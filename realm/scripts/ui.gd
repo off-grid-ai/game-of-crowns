@@ -483,7 +483,7 @@ func _build_houses() -> void:
 	v.add_child(HSeparator.new())
 	v.add_child(T.label("Your word"))
 	var word := LineEdit.new()
-	word.placeholder_text = "all bannermen grow restless"
+	word.placeholder_text = "e.g. the Stormlands are loyal to their King"
 	word.tooltip_text = "Change the realm's people in your own words: everyone, a house, a person, or a group."
 	word.text_submitted.connect(func(t):
 		mood_decreed.emit(t)
@@ -1477,7 +1477,11 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 	for child in _houses.get_children():
 		child.queue_free()
 	var players: Array = world.get("players", []).duplicate()
-	players.sort_custom(func(a, b): return int(a["cities"]) > int(b["cities"]))
+	# Trouble first: the coldest house at the top, the crown last.
+	players.sort_custom(func(a, b):
+		var fa: float = 1000.0 if a.get("favour") == null else float(a["favour"])
+		var fb: float = 1000.0 if b.get("favour") == null else float(b["favour"])
+		return fa < fb if fa != fb else int(a["cities"]) > int(b["cities"]))
 	# One table, every house on one line, the ledger's own measures in columns
 	# (a house's latest row in the ledger, from the bridge), then its favour.
 	var grid := GridContainer.new()
@@ -1493,7 +1497,10 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		head.tooltip_text = String(col[2])
 		head.mouse_filter = Control.MOUSE_FILTER_PASS
 		grid.add_child(head)
-	grid.add_child(Control.new())
+	var fav_head := T.label("Favour", T.TEXT_3)
+	fav_head.tooltip_text = "How each house feels toward the crown. Below 30 they may rise against you; gifts, feasts and fair rulings raise it."
+	fav_head.mouse_filter = Control.MOUSE_FILTER_PASS
+	grid.add_child(fav_head)
 	for p in players:
 		var h: Dictionary = p["house"]
 		if h.get("wild", false) or int(p["cities"]) == 0:
@@ -1528,22 +1535,15 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 			cell.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 			grid.add_child(cell)
 		if p.get("favour") != null:
-			var bar := ProgressBar.new()
-			bar.max_value = 100
-			bar.value = int(p["favour"])
-			bar.show_percentage = false
-			bar.custom_minimum_size = Vector2(48, 3)
-			bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			bar.tooltip_text = "Favour toward the crown: %d" % int(p["favour"])
-			if int(p["favour"]) < 30:
-				var fill := StyleBoxFlat.new()
-				fill.bg_color = T.DANGER
-				bar.add_theme_stylebox_override("fill", fill)
-			grid.add_child(bar)
+			# The number, in the colour of its danger: red may rise, gold grows cold.
+			var f := int(p["favour"])
+			var fav := T.datum("%d" % f, T.SIZE_DESC, T.DANGER if f < 30 else (T.ACCENT if f < 45 else T.TEXT))
+			fav.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+			fav.tooltip_text = "Favour toward the crown: %d of 100. %s" % [f, "They may rise against you." if f < 30 else ("Growing cold." if f < 45 else "Content, for now.")]
+			fav.mouse_filter = Control.MOUSE_FILTER_PASS
+			grid.add_child(fav)
 		else:
-			var none := Control.new()  # the crown has no favour toward itself: keep the column
-			none.custom_minimum_size = Vector2(48, 3)
-			grid.add_child(none)
+			grid.add_child(Control.new())  # the crown has no favour toward itself: keep the column
 
 
 ## The great houses' columns: the ledger's measures, in the units the ledger reads them in.
