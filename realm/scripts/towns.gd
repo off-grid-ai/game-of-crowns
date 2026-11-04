@@ -156,7 +156,7 @@ func _process(_delta: float) -> void:
 		_graded_at = now
 		terrain.commit_grading()
 	if _queue.is_empty():
-		print("BUILD towns raised %d in %d ms, a few per frame" % [_raised, now - _raising_since])
+		print_verbose("BUILD towns raised %d in %d ms, a few per frame" % [_raised, now - _raising_since])
 		_raising_since = 0
 
 
@@ -215,9 +215,12 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 			var cd := square_r + maxf(cf.x, cf.y) * 0.55
 			for tries in 8:
 				var cp := Vector3(cos(gap_ang), 0, sin(gap_ang)) * cd
-				var cy := _seat(center, cp, cf * 0.8, atan2(-cp.x, -cp.z))
+				# Its wide plot eases back into the land over more ground, so
+				# no raw bank shows below the walls.
+				var cy := _seat(center, cp, cf * 0.8, atan2(-cp.x, -cp.z), 2.2, true)
 				if not is_nan(cy):
 					var castle: Node3D = Real.make("medieval_castle")
+					castle.name = "Castle"
 					castle.position = Vector3(cp.x, cy, cp.z)
 					castle.rotation.y = atan2(-cp.x, -cp.z)
 					root.add_child(castle)
@@ -350,7 +353,7 @@ func _crowded(lots: Array, p: Vector3, r: float) -> bool:
 ## Levels the plot for a building and returns its floor height (town-local),
 ## or NAN when any corner is in water or the plot sits on a cliff. The ground is
 ## cut and filled to the plot's mean height, so nothing sinks into a slope.
-func _seat(center: Vector3, p: Vector3, f: Vector2, rot: float) -> float:
+func _seat(center: Vector3, p: Vector3, f: Vector2, rot: float, most := 1.2, cut := false) -> float:
 	var b := Basis(Vector3.UP, rot)
 	var lo := INF
 	var hi := -INF
@@ -365,8 +368,14 @@ func _seat(center: Vector3, p: Vector3, f: Vector2, rot: float) -> float:
 		sum += y
 	if hi - lo > 0.9:  # about 7 m of fall across the plot: a cliff, not a slope
 		return NAN
-	var level := sum / 5.0
-	terrain.flatten(center + p, f * 1.05, rot, level)
+	# Builders cut into a slope more than they fill it: the plot sits nearer its
+	# low side, so it reads as a terrace in the hill, not a mound on it.
+	var level := lerpf(lo, sum / 5.0, 0.4)
+	if cut:
+		# Cut into the hill, never built up on fill: it stands at the plot's low
+		# side, so nothing hangs in the air and no raw bank shows below it.
+		level = lo
+	terrain.flatten(center + p, f * 1.05, rot, level, 0.35, most)
 	return level - center.y
 
 
@@ -531,7 +540,10 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	var reps := roundi(square_r * 4.0)
 	# The square: trodden earth spreading out around a cobbled heart, both
 	# ragged at the edge, so it reads as ground worn by a town, not a stamp.
-	terrain.paint(root, terrain.tiled(ROAD_TEX, reps + 2, reps + 2, "round"), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2.ONE * square_r * 3.2, rng.randf() * TAU, ROAD_TINT)
+	if terrain.land3d and terrain.land3d.land:
+		terrain.land3d.paint_mud(center, square_r * 1.6, rng.randi())  # in the ground itself
+	else:
+		terrain.paint(root, terrain.tiled(ROAD_TEX, reps + 2, reps + 2, "round"), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2.ONE * square_r * 3.2, rng.randf() * TAU, ROAD_TINT)
 	terrain.paint(root, terrain.tiled(SQUARE_TEX, reps, reps, "round"), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2(square_r * 2.0, square_r * 1.6), rng.randf() * TAU)
 
 	var per_variant := {}
@@ -696,7 +708,7 @@ func _fields(root: Node3D, center: Vector3, outer: float, size: int, rng: Random
 		var ang := rng.randf() * TAU
 		var r := outer + 0.4 + rng.randf() * 2.6
 		var off := Vector3(cos(ang) * r, 0, sin(ang) * r)
-		if not _flat_enough(center, off, 0.5):
+		if not _flat_enough(center, off, 0.5) or _built_on(root, off):
 			continue
 		var crop: Array = CROPS[rng.randi() % CROPS.size()]
 		var fsize := Vector2(rng.randf_range(0.9, 1.6), rng.randf_range(0.45, 0.8))
@@ -704,8 +716,20 @@ func _fields(root: Node3D, center: Vector3, outer: float, size: int, rng: Random
 		var tex: String = terrain.art("res://assets/ground/%s.jpg" % crop[0], DIRT)
 		var field: Decal = terrain.paint(fields, terrain.tiled(tex, roundi(fsize.x * 1.5), roundi(fsize.y * 1.5)), off + Vector3(0, _ground_y(center, off), 0), fsize, yaw, Color.WHITE if tex != DIRT else crop[1])
 		field.set_meta("reps", Vector2i(roundi(fsize.x * 1.5), roundi(fsize.y * 1.5)))
+		if terrain.land3d and terrain.land3d.land:
+			# Ploughed soil in the ground itself; the crop lies over it, the earth showing through.
+			terrain.land3d.paint_field(center + off, fsize, yaw)
+			field.albedo_mix = 0.55
 		placed += 1
 
+
+
+## True when a spot falls inside something already built (a footprint).
+func _built_on(root: Node3D, p: Vector3) -> bool:
+	for fp in root.get_meta("footprints", []):
+		if Geometry2D.is_point_in_polygon(Vector2(p.x, p.z), fp):
+			return true
+	return false
 
 func _banner(root: Node3D, pos: Vector3, color: Color, house: Dictionary) -> void:
 	var b: Node3D = preload("res://scripts/heraldry.gd").standard(house, color, 0.65)

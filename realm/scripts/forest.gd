@@ -1,8 +1,9 @@
 extends Node3D
-## Woods of game-ready pines (assets/realistic/pines: three detail levels and a
-## billboard each). The land is cut into chunks; each chunk draws its trees in
-## full near the camera and as flat billboards further off, so a realm-wide
-## forest costs little. Tree positions come from terrain.gd's woodland noise.
+## Woods of game-ready pines, oaks and bushes (assets/realistic: detail levels
+## and a billboard each), drawn by Terrain3D's instancer: in full near the
+## camera, lighter further out, then as flat billboards, swapped ground cell by
+## ground cell, so a realm-wide forest costs little. Tree positions come from
+## terrain.gd's woodland noise.
 
 const PACK := "res://assets/realistic/pines/scene.gltf"
 const OAKS := "res://assets/realistic/oak_trees_pack/scene.gltf"
@@ -27,6 +28,9 @@ var _full: Array = []  # Mesh or null
 var _mid: Array = []  # the lighter detail level, or the full one where a kind has none
 var _card: Array = []
 var _height: Array[float] = []
+var _ids := {}  # kind -> the Terrain3D mesh id it was planted under
+var _trees := {}  # kind -> its trees' transforms, so felling can replant the rest
+var _felled := {}  # kinds to replant at the end of this frame
 
 
 ## True when the pine pack is in the project.
@@ -68,9 +72,23 @@ func plant(trees: Array) -> void:
 		# cards. Only the nearest cast shadows: every shadow cascade draws its
 		# casters again, and the woods were most of the frame.
 		for k in by_kind:
+			if _land():
+				if not _trees.has(k):
+					_trees[k] = []
+				_trees[k].append_array(by_kind[k])
+				continue
 			_layer(_full[k], by_kind[k], 0.0, NEAR, true)
 			_layer(_mid[k], by_kind[k], NEAR - 1.0, MID, false)
 			_layer(_card[k], by_kind[k], MID - 2.0, 0.0, false)
+	if _land():
+		for k in _trees:
+			_ids[k] = _land().plant([_full[k], _mid[k], _card[k]], [NEAR, MID, 1000.0], 1, _trees[k])
+
+
+## Terrain3D's ground, when the realm is drawn on it (terrain.gd's land3d).
+func _land() -> Node:
+	var land3d = get_parent().get("land3d")
+	return land3d if land3d and land3d.land else null
 
 
 func _layer(mesh: Mesh, xfs: Array, begin: float, end: float, shadows: bool) -> void:
@@ -165,8 +183,17 @@ func _global(n: Node) -> Transform3D:
 	return xf
 
 
-## Fells the pines where a town or farm stands.
+## Fells the trees where a town, farm or battle stands.
 func clear(center: Vector3, radius: float) -> void:
+	if not _ids.is_empty():
+		for k in _trees:
+			var kept: Array = _trees[k].filter(func(t: Transform3D): return Vector2(t.origin.x - center.x, t.origin.z - center.z).length() >= radius)
+			if kept.size() != _trees[k].size():
+				_trees[k] = kept
+				_felled[k] = true
+		if not _felled.is_empty():
+			_replant.call_deferred()
+		return
 	for mmi in get_children():
 		if not (mmi is MultiMeshInstance3D):
 			continue
@@ -179,3 +206,17 @@ func clear(center: Vector3, radius: float) -> void:
 			var t := mm.get_instance_transform(i)
 			if Vector2(t.origin.x - center.x, t.origin.z - center.z).length() < radius:
 				mm.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3.ZERO), t.origin))
+
+
+## The kinds that lost trees this frame, sent to the instancer again in one go.
+func _replant() -> void:
+	var land: Terrain3D = _land().land if _land() else null
+	if land == null:
+		return
+	for k in _felled:
+		var typed: Array[Transform3D] = []
+		typed.assign(_trees[k])
+		land.instancer.clear_by_mesh(_ids[k])
+		land.instancer.add_transforms(_ids[k], typed, PackedColorArray(), false)
+		land.instancer.update_mmis(_ids[k])
+	_felled.clear()

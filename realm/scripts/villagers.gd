@@ -117,6 +117,7 @@ func _spawn(id: int) -> void:
 		a["early"] = rng.randf_range(-0.6, 0.6)  # an early riser or a late one, in hours
 		a["block"] = ""
 		person.position = a["home"]
+		_nav.terrain = terrain
 		var map: RID = _nav.map_for(id, town["node"])
 		# Godot's own crowd avoidance (RVO): each villager steps aside for the others.
 		var agent := NavigationServer2D.agent_create()
@@ -254,6 +255,10 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 		_people.play(n, "Idle", 1.0)
 		return
 	a["stuck"] = 0.0
+	if not terrain.is_land(n.position.x + step.x, n.position.z + step.y):
+		_people.play(n, "Idle", 1.0)  # the shore: never a step into the water
+		a["route"] = PackedVector2Array()
+		return
 	n.position.x += step.x
 	n.position.z += step.y
 	n.position.y = terrain.height_at(n.position.x, n.position.z)

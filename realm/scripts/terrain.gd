@@ -47,7 +47,7 @@ func build(map: Dictionary) -> void:
 	_build_vegetation()
 	var t2 := Time.get_ticks_msec()
 	_build_paths()
-	print("BUILD land %d ms, vegetation %d ms, paths %d ms" % [t1 - t0, t2 - t1, Time.get_ticks_msec() - t2])
+	print_verbose("BUILD land %d ms, vegetation %d ms, paths %d ms" % [t1 - t0, t2 - t1, Time.get_ticks_msec() - t2])
 
 
 func refresh_terrain(map: Dictionary) -> void:
@@ -82,9 +82,9 @@ var _snow: ShaderMaterial
 const SEA_LEVEL := -0.15  # the water's surface
 
 const SEASONS := {
-	"spring": {"leaves": Color(0.82, 1.0, 0.72), "pine": Color(0.9, 1.0, 0.85), "grass": Color(0.78, 1.0, 0.6), "ground": Color(0.66, 0.92, 0.42), "snow": 0.0},
-	"summer": {"leaves": Color.WHITE, "pine": Color.WHITE, "grass": Color.WHITE, "ground": Color(0.62, 0.86, 0.38), "snow": 0.0},
-	"autumn": {"leaves": Color(1.35, 0.62, 0.22), "pine": Color(0.85, 0.85, 0.7), "grass": Color(1.0, 0.93, 0.72), "ground": Color(0.92, 0.86, 0.7), "snow": 0.0},  # the leaves turn; the grass only yellows a little
+	"spring": {"leaves": Color(0.82, 1.0, 0.72), "pine": Color(0.9, 1.0, 0.85), "grass": Color(0.78, 1.0, 0.6), "ground": Color(0.95, 1.05, 0.85), "snow": 0.0},
+	"summer": {"leaves": Color.WHITE, "pine": Color.WHITE, "grass": Color.WHITE, "ground": Color(0.95, 1.0, 0.9), "snow": 0.0},
+	"autumn": {"leaves": Color(1.35, 0.62, 0.22), "pine": Color(0.85, 0.85, 0.7), "grass": Color(1.0, 0.93, 0.72), "ground": Color(0.9, 0.93, 0.82), "snow": 0.0},  # the leaves turn; the grass only dulls a little
 	"winter": {"leaves": Color(0.55, 0.47, 0.4), "pine": Color(0.7, 0.75, 0.72), "grass": Color(0.85, 0.85, 0.82), "ground": Color(0.8, 0.82, 0.86), "snow": 0.5},
 }
 
@@ -143,7 +143,7 @@ var _graded := false
 ## Levels a building's plot the way builders do: cut into the high side, fill
 ## the low side, to height `h`, easing back into the land over `margin`.
 ## Changes the same heights everyone reads (height_at) and what Terrain3D draws.
-func flatten(at: Vector3, size: Vector2, yaw: float, h: float, margin := 0.35) -> void:
+func flatten(at: Vector3, size: Vector2, yaw: float, h: float, margin := 0.35, most := 1.2) -> void:
 	if land == null:
 		return
 	var b := Basis(Vector3.UP, -yaw)
@@ -154,7 +154,7 @@ func flatten(at: Vector3, size: Vector2, yaw: float, h: float, margin := 0.35) -
 		var a := TAU * i / 8.0
 		var edge := at + Vector3(cos(a), 0, sin(a)) * (size.length() * 0.5 + 0.3)
 		drop = maxf(drop, absf(height_at(edge.x, edge.z) - h))
-	margin = clampf(maxf(margin, drop * 2.5), margin, 1.2)  # not so far it unseats the neighbours
+	margin = clampf(maxf(margin, drop * 2.5), margin, most)  # not so far it unseats the neighbours
 	var reach := size.length() * 0.5 + margin
 	var per := float(land_per_unit)
 	var x0 := maxi(0, int((at.x - reach) * per))
@@ -380,21 +380,77 @@ func _build_land() -> void:
 
 
 func _build_sea() -> void:
-	var plane := PlaneMesh.new()
-	plane.size = Vector2(width * TILE * 3, height * TILE * 3)
-	plane.subdivide_width = 1
-	var mat := ShaderMaterial.new()
-	mat.shader = preload("res://scripts/water.gdshader")
-	if ResourceLoader.exists("res://assets/maps/atlas.png"):
-		mat.set_shader_parameter("atlas_tex", load("res://assets/maps/atlas.png"))
-		mat.set_shader_parameter("atlas_size", Vector2(width * TILE, height * TILE))
+	# Boujie Water Shader (addons/boujie_water_shader, MIT): an ocean of rings
+	# that grow coarser away from the camera and a far plane to the horizon,
+	# rolling with Gerstner waves, foamed at the shore, clear in the shallows.
+	# It works in metres; a game unit is about 8 m, so its numbers are scaled here.
+	var mat: ShaderMaterial = load("res://addons/boujie_water_shader/prefabs/deep_ocean_material.tres").duplicate()
+	_drape_sea(mat)
+	mat.set_shader_parameter("color_deep", Color(0.05, 0.15, 0.2))  # northern water: slate green, not tropical blue
+	mat.set_shader_parameter("color_shallow", Color(0.12, 0.26, 0.26, 0.55))  # the shallows tinted, not a window on the seabed
+	mat.set_shader_parameter("albedo", Color(0.16, 0.3, 0.34, 0.0))
+	mat.set_shader_parameter("albedo_fresnel", Color(0.36, 0.47, 0.54))
+	mat.set_shader_parameter("albedo_snell", Color(0.02, 0.08, 0.12))
+	mat.set_shader_parameter("beers_law", 2.5)  # clear at the water's edge, dark by a few metres down
+	mat.set_shader_parameter("depth_offset", -0.2)
+	mat.set_shader_parameter("shore_start_blend", 0.01)  # a band of foam a few metres wide
+	mat.set_shader_parameter("shore_end_blend", 0.018)
+	mat.set_shader_parameter("uv_tri_scale", Vector3(4.5, 4.5, 4.5))
+	mat.set_shader_parameter("refraction_scaling_distance_min", 6.0)
+	mat.set_shader_parameter("near_fade_min", 0.05)
+	mat.set_shader_parameter("near_fade_max", 0.07)
+	mat.set_shader_parameter("distance_fade_min", 1800.0)
+	mat.set_shader_parameter("distance_fade_max", 2000.0)
+	for fade in ["foam", "vertex_wave", "depth_fog"]:
+		mat.set_shader_parameter(fade + "_fade_min", 40.0)  # waves and foam settle into a sheen from afar
+		mat.set_shader_parameter(fade + "_fade_max", 120.0)
+	mat.set_shader_parameter("shore_fade_min", 12.0)  # surf at the shore only up close: no white outline round the map
+	mat.set_shader_parameter("shore_fade_max", 30.0)
+	# A calm sea: a low swell with two smaller sets across it (height, sway,
+	# heading, waves per unit, speed). No whitecaps out at sea.
+	var waves := [[0.035, 0.5, 15.0, 0.35, 0.9], [0.02, 0.5, 150.0, 0.8, 1.3], [0.008, 0.3, 300.0, 2.2, 2.0]]
+	mat.set_shader_parameter("WaveCount", waves.size())
+	for i in 5:
+		mat.set_shader_parameter(["WaveSteepnesses", "WaveAmplitudes", "WaveDirectionsDegrees", "WaveFrequencies", "WaveSpeeds"][i], PackedFloat32Array(waves.map(func(w): return w[i])))
+	mat.set_shader_parameter("WavePhases", PackedFloat32Array([0.0, 40.0, 110.0]))
+	# No whitecaps on a calm sea: one foam wave of zero height. (A count of 0
+	# divides by zero in the shader.)
+	mat.set_shader_parameter("FoamWaveCount", 1)
+	for pair in [["Steepnesses", 0.0], ["Amplitudes", 0.0], ["DirectionsDegrees", 0.0], ["Frequencies", 0.0], ["Speeds", 0.0], ["Phases", 0.0]]:
+		mat.set_shader_parameter("FoamWave" + pair[0], PackedFloat32Array([pair[1]]))
+	mat.set_shader_parameter("UVWaveCount", 0)
 	_sea_mat = mat
-	var mi := MeshInstance3D.new()
-	mi.mesh = plane
-	mi.material_override = mat
-	mi.position = Vector3(width * TILE / 2, SEA_LEVEL, height * TILE / 2)
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(mi)
+	var ocean: Node3D = preload("res://addons/boujie_water_shader/types/ocean.gd").new()
+	ocean.name = "Sea"
+	ocean.outermost_resolution = 16
+	ocean.levels_of_detail = 6
+	ocean.unit_size = 0.125  # a metre between ripples at the camera, coarser further out
+	ocean.far_edge = 2000
+	ocean.material = mat
+	ocean.position = Vector3(width * TILE / 2, SEA_LEVEL, height * TILE / 2)
+	add_child(ocean)
+	# The finest ring stays under the camera, snapped so the waves don't swim.
+	var follow: Node3D = preload("res://addons/boujie_water_shader/types/camera_follower_3d.gd").new()
+	follow.snap = true
+	follow.snap_unit = ocean.max_unit_size  # the coarsest ring's grid, so no ring shifts against the waves
+	ocean.add_child(follow)
+	follow.target_path = follow.get_path_to(ocean)
+
+
+## The realm's atlas laid over the sea as over the land (land3d._drape_atlas):
+## Boujie's shader with one line added that blends toward the atlas by atlas_mix.
+func _drape_sea(mat: ShaderMaterial) -> void:
+	if not ResourceLoader.exists("res://assets/maps/atlas.png"):
+		return
+	var code: String = mat.shader.code
+	code = code.replace("uniform bool freeze_time", "uniform sampler2D atlas_tex : source_color, filter_linear_mipmap_anisotropic, repeat_disable;\nuniform vec2 atlas_size = vec2(1.0);\nuniform float atlas_mix = 0.0;\nuniform bool freeze_time")
+	var end := code.rfind("}")
+	code = code.left(end) + "\tvec2 auv = world_coordinates.xz / atlas_size;\n\tvec3 chart = all(greaterThanEqual(auv, vec2(0.0))) && all(lessThanEqual(auv, vec2(1.0))) ? texture(atlas_tex, auv).rgb : vec3(0.2, 0.34, 0.53);\n\tALBEDO = mix(ALBEDO, chart, atlas_mix);\n\tEMISSION *= 1.0 - atlas_mix;\n}\n"
+	var sh := Shader.new()
+	sh.code = code
+	mat.shader = sh
+	mat.set_shader_parameter("atlas_tex", load("res://assets/maps/atlas.png"))
+	mat.set_shader_parameter("atlas_size", Vector2(width * TILE, height * TILE))
 
 
 func _mesh_from(path: String) -> Mesh:
@@ -481,7 +537,7 @@ func _build_vegetation() -> void:
 		forest.name = "Forest"
 		add_child(forest)
 		forest.plant(_pines)
-		print("FOREST %d pines" % _pines.size())
+		print_verbose("FOREST %d pines" % _pines.size())
 	for key in placed:
 		var parts: PackedStringArray = key.split(":")
 		var mmi := _scatter(meshes[parts[0]][int(parts[1])], placed[key])

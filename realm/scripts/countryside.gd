@@ -110,7 +110,10 @@ func _farmstead(at: Vector3, rng: RandomNumberGenerator, hedges: Array) -> void:
 		var tex: String = _field_tex[rng.randi() % _field_tex.size()]
 		if not ResourceLoader.exists(tex):
 			tex = "res://assets/ground/dirt-albedo.jpg"
-		terrain.paint(self, terrain.tiled(tex, roundi(size.x * 1.5), roundi(size.y * 1.5)), Vector3(c.x, terrain.height_at(c.x, c.z), c.z), size, fyaw)
+		var crop: Decal = terrain.paint(self, terrain.tiled(tex, roundi(size.x * 1.5), roundi(size.y * 1.5)), Vector3(c.x, terrain.height_at(c.x, c.z), c.z), size, fyaw)
+		if terrain.land3d and terrain.land3d.land:
+			terrain.land3d.paint_field(c, size, fyaw)  # ploughed soil under the crop
+			crop.albedo_mix = 0.55
 		hedges.append([c, size, fyaw])
 
 
@@ -206,6 +209,9 @@ func _grass(cities: Array, steads: Array, rng: RandomNumberGenerator) -> void:
 			xf[rng.randi() % 2].append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(k, k * rng.randf_range(0.8, 1.3), k)), Vector3(q.x, terrain.height_at(q.x, q.z) - 0.01, q.z)))
 	for v in 2:
 		if xf[v].is_empty():
+			continue
+		if terrain.land3d and terrain.land3d.land:
+			terrain.land3d.plant([tufts[v]], [30.0], 0, xf[v])  # Terrain3D's instancer draws it
 			continue
 		var mm := MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_3D

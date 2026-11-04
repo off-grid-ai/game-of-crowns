@@ -33,6 +33,15 @@ const KIT := {
 	"ph/stone_fire_pit": ["well", 1.6],
 }
 
+# Parts a kit brings that our land supplies itself: the castle comes on its own
+# raised earth platform with a moat and scenery, the longhall on a ground sheet
+# (which also set its size) with a backdrop, the townhouse on a patch of ground.
+const STRIP := {
+	"medieval_castle": ["Ground", "GroundWater", "Envoiremt_01", "FrontEnv."],
+	"medieval_viking_house": ["Plane001", "Plane002"],
+	"romano-british_house_in_medieval_london": ["Ground"],
+}
+
 static var _cache := {}
 
 
@@ -68,7 +77,10 @@ static func _template(name: String) -> Dictionary:
 	var model: Node3D = (load(path) as PackedScene).instantiate()
 	# Some kits carry things that don't belong in this age (cannon and shot).
 	# (A match can sit inside another match, so check each is still there before freeing it.)
-	for n in model.find_children("*Cannon*", "", true, false):
+	var unwanted: Array = model.find_children("*Cannon*", "", true, false)
+	for part in STRIP.get(name, []):
+		unwanted.append_array(model.find_children(part, "", true, false))
+	for n in unwanted:
 		if is_instance_valid(n):
 			n.get_parent().remove_child(n)
 			n.free()

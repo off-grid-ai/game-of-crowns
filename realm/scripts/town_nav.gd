@@ -1,8 +1,12 @@
 extends RefCounted
 ## Walkable paths for a town, using Godot's built-in navigation: a 2D navmesh
-## over the town's ground with every building footprint cut out. People ask it
-## for a path and walk the streets around houses instead of through them.
+## over the town's ground with every building footprint and all water cut out.
+## People ask it for a path and walk the streets around houses instead of
+## through them, and keep to the shore instead of wading into the sea.
 
+const WATER_STEP := 0.1  # how finely the shore is traced, in game units (about 0.8 m)
+
+var terrain: Node3D  # set by villagers.gd: what is land and what is water
 var _maps := {}  # town id -> RID
 
 
@@ -26,6 +30,7 @@ func map_for(id: int, root: Node3D) -> RID:
 		for p in fp:
 			grown.append(c + (p - c) * 1.08)
 		src.add_obstruction_outline(grown)
+	_cut_water(src, root.position, reach)
 	NavigationServer2D.bake_from_source_geometry_data(poly, src)
 	var map := NavigationServer2D.map_create()
 	NavigationServer2D.map_set_cell_size(map, poly.cell_size)
@@ -35,6 +40,26 @@ func map_for(id: int, root: Node3D) -> RID:
 	NavigationServer2D.region_set_navigation_polygon(region, poly)
 	_maps[id] = map
 	return map
+
+
+## The sea and lakes within reach, as one obstruction per run of water along
+## each row, so the baked map stops at the shore.
+func _cut_water(src: NavigationMeshSourceGeometryData2D, at: Vector3, reach: float) -> void:
+	if terrain == null:
+		return
+	var n := int(ceil(reach / WATER_STEP))
+	for row in range(-n, n + 1):
+		var z := row * WATER_STEP
+		var start := INF
+		for col in range(-n, n + 2):
+			var x := col * WATER_STEP
+			var wet: bool = col <= n and not terrain.is_land(at.x + x, at.z + z)
+			if wet and start == INF:
+				start = x
+			elif not wet and start != INF:
+				var h := WATER_STEP * 0.5
+				src.add_obstruction_outline(PackedVector2Array([Vector2(start - h, z - h), Vector2(x - h, z - h), Vector2(x - h, z + h), Vector2(start - h, z + h)]))
+				start = INF
 
 
 ## A path in town-local XZ, as Vector2s; empty if none yet (the map syncs next frame).
