@@ -77,7 +77,9 @@ func _process(delta: float) -> void:
 ## body is kept in step it carries the meta "in_step": the standing move last
 ## asked of it, which People.play holds back until they stop.
 func _keep_step(p: AnimationPlayer, body: Node3D, id: int, delta: float) -> void:
-	if body.has_meta("mounted") or delta <= 0.0:
+	# People only (a horse keeps its own gaits, horse.gd), and never one whose
+	# every move is chosen as it goes: you, walking the realm, and those you fight.
+	if not body.is_in_group("people") or body.has_meta("mounted") or body.has_meta("driven") or delta <= 0.0:
 		return
 	var g: Dictionary = _gait.get(id, {})
 	var here := body.global_position

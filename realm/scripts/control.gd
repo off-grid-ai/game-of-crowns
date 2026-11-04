@@ -91,6 +91,7 @@ func start(person: Dictionary, house: Dictionary, town_id: int) -> void:
 	_body.position = Vector3(start_at.x, terrain.height_at(start_at.x, start_at.z), start_at.z)
 	_yaw = atan2(center.x - _body.position.x, center.z - _body.position.z)
 	_body.rotation.y = _yaw + PI
+	_body.set_meta("driven", true)  # your moves are your own: the walking rule (anim_lod.gd) leaves you be
 	_me = Combat.new(_body, villagers._people)
 	_me.on_land = _land
 	# Your horse waits saddled a horse's length off to your side, facing the
@@ -514,6 +515,7 @@ func spawn_foes(count: int) -> void:
 		var n: Node3D = villagers._people.make(rng, "soldier", Color(0.42, 0.38, 0.34), "adult")
 		add_child(n)
 		n.position = Vector3(at.x, terrain.height_at(at.x, at.z), at.z)
+		n.set_meta("driven", true)  # a fighter's moves are chosen as it goes
 		var f = Combat.new(n, villagers._people, ["axe", "greatsword", "sword", "dagger"][(i + rng.randi() % 4) % 4])
 		f.health = 60.0
 		f.on_land = _land
