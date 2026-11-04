@@ -300,15 +300,28 @@ const UI_SCALE_FILE := "user://ui_scale.txt"
 var ui_scale := 1.3
 
 
+## The least room the interface is laid out for: a smaller window shrinks the
+## interface to fit rather than letting panels run over each other.
+const UI_MIN_ROOM := Vector2(1280, 720)
+
+
 func _load_ui_scale() -> void:
 	if FileAccess.file_exists(UI_SCALE_FILE):
 		ui_scale = clampf(float(FileAccess.get_file_as_string(UI_SCALE_FILE)), 0.7, 2.5)
-	get_tree().root.content_scale_factor = ui_scale
+	_apply_ui_scale()
+	get_tree().root.size_changed.connect(_apply_ui_scale)
+
+
+## Your chosen size, or less when the window is too small to hold it.
+func _apply_ui_scale() -> void:
+	var win := Vector2(DisplayServer.window_get_size())
+	var fit := minf(win.x / UI_MIN_ROOM.x, win.y / UI_MIN_ROOM.y)
+	get_tree().root.content_scale_factor = clampf(minf(ui_scale, fit), 0.5, 2.5)
 
 
 func _set_ui_scale(v: float) -> void:
 	ui_scale = clampf(snappedf(v, 0.05), 0.7, 2.5)
-	get_tree().root.content_scale_factor = ui_scale
+	_apply_ui_scale()
 	var f := FileAccess.open(UI_SCALE_FILE, FileAccess.WRITE)
 	if f:
 		f.store_string(str(ui_scale))
@@ -388,9 +401,9 @@ func _parse_args() -> void:
 		elif a == "--duel":
 			_shot["duel"] = true
 		elif a.begins_with("--ride="):
-			_shot["ride"] = a.substr(7)  # with --control: mount your horse and "stand", "walk" or "gallop"
+			_shot["ride"] = a.substr(7)  # with --control: mount your horse and "stand", "walk", "gallop" or "all" (three frames)
 		elif a.begins_with("--after="):
-			_shot["after"] = float(a.substr(8))  # with --duel: seconds from the strike to the shot
+			_shot["after"] = a.substr(8)  # with --duel: seconds from the strike to the shot; a list ("0.6,2,5") saves a frame at each
 		elif a.begins_with("--interior="):
 			_shot["interior"] = a.substr(11)
 		elif a.begins_with("--move="):
@@ -416,6 +429,26 @@ func _parse_args() -> void:
 		elif a == "--siege":
 			_shot["siege"] = true
 			_shot["town"] = true
+		elif a.begins_with("--tour="):
+			_shot["tour"] = a.substr(7)  # a folder: one frame of every screen, in one run
+			_shot["wait"] = "9999"
+
+
+## --ride=all: one run, three frames: <shot>_stand, _walk and _gallop.
+func _ride_frames() -> void:
+	var base := String(_shot["path"]).get_basename()
+	var save := func(tag: String): get_viewport().get_texture().get_image().save_png("%s_%s.png" % [base, tag])
+	await get_tree().create_timer(2.0).timeout
+	control.mount()
+	await get_tree().create_timer(2.5).timeout
+	save.call("stand")
+	control.drive = Vector2(0, -1)
+	await get_tree().create_timer(3.0).timeout
+	save.call("walk")
+	control.drive_fast = true
+	await get_tree().create_timer(3.0).timeout
+	save.call("gallop")
+	_take_shot()
 
 
 func _take_shot() -> void:
@@ -791,6 +824,9 @@ func _home_view(world: Dictionary) -> void:
 
 
 func _frame_for_shot(world: Dictionary) -> void:
+	if _shot.has("tour"):
+		_tour(world)
+		return
 	if _shot.has("house"):
 		ui.house_opened.emit(int(_shot["house"]))
 	if _shot.has("folk"):
@@ -820,9 +856,30 @@ func _frame_for_shot(world: Dictionary) -> void:
 						control._me.draw(true))
 					get_tree().create_timer(float(_shot.get("lead", 6.0))).timeout.connect(func():
 						control._me.strike()
-						get_tree().create_timer(float(_shot.get("after", 0.4))).timeout.connect(_take_shot))
+						# Keep fighting: another swing whenever the last one is done.
+						var swing := Timer.new()
+						swing.wait_time = 0.3
+						swing.timeout.connect(func():
+							if control._me.state == "ready":
+								control._me.strike())
+						add_child(swing)
+						swing.start()
+						var times: Array = Array(String(_shot.get("after", "0.4")).split(",")).map(func(t): return float(t))
+						for i in times.size():
+							get_tree().create_timer(times[i]).timeout.connect(func():
+								if i == times.size() - 1 and times.size() == 1:
+									_take_shot()
+									return
+								var path: String = String(_shot["path"]).get_basename() + "_%d.png" % (i + 1)
+								get_viewport().get_texture().get_image().save_png(path)
+								print("Saved screenshot to ", path)
+								if i == times.size() - 1:
+									get_tree().quit()))
 				if _shot.has("ride"):
 					# Into the saddle, then away from the camera at the asked pace.
+					if _shot["ride"] == "all":
+						_ride_frames()
+						return
 					get_tree().create_timer(2.0).timeout.connect(func():
 						control.mount()
 						if _shot["ride"] != "stand":
@@ -1078,3 +1135,78 @@ func _open_person(id: String, house: Dictionary) -> void:
 	bridge.person(id, func(d):
 		if d is Dictionary and d.has("name"):
 			hero.open(d, h))
+
+
+
+## A test aid for checking every screen (--tour=<folder>): waits for the realm
+## to build, then opens each screen in turn and saves a frame of it, so one run
+## replaces a render per screen. Off in play.
+func _tour(world: Dictionary) -> void:
+	var dir := String(_shot["tour"])
+	var kingsmere: Dictionary = {}
+	for c in world.get("cities", []):
+		if String(c.get("title", "")) == "Kingsmere":
+			kingsmere = c
+	var snap := func(name: String) -> void:
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("%s/%s.png" % [dir, name])
+		print("TOUR ", name)
+	var calm := func() -> void:
+		for p in [ui._houses_panel, ui._chron_panel, ui._house_panel, ui._ledger_panel, ui._folk_panel, ui._digest_panel]:
+			if p:
+				p.visible = false
+		ui._houses_btn.button_pressed = false
+		ui._chron_btn.button_pressed = false
+		ui._ledger_btn.button_pressed = false
+	await get_tree().create_timer(float(_shot.get("lead", 70.0))).timeout
+	await snap.call("realm")  # the opening view, with the away digest if any
+	calm.call()
+	ui.visible = true
+	ui._houses_btn.button_pressed = true
+	ui._houses_panel.visible = true
+	ui._chron_btn.button_pressed = true
+	ui._chron_panel.visible = true
+	await get_tree().create_timer(2.0).timeout
+	await snap.call("panels")
+	calm.call()
+	ui.house_opened.emit(3)
+	await get_tree().create_timer(4.0).timeout
+	await snap.call("house")
+	calm.call()
+	ui._ledger_btn.button_pressed = true
+	ui.ledger_opened.emit()
+	await get_tree().create_timer(4.0).timeout
+	await snap.call("ledger")
+	calm.call()
+	if not kingsmere.is_empty():
+		_focus_city(int(kingsmere["id"]))
+		rig.snap(terrain.world_pos(float(kingsmere["x"]), float(kingsmere["y"])), 5.0, 0.6)
+		await get_tree().create_timer(6.0).timeout
+		await snap.call("town")
+		bridge.folk(int(kingsmere["id"]), 0, func(d): ui.show_folk(d if d is Dictionary else {}))
+		await get_tree().create_timer(5.0).timeout
+		await snap.call("folk")
+		calm.call()
+	bridge.house(3, func(d):
+		if d is Dictionary and d.get("lord") is Dictionary:
+			_open_person(str(d["lord"].get("id", "")), d))
+	await get_tree().create_timer(7.0).timeout
+	await snap.call("hero")
+	hero.close()
+	lore.open(-1)
+	await get_tree().create_timer(3.0).timeout
+	await snap.call("lore")
+	lore.open(3)
+	await get_tree().create_timer(3.0).timeout
+	await snap.call("lore_house")
+	lore.close()
+	title.open_settings()
+	await get_tree().create_timer(3.0).timeout
+	await snap.call("settings")
+	title.open()
+	await get_tree().create_timer(2.0).timeout
+	await snap.call("title")
+	title.show_new()
+	await get_tree().create_timer(3.0).timeout
+	await snap.call("new")
+	get_tree().quit()
