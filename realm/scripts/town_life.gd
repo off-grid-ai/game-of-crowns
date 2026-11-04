@@ -210,7 +210,7 @@ func _drill(life: Node3D, center: Vector3, progress: float, color: Color, unit: 
 		var col := i % 4
 		var p := Vector3(-0.36 + col * 0.24, 0, 0.55 + row * 0.26)
 		p.y = _y(center, p)
-		var drill := (["Bow_Draw", "Bow_Aim", "Bow_Shoot"][i % 3]) if unit.contains("Archer") or unit.contains("bow") else ("Sword_Idle" if i % 3 else "Sword_Attack")
+		var drill: String = (["Bow_Draw", "Bow_Aim", "Bow_Shoot"][i % 3]) if unit.contains("Archer") or unit.contains("bow") else ("Sword_Idle" if i % 3 else "Sword_Attack")
 		_townsperson(life, p, "soldier", drill, hash(unit) + i, color.lerp(Color.WHITE, 0.35))
 	var tag := Label3D.new()
 	tag.text = "Training %s  %d%%" % [unit, int(progress * 100)]
