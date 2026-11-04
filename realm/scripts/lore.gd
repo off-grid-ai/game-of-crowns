@@ -209,13 +209,48 @@ func _house(h: Dictionary) -> void:
 		_fact("Character", lore.get("character", ""))
 		_fact("Wants", lore.get("wants", ""))
 		_fact("Old grudge", lore.get("grudge", ""))
+	# Two tabs below: the house's notable people, and the lesser houses sworn to it.
+	var sworn: Array = []
+	for f in _book.get("families", []):
+		var ours: Array = f.get("branches", []).filter(func(b): return String(b.get("house", "")) == String(h.get("name", "")))
+		if not ours.is_empty():
+			var mine: Dictionary = f.duplicate()
+			mine["branches"] = ours
+			sworn.append(mine)
 	var people: Array = h.get("notables", [])
-	if people.is_empty():
+	if people.is_empty() and sworn.is_empty():
 		return
 	_page.add_child(HSeparator.new())
-	_page.add_child(T.label("Notable people", T.ACCENT))
-	for p in people:
-		_person(p, h)
+	var tabs := HBoxContainer.new()
+	tabs.add_theme_constant_override("separation", 6)
+	_page.add_child(tabs)
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 12)
+	_page.add_child(body)
+	var buttons := {}
+	var show := func(tab: String) -> void:
+		_house_tab = tab
+		for k in buttons:
+			buttons[k].button_pressed = k == tab
+		for c in body.get_children():
+			c.queue_free()
+		if tab == "sworn":
+			for f in sworn:
+				_family(f, body)
+		else:
+			for p in people:
+				_person(p, h, body)
+	for t in [["people", "Notable people (%d)" % people.size()], ["sworn", "Sworn houses (%d)" % sworn.size()]]:
+		var b := Button.new()
+		b.text = t[1]
+		b.toggle_mode = true
+		b.flat = true
+		b.focus_mode = Control.FOCUS_NONE
+		var key: String = t[0]
+		b.pressed.connect(func(): show.call(key))
+		buttons[key] = b
+		tabs.add_child(b)
+	show.call(_house_tab if (_house_tab == "people" and not people.is_empty()) or (_house_tab == "sworn" and not sworn.is_empty()) else ("people" if not people.is_empty() else "sworn"))
 
 
 func _fact(name: String, text: String) -> void:
@@ -229,7 +264,10 @@ func _fact(name: String, text: String) -> void:
 	_page.add_child(box)
 
 
-func _person(p: Dictionary, h: Dictionary) -> void:
+var _house_tab := "people"  # the tab a house page opens on: the last one you chose
+
+
+func _person(p: Dictionary, h: Dictionary, into: Node = null) -> void:
 	var card := PanelContainer.new()
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(1, 0.97, 0.9, 0.05)
@@ -238,7 +276,7 @@ func _person(p: Dictionary, h: Dictionary) -> void:
 	sb.set_corner_radius_all(10)
 	sb.set_content_margin_all(16)
 	card.add_theme_stylebox_override("panel", sb)
-	_page.add_child(card)
+	(into if into else _page).add_child(card)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 4)
 	card.add_child(v)
@@ -296,11 +334,11 @@ func _lesser() -> void:
 		_family(f)
 
 
-func _family(f: Dictionary) -> void:
+func _family(f: Dictionary, into: Node = null) -> void:
 	var surname := String(f.get("surname", ""))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 18)
-	_page.add_child(row)
+	(into if into else _page).add_child(row)
 	var cloth := TextureRect.new()
 	var path := "res://assets/heraldry/banner-%s.png" % surname.to_lower()
 	cloth.texture = load(path) if ResourceLoader.exists(path) else null
