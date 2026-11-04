@@ -53,8 +53,10 @@ var _snowed := -1  # town count when the season was last laid on them
 func _ready() -> void:
 	_parse_args()
 	# Started from a shell, macOS opens the window behind whatever is in front:
-	# bring it forward so the game is never hidden on launch.
-	DisplayServer.window_move_to_foreground()
+	# bring it forward so the game is never hidden on launch. A test shot stays
+	# behind, so it never jumps in front of what you're doing.
+	if not _shot.has("path"):
+		DisplayServer.window_move_to_foreground()
 	# Full screen by default (screenshot runs stay windowed so they don't take over the display).
 	if not _shot.has("path"):
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
@@ -563,12 +565,15 @@ func _try_look(look: String) -> void:
 			"nossao": env.ssao_enabled = false
 			"nofog": env.fog_enabled = false
 			"noshadow": sun.shadow_enabled = false
+		if k.begins_with("sat="):
+			env.adjustment_saturation = float(k.substr(4))
 			"noforest": _no_forest = true
 			"notrees": _no_trees = true
 			"nosea": _no_sea = true
 			"noinstancer": _no_instancer = true
 			"profile": _shot["profile"] = true
 			"cycle": _cycle = []  # starts once the towns are built; see _cycle_step
+			"warmfog": env.fog_light_color = Color(0.86, 0.8, 0.68)
 			"cyclevis":  # the same, hiding each system rather than pausing it: what each one draws
 				_cycle = []
 				_cycle_vis = true
