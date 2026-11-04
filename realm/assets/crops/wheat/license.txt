@@ -1,0 +1,11 @@
+Model Information:
+* title:	Wheat
+* source:	https://sketchfab.com/3d-models/wheat-1e4643b88a1f4683a9765287ff2871cb
+* author:	ljungman (https://sketchfab.com/ljungman)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Wheat" (https://sketchfab.com/3d-models/wheat-1e4643b88a1f4683a9765287ff2871cb) by ljungman (https://sketchfab.com/ljungman) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

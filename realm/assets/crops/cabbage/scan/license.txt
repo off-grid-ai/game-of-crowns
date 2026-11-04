@@ -1,0 +1,10 @@
+Model Information:
+* title:	Cabbage (the scan the cabbage was optimised from)
+* source:	https://sketchfab.com/3d-models/cabbage-a2ce58a7c4a64a42bfb13af2350d18db
+* author:	Yu (https://skfb.ly/6XGsq)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+The cabbage in ../ is Meerschaum Digital's optimised derivative of this scan; both are credited.

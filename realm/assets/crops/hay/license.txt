@@ -1,0 +1,11 @@
+Model Information:
+* title:	Haystack
+* source:	https://sketchfab.com/3d-models/haystack-f9e0ae0859fa4e71a2d7dbe55810c1a8
+* author:	ljungman (https://sketchfab.com/ljungman)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Haystack" (https://sketchfab.com/3d-models/haystack-f9e0ae0859fa4e71a2d7dbe55810c1a8) by ljungman (https://sketchfab.com/ljungman) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

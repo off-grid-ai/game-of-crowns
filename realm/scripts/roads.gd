@@ -13,6 +13,7 @@ var terrain: Node3D
 var _signature := ""
 var _kings_sig := ""
 var _kings: Node3D
+var _roads: Node3D  # the network Freeciv's workers built, redrawn when it changes
 
 
 func sync(world: Dictionary) -> void:
@@ -26,9 +27,12 @@ func sync(world: Dictionary) -> void:
 		return
 	_signature = sig
 	terrain.set_roads(world.get("roads", []))
-	for child in get_children():
-		if child != _kings:
-			child.queue_free()
+	if _roads:
+		_roads.queue_free()
+	_roads = Node3D.new()
+	_roads.name = "Roads"
+	add_child(_roads)
+	_forget("roads")
 	# Freeciv paves whole patches of tiles; joining every neighbour would draw a
 	# lattice. Real tracks branch: keep only a spanning tree, straight steps
 	# before diagonals, so each patch becomes a few roads with no loops.
@@ -51,7 +55,7 @@ func sync(world: Dictionary) -> void:
 		if ra == rb:
 			continue
 		root[ra] = rb
-		_segment(terrain.world_pos(e[1].x, e[1].y), terrain.world_pos(e[2].x, e[2].y))
+		_segment(terrain.world_pos(e[1].x, e[1].y), terrain.world_pos(e[2].x, e[2].y), _roads, WIDTH, TINT, "roads")
 
 
 ## A track between two tile centres, bowed gently at the middle so roads don't
@@ -69,6 +73,7 @@ func kings_road(world: Dictionary) -> void:
 	_kings = Node3D.new()
 	_kings.name = "KingsRoad"
 	add_child(_kings)
+	_forget("kings")
 	var hub: Dictionary = {}
 	for c in cities:
 		if String(c.get("title", "")) == "Kingsmere":
@@ -81,16 +86,17 @@ func kings_road(world: Dictionary) -> void:
 			continue
 		var route: PackedVector3Array = terrain.land_path(from, terrain.world_pos(float(c["x"]), float(c["y"])))
 		for i in route.size() - 1:
-			_segment(route[i], route[i + 1], _kings, WIDTH * 2.2, KINGS_TINT)
+			_segment(route[i], route[i + 1], _kings, WIDTH * 2.2, KINGS_TINT, "kings")
 		_roadside(route, cities)
 	_plant_verges()
 	# Lords' roads: every town to the seat of the house that holds it.
+	clear_tracks("lords")
 	for c in cities:
 		if c.get("capital", false):
 			continue
 		for seat in cities:
 			if seat.get("capital", false) and int(seat["owner"]) == int(c["owner"]):
-				track(terrain.world_pos(float(c["x"]), float(c["y"])), terrain.world_pos(float(seat["x"]), float(seat["y"])), WIDTH * 1.4)
+				track(terrain.world_pos(float(c["x"]), float(c["y"])), terrain.world_pos(float(seat["x"]), float(seat["y"])), WIDTH * 1.4, "lords")
 
 
 ## The life of a great road: bushes and brambles along both verges, a
@@ -222,29 +228,99 @@ func _plant_verges() -> void:
 	_verges.clear()
 
 
-## A road or track along the land between two points, onto the King's Road layer.
-## Farm tracks have a layer of their own: the king's road is rebuilt whenever a
-## town changes hands, and the tracks hung on it vanished with it.
+## A road or track along the land between two points. Tracks have a layer of
+## their own, kept by whoever laid them (`key`: a patch of farms, the lords'
+## roads), so each can be taken up without disturbing the rest.
 var _tracks: Node3D
+var _track_keys := {}  # key -> its node of painted track
 
 
-func clear_tracks() -> void:
-	if _tracks:
-		_tracks.queue_free()
-	_tracks = null
+func clear_tracks(key := "") -> void:
+	for k in _track_keys.keys():
+		if key == "" or k == key:
+			if is_instance_valid(_track_keys[k]):
+				_track_keys[k].queue_free()
+			_track_keys.erase(k)
+			_forget("track:" + k)
 
 
-func track(a: Vector3, b: Vector3, width := WIDTH * 0.7) -> void:
+func track(a: Vector3, b: Vector3, width := WIDTH * 0.7, key := "") -> void:
 	if _tracks == null:
 		_tracks = Node3D.new()
 		_tracks.name = "FarmTracks"
 		add_child(_tracks)
+	if not _track_keys.has(key):
+		var n := Node3D.new()
+		n.name = "Track_" + key.validate_node_name()
+		_tracks.add_child(n)
+		_track_keys[key] = n
 	var route: PackedVector3Array = terrain.land_path(a, b)
 	for i in route.size() - 1:
-		_segment(route[i], route[i + 1], _tracks, width, TINT)
+		_segment(route[i], route[i + 1], _track_keys[key], width, TINT, "track:" + key)
 
 
-func _segment(a: Vector3, b: Vector3, parent: Node3D = null, width := WIDTH, tint := TINT) -> void:
+## Where every road and track runs, so grass and the like can keep off them:
+## owner ("roads", "kings", "track:<key>") -> [from, to, half width] in the
+## ground plane, and a coarse grid over them, remade on the first ask after a change.
+var _paths := {}
+var _grid := {}
+var _grid_stale := true
+var version := 0  # goes up whenever a road or track is laid or taken up
+const CELL := 2.0
+
+
+func _forget(owner: String) -> void:
+	if _paths.erase(owner):
+		_grid_stale = true
+		version += 1
+
+
+func _remember(owner: String, a: Vector3, b: Vector3, half: float) -> void:
+	if not _paths.has(owner):
+		_paths[owner] = []
+	_paths[owner].append([Vector2(a.x, a.z), Vector2(b.x, b.z), half])
+	_grid_stale = true
+	version += 1
+
+
+func _cells() -> Dictionary:
+	if not _grid_stale:
+		return _grid
+	_grid = {}
+	for owner in _paths:
+		for s in _paths[owner]:
+			var lo: Vector2 = (s[0] as Vector2).min(s[1]) - Vector2.ONE * s[2]
+			var hi: Vector2 = (s[0] as Vector2).max(s[1]) + Vector2.ONE * s[2]
+			for cx in range(floori(lo.x / CELL), floori(hi.x / CELL) + 1):
+				for cz in range(floori(lo.y / CELL), floori(hi.y / CELL) + 1):
+					var c := Vector2i(cx, cz)
+					if not _grid.has(c):
+						_grid[c] = []
+					_grid[c].append(s)
+	_grid_stale = false
+	return _grid
+
+
+## True when a spot lies on a road or track, or within `margin` of its verge.
+func on_path(p: Vector3, margin := 0.0) -> bool:
+	var q := Vector2(p.x, p.z)
+	for s in _cells().get(Vector2i(floori(q.x / CELL), floori(q.y / CELL)), []):
+		if q.distance_to(Geometry2D.get_closest_point_to_segment(q, s[0], s[1])) < float(s[2]) + margin:
+			return true
+	return false
+
+
+## A number that changes when any road or track within `r` of `p` does.
+func paths_near(p: Vector3, r: float) -> int:
+	var near := []
+	var cells := _cells()
+	for cx in range(floori((p.x - r) / CELL), floori((p.x + r) / CELL) + 1):
+		for cz in range(floori((p.z - r) / CELL), floori((p.z + r) / CELL) + 1):
+			near.append(cells.get(Vector2i(cx, cz), []))
+	return hash(near)
+
+
+func _segment(a: Vector3, b: Vector3, parent: Node3D = null, width := WIDTH, tint := TINT, owner := "roads") -> void:
 	var flat := Vector3(b.x - a.x, 0, b.z - a.z)
 	var mid := a.lerp(b, 0.5) + Vector3(flat.z, 0, -flat.x).normalized() * 0.25 * sin(a.x * 0.7 + b.z * 0.3)
 	mid.y = terrain.height_at(mid.x, mid.z)
@@ -260,4 +336,5 @@ func _segment(a: Vector3, b: Vector3, parent: Node3D = null, width := WIDTH, tin
 		if wet:
 			continue
 		var len := Vector2(q.x - p.x, q.z - p.z).length() + width
+		_remember(owner, p, q, width * 0.5)
 		terrain.paint(parent if parent else self, terrain.tiled(TEX, 2 if width > WIDTH else 1, roundi(len / width), "sides"), Vector3(c.x, (p.y + q.y) / 2.0, c.z), Vector2(width, len), atan2(q.x - p.x, q.z - p.z), tint, absf(p.y - q.y) + 3.0, 100.0 if width > WIDTH * 0.8 else 40.0)

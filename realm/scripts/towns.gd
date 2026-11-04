@@ -174,6 +174,7 @@ func nearest(pos: Vector3, max_dist := 6.0) -> Dictionary:
 # --- the realistic kit (assets/realistic) -----------------------------------------
 
 const Real = preload("res://scripts/realistic.gd")
+const Fields = preload("res://scripts/countryside.gd")  # crops, and fields that line up with their soil
 var realistic_towns: Array = []
 var _house := {}  # the house of the town being built, for its castle banner
 var _house_colour := Color.GRAY  # town names drawn from the realistic kit; "*" for all
@@ -587,6 +588,10 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 		if t > t0:
 			var mid := dir * (t0 + t) / 2.0
 			terrain.paint(root, terrain.tiled(ROAD_TEX, 1, roundi((t - t0) / 0.34), "sides"), Vector3(mid.x, (lo + hi) / 2.0, mid.z), Vector2(0.34, t - t0), atan2(dir.x, dir.z), ROAD_TINT, hi - lo + 1.0)
+			# Town-local, like the footprints: where the grass keeps off.
+			var lanes: Array = root.get_meta("lanes", [])
+			lanes.append([Vector2(dir.x, dir.z) * t0, Vector2(dir.x, dir.z) * t])
+			root.set_meta("lanes", lanes)
 		# Each side of the street fills with houses, front door to the road.
 		for s in [-1, 1]:
 			var cursor := square_r + 0.35
@@ -668,10 +673,20 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 		_single(root, _barracks, bp2 + Vector3(0, _ground_y(center, bp2), 0), atan2(-bp2.x, -bp2.z))
 	if "Granary" in buildings:
 		var gp := Vector3(cos(base_ang - 0.5), 0, sin(base_ang - 0.5)) * (reach + 0.5)
+		var stored := false
 		if real:
-			_put(root, center, "old_wooden_barn", gp, Real.footprint("old_wooden_barn"), [], rng, false)
+			stored = _put(root, center, "old_wooden_barn", gp, Real.footprint("old_wooden_barn"), [], rng, false)
 		elif _flat_enough(center, gp, 0.4):
 			_single(root, _barn, gp + Vector3(0, _ground_y(center, gp), 0), base_ang)
+			stored = true
+		if stored:
+			# Hay heaped by the granary's barn, against the winter.
+			var heaps: Array = []
+			for k in 2:
+				var hp: Vector3 = gp + Vector3(-sin(base_ang - 0.5), 0, cos(base_ang - 0.5)) * (0.6 + k * 0.32) * (1 if k == 0 else -1)
+				if terrain.is_land(center.x + hp.x, center.z + hp.z):
+					heaps.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU), hp + Vector3(0, _ground_y(center, hp) - 0.01, 0)))
+			Fields.pile_hay(root, heaps)
 
 	var outer := reach + 0.35
 	root.set_meta("reach", reach + 3.0)
@@ -715,6 +730,9 @@ func _fields(root: Node3D, center: Vector3, outer: float, size: int, rng: Random
 	var fields := Node3D.new()
 	fields.name = "Fields"
 	root.add_child(fields)
+	var crops := Node3D.new()  # beside the fields, not in them: the town's life reads every field as a decal
+	crops.name = "Crops"
+	root.add_child(crops)
 	var placed := 0
 	for i in n * 5:
 		if placed >= n:
@@ -727,13 +745,20 @@ func _fields(root: Node3D, center: Vector3, outer: float, size: int, rng: Random
 		var crop: Array = CROPS[rng.randi() % CROPS.size()]
 		var fsize := Vector2(rng.randf_range(0.9, 1.6), rng.randf_range(0.45, 0.8))
 		var yaw := ang + rng.randf_range(-0.3, 0.3)
+		off = Fields.on_furrows(terrain, center + off, fsize) - center  # its soil and its crop in one place
 		var tex: String = terrain.art("res://assets/ground/%s.jpg" % crop[0], DIRT)
 		var field: Decal = terrain.paint(fields, terrain.tiled(tex, roundi(fsize.x * 1.5), roundi(fsize.y * 1.5)), off + Vector3(0, _ground_y(center, off), 0), fsize, yaw, Color.WHITE if tex != DIRT else crop[1])
 		field.set_meta("reps", Vector2i(roundi(fsize.x * 1.5), roundi(fsize.y * 1.5)))
 		if terrain.land3d and terrain.land3d.land:
 			# Ploughed soil in the ground itself; the crop lies over it, the earth showing through.
-			terrain.land3d.paint_field(center + off, fsize, yaw)
+			Fields.plough(terrain, center + off, fsize, yaw)
 			field.albedo_mix = 0.55
+		# Wheat in the gold fields, cabbages in some of the green; fallow rests.
+		if crop[0] == "field-wheat" or (crop[0] == "field-green" and rng.randf() < 0.5):
+			Fields.sow(crops, terrain, center, "wheat" if crop[0] == "field-wheat" else "cabbage", center + off, fsize, yaw, rng)
+		var all: Array = root.get_meta("fields", [])
+		all.append([off, fsize, yaw])
+		root.set_meta("fields", all)
 		placed += 1
 
 
