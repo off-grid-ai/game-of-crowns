@@ -47,7 +47,8 @@ var _chat_line: LineEdit
 var _chat_with := {}  # {town, i}
 var _chat_lines: Array[String] = []
 var _waiting := false
-var _mic_btn: Button
+var _mode_btn: Button
+var _hearing: Label
 var mic: Node  # mic.gd, shared with the court
 
 
@@ -390,8 +391,12 @@ func _fallen() -> void:
 
 # --- talking ------------------------------------------------------------------------
 
-## Face to face with a townsperson: type, and they answer in their own voice
-## (the local model). They stop what they're doing and turn to you.
+const Settings := preload("res://scripts/settings.gd")
+
+
+## Face to face with a townsperson, in the mode you chose: typing, or speaking
+## hands-free (the mic listens, hears you finish, and pauses while they answer).
+## They stop what they're doing and turn to you.
 func _open_chat(town: int, i: int) -> void:
 	var T := preload("res://scripts/theme.gd")
 	if _chat == null:
@@ -419,30 +424,58 @@ func _open_chat(town: int, i: int) -> void:
 		line.add_theme_constant_override("separation", 8)
 		v.add_child(line)
 		_chat_line = LineEdit.new()
-		_chat_line.placeholder_text = "Say something…   (Enter to speak, Esc to step away)"
+		_chat_line.placeholder_text = "Say something…   (Enter to say it, Esc to step away)"
 		_chat_line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_chat_line.text_submitted.connect(_speak)
 		line.add_child(_chat_line)
-		# Or say it aloud: press, speak, press again.
-		_mic_btn = Button.new()
-		_mic_btn.text = "Speak aloud"
-		_mic_btn.pressed.connect(_toggle_mic)
-		line.add_child(_mic_btn)
-	_mic_btn.visible = preload("res://scripts/settings.gd").get_value("mic")
+		_hearing = T.label("")
+		_hearing.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		line.add_child(_hearing)
+		# One tap to change how you talk; it stays that way until you change it again.
+		_mode_btn = Button.new()
+		_mode_btn.pressed.connect(func():
+			Settings.set_value("talk", "type" if Settings.get_value("talk") == "speak" else "speak")
+			_apply_mode())
+		line.add_child(_mode_btn)
+		mic.state_changed.connect(_on_mic)
+		mic.utterance.connect(func(wav):
+			if _chat and _chat.visible:
+				spoke.emit(wav))
 	_chat_with = {"town": town, "i": i}
 	_chat_lines = ["[color=#9a968e]You approach them.[/color]"]
 	_waiting = false
 	_draw_chat()
 	_chat.visible = true
-	_chat_line.text = ""
-	_chat_line.grab_focus()
+	_apply_mode()
 	villagers._people.play(_body, "Idle_Talking", 1.0)
 	_hold_listener()
+
+
+## Typing shows the line; speaking hides it and listens.
+func _apply_mode() -> void:
+	var speaking: bool = Settings.get_value("talk") == "speak"
+	_chat_line.visible = not speaking
+	_hearing.visible = speaking
+	_mode_btn.text = "Type instead" if speaking else "Speak instead"
+	if speaking:
+		_chat_line.release_focus()
+		if not _waiting:
+			mic.listen()
+	else:
+		mic.stop()
+		_chat_line.text = ""
+		_chat_line.grab_focus()
+
+
+func _on_mic(state: String) -> void:
+	if _hearing:
+		_hearing.text = {"listening": "Listening…", "hearing": "Hearing you…", "waiting": "…", "off": ""}.get(state, "")
 
 
 func _close_chat() -> void:
 	_chat.visible = false
 	_chat_line.release_focus()
+	mic.stop()
 	_chat_with = {}
 
 
@@ -466,12 +499,14 @@ func _speak(text: String) -> void:
 	_chat_line.text = ""
 	_chat_lines.append("[color=#dbb46e]%s:[/color] %s" % [String(_person.get("name", "You")), text])
 	_waiting = true
+	mic.hold()
 	_draw_chat()
 	said.emit(int(_chat_with["town"]), int(_chat_with["i"]), text)
 
 
-## Their answer arrives from the bridge.
-func heard(d: Dictionary) -> void:
+## Their answer arrives from the bridge. If they'll say it aloud, listening
+## resumes when they've finished (main calls done_speaking); if not, now.
+func heard(d: Dictionary, aloud := false) -> void:
 	if _chat == null or not _chat.visible:
 		return
 	_waiting = false
@@ -480,33 +515,25 @@ func heard(d: Dictionary) -> void:
 	else:
 		_chat_lines.append("[color=#e86b5c]%s[/color]" % String(d.get("error", "They say nothing.")))
 	_draw_chat()
+	if not aloud:
+		done_speaking()
+
+
+## They've finished speaking: your turn again.
+func done_speaking() -> void:
+	if _chat and _chat.visible and Settings.get_value("talk") == "speak" and not _waiting:
+		mic.listen()
 
 
 func _draw_chat() -> void:
 	_chat_log.text = "\n\n".join(_chat_lines) + ("\n\n[color=#9a968e]…[/color]" if _waiting else "")
 
 
-## Press, speak, press again: what you said goes off to become words.
-func _toggle_mic() -> void:
-	if not mic.listening():
-		mic.start()
-		_mic_btn.text = "Done speaking"
-		return
-	_mic_btn.text = "Speak aloud"
-	var wav: PackedByteArray = mic.finish()
-	if wav.is_empty():
-		return
-	_chat_lines.append("[color=#9a968e](listening…)[/color]")
-	_draw_chat()
-	spoke.emit(wav)
-
-
-## Your spoken words came back as text: say them, as if typed.
+## What you said aloud came back as words: say them, as if typed.
 func understood(d: Dictionary) -> void:
-	if _chat_lines.size() and _chat_lines[-1].contains("(listening…)"):
-		_chat_lines.pop_back()
 	if d.has("text"):
 		_speak(String(d["text"]))
 	else:
 		_chat_lines.append("[color=#e86b5c]%s[/color]" % String(d.get("error", "Nothing was heard.")))
 		_draw_chat()
+		done_speaking()

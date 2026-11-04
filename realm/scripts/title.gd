@@ -340,7 +340,7 @@ func _voice_settings(right: Control) -> void:
 	vol.value = float(Settings.get_value("voice_volume"))
 	vol.value_changed.connect(func(v): Settings.set_value("voice_volume", v))
 	right.add_child(vol)
-	_choices(right, "Speak aloud to people (microphone)", [["Yes", true], ["No", false]], Settings.get_value("mic"), func(v): Settings.set_value("mic", v))
+	_choices(right, "When you talk with people", [["Type", "type"], ["Speak (hands-free)", "speak"]], Settings.get_value("talk"), func(v): Settings.set_value("talk", v))
 	_section(right, "The local model")
 	var ai := _label("Asking Off Grid AI…", 14, MUTED)
 	right.add_child(ai)

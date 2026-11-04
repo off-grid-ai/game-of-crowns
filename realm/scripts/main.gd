@@ -144,9 +144,10 @@ func _ready() -> void:
 	control.said.connect(func(town, i, text):
 		var p: Dictionary = control._person
 		bridge.talk(town, i, {"id": str(p.get("id", "")), "name": String(p.get("name", "")), "house": String(_houses.get(int(p.get("house_id", -1)), {}).get("name", ""))}, text, func(code, d):
-			control.heard(d if d is Dictionary else {"error": "They say nothing."})
-			if d is Dictionary and d.has("reply"):
-				_say_aloud(String(d["reply"]), {"name": d.get("name", ""), "gender": d.get("gender", "")})))
+			var aloud: bool = d is Dictionary and d.has("reply") and Settings.get_value("voices")
+			control.heard(d if d is Dictionary else {"error": "They say nothing."}, aloud)
+			if aloud:
+				_say_aloud(String(d["reply"]), {"name": d.get("name", ""), "gender": d.get("gender", "")}, control.done_speaking)))
 	control.spoke.connect(func(wav): bridge.hear(wav, control.understood))
 	ui.petition_voiced.connect(func(id, wav): bridge.hear(wav, func(d): ui.heard_ruling(id, d)))
 	control.talk_to.connect(func(town, i):
@@ -762,11 +763,16 @@ var _voice: AudioStreamPlayer
 
 
 ## A line spoken aloud in the speaker's own voice; a new line cuts off the last.
-func _say_aloud(text: String, who: Dictionary) -> void:
+## done runs when they've finished (or at once, if there's no voice to be had).
+func _say_aloud(text: String, who: Dictionary, done := Callable()) -> void:
 	if not Settings.get_value("voices"):
+		if done.is_valid():
+			done.call()
 		return
 	bridge.voice(text, who, func(stream):
 		if stream == null:
+			if done.is_valid():
+				done.call()
 			return
 		if _voice == null:
 			_voice = AudioStreamPlayer.new()
@@ -774,6 +780,10 @@ func _say_aloud(text: String, who: Dictionary) -> void:
 			add_child(_voice)
 		_voice.stream = stream
 		_voice.volume_db = linear_to_db(maxf(0.01, float(Settings.get_value("voice_volume"))))
+		for c in _voice.finished.get_connections():
+			_voice.finished.disconnect(c["callable"])
+		if done.is_valid():
+			_voice.finished.connect(done, CONNECT_ONE_SHOT)
 		_voice.play())
 
 
