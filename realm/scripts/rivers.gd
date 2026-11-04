@@ -26,7 +26,11 @@ func _river(_terrain: Node3D, line: Array) -> void:
 	var widths: Array[float] = []
 	for p in line:
 		pts.append(Vector3(float(p[0]), float(p[1]), float(p[2])))
-		widths.append(float(p[3]))
+		# Waterways lays its mesh a width either side of the line, and the
+		# valley's channel is cut half the width either side: halved, the water
+		# fills the channel and stops at its banks, instead of spreading out as
+		# flat sheets over the land falling away beside a lowland river.
+		widths.append(float(p[3]) * 0.5)
 	_lay(pts, widths)
 
 
