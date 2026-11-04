@@ -441,16 +441,33 @@ export async function aiStatus() {
 // --- story arcs ---------------------------------------------------------------------
 
 // One of the people in a story arc speaks as a beat of it happens. The arc
-// decides what happens; this is only their words about it.
+// decides what happens and its line is fixed; this is the one line of colour
+// in their voice, or nothing.
 export async function arcLine(who, thread, happening, alsoIn = []) {
   const rank = who.rank === "lord" ? (who.gender === "female" ? "Lady" : "Lord") : who.folk ? `a ${who.station} in the lands` : who.rank;
-  return say(
+  const said = await say(
     `You are ${who.name}, ${who.age}, ${who.gender === "female" ? "a woman" : "a man"}, ${rank} of ${who.house}. By nature ${(who.traits ?? []).join(", ") || "ordinary"}. You want to ${who.goals?.[0]?.text ?? "endure"}. You remember: ${(who.memories ?? []).slice(-4).join(" ") || "little worth telling"}${alsoIn.length ? ` You are also caught up in ${alsoIn.join(" and ")}.` : ""}
-Gritty medieval realm. You are living through ${thread}. Speak as yourself, in the first person, to someone beside you as it happens: one or two short sentences, plain speech of the period, as your nature demands. Don't describe what is happening; say what you feel or mean to do about it. No narration, no quotation marks, no names of speakers.`,
+Gritty medieval realm. You are living through ${thread}. Speak as yourself, in the first person, to someone beside you as it happens: one short sentence, plain speech of the period, as your nature demands. Don't describe what is happening; say what you feel or mean to do about it. No narration, no quotation marks, no names of speakers.`,
     [],
     `What is happening: ${happening}`,
-    80,
+    60,
   );
+  return colour(said, happening, who.name);
+}
+
+// One sentence at most, and none if it only tells the beat over again or
+// speaks as somebody else.
+export function colour(said, happening, name = "") {
+  const first = String(said ?? "").match(/^[^.!?]+[.!?]?/)?.[0]?.trim() ?? "";
+  if (first.length < 8) return null;
+  // A small model sometimes speaks as someone else in the beat: "I am <another>".
+  const claimed = first.match(/\bI am ([A-Z][a-z]+(?: [A-Z][a-z]+)?)/)?.[1];
+  if (claimed && name && !name.startsWith(claimed.split(" ")[0])) return null;
+  const bag = (x) => String(x).toLowerCase().match(/[a-z']{4,}/g) ?? [];
+  const told = new Set(bag(happening));
+  const words = bag(first);
+  const echo = words.length ? words.filter((w) => told.has(w)).length / words.length : 1;
+  return echo > 0.5 ? null : first.slice(0, 160).replace(/[,;:]?\s*$/, (m) => (/[.!?]$/.test(first.slice(0, 160)) ? "" : "."));
 }
 
 // The King describes a story in plain words; the model picks the arc whose
