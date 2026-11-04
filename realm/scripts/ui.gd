@@ -66,6 +66,8 @@ const Heraldry = preload("res://scripts/heraldry.gd")
 var _town_info: Label
 var _town_family: HBoxContainer  # the lesser family holding the town, under its arms
 var _grant_menu: MenuButton
+var _marriage_menu: MenuButton  # wed this town's house to another
+var _marry_ids: Array = []  # the houses it can be wed to, by menu item
 var _house_ids: Array = []
 var _fate_box: HBoxContainer
 
@@ -585,6 +587,12 @@ func _build_town_panel() -> void:
 	_grant_menu = MenuButton.new()
 	_grant_menu.get_popup().id_pressed.connect(func(i): decree.emit("grant", "", int(_house_ids[i])))
 	row.add_child(_grant_menu)
+	# A royal match: bind this house to another by marriage (8k cr).
+	_marriage_menu = MenuButton.new()
+	_marriage_menu.text = "Arrange a marriage with…  8k cr"
+	_marriage_menu.tooltip_text = "Bind this house to another by blood: both warm to the crown, and neither raids or plots against the other while the bond holds."
+	_marriage_menu.get_popup().id_pressed.connect(func(i): decree.emit("marriage", "", int(_marry_ids[i])))
+	row.add_child(_marriage_menu)
 	var build := HFlowContainer.new()
 	v.add_child(build)
 	build.add_child(T.label("Fund  18k cr"))
@@ -1570,6 +1578,16 @@ func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 		_decree_btns[a].text = names[a]
 		_decree_btns[a].visible = names[a] != ""
 	_grant_menu.visible = not c.get("capital", false)  # a house's seat is never granted away
+	_marriage_menu.visible = not mine  # a match is made between two great houses
+	# The other great houses, not this one: the names as the houses table has them.
+	var mp := _marriage_menu.get_popup()
+	mp.clear()
+	_marry_ids.clear()
+	var popup := _grant_menu.get_popup()
+	for i in _house_ids.size():
+		if int(_house_ids[i]) != int(c.get("owner", -1)):
+			mp.add_item(popup.get_item_text(i), _marry_ids.size())
+			_marry_ids.append(int(_house_ids[i]))
 	_grant_menu.text = "Grant this town to…" if mine else "Take it and grant it to…"
 
 

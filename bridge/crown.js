@@ -12,6 +12,7 @@ export const DECREES = {
   grant: { cost: 0, label: "Grant this castle to another house" },
   feast: { cost: 100, label: "Hold a feast in the lord's honour" },
   banners: { cost: 50, label: "Call the banners" },
+  marriage: { cost: 80, label: "Arrange a marriage between two houses" },
 };
 
 // When the banners were last called: the houses won't answer twice in a year.
@@ -168,6 +169,15 @@ export function decree(cmd, world) {
         text: `A feast at Kingsmere in honour of ${lord}. Wine flows; old slights are forgotten, for now.`,
         lua: [pay],
       };
+    case "marriage": {
+      // A royal match binds two great houses by blood: both thank the crown,
+      // and the bond holds them from each other's throats (the court's truce;
+      // the names and the vows come from the court, in server.js).
+      if (!c) return { error: "choose a town of one of the two houses" };
+      const to = world.players.find((p) => p.id === Number(cmd.to));
+      if (!to || to.id === owner.id || houseFor(to).wild || houseFor(to).crown || houseFor(owner).crown) return { error: "choose two great houses to wed" };
+      return { cost: d.cost, favour: { [owner.id]: 8, [to.id]: 8 }, text: `By the King's word, ${lord} and ${houseFor(to).name} are to be joined by marriage.`, lua: [pay], pact: [owner.id, to.id] };
+    }
     case "grant": {
       if (!c) return { error: "choose a town" };
       const to = world.players.find((p) => p.id === Number(cmd.to));

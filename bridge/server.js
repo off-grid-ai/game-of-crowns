@@ -823,6 +823,23 @@ http.createServer(async (req, res) => {
     const what = { grain: "The King's grain reaches", tribute: "The King's gold reaches", ward: "The ward reaches", rider: "The King's rider reaches" }[String(b.kind)];
     if (!town || !what) return json(res, 400, { error: "nothing arrived" });
     const key = `${b.kind}:${town.id}:${b.sent ?? 0}`;
+    // A royal match: the two lords' heirs (or kin) are named, they warm to each
+    // other, and a long truce holds their houses from raids and plots.
+    if (result.pact && court) {
+      const [a, b] = result.pact.map((pid) => court.lordOfHouse(pid));
+      if (a && b) {
+        const kin = (lord) => court.alive().find((k) => k.parents?.includes(lord.id) && !k.spouse && k.age >= 15) ?? lord;
+        const ka = kin(a), kb = kin(b);
+        court.shift(a.id, b.id, 25, `The King bound my house to ${b.house} by marriage.`);
+        court.shift(b.id, a.id, 25, `The King bound my house to ${a.house} by marriage.`);
+        court.truces ??= {};
+        court.truces[[a.id, b.id].sort().join(":")] = (world?.turn ?? 0) + 24;
+        court.remember(a.id, `By the King's word, ${ka.name} is to wed ${kb.name} of ${b.house}.`);
+        court.remember(b.id, `By the King's word, ${kb.name} is to wed ${ka.name} of ${a.house}.`);
+        result.text = `By the King's word, ${ka.name} of ${a.house} will wed ${kb.name} of ${b.house}. The two houses are bound by blood; while the bond holds, neither will raise a hand against the other.`;
+        court.saveCourt?.();
+      }
+    }
     if (!arrivals.has(key)) {
       arrivals.add(key);
       record({ turn: world.turn, kind: "crown", city: town.id, text: `${what} ${cityName(town.id)}${b.label ? `: ${String(b.label).slice(0, 80)}` : ""}.` });
