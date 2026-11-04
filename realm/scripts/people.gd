@@ -27,25 +27,22 @@ const BODIES := {
 	"arissa": {"sex": "f", "roles": ["archer", "townsfolk"], "cloth": ["arissa_Cloak_Geo"], "crowd": true},
 	"erika": {"sex": "f", "roles": ["archer", "townsfolk"], "cloth": [], "crowd": true},
 	"erika_bow": {"sex": "f", "roles": ["archer"], "cloth": [], "crowd": true},
-	"knight": {"sex": "f", "roles": ["soldier", "noble"], "cloth": ["Lower_Armor"], "crowd": true},
-	"maria": {"sex": "f", "roles": ["soldier"], "cloth": [], "crowd": true},
+	"eve": {"sex": "f", "roles": ["townsfolk", "noble", "archer"], "cloth": [], "crowd": true},
+	"knight": {"sex": "m", "roles": ["soldier", "noble"], "cloth": ["Lower_Armor"], "crowd": true},
 	"paladin": {"sex": "m", "roles": ["soldier", "noble"], "cloth": [], "crowd": true},
 	"paladin_prop": {"sex": "m", "roles": ["noble"], "cloth": [], "crowd": false},
-	"heraklios": {"sex": "m", "roles": ["soldier", "noble"], "cloth": [], "crowd": true},
-	"dreyar": {"sex": "m", "roles": ["soldier", "peasant"], "cloth": [], "crowd": true},
-	"ganfaul": {"sex": "m", "roles": ["clergy", "townsfolk"], "cloth": [], "crowd": true},
-	"brute": {"sex": "m", "roles": ["soldier"], "cloth": ["MaleBruteA_Bottoms"], "crowd": false},
-	"eve": {"sex": "f", "roles": ["townsfolk", "noble"], "cloth": [], "crowd": true},
-	"lola": {"sex": "f", "roles": ["townsfolk"], "cloth": [], "crowd": true},
-	"medea": {"sex": "f", "roles": ["noble", "clergy"], "cloth": [], "crowd": true},
-	"kachujin": {"sex": "f", "roles": ["soldier"], "cloth": [], "crowd": true},
-	"akai": {"sex": "m", "roles": ["peasant", "townsfolk"], "cloth": [], "crowd": true},
-	"uriel": {"sex": "f", "roles": ["noble"], "cloth": [], "crowd": false},
+	"heraklios": {"sex": "m", "roles": ["townsfolk", "soldier"], "cloth": [], "crowd": true},
+	"dreyar": {"sex": "m", "roles": ["noble", "soldier"], "cloth": [], "crowd": true},
+	"ganfaul": {"sex": "m", "roles": ["soldier"], "cloth": [], "crowd": true},
+	"akai": {"sex": "m", "roles": ["archer"], "cloth": [], "crowd": true},
+	"brute": {"sex": "m", "roles": ["peasant", "soldier"], "cloth": ["MaleBruteA_Bottoms"], "crowd": false},
+	"uriel": {"sex": "m", "roles": ["noble"], "cloth": [], "crowd": false},
 }
 ## How often a crowd figure is a Mixamo character rather than a Quaternius
-## outfit, by station. The outfits are lighter and take any colour, so plain
-## folk stay mostly outfits; the stations the outfits can't dress are all Mixamo.
-const MIXAMO_SHARE := {"peasant": 0.2, "townsfolk": 0.5, "soldier": 0.45, "archer": 1.0, "noble": 1.0, "clergy": 1.0}
+## outfit, by station. No Mixamo character is dressed as a peasant or a cleric
+## yet, so those stay outfits; archers and nobles are all Mixamo. (A Mixamo
+## body is the cheaper of the two: 1-4 draws against an outfit's ~9.)
+const MIXAMO_SHARE := {"peasant": 0.0, "townsfolk": 0.4, "soldier": 0.5, "archer": 1.0, "noble": 1.0, "clergy": 0.0}
 
 const HEAD_ONLY := preload("res://scripts/head_only.gdshader")
 
@@ -176,8 +173,8 @@ static func station(person: Dictionary) -> String:
 ## for a crowd unless they stand alone.
 func _bodies(role: String, sex: String, coloured: bool, crowd: bool) -> Array:
 	var pool := BODIES.keys().filter(func(b): return role in BODIES[b]["roles"] and (not crowd or BODIES[b]["crowd"]) and (not coloured or not BODIES[b]["cloth"].is_empty()))
-	var same: Array = pool.filter(func(b): return sex == "" or BODIES[b]["sex"] == sex.left(1))
-	return same if not same.is_empty() else pool
+	# Never the other sex: with no body of theirs, they wear an outfit instead.
+	return pool.filter(func(b): return sex == "" or BODIES[b]["sex"] == sex.left(1))
 
 
 ## One Mixamo character by name, laid out like the outfits (Armature/
