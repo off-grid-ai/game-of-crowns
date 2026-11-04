@@ -51,6 +51,8 @@ var _blocking := false
 var _news_until := 0
 var _chat: PanelContainer  # talking with someone: their words and yours
 var _chat_log: RichTextLabel
+var _chat_who: Label  # the name and calling of who you're talking with
+var _chat_moves: HFlowContainer  # one-click things to say or do
 var _chat_line: LineEdit
 var _chat_with := {}  # {town, i}
 var _chat_lines: Array[String] = []
@@ -591,17 +593,26 @@ func _open_chat(town: int, i: int, person := "", person_name := "") -> void:
 		_chat.anchor_bottom = 1.0
 		_chat.offset_left = -330
 		_chat.offset_right = 330
-		_chat.offset_top = -330
+		_chat.offset_top = -380
 		_chat.offset_bottom = -110
 		_hud.add_child(_chat)
 		var v := VBoxContainer.new()
 		v.add_theme_constant_override("separation", 8)
 		_chat.add_child(v)
+		# Who you're speaking with, as soon as they answer: name and calling.
+		_chat_who = T.title("", 18)
+		v.add_child(_chat_who)
 		_chat_log = RichTextLabel.new()
 		_chat_log.bbcode_enabled = true
 		_chat_log.scroll_following = true
 		_chat_log.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		v.add_child(_chat_log)
+		# Things to say or do with one click, so a talk never stalls on an empty
+		# box; anything else can still be typed below.
+		_chat_moves = HFlowContainer.new()
+		_chat_moves.add_theme_constant_override("h_separation", 6)
+		_chat_moves.add_theme_constant_override("v_separation", 6)
+		v.add_child(_chat_moves)
 		var line := HBoxContainer.new()
 		line.add_theme_constant_override("separation", 8)
 		v.add_child(line)
@@ -629,6 +640,8 @@ func _open_chat(town: int, i: int, person := "", person_name := "") -> void:
 	_chat_lines = ["[color=#9a968e]%s[/color]" % ("You approach %s." % person_name if person_name != "" else "You approach them.")]
 	# They speak first, as people do when their King walks up to them.
 	_waiting = true
+	_chat_who.text = person_name
+	_fill_moves(person != "")
 	approached.emit(town, i, person)
 	_draw_chat()
 	_chat.visible = true
@@ -656,6 +669,33 @@ func _apply_mode() -> void:
 func _on_mic(state: String) -> void:
 	if _hearing and is_instance_valid(_hearing):
 		_hearing.text = {"listening": "Listening…", "hearing": "Hearing you…", "waiting": "…", "off": ""}.get(state, "")
+
+
+## What a King (or a lord) might say or do in a street talk. Each is said as
+## if typed, so the person answers it and remembers it like any other words.
+func _fill_moves(named: bool) -> void:
+	for c in _chat_moves.get_children():
+		c.queue_free()
+	var king: bool = str(_person.get("id", "")) == "king"
+	var moves: Array = [["What news?", "What news from these parts?"], ["What do you need?", "What do you need? Tell me plainly."]]
+	if named:
+		moves += [["Your lord's mind", "What does your house think of the crown?"], ["Speak your grievance", "Is there a wrong I should know of?"]]
+	else:
+		moves += [["Your work", "Tell me of your work and how it goes."], ["Your lord", "How does your lord treat you?"]]
+	moves.append(["Give a coin", "(%s presses a silver coin into your hand.)" % ("The King" if king else String(_person.get("name", "The stranger")))])
+	moves.append(["Farewell", ""])
+	for m in moves:
+		var b := Button.new()
+		b.text = String(m[0])
+		b.focus_mode = Control.FOCUS_NONE
+		b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		var line: String = m[1]
+		b.pressed.connect(func():
+			if line == "":
+				_close_chat()
+			elif not _waiting:
+				_speak(line))
+		_chat_moves.add_child(b)
 
 
 func _close_chat() -> void:
@@ -704,6 +744,8 @@ func heard(d: Dictionary, aloud := false) -> void:
 	if _chat == null or not _chat.visible:
 		return
 	_waiting = false
+	if d.get("name", "") != "":
+		_chat_who.text = String(d["name"]) + ("  ·  " + String(d["trade"]) if String(d.get("trade", "")) != "" else "")
 	if d.has("reply"):
 		_chat_lines.append("[color=#ecece8]%s:[/color] [i]%s[/i]" % [String(d.get("name", "")), String(d["reply"])])
 	else:

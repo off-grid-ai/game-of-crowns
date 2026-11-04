@@ -455,6 +455,9 @@ func _controls_settings(parent: Control) -> void:
 	parent.add_child(groups)
 	var by_group := {}
 	for a in Keys.ACTIONS:
+		# Walking the realm is version 2: its keys stay out of the list until then.
+		if not preload("res://scripts/features.gd").WALKING and (String(a[2]) == "Walking and fighting" or String(a[0]) == "walk_king"):
+			continue
 		if not by_group.has(a[2]):
 			var col := VBoxContainer.new()
 			col.size_flags_horizontal = Control.SIZE_EXPAND_FILL

@@ -30,6 +30,7 @@ signal person_opened(id: String, house: Dictionary)  # the character view
 signal walk_as_king  # step into the King himself, at Kingsmere
 signal story_opened(entry: Dictionary)  # a story's name clicked in the chronicle
 
+const Features := preload("res://scripts/features.gd")
 const T := preload("res://scripts/theme.gd")
 const Keys := preload("res://scripts/keys.gd")
 
@@ -363,10 +364,11 @@ func _build_top_bar() -> void:
 	_court_btn.add_child(_court_badge)
 	act.add_child(_court_btn)
 	# You are the King: one press to walk among your people as him.
-	var walk := _btn("Walk as the King", func(): walk_as_king.emit())
-	walk.tooltip_text = _with_key("Walk the realm as the King, talk to anyone, draw your sword", "walk_king")
-	walk.add_theme_color_override("font_color", T.ACCENT)
-	act.add_child(walk)
+	if Features.WALKING:
+		var walk := _btn("Walk as the King", func(): walk_as_king.emit())
+		walk.tooltip_text = _with_key("Walk the realm as the King, talk to anyone, draw your sword", "walk_king")
+		walk.add_theme_color_override("font_color", T.ACCENT)
+		act.add_child(walk)
 	_houses_btn = _icon_btn("shield", _with_key("The great houses, and your word", "houses"), func(): _houses_panel.visible = _houses_btn.button_pressed)
 	_houses_btn.toggle_mode = true
 	act.add_child(_houses_btn)
@@ -421,7 +423,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	# Every key is an Input Map action (keys.gd), so Settings → Controls can change it.
 	if event.is_action_pressed(&"pause"):
 		_toggle_pause()
-	elif event.is_action_pressed(&"walk_king"):
+	elif Features.WALKING and event.is_action_pressed(&"walk_king"):
 		walk_as_king.emit()
 	elif event.is_action_pressed(&"houses"):
 		_houses_btn.button_pressed = not _houses_btn.button_pressed

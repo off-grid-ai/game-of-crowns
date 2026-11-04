@@ -1367,6 +1367,9 @@ func _walk_as_king() -> void:
 ## Step into someone: they appear at their seat (or their house's chief town)
 ## and the camera drops low behind them. Esc gives the realm back.
 func _take_control(p: Dictionary, h: Dictionary) -> void:
+	# Walking the realm is version 2; test renders still reach it to build it.
+	if not preload("res://scripts/features.gd").WALKING and not _shot.has("path"):
+		return
 	var town := -1
 	var owner := int(h.get("id", -1))
 	for c in bridge.world.get("cities", []):

@@ -380,6 +380,7 @@ func _fill_panel(p: Dictionary, house: Dictionary) -> void:
 	change.text = "Change who they are"
 	change.pressed.connect(func(): edit_requested.emit(p, house))
 	var take := Button.new()
+	take.visible = preload("res://scripts/features.gd").WALKING  # stepping into someone's boots: version 2
 	take.text = "Take control"
 	take.add_theme_color_override("font_color", T.ACCENT)
 	take.pressed.connect(func(): control_requested.emit(p, house))

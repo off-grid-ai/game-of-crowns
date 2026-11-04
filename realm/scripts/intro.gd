@@ -37,7 +37,7 @@ const TIPS := [
 	["Your word", "Shape your people's minds in a sentence: all bannermen grow restless, the North loves its King. Each order keeps working until you revoke it.", "{houses}  houses, then Your word"],
 	["Petitions remember", "Every ruling is remembered by the one who asked, and by their house. Favour rises and falls with what you decide.", "{court}  court"],
 	["The chronicle", "Everything that happens is written down: births, deaths, marriages, battles and your rulings.", "{chronicle}  chronicle    {ledger}  ledger"],
-	["Meet anyone", "Click a lord, a lady or a bannerman to see them face to face, hear what they want, or take their place in the world.", "{houses}  houses, then See"],
+	["Meet anyone", "Click a lord, a lady or a bannerman to see them face to face, hear what they want, and what they remember of you.", "{houses}  houses, then See"],
 ]
 
 var say := Callable()  # (text) -> void: a voice for each page; unset, the intro is read, not narrated
@@ -92,7 +92,8 @@ func play(houses: Array, seats: Dictionary) -> void:
 	page.call("hero", "Every lord a life", "Each lord has a temper, an ambition and a long memory. Raise one up, break another, or rewrite who they are.", {}, "{houses}  houses    {chronicle}  chronicle", home, 1.8)
 	page.call("battle", "War is one insult away", "Grudges boil over into marching armies, burning fields and towns under siege. One ruling can stop a war. Another can start one.", {}, "", Vector2(0.45, 0.75), 2.0)
 	page.call("street", "Read the realm at a glance", "Walls rising, recruits drilling, fields browning in famine, smoke over a town in revolt. Every town shows you what it is going through.", {}, "Click a town to open it", home, 2.6)
-	page.call("walk", "Then step down from the throne", "Take any lord's place. Walk the streets, talk to anyone, push into the tavern, and draw steel when talking fails.", {}, "Every control is in Settings", home, 3.0)
+	if preload("res://scripts/features.gd").WALKING:  # walking the realm: version 2
+		page.call("walk", "Then step down from the throne", "Take any lord's place. Walk the streets, talk to anyone, push into the tavern, and draw steel when talking fails.", {}, "Every control is in Settings", home, 3.0)
 	for tip in TIPS:
 		page.call("tip", tip[0], tip[1], {}, tip[2], Vector2(0.3 + randf() * 0.4, 0.2 + randf() * 0.6), 2.0)
 	_build()
