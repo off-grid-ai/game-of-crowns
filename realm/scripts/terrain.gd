@@ -84,7 +84,7 @@ const SEA_LEVEL := -0.15  # the water's surface
 const SEASONS := {
 	"spring": {"leaves": Color(0.82, 1.0, 0.72), "pine": Color(0.9, 1.0, 0.85), "grass": Color(0.78, 1.0, 0.6), "ground": Color(0.66, 0.92, 0.42), "snow": 0.0},
 	"summer": {"leaves": Color.WHITE, "pine": Color.WHITE, "grass": Color.WHITE, "ground": Color(0.62, 0.86, 0.38), "snow": 0.0},
-	"autumn": {"leaves": Color(1.35, 0.62, 0.22), "pine": Color(0.85, 0.85, 0.7), "grass": Color(1.1, 0.85, 0.45), "ground": Color(0.8, 0.72, 0.38), "snow": 0.0},
+	"autumn": {"leaves": Color(1.35, 0.62, 0.22), "pine": Color(0.85, 0.85, 0.7), "grass": Color(1.0, 0.93, 0.72), "ground": Color(0.92, 0.86, 0.7), "snow": 0.0},  # the leaves turn; the grass only yellows a little
 	"winter": {"leaves": Color(0.55, 0.47, 0.4), "pine": Color(0.7, 0.75, 0.72), "grass": Color(0.85, 0.85, 0.82), "ground": Color(0.8, 0.82, 0.86), "snow": 0.5},
 }
 
@@ -147,6 +147,14 @@ func flatten(at: Vector3, size: Vector2, yaw: float, h: float, margin := 0.35) -
 	if land == null:
 		return
 	var b := Basis(Vector3.UP, -yaw)
+	# A plot cut into a slope runs back into the land over a distance that
+	# grows with the height it cut or filled, so it reads as a terrace, not a cliff.
+	var drop := 0.0
+	for i in 8:
+		var a := TAU * i / 8.0
+		var edge := at + Vector3(cos(a), 0, sin(a)) * (size.length() * 0.5 + 0.3)
+		drop = maxf(drop, absf(height_at(edge.x, edge.z) - h))
+	margin = clampf(maxf(margin, drop * 2.5), margin, 1.2)  # not so far it unseats the neighbours
 	var reach := size.length() * 0.5 + margin
 	var per := float(land_per_unit)
 	var x0 := maxi(0, int((at.x - reach) * per))

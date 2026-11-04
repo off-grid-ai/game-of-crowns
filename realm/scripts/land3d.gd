@@ -36,6 +36,15 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 	# Rock only on real cliffs: higher values keep grass on steeper ground.
 	mat.set_shader_param("auto_slope", 1.6 if terrain.land else 2.2)
 	mat.set_shader_param("blend_sharpness", 0.87)
+	# Terrain3D's own answers to a ground that looks like a carpet: textures
+	# projected onto steep faces instead of stretched down them, broad patches
+	# of colour and tone across the grass, and a second, larger texture scale
+	# blended in with distance so the tiling never shows.
+	mat.projection_enabled = true
+	mat.macro_variation_enabled = true
+	mat.dual_scaling_enabled = true
+	mat.set_shader_param("macro_variation1", Color(0.86, 0.93, 0.78))
+	mat.set_shader_param("macro_variation2", Color(0.97, 0.9, 0.78))
 	_drape_atlas(mat, terrain)
 	var w: int = terrain.width * int(terrain.TILE)
 	var h: int = terrain.height * int(terrain.TILE)

@@ -118,7 +118,7 @@ func _ready() -> void:
 			if code == 200:
 				ui.house_opened.emit(int(spec["house"]))))
 	intro = preload("res://scripts/intro.gd").new()
-	intro.rig = rig
+	intro.ready_check = func(): return terrain.width > 0 and towns != null and not towns.building()
 	intro.say = func(text): _say_aloud(text, {"name": "The Chronicler", "gender": "male"})
 	add_child(intro)
 	lore = preload("res://scripts/lore.gd").new()
@@ -240,12 +240,17 @@ func _ready() -> void:
 	title.began.connect(func(): _intro_due = true)
 	# Continuing or beginning a chronicle wakes the realm, and the intro plays
 	# over it as it comes up (any key skips).
+	# Choosing a chronicle starts the intro at once, as the loading screen,
+	# and wakes the realm to build behind it.
 	title.closed.connect(func():
 		if not bridge.active:
-			_intro_due = true
-			bridge.wake())
+			bridge.wake()
+			if bridge.world.is_empty():
+				_intro_due = true
+			else:
+				_tell_the_story())
 	title.watch_intro.connect(func():
-		if terrain.width == 0 or bridge.world.is_empty():
+		if bridge.world.is_empty():
 			_intro_due = true
 		else:
 			_tell_the_story())
@@ -530,8 +535,49 @@ func _log_perf(delta: float) -> void:
 		rig.distance if rig else 0.0, towns.building() if towns and towns.has_method("building") else "?"])
 
 
+## Once the towns have finished building: triangles and draws by system, as
+## the most they could cost (instances × their mesh, ignoring culling), with
+## how far each is drawn, so the frame's cost can be pinned on something.
+var _profiled := false
+func _profile_once() -> void:
+	if _profiled or towns == null or towns.building() or terrain.width == 0:
+		return
+	_profiled = true
+	var f := FileAccess.open("user://perf.log", FileAccess.READ_WRITE if FileAccess.file_exists("user://perf.log") else FileAccess.WRITE)
+	if f == null:
+		return
+	f.seek_end()
+	for sys in [towns, countryside, roads, terrain, villagers]:
+		if sys == null:
+			continue
+		var tris := 0
+		var draws := 0
+		var by_end := {}
+		for g in sys.find_children("*", "GeometryInstance3D", true, false):
+			var mesh: Mesh = null
+			var count := 1
+			if g is MultiMeshInstance3D and g.multimesh:
+				mesh = g.multimesh.mesh
+				count = g.multimesh.visible_instance_count if g.multimesh.visible_instance_count >= 0 else g.multimesh.instance_count
+			elif g is MeshInstance3D:
+				mesh = g.mesh
+			if mesh == null:
+				continue
+			var t := 0
+			for si in mesh.get_surface_count():
+				var arr := mesh.surface_get_arrays(si)
+				var idx = arr[Mesh.ARRAY_INDEX]
+				t += (idx.size() if idx != null else arr[Mesh.ARRAY_VERTEX].size()) / 3
+			tris += t * count
+			draws += mesh.get_surface_count()
+			var e := "%d" % int(g.visibility_range_end)
+			by_end[e] = by_end.get(e, 0) + t * count
+		f.store_line("PROFILE %s: %dk tris, %d draws, tris by draw distance %s" % [sys.name, tris / 1000, draws, str(by_end)])
+
+
 func _process(_delta: float) -> void:
 	_log_perf(_delta)
+	_profile_once()
 	_heard_at -= _delta
 	if _heard_at <= 0.0:
 		_heard_at = 0.25
@@ -580,7 +626,7 @@ func _on_world(world: Dictionary) -> void:
 	if terrain.width == 0:
 		return
 	director.world = world
-	if _intro_due:
+	if _intro_due and not world.is_empty():
 		_intro_due = false
 		_tell_the_story.call_deferred()
 	director.set_process(not _shot.has("path") or _shot.get("director", false))
@@ -897,7 +943,7 @@ func _tell_the_story() -> void:
 		if c.get("capital", false):
 			for p in w.get("players", []):
 				if int(p["id"]) == int(c["owner"]):
-					seats[String(p["house"].get("name", ""))] = [String(c.get("title", c["name"])), terrain.world_pos(float(c["x"]), float(c["y"]))]
+					seats[String(p["house"].get("name", ""))] = [String(c.get("title", c["name"])), Vector2(float(c["x"]), float(c["y"]))]
 	Settings.set_value("seen_intro", true)
 	# The intro has the screen to itself: the menu, the interface and the map's
 	# names step aside while it plays (it may fly over the live realm), and come

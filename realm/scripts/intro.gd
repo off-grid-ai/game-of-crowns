@@ -1,16 +1,21 @@
 extends CanvasLayer
-## The opening of a reign: a storybook of Aldmere, and how to play it, told over stills of the realm
-## itself (assets/intro/stills, rendered from the game), each drifting slowly
-## (a Ken Burns pan) under a caption, narrated aloud when voices are on. Then,
-## once the world has formed, the camera flies over each great house's seat.
-## Any key or click skips it. Plays on first launch, when a chronicle begins,
-## and from the menu.
+## The opening of a reign, and the loading screen while the realm comes up: a
+## sequence of pages, each a picture with a caption that tells the lore, shows
+## how the game works, or gives a tip with its keys. The pictures are stills of
+## the game itself (assets/intro/stills, rendered by tools/stills.sh); a page
+## whose still isn't there yet shows the realm's painted atlas, panned to the
+## place it speaks of. Each picture drifts slowly (a Ken Burns pan), narrated
+## aloud when voices are on. It starts the moment a chronicle is chosen; while
+## the realm is still forming it keeps turning pages (a key turns the next),
+## and once the realm is ready a key or click goes in.
 
 signal finished
 
 const STILLS := "res://assets/intro/stills/"
+const ATLAS := "res://assets/maps/atlas.png"
+const REALM_TILES := Vector2(56, 88)  # the atlas covers the whole map (bridge/tools/azgaar_world.py)
 const T := preload("res://scripts/theme.gd")
-const HOLD := 8.0  # seconds on each page of the storybook
+const HOLD := 8.0  # seconds on each page
 
 ## What the world bible says of each house: who they are, in one line.
 const CHARACTER := {
@@ -24,21 +29,27 @@ const CHARACTER := {
 	"House Brightwater": "Their own masters, owing little and forgiving less.",
 }
 
+## Tips shown again while the realm is still forming, after the story.
+const TIPS := [
+	["Pace", "The realm runs on its own clock. Pause it, or set it to walk, ride or gallop.", "Space  pause    1 2 3  pace"],
+	["Your word", "Shape your people's minds in a sentence: all bannermen grow restless, the North loves its King. Each order keeps working until you revoke it.", "H  houses, then Your word"],
+	["Petitions remember", "Every ruling is remembered by the one who asked, and by their house. Favour rises and falls with what you decide.", "K  court"],
+	["The chronicle", "Everything that happens is written down: births, deaths, marriages, battles and your rulings.", "C  chronicle    L  ledger"],
+	["Meet anyone", "Click a lord, a lady or a bannerman to see them face to face, hear what they want, or take their place in the world.", "H  houses, then See"],
+]
+
 var say := Callable()  # (text) -> void: the narrator's voice, if voices are on
-var rig: Node3D  # for the flyover
-var _pages: Array = []
+var ready_check := Callable()  # () -> bool: the realm is built and can be shown
+var _pages: Array = []  # [still, title, line, house, keys, atlas uv, atlas zoom]
 var _page := -1
 var _image: TextureRect
+var _map: TextureRect
 var _title: Label
 var _line: Label
-var _keys: Label  # the controls for what this page teaches
+var _keys: Label
 var _sigil: TextureRect
 var _hint: Label
 var _tween: Tween
-var _flyover: Array = []  # [world position, title, line]
-var _flying := false
-var _where: Array = []  # per page: [world position, camera distance] for the live view
-var _black: ColorRect
 
 
 func _ready() -> void:
@@ -46,62 +57,42 @@ func _ready() -> void:
 	visible = false
 
 
-## The story of this realm: houses as they stand now, seats as they are.
-## houses: the world's players' house dicts; seats: {house name: [town name, world position]}.
+func _is_ready() -> bool:
+	return not ready_check.is_valid() or ready_check.call()
+
+
+## houses: the world's players' house dicts; seats: {house name: [town name, Vector2 tile]}.
 func play(houses: Array, seats: Dictionary) -> void:
 	_pages.clear()
-	_flyover.clear()
-	# The story and how to play, woven together: each page of the realm's tale
-	# is followed by what you do in it, with the keys that do it.
-	_pages.append(["realm", "Aldmere", "A long continent: snow and pine in the north, gold hills in the west, a green heartland, storm-wracked cliffs in the east, and red sand in the south."])
-	_pages.append(["realm", "It lives without you", "Eight great houses build, trade, marry and make war on their own. Watch from the sky, and the realm goes on whether you act or not.", {}, "WASD  pan    Q E  turn    scroll  zoom    Space  pause    1 2 3  pace"])
+	var uv := func(tile: Vector2) -> Vector2: return (tile + Vector2(0.5, 0.5)) / REALM_TILES
 	var crown := {}
 	for h in houses:
 		if h.get("crown", false):
 			crown = h
+	var home: Vector2 = uv.call(seats[crown["name"]][1]) if not crown.is_empty() and seats.has(crown.get("name", "")) else Vector2(0.5, 0.5)
+	var page := func(still: String, title: String, line: String, house := {}, keys := "", at := Vector2(0.5, 0.5), zoom := 1.0) -> void:
+		_pages.append([still, title, line, house, keys, at, zoom])
+	# The story and how to play, woven together: each page of the realm's tale
+	# is followed by what you do in it, with the keys that do it.
+	page.call("realm", "Aldmere", "A long continent: snow and pine in the north, gold hills in the west, a green heartland, storm-wracked cliffs in the east, and red sand in the south.")
+	page.call("realm", "The Lore of Aldmere", "Three hundred years ago the Conqueror's dragons united seven kingdoms under one crown. The last dragon died a century ago, and the houses remember being kings.", {}, "B  the Lore, any time", Vector2(0.5, 0.3), 1.6)
+	page.call("realm", "It lives without you", "Eight great houses build, trade, marry and make war on their own. Watch from the sky, and the realm goes on whether you act or not.", {}, "drag  pan    scroll  zoom    Q E  turn    WASD  move", Vector2(0.5, 0.6), 1.4)
 	if not crown.is_empty() and seats.has(crown.get("name", "")):
 		var town: String = seats[crown["name"]][0]
-		_pages.append(["seat_" + town, "Kingsmere", "At its heart sits your seat, %s. You are the King, and seven great houses owe you their swords." % town])
+		page.call("seat_" + town, "Kingsmere", "At its heart sits your seat, %s. You are the King, and seven great houses owe you their swords." % town, crown, "Z  back to Kingsmere", home, 3.0)
 	for h in houses:
 		if h.get("crown", false) or h.get("wild", false) or not seats.has(h.get("name", "")):
 			continue
 		var name: String = h["name"]
 		var town: String = seats[name][0]
-		_pages.append(["seat_" + town, name, "%s. Their words: \"%s\". %s" % [town, h.get("words", ""), CHARACTER.get(name, "")], h])
-		_flyover.append([seats[name][1], name, town])
-	_pages.append(["realm", "The Lore of Aldmere", "Three hundred years ago the Conqueror's dragons united seven kingdoms under one crown. The last dragon died a century ago, and the houses remember being kings. Every house's history, grudges and people are written in the Lore.", {}, "B  the Lore, any time"])
-	_pages.append(["hall", "Hold court", "Lords come to your hall with petitions: grain, land, justice, vengeance. Choose a ruling, or answer in your own words, typed or spoken. Whatever you decide comes to pass.", {}, "K  court    Type or Speak: Settings"])
-	_pages.append(["hero", "Every lord a life", "Every lord and lady has a nature, a goal and a memory, and they remember what you did. Open a house to meet them, follow their story, or change who they are.", {}, "H  houses    C  chronicle    L  ledger"])
-	_pages.append(["battle", "Old grudges", "Old grudges run deep. When the great houses quarrel, armies march, towns are besieged and the realm bleeds. Your rulings can calm a feud or start one."])
-	_pages.append(["street", "Read the towns", "Every town shows what it is doing: walls rising, recruits drilling on the square, fields browning in famine, smoke over a town in unrest."])
-	_pages.append(["walk", "Walk among them", "When you choose, take the place of any lord: walk the streets, talk with the townsfolk, step into their halls, and draw steel when you must.", {}, "WASD  walk    Shift  run    E  talk, enter    Tab  draw    click  strike    Space  block    Esc  leave"])
-	_pages.append(["realm", "Long may you reign", "Keep the peace. Let the realm prosper. And remember: it lives on whether you watch or not."])
-	# A page without its still plays over the live realm, the camera flown to
-	# where it speaks of: the realm from the sky, a house at its seat, the King's
-	# own town for the pages about playing.
-	var home: Vector3 = seats[crown["name"]][1] if not crown.is_empty() and seats.has(crown.get("name", "")) else Vector3.ZERO
-	var towns: Array = seats.values().map(func(v): return v[1])
-	if towns.is_empty():
-		towns = [home]
-	_where.clear()
-	var i := 0
-	for p in _pages:
-		var still := String(p[0])
-		var at: Vector3 = towns[i % towns.size()]
-		var dist := 22.0 + (i % 3) * 8.0  # the pages about playing: a town from the air
-		if still == "realm":
-			at = home if i == 0 else towns[(i * 3) % towns.size()]
-			dist = [190.0, 120.0, 150.0][i % 3]
-		elif still.begins_with("seat_"):
-			for name in seats:
-				if still == "seat_" + String(seats[name][0]):
-					at = seats[name][1]
-			dist = 11.0
-		_where.append([at, dist])
-		i += 1
-	if _pages.is_empty():
-		_end()
-		return
+		page.call("seat_" + town, name, "%s. Their words: \"%s\". %s" % [town, h.get("words", ""), CHARACTER.get(name, "")], h, "", uv.call(seats[name][1]), 3.0)
+	page.call("hall", "Hold court", "Lords come to your hall with petitions: grain, land, justice, vengeance. Choose a ruling, or answer in your own words, typed or spoken. Whatever you decide comes to pass.", {}, "K  court    Type or Speak: Settings", home, 2.2)
+	page.call("hero", "Every lord a life", "Every lord and lady has a nature, a goal and a memory, and they remember what you did. Open a house to meet them, follow their story, or change who they are.", {}, "H  houses    C  chronicle    L  ledger", home, 1.8)
+	page.call("battle", "Old grudges", "When the great houses quarrel, armies march, towns are besieged and the realm bleeds. Your rulings can calm a feud or start one.", {}, "", Vector2(0.45, 0.75), 2.0)
+	page.call("street", "Read the towns", "Every town shows what it is doing: walls rising, recruits drilling on the square, fields browning in famine, smoke over a town in unrest.", {}, "click a town  its panel", home, 2.6)
+	page.call("walk", "Walk among them", "Take the place of any lord: walk the streets, talk with the townsfolk, step into their halls, and draw steel when you must.", {}, "WASD  walk    Shift  run    E  talk, enter    Tab  draw    click  strike    Space  block    Esc  leave", home, 3.0)
+	for tip in TIPS:
+		page.call("tip", tip[0], tip[1], {}, tip[2], Vector2(0.3 + randf() * 0.4, 0.2 + randf() * 0.6), 2.0)
 	_build()
 	visible = true
 	_page = -1
@@ -111,23 +102,39 @@ func play(houses: Array, seats: Dictionary) -> void:
 func _build() -> void:
 	for c in get_children():
 		c.queue_free()
-	_black = ColorRect.new()
-	_black.color = Color.BLACK
-	_black.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(_black)
+	var ground := ColorRect.new()
+	ground.color = Color(0.09, 0.08, 0.07)
+	ground.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(ground)
+	# The atlas, for pages without their still: sized and placed by hand so a
+	# place on the map can sit in the middle of the screen.
+	_map = TextureRect.new()
+	_map.texture = load(ATLAS) if ResourceLoader.exists(ATLAS) else null
+	_map.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_map.stretch_mode = TextureRect.STRETCH_SCALE
+	add_child(_map)
 	_image = TextureRect.new()
 	_image.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	_image.pivot_offset = get_viewport().get_visible_rect().size * 0.5
 	add_child(_image)
-	# A dark band at the foot of the page, so words read on any picture.
-	var shade := ColorRect.new()
-	shade.color = Color(0, 0, 0, 0.55)
-	shade.anchor_top = 0.66
-	shade.anchor_bottom = 1.0
-	shade.anchor_right = 1.0
-	add_child(shade)
+	# A soft dark fall at the foot of the page, so words read on any picture.
+	var fall := TextureRect.new()
+	var g := Gradient.new()
+	g.set_color(0, Color(0, 0, 0, 0.0))
+	g.set_color(1, Color(0, 0, 0, 0.78))
+	var gt := GradientTexture2D.new()
+	gt.gradient = g
+	gt.fill_from = Vector2(0, 0)
+	gt.fill_to = Vector2(0, 1)
+	fall.texture = gt
+	fall.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	fall.stretch_mode = TextureRect.STRETCH_SCALE
+	fall.anchor_top = 0.5
+	fall.anchor_bottom = 1.0
+	fall.anchor_right = 1.0
+	add_child(fall)
 	var box := VBoxContainer.new()
 	box.anchor_top = 1.0
 	box.anchor_bottom = 1.0
@@ -160,98 +167,80 @@ func _build() -> void:
 	_keys.add_theme_font_size_override("font_size", 15)
 	_keys.add_theme_color_override("font_color", T.ACCENT)
 	box.add_child(_keys)
-	_hint = T.label("Any key to skip")
+	_hint = T.label("")
 	_hint.anchor_left = 1.0
 	_hint.anchor_right = 1.0
-	_hint.offset_left = -220
-	_hint.offset_top = 28
+	_hint.offset_left = -360
+	_hint.offset_right = -40
+	_hint.offset_top = 32
+	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(_hint)
+
+
+func _process(_delta: float) -> void:
+	if visible and _hint:
+		_hint.text = ("Any key to begin" if _is_ready() else "The realm is forming…").to_upper()
 
 
 func _next() -> void:
 	_page += 1
 	if _page >= _pages.size():
-		_fly()
-		return
+		if _is_ready():
+			_end()
+			return
+		# Still forming: go round the tips again.
+		_page = _pages.size() - TIPS.size()
 	var p: Array = _pages[_page]
 	var path := STILLS + String(p[0]) + ".png"
-	var live := not ResourceLoader.exists(path)
-	_image.texture = null if live else load(path)
-	_black.visible = not live
-	if live and rig:
-		_shoot(_page)
+	var still := ResourceLoader.exists(path)
+	_image.texture = load(path) if still else null
+	_image.visible = still
+	_map.visible = not still and _map.texture != null
 	_title.text = String(p[1])
 	_line.text = String(p[2])
-	var house: Dictionary = p[3] if p.size() > 3 else {}
-	_keys.text = String(p[4]) if p.size() > 4 else ""
+	var house: Dictionary = p[3]
+	_keys.text = String(p[4])
 	_keys.visible = _keys.text != ""
 	_sigil.texture = preload("res://scripts/heraldry.gd").sigil(house) if not house.is_empty() else null
 	_sigil.visible = _sigil.texture != null
 	if not house.is_empty():
 		_sigil.modulate = Color.from_string(String(house.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.35)
-	# Each page drifts: in a little, and across, alternating direction.
-	var dir := 1.0 if _page % 2 == 0 else -1.0
-	_image.scale = Vector2.ONE * 1.08
-	_image.position = Vector2(-30 * dir, 0)
-	_image.modulate.a = 0.0
 	if _tween:
 		_tween.kill()
 	_tween = create_tween().set_parallel(true)
-	_tween.tween_property(_image, "modulate:a", 1.0, 1.0)
-	_tween.tween_property(_image, "scale", Vector2.ONE * 1.16, HOLD).set_trans(Tween.TRANS_SINE)
-	_tween.tween_property(_image, "position", Vector2(30 * dir, -14), HOLD).set_trans(Tween.TRANS_SINE)
+	# Each page drifts: in a little, and across, alternating direction.
+	var dir := 1.0 if _page % 2 == 0 else -1.0
+	var pic: Control = _image if still else _map
+	pic.modulate.a = 0.0
+	_tween.tween_property(pic, "modulate:a", 1.0, 1.0)
+	if still:
+		_image.scale = Vector2.ONE * 1.08
+		_image.position = Vector2(-30 * dir, 0)
+		_tween.tween_property(_image, "scale", Vector2.ONE * 1.16, HOLD).set_trans(Tween.TRANS_SINE)
+		_tween.tween_property(_image, "position", Vector2(30 * dir, -14), HOLD).set_trans(Tween.TRANS_SINE)
+	elif _map.visible:
+		# The atlas sized so the whole realm fills the height at zoom 1, with the
+		# page's place drawn toward the middle, pushing in and drifting.
+		var screen := get_viewport().get_visible_rect().size
+		var aspect := float(_map.texture.get_width()) / _map.texture.get_height()
+		var at: Vector2 = p[5]
+		var zoom: float = p[6]
+		var start := Vector2(screen.y * 1.05 * zoom * aspect, screen.y * 1.05 * zoom)
+		var end := start * 1.12
+		var focus := screen * Vector2(0.5, 0.42)
+		_map.size = start
+		_map.position = focus - at * start + Vector2(-24 * dir, 0)
+		_tween.tween_property(_map, "size", end, HOLD).set_trans(Tween.TRANS_SINE)
+		_tween.tween_property(_map, "position", focus - at * end + Vector2(24 * dir, -10), HOLD).set_trans(Tween.TRANS_SINE)
 	_tween.chain().tween_callback(_next)
 	if say.is_valid():
 		say.call(String(p[2]))
 
 
-## A live shot for a page: cut to it, then a slow orbit and push-in for the
-## page's length, each page turning the other way, so the realm is always
-## moving under the words.
-var _move: Tween
-func _shoot(page: int) -> void:
-	var at: Vector3 = _where[page][0]
-	var dist: float = _where[page][1]
-	var dir := 1.0 if page % 2 == 0 else -1.0
-	var yaw0 := deg_to_rad(20.0 + 47.0 * page)
-	rig.snap(at, dist * 1.25, yaw0)
-	rig._goal_tilt = 0.0
-	if _move:
-		_move.kill()
-	_move = create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	_move.tween_method(func(y): rig._goal_yaw = y, yaw0, yaw0 + 0.55 * dir, HOLD)
-	_move.tween_method(func(d): rig._goal_distance = d, dist * 1.25, dist * 0.8, HOLD)
-
-
-## The world itself: a slow pass over each house's seat, then the realm is yours.
-func _fly() -> void:
-	if rig == null or _flyover.is_empty():
-		_end()
-		return
-	_flying = true
-	var fade := create_tween()
-	fade.tween_property(_image, "modulate:a", 0.0, 0.8)
-	for c in get_children():
-		if c is ColorRect and c.color == Color.BLACK:
-			fade.parallel().tween_property(c, "modulate:a", 0.0, 0.8)
-	var steps := create_tween()
-	for stop in _flyover:
-		steps.tween_callback(func():
-			rig.frame_town(stop[0], 10)
-			_title.text = String(stop[1])
-			_line.text = String(stop[2])
-			_sigil.visible = false)
-		steps.tween_interval(3.5)
-	steps.tween_callback(_end)
-
-
 func _end() -> void:
 	if _tween:
 		_tween.kill()
-	if _move:
-		_move.kill()
 	visible = false
-	_flying = false
 	for c in get_children():
 		c.queue_free()
 	finished.emit()
@@ -262,4 +251,7 @@ func _input(event: InputEvent) -> void:
 		return
 	if (event is InputEventKey and event.pressed and not event.echo) or (event is InputEventMouseButton and event.pressed):
 		get_viewport().set_input_as_handled()
-		_end()
+		if _is_ready():
+			_end()
+		else:
+			_next()
