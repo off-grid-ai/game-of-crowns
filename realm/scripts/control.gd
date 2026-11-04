@@ -17,6 +17,7 @@ signal fell(person: Dictionary)
 const Combat := preload("res://scripts/combat.gd")
 const Horse := preload("res://scripts/horse.gd")
 const Keys := preload("res://scripts/keys.gd")
+const HORSE_BODY: float = preload("res://scripts/scenes.gd").HORSE_BODY
 
 const WALK := 0.17  # world units a second, as the townsfolk walk
 const RUN := 0.42
@@ -92,10 +93,13 @@ func start(person: Dictionary, house: Dictionary, town_id: int) -> void:
 	_body.rotation.y = _yaw + PI
 	_me = Combat.new(_body, villagers._people)
 	_me.on_land = _land
-	# Your horse waits saddled a pace off, facing the way you do.
+	# Your horse waits saddled a horse's length off to your side, facing the
+	# way you do, its whole body clear of you and of anything standing there
+	# (the same check the realm's riders use).
 	_horse = Horse.new()
 	add_child(_horse)
-	var by := _walkable(_body.position + Vector3(cos(_yaw), 0, -sin(_yaw)) * 0.14 - Vector3(sin(_yaw), 0, cos(_yaw)) * 0.06)
+	var by := _walkable(_body.position + Vector3(cos(_yaw), 0, -sin(_yaw)) * (HORSE_BODY * 2.2))
+	by = villagers._nav.stand(towns, by, HORSE_BODY)
 	_horse.position = Vector3(by.x, terrain.height_at(by.x, by.z), by.z)
 	_horse.rotation.y = _body.rotation.y
 	_cam = Camera3D.new()
@@ -109,8 +113,11 @@ func start(person: Dictionary, house: Dictionary, town_id: int) -> void:
 	_my_tag = _name_tag(String(person.get("name", "")))
 	_follow(1.0)
 	want_people.emit(town_id)
-	# The keys live in Settings; one line says so, then the prompt is for what's near.
-	_say("%s to leave  ·  every control is in Settings" % Keys.label("back"), 5.0)
+	# The essentials for a few seconds, then the prompt is for what's near
+	# (speak with them, mount your horse); every key is in Settings.
+	_say("%s walk  ·  %s run  ·  %s talk, enter, ride  ·  %s strike  ·  %s back" % [
+		"/".join([Keys.label("walk_forward").get_slice(" / ", 0), Keys.label("walk_left").get_slice(" / ", 0), Keys.label("walk_back").get_slice(" / ", 0), Keys.label("walk_right").get_slice(" / ", 0)]),
+		Keys.label("run"), Keys.label("interact"), Keys.label("attack"), Keys.label("back")], 9.0)
 
 
 func stop() -> void:
