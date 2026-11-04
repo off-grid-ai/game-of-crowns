@@ -1,0 +1,69 @@
+# Game of Crowns: what stays out of git.
+# Rule of thumb: our code, docs, our own art and small config go in; generated
+# state, caches and other people's art (fetched again per ASSETS in the README)
+# stay out. Godot's .import files are kept even for excluded art: they carry
+# our import settings (retargeting, compression) and are tiny.
+
+# --- OS and editors ---
+.DS_Store
+*.swp
+.vscode/
+.idea/
+
+# --- Godot ---
+realm/.godot/
+*.tmp
+realm/export/
+realm/realistic.txt
+
+# --- Third-party art (Sketchfab, Mixamo, Quaternius, Poly Haven, Kenney) ---
+# Binaries out, import settings and licence notes in.
+realm/assets/realistic/**
+realm/assets/people/**
+realm/assets/hero/**
+realm/assets/anims/**
+realm/assets/props/**
+realm/assets/nature/**
+realm/assets/q/**
+realm/assets/ground/**
+realm/assets/village/**
+!realm/assets/realistic/**/
+!realm/assets/people/**/
+!realm/assets/hero/**/
+!realm/assets/anims/**/
+!realm/assets/props/**/
+!realm/assets/nature/**/
+!realm/assets/q/**/
+!realm/assets/ground/**/
+!realm/assets/village/**/
+!realm/assets/**/*.import
+!realm/assets/**/license.txt
+!realm/assets/**/LICENSE*
+!realm/assets/**/CREDITS*
+
+# Raw downloads waiting to be sorted into the game.
+/downloads/
+/assets/
+
+# --- The bridge's running state ---
+node_modules/
+bridge/chronicles/
+bridge/archive/
+bridge/saves/
+bridge/state/
+bridge/*.sav.zst
+bridge/*.log
+bridge/records.json
+bridge/scenarios.json
+bridge/resume.serv
+bridge/probe.*
+# Azgaar's raw exports: inputs to tools/azgaar_*.py, regenerated from the Azgaar map.
+bridge/data/Belia *
+
+# The baseline realm (a few years of history new chronicles start from) is kept,
+# saves and all.
+!bridge/baseline/**
+
+# --- Screenshots and scratch ---
+shots/
+*.png.tmp
