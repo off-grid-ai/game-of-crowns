@@ -18,11 +18,13 @@ const OAK_KINDS := 7
 const BUSH_FIRST := 15
 const BUSH_KINDS := 6
 const CHUNK := 20.0  # game units per side
-const NEAR := 28.0  # within this distance of the camera, trees are drawn in full
+const NEAR := 12.0  # within this distance of the camera, trees are drawn in full, with shadows
+const MID := 40.0  # out to this distance, the pack's lighter detail level, without shadows
 const S := 0.12  # game units per metre
 const KINDS := ["Pine_big_1", "Pine_big_2", "Pine_big_3", "Pine_medium_1", "Pine_medium_2", "Pine_large_1", "Pine_large_2", "Pine_large_3"]
 
 var _full: Array = []  # Mesh or null
+var _mid: Array = []  # the lighter detail level, or the full one where a kind has none
 var _card: Array = []
 var _height: Array[float] = []
 
@@ -62,9 +64,13 @@ func plant(trees: Array) -> void:
 			if not by_kind.has(k):
 				by_kind[k] = []
 			by_kind[k].append(xf)
+		# Three tiers: full detail close by, lighter further out, then flat
+		# cards. Only the nearest cast shadows: every shadow cascade draws its
+		# casters again, and the woods were most of the frame.
 		for k in by_kind:
 			_layer(_full[k], by_kind[k], 0.0, NEAR, true)
-			_layer(_card[k], by_kind[k], NEAR - 2.0, 0.0, false)
+			_layer(_mid[k], by_kind[k], NEAR - 1.0, MID, false)
+			_layer(_card[k], by_kind[k], MID - 2.0, 0.0, false)
 
 
 func _layer(mesh: Mesh, xfs: Array, begin: float, end: float, shadows: bool) -> void:
@@ -91,19 +97,21 @@ func _layer(mesh: Mesh, xfs: Array, begin: float, end: float, shadows: bool) -> 
 func _load() -> void:
 	if not _full.is_empty() or not available():
 		return
-	_load_pack(PACK, KINDS, "_LOD1", "_Billboard_LOD3")
+	_load_pack(PACK, KINDS, "_LOD1", "_LOD2", "_Billboard_LOD3")
 	for pack in MORE:
 		if ResourceLoader.exists(pack[0]):
-			_load_pack(pack[0], pack[1], pack[2], pack[3])
+			_load_pack(pack[0], pack[1], pack[2], pack[2], pack[3])
 
 
-func _load_pack(path: String, kinds: Array, full_suffix: String, card_suffix: String) -> void:
+func _load_pack(path: String, kinds: Array, full_suffix: String, mid_suffix: String, card_suffix: String) -> void:
 	var scene: Node = (load(path) as PackedScene).instantiate()
 	for kind in kinds:
 		var full := _merge(scene, kind + full_suffix)
+		var mid := _merge(scene, kind + mid_suffix) if mid_suffix != full_suffix else null
 		var card := _merge(scene, kind + card_suffix)
 		# A missing kind keeps its slot, so indices stay put.
 		_full.append(full if card != null else null)
+		_mid.append((mid if mid != null else full) if card != null else null)
 		_card.append(card if full != null else null)
 		_height.append(full.get_aabb().size.y if full else 0.0)
 	scene.free()

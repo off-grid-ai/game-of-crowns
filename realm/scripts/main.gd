@@ -381,6 +381,8 @@ func _parse_args() -> void:
 			_shot["intro"] = true  # plays the intro once the realm is up; --wait picks the page
 		elif a == "--duel":
 			_shot["duel"] = true
+		elif a.begins_with("--ride="):
+			_shot["ride"] = a.substr(7)  # with --control: mount your horse and "stand", "walk" or "gallop"
 		elif a.begins_with("--after="):
 			_shot["after"] = float(a.substr(8))  # with --duel: seconds from the strike to the shot
 		elif a.begins_with("--interior="):
@@ -657,6 +659,10 @@ func _process(_delta: float) -> void:
 func _update_labels() -> void:
 	var d: float = rig.distance
 	terrain.set_realm_mix(smoothstep(120.0, 200.0, d))
+	# Shadows reach only as far as they can be seen: every cascade draws its
+	# casters again, so a realm-wide reach was most of the frame.
+	if sun:
+		sun.directional_shadow_max_distance = clampf(d * 2.2, 20.0, 90.0)
 	# The atlas comes in as the towns shrink to dots: a hint of it at the middle
 	# distance, most of it from across the realm (the 3D light still shapes it).
 	terrain.set_atlas_mix(lerpf(0.0, 0.35, smoothstep(30.0, 80.0, d)) + 0.45 * smoothstep(80.0, 180.0, d))
@@ -809,6 +815,15 @@ func _frame_for_shot(world: Dictionary) -> void:
 					get_tree().create_timer(float(_shot.get("lead", 6.0))).timeout.connect(func():
 						control._me.strike()
 						get_tree().create_timer(float(_shot.get("after", 0.4))).timeout.connect(_take_shot))
+				if _shot.has("ride"):
+					# Into the saddle, then away from the camera at the asked pace.
+					get_tree().create_timer(2.0).timeout.connect(func():
+						control.mount()
+						if _shot["ride"] != "stand":
+							control.drive = Vector2(0, -1)
+							control.drive_fast = _shot["ride"] == "gallop"
+						get_tree().create_timer(float(_shot.get("lead", 3.0))).timeout.connect(_take_shot))
+					return
 				if _shot.has("interior"):
 					get_tree().create_timer(2.0).timeout.connect(func():
 						interior.open(String(_shot["interior"]), p, h, String(p.get("seat", "")))
