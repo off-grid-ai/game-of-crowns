@@ -8,6 +8,7 @@ How a round is played: `realm/tools/play/*.play` scenarios feed real input (keys
 
 | # | Expected | Found | Change | Commit |
 |---|---|---|---|---|
+| 7 | A new chronicle is quick to start (genre brief: depth on request) | One tall page of every choice, taller than the window (its heading ran off the top), voices repeated from Settings | Three reign cards (Gentle, Balanced, Tough) with what each means, a name and Begin up front; the rest folded behind "Customise every choice", sized to the window | 89428b6 |
 | 4 | Esc ends a conversation | The talk's text box held the keyboard and swallowed Esc: no way out of a conversation | Walking mode hears Esc before the box does | 03eb103 |
 | 5 | Leaving walking clears its screen | The conversation panel and name tags stayed (the panel was freed but still referenced, so the next talk reused a dead one) | Leaving walking closes and forgets the talk, tags and prompt; the microphone is wired once, not again each walk | 03eb103 |
 | 6 | The menu is the menu | Opening the menu or Settings while walking left the walk running under it | Opening the menu steps you out of walking first | 03eb103 |
