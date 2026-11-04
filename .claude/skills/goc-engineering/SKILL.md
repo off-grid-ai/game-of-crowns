@@ -17,7 +17,7 @@ description: How code is changed, checked and committed in Game of Crowns (realm
 
 ## Sessions share one checkout and one git index
 
-Several sessions commit to `main` from the same folder. Never `git add` and leave files staged: another session's commit will take them. Commit only your own paths in one step, `git commit -m "…" -- <your paths>` (new files: `git add <paths> && git commit -m "…" -- <paths>` in the same command), then `git push`; if the push is rejected because another session just pushed, `git pull --rebase -q && git push`. Check the compile output is clean before committing, never after.
+Several sessions commit to `main` from the same folder. Never `git add` and leave files staged: another session's commit will take them. Commit only your own changes, in one step. A path commit takes the whole file, so if `git diff <file>` shows any lines that aren't yours (another session is editing it too), stage just your hunks (`git diff <file> > /tmp/mine.patch`, trim it to your hunks, `git apply --cached /tmp/mine.patch`) and run a plain `git commit -m "…"`. If the file is yours alone, `git commit -m "…" -- <paths>` is fine (new files: `git add <paths> && git commit … -- <paths>` in the same command). Then `git push`; if the push is rejected because another session just pushed, `git pull --rebase -q && git push`. Check the compile output is clean before committing, never after.
 
 ## Production grade
 
