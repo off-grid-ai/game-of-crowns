@@ -66,9 +66,8 @@ func start(person: Dictionary, house: Dictionary, town_id: int) -> void:
 	var center: Vector3 = towns.towns[town_id]["node"].global_position
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(str(person.get("id", "")))
-	var lordly := str(person.get("rank", "")) in ["lord", "heir"] or person.get("role") != null
 	var tint := Color.from_string(String(house.get("color", "#888888")), Color.GRAY).lerp(Color.WHITE, 0.45)
-	_body = villagers._people.make(rng, "soldier" if lordly else "peasant", tint, "adult", "", str(person.get("gender", "")))
+	_body = villagers._people.make(rng, villagers._people.station(person), tint, "adult", "", str(person.get("gender", "")), str(person.get("id", "")))
 	add_child(_body)
 	# A lord steps out of their own hall; anyone else from the edge of the square.
 	var door := Vector3(0.9, 0, 0.9)
@@ -571,7 +570,7 @@ func meet(people: Array) -> void:
 		var p: Dictionary = people[i]
 		if str(p.get("id", "")) == str(_person.get("id", "")):
 			continue  # that's you
-		var n: Node3D = villagers._people.make(rng, "soldier" if p.get("rank") != "heir" else "peasant", Color(0.95, 0.88, 0.7), "adult", "", str(p.get("gender", "")))
+		var n: Node3D = villagers._people.make(rng, villagers._people.station(p), Color(0.95, 0.88, 0.7), "adult", "", str(p.get("gender", "")), str(p.get("id", "")))
 		add_child(n)
 		var at := _walkable(center + door + Vector3(cos(i * 1.3), 0, sin(i * 1.3)) * 0.35)
 		n.position = Vector3(at.x, terrain.height_at(at.x, at.z), at.z)
