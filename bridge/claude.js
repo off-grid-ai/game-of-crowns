@@ -153,3 +153,20 @@ Return {"story": "...", "says": "..."}`,
   );
   return out && out.story ? { story: String(out.story), says: String(out.says ?? "") } : null;
 }
+
+// Someone in the realm answers you, face to face, in their own voice: what they
+// are, what's happened to them and their town, who you are to them, and what
+// you've said to each other before. They can be warm, wary, afraid or rude.
+export async function speak(person, town, house, you, events, story, past, said) {
+  const out = await complete(
+    "You are an ordinary person in a gritty medieval realm (tone: Game of Thrones, Vikings), speaking aloud to someone in front of you. Stay in character. Plain, concrete speech of the period: no modern words, no fantasy cliches, no narration. 1 to 3 sentences.",
+    `You are ${person.name}, ${person.age}, a ${person.woman ? "woman" : "man"}, ${person.trade} in ${town}, in the lands of ${house}. By nature ${person.nature ?? "ordinary"}. ${person.family}. Known for: ${person.past}. You want: ${person.wants}.
+${story ? `Your life so far: ${story}\n` : ""}Lately in ${town} and the realm:
+${events.map((e) => "- " + e).join("\n") || "- quiet seasons"}
+You are speaking with ${you.name}${you.title ? `, ${you.title}` : ""} of ${you.house}${you.lord ? ", who rules this town; your lord" : ""}. Speak to them as your station and your nature demand.
+${past.length ? "What you and they have said before:\n" + past.map((l) => `${l.who}: ${l.text}`).join("\n") + "\n" : ""}They say to you now: "${said}"
+Return {"reply": "what you say back", "feeling": "one word: how you feel toward them now"}`,
+    220,
+  );
+  return out && out.reply ? { reply: String(out.reply).replace(/^"|"$/g, ""), feeling: String(out.feeling ?? "") } : null;
+}

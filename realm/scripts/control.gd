@@ -7,6 +7,7 @@ extends Node3D
 ## it walks the town's own paths and can't pass through a wall.
 
 signal talk_to(town: int, i: int)
+signal said(town: int, i: int, text: String)
 signal enter(kind: String, town: int, person: Dictionary)
 signal ended
 signal fell(person: Dictionary)
@@ -39,6 +40,12 @@ var _foes: Array = []  # Combat: whoever has come for you
 var _threat_check := 12.0
 var _blocking := false
 var _news_until := 0
+var _chat: PanelContainer  # talking with someone: their words and yours
+var _chat_log: RichTextLabel
+var _chat_line: LineEdit
+var _chat_with := {}  # {town, i}
+var _chat_lines: Array[String] = []
+var _waiting := false
 
 
 func start(person: Dictionary, house: Dictionary, town_id: int) -> void:
@@ -146,7 +153,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
 			KEY_ESCAPE:
-				stop()
+				if _chat and _chat.visible:
+					_close_chat()
+				else:
+					stop()
 				get_viewport().set_input_as_handled()
 			KEY_E:
 				_act()
@@ -174,6 +184,10 @@ func _unhandled_input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	if not active or not is_instance_valid(_body):
 		return
+	if _chat and _chat.visible:
+		_hold_listener()
+		_follow(delta)
+		return  # stand and talk; the keys are for typing
 	if Input.is_key_pressed(KEY_Q):
 		_yaw += delta * 1.8
 	if Input.is_key_pressed(KEY_R):
@@ -286,8 +300,7 @@ func _door_near(p: Vector3) -> Dictionary:
 func _act() -> void:
 	match String(_near.get("kind", "")):
 		"folk":
-			talk_to.emit(int(_near["town"]), int(_near["i"]))
-			villagers._people.play(_body, "Idle_Talking", 1.0)
+			_open_chat(int(_near["town"]), int(_near["i"]))
 		"door":
 			enter.emit(String(_near["room"]), int(_near["town"]), _person)
 
@@ -370,3 +383,91 @@ func _fallen() -> void:
 	get_tree().create_timer(3.5).timeout.connect(func():
 		fell.emit(_person)
 		stop())
+
+
+# --- talking ------------------------------------------------------------------------
+
+## Face to face with a townsperson: type, and they answer in their own voice
+## (the local model). They stop what they're doing and turn to you.
+func _open_chat(town: int, i: int) -> void:
+	var T := preload("res://scripts/theme.gd")
+	if _chat == null:
+		_chat = PanelContainer.new()
+		_chat.theme = T.get_theme()
+		T.glass(_chat)
+		_chat.anchor_left = 0.5
+		_chat.anchor_right = 0.5
+		_chat.anchor_top = 1.0
+		_chat.anchor_bottom = 1.0
+		_chat.offset_left = -330
+		_chat.offset_right = 330
+		_chat.offset_top = -330
+		_chat.offset_bottom = -110
+		_hud.add_child(_chat)
+		var v := VBoxContainer.new()
+		v.add_theme_constant_override("separation", 8)
+		_chat.add_child(v)
+		_chat_log = RichTextLabel.new()
+		_chat_log.bbcode_enabled = true
+		_chat_log.scroll_following = true
+		_chat_log.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		v.add_child(_chat_log)
+		_chat_line = LineEdit.new()
+		_chat_line.placeholder_text = "Say something…   (Enter to speak, Esc to step away)"
+		_chat_line.text_submitted.connect(_speak)
+		v.add_child(_chat_line)
+	_chat_with = {"town": town, "i": i}
+	_chat_lines = ["[color=#9a968e]You approach them.[/color]"]
+	_waiting = false
+	_draw_chat()
+	_chat.visible = true
+	_chat_line.text = ""
+	_chat_line.grab_focus()
+	villagers._people.play(_body, "Idle_Talking", 1.0)
+	_hold_listener()
+
+
+func _close_chat() -> void:
+	_chat.visible = false
+	_chat_line.release_focus()
+	_chat_with = {}
+
+
+## Keep the one you're speaking to standing there, facing you.
+func _hold_listener() -> void:
+	if _chat_with.is_empty():
+		return
+	var crowd: Array = villagers._crowds.get(_chat_with["town"], [])
+	if int(_chat_with["i"]) < crowd.size():
+		var a: Dictionary = crowd[int(_chat_with["i"])]
+		a["hold_until"] = Time.get_ticks_msec() + 1500
+		a["face"] = _body.position
+		var to: Vector3 = a["node"].position - _body.position
+		_body.rotation.y = atan2(to.x, to.z)
+
+
+func _speak(text: String) -> void:
+	text = text.strip_edges()
+	if text == "" or _chat_with.is_empty():
+		return
+	_chat_line.text = ""
+	_chat_lines.append("[color=#dbb46e]%s:[/color] %s" % [String(_person.get("name", "You")), text])
+	_waiting = true
+	_draw_chat()
+	said.emit(int(_chat_with["town"]), int(_chat_with["i"]), text)
+
+
+## Their answer arrives from the bridge.
+func heard(d: Dictionary) -> void:
+	if _chat == null or not _chat.visible:
+		return
+	_waiting = false
+	if d.has("reply"):
+		_chat_lines.append("[color=#ecece8]%s:[/color] [i]%s[/i]" % [String(d.get("name", "")), String(d["reply"])])
+	else:
+		_chat_lines.append("[color=#e86b5c]%s[/color]" % String(d.get("error", "They say nothing.")))
+	_draw_chat()
+
+
+func _draw_chat() -> void:
+	_chat_log.text = "\n\n".join(_chat_lines) + ("\n\n[color=#9a968e]…[/color]" if _waiting else "")

@@ -136,6 +136,10 @@ func _ready() -> void:
 	hero.control_requested.connect(func(p, h):
 		hero.close()
 		_take_control(p, h))
+	control.said.connect(func(town, i, text):
+		var p: Dictionary = control._person
+		bridge.talk(town, i, {"id": str(p.get("id", "")), "name": String(p.get("name", "")), "house": String(_houses.get(int(p.get("house_id", -1)), {}).get("name", ""))}, text, func(code, d):
+			control.heard(d if d is Dictionary else {"error": "They say nothing."})))
 	control.talk_to.connect(func(town, i):
 		ui.show_folk_waiting()
 		bridge.folk(town, i, func(d): ui.show_folk(d if d is Dictionary else {})))

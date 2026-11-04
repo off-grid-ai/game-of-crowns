@@ -71,6 +71,10 @@ func character_options(cb: Callable) -> void:
 	_http_get("/characters/options", cb)
 
 
+func talk(city: int, i: int, you: Dictionary, said: String, cb: Callable) -> void:
+	_post("/talk", {"city": city, "i": i, "you": you, "said": said}, cb)
+
+
 func person_fell(id: String, how: String, cb: Callable) -> void:
 	_post("/person/fall", {"id": id, "how": how}, cb)
 

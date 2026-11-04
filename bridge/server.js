@@ -15,7 +15,7 @@ import { godCommand, healLua } from "./god.js";
 import { readSave, extractDetail } from "./savefile.js";
 import { townsfolk } from "./townsfolk.js";
 import { ROLES, GOALS, TRAITS } from "./characters.js";
-import { folkTale } from "./claude.js";
+import { folkTale, speak } from "./claude.js";
 import { BUILD_COST, granarySize } from "./rules.js";
 import * as chron from "./chronicles.js";
 import { decree, titheLua, clampFavour, DECREES } from "./crown.js";
@@ -713,6 +713,36 @@ http.createServer(async (req, res) => {
       fs.writeFileSync(file, JSON.stringify(tales, null, 1));
     }
     return json(res, 200, { town: cityName(city.id), person, ...tales[key] });
+  }
+  if (url.pathname === "/talk" && req.method === "POST") {
+    // You speak to someone in the street; they answer in their own voice and remember it.
+    const b = await body(req);
+    const city = world?.cities.find((c) => c.id === Number(b.city));
+    if (!city) return json(res, 404, { error: "no such town" });
+    const person = townsfolk(city)[Number(b.i)];
+    const said = String(b.said ?? "").trim().slice(0, 400);
+    if (!person || !said) return json(res, 400, { error: "nobody to hear it" });
+    const key = `${city.id}:${person.i}:${person.name}`;
+    const tales = chron.readJson(path.join(P.state, "folk-tales.json"), {});
+    const file = path.join(P.state, "talks.json");
+    const talks = chron.readJson(file, {});
+    const past = (talks[key] ?? []).slice(-10);
+    const owner = world.players.find((p) => p.id === city.owner);
+    const speaker = b.you?.id ? court.people[String(b.you.id)] : null;
+    const you = {
+      name: speaker?.name ?? String(b.you?.name ?? "a stranger"),
+      house: speaker?.house ?? String(b.you?.house ?? ""),
+      title: speaker ? (speaker.rank === "lord" ? (speaker.gender === "female" ? "Lady" : "Lord") : speaker.rank) : "",
+      lord: speaker ? speaker.playerId === city.owner && speaker.rank === "lord" : false,
+    };
+    const near = chronicle.filter((e) => e.city === city.id || (e.text ?? "").includes(cityName(city.id))).slice(-5).map((e) => e.text);
+    const out = await speak(person, cityName(city.id), houseFor(owner).name, you, near, tales[key]?.story ?? "", past, said);
+    if (!out) return json(res, 503, { error: `${person.name} only stares at you. (The local model isn't running.)` });
+    talks[key] = [...past, { who: you.name, text: said }, { who: person.name, text: out.reply }].slice(-16);
+    fs.writeFileSync(file, JSON.stringify(talks, null, 1));
+    // A lord remembers being spoken to by their own people, briefly.
+    if (speaker) court.remember(speaker.id, `In ${cityName(city.id)} I spoke with ${person.name}, the ${person.trade}.`);
+    return json(res, 200, { name: person.name, trade: person.trade, ...out });
   }
   if (url.pathname === "/lord") return json(res, 200, court.summary(Number(url.searchParams.get("city"))) ?? {});
   if (url.pathname === "/season" && req.method === "POST") {

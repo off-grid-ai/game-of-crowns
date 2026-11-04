@@ -169,6 +169,13 @@ func _block(a: Dictionary) -> String:
 
 func _step(a: Dictionary, delta: float, _t: float) -> void:
 	var n: Node3D = a["node"]
+	# Spoken to: they stop, turn to whoever it is, and talk with their hands.
+	if Time.get_ticks_msec() < int(a.get("hold_until", 0)):
+		var to: Vector3 = a.get("face", n.position) - n.position
+		if Vector2(to.x, to.z).length() > 0.01:
+			n.rotation.y = lerp_angle(n.rotation.y, atan2(to.x, to.z), minf(1.0, delta * 6.0))
+		_people.play(n, "Idle_Talking", 1.0)
+		return
 	# A new part of the day: drop what you're doing and go.
 	var block := _block(a)
 	if block != a["block"]:
