@@ -4,6 +4,12 @@ extends RefCounted
 ## beard, hair colour, cloth tint and build all vary, so no two look alike.
 
 const S := 0.12  # same scale as the towns: a 1.8 m person is ~0.22 units
+## The moves that carry a body across the ground, legs in step. A person who
+## is moving plays one of these, whatever was asked (anim_lod.gd sees to it):
+## "Carrying" and "Wheelbarrow" are standing moves, the legs barely swing.
+const WALKS := ["Walk", "Running", "Sprint", "Sneak", "SS_Walk", "GS_Walk", "Axe_Walk", "Injured_Walk"]
+const WALK_PACE := 0.17  # world units a second at a "Walk" played at speed 1
+const RUN_PACE := 0.45  # and at "Running"
 const SEEN_TO := 18.0  # world units: beyond this a person isn't drawn or animated (a few pixels tall)
 
 const OUTFITS := {
@@ -326,6 +332,11 @@ static func play(person: Node3D, anim_name: String, speed := 1.0) -> void:
 		speed *= 0.75
 	var anim: AnimationPlayer = person.get_node_or_null("Anim")
 	if anim == null or not anim.has_animation(anim_name):
+		return
+	# Being carried across the ground (anim_lod.gd keeps their legs in step):
+	# a standing move waits until they stop.
+	if person.has_meta("in_step") and anim_name not in WALKS:
+		person.set_meta("in_step", anim_name)
 		return
 	if anim.current_animation != anim_name:
 		anim.play(anim_name, 0.25)
