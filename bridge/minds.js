@@ -71,7 +71,7 @@ const BELIEFS = {
 const WEIGHT = {
   plague: 0.95, famine: 0.85, razed: 1, sack: 0.9, city_transferred: 0.8, city_destroyed: 1, battle: 0.55, unit_killed: 0.4,
   tithe: 0.7, rebellion: 0.6, rebel: 0.6, unrest: 0.35, raid: 0.6, outlaws: 0.45, death: 0.35, succession: 0.35, marriage: 0.3,
-  feast: 0.45, bounty: 0.6, grain: 0.5, faith: 0.4, decree: 0.3, justice: 0.3, war: 0.6, peace: 0.5, talk: 0.65, visit: 0.6, rider: 0.25,
+  feast: 0.45, bounty: 0.6, arc: 0.5, grain: 0.5, faith: 0.4, decree: 0.3, justice: 0.3, war: 0.6, peace: 0.5, talk: 0.65, visit: 0.6, rider: 0.25,
 };
 const MOVES = {
   plague: { fear: 0.4, grief: 0.3, faith: 0.1 }, famine: { hunger: 0.45, fear: 0.2 }, razed: { fear: 0.5, grief: 0.4, anger: 0.2 },
@@ -289,7 +289,7 @@ export class Minds {
     }
     this.seen.tithe = tithe;
     const steps = this.seen.turn ? Math.min(8, Math.max(1, turn - this.seen.turn)) : 1;
-    for (let s = 0; s < steps; s++) for (const m of Object.values(this.minds)) this.season(m, m.town != null ? this.realm.town(m.town) : null);
+    for (let s = 0; s < steps; s++) for (const m of Object.values(this.minds)) if (!m.gone) this.season(m, m.town != null ? this.realm.town(m.town) : null);
     this.seen.turn = turn;
     this.warmThoughts();
     this.save();
@@ -322,7 +322,10 @@ export class Minds {
     const town = world.cities.find((c) => c.id === at);
     const house = town ? houseFor(world.players.find((p) => p.id === town.owner))?.name : world.players.map((p) => houseFor(p)?.name).find((h) => h && entry.text.includes(h.replace("House ", "")));
     this.everyone();
+    // Those cast in a story's beat already remember it in their own words (arcs.js).
+    const cast = new Set((entry.cast ?? []).map(String));
     for (const m of Object.values(this.minds)) {
+      if (m.gone || cast.has(String(m.id))) continue;
       if (!String(m.id).startsWith("folk:") && !this.realm.court()?.people?.[m.id]?.alive) continue;
       const home = world.cities.find((c) => c.id === m.town);
       const mine = home ? houseFor(world.players.find((p) => p.id === home.owner))?.name : null;
@@ -333,20 +336,20 @@ export class Minds {
       const said = firstSentence(entry.text);
       const text = near === "here" ? `I was in ${cityName(town.id)} when it happened. ${entry.text}` : near === "lands" ? `Word came from ${town ? cityName(town.id) : "our lord's lands"}: ${said}` : `They say in the market: ${said}`;
       this.remember(m, text, { weight, kind, moves: MOVES[kind], turn: Number(entry.turn) || this.now() });
-      this.believe(m, kind, near);
+      this.believeOf(m, kind, near);
     }
   }
 
   // What the realm as a whole hears, at one closeness for everyone.
   hearRealm(ev, near) {
     for (const m of Object.values(this.minds)) {
-      if (!String(m.id).startsWith("folk:")) continue;
+      if (!String(m.id).startsWith("folk:") || m.gone) continue;
       this.remember(m, near === NEAR.here ? `${ev.text} We can scarce feed ourselves as it is.` : ev.text, { weight: (WEIGHT[ev.kind] ?? 0.4) * near, kind: ev.kind, moves: MOVES[ev.kind] });
-      this.believe(m, ev.kind, "here");
+      this.believeOf(m, ev.kind, "here");
     }
   }
 
-  believe(m, kind, near) {
+  believeOf(m, kind, near) {
     const nature = m.nature.join(" ");
     const b = kind === "plague" && near === "here" ? (/superstitious|pious/.test(nature) ? "the sickness is a judgement on the lord's sins" : "the sickness came in on the traders' carts")
       : kind === "tithe" ? (m.mood.anger > 0.45 ? "the crown cares nothing for common folk" : "the King must need the coin for a war")
@@ -360,7 +363,7 @@ export class Minds {
     const t = this.town(city);
     if (!t) return { error: "no such town" };
     const ids = (who ?? []).map((x) => (typeof x === "number" || /^\d+$/.test(x) ? `folk:${t.city.id}:${x}` : String(x)));
-    const saw = ids.length ? ids.map((id) => this.get(id)).filter(Boolean) : t.minds;
+    const saw = (ids.length ? ids.map((id) => this.get(id)).filter(Boolean) : t.minds).filter((m) => !m.gone);
     const weight = (WEIGHT[kind] ?? 0.4) * (ids.length ? 1 : 0.75);
     for (const m of saw) this.remember(m, `I saw it myself: ${text}`, { weight, kind, moves: MOVES[kind] });
     return { remembered: saw.length, at: at ?? this.now() };
@@ -488,6 +491,8 @@ export class Minds {
     const season = calendar(this.now()).season;
     const place = this.realm.town(t.city.id) ?? {};
     const out = t.minds.map((m) => {
+      // Someone a story took (dead, left, gone into a lord's service) walks no more.
+      if (m.gone) return { i: m.i, id: m.id, doing: m.gone, where: "gone", with: [], until: until % 24, mood: round(m.mood), feeling: this.feeling(m), tier: "cold", by: "story", bonds: {} };
       const own = m.plan && m.plan.part === part && m.plan.turn === this.now() && m.plan.by === "model" ? m.plan : null;
       const p = own ?? { ...this.rulePlan(m, part, season, place, hour), by: "rules" };
       return { i: m.i, id: m.id, doing: p.doing, where: p.where, with: [], until: until % 24, mood: round(m.mood), feeling: this.feeling(m), tier: this.tier(m.id), by: p.by, bonds: m.bonds };
@@ -552,7 +557,7 @@ export class Minds {
   // stretch of the day, and where, from the town's places.
   async thinkPlan(id, pri) {
     const m = this.minds[id];
-    if (!m || this.thinking.has(id) || m.town == null || !String(id).startsWith("folk:")) return;
+    if (!m || m.gone || this.thinking.has(id) || m.town == null || !String(id).startsWith("folk:")) return;
     const hour = this.hour(m.town);
     const [part] = block(hour);
     if (part === "night" || (m.plan?.by === "model" && m.plan.part === part && m.plan.turn === this.now())) return;
