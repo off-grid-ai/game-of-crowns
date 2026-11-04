@@ -147,6 +147,28 @@ static func _default_opt() -> Dictionary:
 		"cunning": "hard", "houseWealth": "asis", "trust": "wary", "host": "standard", "petitions": "normal", "intrigue": "normal", "skip": [], "language": "en"}
 
 
+## The ready-made reigns, from a gentle one to learn in to one that tests you.
+const PRESETS := {
+	"Gentle": {"about": "Loyal houses, a full treasury, few disasters: a reign to learn in.",
+		"wealth": "rich", "host": "strong", "temper": "peaceful", "cunning": "easy", "houseWealth": "asis", "trust": "loyal", "intrigue": "quiet", "disasters": "gentle", "raiders": "none", "dead": "late", "usurper": false},
+	"Balanced": {"about": "The realm as it comes: wary houses, some trouble, a fair purse.",
+		"wealth": "comfortable", "host": "standard", "temper": "mixed", "cunning": "normal", "houseWealth": "asis", "trust": "wary", "intrigue": "normal", "disasters": "normal", "raiders": "normal", "dead": "normal", "usurper": true},
+	"Tough": {"about": "Rich, warlike, resentful houses, a thin purse, cruel years and the dead coming soon.",
+		"wealth": "poor", "host": "small", "temper": "warlike", "cunning": "hard", "houseWealth": "rich", "trust": "resentful", "intrigue": "scheming", "disasters": "cruel", "raiders": "hordes", "dead": "soon", "usurper": true},
+}
+
+
+func _use_preset(name: String) -> void:
+	var p: Dictionary = PRESETS[name]
+	_wealth = String(p["wealth"])
+	for k in p:
+		if k != "about" and k != "wealth":
+			_opt[k] = p[k]
+	var typed := _name_edit.text if _name_edit else ""
+	show_new()
+	_name_edit.text = typed if typed != "" else name
+
+
 ## Every choice about the realm to come, in two columns: the world, its time and
 ## the crown on the left; the great houses and fate on the right. Saved
 ## scenarios across the top start you from a set you liked before.
@@ -174,6 +196,16 @@ func show_new() -> void:
 			var b := _toggle(String(sc.get("name", "")), row)
 			b.toggle_mode = false
 			b.pressed.connect(_use_scenario.bind(sc)))
+	# How hard a reign: one press sets every choice below (each can still be changed).
+	var presets := HFlowContainer.new()
+	presets.add_theme_constant_override("h_separation", 6)
+	_body.add_child(presets)
+	presets.add_child(_label("How hard a reign  ", 14, MUTED))
+	for name in PRESETS:
+		var b := _toggle(String(name), presets)
+		b.toggle_mode = false
+		b.tooltip_text = String(PRESETS[name]["about"])
+		b.pressed.connect(_use_preset.bind(String(name)))
 	var name_edit := LineEdit.new()
 	name_edit.placeholder_text = "Name this chronicle (e.g. The Long Winter)"
 	name_edit.add_theme_font_size_override("font_size", 18)
