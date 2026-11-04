@@ -277,6 +277,8 @@ func _ready() -> void:
 	if _shot.has("clean"):
 		ui.visible = false
 		labels.visible = false
+	# Launch-video takes: scripted camera moves (cinematics.gd reads --clip itself).
+	if OS.get_cmdline_user_args().any(func(a): return a.begins_with("--clip=")): add_child(load("res://scripts/cinematics.gd").new())
 
 
 ## The Dock and window icon: crown and raven on dark stone, in the macOS
