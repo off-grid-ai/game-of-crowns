@@ -67,3 +67,6 @@ bridge/data/Belia *
 # --- Screenshots and scratch ---
 shots/
 *.png.tmp
+
+# --- Local tool config ---
+.claude/
