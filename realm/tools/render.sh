@@ -5,12 +5,15 @@
 # Ali's game always comes first: renders wait while it's open, and a render
 # caught running when the game opens is stopped and retried after it closes.
 #   realm/tools/render.sh <out.png> [godot args after --, e.g. --city=Stonefell --dist=7 --wait=70]
-# Env: RES (default 2400x1380), LIMIT seconds (default 300).
+# Env: RES (default 2400x1380), LIMIT seconds (default 300), GODOT_ARGS engine
+# flags before the -- (a movie: "--write-movie out.avi --fixed-fps 30").
 cd "$(dirname "$0")/.."
 LOCK=/tmp/goc-render.lock
 OUT=$1; shift
 # Ali's game: a Godot that isn't a render, a movie take or a headless check.
-playing() { pgrep -ifl godot | grep -v -e "--shot=" -e "--write-movie" -e "--headless" -e "render.sh" | grep -qi godot; }
+# (Only real Godot binaries count: the shells and greps that mention "godot" in
+# their own command lines, this check included, must not.)
+playing() { pgrep -fl "^(arch -arm64 )?godot( |$)" | grep -v -e "--shot=" -e "--write-movie" -e "--headless" | grep -q .; }
 until mkdir $LOCK 2>/dev/null; do
   # A lock left by a render that died frees itself.
   [ -f $LOCK/pid ] && ! kill -0 $(cat $LOCK/pid) 2>/dev/null && rm -rf $LOCK
@@ -20,7 +23,7 @@ echo $$ > $LOCK/pid
 trap 'rm -rf $LOCK' EXIT
 for attempt in 1 2 3 4 5 6; do
   while playing; do sleep 10; done
-  arch -arm64 godot --path . --resolution ${RES:-2400x1380} -- --shot=$OUT "$@" > ${OUT%.png}.log 2>&1 &
+  arch -arm64 godot --path . --resolution ${RES:-2400x1380} ${=GODOT_ARGS} -- --shot=$OUT "$@" > ${OUT%.png}.log 2>&1 &
   pid=$!; t=0; yielded=0
   while kill -0 $pid 2>/dev/null && [ $t -lt ${LIMIT:-300} ]; do
     sleep 2; t=$((t+2))
