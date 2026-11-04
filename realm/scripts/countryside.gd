@@ -502,7 +502,7 @@ func _grass(cities: Array) -> void:
 		if _grass_nodes.has(key):
 			continue
 		var place: Array = places[key]
-		if place[2] != null and not is_instance_valid(place[2]):
+		if place[3] == null and not is_instance_valid(place[2]):  # a town (a freed one reads as null)
 			_grass_sig = ""  # rebuilt while the grass grew: next report
 			continue
 		_grass_nodes[key] = _grow(place[4], place[0], place[1], _bare_ground(place[0], place[1], place[2], place[3]))
