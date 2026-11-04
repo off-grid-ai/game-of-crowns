@@ -170,3 +170,22 @@ Return {"reply": "what you say back", "feeling": "one word: how you feel toward 
   );
   return out && out.reply ? { reply: String(out.reply).replace(/^"|"$/g, ""), feeling: String(out.feeling ?? "") } : null;
 }
+
+// The King's ruling in his own words -> which of the petition's choices he
+// means, and what the petitioner says back to his face.
+export async function ruleFrom(petition, who, words) {
+  const opts = (petition.options ?? []).map((o) => `- ${o.id}: ${o.label ?? o.text ?? o.id}`).join("\n");
+  const out = await complete(
+    "You read a medieval king's spoken ruling on a petition and decide which of the allowed rulings it means. Then you voice the petitioner's reply, in character, 1 to 2 sentences, plain speech of the period.",
+    `Petition: ${petition.text}
+Petitioner: ${who ? `${who.name} of ${who.house}, ${(who.traits ?? []).join(", ")}` : "a lord of the realm"}.
+Allowed rulings:
+${opts}
+The King says: "${words}"
+Pick the ruling closest to what he said. Return {"option": "<one of the ids above>", "reaction": "what the petitioner says back"}`,
+    200,
+  );
+  const ids = (petition.options ?? []).map((o) => o.id);
+  if (!out || !ids.includes(out.option)) return null;
+  return { option: out.option, reaction: String(out.reaction ?? "") };
+}

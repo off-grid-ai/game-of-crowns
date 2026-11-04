@@ -15,7 +15,7 @@ import { godCommand, healLua } from "./god.js";
 import { readSave, extractDetail } from "./savefile.js";
 import { townsfolk } from "./townsfolk.js";
 import { ROLES, GOALS, TRAITS } from "./characters.js";
-import { folkTale, speak } from "./claude.js";
+import { folkTale, speak, ruleFrom } from "./claude.js";
 import { BUILD_COST, granarySize } from "./rules.js";
 import * as chron from "./chronicles.js";
 import { decree, titheLua, clampFavour, DECREES } from "./crown.js";
@@ -232,6 +232,28 @@ function snapshot() {
     applyStartOptions();
     applyOpeningMood();
   }, 500);
+}
+
+// A ruling on a petition, by option: the treasury pays, the realm changes,
+// favour shifts, the chronicle and the world show it. Shared by a chosen
+// option and a ruling in the King's own words.
+function rule(id, option) {
+  const asked = court.petitions.find((x) => x.id === id && !x.answered)?.options?.find((o) => o.id === option);
+  const purse = world.players.find((p) => houseFor(p).crown)?.gold ?? 0;
+  if (asked?.cost && purse < asked.cost) return { error: crowns(`the treasury holds ${purse} gold`) };
+  const out = court.answer(id, option, world);
+  if (out.error) return out;
+  const crownNow = world.players.find((p) => houseFor(p).crown);
+  if (out.cost && (crownNow?.gold ?? 0) < out.cost) return { error: crowns(`the treasury holds ${crownNow?.gold ?? 0} gold`) };
+  if (out.cost) {
+    send(`lua cmd for p in players_iterate() do if p.id == ${crownNow.id} then edit.change_gold(p, -${out.cost}) end end`);
+    crownNow.gold -= out.cost;
+  }
+  out.lua.forEach((l) => send(`lua cmd ${l}`));
+  shiftFavour(out.favour);
+  record({ turn: world.turn, kind: "decree", text: out.text });
+  rulingScene(id, option, out);
+  return { ok: true, text: crowns(out.text) };
 }
 
 // A town is besieged while an enemy host stands at its walls: three or more
@@ -622,22 +644,24 @@ http.createServer(async (req, res) => {
   if (url.pathname === "/court" && req.method === "GET") return json(res, 200, inCrowns(court.open()));
   if (url.pathname === "/court/answer" && req.method === "POST") {
     const { id, option } = await body(req);
-    const asked = court.petitions.find((x) => x.id === id && !x.answered)?.options?.find((o) => o.id === option);
-    const purse = world.players.find((p) => houseFor(p).crown)?.gold ?? 0;
-    if (asked?.cost && purse < asked.cost) return json(res, 400, { error: crowns(`the treasury holds ${purse} gold`) });
-    const out = court.answer(id, option, world);
+    const out = rule(id, option);
+    return json(res, out.error ? 400 : 200, out);
+  }
+  if (url.pathname === "/court/say" && req.method === "POST") {
+    // The King answers a petition in his own words; the local model reads which
+    // of the ruling's choices he means, and the petitioner answers him.
+    const { id, words } = await body(req);
+    const pet = court.petitions.find((x) => x.id === id && !x.answered);
+    const said = String(words ?? "").trim().slice(0, 500);
+    if (!pet || !said) return json(res, 400, { error: "there's no one waiting on that" });
+    const who = court.people[pet.from];
+    const read = await ruleFrom(pet, who, said);
+    if (!read) return json(res, 503, { error: "Your words hang in the hall unread. (The local model isn't running; choose a ruling instead.)" });
+    const out = rule(id, read.option);
     if (out.error) return json(res, 400, out);
-    const crownNow = world.players.find((p) => houseFor(p).crown);
-    if (out.cost && (crownNow?.gold ?? 0) < out.cost) return json(res, 400, { error: crowns(`the treasury holds ${crownNow?.gold ?? 0} gold`) });
-    if (out.cost) {
-      send(`lua cmd for p in players_iterate() do if p.id == ${crownNow.id} then edit.change_gold(p, -${out.cost}) end end`);
-      crownNow.gold -= out.cost;
-    }
-    out.lua.forEach((l) => send(`lua cmd ${l}`));
-    shiftFavour(out.favour);
-    record({ turn: world.turn, kind: "decree", text: out.text });
-    rulingScene(id, option, out);
-    return json(res, 200, { ok: true, text: crowns(out.text) });
+    record({ turn: world.turn, kind: "decree", text: `The King to ${who?.name ?? "the petitioner"}: "${said}"` });
+    if (who && read.reaction) court.remember(who.id, `The King told me: "${said.slice(0, 160)}"`);
+    return json(res, 200, { ...out, option: read.option, reaction: read.reaction, name: who?.name ?? "" });
   }
   if (url.pathname === "/house") {
     // One great house: its numbers over time, its lord, bannermen, wars and allies.

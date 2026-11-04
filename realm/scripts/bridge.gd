@@ -71,6 +71,10 @@ func character_options(cb: Callable) -> void:
 	_http_get("/characters/options", cb)
 
 
+func rule_in_words(id: String, words: String, cb: Callable) -> void:
+	_post("/court/say", {"id": id, "words": words}, cb)
+
+
 func talk(city: int, i: int, you: Dictionary, said: String, cb: Callable) -> void:
 	_post("/talk", {"city": city, "i": i, "you": you, "said": said}, cb)
 

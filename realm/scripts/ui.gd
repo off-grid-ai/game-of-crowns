@@ -22,6 +22,7 @@ signal open_menu
 signal always_day(on: bool)
 signal mood_decreed(text: String)
 signal petition_answered(id: String, option: String)
+signal petition_spoken(id: String, words: String)
 signal decree_revoked(id: String)
 signal person_opened(id: String, house: Dictionary)  # the character view
 
@@ -1341,7 +1342,30 @@ func _show_audience() -> void:
 			hint.autowrap_mode = TextServer.AUTOWRAP_WORD
 			row.add_child(hint)
 		v.add_child(row)
+	# Or answer as you'd say it; the court reads which ruling you mean.
+	var own := LineEdit.new()
+	own.placeholder_text = "Or rule in your own words, and press Enter…"
+	own.text_submitted.connect(func(words):
+		if words.strip_edges() != "":
+			own.editable = false
+			own.text = "The court weighs your words…"
+			petition_spoken.emit(String(p["id"]), words.strip_edges()))
+	v.add_child(own)
 	v.add_child(_btn("Later", func(): _court_hidden = true; _court_panel.visible = false))
+
+
+## A ruling spoken in your own words came back: the petitioner's reply, then on.
+func ruled_in_words(id: String, d: Dictionary) -> void:
+	if d.has("error"):
+		toast(String(d["error"]))
+		_show_audience()
+		return
+	if String(d.get("reaction", "")) != "":
+		toast("%s: “%s”" % [String(d.get("name", "")), String(d["reaction"])])
+	_petitions = _petitions.filter(func(x): return String(x["id"]) != id)
+	_court_btn.text = " %d" % _petitions.size()
+	_court_btn.visible = _petitions.size() > 0
+	_show_audience()
 
 
 func _answer(id: String, option: String) -> void:

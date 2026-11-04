@@ -188,6 +188,10 @@ func _ready() -> void:
 	bridge.decrees_changed.connect(ui.set_decrees)
 	bridge.decrees(ui.set_decrees)
 	ui.petition_answered.connect(func(id, opt): bridge.answer_petition(id, opt); bridge.court(ui.set_court))
+	ui.petition_spoken.connect(func(id, words):
+		bridge.rule_in_words(id, words, func(_code, d):
+			ui.ruled_in_words(id, d if d is Dictionary else {"error": "The court is silent."})
+			bridge.court(ui.set_court)))
 	ui.tithe_changed.connect(func(r): bridge.set_tithe(r))
 	title = preload("res://scripts/title.gd").new()
 	title.bridge = bridge
