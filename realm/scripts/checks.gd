@@ -38,6 +38,7 @@ func _process(delta: float) -> void:
 		return
 	_at = EVERY
 	_write(_look())
+	_write(_nodes())
 	_first.clear()
 	_second.clear()
 
@@ -82,6 +83,22 @@ func _look() -> String:
 				if worst.size() < 5:
 					worst.append("inside:%s horse(%.1f,%.1f)" % [label, horse.global_position.x, horse.global_position.z])
 	return "%s CHECK people=%d inside=%d sunk=%d slide=%d %s" % [Time.get_time_string_from_system(), seen, count["inside"], count["sunk"], count["slide"], " ".join(worst)]
+
+
+## How many nodes each part of the game holds, biggest first: what's piling up.
+func _nodes() -> String:
+	var counts := []
+	for child in get_parent().get_children():
+		counts.append([child.name, _count(child)])
+	counts.sort_custom(func(a, b): return a[1] > b[1])
+	return "%s NODES %s" % [Time.get_time_string_from_system(), " ".join(counts.slice(0, 8).map(func(c): return "%s=%d" % c))]
+
+
+static func _count(n: Node) -> int:
+	var total := 1
+	for c in n.get_children():
+		total += _count(c)
+	return total
 
 
 ## On screen and near enough to be drawn moving: what the eye can catch sliding.
