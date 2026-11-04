@@ -32,6 +32,7 @@ const RENAMED = {
 import { Court } from "./characters.js";
 import { Minds, route as mindsRoute } from "./minds.js";
 import { Arcs, templates as arcTemplates, check } from "./arcs.js";
+import { Chatter } from "./chatter.js";
 import { bible, FAMILIES, LESSER } from "./lore.js";
 import { Stakes, calendar, epithet } from "./stakes.js";
 import { watched, usageToday, moodFrom, isWatched, arcFromWords } from "./claude.js";
@@ -57,6 +58,7 @@ let favour = {};
 let court = null;
 let minds = null;
 let arcs = null;
+let chatter = null; // talk and gossip between minds (chatter.js)
 let arcsRunning = false;
 let stakes = null;
 let decreesIssued = 0;
@@ -84,6 +86,8 @@ function load(id) {
   meta.tithe ??= 0.1;
   court = new Court(P.base, record);
   arcs = new Arcs(P.base, court, record);
+  chatter?.stop();
+  chatter = new Chatter(P.state, { world: () => world, turn: () => world?.turn ?? 0, minds: () => minds });
   stakes = new Stakes(P.state, record, endReign);
   rememberNames(world);
   minds = new Minds(P.state, {
@@ -934,6 +938,10 @@ http.createServer(async (req, res) => {
     if (!world) return json(res, 503, { error: "the realm is still forming" });
     const out = court.create(await body(req), world);
     return json(res, out.error ? 400 : 200, out);
+  }
+  if (url.pathname.startsWith("/minds/") && chatter) {
+    const out = await chatter.route(url, req, body);
+    if (out) return json(res, ...out);
   }
   if (url.pathname === "/townsfolk") {
     // The folk of a town, and, asked for one person, their story in full.
