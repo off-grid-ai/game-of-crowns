@@ -16,7 +16,7 @@ How a round is played: `realm/tools/play/*.play` scenarios feed real input (keys
 
 | # | Expected | Found | Change | Commit |
 |---|---|---|---|---|
-| 48 | Houses stay themselves | Four houses sat at exactly 45 (r12/04): all drifted toward one neutral 55 less the tithe, so the table flattened to one number again | Each drifts toward its own temper with the crown (the reign's mood plus its history): Stormhold's old loyalty, Sunspire's grudge persist unless the King changes them | (next) |
+| 48 | Houses stay themselves | Four houses sat at exactly 45 (r12/04): all drifted toward one neutral 55 less the tithe, so the table flattened to one number again | Each drifts toward its own temper with the crown (the reign's mood plus its history): Stormhold's old loyalty, Sunspire's grudge persist unless the King changes them | 7515350 |
 | 47 | Seen working (r12/02–04) | — | Treasury 82k → 99k over a year with "▲3,800" a season beside it; "▼7 15" beside Stormhold; the Hand: "What cools them most: the royal tithe (−17)"; "left unheard at court −12" now on the ledger; a usurper stirs with Call the banners priced | r12 |
 | 46 | Where money comes from (supervisor 06:50 #2) | The treasury only fell (115k → 73k, r10–r11); the reckoning popped up as "While you were away" | The treasury shows its net each season beside it (▲/▼), explained on hover; the reckoning stays in the chronicle | 3b1edbe |
 | 45 | Favour moves for reasons you can see (supervisor 06:50 #1) | Thornvale 39 → 27 a season after a gift; the causes listed didn't add up (an unheard petitioner, a loan, story beats moved favour silently) | Every fall names its cause; the year's trend shows beside the number; the Hand names what cools the coldest house most | 3b1edbe |
