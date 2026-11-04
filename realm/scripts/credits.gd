@@ -16,6 +16,15 @@ const FOUNDATIONS := [
 	["Boujie Water Shader", "Zach Bernal and contributors", "MIT", "the sea and lakes"],
 	["Waterways", "Kasper Arnklit Frandsen", "MIT", "the rivers"],
 	["Off Grid AI", "Off Grid AI", "", "the voices and words of the realm's people"],
+	["Universal Base Characters, Fantasy Outfits, MegaKits", "Quaternius", "CC0", "townsfolk, their clothes, village and nature pieces"],
+	["Castle Kit, Fantasy Town Kit, UI Pack", "Kenney", "CC0", "castle and town pieces"],
+	["Ground textures", "Poly Haven", "CC0", "the earth, fields and roads"],
+	["The Milky Way panorama", "ESO/S. Brunier", "CC BY 4.0", "the night sky"],
+	["Phosphor Icons", "Phosphor Icons", "MIT", "the interface's icons"],
+	["Geist, Geist Mono", "The Geist Project Authors", "OFL 1.1", "the interface's letters"],
+	["EB Garamond", "The EB Garamond Project Authors", "OFL 1.1", "people's spoken words"],
+	["Cinzel", "The Cinzel Project Authors", "OFL 1.1", ""],
+	["Inter", "The Inter Project Authors", "OFL 1.1", ""],
 ]
 
 
