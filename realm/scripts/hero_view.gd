@@ -22,7 +22,6 @@ var _cam: Camera3D
 var _body: Node3D
 var _player: AnimationPlayer
 var _panel: PanelContainer
-var _moves: VBoxContainer
 var _torches: Array[OmniLight3D] = []
 var _orbit := 0.0
 var _idle_for := 0.0
@@ -216,7 +215,6 @@ func _cast(person: Dictionary, house: Dictionary) -> void:
 	for move in _clips:
 		lib.add_animation(move, _clips[move])
 	_player.add_animation_library("hero", lib)
-	_fill_moves()
 	var first := _default_move()
 	if first != "":
 		play(first)
@@ -308,19 +306,6 @@ func _build_panel() -> void:
 	back.position = Vector2(24, 24)
 	back.pressed.connect(close)
 	add_child(back)
-	# The moves run down the left edge, clear of the person and the panel.
-	var list := ScrollContainer.new()
-	list.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	list.anchor_bottom = 1.0
-	list.offset_left = 24
-	list.offset_right = 214
-	list.offset_top = 92
-	list.offset_bottom = -24
-	add_child(list)
-	_moves = VBoxContainer.new()
-	_moves.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_moves.add_theme_constant_override("separation", 2)
-	list.add_child(_moves)
 
 
 func _fill_panel(p: Dictionary, house: Dictionary) -> void:
@@ -400,23 +385,3 @@ func _para(text: String) -> RichTextLabel:
 	return r
 
 
-func _fill_moves() -> void:
-	for c in _moves.get_children():
-		c.queue_free()
-	for idle in [true, false]:
-		_moves.add_child(T.label("Stance" if idle else "Gesture"))
-		for move in _clips:
-			if _is_idle(move) != idle:
-				continue
-			var b := Button.new()
-			b.text = move
-			b.flat = true
-			b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-			b.add_theme_font_size_override("font_size", T.SIZE_DESC)
-			b.add_theme_color_override("font_color", T.TEXT_2)
-			b.pressed.connect(play.bind(move))
-			_moves.add_child(b)
-		if idle:
-			var gap := Control.new()
-			gap.custom_minimum_size = Vector2(0, 10)
-			_moves.add_child(gap)
