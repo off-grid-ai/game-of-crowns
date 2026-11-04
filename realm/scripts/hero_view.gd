@@ -1,19 +1,16 @@
 extends CanvasLayer
 ## The character view: one named person up close, in a torchlit hall under
 ## their house's banner, with who they are, what they want and what they
-## remember beside them. They're the detailed Mixamo-rigged "hero layer"
-## (assets/hero), separate from the light Quaternius crowds, and play any
-## Mixamo move dropped into assets/hero/anims (FBX, without skin), each one a
-## button. The stage lives in its own 3D world, so the realm behind it is
-## untouched.
+## remember beside them. They're cast by people.gd from the Mixamo characters,
+## by station and always the same body for the same person, and play any
+## Mixamo move dropped into assets/hero/anims (FBX, without skin, retargeted
+## at import like the crowd's moves), each one a button. The stage lives in
+## its own 3D world, so the realm behind it is untouched.
 
 const T := preload("res://scripts/theme.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
+const People := preload("res://scripts/people.gd")
 const ANIM_DIR := "res://assets/hero/anims"
-# Body by who they are: [model, height in metres]. Each is a Mixamo rig.
-const MEN := ["fuse_civilian_1", "fuse_civilian_2", "medieval_civilian_3"]
-const WOMEN := ["fuse_woman_1"]
-const KNIGHT := "knight"
 
 signal closed
 signal edit_requested(person: Dictionary, house: Dictionary)
@@ -30,7 +27,8 @@ var _torches: Array[OmniLight3D] = []
 var _orbit := 0.0
 var _idle_for := 0.0
 var _fidget_at := 6.0
-var _clips := {}  # move name -> Animation (in Mixamo bone names, normalised)
+var _clips := {}  # move name -> Animation, on the humanoid skeleton
+var _people = People.new()
 
 
 func _ready() -> void:
@@ -80,7 +78,7 @@ func open(person: Dictionary, house: Dictionary) -> void:
 	visible = true
 	_orbit = 0.0
 	_dress_stage(house)
-	_cast(person)
+	_cast(person, house)
 	_fill_panel(person, house)
 
 
@@ -197,40 +195,26 @@ func _dress_stage(house: Dictionary) -> void:
 
 # --- the person ------------------------------------------------------------------
 
-func _cast(person: Dictionary) -> void:
+func _cast(person: Dictionary, house: Dictionary) -> void:
 	if _body:
 		_body.queue_free()
-	var female := str(person.get("gender", "male")) == "female"
-	var role := str(person.get("role")) if person.get("role") else ""
-	var knightly := role.to_lower().contains("knight") or role.to_lower().contains("sword")
-	var pool: Array = WOMEN if female else ([KNIGHT] if knightly else MEN)
-	var pick: String = pool[abs(hash(str(person.get("id", person.get("name", ""))))) % pool.size()]
-	var path := "res://assets/hero/%s/scene.gltf" % pick
-	if not ResourceLoader.exists(path):
-		return
-	var model: Node3D = (load(path) as PackedScene).instantiate()
+	var key := str(person.get("id", person.get("name", "")))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(key)
+	var years := int(person.get("age", 30))
+	var age := "child" if years < 14 else ("elder" if years > 60 else "adult")
+	var tint := Color.from_string(String(house.get("color", "#888888")), Color.GRAY).lerp(Color.WHITE, 0.45)
+	var model: Node3D = _people.make(rng, People.station(person), tint, age, "", str(person.get("gender", "")), key)
+	model.scale /= People.S  # the stage is in metres, the realm at town scale
 	_body = Node3D.new()
 	_body.add_child(model)
 	_stage.add_child(_body)
-	# Scale to a person's height (the rigs come in centimetres), feet on the floor.
-	var box := _bounds(model)
-	var tall := 1.72 if female else 1.8
-	var k := tall / maxf(box.size.y, 0.001)
-	model.scale = Vector3.ONE * k
-	model.position = Vector3(-box.get_center().x, -box.position.y, -box.get_center().z) * k
 	_body.rotation.y = 0.25
-	_player = model.find_children("*", "AnimationPlayer", true, false)[0] if not model.find_children("*", "AnimationPlayer", true, false).is_empty() else null
-	if _player == null:
-		_player = AnimationPlayer.new()
-		model.add_child(_player)
+	_player = model.get_node("Anim")
 	_load_clips()
-	var skel: Skeleton3D = model.find_children("*", "Skeleton3D", true, false)[0]
 	var lib := AnimationLibrary.new()
 	for move in _clips:
-		_clips[move]["name"] = move
-		lib.add_animation(move, _for_skeleton(_clips[move], _player, skel))
-	if _player.has_animation_library("hero"):
-		_player.remove_animation_library("hero")
+		lib.add_animation(move, _clips[move])
 	_player.add_animation_library("hero", lib)
 	_fill_moves()
 	var first := _default_move()
@@ -268,135 +252,41 @@ func _fidget(delta: float) -> void:
 
 
 func _default_move() -> String:
-	for want in ["Breathing Idle", "Standing Idle", "Idle", "Knight's Stance"]:
+	for want in ["Breathing Idle", "Standing Idle", "Idle"]:
 		if _clips.has(want):
 			return want
 	return _clips.keys()[0] if not _clips.is_empty() else ""
 
 
-## Every Mixamo move in assets/hero/anims, plus the knight's own stance, keyed
-## by a readable name, with bone names normalised so any Mixamo rig can play it.
+## Every Mixamo move in assets/hero/anims, keyed by a readable name. They're
+## retargeted at import to the humanoid skeleton, so they play on any body
+## people.gd makes, as the crowd's moves do.
 func _load_clips() -> void:
 	if not _clips.is_empty():
 		return
 	var dir := DirAccess.open(ANIM_DIR)
-	if dir:
-		for f in dir.get_files():
-			if not (f.ends_with(".fbx") or f.ends_with(".glb") or f.ends_with(".gltf")):
-				continue
-			# A file still downloading or not yet imported is skipped, not fatal.
-			var packed := load(ANIM_DIR + "/" + f) as PackedScene
-			if packed == null:
-				continue
-			var scene: Node = packed.instantiate()
-			var ap: Array = scene.find_children("*", "AnimationPlayer", true, false)
-			if not ap.is_empty():
-				var a: AnimationPlayer = ap[0]
-				for n in a.get_animation_list():
-					var anim: Animation = a.get_animation(n)
-					if anim.length > 0.1:
-						_clips[f.get_basename().capitalize()] = _neutral(anim, scene)
-						break
-			scene.free()
-	# The knight's sculpture carries a slow armed stance: everyone can use it.
-	var kp := "res://assets/hero/%s/scene.gltf" % KNIGHT
-	if ResourceLoader.exists(kp):
-		var ks: Node = (load(kp) as PackedScene).instantiate()
-		var ap: Array = ks.find_children("*", "AnimationPlayer", true, false)
+	if dir == null:
+		return
+	for f in dir.get_files():
+		if not (f.ends_with(".fbx") or f.ends_with(".glb") or f.ends_with(".gltf")):
+			continue
+		# A file still downloading or not yet imported is skipped, not fatal.
+		var packed := load(ANIM_DIR + "/" + f) as PackedScene
+		if packed == null:
+			continue
+		var scene: Node = packed.instantiate()
+		var ap: Array = scene.find_children("*", "AnimationPlayer", true, false)
 		if not ap.is_empty():
 			var a: AnimationPlayer = ap[0]
-			var anim: Animation = a.get_animation(a.get_animation_list()[0])
-			if anim.length > 0.1:
-				_clips["Knight's Stance"] = _neutral(anim, ks)
-		ks.free()
-
-
-## The clip with each track keyed to a bare bone name ("hips", "leftforearm"),
-## rotations only plus the hips' height as a share of the source's hips, so it
-## fits any Mixamo body whatever its scale or the exporter's node names.
-func _neutral(anim: Animation, scene: Node) -> Dictionary:
-	var src: Skeleton3D = null
-	var sk: Array = scene.find_children("*", "Skeleton3D", true, false)
-	if not sk.is_empty():
-		src = sk[0]
-	var hip_rest := 1.0
-	if src:
-		var hb := _find_bone(src, "hips")
-		if hb >= 0:
-			hip_rest = maxf(absf(src.get_bone_global_rest(hb).origin.y), 0.001)
-	var tracks := []
-	for i in anim.get_track_count():
-		var path := String(anim.track_get_path(i))
-		var bone := _bare(path.get_slice(":", path.get_slice_count(":") - 1))
-		var kind := anim.track_get_type(i)
-		if kind == Animation.TYPE_ROTATION_3D or (kind == Animation.TYPE_POSITION_3D and bone == "hips"):
-			var keys := []
-			for k in anim.track_get_key_count(i):
-				var v = anim.track_get_key_value(i, k)
-				if kind == Animation.TYPE_POSITION_3D:
-					v = v / hip_rest
-				keys.append([anim.track_get_key_time(i, k), v])
-			tracks.append({"bone": bone, "type": kind, "keys": keys})
-	return {"length": anim.length, "tracks": tracks, "name": ""}
-
-
-func _for_skeleton(clip: Dictionary, player: AnimationPlayer, skel: Skeleton3D) -> Animation:
-	var a := Animation.new()
-	a.length = clip["length"]
-	a.loop_mode = Animation.LOOP_LINEAR if _is_idle(clip.get("name", "")) else Animation.LOOP_NONE
-	var root := player.get_node(player.root_node)
-	var skel_path := String(root.get_path_to(skel))
-	var hb := _find_bone(skel, "hips")
-	var hip_rest := absf(skel.get_bone_global_rest(hb).origin.y) if hb >= 0 else 1.0
-	for t in clip["tracks"]:
-		var b := _find_bone(skel, t["bone"])
-		if b < 0:
-			continue
-		var i := a.add_track(t["type"])
-		a.track_set_path(i, "%s:%s" % [skel_path, skel.get_bone_name(b)])
-		for k in t["keys"]:
-			var v = k[1]
-			if t["type"] == Animation.TYPE_POSITION_3D:
-				v = v * hip_rest
-			if t["type"] == Animation.TYPE_ROTATION_3D:
-				a.rotation_track_insert_key(i, k[0], v)
-			else:
-				a.position_track_insert_key(i, k[0], v)
-	return a
-
-
-## "mixamorig_LeftForeArm_018" / "mixamorig:LeftForeArm" -> "leftforearm"
-static func _bare(name: String) -> String:
-	var n := name.to_lower()
-	for p in ["mixamorig:", "mixamorig_", "mixamorig1:", "mixamorig1_", "mixamorig2_"]:
-		n = n.trim_prefix(p)
-	var parts := n.split("_")
-	if parts.size() > 1 and parts[-1].is_valid_int():
-		parts.remove_at(parts.size() - 1)
-	return "".join(parts).replace(":", "")
-
-
-static func _find_bone(skel: Skeleton3D, bare: String) -> int:
-	for b in skel.get_bone_count():
-		if _bare(skel.get_bone_name(b)) == bare:
-			return b
-	return -1
-
-
-static func _bounds(n: Node3D) -> AABB:
-	var box := AABB()
-	var first := true
-	for mi in n.find_children("*", "MeshInstance3D", true, false):
-		var xf := Transform3D.IDENTITY
-		var p: Node = mi
-		while p != null and p != n:
-			if p is Node3D:
-				xf = (p as Node3D).transform * xf
-			p = p.get_parent()
-		var b: AABB = xf * (mi as MeshInstance3D).get_aabb()
-		box = b if first else box.merge(b)
-		first = false
-	return box
+			for n in a.get_animation_list():
+				var anim: Animation = a.get_animation(n)
+				if anim.length > 0.1:
+					var move := f.get_basename().capitalize()
+					var clip := People._in_place(anim.duplicate(true))
+					clip.loop_mode = Animation.LOOP_LINEAR if _is_idle(move) else Animation.LOOP_NONE
+					_clips[move] = clip
+					break
+		scene.free()
 
 
 # --- who they are ------------------------------------------------------------------
