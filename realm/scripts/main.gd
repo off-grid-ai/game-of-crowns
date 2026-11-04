@@ -26,6 +26,7 @@ var _houses := {}  # player id -> house dict
 var hero: CanvasLayer  # the character view
 var labels: CanvasLayer  # town names on the map
 var intro: CanvasLayer  # the storybook at the start of a reign
+var lore: CanvasLayer  # the book of the realm's houses and people
 var sound: Node  # soundscape.gd
 var _heard_at := 0.0
 var _intro_due := false
@@ -120,7 +121,10 @@ func _ready() -> void:
 	intro.rig = rig
 	intro.say = func(text): _say_aloud(text, {"name": "The Chronicler", "gender": "male"})
 	add_child(intro)
-	_intro_due = not Settings.get_value("seen_intro") and not _shot.has("path")
+	lore = preload("res://scripts/lore.gd").new()
+	lore.person_opened.connect(_open_person)
+	add_child(lore)
+	_intro_due = (not Settings.get_value("seen_intro") and not _shot.has("path")) or _shot.has("intro")
 	labels = preload("res://scripts/map_labels.gd").new()
 	labels.towns = towns
 	labels.rig = rig
@@ -129,6 +133,7 @@ func _ready() -> void:
 	hero = preload("res://scripts/hero_view.gd").new()
 	add_child(hero)
 	ui.person_opened.connect(_open_person)
+	ui.lore_opened.connect(func(id): lore.toggle() if id < 0 else lore.open(id))
 	# Reshaping someone: the close-up gives way to the form, then comes back with the new self.
 	hero.edit_requested.connect(func(p, h):
 		hero.close()
@@ -227,15 +232,20 @@ func _ready() -> void:
 	ui.tithe_changed.connect(func(r): bridge.set_tithe(r))
 	title = preload("res://scripts/title.gd").new()
 	title.bridge = bridge
+	lore.fetch = bridge.lore
 	add_child(title)
 	title.began.connect(func(): _intro_due = true)
 	title.watch_intro.connect(_tell_the_story)
+	title.read_lore.connect(lore.open)
 	if _shot.has("path") and not _shot.has("title"):
 		title.visible = false
 	if _shot.has("new"):
 		title.show_new.call_deferred()
 	if _shot.has("settings"):
 		title.open_settings.call_deferred()
+	if _shot.has("lore"):
+		get_tree().create_timer(float(_shot.get("wait", 8.0)) - 4.0).timeout.connect(func():
+			lore.open(int(_shot["lore"])))
 	bridge.command_done.connect(func(ok, text): ui.toast(text if ok else "The gods cannot: " + text))
 	if _shot.has("path"):
 		get_tree().create_timer(float(_shot.get("wait", 8.0))).timeout.connect(_take_shot)
@@ -338,6 +348,10 @@ func _parse_args() -> void:
 		elif a == "--settings":
 			_shot["title"] = true
 			_shot["settings"] = true
+		elif a.begins_with("--lore"):
+			_shot["lore"] = int(a.substr(7)) if a.begins_with("--lore=") else -1  # a house id, or the realm
+		elif a == "--intro":
+			_shot["intro"] = true  # plays the intro once the realm is up; --wait picks the page
 		elif a == "--duel":
 			_shot["duel"] = true
 		elif a.begins_with("--interior="):
@@ -433,6 +447,18 @@ func _setup_environment() -> void:
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 220.0
 	sun.directional_shadow_blend_splits = true
+	_try_look(OS.get_environment("GOC_LOOK"))
+
+
+## Trying a look from the shell, for side-by-side renders: GOC_LOOK=filmic,aces,nogi,nossao,nofog.
+func _try_look(look: String) -> void:
+	for k in look.split(",", false):
+		match k:
+			"filmic": env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+			"aces": env.tonemap_mode = Environment.TONE_MAPPER_ACES
+			"nogi": env.sdfgi_enabled = false
+			"nossao": env.ssao_enabled = false
+			"nofog": env.fog_enabled = false
 
 
 ## Day and night cycle, or a fixed bright day (toggled from the HUD).
@@ -492,6 +518,9 @@ func _process(_delta: float) -> void:
 func _update_labels() -> void:
 	var d: float = rig.distance
 	terrain.set_realm_mix(smoothstep(120.0, 200.0, d))
+	# The atlas comes in as the towns shrink to dots: a hint of it at the middle
+	# distance, most of it from across the realm (the 3D light still shapes it).
+	terrain.set_atlas_mix(lerpf(0.0, 0.35, smoothstep(30.0, 80.0, d)) + 0.45 * smoothstep(80.0, 180.0, d))
 	# Haze reads as air close up; looking down on the whole realm it would grey it out.
 	env.fog_density = lerpf(0.0012, 0.00015, smoothstep(70.0, 200.0, d))
 

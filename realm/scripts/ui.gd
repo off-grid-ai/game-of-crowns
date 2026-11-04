@@ -24,6 +24,7 @@ signal mood_decreed(text: String)
 signal petition_answered(id: String, option: String)
 signal petition_spoken(id: String, words: String, confirm: String)
 signal open_settings
+signal lore_opened(house_id: int)  # -1: the book at its last page
 signal petition_voiced(id: String, wav: PackedByteArray)
 signal decree_revoked(id: String)
 signal person_opened(id: String, house: Dictionary)  # the character view
@@ -246,6 +247,7 @@ func _build_top_bar() -> void:
 	_chron_btn = _icon_btn("scroll", "Chronicle of the realm  (C)", func(): _chron_panel.visible = _chron_btn.button_pressed)
 	_chron_btn.toggle_mode = true
 	act.add_child(_chron_btn)
+	act.add_child(_icon_btn("book-open-text", "The Lore of Aldmere: its houses and people  (B)", func(): lore_opened.emit(-1)))
 	_ledger_btn = _icon_btn("chart-line", "The ledger: the realm over time  (L)", _toggle_ledger)
 	_ledger_btn.toggle_mode = true
 	act.add_child(_ledger_btn)
@@ -317,6 +319,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_L:
 			_ledger_btn.button_pressed = not _ledger_btn.button_pressed
 			_toggle_ledger()
+		KEY_B:
+			lore_opened.emit(-1)
 		KEY_K:
 			if not _petitions.is_empty():
 				_toggle_court()
@@ -463,7 +467,8 @@ func _build_town_panel() -> void:
 ## Camera controls down the right edge: zoom, pan, turn, tilt and home.
 ## Each button repeats while held, so you can glide rather than click-click.
 func _build_camera_controls() -> void:
-	# Bottom right, just left of the minimap: everything for finding your way sits together.
+	# Bottom right, beside the minimap and the same height: everything for
+	# finding your way sits together.
 	var frame := _glass_panel()
 	frame.anchor_left = 1.0
 	frame.anchor_right = 1.0
@@ -471,10 +476,12 @@ func _build_camera_controls() -> void:
 	frame.anchor_bottom = 1.0
 	frame.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	frame.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	frame.offset_right = -(12 + MINIMAP_SIZE.x + 8 + 8)
+	frame.offset_right = -12
 	frame.offset_bottom = -12
+	frame.custom_minimum_size.y = MINIMAP_SIZE.y + 8  # the minimap's frame
 	frame.add_theme_stylebox_override("panel", T._box(T.SURFACE_SOLID, T.HAIRLINE, 10, 6))
 	var v := VBoxContainer.new()
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_theme_constant_override("separation", 2)
 	frame.add_child(v)
 	var add := func(parent: Control, icon: String, tip: String, action: String) -> void:
@@ -514,8 +521,10 @@ func _build_camera_controls() -> void:
 	v.add_child(home)
 
 
-## The realm in the bottom-right corner: territory, seats, and where you're looking.
-const MINIMAP_SIZE := Vector2(200, 315)
+## The realm in the bottom-right corner, left of the camera pad and as tall:
+## territory, seats, and where you're looking (the realm's own shape, 224 × 352).
+const MINIMAP_SIZE := Vector2(254, 400)
+const PAD_WIDTH := 104  # the camera pad: two 44-point buttons and its padding
 
 
 func _build_minimap() -> void:
@@ -524,7 +533,7 @@ func _build_minimap() -> void:
 	frame.anchor_right = 1.0
 	frame.anchor_top = 1.0
 	frame.anchor_bottom = 1.0
-	frame.offset_right = -12
+	frame.offset_right = -(12 + PAD_WIDTH + 8)
 	frame.offset_bottom = -12
 	frame.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	frame.grow_vertical = Control.GROW_DIRECTION_BEGIN
@@ -595,6 +604,7 @@ func show_house(d: Dictionary) -> void:
 	names.add_child(T.title(String(d.get("name", "")), 22))
 	if String(d.get("words", "")) != "":
 		names.add_child(T.label("“%s”  ·  %s" % [d["words"], d.get("seat", "")], T.TEXT_2))
+	head.add_child(_btn("Lore", func(): lore_opened.emit(int(d.get("id", -1)))))
 	head.add_child(_btn("Add a character", func(): character_form.emit(int(d.get("id", -1)))))
 	head.add_child(_btn("Close", func(): _house_panel.visible = false))
 	# The numbers, each with how far it has moved over the last years.

@@ -6,6 +6,7 @@ extends CanvasLayer
 signal closed
 signal began  # a new chronicle was asked for: its story should be told
 signal watch_intro
+signal read_lore
 
 const PARCHMENT := Color(0.95, 0.9, 0.8)
 const MUTED := Color(0.72, 0.66, 0.56)
@@ -86,6 +87,9 @@ func show_main() -> void:
 	_big("Watch the introduction", func():
 		_close()
 		watch_intro.emit())
+	_big("The Lore of Aldmere", func():
+		_close()
+		read_lore.emit())
 	_big("Chronicles", show_list)
 	_big("Hall of Records", show_records)
 

@@ -146,6 +146,10 @@ func house(id: int, cb: Callable) -> void:
 	_http_get("/house?id=%d" % id, cb)
 
 
+func lore(cb: Callable) -> void:
+	_http_get("/lore", cb)
+
+
 func person(id: String, cb: Callable) -> void:
 	_http_get("/person?id=%s" % id.uri_encode(), cb)
 

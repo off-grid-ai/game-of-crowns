@@ -21,6 +21,7 @@ import { BUILD_COST, granarySize } from "./rules.js";
 import * as chron from "./chronicles.js";
 import { decree, titheLua, clampFavour, DECREES } from "./crown.js";
 import { Court } from "./characters.js";
+import { bible } from "./lore.js";
 import { Stakes, calendar, epithet } from "./stakes.js";
 import { watched, usageToday, moodFrom, isWatched } from "./claude.js";
 
@@ -789,6 +790,34 @@ http.createServer(async (req, res) => {
       wars: (d?.atWarWith ?? []).filter(great).map(nameOf),
       allies: (d?.allies ?? []).filter((id) => id !== pid && great(id)).map(nameOf),
     });
+  }
+  if (url.pathname === "/lore") {
+    // The book of the realm: its story from the world bible, and each great
+    // house as it stands now, with the people who matter in it.
+    const b = bible(path.join(DIR, "..", "WORLD.md"));
+    const RANK = { lord: 0, spouse: 1, heir: 2, bannerman: 3, child: 4 };
+    const houses = (world?.players ?? []).filter((p) => p.alive !== false && !houseFor(p).wild).map((p) => {
+      const h = houseFor(p);
+      const seat = world.cities.find((c) => c.owner === p.id && c.capital);
+      const people = court.alive().filter((c) => c.playerId === p.id && c.rank in RANK)
+        .sort((a, c) => RANK[a.rank] - RANK[c.rank] || (c.created ? 1 : 0) - (a.created ? 1 : 0) || c.age - a.age);
+      // The lord, the lord's spouse and heir, then the leading bannermen.
+      const lord = people.find((c) => c.rank === "lord");
+      const family = lord ? people.filter((c) => c.id === lord.spouse || (c.rank === "heir" && c.parents?.includes(lord.id))) : [];
+      const notables = [...(lord ? [lord] : []), ...family, ...people.filter((c) => c.rank === "bannerman").slice(0, 4)];
+      return {
+        id: p.id, name: h.name, words: h.words, color: h.color, sigil: h.sigil, crown: !!h.crown,
+        seat: seat ? cityName(seat.id) : null, towns: world.cities.filter((c) => c.owner === p.id).length,
+        favour: h.crown ? null : favourOf(p.id), lore: b.houses[h.name] ?? null,
+        notables: notables.map((c) => ({
+          id: c.id, name: c.name, gender: c.gender, age: c.age, rank: c.rank, traits: c.traits,
+          goal: c.goals?.[0]?.text ?? null, role: c.role ? ROLES[c.role]?.title : null,
+          seat: c.seat != null ? cityName(c.seat) : null, loyalty: c.loyalty,
+          story: c.backstory ?? [...new Set(c.memories ?? [])].slice(-2).join(" ") ?? null,
+        })),
+      };
+    }).sort((a, c) => (c.crown ? 1 : 0) - (a.crown ? 1 : 0) || (c.lore ? 1 : 0) - (a.lore ? 1 : 0));
+    return json(res, 200, { intro: b.intro, crown: b.crown, faults: b.faults, fate: b.fate, tone: b.tone, houses });
   }
   if (url.pathname === "/person" && req.method !== "POST") {
     // One person up close, for the character view: who they are and what they remember.
