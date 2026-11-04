@@ -1,30 +1,36 @@
 extends Node
-## Scripted camera moves for the launch video, rendered frame by frame with
-## Movie Maker so the Mac's live frame rate doesn't matter:
-##   godot --path realm --write-movie out.avi --fixed-fps 30 -- --clip=<name> --shot=<last.png> --wait=99999 [--city=<Town>]
+## Scripted camera moves for the launch video and the intro's stills, filmed
+## frame by frame so the Mac's live frame rate doesn't matter:
+##   godot --path realm --fixed-fps 30 -- --clip=<name> --shot=<last.png> --wait=99999 [--frames=<dir>] [--city=<Town>]
 ## main.gd adds this node when --clip= is given. It hides the interface, waits
-## until the realm is up and every town is built, plays the move, saves the
-## last frame to --shot and quits. It prints "CLIP_START <frame>" when the move
-## begins, so the wait before it can be cut (tools/media.sh does).
-## Every move is a low oblique look across the land, never straight down.
+## until the realm is up and every town is built, stages the scene, plays the
+## move and quits. The film is its own 3840×2160 view of the same world (a
+## window can't be that big on this screen; --film=WxH changes it): with
+## --frames each frame of the move is written there as a JPEG (tools/media.sh
+## makes them a clip), and the last frame is always saved to --shot as a PNG.
+## --secs=0 makes a still. Every move is a low oblique look across the land,
+## about 30° down at most, never from above.
 ##
 ## Clips: realm, descent, seat (--city), street (--city), battle (--city),
-## siege (--city), duel (--lord), hall (--lord), walk (--lord), feast (--city),
-## dawn (--city). --lord=<house id> picks whose lord walks (default 0).
+## siege (--city), duel, hall, walk, hero (--lord=<house id>, default 0),
+## feast (--city), dawn (--city).
 
 var main: Node
 var clip := ""
 var lord := 0
 var seconds := 10.0  # the move's length; --secs= overrides
+var frames_dir := ""
+var film_size := Vector2i(3840, 2160)
 var _t := -1.0  # time into the move; below zero while waiting
+var _n := 0  # frames of the move so far
 var _settle := 0.0
-var _from := {}  # the camera at the move's start: target, distance, yaw, tilt
 var _at := Vector3.ZERO  # what the move is about: a town, a field, a feast
 var _keys: Array[int] = []  # keys held down for a walk
 var _staged := false
-var _start_frame := 0
 var _swings := 0
 var _dt := 0.0
+var _film: SubViewport
+var _film_cam: Camera3D
 
 
 func _ready() -> void:
@@ -36,6 +42,11 @@ func _ready() -> void:
 			lord = int(a.substr(7))
 		elif a.begins_with("--secs="):
 			seconds = float(a.substr(7))
+		elif a.begins_with("--frames="):
+			frames_dir = a.substr(9)
+		elif a.begins_with("--film="):
+			var wh := a.substr(7).split("x")
+			film_size = Vector2i(int(wh[0]), int(wh[1]))
 	# A render without its interface; pass a long --wait so main's own shot
 	# timer never ends it first: the clip ends itself.
 	main._shot["clean"] = true
@@ -51,10 +62,23 @@ func _ready() -> void:
 	main.labels.visible = false
 	main.title.visible = false
 	main.bridge.active = true
+	if frames_dir != "":
+		DirAccess.make_dir_recursive_absolute(frames_dir)
+	_film = SubViewport.new()
+	_film.size = film_size
+	_film.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_film.msaa_3d = Viewport.MSAA_4X
+	add_child(_film)
+	_film_cam = Camera3D.new()
+	_film.add_child(_film_cam)
+	_film_cam.current = true
 
 
 func _process(delta: float) -> void:
+	_dt = delta
+	_hide_huds()
 	if _t < 0.0:
+		_follow_camera()
 		if not _ready_to_roll():
 			_settle = 0.0
 			return
@@ -67,14 +91,19 @@ func _process(delta: float) -> void:
 			return
 		_t = 0.0
 		_begin()
-		_start_frame = Engine.get_frames_drawn()
-		print("CLIP_START %d" % _start_frame)
-	_t += delta
-	_dt = delta
-	_hide_huds()
-	var u := clampf(_t / seconds, 0.0, 1.0)
+		# The window's own view is never filmed: stop drawing it.
+		get_tree().root.disable_3d = true
+		print("CLIP_START")
+	else:
+		_t += delta
+	var u := clampf(_t / seconds, 0.0, 1.0) if seconds > 0.0 else 1.0
 	_move(u, _ease(u))
-	if _t >= seconds:
+	# The film shows what was drawn last frame: save that, then aim for this one.
+	if _n > 0 and frames_dir != "" and seconds > 0.0:
+		_film.get_texture().get_image().save_jpg(frames_dir.path_join("%05d.jpg" % (_n - 1)), 0.95)
+	_follow_camera()
+	_n += 1
+	if _t >= seconds and _n >= 3:
 		_end()
 
 
@@ -88,8 +117,8 @@ func _lead_in() -> float:
 	match clip:
 		"battle": return 7.0
 		"siege": return 10.0
-		"duel", "walk": return 4.0
-		"hall": return 7.0
+		"duel", "walk", "hero": return 5.0
+		"hall": return 8.0
 		"feast": return 5.0
 	return 3.0
 
@@ -115,6 +144,10 @@ func _stage() -> void:
 			main.scenes._feast(_at, main._houses.get(int(city["owner"]), {}))
 		"duel", "walk", "hall":
 			_take_lord()
+		"hero":
+			main.bridge.house(lord, func(d):
+				if d is Dictionary and d.get("lord") is Dictionary:
+					main._open_person(str(d["lord"].get("id", "")), d))
 		"descent":
 			var king := _city("Kingsmere")
 			if king.is_empty():
@@ -146,57 +179,57 @@ func _take_lord() -> void:
 
 
 func _begin() -> void:
-	var rig: Node3D = main.rig
-	_from = {"target": rig.target, "distance": rig.distance, "yaw": rig.yaw}
 	match clip:
 		"duel":
 			main.control.spawn_foes(2)
 			main.control._me.draw(true)
 		"walk", "hall":
-			_press(KEY_W, true)
+			if seconds > 0.0:
+				_press(KEY_W, true)
 
 
 ## u: 0..1 through the move; e: the same, eased in and out.
 func _move(u: float, e: float) -> void:
+	var far: float = main.rig.max_distance
 	match clip:
 		"realm":
-			# The whole realm turning slowly under a low sky.
-			_cam(_at, 1.0e4, 0.3 + e * 0.7, -14.0)
+			# The whole realm turning slowly, looked at across the land.
+			_cam(_at, far * 0.6, 0.3 + e * 0.6, 34.0)  # steep enough to keep the realm's edge out of frame
 		"descent":
-			# From high over the land down to Kingsmere's streets.
-			var d := exp(lerpf(log(150.0), log(4.5), e))
-			_cam(_at, d, 2.4 - e * 0.9, lerpf(-18.0, 0.0, e))
+			# From high over the land down into Kingsmere's streets.
+			var d := exp(lerpf(log(far * 0.6), log(4.0), e))
+			_cam(_at, d, 2.4 - e * 0.9, lerpf(34.0, 24.0, e))
 		"seat":
-			_cam(_at, 7.5, 0.4 + e * 1.4, -4.0)
+			_cam(_at, 6.5, 0.4 + e * 1.2, 21.0)
 		"street":
-			# A glide just above the roofs, across the town and through its square.
+			# A glide just over the roofs, across the town and through its square.
 			var dir := Vector3(sin(0.6), 0, cos(0.6))
-			_cam(_at + dir * lerpf(1.4, -1.4, e), 1.6, 0.6 + e * 0.5, 4.0)
+			_cam(_at + dir * lerpf(1.2, -1.2, e), 1.8, 0.6 + e * 0.4, 16.0)
 		"battle":
-			_cam(_at, lerpf(4.2, 3.0, e), 0.2 + e * 1.1, -2.0)
+			_cam(_at, lerpf(4.2, 3.0, e), 0.2 + e * 1.0, 22.0)
 		"siege":
-			_cam(_at, lerpf(6.5, 5.0, e), 0.5 + e * 0.9, -4.0)
+			_cam(_at, lerpf(6.5, 5.0, e), 0.5 + e * 0.8, 24.0)
 		"feast":
-			_cam(_at, lerpf(2.6, 1.8, e), 0.4 + e * 1.2, 2.0)
+			_cam(_at, lerpf(2.6, 1.9, e), 0.4 + e * 1.1, 20.0)
 		"dawn":
 			# First light over the town: the sun comes up as the camera turns.
 			main.sky3d.game_time_enabled = false
 			main.sky3d.current_time = lerpf(5.2, 7.6, u)
-			_cam(_at, 9.0, 1.2 + e * 0.6, -6.0)
+			_cam(_at, 9.0, 1.2 + e * 0.5, 24.0)
 		"duel":
-			# Swing as they close; the follow camera is the hero's own.
+			# Swing as they close; the camera is the hero's own, behind the shoulder.
 			if _t > 1.6 + _swings * 2.2:
 				_swings += 1
 				main.control._me.strike()
 		"walk":
-			# A slow turn of the shoulder camera halfway, to see the town around.
 			main.control._yaw += 0.05 * _dt
 		"hall":
 			main.interior._yaw += 0.04 * _dt
 
 
-## Puts the strategy camera exactly here (no easing behind the path).
-func _cam(target: Vector3, dist: float, yaw: float, tilt: float) -> void:
+## Puts the strategy camera exactly here (no easing behind the path), `pitch`
+## degrees down at what it looks at.
+func _cam(target: Vector3, dist: float, yaw: float, pitch: float) -> void:
 	var rig: Node3D = main.rig
 	rig._goal_target = target
 	rig._goal_distance = dist
@@ -205,18 +238,44 @@ func _cam(target: Vector3, dist: float, yaw: float, tilt: float) -> void:
 	rig.distance = rig._goal_distance
 	rig.yaw = yaw
 	rig._goal_yaw = yaw
+	# The rig's own pitch for this distance (camera_rig._apply), solved for the tilt.
+	var t := clampf((rig.distance - rig.min_distance) / (rig.max_distance - rig.min_distance), 0.0, 1.0)
+	var base := lerpf(30.0, 55.0, pow(t, 0.7))
+	var g := smoothstep(2.5, 0.45, rig.distance)
+	var tilt := (pitch - (1.0 - g) * base - 3.0 * g) / ((1.0 - g) + 0.6 * g)
 	rig.tilt = tilt
 	rig._goal_tilt = tilt
 	rig._apply()
+
+
+## The film looks through whichever camera is showing: a room's, a portrait's,
+## the walking shoulder camera or the strategy view.
+func _follow_camera() -> void:
+	var src: Camera3D = null
+	if main.interior.visible and is_instance_valid(main.interior._cam):
+		src = main.interior._cam
+	elif main.hero.visible and is_instance_valid(main.hero._cam):
+		src = main.hero._cam
+	else:
+		src = main.get_viewport().get_camera_3d()
+	if src == null:
+		return
+	if _film.world_3d != src.get_world_3d():
+		_film.world_3d = src.get_world_3d()
+	_film_cam.global_transform = src.global_transform
+	_film_cam.fov = src.fov
+	_film_cam.near = src.near
+	_film_cam.far = src.far
+	_film_cam.environment = src.environment
+	_film_cam.attributes = src.attributes
 
 
 func _end() -> void:
 	set_process(false)
 	for k in _keys.duplicate():
 		_press(k, false)
-	var img := get_viewport().get_texture().get_image()
-	img.save_png(String(main._shot["path"]))
-	print("CLIP_END %d" % Engine.get_frames_drawn())
+	_film.get_texture().get_image().save_png(String(main._shot["path"]))
+	print("CLIP_END %d frames" % maxi(_n - 1, 0))
 	get_tree().quit()
 
 

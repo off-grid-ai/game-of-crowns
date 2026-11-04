@@ -1,12 +1,12 @@
 #!/bin/zsh
 # The launch-video media kit: 4K stills and short clips of the realm, plus the
-# intro's stills. Every render goes through render.sh (one Godot at a time,
-# Ali's game first). Clips are Movie Maker takes (cinematics.gd, frame by
-# frame at 30 fps, so the live frame rate doesn't matter), cut to the move and
-# encoded with ffmpeg to H.264 at 4K and 1080p.
-#   realm/tools/media.sh [stills|clips|intro|all] [name ...]
+# intro's stills. Every take is a cinematics.gd move filmed at 3840x2160 in its
+# own view (frame by frame at a fixed 30 fps, so the live frame rate doesn't
+# matter), and goes through render.sh: one Godot at a time, Ali's game first.
+# Clips are encoded with ffmpeg to H.264 at 4K and 1080p.
+#   realm/tools/media.sh [intro|stills|clips|all] [name ...]
 # Output: media/launch/stills, media/launch/clips; intro stills in
-# realm/assets/intro/stills. Env: RES (default 3840x2160).
+# realm/assets/intro/stills.
 cd "$(dirname "$0")/../.."
 ROOT=$PWD
 STILLS=$ROOT/media/launch/stills
@@ -14,7 +14,8 @@ CLIPS=$ROOT/media/launch/clips
 INTRO=$ROOT/realm/assets/intro/stills
 WORK=$ROOT/media/launch/work
 FF=/opt/homebrew/bin/ffmpeg
-export RES=${RES:-3840x2160}
+# The window is never filmed, so it stays small; the launch kit goes first in the queue.
+export RES=1280x720 PRIORITY=1
 mkdir -p $STILLS $CLIPS $INTRO $WORK
 WHAT=${1:-all}; shift 2>/dev/null
 ONLY=("$@")
@@ -22,60 +23,48 @@ SEATS=(Stonefell Goldrock Riverhall Eaglefell Crowfield Highfell Deepvale Lionmo
 
 want() { [ ${#ONLY} = 0 ] || (( ${ONLY[(Ie)$1]} )); }
 
-# A still: render.sh at 4K without the interface.
+# A 4K still: the clip's move held at its end.
 still() {
   local dir=$1 name=$2; shift 2
   want $name || return 0
   rm -f $dir/$name.png
-  LIMIT=420 realm/tools/render.sh $dir/$name.png --clean "$@"
+  LIMIT=600 GODOT_ARGS="--fixed-fps 30" realm/tools/render.sh $dir/$name.png --wait=99999 --secs=0 "$@"
   mv -f $dir/$name.log $WORK/still_$name.log 2>/dev/null
 }
 
-# A clip: a Movie Maker take of one cinematics.gd move, cut to where the move
-# starts (cinematics prints CLIP_START <frame>), then 4K and 1080p MP4s and a
-# still of its last frame.
+# A clip: every frame of the move as a 4K JPEG, then 4K and 1080p MP4s, and its
+# last frame kept as a still.
 clip() {
   local name=$1; shift
   want $name || return 0
-  local avi=$WORK/$name.avi png=$WORK/$name.png
-  rm -f $avi $png ${avi%.avi}*.wav
-  # Movie Maker's MJPEG at its best quality, only for these takes.
-  print '[editor]\nmovie_writer/mjpeg_quality=0.95' > realm/override.cfg
-  LIMIT=${CLIP_LIMIT:-2400} GODOT_ARGS="--write-movie $avi --fixed-fps 30" realm/tools/render.sh $png --wait=99999 "$@"
-  rm -f realm/override.cfg
-  local start=$(grep -o 'CLIP_START [0-9]*' $WORK/$name.log | awk '{print $2}')
-  [ -z "$start" ] || [ ! -f $avi ] && { echo "NO TAKE $name (log: $WORK/$name.log)"; return 1; }
-  local ss=$(echo "scale=3; $start / 30" | bc)
-  $FF -y -loglevel error -ss $ss -i $avi -c:v libx264 -preset slow -crf 14 -pix_fmt yuv420p -an -movflags +faststart $CLIPS/${name}_4k.mp4
-  $FF -y -loglevel error -i $CLIPS/${name}_4k.mp4 -vf scale=1920:1080:flags=lanczos -c:v libx264 -preset slow -crf 16 -pix_fmt yuv420p -movflags +faststart $CLIPS/${name}_1080p.mp4
-  mv -f $png $STILLS/clip_$name.png
-  rm -f $avi
+  local frames=$WORK/$name png=$WORK/$name.png
+  rm -rf $frames $png
+  LIMIT=${CLIP_LIMIT:-3600} GODOT_ARGS="--fixed-fps 30" realm/tools/render.sh $png --wait=99999 --frames=$frames "$@"
+  [ -f $frames/00000.jpg ] || { echo "NO TAKE $name (log: $WORK/$name.log)"; return 1; }
+  $FF -y -loglevel error -framerate 30 -i $frames/%05d.jpg -c:v libx264 -preset slow -crf 14 -pix_fmt yuv420p -movflags +faststart $CLIPS/${name}_4k.mp4
+  $FF -y -loglevel error -framerate 30 -i $frames/%05d.jpg -vf scale=1920:1080:flags=lanczos -c:v libx264 -preset slow -crf 16 -pix_fmt yuv420p -movflags +faststart $CLIPS/${name}_1080p.mp4
+  [ -f $png ] && mv -f $png $STILLS/clip_$name.png
+  rm -rf $frames
   echo "ok clip $name"
 }
 
 if [[ $WHAT == intro || $WHAT == all ]]; then
-  # What intro.gd shows, by name (see its pages).
-  still $INTRO realm --wait=70
-  for s in $SEATS; do still $INTRO seat_$s --city=$s --dist=7 --wait=70; done
-  still $INTRO street --city=Stonefell --dist=2.5 --wait=70
-  still $INTRO battle --city=Deepvale --battle --wait=70
-  still $INTRO hero --hero=0 --wait=60
-  still $INTRO hall --control=0 --interior=great_hall --wait=300
-  still $INTRO walk --control=0 --wait=300
+  # The pictures intro.gd shows, by name (see its pages).
+  still $INTRO realm --clip=realm
+  for s in $SEATS; do still $INTRO seat_$s --clip=seat --city=$s; done
+  still $INTRO street --clip=street --city=Stonefell
+  still $INTRO battle --clip=battle --city=Deepvale
+  still $INTRO hero --clip=hero --lord=0
+  still $INTRO hall --clip=hall --lord=0
+  still $INTRO walk --clip=walk --lord=0
 fi
 
 if [[ $WHAT == stills || $WHAT == all ]]; then
-  still $STILLS realm --wait=70
-  still $STILLS kingsmere --city=Kingsmere --dist=9 --wait=70
-  for s in $SEATS; do still $STILLS seat_$s --city=$s --dist=7 --wait=70; done
-  still $STILLS street --city=Stonefell --dist=2.5 --wait=70
-  still $STILLS battle --city=Deepvale --battle --wait=70
-  still $STILLS siege --city=Goldrock --siege --wait=90
-  still $STILLS duel --control=0 --duel --wait=300
-  still $STILLS hero --hero=0 --wait=60
-  still $STILLS hall --control=0 --interior=great_hall --wait=300
-  still $STILLS feast --city=Stonefell --feast --dist=2.2 --wait=40
-  still $STILLS dawn --city=Stonefell --dist=9 --time=0.26 --wait=70
+  still $STILLS kingsmere --clip=descent
+  still $STILLS siege --clip=siege --city=Goldrock
+  still $STILLS duel --clip=duel --lord=0 --secs=2.2
+  still $STILLS feast --clip=feast --city=Stonefell
+  still $STILLS dawn --clip=dawn --city=Stonefell
 fi
 
 if [[ $WHAT == clips || $WHAT == all ]]; then
