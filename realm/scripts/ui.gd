@@ -541,6 +541,7 @@ func _build_camera_controls() -> void:
 	frame.offset_right = -12
 	frame.offset_bottom = -12
 	frame.custom_minimum_size.y = MINIMAP_SIZE.y + 8  # the minimap's frame
+	_pad = frame
 	frame.add_theme_stylebox_override("panel", T._box(T.SURFACE_SOLID, T.HAIRLINE, 10, 6))
 	var v := VBoxContainer.new()
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -585,6 +586,20 @@ func _build_camera_controls() -> void:
 	v.add_child(home)
 
 
+## The camera pad keeps out of the way: hidden until the mouse comes near its
+## corner, then it fades in (the mouse, trackpad and keys move the camera anyway).
+var _pad: Control
+func _reveal_pad(delta: float) -> void:
+	if _pad == null:
+		return
+	var near := _pad.get_global_rect().grow(140).has_point(get_viewport().get_mouse_position())
+	_pad.modulate.a = move_toward(_pad.modulate.a, 1.0 if near else 0.0, delta * (6.0 if near else 2.5))
+	_pad.mouse_filter = Control.MOUSE_FILTER_STOP if _pad.modulate.a > 0.3 else Control.MOUSE_FILTER_IGNORE
+	for b in _pad.find_children("*", "Button", true, false):
+		b.mouse_filter = _pad.mouse_filter
+	_pad.visible = _pad.modulate.a > 0.01 or near
+
+
 ## The realm in the bottom-right corner, left of the camera pad and as tall:
 ## territory, seats, and where you're looking (the realm's own shape, 224 × 352).
 const MINIMAP_SIZE := Vector2(254, 400)
@@ -621,6 +636,7 @@ func _build_court() -> void:
 # --- state ----------------------------------------------------------------------------
 
 func _process(delta: float) -> void:
+	_reveal_pad(delta)
 	_fit_centre(_digest_panel, 620.0)
 	_fit_centre(_house_panel, 640.0)
 	_fit_centre(_ledger_panel, 820.0)
