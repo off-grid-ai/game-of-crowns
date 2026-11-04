@@ -495,9 +495,12 @@ function counsel(players, cities, threat) {
   if (hungry) out.push({ urgency: 80, text: `${hungry.title} is starving`, why: "A hungry town shrinks, riots, and blames its King.", acts: [{ label: "Send grain", action: "relief", city: hungry.id }] });
   const waiting = court?.open?.().length ?? 0;
   if (waiting) out.push({ urgency: 60, text: `${waiting} ${waiting === 1 ? "petitioner waits" : "petitioners wait"} at court`, why: "Lords left waiting go home unheard, and say so.", acts: [{ label: "Hear them", ui: "court" }] });
-  const war = great.find((p) => (p.atWarWith ?? []).some((o) => great.some((g) => g.id === o)));
+  // A war the King has stilled (his peace, or a royal match) is no longer the
+  // Hand's worry, though the engine still counts the two houses at war.
+  const stilled = (x, y) => { const a = court?.lordOfHouse(x), b = court?.lordOfHouse(y); return !!(a && b && court.truce(a.id, b.id)); };
+  const war = great.find((p) => (p.atWarWith ?? []).some((o) => great.some((g) => g.id === o) && !stilled(p.id, o)));
   if (war) {
-    const foe = great.find((g) => war.atWarWith.includes(g.id));
+    const foe = great.find((g) => war.atWarWith.includes(g.id) && !stilled(war.id, g.id));
     out.push({ urgency: 50, text: `${war.house.name} and ${foe.house.name} are at war`, why: "Every season of war burns fields and lowers the realm's peace. Both must be warm to the crown (favour 40) to obey.", acts: [{ label: "Command peace", action: "peace", city: seatOf(war.id)?.id, to: foe.id }, { label: "Wed them to each other", action: "marriage", city: seatOf(war.id)?.id, to: foe.id }].filter((a) => a.city !== undefined) });
   }
   if (purse < 150) out.push({ urgency: 40, text: "The royal treasury is thin", why: "Every decree costs crowns; a higher tithe fills the purse but cools the houses.", acts: [{ label: "Raise the tithe", ui: "tithe_up" }] });

@@ -85,6 +85,7 @@ var _court_waiting := false  # the court panel, set aside for a commoner's card
 var _court_hidden := true
 
 var _toast: Label
+var _toast_box: PanelContainer  # the card the notice sits on
 var _decree_btns := {}  # decree -> its button on the town card, named for whose town it is
 var _stories := {}  # chronicle seq -> a story beat's entry, for its link
 var _offer: PanelContainer  # "Watch": the latest moment worth seeing, for a few seconds
@@ -107,18 +108,24 @@ func _ready() -> void:
 	_build_court()
 	_build_minimap()
 	_build_camera_controls()
+	# What the King's order did, on a card of its own: centred between the side
+	# panels, on solid smoked glass with a gold edge, so a result is never faint
+	# text lost under a panel.
+	_toast_box = PanelContainer.new()
+	_toast_box.add_theme_stylebox_override("panel", T._box(T.SURFACE_SOLID, Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.55), 10, 14))
+	_toast_box.anchor_left = 0.5
+	_toast_box.anchor_right = 0.5
+	_toast_box.offset_left = -250
+	_toast_box.offset_right = 250
+	_toast_box.offset_top = 78
+	_toast_box.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_toast_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_toast_box.modulate.a = 0.0
+	_root.add_child(_toast_box)
 	_toast = T.title("", 16, T.TEXT)
-	_toast.anchor_left = 0.5
-	_toast.anchor_right = 0.5
-	_toast.offset_left = -420
-	_toast.offset_right = 420
-	_toast.offset_top = 78
 	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_toast.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART  # a long notice wraps in the middle, never runs off to one side
-	_toast.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
-	_toast.add_theme_constant_override("outline_size", 6)
-	_root.add_child(_toast)
+	_toast_box.add_child(_toast)
 
 
 # --- building blocks --------------------------------------------------------------
@@ -733,6 +740,10 @@ func _build_court() -> void:
 
 func _process(delta: float) -> void:
 	_reveal_pad(delta)
+	# The Hand's counsel steps aside while you read a town, the court or the
+	# away report, and is back when you close them.
+	if _counsel:
+		_counsel.visible = not ((_digest_panel and _digest_panel.visible) or _town_panel.visible or _court_panel.visible)
 	_arrange_top()  # the date line grows (a usurper marches…), so keep the bar from overlapping
 	_fit_centre(_digest_panel, 620.0)
 	_fit_centre(_house_panel, 640.0)
@@ -752,9 +763,9 @@ func _process(delta: float) -> void:
 		for c in _cards:
 			if is_instance_valid(c) and c.visible:
 				top = maxf(top, c.get_global_rect().end.y + 12.0)
-		_toast.offset_top = top
+		_toast_box.offset_top = top
 		_toast_time -= delta
-		_toast.modulate.a = clampf(_toast_time, 0.0, 1.0)
+		_toast_box.modulate.a = clampf(_toast_time, 0.0, 1.0)
 
 
 ## A great house in full: its standing now and how it has moved, its lord,
@@ -1326,7 +1337,7 @@ func offer_watch(text: String, go: Callable) -> void:
 
 func toast(text: String) -> void:
 	_toast.text = text
-	_toast_time = 5.0
+	_toast_time = 7.0  # long enough to read a sentence or two
 
 
 var _tithe_asked := -1.0  # a tithe the King set that the realm hasn't reported back yet

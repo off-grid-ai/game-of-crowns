@@ -118,9 +118,10 @@ export function decree(cmd, world) {
       if (men) lua.push(`local c = find.city(nil, ${seat.id}); if c then for i = 1, ${men} do edit.create_unit(c.owner, c.tile, find.unit_type(i % 2 == 0 and "Knights" or "Pikemen"), 1, c, -1) end end`);
       const list = (xs) => xs.length > 1 ? `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}` : xs[0];
       const parts = [];
-      if (came.length) parts.push(`${list(came)} answer at once`);
-      if (few.length) parts.push(`${list(few)} send a few men, with excuses`);
-      if (refused.length) parts.push(`${list(refused)} refuse the summons`);
+      const verb = (xs, one, many) => (xs.length > 1 ? many : one);
+      if (came.length) parts.push(`${list(came)} ${verb(came, "answers", "answer")} at once`);
+      if (few.length) parts.push(`${list(few)} ${verb(few, "sends", "send")} a few men, with excuses`);
+      if (refused.length) parts.push(`${list(refused)} ${verb(refused, "refuses", "refuse")} the summons`);
       return { cost: d.cost, favour, text: `The King calls the banners. ${parts.join("; ")}.${men ? ` ${men * 200} men march to Kingsmere.` : " No one marches."}`, lua, refused };
     }
     case "relief":
