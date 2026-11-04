@@ -12,6 +12,10 @@ How a round is played: `realm/tools/play/*.play` scenarios feed real input (keys
 
 | # | Expected | Found | Change | Commit |
 |---|---|---|---|---|
+| 34 | The King's result where he acted (verified, r09/08, r09/12) | — | Seen: peace between Thornvale and Stormhold on its own card between the panels, the counsel moving to the next war (Stormhold–Sunspire); "The King sends a chest of gold to House Sunspire." on its own card, the chronicle line, Sunspire's favour 41 → 51, the counsel moved on to the court and the war | r09 |
+| 33 | A card doesn't cover the table or the minimap | The result card sat over the houses' Favour heading (r09/08); the court ran under the minimap (r09/07) | Both fit the gap between the side panels; a tall card stops short of the minimap | d312503 |
+| 32 | A petition's numbers agree with the table | "favour 45, 4 soldiers" under Cecily Stormhold's petition while the table read 67 and 800 men (r09/07): a snapshot from when the petition was made | The court card drops it; the live table beside it says it right | d312503 |
+| 31 | Words of the realm (supervisor 05:05 #3) | "masters Astronomy", "King'sspire", "B the Lore" key strips on the loading story, a reign named "Balanced" | "House Blackbrook's maesters chart the stars", "King's Spire", no key strips (r09/04), a reign named "The Last Accord" (r09/02) | 5431e0d |
 | 30 | The King can stop a war | The counsel's answer to a war was "a feast for each" (r06/04-first-view) | Command peace: both warm (40+) obey, their soldiers by the other's towns go home, war appetite cools, a truce holds; a cold house refuses. The engine still counts them at war; the fighting stops. In the counsel beside "Wed them to each other" | daf44c6 |
 | 29 | The counsel stays in view | It covered the bottom of the houses panel ("Your word") | "Proclaim your word…" folds to one line until wanted | daf44c6 |
 | 28 | Read what the people say (supervisor #3) | Model lines that loop ("a liege's liege, not my liege's liege") and stray quotes | Two sentences at most, no stray quotes, looping lines dropped | f4f3e02 |
