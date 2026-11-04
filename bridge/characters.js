@@ -27,13 +27,13 @@ const SEASONS_PER_YEAR = 4;
 // Roles a player can give a character: a title, and the leanings that come with it.
 export const ROLES = {
   knight: { title: "a sworn knight", traits: ["brave"], loyalty: 70 },
-  spymaster: { title: "a master of whispers", traits: ["cunning", "paranoid"], loyalty: 50 },
+  spymaster: { title: "a spymaster", traits: ["cunning", "paranoid"], loyalty: 50 },
   steward: { title: "a steward", traits: ["patient"], loyalty: 65 },
-  septon: { title: "a septon", traits: ["pious"], loyalty: 60 },
-  maester: { title: "a maester", traits: ["just"], loyalty: 60 },
+  priest: { title: "a priest", traits: ["pious"], loyalty: 60 },
+  scholar: { title: "a court scholar", traits: ["just"], loyalty: 60 },
   sellsword: { title: "a sellsword captain", traits: ["greedy"], loyalty: 30 },
   merchant: { title: "a merchant prince", traits: ["greedy", "cunning"], loyalty: 45 },
-  hedge_knight: { title: "a hedge knight", traits: ["brave", "proud"], loyalty: 55 },
+  hedge_knight: { title: "a landless knight", traits: ["brave", "proud"], loyalty: 55 },
   lady: { title: "a lady of the court", traits: ["cunning"], loyalty: 55 },
   ward: { title: "a ward", traits: ["content"], loyalty: 60 },
   outlaw: { title: "a pardoned outlaw", traits: ["wrathful"], loyalty: 25 },
@@ -637,8 +637,8 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
 
     // The Faith: a preacher blames the King for the realm's troubles.
     const troubled = world.cities.filter((x) => x.food !== undefined && x.food < 3).length;
-    if (has("pious") || troubled >= 3) candidates.push({ kind: "faith", weight: 1 + Math.min(4, troubled), make: () => ({ kind: "faith", text: `A barefoot septon has come to ${c.house}'s lands with ${troubled ? `${troubled} hungry towns` : "the poor"} at his back. He preaches that the gods have turned from a sinful King. ${c.name}${has("pious") ? ", a pious man," : ""} asks what the crown will do.`, facts: facts(c.playerId), options: [
-      { id: "endow", label: "Endow the Faith (150 gold)", hint: "Every house +4 · the septon blesses your name", cost: 150 },
+    if (has("pious") || troubled >= 3) candidates.push({ kind: "faith", weight: 1 + Math.min(4, troubled), make: () => ({ kind: "faith", text: `A barefoot friar has come to ${c.house}'s lands with ${troubled ? `${troubled} hungry towns` : "the poor"} at his back. He preaches that the gods have turned from a sinful King. ${c.name}${has("pious") ? ", a pious man," : ""} asks what the crown will do.`, facts: facts(c.playerId), options: [
+      { id: "endow", label: "Endow the Faith (150 gold)", hint: "Every house +4 · the Church blesses your name", cost: 150 },
       { id: "silence", label: "Have him silenced", hint: `The preaching stops · ${has("pious") ? `${c.house} −20, ${c.name} is appalled` : `${c.house} −5`} · the poor remember` },
       { id: "ignore", label: "Words are wind", hint: "Every house −3 · the sermon spreads" },
     ] }) });
@@ -938,9 +938,9 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
       this.save(regent);
     } else if (p.kind === "faith") {
       const houses = world.players.filter((o) => !houseFor(o).crown && !houseFor(o).wild);
-      if (option === "endow") { for (const o of houses) out.favour[o.id] = 4; out.text = "The crown endows the Faith. In every sept, the King's name is blessed."; }
-      if (option === "silence") { out.favour[c.playerId] = c.traits.includes("pious") ? -20 : -5; this.remember(c.id, "The King had a holy man silenced in my lands."); out.text = "The septon is taken in the night. The preaching stops. The poor do not forget his face."; }
-      if (option === "ignore") { for (const o of houses) out.favour[o.id] = -3; out.text = "The King ignores the septon. His sermon spreads from village to village."; }
+      if (option === "endow") { for (const o of houses) out.favour[o.id] = 4; out.text = "The crown endows the Faith. In every church, the King's name is blessed."; }
+      if (option === "silence") { out.favour[c.playerId] = c.traits.includes("pious") ? -20 : -5; this.remember(c.id, "The King had a holy man silenced in my lands."); out.text = "The friar is taken in the night. The preaching stops. The poor do not forget his face."; }
+      if (option === "ignore") { for (const o of houses) out.favour[o.id] = -3; out.text = "The King ignores the friar. His sermon spreads from village to village."; }
     } else if (p.kind === "raise") {
       const man = this.people[p.man];
       if (option === "raise") { man.liege = null; man.loyalty = 100; man.goals = [{ kind: "favour", text: "prove the King right to raise me" }]; out.favour[c.playerId] = -15; this.remember(c.id, `The King took ${man.name} from my service and made him a lord.`); out.text = `${man.name} rises a lord, sworn to the crown alone. ${c.name} has lost a sword and gained a rival.`; }

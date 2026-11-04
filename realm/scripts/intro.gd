@@ -27,7 +27,7 @@ const CHARACTER := {
 	"House Stormhold": "Warlike, fierce and loyal, until they aren't.",
 	"House Sunspire": "Proud and independent, the last to bend the knee.",
 	"House Highfell": "Isolated and cautious, untouchable in their mountains.",
-	"House Brightwater": "Their own masters, owing little and forgiving less.",
+	"House Brightwell": "Their own masters, owing little and forgiving less.",
 }
 
 ## Tips shown again while the realm is still forming, after the story.
@@ -227,15 +227,25 @@ func _next() -> void:
 		var at: Vector2 = p[5]
 		var zoom: float = p[6]
 		var start := Vector2(screen.y * 1.05 * zoom * aspect, screen.y * 1.05 * zoom)
+		# Never narrower than the screen: on a wide window the realm's height
+		# alone would leave bare edges.
+		start *= maxf(1.0, (screen.x + 60.0) / start.x)
 		var end := start * 1.12
 		var focus := screen * Vector2(0.5, 0.42)
 		_map.size = start
-		_map.position = focus - at * start + Vector2(-24 * dir, 0)
+		_map.position = _cover(focus - at * start + Vector2(-24 * dir, 0), start, screen)
 		_tween.tween_property(_map, "size", end, HOLD).set_trans(Tween.TRANS_SINE)
-		_tween.tween_property(_map, "position", focus - at * end + Vector2(24 * dir, -10), HOLD).set_trans(Tween.TRANS_SINE)
+		_tween.tween_property(_map, "position", _cover(focus - at * end + Vector2(24 * dir, -10), end, screen), HOLD).set_trans(Tween.TRANS_SINE)
 	_tween.chain().tween_callback(_next)
 	if say.is_valid():
 		say.call(String(p[2]))
+
+
+## A map position pulled back just enough that the map still covers the
+## screen: a place near the realm's edge sits off-centre rather than showing
+## the edge of the map.
+static func _cover(pos: Vector2, size: Vector2, screen: Vector2) -> Vector2:
+	return Vector2(clampf(pos.x, screen.x - size.x, 0.0), clampf(pos.y, screen.y - size.y, 0.0))
 
 
 func _end() -> void:

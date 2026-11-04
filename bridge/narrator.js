@@ -26,7 +26,7 @@ export function houseFor(player) {
   // Houses born from civil war get a name and colour of their own.
   let h = 0;
   for (const ch of String(player?.name ?? "x")) h = (Math.imul(h, 31) + ch.charCodeAt(0)) >>> 0;
-  const name = ["Blackwater", "Ashford", "Redmane", "Greywind", "Duskendale", "Stonehelm", "Ravenmoor", "Brightwater", "Hollowmere", "Vyrwel"][h % 10];
+  const name = ["Blackbrook", "Ashcombe", "Redmane", "Greymantle", "Duskmoor", "Stonecrest", "Ravenmoor", "Brightwell", "Hollowmere", "Vyrwel"][h % 10];
   const color = ["#7d4e8f", "#8f3b3b", "#3b6f8f", "#6f8f3b", "#8f6f3b", "#3b8f7a", "#5b5b8f", "#8f3b6f", "#a0a03b", "#3b3b3b"][(h >>> 4) % 10];
   return { name: `House ${name}`, seat: "lands torn from an older house", words: "Our Own", color, sigil: "banner" };
 }
@@ -38,9 +38,9 @@ const SUFFIX = ["fell", "hold", "watch", "ford", "haven", "gate", "keep", "mere"
   "stone", "bridge", "crag", "vale", "rock", "reach", "cross", "moor", "burg", "port", "barrow", "field", "garden"];
 
 // Towns named in the world bible keep their names; the rest get a fitting one.
-const AUTHORED = new Set(["Kingsmere", "Stonefell", "Wintermoor", "Frostwatch", "Goldrock", "Lannport", "Silverhill",
-  "Saltkeep", "Pyke Hollow", "Rosehall", "Oldtown Reach", "Bitterbridge", "Stormwatch", "Rainhold", "Sunspire",
-  "Redsands", "Saltshore", "Highfell", "Gulltown"]);
+const AUTHORED = new Set(["Kingsmere", "Stonefell", "Wintermoor", "Frostwatch", "Goldrock", "Gildport", "Silverhill",
+  "Saltkeep", "Rook Hollow", "Rosehall", "Elder Reach", "Bitterford", "Stormwatch", "Rainhold", "Sunspire",
+  "Redsands", "Saltmarsh", "Highfell", "Gullhaven"]);
 let names = {};
 
 export function rememberNames(world) {
@@ -82,7 +82,7 @@ const NOTABLE_BUILDINGS = {
   "Great Wall": (c, h) => `${h} completes the Great Wall. Their enemies despair.`,
   Pyramids: (c, h) => `${h} raises the Pyramids at ${c}, a wonder of the age.`,
   "Hanging Gardens": (c, h) => `The Hanging Gardens bloom in ${c}. ${h} rejoices.`,
-  "Great Library": (c, h) => `The Great Library opens in ${c}. Maesters flock to ${h}.`,
+  "Great Library": (c, h) => `The Great Library opens in ${c}. Scholars flock to ${h}.`,
   Colossus: (c, h) => `A bronze Colossus stands over ${c}'s harbour.`,
   Lighthouse: (c, h) => `A great lighthouse burns above ${c}.`,
   "Temple of Artemis": (c, h) => `A temple to the moon goddess rises in ${c}.`,

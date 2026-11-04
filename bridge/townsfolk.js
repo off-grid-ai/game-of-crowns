@@ -75,11 +75,11 @@ export function townsfolk(city) {
     const woman = r() < 0.5;
     // Some trades were women's; a man of the same house does the man's version.
     const AS_MAN = { alewife: "brewer", "tavern girl": "potboy", washerwoman: "fuller", midwife: "barber", "hedge witch": "cunning man" };
-    const AS_WOMAN = { septon: "septa", friar: "anchoress" };
-    // Every town keeps a septon at its sept; the rest of the folk are drawn by trade.
-    const raw = i === 0 ? "septon" : trade(r);
+    const AS_WOMAN = { priest: "prioress", friar: "anchoress" };
+    // Every town keeps a priest at its church; the rest of the folk are drawn by trade.
+    const raw = i === 0 ? "priest" : trade(r);
     const t = woman ? AS_WOMAN[raw] ?? raw : AS_MAN[raw] ?? raw;
-    // The septon and the town's stock characters are always grown.
+    // The priest and the town's stock characters are always grown.
     const age = (i <= TOWN_TYPES.length ? 20 : 14) + Math.floor(r() * (i <= TOWN_TYPES.length ? 46 : 52));
     // Trade surnames only where the trade really became a name (Miller, Smith…).
     const asSurname = ["miller", "smith", "baker", "brewer", "carter", "cooper", "fisher", "shepherd", "thatcher", "weaver", "potter", "tanner", "carpenter"].includes(t);

@@ -13,7 +13,7 @@ var terrain: Node3D
 var target := Vector3.ZERO
 var distance := 120.0
 var yaw := 0.0
-var min_distance := 2.0  # about 16 m: just above the crowd, never in among it
+var min_distance := 1.3  # about 10 m: a few houses fill the view, the camera still above the crowd
 const EYE := 0.2  # eye height, about 1.7 m
 var max_distance := 260.0
 
@@ -266,7 +266,7 @@ func _apply() -> void:
 	var above := clampf(lerpf(30.0, 55.0, pow(t, 0.7)) + tilt, 8.0, 89.0)
 	# Zoomed right in, the camera comes down to a person's eye and looks across
 	# the land rather than down at it; tilt then looks up or down from there.
-	var ground_view := smoothstep(4.0, 1.2, distance)
+	var ground_view := smoothstep(4.0, 1.2, distance) * 0.55  # comes down toward the street, never to eye level
 	var level := clampf(3.0 + tilt * 0.6, -25.0, 40.0)
 	var pitch := deg_to_rad(lerpf(above, level, ground_view))
 	var ground := _floor_at(target)

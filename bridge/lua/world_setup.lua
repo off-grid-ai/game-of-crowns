@@ -92,12 +92,12 @@ local TERRAIN = {g = "Grassland", p = "Plains", d = "Desert", t = "Tundra", a = 
 local RIVERS = {{40,33}, {40,34}, {39,38}, {40,39}, {40,40}, {40,41}, {41,41}, {41,42}, {21,42}, {21,43}, {22,43}, {23,45}, {23,46}, {24,46}, {24,47}, {25,48}, {25,49}, {25,50}, {26,51}, {26,52}, {27,52}, {27,53}, {28,53}, {28,54}, {29,55}, {28,55}, {29,56}, {30,57}, {30,58}, {30,59}, {31,60}, {32,61}, {32,62}, {27,21}, {28,21}, {28,22}, {29,23}, {29,24}, {29,25}, {30,25}, {30,26}, {30,27}, {31,27}, {31,28}, {32,29}, {31,30}, {32,31}, {32,32}, {33,32}, {33,33}, {33,34}, {34,34}, {35,35}, {35,36}, {35,37}, {36,37}, {36,38}}
 local HOUSES = {
   {nation = "Scottish", seat = "Stonefell", x = 28, y = 18, towns = {"Wintermoor", "Frostwatch"}},
-  {nation = "English", seat = "Goldrock", x = 20, y = 36, towns = {"Lannport", "Silverhill"}},
-  {nation = "Norwegian", seat = "Saltkeep", x = 9, y = 39, towns = {"Pyke Hollow"}},
-  {nation = "French", seat = "Rosehall", x = 25, y = 52, towns = {"Oldtown Reach", "Bitterbridge"}},
+  {nation = "English", seat = "Goldrock", x = 20, y = 36, towns = {"Gildport", "Silverhill"}},
+  {nation = "Norwegian", seat = "Saltkeep", x = 9, y = 39, towns = {"Rook Hollow"}},
+  {nation = "French", seat = "Rosehall", x = 25, y = 52, towns = {"Elder Reach", "Bitterford"}},
   {nation = "Welsh", seat = "Stormwatch", x = 44, y = 54, towns = {"Rainhold"}},
-  {nation = "Castilian", seat = "Sunspire", x = 33, y = 76, towns = {"Redsands", "Saltshore"}},
-  {nation = "Irish", seat = "Highfell", x = 40, y = 30, towns = {"Gulltown"}}
+  {nation = "Castilian", seat = "Sunspire", x = 33, y = 76, towns = {"Redsands", "Saltmarsh"}},
+  {nation = "Irish", seat = "Highfell", x = 40, y = 30, towns = {"Gullhaven"}}
 }
 KINGSMERE = {x = 40, y = 43}
 

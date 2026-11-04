@@ -91,14 +91,14 @@
   },
   {
     "id": "poisoned_cup", "weight": 2, "needs": ["heir", "rival"],
-    "text": "{heir}, heir of {me.house}, fell ill at a feast held by {rival.house}. The maester says poison. {me} wants {rival} tried for murder. {rival} swears on the old gods it was bad fish.",
+    "text": "{heir}, heir of {me.house}, fell ill at a feast held by {rival.house}. The physician says poison. {me} wants {rival} tried for murder. {rival} swears on the old gods it was bad fish.",
     "options": [
       { "id": "trial", "label": "Put {rival} on trial", "hint": "{rival.house} −30 · {me.house} +15 · if innocent, the realm sees a tyrant",
         "effects": { "favour": { "rival": -30, "me": 15 }, "memory": { "rival": "The King put me on trial over a sick boy and a bad fish." } },
         "text": "{rival} stands trial at Kingsmere. Nothing is proven. Everything is remembered." },
-      { "id": "maester", "label": "Send the royal maester to save {heir} (80 gold)", "cost": 80, "hint": "{heir} lives · {me.house} +10 · the question is left open",
-        "effects": { "favour": { "me": 10 }, "memory": { "heir": "The King's maester saved my life." } },
-        "text": "The royal maester rides through the night. {heir} lives, pale and thin, and remembers who saved them." },
+      { "id": "maester", "label": "Send the royal physician to save {heir} (80 gold)", "cost": 80, "hint": "{heir} lives · {me.house} +10 · the question is left open",
+        "effects": { "favour": { "me": 10 }, "memory": { "heir": "The King's physician saved my life." } },
+        "text": "The royal physician rides through the night. {heir} lives, pale and thin, and remembers who saved them." },
       { "id": "nothing", "label": "Fish is fish", "hint": "{heir} may die · {me.house} −15",
         "effects": { "favour": { "me": -15 }, "dies": { "who": "heir", "chance": 0.5, "text": "{heir}, heir of {me.house}, dies of the fever. {me} names the poisoner in every hall." } },
         "text": "The King declines to act." }
@@ -163,7 +163,7 @@
   },
   {
     "id": "plague_town", "weight": 3, "needs": ["town"], "when": { "hungry": true },
-    "text": "Sickness has come to {town}. {me} of {me.house} wants to close the gates and let it burn itself out. The septons say that is murder.",
+    "text": "Sickness has come to {town}. {me} of {me.house} wants to close the gates and let it burn itself out. The priests say that is murder.",
     "options": [
       { "id": "close", "label": "Close the gates", "hint": "The sickness stays in {town} · the poor of {town} never forgive",
         "effects": { "favour": { "me": 5 }, "memory": { "me": "I shut the gates of {town} on my own people, with the King's leave." } },
@@ -274,17 +274,17 @@
   },
   {
     "id": "wildlings", "weight": 2, "when": { "chance": 0.5 },
-    "text": "Wildlings have crossed into {me.house}'s lands near {town}. Thousands, starving, with children. They say something worse is behind them.",
+    "text": "Hill clans have crossed into {me.house}'s lands near {town}. Thousands, starving, with children. They say something worse is behind them.",
     "options": [
       { "id": "settle", "label": "Let them settle empty land", "hint": "{town} grows · {me.house} −10, furious",
         "effects": { "favour": { "me": -10 }, "units": { "me": { "count": 1, "type": "Warriors" } } },
-        "text": "The wildlings settle the empty hills by {town}. {me} posts guards on every road." },
+        "text": "The clansfolk settle the empty hills by {town}. {me} posts guards on every road." },
       { "id": "drive", "label": "Drive them back", "hint": "{me.house} +5 · they will come back angrier",
         "effects": { "favour": { "me": 5 } },
-        "text": "{me.house}'s riders drive the wildlings back into the snow." },
+        "text": "{me.house}'s riders drive the clansfolk back into the snow." },
       { "id": "levy", "label": "Take their fighters into the King's host", "hint": "The crown gains warriors · {me.house} −5",
         "effects": { "units": { "crown": { "count": 3, "type": "Warriors" } }, "favour": { "me": -5 } },
-        "text": "The wildling fighters swear to the King. Their families go south with them." }
+        "text": "The clan fighters swear to the King. Their families go south with them." }
     ]
   },
   {
@@ -372,7 +372,7 @@
       { "id": "deny", "label": "Refuse without proof", "hint": "{me.house} −10 · {me} seeks proof {me.himself}",
         "effects": { "favour": { "me": -10 }, "goal": { "me": { "kind": "revenge", "text": "catch {rival} and my {me.wife} together" } } },
         "text": "The King refuses. {me} hires men to follow {me.his} own {me.wife}." },
-      { "id": "septon", "label": "Let the High Septon decide", "hint": "Both −3 · it drags on for years",
+      { "id": "septon", "label": "Let the Archbishop decide", "hint": "Both −3 · it drags on for years",
         "effects": { "favour": { "me": -3, "rival": -3 } },
         "text": "The matter goes to the Faith, where it will take years." }
     ]
@@ -448,7 +448,7 @@
   },
   {
     "id": "pirates", "weight": 2, "when": { "chance": 0.5 },
-    "text": "Ironborn reavers raid {me.house}'s coast near {town}. {me} wants the royal fleet; {me} also wants to know why the crown keeps a fleet at all.",
+    "text": "Island reavers raid {me.house}'s coast near {town}. {me} wants the royal fleet; {me} also wants to know why the crown keeps a fleet at all.",
     "options": [
       { "id": "fleet", "label": "Send the fleet (150 gold)", "cost": 150, "hint": "{me.house} +15 · the reavers go elsewhere",
         "effects": { "favour": { "me": 15 } },

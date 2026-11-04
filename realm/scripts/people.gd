@@ -159,7 +159,7 @@ static func station(person: Dictionary) -> String:
 	var role := str(person.get("role")) if person.get("role") else ""
 	if role in ["knight", "hedge_knight", "sellsword"]:
 		return "soldier"
-	if role in ["septon", "maester"]:
+	if role in ["priest", "scholar"]:
 		return "clergy"
 	if role == "outlaw":
 		return "archer"
