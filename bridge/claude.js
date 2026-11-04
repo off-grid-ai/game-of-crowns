@@ -55,15 +55,48 @@ async function gateway() {
   return null;
 }
 
-async function complete(system, prompt, maxTokens = 220, retry = true) {
-  const first = await completeOnce(system, prompt, maxTokens);
+async function complete(system, prompt, maxTokens = 220, retry = true, turns = []) {
+  const first = await completeOnce(system, prompt, maxTokens, turns);
   if (first || !retry) return first;
   // The gateway may have been loading its model, or moved port; try once more.
   await new Promise((r) => setTimeout(r, 3000));
-  return completeOnce(system, prompt, maxTokens);
+  return completeOnce(system, prompt, maxTokens, turns);
 }
 
-async function completeOnce(system, prompt, maxTokens) {
+// Plain words, not JSON: what someone says aloud. Small models speak far
+// better when they aren't also filling in a form.
+async function say(system, turns, prompt, maxTokens = 160) {
+  const url = await gateway();
+  if (!url) return null;
+  try {
+    const res = await fetch(`${url}/chat/completions`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      signal: AbortSignal.timeout(90000),
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "system", content: system }, ...turns, { role: "user", content: prompt }],
+        max_tokens: maxTokens,
+        temperature: 0.8,
+        chat_template_kwargs: { enable_thinking: false },
+        reasoning_budget: 0,
+      }),
+    });
+    if (!res.ok) {
+      base = null;
+      return null;
+    }
+    const text = String((await res.json()).choices?.[0]?.message?.content ?? "").trim();
+    // Keep only the speech: no quotes, no "Name:" prefix, no stage directions.
+    return text.replace(/^[\w .'-]{1,40}:\s*/, "").replace(/\*[^*]*\*/g, "").replace(/^["“]|["”]$/g, "").trim() || null;
+  } catch (err) {
+    console.error("offgrid:", err.message);
+    base = null;
+    return null;
+  }
+}
+
+async function completeOnce(system, prompt, maxTokens, turns = []) {
   const url = await gateway();
   if (!url) return null;
   try {
@@ -73,7 +106,7 @@ async function completeOnce(system, prompt, maxTokens) {
       signal: AbortSignal.timeout(90000), // the first call may wait for the model to load
       body: JSON.stringify({
         model,
-        messages: [{ role: "system", content: system }, { role: "user", content: prompt + "\nRespond with only the JSON object." }],
+        messages: [{ role: "system", content: system }, ...turns, { role: "user", content: prompt + "\nRespond with only the JSON object." }],
         max_tokens: maxTokens,
         temperature: 0.8,
         chat_template_kwargs: { enable_thinking: false },
@@ -154,21 +187,16 @@ Return {"story": "...", "says": "..."}`,
   return out && out.story ? { story: String(out.story), says: String(out.says ?? "") } : null;
 }
 
-// Someone in the realm answers you, face to face, in their own voice: what they
-// are, what's happened to them and their town, who you are to them, and what
-// you've said to each other before. They can be warm, wary, afraid or rude.
+// Someone in the realm answers you, face to face, in their own voice. Small
+// models follow a conversation best as real turns: a short persona, what was
+// said before as back-and-forth, and the latest words last, to be answered.
 export async function speak(person, town, house, you, events, story, past, said) {
-  const out = await complete(
-    "You are an ordinary person in a gritty medieval realm (tone: Game of Thrones, Vikings), speaking aloud to someone in front of you. Stay in character. Plain, concrete speech of the period: no modern words, no fantasy cliches, no narration. 1 to 3 sentences.",
-    `You are ${person.name}, ${person.age}, a ${person.woman ? "woman" : "man"}, ${person.trade} in ${town}, in the lands of ${house}. By nature ${person.nature ?? "ordinary"}. ${person.family}. Known for: ${person.past}. You want: ${person.wants}.
-${story ? `Your life so far: ${story}\n` : ""}Lately in ${town} and the realm:
-${events.map((e) => "- " + e).join("\n") || "- quiet seasons"}
-You are speaking with ${you.name}${you.title ? `, ${you.title}` : ""} of ${you.house}${you.lord ? ", who rules this town; your lord" : ""}. Speak to them as your station and your nature demand.
-${past.length ? "What you and they have said before:\n" + past.map((l) => `${l.who}: ${l.text}`).join("\n") + "\n" : ""}They say to you now: "${said}"
-Return {"reply": "what you say back", "feeling": "one word: how you feel toward them now"}`,
-    220,
-  );
-  return out && out.reply ? { reply: String(out.reply).replace(/^"|"$/g, ""), feeling: String(out.feeling ?? "") } : null;
+  const persona = `You are ${person.name}, ${person.age}, a ${person.woman ? "woman" : "man"}, ${person.trade} in ${town} (lands of ${house}). By nature ${person.nature ?? "ordinary"}; ${person.family}; you want ${person.wants}.${story ? ` ${story.split(". ").slice(0, 2).join(". ")}.` : ""}
+Lately: ${events.slice(-3).join(" ") || "quiet seasons."}
+You are talking with ${you.name}${you.lord ? ", your lord" : ""}. Call them "${you.address ?? "stranger"}". Gritty medieval realm. Reply with only what you say aloud: one to three full sentences in plain speech of the period, answering exactly what they just said. No narration, no quotation marks.`;
+  const turns = past.slice(-6).map((l) => ({ role: l.who === person.name ? "assistant" : "user", content: l.text }));
+  const reply = await say(persona, turns, said);
+  return reply ? { reply } : null;
 }
 
 // The King's ruling in his own words -> which of the petition's choices he

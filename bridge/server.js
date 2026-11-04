@@ -759,6 +759,8 @@ http.createServer(async (req, res) => {
       title: speaker ? (speaker.rank === "lord" ? (speaker.gender === "female" ? "Lady" : "Lord") : speaker.rank) : "",
       lord: speaker ? speaker.playerId === city.owner && speaker.rank === "lord" : false,
     };
+    // How a commoner names them to their face.
+    you.address = !speaker ? "stranger" : speaker.rank === "lord" || speaker.rank === "heir" ? (speaker.gender === "female" ? "my lady" : "my lord") : speaker.gender === "female" ? "my lady" : "ser";
     const near = chronicle.filter((e) => e.city === city.id || (e.text ?? "").includes(cityName(city.id))).slice(-5).map((e) => e.text);
     const out = await speak(person, cityName(city.id), houseFor(owner).name, you, near, tales[key]?.story ?? "", past, said);
     if (!out) return json(res, 503, { error: `${person.name} only stares at you. (The local model isn't running.)` });
