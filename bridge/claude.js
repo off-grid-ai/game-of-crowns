@@ -200,20 +200,88 @@ You are talking with ${you.name}${you.lord ? ", your lord" : ""}. Call them "${y
 }
 
 // The King's ruling in his own words -> which of the petition's choices he
-// means, and what the petitioner says back to his face.
+// means, and what the petitioner says back to his face. A small model picks
+// reliably from a numbered list with a one-number answer, and speaks well in
+// plain words; so it's two short asks, not one form.
 export async function ruleFrom(petition, who, words) {
-  const opts = (petition.options ?? []).map((o) => `- ${o.id}: ${o.label ?? o.text ?? o.id}`).join("\n");
-  const out = await complete(
-    "You read a medieval king's spoken ruling on a petition and decide which of the allowed rulings it means. Then you voice the petitioner's reply, in character, 1 to 2 sentences, plain speech of the period.",
-    `Petition: ${petition.text}
-Petitioner: ${who ? `${who.name} of ${who.house}, ${(who.traits ?? []).join(", ")}` : "a lord of the realm"}.
-Allowed rulings:
-${opts}
-The King says: "${words}"
-Pick the ruling closest to what he said. Return {"option": "<one of the ids above>", "reaction": "what the petitioner says back"}`,
-    200,
+  const options = petition.options ?? [];
+  if (!options.length) return null;
+  const list = options.map((o, i) => `${i + 1}. ${o.label ?? o.id}${o.hint ? ` (${o.hint})` : ""}`).join("\n");
+  const pick = await say(
+    "You decide which ruling a king means. Answer with only the number of the ruling.",
+    [],
+    `Petition: ${petition.text}\nRulings:\n${list}\nThe king says: "${words}"\nWhich ruling does the king mean? Only the number.`,
+    6,
   );
-  const ids = (petition.options ?? []).map((o) => o.id);
-  if (!out || !ids.includes(out.option)) return null;
-  return { option: out.option, reaction: String(out.reaction ?? "") };
+  const n = Number(String(pick ?? "").match(/\d+/)?.[0]);
+  const chosen = options[n - 1];
+  return chosen ? { option: chosen.id } : null;
+}
+
+// The petitioner hears the King's ruling and answers him to his face.
+export async function reactTo(petition, who, words, option) {
+  const chosen = (petition.options ?? []).find((o) => o.id === option);
+  if (!who || !chosen) return "";
+  return (await say(
+    `You are ${who.name} of ${who.house}, by nature ${(who.traits ?? []).join(", ") || "proud"}. You came to the King's court: ${petition.text} The King has ruled: ${chosen.label ?? chosen.id}. You are NOT the King; you answer him. Reply to his face with only what you say aloud: one or two sentences, plain speech of the period, as your nature demands. No narration, no quotation marks.`,
+    [],
+    `The King says: "${words}"`,
+    90,
+  )) ?? "";
+}
+
+// Kokoro's voices on the Off Grid gateway, by language (the realm's tongue)
+// and sex. Each person keeps one voice for life: picked from their name.
+const VOICES = {
+  en: { female: ["bf_emma", "af_sarah", "af_heart", "af_river"], male: ["bm_daniel", "am_michael", "am_adam"] },
+  de: { female: ["df_anna"], male: ["bm_daniel"] },
+  es: { female: ["ef_dora"], male: ["em_alex"] },
+  fr: { female: ["ff_siwis"], male: ["bm_daniel"] },
+  it: { female: ["if_sara"], male: ["im_nicola"] },
+  pt: { female: ["pf_dora"], male: ["pm_mateusz"] },
+  hi: { female: ["hf_alpha"], male: ["hm_omega", "hm_psi"] },
+};
+
+export function voiceFor(who, language = "en") {
+  const set = VOICES[language] ?? VOICES.en;
+  const list = who.gender === "female" || who.woman ? set.female : set.male;
+  let h = 0;
+  for (const ch of String(who.name ?? "")) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return list[h % list.length];
+}
+
+// Text to speech through the gateway: WAV bytes, or null if it isn't there.
+export async function speech(text, voice) {
+  const url = await gateway();
+  if (!url) return null;
+  try {
+    const res = await fetch(`${url}/audio/speech`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      signal: AbortSignal.timeout(60000),
+      body: JSON.stringify({ input: text, voice }),
+    });
+    return res.ok ? Buffer.from(await res.arrayBuffer()) : null;
+  } catch (err) {
+    console.error("offgrid speech:", err.message);
+    return null;
+  }
+}
+
+// Speech to text through the gateway (Whisper): the words, or null.
+export async function transcribe(wav, language = "en") {
+  const url = await gateway();
+  if (!url) return null;
+  try {
+    const form = new FormData();
+    form.append("file", new Blob([wav], { type: "audio/wav" }), "speech.wav");
+    if (language) form.append("language", language);
+    const res = await fetch(`${url}/audio/transcriptions`, { method: "POST", body: form, signal: AbortSignal.timeout(60000) });
+    if (!res.ok) return null;
+    const out = await res.json();
+    return String(out.text ?? "").trim() || null;
+  } catch (err) {
+    console.error("offgrid hearing:", err.message);
+    return null;
+  }
 }

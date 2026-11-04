@@ -71,8 +71,30 @@ func character_options(cb: Callable) -> void:
 	_http_get("/characters/options", cb)
 
 
-func rule_in_words(id: String, words: String, cb: Callable) -> void:
-	_post("/court/say", {"id": id, "words": words}, cb)
+## What you said into the microphone, as words (Off Grid's Whisper, via the bridge).
+func hear(wav: PackedByteArray, cb: Callable) -> void:
+	var req := HTTPRequest.new()
+	add_child(req)
+	req.request_completed.connect(func(_r, code, _h, resp):
+		req.queue_free()
+		var data = JSON.parse_string(resp.get_string_from_utf8())
+		cb.call(data if data is Dictionary else {"error": "nothing was heard"}))
+	req.request_raw(BASE + "/hear", ["Content-Type: audio/wav"], HTTPClient.METHOD_POST, wav)
+
+
+## Someone's words spoken aloud (Off Grid's Kokoro, via the bridge): a ready
+## AudioStream, or null if there's no voice to be had.
+func voice(text: String, who: Dictionary, cb: Callable) -> void:
+	var req := HTTPRequest.new()
+	add_child(req)
+	req.request_completed.connect(func(_r, code, _h, bytes):
+		req.queue_free()
+		cb.call(AudioStreamWAV.load_from_buffer(bytes) if code == 200 and bytes.size() > 44 else null))
+	req.request(BASE + "/voice", ["Content-Type: application/json"], HTTPClient.METHOD_POST, JSON.stringify({"text": text, "who": who}))
+
+
+func rule_in_words(id: String, words: String, confirm: String, cb: Callable) -> void:
+	_post("/court/say", {"id": id, "words": words, "confirm": confirm}, cb)
 
 
 func talk(city: int, i: int, you: Dictionary, said: String, cb: Callable) -> void:

@@ -7,6 +7,7 @@
 
 import { spawn } from "node:child_process";
 import fs from "node:fs";
+import crypto from "node:crypto";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,7 +16,7 @@ import { godCommand, healLua } from "./god.js";
 import { readSave, extractDetail } from "./savefile.js";
 import { townsfolk } from "./townsfolk.js";
 import { ROLES, GOALS, TRAITS } from "./characters.js";
-import { folkTale, speak, ruleFrom } from "./claude.js";
+import { folkTale, speak, ruleFrom, reactTo, speech, voiceFor, transcribe } from "./claude.js";
 import { BUILD_COST, granarySize } from "./rules.js";
 import * as chron from "./chronicles.js";
 import { decree, titheLua, clampFavour, DECREES } from "./crown.js";
@@ -495,6 +496,14 @@ function body(req) {
   });
 }
 
+function bytes(req) {
+  return new Promise((resolve) => {
+    const parts = [];
+    req.on("data", (d) => parts.push(d));
+    req.on("end", () => resolve(Buffer.concat(parts)));
+  });
+}
+
 function reignInfo() {
   return {
     id: meta.id, name: meta.name, scenario: meta.scenario, status: meta.status, paused, minutes: meta.minutes,
@@ -642,26 +651,57 @@ http.createServer(async (req, res) => {
     return json(res, 200, mood);
   }
   if (url.pathname === "/court" && req.method === "GET") return json(res, 200, inCrowns(court.open()));
+  if (url.pathname === "/hear" && req.method === "POST") {
+    // What the King said into the microphone (a WAV), as words, by Off Grid's Whisper.
+    const wav = await bytes(req);
+    if (wav.length < 1000) return json(res, 400, { error: "nothing was heard" });
+    const text = await transcribe(wav, meta.options?.language);
+    return text ? json(res, 200, { text }) : json(res, 503, { error: "Your words were lost. (The local speech model isn't running.)" });
+  }
+  if (url.pathname === "/voice" && req.method === "POST") {
+    // Someone's words, spoken aloud by Off Grid's Kokoro: a voice of their own,
+    // in the realm's language. WAV bytes; cached, so a line is only made once.
+    const { text, who } = await body(req);
+    const line = String(text ?? "").trim().slice(0, 600);
+    if (!line) return json(res, 400, { error: "nothing to say" });
+    const voice = voiceFor(who ?? {}, meta.options?.language);
+    const dir = path.join(P.state, "voices");
+    const file = path.join(dir, crypto.createHash("sha1").update(voice + "|" + line).digest("hex") + ".wav");
+    if (!fs.existsSync(file)) {
+      const wav = await speech(line, voice);
+      if (!wav) return json(res, 503, { error: "no voice (the local speech model isn't running)" });
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(file, wav);
+    }
+    res.writeHead(200, { "content-type": "audio/wav" });
+    return res.end(fs.readFileSync(file));
+  }
   if (url.pathname === "/court/answer" && req.method === "POST") {
     const { id, option } = await body(req);
     const out = rule(id, option);
     return json(res, out.error ? 400 : 200, out);
   }
   if (url.pathname === "/court/say" && req.method === "POST") {
-    // The King answers a petition in his own words; the local model reads which
-    // of the ruling's choices he means, and the petitioner answers him.
-    const { id, words } = await body(req);
+    // The King answers a petition in his own words. The local model proposes
+    // which ruling he means; nothing happens until he confirms it (confirm:
+    // the option id), so a misreading can never act on its own.
+    const { id, words, confirm } = await body(req);
     const pet = court.petitions.find((x) => x.id === id && !x.answered);
     const said = String(words ?? "").trim().slice(0, 500);
     if (!pet || !said) return json(res, 400, { error: "there's no one waiting on that" });
     const who = court.people[pet.from];
-    const read = await ruleFrom(pet, who, said);
-    if (!read) return json(res, 503, { error: "Your words hang in the hall unread. (The local model isn't running; choose a ruling instead.)" });
-    const out = rule(id, read.option);
+    if (!confirm) {
+      const read = await ruleFrom(pet, who, said);
+      if (!read) return json(res, 503, { error: "Your words hang in the hall unread. (The local model isn't running; choose a ruling instead.)" });
+      const o = pet.options.find((x) => x.id === read.option);
+      return json(res, 200, { proposed: read.option, label: crowns(o?.label ?? read.option), name: who?.name ?? "" });
+    }
+    const reaction = await reactTo(pet, who, said, String(confirm));
+    const out = rule(id, String(confirm));
     if (out.error) return json(res, 400, out);
     record({ turn: world.turn, kind: "decree", text: `The King to ${who?.name ?? "the petitioner"}: "${said}"` });
-    if (who && read.reaction) court.remember(who.id, `The King told me: "${said.slice(0, 160)}"`);
-    return json(res, 200, { ...out, option: read.option, reaction: read.reaction, name: who?.name ?? "" });
+    if (who) court.remember(who.id, `The King told me: "${said.slice(0, 160)}"`);
+    return json(res, 200, { ...out, option: String(confirm), reaction, name: who?.name ?? "", gender: who?.gender ?? "male" });
   }
   if (url.pathname === "/house") {
     // One great house: its numbers over time, its lord, bannermen, wars and allies.
@@ -768,7 +808,7 @@ http.createServer(async (req, res) => {
     fs.writeFileSync(file, JSON.stringify(talks, null, 1));
     // A lord remembers being spoken to by their own people, briefly.
     if (speaker) court.remember(speaker.id, `In ${cityName(city.id)} I spoke with ${person.name}, the ${person.trade}.`);
-    return json(res, 200, { name: person.name, trade: person.trade, ...out });
+    return json(res, 200, { name: person.name, trade: person.trade, gender: person.woman ? "female" : "male", ...out });
   }
   if (url.pathname === "/lord") return json(res, 200, court.summary(Number(url.searchParams.get("city"))) ?? {});
   if (url.pathname === "/season" && req.method === "POST") {

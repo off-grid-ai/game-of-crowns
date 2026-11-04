@@ -8,6 +8,7 @@ extends Node3D
 
 signal talk_to(town: int, i: int)
 signal said(town: int, i: int, text: String)
+signal spoke(wav: PackedByteArray)  # your voice, to be turned into words
 signal enter(kind: String, town: int, person: Dictionary)
 signal ended
 signal fell(person: Dictionary)
@@ -46,6 +47,8 @@ var _chat_line: LineEdit
 var _chat_with := {}  # {town, i}
 var _chat_lines: Array[String] = []
 var _waiting := false
+var _mic_btn: Button
+var mic: Node  # mic.gd, shared with the court
 
 
 func start(person: Dictionary, house: Dictionary, town_id: int) -> void:
@@ -412,10 +415,19 @@ func _open_chat(town: int, i: int) -> void:
 		_chat_log.scroll_following = true
 		_chat_log.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		v.add_child(_chat_log)
+		var line := HBoxContainer.new()
+		line.add_theme_constant_override("separation", 8)
+		v.add_child(line)
 		_chat_line = LineEdit.new()
 		_chat_line.placeholder_text = "Say something…   (Enter to speak, Esc to step away)"
+		_chat_line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_chat_line.text_submitted.connect(_speak)
-		v.add_child(_chat_line)
+		line.add_child(_chat_line)
+		# Or say it aloud: press, speak, press again.
+		_mic_btn = Button.new()
+		_mic_btn.text = "Speak aloud"
+		_mic_btn.pressed.connect(_toggle_mic)
+		line.add_child(_mic_btn)
 	_chat_with = {"town": town, "i": i}
 	_chat_lines = ["[color=#9a968e]You approach them.[/color]"]
 	_waiting = false
@@ -471,3 +483,29 @@ func heard(d: Dictionary) -> void:
 
 func _draw_chat() -> void:
 	_chat_log.text = "\n\n".join(_chat_lines) + ("\n\n[color=#9a968e]…[/color]" if _waiting else "")
+
+
+## Press, speak, press again: what you said goes off to become words.
+func _toggle_mic() -> void:
+	if not mic.listening():
+		mic.start()
+		_mic_btn.text = "Done speaking"
+		return
+	_mic_btn.text = "Speak aloud"
+	var wav: PackedByteArray = mic.finish()
+	if wav.is_empty():
+		return
+	_chat_lines.append("[color=#9a968e](listening…)[/color]")
+	_draw_chat()
+	spoke.emit(wav)
+
+
+## Your spoken words came back as text: say them, as if typed.
+func understood(d: Dictionary) -> void:
+	if _chat_lines.size() and _chat_lines[-1].contains("(listening…)"):
+		_chat_lines.pop_back()
+	if d.has("text"):
+		_speak(String(d["text"]))
+	else:
+		_chat_lines.append("[color=#e86b5c]%s[/color]" % String(d.get("error", "Nothing was heard.")))
+		_draw_chat()

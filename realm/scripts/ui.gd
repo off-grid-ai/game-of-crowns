@@ -22,7 +22,8 @@ signal open_menu
 signal always_day(on: bool)
 signal mood_decreed(text: String)
 signal petition_answered(id: String, option: String)
-signal petition_spoken(id: String, words: String)
+signal petition_spoken(id: String, words: String, confirm: String)
+signal petition_voiced(id: String, wav: PackedByteArray)
 signal decree_revoked(id: String)
 signal person_opened(id: String, house: Dictionary)  # the character view
 
@@ -1347,18 +1348,75 @@ func _show_audience() -> void:
 	own.placeholder_text = "Or rule in your own words, and press Enter…"
 	own.text_submitted.connect(func(words):
 		if words.strip_edges() != "":
+			_spoken = words.strip_edges()
 			own.editable = false
 			own.text = "The court weighs your words…"
-			petition_spoken.emit(String(p["id"]), words.strip_edges()))
-	v.add_child(own)
+			petition_spoken.emit(String(p["id"]), _spoken, ""))
+	var own_row := HBoxContainer.new()
+	own_row.add_theme_constant_override("separation", 8)
+	own.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	own_row.add_child(own)
+	# Or say it aloud to the hall.
+	var aloud := _btn("Speak aloud", func(): pass)
+	aloud.pressed.connect(func():
+		if not mic.listening():
+			mic.start()
+			aloud.text = "Done speaking"
+			return
+		aloud.text = "Speak aloud"
+		var wav: PackedByteArray = mic.finish()
+		if not wav.is_empty():
+			own.editable = false
+			own.text = "The court listens…"
+			petition_voiced.emit(String(p["id"]), wav))
+	own_row.add_child(aloud)
+	v.add_child(own_row)
+	_own_line = own
 	v.add_child(_btn("Later", func(): _court_hidden = true; _court_panel.visible = false))
 
 
-## A ruling spoken in your own words came back: the petitioner's reply, then on.
+var _spoken := ""
+var mic: Node  # mic.gd
+
+
+## Your spoken ruling came back as words: treat them as typed.
+func heard_ruling(id: String, d: Dictionary) -> void:
+	if not d.has("text"):
+		toast(String(d.get("error", "The court did not hear you.")))
+		_show_audience()
+		return
+	_spoken = String(d["text"])
+	_own_line.text = "The court weighs your words…"
+	petition_spoken.emit(id, _spoken, "")
+var _own_line: LineEdit
+
+
+## A ruling spoken in your own words came back. First the court's reading of it,
+## to confirm or correct; once confirmed, the petitioner's reply, then on.
 func ruled_in_words(id: String, d: Dictionary) -> void:
 	if d.has("error"):
 		toast(String(d["error"]))
 		_show_audience()
+		return
+	if d.has("proposed"):
+		var row := VBoxContainer.new()
+		row.add_child(T.label("Your court takes your words to mean"))
+		var meant := Label.new()
+		meant.text = String(d.get("label", ""))
+		meant.autowrap_mode = TextServer.AUTOWRAP_WORD
+		meant.add_theme_color_override("font_color", T.ACCENT)
+		row.add_child(meant)
+		var go := HBoxContainer.new()
+		go.add_theme_constant_override("separation", 8)
+		go.add_child(_btn("Rule so", func():
+			row.queue_free()
+			_own_line.text = "Your ruling is carried out…"
+			petition_spoken.emit(id, _spoken, String(d["proposed"]))))
+		go.add_child(_btn("Not that: I'll choose", func(): _show_audience()))
+		row.add_child(go)
+		_own_line.get_parent().add_child(row)
+		_own_line.get_parent().move_child(row, _own_line.get_index() + 1)
+		_own_line.text = "“%s”" % _spoken
 		return
 	if String(d.get("reaction", "")) != "":
 		toast("%s: “%s”" % [String(d.get("name", "")), String(d["reaction"])])

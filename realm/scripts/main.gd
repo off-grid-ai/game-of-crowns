@@ -26,6 +26,7 @@ var _houses := {}  # player id -> house dict
 var hero: CanvasLayer  # the character view
 var labels: CanvasLayer  # town names on the map
 var control: Node3D  # walking as a character
+var mic: Node  # speaking instead of typing
 var interior: CanvasLayer  # inside a building
 var _selected := -1
 var _time_of_day := 0.36
@@ -124,7 +125,11 @@ func _ready() -> void:
 		hero.close()
 		bridge.character_options(func(opts): ui.show_character_form(int(h.get("id", -1)), String(h.get("name", "")), opts if opts is Dictionary else {}, p)))
 	# Taking control: the close-up gives way to the person, in their own town.
+	mic = preload("res://scripts/mic.gd").new()
+	add_child(mic)
+	ui.mic = mic
 	control = preload("res://scripts/control.gd").new()
+	control.mic = mic
 	control.terrain = terrain
 	control.towns = towns
 	control.villagers = villagers
@@ -139,7 +144,11 @@ func _ready() -> void:
 	control.said.connect(func(town, i, text):
 		var p: Dictionary = control._person
 		bridge.talk(town, i, {"id": str(p.get("id", "")), "name": String(p.get("name", "")), "house": String(_houses.get(int(p.get("house_id", -1)), {}).get("name", ""))}, text, func(code, d):
-			control.heard(d if d is Dictionary else {"error": "They say nothing."})))
+			control.heard(d if d is Dictionary else {"error": "They say nothing."})
+			if d is Dictionary and d.has("reply"):
+				_say_aloud(String(d["reply"]), {"name": d.get("name", ""), "gender": d.get("gender", "")})))
+	control.spoke.connect(func(wav): bridge.hear(wav, control.understood))
+	ui.petition_voiced.connect(func(id, wav): bridge.hear(wav, func(d): ui.heard_ruling(id, d)))
 	control.talk_to.connect(func(town, i):
 		ui.show_folk_waiting()
 		bridge.folk(town, i, func(d): ui.show_folk(d if d is Dictionary else {})))
@@ -188,10 +197,13 @@ func _ready() -> void:
 	bridge.decrees_changed.connect(ui.set_decrees)
 	bridge.decrees(ui.set_decrees)
 	ui.petition_answered.connect(func(id, opt): bridge.answer_petition(id, opt); bridge.court(ui.set_court))
-	ui.petition_spoken.connect(func(id, words):
-		bridge.rule_in_words(id, words, func(_code, d):
+	ui.petition_spoken.connect(func(id, words, confirm):
+		bridge.rule_in_words(id, words, confirm, func(_code, d):
 			ui.ruled_in_words(id, d if d is Dictionary else {"error": "The court is silent."})
-			bridge.court(ui.set_court)))
+			if d is Dictionary and String(d.get("reaction", "")) != "":
+				_say_aloud(String(d["reaction"]), {"name": d.get("name", ""), "gender": d.get("gender", "")})
+			if confirm != "":
+				bridge.court(ui.set_court)))
 	ui.tithe_changed.connect(func(r): bridge.set_tithe(r))
 	title = preload("res://scripts/title.gd").new()
 	title.bridge = bridge
@@ -739,6 +751,22 @@ func _on_god_action(action: String, building: String) -> void:
 
 ## The character view on one person; the house record is swapped for the
 ## world's own (with its sigil) when there is one.
+var _voice: AudioStreamPlayer
+
+
+## A line spoken aloud in the speaker's own voice; a new line cuts off the last.
+func _say_aloud(text: String, who: Dictionary) -> void:
+	bridge.voice(text, who, func(stream):
+		if stream == null:
+			return
+		if _voice == null:
+			_voice = AudioStreamPlayer.new()
+			_voice.bus = "Master"
+			add_child(_voice)
+		_voice.stream = stream
+		_voice.play())
+
+
 ## Step into someone: they appear at their seat (or their house's chief town)
 ## and the camera drops low behind them. Esc gives the realm back.
 func _take_control(p: Dictionary, h: Dictionary) -> void:
