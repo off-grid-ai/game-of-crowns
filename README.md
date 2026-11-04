@@ -89,6 +89,10 @@ realm.sh            open / start / stop / status
 *.md                vision, design, world bible, UI, asset briefs
 ```
 
+## Licence
+
+Our code, docs and own art are [MIT](LICENSE). Freeciv is GPL 2.0 and runs as its own program. Third-party art keeps its own licence: each folder's `license.txt`, [audio credits](realm/assets/audio/CREDITS.md), the fonts' OFL files in `realm/assets/fonts/`, and the in-game Credits page, which lists everyone.
+
 ## Development notes
 
 - **Run Godot natively.** A shell under Rosetta starts the universal Godot binary as Intel, several times slower. Use `arch -arm64 godot …` (`realm.sh` does).
