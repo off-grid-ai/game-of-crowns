@@ -157,15 +157,24 @@ static func _fit_static(n: Node3D, height: float) -> void:
 
 # --- battle -----------------------------------------------------------------------
 
-## A pitched battle where Freeciv says men died: two companies form up under
-## their banners in loose ranks, advance, charge, and meet along a line where
-## each front-rank man duels the man opposite. Men fall, those behind step up,
-## and one side breaks and scatters.
+## A pitched battle where Freeciv says men died, staged like film. The losing
+## house (team 0) holds a shield wall: swords and locked shields in front,
+## spears over their shoulders, archers behind. The victors (team 1) form
+## under their banner while their captain shouts them on, advance at a walk
+## under the archers' arrows, then charge home as a picked company runs round
+## the end of the wall into its flank. Front-rank men duel the man opposite; men fall, those behind step
+## up. The defenders' standard-bearer goes down, the banner falls, and the
+## wall breaks and scatters. The victors cheer under their own standard.
 const RANKS := 3
-const FILES := 7
-const GAP := 0.19  # between files: about 1.6 m, room to swing a sword
-const ROW := 0.21  # between ranks: about 1.8 m
+const FILES := 9
+const GAP := 0.15  # between files: about 1.25 m, shields nearly touching
+const ROW := 0.2  # between ranks: about 1.7 m
 const REACH := 0.09  # half the distance between two duelists: 1.5 m apart
+const FLANKERS := 6
+
+## Camera beats for whoever holds the camera (the director, or a shot):
+## where to look, from how far, and from which side.
+signal framing(pos: Vector3, dist: float, yaw: float)
 
 
 func _battle(at: Vector3, loser: Dictionary) -> void:
@@ -173,46 +182,95 @@ func _battle(at: Vector3, loser: Dictionary) -> void:
 	add_child(root)
 	var r := _rng(at)
 	var cols := [Color.from_string(String(loser.get("color", "#777")), Color.GRAY).lerp(Color.WHITE, 0.3), Color(0.5, 0.17, 0.15)]
-	var ang := r.randf() * TAU
-	var dir := Vector3(cos(ang), 0, sin(ang))  # team 0 faces -dir, team 1 faces +dir
+	# The lines meet across the view, so you watch the clash from the side.
+	var dir := Vector3(cos(r.randf() * TAU), 0, 0)
+	dir.z = sqrt(1.0 - dir.x * dir.x)
+	var cam := get_viewport().get_camera_3d() if is_inside_tree() else null
+	if cam:
+		dir = Vector3(cam.global_basis.x.x, 0, cam.global_basis.x.z).normalized()
 	var side := Vector3(-dir.z, 0, dir.x)
+	var view_yaw := atan2(side.x, side.z) + 0.35
 	var teams := [[], []]
-	var banners := []
 	for team in 2:
 		var face: Vector3 = -dir if team == 0 else dir
 		for rank in RANKS:
 			for file in FILES:
-				# Where this man will stand once the lines meet; he starts 0.9 back from there.
+				# Where this man will stand once the lines meet. The wall holds
+				# its ground a little forward; the attackers start well back.
 				var slot: Vector3 = at - face * (REACH + rank * ROW) + side * ((file - (FILES - 1) / 2.0) * GAP)
-				slot += side * r.randf_range(-0.025, 0.025) - face * r.randf_range(0.0, 0.03)
+				slot += side * r.randf_range(-0.015, 0.015) - face * r.randf_range(0.0, 0.02)
 				var f: Node3D = _people.make(r, "soldier", cols[team], "adult")
-				f.position = _ground(slot - face * 1.4)
+				var back := 0.25 if team == 0 else 1.5
+				f.position = _ground(slot - face * back)
 				f.rotation.y = atan2(face.x, face.z)
 				root.add_child(f)
-				_people.play(f, "Sword_Idle", r.randf_range(0.9, 1.1))
-				teams[team].append({"node": f, "rank": rank, "file": file, "face": face, "slot": slot, "alive": true, "engaged": false})
-		banners.append(_standard(root, at - face * (REACH + RANKS * ROW + 1.45), cols[team], face, loser if team == 0 else {}))
-	# 1. Form up and hold (0-3 s), 2. advance at a walk to 0.3 short (3-8 s), 3. charge home (8-10 s).
-	_advance(teams, 3.0, 5.0, 0.45, "Walk", r)
-	_advance(teams, 8.0, 2.0, 0.0, "Sprint", r)
-	_follow_banners(banners, teams, 3.0, 7.0)
-	# 4. The clash (10-21 s): front pairs duel; men fall, those behind step up.
+				var kit := "sword"
+				if team == 0 and rank == 1:
+					kit = "spear"
+				elif team == 0 and rank == 2:
+					kit = "bow"
+				arm(f, kit)
+				_people.play(f, "Bow_Idle" if kit == "bow" else "Sword_Idle", r.randf_range(0.9, 1.1))
+				teams[team].append({"node": f, "rank": rank, "file": file, "face": face, "slot": slot, "alive": true, "engaged": false, "kit": kit})
+	# Each side's standard, carried by a bearer behind the middle of its line.
+	var bearers := []
+	for team in 2:
+		var face: Vector3 = -dir if team == 0 else dir
+		var p: Vector3 = at - face * (REACH + RANKS * ROW + (0.3 if team == 0 else 1.6))
+		var bearer: Node3D = _people.make(r, "soldier", cols[team], "adult")
+		bearer.position = _ground(p)
+		bearer.rotation.y = atan2(face.x, face.z)
+		root.add_child(bearer)
+		arm(bearer, "bow")
+		_people.play(bearer, "Sword_Idle")
+		var flag := _standard(root, p + side * 0.06, cols[team], face, loser if team == 0 else {})
+		bearers.append({"node": bearer, "flag": flag, "face": face})
+	var flankers := _flank_company(root, at, dir, side, cols[1], r)
+	framing.emit(_ground(at), 5.5, view_yaw)
+	# 1. Formed up (0-3 s): the attackers' captain shouts them on.
+	var captain: Dictionary = teams[1][FILES / 2]
 	var tw := create_tween()
-	tw.tween_interval(10.2)
+	tw.tween_interval(0.8)
+	tw.tween_callback(func():
+		_people.play(captain["node"], "Yelling", 1.0)
+		for m in teams[0]:
+			if m["rank"] == 0:
+				_people.play(m["node"], "Shield_Block", r.randf_range(0.9, 1.1)))
+	tw.tween_interval(2.2)
+	# 2. The advance (3-8 s) at a walk, in step, under the archers' arrows;
+	# the wall closes up and braces behind its shields.
+	tw.tween_callback(func():
+		_advance(teams[1], 0.0, 5.0, 0.45, "Walk", r)
+		for m in teams[0]:
+			if m["rank"] < 2:
+				_walk_to(m, m["slot"], 2.5, "Walk", "Shield_Block" if m["rank"] == 0 else "Sword_Idle", r)
+		_follow(bearers[1], 1.15, 7.0, r))
+	for v in 3:
+		tw.tween_callback(func(): _arrows(root, teams[0], teams[1], r))
+		tw.tween_interval(1.7)
+	# 3. The charge (8-10 s): the horn, and they run the last stretch.
+	tw.tween_callback(func():
+		_people.play(captain["node"], "Yelling", 1.2)
+		_advance(teams[1], 0.0, 2.0, 0.0, "Sprint", r)
+		framing.emit(_ground(at), 3.2, view_yaw - 0.15))
+	tw.tween_interval(2.1)
+	# 4. The clash (10-21 s): front pairs duel; men fall, those behind step up;
+	# the flank company hits the open end of the wall.
 	tw.tween_callback(func():
 		_dust(root, _ground(at) + Vector3(0, 0.01, 0), side, FILES * GAP)
 		for team in teams:
 			for m in team:
-				m["engaged"] = m["rank"] == 0
-				_people.play(m["node"], "Sword_Attack" if m["rank"] == 0 else "Sword_Idle", r.randf_range(0.8, 1.2)))
-	# The ranks behind press into the gaps and join the melee: the second
-	# rank two seconds in, the third three seconds later.
+				if m["rank"] == 0:
+					m["engaged"] = true
+					_people.play(m["node"], "Sword_Attack" if team == teams[1] else "Shield_Block", r.randf_range(0.85, 1.15))
+		framing.emit(_ground(at), 2.2, view_yaw - 0.3))
 	_press(teams, 1, 12.0, side, r)
-	_press(teams, 2, 15.0, side, r)
+	_press(teams, 2, 15.5, side, r)
+	_charge_flank(flankers, teams[0], at, dir, side, 8.0, r)
 	for beat in 11:
 		tw.tween_interval(1.0)
 		tw.tween_callback(func():
-			# The losing side (team 0) falls three times as often.
+			# The losing side falls three times as often.
 			if r.randf() < 0.75:
 				_fall(teams[0], r)
 			if r.randf() < 0.25:
@@ -220,10 +278,15 @@ func _battle(at: Vector3, loser: Dictionary) -> void:
 			for team in teams:
 				for m in team:
 					if m["alive"] and m["engaged"]:
-						_duel_step(m, r))
-	# 5. The rout (21 s): the beaten turn and scatter; the victors chase a few paces.
+						_duel_step(m, r, team == teams[0]))
+		if beat == 7:
+			# The standard-bearer is cut down and the banner goes over.
+			tw.tween_callback(func():
+				_die(bearers[0]["node"], "Death_Back", r)
+				_drop_banner(bearers[0]["flag"], bearers[0]["face"]))
+	# 5. The rout (21 s): the beaten turn and run; the victors chase a few paces,
+	# then cheer under their standard.
 	tw.tween_callback(func():
-		_drop_banner(banners[0])
 		for m in teams[0]:
 			if not m["alive"]:
 				continue
@@ -237,65 +300,107 @@ func _battle(at: Vector3, loser: Dictionary) -> void:
 				continue
 			var n: Node3D = m["node"]
 			if m["rank"] == 0 and r.randf() < 0.6:
-				_people.play(n, "Sprint", 0.9)
-				var from := n.position
-				var to: Vector3 = from + m["face"] * r.randf_range(0.3, 0.6)
-				var mt := n.create_tween()
-				mt.tween_method(func(k: float):
-					if is_instance_valid(n):
-						n.position = _ground(from.lerp(to, k)), 0.0, 1.0, 1.5)
-				mt.tween_callback(func(): _people.play(n, "Sword_Idle", 1.0))
+				_walk_to(m, n.position + m["face"] * r.randf_range(0.3, 0.6), 1.5, "Sprint", "Cheering", r)
 			else:
-				_people.play(n, "Sword_Idle", 1.0))
+				_people.play(n, "Cheering" if r.randf() < 0.6 else "Yelling", r.randf_range(0.9, 1.1))
+		_follow(bearers[1], 0.5, 2.0, r)
+		framing.emit(_ground(at + dir * 0.4), 3.0, view_yaw + 0.2))
+	tw.tween_interval(5.0)
+	tw.tween_callback(func():
+		for m in teams[1]:
+			if m["alive"]:
+				_people.play(m["node"], "Sword_Idle", 1.0))
 	# 6. The field (afterwards): the fallen stay a minute.
-	tw.tween_interval(70.0)
+	tw.tween_interval(65.0)
 	tw.tween_callback(root.queue_free)
 
 
 ## Moves each living soldier toward his slot, stopping `short` before it, over
-## about `secs` from `start`. Each man sets off a beat apart, so no line moves
-## like a single block.
-func _advance(teams: Array, start: float, secs: float, short: float, anim: String, r: RandomNumberGenerator) -> void:
-	for team in teams:
-		for m in team:
-			var delay: float = start + r.randf_range(0.0, 0.5) + m["rank"] * 0.15
-			var n: Node3D = m["node"]
-			var tw := n.create_tween()
-			tw.tween_interval(delay)
-			tw.tween_callback(func():
-				if not m["alive"]:
-					return
-				_people.play(n, anim, r.randf_range(0.9, 1.1))
-				var from := n.position
-				var to: Vector3 = m["slot"] - m["face"] * short
-				var mt := n.create_tween()
-				mt.tween_method(func(k: float):
-					if is_instance_valid(n):
-						n.position = _ground(from.lerp(to, k)), 0.0, 1.0, secs * r.randf_range(0.9, 1.05)))
+## about `secs` from `start`. The ranks walk in step, each man a beat apart, so
+## no line moves like a single block.
+func _advance(team: Array, start: float, secs: float, short: float, anim: String, r: RandomNumberGenerator) -> void:
+	var phase := r.randf()
+	for m in team:
+		var delay: float = start + r.randf_range(0.0, 0.25) + m["rank"] * 0.12
+		var n: Node3D = m["node"]
+		var tw := n.create_tween()
+		tw.tween_interval(delay)
+		tw.tween_callback(func():
+			if not m["alive"]:
+				return
+			_in_step(n, anim, phase)
+			var from := n.position
+			var to: Vector3 = m["slot"] - m["face"] * short
+			var mt := n.create_tween()
+			mt.tween_method(func(k: float):
+				if is_instance_valid(n) and m["alive"]:
+					n.position = _ground(from.lerp(to, k)), 0.0, 1.0, secs * r.randf_range(0.95, 1.03)))
 
 
-## A duelist's footwork between blows: a lunge in, a step back, or a sidestep.
-func _duel_step(m: Dictionary, r: RandomNumberGenerator) -> void:
+## Plays a move with everyone at the same point in it: a rank marching in step,
+## or drilling as one.
+func _in_step(n: Node3D, anim_name: String, phase: float, speed := 1.0) -> void:
+	n.set_meta("tempo", 1.0)
+	_people.play(n, anim_name, speed)
+	var ap: AnimationPlayer = n.get_node_or_null("Anim")
+	if ap and ap.has_animation(anim_name):
+		ap.seek(phase * ap.get_animation(anim_name).length, true)
+
+
+## One man walks or runs to a spot, facing the way he goes, then takes up `then`.
+func _walk_to(m: Dictionary, to: Vector3, secs: float, anim: String, then: String, r: RandomNumberGenerator) -> void:
+	var n: Node3D = m["node"]
+	var from := n.position
+	_people.play(n, anim, r.randf_range(0.9, 1.1))
+	var mt := n.create_tween()
+	mt.tween_method(func(k: float):
+		if is_instance_valid(n) and m["alive"]:
+			n.position = _ground(from.lerp(to, k)), 0.0, 1.0, secs)
+	mt.tween_callback(func():
+		if m["alive"]:
+			_people.play(n, then, r.randf_range(0.9, 1.1)))
+
+
+## A duelist's footwork between blows: a cut, a second cut, or a shield raised
+## against the man opposite, with a step in, back or aside.
+func _duel_step(m: Dictionary, r: RandomNumberGenerator, wall := false) -> void:
 	var n: Node3D = m["node"]
 	var face: Vector3 = m["face"]
 	var across := Vector3(-face.z, 0, face.x)
 	var home: Vector3 = m["slot"]
-	var to: Vector3 = home + face * r.randf_range(-0.04, 0.03) + across * r.randf_range(-0.03, 0.03)
+	var to: Vector3 = home + face * r.randf_range(-0.04, 0.03) + across * r.randf_range(-0.025, 0.025)
 	var mt := n.create_tween()
 	mt.tween_property(n, "position", _ground(to), r.randf_range(0.35, 0.6)).set_trans(Tween.TRANS_SINE)
-	_people.play(n, "Sword_Attack", r.randf_range(0.8, 1.25))
+	var roll := r.randf()
+	var move := "Sword_Attack" if roll < 0.4 else ("Sword_Attack_2" if roll < 0.7 else "Shield_Block")
+	if wall and roll < 0.25:
+		move = "Shield_Block"
+	if m["kit"] == "bow":
+		move = "Sword_Attack"
+	if roll > 0.93:
+		move = "Hit"
+	_people.play(n, move, r.randf_range(0.85, 1.2))
 
 
-func _follow_banners(banners: Array, teams: Array, start: float, secs: float) -> void:
-	for i in banners.size():
-		var b: Node3D = banners[i]
-		var face: Vector3 = teams[i][0]["face"]
-		var tw := create_tween()
-		tw.tween_interval(start)
-		tw.tween_property(b, "position", _ground(b.position + face * 1.4), secs)
+## A standard-bearer walks forward `dist` behind his line over `secs`, his banner with him.
+func _follow(b: Dictionary, dist: float, secs: float, r: RandomNumberGenerator) -> void:
+	var n: Node3D = b["node"]
+	var to: Vector3 = n.position + b["face"] * dist
+	_people.play(n, "Walk", r.randf_range(0.9, 1.0))
+	var off: Vector3 = b["flag"].position - n.position
+	var tw := n.create_tween()
+	tw.tween_method(func(k: float):
+		if is_instance_valid(n) and not n.has_meta("dead"):
+			var p := _ground(n.position.lerp(to, k * 0.2))
+			n.position = p
+			b["flag"].position = _ground(p + off), 0.0, 1.0, secs)
+	tw.tween_callback(func():
+		if not n.has_meta("dead"):
+			_people.play(n, "Sword_Idle", 1.0))
 
 
-## The men of `rank` push forward into the gaps between the duelling pairs and fight.
+## The men of `rank` push forward into the gaps between the duelling pairs and
+## fight; spearmen thrust over the front rank's shields, archers draw swords.
 func _press(teams: Array, rank: int, at_time: float, side: Vector3, r: RandomNumberGenerator) -> void:
 	var tw := create_tween()
 	tw.tween_interval(at_time)
@@ -312,7 +417,9 @@ func _press(teams: Array, rank: int, at_time: float, side: Vector3, r: RandomNum
 				mt.tween_interval(r.randf_range(0.0, 0.9))
 				mt.tween_callback(func(): _people.play(n, "Sprint", r.randf_range(0.8, 1.0)))
 				mt.tween_property(n, "position", _ground(m["slot"]), r.randf_range(0.7, 1.0))
-				mt.tween_callback(func(): _people.play(n, "Sword_Attack", r.randf_range(0.85, 1.15))))
+				mt.tween_callback(func():
+					if m["alive"]:
+						_people.play(n, "Sword_Attack", r.randf_range(0.85, 1.15))))
 
 
 func _fall(team: Array, r: RandomNumberGenerator) -> void:
@@ -321,22 +428,143 @@ func _fall(team: Array, r: RandomNumberGenerator) -> void:
 		return
 	var m: Dictionary = front[r.randi() % front.size()]
 	m["alive"] = false
-	var anim: AnimationPlayer = m["node"].get_node("Anim")
-	anim.get_animation("Death01").loop_mode = Animation.LOOP_NONE
-	anim.play("Death01", 0.1)
+	_die(m["node"], DEATHS[r.randi() % DEATHS.size()], r)
 	# The man behind steps over the body into the gap, at his own pace.
 	for back in team:
 		if back["alive"] and not back["engaged"] and back["file"] == m["file"] and back["rank"] > 0:
 			back["rank"] -= 1
 			back["engaged"] = true
 			back["slot"] = back["slot"] + back["face"] * ROW + Vector3(-back["face"].z, 0, back["face"].x) * r.randf_range(-0.04, 0.04)
-			var n: Node3D = back["node"]
-			var mt := n.create_tween()
+			var mt: Tween = back["node"].create_tween()
 			mt.tween_interval(r.randf_range(0.2, 0.8))
-			mt.tween_callback(_people.play.bind(n, "Walk", 1.0))
-			mt.tween_property(n, "position", _ground(back["slot"]), 0.8)
-			mt.tween_callback(_people.play.bind(n, "Sword_Attack", 1.0))
+			mt.tween_callback(func(): _walk_to(back, back["slot"], 0.8, "Walk", "Sword_Attack", r))
 			break
+
+
+## A man goes down and stays down: the death plays once and holds its last frame.
+func _die(n: Node3D, how: String, r: RandomNumberGenerator) -> void:
+	n.set_meta("dead", true)
+	var ap: AnimationPlayer = n.get_node_or_null("Anim")
+	if ap == null or not ap.has_animation(how):
+		return
+	ap.get_animation(how).loop_mode = Animation.LOOP_NONE
+	ap.speed_scale = r.randf_range(0.9, 1.1)
+	ap.play(how, 0.1)
+
+
+## Archers loose a volley: an arrow from each living archer arcs onto the
+## advancing ranks, and now and then one finds its man.
+func _arrows(root: Node3D, archers_team: Array, targets: Array, r: RandomNumberGenerator) -> void:
+	for m in archers_team:
+		if not m["alive"] or m["kit"] != "bow":
+			continue
+		var n: Node3D = m["node"]
+		var tw := n.create_tween()
+		tw.tween_interval(r.randf_range(0.0, 0.3))
+		tw.tween_callback(func(): _people.play(n, "Bow_Draw", 1.2))
+		tw.tween_interval(0.6)
+		tw.tween_callback(func():
+			if not m["alive"]:
+				return
+			_people.play(n, "Bow_Shoot", 1.0)
+			var mark: Dictionary = targets[r.randi() % targets.size()]
+			var land: Vector3 = mark["node"].position + Vector3(r.randf_range(-0.12, 0.12), 0, r.randf_range(-0.12, 0.12))
+			_arrow(root, n.position + Vector3(0, 0.17, 0), land, r)
+			if mark["alive"] and mark["rank"] > 0 and r.randf() < 0.08:
+				mark["alive"] = false
+				var hit: Tween = mark["node"].create_tween()
+				hit.tween_interval(1.1)
+				hit.tween_callback(func(): _die(mark["node"], "Death_Front", r)))
+		tw.tween_interval(0.5)
+		tw.tween_callback(func():
+			if m["alive"] and not m["engaged"]:
+				_people.play(n, "Bow_Idle", 1.0))
+
+
+var _arrow_mesh: BoxMesh
+
+
+func _arrow(root: Node3D, from: Vector3, to: Vector3, r: RandomNumberGenerator) -> void:
+	if _arrow_mesh == null:
+		_arrow_mesh = BoxMesh.new()
+		_arrow_mesh.size = Vector3(0.0025, 0.0025, 0.09)
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.25, 0.2, 0.15)
+		_arrow_mesh.material = mat
+	var a := MeshInstance3D.new()
+	a.mesh = _arrow_mesh
+	root.add_child(a)
+	var top := from.distance_to(to) * 0.35
+	var path := func(t: float) -> Vector3:
+		var p := from.lerp(to, t)
+		p.y += top * 4.0 * t * (1.0 - t)
+		return p
+	var tw := a.create_tween()
+	tw.tween_method(func(t: float):
+		var p: Vector3 = path.call(t)
+		var q: Vector3 = path.call(minf(t + 0.02, 1.0))
+		a.position = p
+		if q.distance_to(p) > 0.0001:
+			a.look_at(q, Vector3.UP), 0.0, 1.0, r.randf_range(1.0, 1.2))
+	# Arrows that miss stand in the ground a while.
+	tw.tween_interval(6.0)
+	tw.tween_callback(a.queue_free)
+
+
+## The victors' flank company: picked men waiting out on the wing, behind their own line.
+func _flank_company(root: Node3D, at: Vector3, dir: Vector3, side: Vector3, col: Color, r: RandomNumberGenerator) -> Array:
+	var men := []
+	for i in FLANKERS:
+		var f: Node3D = _people.make(r, "soldier", col, "adult")
+		var p: Vector3 = at + dir * (REACH + RANKS * ROW + 1.0 + (i % 2) * 0.18) + side * ((FILES / 2.0) * GAP + 0.5 + (i / 2) * 0.16)
+		f.position = _ground(p)
+		f.rotation.y = atan2(-dir.x, -dir.z)
+		root.add_child(f)
+		arm(f, "sword")
+		_people.play(f, "Sword_Idle", r.randf_range(0.9, 1.1))
+		men.append({"node": f, "alive": true})
+	return men
+
+
+## The flank company runs out wide round the end of the wall and into its
+## open flank, and the men there go down.
+func _charge_flank(company: Array, wall: Array, at: Vector3, dir: Vector3, side: Vector3, start: float, r: RandomNumberGenerator) -> void:
+	var flank: Vector3 = at - dir * (REACH + ROW) + side * ((FILES / 2.0) * GAP + 0.1)
+	for i in company.size():
+		var c: Dictionary = company[i]
+		var n: Node3D = c["node"]
+		var from: Vector3 = n.position
+		# Out wide past the wall's end, then wheel in onto its flank.
+		var wide: Vector3 = flank + side * (0.45 + (i % 2) * 0.12) + dir * 0.15
+		var into: Vector3 = flank - side * (0.05 + (i / 2) * 0.1) + side * 0.12 - dir * ((i % 2) * 0.12)
+		var curve := Curve3D.new()
+		curve.add_point(from)
+		curve.add_point(wide, (from - wide) * 0.4, (into - wide) * 0.35)
+		curve.add_point(into)
+		var tw := n.create_tween()
+		tw.tween_interval(start + i * 0.2)
+		tw.tween_callback(func(): _people.play(n, "Sprint", r.randf_range(1.0, 1.15)))
+		tw.tween_method(func(t: float):
+			if not c["alive"]:
+				return
+			var len := curve.get_baked_length()
+			var p := curve.sample_baked(t * len)
+			var q := curve.sample_baked(minf(t + 0.02, 1.0) * len)
+			n.position = _ground(p)
+			if q.distance_to(p) > 0.0001:
+				n.rotation.y = atan2(q.x - p.x, q.z - p.z), 0.0, 1.0, r.randf_range(3.2, 3.8))
+		tw.tween_callback(func():
+			n.rotation.y = atan2(-side.x, -side.z)
+			_people.play(n, "Sword_Attack_2", r.randf_range(0.9, 1.1))
+			# The men on the end of the wall are taken in the flank.
+			var near := wall.filter(func(w): return w["alive"] and w["node"].position.distance_to(n.position) < 0.3)
+			if not near.is_empty() and r.randf() < 0.7:
+				near[0]["alive"] = false
+				_die(near[0]["node"], "Death_Back", r))
+		tw.tween_interval(2.0)
+		tw.tween_callback(func():
+			if c["alive"]:
+				_people.play(n, "Sword_Attack", r.randf_range(0.9, 1.1)))
 
 
 func _standard(root: Node3D, p: Vector3, color: Color, face: Vector3, house := {}) -> Node3D:
@@ -347,9 +575,24 @@ func _standard(root: Node3D, p: Vector3, color: Color, face: Vector3, house := {
 	return b
 
 
-func _drop_banner(b: Node3D) -> void:
+## A standard goes over: it sways, then topples backward from the line and
+## lies on the field. `face` is the way its line faced.
+func _drop_banner(b: Node3D, face := Vector3.ZERO) -> void:
 	var tw := b.create_tween()
-	tw.tween_property(b, "rotation:x", deg_to_rad(80), 1.2).set_ease(Tween.EASE_IN)
+	if face == Vector3.ZERO:
+		tw.tween_property(b, "rotation:x", deg_to_rad(80), 1.2).set_ease(Tween.EASE_IN)
+		return
+	# Topple about the axis along the line, away from the fighting.
+	var axis := Vector3(-face.z, 0, face.x).normalized()
+	var start := b.transform.basis
+	tw.tween_method(func(k: float):
+		b.transform.basis = Basis(axis, -k * deg_to_rad(84)) * start, 0.0, 0.12, 0.35).set_trans(Tween.TRANS_SINE)
+	tw.tween_method(func(k: float):
+		b.transform.basis = Basis(axis, -k * deg_to_rad(84)) * start, 0.12, 0.04, 0.3).set_trans(Tween.TRANS_SINE)
+	tw.tween_method(func(k: float):
+		b.transform.basis = Basis(axis, -k * deg_to_rad(84)) * start, 0.04, 1.0, 1.1).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	tw.tween_method(func(k: float):
+		b.transform.basis = Basis(axis, -k * deg_to_rad(84)) * start, 1.0, 0.96, 0.15)
 
 
 func _dust(root: Node3D, p: Vector3, along: Vector3, width: float) -> void:

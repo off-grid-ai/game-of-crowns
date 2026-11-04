@@ -1,30 +1,84 @@
 extends RefCounted
 ## One fighter in a melee: the character you control or a foe. Health, a
-## guard, and a few states: ready, striking, blocking, staggered, dead. A strike
-## lands partway through its swing on whoever is in front within reach; a
-## raised shield turned toward the blow stops it. The moves are the townsfolk's
-## own Mixamo clips, so a fight looks like the rest of the world.
+## guard, and a few states: ready, striking, blocking, staggered, dead. Each
+## fighter has a kit (sword and shield, greatsword, axe, dagger) and fights with
+## that kit's own Mixamo moves; sheathed, they fight with their fists. A strike
+## lands on the frame the blow arrives, on whoever is in front within reach; a
+## guard turned toward the blow stops it. Who is hit reels the way the blow
+## came from and bleeds; who falls, falls away from it and stains the ground.
 
-const REACH := 0.16  # town units: about 1.3 m, a sword's length
+const Weapons := preload("res://scripts/weapons.gd")
+const Blood := preload("res://scripts/blood.gd")
+
+const REACH := 0.16  # town units: about 1.3 m, a sword's length (the AI's closing distance)
 const ARC := 0.75  # cos of the half-angle a strike covers (about 40 degrees each side)
-const SWING := 0.42  # seconds into a strike when the blade arrives
-const RECOVER := 0.9  # seconds before the next strike
-const STAGGER := 0.6
+const FOLLOW := 0.4  # seconds a move runs on past its blow before the fighter is ready again
+
+# How each kit fights. attacks: the cuts it varies between. kick: a shove now
+# and then that goes through a guard. guard: held while blocking (a looping
+# clip, or a one-off held on its last frame). parry: played when a blow is
+# turned. hurt: reeling from a blow in front. fall_back / fall_forward: deaths,
+# by the way the body goes. reach in town units; harm scales the blow; pace
+# the moves' speed.
+const KITS := {
+	"sword": {"weapon": "sword", "shield": true, "idle": "Sword_Idle", "walk": "SS_Walk",
+		"attacks": ["SS_Slash_1", "SS_Slash_3", "SS_Slash_4", "SS_Slash_5", "SS_Attack_3", "SS_Attack_4", "Sword_Attack_2"],
+		"kick": "SS_Kick", "guard": "SS_Block_Idle", "parry": ["SS_Block_1", "SS_Block_2", "Shield_Block"],
+		"hurt": ["SS_Impact_1", "SS_Impact_2", "SS_Impact_3"],
+		"fall_back": ["SS_Death_1", "Sword_Death"], "fall_forward": ["SS_Death_2", "Death_Back"],
+		"reach": 0.17, "harm": 1.0, "pace": 1.15},
+	"greatsword": {"weapon": "greatsword", "shield": false, "idle": "GS_Idle", "walk": "GS_Walk",
+		"attacks": ["GS_Attack", "GS_Slash_1", "GS_Slash_3", "GS_Spin"],
+		"kick": "GS_Kick", "guard": "GS_Block_2", "parry": ["GS_Block_1"],
+		"hurt": ["GS_Impact_1", "GS_Impact_2", "GS_Impact_3"],
+		"fall_back": ["GS_Death_1"], "fall_forward": ["GS_Death_2"],
+		"reach": 0.21, "harm": 1.4, "pace": 1.0},
+	"axe": {"weapon": "axe", "shield": false, "idle": "Axe_Idle", "walk": "Axe_Walk",
+		"attacks": ["Axe_Down", "Axe_Horizontal", "Axe_Backhand", "Axe_Spin"],
+		"kick": "Axe_Kick", "guard": "Axe_Block_Idle", "parry": ["Axe_Block_React"],
+		"hurt": ["React_Gut", "React_Front", "React_Head"],
+		"fall_back": ["Sword_Death", "SS_Death_1"], "fall_forward": ["Death_Back", "SS_Death_2"],
+		"reach": 0.17, "harm": 1.2, "pace": 1.3},
+	"dagger": {"weapon": "dagger", "shield": false, "idle": "Boxing", "walk": "Walk",
+		"attacks": ["Punch_1", "Punch_2", "Punch_3", "Punch_Jab"],
+		"kick": "Kick_Front", "guard": "", "parry": [],
+		"hurt": ["React_Front", "React_Head", "Hit"],
+		"fall_back": ["Death01", "Sword_Death"], "fall_forward": ["Death_Back"],
+		"reach": 0.13, "harm": 0.8, "pace": 1.1},
+	"fists": {"weapon": "", "shield": false, "idle": "Boxing", "walk": "Walk",
+		"attacks": ["Punch_1", "Punch_2", "Punch_3", "Punch_Jab"],
+		"kick": "Kick_Front", "guard": "", "parry": [],
+		"hurt": ["React_Head", "React_Front", "Hit"],
+		"fall_back": ["Death01"], "fall_forward": ["Death_Back"],
+		"reach": 0.12, "harm": 0.35, "pace": 1.1},
+}
+# When the blow arrives, as a fraction of each move: the moment the striking
+# hand (or foot) moves fastest, measured from the clips themselves.
+const BLOW_AT := {
+	"SS_Slash_1": 0.40, "SS_Slash_3": 0.50, "SS_Slash_4": 0.55, "SS_Slash_5": 0.44,
+	"SS_Attack_3": 0.43, "SS_Attack_4": 0.43, "SS_Kick": 0.40, "Sword_Attack": 0.49, "Sword_Attack_2": 0.45,
+	"GS_Attack": 0.39, "GS_Slash_1": 0.45, "GS_Slash_3": 0.44, "GS_Spin": 0.61, "GS_Kick": 0.36,
+	"Axe_Down": 0.37, "Axe_Horizontal": 0.40, "Axe_Backhand": 0.33, "Axe_Spin": 0.33, "Axe_Kick": 0.30,
+	"Punch_1": 0.48, "Punch_2": 0.29, "Punch_3": 0.33, "Punch_Jab": 0.28, "Kick_Front": 0.36,
+}
 
 var node: Node3D
 var people  # people.gd
+var kit := "sword"
 var health := 100.0
 var state := "ready"  # ready | striking | blocking | staggered | dead
 var armed := false
 var _timer := 0.0
 var _swing_at := -1.0
-var _alt := false
+var _last := ""
+var _kicking := false
 var on_land := Callable()  # (attacker) -> void: asked to resolve a strike that just arrived
 
 
-func _init(body: Node3D, p) -> void:
+func _init(body: Node3D, p, with := "sword") -> void:
 	node = body
 	people = p
+	kit = with
 
 
 func alive() -> bool:
@@ -35,60 +89,130 @@ func facing() -> Vector3:
 	return Vector3(sin(node.rotation.y), 0, cos(node.rotation.y))
 
 
+## The kit in use: the weapon drawn, or fists when it is sheathed.
+func style() -> Dictionary:
+	return KITS[kit if armed else "fists"]
+
+
+func idle_clip() -> String:
+	return style()["idle"]
+
+
+func walk_clip(running := false) -> String:
+	if running:
+		return "Sprint" if armed else "Running"
+	return style()["walk"]
+
+
+func reach() -> float:
+	return style()["reach"]
+
+
 func draw(on: bool) -> void:
 	if not alive():
 		return
 	armed = on
-	people.play(node, "Sword_Idle" if on else "Idle", 1.0)
+	var k: Dictionary = KITS[kit]
+	if on and k["weapon"] != "":
+		Weapons.arm(node, k["weapon"], k["shield"])
+	else:
+		Weapons.disarm(node)
+	people.play(node, idle_clip(), 1.0)
 
 
+## Swing (or punch, when sheathed). Varies the cut, and now and then kicks.
 func strike() -> bool:
-	if not alive() or state in ["striking", "staggered"] or not armed:
+	if not alive() or state in ["striking", "staggered"]:
 		return false
+	var s := style()
+	var pool: Array = s["attacks"].filter(func(c): return c != _last)
+	var move: String = pool[randi() % pool.size()]
+	_kicking = randf() < 0.15
+	if _kicking:
+		move = s["kick"]
+	_last = move
 	state = "striking"
-	_timer = RECOVER
-	_swing_at = SWING
-	_alt = not _alt
-	people.play(node, "Sword_Attack_2" if _alt else "Sword_Attack", 1.25)
+	var length := _once(move, s["pace"])
+	var at: float = length * float(BLOW_AT.get(move, 0.45)) / float(s["pace"])
+	_swing_at = at
+	_timer = at + FOLLOW
 	return true
 
 
 func block(on: bool) -> void:
-	if not alive() or not armed or state in ["striking", "staggered"]:
+	if not alive() or not armed or state in ["striking", "staggered"] or KITS[kit]["guard"] == "":
 		return
 	state = "blocking" if on else "ready"
-	people.play(node, "Shield_Block" if on else "Sword_Idle", 1.0)
+	if on:
+		_guard()
+	else:
+		people.play(node, idle_clip(), 1.0)
+
+
+## How hard this fighter's blow falls, from a base for who is striking.
+func harm(base: float) -> float:
+	return base * float(style()["harm"]) * (0.4 if _kicking else 1.0)
 
 
 ## Called by an attacker's strike: true if the blow was turned aside.
-func take(from: Node3D, damage: float) -> bool:
+func take(attacker, damage: float) -> bool:
 	if not alive():
 		return false
-	var to_attacker := (from.global_position - node.global_position)
+	var from: Node3D = attacker.node
+	var to_attacker := from.global_position - node.global_position
 	to_attacker.y = 0
-	if state == "blocking" and facing().dot(to_attacker.normalized()) > 0.3:
-		people.play(node, "Shield_Block", 1.4)
+	to_attacker = to_attacker.normalized()
+	var front := facing().dot(to_attacker)
+	var kicked: bool = attacker._kicking
+	if state == "blocking" and front > 0.3 and not kicked:
+		var parry: Array = KITS[kit]["parry"]
+		if not parry.is_empty():
+			_once(parry[randi() % parry.size()], 1.3)
+			node.get_tree().create_timer(0.5).timeout.connect(func():
+				if state == "blocking":
+					_guard())
 		return true
-	health -= damage
+	health -= attacker.harm(damage)
+	var bladed: bool = attacker.armed and not kicked
+	var unit := node.scale.x  # world units per metre, here
+	if bladed:
+		var wound := node.global_position + Vector3.UP * 1.25 * unit + to_attacker * 0.12 * unit
+		Blood.spray(node.get_parent(), wound, -to_attacker, node.global_position.y, unit)
+	var s: Dictionary = KITS[kit] if armed else KITS["fists"]
 	if health <= 0.0:
 		state = "dead"
-		var fall := "Sword_Death" if armed else "Death01"
-		people.play(node, fall, 1.0)
-		# Clips are shared and loop; this one plays through once, then holds still.
-		var a: AnimationPlayer = node.get_node_or_null("Anim")
-		if a and a.has_animation(fall):
-			a.seek(0.0, true)
-			node.get_tree().create_timer(a.get_animation(fall).length * 0.97).timeout.connect(func():
-				if is_instance_valid(a):
-					a.pause())
+		_swing_at = -1.0
+		# Struck from the front they go over backwards; from behind, onto their face.
+		var falls: Array = s["fall_back"] if front > -0.2 else s["fall_forward"]
+		_once(falls[randi() % falls.size()], 1.0)
+		if bladed or attacker.armed:
+			var at := node.global_position
+			var parent := node.get_parent()
+			node.get_tree().create_timer(1.4).timeout.connect(func():
+				if is_instance_valid(parent):
+					Blood.pool(parent, at, -to_attacker, unit))
 		return false
 	state = "staggered"
-	_timer = STAGGER
-	people.play(node, "Hit", 1.2)
+	_swing_at = -1.0
+	# Reel the way the blow came: from the side, the side; head-on, the kit's own.
+	var left := Vector3(cos(node.rotation.y), 0, -sin(node.rotation.y))
+	var side := left.dot(to_attacker)
+	var reel: String
+	if front < -0.3:
+		reel = "Hit"
+	elif absf(side) > 0.6 or (kicked and absf(side) > 0.3):
+		reel = "React_Left" if side > 0.0 else "React_Right"
+	elif kicked:
+		reel = "React_Gut"
+	else:
+		var hurt: Array = s["hurt"]
+		reel = hurt[randi() % hurt.size()]
+	var length := _once(reel, 1.2)
+	_timer = minf(length / 1.2 * 0.8, 1.0)
 	return false
 
 
-## Advance the fighter's own clock; resolves its strike when the blade arrives.
+## Advance the fighter's own clock; resolves its strike when the blow arrives.
 func tick(delta: float) -> void:
 	if not alive():
 		return
@@ -100,7 +224,8 @@ func tick(delta: float) -> void:
 		_timer -= delta
 		if _timer <= 0.0 and state in ["striking", "staggered"]:
 			state = "ready"
-			people.play(node, "Sword_Idle" if armed else "Idle", 1.0)
+			_kicking = false
+			people.play(node, idle_clip(), 1.0)
 
 
 ## Is this fighter in the arc of a blow from `attacker`?
@@ -109,4 +234,27 @@ func in_reach_of(attacker) -> bool:
 		return false
 	var d: Vector3 = node.global_position - attacker.node.global_position
 	d.y = 0
-	return d.length() < REACH and attacker.facing().dot(d.normalized()) > ARC
+	return d.length() < attacker.reach() and attacker.facing().dot(d.normalized()) > ARC
+
+
+## Raise the kit's guard and keep it up.
+func _guard() -> void:
+	var g: String = KITS[kit]["guard"]
+	if g.ends_with("Idle"):
+		people.play(node, g, 1.0)
+	else:
+		_once(g, 1.4)  # a one-off: it holds on its last frame
+
+
+## Plays a move once from its start, holding its last frame when done (the
+## shared clips loop for the townsfolk; these don't). Returns its length.
+func _once(clip: String, speed := 1.0) -> float:
+	var a: AnimationPlayer = node.get_node_or_null("Anim")
+	if a == null or not a.has_animation(clip):
+		return 0.5
+	var anim := a.get_animation(clip)
+	anim.loop_mode = Animation.LOOP_NONE
+	a.play(clip, 0.12)
+	a.seek(0.0, true)
+	a.speed_scale = speed
+	return anim.length

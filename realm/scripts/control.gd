@@ -144,7 +144,7 @@ func _build_hud() -> void:
 	_prompt = T.title("", 16)
 	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(_prompt)
-	_hint = T.label("WASD walk   ·   Shift run   ·   right-drag turn   ·   E talk or enter   ·   Tab draw sword   ·   click strike   ·   Space block   ·   Esc leave")
+	_hint = T.label("WASD walk   ·   Shift run   ·   right-drag turn   ·   E talk or enter   ·   Tab draw sword   ·   click strike (fists when sheathed)   ·   Space block   ·   Esc leave")
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(_hint)
 
@@ -170,8 +170,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.button_index == MOUSE_BUTTON_RIGHT:
 			_turning = event.pressed
 		elif event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-			if not _me.armed:
-				_me.draw(true)
 			_me.strike()
 		elif event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_dist = maxf(0.35, _dist * 0.88)
@@ -221,9 +219,10 @@ func _process(delta: float) -> void:
 		if terrain.is_land(next.x, next.z):
 			_body.position = Vector3(next.x, terrain.height_at(next.x, next.z), next.z)
 		_body.rotation.y = lerp_angle(_body.rotation.y, atan2(dir.x, dir.z), minf(1.0, delta * 10.0))
-		villagers._people.play(_body, ("Sprint" if _me.armed else "Running") if running else "Walk", 1.0)
+		villagers._people.play(_body, _me.walk_clip(running), 1.0)
 	elif _me.alive() and _me.state == "ready":
-		villagers._people.play(_body, "Sword_Idle" if _me.armed else "Idle", 1.0)
+		villagers._people.play(_body, _me.idle_clip(), 1.0)
+	_square_up(delta, want == Vector2.ZERO)
 	_fight(delta)
 	# The townsfolk gather wherever you are.
 	rig.target = _body.position
@@ -322,11 +321,32 @@ func _land(attacker) -> void:
 	var all: Array = [_me] + _foes
 	for f in all:
 		if f != attacker and f.in_reach_of(attacker):
-			var turned: bool = f.take(attacker.node, 34.0 if attacker == _me else 18.0)
+			var turned: bool = f.take(attacker, 34.0 if attacker == _me else 18.0)
 			if f == _me and not _me.alive():
 				_fallen()
 			elif not turned and f != _me and not f.alive():
 				_say("The outlaw falls.")
+
+
+## With a foe close, standing still means facing them, and the camera comes
+## round over your shoulder so you both stay in view (unless you are turning it).
+func _square_up(delta: float, still: bool) -> void:
+	if not _me.alive():
+		return
+	var near: Node3D = null
+	var best: float = _me.reach() * 4.0
+	for f in _foes:
+		var d: float = f.node.position.distance_to(_body.position)
+		if f.alive() and d < best:
+			best = d
+			near = f.node
+	if near == null:
+		return
+	var to := near.position - _body.position
+	if still and _me.state in ["ready", "blocking"]:
+		_body.rotation.y = lerp_angle(_body.rotation.y, atan2(to.x, to.z), minf(1.0, delta * 8.0))
+	if not _turning:
+		_yaw = lerp_angle(_yaw, atan2(-to.x, -to.z) + 0.55, minf(1.0, delta * 1.5))
 
 
 ## Foes close in, circle a little, strike when in reach, and now and then raise
@@ -349,22 +369,23 @@ func _fight(delta: float) -> void:
 		f.node.rotation.y = lerp_angle(f.node.rotation.y, atan2(to.x, to.z), minf(1.0, delta * 6.0))
 		if f.state != "ready" and f.state != "blocking":
 			continue
-		if _me.state == "striking" and to.length() < Combat.REACH * 1.3 and f.state == "ready" and randf() < delta * 1.5:
+		if _me.state == "striking" and to.length() < _me.reach() * 1.3 and f.state == "ready" and randf() < delta * 1.5:
 			f.block(true)
 			get_tree().create_timer(0.7).timeout.connect(func(): f.block(false))
 			continue
-		if to.length() > Combat.REACH * 0.8:
+		if to.length() > f.reach() * 0.8:
 			var step: Vector3 = to.normalized() * WALK * 1.3 * delta
 			var next := _walkable(f.node.position + step)
 			f.node.position = Vector3(next.x, terrain.height_at(next.x, next.z), next.z)
-			villagers._people.play(f.node, "Walk", 1.1)
+			villagers._people.play(f.node, f.walk_clip(), 1.1)
 		elif f.state == "ready" and randf() < delta * 0.9:
 			f.strike()
 		else:
-			villagers._people.play(f.node, "Sword_Idle", 1.0)
+			villagers._people.play(f.node, f.idle_clip(), 1.0)
 
 
-## Outlaws, armed, from somewhere just out of sight.
+## Outlaws, armed with whatever they could get (an axe, a greatsword, a
+## sword and shield, a knife), from somewhere just out of sight.
 func spawn_foes(count: int) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
@@ -374,7 +395,7 @@ func spawn_foes(count: int) -> void:
 		var n: Node3D = villagers._people.make(rng, "soldier", Color(0.42, 0.38, 0.34), "adult")
 		add_child(n)
 		n.position = Vector3(at.x, terrain.height_at(at.x, at.z), at.z)
-		var f = Combat.new(n, villagers._people)
+		var f = Combat.new(n, villagers._people, ["axe", "greatsword", "sword", "dagger"][(i + rng.randi() % 4) % 4])
 		f.health = 60.0
 		f.on_land = _land
 		f.draw(true)
