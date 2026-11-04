@@ -1,0 +1,33 @@
+# Realm — working vision
+
+The one place where decisions live. New ideas get added here. They don't replace what's already decided unless we say so explicitly.
+
+## The game in one line
+A living medieval-fantasy world that runs on its own on your laptop. You're its god: you watch, build, bless and curse.
+
+## Decided
+- **Setting:** Game of Thrones *era and feel* (medieval, great houses, castles), with mythical touches (the dead beyond the wall, wildlings). No dragons: dropped 2026-11-03. It doesn't need to be Westeros or use GoT names.
+- **One age.** Medieval throughout. Tech grows within it (wooden forts become stone castles), but there's no march to industrial or sci-fi.
+- **Self-running.** Villages grow into towns and kingdoms at their own pace. It keeps going while you're away (it catches up when reopened).
+- **You are the King.** The great houses are your vassals and run themselves. Your goal: **keep the peace while the realm prospers.** Royal tools: grain and gold to houses, raise the royal army, grant or strip castles, raise buildings. Famine, plague and the dead are fate testing your reign (with a sandbox "god" mode to trigger them yourself). The HUD shows Peace and Prosperity.
+- **Deep cause and effect.** Famine, abundance, plague, faith, unrest and war ripple through the simulation. Different peoples react differently, and their history changes them.
+- **Look:** like Manor Lords (rich stylized 3D). Top-down by default, zoom smoothly into a city and into buildings to see people working.
+- **People animated** with Mixamo (or an equivalent free library).
+- **We are system integrators.** Every layer, including the simulation itself, comes from an existing open project. Our code is glue: connecting the pieces, translating one's output into another's input, and giving you narrative control. Before writing anything, ask "who has already built this?"
+- **Closest existing game:** WorldBox (right loop, visuals too low quality). Manor Lords is the visual reference, not a substitute.
+
+- **Personal use only, so licences don't matter.** GPL engines, 0 A.D. art, Sketchfab models and so on are all fair game. Pick on quality and fit alone.
+
+- **Scenarios and restarts.** Start a new realm any time from a scenario: map size, land and climate, which houses exist, how rich and aggressive they are, starting wars or alliances, how often fate strikes. Save scenarios to replay them.
+- **Track everything.** Treasury, food, population, armies and towns per house and for the realm, with history charts over time.
+
+## Approach
+1. Survey existing building blocks properly (codebases, art, sim content, engine kits). *Done: see BUILDING_BLOCKS.md.*
+2. Choose the stack from that survey, together. *Proposed: Godot 4 + Quaternius art + Azgaar world seed.*
+3. Proof: one living valley built from those pieces, so you can judge quality before committing.
+4. Then the full realm.
+
+## Open questions
+- Platform: browser (three.js) vs Unity vs Godot. Decide after the survey.
+- Budget for paid art packs (e.g. Synty), if free art isn't good enough.
+- How you steer the narrative: direct events only, or also "story arcs" you set up (e.g. "make House X rise, then betray Y")?
