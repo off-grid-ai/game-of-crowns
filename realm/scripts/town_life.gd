@@ -349,4 +349,4 @@ static func _near_only(life: Node) -> void:
 		if g.visibility_range_end == 0.0:
 			g.visibility_range_end = 30.0
 			g.visibility_range_end_margin = 4.0
-			g.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+			g.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED

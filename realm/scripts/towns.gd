@@ -436,7 +436,7 @@ func _flush(root: Node3D) -> void:
 	# Anything placed whole (the castle, landmarks) carries furthest.
 	for g in root.find_children("*", "GeometryInstance3D", true, false):
 		if g.visibility_range_end == 0.0:
-			_fade_beyond(g, 160.0)
+			_fade_beyond(g, 90.0)
 
 
 ## How far away a kit model is still worth drawing, by its real size: clutter
@@ -453,17 +453,19 @@ func _reach_for(kind: String) -> float:
 		return 16.0
 	if m < 6.0:
 		return 28.0
+	# Past these the painted map has taken over (it is most of the view by
+	# 45 units out): a house there is a few pixels, a castle a small block.
 	if m < 15.0:
-		return 70.0
+		return 40.0
 	if m < 25.0:
-		return 100.0
-	return 160.0
+		return 60.0
+	return 90.0
 
 
 func _fade_beyond(g: GeometryInstance3D, end: float) -> void:
 	g.visibility_range_end = end
 	g.visibility_range_end_margin = end * 0.15
-	g.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	g.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 
 
 func _ground_y(center: Vector3, off: Vector3) -> float:

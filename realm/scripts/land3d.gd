@@ -20,6 +20,9 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 	land.name = "Terrain3D"
 	# Its textures are built here, not saved to a file, so there is nothing to free.
 	land.free_editor_textures = false
+	# Nothing in the realm stands on physics (the camera and walkers read the
+	# heights directly): no collision shapes rebuilt around the camera.
+	land.set("collision_mode", 0)
 	add_child(land)
 	land.render_layers = 1 | ground_layer  # so painted roads and squares land on it
 	land.vertex_spacing = 1.0
@@ -186,8 +189,12 @@ func _drape_atlas(mat: Terrain3DMaterial, terrain: Node3D) -> void:
 	mat.set_shader_param("atlas_size", Vector2(terrain.width * terrain.TILE, terrain.height * terrain.TILE))
 
 
+var _atlas_mix := -1.0
 func set_atlas_mix(v: float) -> void:
-	if land:
+	# Only when it really changes: setting a value on Terrain3D's material every
+	# frame is far from free, and the camera usually holds still.
+	if land and absf(v - _atlas_mix) > 0.002:
+		_atlas_mix = v
 		land.material.set_shader_param("atlas_mix", v)
 
 

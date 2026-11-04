@@ -223,12 +223,25 @@ func _plant_verges() -> void:
 
 
 ## A road or track along the land between two points, onto the King's Road layer.
+## Farm tracks have a layer of their own: the king's road is rebuilt whenever a
+## town changes hands, and the tracks hung on it vanished with it.
+var _tracks: Node3D
+
+
+func clear_tracks() -> void:
+	if _tracks:
+		_tracks.queue_free()
+	_tracks = null
+
+
 func track(a: Vector3, b: Vector3, width := WIDTH * 0.7) -> void:
-	if _kings == null:
-		return
+	if _tracks == null:
+		_tracks = Node3D.new()
+		_tracks.name = "FarmTracks"
+		add_child(_tracks)
 	var route: PackedVector3Array = terrain.land_path(a, b)
 	for i in route.size() - 1:
-		_segment(route[i], route[i + 1], _kings, width, TINT)
+		_segment(route[i], route[i + 1], _tracks, width, TINT)
 
 
 func _segment(a: Vector3, b: Vector3, parent: Node3D = null, width := WIDTH, tint := TINT) -> void:

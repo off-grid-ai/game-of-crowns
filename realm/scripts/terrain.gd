@@ -762,13 +762,21 @@ func set_realm(owners: Array, players: Array) -> void:
 
 
 ## 0 down among the streets, 1 looking at the whole realm.
+var _realm_mix := -1.0
 func set_realm_mix(v: float) -> void:
+	if absf(v - _realm_mix) <= 0.002:
+		return
+	_realm_mix = v
 	if _land_mat:
 		_land_mat.set_shader_parameter("realm_mix", v)
 
 
 ## How much of the atlas shows over the 3D ground (0 up close, most of it far out).
+var _atlas_mix := -1.0
 func set_atlas_mix(v: float) -> void:
+	if absf(v - _atlas_mix) <= 0.002:
+		return  # unchanged: nothing to send
+	_atlas_mix = v
 	if land3d:
 		land3d.set_atlas_mix(v)
 	if _sea_mat:

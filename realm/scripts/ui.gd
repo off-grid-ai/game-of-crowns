@@ -1193,8 +1193,12 @@ func toast(text: String) -> void:
 	_toast_time = 5.0
 
 
+var _tithe_asked := -1.0  # a tithe the King set that the realm hasn't reported back yet
+var _tithe_asked_at := 0  # when; after half a minute the realm's word stands
 func _set_tithe(rate: float) -> void:
 	_tithe = clampf(snappedf(rate, 0.05), 0.0, 0.4)
+	_tithe_asked = _tithe
+	_tithe_asked_at = Time.get_ticks_msec()
 	tithe_changed.emit(_tithe)
 	_tithe_l.text = "%d%%" % int(_tithe * 100)
 	toast("The royal tithe is now %d%%. %s" % [int(_tithe * 100), "The houses grumble." if _tithe >= 0.2 else "The houses breathe easier."])
@@ -1238,7 +1242,12 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		_house_by_name[String(houses[pid].get("name", ""))] = houses[pid]
 	set_reign(world.get("reign", {}))
 	var c: Dictionary = world.get("crown", {})
-	_tithe = float(c.get("tithe", _tithe))
+	# The realm's report can be older than the King's last word: until it
+	# carries the tithe just set, the screen keeps showing that one.
+	var reported := float(c.get("tithe", _tithe))
+	if _tithe_asked < 0.0 or absf(reported - _tithe_asked) < 0.001 or Time.get_ticks_msec() - _tithe_asked_at > 30000:
+		_tithe = reported
+		_tithe_asked = -1.0
 	_gold.text = _heads(int(c.get("treasury", 0)) * CROWNS)
 	_peace.text = "%d%%" % int(float(world.get("peace", 1)) * 100)
 	_souls.text = _heads(int(world.get("souls", 0)))

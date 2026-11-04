@@ -88,6 +88,9 @@ func _ready() -> void:
 	units = preload("res://scripts/units.gd").new()
 	units.terrain = terrain
 	add_child(units)
+	var anim_lod := preload("res://scripts/anim_lod.gd").new()
+	anim_lod.name = "AnimLOD"
+	add_child(anim_lod)
 	rig = preload("res://scripts/camera_rig.gd").new()
 	rig.terrain = terrain
 	rig.towns = towns  # so the camera keeps above roofs
@@ -483,6 +486,10 @@ func _setup_environment() -> void:
 	sky3d.minutes_per_day = DAY_SECONDS / 60.0
 	sky3d.current_time = _time_of_day * 24.0
 	env = sky3d.environment
+	# The sky changes all the time (clouds, the sun): its lighting is rebuilt a
+	# little each frame rather than all of it every frame.
+	if env.sky:
+		env.sky.process_mode = Sky.PROCESS_MODE_INCREMENTAL
 	env.tonemap_mode = Environment.TONE_MAPPER_AGX
 	env.ssao_enabled = true
 	env.ssao_radius = 1.2
@@ -545,6 +552,9 @@ func _try_look(look: String) -> void:
 			"nofog": env.fog_enabled = false
 			"noshadow": sun.shadow_enabled = false
 			"noforest": _no_forest = true
+			"notrees": _no_trees = true
+			"nosea": _no_sea = true
+			"noinstancer": _no_instancer = true
 			"profile": _shot["profile"] = true
 			"cycle": _cycle = []  # starts once the towns are built; see _cycle_step
 			"cyclevis":  # the same, hiding each system rather than pausing it: what each one draws
@@ -655,6 +665,9 @@ func _profile_once() -> void:
 		f.store_line("PROFILE %s: %dk tris, %d draws, tris by draw distance %s" % [sys.name, tris / 1000, draws, str(by_end)])
 
 
+var _no_instancer := false  # test: Terrain3D's instancer switched off
+var _no_sea := false  # test: hide the sea
+var _no_trees := false  # test: hide what Terrain3D's instancer draws
 var _no_forest := false  # GOC_LOOK=noforest: the woods hidden, to measure what they cost
 ## GOC_LOOK=cycle: once the realm is built, each system in turn stops processing
 ## for a few seconds while script time and frame rate are averaged, so the
@@ -718,6 +731,15 @@ func _process(_delta: float) -> void:
 	_cycle_step(_delta)
 	if _no_forest and terrain.forest:
 		terrain.forest.visible = false
+	if _no_instancer and terrain.land3d and terrain.land3d.land and terrain.land3d.land.instancer_mode != 0:
+		terrain.land3d.land.instancer_mode = 0
+	if _no_sea:
+		for n in terrain.get_children():
+			if n.name.to_lower().contains("ocean") or n.name.to_lower().contains("sea"):
+				n.visible = false
+	if _no_trees and terrain.land3d and terrain.land3d.land:
+		for m in terrain.land3d.land.find_children("*", "MultiMeshInstance3D", true, false):
+			m.visible = false
 	_profile_once()
 	_heard_at -= _delta
 	if _heard_at <= 0.0:

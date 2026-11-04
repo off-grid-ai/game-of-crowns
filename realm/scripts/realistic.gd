@@ -110,6 +110,21 @@ static func _template(name: String) -> Dictionary:
 			for i in mesh.get_surface_count():
 				mesh.surface_set_material(i, m.get_active_material(i))
 		parts.append([mesh, _local(m, root)])
+	# One mesh, one surface per material: a model authored in hundreds of
+	# pieces (the longhall is 352) costs a draw call for every piece, and on
+	# Metal those calls, not triangles, were what held the frame.
+	var merged := _merge(parts)
+	if merged:
+		parts = [[merged, Transform3D.IDENTITY]]
+		var whole := Node3D.new()
+		whole.name = name
+		var mi := MeshInstance3D.new()
+		mi.name = "Model"
+		mi.mesh = merged
+		whole.add_child(mi)
+		mi.owner = whole
+		root.free()
+		root = whole
 	var scene := PackedScene.new()
 	scene.pack(root)
 	root.free()
@@ -118,6 +133,96 @@ static func _template(name: String) -> Dictionary:
 
 
 ## The model as [mesh, transform] pairs relative to its foot, for batching.
+## The parts' surfaces gathered by material into one mesh, each vertex moved by
+## its part's place in the model. Null if a part can't be merged (skinned or
+## morphing meshes keep their pieces).
+static func _merge(parts: Array) -> ArrayMesh:
+	var by_mat := {}  # material -> [arrays list]
+	for part in parts:
+		var mesh: Mesh = part[0]
+		var xf: Transform3D = part[1]
+		if mesh.get_blend_shape_count() > 0:
+			return null
+		for si in mesh.get_surface_count():
+			if mesh.surface_get_primitive_type(si) != Mesh.PRIMITIVE_TRIANGLES:
+				return null
+			var a := mesh.surface_get_arrays(si)
+			if a[Mesh.ARRAY_BONES] != null:
+				return null
+			var mat: Material = mesh.surface_get_material(si)
+			if not by_mat.has(mat):
+				by_mat[mat] = []
+			by_mat[mat].append([a, xf])
+	# Built through the importer's own mesh so the engine can make it lighter
+	# versions for distance, as it did for the pieces on import.
+	var im := ImporterMesh.new()
+	for mat in by_mat:
+		var verts := PackedVector3Array()
+		var norms := PackedVector3Array()
+		var tans := PackedFloat32Array()
+		var uvs := PackedVector2Array()
+		var uv2s := PackedVector2Array()
+		var cols := PackedColorArray()
+		var idx := PackedInt32Array()
+		var has_tan := true
+		var has_uv2 := true
+		var has_col := true
+		for entry in by_mat[mat]:
+			var a: Array = entry[0]
+			var xf: Transform3D = entry[1]
+			var base := verts.size()
+			var v: PackedVector3Array = a[Mesh.ARRAY_VERTEX]
+			var n = a[Mesh.ARRAY_NORMAL]
+			var t = a[Mesh.ARRAY_TANGENT]
+			var u = a[Mesh.ARRAY_TEX_UV]
+			var u2 = a[Mesh.ARRAY_TEX_UV2]
+			var c = a[Mesh.ARRAY_COLOR]
+			var nb := xf.basis.inverse().transposed()
+			for i in v.size():
+				verts.append(xf * v[i])
+				norms.append((nb * n[i]).normalized() if n != null else Vector3.UP)
+			if t != null and has_tan:
+				for i in v.size():
+					var tv: Vector3 = (xf.basis * Vector3(t[i * 4], t[i * 4 + 1], t[i * 4 + 2])).normalized()
+					tans.append_array([tv.x, tv.y, tv.z, t[i * 4 + 3]])
+			else:
+				has_tan = false
+			if u != null:
+				uvs.append_array(u)
+			else:
+				uvs.resize(verts.size())
+			if u2 != null and has_uv2:
+				uv2s.append_array(u2)
+			else:
+				has_uv2 = false
+			if c != null and has_col:
+				cols.append_array(c)
+			else:
+				has_col = false
+			var ind = a[Mesh.ARRAY_INDEX]
+			if ind != null:
+				for i in ind:
+					idx.append(base + i)
+			else:
+				for i in v.size():
+					idx.append(base + i)
+		var arr := []
+		arr.resize(Mesh.ARRAY_MAX)
+		arr[Mesh.ARRAY_VERTEX] = verts
+		arr[Mesh.ARRAY_NORMAL] = norms
+		if has_tan and tans.size() == verts.size() * 4:
+			arr[Mesh.ARRAY_TANGENT] = tans
+		arr[Mesh.ARRAY_TEX_UV] = uvs
+		if has_uv2 and uv2s.size() == verts.size():
+			arr[Mesh.ARRAY_TEX_UV2] = uv2s
+		if has_col and cols.size() == verts.size():
+			arr[Mesh.ARRAY_COLOR] = cols
+		arr[Mesh.ARRAY_INDEX] = idx
+		im.add_surface(Mesh.PRIMITIVE_TRIANGLES, arr, [], {}, mat)
+	im.generate_lods(25.0, 60.0, [])
+	return im.get_mesh()
+
+
 static func parts(name: String) -> Array:
 	var t := _template(name)
 	return t["parts"] if t else []

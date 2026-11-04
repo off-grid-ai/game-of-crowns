@@ -85,8 +85,17 @@ func plant(trees: Array) -> void:
 			_ids[k] = _land().plant([_full[k], _mid[k], _card[k]], [NEAR, MID, 1000.0], 1, _trees[k])
 
 
+## Terrain3D's instancer cost ~400 ms a frame over a town on this Mac, working
+## out every tree's detail level on the CPU each frame; Godot's own batches,
+## a block of land each with near, middle and far versions switched by distance
+## on the GPU, draw the same trees for nothing per frame.
+const USE_INSTANCER := false
+
+
 ## Terrain3D's ground, when the realm is drawn on it (terrain.gd's land3d).
 func _land() -> Node:
+	if not USE_INSTANCER:
+		return null
 	var land3d = get_parent().get("land3d")
 	return land3d if land3d and land3d.land else null
 
@@ -104,7 +113,7 @@ func _layer(mesh: Mesh, xfs: Array, begin: float, end: float, shadows: bool) -> 
 	mmi.visibility_range_end = end
 	mmi.visibility_range_begin_margin = 2.0
 	mmi.visibility_range_end_margin = 2.0
-	mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 	if not shadows:
 		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mmi)
@@ -213,8 +222,16 @@ func clear(center: Vector3, radius: float) -> void:
 
 ## The kinds that lost trees this frame, sent to the instancer again in one go.
 var _replant_due := false
+var _replants := 0
 func _replant() -> void:
 	_replant_due = false
+	_replants += 1
+	var t0 := Time.get_ticks_msec()
+	_replant_body()
+	print_verbose("REPLANT #%d %d ms" % [_replants, Time.get_ticks_msec() - t0])
+
+
+func _replant_body() -> void:
 	var land: Terrain3D = _land().land if _land() else null
 	if land == null:
 		return

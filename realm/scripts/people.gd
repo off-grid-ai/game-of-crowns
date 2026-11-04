@@ -232,13 +232,14 @@ func _finish(person: Node3D, skeleton: Skeleton3D, rng: RandomNumberGenerator, r
 	anim.name = "Anim"
 	person.add_child(anim)
 	anim.add_animation_library("", _lib)
+	preload("res://scripts/anim_lod.gd").add(anim)  # moved by distance, not every frame regardless
 	# Past arm's length of the camera a person is a speck: they fade out and stop
 	# costing draws, so a crowd only costs what's near.
 	for mi in skeleton.get_children():
 		if mi is GeometryInstance3D:
 			mi.visibility_range_end = SEEN_TO
 			mi.visibility_range_end_margin = 3.0
-			mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+			mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 	_shape(skeleton, build, age)
 	var height: float = rng.randf_range(0.96, 1.04) * {"child": 0.72, "young": 0.98, "adult": 1.0, "elder": 0.96}[age]
 	person.scale = Vector3.ONE * height * k * S

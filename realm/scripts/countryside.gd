@@ -28,6 +28,8 @@ func build(cities: Array) -> void:
 	var slice := Time.get_ticks_msec()
 	for c in get_children():
 		c.queue_free()
+	if roads:
+		roads.clear_tracks()
 	if _bush == null:
 		_bush = preload("res://scripts/house_builder.gd").new().bake_path("res://assets/nature/Plant_1.gltf")
 	var rng := RandomNumberGenerator.new()
@@ -73,7 +75,7 @@ func build(cities: Array) -> void:
 	await get_tree().process_frame
 	if gen != _gen:
 		return
-	_grass(cities, steads, rng)
+	_grass(cities, steads)
 
 
 func _near_town(cities: Array, tx: int, ty: int) -> bool:
@@ -185,7 +187,12 @@ func _hedgerows(fields: Array) -> void:
 
 ## Grass underfoot around every town and farmstead: the nature kit's own
 ## grass tufts, dense close to where people live, drawn only near the camera.
-func _grass(cities: Array, steads: Array, rng: RandomNumberGenerator) -> void:
+var _tufts := {}  # place -> its two lists of tufts, scattered once
+var _grass_nodes := {}  # place -> its grass batches, kept between rebuilds
+var _grass_root: Node3D
+
+
+func _grass(cities: Array, steads: Array) -> void:
 	var builder = preload("res://scripts/house_builder.gd").new()
 	var tufts: Array = [builder.bake_path("res://assets/nature/Grass_Common_Short.gltf"), builder.bake_path("res://assets/nature/Grass_Wispy_Short.gltf")]
 	var spots: Array = []
@@ -193,35 +200,67 @@ func _grass(cities: Array, steads: Array, rng: RandomNumberGenerator) -> void:
 		spots.append([terrain.world_pos(float(c["x"]), float(c["y"])), 5.5])
 	for s in steads:
 		spots.append([s, 3.0])
-	var xf := [[], []]
+	var kept := {}
 	for spot in spots:
 		var p: Vector3 = spot[0]
 		var r: float = spot[1]
+		# A place's tufts are scattered once and remembered: a town founded or
+		# razed elsewhere doesn't scatter the whole realm's grass again.
+		var key := "%d:%d:%d" % [roundi(p.x * 10.0), roundi(p.z * 10.0), roundi(r)]
+		if _tufts.has(key):
+			kept[key] = _tufts[key]
+			continue
+		var mine := [[], []]
+		var prng := RandomNumberGenerator.new()
+		prng.seed = hash(key)
 		for i in int(r * r * 45.0):
-			var ang := rng.randf() * TAU
-			var d := sqrt(rng.randf()) * r
+			var ang := prng.randf() * TAU
+			var d := sqrt(prng.randf()) * r
 			if d < 1.0 and r > 4.0:
 				continue  # the trodden square and lanes stay bare
 			var q := p + Vector3(cos(ang), 0, sin(ang)) * d
 			if not terrain.is_land(q.x, q.z):
 				continue
-			var k := 0.12 * rng.randf_range(0.5, 1.0)
-			xf[rng.randi() % 2].append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(k, k * rng.randf_range(0.8, 1.3), k)), Vector3(q.x, terrain.height_at(q.x, q.z) - 0.01, q.z)))
-	for v in 2:
-		if xf[v].is_empty():
+			var k := 0.12 * prng.randf_range(0.5, 1.0)
+			mine[prng.randi() % 2].append(Transform3D(Basis(Vector3.UP, prng.randf() * TAU).scaled(Vector3(k, k * prng.randf_range(0.8, 1.3), k)), Vector3(q.x, terrain.height_at(q.x, q.z) - 0.01, q.z)))
+		kept[key] = mine
+	_tufts = kept  # places gone (a razed town) take their grass with them
+	# Each place's tufts in its own small batch, drawn within 30 units: the
+	# engine culls a batch off screen or out of range at no cost per frame
+	# (Terrain3D's instancer spent ~400 ms a frame managing them). Kept between
+	# rebuilds: only a new place gets a batch, a gone one loses its own.
+	if _grass_root == null or not is_instance_valid(_grass_root):
+		_grass_nodes.clear()  # a new realm took the old batches with it
+		_grass_root = Node3D.new()
+		_grass_root.name = "GrassBatches"
+		terrain.add_child(_grass_root)  # outside the countryside, which a rebuild clears
+	for key in _grass_nodes.keys():
+		if not kept.has(key):
+			for n in _grass_nodes[key]:
+				if is_instance_valid(n):
+					n.queue_free()
+			_grass_nodes.erase(key)
+	for key in kept:
+		if _grass_nodes.has(key):
 			continue
-		if terrain.land3d and terrain.land3d.land:
-			terrain.land3d.plant([tufts[v]], [30.0], 0, xf[v])  # Terrain3D's instancer draws it
-			continue
-		var mm := MultiMesh.new()
-		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.mesh = tufts[v]
-		mm.instance_count = xf[v].size()
-		for i in xf[v].size():
-			mm.set_instance_transform(i, xf[v][i])
-		var mmi := MultiMeshInstance3D.new()
-		mmi.multimesh = mm
-		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		mmi.visibility_range_end = 30.0
-		mmi.name = "Grass"
-		add_child(mmi)
+		var nodes := []
+		for v in 2:
+			var list: Array = kept[key][v]
+			if list.is_empty():
+				continue
+			var mm := MultiMesh.new()
+			mm.transform_format = MultiMesh.TRANSFORM_3D
+			mm.mesh = tufts[v]
+			mm.instance_count = list.size()
+			for i in list.size():
+				mm.set_instance_transform(i, list[i])
+			var mmi := MultiMeshInstance3D.new()
+			mmi.multimesh = mm
+			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			mmi.visibility_range_end = 30.0
+			mmi.visibility_range_end_margin = 3.0
+			mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
+			mmi.name = "Grass"
+			_grass_root.add_child(mmi)
+			nodes.append(mmi)
+		_grass_nodes[key] = nodes
