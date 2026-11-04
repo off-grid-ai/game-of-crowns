@@ -486,6 +486,8 @@ func _try_look(look: String) -> void:
 			"nogi": env.sdfgi_enabled = false
 			"nossao": env.ssao_enabled = false
 			"nofog": env.fog_enabled = false
+			"noshadow": sun.shadow_enabled = false
+			"noforest": _no_forest = true
 
 
 ## Day and night cycle, or a fixed bright day (toggled from the HUD).
@@ -584,8 +586,13 @@ func _profile_once() -> void:
 		f.store_line("PROFILE %s: %dk tris, %d draws, tris by draw distance %s" % [sys.name, tris / 1000, draws, str(by_end)])
 
 
+var _no_forest := false  # GOC_LOOK=noforest: the woods hidden, to measure what they cost
+
+
 func _process(_delta: float) -> void:
 	_log_perf(_delta)
+	if _no_forest and terrain.forest:
+		terrain.forest.visible = false
 	_profile_once()
 	_heard_at -= _delta
 	if _heard_at <= 0.0:
