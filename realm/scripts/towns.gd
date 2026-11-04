@@ -323,6 +323,8 @@ func _palisade(root: Node3D, center: Vector3, r: float, streets: Array, seat: bo
 			continue
 		# A seat's stockade stands taller.
 		_place("wooden_fence_game_ready_asset", p + Vector3(0, _ground_y(center, p) - 0.01, 0), -ang + (PI / 2 if f.y > f.x else 0.0), Vector3(1, 1.6, 1) if seat else Vector3.ONE)
+		# Townsfolk keep inside it and leave by the gates, not through the stakes.
+		_footprint_rect(root, p, Vector2(panel * 1.05, 0.08), -ang + PI / 2)
 
 
 ## The square's life: a well at its heart, market stalls along one side, and

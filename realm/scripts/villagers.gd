@@ -122,6 +122,7 @@ func _spawn(id: int) -> void:
 		# Godot's own crowd avoidance (RVO): each villager steps aside for the others.
 		var agent := NavigationServer2D.agent_create()
 		NavigationServer2D.agent_set_map(agent, map)
+		a["map"] = map
 		NavigationServer2D.agent_set_radius(agent, 0.045)  # about 0.4 m
 		NavigationServer2D.agent_set_neighbor_distance(agent, 0.5)
 		NavigationServer2D.agent_set_max_neighbors(agent, 8)
@@ -355,6 +356,9 @@ func _choose_next(a: Dictionary) -> void:
 		return
 	var center: Vector3 = a["center"]
 	var map: RID = _nav.map_for(a["town"], town["node"])
+	if a.has("agent") and a.get("map", RID()) != map:
+		NavigationServer2D.agent_set_map(a["agent"], map)  # the town was rebuilt: walk its new streets
+		a["map"] = map
 	var from := _nav.closest(map, Vector2(n.position.x - center.x, n.position.z - center.z))
 	var goal := _nav.closest(map, Vector2(target.x - center.x, target.z - center.z))
 	a["route"] = _nav.path(map, from, goal)

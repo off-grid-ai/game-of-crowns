@@ -90,6 +90,7 @@ func _ready() -> void:
 	add_child(units)
 	rig = preload("res://scripts/camera_rig.gd").new()
 	rig.terrain = terrain
+	rig.towns = towns  # so the camera keeps above roofs
 	add_child(rig)
 	rig.clicked.connect(_on_ground_clicked)
 	villagers = preload("res://scripts/villagers.gd").new()

@@ -8,11 +8,16 @@ const WATER_STEP := 0.1  # how finely the shore is traced, in game units (about 
 
 var terrain: Node3D  # set by villagers.gd: what is land and what is water
 var _maps := {}  # town id -> RID
+var _built_from := {}  # town id -> the instance id of the town node its map was baked from
 
 
 func map_for(id: int, root: Node3D) -> RID:
-	if _maps.has(id):
+	# A town rebuilt as it grows is a new node with new houses: its old map
+	# would walk people straight through them, so it is baked afresh.
+	if _maps.has(id) and _built_from.get(id, 0) == root.get_instance_id():
 		return _maps[id]
+	forget(id)
+	_built_from[id] = root.get_instance_id()
 	var reach: float = root.get_meta("reach", 6.0)
 	var poly := NavigationPolygon.new()
 	poly.agent_radius = 0.035

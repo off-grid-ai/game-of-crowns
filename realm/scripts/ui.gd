@@ -43,6 +43,7 @@ var _tithe := 0.1
 var _paused := false
 var _pause_btn: Button
 var _court_btn: Button
+var _court_badge: Label  # the number of petitioners, on the crown key's corner
 var _houses_btn: Button
 var _chron_btn: Button
 
@@ -304,19 +305,30 @@ func _build_top_bar() -> void:
 	act.add_theme_constant_override("separation", 6)  # each key stands on its own
 	_court_btn = _icon_btn("crown", _with_key("The court: petitioners waiting", "court"), _toggle_court)
 	_court_btn.visible = false
-	# Petitioners waiting: the crown and its count in gold, as clear on hover
-	# and when pressed as at rest, the count large enough to read at a glance.
+	# Petitioners waiting: the crown in gold, and how many on a round badge on
+	# its corner, the way an app shows unread messages, never over the crown.
 	for look in ["normal", "hover", "pressed", "hover_pressed", "focus"]:
 		_court_btn.add_theme_color_override("icon_%s_color" % look, T.ACCENT)
-		_court_btn.add_theme_color_override("font_%s_color" % look if look != "normal" else "font_color", T.ACCENT.lightened(0.2))
-	_court_btn.add_theme_font_override("font", T.mono)
-	_court_btn.add_theme_font_size_override("font_size", 17)
-	# Room inside the key for the count beside the crown.
-	for look in ["normal", "hover", "pressed", "hover_pressed"]:
-		var sb: StyleBoxFlat = _court_btn.get_theme_stylebox(look).duplicate()
-		sb.content_margin_left = 10
-		sb.content_margin_right = 12
-		_court_btn.add_theme_stylebox_override(look, sb)
+	_court_badge = Label.new()
+	_court_badge.add_theme_font_override("font", T.mono)
+	_court_badge.add_theme_font_size_override("font_size", 12)
+	_court_badge.add_theme_color_override("font_color", Color(0.1, 0.08, 0.06))
+	_court_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_court_badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var pill := StyleBoxFlat.new()
+	pill.bg_color = T.ACCENT
+	pill.set_corner_radius_all(9)
+	pill.content_margin_left = 5
+	pill.content_margin_right = 5
+	_court_badge.add_theme_stylebox_override("normal", pill)
+	_court_badge.custom_minimum_size = Vector2(18, 18)
+	_court_badge.anchor_left = 1.0
+	_court_badge.anchor_right = 1.0
+	_court_badge.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_court_badge.offset_right = 5
+	_court_badge.offset_top = -5
+	_court_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_court_btn.add_child(_court_badge)
 	act.add_child(_court_btn)
 	_houses_btn = _icon_btn("shield", _with_key("The great houses, and your word", "houses"), func(): _houses_panel.visible = _houses_btn.button_pressed)
 	_houses_btn.toggle_mode = true
@@ -1434,7 +1446,7 @@ func set_court(petitions: Array) -> void:
 		return
 	_court_sig = sig
 	_petitions = petitions
-	_court_btn.text = " %d" % petitions.size()
+	_court_badge.text = str(petitions.size())
 	_court_btn.visible = petitions.size() > 0
 	if petitions.is_empty():
 		_court_panel.visible = false
@@ -1599,7 +1611,7 @@ func ruled_in_words(id: String, d: Dictionary) -> void:
 	if String(d.get("reaction", "")) != "":
 		toast("%s: “%s”" % [String(d.get("name", "")), String(d["reaction"])])
 	_petitions = _petitions.filter(func(x): return String(x["id"]) != id)
-	_court_btn.text = " %d" % _petitions.size()
+	_court_badge.text = str(_petitions.size())
 	_court_btn.visible = _petitions.size() > 0
 	_show_audience()
 
@@ -1607,7 +1619,7 @@ func ruled_in_words(id: String, d: Dictionary) -> void:
 func _answer(id: String, option: String) -> void:
 	petition_answered.emit(id, option)
 	_petitions = _petitions.filter(func(x): return String(x["id"]) != id)
-	_court_btn.text = " %d" % _petitions.size()
+	_court_badge.text = str(_petitions.size())
 	_court_btn.visible = _petitions.size() > 0
 	_show_audience()
 

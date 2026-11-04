@@ -80,13 +80,9 @@ func _ready() -> void:
 		logo.texture = load(logo_path)
 		logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		logo.custom_minimum_size = Vector2(480, 270)
-		# The logo is painted on dark stone with square edges: feather them so
-		# it sits in the painting rather than on it.
-		var feather := ShaderMaterial.new()
-		feather.shader = Shader.new()
-		feather.shader.code = "shader_type canvas_item;\nvoid fragment() {\n\tvec4 c = texture(TEXTURE, UV);\n\tvec2 d = min(UV, 1.0 - UV);\n\tc.a *= smoothstep(0.0, 0.16, d.x) * smoothstep(0.0, 0.2, d.y);\n\tCOLOR = c;\n}"
-		logo.material = feather
+		# The Game of Crowns title (media/brand-kit), gold on transparent: it sits
+		# straight on the painted sky.
+		logo.custom_minimum_size = Vector2(720, 240)
 		col.add_child(logo)
 	_body = VBoxContainer.new()
 	_body.add_theme_constant_override("separation", 8)

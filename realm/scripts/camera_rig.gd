@@ -183,6 +183,26 @@ func _ground_under(screen: Vector2) -> Vector3:
 
 
 ## The land or the sea's surface, whichever is higher.
+## The lowest the camera may be over a building: clear of its roof (a castle's
+## towers stand far taller than a house). From the footprints each town keeps
+## for its walkers; nowhere near a town, no limit.
+var towns: Node3D
+func _roofline(p: Vector3) -> float:
+	if towns == null:
+		return -INF
+	for id in towns.towns:
+		var root: Node3D = towns.towns[id]["node"]
+		var local := Vector2(p.x - root.position.x, p.z - root.position.z)
+		if local.length() > float(root.get_meta("reach", 6.0)):
+			continue
+		for fp in root.get_meta("footprints", []):
+			if Geometry2D.is_point_in_polygon(local, fp):
+				var area := absf((fp[1] - fp[0]).cross(fp[3] - fp[0]))
+				return root.position.y + (2.4 if area > 3.0 else 0.95)
+		return -INF
+	return -INF
+
+
 func _floor_at(p: Vector3) -> float:
 	return maxf(terrain.height_at(p.x, p.z), 0.0) if terrain and terrain.width > 0 else 0.0
 
@@ -278,6 +298,7 @@ func _apply() -> void:
 	var pos := look + offset
 	if terrain and terrain.width > 0:
 		pos.y = maxf(pos.y, maxf(terrain.height_at(pos.x, pos.z), 0.0) + lerpf(1.5, EYE, ground_view))
+	pos.y = maxf(pos.y, _roofline(pos))
 	cam.fov = lerpf(45.0, 62.0, ground_view)  # wider on the ground, as a person sees
 	cam.global_position = pos
 	cam.look_at(look + Vector3(0, distance * 0.02 * (1.0 - ground_view), 0), Vector3.UP)
