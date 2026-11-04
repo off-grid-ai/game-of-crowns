@@ -2,8 +2,8 @@ extends Node3D
 ## What the townsfolk say to each other, overheard. When the camera comes
 ## close to a gathering in the street, the bridge's minds write their talk
 ## (bridge/chatter.js) and it plays here: each line a short caption over the
-## speaker's head, in turn, the last fading as the next begins, and spoken
-## aloud in that person's own voice when voices are on, quieter further off.
+## speaker's head, in turn, the last fading as the next begins (and, when
+## SPOKEN, aloud in that person's own voice, quieter further off).
 
 const Settings := preload("res://scripts/settings.gd")
 
@@ -12,6 +12,9 @@ var towns: Node3D
 var bridge: Node  # bridge.gd, for its address and the voices
 var sound: Node  # soundscape.gd: hushes the town while someone speaks
 
+## Overheard talk is read, not heard, in v1 (VISION.md, release calls): set
+## true to have each line spoken in the speaker's own voice when voices are on.
+const SPOKEN := false
 ## Close enough to overhear: the camera within this of a gathering.
 const HEAR := 2.6
 ## A talking town: its centre within this of the camera.
@@ -139,7 +142,7 @@ func _play(town: int, g: Dictionary, key: String, talk: Dictionary) -> void:
 ## Their words aloud, from where they stand, in their own voice. Returns the
 ## seconds already spent speaking (0 with voices off).
 func _speak(speaker: Node3D, text: String, line: Dictionary) -> float:
-	if not Settings.get_value("voices"):
+	if not SPOKEN or not Settings.get_value("voices"):
 		return 0.0
 	var start := Time.get_ticks_msec()
 	var got := [null]

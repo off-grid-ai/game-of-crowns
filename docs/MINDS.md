@@ -178,8 +178,9 @@ call for the teller's opening line and one per listener retelling it. Hot talk t
   her head while `give_floor()` gives her the talking animation; Jocelin Thatcher's
   line before it fades. Captions stack on screen (any gathering, near or far) so none
   overprint, are hidden behind walls, and only start for people in view within 2.6
-  of the camera. With voices on, each line plays from the speaker in their own voice
-  (`/voice`), quieter with distance. In Redsands the square was full of drilling
+  of the camera. Per the v1 release calls the talk is captions only; chatter.gd's
+  SPOKEN (off) plays each line from the speaker in their own voice (`/voice`),
+  quieter with distance, when voices come back. In Redsands the square was full of drilling
   pikemen, so few villagers gathered there. The lines from a 2B model are short and
   plain; now and then an ask comes back with too little (the model echoes) and that group stays silent.
 - **Cold minds get no lines.** Only `who=` gatherings near the camera (hot) and, now
