@@ -324,6 +324,9 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, rng: RandomNumberGen
 		if not terrain.is_land(center.x + p.x, center.z + p.z):
 			return
 		_place(kind, p + Vector3(0, _ground_y(center, p) - 0.01, 0), yaw)
+		# The well and the market stand in people's way: walk round them, not through.
+		if not kind.begins_with("ph/") or kind == "ph/stone_fire_pit":
+			_footprint_rect(root, p, Real.footprint(kind) * 0.9, yaw)
 	var off := Vector3(rng.randf_range(-0.15, 0.15), 0, rng.randf_range(-0.15, 0.15))
 	drop.call("ph/stone_fire_pit", off, rng.randf() * TAU)  # the well, at the heart
 	var market_ang := rng.randf() * TAU

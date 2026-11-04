@@ -219,7 +219,8 @@ func _process(delta: float) -> void:
 func _follow(delta: float) -> void:
 	var head := _body.position + Vector3(0, 0.2, 0)
 	var back := Vector3(sin(_yaw), 0, cos(_yaw)) * _dist
-	var eye := head + back + Vector3(0, _dist * 0.3 + 0.03, 0)
+	# About 30 degrees down: still oblique, but over the carts and barrels.
+	var eye := head + back + Vector3(0, _dist * 0.55 + 0.05, 0)
 	var ground: float = terrain.height_at(eye.x, eye.z) + 0.06
 	eye.y = maxf(eye.y, ground)
 	var k := minf(1.0, delta * 8.0)
