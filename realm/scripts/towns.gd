@@ -287,8 +287,7 @@ func _put(root: Node3D, center: Vector3, kind: String, p: Vector3, f: Vector2, l
 	var seat_y := _seat(center, p, f, yaw)
 	if is_nan(seat_y):
 		return false
-	_place(kind, Vector3(p.x, seat_y, p.z), yaw)
-	_footprint_rect(root, p, f, yaw)
+	_place(root, kind, Vector3(p.x, seat_y, p.z), yaw, Vector3.ONE, f)
 	if dress:
 		_door(root, p, f, "cottage", "house")
 	if dress:
@@ -323,9 +322,8 @@ func _palisade(root: Node3D, center: Vector3, r: float, streets: Array, seat: bo
 		if not terrain.is_land(center.x + p.x, center.z + p.z):
 			continue
 		# A seat's stockade stands taller.
-		_place("wooden_fence_game_ready_asset", p + Vector3(0, _ground_y(center, p) - 0.01, 0), -ang + (PI / 2 if f.y > f.x else 0.0), Vector3(1, 1.6, 1) if seat else Vector3.ONE)
 		# Townsfolk keep inside it and leave by the gates, not through the stakes.
-		_footprint_rect(root, p, Vector2(panel * 1.05, 0.08), -ang + PI / 2)
+		_place(root, "wooden_fence_game_ready_asset", p + Vector3(0, _ground_y(center, p) - 0.01, 0), -ang + (PI / 2 if f.y > f.x else 0.0), Vector3(1, 1.6, 1) if seat else Vector3.ONE, Vector2(panel * 1.05, 0.08))
 
 
 ## The square's life: a well at its heart, market stalls along one side, and
@@ -334,10 +332,7 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, rng: RandomNumberGen
 	var drop := func(kind: String, p: Vector3, yaw: float) -> void:
 		if not terrain.is_land(center.x + p.x, center.z + p.z):
 			return
-		_place(kind, p + Vector3(0, _ground_y(center, p) - 0.01, 0), yaw)
-		# The well and the market stand in people's way: walk round them, not through.
-		if not kind.begins_with("ph/") or kind == "ph/stone_fire_pit":
-			_footprint_rect(root, p, Real.footprint(kind) * 0.9, yaw)
+		_place(root, kind, p + Vector3(0, _ground_y(center, p) - 0.01, 0), yaw)
 	var off := Vector3(rng.randf_range(-0.15, 0.15), 0, rng.randf_range(-0.15, 0.15))
 	drop.call("ph/stone_fire_pit", off, rng.randf() * TAU)  # the well, at the heart
 	var market_ang := rng.randf() * TAU
@@ -401,9 +396,7 @@ func _dress(root: Node3D, center: Vector3, hp: Vector3, face: Vector3, out: Vect
 		if not terrain.is_land(center.x + p.x, center.z + p.z):
 			continue
 		var yaw := atan2(face.x, face.z) + (PI / 2 if spot[0] == "wooden_fence_game_ready_asset" else rng.randf_range(-0.6, 0.6))
-		_place(spot[0], p + Vector3(0, _ground_y(center, p), 0), yaw)
-		if String(spot[0]).contains("cart") or String(spot[0]).contains("wagon"):
-			_footprint_rect(root, p, Real.footprint(spot[0]), yaw)  # walk round a cart, not through it
+		_place(root, spot[0], p + Vector3(0, _ground_y(center, p), 0), yaw)
 
 
 # --- building blocks -----------------------------------------------------------
@@ -413,10 +406,18 @@ var _batch := {}  # kit model -> transforms in the town being built
 
 ## Queues a kit model for the town being built; _flush draws each model's
 ## copies as one batch, far cheaper than a scene instance per house.
-func _place(kind: String, pos: Vector3, yaw: float, scale := Vector3.ONE) -> void:
+## Everything set down in a town stands in people's way, so placing it marks
+## its ground on the town's walk map too, in one place: nobody walks through a
+## barrel, a ladder or a woodpile because its caller forgot to say so. `foot` is
+## the ground it takes when that isn't the model's own (a palisade's thin line).
+func _place(root: Node3D, kind: String, pos: Vector3, yaw: float, scale := Vector3.ONE, foot := Vector2.ZERO) -> void:
 	if not _batch.has(kind):
 		_batch[kind] = []
 	_batch[kind].append(Transform3D(Basis(Vector3.UP, yaw).scaled(scale), pos))
+	if foot == Vector2.ZERO:
+		foot = Real.footprint(kind) * Vector2(scale.x, scale.z)
+	if foot != Vector2.ZERO:
+		_footprint_rect(root, Vector3(pos.x, 0, pos.z), foot, yaw)
 
 
 func _flush(root: Node3D) -> void:
@@ -696,6 +697,11 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 				if terrain.is_land(center.x + hp.x, center.z + hp.z):
 					heaps.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU), hp + Vector3(0, _ground_y(center, hp) - 0.01, 0)))
 			Fields.pile_hay(root, heaps)
+			var hay: Mesh = Fields.crop_mesh("hay")
+			if hay:
+				var box := hay.get_aabb()
+				for h in heaps:
+					_footprint_rect(root, h.origin, Vector2(box.size.x, box.size.z), h.basis.get_euler().y)  # a heap is walked round too
 
 	var outer := reach + 0.35
 	root.set_meta("reach", reach + 3.0)
