@@ -121,7 +121,9 @@ func make(rng: RandomNumberGenerator, role := "peasant", tint := Color.WHITE, ag
 	# Children are outfits only: every Mixamo character is grown.
 	if age != "child" and (roll < MIXAMO_SHARE[role] or look != ""):
 		# A named person is known by their body, so only a crowd needs one that shows its colour.
-		var pool := _bodies(role, sex, tint != Color.WHITE and look == "", look == "")
+		# A crowd's sex is rolled first, so the mix of bodies on hand doesn't decide it.
+		var want := sex if sex != "" or look != "" else ("male" if rng.randf() < 0.5 else "female")
+		var pool := _bodies(role, want, tint != Color.WHITE and look == "", look == "")
 		if not pool.is_empty():
 			var body: String = pool[(abs(hash(look)) if look != "" else rng.randi()) % pool.size()]
 			return make_body(rng, body, tint, age, build, role)
