@@ -475,8 +475,8 @@ function counsel(players, cities, threat) {
       why: f < 30 ? "So low, they may raise their banners against you any season." : "Below 30, a house may rise against the crown.",
       acts: [{ label: "Gift crowns", action: "gift", city: seatOf(cold.id).id }, { label: "A feast in their honour", action: "feast", city: seatOf(cold.id).id }] });
   }
-  if (threat.usurper !== "none") out.push({ urgency: 90, text: "A usurper gathers men against the throne", why: "If the host reaches Kingsmere, the crown is lost.", acts: [{ label: "Raise the royal levy", action: "levy" }] });
-  if (threat.north > 0) out.push({ urgency: 75, text: `The dead come south (wave ${threat.north})`, why: "The northern houses beg the King for men.", acts: [{ label: "Raise the royal levy", action: "levy" }] });
+  if (threat.usurper !== "none") out.push({ urgency: 90, text: "A usurper gathers men against the throne", why: "If the host reaches Kingsmere, the crown is lost. The loyal houses will send men if you call.", acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }] });
+  if (threat.north > 0) out.push({ urgency: 75, text: `The dead come south (wave ${threat.north})`, why: "The northern houses beg the King for men.", acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }] });
   const hungry = cities.find((c) => c.famine);
   if (hungry) out.push({ urgency: 80, text: `${hungry.title} is starving`, why: "A hungry town shrinks, riots, and blames its King.", acts: [{ label: "Send grain", action: "relief", city: hungry.id }] });
   const waiting = court?.open?.().length ?? 0;
@@ -788,7 +788,7 @@ http.createServer(async (req, res) => {
     decreesIssued++;
     const cmd = await body(req);
     if (meta.status !== "running") return json(res, 400, { error: "this reign has ended" });
-    const result = decree(cmd, world);
+    const result = decree({ ...cmd, favourOf }, world);
     if (result.error) return json(res, 400, result);
     result.lua.forEach((l) => send(`lua cmd ${l}`));
     // Spend now, so a second decree before the next snapshot can't overdraw the treasury.

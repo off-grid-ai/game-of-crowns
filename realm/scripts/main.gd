@@ -1267,7 +1267,7 @@ func _focus_house(owner: int) -> void:
 
 
 func _on_decree(action: String, building: String, to: int) -> void:
-	if _selected < 0 and action != "levy":
+	if _selected < 0 and action != "levy" and action != "banners":
 		ui.toast("First choose a town: click one on the map.")
 		return
 	bridge.decree(action, _selected, building, to)

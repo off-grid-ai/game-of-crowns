@@ -578,7 +578,7 @@ func _build_town_panel() -> void:
 	v.add_child(T.label("Royal decrees"))
 	var row := HFlowContainer.new()
 	v.add_child(row)
-	for a in ["relief", "gift", "feast", "levy"]:
+	for a in ["relief", "gift", "feast", "levy", "banners"]:
 		var act: String = a
 		_decree_btns[act] = _btn("", func(): decree.emit(act, "", -1))
 		row.add_child(_decree_btns[act])
@@ -1564,6 +1564,7 @@ func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 		"gift": "" if mine else "Gift crowns to %s  15k cr" % lord,
 		"feast": "Hold a feast at court  10k cr" if seat else ("" if mine else "Feast in %s's honour  10k cr" % lord),
 		"levy": "Raise the royal levy  20k cr" if seat else "",
+		"banners": "Call the banners  5k cr" if seat else "",
 	}
 	for a in names:
 		_decree_btns[a].text = names[a]

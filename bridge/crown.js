@@ -11,7 +11,11 @@ export const DECREES = {
   build: { cost: 180, label: "Raise a building" },
   grant: { cost: 0, label: "Grant this castle to another house" },
   feast: { cost: 100, label: "Hold a feast in the lord's honour" },
+  banners: { cost: 50, label: "Call the banners" },
 };
+
+// When the banners were last called: the houses won't answer twice in a year.
+let bannersCalled = -99;
 
 const BUILDABLE = { temple: "Temple", granary: "Granary", walls: "City Walls", market: "Marketplace", aqueduct: "Aqueduct" };
 
@@ -75,6 +79,45 @@ export function decree(cmd, world) {
   const inCity = (body) => `local c = find.city(nil, ${Number(c?.id)}); if c then ${body} end`;
 
   switch (cmd.action) {
+    case "banners": {
+      // The King summons every great house to send men to Kingsmere. Each
+      // answers by its favour: the loyal march at once, the wary send a few
+      // with excuses, the cold refuse to his face. One decree, and the King
+      // learns who he can count on; the men who come join the royal host.
+      const seat = world.cities.find((x) => x.owner === crown.id && x.capital);
+      if (!seat) return { error: "the crown has no seat to muster at" };
+      const since = (world.turn ?? 0) - bannersCalled;
+      if (since < 4) return { error: `the banners were called ${since === 0 ? "this season" : since === 1 ? "last season" : `${since} seasons ago`}; the houses won't answer again before the year is out` };
+      bannersCalled = world.turn ?? 0;
+      const fav = cmd.favourOf ?? (() => 60);
+      const came = [], few = [], refused = [];
+      const lua = [pay];
+      const favour = {};
+      let men = 0;
+      for (const p of world.players) {
+        const h = houseFor(p);
+        if (h.wild || h.crown || !world.cities.some((x) => x.owner === p.id)) continue;
+        const f = fav(p.id);
+        const name = h.name.replace("House ", "");
+        const n = f >= 60 ? 2 : f >= 35 ? 1 : 0;
+        if (n === 2) came.push(name);
+        else if (n === 1) few.push(name);
+        else refused.push(name);
+        // Service costs a house a little love; refusing costs it none, today.
+        if (n) {
+          favour[p.id] = n === 2 ? -2 : -4;
+          men += n;
+          lua.push(`for p in players_iterate() do if p.id == ${p.id} then local i = 0; for u in p:units_iterate() do local r = u.utype:rule_name(); if i < ${n} and r ~= "Workers" and r ~= "Settlers" and r ~= "Explorer" then edit.unit_kill(u, "killed", nil); i = i + 1 end end end end`);
+        }
+      }
+      if (men) lua.push(`local c = find.city(nil, ${seat.id}); if c then for i = 1, ${men} do edit.create_unit(c.owner, c.tile, find.unit_type(i % 2 == 0 and "Knights" or "Pikemen"), 1, c, -1) end end`);
+      const list = (xs) => xs.length > 1 ? `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}` : xs[0];
+      const parts = [];
+      if (came.length) parts.push(`${list(came)} answer at once`);
+      if (few.length) parts.push(`${list(few)} send a few men, with excuses`);
+      if (refused.length) parts.push(`${list(refused)} refuse the summons`);
+      return { cost: d.cost, favour, text: `The King calls the banners. ${parts.join("; ")}.${men ? ` ${men * 200} men march to Kingsmere.` : " No one marches."}`, lua, refused };
+    }
     case "relief":
       if (!c) return { error: "choose a town" };
       return {
