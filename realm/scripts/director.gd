@@ -81,6 +81,7 @@ func _next_shot() -> void:
 		var at: Vector3 = terrain.world_pos(float(best.get("x", 0)), float(best.get("y", 0)))
 		_last_key = String(best["_key"])
 		rig.focus(at, SCENES[kind][1])
+		rig._goal_tilt = 0.0  # a battle's framing lowers the view; each new shot starts level
 		ui.toast(SCENES[kind][2] % _town_near(best, at))
 		return
 	_tour()

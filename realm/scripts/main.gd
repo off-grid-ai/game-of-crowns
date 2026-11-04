@@ -202,7 +202,8 @@ func _ready() -> void:
 	scenes.framing.connect(func(p: Vector3, d: float, y: float):
 		if director.active or _shot.has("battle") or _shot.has("muster") or _shot.has("siege"):
 			rig.focus(p, d)
-			rig._goal_yaw = y)
+			rig._goal_yaw = y
+			rig._goal_tilt = -12.0)  # lower than the rig's own pitch: Ali's low oblique view
 	bridge = preload("res://scripts/bridge.gd").new()
 	# The realm stays unloaded behind the title menu; it wakes when a chronicle
 	# is continued or begun (renders without the menu load it at once).
