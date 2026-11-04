@@ -140,6 +140,12 @@ func _keep_up(id: int) -> void:
 			a["map"] = map
 			if a.has("agent"):
 				NavigationServer2D.agent_set_map(a["agent"], map)
+			# A building raised where they stood: they step out onto the street.
+			if _nav.ready(map):
+				var c0: Vector3 = a["center"]
+				var out := _nav.closest(map, Vector2(n.position.x - c0.x, n.position.z - c0.z))
+				n.position.x = c0.x + out.x
+				n.position.z = c0.z + out.y
 			var route: PackedVector2Array = a["route"]
 			if not route.is_empty():
 				var c: Vector3 = a["center"]
