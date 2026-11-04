@@ -776,6 +776,18 @@ http.createServer(async (req, res) => {
     endReign("The King lays down the crown.");
     return json(res, 200, reignInfo());
   }
+  if (url.pathname === "/reign/continue" && req.method === "POST") {
+    // A timed reign has ended and been scored; the King rules on, with no clock,
+    // in the same realm. The score stands in the records as it was.
+    if (meta.status !== "ended") return json(res, 400, { error: "this reign has not ended" });
+    meta.status = "running";
+    meta.minutes = 0;
+    paused = false;
+    chron.saveMeta(meta);
+    send(`set timeout ${turnSeconds}`);
+    record({ turn: world?.turn ?? 0, kind: "decree", text: "The King rules on." });
+    return json(res, 200, reignInfo());
+  }
   if ((url.pathname === "/pause" || url.pathname === "/resume") && req.method === "POST") {
     if (meta.status !== "running") return json(res, 400, { error: "this reign has ended" });
     paused = url.pathname === "/pause";
@@ -844,18 +856,6 @@ http.createServer(async (req, res) => {
       const goal = target && target.id !== seat.id ? target : near && Math.hypot(near.x - seat.x, near.y - seat.y) < 12 ? near : { x: seat.x + 3, y: seat.y + 2 };
       scene("muster", { x: seat.x, y: seat.y, tx: goal.x, ty: goal.y, city: seat.id });
     }
-    record({ turn: world?.turn ?? 0, kind: "decree", text: result.text, city: cmd.city });
-    setTimeout(snapshot, 600);
-    return json(res, 200, { ok: true, text: crowns(result.text) });
-  }
-  if (url.pathname === "/scene/arrived" && req.method === "POST") {
-    // The King's grain, gold or word reached the town it was sent to: the realm
-    // sees it, the chronicle says so in his name, and the town remembers.
-    const b = await body(req);
-    const town = world?.cities.find((c) => c.id === Number(b.city));
-    const what = { grain: "The King's grain reaches", tribute: "The King's gold reaches", ward: "The ward reaches", rider: "The King's rider reaches" }[String(b.kind)];
-    if (!town || !what) return json(res, 400, { error: "nothing arrived" });
-    const key = `${b.kind}:${town.id}:${b.sent ?? 0}`;
     // A royal match: the two lords' heirs (or kin) are named, they warm to each
     // other, and a long truce holds their houses from raids and plots.
     if (result.pact && court) {
@@ -873,6 +873,18 @@ http.createServer(async (req, res) => {
         court.saveCourt?.();
       }
     }
+    record({ turn: world?.turn ?? 0, kind: "decree", text: result.text, city: cmd.city });
+    setTimeout(snapshot, 600);
+    return json(res, 200, { ok: true, text: crowns(result.text) });
+  }
+  if (url.pathname === "/scene/arrived" && req.method === "POST") {
+    // The King's grain, gold or word reached the town it was sent to: the realm
+    // sees it, the chronicle says so in his name, and the town remembers.
+    const b = await body(req);
+    const town = world?.cities.find((c) => c.id === Number(b.city));
+    const what = { grain: "The King's grain reaches", tribute: "The King's gold reaches", ward: "The ward reaches", rider: "The King's rider reaches" }[String(b.kind)];
+    if (!town || !what) return json(res, 400, { error: "nothing arrived" });
+    const key = `${b.kind}:${town.id}:${b.sent ?? 0}`;
     if (!arrivals.has(key)) {
       arrivals.add(key);
       record({ turn: world.turn, kind: "crown", city: town.id, text: `${what} ${cityName(town.id)}${b.label ? `: ${String(b.label).slice(0, 80)}` : ""}.` });
