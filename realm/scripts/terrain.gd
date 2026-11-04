@@ -387,7 +387,7 @@ func _build_sea() -> void:
 	var mat: ShaderMaterial = load("res://addons/boujie_water_shader/prefabs/deep_ocean_material.tres").duplicate()
 	_drape_sea(mat)
 	mat.set_shader_parameter("color_deep", Color(0.05, 0.15, 0.2))  # northern water: slate green, not tropical blue
-	mat.set_shader_parameter("color_shallow", Color(0.12, 0.26, 0.26, 0.55))  # the shallows tinted, not a window on the seabed
+	mat.set_shader_parameter("color_shallow", Color(0.09, 0.2, 0.22, 0.75))  # the shallows tinted, not a window on the seabed
 	mat.set_shader_parameter("albedo", Color(0.16, 0.3, 0.34, 0.0))
 	mat.set_shader_parameter("albedo_fresnel", Color(0.36, 0.47, 0.54))
 	mat.set_shader_parameter("albedo_snell", Color(0.02, 0.08, 0.12))
