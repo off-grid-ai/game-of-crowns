@@ -1,0 +1,491 @@
+{
+  "id": "succession-crisis",
+  "name": "A succession crisis",
+  "about": "An old lord sickens with a weak or young heir, and an ambitious bannerman circles; the heir is confirmed, governed, imprisoned or exiled, as the house's men and the crown's regard decide.",
+  "kind": "succession",
+  "weight": 2,
+  "cooldown": 16,
+  "title": "The {old.houseName} Succession",
+  "roles": {
+    "old": {
+      "rank": "lord",
+      "age": [
+        56,
+        99
+      ]
+    },
+    "heir": {
+      "childOf": "old",
+      "rank": [
+        "heir",
+        "child"
+      ],
+      "either": [
+        {
+          "age": [
+            6,
+            19
+          ]
+        },
+        {
+          "traits": [
+            "craven",
+            "content",
+            "lustful",
+            "generous"
+          ]
+        }
+      ]
+    },
+    "claimant": {
+      "rank": "bannerman",
+      "house": "old",
+      "seat": true,
+      "notTraits": [
+        "honourable"
+      ],
+      "either": [
+        {
+          "loyalty": [
+            0,
+            60
+          ]
+        },
+        {
+          "traits": [
+            "ambitious",
+            "cunning",
+            "greedy"
+          ]
+        },
+        {
+          "goal": "land|crown|defect"
+        }
+      ],
+      "likes": {
+        "remembers": "never answered|sent home|humiliat|liar|nothing",
+        "traits": [
+          "ambitious",
+          "cunning"
+        ]
+      }
+    },
+    "hall": {
+      "town": true,
+      "seatOf": "old"
+    }
+  },
+  "core": [
+    "heir",
+    "claimant"
+  ],
+  "onDeath": {
+    "old": "passing",
+    "heir": "heir-dies",
+    "claimant": "claimant-dies"
+  },
+  "fade": "The talk of who rules {old.houseName} dies down. {thread} becomes a matter for scholars.",
+  "beats": [
+    {
+      "id": "sickens",
+      "stage": "rising",
+      "speaker": "old",
+      "at": "hall",
+      "text": "{old} of {old.house} takes to {old.his} bed with a fever that will not break. In {hall}, men count the days, and look at {heir}, and then at each other.",
+      "memory": {
+        "heir": "My {old.father} is sick, and the bannermen look at me as if I were already a problem.",
+        "claimant": "{old} is dying, and {heir} is no {old.lord}."
+      },
+      "after": [
+        1,
+        2
+      ],
+      "next": [
+        {
+          "to": "whispers"
+        }
+      ]
+    },
+    {
+      "id": "whispers",
+      "stage": "rising",
+      "speaker": "claimant",
+      "at": "hall",
+      "text": "{claimant} rides to {hall} with more men than courtesy needs, and asks after {old}'s health in a loud voice.",
+      "do": {
+        "goal": {
+          "claimant": {
+            "kind": "crown",
+            "text": "rule {old.house} in all but name"
+          }
+        }
+      },
+      "after": [
+        1,
+        2
+      ],
+      "next": [
+        {
+          "if": {
+            "loyalty": [
+              "claimant",
+              ">",
+              78
+            ]
+          },
+          "to": "sworn"
+        },
+        {
+          "if": {
+            "chance": 0.6
+          },
+          "to": "deathbed"
+        }
+      ],
+      "patience": 2,
+      "otherwise": "deathbed"
+    },
+    {
+      "id": "deathbed",
+      "stage": "crisis",
+      "speaker": "heir",
+      "at": "hall",
+      "text": "{old} dies in {hall} with {heir}'s hand in {old.his}. The household holds its breath.",
+      "memory": {
+        "heir": "My {old.father} died holding my hand. Now everyone watches what I do."
+      },
+      "do": {
+        "die": {
+          "who": "old",
+          "how": "I died in my bed at {hall}, with {heir} beside me."
+        }
+      },
+      "after": [
+        1,
+        1
+      ],
+      "next": [
+        {
+          "if": {
+            "loyalty": [
+              "claimant",
+              ">",
+              72
+            ]
+          },
+          "to": "regency-talk"
+        },
+        {
+          "if": {
+            "any": [
+              {
+                "trait": [
+                  "claimant",
+                  "ambitious|wrathful|greedy"
+                ]
+              },
+              {
+                "loyalty": [
+                  "claimant",
+                  "<",
+                  45
+                ]
+              }
+            ]
+          },
+          "to": "seizes"
+        }
+      ],
+      "patience": 1,
+      "otherwise": "regency-talk"
+    },
+    {
+      "id": "passing",
+      "stage": "crisis",
+      "speaker": "heir",
+      "at": "hall",
+      "text": "{old} is dead, and the seat at {hall} passes to {heir}. Nobody looks at {heir}; everyone looks at {claimant}.",
+      "after": [
+        1,
+        1
+      ],
+      "next": [
+        {
+          "if": {
+            "any": [
+              {
+                "trait": [
+                  "claimant",
+                  "ambitious|wrathful|greedy"
+                ]
+              },
+              {
+                "loyalty": [
+                  "claimant",
+                  "<",
+                  45
+                ]
+              }
+            ]
+          },
+          "to": "seizes"
+        }
+      ],
+      "patience": 1,
+      "otherwise": "regency-talk"
+    },
+    {
+      "id": "regency-talk",
+      "stage": "crisis",
+      "speaker": "claimant",
+      "at": "hall",
+      "text": "{claimant} offers to govern {old.house} until {heir} is grown. The household knights study their boots.",
+      "after": [
+        1,
+        2
+      ],
+      "next": [
+        {
+          "if": {
+            "favour": [
+              "heir",
+              "<",
+              35
+            ]
+          },
+          "to": "seizes"
+        },
+        {
+          "if": {
+            "trait": [
+              "claimant",
+              "cunning|paranoid"
+            ]
+          },
+          "to": "seizes"
+        },
+        {
+          "if": {
+            "chance": 0.5
+          },
+          "to": "council"
+        }
+      ],
+      "patience": 2,
+      "otherwise": "sworn"
+    },
+    {
+      "id": "seizes",
+      "stage": "crisis",
+      "speaker": "claimant",
+      "at": "hall",
+      "text": "{claimant} takes the keys of {hall} by night. {heir} is kept safe, as {claimant} puts it, in the north tower.",
+      "memory": {
+        "heir": "{claimant} stole the keys of {hall} and locked me in the tower.",
+        "claimant": "I took {hall}. Someone had to."
+      },
+      "do": {
+        "rank": {
+          "claimant": "lord",
+          "heir": "ward"
+        },
+        "seat": [
+          "claimant",
+          "hall"
+        ],
+        "opinion": [
+          [
+            "heir",
+            "claimant",
+            -70
+          ]
+        ]
+      },
+      "after": [
+        2,
+        3
+      ],
+      "next": [
+        {
+          "if": {
+            "all": [
+              {
+                "trait": [
+                  "heir",
+                  "brave|wrathful|proud|cunning|vengeful"
+                ]
+              },
+              {
+                "age": [
+                  "heir",
+                  ">=",
+                  14
+                ]
+              }
+            ]
+          },
+          "to": "escape"
+        },
+        {
+          "if": {
+            "chance": 0.3
+          },
+          "to": "escape"
+        }
+      ],
+      "patience": 2,
+      "otherwise": "usurper-holds"
+    },
+    {
+      "id": "escape",
+      "stage": "crisis",
+      "speaker": "heir",
+      "text": "{heir} goes over the wall of {hall} on a rope of bedsheets and rides for Kingsmere to beg the crown's justice.",
+      "after": [
+        1,
+        2
+      ],
+      "next": [
+        {
+          "if": {
+            "favour": [
+              "heir",
+              ">",
+              50
+            ]
+          },
+          "to": "restored"
+        },
+        {
+          "if": {
+            "chance": 0.3
+          },
+          "to": "restored"
+        }
+      ],
+      "patience": 1,
+      "otherwise": "exile"
+    },
+    {
+      "id": "restored",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "heir",
+      "at": "hall",
+      "text": "The crown's riders come to {hall} with {heir} at their head. {claimant} hands back the keys and is sent from {old.house}'s lands with only {claimant.his} horse.",
+      "memory": {
+        "claimant": "I held {hall} for a season and lost it to a child and the King's riders.",
+        "heir": "The King gave me back {hall}. I will not forget who took it."
+      },
+      "do": {
+        "rank": {
+          "heir": "lord",
+          "claimant": "exile"
+        },
+        "seat": [
+          "heir",
+          "hall"
+        ],
+        "favour": {
+          "heir": 5
+        },
+        "goal": {
+          "claimant": {
+            "kind": "revenge",
+            "text": "take back what {heir} and the King took from me"
+          }
+        }
+      }
+    },
+    {
+      "id": "exile",
+      "stage": "resolution",
+      "end": "failed",
+      "speaker": "heir",
+      "text": "The King will not hear {heir}. {claimant} rules {old.house} from {hall}, and {heir} is a rightful {heir.lord} with no roof.",
+      "memory": {
+        "heir": "{claimant} stole my father's seat, and the King did nothing."
+      },
+      "do": {
+        "rank": {
+          "heir": "exile"
+        },
+        "goal": {
+          "heir": {
+            "kind": "revenge",
+            "text": "take back {hall} from {claimant}"
+          }
+        }
+      }
+    },
+    {
+      "id": "usurper-holds",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "claimant",
+      "at": "hall",
+      "text": "{claimant} rules {old.house} from {hall}. The bannermen bend the knee one by one, and {heir} is not seen outside the tower.",
+      "do": {
+        "loyalty": {
+          "claimant": 20
+        }
+      }
+    },
+    {
+      "id": "council",
+      "stage": "resolution",
+      "end": "resolved",
+      "at": "hall",
+      "text": "The bannermen of {old.house} meet in {hall} and swear for {heir}, with {claimant} to advise until {heir.he} is grown. {claimant} signs last.",
+      "memory": {
+        "claimant": "The bannermen swore for {heir}. I signed last, and they all saw it."
+      },
+      "do": {
+        "loyalty": {
+          "claimant": -10
+        }
+      }
+    },
+    {
+      "id": "sworn",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "claimant",
+      "at": "hall",
+      "text": "{claimant} kneels before {heir} in {hall} and swears. Whatever {claimant.he} wanted, {claimant.he} wants a clean name more.",
+      "do": {
+        "loyalty": {
+          "claimant": 15
+        },
+        "opinion": [
+          [
+            "heir",
+            "claimant",
+            30
+          ]
+        ]
+      }
+    },
+    {
+      "id": "heir-dies",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "claimant",
+      "text": "{heir} is dead, and {claimant} is the strongest {claimant.man} left in {old.house}. Nobody asks how the {heir.son} died; nobody dares.",
+      "do": {
+        "goal": {
+          "claimant": {
+            "kind": "crown",
+            "text": "be named lord of {old.house} when the time comes"
+          }
+        }
+      }
+    },
+    {
+      "id": "claimant-dies",
+      "stage": "resolution",
+      "end": "resolved",
+      "text": "{claimant} is dead, and {thread} with {claimant.him}. {heir} keeps the seat at {hall}, if not easily."
+    }
+  ]
+}

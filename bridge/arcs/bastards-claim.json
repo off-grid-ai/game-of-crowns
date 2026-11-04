@@ -1,0 +1,167 @@
+{
+  "id": "bastards-claim",
+  "name": "A bastard's claim",
+  "about": "A lord's child born out of wedlock comes to court with a token; acknowledged or denied, they rival the trueborn heir, or carry their grievance to an enemy house and come back with its banners.",
+  "kind": "claim",
+  "weight": 2,
+  "cooldown": 16,
+  "title": "The Bastard of {father.seat}",
+  "roles": {
+    "father": { "rank": ["lord", "bannerman"], "age": [38, 85], "seat": true, "either": [{ "traits": ["lustful"] }, { "traits": ["proud", "greedy"], "children": true }] },
+    "trueborn": { "childOf": "father", "rank": ["heir", "child"], "age": [12, 50] },
+    "hall": { "town": true, "seatOf": "father" },
+    "bastard": {
+      "new": {
+        "surname": "Fitz{father.first}", "like": "father", "rank": "sworn", "age": [17, 28],
+        "traits": ["ambitious", "proud"],
+        "memory": "My mother told me on her deathbed whose child I am: {father} of {father.house}.",
+        "goal": { "kind": "land", "text": "be named {father}'s child before the whole realm" }
+      }
+    },
+    "rival": { "rank": "lord", "otherHouse": "father", "optional": true, "either": [{ "opinionOf": ["father", "<", 0] }, { "opinion": ["father", "<", 0] }] }
+  },
+  "core": ["bastard"],
+  "onDeath": { "bastard": "bastard-buried", "father": "father-gone", "trueborn": "only-blood" },
+  "fade": "{bastard} drifts from hall to hall, and {thread} is told less every winter.",
+  "beats": [
+    {
+      "id": "arrives", "stage": "rising", "speaker": "bastard", "at": "hall",
+      "text": "A young {bastard.man} named {bastard} rides into {hall} with a ring of {father.house} on a string round {bastard.his} neck, and asks for {father}.",
+      "memory": { "father": "A {bastard.man} called {bastard} came to {hall} wearing a ring I gave a girl long ago.", "trueborn": "A stranger came to {hall} claiming my {father.father}'s blood." },
+      "after": [1, 1],
+      "next": [
+        { "if": { "trait": ["father", "honourable|just|generous|content"] }, "to": "acknowledged" },
+        { "if": { "trait": ["father", "proud|paranoid|cunning|greedy"] }, "to": "denied" },
+        { "if": { "chance": 0.5 }, "to": "acknowledged" }
+      ],
+      "patience": 1, "otherwise": "denied"
+    },
+    {
+      "id": "acknowledged", "stage": "rising", "speaker": "father", "at": "hall",
+      "text": "{father} looks at the ring a long time, then embraces {bastard} before the whole hall. {trueborn} does not.",
+      "memory": { "trueborn": "My {father.father} put a bastard at our table and called {bastard.him} blood.", "bastard": "{father} called me {father.his} own before the hall at {hall}." },
+      "do": { "adopt": ["bastard", "father"], "opinion": [["trueborn", "bastard", -30], ["bastard", "father", 30]] },
+      "after": [2, 3],
+      "next": [
+        { "if": { "all": [{ "trait": ["bastard", "ambitious"] }, { "chance": 0.6 }] }, "to": "claims" }
+      ],
+      "patience": 2, "otherwise": "settles"
+    },
+    {
+      "id": "claims", "stage": "crisis", "speaker": "bastard", "at": "hall",
+      "text": "{bastard} begins to say aloud what others whisper at {hall}: that {bastard.he} is the elder, and {trueborn} is soft.",
+      "do": { "opinion": [["trueborn", "bastard", -30]] },
+      "after": [1, 2],
+      "next": [
+        { "if": { "trait": ["trueborn", "wrathful|vengeful|proud|paranoid|brave"] }, "to": "duel" }
+      ],
+      "patience": 1, "otherwise": "choice"
+    },
+    {
+      "id": "duel", "stage": "crisis", "speaker": "trueborn", "at": "hall",
+      "text": "{trueborn} and {bastard} fight in the yard at {hall} with blunted swords that do not stay blunt for long.",
+      "do": { "die": { "who": "bastard", "chance": 0.4, "how": "I died in the yard at {hall}, by my {trueborn.brother}'s hand." } },
+      "after": [1, 1],
+      "next": [
+        { "if": { "dead": "bastard" }, "to": "bastard-buried" },
+        { "if": { "alive": "bastard" }, "to": "spared" }
+      ]
+    },
+    {
+      "id": "spared", "stage": "crisis", "speaker": "bastard",
+      "text": "{bastard} stands over {trueborn} in the mud and lets {trueborn.him} live. The whole household sees which of them is the better sword.",
+      "memory": { "trueborn": "{bastard} beat me in the yard before everyone and let me live. I would rather have died." },
+      "after": [1, 1],
+      "next": [{ "to": "choice" }]
+    },
+    {
+      "id": "choice", "stage": "crisis", "speaker": "father", "at": "hall",
+      "text": "{father} must choose between {father.his} children. For a week {father.he} hunts alone and speaks to no one.",
+      "after": [1, 1],
+      "next": [
+        { "if": { "all": [{ "opinion": ["father", "trueborn", "<", 0] }, { "chance": 0.6 }] }, "to": "named-heir" },
+        { "if": { "chance": 0.3 }, "to": "named-heir" },
+        { "if": { "alive": "rival" }, "to": "to-rival" }
+      ],
+      "patience": 1, "otherwise": "sent-away"
+    },
+    {
+      "id": "named-heir", "stage": "resolution", "end": "resolved", "speaker": "father", "at": "hall",
+      "text": "{father} names {bastard} heir to {hall} before the bannermen. {trueborn} walks out of the hall and does not come back that night.",
+      "memory": { "trueborn": "My {father.father} named a bastard heir in my place. I was humiliated before the whole hall.", "bastard": "I am heir to {hall}. My mother's boy, heir to {hall}." },
+      "do": { "rank": { "bastard": "heir", "trueborn": "child" }, "opinion": [["trueborn", "father", -50], ["trueborn", "bastard", -40]], "goal": { "trueborn": { "kind": "revenge", "text": "take back my birthright from {bastard}" } } }
+    },
+    {
+      "id": "sent-away", "stage": "resolution", "end": "failed", "speaker": "bastard",
+      "text": "{father} gives {bastard} a horse, a purse and a sword, and sends {bastard.him} away from {hall}. It is kinder than it looks, and {bastard} does not see it.",
+      "memory": { "bastard": "{father} sent me away from {hall} with a purse, as if I were a debt." },
+      "do": { "rank": { "bastard": "exile" }, "gold": { "father": -20 } }
+    },
+    {
+      "id": "denied", "stage": "crisis", "speaker": "father", "at": "hall",
+      "text": "{father} says {father.he} has never seen the {bastard.man} before, and has {bastard.him} whipped from the gates of {hall}.",
+      "memory": { "bastard": "{father} denied me and had me whipped from the gates of {hall}." },
+      "after": [1, 2],
+      "next": [{ "if": { "alive": "rival" }, "to": "to-rival" }],
+      "patience": 1, "otherwise": "bitter-exile"
+    },
+    {
+      "id": "to-rival", "stage": "crisis", "speaker": "bastard",
+      "text": "{bastard} rides to {rival.seat} and offers {rival} a sword, and everything {bastard.he} knows of {father.house}.",
+      "memory": { "father": "{bastard} has gone to {rival} with everything {bastard.he} knows of my house.", "rival": "{father}'s bastard came to me with a grudge and a sword. Both are useful." },
+      "do": { "defect": ["bastard", "rival"], "opinion": [["father", "bastard", -40], ["rival", "bastard", 25]], "goal": { "bastard": { "kind": "revenge", "text": "take {hall} by the sword" } } },
+      "after": [1, 3],
+      "next": [
+        { "if": { "all": [{ "stronger": ["rival", "father"] }, { "chance": 0.6 }] }, "to": "bastard-war" }
+      ],
+      "patience": 3, "otherwise": "bitter-exile"
+    },
+    {
+      "id": "bastard-war", "stage": "crisis", "speaker": "bastard", "at": "hall",
+      "text": "{rival} lends {bastard} men and banners. They march on {hall} with the bastard's own badge sewn over {rival.house}'s.",
+      "do": { "war": ["rival", "father", "hall"], "warSize": 6 },
+      "after": [2, 3],
+      "next": [
+        { "if": { "holds": ["rival", "hall"] }, "to": "bastard-wins" }
+      ],
+      "patience": 3, "otherwise": "bastard-falls"
+    },
+    {
+      "id": "bastard-wins", "stage": "resolution", "end": "resolved", "speaker": "bastard", "at": "hall",
+      "text": "{hall} falls to {rival.house}, and {rival} gives it to {bastard} to hold. The {bastard.man} whipped from its gates now sits in its hall.",
+      "memory": { "father": "My own bastard took {hall} from me with {rival}'s men.", "bastard": "I hold {hall}. They whipped me from these gates." },
+      "do": { "rank": { "bastard": "bannerman" }, "seat": ["bastard", "hall"], "goal": { "bastard": { "kind": "favour", "text": "hold {hall} for {rival}" } } }
+    },
+    {
+      "id": "bastard-falls", "stage": "resolution", "end": "failed", "at": "hall",
+      "text": "The walls of {hall} hold. {bastard} is taken among the wounded and hanged by {father}'s order, with the ring still round {bastard.his} neck.",
+      "memory": { "rival": "{father} hanged {bastard}, who fought under my banners." },
+      "do": { "die": { "who": "bastard", "how": "I was hanged at {hall} by my own {father.father}'s order." }, "opinion": [["rival", "father", -30]] }
+    },
+    {
+      "id": "settles", "stage": "resolution", "end": "resolved", "at": "hall",
+      "text": "{bastard} takes a knight's place in {father}'s household at {hall} and seems content with it. {trueborn} sleeps with a knife under the pillow all the same."
+    },
+    {
+      "id": "bitter-exile", "stage": "resolution", "end": "failed", "speaker": "bastard",
+      "text": "{bastard} sells the ring in a port town and takes ship. Some say {bastard.he} will be back.",
+      "do": { "rank": { "bastard": "exile" } }
+    },
+    {
+      "id": "father-gone", "stage": "resolution", "end": "resolved", "speaker": "trueborn",
+      "text": "{father} dies, and the question of {father.his} blood is left to the living. {trueborn} gives {bastard} until nightfall to be gone from {hall}.",
+      "memory": { "bastard": "When {father} died, {trueborn} threw me out of {hall} before the body was cold." },
+      "do": { "rank": { "bastard": "exile" }, "goal": { "bastard": { "kind": "revenge", "text": "make {trueborn} regret the night {trueborn.he} threw me out" } } }
+    },
+    {
+      "id": "only-blood", "stage": "resolution", "end": "resolved", "speaker": "bastard",
+      "text": "With {trueborn} in the grave, {bastard} is the only child of {father}'s blood left standing. Whatever the priests say, {hall} will pass to {bastard.him}.",
+      "do": { "rank": { "bastard": "heir" } }
+    },
+    {
+      "id": "bastard-buried", "stage": "resolution", "end": "failed",
+      "text": "{bastard} is buried outside the walls of {hall}, where they bury those who are nobody's. {father} does not come.",
+      "memory": { "father": "They buried {bastard} outside the walls. I did not go." }
+    }
+  ]
+}

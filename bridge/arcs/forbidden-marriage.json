@@ -1,0 +1,125 @@
+{
+  "id": "forbidden-marriage",
+  "name": "A forbidden marriage",
+  "about": "The children of two houses that hate each other fall in love; a parent forbids it, and they obey, elope or are hunted, while the houses' strength decides who keeps them.",
+  "kind": "love",
+  "weight": 2,
+  "cooldown": 14,
+  "title": "The Forbidden Match of {a.houseName} and {b.houseName}",
+  "roles": {
+    "elder": {
+      "rank": ["lord", "bannerman"], "children": true, "seat": true,
+      "likes": { "remembers": "raided|betrayed|spurned|humiliat|burned" }
+    },
+    "a": { "childOf": "elder", "unwed": true, "age": [15, 32] },
+    "rival": {
+      "rank": ["lord", "bannerman"], "otherHouse": "elder", "children": true,
+      "either": [
+        { "namedBy": { "role": "elder", "memory": "raided|betrayed|spurned|humiliat|burned|oath" } },
+        { "opinionOf": ["elder", "<", -10] },
+        { "opinion": ["elder", "<", -10] }
+      ]
+    },
+    "b": { "childOf": "rival", "unwed": true, "otherGender": "a", "age": [15, 34] }
+  },
+  "core": ["a", "b"],
+  "onDeath": { "a": "grief", "b": "grief" },
+  "fade": "{a} and {b} stop writing. Whatever it was, {thread} is a song now, sung wrong.",
+  "beats": [
+    {
+      "id": "meet", "stage": "rising", "speaker": "a",
+      "text": ["At the harvest fair in {elder.seat}, {a} of {a.house} and {b} of {b.house} dance three dances together, and are seen.", "{a} and {b} meet at a hawking party neither house should have attended, and ride back far behind the others."],
+      "memory": { "a": "I danced with {b} of {b.house}. I think of nothing else.", "b": "I met {a} of {a.house}, whose house my {b.father} hates. I do not care.", "elder": false, "rival": false },
+      "after": [1, 2],
+      "next": [{ "to": "letters" }]
+    },
+    {
+      "id": "letters", "stage": "rising", "speaker": "b",
+      "text": "Letters pass between {a} and {b}, hidden in loaves and saddlebags. A maid of {elder.house} reads one, and tells.",
+      "memory": { "elder": "My {a.son} {a} has been writing to {b}, the {b.son} of {rival}." },
+      "after": [1, 1],
+      "next": [
+        { "if": { "all": [{ "trait": ["elder", "just|generous|content|patient|lustful"] }, { "opinion": ["elder", "rival", ">", -50] }] }, "to": "asked" }
+      ],
+      "patience": 1, "otherwise": "forbidden"
+    },
+    {
+      "id": "asked", "stage": "rising", "speaker": "elder",
+      "text": "{a} kneels before {elder} and asks leave to wed {b} of {rival.house}. {elder} says {elder.he} will think on it, and sends a rider to {rival}.",
+      "after": [1, 2],
+      "next": [
+        { "if": { "all": [{ "opinion": ["rival", "elder", ">", -30] }, { "opinion": ["elder", "rival", ">", -30] }] }, "to": "blessed" },
+        { "if": { "chance": 0.5 }, "to": "blessed" }
+      ],
+      "patience": 1, "otherwise": "forbidden"
+    },
+    {
+      "id": "blessed", "stage": "resolution", "end": "resolved", "speaker": "elder",
+      "text": "Bells ring in {elder.seat}: {a} weds {b}, and {elder.house} and {rival.house} drink from one cup. Old grudges are buried, for now.",
+      "memory": { "elder": "I let my {a.son} wed into {rival.house}. Let it end the old quarrel.", "rival": "My {b.son} {b} wed {a} of {elder.house}. We are kin now, {elder} and I." },
+      "do": { "marry": ["a", "b"], "opinion": [["elder", "rival", 35], ["rival", "elder", 35]], "truce": ["elder", "rival", 4] }
+    },
+    {
+      "id": "forbidden", "stage": "crisis", "speaker": "elder",
+      "text": "{elder} forbids it: no child of {elder.house} will wed into {rival.house}. {a} is locked in a tower room at {elder.seat}.",
+      "memory": { "a": "{elder} forbade me {b} and locked me in a tower like a thief." },
+      "do": { "opinion": [["a", "elder", -30]] },
+      "after": [1, 2],
+      "next": [
+        { "if": { "trait": ["a", "brave|lustful|ambitious|proud|wrathful|vengeful"] }, "to": "elope" },
+        { "if": { "chance": 0.45 }, "to": "elope" }
+      ],
+      "patience": 1, "otherwise": "obeys"
+    },
+    {
+      "id": "obeys", "stage": "resolution", "end": "failed", "speaker": "a",
+      "text": "{a} bows to {elder}'s will. {b} is promised elsewhere within the year, and {a} does not go to the feast.",
+      "memory": { "a": "I gave up {b} because {elder} commanded it. I will not forgive it.", "b": "{a} would not defy {a.his} {elder.father} for me." },
+      "do": { "opinion": [["a", "elder", -20]], "goal": { "a": { "kind": "revenge", "text": "make {elder} answer for what was taken from me" } } }
+    },
+    {
+      "id": "elope", "stage": "crisis", "speaker": "a",
+      "text": "{a} slips out of {elder.seat} by the sally port and rides for {b}. They are wed by a hedge priest at dawn, with a ploughman for a witness.",
+      "memory": { "a": "I wed {b} by a hedge priest at dawn. Let them come.", "b": "{a} came to me through the night. We are wed.", "elder": "My {a.son} ran off to wed into {rival.house}. A theft, and {rival} is the thief.", "rival": "My {b.son} wed {a} of {elder.house} without my leave." },
+      "do": { "marry": ["a", "b"], "opinion": [["elder", "rival", -25]] },
+      "after": [1, 2],
+      "next": [
+        { "if": { "any": [{ "trait": ["elder", "wrathful|vengeful|proud"] }, { "opinion": ["elder", "rival", "<", -50] }] }, "to": "pursuit" },
+        { "if": { "trait": ["elder", "content|generous|lustful|just"] }, "to": "grudging" }
+      ],
+      "patience": 1, "otherwise": "pursuit"
+    },
+    {
+      "id": "pursuit", "stage": "crisis", "speaker": "elder",
+      "text": "{elder} calls the match a theft and rides on {rival.seat} with steel to take {a} back.",
+      "do": { "war": ["elder", "rival"], "warSize": 5 },
+      "after": [2, 3],
+      "next": [
+        { "if": { "stronger": ["elder", "rival", 1.3] }, "to": "dragged-home" },
+        { "if": { "stronger": ["rival", "elder", 1.0] }, "to": "lovers-keep" }
+      ],
+      "patience": 2, "otherwise": "lovers-keep"
+    },
+    {
+      "id": "dragged-home", "stage": "resolution", "end": "failed", "speaker": "a",
+      "text": "{elder}'s riders drag {a} back to {elder.seat}. The priests unmake the marriage; {b} is left bleeding at the roadside.",
+      "memory": { "a": "My {elder.father}'s men dragged me home and the priests unmade my marriage to {b}.", "b": "{elder}'s riders took {a} from me on the road and left me in the ditch." },
+      "do": { "unwed": "a", "opinion": [["b", "elder", -60], ["rival", "elder", -40]], "die": { "who": "b", "chance": 0.25, "how": "I died on the road trying to keep {a}." } }
+    },
+    {
+      "id": "lovers-keep", "stage": "resolution", "end": "resolved", "speaker": "b",
+      "text": "{elder}'s host turns for home. {a} and {b} keep their hearth under {rival.house}'s banners, and a child is born before the snows.",
+      "memory": { "a": "My {elder.father} could not take me back. My home is with {b} now." }
+    },
+    {
+      "id": "grudging", "stage": "resolution", "end": "resolved", "speaker": "elder",
+      "text": "{elder} rages for a week, then sends a cask of wine after the couple. A match made is a match made.",
+      "do": { "opinion": [["elder", "rival", 10], ["a", "elder", 20]] }
+    },
+    {
+      "id": "grief", "stage": "resolution", "end": "failed",
+      "text": "Death parts {a} and {b} before the houses can. In {elder.seat} and {rival.seat} alike the bells are rung, and each house blames the other.",
+      "do": { "opinion": [["elder", "rival", -25], ["rival", "elder", -25]] }
+    }
+  ]
+}

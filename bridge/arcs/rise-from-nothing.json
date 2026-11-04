@@ -1,0 +1,158 @@
+{
+  "id": "rise-from-nothing",
+  "name": "A rise from nothing",
+  "about": "A stable-born youth catches a lord's eye, fights, is knighted, and wins land of their own, or is cut down by a jealous bannerman or the first battle.",
+  "kind": "rise",
+  "weight": 2,
+  "cooldown": 14,
+  "title": "The Rise of {upstart}",
+  "roles": {
+    "patron": { "rank": ["lord", "bannerman"], "seat": true, "likes": { "traits": ["generous", "just", "brave", "honourable"] } },
+    "upstart": {
+      "new": {
+        "surname": ["Stable", "Smith", "Miller", "Fletcher", "Cooper", "Tanner"], "like": "patron", "rank": "sworn", "age": [16, 22],
+        "traits": ["brave", "ambitious"], "loyalty": 70,
+        "memory": "I was born in the stables at {patron.seat}, and I mean to die in a hall.",
+        "goal": { "kind": "land", "text": "hold land of my own, though I was born with none" }
+      }
+    },
+    "rival": { "rank": "bannerman", "house": "patron", "optional": true, "likes": { "traits": ["proud", "greedy", "vengeful", "paranoid"] } },
+    "grant": { "town": true, "ownedBy": "patron", "notCapital": true, "unheld": true, "optional": true }
+  },
+  "core": ["upstart"],
+  "onDeath": { "upstart": "fallen", "patron": "patron-dies" },
+  "fade": "{upstart} serves on, a good sword in a crowded hall, and nobody sings of {upstart.him}.",
+  "beats": [
+    {
+      "id": "noticed", "stage": "rising", "speaker": "upstart",
+      "text": "At the spring muster at {patron.seat}, a stable {upstart.man} called {upstart} unhorses a knight with a borrowed lance. {patron} asks the {upstart.man}'s name.",
+      "memory": { "patron": "A stable {upstart.man} called {upstart} unhorsed a knight at my muster." },
+      "do": { "opinion": [["patron", "upstart", 20], ["upstart", "patron", 30]] },
+      "after": [1, 2],
+      "next": [
+        { "if": { "trait": ["patron", "generous|just|brave|honourable|content"] }, "to": "squire" },
+        { "if": { "chance": 0.5 }, "to": "squire" }
+      ],
+      "patience": 1, "otherwise": "spurned"
+    },
+    {
+      "id": "spurned", "stage": "resolution", "end": "failed", "speaker": "upstart",
+      "text": "{patron} laughs and tosses the {upstart.man} a coin for the show. {upstart} keeps the coin, and leaves {patron.seat} on foot before dawn.",
+      "memory": { "upstart": "{patron} threw me a coin like a juggler. I left {patron.seat} on foot." },
+      "do": { "rank": { "upstart": "exile" }, "opinion": [["upstart", "patron", -40]] }
+    },
+    {
+      "id": "squire", "stage": "rising", "speaker": "upstart",
+      "text": "{patron} takes {upstart} into {patron.his} household as a squire. The other squires put dung in {upstart.his} boots, once.",
+      "after": [2, 3],
+      "next": [
+        { "if": { "any": [{ "units": ["patron", "<", 14] }, { "chance": 0.45 }] }, "to": "battle" }
+      ],
+      "patience": 1, "otherwise": "tourney"
+    },
+    {
+      "id": "battle", "stage": "crisis", "speaker": "upstart",
+      "text": "Raiders come over the hills near {patron.seat}. {upstart} holds a ford with six men until {patron}'s horse comes up.",
+      "memory": { "patron": "{upstart} held the ford when grown knights ran. I owe the {upstart.man} my lands." },
+      "do": { "die": { "who": "upstart", "chance": 0.2, "how": "I fell holding the ford for {patron}." }, "opinion": [["patron", "upstart", 30]] },
+      "after": [1, 1],
+      "next": [{ "if": { "alive": "upstart" }, "to": "knighted" }],
+      "patience": 1, "otherwise": "fallen"
+    },
+    {
+      "id": "tourney", "stage": "rising", "speaker": "upstart",
+      "text": "{upstart} rides in the lists at {patron.seat} in borrowed armour and is not unhorsed all day.",
+      "after": [1, 1],
+      "next": [{ "if": { "chance": 0.65 }, "to": "knighted" }],
+      "patience": 1, "otherwise": "humbled"
+    },
+    {
+      "id": "humbled", "stage": "resolution", "end": "failed", "speaker": "upstart",
+      "text": "{upstart} is unhorsed in the last pass and laughed out of the lists. {upstart.He} goes back to the stables, and the horses do not laugh.",
+      "memory": { "upstart": "They laughed me out of the lists at {patron.seat}. I went back to the horses." }
+    },
+    {
+      "id": "knighted", "stage": "crisis", "speaker": "patron",
+      "text": "{patron} dubs {upstart} knight in the hall at {patron.seat}. {upstart.He} kneels a stable {upstart.man} and rises Ser {upstart.first}.",
+      "memory": { "upstart": "{patron} knighted me in the hall at {patron.seat}. I knelt in straw and rose a knight.", "rival": "{patron} knighted a stable {upstart.man}. What is a knighthood worth now?" },
+      "do": { "traits": { "upstart": { "add": ["proud"] } }, "loyalty": { "upstart": 15 }, "opinion": [["rival", "upstart", -20]] },
+      "after": [2, 3],
+      "next": [
+        { "if": { "all": [{ "alive": "rival" }, { "trait": ["rival", "proud|greedy|vengeful|paranoid|cunning|wrathful"] }] }, "to": "envy" },
+        { "if": { "holds": ["patron", "grant"] }, "to": "landed" }
+      ],
+      "patience": 2, "otherwise": "household"
+    },
+    {
+      "id": "envy", "stage": "crisis", "speaker": "rival",
+      "text": "{rival} says at table that a stable {upstart.man} in a knight's cloak still smells of the stable. {upstart} answers with a fist.",
+      "memory": { "rival": "{upstart} struck me at {patron}'s table, before everyone. A stable {upstart.man} struck me.", "upstart": "{rival} humiliated me at table. I hit {rival.him}, and would again." },
+      "do": { "opinion": [["rival", "upstart", -40], ["upstart", "rival", -30]] },
+      "after": [1, 2],
+      "next": [
+        { "if": { "trait": ["rival", "cunning|paranoid|craven"] }, "to": "poison" }
+      ],
+      "patience": 1, "otherwise": "duel"
+    },
+    {
+      "id": "poison", "stage": "crisis",
+      "text": "{upstart} falls sick after a feast at {patron.seat}. The cup came from {rival}'s end of the table.",
+      "do": { "die": { "who": "upstart", "chance": 0.5, "how": "I drank from a cup at {patron}'s feast and never rose." } },
+      "after": [1, 1],
+      "next": [{ "if": { "alive": "upstart" }, "to": "survives" }],
+      "patience": 1, "otherwise": "fallen"
+    },
+    {
+      "id": "survives", "stage": "crisis", "speaker": "upstart",
+      "text": "{upstart} lives, thinner and quieter. {patron} sends {rival} back to {rival.seat} and does not invite {rival.him} again.",
+      "do": { "opinion": [["patron", "rival", -30]], "traits": { "upstart": { "add": ["paranoid"] } } },
+      "after": [1, 2],
+      "next": [{ "if": { "holds": ["patron", "grant"] }, "to": "landed" }],
+      "patience": 1, "otherwise": "household"
+    },
+    {
+      "id": "duel", "stage": "crisis", "speaker": "upstart",
+      "text": "{rival} demands satisfaction, and they fight on the green below {patron.seat} at dawn.",
+      "do": { "die": [{ "who": "rival", "chance": 0.45, "how": "I died on the green at {patron.seat} at a stable {upstart.man}'s hand." }] },
+      "after": [1, 1],
+      "next": [
+        { "if": { "dead": "rival" }, "to": "duel-won" },
+        { "if": { "chance": 0.5 }, "to": "duel-won" }
+      ],
+      "patience": 1, "otherwise": "duel-lost"
+    },
+    {
+      "id": "duel-won", "stage": "crisis", "speaker": "upstart",
+      "text": "{upstart} walks off the green with {rival}'s blood on {upstart.his} sword and the whole of {patron.seat} watching.",
+      "after": [1, 1],
+      "next": [{ "if": { "holds": ["patron", "grant"] }, "to": "landed" }],
+      "patience": 1, "otherwise": "household"
+    },
+    {
+      "id": "duel-lost", "stage": "resolution", "end": "failed",
+      "text": "{rival} runs {upstart} through on the green below {patron.seat}. The stable {upstart.man}'s knighthood lasted a single summer.",
+      "do": { "die": { "who": "upstart", "how": "{rival} killed me on the green at dawn." } }
+    },
+    {
+      "id": "landed", "stage": "resolution", "end": "resolved", "speaker": "upstart", "at": "grant",
+      "text": "{patron} grants {upstart} the lordship of {grant}. A {upstart.man} born in straw now sits a hall under {upstart.his} own banner.",
+      "memory": { "upstart": "I hold {grant}. Born in the stables at {patron.seat}, and now I hold {grant}.", "patron": "I gave {grant} to {upstart}, who was born in my stables." },
+      "do": { "rank": { "upstart": "bannerman" }, "seat": ["upstart", "grant"], "goal": { "upstart": { "kind": "favour", "text": "repay {patron}, who raised me from the straw" } } }
+    },
+    {
+      "id": "household", "stage": "resolution", "end": "resolved", "speaker": "upstart",
+      "text": "There is no land to give, but {upstart} rides at {patron}'s right hand now, and men who once kicked {upstart.him} call {upstart.him} ser.",
+      "do": { "loyalty": { "upstart": 10 } }
+    },
+    {
+      "id": "fallen", "stage": "resolution", "end": "failed",
+      "text": "{upstart} is buried at {patron.seat}, under a stone {patron} pays for. The stable hands go to the grave on their own.",
+      "memory": { "patron": "I buried {upstart}, who was born in my stables and died my knight." }
+    },
+    {
+      "id": "patron-dies", "stage": "resolution", "end": "failed", "speaker": "upstart",
+      "text": "{patron} dies, and with {patron.him} every promise made to {upstart}. The new lord of {patron.seat} has squires of {patron.his} own.",
+      "do": { "rank": { "upstart": "exile" } }
+    }
+  ]
+}

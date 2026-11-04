@@ -30,9 +30,10 @@ const RENAMED = {
   "Lord Jon Highfell": "Lord Declan Highfell",
 };
 import { Court } from "./characters.js";
+import { Arcs, templates as arcTemplates, check } from "./arcs.js";
 import { bible, FAMILIES, LESSER } from "./lore.js";
 import { Stakes, calendar, epithet } from "./stakes.js";
-import { watched, usageToday, moodFrom, isWatched } from "./claude.js";
+import { watched, usageToday, moodFrom, isWatched, arcFromWords } from "./claude.js";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8787);
@@ -53,6 +54,8 @@ let paused = false;
 // Each great house's regard for the crown (0-100), by Freeciv player id.
 let favour = {};
 let court = null;
+let arcs = null;
+let arcsRunning = false;
 let stakes = null;
 let decreesIssued = 0;
 let seasonRunning = false;
@@ -78,6 +81,7 @@ function load(id) {
   favour = chron.readJson(path.join(P.state, "favour.json"), {});
   meta.tithe ??= 0.1;
   court = new Court(P.base, record);
+  arcs = new Arcs(P.base, court, record);
   stakes = new Stakes(P.state, record, endReign);
   rememberNames(world);
 }
@@ -360,6 +364,7 @@ function onEvent(line) {
     collectTithe(Number(ev.turn));
     setTimeout(() => stakes?.tick(Number(ev.turn), world, { favour: favourOf, send: (l) => send(`lua cmd ${l}`), watched: isWatched(), options: meta.options ?? {} }), 2000);
     if (Number(ev.turn) % 4 === 0) setTimeout(runSeason, 2500);
+    setTimeout(() => runArcs(1), 4000);
     // Let the AI finish its start-of-turn moves before dumping the world.
     setTimeout(snapshot, 1500);
     if ((Number(ev.turn) - 1) % 4 === 0) record({ turn: Number(ev.turn), kind: "year", text: `The year ${calendar(ev.turn).year} AC begins.` });
@@ -385,6 +390,35 @@ async function runSeason() {
   } finally {
     seasonRunning = false;
   }
+}
+
+// Each season the realm's story arcs move on (arcs.js); n seasons at once
+// fast-forwards them, re-reading the realm whenever a beat pulled a lever.
+function arcCtx() {
+  const d = detail();
+  return {
+    world, favour: favourOf, shift: shiftFavour, send: (l) => send(`lua cmd ${l}`),
+    atWar: (a, b) => (d?.players?.[a]?.atWarWith ?? []).includes(b),
+    town: (id) => {
+      const x = d?.cities?.[id];
+      return x ? { food: x.foodStock, famine: x.hadFamine, plague: x.plagueTurn >= 0 && world.turn - x.plagueTurn <= 16 } : {};
+    },
+    recent: (turns = 16) => chronicle.filter((e) => e.turn >= world.turn - turns),
+    refresh: () => new Promise((r) => { snapshot(); setTimeout(r, 900); }),
+  };
+}
+
+async function runArcs(n = 1, start = true) {
+  if (!world || !arcs || arcsRunning) return false;
+  arcsRunning = true;
+  try {
+    for (let i = 0; i < n; i++) await arcs.season(arcCtx(), { start });
+  } catch (err) {
+    console.error("arcs:", err);
+  } finally {
+    arcsRunning = false;
+  }
+  return true;
 }
 
 function saveFavour() {
@@ -953,6 +987,62 @@ http.createServer(async (req, res) => {
     // A lord remembers being spoken to by their own people, briefly.
     if (speaker) court.remember(speaker.id, `In ${cityName(city.id)} I spoke with ${person.name}, the ${person.trade}.`);
     return json(res, 200, { name: person.name, trade: person.trade, gender: person.woman ? "female" : "male", ...out });
+  }
+  if (url.pathname === "/arcs" && req.method === "GET") return json(res, 200, inCrowns(arcs.view(arcCtx())));
+  if (url.pathname === "/arcs/templates") return json(res, 200, arcTemplates().map((t) => ({ id: t.id, file: t.file, name: t.name, title: t.title, about: t.about, roles: Object.keys(t.roles ?? {}), beats: (t.beats ?? []).length, problems: t.problems })));
+  // Fast-forward: n seasons of the realm's stories, against the live realm.
+  if (url.pathname === "/arcs/tick" && req.method === "POST") {
+    const b = await body(req);
+    const ran = await runArcs(Math.max(1, Math.min(60, Number(b.n) || 1)), b.start !== false);
+    return json(res, ran ? 200 : 409, ran ? inCrowns(arcs.view(arcCtx())) : { error: "the stories are already moving" });
+  }
+  // Begin one kind of story now, if the realm has the people for it.
+  if (url.pathname === "/arcs/start" && req.method === "POST") {
+    const b = await body(req);
+    if (arcsRunning) return json(res, 409, { error: "the stories are already moving" });
+    arcsRunning = true;
+    try {
+      const all = arcTemplates().filter((t) => !t.problems.length);
+      const arc = await arcs.begin(all, arcCtx(), String(b.template ?? ""));
+      arcs.save();
+      return arc ? json(res, 200, inCrowns(arcs.view(arcCtx()).active.find((a) => a.id === arc.id))) : json(res, 404, { error: "nobody in the realm fits that story now" });
+    } finally {
+      arcsRunning = false;
+    }
+  }
+  // The King's own story: an arc file dropped in as JSON, or told in words
+  // and shaped by the model from the closest existing arc.
+  if (url.pathname === "/arcs/write" && req.method === "POST") {
+    const b = await body(req);
+    const dir = path.join(DIR, "arcs");
+    const slug = (x) => String(x).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
+    let arc;
+    if (b.arc) {
+      arc = typeof b.arc === "string" ? JSON.parse(b.arc) : b.arc;
+    } else {
+      const words = String(b.words ?? "").trim().slice(0, 600);
+      if (!words) return json(res, 400, { error: "say what the story is" });
+      const shapes = arcTemplates().filter((t) => !t.problems.length && !t.told);
+      const given = shapes.filter((t) => t.id === b.shape);
+      const out = await arcFromWords(words, (given.length ? given : shapes).map((t) => ({ id: t.id, name: t.name, about: t.about, roles: t.roles, beats: t.beats })));
+      const base = given[0] ?? shapes.find((t) => t.id === out?.shape);
+      if (!base) return json(res, 503, { error: "the local model isn't there to shape it; drop an arc file in bridge/arcs instead" });
+      const name = out?.name || words.split(/[.,;]/)[0].slice(0, 40);
+      arc = structuredClone(base);
+      delete arc.file; delete arc.problems;
+      arc.id = `told-${slug(name)}`;
+      arc.name = name;
+      arc.about = words;
+      arc.told = { from: base.id, words };
+      const anchor = Object.keys(base.roles)[0];
+      arc.title = /^the /i.test(name) ? `${name} of {${anchor}.seat}` : `The ${name} of {${anchor}.seat}`;
+      arc.beats.forEach((beat, i) => { if (out?.beats?.[i]) beat.text = out.beats[i]; });
+    }
+    const problems = check(arc);
+    if (problems.length) return json(res, 400, { error: "that arc doesn't hold together", problems });
+    const file = path.join(dir, `${slug(arc.id)}.json`);
+    fs.writeFileSync(file, JSON.stringify(arc, null, 2));
+    return json(res, 200, { ok: true, file: path.relative(DIR, file), arc });
   }
   if (url.pathname === "/lord") return json(res, 200, court.summary(Number(url.searchParams.get("city"))) ?? {});
   if (url.pathname === "/season" && req.method === "POST") {

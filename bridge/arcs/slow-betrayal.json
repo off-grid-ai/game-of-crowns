@@ -1,0 +1,458 @@
+{
+  "id": "slow-betrayal",
+  "name": "A slow betrayal",
+  "about": "A bannerman with a grievance is courted by another house, letter by letter and cask by cask; the liege grows suspicious, and the town either changes hands or its lord loses his head.",
+  "kind": "betrayal",
+  "weight": 3,
+  "cooldown": 10,
+  "title": "The Treason of {town}",
+  "roles": {
+    "liege": {
+      "rank": "lord"
+    },
+    "turncoat": {
+      "rank": "bannerman",
+      "swornTo": "liege",
+      "seat": true,
+      "notTraits": [
+        "honourable"
+      ],
+      "either": [
+        {
+          "loyalty": [
+            0,
+            55
+          ]
+        },
+        {
+          "opinion": [
+            "liege",
+            "<",
+            -5
+          ]
+        },
+        {
+          "remembers": "never answered|sent home|liar|spurned|forbade|humiliat|nothing|bought"
+        },
+        {
+          "goal": "defect|land"
+        }
+      ],
+      "likes": {
+        "traits": [
+          "greedy",
+          "cunning",
+          "ambitious"
+        ],
+        "remembers": "never answered|sent home|liar|spurned|humiliat"
+      }
+    },
+    "town": {
+      "town": true,
+      "seatOf": "turncoat",
+      "notCapital": true
+    },
+    "tempter": {
+      "rank": "lord",
+      "otherHouse": "liege",
+      "likes": {
+        "traits": [
+          "cunning",
+          "greedy",
+          "ambitious"
+        ]
+      }
+    }
+  },
+  "core": [
+    "turncoat",
+    "liege"
+  ],
+  "onDeath": {
+    "tempter": "tempter-gone"
+  },
+  "fade": "The letters stop coming to {town}. Whatever {turncoat} meant to do, {turncoat.he} never does it.",
+  "beats": [
+    {
+      "id": "envoy",
+      "stage": "rising",
+      "speaker": "turncoat",
+      "at": "town",
+      "text": "A merchant who is no merchant comes to {town} with letters from {tempter} of {tempter.house}, and leaves without them.",
+      "memory": {
+        "turncoat": "{tempter} wrote to me as an equal. My own liege never has.",
+        "liege": false
+      },
+      "do": {
+        "opinion": [
+          [
+            "turncoat",
+            "tempter",
+            15
+          ]
+        ],
+        "loyalty": {
+          "turncoat": -10
+        }
+      },
+      "after": [
+        1,
+        2
+      ],
+      "next": [
+        {
+          "if": {
+            "loyalty": [
+              "turncoat",
+              ">",
+              70
+            ]
+          },
+          "to": "refuses"
+        },
+        {
+          "if": {
+            "chance": 0.75
+          },
+          "to": "gold"
+        }
+      ],
+      "patience": 1,
+      "otherwise": "refuses"
+    },
+    {
+      "id": "gold",
+      "stage": "rising",
+      "speaker": "turncoat",
+      "at": "town",
+      "text": "Gold from {tempter.house} comes to {town} in wine casks. {turncoat} buys horses and says they are for the tourney.",
+      "memory": {
+        "turncoat": "I took {tempter}'s gold. There is no unknowing it."
+      },
+      "do": {
+        "pay": [
+          [
+            "tempter",
+            "turncoat",
+            40
+          ]
+        ],
+        "loyalty": {
+          "turncoat": -10
+        }
+      },
+      "after": [
+        1,
+        3
+      ],
+      "next": [
+        {
+          "if": {
+            "all": [
+              {
+                "trait": [
+                  "liege",
+                  "paranoid|cunning"
+                ]
+              },
+              {
+                "chance": 0.6
+              }
+            ]
+          },
+          "to": "suspicion"
+        },
+        {
+          "if": {
+            "chance": 0.3
+          },
+          "to": "suspicion"
+        }
+      ],
+      "patience": 2,
+      "otherwise": "the-gate"
+    },
+    {
+      "id": "suspicion",
+      "stage": "crisis",
+      "speaker": "liege",
+      "text": "{liege} hears of the horses, and the casks, and asks {turncoat} to winter at {liege.seat}. {turncoat} pleads a fever.",
+      "memory": {
+        "liege": "{turncoat} will not come to {liege.seat}. A loyal man comes when called.",
+        "turncoat": "{liege} called me to {liege.seat} for the winter. I said I had a fever. I do not."
+      },
+      "do": {
+        "opinion": [
+          [
+            "liege",
+            "turncoat",
+            -25
+          ]
+        ]
+      },
+      "after": [
+        1,
+        2
+      ],
+      "next": [
+        {
+          "if": {
+            "stronger": [
+              "liege",
+              "tempter",
+              1.3
+            ]
+          },
+          "to": "summoned"
+        },
+        {
+          "if": {
+            "trait": [
+              "turncoat",
+              "brave|ambitious|wrathful|greedy"
+            ]
+          },
+          "to": "the-gate"
+        }
+      ],
+      "patience": 2,
+      "otherwise": "the-gate"
+    },
+    {
+      "id": "summoned",
+      "stage": "crisis",
+      "speaker": "turncoat",
+      "at": "town",
+      "text": "{turncoat} rides to {liege.seat} at last, between two files of {liege.house}'s spearmen.",
+      "after": [
+        1,
+        1
+      ],
+      "next": [
+        {
+          "if": {
+            "trait": [
+              "liege",
+              "wrathful|paranoid|vengeful|proud"
+            ]
+          },
+          "to": "executed"
+        },
+        {
+          "if": {
+            "chance": 0.4
+          },
+          "to": "executed"
+        }
+      ],
+      "patience": 1,
+      "otherwise": "forgiven"
+    },
+    {
+      "id": "executed",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "liege",
+      "text": "{liege} has {turncoat} beheaded in the yard at {liege.seat}, after the letters from {tempter} are read aloud.",
+      "memory": {
+        "liege": "{tempter} bought my bannerman {turncoat} with gold. I took the traitor's head and I will have more."
+      },
+      "do": {
+        "die": {
+          "who": "turncoat",
+          "how": "I was beheaded at {liege.seat} for {tempter}'s gold."
+        },
+        "opinion": [
+          [
+            "liege",
+            "tempter",
+            -45
+          ]
+        ],
+        "goal": {
+          "liege": {
+            "kind": "revenge",
+            "text": "make {tempter} pay for buying my bannerman"
+          }
+        }
+      }
+    },
+    {
+      "id": "forgiven",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "liege",
+      "text": "{liege} forgives {turncoat} before the hall, and keeps {turncoat}'s eldest at {liege.seat} as a ward. Everyone understands.",
+      "memory": {
+        "turncoat": "{liege} forgave me and took my child as surety. I will be watched until I die."
+      },
+      "do": {
+        "loyalty": {
+          "turncoat": 20
+        },
+        "opinion": [
+          [
+            "liege",
+            "tempter",
+            -20
+          ]
+        ]
+      }
+    },
+    {
+      "id": "the-gate",
+      "stage": "crisis",
+      "speaker": "turncoat",
+      "at": "town",
+      "text": "On a moonless night {turncoat} opens the gates of {town} to {tempter.house}. By dawn the banners on the walls have changed.",
+      "memory": {
+        "liege": "{turncoat} betrayed me and gave {town} to {tempter.house}.",
+        "tempter": "{turncoat} gave me {town} for the price of a few casks.",
+        "turncoat": "I opened the gates of {town} to {tempter.house}. I have betrayed {liege}, and I would do it again."
+      },
+      "do": {
+        "transfer": [
+          "town",
+          "tempter"
+        ],
+        "defect": [
+          "turncoat",
+          "tempter"
+        ],
+        "opinion": [
+          [
+            "liege",
+            "turncoat",
+            -70
+          ],
+          [
+            "liege",
+            "tempter",
+            -40
+          ]
+        ]
+      },
+      "after": [
+        2,
+        3
+      ],
+      "next": [
+        {
+          "if": {
+            "holds": [
+              "liege",
+              "town"
+            ]
+          },
+          "to": "retaken"
+        },
+        {
+          "if": {
+            "stronger": [
+              "liege",
+              "tempter",
+              1.1
+            ]
+          },
+          "to": "march-back"
+        }
+      ],
+      "patience": 2,
+      "otherwise": "treason-pays"
+    },
+    {
+      "id": "march-back",
+      "stage": "crisis",
+      "speaker": "liege",
+      "at": "town",
+      "text": "{liege} will not suffer it. The host of {liege.house} marches on {town} to take it back from {tempter}.",
+      "do": {
+        "war": [
+          "liege",
+          "tempter",
+          "town"
+        ],
+        "warSize": 7
+      },
+      "after": [
+        2,
+        4
+      ],
+      "next": [
+        {
+          "if": {
+            "holds": [
+              "liege",
+              "town"
+            ]
+          },
+          "to": "retaken"
+        }
+      ],
+      "patience": 3,
+      "otherwise": "treason-pays"
+    },
+    {
+      "id": "retaken",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "liege",
+      "at": "town",
+      "text": "{town} is {liege.house}'s again. {turncoat} is found hiding in the bell tower.",
+      "do": {
+        "die": {
+          "who": "turncoat",
+          "chance": 0.7,
+          "how": "They found me in the bell tower of {town}."
+        }
+      }
+    },
+    {
+      "id": "treason-pays",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "turncoat",
+      "at": "town",
+      "text": "{turncoat} sits safe in {town} under {tempter.house}'s banners. Bannermen across the realm take note of what treason pays.",
+      "do": {
+        "loyalty": {
+          "liege": -5
+        }
+      }
+    },
+    {
+      "id": "refuses",
+      "stage": "resolution",
+      "end": "failed",
+      "speaker": "turncoat",
+      "text": "{turncoat} burns {tempter}'s letters unread, and sends the ashes to {liege} in a box.",
+      "memory": {
+        "liege": "{turncoat} sent me the ashes of {tempter}'s letters. A loyal man.",
+        "tempter": "{turncoat} burned my letters and sent the ashes to {liege}. Spurned like a peddler."
+      },
+      "do": {
+        "loyalty": {
+          "turncoat": 15
+        },
+        "opinion": [
+          [
+            "liege",
+            "turncoat",
+            25
+          ],
+          [
+            "liege",
+            "tempter",
+            -20
+          ]
+        ]
+      }
+    },
+    {
+      "id": "tempter-gone",
+      "stage": "resolution",
+      "end": "faded",
+      "text": "{tempter} dies, and the gold stops coming to {town}. {turncoat} never speaks of the letters, and burns them one night in the kitchen fire."
+    }
+  ]
+}

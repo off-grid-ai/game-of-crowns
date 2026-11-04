@@ -1,0 +1,136 @@
+{
+  "id": "holy-movement",
+  "name": "A holy man's movement",
+  "about": "A barefoot friar preaches to the hungry that the great are sinful; a lord embraces or hunts him, rivals cry heresy, and the friar becomes an order, an exile or a martyr.",
+  "kind": "faith",
+  "weight": 2,
+  "cooldown": 14,
+  "title": "The Preaching of {friar}",
+  "roles": {
+    "lord": {
+      "rank": ["lord", "bannerman"], "seat": true,
+      "either": [{ "traits": ["pious"] }, { "hungry": true }, { "remembers": "holy man|friar|starve|hunger|sickness|plague|never answered|burned" }],
+      "likes": { "traits": ["pious", "paranoid"] }
+    },
+    "friar": {
+      "new": {
+        "name": ["Brother {first}", "Friar {first}"], "surname": "Barefoot", "gender": "male", "like": "lord",
+        "rank": "sworn", "age": [30, 60], "traits": ["pious", "generous", "proud"],
+        "memory": "The gods spoke to me in a ditch outside {lord.seat}. I have walked barefoot since.",
+        "goal": { "kind": "faith", "text": "bring the great of {lord.house} to their knees before the gods" }
+      }
+    },
+    "rival": { "rank": "lord", "otherHouse": "lord", "notTraits": ["pious"], "optional": true }
+  },
+  "core": ["lord"],
+  "onDeath": { "friar": "saint", "lord": "lord-dies" },
+  "fade": "The crowds thin as the harvest comes in. {friar} walks on to other villages, and {thread} is forgotten.",
+  "beats": [
+    {
+      "id": "comes", "stage": "rising", "speaker": "friar",
+      "text": "A barefoot friar called {friar} comes to the villages around {lord.seat}, preaching that the great are sinful and the poor will inherit the land.",
+      "memory": { "lord": "A friar called {friar} preaches in my villages that lords are sinners." },
+      "after": [1, 2],
+      "next": [
+        { "if": { "any": [{ "hungry": "lord" }, { "realmHungry": 6 }, { "plague": "lord" }] }, "to": "crowds" },
+        { "if": { "chance": 0.55 }, "to": "crowds" }
+      ],
+      "patience": 2, "otherwise": "ignored"
+    },
+    {
+      "id": "crowds", "stage": "rising", "speaker": "friar",
+      "text": "Hundreds follow {friar} from field to field. The tithe barns of {lord.house} stand half empty; the people give to the friar instead.",
+      "do": { "gold": { "lord": -20 } },
+      "after": [1, 2],
+      "next": [
+        { "if": { "trait": ["lord", "pious|generous|just"] }, "to": "patron" },
+        { "if": { "trait": ["lord", "paranoid|wrathful|greedy|proud|cunning"] }, "to": "crackdown" }
+      ],
+      "patience": 1, "otherwise": "crackdown"
+    },
+    {
+      "id": "patron", "stage": "crisis", "speaker": "lord",
+      "text": "{lord} kneels in the mud before {friar} and is blessed. The faithful of {lord.seat} take up pikes and march behind the friar's crowds.",
+      "memory": { "lord": "I knelt in the mud to {friar} and was blessed.", "friar": "{lord} of {lord.house} knelt to me. The gods are working." },
+      "do": { "units": { "lord": { "type": "Pikemen", "count": 2 } }, "traits": { "lord": { "add": ["pious"] } }, "opinion": [["lord", "friar", 40]] },
+      "after": [2, 3],
+      "next": [
+        { "if": { "all": [{ "alive": "rival" }, { "chance": 0.6 }] }, "to": "heresy" }
+      ],
+      "patience": 2, "otherwise": "the-order"
+    },
+    {
+      "id": "heresy", "stage": "crisis", "speaker": "rival",
+      "text": "{rival} of {rival.house} writes to the King that {lord} harbours a heretic and arms a rabble against honest lords.",
+      "memory": { "lord": "{rival} called me a heretic's dog before the King.", "rival": "I warned the King about {lord} and the friar." },
+      "do": { "opinion": [["lord", "rival", -30]], "favour": { "lord": -8 } },
+      "after": [1, 2],
+      "next": [
+        { "if": { "stronger": ["lord", "rival"] }, "to": "faith-holds" },
+        { "if": { "favour": ["lord", "<", 40] }, "to": "taken" }
+      ],
+      "patience": 2, "otherwise": "faith-holds"
+    },
+    {
+      "id": "faith-holds", "stage": "resolution", "end": "resolved", "speaker": "friar",
+      "text": "No one dares come for {friar} while {lord}'s pikes stand round {friar.him}. The preaching goes on, and spreads.",
+      "do": { "goal": { "lord": { "kind": "faith", "text": "keep {friar} and the faithful safe" } } }
+    },
+    {
+      "id": "crackdown", "stage": "crisis", "speaker": "lord",
+      "text": "{lord} sends riders to take {friar}. They find {friar.him} preaching on a hillside to a thousand people, and the riders do not dare.",
+      "memory": { "friar": "{lord} sent riders to take me. The people stood in their way." },
+      "do": { "opinion": [["friar", "lord", -40]] },
+      "after": [1, 2],
+      "next": [
+        { "if": { "trait": ["lord", "wrathful|paranoid|vengeful"] }, "to": "martyr" },
+        { "if": { "chance": 0.5 }, "to": "martyr" }
+      ],
+      "patience": 1, "otherwise": "taken"
+    },
+    {
+      "id": "martyr", "stage": "crisis", "speaker": "lord",
+      "text": "{friar} is hanged from the bridge at {lord.seat}. By morning the rope is gone, cut into relics.",
+      "memory": { "lord": "I hanged {friar} from the bridge at {lord.seat}. The people took the rope for relics." },
+      "do": { "die": { "who": "friar", "how": "I was hanged from the bridge at {lord.seat} for speaking the truth." }, "favour": { "lord": -10 }, "traits": { "lord": { "add": ["paranoid"] } } },
+      "after": [1, 2],
+      "next": [
+        { "if": { "any": [{ "hungry": "lord" }, { "realmHungry": 6 }] }, "to": "uprising" }
+      ],
+      "patience": 1, "otherwise": "forgotten"
+    },
+    {
+      "id": "uprising", "stage": "resolution", "end": "failed", "speaker": "lord",
+      "text": "The hungry rise in {friar}'s name. They burn the tithe barns of {lord.house} and stone {lord}'s stewards in the road.",
+      "memory": { "lord": "The poor rose in the hanged friar's name and burned my barns." },
+      "do": { "gold": { "lord": -60 }, "loyalty": { "lord": -10 } }
+    },
+    {
+      "id": "forgotten", "stage": "resolution", "end": "resolved",
+      "text": "The relics are sold and resold at fairs. In a few years the bridge at {lord.seat} is only a bridge."
+    },
+    {
+      "id": "taken", "stage": "resolution", "end": "failed", "speaker": "friar",
+      "text": "{friar} is taken in the night and put on a ship across the sea in chains. The preaching stops; the poor do not forget the face.",
+      "do": { "rank": { "friar": "exile" } }
+    },
+    {
+      "id": "the-order", "stage": "resolution", "end": "resolved", "speaker": "friar",
+      "text": "{friar}'s followers build a house of prayer outside {lord.seat}, with {lord}'s stone and the poor's labour. They call themselves the Barefoot Brothers.",
+      "do": { "favour": { "lord": 4 } }
+    },
+    {
+      "id": "ignored", "stage": "resolution", "end": "faded",
+      "text": "Nobody much comes to hear {friar}. {friar.He} walks on to other lands, preaching to the crows."
+    },
+    {
+      "id": "saint", "stage": "resolution", "end": "resolved",
+      "text": "{friar} dies in a hovel outside {lord.seat}, and within a season the poor are praying to {friar.him}.",
+      "memory": { "lord": "{friar} is dead, and the poor pray to {friar.him} now." }
+    },
+    {
+      "id": "lord-dies", "stage": "resolution", "end": "resolved", "speaker": "friar",
+      "text": "{lord} dies, and {friar} preaches that it was the gods' judgment. The new lord of {lord.seat} listens carefully."
+    }
+  ]
+}

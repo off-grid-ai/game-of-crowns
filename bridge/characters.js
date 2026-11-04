@@ -164,9 +164,13 @@ export class Court {
 
   newPerson(fields, r) {
     const gender = fields.gender ?? (r() < 0.5 ? "male" : "female");
+    // Nobody alive shares a full name, so the chronicle can always tell people apart.
+    const taken = new Set(this.alive().map((x) => x.name));
+    let name = `${pick(gender === "male" ? M : F, r)} ${fields.surname}`;
+    for (let i = 0; i < 12 && taken.has(name); i++) name = `${pick(gender === "male" ? M : F, r)} ${fields.surname}`;
     const c = {
       id: `c${this.seq++}`,
-      name: `${pick(gender === "male" ? M : F, r)} ${fields.surname}`,
+      name,
       gender, age: 30, alive: true, traits: [pick(TRAITS, r), pick(TRAITS, r)].filter((t, i, a) => a.indexOf(t) === i),
       loyalty: 50 + Math.floor(r() * 40), goals: [], relationships: {}, memories: [], spouse: null, children: [],
       ...fields,

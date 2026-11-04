@@ -1453,6 +1453,9 @@ func add_chronicle(entries: Array) -> void:
 		var loss := kind in ["city_shrank", "disaster", "city_destroyed", "building_lost", "city_transferred", "civil_war", "betrayal", "rebellion", "raid", "death", "unrest"]
 		var tone := "#e86b5c" if loss else ("#9a9a96" if kind == "year" else "#ecece8")
 		var text := "[color=%s]%s[/color]" % [tone, e.get("text", "")]
+		# A beat of a story arc is told under the story's own name.
+		if e.get("thread"):
+			text = "[color=#c9a45c]%s[/color]   %s" % [e["thread"], text]
 		if e.has("city") and e["city"] != null:
 			text = "[url=%d]%s[/url]" % [int(e["city"]), text]
 		_lines.push_front("[font_size=11][color=#6f6f6c]%s[/color][/font_size]   %s" % [_season_of(int(e.get("turn", 0))), text])
