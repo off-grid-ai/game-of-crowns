@@ -705,6 +705,7 @@ func _rider(from: Vector3, to: Vector3, label: String) -> void:
 	standard.position = Vector3(0.35, 0, -0.1)
 	rider.add_child(standard)
 	var tag := Label3D.new()
+	tag.visibility_range_begin = 1.6  # gone when you're walking right past it
 	tag.text = label
 	tag.font_size = 36
 	tag.pixel_size = 0.004
@@ -755,6 +756,7 @@ func _convoy(from: Vector3, to: Vector3, grain: bool, label := "") -> void:
 		length += route[i].distance_to(route[i + 1])
 	var seconds := clampf(length / 0.35, 12.0, 70.0)
 	var tag := Label3D.new()
+	tag.visibility_range_begin = 1.6  # gone when you're walking right past it
 	tag.text = label if label != "" else ("The King's grain" if grain else "The King's gold")
 	tag.font_size = 36
 	tag.pixel_size = 0.004
@@ -881,6 +883,7 @@ func _handover(at: Vector3, old_house: Dictionary, new_house: Dictionary, town: 
 
 func _caption(root: Node3D, text: String, at: Vector3) -> Label3D:
 	var tag := Label3D.new()
+	tag.visibility_range_begin = 1.6  # gone when you're walking right past it
 	tag.text = text
 	tag.font_size = 36
 	tag.pixel_size = 0.004

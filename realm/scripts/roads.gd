@@ -148,6 +148,7 @@ func _inn(at: Vector3, road: Vector3, rng: RandomNumberGenerator) -> void:
 		n.rotation.y = yaw + part[2]
 		_kings.add_child(n)
 	var sign := Label3D.new()
+	sign.visibility_range_begin = 1.6  # gone when you're walking right past it
 	sign.text = ["The Crossed Keys", "The Drowned Stag", "The King's Rest", "The Broken Wheel", "The Black Ewe", "The Wayfarer", "The Last Lantern"][rng.randi() % 7]
 	sign.font_size = 34
 	sign.pixel_size = 0.003

@@ -190,6 +190,7 @@ func _construction(life: Node3D, center: Vector3, building: String, progress: fl
 		bp.y = _y(center, bp)
 		_townsperson(life, bp, "peasant", ["Fixing_Kneeling", "Carrying", "Wheelbarrow"][i], rng.randi())
 	var tag := Label3D.new()
+	tag.visibility_range_begin = 1.6  # gone when you're walking right past it
 	tag.text = "Building %s  %d%%" % [building, int(progress * 100)]
 	tag.font_size = 40
 	tag.pixel_size = 0.004
@@ -213,6 +214,7 @@ func _drill(life: Node3D, center: Vector3, progress: float, color: Color, unit: 
 		var drill: String = (["Bow_Draw", "Bow_Aim", "Bow_Shoot"][i % 3]) if unit.contains("Archer") or unit.contains("bow") else ("Sword_Idle" if i % 3 else "Sword_Attack")
 		_townsperson(life, p, "soldier", drill, hash(unit) + i, color.lerp(Color.WHITE, 0.35))
 	var tag := Label3D.new()
+	tag.visibility_range_begin = 1.6  # gone when you're walking right past it
 	tag.text = "Training %s  %d%%" % [unit, int(progress * 100)]
 	tag.font_size = 40
 	tag.pixel_size = 0.004
