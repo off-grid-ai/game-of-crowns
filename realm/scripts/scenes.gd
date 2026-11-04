@@ -83,6 +83,78 @@ func _ground(p: Vector3) -> Vector3:
 	return Vector3(p.x, terrain.height_at(p.x, p.z), p.z)
 
 
+# --- arms ----------------------------------------------------------------------
+
+const SWORD := preload("res://assets/props/Sword_Bronze.gltf")
+const SHIELD := preload("res://assets/props/Shield_Wooden.gltf")
+# Where a weapon sits in the hand, in the hand bone's own space (metres).
+static var SWORD_GRIP := Transform3D(Basis.from_euler(Vector3(-PI / 2, 0, 0)).scaled(Vector3.ONE * 0.8), Vector3(0, 0.08, 0.02))
+static var SPEAR_GRIP := Transform3D(Basis.from_euler(Vector3(-PI / 2, 0, 0)), Vector3(0, 0.08, 0.02))
+static var SHIELD_GRIP := Transform3D(Basis.from_euler(Vector3(-PI / 2, 0, 0)).scaled(Vector3.ONE * 0.9), Vector3(0, 0.06, 0))
+const DEATHS := ["Death01", "Death_Front", "Death_Back", "Sword_Death"]
+
+
+## Puts arms in a soldier's hands, held on the hand bones so they swing with
+## every move: "sword" (sword and shield), "spear" (spear and shield), or
+## "bow" (archers keep their hands free; there is no bow model yet).
+static func arm(person: Node3D, kit: String) -> void:
+	var skel: Skeleton3D = person.get_node_or_null("Armature/GeneralSkeleton")
+	if skel == null or kit == "bow":
+		return
+	_hold(skel, "LeftHand", SHIELD.instantiate(), SHIELD_GRIP)
+	_hold(skel, "RightHand", SWORD.instantiate() if kit == "sword" else _spear(), SWORD_GRIP if kit == "sword" else SPEAR_GRIP)
+
+
+static func _hold(skel: Skeleton3D, bone: String, item: Node3D, grip: Transform3D) -> void:
+	var at := BoneAttachment3D.new()
+	at.bone_name = bone
+	skel.add_child(at)
+	item.transform = grip
+	at.add_child(item)
+
+
+## An ash shaft about 2.4 m long with a bronze blade for its head, held a
+## third of the way up.
+static func _spear() -> Node3D:
+	var s := Node3D.new()
+	var shaft := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.014
+	cyl.bottom_radius = 0.016
+	cyl.height = 2.4
+	cyl.radial_segments = 6
+	shaft.mesh = cyl
+	var wood := StandardMaterial3D.new()
+	wood.albedo_color = Color(0.36, 0.27, 0.18)
+	wood.roughness = 0.9
+	shaft.material_override = wood
+	shaft.position.y = 0.4
+	s.add_child(shaft)
+	var head: Node3D = SWORD.instantiate()
+	head.scale = Vector3.ONE * 0.22
+	head.position.y = 1.62
+	s.add_child(head)
+	return s
+
+
+## Scales a model so it stands `height` tall, measured through its own node
+## transforms (an armature's import scale included), before it is in the tree.
+static func _fit_static(n: Node3D, height: float) -> void:
+	var box := AABB()
+	var first := true
+	for mi in n.find_children("*", "MeshInstance3D", true, false):
+		var xf: Transform3D = (mi as Node3D).transform
+		var up: Node = mi.get_parent()
+		while up != n and up is Node3D:
+			xf = (up as Node3D).transform * xf
+			up = up.get_parent()
+		var b: AABB = xf * (mi as MeshInstance3D).get_aabb()
+		box = b if first else box.merge(b)
+		first = false
+	if not first and box.size.y > 0.0:
+		n.scale = Vector3.ONE * (height / box.size.y)
+
+
 # --- battle -----------------------------------------------------------------------
 
 ## A pitched battle where Freeciv says men died: two companies form up under
