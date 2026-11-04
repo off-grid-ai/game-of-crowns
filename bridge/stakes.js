@@ -115,7 +115,7 @@ export class Stakes {
       const x = north ? north.x : 28;
       const y = north ? Math.max(2, north.y - 4) : 6;
       this.host(ctx, this.theDead(), x, y, ["Warriors", "Archers", "Pikemen"], 3 + n.waves * 2);
-      this.record({ turn, kind: "rebellion", text: n.waves === 1 ? "The dead come over the wall. The North bleeds first." : `The dead come again, more than before (wave ${n.waves}). The northern houses beg the King for aid.` });
+      this.record({ turn, kind: "rebellion", text: n.waves === 1 ? "The dead come over the wall. The North bleeds first." : `The dead come again, more than before${n.waves > 4 ? ", as they have for years now" : ""}. The northern houses beg the King for aid.` });
       const northernSeats = world.cities.filter((c) => c.y < 22);
       if (n.waves >= 4 && northernSeats.length === 0) this.endReign("The North is lost to the dead, and the realm with it.", "fallen");
     }

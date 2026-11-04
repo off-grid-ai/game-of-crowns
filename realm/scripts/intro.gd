@@ -15,6 +15,7 @@ const STILLS := "res://assets/intro/stills/"
 const ATLAS := "res://assets/maps/atlas.png"
 const REALM_TILES := Vector2(56, 88)  # the atlas covers the whole map (bridge/tools/azgaar_world.py)
 const T := preload("res://scripts/theme.gd")
+const Keys := preload("res://scripts/keys.gd")
 const HOLD := 8.0  # seconds on each page
 
 ## What the world bible says of each house: who they are, in one line.
@@ -31,11 +32,11 @@ const CHARACTER := {
 
 ## Tips shown again while the realm is still forming, after the story.
 const TIPS := [
-	["Pace", "The realm runs on its own clock. Pause it, or set it to walk, ride or gallop.", "Space  pause    1 2 3  pace"],
-	["Your word", "Shape your people's minds in a sentence: all bannermen grow restless, the North loves its King. Each order keeps working until you revoke it.", "H  houses, then Your word"],
-	["Petitions remember", "Every ruling is remembered by the one who asked, and by their house. Favour rises and falls with what you decide.", "K  court"],
-	["The chronicle", "Everything that happens is written down: births, deaths, marriages, battles and your rulings.", "C  chronicle    L  ledger"],
-	["Meet anyone", "Click a lord, a lady or a bannerman to see them face to face, hear what they want, or take their place in the world.", "H  houses, then See"],
+	["Pace", "The realm runs on its own clock. Pause it, or set it to walk, ride or gallop.", "{pause}  pause    {pace_walk} {pace_ride} {pace_gallop}  pace"],
+	["Your word", "Shape your people's minds in a sentence: all bannermen grow restless, the North loves its King. Each order keeps working until you revoke it.", "{houses}  houses, then Your word"],
+	["Petitions remember", "Every ruling is remembered by the one who asked, and by their house. Favour rises and falls with what you decide.", "{court}  court"],
+	["The chronicle", "Everything that happens is written down: births, deaths, marriages, battles and your rulings.", "{chronicle}  chronicle    {ledger}  ledger"],
+	["Meet anyone", "Click a lord, a lady or a bannerman to see them face to face, hear what they want, or take their place in the world.", "{houses}  houses, then See"],
 ]
 
 var say := Callable()  # (text) -> void: the narrator's voice, if voices are on
@@ -86,11 +87,11 @@ func play(houses: Array, seats: Dictionary) -> void:
 		var name: String = h["name"]
 		var town: String = seats[name][0]
 		page.call("seat_" + town, name, "%s. Their words: \"%s\". %s" % [town, h.get("words", ""), CHARACTER.get(name, "")], h, "", uv.call(seats[name][1]), 3.0)
-	page.call("hall", "Rule in your own words", "Petitioners kneel before you: a starving town, a stolen bride, a blood feud. Pick a ruling, or just say what you would do, typed or spoken. They will remember it.", {}, "K  court    Type or Speak: Settings", home, 2.2)
-	page.call("hero", "Every lord a life", "Each lord has a temper, an ambition and a long memory. Raise one up, break another, or rewrite who they are.", {}, "H  houses    C  chronicle    L  ledger", home, 1.8)
+	page.call("hall", "Rule in your own words", "Petitioners kneel before you: a starving town, a stolen bride, a blood feud. Pick a ruling, or just say what you would do, typed or spoken. They will remember it.", {}, "{court}  court", home, 2.2)
+	page.call("hero", "Every lord a life", "Each lord has a temper, an ambition and a long memory. Raise one up, break another, or rewrite who they are.", {}, "{houses}  houses    {chronicle}  chronicle", home, 1.8)
 	page.call("battle", "War is one insult away", "Grudges boil over into marching armies, burning fields and towns under siege. One ruling can stop a war. Another can start one.", {}, "", Vector2(0.45, 0.75), 2.0)
-	page.call("street", "Read the realm at a glance", "Walls rising, recruits drilling, fields browning in famine, smoke over a town in revolt. Every town shows you what it is going through.", {}, "click a town  its panel", home, 2.6)
-	page.call("walk", "Then step down from the throne", "Take any lord's place. Walk the streets, talk to anyone, push into the tavern, and draw steel when talking fails.", {}, "WASD  walk    Shift  run    E  talk, enter    Tab  draw    click  strike    Space  block    Esc  leave", home, 3.0)
+	page.call("street", "Read the realm at a glance", "Walls rising, recruits drilling, fields browning in famine, smoke over a town in revolt. Every town shows you what it is going through.", {}, "Click a town to open it", home, 2.6)
+	page.call("walk", "Then step down from the throne", "Take any lord's place. Walk the streets, talk to anyone, push into the tavern, and draw steel when talking fails.", {}, "Every control is in Settings", home, 3.0)
 	for tip in TIPS:
 		page.call("tip", tip[0], tip[1], {}, tip[2], Vector2(0.3 + randf() * 0.4, 0.2 + randf() * 0.6), 2.0)
 	_build()
@@ -199,7 +200,7 @@ func _next() -> void:
 	_title.text = String(p[1])
 	_line.text = String(p[2])
 	var house: Dictionary = p[3]
-	_keys.text = String(p[4])
+	_keys.text = _with_keys(String(p[4]))
 	_keys.visible = _keys.text != ""
 	_sigil.texture = preload("res://scripts/heraldry.gd").sigil(house) if not house.is_empty() else null
 	_sigil.visible = _sigil.texture != null
@@ -255,3 +256,13 @@ func _input(event: InputEvent) -> void:
 			_end()
 		else:
 			_next()
+
+
+## A hint with its keys filled in from Settings → Controls: "{court}  court"
+## reads "K  court", or whatever key the player has given the court.
+func _with_keys(hint: String) -> String:
+	for action in Keys.ACTIONS:
+		var tag := "{%s}" % action[0]
+		if hint.contains(tag):
+			hint = hint.replace(tag, Keys.label(action[0]).get_slice(" / ", 0))
+	return hint

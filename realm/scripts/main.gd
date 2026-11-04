@@ -275,6 +275,9 @@ func _ready() -> void:
 		title.show_new.call_deferred()
 	if _shot.has("settings"):
 		title.open_settings.call_deferred()
+	if _shot.has("credits"):
+		title.visible = true
+		title.show_credits.call_deferred()
 	if _shot.has("lore"):
 		get_tree().create_timer(float(_shot.get("wait", 8.0)) - 4.0).timeout.connect(func():
 			lore.open(int(_shot["lore"])))
@@ -395,6 +398,9 @@ func _parse_args() -> void:
 		elif a == "--settings":
 			_shot["title"] = true
 			_shot["settings"] = true
+		elif a == "--credits":
+			_shot["title"] = true
+			_shot["credits"] = true
 		elif a.begins_with("--lore"):
 			_shot["lore"] = int(a.substr(7)) if a.begins_with("--lore=") else -1  # a house id, or the realm
 		elif a == "--intro":
@@ -1213,4 +1219,22 @@ func _tour(world: Dictionary) -> void:
 	title.show_new()
 	await get_tree().create_timer(3.0).timeout
 	await snap.call("new")
+	title.visible = false
+	ui.visible = true
+	# Step into a lord's boots, then into their hall.
+	var lord := {}
+	bridge.house(0, func(d):
+		if d is Dictionary and d.get("lord") is Dictionary:
+			var h: Dictionary = _houses.get(int(d.get("id", 0)), d)
+			bridge.person(str(d["lord"].get("id", "")), func(p):
+				if p is Dictionary:
+					lord["p"] = p
+					lord["h"] = h
+					_take_control(p, h)))
+	await get_tree().create_timer(8.0).timeout
+	await snap.call("control")
+	if lord.has("p"):
+		interior.open("great_hall", lord["p"], lord["h"], String(lord["p"].get("seat", "")))
+		await get_tree().create_timer(5.0).timeout
+		await snap.call("interior")
 	get_tree().quit()

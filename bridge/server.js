@@ -437,7 +437,7 @@ function greatHouses() {
 // Money in words is in crowns, a hundred to each Freeciv gold, so every figure
 // the King reads (court prices, rulings, the chronicle) matches the ledger.
 const crowns = (text) => String(text ?? "").replace(/(\d+) gold\b/g, (_, n) => `${(Number(n) * 100).toLocaleString("en-GB")} crowns`).replace(/(\d+) gold\)/g, (_, n) => `${(Number(n) * 100).toLocaleString("en-GB")} crowns)`);
-const inCrowns = (v) => JSON.parse(JSON.stringify(v), (k, x) => (typeof x === "string" && ["text", "label", "hint", "voice", "summary"].includes(k) ? crowns(x) : x));
+const inCrowns = (v) => JSON.parse(JSON.stringify(v), (k, x) => (typeof x === "string" && ["text", "label", "hint", "voice", "summary"].includes(k) ? crowns(x) : k === "facts" && Array.isArray(x) ? x.map(crowns) : x));
 
 // Heads, not Freeciv points: a size-1 village is about 500 souls, a size-5
 // market town 7,500, a size-10 city 27,500. Grows faster than size, as towns do.

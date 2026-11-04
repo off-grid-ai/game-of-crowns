@@ -53,6 +53,14 @@ func _ready() -> void:
 		fade.stretch_mode = TextureRect.STRETCH_SCALE
 		fade.set_anchors_preset(Control.PRESET_FULL_RECT)
 		_root.add_child(fade)
+		# The forms are wide and full of small type: behind them the painting
+		# sinks further back so every line reads.
+		_scrim = ColorRect.new()
+		_scrim.color = Color(0.06, 0.05, 0.04, 0.78)
+		_scrim.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_scrim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_scrim.visible = false
+		_root.add_child(_scrim)
 	else:
 		var shade := ColorRect.new()
 		shade.color = Color(0.11, 0.095, 0.08, 0.95)
@@ -73,6 +81,12 @@ func _ready() -> void:
 		logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		logo.custom_minimum_size = Vector2(480, 270)
+		# The logo is painted on dark stone with square edges: feather them so
+		# it sits in the painting rather than on it.
+		var feather := ShaderMaterial.new()
+		feather.shader = Shader.new()
+		feather.shader.code = "shader_type canvas_item;\nvoid fragment() {\n\tvec4 c = texture(TEXTURE, UV);\n\tvec2 d = min(UV, 1.0 - UV);\n\tc.a *= smoothstep(0.0, 0.16, d.x) * smoothstep(0.0, 0.2, d.y);\n\tCOLOR = c;\n}"
+		logo.material = feather
 		col.add_child(logo)
 	_body = VBoxContainer.new()
 	_body.add_theme_constant_override("separation", 8)
@@ -83,6 +97,7 @@ func _ready() -> void:
 
 
 var _on_main := true
+var _scrim: ColorRect  # darkens the painting behind the forms
 
 
 ## The menu's first page shows "Continue" once the realm has reported in.
@@ -104,6 +119,8 @@ func show_main() -> void:
 	_clear()
 	if _logo:
 		_logo.visible = true
+	if _scrim:
+		_scrim.visible = false
 	_on_main = true
 	var reign: Dictionary = bridge.world.get("reign", {})
 	_has_continue = not reign.is_empty()
@@ -122,6 +139,7 @@ func show_main() -> void:
 		read_lore.emit())
 	_big("Chronicles", show_list)
 	_big("Hall of Records", show_records)
+	_big("Credits", show_credits)
 
 
 const HOUSES := ["Wolfholt", "Goldcrest", "Ironreach", "Thornvale", "Stormhold", "Sunspire", "Highfell"]
@@ -149,12 +167,15 @@ func show_new() -> void:
 	var saved := HFlowContainer.new()
 	saved.add_theme_constant_override("h_separation", 6)
 	_body.add_child(saved)
+	# Held weakly: the reply can come after this page has gone.
+	var saved_ref: WeakRef = weakref(saved)
 	bridge.scenarios(func(list):
-		if not is_instance_valid(saved) or not list is Array or list.is_empty():
+		var row: HFlowContainer = saved_ref.get_ref()
+		if row == null or not list is Array or list.is_empty():
 			return
-		saved.add_child(_label("Begin from  ", 14, MUTED))
+		row.add_child(_label("Begin from  ", 14, MUTED))
 		for sc in list:
-			var b := _toggle(String(sc.get("name", "")), saved)
+			var b := _toggle(String(sc.get("name", "")), row)
 			b.toggle_mode = false
 			b.pressed.connect(_use_scenario.bind(sc)))
 	var name_edit := LineEdit.new()
@@ -339,26 +360,28 @@ func show_settings() -> void:
 	var right := _column(cols)
 
 	_section(left, "This reign")
-	var note := _label("Changes take effect at once.", 14, MUTED)
+	var note := _label("Changes take effect at once.", 14, PARCHMENT)
 	left.add_child(note)
+	var left_ref: WeakRef = weakref(left)
 	bridge.reign_options(func(d):
-		if not is_instance_valid(left) or not d is Dictionary or not d.has("options"):
+		var col: VBoxContainer = left_ref.get_ref()
+		if col == null or not d is Dictionary or not d.has("options"):
 			return
 		var o: Dictionary = d["options"]
 		var apply := func(key: String, value) -> void:
 			bridge.set_reign_options({key: value}, func(_c, _r): pass)
-		_choices(left, "A season lasts", [["6 s", 6], ["12 s", 12], ["24 s", 24], ["48 s", 48]], int(o.get("pace", 12)), func(v): apply.call("pace", v))
-		_choices(left, "The tongue people speak to you in", [["English", "en"], ["Français", "fr"], ["Deutsch", "de"], ["Español", "es"], ["Italiano", "it"], ["Português", "pt"], ["हिन्दी", "hi"]], o.get("language", "en"), func(v): apply.call("language", v))
-		_choices(left, "Floods, fires and famine", [["None", "none"], ["Gentle", "gentle"], ["Normal", "normal"], ["Cruel", "cruel"]], o.get("disasters", "normal"), func(v): apply.call("disasters", v))
-		_choices(left, "Raiders from the wilds", [["None", "none"], ["Some", "normal"], ["Hordes", "hordes"]], o.get("raiders", "normal"), func(v): apply.call("raiders", v))
-		_choices(left, "The dead beyond the wall", [["Never", "off"], ["Late", "late"], ["In time", "normal"], ["Soon", "soon"]], o.get("dead", "normal"), func(v): apply.call("dead", v))
-		_choices(left, "A usurper may rise", [["Yes", true], ["No", false]], o.get("usurper", true), func(v): apply.call("usurper", v))
-		_choices(left, "Lords at court each season", [["Seldom", "rare"], ["Some", "normal"], ["Many", "often"]], o.get("petitions", "normal"), func(v): apply.call("petitions", v))
-		_choices(left, "Plots and bold moves", [["Quiet", "quiet"], ["Some", "normal"], ["Scheming", "scheming"]], o.get("intrigue", "normal"), func(v): apply.call("intrigue", v))
+		_choices(col, "A season lasts", [["6 s", 6], ["12 s", 12], ["24 s", 24], ["48 s", 48]], int(o.get("pace", 12)), func(v): apply.call("pace", v))
+		_choices(col, "The tongue people speak to you in", [["English", "en"], ["Français", "fr"], ["Deutsch", "de"], ["Español", "es"], ["Italiano", "it"], ["Português", "pt"], ["हिन्दी", "hi"]], o.get("language", "en"), func(v): apply.call("language", v))
+		_choices(col, "Floods, fires and famine", [["None", "none"], ["Gentle", "gentle"], ["Normal", "normal"], ["Cruel", "cruel"]], o.get("disasters", "normal"), func(v): apply.call("disasters", v))
+		_choices(col, "Raiders from the wilds", [["None", "none"], ["Some", "normal"], ["Hordes", "hordes"]], o.get("raiders", "normal"), func(v): apply.call("raiders", v))
+		_choices(col, "The dead beyond the wall", [["Never", "off"], ["Late", "late"], ["In time", "normal"], ["Soon", "soon"]], o.get("dead", "normal"), func(v): apply.call("dead", v))
+		_choices(col, "A usurper may rise", [["Yes", true], ["No", false]], o.get("usurper", true), func(v): apply.call("usurper", v))
+		_choices(col, "Lords at court each season", [["Seldom", "rare"], ["Some", "normal"], ["Many", "often"]], o.get("petitions", "normal"), func(v): apply.call("petitions", v))
+		_choices(col, "Plots and bold moves", [["Quiet", "quiet"], ["Some", "normal"], ["Scheming", "scheming"]], o.get("intrigue", "normal"), func(v): apply.call("intrigue", v))
 		var fixed := _label("The world, the houses' temper, wealth and trust, and the royal host were set when the chronicle began.", 13, MUTED)
 		fixed.autowrap_mode = TextServer.AUTOWRAP_WORD
 		fixed.custom_minimum_size.x = 200
-		left.add_child(fixed))
+		col.add_child(fixed))
 
 	_voice_settings(right)
 	_controls_settings(page)
@@ -380,7 +403,10 @@ var _rebind_button: Button
 func _controls_settings(parent: Control) -> void:
 	_section(parent, "Controls")
 	_choices(parent, "The on-screen camera pad", [["When the mouse is near", "near"], ["Always", "always"], ["Never", "never"]], Settings.get_value("camera_pad"), func(v): Settings.set_value("camera_pad", v))
-	parent.add_child(_label("Mouse: drag to move, scroll or pinch to zoom toward the cursor, right-drag or Option-drag to turn and tilt, click a town or a person to open them.", 14, MUTED))
+	var mouse := _label("Mouse: drag to move, scroll or pinch to zoom toward the cursor, right-drag or Option-drag to turn and tilt, click a town or a person to open them.", 14, MUTED)
+	mouse.autowrap_mode = TextServer.AUTOWRAP_WORD
+	mouse.custom_minimum_size.x = 200
+	parent.add_child(mouse)
 	var groups := HBoxContainer.new()
 	groups.add_theme_constant_override("separation", 40)
 	parent.add_child(groups)
@@ -401,6 +427,7 @@ func _controls_settings(parent: Control) -> void:
 		var grid: GridContainer = by_group[a[2]]
 		var what := _label(String(a[1]), 14, PARCHMENT)
 		what.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		what.custom_minimum_size.x = 140
 		grid.add_child(what)
 		var key := Button.new()
 		key.text = Keys.label(a[0])
@@ -419,7 +446,7 @@ func _controls_settings(parent: Control) -> void:
 		Keys.reset()
 		show_settings())
 	reset.custom_minimum_size.y = 36
-	parent.add_child(reset)
+	reset.reparent(parent)
 
 
 func _input(event: InputEvent) -> void:
@@ -467,13 +494,18 @@ func _voice_settings(right: Control) -> void:
 	_section(right, "The local model")
 	var ai := _label("Asking Off Grid AI…", 14, MUTED)
 	right.add_child(ai)
+	var ai_ref: WeakRef = weakref(ai)
+	var right_ref: WeakRef = weakref(right)
 	bridge.ai_status(func(d):
-		if not is_instance_valid(ai) or not d is Dictionary:
+		var status: Label = ai_ref.get_ref()
+		if status == null or not d is Dictionary:
 			return
 		var mark := func(ok: bool) -> String: return "ready" if ok else "not ready"
-		ai.text = "Words: %s%s\nVoices: %s\nListening: %s" % [mark.call(d.get("words", false)), (" (%s)" % String(d["model"]).get_file()) if d.get("model") else "", mark.call(d.get("voices", false)), mark.call(d.get("hearing", false))]
+		status.text = "Words: %s%s\nVoices: %s\nListening: %s" % [mark.call(d.get("words", false)), (" (%s)" % String(d["model"]).get_file().trim_suffix("-GGUF").replace("-", " ")) if d.get("model") else "", mark.call(d.get("voices", false)), mark.call(d.get("hearing", false))]
 		if String(d.get("note", "")) != "":
-			right.add_child(_label(String(d["note"]), 14, GOLD)))
+			var col: VBoxContainer = right_ref.get_ref()
+			if col:
+				col.add_child(_label(String(d["note"]), 14, GOLD)))
 
 
 
@@ -533,6 +565,37 @@ func _on_records(data) -> void:
 	_big("Back", show_main)
 
 
+## Everyone whose work the realm is made from, by kind, from the licence
+## files beside each asset (credits.gd).
+func show_credits() -> void:
+	_clear()
+	_on_main = false
+	var room := _root.get_viewport_rect().size
+	_body.custom_minimum_size = Vector2(minf(820.0, room.x - 120.0), 0)
+	_heading("Credits")
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.custom_minimum_size = Vector2(0, maxf(220.0, room.y - 230.0))
+	_body.add_child(scroll)
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 4)
+	scroll.add_child(list)
+	var section := ""
+	for e in preload("res://scripts/credits.gd").entries():
+		if e["section"] != section:
+			section = e["section"]
+			_section(list, section)
+		var by := String(e["by"])
+		var line := String(e["title"]) + ("  ·  %s" % by if by != "" and by != e["title"] else "")
+		if String(e["licence"]) != "":
+			line += "  ·  " + String(e["licence"])
+		list.add_child(_label(line, 14, PARCHMENT))
+		if String(e["note"]) != "":
+			list.add_child(_label("      " + String(e["note"]), 13, PARCHMENT.darkened(0.35)))
+	_big("Back", show_main)
+
+
 var _name_edit: LineEdit
 
 
@@ -545,7 +608,10 @@ func _begin() -> void:
 			began.emit()
 			_wait_for(String(d.get("id", "")), "The realm is being forged…")
 		else:
-			_wait_for("", "The realm could not be forged. Try again."))
+			_wait_for("", "The realm could not be forged")
+			_body.add_child(_label("The realm did not answer. Give it a moment, then try again.", 15, MUTED))
+			_big("Try again", show_new)
+			_big("Back", show_main))
 	_wait_for("", "The realm is being forged…")
 
 
@@ -557,10 +623,10 @@ var _waiting_for := ""
 func _wait_for(id: String, text: String) -> void:
 	_clear()
 	_heading(text)
-	_body.add_child(_label("Freeciv is laying out the land and the houses are taking their seats.", 15, MUTED))
 	_waiting_for = id
 	if id == "":
 		return
+	_body.add_child(_label("The land is being laid out and the houses are taking their seats.", 15, MUTED))
 	if not bridge.world_updated.is_connected(_arrived):
 		bridge.world_updated.connect(_arrived)
 	# If the realm never reports, don't strand the player here.
@@ -586,6 +652,8 @@ func _clear() -> void:
 	# The full logo belongs on the main menu; forms need the room.
 	if _logo:
 		_logo.visible = false
+	if _scrim:
+		_scrim.visible = true
 	_body.custom_minimum_size = Vector2(620, 0)
 	for c in _body.get_children():
 		c.queue_free()
@@ -612,6 +680,9 @@ func _big(text: String, cb: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.add_theme_font_size_override("font_size", 16)
+	# A soft dark edge keeps the words readable over the bright painting.
+	b.add_theme_constant_override("outline_size", 6)
+	b.add_theme_color_override("font_outline_color", Color(0.05, 0.04, 0.03, 0.75))
 	b.custom_minimum_size = Vector2(0, 46)
 	b.focus_mode = Control.FOCUS_NONE
 	b.pressed.connect(cb)

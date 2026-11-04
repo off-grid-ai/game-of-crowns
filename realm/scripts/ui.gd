@@ -30,6 +30,7 @@ signal decree_revoked(id: String)
 signal person_opened(id: String, house: Dictionary)  # the character view
 
 const T := preload("res://scripts/theme.gd")
+const Keys := preload("res://scripts/keys.gd")
 
 var _root: Control
 var _reign: Label
@@ -272,8 +273,11 @@ func _build_top_bar() -> void:
 	_peace = _gauge(state, "scales", "Peace: share of the great houses not at war")
 	_souls = _gauge(state, "users-three", "Souls in the realm")
 	var tithe := HBoxContainer.new()
-	tithe.add_theme_constant_override("separation", 0)
+	tithe.add_theme_constant_override("separation", 2)
 	_tithe_l = _gauge(tithe, "percent", "Royal tithe on every house's treasury. Higher is richer and more resented.")
+	var gap := Control.new()  # the figure and its buttons apart
+	gap.custom_minimum_size = Vector2(8, 0)
+	tithe.add_child(gap)
 	var less := _icon_btn("minus", "Lower the tithe", func(): _set_tithe(_tithe - 0.05))
 	less.custom_minimum_size = Vector2(24, 24)
 	less.add_theme_constant_override("icon_max_width", 11)
@@ -290,7 +294,7 @@ func _build_top_bar() -> void:
 	get_viewport().size_changed.connect(_arrange_top)
 	_arrange_top.call_deferred()
 	act.add_theme_constant_override("separation", 6)  # each key stands on its own
-	_court_btn = _icon_btn("crown", "The court: petitioners waiting  (K)", _toggle_court)
+	_court_btn = _icon_btn("crown", _with_key("The court: petitioners waiting", "court"), _toggle_court)
 	_court_btn.visible = false
 	_court_btn.add_theme_color_override("icon_normal_color", T.ACCENT)
 	_court_btn.add_theme_color_override("font_color", T.ACCENT)
@@ -303,14 +307,14 @@ func _build_top_bar() -> void:
 		sb.content_margin_right = 12
 		_court_btn.add_theme_stylebox_override(look, sb)
 	act.add_child(_court_btn)
-	_houses_btn = _icon_btn("shield", "The great houses, and your word  (H)", func(): _houses_panel.visible = _houses_btn.button_pressed)
+	_houses_btn = _icon_btn("shield", _with_key("The great houses, and your word", "houses"), func(): _houses_panel.visible = _houses_btn.button_pressed)
 	_houses_btn.toggle_mode = true
 	act.add_child(_houses_btn)
-	_chron_btn = _icon_btn("scroll", "Chronicle of the realm  (C)", func(): _chron_panel.visible = _chron_btn.button_pressed)
+	_chron_btn = _icon_btn("scroll", _with_key("Chronicle of the realm", "chronicle"), func(): _chron_panel.visible = _chron_btn.button_pressed)
 	_chron_btn.toggle_mode = true
 	act.add_child(_chron_btn)
-	act.add_child(_icon_btn("book-open-text", "The Lore of Aldmere: its houses and people  (B)", func(): lore_opened.emit(-1)))
-	_ledger_btn = _icon_btn("chart-line", "The ledger: the realm over time  (L)", _toggle_ledger)
+	act.add_child(_icon_btn("book-open-text", _with_key("The Lore of Aldmere: its houses and people", "lore"), func(): lore_opened.emit(-1)))
+	_ledger_btn = _icon_btn("chart-line", _with_key("The ledger: the realm over time", "ledger"), _toggle_ledger)
 	_ledger_btn.toggle_mode = true
 	act.add_child(_ledger_btn)
 	_divider(act)
@@ -322,7 +326,7 @@ func _build_top_bar() -> void:
 		b.button_pressed = secs == 12
 		_pace_btns[secs] = b
 		act.add_child(b)
-	_pause_btn = _icon_btn("pause", "Pause  (Space)", _toggle_pause)
+	_pause_btn = _icon_btn("pause", _with_key("Pause", "pause"), _toggle_pause)
 	_pause_btn.toggle_mode = true
 	act.add_child(_pause_btn)
 	var day := _icon_btn("sun", "Always day. Off for the day and night cycle.")
@@ -503,7 +507,7 @@ func _build_town_panel() -> void:
 	v.add_child(T.label("Royal decrees"))
 	var row := HFlowContainer.new()
 	v.add_child(row)
-	for pair in [["Send grain  12k cr", "relief"], ["Gift crowns  15k", "gift"], ["Feast  10k cr", "feast"], ["Royal levy  20k cr", "levy"]]:
+	for pair in [["Send grain  12k cr", "relief"], ["Gift crowns  15k cr", "gift"], ["Feast  10k cr", "feast"], ["Royal levy  20k cr", "levy"]]:
 		var a: String = pair[1]
 		row.add_child(_btn(pair[0], func(): decree.emit(a, "", -1)))
 	_grant_menu = MenuButton.new()
@@ -518,7 +522,7 @@ func _build_town_panel() -> void:
 		build.add_child(_btn(pair[0], func(): decree.emit("build", bld, -1)))
 	var fate_toggle := _btn("Fate")
 	fate_toggle.toggle_mode = true
-	fate_toggle.tooltip_text = "Sandbox powers beyond a king's: blessings and disasters."
+	fate_toggle.tooltip_text = "Powers beyond a king's: blessings and disasters."
 	fate_toggle.toggled.connect(func(on): _fate_box.visible = on)
 	build.add_child(fate_toggle)
 	_fate_box = HBoxContainer.new()
@@ -585,7 +589,7 @@ func _build_camera_controls() -> void:
 	add.call(tilt, "caret-up", "Look further out (tilt)", "tilt_up")
 	add.call(tilt, "caret-down", "Look down (tilt)", "tilt_down")
 	v.add_child(HSeparator.new())
-	var home := _icon_btn("house-home", "Back to Kingsmere  (Z)", func(): home_view.emit())
+	var home := _icon_btn("house-home", _with_key("Back to Kingsmere", "home"), func(): home_view.emit())
 	home.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	v.add_child(home)
 
@@ -624,7 +628,8 @@ func _build_minimap() -> void:
 	frame.add_theme_stylebox_override("panel", T._box(T.SURFACE_SOLID, T.HAIRLINE, 8, 4))
 	minimap = preload("res://scripts/minimap.gd").new()
 	minimap.custom_minimum_size = MINIMAP_SIZE
-	minimap.tooltip_text = "The realm. Click or drag to go there.  (M hides it)"
+	minimap.clip_contents = true  # the view's outline stays inside the map
+	minimap.tooltip_text = "The realm. Click or drag to go there.  (%s hides it)" % Keys.label("minimap").get_slice(" / ", 0)
 	frame.add_child(minimap)
 
 
@@ -676,9 +681,15 @@ func show_house(d: Dictionary) -> void:
 		return
 	_house_panel = _glass_panel()
 	_house_panel.offset_top = 70
+	# Scrolls when a house has more bannermen than the screen holds.
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.name = "Scroll"
+	_house_panel.add_child(scroll)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
-	_house_panel.add_child(v)
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(v)
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 14)
 	v.add_child(head)
@@ -701,7 +712,7 @@ func show_house(d: Dictionary) -> void:
 	grid.add_theme_constant_override("h_separation", 26)
 	grid.add_theme_constant_override("v_separation", 8)
 	v.add_child(grid)
-	for pair in [["Gold", "gold"], ["Souls", "souls"], ["Men-at-arms", "armies"], ["Grain", "grain"], ["Towns", "towns"]]:
+	for pair in [["Treasury", "gold"], ["Souls", "souls"], ["Men-at-arms", "armies"], ["Grain", "grain"], ["Towns", "towns"]]:
 		var key: String = pair[1]
 		var cell := VBoxContainer.new()
 		cell.add_child(T.label(pair[0]))
@@ -729,7 +740,7 @@ func show_house(d: Dictionary) -> void:
 		lr.add_child(ln)
 		lr.add_child(_see_btn(lord, d))
 		v.add_child(lr)
-		v.add_child(T.label("%s  ·  wants to %s" % [", ".join(lord.get("traits", [])), lord.get("goal", "endure")], T.TEXT_2))
+		v.add_child(_wrapped(T.label("%s  ·  wants to %s" % [", ".join(lord.get("traits", [])), lord.get("goal", "endure")], T.TEXT_2)))
 	var men: Array = d.get("bannermen", [])
 	if men.size() > 0:
 		v.add_child(T.label("Bannermen"))
@@ -747,9 +758,9 @@ func show_house(d: Dictionary) -> void:
 	if wars.size() > 0 or allies.size() > 0:
 		v.add_child(HSeparator.new())
 		if wars.size() > 0:
-			v.add_child(T.datum("At war with " + ", ".join(wars), T.SIZE_DESC, Color("#e86b5c")))
+			v.add_child(_wrapped(T.datum("At war with " + ", ".join(wars), T.SIZE_DESC, Color("#e86b5c"))))
 		if allies.size() > 0:
-			v.add_child(T.datum("Allied with " + ", ".join(allies), T.SIZE_DESC, T.TEXT_2))
+			v.add_child(_wrapped(T.datum("Allied with " + ", ".join(allies), T.SIZE_DESC, T.TEXT_2)))
 	_court_panel.visible = false
 
 
@@ -972,12 +983,12 @@ func show_ledger(rows: Array, houses: Dictionary) -> void:
 		return
 	var first := int(rows[0].get("turn", 0))
 	var last := int(rows[-1].get("turn", 0))
-	v.add_child(T.label("Turn %d to %d  ·  %d years" % [first, last, (last - first) / 4], T.TEXT_3))
+	v.add_child(T.label("%s to %s  ·  %d years" % [_season_of(first), _season_of(last), floori((last - first) / 4.0)], T.TEXT_3))
 	var grid := GridContainer.new()
 	grid.columns = 4
 	grid.add_theme_constant_override("h_separation", 22)
 	v.add_child(grid)
-	for spec in [["Peace", "peace", 100.0, "%d%%"], ["Souls", "souls", 1.0, ""], ["Grain", "food", 1.0, ""], ["Royal treasury", "treasury", 1.0, "%d"]]:
+	for spec in [["Peace", "peace", 100.0, "%d%%"], ["Souls", "souls", 1.0, ""], ["Grain", "food", 1.0, ""], ["Royal treasury", "treasury", 1.0, ""]]:
 		var key: String = spec[1]
 		var vals := rows.map(func(r): return float(r.get(key, 0)) * spec[2])
 		var cell := VBoxContainer.new()
@@ -1013,7 +1024,7 @@ func show_ledger(rows: Array, houses: Dictionary) -> void:
 			tag.add_child(T.datum(" %s %s   " % [String(name).replace("House ", ""), _real(key, int(vals[-1]))], T.SIZE_DESC, T.TEXT_2))
 			legend.add_child(tag)
 		chart_box.add_child(_chart(series, Vector2(780, 120)))
-	for spec in [["gold", "Gold"], ["souls", "Souls"], ["armies", "Men-at-arms"], ["towns", "Towns"], ["grain", "Grain"]]:
+	for spec in [["gold", "Treasury"], ["souls", "Souls"], ["armies", "Men-at-arms"], ["towns", "Towns"], ["grain", "Grain"]]:
 		var key: String = spec[0]
 		var b := _btn(spec[1], func(): draw_houses.call(key))
 		pick.add_child(b)
@@ -1090,7 +1101,9 @@ func show_digest(entries: Array, turns: int) -> void:
 			told[t] = true
 			unique.append(e)
 	entries = unique
-	var shown := entries.slice(maxi(0, entries.size() - 8))
+	# As many as the screen holds (about two lines each), never more than eight.
+	var room := clampi(int((get_viewport().get_visible_rect().size.y - 330.0) / 72.0), 3, 8)
+	var shown := entries.slice(maxi(0, entries.size() - room))
 	shown.reverse()
 	for e in shown:
 		var kind := String(e.get("kind", ""))
@@ -1127,6 +1140,10 @@ func _fit_centre(panel: Control, widest: float) -> void:
 		left = _houses_panel.get_global_rect().end.x + 12.0
 	if _chron_panel.visible:
 		right = _chron_panel.get_global_rect().position.x - 12.0
+	# A panel along the bottom (the town) stops short of the minimap.
+	var map_frame := minimap.get_parent() as Control if minimap else null
+	if panel.anchor_top == 1.0 and map_frame and map_frame.is_visible_in_tree():
+		right = minf(right, map_frame.get_global_rect().position.x - 12.0)
 	var w := minf(widest, right - left)
 	var x := (left + right - w) / 2.0
 	panel.anchor_left = 0.0
@@ -1203,7 +1220,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 	elif th.get("usurper", "none") == "march":
 		danger.append("a usurper marches on Kingsmere")
 	if int(th.get("north", 0)) > 0:
-		danger.append("the dead: wave %d" % int(th["north"]))
+		danger.append("the dead march on the North")
 	if danger.is_empty():
 		_reign.add_theme_color_override("font_color", T.TEXT_3)
 	else:
@@ -1260,6 +1277,10 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 				fill.bg_color = T.DANGER
 				bar.add_theme_stylebox_override("fill", fill)
 			row.add_child(bar)
+		else:
+			var none := Control.new()  # the crown has no favour toward itself: keep the column
+			none.custom_minimum_size = Vector2(56, 3)
+			row.add_child(none)
 		_houses.add_child(row)
 
 
@@ -1277,13 +1298,21 @@ func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 	if c.get("capital", false):
 		parts.append("Seat of the house")
 	parts.append("%s souls" % _heads(250 * int(c["size"]) * (int(c["size"]) + 1)))
-	if c.get("building"):
-		parts.append("%s %s %d%%" % ["training" if c.get("buildingKind") == "UnitType" else "building", String(c["building"]).to_lower(), int(float(c.get("progress", 0)) * 100)])
+	if String(c.get("building", "")) == "Coinage":
+		parts.append("filling the coffers")
+	elif c.get("building"):
+		parts.append("%s %s %d%%" % ["training" if c.get("buildingKind") == "UnitType" else "building", _realm_word(String(c["building"])).to_lower(), int(float(c.get("progress", 0)) * 100)])
 	if c.get("granary"):
 		parts.append("grain %s of %s" % [_real("grain", int(c.get("food", 0))), _real("grain", int(c["granary"]))])
 	if b.size() > 0:
-		parts.append(", ".join(b))
+		parts.append(", ".join(b.map(_realm_word)))
 	_town_info.text = "  ·  ".join(parts)
+
+
+## Freeciv's names for what a town builds, in the realm's own words.
+const REALM_WORDS := {"Colosseum": "Tiltyard", "Diplomat": "Envoys", "Workers": "Labourers", "Trireme": "Galley", "Bank": "Counting house", "Marketplace": "Market", "City Walls": "Walls"}
+static func _realm_word(name: String) -> String:
+	return String(REALM_WORDS.get(name, name))
 
 
 func add_chronicle(entries: Array) -> void:
@@ -1294,7 +1323,7 @@ func add_chronicle(entries: Array) -> void:
 		var text := "[color=%s]%s[/color]" % [tone, e.get("text", "")]
 		if e.has("city") and e["city"] != null:
 			text = "[url=%d]%s[/url]" % [int(e["city"]), text]
-		_lines.push_front("[font_size=11][color=#6f6f6c]%d[/color][/font_size]   %s" % [int(e.get("turn", 0)), text])
+		_lines.push_front("[font_size=11][color=#6f6f6c]%s[/color][/font_size]   %s" % [_season_of(int(e.get("turn", 0))), text])
 		if kind != "year":
 			_tick(e, loss)
 	if _lines.size() > 300:
@@ -1560,3 +1589,23 @@ func set_decrees(list: Array) -> void:
 		x.pressed.connect(decree_revoked.emit.bind(String(d["id"])))
 		row.add_child(x)
 		_decree_box.add_child(row)
+
+
+## A tooltip with the key that does the same, as set in Settings → Controls.
+func _with_key(text: String, action: String) -> String:
+	var key := Keys.label(action).get_slice(" / ", 0)
+	return text if key == "" else "%s  (%s)" % [text, key]
+
+
+## A turn as the realm counts it, "Autumn 866": four seasons a year, from 300
+## years after the Conquest (the bridge's calendar in stakes.js).
+static func _season_of(turn: int) -> String:
+	var t := maxi(1, turn) - 1
+	return "%s %d" % [["Spring", "Summer", "Autumn", "Winter"][t % 4], 300 + floori(t / 4.0)]
+
+
+## A line that wraps to its panel instead of widening it.
+static func _wrapped(l: Label) -> Label:
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD
+	l.custom_minimum_size.x = 200
+	return l

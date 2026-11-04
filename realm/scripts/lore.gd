@@ -9,6 +9,7 @@ signal person_opened(id: String, house: Dictionary)
 signal closed
 
 const T := preload("res://scripts/theme.gd")
+const Keys := preload("res://scripts/keys.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
 const RANKS := {"lord": "Lord", "spouse": "Consort", "heir": "Heir", "bannerman": "Bannerman", "child": "Child"}
 
@@ -88,7 +89,7 @@ func _build() -> void:
 	fill.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	left.add_child(fill)
 	var shut := Button.new()
-	shut.text = "Close  (B)"
+	shut.text = "Close  (%s)" % Keys.label("lore").get_slice(" / ", 0)
 	shut.focus_mode = Control.FOCUS_NONE
 	shut.pressed.connect(close)
 	left.add_child(shut)
@@ -248,12 +249,16 @@ func _person(p: Dictionary, h: Dictionary) -> void:
 		close()
 		person_opened.emit(str(p.get("id", "")), h))
 	top.add_child(meet)
-	var who := [String(p.get("role", "")) if p.get("role") != null else RANKS.get(String(p.get("rank", "")), ""), "%d" % int(p.get("age", 0))]
+	var rank: String = String(p.get("role", "")) if p.get("role") != null else RANKS.get(String(p.get("rank", "")), "")
+	if String(p.get("gender", "")) == "female":
+		rank = {"Lord": "Lady", "Bannerman": "Bannerwoman", "Heir": "Heiress"}.get(rank, rank)
+	var who := [rank, "%d" % int(p.get("age", 0))]
 	if p.get("seat") != null:
 		who.append(String(p["seat"]))
 	v.add_child(T.label("  ·  ".join(who.filter(func(s): return s != ""))))
 	var traits: Array = p.get("traits", [])
-	var line := ", ".join(traits).capitalize() if traits.size() > 0 else ""
+	var line := ", ".join(traits) if traits.size() > 0 else ""
+	line = line.left(1).to_upper() + line.substr(1)
 	if p.get("goal") != null:
 		line += ("%s wants to %s." % ["She" if p.get("gender") == "female" else "He", p["goal"]]) if line == "" else (". Wants to %s." % p["goal"])
 	if line != "":

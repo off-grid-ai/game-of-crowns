@@ -8,6 +8,7 @@ extends CanvasLayer
 ## its own 3D world, so the realm behind it is untouched.
 
 const T := preload("res://scripts/theme.gd")
+const Keys := preload("res://scripts/keys.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
 const People := preload("res://scripts/people.gd")
 const ANIM_DIR := "res://assets/hero/anims"
@@ -302,7 +303,7 @@ func _build_panel() -> void:
 	_panel.offset_bottom = -24
 	add_child(_panel)
 	var back := Button.new()
-	back.text = "  ←  Back to the realm   (Esc)  "
+	back.text = "  ←  Back to the realm   (%s)  " % Keys.label("back").get_slice(" / ", 0)
 	back.position = Vector2(24, 24)
 	back.pressed.connect(close)
 	add_child(back)
@@ -335,7 +336,8 @@ func _fill_panel(p: Dictionary, house: Dictionary) -> void:
 		v.add_child(T.datum("“%s”" % String(house["words"]), T.SIZE_DESC, T.ACCENT))
 	v.add_child(HSeparator.new())
 	v.add_child(T.label("Nature"))
-	v.add_child(T.datum(", ".join(p.get("traits", [])).capitalize(), T.SIZE_BODY))
+	var nature := ", ".join(p.get("traits", []))
+	v.add_child(T.datum(nature.left(1).to_upper() + nature.substr(1), T.SIZE_BODY))
 	var loyal := int(p.get("loyalty", 50))
 	v.add_child(T.label("Loyalty to their liege (of 100)"))
 	var bar := ProgressBar.new()
