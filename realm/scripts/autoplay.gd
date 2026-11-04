@@ -1,0 +1,138 @@
+extends Node
+## A test aid for playing the game as a player would (--play=<scenario> --out=<dir>):
+## once the realm is built, it feeds real input through the same path a player's
+## keys and clicks take (Input.parse_input_event), saves frames, and writes what
+## the game says at each step to <dir>/play.log, so a run shows whether the game
+## did what a player would expect. Off in play.
+##
+## A scenario is one step per line ("#" starts a comment):
+##   wait 2.5            let the game run
+##   tap back            press and release an Input Map action (keys.gd)
+##   hold walk_forward 2 hold an action for seconds
+##   key G               press and release a key by name
+##   click 0.5 0.6       left-click at a fraction of the screen
+##   snap name           save <dir>/name.png
+##   look note           log what the game says now, with a note
+##   city Kingsmere 6    frame a town by name, at a camera distance
+
+var main: Node
+var out := ""
+var _steps: PackedStringArray = []
+var _log: FileAccess
+
+
+func start(scenario: String, dir: String) -> void:
+	out = dir
+	DirAccess.make_dir_recursive_absolute(out)
+	_log = FileAccess.open(out + "/play.log", FileAccess.WRITE)
+	_steps = FileAccess.get_file_as_string(scenario).split("\n")
+	_run()
+
+
+func _run() -> void:
+	for raw in _steps:
+		var line := raw.strip_edges()
+		if line == "" or line.begins_with("#"):
+			continue
+		var w := line.split(" ", false)
+		_note("> " + line)
+		match w[0]:
+			"wait":
+				await get_tree().create_timer(float(w[1])).timeout
+			"tap":
+				_action(w[1], true)
+				await get_tree().process_frame
+				await get_tree().process_frame
+				_action(w[1], false)
+				await get_tree().create_timer(0.3).timeout
+			"hold":
+				_action(w[1], true)
+				await get_tree().create_timer(float(w[2])).timeout
+				_action(w[1], false)
+			"key":
+				_key(OS.find_keycode_from_string(w[1]), true)
+				await get_tree().process_frame
+				_key(OS.find_keycode_from_string(w[1]), false)
+				await get_tree().create_timer(0.3).timeout
+			"click":
+				_click(Vector2(float(w[1]), float(w[2])))
+				await get_tree().create_timer(0.4).timeout
+			"snap":
+				await RenderingServer.frame_post_draw
+				get_viewport().get_texture().get_image().save_png("%s/%s.png" % [out, w[1]])
+			"look":
+				_note("  " + " ".join(w.slice(1)) + " :: " + JSON.stringify(_observe()))
+			"city":
+				_frame_city(w[1], float(w[2]) if w.size() > 2 else 6.0)
+				await get_tree().create_timer(3.0).timeout
+	_note("done")
+	_log.close()
+	get_tree().quit()
+
+
+func _action(name: String, down: bool) -> void:
+	for ev in InputMap.action_get_events(StringName(name)):
+		var e: InputEvent = ev.duplicate()
+		if e is InputEventKey:
+			e.pressed = down
+			e.keycode = e.physical_keycode
+		elif e is InputEventMouseButton:
+			e.pressed = down
+			e.position = get_viewport().get_visible_rect().size * 0.5
+			e.global_position = e.position
+		Input.parse_input_event(e)
+		return
+
+
+func _key(code: int, down: bool) -> void:
+	var e := InputEventKey.new()
+	e.keycode = code
+	e.physical_keycode = code
+	e.pressed = down
+	Input.parse_input_event(e)
+
+
+func _click(frac: Vector2) -> void:
+	var at := get_viewport().get_visible_rect().size * frac
+	for down in [true, false]:
+		var e := InputEventMouseButton.new()
+		e.button_index = MOUSE_BUTTON_LEFT
+		e.pressed = down
+		e.position = at
+		e.global_position = at
+		Input.parse_input_event(e)
+
+
+func _frame_city(title: String, dist: float) -> void:
+	for c in main.bridge.world.get("cities", []):
+		if String(c.get("title", c.get("name", ""))) == title:
+			main.rig.snap(main.terrain.world_pos(float(c["x"]), float(c["y"])), dist, 0.6)
+			return
+
+
+## What a player could tell from the screen right now.
+func _observe() -> Dictionary:
+	var o := {"fps": Engine.get_frames_per_second(), "cam_dist": snappedf(main.rig.distance, 0.1)}
+	var c: Node = main.control
+	o["walking"] = c != null and c.active
+	if c and c.active:
+		o["prompt"] = String(c._prompt.text) if c.get("_prompt") else ""
+		var me: Node3D = c.get("_body") if c.get("_body") else null
+		if me:
+			o["at"] = [snappedf(me.global_position.x, 0.01), snappedf(me.global_position.z, 0.01)]
+	o["menu"] = main.title.visible
+	o["intro"] = main.intro.visible
+	o["lore"] = main.lore.visible
+	o["hero"] = main.hero.visible if main.hero else false
+	var panels := []
+	for n in ["_houses_panel", "_chron_panel", "_court_panel", "_house_panel", "_town_panel", "_folk_panel", "_ledger_panel", "_digest_panel"]:
+		var p = main.ui.get(n)
+		if p and p.visible:
+			panels.append(n.trim_prefix("_").trim_suffix("_panel"))
+	o["panels"] = panels
+	return o
+
+
+func _note(s: String) -> void:
+	_log.store_line("%7.1f %s" % [Time.get_ticks_msec() / 1000.0, s])
+	_log.flush()

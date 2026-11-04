@@ -471,6 +471,11 @@ func _parse_args() -> void:
 		elif a == "--siege":
 			_shot["siege"] = true
 			_shot["town"] = true
+		elif a.begins_with("--play="):
+			_shot["play"] = a.substr(7)  # a scenario of player inputs (autoplay.gd); frames and a log go to --out
+			_shot["wait"] = "9999"
+		elif a.begins_with("--out="):
+			_shot["out"] = a.substr(6)
 		elif a.begins_with("--tour="):
 			_shot["tour"] = a.substr(7)  # a folder: one frame of every screen, in one run
 			_shot["wait"] = "9999"
@@ -978,6 +983,8 @@ func _home_view(world: Dictionary) -> void:
 
 
 func _frame_for_shot(world: Dictionary) -> void:
+	if _shot.has("play"):
+		_autoplay()
 	if _shot.has("tour"):
 		_tour(world)
 		return
@@ -1372,6 +1379,18 @@ func _open_person(id: String, house: Dictionary) -> void:
 		if d is Dictionary and d.has("name"):
 			hero.open(d, h))
 
+
+
+## A test aid for playing as a player would (--play=<scenario> --out=<dir>):
+## once the realm has built, autoplay.gd feeds real input and logs what happens.
+func _autoplay() -> void:
+	while towns.building() or terrain.width == 0:
+		await get_tree().create_timer(1.0).timeout
+	await get_tree().create_timer(3.0).timeout
+	var a: Node = preload("res://scripts/autoplay.gd").new()
+	a.main = self
+	add_child(a)
+	a.start(String(_shot["play"]), String(_shot.get("out", "user://play")))
 
 
 ## A test aid for checking every screen (--tour=<folder>): waits for the realm
