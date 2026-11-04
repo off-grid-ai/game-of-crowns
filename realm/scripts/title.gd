@@ -329,9 +329,12 @@ func show_settings() -> void:
 		pad.add_theme_constant_override("margin_" + side, 8)
 	pad.add_theme_constant_override("margin_right", 22)
 	scroll.add_child(pad)
+	var page := VBoxContainer.new()
+	page.add_theme_constant_override("separation", 18)
+	pad.add_child(page)
 	var cols := HBoxContainer.new()
 	cols.add_theme_constant_override("separation", 48)
-	pad.add_child(cols)
+	page.add_child(cols)
 	var left := _column(cols)
 	var right := _column(cols)
 
@@ -358,12 +361,79 @@ func show_settings() -> void:
 		left.add_child(fixed))
 
 	_voice_settings(right)
+	_controls_settings(page)
 
 	var back := _big("Back", func(): show_main() if _from_menu else _close())
 	back.custom_minimum_size.y = 40
 
 
 var _from_menu := true
+
+
+const Keys := preload("res://scripts/keys.gd")
+var _rebinding := ""  # the action waiting for its new key
+var _rebind_button: Button
+
+
+## Every control the game has, grouped, each on a key you can change: click
+## it, press the new key (Esc cancels). Plus where the camera pad shows.
+func _controls_settings(parent: Control) -> void:
+	_section(parent, "Controls")
+	_choices(parent, "The on-screen camera pad", [["When the mouse is near", "near"], ["Always", "always"], ["Never", "never"]], Settings.get_value("camera_pad"), func(v): Settings.set_value("camera_pad", v))
+	parent.add_child(_label("Mouse: drag to move, scroll or pinch to zoom toward the cursor, right-drag or Option-drag to turn and tilt, click a town or a person to open them.", 14, MUTED))
+	var groups := HBoxContainer.new()
+	groups.add_theme_constant_override("separation", 40)
+	parent.add_child(groups)
+	var by_group := {}
+	for a in Keys.ACTIONS:
+		if not by_group.has(a[2]):
+			var col := VBoxContainer.new()
+			col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			col.add_theme_constant_override("separation", 4)
+			col.add_child(_label(String(a[2]), 15, GOLD))
+			var grid := GridContainer.new()
+			grid.columns = 2
+			grid.add_theme_constant_override("h_separation", 14)
+			grid.add_theme_constant_override("v_separation", 4)
+			col.add_child(grid)
+			groups.add_child(col)
+			by_group[a[2]] = grid
+		var grid: GridContainer = by_group[a[2]]
+		var what := _label(String(a[1]), 14, PARCHMENT)
+		what.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		grid.add_child(what)
+		var key := Button.new()
+		key.text = Keys.label(a[0])
+		key.custom_minimum_size = Vector2(110, 30)
+		key.focus_mode = Control.FOCUS_NONE
+		key.tooltip_text = "Click, then press the new key"
+		var action: String = a[0]
+		key.pressed.connect(func():
+			if _rebind_button:
+				_rebind_button.text = Keys.label(_rebinding)
+			_rebinding = action
+			_rebind_button = key
+			key.text = "Press a key…")
+		grid.add_child(key)
+	var reset := _big("Reset controls to defaults", func():
+		Keys.reset()
+		show_settings())
+	reset.custom_minimum_size.y = 36
+	parent.add_child(reset)
+
+
+func _input(event: InputEvent) -> void:
+	if _rebinding == "" or not visible:
+		return
+	if event is InputEventKey and event.pressed and not event.echo:
+		get_viewport().set_input_as_handled()
+		var code: int = event.physical_keycode if event.physical_keycode != 0 else event.keycode
+		if code != KEY_ESCAPE:
+			Keys.rebind(_rebinding, code)
+		if is_instance_valid(_rebind_button):
+			_rebind_button.text = Keys.label(_rebinding)
+		_rebinding = ""
+		_rebind_button = null
 
 
 ## Voices aloud, their volume, the microphone, and whether Off Grid's local

@@ -363,38 +363,42 @@ func _toggle_court() -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not (event is InputEventKey) or not event.pressed or event.echo or event.meta_pressed or event.ctrl_pressed:
 		return
-	match event.keycode:
-		KEY_SPACE: _toggle_pause()
-		KEY_1: _set_pace(60)
-		KEY_2: _set_pace(12)
-		KEY_3: _set_pace(3)
-		KEY_H:
-			_houses_btn.button_pressed = not _houses_btn.button_pressed
-			_houses_panel.visible = _houses_btn.button_pressed
-		KEY_C:
-			_chron_btn.button_pressed = not _chron_btn.button_pressed
-			_chron_panel.visible = _chron_btn.button_pressed
-		KEY_Z:
-			home_view.emit()
-		KEY_M:
-			minimap.get_parent().visible = not minimap.get_parent().visible
-		KEY_L:
-			_ledger_btn.button_pressed = not _ledger_btn.button_pressed
-			_toggle_ledger()
-		KEY_B:
-			lore_opened.emit(-1)
-		KEY_K:
-			if not _petitions.is_empty():
-				_toggle_court()
-		KEY_ESCAPE:
-			_court_hidden = true
-			_court_panel.visible = false
-			_houses_btn.button_pressed = false
-			_houses_panel.visible = false
-			_chron_btn.button_pressed = false
-			_chron_panel.visible = false
-		_:
-			return
+	# Every key is an Input Map action (keys.gd), so Settings → Controls can change it.
+	if event.is_action_pressed(&"pause"):
+		_toggle_pause()
+	elif event.is_action_pressed(&"pace_walk"):
+		_set_pace(60)
+	elif event.is_action_pressed(&"pace_ride"):
+		_set_pace(12)
+	elif event.is_action_pressed(&"pace_gallop"):
+		_set_pace(3)
+	elif event.is_action_pressed(&"houses"):
+		_houses_btn.button_pressed = not _houses_btn.button_pressed
+		_houses_panel.visible = _houses_btn.button_pressed
+	elif event.is_action_pressed(&"chronicle"):
+		_chron_btn.button_pressed = not _chron_btn.button_pressed
+		_chron_panel.visible = _chron_btn.button_pressed
+	elif event.is_action_pressed(&"home"):
+		home_view.emit()
+	elif event.is_action_pressed(&"minimap"):
+		minimap.get_parent().visible = not minimap.get_parent().visible
+	elif event.is_action_pressed(&"ledger"):
+		_ledger_btn.button_pressed = not _ledger_btn.button_pressed
+		_toggle_ledger()
+	elif event.is_action_pressed(&"lore"):
+		lore_opened.emit(-1)
+	elif event.is_action_pressed(&"court"):
+		if not _petitions.is_empty():
+			_toggle_court()
+	elif event.is_action_pressed(&"back"):
+		_court_hidden = true
+		_court_panel.visible = false
+		_houses_btn.button_pressed = false
+		_houses_panel.visible = false
+		_chron_btn.button_pressed = false
+		_chron_panel.visible = false
+	else:
+		return
 	get_viewport().set_input_as_handled()
 
 
@@ -592,7 +596,8 @@ var _pad: Control
 func _reveal_pad(delta: float) -> void:
 	if _pad == null:
 		return
-	var near := _pad.get_global_rect().grow(140).has_point(get_viewport().get_mouse_position())
+	var mode := String(preload("res://scripts/settings.gd").get_value("camera_pad"))
+	var near := mode == "always" or (mode == "near" and _pad.get_global_rect().grow(140).has_point(get_viewport().get_mouse_position()))
 	_pad.modulate.a = move_toward(_pad.modulate.a, 1.0 if near else 0.0, delta * (6.0 if near else 2.5))
 	_pad.mouse_filter = Control.MOUSE_FILTER_STOP if _pad.modulate.a > 0.3 else Control.MOUSE_FILTER_IGNORE
 	for b in _pad.find_children("*", "Button", true, false):

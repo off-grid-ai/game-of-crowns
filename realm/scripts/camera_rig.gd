@@ -201,10 +201,10 @@ func _click(screen: Vector2) -> void:
 
 func _process(delta: float) -> void:
 	var keys := Vector2(
-		float(Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT)) - float(Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT)),
-		float(Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN)) - float(Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP)))
+		Input.get_axis(&"cam_left", &"cam_right"),
+		Input.get_axis(&"cam_up", &"cam_down"))
 	# Keys ease in and out rather than jolting; Shift runs.
-	var want := keys.normalized() * _goal_distance * (1.8 if Input.is_key_pressed(KEY_SHIFT) else 0.8)
+	var want := keys.normalized() * _goal_distance * (1.8 if Input.is_action_pressed(&"cam_fast") else 0.8)
 	_keys_v = _keys_v.lerp(want, 1.0 - exp(-delta * 8.0))
 	if _keys_v.length() > _goal_distance * 0.001:
 		_pan(_keys_v * delta)
@@ -212,13 +212,13 @@ func _process(delta: float) -> void:
 	if _dragging == 0 and _fling.length() > _goal_distance * 0.002:
 		_goal_target += _fling * delta
 		_fling *= exp(-delta * 4.0)
-	if Input.is_key_pressed(KEY_Q):
+	if Input.is_action_pressed(&"cam_turn_left"):
 		_goal_yaw += 1.2 * delta
-	if Input.is_key_pressed(KEY_E):
+	if Input.is_action_pressed(&"cam_turn_right"):
 		_goal_yaw -= 1.2 * delta
-	if Input.is_key_pressed(KEY_R):
+	if Input.is_action_pressed(&"cam_tilt_up"):
 		_goal_tilt = clampf(_goal_tilt + 40.0 * delta, -40.0, 30.0)
-	if Input.is_key_pressed(KEY_F):
+	if Input.is_action_pressed(&"cam_tilt_down"):
 		_goal_tilt = clampf(_goal_tilt - 40.0 * delta, -40.0, 30.0)
 	_keep_inside()
 	# The same easing whatever the frame rate; distance eases in log space so a

@@ -62,6 +62,7 @@ func _ready() -> void:
 		var screen := DisplayServer.screen_get_usable_rect()
 		DisplayServer.window_set_position(screen.end - Vector2i(24, 24))
 	_apply_icon()
+	preload("res://scripts/keys.gd").apply()  # every key as an Input Map action, with your changes
 	_load_ui_scale()
 	_setup_environment()
 	terrain = preload("res://scripts/terrain.gd").new()
