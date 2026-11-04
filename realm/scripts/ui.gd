@@ -1540,7 +1540,6 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 	else:
 		_reign.text = "  ·  ".join(danger).to_upper()
 		_reign.add_theme_color_override("font_color", T.DANGER)
-	_court_btn.modulate.a = 0.75 + 0.25 * sin(Time.get_ticks_msec() * 0.003)
 	var popup := _grant_menu.get_popup()
 	popup.clear()
 	_house_ids.clear()

@@ -501,11 +501,24 @@ function counsel(players, cities, threat) {
   const war = great.find((p) => (p.atWarWith ?? []).some((o) => great.some((g) => g.id === o) && !stilled(p.id, o)));
   if (war) {
     const foe = great.find((g) => war.atWarWith.includes(g.id) && !stilled(war.id, g.id));
-    out.push({ urgency: 50, text: `${war.house.name} and ${foe.house.name} are at war`, why: "Every season of war burns fields and lowers the realm's peace. Both must be warm to the crown (favour 40) to obey.", acts: [{ label: "Command peace", action: "peace", city: seatOf(war.id)?.id, to: foe.id }, { label: "Wed them to each other", action: "marriage", city: seatOf(war.id)?.id, to: foe.id }].filter((a) => a.city !== undefined) });
+    // The Hand never offers an order he knows will be refused: a house too cold
+    // to obey (under 40) is to be won first, and he says so.
+    const cold = [war, foe].filter((p) => favourOf(p.id) < 40).sort((a, b) => favourOf(a.id) - favourOf(b.id))[0];
+    const acts = cold
+      ? [{ label: `Gift crowns to ${cold.house.name.replace(/^House /, "")}`, action: "gift", city: seatOf(cold.id)?.id }, { label: "Wed them to each other", action: "marriage", city: seatOf(war.id)?.id, to: foe.id }]
+      : [{ label: "Command peace", action: "peace", city: seatOf(war.id)?.id, to: foe.id }, { label: "Wed them to each other", action: "marriage", city: seatOf(war.id)?.id, to: foe.id }];
+    const why = cold
+      ? `${cold.house.name} is too cold to obey a royal peace (favour ${Math.round(favourOf(cold.id))}, it needs 40). Warm them first, or bind the two by marriage.`
+      : "Every season of war burns fields and lowers the realm's peace. Both are warm enough to obey the King's peace.";
+    out.push({ urgency: 50, text: `${war.house.name} and ${foe.house.name} are at war`, why, acts: acts.filter((a) => a.city !== undefined) });
   }
   if (purse < 150) out.push({ urgency: 40, text: "The royal treasury is thin", why: "Every decree costs crowns; a higher tithe fills the purse but cools the houses.", acts: [{ label: "Raise the tithe", ui: "tithe_up" }] });
   if (!out.length) out.push({ urgency: 0, text: "The realm is quiet", why: "A good season to win a house's love before you need it.", acts: [] });
-  return out.sort((a, b) => b.urgency - a.urgency).slice(0, 3);
+  // Every order shows its price before the King gives it, as the town card does: "Command peace  6k cr".
+  for (const o of out) for (const a of o.acts) if (DECREES[a.action]?.cost) a.label += `  ${DECREES[a.action].cost / 10}k cr`;
+  // Two matters at most: the Hand's card stays clear of the houses table, and the
+  // court has its own badge.
+  return out.sort((a, b) => b.urgency - a.urgency).slice(0, 2);
 }
 
 // Why each house feels as it does: the last few things that moved its favour,
@@ -529,9 +542,12 @@ function shiftFavour(changes, why = "") {
 }
 
 // Each turn the crown takes its tithe; a heavy tithe wears favour down.
+const tally = { total: 0, upkeep: 0 };  // the tithe since the last reckoning
 function collectTithe(turn) {
   if (!world) return;
   const t = titheLua(world, meta.tithe);
+  tally.total += t.total;
+  tally.upkeep += t.upkeep;
   t.lua.forEach((l) => send(`lua cmd ${l}`));
   const wear = isWatched() ? meta.tithe * 8 : 0;
   for (const p of world.players) {
@@ -545,7 +561,12 @@ function collectTithe(turn) {
     }
   }
   saveFavour();
-  if (turn % 10 === 0 && (t.total > 0 || t.upkeep > 0)) record({ turn, kind: "crown", text: `The royal tithe brings ${t.total} gold to Kingsmere; the court, the royal host and the castles cost ${t.upkeep}.` });
+  if (turn % 10 === 0 && (tally.total > 0 || tally.upkeep > 0)) {
+    record({ turn, kind: "crown", text: tally.total > 0
+      ? `The royal tithe brings ${tally.total} gold to Kingsmere since the last reckoning; the court, the royal host and the castles cost ${tally.upkeep} gold.`
+      : `No tithe has reached Kingsmere since the last reckoning; the court, the royal host and the castles still cost ${tally.upkeep} gold.` });
+    tally.total = tally.upkeep = 0;
+  }
 }
 
 function healScars(turn) {
@@ -847,7 +868,18 @@ http.createServer(async (req, res) => {
     // Spend now, so a second decree before the next snapshot can't overdraw the treasury.
     const crownNow = world.players.find((p) => houseFor(p).crown);
     if (crownNow) crownNow.gold -= result.cost;
+    // The result card says what the order cost and whose favour moved, so the
+    // King learns the price of his word: "6,000 crowns · Thornvale 45 → 47".
+    const was = Object.fromEntries(Object.keys(result.favour ?? {}).map((id) => [id, Math.round(favourOf(Number(id)))]));
     shiftFavour(result.favour, { gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "called to the King's banners", marriage: "a royal match", peace: "the King's peace" }[cmd.action] ?? "a royal decree");
+    const moved = Object.keys(was).map((id) => {
+      const p = world.players.find((x) => x.id === Number(id));
+      const now = Math.round(favourOf(Number(id)));
+      return p && now !== was[id] ? `${houseFor(p).name.replace(/^House /, "")} ${was[id]} → ${now}` : null;
+    }).filter(Boolean);
+    const price = result.cost ? [`${(result.cost * 100).toLocaleString("en-US")} crowns`] : [];
+    const shown = moved.length > 4 ? [...moved.slice(0, 3), `and ${moved.length - 3} more`] : moved;
+    const effects = [...price, ...shown].join("  ·  ");
     const seat = world.cities.find((c) => c.owner === crownNow?.id && c.capital);
     const target = world.cities.find((c) => c.id === Number(cmd.city));
     if (seat && target && (cmd.action === "relief" || cmd.action === "gift")) scene(cmd.action === "relief" ? "grain" : "tribute", { x: seat.x, y: seat.y, tx: target.x, ty: target.y, city: target.id });
@@ -894,7 +926,7 @@ http.createServer(async (req, res) => {
     }
     record({ turn: world?.turn ?? 0, kind: "decree", text: result.text, city: cmd.city });
     setTimeout(snapshot, 600);
-    return json(res, 200, { ok: true, text: crowns(result.text) });
+    return json(res, 200, { ok: true, text: crowns(result.text) + (effects ? `\n${effects}` : "") });
   }
   if (url.pathname === "/scene/arrived" && req.method === "POST") {
     // The King's grain, gold or word reached the town it was sent to: the realm
