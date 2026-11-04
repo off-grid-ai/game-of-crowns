@@ -590,18 +590,12 @@ func _build_town_panel() -> void:
 	for pair in [["Temple", "temple"], ["Granary", "granary"], ["Walls", "walls"], ["Market", "market"], ["Aqueduct", "aqueduct"]]:
 		var bld: String = pair[1]
 		build.add_child(_btn(pair[0], func(): decree.emit("build", bld, -1)))
-	var fate_toggle := _btn("Fate")
-	fate_toggle.toggle_mode = true
-	fate_toggle.tooltip_text = "Powers beyond a king's: blessings and disasters."
-	fate_toggle.toggled.connect(func(on): _fate_box.visible = on)
-	build.add_child(fate_toggle)
+	# A king can't call down drought or plague: the god's powers (Fate) are
+	# gone from the King's game. The box stays, empty and hidden, for v2's god mode.
 	_fate_box = HBoxContainer.new()
 	_fate_box.visible = false
 	v.add_child(_fate_box)
-	for pair in [["Bounty", "bounty"], ["Drought", "famine"], ["Plague", "plague"], ["Army", "army"],
-			["Wanderers", "settlers"], ["Gold", "gold"], ["Treason", "civil_war"]]:
-		var a: String = pair[1]
-		_fate_box.add_child(_btn(pair[0], func(): god_action.emit(a, "")))
+
 
 
 ## Camera controls down the right edge: zoom, pan, turn, tilt and home.
