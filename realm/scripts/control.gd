@@ -151,7 +151,7 @@ func stop() -> void:
 
 func _build_hud() -> void:
 	_hud = CanvasLayer.new()
-	_hud.layer = 15
+	_hud.layer = 5  # over the interface, under the menu and Settings (title.gd, layer 10)
 	add_child(_hud)
 	var T := preload("res://scripts/theme.gd")
 	var box := PanelContainer.new()

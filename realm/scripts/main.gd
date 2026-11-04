@@ -159,6 +159,7 @@ func _ready() -> void:
 	add_child(mic)
 	ui.mic = mic
 	control = preload("res://scripts/control.gd").new()
+	ui.walker = control  # Esc steps you out of walking, not just closes panels
 	control.mic = mic
 	control.terrain = terrain
 	control.towns = towns

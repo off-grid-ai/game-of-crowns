@@ -23,6 +23,7 @@ signal petition_answered(id: String, option: String)
 signal petition_spoken(id: String, words: String, confirm: String)
 signal open_settings
 signal lore_opened(house_id: int)  # -1: the book at its last page
+var walker: Node  # walking mode (control.gd), set by main: Esc is its own while you walk
 signal petition_voiced(id: String, wav: PackedByteArray)
 signal decree_revoked(id: String)
 signal person_opened(id: String, house: Dictionary)  # the character view
@@ -441,6 +442,11 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		if not _petitions.is_empty():
 			_toggle_court()
 	elif event.is_action_pressed(&"back"):
+		# While you walk the realm, Esc is walking mode's: it closes a talk or
+		# steps you back up to the realm (control.gd). The interface only takes
+		# it when it has a panel of its own to close.
+		if walker and walker.active:
+			return
 		_court_hidden = true
 		_court_panel.visible = false
 		side_panels(false)
