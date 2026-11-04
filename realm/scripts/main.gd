@@ -200,7 +200,7 @@ func _ready() -> void:
 	add_child(director)
 	# Battles and musters call their own camera beats while the director (or a test shot) holds the camera.
 	scenes.framing.connect(func(p: Vector3, d: float, y: float):
-		if director.active or _shot.has("battle") or _shot.has("muster"):
+		if director.active or _shot.has("battle") or _shot.has("muster") or _shot.has("siege"):
 			rig.focus(p, d)
 			rig._goal_yaw = y)
 	bridge = preload("res://scripts/bridge.gd").new()
@@ -712,7 +712,7 @@ func _on_world(world: Dictionary) -> void:
 	var tt := Time.get_ticks_msec()
 	towns.sync(world, _houses)
 	if Time.get_ticks_msec() - tt > 500:
-		print("BUILD towns %d ms" % (Time.get_ticks_msec() - tt))
+		print_verbose("BUILD towns %d ms" % (Time.get_ticks_msec() - tt))
 	terrain.set_realm(world.get("owners", []), world.get("players", []))
 	var season := String(_shot.get("season", world.get("date", {}).get("season", "summer")))
 	if season != terrain.season or towns.towns.size() != _snowed:
@@ -723,7 +723,7 @@ func _on_world(world: Dictionary) -> void:
 	roads.kings_road(world)
 	countryside.build(world.get("cities", []))
 	if Time.get_ticks_msec() - tt > 500:
-		print("BUILD roads+countryside %d ms" % (Time.get_ticks_msec() - tt))
+		print_verbose("BUILD roads+countryside %d ms" % (Time.get_ticks_msec() - tt))
 	scenes.sync(world, _houses)
 	units.sync(world, _houses)
 	ui.set_world(world, _houses)
