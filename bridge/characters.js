@@ -806,7 +806,7 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
         ctx.send(`for p in players_iterate() do if p.id == ${debt.pid} then edit.change_gold(p, -${debt.amount}) elseif p.id == ${world.players.find((x) => houseFor(x).crown)?.id ?? -1} then edit.change_gold(p, ${debt.amount}) end end`);
         this.record({ turn, kind: "court", text: `${houseFor(p).name} repays the crown ${debt.amount} gold, with interest.` });
       } else if (lord) {
-        ctx.shift({ [debt.pid]: -15 });
+        ctx.shift({ [debt.pid]: -15 }, "shamed over the crown's loan");
         this.remember(lord.id, "The crown's loan came due and I could not pay. The King's men counted my silver in front of my children.");
         this.record({ turn, kind: "unrest", text: `${lord.house} defaults on the crown's loan. ${lord.name} will not meet the King's eye.` });
       }
@@ -823,7 +823,7 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
       p.answered = "ignored";
       const c = this.people[p.from];
       if (!c) continue;
-      shift({ [c.playerId]: -12 });
+      shift({ [c.playerId]: -12 }, "left unheard at court");
       this.remember(c.id, "I waited at court for two years. The King never answered.");
       this.record({ turn, kind: "unrest", text: `${c.name} of ${c.house} leaves Kingsmere unheard, and says so to anyone who will listen.` });
     }

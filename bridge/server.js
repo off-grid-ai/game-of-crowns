@@ -484,8 +484,11 @@ function counsel(players, cities, threat) {
   const cold = great.filter((p) => favourOf(p.id) < 45).sort((a, b) => favourOf(a.id) - favourOf(b.id))[0];
   if (cold && seatOf(cold.id)) {
     const f = favourOf(cold.id);
-    out.push({ urgency: f < 30 ? 100 : 70, text: `${cold.house.name} grows cold to the crown (favour ${f})`,
-      why: f < 30 ? "So low, they may raise their banners against you any season." : "Below 30, a house may rise against the crown.",
+    // The Hand names what is cooling them most, from the house's ledger of causes.
+    const drain = (favourWhy[cold.id] ?? []).filter((r) => r.d < 0).sort((a, b) => a.d - b.d)[0];
+    const cause = drain ? ` What cools them most: ${drain.why} (${Math.round(drain.d)}).` : "";
+    out.push({ urgency: f < 30 ? 100 : 70, text: `${cold.house.name} grows cold to the crown: favour ${f}`,
+      why: (f < 30 ? "So low, they may raise their banners against you any season." : "Below 30, a house may rise against the crown.") + cause,
       acts: [{ label: "Gift crowns", action: "gift", city: seatOf(cold.id).id }, { label: "A feast in their honour", action: "feast", city: seatOf(cold.id).id }] });
   }
   if (threat.usurper !== "none") out.push({ urgency: 90, text: "A usurper gathers men against the throne", why: "If the host reaches Kingsmere, the crown is lost. The loyal houses will send men if you call.", acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }] });
@@ -542,13 +545,18 @@ function shiftFavour(changes, why = "") {
 
 // Each turn the crown takes its tithe; a heavy tithe wears favour down.
 const tally = { total: 0, upkeep: 0 };  // the tithe since the last reckoning
+const lastSeason = { net: 0 };  // the tithe less upkeep, this season, for the top bar
+const favourPast = {};  // turn -> {house id: favour}, the last two years
 function collectTithe(turn) {
   if (!world) return;
+  favourPast[turn] = { ...favour };
+  for (const t of Object.keys(favourPast)) if (Number(t) < turn - 8) delete favourPast[t];
   const t = titheLua(world, meta.tithe);
   tally.total += t.total;
   tally.upkeep += t.upkeep;
+  lastSeason.net = t.total - t.upkeep;
   t.lua.forEach((l) => send(`lua cmd ${l}`));
-  const wear = isWatched() ? meta.tithe * 8 : 0;
+  const wear = isWatched() ? meta.tithe * 4 : 0;  // 10% wears 0.4 a season; the drift to 55 outweighs it
   for (const p of world.players) {
     if (houseFor(p).wild || houseFor(p).crown) continue;
     const before = favourOf(p.id);
@@ -561,7 +569,7 @@ function collectTithe(turn) {
   }
   saveFavour();
   if (turn % 10 === 0 && (tally.total > 0 || tally.upkeep > 0)) {
-    record({ turn, kind: "crown", text: tally.total > 0
+    record({ turn, kind: "tithe", text: tally.total > 0
       ? `The royal tithe brings ${tally.total} gold to Kingsmere since the last reckoning; the court, the royal host and the castles cost ${tally.upkeep} gold.`
       : `No tithe has reached Kingsmere since the last reckoning; the court, the royal host and the castles still cost ${tally.upkeep} gold.` });
     tally.total = tally.upkeep = 0;
@@ -745,10 +753,13 @@ http.createServer(async (req, res) => {
     });
     const last = history[history.length - 1];
     const crownP = players.find((p) => p.house.crown);
-    const crown = { treasury: crownP?.gold ?? 0, tithe: meta.tithe, decrees: DECREES };
+    const crown = { treasury: crownP?.gold ?? 0, tithe: meta.tithe, decrees: DECREES, perSeason: lastSeason.net };
     for (const p of players) {
       p.favour = p.house.wild || p.house.crown ? null : favourOf(p.id);
       p.favourWhy = favourWhy[p.id] ?? [];
+      // How far favour has moved in the last year (four seasons), shown beside it.
+      const yearAgo = favourPast[(world?.turn ?? 0) - 4];
+      p.favourTrend = p.favour == null || !yearAgo || yearAgo[p.id] == null ? 0 : Math.round(p.favour - yearAgo[p.id]);
     }
     // Each house's measures as the ledger keeps them (one reckoning, recordTurn).
     // The Crown's own row reads like the houses' (the ledger keeps only theirs).

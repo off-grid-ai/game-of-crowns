@@ -37,7 +37,6 @@ export function clampFavour(v) {
 // And the crown pays its way: the court, the royal host's wages and its
 // castles' keep, plus the cost of a great treasury itself (stewards, gifts,
 // loans called in), so royal gold is a choice to spend, not a heap that grows.
-const lastGold = {};  // player id -> treasury after last season's tithe
 
 // The court and the castles' keep, plus a little for a great treasury's
 // stewards. Not the soldiers: the engine already charges a town for its units,
@@ -55,9 +54,10 @@ export function titheLua(world, rate) {
   for (const p of world.players) {
     const h = houseFor(p);
     if (h.wild || h.crown) continue;
-    const earned = lastGold[p.id] === undefined ? 0 : p.gold - lastGold[p.id];
-    const take = rate > 0 && earned > 0 ? Math.floor(earned * rate) : 0;
-    lastGold[p.id] = p.gold - take;
+    // The tithe is a share of each house's treasury: the rate a year, a quarter
+    // of it each season. (A share of their gains came to nothing: the houses
+    // spend as fast as they earn, so the crown starved while favour still wore.)
+    const take = rate > 0 && p.gold > 0 ? Math.floor((p.gold * rate) / 4) : 0;
     if (take <= 0) continue;
     takes[p.id] = take;
     total += take;

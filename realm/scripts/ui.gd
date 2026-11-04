@@ -344,7 +344,7 @@ func _build_top_bar() -> void:
 	# too narrow for both it and the actions; see _arrange_top).
 	var state := _pill(0.5, Control.GROW_DIRECTION_BOTH)
 	_top = [when.get_parent(), state.get_parent()]
-	_gold = _gauge(state, "coins", "Royal treasury, in crowns", "Treasury")
+	_gold = _gauge(state, "coins", "Royal treasury, in crowns. The figure after it is what the tithe brings each season, less the court and the castles.", "Treasury")
 	_peace = _gauge(state, "scales", "Peace: share of the great houses not at war", "Peace")
 	_souls = _gauge(state, "users-three", "Souls in the realm", "Souls")
 	var tithe := HBoxContainer.new()
@@ -1525,6 +1525,10 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		_tithe = reported
 		_tithe_asked = -1.0
 	_gold.text = _heads(int(c.get("treasury", 0)) * CROWNS)
+	# What the crown takes in each season, net of the court and castles: where money comes from.
+	var net := int(c.get("perSeason", 0)) * CROWNS
+	if net != 0:
+		_gold.text += "  %s%s" % ["▲" if net > 0 else "▼", _heads(absi(net))]
 	_peace.text = "%d%%" % int(float(world.get("peace", 1)) * 100)
 	_souls.text = _heads(int(world.get("souls", 0)))
 	_tithe_l.text = "%d%%" % int(_tithe * 100)
@@ -1621,6 +1625,11 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 			var means := "Below 30 they may rise against you and refuse your banners." if f < 30 else ("Growing cold: below 30 they may rise." if f < 45 else ("Loyal: they answer your banners at once." if f >= 60 else "Content, for now."))
 			fav.tooltip_text = "Favour toward the crown: %d of 100\n\n%s%s" % [f, ("\n".join(why) + "\n\n") if not why.is_empty() else "", means]
 			fav.mouse_filter = Control.MOUSE_FILTER_PASS
+			# Which way they're going: "37 ▼10" over the last year, so a drift shows
+			# before it becomes a rising.
+			var trend := int(p.get("favourTrend", 0))
+			if absi(trend) >= 3:
+				fav.text = "%s %d" % ["▲" if trend > 0 else "▼", absi(trend)] + "  %d" % f
 			grid.add_child(fav)
 		else:
 			grid.add_child(Control.new())  # the crown has no favour toward itself: keep the column

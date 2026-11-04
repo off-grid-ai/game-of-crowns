@@ -602,7 +602,7 @@ export class Arcs {
     for (const [k, n] of Object.entries(d.loyalty ?? {})) if (!R(k)?.folk && R(k)?.loyalty !== undefined) R(k).loyalty = Math.max(0, Math.min(100, R(k).loyalty + n));
     const fav = {};
     for (const [k, n] of Object.entries(d.favour ?? {})) { const h = this.house(R(k), ctx); if (h) fav[h.id] = (fav[h.id] ?? 0) + n; }
-    if (Object.keys(fav).length) ctx.shift(fav);
+    if (Object.keys(fav).length) ctx.shift(fav, arc.title ? `${arc.title.replace(/^The /, "the ")}` : "a turn in the realm's story");
     for (const [k, n] of Object.entries(d.gold ?? {})) { const h = this.house(R(k), ctx); if (h) gold(h.id, n); }
     // Gold from one house to another: what a bribe, a dowry or a blood price costs.
     for (const [from, to, n] of d.pay ?? []) { const [a, b] = [this.house(R(from), ctx), this.house(R(to), ctx)]; if (a && b) { const amt = Math.min(n, Math.max(0, a.gold)); gold(a.id, -amt); gold(b.id, amt); } }
