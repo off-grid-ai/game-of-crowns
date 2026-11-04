@@ -95,6 +95,7 @@ static func _template(name: String) -> Dictionary:
 	model.scale = Vector3.ONE * k
 	model.position = -Vector3(box.get_center().x, box.position.y, box.get_center().z) * k
 	_own(model, root)
+	_no_glow(root)
 	# The same model as plain meshes, for drawing many copies in one batch.
 	var parts := []
 	for mi in root.find_children("*", "MeshInstance3D", true, false):
@@ -130,6 +131,25 @@ static func _template(name: String) -> Dictionary:
 	root.free()
 	_cache[name] = {"scene": scene, "foot": Vector2(box.size.x, box.size.z) * k, "parts": parts}
 	return _cache[name]
+
+
+## A building is lit by the sun and the moon, never by itself: some kits come
+## out of their exporter with emission on at full white (the thatched cottages
+## glowed in daylight colours all night). Their surfaces take a copy without it.
+static func _no_glow(root: Node) -> void:
+	var lit_of := {}  # one copy per material, so merged surfaces still share it
+	for mi in root.find_children("*", "MeshInstance3D", true, false):
+		var m: MeshInstance3D = mi
+		if m.mesh == null:
+			continue
+		for i in m.mesh.get_surface_count():
+			var mat := m.get_active_material(i) as BaseMaterial3D
+			if mat and mat.emission_enabled:
+				if not lit_of.has(mat):
+					var lit: BaseMaterial3D = mat.duplicate()
+					lit.emission_enabled = false
+					lit_of[mat] = lit
+				m.set_surface_override_material(i, lit_of[mat])
 
 
 ## The model as [mesh, transform] pairs relative to its foot, for batching.
