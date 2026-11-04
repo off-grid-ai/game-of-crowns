@@ -36,6 +36,7 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 	# Rock only on real cliffs: higher values keep grass on steeper ground.
 	mat.set_shader_param("auto_slope", 1.6 if terrain.land else 2.2)
 	mat.set_shader_param("blend_sharpness", 0.87)
+	_drape_atlas(mat, terrain)
 	var w: int = terrain.width * int(terrain.TILE)
 	var h: int = terrain.height * int(terrain.TILE)
 	# Ground layers once per game unit; the eroded heightmap, where the realm has
@@ -66,26 +67,42 @@ func _control_from_land(terrain: Node3D) -> Image:
 	var h := hm.get_height()
 	var per: int = terrain.land_per_unit
 	var tile: float = terrain.TILE
-	var grass := Terrain3DUtil.as_float(Terrain3DUtil.enc_base(0) | Terrain3DUtil.enc_auto(true))
-	var forest := Terrain3DUtil.as_float(Terrain3DUtil.enc_base(5) | Terrain3DUtil.enc_auto(true))
-	var sand := Terrain3DUtil.as_float(Terrain3DUtil.enc_base(2))
+	# Terrain3D switches base textures hard from vertex to vertex, which draws
+	# stair-steps; overlays blend. So the ground is grass everywhere, with sand,
+	# forest floor and snow laid over it at a blend that ramps smoothly.
+	var over := func(layer: int, weight: float) -> float:
+		var enc := Terrain3DUtil.enc_base(0) | Terrain3DUtil.enc_auto(true)
+		var bl := clampi(int(weight * 255.0), 0, 255)
+		if bl > 0:
+			enc |= Terrain3DUtil.enc_overlay(layer) | Terrain3DUtil.enc_blend(bl)
+		return Terrain3DUtil.as_float(enc)
+	var tw: int = terrain.width
+	var th: int = terrain.height
+	var wood := func(fx: float, fz: float) -> float:
+		# The forest tiles, blended across tile edges and frayed a little.
+		fx += sin(fz * 1.7) * 0.18 - 0.5
+		fz += cos(fx * 1.9) * 0.18 - 0.5
+		var x0 := floori(fx)
+		var z0 := floori(fz)
+		var u := fx - x0
+		var v := fz - z0
+		var f := func(x: int, z: int) -> float:
+			return 1.0 if terrain.tile_at(clampi(x, 0, tw - 1), clampi(z, 0, th - 1)) == "Forest" else 0.0
+		var t: float = lerpf(lerpf(f.call(x0, z0), f.call(x0 + 1, z0), u), lerpf(f.call(x0, z0 + 1), f.call(x0 + 1, z0 + 1), u), v)
+		return t * t * (3.0 - 2.0 * t)
 	var out := Image.create_empty(w, h, false, Image.FORMAT_RF)
-	var snow := []
-	for i in 9:
-		snow.append(Terrain3DUtil.as_float(Terrain3DUtil.enc_base(0) | Terrain3DUtil.enc_overlay(3) | Terrain3DUtil.enc_blend(int(255.0 * i / 8.0)) | Terrain3DUtil.enc_auto(true)))
 	for z in h:
-		var tz := int(z / (tile * per))
+		var fz := (z + 0.5) / (tile * per)
 		for x in w:
 			var y := hm.get_pixel(x, z).r
 			var v: float
-			if y < -0.02:  # the sea floor and the wet edge; land just above the water stays green
-				v = sand
+			var sand := smoothstep(0.02, -0.12, y)  # a narrow beach at the waterline, sand on the sea floor
+			if sand > 0.02:
+				v = over.call(2, sand)
 			elif y > 7.5:
-				v = snow[clampi(int((y - 7.5) / 2.0 * 8.0), 0, 8)]
-			elif terrain.tile_at(int(x / (tile * per)), tz) == "Forest":
-				v = forest
+				v = over.call(3, smoothstep(7.5, 9.5, y))
 			else:
-				v = grass
+				v = over.call(5, wood.call((x + 0.5) / (tile * per), fz))
 			out.set_pixel(x, z, Color(v, 0, 0, 1))
 	return out
 
@@ -117,3 +134,33 @@ func set_grass(tint: Color, snow := false) -> void:
 	ta.albedo_texture = load("res://assets/ground/packed/%s-albedo-height.png" % layer)
 	ta.normal_texture = load("res://assets/ground/packed/%s-normal-rough.png" % layer)
 	ta.albedo_color = tint
+
+
+## The realm's atlas (assets/maps/atlas.png, Azgaar's map drawn from its own
+## data by bridge/tools/make_atlas.sh) laid over the ground: Terrain3D's own
+## shader, with one line added that blends toward the atlas by atlas_mix, which
+## the camera raises as it pulls back. Up close the ground is the 3D ground;
+## from across the realm it reads with a map's detail.
+func _drape_atlas(mat: Terrain3DMaterial, terrain: Node3D) -> void:
+	var atlas: Texture2D = load("res://assets/maps/atlas.png") if ResourceLoader.exists("res://assets/maps/atlas.png") else null
+	if atlas == null:
+		return
+	mat.shader_override_enabled = true
+	var sh: Shader = mat.shader_override
+	if sh == null or not sh.code.contains("varying vec3 v_vertex;"):
+		mat.shader_override_enabled = false
+		return
+	var code := sh.code.replace("varying vec3 v_vertex;", "varying vec3 v_vertex;\nuniform sampler2D atlas_tex : source_color, filter_linear_mipmap_anisotropic, repeat_disable;\nuniform vec2 atlas_size = vec2(1.0);\nuniform float atlas_mix = 0.0;")
+	var at := code.find("ALBEDO = ")
+	var end := code.find("\n", at)
+	code = code.insert(end, "\n\tALBEDO = mix(ALBEDO, texture(atlas_tex, v_vertex.xz / atlas_size).rgb, atlas_mix);")
+	var drape := Shader.new()
+	drape.code = code
+	mat.shader_override = drape
+	mat.set_shader_param("atlas_tex", atlas)
+	mat.set_shader_param("atlas_size", Vector2(terrain.width * terrain.TILE, terrain.height * terrain.TILE))
+
+
+func set_atlas_mix(v: float) -> void:
+	if land:
+		land.material.set_shader_param("atlas_mix", v)

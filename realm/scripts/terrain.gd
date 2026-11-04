@@ -73,6 +73,7 @@ func world_pos(tx: float, ty: float) -> Vector3:
 # --- seasons --------------------------------------------------------------------------
 
 var land3d: Node3D
+var _sea_mat: ShaderMaterial
 var season := ""
 var _leaf_mats := {}  # material -> its summer colour
 const SNOW := preload("res://scripts/snow.gdshader")
@@ -249,8 +250,13 @@ func _warp(wx: float, wz: float) -> Vector2:
 
 ## Dry ground: a land tile, standing clear of the sea. Lowland towns by the
 ## coast and the lakes sit barely above the water, and that's still land.
+## Dry ground. With the eroded heightmap, the land itself decides: the coarse
+## tiles call an island's shores "Ocean" even where the ground stands dry, which
+## left small island towns nowhere to build. Lakes still come from the tiles.
 func is_land(wx: float, wz: float) -> bool:
 	var name := tile_at(floori(wx / TILE), floori(wz / TILE))
+	if land:
+		return name != "Lake" and height_at(wx, wz) > SEA_LEVEL + 0.04
 	return not (name.contains("Ocean") or name == "Lake") and height_at(wx, wz) > SEA_LEVEL + 0.1
 
 
@@ -371,6 +377,10 @@ func _build_sea() -> void:
 	plane.subdivide_width = 1
 	var mat := ShaderMaterial.new()
 	mat.shader = preload("res://scripts/water.gdshader")
+	if ResourceLoader.exists("res://assets/maps/atlas.png"):
+		mat.set_shader_parameter("atlas_tex", load("res://assets/maps/atlas.png"))
+		mat.set_shader_parameter("atlas_size", Vector2(width * TILE, height * TILE))
+	_sea_mat = mat
 	var mi := MeshInstance3D.new()
 	mi.mesh = plane
 	mi.material_override = mat
@@ -632,6 +642,14 @@ func set_realm_mix(v: float) -> void:
 		_land_mat.set_shader_parameter("realm_mix", v)
 
 
+## How much of the atlas shows over the 3D ground (0 up close, most of it far out).
+func set_atlas_mix(v: float) -> void:
+	if land3d:
+		land3d.set_atlas_mix(v)
+	if _sea_mat:
+		_sea_mat.set_shader_parameter("atlas_mix", v)
+
+
 # --- painted ground (Godot's Decal) ------------------------------------------------
 
 var _tiled := {}
@@ -640,8 +658,14 @@ var _tiled := {}
 ## Paints a texture onto the land itself, following every rise and dip, the way
 ## a road or a market square is worn into the earth rather than laid on top.
 ## Projects straight down within a box `depth` tall, centred on `at` (parent-local).
-func paint(parent: Node3D, tex: Texture2D, at: Vector3, size: Vector2, yaw := 0.0, tint := Color.WHITE, depth := 1.5) -> Decal:
+## Painted ground fades out as the camera pulls away (from `fade` units on):
+## from across the realm, streets, tracks and fields would only read as brown
+## scratches and confetti over the atlas, which draws the land better there.
+func paint(parent: Node3D, tex: Texture2D, at: Vector3, size: Vector2, yaw := 0.0, tint := Color.WHITE, depth := 1.5, fade := 40.0) -> Decal:
 	var d := Decal.new()
+	d.distance_fade_enabled = true
+	d.distance_fade_begin = fade
+	d.distance_fade_length = fade * 0.75
 	d.texture_albedo = tex
 	d.modulate = tint
 	d.cull_mask = GROUND_LAYER
