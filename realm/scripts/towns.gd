@@ -762,9 +762,7 @@ func _fields(root: Node3D, center: Vector3, outer: float, size: int, rng: Random
 			# Ploughed soil in the ground itself; the crop lies over it, the earth showing through.
 			Fields.plough(terrain, center + off, fsize, yaw)
 			field.albedo_mix = 0.55
-		# Wheat in the gold fields, cabbages in some of the green; fallow rests.
-		if crop[0] == "field-wheat" or (crop[0] == "field-green" and rng.randf() < 0.5):
-			Fields.sow(crops, terrain, center, "wheat" if crop[0] == "field-wheat" else "cabbage", center + off, fsize, yaw, rng)
+		Fields.sow(crops, terrain, center, Fields.crop_for(crop[0], rng), center + off, fsize, yaw, rng)
 		var all: Array = root.get_meta("fields", [])
 		all.append([off, fsize, yaw])
 		root.set_meta("fields", all)

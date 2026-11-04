@@ -222,9 +222,7 @@ func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: A
 		if terrain.land3d and terrain.land3d.land:
 			plough(terrain, c, size, fyaw)  # ploughed soil under the crop
 			crop.albedo_mix = 0.55
-		# Wheat in the gold fields, cabbages in some green ones; fallow rests.
-		if kind == 0 or (kind == 1 and rng.randf() < 0.5):
-			sow(node, terrain, Vector3.ZERO, "wheat" if kind == 0 else "cabbage", c, size, fyaw, rng)
+		sow(node, terrain, Vector3.ZERO, crop_for(tex.get_file().get_basename(), rng), c, size, fyaw, rng)
 		hedges.append([c, size, fyaw])
 		fields.append([c, size, fyaw])
 	return {"at": at, "fields": fields, "yard": yard}
@@ -296,13 +294,26 @@ func _hedgerows(node: Node3D, fields: Array, seed: int) -> void:
 
 # --- fields and crops (towns sow theirs with these too) ------------------------------
 
-## The crops, each fitted once to the realm's scale: ripe wheat about a metre
-## tall, cabbages a third of a metre across, hay heaped two and a half metres long.
-const CROP_MODELS := {"wheat": "res://assets/crops/wheat/scene.gltf", "cabbage": "res://assets/crops/cabbage/scene.gltf", "hay": "res://assets/crops/hay/scene.gltf"}
-const CROP_SIZE := {"wheat": 0.13, "cabbage": 0.04, "hay": 0.3}  # wheat by height, the rest by their longest side
-const CROP_ROWS := {"wheat": [0.06, 0.05], "cabbage": [0.09, 0.08]}  # [between rows, along a row]
+## The crops, each fitted once to the realm's scale: wheat about a metre
+## tall, barley a little shorter, flax (the nature kit's tall wispy grass) and
+## beans (its small leafy plant) knee-high, cabbages a third of a metre across,
+## hay heaped two and a half metres long.
+const CROP_MODELS := {"wheat": "res://assets/crops/wheat/scene.gltf", "barley": "res://assets/crops/wheat/scene.gltf", "flax": "res://assets/nature/Grass_Wispy_Tall.gltf", "beans": "res://assets/nature/Plant_1.gltf", "cabbage": "res://assets/crops/cabbage/scene.gltf", "hay": "res://assets/crops/hay/scene.gltf"}
+const CROP_SIZE := {"wheat": 0.13, "barley": 0.1, "flax": 0.09, "beans": 0.06, "cabbage": 0.04, "hay": 0.3}  # cereals and flax by height, the rest by their longest side
+const CROP_ROWS := {"wheat": [0.045, 0.04], "barley": [0.045, 0.035], "flax": [0.05, 0.04], "beans": [0.08, 0.06], "cabbage": [0.09, 0.08]}  # [between rows, along a row]
+const STANDING := ["wheat", "barley", "flax"]  # cut at harvest and left as stubble; the rest are lifted
 const CROP_REACH := 25.0  # crops are drawn this near the camera; the field's painted colour does beyond
 static var _crop_meshes := {}
+
+
+## What a field grows, by the colour painted under it: gold fields wheat or
+## barley, green ones cabbages, beans or flax; fallow fields rest.
+static func crop_for(field: String, rng: RandomNumberGenerator) -> String:
+	if field == "field-wheat":
+		return "wheat" if rng.randf() < 0.6 else "barley"
+	if field == "field-green":
+		return ["cabbage", "beans", "flax"][rng.randi() % 3]
+	return ""
 
 
 static func crop_mesh(kind: String) -> Mesh:
@@ -312,7 +323,7 @@ static func crop_mesh(kind: String) -> Mesh:
 	if ResourceLoader.exists(CROP_MODELS[kind]):
 		var baked: ArrayMesh = preload("res://scripts/house_builder.gd").new().bake_path(CROP_MODELS[kind])
 		var box := baked.get_aabb()
-		var k: float = CROP_SIZE[kind] / (box.size.y if kind == "wheat" else maxf(box.size.x, box.size.z))
+		var k: float = CROP_SIZE[kind] / (box.size.y if kind in STANDING else maxf(box.size.x, box.size.z))
 		# Standing on its own base, at the centre, at the realm's scale.
 		var shift := Vector3(box.get_center().x, box.position.y, box.get_center().z)
 		var im := ImporterMesh.new()
@@ -331,7 +342,7 @@ static func crop_mesh(kind: String) -> Mesh:
 					mat.alpha_scissor_threshold = 0.5
 					mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 			im.add_surface(Mesh.PRIMITIVE_TRIANGLES, arr, [], {}, mat)
-		if kind != "wheat":
+		if kind in ["cabbage", "hay"]:
 			im.generate_lods(25.0, 60.0, [])  # the scanned cabbage and hay are dense up close
 		mesh = im.get_mesh()
 	_crop_meshes[kind] = mesh
@@ -364,9 +375,11 @@ static func _soil(size: Vector2) -> Vector2:
 
 ## Sows a field in rows along its length: one batch of plants, drawn only near
 ## the camera and casting no shadow. `origin` is where `parent` stands in the
-## world. The batch stands at the field's lowest ground, so a spring field can
-## be shown young by squashing it down there (the taller plants sink in).
+## world. The batch stands at the field's lowest ground, so a young field is
+## shown by squashing it down there (the taller plants sink in).
 static func sow(parent: Node3D, land: Node3D, origin: Vector3, kind: String, c: Vector3, size: Vector2, yaw: float, rng: RandomNumberGenerator) -> void:
+	if kind == "":
+		return
 	var mesh := crop_mesh(kind)
 	if mesh == null:
 		return
@@ -406,8 +419,10 @@ static func sow(parent: Node3D, land: Node3D, origin: Vector3, kind: String, c: 
 	mmi.visibility_range_end = CROP_REACH
 	mmi.visibility_range_end_margin = 2.0
 	mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
+	mmi.set_meta("kind", kind)
+	mmi.set_meta("lag", rng.randf())  # each field ripens and is reaped on a day of its own
 	mmi.add_to_group("crops")
-	_in_season(mmi, String(land.season))
+	_ripen(mmi, _season_name if _season_name != "" else String(land.season), _through() if _season_name != "" else 0.0)
 	parent.add_child(mmi)
 
 
@@ -430,21 +445,79 @@ static func pile_hay(parent: Node3D, xfs: Array) -> void:
 	parent.add_child(mmi)
 
 
-## Standing crops in summer and autumn, young in spring, bare in winter.
-static func _in_season(crop: Node3D, season: String) -> void:
-	crop.visible = season != "winter"
-	crop.scale = Vector3(1.0, 0.35 if season == "spring" else 1.0, 1.0)
+## The farming year, field by field. Spring: green shoots rising. Summer: the
+## crop stands full and green, the grain yellowing toward the season's end.
+## Autumn: gold until the field's harvest day, then stubble (or, for cabbages
+## and beans, bare earth once lifted). Winter: bare, under the snow.
+const SEASON_SECONDS := 90.0  # the realm's pace: a season every 90 seconds
+const TINTS := {"green": Color(0.5, 0.95, 0.32), "yellowing": Color(0.85, 0.95, 0.5), "gold": Color.WHITE, "stubble": Color(0.78, 0.66, 0.46)}
+const FLAX_TINTS := {"green": Color(0.8, 1.0, 0.8), "yellowing": Color(1.0, 0.95, 0.6), "gold": Color(1.25, 0.9, 0.5), "stubble": Color(1.0, 0.8, 0.55)}
+static var _season_name := ""
+static var _season_from := 0
+static var _tinted := {}  # "kind|stage" -> the crop's material in that colour
 
 
-var _season := ""
+## How far through the season the realm is, 0 to 1.
+static func _through() -> float:
+	return clampf((Time.get_ticks_msec() - _season_from) / 1000.0 / SEASON_SECONDS, 0.0, 1.0)
 
 
-func _check_season() -> void:
-	if terrain == null or terrain.season == _season:
+static func _stage(kind: String, season: String, t: float, lag: float) -> Array:
+	match season:
+		"winter":
+			return ["", 0.0]
+		"spring":
+			return ["green", lerpf(0.4, 0.7, t)]
+		"autumn":
+			if t < 0.25 + lag * 0.6:
+				return ["gold" if kind in STANDING else "green", 1.0]
+			return ["stubble", 0.14] if kind in STANDING else ["", 0.0]
+	# Summer, and a realm with no season yet.
+	if kind in STANDING and t > 0.55 + lag * 0.35:
+		return ["yellowing", 1.0]
+	return ["green", lerpf(0.6, 1.0, minf(1.0, t * 2.5))]
+
+
+## Puts one field's crop at its stage: its height, and its colour for the
+## grain and flax (cabbages and beans keep their own green).
+static func _ripen(crop: GeometryInstance3D, season: String, t: float) -> void:
+	var kind: String = crop.get_meta("kind", "wheat")
+	var st := _stage(kind, season, t, float(crop.get_meta("lag", 0.5)))
+	var key := "%s|%s|%.2f" % [kind, st[0], st[1]]
+	if crop.get_meta("stage", "") == key:
 		return
-	_season = terrain.season
+	crop.set_meta("stage", key)
+	crop.visible = st[0] != ""
+	if st[0] == "":
+		return
+	crop.scale = Vector3(1.0, float(st[1]), 1.0)
+	if kind in STANDING:
+		crop.material_override = _tint(kind, st[0])
+
+
+static func _tint(kind: String, stage: String) -> Material:
+	var key := kind + "|" + stage
+	if not _tinted.has(key):
+		var mat: Material = crop_mesh(kind).surface_get_material(0).duplicate()
+		var tint: Color = (FLAX_TINTS if kind == "flax" else TINTS)[stage]
+		if kind == "barley":
+			tint *= Color(1.05, 1.0, 0.92)  # paler, greyer than wheat
+		mat.albedo_color = tint
+		_tinted[key] = mat
+	return _tinted[key]
+
+
+## Once a second: a new season starts its clock, and every field moves on to
+## the stage it has reached (only those that changed are touched).
+func _check_season() -> void:
+	if terrain == null:
+		return
+	if terrain.season != _season_name:
+		_season_name = terrain.season
+		_season_from = Time.get_ticks_msec()
+	var t := _through()
 	for crop in get_tree().get_nodes_in_group("crops"):
-		_in_season(crop, _season)
+		_ripen(crop, _season_name, t)
 
 
 # --- grass ----------------------------------------------------------------------------
