@@ -328,8 +328,14 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 		var to: Vector3 = a.get("face", n.position) - n.position
 		if Vector2(to.x, to.z).length() > 0.01:
 			n.rotation.y = lerp_angle(n.rotation.y, atan2(to.x, to.z), minf(1.0, delta * 6.0))
-		_people.play(n, "Idle_Talking", 1.0)
+		_people.play(n, String(a.get("held_move", "Idle_Talking")), 1.0)
 		return
+	if a.has("held_move"):
+		a.erase("held_move")
+		if a.has("flee_from"):
+			_flee(a, a["flee_from"])
+			a.erase("flee_from")
+			return
 	# A new part of the day: drop what you're doing and go.
 	var block := _block(a)
 	if block != a["block"]:
@@ -1032,6 +1038,44 @@ func _tell_attention(id: int) -> void:
 
 ## What the town shows that its people would remember: a feast begun, a riot,
 ## hunger setting in, a building finished. Told to the minds once, as it starts.
+## Someone in the street is struck (by you, walking the realm): they reel, then
+## run for home, and everyone near them scatters too. Those who saw it remember
+## it in the minds, so the town talks of it and fears whoever did it.
+func struck(town: int, i: int, by: Vector3, who_struck: String) -> void:
+	var crowd: Array = _crowds.get(town, [])
+	if i >= crowd.size():
+		return
+	var a: Dictionary = crowd[i]
+	a["hold_until"] = Time.get_ticks_msec() + 700
+	a["face"] = by
+	a["held_move"] = "React_Front"
+	a["flee_from"] = by
+	var saw := ["folk:%d:%d" % [town, int(a["i"])]]
+	for b in crowd:
+		if b != a and b["node"].visible and b["node"].position.distance_to(a["node"].position) < 1.2:
+			_flee(b, by)
+			saw.append("folk:%d:%d" % [town, int(b["i"])])
+	_bridge("POST", "/minds/witness", {"city": town, "kind": "struck", "text": "%s struck one of us down in the street, unprovoked." % who_struck, "who": saw, "at": hour}, Callable())
+
+
+## Away from `from`, at a run, home: what anyone does when steel is drawn on them.
+func _flee(a: Dictionary, from: Vector3) -> void:
+	var town: Dictionary = towns.towns.get(a["town"], {})
+	if town.is_empty():
+		return
+	var n: Node3D = a["node"]
+	var c: Vector3 = a["center"]
+	var map: RID = _nav.map_for(a["town"], town["node"])
+	var away: Vector3 = a["home"] if (a["home"] - from).length() > (n.position - from).length() else n.position + (n.position - from).normalized() * 1.5
+	var goal := _nav.closest(map, Vector2(away.x - c.x, away.z - c.z))
+	a["goal"] = goal
+	a["route"] = _nav.path(map, _nav.closest(map, Vector2(n.position.x - c.x, n.position.z - c.z)), goal)
+	a["gait"] = "Running"
+	a["pace"] = 2.4
+	a["work"] = "Terrified"
+	a["wait"] = 6.0
+
+
 func _witness(id: int) -> void:
 	if not towns.towns.has(id):
 		return

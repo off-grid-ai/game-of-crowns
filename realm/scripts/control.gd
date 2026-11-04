@@ -431,6 +431,8 @@ func _fight_hint() -> void:
 
 
 func _land(attacker) -> void:
+	if attacker == _me and not _foes.any(func(f): return f.in_reach_of(_me)):
+		_strike_townsfolk()
 	var all: Array = [_me] + _foes
 	for f in all:
 		if f != attacker and f.in_reach_of(attacker):
@@ -439,6 +441,22 @@ func _land(attacker) -> void:
 				_fallen()
 			elif not turned and f != _me and not f.alive():
 				_say("The outlaw falls.")
+
+
+## Your blade finds a townsman (no outlaw in reach): they reel and run, the
+## street scatters, and the town will remember who did it.
+func _strike_townsfolk() -> void:
+	var town := _town_at(_body.position)
+	var crowd: Array = villagers._crowds.get(town, [])
+	var face: Vector3 = _me.facing()
+	for i in crowd.size():
+		var n: Node3D = crowd[i]["node"]
+		var d: Vector3 = n.global_position - _body.global_position
+		d.y = 0
+		if n.visible and d.length() < _me.reach() * 1.2 and face.dot(d.normalized()) > 0.3:
+			villagers.struck(town, i, _body.global_position, String(_person.get("name", "a stranger")))
+			_say("They reel and run. The street scatters, and the town will remember.")
+			return
 
 
 ## With a foe close, standing still means facing them, and the camera comes
