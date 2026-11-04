@@ -345,7 +345,7 @@ func _build_top_bar() -> void:
 	var state := _pill(0.5, Control.GROW_DIRECTION_BOTH)
 	_top = [when.get_parent(), state.get_parent()]
 	_gold = _gauge(state, "coins", "Royal treasury, in crowns. The figure after it is what the tithe brings each season, less the court and the castles.", "Treasury")
-	_peace = _gauge(state, "scales", "Peace: share of the great houses not at war", "Peace")
+	_peace = _gauge(state, "scales", "Peace: how much of the realm is free of war between the great houses. A host marching on the throne halves it.", "Peace")
 	_souls = _gauge(state, "users-three", "Souls in the realm", "Souls")
 	var tithe := HBoxContainer.new()
 	tithe.add_theme_constant_override("separation", 2)

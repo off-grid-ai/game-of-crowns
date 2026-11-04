@@ -675,7 +675,8 @@ function ledger() {
   const pairs = (n * (n - 1)) / 2 || 1;
   const crown = (world.players ?? []).find((p) => houseFor(p).crown);
   const row = {
-    turn: world.turn, at: Date.now(), peace: Math.max(0, 1 - wars / 2 / pairs), pop, souls: soulsAll, food,
+    // A host marching on the throne is war at the realm's heart: it halves the peace.
+    turn: world.turn, at: Date.now(), peace: Math.max(0, 1 - wars / 2 / pairs) * (stakes?.s.usurper.stage === "march" ? 0.5 : 1), pop, souls: soulsAll, food,
     treasury: crown?.gold ?? 0, houses,
   };
   history.push(row);
@@ -935,7 +936,7 @@ http.createServer(async (req, res) => {
     if (crownNow) crownNow.gold -= result.cost;
     // The result card says what the order cost and whose favour moved, so the
     // King learns the price of his word.
-    const effects = shiftAndTell(result.favour, { gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "called to the King's banners", marriage: "a royal match", peace: "the King's peace" }[cmd.action] ?? "a royal decree", result.cost);
+    const effects = shiftAndTell(result.favour, { gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "the King's banners: answered or refused", marriage: "a royal match", peace: "the King's peace" }[cmd.action] ?? "a royal decree", result.cost);
     const seat = world.cities.find((c) => c.owner === crownNow?.id && c.capital);
     const target = world.cities.find((c) => c.id === Number(cmd.city));
     if (seat && target && (cmd.action === "relief" || cmd.action === "gift")) scene(cmd.action === "relief" ? "grain" : "tribute", { x: seat.x, y: seat.y, tx: target.x, ty: target.y, city: target.id });

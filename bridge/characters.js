@@ -341,7 +341,8 @@ export class Court {
     const pet = moves.find((m) => m.kind === "petition");
     if (pet) await this.act(pet, world, ctx, turn);
     else {
-      const lords = this.alive().filter((c) => c.rank === "lord");
+      // Only lords of houses that hold land (the houses table's rows) bring petitions.
+      const lords = this.alive().filter((c) => c.rank === "lord" && (world.players.find((p) => p.id === c.playerId)?.cities ?? 0) > 0);
       const askers = { rare: 1, normal: 3, often: 5 }[ctx.options?.petitions] ?? 3;
       for (const l of lords.sort(() => r() - 0.5).slice(0, askers)) await this.petition(l, world, turn, ctx);
     }
