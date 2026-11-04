@@ -650,8 +650,11 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	else:
 		_single(root, _keep, keep_off + Vector3(0, _ground_y(center, keep_off), 0), base_ang)
 	# A bannerman seated here flies his family's arms over the town; his
-	# liege's banner then stands at the square.
-	var family: Dictionary = preload("res://scripts/heraldry.gd").family(String(c["family"])) if c.get("family") is String else {}
+	# liege's banner then stands at the square. A great house's seat, and any
+	# town the Crown holds, fly only their own.
+	var family: Dictionary = {}
+	if c.get("family") is String and not c["capital"] and not house.get("crown", false):
+		family = preload("res://scripts/heraldry.gd").family(String(c["family"]))
 	if not stone:
 		_banner(root, keep_off + Vector3(0, _ground_y(center, keep_off) + (2.0 if c["capital"] else 1.75), 0), color, house if family.is_empty() else family)
 	if not family.is_empty():
