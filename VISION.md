@@ -26,6 +26,12 @@ A living medieval-fantasy world that runs on its own on your laptop. You're its 
 - **Our edge is the local model (Off Grid AI Desktop).** With no call caps and no cloud cost, every NPC can have a mind of its own, not just the named lords.
 - **You are guest and Ford at once.** You walk among them and talk (they remember you), and you write their narratives (story arcs), which they then live out in their own way.
 
+## v1: what ships (frozen 2026-11-05)
+Nothing new goes in unless it blocks the bar below; ideas go to v1.1.
+- **In v1:** the world, towns, seasons, crops, coast and rivers; battles on open ground with no one inside a building, and the mounted messenger; every person a mind (memory, mood, plans, talk with you by voice and with each other, gossip that travels); story arcs, commoners included; the double-click Mac app.
+- **The bar:** one combined check passes (no one inside a building or sunk, no script errors, screenshots look right); Ali plays a session from the app and it holds up; 30 fps or better at the town close-up; signed with the Off Grid AI Developer ID.
+- **v1.1:** levies raised from a town's real commoners; live reactions to what happens in front of people; more reverie arcs; 120 fps; the launch kit.
+
 ## Approach
 1. Survey existing building blocks properly (codebases, art, sim content, engine kits). *Done: see BUILDING_BLOCKS.md.*
 2. Choose the stack from that survey, together. *Proposed: Godot 4 + Quaternius art + Azgaar world seed.*
