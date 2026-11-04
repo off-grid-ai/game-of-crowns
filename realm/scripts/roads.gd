@@ -88,7 +88,6 @@ func kings_road(world: Dictionary) -> void:
 		for i in route.size() - 1:
 			_segment(route[i], route[i + 1], _kings, WIDTH * 2.2, KINGS_TINT, "kings")
 		_roadside(route, cities)
-	_plant_verges()
 	# Lords' roads: every town to the seat of the house that holds it.
 	clear_tracks("lords")
 	for c in cities:
@@ -97,6 +96,7 @@ func kings_road(world: Dictionary) -> void:
 		for seat in cities:
 			if seat.get("capital", false) and int(seat["owner"]) == int(c["owner"]):
 				track(terrain.world_pos(float(c["x"]), float(c["y"])), terrain.world_pos(float(seat["x"]), float(seat["y"])), WIDTH * 1.4, "lords")
+	_plant_verges()
 
 
 ## The life of a great road: bushes and brambles along both verges, a
@@ -127,7 +127,7 @@ func _roadside(route: PackedVector3Array, cities: Array) -> void:
 				if rng.randf() < 0.55:
 					var q: Vector3 = p + side * sgn * rng.randf_range(0.42, 0.7) + dir * rng.randf_range(-0.2, 0.2)
 					if terrain.is_land(q.x, q.z):
-						_verges.append(Vector3(q.x, terrain.height_at(q.x, q.z), q.z))
+						_verges.append(q)
 			t += 0.3
 		walked += len
 		since_inn += len
@@ -200,15 +200,38 @@ func _waystone(at: Vector3, rng: RandomNumberGenerator) -> void:
 
 
 ## All the roadside bushes in one batch, so a long road costs one draw.
+## Planted once the towns stand and their plots are graded, at the ground's
+## height then (not before, or they sank where a town levelled its lots), and
+## never within a town's reach or on a road's bed.
 func _plant_verges() -> void:
 	if _verges.is_empty():
 		return
+	var spots: Array = _verges
+	_verges = []
+	var road := _kings
+	var towns = get_parent().get("towns")
+	while towns and towns.building():
+		await get_tree().process_frame
+		if road != _kings or not is_instance_valid(road):
+			return  # the road was redrawn meanwhile; its own verges follow it
+	var places: Array = []
+	if towns:
+		for t in towns.towns.values():
+			if is_instance_valid(t["node"]):
+				places.append([Vector2(t["node"].position.x, t["node"].position.z), float(t["node"].get_meta("reach", 6.0))])
+	var kept: Array = []
+	for q in spots:
+		var town := false
+		for pl in places:
+			town = town or Vector2(q.x, q.z).distance_to(pl[0]) < pl[1]
+		if not town and not on_path(q, 0.05):
+			kept.append(Vector3(q.x, terrain.height_at(q.x, q.z), q.z))
 	var builder = preload("res://scripts/house_builder.gd").new()
 	var bushes := [builder.bake_path("res://assets/nature/Plant_1.gltf"), builder.bake_path("res://assets/nature/Fern_1.gltf"), builder.bake_path("res://assets/nature/Plant_7.gltf")]
 	var groups := [[], [], []]
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
-	for p in _verges:
+	for p in kept:
 		var k := 0.12 * rng.randf_range(0.7, 1.4)
 		groups[rng.randi() % 3].append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(k, k * rng.randf_range(0.8, 1.3), k)), p - Vector3(0, 0.02, 0)))
 	for i in 3:
@@ -224,8 +247,7 @@ func _plant_verges() -> void:
 		mmi.multimesh = mm
 		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		mmi.visibility_range_end = 60.0
-		_kings.add_child(mmi)
-	_verges.clear()
+		road.add_child(mmi)
 
 
 ## A road or track along the land between two points. Tracks have a layer of
