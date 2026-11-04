@@ -8,8 +8,12 @@ var _body := CapsuleMesh.new()
 var _beast := BoxMesh.new()
 var _mats := {}
 var _people = preload("res://scripts/people.gd").new()
+const Scenes = preload("res://scripts/scenes.gd")
 var turn_seconds := 12.0
 
+const MOUNTED := ["Horsemen", "Chariot", "Elephants", "Crusaders", "Knights", "Dragoons", "Cavalry"]
+const SPEARS := ["Phalanx", "Pikemen", "Legion"]
+const BOWS := ["Archers", "Longbowmen", "Crossbowmen"]
 const BEASTS := ["Bear", "Wolf", "Lion", "Tiger", "Elephant", "Crocodile", "Polar Bear", "Snake", "Mammoth", "Jaguar", "Kraken", "Giant Squid", "Dragon", "Monkey", "Moose", "Deer", "Buffalo"]
 
 
@@ -30,6 +34,7 @@ func _mat(color: Color) -> StandardMaterial3D:
 
 
 var _town_tiles := {}
+var _heading := {}  # tile -> the way the army standing there last marched
 
 
 func sync(world: Dictionary, houses: Dictionary) -> void:
@@ -50,11 +55,19 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 		var house: Dictionary = houses.get(int(u["owner"]), {})
 		var wild := bool(house.get("wild", false)) or String(u["type"]) in BEASTS
 		# Garrisons stand guard at the town's edge, not in its square; armies in
-		# the field stand in a loose ring around their banner.
+		# the field stand in ranks two abreast behind their banner, facing the
+		# way they last marched.
 		var in_town: bool = _town_tiles.has(key)
-		var ang := slot * 1.05 + (0.4 if in_town else 0.0)
-		var ring := 1.6 + slot * 0.08 if in_town else (0.0 if slot == 0 else 0.55)
-		var target: Vector3 = terrain.world_pos(float(u["x"]), float(u["y"])) + Vector3(cos(ang), 0, sin(ang)) * ring
+		var centre: Vector3 = terrain.world_pos(float(u["x"]), float(u["y"]))
+		var target: Vector3
+		if in_town:
+			var ang := slot * 1.05 + 0.4
+			target = centre + Vector3(cos(ang), 0, sin(ang)) * (1.6 + slot * 0.08)
+		else:
+			var head: float = _heading.get(key, 0.0)
+			var fwd := Vector3(sin(head), 0, cos(head))
+			var across := Vector3(fwd.z, 0, -fwd.x)
+			target = centre - fwd * (int(slot / 2) * 0.16) + across * ((slot % 2) * 0.14 - 0.07 if slot > 0 else 0.0)
 		target.y = terrain.height_at(target.x, target.z)
 		if not _figures.has(id):
 			var node: Node3D
@@ -66,13 +79,20 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 			else:
 				var rng := RandomNumberGenerator.new()
 				rng.seed = id
-				node = _people.make(rng, "soldier", Color.from_string(String(house.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.35), "adult")
+				var tint := Color.from_string(String(house.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.35)
+				var kind := String(u["type"])
+				# Mounted units go on foot until there is a horse fit for the realm.
+				node = _people.make(rng, "soldier", tint, "adult")
+				Scenes.arm(node, "bow" if kind in BOWS else ("spear" if kind in SPEARS or kind in MOUNTED else "sword"))
 			node.position = target
 			add_child(node)
 			if not wild and slot == 0:
 				_banner(node, Color.from_string(String(house.get("color", "#888")), Color.GRAY), house)
-			_figures[id] = {"node": node, "target": target, "wild": wild, "from": target, "t": 1.0, "bow": String(u["type"]) in ["Archers", "Longbowmen", "Crossbowmen"]}
+			_figures[id] = {"node": node, "target": target, "wild": wild, "from": target, "t": 1.0, "bow": String(u["type"]) in BOWS}
 		if _figures[id]["target"].distance_to(target) > 0.01:
+			var moved: Vector3 = target - _figures[id]["node"].position
+			if slot == 0 and Vector2(moved.x, moved.z).length() > 0.3:
+				_heading[key] = atan2(moved.x, moved.z)
 			_figures[id]["from"] = _figures[id]["node"].position
 			_figures[id]["path"] = terrain.land_path(_figures[id]["node"].position, target)
 			_figures[id]["t"] = 0.0
