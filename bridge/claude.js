@@ -1,7 +1,8 @@
 // Local language model for the moments that matter: a character's pivotal
 // choice in their own voice, and turning the King's mood decrees ("everyone is
 // more aggressive", "make Thornvale diplomatic") into numbers. Runs through the
-// Off Grid AI Desktop local model gateway (OpenAI-compatible, on-device, free).
+// Off Grid AI Desktop local model gateway (OpenAI-compatible, on-device, free),
+// always with Omni 2B or Omni 1.7B.
 // If the gateway isn't running, callers fall back to the rule-based choice.
 
 // The gateway's port moves between dev runs (7878 by default); find it by its /health name.
@@ -20,15 +21,35 @@ export function isWatched() {
 }
 
 export function usageToday() {
-  return { engine: "Off Grid AI (local)", gateway: base, cost: 0 };
+  return { engine: "Off Grid AI (local)", gateway: base, model, cost: 0 };
 }
 
+// Only Off Grid's small Omni models write for the realm: Omni 2B first, then
+// Omni 1.7B (OFFGRID_MODEL overrides). Text only; no images or video.
+const WANT = [process.env.OFFGRID_MODEL, /omni.*2b/i, /omni.*1\.?7b/i].filter(Boolean);
+let model = null;
+let warned = false;
+
 async function gateway() {
-  if (base) return base;
+  if (base && model) return base;
   for (const url of GATEWAYS) {
     try {
       const r = await fetch(url.replace(/\/v1$/, "/health"), { signal: AbortSignal.timeout(1500) });
-      if (r.ok && /off grid/i.test((await r.json()).name ?? "")) return (base = url);
+      if (!(r.ok && /off grid/i.test((await r.json()).name ?? ""))) continue;
+      const list = await (await fetch(`${url}/models`, { signal: AbortSignal.timeout(3000) })).json();
+      const ids = (list.data ?? list.models ?? []).map((m) => m.id ?? m.name ?? "").filter(Boolean);
+      model = null;
+      for (const w of WANT) {
+        model = ids.find((id) => (typeof w === "string" ? id === w : w.test(id))) ?? null;
+        if (model) break;
+      }
+      if (!model) {
+        if (!warned) console.error(`offgrid: Omni 2B / Omni 1.7B isn't loaded in Off Grid AI (gateway has: ${ids.join(", ") || "none"}); the realm decides by its rules until it is.`);
+        warned = true;
+        return null;
+      }
+      warned = false;
+      return (base = url);
     } catch { /* try the next */ }
   }
   return null;
@@ -51,6 +72,7 @@ async function completeOnce(system, prompt, maxTokens) {
       headers: { "content-type": "application/json" },
       signal: AbortSignal.timeout(90000), // the first call may wait for the model to load
       body: JSON.stringify({
+        model,
         messages: [{ role: "system", content: system }, { role: "user", content: prompt + "\nRespond with only the JSON object." }],
         max_tokens: maxTokens,
         temperature: 0.8,
