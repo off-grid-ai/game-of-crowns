@@ -288,13 +288,19 @@ func _build_top_bar() -> void:
 	_top.append(act.get_parent())
 	get_viewport().size_changed.connect(_arrange_top)
 	_arrange_top.call_deferred()
-	act.add_theme_constant_override("separation", 0)
+	act.add_theme_constant_override("separation", 6)  # each key stands on its own
 	_court_btn = _icon_btn("crown", "The court: petitioners waiting  (K)", _toggle_court)
 	_court_btn.visible = false
 	_court_btn.add_theme_color_override("icon_normal_color", T.ACCENT)
 	_court_btn.add_theme_color_override("font_color", T.ACCENT)
 	_court_btn.add_theme_font_override("font", T.mono)
 	_court_btn.add_theme_font_size_override("font_size", 12)
+	# Room inside the key for the count beside the crown.
+	for state in ["normal", "hover", "pressed", "hover_pressed"]:
+		var sb: StyleBoxFlat = _court_btn.get_theme_stylebox(state).duplicate()
+		sb.content_margin_left = 10
+		sb.content_margin_right = 12
+		_court_btn.add_theme_stylebox_override(state, sb)
 	act.add_child(_court_btn)
 	_houses_btn = _icon_btn("shield", "The great houses, and your word  (H)", func(): _houses_panel.visible = _houses_btn.button_pressed)
 	_houses_btn.toggle_mode = true
