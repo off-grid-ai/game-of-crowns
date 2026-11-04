@@ -23,8 +23,11 @@ const ROOMS := {
 ## of reach), "both" to draw faces from behind too, "hide" nodes that aren't the
 ## room, and "folk" who stands where: [x, z, face, role, move, age].
 const FIT := {
-	"tavern": {"m": 0.5, "y": 0.0, "door": Vector2(0, 0), "face": 0.0, "floor": [-16.7, -35.2, 13.7, 15.3]},
-	"chapel": {"m": 1.0, "y": -4.8, "door": Vector2(0, 0), "face": 0.0, "floor": [-2.9, -7.0, 2.7, 4.8]},
+	"tavern": {"m": 0.5, "y": 0.0, "door": Vector2(17.5, 1.7), "face": 90.0, "floor": [-16.7, -35.2, 13.7, 15.3]},
+	"chapel": {"m": 1.0, "y": -4.8, "door": Vector2(0, 3.9), "face": 0.0, "floor": [-2.9, -7.0, 2.7, 4.8],
+		"lights": [[0, -3.3, -6.0, 1.4, 5.0], [0, -2.6, -1.0, 0.8, 7.0], [0, -2.6, 3.0, 0.6, 6.0]],
+		"folk": [[0.0, -6.1, 0, "clergy", "Idle_Talking", "elder"], [-0.9, -4.6, 180, "peasant", "Kneeling", ""], [0.9, -4.6, 180, "peasant", "Praying", ""],
+			[0.0, -3.6, 180, "peasant", "Kneeling", ""], [0.1, -0.6, 180, "peasant", "Praying", ""], [-0.1, 1.6, 200, "peasant", "Idle", "elder"]]},
 	"cottage": {"m": 0.0254, "y": 0.0, "door": Vector2(1270, -1700), "face": 0.0, "floor": [1000, -1930, 1530, -1460], "both": true},
 }
 ## Until a proper interior arrives, a room can stand in from the town kit.
@@ -115,6 +118,7 @@ func open(room: String, person: Dictionary, house: Dictionary, town_name: String
 	_figure.scale /= S
 	_figure.rotation.y = _yaw + PI  # facing into the room, away from the camera
 	_body.add_child(_figure)
+	people.play(_figure, "Idle", 1.0)
 	_arm = SpringArm3D.new()
 	_arm.spring_length = 3.2
 	_arm.margin = 0.15
@@ -138,17 +142,20 @@ func open(room: String, person: Dictionary, house: Dictionary, town_name: String
 	return true
 
 
-## The room's collision, one mesh a frame so stepping in never stalls; then its
-## people, once the floor is there to stand them on.
+## The room's collision, a few milliseconds a frame so stepping in never
+## stalls; then its people, once the floor is there to stand them on.
 func _settle(room: String, model: Node3D, box: AABB, fit: Dictionary, rng: RandomNumberGenerator) -> void:
 	var body := _body
+	var t := Time.get_ticks_usec()
 	for mi in model.find_children("*", "MeshInstance3D", true, false):
 		if not is_instance_valid(mi) or mi.is_queued_for_deletion():
 			continue
 		(mi as MeshInstance3D).create_trimesh_collision()
-		await get_tree().process_frame
-		if body != _body:
-			return  # left, or went elsewhere, while it built
+		if Time.get_ticks_usec() - t > 12000:
+			await get_tree().process_frame
+			t = Time.get_ticks_usec()
+			if body != _body:
+				return  # left, or went elsewhere, while it built
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	if body != _body:
@@ -160,19 +167,37 @@ func _settle(room: String, model: Node3D, box: AABB, fit: Dictionary, rng: Rando
 
 
 ## For stills: --inside_cam=x,y,z,yaw,pitch (metres, degrees) sets a free camera
-## in the room, and the room's measure goes to the log.
+## in the room and logs its measure; several poses split by ";" each save a
+## still beside the shot (<shot>_1.png, ...), so one launch checks a whole room.
 func _look(box: AABB) -> void:
-	print("interior: floor %.2f  box %s  you %s" % [_floor_y, box, _body.position])
+	var shot := ""
+	var poses: PackedStringArray = []
 	for a in OS.get_cmdline_user_args():
-		if a.begins_with("--inside_cam="):
-			var v := a.substr(13).split_floats(",")
-			var cam := Camera3D.new()
-			cam.fov = 70
-			cam.near = 0.05
-			_world.add_child(cam)
+		if a.begins_with("--shot="):
+			shot = a.substr(7)
+		elif a.begins_with("--inside_cam="):
+			poses = a.substr(13).split(";")
+	if poses.is_empty():
+		return
+	print("interior: floor %.2f  box %s  you %s" % [_floor_y, box, _body.position])
+	var cam := Camera3D.new()
+	cam.fov = 70
+	cam.near = 0.05
+	_world.add_child(cam)
+	for i in poses.size():
+		var v := poses[i].split_floats(",")
+		if v.size() < 5:
+			_cam.current = true  # "-": the view over your shoulder
+		else:
 			cam.position = Vector3(v[0], v[1], v[2])
 			cam.rotation_degrees = Vector3(v[4], v[3], 0)
 			cam.current = true
+		if poses.size() > 1 and shot != "":
+			await RenderingServer.frame_post_draw
+			await RenderingServer.frame_post_draw
+			_viewport.get_texture().get_image().save_png(shot.get_basename() + "_%d.png" % (i + 1))
+	if poses.size() > 1:
+		_cam.current = true
 
 
 func close() -> void:
