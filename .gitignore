@@ -27,6 +27,7 @@ realm/assets/nature/**
 realm/assets/q/**
 realm/assets/ground/**
 realm/assets/village/**
+realm/assets/interiors/**
 !realm/assets/realistic/**/
 !realm/assets/people/**/
 !realm/assets/hero/**/
@@ -36,6 +37,7 @@ realm/assets/village/**
 !realm/assets/q/**/
 !realm/assets/ground/**/
 !realm/assets/village/**/
+!realm/assets/interiors/**/
 !realm/assets/**/*.import
 !realm/assets/**/license.txt
 !realm/assets/**/LICENSE*

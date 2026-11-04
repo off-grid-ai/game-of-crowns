@@ -60,9 +60,14 @@ func open(room: String, person: Dictionary, house: Dictionary, town_name: String
 	var k := want / maxf(maxf(box.size.x, box.size.z), 0.001)
 	model.scale *= k
 	model.position -= Vector3(box.get_center().x, box.position.y, box.get_center().z) * k
+	var stand_in := not ResourceLoader.exists("res://assets/interiors/%s/scene.gltf" % room)
 	for mi in model.find_children("*", "MeshInstance3D", true, false):
 		(mi as MeshInstance3D).create_trimesh_collision()
+		if stand_in:
+			_both_sides(mi)
 	box = _bounds_world(model)
+	if stand_in:
+		_lay_floor(box)
 	var floor_at := _floor(Vector3(box.get_center().x, box.end.y, box.get_center().z), box)
 	_body = CharacterBody3D.new()
 	var shape := CollisionShape3D.new()
@@ -80,6 +85,7 @@ func open(room: String, person: Dictionary, house: Dictionary, town_name: String
 	var tint := Color.from_string(String(house.get("color", "#888888")), Color.GRAY).lerp(Color.WHITE, 0.45)
 	_figure = people.make(rng, "soldier" if lordly else "peasant", tint, "adult", "", str(person.get("gender", "")))
 	_figure.scale /= S
+	_figure.rotation.y = PI  # facing into the room, away from the camera
 	_body.add_child(_figure)
 	_arm = SpringArm3D.new()
 	_arm.spring_length = 3.2
@@ -123,6 +129,35 @@ func _room_model(room: String) -> Node3D:
 			m.scale = Vector3.ONE  # back to the model's own units; open() sizes it
 			return m
 	return null
+
+
+## A town building seen from inside: its walls were only made to face out,
+## so draw both sides of every surface.
+func _both_sides(mi: MeshInstance3D) -> void:
+	for i in mi.mesh.get_surface_count():
+		var m := mi.get_active_material(i) as BaseMaterial3D
+		if m:
+			var copy: BaseMaterial3D = m.duplicate()
+			copy.cull_mode = BaseMaterial3D.CULL_DISABLED
+			mi.set_surface_override_material(i, copy)
+
+
+## ...and it has no floor of its own: lay flagstones the size of the room.
+func _lay_floor(box: AABB) -> void:
+	var floor_mesh := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(box.size.x, box.size.z) * 0.98
+	var stone := StandardMaterial3D.new()
+	stone.albedo_color = Color(0.36, 0.33, 0.3)
+	stone.roughness = 0.9
+	if ResourceLoader.exists("res://assets/ground/square-cobbles.jpg"):
+		stone.albedo_texture = load("res://assets/ground/square-cobbles.jpg")
+		stone.uv1_scale = Vector3(box.size.x / 3.0, box.size.z / 3.0, 1)
+	plane.material = stone
+	floor_mesh.mesh = plane
+	floor_mesh.position = Vector3(box.get_center().x, box.position.y + 0.02, box.get_center().z)
+	_world.add_child(floor_mesh)
+	floor_mesh.create_trimesh_collision()
 
 
 func _light() -> void:

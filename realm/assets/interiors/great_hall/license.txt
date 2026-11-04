@@ -1,0 +1,11 @@
+Model Information:
+* title:	Throne Room
+* source:	https://sketchfab.com/3d-models/throne-room-247c37e6a9694ae891398911876f0c14
+* author:	Uğur Yakışık (https://sketchfab.com/UgurYksk)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Throne Room" (https://sketchfab.com/3d-models/throne-room-247c37e6a9694ae891398911876f0c14) by Uğur Yakışık (https://sketchfab.com/UgurYksk) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
