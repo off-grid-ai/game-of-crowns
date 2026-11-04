@@ -649,8 +649,14 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 			_single(root, _corner_tower, cp + Vector3(0, _ground_y(center, cp), 0), 0.0, S * 0.8)
 	else:
 		_single(root, _keep, keep_off + Vector3(0, _ground_y(center, keep_off), 0), base_ang)
+	# A bannerman seated here flies his family's arms over the town; his
+	# liege's banner then stands at the square.
+	var family: Dictionary = preload("res://scripts/heraldry.gd").family(String(c["family"])) if c.get("family") is String else {}
 	if not stone:
-		_banner(root, keep_off + Vector3(0, _ground_y(center, keep_off) + (2.0 if c["capital"] else 1.75), 0), color, house)
+		_banner(root, keep_off + Vector3(0, _ground_y(center, keep_off) + (2.0 if c["capital"] else 1.75), 0), color, house if family.is_empty() else family)
+	if not family.is_empty():
+		var sq := -keep_off.normalized() * (square_r + 0.15)
+		_banner(root, sq + Vector3(0, _ground_y(center, sq), 0), color, family if stone else house)
 
 	# Great buildings take their places around the square. A realistic town's
 	# church, hall and tavern are already on its square, from the kit.
