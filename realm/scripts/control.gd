@@ -8,6 +8,7 @@ extends Node3D
 
 signal talk_to(town: int, i: int)
 signal said(town: int, i: int, text: String, person: String)
+signal approached(town: int, i: int, person: String)  # they've been walked up to: their opening line
 signal want_people(town: int)  # ask for the town's named people
 signal spoke(wav: PackedByteArray)  # your voice, to be turned into words
 signal enter(kind: String, town: int, person: Dictionary)
@@ -626,7 +627,9 @@ func _open_chat(town: int, i: int, person := "", person_name := "") -> void:
 					spoke.emit(wav))
 	_chat_with = {"town": town, "i": i, "person": person}
 	_chat_lines = ["[color=#9a968e]%s[/color]" % ("You approach %s." % person_name if person_name != "" else "You approach them.")]
-	_waiting = false
+	# They speak first, as people do when their King walks up to them.
+	_waiting = true
+	approached.emit(town, i, person)
 	_draw_chat()
 	_chat.visible = true
 	_apply_mode()

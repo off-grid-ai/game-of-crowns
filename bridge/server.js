@@ -284,7 +284,8 @@ function snapshot() {
 // (their traits, aims and memories) and remember what passed between you.
 async function talkToNamed(res, city, id, b) {
   const c = court.people[id];
-  const said = String(b.said ?? "").trim().slice(0, 400);
+  const greet = !!b.greet;  // they've only just walked up: the lord or lady speaks first
+  const said = greet ? "(They walk up to you and stop, and say nothing yet: you speak first, as you would to them, by what you know of them and what they have done.)" : String(b.said ?? "").trim().slice(0, 400);
   if (!c || !c.alive || !said) return json(res, 400, { error: "nobody to hear it" });
   const speaker = b.you?.id ? court.people[String(b.you.id)] : null;
   const you = isKing(b) ? KING : {
@@ -307,10 +308,12 @@ async function talkToNamed(res, city, id, b) {
   const near = chronicle.filter((e) => e.city === city.id || (e.text ?? "").includes(c.house)).slice(-4).map((e) => e.text);
   const out = await speak(person, cityName(city.id), c.house, you, near, story, past, said, meta.options?.language ?? "en", minds.forTalk(c.id, { id: isKing(b) ? "king" : speaker?.id, name: you.name }));
   if (!out) return json(res, 503, { error: `${c.name} regards you in silence. (The local model isn't running.)` });
-  talks[key] = [...past, { who: you.name, text: said }, { who: c.name, text: out.reply }].slice(-16);
+  talks[key] = [...past, ...(greet ? [] : [{ who: you.name, text: said }]), { who: c.name, text: out.reply }].slice(-16);
   fs.writeFileSync(file, JSON.stringify(talks, null, 1));
-  court.remember(c.id, `${you.name} sought me out in ${cityName(city.id)} and said: "${said.slice(0, 120)}"`);
-  minds.talked(c.id, { id: isKing(b) ? "king" : speaker?.id, name: you.name }, said, out.reply);
+  if (!greet) {
+    court.remember(c.id, `${you.name} sought me out in ${cityName(city.id)} and said: "${said.slice(0, 120)}"`);
+    minds.talked(c.id, { id: isKing(b) ? "king" : speaker?.id, name: you.name }, said, out.reply);
+  }
   return json(res, 200, { name: c.name, gender: c.gender, ...out });
 }
 
@@ -1017,7 +1020,9 @@ http.createServer(async (req, res) => {
     if (!city) return json(res, 404, { error: "no such town" });
     if (b.person) return talkToNamed(res, city, String(b.person), b);
     const person = townsfolk(city)[Number(b.i)];
-    const said = String(b.said ?? "").trim().slice(0, 400);
+    // b.greet: they've only just walked up, and the townsperson speaks first.
+    const greet = !!b.greet;
+    const said = greet ? "(They walk up to you and stop, and say nothing yet: you speak first, as you would to them, by what you know of them and what they have done.)" : String(b.said ?? "").trim().slice(0, 400);
     if (!person || !said) return json(res, 400, { error: "nobody to hear it" });
     const key = `v2:${city.id}:${person.i}:${person.name}`;
     const tales = chron.readJson(path.join(P.state, "folk-tales.json"), {});
@@ -1038,9 +1043,9 @@ http.createServer(async (req, res) => {
     const mindId = `folk:${city.id}:${person.i}`;
     const out = await speak(person, cityName(city.id), houseFor(owner).name, you, near, tales[key]?.story ?? "", past, said, meta.options?.language ?? "en", minds.forTalk(mindId, { id: isKing(b) ? "king" : speaker?.id, name: you.name }));
     if (!out) return json(res, 503, { error: `${person.name} only stares at you. (The local model isn't running.)` });
-    talks[key] = [...past, { who: you.name, text: said }, { who: person.name, text: out.reply }].slice(-16);
+    talks[key] = [...past, ...(greet ? [] : [{ who: you.name, text: said }]), { who: person.name, text: out.reply }].slice(-16);
     fs.writeFileSync(file, JSON.stringify(talks, null, 1));
-    minds.talked(mindId, { id: isKing(b) ? "king" : speaker?.id, name: you.name }, said, out.reply);
+    if (!greet) minds.talked(mindId, { id: isKing(b) ? "king" : speaker?.id, name: you.name }, said, out.reply);
     // A lord remembers being spoken to by their own people, briefly.
     if (speaker) court.remember(speaker.id, `In ${cityName(city.id)} I spoke with ${person.name}, the ${person.trade}.`);
     return json(res, 200, { name: person.name, trade: person.trade, gender: person.woman ? "female" : "male", ...out });

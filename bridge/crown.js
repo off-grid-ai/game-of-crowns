@@ -102,9 +102,14 @@ export function decree(cmd, world) {
       if (!c) return { error: "choose a town" };
       const b = BUILDABLE[cmd.building];
       if (!b) return { error: "unknown building" };
+      // "new city walls", "a granary", "an aqueduct": the building as it reads.
+      const what = b.toLowerCase();
+      const thing = what.endsWith("s") ? `new ${what}` : `${/^[aeiou]/.test(what) ? "an" : "a"} ${what}`;
+      // In the King's own town the crown builds for itself: nobody to thank.
+      const own = houseFor(owner).crown;
       return {
-        cost: d.cost, favour: { [owner.id]: 8 },
-        text: `The crown pays for a ${b.toLowerCase()} in ${town}. ${lord} is grateful.`,
+        cost: d.cost, favour: own ? {} : { [owner.id]: 8 },
+        text: own ? `The King raises ${thing} in ${town} at the crown's cost.` : `The crown pays for ${thing} in ${town}. ${lord} is grateful.`,
         lua: [pay, inCity(`local b = find.building_type("${b}"); if b and not c:has_building(b) then edit.create_building(c, b) end`)],
       };
     }

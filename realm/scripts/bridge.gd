@@ -124,8 +124,9 @@ func rule_in_words(id: String, words: String, confirm: String, cb: Callable) -> 
 
 ## Speak to someone: a townsperson (i, their place in the town's folk) or a
 ## named lord, lady or bannerman (person, their id).
-func talk(city: int, i: int, you: Dictionary, said: String, cb: Callable, person := "") -> void:
-	var body := {"city": city, "i": i, "you": you, "said": said}
+## said "" with greet: they've just been approached and speak first.
+func talk(city: int, i: int, you: Dictionary, said: String, cb: Callable, person := "", greet := false) -> void:
+	var body := {"city": city, "i": i, "you": you, "said": said, "greet": greet}
 	if person != "":
 		body["person"] = person
 	_post("/talk", body, cb)
