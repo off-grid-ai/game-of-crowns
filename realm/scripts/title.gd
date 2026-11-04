@@ -86,9 +86,12 @@ var _on_main := true
 
 
 ## The menu's first page shows "Continue" once the realm has reported in.
-func _on_world(_w) -> void:
-	if visible and _on_main and _body.get_child_count() < 4:
+func _on_world(w) -> void:
+	if visible and _on_main and not _has_continue and w is Dictionary and not w.get("reign", {}).is_empty():
 		show_main()
+
+
+var _has_continue := false  # the menu already offers Continue
 
 
 func open() -> void:
@@ -103,6 +106,7 @@ func show_main() -> void:
 		_logo.visible = true
 	_on_main = true
 	var reign: Dictionary = bridge.world.get("reign", {})
+	_has_continue = not reign.is_empty()
 	if not reign.is_empty():
 		var label := "Continue  —  %s" % reign.get("name", "the realm")
 		if reign.get("status", "") == "ended":
