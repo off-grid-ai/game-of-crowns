@@ -791,8 +791,6 @@ func _try_digest() -> void:
 	# Test renders keep the away digest closed unless they ask for it (--digest=N).
 	if _shot.has("path") and not _shot.has("digest"):
 		return
-	if _shot.has("path") and not _shot.has("digest"):
-		return  # test renders never open it unless asked
 	var f := FileAccess.open(SEEN_FILE, FileAccess.READ)
 	if f:
 		var data = JSON.parse_string(f.get_as_text())
@@ -895,7 +893,7 @@ func _frame_for_shot(world: Dictionary) -> void:
 				if _shot.has("interior"):
 					get_tree().create_timer(2.0).timeout.connect(func():
 						interior.open(String(_shot["interior"]), p, h, String(p.get("seat", "")))
-						get_tree().create_timer(3.0).timeout.connect(_take_shot))
+						get_tree().create_timer(float(_shot.get("wait", 3.0))).timeout.connect(_take_shot))
 				elif not _shot.has("duel"):
 					get_tree().create_timer(3.0).timeout.connect(_take_shot)))
 		return
