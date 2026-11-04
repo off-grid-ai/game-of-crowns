@@ -21,6 +21,11 @@ A living medieval-fantasy world that runs on its own on your laptop. You're its 
 - **Scenarios and restarts.** Start a new realm any time from a scenario: map size, land and climate, which houses exist, how rich and aggressive they are, starting wars or alliances, how often fate strikes. Save scenarios to replay them.
 - **Track everything.** Treasury, food, population, armies and towns per house and for the realm, with history charts over time.
 
+## What it is, underneath (added 2026-11-05)
+- **Westworld in a Game of Thrones world.** An interactive world simulation: the people in it aren't scenery, they're minds. Each one remembers, wants, decides and acts on their own, and talks with you and with each other.
+- **Our edge is the local model (Off Grid AI Desktop).** With no call caps and no cloud cost, every NPC can have a mind of its own, not just the named lords.
+- **You are guest and Ford at once.** You walk among them and talk (they remember you), and you write their narratives (story arcs), which they then live out in their own way.
+
 ## Approach
 1. Survey existing building blocks properly (codebases, art, sim content, engine kits). *Done: see BUILDING_BLOCKS.md.*
 2. Choose the stack from that survey, together. *Proposed: Godot 4 + Quaternius art + Azgaar world seed.*
