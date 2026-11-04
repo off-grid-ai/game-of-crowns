@@ -17,6 +17,8 @@ var _root: Control
 var _body: VBoxContainer
 var _logo: TextureRect
 var _minutes := 0
+var _preset := "Balanced"  # the card chosen on the new-chronicle page
+var _more := false  # every other choice unfolded
 var _scenario := "aldmere"
 var _wealth := "comfortable"
 var _mood_edit: LineEdit
@@ -160,6 +162,7 @@ const PRESETS := {
 
 func _use_preset(name: String) -> void:
 	var p: Dictionary = PRESETS[name]
+	_preset = name
 	_wealth = String(p["wealth"])
 	for k in p:
 		if k != "about" and k != "wealth":
@@ -197,24 +200,39 @@ func show_new() -> void:
 			b.toggle_mode = false
 			b.pressed.connect(_use_scenario.bind(sc)))
 	# How hard a reign: one press sets every choice below (each can still be changed).
-	var presets := HFlowContainer.new()
-	presets.add_theme_constant_override("h_separation", 6)
+	# How hard a reign, as three cards: the one decision most players need.
+	_body.add_child(_label("How hard a reign", 15, MUTED))
+	var presets := HBoxContainer.new()
+	presets.add_theme_constant_override("separation", 12)
 	_body.add_child(presets)
-	presets.add_child(_label("How hard a reign  ", 14, MUTED))
 	for name in PRESETS:
-		var b := _toggle(String(name), presets)
-		b.toggle_mode = false
-		b.tooltip_text = String(PRESETS[name]["about"])
-		b.pressed.connect(_use_preset.bind(String(name)))
+		var card := _toggle(String(name), presets)
+		card.toggle_mode = true
+		card.button_pressed = name == _preset
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		card.custom_minimum_size.y = 84
+		card.text = "%s\n%s" % [name, PRESETS[name]["about"]]
+		card.autowrap_mode = TextServer.AUTOWRAP_WORD
+		card.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		card.pressed.connect(_use_preset.bind(String(name)))
 	var name_edit := LineEdit.new()
 	name_edit.placeholder_text = "Name this chronicle (e.g. The Long Winter)"
 	name_edit.add_theme_font_size_override("font_size", 18)
 	_body.add_child(name_edit)
 	_name_edit = name_edit
+	# Every other choice, folded away until asked for: it fits the window
+	# beneath the cards rather than pushing the page off the screen.
+	var more := _toggle("Customise every choice", _body)
+	more.toggle_mode = true
+	more.button_pressed = _more
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.custom_minimum_size = Vector2(0, maxf(220.0, room.y - 270.0))
+	scroll.custom_minimum_size = Vector2(0, clampf(room.y - 520.0, 200.0, 640.0))
+	scroll.visible = _more
 	_body.add_child(scroll)
+	more.toggled.connect(func(on):
+		_more = on
+		scroll.visible = on)
 	# Breathing room inside the scroll: off the edges, and clear of the scrollbar.
 	var pad := MarginContainer.new()
 	pad.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -270,7 +288,6 @@ func show_new() -> void:
 	_choices(right, "Raiders from the wilds", [["None", "none"], ["Some", "normal"], ["Hordes", "hordes"]], _opt["raiders"], func(v): _opt["raiders"] = v)
 	_choices(right, "The dead beyond the wall", [["Never", "off"], ["Late", "late"], ["In time", "normal"], ["Soon", "soon"]], _opt["dead"], func(v): _opt["dead"] = v)
 	_choices(right, "A usurper may rise", [["Yes", true], ["No", false]], _opt["usurper"], func(v): _opt["usurper"] = v)
-	_voice_settings(right)
 
 	var go := HBoxContainer.new()
 	go.add_theme_constant_override("separation", 10)
