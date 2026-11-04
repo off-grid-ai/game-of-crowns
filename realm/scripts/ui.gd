@@ -789,6 +789,9 @@ func _process(delta: float) -> void:
 			if is_instance_valid(c) and c.visible:
 				top = maxf(top, c.get_global_rect().end.y + 12.0)
 		_toast_box.offset_top = top
+		# An offer to watch the order carried out sits under the result, never on it.
+		if _offer and _offer.visible and _toast_box.modulate.a > 0.05:
+			_offer.offset_top = _toast_box.get_global_rect().end.y + 10.0
 		_toast_time -= delta
 		_toast_box.modulate.a = clampf(_toast_time, 0.0, 1.0)
 
@@ -1353,7 +1356,7 @@ func offer_watch(text: String, go: Callable) -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 14)
 	_offer.add_child(row)
-	row.add_child(T.datum(text, T.SIZE_DESC + 1, T.TEXT))
+	row.add_child(T.title(text, 15, T.TEXT))
 	var b := _btn("Watch", func():
 		go.call()
 		_offer.visible = false)

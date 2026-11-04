@@ -14,6 +14,11 @@ How a round is played: `realm/tools/play/*.play` scenarios feed real input (keys
 
 | # | Expected | Found | Change | Commit |
 |---|---|---|---|---|
+| 42 | Watching an order follows its result | "Tribute leaves Rosehall" in spaced type over the result card, right after the King *sent* gold (r11/06) | "The King's gold on the road to Rosehall" in the card's type, under the result (r11/07) | (next) |
+| 41 | The court key reads at a glance | The crown key looked dimmed with three waiting (a pulse set only when the world refreshed, so each frame caught a random brightness) | Lit while anyone waits, dim when nobody does | 018d5ef |
+| 40 | The tithe reckoning is true | "The royal tithe brings 0 crowns … the castles cost 16" (r11/04): one season's take, no unit | Every season since the last reckoning, in crowns; says so plainly when none came | 018d5ef |
+| 39 | The Hand never advises an order that fails | "Command peace" offered with Thornvale at 34; refused, 6,000 crowns and 5 favour lost (r11/03) | A house under 40 is to be warmed first: "Gift crowns to Thornvale", and why; two matters at most so his card clears the houses table (r11/05) | 018d5ef |
+| 38 | The price before, the effect after (supervisor 06:10 #2) | Peace silently cost 6k; banners took favour unannounced | Every counsel order shows its price ("Command peace  6k cr"); the result card: "15,000 crowns · Thornvale 27 → 37" (r11/03, r11/07) | 018d5ef |
 | 37 | Famine in the King's own town reads right | "the people of The Crown starve" (r10/05) | "the King's own people starve" | 853581d |
 | 36 | The court comes to the King (supervisor 06:10 #1) | Petitioners sat "3 waiting" for a year unopened (r09/06–12) | The first petitioner of a sitting is brought straight in (r10/05); the crown's tip counts them; an unheard one still leaves after two years, −12 favour and a chronicle line | 853581d |
 | 35 | A newcomer can read the bar (supervisor 05:05 #3, 06:10 #2) | Bare numbers (115k, 80%, 254k, 10%) and eight unnamed icons; hovering showed nothing in play (r10/02–04) | Treasury, Peace, Souls, Tithe named beside their numbers; each key named under its icon: Court, Houses, Chronicle, Lore, Ledger, Pause, Settings, Menu (r10/05) | 853581d |

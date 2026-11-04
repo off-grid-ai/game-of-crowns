@@ -16,7 +16,7 @@ const SCENES := {
 	"famine": [5, 6.0, "Famine in %s"],
 	"plague": [5, 6.0, "Plague in %s"],
 	"grain": [4, 5.0, "The King's grain on the road to %s"],
-	"tribute": [3, 5.0, "Tribute leaves %s"],
+	"tribute": [3, 5.0, "The King's gold on the road to %s"],
 	"handover": [3, 8.0, "%s changes hands"],
 	"muster": [4, 6.0, "The King's levy musters at %s"],
 	"feast": [3, 4.0, "A feast at %s"],
