@@ -149,9 +149,9 @@ func _icon_btn(icon: String, tip: String, cb: Callable = Callable()) -> Button:
 	b.icon = _icon(icon)
 	b.tooltip_text = tip
 	b.expand_icon = false
-	b.custom_minimum_size = Vector2(34, 34)
+	b.custom_minimum_size = Vector2(44, 44)
 	b.focus_mode = Control.FOCUS_NONE
-	b.add_theme_constant_override("icon_max_width", 18)
+	b.add_theme_constant_override("icon_max_width", 24)
 	b.add_theme_color_override("icon_normal_color", T.TEXT_2)
 	b.add_theme_color_override("icon_hover_color", T.TEXT)
 	b.add_theme_color_override("icon_pressed_color", T.ACCENT)
@@ -515,7 +515,7 @@ func _build_camera_controls() -> void:
 
 
 ## The realm in the bottom-right corner: territory, seats, and where you're looking.
-const MINIMAP_SIZE := Vector2(160, 252)
+const MINIMAP_SIZE := Vector2(200, 315)
 
 
 func _build_minimap() -> void:

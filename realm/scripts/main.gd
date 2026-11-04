@@ -762,6 +762,7 @@ const Settings := preload("res://scripts/settings.gd")
 var _voice: AudioStreamPlayer
 
 
+
 ## A line spoken aloud in the speaker's own voice; a new line cuts off the last.
 ## done runs when they've finished (or at once, if there's no voice to be had).
 func _say_aloud(text: String, who: Dictionary, done := Callable()) -> void:

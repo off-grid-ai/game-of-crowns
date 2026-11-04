@@ -15,10 +15,10 @@ const SURFACE := Color(0.17, 0.15, 0.13, 0.58)  # warm umber, not black
 const SURFACE_SOLID := Color(0.17, 0.15, 0.13, 0.86)
 const HAIRLINE := Color(1, 0.95, 0.85, 0.14)
 const TOP_LIGHT := Color(1, 1, 1, 0.06)
-const SIZE_TITLE := 18
-const SIZE_BODY := 13
-const SIZE_DESC := 12
-const SIZE_LABEL := 10
+const SIZE_TITLE := 22
+const SIZE_BODY := 16
+const SIZE_DESC := 14
+const SIZE_LABEL := 12
 const GLASS := preload("res://scripts/glass.gdshader")
 
 # Old names kept so older callers still read sensibly.
@@ -66,16 +66,16 @@ static func get_theme() -> Theme:
 	var t := Theme.new()
 	t.default_font = sans
 	t.default_font_size = SIZE_BODY
-	var panel := _box(SURFACE, HAIRLINE, 10, 14)
+	var panel := _box(SURFACE, HAIRLINE, 12, 18)
 	panel.border_width_top = 1
 	panel.border_color = HAIRLINE
 	# No stylebox shadow: the glass shader would paint its blur into the shadow too.
 	t.set_stylebox("panel", "PanelContainer", panel)
 	# Buttons: quiet text until hovered; the accent only when active.
-	var normal := _box(Color(1, 1, 1, 0.0), Color(1, 1, 1, 0.0), 6, 8)
-	var hover := _box(Color(1, 1, 1, 0.07), Color(0, 0, 0, 0), 6, 8)
-	var pressed := _box(Color(ACCENT.r, ACCENT.g, ACCENT.b, 0.14), Color(0, 0, 0, 0), 6, 8)
-	var disabled := _box(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 6, 8)
+	var normal := _box(Color(1, 1, 1, 0.0), Color(1, 1, 1, 0.0), 7, 11)
+	var hover := _box(Color(1, 1, 1, 0.07), Color(0, 0, 0, 0), 7, 11)
+	var pressed := _box(Color(ACCENT.r, ACCENT.g, ACCENT.b, 0.14), Color(0, 0, 0, 0), 7, 11)
+	var disabled := _box(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 7, 11)
 	for st in ["normal", "focus"]:
 		t.set_stylebox(st, "Button", normal)
 	t.set_stylebox("hover", "Button", hover)
