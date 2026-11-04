@@ -79,13 +79,13 @@ func _scene(path: String) -> PackedScene:
 
 ## role: "peasant" or "soldier". Returns a Node3D with an AnimationPlayer named "Anim".
 ## Body: "child", "young", "adult", "elder"; build: "thin", "average", "stout".
-## gender: "male" or "female" to choose, "" for either.
-func make(rng: RandomNumberGenerator, role := "peasant", tint := Color.WHITE, age := "", build := "", gender := "") -> Node3D:
+## sex: "male" or "female" to choose, "" for either.
+func make(rng: RandomNumberGenerator, role := "peasant", tint := Color.WHITE, age := "", build := "", sex := "") -> Node3D:
 	if age == "":
 		age = ["child", "young", "young", "adult", "adult", "adult", "adult", "elder"][rng.randi() % 8] if role == "peasant" else ["young", "adult"][rng.randi() % 2]
 	if build == "":
 		build = ["thin", "average", "average", "stout"][rng.randi() % 4]
-	var outfits: Array = OUTFITS[role].filter(func(o): return gender == "" or o[1] == gender.left(1))
+	var outfits: Array = OUTFITS[role].filter(func(o): return sex == "" or o[1] == sex.left(1))
 	if outfits.is_empty():
 		outfits = OUTFITS[role]
 	var pick: Array = outfits[rng.randi() % outfits.size()]
