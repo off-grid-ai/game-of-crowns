@@ -65,11 +65,11 @@ func _init() -> void:
 		root.add_child(p)
 		people.play(p, move)
 	var cam := Camera3D.new()
-	cam.fov = 35
+	cam.fov = 24
 	root.add_child(cam)
 	var span := maxf(n * 0.16, 0.8)
 	# Low and oblique, as the realm is seen: never straight down.
-	cam.look_at_from_position(Vector3(span * 0.12, 0.3, span * 0.95 + 0.3), Vector3(0, 0.11, 0))
+	cam.look_at_from_position(Vector3(span * 0.1, 0.2, span * 0.85 + 0.15), Vector3(0, 0.1, 0))
 
 
 func _process(_delta: float) -> bool:
