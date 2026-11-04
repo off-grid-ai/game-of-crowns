@@ -1436,6 +1436,8 @@ func _counsel_act(act: Dictionary) -> void:
 		_toggle_court()
 	elif on == "tithe_up":
 		_set_tithe(_tithe + 0.05)
+	elif on == "tithe_down":
+		_set_tithe(_tithe - 0.05)
 	else:
 		decree_at.emit(String(act.get("action", "")), int(act.get("city", -1)), int(act.get("to", -1)))
 
@@ -1603,7 +1605,30 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		name.pressed.connect(func():
 			focus_house.emit(owner)
 			house_opened.emit(owner))
-		grid.add_child(name)
+		# Whom they're at odds with, under the name: wars in red, the King's truces in gold.
+		var odds := PackedStringArray()
+		if not p.get("wars", []).is_empty():
+			odds.append("[color=#%s]AT WAR · %s[/color]" % [T.DANGER.to_html(false), ", ".join(PackedStringArray(p["wars"])).to_upper()])
+		if not p.get("truces", []).is_empty():
+			odds.append("[color=#%s]TRUCE · %s[/color]" % [T.ACCENT.to_html(false), ", ".join(PackedStringArray(p["truces"])).to_upper()])
+		if odds.is_empty():
+			grid.add_child(name)
+		else:
+			var cell := VBoxContainer.new()
+			cell.add_theme_constant_override("separation", -4)
+			cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			cell.add_child(name)
+			var line := RichTextLabel.new()
+			line.bbcode_enabled = true
+			line.fit_content = true
+			line.scroll_active = false
+			line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			line.add_theme_font_override("normal_font", T.mono)
+			line.add_theme_font_size_override("normal_font_size", 9)
+			line.text = "  ".join(odds)
+			cell.add_child(line)
+			grid.add_child(cell)
 		var m: Dictionary = p.get("measures") if p.get("measures") is Dictionary else {"towns": int(p["cities"])}
 		for col in HOUSE_COLUMNS:
 			var key: String = col[0]

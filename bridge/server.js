@@ -491,7 +491,20 @@ function counsel(players, cities, threat) {
       why: (f < 30 ? "So low, they may raise their banners against you any season." : "Below 30, a house may rise against the crown.") + cause,
       acts: [{ label: "Gift crowns", action: "gift", city: seatOf(cold.id).id }, { label: "A feast in their honour", action: "feast", city: seatOf(cold.id).id }] });
   }
-  if (threat.usurper !== "none") out.push({ urgency: 90, text: "A usurper gathers men against the throne", why: "If the host reaches Kingsmere, the crown is lost. The loyal houses will send men if you call.", acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }] });
+  // The usurper by name, how long until they march, and how to stop it: the
+  // whispers fade once the angry houses (under 25) are won back.
+  const pretender = players.find((p) => p.id === threat.pretender);
+  const claimant = pretender ? pretender.house.name : "A pretender";
+  if (threat.usurper === "rumour") {
+    const left = Math.max(1, 8 - (threat.turn - threat.since));
+    const angry = great.filter((p) => favourOf(p.id) < 25).map((p) => p.house.name.replace(/^House /, ""));
+    out.push({ urgency: 95, text: `${claimant} whispers of a better claim to the throne`,
+      why: `In ${left} season${left === 1 ? "" : "s"} they march on Kingsmere, unless the angry houses are won back above 25: ${angry.join(", ") || "none now"}.`,
+      acts: [pretender && seatOf(pretender.id) ? { label: `Gift crowns to ${claimant.replace(/^House /, "")}`, action: "gift", city: seatOf(pretender.id).id } : null, { label: "Call the banners", action: "banners" }].filter(Boolean) });
+  } else if (threat.usurper !== "none") out.push({ urgency: 100, text: `${claimant}'s host marches on Kingsmere`, why: "If it reaches the walls, the crown is lost. Loyal houses (favour 35 and up) send men when you call the banners; the royal levy is yours to pay for.", acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }] });
+  // When the tithe is what cools a house most, the Hand offers to lighten it.
+  const tithed = great.some((p) => { const r = (favourWhy[p.id] ?? []).filter((x) => x.d < 0).sort((a, b) => a.d - b.d)[0]; return favourOf(p.id) < 35 && r?.why === "the royal tithe"; });
+  if (tithed && meta.tithe > 0) out.push({ urgency: 65, text: "The tithe is what the houses resent most", why: `At ${Math.round(meta.tithe * 100)}% it wears every house's favour a little each season. Lighter, the crown earns less but the houses cool more slowly.`, acts: [{ label: `Lower the tithe to ${Math.round(meta.tithe * 100) - 5}%`, ui: "tithe_down" }] });
   if (threat.north > 0) out.push({ urgency: 75, text: `The dead come south (wave ${threat.north})`, why: "The northern houses beg the King for men.", acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }] });
   const hungry = cities.find((c) => c.famine);
   if (hungry) out.push({ urgency: 80, text: `${hungry.title} is starving`, why: "A hungry town shrinks, riots, and blames its King.", acts: [{ label: "Send grain", action: "relief", city: hungry.id }] });
@@ -765,6 +778,13 @@ http.createServer(async (req, res) => {
     for (const p of players) {
       p.favour = p.house.wild || p.house.crown ? null : favourOf(p.id);
       p.favourWhy = favourWhy[p.id] ?? [];
+      // Whom the house is at odds with, by name: wars, and wars the King has
+      // stilled (a commanded peace or a royal match) as truces.
+      const lordOf = (pid) => court?.lordOfHouse(pid);
+      const stilledWith = (q) => { const a = lordOf(p.id), b = lordOf(q.id); return !!(a && b && court.truce(a.id, b.id)); };
+      const rivals = (p.atWarWith ?? []).map((id) => players.find((q) => q.id === id)).filter((q) => q && !q.house.wild);
+      p.wars = rivals.filter((q) => !stilledWith(q)).map((q) => q.house.crown ? "the Crown" : q.house.name.replace(/^House /, ""));
+      p.truces = rivals.filter(stilledWith).map((q) => q.house.name.replace(/^House /, ""));
       // How far favour has moved in the last year (four seasons), shown beside it.
       const yearAgo = favourPast[(world?.turn ?? 0) - 4];
       p.favourTrend = p.favour == null || !yearAgo || yearAgo[p.id] == null ? 0 : Math.round(p.favour - yearAgo[p.id]);
@@ -777,7 +797,8 @@ http.createServer(async (req, res) => {
     };
     for (const p of players) p.measures = last?.houses?.[p.house.name] ?? (p.house.crown ? own(p) : null);
     const usurper = stakes?.s.usurper.stage ?? "none";
-    const threat = { usurper, north: (stakes?.s.north.waves ?? 0) };
+    const u = stakes?.s.usurper;
+    const threat = { usurper, north: (stakes?.s.north.waves ?? 0), pretender: u?.house ?? null, since: u?.since ?? 0, turn: world?.turn ?? 0 };
     return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), date: calendar(world.turn), threat, counsel: counsel(players, cities, threat), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000) });
   }
   if (url.pathname === "/map") {
