@@ -5,7 +5,8 @@
 # Ali's game always comes first: renders wait while it's open, and a render
 # caught running when the game opens is stopped and retried after it closes.
 #   realm/tools/render.sh <out.png> [godot args after --, e.g. --city=Stonefell --dist=7 --wait=70]
-# Env: RES (default 2400x1380), LIMIT seconds (default 300), GODOT_ARGS engine
+# Env: RES (default 2400x1380), LIMIT seconds (default 300), PRIORITY=1 to go
+# ahead of other renders (the launch kit), GODOT_ARGS engine
 # flags before the -- (a movie: "--write-movie out.avi --fixed-fps 30").
 cd "$(dirname "$0")/.."
 LOCK=/tmp/goc-render.lock
@@ -14,13 +15,23 @@ OUT=$1; shift
 # (Only real Godot binaries count: the shells and greps that mention "godot" in
 # their own command lines, this check included, must not.)
 playing() { pgrep -fl "^(arch -arm64 )?godot( |$)" | grep -v -e "--shot=" -e "--write-movie" -e "--headless" | grep -q .; }
-until mkdir $LOCK 2>/dev/null; do
+# PRIORITY=1 (the launch kit) goes first: other renders hold back while any
+# prioritised render is waiting or running.
+PRI=/tmp/goc-render.priority
+mkdir -p $PRI
+[ -n "$PRIORITY" ] && touch $PRI/$$
+first() {
+  [ -n "$PRIORITY" ] && return 0
+  for f in $PRI/*(N); do kill -0 ${f:t} 2>/dev/null && return 1; rm -f $f; done
+  return 0
+}
+until first && mkdir $LOCK 2>/dev/null; do
   # A lock left by a render that died frees itself.
   [ -f $LOCK/pid ] && ! kill -0 $(cat $LOCK/pid) 2>/dev/null && rm -rf $LOCK
   sleep 3
 done
 echo $$ > $LOCK/pid
-trap 'rm -rf $LOCK' EXIT
+trap 'rm -rf $LOCK $PRI/$$' EXIT
 for attempt in 1 2 3 4 5 6; do
   while playing; do sleep 10; done
   arch -arm64 godot --path . --position 30000,30000 --resolution ${RES:-2400x1380} ${=GODOT_ARGS} -- --shot=$OUT "$@" > ${OUT%.png}.log 2>&1 &
