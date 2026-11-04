@@ -198,6 +198,11 @@ func _ready() -> void:
 	director.towns = towns
 	director.ui = ui
 	add_child(director)
+	# Battles and musters call their own camera beats while the director (or a test shot) holds the camera.
+	scenes.framing.connect(func(p: Vector3, d: float, y: float):
+		if director.active or _shot.has("battle") or _shot.has("muster"):
+			rig.focus(p, d)
+			rig._goal_yaw = y)
 	bridge = preload("res://scripts/bridge.gd").new()
 	# The realm stays unloaded behind the title menu; it wakes when a chronicle
 	# is continued or begun (renders without the menu load it at once).
