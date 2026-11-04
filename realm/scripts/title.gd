@@ -4,6 +4,8 @@ extends CanvasLayer
 ## chronicles, and the Hall of Records.
 
 signal closed
+signal began  # a new chronicle was asked for: its story should be told
+signal watch_intro
 
 const PARCHMENT := Color(0.95, 0.9, 0.8)
 const MUTED := Color(0.72, 0.66, 0.56)
@@ -81,6 +83,9 @@ func show_main() -> void:
 		_big(label, _close)
 	_big("Begin a New Chronicle", show_new)
 	_big("Settings", show_settings)
+	_big("Watch the introduction", func():
+		_close()
+		watch_intro.emit())
 	_big("Chronicles", show_list)
 	_big("Hall of Records", show_records)
 
@@ -419,6 +424,7 @@ func _begin() -> void:
 		n = "The Realm of %s" % ("Strangers" if _scenario == "random" else "Aldmere")
 	bridge.create_chronicle(n, _scenario, _minutes, "normal", _wealth, _mood_edit.text.strip_edges(), _opt, func(code, d):
 		if code == 200 and d is Dictionary:
+			began.emit()
 			_wait_for(String(d.get("id", "")), "The realm is being forged…")
 		else:
 			_wait_for("", "The realm could not be forged. Try again."))

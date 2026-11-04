@@ -25,6 +25,8 @@ var env: Environment
 var _houses := {}  # player id -> house dict
 var hero: CanvasLayer  # the character view
 var labels: CanvasLayer  # town names on the map
+var intro: CanvasLayer  # the storybook at the start of a reign
+var _intro_due := false
 var control: Node3D  # walking as a character
 var mic: Node  # speaking instead of typing
 var interior: CanvasLayer  # inside a building
@@ -112,6 +114,11 @@ func _ready() -> void:
 			ui.toast(("%s enters the service of the house." % spec["name"]) if code == 200 else String(d.get("error", "That failed.")))
 			if code == 200:
 				ui.house_opened.emit(int(spec["house"]))))
+	intro = preload("res://scripts/intro.gd").new()
+	intro.rig = rig
+	intro.say = func(text): _say_aloud(text, {"name": "The Chronicler", "gender": "male"})
+	add_child(intro)
+	_intro_due = not Settings.get_value("seen_intro") and not _shot.has("path")
 	labels = preload("res://scripts/map_labels.gd").new()
 	labels.towns = towns
 	labels.rig = rig
@@ -192,6 +199,8 @@ func _ready() -> void:
 	ui.pause_toggled.connect(func(p): bridge.set_paused(p); ui.toast("The realm holds its breath." if p else "The realm stirs again."))
 	ui.open_menu.connect(func(): title.open())
 	ui.open_settings.connect(func(): title.open_settings())
+	title.began.connect(func(): _intro_due = true)
+	title.watch_intro.connect(_tell_the_story)
 	ui.decree.connect(_on_decree)
 	ui.always_day.connect(set_always_day)
 	ui.mood_decreed.connect(func(t): bridge.set_mood(t); ui.toast("The realm hears your will…"))
@@ -219,6 +228,9 @@ func _ready() -> void:
 	bridge.command_done.connect(func(ok, text): ui.toast(text if ok else "The gods cannot: " + text))
 	if _shot.has("path"):
 		get_tree().create_timer(float(_shot.get("wait", 8.0))).timeout.connect(_take_shot)
+	if _shot.has("clean"):
+		ui.visible = false
+		labels.visible = false
 
 
 ## The Dock and window icon: crown and raven on dark stone, in the macOS
@@ -310,6 +322,8 @@ func _parse_args() -> void:
 			_shot["hero"] = int(a.substr(7))
 		elif a.begins_with("--control="):
 			_shot["control"] = int(a.substr(10))
+		elif a == "--clean":
+			_shot["clean"] = true  # no interface: stills for the intro and the launch video
 		elif a == "--settings":
 			_shot["title"] = true
 			_shot["settings"] = true
@@ -459,6 +473,9 @@ func _on_world(world: Dictionary) -> void:
 	if terrain.width == 0:
 		return
 	director.world = world
+	if _intro_due:
+		_intro_due = false
+		_tell_the_story.call_deferred()
 	director.set_process(not _shot.has("path") or _shot.get("director", false))
 	if _shot.get("director", false) and not director.active:
 		director.start()
@@ -759,6 +776,23 @@ func _on_god_action(action: String, building: String) -> void:
 ## The character view on one person; the house record is swapped for the
 ## world's own (with its sigil) when there is one.
 const Settings := preload("res://scripts/settings.gd")
+
+
+## The realm's story as it stands: each house with its seat, told over stills,
+## then a flight over the seats themselves.
+func _tell_the_story() -> void:
+	var w: Dictionary = bridge.world
+	var houses: Array = []
+	var seats := {}
+	for p in w.get("players", []):
+		houses.append(p["house"])
+	for c in w.get("cities", []):
+		if c.get("capital", false):
+			for p in w.get("players", []):
+				if int(p["id"]) == int(c["owner"]):
+					seats[String(p["house"].get("name", ""))] = [String(c.get("title", c["name"])), terrain.world_pos(float(c["x"]), float(c["y"]))]
+	Settings.set_value("seen_intro", true)
+	intro.play(houses, seats)
 var _voice: AudioStreamPlayer
 
 
