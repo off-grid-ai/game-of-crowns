@@ -1,0 +1,11 @@
+Model Information:
+* title:	Combat Axe
+* source:	https://sketchfab.com/3d-models/combat-axe-a211b8dd0e9e485eb30204b9a03273a3
+* author:	YieldingMist206 (https://sketchfab.com/YieldingMist206)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Combat Axe" (https://sketchfab.com/3d-models/combat-axe-a211b8dd0e9e485eb30204b9a03273a3) by YieldingMist206 (https://sketchfab.com/YieldingMist206) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
