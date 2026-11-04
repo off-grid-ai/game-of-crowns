@@ -170,6 +170,7 @@ func _icon_btn(icon: String, tip: String, cb: Callable = Callable()) -> Button:
 	b.add_theme_stylebox_override("pressed", key.call(Color(0.86, 0.71, 0.43, 0.2), Color(0.86, 0.71, 0.43, 0.5)))
 	b.add_theme_stylebox_override("hover_pressed", key.call(Color(0.86, 0.71, 0.43, 0.26), Color(0.86, 0.71, 0.43, 0.6)))
 	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if cb.is_valid():
 		b.pressed.connect(cb)
 	return b
@@ -555,6 +556,7 @@ func _build_camera_controls() -> void:
 			camera_nudge.emit(action)
 			hold.start())
 		b.button_up.connect(hold.stop)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL  # pairs split the row evenly
 		parent.add_child(b)
 	add.call(v, "plus", "Zoom in", "in")
 	add.call(v, "minus", "Zoom out", "out")
@@ -579,6 +581,7 @@ func _build_camera_controls() -> void:
 	add.call(tilt, "caret-down", "Look down (tilt)", "tilt_down")
 	v.add_child(HSeparator.new())
 	var home := _icon_btn("house-home", "Back to Kingsmere  (Z)", func(): home_view.emit())
+	home.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	v.add_child(home)
 
 
