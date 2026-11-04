@@ -788,6 +788,11 @@ func _try_digest() -> void:
 	if _digest_done or _reign_id == "" or _first_batch.is_empty():
 		return
 	_digest_done = true
+	# Test renders keep the away digest closed unless they ask for it (--digest=N).
+	if _shot.has("path") and not _shot.has("digest"):
+		return
+	if _shot.has("path") and not _shot.has("digest"):
+		return  # test renders never open it unless asked
 	var f := FileAccess.open(SEEN_FILE, FileAccess.READ)
 	if f:
 		var data = JSON.parse_string(f.get_as_text())
