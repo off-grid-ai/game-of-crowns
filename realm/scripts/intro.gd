@@ -75,7 +75,7 @@ func play(houses: Array, seats: Dictionary) -> void:
 	# The story and how to play, woven together: each page of the realm's tale
 	# is followed by what you do in it, with the keys that do it.
 	page.call("realm", "Aldmere", "A long continent: snow and pine in the north, gold hills in the west, a green heartland, storm-wracked cliffs in the east, and red sand in the south.")
-	page.call("realm", "The Lore of Aldmere", "Three hundred years ago the Conqueror's dragons united seven kingdoms under one crown. The last dragon died a century ago, and the houses remember being kings.", {}, "B  the Lore, any time", Vector2(0.5, 0.3), 1.6)
+	page.call("realm", "The Lore of Aldmere", "Three hundred years ago the Conqueror united seven kingdoms under one crown, by sword and by marriage. The crown has held ever since, but the houses remember being kings.", {}, "B  the Lore, any time", Vector2(0.5, 0.3), 1.6)
 	page.call("realm", "It lives without you", "Eight great houses build, trade, marry and make war on their own. Watch from the sky, and the realm goes on whether you act or not.", {}, "drag  pan    scroll  zoom    Q E  turn    WASD  move", Vector2(0.5, 0.6), 1.4)
 	if not crown.is_empty() and seats.has(crown.get("name", "")):
 		var town: String = seats[crown["name"]][0]

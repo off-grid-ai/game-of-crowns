@@ -2,7 +2,7 @@
 
 A long continent running north to south. Snow and pine in the north; rolling hills and gold-bearing rock in the west; a fertile green heartland; storm-wracked eastern cliffs; desert and red sandstone in the south; a ring of high mountains around an inland vale; a cold archipelago off the western coast. At its heart, on a great river delta, sits **Kingsmere**, your seat.
 
-Three hundred years ago the Conqueror's dragons united the seven kingdoms under one crown. The last dragon died a century ago. The houses remember being kings.
+Three hundred years ago the Conqueror united the seven kingdoms under one crown, by sword and by marriage. The crown has held ever since, but the houses remember being kings.
 
 ## The Crown: you
 - **Seat:** Kingsmere, the river delta at the heart of the realm.

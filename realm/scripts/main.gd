@@ -408,8 +408,6 @@ func _parse_args() -> void:
 		elif a == "--siege":
 			_shot["siege"] = true
 			_shot["town"] = true
-		elif a == "--dragon":
-			_shot["dragon"] = true
 
 
 func _take_shot() -> void:
@@ -851,8 +849,6 @@ func _frame_for_shot(world: Dictionary) -> void:
 						foe = _houses[pid]
 				scenes._siege(int(best["id"]), center, terrain.world_pos(float(best["x"]) + 1.0, float(best["y"]) + 0.4), int(best["size"]), 2, foe, _houses.get(int(best["owner"]), {}), 600.0)
 				rig.snap(scenes._sieges[int(best["id"])]["front"], float(_shot.get("dist", 6.0)), 0.6)
-			if _shot.get("dragon", false):
-				_summon_dragon(int(best["id"]))
 
 
 func _on_chronicle(entries: Array) -> void:
@@ -861,19 +857,6 @@ func _on_chronicle(entries: Array) -> void:
 		_try_digest()
 	elif _digest_done and not entries.is_empty():
 		_mark_seen(entries)
-	for e in entries:
-		# Only fresh god acts get a visible dragon, not ones replayed from history.
-		if String(e.get("kind", "")) == "god" and String(e.get("text", "")).begins_with("A dragon") and e.has("city"):
-			if Time.get_unix_time_from_system() * 1000.0 - float(e.get("at", 0)) < 15000.0:
-				_summon_dragon(int(e["city"]))
-
-
-func _summon_dragon(city_id: int) -> void:
-	if not towns.towns.has(city_id):
-		return
-	var d: Node3D = preload("res://scripts/dragon.gd").new()
-	d.center = towns.towns[city_id]["node"].global_position
-	add_child(d)
 
 
 func _on_ground_clicked(p: Vector3) -> void:

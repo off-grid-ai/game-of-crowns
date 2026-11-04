@@ -32,7 +32,7 @@ export function houseFor(player) {
 }
 
 const PREFIX = ["Winter", "Storm", "High", "Gold", "Iron", "Thorn", "Raven", "Eagle", "Red", "White", "Black", "Grey",
-  "Sun", "Moon", "Dragon", "Wolf", "Stag", "Lion", "Rose", "Salt", "Bitter", "Deep", "Old", "King's", "Maiden",
+  "Sun", "Moon", "Raven", "Wolf", "Stag", "Lion", "Rose", "Salt", "Bitter", "Deep", "Old", "King's", "Maiden",
   "Ash", "Sea", "River", "Wind", "Frost", "Oak", "Bright", "Hollow", "Crow", "Stone", "Silver"];
 const SUFFIX = ["fell", "hold", "watch", "ford", "haven", "gate", "keep", "mere", "spire", "wood", "march", "hall",
   "stone", "bridge", "crag", "vale", "rock", "reach", "cross", "moor", "burg", "port", "barrow", "field", "garden"];

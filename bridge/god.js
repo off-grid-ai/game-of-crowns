@@ -65,14 +65,6 @@ export function godCommand(cmd, world) {
           scar(id, "Swamp", 0.5, 8),
         ],
       };
-    case "dragon":
-      return {
-        text: `A dragon descends on ${town}! Fire rains from the sky: walls, granaries and temples burn, and the fields are scorched.`,
-        lua: [
-          inCity(id, `for _, n in ipairs({"City Walls", "Temple", "Granary", "Barracks", "Marketplace", "Aqueduct"}) do local b = find.building_type(n); if b and c:has_building(b) then edit.remove_building(c, b) end end; ${KILL_GARRISON}`),
-          scar(id, "Desert", 0.5, 8),
-        ],
-      };
     case "army":
       return {
         text: `The gods raise an army for ${house} at ${town}.`,
