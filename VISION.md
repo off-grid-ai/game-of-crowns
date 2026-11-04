@@ -30,7 +30,8 @@ A living medieval-fantasy world that runs on its own on your laptop. You're its 
 Nothing new goes in unless it blocks the bar below; ideas go to v1.1.
 - **In v1:** the world, towns, seasons, crops, coast and rivers; battles on open ground with no one inside a building, and the mounted messenger; every person a mind (memory, mood, plans, talk with you by voice and with each other, gossip that travels); story arcs, commoners included; the double-click Mac app.
 - **The bar:** one combined check passes (no one inside a building or sunk, no script errors, screenshots look right); Ali plays a session from the app and it holds up; 30 fps or better at the town close-up; signed with the Off Grid AI Developer ID.
-- **v1.1:** levies raised from a town's real commoners; live reactions to what happens in front of people; more reverie arcs; 120 fps; the launch kit.
+- **Release calls (2026-11-05, agreed):** always day for v1, with no day/night toggle (nights return in v1.1 with lit windows and torches); no tall grass inside towns; a richer colour grade; conversations as captions, not spoken; arc beats in short fixed lines with one line of colour from the model; any scene that fails the final pass (duel, siege, interiors, close-up battle) stops playing rather than being fixed; if the release build is under 30 fps, fewer people are drawn at once and grass is drawn less far, until it isn't.
+- **v1.1:** mouse-look controls; levies raised from a town's real commoners; live reactions to what happens in front of people; more reverie arcs; 120 fps; the launch kit.
 
 ## Approach
 1. Survey existing building blocks properly (codebases, art, sim content, engine kits). *Done: see BUILDING_BLOCKS.md.*
