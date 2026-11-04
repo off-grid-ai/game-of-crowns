@@ -79,6 +79,7 @@ var _court_waiting := false  # the court panel, set aside for a commoner's card
 var _court_hidden := true
 
 var _toast: Label
+var _toast_top := 78.0  # just under the top bar
 var _toast_time := 0.0
 
 
@@ -265,8 +266,7 @@ func _arrange_top() -> void:
 	# onto a second row on a narrow window never has a notice written over it.
 	var bottom := 10.0 + maxf(when.get_combined_minimum_size().y, act.get_combined_minimum_size().y)
 	bottom = maxf(bottom, state.offset_top + state.get_combined_minimum_size().y)
-	if _toast:
-		_toast.offset_top = bottom + 12.0
+	_toast_top = bottom + 12.0
 
 
 func _pill(anchor_x: float, grow: int) -> HBoxContainer:
@@ -689,6 +689,12 @@ func _process(delta: float) -> void:
 	_fit_centre(_court_panel, 680.0)
 	_fit_centre(_town_panel, 600.0)
 	if _toast_time > 0:
+		# A notice never writes over an open card: it sits just under it.
+		var top := _toast_top
+		for c in _cards:
+			if is_instance_valid(c) and c.visible:
+				top = maxf(top, c.get_global_rect().end.y + 12.0)
+		_toast.offset_top = top
 		_toast_time -= delta
 		_toast.modulate.a = clampf(_toast_time, 0.0, 1.0)
 
