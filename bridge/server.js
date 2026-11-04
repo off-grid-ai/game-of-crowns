@@ -403,7 +403,7 @@ function onEvent(line) {
   if (ev.kind === "turn") {
     healScars(Number(ev.turn));
     collectTithe(Number(ev.turn));
-    setTimeout(() => stakes?.tick(Number(ev.turn), world, { favour: favourOf, send: (l) => send(`lua cmd ${l}`), watched: isWatched(), options: meta.options ?? {} }), 2000);
+    setTimeout(() => stakes?.tick(Number(ev.turn), world, { favour: favourOf, shift: shiftFavour, send: (l) => send(`lua cmd ${l}`), watched: isWatched(), options: meta.options ?? {} }), 2000);
     if (Number(ev.turn) % 4 === 0) setTimeout(runSeason, 2500);
     setTimeout(() => runArcs(1), 4000);
     // Let the AI finish its start-of-turn moves before dumping the world.

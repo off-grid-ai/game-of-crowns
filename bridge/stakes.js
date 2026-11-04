@@ -90,9 +90,22 @@ export class Stakes {
         this.host(ctx, this.playerById(u.house), this.s.seat.x, this.s.seat.y, ["Knights", "Pikemen", "Catapult", "Knights"], 6 + angry.length * 2);
         this.record({ turn, kind: "rebellion", text: `${name} declares for the throne! A usurper's host marches on Kingsmere.` });
       }
-    } else if (u.stage === "march" && turn - u.since >= 12) {
-      u.stage = "none";
-      this.record({ turn, kind: "decree", text: "The usurper's host is broken before the walls of Kingsmere. The crown endures." });
+    } else if (u.stage === "march" && this.s.seat) {
+      // The march ends on the field, not on a timer: the pretender's soldiers
+      // around Kingsmere are counted each season.
+      const name = houseFor(world.players.find((p) => p.id === u.house) ?? {}).name ?? "The pretender";
+      const CIVIL = new Set(["Settlers", "Workers", "Migrants", "Engineers", "Explorer", "Caravan", "Freight", "Diplomat", "Spy", "Leader"]);
+      const near = (world.units ?? []).filter((x) => x.owner === u.house && !CIVIL.has(x.type) && Math.hypot(x.x - this.s.seat.x, x.y - this.s.seat.y) <= 6).length;
+      u.peak = Math.max(u.peak ?? 0, near);
+      if (turn - u.since >= 2 && near === 0) {
+        u.stage = "none";
+        this.record({ turn, kind: "decree", text: `${name}'s host is broken before the walls of Kingsmere. The crown endures, and the houses that stood by it take heart.` });
+        const loyal = houses.filter((p) => p.id !== u.house && ctx.favour(p.id) >= 35);
+        if (loyal.length) ctx.shift?.(Object.fromEntries(loyal.map((p) => [p.id, 5])), "the crown stood firm against the pretender");
+      } else if (turn - u.since >= 16) {
+        u.stage = "none";
+        this.record({ turn, kind: "unrest", text: `Four years before Kingsmere, and the walls still stand. ${name}'s host melts away home, humbled but unbroken.` });
+      }
     }
 
     // --- The dead beyond the wall ------------------------------------------------
