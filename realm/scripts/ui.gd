@@ -1631,7 +1631,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 			var cell := VBoxContainer.new()
 			cell.add_theme_constant_override("separation", -4)
 			cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			cell.custom_minimum_size.x = 170  # room for "WAR · THORNVALE, SUNSPIRE" on one line
+			cell.custom_minimum_size.x = 140  # room for most "WAR · THORNVALE" lines on one
 			cell.add_child(name)
 			var line := RichTextLabel.new()
 			line.bbcode_enabled = true

@@ -502,6 +502,11 @@ function counsel(players, cities, threat) {
       why: `In ${left} season${left === 1 ? "" : "s"} they march on Kingsmere, unless the angry houses are won back above 25: ${angry.join(", ") || "none now"}.`,
       acts: [pretender && seatOf(pretender.id) ? { label: `Gift crowns to ${claimant.replace(/^House /, "")}`, action: "gift", city: seatOf(pretender.id).id } : null, { label: "Call the banners", action: "banners" }].filter(Boolean) });
   } else if (threat.usurper !== "none") out.push({ urgency: 100, text: `${claimant}'s host marches on Kingsmere`, why: "If it reaches the walls, the crown is lost. Loyal houses (favour 35 and up) send men when you call the banners; the royal levy is yours to pay for.", acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }] });
+  // The pretender's own coldness is the usurper's story: one matter, not two.
+  if (threat.usurper === "rumour" && pretender) {
+    const i = out.findIndex((o) => o.text.startsWith(`${pretender.house.name} grows cold`));
+    if (i >= 0) out.splice(i, 1);
+  }
   // When the tithe is what cools a house most, the Hand offers to lighten it.
   const tithed = great.some((p) => { const r = (favourWhy[p.id] ?? []).filter((x) => x.d < 0).sort((a, b) => a.d - b.d)[0]; return favourOf(p.id) < 35 && r?.why === "the royal tithe"; });
   if (tithed && meta.tithe > 0) out.push({ urgency: 65, text: "The tithe is what the houses resent most", why: `At ${Math.round(meta.tithe * 100)}% it wears every house's favour a little each season. Lighter, the crown earns less but the houses cool more slowly.`, acts: [{ label: `Lower the tithe to ${Math.round(meta.tithe * 100) - 5}%`, ui: "tithe_down" }] });

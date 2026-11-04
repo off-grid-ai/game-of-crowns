@@ -818,8 +818,13 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
     for (const p of this.petitions) {
       // Patience in the King's time too: two years of seasons pass in a minute or
       // two of play, so a petitioner also waits five real minutes before leaving.
-      p.at ??= Date.now();
-      if (p.answered || turn - p.turn < 8 || Date.now() - p.at < 5 * 60000) continue;
+      // Only time the King is watching counts: a realm left closed for an hour
+      // doesn't empty his court (each watched season adds at most half a minute).
+      const now = Date.now();
+      p.waitedMs = (p.waitedMs ?? 0) + Math.min(30000, now - (p.tick ?? now));
+      p.tick = now;
+      p.seasons = (p.seasons ?? 0) + 1;
+      if (p.answered || p.seasons < 8 || p.waitedMs < 5 * 60000) continue;
       p.answered = "ignored";
       const c = this.people[p.from];
       if (!c) continue;
