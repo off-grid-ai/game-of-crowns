@@ -1324,24 +1324,16 @@ func _say_aloud(text: String, who: Dictionary, done := Callable()) -> void:
 		_voice.play())
 
 
-## Step into a house's lord (the Crown's is the King): their record from the
-## bridge, then into their body at their seat.
-func _take_lord(house_id: int) -> void:
-	bridge.house(house_id, func(d):
-		if not (d is Dictionary and d.get("lord") is Dictionary):
-			ui.toast("There is no one on that seat to walk as.")
-			return
-		var h: Dictionary = _houses.get(int(d.get("id", house_id)), d)
-		bridge.person(str(d["lord"].get("id", "")), func(p):
-			if p is Dictionary:
-				_take_control(p, h)))
-
-
-## The King: the lord of the Crown's house.
+## The King is you, not one of the court's characters: he has a body of his
+## own ("king", which the bridge knows to address as Your Grace), at his seat.
 func _walk_as_king() -> void:
 	for p in bridge.world.get("players", []):
-		if p.get("house", {}).get("crown", false):
-			_take_lord(int(p["id"]))
+		var h: Dictionary = p.get("house", {})
+		if h.get("crown", false):
+			var house: Dictionary = _houses.get(int(p["id"]), h)
+			house["id"] = int(p["id"])
+			var king := {"id": "king", "name": "The King", "gender": "male", "rank": "king", "role": "King", "seat": String(h.get("seat", "Kingsmere")), "traits": []}
+			_take_control(king, house)
 			return
 	ui.toast("The throne is empty.")
 

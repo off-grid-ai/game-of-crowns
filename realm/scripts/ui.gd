@@ -335,7 +335,7 @@ func _build_top_bar() -> void:
 	_arrange_top.call_deferred()
 	act.add_theme_constant_override("separation", 6)  # each key stands on its own
 	_court_btn = _icon_btn("crown", _with_key("The court: petitioners waiting", "court"), _toggle_court)
-	_court_btn.visible = false
+	_court_btn.modulate.a = 0.45  # an empty court until someone comes
 	# Petitioners waiting: the crown in gold, and how many on a round badge on
 	# its corner, the way an app shows unread messages, never over the crown.
 	for look in ["normal", "hover", "pressed", "hover_pressed", "focus"]:
@@ -393,7 +393,18 @@ func _toggle_pause() -> void:
 	pause_toggled.emit(_paused)
 
 
+## The court is always in the bar: full when petitioners wait (the badge counts
+## them), dimmed when nobody does.
+func _court_waiting_shown(n: int) -> void:
+	_court_btn.modulate.a = 1.0 if n > 0 else 0.45
+	_court_badge.visible = n > 0
+	_court_btn.tooltip_text = _with_key("The court: petitioners waiting" if n > 0 else "The court: nobody waits today", "court")
+
+
 func _toggle_court() -> void:
+	if _petitions.is_empty():
+		toast("Nobody waits at court today.")
+		return
 	if _court_panel.visible:
 		_court_hidden = true
 		_court_panel.visible = false
@@ -1620,7 +1631,7 @@ func set_court(petitions: Array) -> void:
 	_court_sig = sig
 	_petitions = petitions
 	_court_badge.text = str(petitions.size())
-	_court_btn.visible = petitions.size() > 0
+	_court_waiting_shown(petitions.size())
 	if petitions.is_empty():
 		_court_panel.visible = false
 	elif not _court_hidden:
@@ -1789,7 +1800,7 @@ func ruled_in_words(id: String, d: Dictionary) -> void:
 		toast("%s: “%s”" % [String(d.get("name", "")), String(d["reaction"])])
 	_petitions = _petitions.filter(func(x): return String(x["id"]) != id)
 	_court_badge.text = str(_petitions.size())
-	_court_btn.visible = _petitions.size() > 0
+	_court_waiting_shown(_petitions.size())
 	_show_audience()
 
 
@@ -1797,7 +1808,7 @@ func _answer(id: String, option: String) -> void:
 	petition_answered.emit(id, option)
 	_petitions = _petitions.filter(func(x): return String(x["id"]) != id)
 	_court_badge.text = str(_petitions.size())
-	_court_btn.visible = _petitions.size() > 0
+	_court_waiting_shown(_petitions.size())
 	_show_audience()
 
 
