@@ -1,7 +1,16 @@
 extends RefCounted
-## The great houses' banners: painted cloths in assets/heraldry, one per house
-## (banner-goldcrest.png, banner-crown.png …). A house without one flies a
-## plain cloth in its colour.
+## The houses' banners: painted cloths in assets/heraldry, one per house
+## (banner-goldcrest.png, banner-crown.png …), the lesser families sworn to
+## them (banner-ashby.png …) and the houses born of civil war. A house without
+## one flies a plain cloth in its colour.
+
+
+## A lesser family's arms as a house, for `cloth`/`sigil`/`standard`
+## ("Ashby" -> the Ashby banner), or {} if none has been drawn.
+static func family(surname: String) -> Dictionary:
+	if surname == "" or not ResourceLoader.exists("res://assets/heraldry/banner-%s.png" % surname.to_lower()):
+		return {}
+	return {"name": "House " + surname}
 
 static var _cache := {}
 
@@ -53,7 +62,10 @@ static func slug(house: Dictionary) -> String:
 	if house.get("crown", false):
 		return "crown"
 	if house.get("sigil", "") == "banner":
-		return "rebel"  # a house born from civil war flies the broken crown
+		# A house born from civil war flies its own arms where they've been
+		# drawn (assets/heraldry), otherwise the broken crown.
+		var own := name.trim_prefix("house ").strip_edges().replace(" ", "-")
+		return own if ResourceLoader.exists("res://assets/heraldry/banner-%s.png" % own) else "rebel"
 	return name.trim_prefix("house ").trim_prefix("the ").strip_edges().replace(" ", "-")
 
 

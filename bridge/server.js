@@ -574,10 +574,13 @@ http.createServer(async (req, res) => {
     const players = world.players.map((p) => ({ ...p, name: RENAMED[p.name] ?? p.name, house: houseFor(p), atWarWith: d?.players[p.id]?.atWarWith ?? [] }));
     const cities = world.cities.map((c) => {
       const x = d?.cities[c.id];
-      if (!x) return { ...c, title: cityName(c.id) };
+      // The lesser family seated here (a bannerman), whose banner the town flies.
+      const holder = court?.lordOfTown(c.id);
+      const family = holder?.rank === "bannerman" ? holder.surname ?? null : null;
+      if (!x) return { ...c, title: cityName(c.id), family };
       const cost = BUILD_COST[x.building] ?? 0;
       return {
-        ...c, title: cityName(c.id),
+        ...c, title: cityName(c.id), family,
         food: x.foodStock, granary: granarySize(c.size), famine: x.hadFamine,
         plagueTurn: x.plagueTurn, celebrating: x.celebrating, disorder: x.disorder,
         building: x.building, buildingKind: x.buildingKind,
