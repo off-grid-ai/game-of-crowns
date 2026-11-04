@@ -27,6 +27,10 @@ const CLIP_PACE := 1.1 * S
 ## Coats: the texture is a dark bay; these shift it.
 const COATS := [Color(1, 1, 1), Color(1.15, 0.95, 0.8), Color(0.55, 0.5, 0.48), Color(1.35, 1.3, 1.25), Color(1.2, 0.8, 0.6)]
 
+## How far the straddling pose's thighs drop (radians) and its shins come forward.
+const THIGH_DROP := 0.7
+const SHIN_LIFT := 0.25
+
 static var _seat_lib: AnimationLibrary
 
 var rider: Node3D
@@ -147,8 +151,39 @@ static func _seat() -> AnimationLibrary:
 		if not String(a.track_get_path(t)).contains(":"):
 			a.remove_track(t)
 	a.loop_mode = Animation.LOOP_LINEAR
+	# Off a chair onto a horse: the thighs drop from level to hang round the
+	# barrel, and the shins come forward a little, heels under the hips.
+	_lower_legs(a, THIGH_DROP, SHIN_LIFT)
 	_seat_lib.add_animation("Seat", a)
 	return _seat_lib
+
+
+## Swings each thigh down about the hip (toward straight down) and each shin
+## back toward forward, editing the pose's rotation keys. Bones in Godot's
+## humanoid skeleton point along their own +Y.
+static func _lower_legs(a: Animation, drop: float, lift: float) -> void:
+	var hips := a.find_track(NodePath("%GeneralSkeleton:Hips"), Animation.TYPE_ROTATION_3D)
+	for side in ["Left", "Right"]:
+		var thigh := a.find_track(NodePath("%GeneralSkeleton:" + side + "UpperLeg"), Animation.TYPE_ROTATION_3D)
+		var shin := a.find_track(NodePath("%GeneralSkeleton:" + side + "LowerLeg"), Animation.TYPE_ROTATION_3D)
+		if hips < 0 or thigh < 0 or shin < 0:
+			continue
+		for k in a.track_get_key_count(thigh):
+			var t := a.track_get_key_time(thigh, k)
+			var p: Quaternion = a.rotation_track_interpolate(hips, t)
+			var l: Quaternion = a.track_get_key_value(thigh, k)
+			var along := (p * l) * Vector3.UP
+			var axis := along.cross(Vector3.DOWN)
+			if axis.length() < 0.01:
+				continue
+			var turn := Quaternion(axis.normalized(), drop)
+			var l2 := p.inverse() * turn * p * l
+			a.track_set_key_value(thigh, k, l2)
+			# The shin turns back the other way about the same axis.
+			var g := p * l2
+			var ks := mini(k, a.track_get_key_count(shin) - 1)
+			var s0: Quaternion = a.track_get_key_value(shin, ks)
+			a.track_set_key_value(shin, ks, g.inverse() * Quaternion(axis.normalized(), -lift) * g * s0)
 
 
 func _rein() -> MeshInstance3D:
@@ -227,4 +262,4 @@ func _reins_follow() -> void:
 			continue
 		var up := (b - a) / length
 		var side := up.cross(Vector3.FORWARD if absf(up.dot(Vector3.FORWARD)) < 0.9 else Vector3.RIGHT).normalized()
-		r.global_transform = Transform3D(Basis(side, up, side.cross(up)).scaled(Vector3(1, length, 1)), mid)
+		r.global_transform = Transform3D(Basis(side, up * length, side.cross(up)), mid)
