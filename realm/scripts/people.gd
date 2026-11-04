@@ -4,6 +4,7 @@ extends RefCounted
 ## beard, hair colour, cloth tint and build all vary, so no two look alike.
 
 const S := 0.12  # same scale as the towns: a 1.8 m person is ~0.22 units
+const SEEN_TO := 28.0  # world units: beyond this a person isn't drawn or animated
 
 const OUTFITS := {
 	"peasant": [["Male_Peasant", "m"], ["Female_Peasant", "f"]],
@@ -17,12 +18,42 @@ const BYNAMES := ["the Smith", "Miller", "of the Ford", "Thatcher", "the Tall", 
 const SKIN := [Color(1.0, 0.86, 0.74), Color(0.95, 0.78, 0.64), Color(0.82, 0.62, 0.48), Color(0.62, 0.45, 0.33), Color(0.45, 0.32, 0.24), Color(1.0, 0.9, 0.8)]
 const CLOTH := [Color(1, 1, 1), Color(0.85, 0.75, 0.62), Color(0.7, 0.8, 0.7), Color(0.75, 0.7, 0.85), Color(0.9, 0.7, 0.6), Color(0.65, 0.65, 0.65)]
 
+## Mixamo characters, each in assets/people/mixamo/<name>/<name>.fbx and
+## retargeted at import to the same humanoid skeleton as the moves. Each says
+## who it is ("m"/"f"), which stations it can stand for, and which of its
+## meshes are clothing that takes a house's colour. "crowd" bodies are light
+## enough to fill a square; the rest stand alone (the court, the close-up).
+const BODIES := {
+	"arissa": {"sex": "f", "roles": ["archer", "townsfolk"], "cloth": ["arissa_Cloak_Geo"], "crowd": true},
+	"erika": {"sex": "f", "roles": ["archer", "townsfolk"], "cloth": [], "crowd": true},
+	"erika_bow": {"sex": "f", "roles": ["archer"], "cloth": [], "crowd": true},
+	"knight": {"sex": "f", "roles": ["soldier", "noble"], "cloth": ["Lower_Armor"], "crowd": true},
+	"maria": {"sex": "f", "roles": ["soldier"], "cloth": [], "crowd": true},
+	"paladin": {"sex": "m", "roles": ["soldier", "noble"], "cloth": [], "crowd": true},
+	"paladin_prop": {"sex": "m", "roles": ["noble"], "cloth": [], "crowd": false},
+	"heraklios": {"sex": "m", "roles": ["soldier", "noble"], "cloth": [], "crowd": true},
+	"dreyar": {"sex": "m", "roles": ["soldier", "peasant"], "cloth": [], "crowd": true},
+	"ganfaul": {"sex": "m", "roles": ["clergy", "townsfolk"], "cloth": [], "crowd": true},
+	"brute": {"sex": "m", "roles": ["soldier"], "cloth": ["MaleBruteA_Bottoms"], "crowd": false},
+	"eve": {"sex": "f", "roles": ["townsfolk", "noble"], "cloth": [], "crowd": true},
+	"lola": {"sex": "f", "roles": ["townsfolk"], "cloth": [], "crowd": true},
+	"medea": {"sex": "f", "roles": ["noble", "clergy"], "cloth": [], "crowd": true},
+	"kachujin": {"sex": "f", "roles": ["soldier"], "cloth": [], "crowd": true},
+	"akai": {"sex": "m", "roles": ["peasant", "townsfolk"], "cloth": [], "crowd": true},
+	"uriel": {"sex": "f", "roles": ["noble"], "cloth": [], "crowd": false},
+}
+## How often a crowd figure is a Mixamo character rather than a Quaternius
+## outfit, by station. The outfits are lighter and take any colour, so plain
+## folk stay mostly outfits; the stations the outfits can't dress are all Mixamo.
+const MIXAMO_SHARE := {"peasant": 0.2, "townsfolk": 0.5, "soldier": 0.45, "archer": 1.0, "noble": 1.0, "clergy": 1.0}
+
 const HEAD_ONLY := preload("res://scripts/head_only.gdshader")
 
 const ANIMS := "res://assets/anims/mixamo/"
 
 var _lib: AnimationLibrary
 var _scenes := {}
+var _heights := {}  # Mixamo body -> scale that stands it as tall as an outfit
 
 
 func _init() -> void:
@@ -77,17 +108,30 @@ func _scene(path: String) -> PackedScene:
 	return _scenes[path]
 
 
-## role: "peasant" or "soldier". Returns a Node3D with an AnimationPlayer named "Anim".
+## role: "peasant", "townsfolk", "soldier", "archer", "noble" or "clergy".
+## Returns a Node3D with an AnimationPlayer named "Anim".
 ## Body: "child", "young", "adult", "elder"; build: "thin", "average", "stout".
 ## sex: "male" or "female" to choose, "" for either.
-func make(rng: RandomNumberGenerator, role := "peasant", tint := Color.WHITE, age := "", build := "", sex := "") -> Node3D:
+## look: a stable key (a named person's id) that always gives the same body.
+func make(rng: RandomNumberGenerator, role := "peasant", tint := Color.WHITE, age := "", build := "", sex := "", look := "") -> Node3D:
+	if not MIXAMO_SHARE.has(role):
+		role = "peasant"
 	if age == "":
-		age = ["child", "young", "young", "adult", "adult", "adult", "adult", "elder"][rng.randi() % 8] if role == "peasant" else ["young", "adult"][rng.randi() % 2]
+		age = ["child", "young", "young", "adult", "adult", "adult", "adult", "elder"][rng.randi() % 8] if role in ["peasant", "townsfolk"] else ["young", "adult"][rng.randi() % 2]
 	if build == "":
 		build = ["thin", "average", "average", "stout"][rng.randi() % 4]
-	var outfits: Array = OUTFITS[role].filter(func(o): return sex == "" or o[1] == sex.left(1))
+	var roll := rng.randf()
+	# Children are outfits only: every Mixamo character is grown.
+	if age != "child" and (roll < MIXAMO_SHARE[role] or look != ""):
+		# A named person is known by their body, so only a crowd needs one that shows its colour.
+		var pool := _bodies(role, sex, tint != Color.WHITE and look == "", look == "")
+		if not pool.is_empty():
+			var body: String = pool[(abs(hash(look)) if look != "" else rng.randi()) % pool.size()]
+			return make_body(rng, body, tint, age, build, role)
+	var outfit_role := "soldier" if role in ["soldier", "archer", "noble"] else "peasant"
+	var outfits: Array = OUTFITS[outfit_role].filter(func(o): return sex == "" or o[1] == sex.left(1))
 	if outfits.is_empty():
-		outfits = OUTFITS[role]
+		outfits = OUTFITS[outfit_role]
 	var pick: Array = outfits[rng.randi() % outfits.size()]
 	var person: Node3D = _scene("res://assets/people/%s.gltf" % pick[0]).instantiate()
 	var skeleton: Skeleton3D = person.get_node("Armature/GeneralSkeleton")
@@ -107,16 +151,98 @@ func make(rng: RandomNumberGenerator, role := "peasant", tint := Color.WHITE, ag
 		_attach(skeleton, style, hair_colour)
 	if pick[1] == "m" and age != "child" and rng.randf() < (0.7 if age == "elder" else 0.4):
 		_attach(skeleton, "Hair_Beard", hair_colour)
+	return _finish(person, skeleton, rng, role, age, build, "male" if pick[1] == "m" else "female")
+
+
+## The station a named person (a bridge /person record) is dressed for: by
+## their court role if they have one, else by rank.
+static func station(person: Dictionary) -> String:
+	var role := str(person.get("role")) if person.get("role") else ""
+	if role in ["knight", "hedge_knight", "sellsword"]:
+		return "soldier"
+	if role in ["septon", "maester"]:
+		return "clergy"
+	if role == "outlaw":
+		return "archer"
+	if role == "merchant":
+		return "townsfolk"
+	if role != "" or str(person.get("rank", "")) in ["lord", "spouse", "heir", "bannerman"]:
+		return "noble"
+	return "townsfolk"
+
+
+## The Mixamo characters that can stand for a station: of the asked sex if
+## any are, able to wear a house's colour if one is asked, and light enough
+## for a crowd unless they stand alone.
+func _bodies(role: String, sex: String, coloured: bool, crowd: bool) -> Array:
+	var pool := BODIES.keys().filter(func(b): return role in BODIES[b]["roles"] and (not crowd or BODIES[b]["crowd"]) and (not coloured or not BODIES[b]["cloth"].is_empty()))
+	var same: Array = pool.filter(func(b): return sex == "" or BODIES[b]["sex"] == sex.left(1))
+	return same if not same.is_empty() else pool
+
+
+## One Mixamo character by name, laid out like the outfits (Armature/
+## GeneralSkeleton, an "Anim" player on the shared moves) and stood as tall
+## as one, whatever units it came in.
+func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, age := "adult", build := "average", role := "") -> Node3D:
+	var info: Dictionary = BODIES[body]
+	var person: Node3D = _scene("res://assets/people/mixamo/%s/%s.fbx" % [body, body]).instantiate()
+	for n in person.get_children():
+		if n is AnimationPlayer:
+			n.free()
+	var skeleton: Skeleton3D = person.get_node("GeneralSkeleton")
+	var armature := Node3D.new()
+	armature.name = "Armature"
+	person.add_child(armature)
+	armature.owner = person
+	var meshes := skeleton.get_children()
+	for n in [skeleton] + meshes:
+		n.owner = null
+	skeleton.reparent(armature, false)
+	# The moves find the skeleton by its unique name, which needs its owner back.
+	skeleton.owner = person
+	skeleton.unique_name_in_owner = true
+	for mi in skeleton.get_children():
+		if mi is MeshInstance3D:
+			mi.owner = person
+			if tint != Color.WHITE and String(mi.name) in info["cloth"]:
+				_tint(mi, tint)
+	if role == "":
+		role = info["roles"][0]
+	return _finish(person, skeleton, rng, role, age, build, "male" if info["sex"] == "m" else "female", _height(body, skeleton, info["sex"]))
+
+
+## The scale that puts a Mixamo character's head where an outfit's is.
+func _height(body: String, skeleton: Skeleton3D, sex: String) -> float:
+	if not _heights.has(body):
+		var ref: Node3D = _scene("res://assets/people/%s_Peasant.gltf" % ("Male" if sex == "m" else "Female")).instantiate()
+		var want := _head_y(ref.get_node("Armature/GeneralSkeleton"))
+		ref.free()
+		_heights[body] = want / maxf(_head_y(skeleton), 0.001)
+	return _heights[body]
+
+
+static func _head_y(skeleton: Skeleton3D) -> float:
+	var head := skeleton.find_bone("Head")
+	return (skeleton.transform * skeleton.get_bone_global_rest(head)).origin.y if head >= 0 else 1.0
+
+
+func _finish(person: Node3D, skeleton: Skeleton3D, rng: RandomNumberGenerator, role: String, age: String, build: String, gender: String, k := 1.0) -> Node3D:
 	var anim := AnimationPlayer.new()
 	anim.name = "Anim"
 	person.add_child(anim)
 	anim.add_animation_library("", _lib)
+	# Past arm's length of the camera a person is a speck: they fade out and stop
+	# costing draws, so a crowd only costs what's near.
+	for mi in skeleton.get_children():
+		if mi is GeometryInstance3D:
+			mi.visibility_range_end = SEEN_TO
+			mi.visibility_range_end_margin = 3.0
+			mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	_shape(skeleton, build, age)
 	var height: float = rng.randf_range(0.96, 1.04) * {"child": 0.72, "young": 0.98, "adult": 1.0, "elder": 0.96}[age]
-	person.scale = Vector3.ONE * height * S
+	person.scale = Vector3.ONE * height * k * S
 	person.set_meta("age", age)
 	# Who this person is, not just how they look: the character layer reads this.
-	var gender: String = "male" if pick[1] == "m" else "female"
 	var names: Array = MALE_NAMES if gender == "male" else FEMALE_NAMES
 	person.set_meta("identity", {
 		"name": "%s %s" % [names[rng.randi() % names.size()], BYNAMES[rng.randi() % BYNAMES.size()]],
