@@ -80,14 +80,25 @@ func play(houses: Array, seats: Dictionary) -> void:
 	# where it speaks of: the realm from the sky, a house at its seat, the King's
 	# own town for the pages about playing.
 	var home: Vector3 = seats[crown["name"]][1] if not crown.is_empty() and seats.has(crown.get("name", "")) else Vector3.ZERO
+	var towns: Array = seats.values().map(func(v): return v[1])
+	if towns.is_empty():
+		towns = [home]
 	_where.clear()
+	var i := 0
 	for p in _pages:
 		var still := String(p[0])
-		var at := home
-		for name in seats:
-			if still == "seat_" + String(seats[name][0]):
-				at = seats[name][1]
-		_where.append([at, 170.0 if still == "realm" else (12.0 if still.begins_with("seat_") else 24.0)])
+		var at: Vector3 = towns[i % towns.size()]
+		var dist := 22.0 + (i % 3) * 8.0  # the pages about playing: a town from the air
+		if still == "realm":
+			at = home if i == 0 else towns[(i * 3) % towns.size()]
+			dist = [190.0, 120.0, 150.0][i % 3]
+		elif still.begins_with("seat_"):
+			for name in seats:
+				if still == "seat_" + String(seats[name][0]):
+					at = seats[name][1]
+			dist = 11.0
+		_where.append([at, dist])
+		i += 1
 	if _pages.is_empty():
 		_end()
 		return
@@ -168,8 +179,7 @@ func _next() -> void:
 	_image.texture = null if live else load(path)
 	_black.visible = not live
 	if live and rig:
-		rig.frame_town(_where[_page][0], 10)
-		rig._goal_distance = float(_where[_page][1])
+		_shoot(_page)
 	_title.text = String(p[1])
 	_line.text = String(p[2])
 	var house: Dictionary = p[3] if p.size() > 3 else {}
@@ -193,6 +203,24 @@ func _next() -> void:
 	_tween.chain().tween_callback(_next)
 	if say.is_valid():
 		say.call(String(p[2]))
+
+
+## A live shot for a page: cut to it, then a slow orbit and push-in for the
+## page's length, each page turning the other way, so the realm is always
+## moving under the words.
+var _move: Tween
+func _shoot(page: int) -> void:
+	var at: Vector3 = _where[page][0]
+	var dist: float = _where[page][1]
+	var dir := 1.0 if page % 2 == 0 else -1.0
+	var yaw0 := deg_to_rad(20.0 + 47.0 * page)
+	rig.snap(at, dist * 1.25, yaw0)
+	rig._goal_tilt = 0.0
+	if _move:
+		_move.kill()
+	_move = create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_move.tween_method(func(y): rig._goal_yaw = y, yaw0, yaw0 + 0.55 * dir, HOLD)
+	_move.tween_method(func(d): rig._goal_distance = d, dist * 1.25, dist * 0.8, HOLD)
 
 
 ## The world itself: a slow pass over each house's seat, then the realm is yours.
@@ -220,6 +248,8 @@ func _fly() -> void:
 func _end() -> void:
 	if _tween:
 		_tween.kill()
+	if _move:
+		_move.kill()
 	visible = false
 	_flying = false
 	for c in get_children():

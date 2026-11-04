@@ -865,6 +865,17 @@ func _tell_the_story() -> void:
 				if int(p["id"]) == int(c["owner"]):
 					seats[String(p["house"].get("name", ""))] = [String(c.get("title", c["name"])), terrain.world_pos(float(c["x"]), float(c["y"]))]
 	Settings.set_value("seen_intro", true)
+	# The intro has the screen to itself: the menu, the interface and the map's
+	# names step aside while it plays (it may fly over the live realm), and come
+	# back as they were when it ends.
+	var was := [title.visible, ui.visible, labels.visible]
+	title.visible = false
+	ui.visible = false
+	labels.visible = false
+	intro.finished.connect(func():
+		title.visible = was[0]
+		ui.visible = was[1] and not _shot.has("clean")
+		labels.visible = was[2] and not _shot.has("clean"), CONNECT_ONE_SHOT)
 	intro.play(houses, seats)
 var _voice: AudioStreamPlayer
 
