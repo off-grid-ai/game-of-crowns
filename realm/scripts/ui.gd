@@ -752,6 +752,8 @@ func _process(delta: float) -> void:
 	_fit_centre(_form_panel, 600.0)
 	_fit_centre(_court_panel, 680.0)
 	_fit_centre(_town_panel, 600.0)
+	if _toast_time > 0:
+		_fit_centre(_toast_box, 500.0)  # a result card never covers the houses table
 	if _offer and _offer.visible:
 		_offer_left -= delta
 		_offer.modulate.a = clampf(_offer_left, 0.0, 1.0)
@@ -1297,9 +1299,11 @@ func _fit_centre(panel: Control, widest: float) -> void:
 		left = _houses_panel.get_global_rect().end.x + 12.0
 	if _chron_panel.visible:
 		right = _chron_panel.get_global_rect().position.x - 12.0
-	# A panel along the bottom (the town) stops short of the minimap.
+	# A panel along the bottom (the town), or one tall enough to reach the
+	# minimap (the court), stops short of it.
 	var map_frame := minimap.get_parent() as Control if minimap else null
-	if panel.anchor_top == 1.0 and map_frame and map_frame.is_visible_in_tree():
+	var reaches := panel.anchor_top == 1.0 or (map_frame != null and panel.get_global_rect().end.y > map_frame.get_global_rect().position.y)
+	if reaches and map_frame and map_frame.is_visible_in_tree():
 		right = minf(right, map_frame.get_global_rect().position.x - 12.0)
 	var w := minf(widest, right - left)
 	var x := (left + right - w) / 2.0
@@ -1822,13 +1826,8 @@ func _show_audience() -> void:
 	else:
 		said.text = String(p["text"])
 	v.add_child(said)
-	for f in p.get("facts", []):
-		var fact := Label.new()
-		fact.text = String(f)
-		fact.add_theme_color_override("font_color", T.TEXT_3)
-		fact.add_theme_font_size_override("font_size", T.SIZE_DESC)
-		fact.autowrap_mode = TextServer.AUTOWRAP_WORD
-		v.add_child(fact)
+	# The petition's facts are what the speaker knew when they came (the model's
+	# brief); shown later they contradict the live houses table, so they stay unsaid.
 	v.add_child(HSeparator.new())
 	for o in p["options"]:
 		var row := VBoxContainer.new()
