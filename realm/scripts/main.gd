@@ -488,6 +488,7 @@ func _try_look(look: String) -> void:
 			"nofog": env.fog_enabled = false
 			"noshadow": sun.shadow_enabled = false
 			"noforest": _no_forest = true
+			"cycle": _cycle = []  # starts once the towns are built; see _cycle_step
 
 
 ## Day and night cycle, or a fixed bright day (toggled from the HUD).
@@ -587,10 +588,52 @@ func _profile_once() -> void:
 
 
 var _no_forest := false  # GOC_LOOK=noforest: the woods hidden, to measure what they cost
+## GOC_LOOK=cycle: once the realm is built, each system in turn stops processing
+## for a few seconds while script time and frame rate are averaged, so the
+## frame's cost can be pinned on the system that carries it.
+var _cycle = null
+var _cycle_i := -1
+var _cycle_t := 0.0
+var _cycle_sum := 0.0
+var _cycle_fps := 0.0
+var _cycle_n := 0
+func _cycle_step(delta: float) -> void:
+	if _cycle == null or towns == null or towns.building() or terrain.width == 0:
+		return
+	if _cycle.is_empty():
+		_cycle = [["nothing", null], ["villagers", villagers], ["units", units], ["scenes", scenes], ["towns", towns], ["labels", labels], ["director", director], ["ui", ui], ["sound", sound], ["countryside", countryside], ["roads", roads], ["terrain", terrain], ["bridge", bridge]]
+		_cycle_i = 0
+		_cycle_t = 0.0
+	_cycle_t += delta
+	if _cycle_t > 2.0:  # let it settle before measuring
+		_cycle_sum += Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
+		_cycle_fps += Engine.get_frames_per_second()
+		_cycle_n += 1
+	if _cycle_t < 8.0:
+		return
+	var f := FileAccess.open("user://perf.log", FileAccess.READ_WRITE)
+	if f:
+		f.seek_end()
+		f.store_line("CYCLE off=%s process=%.1fms fps=%.1f" % [_cycle[_cycle_i][0], _cycle_sum / maxf(_cycle_n, 1), _cycle_fps / maxf(_cycle_n, 1)])
+	var was: Node = _cycle[_cycle_i][1]
+	if was:
+		was.process_mode = Node.PROCESS_MODE_INHERIT
+	_cycle_i += 1
+	_cycle_t = 0.0
+	_cycle_sum = 0.0
+	_cycle_fps = 0.0
+	_cycle_n = 0
+	if _cycle_i >= _cycle.size():
+		_cycle = null
+		return
+	var next: Node = _cycle[_cycle_i][1]
+	if next:
+		next.process_mode = Node.PROCESS_MODE_DISABLED
 
 
 func _process(_delta: float) -> void:
 	_log_perf(_delta)
+	_cycle_step(_delta)
 	if _no_forest and terrain.forest:
 		terrain.forest.visible = false
 	_profile_once()
