@@ -5,6 +5,7 @@ extends RefCounted
 ## keep; celebrations light a bonfire; unrest sets roofs smoking.
 
 const S := 0.12
+const Real = preload("res://scripts/realistic.gd")
 
 var terrain: Node3D
 var towns_node: Node3D  # towns.gd, for its baked building meshes
@@ -136,18 +137,17 @@ func _fields(root: Node3D, hungry: bool) -> void:
 ## A building site: the structure rises with real progress under scaffolding,
 ## with timber stacked beside it and builders at work.
 func _construction(life: Node3D, center: Vector3, building: String, progress: float, rng: RandomNumberGenerator, size: int) -> void:
-	var mesh: Mesh = towns_node._houses[0]
+	# What rises is the kit's own building for it.
+	var kit := "thatched_rural_houses"
 	match building:
 		"Temple", "Cathedral", "Amphitheater", "Colosseum", "Courthouse", "Library", "University":
-			mesh = towns_node._hall
-		"Barracks", "Barracks II":
-			mesh = towns_node._barracks
+			kit = "medieval_church"
+		"Barracks", "Barracks II", "Palace":
+			kit = "medieval_viking_house"
 		"Granary", "Marketplace", "Harbor":
-			mesh = towns_node._barn
+			kit = "old_wooden_barn"
 		"City Walls", "Great Wall":
-			mesh = towns_node._wall_tower
-		"Palace":
-			mesh = towns_node._castle_keep
+			kit = "wooden_fence_game_ready_asset"
 	# Sites go up at the edge of town, on the first flat ground found.
 	var reach := clampf(1.6 + size * 0.32, 2.0, 6.0) + 0.7
 	var ang := rng.randf() * TAU
@@ -161,16 +161,17 @@ func _construction(life: Node3D, center: Vector3, building: String, progress: fl
 		ang += TAU / 12.0
 	var base := off + Vector3(0, _y(center, off), 0)
 	var grow := clampf(progress, 0.08, 1.0)
-	var site := MeshInstance3D.new()
-	site.mesh = mesh
-	site.scale = Vector3(S, S * grow, S)
+	var site: Node3D = Real.make(kit)
+	if site == null:
+		return
+	site.scale.y = grow
 	site.position = base
 	site.rotation.y = ang + PI
 	life.add_child(site)
-	var bb: AABB = mesh.get_aabb()
-	var hx := bb.size.x * S * 0.55
-	var hz := bb.size.z * S * 0.55
-	var full := bb.size.y * S
+	var f: Vector2 = Real.footprint(kit)
+	var hx := f.x * 0.55
+	var hz := f.y * 0.55
+	var full := maxf(f.x, f.y) * 0.6
 	_pole.height = full * 1.05
 	for p in [Vector3(hx, 0, hz), Vector3(-hx, 0, hz), Vector3(hx, 0, -hz), Vector3(-hx, 0, -hz), Vector3(0, 0, hz), Vector3(0, 0, -hz)]:
 		var pole := MeshInstance3D.new()

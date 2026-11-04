@@ -29,13 +29,29 @@ func sync(world: Dictionary) -> void:
 	for child in get_children():
 		if child != _kings:
 			child.queue_free()
+	# Freeciv paves whole patches of tiles; joining every neighbour would draw a
+	# lattice. Real tracks branch: keep only a spanning tree, straight steps
+	# before diagonals, so each patch becomes a few roads with no loops.
+	var edges := []
 	for key in nodes:
 		var a: Vector2i = nodes[key]
-		# Each pair once: only look east and south (and the two diagonals below).
 		for d in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(-1, 1)]:
 			var b: Vector2i = a + d
 			if nodes.has("%d,%d" % [b.x, b.y]):
-				_segment(terrain.world_pos(a.x, a.y), terrain.world_pos(b.x, b.y))
+				edges.append([1.0 if d.x == 0 or d.y == 0 else 1.414, a, b])
+	edges.sort_custom(func(x, y): return x[0] < y[0])
+	var root := {}
+	var find := func(k: Vector2i) -> Vector2i:
+		while root.get(k, k) != k:
+			k = root[k]
+		return k
+	for e in edges:
+		var ra: Vector2i = find.call(e[1])
+		var rb: Vector2i = find.call(e[2])
+		if ra == rb:
+			continue
+		root[ra] = rb
+		_segment(terrain.world_pos(e[1].x, e[1].y), terrain.world_pos(e[2].x, e[2].y))
 
 
 ## A track between two tile centres, bowed gently at the middle so roads don't
@@ -223,7 +239,12 @@ func _segment(a: Vector3, b: Vector3, parent: Node3D = null, width := WIDTH, tin
 		var p: Vector3 = run[0]
 		var q: Vector3 = run[1]
 		var c := p.lerp(q, 0.5)
-		if not terrain.is_land(c.x, c.z):
+		# Roads stop at the shore: never a track drawn across the sea.
+		var wet := false
+		for k in 5:
+			var s := p.lerp(q, k / 4.0)
+			wet = wet or not terrain.is_land(s.x, s.z)
+		if wet:
 			continue
 		var len := Vector2(q.x - p.x, q.z - p.z).length() + width
-		terrain.paint(parent if parent else self, terrain.tiled(TEX, 2 if width > WIDTH else 1, roundi(len / width), "sides"), Vector3(c.x, (p.y + q.y) / 2.0, c.z), Vector2(width, len), atan2(q.x - p.x, q.z - p.z), tint, absf(p.y - q.y) + 3.0)
+		terrain.paint(parent if parent else self, terrain.tiled(TEX, 2 if width > WIDTH else 1, roundi(len / width), "sides"), Vector3(c.x, (p.y + q.y) / 2.0, c.z), Vector2(width, len), atan2(q.x - p.x, q.z - p.z), tint, absf(p.y - q.y) + 3.0, 100.0 if width > WIDTH * 0.8 else 40.0)

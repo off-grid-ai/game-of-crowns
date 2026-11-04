@@ -593,32 +593,36 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	if not stone:
 		_banner(root, keep_off + Vector3(0, _ground_y(center, keep_off) + (2.0 if c["capital"] else 1.75), 0), color, house)
 
-	# Great buildings take their places around the square.
+	# Great buildings take their places around the square. A realistic town's
+	# church, hall and tavern are already on its square, from the kit.
 	var slot := 0
 	var spots := []
 	for i in street_count:
 		var a: float = streets[i] + PI / street_count
 		spots.append(Vector3(cos(a), 0, sin(a)) * (square_r + 0.7))
 	spots.pop_front()  # the first gap holds the keep
-	if "Temple" in buildings or "Cathedral" in buildings:
+	if not real and ("Temple" in buildings or "Cathedral" in buildings):
 		if slot < spots.size():
 			var tp: Vector3 = spots[slot]
 			slot += 1
 			_single(root, _hall, tp + Vector3(0, _ground_y(center, tp), 0), atan2(-tp.x, -tp.z))
 			var bp: Vector3 = tp + tp.normalized() * 0.55
 			_single(root, _bell, bp + Vector3(0, _ground_y(center, bp), 0), 0.0)
-	if "Barracks" in buildings and slot < spots.size():
+	if not real and "Barracks" in buildings and slot < spots.size():
 		var bp2: Vector3 = spots[slot]
 		slot += 1
 		_single(root, _barracks, bp2 + Vector3(0, _ground_y(center, bp2), 0), atan2(-bp2.x, -bp2.z))
 	if "Granary" in buildings:
 		var gp := Vector3(cos(base_ang - 0.5), 0, sin(base_ang - 0.5)) * (reach + 0.5)
-		if _flat_enough(center, gp, 0.4):
+		if real:
+			_put(root, center, "old_wooden_barn", gp, Real.footprint("old_wooden_barn"), [], rng, false)
+		elif _flat_enough(center, gp, 0.4):
 			_single(root, _barn, gp + Vector3(0, _ground_y(center, gp), 0), base_ang)
 
 	var outer := reach + 0.35
 	root.set_meta("reach", reach + 3.0)
-	if "City Walls" in buildings:
+	# A realistic town's palisade is its wall (a seat's stands taller).
+	if "City Walls" in buildings and not real:
 		_walls(root, center, outer)
 		outer += 0.4
 	terrain.commit_grading()

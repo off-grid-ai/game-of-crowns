@@ -53,13 +53,18 @@ func build(cities: Array) -> void:
 				continue
 			steads.append(at)
 			_farmstead(at, rng, hedges)
-			# A cart track from the yard to the nearest town.
+			# A narrow cart track from the yard into a town close by. Farms out on
+			# their own make do with the fields: a track from each to a far town
+			# would criss-cross the land with straight lines.
 			var near: Dictionary = {}
+			var near_d := 3.5  # tiles
 			for c in cities:
-				if near.is_empty() or Vector2(float(c["x"]) - tx, float(c["y"]) - ty).length() < Vector2(float(near["x"]) - tx, float(near["y"]) - ty).length():
+				var cd := Vector2(float(c["x"]) - tx, float(c["y"]) - ty).length()
+				if cd < near_d:
+					near_d = cd
 					near = c
 			if roads and not near.is_empty():
-				roads.track(at, terrain.world_pos(float(near["x"]), float(near["y"])))
+				roads.track(at, terrain.world_pos(float(near["x"]), float(near["y"])), roads.WIDTH * 0.45)
 	_flush()
 	await get_tree().process_frame
 	if gen != _gen:
