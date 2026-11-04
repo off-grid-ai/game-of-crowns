@@ -36,7 +36,7 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 				if played_battle.has(tile):
 					continue
 				played_battle[tile] = true
-				_battle(at, houses.get(int(s.get("owner", -1)), {}))
+				_battle(at, houses.get(int(s.get("owner", -1)), {}), houses.get(_victor(world, s), {}))
 			"sack":
 				_burn(at, 45.0)
 				_refugees(at, 7)
@@ -71,6 +71,21 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 					if int(c["id"]) == int(s.get("city", -1)):
 						town = String(c.get("title", c["name"]))
 				_handover(at, houses.get(int(s.get("from", -1)), {}), houses.get(int(s.get("to", -1)), {}), town)
+
+
+## Who won a fight: the house with men standing on or next to the tile where
+## the loser's died. -1 if no one is there.
+func _victor(world: Dictionary, s: Dictionary) -> int:
+	var best := -1
+	var near := INF
+	for u in world.get("units", []):
+		if int(u["owner"]) == int(s.get("owner", -1)):
+			continue
+		var d := Vector2(float(u["x"]) - float(s["x"]), float(u["y"]) - float(s["y"])).length()
+		if d <= 1.5 and d < near:
+			near = d
+			best = int(u["owner"])
+	return best
 
 
 func _rng(at: Vector3) -> RandomNumberGenerator:
@@ -168,9 +183,9 @@ static func _fit_static(n: Node3D, height: float) -> void:
 ## wall breaks and scatters. The victors cheer under their own standard.
 const RANKS := 3
 const FILES := 9
-const GAP := 0.15  # between files: about 1.25 m, shields nearly touching
+const GAP := 0.2  # between files: about 1.7 m, room for each pair to fight
 const ROW := 0.2  # between ranks: about 1.7 m
-const REACH := 0.09  # half the distance between two duelists: 1.5 m apart
+const REACH := 0.11  # half the distance between two duelists: 1.8 m apart
 const KNIGHTS := 5
 
 ## Camera beats for whoever holds the camera (the director, or a shot):
@@ -178,11 +193,19 @@ const KNIGHTS := 5
 signal framing(pos: Vector3, dist: float, yaw: float)
 
 
-func _battle(at: Vector3, loser: Dictionary) -> void:
+func _battle(at: Vector3, loser: Dictionary, victor := {}) -> void:
 	var root := Node3D.new()
 	add_child(root)
 	var r := _rng(at)
-	var cols := [Color.from_string(String(loser.get("color", "#777")), Color.GRAY).lerp(Color.WHITE, 0.3), Color(0.5, 0.17, 0.15)]
+	var lost := Color.from_string(String(loser.get("color", "#777")), Color.GRAY)
+	var won := Color.from_string(String(victor.get("color", "#7f2b26")), Color(0.5, 0.17, 0.15))
+	# Two houses in like colours (or victors unknown, in blood red, against a red
+	# house): the victors go in steel blue, so you can tell the sides apart.
+	if absf(wrapf(lost.h - won.h, -0.5, 0.5)) < 0.08 and lost.s > 0.25 and won.s > 0.25:
+		won = Color(0.22, 0.3, 0.46)
+	var cols := [lost.lerp(Color.WHITE, 0.3), won.lerp(Color.WHITE, 0.15)]
+	# A field is trampled flat where the lines meet: no trees stand in the fight.
+	terrain.clear_around(at, (FILES * GAP) * 0.5 + 0.9)
 	# The lines meet across the view, so you watch the clash from the side.
 	var dir := Vector3(cos(r.randf() * TAU), 0, 0)
 	dir.z = sqrt(1.0 - dir.x * dir.x)
@@ -190,6 +213,8 @@ func _battle(at: Vector3, loser: Dictionary) -> void:
 	if cam:
 		dir = Vector3(cam.global_basis.x.x, 0, cam.global_basis.x.z).normalized()
 	var side := Vector3(-dir.z, 0, dir.x)
+	# One side of the field for the whole battle: moving round it puts houses
+	# and trees between you and the fighting.
 	var view_yaw := atan2(side.x, side.z) + 0.35
 	var teams := [[], []]
 	for team in 2:
@@ -224,7 +249,9 @@ func _battle(at: Vector3, loser: Dictionary) -> void:
 		root.add_child(bearer)
 		arm(bearer, "bow")
 		_people.play(bearer, "Sword_Idle")
-		var flag := _standard(root, p + side * 0.06, cols[team], face, loser if team == 0 else {})
+		var house: Dictionary = loser if team == 0 else victor
+		# A standard needs its house's arms; men of no known house fight without one.
+		var flag: Node3D = _standard(root, p + side * 0.06, cols[team], face, house) if team == 0 or not house.is_empty() else null
 		bearers.append({"node": bearer, "flag": flag, "face": face})
 	var knights := _flank_company(root, at, dir, side, cols[1], r)
 	framing.emit(_ground(at), 5.5, view_yaw)
@@ -253,7 +280,7 @@ func _battle(at: Vector3, loser: Dictionary) -> void:
 	tw.tween_callback(func():
 		_people.play(captain["node"], "Yelling", 1.2)
 		_advance(teams[1], 0.0, 2.0, 0.0, "Sprint", r)
-		framing.emit(_ground(at), 3.2, view_yaw - 0.15))
+		framing.emit(_ground(at), 3.6, view_yaw))
 	tw.tween_interval(2.1)
 	# 4. The clash (10-21 s): front pairs duel; men fall, those behind step up;
 	# the knights hit the open end of the wall.
@@ -264,7 +291,7 @@ func _battle(at: Vector3, loser: Dictionary) -> void:
 				if m["rank"] == 0:
 					m["engaged"] = true
 					_people.play(m["node"], "Sword_Attack" if team == teams[1] else "Shield_Block", r.randf_range(0.85, 1.15))
-		framing.emit(_ground(at), 2.2, view_yaw - 0.3))
+		framing.emit(_ground(at), 2.8, view_yaw))
 	_press(teams, 1, 12.0, side, r)
 	_press(teams, 2, 15.5, side, r)
 	_charge_flank(knights, teams[0], at, dir, side, 8.0, r)
@@ -305,7 +332,7 @@ func _battle(at: Vector3, loser: Dictionary) -> void:
 			else:
 				_people.play(n, "Cheering" if r.randf() < 0.6 else "Yelling", r.randf_range(0.9, 1.1))
 		_follow(bearers[1], 0.5, 2.0, r)
-		framing.emit(_ground(at + dir * 0.4), 3.0, view_yaw + 0.2))
+		framing.emit(_ground(at + dir * 0.3), 3.4, view_yaw))
 	tw.tween_interval(5.0)
 	tw.tween_callback(func():
 		for m in teams[1]:
@@ -388,13 +415,15 @@ func _follow(b: Dictionary, dist: float, secs: float, r: RandomNumberGenerator) 
 	var n: Node3D = b["node"]
 	var to: Vector3 = n.position + b["face"] * dist
 	_people.play(n, "Walk", r.randf_range(0.9, 1.0))
-	var off: Vector3 = b["flag"].position - n.position
+	var flag: Node3D = b["flag"]
+	var off: Vector3 = flag.position - n.position if flag else Vector3.ZERO
 	var tw := n.create_tween()
 	tw.tween_method(func(k: float):
 		if is_instance_valid(n) and not n.has_meta("dead"):
 			var p := _ground(n.position.lerp(to, k * 0.2))
 			n.position = p
-			b["flag"].position = _ground(p + off), 0.0, 1.0, secs)
+			if flag:
+				flag.position = _ground(p + off), 0.0, 1.0, secs)
 	tw.tween_callback(func():
 		if not n.has_meta("dead"):
 			_people.play(n, "Sword_Idle", 1.0))
@@ -592,6 +621,13 @@ func _standard(root: Node3D, p: Vector3, color: Color, face: Vector3, house := {
 ## A standard goes over: it sways, then topples backward from the line and
 ## lies on the field. `face` is the way its line faced.
 func _drop_banner(b: Node3D, face := Vector3.ZERO) -> void:
+	# The cloth turns to face you about its pole while it stands; once it falls
+	# it must go down with the pole, so it gets a cloth of its own that doesn't.
+	var cloth: MeshInstance3D = b.get_node_or_null("Banner")
+	if cloth and cloth.material_override is BaseMaterial3D:
+		var m: BaseMaterial3D = cloth.material_override.duplicate()
+		m.billboard_mode = BaseMaterial3D.BILLBOARD_DISABLED
+		cloth.material_override = m
 	var tw := b.create_tween()
 	if face == Vector3.ZERO:
 		tw.tween_property(b, "rotation:x", deg_to_rad(80), 1.2).set_ease(Tween.EASE_IN)
@@ -653,6 +689,9 @@ func _siege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, fo
 	var arc := func(a: float, rad: float) -> Vector3:
 		return _ground(at + Vector3(cos(base + a), 0, sin(base + a)) * rad)
 	_sieges[id]["front"] = arc.call(0.0, wall + 0.6)
+	# Seen from behind the camp, on the open ground it was pitched on, over the
+	# engines and companies to the walls.
+	framing.emit(_sieges[id]["front"], 4.5, PI / 2 - base)
 	# The camp: companies under their standards.
 	for g in 5:
 		var a := (g - 2) * 0.32 + r.randf_range(-0.06, 0.06)
@@ -1075,7 +1114,7 @@ func _muster(at: Vector3, goal: Vector3) -> void:
 		for m in men:
 			_in_step(m["node"], "Walk", phase)
 		_people.play(captain, "Walk", 1.0)
-		framing.emit(_ground(at + start_dir * 1.2), 3.4, yaw + 0.3))
+		framing.emit(_ground(at + start_dir * 1.2), 3.4, yaw))
 	tw.tween_method(func(t: float):
 		for m in men:
 			var row := int(m["slot"]) / 2
