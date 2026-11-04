@@ -169,6 +169,19 @@ const PRESETS := {
 }
 
 
+## A name for a new reign, like a chronicle's title; the player can type their own.
+const REIGN_NAMES := ["The Long Winter", "The Broken Oath", "The Gilded Peace", "The Iron Year",
+	"The Seven Banners", "The Hollow Crown", "The Red Harvest", "The Quiet Throne", "The Last Accord",
+	"The Wolf's Reign", "The Ashen Summer", "The Bended Knee"]
+var _reign := ""
+
+
+func _reign_name() -> String:
+	if _reign == "":
+		_reign = REIGN_NAMES[randi() % REIGN_NAMES.size()]
+	return _reign
+
+
 func _use_preset(name: String) -> void:
 	var p: Dictionary = PRESETS[name]
 	_preset = name
@@ -179,7 +192,7 @@ func _use_preset(name: String) -> void:
 	# A name you typed stays; one that was only the last card's name follows the card.
 	var typed := _name_edit.text if _name_edit else ""
 	show_new()
-	_name_edit.text = name if typed == "" or PRESETS.has(typed) else typed
+	_name_edit.text = typed if typed != "" and not PRESETS.has(typed) else _reign_name()
 
 
 ## Every choice about the realm to come, in two columns: the world, its time and
@@ -228,6 +241,7 @@ func show_new() -> void:
 	var name_edit := LineEdit.new()
 	name_edit.placeholder_text = "Name this chronicle (e.g. The Long Winter)"
 	name_edit.add_theme_font_size_override("font_size", 18)
+	name_edit.text = _reign_name()
 	_body.add_child(name_edit)
 	_name_edit = name_edit
 	# Every other choice, folded away until asked for: it fits the window
@@ -647,6 +661,7 @@ var _name_edit: LineEdit
 
 func _begin() -> void:
 	var n := _name_edit.text.strip_edges()
+	_reign = ""  # the next reign gets a name of its own
 	if n == "":
 		n = "The Realm of %s" % ("Strangers" if _scenario == "random" else "Aldmere")
 	bridge.create_chronicle(n, _scenario, _minutes, "normal", _wealth, _mood_edit.text.strip_edges(), _opt, func(code, d):

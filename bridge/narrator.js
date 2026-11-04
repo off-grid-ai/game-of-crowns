@@ -58,7 +58,8 @@ function generatedName(id) {
   const p = PREFIX[h % PREFIX.length];
   h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0;
   const s = SUFFIX[h % SUFFIX.length];
-  return p + s;
+  // "King's" + "spire" reads as two words: "King's Spire".
+  return p.endsWith("'s") ? `${p} ${s[0].toUpperCase()}${s.slice(1)}` : p + s;
 }
 
 function owner(world, id) {
@@ -89,9 +90,18 @@ const NOTABLE_BUILDINGS = {
   "Statue of Zeus": (c, h) => `${h} raises a statue of the thunder god at ${c}.`,
 };
 
-const NOTABLE_TECH = new Set(["Bronze Working", "Iron Working", "Monarchy", "Feudalism", "Chivalry", "Masonry",
-  "Mathematics", "Astronomy", "Philosophy", "Monotheism", "Horseback Riding", "Writing", "Currency",
-  "Construction", "The Wheel", "Mysticism", "Polytheism", "Seafaring", "Map Making", "Code of Laws"]);
+// What a house learning a craft looks like in the realm; other advances aren't news.
+const NOTABLE_TECH = {
+  "Bronze Working": "smiths cast bronze", "Iron Working": "smiths forge iron blades",
+  "Monarchy": "lord holds court like a king", "Feudalism": "lord binds knights by oath",
+  "Chivalry": "knights swear the vows of chivalry", "Masonry": "masons raise stone walls",
+  "Mathematics": "engineers reckon siege engines", "Astronomy": "maesters chart the stars",
+  "Philosophy": "scholars hold learned debate", "Monotheism": "septons preach one faith",
+  "Horseback Riding": "riders break horses for war", "Writing": "clerks keep written records",
+  "Currency": "lord mints coin", "Construction": "builders raise great halls",
+  "The Wheel": "wrights build war carts", "Seafaring": "shipwrights lay down sea-going hulls",
+  "Map Making": "captains chart the coasts", "Code of Laws": "lord sets the law down in writing",
+};
 
 export function describe(ev, world) {
   const c = ev.city !== undefined ? town(ev.city) : "";
@@ -126,7 +136,7 @@ export function describe(ev, world) {
     case "tech":
       // Techs the realm starts with are granted by script; they aren't news.
       if (ev.source === "script" || Number(ev.turn) <= 1) return null;
-      return NOTABLE_TECH.has(ev.tech) ? `${owner(world, ev.owner)} masters ${ev.tech}.` : null;
+      return NOTABLE_TECH[ev.tech] ? `${owner(world, ev.owner)}'s ${NOTABLE_TECH[ev.tech]}.` : null;
     case "civil_war":
       return `${owner(world, ev.owner)} tears itself apart in civil war.`;
     default:

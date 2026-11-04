@@ -209,7 +209,10 @@ func _next() -> void:
 	_title.text = String(p[1])
 	_line.text = String(p[2])
 	var house: Dictionary = p[3]
-	_keys.text = _with_keys(String(p[4]))
+	# No key strips while the realm loads (controls live in Settings); a plain
+	# sentence like "Click a town to open it" still shows. Key hints are "K  court".
+	var hint := String(p[4])
+	_keys.text = "" if hint.contains("  ") else hint
 	_keys.visible = _keys.text != ""
 	_sigil.texture = preload("res://scripts/heraldry.gd").sigil(house) if not house.is_empty() else null
 	_sigil.visible = _sigil.texture != null
