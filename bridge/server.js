@@ -672,6 +672,15 @@ http.createServer(async (req, res) => {
     });
   }
   if (url.pathname === "/characters/options") return json(res, 200, { roles: Object.fromEntries(Object.entries(ROLES).map(([k, v]) => [k, v.title])), goals: GOALS, traits: TRAITS.filter((t) => t !== "lustful") });
+  if (url.pathname === "/person/fall" && req.method === "POST") {
+    // Someone the King walked as fell in a fight: a real death, and their heir inherits.
+    const { id, how } = await body(req);
+    const c = court.people[String(id)];
+    if (!c || !c.alive || !world) return json(res, 400, { error: "no such person" });
+    if (how) court.remember(c.id, String(how).slice(0, 200));
+    court.die(c, world.turn, world);
+    return json(res, 200, { ok: true });
+  }
   if (url.pathname === "/person" && req.method === "POST") {
     const spec = await body(req);
     const out = court.edit(String(spec.id), spec, world);

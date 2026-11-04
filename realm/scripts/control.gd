@@ -9,6 +9,9 @@ extends Node3D
 signal talk_to(town: int, i: int)
 signal enter(kind: String, town: int, person: Dictionary)
 signal ended
+signal fell(person: Dictionary)
+
+const Combat := preload("res://scripts/combat.gd")
 
 const WALK := 0.17  # world units a second, as the townsfolk walk
 const RUN := 0.42
@@ -31,6 +34,10 @@ var _hint: Label
 var _prompt: Label
 var _turning := false
 var _near := {}  # what E would act on: {kind: "folk"|"door", ...}
+var _me  # Combat: you, in a fight
+var _foes: Array = []  # Combat: whoever has come for you
+var _threat_check := 12.0
+var _blocking := false
 
 
 func start(person: Dictionary, house: Dictionary, town_id: int) -> void:
@@ -54,9 +61,13 @@ func start(person: Dictionary, house: Dictionary, town_id: int) -> void:
 		if d["room"] == "great_hall":
 			door = d["at"]
 			break
-	var start_at := _walkable(center + door)
+	# A few steps out into the square, the camera on the square's side looking
+	# back at where they came from, so it never sits inside a wall.
+	var out := Vector3(-door.x, 0, -door.z).normalized() * 0.45
+	var start_at := _walkable(center + door + out)
 	_body.position = Vector3(start_at.x, terrain.height_at(start_at.x, start_at.z), start_at.z)
-	_yaw = atan2(_body.position.x - center.x, _body.position.z - center.z)
+	_yaw = atan2(center.x - _body.position.x, center.z - _body.position.z)
+	_body.rotation.y = _yaw + PI
 	var tag := Label3D.new()
 	tag.text = String(person.get("name", ""))
 	tag.font_size = 36
@@ -67,6 +78,8 @@ func start(person: Dictionary, house: Dictionary, town_id: int) -> void:
 	tag.position = Vector3(0, 2.15, 0)  # just above the head, in the body's own scale
 	tag.modulate = Color(1, 0.93, 0.78)
 	_body.add_child(tag)
+	_me = Combat.new(_body, villagers._people)
+	_me.on_land = _land
 	_cam = Camera3D.new()
 	_cam.fov = 50
 	_cam.near = 0.02
@@ -85,6 +98,10 @@ func stop() -> void:
 	if is_instance_valid(_body):
 		rig.focus(_body.position, 6.0)
 		_body.queue_free()
+	for f in _foes:
+		if is_instance_valid(f.node):
+			f.node.queue_free()
+	_foes.clear()
 	if is_instance_valid(_cam):
 		_cam.queue_free()
 	if is_instance_valid(_hud):
@@ -117,7 +134,7 @@ func _build_hud() -> void:
 	_prompt = T.title("", 16)
 	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(_prompt)
-	_hint = T.label("WASD walk   ·   Shift run   ·   Q R or right-drag turn   ·   wheel closer   ·   E talk or enter   ·   Esc leave")
+	_hint = T.label("WASD walk   ·   Shift run   ·   right-drag turn   ·   E talk or enter   ·   Tab draw sword   ·   click strike   ·   Space block   ·   Esc leave")
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(_hint)
 
@@ -133,9 +150,16 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_E:
 				_act()
 				get_viewport().set_input_as_handled()
+			KEY_TAB:
+				_me.draw(not _me.armed)
+				get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_RIGHT:
 			_turning = event.pressed
+		elif event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			if not _me.armed:
+				_me.draw(true)
+			_me.strike()
 		elif event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_dist = maxf(0.35, _dist * 0.88)
 		elif event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
@@ -163,6 +187,13 @@ func _process(delta: float) -> void:
 	if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT):
 		want.x += 1
 	var running := Input.is_key_pressed(KEY_SHIFT)
+	_me.tick(delta)
+	var block: bool = Input.is_key_pressed(KEY_SPACE) and _me.armed
+	if block != _blocking:
+		_blocking = block
+		_me.block(block)
+	if not _me.alive() or _me.state in ["striking", "staggered", "blocking"]:
+		want = Vector2.ZERO  # rooted while swinging, reeling or behind the shield
 	if want != Vector2.ZERO:
 		# Forward is away from the camera.
 		var fwd := Vector3(-sin(_yaw), 0, -cos(_yaw))
@@ -173,9 +204,10 @@ func _process(delta: float) -> void:
 		if terrain.is_land(next.x, next.z):
 			_body.position = Vector3(next.x, terrain.height_at(next.x, next.z), next.z)
 		_body.rotation.y = lerp_angle(_body.rotation.y, atan2(dir.x, dir.z), minf(1.0, delta * 10.0))
-		villagers._people.play(_body, "Running" if running else "Walk", 1.0)
-	else:
-		villagers._people.play(_body, "Idle", 1.0)
+		villagers._people.play(_body, ("Sprint" if _me.armed else "Running") if running else "Walk", 1.0)
+	elif _me.alive() and _me.state == "ready":
+		villagers._people.play(_body, "Sword_Idle" if _me.armed else "Idle", 1.0)
+	_fight(delta)
 	# The townsfolk gather wherever you are.
 	rig.target = _body.position
 	rig.distance = 3.0
@@ -254,3 +286,77 @@ func _act() -> void:
 			villagers._people.play(_body, "Idle_Talking", 1.0)
 		"door":
 			enter.emit(String(_near["room"]), int(_near["town"]), _person)
+
+
+# --- fighting --------------------------------------------------------------------
+
+## A blade has arrived: everyone in its arc takes the blow.
+func _land(attacker) -> void:
+	var all: Array = [_me] + _foes
+	for f in all:
+		if f != attacker and f.in_reach_of(attacker):
+			var turned: bool = f.take(attacker.node, 34.0 if attacker == _me else 18.0)
+			if f == _me and not _me.alive():
+				_fallen()
+			elif not turned and f != _me and not f.alive():
+				_prompt.text = "The outlaw falls."
+
+
+## Foes close in, circle a little, strike when in reach, and now and then raise
+## a shield when you swing. Outlaws come out of the dark at night, and a town
+## in disorder can turn on whoever walks its streets.
+func _fight(delta: float) -> void:
+	_threat_check -= delta
+	if _threat_check <= 0.0:
+		_threat_check = 20.0
+		var alive_foes := _foes.filter(func(f): return f.alive()).size()
+		var town: Dictionary = towns.towns.get(_town_at(_body.position), {}).get("data", {})
+		if alive_foes == 0 and _me.alive() and (villagers.night or town.get("disorder", false)) and randf() < 0.5:
+			spawn_foes(randi_range(1, 3))
+	for f in _foes:
+		f.tick(delta)
+		if not f.alive() or not _me.alive():
+			continue
+		var to: Vector3 = _body.position - f.node.position
+		to.y = 0
+		f.node.rotation.y = lerp_angle(f.node.rotation.y, atan2(to.x, to.z), minf(1.0, delta * 6.0))
+		if f.state != "ready" and f.state != "blocking":
+			continue
+		if _me.state == "striking" and to.length() < Combat.REACH * 1.3 and f.state == "ready" and randf() < delta * 1.5:
+			f.block(true)
+			get_tree().create_timer(0.7).timeout.connect(func(): f.block(false))
+			continue
+		if to.length() > Combat.REACH * 0.8:
+			var step: Vector3 = to.normalized() * WALK * 1.3 * delta
+			var next := _walkable(f.node.position + step)
+			f.node.position = Vector3(next.x, terrain.height_at(next.x, next.z), next.z)
+			villagers._people.play(f.node, "Walk", 1.1)
+		elif f.state == "ready" and randf() < delta * 0.9:
+			f.strike()
+		else:
+			villagers._people.play(f.node, "Sword_Idle", 1.0)
+
+
+## Outlaws, armed, from somewhere just out of sight.
+func spawn_foes(count: int) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	for i in count:
+		var ang := rng.randf() * TAU
+		var at := _walkable(_body.position + Vector3(cos(ang), 0, sin(ang)) * rng.randf_range(0.7, 1.1))
+		var n: Node3D = villagers._people.make(rng, "soldier", Color(0.42, 0.38, 0.34), "adult")
+		add_child(n)
+		n.position = Vector3(at.x, terrain.height_at(at.x, at.z), at.z)
+		var f = Combat.new(n, villagers._people)
+		f.health = 60.0
+		f.on_land = _land
+		f.draw(true)
+		_foes.append(f)
+	_prompt.text = "Outlaws come for you. Tab to draw your sword."
+
+
+func _fallen() -> void:
+	_prompt.text = "%s has fallen." % String(_person.get("name", ""))
+	get_tree().create_timer(3.5).timeout.connect(func():
+		fell.emit(_person)
+		stop())

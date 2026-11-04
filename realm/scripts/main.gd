@@ -149,6 +149,9 @@ func _ready() -> void:
 			control.set_process_unhandled_input(false)
 		else:
 			ui.toast("Its doors are shut to you, for now."))
+	control.fell.connect(func(p):
+		bridge.person_fell(str(p.get("id", "")), "I fell to outlaws in the streets of %s." % String(p.get("seat", "my own town")), func(code, _d):
+			ui.toast(("%s is dead. Their heir takes up the seat." % String(p.get("name", ""))) if code == 200 else "They fell, but the realm did not hear of it.")))
 	interior.closed.connect(func():
 		control.set_process(true)
 		control.set_process_unhandled_input(true))
@@ -283,6 +286,8 @@ func _parse_args() -> void:
 			_shot["hero"] = int(a.substr(7))
 		elif a.begins_with("--control="):
 			_shot["control"] = int(a.substr(10))
+		elif a == "--duel":
+			_shot["duel"] = true
 		elif a.begins_with("--interior="):
 			_shot["interior"] = a.substr(11)
 		elif a.begins_with("--move="):
@@ -540,6 +545,14 @@ func _frame_for_shot(world: Dictionary) -> void:
 				if not p is Dictionary:
 					return
 				_take_control(p, h)
+				if _shot.has("duel"):
+					# Outlaws come; draw and swing, timed so the shot catches the clash.
+					get_tree().create_timer(2.0).timeout.connect(func():
+						control.spawn_foes(2)
+						control._me.draw(true))
+					get_tree().create_timer(float(_shot.get("lead", 6.0))).timeout.connect(func():
+						control._me.strike()
+						get_tree().create_timer(0.4).timeout.connect(_take_shot))
 				if _shot.has("interior"):
 					get_tree().create_timer(2.0).timeout.connect(func():
 						interior.open(String(_shot["interior"]), p, h, String(p.get("seat", ""))))))
