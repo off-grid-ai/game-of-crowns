@@ -918,11 +918,10 @@ func _on_world(world: Dictionary) -> void:
 		if not _shot.has("path"):
 			_home_view(world)
 		_frame_for_shot(world)
+		# The realm opens with the houses and the chronicle in view; a test shot
+		# stays clear of them unless it asks (--panels).
+		ui.side_panels(not _shot.has("path") or _shot.get("panels", false))
 		if _shot.get("panels", false):
-			ui._houses_btn.button_pressed = true
-			ui._houses_panel.visible = true
-			ui._chron_btn.button_pressed = true
-			ui._chron_panel.visible = true
 			ui._court_hidden = false
 
 

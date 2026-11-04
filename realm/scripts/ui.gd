@@ -419,13 +419,19 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	elif event.is_action_pressed(&"back"):
 		_court_hidden = true
 		_court_panel.visible = false
-		_houses_btn.button_pressed = false
-		_houses_panel.visible = false
-		_chron_btn.button_pressed = false
-		_chron_panel.visible = false
+		side_panels(false)
 	else:
 		return
 	get_viewport().set_input_as_handled()
+
+
+## The great houses down the left and the chronicle down the right: open by
+## default, so who is rising and what is happening are always in view.
+func side_panels(on: bool) -> void:
+	_houses_btn.button_pressed = on
+	_houses_panel.visible = on
+	_chron_btn.button_pressed = on
+	_chron_panel.visible = on
 
 
 func _build_houses() -> void:
