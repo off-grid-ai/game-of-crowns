@@ -428,7 +428,7 @@ var _rebind_button: Button
 ## it, press the new key (Esc cancels). Plus where the camera pad shows.
 func _controls_settings(parent: Control) -> void:
 	_section(parent, "Controls")
-	_choices(parent, "The on-screen camera pad", [["When the mouse is near", "near"], ["Always", "always"], ["Never", "never"]], Settings.get_value("camera_pad"), func(v): Settings.set_value("camera_pad", v))
+	_choices(parent, "The on-screen camera pad", [["Always", "always"], ["When the mouse is near", "near"], ["Never", "never"]], Settings.get_value("camera_pad"), func(v): Settings.set_value("camera_pad", v))
 	var mouse := _label("Mouse: drag to move, scroll or pinch to zoom toward the cursor, right-drag or Option-drag to turn and tilt, click a town or a person to open them.", 14, MUTED)
 	mouse.autowrap_mode = TextServer.AUTOWRAP_WORD
 	mouse.custom_minimum_size.x = 200
