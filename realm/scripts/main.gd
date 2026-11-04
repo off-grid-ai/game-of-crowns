@@ -281,6 +281,7 @@ func _ready() -> void:
 	# Choosing a chronicle starts the intro at once, as the loading screen,
 	# and wakes the realm to build behind it.
 	title.closed.connect(func():
+		_opened_in_intro = true
 		if not bridge.active:
 			bridge.wake()
 			if bridge.world.is_empty():
@@ -1276,15 +1277,21 @@ func _tell_the_story() -> void:
 	# The intro has the screen to itself: the menu, the interface and the map's
 	# names step aside while it plays (it may fly over the live realm), and come
 	# back as they were when it ends.
-	var was := [title.visible, ui.visible, labels.visible]
+	var was := [title.visible]
+	_opened_in_intro = false
 	title.visible = false
 	ui.visible = false
 	labels.visible = false
 	intro.finished.connect(func():
-		title.visible = was[0]
-		ui.visible = was[1] and not _shot.has("clean")
-		labels.visible = was[2] and not _shot.has("clean"), CONNECT_ONE_SHOT)
+		# The menu comes back only if no chronicle was opened meanwhile; the
+		# interface follows the one rule (shown whenever the menu isn't), not
+		# what was on screen when the intro began (a new realm began from the
+		# menu, which left the interface hidden after the intro).
+		title.visible = was[0] and not _opened_in_intro
+		ui.visible = not title.visible and not _shot.has("clean")
+		labels.visible = ui.visible, CONNECT_ONE_SHOT)
 	intro.play(houses, seats)
+var _opened_in_intro := false  # a chronicle was opened while the intro played: no menu after it
 var _voice: AudioStreamPlayer
 
 
