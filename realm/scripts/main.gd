@@ -275,6 +275,9 @@ func _ready() -> void:
 	# The menu stands alone: the game's interface hides behind it until a
 	# chronicle is open (and again whenever the menu is brought back).
 	title.visibility_changed.connect(func():
+		# The menu (and Settings, a new chronicle) steps you out of walking first.
+		if title.visible and control and control.active:
+			control.stop()
 		ui.visible = not title.visible and not _shot.has("clean")
 		labels.visible = not title.visible and not _shot.has("clean"))
 	# Continuing or beginning a chronicle wakes the realm, and the intro plays

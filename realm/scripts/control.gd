@@ -141,6 +141,13 @@ func stop() -> void:
 	_notables.clear()
 	if is_instance_valid(_cam):
 		_cam.queue_free()
+	# The conversation, the tags and the prompt live in the walking display: close
+	# the talk and forget them with it, so the next walk builds them fresh.
+	if _chat and is_instance_valid(_chat):
+		_close_chat()
+	_chat = null
+	_chat_line = null
+	_my_tag = null
 	if is_instance_valid(_hud):
 		_hud.queue_free()
 	rig.set_process(true)
@@ -171,6 +178,14 @@ func _build_hud() -> void:
 	_prompt = T.title("", 16)
 	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(_prompt)
+
+
+## Esc ends a conversation even while its text box has the keyboard: a focused
+## box takes keys before any unhandled handler, so this listens first.
+func _input(event: InputEvent) -> void:
+	if active and _chat and _chat.visible and event is InputEventKey and event.pressed and not event.echo and event.is_action_pressed(&"back"):
+		_close_chat()
+		get_viewport().set_input_as_handled()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -603,10 +618,12 @@ func _open_chat(town: int, i: int, person := "", person_name := "") -> void:
 			Settings.set_value("talk", "type" if Settings.get_value("talk") == "speak" else "speak")
 			_apply_mode())
 		line.add_child(_mode_btn)
-		mic.state_changed.connect(_on_mic)
-		mic.utterance.connect(func(wav):
-			if _chat and _chat.visible:
-				spoke.emit(wav))
+		# Once for the life of walking mode: the panel is rebuilt on each walk.
+		if not mic.state_changed.is_connected(_on_mic):
+			mic.state_changed.connect(_on_mic)
+			mic.utterance.connect(func(wav):
+				if _chat and _chat.visible:
+					spoke.emit(wav))
 	_chat_with = {"town": town, "i": i, "person": person}
 	_chat_lines = ["[color=#9a968e]%s[/color]" % ("You approach %s." % person_name if person_name != "" else "You approach them.")]
 	_waiting = false
@@ -634,7 +651,7 @@ func _apply_mode() -> void:
 
 
 func _on_mic(state: String) -> void:
-	if _hearing:
+	if _hearing and is_instance_valid(_hearing):
 		_hearing.text = {"listening": "Listening…", "hearing": "Hearing you…", "waiting": "…", "off": ""}.get(state, "")
 
 
