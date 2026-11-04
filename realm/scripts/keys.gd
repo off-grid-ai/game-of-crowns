@@ -37,6 +37,7 @@ const ACTIONS := [
 	["interact", "Talk, enter, mount", "Walking and fighting", [KEY_E]],
 	["draw", "Draw or sheathe your weapon", "Walking and fighting", [KEY_TAB]],
 	["block", "Block (hold)", "Walking and fighting", [KEY_SPACE]],
+	["dodge", "Dodge (with left or right, else back)", "Walking and fighting", [KEY_X]],
 	["turn_left", "Turn the view left", "Walking and fighting", [KEY_Q]],
 	["turn_right", "Turn the view right", "Walking and fighting", [KEY_R]],
 ]
