@@ -16,7 +16,7 @@ import { godCommand, healLua } from "./god.js";
 import { readSave, extractDetail } from "./savefile.js";
 import { townsfolk } from "./townsfolk.js";
 import { ROLES, GOALS, TRAITS } from "./characters.js";
-import { folkTale, speak, ruleFrom, reactTo, speech, voiceFor, transcribe, aiStatus } from "./claude.js";
+import { folkTale, folkPlain, moodRules, speak, ruleFrom, reactTo, speech, voiceFor, transcribe, aiStatus } from "./claude.js";
 import { BUILD_COST, granarySize } from "./rules.js";
 import * as chron from "./chronicles.js";
 import { decree, titheLua, clampFavour, DECREES } from "./crown.js";
@@ -196,7 +196,8 @@ async function applyOpeningMood() {
   chron.saveMeta(meta);
   const houses = world.players.map((p) => houseFor(p)).filter((h) => !h.wild && !h.crown).map((h) => h.name);
   court.populate(world);
-  const mood = await moodFrom(meta.openingMood, houses, court.alive().filter((c) => c.rank === "lord").map((c) => c.name));
+  const lords = court.alive().filter((c) => c.rank === "lord").map((c) => c.name);
+  const mood = (await moodFrom(meta.openingMood, houses, lords)) ?? moodRules(meta.openingMood, houses, lords);
   if (mood) {
     court.setMood(mood);
     record({ turn: world.turn, kind: "decree", text: `So the chronicle begins: ${mood.summary}` });
@@ -676,8 +677,7 @@ http.createServer(async (req, res) => {
     }
     const houses = (world?.players ?? []).map((p) => houseFor(p)).filter((h) => !h.wild && !h.crown).map((h) => h.name);
     const names = court.alive().filter((c) => c.rank === "lord" || c.rank === "bannerman" || c.rank === "heir").map((c) => c.name);
-    const mood = await moodFrom(String(text).slice(0, 300), houses, names);
-    if (!mood) return json(res, 503, { error: "Off Grid AI isn't running; open the app to set the realm's mood" });
+    const mood = (await moodFrom(String(text).slice(0, 300), houses, names)) ?? moodRules(String(text).slice(0, 300), houses, names);
     const touched = court.setMood(mood);
     mood.summary = `${mood.summary} (${touched} ${touched === 1 ? "person" : "people"})`;
     record({ turn: world?.turn ?? 0, kind: "decree", text: `By the King's word: ${mood.summary}` });
@@ -805,7 +805,8 @@ http.createServer(async (req, res) => {
       const near = chronicle.filter((e) => e.city === city.id || (e.text ?? "").includes(cityName(city.id))).slice(-6).map((e) => e.text);
       const realm = chronicle.filter((e) => ["rebellion", "betrayal", "city_transferred", "death", "marriage", "raid"].includes(e.kind)).slice(-4).map((e) => e.text);
       const tale = await folkTale(person, cityName(city.id), houseFor(owner).name, [...near, ...realm]);
-      if (!tale) return json(res, 503, { error: "the storyteller is busy; try again" });
+      // No local model: their life told plainly, and not kept, so the model can tell it later.
+      if (!tale) return json(res, 200, { town: cityName(city.id), person, ...folkPlain(person, cityName(city.id)) });
       tales[key] = tale;
       fs.writeFileSync(file, JSON.stringify(tales, null, 1));
     }

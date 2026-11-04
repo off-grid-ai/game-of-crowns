@@ -172,6 +172,57 @@ Numbers are integers from -50 to 50 (0 = unchanged). "Strategic" = more cunning 
   };
 }
 
+// Without the local model, the King's word is still read: by its keywords.
+// Cruder than the model, but the realm never waits on it.
+const WORDS = [
+  [/aggress|warlike|war|bloody|restless|bold|fierce|angry/, { aggression: 30 }],
+  [/peace|calm|gentle|diplomat|quiet/, { aggression: -30, caution: 20 }],
+  [/loyal|faithful to|obedien/, { loyalty: 30 }],
+  [/disloyal|rebel|defiant|treacher/, { loyalty: -30 }],
+  [/ambiti|hungry for|grasping for power/, { ambition: 30 }],
+  [/content|humble|satisfied/, { ambition: -30 }],
+  [/careful|cautious|wary|strategic/, { caution: 30, cunning: 15 }],
+  [/reckless|rash/, { caution: -30 }],
+  [/cunning|scheming|clever|sly/, { cunning: 30 }],
+  [/pious|devout|godly|holy/, { piety: 30 }],
+  [/godless|impious/, { piety: -30 }],
+  [/greed|grasping|miserly/, { greed: 30 }],
+  [/generous|charitable|open-handed/, { greed: -30 }],
+];
+
+export function moodRules(text, houses, names = []) {
+  const t = String(text).toLowerCase();
+  const out = { aggression: 0, loyalty: 0, ambition: 0, caution: 0, cunning: 0, piety: 0, greed: 0 };
+  for (const [re, add] of WORDS) {
+    const m = re.exec(t);
+    if (!m) continue;
+    // "less loyal", "not so warlike": a negation just before the word turns it round.
+    const flip = /\b(less|not|no longer|fewer|not so)\s+(\w+\s+)?$/.test(t.slice(0, m.index)) ? -1 : 1;
+    for (const [k, v] of Object.entries(add)) out[k] += v * flip;
+  }
+  const hs = houses.filter((h) => t.includes(h.replace("House ", "").toLowerCase()));
+  const cs = names.filter((n) => t.includes(n.toLowerCase())).map((n) => n.toLowerCase());
+  const rank = /\blords?\b/.test(t) ? "lord" : /bannerm[ae]n/.test(t) ? "bannerman" : /\bheirs?\b/.test(t) ? "heir" : null;
+  const scope = cs.length ? "characters" : hs.length ? "houses" : rank ? "group" : "all";
+  const clamp = (v) => Math.max(-50, Math.min(50, v));
+  return {
+    id: `d${Date.now().toString(36)}`, text, scope, summary: String(text).trim(),
+    houses: hs, characters: cs, group: rank ? { rank, gender: "any" } : {},
+    ...Object.fromEntries(Object.entries(out).map(([k, v]) => [k, clamp(v)])),
+    addTraits: [], removeTraits: [], goal: "",
+  };
+}
+
+// A townsperson's life without the model: told plainly from what the realm
+// knows of them. The model, when it's there, tells it better later.
+export function folkPlain(person, town) {
+  const they = person.woman ? "She" : "He";
+  return {
+    story: `${person.name} is a ${person.trade} in ${town}, ${person.age} years old, ${person.family}. ${person.past ? person.past.charAt(0).toUpperCase() + person.past.slice(1) + "." : ""} ${they} wants ${person.wants}.`.replace(/\s+/g, " ").trim(),
+    says: "",
+  };
+}
+
 // One of the common folk, told in full: a short story in their own life,
 // woven from what has really happened in their town.
 export async function folkTale(person, town, house, events) {
