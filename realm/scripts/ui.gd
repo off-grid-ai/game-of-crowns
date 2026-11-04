@@ -642,6 +642,7 @@ func _build_court() -> void:
 
 func _process(delta: float) -> void:
 	_reveal_pad(delta)
+	_arrange_top()  # the date line grows (a usurper marches…), so keep the bar from overlapping
 	_fit_centre(_digest_panel, 620.0)
 	_fit_centre(_house_panel, 640.0)
 	_fit_centre(_ledger_panel, 820.0)
@@ -1085,6 +1086,15 @@ func show_digest(entries: Array, turns: int) -> void:
 	var years := turns / 4
 	var span := ("%d years" % years if years > 1 else "a year") if years >= 1 else ("%d seasons" % turns if turns > 1 else "a season")
 	v.add_child(T.title("%s passed in the realm" % (span.left(1).to_upper() + span.substr(1)) if turns > 0 else "The realm moved on", 22))
+	# The same news told twice (a siege reported each season it lasts) is told once.
+	var unique: Array = []
+	var told := {}
+	for e in entries:
+		var t := String(e.get("text", ""))
+		if not told.has(t):
+			told[t] = true
+			unique.append(e)
+	entries = unique
 	var shown := entries.slice(maxi(0, entries.size() - 8))
 	shown.reverse()
 	for e in shown:
