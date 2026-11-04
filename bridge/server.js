@@ -262,8 +262,8 @@ function applyStartOptions() {
     // The reign's mood sets the level; each house's own history with the crown
     // (the world bible) sets where it stands within it, so the table starts
     // with friends, doubters and an obvious problem, not seven equal numbers.
-    const lean = { "House Stormhold": 12, "House Goldcrest": 8, "House Wolfholt": 4, "House Highfell": 2, "House Thornvale": -2, "House Ironreach": -10, "House Sunspire": -14 }[houseFor(p).name] ?? 0;
-    favour[p.id] = clampFavour(({ loyal: 74, wary: 55, resentful: 34 }[o.trust] ?? 55) + lean);
+    const lean = LEAN[houseFor(p).name] ?? 0;
+    favour[p.id] = restingFavour(p);
     favourWhy[p.id] = [];
     noteFavour(p.id, ({ loyal: 19, wary: 0, resentful: -21 }[o.trust] ?? 0), "the realm's mood at your crowning");
     noteFavour(p.id, lean, lean > 0 ? "their old loyalty to the crown" : "their old grievances against the crown");
@@ -543,6 +543,14 @@ function shiftFavour(changes, why = "") {
   saveFavour();
 }
 
+// Each house's own history with the crown (the world bible), within the reign's mood.
+const LEAN = { "House Stormhold": 12, "House Goldcrest": 8, "House Wolfholt": 4, "House Highfell": 2, "House Thornvale": -2, "House Ironreach": -10, "House Sunspire": -14 };
+// Where a house's favour settles when the King leaves it be: its own temper with
+// the crown, so the table keeps friends and doubters rather than one number.
+function restingFavour(p) {
+  return clampFavour(({ loyal: 74, wary: 55, resentful: 34 }[meta.options?.trust] ?? 55) + (LEAN[houseFor(p).name] ?? 0));
+}
+
 // Each turn the crown takes its tithe; a heavy tithe wears favour down.
 const tally = { total: 0, upkeep: 0 };  // the tithe since the last reckoning
 const lastSeason = { net: 0 };  // the tithe less upkeep, this season, for the top bar
@@ -560,8 +568,8 @@ function collectTithe(turn) {
   for (const p of world.players) {
     if (houseFor(p).wild || houseFor(p).crown) continue;
     const before = favourOf(p.id);
-    // Favour drifts back toward a neutral 55, minus the tithe's wear.
-    favour[p.id] = clampFavour(before + (55 - before) * 0.03 - wear);
+    // Favour drifts back toward the house's own temper, minus the tithe's wear.
+    favour[p.id] = clampFavour(before + (restingFavour(p) - before) * 0.03 - wear);
     if (wear) noteFavour(p.id, -wear, "the royal tithe");
     if (before >= 20 && favour[p.id] < 20) {
       record({ turn, kind: "unrest", text: `${houseFor(p).name} speaks openly against the crown. Their loyalty hangs by a thread.` });
