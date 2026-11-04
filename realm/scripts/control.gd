@@ -180,6 +180,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		elif event.is_action_pressed(&"draw"):
 			_me.draw(not _me.armed)
+			if _me.armed:
+				_fight_hint()
+			get_viewport().set_input_as_handled()
+		elif event.is_action_pressed(&"attack"):
+			_attack()
 			get_viewport().set_input_as_handled()
 		elif event.is_action_pressed(&"dodge"):
 			# Away from the camera's side you lean to; back if neither.
@@ -188,8 +193,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_RIGHT:
 			_turning = event.pressed
-		elif event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-			_me.strike()
+		elif event.is_action_pressed(&"attack"):
+			_attack()
 		elif event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_dist = maxf(0.35, _dist * 0.88)
 		elif event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
@@ -395,6 +400,19 @@ func _ride(delta: float, want: Vector2, fast: bool) -> void:
 # --- fighting --------------------------------------------------------------------
 
 ## A blade has arrived: everyone in its arc takes the blow.
+## A strike: with the weapon sheathed, the first press draws it.
+func _attack() -> void:
+	if not _me.armed:
+		_me.draw(true)
+		_fight_hint()
+		return
+	_me.strike()
+
+
+func _fight_hint() -> void:
+	_say("%s to strike  ·  hold %s to block  ·  %s to dodge" % [Keys.label("attack"), Keys.label("block"), Keys.label("dodge")], 4.0)
+
+
 func _land(attacker) -> void:
 	var all: Array = [_me] + _foes
 	for f in all:

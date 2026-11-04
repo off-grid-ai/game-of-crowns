@@ -5,6 +5,8 @@ extends RefCounted
 ## Use: Input.is_action_pressed(&"cam_left"), event.is_action_pressed(&"pause").
 
 const PATH := "user://settings.cfg"
+## A mouse button in the defaults: this plus its button index (keys are below it).
+const MOUSE := 1 << 24
 
 ## [action, what it does, group, default keys]
 const ACTIONS := [
@@ -32,6 +34,7 @@ const ACTIONS := [
 	["walk_right", "Walk right", "Walking and fighting", [KEY_D, KEY_RIGHT]],
 	["run", "Run (hold)", "Walking and fighting", [KEY_SHIFT]],
 	["interact", "Talk, enter, mount", "Walking and fighting", [KEY_E]],
+	["attack", "Strike (draws your weapon first)", "Walking and fighting", [MOUSE + MOUSE_BUTTON_LEFT]],
 	["draw", "Draw or sheathe your weapon", "Walking and fighting", [KEY_TAB]],
 	["block", "Block (hold)", "Walking and fighting", [KEY_SPACE]],
 	["dodge", "Dodge (with left or right, else back)", "Walking and fighting", [KEY_X]],
@@ -51,6 +54,11 @@ static func apply() -> void:
 		InputMap.action_erase_events(name)
 		var keys: Array = cfg.get_value("keys", a[0], a[3])
 		for k in keys:
+			if int(k) >= MOUSE:
+				var mb := InputEventMouseButton.new()
+				mb.button_index = int(k) - MOUSE
+				InputMap.action_add_event(name, mb)
+				continue
 			var ev := InputEventKey.new()
 			ev.physical_keycode = int(k)
 			InputMap.action_add_event(name, ev)
@@ -81,4 +89,6 @@ static func label(action: String) -> String:
 	for ev in InputMap.action_get_events(StringName(action)):
 		if ev is InputEventKey:
 			names.append(OS.get_keycode_string(ev.physical_keycode if ev.physical_keycode != 0 else ev.keycode))
+		elif ev is InputEventMouseButton:
+			names.append({MOUSE_BUTTON_LEFT: "Click", MOUSE_BUTTON_RIGHT: "Right-click", MOUSE_BUTTON_MIDDLE: "Middle-click"}.get(ev.button_index, "Mouse %d" % ev.button_index))
 	return " / ".join(names)
