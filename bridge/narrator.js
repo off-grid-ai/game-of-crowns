@@ -109,7 +109,10 @@ export function describe(ev, world) {
     case "city_built":
       return `${owner(world, ev.owner)} founds the town of ${c}.`;
     case "city_shrank":
-      if (ev.reason === "famine") return `Famine in ${c}. The granaries are empty and the people of ${owner(world, ev.owner)} starve.`;
+      if (ev.reason === "famine") {
+        const who = owner(world, ev.owner);
+        return `Famine in ${c}. The granaries are empty and ${who === "The Crown" ? "the King's own people" : `the people of ${who}`} starve.`;
+      }
       if (ev.reason === "plague") return `Plague sweeps through ${c}. The dead are carted out by night.`;
       if (ev.reason === "disaster") return `Disaster strikes ${c}; many are lost.`;
       if (ev.reason === "migration") return `Families abandon ${c}, seeking better lands.`;

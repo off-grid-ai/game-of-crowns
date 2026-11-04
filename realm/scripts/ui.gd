@@ -83,6 +83,7 @@ var _court_sig := ""
 var _petitions: Array = []
 var _court_waiting := false  # the court panel, set aside for a commoner's card
 var _court_hidden := true
+var _court_met := false  # the court has opened once this sitting
 
 var _toast: Label
 var _toast_box: PanelContainer  # the card the notice sits on
@@ -193,6 +194,20 @@ func _icon(name: String) -> Texture2D:
 	return load("res://assets/icons/%s.svg" % name)
 
 
+## A toolbar key with its name under the icon, so a newcomer reads the bar.
+func _named(b: Button, word: String) -> Button:
+	b.text = word
+	b.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+	b.custom_minimum_size = Vector2(62, 52)
+	b.add_theme_font_size_override("font_size", 10)
+	b.add_theme_color_override("font_color", T.TEXT_3)
+	b.add_theme_color_override("font_hover_color", T.TEXT)
+	b.add_theme_color_override("font_pressed_color", T.ACCENT)
+	b.add_theme_color_override("font_hover_pressed_color", T.ACCENT)
+	b.add_theme_constant_override("icon_max_width", 20)
+	return b
+
+
 func _icon_btn(icon: String, tip: String, cb: Callable = Callable()) -> Button:
 	var b := Button.new()
 	b.icon = _icon(icon)
@@ -225,7 +240,7 @@ func _icon_btn(icon: String, tip: String, cb: Callable = Callable()) -> Button:
 
 
 ## A glance: icon and number, explained on hover.
-func _gauge(parent: Control, icon: String, tip: String) -> Label:
+func _gauge(parent: Control, icon: String, tip: String, word := "") -> Label:
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 6)
 	h.tooltip_text = tip
@@ -238,6 +253,14 @@ func _gauge(parent: Control, icon: String, tip: String) -> Label:
 	i.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	i.modulate = T.TEXT_3
 	h.add_child(i)
+	# Named in a word, so nobody has to hover to learn what the number is.
+	if word != "":
+		var w := T.label(word.to_upper())
+		w.add_theme_font_override("font", T.mono)
+		w.add_theme_font_size_override("font_size", 9)
+		w.add_theme_color_override("font_color", T.TEXT_3)
+		w.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		h.add_child(w)
 	var d := T.datum("—", 13)
 	h.add_child(d)
 	parent.add_child(h)
@@ -321,12 +344,12 @@ func _build_top_bar() -> void:
 	# too narrow for both it and the actions; see _arrange_top).
 	var state := _pill(0.5, Control.GROW_DIRECTION_BOTH)
 	_top = [when.get_parent(), state.get_parent()]
-	_gold = _gauge(state, "coins", "Royal treasury, in crowns")
-	_peace = _gauge(state, "scales", "Peace: share of the great houses not at war")
-	_souls = _gauge(state, "users-three", "Souls in the realm")
+	_gold = _gauge(state, "coins", "Royal treasury, in crowns", "Treasury")
+	_peace = _gauge(state, "scales", "Peace: share of the great houses not at war", "Peace")
+	_souls = _gauge(state, "users-three", "Souls in the realm", "Souls")
 	var tithe := HBoxContainer.new()
 	tithe.add_theme_constant_override("separation", 2)
-	_tithe_l = _gauge(tithe, "percent", "Royal tithe on every house's treasury. Higher is richer and more resented.")
+	_tithe_l = _gauge(tithe, "percent", "Royal tithe on every house's treasury. Higher is richer and more resented.", "Tithe")
 	var gap := Control.new()  # the figure and its buttons apart
 	gap.custom_minimum_size = Vector2(8, 0)
 	tithe.add_child(gap)
@@ -372,7 +395,7 @@ func _build_top_bar() -> void:
 	_court_badge.offset_top = -5
 	_court_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_court_btn.add_child(_court_badge)
-	act.add_child(_court_btn)
+	act.add_child(_named(_court_btn, "Court"))
 	# You are the King: one press to walk among your people as him.
 	if Features.WALKING:
 		var walk := _btn("Walk as the King", func(): walk_as_king.emit())
@@ -381,21 +404,21 @@ func _build_top_bar() -> void:
 		act.add_child(walk)
 	_houses_btn = _icon_btn("shield", _with_key("The great houses, and your word", "houses"), func(): _houses_panel.visible = _houses_btn.button_pressed)
 	_houses_btn.toggle_mode = true
-	act.add_child(_houses_btn)
+	act.add_child(_named(_houses_btn, "Houses"))
 	_chron_btn = _icon_btn("scroll", _with_key("Chronicle of the realm", "chronicle"), func(): _chron_panel.visible = _chron_btn.button_pressed)
 	_chron_btn.toggle_mode = true
-	act.add_child(_chron_btn)
-	act.add_child(_icon_btn("book-open-text", _with_key("The Lore of Aldmere: its houses and people", "lore"), func(): lore_opened.emit(-1)))
+	act.add_child(_named(_chron_btn, "Chronicle"))
+	act.add_child(_named(_icon_btn("book-open-text", _with_key("The Lore of Aldmere: its houses and people", "lore"), func(): lore_opened.emit(-1)), "Lore"))
 	_ledger_btn = _icon_btn("chart-line", _with_key("The ledger: the realm over time", "ledger"), _toggle_ledger)
 	_ledger_btn.toggle_mode = true
-	act.add_child(_ledger_btn)
+	act.add_child(_named(_ledger_btn, "Ledger"))
 	_divider(act)
 	_pause_btn = _icon_btn("pause", _with_key("Pause", "pause"), _toggle_pause)
 	_pause_btn.toggle_mode = true
-	act.add_child(_pause_btn)
+	act.add_child(_named(_pause_btn, "Pause"))
 	_divider(act)
-	act.add_child(_icon_btn("gear-six", "Settings: this reign, voices, the local model", func(): open_settings.emit()))
-	act.add_child(_icon_btn("list", "Chronicles, new realms, records", func(): open_menu.emit()))
+	act.add_child(_named(_icon_btn("gear-six", "Settings: this reign, voices, the local model", func(): open_settings.emit()), "Settings"))
+	act.add_child(_named(_icon_btn("list", "Chronicles, new realms, records", func(): open_menu.emit()), "Menu"))
 
 
 
@@ -411,7 +434,7 @@ func _toggle_pause() -> void:
 func _court_waiting_shown(n: int) -> void:
 	_court_btn.modulate.a = 1.0 if n > 0 else 0.45
 	_court_badge.visible = n > 0
-	_court_btn.tooltip_text = _with_key("The court: petitioners waiting" if n > 0 else "The court: nobody waits today", "court")
+	_court_btn.tooltip_text = _with_key(("The court: %d petitioner%s wait%s for you" % [n, "" if n == 1 else "s", "s" if n == 1 else ""]) if n > 0 else "The court: nobody waits today", "court")
 
 
 func _toggle_court() -> void:
@@ -530,7 +553,7 @@ func _build_chronicle() -> void:
 	_chron_panel.anchor_bottom = 1.0
 	_chron_panel.offset_left = -340
 	_chron_panel.offset_right = -10
-	_chron_panel.offset_top = 62
+	_chron_panel.offset_top = 84  # under the named toolbar keys
 	_chron_panel.offset_bottom = -(12 + MINIMAP_SIZE.y + 8 + 10)  # above the minimap and camera pad
 	_chron_panel.visible = false
 	var v := VBoxContainer.new()
@@ -1769,7 +1792,11 @@ func set_court(petitions: Array) -> void:
 	_court_waiting_shown(petitions.size())
 	if petitions.is_empty():
 		_court_panel.visible = false
-	elif not _court_hidden:
+	elif not _court_hidden or not _court_met:
+		# The first petitioner of a sitting is brought straight in: a new King
+		# meets his court at once, then the badge and the Hand call him back.
+		_court_met = true
+		_court_hidden = false
 		_show_audience()
 
 

@@ -11,6 +11,7 @@ extends Node
 ##   hold walk_forward 2 hold an action for seconds
 ##   key G               press and release a key by name
 ##   click 0.5 0.6       left-click at a fraction of the screen
+##   hover 0.5 0.6       rest the mouse there (tooltips show after a moment)
 ##   snap name           save <dir>/name.png
 ##   look note           log what the game says now, with a note
 ##   city Kingsmere 6    frame a town by name, at a camera distance
@@ -82,6 +83,14 @@ func _play(quit_after: bool) -> void:
 			"click":
 				_click(Vector2(float(w[1]), float(w[2])))
 				await get_tree().create_timer(0.4).timeout
+			"hover":
+				var at := get_viewport().get_visible_rect().size * Vector2(float(w[1]), float(w[2]))
+				get_viewport().warp_mouse(at)
+				var m := InputEventMouseMotion.new()
+				m.position = at
+				m.global_position = at
+				Input.parse_input_event(m)
+				await get_tree().create_timer(0.3).timeout
 			"snap":
 				await RenderingServer.frame_post_draw
 				var img := get_viewport().get_texture().get_image()
