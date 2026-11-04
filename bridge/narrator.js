@@ -3,13 +3,13 @@
 // real-world city names.
 
 const HOUSES = {
-  scottish: { name: "House Wolfholt", seat: "the cold North", words: "Winter Endures", color: "#9aa6b2", sigil: "wolf" },
-  english: { name: "House Goldcrest", seat: "the Western hills", words: "Gold Remembers", color: "#d4a62a", sigil: "lion" },
-  norwegian: { name: "House Ironreach", seat: "the Iron Isles", words: "We Take", color: "#3d4a52", sigil: "kraken" },
-  french: { name: "House Thornvale", seat: "the green Reach", words: "Grown Strong", color: "#4f8a3c", sigil: "rose" },
-  welsh: { name: "House Stormhold", seat: "the Stormlands", words: "Ours Is the Fury", color: "#b8862b", sigil: "stag" },
-  castilian: { name: "House Sunspire", seat: "the sands of the South", words: "Unbowed", color: "#c2562a", sigil: "sun" },
-  irish: { name: "House Highfell", seat: "the high Vale", words: "As High as Honor", color: "#4a7bb7", sigil: "falcon" },
+  scottish: { name: "House Wolfholt", seat: "the cold North", words: "Hold Fast", color: "#9aa6b2", sigil: "wolf" },
+  english: { name: "House Goldcrest", seat: "the Western hills", words: "Wealth Is Strength", color: "#d4a62a", sigil: "lion" },
+  norwegian: { name: "House Ironreach", seat: "the grey islands", words: "The Sea Provides", color: "#3d4a52", sigil: "kraken" },
+  french: { name: "House Thornvale", seat: "the green valleys", words: "Root and Thorn", color: "#4f8a3c", sigil: "rose" },
+  welsh: { name: "House Stormhold", seat: "the storm coast", words: "We Weather All", color: "#b8862b", sigil: "stag" },
+  castilian: { name: "House Sunspire", seat: "the sands of the South", words: "The Sun Waits", color: "#c2562a", sigil: "sun" },
+  irish: { name: "House Highfell", seat: "the high passes", words: "Sworn and Steadfast", color: "#4a7bb7", sigil: "falcon" },
   norman: { name: "The Crown", seat: "Kingsmere", words: "One Realm", color: "#b8202a", sigil: "crown", crown: true },
   animals: { name: "the wild beasts", color: "#6b5a44", sigil: "beast", wild: true },
   barbarian: { name: "barbarian raiders", color: "#7a2222", sigil: "skull", wild: true },
