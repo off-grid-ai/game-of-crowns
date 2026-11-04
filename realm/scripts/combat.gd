@@ -4,8 +4,10 @@ extends RefCounted
 ## fighter has a kit (sword and shield, greatsword, axe, dagger) and fights with
 ## that kit's own Mixamo moves; sheathed, they fight with their fists. A strike
 ## lands on the frame the blow arrives, on whoever is in front within reach; a
-## guard turned toward the blow stops it. Who is hit reels the way the blow
-## came from and bleeds; who falls, falls away from it and stains the ground.
+## guard turned toward the blow stops it, and a dodge takes you out of its way.
+## Who is hit reels the way the blow came from and bleeds; a heavy blow can put
+## them on the ground for a moment, a kick leaves them dazed; who falls, falls
+## away from it and stains the ground.
 
 const Weapons := preload("res://scripts/weapons.gd")
 const Blood := preload("res://scripts/blood.gd")
@@ -13,6 +15,10 @@ const Blood := preload("res://scripts/blood.gd")
 const REACH := 0.16  # town units: about 1.3 m, a sword's length (the AI's closing distance)
 const ARC := 0.75  # cos of the half-angle a strike covers (about 40 degrees each side)
 const FOLLOW := 0.4  # seconds a move runs on past its blow before the fighter is ready again
+const DODGE := 0.6  # metres a dodge carries you
+const FLOORED := 0.3  # chance a heavy blow that doesn't kill knocks you down
+# Moves heavy enough to floor someone: the big two-handed and spinning cuts.
+const HEAVY := ["GS_Attack", "GS_Slash_1", "GS_Slash_3", "GS_Spin", "Axe_Down", "Axe_Spin"]
 
 # How each kit fights. attacks: the cuts it varies between. kick: a shove now
 # and then that goes through a guard. guard: held while blocking (a looping
@@ -47,7 +53,7 @@ const KITS := {
 		"reach": 0.13, "harm": 0.8, "pace": 1.1},
 	"fists": {"weapon": "", "shield": false, "idle": "Boxing", "walk": "Walk",
 		"attacks": ["Punch_1", "Punch_2", "Punch_3", "Punch_Jab"],
-		"kick": "Kick_Front", "guard": "", "parry": [],
+		"kick": "Kick_Front", "guard": "Body_Block", "parry": ["Body_Block"],
 		"hurt": ["React_Head", "React_Front", "Hit"],
 		"fall_back": ["Death01"], "fall_forward": ["Death_Back"],
 		"reach": 0.12, "harm": 0.35, "pace": 1.1},
@@ -66,7 +72,7 @@ var node: Node3D
 var people  # people.gd
 var kit := "sword"
 var health := 100.0
-var state := "ready"  # ready | striking | blocking | staggered | dead
+var state := "ready"  # ready | striking | blocking | dodging | staggered | down | dead
 var armed := false
 var _timer := 0.0
 var _swing_at := -1.0
@@ -122,7 +128,7 @@ func draw(on: bool) -> void:
 
 ## Swing (or punch, when sheathed). Varies the cut, and now and then kicks.
 func strike() -> bool:
-	if not alive() or state in ["striking", "staggered"]:
+	if not alive() or state != "ready" and state != "blocking":
 		return false
 	var s := style()
 	var pool: Array = s["attacks"].filter(func(c): return c != _last)
@@ -140,13 +146,31 @@ func strike() -> bool:
 
 
 func block(on: bool) -> void:
-	if not alive() or not armed or state in ["striking", "staggered"] or KITS[kit]["guard"] == "":
+	if not alive() or not state in ["ready", "blocking"] or style()["guard"] == "":
 		return
 	state = "blocking" if on else "ready"
 	if on:
 		_guard()
 	else:
 		people.play(node, idle_clip(), 1.0)
+
+
+## Step out of the way: "left", "right" or "back". Nothing lands while you
+## move; you are carried about a stride along the dodge.
+func dodge(way: String) -> bool:
+	if not alive() or not state in ["ready", "blocking"]:
+		return false
+	var clip: String = {"left": "Dodge_Left", "right": "Dodge_Right"}.get(way, "Dodge_Back")
+	state = "dodging"
+	_swing_at = -1.0
+	var length := _once(clip, 1.5)
+	_timer = minf(length / 1.5, 1.1)
+	var f := facing()
+	var left := Vector3(f.z, 0, -f.x)
+	var dir: Vector3 = {"left": left, "right": -left}.get(way, -f)
+	var go := node.create_tween()
+	go.tween_property(node, "position", node.position + dir * DODGE * node.scale.x, _timer * 0.6).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	return true
 
 
 ## How hard this fighter's blow falls, from a base for who is striking.
@@ -156,8 +180,8 @@ func harm(base: float) -> float:
 
 ## Called by an attacker's strike: true if the blow was turned aside.
 func take(attacker, damage: float) -> bool:
-	if not alive():
-		return false
+	if not alive() or state in ["dodging", "down"]:
+		return state == "dodging"
 	var from: Node3D = attacker.node
 	var to_attacker := from.global_position - node.global_position
 	to_attacker.y = 0
@@ -165,7 +189,7 @@ func take(attacker, damage: float) -> bool:
 	var front := facing().dot(to_attacker)
 	var kicked: bool = attacker._kicking
 	if state == "blocking" and front > 0.3 and not kicked:
-		var parry: Array = KITS[kit]["parry"]
+		var parry: Array = style()["parry"]
 		if not parry.is_empty():
 			_once(parry[randi() % parry.size()], 1.3)
 			node.get_tree().create_timer(0.5).timeout.connect(func():
@@ -192,18 +216,22 @@ func take(attacker, damage: float) -> bool:
 				if is_instance_valid(parent):
 					Blood.pool(parent, at, -to_attacker, unit))
 		return false
-	state = "staggered"
 	_swing_at = -1.0
+	if attacker._last in HEAVY and randf() < FLOORED:
+		_floor()
+		return false
+	state = "staggered"
+	if kicked:
+		_timer = _once("Stunned", 1.4) / 1.4 * 0.75  # dazed, half-bent, then back
+		return false
 	# Reel the way the blow came: from the side, the side; head-on, the kit's own.
 	var left := Vector3(cos(node.rotation.y), 0, -sin(node.rotation.y))
 	var side := left.dot(to_attacker)
 	var reel: String
 	if front < -0.3:
 		reel = "Hit"
-	elif absf(side) > 0.6 or (kicked and absf(side) > 0.3):
+	elif absf(side) > 0.6:
 		reel = "React_Left" if side > 0.0 else "React_Right"
-	elif kicked:
-		reel = "React_Gut"
 	else:
 		var hurt: Array = s["hurt"]
 		reel = hurt[randi() % hurt.size()]
@@ -222,7 +250,7 @@ func tick(delta: float) -> void:
 			on_land.call(self)
 	if _timer > 0.0:
 		_timer -= delta
-		if _timer <= 0.0 and state in ["striking", "staggered"]:
+		if _timer <= 0.0 and state in ["striking", "staggered", "dodging", "down"]:
 			state = "ready"
 			_kicking = false
 			people.play(node, idle_clip(), 1.0)
@@ -237,9 +265,19 @@ func in_reach_of(attacker) -> bool:
 	return d.length() < attacker.reach() and attacker.facing().dot(d.normalized()) > ARC
 
 
+## Knocked off your feet: down on your back, then up again, slowly.
+func _floor() -> void:
+	state = "down"
+	var fall := _once("Knocked_Down", 1.2) / 1.2
+	_timer = fall + 8.33 / 2.2
+	node.get_tree().create_timer(fall).timeout.connect(func():
+		if state == "down":
+			_once("Getting_Up", 2.2))
+
+
 ## Raise the kit's guard and keep it up.
 func _guard() -> void:
-	var g: String = KITS[kit]["guard"]
+	var g: String = style()["guard"]
 	if g.ends_with("Idle"):
 		people.play(node, g, 1.0)
 	else:

@@ -144,7 +144,7 @@ func _build_hud() -> void:
 	_prompt = T.title("", 16)
 	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(_prompt)
-	_hint = T.label("WASD walk   ·   Shift run   ·   right-drag turn   ·   E talk or enter   ·   Tab draw sword   ·   click strike (fists when sheathed)   ·   Space block   ·   Esc leave")
+	_hint = T.label("WASD walk   ·   Shift run   ·   right-drag turn   ·   E talk or enter   ·   Tab draw sword   ·   click strike (fists when sheathed)   ·   Space block   ·   C dodge   ·   Esc leave")
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(_hint)
 
@@ -165,6 +165,10 @@ func _unhandled_input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 			KEY_TAB:
 				_me.draw(not _me.armed)
+				get_viewport().set_input_as_handled()
+			KEY_C:
+				# Away from the camera's side you lean to; back if neither.
+				_me.dodge("left" if Input.is_key_pressed(KEY_A) else "right" if Input.is_key_pressed(KEY_D) else "back")
 				get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_RIGHT:
@@ -203,12 +207,12 @@ func _process(delta: float) -> void:
 		want.x += 1
 	var running := Input.is_key_pressed(KEY_SHIFT)
 	_me.tick(delta)
-	var block: bool = Input.is_key_pressed(KEY_SPACE) and _me.armed
+	var block: bool = Input.is_key_pressed(KEY_SPACE)
 	if block != _blocking:
 		_blocking = block
 		_me.block(block)
-	if not _me.alive() or _me.state in ["striking", "staggered", "blocking"]:
-		want = Vector2.ZERO  # rooted while swinging, reeling or behind the shield
+	if not _me.alive() or _me.state != "ready":
+		want = Vector2.ZERO  # rooted while swinging, reeling, dodging, down or behind the shield
 	if want != Vector2.ZERO:
 		# Forward is away from the camera.
 		var fwd := Vector3(-sin(_yaw), 0, -cos(_yaw))
@@ -369,9 +373,13 @@ func _fight(delta: float) -> void:
 		f.node.rotation.y = lerp_angle(f.node.rotation.y, atan2(to.x, to.z), minf(1.0, delta * 6.0))
 		if f.state != "ready" and f.state != "blocking":
 			continue
-		if _me.state == "striking" and to.length() < _me.reach() * 1.3 and f.state == "ready" and randf() < delta * 1.5:
-			f.block(true)
-			get_tree().create_timer(0.7).timeout.connect(func(): f.block(false))
+		if _me.state == "striking" and to.length() < _me.reach() * 1.3 and f.state == "ready" and randf() < delta * 2.0:
+			# Seeing your swing coming: a guard if they have one, else a step aside.
+			if randf() < 0.6 and f.style()["guard"] != "":
+				f.block(true)
+				get_tree().create_timer(0.7).timeout.connect(func(): f.block(false))
+			else:
+				f.dodge(["left", "right", "back"][randi() % 3])
 			continue
 		if to.length() > f.reach() * 0.8:
 			var step: Vector3 = to.normalized() * WALK * 1.3 * delta
