@@ -4,6 +4,7 @@ extends CanvasLayer
 ## own Geist type with a soft shadow, and decluttered: seats first, then the
 ## bigger towns, and a name that would collide with one already placed waits
 ## until there's room. Small towns' names only come in as you draw closer.
+## A seat shows its house's sigil; a town held by a bannerman, his family's.
 
 var towns: Node3D
 var rig: Node3D
@@ -116,7 +117,8 @@ func _make(_id: int) -> Dictionary:
 func _refresh(tag: Dictionary, data: Dictionary) -> void:
 	var cap: bool = data.get("capital", false)
 	var h: Dictionary = houses.get(int(data.get("owner", -1)), {})
-	var sig := "%s|%s|%s" % [data.get("title", data.get("name", "")), h.get("name", ""), cap]
+	var fam: String = String(data["family"]) if data.get("family") is String else ""
+	var sig := "%s|%s|%s|%s" % [data.get("title", data.get("name", "")), h.get("name", ""), cap, fam]
 	if tag["sig"] == sig:
 		return
 	tag["sig"] = sig
@@ -128,10 +130,17 @@ func _refresh(tag: Dictionary, data: Dictionary) -> void:
 	var house: Label = tag["house"]
 	house.text = String(h.get("name", "")).to_upper() if cap else ""
 	house.visible = cap
+	var Heraldry := preload("res://scripts/heraldry.gd")
+	var family: Dictionary = Heraldry.family(fam) if not cap else {}
 	var sigil: TextureRect = tag["sigil"]
-	sigil.texture = preload("res://scripts/heraldry.gd").sigil(h) if cap and not h.is_empty() else null
+	sigil.texture = Heraldry.sigil(h) if cap and not h.is_empty() else Heraldry.sigil(family) if not family.is_empty() else null
 	sigil.visible = sigil.texture != null
-	sigil.modulate = Color.from_string(String(h.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.4)
+	# A family's arms in their own cream, a little smaller than a seat's.
+	sigil.custom_minimum_size = Vector2(26, 26) if cap else Vector2(20, 20)
+	sigil.modulate = Color.from_string(String(h.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.4) if cap else Color(1, 1, 1, 0.92)
+	if not family.is_empty():
+		house.text = fam.to_upper()
+		house.visible = true
 
 
 ## A soft halo instead of a hard outline: legible on snow, sea or forest.

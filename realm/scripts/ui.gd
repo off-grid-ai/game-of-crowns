@@ -60,6 +60,7 @@ var _town_sigil: TextureRect
 var _house_by_name := {}  # "House Goldcrest" -> house, for petitions that name their house
 const Heraldry = preload("res://scripts/heraldry.gd")
 var _town_info: Label
+var _town_family: HBoxContainer  # the lesser family holding the town, under its arms
 var _grant_menu: MenuButton
 var _house_ids: Array = []
 var _fate_box: HBoxContainer
@@ -499,6 +500,11 @@ func _build_town_panel() -> void:
 	title_row.add_child(_town_sigil)
 	_town_title = T.title("", 16)
 	title_row.add_child(_town_title)
+	_town_family = HBoxContainer.new()
+	_town_family.add_theme_constant_override("separation", 10)
+	_town_family.add_child(_sigil_icon({}, 22))
+	_town_family.add_child(T.datum("", T.SIZE_DESC + 1, T.TEXT_2))
+	v.add_child(_town_family)
 	_town_info = Label.new()
 	_town_info.add_theme_color_override("font_color", T.TEXT_2)
 	_town_info.add_theme_font_size_override("font_size", T.SIZE_DESC + 1)
@@ -747,6 +753,12 @@ func show_house(d: Dictionary) -> void:
 		v.add_child(T.label("Bannermen"))
 		for m in men:
 			var r := HBoxContainer.new()
+			r.add_theme_constant_override("separation", 8)
+			var arms := _sigil_icon({}, 18)
+			_set_arms(arms, family_of(String(m.get("name", "")), d))
+			if not arms.visible:
+				arms.visible = true  # holds the column, so the names line up
+			r.add_child(arms)
 			var n := T.datum("%s%s%s%s" % [m.get("name", ""), ("  ·  " + String(m["role"])) if m.get("role") else "", ("  ·  " + String(m["seat"])) if m.get("seat") else "", "  ✦" if m.get("created", false) else ""], T.SIZE_DESC, T.ACCENT if m.get("created", false) else T.TEXT)
 			n.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			r.add_child(n)
@@ -1231,6 +1243,35 @@ func _sigil_icon(house: Dictionary, px: int) -> TextureRect:
 	return icon
 
 
+## A lesser family's arms, in their own cream beside their liege's colour.
+func _set_arms(icon: TextureRect, family: Dictionary) -> void:
+	icon.texture = Heraldry.sigil(family)
+	icon.visible = icon.texture != null
+	icon.modulate = Color.WHITE
+
+
+## The arms of the lesser family a person of `house` belongs to ("Ysolde Pell"
+## of House Stormhold -> the Pells'), or {} for the house's own blood.
+static func family_of(name: String, house: Dictionary) -> Dictionary:
+	var surname := name.strip_edges().get_slice(" ", name.strip_edges().get_slice_count(" ") - 1)
+	if "House " + surname == String(house.get("name", "")):
+		return {}
+	return Heraldry.family(surname)
+
+
+## A person's name under their family's arms (when a lesser family's), with
+## their liege's arms beside them, smaller: for the court's panels.
+func _arms_pair(row: HBoxContainer, name: String, house: Dictionary, px: int) -> void:
+	var family := family_of(name, house)
+	if family.is_empty():
+		row.add_child(_sigil_icon(house, px))
+		return
+	var mine := _sigil_icon({}, px)
+	_set_arms(mine, family)
+	row.add_child(mine)
+	row.add_child(_sigil_icon(house, int(px * 0.55)))
+
+
 func _set_sigil(icon: TextureRect, house: Dictionary) -> void:
 	icon.texture = Heraldry.sigil(house) if not house.is_empty() else null
 	icon.visible = icon.texture != null
@@ -1334,6 +1375,12 @@ func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 	_ticker.visible = false
 	_town_title.text = "%s  ·  %s" % [c.get("title", c["name"]), house.get("name", "")]
 	_set_sigil(_town_sigil, house)
+	# A town held by a bannerman flies his family's arms.
+	var family := Heraldry.family(String(c["family"])) if c.get("family") is String else {}
+	_town_family.visible = not family.is_empty()
+	if _town_family.visible:
+		_set_arms(_town_family.get_child(0), family)
+		(_town_family.get_child(1) as Label).text = "Held by the %s family, sworn to %s" % [c["family"], String(house.get("name", "")).replace("House ", "")]
 	var b: Array = c.get("buildings", [])
 	var parts := []
 	if c.get("capital", false):
@@ -1472,7 +1519,7 @@ func _show_audience() -> void:
 	var named := HBoxContainer.new()
 	named.add_theme_constant_override("separation", 14)
 	v.add_child(named)
-	named.add_child(_sigil_icon(_house_by_name.get(String(p.get("house", "")), {}), 40))
+	_arms_pair(named, String(p.get("name", "")), _house_by_name.get(String(p.get("house", "")), {}), 40)
 	var pname := T.title(String(p.get("name", "")), 22)
 	pname.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	named.add_child(pname)

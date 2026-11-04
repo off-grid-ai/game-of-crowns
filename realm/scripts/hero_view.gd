@@ -77,7 +77,7 @@ func _process(delta: float) -> void:
 func open(person: Dictionary, house: Dictionary) -> void:
 	visible = true
 	_orbit = 0.0
-	_dress_stage(house)
+	_dress_stage(house, _family(person, house))
 	_cast(person, house)
 	_fill_panel(person, house)
 
@@ -180,14 +180,15 @@ func _flame() -> Node3D:
 	return p
 
 
-func _dress_stage(house: Dictionary) -> void:
+func _dress_stage(house: Dictionary, family: Dictionary) -> void:
 	for n in _stage.get_children():
 		if n.is_in_group("hero_dressing"):
 			n.queue_free()
 	var col := Color.from_string(String(house.get("color", "#8a6d3b")), Color(0.55, 0.42, 0.25))
-	# The house's banner hangs behind them, a little off to one side.
+	# The house's banner hangs behind them, a little off to one side; one of a
+	# lesser family stands between their own banner and their liege's.
 	for x in [-1.3, 1.3]:
-		var b: Node3D = Heraldry.standard(house, col, 3.2)
+		var b: Node3D = Heraldry.standard(family if x < 0.0 and not family.is_empty() else house, col, 3.2)
 		b.position = Vector3(x, 0, -1.6)
 		b.add_to_group("hero_dressing")
 		_stage.add_child(b)
@@ -323,8 +324,29 @@ func _fill_panel(p: Dictionary, house: Dictionary) -> void:
 	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	v.add_theme_constant_override("separation", 10)
 	scroll.add_child(v)
-	v.add_child(T.label(String(house.get("name", p.get("house", ""))).to_upper()))
-	v.add_child(T.title(String(p.get("name", "")), 26))
+	# Their arms beside their name: a lesser family's own, their liege's smaller.
+	var family := _family(p, house)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 12)
+	v.add_child(head)
+	if not family.is_empty():
+		head.add_child(_arms(family, Color.WHITE, 40))
+	var liege := _arms(house, Color.from_string(String(house.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.25), 40 if family.is_empty() else 22)
+	if liege.texture:
+		head.add_child(liege)
+	var names := VBoxContainer.new()
+	names.add_theme_constant_override("separation", 2)
+	names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(names)
+	var house_line := String(house.get("name", p.get("house", "")))
+	if not family.is_empty():
+		house_line = "The %s family  ·  sworn to %s" % [String(family["name"]).trim_prefix("House "), house_line.replace("House ", "")]
+	var hl := T.label(house_line)
+	hl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	names.add_child(hl)
+	var title := T.title(String(p.get("name", "")), 26)
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	names.add_child(title)
 	var rank := str(p["role"]) if p.get("role") else (str(p["rank"]).capitalize() if p.get("rank") else "")
 	if str(p.get("gender", "")) == "female":
 		rank = {"Lord": "Lady", "Bannerman": "Bannerwoman", "Heir": "Heiress"}.get(rank, rank)
@@ -374,6 +396,27 @@ func _fill_panel(p: Dictionary, house: Dictionary) -> void:
 		v.add_child(T.label("Remembers"))
 		for i in range(mem.size() - 1, -1, -1):
 			v.add_child(_para("[i]“%s”[/i]" % String(mem[i])))
+
+
+## The lesser family a person belongs to (from their surname), or {} for
+## the house's own blood.
+static func _family(p: Dictionary, house: Dictionary) -> Dictionary:
+	var name := String(p.get("name", "")).strip_edges()
+	var surname := name.get_slice(" ", name.get_slice_count(" ") - 1)
+	if "House " + surname == String(house.get("name", p.get("house", ""))):
+		return {}
+	return Heraldry.family(surname)
+
+
+static func _arms(house: Dictionary, tint: Color, px: int) -> TextureRect:
+	var r := TextureRect.new()
+	r.texture = Heraldry.sigil(house)
+	r.custom_minimum_size = Vector2(px, px)
+	r.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	r.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	r.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	r.modulate = tint
+	return r
 
 
 func _para(text: String) -> RichTextLabel:

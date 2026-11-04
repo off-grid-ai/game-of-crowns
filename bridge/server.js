@@ -30,7 +30,7 @@ const RENAMED = {
   "Lord Jon Highfell": "Lord Declan Highfell",
 };
 import { Court } from "./characters.js";
-import { bible } from "./lore.js";
+import { bible, FAMILIES, LESSER } from "./lore.js";
 import { Stakes, calendar, epithet } from "./stakes.js";
 import { watched, usageToday, moodFrom, isWatched } from "./claude.js";
 
@@ -808,6 +808,12 @@ http.createServer(async (req, res) => {
     // house as it stands now, with the people who matter in it.
     const b = bible(path.join(DIR, "..", "WORLD.md"));
     const RANK = { lord: 0, spouse: 1, heir: 2, bannerman: 3, child: 4 };
+    // A house born of civil war has no page in the bible; its arms and
+    // character come from the lesser houses' lore.
+    const rebel = (name) => {
+      const f = FAMILIES[name.replace("House ", "")];
+      return f ? { region: "Born of civil war", arms: f.arms, character: f.character } : null;
+    };
     const houses = (world?.players ?? []).filter((p) => p.alive !== false && !houseFor(p).wild).map((p) => {
       const h = houseFor(p);
       const seat = world.cities.find((c) => c.owner === p.id && c.capital);
@@ -820,16 +826,33 @@ http.createServer(async (req, res) => {
       return {
         id: p.id, name: h.name, words: h.words, color: h.color, sigil: h.sigil, crown: !!h.crown,
         seat: seat ? cityName(seat.id) : null, towns: world.cities.filter((c) => c.owner === p.id).length,
-        favour: h.crown ? null : favourOf(p.id), lore: b.houses[h.name] ?? null,
+        favour: h.crown ? null : favourOf(p.id), lore: b.houses[h.name] ?? rebel(h.name),
         notables: notables.map((c) => ({
-          id: c.id, name: c.name, gender: c.gender, age: c.age, rank: c.rank, traits: c.traits,
+          id: c.id, name: c.name, surname: c.surname ?? null, gender: c.gender, age: c.age, rank: c.rank, traits: c.traits,
           goal: c.goals?.[0]?.text ?? null, role: c.role ? ROLES[c.role]?.title : null,
           seat: c.seat != null ? cityName(c.seat) : null, loyalty: c.loyalty,
           story: c.backstory ?? [...new Set(c.memories ?? [])].slice(-2).join(" ") ?? null,
         })),
       };
     }).sort((a, c) => (c.crown ? 1 : 0) - (a.crown ? 1 : 0) || (c.lore ? 1 : 0) - (a.lore ? 1 : 0));
-    return json(res, 200, { intro: b.intro, crown: b.crown, faults: b.faults, fate: b.fate, tone: b.tone, houses });
+    // The lesser families sworn to the great houses: one entry each, with
+    // every town a branch of it holds, under which liege, and who heads it.
+    const lesser = {};
+    const held = (c) => c.seat != null && (world?.cities ?? []).some((t) => t.id === c.seat && t.owner === c.playerId);
+    for (const c of court.alive().filter((x) => x.rank === "bannerman" && FAMILIES[x.surname])) {
+      const p = world?.players.find((x) => x.id === c.playerId);
+      if (!p || p.alive === false) continue;
+      const h = houseFor(p);
+      const f = (lesser[c.surname] ??= { surname: c.surname, ...FAMILIES[c.surname], branches: [] });
+      f.branches.push({
+        house: h.name, house_id: p.id, color: h.color, sigil: h.sigil, crown: !!h.crown,
+        // A seat lost to another house (or razed) is told as lost, not held.
+        seat: held(c) ? cityName(c.seat) : null, lost: c.seat != null && !held(c) ? cityName(c.seat) : null,
+        head: { id: c.id, name: c.name, gender: c.gender, age: c.age, loyalty: c.loyalty, traits: c.traits, role: c.role ? ROLES[c.role]?.title : null },
+      });
+    }
+    const families = Object.values(lesser).sort((a, c) => c.branches.length - a.branches.length || a.surname.localeCompare(c.surname));
+    return json(res, 200, { intro: b.intro, crown: b.crown, faults: b.faults, fate: b.fate, tone: b.tone, houses, lesser: LESSER, families });
   }
   if (url.pathname === "/person" && req.method !== "POST") {
     // One person up close, for the character view: who they are and what they remember.

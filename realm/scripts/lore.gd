@@ -1,6 +1,7 @@
 extends CanvasLayer
 ## The Lore of Aldmere: a book of the realm, open from the menu or with B.
-## The left page lists its chapters (the realm, then each great house); the
+## The left page lists its chapters (the realm, each great house, then the
+## lesser houses sworn to them); the
 ## right page reads the chosen one. The realm's story and each house's come
 ## from the world bible; the people in each house are the living ones, so the
 ## book changes as the reign goes on. Anyone named can be met face to face.
@@ -18,7 +19,8 @@ var _book := {}
 var _chapters: VBoxContainer
 var _page: VBoxContainer
 var _scroll: ScrollContainer
-var _chosen := -2  # -1 = the realm, otherwise a house id
+var _chosen := -2  # -1 = the realm, -3 = the lesser houses, otherwise a house id
+const LESSER := -3
 
 
 func _ready() -> void:
@@ -85,6 +87,8 @@ func _build() -> void:
 	_chapter("The Realm", -1, {})
 	for h in _book.get("houses", []):
 		_chapter(String(h.get("name", "")), int(h.get("id", -1)), h)
+	if not _book.get("families", []).is_empty():
+		_chapter("Lesser houses", LESSER, {})
 	var fill := Control.new()
 	fill.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	left.add_child(fill)
@@ -133,6 +137,9 @@ func _show(id: int) -> void:
 	_scroll.scroll_vertical = 0
 	if id == -1:
 		_realm()
+		return
+	if id == LESSER:
+		_lesser()
 		return
 	for h in _book.get("houses", []):
 		if int(h.get("id", -2)) == id:
@@ -198,6 +205,7 @@ func _house(h: Dictionary) -> void:
 	elif lore.is_empty():
 		_para("A house born of the realm's own wars, owing little to the old order and forgiving less. Its story is still being written, in this reign.")
 	else:
+		_fact("Arms", lore.get("arms", ""))
 		_fact("Character", lore.get("character", ""))
 		_fact("Wants", lore.get("wants", ""))
 		_fact("Old grudge", lore.get("grudge", ""))
@@ -236,6 +244,13 @@ func _person(p: Dictionary, h: Dictionary) -> void:
 	card.add_child(v)
 	var top := HBoxContainer.new()
 	v.add_child(top)
+	top.add_theme_constant_override("separation", 10)
+	# A bannerman, or anyone of a lesser family, under their family's arms.
+	var surname := String(p.get("surname", "")) if p.get("surname") is String else ""
+	if surname != "" and "House " + surname != String(h.get("name", "")):
+		var arms := Heraldry.family(surname)
+		if not arms.is_empty():
+			top.add_child(_sigil(arms, Color.WHITE, 24))  # a family's arms in their own cream, the liege's in its colour
 	var name := T.title(String(p.get("name", "")), 20)
 	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(name)
@@ -265,6 +280,88 @@ func _person(p: Dictionary, h: Dictionary) -> void:
 		v.add_child(_text(line, T.TEXT_2))
 	if p.get("story") != null and String(p["story"]) != "":
 		v.add_child(_text("“%s”" % String(p["story"]), T.TEXT_3))
+
+
+# --- the lesser houses -----------------------------------------------------------
+
+## The families sworn to the great houses, each under its painted banner: its
+## arms, its character, and every town a branch of it holds, under which liege
+## and who heads it there.
+func _lesser() -> void:
+	_page.add_child(T.title("The Lesser Houses", 34))
+	if String(_book.get("lesser", "")) != "":
+		_para(String(_book["lesser"]), T.TEXT_2)
+	for f in _book.get("families", []):
+		_page.add_child(HSeparator.new())
+		_family(f)
+
+
+func _family(f: Dictionary) -> void:
+	var surname := String(f.get("surname", ""))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 18)
+	_page.add_child(row)
+	var cloth := TextureRect.new()
+	var path := "res://assets/heraldry/banner-%s.png" % surname.to_lower()
+	cloth.texture = load(path) if ResourceLoader.exists(path) else null
+	cloth.custom_minimum_size = Vector2(44, 88)
+	cloth.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	cloth.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	cloth.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	row.add_child(cloth)
+	var v := VBoxContainer.new()
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	v.add_theme_constant_override("separation", 4)
+	row.add_child(v)
+	v.add_child(T.title("The %s family" % surname, 22))
+	if String(f.get("arms", "")) != "":
+		v.add_child(T.label(String(f["arms"]), T.ACCENT))
+	if String(f.get("character", "")) != "":
+		v.add_child(_text(String(f["character"])))
+	for b in f.get("branches", []):
+		var line := HBoxContainer.new()
+		line.add_theme_constant_override("separation", 8)
+		v.add_child(line)
+		var liege := {"name": b.get("house", ""), "color": b.get("color", "#888"), "sigil": b.get("sigil", ""), "crown": b.get("crown", false)}
+		line.add_child(_sigil(liege, _tint(liege), 18))
+		var head: Dictionary = b.get("head", {}) if b.get("head") is Dictionary else {}
+		var said := ["Sworn to %s" % String(b.get("house", "")).replace("House ", "")]
+		if b.get("seat") != null:
+			said.append("holds %s" % b["seat"])
+		elif b.get("lost") != null:
+			said.append("lost %s" % b["lost"])
+		if not head.is_empty():
+			said.append("%s, %d" % [head.get("name", ""), int(head.get("age", 0))])
+		var l := T.datum("  ·  ".join(said), T.SIZE_DESC + 1, T.TEXT_2)
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		line.add_child(l)
+		if head.has("id"):
+			var meet := Button.new()
+			meet.text = "Meet"
+			meet.flat = true
+			meet.focus_mode = Control.FOCUS_NONE
+			meet.tooltip_text = "Meet them face to face"
+			meet.add_theme_color_override("font_color", T.ACCENT)
+			meet.pressed.connect(func():
+				close()
+				person_opened.emit(str(head["id"]), liege))
+			line.add_child(meet)
+
+
+## A sigil, `px` square, in a house's colour.
+static func _sigil(house: Dictionary, tint: Color, px: int) -> TextureRect:
+	var r := TextureRect.new()
+	r.texture = Heraldry.sigil(house)
+	r.custom_minimum_size = Vector2(px, px)
+	r.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	r.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	r.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	r.modulate = tint
+	return r
+
+
+static func _tint(house: Dictionary) -> Color:
+	return Color.from_string(String(house.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.35)
 
 
 # --- type -----------------------------------------------------------------------
