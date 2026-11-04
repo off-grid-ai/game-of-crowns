@@ -18,3 +18,7 @@ description: How code is changed, checked and committed in Game of Crowns (realm
 ## Sessions share one checkout and one git index
 
 Several sessions commit to `main` from the same folder. Never `git add` and leave files staged: another session's commit will take them. Commit only your own paths in one step, `git commit -m "…" -- <your paths>` (new files: `git add <paths> && git commit -m "…" -- <paths>` in the same command), then `git push`; if the push is rejected because another session just pushed, `git pull --rebase -q && git push`. Check the compile output is clean before committing, never after.
+
+## Production grade
+
+Ali's bar is a shippable game. Nothing debug reaches the player or the log: no animation lists, test pickers, key-help strips, internal names, `print()` traces or frame probes in committed code (keep test aids behind an explicit shot flag such as `--probe`, off in play). The player sees the world and the choices that matter; the game makes the rest of the calls. Read the run log of every render you take, and fix any recurring ERROR or WARNING rather than ignoring it.
