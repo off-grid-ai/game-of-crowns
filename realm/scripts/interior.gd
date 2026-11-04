@@ -6,6 +6,7 @@ extends CanvasLayer
 ## camera off the walls, and the room holds the people who'd be there.
 
 signal closed
+signal opened(room: String)
 
 const S := 0.12  # town units per metre (people.gd builds townsfolk at this scale)
 ## room -> [longest side in metres, a way to read its name, who's inside]
@@ -101,6 +102,7 @@ func open(room: String, person: Dictionary, house: Dictionary, town_name: String
 	_cam.current = true
 	_people_inside(room, box, rng)
 	_hud(String(ROOMS[room][1]) + (" of %s" % town_name if town_name != "" else ""), String(person.get("name", "")))
+	opened.emit(room)
 	return true
 
 

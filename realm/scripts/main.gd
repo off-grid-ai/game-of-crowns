@@ -26,6 +26,8 @@ var _houses := {}  # player id -> house dict
 var hero: CanvasLayer  # the character view
 var labels: CanvasLayer  # town names on the map
 var intro: CanvasLayer  # the storybook at the start of a reign
+var sound: Node  # soundscape.gd
+var _heard_at := 0.0
 var _intro_due := false
 var control: Node3D  # walking as a character
 var mic: Node  # speaking instead of typing
@@ -194,6 +196,14 @@ func _ready() -> void:
 	bridge.map_loaded.connect(_on_map)
 	bridge.world_updated.connect(_on_world)
 	bridge.chronicle_added.connect(ui.add_chronicle)
+	# The realm's sound: ambience from the camera, stingers from the chronicle.
+	sound = preload("res://scripts/soundscape.gd").new()
+	add_child(sound)
+	for bus in ["Music", "Ambience"]:
+		sound.set_volume(bus, float(Settings.get_value("vol_" + bus.to_lower())))
+	bridge.chronicle_added.connect(_sound_events)
+	interior.opened.connect(func(room): sound.set_interior(room))
+	interior.closed.connect(func(): sound.set_interior(""))
 	bridge.chronicle_added.connect(_on_chronicle)
 	bridge.realm_changed.connect(_on_realm_changed)
 	ui.pause_toggled.connect(func(p): bridge.set_paused(p); ui.toast("The realm holds its breath." if p else "The realm stirs again."))
@@ -431,7 +441,40 @@ func set_always_day(on: bool) -> void:
 		sky3d.current_time = 10.0
 
 
+## A few times a second: what the camera is near, for the ambience and music.
+func _listen() -> void:
+	if sound == null or terrain.width == 0:
+		return
+	var near := {}
+	var c: Dictionary = towns.nearest(rig.target, 8.0)
+	if not c.is_empty():
+		var b := str(c.get("buildings", ""))
+		near = {"size": int(c.get("size", 1)), "market": b.contains("Marketplace") or int(c.get("size", 1)) >= 4,
+			"church": b.contains("Temple") or b.contains("Cathedral"), "forge": b.contains("Barracks") or b.contains("Blacksmith"),
+			"tavern": int(c.get("size", 1)) >= 3, "siege": c.get("besieged", false), "north": float(c.get("y", 999)) < 25.0}
+	var season := String(bridge.world.get("date", {}).get("season", "summer"))
+	sound.set_view(rig.distance, near, season, sky3d != null and sky3d.is_night(), "snow" if season == "winter" else "clear")
+	var th: Dictionary = bridge.world.get("threat", {})
+	sound.mood("dead" if int(th.get("north", 0)) > 0 and rig.distance > 60.0 else ("tension" if String(th.get("usurper", "none")) != "none" else "calm"))
+
+
+## The chronicle, heard: each kind of event its own stinger.
+func _sound_events(entries: Array) -> void:
+	const KINDS := {"death": "death", "succession": "crown", "crown": "crown", "marriage": "marriage", "alliance": "alliance",
+		"rebellion": "rebellion", "civil_war": "rebellion", "raid": "rebellion", "city_destroyed": "sack", "city_transferred": "handover",
+		"battle": "battle", "unit_killed": "unit_killed"}
+	for e in entries.slice(-3):
+		var kind := String(e.get("kind", ""))
+		if kind == "city_shrank":
+			kind = String(e.get("reason", ""))
+		sound.event(String(KINDS.get(kind, kind)))
+
+
 func _process(_delta: float) -> void:
+	_heard_at -= _delta
+	if _heard_at <= 0.0:
+		_heard_at = 0.25
+		_listen()
 	if villagers and sky3d:
 		villagers.night = sky3d.is_night()
 		# The village keeps its own clock: the sky's, or in always-day light a
@@ -811,8 +854,11 @@ func _say_aloud(text: String, who: Dictionary, done := Callable()) -> void:
 			return
 		if _voice == null:
 			_voice = AudioStreamPlayer.new()
-			_voice.bus = "Master"
+			_voice.bus = sound.voice_bus() if sound else "Master"
+			_voice.finished.connect(func(): if sound: sound.voice_ended())
 			add_child(_voice)
+		if sound:
+			sound.voice_started()
 		_voice.stream = stream
 		_voice.volume_db = linear_to_db(maxf(0.01, float(Settings.get_value("voice_volume"))))
 		for c in _voice.finished.get_connections():

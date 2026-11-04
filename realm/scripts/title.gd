@@ -345,6 +345,20 @@ func _voice_settings(right: Control) -> void:
 	vol.value = float(Settings.get_value("voice_volume"))
 	vol.value_changed.connect(func(v): Settings.set_value("voice_volume", v))
 	right.add_child(vol)
+	for pair in [["Music", "vol_music"], ["Sounds of the realm", "vol_ambience"]]:
+		right.add_child(_label(pair[0], 15, MUTED))
+		var sl := HSlider.new()
+		sl.min_value = 0.0
+		sl.max_value = 1.0
+		sl.step = 0.05
+		sl.value = float(Settings.get_value(pair[1]))
+		var key: String = pair[1]
+		sl.value_changed.connect(func(v):
+			Settings.set_value(key, v)
+			var main := get_tree().root.get_node_or_null("Main")
+			if main and main.sound:
+				main.sound.set_volume("Music" if key == "vol_music" else "Ambience", v))
+		right.add_child(sl)
 	_choices(right, "When you talk with people", [["Type", "type"], ["Speak (hands-free)", "speak"]], Settings.get_value("talk"), func(v): Settings.set_value("talk", v))
 	_section(right, "The local model")
 	var ai := _label("Asking Off Grid AI…", 14, MUTED)

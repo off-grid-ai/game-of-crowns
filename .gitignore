@@ -28,6 +28,7 @@ realm/assets/q/**
 realm/assets/ground/**
 realm/assets/village/**
 realm/assets/interiors/**
+realm/assets/audio/**
 !realm/assets/realistic/**/
 !realm/assets/people/**/
 !realm/assets/hero/**/
@@ -38,6 +39,7 @@ realm/assets/interiors/**
 !realm/assets/ground/**/
 !realm/assets/village/**/
 !realm/assets/interiors/**/
+!realm/assets/audio/**/
 !realm/assets/**/*.import
 !realm/assets/**/license.txt
 !realm/assets/**/LICENSE*

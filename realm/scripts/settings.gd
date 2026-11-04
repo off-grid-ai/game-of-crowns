@@ -4,7 +4,7 @@ extends RefCounted
 ## chronicle in the bridge instead; these are just how you like to play.
 
 const PATH := "user://settings.cfg"
-const DEFAULTS := {"voices": true, "voice_volume": 0.85, "talk": "type", "seen_intro": false}  # talk: "type" | "speak"
+const DEFAULTS := {"voices": true, "voice_volume": 0.85, "talk": "type", "seen_intro": false, "vol_music": 0.7, "vol_ambience": 0.8}  # talk: "type" | "speak"
 
 static var _cfg: ConfigFile
 
