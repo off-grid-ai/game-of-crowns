@@ -498,7 +498,7 @@ function counsel(players, cities, threat) {
   const war = great.find((p) => (p.atWarWith ?? []).some((o) => great.some((g) => g.id === o)));
   if (war) {
     const foe = great.find((g) => war.atWarWith.includes(g.id));
-    out.push({ urgency: 50, text: `${war.house.name} and ${foe.house.name} are at war`, why: "Every season of war burns fields and lowers the realm's peace.", acts: [{ label: `A feast for ${war.house.name.replace("House ", "")}`, action: "feast", city: seatOf(war.id)?.id }, { label: `A feast for ${foe.house.name.replace("House ", "")}`, action: "feast", city: seatOf(foe.id)?.id }].filter((a) => a.city !== undefined) });
+    out.push({ urgency: 50, text: `${war.house.name} and ${foe.house.name} are at war`, why: "Every season of war burns fields and lowers the realm's peace. Both must be warm to the crown (favour 40) to obey.", acts: [{ label: "Command peace", action: "peace", city: seatOf(war.id)?.id, to: foe.id }, { label: "Wed them to each other", action: "marriage", city: seatOf(war.id)?.id, to: foe.id }].filter((a) => a.city !== undefined) });
   }
   if (purse < 150) out.push({ urgency: 40, text: "The royal treasury is thin", why: "Every decree costs crowns; a higher tithe fills the purse but cools the houses.", acts: [{ label: "Raise the tithe", ui: "tithe_up" }] });
   if (!out.length) out.push({ urgency: 0, text: "The realm is quiet", why: "A good season to win a house's love before you need it.", acts: [] });
@@ -844,7 +844,7 @@ http.createServer(async (req, res) => {
     // Spend now, so a second decree before the next snapshot can't overdraw the treasury.
     const crownNow = world.players.find((p) => houseFor(p).crown);
     if (crownNow) crownNow.gold -= result.cost;
-    shiftFavour(result.favour, { gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "called to the King's banners", marriage: "a royal match" }[cmd.action] ?? "a royal decree");
+    shiftFavour(result.favour, { gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "called to the King's banners", marriage: "a royal match", peace: "the King's peace" }[cmd.action] ?? "a royal decree");
     const seat = world.cities.find((c) => c.owner === crownNow?.id && c.capital);
     const target = world.cities.find((c) => c.id === Number(cmd.city));
     if (seat && target && (cmd.action === "relief" || cmd.action === "gift")) scene(cmd.action === "relief" ? "grain" : "tribute", { x: seat.x, y: seat.y, tx: target.x, ty: target.y, city: target.id });
@@ -860,6 +860,17 @@ http.createServer(async (req, res) => {
       const near = foes.sort((a, b) => Math.hypot(a.x - seat.x, a.y - seat.y) - Math.hypot(b.x - seat.x, b.y - seat.y))[0];
       const goal = target && target.id !== seat.id ? target : near && Math.hypot(near.x - seat.x, near.y - seat.y) < 12 ? near : { x: seat.x + 3, y: seat.y + 2 };
       scene("muster", { x: seat.x, y: seat.y, tx: goal.x, ty: goal.y, city: seat.id });
+    }
+    // A commanded peace: the two lords' houses keep a truce (no raids, no plots).
+    if (result.truce && court) {
+      const [a, b] = result.truce.map((pid) => court.lordOfHouse(pid));
+      if (a && b) {
+        court.truces ??= {};
+        court.truces[[a.id, b.id].sort().join(":")] = (world?.turn ?? 0) + 16;
+        court.remember(a.id, `The King commanded peace with ${b.house}, and I bowed to it.`);
+        court.remember(b.id, `The King commanded peace with ${a.house}, and I bowed to it.`);
+        court.saveCourt?.();
+      }
     }
     // A royal match: the two lords' heirs (or kin) are named, they warm to each
     // other, and a long truce holds their houses from raids and plots.

@@ -13,6 +13,7 @@ export const DECREES = {
   feast: { cost: 100, label: "Hold a feast in the lord's honour" },
   banners: { cost: 50, label: "Call the banners" },
   marriage: { cost: 80, label: "Arrange a marriage between two houses" },
+  peace: { cost: 60, label: "Command peace between two warring houses" },
 };
 
 // When the banners were last called: the houses won't answer twice in a year.
@@ -172,6 +173,24 @@ export function decree(cmd, world) {
         text: `A feast at Kingsmere in honour of ${lord}. Wine flows; old slights are forgotten, for now.`,
         lua: [pay],
       };
+    case "peace": {
+      // The King commands two warring houses to lay down arms. Each obeys by its
+      // favour: if both are warm enough, the soldiers camped by the other's towns
+      // go home and both lose their taste for war a while (the engine still
+      // counts them at war; the fighting stops). A cold house refuses to his face.
+      if (!c) return { error: "choose a town of one of the two houses" };
+      const to = world.players.find((p) => p.id === Number(cmd.to));
+      if (!to || to.id === owner.id || houseFor(to).wild || houseFor(to).crown || houseFor(owner).crown) return { error: "choose two great houses" };
+      const fav = cmd.favourOf ?? (() => 60);
+      const a = houseFor(owner).name, b = houseFor(to).name;
+      const cold = [owner, to].filter((p) => fav(p.id) < 40);
+      if (cold.length) {
+        const who = cold.map((p) => houseFor(p).name).join(" and ");
+        return { cost: d.cost, favour: Object.fromEntries(cold.map((p) => [p.id, -5])), lua: [pay], text: `The King commands peace between ${a} and ${b}. ${who} ${cold.length > 1 ? "refuse" : "refuses"} the King's peace, and the war goes on.` };
+      }
+      const home = (x, y) => `for p in players_iterate() do if p.id == ${x} then for u in p:units_iterate() do local r = u.utype:rule_name(); if r ~= "Workers" and r ~= "Settlers" then for q in players_iterate() do if q.id == ${y} then for c in q:cities_iterate() do if u.tile:sq_distance(c.tile) <= 9 then edit.unit_kill(u, "killed", nil); break end end end end end end; edit.trait_mod_set(p, "Aggressive", -60) end end`;
+      return { cost: d.cost, favour: { [owner.id]: 2, [to.id]: 2 }, lua: [pay, home(owner.id, to.id), home(to.id, owner.id)], text: `The King commands peace between ${a} and ${b}. Both bow to the crown; their hosts break camp and turn for home.`, truce: [owner.id, to.id] };
+    }
     case "marriage": {
       // A royal match binds two great houses by blood: both thank the crown,
       // and the bond holds them from each other's throats (the court's truce;

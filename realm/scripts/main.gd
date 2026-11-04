@@ -267,7 +267,7 @@ func _ready() -> void:
 	ui.open_menu.connect(func(): title.open())
 	ui.open_settings.connect(func(): title.open_settings())
 	ui.decree.connect(_on_decree)
-	ui.decree_at.connect(func(action, city): bridge.decree(action, city))
+	ui.decree_at.connect(func(action, city, to): bridge.decree(action, city, "", to))
 	ui.mood_decreed.connect(func(t): bridge.set_mood(t); ui.toast("The realm hears your will…"))
 	ui.decree_revoked.connect(func(id): bridge.revoke_decree(id, ui.set_decrees))
 	bridge.decrees_changed.connect(ui.set_decrees)

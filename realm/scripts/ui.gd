@@ -16,7 +16,7 @@ signal character_edited(spec: Dictionary)
 signal focus_city(city_id: int)
 signal pause_toggled(paused: bool)
 signal decree(action: String, building: String, to: int)
-signal decree_at(action: String, city: int)  # a decree straight from the Hand's counsel, at its town
+signal decree_at(action: String, city: int, to: int)  # a decree straight from the Hand's counsel, at its town (and the other house)
 signal tithe_changed(rate: float)
 signal open_menu
 signal mood_decreed(text: String)
@@ -483,21 +483,34 @@ func _build_houses() -> void:
 	_houses.add_theme_constant_override("separation", 2)
 	v.add_child(_houses)
 	v.add_child(HSeparator.new())
-	v.add_child(T.label("Your word"))
+	# The King's word, folded to one line until wanted: the table stays compact
+	# and the Hand's counsel below it in view.
+	var open_word := _btn("Proclaim your word…")
+	open_word.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	open_word.add_theme_color_override("font_color", T.ACCENT)
+	open_word.tooltip_text = "Shape your people's minds in a sentence: everyone, a house, a person, or a group. Each proclamation keeps working until you revoke it."
+	v.add_child(open_word)
+	var word_box := VBoxContainer.new()
+	word_box.visible = false
+	v.add_child(word_box)
 	var word := LineEdit.new()
 	word.placeholder_text = "e.g. the Stormlands are loyal to their King"
-	word.tooltip_text = "Change the realm's people in your own words: everyone, a house, a person, or a group."
 	word.text_submitted.connect(func(t):
 		mood_decreed.emit(t)
 		word.clear()
-		word.release_focus())
-	v.add_child(word)
+		word.release_focus()
+		word_box.visible = false)
+	word_box.add_child(word)
 	var hint := Label.new()
-	hint.text = "Shape your people's minds in a sentence. Each order below keeps working on them until you revoke it."
+	hint.text = "Shape your people's minds in a sentence. Each proclamation keeps working until you revoke it."
 	hint.add_theme_color_override("font_color", T.TEXT_2)
 	hint.add_theme_font_size_override("font_size", T.SIZE_DESC)
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD
-	v.add_child(hint)
+	word_box.add_child(hint)
+	open_word.pressed.connect(func():
+		word_box.visible = not word_box.visible
+		if word_box.visible:
+			word.grab_focus())
 	_decree_box = VBoxContainer.new()
 	_decree_box.add_theme_constant_override("separation", 2)
 	v.add_child(_decree_box)
@@ -1383,7 +1396,7 @@ func _counsel_act(act: Dictionary) -> void:
 	elif on == "tithe_up":
 		_set_tithe(_tithe + 0.05)
 	else:
-		decree_at.emit(String(act.get("action", "")), int(act.get("city", -1)))
+		decree_at.emit(String(act.get("action", "")), int(act.get("city", -1)), int(act.get("to", -1)))
 
 
 func _set_tithe(rate: float) -> void:

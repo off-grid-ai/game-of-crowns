@@ -15,6 +15,7 @@ extends Node
 ##   look note           log what the game says now, with a note
 ##   city Kingsmere 6    frame a town by name, at a camera distance
 ##   button Continue     press the visible button whose words begin so
+##   town Kingsmere      open a town's card
 
 var main: Node
 var out := ""
@@ -102,6 +103,12 @@ func _play(quit_after: bool) -> void:
 						break
 				_note("  button %s: %s" % [want, "pressed" if hit else "NOT FOUND"])
 				await get_tree().create_timer(0.4).timeout
+			"town":
+				# Open a town's card, as clicking the town would.
+				for c in main.bridge.world.get("cities", []):
+					if String(c.get("title", c.get("name", ""))) == w[1]:
+						main._focus_city(int(c["id"]))
+				await get_tree().create_timer(1.0).timeout
 			"city":
 				_frame_city(w[1], float(w[2]) if w.size() > 2 else 6.0)
 				await get_tree().create_timer(3.0).timeout
