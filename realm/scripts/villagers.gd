@@ -183,6 +183,36 @@ func who_at(p: Vector3, reach := 0.35) -> Dictionary:
 	return best
 
 
+## The villager under the pointer on screen, if the click was on them: a
+## click on the town around them is not a hello.
+func who_on_screen(cam: Camera3D, at: Vector2, px := 18.0) -> Dictionary:
+	var best := {}
+	var best_d := px
+	for id in _crowds:
+		var list: Array = _crowds[id]
+		for i in list.size():
+			var n: Node3D = list[i]["node"]
+			if not n.visible:
+				continue
+			var mid := n.global_position + Vector3(0, 0.11, 0)  # their middle, not their feet
+			if cam.is_position_behind(mid):
+				continue
+			var d := cam.unproject_position(mid).distance_to(at)
+			if d < best_d:
+				best_d = d
+				best = {"town": int(id), "i": i, "node": n}
+	return best
+
+
+## Someone looked at from above stops where they are and turns up to face
+## the watcher, for as long as their card is open.
+func hold(town: int, i: int, face: Vector3, ms := 1500) -> void:
+	var list: Array = _crowds.get(town, [])
+	if i < list.size():
+		list[i]["hold_until"] = Time.get_ticks_msec() + ms
+		list[i]["face"] = face
+
+
 func _exit_tree() -> void:
 	# Hand the avoidance agents back before the navigation server shuts down.
 	for id in _crowds:

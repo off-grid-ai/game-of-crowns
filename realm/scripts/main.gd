@@ -731,12 +731,20 @@ func _cycle_step(delta: float) -> void:
 
 
 var _settled := false  # the scatter has been seated on the graded ground
+var _folk_held := {}  # the villager whose card is open: they stand still for it
+
+
 func _process(_delta: float) -> void:
 	_log_perf(_delta)
 	if not _settled and terrain.built and towns and not towns.towns.is_empty() and not towns.building():
 		_settled = true
 		terrain.settle_scatter()
 	_cycle_step(_delta)
+	if not _folk_held.is_empty():
+		if ui._folk_panel and ui._folk_panel.visible:
+			villagers.hold(_folk_held["town"], _folk_held["i"], rig.get_viewport().get_camera_3d().global_position)
+		else:
+			_folk_held = {}
 	if _no_forest and terrain.forest:
 		terrain.forest.visible = false
 	if _no_instancer and terrain.land3d and terrain.land3d.land and terrain.land3d.land.instancer_mode != 0:
@@ -1089,8 +1097,9 @@ func _on_chronicle(entries: Array) -> void:
 func _on_ground_clicked(p: Vector3) -> void:
 	# Close enough to see faces: a click on a villager is a hello.
 	if rig.distance < 12.0:
-		var who: Dictionary = villagers.who_at(p, 0.02 * rig.distance + 0.1)
+		var who: Dictionary = villagers.who_on_screen(get_viewport().get_camera_3d(), get_viewport().get_mouse_position())
 		if not who.is_empty():
+			_folk_held = who
 			ui.show_folk_waiting()
 			bridge.folk(who["town"], who["i"], func(d): ui.show_folk(d if d is Dictionary else {}))
 			return

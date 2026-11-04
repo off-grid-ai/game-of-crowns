@@ -896,12 +896,12 @@ http.createServer(async (req, res) => {
     if (!person) return json(res, 404, { error: "no such person" });
     const file = path.join(P.state, "folk-tales.json");
     const tales = chron.readJson(file) ?? {};
-    const key = `${city.id}:${person.i}:${person.name}`;
+    const key = `v2:${city.id}:${person.i}:${person.name}`;  // v2: tales about the person, not the realm
     if (!tales[key]) {
       const owner = world.players.find((p) => p.id === city.owner);
-      const near = chronicle.filter((e) => e.city === city.id || (e.text ?? "").includes(cityName(city.id))).slice(-6).map((e) => e.text);
-      const realm = chronicle.filter((e) => ["rebellion", "betrayal", "city_transferred", "death", "marriage", "raid"].includes(e.kind)).slice(-4).map((e) => e.text);
-      const tale = await folkTale(person, cityName(city.id), houseFor(owner).name, [...near, ...realm]);
+      // Only what happened in their own town touches a commoner's tale.
+      const near = chronicle.filter((e) => e.city === city.id && e.kind !== "tithe").slice(-1).map((e) => e.text);
+      const tale = await folkTale(person, cityName(city.id), houseFor(owner).name, near);
       // No local model: their life told plainly, and not kept, so the model can tell it later.
       if (!tale) return json(res, 200, { town: cityName(city.id), person, ...folkPlain(person, cityName(city.id)) });
       tales[key] = tale;
@@ -928,7 +928,7 @@ http.createServer(async (req, res) => {
     const person = townsfolk(city)[Number(b.i)];
     const said = String(b.said ?? "").trim().slice(0, 400);
     if (!person || !said) return json(res, 400, { error: "nobody to hear it" });
-    const key = `${city.id}:${person.i}:${person.name}`;
+    const key = `v2:${city.id}:${person.i}:${person.name}`;
     const tales = chron.readJson(path.join(P.state, "folk-tales.json"), {});
     const file = path.join(P.state, "talks.json");
     const talks = chron.readJson(file, {});

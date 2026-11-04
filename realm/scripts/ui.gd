@@ -75,6 +75,7 @@ var minimap: Control
 var _ledger_btn: Button
 var _court_sig := ""
 var _petitions: Array = []
+var _court_waiting := false  # the court panel, set aside for a commoner's card
 var _court_hidden := true
 
 var _toast: Label
@@ -110,6 +111,31 @@ func _ready() -> void:
 
 
 # --- building blocks --------------------------------------------------------------
+
+## The cards that come up under the top bar share one place, and only the
+## latest is ever on screen: one coming up puts away whichever was there.
+var _cards: Array = []
+
+
+func _card(p: PanelContainer) -> PanelContainer:
+	_cards = _cards.filter(func(c): return is_instance_valid(c))
+	_cards.append(p)
+	p.visibility_changed.connect(func():
+		if p.visible:
+			_put_away_all_but(p))
+	_put_away_all_but.call_deferred(p)  # a new card is born visible, no signal
+	return p
+
+
+func _put_away_all_but(p: PanelContainer) -> void:
+	if not is_instance_valid(p) or not p.visible:
+		return
+	for c in _cards:
+		if c != p and is_instance_valid(c) and c.visible:
+			c.visible = false
+			if c == _ledger_panel and _ledger_btn:
+				_ledger_btn.set_pressed_no_signal(false)
+
 
 func _glass_panel() -> PanelContainer:
 	var p := PanelContainer.new()
@@ -641,7 +667,7 @@ func _build_minimap() -> void:
 
 
 func _build_court() -> void:
-	_court_panel = _glass_panel()
+	_court_panel = _card(_glass_panel())
 	_court_panel.anchor_left = 0.5
 	_court_panel.anchor_right = 0.5
 	_court_panel.offset_left = -330
@@ -686,7 +712,7 @@ func show_house(d: Dictionary) -> void:
 		_house_panel.queue_free()
 	if d.is_empty() or d.has("error"):
 		return
-	_house_panel = _glass_panel()
+	_house_panel = _card(_glass_panel())
 	_house_panel.offset_top = 70
 	# Scrolls when a house has more bannermen than the screen holds.
 	var scroll := ScrollContainer.new()
@@ -780,7 +806,11 @@ func show_house(d: Dictionary) -> void:
 func _folk_shell() -> VBoxContainer:
 	if _folk_panel:
 		_folk_panel.queue_free()
-	_folk_panel = _glass_panel()
+	# The court waits behind a commoner's card, and is back when it closes.
+	if _court_panel.visible:
+		_court_panel.visible = false
+		_court_waiting = true
+	_folk_panel = _card(_glass_panel())
 	_folk_panel.offset_top = 70
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
@@ -792,13 +822,21 @@ func show_folk_waiting() -> void:
 	var v := _folk_shell()
 	v.add_child(T.label("One of the common folk", T.TEXT_3))
 	v.add_child(T.datum("They stop, and look up at you…", 16, T.TEXT_2))
+	v.add_child(_btn("Close", close_folk))
+
+
+func close_folk() -> void:
+	if _folk_panel:
+		_folk_panel.visible = false
+	if _court_waiting:
+		_court_waiting = false
+		_court_panel.visible = true
 
 
 ## One of the common folk, met in the street: who they are, and their story.
 func show_folk(d: Dictionary) -> void:
 	if d.is_empty() or d.has("error") or not d.has("person"):
-		if _folk_panel:
-			_folk_panel.visible = false
+		close_folk()
 		if d.has("error"):
 			toast(String(d["error"]))
 		return
@@ -814,7 +852,7 @@ func show_folk(d: Dictionary) -> void:
 	names.add_child(T.label("%s, %d  ·  %s  ·  %s" % [String(p.get("trade", "")).capitalize(), int(p.get("age", 0)), p.get("family", ""), d.get("town", "")], T.TEXT_2))
 	if String(p.get("nature", "")) != "":
 		names.add_child(T.label("Known to be %s" % p["nature"], T.ACCENT))
-	head.add_child(_btn("Close", func(): _folk_panel.visible = false))
+	head.add_child(_btn("Close", close_folk))
 	var story := RichTextLabel.new()
 	story.bbcode_enabled = true
 	story.fit_content = true
@@ -833,7 +871,7 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 	var editing := not person.is_empty()
 	if _form_panel:
 		_form_panel.queue_free()
-	_form_panel = _glass_panel()
+	_form_panel = _card(_glass_panel())
 	_form_panel.offset_top = 70
 	if _house_panel:
 		_house_panel.visible = false
@@ -978,7 +1016,7 @@ func _toggle_ledger() -> void:
 func show_ledger(rows: Array, houses: Dictionary) -> void:
 	if _ledger_panel:
 		_ledger_panel.queue_free()
-	_ledger_panel = _glass_panel()
+	_ledger_panel = _card(_glass_panel())
 	_ledger_panel.offset_top = 70
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 12)
@@ -1127,7 +1165,7 @@ func _spark(values: Array) -> Control:
 func show_digest(entries: Array, turns: int) -> void:
 	if _digest_panel:
 		_digest_panel.queue_free()
-	_digest_panel = _glass_panel()
+	_digest_panel = _card(_glass_panel())
 	_digest_panel.offset_top = 70
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
@@ -1496,6 +1534,10 @@ func _show_audience() -> void:
 		return
 	if _digest_panel and _digest_panel.visible:
 		return  # the court waits until you've read what happened
+	# One card at a time in that place: the court comes up, a commoner's card goes.
+	if _folk_panel:
+		_folk_panel.visible = false
+	_court_waiting = false
 	_court_panel.visible = true
 	_town_panel.visible = false
 	var p: Dictionary = _petitions[0]

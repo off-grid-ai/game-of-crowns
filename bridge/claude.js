@@ -226,16 +226,26 @@ export function folkPlain(person, town) {
 // One of the common folk, told in full: a short story in their own life,
 // woven from what has really happened in their town.
 export async function folkTale(person, town, house, events) {
+  // A small model given the realm's news retells all of it: hand it one
+  // happening at most, and ask for their life, not the realm's.
+  const event = events.find(Boolean);
   const out = await complete(
-    "You write short, grounded vignettes about ordinary people in a medieval realm. Plain, concrete, unsentimental; no fantasy clichés, no modern words.",
+    "You write short, grounded vignettes about ordinary people in a medieval realm. Plain, concrete, unsentimental; no fantasy clichés, no modern words. You write about the one person, never about lords, houses or wars they only heard of.",
     `Person: ${person.name}, ${person.age}, ${person.woman ? "woman" : "man"}, ${person.trade} in ${town} (lands of ${house}). By nature ${person.nature ?? "ordinary"}. ${person.family}. Known for: ${person.past}. Wants: ${person.wants}.
-What has happened in ${town} and the realm lately:
-${events.map((e) => "- " + e).join("\n") || "- nothing much; quiet years"}
-Write their story in 4 to 6 sentences, third person, past and present, tying their life to one or two of those events where it fits naturally. Let their nature show in what they do and say. Then one line they might say to a stranger, in their voice.
+${event ? `Something that happened nearby lately: ${event}` : "The seasons here have been quiet."}
+Write their story in 3 or 4 short sentences, third person: their work, their household, what they want and why. Mention the happening only if it changed their own day, in a few words. Let their nature show in what they do. Then, separately, one line they might say to a stranger, in their voice.
 Return {"story": "...", "says": "..."}`,
-    420,
+    300,
   );
-  return out && out.story ? { story: String(out.story), says: String(out.says ?? "") } : null;
+  if (!out || !out.story) return null;
+  const says = String(out.says ?? "").trim();
+  // The story ends before the line they'd say: that is shown on its own.
+  const story = (String(out.story).match(/[^.!?]+[.!?]+['"’”]?/g) ?? [String(out.story)])
+    .map((x) => x.trim())
+    .filter((x) => !/might say|would say|says to (a|any) stranger/i.test(x))
+    .slice(0, 4)
+    .join(" ");
+  return { story, says };
 }
 
 // Someone in the realm answers you, face to face, in their own voice. Small
