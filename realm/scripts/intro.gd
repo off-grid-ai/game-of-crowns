@@ -13,6 +13,7 @@ signal finished
 
 const STILLS := "res://assets/intro/stills/"
 const ATLAS := "res://assets/maps/atlas.png"
+const BACKDROP := "res://assets/ui/title-background.png"
 const REALM_TILES := Vector2(56, 88)  # the atlas covers the whole map (bridge/tools/azgaar_world.py)
 const T := preload("res://scripts/theme.gd")
 const Keys := preload("res://scripts/keys.gd")
@@ -39,7 +40,7 @@ const TIPS := [
 	["Meet anyone", "Click a lord, a lady or a bannerman to see them face to face, hear what they want, or take their place in the world.", "{houses}  houses, then See"],
 ]
 
-var say := Callable()  # (text) -> void: the narrator's voice, if voices are on
+var say := Callable()  # (text) -> void: a voice for each page; unset, the intro is read, not narrated
 var ready_check := Callable()  # () -> bool: the realm is built and can be shown
 var _pages: Array = []  # [still, title, line, house, keys, atlas uv, atlas zoom]
 var _page := -1
@@ -96,6 +97,9 @@ func play(houses: Array, seats: Dictionary) -> void:
 		page.call("tip", tip[0], tip[1], {}, tip[2], Vector2(0.3 + randf() * 0.4, 0.2 + randf() * 0.6), 2.0)
 	_build()
 	visible = true
+	# The intro covers the screen: the realm behind it need not be drawn while
+	# it builds, which is what made the pages stutter.
+	get_viewport().disable_3d = true
 	_page = -1
 	_next()
 
@@ -193,6 +197,10 @@ func _next() -> void:
 		_page = _pages.size() - TIPS.size()
 	var p: Array = _pages[_page]
 	var path := STILLS + String(p[0]) + ".png"
+	# A page without a still of its own is told over the painted realm (the
+	# title's vista), not over the flat atlas.
+	if not ResourceLoader.exists(path):
+		path = BACKDROP
 	var still := ResourceLoader.exists(path)
 	_image.texture = load(path) if still else null
 	_image.visible = still
@@ -252,6 +260,7 @@ func _end() -> void:
 	if _tween:
 		_tween.kill()
 	visible = false
+	get_viewport().disable_3d = false
 	for c in get_children():
 		c.queue_free()
 	finished.emit()

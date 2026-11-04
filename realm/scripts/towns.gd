@@ -245,20 +245,24 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 	# The ring of townhouses framing the square, shoulder to shoulder.
 	var ring := square_r + 0.6
 	for r in 4:
+		# Each ring draws from its own sequence, so a bigger town carries on
+		# along the same ring instead of shifting every house after it.
+		var rr := RandomNumberGenerator.new()
+		rr.seed = rng.seed + 7 * (r + 1)
 		var circ := TAU * ring
-		var ang := rng.randf() * TAU
+		var ang := rr.randf() * TAU
 		var walked := 0.0
 		while walked < circ and placed < want:
-			var kind: String = kinds[rng.randi() % kinds.size()]
+			var kind: String = kinds[rr.randi() % kinds.size()]
 			var f: Vector2 = Real.footprint(kind)
 			var span := maxf(f.x, f.y)
 			var p := Vector3(cos(ang), 0, sin(ang)) * ring
-			var step := (span * 0.78 + rng.randf_range(0.0, 0.08)) / ring  # eaves almost touching
+			var step := (span * 0.78 + rr.randf_range(0.0, 0.08)) / ring  # eaves almost touching
 			ang += step
 			walked += step * ring
 			if _on_street(p, streets, 0.32):
 				continue  # keep the roads into the square open
-			if _put(root, center, kind, p, f, lots, rng, true):
+			if _put(root, center, kind, p, f, lots, rr, true):
 				placed += 1
 		ring += 0.95
 	_palisade(root, center, ring - 0.4, streets, seat)
@@ -525,8 +529,10 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	_house = house
 	_house_colour = color
 
-	# Streets radiate from the square and lengthen as the town grows.
-	var street_count := 3 if size < 5 else (4 if size < 9 else 5)
+	# Streets radiate from the square and lengthen as the town grows. Their
+	# number and the square are the town's own, fixed whatever its size, so a
+	# town that grows keeps every house it has and only adds to its edges.
+	var street_count := 3 + int(c["id"]) % 3
 	var reach := clampf(1.6 + size * 0.32, 2.0, 6.0)
 	var base_ang := rng.randf() * TAU
 	var streets := []
@@ -535,7 +541,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 
 	var square_r := 0.75 if size < 6 else 1.0
 	if realistic_towns.has("*") or realistic_towns.has(String(c.get("title", c["name"]))):
-		square_r = 1.0 if size < 6 else 1.25  # a market square, room for stalls and a crowd
+		square_r = 1.25 if bool(c.get("capital", false)) or size >= 12 else 1.0  # a market square, room for stalls and a crowd
 		reach = maxf(reach, square_r + 3.6)  # the town reaches out to its palisade
 	var reps := roundi(square_r * 4.0)
 	# The square: trodden earth spreading out around a cobbled heart, both

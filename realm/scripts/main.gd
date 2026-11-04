@@ -120,7 +120,6 @@ func _ready() -> void:
 				ui.house_opened.emit(int(spec["house"]))))
 	intro = preload("res://scripts/intro.gd").new()
 	intro.ready_check = func(): return terrain.width > 0 and towns != null and not towns.building()
-	intro.say = func(text): _say_aloud(text, {"name": "The Chronicler", "gender": "male"})
 	add_child(intro)
 	lore = preload("res://scripts/lore.gd").new()
 	lore.person_opened.connect(_open_person)
@@ -281,7 +280,14 @@ func _ready() -> void:
 	if _shot.has("lore"):
 		get_tree().create_timer(float(_shot.get("wait", 8.0)) - 4.0).timeout.connect(func():
 			lore.open(int(_shot["lore"])))
-	bridge.command_done.connect(func(ok, text): ui.toast(text if ok else "The gods cannot: " + text))
+	bridge.command_done.connect(func(ok, text):
+		if not ok and text == "no such petition":
+			# The court moved on (answered, or gone with an old session): show who
+			# is really waiting rather than an error.
+			bridge.court(ui.set_court)
+			ui.toast("That petitioner has already gone.")
+			return
+		ui.toast(text if ok else "The gods cannot: " + text))
 	if _shot.has("path"):
 		get_tree().create_timer(float(_shot.get("wait", 8.0))).timeout.connect(_take_shot)
 	if _shot.has("clean"):
@@ -522,6 +528,12 @@ func _setup_environment() -> void:
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 220.0
 	sun.directional_shadow_blend_splits = true
+	# Two shadow bands, not four: every band draws all its casters again, and
+	# the view never reaches far enough to need the outer two.
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	# Each model's simpler versions (made on import) take over once the
+	# difference is under a few pixels, rather than under one.
+	get_viewport().mesh_lod_threshold = 4.0
 	_try_look(OS.get_environment("GOC_LOOK"))
 
 
@@ -537,6 +549,9 @@ func _try_look(look: String) -> void:
 			"noshadow": sun.shadow_enabled = false
 			"noforest": _no_forest = true
 			"cycle": _cycle = []  # starts once the towns are built; see _cycle_step
+			"cyclevis":  # the same, hiding each system rather than pausing it: what each one draws
+				_cycle = []
+				_cycle_vis = true
 
 
 ## Day and night cycle, or a fixed bright day (toggled from the HUD).
@@ -640,43 +655,57 @@ var _no_forest := false  # GOC_LOOK=noforest: the woods hidden, to measure what 
 ## for a few seconds while script time and frame rate are averaged, so the
 ## frame's cost can be pinned on the system that carries it.
 var _cycle = null
+var _cycle_vis := false
+var _cycle_prims := 0.0
+var _cycle_began := false
 var _cycle_i := -1
 var _cycle_t := 0.0
 var _cycle_sum := 0.0
 var _cycle_fps := 0.0
 var _cycle_n := 0
 func _cycle_step(delta: float) -> void:
-	if _cycle == null or towns == null or towns.building() or terrain.width == 0:
+	if _cycle == null or towns == null or terrain.width == 0 or (towns.building() and not _cycle_began):
 		return
+	_cycle_began = true
 	if _cycle.is_empty():
 		_cycle = [["nothing", null], ["villagers", villagers], ["units", units], ["scenes", scenes], ["towns", towns], ["labels", labels], ["director", director], ["ui", ui], ["sound", sound], ["countryside", countryside], ["roads", roads], ["terrain", terrain], ["bridge", bridge]]
+		if _cycle_vis:
+			_cycle = [["nothing", null], ["villagers", villagers], ["units", units], ["scenes", scenes], ["towns", towns], ["countryside", countryside], ["roads", roads], ["forest", terrain.forest], ["ground", terrain.land3d], ["rivers", terrain.get_node_or_null("Rivers")], ["terrain", terrain]]
 		_cycle_i = 0
 		_cycle_t = 0.0
 	_cycle_t += delta
 	if _cycle_t > 2.0:  # let it settle before measuring
 		_cycle_sum += Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
 		_cycle_fps += Engine.get_frames_per_second()
+		_cycle_prims += Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)
 		_cycle_n += 1
 	if _cycle_t < 8.0:
 		return
 	var f := FileAccess.open("user://perf.log", FileAccess.READ_WRITE)
 	if f:
 		f.seek_end()
-		f.store_line("CYCLE off=%s process=%.1fms fps=%.1f" % [_cycle[_cycle_i][0], _cycle_sum / maxf(_cycle_n, 1), _cycle_fps / maxf(_cycle_n, 1)])
+		f.store_line("CYCLE %s=%s process=%.1fms fps=%.1f prims=%dk" % ["hidden" if _cycle_vis else "off", _cycle[_cycle_i][0], _cycle_sum / maxf(_cycle_n, 1), _cycle_fps / maxf(_cycle_n, 1), int(_cycle_prims / maxf(_cycle_n, 1) / 1000.0)])
 	var was: Node = _cycle[_cycle_i][1]
 	if was:
-		was.process_mode = Node.PROCESS_MODE_INHERIT
+		if _cycle_vis:
+			was.visible = true
+		else:
+			was.process_mode = Node.PROCESS_MODE_INHERIT
 	_cycle_i += 1
 	_cycle_t = 0.0
 	_cycle_sum = 0.0
 	_cycle_fps = 0.0
 	_cycle_n = 0
+	_cycle_prims = 0.0
 	if _cycle_i >= _cycle.size():
 		_cycle = null
 		return
 	var next: Node = _cycle[_cycle_i][1]
 	if next:
-		next.process_mode = Node.PROCESS_MODE_DISABLED
+		if _cycle_vis:
+			next.visible = false
+		else:
+			next.process_mode = Node.PROCESS_MODE_DISABLED
 
 
 func _process(_delta: float) -> void:
@@ -708,7 +737,7 @@ func _update_labels() -> void:
 	# Shadows reach only as far as they can be seen: every cascade draws its
 	# casters again, so a realm-wide reach was most of the frame.
 	if sun:
-		sun.directional_shadow_max_distance = clampf(d * 2.2, 20.0, 90.0)
+		sun.directional_shadow_max_distance = clampf(d * 1.8, 12.0, 80.0)
 	# The atlas comes in as soon as the towns stop reading, and the kingdoms
 	# view is reached quickly: the in-between, where houses are specks and
 	# woods a carpet, is passed through in a few turns of the wheel rather than

@@ -4,7 +4,7 @@ extends RefCounted
 ## beard, hair colour, cloth tint and build all vary, so no two look alike.
 
 const S := 0.12  # same scale as the towns: a 1.8 m person is ~0.22 units
-const SEEN_TO := 28.0  # world units: beyond this a person isn't drawn or animated
+const SEEN_TO := 18.0  # world units: beyond this a person isn't drawn or animated (a few pixels tall)
 
 const OUTFITS := {
 	"peasant": [["Male_Peasant", "m"], ["Female_Peasant", "f"]],
@@ -118,8 +118,10 @@ func make(rng: RandomNumberGenerator, role := "peasant", tint := Color.WHITE, ag
 	if build == "":
 		build = ["thin", "average", "average", "stout"][rng.randi() % 4]
 	var roll := rng.randf()
-	# Children are outfits only: every Mixamo character is grown.
-	if age != "child" and (roll < MIXAMO_SHARE[role] or look != ""):
+	# Children and elders are outfits only: every Mixamo character is in their
+	# prime, so a lady of 74 would stand there looking 25. Built from parts,
+	# an elder gets grey hair and a slightly shorter frame.
+	if age not in ["child", "elder"] and (roll < MIXAMO_SHARE[role] or look != ""):
 		# A named person is known by their body, so only a crowd needs one that shows its colour.
 		# A crowd's sex is rolled first, so the mix of bodies on hand doesn't decide it.
 		var want := sex if sex != "" or look != "" else ("male" if rng.randf() < 0.5 else "female")

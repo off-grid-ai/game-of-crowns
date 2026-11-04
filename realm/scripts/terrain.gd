@@ -95,6 +95,10 @@ const SEASONS := {
 
 ## Turns the land to the season: leaf colour, grass, the ground, and snow on
 ## whatever faces up in winter (trees, roofs). towns: their nodes, for the snow.
+const SNOW_FADE := 8.0  # seconds for snow to settle or melt
+var _snow_fade: Tween
+
+
 func set_season(name: String, towns: Array = []) -> void:
 	if not SEASONS.has(name):
 		return
@@ -102,9 +106,22 @@ func set_season(name: String, towns: Array = []) -> void:
 	if _snow == null:
 		_snow = ShaderMaterial.new()
 		_snow.shader = SNOW
-	_snow.set_shader_parameter("amount", s["snow"])
-	for node in towns:
-		_snow_on(node, s["snow"] > 0.0)
+	# Snow settles and melts over a few seconds rather than in a frame. It is
+	# put on before it builds up, and only taken off once it has melted.
+	var from: float = _snow.get_shader_parameter("amount") if _snow.get_shader_parameter("amount") != null else 0.0
+	if s["snow"] > 0.0:
+		for node in towns:
+			_snow_on(node, true)
+	if _snow_fade:
+		_snow_fade.kill()
+	_snow_fade = create_tween()
+	_snow_fade.tween_method(func(v: float): _snow.set_shader_parameter("amount", v), from, float(s["snow"]), SNOW_FADE)
+	if s["snow"] <= 0.0:
+		var gone := towns.duplicate()
+		_snow_fade.tween_callback(func():
+			for node in gone:
+				if is_instance_valid(node):
+					_snow_on(node, false))
 	if name == season:
 		return
 	season = name
@@ -121,7 +138,8 @@ func set_season(name: String, towns: Array = []) -> void:
 			if not _leaf_mats.has(mat):
 				_leaf_mats[mat] = mat.albedo_color
 			mat.albedo_color = _leaf_mats[mat] * s[key]
-		mmi.material_overlay = _snow if s["snow"] > 0.0 else null
+		if s["snow"] > 0.0:
+			mmi.material_overlay = _snow  # left on as it melts; the fade takes it to nothing
 	if land3d:
 		land3d.set_grass(s["ground"], s["snow"] > 0.0)
 

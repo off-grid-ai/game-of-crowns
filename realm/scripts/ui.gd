@@ -101,6 +101,8 @@ func _ready() -> void:
 	_toast.offset_right = 420
 	_toast.offset_top = 78
 	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_toast.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART  # a long notice wraps in the middle, never runs off to one side
 	_toast.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
 	_toast.add_theme_constant_override("outline_size", 6)
 	_root.add_child(_toast)
@@ -232,6 +234,12 @@ func _arrange_top() -> void:
 		state.offset_left = 10
 		state.offset_right = 10 + sw
 		state.offset_top = 10 + when.get_combined_minimum_size().y + 8
+	# Notices sit just under whatever the top bar takes up, so a bar that wraps
+	# onto a second row on a narrow window never has a notice written over it.
+	var bottom := 10.0 + maxf(when.get_combined_minimum_size().y, act.get_combined_minimum_size().y)
+	bottom = maxf(bottom, state.offset_top + state.get_combined_minimum_size().y)
+	if _toast:
+		_toast.offset_top = bottom + 12.0
 
 
 func _pill(anchor_x: float, grow: int) -> HBoxContainer:
@@ -296,10 +304,13 @@ func _build_top_bar() -> void:
 	act.add_theme_constant_override("separation", 6)  # each key stands on its own
 	_court_btn = _icon_btn("crown", _with_key("The court: petitioners waiting", "court"), _toggle_court)
 	_court_btn.visible = false
-	_court_btn.add_theme_color_override("icon_normal_color", T.ACCENT)
-	_court_btn.add_theme_color_override("font_color", T.ACCENT)
+	# Petitioners waiting: the crown and its count in gold, as clear on hover
+	# and when pressed as at rest, the count large enough to read at a glance.
+	for look in ["normal", "hover", "pressed", "hover_pressed", "focus"]:
+		_court_btn.add_theme_color_override("icon_%s_color" % look, T.ACCENT)
+		_court_btn.add_theme_color_override("font_%s_color" % look if look != "normal" else "font_color", T.ACCENT.lightened(0.2))
 	_court_btn.add_theme_font_override("font", T.mono)
-	_court_btn.add_theme_font_size_override("font_size", 12)
+	_court_btn.add_theme_font_size_override("font_size", 17)
 	# Room inside the key for the count beside the crown.
 	for look in ["normal", "hover", "pressed", "hover_pressed"]:
 		var sb: StyleBoxFlat = _court_btn.get_theme_stylebox(look).duplicate()
@@ -997,39 +1008,70 @@ func show_ledger(rows: Array, houses: Dictionary) -> void:
 		cell.add_child(_chart([{"values": vals, "color": T.ACCENT}], Vector2(180, 48)))
 		grid.add_child(cell)
 	v.add_child(HSeparator.new())
-	# The great houses compared, one line each in its colour.
+	# The great houses compared: who leads now, and who is rising or falling
+	# over the last year. A ranked list reads at a glance; seven tangled lines
+	# over every season of the reign did not.
 	var pick := HBoxContainer.new()
 	pick.add_theme_constant_override("separation", 4)
 	v.add_child(pick)
 	pick.add_child(T.label("The great houses by  "))
-	var chart_box := VBoxContainer.new()
-	var legend := HFlowContainer.new()
+	var board := VBoxContainer.new()
+	board.add_theme_constant_override("separation", 6)
+	var buttons := {}
 	var draw_houses := func(key: String):
-		for c in chart_box.get_children():
+		for c in board.get_children():
 			c.queue_free()
-		for c in legend.get_children():
-			c.queue_free()
-		var series := []
+		for k in buttons:
+			buttons[k].modulate = Color.WHITE if k == key else Color(1, 1, 1, 0.55)
+		var year_ago: Dictionary = rows[maxi(0, rows.size() - 5)]
+		var ranked := []
 		for name in houses:
-			var h: Dictionary = houses[name]
-			var vals := rows.map(func(r): return float(r.get("houses", {}).get(name, {}).get(key, 0)))
+			if houses[name].get("wild", false):
+				continue  # raiders and the dead are not a great house
+			var now := float(rows[-1].get("houses", {}).get(name, {}).get(key, 0))
+			var then := float(year_ago.get("houses", {}).get(name, {}).get(key, 0))
+			ranked.append({"name": name, "now": now, "then": then})
+		ranked.sort_custom(func(x, y): return x["now"] > y["now"])
+		var top := maxf(1.0, ranked[0]["now"] if not ranked.is_empty() else 1.0)
+		for e in ranked:
+			var h: Dictionary = houses[e["name"]]
 			var col := Color.from_string(String(h.get("color", "#888")), Color.GRAY)
-			series.append({"values": vals, "color": col})
-			var tag := HBoxContainer.new()
-			var sw := ColorRect.new()
-			sw.color = col
-			sw.custom_minimum_size = Vector2(10, 10)
-			sw.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			tag.add_child(sw)
-			tag.add_child(T.datum(" %s %s   " % [String(name).replace("House ", ""), _real(key, int(vals[-1]))], T.SIZE_DESC, T.TEXT_2))
-			legend.add_child(tag)
-		chart_box.add_child(_chart(series, Vector2(780, 120)))
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 12)
+			var who := T.datum(String(e["name"]).replace("House ", ""), T.SIZE_DESC, T.TEXT)
+			who.custom_minimum_size.x = 130
+			row.add_child(who)
+			var bar := Control.new()
+			bar.custom_minimum_size = Vector2(420, 14)
+			bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			var share: float = e["now"] / top
+			bar.draw.connect(func():
+				bar.draw_rect(Rect2(Vector2.ZERO, bar.size), Color(1, 1, 1, 0.06))
+				bar.draw_rect(Rect2(Vector2.ZERO, Vector2(bar.size.x * share, bar.size.y)), col))
+			row.add_child(bar)
+			var fig := T.datum(_real(key, int(e["now"])), T.SIZE_DESC, T.TEXT)
+			fig.custom_minimum_size.x = 80
+			fig.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+			row.add_child(fig)
+			# The year's change: rising, falling, or holding.
+			var d: float = (e["now"] - e["then"]) / maxf(1.0, e["then"])
+			var trend := "holding"
+			var tcol := T.TEXT_3
+			if d > 0.05:
+				trend = "▲ %d%%" % roundi(d * 100.0)
+				tcol = T.TEXT_2
+			elif d < -0.05:
+				trend = "▼ %d%%" % roundi(-d * 100.0)
+				tcol = T.DANGER
+			row.add_child(T.datum(trend, T.SIZE_DESC, tcol))
+			board.add_child(row)
 	for spec in [["gold", "Treasury"], ["souls", "Souls"], ["armies", "Men-at-arms"], ["towns", "Towns"], ["grain", "Grain"]]:
 		var key: String = spec[0]
 		var b := _btn(spec[1], func(): draw_houses.call(key))
+		buttons[key] = b
 		pick.add_child(b)
-	v.add_child(chart_box)
-	v.add_child(legend)
+	v.add_child(board)
+	v.add_child(T.label("Change over the last year"))
 	draw_houses.call("gold")
 	_court_panel.visible = false
 
