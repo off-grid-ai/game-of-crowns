@@ -14,6 +14,7 @@ extends Node
 ##   snap name           save <dir>/name.png
 ##   look note           log what the game says now, with a note
 ##   city Kingsmere 6    frame a town by name, at a camera distance
+##   button Continue     press the visible button whose words begin so
 
 var main: Node
 var out := ""
@@ -90,6 +91,17 @@ func _play(quit_after: bool) -> void:
 					img.save_png(path)
 			"look":
 				_note("  " + " ".join(w.slice(1)) + " :: " + JSON.stringify(_observe()))
+			"button":
+				# Press the visible button whose words start with these, as a click would.
+				var want := " ".join(w.slice(1)).to_lower()
+				var hit := false
+				for b in get_tree().root.find_children("*", "BaseButton", true, false):
+					if b.is_visible_in_tree() and String(b.get("text")).to_lower().strip_edges().begins_with(want):
+						b.emit_signal("pressed")
+						hit = true
+						break
+				_note("  button %s: %s" % [want, "pressed" if hit else "NOT FOUND"])
+				await get_tree().create_timer(0.4).timeout
 			"city":
 				_frame_city(w[1], float(w[2]) if w.size() > 2 else 6.0)
 				await get_tree().create_timer(3.0).timeout
