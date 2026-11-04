@@ -160,6 +160,11 @@ func house(id: int, cb: Callable) -> void:
 	_http_get("/house?id=%d" % id, cb)
 
 
+## A reign whose clock ran out goes on, endless, in the same realm.
+func continue_reign(cb: Callable) -> void:
+	_post("/reign/continue", {}, cb)
+
+
 func lore(cb: Callable) -> void:
 	_http_get("/lore", cb)
 

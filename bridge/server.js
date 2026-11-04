@@ -200,6 +200,9 @@ function startFreeciv() {
   }
   setTimeout(() => {
     send(`lua unsafe-cmd SNAP_DIR = "${P.state}/"`);
+    // The Crown's soldiers defend; they don't conquer or raze in the King's name
+    // unbidden (older realms were saved with a warlike Crown).
+    send(`lua cmd for p in players_iterate() do if p.name == "The King" then edit.trait_mod_set(p, "Aggressive", -100); edit.trait_mod_set(p, "Expansionist", -100) end end`);
     send(`set timeout ${paused ? 0 : turnSeconds}`);
     snapshot();
   }, 4000);
@@ -254,7 +257,11 @@ function applyStartOptions() {
   for (const p of world.players.filter((x) => !houseFor(x).wild && !houseFor(x).crown)) {
     const gold = { poor: -Math.floor((p.gold ?? 0) * 0.7), asis: 0, rich: 400 }[o.houseWealth] ?? 0;
     if (gold) lua.push(`${who(p.id)} edit.change_gold(q, ${gold}) end end`);
-    favour[p.id] = clampFavour({ loyal: 78, wary: 55, resentful: 28 }[o.trust] ?? 55);
+    // The reign's mood sets the level; each house's own history with the crown
+    // (the world bible) sets where it stands within it, so the table starts
+    // with friends, doubters and an obvious problem, not seven equal numbers.
+    const lean = { "House Stormhold": 12, "House Goldcrest": 8, "House Wolfholt": 4, "House Highfell": 2, "House Thornvale": -2, "House Ironreach": -10, "House Sunspire": -14 }[houseFor(p).name] ?? 0;
+    favour[p.id] = clampFavour(({ loyal: 74, wary: 55, resentful: 34 }[o.trust] ?? 55) + lean);
   }
   saveFavour();
   const crown = world.players.find((x) => houseFor(x).crown);

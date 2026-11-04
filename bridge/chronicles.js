@@ -117,7 +117,9 @@ function servFor(text, opt) {
 // House temperaments: Aldmere's from the world bible, or rolled for random realms.
 const TEMPERAMENT = {
   scottish: [70, 30, 35, 70], english: [50, 90, 25, 60], norwegian: [60, 20, 95, 25], french: [55, 75, 30, 85],
-  welsh: [55, 30, 85, 40], castilian: [40, 50, 40, 80], irish: [30, 40, 15, 75], norman: [40, 50, 30, 60],
+  // The Crown (norman) defends and builds but never goes conquering on its own:
+  // the King, not the engine, decides when the royal host marches.
+  welsh: [55, 30, 85, 40], castilian: [40, 50, 40, 80], irish: [30, 40, 15, 75], norman: [1, 50, 1, 75],
 };
 
 function writeNations(dir, random, temper = "mixed") {

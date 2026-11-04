@@ -124,10 +124,14 @@ func show_main() -> void:
 	_has_continue = not reign.is_empty()
 	if not reign.is_empty():
 		var label := "Continue  —  %s" % reign.get("name", "the realm")
+		var go := _close
+		# A reign whose clock ran out isn't over for the King: he rules on, in the
+		# same realm, with no clock (its score stays in the Hall of Records).
 		if reign.get("status", "") == "ended":
-			label = "View  —  %s  (reign ended)" % reign.get("name", "")
+			label = "Rule on  —  %s" % reign.get("name", "")
+			go = func(): bridge.continue_reign(func(_c, _d): _close())
 		# The one thing most players came back to do: the primary choice, in gold.
-		var cont := _big(label, _close)
+		var cont := _big(label, go)
 		var T := preload("res://scripts/theme.gd")
 		cont.add_theme_stylebox_override("normal", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.24), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.6), 8, 10))
 		cont.add_theme_stylebox_override("hover", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.36), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.85), 8, 10))
@@ -258,7 +262,8 @@ func show_new() -> void:
 	_choices(left, "Where", [["Aldmere, nine years in", "aldmere"], ["Aldmere, year one", "aldmere_fresh"], ["A random realm", "random"]], _scenario, func(v):
 		_scenario = v
 		_houses_enabled(house_row))
-	_choices(left, "Length of the reign", [["5 min", 5], ["10 min", 10], ["30 min", 30], ["1 hour", 60], ["Endless", 0]], _minutes, func(v): _minutes = v)
+	# Endless first: a reign is a life's work; a clock is a challenge you choose.
+	_choices(left, "Length of the reign", [["Endless", 0], ["A 30-minute challenge", 30], ["An hour's challenge", 60]], _minutes, func(v): _minutes = v)
 	_section(left, "The crown")
 	_choices(left, "The royal treasury", [["Poor · 15k", "poor"], ["Comfortable · 50k", "comfortable"], ["Rich · 150k", "rich"]], _wealth, func(v): _wealth = v)
 	_choices(left, "The royal host at the start", [["A few loyal men", "small"], ["A garrison", "standard"], ["A great host", "strong"]], _opt["host"], func(v): _opt["host"] = v)
