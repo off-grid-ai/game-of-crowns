@@ -6,9 +6,11 @@ extends RefCounted
 
 const WATER_STEP := 0.1  # how finely the shore is traced, in game units (about 0.8 m)
 
-var terrain: Node3D  # set by villagers.gd: what is land and what is water
-var _maps := {}  # town id -> RID
-var _built_from := {}  # town id -> what its map was baked from: the town node and its life
+var terrain: Node3D  # set by whoever walks: what is land and what is water
+# One map per town for everyone who walks it (villagers, and soldiers marching
+# in or out), so their avoidance agents share it and step aside for each other.
+static var _maps := {}  # town id -> RID
+static var _built_from := {}  # town id -> what its map was baked from: the town node and its life
 
 
 func map_for(id: int, root: Node3D) -> RID:
@@ -93,6 +95,36 @@ func closest(map: RID, p: Vector2) -> Vector2:
 	if NavigationServer2D.map_get_iteration_id(map) == 0:
 		return p  # not synced yet: the point as given
 	return NavigationServer2D.map_get_closest_point(map, p)
+
+
+## True when the town has a walk map already (it's near the camera and its
+## villagers are out). Baking one is costly: a town out of sight walks without.
+static func baked(id: int) -> bool:
+	return _maps.has(id)
+
+
+## Where someone can stand nearest `want` (world), on the town's walk map:
+## clear of every house, wall, fence, stall and cart.
+func spot(id: int, root: Node3D, want: Vector3) -> Vector3:
+	var map := map_for(id, root)
+	var c := root.global_position
+	var p := closest(map, Vector2(want.x - c.x, want.z - c.z))
+	return Vector3(c.x + p.x, terrain.height_at(c.x + p.x, c.z + p.y) if terrain else want.y, c.z + p.y)
+
+
+## A walk through the town's streets between two world points, as world
+## points; just the two ends until the map has synced (a frame after baking).
+func walk(id: int, root: Node3D, from: Vector3, to: Vector3) -> PackedVector3Array:
+	var map := map_for(id, root)
+	var c := root.global_position
+	var out := PackedVector3Array()
+	var way := path(map, closest(map, Vector2(from.x - c.x, from.z - c.z)), closest(map, Vector2(to.x - c.x, to.z - c.z)))
+	if way.is_empty():
+		out.append_array([from, to])
+		return out
+	for p in way:
+		out.append(Vector3(c.x + p.x, terrain.height_at(c.x + p.x, c.z + p.y) if terrain else from.y, c.z + p.y))
+	return out
 
 
 func forget(id: int) -> void:
