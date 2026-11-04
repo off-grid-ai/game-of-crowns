@@ -126,7 +126,12 @@ func show_main() -> void:
 		var label := "Continue  —  %s" % reign.get("name", "the realm")
 		if reign.get("status", "") == "ended":
 			label = "View  —  %s  (reign ended)" % reign.get("name", "")
-		_big(label, _close)
+		# The one thing most players came back to do: the primary choice, in gold.
+		var cont := _big(label, _close)
+		var T := preload("res://scripts/theme.gd")
+		cont.add_theme_stylebox_override("normal", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.24), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.6), 8, 10))
+		cont.add_theme_stylebox_override("hover", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.36), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.85), 8, 10))
+		cont.add_theme_color_override("font_color", Color(1, 0.93, 0.78))
 	_big("Begin a New Chronicle", show_new)
 	_big("Settings", show_settings)
 	_big("Watch the introduction", func():
@@ -715,13 +720,13 @@ func _label(text: String, size: int, color: Color) -> Label:
 func _big(text: String, cb: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.add_theme_font_size_override("font_size", 16)
+	b.add_theme_font_size_override("font_size", 21)
 	# A soft dark edge keeps the words readable over the bright painting.
-	b.add_theme_constant_override("outline_size", 6)
-	b.add_theme_color_override("font_outline_color", Color(0.05, 0.04, 0.03, 0.75))
-	# Each choice sized to its words with a little room, centred: a highlight
-	# the full width of the window looked absurd.
-	b.custom_minimum_size = Vector2(300, 42)
+	b.add_theme_constant_override("outline_size", 8)
+	b.add_theme_color_override("font_outline_color", Color(0.05, 0.04, 0.03, 0.85))
+	# Each choice a generous, easy target, centred: a highlight the full width
+	# of the window looked absurd, a thin one was easy to miss.
+	b.custom_minimum_size = Vector2(380, 50)
 	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	b.focus_mode = Control.FOCUS_NONE
 	b.pressed.connect(cb)
