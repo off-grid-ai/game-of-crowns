@@ -15,9 +15,13 @@ signal ended
 signal fell(person: Dictionary)
 
 const Combat := preload("res://scripts/combat.gd")
+const Horse := preload("res://scripts/horse.gd")
+const Keys := preload("res://scripts/keys.gd")
 
 const WALK := 0.17  # world units a second, as the townsfolk walk
 const RUN := 0.42
+const RIDE := 0.22  # a horse's walk
+const GALLOP := 0.9
 const S := 0.12  # town scale, as people.gd
 
 var terrain: Node3D
@@ -33,7 +37,6 @@ var _cam: Camera3D
 var _yaw := 0.0
 var _dist := 0.6
 var _hud: CanvasLayer
-var _hint: Label
 var _prompt: Label
 var _turning := false
 var _near := {}  # what E would act on: {kind: "folk"|"door", ...}
@@ -53,6 +56,10 @@ var _waiting := false
 var _mode_btn: Button
 var _hearing: Label
 var mic: Node  # mic.gd, shared with the court
+var _horse: Node3D  # horse.gd: your horse, held by the hall door till you mount
+var _riding := false
+var drive := Vector2.ZERO  # for staged shots: held keys (x right, y back), as WASD
+var drive_fast := false
 
 
 func start(person: Dictionary, house: Dictionary, town_id: int) -> void:
@@ -84,6 +91,12 @@ func start(person: Dictionary, house: Dictionary, town_id: int) -> void:
 	_body.rotation.y = _yaw + PI
 	_me = Combat.new(_body, villagers._people)
 	_me.on_land = _land
+	# Your horse waits saddled a pace off, facing the way you do.
+	_horse = Horse.new()
+	add_child(_horse)
+	var by := _walkable(_body.position + Vector3(cos(_yaw), 0, -sin(_yaw)) * 0.14 - Vector3(sin(_yaw), 0, cos(_yaw)) * 0.06)
+	_horse.position = Vector3(by.x, terrain.height_at(by.x, by.z), by.z)
+	_horse.rotation.y = _body.rotation.y
 	_cam = Camera3D.new()
 	_cam.fov = 50
 	_cam.near = 0.02
@@ -95,6 +108,8 @@ func start(person: Dictionary, house: Dictionary, town_id: int) -> void:
 	_my_tag = _name_tag(String(person.get("name", "")))
 	_follow(1.0)
 	want_people.emit(town_id)
+	# The keys live in Settings; one line says so, then the prompt is for what's near.
+	_say("%s to leave  ·  every control is in Settings" % Keys.label("back"), 5.0)
 
 
 func stop() -> void:
@@ -102,8 +117,11 @@ func stop() -> void:
 		return
 	active = false
 	if is_instance_valid(_body):
-		rig.focus(_body.position, 6.0)
+		rig.focus(_at(), 6.0)
 		_body.queue_free()
+	if is_instance_valid(_horse):
+		_horse.queue_free()
+	_riding = false
 	for f in _foes:
 		if is_instance_valid(f.node):
 			f.node.queue_free()
@@ -144,32 +162,28 @@ func _build_hud() -> void:
 	_prompt = T.title("", 16)
 	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(_prompt)
-	_hint = T.label("WASD walk   ·   Shift run   ·   right-drag turn   ·   E talk or enter   ·   Tab draw sword   ·   click strike (fists when sheathed)   ·   Space block   ·   C dodge   ·   Esc leave")
-	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	v.add_child(_hint)
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not active:
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
-		match event.keycode:
-			KEY_ESCAPE:
-				if _chat and _chat.visible:
-					_close_chat()
-				else:
-					stop()
-				get_viewport().set_input_as_handled()
-			KEY_E:
-				_act()
-				get_viewport().set_input_as_handled()
-			KEY_TAB:
-				_me.draw(not _me.armed)
-				get_viewport().set_input_as_handled()
-			KEY_C:
-				# Away from the camera's side you lean to; back if neither.
-				_me.dodge("left" if Input.is_key_pressed(KEY_A) else "right" if Input.is_key_pressed(KEY_D) else "back")
-				get_viewport().set_input_as_handled()
+		if event.is_action_pressed(&"back"):
+			if _chat and _chat.visible:
+				_close_chat()
+			else:
+				stop()
+			get_viewport().set_input_as_handled()
+		elif event.is_action_pressed(&"interact"):
+			_act()
+			get_viewport().set_input_as_handled()
+		elif event.is_action_pressed(&"draw"):
+			_me.draw(not _me.armed)
+			get_viewport().set_input_as_handled()
+		elif event.is_action_pressed(&"dodge"):
+			# Away from the camera's side you lean to; back if neither.
+			_me.dodge("left" if Input.is_action_pressed(&"walk_left") else "right" if Input.is_action_pressed(&"walk_right") else "back")
+			get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_RIGHT:
 			_turning = event.pressed
@@ -192,22 +206,19 @@ func _process(delta: float) -> void:
 		_hold_listener()
 		_follow(delta)
 		return  # stand and talk; the keys are for typing
-	if Input.is_key_pressed(KEY_Q):
+	if Input.is_action_pressed(&"turn_left"):
 		_yaw += delta * 1.8
-	if Input.is_key_pressed(KEY_R):
+	if Input.is_action_pressed(&"turn_right"):
 		_yaw -= delta * 1.8
-	var want := Vector2.ZERO
-	if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):
-		want.y -= 1
-	if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN):
-		want.y += 1
-	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):
-		want.x -= 1
-	if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT):
-		want.x += 1
-	var running := Input.is_key_pressed(KEY_SHIFT)
+	var want := Input.get_vector(&"walk_left", &"walk_right", &"walk_forward", &"walk_back")
+	if drive != Vector2.ZERO:
+		want = drive
+	var running := Input.is_action_pressed(&"run") or drive_fast
+	if _riding:
+		_ride(delta, want, running)
+		return
 	_me.tick(delta)
-	var block: bool = Input.is_key_pressed(KEY_SPACE)
+	var block: bool = Input.is_action_pressed(&"block")
 	if block != _blocking:
 		_blocking = block
 		_me.block(block)
@@ -238,8 +249,9 @@ func _process(delta: float) -> void:
 
 ## Low behind the shoulder, the oblique of every Aldmere view, eased.
 func _follow(delta: float) -> void:
-	var head := _body.position + Vector3(0, 0.2, 0)
-	var back := Vector3(sin(_yaw), 0, cos(_yaw)) * _dist
+	# In the saddle the eye rises with you and stands a little further back.
+	var head := _at() + Vector3(0, 0.33 if _riding else 0.2, 0)
+	var back := Vector3(sin(_yaw), 0, cos(_yaw)) * _dist * (1.3 if _riding else 1.0)
 	# About 30 degrees down: still oblique, but over the carts and barrels.
 	var eye := head + back + Vector3(0, _dist * 0.55 + 0.05, 0)
 	var ground: float = terrain.height_at(eye.x, eye.z) + 0.06
@@ -278,20 +290,28 @@ func _look_around() -> void:
 	_near = {}
 	if Time.get_ticks_msec() < _news_until:
 		return  # something just happened; let it be read
+	if _riding:
+		_near = {"kind": "dismount"}
+		_prompt.text = Keys.label("interact") + "  ·  dismount"
+		return
+	if is_instance_valid(_horse) and Vector2(_horse.position.x - _body.position.x, _horse.position.z - _body.position.z).length() < 0.3:
+		_near = {"kind": "horse"}
+		_prompt.text = Keys.label("interact") + "  ·  mount your horse"
+		return
 	for n in _notables:
 		if is_instance_valid(n["node"]) and Vector2(n["node"].position.x - _body.position.x, n["node"].position.z - _body.position.z).length() < 0.3:
 			_near = {"kind": "named", "town": _town, "id": n["id"], "name": n["name"]}
-			_prompt.text = "E  ·  speak with %s" % n["name"]
+			_prompt.text = Keys.label("interact") + "  ·  speak with %s" % n["name"]
 			return
 	var who: Dictionary = villagers.who_at(_body.position, 0.28)
 	if not who.is_empty():
 		_near = {"kind": "folk", "town": who["town"], "i": who["i"]}
-		_prompt.text = "E  ·  speak with them"
+		_prompt.text = Keys.label("interact") + "  ·  speak with them"
 		return
 	var door := _door_near(_body.position)
 	if not door.is_empty():
 		_near = door
-		_prompt.text = "E  ·  enter the %s" % String(door["name"])
+		_prompt.text = Keys.label("interact") + "  ·  enter the %s" % String(door["name"])
 		return
 	_prompt.text = String(_person.get("name", "")) + ("  ·  %s" % String(_person["seat"]) if _person.get("seat") else "")
 
@@ -316,6 +336,54 @@ func _act() -> void:
 			_open_chat(int(_near["town"]), -1, String(_near["id"]), String(_near["name"]))
 		"door":
 			enter.emit(String(_near["room"]), int(_near["town"]), _person)
+		"horse":
+			mount()
+		"dismount":
+			dismount()
+
+
+# --- riding ---------------------------------------------------------------------
+
+## Where you are: your feet, or your horse's when you ride.
+func _at() -> Vector3:
+	return _horse.global_position if _riding and is_instance_valid(_horse) else _body.position
+
+
+## Up into the saddle (sheathing first: the hands are on the reins).
+func mount() -> void:
+	if _riding or not is_instance_valid(_horse) or not _me.alive():
+		return
+	if _me.armed:
+		_me.draw(false)
+	_horse.mount(_body)
+	_riding = true
+
+
+func dismount() -> void:
+	if not _riding:
+		return
+	_riding = false
+	_horse.dismount()
+	villagers._people.play(_body, _me.idle_clip(), 1.0)
+
+
+## WASD steers the horse as it would your feet: it walks, or gallops with Shift,
+## turning toward where you point it rather than sidestepping.
+func _ride(delta: float, want: Vector2, fast: bool) -> void:
+	if want != Vector2.ZERO:
+		var fwd := Vector3(-sin(_yaw), 0, -cos(_yaw))
+		var right := Vector3(cos(_yaw), 0, -sin(_yaw))
+		var dir := (fwd * -want.y + right * want.x).normalized()
+		_horse.rotation.y = lerp_angle(_horse.rotation.y, atan2(dir.x, dir.z), minf(1.0, delta * 3.0))
+		var ahead := Vector3(sin(_horse.rotation.y), 0, cos(_horse.rotation.y))
+		var next := _walkable(_horse.position + ahead * (GALLOP if fast else RIDE) * delta)
+		if terrain.is_land(next.x, next.z):
+			_horse.position = Vector3(next.x, terrain.height_at(next.x, next.z), next.z)
+	rig.target = _horse.position
+	rig.distance = 3.0
+	_follow(delta)
+	_tags()
+	_look_around()
 
 
 # --- fighting --------------------------------------------------------------------
@@ -408,7 +476,7 @@ func spawn_foes(count: int) -> void:
 		f.on_land = _land
 		f.draw(true)
 		_foes.append(f)
-	_say("Outlaws come for you. Tab to draw your sword.")
+	_say("Outlaws come for you. %s to draw your sword." % Keys.label("draw"))
 
 
 ## News in the prompt line, held long enough to read.
