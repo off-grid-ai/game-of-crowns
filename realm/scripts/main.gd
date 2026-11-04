@@ -230,6 +230,13 @@ func _ready() -> void:
 	# The realm's sound: ambience from the camera, stingers from the chronicle.
 	sound = preload("res://scripts/soundscape.gd").new()
 	add_child(sound)
+	# The townsfolk's talk with each other, overheard up close (chatter.gd).
+	var chatter := preload("res://scripts/chatter.gd").new()
+	chatter.villagers = villagers
+	chatter.towns = towns
+	chatter.bridge = bridge
+	chatter.sound = sound
+	add_child(chatter)
 	for bus in ["Music", "Ambience"]:
 		sound.set_volume(bus, float(Settings.get_value("vol_" + bus.to_lower())))
 	bridge.chronicle_added.connect(_sound_events)

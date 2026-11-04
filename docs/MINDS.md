@@ -123,3 +123,58 @@ These are bridge calls against the live realm, The Realm of Aldmere, from turn 1
     - warm: 8 calls, average wait 7.0 s.
   - The two warm calls queued during the burst waited 22.3 s and 22.7 s and ran only once every hot call had finished.
   - A model plan takes about 0.3 to 0.5 s of Omni 2B time.
+
+### Talk between minds and gossip that travels (bridge/chatter.js, realm/scripts/chatter.gd)
+Bridge calls on the live realm, turns 139 to 141. Each conversation is one Omni 2B
+call (the whole exchange written as a scene: one call per line only echoed), plus one
+call for the teller's opening line and one per listener retelling it. Hot talk took
+4 to 6 s.
+
+- **A rumour started with one person.** Fulk Webb, a brewer in Redsands and a gossip,
+  met Bertram Carter, the carter (`/minds/chatter?city=228&who=45,13`). Fulk had no
+  news, so he made some up about a neighbour:
+  - Fulk: "Sabina Miller the hedge witch was caught selling fake herbs to the town's merchants."
+  - Bertram: "She's a witch, Fulk. She's selling fake herbs to the merchants."
+  - Fulk: "That's a lie. She's a fraud, Bertram. She's selling poison."
+  - Bonds moved: Bertram toward Fulk trust +0.05, warmth -0.02 (a drunk, angry at
+    the tithe); Fulk toward Bertram warmth +0.03.
+- **It reached others, changed in the telling, and crossed to another town.**
+  `GET /minds/rumours` traces it person by person:
+  | turn | town | who | told by | what they believe |
+  |---|---|---|---|---|
+  | 139 | Redsands | Fulk Webb | (began it) | Sabina Miller the hedge witch was caught selling fake herbs to the town's merchants. |
+  | 139 | Redsands | Bertram Carter | Fulk Webb | They say Sabina Miller the hedge witch sold fake herbs to the town's merchants. |
+  | 139 | Redsands | Gilbert Thatcher | Fulk Webb | They say Sabina Miller … was caught selling fake herbs … |
+  | 140 | Crowbarrow | Christina Dale | Bertram Carter | … sold fake herbs to the town's merchants, and that's not the half of it |
+  | 140 | Crowbarrow | Robin Cooper | Christina Dale | … and that's not the half of it |
+  | 141 | Crowbarrow | Margery Thatcher | Robin Cooper | They say Sabina Miller, the hedge witch, has been swearing at the baker for refusing to give her a proper slice of the loaf. |
+
+  Bertram, being a carter, set off for the nearest town with his news, arrived in
+  Crowbarrow, told Christina and Cecily Brook there, then went home. His mind records it:
+  "Fulk Webb told me: …", "In Crowbarrow I told Christina Dale what I'd heard.",
+  "I set off for Redsands, home." Christina's: "Bertram Carter from Redsands told me: …",
+  with a bond to him (trust +0.03, warmth +0.03, note "told me Sabina Miller…").
+  By turn 147 it had reached 48 people across both towns, in four lines of descent
+  (fake herbs; poisoned herbs "and the reeve knows"; swearing at the baker "and the
+  priest knows it"), each traceable back to Fulk. That was too fast: cold telling now
+  runs once a minute and a rumour stops travelling six seasons after it was heard.
+  Unwatched (cold) towns pass it on by rules, a word made worse or a clause added;
+  hot talk passes it in the listener's own words from the model.
+- **In the other town, a model-written talk carried it on.** In Crowbarrow, Robin Cooper
+  (quarrelsome) told Margery Thatcher:
+  - Robin: "Sabina Miller the hedge witch sold fake herbs to the town's merchants, and that's not the half of it. The other half is that she's been swearing at the baker since he refused to give her a proper slice of the loaf."
+  - Margery: "I heard the baker said he'd been swearing at her for weeks, not just once."
+  - Bonds: both cooled toward each other (warmth -0.09), Margery's trust in Robin +0.05.
+- **Overheard in the 3D town.** Render `--city=Kingsmere --dist=1.5 --chatter --clean`
+  (low oblique, the shot taken as the second line is read): two villagers at the
+  market gather (crowds' `gatherings()`), chatter.gd asks for their talk
+  (`who=12,20`, hot), and Tiffany Brewer's line "I want the King's coin." stands over
+  her head while `give_floor()` gives her the talking animation; Jocelin Thatcher's
+  line before it fades. Captions stack on screen (any gathering, near or far) so none
+  overprint, are hidden behind walls, and only start for people in view within 2.6
+  of the camera. With voices on, each line plays from the speaker in their own voice
+  (`/voice`), quieter with distance. In Redsands the square was full of drilling
+  pikemen, so few villagers gathered there. The lines from a 2B model are short and
+  plain; now and then an ask comes back with too little (the model echoes) and that group stays silent.
+- **Cold minds get no lines.** Only `who=` gatherings near the camera (hot) and, now
+  and then, a warm town's plan meetings get model talk; everyone else gossips by rules.
