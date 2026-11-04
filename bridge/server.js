@@ -459,6 +459,38 @@ function favourOf(id) {
   return favour[id] ?? 60;
 }
 
+// The Hand of the King advises: the two or three most pressing matters in the
+// realm, worst first, each with why it matters in one line and the decrees that
+// answer it, so a new King always knows what to do next and learns by doing it.
+function counsel(players, cities, threat) {
+  const out = [];
+  const great = players.filter((p) => !p.house.wild && !p.house.crown && p.cities?.length !== 0);
+  const seatOf = (pid) => cities.find((c) => c.owner === pid && c.capital) ?? cities.find((c) => c.owner === pid);
+  const purse = players.find((p) => p.house.crown)?.gold ?? 0;
+  // A house sliding toward rebellion.
+  const cold = great.filter((p) => favourOf(p.id) < 45).sort((a, b) => favourOf(a.id) - favourOf(b.id))[0];
+  if (cold && seatOf(cold.id)) {
+    const f = favourOf(cold.id);
+    out.push({ urgency: f < 30 ? 100 : 70, text: `${cold.house.name} grows cold to the crown (favour ${f})`,
+      why: f < 30 ? "So low, they may raise their banners against you any season." : "Below 30, a house may rise against the crown.",
+      acts: [{ label: "Gift crowns", action: "gift", city: seatOf(cold.id).id }, { label: "A feast in their honour", action: "feast", city: seatOf(cold.id).id }] });
+  }
+  if (threat.usurper !== "none") out.push({ urgency: 90, text: "A usurper gathers men against the throne", why: "If the host reaches Kingsmere, the crown is lost.", acts: [{ label: "Raise the royal levy", action: "levy" }] });
+  if (threat.north > 0) out.push({ urgency: 75, text: `The dead come south (wave ${threat.north})`, why: "The northern houses beg the King for men.", acts: [{ label: "Raise the royal levy", action: "levy" }] });
+  const hungry = cities.find((c) => c.famine);
+  if (hungry) out.push({ urgency: 80, text: `${hungry.title} is starving`, why: "A hungry town shrinks, riots, and blames its King.", acts: [{ label: "Send grain", action: "relief", city: hungry.id }] });
+  const waiting = court?.open?.().length ?? 0;
+  if (waiting) out.push({ urgency: 60, text: `${waiting} ${waiting === 1 ? "petitioner waits" : "petitioners wait"} at court`, why: "Lords left waiting go home unheard, and say so.", acts: [{ label: "Hear them", ui: "court" }] });
+  const war = great.find((p) => (p.atWarWith ?? []).some((o) => great.some((g) => g.id === o)));
+  if (war) {
+    const foe = great.find((g) => war.atWarWith.includes(g.id));
+    out.push({ urgency: 50, text: `${war.house.name} and ${foe.house.name} are at war`, why: "Every season of war burns fields and lowers the realm's peace.", acts: [{ label: `A feast for ${war.house.name.replace("House ", "")}`, action: "feast", city: seatOf(war.id)?.id }, { label: `A feast for ${foe.house.name.replace("House ", "")}`, action: "feast", city: seatOf(foe.id)?.id }].filter((a) => a.city !== undefined) });
+  }
+  if (purse < 150) out.push({ urgency: 40, text: "The royal treasury is thin", why: "Every decree costs crowns; a higher tithe fills the purse but cools the houses.", acts: [{ label: "Raise the tithe", ui: "tithe_up" }] });
+  if (!out.length) out.push({ urgency: 0, text: "The realm is quiet", why: "A good season to win a house's love before you need it.", acts: [] });
+  return out.sort((a, b) => b.urgency - a.urgency).slice(0, 3);
+}
+
 function shiftFavour(changes) {
   for (const [id, delta] of Object.entries(changes)) favour[id] = clampFavour(favourOf(Number(id)) + delta);
   saveFavour();
@@ -665,7 +697,8 @@ http.createServer(async (req, res) => {
     // Each house's measures as the ledger keeps them (one reckoning, recordTurn).
     for (const p of players) p.measures = last?.houses?.[p.house.name] ?? null;
     const usurper = stakes?.s.usurper.stage ?? "none";
-    return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), date: calendar(world.turn), threat: { usurper, north: (stakes?.s.north.waves ?? 0) }, peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000) });
+    const threat = { usurper, north: (stakes?.s.north.waves ?? 0) };
+    return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), date: calendar(world.turn), threat, counsel: counsel(players, cities, threat), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000) });
   }
   if (url.pathname === "/map") {
     const map = chron.readJson(path.join(P.state, "map.json"));

@@ -21,6 +21,25 @@ var _steps: PackedStringArray = []
 var _log: FileAccess
 
 
+## Live hand play (GOC_HAND=1): steps written to <dir>/cmd.txt are played as
+## they arrive, and <dir>/done.txt says when, with what the game shows then.
+func serve(dir: String) -> void:
+	out = dir
+	DirAccess.make_dir_recursive_absolute(out)
+	_log = FileAccess.open(out + "/play.log", FileAccess.WRITE)
+	while true:
+		await get_tree().create_timer(0.2).timeout
+		var cmd := out + "/cmd.txt"
+		if not FileAccess.file_exists(cmd):
+			continue
+		_steps = FileAccess.get_file_as_string(cmd).split("\n")
+		DirAccess.remove_absolute(cmd)
+		await _play(false)
+		var f := FileAccess.open(out + "/done.txt", FileAccess.WRITE)
+		f.store_string(JSON.stringify(_observe()))
+		f.close()
+
+
 func start(scenario: String, dir: String) -> void:
 	out = dir
 	DirAccess.make_dir_recursive_absolute(out)
@@ -30,6 +49,10 @@ func start(scenario: String, dir: String) -> void:
 
 
 func _run() -> void:
+	await _play(true)
+
+
+func _play(quit_after: bool) -> void:
 	for raw in _steps:
 		var line := raw.strip_edges()
 		if line == "" or line.begins_with("#"):
@@ -59,15 +82,21 @@ func _run() -> void:
 				await get_tree().create_timer(0.4).timeout
 			"snap":
 				await RenderingServer.frame_post_draw
-				get_viewport().get_texture().get_image().save_png("%s/%s.png" % [out, w[1]])
+				var img := get_viewport().get_texture().get_image()
+				var path: String = w[1] if w[1].begins_with("/") else "%s/%s.png" % [out, w[1]]
+				if path.ends_with(".jpg"):
+					img.save_jpg(path, 0.85)
+				else:
+					img.save_png(path)
 			"look":
 				_note("  " + " ".join(w.slice(1)) + " :: " + JSON.stringify(_observe()))
 			"city":
 				_frame_city(w[1], float(w[2]) if w.size() > 2 else 6.0)
 				await get_tree().create_timer(3.0).timeout
-	_note("done")
-	_log.close()
-	get_tree().quit()
+	if quit_after:
+		_note("done")
+		_log.close()
+		get_tree().quit()
 
 
 func _action(name: String, down: bool) -> void:

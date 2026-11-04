@@ -16,6 +16,7 @@ signal character_edited(spec: Dictionary)
 signal focus_city(city_id: int)
 signal pause_toggled(paused: bool)
 signal decree(action: String, building: String, to: int)
+signal decree_at(action: String, city: int)  # a decree straight from the Hand's counsel, at its town
 signal tithe_changed(rate: float)
 signal open_menu
 signal mood_decreed(text: String)
@@ -1309,6 +1310,64 @@ func toast(text: String) -> void:
 
 var _tithe_asked := -1.0  # a tithe the King set that the realm hasn't reported back yet
 var _tithe_asked_at := 0  # when; after half a minute the realm's word stands
+## The Hand of the King advises: the realm's most pressing matters, each with
+## why it matters and the decree that answers it, top centre under the realm's
+## numbers. Rebuilt only when the counsel changes. It teaches the game as it is
+## played: there is always a next thing to do, and a button that does it.
+var _counsel: PanelContainer
+var _counsel_sig := ""
+func _show_counsel(items: Array) -> void:
+	var sig := JSON.stringify(items)
+	if sig == _counsel_sig and _counsel:
+		_counsel.visible = not (_digest_panel and _digest_panel.visible)
+		return
+	_counsel_sig = sig
+	if _counsel:
+		_counsel.queue_free()
+	_counsel = _glass_panel()
+	_counsel.anchor_left = 0.5
+	_counsel.anchor_right = 0.5
+	_counsel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_counsel.offset_left = -300
+	_counsel.offset_right = 300
+	_counsel.offset_top = 66
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 8)
+	_counsel.add_child(v)
+	v.add_child(T.label("The Hand of the King advises"))
+	for it in items:
+		var row := VBoxContainer.new()
+		row.add_theme_constant_override("separation", 2)
+		v.add_child(row)
+		var urgent: bool = int(it.get("urgency", 0)) >= 75
+		row.add_child(T.datum(String(it.get("text", "")), T.SIZE_BODY, T.DANGER if urgent else T.TEXT))
+		var why := Label.new()
+		why.text = String(it.get("why", ""))
+		why.autowrap_mode = TextServer.AUTOWRAP_WORD
+		why.add_theme_color_override("font_color", T.TEXT_2)
+		why.add_theme_font_size_override("font_size", T.SIZE_DESC)
+		row.add_child(why)
+		var acts := HFlowContainer.new()
+		acts.add_theme_constant_override("h_separation", 6)
+		row.add_child(acts)
+		for a in it.get("acts", []):
+			var act: Dictionary = a
+			var b := _btn(String(act.get("label", "")), func(): _counsel_act(act))
+			b.add_theme_color_override("font_color", T.ACCENT)
+			acts.add_child(b)
+	_counsel.visible = not (_digest_panel and _digest_panel.visible)
+
+
+func _counsel_act(act: Dictionary) -> void:
+	var on := String(act.get("ui", ""))
+	if on == "court":
+		_toggle_court()
+	elif on == "tithe_up":
+		_set_tithe(_tithe + 0.05)
+	else:
+		decree_at.emit(String(act.get("action", "")), int(act.get("city", -1)))
+
+
 func _set_tithe(rate: float) -> void:
 	_tithe = clampf(snappedf(rate, 0.05), 0.0, 0.4)
 	_tithe_asked = _tithe
@@ -1381,6 +1440,7 @@ func _set_sigil(icon: TextureRect, house: Dictionary) -> void:
 
 
 func set_world(world: Dictionary, houses: Dictionary) -> void:
+	_show_counsel(world.get("counsel", []))
 	for pid in houses:
 		_house_by_name[String(houses[pid].get("name", ""))] = houses[pid]
 	set_reign(world.get("reign", {}))

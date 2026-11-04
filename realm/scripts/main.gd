@@ -68,6 +68,12 @@ func _ready() -> void:
 		DisplayServer.window_set_position(screen.end - Vector2i(24, 24))
 	_apply_icon()
 	preload("res://scripts/keys.gd").apply()  # every key as an Input Map action, with your changes
+	# A test aid for playing by hand from outside (GOC_HAND=<dir>): off in play.
+	if OS.get_environment("GOC_HAND") != "":
+		var hand: Node = preload("res://scripts/autoplay.gd").new()
+		hand.main = self
+		add_child(hand)
+		hand.serve.call_deferred(OS.get_environment("GOC_HAND"))
 	_load_ui_scale()
 	_setup_environment()
 	terrain = preload("res://scripts/terrain.gd").new()
@@ -261,6 +267,7 @@ func _ready() -> void:
 	ui.open_menu.connect(func(): title.open())
 	ui.open_settings.connect(func(): title.open_settings())
 	ui.decree.connect(_on_decree)
+	ui.decree_at.connect(func(action, city): bridge.decree(action, city))
 	ui.mood_decreed.connect(func(t): bridge.set_mood(t); ui.toast("The realm hears your will…"))
 	ui.decree_revoked.connect(func(id): bridge.revoke_decree(id, ui.set_decrees))
 	bridge.decrees_changed.connect(ui.set_decrees)
