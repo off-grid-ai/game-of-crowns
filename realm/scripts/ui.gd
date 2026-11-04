@@ -80,6 +80,7 @@ var _court_waiting := false  # the court panel, set aside for a commoner's card
 var _court_hidden := true
 
 var _toast: Label
+var _decree_btns := {}  # decree -> its button on the town card, named for whose town it is
 var _stories := {}  # chronicle seq -> a story beat's entry, for its link
 var _offer: PanelContainer  # "Watch": the latest moment worth seeing, for a few seconds
 var _offer_left := 0.0
@@ -557,11 +558,11 @@ func _build_town_panel() -> void:
 	v.add_child(T.label("Royal decrees"))
 	var row := HFlowContainer.new()
 	v.add_child(row)
-	for pair in [["Send grain  12k cr", "relief"], ["Gift crowns  15k cr", "gift"], ["Feast  10k cr", "feast"], ["Royal levy  20k cr", "levy"]]:
-		var a: String = pair[1]
-		row.add_child(_btn(pair[0], func(): decree.emit(a, "", -1)))
+	for a in ["relief", "gift", "feast", "levy"]:
+		var act: String = a
+		_decree_btns[act] = _btn("", func(): decree.emit(act, "", -1))
+		row.add_child(_decree_btns[act])
 	_grant_menu = MenuButton.new()
-	_grant_menu.text = "Grant castle to…"
 	_grant_menu.get_popup().id_pressed.connect(func(i): decree.emit("grant", "", int(_house_ids[i])))
 	row.add_child(_grant_menu)
 	var build := HFlowContainer.new()
@@ -1476,6 +1477,28 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 const HOUSE_COLUMNS := [["towns", "Towns", "Towns held"], ["armies", "Men", "Men-at-arms"], ["gold", "Crowns", "Treasury, in crowns"], ["grain", "Grain", "Grain in store, in tonnes"], ["souls", "Souls", "Souls in their lands"]]
 
 
+## The decrees a town card offers, named for whose town it is: the King's own
+## seat (a feast at court, the royal levy), another of his towns (grain from the
+## royal stores, granting it away), or a house's (grain and gold sent to them, a
+## feast in their honour, taking the town for another house).
+func _name_decrees(c: Dictionary, house: Dictionary) -> void:
+	var town := String(c.get("title", c["name"]))
+	var lord := String(house.get("name", "")).replace("House ", "")
+	var mine: bool = house.get("crown", false)
+	var seat: bool = mine and c.get("capital", false)
+	var names := {
+		"relief": "" if seat else ("Grain from the royal stores  12k cr" if mine else "Send grain to %s  12k cr" % town),
+		"gift": "" if mine else "Gift crowns to %s  15k cr" % lord,
+		"feast": "Hold a feast at court  10k cr" if seat else ("" if mine else "Feast in %s's honour  10k cr" % lord),
+		"levy": "Raise the royal levy  20k cr" if seat else "",
+	}
+	for a in names:
+		_decree_btns[a].text = names[a]
+		_decree_btns[a].visible = names[a] != ""
+	_grant_menu.visible = not c.get("capital", false)  # a house's seat is never granted away
+	_grant_menu.text = "Grant this town to…" if mine else "Take it and grant it to…"
+
+
 func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 	if c.is_empty():
 		_town_panel.visible = false
@@ -1484,6 +1507,7 @@ func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 	_town_panel.visible = true
 	_ticker.visible = false
 	_town_title.text = "%s  ·  %s" % [c.get("title", c["name"]), house.get("name", "")]
+	_name_decrees(c, house)
 	_set_sigil(_town_sigil, house)
 	# A town held by a bannerman flies his family's arms.
 	var family := Heraldry.family(String(c["family"])) if c.get("family") is String else {}

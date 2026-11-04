@@ -110,6 +110,11 @@ export function decree(cmd, world) {
     }
     case "feast":
       if (!owner) return { error: "choose a town or house" };
+      // At the King's own court: every great house is his guest.
+      if (houseFor(owner).crown) {
+        const guests = Object.fromEntries(world.players.filter((p) => !houseFor(p).crown && !houseFor(p).wild && p.id !== owner.id).map((p) => [p.id, 5]));
+        return { cost: d.cost, favour: guests, text: "The King holds a feast at court. Every great house sends someone; tempers cool, for now.", lua: [pay] };
+      }
       return {
         cost: d.cost, favour: { [owner.id]: 15 },
         text: `A feast at Kingsmere in honour of ${lord}. Wine flows; old slights are forgotten, for now.`,
@@ -120,6 +125,14 @@ export function decree(cmd, world) {
       const to = world.players.find((p) => p.id === Number(cmd.to));
       if (!to || to.id === owner.id || houseFor(to).wild) return { error: "choose a house to grant it to" };
       if (c.capital) return { error: "a house's seat cannot be granted away" };
+      // One of the crown's own towns, given as a reward.
+      if (houseFor(owner).crown) {
+        return {
+          cost: 0, favour: { [to.id]: 25 },
+          text: `The King grants ${town} to ${houseFor(to).name}, a reward for loyal service.`,
+          lua: [`local c = find.city(nil, ${c.id}); local to; for p in players_iterate() do if p.id == ${to.id} then to = p end end; if c and to then edit.transfer_city(c, to) end`],
+        };
+      }
       return {
         cost: 0, favour: { [owner.id]: -30, [to.id]: 20 },
         text: `By royal decree, ${town} is taken from ${lord} and granted to ${houseFor(to).name}. ${lord} will not forget.`,
