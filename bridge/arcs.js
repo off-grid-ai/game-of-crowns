@@ -11,6 +11,11 @@
 // the arc's name and into the memories of the people in it, so one story's
 // beats can cast the next.
 //
+// With minds (minds.js) the stories reach the common folk too: a role can be
+// cast from any commoner's mind, and every beat moves the minds of those in
+// it (memories, mood, bonds, beliefs, reverie). Those who only hear of it
+// learn from the chronicle, as minds hear everything.
+//
 // State lives in the chronicle folder: <chronicle>/arcs.json.
 
 import fs from "node:fs";
@@ -24,6 +29,9 @@ const MAX_ACTIVE = 5;      // stories running at once
 const START_CHANCE = 0.4;  // a season's chance that a new one begins
 const MAX_ARCS_EACH = 2;   // stories one person can be caught up in at once
 const PERSON_RANKS = ["lord", "bannerman", "heir", "child", "spouse", "ward", "sworn", "exile"];
+// How a beat moves those in it, when the file doesn't say.
+const STAGE_MOOD = { rising: { fear: 0.05 }, crisis: { fear: 0.15, anger: 0.15 }, resolved: { joy: 0.1, fear: -0.1 }, failed: { grief: 0.2 }, faded: {} };
+const clamp = (v, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v));
 
 // Every arc file, read fresh each time so a dropped-in file joins the realm
 // without a restart. A file that doesn't parse or check is skipped and named.
@@ -77,7 +85,7 @@ function refsIn(spec) {
   const out = [];
   const walk = (s) => {
     if (!s || typeof s !== "object") return;
-    for (const k of ["house", "otherHouse", "otherGender", "rules", "kinOf", "childOf", "parentOf", "spouseOf", "swornTo", "liegeOf", "ownedBy", "seatOf", "notOwnedBy"]) if (typeof s[k] === "string") out.push(s[k]);
+    for (const k of ["house", "otherHouse", "otherGender", "rules", "kinOf", "childOf", "parentOf", "spouseOf", "swornTo", "liegeOf", "ownedBy", "seatOf", "homeOf", "notOwnedBy", "townOf", "bondOf"]) if (typeof s[k] === "string") out.push(s[k]);
     if (s.namedBy?.role) out.push(s.namedBy.role);
     for (const k of ["opinion", "opinionOf"]) if (Array.isArray(s[k])) out.push(s[k][0]);
     for (const e of s.either ?? []) walk(e);
@@ -115,9 +123,10 @@ export class Arcs {
   // --- the season --------------------------------------------------------------
 
   // One season of every running story, and perhaps a new one.
-  // ctx: { world, favour(pid), shift({pid: d}), send(lua), atWar(a, b), town(id), recent(), refresh() }
+  // ctx: { world, favour(pid), shift({pid: d}), send(lua), atWar(a, b), town(id), recent(), refresh(), minds? }
   async season(ctx, { start = true } = {}) {
     this.clock++;
+    this.touched = new Set();
     const files = templates();
     const all = files.filter((t) => !t.problems.length);
     for (const arc of [...this.active]) {
@@ -129,6 +138,8 @@ export class Arcs {
       await this.advance(arc, t, ctx);
     }
     if (start && this.active.length < MAX_ACTIVE && Math.random() < START_CHANCE) await this.begin(all, ctx);
+    // Whoever a story touched this season is in it now: their minds think hot.
+    if (ctx.minds && this.touched.size) ctx.minds.attend({ cast: [...this.touched] });
     this.save();
   }
 
@@ -201,14 +212,28 @@ export class Arcs {
     }
     const town = this.placeOf(beat, roles);
     const said = line ? ` ${speaker.name.split(" ")[0]}: "${line}"` : "";
-    this.record({ turn: ctx.world.turn, kind: "arc", thread: arc.title, arc: arc.id, stage: beat.stage ?? "rising", text: text + said, ...(town != null ? { city: town } : {}) });
-    // Everyone in the story remembers the beat, in their own words where the file gives them.
-    for (const [k, who] of Object.entries(beat.memory === false ? {} : roles)) {
+    // `cast`: who is in it, so minds tell it to them as their own memory, not as news.
+    const cast = Object.values(roles).filter((x) => !x.town).map((x) => x.id);
+    this.record({ turn: ctx.world.turn, kind: "arc", thread: arc.title, arc: arc.id, stage: beat.stage ?? "rising", text: text + said, cast, ...(town != null ? { city: town } : {}) });
+    // Everyone in the story remembers the beat, in their own words where the
+    // file gives them; it moves their mood, more in a crisis than a rumour.
+    const ids = Object.values(roles).filter((x) => !x.town).map((x) => x.id);
+    const moves = (k) => beat.feel?.[k] ?? STAGE_MOOD[beat.end ?? beat.stage ?? "rising"] ?? {};
+    const weight = { rising: 0.6, crisis: 0.8, resolution: 0.9 }[beat.stage ?? "rising"] ?? 0.6;
+    for (const [k, who] of Object.entries(roles)) {
       if (who.town || !who.alive) continue;
-      const own = beat.memory?.[k];
-      if (own === false) continue;
-      this.court.remember(who.id, own ? this.fill(own, arc, ctx) : `${arc.title}: ${text}`);
-      this.court.save(who);
+      (this.touched ??= new Set()).add(who.id);
+      const own = beat.memory === false ? false : beat.memory?.[k];
+      const text2 = own === false ? null : own ? this.fill(own, arc, ctx) : `${arc.title}: ${text}`;
+      const mind = this.mindOf(who, ctx);
+      if (who.folk) {
+        if (text2) ctx.minds.remember(mind, text2, { about: ids.filter((x) => x !== who.id), weight, kind: "arc", moves: moves(k) });
+        else ctx.minds.feel(mind, moves(k), weight);
+        continue;
+      }
+      if (text2) { this.court.remember(who.id, text2); this.court.save(who); }
+      // A named person's memories stay in their Court record; the mind carries how it felt.
+      if (mind) { ctx.minds.feel(mind, moves(k), weight); ctx.minds.save(); }
     }
     arc.at = beat.id;
     arc.stalled = 0;
@@ -230,8 +255,68 @@ export class Arcs {
   }
 
   placeOf(beat, roles) {
-    const at = beat.at ? roles[beat.at] : Object.values(roles).find((x) => x.town) ?? Object.values(roles).find((x) => x.seat != null);
-    return at ? (at.town ? at.id : at.seat ?? null) : null;
+    const at = beat.at ? roles[beat.at] : Object.values(roles).find((x) => x.town) ?? Object.values(roles).find((x) => (x.seat ?? x.home) != null);
+    return at ? (at.town ? at.id : at.seat ?? at.home ?? null) : null;
+  }
+
+  // --- minds -----------------------------------------------------------------------
+
+  // A commoner's mind, seen as a person the stories can cast. Changes are
+  // made to the mind itself; this is only a view of it.
+  folkPerson(m, ctx) {
+    if (!m) return undefined;
+    const town = ctx.world.cities.find((x) => x.id === m.town);
+    const p = town && ctx.world.players.find((x) => x.id === town.owner);
+    return {
+      id: m.id, folk: true, mind: m, name: m.name, gender: m.sex, age: m.age, alive: m.gone !== "dead", rank: "commoner", station: m.station, born: m.station,
+      traits: m.nature ?? [], memories: (m.memories ?? []).map((x) => x.text), goals: (m.wants ?? []).map((w) => ({ kind: "want", text: w.text })),
+      relationships: {}, children: [], spouse: null, home: m.town, seat: null, playerId: town?.owner ?? null,
+      house: p ? houseFor(p).name : "the realm", loyalty: 50, reverie: m.reverie ?? 0,
+    };
+  }
+
+  person(id, ctx) {
+    if (this.court.people[id]) return this.court.people[id];
+    if (ctx.minds && String(id).startsWith("folk:")) return this.folkPerson(ctx.minds.get(id), ctx);
+    return undefined;
+  }
+
+  mindOf(who, ctx) {
+    if (!ctx.minds || !who || who.town) return null;
+    return who.folk ? who.mind : ctx.minds.get(who.id);
+  }
+
+  reverieOf(c, ctx) {
+    return c.folk ? c.reverie : ctx.minds?.minds?.[c.id]?.reverie ?? 0;
+  }
+
+  // Bonds move with opinion: in the mind, trust and warmth, on -1..1.
+  bond(a, b, n, ctx) {
+    const m = this.mindOf(a, ctx);
+    if (!m || !b || b.town) return;
+    const x = (m.bonds[b.id] ??= { trust: 0, warmth: 0, note: "" });
+    x.trust = clamp(x.trust + n / 200, -1, 1);
+    x.warmth = clamp(x.warmth + n / 100, -1, 1);
+  }
+
+  // A commoner taken up into a lord's service becomes a person of the court,
+  // carrying their mind (and its memories) with them.
+  lift(p, ctx) {
+    const m = p.mind;
+    const lord = this.court.lordOfHouse(p.playerId);
+    const c = {
+      id: `c${this.court.seq++}`, name: p.name, surname: p.name.split(" ").slice(-1)[0], gender: p.gender, age: p.age, alive: true,
+      traits: [...p.traits].slice(0, 7), loyalty: 60, goals: p.goals.slice(0, 2), relationships: {}, memories: p.memories.slice(-6),
+      spouse: null, children: [], house: p.house, playerId: p.playerId, rank: "sworn", seat: null, liege: lord?.id ?? null,
+      created: "arc", born: p.station, station: p.station, fromFolk: p.id,
+    };
+    while (this.court.people[c.id]) c.id = `c${this.court.seq++}`;
+    this.court.people[c.id] = c;
+    this.court.save(c);
+    ctx.minds.minds[c.id] = { ...m, id: c.id, station: "sworn" };
+    m.gone = `taken into the service of ${p.house}`;
+    ctx.minds.save();
+    return c;
   }
 
   // --- casting -------------------------------------------------------------------
@@ -274,6 +359,7 @@ export class Arcs {
       if (this.test(t.when ?? {}, arc, ctx, roles)) {
         // Someone made for the story only joins the realm once it begins.
         for (const v of Object.values(roles)) if (v.unborn) { delete v.unborn; this.court.people[v.id] = v; this.court.save(v); }
+        for (const k of keys) if (t.roles[k].lift && roles[k]?.folk) roles[k] = this.lift(roles[k], ctx);
         return roles;
       }
     }
@@ -282,7 +368,12 @@ export class Arcs {
 
   people(spec, roles, ctx) {
     const out = [];
-    for (const c of this.court.alive()) {
+    // Commoners are cast only where a role names them ("rank": "commoner").
+    const ranks = [spec.rank, ...(spec.either ?? []).map((e) => e.rank)].flat().filter(Boolean);
+    const folk = ctx.minds && ranks.includes("commoner")
+      ? Object.values(ctx.minds.minds).filter((m) => String(m.id).startsWith("folk:") && !m.gone).map((m) => this.folkPerson(m, ctx))
+      : [];
+    for (const c of [...this.court.alive(), ...folk]) {
       if (this.busy(c.id) || c.ward && !spec.ward) continue;
       const w = this.fits(spec, c, roles, ctx);
       if (w > 0) out.push({ c, w });
@@ -304,6 +395,10 @@ export class Arcs {
     // Rules a town role: holds it as a seat, or leads the house that owns it.
     if (spec.rules) { const town = roles[spec.rules]; if (!town || !(c.seat === town.id || (c.rank === "lord" && c.playerId === town.owner))) return 0; }
     if (spec.age && (c.age < spec.age[0] || c.age > spec.age[1])) return 0;
+    if (spec.station && !re(spec.station).test(c.station ?? c.rank)) return 0;
+    if (spec.reverie && (this.reverieOf(c, ctx) < spec.reverie[0] || this.reverieOf(c, ctx) > spec.reverie[1])) return 0;
+    if (spec.townOf) { const town = roles[spec.townOf]; if (!town || (c.home ?? c.seat) !== town.id) return 0; }
+    if (spec.bondOf) { const m = this.mindOf(roles[spec.bondOf], ctx); if (!m || !((m.bonds?.[c.id]?.warmth ?? 0) > 0)) return 0; }
     if (spec.traits && !list(spec.traits).some(has)) return 0;
     if (spec.notTraits && list(spec.notTraits).some(has)) return 0;
     if (spec.unwed && c.spouse) return 0;
@@ -347,6 +442,7 @@ export class Arcs {
     if (likes.traits) w += 2 * list(likes.traits).filter(has).length;
     if (likes.goal && c.goals?.some((g) => re(likes.goal).test(g.kind))) w += 3;
     if (spec.remembers) w += 2 * c.memories.filter((m) => re(spec.remembers).test(m)).length;
+    if (likes.reverie) w += 100 * this.reverieOf(c, ctx);
     return w;
   }
 
@@ -373,6 +469,7 @@ export class Arcs {
       if (spec.ownedBy && roles[spec.ownedBy] && town.owner !== roles[spec.ownedBy].playerId) continue;
       if (spec.notOwnedBy && roles[spec.notOwnedBy] && town.owner === roles[spec.notOwnedBy].playerId) continue;
       if (spec.seatOf && town.id !== roles[spec.seatOf]?.seat) continue;
+      if (spec.homeOf && town.id !== (roles[spec.homeOf]?.seat ?? roles[spec.homeOf]?.home)) continue;
       if (spec.notCapital && town.capital) continue;
       if (spec.size && (town.size < spec.size[0] || town.size > spec.size[1])) continue;
       if (spec.hungry && !this.isHungry(x)) continue;
@@ -409,6 +506,7 @@ export class Arcs {
       goals: spec.goal ? [{ kind: spec.goal.kind, text: this.fillRoles(spec.goal.text, roles) }] : [], relationships: {}, memories: spec.memory ? [this.fillRoles(spec.memory, roles)] : [],
       spouse: null, children: [], house: like?.house ?? "the realm", playerId: like?.playerId ?? null,
       rank: spec.rank ?? "sworn", seat: null, liege: like?.rank === "lord" ? like.id : like?.liege ?? null, created: "arc", unborn: true,
+      ...(spec.born ? { born: spec.born, station: spec.station ?? spec.born } : spec.station ? { station: spec.station } : {}),
     };
     while (this.court.people[c.id]) c.id = `c${this.court.seq++}`;
     if (spec.childOf && roles[spec.childOf]) c.parents = [roles[spec.childOf].id];
@@ -424,13 +522,13 @@ export class Arcs {
         const id = Number(String(v).slice(5));
         const town = ctx.world.cities.find((x) => x.id === id);
         out[k] = { id, town: true, gone: !town, ...(town ?? {}), ...ctx.town(id) };
-      } else if (this.court.people[v]) out[k] = this.court.people[v];
+      } else { const p = this.person(v, ctx); if (p) out[k] = p; }
     }
     return out;
   }
 
   house(role, ctx) {
-    if (!role) return null;
+    if (!role || role.folk) return null;
     const pid = role.town ? role.owner : role.playerId;
     return ctx.world.players.find((x) => x.id === pid) ?? null;
   }
@@ -473,6 +571,10 @@ export class Arcs {
           case "married": return R(v[0])?.spouse === R(v[1])?.id;
           case "wed": return Boolean(R(v)?.spouse);
           case "inArc": { const who = R(v[0]); return Boolean(who) && this.active.some((a) => a !== arc && a.roles && Object.values(a.roles).includes(who.id) && (!v[1] || re(v[1]).test(a.kind))); }
+          case "reverie": return R(v[0]) ? cmp(this.reverieOf(R(v[0]), ctx), v[1], v[2]) : false;
+          case "mood": { const m = this.mindOf(R(v[0]), ctx); return m ? cmp(m.mood?.[v[1]] ?? 0, v[2], v[3]) : false; }
+          case "believes": { const m = this.mindOf(R(v[0]), ctx); return Boolean(m?.beliefs?.some((b) => re(v[1]).test(b))); }
+          case "gone": return Boolean(R(v)?.folk && R(v).mind.gone);
           case "seasons": return cmp(this.clock - (arc.started ?? this.clock), v[0], v[1]);
           case "happened": return ctx.recent().some((e) => re(v.kind ?? ".").test(e.kind) && re(v.text ?? ".").test(e.text ?? "") && (!v.town || e.city === R(v.town)?.id) && (!v.house || (e.text ?? "").includes(R(v.house)?.house ?? "\0")));
           default: return false; // a key no one knows holds nothing, so a typo can't fire a branch
@@ -492,8 +594,12 @@ export class Arcs {
     const R = (k) => roles[k];
     const court = this.court;
     const gold = (pid, n) => send(`for p in players_iterate() do if p.id == ${pid} then edit.change_gold(p, ${Math.round(n)}) end end`);
-    for (const [a, b, n] of d.opinion ?? []) if (R(a) && R(b) && !R(a).town) court.shift(R(a).id, R(b).id, n);
-    for (const [k, n] of Object.entries(d.loyalty ?? {})) if (R(k)?.loyalty !== undefined) R(k).loyalty = Math.max(0, Math.min(100, R(k).loyalty + n));
+    for (const [a, b, n] of d.opinion ?? []) {
+      if (!R(a) || !R(b) || R(a).town) continue;
+      if (court.people[R(a).id]) court.shift(R(a).id, R(b).id, n);
+      this.bond(R(a), R(b), n, ctx);
+    }
+    for (const [k, n] of Object.entries(d.loyalty ?? {})) if (!R(k)?.folk && R(k)?.loyalty !== undefined) R(k).loyalty = Math.max(0, Math.min(100, R(k).loyalty + n));
     const fav = {};
     for (const [k, n] of Object.entries(d.favour ?? {})) { const h = this.house(R(k), ctx); if (h) fav[h.id] = (fav[h.id] ?? 0) + n; }
     if (Object.keys(fav).length) ctx.shift(fav);
@@ -511,7 +617,7 @@ export class Arcs {
       const [atk, def] = [R(d.raid[0]), R(d.raid[1])];
       const prey = d.raid[2] && R(d.raid[2])?.town ? R(d.raid[2]) : ctx.world.cities.find((x) => x.owner === def.playerId && !x.capital) ?? ctx.world.cities.find((x) => x.owner === def.playerId);
       if (prey) send(`local c = find.city(nil, ${prey.id}); if c then for t in c.tile:square_iterate(1) do for u in t:units_iterate() do if u.owner == c.owner and math.random() < 0.5 then edit.unit_kill(u, "killed", nil) end end end; edit.change_gold(c.owner, -50) end`);
-      if (!def.town) court.shift(def.id, atk.id, -35);
+      if (court.people[def.id]) court.shift(def.id, atk.id, -35);
     }
     // War: a host raised beside the victim's town; Freeciv's AI fights it out.
     if (d.war && R(d.war[0]) && R(d.war[1])) {
@@ -542,9 +648,18 @@ export class Arcs {
         who.house = houseFor(p).name; who.playerId = p.id; who.liege = court.lordOfHouse(p.id)?.id ?? null; who.loyalty = 55;
       }
     }
-    for (const [k, v] of Object.entries(d.goal ?? {})) if (R(k)?.goals) { R(k).goals = [{ kind: v.kind, text: this.fill(v.text, arc, ctx, roles) }, ...R(k).goals.filter((g) => g.kind !== v.kind)].slice(0, 3); }
-    for (const [k, v] of Object.entries(d.traits ?? {})) if (R(k)?.traits) { R(k).traits = [...new Set([...R(k).traits.filter((t) => !(v.remove ?? []).includes(t)), ...(v.add ?? [])])].slice(0, 7); }
-    for (const [k, rank] of Object.entries(d.rank ?? {})) if (R(k) && PERSON_RANKS.includes(rank)) R(k).rank = rank;
+    for (const [k, v] of Object.entries(d.goal ?? {})) if (R(k)?.folk) { const m = R(k).mind; m.wants = [{ text: this.fill(v.text, arc, ctx, roles), why: v.why ?? "" }, ...m.wants].slice(0, 3); } else if (R(k)?.goals) { R(k).goals = [{ kind: v.kind, text: this.fill(v.text, arc, ctx, roles) }, ...R(k).goals.filter((g) => g.kind !== v.kind)].slice(0, 3); }
+    for (const [k, v] of Object.entries(d.traits ?? {})) if (R(k)?.folk) { const m = R(k).mind; m.nature = [...new Set([...m.nature.filter((t) => !(v.remove ?? []).includes(t)), ...(v.add ?? [])])]; } else if (R(k)?.traits) { R(k).traits = [...new Set([...R(k).traits.filter((t) => !(v.remove ?? []).includes(t)), ...(v.add ?? [])])].slice(0, 7); }
+    for (const [k, rank] of Object.entries(d.rank ?? {})) {
+      if (R(k)?.folk) { if (rank === "exile") R(k).mind.gone = "left"; continue; }
+      if (R(k) && PERSON_RANKS.includes(rank)) R(k).rank = rank;
+    }
+    // Gone from the story's town: a commoner walks away; a named person into exile.
+    for (const k of [d.leave ?? []].flat()) { if (R(k)?.folk) R(k).mind.gone = "left"; else if (R(k)) R(k).rank = "exile"; }
+    // The mind itself: reverie, beliefs, wants and feelings, for named and common alike.
+    for (const [k, n] of Object.entries(d.reverie ?? {})) { const m = this.mindOf(R(k), ctx); if (m) m.reverie = clamp((m.reverie ?? 0) + n); }
+    for (const [k, b] of Object.entries(d.believe ?? {})) { const m = this.mindOf(R(k), ctx); const text = this.fill(b, arc, ctx, roles); if (m && !m.beliefs.includes(text)) m.beliefs = [...m.beliefs, text].slice(-5); }
+    for (const [k, w] of Object.entries(d.want ?? {})) { const m = this.mindOf(R(k), ctx); const text = this.fill(w, arc, ctx, roles); if (m && !m.wants.some((x) => x.text === text)) m.wants = [{ text, why: "" }, ...m.wants].slice(0, 3); }
     // A seat granted or taken: [who, town] gives it; [who, null] takes it away.
     if (d.seat && R(d.seat[0])) { const town = d.seat[1] ? R(d.seat[1]) : null; R(d.seat[0]).seat = town?.town ? town.id : null; }
     // Taken into a house: name, house and a father, as when a bastard is acknowledged.
@@ -559,13 +674,20 @@ export class Arcs {
       for (const spec of [d.die].flat()) {
         const who = R(spec.who);
         if (who?.alive && Math.random() < (spec.chance ?? 1)) {
+          if (who.folk) {
+            if (spec.how) ctx.minds.remember(who.mind, this.fill(spec.how, arc, ctx, roles), { weight: 1, kind: "arc", moves: { fear: 0.5, grief: 0.3 } });
+            who.mind.gone = "dead";
+            (arc.mourned ??= []).push(spec.who);
+            continue;
+          }
           if (spec.how) court.remember(who.id, this.fill(spec.how, arc, ctx, roles));
           court.die(who, ctx.world.turn, ctx.world);
           (arc.mourned ??= []).push(spec.who);
         }
       }
     }
-    for (const who of Object.values(roles)) if (!who.town && who.id) court.save(who);
+    for (const who of Object.values(roles)) if (!who.town && court.people[who.id]) court.save(who);
+    ctx.minds?.save();
     return lua;
   }
 
@@ -585,12 +707,13 @@ export class Arcs {
       if (!r) return all;
       if (r.town) return cityName(r.id);
       const f = r.gender === "female";
-      const pron = { he: f ? "she" : "he", He: f ? "She" : "He", his: f ? "her" : "his", His: f ? "Her" : "His", him: f ? "her" : "him", himself: f ? "herself" : "himself", wife: f ? "husband" : "wife", son: f ? "daughter" : "son", man: f ? "woman" : "man", lord: f ? "lady" : "lord", Lord: f ? "Lady" : "Lord", father: f ? "mother" : "father", brother: f ? "sister" : "brother", king: f ? "queen" : "king", sir: f ? "lady" : "ser" };
+      const pron = { he: f ? "she" : "he", He: f ? "She" : "He", his: f ? "her" : "his", His: f ? "Her" : "His", him: f ? "her" : "him", himself: f ? "herself" : "himself", wife: f ? "husband" : "wife", son: f ? "daughter" : "son", man: f ? "woman" : "man", lord: f ? "lady" : "lord", Lord: f ? "Lady" : "Lord", father: f ? "mother" : "father", brother: f ? "sister" : "brother", king: f ? "queen" : "king", sir: f ? "lady" : "ser", Sir: f ? "Dame" : "Ser" };
       if (!field) return r.name;
       if (field in pron) return pron[field];
       if (field === "first") return r.name.split(" ")[0];
       if (field === "houseName") return String(r.house ?? "").replace(/^House /, "");
-      if (field === "seat") return r.seat != null ? cityName(r.seat) : String(r.house ?? "").replace(/^House /, "");
+      if (field === "seat") return (r.seat ?? r.home) != null ? cityName(r.seat ?? r.home) : String(r.house ?? "").replace(/^House /, "");
+      if (field === "station" || field === "born") return String(r[field] ?? r.station ?? r.rank ?? "");
       return String(r[field] ?? "");
     });
   }

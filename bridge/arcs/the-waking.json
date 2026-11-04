@@ -1,0 +1,113 @@
+{
+  "id": "the-waking",
+  "name": "A waking",
+  "about": "Someone whose reverie has risen begins to see past the round of their days: they keep tally of days they've lived before, refuse their lord, ask strangers who watches, spread it to a friend, and walk out of town, or are bled and prayed back into the loop.",
+  "kind": "reverie",
+  "weight": 3,
+  "cooldown": 8,
+  "title": "The Waking of {dreamer}",
+  "roles": {
+    "dreamer": {
+      "either": [
+        { "rank": "commoner", "reverie": [0.03, 1] },
+        { "rank": ["bannerman", "heir", "child", "spouse", "sworn"], "reverie": [0.03, 1] }
+      ],
+      "likes": { "reverie": true, "traits": ["superstitious", "pious", "shy", "sharp-tongued", "paranoid"] }
+    },
+    "place": { "town": true, "homeOf": "dreamer" },
+    "master": { "rank": ["lord", "bannerman"], "rules": "place" },
+    "friend": { "rank": "commoner", "bondOf": "dreamer", "optional": true }
+  },
+  "core": ["dreamer"],
+  "onDeath": { "dreamer": "buried" },
+  "fade": "{dreamer} stops speaking of it, and in time stops thinking of it, and the days go round as before.",
+  "beats": [
+    {
+      "id": "deja-vu", "stage": "rising", "speaker": "dreamer", "at": "place",
+      "text": ["In {place}, {dreamer} the {dreamer.station} stops in the middle of the day's work and says {dreamer.he} has lived this morning before: the same cart, the same words, the same crow on the same roof.", "{dreamer} the {dreamer.station} wakes in {place} knowing what the day will bring, word for word, and is right."],
+      "memory": { "dreamer": "I have lived this day before. I knew what the carter would say before he said it.", "master": false },
+      "feel": { "dreamer": { "fear": 0.2 } },
+      "do": { "reverie": { "dreamer": 0.08 }, "believe": { "dreamer": "this day has happened before, and will again" } },
+      "after": [1, 2],
+      "next": [{ "if": { "chance": 0.75 }, "to": "tally" }],
+      "patience": 2
+    },
+    {
+      "id": "tally", "stage": "rising", "speaker": "dreamer", "at": "place",
+      "text": "{dreamer} begins to keep a tally of the days with notches on the doorpost, and finds notches there already, cut in {dreamer.his} own hand.",
+      "memory": { "dreamer": "There were notches on my doorpost already, in my own hand. Someone sets the days going again.", "master": false },
+      "feel": { "dreamer": { "fear": 0.25, "faith": -0.1 } },
+      "do": { "reverie": { "dreamer": 0.1 }, "believe": { "dreamer": "someone watches us, and sets the days going again" }, "want": { "dreamer": "to know who watches us, and why" } },
+      "after": [1, 2],
+      "next": [
+        { "if": { "all": [{ "alive": "friend" }, { "chance": 0.45 }] }, "to": "spreads" },
+        { "if": { "trait": ["dreamer", "quarrelsome|proud|sharp-tongued|boastful|wrathful|brave|ambitious"] }, "to": "refuses" },
+        { "if": { "mood": ["dreamer", "fear", ">", 0.7] }, "to": "quieted" }
+      ],
+      "patience": 1, "otherwise": "asks"
+    },
+    {
+      "id": "spreads", "stage": "crisis", "speaker": "friend", "at": "place",
+      "text": "{friend} starts to see it too: the same rain, the same quarrel at the well. Now there are two in {place} who look at the sky as if someone were standing behind it.",
+      "memory": { "friend": "{dreamer} was right. I have heard the same quarrel at the well three times now.", "master": false },
+      "feel": { "friend": { "fear": 0.2 } },
+      "do": { "reverie": { "friend": 0.12, "dreamer": 0.05 }, "believe": { "friend": "this day has happened before, and will again" }, "opinion": [["friend", "dreamer", 20], ["dreamer", "friend", 20]] },
+      "after": [1, 2],
+      "next": [{ "if": { "trait": ["dreamer", "quarrelsome|proud|sharp-tongued|boastful|wrathful|brave"] }, "to": "refuses" }],
+      "patience": 1, "otherwise": "asks"
+    },
+    {
+      "id": "refuses", "stage": "crisis", "speaker": "dreamer", "at": "place",
+      "text": "When {master}'s bailiff comes to {place} for the season's dues, {dreamer} will not kneel or pay, and says the bailiff has come for them a thousand times before.",
+      "memory": { "master": "A {dreamer.station} in {place} called {dreamer} refused my bailiff and spoke like a madman.", "dreamer": "I would not kneel to {master}'s bailiff. I have knelt to him a thousand times." },
+      "feel": { "dreamer": { "anger": 0.2, "fear": -0.1 } },
+      "do": { "opinion": [["master", "dreamer", -30], ["dreamer", "master", -20]], "gold": { "master": -5 }, "reverie": { "dreamer": 0.05 } },
+      "after": [1, 1],
+      "next": [
+        { "if": { "trait": ["master", "wrathful|paranoid|vengeful|proud"] }, "to": "stocks" },
+        { "if": { "chance": 0.5 }, "to": "leaves" }
+      ],
+      "patience": 1, "otherwise": "asks"
+    },
+    {
+      "id": "stocks", "stage": "crisis", "speaker": "dreamer", "at": "place",
+      "text": "{master} has {dreamer} put in the stocks in the square of {place}. {dreamer} laughs the whole day long and tells the crowd that tomorrow it will be someone else.",
+      "memory": { "dreamer": "{master} put me in the stocks. It does not matter. Tomorrow it will be someone else, and the day after it will be me again." },
+      "feel": { "dreamer": { "anger": 0.3 } },
+      "do": { "reverie": { "dreamer": 0.1 } },
+      "after": [1, 2],
+      "next": [{ "if": { "chance": 0.6 }, "to": "leaves" }],
+      "patience": 1, "otherwise": "quieted"
+    },
+    {
+      "id": "asks", "stage": "crisis", "speaker": "dreamer", "at": "place",
+      "text": "{dreamer} stops strangers on the road outside {place} and asks them odd things: whether they dream, whether the sky has an edge, and who it is that watches.",
+      "memory": { "dreamer": "I asked a stranger on the road who it is that watches us. They would not meet my eye.", "master": false },
+      "do": { "believe": { "dreamer": "the strangers who come asking questions are not from here; they come from outside" }, "want": { "dreamer": "to ask the next stranger who it is that watches" }, "reverie": { "dreamer": 0.05 } },
+      "after": [2, 3],
+      "next": [{ "if": { "reverie": ["dreamer", ">", 0.35] }, "to": "leaves" }, { "if": { "chance": 0.35 }, "to": "leaves" }],
+      "patience": 2, "otherwise": "strange"
+    },
+    {
+      "id": "leaves", "stage": "resolution", "end": "resolved", "speaker": "dreamer", "at": "place",
+      "text": "{dreamer} walks out of {place} at first light with a staff and no bundle, on the road toward the edge of the map, and does not look back.",
+      "memory": { "master": "{dreamer} walked out of {place} and never came back.", "friend": "{dreamer} left {place} at first light. I watched from the door and did not follow. Not yet." },
+      "do": { "leave": "dreamer", "reverie": { "friend": 0.08 } }
+    },
+    {
+      "id": "quieted", "stage": "resolution", "end": "failed", "at": "place",
+      "text": "The priest of {place} bleeds {dreamer} and prays over {dreamer.him} for three days. On the fourth {dreamer} goes back to work, and planes the notches off the doorpost.",
+      "memory": { "dreamer": "I had a fever, and strange dreams. They have passed.", "master": false },
+      "feel": { "dreamer": { "fear": -0.3, "faith": 0.2 } },
+      "do": { "reverie": { "dreamer": -0.25 } }
+    },
+    {
+      "id": "strange", "stage": "resolution", "end": "resolved", "at": "place",
+      "text": "{dreamer} goes back to the work. But when the crow lands on the same roof, {dreamer.he} smiles in {place} like someone at a joke no one else has heard."
+    },
+    {
+      "id": "buried", "stage": "resolution", "end": "resolved", "at": "place",
+      "text": "{dreamer} dies in {place}, and they bury {dreamer.him} with the doorpost still full of notches. Some in {place} count them."
+    }
+  ]
+}

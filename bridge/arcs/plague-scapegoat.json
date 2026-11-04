@@ -1,124 +1,422 @@
 {
   "id": "plague-scapegoat",
   "name": "A plague and a scapegoat",
-  "about": "Sickness or famine strikes a real town; its people need someone to blame, and its lord burns them, protects them, or loses the town's love, while the sickness itself decides whether the fire did any good.",
+  "about": "Sickness or famine strikes a real town; its people blame one of their own, often a hedge witch, a midwife or a beggar of that town, and its lord burns them, protects them, or loses the town's love, while the sickness decides whether the fire did any good.",
   "kind": "plague",
   "weight": 3,
   "cooldown": 12,
   "title": "The Pestilence of {town}",
   "roles": {
-    "town": { "town": true, "afflicted": true },
-    "lord": { "rank": ["lord", "bannerman"], "rules": "town" },
+    "town": {
+      "town": true,
+      "afflicted": true
+    },
+    "lord": {
+      "rank": [
+        "lord",
+        "bannerman"
+      ],
+      "rules": "town"
+    },
     "scapegoat": {
-      "rank": ["bannerman", "spouse", "child", "sworn", "heir"], "house": "lord",
-      "opinionOf": ["lord", "<", -15],
+      "either": [
+        {
+          "rank": "commoner",
+          "townOf": "town",
+          "station": "hedge witch|midwife|barber|beggar|anchoress|tanner|washerwoman|potter"
+        },
+        {
+          "rank": "commoner",
+          "townOf": "town",
+          "traits": [
+            "sharp-tongued",
+            "quarrelsome",
+            "a busybody",
+            "superstitious",
+            "shy",
+            "secretly a drunkard"
+          ]
+        },
+        {
+          "rank": [
+            "bannerman",
+            "spouse",
+            "child",
+            "sworn",
+            "heir"
+          ],
+          "house": "lord",
+          "opinionOf": [
+            "lord",
+            "<",
+            -15
+          ]
+        }
+      ],
+      "likes": {
+        "traits": [
+          "sharp-tongued",
+          "quarrelsome",
+          "superstitious"
+        ]
+      },
       "create": {
-        "name": ["{first} of the Fen", "Old {first}", "{first} the Herbwife"], "surname": "Fen", "gender": "female", "like": "lord",
-        "rank": "sworn", "age": [40, 70], "traits": ["patient", "pious"],
+        "name": [
+          "{first} of the Fen",
+          "Old {first}",
+          "{first} the Herbwife"
+        ],
+        "surname": "Fen",
+        "gender": "female",
+        "like": "lord",
+        "rank": "sworn",
+        "age": [
+          40,
+          70
+        ],
+        "traits": [
+          "patient",
+          "pious"
+        ],
         "memory": "I have healed the sick of {town} with herbs for thirty years. They used to thank me."
       }
     }
   },
-  "core": ["lord"],
-  "onDeath": { "scapegoat": "mob-killed", "lord": "lord-taken" },
+  "core": [
+    "lord"
+  ],
+  "onDeath": {
+    "scapegoat": "mob-killed",
+    "lord": "lord-taken"
+  },
   "fade": "The sickness lingers in {town} and then is only one sorrow among many.",
   "beats": [
     {
-      "id": "sickness", "stage": "rising", "at": "town", "speaker": "lord",
-      "text": ["Sickness comes to {town}: first the tanners' street, then the market. The death-carts go out at night.", "In {town} the bread runs out and the coughing starts. The church bell rings for the dead three times before noon."],
-      "memory": { "lord": "The sickness came to {town}, and the people look to me.", "scapegoat": false },
-      "after": [1, 2],
-      "next": [{ "to": "rumour" }]
+      "id": "sickness",
+      "stage": "rising",
+      "at": "town",
+      "speaker": "lord",
+      "text": [
+        "Sickness comes to {town}: first the tanners' street, then the market. The death-carts go out at night.",
+        "In {town} the bread runs out and the coughing starts. The church bell rings for the dead three times before noon."
+      ],
+      "memory": {
+        "lord": "The sickness came to {town}, and the people look to me.",
+        "scapegoat": false
+      },
+      "after": [
+        1,
+        2
+      ],
+      "next": [
+        {
+          "to": "rumour"
+        }
+      ]
     },
     {
-      "id": "rumour", "stage": "rising", "at": "town", "speaker": "scapegoat",
+      "id": "rumour",
+      "stage": "rising",
+      "at": "town",
+      "speaker": "scapegoat",
       "text": "In the alehouses of {town} they say the sickness came with {scapegoat}. Someone has chalked a mark on {scapegoat.his} door.",
-      "memory": { "scapegoat": "They chalked a mark on my door in {town} and say I brought the sickness." },
-      "after": [1, 1],
-      "next": [
-        { "if": { "trait": ["lord", "just|honourable|generous"] }, "to": "protects" },
-        { "if": { "trait": ["lord", "paranoid|wrathful|cunning|craven|pious|vengeful"] }, "to": "trial" },
-        { "if": { "chance": 0.5 }, "to": "protects" }
+      "memory": {
+        "scapegoat": "They chalked a mark on my door in {town} and say I brought the sickness."
+      },
+      "after": [
+        1,
+        1
       ],
-      "patience": 1, "otherwise": "trial"
+      "next": [
+        {
+          "if": {
+            "trait": [
+              "lord",
+              "just|honourable|generous"
+            ]
+          },
+          "to": "protects"
+        },
+        {
+          "if": {
+            "trait": [
+              "lord",
+              "paranoid|wrathful|cunning|craven|pious|vengeful"
+            ]
+          },
+          "to": "trial"
+        },
+        {
+          "if": {
+            "chance": 0.5
+          },
+          "to": "protects"
+        }
+      ],
+      "patience": 1,
+      "otherwise": "trial"
     },
     {
-      "id": "trial", "stage": "crisis", "at": "town", "speaker": "lord",
+      "id": "trial",
+      "stage": "crisis",
+      "at": "town",
+      "speaker": "lord",
       "text": "{lord} has {scapegoat} brought before the people of {town} in chains, to answer for the dying.",
-      "memory": { "scapegoat": "{lord} put me in chains before the people of {town}." },
-      "do": { "opinion": [["scapegoat", "lord", -50]] },
-      "after": [1, 1],
-      "next": [
-        { "if": { "any": [{ "hungry": "town" }, { "plague": "town" }] }, "to": "burned" },
-        { "if": { "chance": 0.5 }, "to": "burned" }
+      "memory": {
+        "scapegoat": "{lord} put me in chains before the people of {town}."
+      },
+      "do": {
+        "opinion": [
+          [
+            "scapegoat",
+            "lord",
+            -50
+          ]
+        ]
+      },
+      "after": [
+        1,
+        1
       ],
-      "patience": 1, "otherwise": "spared"
+      "next": [
+        {
+          "if": {
+            "any": [
+              {
+                "hungry": "town"
+              },
+              {
+                "plague": "town"
+              }
+            ]
+          },
+          "to": "burned"
+        },
+        {
+          "if": {
+            "chance": 0.5
+          },
+          "to": "burned"
+        }
+      ],
+      "patience": 1,
+      "otherwise": "spared"
     },
     {
-      "id": "burned", "stage": "crisis", "at": "town",
+      "id": "burned",
+      "stage": "crisis",
+      "at": "town",
       "text": "{scapegoat} burns in the square of {town}. The crowd that bayed for it goes home quiet.",
-      "memory": { "lord": "I burned {scapegoat} in the square at {town} to quiet the people." },
-      "do": { "die": { "who": "scapegoat", "how": "I was burned in {town} for a sickness I did not bring." } },
-      "after": [2, 3],
-      "next": [
-        { "if": { "any": [{ "plague": "town" }, { "hungry": "town" }] }, "to": "still-dying" }
+      "memory": {
+        "lord": "I burned {scapegoat} in the square at {town} to quiet the people."
+      },
+      "do": {
+        "die": {
+          "who": "scapegoat",
+          "how": "I was burned in {town} for a sickness I did not bring."
+        }
+      },
+      "after": [
+        2,
+        3
       ],
-      "patience": 1, "otherwise": "it-passes"
+      "next": [
+        {
+          "if": {
+            "any": [
+              {
+                "plague": "town"
+              },
+              {
+                "hungry": "town"
+              }
+            ]
+          },
+          "to": "still-dying"
+        }
+      ],
+      "patience": 1,
+      "otherwise": "it-passes"
     },
     {
-      "id": "still-dying", "stage": "resolution", "end": "failed", "at": "town", "speaker": "lord",
+      "id": "still-dying",
+      "stage": "resolution",
+      "end": "failed",
+      "at": "town",
+      "speaker": "lord",
       "text": "The fire did nothing. The dying goes on in {town}, and now they whisper that {lord} burned the wrong {scapegoat.man}.",
-      "memory": { "lord": "I burned {scapegoat} and the dying did not stop. The people of {town} look at me differently." },
-      "do": { "favour": { "lord": -5 }, "loyalty": { "lord": -5 }, "traits": { "lord": { "add": ["paranoid"] } } }
+      "memory": {
+        "lord": "I burned {scapegoat} and the dying did not stop. The people of {town} look at me differently."
+      },
+      "do": {
+        "favour": {
+          "lord": -5
+        },
+        "loyalty": {
+          "lord": -5
+        },
+        "traits": {
+          "lord": {
+            "add": [
+              "paranoid"
+            ]
+          }
+        }
+      }
     },
     {
-      "id": "it-passes", "stage": "resolution", "end": "resolved", "at": "town", "speaker": "lord",
+      "id": "it-passes",
+      "stage": "resolution",
+      "end": "resolved",
+      "at": "town",
+      "speaker": "lord",
       "text": "The sickness lifts from {town} at last. {lord} has the ashes thrown in the river and calls it justice; nobody contradicts {lord.him}."
     },
     {
-      "id": "protects", "stage": "crisis", "at": "town", "speaker": "lord",
+      "id": "protects",
+      "stage": "crisis",
+      "at": "town",
+      "speaker": "lord",
       "text": "{lord} stands at {scapegoat}'s door with a drawn sword and says the first man to touch it hangs.",
-      "memory": { "scapegoat": "{lord} stood at my door with a sword when all {town} wanted me dead.", "lord": "I stood between the people of {town} and {scapegoat}." },
-      "do": { "opinion": [["scapegoat", "lord", 60]] },
-      "after": [1, 2],
-      "next": [
-        { "if": { "all": [{ "any": [{ "hungry": "town" }, { "plague": "town" }] }, { "chance": 0.6 }] }, "to": "riot" }
+      "memory": {
+        "scapegoat": "{lord} stood at my door with a sword when all {town} wanted me dead.",
+        "lord": "I stood between the people of {town} and {scapegoat}."
+      },
+      "do": {
+        "opinion": [
+          [
+            "scapegoat",
+            "lord",
+            60
+          ]
+        ]
+      },
+      "after": [
+        1,
+        2
       ],
-      "patience": 2, "otherwise": "protected-passes"
+      "next": [
+        {
+          "if": {
+            "all": [
+              {
+                "any": [
+                  {
+                    "hungry": "town"
+                  },
+                  {
+                    "plague": "town"
+                  }
+                ]
+              },
+              {
+                "chance": 0.6
+              }
+            ]
+          },
+          "to": "riot"
+        }
+      ],
+      "patience": 2,
+      "otherwise": "protected-passes"
     },
     {
-      "id": "spared", "stage": "crisis", "at": "town", "speaker": "lord",
+      "id": "spared",
+      "stage": "crisis",
+      "at": "town",
+      "speaker": "lord",
       "text": "{lord} finds no proof against {scapegoat} and lets {scapegoat.him} go. The crowd outside does not agree.",
-      "after": [1, 1],
-      "next": [{ "if": { "chance": 0.6 }, "to": "riot" }],
-      "patience": 1, "otherwise": "protected-passes"
+      "after": [
+        1,
+        1
+      ],
+      "next": [
+        {
+          "if": {
+            "chance": 0.6
+          },
+          "to": "riot"
+        }
+      ],
+      "patience": 1,
+      "otherwise": "protected-passes"
     },
     {
-      "id": "riot", "stage": "crisis", "at": "town",
+      "id": "riot",
+      "stage": "crisis",
+      "at": "town",
       "text": "The hungry of {town} riot. They break open {lord}'s granary and come for {scapegoat} with torches.",
-      "memory": { "lord": "The people of {town} broke my granary and hunted {scapegoat} through the streets." },
-      "do": { "gold": { "lord": -30 }, "die": { "who": "scapegoat", "chance": 0.5, "how": "The mob of {town} dragged me from my house." } },
-      "after": [1, 1],
-      "next": [{ "if": { "alive": "scapegoat" }, "to": "flees" }],
-      "patience": 1, "otherwise": "mob-killed"
+      "memory": {
+        "lord": "The people of {town} broke my granary and hunted {scapegoat} through the streets."
+      },
+      "do": {
+        "gold": {
+          "lord": -30
+        },
+        "die": {
+          "who": "scapegoat",
+          "chance": 0.5,
+          "how": "The mob of {town} dragged me from my house."
+        }
+      },
+      "after": [
+        1,
+        1
+      ],
+      "next": [
+        {
+          "if": {
+            "alive": "scapegoat"
+          },
+          "to": "flees"
+        }
+      ],
+      "patience": 1,
+      "otherwise": "mob-killed"
     },
     {
-      "id": "flees", "stage": "resolution", "end": "resolved", "at": "town",
-      "text": "{scapegoat} is gone from {town} by morning, over the wall with a bag of herbs and nothing else. The sickness stays a while longer, and then it too is gone.",
-      "do": { "rank": { "scapegoat": "exile" } }
+      "id": "flees",
+      "stage": "resolution",
+      "end": "resolved",
+      "at": "town",
+      "text": "{scapegoat} is gone from {town} by morning, over the wall with what {scapegoat.he} could carry. The sickness stays a while longer, and then it too is gone.",
+      "do": {
+        "rank": {
+          "scapegoat": "exile"
+        }
+      }
     },
     {
-      "id": "mob-killed", "stage": "resolution", "end": "failed", "at": "town", "speaker": "lord",
+      "id": "mob-killed",
+      "stage": "resolution",
+      "end": "failed",
+      "at": "town",
+      "speaker": "lord",
       "text": "{scapegoat} is dead, killed by the people {scapegoat.he} lived among in {town}. {lord} hangs two of them, and it changes nothing.",
-      "memory": { "lord": "The people of {town} murdered {scapegoat} and I could not stop them." }
+      "memory": {
+        "lord": "The people of {town} murdered {scapegoat} and I could not stop them."
+      }
     },
     {
-      "id": "protected-passes", "stage": "resolution", "end": "resolved", "at": "town",
+      "id": "protected-passes",
+      "stage": "resolution",
+      "end": "resolved",
+      "at": "town",
       "text": "The sickness burns itself out. Nobody in {town} speaks of {scapegoat} again, and {lord}'s name is blessed in the churches.",
-      "do": { "favour": { "lord": 3 }, "loyalty": { "lord": 5 } }
+      "do": {
+        "favour": {
+          "lord": 3
+        },
+        "loyalty": {
+          "lord": 5
+        }
+      }
     },
     {
-      "id": "lord-taken", "stage": "resolution", "end": "failed", "at": "town",
+      "id": "lord-taken",
+      "stage": "resolution",
+      "end": "failed",
+      "at": "town",
       "text": "The sickness takes {lord} {lord.himself}. In {town} they say it is judgment, and do not say for what."
     }
   ]

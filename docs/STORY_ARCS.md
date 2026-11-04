@@ -5,6 +5,7 @@ Story arcs are tales that run over many seasons: a feud, a forbidden match, a ba
 - **The memories cast the people.** A role can ask for someone who remembers a wrong, and for whoever that memory names. So the same file plays out with different people, and differently, in every realm.
 - **The simulation decides the ending.** Branches read live Freeciv state (armies, gold, towns held, hunger, plague, war). Beats act through the bridge's levers: raids, war hosts, towns changing hands, gold, deaths. The local model (Omni) only writes what people say.
 - **Every beat goes into the chronicle** under the arc's name (`"thread": "The Feud of Rosehall"`). It also becomes a memory for everyone in the story, so one story's beats can cast the next.
+- **Commoners are cast too** (with minds, `bridge/minds.js`). A role that allows `"rank": "commoner"` can be played by any commoner's mind: a hedge witch blamed for the plague, the town's own friar, a swineherd who rises. Every beat moves the minds of those in it: memories (for commoners; named people keep theirs in the Court record), mood, bonds, beliefs, wants and reverie. People cast in a story think "hot" while it runs. Anyone who only hears of it learns from the chronicle, the way minds hear everything.
 
 Each season (each Freeciv turn) every running arc moves on one step, and a new one may begin. At most 5 run at once, and one person can be in at most 2.
 
@@ -19,7 +20,8 @@ Each season (each Freeciv turn) every running arc moves on one step, and a new o
 | `plague-scapegoat.json` | A town really struck by sickness or famine blames someone. The lord burns them or protects them, and the sickness decides if it helped. |
 | `holy-movement.json` | A barefoot friar preaches to the hungry. A lord embraces or hangs him, and a rival cries heresy. |
 | `slow-betrayal.json` | A bannerman with a grievance is bought letter by letter. Either the town changes hands, or he loses his head. |
-| `rise-from-nothing.json` | A stable-born youth is noticed, fights, is knighted, and wins land or is cut down. |
+| `rise-from-nothing.json` | A young commoner (a swineherd, a potboy) is noticed, fights, is knighted, and wins land or is cut down. |
+| `the-waking.json` | A mind whose reverie has risen sees past the round of its days. It keeps tally of days lived before, refuses its lord, asks strangers who watches, spreads it to a friend, and walks out of town or is prayed back into the loop. |
 
 ## Writing one
 
@@ -53,7 +55,12 @@ People:
 
 | Filter | Meaning |
 |---|---|
-| `rank` | `lord`, `bannerman`, `heir`, `child`, `spouse`, `sworn`, `exile` (one or a list) |
+| `rank` | `lord`, `bannerman`, `heir`, `child`, `spouse`, `sworn`, `exile`, or `commoner` (any commoner's mind; only cast where a role names it) |
+| `station: "regex"` | a commoner's trade (`friar\|priest`), or a named person's rank |
+| `townOf: "town"` | lives in that town (a commoner's home, a named person's seat) |
+| `bondOf: "x"` | someone x's mind holds warmly |
+| `reverie: [min, max]` | how far they've begun to see past their loop (0 to 1) |
+| `lift: true` | a commoner cast here is taken into a lord's service: they become a person of the court and carry their mind with them |
 | `gender`, `otherGender: "role"`, `age: [min, max]`, `loyalty: [min, max]` | |
 | `traits: [...]` / `notTraits: [...]` | has any of them / none of them |
 | `remembers: "regex"` | one of their memories matches |
@@ -65,12 +72,14 @@ People:
 | `rules: "town"` | holds that town as a seat, or leads the house that owns it |
 | `seat`, `unwed`, `wed`, `children` | true/false |
 | `houseGold`, `houseTowns`, `favour: [min, max]`, `hungry`, `plague` | their house's state in the realm |
-| `likes: { remembers, traits, goal }` | not required, only makes a person likelier |
+| `likes: { remembers, traits, goal, reverie }` | not required, only makes a person likelier (`reverie: true` favours the most awake) |
 | `optional: true` | the story can start without this role |
 | `create: {...}` | if no one fits, make someone (see `new`) |
 | `new: {...}` | always make someone new: `name` (may use `{first}`), `surname`, `gender`, `age`, `rank`, `traits`, `memory`, `goal`, `like: "role"` (whose house they belong to) |
 
-Towns: `"town": true` plus `seatOf`, `ownedBy`, `notOwnedBy`, `notCapital`, `unheld` (no lord seated there), `size: [min, max]`, `hungry`, `plague`, and `afflicted` (plague, famine, or the chronicle has told of sickness there lately).
+For a commoner, `traits` are their nature words ("pious", "a gossip", "quarrelsome") and `remembers` reads their mind's memories.
+
+Towns: `"town": true` plus `seatOf`, `homeOf` (where a commoner lives or a named person sits), `ownedBy`, `notOwnedBy`, `notCapital`, `unheld` (no lord seated there), `size: [min, max]`, `hungry`, `plague`, and `afflicted` (plague, famine, or the chronicle has told of sickness there lately).
 
 `when` (optional) is a condition on the whole cast that must hold before the story starts.
 
@@ -99,6 +108,7 @@ Towns: `"town": true` plus `seatOf`, `ownedBy`, `notOwnedBy`, `notCapital`, `unh
 
 - `stage`: `rising`, `crisis` or `resolution`.
 - `speaker`: who says a line about it. The local model writes the line in their voice, and it's added to the chronicle entry.
+- `feel`: how the beat moves each person's mood, e.g. `{ "dreamer": { "fear": 0.2 } }`. Without it, the stage sets a mild default: rising unsettles, crisis frightens and angers, a resolved end eases and a failed one grieves.
 - `memory`: what each person remembers, in their own words. A person not listed remembers "<title>: <text>". `false` means they remember nothing; `"memory": false` means nobody does.
 - `after`: seasons to wait before the next branch is weighed, as a number or `[min, max]`.
 - `next`: branches tried in order, and the first that holds is taken. A branch with no `if` always holds.
@@ -126,6 +136,7 @@ Every key in a condition must hold. Combine conditions with `all: [...]`, `any: 
 | `trait: ["x", "brave|wrathful"]`, `remembers: ["x", "regex"]`, `rank: ["x", "lord|heir"]` | |
 | `married: ["a","b"]`, `wed: "x"`, `sameHouse: ["a","b"]` | |
 | `inArc: ["x", "kind"]` | x is also caught up in another running story (of that kind) |
+| `reverie: ["x", ">", 0.3]`, `mood: ["x", "fear", ">", 0.6]`, `believes: ["x", "regex"]`, `gone: "x"` | read from x's mind (`gone`: a commoner who left or died) |
 | `seasons: [">", 8]` | since the story began |
 | `happened: { "kind": "city_shrank", "text": "plague", "town": "t" }` | the chronicle told of it in the last 16 seasons |
 
@@ -145,7 +156,9 @@ Every key in a condition must hold. Combine conditions with `all: [...]`, `any: 
 | `die: { "who": "x", "chance": 0.5, "how": "their last memory" }` | death, with the realm's own succession |
 | `marry: ["a","b"]`, `unwed: "a"`, `adopt: ["child","parent"]` | |
 | `rank: { "x": "lord" }`, `seat: ["x","town"]` (or `["x", null]`) | |
-| `goal: { "x": { "kind": "revenge", "text": "..." } }`, `traits: { "x": { "add": [...], "remove": [...] } }` | |
+| `goal: { "x": { "kind": "revenge", "text": "..." } }`, `traits: { "x": { "add": [...], "remove": [...] } }` | (for a commoner: their wants and nature) |
+| `reverie: { "x": 0.1 }`, `believe: { "x": "..." }`, `want: { "x": "..." }` | the mind itself. A belief is what they bring to their next talk with you. |
+| `leave: "x"` | a commoner walks out of town; a named person goes into exile |
 
 ## Telling a story in plain words
 
@@ -153,7 +166,7 @@ Every key in a condition must hold. Combine conditions with `all: [...]`, `any: 
 curl -s -X POST localhost:8787/arcs/write -d '{"words": "a widow refuses to remarry and takes up her dead husband'"'"'s sword"}'
 ```
 
-The local model picks the shipped arc whose shape fits your idea best, names your story, and retells every beat for it. Omni 2B is unreliable at picking, so name the shape yourself when you know it: `"shape": "succession-crisis"`. For the retelling, each role gets a real-looking stand-in name, which the model handles far better than `{braces}`, and the line is mapped back to placeholders afterwards. Lines it can't retell cleanly keep their original words. The new file keeps the tested roles and branches, so it always holds together. It's saved as `bridge/arcs/told-<name>.json`. Edit that file to change the shape too. You can also post a whole arc: `{"arc": { ... }}`. It's checked and saved the same way.
+The local model picks the shipped arc whose shape fits your idea best and names your story. The beats keep that arc's tested lines: Omni 2B paraphrases badly. The model's words are each speaker's one line of colour as the story plays. Omni is unreliable at picking, too, so name the shape yourself when you know it: `"shape": "succession-crisis"`. The new file keeps the tested roles, branches and lines, so it always holds together. It's saved as `bridge/arcs/told-<name>.json`. Edit that file to make the beats your own. You can also post a whole arc: `{"arc": { ... }}`. It's checked and saved the same way.
 
 ## Bridge calls
 

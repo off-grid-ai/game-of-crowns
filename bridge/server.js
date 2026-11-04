@@ -410,7 +410,7 @@ async function runSeason() {
 function arcCtx() {
   const d = detail();
   return {
-    world, favour: favourOf, shift: shiftFavour, send: (l) => send(`lua cmd ${l}`),
+    world, minds, favour: favourOf, shift: shiftFavour, send: (l) => send(`lua cmd ${l}`),
     atWar: (a, b) => (d?.players?.[a]?.atWarWith ?? []).includes(b),
     town: (id) => {
       const x = d?.cities?.[id];
@@ -1040,7 +1040,7 @@ http.createServer(async (req, res) => {
       if (!words) return json(res, 400, { error: "say what the story is" });
       const shapes = arcTemplates().filter((t) => !t.problems.length && !t.told);
       const given = shapes.filter((t) => t.id === b.shape);
-      const out = await arcFromWords(words, (given.length ? given : shapes).map((t) => ({ id: t.id, name: t.name, about: t.about, roles: t.roles, beats: t.beats })));
+      const out = await arcFromWords(words, (given.length ? given : shapes).map((t) => ({ id: t.id, name: t.name, about: t.about })));
       const base = given[0] ?? shapes.find((t) => t.id === out?.shape);
       if (!base) return json(res, 503, { error: "the local model isn't there to shape it; drop an arc file in bridge/arcs instead" });
       const name = out?.name || words.split(/[.,;]/)[0].slice(0, 40);
@@ -1052,7 +1052,6 @@ http.createServer(async (req, res) => {
       arc.told = { from: base.id, words };
       const anchor = Object.keys(base.roles)[0];
       arc.title = /^the /i.test(name) ? `${name} of {${anchor}.seat}` : `The ${name} of {${anchor}.seat}`;
-      arc.beats.forEach((beat, i) => { if (out?.beats?.[i]) beat.text = out.beats[i]; });
     }
     const problems = check(arc);
     if (problems.length) return json(res, 400, { error: "that arc doesn't hold together", problems });

@@ -82,7 +82,8 @@ export class Court {
     this.moodFile = path.join(dir, "mood.json");
     const savedMoods = fs.existsSync(this.moodFile) ? JSON.parse(fs.readFileSync(this.moodFile, "utf8")) : [];
     this.decrees = Array.isArray(savedMoods) ? savedMoods : [];
-    this.seq = Object.keys(this.people).length + 1;
+    // Past the highest id ever given, so a new person never takes an old one's file.
+    this.seq = Math.max(0, ...Object.keys(this.people).map((id) => Number(String(id).slice(1)) || 0)) + 1;
   }
 
   save(c) {
@@ -168,6 +169,7 @@ export class Court {
     const taken = new Set(this.alive().map((x) => x.name));
     let name = `${pick(gender === "male" ? M : F, r)} ${fields.surname}`;
     for (let i = 0; i < 12 && taken.has(name); i++) name = `${pick(gender === "male" ? M : F, r)} ${fields.surname}`;
+    while (this.people[`c${this.seq}`]) this.seq++;
     const c = {
       id: `c${this.seq++}`,
       name,

@@ -454,57 +454,18 @@ Gritty medieval realm. You are living through ${thread}. Speak as yourself, in t
 }
 
 // The King describes a story in plain words; the model picks the arc whose
-// shape fits it best and retells its beats for that story. The shape (roles,
-// branches, what reads the realm) stays the tested one; the words are new.
+// shape fits it best and names it. The beats keep their tested lines: a small
+// model retells them badly, so the only words it adds are each speaker's one
+// line of colour as the story plays.
 export async function arcFromWords(words, shapes) {
-  if (shapes.length === 1) return arcRetold(words, shapes[0]);
+  if (shapes.length === 1) return arcNamed(words, shapes[0]);
   const list = shapes.map((s, i) => `${i + 1}. ${s.name}: ${s.about}`).join("\n");
   const pick = await say("You match a story idea to the closest story shape. Answer with only the number.", [], `Story idea: "${words}"\nShapes:\n${list}\nWhich shape fits the idea best? Only the number.`, 6);
   const shape = shapes[Number(String(pick ?? "").match(/\d+/)?.[0]) - 1] ?? null;
-  return shape ? arcRetold(words, shape) : null;
+  return shape ? arcNamed(words, shape) : null;
 }
 
-async function arcRetold(words, shape) {
+async function arcNamed(words, shape) {
   const name = await say("You name stories in a medieval chronicle. Answer with only the name: two to five words, no quotation marks.", [], `Story: "${words}". Its name:`, 16);
-  // A small model retells a line well when it reads people, not braces: each
-  // role gets a stand-in name for the asking, and is put back after.
-  const MEN = ["Aldric", "Maud", "Garth", "Wynne", "Osric", "Edith", "Corwin"];
-  const PLACES = ["Thornhall", "Ashford", "Greywater", "Brackenmoor"];
-  const stand = {};
-  let m = 0, p = 0;
-  for (const [k, spec] of Object.entries(shape.roles ?? {})) stand[k] = spec.town ? PLACES[p++ % PLACES.length] : MEN[m++ % MEN.length];
-  const PRON = { he: "they", He: "They", him: "them", his: "their", His: "Their", himself: "themself" };
-  const beats = [];
-  for (const b of shape.beats) {
-    const old = String([b.text].flat()[0]);
-    // Lines that lean on what only the realm knows (ages, titles) keep their words.
-    if (/\{\w+\.(?!house|houseName|seat|first|he|He|him|his|His|himself)\w+\}/.test(old)) { beats.push(null); continue; }
-    const asked = old.replace(/\{(\w+)(?:\.(\w+))?\}/g, (all, r, f) => {
-      if (!stand[r]) return all;
-      if (!f || f === "first") return stand[r];
-      if (f === "house" || f === "houseName") return `House ${stand[r]}`;
-      if (f === "seat") return `${stand[r]}hold`;
-      return PRON[f] ?? all;
-    });
-    const people = Object.entries(stand).map(([k, v]) => `${v} (${k})`).join(", ");
-    const out = await say(
-      "You retell one line of a medieval chronicle for a different story. Use the same people and places by the same names. One or two plain sentences, telling only what happens at this one moment of the story, not the story itself. No quotation marks.",
-      [],
-      `The new story: "${words}"\nPeople and places: ${people}.\nThe old line: ${asked}\nThe line, retold for the new story:`,
-      120,
-    );
-    if (!out || /\{|\}/.test(out)) { beats.push(null); continue; }
-    let back = out;
-    for (const [k, v] of Object.entries(stand)) {
-      back = back.replace(new RegExp(`House ${v}\\b`, "g"), `{${k}.house}`).replace(new RegExp(`\\b${v}hold\\b`, "g"), `{${k}.seat}`).replace(new RegExp(`\\b${v}\\b`, "g"), `{${k}}`);
-    }
-    // A retelling that names nobody, only restates the story idea, or repeats
-    // an earlier beat isn't one: that beat keeps its tested words.
-    const bag = (x) => new Set(String(x).toLowerCase().match(/[a-z']{4,}/g) ?? []);
-    const idea = bag(words);
-    const mine = [...bag(back)];
-    const echo = mine.length ? mine.filter((w) => idea.has(w)).length / mine.length : 1;
-    beats.push(/\{\w+/.test(back) && echo < 0.5 && !beats.includes(back) ? back : null);
-  }
-  return { shape: shape.id, name: name?.replace(/["“”.]/g, "").trim().slice(0, 40) || null, beats };
+  return { shape: shape.id, name: name?.replace(/["“”.]/g, "").trim().slice(0, 40) || null };
 }

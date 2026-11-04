@@ -74,9 +74,7 @@ GET  /minds/town?city=ID[&hour=H]
                               { i, id, doing, where, with:[i], until, mood, feeling, tier, by }
                               where: home|bench|field|well|market|tavern|sept; hour is the town's
                               (villagers.hour; blocks as villagers.gd _block); until is the hour
-                              the block ends; by: "rules" or "model"; a mind a story took
-                              (m.gone: dead, left, in a house's service) has where "gone",
-                              doing m.gone, by "story": don't walk them
+                              the block ends; by: "rules" or "model"
 GET  /mind?id=ID              one mind in full (for the card and the talk)
 POST /minds/witness           as above
 GET  /minds/chatter?city=ID   conversations to play in that town now:
