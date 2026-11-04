@@ -22,62 +22,6 @@ func _ready() -> void:
 	_wagon = builder.piece_mesh("Prop_Wagon")
 
 
-# --- the gate: nobody in a building ----------------------------------------------
-
-## Test shots only (--shot): every five seconds, how many people anywhere (in
-## scenes, armies and towns) have their feet inside a building, written to
-## user://perf.log as "INSIDE n" with the worst few. 0 throughout is the bar.
-## Riders sit above the ground and men on a wall-walk stand on it: neither counts.
-var _gate: bool = Array(OS.get_cmdline_user_args()).any(func(a): return String(a).begins_with("--shot="))
-var _gate_at := 5.0
-
-
-func _process(delta: float) -> void:
-	if not _gate or terrain == null:
-		return
-	_gate_at -= delta
-	if _gate_at > 0.0:
-		return
-	_gate_at = 5.0
-	if towns == null:
-		towns = get_parent().get("towns")
-	var count := 0
-	var seen := 0
-	var where := []
-	var systems := {"scenes": self, "units": get_parent().get("units"), "villagers": get_parent().get("villagers")}
-	for label in systems:
-		var sys: Node = systems[label]
-		if sys == null:
-			continue
-		for skel in (sys as Node).find_children("GeneralSkeleton", "Skeleton3D", true, false):
-			var person := skel.get_parent().get_parent() as Node3D
-			if person == null or person.has_meta("mounted") or not person.is_visible_in_tree():
-				continue
-			seen += 1
-			var feet := person.global_position
-			if feet.y > terrain.height_at(feet.x, feet.z) + 0.03:
-				continue
-			if _nav.in_building(towns, feet):
-				count += 1
-				if where.size() < 4:
-					where.append("%s/%s(%.1f,%.1f)" % [label, _scene_of(person, sys), feet.x, feet.z])
-		# Horses: the whole body, nose to tail, clear of every building.
-		for rig in (sys as Node).find_children("HorseRig", "Node3D", true, false):
-			var horse := rig.get_parent().get_parent() as Node3D
-			if horse == null or not horse.is_visible_in_tree():
-				continue
-			seen += 1
-			if _nav.in_building(towns, horse.global_position, HORSE_BODY * 0.8):
-				count += 1
-				if where.size() < 4:
-					where.append("%s horse(%.1f,%.1f)" % [label, horse.global_position.x, horse.global_position.z])
-	var f := FileAccess.open("user://perf.log", FileAccess.READ_WRITE if FileAccess.file_exists("user://perf.log") else FileAccess.WRITE)
-	if f == null:
-		return
-	f.seek_end()
-	f.store_line("%s INSIDE %d of %d %s" % [Time.get_time_string_from_system(), count, seen, " ".join(where)])
-
-
 ## Whether the towns stand: scenes are set out against their buildings, so
 ## none is staged while a realm just opened is still putting them up.
 func _towns_up() -> bool:
@@ -87,12 +31,6 @@ func _towns_up() -> bool:
 
 
 ## The top node under `sys` that `n` belongs to: a scene's name, for the gate.
-static func _scene_of(n: Node, sys: Node) -> String:
-	while n and n.get_parent() != sys:
-		n = n.get_parent()
-	return String(n.name) if n else "?"
-
-
 func sync(world: Dictionary, houses: Dictionary) -> void:
 	if not _towns_up():
 		get_tree().create_timer(1.0).timeout.connect(sync.bind(world, houses))

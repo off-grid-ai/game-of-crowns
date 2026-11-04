@@ -105,6 +105,13 @@ func _ready() -> void:
 	villagers.towns = towns
 	villagers.rig = rig
 	add_child(villagers)
+	if _shot.has("path"):
+		# Test shots: is everyone where a body can be (checks.gd).
+		var checks = preload("res://scripts/checks.gd").new()
+		checks.terrain = terrain
+		checks.towns = towns
+		checks.systems = {"scenes": scenes, "units": units, "villagers": villagers}
+		add_child(checks)
 	ui = preload("res://scripts/ui.gd").new()
 	add_child(ui)
 	ui.god_action.connect(_on_god_action)
@@ -625,16 +632,12 @@ func _log_perf(delta: float) -> void:
 		Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME),
 		int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000.0), Performance.get_monitor(Performance.OBJECT_NODE_COUNT),
 		rig.distance if rig else 0.0, towns.building() if towns and towns.has_method("building") else "?"])
-	f.store_line(_ground_check())
 
 
 ## The ground was levelled under `area` (a town built or grew): everyone
 ## standing there goes back on it, whoever placed them and whether they're
 ## walking or still. The one place this is done, so nobody is ever left at
 ## the old height, sunk into raised ground or hovering over a cut.
-const _HORSE = preload("res://scripts/horse.gd")
-
-
 func _on_ground_changed(area: Rect2) -> void:
 	area = area.grow(0.05)
 	for p in get_tree().get_nodes_in_group("people"):
@@ -646,40 +649,9 @@ func _on_ground_changed(area: Rect2) -> void:
 
 
 ## A person made by people.gd who stands on the ground: not set up high on
-## purpose (a "lift", or "aloft") and not riding (their holder sits on a horse).
+## purpose (a "lift", or "aloft") and not riding (horse.gd marks them "mounted").
 func _stands_on_ground(p: Node) -> bool:
-	if not (p is Node3D) or not p.is_inside_tree() or p.has_meta("lift") or p.has_meta("aloft"):
-		return false
-	var up: Node = p.get_parent()
-	for i in 6:  # seated on a horse's saddle: the horse stands on the ground, not them
-		if up == null:
-			break
-		if up.get_script() == _HORSE:
-			return false
-		up = up.get_parent()
-	return true
-
-
-## Who isn't standing on the ground they're drawn on: everyone made by
-## people.gd, feet against the ground's height there, by whoever placed them.
-## Riders (on a horse) and anyone set up high on purpose (a "lift") are left out.
-func _ground_check() -> String:
-	var sunk := {}
-	var aloft := {}
-	var n := 0
-	for p in get_tree().get_nodes_in_group("people"):
-		if not _stands_on_ground(p) or not p.is_visible_in_tree():
-			continue
-		var holder: Node = p.get_parent()
-		n += 1
-		var g: Vector3 = p.global_position
-		var off: float = g.y - terrain.height_at(g.x, g.z)
-		var who := "%s/%s" % [holder.get_parent().name if holder and holder.get_parent() else "?", holder.name if holder else "?"]
-		if off < -0.015:
-			sunk[who] = int(sunk.get(who, 0)) + 1
-		elif off > 0.015:
-			aloft[who] = int(aloft.get(who, 0)) + 1
-	return "GROUND people=%d sunk=%s aloft=%s graded_pending=%s" % [n, sunk, aloft, terrain.get("_graded")]
+	return p is Node3D and p.is_inside_tree() and not (p.has_meta("lift") or p.has_meta("aloft") or p.has_meta("mounted"))
 
 
 ## Once the towns have finished building: triangles and draws by system, as
