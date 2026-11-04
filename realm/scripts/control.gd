@@ -289,6 +289,15 @@ func _walkable(p: Vector3) -> Vector3:
 	return Vector3(c.x + q.x, p.y, c.z + q.y)
 
 
+## Among a town's houses (its trodden ground), not out on the roads and fields.
+func _in_town(p: Vector3) -> bool:
+	for id in towns.towns:
+		var node: Node3D = towns.towns[id]["node"]
+		if is_instance_valid(node) and Vector2(p.x - node.global_position.x, p.z - node.global_position.z).length() < float(node.get_meta("trodden", 3.0)):
+			return true
+	return false
+
+
 func _town_at(p: Vector3) -> int:
 	for id in towns.towns:
 		var node: Node3D = towns.towns[id]["node"]
@@ -453,15 +462,18 @@ func _square_up(delta: float, still: bool) -> void:
 
 
 ## Foes close in, circle a little, strike when in reach, and now and then raise
-## a shield when you swing. Outlaws come out of the dark at night, and a town
-## in disorder can turn on whoever walks its streets.
+## a shield when you swing. Outlaws haunt the roads beyond the houses, come out
+## of the dark at night, and a town in disorder turns on whoever walks it.
 func _fight(delta: float) -> void:
 	_threat_check -= delta
 	if _threat_check <= 0.0:
 		_threat_check = 20.0
 		var alive_foes := _foes.filter(func(f): return f.alive()).size()
 		var town: Dictionary = towns.towns.get(_town_at(_body.position), {}).get("data", {})
-		if alive_foes == 0 and _me.alive() and (villagers.night or town.get("disorder", false)) and randf() < 0.5:
+		# Outlaws work the roads and fields beyond the houses (by day too), any
+		# street after dark, and a town in disorder turns on whoever walks it.
+		var abroad := not _in_town(_body.position)
+		if alive_foes == 0 and _me.alive() and (abroad or villagers.night or town.get("disorder", false)) and randf() < (0.4 if abroad else 0.5):
 			spawn_foes(randi_range(1, 3))
 	for f in _foes:
 		f.tick(delta)
