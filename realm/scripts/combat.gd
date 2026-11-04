@@ -5,9 +5,10 @@ extends RefCounted
 ## that kit's own Mixamo moves; sheathed, they fight with their fists. A strike
 ## lands on the frame the blow arrives, on whoever is in front within reach; a
 ## guard turned toward the blow stops it, and a dodge takes you out of its way.
-## Who is hit reels the way the blow came from and bleeds; a heavy blow can put
-## them on the ground for a moment, a kick leaves them dazed; who falls, falls
-## away from it and stains the ground.
+## Who is hit reels by where the blow lands (head, body, side, legs, back) and
+## how hard, and bleeds there; a heavy blow can put them on the ground for a
+## moment, a kick leaves them dazed or doubled over; the badly hurt limp; who
+## falls, falls away from it and stains the ground.
 
 const Weapons := preload("res://scripts/weapons.gd")
 const Blood := preload("res://scripts/blood.gd")
@@ -19,6 +20,23 @@ const DODGE := 0.6  # metres a dodge carries you
 const FLOORED := 0.3  # chance a heavy blow that doesn't kill knocks you down
 # Moves heavy enough to floor someone: the big two-handed and spinning cuts.
 const HEAVY := ["GS_Attack", "GS_Slash_1", "GS_Slash_3", "GS_Spin", "Axe_Down", "Axe_Spin"]
+# Cuts that come down from above land on the head; the rest are a body blow
+# more often than not, now and then the head or the legs.
+const OVERHEAD := ["GS_Attack", "Axe_Down", "SS_Attack_3", "Sword_Attack_2"]
+const HURT_FOR := 12.0  # seconds someone limps after being knocked down
+const WEAK := 35.0  # health below which they limp for good
+# Reactions by where the blow lands and how hard. Taken head-on unless named.
+const REELS := {
+	"head": ["Head_Light_1", "Head_Light_2", "Head_Light_3"],
+	"head_heavy": ["Head_Big_1", "Head_Big_2"],
+	"body": ["Body_Light_1", "Body_Light_2", "Body_Light_3"],
+	"body_heavy": ["Body_Big_2", "Body_Big_3"],
+	"side_heavy": ["Side_Big", "Kidney_Big"],
+	"kick": ["Groin_2", "Stunned", "Kidney_Light"],
+}
+# Blows that put someone on the ground, by where they land.
+const FLOORS := {"head": ["Knocked_Down"], "body": ["Knocked_Down", "Body_Big_1"], "legs": ["Legs_1", "Legs_2"]}
+const WOUND_AT := {"head": 1.6, "body": 1.2, "legs": 0.55}  # metres up the body
 
 # How each kit fights. attacks: the cuts it varies between. kick: a shove now
 # and then that goes through a guard. guard: held while blocking (a looping
@@ -55,7 +73,7 @@ const KITS := {
 		"attacks": ["Punch_1", "Punch_2", "Punch_3", "Punch_Jab"],
 		"kick": "Kick_Front", "guard": "Body_Block", "parry": ["Body_Block"],
 		"hurt": ["React_Head", "React_Front", "Hit"],
-		"fall_back": ["Death01"], "fall_forward": ["Death_Back"],
+		"fall_back": ["Death01", "Fall_Back_Death"], "fall_forward": ["Death_Back"],
 		"reach": 0.12, "harm": 0.35, "pace": 1.1},
 }
 # When the blow arrives, as a fraction of each move: the moment the striking
@@ -78,6 +96,7 @@ var _timer := 0.0
 var _swing_at := -1.0
 var _last := ""
 var _kicking := false
+var _hurt_until := 0.0  # seconds (ticks clock) until a knockdown stops showing
 var on_land := Callable()  # (attacker) -> void: asked to resolve a strike that just arrived
 
 
@@ -100,11 +119,18 @@ func style() -> Dictionary:
 	return KITS[kit if armed else "fists"]
 
 
+## Badly hurt: low on health, or not long up off the ground.
+func hurt() -> bool:
+	return alive() and (health < WEAK or Time.get_ticks_msec() / 1000.0 < _hurt_until)
+
+
 func idle_clip() -> String:
-	return style()["idle"]
+	return "Injured_Idle" if hurt() else style()["idle"]
 
 
 func walk_clip(running := false) -> String:
+	if hurt():
+		return "Injured_Walk"
 	if running:
 		return "Sprint" if armed else "Running"
 	return style()["walk"]
@@ -196,11 +222,14 @@ func take(attacker, damage: float) -> bool:
 				if state == "blocking":
 					_guard())
 		return true
-	health -= attacker.harm(damage)
+	var blow: float = attacker.harm(damage)
+	health -= blow
+	var heavy: bool = attacker._last in HEAVY or blow >= 30.0
+	var zone := _zone(attacker._last, kicked)
 	var bladed: bool = attacker.armed and not kicked
 	var unit := node.scale.x  # world units per metre, here
 	if bladed:
-		var wound := node.global_position + Vector3.UP * 1.25 * unit + to_attacker * 0.12 * unit
+		var wound := node.global_position + Vector3.UP * float(WOUND_AT[zone]) * unit + to_attacker * 0.12 * unit
 		Blood.spray(node.get_parent(), wound, -to_attacker, node.global_position.y, unit)
 	var s: Dictionary = KITS[kit] if armed else KITS["fists"]
 	if health <= 0.0:
@@ -217,27 +246,41 @@ func take(attacker, damage: float) -> bool:
 					Blood.pool(parent, at, -to_attacker, unit))
 		return false
 	_swing_at = -1.0
-	if attacker._last in HEAVY and randf() < FLOORED:
-		_floor()
+	if heavy and not kicked and randf() < FLOORED:
+		var floors: Array = FLOORS[zone]
+		_floor(floors[randi() % floors.size()])
 		return false
 	state = "staggered"
-	if kicked:
-		_timer = _once("Stunned", 1.4) / 1.4 * 0.75  # dazed, half-bent, then back
-		return false
-	# Reel the way the blow came: from the side, the side; head-on, the kit's own.
+	# Reel by where it landed and which way it came: from behind, a stumble
+	# forward; from the side, thrown that way; head-on, by head, body or legs.
 	var left := Vector3(cos(node.rotation.y), 0, -sin(node.rotation.y))
 	var side := left.dot(to_attacker)
-	var reel: String
+	var pick: Array
 	if front < -0.3:
-		reel = "Hit"
+		pick = ["Back_Head"] if zone == "head" else ["Back_Hit"]
+	elif kicked:
+		pick = REELS["kick"]
 	elif absf(side) > 0.6:
-		reel = "React_Left" if side > 0.0 else "React_Right"
+		pick = REELS["side_heavy"] if heavy else ["React_Left" if side > 0.0 else "React_Right"]
+	elif zone == "head":
+		pick = REELS["head_heavy" if heavy else "head"]
+	elif heavy:
+		pick = REELS["body_heavy"]
 	else:
-		var hurt: Array = s["hurt"]
-		reel = hurt[randi() % hurt.size()]
-	var length := _once(reel, 1.2)
-	_timer = minf(length / 1.2 * 0.8, 1.0)
+		pick = REELS["body"] + s["hurt"]  # the kit's own impacts keep the weapon up
+	var length := _once(pick[randi() % pick.size()], 1.2)
+	_timer = minf(length / 1.2 * 0.8, 1.2)
 	return false
+
+
+## Where a blow from `move` lands: "head", "body" or "legs".
+func _zone(move: String, kicked: bool) -> String:
+	if kicked:
+		return "body"
+	if move in OVERHEAD:
+		return "head"
+	var roll := randf()
+	return "head" if roll < 0.3 else "legs" if roll > 0.82 else "body"
 
 
 ## Advance the fighter's own clock; resolves its strike when the blow arrives.
@@ -265,10 +308,12 @@ func in_reach_of(attacker) -> bool:
 	return d.length() < attacker.reach() and attacker.facing().dot(d.normalized()) > ARC
 
 
-## Knocked off your feet: down on your back, then up again, slowly.
-func _floor() -> void:
+## Knocked off your feet by `clip`: down, then up again, slowly, and limping
+## for a while after.
+func _floor(clip := "Knocked_Down") -> void:
 	state = "down"
-	var fall := _once("Knocked_Down", 1.2) / 1.2
+	_hurt_until = Time.get_ticks_msec() / 1000.0 + HURT_FOR
+	var fall := _once(clip, 1.2) / 1.2
 	_timer = fall + 8.33 / 2.2
 	node.get_tree().create_timer(fall).timeout.connect(func():
 		if state == "down":
