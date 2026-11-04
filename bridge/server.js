@@ -728,7 +728,12 @@ http.createServer(async (req, res) => {
       p.favourWhy = favourWhy[p.id] ?? [];
     }
     // Each house's measures as the ledger keeps them (one reckoning, recordTurn).
-    for (const p of players) p.measures = last?.houses?.[p.house.name] ?? null;
+    // The Crown's own row reads like the houses' (the ledger keeps only theirs).
+    const own = (p) => {
+      const mine = world.cities.filter((c) => c.owner === p.id);
+      return { towns: mine.length, pop: mine.reduce((t, c) => t + c.size, 0), souls: mine.reduce((t, c) => t + soulsOf(c.size), 0), gold: p.gold, armies: p.units, grain: mine.reduce((t, c) => t + (d?.cities[c.id]?.foodStock ?? 0), 0) };
+    };
+    for (const p of players) p.measures = last?.houses?.[p.house.name] ?? (p.house.crown ? own(p) : null);
     const usurper = stakes?.s.usurper.stage ?? "none";
     const threat = { usurper, north: (stakes?.s.north.waves ?? 0) };
     return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), date: calendar(world.turn), threat, counsel: counsel(players, cities, threat), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000) });
