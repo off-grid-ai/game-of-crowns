@@ -56,6 +56,10 @@ func _process(_delta: float) -> void:
 			box.visible = false
 			continue
 		_refresh(tag, data)
+		var life: Node = towns.towns[id]["node"].get_node_or_null("Life")
+		var doing: String = life.get_meta("doing", "") if life else ""
+		tag["doing"].text = doing
+		tag["doing"].visible = doing != "" and d < 60.0
 		var p := cam.unproject_position(at)
 		var size := box.get_combined_minimum_size()
 		var rect := Rect2(p - Vector2(size.x * 0.5, size.y), size)
@@ -98,7 +102,14 @@ func _make(_id: int) -> Dictionary:
 	house.add_theme_color_override("font_color", Color(0.95, 0.93, 0.88, 0.78))
 	_shadow(house)
 	box.add_child(house)
-	return {"box": box, "name": name, "house": house, "sigil": sigil, "sig": ""}
+	# What the town is busy with: a building going up, recruits in training.
+	var doing := Label.new()
+	doing.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	doing.add_theme_font_size_override("font_size", 11)
+	doing.add_theme_color_override("font_color", T.ACCENT)
+	_shadow(doing)
+	box.add_child(doing)
+	return {"box": box, "name": name, "house": house, "sigil": sigil, "doing": doing, "sig": ""}
 
 
 ## Only rewrite a tag when its town's name, owner or rank changed.

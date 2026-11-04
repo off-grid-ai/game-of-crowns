@@ -189,17 +189,8 @@ func _construction(life: Node3D, center: Vector3, building: String, progress: fl
 		var bp := base + Vector3(rng.randf_range(-hx, hx), 0, hz + 0.12).rotated(Vector3.UP, ang)
 		bp.y = _y(center, bp)
 		_townsperson(life, bp, "peasant", ["Fixing_Kneeling", "Carrying", "Wheelbarrow"][i], rng.randi())
-	var tag := Label3D.new()
-	tag.visibility_range_begin = 1.6  # gone when you're walking right past it
-	tag.text = "Building %s  %d%%" % [building, int(progress * 100)]
-	tag.font_size = 40
-	tag.pixel_size = 0.004
-	tag.outline_size = 10
-	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	tag.no_depth_test = true
-	tag.position = base + Vector3(0, full + 0.25, 0)
-	tag.modulate = Color(1.0, 0.92, 0.72)
-	life.add_child(tag)
+	# What's being raised shows under the town's name on the map (map_labels.gd).
+	life.set_meta("doing", "Building %s · %d%%" % [building, int(progress * 100)])
 
 
 ## Recruits drilling in ranks on the square while a unit trains.
@@ -213,17 +204,7 @@ func _drill(life: Node3D, center: Vector3, progress: float, color: Color, unit: 
 		p.y = _y(center, p)
 		var drill: String = (["Bow_Draw", "Bow_Aim", "Bow_Shoot"][i % 3]) if unit.contains("Archer") or unit.contains("bow") else ("Sword_Idle" if i % 3 else "Sword_Attack")
 		_townsperson(life, p, "soldier", drill, hash(unit) + i, color.lerp(Color.WHITE, 0.35))
-	var tag := Label3D.new()
-	tag.visibility_range_begin = 1.6  # gone when you're walking right past it
-	tag.text = "Training %s  %d%%" % [unit, int(progress * 100)]
-	tag.font_size = 40
-	tag.pixel_size = 0.004
-	tag.outline_size = 10
-	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	tag.no_depth_test = true
-	tag.position = Vector3(0, _y(center, Vector3.ZERO) + 0.45, 0)
-	tag.modulate = Color(1.0, 0.85, 0.75)
-	life.add_child(tag)
+	life.set_meta("doing", "Training %s · %d%%" % [unit.to_lower(), int(progress * 100)])
 
 
 ## Outside the keep: the hungry beg and camp rough by a small fire, or, in
@@ -286,21 +267,22 @@ func _crowd(life: Node3D, center: Vector3, rng: RandomNumberGenerator, count: in
 
 
 func _bonfire(life: Node3D, center: Vector3) -> void:
+	# A fire you'd gather round: flames, not a flare (additive sparks bloom fast).
 	var p := CPUParticles3D.new()
-	p.amount = 40
-	p.lifetime = 0.9
+	p.amount = 18
+	p.lifetime = 0.8
 	p.direction = Vector3.UP
 	p.spread = 15
 	p.initial_velocity_min = 0.3
 	p.initial_velocity_max = 0.6
-	p.scale_amount_min = 0.05
-	p.scale_amount_max = 0.12
+	p.scale_amount_min = 0.04
+	p.scale_amount_max = 0.08
 	var grad := Gradient.new()
-	grad.set_color(0, Color(1, 0.8, 0.3))
-	grad.set_color(1, Color(0.8, 0.2, 0.0, 0.0))
+	grad.set_color(0, Color(0.85, 0.45, 0.12, 0.7))
+	grad.set_color(1, Color(0.5, 0.12, 0.0, 0.0))
 	p.color_ramp = grad
 	var q := QuadMesh.new()
-	q.size = Vector2(0.4, 0.4)
+	q.size = Vector2(0.25, 0.25)
 	var m := StandardMaterial3D.new()
 	m.albedo_texture = preload("res://scripts/towns.gd").soft_dot()
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -314,8 +296,8 @@ func _bonfire(life: Node3D, center: Vector3) -> void:
 	life.add_child(p)
 	var light := OmniLight3D.new()
 	light.light_color = Color(1.0, 0.6, 0.3)
-	light.light_energy = 2.0
-	light.omni_range = 2.0
+	light.light_energy = 0.9
+	light.omni_range = 1.1
 	light.position = p.position + Vector3(0, 0.2, 0)
 	life.add_child(light)
 
