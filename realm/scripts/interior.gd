@@ -13,12 +13,24 @@ const S := 0.12  # town units per metre (people.gd builds townsfolk at this scal
 const ROOMS := {
 	"great_hall": [26.0, "The great hall", [["Sword_Idle", 4], ["Idle_Talking", 3], ["Bow", 1], ["Arguing", 2]]],
 	"tavern": [14.0, "The tavern", [["Drinking", 4], ["Idle_Talking", 3], ["Cheering", 2], ["Dance", 2]]],
-	"chapel": [30.0, "The chapel", [["Praying", 5], ["Kneeling", 3], ["Idle", 2]]],
+	"chapel": [12.0, "The chapel", [["Praying", 5], ["Kneeling", 3], ["Idle", 2]]],
 	"cottage": [8.0, "A house", [["Idle_Talking", 2], ["Carrying", 1], ["Idle", 1]]],
+}
+## How a real room's file sits in the world. Positions are in the file's own
+## units: "m" metres per unit, "y" its floor's height, "door" where you come in
+## (x, z) and "face" the way you look (degrees), "floor" the part people stand
+## on (x0, z0, x1, z1), "lights" its candles and hearth (x, y, z, energy, metres
+## of reach), "both" to draw faces from behind too, "hide" nodes that aren't the
+## room, and "folk" who stands where: [x, z, face, role, move, age].
+const FIT := {
+	"tavern": {"m": 0.5, "y": 0.0, "door": Vector2(0, 0), "face": 0.0, "floor": [-16.7, -35.2, 13.7, 15.3]},
+	"chapel": {"m": 1.0, "y": -4.8, "door": Vector2(0, 0), "face": 0.0, "floor": [-2.9, -7.0, 2.7, 4.8]},
+	"cottage": {"m": 0.0254, "y": 0.0, "door": Vector2(1270, -1700), "face": 0.0, "floor": [1000, -1930, 1530, -1460], "both": true},
 }
 ## Until a proper interior arrives, a room can stand in from the town kit.
 const FALLBACK := {"chapel": "medieval_church", "great_hall": "medieval_viking_house", "tavern": "medieval_tavern"}
 
+const People := preload("res://scripts/people.gd")
 var people  # people.gd, shared with the villagers
 var _viewport: SubViewport
 var _world: Node3D
@@ -30,6 +42,8 @@ var _yaw := 0.0
 var _turning := false
 var _folk: Array = []
 var _hint: Label
+var _settled := false  # the room's collision is in and you stand on its floor
+var _floor_y := 0.0  # the floor's height in the world, metres
 
 
 func _ready() -> void:
@@ -54,22 +68,33 @@ func open(room: String, person: Dictionary, house: Dictionary, town_name: String
 	_world = Node3D.new()
 	_viewport.add_child(_world)
 	_light()
-	# The room at its true size, with collision from its own geometry.
 	_world.add_child(model)
-	var box := _bounds(model)
-	var want: float = ROOMS[room][0]
-	var k := want / maxf(maxf(box.size.x, box.size.z), 0.001)
-	model.scale *= k
-	model.position -= Vector3(box.get_center().x, box.position.y, box.get_center().z) * k
+	var fit: Dictionary = FIT.get(room, {})
 	var stand_in := not ResourceLoader.exists("res://assets/interiors/%s/scene.gltf" % room)
-	for mi in model.find_children("*", "MeshInstance3D", true, false):
-		(mi as MeshInstance3D).create_trimesh_collision()
-		if stand_in:
+	var box: AABB
+	if fit.is_empty():
+		# No measure for it yet: size the whole model to the room's longest side.
+		box = _bounds(model)
+		var k: float = ROOMS[room][0] / maxf(maxf(box.size.x, box.size.z), 0.001)
+		model.scale *= k
+		model.position -= Vector3(box.get_center().x, box.position.y, box.get_center().z) * k
+		box = _bounds_world(model)
+		_floor_y = box.position.y
+	else:
+		# A measured room: the file's units to metres, its floor where it says.
+		var m: float = fit["m"]
+		model.scale *= m
+		for part in fit.get("hide", []):
+			for n in model.find_children(String(part), "", true, false):
+				n.queue_free()
+		var f: Array = fit["floor"]
+		_floor_y = float(fit["y"]) * m
+		box = AABB(Vector3(f[0], fit["y"], f[1]) * m, Vector3(f[2] - f[0], 3.0 / m, f[3] - f[1]) * m)
+	if stand_in or fit.get("both", false):
+		for mi in model.find_children("*", "MeshInstance3D", true, false):
 			_both_sides(mi)
-	box = _bounds_world(model)
 	if stand_in:
 		_lay_floor(box)
-	var floor_at := _floor(Vector3(box.get_center().x, box.end.y, box.get_center().z), box)
 	_body = CharacterBody3D.new()
 	var shape := CollisionShape3D.new()
 	var cap := CapsuleShape3D.new()
@@ -79,20 +104,26 @@ func open(room: String, person: Dictionary, house: Dictionary, town_name: String
 	shape.position.y = 0.9
 	_body.add_child(shape)
 	_world.add_child(_body)
-	_body.position = floor_at + Vector3(0, 0.05, 0)
+	var door: Vector2 = fit.get("door", Vector2.ZERO) * float(fit.get("m", 1.0))
+	_body.position = Vector3(door.x, _floor_y + 0.05, door.y) if not fit.is_empty() else Vector3(box.get_center().x, _floor_y + 0.05, box.get_center().z)
+	_yaw = deg_to_rad(float(fit.get("face", 0.0)))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(str(person.get("id", "")))
-	var lordly := str(person.get("rank", "")) in ["lord", "heir"] or person.get("role") != null
 	var tint := Color.from_string(String(house.get("color", "#888888")), Color.GRAY).lerp(Color.WHITE, 0.45)
-	_figure = people.make(rng, "soldier" if lordly else "peasant", tint, "adult", "", str(person.get("gender", "")))
+	# The same named person, the same body, as in the hero view and the streets.
+	_figure = people.make(rng, People.station(person), tint, "adult", "", str(person.get("gender", "")), str(person.get("id", "")))
 	_figure.scale /= S
-	_figure.rotation.y = PI  # facing into the room, away from the camera
+	_figure.rotation.y = _yaw + PI  # facing into the room, away from the camera
 	_body.add_child(_figure)
 	_arm = SpringArm3D.new()
 	_arm.spring_length = 3.2
-	_arm.margin = 0.2
+	_arm.margin = 0.15
+	# A ball, not a ray, so the lens can't slip through a beam or a corner.
+	var ball := SphereShape3D.new()
+	ball.radius = 0.25
+	_arm.shape = ball
 	_arm.position = Vector3(0, 1.6, 0)
-	_arm.rotation.x = deg_to_rad(-18)
+	_arm.rotation = Vector3(deg_to_rad(-18), _yaw, 0)
 	_arm.add_excluded_object(_body.get_rid())
 	_body.add_child(_arm)
 	_cam = Camera3D.new()
@@ -100,10 +131,48 @@ func open(room: String, person: Dictionary, house: Dictionary, town_name: String
 	_cam.near = 0.05
 	_arm.add_child(_cam)
 	_cam.current = true
-	_people_inside(room, box, rng)
+	_lamps(box, rng, fit)
 	_hud(String(ROOMS[room][1]) + (" of %s" % town_name if town_name != "" else ""), String(person.get("name", "")))
+	_settle(room, model, box, fit, rng)
 	opened.emit(room)
 	return true
+
+
+## The room's collision, one mesh a frame so stepping in never stalls; then its
+## people, once the floor is there to stand them on.
+func _settle(room: String, model: Node3D, box: AABB, fit: Dictionary, rng: RandomNumberGenerator) -> void:
+	var body := _body
+	for mi in model.find_children("*", "MeshInstance3D", true, false):
+		if not is_instance_valid(mi) or mi.is_queued_for_deletion():
+			continue
+		(mi as MeshInstance3D).create_trimesh_collision()
+		await get_tree().process_frame
+		if body != _body:
+			return  # left, or went elsewhere, while it built
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	if body != _body:
+		return
+	_body.position = _floor(_body.position, box) + Vector3(0, 0.05, 0)
+	_people_inside(room, box, fit, rng)
+	_settled = true
+	_look(box)
+
+
+## For stills: --inside_cam=x,y,z,yaw,pitch (metres, degrees) sets a free camera
+## in the room, and the room's measure goes to the log.
+func _look(box: AABB) -> void:
+	print("interior: floor %.2f  box %s  you %s" % [_floor_y, box, _body.position])
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--inside_cam="):
+			var v := a.substr(13).split_floats(",")
+			var cam := Camera3D.new()
+			cam.fov = 70
+			cam.near = 0.05
+			_world.add_child(cam)
+			cam.position = Vector3(v[0], v[1], v[2])
+			cam.rotation_degrees = Vector3(v[4], v[3], 0)
+			cam.current = true
 
 
 func close() -> void:
@@ -117,6 +186,7 @@ func _clear() -> void:
 		c.queue_free()
 	_folk.clear()
 	_body = null
+	_settled = false
 
 
 func _room_model(room: String) -> Node3D:
@@ -177,49 +247,58 @@ func _light() -> void:
 	_world.add_child(env)
 
 
-## Warm firelight scattered through the room, and daylight through its windows.
-func _lamps(box: AABB, rng: RandomNumberGenerator) -> void:
+## Warm firelight: the room's own candles and hearth where it has them, else
+## scattered through it; and daylight through its windows.
+func _lamps(box: AABB, rng: RandomNumberGenerator, fit: Dictionary) -> void:
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-50, 35, 0)
 	sun.light_energy = 0.6
 	sun.shadow_enabled = true
 	_world.add_child(sun)
-	for i in 4:
+	var m: float = fit.get("m", 1.0)
+	var spots: Array = fit.get("lights", [])
+	for i in maxi(spots.size(), 4 if spots.is_empty() else 0):
 		var l := OmniLight3D.new()
 		l.light_color = Color(1.0, 0.68, 0.38)
 		l.light_energy = 1.6
 		l.omni_range = maxf(box.size.x, box.size.z) * 0.45
 		l.shadow_enabled = i == 0
-		l.position = Vector3(lerpf(box.position.x, box.end.x, rng.randf_range(0.25, 0.75)), box.position.y + 2.4, lerpf(box.position.z, box.end.z, rng.randf_range(0.25, 0.75)))
+		l.position = Vector3(lerpf(box.position.x, box.end.x, rng.randf_range(0.25, 0.75)), _floor_y + 2.4, lerpf(box.position.z, box.end.z, rng.randf_range(0.25, 0.75)))
+		if i < spots.size():
+			var s: Array = spots[i]
+			l.position = Vector3(s[0], s[1], s[2]) * m
+			l.light_energy = s[3]
+			l.omni_range = s[4]
 		_world.add_child(l)
 
 
-func _people_inside(room: String, box: AABB, rng: RandomNumberGenerator) -> void:
-	_lamps(box, rng)
-	for group in ROOMS[room][2]:
-		for i in int(group[1]):
-			var p := Vector3(lerpf(box.position.x, box.end.x, rng.randf_range(0.2, 0.8)), box.end.y, lerpf(box.position.z, box.end.z, rng.randf_range(0.2, 0.8)))
-			var at := _floor(p, box)
-			if at == Vector3.INF:
-				continue
-			var f: Node3D = people.make(rng, "soldier" if group[0].begins_with("Sword") else "peasant")
-			f.scale /= S
-			f.position = at
-			f.rotation.y = rng.randf() * TAU
-			_world.add_child(f)
-			people.play(f, String(group[0]))
-			_folk.append(f)
+## Who's inside: the room's own people where it names them, else a crowd
+## scattered across its floor.
+func _people_inside(room: String, box: AABB, fit: Dictionary, rng: RandomNumberGenerator) -> void:
+	var m: float = fit.get("m", 1.0)
+	var spots: Array = fit.get("folk", [])
+	if spots.is_empty():
+		for group in ROOMS[room][2]:
+			for i in int(group[1]):
+				spots.append([lerpf(box.position.x, box.end.x, rng.randf_range(0.2, 0.8)) / m, lerpf(box.position.z, box.end.z, rng.randf_range(0.2, 0.8)) / m, rng.randf() * 360.0, "soldier" if group[0].begins_with("Sword") else "peasant", group[0], ""])
+	for s in spots:
+		var f: Node3D = people.make(rng, String(s[3]), Color.WHITE, String(s[5]))
+		f.scale /= S
+		f.position = _floor(Vector3(s[0], 0, s[1]) * m, box)
+		f.rotation.y = deg_to_rad(float(s[2]))
+		_world.add_child(f)
+		people.play(f, String(s[4]))
+		_folk.append(f)
 
 
-## The floor under a point: cast from head height above the room's lowest level,
+## The floor under a point: cast from head height above the floor,
 ## so the ray finds the floor, not the roof.
-func _floor(p: Vector3, box: AABB) -> Vector3:
+func _floor(p: Vector3, _box: AABB) -> Vector3:
 	var space := _world.get_world_3d().direct_space_state
-	var from := Vector3(p.x, box.position.y + 1.6, p.z)
-	# Collision shapes only join the space next physics frame; fall back to the box floor.
-	var q := PhysicsRayQueryParameters3D.create(from, Vector3(p.x, box.position.y - 1.0, p.z))
+	var q := PhysicsRayQueryParameters3D.create(Vector3(p.x, _floor_y + 1.6, p.z), Vector3(p.x, _floor_y - 1.0, p.z))
+	q.exclude = [_body.get_rid()] if _body else []
 	var hit := space.intersect_ray(q) if space else {}
-	return hit["position"] if not hit.is_empty() else Vector3(p.x, box.position.y, p.z)
+	return hit["position"] if not hit.is_empty() else Vector3(p.x, _floor_y, p.z)
 
 
 func _hud(title: String, who: String) -> void:
@@ -258,7 +337,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if not visible or _body == null or not is_instance_valid(_body):
+	if not visible or _body == null or not is_instance_valid(_body) or not _settled:
 		return
 	var want := Vector2.ZERO
 	if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):
