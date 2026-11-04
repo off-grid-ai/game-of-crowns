@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Building Blocks Gallery</title>
+<style>
+  :root { --bg:#14120f; --card:#1f1b16; --ink:#efe6d6; --muted:#a89a84; --accent:#d8a24a; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 Georgia, serif; }
+  header { padding:32px 16px 8px; max-width:1200px; margin:0 auto; }
+  h1 { margin:0 0 6px; font-size:28px; letter-spacing:.5px; }
+  header p { margin:0; color:var(--muted); }
+  section { max-width:1200px; margin:0 auto; padding:16px; }
+  h2 { font-size:18px; color:var(--accent); margin:24px 0 10px; border-bottom:1px solid #3a3229; padding-bottom:6px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:14px; }
+  figure { margin:0; background:var(--card); border-radius:8px; overflow:hidden; }
+  img { width:100%; display:block; aspect-ratio:16/10; object-fit:cover; background:#2a241d; }
+  figcaption { padding:10px 12px; font-size:13.5px; }
+  figcaption b { display:block; font-size:14.5px; }
+  figcaption span { color:var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>The building blocks</h1>
+  <p>Screenshots of the actual free pieces we'd stitch together. None of this is our game yet, but it's what it would be made from.</p>
+</header>
+
+<section>
+  <h2>Look &amp; world (Godot plugins)</h2>
+  <div class="grid">
+    <figure><img src="https://raw.githubusercontent.com/TokisanGames/Sky3D/main/screenshots/oota-windmill.jpg"><figcaption><b>Sky3D + Terrain3D</b><span>Day/night, clouds, fog, lighting. MIT</span></figcaption></figure>
+    <figure><img src="https://raw.githubusercontent.com/TokisanGames/Sky3D/main/screenshots/oota-forest.jpg"><figcaption><b>Sky3D: forest at dusk</b><span>The lighting and sky come from the plugin; the realistic trees and rocks are another game's art, not ours</span></figcaption></figure>
+    <figure><img src="https://raw.githubusercontent.com/TokisanGames/Terrain3D/main/doc/docs/images/terrain3d.jpg"><figcaption><b>Terrain3D</b><span>Large LOD terrain, painted textures, foliage. MIT</span></figcaption></figure>
+    <figure><img src="https://user-images.githubusercontent.com/52043844/232775382-a9b1d1fe-44d3-4f3b-a1f8-73b7b38f1b5f.png"><figcaption><b>ProtonScatter</b><span>Scatters forests, rocks and props. MIT</span></figcaption></figure>
+    <figure><img src="https://github.com/user-attachments/assets/e979158a-5bb1-43a5-9129-1ca210492b1c"><figcaption><b>Vertex Animation Textures plugin</b><span>Thousands of animated characters at once. MIT</span></figcaption></figure>
+  </div>
+</section>
+
+<section>
+  <h2>Art (Quaternius, CC0)</h2>
+  <div class="grid">
+    <figure><img src="https://quaternius.com/assets/images/fullres/medievalvillagemegakit.jpg"><figcaption><b>Medieval Village MegaKit</b><span>Houses, walls with interiors, roofs. Free / $9.99 Pro</span></figcaption></figure>
+    <figure><img src="https://quaternius.com/assets/images/fullres/medievalvillagemegakit/pro.jpg"><figcaption><b>Medieval Village MegaKit: Pro</b><span>Extra pieces</span></figcaption></figure>
+    <figure><img src="https://quaternius.com/assets/images/fullres/fantasypropsmegakit.jpg"><figcaption><b>Fantasy Props MegaKit</b><span>Furniture, tools, market stalls, for interiors</span></figcaption></figure>
+    <figure><img src="https://quaternius.com/assets/images/fullres/stylizednaturemegakit.jpg"><figcaption><b>Stylized Nature MegaKit</b><span>Trees, rocks, grass</span></figcaption></figure>
+    <figure><img src="https://quaternius.com/assets/images/fullres/universalbasecharacters.jpg"><figcaption><b>Universal Base Characters</b><span>People on one shared rig</span></figcaption></figure>
+    <figure><img src="https://quaternius.com/assets/images/fullres/modularcharacteroutfitsfantasy.jpg"><figcaption><b>Fantasy Outfits</b><span>Peasants, soldiers, nobles</span></figcaption></figure>
+    <figure><img src="https://quaternius.com/assets/images/fullres/universalanimationlibrary.jpg"><figcaption><b>Universal Animation Library</b><span>Walk, work, fight, die</span></figcaption></figure>
+    <figure><img src="https://quaternius.com/assets/images/fullres/ultimatemonsters.jpg"><figcaption><b>Ultimate Monsters</b><span>50 animated creatures</span></figcaption></figure>
+    <figure><img src="https://quaternius.com/assets/images/fullres/ultimateanimatedanimal.jpg"><figcaption><b>Animated Animals</b><span>Horses, wolves, cattle, deer</span></figcaption></figure>
+  </div>
+</section>
+
+<section>
+  <h2>Placeholder art (Kenney, already downloaded)</h2>
+  <div class="grid">
+    <figure><img src="assets/kenney/castle-kit/Preview.png"><figcaption><b>Kenney Castle Kit</b><span>Too toy-like for the final look</span></figcaption></figure>
+    <figure><img src="assets/kenney/fantasy-town-kit/Preview.png"><figcaption><b>Kenney Fantasy Town Kit</b><span>Placeholders only</span></figcaption></figure>
+  </div>
+</section>
+</body>
+</html>

@@ -1,0 +1,265 @@
+{"turn":"2","kind":"city_built","city":"Warszawa","owner":"Stanisław Poniatowski"}
+{"turn":"2","kind":"city_built","city":"Bangkok","owner":"Maha Mongkut"}
+{"turn":"2","kind":"city_built","city":"Onondaga","owner":"Thayendanegea"}
+{"turn":"3","kind":"city_built","city":"Karakorum","owner":"Sübeedei"}
+{"turn":"3","kind":"city_built","city":"Moskva","owner":"Vladimir Lenin"}
+{"turn":"3","kind":"city_built","city":"Wanggomsong","owner":"Yi Song-gye"}
+{"turn":"9","kind":"city_built","city":"Sankt-Peterburg","owner":"Vladimir Lenin"}
+{"turn":"13","kind":"city_size","change":"-2","city":"Bangkok","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+{"turn":"15","kind":"city_built","city":"Thon Buri","owner":"Maha Mongkut"}
+{"turn":"16","kind":"city_size","change":"1","city":"Warszawa","owner":"Stanisław Poniatowski","reason":"growth","size":"4.0"}
+{"turn":"17","kind":"city_size","change":"-2","city":"Warszawa","owner":"Stanisław Poniatowski","reason":"unit_built","size":"2.0"}
+{"turn":"17","kind":"city_size","change":"-2","city":"Onondaga","owner":"Thayendanegea","reason":"unit_built","size":"1.0"}
+{"turn":"18","kind":"city_size","change":"-2","city":"Karakorum","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+{"turn":"18","kind":"city_size","change":"-2","city":"Wanggomsong","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"20","kind":"city_built","city":"Ganaraske","owner":"Thayendanegea"}
+{"turn":"21","kind":"city_built","city":"Ungjin","owner":"Yi Song-gye"}
+{"turn":"21","kind":"city_built","city":"Sainshand","owner":"Sübeedei"}
+{"turn":"21","kind":"city_size","change":"-2","city":"Bangkok","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+{"turn":"22","kind":"city_built","city":"Kraków","owner":"Stanisław Poniatowski"}
+{"turn":"24","kind":"city_size","change":"1","city":"Warszawa","owner":"Stanisław Poniatowski","reason":"growth","size":"4.0"}
+{"turn":"25","kind":"city_built","city":"Nakhon Rachasima","owner":"Maha Mongkut"}
+{"turn":"27","kind":"city_size","change":"-2","city":"Karakorum","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+{"turn":"27","kind":"city_size","change":"-2","city":"Onondaga","owner":"Thayendanegea","reason":"unit_built","size":"1.0"}
+{"turn":"27","kind":"city_size","change":"-2","city":"Warszawa","owner":"Stanisław Poniatowski","reason":"unit_built","size":"2.0"}
+{"turn":"28","kind":"city_size","change":"-2","city":"Wanggomsong","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"29","kind":"city_size","change":"-2","city":"Bangkok","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+{"turn":"30","kind":"city_size","change":"-2","city":"Thon Buri","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+{"turn":"31","kind":"city_built","city":"Ulaangom","owner":"Sübeedei"}
+{"turn":"31","kind":"city_built","city":"Wandu","owner":"Yi Song-gye"}
+{"turn":"31","kind":"city_built","city":"Oneida","owner":"Thayendanegea"}
+{"turn":"32","kind":"city_built","city":"Gniezno","owner":"Stanisław Poniatowski"}
+{"turn":"32","kind":"city_size","change":"1","city":"Warszawa","owner":"Stanisław Poniatowski","reason":"growth","size":"4.0"}
+{"turn":"33","kind":"city_size","change":"1","city":"Sankt-Peterburg","owner":"Vladimir Lenin","reason":"growth","size":"4.0"}
+{"turn":"34","kind":"city_built","city":"Chiang Mai","owner":"Maha Mongkut"}
+{"turn":"34","kind":"city_built","city":"Khon Kaen","owner":"Maha Mongkut"}
+{"turn":"34","kind":"city_size","change":"-2","city":"Kraków","owner":"Stanisław Poniatowski","reason":"unit_built","size":"1.0"}
+{"turn":"34","kind":"city_size","change":"-2","city":"Moskva","owner":"Vladimir Lenin","reason":"unit_built","size":"1.0"}
+{"turn":"35","kind":"city_size","change":"-2","city":"Karakorum","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+{"turn":"35","kind":"city_size","change":"-2","city":"Ganaraske","owner":"Thayendanegea","reason":"unit_built","size":"1.0"}
+{"turn":"36","kind":"city_size","change":"-2","city":"Warszawa","owner":"Stanisław Poniatowski","reason":"unit_built","size":"2.0"}
+{"turn":"36","kind":"city_size","change":"-2","city":"Sainshand","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+{"turn":"36","kind":"city_size","change":"-2","city":"Ungjin","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"37","kind":"city_size","change":"-2","city":"Onondaga","owner":"Thayendanegea","reason":"unit_built","size":"1.0"}
+{"turn":"38","kind":"city_built","city":"Samara","owner":"Vladimir Lenin"}
+{"turn":"38","kind":"city_size","change":"-2","city":"Bangkok","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+{"turn":"38","kind":"city_size","change":"-2","city":"Wanggomsong","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"39","kind":"city_built","city":"Canienga","owner":"Thayendanegea"}
+{"turn":"40","kind":"city_built","city":"Jolbon","owner":"Yi Song-gye"}
+{"turn":"40","kind":"city_built","city":"Tsetserleg","owner":"Sübeedei"}
+{"turn":"40","kind":"city_built","city":"Gdańsk","owner":"Stanisław Poniatowski"}
+{"turn":"40","kind":"city_size","change":"-2","city":"Thon Buri","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+{"turn":"40","kind":"city_size","change":"-2","city":"Nakhon Rachasima","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+{"turn":"40","kind":"city_size","change":"1","city":"Warszawa","owner":"Stanisław Poniatowski","reason":"growth","size":"4.0"}
+{"turn":"42","kind":"city_built","city":"Teyagon","owner":"Thayendanegea"}
+{"turn":"42","kind":"city_size","change":"-2","city":"Moskva","owner":"Vladimir Lenin","reason":"unit_built","size":"1.0"}
+{"turn":"43","kind":"city_built","city":"Hat Yai","owner":"Maha Mongkut"}
+{"turn":"43","kind":"city_built","city":"Sabi","owner":"Yi Song-gye"}
+{"turn":"43","kind":"city_size","change":"-2","city":"Karakorum","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+{"turn":"44","kind":"city_size","change":"-2","city":"Kraków","owner":"Stanisław Poniatowski","reason":"unit_built","size":"1.0"}
+{"turn":"45","kind":"city_size","change":"-2","city":"Warszawa","owner":"Stanisław Poniatowski","reason":"unit_built","size":"3.0"}
+{"turn":"46","kind":"city_built","city":"Zielona Góra","owner":"Stanisław Poniatowski"}
+{"turn":"46","kind":"city_size","change":"-2","city":"Wandu","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"46","kind":"city_size","change":"-2","city":"Ungjin","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"46","kind":"city_size","change":"-2","city":"Oneida","owner":"Thayendanegea","reason":"unit_built","size":"1.0"}
+{"turn":"47","kind":"city_built","city":"Tver","owner":"Vladimir Lenin"}
+{"turn":"47","kind":"city_size","change":"-2","city":"Gniezno","owner":"Stanisław Poniatowski","reason":"unit_built","size":"1.0"}
+{"turn":"47","kind":"city_size","change":"-2","city":"Sainshand","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+{"turn":"47","kind":"city_size","change":"-2","city":"Onondaga","owner":"Thayendanegea","reason":"unit_built","size":"1.0"}
+{"turn":"48","kind":"city_size","change":"-2","city":"Ulaangom","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+{"turn":"48","kind":"city_size","change":"1","city":"Bangkok","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+{"turn":"49","kind":"city_built","city":"Chumphon","owner":"Maha Mongkut"}
+{"turn":"49","kind":"city_built","city":"Wiryesong","owner":"Yi Song-gye"}
+{"turn":"49","kind":"city_built","city":"Khovd","owner":"Sübeedei"}
+{"turn":"49","kind":"city_size","change":"-2","city":"Bangkok","owner":"Maha Mongkut","reason":"unit_built","size":"2.0"}
+{"turn":"49","kind":"city_size","change":"-2","city":"Khon Kaen","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+{"turn":"50","kind":"city_built","city":"Kochilsan","owner":"Yi Song-gye"}
+{"turn":"50","kind":"city_size","change":"-2","city":"Nakhon Rachasima","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+{"turn":"50","kind":"city_size","change":"-2","city":"Thon Buri","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+{"turn":"50","kind":"city_size","change":"-2","city":"Ganaraske","owner":"Thayendanegea","reason":"unit_built","size":"1.0"}
+{"turn":"51","kind":"city_size","change":"1","city":"Warszawa","owner":"Stanisław Poniatowski","reason":"growth","size":"4.0"}
+{"turn":"51","kind":"city_size","change":"-2","city":"Wanggomsong","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"52","kind":"city_built","city":"Altanbulag","owner":"Sübeedei"}
+{"turn":"52","kind":"city_size","change":"1","city":"Kraków","owner":"Stanisław Poniatowski","reason":"growth","size":"4.0"}
+{"turn":"52","kind":"city_size","change":"-2","city":"Moskva","owner":"Vladimir Lenin","reason":"unit_built","size":"1.0"}
+{"turn":"54","kind":"city_built","city":"Ulaanbaatar","owner":"Sübeedei"}
+{"turn":"54","kind":"city_built","city":"Zuunmod","owner":"Sübeedei"}
+{"turn":"54","kind":"city_size","change":"1","city":"Bangkok","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+{"turn":"55","kind":"city_size","change":"-2","city":"Tsetserleg","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+{"turn":"55","kind":"city_size","change":"-2","city":"Karakorum","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+{"turn":"55","kind":"city_size","change":"-2","city":"Jolbon","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"56","kind":"city_size","change":"-2","city":"Ungjin","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"56","kind":"city_size","change":"-2","city":"Wandu","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"57","kind":"city_built","city":"Hua Hin","owner":"Maha Mongkut"}
+{"turn":"57","kind":"city_built","city":"Szczecin","owner":"Stanisław Poniatowski"}
+{"turn":"57","kind":"city_size","change":"-2","city":"Canienga","owner":"Thayendanegea","reason":"unit_built","size":"1.0"}
+{"turn":"57","kind":"city_size","change":"-2","city":"Onondaga","owner":"Thayendanegea","reason":"unit_built","size":"1.0"}
+{"turn":"58","kind":"city_size","change":"-2","city":"Zielona Góra","owner":"Stanisław Poniatowski","reason":"unit_built","size":"1.0"}
+{"turn":"59","kind":"city_built","city":"Chiang Rai","owner":"Maha Mongkut"}
+{"turn":"59","kind":"city_size","change":"1","city":"Gniezno","owner":"Stanisław Poniatowski","reason":"growth","size":"4.0"}
+{"turn":"60","kind":"city_built","city":"Hanyang","owner":"Yi Song-gye"}
+{"turn":"60","kind":"city_built","city":"Dalgubol","owner":"Yi Song-gye"}
+{"turn":"60","kind":"city_size","change":"1","city":"Oneida","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+{"turn":"60","kind":"city_size","change":"1","city":"Nakhon Rachasima","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+{"turn":"61","kind":"city_size","change":"1","city":"Khon Kaen","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+{"turn":"62","kind":"city_size","change":"-2","city":"Sainshand","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+{"turn":"62","kind":"city_size","change":"-2","city":"Bangkok","owner":"Maha Mongkut","reason":"unit_built","size":"3.0"}
+{"turn":"62","kind":"city_size","change":"1","city":"Bangkok","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+{"turn":"62","kind":"city_size","change":"1","city":"Thon Buri","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+{"turn":"62","kind":"city_size","change":"-2","city":"Khon Kaen","owner":"Maha Mongkut","reason":"unit_built","size":"2.0"}
+{"turn":"62","kind":"city_size","change":"-2","city":"Wanggomsong","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"64","kind":"city_built","city":"Bayankhongor","owner":"Sübeedei"}
+{"turn":"64","kind":"city_size","change":"1","city":"Ganaraske","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+{"turn":"65","kind":"city_built","city":"Kaegyong","owner":"Yi Song-gye"}
+{"turn":"66","kind":"city_built","city":"Dalanzadgad","owner":"Sübeedei"}
+{"turn":"66","kind":"city_size","change":"-2","city":"Bangkok","owner":"Maha Mongkut","reason":"unit_built","size":"3.0"}
+{"turn":"66","kind":"city_size","change":"-2","city":"Nakhon Rachasima","owner":"Maha Mongkut","reason":"unit_built","size":"3.0"}
+{"turn":"66","kind":"city_size","change":"1","city":"Teyagon","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+{"turn":"66","kind":"city_size","change":"-2","city":"Khovd","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+{"turn":"67","kind":"city_size","change":"1","city":"Zielona Góra","owner":"Stanisław Poniatowski","reason":"growth","size":"4.0"}
+{"turn":"67","kind":"city_size","change":"1","city":"Karakorum","owner":"Sübeedei","reason":"growth","size":"4.0"}
+{"turn":"67","kind":"city_size","change":"-2","city":"Altanbulag","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+{"turn":"67","kind":"city_size","change":"-2","city":"Ulaangom","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+{"turn":"67","kind":"city_size","change":"1","city":"Chumphon","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+{"turn":"68","kind":"city_size","change":"1","city":"Canienga","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+{"turn":"68","kind":"city_size","change":"-2","city":"Tsetserleg","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+{"turn":"68","kind":"city_size","change":"-2","city":"Karakorum","owner":"Sübeedei","reason":"unit_built","size":"2.0"}
+{"turn":"68","kind":"city_size","change":"-2","city":"Ulaanbaatar","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+{"turn":"69","kind":"city_size","change":"1","city":"Jolbon","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+{"turn":"69","kind":"city_size","change":"-2","city":"Ganaraske","owner":"Thayendanegea","reason":"unit_built","size":"2.0"}
+{"turn":"70","kind":"city_built","city":"Hanbat","owner":"Yi Song-gye"}
+{"turn":"70","kind":"city_built","city":"Oswegatchie","owner":"Thayendanegea"}
+{"turn":"70","kind":"city_size","change":"1","city":"Wandu","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+{"turn":"70","kind":"city_size","change":"1","city":"Ungjin","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+{"turn":"70","kind":"city_size","change":"1","city":"Moskva","owner":"Vladimir Lenin","reason":"growth","size":"4.0"}
+{"turn":"70","kind":"city_size","change":"1","city":"Khon Kaen","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+{"turn":"71","kind":"city_size","change":"1","city":"Onondaga","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+{"turn":"71","kind":"city_size","change":"-2","city":"Bangkok","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+{"turn":"72","kind":"city_size","change":"-2","city":"Wanggomsong","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"72","kind":"city_size","change":"-2","city":"Sabi","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"72","kind":"city_size","change":"1","city":"Karakorum","owner":"Sübeedei","reason":"growth","size":"4.0"}
+{"turn":"72","kind":"city_size","change":"1","city":"Ulaangom","owner":"Sübeedei","reason":"growth","size":"4.0"}
+{"turn":"72","kind":"city_size","change":"1","city":"Zuunmod","owner":"Sübeedei","reason":"growth","size":"4.0"}
+{"turn":"73","kind":"city_size","change":"1","city":"Nakhon Rachasima","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+{"turn":"74","kind":"city_size","change":"1","city":"Tsetserleg","owner":"Sübeedei","reason":"growth","size":"4.0"}
+{"turn":"74","kind":"city_size","change":"-2","city":"Karakorum","owner":"Sübeedei","reason":"unit_built","size":"2.0"}
+{"turn":"74","kind":"city_size","change":"-2","city":"Sainshand","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+{"turn":"74","kind":"city_size","change":"-2","city":"Ulaangom","owner":"Sübeedei","reason":"unit_built","size":"2.0"}
+{"turn":"75","kind":"city_size","change":"-2","city":"Hanyang","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"75","kind":"city_size","change":"-2","city":"Canienga","owner":"Thayendanegea","reason":"unit_built","size":"3.0"}
+{"turn":"75","kind":"city_size","change":"-2","city":"Ulaanbaatar","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+{"turn":"76","kind":"city_size","change":"-2","city":"Altanbulag","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+{"turn":"77","kind":"city_built","city":"Hamhung","owner":"Yi Song-gye"}
+{"turn":"77","kind":"city_size","change":"1","city":"Ganaraske","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+{"turn":"77","kind":"city_size","change":"-2","city":"Oneida","owner":"Thayendanegea","reason":"unit_built","size":"3.0"}
+{"turn":"77","kind":"city_size","change":"-2","city":"Bangkok","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+{"turn":"77","kind":"city_size","change":"-2","city":"Kaegyong","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"78","kind":"city_built","city":"Wonsanjin","owner":"Yi Song-gye"}
+{"turn":"78","kind":"city_size","change":"1","city":"Ulaangom","owner":"Sübeedei","reason":"growth","size":"4.0"}
+{"turn":"78","kind":"city_size","change":"-2","city":"Kochilsan","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"78","kind":"city_size","change":"1","city":"Dalgubol","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+{"turn":"79","kind":"city_size","change":"-2","city":"Tver","owner":"Vladimir Lenin","reason":"unit_built","size":"1.0"}
+{"turn":"79","kind":"city_size","change":"1","city":"Oneida","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+{"turn":"79","kind":"city_size","change":"-2","city":"Teyagon","owner":"Thayendanegea","reason":"unit_built","size":"2.0"}
+{"turn":"79","kind":"city_size","change":"1","city":"Hanbat","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+{"turn":"80","kind":"city_size","change":"1","city":"Hat Yai","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+{"turn":"80","kind":"city_size","change":"-2","city":"Wanggomsong","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"80","kind":"city_size","change":"-2","city":"Dalgubol","owner":"Yi Song-gye","reason":"unit_built","size":"2.0"}
+{"turn":"80","kind":"city_size","change":"1","city":"Bayankhongor","owner":"Sübeedei","reason":"growth","size":"4.0"}
+{"turn":"80","kind":"city_size","change":"-2","city":"Karakorum","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+{"turn":"80","kind":"city_size","change":"-2","city":"Ulaangom","owner":"Sübeedei","reason":"unit_built","size":"2.0"}
+{"turn":"81","kind":"city_built","city":"Michuhol","owner":"Yi Song-gye"}
+{"turn":"81","kind":"city_size","change":"1","city":"Szczecin","owner":"Stanisław Poniatowski","reason":"growth","size":"4.0"}
+{"turn":"81","kind":"city_size","change":"-2","city":"Sabi","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"82","kind":"city_size","change":"-2","city":"Chiang Rai","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+{"turn":"82","kind":"city_size","change":"-2","city":"Ulaanbaatar","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+{"turn":"82","kind":"city_size","change":"1","city":"Canienga","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+{"turn":"83","kind":"city_size","change":"-2","city":"Bangkok","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+{"turn":"83","kind":"city_size","change":"-2","city":"Teyagon","owner":"Thayendanegea","reason":"unit_built","size":"1.0"}
+{"turn":"83","kind":"city_size","change":"-2","city":"Ganaraske","owner":"Thayendanegea","reason":"unit_built","size":"3.0"}
+{"turn":"84","kind":"city_built","city":"Sipje","owner":"Yi Song-gye"}
+{"turn":"84","kind":"city_size","change":"-2","city":"Canienga","owner":"Thayendanegea","reason":"unit_built","size":"2.0"}
+{"turn":"84","kind":"city_size","change":"1","city":"Ulaangom","owner":"Sübeedei","reason":"growth","size":"4.0"}
+{"turn":"85","kind":"city_size","change":"1","city":"Hua Hin","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+{"turn":"85","kind":"city_size","change":"-2","city":"Hanyang","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"86","kind":"city_built","city":"Lop Buri","owner":"Maha Mongkut"}
+{"turn":"86","kind":"city_size","change":"1","city":"Kaegyong","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+{"turn":"86","kind":"city_size","change":"1","city":"Karakorum","owner":"Sübeedei","reason":"growth","size":"4.0"}
+{"turn":"87","kind":"city_size","change":"-2","city":"Kochilsan","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"87","kind":"city_size","change":"1","city":"Dalgubol","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+{"turn":"88","kind":"city_size","change":"1","city":"Ganaraske","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+{"turn":"88","kind":"city_size","change":"1","city":"Altanbulag","owner":"Sübeedei","reason":"growth","size":"4.0"}
+{"turn":"89","kind":"city_size","change":"1","city":"Gniezno","owner":"Stanisław Poniatowski","reason":"growth","size":"8.0"}
+{"turn":"89","kind":"city_size","change":"1","city":"Oswegatchie","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+{"turn":"89","kind":"city_size","change":"-1","city":"Oneida","owner":"Thayendanegea","reason":"plague","size":"5.0"}
+{"turn":"89","kind":"city_size","change":"-1","city":"Thon Buri","owner":"Maha Mongkut","reason":"plague","size":"5.0"}
+{"turn":"90","kind":"city_size","change":"-2","city":"Wanggomsong","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"90","kind":"city_size","change":"-2","city":"Sabi","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"90","kind":"city_size","change":"1","city":"Canienga","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+{"turn":"90","kind":"city_size","change":"1","city":"Dalanzadgad","owner":"Sübeedei","reason":"growth","size":"4.0"}
+{"turn":"90","kind":"city_size","change":"1","city":"Khovd","owner":"Sübeedei","reason":"growth","size":"4.0"}
+{"turn":"91","kind":"city_built","city":"Kwangju","owner":"Yi Song-gye"}
+{"turn":"91","kind":"city_built","city":"Caughnawaga","owner":"Thayendanegea"}
+{"turn":"91","kind":"city_size","change":"-2","city":"Hamhung","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"91","kind":"city_size","change":"1","city":"Kraków","owner":"Stanisław Poniatowski","reason":"growth","size":"8.0"}
+{"turn":"91","kind":"city_size","change":"1","city":"Sainshand","owner":"Sübeedei","reason":"growth","size":"4.0"}
+{"turn":"91","kind":"city_size","change":"-1","city":"Samara","owner":"Vladimir Lenin","reason":"famine","size":"2.0"}
+{"turn":"92","kind":"city_size","change":"1","city":"Bangkok","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+{"turn":"92","kind":"city_size","change":"-2","city":"Michuhol","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"92","kind":"city_size","change":"-2","city":"Oswegatchie","owner":"Thayendanegea","reason":"unit_built","size":"2.0"}
+{"turn":"93","kind":"city_built","city":"Songjin","owner":"Yi Song-gye"}
+{"turn":"93","kind":"city_size","change":"1","city":"Ulaanbaatar","owner":"Sübeedei","reason":"growth","size":"4.0"}
+{"turn":"93","kind":"city_size","change":"-2","city":"Wonsanjin","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"94","kind":"city_size","change":"-2","city":"Oneida","owner":"Thayendanegea","reason":"unit_built","size":"4.0"}
+{"turn":"95","kind":"city_size","change":"1","city":"Teyagon","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+{"turn":"95","kind":"city_size","change":"-2","city":"Hanyang","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"96","kind":"city_size","change":"-2","city":"Kraków","owner":"Stanisław Poniatowski","reason":"unit_built","size":"6.0"}
+{"turn":"96","kind":"city_size","change":"-2","city":"Sipje","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"97","kind":"city_size","change":"-2","city":"Gdańsk","owner":"Stanisław Poniatowski","reason":"unit_built","size":"1.0"}
+{"turn":"98","kind":"city_size","change":"-2","city":"Wanggomsong","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"99","kind":"city_built","city":"Yekaterinburg","owner":"Vladimir Lenin"}
+{"turn":"99","kind":"city_built","city":"Chonju","owner":"Yi Song-gye"}
+{"turn":"99","kind":"city_built","city":"Unggi","owner":"Yi Song-gye"}
+{"turn":"99","kind":"city_built","city":"Hwasong","owner":"Yi Song-gye"}
+{"turn":"99","kind":"city_built","city":"Chongju","owner":"Yi Song-gye"}
+{"turn":"99","kind":"city_size","change":"-2","city":"Chiang Rai","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+{"turn":"99","kind":"city_size","change":"1","city":"Hamhung","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+{"turn":"100","kind":"city_built","city":"Kaesong","owner":"Yi Song-gye"}
+{"turn":"100","kind":"city_size","change":"1","city":"Oswegatchie","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+{"turn":"100","kind":"city_size","change":"-2","city":"Michuhol","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+{"turn":"100","kind":"city_size","change":"1","city":"Kochilsan","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+{"turn":"101","kind":"city_size","change":"-1","city":"Dalanzadgad","owner":"Sübeedei","reason":"famine","size":"4.0"}
+{"turn":"102","kind":"city_size","change":"-1","city":"Samara","owner":"Vladimir Lenin","reason":"famine","size":"1.0"}
+{"turn":"104","kind":"city_built","city":"Olsztyn","owner":"Stanisław Poniatowski"}
+{"turn":"104","kind":"city_size","change":"-2","city":"Warszawa","owner":"Stanisław Poniatowski","reason":"unit_built","size":"5.0"}
+{"turn":"105","kind":"city_size","change":"1","city":"Onondaga","owner":"Thayendanegea","reason":"growth","size":"8.0"}
+{"turn":"105","kind":"city_size","change":"1","city":"Lop Buri","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+{"turn":"106","kind":"city_built","city":"Cattaraugus","owner":"Thayendanegea"}
+{"turn":"106","kind":"city_size","change":"-1","city":"Oneida","owner":"Thayendanegea","reason":"plague","size":"5.0"}
+{"turn":"107","kind":"city_size","change":"1","city":"Tsetserleg","owner":"Sübeedei","reason":"growth","size":"8.0"}
+{"turn":"107","kind":"city_size","change":"1","city":"Wonsanjin","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+{"turn":"109","kind":"city_size","change":"1","city":"Songjin","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+{"turn":"109","kind":"city_size","change":"1","city":"Hanyang","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+{"turn":"109","kind":"city_size","change":"1","city":"Sipje","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+{"turn":"109","kind":"city_size","change":"-2","city":"Moskva","owner":"Vladimir Lenin","reason":"unit_built","size":"2.0"}
+{"turn":"110","kind":"city_size","change":"1","city":"Kraków","owner":"Stanisław Poniatowski","reason":"growth","size":"8.0"}
+{"turn":"110","kind":"city_size","change":"-1","city":"Hamhung","owner":"Yi Song-gye","reason":"famine","size":"4.0"}
+{"turn":"111","kind":"city_built","city":"Kanggye","owner":"Yi Song-gye"}
+{"turn":"111","kind":"city_built","city":"Harbin","owner":"Yi Song-gye"}
+{"turn":"111","kind":"city_size","change":"-1","city":"Oswegatchie","owner":"Thayendanegea","reason":"famine","size":"4.0"}
+{"turn":"111","kind":"city_size","change":"1","city":"Chonju","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+{"turn":"111","kind":"city_size","change":"1","city":"Michuhol","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+{"turn":"112","kind":"city_size","change":"-1","city":"Tsetserleg","owner":"Sübeedei","reason":"plague","size":"7.0"}
+{"turn":"112","kind":"disaster","disaster":"Flood","city":"Tsetserleg","owner":"Sübeedei"}
+{"turn":"113","kind":"city_built","city":"Pyongyang","owner":"Yi Song-gye"}
+{"turn":"113","kind":"city_size","change":"-1","city":"Ulaanbaatar","owner":"Sübeedei","reason":"famine","size":"4.0"}
+{"turn":"113","kind":"city_size","change":"-1","city":"Ungjin","owner":"Yi Song-gye","reason":"plague","size":"5.0"}
+{"turn":"113","kind":"city_size","change":"-1","city":"Jolbon","owner":"Yi Song-gye","reason":"famine","size":"5.0"}
+{"turn":"116","kind":"city_size","change":"-1","city":"Lop Buri","owner":"Maha Mongkut","reason":"famine","size":"4.0"}
+{"turn":"116","kind":"city_size","change":"1","city":"Wanggomsong","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+{"turn":"117","kind":"city_size","change":"1","city":"Wandu","owner":"Yi Song-gye","reason":"growth","size":"8.0"}
+{"turn":"117","kind":"city_size","change":"1","city":"Ganaraske","owner":"Thayendanegea","reason":"growth","size":"8.0"}
+{"turn":"117","kind":"city_size","change":"1","city":"Canienga","owner":"Thayendanegea","reason":"growth","size":"8.0"}
+{"turn":"120","kind":"city_built","city":"Akwesasne","owner":"Thayendanegea"}
+{"turn":"120","kind":"city_size","change":"1","city":"Unggi","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+{"turn":"120","kind":"city_size","change":"1","city":"Chongju","owner":"Yi Song-gye","reason":"growth","size":"4.0"}

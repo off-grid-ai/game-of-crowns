@@ -1,0 +1,13 @@
+rulesetdir civ2civ3
+set aifill 6
+set minplayers 0
+set timeout -1
+set endturn 120
+set saveturns 0
+set autosaves ""
+set size 2
+set disasters 30
+set barbarians normal
+hard
+lua file events.lua
+start

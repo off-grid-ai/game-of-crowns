@@ -1,0 +1,312 @@
+3: in load_rulesetdir() [../server/ruleset.c::9467]: Loading rulesets.
+3: in setting_ruleset_one() [../server/settings.c::4524]: Ruleset: 'aifill' has been set to 6.
+3: in setting_ruleset_one() [../server/settings.c::4568]: Ruleset: 'generator' has been set to "Pseudo-fractal height" (FRACTAL).
+3: in setting_ruleset_one() [../server/settings.c::4615]: Ruleset: 'wrap' has been set to "Wrap East-West" and "Wrap North-South" (WRAPX|WRAPY).
+3: in setting_ruleset_one() [../server/settings.c::4568]: Ruleset: 'mapsize' has been set to "Tiles per player" (PLAYER).
+3: in setting_ruleset_one() [../server/settings.c::4504]: Ruleset: 'tinyisles' has been set to enabled.
+3: in setting_ruleset_one() [../server/settings.c::4524]: Ruleset: 'temperature' has been set to 60.
+3: in setting_ruleset_one() [../server/settings.c::4524]: Ruleset: 'flatpoles' has been set to 0.
+3: in setting_ruleset_one() [../server/settings.c::4544]: Ruleset: 'startunits' has been set to "cwsx".
+3: in setting_ruleset_one() [../server/settings.c::4524]: Ruleset: 'citymindist' has been set to 3.
+3: in setting_ruleset_one() [../server/settings.c::4524]: Ruleset: 'techlevel' has been set to 1.
+3: in setting_ruleset_one() [../server/settings.c::4504]: Ruleset: 'foggedborders' has been set to enabled.
+3: in setting_ruleset_one() [../server/settings.c::4504]: Ruleset: 'restrictinfra' has been set to enabled.
+3: in setting_ruleset_one() [../server/settings.c::4504]: Ruleset: 'unreachableprotects' has been set to disabled.
+3: in setting_ruleset_one() [../server/settings.c::4524]: Ruleset: 'onsetbarbs' has been set to 120.
+3: in setting_ruleset_one() [../server/settings.c::4524]: Ruleset: 'occupychance' has been set to 100.
+3: in setting_ruleset_one() [../server/settings.c::4524]: Ruleset: 'razechance' has been set to 10.
+3: in setting_ruleset_one() [../server/settings.c::4524]: Ruleset: 'techlossforgiveness' has been set to 0.
+3: in setting_ruleset_one() [../server/settings.c::4568]: Ruleset: 'revolentype' has been set to "Random, max always quicker" (RANDQUICK).
+3: in setting_ruleset_one() [../server/settings.c::4524]: Ruleset: 'tradeworldrelpct' has been set to 100.
+3: in setting_ruleset_one() [../server/settings.c::4524]: Ruleset: 'disasters' has been set to 100.
+3: in setting_ruleset_one() [../server/settings.c::4524]: Ruleset: 'animals' has been set to 14.
+3: in aifill() [../server/srv_main.c::2544]: AI*1 has been added as Easy level AI-controlled player (classic).
+3: in aifill() [../server/srv_main.c::2544]: AI*2 has been added as Easy level AI-controlled player (classic).
+3: in aifill() [../server/srv_main.c::2544]: AI*3 has been added as Easy level AI-controlled player (classic).
+3: in aifill() [../server/srv_main.c::2544]: AI*4 has been added as Easy level AI-controlled player (classic).
+3: in aifill() [../server/srv_main.c::2544]: AI*5 has been added as Easy level AI-controlled player (classic).
+3: in aifill() [../server/srv_main.c::2544]: AI*6 has been added as Easy level AI-controlled player (classic).
+3: in read_init_script_real() [../server/stdinhand.c::1245]: Loading script file './autogame.serv'.
+3: in srv_main() [../server/srv_main.c::3553]: Now accepting new client connections on port 5599.
+3: in announce_player() [../server/srv_main.c::2835]: Maha Mongkut rules the Thai.
+3: in announce_player() [../server/srv_main.c::2835]: Vladimir Lenin rules the Russians.
+3: in announce_player() [../server/srv_main.c::2835]: Stanisław Poniatowski rules the Poles.
+3: in announce_player() [../server/srv_main.c::2835]: Thayendanegea rules the Iroquois.
+3: in announce_player() [../server/srv_main.c::2835]: Sübeedei rules the Mongols.
+3: in announce_player() [../server/srv_main.c::2835]: Yi Song-gye rules the Koreans.
+3: in generator_init_topology() [../server/generator/mapgen_topology.c::207]: Setting map size to 2 (approx. 100 (land) tiles for each of the 6 player(s)).
+3: in set_sizes() [../server/generator/mapgen_topology.c::126]: Creating a map of size 32 x 64 = 2048 tiles (2000 requested).
+3: in srv_ready() [../server/srv_main.c::3348]: Setting 'startpos' has been adjusted from "Generator's choice" (DEFAULT) to "All players on a single continent" (ALL).
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"2","kind":"city_built","city":"Warszawa","owner":"Stanisław Poniatowski"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"2","kind":"city_built","city":"Bangkok","owner":"Maha Mongkut"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"2","kind":"city_built","city":"Onondaga","owner":"Thayendanegea"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"3","kind":"city_built","city":"Karakorum","owner":"Sübeedei"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"3","kind":"city_built","city":"Moskva","owner":"Vladimir Lenin"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"3","kind":"city_built","city":"Wanggomsong","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"9","kind":"city_built","city":"Sankt-Peterburg","owner":"Vladimir Lenin"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"13","kind":"city_size","change":"-2","city":"Bangkok","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"15","kind":"city_built","city":"Thon Buri","owner":"Maha Mongkut"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"16","kind":"city_size","change":"1","city":"Warszawa","owner":"Stanisław Poniatowski","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"17","kind":"city_size","change":"-2","city":"Warszawa","owner":"Stanisław Poniatowski","reason":"unit_built","size":"2.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"17","kind":"city_size","change":"-2","city":"Onondaga","owner":"Thayendanegea","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"18","kind":"city_size","change":"-2","city":"Karakorum","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"18","kind":"city_size","change":"-2","city":"Wanggomsong","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"20","kind":"city_built","city":"Ganaraske","owner":"Thayendanegea"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"21","kind":"city_built","city":"Ungjin","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"21","kind":"city_built","city":"Sainshand","owner":"Sübeedei"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"21","kind":"city_size","change":"-2","city":"Bangkok","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"22","kind":"city_built","city":"Kraków","owner":"Stanisław Poniatowski"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"24","kind":"city_size","change":"1","city":"Warszawa","owner":"Stanisław Poniatowski","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"25","kind":"city_built","city":"Nakhon Rachasima","owner":"Maha Mongkut"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"27","kind":"city_size","change":"-2","city":"Karakorum","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"27","kind":"city_size","change":"-2","city":"Onondaga","owner":"Thayendanegea","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"27","kind":"city_size","change":"-2","city":"Warszawa","owner":"Stanisław Poniatowski","reason":"unit_built","size":"2.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"28","kind":"city_size","change":"-2","city":"Wanggomsong","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"29","kind":"city_size","change":"-2","city":"Bangkok","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"30","kind":"city_size","change":"-2","city":"Thon Buri","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"31","kind":"city_built","city":"Ulaangom","owner":"Sübeedei"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"31","kind":"city_built","city":"Wandu","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"31","kind":"city_built","city":"Oneida","owner":"Thayendanegea"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"32","kind":"city_built","city":"Gniezno","owner":"Stanisław Poniatowski"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"32","kind":"city_size","change":"1","city":"Warszawa","owner":"Stanisław Poniatowski","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"33","kind":"city_size","change":"1","city":"Sankt-Peterburg","owner":"Vladimir Lenin","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"34","kind":"city_built","city":"Chiang Mai","owner":"Maha Mongkut"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"34","kind":"city_built","city":"Khon Kaen","owner":"Maha Mongkut"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"34","kind":"city_size","change":"-2","city":"Kraków","owner":"Stanisław Poniatowski","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"34","kind":"city_size","change":"-2","city":"Moskva","owner":"Vladimir Lenin","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"35","kind":"city_size","change":"-2","city":"Karakorum","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"35","kind":"city_size","change":"-2","city":"Ganaraske","owner":"Thayendanegea","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"36","kind":"city_size","change":"-2","city":"Warszawa","owner":"Stanisław Poniatowski","reason":"unit_built","size":"2.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"36","kind":"city_size","change":"-2","city":"Sainshand","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"36","kind":"city_size","change":"-2","city":"Ungjin","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"37","kind":"city_size","change":"-2","city":"Onondaga","owner":"Thayendanegea","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"38","kind":"city_built","city":"Samara","owner":"Vladimir Lenin"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"38","kind":"city_size","change":"-2","city":"Bangkok","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"38","kind":"city_size","change":"-2","city":"Wanggomsong","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"39","kind":"city_built","city":"Canienga","owner":"Thayendanegea"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"40","kind":"city_built","city":"Jolbon","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"40","kind":"city_built","city":"Tsetserleg","owner":"Sübeedei"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"40","kind":"city_built","city":"Gdańsk","owner":"Stanisław Poniatowski"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"40","kind":"city_size","change":"-2","city":"Thon Buri","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"40","kind":"city_size","change":"-2","city":"Nakhon Rachasima","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"40","kind":"city_size","change":"1","city":"Warszawa","owner":"Stanisław Poniatowski","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"42","kind":"city_built","city":"Teyagon","owner":"Thayendanegea"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"42","kind":"city_size","change":"-2","city":"Moskva","owner":"Vladimir Lenin","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"43","kind":"city_built","city":"Hat Yai","owner":"Maha Mongkut"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"43","kind":"city_built","city":"Sabi","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"43","kind":"city_size","change":"-2","city":"Karakorum","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"44","kind":"city_size","change":"-2","city":"Kraków","owner":"Stanisław Poniatowski","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"45","kind":"city_size","change":"-2","city":"Warszawa","owner":"Stanisław Poniatowski","reason":"unit_built","size":"3.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"46","kind":"city_built","city":"Zielona Góra","owner":"Stanisław Poniatowski"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"46","kind":"city_size","change":"-2","city":"Wandu","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"46","kind":"city_size","change":"-2","city":"Ungjin","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"46","kind":"city_size","change":"-2","city":"Oneida","owner":"Thayendanegea","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"47","kind":"city_built","city":"Tver","owner":"Vladimir Lenin"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"47","kind":"city_size","change":"-2","city":"Gniezno","owner":"Stanisław Poniatowski","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"47","kind":"city_size","change":"-2","city":"Sainshand","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"47","kind":"city_size","change":"-2","city":"Onondaga","owner":"Thayendanegea","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"48","kind":"city_size","change":"-2","city":"Ulaangom","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"48","kind":"city_size","change":"1","city":"Bangkok","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"49","kind":"city_built","city":"Chumphon","owner":"Maha Mongkut"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"49","kind":"city_built","city":"Wiryesong","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"49","kind":"city_built","city":"Khovd","owner":"Sübeedei"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"49","kind":"city_size","change":"-2","city":"Bangkok","owner":"Maha Mongkut","reason":"unit_built","size":"2.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"49","kind":"city_size","change":"-2","city":"Khon Kaen","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"50","kind":"city_built","city":"Kochilsan","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"50","kind":"city_size","change":"-2","city":"Nakhon Rachasima","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"50","kind":"city_size","change":"-2","city":"Thon Buri","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"50","kind":"city_size","change":"-2","city":"Ganaraske","owner":"Thayendanegea","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"51","kind":"city_size","change":"1","city":"Warszawa","owner":"Stanisław Poniatowski","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"51","kind":"city_size","change":"-2","city":"Wanggomsong","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"52","kind":"city_built","city":"Altanbulag","owner":"Sübeedei"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"52","kind":"city_size","change":"1","city":"Kraków","owner":"Stanisław Poniatowski","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"52","kind":"city_size","change":"-2","city":"Moskva","owner":"Vladimir Lenin","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"54","kind":"city_built","city":"Ulaanbaatar","owner":"Sübeedei"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"54","kind":"city_built","city":"Zuunmod","owner":"Sübeedei"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"54","kind":"city_size","change":"1","city":"Bangkok","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"55","kind":"city_size","change":"-2","city":"Tsetserleg","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"55","kind":"city_size","change":"-2","city":"Karakorum","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"55","kind":"city_size","change":"-2","city":"Jolbon","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"56","kind":"city_size","change":"-2","city":"Ungjin","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"56","kind":"city_size","change":"-2","city":"Wandu","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"57","kind":"city_built","city":"Hua Hin","owner":"Maha Mongkut"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"57","kind":"city_built","city":"Szczecin","owner":"Stanisław Poniatowski"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"57","kind":"city_size","change":"-2","city":"Canienga","owner":"Thayendanegea","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"57","kind":"city_size","change":"-2","city":"Onondaga","owner":"Thayendanegea","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"58","kind":"city_size","change":"-2","city":"Zielona Góra","owner":"Stanisław Poniatowski","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"59","kind":"city_built","city":"Chiang Rai","owner":"Maha Mongkut"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"59","kind":"city_size","change":"1","city":"Gniezno","owner":"Stanisław Poniatowski","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"60","kind":"city_built","city":"Hanyang","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"60","kind":"city_built","city":"Dalgubol","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"60","kind":"city_size","change":"1","city":"Oneida","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"60","kind":"city_size","change":"1","city":"Nakhon Rachasima","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"61","kind":"city_size","change":"1","city":"Khon Kaen","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"62","kind":"city_size","change":"-2","city":"Sainshand","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"62","kind":"city_size","change":"-2","city":"Bangkok","owner":"Maha Mongkut","reason":"unit_built","size":"3.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"62","kind":"city_size","change":"1","city":"Bangkok","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"62","kind":"city_size","change":"1","city":"Thon Buri","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"62","kind":"city_size","change":"-2","city":"Khon Kaen","owner":"Maha Mongkut","reason":"unit_built","size":"2.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"62","kind":"city_size","change":"-2","city":"Wanggomsong","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"64","kind":"city_built","city":"Bayankhongor","owner":"Sübeedei"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"64","kind":"city_size","change":"1","city":"Ganaraske","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"65","kind":"city_built","city":"Kaegyong","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"66","kind":"city_built","city":"Dalanzadgad","owner":"Sübeedei"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"66","kind":"city_size","change":"-2","city":"Bangkok","owner":"Maha Mongkut","reason":"unit_built","size":"3.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"66","kind":"city_size","change":"-2","city":"Nakhon Rachasima","owner":"Maha Mongkut","reason":"unit_built","size":"3.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"66","kind":"city_size","change":"1","city":"Teyagon","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"66","kind":"city_size","change":"-2","city":"Khovd","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"67","kind":"city_size","change":"1","city":"Zielona Góra","owner":"Stanisław Poniatowski","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"67","kind":"city_size","change":"1","city":"Karakorum","owner":"Sübeedei","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"67","kind":"city_size","change":"-2","city":"Altanbulag","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"67","kind":"city_size","change":"-2","city":"Ulaangom","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"67","kind":"city_size","change":"1","city":"Chumphon","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"68","kind":"city_size","change":"1","city":"Canienga","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"68","kind":"city_size","change":"-2","city":"Tsetserleg","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"68","kind":"city_size","change":"-2","city":"Karakorum","owner":"Sübeedei","reason":"unit_built","size":"2.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"68","kind":"city_size","change":"-2","city":"Ulaanbaatar","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"69","kind":"city_size","change":"1","city":"Jolbon","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"69","kind":"city_size","change":"-2","city":"Ganaraske","owner":"Thayendanegea","reason":"unit_built","size":"2.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"70","kind":"city_built","city":"Hanbat","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"70","kind":"city_built","city":"Oswegatchie","owner":"Thayendanegea"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"70","kind":"city_size","change":"1","city":"Wandu","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"70","kind":"city_size","change":"1","city":"Ungjin","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"70","kind":"city_size","change":"1","city":"Moskva","owner":"Vladimir Lenin","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"70","kind":"city_size","change":"1","city":"Khon Kaen","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"71","kind":"city_size","change":"1","city":"Onondaga","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"71","kind":"city_size","change":"-2","city":"Bangkok","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"72","kind":"city_size","change":"-2","city":"Wanggomsong","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"72","kind":"city_size","change":"-2","city":"Sabi","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"72","kind":"city_size","change":"1","city":"Karakorum","owner":"Sübeedei","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"72","kind":"city_size","change":"1","city":"Ulaangom","owner":"Sübeedei","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"72","kind":"city_size","change":"1","city":"Zuunmod","owner":"Sübeedei","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"73","kind":"city_size","change":"1","city":"Nakhon Rachasima","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"74","kind":"city_size","change":"1","city":"Tsetserleg","owner":"Sübeedei","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"74","kind":"city_size","change":"-2","city":"Karakorum","owner":"Sübeedei","reason":"unit_built","size":"2.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"74","kind":"city_size","change":"-2","city":"Sainshand","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"74","kind":"city_size","change":"-2","city":"Ulaangom","owner":"Sübeedei","reason":"unit_built","size":"2.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"75","kind":"city_size","change":"-2","city":"Hanyang","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"75","kind":"city_size","change":"-2","city":"Canienga","owner":"Thayendanegea","reason":"unit_built","size":"3.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"75","kind":"city_size","change":"-2","city":"Ulaanbaatar","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"76","kind":"city_size","change":"-2","city":"Altanbulag","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"77","kind":"city_built","city":"Hamhung","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"77","kind":"city_size","change":"1","city":"Ganaraske","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"77","kind":"city_size","change":"-2","city":"Oneida","owner":"Thayendanegea","reason":"unit_built","size":"3.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"77","kind":"city_size","change":"-2","city":"Bangkok","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"77","kind":"city_size","change":"-2","city":"Kaegyong","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"78","kind":"city_built","city":"Wonsanjin","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"78","kind":"city_size","change":"1","city":"Ulaangom","owner":"Sübeedei","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"78","kind":"city_size","change":"-2","city":"Kochilsan","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"78","kind":"city_size","change":"1","city":"Dalgubol","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"79","kind":"city_size","change":"-2","city":"Tver","owner":"Vladimir Lenin","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"79","kind":"city_size","change":"1","city":"Oneida","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"79","kind":"city_size","change":"-2","city":"Teyagon","owner":"Thayendanegea","reason":"unit_built","size":"2.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"79","kind":"city_size","change":"1","city":"Hanbat","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"80","kind":"city_size","change":"1","city":"Hat Yai","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"80","kind":"city_size","change":"-2","city":"Wanggomsong","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"80","kind":"city_size","change":"-2","city":"Dalgubol","owner":"Yi Song-gye","reason":"unit_built","size":"2.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"80","kind":"city_size","change":"1","city":"Bayankhongor","owner":"Sübeedei","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"80","kind":"city_size","change":"-2","city":"Karakorum","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"80","kind":"city_size","change":"-2","city":"Ulaangom","owner":"Sübeedei","reason":"unit_built","size":"2.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"81","kind":"city_built","city":"Michuhol","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"81","kind":"city_size","change":"1","city":"Szczecin","owner":"Stanisław Poniatowski","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"81","kind":"city_size","change":"-2","city":"Sabi","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"82","kind":"city_size","change":"-2","city":"Chiang Rai","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"82","kind":"city_size","change":"-2","city":"Ulaanbaatar","owner":"Sübeedei","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"82","kind":"city_size","change":"1","city":"Canienga","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"83","kind":"city_size","change":"-2","city":"Bangkok","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"83","kind":"city_size","change":"-2","city":"Teyagon","owner":"Thayendanegea","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"83","kind":"city_size","change":"-2","city":"Ganaraske","owner":"Thayendanegea","reason":"unit_built","size":"3.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"84","kind":"city_built","city":"Sipje","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"84","kind":"city_size","change":"-2","city":"Canienga","owner":"Thayendanegea","reason":"unit_built","size":"2.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"84","kind":"city_size","change":"1","city":"Ulaangom","owner":"Sübeedei","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"85","kind":"city_size","change":"1","city":"Hua Hin","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"85","kind":"city_size","change":"-2","city":"Hanyang","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"86","kind":"city_built","city":"Lop Buri","owner":"Maha Mongkut"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"86","kind":"city_size","change":"1","city":"Kaegyong","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"86","kind":"city_size","change":"1","city":"Karakorum","owner":"Sübeedei","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"87","kind":"city_size","change":"-2","city":"Kochilsan","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"87","kind":"city_size","change":"1","city":"Dalgubol","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"88","kind":"city_size","change":"1","city":"Ganaraske","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"88","kind":"city_size","change":"1","city":"Altanbulag","owner":"Sübeedei","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"89","kind":"city_size","change":"1","city":"Gniezno","owner":"Stanisław Poniatowski","reason":"growth","size":"8.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"89","kind":"city_size","change":"1","city":"Oswegatchie","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"89","kind":"city_size","change":"-1","city":"Oneida","owner":"Thayendanegea","reason":"plague","size":"5.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"89","kind":"city_size","change":"-1","city":"Thon Buri","owner":"Maha Mongkut","reason":"plague","size":"5.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"90","kind":"city_size","change":"-2","city":"Wanggomsong","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"90","kind":"city_size","change":"-2","city":"Sabi","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"90","kind":"city_size","change":"1","city":"Canienga","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"90","kind":"city_size","change":"1","city":"Dalanzadgad","owner":"Sübeedei","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"90","kind":"city_size","change":"1","city":"Khovd","owner":"Sübeedei","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"91","kind":"city_built","city":"Kwangju","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"91","kind":"city_built","city":"Caughnawaga","owner":"Thayendanegea"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"91","kind":"city_size","change":"-2","city":"Hamhung","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"91","kind":"city_size","change":"1","city":"Kraków","owner":"Stanisław Poniatowski","reason":"growth","size":"8.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"91","kind":"city_size","change":"1","city":"Sainshand","owner":"Sübeedei","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"91","kind":"city_size","change":"-1","city":"Samara","owner":"Vladimir Lenin","reason":"famine","size":"2.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"92","kind":"city_size","change":"1","city":"Bangkok","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"92","kind":"city_size","change":"-2","city":"Michuhol","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"92","kind":"city_size","change":"-2","city":"Oswegatchie","owner":"Thayendanegea","reason":"unit_built","size":"2.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"93","kind":"city_built","city":"Songjin","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"93","kind":"city_size","change":"1","city":"Ulaanbaatar","owner":"Sübeedei","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"93","kind":"city_size","change":"-2","city":"Wonsanjin","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"94","kind":"city_size","change":"-2","city":"Oneida","owner":"Thayendanegea","reason":"unit_built","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"95","kind":"city_size","change":"1","city":"Teyagon","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"95","kind":"city_size","change":"-2","city":"Hanyang","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"96","kind":"city_size","change":"-2","city":"Kraków","owner":"Stanisław Poniatowski","reason":"unit_built","size":"6.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"96","kind":"city_size","change":"-2","city":"Sipje","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"97","kind":"city_size","change":"-2","city":"Gdańsk","owner":"Stanisław Poniatowski","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"98","kind":"city_size","change":"-2","city":"Wanggomsong","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"99","kind":"city_built","city":"Yekaterinburg","owner":"Vladimir Lenin"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"99","kind":"city_built","city":"Chonju","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"99","kind":"city_built","city":"Unggi","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"99","kind":"city_built","city":"Hwasong","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"99","kind":"city_built","city":"Chongju","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"99","kind":"city_size","change":"-2","city":"Chiang Rai","owner":"Maha Mongkut","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"99","kind":"city_size","change":"1","city":"Hamhung","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"100","kind":"city_built","city":"Kaesong","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"100","kind":"city_size","change":"1","city":"Oswegatchie","owner":"Thayendanegea","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"100","kind":"city_size","change":"-2","city":"Michuhol","owner":"Yi Song-gye","reason":"unit_built","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"100","kind":"city_size","change":"1","city":"Kochilsan","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"101","kind":"city_size","change":"-1","city":"Dalanzadgad","owner":"Sübeedei","reason":"famine","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"102","kind":"city_size","change":"-1","city":"Samara","owner":"Vladimir Lenin","reason":"famine","size":"1.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"104","kind":"city_built","city":"Olsztyn","owner":"Stanisław Poniatowski"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"104","kind":"city_size","change":"-2","city":"Warszawa","owner":"Stanisław Poniatowski","reason":"unit_built","size":"5.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"105","kind":"city_size","change":"1","city":"Onondaga","owner":"Thayendanegea","reason":"growth","size":"8.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"105","kind":"city_size","change":"1","city":"Lop Buri","owner":"Maha Mongkut","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"106","kind":"city_built","city":"Cattaraugus","owner":"Thayendanegea"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"106","kind":"city_size","change":"-1","city":"Oneida","owner":"Thayendanegea","reason":"plague","size":"5.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"107","kind":"city_size","change":"1","city":"Tsetserleg","owner":"Sübeedei","reason":"growth","size":"8.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"107","kind":"city_size","change":"1","city":"Wonsanjin","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"109","kind":"city_size","change":"1","city":"Songjin","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"109","kind":"city_size","change":"1","city":"Hanyang","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"109","kind":"city_size","change":"1","city":"Sipje","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"109","kind":"city_size","change":"-2","city":"Moskva","owner":"Vladimir Lenin","reason":"unit_built","size":"2.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"110","kind":"city_size","change":"1","city":"Kraków","owner":"Stanisław Poniatowski","reason":"growth","size":"8.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"110","kind":"city_size","change":"-1","city":"Hamhung","owner":"Yi Song-gye","reason":"famine","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"111","kind":"city_built","city":"Kanggye","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"111","kind":"city_built","city":"Harbin","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"111","kind":"city_size","change":"-1","city":"Oswegatchie","owner":"Thayendanegea","reason":"famine","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"111","kind":"city_size","change":"1","city":"Chonju","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"111","kind":"city_size","change":"1","city":"Michuhol","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"112","kind":"city_size","change":"-1","city":"Tsetserleg","owner":"Sübeedei","reason":"plague","size":"7.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"112","kind":"disaster","disaster":"Flood","city":"Tsetserleg","owner":"Sübeedei"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"113","kind":"city_built","city":"Pyongyang","owner":"Yi Song-gye"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"113","kind":"city_size","change":"-1","city":"Ulaanbaatar","owner":"Sübeedei","reason":"famine","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"113","kind":"city_size","change":"-1","city":"Ungjin","owner":"Yi Song-gye","reason":"plague","size":"5.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"113","kind":"city_size","change":"-1","city":"Jolbon","owner":"Yi Song-gye","reason":"famine","size":"5.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"116","kind":"city_size","change":"-1","city":"Lop Buri","owner":"Maha Mongkut","reason":"famine","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"116","kind":"city_size","change":"1","city":"Wanggomsong","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"117","kind":"city_size","change":"1","city":"Wandu","owner":"Yi Song-gye","reason":"growth","size":"8.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"117","kind":"city_size","change":"1","city":"Ganaraske","owner":"Thayendanegea","reason":"growth","size":"8.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"117","kind":"city_size","change":"1","city":"Canienga","owner":"Thayendanegea","reason":"growth","size":"8.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"120","kind":"city_built","city":"Akwesasne","owner":"Thayendanegea"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"120","kind":"city_size","change":"1","city":"Unggi","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+3: in luascript_log_vargs() [../common/scriptcore/luascript.c::435]: EVENT {"turn":"120","kind":"city_size","change":"1","city":"Chongju","owner":"Yi Song-gye","reason":"growth","size":"4.0"}
+3: in check_for_game_over() [../server/srv_main.c::586]: Game ended as the turn limit was exceeded.
+3: in server_remove_player() [../server/plrhand.c::1952]: Removing player Maha Mongkut.
+3: in server_remove_player() [../server/plrhand.c::1952]: Removing player Vladimir Lenin.
+3: in server_remove_player() [../server/plrhand.c::1952]: Removing player Stanisław Poniatowski.
+3: in server_remove_player() [../server/plrhand.c::1952]: Removing player Thayendanegea.
+3: in server_remove_player() [../server/plrhand.c::1952]: Removing player Sübeedei.
+3: in server_remove_player() [../server/plrhand.c::1952]: Removing player Yi Song-gye.
+3: in server_remove_player() [../server/plrhand.c::1952]: Removing player Orca.
