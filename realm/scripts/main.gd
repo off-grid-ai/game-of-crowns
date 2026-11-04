@@ -1064,7 +1064,8 @@ func _frame_for_shot(world: Dictionary) -> void:
 			if _shot.get("battle", false):
 				# Stage a battle on open ground beside the town, for testing.
 				var field: Vector3 = terrain.world_pos(float(best["x"]) + 1.5, float(best["y"]))
-				rig.snap(field, float(_shot.get("dist", 4.0)), 0.6)
+				# The battle finds its own open ground near there: frame that, not the town.
+				rig.snap(scenes._battlefield(field), float(_shot.get("dist", 4.0)), 0.6)
 				scenes._battle(field, _houses.get(int(best["owner"]), {}))
 			if _shot.get("siege", false):
 				# Stage a siege of the town by another house, for testing.
