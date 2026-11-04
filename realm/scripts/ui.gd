@@ -1368,6 +1368,20 @@ func offer_watch(text: String, go: Callable) -> void:
 func toast(text: String) -> void:
 	_toast.text = text
 	_toast_time = 7.0  # long enough to read a sentence or two
+	_toast_result = true
+
+
+## A caption for what the camera shows ("The King's rider, bound for Stormwatch"):
+## never over the result of the King's own order while that is still up.
+func caption(text: String) -> void:
+	if _toast_result and _toast_time > 0.5:
+		return
+	_toast.text = text
+	_toast_time = 5.0
+	_toast_result = false
+
+
+var _toast_result := false  # the card shows an order's result, not a camera caption
 
 
 var _tithe_asked := -1.0  # a tithe the King set that the realm hasn't reported back yet
@@ -1608,7 +1622,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		# Whom they're at odds with, under the name: wars in red, the King's truces in gold.
 		var odds := PackedStringArray()
 		if not p.get("wars", []).is_empty():
-			odds.append("[color=#%s]AT WAR · %s[/color]" % [T.DANGER.to_html(false), ", ".join(PackedStringArray(p["wars"])).to_upper()])
+			odds.append("[color=#%s]WAR · %s[/color]" % [T.DANGER.to_html(false), ", ".join(PackedStringArray(p["wars"])).to_upper()])
 		if not p.get("truces", []).is_empty():
 			odds.append("[color=#%s]TRUCE · %s[/color]" % [T.ACCENT.to_html(false), ", ".join(PackedStringArray(p["truces"])).to_upper()])
 		if odds.is_empty():
@@ -1617,6 +1631,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 			var cell := VBoxContainer.new()
 			cell.add_theme_constant_override("separation", -4)
 			cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			cell.custom_minimum_size.x = 170  # room for "WAR · THORNVALE, SUNSPIRE" on one line
 			cell.add_child(name)
 			var line := RichTextLabel.new()
 			line.bbcode_enabled = true

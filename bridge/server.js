@@ -348,10 +348,10 @@ function rule(id, option) {
     crownNow.gold -= out.cost;
   }
   out.lua.forEach((l) => send(`lua cmd ${l}`));
-  shiftFavour(out.favour, "your ruling at court");
+  const effects = shiftAndTell(out.favour, "your ruling at court", out.cost);
   record({ turn: world.turn, kind: "decree", text: out.text });
   rulingScene(id, option, out);
-  return { ok: true, text: crowns(out.text) };
+  return { ok: true, text: crowns(out.text) + (effects ? `\n${effects}` : "") };
 }
 
 // A town is besieged while an enemy host stands at its walls: three or more
@@ -546,6 +546,20 @@ function noteFavour(id, d, why) {
   if (same) same.d += d;  // the same cause again adds up, not repeats
   else list.push({ d, why });
   while (list.length > 6) list.shift();
+}
+
+// Shifts favour and says what it did, for the result card: "6,000 crowns · Thornvale 34 → 29".
+function shiftAndTell(changes, why, cost = 0) {
+  const was = Object.fromEntries(Object.keys(changes ?? {}).map((id) => [id, Math.round(favourOf(Number(id)))]));
+  shiftFavour(changes ?? {}, why);
+  const moved = Object.keys(was).map((id) => {
+    const p = world?.players.find((x) => x.id === Number(id));
+    const now = Math.round(favourOf(Number(id)));
+    return p && now !== was[id] ? `${houseFor(p).name.replace(/^House /, "")} ${was[id]} → ${now}` : null;
+  }).filter(Boolean);
+  const price = cost ? [`${(cost * 100).toLocaleString("en-US")} crowns`] : [];
+  const shown = moved.length > 4 ? [...moved.slice(0, 3), `and ${moved.length - 3} more`] : moved;
+  return [...price, ...shown].join("  ·  ");
 }
 
 function shiftFavour(changes, why = "") {
@@ -908,17 +922,8 @@ http.createServer(async (req, res) => {
     const crownNow = world.players.find((p) => houseFor(p).crown);
     if (crownNow) crownNow.gold -= result.cost;
     // The result card says what the order cost and whose favour moved, so the
-    // King learns the price of his word: "6,000 crowns · Thornvale 45 → 47".
-    const was = Object.fromEntries(Object.keys(result.favour ?? {}).map((id) => [id, Math.round(favourOf(Number(id)))]));
-    shiftFavour(result.favour, { gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "called to the King's banners", marriage: "a royal match", peace: "the King's peace" }[cmd.action] ?? "a royal decree");
-    const moved = Object.keys(was).map((id) => {
-      const p = world.players.find((x) => x.id === Number(id));
-      const now = Math.round(favourOf(Number(id)));
-      return p && now !== was[id] ? `${houseFor(p).name.replace(/^House /, "")} ${was[id]} → ${now}` : null;
-    }).filter(Boolean);
-    const price = result.cost ? [`${(result.cost * 100).toLocaleString("en-US")} crowns`] : [];
-    const shown = moved.length > 4 ? [...moved.slice(0, 3), `and ${moved.length - 3} more`] : moved;
-    const effects = [...price, ...shown].join("  ·  ");
+    // King learns the price of his word.
+    const effects = shiftAndTell(result.favour, { gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "called to the King's banners", marriage: "a royal match", peace: "the King's peace" }[cmd.action] ?? "a royal decree", result.cost);
     const seat = world.cities.find((c) => c.owner === crownNow?.id && c.capital);
     const target = world.cities.find((c) => c.id === Number(cmd.city));
     if (seat && target && (cmd.action === "relief" || cmd.action === "gift")) scene(cmd.action === "relief" ? "grain" : "tribute", { x: seat.x, y: seat.y, tx: target.x, ty: target.y, city: target.id });

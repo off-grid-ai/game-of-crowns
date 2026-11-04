@@ -108,7 +108,7 @@ func watch_at(at: Vector3, dist: float, caption: String, follow: Node3D = null) 
 	_follow = follow
 	rig.focus(at, dist)
 	rig._goal_tilt = 0.0
-	ui.toast(caption)
+	ui.caption(caption)
 
 
 ## What a scene is called on screen: "The King's grain on the road to Oldburg".
@@ -124,7 +124,7 @@ func _frame(s: Dictionary, follow: Node3D) -> void:
 	_follow = follow
 	rig.focus(follow.global_position if is_instance_valid(follow) else at, how[1])
 	rig._goal_tilt = 0.0  # a battle's framing lowers the view; each new shot starts level
-	ui.toast(caption(s))
+	ui.caption(caption(s))
 
 
 ## Nothing stirring: visit a town, the bigger the likelier.
@@ -142,7 +142,7 @@ func _tour() -> void:
 		if roll <= 0.0:
 			_last_key = "town:%d" % int(c["id"])
 			rig.frame_town(terrain.world_pos(float(c["x"]), float(c["y"])), int(c.get("size", 4)))
-			ui.toast(String(c.get("title", c["name"])))
+			ui.caption(String(c.get("title", c["name"])))
 			return
 
 
