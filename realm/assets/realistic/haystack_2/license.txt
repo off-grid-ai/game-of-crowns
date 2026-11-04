@@ -1,0 +1,11 @@
+Model Information:
+* title:	Haystack 2
+* source:	https://sketchfab.com/3d-models/haystack-2-b0f9bf31bec0474fb20f3d911f427a8c
+* author:	Frice (https://sketchfab.com/Frice)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Haystack 2" (https://sketchfab.com/3d-models/haystack-2-b0f9bf31bec0474fb20f3d911f427a8c) by Frice (https://sketchfab.com/Frice) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

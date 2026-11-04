@@ -1,0 +1,11 @@
+Model Information:
+* title:	Medieval Church
+* source:	https://sketchfab.com/3d-models/medieval-church-c932bc5680854c8ea2f89d4556dce7f1
+* author:	AnyRPG (https://sketchfab.com/anyrpg)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Medieval Church" (https://sketchfab.com/3d-models/medieval-church-c932bc5680854c8ea2f89d4556dce7f1) by AnyRPG (https://sketchfab.com/anyrpg) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

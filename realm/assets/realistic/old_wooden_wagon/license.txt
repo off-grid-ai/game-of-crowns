@@ -1,0 +1,11 @@
+Model Information:
+* title:	Old wooden Wagon
+* source:	https://sketchfab.com/3d-models/old-wooden-wagon-8e92e18ae53d484ab334eede6421f0d5
+* author:	Asylum Nox (https://sketchfab.com/peter.pottiez)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Old wooden Wagon" (https://sketchfab.com/3d-models/old-wooden-wagon-8e92e18ae53d484ab334eede6421f0d5) by Asylum Nox (https://sketchfab.com/peter.pottiez) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

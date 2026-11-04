@@ -1,0 +1,11 @@
+Model Information:
+* title:	Medieval wooden cart
+* source:	https://sketchfab.com/3d-models/medieval-wooden-cart-c4ee19920e9b45aaa6ebe37839b1ad2a
+* author:	rakutin (https://sketchfab.com/rakutin)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Medieval wooden cart" (https://sketchfab.com/3d-models/medieval-wooden-cart-c4ee19920e9b45aaa6ebe37839b1ad2a) by rakutin (https://sketchfab.com/rakutin) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

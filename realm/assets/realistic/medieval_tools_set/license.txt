@@ -1,0 +1,11 @@
+Model Information:
+* title:	Medieval Tools Set
+* source:	https://sketchfab.com/3d-models/medieval-tools-set-e543a102465a4fbdb2eb89e3b8d3afb0
+* author:	Thangzy (https://sketchfab.com/thangzy)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Medieval Tools Set" (https://sketchfab.com/3d-models/medieval-tools-set-e543a102465a4fbdb2eb89e3b8d3afb0) by Thangzy (https://sketchfab.com/thangzy) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
