@@ -1,0 +1,8 @@
+rulesetdir civ2civ3
+set aifill 3
+set minplayers 0
+set timeout 1
+set wrap ""
+set topology ""
+set endturn 1000
+start

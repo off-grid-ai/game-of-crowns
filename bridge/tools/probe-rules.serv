@@ -1,0 +1,6 @@
+rulesetdir realmrules
+set aifill 2
+set minplayers 0
+set timeout 1
+set endturn 3
+start

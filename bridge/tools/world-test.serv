@@ -1,0 +1,46 @@
+# New realm: seven great houses, medieval-flavoured nations, no map wrapping.
+rulesetdir realmrules
+set nationset all
+set wrap ""
+set topology ""
+set mapsize XYSIZE
+set xsize 56
+set ysize 84
+set landmass 30
+# Eight players created by hand: seven great houses and the Crown (you).
+# The Crown is human, so each turn waits out its full length.
+set aifill 0
+set turnblock enabled
+create Wolfholt
+create Goldcrest
+create Ironreach
+create Thornvale
+create Stormhold
+create Sunspire
+create Highfell
+create Crown
+set minplayers 0
+set barbarians normal
+set disasters 25
+# Research is slow; the ruleset itself stops it at the high middle ages.
+set sciencebox 300
+# Each house plays its own strategy (traits set per nation in data/nation).
+set traitdistribution FIXED
+set endturn 50
+set saveturns 0
+set autosaves "TURN|GAMEOVER|QUITIDLE|INTERRUPT"
+set savename "realm"
+set timeout 1
+hard
+playernation Wolfholt scottish 1 "Lord Edric Wolfholt"
+playernation Goldcrest english 1 "Lord Tybalt Goldcrest"
+playernation Ironreach norwegian 1 "Lord Harrald Ironreach"
+playernation Thornvale french 0 "Lady Olenna Thornvale"
+playernation Stormhold welsh 1 "Lord Robb Stormhold"
+playernation Sunspire castilian 0 "Princess Arianne Sunspire"
+playernation Highfell irish 1 "Lord Jon Highfell"
+aitoggle Crown
+playernation Crown norman 1 "The King"
+lua file lua/world_setup.lua
+lua file lua/events.lua
+start
