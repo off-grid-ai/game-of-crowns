@@ -81,7 +81,7 @@ func snap(pos: Vector3, dist: float, y := 0.0) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	# Panels (chronicle, houses, god powers) own the mouse while it's over them.
+	# Panels (chronicle, houses, a town) own the mouse while it's over them.
 	if (event is InputEventMouse or event is InputEventGesture) and get_viewport().gui_get_hovered_control() != null and _dragging == 0:
 		return
 	if event is InputEventMouseButton:

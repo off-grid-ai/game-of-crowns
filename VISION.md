@@ -3,7 +3,7 @@
 The one place where decisions live. New ideas get added here. They don't replace what's already decided unless we say so explicitly.
 
 ## The game in one line
-A living medieval-fantasy world that runs on its own on your laptop. You're its god: you watch, build, bless and curse.
+A living medieval-fantasy world that runs on its own on your laptop. You are its King: you watch it, rule it, and live with what your rulings set in motion.
 
 ## Decided
 - **Setting:** Game of Thrones *era and feel* (medieval, great houses, castles), with mythical touches (the dead beyond the wall, wildlings). No dragons: dropped 2026-11-03. It doesn't need to be Westeros or use GoT names.

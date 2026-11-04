@@ -167,13 +167,14 @@ func _use_preset(name: String) -> void:
 	for k in p:
 		if k != "about" and k != "wealth":
 			_opt[k] = p[k]
+	# A name you typed stays; one that was only the last card's name follows the card.
 	var typed := _name_edit.text if _name_edit else ""
 	show_new()
-	_name_edit.text = typed if typed != "" else name
+	_name_edit.text = name if typed == "" or PRESETS.has(typed) else typed
 
 
 ## Every choice about the realm to come, in two columns: the world, its time and
-## the crown on the left; the great houses and fate on the right. Saved
+## the crown on the left; the great houses and what tests the reign on the right. Saved
 ## scenarios across the top start you from a set you liked before.
 func show_new() -> void:
 	_clear()
@@ -283,7 +284,7 @@ func show_new() -> void:
 			else:
 				b.set_pressed_no_signal(true))
 	_houses_enabled(house_row)
-	_section(right, "Fate")
+	_section(right, "What tests the reign")
 	_choices(right, "Floods, fires and famine", [["None", "none"], ["Gentle", "gentle"], ["Normal", "normal"], ["Cruel", "cruel"]], _opt["disasters"], func(v): _opt["disasters"] = v)
 	_choices(right, "Raiders from the wilds", [["None", "none"], ["Some", "normal"], ["Hordes", "hordes"]], _opt["raiders"], func(v): _opt["raiders"] = v)
 	_choices(right, "The dead beyond the wall", [["Never", "off"], ["Late", "late"], ["In time", "normal"], ["Soon", "soon"]], _opt["dead"], func(v): _opt["dead"] = v)
@@ -304,17 +305,6 @@ func show_new() -> void:
 	begin.add_theme_color_override("font_hover_color", T.TEXT)
 	begin.add_theme_font_size_override("font_size", 17)
 	begin.pressed.connect(_begin)
-	var keep_name := LineEdit.new()
-	keep_name.placeholder_text = "Save these choices as…"
-	keep_name.custom_minimum_size = Vector2(220, 0)
-	go.add_child(keep_name)
-	var keep := _toggle("Save", go)
-	keep.toggle_mode = false
-	keep.pressed.connect(func():
-		if keep_name.text.strip_edges() == "":
-			return
-		bridge.save_scenario({"name": keep_name.text.strip_edges(), "scenario": _scenario, "minutes": _minutes, "wealth": _wealth,
-			"mood": _mood_edit.text.strip_edges(), "options": _opt}, func(_c, _d): show_new()))
 	var back := _toggle("Back", go)
 	back.toggle_mode = false
 	back.pressed.connect(show_main)
