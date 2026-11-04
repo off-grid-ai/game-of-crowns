@@ -190,10 +190,12 @@ Return {"story": "...", "says": "..."}`,
 // Someone in the realm answers you, face to face, in their own voice. Small
 // models follow a conversation best as real turns: a short persona, what was
 // said before as back-and-forth, and the latest words last, to be answered.
-export async function speak(person, town, house, you, events, story, past, said) {
+export const TONGUES = { en: "English", de: "German", es: "Spanish", fr: "French", it: "Italian", pt: "Portuguese", hi: "Hindi" };
+
+export async function speak(person, town, house, you, events, story, past, said, language = "en") {
   const persona = `You are ${person.name}, ${person.age}, a ${person.woman ? "woman" : "man"}, ${person.trade} in ${town} (lands of ${house}). By nature ${person.nature ?? "ordinary"}; ${person.family}; you want ${person.wants}.${story ? ` ${story.split(". ").slice(0, 2).join(". ")}.` : ""}
 Lately: ${events.slice(-3).join(" ") || "quiet seasons."}
-You are talking with ${you.name}${you.lord ? ", your lord" : ""}. Call them "${you.address ?? "stranger"}". Gritty medieval realm. Reply with only what you say aloud: one to three full sentences in plain speech of the period, answering exactly what they just said. No narration, no quotation marks.`;
+You are talking with ${you.name}${you.lord ? ", your lord" : ""}. Call them "${you.address ?? "stranger"}". Gritty medieval realm. Reply with only what you say aloud: one to three full sentences in plain speech of the period, answering exactly what they just said. No narration, no quotation marks.${language !== "en" ? ` Speak only in ${TONGUES[language] ?? "English"}.` : ""}`;
   const turns = past.slice(-6).map((l) => ({ role: l.who === person.name ? "assistant" : "user", content: l.text }));
   const reply = await say(persona, turns, said);
   return reply ? { reply } : null;
@@ -219,11 +221,11 @@ export async function ruleFrom(petition, who, words) {
 }
 
 // The petitioner hears the King's ruling and answers him to his face.
-export async function reactTo(petition, who, words, option) {
+export async function reactTo(petition, who, words, option, language = "en") {
   const chosen = (petition.options ?? []).find((o) => o.id === option);
   if (!who || !chosen) return "";
   return (await say(
-    `You are ${who.name} of ${who.house}, by nature ${(who.traits ?? []).join(", ") || "proud"}. You came to the King's court: ${petition.text} The King has ruled: ${chosen.label ?? chosen.id}. You are NOT the King; you answer him. Reply to his face with only what you say aloud: one or two sentences, plain speech of the period, as your nature demands. No narration, no quotation marks.`,
+    `You are ${who.name} of ${who.house}, by nature ${(who.traits ?? []).join(", ") || "proud"}. You came to the King's court: ${petition.text} The King has ruled: ${chosen.label ?? chosen.id}. You are NOT the King; you answer him. Reply to his face with only what you say aloud: one or two sentences, plain speech of the period, as your nature demands. No narration, no quotation marks.${language !== "en" ? ` Speak only in ${TONGUES[language] ?? "English"}.` : ""}`,
     [],
     `The King says: "${words}"`,
     90,

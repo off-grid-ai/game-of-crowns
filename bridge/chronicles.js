@@ -79,11 +79,13 @@ export const OPTION_DEFAULTS = {
   petitions: "normal",   // lords at court each season: rare | normal | often
   intrigue: "normal",    // bold moves by the court each season: quiet | normal | scheming
   skip: [],              // great houses left out of a fresh realm (by house name)
+  language: "en",        // the tongue people speak to you in: en | de | es | fr | it | pt | hi
 };
 const CHOICES = {
   disasters: ["none", "gentle", "normal", "cruel"], raiders: ["none", "normal", "hordes"], dead: ["off", "late", "normal", "soon"],
   temper: ["peaceful", "mixed", "warlike"], cunning: ["easy", "normal", "hard"], houseWealth: ["poor", "asis", "rich"],
   trust: ["loyal", "wary", "resentful"], host: ["small", "standard", "strong"], petitions: ["rare", "normal", "often"], intrigue: ["quiet", "normal", "scheming"],
+  language: ["en", "de", "es", "fr", "it", "pt", "hi"],
 };
 export const HOUSE_NATIONS = { Wolfholt: "scottish", Goldcrest: "english", Ironreach: "norwegian", Thornvale: "french", Stormhold: "welsh", Sunspire: "castilian", Highfell: "irish" };
 

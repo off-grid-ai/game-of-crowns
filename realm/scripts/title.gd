@@ -89,7 +89,7 @@ var _opt := {}  # the chronicle's options as they stand; sent to the bridge as-i
 
 static func _default_opt() -> Dictionary:
 	return {"pace": 12, "disasters": "normal", "raiders": "normal", "dead": "normal", "usurper": true, "temper": "mixed",
-		"cunning": "hard", "houseWealth": "asis", "trust": "wary", "host": "standard", "petitions": "normal", "intrigue": "normal", "skip": []}
+		"cunning": "hard", "houseWealth": "asis", "trust": "wary", "host": "standard", "petitions": "normal", "intrigue": "normal", "skip": [], "language": "en"}
 
 
 ## Every choice about the realm to come, in two columns: the world, its time and
@@ -150,6 +150,7 @@ func show_new() -> void:
 	_choices(left, "The royal treasury", [["Poor · 15k", "poor"], ["Comfortable · 50k", "comfortable"], ["Rich · 150k", "rich"]], _wealth, func(v): _wealth = v)
 	_choices(left, "The royal host at the start", [["A few loyal men", "small"], ["A garrison", "standard"], ["A great host", "strong"]], _opt["host"], func(v): _opt["host"] = v)
 	_choices(left, "Lords at court each season", [["Seldom", "rare"], ["Some", "normal"], ["Many", "often"]], _opt["petitions"], func(v): _opt["petitions"] = v)
+	_choices(left, "The tongue people speak to you in", [["English", "en"], ["Français", "fr"], ["Deutsch", "de"], ["Español", "es"], ["Italiano", "it"], ["Português", "pt"], ["हिन्दी", "hi"]], _opt["language"], func(v): _opt["language"] = v)
 	left.add_child(_label("The opening mood, in your own words", 15, MUTED))
 	_mood_edit = LineEdit.new()
 	_mood_edit.placeholder_text = "e.g. a fragile peace after a long war; the North trusts no one"

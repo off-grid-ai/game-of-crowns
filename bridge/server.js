@@ -696,7 +696,7 @@ http.createServer(async (req, res) => {
       const o = pet.options.find((x) => x.id === read.option);
       return json(res, 200, { proposed: read.option, label: crowns(o?.label ?? read.option), name: who?.name ?? "" });
     }
-    const reaction = await reactTo(pet, who, said, String(confirm));
+    const reaction = await reactTo(pet, who, said, String(confirm), meta.options?.language ?? "en");
     const out = rule(id, String(confirm));
     if (out.error) return json(res, 400, out);
     record({ turn: world.turn, kind: "decree", text: `The King to ${who?.name ?? "the petitioner"}: "${said}"` });
@@ -802,7 +802,7 @@ http.createServer(async (req, res) => {
     // How a commoner names them to their face.
     you.address = !speaker ? "stranger" : speaker.rank === "lord" || speaker.rank === "heir" ? (speaker.gender === "female" ? "my lady" : "my lord") : speaker.gender === "female" ? "my lady" : "ser";
     const near = chronicle.filter((e) => e.city === city.id || (e.text ?? "").includes(cityName(city.id))).slice(-5).map((e) => e.text);
-    const out = await speak(person, cityName(city.id), houseFor(owner).name, you, near, tales[key]?.story ?? "", past, said);
+    const out = await speak(person, cityName(city.id), houseFor(owner).name, you, near, tales[key]?.story ?? "", past, said, meta.options?.language ?? "en");
     if (!out) return json(res, 503, { error: `${person.name} only stares at you. (The local model isn't running.)` });
     talks[key] = [...past, { who: you.name, text: said }, { who: person.name, text: out.reply }].slice(-16);
     fs.writeFileSync(file, JSON.stringify(talks, null, 1));
