@@ -39,9 +39,17 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	var kind := String(c.get("buildingKind", ""))
 	var building := String(c.get("building", ""))
 	var progress := float(c.get("progress", 0.0))
-	var sig := "%s|%s|%d|%s|%s|%s" % [kind, building, int(progress * 20), hungry, c.get("celebrating", false), c.get("disorder", false)]
+	var sig := "%s|%s|%s|%s|%s" % [kind, building, hungry, c.get("celebrating", false), c.get("disorder", false)]
 	var life: Node3D = root.get_node_or_null("Life")
 	if life and life.get_meta("sig", "") == sig:
+		# Only the work moved on: the site grows where it stands, and the
+		# townsfolk carry on, rather than the whole scene being rebuilt.
+		var site: Node3D = life.get_node_or_null("Site")
+		if site:
+			site.scale.y = clampf(progress, 0.08, 1.0)
+		if kind == "Building" or kind == "UnitType":
+			var label := "Building %s" if kind == "Building" else "Training %s"
+			life.set_meta("doing", (label + " · %d%%") % [building, int(progress * 100)])
 		return
 	if life:
 		life.free()
@@ -69,6 +77,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 		_bonfire(life, center)
 	if c.get("disorder", false):
 		_unrest(life, center, rng)
+	_near_only(life)
 
 
 func _y(center: Vector3, off: Vector3) -> float:
@@ -165,6 +174,7 @@ func _construction(life: Node3D, center: Vector3, building: String, progress: fl
 	if site == null:
 		return
 	site.scale.y = grow
+	site.name = "Site"
 	site.position = base
 	site.rotation.y = ang + PI
 	life.add_child(site)
@@ -331,3 +341,12 @@ func _unrest(life: Node3D, center: Vector3, rng: RandomNumberGenerator) -> void:
 		p.mesh = q
 		p.position = off + Vector3(0, _y(center, off) + 0.6, 0)
 		life.add_child(p)
+
+
+## The town's life is street-level detail: drawn only within a short walk of the camera.
+static func _near_only(life: Node) -> void:
+	for g in life.find_children("*", "GeometryInstance3D", true, false):
+		if g.visibility_range_end == 0.0:
+			g.visibility_range_end = 30.0
+			g.visibility_range_end_margin = 4.0
+			g.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF

@@ -415,8 +415,36 @@ func _flush(root: Node3D) -> void:
 				mm.set_instance_transform(i, xfs[i] * part[1])
 			var mmi := MultiMeshInstance3D.new()
 			mmi.multimesh = mm
+			_fade_beyond(mmi, _reach_for(kind))
 			root.add_child(mmi)
 	_batch.clear()
+	# Anything placed whole (the castle, landmarks) carries furthest.
+	for g in root.find_children("*", "GeometryInstance3D", true, false):
+		if g.visibility_range_end == 0.0:
+			_fade_beyond(g, 160.0)
+
+
+## How far away a kit model is still worth drawing, by its real size: clutter
+## only up close, houses across a valley, castles and churches from across the
+## realm. Beyond that the atlas and the town's name carry the view, and the
+## frame isn't spent on millions of triangles no one can see.
+func _reach_for(kind: String) -> float:
+	var m: float = float(Real.KIT.get(kind, ["", 10.0])[1])
+	if m < 2.0:
+		return 16.0
+	if m < 6.0:
+		return 28.0
+	if m < 15.0:
+		return 70.0
+	if m < 25.0:
+		return 100.0
+	return 160.0
+
+
+func _fade_beyond(g: GeometryInstance3D, end: float) -> void:
+	g.visibility_range_end = end
+	g.visibility_range_end_margin = end * 0.15
+	g.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 
 
 func _ground_y(center: Vector3, off: Vector3) -> float:
