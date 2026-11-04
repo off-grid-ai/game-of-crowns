@@ -10,6 +10,12 @@ How a round is played: `realm/tools/play/*.play` scenarios feed real input (keys
 
 | # | Expected | Found | Change | Commit |
 |---|---|---|---|---|
+| 30 | The King can stop a war | The counsel's answer to a war was "a feast for each" (r06/04-first-view) | Command peace: both warm (40+) obey, their soldiers by the other's towns go home, war appetite cools, a truce holds; a cold house refuses. The engine still counts them at war; the fighting stops. In the counsel beside "Wed them to each other" | daf44c6 |
+| 29 | The counsel stays in view | It covered the bottom of the houses panel ("Your word") | "Proclaim your word…" folds to one line until wanted | daf44c6 |
+| 28 | Read what the people say (supervisor #3) | Model lines that loop ("a liege's liege, not my liege's liege") and stray quotes | Two sentences at most, no stray quotes, looping lines dropped | f4f3e02 |
+| 27 | The King's own numbers | The Crown's row was a row of dots | Its towns, men, crowns, grain and souls | 2bc8e79 |
+| 26 | Favour that varies, in view (verified, r06/04-first-view) | — | Seen: favour 41–62 by house, coldest first, coloured; counsel bottom-left; "Raising pikemen · 3%"; treasury 143k | r06 |
+| 25 | A new reign starts cleanly (verified, r06/01–03) | — | Seen: three cards, the name follows the card, Begin, the loading story | r06 |
 | 24 | The King can always act | The purse sat at 0 for good (upkeep charged soldiers the engine already pays for), so every decree failed silently (r05/05-banners) | Upkeep is the court and castles only; a decree the purse can't pay is greyed with why and how to fill it | de1cb08 |
 | 23 | The counsel doesn't hide the table | The Hand's card sat over the houses' favour column and under the story offer (r05/03-counsel) | Bottom-left in plain type, clear of the table, the offers and a town's card | de1cb08 |
 | 22 | Towns speak the realm's language | "Training Settlers 6%", "grain 20 t of 400 t" | "Raising settlers for a new town · 6%", "granary half full" | a3f305d |
