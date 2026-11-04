@@ -58,17 +58,77 @@ async function gateway() {
   return null;
 }
 
-async function complete(system, prompt, maxTokens = 220, retry = true, turns = []) {
-  const first = await completeOnce(system, prompt, maxTokens, turns);
+// One queue for every call to the model. It has no call caps but one
+// throughput, so thinking follows attention: hot (the player is waiting, or the
+// mind is in front of them) before warm (the court's seasons, the stories,
+// minds on screen) before cold. A call that has waited climbs a level every
+// 30 seconds, so nothing starves.
+const RANK = { hot: 0, warm: 1, cold: 2 };
+const SLOTS = Math.max(1, Number(process.env.GOC_MODEL_SLOTS) || 1);
+const queue = [];
+const timings = [];
+let running = 0;
+
+function queued(pri, job) {
+  return new Promise((resolve) => {
+    queue.push({ pri: RANK[pri] === undefined ? "warm" : pri, at: Date.now(), job, resolve });
+    pump();
+  });
+}
+
+function pump() {
+  while (running < SLOTS && queue.length) {
+    const now = Date.now();
+    const score = (q) => RANK[q.pri] - (now - q.at) / 30000;
+    let best = 0;
+    for (let i = 1; i < queue.length; i++) if (score(queue[i]) < score(queue[best])) best = i;
+    const q = queue.splice(best, 1)[0];
+    const start = Date.now();
+    running++;
+    q.job().catch(() => null).then((out) => {
+      running--;
+      timings.push({ pri: q.pri, waitMs: start - q.at, runMs: Date.now() - start, at: start });
+      if (timings.length > 300) timings.shift();
+      q.resolve(out);
+      pump();
+    });
+  }
+}
+
+// What the queue holds now and how long calls of each level waited lately.
+export function modelQueue() {
+  const waiting = { hot: 0, warm: 0, cold: 0 };
+  for (const q of queue) waiting[q.pri]++;
+  const levels = {};
+  for (const pri of Object.keys(RANK)) {
+    const t = timings.filter((x) => x.pri === pri);
+    if (!t.length) continue;
+    const avg = (k) => Math.round(t.reduce((a, x) => a + x[k], 0) / t.length);
+    levels[pri] = { calls: t.length, waitMs: avg("waitMs"), runMs: avg("runMs"), maxWaitMs: Math.max(...t.map((x) => x.waitMs)) };
+  }
+  return { slots: SLOTS, running, waiting, levels, recent: timings.slice(-30) };
+}
+
+async function complete(system, prompt, maxTokens = 220, retry = true, turns = [], pri = "warm") {
+  const first = await queued(pri, () => completeOnce(system, prompt, maxTokens, turns));
   if (first || !retry) return first;
   // The gateway may have been loading its model, or moved port; try once more.
   await new Promise((r) => setTimeout(r, 3000));
-  return completeOnce(system, prompt, maxTokens, turns);
+  return queued(pri, () => completeOnce(system, prompt, maxTokens, turns));
 }
 
 // Plain words, not JSON: what someone says aloud. Small models speak far
 // better when they aren't also filling in a form.
-async function say(system, turns, prompt, maxTokens = 160) {
+function say(system, turns, prompt, maxTokens = 160, pri = "warm") {
+  return queued(pri, () => sayOnce(system, turns, prompt, maxTokens));
+}
+
+// A mind thinking in plain words, at its attention's level (minds.js).
+export function think(system, prompt, pri = "cold", maxTokens = 80) {
+  return say(system, [], prompt, maxTokens, pri);
+}
+
+async function sayOnce(system, turns, prompt, maxTokens) {
   const url = await gateway();
   if (!url) return null;
   try {
@@ -158,7 +218,7 @@ Return {
  "summary": "one short sentence describing the change"
 }
 Numbers are integers from -50 to 50 (0 = unchanged). "Strategic" = more cunning and caution. "Diplomatic" = less aggression, more caution and cunning.`,
-    320,
+    320, true, [], "hot",
   );
   if (!out) return null;
   const clamp = (v) => Math.max(-50, Math.min(50, Math.round(Number(v) || 0)));
@@ -238,7 +298,7 @@ export async function folkTale(person, town, house, events) {
 ${event ? `Something that happened nearby lately: ${event}` : "The seasons here have been quiet."}
 Write their story in 3 or 4 short sentences, third person: their work, their household, what they want and why. Mention the happening only if it changed their own day, in a few words. Let their nature show in what they do. Then, separately, one line they might say to a stranger, in their voice.
 Return {"story": "...", "says": "..."}`,
-    300,
+    300, true, [], "hot",
   );
   if (!out || !out.story) return null;
   const says = String(out.says ?? "").trim();
@@ -256,12 +316,13 @@ Return {"story": "...", "says": "..."}`,
 // said before as back-and-forth, and the latest words last, to be answered.
 export const TONGUES = { en: "English", de: "German", es: "Spanish", fr: "French", it: "Italian", pt: "Portuguese", hi: "Hindi" };
 
-export async function speak(person, town, house, you, events, story, past, said, language = "en") {
+// `mind` is what their mind brings (minds.js): how they feel, what they recall of you.
+export async function speak(person, town, house, you, events, story, past, said, language = "en", mind = "") {
   const persona = `You are ${person.name}, ${person.age}, a ${person.woman ? "woman" : "man"}, ${person.trade} in ${town} (lands of ${house}). By nature ${person.nature ?? "ordinary"}; ${person.family}; you want ${person.wants}.${story ? ` ${story.split(". ").slice(0, 2).join(". ")}.` : ""}
-Lately: ${events.slice(-3).join(" ") || "quiet seasons."}
+Lately: ${events.slice(-3).join(" ") || "quiet seasons."}${mind ? `\n${mind}` : ""}
 You are talking with ${you.name}${you.lord ? ", your lord" : ""}. Call them "${you.address ?? "stranger"}". Gritty medieval realm. Reply with only what you say aloud: one to three full sentences in plain speech of the period, answering exactly what they just said. No narration, no quotation marks.${language !== "en" ? ` Speak only in ${TONGUES[language] ?? "English"}.` : ""}`;
   const turns = past.slice(-6).map((l) => ({ role: l.who === person.name ? "assistant" : "user", content: l.text }));
-  const reply = await say(persona, turns, said);
+  const reply = await say(persona, turns, said, 160, "hot");
   return reply ? { reply } : null;
 }
 
@@ -277,7 +338,7 @@ export async function ruleFrom(petition, who, words) {
     "You decide which ruling a king means. Answer with only the number of the ruling.",
     [],
     `Petition: ${petition.text}\nRulings:\n${list}\nThe king says: "${words}"\nWhich ruling does the king mean? Only the number.`,
-    6,
+    6, "hot",
   );
   const n = Number(String(pick ?? "").match(/\d+/)?.[0]);
   const chosen = options[n - 1];
@@ -292,7 +353,7 @@ export async function reactTo(petition, who, words, option, language = "en") {
     `You are ${who.name} of ${who.house}, by nature ${(who.traits ?? []).join(", ") || "proud"}. You came to the King's court: ${petition.text} The King has ruled: ${chosen.label ?? chosen.id}. You are NOT the King; you answer him. Reply to his face with only what you say aloud: one or two sentences, plain speech of the period, as your nature demands. No narration, no quotation marks.${language !== "en" ? ` Speak only in ${TONGUES[language] ?? "English"}.` : ""}`,
     [],
     `The King says: "${words}"`,
-    90,
+    90, "hot",
   )) ?? "";
 }
 
@@ -382,7 +443,7 @@ export async function aiStatus() {
 // One of the people in a story arc speaks as a beat of it happens. The arc
 // decides what happens; this is only their words about it.
 export async function arcLine(who, thread, happening, alsoIn = []) {
-  const rank = who.rank === "lord" ? (who.gender === "female" ? "Lady" : "Lord") : who.rank;
+  const rank = who.rank === "lord" ? (who.gender === "female" ? "Lady" : "Lord") : who.folk ? `a ${who.station} in the lands` : who.rank;
   return say(
     `You are ${who.name}, ${who.age}, ${who.gender === "female" ? "a woman" : "a man"}, ${rank} of ${who.house}. By nature ${(who.traits ?? []).join(", ") || "ordinary"}. You want to ${who.goals?.[0]?.text ?? "endure"}. You remember: ${(who.memories ?? []).slice(-4).join(" ") || "little worth telling"}${alsoIn.length ? ` You are also caught up in ${alsoIn.join(" and ")}.` : ""}
 Gritty medieval realm. You are living through ${thread}. Speak as yourself, in the first person, to someone beside you as it happens: one or two short sentences, plain speech of the period, as your nature demands. Don't describe what is happening; say what you feel or mean to do about it. No narration, no quotation marks, no names of speakers.`,

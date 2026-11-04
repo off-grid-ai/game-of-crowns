@@ -30,6 +30,7 @@ const RENAMED = {
   "Lord Jon Highfell": "Lord Declan Highfell",
 };
 import { Court } from "./characters.js";
+import { Minds, route as mindsRoute } from "./minds.js";
 import { Arcs, templates as arcTemplates, check } from "./arcs.js";
 import { bible, FAMILIES, LESSER } from "./lore.js";
 import { Stakes, calendar, epithet } from "./stakes.js";
@@ -54,6 +55,7 @@ let paused = false;
 // Each great house's regard for the crown (0-100), by Freeciv player id.
 let favour = {};
 let court = null;
+let minds = null;
 let arcs = null;
 let arcsRunning = false;
 let stakes = null;
@@ -84,6 +86,14 @@ function load(id) {
   arcs = new Arcs(P.base, court, record);
   stakes = new Stakes(P.state, record, endReign);
   rememberNames(world);
+  minds = new Minds(P.state, {
+    world: () => world, court: () => court, tithe: () => meta.tithe,
+    town: (id) => {
+      const x = detail()?.cities?.[id];
+      return x ? { famine: x.hadFamine, plague: x.plagueTurn >= 0 && (world?.turn ?? 0) - x.plagueTurn <= 4 } : {};
+    },
+  });
+  minds.catchUp(chronicle);
 }
 
 function newestSave(kind = "") {
@@ -114,6 +124,7 @@ function record(entry) {
   entry.at = Date.now();
   chronicle.push(entry);
   fs.appendFileSync(path.join(P.state, "chronicle.jsonl"), JSON.stringify(entry) + "\n");
+  minds?.perceive(entry);
   // A wedding is a feast in the bride's town.
   if (entry.kind === "marriage" && entry.city != null) {
     const town = world?.cities?.find((c) => c.id === entry.city);
@@ -283,11 +294,12 @@ async function talkToNamed(res, city, id, b) {
   const key = `char:${c.id}`;
   const past = (talks[key] ?? []).slice(-10);
   const near = chronicle.filter((e) => e.city === city.id || (e.text ?? "").includes(c.house)).slice(-4).map((e) => e.text);
-  const out = await speak(person, cityName(city.id), c.house, you, near, story, past, said, meta.options?.language ?? "en");
+  const out = await speak(person, cityName(city.id), c.house, you, near, story, past, said, meta.options?.language ?? "en", minds.forTalk(c.id, { id: speaker?.id, name: you.name }));
   if (!out) return json(res, 503, { error: `${c.name} regards you in silence. (The local model isn't running.)` });
   talks[key] = [...past, { who: you.name, text: said }, { who: c.name, text: out.reply }].slice(-16);
   fs.writeFileSync(file, JSON.stringify(talks, null, 1));
   court.remember(c.id, `${you.name} sought me out in ${cityName(city.id)} and said: "${said.slice(0, 120)}"`);
+  minds.talked(c.id, { id: speaker?.id, name: you.name }, said, out.reply);
   return json(res, 200, { name: c.name, gender: c.gender, ...out });
 }
 
@@ -367,6 +379,7 @@ function onEvent(line) {
     setTimeout(() => runArcs(1), 4000);
     // Let the AI finish its start-of-turn moves before dumping the world.
     setTimeout(snapshot, 1500);
+    setTimeout(() => minds?.tick(Number(ev.turn)), 3000);
     if ((Number(ev.turn) - 1) % 4 === 0) record({ turn: Number(ev.turn), kind: "year", text: `The year ${calendar(ev.turn).year} AC begins.` });
     return;
   }
@@ -602,6 +615,7 @@ http.createServer(async (req, res) => {
   const url = new URL(req.url, "http://x");
   if (req.method === "OPTIONS") return json(res, 204, {});
   if (!meta) return json(res, 503, { error: "no chronicle" });
+  if (await mindsRoute(minds, url, req, body, json, res)) return;
 
   if (url.pathname === "/world") {
     watched(); // the game window polls this every second while open
@@ -980,10 +994,12 @@ http.createServer(async (req, res) => {
     // How a commoner names them to their face.
     you.address = !speaker ? "stranger" : speaker.rank === "lord" || speaker.rank === "heir" ? (speaker.gender === "female" ? "my lady" : "my lord") : speaker.gender === "female" ? "my lady" : "ser";
     const near = chronicle.filter((e) => e.city === city.id || (e.text ?? "").includes(cityName(city.id))).slice(-5).map((e) => e.text);
-    const out = await speak(person, cityName(city.id), houseFor(owner).name, you, near, tales[key]?.story ?? "", past, said, meta.options?.language ?? "en");
+    const mindId = `folk:${city.id}:${person.i}`;
+    const out = await speak(person, cityName(city.id), houseFor(owner).name, you, near, tales[key]?.story ?? "", past, said, meta.options?.language ?? "en", minds.forTalk(mindId, { id: speaker?.id, name: you.name }));
     if (!out) return json(res, 503, { error: `${person.name} only stares at you. (The local model isn't running.)` });
     talks[key] = [...past, { who: you.name, text: said }, { who: person.name, text: out.reply }].slice(-16);
     fs.writeFileSync(file, JSON.stringify(talks, null, 1));
+    minds.talked(mindId, { id: speaker?.id, name: you.name }, said, out.reply);
     // A lord remembers being spoken to by their own people, briefly.
     if (speaker) court.remember(speaker.id, `In ${cityName(city.id)} I spoke with ${person.name}, the ${person.trade}.`);
     return json(res, 200, { name: person.name, trade: person.trade, gender: person.woman ? "female" : "male", ...out });
