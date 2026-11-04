@@ -654,6 +654,7 @@ func _siege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, fo
 			f.position = _ground(p)
 			f.rotation.y = atan2(inward.x, inward.z) + r.randf_range(-0.6, 0.6)
 			root.add_child(f)
+			arm(f, "spear" if i % 2 == 0 else "sword")
 			_people.play(f, "Sword_Idle" if r.randf() < 0.6 else "Idle", r.randf_range(0.8, 1.1))
 	# The engines, set back behind the camp line, and their stones.
 	for e in clampi(maxi(engines, 1), 1, 3):
@@ -667,7 +668,9 @@ func _siege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, fo
 		var to_town := at - ep
 		engine.rotation.y = atan2(to_town.x, to_town.z) + PI
 		_volley(root, ep + Vector3(0, 0.35, 0), at, reach * 0.8, r, 4.0 + e * 1.3)
-	# The defenders on the walls, facing out toward the host.
+	# The defenders on the walls, facing out toward the host: archers and
+	# spearmen turn about.
+	var archers := []
 	for i in 9:
 		var a := (i - 4) * 0.13
 		var p: Vector3 = arc.call(a, wall - 0.12)
@@ -678,10 +681,26 @@ func _siege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, fo
 		var face := (p - at).normalized()
 		f.rotation.y = atan2(face.x, face.z)
 		root.add_child(f)
-		_people.play(f, "Sword_Idle", r.randf_range(0.9, 1.1))
-	# Assault parties rush the walls in turn, fight there, and fall back.
+		var bow := i % 2 == 0
+		arm(f, "bow" if bow else "spear")
+		_people.play(f, "Bow_Idle" if bow else "Sword_Idle", r.randf_range(0.9, 1.1))
+		if bow:
+			archers.append({"node": f, "alive": true, "kit": "bow", "engaged": false})
+	# Assault parties rush the walls in turn under the archers' arrows, fight
+	# there, and fall back.
+	var parties := []
 	for party in 2:
-		_assault(root, arc, (party - 0.5) * 0.5, camp_r, wall, foe_col, r, 3.0 + party * 6.0)
+		parties.append(_assault(root, arc, (party - 0.5) * 0.5, camp_r, wall, foe_col, r, 3.0 + party * 6.0))
+	var loose := Timer.new()
+	loose.wait_time = 2.6
+	loose.autostart = true
+	loose.timeout.connect(func():
+		var marks := []
+		for men in parties:
+			marks.append_array(men.filter(func(m): return m.get("out", false) and m["alive"]))
+		if not marks.is_empty():
+			_arrows(root, archers, marks, r))
+	root.add_child(loose)
 	_siege_watch(id)
 
 
@@ -751,37 +770,50 @@ func _volley(root: Node3D, from: Vector3, at: Vector3, spread: float, r: RandomN
 	root.add_child(t)
 
 
-## Six men leave the camp at a run, fight at the foot of the walls, and fall back.
-func _assault(root: Node3D, arc: Callable, a: float, camp_r: float, wall: float, col: Color, r: RandomNumberGenerator, first: float) -> void:
+## Six men leave the camp behind their raised shields, run the last stretch,
+## fight at the foot of the walls and fall back, leaving a man or two there.
+## The camp sends a fresh man in each one's place before the next rush.
+func _assault(root: Node3D, arc: Callable, a: float, camp_r: float, wall: float, col: Color, r: RandomNumberGenerator, first: float) -> Array:
 	var men := []
 	for i in 6:
-		var f: Node3D = _people.make(r, "soldier", col, "adult")
 		var off := (i - 2.5) * 0.06
 		var home: Vector3 = arc.call(a + off, camp_r - 0.35)
-		f.position = home
-		root.add_child(f)
-		men.append({"node": f, "home": home, "foot": arc.call(a + off, wall + 0.12)})
+		var m := {"home": home, "foot": arc.call(a + off, wall + 0.12), "alive": true, "kit": "sword", "rank": 1}
+		_assault_man(root, m, col, r)
+		men.append(m)
 	var cycle := func():
 		for m in men:
+			if not m["alive"]:
+				_assault_man(root, m, col, r)  # a fresh man from the camp
 			var n: Node3D = m["node"]
-			if not is_instance_valid(n):
-				continue
-			var tw := n.create_tween()
 			var face: Vector3 = (m["foot"] - m["home"]).normalized()
+			var half: Vector3 = m["home"].lerp(m["foot"], 0.55)
+			var tw := n.create_tween()
 			tw.tween_interval(r.randf_range(0.0, 0.6))
 			tw.tween_callback(func():
+				m["out"] = true
 				n.rotation.y = atan2(face.x, face.z)
-				_people.play(n, "Sprint", r.randf_range(0.9, 1.1)))
-			tw.tween_property(n, "position", m["foot"], 2.2)
-			tw.tween_callback(func(): _people.play(n, "Sword_Attack", r.randf_range(0.85, 1.15)))
+				_people.play(n, "Shield_Block", r.randf_range(0.9, 1.1)))
+			tw.tween_method(func(k: float): if m["alive"]: n.position = _ground(m["home"].lerp(half, k)), 0.0, 1.0, 2.4)
+			tw.tween_callback(func(): if m["alive"]: _people.play(n, "Sprint", r.randf_range(0.9, 1.1)))
+			tw.tween_method(func(k: float): if m["alive"]: n.position = _ground(half.lerp(m["foot"], k)), 0.0, 1.0, 1.4)
+			tw.tween_callback(func(): if m["alive"]: _people.play(n, "Sword_Attack" if r.randf() < 0.5 else "Sword_Attack_2", r.randf_range(0.85, 1.15)))
 			tw.tween_interval(r.randf_range(3.0, 4.5))
 			tw.tween_callback(func():
+				if not m["alive"]:
+					return
+				if r.randf() < 0.18:
+					m["alive"] = false
+					_die(n, DEATHS[r.randi() % DEATHS.size()], r)
+					return
 				n.rotation.y = atan2(-face.x, -face.z)
 				_people.play(n, "Walk", 1.0))
-			tw.tween_property(n, "position", m["home"], 3.0)
+			tw.tween_method(func(k: float): if m["alive"]: n.position = _ground(m["foot"].lerp(m["home"], k)), 0.0, 1.0, 3.0)
 			tw.tween_callback(func():
-				n.rotation.y = atan2(face.x, face.z)
-				_people.play(n, "Sword_Idle", 1.0))
+				m["out"] = false
+				if m["alive"]:
+					n.rotation.y = atan2(face.x, face.z)
+					_people.play(n, "Sword_Idle", 1.0))
 	var t := Timer.new()
 	t.wait_time = 15.0
 	t.timeout.connect(cycle)
@@ -792,6 +824,18 @@ func _assault(root: Node3D, arc: Callable, a: float, camp_r: float, wall: float,
 		if is_instance_valid(t):
 			cycle.call()
 			t.start())
+	return men
+
+
+func _assault_man(root: Node3D, m: Dictionary, col: Color, r: RandomNumberGenerator) -> void:
+	var f: Node3D = _people.make(r, "soldier", col, "adult")
+	f.position = m["home"]
+	root.add_child(f)
+	arm(f, "sword")
+	_people.play(f, "Sword_Idle", r.randf_range(0.9, 1.1))
+	m["node"] = f
+	m["alive"] = true
+	m["out"] = false
 
 
 ## Re-skins a bright toy-kit model in weathered timber, like the town's beams.
