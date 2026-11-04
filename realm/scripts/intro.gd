@@ -1,5 +1,5 @@
 extends CanvasLayer
-## The opening of a reign: a storybook of Aldmere told over stills of the realm
+## The opening of a reign: a storybook of Aldmere, and how to play it, told over stills of the realm
 ## itself (assets/intro/stills, rendered from the game), each drifting slowly
 ## (a Ken Burns pan) under a caption, narrated aloud when voices are on. Then,
 ## once the world has formed, the camera flies over each great house's seat.
@@ -10,7 +10,7 @@ signal finished
 
 const STILLS := "res://assets/intro/stills/"
 const T := preload("res://scripts/theme.gd")
-const HOLD := 7.0  # seconds on each page of the storybook
+const HOLD := 8.0  # seconds on each page of the storybook
 
 ## What the world bible says of each house: who they are, in one line.
 const CHARACTER := {
@@ -31,11 +31,14 @@ var _page := -1
 var _image: TextureRect
 var _title: Label
 var _line: Label
+var _keys: Label  # the controls for what this page teaches
 var _sigil: TextureRect
 var _hint: Label
 var _tween: Tween
 var _flyover: Array = []  # [world position, title, line]
 var _flying := false
+var _where: Array = []  # per page: [world position, camera distance] for the live view
+var _black: ColorRect
 
 
 func _ready() -> void:
@@ -48,7 +51,10 @@ func _ready() -> void:
 func play(houses: Array, seats: Dictionary) -> void:
 	_pages.clear()
 	_flyover.clear()
+	# The story and how to play, woven together: each page of the realm's tale
+	# is followed by what you do in it, with the keys that do it.
 	_pages.append(["realm", "Aldmere", "A long continent: snow and pine in the north, gold hills in the west, a green heartland, storm-wracked cliffs in the east, and red sand in the south."])
+	_pages.append(["realm", "It lives without you", "Eight great houses build, trade, marry and make war on their own. Watch from the sky, and the realm goes on whether you act or not.", {}, "WASD  pan    Q E  turn    scroll  zoom    Space  pause    1 2 3  pace"])
 	var crown := {}
 	for h in houses:
 		if h.get("crown", false):
@@ -63,11 +69,25 @@ func play(houses: Array, seats: Dictionary) -> void:
 		var town: String = seats[name][0]
 		_pages.append(["seat_" + town, name, "%s. Their words: \"%s\". %s" % [town, h.get("words", ""), CHARACTER.get(name, "")], h])
 		_flyover.append([seats[name][1], name, town])
-	_pages.append(["battle", "Old grudges", "Old grudges run deep. When the great houses quarrel, the realm bleeds."])
-	_pages.append(["hero", "Every lord a life", "Every lord and lady has a nature, a goal and a memory. They will come to your court, and they will remember what you did."])
-	_pages.append(["walk", "Among them", "And when you choose, you may walk among your people, speak with them, and stand in their halls."])
-	_pages.append(["street", "Long may you reign", "Keep the peace. Let the realm prosper. The realm lives on whether you watch or not."])
-	_pages = _pages.filter(func(p): return ResourceLoader.exists(STILLS + p[0] + ".png"))
+	_pages.append(["realm", "The Lore of Aldmere", "Three hundred years ago the Conqueror's dragons united seven kingdoms under one crown. The last dragon died a century ago, and the houses remember being kings. Every house's history, grudges and people are written in the Lore.", {}, "B  the Lore, any time"])
+	_pages.append(["hall", "Hold court", "Lords come to your hall with petitions: grain, land, justice, vengeance. Choose a ruling, or answer in your own words, typed or spoken. Whatever you decide comes to pass.", {}, "K  court    Type or Speak: Settings"])
+	_pages.append(["hero", "Every lord a life", "Every lord and lady has a nature, a goal and a memory, and they remember what you did. Open a house to meet them, follow their story, or change who they are.", {}, "H  houses    C  chronicle    L  ledger"])
+	_pages.append(["battle", "Old grudges", "Old grudges run deep. When the great houses quarrel, armies march, towns are besieged and the realm bleeds. Your rulings can calm a feud or start one."])
+	_pages.append(["street", "Read the towns", "Every town shows what it is doing: walls rising, recruits drilling on the square, fields browning in famine, smoke over a town in unrest."])
+	_pages.append(["walk", "Walk among them", "When you choose, take the place of any lord: walk the streets, talk with the townsfolk, step into their halls, and draw steel when you must.", {}, "WASD  walk    Shift  run    E  talk, enter    Tab  draw    click  strike    Space  block    Esc  leave"])
+	_pages.append(["realm", "Long may you reign", "Keep the peace. Let the realm prosper. And remember: it lives on whether you watch or not."])
+	# A page without its still plays over the live realm, the camera flown to
+	# where it speaks of: the realm from the sky, a house at its seat, the King's
+	# own town for the pages about playing.
+	var home: Vector3 = seats[crown["name"]][1] if not crown.is_empty() and seats.has(crown.get("name", "")) else Vector3.ZERO
+	_where.clear()
+	for p in _pages:
+		var still := String(p[0])
+		var at := home
+		for name in seats:
+			if still == "seat_" + String(seats[name][0]):
+				at = seats[name][1]
+		_where.append([at, 170.0 if still == "realm" else (12.0 if still.begins_with("seat_") else 24.0)])
 	if _pages.is_empty():
 		_end()
 		return
@@ -80,10 +100,10 @@ func play(houses: Array, seats: Dictionary) -> void:
 func _build() -> void:
 	for c in get_children():
 		c.queue_free()
-	var black := ColorRect.new()
-	black.color = Color.BLACK
-	black.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(black)
+	_black = ColorRect.new()
+	_black.color = Color.BLACK
+	_black.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_black)
 	_image = TextureRect.new()
 	_image.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -124,6 +144,11 @@ func _build() -> void:
 	_line.add_theme_color_override("font_color", Color(0.95, 0.93, 0.88))
 	_line.custom_minimum_size.x = 600
 	box.add_child(_line)
+	_keys = Label.new()
+	_keys.add_theme_font_override("font", T.mono)
+	_keys.add_theme_font_size_override("font_size", 15)
+	_keys.add_theme_color_override("font_color", T.ACCENT)
+	box.add_child(_keys)
 	_hint = T.label("Any key to skip")
 	_hint.anchor_left = 1.0
 	_hint.anchor_right = 1.0
@@ -138,10 +163,18 @@ func _next() -> void:
 		_fly()
 		return
 	var p: Array = _pages[_page]
-	_image.texture = load(STILLS + p[0] + ".png")
+	var path := STILLS + String(p[0]) + ".png"
+	var live := not ResourceLoader.exists(path)
+	_image.texture = null if live else load(path)
+	_black.visible = not live
+	if live and rig:
+		rig.frame_town(_where[_page][0], 10)
+		rig._goal_distance = float(_where[_page][1])
 	_title.text = String(p[1])
 	_line.text = String(p[2])
 	var house: Dictionary = p[3] if p.size() > 3 else {}
+	_keys.text = String(p[4]) if p.size() > 4 else ""
+	_keys.visible = _keys.text != ""
 	_sigil.texture = preload("res://scripts/heraldry.gd").sigil(house) if not house.is_empty() else null
 	_sigil.visible = _sigil.texture != null
 	if not house.is_empty():
