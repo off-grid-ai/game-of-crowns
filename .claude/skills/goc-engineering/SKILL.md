@@ -14,3 +14,7 @@ description: How code is changed, checked and committed in Game of Crowns (realm
 7. **Third-party art stays out of git** (Sketchfab, Mixamo, Quaternius, Poly Haven): only its `.import` files and licences are tracked. Own art, code, docs and the baseline realm go in. See `.gitignore`.
 8. **Never wait.** Renders, imports and long calls run in the background; resume from the notification.
 9. **Local model:** text only, Off Grid's Omni 2B (or 1.7B), no call budget. Small model: short persona, real conversation turns, plain-text replies; JSON only for simple picks.
+
+## Sessions share one checkout and one git index
+
+Several sessions commit to `main` from the same folder. Never `git add` and leave files staged: another session's commit will take them. Commit only your own paths in one step, `git commit -m "…" -- <your paths>` (new files: `git add <paths> && git commit -m "…" -- <paths>` in the same command), then `git push`; if the push is rejected because another session just pushed, `git pull --rebase -q && git push`. Check the compile output is clean before committing, never after.
