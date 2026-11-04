@@ -6,6 +6,8 @@ How a round is played: `realm/tools/play/*.play` scenarios feed real input (keys
 
 ## 2026-11-05 (overnight)
 
+**Supervisor 04:22** (independent review of r01–r04): (1) the opening: three panels cover the map and the Hand's counsel, banners and marriage were never captured; re-capture until each has a frame. (2) Favour means nothing yet: all 28, no reasons; show why (CK3-style: "+10 marriage, −15 taxed") and what each band does. (3) Guard what the player reads: garbled model lines, engine words ("Training Settlers 6%", "20 t of 400 t"), the Crown's row of dots, a 0 purse with no reason. Also seen: the timed reign ended on a newcomer; the Crown razed towns unbidden (both fixed in 74949fb, not yet re-captured). Call kept: the houses and chronicle panels stay open by default (Ali asked for that view); the counsel must stand out with them.
+
 | # | Expected | Found | Change | Commit |
 |---|---|---|---|---|
 | 16 | The King can bind houses together (political alliances) | No royal diplomacy at all: alliances were chronicle lines between lords | A royal match on any house's card: both houses warm to the crown, the lords to each other, heirs named, a long truce against raids and plots | 70aa696 |

@@ -1547,7 +1547,15 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 			var f := int(p["favour"])
 			var fav := T.datum("%d" % f, T.SIZE_DESC, T.DANGER if f < 30 else (T.ACCENT if f < 45 else T.TEXT))
 			fav.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-			fav.tooltip_text = "Favour toward the crown: %d of 100. %s" % [f, "They may rise against you." if f < 30 else ("Growing cold." if f < 45 else "Content, for now.")]
+			# Why they feel so (the bridge's ledger of kindnesses and grievances),
+			# then what it means: CK3's opinion breakdown, in the realm's words.
+			var why := PackedStringArray()
+			for r in p.get("favourWhy", []):
+				var d := int(r.get("d", 0))
+				if d != 0:
+					why.append("%s%d  %s" % ["+" if d > 0 else "", d, String(r.get("why", ""))])
+			var means := "Below 30 they may rise against you and refuse your banners." if f < 30 else ("Growing cold: below 30 they may rise." if f < 45 else ("Loyal: they answer your banners at once." if f >= 60 else "Content, for now."))
+			fav.tooltip_text = "Favour toward the crown: %d of 100\n\n%s%s" % [f, ("\n".join(why) + "\n\n") if not why.is_empty() else "", means]
 			fav.mouse_filter = Control.MOUSE_FILTER_PASS
 			grid.add_child(fav)
 		else:

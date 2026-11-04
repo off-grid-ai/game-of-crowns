@@ -55,6 +55,7 @@ let turnSeconds = 90;
 let paused = false;
 // Each great house's regard for the crown (0-100), by Freeciv player id.
 let favour = {};
+const favourWhy = {};  // player id -> [{ d, why }], newest last: why each house feels as it does
 let court = null;
 let minds = null;
 let arcs = null;
@@ -90,6 +91,8 @@ function load(id) {
   turnSeconds = 90;  // one pace for every realm: a season a minute and a half
   paused = meta.status !== "running";
   favour = chron.readJson(path.join(P.state, "favour.json"), {});
+  for (const k of Object.keys(favourWhy)) delete favourWhy[k];
+  Object.assign(favourWhy, chron.readJson(path.join(P.state, "favour-why.json"), {}));
   meta.tithe ??= 0.1;
   court = new Court(P.base, record);
   arcs = new Arcs(P.base, court, record);
@@ -262,6 +265,9 @@ function applyStartOptions() {
     // with friends, doubters and an obvious problem, not seven equal numbers.
     const lean = { "House Stormhold": 12, "House Goldcrest": 8, "House Wolfholt": 4, "House Highfell": 2, "House Thornvale": -2, "House Ironreach": -10, "House Sunspire": -14 }[houseFor(p).name] ?? 0;
     favour[p.id] = clampFavour(({ loyal: 74, wary: 55, resentful: 34 }[o.trust] ?? 55) + lean);
+    favourWhy[p.id] = [];
+    noteFavour(p.id, ({ loyal: 19, wary: 0, resentful: -21 }[o.trust] ?? 0), "the realm's mood at your crowning");
+    noteFavour(p.id, lean, lean > 0 ? "their old loyalty to the crown" : "their old grievances against the crown");
   }
   saveFavour();
   const crown = world.players.find((x) => houseFor(x).crown);
@@ -343,7 +349,7 @@ function rule(id, option) {
     crownNow.gold -= out.cost;
   }
   out.lua.forEach((l) => send(`lua cmd ${l}`));
-  shiftFavour(out.favour);
+  shiftFavour(out.favour, "your ruling at court");
   record({ turn: world.turn, kind: "decree", text: out.text });
   rulingScene(id, option, out);
   return { ok: true, text: crowns(out.text) };
@@ -460,6 +466,7 @@ async function runArcs(n = 1, start = true) {
 
 function saveFavour() {
   fs.writeFileSync(path.join(P.state, "favour.json"), JSON.stringify(favour));
+  fs.writeFileSync(path.join(P.state, "favour-why.json"), JSON.stringify(favourWhy));
 }
 
 function favourOf(id) {
@@ -498,8 +505,23 @@ function counsel(players, cities, threat) {
   return out.sort((a, b) => b.urgency - a.urgency).slice(0, 3);
 }
 
-function shiftFavour(changes) {
-  for (const [id, delta] of Object.entries(changes)) favour[id] = clampFavour(favourOf(Number(id)) + delta);
+// Why each house feels as it does: the last few things that moved its favour,
+// shown to the King like a ledger of grievances and kindnesses.
+
+function noteFavour(id, d, why) {
+  if (!d || !why) return;
+  const list = (favourWhy[id] ??= []);
+  const same = list.find((x) => x.why === why);
+  if (same) same.d += d;  // the same cause again adds up, not repeats
+  else list.push({ d, why });
+  while (list.length > 6) list.shift();
+}
+
+function shiftFavour(changes, why = "") {
+  for (const [id, delta] of Object.entries(changes)) {
+    favour[id] = clampFavour(favourOf(Number(id)) + delta);
+    noteFavour(id, delta, why);
+  }
   saveFavour();
 }
 
@@ -514,6 +536,7 @@ function collectTithe(turn) {
     const before = favourOf(p.id);
     // Favour drifts back toward a neutral 55, minus the tithe's wear.
     favour[p.id] = clampFavour(before + (55 - before) * 0.03 - wear);
+    if (wear) noteFavour(p.id, -wear, "the royal tithe");
     if (before >= 20 && favour[p.id] < 20) {
       record({ turn, kind: "unrest", text: `${houseFor(p).name} speaks openly against the crown. Their loyalty hangs by a thread.` });
     }
@@ -700,7 +723,10 @@ http.createServer(async (req, res) => {
     const last = history[history.length - 1];
     const crownP = players.find((p) => p.house.crown);
     const crown = { treasury: crownP?.gold ?? 0, tithe: meta.tithe, decrees: DECREES };
-    for (const p of players) p.favour = p.house.wild || p.house.crown ? null : favourOf(p.id);
+    for (const p of players) {
+      p.favour = p.house.wild || p.house.crown ? null : favourOf(p.id);
+      p.favourWhy = favourWhy[p.id] ?? [];
+    }
     // Each house's measures as the ledger keeps them (one reckoning, recordTurn).
     for (const p of players) p.measures = last?.houses?.[p.house.name] ?? null;
     const usurper = stakes?.s.usurper.stage ?? "none";
@@ -801,7 +827,7 @@ http.createServer(async (req, res) => {
     // Spend now, so a second decree before the next snapshot can't overdraw the treasury.
     const crownNow = world.players.find((p) => houseFor(p).crown);
     if (crownNow) crownNow.gold -= result.cost;
-    shiftFavour(result.favour);
+    shiftFavour(result.favour, { gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "called to the King's banners", marriage: "a royal match" }[cmd.action] ?? "a royal decree");
     const seat = world.cities.find((c) => c.owner === crownNow?.id && c.capital);
     const target = world.cities.find((c) => c.id === Number(cmd.city));
     if (seat && target && (cmd.action === "relief" || cmd.action === "gift")) scene(cmd.action === "relief" ? "grain" : "tribute", { x: seat.x, y: seat.y, tx: target.x, ty: target.y, city: target.id });
