@@ -168,6 +168,7 @@ func _ready() -> void:
 	interior = preload("res://scripts/interior.gd").new()
 	interior.people = villagers._people
 	add_child(interior)
+	ui.walk_as_king.connect(_walk_as_king)
 	hero.control_requested.connect(func(p, h):
 		hero.close()
 		_take_control(p, h))
@@ -1259,6 +1260,28 @@ func _say_aloud(text: String, who: Dictionary, done := Callable()) -> void:
 		if done.is_valid():
 			_voice.finished.connect(done, CONNECT_ONE_SHOT)
 		_voice.play())
+
+
+## Step into a house's lord (the Crown's is the King): their record from the
+## bridge, then into their body at their seat.
+func _take_lord(house_id: int) -> void:
+	bridge.house(house_id, func(d):
+		if not (d is Dictionary and d.get("lord") is Dictionary):
+			ui.toast("There is no one on that seat to walk as.")
+			return
+		var h: Dictionary = _houses.get(int(d.get("id", house_id)), d)
+		bridge.person(str(d["lord"].get("id", "")), func(p):
+			if p is Dictionary:
+				_take_control(p, h)))
+
+
+## The King: the lord of the Crown's house.
+func _walk_as_king() -> void:
+	for p in bridge.world.get("players", []):
+		if p.get("house", {}).get("crown", false):
+			_take_lord(int(p["id"]))
+			return
+	ui.toast("The throne is empty.")
 
 
 ## Step into someone: they appear at their seat (or their house's chief town)

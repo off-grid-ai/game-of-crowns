@@ -27,6 +27,7 @@ const ACTIONS := [
 	["court", "The court", "The realm", [KEY_K]],
 	["lore", "The Lore of Aldmere", "The realm", [KEY_B]],
 	["minimap", "Show or hide the minimap", "The realm", [KEY_M]],
+	["walk_king", "Walk the realm as the King", "The realm", [KEY_G]],
 	["back", "Close, step back", "The realm", [KEY_ESCAPE]],
 	["walk_forward", "Walk forward", "Walking and fighting", [KEY_W, KEY_UP]],
 	["walk_back", "Walk back", "Walking and fighting", [KEY_S, KEY_DOWN]],
