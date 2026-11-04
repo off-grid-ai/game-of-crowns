@@ -957,6 +957,8 @@ actor_reqs    =
       "DiplRel",       "War",     "Local", TRUE
     }
 
+; The Crown (Norman) never takes a town by storm: the King's host defends; towns
+; change hands by his decree (a grant), never by his soldiers razing a hamlet.
 [actionenabler_conquer_city_native]
 action        = "Conquer City"
 actor_reqs    =
@@ -967,6 +969,7 @@ actor_reqs    =
       "MinMoveFrags",   "1",              "Local",  TRUE
       "UnitState",      "OnLivableTile",  "Local",  TRUE
       "Nation",         "Animal Kingdom", "Player", FALSE
+      "Nation",         "Norman",         "Player", FALSE
     }
 target_reqs   =
     { "type",           "name",           "range",  "present"
@@ -984,6 +987,7 @@ actor_reqs    =
       "UnitFlag",       "Marines",        "Local",  TRUE
       "UnitState",      "OnLivableTile",  "Local",  FALSE
       "Nation",         "Animal Kingdom", "Player", FALSE
+      "Nation",         "Norman",         "Player", FALSE
     }
 target_reqs   =
     { "type",           "name",           "range",  "present"

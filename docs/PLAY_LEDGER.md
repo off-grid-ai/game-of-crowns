@@ -14,6 +14,7 @@ How a round is played: `realm/tools/play/*.play` scenarios feed real input (keys
 
 | # | Expected | Found | Change | Commit |
 |---|---|---|---|---|
+| 43 | The King's host never burns a town unbidden (row 19 again) | "Windstone is razed to the ground by The Crown" (r11/07). The row-19 fix never ran: this Freeciv has no `edit.trait_mod_set`, and the call failed in Lua on every start (freeciv.log); the peace decree's "war appetite cools" was the same dead call | The ruleset forbids the Crown's nation (Norman) "Conquer City"; it defends, and towns change hands only by the King's grant. Dead trait calls removed; peace keeps what works (soldiers near the other house's towns sent home, the truce). To watch: no "razed by The Crown" in later rounds | (next) |
 | 42 | Watching an order follows its result | "Tribute leaves Rosehall" in spaced type over the result card, right after the King *sent* gold (r11/06) | "The King's gold on the road to Rosehall" in the card's type, under the result (r11/07) | 5cc7a45 |
 | 41 | The court key reads at a glance | The crown key looked dimmed with three waiting (a pulse set only when the world refreshed, so each frame caught a random brightness) | Lit while anyone waits, dim when nobody does | 018d5ef |
 | 40 | The tithe reckoning is true | "The royal tithe brings 0 crowns … the castles cost 16" (r11/04): one season's take, no unit | Every season since the last reckoning, in crowns; says so plainly when none came | 018d5ef |

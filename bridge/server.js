@@ -203,9 +203,8 @@ function startFreeciv() {
   }
   setTimeout(() => {
     send(`lua unsafe-cmd SNAP_DIR = "${P.state}/"`);
-    // The Crown's soldiers defend; they don't conquer or raze in the King's name
-    // unbidden (older realms were saved with a warlike Crown).
-    send(`lua cmd for p in players_iterate() do if p.name == "The King" then edit.trait_mod_set(p, "Aggressive", -100); edit.trait_mod_set(p, "Expansionist", -100) end end`);
+    // The Crown's soldiers defend and never take a town unbidden: the ruleset
+    // forbids the Normans "Conquer City" (data/realmrules/actions.ruleset).
     send(`set timeout ${paused ? 0 : turnSeconds}`);
     snapshot();
   }, 4000);

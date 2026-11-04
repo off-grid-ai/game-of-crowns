@@ -189,7 +189,7 @@ export function decree(cmd, world) {
         const who = cold.map((p) => houseFor(p).name).join(" and ");
         return { cost: d.cost, favour: Object.fromEntries(cold.map((p) => [p.id, -5])), lua: [pay], text: `The King commands peace between ${a} and ${b}. ${who} ${cold.length > 1 ? "refuse" : "refuses"} the King's peace, and the war goes on.` };
       }
-      const home = (x, y) => `for p in players_iterate() do if p.id == ${x} then for u in p:units_iterate() do local r = u.utype:rule_name(); if r ~= "Workers" and r ~= "Settlers" then for q in players_iterate() do if q.id == ${y} then for c in q:cities_iterate() do if u.tile:sq_distance(c.tile) <= 9 then edit.unit_kill(u, "killed", nil); break end end end end end end; edit.trait_mod_set(p, "Aggressive", -60) end end`;
+      const home = (x, y) => `for p in players_iterate() do if p.id == ${x} then for u in p:units_iterate() do local r = u.utype:rule_name(); if r ~= "Workers" and r ~= "Settlers" then for q in players_iterate() do if q.id == ${y} then for c in q:cities_iterate() do if u.tile:sq_distance(c.tile) <= 9 then edit.unit_kill(u, "killed", nil); break end end end end end end end end`;
       return { cost: d.cost, favour: { [owner.id]: 2, [to.id]: 2 }, lua: [pay, home(owner.id, to.id), home(to.id, owner.id)], text: `The King commands peace between ${a} and ${b}. Both bow to the crown; their hosts break camp and turn for home.`, truce: [owner.id, to.id] };
     }
     case "marriage": {
