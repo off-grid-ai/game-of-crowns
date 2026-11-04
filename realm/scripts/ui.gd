@@ -157,6 +157,19 @@ func _icon_btn(icon: String, tip: String, cb: Callable = Callable()) -> Button:
 	b.add_theme_color_override("icon_hover_color", T.TEXT)
 	b.add_theme_color_override("icon_pressed_color", T.ACCENT)
 	b.add_theme_color_override("icon_hover_pressed_color", T.ACCENT)
+	# Reads as a button at rest (a faint key), lifts on hover, gold when on.
+	var key := func(bg: Color, line: Color) -> StyleBoxFlat:
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = bg
+		sb.border_color = line
+		sb.set_border_width_all(1)
+		sb.set_corner_radius_all(9)
+		return sb
+	b.add_theme_stylebox_override("normal", key.call(Color(1, 0.97, 0.9, 0.05), Color(1, 0.95, 0.85, 0.08)))
+	b.add_theme_stylebox_override("hover", key.call(Color(1, 0.97, 0.9, 0.13), Color(1, 0.95, 0.85, 0.22)))
+	b.add_theme_stylebox_override("pressed", key.call(Color(0.86, 0.71, 0.43, 0.2), Color(0.86, 0.71, 0.43, 0.5)))
+	b.add_theme_stylebox_override("hover_pressed", key.call(Color(0.86, 0.71, 0.43, 0.26), Color(0.86, 0.71, 0.43, 0.6)))
+	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	if cb.is_valid():
 		b.pressed.connect(cb)
 	return b
@@ -180,6 +193,43 @@ func _gauge(parent: Control, icon: String, tip: String) -> Label:
 	h.add_child(d)
 	parent.add_child(h)
 	return d
+
+
+var _top: Array = []  # the date, state and actions pills
+
+
+## Keeps the top bar from overlapping on smaller screens: the realm's state sits
+## centred when there's room, else just right of the date, else on a second row.
+func _arrange_top() -> void:
+	if _top.size() < 3:
+		return
+	var when: Control = _top[0]
+	var state: Control = _top[1]
+	var act: Control = _top[2]
+	var w := get_viewport().get_visible_rect().size.x
+	var sw := state.get_combined_minimum_size().x
+	var left := when.position.x + when.get_combined_minimum_size().x + 12.0
+	var right := w - 10.0 - act.get_combined_minimum_size().x - 12.0
+	state.offset_top = 10
+	if w * 0.5 - sw * 0.5 >= left and w * 0.5 + sw * 0.5 <= right:
+		state.anchor_left = 0.5
+		state.anchor_right = 0.5
+		state.grow_horizontal = Control.GROW_DIRECTION_BOTH
+		state.offset_left = -sw * 0.5
+		state.offset_right = sw * 0.5
+	elif left + sw <= right:
+		state.anchor_left = 0.0
+		state.anchor_right = 0.0
+		state.grow_horizontal = Control.GROW_DIRECTION_END
+		state.offset_left = left
+		state.offset_right = left + sw
+	else:
+		state.anchor_left = 0.0
+		state.anchor_right = 0.0
+		state.grow_horizontal = Control.GROW_DIRECTION_END
+		state.offset_left = 10
+		state.offset_right = 10 + sw
+		state.offset_top = 10 + when.get_combined_minimum_size().y + 8
 
 
 func _pill(anchor_x: float, grow: int) -> HBoxContainer:
@@ -213,8 +263,10 @@ func _build_top_bar() -> void:
 	_reign.add_theme_font_size_override("font_size", 9)
 	who.add_child(_reign)
 	when.add_child(who)
-	# Top-centre: the state of the realm.
+	# Top-centre: the state of the realm (beside the date instead, on a screen
+	# too narrow for both it and the actions; see _arrange_top).
 	var state := _pill(0.5, Control.GROW_DIRECTION_BOTH)
+	_top = [when.get_parent(), state.get_parent()]
 	_gold = _gauge(state, "coins", "Royal treasury, in crowns")
 	_peace = _gauge(state, "scales", "Peace: share of the great houses not at war")
 	_souls = _gauge(state, "users-three", "Souls in the realm")
@@ -233,6 +285,9 @@ func _build_top_bar() -> void:
 	# Top-right: what you can do.
 	var act := _pill(1.0, Control.GROW_DIRECTION_BEGIN)
 	act.get_parent().offset_right = -10
+	_top.append(act.get_parent())
+	get_viewport().size_changed.connect(_arrange_top)
+	_arrange_top.call_deferred()
 	act.add_theme_constant_override("separation", 0)
 	_court_btn = _icon_btn("crown", "The court: petitioners waiting  (K)", _toggle_court)
 	_court_btn.visible = false
