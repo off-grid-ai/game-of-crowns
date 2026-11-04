@@ -6,6 +6,7 @@ extends Node3D
 
 var terrain: Node3D
 var towns: Node3D
+var _nav = preload("res://scripts/town_nav.gd").new()  # where people may stand, and the streets they walk
 var _people = preload("res://scripts/people.gd").new()
 const Heraldry = preload("res://scripts/heraldry.gd")
 const Realistic = preload("res://scripts/realistic.gd")
@@ -21,7 +22,81 @@ func _ready() -> void:
 	_wagon = builder.piece_mesh("Prop_Wagon")
 
 
+# --- the gate: nobody in a building ----------------------------------------------
+
+## Test shots only (--shot): every five seconds, how many people anywhere (in
+## scenes, armies and towns) have their feet inside a building, written to
+## user://perf.log as "INSIDE n" with the worst few. 0 throughout is the bar.
+## Riders sit above the ground and men on a wall-walk stand on it: neither counts.
+var _gate: bool = Array(OS.get_cmdline_user_args()).any(func(a): return String(a).begins_with("--shot="))
+var _gate_at := 5.0
+
+
+func _process(delta: float) -> void:
+	if not _gate or terrain == null:
+		return
+	_gate_at -= delta
+	if _gate_at > 0.0:
+		return
+	_gate_at = 5.0
+	if towns == null:
+		towns = get_parent().get("towns")
+	var count := 0
+	var seen := 0
+	var where := []
+	var systems := {"scenes": self, "units": get_parent().get("units"), "villagers": get_parent().get("villagers")}
+	for label in systems:
+		var sys: Node = systems[label]
+		if sys == null:
+			continue
+		for skel in (sys as Node).find_children("GeneralSkeleton", "Skeleton3D", true, false):
+			var person := skel.get_parent().get_parent() as Node3D
+			if person == null or person.has_meta("mounted") or not person.is_visible_in_tree():
+				continue
+			seen += 1
+			var feet := person.global_position
+			if feet.y > terrain.height_at(feet.x, feet.z) + 0.03:
+				continue
+			if _nav.in_building(towns, feet):
+				count += 1
+				if where.size() < 4:
+					where.append("%s/%s(%.1f,%.1f)" % [label, _scene_of(person, sys), feet.x, feet.z])
+		# Horses: the whole body, nose to tail, clear of every building.
+		for rig in (sys as Node).find_children("HorseRig", "Node3D", true, false):
+			var horse := rig.get_parent().get_parent() as Node3D
+			if horse == null or not horse.is_visible_in_tree():
+				continue
+			seen += 1
+			if _nav.in_building(towns, horse.global_position, HORSE_BODY * 0.8):
+				count += 1
+				if where.size() < 4:
+					where.append("%s horse(%.1f,%.1f)" % [label, horse.global_position.x, horse.global_position.z])
+	var f := FileAccess.open("user://perf.log", FileAccess.READ_WRITE if FileAccess.file_exists("user://perf.log") else FileAccess.WRITE)
+	if f == null:
+		return
+	f.seek_end()
+	f.store_line("%s INSIDE %d of %d %s" % [Time.get_time_string_from_system(), count, seen, " ".join(where)])
+
+
+## Whether the towns stand: scenes are set out against their buildings, so
+## none is staged while a realm just opened is still putting them up.
+func _towns_up() -> bool:
+	if towns == null:
+		towns = get_parent().get("towns")
+	return towns == null or not towns.has_method("building") or not (towns.building() or towns.towns.is_empty())
+
+
+## The top node under `sys` that `n` belongs to: a scene's name, for the gate.
+static func _scene_of(n: Node, sys: Node) -> String:
+	while n and n.get_parent() != sys:
+		n = n.get_parent()
+	return String(n.name) if n else "?"
+
+
 func sync(world: Dictionary, houses: Dictionary) -> void:
+	if not _towns_up():
+		get_tree().create_timer(1.0).timeout.connect(sync.bind(world, houses))
+		return
 	var played_battle := {}
 	for s in world.get("scenes", []):
 		var key := "%s:%d:%d:%d:%d" % [s["kind"], int(s.get("x", 0)), int(s.get("y", 0)), int(s.get("turn", 0)), int(s.get("city", -1))]
@@ -94,6 +169,28 @@ func _rng(at: Vector3) -> RandomNumberGenerator:
 	return r
 
 
+## Where a person may stand nearest `p`: on the ground and in no building
+## (town_nav.gd, the realm's one answer). Every person or horse a scene places
+## or moves is set down through here; things (standards, fires, wagons' dust)
+## use _ground.
+func _stand(p: Vector3, body := 0.0) -> Vector3:
+	if towns == null:
+		towns = get_parent().get("towns")
+	_nav.terrain = terrain
+	return _nav.stand(towns, p, body)
+
+
+## A horse is set down with its whole body clear, nose to tail.
+const HORSE_BODY := 0.17
+
+
+## The way a scene's people go from one place to another: through a town's
+## streets, never through its houses, and over open land between.
+func _route(from: Vector3, to: Vector3) -> PackedVector3Array:
+	_stand(from)  # finds the towns and the ground
+	return _nav.route(towns, from, to)
+
+
 func _ground(p: Vector3) -> Vector3:
 	return Vector3(p.x, terrain.height_at(p.x, p.z), p.z)
 
@@ -115,7 +212,7 @@ const DEATHS := ["Death01", "Death_Front", "Death_Back", "Sword_Death"]
 ## a man on foot is scaled to the towns, a horse is not.
 const CARRIED := 0.4
 static func carried_standard(bearer: Node3D, house: Dictionary, color: Color) -> Node3D:
-	var k := maxf(bearer.scale.y, 0.001)
+	var k := maxf(bearer.global_transform.basis.get_scale().y if bearer.is_inside_tree() else bearer.scale.y, 0.001)
 	var b: Node3D = Heraldry.standard(house, color, CARRIED / k)
 	b.position = Vector3(0.042, 0, -0.012) / k
 	bearer.add_child(b)
@@ -214,6 +311,7 @@ signal framing(pos: Vector3, dist: float, yaw: float)
 
 func _battle(at: Vector3, loser: Dictionary, victor := {}) -> void:
 	var root := Node3D.new()
+	root.name = "Battle"
 	add_child(root)
 	var r := _rng(at)
 	var lost := Color.from_string(String(loser.get("color", "#777")), Color.GRAY)
@@ -225,7 +323,16 @@ func _battle(at: Vector3, loser: Dictionary, victor := {}) -> void:
 	var cols := [lost.lerp(Color.WHITE, 0.3), won.lerp(Color.WHITE, 0.15)]
 	# Battles are fought on open ground: out past the town, off its roads and
 	# fields, on land flat enough to hold a line. No trees stand in the fight.
+	# The field is chosen against the towns as they stand: while they are
+	# still going up (a realm just opened), wait for them.
+	if not _towns_up():
+		root.queue_free()
+		get_tree().create_timer(0.5).timeout.connect(_battle.bind(at, loser, victor))
+		return
 	at = _battlefield(at)
+	if at == Vector3.INF:
+		root.queue_free()
+		return  # no open ground near: the battle is told, not shown
 	terrain.clear_around(at, FIELD)
 	# The lines meet across the view, so you watch the clash from the side.
 	var dir := Vector3(cos(r.randf() * TAU), 0, 0)
@@ -237,6 +344,11 @@ func _battle(at: Vector3, loser: Dictionary, victor := {}) -> void:
 	# One side of the field for the whole battle: moving round it puts houses
 	# and trees between you and the fighting.
 	var view_yaw := atan2(side.x, side.z) + 0.35
+	# The camera watches low across the field from that side: fell the trees
+	# between it and the fight, in a cone opening toward where it stands.
+	var toward_cam := Vector3(sin(view_yaw), 0, cos(view_yaw))
+	for k in 6:
+		terrain.clear_around(at + toward_cam * (FIELD + k * 1.2), 1.4 + k * 0.35)
 	var teams := [[], []]
 	for team in 2:
 		var face: Vector3 = -dir if team == 0 else dir
@@ -248,7 +360,7 @@ func _battle(at: Vector3, loser: Dictionary, victor := {}) -> void:
 				slot += side * r.randf_range(-0.015, 0.015) - face * r.randf_range(0.0, 0.02)
 				var f: Node3D = _people.make(r, "soldier", cols[team], "adult")
 				var back := 0.25 if team == 0 else 1.5
-				f.position = _ground(slot - face * back)
+				f.position = _stand(slot - face * back)
 				f.rotation.y = atan2(face.x, face.z)
 				root.add_child(f)
 				var kit := "sword"
@@ -265,7 +377,7 @@ func _battle(at: Vector3, loser: Dictionary, victor := {}) -> void:
 		var face: Vector3 = -dir if team == 0 else dir
 		var p: Vector3 = at - face * (REACH + RANKS * ROW + (0.3 if team == 0 else 1.6))
 		var bearer: Node3D = _people.make(r, "soldier", cols[team], "adult")
-		bearer.position = _ground(p)
+		bearer.position = _stand(p)
 		bearer.rotation.y = atan2(face.x, face.z)
 		root.add_child(bearer)
 		arm(bearer, "bow")
@@ -301,7 +413,8 @@ func _battle(at: Vector3, loser: Dictionary, victor := {}) -> void:
 	tw.tween_callback(func():
 		_people.play(captain["node"], "Yelling", 1.2)
 		_advance(teams[1], 0.0, 2.0, 0.0, "Sprint", r)
-		framing.emit(_ground(at), 3.6, view_yaw))
+		# Toward the wing, where the knights are wheeling in on the wall's end.
+		framing.emit(_ground(at + side * 0.6), 3.4, view_yaw))
 	tw.tween_interval(2.1)
 	# 4. The clash (10-21 s): front pairs duel; men fall, those behind step up;
 	# the knights hit the open end of the wall.
@@ -380,7 +493,7 @@ func _advance(team: Array, start: float, secs: float, short: float, anim: String
 			var mt := n.create_tween()
 			mt.tween_method(func(k: float):
 				if is_instance_valid(n) and m["alive"]:
-					n.position = _ground(from.lerp(to, k)), 0.0, 1.0, secs * r.randf_range(0.95, 1.03)))
+					n.position = _stand(from.lerp(to, k)), 0.0, 1.0, secs * r.randf_range(0.95, 1.03)))
 
 
 ## Plays a move with everyone at the same point in it: a rank marching in step,
@@ -401,7 +514,7 @@ func _walk_to(m: Dictionary, to: Vector3, secs: float, anim: String, then: Strin
 	var mt := n.create_tween()
 	mt.tween_method(func(k: float):
 		if is_instance_valid(n) and m["alive"]:
-			n.position = _ground(from.lerp(to, k)), 0.0, 1.0, secs)
+			n.position = _stand(from.lerp(to, k)), 0.0, 1.0, secs)
 	mt.tween_callback(func():
 		if m["alive"]:
 			_people.play(n, then, r.randf_range(0.9, 1.1)))
@@ -416,7 +529,7 @@ func _duel_step(m: Dictionary, r: RandomNumberGenerator, wall := false) -> void:
 	var home: Vector3 = m["slot"]
 	var to: Vector3 = home + face * r.randf_range(-0.04, 0.03) + across * r.randf_range(-0.025, 0.025)
 	var mt := n.create_tween()
-	mt.tween_property(n, "position", _ground(to), r.randf_range(0.35, 0.6)).set_trans(Tween.TRANS_SINE)
+	mt.tween_property(n, "position", _stand(to), r.randf_range(0.35, 0.6)).set_trans(Tween.TRANS_SINE)
 	var roll := r.randf()
 	var move := "Sword_Attack" if roll < 0.4 else ("Sword_Attack_2" if roll < 0.7 else "Shield_Block")
 	if wall and roll < 0.25:
@@ -438,7 +551,7 @@ func _follow(b: Dictionary, dist: float, secs: float, r: RandomNumberGenerator) 
 	var tw := n.create_tween()
 	tw.tween_method(func(k: float):
 		if is_instance_valid(n) and not n.has_meta("dead"):
-			var p := _ground(n.position.lerp(to, k * 0.2))
+			var p := _stand(n.position.lerp(to, k * 0.2))
 			n.position = p
 			if flag:
 				flag.position = _ground(p + off), 0.0, 1.0, secs)
@@ -567,7 +680,7 @@ func _flank_company(root: Node3D, at: Vector3, dir: Vector3, side: Vector3, col:
 		h.mount(_people.make(r, "soldier", col, "adult"))
 		arm(h.rider, "lance")
 		var wing: Vector3 = at + side * ((FILES / 2.0) * GAP + 0.55 + (i / 2) * 0.24) - dir * ((i % 2) * 0.22)
-		h.position = _ground(wing - dir * (REACH + RANKS * ROW + 1.8))
+		h.position = _stand(wing - dir * (REACH + RANKS * ROW + 1.8), HORSE_BODY)
 		h.rotation.y = atan2(dir.x, dir.z)
 		knights.append({"node": h, "wing": wing, "alive": true})
 	return knights
@@ -596,7 +709,7 @@ func _charge_flank(knights: Array, wall: Array, at: Vector3, dir: Vector3, side:
 		# Up at a walk during the advance (3-7.5 s).
 		var from: Vector3 = h.position
 		tw.tween_interval(3.0 + r.randf_range(0.0, 0.3))
-		tw.tween_method(func(t: float): h.position = _ground(from.lerp(poised, t)), 0.0, 1.0, 4.4)
+		tw.tween_method(func(t: float): h.position = _stand(from.lerp(poised, t), HORSE_BODY), 0.0, 1.0, 4.4)
 		tw.tween_interval(start - 7.7 + i * 0.15)
 		if i == 0:
 			tw.tween_callback(h.rear)
@@ -605,7 +718,7 @@ func _charge_flank(knights: Array, wall: Array, at: Vector3, dir: Vector3, side:
 		tw.tween_method(func(t: float):
 			var p := curve.sample_baked(t * length)
 			var q := curve.sample_baked(minf(t + 0.02, 1.0) * length)
-			h.position = _ground(p)
+			h.position = _stand(p, HORSE_BODY)
 			if q.distance_to(p) > 0.0001:
 				h.rotation.y = atan2(q.x - p.x, q.z - p.z), 0.0, 1.0, length / Horse.GALLOP * 1.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		tw.tween_callback(func():
@@ -620,11 +733,12 @@ func _charge_flank(knights: Array, wall: Array, at: Vector3, dir: Vector3, side:
 				h.fall()
 				var thrown: Node3D = h.dismount()
 				if thrown:
+					thrown.global_position = _stand(thrown.global_position)
 					_die(thrown, "Death_Front", r))
 		# The rest ride on through the broken flank and slow to a walk.
 		tw.tween_method(func(t: float):
 			if k["alive"]:
-				h.position = _ground(into.lerp(through, t)), 0.0, 1.0, 2.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+				h.position = _stand(into.lerp(through, t), HORSE_BODY), 0.0, 1.0, 2.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 
 
 ## A standard planted behind a line or at a muster: a little taller than one carried.
@@ -695,7 +809,13 @@ func _siege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, fo
 	if _sieges.has(id) and is_instance_valid(_sieges[id]["root"]):
 		_sieges[id]["until"] = Time.get_ticks_msec() / 1000.0 + turn_secs * 1.5
 		return
+	if not _towns_up():
+		# Pitched once the town stands; until then, where it will be.
+		_sieges[id] = {"root": null, "until": 0.0, "front": _ground(approach)}
+		get_tree().create_timer(1.0).timeout.connect(_siege.bind(id, at, approach, size, engines, foe, held, turn_secs))
+		return
 	var root := Node3D.new()
+	root.name = "Siege"
 	add_child(root)
 	_sieges[id] = {"root": root, "until": Time.get_ticks_msec() / 1000.0 + turn_secs * 1.5}
 	var r := _rng(at)
@@ -725,7 +845,7 @@ func _siege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, fo
 			if not _footing(p):
 				continue
 			var f: Node3D = _people.make(r, "soldier", foe_col, "adult")
-			f.position = _ground(p)
+			f.position = _stand(p)
 			f.rotation.y = atan2(inward.x, inward.z) + r.randf_range(-0.6, 0.6)
 			root.add_child(f)
 			arm(f, "spear" if i % 2 == 0 else "sword")
@@ -747,7 +867,7 @@ func _siege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, fo
 	var archers := []
 	for i in 9:
 		var a := (i - 4) * 0.13
-		var p: Vector3 = arc.call(a, wall - 0.12)
+		var p: Vector3 = _stand(arc.call(a, wall - 0.3))
 		if not _footing(p):
 			continue
 		var f: Node3D = _people.make(r, "soldier", held_col, "adult")
@@ -807,18 +927,20 @@ func _footing(p: Vector3) -> bool:
 	return absf(terrain.height_at(p.x + 0.15, p.z) - terrain.height_at(p.x - 0.15, p.z)) < 0.12 and absf(terrain.height_at(p.x, p.z + 0.15) - terrain.height_at(p.x, p.z - 0.15)) < 0.12
 
 
-## Open ground for a pitched battle, as near `near` as there is: dry, flat
-## enough to hold a line, past every town's reach, off roads and farms. Each
-## spot in rings about `near` is scored by what lies across the field there.
+## Open ground for a pitched battle, as near `near` as there is. A field is
+## never in or beside a town or a farmstead: one whose fighting ground (FIELD
+## and a margin) comes within any town's reach or near a farm is refused
+## outright, and the search widens ring by ring until a clear one is found.
+## Among the clear fields of the nearest ring, the driest, flattest and most
+## open wins. Vector3.INF if the land has none (no battle is staged then).
 func _battlefield(near: Vector3) -> Vector3:
 	var main := get_parent()
 	if towns == null:
 		towns = main.get("towns")
 	var roads = main.get("roads")
 	var country = main.get("countryside")
-	# Only the towns and farms that could reach the field, gathered once.
-	var span := 10 * 0.8 + FIELD
-	var walls := []  # [centre, reach]
+	var span := RINGS * 0.8 + FIELD
+	var walls := []  # [centre, reach] of every town that could touch a field
 	if towns:
 		for id in towns.towns:
 			var t: Node3D = towns.towns[id]["node"]
@@ -827,29 +949,53 @@ func _battlefield(near: Vector3) -> Vector3:
 				walls.append([t.global_position, reach])
 	var farms := []
 	for f in (country.get("_sites") if country else []):
-		if _flat_gap(f["at"], near) < span + 1.6:
+		if _flat_gap(f["at"], near) < span + FARM_CLEAR:
 			farms.append(f["at"])
-	var best := near
-	var best_score := INF
-	for ring in 10:
+	for ring in RINGS:
+		var best := Vector3.INF
+		var best_score := INF
 		var n := maxi(1, ring * 8)
 		for i in n:
 			var a := TAU * i / n
 			var p := _ground(near + Vector3(cos(a), 0, sin(a)) * ring * 0.8)
-			var score := _field_cost(p, roads, walls, farms) + ring * 0.3
+			if not _clear_field(p, walls, farms):
+				continue
+			var score := _field_cost(p, roads)
 			if score < best_score:
 				best_score = score
 				best = p
-	return best
+		if best != Vector3.INF:
+			return best
+	return Vector3.INF
+
+
+## How far out (in rings 0.8 apart) the field is looked for.
+const RINGS := 40
+## How far a field's edge keeps from a town's reach, and its centre from a farmstead.
+const TOWN_CLEAR := 0.4
+const FARM_CLEAR := FIELD + 0.6
+## What the land itself costs a battle, per sample: woods hide it, hills break the lines.
+const ROUGH_GROUND := {"Forest": 12.0, "Jungle": 12.0, "Swamp": 8.0, "Hills": 4.0, "Mountains": 50.0, "Glacier": 50.0}
 
 
 static func _flat_gap(a: Vector3, b: Vector3) -> float:
 	return Vector2(a.x - b.x, a.z - b.z).length()
 
 
-## What's wrong with fighting at `c`: water, slope, roads, towns and farms
+## Whether a field centred at `c` is clear of every town and farm.
+static func _clear_field(c: Vector3, walls: Array, farms: Array) -> bool:
+	for w in walls:
+		if _flat_gap(c, w[0]) < float(w[1]) + FIELD + TOWN_CLEAR:
+			return false
+	for f in farms:
+		if _flat_gap(c, f) < FARM_CLEAR:
+			return false
+	return true
+
+
+## What's wrong with fighting at `c`: water, slope, rough ground and roads
 ## across the field, sampled at its centre and on three rings to its edge.
-func _field_cost(c: Vector3, roads, walls: Array, farms: Array) -> float:
+func _field_cost(c: Vector3, roads) -> float:
 	var cost := 0.0
 	for k in 25:
 		var ring := int(ceil(k / 8.0))
@@ -858,14 +1004,10 @@ func _field_cost(c: Vector3, roads, walls: Array, farms: Array) -> float:
 			cost += 50.0
 			continue
 		cost += absf(terrain.height_at(q.x, q.z) - c.y) * 30.0
+		var tile: Vector2i = terrain.tile_of(q)
+		cost += float(ROUGH_GROUND.get(terrain.tile_at(tile.x, tile.y), 0.0))
 		if roads and roads.on_path(q, 0.05):
 			cost += 3.0
-		for w in walls:
-			if _flat_gap(q, w[0]) < w[1]:
-				cost += 40.0
-		for f in farms:
-			if _flat_gap(q, f) < 1.6:
-				cost += 10.0
 	return cost
 
 
@@ -930,9 +1072,9 @@ func _assault(root: Node3D, arc: Callable, a: float, camp_r: float, wall: float,
 				m["out"] = true
 				n.rotation.y = atan2(face.x, face.z)
 				_people.play(n, "Shield_Block", r.randf_range(0.9, 1.1)))
-			tw.tween_method(func(k: float): if m["alive"]: n.position = _ground(m["home"].lerp(half, k)), 0.0, 1.0, 2.4)
+			tw.tween_method(func(k: float): if m["alive"]: n.position = _stand(m["home"].lerp(half, k)), 0.0, 1.0, 2.4)
 			tw.tween_callback(func(): if m["alive"]: _people.play(n, "Sprint", r.randf_range(0.9, 1.1)))
-			tw.tween_method(func(k: float): if m["alive"]: n.position = _ground(half.lerp(m["foot"], k)), 0.0, 1.0, 1.4)
+			tw.tween_method(func(k: float): if m["alive"]: n.position = _stand(half.lerp(m["foot"], k)), 0.0, 1.0, 1.4)
 			tw.tween_callback(func(): if m["alive"]: _people.play(n, "Sword_Attack" if r.randf() < 0.5 else "Sword_Attack_2", r.randf_range(0.85, 1.15)))
 			tw.tween_interval(r.randf_range(3.0, 4.5))
 			tw.tween_callback(func():
@@ -944,7 +1086,7 @@ func _assault(root: Node3D, arc: Callable, a: float, camp_r: float, wall: float,
 					return
 				n.rotation.y = atan2(-face.x, -face.z)
 				_people.play(n, "Walk", 1.0))
-			tw.tween_method(func(k: float): if m["alive"]: n.position = _ground(m["foot"].lerp(m["home"], k)), 0.0, 1.0, 3.0)
+			tw.tween_method(func(k: float): if m["alive"]: n.position = _stand(m["foot"].lerp(m["home"], k)), 0.0, 1.0, 3.0)
 			tw.tween_callback(func():
 				m["out"] = false
 				if m["alive"]:
@@ -965,7 +1107,7 @@ func _assault(root: Node3D, arc: Callable, a: float, camp_r: float, wall: float,
 
 func _assault_man(root: Node3D, m: Dictionary, col: Color, r: RandomNumberGenerator) -> void:
 	var f: Node3D = _people.make(r, "soldier", col, "adult")
-	f.position = m["home"]
+	f.position = _stand(m["home"])
 	root.add_child(f)
 	arm(f, "sword")
 	_people.play(f, "Sword_Idle", r.randf_range(0.9, 1.1))
@@ -1056,6 +1198,7 @@ func _puffs(color: Color, amount: int, life: float, smin: float, smax: float, ad
 
 func _burn(at: Vector3, seconds: float, scale := 1.0) -> void:
 	var root := Node3D.new()
+	root.name = "Burn"
 	add_child(root)
 	var r := _rng(at)
 	for i in int(5 * scale):
@@ -1103,7 +1246,7 @@ func _refugees(at: Vector3, count: int) -> void:
 		var start := at + Vector3(cos(ang), 0, sin(ang)) * (2.0 + i * 0.12) + Vector3(r.randf_range(-0.1, 0.1), 0, r.randf_range(-0.1, 0.1))
 		var goal := start + Vector3(cos(ang), 0, sin(ang)) * 4.0
 		add_child(f)
-		f.look_at_from_position(_ground(start), _ground(goal) + Vector3(0, _ground(start).y - terrain.height_at(goal.x, goal.z), 0), Vector3.UP)
+		f.look_at_from_position(_stand(start), _ground(goal) + Vector3(0, _ground(start).y - terrain.height_at(goal.x, goal.z), 0), Vector3.UP)
 		f.rotate_y(PI)
 		# Some flee at a run, the rest trudge with what they could carry.
 		var running := i % 3 == 0
@@ -1112,7 +1255,7 @@ func _refugees(at: Vector3, count: int) -> void:
 
 
 func _walk(n: Node3D, goal: Vector3, seconds: float, fade: bool) -> void:
-	var route: PackedVector3Array = terrain.land_path(n.position, goal)
+	var route: PackedVector3Array = _route(n.position, goal)
 	var tw := create_tween()
 	tw.tween_method(func(t: float):
 		if not is_instance_valid(n):
@@ -1120,7 +1263,7 @@ func _walk(n: Node3D, goal: Vector3, seconds: float, fade: bool) -> void:
 		var p: Vector3 = terrain.along(route, t)
 		if not terrain.is_land(p.x, p.z):
 			return  # never step into water; stop at the shore
-		n.position = _ground(p), 0.0, 1.0, seconds)
+		n.position = _stand(p), 0.0, 1.0, seconds)
 	if fade:
 		tw.tween_callback(n.queue_free)
 
@@ -1133,10 +1276,11 @@ func _walk(n: Node3D, goal: Vector3, seconds: float, fade: bool) -> void:
 func _muster(at: Vector3, goal: Vector3) -> void:
 	var r := _rng(at)
 	var root := Node3D.new()
+	root.name = "Muster"
 	add_child(root)
 	var col := Color(0.72, 0.13, 0.16).lerp(Color.WHITE, 0.25)
 	var crown := {"name": "The Crown", "crown": true}
-	var route: PackedVector3Array = terrain.land_path(at, goal)
+	var route: PackedVector3Array = _route(at, goal)
 	var length := 0.0
 	for i in route.size() - 1:
 		length += route[i].distance_to(route[i + 1])
@@ -1150,7 +1294,7 @@ func _muster(at: Vector3, goal: Vector3) -> void:
 	for rank in RANKS:
 		for file in FILES:
 			var f: Node3D = _people.make(r, "soldier", col, "adult")
-			f.position = _ground(at + side * ((file - 1.5) * 0.13) - start_dir * (rank * 0.15))
+			f.position = _stand(at + side * ((file - 1.5) * 0.13) - start_dir * (rank * 0.15))
 			f.rotation.y = atan2(start_dir.x, start_dir.z)
 			root.add_child(f)
 			arm(f, "spear")
@@ -1158,13 +1302,13 @@ func _muster(at: Vector3, goal: Vector3) -> void:
 			men.append({"node": f, "slot": rank * FILES + file})
 	# The sergeant faces his men; the captain stands at the head.
 	var sergeant: Node3D = _people.make(r, "soldier", col, "adult")
-	sergeant.position = _ground(at + start_dir * 0.3 + side * 0.32)
+	sergeant.position = _stand(at + start_dir * 0.3 + side * 0.32)
 	sergeant.rotation.y = atan2(-start_dir.x, -start_dir.z) - 0.5
 	root.add_child(sergeant)
 	arm(sergeant, "sword")
 	_people.play(sergeant, "Sword_Idle")
 	var captain: Node3D = _people.make(r, "soldier", col, "adult")
-	captain.position = _ground(at + start_dir * 0.32)
+	captain.position = _stand(at + start_dir * 0.32)
 	captain.rotation.y = atan2(start_dir.x, start_dir.z)
 	root.add_child(captain)
 	arm(captain, "sword")
@@ -1228,35 +1372,40 @@ func _on_route(n: Node3D, route: PackedVector3Array, t: float, offset: float) ->
 		n.rotation.y = atan2(dir.x, dir.z)
 	if t <= 0.0:
 		return  # still formed up, waiting for the column to reach him
-	n.position = _ground(p + Vector3(-dir.z, 0, dir.x) * offset)
+	n.position = _stand(p + Vector3(-dir.z, 0, dir.x) * offset)
 
 
-## A royal rider carries the King's ruling at a run to the petitioner's seat,
-## under the crown's banner, with what was decided written above him.
+## A royal rider carries the King's ruling to the petitioner's seat on a
+## horse, the crown's standard in hand, with what was decided written above
+## him. He sets off at a walk, rides the road at a gallop and draws up at a walk.
 func _rider(from: Vector3, to: Vector3, label: String) -> void:
 	var r := _rng(to)
+	var horse: Node3D = Horse.new(r.randi() % Horse.COATS.size())
+	add_child(horse)
+	horse.position = _stand(from, HORSE_BODY)
 	var rider: Node3D = _people.make(r, "soldier", Color(0.72, 0.13, 0.16).lerp(Color.WHITE, 0.3), "adult")
-	add_child(rider)
+	horse.mount(rider)
 	carried_standard(rider, {"name": "The Crown", "crown": true}, Color(0.72, 0.13, 0.16))
-	var tag := _caption(self, label, _ground(from) + Vector3(0, 0.4, 0))
-	_people.play(rider, "Running", 1.1)
-	var route: PackedVector3Array = terrain.land_path(from, to)
+	var tag := _caption(self, label, _ground(from) + Vector3(0, 0.45, 0))
+	var route: PackedVector3Array = _route(from, to)
 	var length := 0.0
 	for i in route.size() - 1:
 		length += route[i].distance_to(route[i + 1])
+	# Eased in and out, the pace peaks at about pi/2 the average: a gallop
+	# (horse.gd) over the open road, a walk at either end.
+	var secs := clampf(length / (Horse.GALLOP * 0.63), 8.0, 90.0)
 	var tw := create_tween()
 	tw.tween_method(func(t: float):
-		var p := _ground(terrain.along(route, t))
+		var p := _stand(terrain.along(route, t), HORSE_BODY)
 		var ahead := _ground(terrain.along(route, minf(1.0, t + 0.01)))
 		if ahead.distance_to(p) > 0.0001:
-			rider.rotation.y = atan2(ahead.x - p.x, ahead.z - p.z)
-		rider.position = p
-		_place_tag(tag, p + Vector3(0, 0.4, 0)), 0.0, 1.0, clampf(length / 0.6, 8.0, 45.0))
-	tw.tween_callback(func(): _people.play(rider, "Idle", 1.0))
-	tw.tween_interval(2.0)
+			horse.rotation.y = lerp_angle(horse.rotation.y, atan2(ahead.x - p.x, ahead.z - p.z), 0.2)
+		horse.position = p
+		_place_tag(tag, p + Vector3(0, 0.45, 0)), 0.0, 1.0, secs).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tw.tween_interval(3.0)
 	tw.tween_property(tag, "modulate:a", 0.0, 2.0)
 	tw.tween_callback(func():
-		rider.queue_free()
+		horse.queue_free()
 		tag.queue_free())
 
 
@@ -1265,6 +1414,7 @@ func _rider(from: Vector3, to: Vector3, label: String) -> void:
 func _convoy(from: Vector3, to: Vector3, grain: bool, label := "") -> void:
 	var r := _rng(from)
 	var root := Node3D.new()
+	root.name = "Convoy"
 	add_child(root)
 	var wagon := MeshInstance3D.new()
 	wagon.mesh = _wagon
@@ -1277,7 +1427,7 @@ func _convoy(from: Vector3, to: Vector3, grain: bool, label := "") -> void:
 		root.add_child(s)
 		_people.play(s, "Walk")
 		escort.append(s)
-	var route: PackedVector3Array = terrain.land_path(from, to)
+	var route: PackedVector3Array = _route(from, to)
 	var length := 0.0
 	for i in route.size() - 1:
 		length += route[i].distance_to(route[i + 1])
@@ -1285,7 +1435,7 @@ func _convoy(from: Vector3, to: Vector3, grain: bool, label := "") -> void:
 	var tag := _caption(root, label if label != "" else ("The King's grain" if grain else "The King's gold"), _ground(from) + Vector3(0, 0.45, 0))
 	var tw := create_tween()
 	tw.tween_method(func(t: float):
-		var p := _ground(terrain.along(route, t))
+		var p := _stand(terrain.along(route, t))
 		var ahead := _ground(terrain.along(route, minf(1.0, t + 0.01)))
 		var dir := (ahead - p).normalized() if ahead.distance_to(p) > 0.0001 else Vector3.FORWARD
 		var side := Vector3(-dir.z, 0, dir.x)
@@ -1294,7 +1444,7 @@ func _convoy(from: Vector3, to: Vector3, grain: bool, label := "") -> void:
 		_place_tag(tag, p + Vector3(0, 0.45, 0))
 		for i in escort.size():
 			var e: Node3D = escort[i]
-			var trail := _ground(terrain.along(route, maxf(0.0, t - (0.004 + i * 0.003))))
+			var trail := _stand(terrain.along(route, maxf(0.0, t - (0.004 + i * 0.003))))
 			e.position = trail + side * (0.05 if i % 2 == 0 else -0.05)
 			e.rotation.y = atan2(dir.x, dir.z), 0.0, 1.0, seconds)
 	tw.tween_interval(1.0)
@@ -1309,6 +1459,7 @@ func _convoy(from: Vector3, to: Vector3, grain: bool, label := "") -> void:
 func _feast(at: Vector3, house: Dictionary) -> void:
 	var r := _rng(at)
 	var root := Node3D.new()
+	root.name = "Feast"
 	add_child(root)
 	var centre := _ground(at)
 	var fire: Node3D = Realistic.make("ph/stone_fire_pit")
@@ -1339,7 +1490,7 @@ func _feast(at: Vector3, house: Dictionary) -> void:
 		var f: Node3D = _people.make(r, "peasant", col.lerp(Color.WHITE, 0.55) if i % 3 == 0 else Color.WHITE)
 		ring.add_child(f)
 		var p := Vector3(cos(a), 0, sin(a)) * 0.42
-		f.position = p + Vector3(0, terrain.height_at(at.x + p.x, at.z + p.z) - centre.y, 0)
+		f.position = _stand(centre + p) - centre
 		f.rotation.y = a + PI * 0.5
 		_people.play(f, "Dance", r.randf_range(0.9, 1.1))
 	var spin := ring.create_tween().set_loops()
@@ -1352,7 +1503,7 @@ func _feast(at: Vector3, house: Dictionary) -> void:
 			var f: Node3D = _people.make(r)
 			root.add_child(f)
 			var off := Vector3(cos(j * 2.1), 0, sin(j * 2.1)) * 0.09
-			f.position = _ground(spot + off)
+			f.position = _stand(spot + off)
 			f.rotation.y = atan2(-off.x, -off.z)
 			_people.play(f, "Idle_Talking")
 	var tag := _caption(root, "A wedding feast", centre + Vector3(0, 1.3, 0))
@@ -1364,6 +1515,7 @@ func _feast(at: Vector3, house: Dictionary) -> void:
 func _handover(at: Vector3, old_house: Dictionary, new_house: Dictionary, town: String) -> void:
 	var r := _rng(at)
 	var root := Node3D.new()
+	root.name = "Handover"
 	add_child(root)
 	var old_col := Color.from_string(String(old_house.get("color", "#777")), Color.GRAY)
 	var new_col := Color.from_string(String(new_house.get("color", "#ccc")), Color.WHITE)
@@ -1386,11 +1538,12 @@ func _handover(at: Vector3, old_house: Dictionary, new_house: Dictionary, town: 
 		root.add_child(s)
 		var start := at + dir * (4.0 + (i / 2) * 0.22) + side * ((i % 2) * 0.16 - 0.08)
 		var goal := spot + dir * (0.35 + (i / 2) * 0.16) + side * ((i % 2) * 0.16 - 0.08)
-		s.position = _ground(start)
+		s.position = _stand(start)
 		s.rotation.y = atan2(-dir.x, -dir.z)
 		_people.play(s, "Walk")
 		var mt := s.create_tween()
-		mt.tween_property(s, "position", _ground(goal), 14.0)
+		var from := s.position
+		mt.tween_method(func(k: float): s.position = _stand(from.lerp(goal, k)), 0.0, 1.0, 14.0)
 		mt.tween_callback(_people.play.bind(s, "Sword_Idle", 1.0))
 	tw.tween_interval(13.0)
 	tw.tween_callback(func():

@@ -4,7 +4,8 @@ extends Node3D
 
 var terrain: Node3D
 var towns: Node3D  # towns.gd: inside a town's reach, soldiers keep to its streets
-var _nav = preload("res://scripts/town_nav.gd").new()
+const TownNav = preload("res://scripts/town_nav.gd")
+var _nav = TownNav.new()
 var _figures := {}  # unit id -> {node, target}
 var _body := CapsuleMesh.new()
 var _beast := BoxMesh.new()
@@ -76,11 +77,9 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 			var across := Vector3(fwd.z, 0, -fwd.x)
 			target = centre - fwd * (int(slot / 2) * 0.16) + across * ((slot % 2) * 0.14 - 0.07 if slot > 0 else 0.0)
 		target.y = terrain.height_at(target.x, target.z)
-		# In a town that has its walk map, stand where townsfolk could: clear of
-		# houses, stalls and carts.
-		var town := _town_at(target)
-		if town >= 0:
-			target = _nav.spot(town, _town_root(town), target)
+		# Never in a building: on the town's walk map where it has one, and
+		# off every footprint (town_nav.gd).
+		target = _nav.stand(towns, target, 0.17 if String(u["type"]) in MOUNTED and String(u["type"]) != "Elephants" else 0.0)
 		if not _figures.has(id):
 			var node: Node3D
 			if wild:
@@ -106,14 +105,15 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 			node.position = target
 			add_child(node)
 			if not wild and slot == 0:
-				_banner(node, Color.from_string(String(house.get("color", "#888")), Color.GRAY), house)
+				# Carried by the rider when the company is mounted.
+				_banner(node.rider if node.get("rider") else node, Color.from_string(String(house.get("color", "#888")), Color.GRAY), house)
 			_figures[id] = {"node": node, "target": target, "wild": wild, "from": target, "t": 1.0, "bow": String(u["type"]) in BOWS, "horse": node.has_method("mount")}
 		if _figures[id]["target"].distance_to(target) > 0.01:
 			var moved: Vector3 = target - _figures[id]["node"].position
 			if slot == 0 and Vector2(moved.x, moved.z).length() > 0.3:
 				_heading[key] = atan2(moved.x, moved.z)
 			_figures[id]["from"] = _figures[id]["node"].position
-			_figures[id]["path"] = _route(_figures[id]["node"].position, target)
+			_figures[id]["path"] = _nav.route(towns, _figures[id]["node"].position, target)
 			_figures[id]["t"] = 0.0
 		_figures[id]["target"] = target
 	for id in _figures.keys():
@@ -122,47 +122,20 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 			_figures.erase(id)
 
 
-## The town whose walk map `p` is on (world), or -1: only towns near enough
-## to the camera to have one baked; the rest are walked across as open land.
-func _town_at(p: Vector3) -> int:
-	if towns == null:
-		return -1
-	for id in towns.towns:
-		var root: Node3D = towns.towns[id]["node"]
-		if not is_instance_valid(root) or not _nav.baked(int(id)):
+func _settle() -> void:
+	for id in _figures:
+		var f: Dictionary = _figures[id]
+		if f["wild"]:
 			continue
-		var c := root.global_position
-		if Vector2(p.x - c.x, p.z - c.z).length() < float(root.get_meta("reach", 0.0)):
-			return int(id)
-	return -1
-
-
-func _town_root(id: int) -> Node3D:
-	return towns.towns[id]["node"]
-
-
-## The way from one place to another: through a town's streets inside its
-## reach, across the land between.
-func _route(from: Vector3, to: Vector3) -> PackedVector3Array:
-	var a := _town_at(from)
-	var b := _town_at(to)
-	if a < 0 and b < 0:
-		return terrain.land_path(from, to)
-	if a == b:
-		return _nav.walk(a, _town_root(a), from, to)
-	var out := PackedVector3Array()
-	var head := from
-	var tail := to
-	if a >= 0:
-		# Out through the streets to the town's edge nearest the way ahead.
-		head = _nav.spot(a, _town_root(a), to)
-		out.append_array(_nav.walk(a, _town_root(a), from, head))
-	if b >= 0:
-		tail = _nav.spot(b, _town_root(b), head)
-	out.append_array(terrain.land_path(head, tail))
-	if b >= 0:
-		out.append_array(_nav.walk(b, _town_root(b), tail, to))
-	return out
+		var body := 0.17 if f.get("horse", false) else 0.0
+		var n: Node3D = f["node"]
+		if not _nav.clear(towns, n.position, body):
+			n.position = _nav.stand(towns, n.position, body)
+		if not _nav.clear(towns, f["target"], body):
+			f["target"] = _nav.stand(towns, f["target"], body)
+			f["from"] = n.position
+			f["path"] = _nav.route(towns, n.position, f["target"])
+			f["t"] = 0.0
 
 
 ## A company's standard: the house's banner on a pole.
@@ -170,7 +143,16 @@ func _banner(soldier: Node3D, color: Color, house: Dictionary) -> void:
 	Scenes.carried_standard(soldier, house, color)
 
 
+var _settle_at := 2.0
+
+
 func _process(delta: float) -> void:
+	# Towns go up after their garrisons are first placed, and grow: every two
+	# seconds, anyone at rest who now stands in a building steps out of it.
+	_settle_at -= delta
+	if _settle_at <= 0.0:
+		_settle_at = 2.0
+		_settle()
 	for id in _figures:
 		var f: Dictionary = _figures[id]
 		var n: Node3D = f["node"]
@@ -187,6 +169,10 @@ func _process(delta: float) -> void:
 			if Vector2(dir.x, dir.z).length() > 0.05:
 				n.rotation.y = atan2(dir.x, dir.z)
 			n.position = Vector3(p.x, terrain.height_at(p.x, p.z), p.z)
+			# Through a town with no walk map the way is a straight line: keep
+			# off its buildings as it goes.
+			if not TownNav.towns_at(towns, p).is_empty():
+				n.position = _nav.stand(towns, n.position, 0.17 if f.get("horse", false) else 0.0)
 			if not f.get("horse", false):
 				_people.play(n, "Walk")
 		elif f.get("horse", false):

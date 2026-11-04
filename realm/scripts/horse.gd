@@ -40,10 +40,15 @@ const SADDLE := Vector3(0, 1.6, 0.02)
 const BIT := Vector3(0.06, 1.88, 1.66)
 
 ## The lance: 3.5 m of painted ash, its length along +X in the file; the grip
-## is just behind the hand guard, 2.75 units back from the file's origin.
+## is just behind the hand guard, 2.75 units back from the file's origin. The
+## file is drawn stout (its vamplate a seventh of its length across), so it is
+## scaled along and across apart: 3.5 m long, the vamplate about 17 cm across
+## and the shaft at the grip about 6 cm, as a man's hand closes round it.
 const LANCE_LONG := 3.5
 const LANCE_FILE_LONG := 7.756
 const LANCE_GRIP := -2.75
+const LANCE_GUARD := 0.17  # metres across the vamplate
+const LANCE_FILE_GUARD := 1.073  # the vamplate's width in the file
 
 static var _seat_lib: AnimationLibrary
 static var _coats := {}  # coat index -> material
@@ -161,8 +166,9 @@ func bear_lance() -> void:
 	lance = Node3D.new()
 	var m: Node3D = (load(LANCE) as PackedScene).instantiate()
 	var k := LANCE_LONG / LANCE_FILE_LONG * S
+	var w := LANCE_GUARD / LANCE_FILE_GUARD * S
 	# Its length turned to point ahead (+Z), the grip at the holder's origin.
-	m.transform = Transform3D(Basis(Vector3.UP, -PI / 2).scaled(Vector3.ONE * k), Vector3(0, 0, -LANCE_GRIP * k))
+	m.transform = Transform3D(Basis(Vector3.UP, -PI / 2) * Basis.from_scale(Vector3(k, w, w)), Vector3(0, 0, -LANCE_GRIP * k))
 	lance.add_child(m)
 	for mi in m.find_children("*", "MeshInstance3D", true, false):
 		(mi as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
