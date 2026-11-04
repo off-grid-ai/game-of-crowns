@@ -228,6 +228,7 @@ static func _head_y(skeleton: Skeleton3D) -> float:
 
 
 func _finish(person: Node3D, skeleton: Skeleton3D, rng: RandomNumberGenerator, role: String, age: String, build: String, gender: String, k := 1.0) -> Node3D:
+	person.add_to_group("people")  # everyone who stands on the ground, for the ground check
 	var anim := AnimationPlayer.new()
 	anim.name = "Anim"
 	person.add_child(anim)

@@ -175,6 +175,10 @@ func _snow_on(node: Node, on: bool) -> void:
 # --- building ground --------------------------------------------------------------
 
 var _graded := false
+## The ground has changed under `area` (world XZ) and is drawn that way now:
+## whatever stands there is set back on it (main.gd), in one place for all.
+signal ground_changed(area: Rect2)
+var _graded_area := Rect2()  # all the ground graded since the last commit
 
 
 ## Levels a building's plot the way builders do: cut into the high side, fill
@@ -216,6 +220,8 @@ func flatten(at: Vector3, size: Vector2, yaw: float, h: float, margin := 0.35, m
 			land.set_pixel(x, z, Color(v, 0, 0, 1))
 			if data:
 				data.set_height(Vector3(x / per, 0, z / per), v)
+	var area := Rect2(at.x - reach, at.z - reach, reach * 2.0, reach * 2.0)
+	_graded_area = area if not _graded else _graded_area.merge(area)
 	_graded = true
 
 
@@ -228,6 +234,8 @@ func commit_grading() -> void:
 		return
 	if _graded and land3d and land3d.land:
 		land3d.land.data.update_maps()
+	if _graded:
+		ground_changed.emit(_graded_area)
 	_graded = false
 
 
