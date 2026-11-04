@@ -3,6 +3,8 @@ extends Node3D
 ## gliding between tiles as Freeciv moves them.
 
 var terrain: Node3D
+var towns: Node3D  # towns.gd: inside a town's reach, soldiers keep to its streets
+var _nav = preload("res://scripts/town_nav.gd").new()
 var _figures := {}  # unit id -> {node, target}
 var _body := CapsuleMesh.new()
 var _beast := BoxMesh.new()
@@ -20,6 +22,9 @@ const BEASTS := ["Bear", "Wolf", "Lion", "Tiger", "Elephant", "Crocodile", "Pola
 
 
 func _ready() -> void:
+	if towns == null:
+		towns = get_parent().get("towns")
+	_nav.terrain = terrain
 	_body.radius = 0.12
 	_body.height = 0.5
 	_beast.size = Vector3(0.45, 0.28, 0.22)
@@ -71,6 +76,11 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 			var across := Vector3(fwd.z, 0, -fwd.x)
 			target = centre - fwd * (int(slot / 2) * 0.16) + across * ((slot % 2) * 0.14 - 0.07 if slot > 0 else 0.0)
 		target.y = terrain.height_at(target.x, target.z)
+		# In a town that has its walk map, stand where townsfolk could: clear of
+		# houses, stalls and carts.
+		var town := _town_at(target)
+		if town >= 0:
+			target = _nav.spot(town, _town_root(town), target)
 		if not _figures.has(id):
 			var node: Node3D
 			if wild:
@@ -103,13 +113,56 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 			if slot == 0 and Vector2(moved.x, moved.z).length() > 0.3:
 				_heading[key] = atan2(moved.x, moved.z)
 			_figures[id]["from"] = _figures[id]["node"].position
-			_figures[id]["path"] = terrain.land_path(_figures[id]["node"].position, target)
+			_figures[id]["path"] = _route(_figures[id]["node"].position, target)
 			_figures[id]["t"] = 0.0
 		_figures[id]["target"] = target
 	for id in _figures.keys():
 		if not seen.has(id):
 			_figures[id]["node"].queue_free()
 			_figures.erase(id)
+
+
+## The town whose walk map `p` is on (world), or -1: only towns near enough
+## to the camera to have one baked; the rest are walked across as open land.
+func _town_at(p: Vector3) -> int:
+	if towns == null:
+		return -1
+	for id in towns.towns:
+		var root: Node3D = towns.towns[id]["node"]
+		if not is_instance_valid(root) or not _nav.baked(int(id)):
+			continue
+		var c := root.global_position
+		if Vector2(p.x - c.x, p.z - c.z).length() < float(root.get_meta("reach", 0.0)):
+			return int(id)
+	return -1
+
+
+func _town_root(id: int) -> Node3D:
+	return towns.towns[id]["node"]
+
+
+## The way from one place to another: through a town's streets inside its
+## reach, across the land between.
+func _route(from: Vector3, to: Vector3) -> PackedVector3Array:
+	var a := _town_at(from)
+	var b := _town_at(to)
+	if a < 0 and b < 0:
+		return terrain.land_path(from, to)
+	if a == b:
+		return _nav.walk(a, _town_root(a), from, to)
+	var out := PackedVector3Array()
+	var head := from
+	var tail := to
+	if a >= 0:
+		# Out through the streets to the town's edge nearest the way ahead.
+		head = _nav.spot(a, _town_root(a), to)
+		out.append_array(_nav.walk(a, _town_root(a), from, head))
+	if b >= 0:
+		tail = _nav.spot(b, _town_root(b), head)
+	out.append_array(terrain.land_path(head, tail))
+	if b >= 0:
+		out.append_array(_nav.walk(b, _town_root(b), tail, to))
+	return out
 
 
 ## A company's standard: the house's banner on a pole.
