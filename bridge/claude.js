@@ -193,7 +193,33 @@ async function completeOnce(system, prompt, maxTokens, turns = []) {
 // A character's pivotal decision, in their own voice. The model is local and
 // free, so every one goes to it; rules decide only if it isn't running.
 export async function decide(system, prompt) {
-  return complete(system, prompt);
+  const out = await complete(system, prompt);
+  if (out && typeof out.line === "string") out.line = tidyLine(out.line);
+  return out;
+}
+
+// What a player reads from the small local model, kept readable: at most two
+// sentences, no wrapping quotes, and a line that loops on itself ("a liege's
+// liege, not my liege's liege") or repeats a phrase is dropped, not shown.
+export function tidyLine(text) {
+  let t = String(text ?? "").replace(/\s+/g, " ").trim().replace(/^["'“]+|["'”]+$/g, "");
+  const sentences = t.match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [];
+  // The chronicle wraps a line in its own quotes: none inside it.
+  t = sentences.slice(0, 2).map((x) => x.trim()).join(" ").replace(/["“”]/g, "").replace(/\s+/g, " ").trim();
+  // Content words only: a looping line repeats a pair of them, or one word thrice.
+  const words = t.toLowerCase().replace(/[^a-z' -]/g, " ").split(/\s+/).filter((w) => w.length > 3);
+  const pairs = new Set();
+  const counts = {};
+  for (let i = 0; i < words.length; i++) {
+    counts[words[i]] = (counts[words[i]] ?? 0) + 1;
+    if (counts[words[i]] >= 3) return "";
+    if (i + 1 < words.length) {
+      const pair = `${words[i]} ${words[i + 1]}`;
+      if (pairs.has(pair)) return "";
+      pairs.add(pair);
+    }
+  }
+  return t.length > 220 ? t.slice(0, t.lastIndexOf(" ", 217)) + "…" : t;
 }
 
 const TRAITS = ["ambitious", "honourable", "greedy", "vengeful", "pious", "cunning", "craven", "brave", "lustful", "content", "paranoid", "generous", "proud", "patient", "wrathful", "just"];
