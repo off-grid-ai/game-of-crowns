@@ -85,6 +85,7 @@ func _ground(p: Vector3) -> Vector3:
 
 # --- arms ----------------------------------------------------------------------
 
+const Horse := preload("res://scripts/horse.gd")
 const SWORD := preload("res://assets/props/Sword_Bronze.gltf")
 const SHIELD := preload("res://assets/props/Shield_Wooden.gltf")
 # Where a weapon sits in the hand, in the hand bone's own space (metres).
@@ -161,8 +162,8 @@ static func _fit_static(n: Node3D, height: float) -> void:
 ## house (team 0) holds a shield wall: swords and locked shields in front,
 ## spears over their shoulders, archers behind. The victors (team 1) form
 ## under their banner while their captain shouts them on, advance at a walk
-## under the archers' arrows, then charge home as a picked company runs round
-## the end of the wall into its flank. Front-rank men duel the man opposite; men fall, those behind step
+## under the archers' arrows, then charge home as their knights gallop round the
+## end of the wall into its flank. Front-rank men duel the man opposite; men fall, those behind step
 ## up. The defenders' standard-bearer goes down, the banner falls, and the
 ## wall breaks and scatters. The victors cheer under their own standard.
 const RANKS := 3
@@ -170,7 +171,7 @@ const FILES := 9
 const GAP := 0.15  # between files: about 1.25 m, shields nearly touching
 const ROW := 0.2  # between ranks: about 1.7 m
 const REACH := 0.09  # half the distance between two duelists: 1.5 m apart
-const FLANKERS := 6
+const KNIGHTS := 5
 
 ## Camera beats for whoever holds the camera (the director, or a shot):
 ## where to look, from how far, and from which side.
@@ -225,7 +226,7 @@ func _battle(at: Vector3, loser: Dictionary) -> void:
 		_people.play(bearer, "Sword_Idle")
 		var flag := _standard(root, p + side * 0.06, cols[team], face, loser if team == 0 else {})
 		bearers.append({"node": bearer, "flag": flag, "face": face})
-	var flankers := _flank_company(root, at, dir, side, cols[1], r)
+	var knights := _flank_company(root, at, dir, side, cols[1], r)
 	framing.emit(_ground(at), 5.5, view_yaw)
 	# 1. Formed up (0-3 s): the attackers' captain shouts them on.
 	var captain: Dictionary = teams[1][FILES / 2]
@@ -255,7 +256,7 @@ func _battle(at: Vector3, loser: Dictionary) -> void:
 		framing.emit(_ground(at), 3.2, view_yaw - 0.15))
 	tw.tween_interval(2.1)
 	# 4. The clash (10-21 s): front pairs duel; men fall, those behind step up;
-	# the flank company hits the open end of the wall.
+	# the knights hit the open end of the wall.
 	tw.tween_callback(func():
 		_dust(root, _ground(at) + Vector3(0, 0.01, 0), side, FILES * GAP)
 		for team in teams:
@@ -266,7 +267,7 @@ func _battle(at: Vector3, loser: Dictionary) -> void:
 		framing.emit(_ground(at), 2.2, view_yaw - 0.3))
 	_press(teams, 1, 12.0, side, r)
 	_press(teams, 2, 15.5, side, r)
-	_charge_flank(flankers, teams[0], at, dir, side, 8.0, r)
+	_charge_flank(knights, teams[0], at, dir, side, 8.0, r)
 	for beat in 11:
 		tw.tween_interval(1.0)
 		tw.tween_callback(func():
@@ -511,60 +512,73 @@ func _arrow(root: Node3D, from: Vector3, to: Vector3, r: RandomNumberGenerator) 
 	tw.tween_callback(a.queue_free)
 
 
-## The victors' flank company: picked men waiting out on the wing, behind their own line.
+## The victors' knights: horsemen waiting out on the wing, well behind their
+## own line, to walk up during the advance.
 func _flank_company(root: Node3D, at: Vector3, dir: Vector3, side: Vector3, col: Color, r: RandomNumberGenerator) -> Array:
-	var men := []
-	for i in FLANKERS:
-		var f: Node3D = _people.make(r, "soldier", col, "adult")
-		var p: Vector3 = at + dir * (REACH + RANKS * ROW + 1.0 + (i % 2) * 0.18) + side * ((FILES / 2.0) * GAP + 0.5 + (i / 2) * 0.16)
-		f.position = _ground(p)
-		f.rotation.y = atan2(-dir.x, -dir.z)
-		root.add_child(f)
-		arm(f, "sword")
-		_people.play(f, "Sword_Idle", r.randf_range(0.9, 1.1))
-		men.append({"node": f, "alive": true})
-	return men
+	var knights := []
+	for i in KNIGHTS:
+		var h: Node3D = Horse.new(r.randi() % 5)
+		root.add_child(h)
+		h.mount(_people.make(r, "soldier", col, "adult"))
+		arm(h.rider, "spear")
+		var wing: Vector3 = at + side * ((FILES / 2.0) * GAP + 0.55 + (i / 2) * 0.24) + dir * ((i % 2) * 0.22)
+		h.position = _ground(wing + dir * (REACH + RANKS * ROW + 2.4))
+		h.rotation.y = atan2(-dir.x, -dir.z)
+		knights.append({"node": h, "wing": wing, "alive": true})
+	return knights
 
 
-## The flank company runs out wide round the end of the wall and into its
-## open flank, and the men there go down.
-func _charge_flank(company: Array, wall: Array, at: Vector3, dir: Vector3, side: Vector3, start: float, r: RandomNumberGenerator) -> void:
+## The knights walk up behind the line during the advance; at the horn their
+## captain's horse rears, and they gallop round the end of the wall and ride
+## into its flank. The men there are ridden down, and a horse or two falls.
+func _charge_flank(knights: Array, wall: Array, at: Vector3, dir: Vector3, side: Vector3, start: float, r: RandomNumberGenerator) -> void:
 	var flank: Vector3 = at - dir * (REACH + ROW) + side * ((FILES / 2.0) * GAP + 0.1)
-	for i in company.size():
-		var c: Dictionary = company[i]
-		var n: Node3D = c["node"]
-		var from: Vector3 = n.position
-		# Out wide past the wall's end, then wheel in onto its flank.
-		var wide: Vector3 = flank + side * (0.45 + (i % 2) * 0.12) + dir * 0.15
-		var into: Vector3 = flank - side * (0.05 + (i / 2) * 0.1) + side * 0.12 - dir * ((i % 2) * 0.12)
+	for i in knights.size():
+		var k: Dictionary = knights[i]
+		var h: Node3D = k["node"]
+		var poised: Vector3 = k["wing"] + dir * (REACH + RANKS * ROW + 1.4)
+		# Out wide past the wall's end, wheel in onto its flank, and ride on through.
+		var wide: Vector3 = flank + side * (0.55 + (i % 2) * 0.15) + dir * 0.2
+		var into: Vector3 = flank - side * (0.25 + (i / 2) * 0.12) - dir * ((i % 2) * 0.14)
+		var through: Vector3 = into - side * 0.6 - dir * 0.15
 		var curve := Curve3D.new()
-		curve.add_point(from)
-		curve.add_point(wide, (from - wide) * 0.4, (into - wide) * 0.35)
+		curve.add_point(poised)
+		curve.add_point(wide, (poised - wide) * 0.4, (into - wide) * 0.35)
 		curve.add_point(into)
-		var tw := n.create_tween()
-		tw.tween_interval(start + i * 0.2)
-		tw.tween_callback(func(): _people.play(n, "Sprint", r.randf_range(1.0, 1.15)))
+		var length := curve.get_baked_length()
+		var tw := h.create_tween()
+		# Up at a walk during the advance (3-7.5 s).
+		var from: Vector3 = h.position
+		tw.tween_interval(3.0 + r.randf_range(0.0, 0.3))
+		tw.tween_method(func(t: float): h.position = _ground(from.lerp(poised, t)), 0.0, 1.0, 4.4)
+		tw.tween_interval(start - 7.7 + i * 0.15)
+		if i == 0:
+			tw.tween_callback(h.rear)
+			tw.tween_interval(1.2)
+		# The charge, at a gallop.
 		tw.tween_method(func(t: float):
-			if not c["alive"]:
-				return
-			var len := curve.get_baked_length()
-			var p := curve.sample_baked(t * len)
-			var q := curve.sample_baked(minf(t + 0.02, 1.0) * len)
-			n.position = _ground(p)
+			var p := curve.sample_baked(t * length)
+			var q := curve.sample_baked(minf(t + 0.02, 1.0) * length)
+			h.position = _ground(p)
 			if q.distance_to(p) > 0.0001:
-				n.rotation.y = atan2(q.x - p.x, q.z - p.z), 0.0, 1.0, r.randf_range(3.2, 3.8))
+				h.rotation.y = atan2(q.x - p.x, q.z - p.z), 0.0, 1.0, length / Horse.GALLOP)
 		tw.tween_callback(func():
-			n.rotation.y = atan2(-side.x, -side.z)
-			_people.play(n, "Sword_Attack_2", r.randf_range(0.9, 1.1))
-			# The men on the end of the wall are taken in the flank.
-			var near := wall.filter(func(w): return w["alive"] and w["node"].position.distance_to(n.position) < 0.3)
-			if not near.is_empty() and r.randf() < 0.7:
-				near[0]["alive"] = false
-				_die(near[0]["node"], "Death_Back", r))
-		tw.tween_interval(2.0)
-		tw.tween_callback(func():
-			if c["alive"]:
-				_people.play(n, "Sword_Attack", r.randf_range(0.9, 1.1)))
+			# The men on the end of the wall are ridden down.
+			var near := wall.filter(func(w): return w["alive"] and w["node"].global_position.distance_to(h.global_position) < 0.3)
+			for w in near.slice(0, 2):
+				w["alive"] = false
+				_die(w["node"], "Death_Back", r)
+			# A horse or two is brought down in the press, its rider thrown.
+			if i % 3 == 1 and r.randf() < 0.75:
+				k["alive"] = false
+				h.fall()
+				var thrown: Node3D = h.dismount()
+				if thrown:
+					_die(thrown, "Death_Front", r))
+		# The rest ride on through the broken flank and slow to a walk.
+		tw.tween_method(func(t: float):
+			if k["alive"]:
+				h.position = _ground(into.lerp(through, t)), 0.0, 1.0, 2.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 
 
 func _standard(root: Node3D, p: Vector3, color: Color, face: Vector3, house := {}) -> Node3D:
