@@ -111,13 +111,19 @@ const DEATHS := ["Death01", "Death_Front", "Death_Back", "Sword_Death"]
 
 
 ## Puts arms in a soldier's hands, held on the hand bones so they swing with
-## every move: "sword" (sword and shield), "spear" (spear and shield), or
+## every move: "sword" (sword and shield), "spear" (spear and shield), "lance"
+## (a knight's shield; the lance is the horse's to carry, see horse.gd), or
 ## "bow" (archers keep their hands free; there is no bow model yet).
 static func arm(person: Node3D, kit: String) -> void:
 	var skel: Skeleton3D = person.get_node_or_null("Armature/GeneralSkeleton")
 	if skel == null or kit == "bow":
 		return
 	_hold(skel, "LeftHand", SHIELD.instantiate(), SHIELD_GRIP)
+	if kit == "lance":
+		var h: Node = person.get_meta("mounted", null)
+		if h:
+			h.bear_lance()
+		return
 	_hold(skel, "RightHand", SWORD.instantiate() if kit == "sword" else _spear(), SWORD_GRIP if kit == "sword" else SPEAR_GRIP)
 
 
@@ -549,7 +555,7 @@ func _flank_company(root: Node3D, at: Vector3, dir: Vector3, side: Vector3, col:
 		var h: Node3D = Horse.new(r.randi() % 5)
 		root.add_child(h)
 		h.mount(_people.make(r, "soldier", col, "adult"))
-		arm(h.rider, "spear")
+		arm(h.rider, "lance")
 		var wing: Vector3 = at + side * ((FILES / 2.0) * GAP + 0.55 + (i / 2) * 0.24) + dir * ((i % 2) * 0.22)
 		h.position = _ground(wing + dir * (REACH + RANKS * ROW + 2.4))
 		h.rotation.y = atan2(-dir.x, -dir.z)

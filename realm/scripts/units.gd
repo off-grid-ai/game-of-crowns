@@ -9,9 +9,11 @@ var _beast := BoxMesh.new()
 var _mats := {}
 var _people = preload("res://scripts/people.gd").new()
 const Scenes = preload("res://scripts/scenes.gd")
+const Horse = preload("res://scripts/horse.gd")
 var turn_seconds := 12.0
 
 const MOUNTED := ["Horsemen", "Chariot", "Elephants", "Crusaders", "Knights", "Dragoons", "Cavalry"]
+const LANCES := ["Knights", "Crusaders"]
 const SPEARS := ["Phalanx", "Pikemen", "Legion"]
 const BOWS := ["Archers", "Longbowmen", "Crossbowmen"]
 const BEASTS := ["Bear", "Wolf", "Lion", "Tiger", "Elephant", "Crocodile", "Polar Bear", "Snake", "Mammoth", "Jaguar", "Kraken", "Giant Squid", "Dragon", "Monkey", "Moose", "Deer", "Buffalo"]
@@ -81,14 +83,21 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 				rng.seed = id
 				var tint := Color.from_string(String(house.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.35)
 				var kind := String(u["type"])
-				# Mounted units go on foot until there is a horse fit for the realm.
 				node = _people.make(rng, "soldier", tint, "adult")
-				Scenes.arm(node, "bow" if kind in BOWS else ("spear" if kind in SPEARS or kind in MOUNTED else "sword"))
+				# Horsemen ride (elephants have no beast of their own yet, so go on foot);
+				# knights carry the lance.
+				if kind in MOUNTED and kind != "Elephants":
+					var horse: Node3D = Horse.new(rng.randi() % Horse.COATS.size())
+					horse.mount(node)
+					Scenes.arm(node, "lance" if kind in LANCES else "spear")
+					node = horse
+				else:
+					Scenes.arm(node, "bow" if kind in BOWS else ("spear" if kind in SPEARS or kind in MOUNTED else "sword"))
 			node.position = target
 			add_child(node)
 			if not wild and slot == 0:
 				_banner(node, Color.from_string(String(house.get("color", "#888")), Color.GRAY), house)
-			_figures[id] = {"node": node, "target": target, "wild": wild, "from": target, "t": 1.0, "bow": String(u["type"]) in BOWS}
+			_figures[id] = {"node": node, "target": target, "wild": wild, "from": target, "t": 1.0, "bow": String(u["type"]) in BOWS, "horse": node.has_method("mount")}
 		if _figures[id]["target"].distance_to(target) > 0.01:
 			var moved: Vector3 = target - _figures[id]["node"].position
 			if slot == 0 and Vector2(moved.x, moved.z).length() > 0.3:
@@ -127,6 +136,9 @@ func _process(delta: float) -> void:
 			if Vector2(dir.x, dir.z).length() > 0.05:
 				n.rotation.y = atan2(dir.x, dir.z)
 			n.position = Vector3(p.x, terrain.height_at(p.x, p.z), p.z)
-			_people.play(n, "Walk")
+			if not f.get("horse", false):
+				_people.play(n, "Walk")
+		elif f.get("horse", false):
+			pass  # the horse stands; its gait follows how it is moved
 		else:
 			_people.play(n, "Bow_Idle" if f.get("bow", false) else "Sword_Idle")

@@ -58,6 +58,7 @@ var _hearing: Label
 var mic: Node  # mic.gd, shared with the court
 var _horse: Node3D  # horse.gd: your horse, held by the hall door till you mount
 var _riding := false
+var _pace := 0.0  # how fast your horse is going: it gathers speed through its gaits
 var drive := Vector2.ZERO  # for staged shots: held keys (x right, y back), as WASD
 var drive_fast := false
 
@@ -363,20 +364,25 @@ func dismount() -> void:
 	if not _riding:
 		return
 	_riding = false
+	_pace = 0.0
 	_horse.dismount()
 	villagers._people.play(_body, _me.idle_clip(), 1.0)
 
 
 ## WASD steers the horse as it would your feet: it walks, or gallops with Shift,
-## turning toward where you point it rather than sidestepping.
+## turning toward where you point it rather than sidestepping. It gathers speed
+## and slows over a second or two, so a gallop comes through the trot and canter.
 func _ride(delta: float, want: Vector2, fast: bool) -> void:
+	var goal := 0.0 if want == Vector2.ZERO else (GALLOP if fast else RIDE)
+	_pace = move_toward(_pace, goal, delta * (0.5 if goal > _pace else 0.8))
 	if want != Vector2.ZERO:
 		var fwd := Vector3(-sin(_yaw), 0, -cos(_yaw))
 		var right := Vector3(cos(_yaw), 0, -sin(_yaw))
 		var dir := (fwd * -want.y + right * want.x).normalized()
 		_horse.rotation.y = lerp_angle(_horse.rotation.y, atan2(dir.x, dir.z), minf(1.0, delta * 3.0))
+	if _pace > 0.0:
 		var ahead := Vector3(sin(_horse.rotation.y), 0, cos(_horse.rotation.y))
-		var next := _walkable(_horse.position + ahead * (GALLOP if fast else RIDE) * delta)
+		var next := _walkable(_horse.position + ahead * _pace * delta)
 		if terrain.is_land(next.x, next.z):
 			_horse.position = Vector3(next.x, terrain.height_at(next.x, next.z), next.z)
 	rig.target = _horse.position

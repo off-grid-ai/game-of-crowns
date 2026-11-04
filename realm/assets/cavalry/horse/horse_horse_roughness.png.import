@@ -2,16 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://tnsdrju2bf4"
-path="res://.godot/imported/horse_mat_baseColor.png-339f321555dbbea392b794492a78266a.ctex"
+uid="uid://cnqnkxxv4nx6m"
+path="res://.godot/imported/horse_horse_roughness.png-1d017fdcbbe1a386baab24af463604f9.ctex"
 metadata={
 "vram_texture": false
+}
+generator_parameters={
+"md5": "243d1315f79b0f5550a84ad336591829"
 }
 
 [deps]
 
-source_file="res://assets/cavalry/horse/textures/horse_mat_baseColor.png"
-dest_files=["res://.godot/imported/horse_mat_baseColor.png-339f321555dbbea392b794492a78266a.ctex"]
+source_file="res://assets/cavalry/horse/horse_horse_roughness.png"
+dest_files=["res://.godot/imported/horse_horse_roughness.png-1d017fdcbbe1a386baab24af463604f9.ctex"]
 
 [params]
 
@@ -23,7 +26,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

@@ -1,0 +1,8 @@
+Model Information:
+* title:	Tournament lance
+* source:	https://sketchfab.com/3d-models/tournament-lance-789408c065b64c008f03121def8f5323
+* author:	TRGN Design (https://sketchfab.com/TRGN_Design)
+
+Model License:
+* license type:	SKETCHFAB Standard (https://sketchfab.com/licenses)
+* requirements:	Under basic restrictions, use worldwide, on all types of media, commercially or not, and in all types of derivative works
