@@ -10,6 +10,8 @@ var terrain: Node3D  # set by whoever walks: what is land and what is water
 # One map per town for everyone who walks it (villagers, and soldiers marching
 # in or out), so their avoidance agents share it and step aside for each other.
 static var _maps := {}  # town id -> RID
+static var _regions := {}  # town id -> its map's region, freed with it
+static var _live := {}  # RID -> true for every map not yet freed: a freed one is never handed to the server
 static var _built_from := {}  # town id -> what its map was baked from: the town node and its life
 
 
@@ -56,6 +58,8 @@ func map_for(id: int, root: Node3D) -> RID:
 	NavigationServer2D.region_set_map(region, map)
 	NavigationServer2D.region_set_navigation_polygon(region, poly)
 	_maps[id] = map
+	_regions[id] = region
+	_live[map] = true
 	return map
 
 
@@ -81,19 +85,25 @@ func _cut_water(src: NavigationMeshSourceGeometryData2D, at: Vector3, reach: flo
 
 ## A path in town-local XZ, as Vector2s; empty if none yet (the map syncs next frame).
 func path(map: RID, from: Vector2, to: Vector2) -> PackedVector2Array:
-	if NavigationServer2D.map_get_iteration_id(map) == 0:
+	if not ready(map):
 		return PackedVector2Array()
 	return NavigationServer2D.map_get_path(map, from, to, true)
 
 
+## True while the map exists: a town rebuilt, or its life changed, has its old
+## map freed, and whoever still holds that one must ask map_for for the new.
+static func live(map: RID) -> bool:
+	return map.is_valid() and _live.has(map)
+
+
 ## True once the map has synced and can answer for paths and places.
 func ready(map: RID) -> bool:
-	return NavigationServer2D.map_get_iteration_id(map) != 0
+	return live(map) and NavigationServer2D.map_get_iteration_id(map) != 0
 
 
 func closest(map: RID, p: Vector2) -> Vector2:
-	if NavigationServer2D.map_get_iteration_id(map) == 0:
-		return p  # not synced yet: the point as given
+	if not ready(map):
+		return p  # not synced yet, or gone: the point as given
 	return NavigationServer2D.map_get_closest_point(map, p)
 
 
@@ -129,5 +139,8 @@ func walk(id: int, root: Node3D, from: Vector3, to: Vector3) -> PackedVector3Arr
 
 func forget(id: int) -> void:
 	if _maps.has(id):
+		_live.erase(_maps[id])
+		NavigationServer2D.free_rid(_regions[id])
 		NavigationServer2D.free_rid(_maps[id])
+		_regions.erase(id)
 		_maps.erase(id)

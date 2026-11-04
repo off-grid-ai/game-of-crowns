@@ -96,6 +96,7 @@ func _refresh() -> void:
 				if a.has("agent"):
 					NavigationServer2D.free_rid(a["agent"])
 			_crowds.erase(id)
+			_nav.forget(id)
 
 
 ## Once a second: the town's walk map is baked afresh when the town is rebuilt
@@ -245,6 +246,12 @@ func _set_down(a: Dictionary) -> bool:
 
 func _step(a: Dictionary, delta: float, _t: float) -> void:
 	var n: Node3D = a["node"]
+	if not _nav.live(a["map"]):
+		# Another walker (a garrison marching in) had the town's map baked
+		# afresh: everyone here takes the new one before asking anything of it.
+		if not towns.towns.has(a["town"]):
+			return
+		_keep_up(a["town"])
 	if not a["placed"] and not _set_down(a):
 		return
 	# Spoken to: they stop, turn to whoever it is, and talk with their hands.
