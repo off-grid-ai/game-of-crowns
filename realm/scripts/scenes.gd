@@ -193,6 +193,7 @@ const GAP := 0.2  # between files: about 1.7 m, room for each pair to fight
 const ROW := 0.2  # between ranks: about 1.7 m
 const REACH := 0.11  # half the distance between two duelists: 1.8 m apart
 const KNIGHTS := 5
+const FIELD := 3.4  # how far the fight reaches from its centre: lines, the attackers' approach, the knights' wing
 
 ## Camera beats for whoever holds the camera (the director, or a shot):
 ## where to look, from how far, and from which side.
@@ -210,8 +211,10 @@ func _battle(at: Vector3, loser: Dictionary, victor := {}) -> void:
 	if absf(wrapf(lost.h - won.h, -0.5, 0.5)) < 0.08 and lost.s > 0.25 and won.s > 0.25:
 		won = Color(0.22, 0.3, 0.46)
 	var cols := [lost.lerp(Color.WHITE, 0.3), won.lerp(Color.WHITE, 0.15)]
-	# A field is trampled flat where the lines meet: no trees stand in the fight.
-	terrain.clear_around(at, (FILES * GAP) * 0.5 + 0.9)
+	# Battles are fought on open ground: out past the town, off its roads and
+	# fields, on land flat enough to hold a line. No trees stand in the fight.
+	at = _battlefield(at)
+	terrain.clear_around(at, FIELD)
 	# The lines meet across the view, so you watch the clash from the side.
 	var dir := Vector3(cos(r.randf() * TAU), 0, 0)
 	dir.z = sqrt(1.0 - dir.x * dir.x)
@@ -257,7 +260,7 @@ func _battle(at: Vector3, loser: Dictionary, victor := {}) -> void:
 		_people.play(bearer, "Sword_Idle")
 		var house: Dictionary = loser if team == 0 else victor
 		# A standard needs its house's arms; men of no known house fight without one.
-		var flag: Node3D = _standard(root, p + side * 0.06, cols[team], face, house) if team == 0 or not house.is_empty() else null
+		var flag: Node3D = _standard(root, p + side * 0.06, cols[team], face, house)
 		bearers.append({"node": bearer, "flag": flag, "face": face})
 	var knights := _flank_company(root, at, dir, side, cols[1], r)
 	framing.emit(_ground(at), 5.5, view_yaw)
@@ -298,8 +301,7 @@ func _battle(at: Vector3, loser: Dictionary, victor := {}) -> void:
 					m["engaged"] = true
 					_people.play(m["node"], "Sword_Attack" if team == teams[1] else "Shield_Block", r.randf_range(0.85, 1.15))
 		framing.emit(_ground(at), 2.8, view_yaw))
-	_press(teams, 1, 12.0, side, r)
-	_press(teams, 2, 15.5, side, r)
+	_brace(teams, 12.0, r)
 	_charge_flank(knights, teams[0], at, dir, side, 8.0, r)
 	for beat in 11:
 		tw.tween_interval(1.0)
@@ -313,14 +315,12 @@ func _battle(at: Vector3, loser: Dictionary, victor := {}) -> void:
 				for m in team:
 					if m["alive"] and m["engaged"]:
 						_duel_step(m, r, team == teams[0]))
-		if beat == 7:
-			# The standard-bearer is cut down and the banner goes over.
-			tw.tween_callback(func():
-				_die(bearers[0]["node"], "Death_Back", r)
-				_drop_banner(bearers[0]["flag"], bearers[0]["face"]))
-	# 5. The rout (21 s): the beaten turn and run; the victors chase a few paces,
-	# then cheer under their standard.
+	# 5. The rout (21 s): the standard-bearer is cut down and the banner goes
+	# over; the beaten turn and run; the victors chase a few paces, then cheer
+	# under their standard.
 	tw.tween_callback(func():
+		_die(bearers[0]["node"], "Death_Back", r)
+		_drop_banner(bearers[0]["flag"], bearers[0]["face"])
 		for m in teams[0]:
 			if not m["alive"]:
 				continue
@@ -435,27 +435,17 @@ func _follow(b: Dictionary, dist: float, secs: float, r: RandomNumberGenerator) 
 			_people.play(n, "Sword_Idle", 1.0))
 
 
-## The men of `rank` push forward into the gaps between the duelling pairs and
-## fight; spearmen thrust over the front rank's shields, archers draw swords.
-func _press(teams: Array, rank: int, at_time: float, side: Vector3, r: RandomNumberGenerator) -> void:
+## The ranks behind hold their places through the fight: shields up in the
+## second rank of the wall, spears thrusting over the front men's shoulders,
+## the rest braced, each in his own file until the man in front falls.
+func _brace(teams: Array, at_time: float, r: RandomNumberGenerator) -> void:
 	var tw := create_tween()
 	tw.tween_interval(at_time)
 	tw.tween_callback(func():
 		for team in teams:
 			for m in team:
-				if not m["alive"] or m["engaged"] or m["rank"] != rank:
-					continue
-				var n: Node3D = m["node"]
-				var lane := 0.5 if (m["file"] + rank) % 2 == 0 else -0.5
-				m["slot"] = m["slot"] + m["face"] * (ROW * rank - REACH * 0.3 * rank) + side * GAP * lane * 0.8
-				m["engaged"] = true
-				var mt := n.create_tween()
-				mt.tween_interval(r.randf_range(0.0, 0.9))
-				mt.tween_callback(func(): _people.play(n, "Sprint", r.randf_range(0.8, 1.0)))
-				mt.tween_property(n, "position", _ground(m["slot"]), r.randf_range(0.7, 1.0))
-				mt.tween_callback(func():
-					if m["alive"]:
-						_people.play(n, "Sword_Attack", r.randf_range(0.85, 1.15))))
+				if m["alive"] and not m["engaged"] and m["kit"] != "bow":
+					_people.play(m["node"], "Sword_Attack" if m["kit"] == "spear" else "Shield_Block", r.randf_range(0.8, 1.0)))
 
 
 func _fall(team: Array, r: RandomNumberGenerator) -> void:
@@ -470,7 +460,14 @@ func _fall(team: Array, r: RandomNumberGenerator) -> void:
 		if back["alive"] and not back["engaged"] and back["file"] == m["file"] and back["rank"] > 0:
 			back["rank"] -= 1
 			back["engaged"] = true
-			back["slot"] = back["slot"] + back["face"] * ROW + Vector3(-back["face"].z, 0, back["face"].x) * r.randf_range(-0.04, 0.04)
+			# He stands beside the body, not on it: to one side of the file, then
+			# the other, so up to three dead lie apart (files are 1.7 m wide).
+			var across := Vector3(-back["face"].z, 0, back["face"].x)
+			var home: Vector3 = m.get("home", m["slot"])
+			var steps: int = m.get("stepped", 0) + 1
+			back["home"] = home
+			back["stepped"] = steps
+			back["slot"] = home + across * (0.07 if steps % 2 == 1 else -0.07)
 			var mt: Tween = back["node"].create_tween()
 			mt.tween_interval(r.randf_range(0.2, 0.8))
 			mt.tween_callback(func(): _walk_to(back, back["slot"], 0.8, "Walk", "Sword_Attack", r))
@@ -547,8 +544,9 @@ func _arrow(root: Node3D, from: Vector3, to: Vector3, r: RandomNumberGenerator) 
 	tw.tween_callback(a.queue_free)
 
 
-## The victors' knights: horsemen waiting out on the wing, well behind their
-## own line, to walk up during the advance.
+## The victors' knights: horsemen waiting on open ground out on the wing, well
+## behind their own line (the victors form on the -dir side), to walk up during
+## the advance.
 func _flank_company(root: Node3D, at: Vector3, dir: Vector3, side: Vector3, col: Color, r: RandomNumberGenerator) -> Array:
 	var knights := []
 	for i in KNIGHTS:
@@ -556,9 +554,9 @@ func _flank_company(root: Node3D, at: Vector3, dir: Vector3, side: Vector3, col:
 		root.add_child(h)
 		h.mount(_people.make(r, "soldier", col, "adult"))
 		arm(h.rider, "lance")
-		var wing: Vector3 = at + side * ((FILES / 2.0) * GAP + 0.55 + (i / 2) * 0.24) + dir * ((i % 2) * 0.22)
-		h.position = _ground(wing + dir * (REACH + RANKS * ROW + 2.4))
-		h.rotation.y = atan2(-dir.x, -dir.z)
+		var wing: Vector3 = at + side * ((FILES / 2.0) * GAP + 0.55 + (i / 2) * 0.24) - dir * ((i % 2) * 0.22)
+		h.position = _ground(wing - dir * (REACH + RANKS * ROW + 1.8))
+		h.rotation.y = atan2(dir.x, dir.z)
 		knights.append({"node": h, "wing": wing, "alive": true})
 	return knights
 
@@ -567,15 +565,16 @@ func _flank_company(root: Node3D, at: Vector3, dir: Vector3, side: Vector3, col:
 ## captain's horse rears, and they gallop round the end of the wall and ride
 ## into its flank. The men there are ridden down, and a horse or two falls.
 func _charge_flank(knights: Array, wall: Array, at: Vector3, dir: Vector3, side: Vector3, start: float, r: RandomNumberGenerator) -> void:
-	var flank: Vector3 = at - dir * (REACH + ROW) + side * ((FILES / 2.0) * GAP + 0.1)
+	# The open end of the losers' wall (they stand on the +dir side).
+	var flank: Vector3 = at + dir * (REACH + ROW) + side * ((FILES / 2.0) * GAP + 0.1)
 	for i in knights.size():
 		var k: Dictionary = knights[i]
 		var h: Node3D = k["node"]
-		var poised: Vector3 = k["wing"] + dir * (REACH + RANKS * ROW + 1.4)
+		var poised: Vector3 = k["wing"] - dir * (REACH + RANKS * ROW + 0.4)
 		# Out wide past the wall's end, wheel in onto its flank, and ride on through.
-		var wide: Vector3 = flank + side * (0.55 + (i % 2) * 0.15) + dir * 0.2
-		var into: Vector3 = flank - side * (0.25 + (i / 2) * 0.12) - dir * ((i % 2) * 0.14)
-		var through: Vector3 = into - side * 0.6 - dir * 0.15
+		var wide: Vector3 = flank + side * (0.55 + (i % 2) * 0.15) - dir * 0.2
+		var into: Vector3 = flank - side * (0.25 + (i / 2) * 0.12) + dir * ((i % 2) * 0.14)
+		var through: Vector3 = into - side * 0.6 + dir * 0.15
 		var curve := Curve3D.new()
 		curve.add_point(poised)
 		curve.add_point(wide, (poised - wide) * 0.4, (into - wide) * 0.35)
@@ -590,13 +589,13 @@ func _charge_flank(knights: Array, wall: Array, at: Vector3, dir: Vector3, side:
 		if i == 0:
 			tw.tween_callback(h.rear)
 			tw.tween_interval(1.2)
-		# The charge, at a gallop.
+		# The charge: off at a canter, lances coming down, into a gallop.
 		tw.tween_method(func(t: float):
 			var p := curve.sample_baked(t * length)
 			var q := curve.sample_baked(minf(t + 0.02, 1.0) * length)
 			h.position = _ground(p)
 			if q.distance_to(p) > 0.0001:
-				h.rotation.y = atan2(q.x - p.x, q.z - p.z), 0.0, 1.0, length / Horse.GALLOP)
+				h.rotation.y = atan2(q.x - p.x, q.z - p.z), 0.0, 1.0, length / Horse.GALLOP * 1.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		tw.tween_callback(func():
 			# The men on the end of the wall are ridden down.
 			var near := wall.filter(func(w): return w["alive"] and w["node"].global_position.distance_to(h.global_position) < 0.3)
@@ -790,6 +789,68 @@ func _footing(p: Vector3) -> bool:
 	if not terrain.is_land(p.x, p.z):
 		return false
 	return absf(terrain.height_at(p.x + 0.15, p.z) - terrain.height_at(p.x - 0.15, p.z)) < 0.12 and absf(terrain.height_at(p.x, p.z + 0.15) - terrain.height_at(p.x, p.z - 0.15)) < 0.12
+
+
+## Open ground for a pitched battle, as near `near` as there is: dry, flat
+## enough to hold a line, past every town's reach, off roads and farms. Each
+## spot in rings about `near` is scored by what lies across the field there.
+func _battlefield(near: Vector3) -> Vector3:
+	var main := get_parent()
+	if towns == null:
+		towns = main.get("towns")
+	var roads = main.get("roads")
+	var country = main.get("countryside")
+	# Only the towns and farms that could reach the field, gathered once.
+	var span := 10 * 0.8 + FIELD
+	var walls := []  # [centre, reach]
+	if towns:
+		for id in towns.towns:
+			var t: Node3D = towns.towns[id]["node"]
+			var reach := float(t.get_meta("reach", 6.0)) if is_instance_valid(t) else 0.0
+			if reach > 0.0 and _flat_gap(t.global_position, near) < span + reach:
+				walls.append([t.global_position, reach])
+	var farms := []
+	for f in (country.get("_sites") if country else []):
+		if _flat_gap(f["at"], near) < span + 1.6:
+			farms.append(f["at"])
+	var best := near
+	var best_score := INF
+	for ring in 10:
+		var n := maxi(1, ring * 8)
+		for i in n:
+			var a := TAU * i / n
+			var p := _ground(near + Vector3(cos(a), 0, sin(a)) * ring * 0.8)
+			var score := _field_cost(p, roads, walls, farms) + ring * 0.3
+			if score < best_score:
+				best_score = score
+				best = p
+	return best
+
+
+static func _flat_gap(a: Vector3, b: Vector3) -> float:
+	return Vector2(a.x - b.x, a.z - b.z).length()
+
+
+## What's wrong with fighting at `c`: water, slope, roads, towns and farms
+## across the field, sampled at its centre and on three rings to its edge.
+func _field_cost(c: Vector3, roads, walls: Array, farms: Array) -> float:
+	var cost := 0.0
+	for k in 25:
+		var ring := int(ceil(k / 8.0))
+		var q := c + Vector3(cos(TAU * k / 8.0), 0, sin(TAU * k / 8.0)) * FIELD * ring / 3.0 if k > 0 else c
+		if not terrain.is_land(q.x, q.z):
+			cost += 50.0
+			continue
+		cost += absf(terrain.height_at(q.x, q.z) - c.y) * 30.0
+		if roads and roads.on_path(q, 0.05):
+			cost += 3.0
+		for w in walls:
+			if _flat_gap(q, w[0]) < w[1]:
+				cost += 40.0
+		for f in farms:
+			if _flat_gap(q, f) < 1.6:
+				cost += 10.0
+	return cost
 
 
 ## Stones in flight on a loop: each arcs from the engine to a point inside the
