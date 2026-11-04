@@ -18,6 +18,9 @@ How a round is played: `realm/tools/play/*.play` scenarios feed real input (keys
 
 | # | Expected | Found | Change | Commit |
 |---|---|---|---|---|
+| 56 | The usurper, played (r13/08–11) | — | Seen: Thornvale's whispers, "In 1 season they march"; the declaration and siege with 8 companies; a ruling ("Wolfholt 45 → 50") with the next petitioner stepping up; Call the banners: "800 men march to Kingsmere · 5,000 crowns · Wolfholt 50 → 46 …", the King's host 1,400 → 2,200 against Thornvale's 4,800 | r13 |
+| 55 | The pretender's war reads in the table | Thornvale besieged Kingsmere while its row read "WAR · STORMHOLD" only (r13/08) | A pretender on the march shows "WAR · THE CROWN" on its row and the Crown's (r13/11) | f66f261 |
+| 54 | The Hand's card never covers the table | It clipped "Proclaim your word…" under the taller war-marked table (r13/06, r13/10) | Wider, so two priced orders share a line; it hugs its content and drops its last matter past the table's foot (r13/11) | f66f261 |
 | 53 | Closing the game doesn't empty the court | Across a restart every petitioner "leaves Kingsmere unheard": −24 for Thornvale, a usurper's whispers one season from marching (r13/06). Patience counted real minutes since the petition, including time the game was closed | Only watched time counts (each watched season adds at most half a minute) | 1350ddb |
 | 52 | One matter, one card | The Hand advised "Gift crowns" to Thornvale twice: as the coldest house and as the pretender (r13/06) | The pretender's coldness folds into the usurper's matter | 1350ddb |
 | 51 | The ruling's result is what shows | After pardoning the deserters the card read "The King's rider, bound for Stormwatch" twice, the camera's caption over the result (r13/02) | Captions never cover the result of the King's order; a ruling's card names the favour moved, like a decree's | 90b8338 |
