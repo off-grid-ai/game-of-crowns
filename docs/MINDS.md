@@ -77,8 +77,14 @@ GET  /minds/town?city=ID[&hour=H]
                               the block ends; by: "rules" or "model"
 GET  /mind?id=ID              one mind in full (for the card and the talk)
 POST /minds/witness           as above
-GET  /minds/chatter?city=ID   conversations to play in that town now:
-                              [{ id, where, who:[i], lines:[{ who, text }] }]
+GET  /minds/chatter?city=ID[&who=i,j][&wait=1]
+                              conversations to play in that town now:
+                              [{ id, where, who:[i], lines:[{ who, name, gender, text }],
+                                 rumour, passed:[{ from, to, text }], moved:[{ who, toward, warmth, trust, now }] }]
+                              who: a gathering on screen (hot), talk for exactly them;
+                              wait: answer when it's written (a few seconds). who -1 = a visitor
+GET  /minds/rumours[?id=R]    every rumour (or one) with its trail: who told whom, where, in what words
+POST /minds/rumour            { city, i, text }: a rumour starts with that person (arcs, things seen)
 POST /minds/attention         { city, near:[i], spoken:[id], cast:[id], hour }: who is hot right now
                               (near: 60 s; spoken, cast: 5 min; the rest of that town warm)
 GET  /minds/queue             tiers, and the model queue: waiting by level, wait and run times
