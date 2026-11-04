@@ -517,15 +517,17 @@ func _setup_environment() -> void:
 	env.glow_enabled = true
 	env.glow_intensity = 0.5
 	env.glow_bloom = 0.08
-	# Natural colour, not pushed: the warmth comes from the light and the haze.
+	# AgX keeps highlights natural but greys the colour out: it is given back
+	# here (roofs keep their detail, the greens and golds read), and the haze is
+	# warm daylight rather than grey.
 	env.adjustment_enabled = true
-	env.adjustment_saturation = 1.0
+	env.adjustment_saturation = 1.25
 	env.adjustment_contrast = 1.07
 	# Distance haze in the sky's own colour, and mist pooling in the valleys,
 	# so the land recedes into the air instead of ending in a hard edge.
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
-	env.fog_light_color = Color(0.8, 0.8, 0.78)
+	env.fog_light_color = Color(0.86, 0.8, 0.68)
 	env.fog_density = 0.0012
 	env.fog_aerial_perspective = 0.5
 	env.fog_sky_affect = 0.0
@@ -574,7 +576,6 @@ func _try_look(look: String) -> void:
 			"nogi": env.sdfgi_enabled = false
 			"nossao": env.ssao_enabled = false
 			"nofog": env.fog_enabled = false
-			"warmfog": env.fog_light_color = Color(0.86, 0.8, 0.68)
 			"noshadow": sun.shadow_enabled = false
 			"noforest": _no_forest = true
 			"notrees": _no_trees = true
