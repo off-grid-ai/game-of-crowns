@@ -1360,6 +1360,22 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		child.queue_free()
 	var players: Array = world.get("players", []).duplicate()
 	players.sort_custom(func(a, b): return int(a["cities"]) > int(b["cities"]))
+	# One table, every house on one line, the ledger's own measures in columns
+	# (a house's latest row in the ledger, from the bridge), then its favour.
+	var grid := GridContainer.new()
+	grid.columns = 2 + HOUSE_COLUMNS.size() + 1
+	grid.add_theme_constant_override("h_separation", 12)
+	grid.add_theme_constant_override("v_separation", 4)
+	_houses.add_child(grid)
+	grid.add_child(Control.new())
+	grid.add_child(Control.new())
+	for col in HOUSE_COLUMNS:
+		var head := T.label(String(col[1]), T.TEXT_3)
+		head.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		head.tooltip_text = String(col[2])
+		head.mouse_filter = Control.MOUSE_FILTER_PASS
+		grid.add_child(head)
+	grid.add_child(Control.new())
 	for p in players:
 		var h: Dictionary = p["house"]
 		if h.get("wild", false) or int(p["cities"]) == 0:
@@ -1367,8 +1383,6 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		if p.get("favour") != null:
 			popup.add_item(String(h.get("name", p["name"])), _house_ids.size())
 			_house_ids.append(int(p["id"]))
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 10)
 		# The house's sigil in its colour, or a bar of its banner colour until a
 		# sigil exists, in a fixed slot so the names line up either way.
 		var slot := CenterContainer.new()
@@ -1380,7 +1394,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 			mark.color = Color.from_string(String(h.get("color", "#888")), Color.GRAY)
 			mark.custom_minimum_size = Vector2(3, 16)
 			slot.add_child(mark)
-		row.add_child(slot)
+		grid.add_child(slot)
 		var name := _btn(String(h.get("name", p["name"])).replace("House ", ""))
 		name.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1388,26 +1402,34 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		name.pressed.connect(func():
 			focus_house.emit(owner)
 			house_opened.emit(owner))
-		row.add_child(name)
-		row.add_child(T.datum("%d" % int(p["cities"]), T.SIZE_DESC, T.TEXT_2))
+		grid.add_child(name)
+		var m: Dictionary = p.get("measures") if p.get("measures") is Dictionary else {"towns": int(p["cities"])}
+		for col in HOUSE_COLUMNS:
+			var key: String = col[0]
+			var cell := T.datum(_heads(int(m.get(key, 0)) * int(SCALE.get(key, 1))) if m.has(key) else "·", T.SIZE_DESC, T.TEXT_2)
+			cell.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+			grid.add_child(cell)
 		if p.get("favour") != null:
 			var bar := ProgressBar.new()
 			bar.max_value = 100
 			bar.value = int(p["favour"])
 			bar.show_percentage = false
-			bar.custom_minimum_size = Vector2(56, 3)
+			bar.custom_minimum_size = Vector2(48, 3)
 			bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			bar.tooltip_text = "Favour toward the crown: %d" % int(p["favour"])
 			if int(p["favour"]) < 30:
 				var fill := StyleBoxFlat.new()
 				fill.bg_color = T.DANGER
 				bar.add_theme_stylebox_override("fill", fill)
-			row.add_child(bar)
+			grid.add_child(bar)
 		else:
 			var none := Control.new()  # the crown has no favour toward itself: keep the column
-			none.custom_minimum_size = Vector2(56, 3)
-			row.add_child(none)
-		_houses.add_child(row)
+			none.custom_minimum_size = Vector2(48, 3)
+			grid.add_child(none)
+
+
+## The great houses' columns: the ledger's measures, in the units the ledger reads them in.
+const HOUSE_COLUMNS := [["towns", "Towns", "Towns held"], ["armies", "Men", "Men-at-arms"], ["gold", "Crowns", "Treasury, in crowns"], ["grain", "Grain", "Grain in store, in tonnes"], ["souls", "Souls", "Souls in their lands"]]
 
 
 func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:

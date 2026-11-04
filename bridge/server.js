@@ -649,6 +649,8 @@ http.createServer(async (req, res) => {
     const crownP = players.find((p) => p.house.crown);
     const crown = { treasury: crownP?.gold ?? 0, tithe: meta.tithe, decrees: DECREES };
     for (const p of players) p.favour = p.house.wild || p.house.crown ? null : favourOf(p.id);
+    // Each house's measures as the ledger keeps them (one reckoning, recordTurn).
+    for (const p of players) p.measures = last?.houses?.[p.house.name] ?? null;
     const usurper = stakes?.s.usurper.stage ?? "none";
     return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), date: calendar(world.turn), threat: { usurper, north: (stakes?.s.north.waves ?? 0) }, peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000) });
   }
