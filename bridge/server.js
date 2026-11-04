@@ -242,6 +242,39 @@ function snapshot() {
   }, 500);
 }
 
+// A named lord, lady or bannerman, face to face: they answer as themselves
+// (their traits, aims and memories) and remember what passed between you.
+async function talkToNamed(res, city, id, b) {
+  const c = court.people[id];
+  const said = String(b.said ?? "").trim().slice(0, 400);
+  if (!c || !c.alive || !said) return json(res, 400, { error: "nobody to hear it" });
+  const speaker = b.you?.id ? court.people[String(b.you.id)] : null;
+  const you = {
+    name: speaker?.name ?? String(b.you?.name ?? "a stranger"),
+    house: speaker?.house ?? "",
+    lord: speaker ? speaker.playerId === c.playerId && speaker.rank === "lord" && c.rank !== "lord" : false,
+    address: !speaker ? "stranger" : speaker.rank === "lord" ? (speaker.gender === "female" ? "my lady" : "my lord") : speaker.gender === "female" ? "my lady" : "ser",
+  };
+  const opinion = speaker ? court.opinion(c.id, speaker.id) : 0;
+  const person = {
+    name: c.name, age: c.age, woman: c.gender === "female", trade: `${c.rank === "lord" ? (c.gender === "female" ? "Lady" : "Lord") : c.rank} of ${c.house}`,
+    nature: (c.traits ?? []).join(", "), family: c.spouse ? "married" : "unwed",
+    wants: c.goals?.[0]?.text ?? "to endure", past: (c.memories ?? []).slice(-1)[0] ?? "",
+  };
+  const story = `You remember: ${(c.memories ?? []).slice(-3).join(" ") || "nothing of note"}. Of ${you.name} you think ${opinion > 20 ? "well" : opinion < -20 ? "ill" : "little either way"}.`;
+  const file = path.join(P.state, "talks.json");
+  const talks = chron.readJson(file, {});
+  const key = `char:${c.id}`;
+  const past = (talks[key] ?? []).slice(-10);
+  const near = chronicle.filter((e) => e.city === city.id || (e.text ?? "").includes(c.house)).slice(-4).map((e) => e.text);
+  const out = await speak(person, cityName(city.id), c.house, you, near, story, past, said, meta.options?.language ?? "en");
+  if (!out) return json(res, 503, { error: `${c.name} regards you in silence. (The local model isn't running.)` });
+  talks[key] = [...past, { who: you.name, text: said }, { who: c.name, text: out.reply }].slice(-16);
+  fs.writeFileSync(file, JSON.stringify(talks, null, 1));
+  court.remember(c.id, `${you.name} sought me out in ${cityName(city.id)} and said: "${said.slice(0, 120)}"`);
+  return json(res, 200, { name: c.name, gender: c.gender, ...out });
+}
+
 // A ruling on a petition, by option: the treasury pays, the realm changes,
 // favour shifts, the chronicle and the world show it. Shared by a chosen
 // option and a ruling in the King's own words.
@@ -812,11 +845,22 @@ http.createServer(async (req, res) => {
     }
     return json(res, 200, { town: cityName(city.id), person, ...tales[key] });
   }
+  if (url.pathname === "/town/people") {
+    // The named people of a town, for someone walking it: its lord or lady, and
+    // the bannermen and heirs seated there.
+    // At a house's seat its whole household gathers: the heir and the bannermen too.
+    const id = Number(url.searchParams.get("city"));
+    const town = world?.cities.find((c) => c.id === id);
+    const here = court.alive().filter((c) => ["lord", "heir", "bannerman"].includes(c.rank)
+      && (c.seat === id || (town?.capital && c.playerId === town.owner && c.rank !== "lord")));
+    return json(res, 200, here.slice(0, 6).map((c) => ({ id: c.id, name: c.name, gender: c.gender, rank: c.rank, house: c.house })));
+  }
   if (url.pathname === "/talk" && req.method === "POST") {
     // You speak to someone in the street; they answer in their own voice and remember it.
     const b = await body(req);
     const city = world?.cities.find((c) => c.id === Number(b.city));
     if (!city) return json(res, 404, { error: "no such town" });
+    if (b.person) return talkToNamed(res, city, String(b.person), b);
     const person = townsfolk(city)[Number(b.i)];
     const said = String(b.said ?? "").trim().slice(0, 400);
     if (!person || !said) return json(res, 400, { error: "nobody to hear it" });

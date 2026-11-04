@@ -109,8 +109,17 @@ func rule_in_words(id: String, words: String, confirm: String, cb: Callable) -> 
 	_post("/court/say", {"id": id, "words": words, "confirm": confirm}, cb)
 
 
-func talk(city: int, i: int, you: Dictionary, said: String, cb: Callable) -> void:
-	_post("/talk", {"city": city, "i": i, "you": you, "said": said}, cb)
+## Speak to someone: a townsperson (i, their place in the town's folk) or a
+## named lord, lady or bannerman (person, their id).
+func talk(city: int, i: int, you: Dictionary, said: String, cb: Callable, person := "") -> void:
+	var body := {"city": city, "i": i, "you": you, "said": said}
+	if person != "":
+		body["person"] = person
+	_post("/talk", body, cb)
+
+
+func town_people(city: int, cb: Callable) -> void:
+	_http_get("/town/people?city=%d" % city, cb)
 
 
 func person_fell(id: String, how: String, cb: Callable) -> void:

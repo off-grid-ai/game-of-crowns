@@ -7,7 +7,8 @@ extends Node3D
 ## it walks the town's own paths and can't pass through a wall.
 
 signal talk_to(town: int, i: int)
-signal said(town: int, i: int, text: String)
+signal said(town: int, i: int, text: String, person: String)
+signal want_people(town: int)  # ask for the town's named people
 signal spoke(wav: PackedByteArray)  # your voice, to be turned into words
 signal enter(kind: String, town: int, person: Dictionary)
 signal ended
@@ -38,6 +39,8 @@ var _turning := false
 var _near := {}  # what E would act on: {kind: "folk"|"door", ...}
 var _me  # Combat: you, in a fight
 var _foes: Array = []  # Combat: whoever has come for you
+var _notables: Array = []  # the town's named people: {node, id, name, gender, rank, tag}
+var _my_tag: Label
 var _threat_check := 12.0
 var _blocking := false
 var _news_until := 0
@@ -80,16 +83,6 @@ func start(person: Dictionary, house: Dictionary, town_id: int) -> void:
 	_body.position = Vector3(start_at.x, terrain.height_at(start_at.x, start_at.z), start_at.z)
 	_yaw = atan2(center.x - _body.position.x, center.z - _body.position.z)
 	_body.rotation.y = _yaw + PI
-	var tag := Label3D.new()
-	tag.text = String(person.get("name", ""))
-	tag.font_size = 36
-	tag.pixel_size = 0.004
-	tag.outline_size = 8
-	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	tag.no_depth_test = true
-	tag.position = Vector3(0, 2.15, 0)  # just above the head, in the body's own scale
-	tag.modulate = Color(1, 0.93, 0.78)
-	_body.add_child(tag)
 	_me = Combat.new(_body, villagers._people)
 	_me.on_land = _land
 	_cam = Camera3D.new()
@@ -100,7 +93,9 @@ func start(person: Dictionary, house: Dictionary, town_id: int) -> void:
 	rig.set_process(false)
 	rig.set_process_unhandled_input(false)
 	_build_hud()
+	_my_tag = _name_tag(String(person.get("name", "")))
 	_follow(1.0)
+	want_people.emit(town_id)
 
 
 func stop() -> void:
@@ -114,6 +109,10 @@ func stop() -> void:
 		if is_instance_valid(f.node):
 			f.node.queue_free()
 	_foes.clear()
+	for n in _notables:
+		if is_instance_valid(n["node"]):
+			n["node"].queue_free()
+	_notables.clear()
 	if is_instance_valid(_cam):
 		_cam.queue_free()
 	if is_instance_valid(_hud):
@@ -231,6 +230,7 @@ func _process(delta: float) -> void:
 	rig.target = _body.position
 	rig.distance = 3.0
 	_follow(delta)
+	_tags()
 	_look_around()
 
 
@@ -276,6 +276,11 @@ func _look_around() -> void:
 	_near = {}
 	if Time.get_ticks_msec() < _news_until:
 		return  # something just happened; let it be read
+	for n in _notables:
+		if is_instance_valid(n["node"]) and Vector2(n["node"].position.x - _body.position.x, n["node"].position.z - _body.position.z).length() < 0.3:
+			_near = {"kind": "named", "town": _town, "id": n["id"], "name": n["name"]}
+			_prompt.text = "E  ·  speak with %s" % n["name"]
+			return
 	var who: Dictionary = villagers.who_at(_body.position, 0.28)
 	if not who.is_empty():
 		_near = {"kind": "folk", "town": who["town"], "i": who["i"]}
@@ -305,6 +310,8 @@ func _act() -> void:
 	match String(_near.get("kind", "")):
 		"folk":
 			_open_chat(int(_near["town"]), int(_near["i"]))
+		"named":
+			_open_chat(int(_near["town"]), -1, String(_near["id"]), String(_near["name"]))
 		"door":
 			enter.emit(String(_near["room"]), int(_near["town"]), _person)
 
@@ -397,7 +404,7 @@ const Settings := preload("res://scripts/settings.gd")
 ## Face to face with a townsperson, in the mode you chose: typing, or speaking
 ## hands-free (the mic listens, hears you finish, and pauses while they answer).
 ## They stop what they're doing and turn to you.
-func _open_chat(town: int, i: int) -> void:
+func _open_chat(town: int, i: int, person := "", person_name := "") -> void:
 	var T := preload("res://scripts/theme.gd")
 	if _chat == null:
 		_chat = PanelContainer.new()
@@ -441,8 +448,8 @@ func _open_chat(town: int, i: int) -> void:
 		mic.utterance.connect(func(wav):
 			if _chat and _chat.visible:
 				spoke.emit(wav))
-	_chat_with = {"town": town, "i": i}
-	_chat_lines = ["[color=#9a968e]You approach them.[/color]"]
+	_chat_with = {"town": town, "i": i, "person": person}
+	_chat_lines = ["[color=#9a968e]%s[/color]" % ("You approach %s." % person_name if person_name != "" else "You approach them.")]
 	_waiting = false
 	_draw_chat()
 	_chat.visible = true
@@ -483,6 +490,14 @@ func _close_chat() -> void:
 func _hold_listener() -> void:
 	if _chat_with.is_empty():
 		return
+	if String(_chat_with.get("person", "")) != "":
+		for n in _notables:
+			if n["id"] == _chat_with["person"] and is_instance_valid(n["node"]):
+				var to_them: Vector3 = n["node"].position - _body.position
+				_body.rotation.y = atan2(to_them.x, to_them.z)
+				n["node"].rotation.y = atan2(-to_them.x, -to_them.z)
+				villagers._people.play(n["node"], "Idle_Talking", 1.0)
+		return
 	var crowd: Array = villagers._crowds.get(_chat_with["town"], [])
 	if int(_chat_with["i"]) < crowd.size():
 		var a: Dictionary = crowd[int(_chat_with["i"])]
@@ -501,7 +516,7 @@ func _speak(text: String) -> void:
 	_waiting = true
 	mic.hold()
 	_draw_chat()
-	said.emit(int(_chat_with["town"]), int(_chat_with["i"]), text)
+	said.emit(int(_chat_with["town"]), int(_chat_with["i"]), text, String(_chat_with.get("person", "")))
 
 
 ## Their answer arrives from the bridge. If they'll say it aloud, listening
@@ -537,3 +552,64 @@ func understood(d: Dictionary) -> void:
 		_chat_lines.append("[color=#e86b5c]%s[/color]" % String(d.get("error", "Nothing was heard.")))
 		_draw_chat()
 		done_speaking()
+
+
+## The town's named people, standing about the square near the hall in their
+## house's colours, each with their name over them; walk up and speak.
+func meet(people: Array) -> void:
+	if not active or not towns.towns.has(_town):
+		return
+	var node: Node3D = towns.towns[_town]["node"]
+	var center := node.global_position
+	var door := Vector3(0.6, 0, 0.6)
+	for d in node.get_meta("doors", []):
+		if d["room"] == "great_hall":
+			door = d["at"]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = _town
+	for i in people.size():
+		var p: Dictionary = people[i]
+		if str(p.get("id", "")) == str(_person.get("id", "")):
+			continue  # that's you
+		var n: Node3D = villagers._people.make(rng, "soldier" if p.get("rank") != "heir" else "peasant", Color(0.95, 0.88, 0.7), "adult", "", str(p.get("gender", "")))
+		add_child(n)
+		var at := _walkable(center + door + Vector3(cos(i * 1.3), 0, sin(i * 1.3)) * 0.35)
+		n.position = Vector3(at.x, terrain.height_at(at.x, at.z), at.z)
+		n.rotation.y = rng.randf() * TAU
+		villagers._people.play(n, "Idle", 1.0)
+		_notables.append({"node": n, "id": str(p.get("id", "")), "name": String(p.get("name", "")), "gender": str(p.get("gender", "")), "rank": str(p.get("rank", "")), "tag": _name_tag(String(p.get("name", "")), T_GOLD)})
+
+
+const T_GOLD := Color(0.95, 0.85, 0.6)
+
+
+## A name over someone's head, flat on the screen in the interface's own type
+## (never 3D text), kept over them by _tags().
+func _name_tag(text: String, colour := Color(1, 0.97, 0.9)) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.theme = preload("res://scripts/theme.gd").get_theme()
+	l.add_theme_font_size_override("font_size", 14)
+	l.add_theme_color_override("font_color", colour)
+	l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.62))
+	l.add_theme_constant_override("shadow_offset_y", 1)
+	l.add_theme_constant_override("shadow_outline_size", 5)
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hud.add_child(l)
+	return l
+
+
+func _tags() -> void:
+	var pairs: Array = [[_body, _my_tag]]
+	for n in _notables:
+		pairs.append([n["node"], n["tag"]])
+	for pair in pairs:
+		var who: Node3D = pair[0]
+		var l: Label = pair[1]
+		if not is_instance_valid(who) or l == null:
+			continue
+		var head := who.global_position + Vector3(0, 0.27, 0)
+		l.visible = not _cam.is_position_behind(head) and _cam.global_position.distance_to(head) < 2.5
+		if l.visible:
+			var at := _cam.unproject_position(head)
+			l.position = at - Vector2(l.get_combined_minimum_size().x * 0.5, l.get_combined_minimum_size().y)

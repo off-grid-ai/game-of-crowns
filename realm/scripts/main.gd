@@ -150,13 +150,14 @@ func _ready() -> void:
 	hero.control_requested.connect(func(p, h):
 		hero.close()
 		_take_control(p, h))
-	control.said.connect(func(town, i, text):
+	control.want_people.connect(func(town): bridge.town_people(town, func(d): control.meet(d if d is Array else [])))
+	control.said.connect(func(town, i, text, person):
 		var p: Dictionary = control._person
 		bridge.talk(town, i, {"id": str(p.get("id", "")), "name": String(p.get("name", "")), "house": String(_houses.get(int(p.get("house_id", -1)), {}).get("name", ""))}, text, func(code, d):
 			var aloud: bool = d is Dictionary and d.has("reply") and Settings.get_value("voices")
 			control.heard(d if d is Dictionary else {"error": "They say nothing."}, aloud)
 			if aloud:
-				_say_aloud(String(d["reply"]), {"name": d.get("name", ""), "gender": d.get("gender", "")}, control.done_speaking)))
+				_say_aloud(String(d["reply"]), {"name": d.get("name", ""), "gender": d.get("gender", "")}, control.done_speaking), person))
 	control.spoke.connect(func(wav): bridge.hear(wav, control.understood))
 	ui.petition_voiced.connect(func(id, wav): bridge.hear(wav, func(d): ui.heard_ruling(id, d)))
 	control.talk_to.connect(func(town, i):
