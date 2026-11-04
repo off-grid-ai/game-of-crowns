@@ -101,7 +101,6 @@ func _ready() -> void:
 	ui = preload("res://scripts/ui.gd").new()
 	add_child(ui)
 	ui.god_action.connect(_on_god_action)
-	ui.speed_changed.connect(func(s): bridge.set_speed(s); ui.toast("Each turn now lasts %d seconds." % s))
 	ui.focus_house.connect(_focus_house)
 	ui.home_view.connect(func(): _home_view(bridge.world))
 	ui.camera_nudge.connect(rig.nudge)
@@ -120,7 +119,7 @@ func _ready() -> void:
 			if code == 200:
 				ui.house_opened.emit(int(spec["house"]))))
 	intro = preload("res://scripts/intro.gd").new()
-	intro.ready_check = func(): return terrain.width > 0 and towns != null and not towns.building()
+	intro.ready_check = func(): return terrain.built and towns != null and not towns.building() and not towns.towns.is_empty()
 	add_child(intro)
 	lore = preload("res://scripts/lore.gd").new()
 	lore.person_opened.connect(_open_person)
@@ -532,9 +531,6 @@ func _setup_environment() -> void:
 	# Two shadow bands, not four: every band draws all its casters again, and
 	# the view never reaches far enough to need the outer two.
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
-	# Each model's simpler versions (made on import) take over once the
-	# difference is under a few pixels, rather than under one.
-	get_viewport().mesh_lod_threshold = 4.0
 	_try_look(OS.get_environment("GOC_LOOK"))
 
 
@@ -549,6 +545,7 @@ func _try_look(look: String) -> void:
 			"nofog": env.fog_enabled = false
 			"noshadow": sun.shadow_enabled = false
 			"noforest": _no_forest = true
+			"profile": _shot["profile"] = true
 			"cycle": _cycle = []  # starts once the towns are built; see _cycle_step
 			"cyclevis":  # the same, hiding each system rather than pausing it: what each one draws
 				_cycle = []
@@ -594,7 +591,11 @@ func _sound_events(entries: Array) -> void:
 ## Every ten seconds, how hard the frame is working, to user://perf.log (read
 ## from outside the game to find what makes it lag).
 var _perf_at := 10.0
+## Any frame that held the window for over half a second, and what was last
+## under way: the spinning cursor's culprits, in the verbose log.
 func _log_perf(delta: float) -> void:
+	if delta > 0.5:
+		print_verbose("STALL %.2f s after: %s" % [delta, Engine.get_meta("stage", "")])
 	_perf_at -= delta
 	if _perf_at > 0.0:
 		return
@@ -616,6 +617,9 @@ func _log_perf(delta: float) -> void:
 ## how far each is drawn, so the frame's cost can be pinned on something.
 var _profiled := false
 func _profile_once() -> void:
+	# A count of every triangle in the realm: seconds of work, so only when asked (--profile).
+	if not _shot.has("profile"):
+		return
 	if _profiled or towns == null or towns.building() or terrain.width == 0:
 		return
 	_profiled = true
@@ -738,7 +742,12 @@ func _update_labels() -> void:
 	# Shadows reach only as far as they can be seen: every cascade draws its
 	# casters again, so a realm-wide reach was most of the frame.
 	if sun:
-		sun.directional_shadow_max_distance = clampf(d * 1.8, 12.0, 80.0)
+		# In steps, not every frame: the camera's easing nudges the distance all
+		# the time, and every change re-fits the shadow map, which made roofs
+		# shimmer even with the camera still.
+		var reach := snappedf(clampf(d * 2.2, 20.0, 90.0), 10.0)
+		if absf(reach - sun.directional_shadow_max_distance) >= 10.0:
+			sun.directional_shadow_max_distance = reach
 	# The atlas comes in as soon as the towns stop reading, and the kingdoms
 	# view is reached quickly: the in-between, where houses are specks and
 	# woods a carpet, is passed through in a few turns of the wheel rather than
@@ -760,11 +769,12 @@ func _on_realm_changed() -> void:
 
 
 func _on_map(map: Dictionary) -> void:
-	terrain.refresh_terrain(map)
+	await terrain.refresh_terrain(map)
 	var c := Vector3(terrain.width * terrain.TILE / 2.0, 0, terrain.height * terrain.TILE / 2.0)
 	rig.snap(c, terrain.width * terrain.TILE * 1.05)
 
 
+var _laying := false  # roads and countryside are being laid out, a frame at a time
 func _on_world(world: Dictionary) -> void:
 	if terrain.width == 0:
 		return
@@ -781,7 +791,10 @@ func _on_world(world: Dictionary) -> void:
 	_houses.clear()
 	for p in world.get("players", []):
 		_houses[int(p["id"])] = p["house"]
+	if not terrain.built:
+		return  # the land is still forming; the next report raises the towns on it
 	var tt := Time.get_ticks_msec()
+	Engine.set_meta("stage", "towns.sync")
 	towns.sync(world, _houses)
 	if Time.get_ticks_msec() - tt > 500:
 		print_verbose("BUILD towns %d ms" % (Time.get_ticks_msec() - tt))
@@ -790,14 +803,27 @@ func _on_world(world: Dictionary) -> void:
 	if season != terrain.season or towns.towns.size() != _snowed:
 		_snowed = towns.towns.size()
 		terrain.set_season(season, towns.towns.values().map(func(t): return t["node"]))
-	roads.sync(world)
-	tt = Time.get_ticks_msec()
-	roads.kings_road(world)
-	countryside.build(world.get("cities", []))
-	if Time.get_ticks_msec() - tt > 500:
-		print_verbose("BUILD roads+countryside %d ms" % (Time.get_ticks_msec() - tt))
+	# Roads and the countryside each in a frame of their own, so laying them
+	# out never holds the window for seconds at once.
+	if not _laying:
+		_laying = true
+		Engine.set_meta("stage", "roads.sync")
+		roads.sync(world)
+		await get_tree().process_frame
+		tt = Time.get_ticks_msec()
+		Engine.set_meta("stage", "kings_road")
+		roads.kings_road(world)
+		await get_tree().process_frame
+		Engine.set_meta("stage", "countryside")
+		countryside.build(world.get("cities", []))
+		if Time.get_ticks_msec() - tt > 500:
+			print_verbose("BUILD roads+countryside %d ms" % (Time.get_ticks_msec() - tt))
+		_laying = false
+	Engine.set_meta("stage", "scenes.sync")
 	scenes.sync(world, _houses)
+	Engine.set_meta("stage", "units.sync")
 	units.sync(world, _houses)
+	Engine.set_meta("stage", "ui.set_world")
 	ui.set_world(world, _houses)
 	if ui.minimap.terrain == null:
 		ui.minimap.terrain = terrain

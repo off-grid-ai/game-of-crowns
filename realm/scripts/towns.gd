@@ -444,6 +444,10 @@ func _flush(root: Node3D) -> void:
 ## realm. Beyond that the atlas and the town's name carry the view, and the
 ## frame isn't spent on millions of triangles no one can see.
 func _reach_for(kind: String) -> float:
+	# The fence panel is 14k triangles, heavier than a house, and a town rings
+	# itself with dozens: past a dozen units it is a hairline, not worth them.
+	if kind == "wooden_fence_game_ready_asset":
+		return 12.0
 	var m: float = float(Real.KIT.get(kind, ["", 10.0])[1])
 	if m < 2.0:
 		return 16.0

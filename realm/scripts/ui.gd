@@ -5,7 +5,6 @@ extends CanvasLayer
 ## court is a notification until you answer it.
 
 signal god_action(action: String, building: String)
-signal speed_changed(seconds: int)
 signal focus_house(owner: int)
 signal house_opened(owner: int)
 signal ledger_opened
@@ -341,14 +340,6 @@ func _build_top_bar() -> void:
 	_ledger_btn.toggle_mode = true
 	act.add_child(_ledger_btn)
 	_divider(act)
-	_pace_btns.clear()
-	for trip in [["play", "Slow pace  (1)", 60], ["caret-right", "Normal pace  (2)", 12], ["fast-forward", "Fast pace  (3)", 3]]:
-		var secs: int = trip[2]
-		var b := _icon_btn(trip[0], trip[1], _set_pace.bind(secs))
-		b.toggle_mode = true
-		b.button_pressed = secs == 12
-		_pace_btns[secs] = b
-		act.add_child(b)
 	_pause_btn = _icon_btn("pause", _with_key("Pause", "pause"), _toggle_pause)
 	_pause_btn.toggle_mode = true
 	act.add_child(_pause_btn)
@@ -362,13 +353,6 @@ func _build_top_bar() -> void:
 	act.add_child(_icon_btn("list", "Chronicles, new realms, records", func(): open_menu.emit()))
 
 
-var _pace_btns := {}
-
-
-func _set_pace(secs: int) -> void:
-	speed_changed.emit(secs)
-	for k in _pace_btns:
-		_pace_btns[k].button_pressed = k == secs
 
 
 func _toggle_pause() -> void:
@@ -393,12 +377,6 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	# Every key is an Input Map action (keys.gd), so Settings → Controls can change it.
 	if event.is_action_pressed(&"pause"):
 		_toggle_pause()
-	elif event.is_action_pressed(&"pace_walk"):
-		_set_pace(60)
-	elif event.is_action_pressed(&"pace_ride"):
-		_set_pace(12)
-	elif event.is_action_pressed(&"pace_gallop"):
-		_set_pace(3)
 	elif event.is_action_pressed(&"houses"):
 		_houses_btn.button_pressed = not _houses_btn.button_pressed
 		_houses_panel.visible = _houses_btn.button_pressed

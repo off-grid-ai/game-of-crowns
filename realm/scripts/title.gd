@@ -143,7 +143,7 @@ var _opt := {}  # the chronicle's options as they stand; sent to the bridge as-i
 
 
 static func _default_opt() -> Dictionary:
-	return {"pace": 12, "disasters": "normal", "raiders": "normal", "dead": "normal", "usurper": true, "temper": "mixed",
+	return {"pace": 90, "disasters": "normal", "raiders": "normal", "dead": "normal", "usurper": true, "temper": "mixed",
 		"cunning": "hard", "houseWealth": "asis", "trust": "wary", "host": "standard", "petitions": "normal", "intrigue": "normal", "skip": [], "language": "en"}
 
 
@@ -202,7 +202,6 @@ func show_new() -> void:
 	_choices(left, "Where", [["Aldmere, nine years in", "aldmere"], ["Aldmere, year one", "aldmere_fresh"], ["A random realm", "random"]], _scenario, func(v):
 		_scenario = v
 		_houses_enabled(house_row))
-	_choices(left, "A season lasts", [["6 s", 6], ["12 s", 12], ["24 s", 24], ["48 s", 48]], _opt["pace"], func(v): _opt["pace"] = v)
 	_choices(left, "Length of the reign", [["5 min", 5], ["10 min", 10], ["30 min", 30], ["1 hour", 60], ["Endless", 0]], _minutes, func(v): _minutes = v)
 	_section(left, "The crown")
 	_choices(left, "The royal treasury", [["Poor · 15k", "poor"], ["Comfortable · 50k", "comfortable"], ["Rich · 150k", "rich"]], _wealth, func(v): _wealth = v)
@@ -366,7 +365,6 @@ func show_settings() -> void:
 		var o: Dictionary = d["options"]
 		var apply := func(key: String, value) -> void:
 			bridge.set_reign_options({key: value}, func(_c, _r): pass)
-		_choices(col, "A season lasts", [["6 s", 6], ["12 s", 12], ["24 s", 24], ["48 s", 48]], int(o.get("pace", 12)), func(v): apply.call("pace", v))
 		_choices(col, "The tongue people speak to you in", [["English", "en"], ["Français", "fr"], ["Deutsch", "de"], ["Español", "es"], ["Italiano", "it"], ["Português", "pt"], ["हिन्दी", "hi"]], o.get("language", "en"), func(v): apply.call("language", v))
 		_choices(col, "Floods, fires and famine", [["None", "none"], ["Gentle", "gentle"], ["Normal", "normal"], ["Cruel", "cruel"]], o.get("disasters", "normal"), func(v): apply.call("disasters", v))
 		_choices(col, "Raiders from the wilds", [["None", "none"], ["Some", "normal"], ["Hordes", "hordes"]], o.get("raiders", "normal"), func(v): apply.call("raiders", v))
@@ -679,7 +677,10 @@ func _big(text: String, cb: Callable) -> Button:
 	# A soft dark edge keeps the words readable over the bright painting.
 	b.add_theme_constant_override("outline_size", 6)
 	b.add_theme_color_override("font_outline_color", Color(0.05, 0.04, 0.03, 0.75))
-	b.custom_minimum_size = Vector2(0, 46)
+	# Each choice sized to its words with a little room, centred: a highlight
+	# the full width of the window looked absurd.
+	b.custom_minimum_size = Vector2(300, 42)
+	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	b.focus_mode = Control.FOCUS_NONE
 	b.pressed.connect(cb)
 	_body.add_child(b)

@@ -39,7 +39,7 @@ let world = null;
 let scars = [];
 let history = [];
 let detailCache = { file: null, mtime: 0, data: null };
-let turnSeconds = 12;
+let turnSeconds = 90;
 let paused = false;
 // Each great house's regard for the crown (0-100), by Freeciv player id.
 let favour = {};
@@ -64,7 +64,7 @@ function load(id) {
   world = chron.readJson(path.join(P.state, "world.json"));
   scars = chron.readJson(path.join(P.state, "scars.json"), []);
   detailCache = { file: null, mtime: 0, data: null };
-  turnSeconds = meta.pace ?? 12;
+  turnSeconds = 90;  // one pace for every realm: a season a minute and a half
   paused = meta.status !== "running";
   favour = chron.readJson(path.join(P.state, "favour.json"), {});
   meta.tithe ??= 0.1;
@@ -664,7 +664,7 @@ http.createServer(async (req, res) => {
   }
   if (url.pathname === "/speed" && req.method === "POST") {
     const { seconds } = await body(req);
-    turnSeconds = Math.max(1, Math.min(600, Number(seconds) || 12));
+    turnSeconds = Math.max(1, Math.min(600, Number(seconds) || 90));
     meta.pace = turnSeconds;
     chron.saveMeta(meta);
     if (!paused) send(`set timeout ${turnSeconds}`);

@@ -33,7 +33,7 @@ const CHARACTER := {
 
 ## Tips shown again while the realm is still forming, after the story.
 const TIPS := [
-	["Pace", "The realm runs on its own clock. Pause it, or set it to walk, ride or gallop.", "{pause}  pause    {pace_walk} {pace_ride} {pace_gallop}  pace"],
+	["Its own clock", "The realm runs on its own clock, a season every minute and a half. Pause it whenever you need to think.", "{pause}  pause"],
 	["Your word", "Shape your people's minds in a sentence: all bannermen grow restless, the North loves its King. Each order keeps working until you revoke it.", "{houses}  houses, then Your word"],
 	["Petitions remember", "Every ruling is remembered by the one who asked, and by their house. Favour rises and falls with what you decide.", "{court}  court"],
 	["The chronicle", "Everything that happens is written down: births, deaths, marriages, battles and your rulings.", "{chronicle}  chronicle    {ledger}  ledger"],

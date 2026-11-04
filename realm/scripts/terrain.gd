@@ -40,18 +40,33 @@ func build(map: Dictionary) -> void:
 		terrain[int(t[1]) * width + int(t[0])] = String(t[2]).split("|")[0]
 	_noise.seed = 7
 	_noise.frequency = 0.08
+	# Built in stages with a frame between each, so the window keeps answering
+	# the system while the realm forms (no spinning cursor).
+	built = false
 	var t0 := Time.get_ticks_msec()
-	_build_land()
+	Engine.set_meta("stage", "land")
+	await _build_land()
+	await get_tree().process_frame
 	var t1 := Time.get_ticks_msec()
+	Engine.set_meta("stage", "sea")
 	_build_sea()
+	await get_tree().process_frame
 	var rivers := preload("res://scripts/rivers.gd").new()
 	rivers.name = "Rivers"
 	add_child(rivers)
+	Engine.set_meta("stage", "rivers")
 	rivers.build(self)
+	await get_tree().process_frame
+	Engine.set_meta("stage", "vegetation")
 	_build_vegetation()
+	await get_tree().process_frame
 	var t2 := Time.get_ticks_msec()
 	_build_paths()
+	built = true
 	print_verbose("BUILD land %d ms, vegetation %d ms, paths %d ms" % [t1 - t0, t2 - t1, Time.get_ticks_msec() - t2])
+
+
+var built := false  # the land, sea, rivers and woods are all in place
 
 
 func refresh_terrain(map: Dictionary) -> void:
@@ -59,7 +74,7 @@ func refresh_terrain(map: Dictionary) -> void:
 		c.queue_free()
 	_veg.clear()
 	_veg_cells.clear()
-	build(map)
+	await build(map)
 
 
 func tile_at(x: int, y: int) -> String:
@@ -95,7 +110,7 @@ const SEASONS := {
 
 ## Turns the land to the season: leaf colour, grass, the ground, and snow on
 ## whatever faces up in winter (trees, roofs). towns: their nodes, for the snow.
-const SNOW_FADE := 8.0  # seconds for snow to settle or melt
+const SNOW_FADE := 20.0  # seconds for snow to settle or melt: about half a season
 var _snow_fade: Tween
 
 
@@ -422,7 +437,7 @@ func _build_land() -> void:
 		mi.visible = false
 		land3d = preload("res://scripts/land3d.gd").new()
 		add_child(land3d)
-		land3d.build(self, GROUND_LAYER)
+		await land3d.build(self, GROUND_LAYER)
 
 
 func _build_sea() -> void:
@@ -802,6 +817,14 @@ func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 	var key := "%s:%d:%d:%s" % [path, nx, ny, edge]
 	if _tiled.has(key):
 		return _tiled[key]
+	# Made once ever, then kept on disk: building these pixel by pixel is what
+	# stalled a town's first appearance.
+	var cached := "user://tiled/%s.png" % key.md5_text()
+	if FileAccess.file_exists(cached):
+		var kept := Image.load_from_file(cached)
+		if kept:
+			_tiled[key] = ImageTexture.create_from_image(kept)
+			return _tiled[key]
 	const N := 256
 	var src: Image = (load(path) as Texture2D).get_image()
 	if src.is_compressed():
@@ -849,6 +872,8 @@ func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 				if a < 1.0:
 					img.set_pixel(x, y, Color(img.get_pixel(x, y), a))
 	img.generate_mipmaps()
+	DirAccess.make_dir_recursive_absolute("user://tiled")
+	img.save_png(cached)
 	_tiled[key] = ImageTexture.create_from_image(img)
 	return _tiled[key]
 

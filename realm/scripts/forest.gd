@@ -191,8 +191,11 @@ func clear(center: Vector3, radius: float) -> void:
 			if kept.size() != _trees[k].size():
 				_trees[k] = kept
 				_felled[k] = true
-		if not _felled.is_empty():
-			_replant.call_deferred()
+		# Fields are cleared a few at a time; the woods are replanted once for the
+		# lot, a moment later, not once per field (each replant redraws them all).
+		if not _felled.is_empty() and not _replant_due:
+			_replant_due = true
+			get_tree().create_timer(2.0).timeout.connect(_replant)
 		return
 	for mmi in get_children():
 		if not (mmi is MultiMeshInstance3D):
@@ -209,7 +212,9 @@ func clear(center: Vector3, radius: float) -> void:
 
 
 ## The kinds that lost trees this frame, sent to the instancer again in one go.
+var _replant_due := false
 func _replant() -> void:
+	_replant_due = false
 	var land: Terrain3D = _land().land if _land() else null
 	if land == null:
 		return

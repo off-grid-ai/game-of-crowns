@@ -64,7 +64,14 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 	if terrain.land:
 		heights = terrain.land
 		land.vertex_spacing = 1.0 / terrain.land_per_unit
-		control = _control_from_land(terrain)
+		# The ground's layers come from 1.2 million samples: worked out on a
+		# background thread while the window carries on answering the system.
+		var out := [null]
+		var task := WorkerThreadPool.add_task(func(): out[0] = _control_from_land(terrain))
+		while not WorkerThreadPool.is_task_completed(task):
+			await get_tree().process_frame
+		WorkerThreadPool.wait_for_task_completion(task)
+		control = out[0]
 	else:
 		heights = Image.create_empty(w, h, false, Image.FORMAT_RF)
 		control = Image.create_empty(w, h, false, Image.FORMAT_RF)

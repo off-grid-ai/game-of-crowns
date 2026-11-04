@@ -66,7 +66,7 @@ export function addRecord(entry) {
 // one drives the simulation: Freeciv's settings, the houses' AI traits, the
 // stakes, the court, or a one-time act when the realm first stirs.
 export const OPTION_DEFAULTS = {
-  pace: 12,              // seconds a season lasts
+  pace: 90,              // seconds a season lasts: six minutes a year, so seasons and lives read
   disasters: "normal",   // floods, fires, famine: none | gentle | normal | cruel
   raiders: "normal",     // barbarians from the wilds: none | normal | hordes
   dead: "normal",        // the dead beyond the wall: off | late | normal | soon
@@ -96,7 +96,7 @@ export function cleanOptions(o = {}, fate) {
   for (const [k, v] of Object.entries(o ?? {})) {
     if (k in CHOICES && CHOICES[k].includes(v)) out[k] = v;
   }
-  out.pace = [6, 12, 24, 48].includes(Number(o?.pace)) ? Number(o.pace) : out.pace;
+  out.pace = 90;  // one pace for every realm
   out.usurper = o?.usurper === undefined ? true : Boolean(o.usurper);
   out.skip = (Array.isArray(o?.skip) ? o.skip : []).filter((h) => h in HOUSE_NATIONS).slice(0, 5);
   return out;
@@ -223,7 +223,7 @@ export function adoptLegacy() {
   fs.cpSync(path.join(DIR, "data", "nation"), path.join(p.data, "nation"), { recursive: true });
   fs.writeFileSync(p.serv, fs.readFileSync(path.join(DIR, "realm.serv"), "utf8"));
   const meta = {
-    id, name: "Aldmere I", scenario: "aldmere", seed: 1066, minutes: 0, pace: 12, created: Date.now(),
+    id, name: "Aldmere I", scenario: "aldmere", seed: 1066, minutes: 0, pace: 90, created: Date.now(),
     elapsedMs: 0, status: "running", score: null, verdict: null,
   };
   saveMeta(meta);
