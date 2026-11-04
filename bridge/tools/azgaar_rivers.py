@@ -185,6 +185,44 @@ def carve(land, rivers):
     return mask
 
 
+MIN_POOL = 100  # samples (about 6 square units): water cut off from the sea at least this big is a lake or lagoon, kept
+
+
+def fill_pockets(land, mask, below):
+    """Raises low ground cut off from the sea to just clear of the water. The
+    coast blur and the river banks leave small hollows just inland that dip
+    under the sea's surface, and the sea showed through them as foam-rimmed
+    pools. A hollow that reaches the map's edge (the open sea) or is the size of
+    a lake keeps its water (Azgaar marks smaller ones as lakes too, but at this
+    scale they read as the same puddles); river water is left to the river.
+    Returns how many hollows were filled."""
+    w, h, v = land.w, land.h, land.v
+    low = bytearray(1 if v[i] < below and mask[i] != 255 else 0 for i in range(w * h))
+    seen = bytearray(w * h)
+    filled = 0
+    for s in range(w * h):
+        if not low[s] or seen[s]:
+            continue
+        seen[s] = 1
+        todo, pocket, keep = [s], [], False
+        while todo:
+            i = todo.pop()
+            pocket.append(i)
+            x, y = i % w, i // w
+            if x == 0 or y == 0 or x == w - 1 or y == h - 1:
+                keep = True
+            for j in (i - 1 if x > 0 else -1, i + 1 if x < w - 1 else -1, i - w if y > 0 else -1, i + w if y < h - 1 else -1):
+                if j >= 0 and low[j] and not seen[j]:
+                    seen[j] = 1
+                    todo.append(j)
+        if keep or len(pocket) >= MIN_POOL:
+            continue
+        for i in pocket:
+            v[i] = WET + 0.01  # dry, and still below 0 so Freeciv's tiles read it as before
+        filled += 1
+    return filled
+
+
 def png(path, w, h, gray):
     raw = b"".join(b"\0" + bytes(gray[y * w:(y + 1) * w]) for y in range(h))
 
@@ -211,11 +249,15 @@ def main(world, land_in, out, land_out, mask_out):
         mouth = min(3.5, 0.4 + math.sqrt(r["discharge"]) / 45)
         laid += runs(land, resample(smooth(pts)), mouth)
     mask = carve(land, laid)
+    # Hollows under the sea's surface first (they show as pools; a shallow neck
+    # still above the surface doesn't join them to the sea), then those that are
+    # merely too wet to build on.
+    pockets = fill_pockets(land, mask, SEA_LEVEL) + fill_pockets(land, mask, WET)
     open(land_out, "wb").write(land.v.tobytes())
     png(mask_out, land.w, land.h, mask)
     json.dump({"rivers": [{"points": [[round(x, 3), round(y, 3), round(z, 3), round(w, 3)] for x, z, y, w in r]} for r in laid]},
               open(out, "w"), separators=(",", ":"))
-    print(f"{len(laid)} river stretches -> {out}, {land_out}, {mask_out}")
+    print(f"{len(laid)} river stretches, {pockets} hollows filled -> {out}, {land_out}, {mask_out}")
 
 
 if __name__ == "__main__":
