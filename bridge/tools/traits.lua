@@ -1,0 +1,1 @@
+for p in players_iterate() do log.normal("TRAITS %s agg=%s trade=%s build=%s exp=%s", p.name, tostring(p:trait("Aggressive")), tostring(p:trait("Trader")), tostring(p:trait("Builder")), tostring(p:trait("Expansionist"))) end
