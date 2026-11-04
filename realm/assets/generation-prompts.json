@@ -1,0 +1,184 @@
+{
+  "tool": "built-in image_gen",
+  "generatedSequentially": true,
+  "designReferences": [
+    "UI.md",
+    "DESIGN.md",
+    "VISION.md",
+    "ASSET_PROMPTS.md"
+  ],
+  "sharedHeraldryStyle": "Medieval heraldry in the grounded style of Game of Thrones house sigils: bold flat shapes, strong silhouette readable at tiny sizes, no gradients, no text, no border frame, painted-cloth look, muted natural dyes.",
+  "exportNotes": [
+    "Banner images: resized to 512 × 1024 PNG; generated alpha channel retained.",
+    "Sigil images: generated alpha cleaned at 50% before resizing; visible shape fitted within 410 × 410, centered on a transparent 512 × 512 canvas; RGB set to #ece6da; exported as RGBA PNG.",
+    "Ground images: resized to 1024 × 1024 and exported as JPEG at quality 94; repeated two by two for visual checks."
+  ],
+  "assets": [
+    {
+      "filename": "banner-wolfholt.png",
+      "prompt": "Use case: stylized-concept. Asset type: game banner cloth texture, ONE asset only. Create a tall 512 × 1024 PNG, exact 1:2 portrait composition. A grey direwolf head, snarling, in pale ash-white on a field of cold slate grey (#9aa6b2 darkened). House of the frozen North. The sigil is centered horizontally in the upper middle, a bold coherent readable silhouette with few interior cutouts. Flat front-facing banner, full width cloth field touches both side edges and the top edge of the image. Cloth sides straight, bottom edge has a deep centered V swallow-tail notch, with actual transparency only outside the cloth and in the notch. Subtle woven linen texture, slightly worn, flat and unfurled, no folds or lighting gradient. No pole, no background, no mockup, no shadow, no frame, no text. Medieval heraldry in the grounded style of Game of Thrones house sigils: bold flat shapes, strong silhouette readable at tiny sizes, no gradients, no text, no border frame, painted-cloth look, muted natural dyes.",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-f081b845-8799-4859-bb49-e27388554b38.png",
+      "destination": "realm/assets/heraldry/banner-wolfholt.png"
+    },
+    {
+      "filename": "banner-goldcrest.png",
+      "prompt": "Use case: stylized-concept. Asset type: one game banner cloth texture. Output 512 × 1024 PNG, exact 1:2 portrait. A rampant lion in deep crimson on a field of rich gold (#d4a62a). A wealthy western house. The sigil sits in the upper middle, centered, bold and readable with simple interior cutouts. Flat straight-on cloth, no folds, field fills entire width and top edge, straight sides, centered bottom V swallow-tail notch. Actual transparent background only in bottom notch and outside cloth. Subtle woven linen texture, slightly worn. No pole, scene, mockup, cast shadow, text, border, shading gradients. Medieval heraldry in the grounded style of Game of Thrones house sigils: bold flat shapes, strong silhouette readable at tiny sizes, no gradients, no text, no border frame, painted-cloth look, muted natural dyes.",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-9158f36e-3df2-494d-8341-4a808dd3fc95.png",
+      "destination": "realm/assets/heraldry/banner-goldcrest.png"
+    },
+    {
+      "filename": "banner-ironreach.png",
+      "prompt": "Use case: stylized-concept. Asset type: one game banner cloth texture. Output 512 × 1024 PNG, exact 1:2 portrait. A golden kraken, tentacles spread, on a field of iron black-blue (#3d4a52). Island reavers. The sigil sits in the upper middle, centered, bold and readable with simple interior cutouts. Flat straight-on cloth, no folds, field fills entire width and top edge, straight sides, centered bottom V swallow-tail notch. Actual transparent background only in bottom notch and outside cloth. Subtle woven linen texture, slightly worn. No pole, scene, mockup, cast shadow, text, border, shading gradients. Medieval heraldry in the grounded style of Game of Thrones house sigils: bold flat shapes, strong silhouette readable at tiny sizes, no gradients, no text, no border frame, painted-cloth look, muted natural dyes.",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-34aa4882-82a1-4a57-9937-46f2a07b7983.png",
+      "destination": "realm/assets/heraldry/banner-ironreach.png"
+    },
+    {
+      "filename": "banner-thornvale.png",
+      "prompt": "Use case: stylized-concept. Asset type: one game banner cloth texture. Output 512 × 1024 PNG, exact 1:2 portrait. A single white rose with thorned stem on a field of deep green (#4f8a3c). A fertile southern-reach house. The sigil sits in the upper middle, centered, bold and readable with simple interior cutouts. Flat straight-on cloth, no folds, field fills entire width and top edge, straight sides, centered bottom V swallow-tail notch. Actual transparent background only in bottom notch and outside cloth. Subtle woven linen texture, slightly worn. No pole, scene, mockup, cast shadow, text, border, shading gradients. Medieval heraldry in the grounded style of Game of Thrones house sigils: bold flat shapes, strong silhouette readable at tiny sizes, no gradients, no text, no border frame, painted-cloth look, muted natural dyes.",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-4993799e-7423-4823-9353-1795fcb3ee0f.png",
+      "destination": "realm/assets/heraldry/banner-thornvale.png"
+    },
+    {
+      "filename": "banner-stormhold.png",
+      "prompt": "Use case: stylized-concept. Asset type: one game banner cloth texture. Output 512 × 1024 PNG, exact 1:2 portrait. A black crowned stag, leaping, on a field of storm amber (#b8862b). Stormlands lords. The stag wears a small clear crown between its antlers. The sigil sits in the upper middle, centered, bold and readable with simple interior cutouts. Flat straight-on cloth, no folds, field fills entire width and top edge, straight sides, centered bottom V swallow-tail notch. Actual transparent background only in bottom notch and outside cloth. Subtle woven linen texture, slightly worn. No pole, scene, mockup, cast shadow, text, border, shading gradients. Medieval heraldry in the grounded style of Game of Thrones house sigils: bold flat shapes, strong silhouette readable at tiny sizes, no gradients, no text, no border frame, painted-cloth look, muted natural dyes.",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-e7b07f64-0a86-411e-8caa-2f17621fcc79.png",
+      "destination": "realm/assets/heraldry/banner-stormhold.png"
+    },
+    {
+      "filename": "banner-sunspire.png",
+      "prompt": "Use case: stylized-concept. Asset type: one game banner cloth texture. Output 512 × 1024 PNG, exact 1:2 portrait. A red sun pierced by a golden spear on a field of burnt orange (#c2562a). Desert south. Simple sun disc with stout short rays and a bold diagonal spear, all shapes readable at tiny size. The sigil sits in the upper middle, centered, bold and readable with simple interior cutouts. Flat straight-on cloth, no folds, field fills entire width and top edge, straight sides, centered bottom V swallow-tail notch. Actual transparent background only in bottom notch and outside cloth. Subtle woven linen texture, slightly worn. No pole, scene, mockup, cast shadow, text, border, shading gradients. Medieval heraldry in the grounded style of Game of Thrones house sigils: bold flat shapes, strong silhouette readable at tiny sizes, no gradients, no text, no border frame, painted-cloth look, muted natural dyes.",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-3a563166-2b7f-4a69-a19f-4a02bea9dbfc.png",
+      "destination": "realm/assets/heraldry/banner-sunspire.png"
+    },
+    {
+      "filename": "banner-highfell.png",
+      "prompt": "Use case: stylized-concept. Asset type: one game banner cloth texture. Output 512 × 1024 PNG, exact 1:2 portrait. A white falcon rising before a crescent moon on a field of sky blue (#4a7bb7). Mountain vale house. Rising falcon wings raised, with a clear crescent moon behind, simple bold shapes. The sigil sits in the upper middle, centered, bold and readable with simple interior cutouts. Flat straight-on cloth, no folds, field fills entire width and top edge, straight sides, centered bottom V swallow-tail notch. Actual transparent background only in bottom notch and outside cloth. Subtle woven linen texture, slightly worn. No pole, scene, mockup, cast shadow, text, border, shading gradients. Medieval heraldry in the grounded style of Game of Thrones house sigils: bold flat shapes, strong silhouette readable at tiny sizes, no gradients, no text, no border frame, painted-cloth look, muted natural dyes.",
+      "editPrompt": "Edit this banner only. Remove ALL white scenery below the falcon: the mountains, house, bushes, hills and path. Fill those removed areas with the same uninterrupted sky-blue woven linen field. Keep the white rising falcon and crescent moon in the upper middle unchanged. Keep full-width blue cloth, straight sides and transparent V notch unchanged. The only white imagery anywhere is ONE falcon and ONE crescent moon. No landscape, houses, architecture, extra decoration, or text. Medieval heraldry in the grounded style of Game of Thrones house sigils: bold flat shapes, strong silhouette readable at tiny sizes, no gradients, no text, no border frame, painted-cloth look, muted natural dyes.",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-6ed3691e-b1e9-4f16-8da6-e604ef68ba1c.png",
+      "destination": "realm/assets/heraldry/banner-highfell.png"
+    },
+    {
+      "filename": "banner-crown.png",
+      "prompt": "Use case: stylized-concept. Asset type: one game banner cloth texture. Output 512 × 1024 PNG, exact 1:2 portrait. A golden crown above a black raven, wings spread, on a field of royal blood red (#b8202a). The King's own banner. Only these two heraldic shapes, no scenery or other decoration. The sigil sits in the upper middle, centered, bold and readable with simple interior cutouts. Flat straight-on cloth, no folds, field fills entire width and top edge, straight sides, centered bottom V swallow-tail notch. Actual transparent background only in bottom notch and outside cloth. Subtle woven linen texture, slightly worn. No pole, scene, mockup, cast shadow, text, border, shading gradients. Medieval heraldry in the grounded style of Game of Thrones house sigils: bold flat shapes, strong silhouette readable at tiny sizes, no gradients, no text, no border frame, painted-cloth look, muted natural dyes.",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-346762be-8920-4738-bdf7-fba4ad644527.png",
+      "destination": "realm/assets/heraldry/banner-crown.png"
+    },
+    {
+      "filename": "banner-dead.png",
+      "prompt": "Use case: stylized-concept. Asset type: one game banner cloth texture. Output 512 × 1024 PNG, exact 1:2 portrait. No sigil. A tattered, frost-rimed pale blue-white cloth (#9fb4c8), torn and rotted, with faint hand-prints in ice. The banner of the dead. Faint distressed frozen handprints scattered softly in upper middle are marks in ice, not an emblem. Frayed edges and several worn holes have real transparency, deep V notch bottom, long hanging strips, eerie and ancient. No scenery. The sigil sits in the upper middle, centered, bold and readable with simple interior cutouts. Flat straight-on cloth, no folds, field fills entire width and top edge, straight sides, centered bottom V swallow-tail notch. Actual transparent background only in bottom notch and outside cloth. Subtle woven linen texture, slightly worn. No pole, scene, mockup, cast shadow, text, border, shading gradients. Medieval heraldry in the grounded style of Game of Thrones house sigils: bold flat shapes, strong silhouette readable at tiny sizes, no gradients, no text, no border frame, painted-cloth look, muted natural dyes.",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-10659c0e-ac2d-4a9f-8efe-60cc27e934ec.png",
+      "destination": "realm/assets/heraldry/banner-dead.png"
+    },
+    {
+      "filename": "banner-rebel.png",
+      "prompt": "Use case: stylized-concept. Asset type: one game banner cloth texture. Output 512 × 1024 PNG, exact 1:2 portrait. A broken crown in black on a field of ash grey. Carried by a usurper's host. A single bold crown split into two clearly separated jagged halves, only emblem, no other decoration or scenery. The sigil sits in the upper middle, centered, bold and readable with simple interior cutouts. Flat straight-on cloth, no folds, field fills entire width and top edge, straight sides, centered bottom V swallow-tail notch. Actual transparent background only in bottom notch and outside cloth. Subtle woven linen texture, slightly worn. No pole, scene, mockup, cast shadow, text, border, shading gradients. Medieval heraldry in the grounded style of Game of Thrones house sigils: bold flat shapes, strong silhouette readable at tiny sizes, no gradients, no text, no border frame, painted-cloth look, muted natural dyes.",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-76b6d991-6b62-4019-b264-4e1fcf0602d1.png",
+      "destination": "realm/assets/heraldry/banner-rebel.png"
+    },
+    {
+      "filename": "sigil-wolfholt.png",
+      "prompt": "Use case: logo-brand. Asset type: ONE game UI heraldic sigil, 512 × 512 PNG square with genuine transparent background. A snarling direwolf head, heraldic sigil, single flat off-white (#ece6da) silhouette on a transparent background, no text, no frame, bold readable shape. The supplied banner is ONLY a reference for the emblem design. Extract and adapt just that emblem into a centered square UI icon occupying approximately 80% of the canvas, 10% clear margin on each side. Remove all cloth, field, banner outline, woven texture, background, shading and shadows. Every opaque pixel of the emblem is the same uniform off-white #ece6da. Internal cutouts are transparent. No separate backdrop or badge. Medieval heraldry in the grounded style of Game of Thrones house sigils: bold flat shapes, strong silhouette readable at tiny sizes, no gradients, no text, no border frame, painted-cloth look, muted natural dyes.",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-5a052e75-a9bf-4c34-a0aa-360b2b88ab13.png",
+      "destination": "realm/assets/heraldry/sigil-wolfholt.png",
+      "referenceImage": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-f081b845-8799-4859-bb49-e27388554b38.png"
+    },
+    {
+      "filename": "sigil-goldcrest.png",
+      "prompt": "Use case: logo-brand. Asset type: ONE game UI heraldic sigil, 512 × 512 PNG square with genuine transparent background. A rampant lion, heraldic sigil, single flat off-white (#ece6da) silhouette on a transparent background, no text, no frame, bold readable shape. The supplied banner is ONLY a reference for the emblem design. Extract and adapt just that emblem into a centered square UI icon occupying approximately 80% of the canvas, 10% clear margin on each side. Remove all cloth, field, banner outline, woven texture, background, shading and shadows. Every opaque pixel of the emblem is the same uniform off-white #ece6da. Internal cutouts are transparent. No separate backdrop or badge. Medieval heraldry in the grounded style of Game of Thrones house sigils: bold flat shapes, strong silhouette readable at tiny sizes, no gradients, no text, no border frame, painted-cloth look, muted natural dyes.",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-3bdf0fd7-026d-4ecf-8f42-d727d653f98f.png",
+      "destination": "realm/assets/heraldry/sigil-goldcrest.png",
+      "referenceImage": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-9158f36e-3df2-494d-8341-4a808dd3fc95.png"
+    },
+    {
+      "filename": "sigil-ironreach.png",
+      "prompt": "Use case: logo-brand. Asset type: ONE game UI heraldic sigil, 512 × 512 PNG square with genuine transparent background. A kraken with eight tentacles spread, heraldic sigil, single flat off-white (#ece6da) silhouette on a transparent background, no text, no frame, bold readable shape. The supplied banner is ONLY a reference for the emblem design. Extract and adapt just that emblem into a centered square UI icon occupying approximately 80% of the canvas, 10% clear margin on each side. Remove all cloth, field, banner outline, woven texture, background, shading and shadows. Every opaque pixel of the emblem is the same uniform off-white #ece6da. Internal cutouts are transparent. No separate backdrop or badge. Medieval heraldry in the grounded style of Game of Thrones house sigils: bold flat shapes, strong silhouette readable at tiny sizes, no gradients, no text, no border frame, painted-cloth look, muted natural dyes.",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-94689800-5474-429a-9a7d-4b28ab9a03ed.png",
+      "destination": "realm/assets/heraldry/sigil-ironreach.png",
+      "referenceImage": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-34aa4882-82a1-4a57-9937-46f2a07b7983.png"
+    },
+    {
+      "filename": "sigil-thornvale.png",
+      "prompt": "Use case: logo-brand. Asset type: ONE game UI heraldic sigil, 512 × 512 PNG square with genuine transparent background. A single rose with thorned stem and two leaves, heraldic sigil, single flat off-white (#ece6da) silhouette on a transparent background, no text, no frame, bold readable shape. The supplied banner is ONLY a reference for the emblem design. Extract and adapt just that emblem into a centered square UI icon occupying approximately 80% of the canvas, 10% clear margin on each side. Remove all cloth, field, banner outline, woven texture, background, shading and shadows. Every opaque pixel of the emblem is the same uniform off-white #ece6da. Internal cutouts are transparent. No separate backdrop or badge. Medieval heraldry in the grounded style of Game of Thrones house sigils: bold flat shapes, strong silhouette readable at tiny sizes, no gradients, no text, no border frame, painted-cloth look, muted natural dyes.",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-93fce7d4-faec-40d4-9c1c-2a86f8e39d5d.png",
+      "destination": "realm/assets/heraldry/sigil-thornvale.png",
+      "referenceImage": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-4993799e-7423-4823-9353-1795fcb3ee0f.png"
+    },
+    {
+      "filename": "sigil-stormhold.png",
+      "prompt": "Use case: logo-brand. Asset type: ONE game UI heraldic sigil, 512 × 512 PNG square with genuine transparent background. A crowned stag leaping, with branching antlers and a small crown between them, heraldic sigil, single flat off-white (#ece6da) silhouette on a transparent background, no text, no frame, bold readable shape. The supplied banner is ONLY a reference for the emblem design. Extract and adapt just that emblem into a centered square UI icon occupying approximately 80% of the canvas, 10% clear margin on each side. Remove all cloth, field, banner outline, woven texture, background, shading and shadows. Every opaque pixel of the emblem is the same uniform off-white #ece6da. Internal cutouts are transparent. No separate backdrop or badge. Medieval heraldry in the grounded style of Game of Thrones house sigils: bold flat shapes, strong silhouette readable at tiny sizes, no gradients, no text, no border frame, painted-cloth look, muted natural dyes.",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-3eac3c99-2a49-4a2b-9722-da5cc8c5f6fe.png",
+      "destination": "realm/assets/heraldry/sigil-stormhold.png",
+      "referenceImage": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-e7b07f64-0a86-411e-8caa-2f17621fcc79.png"
+    },
+    {
+      "filename": "sigil-sunspire.png",
+      "prompt": "Use case: logo-brand. Asset type: ONE game UI heraldic sigil, 512 × 512 PNG square with genuine transparent background. A sun pierced diagonally by a spear. Keep spear visually distinct with two transparent parallel cutouts where it crosses the sun disc; both sun and spear must be the same off-white color, heraldic sigil, single flat off-white (#ece6da) silhouette on a transparent background, no text, no frame, bold readable shape. The supplied banner is ONLY a reference for the emblem design. Extract and adapt just that emblem into a centered square UI icon occupying approximately 80% of the canvas, 10% clear margin on each side. Remove all cloth, field, banner outline, woven texture, background, shading and shadows. Every opaque pixel of the emblem is the same uniform off-white #ece6da. Internal cutouts are transparent. No separate backdrop or badge. Medieval heraldry in the grounded style of Game of Thrones house sigils: bold flat shapes, strong silhouette readable at tiny sizes, no gradients, no text, no border frame, painted-cloth look, muted natural dyes.",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-fafdeb91-c5c6-4900-a555-b729b77879b0.png",
+      "destination": "realm/assets/heraldry/sigil-sunspire.png",
+      "referenceImage": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-3a563166-2b7f-4a69-a19f-4a02bea9dbfc.png"
+    },
+    {
+      "filename": "sigil-highfell.png",
+      "prompt": "Use case: logo-brand. Asset type: ONE game UI heraldic sigil, 512 × 512 PNG square with genuine transparent background. A falcon rising before a crescent moon. Only one falcon and one crescent moon, no scenery, no buildings, no mountains, heraldic sigil, single flat off-white (#ece6da) silhouette on a transparent background, no text, no frame, bold readable shape. The supplied banner is ONLY a reference for the emblem design. Extract and adapt just that emblem into a centered square UI icon occupying approximately 80% of the canvas, 10% clear margin on each side. Remove all cloth, field, banner outline, woven texture, background, shading and shadows. Every opaque pixel of the emblem is the same uniform off-white #ece6da. Internal cutouts are transparent. No separate backdrop or badge. Medieval heraldry in the grounded style of Game of Thrones house sigils: bold flat shapes, strong silhouette readable at tiny sizes, no gradients, no text, no border frame, painted-cloth look, muted natural dyes.",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-d5706d53-50c8-42d6-9528-4c85e0f6f843.png",
+      "destination": "realm/assets/heraldry/sigil-highfell.png",
+      "referenceImage": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-6ed3691e-b1e9-4f16-8da6-e604ef68ba1c.png"
+    },
+    {
+      "filename": "sigil-crown.png",
+      "prompt": "Use case: logo-brand. Asset type: ONE game UI heraldic sigil, 512 × 512 PNG square with genuine transparent background. A crown above a raven with spread wings, both entirely the same off-white, crown separated by a clear transparent gap above raven's head, heraldic sigil, single flat off-white (#ece6da) silhouette on a transparent background, no text, no frame, bold readable shape. The supplied banner is ONLY a reference for the emblem design. Extract and adapt just that emblem into a centered square UI icon occupying approximately 80% of the canvas, 10% clear margin on each side. Remove all cloth, field, banner outline, woven texture, background, shading and shadows. Every opaque pixel of the emblem is the same uniform off-white #ece6da. Internal cutouts are transparent. No separate backdrop or badge. Medieval heraldry in the grounded style of Game of Thrones house sigils: bold flat shapes, strong silhouette readable at tiny sizes, no gradients, no text, no border frame, painted-cloth look, muted natural dyes.",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-6599c2a3-d4c8-4c25-9d57-c687a15c2f4a.png",
+      "destination": "realm/assets/heraldry/sigil-crown.png",
+      "referenceImage": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-346762be-8920-4738-bdf7-fba4ad644527.png"
+    },
+    {
+      "filename": "sigil-dead.png",
+      "prompt": "Use case: logo-brand. Asset type: one game UI heraldic sigil, 512 × 512 PNG square. A skeletal hand, five bone fingers spread upward in a clear ominous open-hand heraldic emblem, heraldic sigil, single flat off-white (#ece6da) silhouette on a transparent background, no text, no frame, bold readable shape. Centered and filling about 80% of canvas with clear margins. Simplified chunky finger bones with transparent joints and clear finger gaps, wrist at bottom; restrained emblem detail readable at 32 pixels. Truly transparent backdrop and interior gaps, entirely uniform off-white opaque pixels, no shadows, no gradients, no cloth or banner, no realistic shading, no other objects. Medieval heraldry in the grounded style of Game of Thrones house sigils: bold flat shapes, strong silhouette readable at tiny sizes, no gradients, no text, no border frame, painted-cloth look, muted natural dyes.",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-87509e8b-7129-427e-8dd8-85fe996c6a7d.png",
+      "destination": "realm/assets/heraldry/sigil-dead.png"
+    },
+    {
+      "filename": "sigil-rebel.png",
+      "prompt": "Use case: logo-brand. Asset type: ONE game UI heraldic sigil, 512 × 512 PNG square with genuine transparent background. A broken crown split into two jagged halves with a clear lightning-shaped transparent break through the center, heraldic sigil, single flat off-white (#ece6da) silhouette on a transparent background, no text, no frame, bold readable shape. The supplied banner is ONLY a reference for the emblem design. Extract and adapt just that emblem into a centered square UI icon occupying approximately 80% of the canvas, 10% clear margin on each side. Remove all cloth, field, banner outline, woven texture, background, shading and shadows. Every opaque pixel of the emblem is the same uniform off-white #ece6da. Internal cutouts are transparent. No separate backdrop or badge. Medieval heraldry in the grounded style of Game of Thrones house sigils: bold flat shapes, strong silhouette readable at tiny sizes, no gradients, no text, no border frame, painted-cloth look, muted natural dyes.",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-dbd9490a-f495-4b8b-98b4-aa11e574a525.png",
+      "destination": "realm/assets/heraldry/sigil-rebel.png",
+      "referenceImage": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-76b6d991-6b62-4019-b264-4e1fcf0602d1.png"
+    },
+    {
+      "filename": "square-cobbles.jpg",
+      "prompt": "Use case: stylized-concept. Asset type: ONE seamless repeating game terrain albedo texture, 1024 × 1024 square. Medieval town-square cobblestones, rounded grey-brown setts of uneven size, dirt and sparse muted moss in the joints, worn smooth. Many small stones, randomized subtle variations, no large focal stones. Seamless tileable top-down texture. Straight orthographic top-down view perpendicular to the flat ground. Even diffuse light, no directional shadows, no highlights, no ambient occlusion baked in, no perspective or horizon. Warm painterly grounded medieval game art, muted natural palette and fine tactile material detail, matches Manor Lords-like terrain. Seamless tileable along both axes, opposite edges must match and all features must continue across the edges naturally. Edge-to-edge material, no border, no vignette, no text or UI. Uniform feature density and scale across image. Avoid large distinctive objects or patches that make obvious repeats. ",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-7735e518-c0c7-406b-913b-e1673d7c45d2.png",
+      "destination": "realm/assets/ground/square-cobbles.jpg"
+    },
+    {
+      "filename": "road-dirt.jpg",
+      "prompt": "Use case: stylized-concept. Asset type: ONE seamless repeating game terrain albedo texture, 1024 × 1024 square. A packed dirt cart track, two faint wheel ruts running straight vertically from top edge through bottom edge, subtle hoof prints, sparsely scattered tiny pebbles and dry straw, light brown earth. Fill the entire canvas with track material without road shoulders or grass edges. Faint ruts do not dominate. Seamless tileable top-down texture. Straight orthographic top-down view perpendicular to the flat ground. Even diffuse light, no directional shadows, no highlights, no ambient occlusion baked in, no perspective or horizon. Warm painterly grounded medieval game art, muted natural palette and fine tactile material detail, matches Manor Lords-like terrain. Seamless tileable along both axes, opposite edges must match and all features must continue across the edges naturally. Edge-to-edge material, no border, no vignette, no text or UI. Uniform feature density and scale across image. Avoid large distinctive objects or patches that make obvious repeats. ",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-2413fdba-1e9c-474a-8dc1-490a7e2339ae.png",
+      "destination": "realm/assets/ground/road-dirt.jpg"
+    },
+    {
+      "filename": "field-wheat.jpg",
+      "prompt": "Use case: stylized-concept. Asset type: ONE seamless repeating game terrain albedo texture, 1024 × 1024 square. Ripe golden wheat field seen from directly above, dense mature wheat heads and stalks in faint closely spaced parallel rows running vertically straight from top edge to bottom edge. Muted harvest gold, ochre and straw colors with tiny glimpses of earth. Dense fine-scale crop coverage, no field boundaries, no paths, no empty patches, no focal features. Seamless tileable top-down texture. Straight orthographic top-down view perpendicular to the flat ground. Even diffuse light, no directional shadows, no highlights, no ambient occlusion baked in, no perspective or horizon. Warm painterly grounded medieval game art, muted natural palette and fine tactile material detail, matches Manor Lords-like terrain. Seamless tileable along both axes, opposite edges must match and all features must continue across the edges naturally. Edge-to-edge material, no border, no vignette, no text or UI. Uniform feature density and scale across image. Avoid large distinctive objects or patches that make obvious repeats. ",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-90cef728-6c1b-4434-ac11-ad91a69f6ac9.png",
+      "destination": "realm/assets/ground/field-wheat.jpg"
+    },
+    {
+      "filename": "field-green.jpg",
+      "prompt": "Use case: stylized-concept. Asset type: ONE seamless repeating game terrain albedo texture, 1024 × 1024 square. A young green barley field seen from directly above, neat narrow furrow rows running vertically straight from top edge to bottom edge, dark soil between. Small slender young green barley blades rather than mature wheat heads. Muted fresh natural green contrasts with fertile dark brown soil. Roughly a dozen evenly spaced narrow planted rows, no large patches or landmarks, no field boundaries. Seamless tileable top-down texture. Straight orthographic top-down view perpendicular to the flat ground. Even diffuse light, no directional shadows, no highlights, no ambient occlusion baked in, no perspective or horizon. Warm painterly grounded medieval game art, muted natural palette and fine tactile material detail, matches Manor Lords-like terrain. Seamless tileable along both axes, opposite edges must match and all features must continue across the edges naturally. Edge-to-edge material, no border, no vignette, no text or UI. Uniform feature density and scale across image. Avoid large distinctive objects or patches that make obvious repeats. ",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-2089874d-ff1a-438c-9e51-3ce0de97e412.png",
+      "destination": "realm/assets/ground/field-green.jpg"
+    },
+    {
+      "filename": "field-fallow.jpg",
+      "prompt": "Use case: stylized-concept. Asset type: ONE seamless repeating game terrain albedo texture, 1024 × 1024 square. A freshly ploughed fallow field from directly above, dark brown furrows in parallel ridges running vertically straight from top edge to bottom edge, clods of earth. Roughly a dozen evenly spaced narrow ridges. Muted fertile dark umber soil throughout, no growing plants, no tools, no tractor marks, no field boundaries, no distinctive large stones. Texture definition only, no cast shadows. Seamless tileable top-down texture. Straight orthographic top-down view perpendicular to the flat ground. Even diffuse light, no directional shadows, no highlights, no ambient occlusion baked in, no perspective or horizon. Warm painterly grounded medieval game art, muted natural palette and fine tactile material detail, matches Manor Lords-like terrain. Seamless tileable along both axes, opposite edges must match and all features must continue across the edges naturally. Edge-to-edge material, no border, no vignette, no text or UI. Uniform feature density and scale across image. Avoid large distinctive objects or patches that make obvious repeats. ",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-bff93e01-bb12-42f7-ab7c-04e6f3ba6521.png",
+      "destination": "realm/assets/ground/field-fallow.jpg"
+    },
+    {
+      "filename": "field-dead.jpg",
+      "prompt": "Use case: stylized-concept. Asset type: ONE seamless repeating game terrain albedo texture, 1024 × 1024 square. A failed, blighted crop field from directly above: grey-brown dead stalks, cracked dry soil. Shown when a medieval town starves. Sparse brittle lifeless barley and broken stalks in faint parallel rows running vertically, muted ashen taupe and dry grey-brown. Fine irregular soil cracks, no fresh green growth, no large distinctive bare patches, no field boundaries, no objects. Seamless tileable top-down texture. Straight orthographic top-down view perpendicular to the flat ground. Even diffuse light, no directional shadows, no highlights, no ambient occlusion baked in, no perspective or horizon. Warm painterly grounded medieval game art, muted natural palette and fine tactile material detail, matches Manor Lords-like terrain. Seamless tileable along both axes, opposite edges must match and all features must continue across the edges naturally. Edge-to-edge material, no border, no vignette, no text or UI. Uniform feature density and scale across image. Avoid large distinctive objects or patches that make obvious repeats. ",
+      "source": "/Users/user/.codex/generated_images/01a1a0cc-f9ed-76a1-bb5c-8c8042ffa272/exec-96395851-ca40-448a-9dbe-1e4d49ec7dca.png",
+      "destination": "realm/assets/ground/field-dead.jpg"
+    }
+  ]
+}
