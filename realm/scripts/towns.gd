@@ -201,6 +201,7 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 	# around it, houses along the roads leading in, and a palisade with gates
 	# where the roads come through. Seats get more of everything.
 	terrain.flatten(center, Vector2.ONE * square_r * 2.0, 0.0, terrain.height_at(center.x, center.z), 0.6)
+	root.set_meta("square_r", square_r)
 	_plaza(root, center, square_r, rng)
 	var lots: Array = [[Vector3.ZERO, square_r * 0.9]]
 	var want := clampi(12 + size * 3, 14, 34) + (8 if seat else 0)
@@ -383,7 +384,10 @@ func _dress(root: Node3D, center: Vector3, hp: Vector3, face: Vector3, out: Vect
 		var p: Vector3 = spot[1]
 		if not terrain.is_land(center.x + p.x, center.z + p.z):
 			continue
-		_place(spot[0], p + Vector3(0, _ground_y(center, p), 0), atan2(face.x, face.z) + (PI / 2 if spot[0] == "wooden_fence_game_ready_asset" else rng.randf_range(-0.6, 0.6)))
+		var yaw := atan2(face.x, face.z) + (PI / 2 if spot[0] == "wooden_fence_game_ready_asset" else rng.randf_range(-0.6, 0.6))
+		_place(spot[0], p + Vector3(0, _ground_y(center, p), 0), yaw)
+		if String(spot[0]).contains("cart") or String(spot[0]).contains("wagon"):
+			_footprint_rect(root, p, Real.footprint(spot[0]), yaw)  # walk round a cart, not through it
 
 
 # --- building blocks -----------------------------------------------------------
