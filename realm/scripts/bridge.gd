@@ -28,11 +28,24 @@ func _ready() -> void:
 	_poll()
 
 
+## Asleep while the title menu is up: the map isn't loaded, so no land, towns
+## or people are built or drawn until a chronicle is chosen. The world's
+## summary still comes in (it's cheap, and the menu needs the reign for Continue).
+var active := true
+
+
+func wake() -> void:
+	if not active:
+		active = true
+		_poll()
+
+
 func _poll() -> void:
-	if not _map_loaded:
+	if active and not _map_loaded:
 		_http_get("/map", _on_map)
 	_http_get("/world", _on_world)
-	_http_get("/chronicle?since=%d" % _last_seq, _on_chronicle)
+	if active:
+		_http_get("/chronicle?since=%d" % _last_seq, _on_chronicle)
 
 
 func god(action: String, city_id: int, building := "") -> void:

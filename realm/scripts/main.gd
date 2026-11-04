@@ -124,7 +124,7 @@ func _ready() -> void:
 	lore = preload("res://scripts/lore.gd").new()
 	lore.person_opened.connect(_open_person)
 	add_child(lore)
-	_intro_due = (not Settings.get_value("seen_intro") and not _shot.has("path")) or _shot.has("intro")
+	_intro_due = _shot.has("intro")
 	labels = preload("res://scripts/map_labels.gd").new()
 	labels.towns = towns
 	labels.rig = rig
@@ -198,6 +198,9 @@ func _ready() -> void:
 	director.ui = ui
 	add_child(director)
 	bridge = preload("res://scripts/bridge.gd").new()
+	# The realm stays unloaded behind the title menu; it wakes when a chronicle
+	# is continued or begun (renders without the menu load it at once).
+	bridge.active = _shot.has("path") and not _shot.has("title")
 	add_child(bridge)
 	bridge.map_loaded.connect(_on_map)
 	bridge.world_updated.connect(_on_world)
@@ -235,7 +238,17 @@ func _ready() -> void:
 	lore.fetch = bridge.lore
 	add_child(title)
 	title.began.connect(func(): _intro_due = true)
-	title.watch_intro.connect(_tell_the_story)
+	# Continuing or beginning a chronicle wakes the realm, and the intro plays
+	# over it as it comes up (any key skips).
+	title.closed.connect(func():
+		if not bridge.active:
+			_intro_due = true
+			bridge.wake())
+	title.watch_intro.connect(func():
+		if terrain.width == 0 or bridge.world.is_empty():
+			_intro_due = true
+		else:
+			_tell_the_story())
 	title.read_lore.connect(lore.open)
 	if _shot.has("path") and not _shot.has("title"):
 		title.visible = false
