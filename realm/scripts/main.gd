@@ -730,8 +730,12 @@ func _cycle_step(delta: float) -> void:
 			next.process_mode = Node.PROCESS_MODE_DISABLED
 
 
+var _settled := false  # the scatter has been seated on the graded ground
 func _process(_delta: float) -> void:
 	_log_perf(_delta)
+	if not _settled and terrain.built and towns and not towns.towns.is_empty() and not towns.building():
+		_settled = true
+		terrain.settle_scatter()
 	_cycle_step(_delta)
 	if _no_forest and terrain.forest:
 		terrain.forest.visible = false

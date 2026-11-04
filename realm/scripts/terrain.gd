@@ -709,6 +709,35 @@ func clear_around(center: Vector3, radius: float) -> void:
 						mm.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3.ZERO), t.origin))
 
 
+## The order a realm is built in: the land is shaped, then towns grade their
+## plots and roads settle, and only then does what stands on the ground take its
+## height from it. The woods and the wild plants are scattered while the land
+## forms, before any town levels its ground, so once the towns are up they are
+## settled onto the finished ground: none buried in a levelled plot, none
+## floating over a cut. A few thousand at a time, so the window stays live.
+func settle_scatter() -> void:
+	var batches: Array = _veg.duplicate()
+	if forest:
+		batches.append_array(forest.find_children("*", "MultiMeshInstance3D", true, false))
+	var done := 0
+	for mmi in batches:
+		if not is_instance_valid(mmi):
+			continue
+		var mm: MultiMesh = mmi.multimesh
+		for i in mm.instance_count:
+			var t := mm.get_instance_transform(i)
+			if t.basis.determinant() == 0.0:
+				continue  # cleared for a town
+			var y := height_at(t.origin.x, t.origin.z) - 0.03
+			if absf(y - t.origin.y) > 0.005:
+				t.origin.y = y
+				mm.set_instance_transform(i, t)
+			done += 1
+			if done % 4000 == 0:
+				await get_tree().process_frame
+	print_verbose("SETTLED %d plants and trees on the finished ground" % done)
+
+
 const VEG_CELL := 4.0
 var _veg_cells := {}  # multimesh instance -> {cell: instance indices}
 
