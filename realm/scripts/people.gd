@@ -10,6 +10,7 @@ const S := 0.12  # same scale as the towns: a 1.8 m person is ~0.22 units
 const WALKS := ["Walk", "Running", "Sprint", "Sneak", "SS_Walk", "GS_Walk", "Axe_Walk", "Injured_Walk"]
 const WALK_PACE := 0.17  # world units a second at a "Walk" played at speed 1
 const RUN_PACE := 0.45  # and at "Running"
+const MOVING_PACE := WALK_PACE * 0.5  # steadier than this across the ground is walking; slower is standing (a turning dance ring, a shuffle)
 const SEEN_TO := 18.0  # world units: beyond this a person isn't drawn or animated (a few pixels tall)
 
 const OUTFITS := {

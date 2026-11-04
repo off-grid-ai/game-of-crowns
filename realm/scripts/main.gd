@@ -232,6 +232,7 @@ func _ready() -> void:
 	add_child(sound)
 	# The townsfolk's talk with each other, overheard up close (chatter.gd).
 	var chatter := preload("res://scripts/chatter.gd").new()
+	chatter.name = "Chatter"
 	chatter.villagers = villagers
 	chatter.towns = towns
 	chatter.bridge = bridge
@@ -732,7 +733,7 @@ func _cycle_step(delta: float) -> void:
 		return
 	_cycle_began = true
 	if _cycle.is_empty():
-		_cycle = [["nothing", null], ["villagers", villagers], ["units", units], ["scenes", scenes], ["towns", towns], ["labels", labels], ["director", director], ["ui", ui], ["sound", sound], ["countryside", countryside], ["roads", roads], ["terrain", terrain], ["bridge", bridge]]
+		_cycle = [["nothing", null], ["villagers", villagers], ["units", units], ["scenes", scenes], ["towns", towns], ["labels", labels], ["director", director], ["ui", ui], ["sound", sound], ["countryside", countryside], ["roads", roads], ["terrain", terrain], ["bridge", bridge], ["anim", get_node_or_null("AnimLOD")], ["chatter", get_node_or_null("Chatter")], ["control", control]]
 		if _cycle_vis:
 			_cycle = [["nothing", null], ["villagers", villagers], ["units", units], ["scenes", scenes], ["towns", towns], ["countryside", countryside], ["roads", roads], ["forest", terrain.forest], ["ground", terrain.land3d], ["rivers", terrain.get_node_or_null("Rivers")], ["terrain", terrain]]
 		_cycle_i = 0
