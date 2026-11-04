@@ -18,6 +18,7 @@ var _head := SphereMesh.new()
 var _mats: Array[StandardMaterial3D] = []
 var _skin := StandardMaterial3D.new()
 var _check := 0.0
+var _cull := 0.0
 var _people = preload("res://scripts/people.gd").new()
 var _nav = preload("res://scripts/town_nav.gd").new()
 const WALK_SPEED := 0.17  # world units per second: an unhurried 1.4 m/s at town scale
@@ -41,10 +42,30 @@ func _process(delta: float) -> void:
 	if _check <= 0.0:
 		_check = 1.0
 		_refresh()
+	_cull -= delta
+	if _cull <= 0.0:
+		_cull = 0.25
+		_pause_unseen()
 	var t := Time.get_ticks_msec() * 0.001
 	for id in _crowds:
 		for a in _crowds[id]:
 			_step(a, delta, t)
+
+
+## Nobody animates unseen: a villager too far off to be drawn, or behind the
+## camera, holds still until they're in view again.
+func _pause_unseen() -> void:
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	var eye := cam.global_position
+	for id in _crowds:
+		for a in _crowds[id]:
+			var n: Node3D = a["node"]
+			var anim: AnimationPlayer = n.get_node_or_null("Anim")
+			if anim:
+				var p := n.global_position + Vector3(0, 0.1, 0)
+				anim.active = n.visible and p.distance_to(eye) < _people.SEEN_TO and cam.is_position_in_frustum(p)
 
 
 func _refresh() -> void:
@@ -80,13 +101,16 @@ func _spawn(id: int) -> void:
 	var list := []
 	# Busier as a town grows: a hamlet has a handful about, a market town a crowd.
 	for i in clampi(6 + size * 5, 8, MAX_PER_TOWN):
-		var person: Node3D = _people.make(rng, "peasant")
+		# Each has a calling that decides where their day goes, and what they wear:
+		# farmers dress as peasants, the pious now and then as clergy, the rest as townsfolk.
+		var roll := rng.randf()
+		var calling := "farmer" if roll < 0.4 else ("crafter" if roll < 0.62 else ("tavern" if roll < 0.74 else ("pious" if roll < 0.82 else ("market" if roll < 0.92 else "idler"))))
+		var station := "peasant" if calling == "farmer" else ("clergy" if calling == "pious" and rng.randf() < 0.3 else "townsfolk")
+		var person: Node3D = _people.make(rng, station)
 		add_child(person)
 		var a := {"node": person, "center": center, "rng": rng, "home": _random_spot(center, rng, 1.8, 3.6), "town": id, "route": PackedVector2Array(),
 			"farmer": false, "wait": rng.randf() * 6.0, "phase": rng.randf() * TAU, "pace": rng.randf_range(0.8, 1.2)}
-		# Each has a calling that decides where their day goes.
-		var roll := rng.randf()
-		a["role"] = "child" if person.get_meta("age", "") == "child" else ("farmer" if roll < 0.4 else ("crafter" if roll < 0.62 else ("tavern" if roll < 0.74 else ("pious" if roll < 0.82 else ("market" if roll < 0.92 else "idler")))))
+		a["role"] = "child" if person.get_meta("age", "") == "child" else calling
 		a["farmer"] = a["role"] == "farmer"
 		a["field"] = _random_spot(center, rng, 4.5, 7.5)  # their own strip, not a random one each time
 		a["bench"] = a["home"] + Vector3(rng.randf_range(-0.2, 0.2), 0, rng.randf_range(-0.2, 0.2))
