@@ -48,7 +48,6 @@ func build(map: Dictionary) -> void:
 	rivers.name = "Rivers"
 	add_child(rivers)
 	rivers.build(self)
-	commit_grading()  # the river beds
 	_build_vegetation()
 	var t2 := Time.get_ticks_msec()
 	_build_paths()
@@ -176,35 +175,14 @@ func flatten(at: Vector3, size: Vector2, yaw: float, h: float, margin := 0.35, m
 				continue
 			var k := 1.0 if out <= 0.0 else 1.0 - smoothstep(0.0, margin, out)
 			var old: float = land.get_pixel(x, z).r
-			if old <= 0.0:
-				continue  # never raise the sea bed into land
+			var near := river_near(w.x, w.z)
+			if old <= 0.0 or near >= 1.0:
+				continue  # never raise the sea bed into land, nor fill a river
+			k *= 1.0 - near * near  # beside a river the land keeps its slope down to the water
 			var v := lerpf(old, h, k)
 			land.set_pixel(x, z, Color(v, 0, 0, 1))
 			if data:
 				data.set_height(Vector3(x / per, 0, z / per), v)
-	_graded = true
-
-
-## Lowers the land into a bowl `r` wide at `at`, its middle `depth` below
-## `surface`: a river's bed. Only lowers, unless `shape` lets it also build the
-## bed up where the land dips below the water.
-func carve(at: Vector3, r: float, surface: float, depth: float, shape := false) -> void:
-	if land == null:
-		return
-	var per := float(land_per_unit)
-	var data = land3d.land.data if land3d and land3d.land else null
-	for z in range(maxi(0, int((at.z - r) * per)), mini(land.get_height() - 1, int((at.z + r) * per) + 1) + 1):
-		for x in range(maxi(0, int((at.x - r) * per)), mini(land.get_width() - 1, int((at.x + r) * per) + 1) + 1):
-			var d := Vector2((x + 0.5) / per - at.x, (z + 0.5) / per - at.z).length() / r
-			if d >= 1.0:
-				continue
-			var old: float = land.get_pixel(x, z).r
-			var bed := surface - depth * (1.0 - d * d)
-			var v := bed if shape else minf(old, bed)
-			if v != old:
-				land.set_pixel(x, z, Color(v, 0, 0, 1))
-				if data:
-					data.set_height(Vector3(x / per, 0, z / per), v)
 	_graded = true
 
 
@@ -240,6 +218,28 @@ func _load_land(info) -> void:
 		return
 	land = Image.create_from_data(w, h, false, Image.FORMAT_RF, bytes)
 	land_per_unit = int(info.get("perUnit", 4))
+	if ResourceLoader.exists(RIVER_MASK):
+		river_mask = (load(RIVER_MASK) as Texture2D).get_image()
+
+
+## Where river water lies (255) and how close a river is beside it (fading to 0),
+## at the land's resolution (bridge/tools/azgaar_rivers.py).
+const RIVER_MASK := "res://assets/maps/rivers-mask.png"
+var river_mask: Image
+
+
+func in_river(wx: float, wz: float) -> bool:
+	return river_near(wx, wz) >= 1.0
+
+
+## 1 in a river's water, falling to 0 a few units from its edge.
+func river_near(wx: float, wz: float) -> float:
+	if river_mask == null:
+		return 0.0
+	var x := clampi(int(wx * land_per_unit), 0, river_mask.get_width() - 1)
+	var z := clampi(int(wz * land_per_unit), 0, river_mask.get_height() - 1)
+	var v := river_mask.get_pixel(x, z).r8
+	return 1.0 if v == 255 else v / 255.0
 
 
 func _land_height(wx: float, wz: float) -> float:
@@ -292,7 +292,7 @@ func _warp(wx: float, wz: float) -> Vector2:
 func is_land(wx: float, wz: float) -> bool:
 	var name := tile_at(floori(wx / TILE), floori(wz / TILE))
 	if land:
-		return name != "Lake" and height_at(wx, wz) > SEA_LEVEL + 0.04
+		return name != "Lake" and height_at(wx, wz) > SEA_LEVEL + 0.04 and not in_river(wx, wz)
 	return not (name.contains("Ocean") or name == "Lake") and height_at(wx, wz) > SEA_LEVEL + 0.1
 
 
@@ -555,7 +555,7 @@ func _build_vegetation() -> void:
 					if kind == "grass":
 						s *= rng.randf_range(0.5, 0.9)
 					if kind == "rock":
-						s *= rng.randf_range(1.2, 2.5) if name == "Mountains" else rng.randf_range(0.8, 1.6)
+						s *= rng.randf_range(0.6, 1.2) if name == "Mountains" else rng.randf_range(0.4, 0.8)  # a man high at most, never the size of a house
 					var b := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(s, s * rng.randf_range(0.9, 1.15), s))
 					var v: int = rng.randi() % meshes[kind].size()
 					placed["%s:%d" % [kind, v]].append(Transform3D(b, Vector3(wx, height_at(wx, wz) - 0.03, wz)))

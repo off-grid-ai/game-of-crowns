@@ -4,7 +4,7 @@ same size as the Freeciv map (TILE units per tile). Land heights come from the
 eroded bake (ridges, gullies, carved river valleys); the bake flattens all water
 to the surface, so the sea shelves down with distance from the shore.
 
-  python3 tools/azgaar_land.py data/belia-eroded-1297x2048.u16 1297 2048 data/belia-land.f32
+  python3 tools/azgaar_land.py data/belia-eroded-1297x2048.u16 1297 2048 data/belia-land-raw.f32
 """
 
 import array
@@ -68,6 +68,8 @@ def shore_distance(land, wet, w, h):
 
 COAST_BLUR = 6  # samples
 COAST_BAND = 3.0  # game units either side of the shore
+PEAK_BLUR = 5  # samples
+PEAK_FROM = 1.0  # game units: above this the high ground is softened, fully by 2 units higher
 
 
 def box_blur(src, w, h, r):
@@ -122,6 +124,14 @@ def main():
         if d < band:
             k = 1.0 - d / band
             land[i] = land[i] * (1.0 - k) + soft[i] * k
+    # The bake's mountains are needles a sample or two wide (0.6 to 9.6 units
+    # within 2 units), which draw as rock pillars. Soften the high ground into
+    # ridges and peaks; the lowland, its towns and coasts keep their detail.
+    ridge = box_blur(box_blur(land, w, h, PEAK_BLUR), w, h, PEAK_BLUR)
+    for i in range(w * h):
+        k = min(1.0, max(0.0, (ridge[i] - PEAK_FROM) / 2.0))
+        if k > 0.0:
+            land[i] = land[i] * (1.0 - k) + ridge[i] * k
     open(out, "wb").write(land.tobytes())
     print(f"wrote {out}: {w}x{h} float32, {min(land):.2f}..{max(land):.2f} units")
 

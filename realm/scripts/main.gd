@@ -704,16 +704,18 @@ func _process(_delta: float) -> void:
 
 func _update_labels() -> void:
 	var d: float = rig.distance
-	terrain.set_realm_mix(smoothstep(120.0, 200.0, d))
+	terrain.set_realm_mix(smoothstep(60.0, 110.0, d))
 	# Shadows reach only as far as they can be seen: every cascade draws its
 	# casters again, so a realm-wide reach was most of the frame.
 	if sun:
 		sun.directional_shadow_max_distance = clampf(d * 2.2, 20.0, 90.0)
-	# The atlas comes in as the towns shrink to dots: a hint of it at the middle
-	# distance, most of it from across the realm (the 3D light still shapes it).
-	terrain.set_atlas_mix(lerpf(0.0, 0.35, smoothstep(30.0, 80.0, d)) + 0.45 * smoothstep(80.0, 180.0, d))
+	# The atlas comes in as soon as the towns stop reading, and the kingdoms
+	# view is reached quickly: the in-between, where houses are specks and
+	# woods a carpet, is passed through in a few turns of the wheel rather than
+	# lingered in (the 3D light still shapes the atlas).
+	terrain.set_atlas_mix(lerpf(0.0, 0.35, smoothstep(25.0, 45.0, d)) + 0.45 * smoothstep(45.0, 90.0, d))
 	# Haze reads as air close up; looking down on the whole realm it would grey it out.
-	env.fog_density = lerpf(0.0012, 0.00015, smoothstep(70.0, 200.0, d))
+	env.fog_density = lerpf(0.0012, 0.00015, smoothstep(45.0, 110.0, d))
 
 
 func _on_realm_changed() -> void:

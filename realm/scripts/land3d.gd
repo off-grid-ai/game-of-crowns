@@ -7,7 +7,7 @@ extends Node3D
 const LAYERS := ["grass", "dirt", "sand", "snow", "rock", "forest", "mud", "field"]  # the order of terrain._layers_at(), then the town's trodden mud and ploughed soil
 const MUD := 6
 const FIELD := 7
-const UV_SCALE := [0.2, 0.15, 0.15, 0.08, 0.06, 0.2, 0.18, 0.18]  # Poly Haven sets cover about 2 m: repeat them closer
+const UV_SCALE := [0.2, 0.15, 0.15, 0.08, 0.25, 0.2, 0.18, 0.18]  # Poly Haven sets cover about 2 m: repeat them closer
 # Poly Haven's photographed ground (tools/pack_ground.gd) is true to colour:
 # only a touch of grading, so the realm reads as one place.
 const TINT := [Color(0.95, 1.0, 0.9), Color.WHITE, Color.WHITE, Color(0.92, 0.94, 0.97), Color(0.9, 0.9, 0.88), Color.WHITE, Color(1.08, 1.0, 0.92), Color.WHITE]  # the trodden mud a little drier and lighter
