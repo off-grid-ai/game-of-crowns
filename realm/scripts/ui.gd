@@ -676,7 +676,6 @@ func show_house(d: Dictionary) -> void:
 		return
 	_house_panel = _glass_panel()
 	_house_panel.offset_top = 70
-	_root.add_child(_house_panel)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	_house_panel.add_child(v)
@@ -759,7 +758,6 @@ func _folk_shell() -> VBoxContainer:
 		_folk_panel.queue_free()
 	_folk_panel = _glass_panel()
 	_folk_panel.offset_top = 70
-	_root.add_child(_folk_panel)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	_folk_panel.add_child(v)
@@ -813,7 +811,6 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 		_form_panel.queue_free()
 	_form_panel = _glass_panel()
 	_form_panel.offset_top = 70
-	_root.add_child(_form_panel)
 	if _house_panel:
 		_house_panel.visible = false
 	var v := VBoxContainer.new()
@@ -959,7 +956,6 @@ func show_ledger(rows: Array, houses: Dictionary) -> void:
 		_ledger_panel.queue_free()
 	_ledger_panel = _glass_panel()
 	_ledger_panel.offset_top = 70
-	_root.add_child(_ledger_panel)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 12)
 	_ledger_panel.add_child(v)
@@ -1078,7 +1074,6 @@ func show_digest(entries: Array, turns: int) -> void:
 		_digest_panel.queue_free()
 	_digest_panel = _glass_panel()
 	_digest_panel.offset_top = 70
-	_root.add_child(_digest_panel)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	_digest_panel.add_child(v)
