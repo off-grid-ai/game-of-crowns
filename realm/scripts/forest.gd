@@ -20,7 +20,7 @@ const BUSH_FIRST := 15
 const BUSH_KINDS := 6
 const CHUNK := 20.0  # game units per side
 const NEAR := 12.0  # within this distance of the camera, trees are drawn in full, with shadows
-const MID := 40.0  # out to this distance, the pack's lighter detail level, without shadows
+const MID := 24.0  # out to this distance, the pack's lighter detail level, without shadows; its painted cards beyond
 const S := 0.12  # game units per metre
 const KINDS := ["Pine_big_1", "Pine_big_2", "Pine_big_3", "Pine_medium_1", "Pine_medium_2", "Pine_large_1", "Pine_large_2", "Pine_large_3"]
 
@@ -116,6 +116,9 @@ func _layer(mesh: Mesh, xfs: Array, begin: float, end: float, shadows: bool) -> 
 	mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 	if not shadows:
 		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# Lit by the global illumination, but not part of what it voxelises: tens
+	# of thousands of trees bounce little light and cost it a great deal.
+	mmi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
 	add_child(mmi)
 
 
@@ -144,6 +147,23 @@ func _load_pack(path: String, kinds: Array, full_suffix: String, mid_suffix: Str
 	scene.free()
 
 
+## The pack's leaves and billboards are alpha-blended: every layer of every
+## canopy shaded and sorted each frame, which made the woods most of the frame's
+## cost. Cut out instead (a pixel is leaf or not), as foliage in games is; the
+## temporal upscaler softens the edges, so it reads the same.
+var _cut := {}
+func _cutout(mat: Material) -> Material:
+	var m := mat as BaseMaterial3D
+	if m == null or m.transparency != BaseMaterial3D.TRANSPARENCY_ALPHA:
+		return mat
+	if not _cut.has(mat):
+		var c: BaseMaterial3D = m.duplicate()
+		c.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+		c.alpha_scissor_threshold = 0.5
+		_cut[mat] = c
+	return _cut[mat]
+
+
 func _merge(scene: Node, group: String) -> ArrayMesh:
 	var root: Node = scene.find_child(group, true, false)
 	if root == null:
@@ -167,7 +187,7 @@ func _merge(scene: Node, group: String) -> ArrayMesh:
 				arrays[Mesh.ARRAY_NORMAL] = nrm
 			arrays[Mesh.ARRAY_TANGENT] = null
 			out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-			out.surface_set_material(out.get_surface_count() - 1, mi.get_active_material(sidx))
+			out.surface_set_material(out.get_surface_count() - 1, _cutout(mi.get_active_material(sidx)))
 	# Stand the tree on its foot, in metres.
 	var box := out.get_aabb()
 	var shifted := ArrayMesh.new()

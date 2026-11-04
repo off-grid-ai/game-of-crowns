@@ -228,6 +228,8 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 	if to.length() < 0.03:
 		route.remove_at(0)
 		a["route"] = route
+		a["best"] = INF
+		a["since"] = 0.0
 		return
 	var want := to.normalized() * WALK_SPEED * float(a.get("pace", 1.0))
 	var vel: Vector2 = want
@@ -238,9 +240,23 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 	var step := vel * delta
 	if step.length() > to.length():
 		step = to
+	# Getting nowhere counts as blocked too: pressed against someone, the
+	# avoidance can nudge a walker back and forth on the spot, legs going,
+	# never any nearer (walking in place).
+	var gap := to.length()
+	if gap < float(a.get("best", INF)) - 0.02:
+		a["best"] = gap
+		a["since"] = 0.0
+	else:
+		a["since"] = float(a.get("since", 0.0)) + delta
+	var going_nowhere: bool = a["since"] > 1.5
+	if going_nowhere:
+		a["since"] = 0.0
+		a["best"] = INF
+		a["stuck"] = 1.3  # straight to stepping aside below
 	# Blocked? Wait a beat, then step aside; if still blocked, either settle
 	# here when close enough, or give up and go somewhere else.
-	if step.length() < delta * WALK_SPEED * 0.2:
+	if going_nowhere or step.length() < delta * WALK_SPEED * 0.2:
 		a["stuck"] = float(a.get("stuck", 0.0)) + delta
 		if a["stuck"] > 1.2:
 			a["stuck"] = 0.0

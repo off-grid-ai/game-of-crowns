@@ -52,6 +52,9 @@ var _snowed := -1  # town count when the season was last laid on them
 
 func _ready() -> void:
 	_parse_args()
+	# Started from a shell, macOS opens the window behind whatever is in front:
+	# bring it forward so the game is never hidden on launch.
+	DisplayServer.window_move_to_foreground()
 	# Full screen by default (screenshot runs stay windowed so they don't take over the display).
 	if not _shot.has("path"):
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)

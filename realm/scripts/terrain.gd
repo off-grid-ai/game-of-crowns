@@ -290,6 +290,13 @@ func _land_height(wx: float, wz: float) -> float:
 ## Height at a world position: the realm's eroded heightmap when it has one,
 ## otherwise a smooth bilinear blend of tile heights plus noise.
 func height_at(wx: float, wz: float) -> float:
+	# One ground for everything: once Terrain3D holds the land, what stands on
+	# it reads the very heights it draws, not a copy kept in step by hand (a
+	# missed sync left townsfolk wading ankle-deep).
+	if built and land3d and land3d.land:
+		var h: float = land3d.land.data.get_height(Vector3(wx, 0.0, wz))
+		if not is_nan(h):
+			return h
 	if land:
 		return _land_height(wx, wz)
 	var warped := _warp(wx, wz)
@@ -440,6 +447,11 @@ func _build_land() -> void:
 		await land3d.build(self, GROUND_LAYER)
 
 
+func _no_shadows(node: Node) -> void:
+	for g in node.find_children("*", "GeometryInstance3D", true, false):
+		g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
 func _build_sea() -> void:
 	# Boujie Water Shader (addons/boujie_water_shader, MIT): an ocean of rings
 	# that grow coarser away from the camera and a far plane to the horizon,
@@ -485,11 +497,13 @@ func _build_sea() -> void:
 	ocean.name = "Sea"
 	ocean.outermost_resolution = 16
 	ocean.levels_of_detail = 6
-	ocean.unit_size = 0.125  # a metre between ripples at the camera, coarser further out
+	ocean.unit_size = 0.25  # two metres between vertices at the camera (the ripples are the shader's), coarser further out
 	ocean.far_edge = 2000
 	ocean.material = mat
 	ocean.position = Vector3(width * TILE / 2, SEA_LEVEL, height * TILE / 2)
 	add_child(ocean)
+	# Water casts no shadow: the rings were drawn again into every shadow band.
+	_no_shadows.call_deferred(ocean)
 	# The finest ring stays under the camera, snapped so the waves don't swim.
 	var follow: Node3D = preload("res://addons/boujie_water_shader/types/camera_follower_3d.gd").new()
 	follow.snap = true
