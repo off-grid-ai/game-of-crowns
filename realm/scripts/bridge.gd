@@ -72,6 +72,18 @@ func character_options(cb: Callable) -> void:
 
 
 ## What you said into the microphone, as words (Off Grid's Whisper, via the bridge).
+func reign_options(cb: Callable) -> void:
+	_http_get("/reign/options", cb)
+
+
+func set_reign_options(changes: Dictionary, cb: Callable) -> void:
+	_post("/reign/options", changes, cb)
+
+
+func ai_status(cb: Callable) -> void:
+	_http_get("/ai", cb)
+
+
 func hear(wav: PackedByteArray, cb: Callable) -> void:
 	var req := HTTPRequest.new()
 	add_child(req)

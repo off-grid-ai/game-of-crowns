@@ -23,6 +23,7 @@ signal always_day(on: bool)
 signal mood_decreed(text: String)
 signal petition_answered(id: String, option: String)
 signal petition_spoken(id: String, words: String, confirm: String)
+signal open_settings
 signal petition_voiced(id: String, wav: PackedByteArray)
 signal decree_revoked(id: String)
 signal person_opened(id: String, house: Dictionary)  # the character view
@@ -266,6 +267,7 @@ func _build_top_bar() -> void:
 	day.toggled.connect(func(on): always_day.emit(on); day.icon = _icon("sun" if on else "moon"))
 	act.add_child(day)
 	_divider(act)
+	act.add_child(_icon_btn("gear-six", "Settings: this reign, voices, the local model", func(): open_settings.emit()))
 	act.add_child(_icon_btn("list", "Chronicles, new realms, records", func(): open_menu.emit()))
 
 
@@ -1369,6 +1371,7 @@ func _show_audience() -> void:
 			own.editable = false
 			own.text = "The court listens…"
 			petition_voiced.emit(String(p["id"]), wav))
+	aloud.visible = preload("res://scripts/settings.gd").get_value("mic")
 	own_row.add_child(aloud)
 	v.add_child(own_row)
 	_own_line = own

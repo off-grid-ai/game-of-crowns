@@ -64,6 +64,7 @@ func _on_world(_w) -> void:
 
 func open() -> void:
 	visible = true
+	_from_menu = true
 	show_main()
 
 
@@ -79,6 +80,7 @@ func show_main() -> void:
 			label = "View  —  %s  (reign ended)" % reign.get("name", "")
 		_big(label, _close)
 	_big("Begin a New Chronicle", show_new)
+	_big("Settings", show_settings)
 	_big("Chronicles", show_list)
 	_big("Hall of Records", show_records)
 
@@ -181,6 +183,7 @@ func show_new() -> void:
 	_choices(right, "Raiders from the wilds", [["None", "none"], ["Some", "normal"], ["Hordes", "hordes"]], _opt["raiders"], func(v): _opt["raiders"] = v)
 	_choices(right, "The dead beyond the wall", [["Never", "off"], ["Late", "late"], ["In time", "normal"], ["Soon", "soon"]], _opt["dead"], func(v): _opt["dead"] = v)
 	_choices(right, "A usurper may rise", [["Yes", true], ["No", false]], _opt["usurper"], func(v): _opt["usurper"] = v)
+	_voice_settings(right)
 
 	var go := HBoxContainer.new()
 	go.add_theme_constant_override("separation", 10)
@@ -263,6 +266,99 @@ func _choices(parent: Control, title: String, pairs: Array, current, setter: Cal
 			setter.call(value)
 			for j in buttons.size():
 				buttons[j].button_pressed = j == i)
+
+
+const Settings := preload("res://scripts/settings.gd")
+
+
+## The settings, one page: the running reign's choices that can still change
+## (applied to the realm at once), and how you play on this Mac: voices, the
+## microphone, and whether Off Grid's local model is there to give people words.
+func show_settings() -> void:
+	_clear()
+	_on_main = false
+	var room := _root.get_viewport_rect().size
+	_body.custom_minimum_size = Vector2(minf(1060.0, room.x - 120.0), 0)
+	_heading("Settings")
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.custom_minimum_size = Vector2(0, maxf(220.0, room.y - 230.0))
+	_body.add_child(scroll)
+	var pad := MarginContainer.new()
+	pad.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for side in ["left", "top", "bottom"]:
+		pad.add_theme_constant_override("margin_" + side, 8)
+	pad.add_theme_constant_override("margin_right", 22)
+	scroll.add_child(pad)
+	var cols := HBoxContainer.new()
+	cols.add_theme_constant_override("separation", 48)
+	pad.add_child(cols)
+	var left := _column(cols)
+	var right := _column(cols)
+
+	_section(left, "This reign")
+	var note := _label("Changes take effect at once.", 14, MUTED)
+	left.add_child(note)
+	bridge.reign_options(func(d):
+		if not is_instance_valid(left) or not d is Dictionary or not d.has("options"):
+			return
+		var o: Dictionary = d["options"]
+		var apply := func(key: String, value) -> void:
+			bridge.set_reign_options({key: value}, func(_c, _r): pass)
+		_choices(left, "A season lasts", [["6 s", 6], ["12 s", 12], ["24 s", 24], ["48 s", 48]], int(o.get("pace", 12)), func(v): apply.call("pace", v))
+		_choices(left, "The tongue people speak to you in", [["English", "en"], ["Français", "fr"], ["Deutsch", "de"], ["Español", "es"], ["Italiano", "it"], ["Português", "pt"], ["हिन्दी", "hi"]], o.get("language", "en"), func(v): apply.call("language", v))
+		_choices(left, "Floods, fires and famine", [["None", "none"], ["Gentle", "gentle"], ["Normal", "normal"], ["Cruel", "cruel"]], o.get("disasters", "normal"), func(v): apply.call("disasters", v))
+		_choices(left, "Raiders from the wilds", [["None", "none"], ["Some", "normal"], ["Hordes", "hordes"]], o.get("raiders", "normal"), func(v): apply.call("raiders", v))
+		_choices(left, "The dead beyond the wall", [["Never", "off"], ["Late", "late"], ["In time", "normal"], ["Soon", "soon"]], o.get("dead", "normal"), func(v): apply.call("dead", v))
+		_choices(left, "A usurper may rise", [["Yes", true], ["No", false]], o.get("usurper", true), func(v): apply.call("usurper", v))
+		_choices(left, "Lords at court each season", [["Seldom", "rare"], ["Some", "normal"], ["Many", "often"]], o.get("petitions", "normal"), func(v): apply.call("petitions", v))
+		_choices(left, "Plots and bold moves", [["Quiet", "quiet"], ["Some", "normal"], ["Scheming", "scheming"]], o.get("intrigue", "normal"), func(v): apply.call("intrigue", v))
+		var fixed := _label("The world, the houses' temper, wealth and trust, and the royal host were set when the chronicle began.", 13, MUTED)
+		fixed.autowrap_mode = TextServer.AUTOWRAP_WORD
+		fixed.custom_minimum_size.x = 200
+		left.add_child(fixed))
+
+	_voice_settings(right)
+
+	var back := _big("Back", func(): show_main() if _from_menu else _close())
+	back.custom_minimum_size.y = 40
+
+
+var _from_menu := true
+
+
+## Voices aloud, their volume, the microphone, and whether Off Grid's local
+## model is there: on the settings page and when beginning a chronicle.
+func _voice_settings(right: Control) -> void:
+	_section(right, "Voices and words")
+	_choices(right, "People speak their words aloud", [["Yes", true], ["No", false]], Settings.get_value("voices"), func(v): Settings.set_value("voices", v))
+	right.add_child(_label("Voice volume", 15, MUTED))
+	var vol := HSlider.new()
+	vol.min_value = 0.0
+	vol.max_value = 1.0
+	vol.step = 0.05
+	vol.value = float(Settings.get_value("voice_volume"))
+	vol.value_changed.connect(func(v): Settings.set_value("voice_volume", v))
+	right.add_child(vol)
+	_choices(right, "Speak aloud to people (microphone)", [["Yes", true], ["No", false]], Settings.get_value("mic"), func(v): Settings.set_value("mic", v))
+	_section(right, "The local model")
+	var ai := _label("Asking Off Grid AI…", 14, MUTED)
+	right.add_child(ai)
+	bridge.ai_status(func(d):
+		if not is_instance_valid(ai) or not d is Dictionary:
+			return
+		var mark := func(ok: bool) -> String: return "ready" if ok else "not ready"
+		ai.text = "Words: %s%s\nVoices: %s\nListening: %s" % [mark.call(d.get("words", false)), (" (%s)" % String(d["model"]).get_file()) if d.get("model") else "", mark.call(d.get("voices", false)), mark.call(d.get("hearing", false))]
+		if String(d.get("note", "")) != "":
+			right.add_child(_label(String(d["note"]), 14, GOLD)))
+
+
+
+## Straight to the settings from the game's own gear button.
+func open_settings() -> void:
+	visible = true
+	_from_menu = false
+	show_settings()
 
 
 func show_list() -> void:

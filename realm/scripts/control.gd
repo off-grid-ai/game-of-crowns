@@ -428,6 +428,7 @@ func _open_chat(town: int, i: int) -> void:
 		_mic_btn.text = "Speak aloud"
 		_mic_btn.pressed.connect(_toggle_mic)
 		line.add_child(_mic_btn)
+	_mic_btn.visible = preload("res://scripts/settings.gd").get_value("mic")
 	_chat_with = {"town": town, "i": i}
 	_chat_lines = ["[color=#9a968e]You approach them.[/color]"]
 	_waiting = false

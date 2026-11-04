@@ -190,6 +190,7 @@ func _ready() -> void:
 	bridge.realm_changed.connect(_on_realm_changed)
 	ui.pause_toggled.connect(func(p): bridge.set_paused(p); ui.toast("The realm holds its breath." if p else "The realm stirs again."))
 	ui.open_menu.connect(func(): title.open())
+	ui.open_settings.connect(func(): title.open_settings())
 	ui.decree.connect(_on_decree)
 	ui.always_day.connect(set_always_day)
 	ui.mood_decreed.connect(func(t): bridge.set_mood(t); ui.toast("The realm hears your will…"))
@@ -212,6 +213,8 @@ func _ready() -> void:
 		title.visible = false
 	if _shot.has("new"):
 		title.show_new.call_deferred()
+	if _shot.has("settings"):
+		title.open_settings.call_deferred()
 	bridge.command_done.connect(func(ok, text): ui.toast(text if ok else "The gods cannot: " + text))
 	if _shot.has("path"):
 		get_tree().create_timer(float(_shot.get("wait", 8.0))).timeout.connect(_take_shot)
@@ -306,6 +309,9 @@ func _parse_args() -> void:
 			_shot["hero"] = int(a.substr(7))
 		elif a.begins_with("--control="):
 			_shot["control"] = int(a.substr(10))
+		elif a == "--settings":
+			_shot["title"] = true
+			_shot["settings"] = true
 		elif a == "--duel":
 			_shot["duel"] = true
 		elif a.begins_with("--interior="):
@@ -751,11 +757,14 @@ func _on_god_action(action: String, building: String) -> void:
 
 ## The character view on one person; the house record is swapped for the
 ## world's own (with its sigil) when there is one.
+const Settings := preload("res://scripts/settings.gd")
 var _voice: AudioStreamPlayer
 
 
 ## A line spoken aloud in the speaker's own voice; a new line cuts off the last.
 func _say_aloud(text: String, who: Dictionary) -> void:
+	if not Settings.get_value("voices"):
+		return
 	bridge.voice(text, who, func(stream):
 		if stream == null:
 			return
@@ -764,6 +773,7 @@ func _say_aloud(text: String, who: Dictionary) -> void:
 			_voice.bus = "Master"
 			add_child(_voice)
 		_voice.stream = stream
+		_voice.volume_db = linear_to_db(maxf(0.01, float(Settings.get_value("voice_volume"))))
 		_voice.play())
 
 

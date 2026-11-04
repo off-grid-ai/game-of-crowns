@@ -5,7 +5,7 @@
 //   times and scores reigns.
 // - Exposes a small HTTP API on 127.0.0.1:8787 for the view.
 
-import { spawn } from "node:child_process";
+import { spawn, execFileSync } from "node:child_process";
 import fs from "node:fs";
 import crypto from "node:crypto";
 import http from "node:http";
@@ -16,7 +16,7 @@ import { godCommand, healLua } from "./god.js";
 import { readSave, extractDetail } from "./savefile.js";
 import { townsfolk } from "./townsfolk.js";
 import { ROLES, GOALS, TRAITS } from "./characters.js";
-import { folkTale, speak, ruleFrom, reactTo, speech, voiceFor, transcribe } from "./claude.js";
+import { folkTale, speak, ruleFrom, reactTo, speech, voiceFor, transcribe, aiStatus } from "./claude.js";
 import { BUILD_COST, granarySize } from "./rules.js";
 import * as chron from "./chronicles.js";
 import { decree, titheLua, clampFavour, DECREES } from "./crown.js";
@@ -114,6 +114,12 @@ function send(line) {
 }
 
 function startFreeciv() {
+  // A Freeciv left behind by an earlier bridge (restarts kill Node, not its
+  // child) would hold the port and stop this one starting: clear it first.
+  // It may be busy saving and ignore a polite request, so it's killed outright.
+  try {
+    execFileSync("pkill", ["-KILL", "-f", `freeciv-server -p ${FC_PORT} `]);
+  } catch { /* none running */ }
   const save = newestSave();
   const resume = path.join(P.base, "resume.serv");
   fs.writeFileSync(resume, `lua file ${path.join(DIR, "lua", "events.lua")}\nstart\n`);
@@ -593,6 +599,33 @@ http.createServer(async (req, res) => {
     paused = url.pathname === "/pause";
     send(`set timeout ${paused ? 0 : turnSeconds}`);
     return json(res, 200, reignInfo());
+  }
+  if (url.pathname === "/reign/options") {
+    // The running reign's choices: read them, or change the ones that can
+    // change mid-reign. Start-only choices (the world, which houses, their
+    // temper, wealth and trust, the starting host) stay as they were.
+    const LIVE = ["pace", "disasters", "raiders", "dead", "usurper", "petitions", "intrigue", "language"];
+    const now = { ...chron.cleanOptions(meta.options ?? {}), pace: meta.pace ?? 12 };
+    if (req.method !== "POST") return json(res, 200, { options: now, live: LIVE });
+    const b = await body(req);
+    const next = chron.cleanOptions({ ...now, ...Object.fromEntries(Object.entries(b).filter(([k]) => LIVE.includes(k))) });
+    meta.options = { ...now, ...Object.fromEntries(LIVE.map((k) => [k, next[k]])) };
+    // The season's length is also set by the speed buttons; only change it when asked.
+    if ("pace" in b) {
+      meta.pace = meta.options.pace;
+      turnSeconds = meta.pace;
+      if (!paused) send(`set timeout ${turnSeconds}`);
+    }
+    meta.options.pace = meta.pace ?? meta.options.pace;
+    chron.saveMeta(meta);
+    // Freeciv's own dials, applied now.
+    send(`set disasters ${{ none: 0, gentle: 5, normal: 25, cruel: 70 }[meta.options.disasters]}`);
+    send(`set barbarians ${{ none: "disabled", normal: "normal", hordes: "hordes" }[meta.options.raiders]}`);
+    return json(res, 200, { options: meta.options, live: LIVE });
+  }
+  if (url.pathname === "/ai") {
+    // What the local model can do right now, for the settings page.
+    return json(res, 200, await aiStatus());
   }
   if (url.pathname === "/speed" && req.method === "POST") {
     const { seconds } = await body(req);

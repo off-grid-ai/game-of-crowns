@@ -287,3 +287,28 @@ export async function transcribe(wav, language = "en") {
     return null;
   }
 }
+
+// For the settings page: is Off Grid there, which model writes, and can it
+// speak and listen.
+export async function aiStatus() {
+  const url = await gateway();
+  const out = { gateway: null, model: null, words: false, voices: false, hearing: false, note: "" };
+  for (const g of GATEWAYS) {
+    try {
+      const r = await fetch(g.replace(/\/v1$/, "/health"), { signal: AbortSignal.timeout(1500) });
+      if (!r.ok) continue;
+      const h = await r.json();
+      if (!/off grid/i.test(h.name ?? "")) continue;
+      out.gateway = g;
+      out.voices = h.modalities?.speech === "ready";
+      out.hearing = h.modalities?.transcription === "ready";
+      break;
+    } catch { /* next */ }
+  }
+  out.model = url ? model : null;
+  out.words = Boolean(url && model);
+  out.note = !out.gateway ? "Open Off Grid AI to give the realm its voice."
+    : !out.words ? "Load Omni 2B in Off Grid AI so people can answer you."
+    : "";
+  return out;
+}
