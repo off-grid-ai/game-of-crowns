@@ -699,6 +699,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 
 	var outer := reach + 0.35
 	root.set_meta("reach", reach + 3.0)
+	root.set_meta("trodden", outer)  # where its people walk: no grass grows within
 	# A realistic town's palisade is its wall (a seat's stands taller).
 	if "City Walls" in buildings and not real:
 		_walls(root, center, outer)

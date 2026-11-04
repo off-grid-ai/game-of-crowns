@@ -523,9 +523,9 @@ func _check_season() -> void:
 # --- grass ----------------------------------------------------------------------------
 
 ## Grass underfoot around every town and farmstead: the nature kit's own grass
-## tufts, dense close to where people live, drawn only near the camera, and
-## never on a road or track, a town's square or lanes, in front of a door, in
-## a field or under a building.
+## tufts, from the edge of a town's trodden ground outward, drawn only near the
+## camera, and never on a road or track, in a town where its people walk, in
+## front of a door, in a field or under a building.
 var _grass_nodes := {}  # place -> its grass batches, kept while the place stands unchanged
 var _grass_root: Node3D
 var _grass_sig := ""
@@ -606,6 +606,9 @@ func _bare_ground(p: Vector3, r: float, town: Node3D, stead) -> Dictionary:
 		var o := Vector2(town.position.x, town.position.z)
 		var square: float = float(town.get_meta("square_r", 0.75)) * 1.6
 		rounds.append([o, square])  # the cobbles and the trodden earth round them
+		# Where townsfolk walk, the ground is trodden bare: tufts that come to a
+		# man's shin hid people's legs (they looked sunk into the ground).
+		rounds.append([o, float(town.get_meta("trodden", 0.0))])
 		for d in town.get_meta("doors", []):
 			rounds.append([o + Vector2(d["at"].x, d["at"].z), 0.3])
 		for lane in town.get_meta("lanes", []):
