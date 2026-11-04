@@ -1,0 +1,11 @@
+Model Information:
+* title:	Chapel of Our Lady on the Bridge (Interior)
+* source:	https://sketchfab.com/3d-models/chapel-of-our-lady-on-the-bridge-interior-364d0c9c4c084bd084fa7be5eb6b2ee0
+* author:	CT Aerial Surveys (https://sketchfab.com/CTAerialSurveys)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Chapel of Our Lady on the Bridge (Interior)" (https://sketchfab.com/3d-models/chapel-of-our-lady-on-the-bridge-interior-364d0c9c4c084bd084fa7be5eb6b2ee0) by CT Aerial Surveys (https://sketchfab.com/CTAerialSurveys) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

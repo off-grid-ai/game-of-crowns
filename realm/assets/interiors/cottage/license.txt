@@ -1,0 +1,11 @@
+Model Information:
+* title:	Medieval cottage in the snow
+* source:	https://sketchfab.com/3d-models/medieval-cottage-in-the-snow-235981d410154ff1b46548fc4c985f50
+* author:	katydid (https://sketchfab.com/Katydid.)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Medieval cottage in the snow" (https://sketchfab.com/3d-models/medieval-cottage-in-the-snow-235981d410154ff1b46548fc4c985f50) by katydid (https://sketchfab.com/Katydid.) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

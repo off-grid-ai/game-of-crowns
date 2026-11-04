@@ -1,0 +1,10 @@
+Model Information:
+* title: The tavern "Under the Falling Pigeon"
+* source: https://sketchfab.com/3d-models/the-tavern-under-the-falling-pigeon-f893c00f9fc34dde9e92870b3aea12f5
+* author: Gnossiennes (https://sketchfab.com/Gnossiennes)
+
+Model License:
+* license type: CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements: Author must be credited. Commercial use is allowed.
+
+Downloaded from Sketchfab as GLB. This folder unpacks the same scene, buffer and texture bytes into glTF files.
