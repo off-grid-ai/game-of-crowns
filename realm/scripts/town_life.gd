@@ -354,9 +354,9 @@ func _crowd(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 		var p := dir * rng.randf_range(0.55, 0.95 if angry else 1.25) + side * rng.randf_range(-0.45, 0.45)
 		var anim: String
 		if angry:
-			anim = ["Arguing", "Yelling", "Arguing", "Idle_Talking"][i % 4]  # arguing, shouting at the door
+			anim = ["Arguing", "Yelling", "Arguing", "Yelling"][i % 4]  # arguing, shouting at the door they all face
 		else:
-			anim = ["Defeated", "Crying", "Kneeling", "Idle", "Praying", "Idle_Talking"][rng.randi() % 6]  # waiting, weeping, begging on their knees
+			anim = ["Defeated", "Crying", "Kneeling", "Idle", "Praying", "Looking_Around"][rng.randi() % 6]  # waiting, weeping, begging on their knees (none talking to the air)
 		var f := _stand(root, life, center, p, "peasant", anim, rng.randi(), Color(0.55, 0.5, 0.45) if not angry else Color(0.7, 0.66, 0.6))
 		if f == null:
 			continue  # no room left at the door: the crowd is what fits
