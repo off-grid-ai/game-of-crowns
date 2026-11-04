@@ -248,7 +248,6 @@ func _ready() -> void:
 	ui.open_menu.connect(func(): title.open())
 	ui.open_settings.connect(func(): title.open_settings())
 	ui.decree.connect(_on_decree)
-	ui.always_day.connect(set_always_day)
 	ui.mood_decreed.connect(func(t): bridge.set_mood(t); ui.toast("The realm hears your will…"))
 	ui.decree_revoked.connect(func(id): bridge.revoke_decree(id, ui.set_decrees))
 	bridge.decrees_changed.connect(ui.set_decrees)
@@ -550,6 +549,8 @@ func _setup_environment() -> void:
 	_night_fill.light_color = Color(0.55, 0.65, 0.95)
 	_night_fill.light_energy = 0.0
 	add_child(_night_fill)
+	# v1 is always day (nights come back with lit windows and torches); a test
+	# shot can still ask for an hour with --time.
 	if not _shot.has("night_ok"):
 		set_always_day.call_deferred(true)
 	sun = sky3d.sun
@@ -565,28 +566,28 @@ func _setup_environment() -> void:
 ## Trying a look from the shell, for side-by-side renders: GOC_LOOK=filmic,aces,nogi,nossao,nofog.
 func _try_look(look: String) -> void:
 	for k in look.split(",", false):
+		if k.begins_with("sat="):
+			env.adjustment_saturation = float(k.substr(4))
 		match k:
 			"filmic": env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 			"aces": env.tonemap_mode = Environment.TONE_MAPPER_ACES
 			"nogi": env.sdfgi_enabled = false
 			"nossao": env.ssao_enabled = false
 			"nofog": env.fog_enabled = false
+			"warmfog": env.fog_light_color = Color(0.86, 0.8, 0.68)
 			"noshadow": sun.shadow_enabled = false
-		if k.begins_with("sat="):
-			env.adjustment_saturation = float(k.substr(4))
 			"noforest": _no_forest = true
 			"notrees": _no_trees = true
 			"nosea": _no_sea = true
 			"noinstancer": _no_instancer = true
 			"profile": _shot["profile"] = true
 			"cycle": _cycle = []  # starts once the towns are built; see _cycle_step
-			"warmfog": env.fog_light_color = Color(0.86, 0.8, 0.68)
 			"cyclevis":  # the same, hiding each system rather than pausing it: what each one draws
 				_cycle = []
 				_cycle_vis = true
 
 
-## Day and night cycle, or a fixed bright day (toggled from the HUD).
+## A fixed bright day (on), or the day and night cycle (off).
 func set_always_day(on: bool) -> void:
 	sky3d.game_time_enabled = not on
 	if on:

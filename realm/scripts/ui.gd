@@ -18,7 +18,6 @@ signal pause_toggled(paused: bool)
 signal decree(action: String, building: String, to: int)
 signal tithe_changed(rate: float)
 signal open_menu
-signal always_day(on: bool)
 signal mood_decreed(text: String)
 signal petition_answered(id: String, option: String)
 signal petition_spoken(id: String, words: String, confirm: String)
@@ -370,11 +369,6 @@ func _build_top_bar() -> void:
 	_pause_btn = _icon_btn("pause", _with_key("Pause", "pause"), _toggle_pause)
 	_pause_btn.toggle_mode = true
 	act.add_child(_pause_btn)
-	var day := _icon_btn("sun", "Always day. Off for the day and night cycle.")
-	day.toggle_mode = true
-	day.button_pressed = true
-	day.toggled.connect(func(on): always_day.emit(on); day.icon = _icon("sun" if on else "moon"))
-	act.add_child(day)
 	_divider(act)
 	act.add_child(_icon_btn("gear-six", "Settings: this reign, voices, the local model", func(): open_settings.emit()))
 	act.add_child(_icon_btn("list", "Chronicles, new realms, records", func(): open_menu.emit()))
