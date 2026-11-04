@@ -1327,12 +1327,20 @@ func _say_aloud(text: String, who: Dictionary, done := Callable()) -> void:
 ## The King is you, not one of the court's characters: he has a body of his
 ## own ("king", which the bridge knows to address as Your Grace), at his seat.
 func _walk_as_king() -> void:
+	# Pressed while walking: back to the realm from above.
+	if control.active:
+		control.stop()
+		return
 	for p in bridge.world.get("players", []):
 		var h: Dictionary = p.get("house", {})
 		if h.get("crown", false):
 			var house: Dictionary = _houses.get(int(p["id"]), h)
 			house["id"] = int(p["id"])
-			var king := {"id": "king", "name": "The King", "gender": "male", "rank": "king", "role": "King", "seat": String(h.get("seat", "Kingsmere")), "traits": []}
+			# The King goes where you are looking: the town nearest the camera,
+			# else his own seat.
+			var near: Dictionary = towns.nearest(rig.target, 12.0)
+			var at := String(near.get("title", near.get("name", ""))) if not near.is_empty() else String(h.get("seat", "Kingsmere"))
+			var king := {"id": "king", "name": "The King", "gender": "male", "rank": "king", "role": "King", "seat": at, "traits": []}
 			_take_control(king, house)
 			return
 	ui.toast("The throne is empty.")
