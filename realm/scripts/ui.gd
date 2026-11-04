@@ -1623,9 +1623,11 @@ func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 	if String(c.get("building", "")) == "Coinage":
 		parts.append("filling the coffers")
 	elif c.get("building"):
-		parts.append("%s %s %d%%" % ["training" if c.get("buildingKind") == "UnitType" else "building", _realm_word(String(c["building"])).to_lower(), int(float(c.get("progress", 0)) * 100)])
+		parts.append(preload("res://scripts/town_life.gd").doing_line(String(c.get("buildingKind", "")), String(c["building"]), float(c.get("progress", 0))).to_lower())
 	if c.get("granary"):
-		parts.append("grain %s of %s" % [_real("grain", int(c.get("food", 0))), _real("grain", int(c["granary"]))])
+		# How full the granary is, as a steward would say it, not tonnes of a capacity.
+		var full := clampf(float(c.get("food", 0)) / maxf(float(c["granary"]), 1.0), 0.0, 1.0)
+		parts.append("starving" if c.get("famine", false) else ("granary empty" if full < 0.05 else ("granary %s" % ("low" if full < 0.34 else ("half full" if full < 0.67 else "full")))))
 	if b.size() > 0:
 		parts.append(", ".join(b.map(_realm_word)))
 	_town_info.text = "  ·  ".join(parts)

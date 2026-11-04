@@ -50,8 +50,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 		# A neighbour's plot may have been levelled since: everyone keeps their feet on it.
 		_reground(life, root.position)
 		if kind == "Building" or kind == "UnitType":
-			var label := "Building %s" if kind == "Building" else "Training %s"
-			life.set_meta("doing", (label + " · %d%%") % [building, int(progress * 100)])
+			life.set_meta("doing", doing_line(kind, building, progress))
 		return
 	if life:
 		life.free()
@@ -304,7 +303,7 @@ func _construction(root: Node3D, life: Node3D, center: Vector3, building: String
 		if b:
 			b.rotation.y = atan2(base.x - b.position.x, base.z - b.position.z)  # facing the work
 	# What's being raised shows under the town's name on the map (map_labels.gd).
-	life.set_meta("doing", "Building %s · %d%%" % [building, int(progress * 100)])
+	life.set_meta("doing", doing_line("Building", building, progress))
 
 
 ## Recruits drilling in ranks on the square while a unit trains.
@@ -342,7 +341,7 @@ func _drill(root: Node3D, life: Node3D, center: Vector3, progress: float, color:
 		var mid := -face * (dist + (rows - 1) * 0.13)
 		life.set_meta("footprints", life.get_meta("footprints") + [_rect(mid, Vector2(0.84, rows * 0.26 + 0.1), atan2(face.x, face.z))])
 		break
-	life.set_meta("doing", "Training %s · %d%%" % [unit.to_lower(), int(progress * 100)])
+	life.set_meta("doing", doing_line("UnitType", unit, progress))
 
 
 ## Outside the keep: the hungry beg and camp rough by a small fire, or, in
@@ -488,3 +487,17 @@ static func _near_only(life: Node) -> void:
 			g.visibility_range_end = 30.0
 			g.visibility_range_end_margin = 4.0
 			g.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
+
+
+## What a town is busy with, as its people would say it: "Raising settlers for
+## a new town", "Building a granary", not the engine's "Training Settlers".
+static func doing_line(kind: String, name: String, progress: float) -> String:
+	const UNITS := {"Settlers": "Raising settlers for a new town", "Migrants": "Gathering families to move", "Workers": "Training labourers", "Engineers": "Training engineers", "Explorer": "Sending out scouts", "Caravan": "Fitting out a caravan", "Diplomat": "Choosing envoys"}
+	const BUILDINGS := {"City Walls": "Raising the walls", "Coinage": "Filling the coffers", "Palace": "Building a palace", "Colosseum": "Building a tiltyard", "Marketplace": "Building a market", "Bank": "Building a counting house"}
+	var what: String
+	if kind == "UnitType":
+		what = String(UNITS.get(name, "Raising %s" % name.to_lower()))
+	else:
+		var low := name.to_lower()
+		what = String(BUILDINGS.get(name, "Building %s %s" % ["an" if "aeiou".contains(low.left(1)) else "a", low]))
+	return "%s · %d%%" % [what, int(progress * 100)]
