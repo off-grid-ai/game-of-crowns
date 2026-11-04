@@ -28,10 +28,36 @@ func _ready() -> void:
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_root.theme = preload("res://scripts/theme.gd").get_theme()
 	add_child(_root)
-	var shade := ColorRect.new()
-	shade.color = Color(0.11, 0.095, 0.08, 0.95)
-	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_root.add_child(shade)
+	# The painted vista of Aldmere behind the menu (assets/ui/title-background.png,
+	# see TITLE_BACKGROUND_PROMPT.md), darkened toward the middle where the menu
+	# sits. Without it, a plain warm dark.
+	var art := "res://assets/ui/title-background.png"
+	if ResourceLoader.exists(art):
+		var bg := TextureRect.new()
+		bg.texture = load(art)
+		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_root.add_child(bg)
+		var fade := TextureRect.new()
+		var g := Gradient.new()
+		g.set_color(0, Color(0.06, 0.05, 0.04, 0.72))
+		g.set_color(1, Color(0.06, 0.05, 0.04, 0.15))
+		var gt := GradientTexture2D.new()
+		gt.gradient = g
+		gt.fill = GradientTexture2D.FILL_RADIAL
+		gt.fill_from = Vector2(0.5, 0.5)
+		gt.fill_to = Vector2(1.0, 0.5)
+		fade.texture = gt
+		fade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		fade.stretch_mode = TextureRect.STRETCH_SCALE
+		fade.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_root.add_child(fade)
+	else:
+		var shade := ColorRect.new()
+		shade.color = Color(0.11, 0.095, 0.08, 0.95)
+		shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_root.add_child(shade)
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_root.add_child(center)

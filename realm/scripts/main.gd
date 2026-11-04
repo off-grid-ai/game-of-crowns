@@ -510,7 +510,28 @@ func _sound_events(entries: Array) -> void:
 		sound.event(String(KINDS.get(kind, kind)))
 
 
+## Every ten seconds, how hard the frame is working, to user://perf.log (read
+## from outside the game to find what makes it lag).
+var _perf_at := 10.0
+func _log_perf(delta: float) -> void:
+	_perf_at -= delta
+	if _perf_at > 0.0:
+		return
+	_perf_at = 10.0
+	var f := FileAccess.open("user://perf.log", FileAccess.READ_WRITE if FileAccess.file_exists("user://perf.log") else FileAccess.WRITE)
+	if f == null:
+		return
+	f.seek_end()
+	f.store_line("%s fps=%d frame=%.1fms process=%.1fms draws=%d objects=%d prims=%dk nodes=%d dist=%.0f towns_building=%s" % [
+		Time.get_time_string_from_system(), Engine.get_frames_per_second(),
+		1000.0 / maxf(Engine.get_frames_per_second(), 1.0), Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
+		Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME),
+		int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000.0), Performance.get_monitor(Performance.OBJECT_NODE_COUNT),
+		rig.distance if rig else 0.0, towns.building() if towns and towns.has_method("building") else "?"])
+
+
 func _process(_delta: float) -> void:
+	_log_perf(_delta)
 	_heard_at -= _delta
 	if _heard_at <= 0.0:
 		_heard_at = 0.25
