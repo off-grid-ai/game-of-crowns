@@ -23,25 +23,41 @@ export function clampFavour(v) {
   return Math.max(0, Math.min(100, Math.round(v)));
 }
 
-// The tithe: each turn the crown takes `rate` of every great house's treasury.
-// Higher tithes cost favour every turn.
+// The tithe: each season the crown takes `rate` of what every great house
+// EARNED since the last (its treasury's rise), not of its savings: a tithe on
+// savings, taken every season, drained the houses to nothing and piled their
+// whole wealth up at Kingsmere. Higher tithes still cost favour every season.
+//
+// And the crown pays its way: the court, the royal host's wages and its
+// castles' keep, plus the cost of a great treasury itself (stewards, gifts,
+// loans called in), so royal gold is a choice to spend, not a heap that grows.
+const lastGold = {};  // player id -> treasury after last season's tithe
+
+export function crownUpkeep(crown) {
+  return 5 + (crown.units ?? 0) + (crown.cities ?? 0) * 3 + Math.floor(Math.max(0, crown.gold) * 0.02);
+}
+
 export function titheLua(world, rate) {
   const crown = crownOf(world);
-  if (!crown || rate <= 0) return { lua: [], total: 0, takes: {} };
+  if (!crown) return { lua: [], total: 0, takes: {}, upkeep: 0 };
   const takes = {};
   let total = 0;
   const lua = [];
   for (const p of world.players) {
     const h = houseFor(p);
-    if (h.wild || h.crown || p.gold <= 0) continue;
-    const take = Math.floor(p.gold * rate);
+    if (h.wild || h.crown) continue;
+    const earned = lastGold[p.id] === undefined ? 0 : p.gold - lastGold[p.id];
+    const take = rate > 0 && earned > 0 ? Math.floor(earned * rate) : 0;
+    lastGold[p.id] = p.gold - take;
     if (take <= 0) continue;
     takes[p.id] = take;
     total += take;
     lua.push(`for p in players_iterate() do if p.id == ${p.id} then edit.change_gold(p, -${take}) end end`);
   }
-  if (total > 0) lua.push(`for p in players_iterate() do if p.id == ${crown.id} then edit.change_gold(p, ${total}) end end`);
-  return { lua, total, takes };
+  const upkeep = Math.min(crownUpkeep(crown), Math.max(0, crown.gold + total));
+  const net = total - upkeep;
+  if (net !== 0) lua.push(`for p in players_iterate() do if p.id == ${crown.id} then edit.change_gold(p, ${net}) end end`);
+  return { lua, total, takes, upkeep };
 }
 
 // Returns { error } or { text, lua, cost, favour: {playerId: delta} }.

@@ -35,10 +35,10 @@ hard
 playernation Wolfholt scottish 1 "Lord Edric Wolfholt"
 playernation Goldcrest english 1 "Lord Tybalt Goldcrest"
 playernation Ironreach norwegian 1 "Lord Harrald Ironreach"
-playernation Thornvale french 0 "Lady Olenna Thornvale"
-playernation Stormhold welsh 1 "Lord Robb Stormhold"
-playernation Sunspire castilian 0 "Princess Arianne Sunspire"
-playernation Highfell irish 1 "Lord Jon Highfell"
+playernation Thornvale french 0 "Lady Isolde Thornvale"
+playernation Stormhold welsh 1 "Lord Rhys Stormhold"
+playernation Sunspire castilian 0 "Princess Ximena Sunspire"
+playernation Highfell irish 1 "Lord Declan Highfell"
 playernation Crown norman 1 "The King"
 lua file lua/world_setup.lua
 lua file lua/events.lua

@@ -20,6 +20,15 @@ import { folkTale, folkPlain, moodRules, speak, ruleFrom, reactTo, speech, voice
 import { BUILD_COST, granarySize } from "./rules.js";
 import * as chron from "./chronicles.js";
 import { decree, titheLua, clampFavour, DECREES } from "./crown.js";
+// Lords whose first names were borrowed from A Song of Ice and Fire, renamed
+// in realm.serv; realms begun before then still carry the old names in their
+// saved game, so they are shown by the new ones.
+const RENAMED = {
+  "Lady Olenna Thornvale": "Lady Isolde Thornvale",
+  "Lord Robb Stormhold": "Lord Rhys Stormhold",
+  "Princess Arianne Sunspire": "Princess Ximena Sunspire",
+  "Lord Jon Highfell": "Lord Declan Highfell",
+};
 import { Court } from "./characters.js";
 import { bible } from "./lore.js";
 import { Stakes, calendar, epithet } from "./stakes.js";
@@ -405,7 +414,7 @@ function collectTithe(turn) {
     }
   }
   saveFavour();
-  if (turn % 10 === 0 && t.total > 0) record({ turn, kind: "crown", text: `The royal tithe brings ${t.total} gold to Kingsmere.` });
+  if (turn % 10 === 0 && (t.total > 0 || t.upkeep > 0)) record({ turn, kind: "crown", text: `The royal tithe brings ${t.total} gold to Kingsmere; the court, the royal host and the castles cost ${t.upkeep}.` });
 }
 
 function healScars(turn) {
@@ -562,7 +571,7 @@ http.createServer(async (req, res) => {
     watched(); // the game window polls this every second while open
     if (!world) return json(res, 503, { error: "realm still forming", reign: reignInfo() });
     const d = detail();
-    const players = world.players.map((p) => ({ ...p, house: houseFor(p), atWarWith: d?.players[p.id]?.atWarWith ?? [] }));
+    const players = world.players.map((p) => ({ ...p, name: RENAMED[p.name] ?? p.name, house: houseFor(p), atWarWith: d?.players[p.id]?.atWarWith ?? [] }));
     const cities = world.cities.map((c) => {
       const x = d?.cities[c.id];
       if (!x) return { ...c, title: cityName(c.id) };
