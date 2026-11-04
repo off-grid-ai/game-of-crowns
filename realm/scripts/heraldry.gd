@@ -9,24 +9,35 @@ static var _cache := {}
 ## The banner cloth material for a house, or a plain one in `fallback`.
 static func cloth(house: Dictionary, fallback: Color) -> Material:
 	var key := slug(house)
-	if _cache.has(key):
-		return _cache[key]
-	var m := StandardMaterial3D.new()
-	m.cull_mode = BaseMaterial3D.CULL_DISABLED
-	m.roughness = 1.0
-	# The cloth turns to face the camera about its pole, so a banner seen from
-	# above is never a sliver.
-	m.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
-	m.billboard_keep_scale = true
 	var path := "res://assets/heraldry/banner-%s.png" % key
-	if key != "" and ResourceLoader.exists(path):
-		m.albedo_texture = load(path)
-		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-		m.alpha_scissor_threshold = 0.5
-		_cache[key] = m
+	var painted := key != "" and ResourceLoader.exists(path)
+	var cache_key := key if painted else "plain:" + fallback.to_html()
+	if _cache.has(cache_key):
+		return _cache[cache_key]
+	# Cloth that moves in the wind (banner_cloth.gdshader), turned to face the
+	# camera about its pole.
+	var m := ShaderMaterial.new()
+	m.shader = CLOTH
+	m.set_shader_parameter("wind", _wind)
+	if painted:
+		m.set_shader_parameter("cloth_tex", load(path))
+		m.set_shader_parameter("use_tex", true)
 	else:
-		m.albedo_color = fallback
+		m.set_shader_parameter("cloth_color", fallback)
+	_cache[cache_key] = m
 	return m
+
+
+const CLOTH := preload("res://scripts/banner_cloth.gdshader")
+static var _wind := 1.0
+
+
+## The sky's wind (Sky3D's wind speed, m/s) carried to every banner, so the
+## flags stream with the clouds overhead.
+static func set_wind(speed: float) -> void:
+	_wind = clampf(speed / 6.0, 0.0, 2.0)
+	for m in _cache.values():
+		(m as ShaderMaterial).set_shader_parameter("wind", _wind)
 
 
 ## The house's sigil (a pale silhouette, tinted by the caller), or null if
@@ -65,10 +76,15 @@ static func standard(house: Dictionary, fallback: Color, height: float) -> Node3
 	var flag := MeshInstance3D.new()
 	var q := QuadMesh.new()
 	q.size = Vector2(w, w * 2.0)
+	q.subdivide_width = 10  # enough to ripple
+	q.subdivide_depth = 6
 	# Hung beside the pole rather than through it; the offset turns with the cloth.
 	q.center_offset = Vector3(w * 0.5 + height * 0.01, 0, 0)
 	flag.mesh = q
 	flag.material_override = cloth(house, fallback)
+	flag.set_instance_shader_parameter("span", w)
+	flag.set_instance_shader_parameter("phase", randf() * TAU)  # no two flags on the same beat
+	flag.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	flag.position = Vector3(0, height - w, 0)
 	flag.name = "Banner"
 	b.add_child(flag)

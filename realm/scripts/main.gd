@@ -489,6 +489,7 @@ func _setup_environment() -> void:
 	sky3d.minutes_per_day = DAY_SECONDS / 60.0
 	sky3d.current_time = _time_of_day * 24.0
 	env = sky3d.environment
+	preload("res://scripts/heraldry.gd").set_wind(float(sky3d.wind_speed))  # banners stream with the clouds
 	# The sky changes all the time (clouds, the sun): its lighting is rebuilt a
 	# little each frame rather than all of it every frame.
 	if env.sky:
