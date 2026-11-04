@@ -1418,14 +1418,16 @@ func _feast(at: Vector3, house: Dictionary) -> void:
 	var col := Color.from_string(String(house.get("color", "#b08a4a")), Color(0.7, 0.55, 0.3))
 	if not house.is_empty():
 		_standard(root, at + Vector3(0.0, 0, -0.9), col, Vector3(0, 0, 1), house)
-	# The ring of dancers, turning slowly about the fire.
+	# The ring of dancers, turning slowly about the fire, in their own village
+	# clothes: the house shows in its standard, not on the dancers (in its
+	# colours they read as two companies brawling).
 	var ring := Node3D.new()
 	ring.position = centre
 	root.add_child(ring)
 	var n := 12
 	for i in n:
 		var a := TAU * i / n
-		var f: Node3D = _people.make(r, "peasant", col.lerp(Color.WHITE, 0.55) if i % 3 == 0 else Color.WHITE)
+		var f: Node3D = _people.make(r, "peasant")
 		ring.add_child(f)
 		var p := Vector3(cos(a), 0, sin(a)) * 0.42
 		f.position = _stand(centre + p) - centre

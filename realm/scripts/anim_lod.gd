@@ -14,7 +14,7 @@ extends Node
 const NEAR := 6.0  # world units: closer than this, every frame
 const STRIDE := 3  # further off, one frame in this many
 const People = preload("res://scripts/people.gd")
-const MOVING := 0.05  # world units a second: slower than this is standing
+const MOVING: float = People.WALK_PACE * 0.5  # slower than half a walk is standing (a dance ring turning, a shuffle)
 const SETTLE := 0.35  # seconds moving (or still) before the legs change
 
 static var _players: Array[WeakRef] = []
