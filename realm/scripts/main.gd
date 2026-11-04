@@ -209,8 +209,6 @@ func _ready() -> void:
 	ui.pause_toggled.connect(func(p): bridge.set_paused(p); ui.toast("The realm holds its breath." if p else "The realm stirs again."))
 	ui.open_menu.connect(func(): title.open())
 	ui.open_settings.connect(func(): title.open_settings())
-	title.began.connect(func(): _intro_due = true)
-	title.watch_intro.connect(_tell_the_story)
 	ui.decree.connect(_on_decree)
 	ui.always_day.connect(set_always_day)
 	ui.mood_decreed.connect(func(t): bridge.set_mood(t); ui.toast("The realm hears your will…"))
@@ -229,6 +227,8 @@ func _ready() -> void:
 	title = preload("res://scripts/title.gd").new()
 	title.bridge = bridge
 	add_child(title)
+	title.began.connect(func(): _intro_due = true)
+	title.watch_intro.connect(_tell_the_story)
 	if _shot.has("path") and not _shot.has("title"):
 		title.visible = false
 	if _shot.has("new"):
