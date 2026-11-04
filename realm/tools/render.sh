@@ -23,7 +23,7 @@ echo $$ > $LOCK/pid
 trap 'rm -rf $LOCK' EXIT
 for attempt in 1 2 3 4 5 6; do
   while playing; do sleep 10; done
-  arch -arm64 godot --path . --resolution ${RES:-2400x1380} ${=GODOT_ARGS} -- --shot=$OUT "$@" > ${OUT%.png}.log 2>&1 &
+  arch -arm64 godot --path . --position 30000,30000 --resolution ${RES:-2400x1380} ${=GODOT_ARGS} -- --shot=$OUT "$@" > ${OUT%.png}.log 2>&1 &
   pid=$!; t=0; yielded=0
   while kill -0 $pid 2>/dev/null && [ $t -lt ${LIMIT:-300} ]; do
     sleep 2; t=$((t+2))
