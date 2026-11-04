@@ -70,5 +70,6 @@ bridge/data/Belia *
 shots/
 *.png.tmp
 
-# --- Local tool config ---
-.claude/
+# --- Local tool config (the project's skills are shared) ---
+.claude/*
+!.claude/skills/
