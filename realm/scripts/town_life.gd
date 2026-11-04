@@ -47,6 +47,8 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 		var site: Node3D = life.get_node_or_null("Site")
 		if site:
 			site.scale.y = clampf(progress, 0.08, 1.0)
+		# A neighbour's plot may have been levelled since: everyone keeps their feet on it.
+		_reground(life, root.position)
 		if kind == "Building" or kind == "UnitType":
 			var label := "Building %s" if kind == "Building" else "Training %s"
 			life.set_meta("doing", (label + " · %d%%") % [building, int(progress * 100)])
@@ -56,6 +58,10 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	life = Node3D.new()
 	life.name = "Life"
 	life.set_meta("sig", sig)
+	# What stands in people's way, town-local like the town's own footprints:
+	# the building site and each group (town_nav.gd walks villagers round them).
+	life.set_meta("footprints", [])
+	life.set_meta("standing", PackedVector2Array())
 	root.add_child(life)
 	var center := root.position
 	var color := Color.from_string(String(house.get("color", "#888888")), Color.GRAY)
@@ -64,24 +70,97 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 
 	_fields(root, hungry)
 	if kind == "Building" and building != "" and building != "Coinage":
-		_construction(life, center, building, progress, rng, int(c["size"]))
+		_construction(root, life, center, building, progress, rng, int(c["size"]))
 	elif kind == "UnitType" and building != "" and not building in ["Settlers", "Workers", "Migrants", "Engineers", "Explorer", "Caravan", "Diplomat"]:
-		_drill(life, center, progress, color, building)
+		_drill(root, life, center, progress, color, building)
 	# The town's health, readable at its door: beggars and the homeless when it
 	# starves (more in a bigger town), an angry crowd when it's in disorder.
 	if c.get("disorder", false):
-		_crowd(life, center, rng, 14, true)
+		_crowd(root, life, center, rng, 14, true)
 	elif hungry:
-		_crowd(life, center, rng, 4 + mini(int(c.get("size", 1)) / 2, 8), false)
+		_crowd(root, life, center, rng, 4 + mini(int(c.get("size", 1)) / 2, 8), false)
 	if c.get("celebrating", false):
 		_bonfire(life, center)
 	if c.get("disorder", false):
 		_unrest(life, center, rng)
 	_near_only(life)
+	_pin(life, center)
 
 
 func _y(center: Vector3, off: Vector3) -> float:
 	return terrain.height_at(center.x + off.x, center.z + off.z) - center.y
+
+
+const ROOM := 0.11  # world units between two people standing (about 0.9 m): shoulders never meet
+const CLEAR := 0.05  # how far a person keeps off a wall or a fence
+
+
+## Everything that stands in the town, town-local: its buildings, walls, fences
+## and stalls (towns.gd) and whatever the life here has put up.
+func _blocked(root: Node3D, life: Node3D) -> Array:
+	return root.get_meta("footprints", []) + life.get_meta("footprints", [])
+
+
+## True when a person can stand at `p` (town-local): on land, clear of every
+## footprint, and a shoulder's width from everyone already placed.
+func _open(center: Vector3, p: Vector3, walls: Array, taken: PackedVector2Array) -> bool:
+	if not terrain.is_land(center.x + p.x, center.z + p.z):
+		return false
+	var q := Vector2(p.x, p.z)
+	for t in taken:
+		if q.distance_to(t) < ROOM:
+			return false
+	for fp: PackedVector2Array in walls:
+		if q.distance_to(fp[0]) > 3.0:
+			continue  # far off: no building is that big
+		if Geometry2D.is_point_in_polygon(q, fp):
+			return false
+		for i in fp.size():
+			if q.distance_to(Geometry2D.get_closest_point_to_segment(q, fp[i], fp[(i + 1) % fp.size()])) < CLEAR:
+				return false
+	return true
+
+
+## The nearest open spot to `want` (town-local), searching outward in rings;
+## NAN in x when there is none within reach, and that person isn't placed.
+func _spot(center: Vector3, want: Vector3, walls: Array, taken: PackedVector2Array, reach := 0.4) -> Vector3:
+	var r := 0.0
+	while r <= reach:
+		var n := 1 if r == 0.0 else int(TAU * r / 0.05)
+		for i in n:
+			var a := TAU * i / n
+			var p := want + Vector3(cos(a), 0, sin(a)) * r
+			if _open(center, p, walls, taken):
+				p.y = _y(center, p)
+				return p
+		r += 0.05
+	return Vector3(NAN, 0, 0)
+
+
+## Places a townsperson at the nearest open spot to `want` and keeps them in
+## the life's list of who stands where; null when there's no room.
+func _stand(root: Node3D, life: Node3D, center: Vector3, want: Vector3, role: String, anim: String, seed: int, tint := Color.WHITE, reach := 0.4) -> Node3D:
+	var taken: PackedVector2Array = life.get_meta("standing")
+	var p := _spot(center, want, _blocked(root, life), taken, reach)
+	if is_nan(p.x):
+		return null
+	taken.append(Vector2(p.x, p.z))
+	life.set_meta("standing", taken)
+	return _townsperson(life, p, role, anim, seed, tint)
+
+
+## Remembers how high each thing stands above the ground under it, so it can
+## be set back on the ground if that ground is levelled later.
+func _pin(life: Node3D, center: Vector3) -> void:
+	for n in life.get_children():
+		if n is Node3D:
+			n.set_meta("lift", n.position.y - _y(center, n.position))
+
+
+func _reground(life: Node3D, center: Vector3) -> void:
+	for n in life.get_children():
+		if n is Node3D and n.has_meta("lift"):
+			n.position.y = _y(center, n.position) + float(n.get_meta("lift"))
 
 
 var _people = preload("res://scripts/people.gd").new()
@@ -132,7 +211,10 @@ func _fields(root: Node3D, hungry: bool) -> void:
 	# that art exists, the crop is tinted the colour of dead earth.
 	var dead := "res://assets/ground/field-dead.jpg"
 	var blight := ResourceLoader.exists(dead)
-	for f: Decal in fields.get_children():
+	for d in fields.get_children():
+		var f := d as Decal
+		if f == null:
+			continue  # the crops themselves (countryside.gd), not a painted field
 		if not f.has_meta("ripe"):
 			f.set_meta("ripe", f.modulate)
 			f.set_meta("crop", f.texture_albedo)
@@ -145,7 +227,7 @@ func _fields(root: Node3D, hungry: bool) -> void:
 
 ## A building site: the structure rises with real progress under scaffolding,
 ## with timber stacked beside it and builders at work.
-func _construction(life: Node3D, center: Vector3, building: String, progress: float, rng: RandomNumberGenerator, size: int) -> void:
+func _construction(root: Node3D, life: Node3D, center: Vector3, building: String, progress: float, rng: RandomNumberGenerator, size: int) -> void:
 	# What rises is the kit's own building for it.
 	var kit := "thatched_rural_houses"
 	match building:
@@ -157,28 +239,46 @@ func _construction(life: Node3D, center: Vector3, building: String, progress: fl
 			kit = "old_wooden_barn"
 		"City Walls", "Great Wall":
 			kit = "wooden_fence_game_ready_asset"
-	# Sites go up at the edge of town, on the first flat ground found.
+	# Sites go up at the edge of town, on the first flat ground found that no
+	# house, wall or fence already stands on (with room round it for the builders).
+	var f: Vector2 = Real.footprint(kit)
 	var reach := clampf(1.6 + size * 0.32, 2.0, 6.0) + 0.7
 	var ang := rng.randf() * TAU
-	var off := Vector3(cos(ang), 0, sin(ang)) * reach
-	for tries in 12:
-		var probe := Vector3(cos(ang), 0, sin(ang)) * reach
+	var walls: Array = _blocked(root, life)
+	var plot := PackedVector2Array()
+	var found := false
+	for tries in 36:
+		var a := ang + TAU * (tries % 12) / 12.0
+		var probe := Vector3(cos(a), 0, sin(a)) * (reach + (tries / 12) * 0.5)
 		var wp := center + probe
-		if terrain.is_land(wp.x, wp.z) and absf(terrain.height_at(wp.x + 0.4, wp.z) - terrain.height_at(wp.x - 0.4, wp.z)) < 0.3:
-			off = probe
+		if not terrain.is_land(wp.x, wp.z) or absf(terrain.height_at(wp.x + 0.4, wp.z) - terrain.height_at(wp.x - 0.4, wp.z)) >= 0.3:
+			continue
+		var rect := _rect(probe, f + Vector2(0.4, 0.4), a + PI)
+		var clear := true
+		for fp: PackedVector2Array in walls:
+			if Vector2(probe.x, probe.z).distance_to(fp[0]) < 4.0 and not Geometry2D.intersect_polygons(rect, fp).is_empty():
+				clear = false
+				break
+		if clear:
+			ang = a
+			plot = _rect(probe, f * 1.1, a + PI)
+			found = true
 			break
-		ang += TAU / 12.0
+	if not found:
+		return  # nowhere to build in sight: the work goes on unseen
+	var off := Vector3((plot[0].x + plot[2].x) / 2.0, 0, (plot[0].y + plot[2].y) / 2.0)
 	var base := off + Vector3(0, _y(center, off), 0)
 	var grow := clampf(progress, 0.08, 1.0)
 	var site: Node3D = Real.make(kit)
 	if site == null:
 		return
+	# The site, its scaffold and its timber stand in the way: walk round them.
+	life.set_meta("footprints", [plot, _rect(base + Vector3(f.x * 0.55 + 0.12, 0, 0).rotated(Vector3.UP, ang), Vector2(0.26, 0.2), ang)])
 	site.scale.y = grow
 	site.name = "Site"
 	site.position = base
 	site.rotation.y = ang + PI
 	life.add_child(site)
-	var f: Vector2 = Real.footprint(kit)
 	var hx := f.x * 0.55
 	var hz := f.y * 0.55
 	var full := maxf(f.x, f.y) * 0.6
@@ -196,43 +296,71 @@ func _construction(life: Node3D, center: Vector3, building: String, progress: fl
 		plank.position = base + Vector3(hx + 0.12, 0.02 + i * 0.026, 0).rotated(Vector3.UP, ang)
 		plank.rotation.y = ang
 		life.add_child(plank)
+	# Builders at work along its front, each at a task done standing or
+	# kneeling where they are (carrying and barrowing are walks: not on the spot).
 	for i in 3:
-		var bp := base + Vector3(rng.randf_range(-hx, hx), 0, hz + 0.12).rotated(Vector3.UP, ang)
-		bp.y = _y(center, bp)
-		_townsperson(life, bp, "peasant", ["Fixing_Kneeling", "Carrying", "Wheelbarrow"][i], rng.randi())
+		var bp := base + Vector3(rng.randf_range(-hx, hx), 0, hz + 0.16).rotated(Vector3.UP, ang)
+		var b := _stand(root, life, center, bp, "peasant", ["Fixing_Kneeling", "PickUp_Table", "Interact"][i], rng.randi())
+		if b:
+			b.rotation.y = atan2(base.x - b.position.x, base.z - b.position.z)  # facing the work
 	# What's being raised shows under the town's name on the map (map_labels.gd).
 	life.set_meta("doing", "Building %s · %d%%" % [building, int(progress * 100)])
 
 
 ## Recruits drilling in ranks on the square while a unit trains.
-func _drill(life: Node3D, center: Vector3, progress: float, color: Color, unit: String) -> void:
-	# Ranks a sword's swing apart (about 2 m), on open ground beside the square.
+func _drill(root: Node3D, life: Node3D, center: Vector3, progress: float, color: Color, unit: String) -> void:
+	# Ranks a sword's swing apart (about 2 m), on open ground beside the square:
+	# the first stretch round the square with room for every rank, the ranks
+	# facing the square's heart.
 	var count := 3 + int(progress * 9)
-	for i in count:
-		var row := i / 4
-		var col := i % 4
-		var p := Vector3(-0.36 + col * 0.24, 0, 0.55 + row * 0.26)
-		p.y = _y(center, p)
-		var drill: String = (["Bow_Draw", "Bow_Aim", "Bow_Shoot"][i % 3]) if unit.contains("Archer") or unit.contains("bow") else ("Sword_Idle" if i % 3 else "Sword_Attack")
-		_townsperson(life, p, "soldier", drill, hash(unit) + i, color.lerp(Color.WHITE, 0.35))
+	var rows := (count + 3) / 4
+	var walls: Array = _blocked(root, life)
+	var none := PackedVector2Array()
+	for tries in 32:
+		var a := TAU * (tries % 16) / 16.0
+		var dist := 0.55 + (tries / 16) * 0.35
+		var face := Vector3(-cos(a), 0, -sin(a))  # toward the heart of the square
+		var side := Vector3(-face.z, 0, face.x)
+		var spots: Array[Vector3] = []
+		for i in count:
+			var p := -face * (dist + (i / 4) * 0.26) + side * (-0.36 + (i % 4) * 0.24)
+			if not _open(center, p, walls, none):
+				break
+			spots.append(p)
+		if spots.size() < count:
+			continue
+		var taken: PackedVector2Array = life.get_meta("standing")
+		for i in count:
+			var p := spots[i]
+			p.y = _y(center, p)
+			var drill: String = (["Bow_Draw", "Bow_Aim", "Bow_Shoot"][i % 3]) if unit.contains("Archer") or unit.contains("bow") else ("Sword_Idle" if i % 3 else "Sword_Attack")
+			var s := _townsperson(life, p, "soldier", drill, hash(unit) + i, color.lerp(Color.WHITE, 0.35))
+			s.rotation.y = atan2(face.x, face.z)
+			taken.append(Vector2(p.x, p.z))
+		life.set_meta("standing", taken)
+		# The ranks are one block to walk round, not a lane to thread.
+		var mid := -face * (dist + (rows - 1) * 0.13)
+		life.set_meta("footprints", life.get_meta("footprints") + [_rect(mid, Vector2(0.84, rows * 0.26 + 0.1), atan2(face.x, face.z))])
+		break
 	life.set_meta("doing", "Training %s · %d%%" % [unit.to_lower(), int(progress * 100)])
 
 
 ## Outside the keep: the hungry beg and camp rough by a small fire, or, in
 ## disorder, a crowd presses at the door with its grievances.
-func _crowd(life: Node3D, center: Vector3, rng: RandomNumberGenerator, count: int, angry: bool) -> void:
+func _crowd(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenerator, count: int, angry: bool) -> void:
 	var dir := Vector3(cos(rng.randf() * TAU), 0, sin(rng.randf() * TAU))
 	var side := Vector3(-dir.z, 0, dir.x)
 	for i in count:
 		var p := dir * rng.randf_range(0.55, 0.95 if angry else 1.25) + side * rng.randf_range(-0.45, 0.45)
-		p.y = _y(center, p)
 		var anim: String
 		if angry:
 			anim = ["Arguing", "Yelling", "Arguing", "Idle_Talking"][i % 4]  # arguing, shouting at the door
 		else:
 			anim = ["Defeated", "Crying", "Kneeling", "Idle", "Praying", "Idle_Talking"][rng.randi() % 6]  # waiting, weeping, begging on their knees
-		var f := _townsperson(life, p, "peasant", anim, rng.randi(), Color(0.55, 0.5, 0.45) if not angry else Color(0.7, 0.66, 0.6))
-		var look := -p + Vector3(rng.randf_range(-0.3, 0.3), 0, rng.randf_range(-0.3, 0.3))
+		var f := _stand(root, life, center, p, "peasant", anim, rng.randi(), Color(0.55, 0.5, 0.45) if not angry else Color(0.7, 0.66, 0.6))
+		if f == null:
+			continue  # no room left at the door: the crowd is what fits
+		var look := -f.position + Vector3(rng.randf_range(-0.3, 0.3), 0, rng.randf_range(-0.3, 0.3))
 		f.rotation.y = atan2(look.x, look.z) if angry or i % 2 == 0 else rng.randf() * TAU
 	if not angry:
 		# Where they lie at night: dark bedrolls in a row against the wall, and a
@@ -275,6 +403,16 @@ func _crowd(life: Node3D, center: Vector3, rng: RandomNumberGenerator, count: in
 		var fp := camp - dir * 0.12
 		smoke.position = Vector3(fp.x, _y(center, fp) + 0.03, fp.z)
 		life.add_child(smoke)
+
+
+## A turned rectangle, town-local XZ, the way towns.gd records footprints.
+static func _rect(at: Vector3, size: Vector2, rot: float) -> PackedVector2Array:
+	var b := Basis(Vector3.UP, rot)
+	var pts := PackedVector2Array()
+	for c in [Vector3(-size.x, 0, -size.y), Vector3(size.x, 0, -size.y), Vector3(size.x, 0, size.y), Vector3(-size.x, 0, size.y)]:
+		var w: Vector3 = at + b * (c * 0.5)
+		pts.append(Vector2(w.x, w.z))
+	return pts
 
 
 func _bonfire(life: Node3D, center: Vector3) -> void:

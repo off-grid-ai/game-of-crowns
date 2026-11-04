@@ -22,6 +22,9 @@ var _cull := 0.0
 var _people = preload("res://scripts/people.gd").new()
 var _nav = preload("res://scripts/town_nav.gd").new()
 const WALK_SPEED := 0.17  # world units per second: an unhurried 1.4 m/s at town scale
+## Moves that are walks (a load carried, a barrow pushed): played on the way,
+## never on the spot. At the far end the load is set down instead.
+const GAITS := {"Carrying": "PickUp_Table", "Wheelbarrow": "Interact"}
 
 
 func _ready() -> void:
@@ -84,12 +87,35 @@ func _refresh() -> void:
 			_crowds.erase(id)
 			_nav.forget(id)
 	for id in _crowds.keys():
+		if towns.towns.has(id):
+			_keep_up(id)
+	for id in _crowds.keys():
 		if not towns.towns.has(id):
 			for a in _crowds[id]:
 				a["node"].queue_free()
 				if a.has("agent"):
 					NavigationServer2D.free_rid(a["agent"])
 			_crowds.erase(id)
+
+
+## Once a second: the town's walk map is baked afresh when the town is rebuilt
+## or a building site, drill or crowd appears in it (town_nav.gd), and whoever
+## is on the way takes the new streets from where they stand. Those standing
+## are set back on the ground, should it have been levelled under them.
+func _keep_up(id: int) -> void:
+	var map: RID = _nav.map_for(id, towns.towns[id]["node"])
+	for a in _crowds[id]:
+		var n: Node3D = a["node"]
+		if a.get("map", RID()) != map:
+			a["map"] = map
+			if a.has("agent"):
+				NavigationServer2D.agent_set_map(a["agent"], map)
+			var route: PackedVector2Array = a["route"]
+			if not route.is_empty():
+				var c: Vector3 = a["center"]
+				a["route"] = _nav.path(map, _nav.closest(map, Vector2(n.position.x - c.x, n.position.z - c.z)), _nav.closest(map, route[route.size() - 1]))
+		if PackedVector2Array(a["route"]).is_empty():
+			n.position.y = terrain.height_at(n.position.x, n.position.z)
 
 
 func _spawn(id: int) -> void:
@@ -132,11 +158,10 @@ func _spawn(id: int) -> void:
 		a["agent"] = agent
 		a["safe"] = Vector2.ZERO
 		NavigationServer2D.agent_set_avoidance_callback(agent, func(v: Vector2): a["safe"] = v)
-		var snap := _nav.closest(map, Vector2(a["home"].x - center.x, a["home"].z - center.z))
-		if snap != Vector2.ZERO:
-			person.position = center + Vector3(snap.x, 0, snap.y)
-			person.position.y = terrain.height_at(person.position.x, person.position.z)
-			a["home"] = person.position
+		# Seen only once set down on the town's walk map (it syncs a frame
+		# later): never first glimpsed standing inside a house.
+		a["placed"] = false
+		person.visible = false
 		list.append(a)
 	_crowds[id] = list
 
@@ -193,8 +218,35 @@ func _block(a: Dictionary) -> String:
 	return "evening"
 
 
+## Sets a new villager down at the nearest walkable spot to their home, and
+## their bench beside it, once the walk map can say where that is.
+func _set_down(a: Dictionary) -> bool:
+	var map: RID = a["map"]
+	if not _nav.ready(map):
+		return false
+	var c: Vector3 = a["center"]
+	var n: Node3D = a["node"]
+	var snap := _nav.closest(map, Vector2(a["home"].x - c.x, a["home"].z - c.z))
+	n.position = c + Vector3(snap.x, 0, snap.y)
+	n.position.y = terrain.height_at(n.position.x, n.position.z)
+	a["home"] = n.position
+	var bench := _nav.closest(map, Vector2(a["bench"].x - c.x, a["bench"].z - c.z))
+	a["bench"] = c + Vector3(bench.x, 0, bench.y)
+	a["goal"] = snap
+	if _spoken_for(a, snap):
+		# Two homes on one spot: the later one starts a pace along.
+		snap = _nav.closest(map, snap + Vector2.from_angle(a["rng"].randf() * TAU) * 0.12)
+		n.position = Vector3(c.x + snap.x, terrain.height_at(c.x + snap.x, c.z + snap.y), c.z + snap.y)
+		a["home"] = n.position
+		a["goal"] = snap
+	a["placed"] = true
+	return true
+
+
 func _step(a: Dictionary, delta: float, _t: float) -> void:
 	var n: Node3D = a["node"]
+	if not a["placed"] and not _set_down(a):
+		return
 	# Spoken to: they stop, turn to whoever it is, and talk with their hands.
 	if Time.get_ticks_msec() < int(a.get("hold_until", 0)):
 		var to: Vector3 = a.get("face", n.position) - n.position
@@ -230,6 +282,8 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 		a["route"] = route
 		a["best"] = INF
 		a["since"] = 0.0
+		if route.is_empty():
+			_people.play(n, a.get("work", "Idle"))  # arrived: straight into what they came for
 		return
 	var want := to.normalized() * WALK_SPEED * float(a.get("pace", 1.0))
 	var vel: Vector2 = want
@@ -240,6 +294,9 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 	var step := vel * delta
 	if step.length() > to.length():
 		step = to
+	# Avoidance steers by people alone: the step is held to the walk map, so a
+	# shove never carries anyone through a wall or a fence.
+	step = _nav.closest(a["map"], here + step) - here
 	# Getting nowhere counts as blocked too: pressed against someone, the
 	# avoidance can nudge a walker back and forth on the spot, legs going,
 	# never any nearer (walking in place).
@@ -265,9 +322,10 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 			if (goal - here).length() < 0.35 or a["tries"] > 2:
 				a["route"] = PackedVector2Array()
 				a["tries"] = 0
+				a["goal"] = here  # settled here instead
 				return
 			var across := Vector2(-to.y, to.x).normalized() * (0.14 if a["rng"].randf() < 0.5 else -0.14)
-			route.insert(0, here + across + to.normalized() * 0.05)
+			route.insert(0, _nav.closest(a["map"], here + across + to.normalized() * 0.05))
 			a["route"] = route
 		_people.play(n, "Idle", 1.0)
 		return
@@ -280,7 +338,8 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 	n.position.z += step.y
 	n.position.y = terrain.height_at(n.position.x, n.position.z)
 	n.rotation.y = atan2(step.x, step.y)
-	_people.play(n, "Walk", 1.0)
+	# The legs keep time with the ground covered: slowed by the press, they slow too.
+	_people.play(n, a.get("gait", "Walk"), clampf(step.length() / delta / WALK_SPEED, 0.5, 1.3))
 
 
 ## The town's shared places, fixed per town: the tavern, the sept, the market and the well.
@@ -308,6 +367,9 @@ func _choose_next(a: Dictionary) -> void:
 	var places := _places(a["town"], a["center"])
 	var roll := rng.randf()
 	var target: Vector3 = a["home"]
+	# Whatever was taken up at the last stop is carried on this walk.
+	a["gait"] = a.get("load", "Walk")
+	a["load"] = "Walk"
 	a["work"] = "Idle"
 	var role: String = a["role"]
 	match String(a["block"]):
@@ -365,6 +427,9 @@ func _choose_next(a: Dictionary) -> void:
 				_:
 					target = _near(places["market"] if roll < 0.5 else places["well"], rng, 0.5)
 					a["work"] = "Idle_Talking" if roll < 0.5 else "Idle"
+	if GAITS.has(a["work"]):
+		a["load"] = a["work"]  # picked up here, carried on the next walk
+		a["work"] = GAITS[a["work"]]
 	# Some linger, some don't: no two keep the same rhythm.
 	a["wait"] = rng.randf_range(3.0, 20.0)
 	var town: Dictionary = towns.towns.get(a["town"], {})
@@ -372,9 +437,22 @@ func _choose_next(a: Dictionary) -> void:
 		return
 	var center: Vector3 = a["center"]
 	var map: RID = _nav.map_for(a["town"], town["node"])
-	if a.has("agent") and a.get("map", RID()) != map:
-		NavigationServer2D.agent_set_map(a["agent"], map)  # the town was rebuilt: walk its new streets
-		a["map"] = map
+	if a.get("map", RID()) != map:
+		_keep_up(a["town"])  # baked afresh: the whole town walks its new streets
 	var from := _nav.closest(map, Vector2(n.position.x - center.x, n.position.z - center.z))
 	var goal := _nav.closest(map, Vector2(target.x - center.x, target.z - center.z))
+	# Never the very spot someone else is bound for: a step along until it's free.
+	for tries in 6:
+		if not _spoken_for(a, goal):
+			break
+		goal = _nav.closest(map, goal + Vector2.from_angle(rng.randf() * TAU) * 0.12)
+	a["goal"] = goal
 	a["route"] = _nav.path(map, from, goal)
+
+
+## True when another villager of the town stands at, or is bound for, `p`.
+func _spoken_for(a: Dictionary, p: Vector2) -> bool:
+	for b in _crowds.get(a["town"], []):
+		if not is_same(b, a) and Vector2(b.get("goal", Vector2(INF, INF))).distance_to(p) < 0.1:
+			return true
+	return false

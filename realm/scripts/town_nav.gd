@@ -8,16 +8,20 @@ const WATER_STEP := 0.1  # how finely the shore is traced, in game units (about 
 
 var terrain: Node3D  # set by villagers.gd: what is land and what is water
 var _maps := {}  # town id -> RID
-var _built_from := {}  # town id -> the instance id of the town node its map was baked from
+var _built_from := {}  # town id -> what its map was baked from: the town node and its life
 
 
 func map_for(id: int, root: Node3D) -> RID:
 	# A town rebuilt as it grows is a new node with new houses: its old map
-	# would walk people straight through them, so it is baked afresh.
-	if _maps.has(id) and _built_from.get(id, 0) == root.get_instance_id():
+	# would walk people straight through them, so it is baked afresh. So is a
+	# town whose life changed (town_life.gd): a building site going up, recruits
+	# drilling, a crowd at the keep are in the way too.
+	var life: Node3D = root.get_node_or_null("Life")
+	var made := [root.get_instance_id(), life.get_instance_id() if life else 0]
+	if _maps.has(id) and _built_from.get(id, []) == made:
 		return _maps[id]
 	forget(id)
-	_built_from[id] = root.get_instance_id()
+	_built_from[id] = made
 	var reach: float = root.get_meta("reach", 6.0)
 	var poly := NavigationPolygon.new()
 	poly.agent_radius = 0.035
@@ -28,7 +32,13 @@ func map_for(id: int, root: Node3D) -> RID:
 		var a := TAU * i / 24
 		outline.append(Vector2(cos(a), sin(a)) * reach)
 	src.add_traversable_outline(outline)
-	for fp in root.get_meta("footprints", []):
+	var standing: Array = []
+	if life:
+		standing = life.get_meta("footprints", []).duplicate()
+		for p: Vector2 in life.get_meta("standing", PackedVector2Array()):
+			var o := 0.045  # a person standing, about 0.4 m across
+			standing.append(PackedVector2Array([p + Vector2(-o, -o), p + Vector2(o, -o), p + Vector2(o, o), p + Vector2(-o, o)]))
+	for fp in root.get_meta("footprints", []) + standing:
 		# Slightly enlarged so people pass alongside walls, not inside them.
 		var c: Vector2 = (fp[0] + fp[1] + fp[2] + fp[3]) / 4.0
 		var grown := PackedVector2Array()
@@ -72,6 +82,11 @@ func path(map: RID, from: Vector2, to: Vector2) -> PackedVector2Array:
 	if NavigationServer2D.map_get_iteration_id(map) == 0:
 		return PackedVector2Array()
 	return NavigationServer2D.map_get_path(map, from, to, true)
+
+
+## True once the map has synced and can answer for paths and places.
+func ready(map: RID) -> bool:
+	return NavigationServer2D.map_get_iteration_id(map) != 0
 
 
 func closest(map: RID, p: Vector2) -> Vector2:
