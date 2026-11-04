@@ -14,7 +14,7 @@ How a round is played: `realm/tools/play/*.play` scenarios feed real input (keys
 
 | # | Expected | Found | Change | Commit |
 |---|---|---|---|---|
-| 42 | Watching an order follows its result | "Tribute leaves Rosehall" in spaced type over the result card, right after the King *sent* gold (r11/06) | "The King's gold on the road to Rosehall" in the card's type, under the result (r11/07) | (next) |
+| 42 | Watching an order follows its result | "Tribute leaves Rosehall" in spaced type over the result card, right after the King *sent* gold (r11/06) | "The King's gold on the road to Rosehall" in the card's type, under the result (r11/07) | 5cc7a45 |
 | 41 | The court key reads at a glance | The crown key looked dimmed with three waiting (a pulse set only when the world refreshed, so each frame caught a random brightness) | Lit while anyone waits, dim when nobody does | 018d5ef |
 | 40 | The tithe reckoning is true | "The royal tithe brings 0 crowns … the castles cost 16" (r11/04): one season's take, no unit | Every season since the last reckoning, in crowns; says so plainly when none came | 018d5ef |
 | 39 | The Hand never advises an order that fails | "Command peace" offered with Thornvale at 34; refused, 6,000 crowns and 5 favour lost (r11/03) | A house under 40 is to be warmed first: "Gift crowns to Thornvale", and why; two matters at most so his card clears the houses table (r11/05) | 018d5ef |
