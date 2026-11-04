@@ -989,9 +989,11 @@ func _walk(n: Node3D, goal: Vector3, seconds: float, fade: bool) -> void:
 		tw.tween_callback(n.queue_free)
 
 
-## The royal host musters in Kingsmere's square in ranks under the crown's
-## banners, holds a moment, then marches out in column two abreast along the
-## road toward where it is sent, and halts there in formation.
+## The royal host musters in Kingsmere's square: spearmen in ranks under the
+## crown's banners, a sergeant out in front. They drill as one at his shout
+## (thrust, thrust, salute), then march out in step, two abreast behind their
+## captain and the banners, along the road and out through the gate
+## toward where they are sent, and halt there in formation.
 func _muster(at: Vector3, goal: Vector3) -> void:
 	var r := _rng(at)
 	var root := Node3D.new()
@@ -1008,50 +1010,89 @@ func _muster(at: Vector3, goal: Vector3) -> void:
 	var side := Vector3(-start_dir.z, 0, start_dir.x)
 	var men := []
 	const FILES := 4
-	const RANKS := 4
+	const RANKS := 5
 	for rank in RANKS:
 		for file in FILES:
 			var f: Node3D = _people.make(r, "soldier", col, "adult")
-			f.position = _ground(at + side * ((file - 1.5) * 0.12) - start_dir * (rank * 0.14))
+			f.position = _ground(at + side * ((file - 1.5) * 0.13) - start_dir * (rank * 0.15))
 			f.rotation.y = atan2(start_dir.x, start_dir.z)
 			root.add_child(f)
+			arm(f, "spear")
 			_people.play(f, "Sword_Idle", r.randf_range(0.9, 1.1))
 			men.append({"node": f, "slot": rank * FILES + file})
+	# The sergeant faces his men; the captain stands at the head.
+	var sergeant: Node3D = _people.make(r, "soldier", col, "adult")
+	sergeant.position = _ground(at + start_dir * 0.3 + side * 0.32)
+	sergeant.rotation.y = atan2(-start_dir.x, -start_dir.z) - 0.5
+	root.add_child(sergeant)
+	arm(sergeant, "sword")
+	_people.play(sergeant, "Sword_Idle")
+	var captain: Node3D = _people.make(r, "soldier", col, "adult")
+	captain.position = _ground(at + start_dir * 0.32)
+	captain.rotation.y = atan2(start_dir.x, start_dir.z)
+	root.add_child(captain)
+	arm(captain, "sword")
+	_people.play(captain, "Sword_Idle")
 	var banners := []
 	for i in 2:
 		var b: Node3D = Heraldry.standard(crown, col, 0.62)
 		b.position = _ground(at + side * (i * 0.36 - 0.18) + start_dir * 0.16)
 		root.add_child(b)
 		banners.append(b)
-	# Formed up (0-4 s), then the column marches; each man keeps his place in it.
-	var seconds := clampf(length / 0.25, 10.0, 80.0)
-	var spacing := 0.11 / maxf(length, 0.5)
+	var yaw := atan2(side.x, side.z) - 0.5
+	framing.emit(_ground(at), 2.6, yaw)
+	# The drill (1-7 s): at each shout the ranks thrust their spears as one,
+	# then salute the banners.
 	var tw := create_tween()
-	tw.tween_interval(4.0)
+	for drill in ["Sword_Attack", "Sword_Attack", "Salute"]:
+		tw.tween_interval(0.6)
+		tw.tween_callback(func(): _people.play(sergeant, "Yelling", 1.3))
+		tw.tween_interval(0.9)
+		tw.tween_callback(func():
+			for m in men:
+				_in_step(m["node"], drill, 0.0))
+	tw.tween_interval(1.6)
+	# Formed for the march: everyone in step, the captain leading.
+	var seconds := clampf(length / 0.25, 12.0, 80.0)
+	var spacing := 0.12 / maxf(length, 0.5)
 	tw.tween_callback(func():
+		_people.play(sergeant, "Yelling", 1.0)
+		var phase := r.randf()
 		for m in men:
-			_people.play(m["node"], "Walk", r.randf_range(0.95, 1.05)))
+			_in_step(m["node"], "Walk", phase)
+		_people.play(captain, "Walk", 1.0)
+		framing.emit(_ground(at + start_dir * 1.2), 3.4, yaw + 0.3))
 	tw.tween_method(func(t: float):
 		for m in men:
-			var n: Node3D = m["node"]
 			var row := int(m["slot"]) / 2
-			var k := clampf(t - row * spacing, 0.0, 1.0)
-			var p: Vector3 = terrain.along(route, k)
-			var ahead: Vector3 = terrain.along(route, minf(1.0, k + 0.01))
-			var dir := Vector3(ahead.x - p.x, 0, ahead.z - p.z)
-			if dir.length() > 0.0001:
-				dir = dir.normalized()
-				n.rotation.y = atan2(dir.x, dir.z)
-			var across := Vector3(-dir.z, 0, dir.x)
-			n.position = _ground(p + across * (0.05 if int(m["slot"]) % 2 == 0 else -0.05))
+			_on_route(m["node"], route, t - (row + 3) * spacing, 0.05 if int(m["slot"]) % 2 == 0 else -0.05)
+		_on_route(sergeant, route, t - 14 * spacing, 0.08)
+		_on_route(captain, route, t, 0.0)
 		for i in banners.size():
-			banners[i].position = _ground(terrain.along(route, clampf(t + 0.02 - i * 0.01, 0.0, 1.0)))
-		, 0.0, 1.0 + 8 * spacing, seconds)
+			_on_route(banners[i], route, t - (1 + i) * spacing, 0.05 if i == 0 else -0.05)
+		, 0.0, 1.0 + 16 * spacing, seconds)
 	tw.tween_callback(func():
 		for m in men:
-			_people.play(m["node"], "Sword_Idle", 1.0))
+			_people.play(m["node"], "Sword_Idle", 1.0)
+		_people.play(sergeant, "Sword_Idle", 1.0)
+		_people.play(captain, "Sword_Idle", 1.0))
 	tw.tween_interval(40.0)
 	tw.tween_callback(root.queue_free)
+
+
+## Places a marcher at `t` along a route (held at the start before his turn
+## comes, and at the end once there), facing along it, `offset` to the side.
+func _on_route(n: Node3D, route: PackedVector3Array, t: float, offset: float) -> void:
+	var k := clampf(t, 0.0, 1.0)
+	var p: Vector3 = terrain.along(route, k)
+	var ahead: Vector3 = terrain.along(route, minf(1.0, k + 0.01))
+	var dir := Vector3(ahead.x - p.x, 0, ahead.z - p.z)
+	if dir.length() > 0.0001:
+		dir = dir.normalized()
+		n.rotation.y = atan2(dir.x, dir.z)
+	if t <= 0.0:
+		return  # still formed up, waiting for the column to reach him
+	n.position = _ground(p + Vector3(-dir.z, 0, dir.x) * offset)
 
 
 ## A royal rider carries the King's ruling at a run to the petitioner's seat,
