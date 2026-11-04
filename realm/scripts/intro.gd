@@ -74,23 +74,23 @@ func play(houses: Array, seats: Dictionary) -> void:
 		_pages.append([still, title, line, house, keys, at, zoom])
 	# The story and how to play, woven together: each page of the realm's tale
 	# is followed by what you do in it, with the keys that do it.
-	page.call("realm", "Aldmere", "A long continent: snow and pine in the north, gold hills in the west, a green heartland, storm-wracked cliffs in the east, and red sand in the south.")
-	page.call("realm", "The Lore of Aldmere", "Three hundred years ago the Conqueror united seven kingdoms under one crown, by sword and by marriage. The crown has held ever since, but the houses remember being kings.", {}, "B  the Lore, any time", Vector2(0.5, 0.3), 1.6)
-	page.call("realm", "It lives without you", "Eight great houses build, trade, marry and make war on their own. Watch from the sky, and the realm goes on whether you act or not.", {}, "drag  pan    scroll  zoom    Q E  turn    WASD  move", Vector2(0.5, 0.6), 1.4)
+	page.call("realm", "Seven houses. One throne. Yours.", "Aldmere: snow and pine in the north, gold in the western hills, red sand in the south. Every acre of it answers to you. For now.")
+	page.call("realm", "They remember being kings", "Three hundred years ago the Conqueror forged seven kingdoms into one crown. The houses bent the knee. They never forgot they once wore crowns of their own.", {}, "B  the Lore, any time", Vector2(0.5, 0.3), 1.6)
+	page.call("realm", "A realm that never waits", "Lords scheme, marry, feud and die while you watch. Wars start without your leave. Look away, and the realm moves on without you.", {}, "drag  pan    scroll  zoom    Q E  turn    WASD  move", Vector2(0.5, 0.6), 1.4)
 	if not crown.is_empty() and seats.has(crown.get("name", "")):
 		var town: String = seats[crown["name"]][0]
-		page.call("seat_" + town, "Kingsmere", "At its heart sits your seat, %s. You are the King, and seven great houses owe you their swords." % town, crown, "Z  back to Kingsmere", home, 3.0)
+		page.call("seat_" + town, "Kingsmere", "%s is yours. Seven great houses owe you their swords. How long they keep paying is up to you." % town, crown, "Z  back to Kingsmere", home, 3.0)
 	for h in houses:
 		if h.get("crown", false) or h.get("wild", false) or not seats.has(h.get("name", "")):
 			continue
 		var name: String = h["name"]
 		var town: String = seats[name][0]
 		page.call("seat_" + town, name, "%s. Their words: \"%s\". %s" % [town, h.get("words", ""), CHARACTER.get(name, "")], h, "", uv.call(seats[name][1]), 3.0)
-	page.call("hall", "Hold court", "Lords come to your hall with petitions: grain, land, justice, vengeance. Choose a ruling, or answer in your own words, typed or spoken. Whatever you decide comes to pass.", {}, "K  court    Type or Speak: Settings", home, 2.2)
-	page.call("hero", "Every lord a life", "Every lord and lady has a nature, a goal and a memory, and they remember what you did. Open a house to meet them, follow their story, or change who they are.", {}, "H  houses    C  chronicle    L  ledger", home, 1.8)
-	page.call("battle", "Old grudges", "When the great houses quarrel, armies march, towns are besieged and the realm bleeds. Your rulings can calm a feud or start one.", {}, "", Vector2(0.45, 0.75), 2.0)
-	page.call("street", "Read the towns", "Every town shows what it is doing: walls rising, recruits drilling on the square, fields browning in famine, smoke over a town in unrest.", {}, "click a town  its panel", home, 2.6)
-	page.call("walk", "Walk among them", "Take the place of any lord: walk the streets, talk with the townsfolk, step into their halls, and draw steel when you must.", {}, "WASD  walk    Shift  run    E  talk, enter    Tab  draw    click  strike    Space  block    Esc  leave", home, 3.0)
+	page.call("hall", "Rule in your own words", "Petitioners kneel before you: a starving town, a stolen bride, a blood feud. Pick a ruling, or just say what you would do, typed or spoken. They will remember it.", {}, "K  court    Type or Speak: Settings", home, 2.2)
+	page.call("hero", "Every lord a life", "Each lord has a temper, an ambition and a long memory. Raise one up, break another, or rewrite who they are.", {}, "H  houses    C  chronicle    L  ledger", home, 1.8)
+	page.call("battle", "War is one insult away", "Grudges boil over into marching armies, burning fields and towns under siege. One ruling can stop a war. Another can start one.", {}, "", Vector2(0.45, 0.75), 2.0)
+	page.call("street", "Read the realm at a glance", "Walls rising, recruits drilling, fields browning in famine, smoke over a town in revolt. Every town shows you what it is going through.", {}, "click a town  its panel", home, 2.6)
+	page.call("walk", "Then step down from the throne", "Take any lord's place. Walk the streets, talk to anyone, push into the tavern, and draw steel when talking fails.", {}, "WASD  walk    Shift  run    E  talk, enter    Tab  draw    click  strike    Space  block    Esc  leave", home, 3.0)
 	for tip in TIPS:
 		page.call("tip", tip[0], tip[1], {}, tip[2], Vector2(0.3 + randf() * 0.4, 0.2 + randf() * 0.6), 2.0)
 	_build()
@@ -154,11 +154,11 @@ func _build() -> void:
 	_sigil.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_sigil.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	head.add_child(_sigil)
-	_title = T.title("", 40)
+	_title = T.title("", 48)
 	head.add_child(_title)
 	_line = Label.new()
 	_line.autowrap_mode = TextServer.AUTOWRAP_WORD
-	_line.add_theme_font_size_override("font_size", 22)
+	_line.add_theme_font_size_override("font_size", 24)
 	_line.add_theme_color_override("font_color", Color(0.95, 0.93, 0.88))
 	_line.custom_minimum_size.x = 600
 	box.add_child(_line)
