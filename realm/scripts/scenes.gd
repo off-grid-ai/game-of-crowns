@@ -4,6 +4,12 @@ extends Node3D
 ## towns burn while their people flee; famine sends families onto the roads;
 ## the King's grain goes out by wagon under escort.
 
+## A scene has just been staged (what the bridge reported, and the thing to
+## follow if it travels): the game can offer to take you to it.
+signal staged(s: Dictionary, follow: Node3D)
+## The King's grain, gold, ward or rider reached the town it was sent to.
+signal arrived(s: Dictionary)
+
 var terrain: Node3D
 var towns: Node3D
 var _nav = preload("res://scripts/town_nav.gd").new()  # where people may stand, and the streets they walk
@@ -42,6 +48,7 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 			continue
 		_seen[key] = true
 		var at: Vector3 = terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0)))
+		var follow: Node3D = null
 		match String(s["kind"]):
 			"battle":
 				# Many deaths on one tile in one turn are one battle.
@@ -68,14 +75,14 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 				var approach: Vector3 = terrain.world_pos(float(s.get("ax", s["x"])), float(s.get("ay", s["y"])))
 				_siege(int(s["city"]), at, approach, int(city.get("size", 4)), int(s.get("engines", 0)), houses.get(int(s.get("owner", -1)), {}), houses.get(int(s.get("defender", -1)), {}), float(world.get("turnSeconds", 20.0)))
 			"grain", "tribute":
-				_convoy(at, terrain.world_pos(float(s["tx"]), float(s["ty"])), s["kind"] == "grain")
+				follow = _convoy(at, terrain.world_pos(float(s["tx"]), float(s["ty"])), s["kind"] == "grain", "", s)
 			"muster":
 				var goal: Vector3 = terrain.world_pos(float(s.get("tx", s["x"])), float(s.get("ty", s["y"])))
 				_muster(at, goal)
 			"ward":
-				_convoy(at, terrain.world_pos(float(s["tx"]), float(s["ty"])), false, "A ward for the King's court")
+				follow = _convoy(at, terrain.world_pos(float(s["tx"]), float(s["ty"])), false, "A ward for the King's court", s)
 			"rider":
-				_rider(at, terrain.world_pos(float(s["tx"]), float(s["ty"])), String(s.get("label", "The King's word")))
+				follow = _rider(at, terrain.world_pos(float(s["tx"]), float(s["ty"])), String(s.get("label", "The King's word")), s)
 			"feast":
 				_feast(at, houses.get(int(s.get("owner", -1)), {}))
 			"handover":
@@ -84,6 +91,7 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 					if int(c["id"]) == int(s.get("city", -1)):
 						town = String(c.get("title", c["name"]))
 				_handover(at, houses.get(int(s.get("from", -1)), {}), houses.get(int(s.get("to", -1)), {}), town)
+		staged.emit(s, follow)
 
 
 ## Who won a fight: the house with men standing on or next to the tile where
@@ -1316,7 +1324,8 @@ func _on_route(n: Node3D, route: PackedVector3Array, t: float, offset: float) ->
 ## A royal rider carries the King's ruling to the petitioner's seat on a
 ## horse, the crown's standard in hand, with what was decided written above
 ## him. He sets off at a walk, rides the road at a gallop and draws up at a walk.
-func _rider(from: Vector3, to: Vector3, label: String) -> void:
+## Returns the horse, to follow. `s`: the scene, reported back on arrival.
+func _rider(from: Vector3, to: Vector3, label: String, s := {}) -> Node3D:
 	var r := _rng(to)
 	var horse: Node3D = Horse.new(r.randi() % Horse.COATS.size())
 	add_child(horse)
@@ -1340,16 +1349,19 @@ func _rider(from: Vector3, to: Vector3, label: String) -> void:
 			horse.rotation.y = lerp_angle(horse.rotation.y, atan2(ahead.x - p.x, ahead.z - p.z), 0.2)
 		horse.position = p
 		_place_tag(tag, p + Vector3(0, 0.45, 0)), 0.0, 1.0, secs).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tw.tween_callback(func(): if not s.is_empty(): arrived.emit(s))
 	tw.tween_interval(3.0)
 	tw.tween_property(tag, "modulate:a", 0.0, 2.0)
 	tw.tween_callback(func():
 		horse.queue_free()
 		tag.queue_free())
+	return horse
 
 
 # --- the King's convoys ------------------------------------------------------------------
 
-func _convoy(from: Vector3, to: Vector3, grain: bool, label := "") -> void:
+## Returns the wagon, to follow. `scene`: the bridge's scene, reported back on arrival.
+func _convoy(from: Vector3, to: Vector3, grain: bool, label := "", scene := {}) -> Node3D:
 	var r := _rng(from)
 	var root := Node3D.new()
 	root.name = "Convoy"
@@ -1385,9 +1397,11 @@ func _convoy(from: Vector3, to: Vector3, grain: bool, label := "") -> void:
 			var trail := _stand(terrain.along(route, maxf(0.0, t - (0.004 + i * 0.003))))
 			e.position = trail + side * (0.05 if i % 2 == 0 else -0.05)
 			e.rotation.y = atan2(dir.x, dir.z), 0.0, 1.0, seconds)
+	tw.tween_callback(func(): if not scene.is_empty(): arrived.emit(scene))
 	tw.tween_interval(1.0)
 	tw.tween_property(tag, "modulate:a", 0.0, 2.0)
 	tw.tween_callback(root.queue_free)
+	return wagon
 
 
 # --- feasts and handovers ----------------------------------------------------------

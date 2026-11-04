@@ -66,6 +66,8 @@ let seasonRunning = false;
 // Recent events with a place on the map, so the view can show them happening.
 let scenes = [];
 
+const arrivals = new Set();  // scenes already credited on arrival
+
 function scene(kind, fields) {
   scenes.push({ kind, turn: world?.turn ?? 0, at: Date.now(), ...fields });
   if (scenes.length > 120) scenes = scenes.slice(-120);
@@ -314,8 +316,11 @@ function rule(id, option) {
   const asked = court.petitions.find((x) => x.id === id && !x.answered)?.options?.find((o) => o.id === option);
   const purse = world.players.find((p) => houseFor(p).crown)?.gold ?? 0;
   if (asked?.cost && purse < asked.cost) return { error: crowns(`the treasury holds ${purse} gold`) };
+  const petition = court.petitions.find((x) => x.id === id);
   const out = court.answer(id, option, world);
   if (out.error) return out;
+  // The one who asked remembers what the King answered, in their own words.
+  if (petition && asked) court.remember(petition.from, `I went before the King, and he ruled: ${String(asked.label ?? asked.id).toLowerCase()}.`);
   const crownNow = world.players.find((p) => houseFor(p).crown);
   if (out.cost && (crownNow?.gold ?? 0) < out.cost) return { error: crowns(`the treasury holds ${crownNow?.gold ?? 0} gold`) };
   if (out.cost) {
@@ -752,6 +757,11 @@ http.createServer(async (req, res) => {
     const seat = world.cities.find((c) => c.owner === crownNow?.id && c.capital);
     const target = world.cities.find((c) => c.id === Number(cmd.city));
     if (seat && target && (cmd.action === "relief" || cmd.action === "gift")) scene(cmd.action === "relief" ? "grain" : "tribute", { x: seat.x, y: seat.y, tx: target.x, ty: target.y, city: target.id });
+    // Every decree is seen where it lands: a feast at the seat, a town changing
+    // hands, the King's rider carrying the crown's purse for a building.
+    if (seat && cmd.action === "feast") scene("feast", { x: seat.x, y: seat.y, city: seat.id, owner: crownNow.id });
+    if (target && cmd.action === "grant") scene("handover", { x: target.x, y: target.y, city: target.id, from: target.owner, to: Number(cmd.to) });
+    if (seat && target && cmd.action === "build") scene("rider", { x: seat.x, y: seat.y, tx: target.x, ty: target.y, city: target.id, label: "The crown's purse for a new building" });
     if (seat && cmd.action === "levy") {
       // The host marches for the town the levy was raised for, else toward the
       // nearest foreign army inside the crown's lands, else down the road a way.
@@ -763,6 +773,20 @@ http.createServer(async (req, res) => {
     record({ turn: world?.turn ?? 0, kind: "decree", text: result.text, city: cmd.city });
     setTimeout(snapshot, 600);
     return json(res, 200, { ok: true, text: crowns(result.text) });
+  }
+  if (url.pathname === "/scene/arrived" && req.method === "POST") {
+    // The King's grain, gold or word reached the town it was sent to: the realm
+    // sees it, the chronicle says so in his name, and the town remembers.
+    const b = await body(req);
+    const town = world?.cities.find((c) => c.id === Number(b.city));
+    const what = { grain: "The King's grain reaches", tribute: "The King's gold reaches", ward: "The ward reaches", rider: "The King's rider reaches" }[String(b.kind)];
+    if (!town || !what) return json(res, 400, { error: "nothing arrived" });
+    const key = `${b.kind}:${town.id}:${b.sent ?? 0}`;
+    if (!arrivals.has(key)) {
+      arrivals.add(key);
+      record({ turn: world.turn, kind: "crown", city: town.id, text: `${what} ${cityName(town.id)}${b.label ? `: ${String(b.label).slice(0, 80)}` : ""}.` });
+    }
+    return json(res, 200, { ok: true });
   }
   if (url.pathname === "/usage") return json(res, 200, usageToday());
   if (url.pathname === "/mood" && req.method === "GET") return json(res, 200, court.decrees);

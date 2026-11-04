@@ -27,6 +27,7 @@ signal petition_voiced(id: String, wav: PackedByteArray)
 signal decree_revoked(id: String)
 signal person_opened(id: String, house: Dictionary)  # the character view
 signal walk_as_king  # step into the King himself, at Kingsmere
+signal story_opened(entry: Dictionary)  # a story's name clicked in the chronicle
 
 const T := preload("res://scripts/theme.gd")
 const Keys := preload("res://scripts/keys.gd")
@@ -79,6 +80,9 @@ var _court_waiting := false  # the court panel, set aside for a commoner's card
 var _court_hidden := true
 
 var _toast: Label
+var _stories := {}  # chronicle seq -> a story beat's entry, for its link
+var _offer: PanelContainer  # "Watch": the latest moment worth seeing, for a few seconds
+var _offer_left := 0.0
 var _toast_top := 78.0  # just under the top bar
 var _toast_time := 0.0
 
@@ -495,7 +499,12 @@ func _build_chronicle() -> void:
 	_chronicle.scroll_active = true
 	_chronicle.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_chronicle.meta_underlined = false
-	_chronicle.meta_clicked.connect(func(meta): focus_city.emit(int(str(meta))))
+	_chronicle.meta_clicked.connect(func(meta):
+		var m := str(meta)
+		if m.begins_with("story:"):
+			story_opened.emit(_stories.get(int(m.substr(6)), {}))
+		else:
+			focus_city.emit(int(m)))
 	v.add_child(_chronicle)
 
 
@@ -696,6 +705,11 @@ func _process(delta: float) -> void:
 	_fit_centre(_form_panel, 600.0)
 	_fit_centre(_court_panel, 680.0)
 	_fit_centre(_town_panel, 600.0)
+	if _offer and _offer.visible:
+		_offer_left -= delta
+		_offer.modulate.a = clampf(_offer_left, 0.0, 1.0)
+		if _offer_left <= 0.0:
+			_offer.visible = false
 	if _toast_time > 0:
 		# A notice never writes over an open card: it sits just under it.
 		var top := _toast_top
@@ -1252,6 +1266,28 @@ func _fit_centre(panel: Control, widest: float) -> void:
 		scroll.custom_minimum_size.y = minf(scroll.get_child(0).get_combined_minimum_size().y, room)
 
 
+## Something worth seeing has begun (your convoy on the road, a battle, a
+## story's turn): a line under the top bar with a Watch button, for a while.
+func offer_watch(text: String, go: Callable) -> void:
+	if _offer:
+		_offer.queue_free()
+	_offer = _glass_panel()
+	_offer.anchor_left = 0.5
+	_offer.anchor_right = 0.5
+	_offer.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_offer.offset_top = _toast_top + 34.0
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 14)
+	_offer.add_child(row)
+	row.add_child(T.datum(text, T.SIZE_DESC + 1, T.TEXT))
+	var b := _btn("Watch", func():
+		go.call()
+		_offer.visible = false)
+	b.add_theme_color_override("font_color", T.ACCENT)
+	row.add_child(b)
+	_offer_left = 12.0
+
+
 func toast(text: String) -> void:
 	_toast.text = text
 	_toast_time = 5.0
@@ -1483,10 +1519,12 @@ func add_chronicle(entries: Array) -> void:
 		var loss := kind in ["city_shrank", "disaster", "city_destroyed", "building_lost", "city_transferred", "civil_war", "betrayal", "rebellion", "raid", "death", "unrest"]
 		var tone := "#e86b5c" if loss else ("#9a9a96" if kind == "year" else "#ecece8")
 		var text := "[color=%s]%s[/color]" % [tone, e.get("text", "")]
-		# A beat of a story arc is told under the story's own name.
+		# A beat of a story arc is told under the story's own name, and the name
+		# takes you to its people; any other line with a town, to the town.
 		if e.get("thread"):
-			text = "[color=#c9a45c]%s[/color]   %s" % [e["thread"], text]
-		if e.has("city") and e["city"] != null:
+			_stories[int(e.get("seq", 0))] = e
+			text = "[url=story:%d][color=#c9a45c]%s[/color][/url]   %s" % [int(e.get("seq", 0)), e["thread"], text]
+		elif e.has("city") and e["city"] != null:
 			text = "[url=%d]%s[/url]" % [int(e["city"]), text]
 		_lines.push_front("[font_size=11][color=#6f6f6c]%s[/color][/font_size]   %s" % [_season_of(int(e.get("turn", 0))), text])
 		if kind != "year":

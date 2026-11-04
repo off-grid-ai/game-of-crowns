@@ -169,6 +169,9 @@ func _ready() -> void:
 	interior.people = villagers._people
 	add_child(interior)
 	ui.walk_as_king.connect(_walk_as_king)
+	ui.story_opened.connect(_follow_story)
+	scenes.staged.connect(_on_staged)
+	scenes.arrived.connect(func(s): bridge.scene_arrived(s))
 	hero.control_requested.connect(func(p, h):
 		hero.close()
 		_take_control(p, h))
@@ -1135,6 +1138,58 @@ func _on_chronicle(entries: Array) -> void:
 		_try_digest()
 	elif _digest_done and not entries.is_empty():
 		_mark_seen(entries)
+		# A story turns: offer to go and see the people it happens to.
+		for e in entries:
+			if e.get("thread") and String(e.get("stage", "")) in ["crisis", "resolution", "rising"]:
+				_offer(String(e["thread"]), _follow_story.bind(e), true)
+
+
+## The moments the King should never miss: his own grain, gold, riders, levies,
+## feasts and grants always; war and fire, now and then.
+const KINGS_OWN := ["grain", "tribute", "rider", "ward", "muster", "feast", "handover"]
+const WAR := ["battle", "siege", "sack", "razed"]
+var _offered_at := -100000
+
+
+func _on_staged(s: Dictionary, follow: Node3D) -> void:
+	var kind := String(s.get("kind", ""))
+	if kind in KINGS_OWN or kind in WAR:
+		_offer(director.caption(s), director.watch.bind(s, follow), kind in KINGS_OWN)
+
+
+## One Watch offer at a time; the realm's own news no more than every 20 s,
+## the King's own deeds and a story's turns always.
+func _offer(text: String, go: Callable, always: bool) -> void:
+	if control.active or _shot.has("path"):
+		return
+	if not always and Time.get_ticks_msec() - _offered_at < 20000:
+		return
+	_offered_at = Time.get_ticks_msec()
+	ui.offer_watch(text, go)
+
+
+## A story's people: the commoner in it if they're walking their town (the
+## camera stays with them), else the town it happens in.
+func _follow_story(e: Dictionary) -> void:
+	if e.is_empty():
+		return
+	var title := String(e.get("thread", "The chronicle"))
+	for id in e.get("cast", []):
+		var parts := String(id).split(":")
+		if parts.size() == 3 and parts[0] == "folk":
+			var crowd: Array = villagers._crowds.get(int(parts[1]), [])
+			var i := int(parts[2])
+			if i < crowd.size() and is_instance_valid(crowd[i]["node"]):
+				var n: Node3D = crowd[i]["node"]
+				director.watch_at(n.global_position, 2.2, title, n)
+				return
+	var city := int(e.get("city", -1)) if e.get("city") != null else -1
+	for c in bridge.world.get("cities", []):
+		if int(c["id"]) == city:
+			towns.ensure(city)
+			director.watch_at(terrain.world_pos(float(c["x"]), float(c["y"])), 7.0, title)
+			return
+	ui.toast("%s: far from any road the camera can take." % title)
 
 
 func _on_ground_clicked(p: Vector3) -> void:

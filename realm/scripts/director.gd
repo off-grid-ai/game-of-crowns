@@ -18,6 +18,10 @@ const SCENES := {
 	"grain": [4, 5.0, "The King's grain on the road to %s"],
 	"tribute": [3, 5.0, "Tribute leaves %s"],
 	"handover": [3, 8.0, "%s changes hands"],
+	"muster": [4, 6.0, "The King's levy musters at %s"],
+	"feast": [3, 4.0, "A feast at %s"],
+	"rider": [3, 3.5, "The King's rider, bound for %s"],
+	"ward": [2, 4.0, "A ward on the road to %s"],
 }
 
 var rig: Node3D
@@ -28,6 +32,7 @@ var world := {}
 var active := false
 var _idle := 0.0
 var _shot_left := 0.0
+var _follow: Node3D  # what this shot travels with (a convoy's wagon, a rider's horse, a villager)
 var _last_key := ""
 
 
@@ -36,6 +41,7 @@ func _input(event: InputEvent) -> void:
 		_idle = 0.0
 		if active:
 			active = false
+			_follow = null
 
 
 func start() -> void:
@@ -53,6 +59,8 @@ func _process(delta: float) -> void:
 		return
 	# A slow turn around whatever we're watching, so even a quiet shot moves.
 	rig._goal_yaw += delta * 0.04
+	if is_instance_valid(_follow) and _follow.is_inside_tree():
+		rig._goal_target = _follow.global_position
 	_shot_left -= delta
 	if _shot_left <= 0.0:
 		_next_shot()
@@ -77,18 +85,51 @@ func _next_shot() -> void:
 			best = s
 			best["_key"] = key
 	if not best.is_empty() and best_score > 0.0:
-		var kind := String(best["kind"])
-		var at: Vector3 = terrain.world_pos(float(best.get("x", 0)), float(best.get("y", 0)))
 		_last_key = String(best["_key"])
-		rig.focus(at, SCENES[kind][1])
-		rig._goal_tilt = 0.0  # a battle's framing lowers the view; each new shot starts level
-		ui.toast(SCENES[kind][2] % _town_near(best, at))
+		_frame(best, null)
 		return
 	_tour()
 
 
+## Takes you to a scene now, as the next shot (the Watch offer), travelling
+## with `follow` when it moves. Any click, key or scroll gives the camera back.
+func watch(s: Dictionary, follow: Node3D = null) -> void:
+	_idle = 0.0
+	active = true
+	_shot_left = SHOT_SECONDS * 2.0
+	_frame(s, follow)
+
+
+## Goes to a place and stays with someone there (a story's people), captioned.
+func watch_at(at: Vector3, dist: float, caption: String, follow: Node3D = null) -> void:
+	_idle = 0.0
+	active = true
+	_shot_left = SHOT_SECONDS * 2.0
+	_follow = follow
+	rig.focus(at, dist)
+	rig._goal_tilt = 0.0
+	ui.toast(caption)
+
+
+## What a scene is called on screen: "The King's grain on the road to Oldburg".
+func caption(s: Dictionary) -> String:
+	var at: Vector3 = terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0)))
+	return String(SCENES.get(String(s.get("kind", "")), [0, 0.0, "%s"])[2]) % _town_near(s, at)
+
+
+func _frame(s: Dictionary, follow: Node3D) -> void:
+	var kind := String(s.get("kind", ""))
+	var at: Vector3 = terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0)))
+	var how: Array = SCENES.get(kind, [0, 6.0, "%s"])
+	_follow = follow
+	rig.focus(follow.global_position if is_instance_valid(follow) else at, how[1])
+	rig._goal_tilt = 0.0  # a battle's framing lowers the view; each new shot starts level
+	ui.toast(caption(s))
+
+
 ## Nothing stirring: visit a town, the bigger the likelier.
 func _tour() -> void:
+	_follow = null
 	var cities: Array = world.get("cities", [])
 	if cities.is_empty():
 		return

@@ -235,6 +235,11 @@ func _http_get(path: String, cb: Callable) -> void:
 	req.request(BASE + path)
 
 
+## The King's grain, gold or rider reached its town: the bridge credits it.
+func scene_arrived(s: Dictionary) -> void:
+	_post("/scene/arrived", {"kind": s.get("kind", ""), "city": s.get("city", -1), "label": s.get("label", ""), "sent": s.get("at", 0)}, func(_c, _d): pass)
+
+
 func _post(path: String, body: Dictionary, cb: Callable) -> void:
 	var req := HTTPRequest.new()
 	add_child(req)
