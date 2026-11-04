@@ -138,8 +138,10 @@ function startFreeciv() {
   else args.push("-r", P.serv);
   console.log(`${meta.name}: ${save ? `resuming from ${path.basename(save)}` : "creating a new realm"}`);
   // This realm's temperaments, then our medieval ruleset, then Freeciv's own data.
-  const env = { ...process.env, FREECIV_DATA_PATH: `${P.data}:${path.join(DIR, "data")}:/opt/homebrew/share/freeciv` };
-  const proc = spawn("freeciv-server", args, { cwd: DIR, env });
+  // The app brings its own Freeciv (bridge/app.js sets FREECIV_SERVER and FREECIV_SHARE).
+  const share = process.env.FREECIV_SHARE || "/opt/homebrew/share/freeciv";
+  const env = { ...process.env, FREECIV_DATA_PATH: `${P.data}:${path.join(DIR, "data")}:${share}` };
+  const proc = spawn(process.env.FREECIV_SERVER || "freeciv-server", args, { cwd: DIR, env });
   fc = proc;
   const log = fs.createWriteStream(path.join(P.state, "freeciv.log"), { flags: "a" });
   let pending = "";
@@ -610,7 +612,7 @@ http.createServer(async (req, res) => {
   if (url.pathname === "/records") return json(res, 200, chron.records().sort((a, b) => b.score - a.score));
   if (url.pathname === "/scenarios") {
     // Saved starting choices, to begin the same kind of realm again.
-    const file = path.join(DIR, "scenarios.json");
+    const file = path.join(chron.HOME, "scenarios.json");
     const all = chron.readJson(file, []);
     if (req.method !== "POST") return json(res, 200, all);
     const b = await body(req);

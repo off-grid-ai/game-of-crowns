@@ -15,9 +15,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
-export const ROOT = path.join(DIR, "chronicles");
+// Where realms are kept: beside the bridge when run from the repo, in
+// ~/Library/Application Support/Game of Crowns when run from the app (GOC_HOME).
+export const HOME = process.env.GOC_HOME || DIR;
+export const ROOT = path.join(HOME, "chronicles");
 const ACTIVE = path.join(ROOT, "active");
-const RECORDS = path.join(DIR, "records.json");
+const RECORDS = path.join(HOME, "records.json");
 
 fs.mkdirSync(ROOT, { recursive: true });
 

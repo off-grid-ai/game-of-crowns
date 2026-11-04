@@ -6,7 +6,10 @@
 // If the gateway isn't running, callers fall back to the rule-based choice.
 
 // The gateway's port moves between dev runs (7878 by default); find it by its /health name.
-const GATEWAYS = [process.env.OFFGRID_URL, ...Array.from({ length: 8 }, (_, i) => `http://127.0.0.1:${7878 + i}/v1`)].filter(Boolean);
+// The packaged game also runs its own Omni (bridge/app.js, GOC_LLM_URL): used
+// only when Off Grid AI Desktop isn't running, which also brings voices.
+const OWN = process.env.GOC_LLM_URL;
+const GATEWAYS = [process.env.OFFGRID_URL, ...Array.from({ length: 8 }, (_, i) => `http://127.0.0.1:${7878 + i}/v1`), OWN].filter(Boolean);
 
 let lastWatched = 0;
 let base = null;
@@ -35,7 +38,7 @@ async function gateway() {
   for (const url of GATEWAYS) {
     try {
       const r = await fetch(url.replace(/\/v1$/, "/health"), { signal: AbortSignal.timeout(1500) });
-      if (!(r.ok && /off grid/i.test((await r.json()).name ?? ""))) continue;
+      if (!(r.ok && (url === OWN || /off grid/i.test((await r.json()).name ?? "")))) continue;
       const list = await (await fetch(`${url}/models`, { signal: AbortSignal.timeout(3000) })).json();
       const ids = (list.data ?? list.models ?? []).map((m) => m.id ?? m.name ?? "").filter(Boolean);
       model = null;
