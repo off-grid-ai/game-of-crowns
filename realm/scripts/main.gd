@@ -238,6 +238,11 @@ func _ready() -> void:
 	lore.fetch = bridge.lore
 	add_child(title)
 	title.began.connect(func(): _intro_due = true)
+	# The menu stands alone: the game's interface hides behind it until a
+	# chronicle is open (and again whenever the menu is brought back).
+	title.visibility_changed.connect(func():
+		ui.visible = not title.visible and not _shot.has("clean")
+		labels.visible = not title.visible and not _shot.has("clean"))
 	# Continuing or beginning a chronicle wakes the realm, and the intro plays
 	# over it as it comes up (any key skips).
 	# Choosing a chronicle starts the intro at once, as the loading screen,
@@ -257,6 +262,8 @@ func _ready() -> void:
 	title.read_lore.connect(lore.open)
 	if _shot.has("path") and not _shot.has("title"):
 		title.visible = false
+	ui.visible = not title.visible and not _shot.has("clean")
+	labels.visible = ui.visible
 	if _shot.has("new"):
 		title.show_new.call_deferred()
 	if _shot.has("settings"):
@@ -372,6 +379,8 @@ func _parse_args() -> void:
 			_shot["intro"] = true  # plays the intro once the realm is up; --wait picks the page
 		elif a == "--duel":
 			_shot["duel"] = true
+		elif a.begins_with("--after="):
+			_shot["after"] = float(a.substr(8))  # with --duel: seconds from the strike to the shot
 		elif a.begins_with("--interior="):
 			_shot["interior"] = a.substr(11)
 		elif a.begins_with("--move="):
@@ -749,7 +758,7 @@ func _frame_for_shot(world: Dictionary) -> void:
 						control._me.draw(true))
 					get_tree().create_timer(float(_shot.get("lead", 6.0))).timeout.connect(func():
 						control._me.strike()
-						get_tree().create_timer(0.4).timeout.connect(_take_shot))
+						get_tree().create_timer(float(_shot.get("after", 0.4))).timeout.connect(_take_shot))
 				if _shot.has("interior"):
 					get_tree().create_timer(2.0).timeout.connect(func():
 						interior.open(String(_shot["interior"]), p, h, String(p.get("seat", "")))
