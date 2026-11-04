@@ -110,6 +110,18 @@ static var SHIELD_GRIP := Transform3D(Basis.from_euler(Vector3(-PI / 2, 0, 0)).s
 const DEATHS := ["Death01", "Death_Front", "Death_Back", "Sword_Death"]
 
 
+## A company's standard as its bearer carries it, beside him and about 0.4
+## world units tall (a man stands 0.22), whatever scale the bearer is drawn at:
+## a man on foot is scaled to the towns, a horse is not.
+const CARRIED := 0.4
+static func carried_standard(bearer: Node3D, house: Dictionary, color: Color) -> Node3D:
+	var k := maxf(bearer.scale.y, 0.001)
+	var b: Node3D = Heraldry.standard(house, color, CARRIED / k)
+	b.position = Vector3(0.042, 0, -0.012) / k
+	bearer.add_child(b)
+	return b
+
+
 ## Puts arms in a soldier's hands, held on the hand bones so they swing with
 ## every move: "sword" (sword and shield), "spear" (spear and shield), "lance"
 ## (a knight's shield; the lance is the horse's to carry, see horse.gd), or
@@ -615,8 +627,12 @@ func _charge_flank(knights: Array, wall: Array, at: Vector3, dir: Vector3, side:
 				h.position = _ground(into.lerp(through, t)), 0.0, 1.0, 2.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 
 
+## A standard planted behind a line or at a muster: a little taller than one carried.
+const PLANTED := 0.45
+
+
 func _standard(root: Node3D, p: Vector3, color: Color, face: Vector3, house := {}) -> Node3D:
-	var b: Node3D = Heraldry.standard(house, color, 0.62)
+	var b: Node3D = Heraldry.standard(house, color, PLANTED)
 	b.position = _ground(p)
 	b.rotation.y = atan2(face.x, face.z)
 	root.add_child(b)
@@ -1155,7 +1171,7 @@ func _muster(at: Vector3, goal: Vector3) -> void:
 	_people.play(captain, "Sword_Idle")
 	var banners := []
 	for i in 2:
-		var b: Node3D = Heraldry.standard(crown, col, 0.62)
+		var b: Node3D = Heraldry.standard(crown, col, PLANTED)
 		b.position = _ground(at + side * (i * 0.36 - 0.18) + start_dir * 0.16)
 		root.add_child(b)
 		banners.append(b)
@@ -1221,18 +1237,8 @@ func _rider(from: Vector3, to: Vector3, label: String) -> void:
 	var r := _rng(to)
 	var rider: Node3D = _people.make(r, "soldier", Color(0.72, 0.13, 0.16).lerp(Color.WHITE, 0.3), "adult")
 	add_child(rider)
-	var standard: Node3D = Heraldry.standard({"name": "The Crown", "crown": true}, Color(0.72, 0.13, 0.16), 3.4)
-	standard.position = Vector3(0.35, 0, -0.1)
-	rider.add_child(standard)
-	var tag := Label3D.new()
-	tag.visibility_range_begin = 1.6  # gone when you're walking right past it
-	tag.text = label
-	tag.font_size = 36
-	tag.pixel_size = 0.004
-	tag.outline_size = 8
-	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	tag.modulate = Color(0.95, 0.85, 0.6)
-	add_child(tag)
+	carried_standard(rider, {"name": "The Crown", "crown": true}, Color(0.72, 0.13, 0.16))
+	var tag := _caption(self, label, _ground(from) + Vector3(0, 0.4, 0))
 	_people.play(rider, "Running", 1.1)
 	var route: PackedVector3Array = terrain.land_path(from, to)
 	var length := 0.0
@@ -1245,9 +1251,10 @@ func _rider(from: Vector3, to: Vector3, label: String) -> void:
 		if ahead.distance_to(p) > 0.0001:
 			rider.rotation.y = atan2(ahead.x - p.x, ahead.z - p.z)
 		rider.position = p
-		tag.position = p + Vector3(0, 0.4, 0), 0.0, 1.0, clampf(length / 0.6, 8.0, 45.0))
+		_place_tag(tag, p + Vector3(0, 0.4, 0)), 0.0, 1.0, clampf(length / 0.6, 8.0, 45.0))
 	tw.tween_callback(func(): _people.play(rider, "Idle", 1.0))
-	tw.tween_interval(4.0)
+	tw.tween_interval(2.0)
+	tw.tween_property(tag, "modulate:a", 0.0, 2.0)
 	tw.tween_callback(func():
 		rider.queue_free()
 		tag.queue_free())
@@ -1275,15 +1282,7 @@ func _convoy(from: Vector3, to: Vector3, grain: bool, label := "") -> void:
 	for i in route.size() - 1:
 		length += route[i].distance_to(route[i + 1])
 	var seconds := clampf(length / 0.35, 12.0, 70.0)
-	var tag := Label3D.new()
-	tag.visibility_range_begin = 1.6  # gone when you're walking right past it
-	tag.text = label if label != "" else ("The King's grain" if grain else "The King's gold")
-	tag.font_size = 36
-	tag.pixel_size = 0.004
-	tag.outline_size = 8
-	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	tag.modulate = Color(0.95, 0.85, 0.6)
-	root.add_child(tag)
+	var tag := _caption(root, label if label != "" else ("The King's grain" if grain else "The King's gold"), _ground(from) + Vector3(0, 0.45, 0))
 	var tw := create_tween()
 	tw.tween_method(func(t: float):
 		var p := _ground(terrain.along(route, t))
@@ -1292,13 +1291,14 @@ func _convoy(from: Vector3, to: Vector3, grain: bool, label := "") -> void:
 		var side := Vector3(-dir.z, 0, dir.x)
 		wagon.position = p
 		wagon.rotation.y = atan2(dir.x, dir.z) + PI
-		tag.position = p + Vector3(0, 0.45, 0)
+		_place_tag(tag, p + Vector3(0, 0.45, 0))
 		for i in escort.size():
 			var e: Node3D = escort[i]
 			var trail := _ground(terrain.along(route, maxf(0.0, t - (0.004 + i * 0.003))))
 			e.position = trail + side * (0.05 if i % 2 == 0 else -0.05)
 			e.rotation.y = atan2(dir.x, dir.z), 0.0, 1.0, seconds)
-	tw.tween_interval(3.0)
+	tw.tween_interval(1.0)
+	tw.tween_property(tag, "modulate:a", 0.0, 2.0)
 	tw.tween_callback(root.queue_free)
 
 
@@ -1401,6 +1401,15 @@ func _handover(at: Vector3, old_house: Dictionary, new_house: Dictionary, town: 
 	_fade_out(root, 60.0, tag)
 
 
+## Captions in the world now, oldest first: a new one near an older one goes a
+## line above it, so two never print over each other.
+var _tags: Array[Label3D] = []
+const LINE := 0.17  # one caption's height, in world units
+const NEAR := 0.8  # captions closer than this (across the ground) share a place
+
+
+## A caption over the world: what a scene is, or what a rider carries. `root`
+## must sit at the world's origin (the scene roots and this node do).
 func _caption(root: Node3D, text: String, at: Vector3) -> Label3D:
 	var tag := Label3D.new()
 	tag.visibility_range_begin = 1.6  # gone when you're walking right past it
@@ -1410,11 +1419,28 @@ func _caption(root: Node3D, text: String, at: Vector3) -> Label3D:
 	tag.outline_size = 8
 	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	tag.modulate = Color(0.95, 0.85, 0.6)
-	tag.position = at
 	root.add_child(tag)
+	_tags.append(tag)
+	tag.tree_exiting.connect(func(): _tags.erase(tag))
+	_place_tag(tag, at)
 	return tag
 
 
+## Sets a caption at `at`, lifted a line for each older caption in the same place.
+func _place_tag(tag: Label3D, at: Vector3) -> void:
+	var lift := 0
+	for o in _tags:
+		if o == tag:
+			break
+		var p: Vector3 = o.get_meta("at", o.position)
+		if Vector2(p.x - at.x, p.z - at.z).length() < NEAR:
+			lift += 1
+	tag.set_meta("at", at)
+	tag.position = at + Vector3(0, lift * LINE, 0)
+
+
+## The caption fades after `seconds`, and the scene it names ends with it: the
+## whole of `root` (the feast's tables, the handover's standards) is freed.
 func _fade_out(root: Node3D, seconds: float, tag: Label3D) -> void:
 	var tw := root.create_tween()
 	tw.tween_interval(seconds)

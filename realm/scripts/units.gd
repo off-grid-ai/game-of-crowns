@@ -167,9 +167,7 @@ func _route(from: Vector3, to: Vector3) -> PackedVector3Array:
 
 ## A company's standard: the house's banner on a pole.
 func _banner(soldier: Node3D, color: Color, house: Dictionary) -> void:
-	var b: Node3D = preload("res://scripts/heraldry.gd").standard(house, color, 3.4)
-	b.position = Vector3(0.35, 0, -0.1)
-	soldier.add_child(b)
+	Scenes.carried_standard(soldier, house, color)
 
 
 func _process(delta: float) -> void:
