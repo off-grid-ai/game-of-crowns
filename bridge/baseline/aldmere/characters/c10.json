@@ -1,0 +1,26 @@
+{
+  "id": "c10",
+  "name": "Roderick Strand",
+  "gender": "male",
+  "age": 20,
+  "alive": true,
+  "traits": [
+    "lustful",
+    "brave"
+  ],
+  "loyalty": 57,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Strand",
+  "house": "House Goldcrest",
+  "playerId": 1,
+  "rank": "child",
+  "liege": "c7",
+  "parents": [
+    "c7",
+    "c8"
+  ]
+}

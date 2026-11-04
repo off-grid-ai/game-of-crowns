@@ -1,0 +1,31 @@
+{
+  "id": "c15",
+  "name": "Ysolde Ironreach",
+  "gender": "female",
+  "age": 59,
+  "alive": true,
+  "traits": [
+    "just",
+    "wrathful"
+  ],
+  "loyalty": 46,
+  "goals": [
+    {
+      "kind": "revenge",
+      "text": "settle the old grudge"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c16",
+  "children": [
+    "c17",
+    "c18"
+  ],
+  "surname": "Ironreach",
+  "house": "House Ironreach",
+  "playerId": 2,
+  "rank": "lord",
+  "seat": 197,
+  "voice": "just, wrathful lord of House Ironreach; speaks like a proud noble"
+}

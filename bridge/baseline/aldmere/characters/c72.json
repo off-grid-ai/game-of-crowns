@@ -1,0 +1,38 @@
+{
+  "id": "c72",
+  "name": "Bryony Varn",
+  "gender": "female",
+  "age": 53,
+  "alive": true,
+  "traits": [
+    "cunning",
+    "lustful"
+  ],
+  "loyalty": 73,
+  "goals": [
+    {
+      "kind": "marriage",
+      "text": "see my daughter wed above her station"
+    }
+  ],
+  "relationships": {
+    "c15": {
+      "opinion": -25
+    }
+  },
+  "memories": [
+    "Ysolde Ironreach spurned my daughter."
+  ],
+  "spouse": "c73",
+  "children": [
+    "c74",
+    "c75",
+    "c76"
+  ],
+  "surname": "Varn",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "bannerman",
+  "seat": 295,
+  "liege": "c20"
+}

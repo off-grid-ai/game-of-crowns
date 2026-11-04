@@ -1,0 +1,23 @@
+{
+  "id": "c54",
+  "name": "Joan Ashby",
+  "gender": "female",
+  "age": 37,
+  "alive": true,
+  "traits": [
+    "pious"
+  ],
+  "loyalty": 84,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c53",
+  "children": [
+    "c55"
+  ],
+  "surname": "Ashby",
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "spouse",
+  "liege": "c53"
+}

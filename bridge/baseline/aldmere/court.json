@@ -1,0 +1,410 @@
+{
+ "petitions": [
+  {
+   "id": "pmw0zf1oi250",
+   "turn": 4,
+   "from": "c20",
+   "name": "Ysolde Thornvale",
+   "house": "House Thornvale",
+   "answered": "ignored",
+   "kind": "seen_with_enemy",
+   "deck": true,
+   "roles": {
+    "me": "c20",
+    "rival": "c1",
+    "friend": "c50",
+    "bannerman": "c29",
+    "heir": "c23",
+    "daughter": "c23",
+    "town": 271,
+    "suitor": "c3"
+   },
+   "text": "Your spymaster reports that Ewan Roswell, sworn to House Thornvale, was seen at an inn on the border with men in House Wolfholt's colours. Money changed hands. Ysolde Thornvale does not yet know.",
+   "facts": [
+    "House Thornvale: 4 towns, 6 soldiers, 36 gold, favour 57, lord is lustful, content",
+    "House Wolfholt: 1 towns, 8 soldiers, 35 gold, favour 57, lord is content, brave"
+   ],
+   "options": [
+    {
+     "id": "tell",
+     "label": "Tell Ysolde Thornvale",
+     "hint": "House Thornvale +10 · Ewan Roswell's fate is in his liege's hands"
+    },
+    {
+     "id": "turn",
+     "label": "Turn Ewan Roswell into the crown's spy (80 gold)",
+     "hint": "You will know what House Wolfholt plans · if found out, both houses hate you",
+     "cost": 80
+    },
+    {
+     "id": "nothing",
+     "label": "Watch, and say nothing",
+     "hint": "Free · if Ewan Roswell turns his coat, his town goes too"
+    }
+   ],
+   "voice": "Whispers travel faster than a raiding band, Your Grace. Tell me what the King desires of this little squabble; I have harvests to keep and fools to keep from my lands."
+  },
+  {
+   "id": "pmw0zfjg3557",
+   "turn": 12,
+   "from": "c20",
+   "name": "Ysolde Thornvale",
+   "house": "House Thornvale",
+   "answered": "ignored",
+   "kind": "secret_alliance",
+   "deck": true,
+   "roles": {
+    "me": "c20",
+    "rival": "c1",
+    "friend": "c50",
+    "bannerman": "c24",
+    "heir": "c23",
+    "daughter": "c23",
+    "town": 272,
+    "rivalTown": 281
+   },
+   "text": "A raven intercepted on the Kingsroad: Ysolde Thornvale of House Thornvale and Tobin Highfell of House Highfell have sworn a pact, sealed with a marriage contract. The letter does not mention the King at all.",
+   "facts": [
+    "House Thornvale: 5 towns, 4 soldiers, 38 gold, favour 37, lord is lustful, content",
+    "House Wolfholt: 3 towns, 6 soldiers, 21 gold, favour 49, lord is content, brave",
+    "House Highfell: 2 towns, 4 soldiers, 26 gold, favour 49, lord is vengeful, content"
+   ],
+   "options": [
+    {
+     "id": "bless",
+     "label": "Bless the alliance publicly",
+     "hint": "Both +10 · two houses stand together, for or against you"
+    },
+    {
+     "id": "break",
+     "label": "Forbid it",
+     "hint": "Both −15 · the pact is broken, and both lords suspect the other betrayed it"
+    },
+    {
+     "id": "rival",
+     "label": "Warn House Wolfholt and let them deal with it",
+     "hint": "House Wolfholt +15 · House Thornvale and House Wolfholt drift toward war"
+    }
+   ],
+   "voice": "A pact? By the blood of my kin, they speak of oaths made without the King's nod. Let them see the hunger in my eyes; my people eat, and that is all that matters."
+  },
+  {
+   "id": "pmw0zfsbi523",
+   "turn": 16,
+   "from": "c20",
+   "name": "Ysolde Thornvale",
+   "house": "House Thornvale",
+   "answered": "ignored",
+   "kind": "debt",
+   "text": "Ysolde Thornvale of House Thornvale: \"The tithe has bled my coffers dry, Your Grace. 46 gold is all that stands between my house and ruin. Spare us, or lend us enough to stand.\"",
+   "facts": [
+    "House Thornvale: 6 towns, 7 soldiers, 46 gold, favour 37, lord is lustful, content"
+   ],
+   "options": [
+    {
+     "id": "forgive",
+     "label": "Return this year's tithe (100 gold)",
+     "hint": "House Thornvale +15 · other houses ask why they still pay",
+     "cost": 100
+    },
+    {
+     "id": "lend",
+     "label": "Lend 250 gold, repaid with interest",
+     "hint": "They owe the crown 325 in two years · if they cannot pay, they will hate you for asking",
+     "cost": 250
+    },
+    {
+     "id": "refuse",
+     "label": "Every house pays its share",
+     "hint": "House Thornvale −10"
+    }
+   ],
+   "voice": "Gold, Your Grace? It is blood and sweat that feeds my folk, not just shiny coins. Spare us, or I swear by the old gods, I will find another lord whose coin I can sway."
+  },
+  {
+   "id": "pmw0zg210676",
+   "turn": 20,
+   "from": "c20",
+   "name": "Ysolde Thornvale",
+   "house": "House Thornvale",
+   "answered": "ignored",
+   "kind": "raise",
+   "man": "c24",
+   "text": "Corwin Greyford, bannerman of House Thornvale, kneels before the throne. He held the line when others ran and asks to be made a lord in his own right, sworn to the crown alone. Ysolde Thornvale stands stiffly beside him.",
+   "facts": [
+    "House Thornvale: 9 towns, 4 soldiers, 59 gold, favour 25, lord is lustful, content"
+   ],
+   "options": [
+    {
+     "id": "raise",
+     "label": "Raise Corwin Greyford (80 gold)",
+     "hint": "A lord who owes you everything · House Thornvale −15, a vassal lost",
+     "cost": 80
+    },
+    {
+     "id": "honour",
+     "label": "Honour him with a sword, not a seat",
+     "hint": "Corwin Greyford +loyalty to his liege · House Thornvale +5"
+    },
+    {
+     "id": "refuse",
+     "label": "Send him back to his liege",
+     "hint": "House Thornvale +10 · Corwin Greyford remembers the crown would not reward him"
+    }
+   ],
+   "voice": "A lord in his own right? Let the King consider the strength he lends us, not just the bloodline. Keep the wolves from our door, Your Grace, and our fealty shall be as stout as the oak."
+  },
+  {
+   "id": "pmw0zgbbf918",
+   "turn": 24,
+   "from": "c20",
+   "name": "Ysolde Thornvale",
+   "house": "House Thornvale",
+   "answered": "ignored",
+   "kind": "bridge_toll",
+   "deck": true,
+   "roles": {
+    "me": "c20",
+    "rival": "c1",
+    "friend": "c50",
+    "bannerman": "c60",
+    "heir": "c23",
+    "daughter": "c23",
+    "town": 282,
+    "rivalTown": 281
+   },
+   "text": "House Wolfholt has raised a toll on the only bridge between House Thornvale's lands and the Kingsroad. Ysolde Thornvale calls it robbery.",
+   "facts": [
+    "House Thornvale: 9 towns, 4 soldiers, 86 gold, favour 13, lord is lustful, content",
+    "House Wolfholt: 3 towns, 3 soldiers, 3 gold, favour 45, lord is content, brave"
+   ],
+   "options": [
+    {
+     "id": "abolish",
+     "label": "Abolish the toll",
+     "hint": "House Thornvale +10 · House Wolfholt −15"
+    },
+    {
+     "id": "share",
+     "label": "The crown takes half",
+     "hint": "The crown gains 80 gold from House Wolfholt · both −5"
+    },
+    {
+     "id": "keep",
+     "label": "A lord may toll his own bridge",
+     "hint": "House Wolfholt +10 · House Thornvale −15"
+    }
+   ],
+   "voice": "Robbery? Aye, it is. Let the King see how swiftly his justice rides when his own lands starve."
+  },
+  {
+   "id": "pmw0zgkp2540",
+   "turn": 28,
+   "from": "c50",
+   "name": "Tobin Highfell",
+   "house": "House Highfell",
+   "answered": "ignored",
+   "kind": "spy_caught",
+   "deck": true,
+   "roles": {
+    "me": "c50",
+    "rival": "c1",
+    "friend": "c42",
+    "bannerman": "c67",
+    "heir": "c52",
+    "daughter": "c52",
+    "town": 237,
+    "rivalTown": 297
+   },
+   "text": "A man of House Wolfholt has been caught copying letters in Tobin Highfell's solar. Under question he says Constance Wolfholt sent him to find proof of treason against the crown.",
+   "facts": [
+    "House Highfell: 2 towns, 4 soldiers, 40 gold, favour 45, lord is vengeful, content",
+    "House Wolfholt: 3 towns, 4 soldiers, 4 gold, favour 45, lord is content, brave"
+   ],
+   "options": [
+    {
+     "id": "believe",
+     "label": "Investigate Tobin Highfell",
+     "hint": "House Highfell −20 · House Wolfholt +10"
+    },
+    {
+     "id": "hang",
+     "label": "Hang the spy",
+     "hint": "House Highfell +10 · House Wolfholt −10"
+    },
+    {
+     "id": "use",
+     "label": "Feed him false letters and send him back",
+     "hint": "Both houses distrust each other more · the crown watches"
+    }
+   ],
+   "voice": "Treason, you say? A serpent's whisper. I shall see this wolf's tongue tested against the stone of your throne, Your Grace."
+  },
+  {
+   "id": "pmw0zgmtx142",
+   "turn": 28,
+   "from": "c1",
+   "name": "Constance Wolfholt",
+   "house": "House Wolfholt",
+   "answered": "ignored",
+   "kind": "lord_sick",
+   "deck": true,
+   "roles": {
+    "me": "c1",
+    "rival": "c15",
+    "friend": "c4",
+    "bannerman": "c83",
+    "heir": "c3",
+    "town": 178,
+    "suitor": "c17"
+   },
+   "text": "Constance Wolfholt of House Wolfholt is gravely ill and asks the King to swear, before witnesses, to protect her house after she is gone.",
+   "facts": [
+    "House Wolfholt: 3 towns, 4 soldiers, 4 gold, favour 45, lord is content, brave"
+   ],
+   "options": [
+    {
+     "id": "swear",
+     "label": "Swear it",
+     "hint": "House Wolfholt +20 · and you are bound by it"
+    },
+    {
+     "id": "words",
+     "label": "Kind words, no oath",
+     "hint": "House Wolfholt −5"
+    }
+   ],
+   "voice": "The King must see the strength of Wolfholt, not just the fading life within these walls. Let him swear it, or let him see the wolves gather at our gate."
+  },
+  {
+   "id": "pmw0zgvbn192",
+   "turn": 32,
+   "from": "c36",
+   "name": "Cecily Stormhold",
+   "house": "House Stormhold",
+   "answered": false,
+   "kind": "deserters",
+   "deck": true,
+   "roles": {
+    "me": "c36",
+    "rival": "c15",
+    "friend": "c52",
+    "bannerman": "c61",
+    "heir": "c40",
+    "daughter": "c38",
+    "town": 277,
+    "suitor": "c17"
+   },
+   "text": "Forty men deserted the King's levy and are hiding in Moonhold. Cecily Stormhold of House Stormhold will not hand them over: \"They are my men first.\"",
+   "facts": [
+    "House Stormhold: 5 towns, 4 soldiers, 87 gold, favour 45, lord is patient, wrathful"
+   ],
+   "options": [
+    {
+     "id": "hang",
+     "label": "Demand them for hanging",
+     "hint": "House Stormhold −15 · every levy hears of it"
+    },
+    {
+     "id": "pardon",
+     "label": "Pardon them, back to the levy",
+     "hint": "The crown gains men · House Stormhold +5"
+    },
+    {
+     "id": "let",
+     "label": "Let House Stormhold keep them",
+     "hint": "House Stormhold +10 · the King's levy is a joke"
+    }
+   ],
+   "voice": "Let the King have his laws, but understand this: those men bleed for Stormhold, and I will not see my blood spilled for the Crown's convenience. They remain under my protection."
+  },
+  {
+   "id": "pmw0zh5nn656",
+   "turn": 36,
+   "from": "c15",
+   "name": "Ysolde Ironreach",
+   "house": "House Ironreach",
+   "answered": false,
+   "kind": "informer",
+   "informer": "c19",
+   "suspect": "c1",
+   "heir": "c3",
+   "text": "Cedric Kettle, sworn to House Ironreach, speaks low: \"Constance Wolfholt of House Wolfholt is buying swords and sending ravens at night. I have seen it, Your Grace. Act before he does.\"",
+   "facts": [
+    "House Wolfholt: 4 towns, 6 soldiers, 3 gold, favour 33, lord is content, brave"
+   ],
+   "options": [
+    {
+     "id": "hostage",
+     "label": "Demand Godwin Wolfholt as a royal ward",
+     "hint": "House Wolfholt −20 · but Constance Wolfholt will not rise while you hold his child"
+    },
+    {
+     "id": "reward",
+     "label": "Pay the informer (60 gold)",
+     "hint": "Cedric Kettle becomes the crown's man · Constance Wolfholt learns who talked",
+     "cost": 60
+    },
+    {
+     "id": "dismiss",
+     "label": "Dismiss it as slander",
+     "hint": "House Wolfholt +5 · Cedric Kettle resents being called a liar"
+    }
+   ],
+   "voice": "Let the King hear this rot! Wolfholt schemes against the sworn blood of Ironreach, and I will not stand idle while my oath-bound men are prey."
+  },
+  {
+   "id": "pmw0zh7jx255",
+   "turn": 36,
+   "from": "c20",
+   "name": "Ysolde Thornvale",
+   "house": "House Thornvale",
+   "answered": false,
+   "kind": "old_lord_dotage",
+   "deck": true,
+   "roles": {
+    "me": "c20",
+    "rival": "c1",
+    "friend": "c52",
+    "bannerman": "c60",
+    "heir": "c23",
+    "daughter": "c23",
+    "town": 272,
+    "rivalTown": 317
+   },
+   "text": "Ysolde Thornvale of House Thornvale is 65 and forgets her own children's names. Elsbeth Thornvale asks the King to let them rule now, before the house is lost.",
+   "facts": [
+    "House Thornvale: 9 towns, 11 soldiers, 171 gold, favour 5, lord is lustful, content"
+   ],
+   "options": [
+    {
+     "id": "heir",
+     "label": "Let Elsbeth Thornvale rule",
+     "hint": "Elsbeth Thornvale owes the crown · Ysolde Thornvale is shamed"
+    },
+    {
+     "id": "wait",
+     "label": "A lord rules until death",
+     "hint": "House Thornvale +5 · Elsbeth Thornvale grows impatient"
+    }
+   ],
+   "voice": "Let them rule? Bah. The blood of Thornvale is mine to command, and the King's favor is a fickle wind. I'll speak my mind, though the stones of this court feel colder than a winter grave."
+  }
+ ],
+ "claims": [
+  {
+   "city": 276,
+   "from": 4,
+   "to": 3,
+   "turn": 12
+  },
+  {
+   "city": 273,
+   "from": 0,
+   "to": 5,
+   "turn": 20
+  }
+ ],
+ "truces": {},
+ "debts": []
+}

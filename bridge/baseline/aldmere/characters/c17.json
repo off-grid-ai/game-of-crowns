@@ -1,0 +1,26 @@
+{
+  "id": "c17",
+  "name": "Jory Ironreach",
+  "gender": "male",
+  "age": 28,
+  "alive": true,
+  "traits": [
+    "just",
+    "craven"
+  ],
+  "loyalty": 74,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Ironreach",
+  "house": "House Ironreach",
+  "playerId": 2,
+  "rank": "heir",
+  "liege": "c15",
+  "parents": [
+    "c15",
+    "c16"
+  ]
+}

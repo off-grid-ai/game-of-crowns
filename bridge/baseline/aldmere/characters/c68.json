@@ -1,0 +1,31 @@
+{
+  "id": "c68",
+  "name": "Cedric Marsh",
+  "gender": "male",
+  "age": 62,
+  "alive": true,
+  "traits": [
+    "ambitious",
+    "just"
+  ],
+  "loyalty": 64,
+  "goals": [
+    {
+      "kind": "defect",
+      "text": "find a liege more worthy of my sword"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c69",
+  "children": [
+    "c70",
+    "c71"
+  ],
+  "surname": "Marsh",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "bannerman",
+  "seat": 296,
+  "liege": "c20"
+}

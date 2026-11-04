@@ -1,0 +1,305 @@
+This is the server for Freeciv version 3.2.6
+You can learn a lot about Freeciv at https://www.freeciv.org/
+This freeciv-server program has player authentication support, but it's currently not in use.
+3: Loading rulesets.
+3: Ruleset: 'aifill' has been set to 6.
+3: Ruleset: 'generator' has been set to "Pseudo-fractal height" (FRACTAL).
+3: Ruleset: 'wrap' has been set to "Wrap East-West" and "Wrap North-South" (WRAPX|WRAPY).
+3: Ruleset: 'mapsize' has been set to "Tiles per player" (PLAYER).
+3: Ruleset: 'tinyisles' has been set to enabled.
+3: Ruleset: 'temperature' has been set to 60.
+3: Ruleset: 'flatpoles' has been set to 0.
+3: Ruleset: 'startunits' has been set to "cwsx".
+3: Ruleset: 'citymindist' has been set to 3.
+3: Ruleset: 'techlevel' has been set to 1.
+3: Ruleset: 'foggedborders' has been set to enabled.
+3: Ruleset: 'restrictinfra' has been set to enabled.
+3: Ruleset: 'unreachableprotects' has been set to disabled.
+3: Ruleset: 'onsetbarbs' has been set to 120.
+3: Ruleset: 'occupychance' has been set to 100.
+3: Ruleset: 'razechance' has been set to 10.
+3: Ruleset: 'techlossforgiveness' has been set to 0.
+3: Ruleset: 'revolentype' has been set to "Random, max always quicker" (RANDQUICK).
+3: Ruleset: 'tradeworldrelpct' has been set to 100.
+3: Ruleset: 'disasters' has been set to 100.
+3: Ruleset: 'animals' has been set to 14.
+3: AI*1 has been added as Easy level AI-controlled player (classic).
+3: AI*2 has been added as Easy level AI-controlled player (classic).
+3: AI*3 has been added as Easy level AI-controlled player (classic).
+3: AI*4 has been added as Easy level AI-controlled player (classic).
+3: AI*5 has been added as Easy level AI-controlled player (classic).
+3: AI*6 has been added as Easy level AI-controlled player (classic).
+3: Loading script file '/Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/realm.serv'.
+3: Loading rulesets.
+3: Ruleset: 'aifill' has been set to 6.
+3: Ruleset: 'generator' has been set to "Pseudo-fractal height" (FRACTAL).
+3: Ruleset: 'wrap' has been set to "Wrap East-West" and "Wrap North-South" (WRAPX|WRAPY).
+3: Ruleset: 'mapsize' has been set to "Tiles per player" (PLAYER).
+3: Ruleset: 'tinyisles' has been set to enabled.
+3: Ruleset: 'temperature' has been set to 60.
+3: Ruleset: 'flatpoles' has been set to 0.
+3: Ruleset: 'startunits' has been set to "cwsx".
+3: Ruleset: 'citymindist' has been set to 3.
+3: Ruleset: 'techlevel' has been set to 1.
+3: Ruleset: 'foggedborders' has been set to enabled.
+3: Ruleset: 'restrictinfra' has been set to enabled.
+3: Ruleset: 'unreachableprotects' has been set to disabled.
+3: Ruleset: 'onsetbarbs' has been set to 120.
+3: Ruleset: 'occupychance' has been set to 100.
+3: Ruleset: 'razechance' has been set to 10.
+3: Ruleset: 'techlossforgiveness' has been set to 0.
+3: Ruleset: 'revolentype' has been set to "Random, max always quicker" (RANDQUICK).
+3: Ruleset: 'tradeworldrelpct' has been set to 100.
+3: Ruleset: 'disasters' has been set to 100.
+3: Ruleset: 'animals' has been set to 14.
+Ruleset directory set to "realmrules"
+Console: 'nationset' has been set to "all".
+Console: 'wrap' has been set to empty value.
+Console: 'topology' has been set to empty value.
+Console: 'mapsize' has been set to "Width and height" (XYSIZE).
+Console: 'xsize' has been set to 56.
+Console: 'ysize' has been set to 88.
+Console: 'landmass' has been set to 30.
+Console: 'aifill' has been set to 0.
+3: Removing player AI*6.
+3: Removing player AI*5.
+3: Removing player AI*4.
+3: Removing player AI*3.
+3: Removing player AI*2.
+3: Removing player AI*1.
+Console: 'turnblock' has been set to disabled.
+Wolfholt has been added as an AI-controlled player (classic).
+Goldcrest has been added as an AI-controlled player (classic).
+Ironreach has been added as an AI-controlled player (classic).
+Thornvale has been added as an AI-controlled player (classic).
+Stormhold has been added as an AI-controlled player (classic).
+Sunspire has been added as an AI-controlled player (classic).
+Highfell has been added as an AI-controlled player (classic).
+Crown has been added as an AI-controlled player (classic).
+Console: 'minplayers' has been set to 0.
+Console: 'barbarians' has been set to "No barbarians" (DISABLED).
+Console: 'disasters' has been set to 5.
+Console: 'sciencebox' has been set to 300.
+Console: 'traitdistribution' has been set to "Fixed" (FIXED).
+Console: 'endturn' has been set to 5000.
+Console: 'saveturns' has been set to 1.
+Console: 'autosaves' has been set to "New turn", "Game over", "No player connections", and "Server interrupted" (TURN|GAMEOVER|QUITIDLE|INTERRUPT).
+Console: 'savename' has been set to "realm".
+Console: 'timeout' has been set to 12.
+Player 'Wolfholt' now has AI skill level 'Hard'.
+Player 'Goldcrest' now has AI skill level 'Hard'.
+Player 'Ironreach' now has AI skill level 'Hard'.
+Player 'Thornvale' now has AI skill level 'Hard'.
+Player 'Stormhold' now has AI skill level 'Hard'.
+Player 'Sunspire' now has AI skill level 'Hard'.
+Player 'Highfell' now has AI skill level 'Hard'.
+Player 'Crown' now has AI skill level 'Hard'.
+Default AI skill level set to 'Hard'.
+Nation of player Lord Edric Wolfholt set to [Scottish].
+Nation of player Lord Tybalt Goldcrest set to [English].
+Nation of player Lord Harrald Ironreach set to [Norwegian].
+Nation of player Lady Olenna Thornvale set to [French].
+Nation of player Lord Robb Stormhold set to [Welsh].
+Nation of player Princess Arianne Sunspire set to [Castilian].
+Nation of player Lord Jon Highfell set to [Irish].
+Nation of player The King set to [Norman].
+Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/world_setup.lua'.
+Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/events.lua'.
+HOOKFAIL civil_war_triggered Signal "civil_war_triggered" does not exist.
+Starting game.
+------------------------------------------------------------------------------
+All options with non-default values
+------------------------------------------------------------------------------
+In the column '##' the status of the option is shown:
+ - a '!' means the option is locked by the ruleset.
+ - a '+' means you may change the option.
+ - a '~' means that option follows default value.
+ - a '=' means the value is same as default.
+------------------------------------------------------------------------------
+Option                    ## value (min, max)
+------------------------------------------------------------------------------
+aifill                    +  0 (0, 500)
+ailevel                   +~ "Hard" (Hard)
+animals                   +  14 (0, 500)
+barbarians                +  "No barbarians" (DISABLED)
+citymindist               +  3 (1, 11)
+disasters                 +  5 (0, 1000)
+flatpoles                 +  0 (0, 100)
+foggedborders             +  enabled
+generator                 +  "Pseudo-fractal height" (FRACTAL)
+mapsize                   +  "Width and height" (XYSIZE)
+minplayers                +  0 (0, 500)
+nationset                 +  "all"
+occupychance              +  100 (0, 100)
+onsetbarbs                +  120 (1, 32767)
+razechance                +  10 (0, 100)
+restrictinfra             +  enabled
+revolentype               +  "Random, max always quicker" (RANDQUICK)
+savename                  +  "realm"
+sciencebox                +  300 (1, 10000)
+startunits                +  "cwsx"
+techlevel                 +  1 (0, 100)
+techlossforgiveness       +  0 (-1, 200)
+temperature               +  60 (0, 100)
+timeout                   +  12 (-1, 8639999)
+tinyisles                 +  enabled
+topology                  +  empty value
+tradeworldrelpct          +  100 (0, 100)
+turnblock                 +  disabled
+unreachableprotects       +  disabled
+wrap                      +  empty value
+xsize                     +  56 (16, 128000)
+ysize                     +  88 (16, 128000)
+------------------------------------------------------------------------------
+You are playing Freeciv with civ2civ3 rules:
+
+Gameplay more similar to civ3, keeping the combat system from civ2.
+
+Adapted for single player, with AI less aggressive at start, but more
+challenging at the end.
+
+The differences from the former default ruleset, 'classic', are listed
+in full in README.civ2civ3.
+------------------------------------------------------------------------------
+3: Now accepting new client connections on port 5556.
+
+For introductory help, type 'help'.
+> 
+3: Lord Edric Wolfholt rules the Scots.
+3: Lord Tybalt Goldcrest rules the English.
+3: Lord Harrald Ironreach rules the Norwegians.
+3: Lady Olenna Thornvale rules the French.
+3: Lord Robb Stormhold rules the Welsh.
+3: Princess Arianne Sunspire rules the Castilians.
+3: Lord Jon Highfell rules the Irish.
+3: The King rules the Normans.
+3: Creating a map of size 56 x 88 = 4928 tiles (map size: 5).
+3: Setting 'startpos' has been adjusted from "Generator's choice" (DEFAULT) to "All players on a single continent" (ALL).
+3: REALM_SETUP Lord Edric Wolfholt seat Stonefell at (41,28) terrain Grassland city <City #178 Stonefell>
+3: REALM_SETUP Lord Tybalt Goldcrest seat Goldrock at (11,40) terrain Grassland city <City #187 Goldrock>
+3: REALM_SETUP Lord Harrald Ironreach seat Saltkeep at (15,31) terrain Grassland city <City #197 Saltkeep>
+3: REALM_SETUP Lady Olenna Thornvale seat Rosehall at (11,60) terrain Grassland city <City #207 Rosehall>
+3: REALM_SETUP Lord Robb Stormhold seat Stormwatch at (47,69) terrain Grassland city <City #217 Stormwatch>
+3: REALM_SETUP Princess Arianne Sunspire seat Sunspire at (42,85) terrain Grassland city <City #227 Sunspire>
+3: REALM_SETUP Lord Jon Highfell seat Highfell at (39,43) terrain Grassland city <City #237 Highfell>
+3: REALM_SETUP crown at Kingsmere (26,46) city <City #246 Kingsmere>
+3: REALM_SETUP done
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0001-Y-4000-auto.sav.zst
+> Console: 'timeout' has been set to 12.
+> Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> Console: 'timeout' has been set to 2.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0002-Y-3950-auto.sav.zst
+> > > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0003-Y-3900-auto.sav.zst
+> > > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0004-Y-3850-auto.sav.zst
+> > > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0005-Y-3800-auto.sav.zst
+> > > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0006-Y-3750-auto.sav.zst
+> > > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0007-Y-3700-auto.sav.zst
+> > > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0008-Y-3650-auto.sav.zst
+> > > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0009-Y-3600-auto.sav.zst
+> > > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0010-Y-3550-auto.sav.zst
+> > > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0011-Y-3500-auto.sav.zst
+> > > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0012-Y-3450-auto.sav.zst
+> > > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0013-Y-3400-auto.sav.zst
+> > > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0014-Y-3350-auto.sav.zst
+> > > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> > 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0015-Y-3300-auto.sav.zst
+> > > > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0016-Y-3250-auto.sav.zst
+> > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0017-Y-3200-auto.sav.zst
+> > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0018-Y-3150-auto.sav.zst
+> > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0019-Y-3100-auto.sav.zst
+> > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> > 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0020-Y-3050-auto.sav.zst
+> > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0021-Y-3000-auto.sav.zst
+> > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0022-Y-2950-auto.sav.zst
+> > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0023-Y-2900-auto.sav.zst
+> > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> > lua callback: '_deflua_unit_loss_messages'
+lua callback: 'ev_unit_lost'
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0024-Y-2850-auto.sav.zst
+> > > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0025-Y-2800-auto.sav.zst
+> > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0026-Y-2750-auto.sav.zst
+> > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0027-Y-2700-auto.sav.zst
+> > > > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0028-Y-2650-auto.sav.zst
+> > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0029-Y-2600-auto.sav.zst
+> > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0030-Y-2550-auto.sav.zst
+> > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0031-Y-2500-auto.sav.zst
+> > > > > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0032-Y-2450-auto.sav.zst
+> > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0033-Y-2400-auto.sav.zst
+> > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0034-Y-2350-auto.sav.zst
+> > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0035-Y-2300-auto.sav.zst
+> > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> > 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0036-Y-2250-auto.sav.zst
+> > > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0037-Y-2200-auto.sav.zst
+> > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> 
+Game saved as /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/saves/realm-T0038-Y-2150-auto.sav.zst
+> > > > > > Loading Freeciv script file '/Users/user/wednesday/civilization/bridge/lua/snapshot.lua'.
+> Console: 'timeout' has been set to 0.

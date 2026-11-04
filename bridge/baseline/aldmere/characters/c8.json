@@ -1,0 +1,25 @@
+{
+  "id": "c8",
+  "name": "Beatrix Strand",
+  "gender": "female",
+  "age": 57,
+  "alive": true,
+  "traits": [
+    "paranoid",
+    "content"
+  ],
+  "loyalty": 83,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c7",
+  "children": [
+    "c9",
+    "c10"
+  ],
+  "surname": "Strand",
+  "house": "House Goldcrest",
+  "playerId": 1,
+  "rank": "spouse",
+  "liege": "c7"
+}

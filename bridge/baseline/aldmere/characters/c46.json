@@ -1,0 +1,25 @@
+{
+  "id": "c46",
+  "name": "Bran Morrow",
+  "gender": "male",
+  "age": 60,
+  "alive": true,
+  "traits": [
+    "pious",
+    "generous"
+  ],
+  "loyalty": 87,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c45",
+  "children": [
+    "c47",
+    "c48"
+  ],
+  "surname": "Morrow",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "spouse",
+  "liege": "c45"
+}

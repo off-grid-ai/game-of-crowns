@@ -1,0 +1,26 @@
+{
+  "id": "c26",
+  "name": "Isolde Greyford",
+  "gender": "female",
+  "age": 19,
+  "alive": true,
+  "traits": [
+    "honourable",
+    "ambitious"
+  ],
+  "loyalty": 76,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Greyford",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "heir",
+  "liege": "c24",
+  "parents": [
+    "c24",
+    "c25"
+  ]
+}

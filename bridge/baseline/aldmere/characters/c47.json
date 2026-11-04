@@ -1,0 +1,26 @@
+{
+  "id": "c47",
+  "name": "Bryony Morrow",
+  "gender": "female",
+  "age": 16,
+  "alive": true,
+  "traits": [
+    "content",
+    "craven"
+  ],
+  "loyalty": 50,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Morrow",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "heir",
+  "liege": "c45",
+  "parents": [
+    "c45",
+    "c46"
+  ]
+}

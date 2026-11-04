@@ -1,0 +1,26 @@
+{
+  "id": "c85",
+  "name": "Agnes Dale",
+  "gender": "female",
+  "age": 20,
+  "alive": true,
+  "traits": [
+    "lustful",
+    "patient"
+  ],
+  "loyalty": 80,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Dale",
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "heir",
+  "liege": "c83",
+  "parents": [
+    "c83",
+    "c84"
+  ]
+}

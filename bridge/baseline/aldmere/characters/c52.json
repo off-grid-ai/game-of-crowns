@@ -1,0 +1,33 @@
+{
+  "id": "c52",
+  "name": "Maud Highfell",
+  "gender": "female",
+  "age": 17,
+  "alive": true,
+  "traits": [
+    "vengeful",
+    "generous"
+  ],
+  "loyalty": 89,
+  "goals": [
+    {
+      "kind": "marriage",
+      "text": "wed my heir into a great house"
+    }
+  ],
+  "relationships": {},
+  "memories": [
+    "I buried my parent, Tobin Highfell, and took up their seat."
+  ],
+  "spouse": null,
+  "children": [],
+  "surname": "Highfell",
+  "house": "House Highfell",
+  "playerId": 6,
+  "rank": "lord",
+  "parents": [
+    "c50",
+    "c51"
+  ],
+  "seat": 237
+}

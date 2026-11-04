@@ -1,0 +1,26 @@
+{
+  "id": "c25",
+  "name": "Mira Greyford",
+  "gender": "female",
+  "age": 56,
+  "alive": true,
+  "traits": [
+    "greedy",
+    "content"
+  ],
+  "loyalty": 82,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c24",
+  "children": [
+    "c26",
+    "c27",
+    "c28"
+  ],
+  "surname": "Greyford",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "spouse",
+  "liege": "c24"
+}

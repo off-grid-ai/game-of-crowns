@@ -1,0 +1,32 @@
+{
+  "id": "c87",
+  "name": "Agnes Dale",
+  "gender": "female",
+  "age": 38,
+  "alive": true,
+  "traits": [
+    "wrathful",
+    "patient"
+  ],
+  "loyalty": 65,
+  "goals": [
+    {
+      "kind": "defect",
+      "text": "find a liege more worthy of my sword"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c88",
+  "children": [
+    "c89",
+    "c90",
+    "c91"
+  ],
+  "surname": "Dale",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "bannerman",
+  "seat": 306,
+  "liege": "c36"
+}

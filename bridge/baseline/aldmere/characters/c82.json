@@ -1,0 +1,26 @@
+{
+  "id": "c82",
+  "name": "Isolde Kettle",
+  "gender": "female",
+  "age": 26,
+  "alive": true,
+  "traits": [
+    "proud",
+    "cunning"
+  ],
+  "loyalty": 56,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Kettle",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "heir",
+  "liege": "c80",
+  "parents": [
+    "c80",
+    "c81"
+  ]
+}

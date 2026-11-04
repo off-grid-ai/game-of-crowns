@@ -1,0 +1,25 @@
+{
+  "id": "c16",
+  "name": "Garth Ironreach",
+  "gender": "male",
+  "age": 56,
+  "alive": true,
+  "traits": [
+    "greedy",
+    "pious"
+  ],
+  "loyalty": 82,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c15",
+  "children": [
+    "c17",
+    "c18"
+  ],
+  "surname": "Ironreach",
+  "house": "House Ironreach",
+  "playerId": 2,
+  "rank": "spouse",
+  "liege": "c15"
+}

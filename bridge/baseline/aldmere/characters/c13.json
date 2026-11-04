@@ -1,0 +1,26 @@
+{
+  "id": "c13",
+  "name": "Harold Pell",
+  "gender": "male",
+  "age": 27,
+  "alive": true,
+  "traits": [
+    "cunning",
+    "craven"
+  ],
+  "loyalty": 83,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Pell",
+  "house": "House Goldcrest",
+  "playerId": 1,
+  "rank": "heir",
+  "liege": "c11",
+  "parents": [
+    "c11",
+    "c12"
+  ]
+}

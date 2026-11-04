@@ -1,0 +1,24 @@
+{
+  "id": "c58",
+  "name": "Osric Hollin",
+  "gender": "male",
+  "age": 31,
+  "alive": true,
+  "traits": [
+    "cunning",
+    "paranoid"
+  ],
+  "loyalty": 78,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c57",
+  "children": [
+    "c59"
+  ],
+  "surname": "Hollin",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "spouse",
+  "liege": "c57"
+}

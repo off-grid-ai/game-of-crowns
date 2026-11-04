@@ -1,0 +1,25 @@
+{
+  "id": "c35",
+  "name": "Cecily Strand",
+  "gender": "female",
+  "age": 26,
+  "alive": true,
+  "traits": [
+    "lustful"
+  ],
+  "loyalty": 86,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Strand",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "child",
+  "liege": "c32",
+  "parents": [
+    "c32",
+    "c33"
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "id": "c83",
+  "name": "Leofric Dale",
+  "gender": "male",
+  "age": 55,
+  "alive": true,
+  "traits": [
+    "vengeful",
+    "pious"
+  ],
+  "loyalty": 75,
+  "goals": [
+    {
+      "kind": "marriage",
+      "text": "see my daughter wed above her station"
+    }
+  ],
+  "relationships": {
+    "c15": {
+      "opinion": -25
+    }
+  },
+  "memories": [
+    "Ysolde Ironreach spurned my daughter."
+  ],
+  "spouse": "c84",
+  "children": [
+    "c85",
+    "c86"
+  ],
+  "surname": "Dale",
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "bannerman",
+  "seat": 297,
+  "liege": "c1"
+}

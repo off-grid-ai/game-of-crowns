@@ -1,0 +1,24 @@
+{
+  "id": "c81",
+  "name": "Odette Kettle",
+  "gender": "female",
+  "age": 33,
+  "alive": true,
+  "traits": [
+    "just",
+    "craven"
+  ],
+  "loyalty": 67,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c80",
+  "children": [
+    "c82"
+  ],
+  "surname": "Kettle",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "spouse",
+  "liege": "c80"
+}

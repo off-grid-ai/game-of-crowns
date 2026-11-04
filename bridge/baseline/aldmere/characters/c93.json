@@ -1,0 +1,24 @@
+{
+  "id": "c93",
+  "name": "Corwin Greyford",
+  "gender": "male",
+  "age": 48,
+  "alive": true,
+  "traits": [
+    "vengeful",
+    "patient"
+  ],
+  "loyalty": 74,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c92",
+  "children": [
+    "c94"
+  ],
+  "surname": "Greyford",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "spouse",
+  "liege": "c92"
+}

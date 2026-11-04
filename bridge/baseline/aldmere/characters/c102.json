@@ -1,0 +1,30 @@
+{
+  "id": "c102",
+  "name": "Aldric Holt",
+  "gender": "male",
+  "age": 43,
+  "alive": true,
+  "traits": [
+    "brave",
+    "greedy"
+  ],
+  "loyalty": 67,
+  "goals": [
+    {
+      "kind": "marriage",
+      "text": "see my daughter wed above her station"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c103",
+  "children": [
+    "c104"
+  ],
+  "surname": "Holt",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "bannerman",
+  "seat": 321,
+  "liege": "c36"
+}

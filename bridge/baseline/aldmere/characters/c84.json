@@ -1,0 +1,25 @@
+{
+  "id": "c84",
+  "name": "Constance Dale",
+  "gender": "female",
+  "age": 54,
+  "alive": true,
+  "traits": [
+    "greedy",
+    "generous"
+  ],
+  "loyalty": 69,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c83",
+  "children": [
+    "c85",
+    "c86"
+  ],
+  "surname": "Dale",
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "spouse",
+  "liege": "c83"
+}

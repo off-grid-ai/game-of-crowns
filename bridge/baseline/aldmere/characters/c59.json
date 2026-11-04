@@ -1,0 +1,26 @@
+{
+  "id": "c59",
+  "name": "Garth Hollin",
+  "gender": "male",
+  "age": 20,
+  "alive": true,
+  "traits": [
+    "pious",
+    "brave"
+  ],
+  "loyalty": 50,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Hollin",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "heir",
+  "liege": "c57",
+  "parents": [
+    "c57",
+    "c58"
+  ]
+}

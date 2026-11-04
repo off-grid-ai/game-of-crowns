@@ -1,0 +1,26 @@
+{
+  "id": "c76",
+  "name": "Gareth Varn",
+  "gender": "male",
+  "age": 24,
+  "alive": true,
+  "traits": [
+    "honourable",
+    "greedy"
+  ],
+  "loyalty": 83,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Varn",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "child",
+  "liege": "c72",
+  "parents": [
+    "c72",
+    "c73"
+  ]
+}

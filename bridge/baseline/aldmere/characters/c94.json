@@ -1,0 +1,26 @@
+{
+  "id": "c94",
+  "name": "Dunstan Greyford",
+  "gender": "male",
+  "age": 23,
+  "alive": true,
+  "traits": [
+    "cunning",
+    "proud"
+  ],
+  "loyalty": 54,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Greyford",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "heir",
+  "liege": "c92",
+  "parents": [
+    "c92",
+    "c93"
+  ]
+}

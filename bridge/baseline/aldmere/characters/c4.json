@@ -1,0 +1,36 @@
+{
+  "id": "c4",
+  "name": "Cecily Goldcrest",
+  "gender": "female",
+  "age": 52,
+  "alive": true,
+  "traits": [
+    "greedy",
+    "ambitious"
+  ],
+  "loyalty": 73,
+  "goals": [
+    {
+      "kind": "revenge",
+      "text": "settle the old grudge"
+    }
+  ],
+  "relationships": {
+    "c1": {
+      "opinion": 100
+    }
+  },
+  "memories": [
+    "Constance Wolfholt took my daughter into House Wolfholt."
+  ],
+  "spouse": "c5",
+  "children": [
+    "c6"
+  ],
+  "surname": "Goldcrest",
+  "house": "House Goldcrest",
+  "playerId": 1,
+  "rank": "lord",
+  "seat": 187,
+  "voice": "greedy, ambitious lord of House Goldcrest; speaks like a proud noble"
+}

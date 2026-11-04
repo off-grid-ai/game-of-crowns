@@ -1,0 +1,26 @@
+{
+  "id": "c28",
+  "name": "Bryony Greyford",
+  "gender": "female",
+  "age": 25,
+  "alive": true,
+  "traits": [
+    "brave",
+    "patient"
+  ],
+  "loyalty": 54,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Greyford",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "child",
+  "liege": "c24",
+  "parents": [
+    "c24",
+    "c25"
+  ]
+}

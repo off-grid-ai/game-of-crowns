@@ -1,0 +1,28 @@
+{
+  "id": "c19",
+  "name": "Cedric Kettle",
+  "gender": "male",
+  "age": 38,
+  "alive": true,
+  "traits": [
+    "generous",
+    "brave"
+  ],
+  "loyalty": 79,
+  "goals": [
+    {
+      "kind": "land",
+      "text": "win more land for my family"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Kettle",
+  "house": "House Ironreach",
+  "playerId": 2,
+  "rank": "bannerman",
+  "seat": 198,
+  "liege": "c15"
+}

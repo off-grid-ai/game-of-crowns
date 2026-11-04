@@ -1,0 +1,17 @@
+{
+ "usurper": {
+  "stage": "none",
+  "house": null,
+  "since": 0
+ },
+ "north": {
+  "awakeAt": 68,
+  "waves": 0,
+  "nextAt": 0
+ },
+ "seat": {
+  "id": 246,
+  "x": 26,
+  "y": 46
+ }
+}

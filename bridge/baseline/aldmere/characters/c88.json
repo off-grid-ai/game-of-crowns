@@ -1,0 +1,26 @@
+{
+  "id": "c88",
+  "name": "Osric Dale",
+  "gender": "male",
+  "age": 34,
+  "alive": true,
+  "traits": [
+    "craven",
+    "paranoid"
+  ],
+  "loyalty": 83,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c87",
+  "children": [
+    "c89",
+    "c90",
+    "c91"
+  ],
+  "surname": "Dale",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "spouse",
+  "liege": "c87"
+}

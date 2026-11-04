@@ -1,0 +1,26 @@
+{
+  "id": "c37",
+  "name": "Willem Stormhold",
+  "gender": "male",
+  "age": 52,
+  "alive": true,
+  "traits": [
+    "greedy",
+    "brave"
+  ],
+  "loyalty": 66,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c36",
+  "children": [
+    "c38",
+    "c39",
+    "c40"
+  ],
+  "surname": "Stormhold",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "spouse",
+  "liege": "c36"
+}

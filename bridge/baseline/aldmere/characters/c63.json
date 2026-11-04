@@ -1,0 +1,26 @@
+{
+  "id": "c63",
+  "name": "Gwen Morrow",
+  "gender": "female",
+  "age": 66,
+  "alive": true,
+  "traits": [
+    "wrathful",
+    "just"
+  ],
+  "loyalty": 81,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c62",
+  "children": [
+    "c64",
+    "c65",
+    "c66"
+  ],
+  "surname": "Morrow",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "spouse",
+  "liege": "c62"
+}

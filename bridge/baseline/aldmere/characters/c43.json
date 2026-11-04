@@ -1,0 +1,24 @@
+{
+  "id": "c43",
+  "name": "Willem Sunspire",
+  "gender": "male",
+  "age": 46,
+  "alive": true,
+  "traits": [
+    "greedy",
+    "vengeful"
+  ],
+  "loyalty": 85,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c42",
+  "children": [
+    "c44"
+  ],
+  "surname": "Sunspire",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "spouse",
+  "liege": "c42"
+}

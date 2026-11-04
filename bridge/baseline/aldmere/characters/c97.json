@@ -1,0 +1,26 @@
+{
+  "id": "c97",
+  "name": "Maud Brook",
+  "gender": "female",
+  "age": 11,
+  "alive": true,
+  "traits": [
+    "paranoid",
+    "just"
+  ],
+  "loyalty": 68,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Brook",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "heir",
+  "liege": "c95",
+  "parents": [
+    "c95",
+    "c96"
+  ]
+}

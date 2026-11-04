@@ -1,0 +1,26 @@
+{
+  "id": "c101",
+  "name": "Beatrix Crane",
+  "gender": "female",
+  "age": 17,
+  "alive": true,
+  "traits": [
+    "paranoid",
+    "wrathful"
+  ],
+  "loyalty": 65,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Crane",
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "child",
+  "liege": "c98",
+  "parents": [
+    "c98",
+    "c99"
+  ]
+}

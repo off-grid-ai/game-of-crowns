@@ -1,0 +1,28 @@
+{
+  "id": "c49",
+  "name": "Isolde Brook",
+  "gender": "female",
+  "age": 52,
+  "alive": true,
+  "traits": [
+    "greedy",
+    "lustful"
+  ],
+  "loyalty": 66,
+  "goals": [
+    {
+      "kind": "land",
+      "text": "win more land for my family"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Brook",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "bannerman",
+  "seat": 228,
+  "liege": "c42"
+}

@@ -1,0 +1,26 @@
+{
+  "id": "c6",
+  "name": "Genevieve Goldcrest",
+  "gender": "female",
+  "age": 21,
+  "alive": true,
+  "traits": [
+    "lustful",
+    "honourable"
+  ],
+  "loyalty": 59,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c3",
+  "children": [],
+  "surname": "Goldcrest",
+  "house": "House Wolfholt",
+  "playerId": 1,
+  "rank": "heir",
+  "liege": "c4",
+  "parents": [
+    "c4",
+    "c5"
+  ]
+}

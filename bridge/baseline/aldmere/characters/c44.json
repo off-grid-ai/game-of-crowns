@@ -1,0 +1,26 @@
+{
+  "id": "c44",
+  "name": "Edith Sunspire",
+  "gender": "female",
+  "age": 18,
+  "alive": true,
+  "traits": [
+    "proud",
+    "just"
+  ],
+  "loyalty": 81,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Sunspire",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "heir",
+  "liege": "c42",
+  "parents": [
+    "c42",
+    "c43"
+  ]
+}

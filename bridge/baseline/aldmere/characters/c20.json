@@ -1,0 +1,37 @@
+{
+  "id": "c20",
+  "name": "Ysolde Thornvale",
+  "gender": "female",
+  "age": 65,
+  "alive": true,
+  "traits": [
+    "lustful",
+    "content"
+  ],
+  "loyalty": 49,
+  "goals": [
+    {
+      "kind": "peace",
+      "text": "keep my people fed and out of other men's wars"
+    }
+  ],
+  "relationships": {},
+  "memories": [
+    "I waited at court for two years. The King never answered.",
+    "I waited at court for two years. The King never answered.",
+    "I waited at court for two years. The King never answered.",
+    "I waited at court for two years. The King never answered.",
+    "I waited at court for two years. The King never answered."
+  ],
+  "spouse": "c21",
+  "children": [
+    "c22",
+    "c23"
+  ],
+  "surname": "Thornvale",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "lord",
+  "seat": 207,
+  "voice": "lustful, content lord of House Thornvale; speaks like a proud noble"
+}

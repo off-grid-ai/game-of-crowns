@@ -1,0 +1,31 @@
+{
+  "id": "c98",
+  "name": "Gareth Crane",
+  "gender": "male",
+  "age": 42,
+  "alive": true,
+  "traits": [
+    "paranoid",
+    "cunning"
+  ],
+  "loyalty": 81,
+  "goals": [
+    {
+      "kind": "marriage",
+      "text": "see my daughter wed above her station"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c99",
+  "children": [
+    "c100",
+    "c101"
+  ],
+  "surname": "Crane",
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "bannerman",
+  "seat": 317,
+  "liege": "c1"
+}

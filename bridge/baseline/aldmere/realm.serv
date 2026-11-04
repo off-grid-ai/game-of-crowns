@@ -1,0 +1,45 @@
+# New realm: seven great houses, medieval-flavoured nations, no map wrapping.
+rulesetdir realmrules
+set nationset all
+set wrap ""
+set topology ""
+set mapsize XYSIZE
+set xsize 56
+set ysize 88
+set landmass 30
+# Eight players created by hand: seven great houses and the Crown (you).
+# The Crown is AI-marshalled: Freeciv commands the royal host, the King rules by decree.
+set aifill 0
+set turnblock disabled
+create Wolfholt
+create Goldcrest
+create Ironreach
+create Thornvale
+create Stormhold
+create Sunspire
+create Highfell
+create Crown
+set minplayers 0
+set barbarians disabled
+set disasters 5
+# Research is slow; the ruleset itself stops it at the high middle ages.
+set sciencebox 300
+# Each house plays its own strategy (traits set per nation in data/nation).
+set traitdistribution FIXED
+set endturn 5000
+set saveturns 1
+set autosaves "TURN|GAMEOVER|QUITIDLE|INTERRUPT"
+set savename "realm"
+set timeout 12
+hard
+playernation Wolfholt scottish 1 "Lord Edric Wolfholt"
+playernation Goldcrest english 1 "Lord Tybalt Goldcrest"
+playernation Ironreach norwegian 1 "Lord Harrald Ironreach"
+playernation Thornvale french 0 "Lady Olenna Thornvale"
+playernation Stormhold welsh 1 "Lord Robb Stormhold"
+playernation Sunspire castilian 0 "Princess Arianne Sunspire"
+playernation Highfell irish 1 "Lord Jon Highfell"
+playernation Crown norman 1 "The King"
+lua file /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/world_setup.lua
+lua file /Users/user/wednesday/civilization/bridge/lua/events.lua
+start

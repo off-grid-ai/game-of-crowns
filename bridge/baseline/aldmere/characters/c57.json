@@ -1,0 +1,30 @@
+{
+  "id": "c57",
+  "name": "Elaine Hollin",
+  "gender": "female",
+  "age": 35,
+  "alive": true,
+  "traits": [
+    "greedy",
+    "wrathful"
+  ],
+  "loyalty": 66,
+  "goals": [
+    {
+      "kind": "marriage",
+      "text": "see my daughter wed above her station"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c58",
+  "children": [
+    "c59"
+  ],
+  "surname": "Hollin",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "bannerman",
+  "seat": 282,
+  "liege": "c20"
+}

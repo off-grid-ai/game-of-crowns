@@ -1,0 +1,34 @@
+{
+  "id": "c65",
+  "name": "Harold Morrow",
+  "gender": "male",
+  "age": 26,
+  "alive": true,
+  "traits": [
+    "content",
+    "wrathful"
+  ],
+  "loyalty": 82,
+  "goals": [
+    {
+      "kind": "land",
+      "text": "win more land for my family"
+    }
+  ],
+  "relationships": {},
+  "memories": [
+    "I buried my parent, Harold Morrow, and took up their seat."
+  ],
+  "spouse": null,
+  "children": [],
+  "surname": "Morrow",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "bannerman",
+  "liege": "c42",
+  "parents": [
+    "c62",
+    "c63"
+  ],
+  "seat": 277
+}

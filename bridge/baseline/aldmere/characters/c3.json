@@ -1,0 +1,26 @@
+{
+  "id": "c3",
+  "name": "Godwin Wolfholt",
+  "gender": "male",
+  "age": 22,
+  "alive": true,
+  "traits": [
+    "brave",
+    "proud"
+  ],
+  "loyalty": 75,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c6",
+  "children": [],
+  "surname": "Wolfholt",
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "heir",
+  "liege": "c1",
+  "parents": [
+    "c1",
+    "c2"
+  ]
+}

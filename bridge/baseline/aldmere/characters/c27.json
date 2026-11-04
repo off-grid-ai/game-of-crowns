@@ -1,0 +1,26 @@
+{
+  "id": "c27",
+  "name": "Edric Greyford",
+  "gender": "male",
+  "age": 28,
+  "alive": true,
+  "traits": [
+    "cunning",
+    "generous"
+  ],
+  "loyalty": 60,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Greyford",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "child",
+  "liege": "c24",
+  "parents": [
+    "c24",
+    "c25"
+  ]
+}

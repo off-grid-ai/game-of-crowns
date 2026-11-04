@@ -1,0 +1,25 @@
+{
+  "id": "c12",
+  "name": "Jory Pell",
+  "gender": "male",
+  "age": 53,
+  "alive": true,
+  "traits": [
+    "proud",
+    "content"
+  ],
+  "loyalty": 73,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c11",
+  "children": [
+    "c13",
+    "c14"
+  ],
+  "surname": "Pell",
+  "house": "House Goldcrest",
+  "playerId": 1,
+  "rank": "spouse",
+  "liege": "c11"
+}

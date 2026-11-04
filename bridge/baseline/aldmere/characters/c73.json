@@ -1,0 +1,26 @@
+{
+  "id": "c73",
+  "name": "Aldric Varn",
+  "gender": "male",
+  "age": 52,
+  "alive": true,
+  "traits": [
+    "paranoid",
+    "patient"
+  ],
+  "loyalty": 69,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c72",
+  "children": [
+    "c74",
+    "c75",
+    "c76"
+  ],
+  "surname": "Varn",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "spouse",
+  "liege": "c72"
+}

@@ -1,0 +1,26 @@
+{
+  "id": "c38",
+  "name": "Genevieve Stormhold",
+  "gender": "female",
+  "age": 19,
+  "alive": true,
+  "traits": [
+    "lustful",
+    "proud"
+  ],
+  "loyalty": 72,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Stormhold",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "heir",
+  "liege": "c36",
+  "parents": [
+    "c36",
+    "c37"
+  ]
+}

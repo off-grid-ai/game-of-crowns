@@ -1,0 +1,26 @@
+{
+  "id": "c23",
+  "name": "Elsbeth Thornvale",
+  "gender": "female",
+  "age": 24,
+  "alive": true,
+  "traits": [
+    "ambitious",
+    "wrathful"
+  ],
+  "loyalty": 61,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Thornvale",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "child",
+  "liege": "c20",
+  "parents": [
+    "c20",
+    "c21"
+  ]
+}

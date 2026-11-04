@@ -1,0 +1,26 @@
+{
+  "id": "c66",
+  "name": "Maud Morrow",
+  "gender": "female",
+  "age": 26,
+  "alive": true,
+  "traits": [
+    "patient",
+    "ambitious"
+  ],
+  "loyalty": 84,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Morrow",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "child",
+  "liege": "c62",
+  "parents": [
+    "c62",
+    "c63"
+  ]
+}

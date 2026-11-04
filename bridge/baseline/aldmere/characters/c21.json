@@ -1,0 +1,25 @@
+{
+  "id": "c21",
+  "name": "Edric Thornvale",
+  "gender": "male",
+  "age": 58,
+  "alive": true,
+  "traits": [
+    "just",
+    "honourable"
+  ],
+  "loyalty": 89,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c20",
+  "children": [
+    "c22",
+    "c23"
+  ],
+  "surname": "Thornvale",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "spouse",
+  "liege": "c20"
+}

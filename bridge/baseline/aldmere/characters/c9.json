@@ -1,0 +1,26 @@
+{
+  "id": "c9",
+  "name": "Wynne Strand",
+  "gender": "female",
+  "age": 19,
+  "alive": true,
+  "traits": [
+    "wrathful",
+    "cunning"
+  ],
+  "loyalty": 58,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Strand",
+  "house": "House Goldcrest",
+  "playerId": 1,
+  "rank": "heir",
+  "liege": "c7",
+  "parents": [
+    "c7",
+    "c8"
+  ]
+}

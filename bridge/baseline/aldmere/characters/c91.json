@@ -1,0 +1,25 @@
+{
+  "id": "c91",
+  "name": "Osric Dale",
+  "gender": "male",
+  "age": 13,
+  "alive": true,
+  "traits": [
+    "ambitious"
+  ],
+  "loyalty": 61,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Dale",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "child",
+  "liege": "c87",
+  "parents": [
+    "c87",
+    "c88"
+  ]
+}

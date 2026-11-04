@@ -1,0 +1,26 @@
+{
+  "id": "c48",
+  "name": "Rosalind Morrow",
+  "gender": "female",
+  "age": 28,
+  "alive": true,
+  "traits": [
+    "generous",
+    "paranoid"
+  ],
+  "loyalty": 73,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Morrow",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "child",
+  "liege": "c45",
+  "parents": [
+    "c45",
+    "c46"
+  ]
+}

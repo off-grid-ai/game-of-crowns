@@ -1,0 +1,32 @@
+{
+  "id": "c50",
+  "name": "Tobin Highfell",
+  "gender": "male",
+  "age": 63,
+  "alive": false,
+  "traits": [
+    "vengeful",
+    "content"
+  ],
+  "loyalty": 46,
+  "goals": [
+    {
+      "kind": "marriage",
+      "text": "wed my heir into a great house"
+    }
+  ],
+  "relationships": {},
+  "memories": [
+    "I waited at court for two years. The King never answered."
+  ],
+  "spouse": "c51",
+  "children": [
+    "c52"
+  ],
+  "surname": "Highfell",
+  "house": "House Highfell",
+  "playerId": 6,
+  "rank": "lord",
+  "seat": 237,
+  "voice": "vengeful, content lord of House Highfell; speaks like a proud noble"
+}

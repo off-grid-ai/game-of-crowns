@@ -1,0 +1,28 @@
+{
+  "id": "c41",
+  "name": "Mira Fenwick",
+  "gender": "female",
+  "age": 62,
+  "alive": false,
+  "traits": [
+    "just",
+    "vengeful"
+  ],
+  "loyalty": 58,
+  "goals": [
+    {
+      "kind": "favour",
+      "text": "rise in my liege's esteem"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Fenwick",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "bannerman",
+  "seat": 218,
+  "liege": "c36"
+}

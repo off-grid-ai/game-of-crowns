@@ -1,0 +1,24 @@
+{
+  "id": "c78",
+  "name": "Dunstan Pell",
+  "gender": "male",
+  "age": 31,
+  "alive": true,
+  "traits": [
+    "cunning",
+    "wrathful"
+  ],
+  "loyalty": 71,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c77",
+  "children": [
+    "c79"
+  ],
+  "surname": "Pell",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "spouse",
+  "liege": "c77"
+}

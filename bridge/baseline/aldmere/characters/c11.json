@@ -1,0 +1,31 @@
+{
+  "id": "c11",
+  "name": "Mira Pell",
+  "gender": "female",
+  "age": 60,
+  "alive": true,
+  "traits": [
+    "greedy",
+    "vengeful"
+  ],
+  "loyalty": 83,
+  "goals": [
+    {
+      "kind": "marriage",
+      "text": "see my daughter wed above her station"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c12",
+  "children": [
+    "c13",
+    "c14"
+  ],
+  "surname": "Pell",
+  "house": "House Goldcrest",
+  "playerId": 1,
+  "rank": "bannerman",
+  "seat": 188,
+  "liege": "c4"
+}

@@ -1,0 +1,26 @@
+{
+  "id": "c22",
+  "name": "Jory Thornvale",
+  "gender": "male",
+  "age": 16,
+  "alive": true,
+  "traits": [
+    "vengeful",
+    "ambitious"
+  ],
+  "loyalty": 57,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Thornvale",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "heir",
+  "liege": "c20",
+  "parents": [
+    "c20",
+    "c21"
+  ]
+}

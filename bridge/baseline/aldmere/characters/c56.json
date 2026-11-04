@@ -1,0 +1,28 @@
+{
+  "id": "c56",
+  "name": "Osric Pell",
+  "gender": "male",
+  "age": 33,
+  "alive": true,
+  "traits": [
+    "wrathful",
+    "patient"
+  ],
+  "loyalty": 55,
+  "goals": [
+    {
+      "kind": "marriage",
+      "text": "see my daughter wed above her station"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Pell",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "bannerman",
+  "seat": 273,
+  "liege": "c42"
+}

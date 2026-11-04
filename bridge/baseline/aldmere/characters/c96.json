@@ -1,0 +1,24 @@
+{
+  "id": "c96",
+  "name": "Lucan Brook",
+  "gender": "male",
+  "age": 41,
+  "alive": true,
+  "traits": [
+    "generous",
+    "paranoid"
+  ],
+  "loyalty": 78,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c95",
+  "children": [
+    "c97"
+  ],
+  "surname": "Brook",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "spouse",
+  "liege": "c95"
+}

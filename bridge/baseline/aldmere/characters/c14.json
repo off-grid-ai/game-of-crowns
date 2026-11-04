@@ -1,0 +1,26 @@
+{
+  "id": "c14",
+  "name": "Hugh Pell",
+  "gender": "male",
+  "age": 19,
+  "alive": true,
+  "traits": [
+    "honourable",
+    "just"
+  ],
+  "loyalty": 72,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Pell",
+  "house": "House Goldcrest",
+  "playerId": 1,
+  "rank": "child",
+  "liege": "c11",
+  "parents": [
+    "c11",
+    "c12"
+  ]
+}

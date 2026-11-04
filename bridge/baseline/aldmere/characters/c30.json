@@ -1,0 +1,24 @@
+{
+  "id": "c30",
+  "name": "Rhiannon Roswell",
+  "gender": "female",
+  "age": 40,
+  "alive": true,
+  "traits": [
+    "honourable",
+    "greedy"
+  ],
+  "loyalty": 63,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c29",
+  "children": [
+    "c31"
+  ],
+  "surname": "Roswell",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "spouse",
+  "liege": "c29"
+}

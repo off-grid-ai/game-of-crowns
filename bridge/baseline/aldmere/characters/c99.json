@@ -1,0 +1,25 @@
+{
+  "id": "c99",
+  "name": "Isolde Crane",
+  "gender": "female",
+  "age": 37,
+  "alive": true,
+  "traits": [
+    "generous",
+    "lustful"
+  ],
+  "loyalty": 76,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c98",
+  "children": [
+    "c100",
+    "c101"
+  ],
+  "surname": "Crane",
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "spouse",
+  "liege": "c98"
+}

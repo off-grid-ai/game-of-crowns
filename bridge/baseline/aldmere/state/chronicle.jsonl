@@ -1,0 +1,122 @@
+{"turn":1,"kind":"city_built","text":"House Blackwater founds the town of Dragonhall.","city":178,"seq":1,"at":1793728120190}
+{"turn":1,"kind":"city_built","text":"House Blackwater founds the town of Goldgarden.","city":187,"seq":2,"at":1793728120191}
+{"turn":1,"kind":"city_built","text":"House Blackwater founds the town of Maidenkeep.","city":188,"seq":3,"at":1793728120192}
+{"turn":1,"kind":"city_built","text":"House Blackwater founds the town of Moonstone.","city":197,"seq":4,"at":1793728120193}
+{"turn":1,"kind":"city_built","text":"House Blackwater founds the town of Stonemarch.","city":198,"seq":5,"at":1793728120194}
+{"turn":1,"kind":"city_built","text":"House Blackwater founds the town of King'sreach.","city":207,"seq":6,"at":1793728120195}
+{"turn":1,"kind":"city_built","text":"House Blackwater founds the town of Redbridge.","city":208,"seq":7,"at":1793728120197}
+{"turn":1,"kind":"city_built","text":"House Blackwater founds the town of Frostreach.","city":217,"seq":8,"at":1793728120198}
+{"turn":1,"kind":"city_built","text":"House Blackwater founds the town of Rosebridge.","city":218,"seq":9,"at":1793728120199}
+{"turn":1,"kind":"city_built","text":"House Blackwater founds the town of Goldstone.","city":227,"seq":10,"at":1793728120201}
+{"turn":1,"kind":"city_built","text":"House Blackwater founds the town of Windmoor.","city":228,"seq":11,"at":1793728120201}
+{"turn":1,"kind":"city_built","text":"House Blackwater founds the town of Moonbridge.","city":237,"seq":12,"at":1793728120202}
+{"turn":1,"kind":"city_built","text":"House Blackwater founds the town of Stonerock.","city":246,"seq":13,"at":1793728120204}
+{"turn":1,"kind":"year","text":"The year 300 AC begins.","seq":14,"at":1793728120595}
+{"turn":2,"kind":"city_built","text":"House Goldcrest founds the town of Moonbarrow.","city":269,"seq":15,"at":1793728127852}
+{"turn":3,"kind":"city_built","text":"House Sunspire founds the town of Highbridge.","city":270,"seq":16,"at":1793728130659}
+{"turn":3,"kind":"city_built","text":"House Thornvale founds the town of King'sspire.","city":271,"seq":17,"at":1793728130806}
+{"turn":3,"kind":"city_built","text":"House Thornvale founds the town of Redmarch.","city":272,"seq":18,"at":1793728130818}
+{"turn":4,"kind":"person","text":"Constance Wolfholt rules House Wolfholt, content and brave.","seq":19,"at":1793728133431}
+{"turn":4,"kind":"person","text":"Cecily Goldcrest rules House Goldcrest, greedy and ambitious.","seq":20,"at":1793728133433}
+{"turn":4,"kind":"person","text":"Ysolde Ironreach rules House Ironreach, just and wrathful.","seq":21,"at":1793728133435}
+{"turn":4,"kind":"person","text":"Ysolde Thornvale rules House Thornvale, lustful and content.","seq":22,"at":1793728133435}
+{"turn":4,"kind":"person","text":"Cecily Stormhold rules House Stormhold, patient and wrathful.","seq":23,"at":1793728133437}
+{"turn":4,"kind":"person","text":"Cecily Sunspire rules House Sunspire, just and craven.","seq":24,"at":1793728133438}
+{"turn":4,"kind":"person","text":"Tobin Highfell rules House Highfell, vengeful and content.","seq":25,"at":1793728133440}
+{"turn":4,"kind":"city_built","text":"House Wolfholt founds the town of Crowhold.","city":273,"seq":26,"at":1793728133559}
+{"turn":4,"kind":"city_built","text":"House Ironreach founds the town of Rosehall.","city":274,"seq":27,"at":1793728133597}
+{"turn":4,"kind":"city_built","text":"House Stormhold founds the town of Eaglefell.","city":275,"seq":28,"at":1793728133613}
+{"turn":4,"kind":"city_built","text":"House Stormhold founds the town of Windcross.","city":276,"seq":29,"at":1793728133615}
+{"turn":5,"kind":"year","text":"The year 301 AC begins.","seq":30,"at":1793728133676}
+{"turn":5,"kind":"city_built","text":"House Sunspire founds the town of Moonhold.","city":277,"seq":31,"at":1793728136330}
+{"turn":5,"kind":"city_built","text":"House Goldcrest founds the town of Highcrag.","city":278,"seq":32,"at":1793728136389}
+{"turn":6,"kind":"city_destroyed","text":"Highcrag is razed to the ground by The Crown.","city":278,"seq":33,"at":1793728136443}
+{"turn":6,"kind":"city_destroyed","text":"Rosehall is razed to the ground by The Crown.","city":274,"seq":34,"at":1793728136445}
+{"turn":7,"kind":"city_destroyed","text":"Lannport is razed to the ground by The Crown.","city":188,"seq":35,"at":1793728139232}
+{"turn":4,"kind":"court","text":"Ysolde Thornvale of House Thornvale comes to court.","seq":36,"at":1793728143015}
+{"turn":8,"kind":"city_built","text":"House Wolfholt founds the town of Crowford.","city":281,"seq":37,"at":1793728145539}
+{"turn":9,"kind":"year","text":"The year 302 AC begins.","seq":38,"at":1793728145672}
+{"turn":9,"kind":"city_built","text":"House Thornvale founds the town of Rosegarden.","city":282,"seq":39,"at":1793728145748}
+{"turn":9,"kind":"city_destroyed","text":"Pyke Hollow is razed to the ground by The Crown.","city":198,"seq":40,"at":1793728145749}
+{"turn":4,"kind":"marriage","text":"Genevieve Goldcrest of Goldrock weds Godwin Wolfholt, heir of House Wolfholt. A minor house rises. \"A lesser house? A useful alliance, then. Let the Goldcrests bend to Wolfholt's strength; a fine seed for the next generation.\"","city":187,"seq":41,"at":1793728148021}
+{"turn":4,"kind":"alliance","text":"Ravens fly between House Wolfholt and House Goldcrest. Constance Wolfholt and Cecily Goldcrest speak of friendship.","seq":42,"at":1793728148021}
+{"turn":10,"kind":"crown","text":"The royal tithe brings 17 gold to Kingsmere.","seq":43,"at":1793728148506}
+{"turn":10,"kind":"city_built","text":"House Highfell founds the town of Eaglehaven.","city":283,"seq":44,"at":1793728151173}
+{"turn":12,"kind":"unrest","text":"Ysolde Thornvale of House Thornvale leaves Kingsmere unheard, and says so to anyone who will listen.","seq":45,"at":1793728156466}
+{"turn":13,"kind":"year","text":"The year 303 AC begins.","seq":46,"at":1793728156697}
+{"turn":12,"kind":"court","text":"Ysolde Thornvale of House Thornvale comes to court.","seq":47,"at":1793728159356}
+{"turn":12,"kind":"raid","text":"Men without banners raid Crowford. Everyone knows who paid them: House Ironreach. \"Let the dogs of Wolfholt know the bite of Ironreach. Their pride will be broken in the blood of their soil.\"","city":281,"seq":48,"at":1793728161275}
+{"turn":12,"kind":"scheme","text":"Cecily Stormhold refuses Corwin Greyford's offer of his daughter's hand. The insult is remembered. \"A Thornvale? They smell of damp earth and lesser ambitions. Osric deserves a match that speaks of true stone, not mere moss.\"","city":272,"seq":49,"at":1793728163672}
+{"turn":12,"kind":"alliance","text":"Ravens fly between House Wolfholt and House Goldcrest. Constance Wolfholt and Cecily Goldcrest speak of friendship.","seq":50,"at":1793728163672}
+{"turn":12,"kind":"betrayal","text":"Treachery! Maud Strand opens the gates of Windcross to House Thornvale.","city":276,"seq":51,"at":1793728163673}
+{"turn":17,"kind":"year","text":"The year 304 AC begins.","seq":52,"at":1793728168230}
+{"turn":17,"kind":"city_transferred","text":"House Stormhold storms Moonhold, tearing it from House Sunspire.","city":277,"seq":53,"at":1793728168248}
+{"turn":17,"kind":"city_built","text":"House Sunspire founds the town of Crowbarrow.","city":289,"seq":54,"at":1793728170805}
+{"turn":16,"kind":"court","text":"Ysolde Thornvale of House Thornvale comes to court.","seq":55,"at":1793728171190}
+{"turn":18,"kind":"city_built","text":"House Thornvale founds the town of Mooncrag.","city":293,"seq":56,"at":1793728173866}
+{"turn":16,"kind":"scheme","text":"Ysolde Ironreach refuses Cecily Stormhold's offer of his daughter's hand. The insult is remembered. \"Marriage for coin and scraps? My blood demands better than a mere trinket for a lesser house. Let Stormhold keep their girl, or they'll learn the price of insolence.\"","city":217,"seq":57,"at":1793728174244}
+{"turn":16,"kind":"alliance","text":"Ravens fly between House Wolfholt and House Goldcrest. Constance Wolfholt and Cecily Goldcrest speak of friendship.","seq":58,"at":1793728174251}
+{"turn":16,"kind":"raid","text":"Men without banners raid Crowford. Everyone knows who paid them: House Ironreach. \"Let the wolves taste the salt spray. They think their wolf-howl shields them, but my blade remembers every slight.\"","city":281,"seq":59,"at":1793728176793}
+{"turn":19,"kind":"city_built","text":"House Thornvale founds the town of King'smere.","city":295,"seq":60,"at":1793728177884}
+{"turn":19,"kind":"city_built","text":"House Thornvale founds the town of Sunfell.","city":296,"seq":61,"at":1793728177901}
+{"turn":20,"kind":"crown","text":"The royal tithe brings 21 gold to Kingsmere.","seq":62,"at":1793728178044}
+{"turn":20,"kind":"unrest","text":"Ysolde Thornvale of House Thornvale leaves Kingsmere unheard, and says so to anyone who will listen.","seq":63,"at":1793728180548}
+{"turn":21,"kind":"year","text":"The year 305 AC begins.","seq":64,"at":1793728180881}
+{"turn":20,"kind":"court","text":"Ysolde Thornvale of House Thornvale comes to court.","seq":65,"at":1793728183434}
+{"turn":21,"kind":"city_built","text":"House Wolfholt founds the town of Crowfell.","city":297,"seq":66,"at":1793728183651}
+{"turn":20,"kind":"scheme","text":"Ysolde Ironreach refuses Bryony Varn's offer of his daughter's hand. The insult is remembered. \"A lesser house for my son? The scent of ambition hangs heavy around this offer, and I smell only dust where honor should bloom. Thornvale shall find their paltry silks gathered back to their own keep.\"","city":295,"seq":67,"at":1793728186559}
+{"turn":20,"kind":"alliance","text":"Ravens fly between House Wolfholt and House Goldcrest. Constance Wolfholt and Cecily Goldcrest speak of friendship.","seq":68,"at":1793728186560}
+{"turn":22,"kind":"city_built","text":"House Goldcrest founds the town of Windspire.","city":300,"seq":69,"at":1793728186623}
+{"turn":22,"kind":"building_built","text":"Barracks rise in Moonbarrow. House Goldcrest is arming.","city":269,"seq":70,"at":1793728186725}
+{"turn":20,"kind":"raid","text":"Men without banners raid Crowford. Everyone knows who paid them: House Ironreach. \"Let the wolves learn the meaning of Ironreach's steel. Whispers are for cowards; a blade speaks louder than any lie.\"","city":281,"seq":71,"at":1793728188861}
+{"turn":20,"kind":"betrayal","text":"Treachery! Osric Pell opens the gates of Crowhold to House Sunspire.","city":273,"seq":72,"at":1793728188876}
+{"turn":24,"kind":"city_destroyed","text":"Windspire is razed to the ground by House Thornvale.","city":300,"seq":73,"at":1793728190134}
+{"turn":24,"kind":"unrest","text":"Ysolde Thornvale of House Thornvale leaves Kingsmere unheard, and says so to anyone who will listen.","seq":74,"at":1793728192586}
+{"turn":25,"kind":"year","text":"The year 306 AC begins.","seq":75,"at":1793728192833}
+{"turn":24,"kind":"court","text":"Ysolde Thornvale of House Thornvale comes to court.","seq":76,"at":1793728194820}
+{"turn":24,"kind":"scheme","text":"Ysolde Ironreach refuses Cecily Sunspire's offer of his daughter's hand. The insult is remembered. \"Sunspire? A twig on the wind. My son deserves a shield-maiden, not some delicate bloom from a lesser weed.\"","city":227,"seq":77,"at":1793728197467}
+{"turn":24,"kind":"alliance","text":"Ravens fly between House Wolfholt and House Goldcrest. Constance Wolfholt and Cecily Goldcrest speak of friendship.","seq":78,"at":1793728197467}
+{"turn":26,"kind":"city_built","text":"House Ironreach founds the town of Moonhold.","city":301,"seq":79,"at":1793728198626}
+{"turn":24,"kind":"raid","text":"Men without banners raid Crowfell. Everyone knows who paid them: House Ironreach. \"Let the wolf taste steel before she ever dares look at Saltkeep again. A whisper is for weaklings, I prefer the blood to speak for itself.\"","city":297,"seq":80,"at":1793728200275}
+{"turn":28,"kind":"city_destroyed","text":"Moonhold is razed to the ground by The Crown.","city":301,"seq":81,"at":1793728202251}
+{"turn":28,"kind":"death","text":"Mira Fenwick of House Stormhold dies at 62. The bells toll in Rainhold.","city":218,"seq":82,"at":1793728204740}
+{"turn":28,"kind":"unrest","text":"Ysolde Thornvale of House Thornvale leaves Kingsmere unheard, and says so to anyone who will listen.","seq":83,"at":1793728204742}
+{"turn":28,"kind":"city_built","text":"House Stormhold founds the town of Rosegarden.","city":306,"seq":84,"at":1793728204811}
+{"turn":29,"kind":"year","text":"The year 307 AC begins.","seq":85,"at":1793728205714}
+{"turn":28,"kind":"court","text":"Tobin Highfell of House Highfell comes to court.","seq":86,"at":1793728207509}
+{"turn":30,"kind":"crown","text":"The royal tithe brings 35 gold to Kingsmere.","seq":87,"at":1793728208741}
+{"turn":28,"kind":"court","text":"Constance Wolfholt of House Wolfholt comes to court.","seq":88,"at":1793728210366}
+{"turn":28,"kind":"scheme","text":"Ysolde Ironreach refuses Cecily Stormhold's offer of his daughter's hand. The insult is remembered. \"A lesser house offering its bloom for my son? I smell weakness, not alliance. We shall not be bound by scraps of ambition.\"","city":217,"seq":89,"at":1793728212936}
+{"turn":28,"kind":"alliance","text":"Ravens fly between House Wolfholt and House Goldcrest. Constance Wolfholt and Cecily Goldcrest speak of friendship.","seq":90,"at":1793728212940}
+{"turn":28,"kind":"raid","text":"Men without banners raid Crowfell. Everyone knows who paid them: House Ironreach.","city":297,"seq":91,"at":1793728212941}
+{"turn":28,"kind":"rebellion","text":"Ysolde Thornvale raises the banners of House Thornvale against the crown!","city":207,"seq":92,"at":1793728212941}
+{"turn":30,"kind":"city_built","text":"House Sunspire founds the town of Lionvale.","city":309,"seq":93,"at":1793728213094}
+{"turn":30,"kind":"building_built","text":"Goldrock raises walls of stone. House Goldcrest expects war.","city":187,"seq":94,"at":1793728213157}
+{"turn":30,"kind":"building_built","text":"Barracks rise in Redsands. House Sunspire is arming.","city":228,"seq":95,"at":1793728213160}
+{"turn":31,"kind":"building_lost","text":"The palace of Saltkeep is destroyed.","city":197,"seq":96,"at":1793728213199}
+{"turn":31,"kind":"city_transferred","text":"The Crown storms Saltkeep, tearing it from House Ironreach.","city":197,"seq":97,"at":1793728213210}
+{"turn":31,"kind":"building_built","text":"Barracks rise in Sunspire. House Sunspire is arming.","city":227,"seq":98,"at":1793728216003}
+{"turn":32,"kind":"death","text":"Tobin Highfell of House Highfell dies at 63. The bells toll in Highfell.","city":237,"seq":99,"at":1793728218513}
+{"turn":32,"kind":"succession","text":"Maud Highfell, 15, succeeds as lord of House Highfell.","city":237,"seq":100,"at":1793728218513}
+{"turn":32,"kind":"unrest","text":"A child sits the seat of Highfell. Ambitious men take note.","city":237,"seq":101,"at":1793728218513}
+{"turn":32,"kind":"death","text":"Harold Morrow of House Sunspire dies at 65. The bells toll in Moonhold.","city":277,"seq":102,"at":1793728218513}
+{"turn":32,"kind":"succession","text":"Harold Morrow, 24, succeeds as lord of Moonhold.","city":277,"seq":103,"at":1793728218513}
+{"turn":32,"kind":"unrest","text":"Ysolde Thornvale of House Thornvale leaves Kingsmere unheard, and says so to anyone who will listen.","seq":104,"at":1793728218515}
+{"turn":32,"kind":"city_built","text":"House Wolfholt founds the town of Lionreach.","city":317,"seq":105,"at":1793728218715}
+{"turn":32,"kind":"building_built","text":"Barracks rise in Redmarch. House Thornvale is arming.","city":272,"seq":106,"at":1793728218777}
+{"turn":33,"kind":"year","text":"The year 308 AC begins.","seq":107,"at":1793728218796}
+{"turn":32,"kind":"court","text":"Cecily Stormhold of House Stormhold comes to court.","seq":108,"at":1793728221771}
+{"turn":33,"kind":"building_built","text":"Barracks rise in Windcross. House Thornvale is arming.","city":276,"seq":109,"at":1793728222033}
+{"turn":32,"kind":"scheme","text":"Ysolde Ironreach refuses Leofric Dale's offer of his daughter's hand. The insult is remembered. \"A lesser wolf for my hearth? The scent of lesser blood does not please me. Let him offer a match worthy of Ironreach, or let him find another lord to bleed.\"","city":297,"seq":110,"at":1793728225120}
+{"turn":32,"kind":"alliance","text":"Ravens fly between House Wolfholt and House Goldcrest. Constance Wolfholt and Cecily Goldcrest speak of friendship.","seq":111,"at":1793728225120}
+{"turn":32,"kind":"raid","text":"Men without banners raid Crowfell. Everyone knows who paid them: House Ironreach.","city":297,"seq":112,"at":1793728228049}
+{"turn":35,"kind":"city_built","text":"House Stormhold founds the town of Crowbarrow.","city":321,"seq":113,"at":1793728229212}
+{"turn":36,"kind":"unrest","text":"Tobin Highfell of House Highfell leaves Kingsmere unheard, and says so to anyone who will listen.","seq":114,"at":1793728231907}
+{"turn":36,"kind":"unrest","text":"Constance Wolfholt of House Wolfholt leaves Kingsmere unheard, and says so to anyone who will listen.","seq":115,"at":1793728231907}
+{"turn":37,"kind":"year","text":"The year 309 AC begins.","seq":116,"at":1793728232195}
+{"turn":36,"kind":"court","text":"Ysolde Ironreach of House Ironreach comes to court.","seq":117,"at":1793728234365}
+{"turn":36,"kind":"court","text":"Ysolde Thornvale of House Thornvale comes to court.","seq":118,"at":1793728237283}
+{"turn":36,"kind":"alliance","text":"Ravens fly between House Wolfholt and House Goldcrest. Constance Wolfholt and Cecily Goldcrest speak of friendship.","seq":119,"at":1793728237285}
+{"turn":36,"kind":"scheme","text":"Cecily Stormhold refuses Cecily Sunspire's offer of his daughter's hand. The insult is remembered. \"A lesser house? My son deserves more than the scraps offered by a sun-bleached patch of dirt. Let Sunspire crawl back to its kennel.\"","city":227,"seq":120,"at":1793728239971}
+{"turn":36,"kind":"rebellion","text":"Ysolde Thornvale raises the banners of House Thornvale against the crown!","city":207,"seq":121,"at":1793728239973}
+{"turn":36,"kind":"raid","text":"Men without banners raid Lionreach. Everyone knows who paid them: House Ironreach.","city":317,"seq":122,"at":1793728239988}

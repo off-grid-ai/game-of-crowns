@@ -1,0 +1,25 @@
+{
+  "id": "c18",
+  "name": "Hilda Ironreach",
+  "gender": "female",
+  "age": 29,
+  "alive": true,
+  "traits": [
+    "craven"
+  ],
+  "loyalty": 73,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Ironreach",
+  "house": "House Ironreach",
+  "playerId": 2,
+  "rank": "child",
+  "liege": "c15",
+  "parents": [
+    "c15",
+    "c16"
+  ]
+}

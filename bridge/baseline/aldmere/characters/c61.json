@@ -1,0 +1,28 @@
+{
+  "id": "c61",
+  "name": "Ysolde Brook",
+  "gender": "female",
+  "age": 48,
+  "alive": true,
+  "traits": [
+    "honourable",
+    "just"
+  ],
+  "loyalty": 69,
+  "goals": [
+    {
+      "kind": "favour",
+      "text": "rise in my liege's esteem"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Brook",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "bannerman",
+  "seat": 275,
+  "liege": "c36"
+}

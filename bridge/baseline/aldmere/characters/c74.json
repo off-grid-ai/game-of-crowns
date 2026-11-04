@@ -1,0 +1,26 @@
+{
+  "id": "c74",
+  "name": "Bryony Varn",
+  "gender": "female",
+  "age": 20,
+  "alive": true,
+  "traits": [
+    "generous",
+    "wrathful"
+  ],
+  "loyalty": 89,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Varn",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "heir",
+  "liege": "c72",
+  "parents": [
+    "c72",
+    "c73"
+  ]
+}

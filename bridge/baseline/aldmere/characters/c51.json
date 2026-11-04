@@ -1,0 +1,24 @@
+{
+  "id": "c51",
+  "name": "Rosalind Highfell",
+  "gender": "female",
+  "age": 59,
+  "alive": true,
+  "traits": [
+    "generous",
+    "content"
+  ],
+  "loyalty": 54,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c50",
+  "children": [
+    "c52"
+  ],
+  "surname": "Highfell",
+  "house": "House Highfell",
+  "playerId": 6,
+  "rank": "spouse",
+  "liege": "c50"
+}

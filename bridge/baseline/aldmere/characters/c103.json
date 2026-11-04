@@ -1,0 +1,24 @@
+{
+  "id": "c103",
+  "name": "Mira Holt",
+  "gender": "female",
+  "age": 43,
+  "alive": true,
+  "traits": [
+    "cunning",
+    "proud"
+  ],
+  "loyalty": 69,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c102",
+  "children": [
+    "c104"
+  ],
+  "surname": "Holt",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "spouse",
+  "liege": "c102"
+}

@@ -1,0 +1,26 @@
+{
+  "id": "c40",
+  "name": "Lucan Stormhold",
+  "gender": "male",
+  "age": 23,
+  "alive": true,
+  "traits": [
+    "just",
+    "lustful"
+  ],
+  "loyalty": 58,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Stormhold",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "child",
+  "liege": "c36",
+  "parents": [
+    "c36",
+    "c37"
+  ]
+}

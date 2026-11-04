@@ -1,0 +1,31 @@
+{
+  "id": "c45",
+  "name": "Rosalind Morrow",
+  "gender": "female",
+  "age": 65,
+  "alive": true,
+  "traits": [
+    "lustful",
+    "craven"
+  ],
+  "loyalty": 74,
+  "goals": [
+    {
+      "kind": "court",
+      "text": "be noticed by the King himself"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c46",
+  "children": [
+    "c47",
+    "c48"
+  ],
+  "surname": "Morrow",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "bannerman",
+  "seat": 270,
+  "liege": "c42"
+}

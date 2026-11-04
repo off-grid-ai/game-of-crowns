@@ -1,0 +1,26 @@
+{
+  "id": "c34",
+  "name": "Mira Strand",
+  "gender": "female",
+  "age": 24,
+  "alive": true,
+  "traits": [
+    "cunning",
+    "ambitious"
+  ],
+  "loyalty": 63,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Strand",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "heir",
+  "liege": "c32",
+  "parents": [
+    "c32",
+    "c33"
+  ]
+}

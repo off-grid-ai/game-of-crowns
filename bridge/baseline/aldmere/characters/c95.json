@@ -1,0 +1,30 @@
+{
+  "id": "c95",
+  "name": "Hilda Brook",
+  "gender": "female",
+  "age": 47,
+  "alive": true,
+  "traits": [
+    "vengeful",
+    "generous"
+  ],
+  "loyalty": 50,
+  "goals": [
+    {
+      "kind": "land",
+      "text": "win more land for my family"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c96",
+  "children": [
+    "c97"
+  ],
+  "surname": "Brook",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "bannerman",
+  "seat": 309,
+  "liege": "c42"
+}

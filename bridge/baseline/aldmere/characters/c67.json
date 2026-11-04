@@ -1,0 +1,28 @@
+{
+  "id": "c67",
+  "name": "Hilda Roswell",
+  "gender": "female",
+  "age": 35,
+  "alive": true,
+  "traits": [
+    "just",
+    "brave"
+  ],
+  "loyalty": 53,
+  "goals": [
+    {
+      "kind": "favour",
+      "text": "rise in my liege's esteem"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Roswell",
+  "house": "House Highfell",
+  "playerId": 6,
+  "rank": "bannerman",
+  "seat": 283,
+  "liege": "c50"
+}

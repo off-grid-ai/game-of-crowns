@@ -1,0 +1,27 @@
+{
+  "id": "c60",
+  "name": "Maud Strand",
+  "gender": "female",
+  "age": 61,
+  "alive": true,
+  "traits": [
+    "craven"
+  ],
+  "loyalty": 55,
+  "goals": [
+    {
+      "kind": "favour",
+      "text": "rise in my liege's esteem"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Strand",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "bannerman",
+  "seat": 276,
+  "liege": "c20"
+}

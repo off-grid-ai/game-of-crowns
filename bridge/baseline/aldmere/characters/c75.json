@@ -1,0 +1,26 @@
+{
+  "id": "c75",
+  "name": "Alaric Varn",
+  "gender": "male",
+  "age": 14,
+  "alive": true,
+  "traits": [
+    "paranoid",
+    "lustful"
+  ],
+  "loyalty": 83,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Varn",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "child",
+  "liege": "c72",
+  "parents": [
+    "c72",
+    "c73"
+  ]
+}

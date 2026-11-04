@@ -1,0 +1,30 @@
+{
+  "id": "c77",
+  "name": "Edith Pell",
+  "gender": "female",
+  "age": 38,
+  "alive": true,
+  "traits": [
+    "patient",
+    "content"
+  ],
+  "loyalty": 66,
+  "goals": [
+    {
+      "kind": "favour",
+      "text": "rise in my liege's esteem"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c78",
+  "children": [
+    "c79"
+  ],
+  "surname": "Pell",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "bannerman",
+  "seat": 293,
+  "liege": "c20"
+}

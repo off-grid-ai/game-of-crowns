@@ -1,0 +1,24 @@
+{
+  "id": "c5",
+  "name": "Tristan Goldcrest",
+  "gender": "male",
+  "age": 49,
+  "alive": true,
+  "traits": [
+    "craven",
+    "vengeful"
+  ],
+  "loyalty": 79,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c4",
+  "children": [
+    "c6"
+  ],
+  "surname": "Goldcrest",
+  "house": "House Goldcrest",
+  "playerId": 1,
+  "rank": "spouse",
+  "liege": "c4"
+}

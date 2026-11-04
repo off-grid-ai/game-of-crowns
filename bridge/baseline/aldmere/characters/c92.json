@@ -1,0 +1,30 @@
+{
+  "id": "c92",
+  "name": "Isolde Greyford",
+  "gender": "female",
+  "age": 55,
+  "alive": true,
+  "traits": [
+    "just",
+    "proud"
+  ],
+  "loyalty": 52,
+  "goals": [
+    {
+      "kind": "court",
+      "text": "be noticed by the King himself"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c93",
+  "children": [
+    "c94"
+  ],
+  "surname": "Greyford",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "bannerman",
+  "seat": 218,
+  "liege": "c36"
+}

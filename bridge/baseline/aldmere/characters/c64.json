@@ -1,0 +1,26 @@
+{
+  "id": "c64",
+  "name": "Lucan Morrow",
+  "gender": "male",
+  "age": 17,
+  "alive": true,
+  "traits": [
+    "pious",
+    "wrathful"
+  ],
+  "loyalty": 76,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Morrow",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "heir",
+  "liege": "c62",
+  "parents": [
+    "c62",
+    "c63"
+  ]
+}

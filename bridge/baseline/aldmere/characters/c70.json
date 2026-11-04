@@ -1,0 +1,26 @@
+{
+  "id": "c70",
+  "name": "Gareth Marsh",
+  "gender": "male",
+  "age": 20,
+  "alive": true,
+  "traits": [
+    "vengeful",
+    "pious"
+  ],
+  "loyalty": 63,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Marsh",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "heir",
+  "liege": "c68",
+  "parents": [
+    "c68",
+    "c69"
+  ]
+}

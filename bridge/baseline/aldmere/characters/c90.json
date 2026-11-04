@@ -1,0 +1,26 @@
+{
+  "id": "c90",
+  "name": "Mira Dale",
+  "gender": "female",
+  "age": 18,
+  "alive": true,
+  "traits": [
+    "brave",
+    "craven"
+  ],
+  "loyalty": 63,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Dale",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "child",
+  "liege": "c87",
+  "parents": [
+    "c87",
+    "c88"
+  ]
+}

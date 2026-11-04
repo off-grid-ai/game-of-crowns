@@ -1,0 +1,30 @@
+{
+  "id": "c29",
+  "name": "Ewan Roswell",
+  "gender": "male",
+  "age": 44,
+  "alive": true,
+  "traits": [
+    "vengeful",
+    "cunning"
+  ],
+  "loyalty": 60,
+  "goals": [
+    {
+      "kind": "court",
+      "text": "be noticed by the King himself"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c30",
+  "children": [
+    "c31"
+  ],
+  "surname": "Roswell",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "bannerman",
+  "seat": 271,
+  "liege": "c20"
+}

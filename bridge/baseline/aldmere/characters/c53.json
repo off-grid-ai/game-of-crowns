@@ -1,0 +1,30 @@
+{
+  "id": "c53",
+  "name": "Hugh Ashby",
+  "gender": "male",
+  "age": 44,
+  "alive": true,
+  "traits": [
+    "patient",
+    "wrathful"
+  ],
+  "loyalty": 52,
+  "goals": [
+    {
+      "kind": "favour",
+      "text": "rise in my liege's esteem"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c54",
+  "children": [
+    "c55"
+  ],
+  "surname": "Ashby",
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "bannerman",
+  "seat": 281,
+  "liege": "c1"
+}

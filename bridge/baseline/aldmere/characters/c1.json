@@ -1,0 +1,53 @@
+{
+  "id": "c1",
+  "name": "Constance Wolfholt",
+  "gender": "female",
+  "age": 63,
+  "alive": true,
+  "traits": [
+    "content",
+    "brave"
+  ],
+  "loyalty": 55,
+  "goals": [
+    {
+      "kind": "power",
+      "text": "make my house the greatest in the realm"
+    }
+  ],
+  "relationships": {
+    "c4": {
+      "opinion": 100
+    },
+    "c15": {
+      "opinion": -100
+    },
+    "c56": {
+      "opinion": -60
+    }
+  },
+  "memories": [
+    "I sought friendship with Cecily Goldcrest.",
+    "Ysolde Ironreach's men raided Crowford.",
+    "Osric Pell betrayed me and gave Crowhold to House Sunspire.",
+    "I sought friendship with Cecily Goldcrest.",
+    "Ysolde Ironreach's men raided Crowfell.",
+    "I sought friendship with Cecily Goldcrest.",
+    "Ysolde Ironreach's men raided Crowfell.",
+    "I sought friendship with Cecily Goldcrest.",
+    "Ysolde Ironreach's men raided Crowfell.",
+    "I waited at court for two years. The King never answered.",
+    "I sought friendship with Cecily Goldcrest.",
+    "Ysolde Ironreach's men raided Lionreach."
+  ],
+  "spouse": "c2",
+  "children": [
+    "c3"
+  ],
+  "surname": "Wolfholt",
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "lord",
+  "seat": 178,
+  "voice": "content, brave lord of House Wolfholt; speaks like a soldier"
+}

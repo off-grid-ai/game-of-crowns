@@ -1,0 +1,26 @@
+{
+  "id": "c79",
+  "name": "Bryony Pell",
+  "gender": "female",
+  "age": 21,
+  "alive": true,
+  "traits": [
+    "patient",
+    "greedy"
+  ],
+  "loyalty": 65,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Pell",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "heir",
+  "liege": "c77",
+  "parents": [
+    "c77",
+    "c78"
+  ]
+}

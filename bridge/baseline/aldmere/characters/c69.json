@@ -1,0 +1,25 @@
+{
+  "id": "c69",
+  "name": "Mira Marsh",
+  "gender": "female",
+  "age": 55,
+  "alive": true,
+  "traits": [
+    "brave",
+    "ambitious"
+  ],
+  "loyalty": 84,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c68",
+  "children": [
+    "c70",
+    "c71"
+  ],
+  "surname": "Marsh",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "spouse",
+  "liege": "c68"
+}

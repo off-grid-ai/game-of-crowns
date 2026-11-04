@@ -1,0 +1,25 @@
+{
+  "id": "c100",
+  "name": "Corwin Crane",
+  "gender": "male",
+  "age": 18,
+  "alive": true,
+  "traits": [
+    "ambitious"
+  ],
+  "loyalty": 84,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Crane",
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "heir",
+  "liege": "c98",
+  "parents": [
+    "c98",
+    "c99"
+  ]
+}

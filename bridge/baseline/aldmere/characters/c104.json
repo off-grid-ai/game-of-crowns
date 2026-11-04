@@ -1,0 +1,26 @@
+{
+  "id": "c104",
+  "name": "Dunstan Holt",
+  "gender": "male",
+  "age": 21,
+  "alive": true,
+  "traits": [
+    "wrathful",
+    "proud"
+  ],
+  "loyalty": 65,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Holt",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "heir",
+  "liege": "c102",
+  "parents": [
+    "c102",
+    "c103"
+  ]
+}

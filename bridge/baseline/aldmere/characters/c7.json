@@ -1,0 +1,31 @@
+{
+  "id": "c7",
+  "name": "Cedric Strand",
+  "gender": "male",
+  "age": 64,
+  "alive": true,
+  "traits": [
+    "patient",
+    "proud"
+  ],
+  "loyalty": 81,
+  "goals": [
+    {
+      "kind": "favour",
+      "text": "rise in my liege's esteem"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c8",
+  "children": [
+    "c9",
+    "c10"
+  ],
+  "surname": "Strand",
+  "house": "House Goldcrest",
+  "playerId": 1,
+  "rank": "bannerman",
+  "seat": 269,
+  "liege": "c4"
+}

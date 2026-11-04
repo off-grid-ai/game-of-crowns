@@ -1,0 +1,40 @@
+{
+  "id": "c42",
+  "name": "Cecily Sunspire",
+  "gender": "female",
+  "age": 52,
+  "alive": true,
+  "traits": [
+    "just",
+    "craven"
+  ],
+  "loyalty": 69,
+  "goals": [
+    {
+      "kind": "marriage",
+      "text": "wed my heir into a great house"
+    }
+  ],
+  "relationships": {
+    "c15": {
+      "opinion": -25
+    },
+    "c36": {
+      "opinion": -25
+    }
+  },
+  "memories": [
+    "Ysolde Ironreach spurned my daughter.",
+    "Cecily Stormhold spurned my daughter."
+  ],
+  "spouse": "c43",
+  "children": [
+    "c44"
+  ],
+  "surname": "Sunspire",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "lord",
+  "seat": 227,
+  "voice": "just, craven lord of House Sunspire; speaks like a proud noble"
+}

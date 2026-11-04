@@ -1,0 +1,26 @@
+{
+  "id": "c86",
+  "name": "Mira Dale",
+  "gender": "female",
+  "age": 20,
+  "alive": true,
+  "traits": [
+    "pious",
+    "proud"
+  ],
+  "loyalty": 78,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Dale",
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "child",
+  "liege": "c83",
+  "parents": [
+    "c83",
+    "c84"
+  ]
+}

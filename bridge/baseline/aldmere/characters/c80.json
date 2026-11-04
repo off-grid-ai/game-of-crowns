@@ -1,0 +1,30 @@
+{
+  "id": "c80",
+  "name": "Tristan Kettle",
+  "gender": "male",
+  "age": 40,
+  "alive": true,
+  "traits": [
+    "honourable",
+    "patient"
+  ],
+  "loyalty": 64,
+  "goals": [
+    {
+      "kind": "land",
+      "text": "win more land for my family"
+    }
+  ],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c81",
+  "children": [
+    "c82"
+  ],
+  "surname": "Kettle",
+  "house": "House Sunspire",
+  "playerId": 5,
+  "rank": "bannerman",
+  "seat": 289,
+  "liege": "c42"
+}

@@ -1,0 +1,26 @@
+{
+  "id": "c71",
+  "name": "Joan Marsh",
+  "gender": "female",
+  "age": 21,
+  "alive": true,
+  "traits": [
+    "just",
+    "pious"
+  ],
+  "loyalty": 59,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Marsh",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "child",
+  "liege": "c68",
+  "parents": [
+    "c68",
+    "c69"
+  ]
+}

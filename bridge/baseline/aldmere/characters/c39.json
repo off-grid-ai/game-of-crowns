@@ -1,0 +1,26 @@
+{
+  "id": "c39",
+  "name": "Osric Stormhold",
+  "gender": "male",
+  "age": 21,
+  "alive": true,
+  "traits": [
+    "honourable",
+    "lustful"
+  ],
+  "loyalty": 59,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Stormhold",
+  "house": "House Stormhold",
+  "playerId": 4,
+  "rank": "child",
+  "liege": "c36",
+  "parents": [
+    "c36",
+    "c37"
+  ]
+}

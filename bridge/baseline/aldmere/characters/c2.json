@@ -1,0 +1,24 @@
+{
+  "id": "c2",
+  "name": "Rowan Wolfholt",
+  "gender": "male",
+  "age": 61,
+  "alive": true,
+  "traits": [
+    "patient",
+    "honourable"
+  ],
+  "loyalty": 89,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": "c1",
+  "children": [
+    "c3"
+  ],
+  "surname": "Wolfholt",
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "spouse",
+  "liege": "c1"
+}

@@ -1,0 +1,11 @@
+{
+ "from": "aldmere-baseline-mw0zeo6b",
+ "turn": 38,
+ "land": {
+  "file": "/Users/user/wednesday/civilization/bridge/data/belia-land.f32",
+  "w": 896,
+  "h": 1408,
+  "perUnit": 4
+ },
+ "made": 1793728243299
+}

@@ -1,0 +1,38 @@
+{
+  "id": "c24",
+  "name": "Corwin Greyford",
+  "gender": "male",
+  "age": 62,
+  "alive": true,
+  "traits": [
+    "ambitious",
+    "proud"
+  ],
+  "loyalty": 76,
+  "goals": [
+    {
+      "kind": "land",
+      "text": "win more land for my family"
+    }
+  ],
+  "relationships": {
+    "c36": {
+      "opinion": -25
+    }
+  },
+  "memories": [
+    "Cecily Stormhold spurned my daughter."
+  ],
+  "spouse": "c25",
+  "children": [
+    "c26",
+    "c27",
+    "c28"
+  ],
+  "surname": "Greyford",
+  "house": "House Thornvale",
+  "playerId": 3,
+  "rank": "bannerman",
+  "seat": 272,
+  "liege": "c20"
+}

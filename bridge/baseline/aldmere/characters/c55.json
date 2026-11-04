@@ -1,0 +1,26 @@
+{
+  "id": "c55",
+  "name": "Rosalind Ashby",
+  "gender": "female",
+  "age": 27,
+  "alive": true,
+  "traits": [
+    "honourable",
+    "generous"
+  ],
+  "loyalty": 50,
+  "goals": [],
+  "relationships": {},
+  "memories": [],
+  "spouse": null,
+  "children": [],
+  "surname": "Ashby",
+  "house": "House Wolfholt",
+  "playerId": 0,
+  "rank": "heir",
+  "liege": "c53",
+  "parents": [
+    "c53",
+    "c54"
+  ]
+}
