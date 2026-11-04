@@ -38,8 +38,11 @@ export function clampFavour(v) {
 // loans called in), so royal gold is a choice to spend, not a heap that grows.
 const lastGold = {};  // player id -> treasury after last season's tithe
 
+// The court and the castles' keep, plus a little for a great treasury's
+// stewards. Not the soldiers: the engine already charges a town for its units,
+// and charging again left the crown at 0 crowns for good, unable to decree.
 export function crownUpkeep(crown) {
-  return 5 + (crown.units ?? 0) + (crown.cities ?? 0) * 3 + Math.floor(Math.max(0, crown.gold) * 0.02);
+  return 2 + (crown.cities ?? 0) * 2 + Math.floor(Math.max(0, crown.gold) * 0.01);
 }
 
 export function titheLua(world, rate) {

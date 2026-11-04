@@ -1323,6 +1323,7 @@ var _tithe_asked_at := 0  # when; after half a minute the realm's word stands
 ## numbers. Rebuilt only when the counsel changes. It teaches the game as it is
 ## played: there is always a next thing to do, and a button that does it.
 var _counsel: PanelContainer
+var _purse := 0  # the royal treasury, in the bridge's gold (×100 crowns)
 var _counsel_sig := ""
 func _show_counsel(items: Array) -> void:
 	var sig := JSON.stringify(items)
@@ -1333,12 +1334,14 @@ func _show_counsel(items: Array) -> void:
 	if _counsel:
 		_counsel.queue_free()
 	_counsel = _glass_panel()
-	_counsel.anchor_left = 0.5
-	_counsel.anchor_right = 0.5
-	_counsel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_counsel.offset_left = -300
-	_counsel.offset_right = 300
-	_counsel.offset_top = 66
+	# Bottom left, under the houses: clear of the table, the story offers under
+	# the top bar and a town's card at the bottom centre.
+	_counsel.anchor_top = 1.0
+	_counsel.anchor_bottom = 1.0
+	_counsel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_counsel.offset_left = 10
+	_counsel.offset_right = 440
+	_counsel.offset_bottom = -12
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
 	_counsel.add_child(v)
@@ -1348,7 +1351,12 @@ func _show_counsel(items: Array) -> void:
 		row.add_theme_constant_override("separation", 2)
 		v.add_child(row)
 		var urgent: bool = int(it.get("urgency", 0)) >= 75
-		row.add_child(T.datum(String(it.get("text", "")), T.SIZE_BODY, T.DANGER if urgent else T.TEXT))
+		var head := Label.new()
+		head.text = String(it.get("text", ""))
+		head.autowrap_mode = TextServer.AUTOWRAP_WORD
+		head.add_theme_font_size_override("font_size", T.SIZE_BODY + 1)
+		head.add_theme_color_override("font_color", T.DANGER if urgent else T.TEXT)
+		row.add_child(head)
 		var why := Label.new()
 		why.text = String(it.get("why", ""))
 		why.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -1364,6 +1372,8 @@ func _show_counsel(items: Array) -> void:
 			b.add_theme_color_override("font_color", T.ACCENT)
 			acts.add_child(b)
 	_counsel.visible = not (_digest_panel and _digest_panel.visible)
+	if _ticker:
+		_ticker.visible = false  # the counsel holds the bottom-left corner; the chronicle has the news
 
 
 func _counsel_act(act: Dictionary) -> void:
@@ -1453,6 +1463,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		_house_by_name[String(houses[pid].get("name", ""))] = houses[pid]
 	set_reign(world.get("reign", {}))
 	var c: Dictionary = world.get("crown", {})
+	_purse = int(c.get("treasury", 0))
 	# The realm's report can be older than the King's last word: until it
 	# carries the tithe just set, the screen keeps showing that one.
 	var reported := float(c.get("tithe", _tithe))
@@ -1582,9 +1593,14 @@ func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 		"levy": "Raise the royal levy  20k cr" if seat else "",
 		"banners": "Call the banners  5k cr" if seat else "",
 	}
+	# A decree the purse can't pay is greyed, and says why and what to do.
+	const COST := {"relief": 12000, "gift": 15000, "feast": 10000, "levy": 20000, "banners": 5000}
 	for a in names:
 		_decree_btns[a].text = names[a]
 		_decree_btns[a].visible = names[a] != ""
+		var short: bool = _purse * 100 < int(COST.get(a, 0))
+		_decree_btns[a].disabled = short
+		_decree_btns[a].tooltip_text = ("The treasury holds %s crowns. Raise the tithe (the %% in the top bar) to fill it." % _heads(_purse * 100)) if short else ""
 	_grant_menu.visible = not c.get("capital", false)  # a house's seat is never granted away
 	_marriage_menu.visible = not mine  # a match is made between two great houses
 	# The other great houses, not this one: the names as the houses table has them.
@@ -1602,7 +1618,7 @@ func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 	if c.is_empty():
 		_town_panel.visible = false
-		_ticker.visible = true
+		_ticker.visible = _counsel == null  # the Hand's counsel holds that corner
 		return
 	_town_panel.visible = true
 	_ticker.visible = false
