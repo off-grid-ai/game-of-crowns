@@ -30,6 +30,8 @@ realm/assets/village/**
 realm/assets/interiors/**
 realm/assets/audio/**
 realm/assets/cavalry/**
+realm/assets/weapons/**
+realm/assets/crops/**
 !realm/assets/realistic/**/
 !realm/assets/people/**/
 !realm/assets/hero/**/
@@ -42,6 +44,8 @@ realm/assets/cavalry/**
 !realm/assets/interiors/**/
 !realm/assets/audio/**/
 !realm/assets/cavalry/**/
+!realm/assets/weapons/**/
+!realm/assets/crops/**/
 !realm/assets/**/*.import
 !realm/assets/**/license.txt
 !realm/assets/**/LICENSE*
