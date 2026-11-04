@@ -9,7 +9,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { cityName, houseFor } from "./narrator.js";
-import { decide, refillBudget } from "./claude.js";
+import { decide } from "./claude.js";
 
 // The court's deck of dilemmas: data, so new ones are written, not coded.
 const DECK_FILE = new URL("./data/dilemmas.json", import.meta.url);
@@ -305,7 +305,6 @@ export class Court {
   // world: live world; ctx: { favour(pid), send(lua), crownId }
   async season(world, ctx) {
     this.populate(world);
-    refillBudget(3);
     const r = rng(world.turn * 104729);
     const turn = world.turn;
     // Age, and sometimes death; heirs inherit.

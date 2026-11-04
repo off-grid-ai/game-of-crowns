@@ -7,7 +7,6 @@
 // The gateway's port moves between dev runs (7878 by default); find it by its /health name.
 const GATEWAYS = [process.env.OFFGRID_URL, ...Array.from({ length: 8 }, (_, i) => `http://127.0.0.1:${7878 + i}/v1`)].filter(Boolean);
 
-let budget = 0;
 let lastWatched = 0;
 let base = null;
 
@@ -18,10 +17,6 @@ export function watched() {
 
 export function isWatched() {
   return Date.now() - lastWatched < 15000;
-}
-
-export function refillBudget(n) {
-  budget = n;
 }
 
 export function usageToday() {
@@ -77,10 +72,9 @@ async function completeOnce(system, prompt, maxTokens) {
   }
 }
 
-// A character's pivotal decision. Budgeted per season and only while watched.
+// A character's pivotal decision, in their own voice. The model is local and
+// free, so every one goes to it; rules decide only if it isn't running.
 export async function decide(system, prompt) {
-  if (budget <= 0 || Date.now() - lastWatched > 15000) return null;
-  budget--;
   return complete(system, prompt);
 }
 
