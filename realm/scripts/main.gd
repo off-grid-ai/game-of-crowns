@@ -555,7 +555,10 @@ func _frame_for_shot(world: Dictionary) -> void:
 						get_tree().create_timer(0.4).timeout.connect(_take_shot))
 				if _shot.has("interior"):
 					get_tree().create_timer(2.0).timeout.connect(func():
-						interior.open(String(_shot["interior"]), p, h, String(p.get("seat", ""))))))
+						interior.open(String(_shot["interior"]), p, h, String(p.get("seat", "")))
+						get_tree().create_timer(3.0).timeout.connect(_take_shot))
+				elif not _shot.has("duel"):
+					get_tree().create_timer(3.0).timeout.connect(_take_shot)))
 		return
 	if _shot.has("hero"):
 		bridge.house(int(_shot["hero"]), func(d):

@@ -38,6 +38,7 @@ var _me  # Combat: you, in a fight
 var _foes: Array = []  # Combat: whoever has come for you
 var _threat_check := 12.0
 var _blocking := false
+var _news_until := 0
 
 
 func start(person: Dictionary, house: Dictionary, town_id: int) -> void:
@@ -61,10 +62,10 @@ func start(person: Dictionary, house: Dictionary, town_id: int) -> void:
 		if d["room"] == "great_hall":
 			door = d["at"]
 			break
-	# A few steps out into the square, the camera on the square's side looking
-	# back at where they came from, so it never sits inside a wall.
-	var out := Vector3(-door.x, 0, -door.z).normalized() * 0.45
-	var start_at := _walkable(center + door + out)
+	# Out in the open square, between the well and their door, the camera on the
+	# square's side, so nothing stands between it and them.
+	var sq: float = towns.towns[town_id]["node"].get_meta("square_r", 1.0)
+	var start_at := _walkable(center + Vector3(door.x, 0, door.z).normalized() * sq * 0.4)
 	_body.position = Vector3(start_at.x, terrain.height_at(start_at.x, start_at.z), start_at.z)
 	_yaw = atan2(center.x - _body.position.x, center.z - _body.position.z)
 	_body.rotation.y = _yaw + PI
@@ -255,6 +256,8 @@ func _town_at(p: Vector3) -> int:
 ## Who or what is close enough to act on, shown as a prompt.
 func _look_around() -> void:
 	_near = {}
+	if Time.get_ticks_msec() < _news_until:
+		return  # something just happened; let it be read
 	var who: Dictionary = villagers.who_at(_body.position, 0.28)
 	if not who.is_empty():
 		_near = {"kind": "folk", "town": who["town"], "i": who["i"]}
@@ -300,7 +303,7 @@ func _land(attacker) -> void:
 			if f == _me and not _me.alive():
 				_fallen()
 			elif not turned and f != _me and not f.alive():
-				_prompt.text = "The outlaw falls."
+				_say("The outlaw falls.")
 
 
 ## Foes close in, circle a little, strike when in reach, and now and then raise
@@ -353,11 +356,17 @@ func spawn_foes(count: int) -> void:
 		f.on_land = _land
 		f.draw(true)
 		_foes.append(f)
-	_prompt.text = "Outlaws come for you. Tab to draw your sword."
+	_say("Outlaws come for you. Tab to draw your sword.")
+
+
+## News in the prompt line, held long enough to read.
+func _say(text: String, seconds := 4.0) -> void:
+	_prompt.text = text
+	_news_until = Time.get_ticks_msec() + int(seconds * 1000)
 
 
 func _fallen() -> void:
-	_prompt.text = "%s has fallen." % String(_person.get("name", ""))
+	_say("%s has fallen." % String(_person.get("name", "")), 10.0)
 	get_tree().create_timer(3.5).timeout.connect(func():
 		fell.emit(_person)
 		stop())
