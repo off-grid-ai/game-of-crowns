@@ -27,9 +27,16 @@ want() { [ ${#ONLY} = 0 ] || (( ${ONLY[(Ie)$1]} )); }
 still() {
   local dir=$1 name=$2; shift 2
   want $name || return 0
+  for try in 1 2 3; do
+    rm -f $dir/$name.png
+    LIMIT=600 GODOT_ARGS="--fixed-fps 30" realm/tools/render.sh $dir/$name.png --wait=99999 --secs=0 "$@"
+    mv -f $dir/$name.log $WORK/still_$name.log 2>/dev/null
+    # A GPU stall leaves no picture or a blank one (a few KB): take it again.
+    [ -f $dir/$name.png ] && [ $(stat -f %z $dir/$name.png) -gt 500000 ] && return 0
+    echo "retake $name"
+  done
   rm -f $dir/$name.png
-  LIMIT=600 GODOT_ARGS="--fixed-fps 30" realm/tools/render.sh $dir/$name.png --wait=99999 --secs=0 "$@"
-  mv -f $dir/$name.log $WORK/still_$name.log 2>/dev/null
+  return 1
 }
 
 # A clip: every frame of the move as a 4K JPEG, then 4K and 1080p MP4s, and its
@@ -38,8 +45,13 @@ clip() {
   local name=$1; shift
   want $name || return 0
   local frames=$WORK/$name png=$WORK/$name.png
-  rm -rf $frames $png
-  LIMIT=${CLIP_LIMIT:-3600} GODOT_ARGS="--fixed-fps 30" realm/tools/render.sh $png --wait=99999 --frames=$frames "$@"
+  for try in 1 2 3; do
+    rm -rf $frames $png
+    LIMIT=${CLIP_LIMIT:-3600} GODOT_ARGS="--fixed-fps 30" realm/tools/render.sh $png --wait=99999 --frames=$frames "$@"
+    # Whole and not blank (a GPU stall), or take it again.
+    grep -q "CLIP_END" $WORK/$name.log && [ $(stat -f %z $png 2>/dev/null || echo 0) -gt 500000 ] && break
+    echo "retake $name"
+  done
   [ -f $frames/00000.jpg ] || { echo "NO TAKE $name (log: $WORK/$name.log)"; return 1; }
   $FF -y -loglevel error -framerate 30 -i $frames/%05d.jpg -c:v libx264 -preset slow -crf 14 -pix_fmt yuv420p -movflags +faststart $CLIPS/${name}_4k.mp4
   $FF -y -loglevel error -framerate 30 -i $frames/%05d.jpg -vf scale=1920:1080:flags=lanczos -c:v libx264 -preset slow -crf 16 -pix_fmt yuv420p -movflags +faststart $CLIPS/${name}_1080p.mp4

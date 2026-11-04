@@ -25,6 +25,7 @@ var _t := -1.0  # time into the move; below zero while waiting
 var _n := 0  # frames of the move so far
 var _settle := 0.0
 var _at := Vector3.ZERO  # what the move is about: a town, a field, a feast
+var _seat_yaw := 1.0  # a seat's shot looks from the side away from its castle
 var _keys: Array[int] = []  # keys held down for a walk
 var _staged := false
 var _swings := 0
@@ -66,8 +67,8 @@ func _ready() -> void:
 		DirAccess.make_dir_recursive_absolute(frames_dir)
 	_film = SubViewport.new()
 	_film.size = film_size
-	_film.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	_film.msaa_3d = Viewport.MSAA_4X
+	_film.render_target_update_mode = SubViewport.UPDATE_DISABLED  # until just before the move
+	_film.msaa_3d = Viewport.MSAA_2X  # 4x at 4K stalls the GPU (Metal fence timeouts)
 	add_child(_film)
 	_film_cam = Camera3D.new()
 	_film.add_child(_film_cam)
@@ -82,17 +83,23 @@ func _process(delta: float) -> void:
 		if not _ready_to_roll():
 			_settle = 0.0
 			return
-		# Built and framed: let the towns' life come out and the light settle.
-		_settle += delta
-		if not _staged and _settle > 0.5:
+		if not _staged:
 			_staged = true
 			_stage()
+			return
+		if not _scene_up():
+			return
+		# Built, framed and on stage: let the towns' life come out and the light settle.
+		_settle += delta
+		if _settle >= _lead_in() - 2.0 and _film.render_target_update_mode != SubViewport.UPDATE_ALWAYS:
+			# The 4K film only draws from here (its light needs a moment to
+			# settle); the window's own view is never filmed, so it stops.
+			_film.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+			get_tree().root.disable_3d = true
 		if _settle < _lead_in():
 			return
 		_t = 0.0
 		_begin()
-		# The window's own view is never filmed: stop drawing it.
-		get_tree().root.disable_3d = true
 		print("CLIP_START")
 	else:
 		_t += delta
@@ -111,14 +118,22 @@ func _ready_to_roll() -> bool:
 	return main.terrain.width > 0 and main._framed and not main.towns.towns.is_empty() and not main.towns.building()
 
 
+## The staged scene is showing: the portrait open, the lord out in their
+## town, the hall's room built around them.
+func _scene_up() -> bool:
+	match clip:
+		"hero": return main.hero.visible and is_instance_valid(main.hero._cam)
+		"duel", "walk": return main.control.active
+		"hall": return main.interior.visible and main.interior._settled
+	return true
+
+
 ## Seconds between the realm being built and the move: scenes staged here need
 ## time to gather (the battle to close, the siege to set up, the lord to step out).
 func _lead_in() -> float:
 	match clip:
 		"battle": return 7.0
 		"siege": return 10.0
-		"duel", "walk", "hero": return 5.0
-		"hall": return 8.0
 		"feast": return 5.0
 	return 3.0
 
@@ -129,6 +144,13 @@ func _stage() -> void:
 	if not city.is_empty():
 		_at = main.terrain.world_pos(float(city["x"]), float(city["y"]))
 	match clip:
+		"seat":
+			_seat_yaw = 1.0
+			var town: Dictionary = main.towns.towns.get(int(city.get("id", -1)), {})
+			var castle: Node3D = town["node"].find_child("Castle", true, false) if town.has("node") else null
+			if castle:
+				var d := castle.global_position - _at
+				_seat_yaw = atan2(-d.x, -d.z)
 		"battle":
 			var field: Vector3 = main.terrain.world_pos(float(city["x"]) + 1.5, float(city["y"]))
 			_at = field
@@ -200,11 +222,14 @@ func _move(u: float, e: float) -> void:
 			var d := exp(lerpf(log(far * 0.6), log(4.0), e))
 			_cam(_at, d, 2.4 - e * 0.9, lerpf(34.0, 24.0, e))
 		"seat":
-			_cam(_at, 6.5, 0.4 + e * 1.2, 21.0)
+			# From the town's far side, so the castle stands behind its roofs.
+			_cam(_at, 7.0, _seat_yaw - 0.45 + e * 0.9, 17.0)
 		"street":
 			# A glide just over the roofs, across the town and through its square.
 			var dir := Vector3(sin(0.6), 0, cos(0.6))
-			_cam(_at + dir * lerpf(1.2, -1.2, e), 1.8, 0.6 + e * 0.4, 16.0)
+			# (Close in, the rig keeps the eye a set height off the ground, so it
+			# looks a little steeper than asked.)
+			_cam(_at + dir * lerpf(1.2, -1.2, e), 1.1, 0.6 + e * 0.4, 14.0)
 		"battle":
 			_cam(_at, lerpf(4.2, 3.0, e), 0.2 + e * 1.0, 22.0)
 		"siege":
@@ -276,7 +301,11 @@ func _end() -> void:
 		_press(k, false)
 	_film.get_texture().get_image().save_png(String(main._shot["path"]))
 	print("CLIP_END %d frames" % maxi(_n - 1, 0))
-	get_tree().quit()
+	# Free the realm while the renderer still runs, then quit: quitting with it
+	# all alive leaks every mesh instance at shutdown and can crash the exit.
+	var tree := get_tree()
+	main.queue_free()
+	tree.create_timer(0.3).timeout.connect(tree.quit)
 
 
 func _press(key: int, down: bool) -> void:
