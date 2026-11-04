@@ -503,7 +503,7 @@ function counsel(players, cities, threat) {
       acts: [pretender && seatOf(pretender.id) ? { label: `Gift crowns to ${claimant.replace(/^House /, "")}`, action: "gift", city: seatOf(pretender.id).id } : null, { label: "Call the banners", action: "banners" }].filter(Boolean) });
   } else if (threat.usurper !== "none") out.push({ urgency: 100, text: `${claimant}'s host marches on Kingsmere`, why: "If it reaches the walls, the crown is lost. Loyal houses (favour 35 and up) send men when you call the banners; the royal levy is yours to pay for.", acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }] });
   // The pretender's own coldness is the usurper's story: one matter, not two.
-  if (threat.usurper === "rumour" && pretender) {
+  if (threat.usurper !== "none" && pretender) {
     const i = out.findIndex((o) => o.text.startsWith(`${pretender.house.name} grows cold`));
     if (i >= 0) out.splice(i, 1);
   }
@@ -803,6 +803,13 @@ http.createServer(async (req, res) => {
       const stilledWith = (q) => { const a = lordOf(p.id), b = lordOf(q.id); return !!(a && b && court.truce(a.id, b.id)); };
       const rivals = (p.atWarWith ?? []).map((id) => players.find((q) => q.id === id)).filter((q) => q && !q.house.wild);
       p.wars = rivals.filter((q) => !stilledWith(q)).map((q) => q.house.crown ? "the Crown" : q.house.name.replace(/^House /, ""));
+      // A pretender on the march is at war with the crown, whatever the engine's treaties say.
+      const u = stakes?.s.usurper;
+      if (u?.stage === "march") {
+        const claimant = players.find((q) => q.id === u.house);
+        if (p.id === u.house && !p.wars.includes("the Crown")) p.wars.unshift("the Crown");
+        if (p.house.crown && claimant && !p.wars.includes(claimant.house.name.replace(/^House /, ""))) p.wars.unshift(claimant.house.name.replace(/^House /, ""));
+      }
       p.truces = rivals.filter(stilledWith).map((q) => q.house.name.replace(/^House /, ""));
       // How far favour has moved in the last year (four seasons), shown beside it.
       const yearAgo = favourPast[(world?.turn ?? 0) - 4];

@@ -767,6 +767,18 @@ func _process(delta: float) -> void:
 	# away report, and is back when you close them.
 	if _counsel:
 		_counsel.visible = not ((_digest_panel and _digest_panel.visible) or _town_panel.visible or _court_panel.visible)
+		# Never over the houses table: past its foot, the Hand drops his last matters.
+		if _counsel.visible:
+			_counsel.offset_top = _counsel.offset_bottom - _counsel.get_combined_minimum_size().y  # hug its content
+		if _counsel.visible and _houses_panel.visible and _counsel.get_child_count() > 0:
+			var rows := _counsel.get_child(0).get_children()
+			var foot := _houses_panel.get_global_rect().end.y + 8.0
+			for i in range(rows.size() - 1, 1, -1):  # keep the heading and the first matter
+				if _counsel.get_global_rect().position.y >= foot:
+					break
+				if rows[i].visible:
+					rows[i].visible = false
+					break  # one a frame: the card re-measures before the next
 	_arrange_top()  # the date line grows (a usurper marches…), so keep the bar from overlapping
 	_fit_centre(_digest_panel, 620.0)
 	_fit_centre(_house_panel, 640.0)
@@ -1408,7 +1420,7 @@ func _show_counsel(items: Array) -> void:
 	_counsel.anchor_bottom = 1.0
 	_counsel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_counsel.offset_left = 10
-	_counsel.offset_right = 440
+	_counsel.offset_right = 540  # wide enough for two priced orders on one line
 	_counsel.offset_bottom = -12
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
