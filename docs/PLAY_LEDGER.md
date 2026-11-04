@@ -10,6 +10,14 @@ How a round is played: `realm/tools/play/*.play` scenarios feed real input (keys
 
 | # | Expected | Found | Change | Commit |
 |---|---|---|---|---|
+| 24 | The King can always act | The purse sat at 0 for good (upkeep charged soldiers the engine already pays for), so every decree failed silently (r05/05-banners) | Upkeep is the court and castles only; a decree the purse can't pay is greyed with why and how to fill it | de1cb08 |
+| 23 | The counsel doesn't hide the table | The Hand's card sat over the houses' favour column and under the story offer (r05/03-counsel) | Bottom-left in plain type, clear of the table, the offers and a town's card | de1cb08 |
+| 22 | Towns speak the realm's language | "Training Settlers 6%", "grain 20 t of 400 t" | "Raising settlers for a new town · 6%", "granary half full" | a3f305d |
+| 21 | Favour has reasons (supervisor #2) | A number with no why | Every change records its cause; hovering shows them and what the level means | 913e98a |
+| 20 | A newcomer's realm doesn't just end | A 10-minute reign ended mid-play; the menu offered only "View" (r04/03-realm) | Rule on (endless, score kept); Endless first, timed reigns as a chosen challenge | 74949fb, 28883ea |
+| 19 | The King's army obeys the King | "Gildport is razed to the ground by The Crown", unbidden (r04) | The Crown's AI defends and builds, never conquers on its own | 74949fb |
+| 18 | Houses differ | Every house at the same favour (28 on Tough) | Each starts from its own history with the crown (world bible) | 74949fb |
+| 17 | The Hand's counsel shows (verified) | Seen working in r05/03-counsel: the coldest house with Gift crowns / A feast, petitioners with Hear them, the thin treasury with Raise the tithe | | r05 |
 | 16 | The King can bind houses together (political alliances) | No royal diplomacy at all: alliances were chronicle lines between lords | A royal match on any house's card: both houses warm to the crown, the lords to each other, heirs named, a long truce against raids and plots | 70aa696 |
 | 15 | The King can raise an army from his vassals | Only a paid royal levy; houses' loyalty never tested | Call the banners: loyal houses send men at once, wary ones a few with excuses, cold ones refuse; the men join the royal host. Once a year | 372e1c5 |
 | 14 | The menu's first choice is obvious and easy to hit | Small thin text over a bright sky; a click landed between two entries (r03) | Bigger entries with a dark edge, Continue in gold | a10dddf |
