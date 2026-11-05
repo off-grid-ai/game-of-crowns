@@ -15,6 +15,8 @@
 
 **Title:** Any game where you make one call and watch it play out for years?
 
+> I'm building a game around this and want to know if it's just me.
+>
 > I want a world that runs itself. Towns grow, harvests fail, families feud. I make one call, like raising a tax, and watch what it causes years later.
 >
 > Closest I've found:
@@ -23,8 +25,6 @@
 > - Dwarf Fortress legends: the best stories, read after the fact.
 >
 > What do you play for this? And what stops watching from feeling like a screensaver?
->
-> (I'm building one because I couldn't find it. Mostly here to learn what you'd want.)
 
 ## 2. The design question (a few days later)
 **Where:** r/gamedesign, r/4Xgaming
@@ -35,12 +35,12 @@
 >
 > Too few levers and it's a screensaver. Too many and it's Crusader Kings. Where's the line for you, and which game got it right?
 
-## 3. The chain (a week or two later, 3–4 screenshots in order)
+## 3. The chain (a week or two later, as a 30–45s clip uploaded to Reddit directly)
 **Where:** r/SimulationGames, r/4Xgaming, r/indiegames; r/godot with a how-it's-built angle
 
 **Title:** I raised taxes. Four years later a noble house was camped outside my capital.
 
-> [One line per step, each with its screenshot. Every step must have happened, in that order, in one run.]
+> [One line per step, matching the clip. Every step must have happened, in that order, in one run.]
 >
 > I set the tax. Everything after happened on its own.
 >
