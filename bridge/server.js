@@ -679,6 +679,11 @@ function collectTithe(turn) {
   flushHeld();  // last season's grouped lines
   if (!world) return;
   favourPast[turn] = { ...favour };
+  // Old grievances and kindnesses fade (about half in five years), so the cause
+  // the Hand names is what moves a house now, not a lifetime's sum.
+  for (const id of Object.keys(favourWhy)) {
+    favourWhy[id] = (favourWhy[id] ?? []).map((r) => ({ ...r, d: r.d * 0.97 })).filter((r) => Math.abs(r.d) >= 1);
+  }
   for (const t of Object.keys(favourPast)) if (Number(t) < turn - 8) delete favourPast[t];
   const t = titheLua(world, meta.tithe);
   tally.total += t.total;
