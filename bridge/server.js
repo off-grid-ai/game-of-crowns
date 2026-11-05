@@ -458,7 +458,7 @@ function onEvent(line) {
   if (ev.kind === "turn") {
     healScars(Number(ev.turn));
     collectTithe(Number(ev.turn));
-    setTimeout(() => stakes?.tick(Number(ev.turn), world, { favour: favourOf, shift: shiftFavour, send: (l) => send(`lua cmd ${l}`), watched: isWatched(), options: meta.options ?? {} }), 2000);
+    setTimeout(() => stakes?.tick(Number(ev.turn), world, { favour: favourOf, sworn, shift: shiftFavour, send: (l) => send(`lua cmd ${l}`), watched: isWatched(), options: meta.options ?? {} }), 2000);
     if (Number(ev.turn) % 4 === 0) setTimeout(runSeason, 2500);
     setTimeout(() => runArcs(1), 4000);
     // Let the AI finish its start-of-turn moves before dumping the world.
@@ -484,7 +484,7 @@ async function runSeason() {
   if (!world || seasonRunning || !court) return;
   seasonRunning = true;
   try {
-    await court.season(world, { favour: favourOf, cause: causeOf, warded: (pid) => (stakes?.s.wards?.[pid] ?? -1) > (world?.turn ?? 0), send: (l) => send(`lua cmd ${l}`), shift: shiftFavour, watched: isWatched(), options: meta.options ?? {} });
+    await court.season(world, { favour: favourOf, cause: causeOf, warded: (pid) => (stakes?.s.wards?.[pid] ?? -1) > (world?.turn ?? 0) || sworn(pid), send: (l) => send(`lua cmd ${l}`), shift: shiftFavour, watched: isWatched(), options: meta.options ?? {} });
   } catch (err) {
     console.error("season:", err);
   } finally {
@@ -508,6 +508,9 @@ function arcCtx() {
     story: meta.options?.story ?? null,
     storyTags: meta.options?.storyTags ?? [],
     endReign: (why, outcome = "deposed") => endReign(why, outcome),
+    // The throne's own war: a story's pretender marches on Kingsmere (stakes.js runs the march).
+    declare: (pid, size) => stakes?.declare(pid, world, { send: (l) => send(`lua cmd ${l}`) }, size),
+    usurperStage: () => stakes?.s.usurper.stage ?? "none",
     refresh: () => new Promise((r) => { snapshot(); setTimeout(r, 900); }),
   };
 }
@@ -653,7 +656,7 @@ function counsel(players, cities, threat) {
   if (!out.length) out.push({ urgency: 0, text: "The realm is quiet", why: "A good season to win a house's love before you need it.", acts: [] });
   // Every order shows its price before the King gives it, as the town card does: "Command peace  6k cr".
   // And what it does, so the King weighs effect against price: "Gift crowns  15k cr · +10".
-  const DOES = { sellswords: "1,000 men", back: "+12 them, −12 the other", settle: "truce; keeper +6, both −3", sitout: "the war goes on",  tithe_down: `slower to cool; ${(Math.round(lastSeason.net * 50) / 1000).toFixed(1)}k less a season`, grant: "+20 them, −30 the holder", gift: "+10", feast: "+15", relief: "+12, eases it, cannot end it", marriage: "+8 each, bound in peace", peace: "+2 each, truce", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2" };
+  const DOES = { sellswords: "1,000 men", back: "+12 them, −12 the other", settle: "truce; keeper +6, both −3", sitout: "the war goes on",  tithe_down: `slower to cool; ${(Math.round(lastSeason.net * 50) / 1000).toFixed(1)}k less a season`, grant: "+20 them, −30 the holder", gift: "+10", feast: "+15", relief: "+12, eases it, cannot end it", marriage: "+8 each, bound in peace", peace: "+2 each, truce", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2", alliance: "sworn 4 years, +5", march: "the host besieges; −25 them" };
   // An order that can't be given now isn't offered: the banners answer once a year.
   for (const o of out) o.acts = o.acts.filter((a) => a.action !== "banners" || bannersReady(world?.turn ?? 0));
   // The Hand's own pick on each matter: the order that does most for its cost.
@@ -694,6 +697,8 @@ const DEED_WORDS = {
   "shamed over the crown's loan": [null, "shamed us over the crown's loan"],
   "left unheard at court": [null, "left us waiting at court and never answered"],
   "the royal tithe": [null, "bled us with the tithe"],
+  "an oath to the crown": ["took our oath and stood by it", "broke the oath we swore to the crown"],
+  "the royal host": ["marched for us", "marched the royal host on our walls"],
 };
 
 // A deed the house will not forget. The same deed again adds to the old one;
@@ -727,6 +732,61 @@ function noteFavour(id, d, why) {
   if (same) same.d += d;  // the same cause again adds up, not repeats
   else list.push({ d, why });
   while (list.length > 6) list.shift();
+}
+
+// --- Oaths and the royal host ------------------------------------------------------
+
+// A house sworn to the crown (an alliance not yet run out).
+function sworn(pid) {
+  return (meta?.alliances?.[pid] ?? -1) > (world?.turn ?? 0);
+}
+
+// The royal host goes to a town: sworn houses send their men with it (an ally
+// marched upon breaks its own oath, and the realm hears of it).
+function startCampaign({ city, house }) {
+  const turn = world?.turn ?? 0;
+  const at = world.cities.find((c) => c.id === city);
+  if (!at) return;
+  if (sworn(house)) {
+    delete meta.alliances[house];
+    shiftFavour(Object.fromEntries(greatHouses().filter((p) => p.id !== house).map((p) => [p.id, -5])), "an oath to the crown");
+    record({ turn, kind: "betrayal", text: `The King marches on a house sworn to him. Every lord who ever knelt to the crown takes note.`, city });
+  }
+  const allies = greatHouses().filter((p) => p.id !== house && sworn(p.id) && world.cities.some((c) => c.owner === p.id));
+  for (const a of allies) send(`lua cmd realm_host(realm_find_player(${a.id}), ${at.x}, ${at.y}, {"Pikemen","Knights"}, 3)`);
+  if (allies.length) record({ turn, kind: "decree", text: `${allies.map((p) => houseFor(p).name).join(" and ")} ${allies.length > 1 ? "answer their oaths" : "answers its oath"} and ${allies.length > 1 ? "send" : "sends"} men to march with the King.`, city });
+  (meta.campaigns ??= []).push({ city, house, turn, allies: allies.map((p) => p.id) });
+  chron.saveMeta(meta);
+  scene("siege", { x: at.x, y: at.y, city, owner: world.players.find((p) => houseFor(p).crown)?.id, defender: house });
+}
+
+// Each season: a host that has stood three seasons before a town takes it or breaks.
+function resolveCampaigns(turn) {
+  for (const c of [...(meta.campaigns ?? [])]) {
+    if (turn - c.turn < 3) continue;
+    meta.campaigns = meta.campaigns.filter((x) => x !== c);
+    const town = world.cities.find((x) => x.id === c.city);
+    const crown = world.players.find((p) => houseFor(p).crown);
+    const foe = world.players.find((p) => p.id === c.house);
+    if (!town || !crown || !foe) continue;
+    if (town.owner !== c.house) { record({ turn, kind: "decree", text: `The royal host stands down before ${cityName(c.city)}: it is no longer ${houseFor(foe).name}'s to take.`, city: c.city }); continue; }
+    const allyMen = (c.allies ?? []).reduce((t, id) => t + (world.players.find((p) => p.id === id)?.units ?? 0) * 0.25, 0);
+    const ours = (crown.units ?? 0) + allyMen;
+    const theirs = (foe.units ?? 0) * 0.6;  // a house can't bring every company to one town
+    const odds = ours / Math.max(1, ours + theirs);
+    if (Math.random() < odds) {
+      send(`lua cmd local t = find.city(nil, ${c.city}); local to; for p in players_iterate() do if p.id == ${crown.id} then to = p end end; if t and to then edit.transfer_city(t, to) end`);
+      shiftFavour({ [c.house]: -20 }, "the royal host");
+      shiftFavour(Object.fromEntries((c.allies ?? []).map((id) => [id, 6])), "the royal host");
+      record({ turn, kind: "sack", text: `${cityName(c.city)} falls to the royal host. ${houseFor(foe).name} has learned what the crown's anger costs.`, city: c.city });
+    } else {
+      send(`lua cmd local n = 0; for p in players_iterate() do if p.id == ${crown.id} then for u in p:units_iterate() do if n < 5 and u.utype:rule_name() ~= "Workers" then edit.unit_kill(u, "killed", nil); n = n + 1 end end end end`);
+      shiftFavour(Object.fromEntries(greatHouses().filter((p) => p.id !== c.house).map((p) => [p.id, -3])), "the royal host");
+      shiftFavour({ [c.house]: -10 }, "the royal host");
+      record({ turn, kind: "battle", text: `The royal host breaks against the walls of ${cityName(c.city)}. ${houseFor(foe).name} holds, and the realm sees a King who can be refused.`, city: c.city });
+    }
+  }
+  chron.saveMeta(meta);
 }
 
 // Shifts favour and says what it did, for the result card: "6,000 crowns · Thornvale 34 → 29".
@@ -769,6 +829,7 @@ function collectTithe(turn) {
   if (court && world) court.courtDay(world, turn, { favour: favourOf, shift: shiftFavour, send: (l) => send(`lua cmd ${l}`), watched: isWatched(), options: meta.options ?? {} }).catch((err) => console.error("court day:", err));
   if (!world) return;
   favourPast[turn] = { ...favour };
+  resolveCampaigns(turn);
   // Old grievances and kindnesses fade (about half in five years), so the cause
   // the Hand names is what moves a house now, not a lifetime's sum.
   for (const id of Object.keys(favourWhy)) {
@@ -1005,6 +1066,8 @@ http.createServer(async (req, res) => {
     for (const p of players) {
       p.favour = p.house.wild || p.house.crown ? null : favourOf(p.id);
       p.favourWhy = favourWhy[p.id] ?? [];
+      p.sworn = sworn(p.id) ? meta.alliances[p.id] : null;  // until what turn the house is sworn to the crown
+      p.besieged = (meta.campaigns ?? []).filter((x) => x.house === p.id).map((x) => x.city);
       // Whom the house is at odds with, by name: wars, and wars the King has
       // stilled (a commanded peace or a royal match) as truces.
       const lordOf = (pid) => court?.lordOfHouse(pid);
@@ -1171,10 +1234,12 @@ http.createServer(async (req, res) => {
         }
       }
     }
-    const result = decree({ ...cmd, favourOf, causeOf, usurper: stakes?.s.usurper, seat: stakes?.s.seat }, world);
+    const result = decree({ ...cmd, favourOf, causeOf, sworn, marching: (city) => (meta.campaigns ?? []).some((x) => x.city === city), usurper: stakes?.s.usurper, seat: stakes?.s.seat }, world);
     if (result.error) return json(res, 400, result);
     if (result.endUsurper && stakes) { stakes.s.usurper.stage = "none"; stakes.save(); }
     if (result.relieved != null) { (meta.relieved ??= {})[result.relieved] = world.turn ?? 0; chron.saveMeta(meta); }
+    if (result.alliance != null) { (meta.alliances ??= {})[result.alliance] = (world.turn ?? 0) + 16; chron.saveMeta(meta); }
+    if (result.march) startCampaign(result.march);
     // A ward holds the house for five years.
     if (result.ward != null && stakes) { (stakes.s.wards ??= {})[result.ward] = (world.turn ?? 0) + 20; stakes.save(); }
     // A town taken from a house is remembered, so the Hand can offer it back.
@@ -1191,7 +1256,7 @@ http.createServer(async (req, res) => {
     if (crownNow) crownNow.gold -= result.cost;
     // The result card says what the order cost and whose favour moved, so the
     // King learns the price of his word.
-    const effects = shiftAndTell(result.favour, { gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "the King's banners: answered or refused", marriage: "a royal match", peace: "the King's peace", back: "the King took a side", settle: "the King's peace, kept by another house", buyoff: "the King bought off the pretender", ward: "their heir taken as the King's ward" }[cmd.action] ?? "a royal decree", result.cost);
+    const effects = shiftAndTell(result.favour, { gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "the King's banners: answered or refused", marriage: "a royal match", peace: "the King's peace", back: "the King took a side", settle: "the King's peace, kept by another house", buyoff: "the King bought off the pretender", ward: "their heir taken as the King's ward", alliance: "an oath to the crown", march: "the royal host" }[cmd.action] ?? "a royal decree", result.cost);
     const seat = world.cities.find((c) => c.owner === crownNow?.id && c.capital);
     const target = world.cities.find((c) => c.id === Number(cmd.city));
     if (seat && target && (cmd.action === "relief" || cmd.action === "gift")) scene(cmd.action === "relief" ? "grain" : "tribute", { x: seat.x, y: seat.y, tx: target.x, ty: target.y, city: target.id });

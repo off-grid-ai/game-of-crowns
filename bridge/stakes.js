@@ -48,6 +48,20 @@ export class Stakes {
     return "realm_the_dead()";
   }
 
+  // A story declares for the throne: the house marches on Kingsmere now, and
+  // the march ends as any usurper's does (broken, worn out, or the crown lost).
+  declare(pid, world, ctx, size = 10) {
+    const u = this.s.usurper;
+    if (!this.s.seat || u.stage === "march") return false;
+    u.stage = "march";
+    u.house = pid;
+    u.since = world.turn ?? 0;
+    u.peak = 0;
+    this.host(ctx, this.playerById(pid), this.s.seat.x, this.s.seat.y, ["Knights", "Pikemen", "Catapult", "Knights"], size);
+    this.save();
+    return true;
+  }
+
   tick(turn, world, ctx) {
     if (!world) return;
     // The crown's fate only advances while the King is present; the realm lives on regardless.
@@ -72,7 +86,8 @@ export class Stakes {
     const houses = world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown && p.cities > 0);
     // A house whose heir is the King's ward does not rise while the ward lives at court.
     const held = (this.s.wards ?? {});
-    const angry = houses.filter((p) => ctx.favour(p.id) < 25 && !((held[p.id] ?? -1) > turn));
+    // Nor does a house sworn to the crown while its oath holds.
+    const angry = houses.filter((p) => ctx.favour(p.id) < 25 && !((held[p.id] ?? -1) > turn) && !ctx.sworn?.(p.id));
     const u = this.s.usurper;
     if (u.stage === "none" && ctx.options?.usurper !== false && houses.length && angry.length >= Math.max(2, Math.ceil(houses.length / 3))) {
       const pretender = angry.sort((a, b) => b.cities - a.cities)[0];

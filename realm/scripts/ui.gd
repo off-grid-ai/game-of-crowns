@@ -647,7 +647,7 @@ func _build_town_panel() -> void:
 	v.add_child(T.label("Royal decrees"))
 	var row := HFlowContainer.new()
 	v.add_child(row)
-	for a in ["relief", "gift", "feast", "levy", "banners"]:
+	for a in ["relief", "gift", "feast", "levy", "banners", "alliance", "march"]:
 		var act: String = a
 		_decree_btns[act] = _btn("", func():
 			if act == "banners":
@@ -1987,11 +1987,14 @@ func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 		"feast": ("Hold a feast at court  " + _price("feast", 10000)) if seat else ("" if mine else "Feast in %s's honour  %s" % [lord, _price("feast", 10000)]),
 		"levy": ("Raise the royal levy  " + _price("levy", 20000)) if seat else "",
 		"banners": ("Call the banners  " + _price("banners", 5000)) if seat else "",
+		# Politics with teeth: an oath that binds a house to the crown's wars, and the royal host.
+		"alliance": "" if mine or _town_player.get("sworn") != null else "Swear an alliance with %s  %s" % [lord, _price("alliance", 20000)],
+		"march": "" if mine or (_town_player.get("besieged", []) as Array).has(int(c["id"])) else "March on %s  %s" % [town, _price("march", 25000)],
 	}
 	_marriage_menu.text = "Arrange a marriage with…  " + _price("marriage", 40000)
 	# A decree the purse can't pay is greyed, and says why and what to do.
 	var COST := {}
-	for a in ["relief", "gift", "feast", "levy", "banners"]:
+	for a in ["relief", "gift", "feast", "levy", "banners", "alliance", "march"]:
 		COST[a] = int(_decrees.get(a, {}).get("cost", 0)) * CROWNS
 	for a in names:
 		_decree_btns[a].text = names[a]
@@ -2013,7 +2016,11 @@ func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 	_grant_menu.text = "Grant this town to…" if mine else "Take it and grant it to…"
 
 
+var _town_player := {}  # the house holding the town on the card, as the realm reports it
+
+
 func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
+	_town_player = _player
 	if c.is_empty():
 		_town_panel.visible = false
 		_ticker.visible = _counsel == null  # the Hand's counsel holds that corner
@@ -2037,6 +2044,10 @@ func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 	var parts := []
 	if c.get("capital", false):
 		parts.append("Seat of the house")
+	if (_town_player.get("besieged", []) as Array).has(int(c["id"])):
+		parts.append("the royal host at its walls")
+	if _town_player.get("sworn") != null:
+		parts.append("sworn to the crown")
 	parts.append("%s souls" % _heads(250 * int(c["size"]) * (int(c["size"]) + 1)))
 	if String(c.get("building", "")) == "Coinage":
 		parts.append("filling the coffers")

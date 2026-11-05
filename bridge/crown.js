@@ -19,6 +19,8 @@ export const DECREES = {
   sellswords: { cost: 300, label: "Hire sellswords" },
   back: { cost: 150, label: "Back one side of a war" },
   settle: { cost: 100, label: "Tell another house to settle a war" },
+  alliance: { cost: 200, label: "Swear an alliance with a house" },
+  march: { cost: 250, label: "March the royal host on a house's town" },
 };
 
 // When the banners were last called: the houses won't answer twice in a year.
@@ -113,10 +115,12 @@ export function decree(cmd, world) {
         const name = h.name.replace("House ", "");
         // What a house sends scales with its strength: a quarter of a loyal
         // house's companies, an eighth of a willing one's, at least one.
-        const share = f >= 60 ? 0.25 : f >= 35 ? 0.125 : 0;
+        // A house sworn to the crown answers gladly, whatever its mood.
+        const oath = (cmd.sworn ?? (() => false))(p.id);
+        const share = f >= 60 || oath ? 0.25 : f >= 35 ? 0.125 : 0;
         const n = share ? Math.max(1, Math.round((p.units ?? 0) * share)) : 0;
         const sent = `${name} ${(n * 200).toLocaleString("en-US")}`;
-        if (f >= 60) came.push(sent);
+        if (f >= 60 || oath) came.push(sent);
         else if (n) few.push(sent);
         else refused.push(name);
         // A house that answers is bound closer by fighting beside the crown; one
@@ -287,6 +291,26 @@ export function decree(cmd, world) {
         text: `By royal decree, ${town} is taken from ${lord} and granted to ${houseFor(to).name}. ${lord} will not forget.`,
         lua: [`local c = find.city(nil, ${c.id}); local to; for p in players_iterate() do if p.id == ${to.id} then to = p end end; if c and to then edit.transfer_city(c, to) end`],
       };
+    }
+    case "alliance": {
+      // An oath: the house fights the King's wars and won't rise against him
+      // for four years. A house that doesn't trust the crown won't swear it.
+      if (!owner || houseFor(owner).crown || houseFor(owner).wild) return { error: "choose a great house's town" };
+      const f = (cmd.favourOf ?? (() => 60))(owner.id);
+      if (f < 50) return { error: `${lord} will not swear an oath to a crown it does not trust (favour ${Math.round(f)}; it needs 50). Win them first.` };
+      if ((cmd.sworn ?? (() => false))(owner.id)) return { error: `${lord} is already sworn to the crown` };
+      return { cost: d.cost, lua: [pay], favour: { [owner.id]: 5 }, alliance: owner.id,
+        text: `${lord} kneels and swears an oath to the crown: its swords are the King's for four years, and it will not rise against him while the oath holds.` };
+    }
+    case "march": {
+      // The royal host marches on a town. The King's sworn houses send men with
+      // it; in three seasons the town falls to the crown, or the host breaks.
+      if (!c || !owner || houseFor(owner).crown || houseFor(owner).wild) return { error: "choose a great house's town to march on" };
+      if ((cmd.marching ?? (() => false))(c.id)) return { error: `the royal host is already before ${town}` };
+      const others = world.players.filter((p) => p.id !== owner.id && !houseFor(p).crown && !houseFor(p).wild && world.cities.some((x) => x.owner === p.id));
+      return { cost: d.cost, lua: [pay, `realm_host(realm_find_player(${crown.id}), ${c.x}, ${c.y}, {"Pikemen","Knights","Archers","Catapult"}, 8)`],
+        favour: { [owner.id]: -25, ...Object.fromEntries(others.map((p) => [p.id, -2])) }, march: { city: c.id, house: owner.id },
+        text: `The royal host marches on ${town}. ${lord} calls every man to its walls, and every house in the realm watches.` };
     }
     default:
       return { error: "unknown decree" };

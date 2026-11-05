@@ -609,6 +609,7 @@ export class Arcs {
           // What the King answered: "option" (the last matter) or ["beat", "option"]; "ignored" if he never did.
           case "ruled": { const [b, o] = Array.isArray(v) ? v : [arc.lastRuled, v]; return Boolean(b) && re(`^(${o})$`).test((arc.ruled ?? {})[b] ?? ""); }
           case "threat": return cmp(arc.threat ?? 0, v[0], v[1]);
+          case "usurper": return re(`^(${v})$`).test(ctx.usurperStage?.() ?? "none");
           case "happened": return ctx.recent().some((e) => re(v.kind ?? ".").test(e.kind) && re(v.text ?? ".").test(e.text ?? "") && (!v.town || e.city === R(v.town)?.id) && (!v.house || (e.text ?? "").includes(R(v.house)?.house ?? "\0")));
           default: return false; // a key no one knows holds nothing, so a typo can't fire a branch
         }
@@ -624,6 +625,8 @@ export class Arcs {
   act(d, arc, roles, ctx) {
     const lua = [];
     if (d.threat != null && arc.reign) arc.threat = Math.max(0, Math.min(100, (arc.threat ?? 0) + Number(d.threat)));
+    // The story's claimant marches on Kingsmere (the realm's own usurper war).
+    if (d.usurper && roles[d.usurper] && ctx.declare) ctx.declare(roles[d.usurper].playerId, Number(d.host ?? 10));
     // The story takes the throne: the reign ends, in the chronicle's words.
     if (d.fall && ctx.endReign) { const why = this.fill(d.fall, arc, ctx, roles); this.finish(arc, "failed", ctx, why); ctx.endReign(why); return lua; }
     const send = (l) => { lua.push(l); ctx.send(l); };
