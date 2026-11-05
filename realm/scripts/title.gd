@@ -187,7 +187,7 @@ var _opt := {}  # the chronicle's options as they stand; sent to the bridge as-i
 
 
 ## The tags a story of your own can be shaped by: what threatens, and how it feels.
-const STORY_TAGS := ["usurper", "war", "intrigue", "rebellion", "the-dead", "famine", "money", "fast-paced", "slow-burn", "violent", "gritty", "aggressive", "cunning", "tragic", "political", "mysterious", "epic"]
+const STORY_TAGS := ["usurper", "war", "intrigue", "rebellion", "succession", "faith", "invasion", "the-dead", "famine", "money", "fast-paced", "slow-burn", "violent", "gritty", "aggressive", "cunning", "tragic", "political", "mysterious", "epic"]
 
 
 static func _default_opt() -> Dictionary:

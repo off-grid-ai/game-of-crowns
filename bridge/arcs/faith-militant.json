@@ -1,0 +1,96 @@
+{
+  "id": "faith-militant",
+  "reign": true,
+  "name": "The Faith Militant",
+  "about": "A barefoot preacher says the crown is godless, and the poor believe him. A pious lord gives him a hall, then a guard, then an army. Win the faith, break it, or bend the knee to it.",
+  "tags": ["faith", "the-people", "slow-burn", "political", "grim", "a-reign"],
+  "kind": "faith",
+  "weight": 1,
+  "title": "The Faith Militant",
+  "roles": {
+    "patron": { "rank": "lord", "seat": true, "likes": { "traits": ["pious", "zealous", "proud", "ambitious"] } },
+    "temple": { "town": true, "seatOf": "patron" },
+    "skeptic": { "rank": "lord", "otherHouse": "patron", "likes": { "traits": ["cynical", "cunning", "greedy"] } }
+  },
+  "core": ["patron"],
+  "beats": [
+    {
+      "id": "the-preacher",
+      "stage": "rising",
+      "threat": 15,
+      "speaker": "skeptic",
+      "at": "temple",
+      "text": "A barefoot preacher walks the roads around {temple}, saying the crown has forgotten the gods and the gods will not forget the crown. Thousands follow him. {patron} gives him a hall.",
+      "court": {
+        "from": "skeptic",
+        "text": "{skeptic} of {skeptic.house}: \"A ragged holy man is preaching against your crown under {patron}'s roof, Your Grace. Shall I have him quietly moved along?\"",
+        "options": [
+          { "id": "endow", "label": "Endow the temple at {temple} and hear him out (200 gold)", "hint": "{patron.houseName} +15 · the faithful soften", "cost": 200, "favour": { "patron": 15 }, "do": { "threat": -10 }, "result": "The King's gold rebuilds the temple at {temple}. The preacher blesses the crown, once, grudgingly." },
+          { "id": "silence", "label": "Have the preacher silenced", "hint": "{patron.houseName} −20 · a martyr in the making", "favour": { "patron": -20, "skeptic": 5 }, "do": { "threat": 15 }, "result": "The preacher is taken in the night. By morning there are three preaching in his place." },
+          { "id": "ignore", "label": "Let him preach", "hint": "nothing now · the faith grows", "do": { "threat": 5 }, "result": "The King lets him preach. His crowds grow every Sabbath." }
+        ]
+      },
+      "after": [3, 4],
+      "next": [
+        { "if": { "all": [{ "ruled": "endow" }, { "chance": 0.4 }] }, "to": "blessed" },
+        { "to": "the-swords" }
+      ],
+      "patience": 6,
+      "otherwise": "the-swords"
+    },
+    {
+      "id": "the-swords",
+      "stage": "crisis",
+      "threat": 45,
+      "speaker": "patron",
+      "at": "temple",
+      "text": "The faithful take up arms: the Swords of the Faith, sworn to the preacher and fed by {patron}. They hang a tax collector at {temple}'s gate.",
+      "do": { "units": { "patron": { "type": "Pikemen", "count": 3 } } },
+      "court": {
+        "from": "skeptic",
+        "text": "{skeptic}: \"Armed zealots hang your officers now, Your Grace, and {patron} pays for their bread. This ends with them, or with you.\"",
+        "options": [
+          { "id": "concord", "label": "Grant the Faith its own courts, and disband the Swords", "hint": "{patron.houseName} +20 · the crown's law shrinks", "favour": { "patron": 20, "skeptic": -10 }, "do": { "threat": -20 }, "result": "The Faith gets its courts; the Swords lay down their arms, mostly." },
+          { "id": "disarm", "label": "Order {patron} to disarm them, on pain of outlawry", "hint": "{patron.houseName} −25 · {patron.he} must choose", "favour": { "patron": -25 }, "do": { "threat": 10 }, "result": "The King's order reaches {temple}. {patron} reads it to the Swords, and asks what they think." }
+        ]
+      },
+      "after": [2, 3],
+      "next": [
+        { "if": { "ruled": "concord" }, "to": "blessed" },
+        { "if": { "favour": ["patron", "<", 30] }, "to": "the-holy-king" },
+        { "to": "disarmed" }
+      ],
+      "patience": 5,
+      "otherwise": "the-holy-king"
+    },
+    {
+      "id": "the-holy-king",
+      "stage": "crisis",
+      "threat": 90,
+      "speaker": "patron",
+      "at": "temple",
+      "text": "The preacher anoints {patron} King by the will of the gods, and the Swords of the Faith march on Kingsmere singing.",
+      "do": { "usurper": "patron", "host": 12 },
+      "after": [3, 3],
+      "next": [{ "if": { "usurper": "none" }, "to": "disarmed" }],
+      "patience": 20,
+      "otherwise": "disarmed"
+    },
+    {
+      "id": "blessed",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "patron",
+      "at": "temple",
+      "text": "The faith and the crown make their peace. The preacher dies old, in a temple the King built, and is made a saint."
+    },
+    {
+      "id": "disarmed",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "skeptic",
+      "at": "temple",
+      "text": "The Swords of the Faith are broken and their banners burned. The faithful go back to praying, for now, and for a different King."
+    }
+  ]
+}

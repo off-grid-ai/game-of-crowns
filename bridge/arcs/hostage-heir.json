@@ -1,0 +1,169 @@
+{
+  "id": "hostage-heir",
+  "reign": true,
+  "name": "The Hostage Heir",
+  "about": "A great house's heir has grown up at your court as your ward. Their lord wants the child back, the child has opinions of their own, and a rival house would like the boy dead.",
+  "tags": ["succession", "great-house", "political", "slow-burn", "tragic", "a-reign"],
+  "kind": "succession",
+  "weight": 1,
+  "title": "The Ward of {lord.house}",
+  "roles": {
+    "lord": { "rank": "lord", "seat": true, "children": true, "likes": { "traits": ["proud", "stubborn", "paranoid"] } },
+    "ward": { "childOf": "lord", "rank": ["heir", "child"], "age": [12, 24] },
+    "rival": { "rank": "lord", "otherHouse": "lord", "likes": { "traits": ["ambitious", "cunning", "cruel"] } },
+    "seat": { "town": true, "seatOf": "lord" }
+  },
+  "core": ["lord"],
+  "onDeath": { "ward": "ward-dies", "lord": "ward-inherits" },
+  "beats": [
+    {
+      "id": "the-letter",
+      "stage": "rising",
+      "threat": 15,
+      "speaker": "lord",
+      "at": "seat",
+      "text": "{ward} has grown up at Kingsmere as the crown's ward. {lord} writes for the first time in years: {lord.he} wants {lord.his} heir home.",
+      "court": {
+        "from": "lord",
+        "text": "{lord} of {lord.house}: \"My heir has been the crown's guest long enough, Your Grace. Send {ward} home, and {lord.house} will know the crown trusts it.\"",
+        "options": [
+          { "id": "release", "label": "Send {ward} home with honours", "hint": "{lord.houseName} +20 · the crown loses its hold", "favour": { "lord": 20 }, "do": { "threat": -10 }, "result": "{ward} rides home to {seat} with a royal escort and the King's blessing." },
+          { "id": "keep", "label": "{ward} stays at Kingsmere", "hint": "{lord.houseName} −15 · the hold stays", "favour": { "lord": -15 }, "do": { "threat": 10 }, "result": "The King keeps {ward} at court. In {seat}, {lord} stops writing." },
+          { "id": "betroth", "label": "Keep {ward} close, and betroth {ward.him} to the crown's choice", "hint": "{lord.houseName} −5 · {ward} bound to Kingsmere for good", "favour": { "lord": -5 }, "do": { "threat": -5 }, "result": "{ward} is betrothed at court. {lord} sends a cold gift for the wedding." }
+        ]
+      },
+      "after": [3, 4],
+      "next": [
+        { "if": { "ruled": "release" }, "to": "home" },
+        { "to": "the-escape" }
+      ],
+      "patience": 6,
+      "otherwise": "the-escape"
+    },
+    {
+      "id": "home",
+      "stage": "rising",
+      "threat": 10,
+      "speaker": "ward",
+      "at": "seat",
+      "text": "{ward} is home at {seat}, and talks of the King with warmth. {rival} hears of it and is not pleased.",
+      "after": [3, 5],
+      "next": [
+        { "if": { "chance": 0.5 }, "to": "grateful" },
+        { "to": "the-dagger" }
+      ]
+    },
+    {
+      "id": "the-escape",
+      "stage": "crisis",
+      "threat": 40,
+      "speaker": "lord",
+      "at": "seat",
+      "text": "{lord.house}'s men try to spirit {ward} out of Kingsmere by night. They are taken at the river gate, {ward} with them.",
+      "court": {
+        "from": "rival",
+        "text": "{rival} of {rival.house}: \"{lord.house} tried to steal its heir from under the crown's roof, Your Grace. If that goes unpunished, every ward in the realm will follow.\"",
+        "options": [
+          { "id": "forgive", "label": "Send the men home unharmed, and keep the child", "hint": "{lord.houseName} +5 · {rival.houseName} −10", "favour": { "lord": 5, "rival": -10 }, "do": { "threat": -5 }, "result": "The men go home with a message: the King understands a father's heart, and keeps the child anyway." },
+          { "id": "hang", "label": "Hang the men at the river gate", "hint": "{lord.houseName} −30 · {rival.houseName} +10", "favour": { "lord": -30, "rival": 10 }, "do": { "threat": 15 }, "result": "Five of {lord.house}'s men hang at the river gate. {ward} watches from a window." },
+          { "id": "return", "label": "Let the child go home after all", "hint": "{lord.houseName} +15 · the realm sees the crown bend", "favour": { "lord": 15, "rival": -10 }, "do": { "threat": -10 }, "result": "The King lets {ward} go. {rival} calls it weakness in every hall that will listen." }
+        ]
+      },
+      "after": [2, 3],
+      "next": [
+        { "if": { "ruled": "return" }, "to": "home" },
+        { "if": { "ruled": "hang" }, "to": "the-father-rises" },
+        { "to": "the-dagger" }
+      ],
+      "patience": 5,
+      "otherwise": "the-father-rises"
+    },
+    {
+      "id": "the-dagger",
+      "stage": "crisis",
+      "threat": 55,
+      "speaker": "rival",
+      "at": "seat",
+      "text": "A knife is found in {ward}'s bed, and a servant of {rival.house} is gone from the household. Whether it was meant to kill or to warn, {lord} knows whom to blame.",
+      "do": { "opinion": [["lord", "rival", -40]] },
+      "court": {
+        "from": "lord",
+        "text": "{lord}: \"{rival} sent a knife for my child, Your Grace. Give me justice, or I will take it.\"",
+        "options": [
+          { "id": "justice", "label": "Fine {rival.house} and guard the heir yourself (150 gold)", "hint": "{rival.houseName} −20 · {lord.houseName} +10", "cost": 150, "favour": { "rival": -20, "lord": 10 }, "do": { "gold": { "rival": -60 }, "threat": -15 }, "result": "{rival.house} pays a blood fine, and {ward} sleeps behind the King's own guard." },
+          { "id": "doubt", "label": "There is no proof", "hint": "{lord.houseName} −20 · {lord} goes to war", "favour": { "lord": -20 }, "do": { "threat": 15 }, "result": "The King finds no proof. {lord} finds it sufficient." }
+        ]
+      },
+      "after": [2, 3],
+      "next": [
+        { "if": { "ruled": "justice" }, "to": "grateful" },
+        { "to": "feud" }
+      ],
+      "patience": 5,
+      "otherwise": "feud"
+    },
+    {
+      "id": "feud",
+      "stage": "crisis",
+      "threat": 70,
+      "speaker": "lord",
+      "at": "seat",
+      "text": "{lord.house} marches on {rival.house} for the knife in the dark. The realm burns from {seat} to {rival.seat}.",
+      "do": { "war": ["lord", "rival"], "warSize": 6 },
+      "after": [3, 4],
+      "next": [
+        { "if": { "favour": ["lord", "<", 25] }, "to": "the-father-rises" },
+        { "to": "grateful" }
+      ],
+      "patience": 4,
+      "otherwise": "grateful"
+    },
+    {
+      "id": "the-father-rises",
+      "stage": "crisis",
+      "threat": 90,
+      "speaker": "lord",
+      "at": "seat",
+      "text": "{lord} raises {lord.his} banners against the crown that hanged {lord.his} men and kept {lord.his} child, and marches on Kingsmere to take {ward} back by the sword.",
+      "do": { "usurper": "lord", "host": 10 },
+      "after": [3, 3],
+      "next": [{ "if": { "usurper": "none" }, "to": "broken" }],
+      "patience": 20,
+      "otherwise": "broken"
+    },
+    {
+      "id": "grateful",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "ward",
+      "at": "seat",
+      "text": "{ward} comes of age loyal to the crown that raised {ward.him}, and {lord.house} with {ward.him}. {thread} ends in a debt the house means to repay.",
+      "do": { "favour": { "lord": 15 } },
+      "memory": { "ward": "The King raised me and kept me safe. My house owes the crown." }
+    },
+    {
+      "id": "broken",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "ward",
+      "at": "seat",
+      "text": "{lord}'s host breaks before Kingsmere. {ward} watched it from the walls, and will rule {seat} one day knowing what the crown can do."
+    },
+    {
+      "id": "ward-dies",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "lord",
+      "at": "seat",
+      "text": "{ward} dies before coming of age, and the hold the crown had on {lord.house} dies with {ward.him}. {lord} does not forgive it."
+    },
+    {
+      "id": "ward-inherits",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "ward",
+      "at": "seat",
+      "text": "{lord} dies, and {ward} rides home from Kingsmere to rule {seat}: a lord raised by the crown."
+    }
+  ]
+}

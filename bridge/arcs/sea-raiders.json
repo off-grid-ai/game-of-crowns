@@ -1,0 +1,253 @@
+{
+  "id": "sea-raiders",
+  "reign": true,
+  "name": "The Sea Raiders",
+  "about": "Longships come out of the western sea and burn a coastal lord's towns. He begs the crown for help, then, if it doesn't come, makes his own peace with the raiders, and points them at Kingsmere.",
+  "tags": [
+    "invasion",
+    "foreign",
+    "war",
+    "fast-paced",
+    "violent",
+    "short"
+  ],
+  "kind": "invasion",
+  "weight": 1,
+  "title": "The Sea Raiders",
+  "roles": {
+    "coast": {
+      "rank": "lord",
+      "seat": true,
+      "likes": {
+        "traits": [
+          "proud",
+          "brave",
+          "wrathful"
+        ]
+      }
+    },
+    "harbour": {
+      "town": true,
+      "ownedBy": "coast",
+      "notCapital": true
+    },
+    "hall": {
+      "town": true,
+      "seatOf": "coast"
+    },
+    "neighbour": {
+      "rank": "lord",
+      "otherHouse": "coast",
+      "likes": {
+        "traits": [
+          "brave",
+          "honourable"
+        ]
+      }
+    }
+  },
+  "core": [
+    "coast"
+  ],
+  "beats": [
+    {
+      "id": "sails",
+      "stage": "rising",
+      "threat": 20,
+      "speaker": "coast",
+      "at": "harbour",
+      "text": "Black sails off {harbour} at dawn. By dusk the harbour is burning, and the raiders are gone with its silver and its daughters.",
+      "do": {
+        "gold": {
+          "coast": -40
+        }
+      },
+      "court": {
+        "from": "coast",
+        "text": "{coast} of {coast.house}: \"Raiders from the sea burned {harbour}, Your Grace, and they will be back with more ships. My house cannot hold the whole coast alone.\"",
+        "options": [
+          {
+            "id": "ships",
+            "label": "Pay for war galleys to guard the coast (300 gold)",
+            "hint": "{coast.houseName} +20 · the sea is watched",
+            "cost": 300,
+            "favour": {
+              "coast": 20
+            },
+            "do": {
+              "threat": -15
+            },
+            "result": "Royal galleys put out from the river mouth to guard {coast.house}'s shore."
+          },
+          {
+            "id": "neighbour",
+            "label": "Order {neighbour.house} to send men to the coast",
+            "hint": "{coast.houseName} +10 · {neighbour.houseName} −10",
+            "favour": {
+              "coast": 10,
+              "neighbour": -10
+            },
+            "do": {
+              "units": {
+                "coast": {
+                  "type": "Pikemen",
+                  "count": 2
+                }
+              },
+              "threat": -10
+            },
+            "result": "{neighbour.house}'s spearmen march to {harbour}, grumbling about another lord's coast."
+          },
+          {
+            "id": "own",
+            "label": "Every lord guards his own shore",
+            "hint": "{coast.houseName} −20 · the raiders return",
+            "favour": {
+              "coast": -20
+            },
+            "do": {
+              "threat": 15
+            },
+            "result": "The crown sends its regrets to {hall}. {coast} sends nothing back."
+          }
+        ]
+      },
+      "after": [
+        2,
+        2
+      ],
+      "next": [
+        {
+          "to": "the-second-fleet"
+        }
+      ],
+      "patience": 4,
+      "otherwise": "the-second-fleet"
+    },
+    {
+      "id": "the-second-fleet",
+      "stage": "crisis",
+      "threat": 50,
+      "speaker": "coast",
+      "at": "harbour",
+      "text": "The raiders come back with forty ships and a king of their own, and they don't leave this time. They winter at {harbour}.",
+      "do": {
+        "gold": {
+          "coast": -60
+        }
+      },
+      "court": {
+        "from": "neighbour",
+        "text": "{neighbour} of {neighbour.house}: \"The sea king has taken {harbour}, Your Grace, and {coast} is talking terms with him. Drive them into the sea, or buy them off before {coast} does.\"",
+        "options": [
+          {
+            "id": "tribute",
+            "label": "Pay the sea king to sail home (500 gold)",
+            "hint": "they go · they'll be back for more",
+            "cost": 500,
+            "do": {
+              "threat": -25
+            },
+            "result": "The sea king takes the crown's gold and sails west. Everyone knows he'll be back."
+          },
+          {
+            "id": "drive-out",
+            "label": "Send the royal host to drive them out (300 gold)",
+            "hint": "{coast.houseName} +25 · blood on the beach",
+            "cost": 300,
+            "favour": {
+              "coast": 25
+            },
+            "do": {
+              "units": {
+                "coast": {
+                  "type": "Knights",
+                  "count": 3
+                }
+              },
+              "threat": -20
+            },
+            "result": "The royal host marches west. On the beach below {harbour}, the sea king learns what knights are for."
+          },
+          {
+            "id": "leave",
+            "label": "Let {coast} deal with them",
+            "hint": "{coast.houseName} −30 · {coast.he} may deal with them on {coast.his} own terms",
+            "favour": {
+              "coast": -30
+            },
+            "do": {
+              "threat": 15
+            },
+            "result": "The crown leaves {coast} to the sea king. {coast} sends a ship to the raiders' camp under a white flag."
+          }
+        ]
+      },
+      "after": [
+        2,
+        3
+      ],
+      "next": [
+        {
+          "if": {
+            "ruled": "drive-out"
+          },
+          "to": "driven-off"
+        },
+        {
+          "if": {
+            "ruled": "tribute"
+          },
+          "to": "bought-off"
+        },
+        {
+          "to": "the-pact"
+        }
+      ],
+      "patience": 4,
+      "otherwise": "the-pact"
+    },
+    {
+      "id": "the-pact",
+      "stage": "crisis",
+      "threat": 85,
+      "speaker": "coast",
+      "at": "hall",
+      "text": "{coast} makes peace with the sea king: the coast for {coast.house}, and Kingsmere's treasury for the raiders. The longships sail up the river, and {coast.house} marches beside them.",
+      "do": {
+        "usurper": "coast",
+        "host": 12
+      },
+      "after": [
+        3,
+        3
+      ],
+      "next": [
+        {
+          "if": {
+            "usurper": "none"
+          },
+          "to": "driven-off"
+        }
+      ],
+      "patience": 20,
+      "otherwise": "driven-off"
+    },
+    {
+      "id": "driven-off",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "neighbour",
+      "at": "harbour",
+      "text": "The raiders are driven into the sea, and their burning ships light the coast for a night. They will not come back in this King's time."
+    },
+    {
+      "id": "bought-off",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "coast",
+      "at": "harbour",
+      "text": "The sea king takes the crown's gold and goes. {harbour} rebuilds, and keeps a watch on the western sea."
+    }
+  ]
+}
