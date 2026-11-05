@@ -589,12 +589,33 @@ var _grass_nodes := {}  # place -> its grass batches, kept while the place stand
 var _grass_root: Node3D
 var _grass_sig := ""
 var _tuft_meshes: Array = []
+## The nature kit's low plants, and how often each grows: mostly grass, with
+## clover and wildflowers among it.
+const TUFTS := ["Grass_Common_Short", "Grass_Wispy_Short", "Clover_1", "Flower_3_Group", "Flower_4_Group"]
+const TUFT_ODDS := [0.5, 0.33, 0.09, 0.04, 0.04]
+const PLANT_WIND := preload("res://scripts/plant_wind.gdshader")
+
+
+## A plant mesh that bends in the wind: each surface keeps its own texture and colour.
+static func _windy(mesh: ArrayMesh) -> ArrayMesh:
+	var out := mesh.duplicate() as ArrayMesh
+	for i in out.get_surface_count():
+		var src := out.surface_get_material(i) as BaseMaterial3D
+		var m := ShaderMaterial.new()
+		m.shader = PLANT_WIND
+		if src:
+			m.set_shader_parameter("albedo_tex", src.albedo_texture)
+			m.set_shader_parameter("albedo_color", src.albedo_color)
+			m.set_shader_parameter("alpha_cut", src.alpha_scissor_threshold if src.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR else 0.0)
+		out.surface_set_material(i, m)
+	return out
 
 
 func _grass(cities: Array) -> void:
 	if _tuft_meshes.is_empty():
 		var builder = preload("res://scripts/house_builder.gd").new()
-		_tuft_meshes = [builder.bake_path("res://assets/nature/Grass_Common_Short.gltf"), builder.bake_path("res://assets/nature/Grass_Wispy_Short.gltf")]
+		for n in TUFTS:
+			_tuft_meshes.append(_windy(builder.bake_path("res://assets/nature/%s.gltf" % n)))
 	if _grass_root == null or not is_instance_valid(_grass_root):
 		_grass_nodes.clear()  # a new realm took the old batches with it
 		_grass_sig = ""
@@ -707,15 +728,17 @@ func _bare_ground(p: Vector3, r: float, town: Node3D, stead) -> Dictionary:
 ## drawn within 30 units: the engine culls a batch off screen or out of range
 ## at no cost per frame.
 func _grow(seed: String, p: Vector3, r: float, bare: Dictionary) -> Array:
-	var mine := [[], []]
+	var mine := []
+	for t in TUFTS:
+		mine.append([])
 	var prng := RandomNumberGenerator.new()
 	prng.seed = hash(seed)
-	for i in int(r * r * 45.0):
+	for i in int(r * r * 70.0):
 		var ang := prng.randf() * TAU
 		var d := sqrt(prng.randf()) * r
 		var q := p + Vector3(cos(ang), 0, sin(ang)) * d
 		var k := 0.12 * prng.randf_range(0.5, 1.0)
-		var v := prng.randi() % 2
+		var v := prng.rand_weighted(TUFT_ODDS)
 		var turn := prng.randf() * TAU
 		var tall := prng.randf_range(0.8, 1.3)
 		if bare.has(Vector2i(floori(q.x / BARE), floori(q.z / BARE))):
@@ -724,7 +747,7 @@ func _grow(seed: String, p: Vector3, r: float, bare: Dictionary) -> Array:
 			continue
 		mine[v].append(Transform3D(Basis(Vector3.UP, turn).scaled(Vector3(k, k * tall, k)), Vector3(q.x, terrain.height_at(q.x, q.z) - 0.01, q.z)))
 	var nodes := []
-	for v in 2:
+	for v in TUFTS.size():
 		var list: Array = mine[v]
 		if list.is_empty():
 			continue
