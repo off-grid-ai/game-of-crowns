@@ -28,7 +28,7 @@ itch.io brings its own daily traffic through its browse pages, and its analytics
 >
 > - Free, nothing locked.
 > - Native on Apple Silicon Macs, signed and notarised.
-> - Want the lords to speak in their own words? Run Off Grid AI (getoffgridai.co/desktop) alongside it.
+> - Give the lords their own words: run Off Grid AI (getoffgridai.co/desktop).
 > - Open source: https://github.com/off-grid-ai/game-of-crowns
 >
 > It's early. Tell me what breaks.
