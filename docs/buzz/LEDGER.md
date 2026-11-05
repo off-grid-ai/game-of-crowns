@@ -3,7 +3,6 @@
 Kept by the downloads supervisor (every 15 minutes in the buzz session). Goal: get the game into people's hands. Newest run first.
 
 ## Needs Mac
-- **Can the main session relaunch your game now to test, then commit and push for v0.2?** It's holding the lord work (plus fixes for the bridge freezing in long reigns, an empty notice card and battles on mountainsides) until it has seen the lord's deed on screen, and you were playing.
 - **Disk:** this Mac has ~4 GB free of 460 GB. It killed the first release run and will hurt other sessions' renders.
 - **Promo art:** prompts for Codex in docs/buzz/asset-prompts.md (GitHub social preview, itch.io cover, key art). The social preview has to be set by hand in the repo's Settings.
 - **itch.io:** a free page for the dmg (needs your account).
@@ -37,6 +36,9 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 - **Buzz session:** this ledger, the supervisor, drafts for the channels once the dmg exists.
 
 ## Runs
+
+### 11-05 15:30
+**Moved:** Mac said yes to relaunching his game for the main session to test the lord work; it commits and pushes once the lord's deed shows on screen, then v0.2.
 
 ### 11-05 15:20
 **Shipped:** nothing since 14:05. Drafts ready to paste: r/macgaming, Mac creator DMs, itch.io page, r/SimulationGames, r/4Xgaming (docs/buzz/channel-0*.md). Downloads: 1.
