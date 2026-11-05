@@ -815,6 +815,9 @@ func _process(delta: float) -> void:
 		# An offer to watch the order carried out sits under the result, never on it.
 		if _offer and _offer.visible and _toast_box.modulate.a > 0.05:
 			_offer.offset_top = _toast_box.get_global_rect().end.y + 10.0
+	# The offer, like every notice, sits between the side panels, never over the table.
+	if _offer and _offer.visible:
+		_fit_centre(_offer, 520.0)
 		_toast_time -= delta
 		_toast_box.modulate.a = clampf(_toast_time, 0.0, 1.0)
 

@@ -586,9 +586,13 @@ function counsel(players, cities, threat) {
     const lord = players.find((p) => p.id === d.owner);
     const where = d.town ? `on ${d.town}${lord ? ` (${lord.house.crown ? "the crown's own" : lord.house.name})` : ""}` : "on the North";
     const when = d.in == null ? "" : d.in <= 1 ? " The next host comes next season." : ` The next host comes in ${d.in} seasons.`;
-    out.push({ urgency: 75, text: "The dead come south",
-      why: `${(d.last ?? 0).toLocaleString("en-US")} of them fell ${where} last time; ${(d.next ?? 0).toLocaleString("en-US")} will come with the next.${when} Against them: your ${(threat.ours * 200).toLocaleString("en-US")} fighting men${bannerMen ? `, and about ${bannerMen.toLocaleString("en-US")} more if you call the banners` : " (the banners are already called this year)"}: ${gap <= 0 ? "together, you would hold" : gap <= 1600 ? `you would lose by ${gap.toLocaleString("en-US")}: a levy (600) and sellswords (1,000) close it` : `you would lose by ${gap.toLocaleString("en-US")}, even with a levy and sellswords`}. If every northern town falls, the realm falls with it.`,
-      acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }, { label: "Hire sellswords", action: "sellswords" }] });
+    // Once the King's own men outnumber the host, the Hand says so and advises
+    // nothing more; if only the banners are needed, he advises only the banners.
+    if ((d.next ?? 0) - threat.ours * 200 <= 0) d.hold = true;
+    const onlyBanners = !d.hold && gap <= 0;
+    out.push({ urgency: d.hold ? 40 : 75, text: d.hold ? "The dead come south, and you would hold" : "The dead come south",
+      why: `${(d.last ?? 0).toLocaleString("en-US")} of them fell ${where} last time; ${(d.next ?? 0).toLocaleString("en-US")} will come with the next.${when} Against them: your ${(threat.ours * 200).toLocaleString("en-US")} fighting men${bannerMen ? `, and about ${bannerMen.toLocaleString("en-US")} more if you call the banners` : " (the banners are already called this year)"}: ${d.hold ? "your own men would hold" : gap <= 0 ? "with the banners, you would hold" : gap <= 1600 ? `you would lose by ${gap.toLocaleString("en-US")}: a levy (600) and sellswords (1,000) close it` : `you would lose by ${gap.toLocaleString("en-US")}, even with a levy and sellswords`}. If every northern town falls, the realm falls with it.`,
+      acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }, { label: "Hire sellswords", action: "sellswords" }].filter((a) => !d.hold && (!onlyBanners || a.action === "banners")) });
   }
   const hungry = cities.find((c) => c.famine);
   if (hungry) out.push({ urgency: 80, text: `${hungry.title} is starving`, why: "A hungry town shrinks, riots, and blames its King.", acts: [{ label: "Send grain", action: "relief", city: hungry.id }] });

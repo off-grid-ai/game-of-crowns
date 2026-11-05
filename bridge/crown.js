@@ -113,8 +113,9 @@ export function decree(cmd, world) {
         // house's companies, an eighth of a willing one's, at least one.
         const share = f >= 60 ? 0.25 : f >= 35 ? 0.125 : 0;
         const n = share ? Math.max(1, Math.round((p.units ?? 0) * share)) : 0;
-        if (f >= 60) came.push(name);
-        else if (n) few.push(name);
+        const sent = `${name} ${(n * 200).toLocaleString("en-US")}`;
+        if (f >= 60) came.push(sent);
+        else if (n) few.push(sent);
         else refused.push(name);
         // A house that answers is bound closer by fighting beside the crown; one
         // that refuses has defied the King to his face and cools further.
@@ -128,10 +129,11 @@ export function decree(cmd, world) {
       const list = (xs) => xs.length > 1 ? `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}` : xs[0];
       const parts = [];
       const verb = (xs, one, many) => (xs.length > 1 ? many : one);
-      if (came.length) parts.push(`${list(came)} ${verb(came, "answers", "answer")} at once`);
-      if (few.length) parts.push(`${list(few)} ${verb(few, "sends", "send")} a few men, with excuses`);
+      // Each house by the men it sent: gladly (loyal) or grudgingly (willing).
+      if (came.length) parts.push(`gladly: ${list(came)}`);
+      if (few.length) parts.push(`grudgingly: ${list(few)}`);
       if (refused.length) parts.push(`${list(refused)} ${verb(refused, "refuses", "refuse")} the summons`);
-      return { cost: d.cost, favour, text: `The King calls the banners. ${parts.join("; ")}.${men ? ` ${(men * 200).toLocaleString("en-US")} men march to Kingsmere.` : " No one marches."}`, lua, refused };
+      return { cost: d.cost, favour, text: `The King calls the banners. ${parts.join("; ").replace(/^./, (c) => c.toUpperCase())}.${men ? ` ${(men * 200).toLocaleString("en-US")} men march to Kingsmere.` : " No one marches."}`, lua, refused };
     }
     case "relief":
       if (!c) return { error: "choose a town" };
