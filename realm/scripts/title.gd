@@ -655,6 +655,13 @@ func _voice_settings(right: Control) -> void:
 	vol.value_changed.connect(func(v): Settings.set_value("voice_volume", v))
 	right.add_child(vol)
 	# Sound: everything at once, then the music and the realm's own sounds.
+	_section(right, "Graphics")
+	_choices(right, "How the realm is drawn", [["Smooth", "smooth"], ["Beautiful", "beautiful"]], Settings.get_value("graphics"), func(v):
+		Settings.set_value("graphics", v)
+		var main := get_tree().root.get_node_or_null("Main")
+		if main and main.has_method("apply_graphics"):
+			main.apply_graphics())
+	right.add_child(_label("Smooth runs well on any Mac. Beautiful adds bounce light, soft haze and depth of field, at a cost.", 13, MUTED))
 	_section(right, "Sound")
 	for pair in [["All sound", "vol_master"], ["Music", "vol_music"], ["Sounds of the realm", "vol_ambience"]]:
 		right.add_child(_label(pair[0], 15, MUTED))

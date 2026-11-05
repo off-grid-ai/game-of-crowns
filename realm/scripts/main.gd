@@ -420,6 +420,36 @@ func _input(event: InputEvent) -> void:
 					get_viewport().set_input_as_handled()
 
 
+## Graphics, as the player chose in Settings. Smooth (the default) drops the
+## passes that each cost a little and together halve the frame rate in a town:
+## global illumination, ambient occlusion, bounce light, volumetric haze, depth
+## of field (look.gd reads graphics_smooth), and shadows beyond the near ground.
+## Beautiful keeps them all. Stills and film takes are always Beautiful.
+var graphics_smooth := true
+var _rich := {}  # the Beautiful values, kept to put back
+
+
+func apply_graphics() -> void:
+	if env == null or sun == null:
+		return
+	if _rich.is_empty():
+		_rich = {"sdfgi": env.sdfgi_enabled, "ssao": env.ssao_enabled, "ssil": env.ssil_enabled, "vol": env.volumetric_fog_enabled, "glow": env.glow_enabled, "shadow": sun.directional_shadow_max_distance}
+	graphics_smooth = String(Settings.get_value("graphics")) != "beautiful" and not (_shot.has("path") or _shot.has("hq"))
+	env.sdfgi_enabled = _rich["sdfgi"] and not graphics_smooth
+	env.ssao_enabled = _rich["ssao"] and not graphics_smooth
+	env.ssil_enabled = _rich["ssil"] and not graphics_smooth
+	env.volumetric_fog_enabled = _rich["vol"] and not graphics_smooth
+	env.glow_enabled = _rich["glow"] and not graphics_smooth
+	# On a Retina screen the 3D is drawn at half size and the upscaler sharpens it
+	# (stills and films draw at full size in _capture_quality, which sets its own).
+	if not (_shot.has("path") or _shot.has("hq")):
+		get_viewport().scaling_3d_scale = 0.5 if graphics_smooth else float(ProjectSettings.get_setting("rendering/scaling_3d/scale", 0.67))
+	sun.directional_shadow_max_distance = minf(_rich["shadow"], 40.0) if graphics_smooth else _rich["shadow"]
+	# The woods: their leafy middle detail runs out sooner, and painted cards take over.
+	if terrain and terrain.forest and terrain.forest.has_method("set_reach"):
+		terrain.forest.set_reach(14.0 if graphics_smooth else -1.0)
+
+
 ## A still or a film is made once and looked at closely: drawn at full
 ## resolution (no upscaler), with antialiasing and the finest shadows. Play keeps
 ## the faster settings.
@@ -628,6 +658,8 @@ func _setup_environment() -> void:
 	# The grade and atmosphere (look.gd, the look pass), once the scene is up.
 	if ResourceLoader.exists("res://scripts/look.gd"):
 		load("res://scripts/look.gd").apply.call_deferred(self)
+	# Then the player's graphics choice, over the top of it.
+	get_tree().create_timer(0.5).timeout.connect(apply_graphics)
 
 
 ## Trying a look from the shell, for side-by-side renders: GOC_LOOK=filmic,aces,nogi,nossao,nofog.
@@ -992,6 +1024,7 @@ func _on_world(world: Dictionary) -> void:
 		_show_selected(world)
 	if not _framed:
 		_framed = true
+		apply_graphics.call_deferred()  # the woods are planted by now: they take the graphics choice too
 		if not _shot.has("path"):
 			_home_view(world)
 		_frame_for_shot(world)

@@ -81,7 +81,8 @@ func _process(_delta: float) -> void:
 	# Tilt-shift at town zoom: the town in focus, the near ground and the far
 	# land softly out of it. It fades out as the camera pulls back to the realm.
 	var d: float = main.rig.distance
-	var town := 1.0 - smoothstep(18.0, 30.0, d)
+	# Smooth graphics (Settings) go without the blur: a full-screen pass every frame.
+	var town := 0.0 if main.get("graphics_smooth") else 1.0 - smoothstep(18.0, 30.0, d)
 	_attrs.dof_blur_far_enabled = town > 0.0
 	_attrs.dof_blur_near_enabled = town > 0.0
 	_attrs.dof_blur_far_distance = d * 1.25

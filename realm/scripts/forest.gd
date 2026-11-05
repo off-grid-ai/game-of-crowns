@@ -293,6 +293,21 @@ func clear_where(standing_on: Callable) -> int:
 	return felled
 
 
+## How far out the leafy middle detail runs before painted cards take over:
+## shorter for Smooth graphics; -1 puts back the full MID.
+func set_reach(mid: float) -> void:
+	var to := MID if mid < 0.0 else mid
+	for mmi in get_children():
+		if not (mmi is MultiMeshInstance3D):
+			continue
+		if not mmi.has_meta("tier"):
+			# The tier each batch was made for, read once from its distances.
+			mmi.set_meta("tier", "full" if mmi.visibility_range_begin == 0.0 else ("mid" if mmi.visibility_range_end > 0.0 else "card"))
+		match String(mmi.get_meta("tier")):
+			"mid": mmi.visibility_range_end = to
+			"card": mmi.visibility_range_begin = to - 2.0
+
+
 ## The kinds that lost trees this frame, sent to the instancer again in one go.
 var _replant_due := false
 var _replants := 0
