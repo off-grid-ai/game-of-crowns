@@ -28,6 +28,8 @@ How a round is played: `realm/tools/play/*.play` scenarios feed real input (keys
 
 | # | Expected | Found | Change | Commit |
 |---|---|---|---|---|
+| 75 | The Hand has room (supervisor 11:20 #1) | Under the tall table the Hand fit one matter; the dead's march, a famine and the royal match never showed (r17) | Bottom centre, between the table and the minimap: three matters at once, Thornvale, King's Spire starving, "The dead come south (wave 3)" with the banners and the levy (r18/03) | 7ef5895 |
+| 74 | Small truths | "WAR · WOLFHOLT, STORMHOLD / +1" wrapping; "The city walls of Eaglewatch is destroyed"; Gilbert Cooper walks "toward the edge of the map" | One name and a count (r18/03); "are destroyed"; "the edge of the known world" | 7ef5895 |
 | 73 | One line per house | War lists wrapped to three lines ("WAR · GOLDCREST, THORNVALE, SUNSPIRE, THE CROWN"), the table grew, the Hand had room for one matter (r17/02) | Two names and a count, all on hover (r17/07). The Hand still shows only its gravest matter at this screen size; the royal match for warring houses waits below it. Open: room for a second matter | d6c165f |
 | 72 | "WAR · THE CROWN" means an enemy (supervisor 10:35 #3) | Wolfholt at 68, just given a town by the King, read "WAR · … THE CROWN" (r16/02) | The engine's war with the Crown isn't shown on a loyal house's row (35 and up); the Crown's row is clean of them (r17/05) | f3b2ad8 |
 | 71 | A third answer after a march (supervisor 09:50 #2, 10:35 #2) | Pardon (cheap) or a town (drives them to 0) | Take their heir as your ward: −5, and the house cannot rise for five years | f3b2ad8 |
