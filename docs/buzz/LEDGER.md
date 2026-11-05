@@ -37,6 +37,10 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 
 ## Runs
 
+### 11-05 15:20
+**Shipped:** nothing since 14:05. Drafts ready to paste: r/macgaming, Mac creator DMs, itch.io page, r/SimulationGames, r/4Xgaming (docs/buzz/channel-0*.md). Downloads: 1.
+**Blocking:** the approved lord and pace work, uncommitted since 12:38 (main session nudged); none of the drafts posted yet (Mac).
+
 ### 11-05 14:05
 **Moved:** first public build is out: https://github.com/off-grid-ai/game-of-crowns/releases/tag/v0.1-20261105-622eb2d (1.8 GB dmg, signed and notarised, Gatekeeper: accepted, source=Notarized Developer ID). Built from origin/main 622eb2d, so it has none of the in-progress lord and pace work.
 **Next:** channel drafts, r/macgaming first. A fresh-Mac install test is worth doing before posting.
