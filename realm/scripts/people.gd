@@ -51,7 +51,7 @@ const BODIES := {
 	# Plain townsfolk in tunics and hose (Leonardo Carvalho's Fuse civilians, CC BY, by way of Sketchfab).
 	"fuse_civilian_1": {"sex": "m", "roles": ["townsfolk", "peasant"], "cloth": [], "crowd": true},
 	"fuse_civilian_2": {"sex": "m", "roles": ["townsfolk", "peasant"], "cloth": [], "crowd": true},
-	"fuse_woman_1": {"sex": "f", "roles": ["townsfolk"], "cloth": [], "crowd": true},
+	"fuse_woman_1": {"sex": "f", "roles": ["townsfolk"], "cloth": [], "crowd": true, "dyed": ["Object_7"]},  # her linen top, near her skin's colour undyed
 	# Gowned and veiled. Her gown shares a material with her hands and shoes, so it keeps its own colour.
 	"noble_lady": {"sex": "f", "roles": ["noble"], "cloth": [], "crowd": false},
 }
@@ -242,11 +242,42 @@ func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, ag
 	for mi in skeleton.get_children():
 		if mi is MeshInstance3D:
 			mi.owner = person
+			_solid(mi, nested)
 			if tint != Color.WHITE and String(mi.name) in info["cloth"]:
 				_tint(mi, tint)
+			elif String(mi.name) in info.get("dyed", []):
+				_tint(mi, DYES[rng.randi() % DYES.size()])
 	if role == "":
 		role = info["roles"][0]
 	return _finish(person, skeleton, rng, role, age, build, "male" if info["sex"] == "m" else "female", _height(body, skeleton, info["sex"]))
+
+
+## Homespun colours for clothes that come undyed.
+const DYES := [Color(0.62, 0.5, 0.38), Color(0.5, 0.56, 0.44), Color(0.66, 0.42, 0.34), Color(0.46, 0.48, 0.6), Color(0.58, 0.55, 0.42)]
+static var _solid_of := {}  # a body's material -> the copy it is drawn with
+
+
+## A body is lit by the sun, never by itself, and drawn solid: Mixamo's
+## exports switch emission on with the colour map as its glow (trims that
+## shone green), and bodies by way of Sketchfab mark every surface see-through
+## (hair that sorted away to nothing). Hair keeps its strands, cut out by alpha.
+static func _solid(mi: MeshInstance3D, sketchfab := false) -> void:
+	for s in mi.mesh.get_surface_count():
+		var m := mi.get_active_material(s) as BaseMaterial3D
+		if m == null or (not m.emission_enabled and (not sketchfab or m.transparency == BaseMaterial3D.TRANSPARENCY_DISABLED)):
+			continue
+		if not _solid_of.has(m):
+			var c: BaseMaterial3D = m.duplicate()
+			c.emission_enabled = false
+			if sketchfab and c.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
+				var strands := String(m.resource_name).to_lower()
+				if strands.contains("hair") or strands.contains("beard") or strands.contains("moustache") or strands.contains("lash"):
+					c.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+					c.alpha_scissor_threshold = 0.4
+				else:
+					c.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
+			_solid_of[m] = c
+		mi.set_surface_override_material(s, _solid_of[m])
 
 
 ## Where a node stands relative to an ancestor, from the transforms between them.

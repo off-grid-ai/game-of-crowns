@@ -523,7 +523,7 @@ const KNOT := 0.26  # a gathering keeps this clear round its middle: knots of tw
 ## them on to the next that fits, and failing all, home.
 func _at(a: Dictionary, key: String, knot := false) -> Vector3:
 	for k in [key] + Array(OVERFLOW.get(key, [])):
-		var p := _claim(a, k, KNOT if knot else SHOULDER)
+		var p := _claim(a, k, KNOT if knot else SHOULDER * 1.8)  # alone, a stride from the next
 		if not is_nan(p.x):
 			a["place_key"] = k
 			return p
@@ -549,8 +549,16 @@ func _claim(a: Dictionary, key: String, clear: float) -> Vector3:
 		return Vector3(NAN, 0, 0)  # full
 	var map: RID = a["map"]
 	var start: float = a["rng"].randf() * TAU
-	var r: float = room["near"]
-	while r <= float(room["far"]):
+	# Every ring out from the heart, starting from one at random: filled from
+	# the middle outward, a busy square packed into one tight clump.
+	var rings: Array[float] = []
+	var rr: float = room["near"]
+	while rr <= float(room["far"]):
+		rings.append(rr)
+		rr += SHOULDER
+	var first: int = a["rng"].randi() % rings.size()
+	for ri in rings.size():
+		var r: float = rings[(first + ri) % rings.size()]
 		var n := maxi(4, int(TAU * r / SHOULDER))
 		for i in n:
 			var want := h + Vector2.from_angle(start + TAU * i / n) * r
@@ -564,7 +572,6 @@ func _claim(a: Dictionary, key: String, clear: float) -> Vector3:
 					break
 			if clear_here:
 				return Vector3(c.x + q.x, terrain.height_at(c.x + q.x, c.z + q.y), c.z + q.y)
-		r += SHOULDER
 	return Vector3(NAN, 0, 0)
 
 
