@@ -608,7 +608,10 @@ func _build_town_panel() -> void:
 	v.add_child(row)
 	for a in ["relief", "gift", "feast", "levy", "banners"]:
 		var act: String = a
-		_decree_btns[act] = _btn("", func(): decree.emit(act, "", -1))
+		_decree_btns[act] = _btn("", func():
+			if act == "banners":
+				_guide_mark(2)
+			decree.emit(act, "", -1))
 		row.add_child(_decree_btns[act])
 	_grant_menu = MenuButton.new()
 	_grant_menu.get_popup().id_pressed.connect(func(i): decree.emit("grant", "", int(_house_ids[i])))
@@ -1393,6 +1396,71 @@ var _tithe_asked_at := 0  # when; after half a minute the realm's word stands
 var _counsel: PanelContainer
 var _purse := 0  # the royal treasury, in the bridge's gold (×100 crowns)
 var _counsel_sig := ""
+# --- the first reign's guide ---------------------------------------------------------
+# Three steps the Hand teaches inside his own card, each ticked when the King does
+# it; kept once per player in settings.cfg, never shown again once done or skipped.
+const GUIDE := ["Answer a petitioner at court", "Follow one of the Hand's orders", "Call the banners"]
+var _guide := [false, false, false]
+var _guide_on := false
+var _guide_loaded := false
+
+
+func _load_guide() -> void:
+	_guide_loaded = true
+	var cfg := ConfigFile.new()
+	cfg.load("user://settings.cfg")
+	_guide_on = not bool(cfg.get_value("guide", "done", false))
+	for i in GUIDE.size():
+		_guide[i] = bool(cfg.get_value("guide", "step%d" % i, false))
+
+
+func _save_guide(done: bool) -> void:
+	var cfg := ConfigFile.new()
+	cfg.load("user://settings.cfg")
+	cfg.set_value("guide", "done", done)
+	for i in GUIDE.size():
+		cfg.set_value("guide", "step%d" % i, _guide[i])
+	cfg.save("user://settings.cfg")
+
+
+func _guide_mark(i: int) -> void:
+	if not _guide_loaded:
+		_load_guide()
+	if not _guide_on or _guide[i]:
+		return
+	_guide[i] = true
+	var all_done: bool = not _guide.has(false)
+	_save_guide(all_done)
+	if all_done:
+		_guide_on = false
+		toast("You have the measure of the throne. The Hand will keep counsel; the choices are yours.")
+	_counsel_sig = ""  # the Hand's card redraws with the step ticked
+
+
+func _guide_block() -> Control:
+	var g := VBoxContainer.new()
+	g.add_theme_constant_override("separation", 2)
+	var head := HBoxContainer.new()
+	var t := T.label("Your first reign · %d of 3" % _guide.count(true))
+	t.add_theme_color_override("font_color", T.ACCENT)
+	t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(t)
+	var skip := _btn("Skip", func():
+		_guide_on = false
+		_save_guide(true)
+		_counsel_sig = "")
+	skip.add_theme_font_size_override("font_size", T.SIZE_DESC)
+	head.add_child(skip)
+	g.add_child(head)
+	for i in GUIDE.size():
+		var l := Label.new()
+		l.text = ("✓  " if _guide[i] else "○  ") + GUIDE[i]
+		l.add_theme_font_size_override("font_size", T.SIZE_DESC + 1)
+		l.add_theme_color_override("font_color", T.TEXT_3 if _guide[i] else T.TEXT)
+		g.add_child(l)
+	return g
+
+
 func _show_counsel(items: Array) -> void:
 	var sig := JSON.stringify(items)
 	if sig == _counsel_sig and _counsel:
@@ -1413,6 +1481,11 @@ func _show_counsel(items: Array) -> void:
 	v.add_theme_constant_override("separation", 8)
 	_counsel.add_child(v)
 	v.add_child(T.label("The Hand of the King advises"))
+	if not _guide_loaded:
+		_load_guide()
+	if _guide_on:
+		v.add_child(_guide_block())
+		v.add_child(HSeparator.new())
 	for it in items:
 		var row := VBoxContainer.new()
 		row.add_theme_constant_override("separation", 2)
@@ -1459,6 +1532,10 @@ func _show_counsel(items: Array) -> void:
 
 func _counsel_act(act: Dictionary) -> void:
 	var on := String(act.get("ui", ""))
+	if on != "court":
+		_guide_mark(1)
+	if String(act.get("action", "")) == "banners":
+		_guide_mark(2)
 	if on == "court":
 		_toggle_court()
 	elif on == "tithe_up":
@@ -2075,6 +2152,7 @@ func ruled_in_words(id: String, d: Dictionary) -> void:
 
 func _answer(id: String, option: String) -> void:
 	petition_answered.emit(id, option)
+	_guide_mark(0)
 	_petitions = _petitions.filter(func(x): return String(x["id"]) != id)
 	_court_badge.text = str(_petitions.size())
 	_court_waiting_shown(_petitions.size())
