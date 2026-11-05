@@ -832,7 +832,8 @@ http.createServer(async (req, res) => {
     const fighting = (pid) => seatNow ? (world?.units ?? []).filter((x) => x.owner === pid && !CIVILIAN.has(x.type) && Math.hypot(x.x - seatNow.x, x.y - seatNow.y) <= 6).length : 0;
     const crownId = players.find((p) => p.house.crown)?.id;
     const threat = { usurper, north: (stakes?.s.north.waves ?? 0), pretender: u?.house ?? null, since: u?.since ?? 0, turn: world?.turn ?? 0,
-      theirs: u?.house != null ? fighting(u.house) : 0, ours: crownId != null ? fighting(crownId) : 0 };
+      // The King's side is his whole host: the garrisons defend Kingsmere too.
+      theirs: u?.house != null ? fighting(u.house) : 0, ours: crownId != null ? (world?.units ?? []).filter((x) => x.owner === crownId && !CIVILIAN.has(x.type)).length : 0 };
     return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), date: calendar(world.turn), threat, counsel: counsel(players, cities, threat), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000) });
   }
   if (url.pathname === "/map") {

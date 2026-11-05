@@ -145,7 +145,7 @@ export function decree(cmd, world) {
       if (!seat) return { error: "the crown has no seat" };
       return {
         cost: d.cost, favour: {},
-        text: "The King raises a levy. Pikemen and knights muster at Kingsmere.",
+        text: "The King raises a levy: 600 men, pikemen and knights, muster at Kingsmere.",
         lua: [pay, `local c = find.city(nil, ${seat.id}); if c then for _, n in ipairs({"Pikemen", "Pikemen", "Knights"}) do edit.create_unit(c.owner, c.tile, find.unit_type(n), 1, c, -1) end end`],
       };
     }
