@@ -38,6 +38,10 @@ How a round is played: `realm/tools/play/*.play` scenarios feed real input (keys
 
 | # | Expected | Found | Change | Commit |
 |---|---|---|---|---|
+| 93 | Seen working (r23/02, r23/04) | — | The truce's end in red: "The truce between House Wolfholt and House Thornvale has run its course. Nothing now holds their swords."; the Elsbeth ruling at last: "Thornvale 44 → 34", the goal slips to 5 of 6 (a ruling with a price); the dead: "even together, you would lose by 1,800; a levy adds 600", next host in 3 seasons | r23 |
+| 92 | The dead, judged (supervisor 15:05 #2) | Numbers without a verdict: 3,800 against 1,200 plus 1,400 | "Together, you would hold" or "even together, you would lose by N; a levy adds 600" | b971f1e |
+| 91 | A win you feel; a truce that ends is news (supervisor 15:05 #1, #3) | The win a single table line; a 40k truce lapsed silently into war (r22) | A result card when the last house comes over, with what to hold next; the Hand calls a house cold only below 35; the end of a truce is chronicled in red; lowering the tithe says what it costs a season | b971f1e |
+| 90 | Battles named | "Battle near the realm · Watch" (r21/03) | "House Sunspire loses men near Crowbarrow": the losing house, the nearest town by the realm's own map | 14abea3 |
 | 89 | The cause named is the cause now | "What cools them most: the royal tithe (−54)", a lifetime's sum, on every house (r22/04) | Causes fade a little each season (about half in five years) | 7359d82 |
 | 88 | A reign you can win (supervisor 14:20 #1) | "Win all of them" with nothing when you did | Played: a feast for Thornvale (29 → 44, ▲15) and "All 6 great houses would answer your banners. The realm is yours in truth." (r22/04); the chronicle marks it once, lost and won again as houses fall away | 88cdafa |
 | 87 | Every audience choice has its number | "Let Elsbeth rule: Elsbeth owes the crown · Ysolde is shamed", no number beside the other choice's +5 (r21/01) | Each choice states its favour effect from the effects it declares ("· House Thornvale −10"); new petitions | 88cdafa |
