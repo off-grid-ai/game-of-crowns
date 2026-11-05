@@ -123,7 +123,7 @@ export function decree(cmd, world) {
       if (came.length) parts.push(`${list(came)} ${verb(came, "answers", "answer")} at once`);
       if (few.length) parts.push(`${list(few)} ${verb(few, "sends", "send")} a few men, with excuses`);
       if (refused.length) parts.push(`${list(refused)} ${verb(refused, "refuses", "refuse")} the summons`);
-      return { cost: d.cost, favour, text: `The King calls the banners. ${parts.join("; ")}.${men ? ` ${men * 200} men march to Kingsmere.` : " No one marches."}`, lua, refused };
+      return { cost: d.cost, favour, text: `The King calls the banners. ${parts.join("; ")}.${men ? ` ${(men * 200).toLocaleString("en-US")} men march to Kingsmere.` : " No one marches."}`, lua, refused };
     }
     case "relief":
       if (!c) return { error: "choose a town" };
