@@ -171,8 +171,9 @@ func _process(delta: float) -> void:
 				f["road_of"] = path
 			var road: Curve3D = f["road"]
 			var length := road.get_baked_length()
-			var p: Vector3 = road.sample_baked(f["t"] * length)
-			var dir: Vector3 = road.sample_baked(minf(length, f["t"] * length + 0.25)) - p
+			# A march with nowhere to go (already there) stands: no curve to walk.
+			var p: Vector3 = path[path.size() - 1] if length < 0.01 else road.sample_baked(f["t"] * length)
+			var dir: Vector3 = Vector3.ZERO if length < 0.01 else road.sample_baked(minf(length, f["t"] * length + 0.25)) - p
 			if Vector2(dir.x, dir.z).length() > 0.01:
 				n.rotation.y = lerp_angle(n.rotation.y, atan2(dir.x, dir.z), clampf(delta * 4.0, 0.0, 1.0))
 			n.position = Vector3(p.x, terrain.height_at(p.x, p.z), p.z)

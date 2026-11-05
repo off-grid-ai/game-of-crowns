@@ -616,9 +616,9 @@ func _build_town_panel() -> void:
 	_grant_menu = MenuButton.new()
 	_grant_menu.get_popup().id_pressed.connect(func(i): decree.emit("grant", "", int(_house_ids[i])))
 	row.add_child(_grant_menu)
-	# A royal match: bind this house to another by marriage (8k cr).
+	# A royal match: bind this house to another by marriage.
 	_marriage_menu = MenuButton.new()
-	_marriage_menu.text = "Arrange a marriage with…  8k cr"
+	_marriage_menu.text = "Arrange a marriage with…"  # its price is set with the town's other decrees
 	_marriage_menu.tooltip_text = "Bind this house to another by blood: both warm to the crown, and neither raids or plots against the other while the bond holds."
 	_marriage_menu.get_popup().id_pressed.connect(func(i): decree.emit("marriage", "", int(_marry_ids[i])))
 	row.add_child(_marriage_menu)
@@ -1665,6 +1665,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 	if _tithe_asked < 0.0 or absf(reported - _tithe_asked) < 0.001 or Time.get_ticks_msec() - _tithe_asked_at > 30000:
 		_tithe = reported
 		_tithe_asked = -1.0
+	_decrees = c.get("decrees", {})
 	_gold.text = _heads(int(c.get("treasury", 0)) * CROWNS)
 	# What the crown takes in each season, net of the court and castles: where money comes from.
 	var net := int(c.get("perSeason", 0)) * CROWNS
@@ -1835,20 +1836,32 @@ const HOUSE_COLUMNS := [["towns", "Towns", "Towns held"], ["armies", "Men", "Men
 ## seat (a feast at court, the royal levy), another of his towns (grain from the
 ## royal stores, granting it away), or a house's (grain and gold sent to them, a
 ## feast in their honour, taking the town for another house).
+var _decrees := {}  # the bridge's own decree list: action -> {cost (in gold), label}
+
+
+## A decree's price as the bridge has it, in crowns: "12k cr".
+func _price(action: String, fallback: int) -> String:
+	var gold := int(_decrees.get(action, {}).get("cost", fallback / CROWNS))
+	return "%dk cr" % int(round(gold * CROWNS / 1000.0))
+
+
 func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 	var town := String(c.get("title", c["name"]))
 	var lord := String(house.get("name", "")).replace("House ", "")
 	var mine: bool = house.get("crown", false)
 	var seat: bool = mine and c.get("capital", false)
 	var names := {
-		"relief": "" if seat else ("Grain from the royal stores  12k cr" if mine else "Send grain to %s  12k cr" % town),
-		"gift": "" if mine else "Gift crowns to %s  15k cr" % lord,
-		"feast": "Hold a feast at court  10k cr" if seat else ("" if mine else "Feast in %s's honour  10k cr" % lord),
-		"levy": "Raise the royal levy  20k cr" if seat else "",
-		"banners": "Call the banners  5k cr" if seat else "",
+		"relief": "" if seat else (("Grain from the royal stores  " if mine else "Send grain to %s  " % town) + _price("relief", 12000)),
+		"gift": "" if mine else "Gift crowns to %s  %s" % [lord, _price("gift", 15000)],
+		"feast": ("Hold a feast at court  " + _price("feast", 10000)) if seat else ("" if mine else "Feast in %s's honour  %s" % [lord, _price("feast", 10000)]),
+		"levy": ("Raise the royal levy  " + _price("levy", 20000)) if seat else "",
+		"banners": ("Call the banners  " + _price("banners", 5000)) if seat else "",
 	}
+	_marriage_menu.text = "Arrange a marriage with…  " + _price("marriage", 40000)
 	# A decree the purse can't pay is greyed, and says why and what to do.
-	const COST := {"relief": 12000, "gift": 15000, "feast": 10000, "levy": 20000, "banners": 5000}
+	var COST := {}
+	for a in ["relief", "gift", "feast", "levy", "banners"]:
+		COST[a] = int(_decrees.get(a, {}).get("cost", 0)) * CROWNS
 	for a in names:
 		_decree_btns[a].text = names[a]
 		_decree_btns[a].visible = names[a] != ""

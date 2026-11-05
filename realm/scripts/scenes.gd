@@ -1335,7 +1335,7 @@ func _rider(from: Vector3, to: Vector3, label: String, s := {}) -> Node3D:
 	carried_standard(rider, {"name": "The Crown", "crown": true}, Color(0.72, 0.13, 0.16))
 	var tag := _caption(self, label, _ground(from) + Vector3(0, 0.45, 0))
 	var road: Curve3D = terrain.smooth_road(_route(from, to))
-	var length: float = road.get_baked_length()
+	var length: float = maxf(road.get_baked_length(), 0.01)
 	# Eased in and out, the pace peaks at about pi/2 the average: a gallop
 	# (horse.gd) over the open road, a walk at either end.
 	var secs := clampf(length / (Horse.GALLOP * 0.63), 8.0, 90.0)
@@ -1383,7 +1383,7 @@ func _convoy(from: Vector3, to: Vector3, grain: bool, label := "", scene := {}) 
 		_people.play(s, "Walk")
 		escort.append(s)
 	var road: Curve3D = terrain.smooth_road(_route(from, to))
-	var length: float = road.get_baked_length()
+	var length: float = maxf(road.get_baked_length(), 0.01)
 	var seconds := clampf(length / 0.35, 12.0, 70.0)
 	var tag := _caption(root, label if label != "" else ("The King's grain" if grain else "The King's gold"), _ground(from) + Vector3(0, 0.45, 0))
 	var heading := [INF]  # eased, so the wagon rounds a bend instead of snapping to it
