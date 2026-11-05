@@ -6,6 +6,8 @@ How a round is played: `realm/tools/play/*.play` scenarios feed real input (keys
 
 ## 2026-11-05 (overnight)
 
+**Supervisor 16:35** (r24–r25): (1) The dead's arrival as the climax: a countdown on the bar, a result card when the host lands (the field, losses, towns held or lost, the goal), and no more advice once the verdict is "hold". (2) The win as a real moment with a harder next aim (Peace above 50%); prices that bite. (3) Truth and onboarding: banner wording that matches the men sent; notices never over the table; no engine progress words on map labels; the fixed table order (done c9e75ca); a three-step first-reign guide; frames captured under their true names.
+
 **Supervisor 15:50** (r23): (1) Make the dead winnable: banners that scale with each house's strength, sellswords and other orders that close the gap, the verdict updating per order, never advising an order that still loses, a marker and a result card. (2) Truth pass: every choice's number and its effect on the goal, the most recent cause, a fixed table order and width, Peace answered or part of the win, others' deaths not red, successions after deaths. (3) Teach in place: tooltips on Peace, favour colours, "+N", "See", "Watch"; the ghost text; the idle camera on the threat.
 
 **Supervisor 15:05** (r22): (1) The win as a moment with the next aim on the same card; once won, the Hand stops calling 35+ houses cold. (2) The dead as a crisis the King can win: a plain verdict ("you would lose by 1,200"), each order's effect on the gap, a countdown, a result card. (3) Truth pass: a truce ending is chronicled; a number on "Lower the tithe"; the match only where it ends a war; fixed table order; deaths folded; the ghost label. (Fading causes and numbers on choices landed after these frames.)
