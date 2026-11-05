@@ -5,7 +5,7 @@ Kept by the downloads supervisor (every 15 minutes in the buzz session). Goal: g
 ## Needs Mac
 - **Disk:** this Mac has ~4 GB free of 460 GB. It killed the first release run and will hurt other sessions' renders.
 - **Promo art:** prompts for Codex in docs/buzz/asset-prompts.md (GitHub social preview, itch.io cover, key art). The social preview has to be set by hand in the repo's Settings.
-- **itch.io:** account created 11-05; next, the project page (docs/buzz/channel-03-itch.md) and the upload with butler (the dmg is over itch's 1 GB web limit).
+- **itch.io images:** the draft page is made (alichherawalla.itch.io/game-of-crowns: description, Strategy, 7 tags, free, comments, AI disclosure, draft). Upload the cover and screenshots by hand from docs/buzz/images/itch/ (itch's uploader opens a file picker I can't drive). The dmg goes up with butler once v0.3 is out.
 - **The lady's licence:** confirm the Sketchfab ownership claim for 'Princess Nun Royal Queen' (b9f22ea). A licence question only: .gitignore keeps body files out of git, so pushes publish no model files.
 - **Approve the rest of the list below** (everything marked "proposed").
 
@@ -43,6 +43,9 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 - **Buzz session:** this ledger, the supervisor, drafts for the channels once the dmg exists.
 
 ## Runs
+
+### 11-05 18:20
+**Moved:** itch draft page made. v0.2 (3a62c90) failed twice at the very end (Apple's upload, then its timestamp server); both now retry. Skipping v0.2: v0.3 is building from 0f052ff (lord memory, 20 s seasons, rider fix, look pass phase 1, no bundled model, T-pose fix). Look phase 2 (935a1d8, da4dee0) waits for review.
 
 ### 11-05 17:35
 **Shipped since 16:45:** the rider never sinks into a hill (3a62c90); two bad stills dropped (e2787b7); ground at true scale and dry mud (16d2715); the tavern's stone yard cut (6e093d7); smoke as wisps (7dd662a); grass and flowers in the wind (71962ea); towns up to 80 people (92456d6); the morning look on by default (62fc53a); look-pass renders (57e2963); no model in the app, recommend Off Grid AI (1c04684, 0239e2c); release tooling: notarisation retry, build any pushed commit (a5fa2f1, 0e0c7b6, 9e6033c).
