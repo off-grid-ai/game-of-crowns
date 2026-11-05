@@ -10,23 +10,25 @@
 #
 # Needs: a Developer ID Application identity in the keychain, and for notarisation
 #   APPLE_API_KEY (path to the .p8), APPLE_API_KEY_ID, APPLE_API_ISSUER
-# Usage: packaging/release-mac.sh [--prerelease]
+# Usage: packaging/release-mac.sh [--prerelease] [commit]   (commit: a pushed commit; default origin/main)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT="$PWD"
 REPO=off-grid-ai/game-of-crowns
-FLAG=""; [ "${1:-}" = "--prerelease" ] && FLAG="--prerelease"
+FLAG=""; [ "${1:-}" = "--prerelease" ] && { FLAG="--prerelease"; shift; }
+WANT="${1:-origin/main}"
 
 for v in APPLE_API_KEY APPLE_API_KEY_ID APPLE_API_ISSUER; do
   [ -n "${!v:-}" ] || { echo "!! $v is not set"; exit 1; }
 done
 
 git fetch -q origin main
-FULL=$(git rev-parse origin/main)
-SHA=$(git rev-parse --short origin/main)
+FULL=$(git rev-parse "$WANT^{commit}")
+SHA=$(git rev-parse --short "$FULL")
+git merge-base --is-ancestor "$FULL" origin/main || { echo "!! $SHA is not on origin/main (push it first)"; exit 1; }
 SRC=$(mktemp -d "$HOME/.goc-release.XXXXXX")
 trap 'rm -rf "$SRC"' EXIT
-echo "==> origin/main at $SHA"
+echo "==> Building $SHA"
 git archive "$FULL" | tar -x -C "$SRC"
 # The packaging tools come from this working copy, so a fix to them applies before it is pushed.
 cp "$ROOT/packaging/build-mac.sh" "$SRC/packaging/build-mac.sh"
