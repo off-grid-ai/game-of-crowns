@@ -39,6 +39,10 @@ New messages get added here. They add to the picture; they don't replace it.
 - **Downloads. Get the game into people's hands first.** All effort goes there.
 - Community, Discord, the Founders' Realm and the rest come later, once people are playing.
 
+## Balance (Mac, 2026-11-05)
+- Don't over-index on memory. It's one strong beat, not the whole pitch: the living world, lots happening, your calls setting off chain reactions and years flying matter as much.
+- Screenshots and video need to look better, especially the people: higher-quality characters.
+
 ## Platform (Mac, 2026-11-05)
 - Mac only for now; no Windows until demand is proven.
 - The AI is optional: the game must stand on its own without the model.

@@ -15,6 +15,7 @@ What a stranger sees in the first minute and in every post. Found in the 4K intr
 | 9 | **Castle on a raised dirt slab** with a hard cliff edge | Lionmoor still | Castles sit on the land. |
 | 10 | **Flat noon light** | everything | The colour grade the release calls already chose: golden hour, haze, muted colour. |
 | 11 | **Watched scenes miss their subject**: the King's gold hidden in a forest | r34/05 | The camera holds what the scene is about. |
+| 13 | **People look low quality** (Mac): small, plain, stiff townsfolk next to detailed buildings | every close shot | At the marketing camera distance people read as people: detailed bodies and clothes, natural poses and work, enough of them to feel busy. Use the higher-detail character models where the camera is close. |
 | 12 | **Broken intro stills**: seat_Deepvale.png and seat_Eaglefell.png are fully black | realm/assets/intro/stills | Re-rendered or dropped from the intro. |
 
 Posting waits on 1–3 at least (they read as bugs), and ideally on 4–8 (they read as unfinished).
