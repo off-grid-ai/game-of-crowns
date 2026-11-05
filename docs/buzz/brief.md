@@ -30,6 +30,10 @@ New messages get added here. They add to the picture; they don't replace it.
 - The game is already playable and can go open source now; a demo isn't the bottleneck.
 - The bottleneck is getting people to play it: find the virality factor.
 
+## Where to find players (Mac, 2026-11-05)
+- Not r/LocalLLaMA or the local-AI crowd: Mac has exhausted them and they're allergic to him there.
+- Build a new community, and tap the gaming community. That's where to win.
+
 ## Working with the main session (Mac, 2026-11-05)
 - This session tells the main session what to build and what not to, as soon as the research shows it. Work autonomously; Mac shouldn't have to carry prompts between sessions.
 
