@@ -24,7 +24,7 @@
 > - Crusader Kings: great chains, but I'm managing everything.
 > - Dwarf Fortress legends: the best stories, read after the fact.
 >
-> What do you play for this? And what stops watching from feeling like a screensaver?
+> What do you play for this?
 
 ## 2. The design question (a few days later)
 **Where:** r/gamedesign, r/4Xgaming
@@ -33,7 +33,7 @@
 
 > In my medieval sim, six noble houses run themselves. They farm, starve and go to war. As King you can't command anyone. You get grain, gold, taxes, marriages, and which side you back in a war. Every lever costs something, and the houses remember.
 >
-> Too few levers and it's a screensaver. Too many and it's Crusader Kings. Where's the line for you, and which game got it right?
+> Too few levers and you're only watching. Too many and you're running everything. Which game got the balance right for you?
 
 ## 3. The chain (a week or two later, as a 30–45s clip uploaded to Reddit directly)
 **Where:** r/SimulationGames, r/4Xgaming, r/indiegames; r/godot with a how-it's-built angle
