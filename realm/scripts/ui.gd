@@ -517,7 +517,7 @@ func _build_houses() -> void:
 	_standing = T.title("", 14, T.TEXT)
 	_standing.autowrap_mode = TextServer.AUTOWRAP_WORD
 	v.add_child(_standing)
-	var bands := T.label("Favour: under 25 may rise against you · 35 and up answer your banners · 60 and up are loyal")
+	var bands := T.label("Favour: red, under 25, may rise against you · gold, under 35, won't answer your banners · 35 and up answer them · 60 and up are loyal")
 	bands.add_theme_font_size_override("font_size", 10)
 	bands.autowrap_mode = TextServer.AUTOWRAP_WORD
 	v.add_child(bands)
@@ -1579,7 +1579,10 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		if all_in and _was_united == 0:
 			toast("The realm is yours in truth: all %d great houses would answer your banners.\nNow hold them, and meet whatever comes from the North." % great.size())
 		_was_united = 1 if all_in else 0
-		_standing.text = ("All %d great houses would answer your banners. The realm is yours in truth." % great.size()) if all_in \
+		# Once won, the next aim: end the wars between the houses (Peace above half).
+		var peace_now := int(float(world.get("peace", 1)) * 100)
+		var next_aim := (" Next: end the wars between them, Peace %d%% of 50%%." % peace_now) if peace_now < 50 else " The realm is at peace with itself."
+		_standing.text = ("All %d great houses would answer your banners. The realm is yours in truth." % great.size() + next_aim) if all_in \
 			else "%d of %d great houses would answer your banners. Win all of them and the realm is yours in truth." % [with_me, great.size()]
 	_show_counsel(world.get("counsel", []))
 	for pid in houses:
@@ -1726,7 +1729,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		if p.get("favour") != null:
 			# The number, in the colour of its danger: red may rise, gold grows cold.
 			var f := int(p["favour"])
-			var fav := T.datum("%d" % f, T.SIZE_DESC, T.DANGER if f < 25 else (T.ACCENT if f < 45 else T.TEXT))
+			var fav := T.datum("%d" % f, T.SIZE_DESC, T.DANGER if f < 25 else (T.ACCENT if f < 35 else T.TEXT))
 			fav.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 			# Why they feel so (the bridge's ledger of kindnesses and grievances),
 			# then what it means: CK3's opinion breakdown, in the realm's words.
@@ -1735,7 +1738,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 				var d := int(r.get("d", 0))
 				if d != 0:
 					why.append("%s%d  %s" % ["+" if d > 0 else "", d, String(r.get("why", ""))])
-			var means := "Below 25 they may rise against you and refuse your banners." if f < 25 else ("Growing cold: below 25 they may rise." if f < 45 else ("Loyal: they answer your banners at once." if f >= 60 else "Content, for now."))
+			var means := "Below 25 they may rise against you and refuse your banners." if f < 25 else ("Cooling: below 35 they won't answer your banners; below 25 they may rise." if f < 35 else ("Loyal: they answer your banners at once." if f >= 60 else "Content, for now."))
 			fav.tooltip_text = "Favour toward the crown: %d of 100\n\n%s%s" % [f, ("\n".join(why) + "\n\n") if not why.is_empty() else "", means]
 			fav.mouse_filter = Control.MOUSE_FILTER_PASS
 			# Which way they're going: "37 ▼10" over the last year, so a drift shows
