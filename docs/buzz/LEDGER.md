@@ -32,11 +32,17 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 | Art licences cleared; separate demo build | Dropped (Mac: not the bottleneck; the game is the demo) |
 
 ## In progress
+- **Main session:** testing the lord work in Mac's relaunched game; then close-up stills (docs/buzz/images/zoom/live/) and the first-impression fixes 1–3 (docs/buzz/first-impression.md) before pushing.
 - **Main session:** the four approved lord and pace changes (not yet committed).
 - **Explainer session (goc-explainer):** briefed 11-05 13:25 by the buzz session: a 20–30 s clip of a lord remembering and a 60–90 s explainer, after the lord work lands; files to docs/buzz/video/.
 - **Buzz session:** this ledger, the supervisor, drafts for the channels once the dmg exists.
 
 ## Runs
+
+### 11-05 16:04
+**Shipped:** explainer cuts committed as source (0e6e3e2; renders stay out of git). Downloads: 1.
+**Moved:** Mac reviewed the footage (people half in the ground, captions behind roofs, map progress text); first-impression list sent to the main session; explainer holding final renders until fixes land.
+**Blocking:** lord test, then fixes 1–3, then push and v0.2.
 
 ### 11-05 15:30
 **Moved:** Mac said yes to relaunching his game for the main session to test the lord work; it commits and pushes once the lord's deed shows on screen, then v0.2.
