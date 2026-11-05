@@ -1,8 +1,14 @@
 # Game of Crowns
 
+**A free medieval kingdom sim where every lord remembers what you did.**
+
+Great houses grow, starve, marry, scheme and go to war on their own. You're the King: rule with grain, gold, decrees and judgement at court, and live with what the lords remember. Tax a house too hard and, years later, its lord may be whispering a better claim to your throne.
+
+**Download:** free, nothing locked, for Macs with Apple Silicon, from [Releases](https://github.com/off-grid-ai/game-of-crowns/releases). Windows is coming.
+
 A living medieval world that runs on its own, set in the fictional realm of **Aldmere**. You are its King. Seven great houses rule their lands, grow their towns, marry, scheme and go to war whether you watch or not; you keep them loyal and the realm at peace with grain, gold, decrees, judgement at court and, when you must, the banners and the royal host. The dead are coming down from beyond the northern wall, and a lord who loses faith in the crown may raise a pretender.
 
-Personal project, macOS on Apple Silicon. Decisions live in [VISION.md](VISION.md) and [DESIGN.md](DESIGN.md).
+Open source, macOS on Apple Silicon. Decisions live in [VISION.md](VISION.md) and [DESIGN.md](DESIGN.md).
 
 ![The King's rider on the road into Goldrock, the seat of House Goldcrest](docs/play/r32-on-road/06-ride.jpg)
 *The King's rider carries the crown's purse into Goldrock; the town card below holds the royal decrees.*
