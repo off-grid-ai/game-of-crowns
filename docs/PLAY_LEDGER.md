@@ -44,6 +44,9 @@ How a round is played: `realm/tools/play/*.play` scenarios feed real input (keys
 
 | # | Expected | Found | Change | Commit |
 |---|---|---|---|---|
+| 103 | Each wave of the dead ends (supervisor 16:35 #1, 17:20 #1) | A wave struck and was never heard of again | Three seasons after a wave strikes, the chronicle says the town held ("the dead broke against the walls of Oldcrag … 5,400 of them lie in the snow") or fell. Not yet seen: the last wave struck before the code went live; the next comes in 6 seasons | 96c5d0f |
+| 102 | Favour's colours mean the rules | Gold meant "under 45", a line nothing else used (r26) | Red under 25 may rise, gold under 35 won't answer the banners; the line under the table says so (r27/01) | b0c9459 |
+| 101 | A goal after the win (supervisor 17:20 #2) | "The realm is yours in truth" and nothing to aim at next | "Next: end the wars between them, Peace 26% of 50%." (r27/01) | b0c9459 |
 | 100 | The Hand stops when the odds are won (supervisor 16:35 #1) | "Raise the royal levy" still advised in gold after "together, you would hold" (r25/03–04) | Once the King's own men outnumber the host: "The dead come south, and you would hold", no orders, lower in the card; only the banners advised when they alone close the gap (r26/04) | bc5dfc5 |
 | 99 | The banners' words match their men (supervisor 16:35 #3) | "Send a few men, with excuses" while 3,800 marched (r25/02) | "Grudgingly: Wolfholt 1,200, Goldcrest 400, Thornvale 1,400, Stormhold 200, Sunspire 400 and Highfell 200. 3,800 men march to Kingsmere." (r26/04); the watch offer between the side panels, never over the table | bc5dfc5 |
 | 98 | Rows stay put; Peace explained | The table re-sorted coldest-first, rows jumping after each order (r22–r25); Peace 26% with no reason | A fixed order by name, the crown last (r26/01); Peace's tooltip names every war between the great houses and what raises it | c9e75ca |
