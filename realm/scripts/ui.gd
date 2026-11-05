@@ -1564,13 +1564,19 @@ func _set_sigil(icon: TextureRect, house: Dictionary) -> void:
 
 
 var _standing: Label  # "4 of 6 great houses would answer your banners"
+var _was_united := -1  # -1 until the first reading, so a reign already won doesn't announce itself on load
 
 
 func set_world(world: Dictionary, houses: Dictionary) -> void:
 	if _standing:
 		var great := (world.get("players", []) as Array).filter(func(p): return p.get("favour") != null)
 		var with_me := great.filter(func(p): return float(p["favour"]) >= 35.0).size()
-		_standing.text = ("All %d great houses would answer your banners. The realm is yours in truth." % great.size()) if with_me == great.size() and great.size() > 0 \
+		var all_in := with_me == great.size() and great.size() > 0
+		# The moment it's won: a card that says so and what to hold next.
+		if all_in and _was_united == 0:
+			toast("The realm is yours in truth: all %d great houses would answer your banners.\nNow hold them, and meet whatever comes from the North." % great.size())
+		_was_united = 1 if all_in else 0
+		_standing.text = ("All %d great houses would answer your banners. The realm is yours in truth." % great.size()) if all_in \
 			else "%d of %d great houses would answer your banners. Win all of them and the realm is yours in truth." % [with_me, great.size()]
 	_show_counsel(world.get("counsel", []))
 	for pid in houses:

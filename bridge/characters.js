@@ -336,6 +336,7 @@ export class Court {
     this.turnNow = turn;
     if (ctx.watched) {
       this.expire(turn, ctx.shift);
+      this.endTruces(turn);
       this.collect(world, turn, ctx);
     }
     const pet = moves.find((m) => m.kind === "petition");
@@ -843,6 +844,17 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
       shift({ [c.playerId]: -12 }, "left unheard at court");
       this.remember(c.id, "I waited at court for two years. The King never answered.");
       this.record({ turn, kind: "unrest", text: `${c.name} of ${c.house} leaves Kingsmere unheard, and says so to anyone who will listen.` });
+    }
+  }
+
+  // A truce that runs out is news: the King's peace between two houses has ended.
+  endTruces(turn) {
+    for (const [k, until] of Object.entries(this.truces ?? {})) {
+      if (until > turn) continue;
+      delete this.truces[k];
+      const [a, b] = k.split(":").map((id) => this.people[id]);
+      if (a && b && a.alive !== false && b.alive !== false && a.house !== b.house)
+        this.record({ turn, kind: "betrayal", text: `The truce between ${a.house} and ${b.house} has run its course. Nothing now holds their swords.` });
     }
   }
 

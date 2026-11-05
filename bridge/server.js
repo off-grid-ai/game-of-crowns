@@ -523,7 +523,8 @@ function counsel(players, cities, threat) {
   // A war or bond the King has stilled (his peace, or a royal match).
   const stilled = (x, y) => { const a = court?.lordOfHouse(x), b = court?.lordOfHouse(y); return !!(a && b && court.truce(a.id, b.id)); };
   // A house sliding toward rebellion.
-  const cold = great.filter((p) => favourOf(p.id) < 45).sort((a, b) => favourOf(a.id) - favourOf(b.id))[0];
+  // Cold is below the banners' line (35): a house that would still answer isn't the Hand's worry.
+  const cold = great.filter((p) => favourOf(p.id) < 35).sort((a, b) => favourOf(a.id) - favourOf(b.id))[0];
   if (cold && seatOf(cold.id)) {
     const f = favourOf(cold.id);
     // The Hand names what is cooling them most, from the house's ledger of causes.
@@ -581,11 +582,12 @@ function counsel(players, cities, threat) {
   const bannerMen = great.reduce((n, p) => n + (favourOf(p.id) >= 60 ? 2 : favourOf(p.id) >= 35 ? 1 : 0), 0) * 200;
   if (threat.north > 0) {
     const d = threat.dead ?? {};
+    const gap = (d.next ?? 0) - threat.ours * 200 - bannerMen;
     const lord = players.find((p) => p.id === d.owner);
     const where = d.town ? `on ${d.town}${lord ? ` (${lord.house.crown ? "the crown's own" : lord.house.name})` : ""}` : "on the North";
     const when = d.in == null ? "" : d.in <= 1 ? " The next host comes next season." : ` The next host comes in ${d.in} seasons.`;
     out.push({ urgency: 75, text: "The dead come south",
-      why: `${(d.last ?? 0).toLocaleString("en-US")} of them fell ${where} last time; ${(d.next ?? 0).toLocaleString("en-US")} will come with the next.${when} Against them: your ${(threat.ours * 200).toLocaleString("en-US")} fighting men, and about ${bannerMen.toLocaleString("en-US")} more if you call the banners. If every northern town falls, the realm falls with it.`,
+      why: `${(d.last ?? 0).toLocaleString("en-US")} of them fell ${where} last time; ${(d.next ?? 0).toLocaleString("en-US")} will come with the next.${when} Against them: your ${(threat.ours * 200).toLocaleString("en-US")} fighting men, and about ${bannerMen.toLocaleString("en-US")} more if you call the banners: ${gap <= 0 ? "together, you would hold" : `even together, you would lose by ${gap.toLocaleString("en-US")}; a levy adds 600`}. If every northern town falls, the realm falls with it.`,
       acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }] });
   }
   const hungry = cities.find((c) => c.famine);
@@ -612,7 +614,7 @@ function counsel(players, cities, threat) {
   if (!out.length) out.push({ urgency: 0, text: "The realm is quiet", why: "A good season to win a house's love before you need it.", acts: [] });
   // Every order shows its price before the King gives it, as the town card does: "Command peace  6k cr".
   // And what it does, so the King weighs effect against price: "Gift crowns  15k cr · +10".
-  const DOES = { grant: "+20 them, −30 the holder", gift: "+10", feast: "+15", relief: "+12", marriage: "+8 each, bound in peace", peace: "+2 each, truce", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2" };
+  const DOES = { tithe_down: `the houses cool more slowly, the crown takes ${(Math.round(lastSeason.net * 50) / 1).toLocaleString("en-US")} less a season`, grant: "+20 them, −30 the holder", gift: "+10", feast: "+15", relief: "+12", marriage: "+8 each, bound in peace", peace: "+2 each, truce", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2" };
   // An order that can't be given now isn't offered: the banners answer once a year.
   for (const o of out) o.acts = o.acts.filter((a) => a.action !== "banners" || bannersReady(world?.turn ?? 0));
   // The Hand's own pick on each matter: the order that does most for its cost.
@@ -624,7 +626,8 @@ function counsel(players, cities, threat) {
   }
   for (const o of out) for (const a of o.acts) {
     if (DECREES[a.action]?.cost) a.label += `  ${DECREES[a.action].cost / 10}k cr`;
-    if (DOES[a.action] && !a.label.includes("(")) a.label += ` · ${DOES[a.action]}`;
+    const does = DOES[a.action ?? a.ui];
+    if (does && !a.label.includes("(")) a.label += ` · ${does}`;
   }
   // Two matters at most: the Hand's card stays clear of the houses table, and the
   // court has its own badge.
