@@ -62,6 +62,12 @@ static func footprint(name: String) -> Vector2:
 	return t["foot"] if t else Vector2.ZERO
 
 
+## The model's height in game units at real scale (its roof's peak).
+static func height(name: String) -> float:
+	var t := _template(name)
+	return t["top"] if t else 0.0
+
+
 static func names_of(kind: String) -> Array:
 	return KIT.keys().filter(func(n): return KIT[n][0] == kind and ResourceLoader.exists(_path(n)))
 
@@ -134,7 +140,7 @@ static func _template(name: String) -> Dictionary:
 	var scene := PackedScene.new()
 	scene.pack(root)
 	root.free()
-	_cache[name] = {"scene": scene, "foot": Vector2(box.size.x, box.size.z) * k, "parts": parts}
+	_cache[name] = {"scene": scene, "foot": Vector2(box.size.x, box.size.z) * k, "top": box.size.y * k, "parts": parts}
 	return _cache[name]
 
 

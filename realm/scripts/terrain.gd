@@ -621,6 +621,8 @@ func _build_vegetation() -> void:
 		add_child(forest)
 		forest.plant(_pines)
 		print_verbose("FOREST %d pines" % _pines.size())
+	if land3d and land3d.land:
+		land3d.plant_reeds.call_deferred(self)
 	for key in placed:
 		var parts: PackedStringArray = key.split(":")
 		var mmi := _scatter(meshes[parts[0]][int(parts[1])], placed[key])
@@ -869,7 +871,7 @@ static func art(path: String, fallback: String) -> String:
 
 
 ## A texture repeated nx by ny times, so a long road keeps its grain instead of
-## stretching. `edge` softens it: "round" for a worn, ragged patch, "sides" for a track's verges.
+## stretching. `edge` softens it: "round" for a worn, ragged patch, "paved" for laid stone, "sides" for a track's verges.
 func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 	nx = clampi(nx, 1, 12)
 	ny = clampi(ny, 1, 24)
@@ -909,6 +911,18 @@ func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 				var n := wear.get_noise_2d(x, y)
 				var a := clampf((0.78 + n * 0.55 - d) * 5.0, 0.0, 1.0)
 				a *= clampf(0.75 + wear.get_noise_2d(x * 4.0, y * 4.0) * 0.6, 0.0, 1.0) if d > 0.45 else 1.0
+				if a < 1.0:
+					img.set_pixel(x, y, Color(img.get_pixel(x, y), a))
+	elif edge == "paved":
+		# Laid stone: whole to its border, the border a little uneven where
+		# setts were lost, with no holes worn through the middle.
+		var wear := FastNoiseLite.new()
+		wear.seed = nx * 11 + ny
+		wear.frequency = 0.02
+		for y in h:
+			for x in w:
+				var d := Vector2(2.0 * x / w - 1.0, 2.0 * y / h - 1.0).length()
+				var a := clampf((0.93 + wear.get_noise_2d(x, y) * 0.05 - d) * 14.0, 0.0, 1.0)
 				if a < 1.0:
 					img.set_pixel(x, y, Color(img.get_pixel(x, y), a))
 	elif edge == "sides":

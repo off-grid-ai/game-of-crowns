@@ -245,6 +245,8 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 			_door(root, p, f, rooms[lm][0], rooms[lm][1])
 			# Where the town gathers: just out from its door, on the square.
 			places[rooms[lm][2]] = p - p.normalized() * (f.y * 0.5 + 0.35)
+			if lm == "medieval_tavern":
+				_tether(root, center, p, f)
 		gap_ang += PI * 0.62
 	root.set_meta("places", places)
 	# The ring of townhouses framing the square, shoulder to shoulder; then the
@@ -376,7 +378,13 @@ func _put(root: Node3D, center: Vector3, kind: String, p: Vector3, f: Vector2, l
 		var homes: Array = root.get_meta("homes", [])
 		homes.append([p + face * (f.y * 0.5 + 0.12), face])  # its doorstep, and which way it looks
 		root.set_meta("homes", homes)
+		_footpath(root, center, p + face * (f.y * 0.5 + 0.12))
 		_dress(root, center, p, face, Vector3(-face.z, 0, face.x), f.x, f.y, rng)
+		# A fire in most homes: a thread of smoke from the roof.
+		if Real.KIT[kind][0] == "house" and rng.randf() < 0.45:
+			var top := Real.height(kind) * k
+			var off := Vector3(-face.z, 0, face.x) * f.x * rng.randf_range(-0.2, 0.2) - face * f.y * 0.1
+			_smoke(root, Vector3(p.x, seat_y + top * 0.92, p.z) + off)
 	lots.append([p, span * 0.42])
 	return true
 
@@ -511,6 +519,13 @@ func _dress(root: Node3D, center: Vector3, hp: Vector3, face: Vector3, out: Vect
 		["haystack_2", hp - face * (fd * 0.5 + 0.15) + along * fw * 0.2, 0.35],
 		["wooden_fence_game_ready_asset", hp - face * (fd * 0.5 + 0.3), 0.45],
 	]
+	# The small things of a working yard against the walls: barrels, crates,
+	# a bucket, a basket.
+	var clutter: Array = Real.names_of("clutter").filter(func(n): return n != "ph/stone_fire_pit" and n != "ph/wooden_ladder" and n != "ph/wooden_lantern_01")
+	if not clutter.is_empty():
+		for i in rng.randi_range(1, 3):
+			var side := 1.0 if rng.randf() < 0.5 else -1.0
+			spots.append([clutter[rng.randi() % clutter.size()], hp + along * side * (fw * 0.5 + 0.05) + face * rng.randf_range(-fd * 0.35, fd * 0.35), 1.0])
 	for spot in spots:
 		if rng.randf() > spot[2]:
 			continue
@@ -676,13 +691,13 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 		square_r = 1.25 if bool(c.get("capital", false)) or size >= 12 else 1.0  # a market square, room for stalls and a crowd
 		reach = maxf(reach, square_r + 3.6)  # the town reaches out to its palisade
 	var reps := roundi(square_r * 4.0)
-	# The square: trodden earth spreading out around a cobbled heart, both
-	# ragged at the edge, so it reads as ground worn by a town, not a stamp.
+	# The square: a cobbled heart laid whole to its edge, and trodden earth
+	# spreading out round it, ragged where it wears into the grass.
 	if terrain.land3d and terrain.land3d.land:
 		terrain.land3d.paint_mud(center, square_r * 1.6, rng.randi())  # in the ground itself
 	else:
 		terrain.paint(root, terrain.tiled(ROAD_TEX, reps + 2, reps + 2, "round"), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2.ONE * square_r * 3.2, rng.randf() * TAU, ROAD_TINT)
-	terrain.paint(root, terrain.tiled(SQUARE_TEX, reps, reps, "round"), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2(square_r * 2.0, square_r * 1.6), rng.randf() * TAU)
+	terrain.paint(root, terrain.tiled(SQUARE_TEX, reps, reps, "paved"), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2(square_r * 2.0, square_r * 1.6), rng.randf() * TAU)
 
 	var per_variant := {}
 	var real := realistic_towns.has(String(c.get("title", c["name"]))) or realistic_towns.has("*")
@@ -748,6 +763,8 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 					root.add_child(home)
 					_footprint_rect(root, hp, Vector2(fw, fd), home.rotation.y)
 					_dress(root, center, hp, face, side * s, fw, fd, rng)
+					if Real.KIT[kit_name][0] == "house" and rng.randf() < 0.45:
+						_smoke(root, home.position + Vector3(0, Real.height(kit_name) * 0.92, 0) - face * fd * 0.1)
 					placed += 1
 					continue
 				var basis := Basis(Vector3.UP, atan2(face.x, face.z)).scaled(Vector3.ONE * S)
@@ -897,6 +914,43 @@ func _fields(root: Node3D, center: Vector3, outer: float, size: int, rng: Random
 		root.set_meta("fields", all)
 		placed += 1
 
+
+
+## A worn footpath from a doorstep to the nearest street: a narrow track of
+## trodden earth, kept clear of grass like the streets.
+func _footpath(root: Node3D, center: Vector3, door: Vector3) -> void:
+	var from := Vector2(door.x, door.z)
+	var best := Vector2.INF
+	for lane in root.get_meta("lanes", []):
+		var q := Geometry2D.get_closest_point_to_segment(from, lane[0], lane[1])
+		if from.distance_to(q) < from.distance_to(best):
+			best = q
+	var length := from.distance_to(best)
+	if length < 0.2 or length > 2.0:
+		return  # on the street already, or too far from one to wear a path
+	var to := from + (best - from) * 0.9  # stops at the street's edge
+	var mid := (from + to) * 0.5
+	var lo := minf(_ground_y(center, door), _ground_y(center, Vector3(to.x, 0, to.y)))
+	var hi := maxf(_ground_y(center, door), _ground_y(center, Vector3(to.x, 0, to.y)))
+	terrain.paint(root, terrain.tiled(ROAD_TEX, 1, maxi(1, roundi(length / 0.3)), "sides"), Vector3(mid.x, (lo + hi) / 2.0, mid.y), Vector2(0.14, from.distance_to(to)), atan2(to.x - from.x, to.y - from.y), ROAD_TINT, hi - lo + 0.6)
+	var lanes: Array = root.get_meta("lanes", [])
+	lanes.append([from, to])
+	root.set_meta("lanes", lanes)
+
+
+## A traveller's horse tied up beside the tavern door, standing at rest.
+func _tether(root: Node3D, center: Vector3, p: Vector3, f: Vector2) -> void:
+	const Horse := preload("res://scripts/horse.gd")
+	if not ResourceLoader.exists(Horse.MODEL):
+		return
+	var face := -p.normalized()
+	var along := Vector3(-face.z, 0, face.x)
+	var at := p + face * (f.y * 0.5 + 0.18) + along * f.x * 0.42
+	var horse := Horse.new()
+	horse.position = at + Vector3(0, _ground_y(center, at), 0)
+	horse.rotation.y = atan2(along.x, along.z)  # side-on to the wall, head to the door
+	root.add_child(horse)
+	_footprint_rect(root, at, Vector2(0.08, 0.3), horse.rotation.y)
 
 
 ## True when a spot falls inside something already built (a footprint).
