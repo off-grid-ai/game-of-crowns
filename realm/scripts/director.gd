@@ -7,21 +7,22 @@ extends Node
 
 const IDLE_SECONDS := 30.0
 const SHOT_SECONDS := 18.0
-# Scene kind -> [interest, camera distance, caption]
+# Scene kind -> [interest, camera distance, caption]. Anything that moves along a
+# road is filmed from well above the trees (9), never from inside a forest canopy.
 const SCENES := {
 	"siege": [10, 7.0, "The siege of %s"],
-	"battle": [9, 4.0, "Battle near %s"],
+	"battle": [9, 8.0, "Battle near %s"],
 	"sack": [9, 8.0, "%s is sacked"],
 	"razed": [9, 9.0, "%s burns"],
 	"famine": [5, 6.0, "Famine in %s"],
 	"plague": [5, 6.0, "Plague in %s"],
-	"grain": [4, 5.0, "The King's grain on the road to %s"],
-	"tribute": [3, 5.0, "The King's gold on the road to %s"],
+	"grain": [4, 9.0, "The King's grain on the road to %s"],
+	"tribute": [3, 9.0, "The King's gold on the road to %s"],
 	"handover": [3, 8.0, "%s changes hands"],
 	"muster": [4, 6.0, "The King's levy musters at %s"],
-	"feast": [3, 4.0, "A feast at %s"],
-	"rider": [3, 3.5, "The King's rider, bound for %s"],
-	"ward": [2, 4.0, "A ward on the road to %s"],
+	"feast": [3, 6.0, "A feast at %s"],
+	"rider": [3, 9.0, "The King's rider, bound for %s"],
+	"ward": [2, 9.0, "A ward on the road to %s"],
 }
 
 var rig: Node3D
@@ -42,6 +43,9 @@ func _input(event: InputEvent) -> void:
 		if active:
 			active = false
 			_follow = null
+			# The King takes the view back: lift it clear of any treetops it was following through.
+			if rig._goal_distance < 6.0:
+				rig._goal_distance = 6.0
 
 
 func start() -> void:
@@ -60,7 +64,8 @@ func _process(delta: float) -> void:
 	# A slow turn around whatever we're watching, so even a quiet shot moves.
 	rig._goal_yaw += delta * 0.04
 	if is_instance_valid(_follow) and _follow.is_inside_tree():
-		rig._goal_target = _follow.global_position
+		# Follow calmly: drift toward the rider rather than snapping to every bump in the road.
+		rig._goal_target = rig._goal_target.lerp(_follow.global_position, clampf(delta * 1.5, 0.0, 1.0))
 	_shot_left -= delta
 	if _shot_left <= 0.0:
 		_next_shot()
