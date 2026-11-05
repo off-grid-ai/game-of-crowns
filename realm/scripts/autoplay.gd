@@ -122,7 +122,19 @@ func _play(quit_after: bool) -> void:
 				await get_tree().create_timer(1.0).timeout
 			"city":
 				_frame_city(w[1], float(w[2]) if w.size() > 2 else 6.0)
+				if main.rig.is_processing_input() == false:
+					main.rig._apply()
 				await get_tree().create_timer(3.0).timeout
+			"freeze":
+				# For like-for-like stills: the director never takes the camera, the
+				# scenes and the interface are hidden, so only the land is compared.
+				main.director.set_process(false)
+				main.scenes.visible = false
+				main.ui.visible = false
+				# and the camera holds exactly where it's put
+				main.rig.set_process(false)
+				main.rig.set_process_input(false)
+				main.rig.set_process_unhandled_input(false)
 	if quit_after:
 		_note("done")
 		_log.close()
