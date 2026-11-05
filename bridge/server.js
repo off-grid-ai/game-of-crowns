@@ -1061,6 +1061,25 @@ http.createServer(async (req, res) => {
     decreesIssued++;
     const cmd = await body(req);
     if (meta.status !== "running") return json(res, 400, { error: "this reign has ended" });
+    // A royal match needs a pair: an unwed son or daughter of age from each house,
+    // one of each, chosen before a crown is spent. Nobody is wed twice.
+    let pair = null;
+    if (cmd.action === "marriage" && court) {
+      const city = world.cities.find((c) => c.id === Number(cmd.city));
+      const [la, lb] = [city?.owner, Number(cmd.to)].map((pid) => court.lordOfHouse(pid));
+      const unwed = (lord) => court.alive().filter((k) => k.parents?.includes(lord.id) && !k.spouse && k.age >= 15);
+      if (la && lb) {
+        const kids = unwed(la);
+        for (const ka of kids) {
+          const kb = unwed(lb).find((k) => k.gender !== ka.gender);
+          if (kb) { pair = [la, lb, ka, kb]; break; }
+        }
+        if (!pair) {
+          const none = !kids.length ? la : lb;
+          return json(res, 400, { error: `${none.house} has no unwed son or daughter of age to wed to the other house` });
+        }
+      }
+    }
     const result = decree({ ...cmd, favourOf, usurper: stakes?.s.usurper, seat: stakes?.s.seat }, world);
     if (result.error) return json(res, 400, result);
     if (result.endUsurper && stakes) { stakes.s.usurper.stage = "none"; stakes.save(); }
@@ -1110,11 +1129,13 @@ http.createServer(async (req, res) => {
     }
     // A royal match: the two lords' heirs (or kin) are named, they warm to each
     // other, and a long truce holds their houses from raids and plots.
-    if (result.pact && court) {
-      const [a, b] = result.pact.map((pid) => court.lordOfHouse(pid));
-      if (a && b) {
-        const kin = (lord) => court.alive().find((k) => k.parents?.includes(lord.id) && !k.spouse && k.age >= 15) ?? lord;
-        const ka = kin(a), kb = kin(b);
+    if (result.pact && court && pair) {
+      const [a, b, ka, kb] = pair;
+      {
+        ka.spouse = kb.id;
+        kb.spouse = ka.id;
+        court.save?.(ka);
+        court.save?.(kb);
         court.shift(a.id, b.id, 25, `The King bound my house to ${b.house} by marriage.`);
         court.shift(b.id, a.id, 25, `The King bound my house to ${a.house} by marriage.`);
         court.truces ??= {};
