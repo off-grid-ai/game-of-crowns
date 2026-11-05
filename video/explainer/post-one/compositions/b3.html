@@ -1,0 +1,38 @@
+<template>
+  <style>
+@font-face { font-family:"EB Garamond"; src:url("assets/fonts/EBGaramond.ttf") format("truetype"); font-weight:400 800; }
+@font-face { font-family:"Cinzel"; src:url("assets/fonts/Cinzel.ttf") format("truetype"); font-weight:400 900; }
+#root { position:absolute; inset:0; overflow:hidden; background:#151719; }
+.cam { position:absolute; left:0; top:0; transform-origin:0 0; }
+.cam img { position:absolute; left:0; top:0; display:block; }
+.mark { position:absolute; height:7px; background:#B7A17D; transform-origin:0 50%; border-radius:2px; }
+.rule { position:absolute; width:8px; background:#B7A17D; transform-origin:50% 0; border-radius:2px; }
+.shade { position:absolute; left:0; right:0; bottom:0; height:520px;
+  background:linear-gradient(180deg, rgba(21,23,25,0) 0%, rgba(21,23,25,.62) 58%, rgba(21,23,25,.82) 100%); }
+.lines { position:absolute; left:120px; right:120px; bottom:118px; font-family:"EB Garamond", serif; font-weight:500;
+  font-size:104px; line-height:1.05; letter-spacing:-0.01em; color:#EFE7D6; text-shadow:0 2px 18px rgba(0,0,0,.45); }
+.lines .ln { display:block; }
+.lines .w { display:inline-block; }
+.final .lines { font-size:128px; }
+.top .shade { top:0; bottom:auto; background:linear-gradient(0deg, rgba(21,23,25,0) 0%, rgba(21,23,25,.62) 58%, rgba(21,23,25,.82) 100%); }
+.top .lines { bottom:auto; top:96px; }
+.top .lines .ln { top:0; bottom:auto; }
+.q { color:#B7A17D; }
+.cursor { position:absolute; left:0; top:0; width:64px; height:64px; z-index:5; }
+</style>
+  <div id="root" data-composition-id="b3" data-width="1920" data-height="1080"><div id="b3" style="position:absolute;inset:0">
+    <div class="cam" id="b3cam" style="width:3024px;height:1898px"><img src="assets/play/b05.jpg" alt="" width="3024" height="1898"><div class="mark" id="b3m0" style="left:328px;top:1312px;width:368px"></div></div><div class="shade"></div><div class="lines"><span class="ln" id="b3l0"><span class="w" id="b3l0w0">Her</span> <span class="w" id="b3l0w1">house</span> <span class="w" id="b3l0w2">didn't</span> <span class="w" id="b3l0w3">forget.</span></span></div>
+  </div></div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.set("#b3cam", { x:-12.5, y:-1507.0, scale:1.45 }, 0);
+    tl.to("#b3cam", { x:-26.0, y:-1543.6, scale:1.48, duration:4.40, ease:"sine.inOut" }, 0);
+    tl.fromTo("#b3m0", { scaleX:0 }, { scaleX:1, duration:.45, ease:"power3.out" }, 1.0);
+    tl.fromTo("#b3l0w0", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 1.60);
+    tl.fromTo("#b3l0w1", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 1.65);
+    tl.fromTo("#b3l0w2", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 1.70);
+    tl.fromTo("#b3l0w3", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 1.75);
+    tl.set({}, {}, 4.4);
+    window.__timelines["b3"] = tl;
+  </script>
+</template>

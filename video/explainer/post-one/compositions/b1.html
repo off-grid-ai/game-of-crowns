@@ -1,0 +1,33 @@
+<template>
+  <style>
+@font-face { font-family:"EB Garamond"; src:url("assets/fonts/EBGaramond.ttf") format("truetype"); font-weight:400 800; }
+@font-face { font-family:"Cinzel"; src:url("assets/fonts/Cinzel.ttf") format("truetype"); font-weight:400 900; }
+#root { position:absolute; inset:0; overflow:hidden; background:#151719; }
+.cam { position:absolute; left:0; top:0; transform-origin:0 0; }
+.cam img { position:absolute; left:0; top:0; display:block; }
+.mark { position:absolute; height:7px; background:#B7A17D; transform-origin:0 50%; border-radius:2px; }
+.rule { position:absolute; width:8px; background:#B7A17D; transform-origin:50% 0; border-radius:2px; }
+.shade { position:absolute; left:0; right:0; bottom:0; height:520px;
+  background:linear-gradient(180deg, rgba(21,23,25,0) 0%, rgba(21,23,25,.62) 58%, rgba(21,23,25,.82) 100%); }
+.lines { position:absolute; left:120px; right:120px; bottom:118px; font-family:"EB Garamond", serif; font-weight:500;
+  font-size:104px; line-height:1.05; letter-spacing:-0.01em; color:#EFE7D6; text-shadow:0 2px 18px rgba(0,0,0,.45); }
+.lines .ln { display:block; }
+.lines .w { display:inline-block; }
+.final .lines { font-size:128px; }
+.top .shade { top:0; bottom:auto; background:linear-gradient(0deg, rgba(21,23,25,0) 0%, rgba(21,23,25,.62) 58%, rgba(21,23,25,.82) 100%); }
+.top .lines { bottom:auto; top:96px; }
+.top .lines .ln { top:0; bottom:auto; }
+.q { color:#B7A17D; }
+.cursor { position:absolute; left:0; top:0; width:64px; height:64px; z-index:5; }
+</style>
+  <div id="root" data-composition-id="b1" data-width="1920" data-height="1080"><div id="b1" style="position:absolute;inset:0">
+    <div class="cam" id="b1cam" style="width:3840px;height:2160px"><img src="assets/world/seat_Lionmoor.jpg" alt="" width="3840" height="2160"></div><div class="shade"></div><div class="lines"><span class="ln" id="b1l0"><span class="w" id="b1l0w0">A</span> <span class="w" id="b1l0w1">kingdom</span> <span class="w" id="b1l0w2">where</span> <span class="w" id="b1l0w3">every</span> <span class="w" id="b1l0w4">lord</span></span><span class="ln" id="b1l1"><span class="w" id="b1l1w0">remembers</span> <span class="w" id="b1l1w1">what</span> <span class="w" id="b1l1w2">you</span> <span class="w" id="b1l1w3">did.</span></span></div>
+  </div></div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.set("#b1cam", { x:0.0, y:0.0, scale:0.5 }, 0);
+    tl.to("#b1cam", { x:-99.3, y:-27.1, scale:0.535, duration:4.20, ease:"sine.inOut" }, 0);
+    tl.set({}, {}, 4.2);
+    window.__timelines["b1"] = tl;
+  </script>
+</template>

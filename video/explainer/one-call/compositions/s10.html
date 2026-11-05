@@ -1,0 +1,42 @@
+<template>
+  <style>
+@font-face { font-family:"EB Garamond"; src:url("assets/fonts/EBGaramond.ttf") format("truetype"); font-weight:400 800; }
+@font-face { font-family:"Cinzel"; src:url("assets/fonts/Cinzel.ttf") format("truetype"); font-weight:400 900; }
+#root { position:absolute; inset:0; overflow:hidden; background:#151719; }
+.cam { position:absolute; left:0; top:0; transform-origin:0 0; }
+.cam img { position:absolute; left:0; top:0; display:block; }
+.mark { position:absolute; height:7px; background:#B7A17D; transform-origin:0 50%; border-radius:2px; }
+.rule { position:absolute; width:8px; background:#B7A17D; transform-origin:50% 0; border-radius:2px; }
+.shade { position:absolute; left:0; right:0; bottom:0; height:520px;
+  background:linear-gradient(180deg, rgba(21,23,25,0) 0%, rgba(21,23,25,.62) 58%, rgba(21,23,25,.82) 100%); }
+.lines { position:absolute; left:120px; right:120px; bottom:118px; font-family:"EB Garamond", serif; font-weight:500;
+  font-size:104px; line-height:1.05; letter-spacing:-0.01em; color:#EFE7D6; text-shadow:0 2px 18px rgba(0,0,0,.45); }
+.lines .ln { display:block; }
+.lines .w { display:inline-block; }
+.final .lines { font-size:128px; }
+.top .shade { top:0; bottom:auto; background:linear-gradient(0deg, rgba(21,23,25,0) 0%, rgba(21,23,25,.62) 58%, rgba(21,23,25,.82) 100%); }
+.top .lines { bottom:auto; top:96px; }
+#s6 .lines .ln { top:0; bottom:auto; }
+.q { color:#B7A17D; }
+.cursor { position:absolute; left:0; top:0; width:64px; height:64px; z-index:5; }
+
+#s10t { position:absolute; left:360px; top:250px; width:1200px; height:auto; }
+#s10l { position:absolute; left:0; right:0; top:690px; text-align:center; font-family:"EB Garamond", serif;
+  font-weight:500; font-size:64px; color:#EFE7D6; }
+#s10u { position:absolute; left:0; right:0; top:800px; text-align:center; font-family:"EB Garamond", serif;
+  font-weight:500; font-size:42px; letter-spacing:.01em; color:#B7A17D; }
+  </style>
+  <div id="root" data-composition-id="s10" data-width="1920" data-height="1080">
+    <img id="s10t" src="assets/world/title.png" alt="Game of Crowns">
+    <div id="s10l">Free on Apple Silicon.</div>
+    <div id="s10u">github.com/off-grid-ai/game-of-crowns</div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#s10t", { clipPath:"inset(0 100% 0 0)", opacity:1 }, { clipPath:"inset(0 0% 0 0)", duration:.9, ease:"power2.inOut" }, 0.15);
+    tl.fromTo("#s10l", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 1.05);
+    tl.fromTo("#s10u", { opacity:0, y:14 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 1.35);
+    tl.set({}, {}, 5.0);
+    window.__timelines["s10"] = tl;
+  </script>
+</template>

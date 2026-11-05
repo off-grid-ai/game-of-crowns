@@ -1,0 +1,10 @@
+renders/
+*/renders/
+takes/
+*/.hyperframes/
+*/.thumbnails/
+*/.waveform-cache/
+*/node_modules
+.DS_Store
+*.mp4
+*/assets/

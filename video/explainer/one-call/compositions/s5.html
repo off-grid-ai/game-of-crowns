@@ -1,0 +1,42 @@
+<template>
+  <style>
+@font-face { font-family:"EB Garamond"; src:url("assets/fonts/EBGaramond.ttf") format("truetype"); font-weight:400 800; }
+@font-face { font-family:"Cinzel"; src:url("assets/fonts/Cinzel.ttf") format("truetype"); font-weight:400 900; }
+#root { position:absolute; inset:0; overflow:hidden; background:#151719; }
+.cam { position:absolute; left:0; top:0; transform-origin:0 0; }
+.cam img { position:absolute; left:0; top:0; display:block; }
+.mark { position:absolute; height:7px; background:#B7A17D; transform-origin:0 50%; border-radius:2px; }
+.rule { position:absolute; width:8px; background:#B7A17D; transform-origin:50% 0; border-radius:2px; }
+.shade { position:absolute; left:0; right:0; bottom:0; height:520px;
+  background:linear-gradient(180deg, rgba(21,23,25,0) 0%, rgba(21,23,25,.62) 58%, rgba(21,23,25,.82) 100%); }
+.lines { position:absolute; left:120px; right:120px; bottom:118px; font-family:"EB Garamond", serif; font-weight:500;
+  font-size:104px; line-height:1.05; letter-spacing:-0.01em; color:#EFE7D6; text-shadow:0 2px 18px rgba(0,0,0,.45); }
+.lines .ln { display:block; }
+.lines .w { display:inline-block; }
+.final .lines { font-size:128px; }
+.top .shade { top:0; bottom:auto; background:linear-gradient(0deg, rgba(21,23,25,0) 0%, rgba(21,23,25,.62) 58%, rgba(21,23,25,.82) 100%); }
+.top .lines { bottom:auto; top:96px; }
+#s6 .lines .ln { top:0; bottom:auto; }
+.q { color:#B7A17D; }
+.cursor { position:absolute; left:0; top:0; width:64px; height:64px; z-index:5; }
+</style>
+  <div id="root" data-composition-id="s5" data-width="1920" data-height="1080"><div id="s5" style="position:absolute;inset:0">
+    <div class="cam" id="s5cam" style="width:3600px;height:2260px"><img id="s5f0" src="assets/play/03-ride-a.jpg" alt="" width="3600" height="2260" style="opacity:1"><img id="s5f1" src="assets/play/04-ride-b.jpg" alt="" width="3600" height="2260" style="opacity:0"><img id="s5f2" src="assets/play/05-ride-c.jpg" alt="" width="3600" height="2260" style="opacity:0"><img id="s5f3" src="assets/play/06-ride-d.jpg" alt="" width="3600" height="2260" style="opacity:0"><img id="s5f4" src="assets/play/07-ride-e.jpg" alt="" width="3600" height="2260" style="opacity:0"></div><div class="shade"></div><div class="lines"><span class="ln" id="s5l0"><span class="w" id="s5l0w0">Then</span> <span class="w" id="s5l0w1">I</span> <span class="w" id="s5l0w2">watched</span> <span class="w" id="s5l0w3">it</span> <span class="w" id="s5l0w4">ride.</span></span></div>
+  </div></div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.set("#s5f1", { opacity:1 }, 1.00);
+    tl.set("#s5f2", { opacity:1 }, 2.00);
+    tl.set("#s5f3", { opacity:1 }, 3.00);
+    tl.set("#s5f4", { opacity:1 }, 4.00);
+    tl.set("#s5cam", { x:-1268.8, y:-624.8, scale:1.12 }, 0);
+    tl.to("#s5cam", { x:-1440.0, y:-660.0, scale:1.2, duration:5.00, ease:"sine.inOut" }, 0);
+    tl.fromTo("#s5l0w0", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.40);
+    tl.fromTo("#s5l0w1", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.45);
+    tl.fromTo("#s5l0w2", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.50);
+    tl.fromTo("#s5l0w3", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.55);
+    tl.fromTo("#s5l0w4", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.60);
+    tl.set({}, {}, 5.0);
+    window.__timelines["s5"] = tl;
+  </script>
+</template>

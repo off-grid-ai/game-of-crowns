@@ -1,0 +1,44 @@
+<template>
+  <style>
+@font-face { font-family:"EB Garamond"; src:url("assets/fonts/EBGaramond.ttf") format("truetype"); font-weight:400 800; }
+@font-face { font-family:"Cinzel"; src:url("assets/fonts/Cinzel.ttf") format("truetype"); font-weight:400 900; }
+#root { position:absolute; inset:0; overflow:hidden; background:#151719; }
+.cam { position:absolute; left:0; top:0; transform-origin:0 0; }
+.cam img { position:absolute; left:0; top:0; display:block; }
+.mark { position:absolute; height:7px; background:#B7A17D; transform-origin:0 50%; border-radius:2px; }
+.rule { position:absolute; width:8px; background:#B7A17D; transform-origin:50% 0; border-radius:2px; }
+.shade { position:absolute; left:0; right:0; bottom:0; height:520px;
+  background:linear-gradient(180deg, rgba(21,23,25,0) 0%, rgba(21,23,25,.62) 58%, rgba(21,23,25,.82) 100%); }
+.lines { position:absolute; left:120px; right:120px; bottom:118px; font-family:"EB Garamond", serif; font-weight:500;
+  font-size:104px; line-height:1.05; letter-spacing:-0.01em; color:#EFE7D6; text-shadow:0 2px 18px rgba(0,0,0,.45); }
+.lines .ln { display:block; }
+.lines .w { display:inline-block; }
+.final .lines { font-size:128px; }
+.top .shade { top:0; bottom:auto; background:linear-gradient(0deg, rgba(21,23,25,0) 0%, rgba(21,23,25,.62) 58%, rgba(21,23,25,.82) 100%); }
+.top .lines { bottom:auto; top:96px; }
+#s6 .lines .ln { top:0; bottom:auto; }
+.q { color:#B7A17D; }
+.cursor { position:absolute; left:0; top:0; width:64px; height:64px; z-index:5; }
+</style>
+  <div id="root" data-composition-id="s6" data-width="1920" data-height="1080"><div id="s6" class="top" style="position:absolute;inset:0">
+    <div class="cam" id="s6cam" style="width:3600px;height:2260px"><img src="assets/play/09-after-a-season.jpg" alt="" width="3600" height="2260"><div class="mark" id="s6m0" style="left:1196px;top:1846px;width:300px"></div></div><style>#s6 .lines .ln { position:absolute; left:0; bottom:0; }</style><div class="shade"></div><div class="lines"><span class="ln" id="s6l0"><span class="w" id="s6l0w0">A</span> <span class="w" id="s6l0w1">season</span> <span class="w" id="s6l0w2">later.</span></span><span class="ln" id="s6l1"><span class="w" id="s6l1w0">A</span> <span class="w" id="s6l1w1">temple.</span> <span class="w" id="s6l1w2">And</span> <span class="w" id="s6l1w3">pikemen.</span></span></div>
+  </div></div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.set("#s6cam", { x:-76.0, y:-96.4, scale:0.74 }, 0);
+    tl.to("#s6cam", { x:-200.0, y:-164.0, scale:0.8, duration:2.20, ease:"sine.inOut" }, 0);
+    tl.to("#s6cam", { x:-460.0, y:-1170.0, scale:1.0, duration:0.90, ease:"cubic-bezier(.45,0,.25,1)" }, 2.2);
+    tl.to("#s6cam", { x:-516.8, y:-1247.2, scale:1.04, duration:1.90, ease:"sine.inOut" }, 3.1);
+    tl.fromTo("#s6m0", { scaleX:0 }, { scaleX:1, duration:.45, ease:"power3.out" }, 3.6);
+    tl.fromTo("#s6l0w0", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.30);
+    tl.fromTo("#s6l0w1", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.35);
+    tl.fromTo("#s6l0w2", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.40);
+    tl.to("#s6l0", { opacity:0, duration:.25, ease:"power2.in" }, 3.10);
+    tl.fromTo("#s6l1w0", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 3.40);
+    tl.fromTo("#s6l1w1", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 3.45);
+    tl.fromTo("#s6l1w2", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 3.50);
+    tl.fromTo("#s6l1w3", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 3.55);
+    tl.set({}, {}, 5.0);
+    window.__timelines["s6"] = tl;
+  </script>
+</template>

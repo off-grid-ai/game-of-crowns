@@ -1,0 +1,43 @@
+<template>
+  <style>
+@font-face { font-family:"EB Garamond"; src:url("assets/fonts/EBGaramond.ttf") format("truetype"); font-weight:400 800; }
+@font-face { font-family:"Cinzel"; src:url("assets/fonts/Cinzel.ttf") format("truetype"); font-weight:400 900; }
+#root { position:absolute; inset:0; overflow:hidden; background:#151719; }
+.cam { position:absolute; left:0; top:0; transform-origin:0 0; }
+.cam img { position:absolute; left:0; top:0; display:block; }
+.mark { position:absolute; height:7px; background:#B7A17D; transform-origin:0 50%; border-radius:2px; }
+.rule { position:absolute; width:8px; background:#B7A17D; transform-origin:50% 0; border-radius:2px; }
+.shade { position:absolute; left:0; right:0; bottom:0; height:520px;
+  background:linear-gradient(180deg, rgba(21,23,25,0) 0%, rgba(21,23,25,.62) 58%, rgba(21,23,25,.82) 100%); }
+.lines { position:absolute; left:120px; right:120px; bottom:118px; font-family:"EB Garamond", serif; font-weight:500;
+  font-size:104px; line-height:1.05; letter-spacing:-0.01em; color:#EFE7D6; text-shadow:0 2px 18px rgba(0,0,0,.45); }
+.lines .ln { display:block; }
+.lines .w { display:inline-block; }
+.final .lines { font-size:128px; }
+.top .shade { top:0; bottom:auto; background:linear-gradient(0deg, rgba(21,23,25,0) 0%, rgba(21,23,25,.62) 58%, rgba(21,23,25,.82) 100%); }
+.top .lines { bottom:auto; top:96px; }
+#s6 .lines .ln { top:0; bottom:auto; }
+.q { color:#B7A17D; }
+.cursor { position:absolute; left:0; top:0; width:64px; height:64px; z-index:5; }
+</style>
+  <div id="root" data-composition-id="s3" data-width="1920" data-height="1080"><div id="s3" style="position:absolute;inset:0">
+    <div class="cam" id="s3cam" style="width:3840px;height:2160px"><img src="assets/world/seat_Riverhall.jpg" alt="" width="3840" height="2160"></div><style>#s3 .lines .ln { position:absolute; left:0; bottom:0; }</style><div class="shade"></div><div class="lines"><span class="ln" id="s3l0"><span class="w" id="s3l0w0">You're</span> <span class="w" id="s3l0w1">the</span> <span class="w" id="s3l0w2">King.</span></span><span class="ln" id="s3l1"><span class="w" id="s3l1w0">You</span> <span class="w" id="s3l1w1">can't</span> <span class="w" id="s3l1w2">move</span> <span class="w" id="s3l1w3">a</span> <span class="w" id="s3l1w4">single</span> <span class="w" id="s3l1w5">soldier.</span></span></div>
+  </div></div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.set("#s3cam", { x:-9.6, y:-5.4, scale:0.505 }, 0);
+    tl.to("#s3cam", { x:-39.0, y:-59.4, scale:0.54, duration:3.60, ease:"sine.inOut" }, 0);
+    tl.fromTo("#s3l0w0", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.20);
+    tl.fromTo("#s3l0w1", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.25);
+    tl.fromTo("#s3l0w2", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.30);
+    tl.to("#s3l0", { opacity:0, duration:.25, ease:"power2.in" }, 1.60);
+    tl.fromTo("#s3l1w0", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 1.90);
+    tl.fromTo("#s3l1w1", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 1.95);
+    tl.fromTo("#s3l1w2", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 2.00);
+    tl.fromTo("#s3l1w3", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 2.05);
+    tl.fromTo("#s3l1w4", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 2.10);
+    tl.fromTo("#s3l1w5", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 2.15);
+    tl.set({}, {}, 3.6);
+    window.__timelines["s3"] = tl;
+  </script>
+</template>

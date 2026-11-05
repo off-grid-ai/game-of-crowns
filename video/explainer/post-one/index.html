@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin:0; padding:0; box-sizing:border-box; }
+      html, body { margin:0; width:1920px; height:1080px; overflow:hidden; background:#151719; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="40.2" data-width="1920" data-height="1080">
+      <div id="h-b1" data-composition-id="b1" data-composition-src="compositions/b1.html" data-start="0.00" data-duration="4.20" data-track-index="0" data-track-kind="graphics" data-width="1920" data-height="1080" style="z-index:1"></div>
+      <div id="h-b2" data-composition-id="b2" data-composition-src="compositions/b2.html" data-start="4.20" data-duration="4.40" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080" style="z-index:2"></div>
+      <div id="h-b3" data-composition-id="b3" data-composition-src="compositions/b3.html" data-start="8.60" data-duration="4.40" data-track-index="0" data-track-kind="graphics" data-width="1920" data-height="1080" style="z-index:3"></div>
+      <div id="h-b4" data-composition-id="b4" data-composition-src="compositions/b4.html" data-start="13.00" data-duration="4.00" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080" style="z-index:4"></div>
+      <div id="h-b5" data-composition-id="b5" data-composition-src="compositions/b5.html" data-start="17.00" data-duration="3.20" data-track-index="0" data-track-kind="graphics" data-width="1920" data-height="1080" style="z-index:5"></div>
+      <div id="h-b6" data-composition-id="b6" data-composition-src="compositions/b6.html" data-start="20.20" data-duration="2.80" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080" style="z-index:6"></div>
+      <div id="h-b7" data-composition-id="b7" data-composition-src="compositions/b7.html" data-start="23.00" data-duration="4.40" data-track-index="0" data-track-kind="graphics" data-width="1920" data-height="1080" style="z-index:7"></div>
+      <div id="h-b8" data-composition-id="b8" data-composition-src="compositions/b8.html" data-start="27.40" data-duration="4.20" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080" style="z-index:8"></div>
+      <div id="h-b9" data-composition-id="b9" data-composition-src="compositions/b9.html" data-start="31.60" data-duration="3.60" data-track-index="0" data-track-kind="graphics" data-width="1920" data-height="1080" style="z-index:9"></div>
+      <div id="h-b10" data-composition-id="b10" data-composition-src="compositions/b10.html" data-start="35.20" data-duration="5.00" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080" style="z-index:10"></div>
+      <audio id="a-bed" class="clip" src="assets/audio/march.mp3" data-start="0.00" data-duration="40.20" data-volume="0.6" data-media-start="0" data-track-index="10" data-fade-in="0.3" data-fade-out="2.0"></audio>
+      <audio id="a-page1" class="clip" src="assets/audio/page.mp3" data-start="4.22" data-duration="0.43" data-volume="0.7" data-media-start="0" data-track-index="11" ></audio>
+      <audio id="a-horn" class="clip" src="assets/audio/war_horn.mp3" data-start="17.00" data-duration="3.20" data-volume="0.35" data-media-start="0" data-track-index="12" data-fade-out="1.0"></audio>
+      <audio id="a-page2" class="clip" src="assets/audio/page.mp3" data-start="23.02" data-duration="0.43" data-volume="0.6" data-media-start="0" data-track-index="13" ></audio>
+      <audio id="a-seal" class="clip" src="assets/audio/seal.mp3" data-start="35.52" data-duration="1.30" data-volume="0.7" data-media-start="0" data-track-index="14" ></audio>
+    </div>
+    <script>
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>

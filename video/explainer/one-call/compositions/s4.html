@@ -1,0 +1,47 @@
+<template>
+  <style>
+@font-face { font-family:"EB Garamond"; src:url("assets/fonts/EBGaramond.ttf") format("truetype"); font-weight:400 800; }
+@font-face { font-family:"Cinzel"; src:url("assets/fonts/Cinzel.ttf") format("truetype"); font-weight:400 900; }
+#root { position:absolute; inset:0; overflow:hidden; background:#151719; }
+.cam { position:absolute; left:0; top:0; transform-origin:0 0; }
+.cam img { position:absolute; left:0; top:0; display:block; }
+.mark { position:absolute; height:7px; background:#B7A17D; transform-origin:0 50%; border-radius:2px; }
+.rule { position:absolute; width:8px; background:#B7A17D; transform-origin:50% 0; border-radius:2px; }
+.shade { position:absolute; left:0; right:0; bottom:0; height:520px;
+  background:linear-gradient(180deg, rgba(21,23,25,0) 0%, rgba(21,23,25,.62) 58%, rgba(21,23,25,.82) 100%); }
+.lines { position:absolute; left:120px; right:120px; bottom:118px; font-family:"EB Garamond", serif; font-weight:500;
+  font-size:104px; line-height:1.05; letter-spacing:-0.01em; color:#EFE7D6; text-shadow:0 2px 18px rgba(0,0,0,.45); }
+.lines .ln { display:block; }
+.lines .w { display:inline-block; }
+.final .lines { font-size:128px; }
+.top .shade { top:0; bottom:auto; background:linear-gradient(0deg, rgba(21,23,25,0) 0%, rgba(21,23,25,.62) 58%, rgba(21,23,25,.82) 100%); }
+.top .lines { bottom:auto; top:96px; }
+#s6 .lines .ln { top:0; bottom:auto; }
+.q { color:#B7A17D; }
+.cursor { position:absolute; left:0; top:0; width:64px; height:64px; z-index:5; }
+</style>
+  <div id="root" data-composition-id="s4" data-width="1920" data-height="1080"><div id="s4" style="position:absolute;inset:0">
+    <div class="cam" id="s4cam" style="width:3600px;height:2260px"><img src="assets/play/01-town.jpg" alt="" width="3600" height="2260"></div><div id="s4b" style="position:absolute;inset:0;opacity:0"><div class="cam" id="s4bcam" style="width:3600px;height:2260px"><img src="assets/play/02-funded.jpg" alt="" width="3600" height="2260"><div class="mark" id="s4bm0" style="left:2032px;top:290px;width:240px"></div></div></div><div class="cursor" id="s4cur"><svg viewBox="0 0 24 24" width="64" height="64"><path d="M5 3l14 8-6.2 1.6L10 19z" fill="#EFE7D6" stroke="#151719" stroke-width="1.4" stroke-linejoin="round"/></svg></div><div class="shade"></div><div class="lines"><span class="ln" id="s4l0"><span class="w" id="s4l0w0">So</span> <span class="w" id="s4l0w1">I</span> <span class="w" id="s4l0w2">paid</span> <span class="w" id="s4l0w3">for</span> <span class="w" id="s4l0w4">a</span> <span class="w" id="s4l0w5">temple.</span></span></div>
+  </div></div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.set("#s4cam", { x:-1406.0, y:-1852.0, scale:1.3 }, 0);
+    tl.to("#s4cam", { x:-1460.6, y:-1913.2, scale:1.33, duration:2.00, ease:"sine.inOut" }, 0);
+    tl.set("#s4b", { opacity:1 }, 2.0);
+    tl.set("#s4bcam", { x:-2005.2, y:-55.0, scale:1.45 }, 2.0);
+    tl.to("#s4bcam", { x:-2148.4, y:-76.0, scale:1.52, duration:2.40, ease:"sine.inOut" }, 2.0);
+    tl.fromTo("#s4bm0", { scaleX:0 }, { scaleX:1, duration:.45, ease:"power3.out" }, 2.35);
+    tl.fromTo("#s4cur", { x:622, y:97, opacity:0 }, { x:830, y:983, opacity:1, duration:1.10, ease:"power3.out" }, 0.3);
+    tl.to("#s4cur", { scale:.86, duration:.08 }, 1.55);
+    tl.to("#s4cur", { scale:1, duration:.25, ease:"back.out(2)" }, 1.6300000000000001);
+    tl.to("#s4cur", { opacity:0, duration:.01 }, 2.0);
+    tl.fromTo("#s4l0w0", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 2.25);
+    tl.fromTo("#s4l0w1", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 2.30);
+    tl.fromTo("#s4l0w2", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 2.35);
+    tl.fromTo("#s4l0w3", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 2.40);
+    tl.fromTo("#s4l0w4", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 2.45);
+    tl.fromTo("#s4l0w5", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 2.50);
+    tl.set({}, {}, 4.4);
+    window.__timelines["s4"] = tl;
+  </script>
+</template>
