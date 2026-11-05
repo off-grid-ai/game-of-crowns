@@ -12,8 +12,8 @@ export const DECREES = {
   grant: { cost: 0, label: "Grant this castle to another house" },
   feast: { cost: 100, label: "Hold a feast in the lord's honour" },
   banners: { cost: 50, label: "Call the banners" },
-  marriage: { cost: 80, label: "Arrange a marriage between two houses" },
-  peace: { cost: 60, label: "Command peace between two warring houses" },
+  marriage: { cost: 400, label: "Arrange a marriage between two houses" },
+  peace: { cost: 150, label: "Command peace between two warring houses" },
   buyoff: { cost: 300, label: "Buy off the pretender" },
   ward: { cost: 20, label: "Take a house's heir as a royal ward" },
 };

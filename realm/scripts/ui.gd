@@ -1783,7 +1783,11 @@ static func _realm_word(name: String) -> String:
 func add_chronicle(entries: Array) -> void:
 	for e in entries:
 		var kind := String(e.get("kind", ""))
-		var loss := kind in ["city_shrank", "disaster", "city_destroyed", "building_lost", "city_transferred", "civil_war", "betrayal", "rebellion", "raid", "death", "unrest"]
+		# Red only for the King's own losses (a rising, a betrayal, or anything that
+		# touches the crown); another house's plague or death reads plain, so red means something.
+		var said := String(e.get("text", ""))
+		var touches_crown := said.contains("The Crown") or said.contains("Kingsmere") or said.contains("the King's") or said.contains("the crown")
+		var loss: bool = kind in ["civil_war", "betrayal", "rebellion"] or (touches_crown and kind in ["city_shrank", "disaster", "city_destroyed", "building_lost", "city_transferred", "raid", "death", "unrest"])
 		var tone := "#e86b5c" if loss else ("#9a9a96" if kind == "year" else "#ecece8")
 		var text := "[color=%s]%s[/color]" % [tone, e.get("text", "")]
 		# A beat of a story arc is told under the story's own name, and the name
