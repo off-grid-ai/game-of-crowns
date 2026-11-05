@@ -33,22 +33,23 @@ In each sidebar, look for: self-promotion or developer rules, a required flair, 
 
 ---
 
-## 1. The itch
+## 1. Every lord remembers (the angle: see angle.md)
 **Where:** r/SimulationGames (Tue 10 Nov), r/grandstrategy (Tue 24 Nov)
 **Format:** text post with the three images in the body
 
-**Title:** I never had time to learn Crusader Kings, so I'm building a kingdom sim that runs itself and only asks you for the big calls
+**Title:** In most world sims, wars are dice rolls. I'm building one where every lord remembers what you did, and acts on it.
 
-> Six great houses farm, starve, feud and go to war on their own. You're the King, and you can't move a single soldier. When something needs you, it comes to court: a house asking for its taxes back, a famine, a war you could end with a marriage. Every answer costs something, and the houses remember.
+> Six great houses run themselves: they farm, starve, marry and go to war. You're the King. Tax a house too hard and its lord remembers. Years later he's whispering a better claim to the throne, and you can trace exactly why.
 >
-> The King's adviser reads the realm for you, so you don't need a wiki to know what matters.
+> A reign takes minutes, years fly by, and it's free with nothing locked. The lords' voices run on your own device, so there are no servers and no waiting.
 >
-> If you've bounced off Crusader Kings or got bored of WorldBox, what would make a game like this worth your evening?
+> What made you stop caring in the world sims you've played?
 
 **Images, in order** (`docs/buzz/images/`):
 1. `1a-town.jpg`: a riverside town; the King's gold on the road. *Caption:* "The realm runs itself. I sent gold here, and I can watch it travel the road."
-2. `2a-petition.jpg`: a lady asks for relief from the tax; three answers, each with its cost. *Caption:* "A house asks for its taxes back. Every answer costs something."
-3. `2b-hand.jpg`: the King's adviser on a famine, the dead marching south and a cold house, each fix priced. *Caption:* "The adviser tells me what matters and what each fix costs. I still pick."
+2. `2a-petition.jpg`: a lady asks for relief from the tax; three answers, each with its cost. *Caption:* "A house asks for its taxes back. Whatever you answer, they remember."
+3. `1b-houses-chronicle.jpg`: wars, famine and plague across two seasons. *Caption:* "The chronicle keeps the chain: who starved, who marched, and why."
+Best replaced by a clip of a lord bringing up, in his own words, what you did years ago, once the main session can record one.
 
 ## 2. The levers
 **Where:** r/4Xgaming (Tue 17 Nov)
@@ -61,7 +62,7 @@ In each sidebar, look for: self-promotion or developer rules, a required flair, 
 > Too few levers and you're only watching. Too many and you're running everything. Which game got the balance right for you?
 
 **Images, in order** (`docs/buzz/images/`):
-1. `1b-houses-chronicle.jpg`: the houses at war, famine and plague in the chronicle, a castle in snow. *Caption:* "Six houses, their wars and their famines. None of it waits for me."
+1. `2b-hand.jpg`: the King's adviser, each fix priced. *Caption:* "The adviser tells you what matters and what each fix costs. You pick."
 2. `2c-marriage.jpg`: a royal marriage binds two houses, 40,000 crowns. *Caption:* "A marriage instead of an army. It cost 40,000 crowns."
 3. `1c-town-life.jpg`: a town from above, the crown paying for an aqueduct. *Caption:* "Or pay for a town's aqueduct and win its house over."
 

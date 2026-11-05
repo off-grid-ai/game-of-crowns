@@ -1,38 +1,48 @@
-# The angle (2026-11-05)
+# The angle (2026-11-05, from all research so far)
 
-## Where the demand really is
-WorldBox on Google Play: **50M+ downloads, 846k reviews, 4.5 stars.** On Steam it's 1–2M owners. The audience is on phones, playing in short bursts.
+Built from: brief.md (everything Mac has said), demand.md, fights.md, positioning.md, and three review sweeps (god sims, ruler games, living-character and AI games) across Steam, Google Play, the App Store and press.
 
-## What they complain about (Play Store reviews Mac pasted)
-1. **Paywall.** "More than 60% of features require premium", traits and races locked, speed locked behind ads. This is the most common complaint by far.
-2. **Lost progress.** Crashes wipe worlds, autosave is premium, no transfer to a new phone, premium lost on reinstall.
-3. **Boring once you've seen it.** "After starting sixteen wars it starts to get repetitive", "I ran out of ideas".
-4. **No real interaction.** "You can create a world but barely interact with anything that can change it."
-5. **Dumb kingdoms.** "The kingdom and army system makes no sense", "the AI for the races isn't impressive… they don't progress far."
-6. **Lag** on ordinary phones.
+## The one thing every audience complains about
+**The world feels random, and what you do doesn't stick.**
+- **God sims:** "It's a Randomizer, not a simulator!", "basically just a dice roll" (Ages of Conflict); "the kingdom system makes no sense" (WorldBox); "no interaction you can do once it's moving" (Fantasy Map Simulator).
+- **Ruler games:** "Luck, rather than skill, is what determines how far you get"; "the swipes feel inconsequential"; the same choices "over. and over." (Reigns, top complaint in every version).
+- **AI-character games:** "unnatural, repetitive, lacking depth" (Whispers from the Star, 99 mentions); the model breaks the game or forgets.
 
-## Our answer, one for one
-| They hate | We give them |
+## The one thing every audience loves
+**Stories with lasting consequences, about people.**
+- RimWorld's top praise is its "emergent storytelling" and "memorable colonist personalities".
+- CK3's is dynasty and succession drama.
+- Fantasy Map Simulator players ask for named leaders, family trees, and story pop-ups so watching feels like "reading an epic saga".
+- Game of Thrones fans want politics that is "sordid and personal", with grudges carried across generations. Every free GoT strategy game is pay-to-win.
+
+## The angle
+**Game of Thrones politics with Westworld people: every lord remembers what you did and acts on it, so nothing in the realm happens for no reason.**
+
+Short form: **Every lord remembers.**
+
+This is the cure for the shared complaint. Memory makes consequences stick. Lords acting on what they know makes every war traceable to a cause. The chronicle shows the chain reaction. And it's personal, which is what GoT fans want.
+
+## What backs it up
+| Pillar | Answers |
 |---|---|
-| Paywall | Pay once, everything unlocked. No ads, no premium tier. |
-| Lost progress | The realm saves itself and keeps going while you're away. |
-| Repetitive | Houses with their own wants, petitions and grudges: every reign plays out differently. |
-| Can't change anything | You're the King: every ruling moves the houses, and they remember it. |
-| Dumb kingdoms | Houses that scheme, ally, marry, starve and rise against you for reasons you can read. |
-| Short attention, phones | A reign in 5 minutes. An adviser on your device tells you what matters. Works offline. |
+| **Every lord remembers and acts on it** (memory, his own plans, reacts to what he hears) | dice-roll worlds, inconsequential choices, repetition |
+| **You can trace every chain reaction** (favour with named causes, the chronicle, the adviser) | "makes no sense", hidden logic, "can't tell why" |
+| **A reign in minutes, years flying** | Reigns proved people want short ruler sessions; Thronefall and Polytopia show they stay when depth sits behind them |
+| **Free, nothing locked, runs offline on your device** | paywalls (WorldBox, Ages of Conflict), pay-to-win (every free GoT game), AI games' server failures and lag |
 
-**The angle in one line:** the world-sim WorldBox players wanted: kingdoms that make sense, a world that answers back, and nothing behind a paywall.
+## How to build the minds so they don't fail like the AI games
+The evidence says players accept AI when the game logic stays in code and the model only gives it a voice; they reject it when it breaks the game, forgets, or repeats itself.
+- The simulation decides what a lord does (favour, grudges, plans). The model says it, in his voice, from what really happened.
+- Memory must never slip: a lord who forgets the thing he swore revenge for undoes the whole promise.
+- Short lines over open chat. Expect players to try to break the lords.
 
-## What it needs from the game (for the main session, not this one)
-- **Years have to fly.** The pace is fixed at 90 seconds a season, so a year takes 6 minutes (`bridge/chronicles.js:72`). A 5-minute reign today is three seasons. The 5-minute promise needs a faster pace, about a season every 15–20 seconds.
-- **Phones are where this audience lives.** The game is a Mac desktop app today. Mobile is a big product call; the posts can test the angle on PC players first.
-- **Be careful with the audience.** Many WorldBox mobile players are young and say they can't afford $8. Pay-once wins their trust, but price low.
+## Truth check before posting
+- **Shown today:** houses remember why their favour moved; a cold house whispers a better claim and marches on the capital; petitions are voiced by the local model.
+- **Not shown yet:** a single lord bringing up, in his own words, what you did years ago. That's the clip that sells the angle. Ask the main session for it.
+- **Years flying:** the pace is 90 seconds a season, 6 minutes a year (`bridge/chronicles.js:72`). Needs about 15–20 seconds a season for "a reign in minutes".
 
-## Post #1, on this angle
-**Where:** r/SimulationGames first; then answer "games like WorldBox" threads in r/Worldbox (comments only, never a standalone post there).
-
-**Title:** WorldBox reviews keep asking for the same things: no paywall, kingdoms that make sense, a world that reacts to you. So I'm building that.
-
-> Six great houses grow, scheme, starve and go to war on their own. You're the King: every ruling moves them, and they remember it. A whole reign fits in five minutes, and your adviser tells you what matters. Pay once, everything unlocked, works offline.
->
-> WorldBox players: what else would you fix?
+## Where each audience is
+- **r/SimulationGames, r/4Xgaming:** the angle as is.
+- **r/CK3AGOT:** comments only: "sordid, personal politics in a five-minute reign".
+- **r/Worldbox, Ages of Conflict and Fantasy Map Simulator discussions:** comments in "games like this" and "got bored" threads.
+- **r/LocalLLaMA:** a separate post leading with the on-device minds.
