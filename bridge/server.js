@@ -34,7 +34,7 @@ const RENAMED = {
 };
 import { Court } from "./characters.js";
 import { Minds, route as mindsRoute } from "./minds.js";
-import { Arcs, templates as arcTemplates, check, ownStories } from "./arcs.js";
+import { Arcs, templates as arcTemplates, check, ownStories, storiesChanged } from "./arcs.js";
 import { Chatter } from "./chatter.js";
 import { bible, FAMILIES, LESSER } from "./lore.js";
 import { Stakes, calendar, epithet } from "./stakes.js";
@@ -1702,6 +1702,7 @@ http.createServer(async (req, res) => {
     const problems = check(arc);
     if (problems.length) return json(res, 400, { error: "that story doesn't hold together", problems });
     fs.writeFileSync(path.join(OWN_STORIES, `${arc.id}.json`), JSON.stringify(arc, null, 2));
+    storiesChanged();
     return json(res, 200, { ok: true, id: arc.id, name: arc.name, about: arc.about, tags: arc.tags, from: base.name });
   }
   if (url.pathname === "/arcs/write" && req.method === "POST") {
@@ -1733,6 +1734,7 @@ http.createServer(async (req, res) => {
     if (problems.length) return json(res, 400, { error: "that arc doesn't hold together", problems });
     const file = path.join(dir, `${slug(arc.id)}.json`);
     fs.writeFileSync(file, JSON.stringify(arc, null, 2));
+    storiesChanged();
     return json(res, 200, { ok: true, file: path.relative(DIR, file), arc });
   }
   if (url.pathname === "/lord") return json(res, 200, court.summary(Number(url.searchParams.get("city"))) ?? {});

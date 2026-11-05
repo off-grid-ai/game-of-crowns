@@ -29,6 +29,8 @@ const DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "arcs");
 // inside the game: the game's own folder is read-only once it's a signed app.
 let OWN = null;
 export function ownStories(dir) { OWN = dir; fs.mkdirSync(dir, { recursive: true }); }
+// A story just written or generated is read at the next ask, not in five seconds.
+export function storiesChanged() { cache = null; }
 const MAX_ACTIVE = 5;      // stories running at once
 const START_CHANCE = 0.4;  // a season's chance that a new one begins
 const MAX_ARCS_EACH = 2;   // stories one person can be caught up in at once
@@ -39,7 +41,18 @@ const clamp = (v, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v));
 
 // Every arc file, read fresh each time so a dropped-in file joins the realm
 // without a restart. A file that doesn't parse or check is skipped and named.
+// Read every few seconds at most: the view asks once a second, and twenty
+// files parsed and checked each time was the bridge's largest steady cost.
+let cache = null;
+let cachedAt = 0;
 export function templates() {
+  if (cache && Date.now() - cachedAt < 5000) return cache;
+  cache = readTemplates();
+  cachedAt = Date.now();
+  return cache;
+}
+
+function readTemplates() {
   const out = [];
   const files = (dir) => (dir && fs.existsSync(dir) ? fs.readdirSync(dir).filter((x) => x.endsWith(".json")).sort().map((f) => [dir, f]) : []);
   for (const [dir, f] of [...files(DIR), ...files(OWN)]) {
@@ -143,6 +156,11 @@ export class Arcs {
     this.cooldown = saved.cooldown ?? {};
     this.seq = saved.seq ?? 1;
     this.reignBegun = saved.reignBegun ?? false;
+    // A realm begun before stories were marked as chosen: its first reign story is the chronicle's own.
+    if (this.reignBegun && ![...this.active, ...this.done].some((a) => a.chosen)) {
+      const first = [...this.active, ...this.done].filter((a) => a.reign).sort((a, b) => a.started - b.started)[0];
+      if (first) first.chosen = true;
+    }
     this.voice = arcLine; // the words; the story never waits on them
   }
 
@@ -171,7 +189,10 @@ export class Arcs {
     if (ctx.story && !this.reignBegun) {
       this.reignBegun = true;
       const pick = ctx.story === "random" ? all.filter((t) => t.reign && (!ctx.storyTags?.length || ctx.storyTags.every((g) => (t.tags ?? []).includes(g)))) : all.filter((t) => t.id === ctx.story);
-      for (const t of pick.sort(() => Math.random() - 0.5)) if (await this.begin(all, ctx, t.id)) break;
+      for (const t of pick.sort(() => Math.random() - 0.5)) {
+        const arc = await this.begin(all, ctx, t.id);
+        if (arc) { arc.chosen = true; break; }  // the chronicle's own story: only it can end the reign
+      }
     }
     if (start && this.active.length < MAX_ACTIVE && Math.random() < START_CHANCE) await this.begin(all.filter((t) => !t.reign), ctx);
     // Whoever a story touched this season is in it now: their minds think hot.
@@ -300,7 +321,7 @@ export class Arcs {
     arc.status = how;
     arc.ended = this.clock;
     // The reign's story ending is the reign ending: weathered, it's a victory.
-    if (arc.reign && how === "resolved" && ctx?.endReign) {
+    if (arc.reign && arc.chosen && how === "resolved" && ctx?.endReign) {
       const last = arc.beats[arc.beats.length - 1]?.text ?? "";
       setTimeout(() => ctx.endReign(`${arc.title} is over, and the crown still stands. ${last}`.trim(), "won"), 0);
     }
@@ -816,7 +837,7 @@ export class Arcs {
   // The story against the throne, for the top of the screen: its name, where it
   // has got to, and how near it is to taking the crown.
   reignView() {
-    const a = this.active.find((x) => x.reign) ?? this.done.slice().reverse().find((x) => x.reign);
+    const a = this.active.find((x) => x.chosen) ?? this.done.slice().reverse().find((x) => x.chosen) ?? this.active.find((x) => x.reign);
     if (!a) return null;
     const last = a.beats[a.beats.length - 1];
     // Its acts: each beat that brought a matter to the King, or turned the story to crisis, is an act.

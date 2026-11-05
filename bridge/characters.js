@@ -88,6 +88,7 @@ export class Court {
   }
 
   save(c) {
+    this._alive = null;  // whoever changed may have changed rank, seat or life
     fs.writeFileSync(path.join(this.dir, `${c.id}.json`), JSON.stringify(c, null, 2));
   }
 
@@ -150,16 +151,39 @@ export class Court {
     fs.writeFileSync(this.courtFile, JSON.stringify({ petitions: this.petitions, claims: this.claims ?? [], truces: this.truces ?? {}, debts: this.debts ?? [] }, null, 1));
   }
 
+  // Everyone living, rebuilt at most a few times a second: the game asks for a
+  // town's lord for every town every second, and a fresh list each time was
+  // most of the bridge's work. Lords by seat and by house come from the same pass.
   alive() {
-    return Object.values(this.people).filter((c) => c.alive);
+    const now = Date.now();
+    if (!this._alive || now - this._aliveAt > 250) {
+      this._alive = Object.values(this.people).filter((c) => c.alive);
+      this._aliveAt = now;
+      this._bySeat = new Map();
+      this._byHouse = new Map();
+      for (const c of this._alive) {
+        if ((c.rank === "lord" || c.rank === "bannerman") && c.seat != null && !this._bySeat.has(c.seat)) this._bySeat.set(c.seat, c);
+        if (c.rank === "lord" && !this._byHouse.has(c.playerId)) this._byHouse.set(c.playerId, c);
+      }
+    }
+    return this._alive;
+  }
+
+  // A death, a birth or a new lord changes who is living and where: rebuild at the next ask.
+  stale() {
+    this._alive = null;
   }
 
   lordOfHouse(pid) {
-    return this.alive().find((c) => c.playerId === pid && c.rank === "lord");
+    this.alive();
+    const c = this._byHouse.get(pid);
+    return c?.alive ? c : this.stale() ?? this.alive().find((x) => x.playerId === pid && x.rank === "lord");
   }
 
   lordOfTown(cityId) {
-    return this.alive().find((c) => c.seat === cityId && (c.rank === "lord" || c.rank === "bannerman"));
+    this.alive();
+    const c = this._bySeat.get(cityId);
+    return c?.alive && c.seat === cityId ? c : (c ? this.stale() ?? this.alive().find((x) => x.seat === cityId && (x.rank === "lord" || x.rank === "bannerman")) : undefined);
   }
 
   // --- population ----------------------------------------------------------
