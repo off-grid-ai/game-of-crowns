@@ -871,7 +871,7 @@ static func art(path: String, fallback: String) -> String:
 
 
 ## A texture repeated nx by ny times, so a long road keeps its grain instead of
-## stretching. `edge` softens it: "round" for a worn, ragged patch, "paved" for laid stone, "sides" for a track's verges.
+## stretching. `edge` softens it: "round" for a worn, ragged patch, "setts" for laid stone, "sides" for a track's verges.
 func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 	nx = clampi(nx, 1, 12)
 	ny = clampi(ny, 1, 24)
@@ -913,16 +913,24 @@ func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 				a *= clampf(0.75 + wear.get_noise_2d(x * 4.0, y * 4.0) * 0.6, 0.0, 1.0) if d > 0.45 else 1.0
 				if a < 1.0:
 					img.set_pixel(x, y, Color(img.get_pixel(x, y), a))
-	elif edge == "paved":
-		# Laid stone: whole to its border, the border a little uneven where
-		# setts were lost, with no holes worn through the middle.
+	elif edge == "setts":
+		# Laid stone: whole at the heart, and toward its border breaking up in
+		# clumps where setts were lost and the earth shows, out in tongues toward
+		# the streets, so it ends in packed earth rather than on a ruled circle.
 		var wear := FastNoiseLite.new()
 		wear.seed = nx * 11 + ny
-		wear.frequency = 0.02
+		wear.frequency = 0.006
+		wear.fractal_octaves = 3
+		var lost := FastNoiseLite.new()
+		lost.seed = nx * 5 + ny
+		lost.frequency = 0.04
 		for y in h:
 			for x in w:
 				var d := Vector2(2.0 * x / w - 1.0, 2.0 * y / h - 1.0).length()
-				var a := clampf((0.93 + wear.get_noise_2d(x, y) * 0.05 - d) * 14.0, 0.0, 1.0)
+				var reach := 0.8 + wear.get_noise_2d(x, y) * 0.22  # the border wanders in and out
+				var a := clampf((reach - d) * 6.0, 0.0, 1.0)
+				if d > reach - 0.3:
+					a *= clampf(0.6 + lost.get_noise_2d(x, y) * 1.4, 0.0, 1.0)  # setts gone in patches
 				if a < 1.0:
 					img.set_pixel(x, y, Color(img.get_pixel(x, y), a))
 	elif edge == "sides":

@@ -697,7 +697,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 		terrain.land3d.paint_mud(center, square_r * 1.6, rng.randi())  # in the ground itself
 	else:
 		terrain.paint(root, terrain.tiled(ROAD_TEX, reps + 2, reps + 2, "round"), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2.ONE * square_r * 3.2, rng.randf() * TAU, ROAD_TINT)
-	terrain.paint(root, terrain.tiled(SQUARE_TEX, reps, reps, "paved"), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2(square_r * 2.0, square_r * 1.6), rng.randf() * TAU)
+	terrain.paint(root, terrain.tiled(SQUARE_TEX, reps, reps, "setts"), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2(square_r * 2.0, square_r * 1.6), rng.randf() * TAU)
 
 	var per_variant := {}
 	var real := realistic_towns.has(String(c.get("title", c["name"]))) or realistic_towns.has("*")

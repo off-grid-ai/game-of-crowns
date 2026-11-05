@@ -168,7 +168,8 @@ func _spawn(id: int) -> void:
 		# Each has a calling that decides where their day goes, and what they wear:
 		# farmers dress as peasants, the pious now and then as clergy, the rest as townsfolk.
 		var roll := rng.randf()
-		var calling := "farmer" if roll < 0.4 else ("crafter" if roll < 0.62 else ("tavern" if roll < 0.74 else ("pious" if roll < 0.82 else ("market" if roll < 0.92 else "idler"))))
+		# The market is where a town is seen: a good share of its people are there.
+		var calling := "farmer" if roll < 0.3 else ("crafter" if roll < 0.5 else ("tavern" if roll < 0.6 else ("pious" if roll < 0.66 else ("market" if roll < 0.88 else "idler"))))
 		var station := "peasant" if calling == "farmer" else ("clergy" if calling == "pious" and rng.randf() < 0.3 else "townsfolk")
 		var person: Node3D = _people.make(rng, station)
 		add_child(person)
@@ -509,7 +510,7 @@ func _town_mood(a: Dictionary) -> String:
 
 ## How much room each shared place has: people stand from `near` to `far`
 ## out from its heart, and no more than `room` of them at once.
-const ROOM := {"market": {"near": 0.2, "far": 0.75, "room": 12}, "well": {"near": 0.15, "far": 0.55, "room": 8},
+const ROOM := {"market": {"near": 0.2, "far": 0.9, "room": 22}, "well": {"near": 0.15, "far": 0.6, "room": 12},
 	"tavern": {"near": 0.15, "far": 0.6, "room": 10}, "sept": {"near": 0.15, "far": 0.55, "room": 8}}
 ## Where those who find a place full go instead.
 const OVERFLOW := {"market": ["well", "tavern"], "well": ["market", "sept"], "tavern": ["market", "well"], "sept": ["well", "market"]}

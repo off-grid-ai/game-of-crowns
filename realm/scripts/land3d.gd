@@ -10,7 +10,7 @@ const FIELD := 7
 const UV_SCALE := [0.8, 0.6, 0.6, 0.32, 1.0, 0.8, 0.72, 0.72]  # a game unit is ~8 m and a Poly Haven set ~2 m: any coarser and the grass smears into streaks
 # Poly Haven's photographed ground (tools/pack_ground.gd) is true to colour:
 # only a touch of grading, so the realm reads as one place.
-const TINT := [Color(0.95, 1.0, 0.9), Color.WHITE, Color.WHITE, Color(0.92, 0.94, 0.97), Color(0.9, 0.9, 0.88), Color.WHITE, Color(0.8, 0.8, 0.8), Color.WHITE]  # the trodden mud drawn toward a dry grey-brown: the photo is red, and the grade's saturation turned it orange
+const TINT := [Color(0.95, 1.0, 0.9), Color.WHITE, Color.WHITE, Color(0.92, 0.94, 0.97), Color(0.9, 0.9, 0.88), Color.WHITE, Color(0.95, 0.92, 0.88), Color.WHITE]  # the trodden mud drawn toward a dry, packed brown: the photo is red and wet-dark
 
 var land: Terrain3D
 
