@@ -1,5 +1,7 @@
 # Building our own community, from gamers (2026-11-05)
 
+**Later, not now:** Mac's focus is downloads first (acquisition.md). This waits until people are playing.
+
 Mac's call: not r/LocalLLaMA, Hacker News or the local-AI crowd (exhausted, allergic). We build a new community and win the gaming crowd. Builds on angle.md, virality.md and acquisition.md.
 
 ## The home: a Discord called the court
