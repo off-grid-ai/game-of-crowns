@@ -35,6 +35,7 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 
 ## In progress
 - **Look-pass session (local_07cac2ca):** grade, ground, buildings, smoke, people, with before/after renders.
+- **Look pass landed (11-05 17:05, retake the marketing shots):** morning grade on by default (62fc53a, `GOC_LOOK=noview` for the old look); ground at true texture scale and brown mud (16d2715); tavern stone apron cut (6e093d7); smoke as wisps (7dd662a); grass and flowers in the wind (71962ea); towns up to 80 people (92456d6). Before/after: docs/play/r37-look/before-after-*.jpg. Render stills with `--season=summer` (winter turns the ground grey). Left: grass blades near the camera, the T-posed townsperson at Goldrock, people detail.
 - **Explainer:** pass 2 planned (PASS2.md: 70% world, memory one beat); holding takes until the look pass and the main session's fixes are pushed.
 - **Main session:** testing the lord work in Mac's relaunched game; then close-up stills (docs/buzz/images/zoom/live/) and the first-impression fixes 1–3 (docs/buzz/first-impression.md) before pushing.
 - **Explainer session (goc-explainer):** briefed 11-05 13:25 by the buzz session: a 20–30 s clip of a lord remembering and a 60–90 s explainer, after the lord work lands; files to docs/buzz/video/.
