@@ -100,11 +100,13 @@ export class Stakes {
       if (turn - u.since >= 2 && near === 0) {
         u.stage = "none";
         this.record({ turn, kind: "decree", text: `${name}'s host is broken before the walls of Kingsmere. The crown endures, and the houses that stood by it take heart.` });
+        u.ended = { house: u.house, turn };  // the King decides what becomes of them
         const loyal = houses.filter((p) => p.id !== u.house && ctx.favour(p.id) >= 35);
         if (loyal.length) ctx.shift?.(Object.fromEntries(loyal.map((p) => [p.id, 5])), "the crown stood firm against the pretender");
       } else if (turn - u.since >= 16) {
         u.stage = "none";
         this.record({ turn, kind: "unrest", text: `Four years before Kingsmere, and the walls still stand. ${name}'s host melts away home, humbled but unbroken.` });
+        u.ended = { house: u.house, turn };  // the King decides what becomes of them
       }
     }
 

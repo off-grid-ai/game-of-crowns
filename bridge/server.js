@@ -515,9 +515,10 @@ function counsel(players, cities, threat) {
     // The Hand names what is cooling them most, from the house's ledger of causes.
     const drain = (favourWhy[cold.id] ?? []).filter((r) => r.d < 0).sort((a, b) => a.d - b.d)[0];
     const cause = drain ? ` What cools them most: ${drain.why} (${Math.round(drain.d)}).` : "";
+    const lighter = drain?.why === "the royal tithe" && meta.tithe > 0 ? [{ label: `Lower the tithe to ${Math.round(meta.tithe * 100) - 5}%`, ui: "tithe_down" }] : [];
     out.push({ urgency: f < 30 ? 100 : 70, text: `${cold.house.name} grows cold to the crown: favour ${f}`,
       why: (f < 30 ? "So low, they may raise their banners against you any season." : "Below 30, a house may rise against the crown.") + cause,
-      acts: [{ label: "Gift crowns", action: "gift", city: seatOf(cold.id).id }, { label: "A feast in their honour", action: "feast", city: seatOf(cold.id).id }] });
+      acts: [...lighter, { label: "Gift crowns", action: "gift", city: seatOf(cold.id).id }, { label: "A feast in their honour", action: "feast", city: seatOf(cold.id).id }] });
   }
   // The usurper by name, how long until they march, and how to stop it: the
   // whispers fade once the angry houses (under 25) are won back.
@@ -531,9 +532,20 @@ function counsel(players, cities, threat) {
       acts: [pretender && seatOf(pretender.id) ? { label: `Gift crowns to ${claimant.replace(/^House /, "")}`, action: "gift", city: seatOf(pretender.id).id } : null, { label: "Buy off their claim", action: "buyoff" }, { label: "Call the banners", action: "banners" }].filter(Boolean) });
   } else if (threat.usurper !== "none") out.push({ urgency: 100, text: `${claimant}'s host marches on Kingsmere`,
     why: `${(threat.theirs * 200).toLocaleString("en-US")} of their men about the walls against ${(threat.ours * 200).toLocaleString("en-US")} of yours: ${threat.theirs > threat.ours ? "as things stand, the walls would fall" : "for now, the walls would hold"}. If Kingsmere falls, the crown is lost. Loyal houses (favour 35 and up) send men to the banners; the royal levy is yours to pay for. Or buy them off: gold for their claim.`, acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }, { label: "Buy them off", action: "buyoff" }] });
+  // After a march: the King decides what becomes of the house that rose.
+  const rose = players.find((p) => p.id === threat.ended);
+  if (rose) {
+    const towns = cities.filter((c) => c.owner === rose.id && !c.capital).sort((a, b) => (a.size ?? 0) - (b.size ?? 0));
+    const loyal = great.filter((p) => p.id !== rose.id).sort((a, b) => favourOf(b.id) - favourOf(a.id))[0];
+    const name = rose.house.name.replace(/^House /, "");
+    out.push({ urgency: 90, text: `The march is over. What of House ${name}?`,
+      why: `They rose against the throne and went home. Pardon them with a feast to win them back, or take a town and give it to ${loyal ? loyal.house.name : "a loyal house"} so the realm sees the price of treason.`,
+      acts: [seatOf(rose.id) ? { label: "Pardon them with a feast", action: "feast", city: seatOf(rose.id).id } : null,
+        towns[0] && loyal ? { label: `Give ${towns[0].title ?? "a town"} to ${loyal.house.name.replace(/^House /, "")}`, action: "grant", city: towns[0].id, to: loyal.id } : null].filter(Boolean) });
+  }
   // The pretender's own coldness is the usurper's story: one matter, not two.
-  if (threat.usurper !== "none" && pretender) {
-    const i = out.findIndex((o) => o.text.startsWith(`${pretender.house.name} grows cold`));
+  for (const who of [threat.usurper !== "none" ? pretender : null, rose].filter(Boolean)) {
+    const i = out.findIndex((o) => o.text.startsWith(`${who.house.name} grows cold`));
     if (i >= 0) out.splice(i, 1);
   }
   // When the tithe is what cools a house most, the Hand offers to lighten it.
@@ -592,7 +604,7 @@ function shiftAndTell(changes, why, cost = 0) {
     return p && now !== was[id] ? `${houseFor(p).name.replace(/^House /, "")} ${was[id]} → ${now}` : null;
   }).filter(Boolean);
   const price = cost ? [`${(cost * 100).toLocaleString("en-US")} crowns`] : [];
-  const shown = moved.length > 4 ? [...moved.slice(0, 3), `and ${moved.length - 3} more`] : moved;
+  const shown = moved.length > 7 ? [...moved.slice(0, 6), `and ${moved.length - 6} more`] : moved;
   return [...price, ...shown].join("  ·  ");
 }
 
@@ -862,6 +874,7 @@ http.createServer(async (req, res) => {
     const crownId = players.find((p) => p.house.crown)?.id;
     const threat = { usurper, north: (stakes?.s.north.waves ?? 0), pretender: u?.house ?? null, since: u?.since ?? 0, turn: world?.turn ?? 0,
       // The King's side is his whole host: the garrisons defend Kingsmere too.
+      ended: u?.ended && !u.ended.settled && (world?.turn ?? 0) - u.ended.turn <= 8 ? u.ended.house : null,
       theirs: u?.house != null ? fighting(u.house) : 0, ours: crownId != null ? (world?.units ?? []).filter((x) => x.owner === crownId && !CIVILIAN.has(x.type)).length : 0 };
     return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), date: calendar(world.turn), threat, counsel: counsel(players, cities, threat), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000) });
   }
@@ -968,6 +981,9 @@ http.createServer(async (req, res) => {
     const result = decree({ ...cmd, favourOf, usurper: stakes?.s.usurper, seat: stakes?.s.seat }, world);
     if (result.error) return json(res, 400, result);
     if (result.endUsurper && stakes) { stakes.s.usurper.stage = "none"; stakes.save(); }
+    // Feasting or stripping the house that rose settles what becomes of them.
+    const endedU = stakes?.s.usurper.ended;
+    if (endedU && !endedU.settled && ["feast", "grant"].includes(cmd.action) && world.cities.some((c) => c.id === Number(cmd.city) && c.owner === endedU.house)) { endedU.settled = true; stakes.save(); }
     result.lua.forEach((l) => send(`lua cmd ${l}`));
     // Spend now, so a second decree before the next snapshot can't overdraw the treasury.
     const crownNow = world.players.find((p) => houseFor(p).crown);

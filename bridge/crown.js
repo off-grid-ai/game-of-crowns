@@ -111,7 +111,7 @@ export function decree(cmd, world) {
         else refused.push(name);
         // A house that answers is bound closer by fighting beside the crown; one
         // that refuses has defied the King to his face and cools further.
-        favour[p.id] = n ? 2 : -3;
+        favour[p.id] = n === 2 ? 3 : n ? 1 : -3;  // gladly, grudgingly, or not at all
         if (n) {
           men += n;
           lua.push(`for p in players_iterate() do if p.id == ${p.id} then local i = 0; for u in p:units_iterate() do local r = u.utype:rule_name(); if i < ${n} and r ~= "Workers" and r ~= "Settlers" and r ~= "Explorer" then edit.unit_kill(u, "killed", nil); i = i + 1 end end end end`);
