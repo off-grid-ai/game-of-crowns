@@ -27,4 +27,4 @@ Goal: get the game into people's hands. Plan: acquisition.md. Updated each super
 ## Downloads per week
 | Week | GitHub | itch.io | Total |
 |---|---|---|---|
-| 11-05 (release day) | 0 | – | 0 |
+| 11-05 (release day) | 1 | – | 1 |
