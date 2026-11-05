@@ -122,7 +122,12 @@ sign "$APP"
 codesign --verify --strict --deep "$APP"
 
 notarize() {
-  xcrun notarytool submit "$1" --key "$APPLE_API_KEY" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER" --wait --timeout 60m
+  # The upload to Apple sometimes drops partway (abortedUpload); try again before failing the build.
+  for i in 1 2 3; do
+    xcrun notarytool submit "$1" --key "$APPLE_API_KEY" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER" --wait --timeout 60m && return 0
+    echo "    notarisation attempt $i failed; retrying in 60s"; sleep 60
+  done
+  return 1
 }
 staple() {
   for i in 1 2 3 4 5 6 7 8 9 10; do
