@@ -3,8 +3,11 @@ extends Node3D
 ## and the fields, stop to work, and go indoors at night. Purely visual: the
 ## simulation of how many people there are belongs to Freeciv (town size).
 
-const VIEW_RADIUS := 55.0
-const MAX_PER_TOWN := 80
+const VIEW_RADIUS := 30.0  # only the towns round where you look have their people about: beyond, nobody is drawn
+const MAX_PER_TOWN := 40
+const STEP_NEAR := 10.0  # world units from the camera: closer than this, a townsperson moves every frame
+const STRIDE := 4  # further off, one frame in this many
+var _frame := 0
 
 var terrain: Node3D
 var towns: Node3D
@@ -67,9 +70,19 @@ func _process(delta: float) -> void:
 		_cull = 0.25
 		_pause_unseen()
 	var t := Time.get_ticks_msec() * 0.001
+	# Those near the camera move every frame; the rest, too far off to be seen
+	# clearly or not drawn at all, one frame in STRIDE with the time they're owed.
+	_frame += 1
+	var cam := get_viewport().get_camera_3d()
+	var eye := cam.global_position if cam else Vector3.INF
 	for id in _crowds:
 		for a in _crowds[id]:
-			_step(a, delta, t)
+			var owed: float = a.get("owed", 0.0) + delta
+			if eye != Vector3.INF and (a["node"] as Node3D).global_position.distance_squared_to(eye) > STEP_NEAR * STEP_NEAR and (_frame + int(a["i"])) % STRIDE != 0:
+				a["owed"] = owed
+				continue
+			a["owed"] = 0.0
+			_step(a, minf(owed, 0.5), t)
 
 
 ## Nobody animates unseen: a villager too far off to be drawn, or behind the
@@ -164,7 +177,7 @@ func _spawn(id: int) -> void:
 	var homes: Array = town["node"].get_meta("homes", [])
 	var start := rng.randi() % maxi(1, homes.size())
 	# Busier as a town grows: a hamlet has a handful about, a market town a crowd.
-	for i in clampi(10 + size * 6, 12, MAX_PER_TOWN):
+	for i in clampi(6 + size * 4, 8, MAX_PER_TOWN):
 		# Each has a calling that decides where their day goes, and what they wear:
 		# farmers dress as peasants, the pious now and then as clergy, the rest as townsfolk.
 		var roll := rng.randf()

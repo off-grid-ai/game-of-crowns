@@ -591,8 +591,9 @@ var _grass_sig := ""
 var _tuft_meshes: Array = []
 ## The nature kit's low plants, and how often each grows: mostly grass, with
 ## clover and wildflowers among it.
-const TUFTS := ["Grass_Common_Short", "Grass_Wispy_Short", "Clover_1", "Flower_3_Group", "Flower_4_Group"]
-const TUFT_ODDS := [0.5, 0.33, 0.09, 0.04, 0.04]
+const TUFTS := ["Grass_Common_Short", "Grass_Wispy_Short", "Clover_1", "Flower_3_Group"]
+const TUFT_ODDS := [0.58, 0.3, 0.08, 0.04]
+const TUFT_REACH := 22.0  # drawn only this near the camera
 const PLANT_WIND := preload("res://scripts/plant_wind.gdshader")
 
 
@@ -724,8 +725,8 @@ func _bare_ground(p: Vector3, r: float, town: Node3D, stead) -> Dictionary:
 	return bare
 
 
-## One place's tufts, scattered the same way every time, in two small batches
-## drawn within 30 units: the engine culls a batch off screen or out of range
+## One place's tufts, scattered the same way every time, in a few small batches
+## drawn within TUFT_REACH: the engine culls a batch off screen or out of range
 ## at no cost per frame.
 func _grow(seed: String, p: Vector3, r: float, bare: Dictionary) -> Array:
 	var mine := []
@@ -733,7 +734,7 @@ func _grow(seed: String, p: Vector3, r: float, bare: Dictionary) -> Array:
 		mine.append([])
 	var prng := RandomNumberGenerator.new()
 	prng.seed = hash(seed)
-	for i in int(r * r * 70.0):
+	for i in int(r * r * 45.0):
 		var ang := prng.randf() * TAU
 		var d := sqrt(prng.randf()) * r
 		var q := p + Vector3(cos(ang), 0, sin(ang)) * d
@@ -760,7 +761,7 @@ func _grow(seed: String, p: Vector3, r: float, bare: Dictionary) -> Array:
 		var mmi := MultiMeshInstance3D.new()
 		mmi.multimesh = mm
 		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		mmi.visibility_range_end = 30.0
+		mmi.visibility_range_end = TUFT_REACH
 		mmi.visibility_range_end_margin = 3.0
 		mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 		mmi.name = "Grass"

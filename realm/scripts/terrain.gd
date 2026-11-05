@@ -564,6 +564,8 @@ func _scatter(mesh: Mesh, transforms: Array) -> MultiMeshInstance3D:
 
 ## Nature MegaKit trees, bushes and rocks, at the same scale as the towns.
 const VEG_SCALE := 0.12
+const VEG_PATCH := 12.0  # game units: grass and bushes are batched by patch of the map
+const VEG_REACH := 24.0  # and drawn only within this of the camera
 var _veg: Array[MultiMeshInstance3D] = []
 
 
@@ -621,14 +623,26 @@ func _build_vegetation() -> void:
 		add_child(forest)
 		forest.plant(_pines)
 		print_verbose("FOREST %d pines" % _pines.size())
-	if land3d and land3d.land:
-		land3d.plant_reeds.call_deferred(self)
 	for key in placed:
 		var parts: PackedStringArray = key.split(":")
-		var mmi := _scatter(meshes[parts[0]][int(parts[1])], placed[key])
-		if parts[0] == "bush" or parts[0] == "grass":
+		if not parts[0] in ["grass", "bush"]:
+			_veg.append(_scatter(meshes[parts[0]][int(parts[1])], placed[key]))
+			continue
+		# Grass and bushes in patches of the map, each drawn only near the
+		# camera: one batch for the whole realm was drawn everywhere at once,
+		# eight million triangles of grass nobody could see.
+		var patches := {}
+		for t: Transform3D in placed[key]:
+			var c := Vector2i(floori(t.origin.x / VEG_PATCH), floori(t.origin.z / VEG_PATCH))
+			if not patches.has(c):
+				patches[c] = []
+			patches[c].append(t)
+		for c in patches:
+			var mmi := _scatter(meshes[parts[0]][int(parts[1])], patches[c])
 			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		_veg.append(mmi)
+			mmi.visibility_range_end = VEG_REACH if parts[0] == "grass" else VEG_REACH * 1.5
+			mmi.visibility_range_end_margin = 3.0
+			_veg.append(mmi)
 
 
 ## The open country isn't evenly dotted with trees: woods gather where the

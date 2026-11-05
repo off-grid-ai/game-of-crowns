@@ -1054,5 +1054,11 @@ func _smoke(root: Node3D, pos: Vector3) -> void:
 	q.size = Vector2(0.6, 0.6)
 	q.material = smoke_material()
 	p.mesh = q
-	p.position = pos
-	root.add_child(p)
+	# Simulated on the GPU (Godot converts the settings): a town has a dozen
+	# hearths, and particles on the CPU cost every frame, seen or not.
+	var gpu := GPUParticles3D.new()
+	gpu.convert_from_particles(p)
+	p.free()
+	gpu.visibility_range_end = 45.0
+	gpu.position = pos
+	root.add_child(gpu)
