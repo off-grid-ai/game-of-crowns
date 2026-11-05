@@ -8,7 +8,7 @@ Goal: get the game into people's hands. Plan: acquisition.md. Updated each super
 | 1 | Repo public (open source) | Mac | **Done** 11-05 13:09: public, secrets scan clean |
 | 2 | Signed and notarised Mac dmg | buzz session | **Done** 11-05 14:03 (notarised, stapled, Gatekeeper accepted). Earlier: Not built. 11-05 13:06: a Developer ID Application identity is in this Mac's keychain (Wednesday Solutions, 84V6KCAC49), so signing can run here (`SIGN_IDENTITY`); notarisation still needs the App Store Connect API key (none found locally) |
 | 3 | GitHub Release with the dmg | buzz session | **Done** 11-05 14:03: v0.1-20261105-622eb2d (pre-release). Earlier: No releases. 11-05 13:40: Release (Mac) workflow moving to GitHub's runner; needs CSC_LINK/CSC_KEY_PASSWORD from Mac |
-| 4 | Free itch.io page with the dmg | Mac (account) | Not started |
+| 4 | Free itch.io page with the dmg | buzz session | Draft page made 11-05; v0.3 dmg pushing with butler; images and Publish are Mac's |
 | 5 | First-run hook (model download at once; a lord remembering in the first reign) | main session | Asked |
 | 6 | A lord remembering on screen + a 20–30s clip | main session / goc-media | Asked |
 | 7 | Windows build | main session | Asked, after 1–6 |
