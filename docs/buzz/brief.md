@@ -60,3 +60,4 @@ New messages get added here. They add to the picture; they don't replace it.
 - Mac's voice (mac-voice skill): outcome first, 3x so what, what's in it for the reader, less is more, no AI slop.
 - Authenticity of a personal story isn't the point; the USPs are.
 - Don't ask Mac questions that research can answer. Make the calls.
+- Releases: bump the version as part of each cut: `packaging/release-mac.sh --prerelease --version X.Y <commit>` (the main session handed realm/export_presets.cfg's version to this session, 11-05).
