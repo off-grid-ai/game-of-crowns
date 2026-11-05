@@ -4,7 +4,7 @@
 # GitHub (origin/main; not the working tree, which other sessions may have half-changed), then
 # publish the dmg as a GitHub Release of that commit.
 #
-# The build runs in a scratch folder: the committed files from `git archive HEAD`, plus the
+# The build runs in a scratch folder: the committed files from `git archive origin/main`, plus the
 # third-party art and Godot's import cache hard-linked from this working copy (the art stays out
 # of git by licence, and hard links cost no disk).
 #
