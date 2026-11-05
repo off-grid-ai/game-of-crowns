@@ -1596,6 +1596,16 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 	if net != 0:
 		_gold.text += "  %s%s a season" % ["▲" if net > 0 else "▼", _heads(absi(net))]
 	_peace.text = "%d%%" % int(float(world.get("peace", 1)) * 100)
+	# Why the peace is what it is, and what raises it.
+	var feuds := PackedStringArray()
+	for p in world.get("players", []):
+		for foe in p.get("wars", []):
+			var a := String(p["house"].get("name", "")).replace("House ", "")
+			var pair := "%s and %s" % ([a, String(foe)] if a < String(foe) else [String(foe), a])
+			if not feuds.has(pair):
+				feuds.append(pair)
+	_peace.get_parent().tooltip_text = "Peace: how much of the realm is free of war between the great houses. A host marching on the throne halves it.\n\n" + \
+		(("At war: " + ", ".join(feuds) + ".\nCommand peace, or wed two warring houses, to raise it.") if not feuds.is_empty() else "No great houses are at war.")
 	_souls.text = _heads(int(world.get("souls", 0)))
 	_tithe_l.text = "%d%%" % int(_tithe * 100)
 	_year.text = String(world.get("date", {}).get("text", "The realm is forming"))
@@ -1620,11 +1630,14 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 	for child in _houses.get_children():
 		child.queue_free()
 	var players: Array = world.get("players", []).duplicate()
-	# Trouble first: the coldest house at the top, the crown last.
+	# A fixed order, so a row stays where the eye left it: the houses by name,
+	# the crown last. Trouble shows in the favour's colour and its trend, not by moving.
 	players.sort_custom(func(a, b):
-		var fa: float = 1000.0 if a.get("favour") == null else float(a["favour"])
-		var fb: float = 1000.0 if b.get("favour") == null else float(b["favour"])
-		return fa < fb if fa != fb else int(a["cities"]) > int(b["cities"]))
+		var ca: bool = a.get("favour") == null
+		var cb: bool = b.get("favour") == null
+		if ca != cb:
+			return cb
+		return String(a["house"].get("name", "")) < String(b["house"].get("name", "")))
 	# One table, every house on one line, the ledger's own measures in columns
 	# (a house's latest row in the ledger, from the bridge), then its favour.
 	var grid := GridContainer.new()
