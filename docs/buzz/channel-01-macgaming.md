@@ -14,7 +14,7 @@ Great houses run themselves: they farm, starve, marry and go to war without you.
 
 It's a native Apple Silicon build, signed and notarised. The download is 1.8 GB. On first run it fetches a 1.8 GB model that gives the lords their words, running on your own Mac; the realm plays by its rules until that's ready.
 
-Download: https://github.com/off-grid-ai/game-of-crowns/releases/latest
+Download: https://github.com/off-grid-ai/game-of-crowns/releases
 
 It's early. What would keep you playing past the first hour?
 
