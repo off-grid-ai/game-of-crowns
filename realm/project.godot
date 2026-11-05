@@ -30,6 +30,7 @@ scaling_3d/mode=4
 scaling_3d/scale=0.67
 lights_and_shadows/directional_shadow/size=4096
 lights_and_shadows/directional_shadow/soft_shadow_filter_quality=2
+mesh_lod/lod_change/threshold_pixels=4.0
 
 [audio]
 
