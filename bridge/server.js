@@ -579,7 +579,7 @@ function counsel(players, cities, threat) {
   }
   // (Lowering the tithe sits on the cold house's matter when the tithe is its top cause.)
   // What the banners would bring today: two companies from the loyal (60+), one from the willing (35+).
-  const bannerMen = great.reduce((n, p) => n + (favourOf(p.id) >= 60 ? 2 : favourOf(p.id) >= 35 ? 1 : 0), 0) * 200;
+  const bannerMen = great.reduce((n, p) => { const f = favourOf(p.id); const sh = f >= 60 ? 0.25 : f >= 35 ? 0.125 : 0; return n + (sh ? Math.max(1, Math.round((p.units ?? 0) * sh)) : 0); }, 0) * 200;
   if (threat.north > 0) {
     const d = threat.dead ?? {};
     const gap = (d.next ?? 0) - threat.ours * 200 - bannerMen;
@@ -587,8 +587,8 @@ function counsel(players, cities, threat) {
     const where = d.town ? `on ${d.town}${lord ? ` (${lord.house.crown ? "the crown's own" : lord.house.name})` : ""}` : "on the North";
     const when = d.in == null ? "" : d.in <= 1 ? " The next host comes next season." : ` The next host comes in ${d.in} seasons.`;
     out.push({ urgency: 75, text: "The dead come south",
-      why: `${(d.last ?? 0).toLocaleString("en-US")} of them fell ${where} last time; ${(d.next ?? 0).toLocaleString("en-US")} will come with the next.${when} Against them: your ${(threat.ours * 200).toLocaleString("en-US")} fighting men, and about ${bannerMen.toLocaleString("en-US")} more if you call the banners: ${gap <= 0 ? "together, you would hold" : `even together, you would lose by ${gap.toLocaleString("en-US")}; a levy adds 600`}. If every northern town falls, the realm falls with it.`,
-      acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }] });
+      why: `${(d.last ?? 0).toLocaleString("en-US")} of them fell ${where} last time; ${(d.next ?? 0).toLocaleString("en-US")} will come with the next.${when} Against them: your ${(threat.ours * 200).toLocaleString("en-US")} fighting men, and about ${bannerMen.toLocaleString("en-US")} more if you call the banners: ${gap <= 0 ? "together, you would hold" : gap <= 1600 ? `you would lose by ${gap.toLocaleString("en-US")}: a levy (600) and sellswords (1,000) close it` : `you would lose by ${gap.toLocaleString("en-US")}, even with a levy and sellswords`}. If every northern town falls, the realm falls with it.`,
+      acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }, { label: "Hire sellswords", action: "sellswords" }] });
   }
   const hungry = cities.find((c) => c.famine);
   if (hungry) out.push({ urgency: 80, text: `${hungry.title} is starving`, why: "A hungry town shrinks, riots, and blames its King.", acts: [{ label: "Send grain", action: "relief", city: hungry.id }] });
@@ -614,7 +614,7 @@ function counsel(players, cities, threat) {
   if (!out.length) out.push({ urgency: 0, text: "The realm is quiet", why: "A good season to win a house's love before you need it.", acts: [] });
   // Every order shows its price before the King gives it, as the town card does: "Command peace  6k cr".
   // And what it does, so the King weighs effect against price: "Gift crowns  15k cr · +10".
-  const DOES = { tithe_down: `the houses cool more slowly, the crown takes ${(Math.round(lastSeason.net * 50) / 1).toLocaleString("en-US")} less a season`, grant: "+20 them, −30 the holder", gift: "+10", feast: "+15", relief: "+12", marriage: "+8 each, bound in peace", peace: "+2 each, truce", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2" };
+  const DOES = { sellswords: "1,000 men", tithe_down: `the houses cool more slowly, the crown takes ${(Math.round(lastSeason.net * 50) / 1).toLocaleString("en-US")} less a season`, grant: "+20 them, −30 the holder", gift: "+10", feast: "+15", relief: "+12", marriage: "+8 each, bound in peace", peace: "+2 each, truce", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2" };
   // An order that can't be given now isn't offered: the banners answer once a year.
   for (const o of out) o.acts = o.acts.filter((a) => a.action !== "banners" || bannersReady(world?.turn ?? 0));
   // The Hand's own pick on each matter: the order that does most for its cost.

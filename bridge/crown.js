@@ -16,6 +16,7 @@ export const DECREES = {
   peace: { cost: 150, label: "Command peace between two warring houses" },
   buyoff: { cost: 300, label: "Buy off the pretender" },
   ward: { cost: 20, label: "Take a house's heir as a royal ward" },
+  sellswords: { cost: 300, label: "Hire sellswords" },
 };
 
 // When the banners were last called: the houses won't answer twice in a year.
@@ -108,13 +109,16 @@ export function decree(cmd, world) {
         if (h.wild || h.crown || !world.cities.some((x) => x.owner === p.id)) continue;
         const f = fav(p.id);
         const name = h.name.replace("House ", "");
-        const n = f >= 60 ? 2 : f >= 35 ? 1 : 0;
-        if (n === 2) came.push(name);
-        else if (n === 1) few.push(name);
+        // What a house sends scales with its strength: a quarter of a loyal
+        // house's companies, an eighth of a willing one's, at least one.
+        const share = f >= 60 ? 0.25 : f >= 35 ? 0.125 : 0;
+        const n = share ? Math.max(1, Math.round((p.units ?? 0) * share)) : 0;
+        if (f >= 60) came.push(name);
+        else if (n) few.push(name);
         else refused.push(name);
         // A house that answers is bound closer by fighting beside the crown; one
         // that refuses has defied the King to his face and cools further.
-        favour[p.id] = n === 2 ? 3 : n ? 1 : -3;  // gladly, grudgingly, or not at all
+        favour[p.id] = f >= 60 ? 3 : n ? 1 : -3;  // gladly, grudgingly, or not at all
         if (n) {
           men += n;
           lua.push(`for p in players_iterate() do if p.id == ${p.id} then local i = 0; for u in p:units_iterate() do local r = u.utype:rule_name(); if i < ${n} and r ~= "Workers" and r ~= "Settlers" and r ~= "Explorer" then edit.unit_kill(u, "killed", nil); i = i + 1 end end end end`);
@@ -143,6 +147,13 @@ export function decree(cmd, world) {
         text: `The King sends a chest of gold to ${lord}.`,
         lua: [pay, `for p in players_iterate() do if p.id == ${owner.id} then edit.change_gold(p, ${d.cost}) end end`],
       };
+    case "sellswords": {
+      // Free companies, paid in gold: a thousand men at Kingsmere, owing nothing to any house.
+      const seat = world.cities.find((x) => x.owner === crown.id && x.capital);
+      if (!seat) return { error: "the crown has no seat" };
+      return { cost: d.cost, favour: {}, text: "The King hires sellswords: a thousand men of the free companies march into Kingsmere, loyal to his gold.",
+        lua: [pay, `local c = find.city(nil, ${seat.id}); if c then for i = 1, 5 do edit.create_unit(c.owner, c.tile, find.unit_type(i % 2 == 0 and "Knights" or "Pikemen"), 1, c, -1) end end`] };
+    }
     case "levy": {
       const seat = world.cities.find((x) => x.owner === crown.id && x.capital);
       if (!seat) return { error: "the crown has no seat" };
