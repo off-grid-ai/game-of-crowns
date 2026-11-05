@@ -184,7 +184,7 @@ func _build() -> void:
 
 func _process(_delta: float) -> void:
 	if visible and _hint:
-		_hint.text = ("Any key to begin" if _is_ready() else "The realm is forming…").to_upper()
+		_hint.text = ("Click or press any key to begin" if _is_ready() else "The realm is forming… click for the next page").to_upper()
 
 
 func _next() -> void:
