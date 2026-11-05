@@ -38,7 +38,7 @@ The evidence says players accept AI when the game logic stays in code and the mo
 
 ## Truth check before posting
 - **Shown today:** houses remember why their favour moved; a cold house whispers a better claim and marches on the capital; petitions are voiced by the local model.
-- **Not shown yet:** a single lord bringing up, in his own words, what you did years ago. That's the clip that sells the angle. Ask the main session for it.
+- **Built but not on screen yet:** lords already keep memories and act on them (`bridge/characters.js`: a refused hand, unpaid loans, ignored petitions, the King taking sides). What's missing is a lord saying it on screen in his own words. That's the clip that sells the angle. Asked of the main session 2026-11-05; it's with Mac because the pace and chronicle changes touch frozen v1 behaviour.
 - **Years flying:** the pace is 90 seconds a season, 6 minutes a year (`bridge/chronicles.js:72`). Needs about 15–20 seconds a season for "a reign in minutes".
 
 ## Where each audience is

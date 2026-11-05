@@ -22,6 +22,13 @@ New messages get added here. They add to the picture; they don't replace it.
 - Learn from what players actually say: app store reviews (Play Store, App Store), Steam reviews, subreddits, any other user feedback. The WorldBox Play Store paste was an example of the method, not the conclusion.
 - Combine everything into one angle; don't pivot on the latest message.
 
+## Go-to-market (Mac, 2026-11-05)
+- Study how the smallest studios and the biggest ones get the word out, and what actually works vs doesn't: subreddits, Discord, channels we don't know yet. SEO will happen anyway.
+- World simulation could be especially interesting here.
+
+## Working with the main session (Mac, 2026-11-05)
+- This session tells the main session what to build and what not to, as soon as the research shows it. Work autonomously; Mac shouldn't have to carry prompts between sessions.
+
 ## Voice
 - Mac's voice (mac-voice skill): outcome first, 3x so what, what's in it for the reader, less is more, no AI slop.
 - Authenticity of a personal story isn't the point; the USPs are.
