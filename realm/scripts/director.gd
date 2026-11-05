@@ -114,6 +114,9 @@ func watch_at(at: Vector3, dist: float, caption: String, follow: Node3D = null) 
 ## What a scene is called on screen: "The King's grain on the road to Oldburg".
 func caption(s: Dictionary) -> String:
 	var at: Vector3 = terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0)))
+	# A battle names who bleeds: "House Sunspire loses men near Crowbarrow".
+	if String(s.get("kind", "")) == "battle" and String(s.get("house", "")) != "":
+		return "%s loses men near %s" % [String(s["house"]), _town_near(s, at)]
 	return String(SCENES.get(String(s.get("kind", "")), [0, 0.0, "%s"])[2]) % _town_near(s, at)
 
 
@@ -152,4 +155,14 @@ func _town_near(s: Dictionary, at: Vector3) -> String:
 		if int(c["id"]) == id:
 			return String(c.get("title", c["name"]))
 	var near: Dictionary = towns.nearest(at)
-	return String(near.get("title", near.get("name", "the realm"))) if not near.is_empty() else "the realm"
+	if not near.is_empty():
+		return String(near.get("title", near.get("name", "")))
+	# No town drawn near: the nearest the realm knows by its tiles.
+	var best := ""
+	var d := INF
+	for c in world.get("cities", []):
+		var dd := Vector2(float(c["x"]), float(c["y"])).distance_to(Vector2(float(s.get("x", 0)), float(s.get("y", 0))))
+		if dd < d:
+			d = dd
+			best = String(c.get("title", c["name"]))
+	return best if best != "" else "the realm"

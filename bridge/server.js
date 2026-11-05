@@ -449,7 +449,10 @@ function onEvent(line) {
     return;
   }
   const town = ev.city !== undefined ? world?.cities?.find((c) => c.id === Number(ev.city)) : null;
-  if (ev.kind === "unit_killed") scene("battle", { x: Number(ev.x), y: Number(ev.y), owner: Number(ev.owner), unit: ev.unit });
+  if (ev.kind === "unit_killed") {
+    const loser = world?.players?.find((p) => p.id === Number(ev.owner));
+    scene("battle", { x: Number(ev.x), y: Number(ev.y), owner: Number(ev.owner), unit: ev.unit, house: loser ? houseFor(loser).name : null });
+  }
   if (ev.kind === "city_transferred" && town) scene(ev.reason === "conquest" ? "sack" : "handover", { x: town.x, y: town.y, city: town.id, from: Number(ev.from), to: Number(ev.to) });
   if (ev.kind === "city_destroyed" && town) scene("razed", { x: town.x, y: town.y, city: town.id });
   if (ev.kind === "city_shrank" && town && (ev.reason === "famine" || ev.reason === "plague")) scene(ev.reason, { x: town.x, y: town.y, city: town.id });
