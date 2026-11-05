@@ -70,7 +70,9 @@ export class Stakes {
 
     // --- The usurper -----------------------------------------------------------
     const houses = world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown && p.cities > 0);
-    const angry = houses.filter((p) => ctx.favour(p.id) < 25);
+    // A house whose heir is the King's ward does not rise while the ward lives at court.
+    const held = (this.s.wards ?? {});
+    const angry = houses.filter((p) => ctx.favour(p.id) < 25 && !((held[p.id] ?? -1) > turn));
     const u = this.s.usurper;
     if (u.stage === "none" && ctx.options?.usurper !== false && houses.length && angry.length >= Math.max(2, Math.ceil(houses.length / 3))) {
       const pretender = angry.sort((a, b) => b.cities - a.cities)[0];

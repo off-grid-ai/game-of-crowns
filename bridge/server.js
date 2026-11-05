@@ -539,8 +539,9 @@ function counsel(players, cities, threat) {
     const loyal = great.filter((p) => p.id !== rose.id).sort((a, b) => favourOf(b.id) - favourOf(a.id))[0];
     const name = rose.house.name.replace(/^House /, "");
     out.push({ urgency: 90, text: `The march is over. What of House ${name}?`,
-      why: `They rose against the throne and went home (favour ${Math.round(favourOf(rose.id))}). Pardon them with a feast to win them back, or take a town and give it to ${loyal ? loyal.house.name : "a loyal house"} so the realm sees the price of treason; a house driven below 25 may rise again.`,
+      why: `They rose against the throne and went home (favour ${Math.round(favourOf(rose.id))}). Pardon them with a feast to win them back, hold their heir at court so they cannot rise, or take a town and give it to ${loyal ? loyal.house.name : "a loyal house"} so the realm sees the price of treason; a house driven below 25 may rise again.`,
       acts: [seatOf(rose.id) ? { label: "Pardon them with a feast", action: "feast", city: seatOf(rose.id).id } : null,
+        seatOf(rose.id) ? { label: `Take their heir as your ward (${name} −5; they cannot rise for five years)`, action: "ward", city: seatOf(rose.id).id } : null,
         towns[0] && loyal ? { label: `Give ${towns[0].title ?? "a town"} to ${loyal.house.name.replace(/^House /, "")} (${name} −30, ${loyal.house.name.replace(/^House /, "")} +20)`, action: "grant", city: towns[0].id, to: loyal.id } : null].filter(Boolean) });
   }
   // The pretender's own coldness is the usurper's story: one matter, not two.
@@ -846,7 +847,11 @@ http.createServer(async (req, res) => {
       const lordOf = (pid) => court?.lordOfHouse(pid);
       const stilledWith = (q) => { const a = lordOf(p.id), b = lordOf(q.id); return !!(a && b && court.truce(a.id, b.id)); };
       const rivals = (p.atWarWith ?? []).map((id) => players.find((q) => q.id === id)).filter((q) => q && !q.house.wild);
-      p.wars = rivals.filter((q) => !stilledWith(q)).map((q) => q.house.crown ? "the Crown" : q.house.name.replace(/^House /, ""));
+      // A loyal house (35 and up) isn't waging war on the King: the engine's state
+      // between them is old diplomacy, not a cause, so it isn't shown as one.
+      const loyalToCrown = (q) => !q.house.crown && (favourOf(q.id) ?? 0) >= 35;
+      p.wars = rivals.filter((q) => !stilledWith(q) && !(q.house.crown && loyalToCrown(p)) && !(p.house.crown && loyalToCrown(q)))
+        .map((q) => q.house.crown ? "the Crown" : q.house.name.replace(/^House /, ""));
       // A pretender on the march is at war with the crown, whatever the engine's treaties say.
       const u = stakes?.s.usurper;
       if (u?.stage === "march") {
@@ -982,16 +987,18 @@ http.createServer(async (req, res) => {
     const result = decree({ ...cmd, favourOf, usurper: stakes?.s.usurper, seat: stakes?.s.seat }, world);
     if (result.error) return json(res, 400, result);
     if (result.endUsurper && stakes) { stakes.s.usurper.stage = "none"; stakes.save(); }
+    // A ward holds the house for five years.
+    if (result.ward != null && stakes) { (stakes.s.wards ??= {})[result.ward] = (world.turn ?? 0) + 20; stakes.save(); }
     // Feasting or stripping the house that rose settles what becomes of them.
     const endedU = stakes?.s.usurper.ended;
-    if (endedU && !endedU.settled && ["feast", "grant"].includes(cmd.action) && world.cities.some((c) => c.id === Number(cmd.city) && c.owner === endedU.house)) { endedU.settled = true; stakes.save(); }
+    if (endedU && !endedU.settled && ["feast", "grant", "ward"].includes(cmd.action) && world.cities.some((c) => c.id === Number(cmd.city) && c.owner === endedU.house)) { endedU.settled = true; stakes.save(); }
     result.lua.forEach((l) => send(`lua cmd ${l}`));
     // Spend now, so a second decree before the next snapshot can't overdraw the treasury.
     const crownNow = world.players.find((p) => houseFor(p).crown);
     if (crownNow) crownNow.gold -= result.cost;
     // The result card says what the order cost and whose favour moved, so the
     // King learns the price of his word.
-    const effects = shiftAndTell(result.favour, { gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "the King's banners: answered or refused", marriage: "a royal match", peace: "the King's peace", buyoff: "the King bought off the pretender" }[cmd.action] ?? "a royal decree", result.cost);
+    const effects = shiftAndTell(result.favour, { gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "the King's banners: answered or refused", marriage: "a royal match", peace: "the King's peace", buyoff: "the King bought off the pretender", ward: "their heir taken as the King's ward" }[cmd.action] ?? "a royal decree", result.cost);
     const seat = world.cities.find((c) => c.owner === crownNow?.id && c.capital);
     const target = world.cities.find((c) => c.id === Number(cmd.city));
     if (seat && target && (cmd.action === "relief" || cmd.action === "gift")) scene(cmd.action === "relief" ? "grain" : "tribute", { x: seat.x, y: seat.y, tx: target.x, ty: target.y, city: target.id });

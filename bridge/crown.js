@@ -15,6 +15,7 @@ export const DECREES = {
   marriage: { cost: 80, label: "Arrange a marriage between two houses" },
   peace: { cost: 60, label: "Command peace between two warring houses" },
   buyoff: { cost: 300, label: "Buy off the pretender" },
+  ward: { cost: 20, label: "Take a house's heir as a royal ward" },
 };
 
 // When the banners were last called: the houses won't answer twice in a year.
@@ -176,6 +177,13 @@ export function decree(cmd, world) {
         text: `A feast at Kingsmere in honour of ${lord}. Wine flows; old slights are forgotten, for now.`,
         lua: [pay],
       };
+    case "ward": {
+      // The heir lives at court: the house cannot rise while the King holds them.
+      const owner = c ? world.players.find((p) => p.id === c.owner) : null;
+      if (!owner || houseFor(owner).crown) return { error: "choose a great house's town" };
+      return { cost: d.cost, favour: { [owner.id]: -5 }, lua: [pay], ward: owner.id,
+        text: `${houseFor(owner).name}'s heir rides to Kingsmere as the King's ward. While the child lives at court, the house will not rise.` };
+    }
     case "buyoff": {
       // Gold for the pretender's claim: their host about Kingsmere goes home and
       // the whispers stop, at a price every other house will remember.
