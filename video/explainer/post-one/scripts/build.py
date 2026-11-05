@@ -39,7 +39,7 @@ SHOTS = [
     dict(id="b6", start=20.2, dur=2.8, img="assets/play/b14s.jpg", iw=3024, ih=1898,
          cam=[(0, 1750, 640, 1.62, 960, 540, None), (2.8, 1760, 660, 1.72, 960, 540, "sine.inOut")]),
     dict(id="b7", start=23.0, dur=4.4, img="assets/play/b09.jpg", iw=3024, ih=1898,
-         cam=[(0, 1720, 430, 1.55, 860, 380, None), (4.4, 1720, 420, 1.62, 860, 380, "sine.inOut")],
+         cam=[(0, 1720, 430, 1.55, 860, 420, None), (4.4, 1720, 420, 1.62, 860, 420, "sine.inOut")],
          lines=[("She had words for the King.", 1.5)]),
     dict(id="b8", start=27.4, dur=4.2, img="assets/play/b14o.jpg", iw=3024, ih=1898,
          cam=[(0, 560, 1690, 1.75, 940, 716, None), (4.2, 560, 1690, 1.80, 960, 716, "sine.inOut")],
@@ -69,14 +69,14 @@ STYLE = """
 .cam img { position:absolute; left:0; top:0; display:block; }
 .mark { position:absolute; height:7px; background:%s; transform-origin:0 50%%; border-radius:2px; }
 .rule { position:absolute; width:8px; background:%s; transform-origin:50%% 0; border-radius:2px; }
-.shade { position:absolute; left:0; right:0; bottom:0; height:520px;
-  background:linear-gradient(180deg, rgba(21,23,25,0) 0%%, rgba(21,23,25,.62) 58%%, rgba(21,23,25,.82) 100%%); }
+.shade { position:absolute; left:0; right:0; bottom:0; height:400px;
+  background:linear-gradient(180deg, rgba(21,23,25,0) 0%%, rgba(21,23,25,1) 22%%, rgba(21,23,25,1) 100%%); }
 .lines { position:absolute; left:120px; right:120px; bottom:118px; font-family:"EB Garamond", serif; font-weight:500;
   font-size:104px; line-height:1.05; letter-spacing:-0.01em; color:#EFE7D6; text-shadow:0 2px 18px rgba(0,0,0,.45); }
 .lines .ln { display:block; }
 .lines .w { display:inline-block; }
 .final .lines { font-size:128px; }
-.top .shade { top:0; bottom:auto; background:linear-gradient(0deg, rgba(21,23,25,0) 0%%, rgba(21,23,25,.62) 58%%, rgba(21,23,25,.82) 100%%); }
+.top .shade { top:0; bottom:auto; height:330px; background:linear-gradient(0deg, rgba(21,23,25,0) 0%%, rgba(21,23,25,1) 22%%, rgba(21,23,25,1) 100%%); }
 .top .lines { bottom:auto; top:96px; }
 .top .lines .ln { top:0; bottom:auto; }
 .q { color:%s; }
