@@ -167,6 +167,9 @@ function record(entry) {
 }
 
 function writeRecord(entry) {
+  // The same line again within a year (a siege that drags on) is news once.
+  const recent = chronicle.slice(-12);
+  if (entry.text && recent.some((e) => e.text === entry.text && (entry.turn ?? 0) - (e.turn ?? 0) <= 4)) return;
   entry.seq = chronicle.length ? chronicle[chronicle.length - 1].seq + 1 : 1;
   entry.at = Date.now();
   chronicle.push(entry);
