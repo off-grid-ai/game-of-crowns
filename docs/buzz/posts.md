@@ -49,6 +49,6 @@
 ---
 
 ## Before posting #1
-- **Somewhere to follow.** A subreddit, Discord or itch.io page. Without it, interest is lost.
 - **No name in the first posts.** "Game of Crowns" pulls the thread into trademark talk.
+- **Somewhere to follow** waits until people respond. Decide it before #3.
 - **"When can I play?"** The honest answer depends on the art licences (VISION: personal use only for now).
