@@ -4,7 +4,7 @@
 //   Contents/Resources/runtime    node, freeciv (bin, lib, share)
 // Realms, records and logs go to ~/Library/Application Support/Game of Crowns.
 // No model ships with the game and nothing is downloaded: the realm plays by
-// its rules, and when Off Grid AI (https://github.com/off-grid-ai) is running
+// its rules, and when Off Grid AI (https://getoffgridai.co/desktop) is running
 // Omni on this Mac, the lords speak in their own words through it (claude.js
 // finds it). When the game quits (or dies), this process takes Freeciv with it.
 import fs from "node:fs";

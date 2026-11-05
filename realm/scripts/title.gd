@@ -567,8 +567,8 @@ func _voice_settings(right: Control) -> void:
 			if col:
 				col.add_child(_label(String(d["note"]), 14, GOLD))
 				var link := LinkButton.new()
-				link.text = "github.com/off-grid-ai"
-				link.uri = "https://github.com/off-grid-ai"
+				link.text = "getoffgridai.co/desktop"
+				link.uri = "https://getoffgridai.co/desktop"
 				link.add_theme_font_size_override("font_size", 14)
 				col.add_child(link))
 

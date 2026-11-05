@@ -1416,7 +1416,7 @@ var _guide_loaded := false
 
 ## Whether Off Grid AI is giving people their own words (main.gd asks the bridge).
 var ai_words := true
-const OFFGRID_URL := "https://github.com/off-grid-ai"
+const OFFGRID_URL := "https://getoffgridai.co/desktop"
 
 
 func _offgrid_told() -> bool:

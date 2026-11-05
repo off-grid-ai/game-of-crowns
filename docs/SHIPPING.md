@@ -26,7 +26,7 @@ Build Mac needs: Godot 4.7.2 with export templates, Homebrew `freeciv`, `dylibbu
 - `realm/scripts/app_services.gd` (an autoload) only acts in the exported app. It starts `bridge/app.js` on the bundled Node, unless a bridge is already listening on 8787. When the game quits it stops the bridge.
 - `bridge/app.js` points the bridge at the bundled Freeciv and keeps everything the player makes in `~/Library/Application Support/Game of Crowns`: `chronicles/`, `records.json`, `scenarios.json`, `logs/` (`bridge.log`).
 - If the game dies, the bridge sees its parent is gone within a second and shuts down Freeciv.
-- **No model ships with the game and nothing is downloaded.** The realm decides by its rules. If [Off Grid AI](https://github.com/off-grid-ai) is running with Omni loaded, the bridge uses it: lords' own words, rulings in your own words, voices and spoken rulings. Settings says so, and the court mentions it once, the first time a lord speaks in the set lines.
+- **No model ships with the game and nothing is downloaded.** The realm decides by its rules. If [Off Grid AI](https://getoffgridai.co/desktop) is running with Omni loaded, the bridge uses it: lords' own words, rulings in your own words, voices and spoken rulings. Settings says so, and the court mentions it once, the first time a lord speaks in the set lines.
 
 ## Signing and notarisation
 

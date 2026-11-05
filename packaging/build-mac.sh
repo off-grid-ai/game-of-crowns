@@ -7,7 +7,7 @@
 #   Contents/Resources/runtime/node  Node (official nodejs.org build, pinned + checksummed)
 #   Contents/Resources/runtime/freeciv  freeciv-server, its dylibs (dylibbundler) and its data
 # No model ships with the game: the realm plays by its rules, and lords speak in their own
-# words when Off Grid AI (https://github.com/off-grid-ai) is running Omni on the same Mac.
+# words when Off Grid AI (https://getoffgridai.co/desktop) is running Omni on the same Mac.
 #
 # Signing and notarisation follow Off Grid AI Desktop's release (OGAD .github/workflows/release.yml),
 # with the same secrets:
