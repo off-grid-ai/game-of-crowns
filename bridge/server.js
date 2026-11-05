@@ -1257,7 +1257,16 @@ http.createServer(async (req, res) => {
       history: history.slice(-40).map((r) => ({ turn: r.turn, souls: (r.houses[h.name]?.pop ?? 0) * 600, ...(r.houses[h.name] ?? {}) })).filter((r) => r.towns !== undefined),
       lord: person(lord),
       bannermen: court.alive().filter((c) => c.rank === "bannerman" && c.playerId === pid).map(person),
-      wars: (d?.atWarWith ?? []).filter(great).map(nameOf),
+      // The same truth as the houses table: wars the King has stilled are truces,
+      // and a loyal house's engine war with the crown isn't a war.
+      ...(() => {
+        const me = court.lordOfHouse(pid);
+        const stilled = (q) => { const o = court.lordOfHouse(q); return !!(me && o && court.truce(me.id, o.id)); };
+        const crownId = world.players.find((x) => houseFor(x).crown)?.id;
+        const loyal = (id) => id !== crownId && favourOf(id) >= 35;
+        const foes = (d?.atWarWith ?? []).filter(great).filter((q) => !((q === crownId && loyal(pid)) || (pid === crownId && loyal(q))));
+        return { wars: foes.filter((q) => !stilled(q)).map(nameOf), truces: foes.filter(stilled).map(nameOf) };
+      })(),
       allies: (d?.allies ?? []).filter((id) => id !== pid && great(id)).map(nameOf),
     });
   }

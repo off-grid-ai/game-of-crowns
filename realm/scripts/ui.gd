@@ -899,11 +899,14 @@ func show_house(d: Dictionary) -> void:
 			r.add_child(_see_btn(m, d))
 			v.add_child(r)
 	var wars: Array = d.get("wars", [])
+	var truces: Array = d.get("truces", [])
 	var allies: Array = d.get("allies", [])
-	if wars.size() > 0 or allies.size() > 0:
+	if wars.size() > 0 or truces.size() > 0 or allies.size() > 0:
 		v.add_child(HSeparator.new())
 		if wars.size() > 0:
 			v.add_child(_wrapped(T.datum("At war with " + ", ".join(wars), T.SIZE_DESC, Color("#e86b5c"))))
+		if truces.size() > 0:
+			v.add_child(_wrapped(T.datum("Under the King's truce with " + ", ".join(truces), T.SIZE_DESC, T.ACCENT)))
 		if allies.size() > 0:
 			v.add_child(_wrapped(T.datum("Allied with " + ", ".join(allies), T.SIZE_DESC, T.TEXT_2)))
 	_court_panel.visible = false
