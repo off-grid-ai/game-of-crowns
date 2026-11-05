@@ -501,7 +501,8 @@ function counsel(players, cities, threat) {
     out.push({ urgency: 95, text: `${claimant} whispers of a better claim to the throne`,
       why: `In ${left} season${left === 1 ? "" : "s"} they march on Kingsmere, unless the angry houses are won back above 25: ${angry.join(", ") || "none now"}.`,
       acts: [pretender && seatOf(pretender.id) ? { label: `Gift crowns to ${claimant.replace(/^House /, "")}`, action: "gift", city: seatOf(pretender.id).id } : null, { label: "Call the banners", action: "banners" }].filter(Boolean) });
-  } else if (threat.usurper !== "none") out.push({ urgency: 100, text: `${claimant}'s host marches on Kingsmere`, why: "If it reaches the walls, the crown is lost. Loyal houses (favour 35 and up) send men when you call the banners; the royal levy is yours to pay for.", acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }] });
+  } else if (threat.usurper !== "none") out.push({ urgency: 100, text: `${claimant}'s host marches on Kingsmere`,
+    why: `${(threat.theirs * 200).toLocaleString("en-US")} of their men about the walls against ${(threat.ours * 200).toLocaleString("en-US")} of yours: ${threat.theirs > threat.ours ? "as things stand, the walls would fall" : "for now, the walls would hold"}. If Kingsmere falls, the crown is lost. Loyal houses (favour 35 and up) send men to the banners; the royal levy is yours to pay for.`, acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }] });
   // The pretender's own coldness is the usurper's story: one matter, not two.
   if (threat.usurper !== "none" && pretender) {
     const i = out.findIndex((o) => o.text.startsWith(`${pretender.house.name} grows cold`));
@@ -825,7 +826,13 @@ http.createServer(async (req, res) => {
     for (const p of players) p.measures = last?.houses?.[p.house.name] ?? (p.house.crown ? own(p) : null);
     const usurper = stakes?.s.usurper.stage ?? "none";
     const u = stakes?.s.usurper;
-    const threat = { usurper, north: (stakes?.s.north.waves ?? 0), pretender: u?.house ?? null, since: u?.since ?? 0, turn: world?.turn ?? 0 };
+    // The odds at Kingsmere: fighting companies of the pretender and of the crown
+    // within a few leagues of the walls (200 men to a company, as the table counts).
+    const seatNow = stakes?.s.seat;
+    const fighting = (pid) => seatNow ? (world?.units ?? []).filter((x) => x.owner === pid && !CIVILIAN.has(x.type) && Math.hypot(x.x - seatNow.x, x.y - seatNow.y) <= 6).length : 0;
+    const crownId = players.find((p) => p.house.crown)?.id;
+    const threat = { usurper, north: (stakes?.s.north.waves ?? 0), pretender: u?.house ?? null, since: u?.since ?? 0, turn: world?.turn ?? 0,
+      theirs: u?.house != null ? fighting(u.house) : 0, ours: crownId != null ? fighting(crownId) : 0 };
     return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), date: calendar(world.turn), threat, counsel: counsel(players, cities, threat), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000) });
   }
   if (url.pathname === "/map") {

@@ -1573,7 +1573,8 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 	if danger.is_empty():
 		_reign.add_theme_color_override("font_color", T.TEXT_3)
 	else:
-		_reign.text = "  ·  ".join(danger).to_upper()
+		# The gravest danger only: a longer line would push the realm's numbers off the bar.
+		_reign.text = String(danger[0]).to_upper()
 		_reign.add_theme_color_override("font_color", T.DANGER)
 	var popup := _grant_menu.get_popup()
 	popup.clear()
