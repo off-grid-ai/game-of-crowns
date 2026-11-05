@@ -26,6 +26,10 @@ New messages get added here. They add to the picture; they don't replace it.
 - Study how the smallest studios and the biggest ones get the word out, and what actually works vs doesn't: subreddits, Discord, channels we don't know yet. SEO will happen anyway.
 - World simulation could be especially interesting here.
 
+## The real bottleneck (Mac, 2026-11-05)
+- The game is already playable and can go open source now; a demo isn't the bottleneck.
+- The bottleneck is getting people to play it: find the virality factor.
+
 ## Working with the main session (Mac, 2026-11-05)
 - This session tells the main session what to build and what not to, as soon as the research shows it. Work autonomously; Mac shouldn't have to carry prompts between sessions.
 
