@@ -539,9 +539,9 @@ function counsel(players, cities, threat) {
     const loyal = great.filter((p) => p.id !== rose.id).sort((a, b) => favourOf(b.id) - favourOf(a.id))[0];
     const name = rose.house.name.replace(/^House /, "");
     out.push({ urgency: 90, text: `The march is over. What of House ${name}?`,
-      why: `They rose against the throne and went home. Pardon them with a feast to win them back, or take a town and give it to ${loyal ? loyal.house.name : "a loyal house"} so the realm sees the price of treason.`,
+      why: `They rose against the throne and went home (favour ${Math.round(favourOf(rose.id))}). Pardon them with a feast to win them back, or take a town and give it to ${loyal ? loyal.house.name : "a loyal house"} so the realm sees the price of treason; a house driven below 25 may rise again.`,
       acts: [seatOf(rose.id) ? { label: "Pardon them with a feast", action: "feast", city: seatOf(rose.id).id } : null,
-        towns[0] && loyal ? { label: `Give ${towns[0].title ?? "a town"} to ${loyal.house.name.replace(/^House /, "")}`, action: "grant", city: towns[0].id, to: loyal.id } : null].filter(Boolean) });
+        towns[0] && loyal ? { label: `Give ${towns[0].title ?? "a town"} to ${loyal.house.name.replace(/^House /, "")} (${name} −30, ${loyal.house.name.replace(/^House /, "")} +20)`, action: "grant", city: towns[0].id, to: loyal.id } : null].filter(Boolean) });
   }
   // The pretender's own coldness is the usurper's story: one matter, not two.
   for (const who of [threat.usurper !== "none" ? pretender : null, rose].filter(Boolean)) {
@@ -579,7 +579,8 @@ function counsel(players, cities, threat) {
   for (const o of out) for (const a of o.acts) if (DECREES[a.action]?.cost) a.label += `  ${DECREES[a.action].cost / 10}k cr`;
   // Two matters at most: the Hand's card stays clear of the houses table, and the
   // court has its own badge.
-  return out.sort((a, b) => b.urgency - a.urgency).slice(0, 2);
+  // Up to three; the card drops its last matters itself if it would reach the houses table.
+  return out.sort((a, b) => b.urgency - a.urgency).slice(0, 3);
 }
 
 // Why each house feels as it does: the last few things that moved its favour,
