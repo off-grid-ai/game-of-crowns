@@ -25,7 +25,7 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 | Windows build | Dropped for now (Mac 11-05: Mac only until demand is proven) |
 | First-impression fixes 1–3 (sunk people, captions, map progress text) | In progress (main session; captions already fixed in 3e0517c) |
 | Look pass #1: capture profile (`--hq`, full res, MSAA+TAA, 8192 shadows) | Built by the main session, not yet committed |
-| Look pass #2–4 and fixes 4–13 (grade, ground, buildings in the land, smoke, people) | Proposed as its own session "Look pass" (card for Mac) |
+| Look pass #2–4 and fixes 4–13 (grade, ground, buildings in the land, smoke, people) | Approved by Mac (started the session); in progress (look-pass session) |
 | Friends as lords (naming screen; later Discord names) | Proposed, parked (later) |
 | Saga card at the end of a reign | Proposed, parked |
 | Lords answer outrageous rulings in character | Proposed, parked |
@@ -34,6 +34,8 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 | Art licences cleared; separate demo build | Dropped (Mac: not the bottleneck; the game is the demo) |
 
 ## In progress
+- **Look-pass session (local_07cac2ca):** grade, ground, buildings, smoke, people, with before/after renders.
+- **Explainer:** pass 2 planned (PASS2.md: 70% world, memory one beat); holding takes until the look pass and the main session's fixes are pushed.
 - **Main session:** testing the lord work in Mac's relaunched game; then close-up stills (docs/buzz/images/zoom/live/) and the first-impression fixes 1–3 (docs/buzz/first-impression.md) before pushing.
 - **Main session:** the four approved lord and pace changes (not yet committed).
 - **Explainer session (goc-explainer):** briefed 11-05 13:25 by the buzz session: a 20–30 s clip of a lord remembering and a 60–90 s explainer, after the lord work lands; files to docs/buzz/video/.
