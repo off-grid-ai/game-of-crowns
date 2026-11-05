@@ -20,9 +20,9 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 | Seasons 20 s instead of 90 s | Approved; in progress |
 | Repo public | **Shipped** 11-05 13:09 (Mac approved; secrets scan clean) |
 | Signed and notarised Mac dmg + GitHub Release | **Shipped** 11-05 14:03: v0.1-20261105-622eb2d, pre-release, notarised Developer ID (packaging/release-mac.sh) |
-| First-run hook: model download at once, a lord remembering in the first reign | Proposed |
+| First-run: the model becomes an opt-in ("Give the lords their own words? 1.8 GB") instead of an automatic download; the first reign shows a lord remembering (works by rules) | Proposed (revised 11-05 after Mac asked why the model is needed) |
 | A 20–30 s clip of a lord remembering | Proposed (after the lord work lands) |
-| Windows build | Proposed |
+| Windows build | Dropped for now (Mac 11-05: Mac only until demand is proven) |
 | Friends as lords (naming screen; later Discord names) | Proposed, parked (later) |
 | Saga card at the end of a reign | Proposed, parked |
 | Lords answer outrageous rulings in character | Proposed, parked |
