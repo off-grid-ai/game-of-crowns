@@ -3,6 +3,7 @@
 Kept by the downloads supervisor (every 15 minutes in the buzz session). Goal: get the game into people's hands. Newest run first.
 
 ## Needs Mac
+- **Sign in to Sketchfab** in the browser the Claude extension uses (the one where you signed in to itch), so the asset session can download six medieval townsfolk bodies for the look pass.
 - **Disk:** this Mac has ~4 GB free of 460 GB. It killed the first release run and will hurt other sessions' renders.
 - **Promo art:** prompts for Codex in docs/buzz/asset-prompts.md (GitHub social preview, itch.io cover, key art). The social preview has to be set by hand in the repo's Settings.
 - **itch.io images:** the draft page is made (alichherawalla.itch.io/game-of-crowns: description, Strategy, 7 tags, free, comments, AI disclosure, draft). Upload the cover and screenshots by hand from docs/buzz/images/itch/ (itch's uploader opens a file picker I can't drive). The dmg goes up with butler once v0.3 is out.
