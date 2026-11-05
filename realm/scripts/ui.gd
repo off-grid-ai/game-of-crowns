@@ -624,7 +624,8 @@ func _build_town_panel() -> void:
 	row.add_child(_marriage_menu)
 	var build := HFlowContainer.new()
 	v.add_child(build)
-	build.add_child(T.label("Fund  18k cr"))
+	_fund_label = T.label("Fund  18k cr")
+	build.add_child(_fund_label)
 	for pair in [["Temple", "temple"], ["Granary", "granary"], ["Walls", "walls"], ["Market", "market"], ["Aqueduct", "aqueduct"]]:
 		var bld: String = pair[1]
 		_build_btns[bld] = _btn(pair[0], func(): decree.emit("build", bld, -1))
@@ -1353,6 +1354,8 @@ func _fit_centre(panel: Control, widest: float) -> void:
 ## Something worth seeing has begun (your convoy on the road, a battle, a
 ## story's turn): a line under the top bar with a Watch button, for a while.
 func offer_watch(text: String, go: Callable) -> void:
+	if _cinema_on:
+		return  # one scene at a time: no new offers while the King is watching
 	if _offer:
 		_offer.queue_free()
 	_offer = _glass_panel()
@@ -1881,16 +1884,21 @@ func _price(action: String, fallback: int) -> String:
 
 
 var _build_btns := {}  # build key -> its button on the town card
+var _fund_label: Label
 # The engine's name for each building the King can fund (an aqueduct may be "Aqueduct, Lake").
 const BUILT_AS := {"temple": "Temple", "granary": "Granary", "walls": "City Walls", "market": "Marketplace", "aqueduct": "Aqueduct"}
 
 
 func _name_decrees(c: Dictionary, house: Dictionary) -> void:
-	# Only what the town hasn't built is offered.
+	# Only what the town hasn't built is offered; with nothing left, no "Fund" at all.
 	var has: Array = c.get("buildings", [])
+	var any_left := false
 	for k in _build_btns:
 		var name: String = BUILT_AS[k]
 		_build_btns[k].visible = not has.any(func(x): return String(x).begins_with(name))
+		any_left = any_left or _build_btns[k].visible
+	if _fund_label:
+		_fund_label.visible = any_left
 	var town := String(c.get("title", c["name"]))
 	var lord := String(house.get("name", "")).replace("House ", "")
 	var mine: bool = house.get("crown", false)
@@ -1932,7 +1940,11 @@ func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 		_town_panel.visible = false
 		_ticker.visible = _counsel == null  # the Hand's counsel holds that corner
 		return
-	_town_panel.visible = true
+	# While the King watches a scene the card waits, and returns with the panels.
+	if _cinema_on:
+		_cinema_was["_town_panel"] = true
+	else:
+		_town_panel.visible = true
 	_ticker.visible = false
 	_town_title.text = "%s  ·  %s" % [c.get("title", c["name"]), house.get("name", "")]
 	_name_decrees(c, house)
