@@ -1368,8 +1368,8 @@ func offer_watch(text: String, go: Callable) -> void:
 	_offer.add_child(row)
 	row.add_child(T.title(text, 15, T.TEXT))
 	var b := _btn("Watch", func():
-		go.call()
-		_offer.visible = false)
+		_offer.visible = false  # used: gone before the clear view notes what to bring back
+		go.call())
 	b.add_theme_color_override("font_color", T.ACCENT)
 	row.add_child(b)
 	_offer_left = 12.0
