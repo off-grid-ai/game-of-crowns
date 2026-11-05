@@ -1767,8 +1767,10 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 			# Red only when the war is with the crown; other houses' wars read muted.
 			var tone: Color = T.DANGER if wars.has("the Crown") else T.TEXT_3
 			odds.append("[color=#%s]WAR · %s[/color]" % [tone.to_html(false), shown.to_upper()])
-		if not p.get("truces", []).is_empty():
-			odds.append("[color=#%s]TRUCE · %s[/color]" % [T.ACCENT.to_html(false), ", ".join(PackedStringArray(p["truces"])).to_upper()])
+		var truces := PackedStringArray(p.get("truces", []))
+		if not truces.is_empty():
+			var held := truces[0] + (" +%d" % (truces.size() - 1) if truces.size() > 1 else "")
+			odds.append("[color=#%s]TRUCE · %s[/color]" % [T.ACCENT.to_html(false), held.to_upper()])
 		if odds.is_empty():
 			grid.add_child(name)
 		else:
@@ -1785,7 +1787,12 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 			line.add_theme_font_override("normal_font", T.mono)
 			line.add_theme_font_size_override("normal_font_size", 9)
 			line.text = "  ".join(odds)
-			line.tooltip_text = "At war with " + ", ".join(wars) if not wars.is_empty() else ""
+			var said := PackedStringArray()
+			if not wars.is_empty():
+				said.append("At war with " + ", ".join(wars))
+			if not truces.is_empty():
+				said.append("Under the King's truce with " + ", ".join(truces))
+			line.tooltip_text = "\n".join(said)
 			line.mouse_filter = Control.MOUSE_FILTER_PASS
 			cell.add_child(line)
 			grid.add_child(cell)
