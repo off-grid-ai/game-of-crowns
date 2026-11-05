@@ -28,6 +28,8 @@ SRC=$(mktemp -d "$HOME/.goc-release.XXXXXX")
 trap 'rm -rf "$SRC"' EXIT
 echo "==> origin/main at $SHA"
 git archive "$FULL" | tar -x -C "$SRC"
+# The packaging tools come from this working copy, so a fix to them applies before it is pushed.
+cp "$ROOT/packaging/build-mac.sh" "$SRC/packaging/build-mac.sh"
 
 echo "==> Art and import cache (hard links)"
 git ls-files -o -i --exclude-standard realm/assets > "$SRC/.art-list"
