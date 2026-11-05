@@ -510,7 +510,7 @@ func _town_mood(a: Dictionary) -> String:
 
 ## How much room each shared place has: people stand from `near` to `far`
 ## out from its heart, and no more than `room` of them at once.
-const ROOM := {"market": {"near": 0.2, "far": 0.9, "room": 22}, "well": {"near": 0.15, "far": 0.6, "room": 12},
+const ROOM := {"market": {"near": 0.3, "far": 1.0, "room": 14}, "well": {"near": 0.15, "far": 0.65, "room": 10},
 	"tavern": {"near": 0.15, "far": 0.6, "room": 10}, "sept": {"near": 0.15, "far": 0.55, "room": 8}}
 ## Where those who find a place full go instead.
 const OVERFLOW := {"market": ["well", "tavern"], "well": ["market", "sept"], "tavern": ["market", "well"], "sept": ["well", "market"]}
@@ -1057,6 +1057,14 @@ func _meet(a: Dictionary, partners: Array, target: Vector3, places: Dictionary) 
 	if free.is_empty():
 		return false
 	var c: Vector3 = a["center"]
+	# Two knots talking at a spot already: a third would make them one crowd.
+	var here := Vector2(target.x - c.x, target.z - c.z)
+	var knots := 0
+	for other in _talks.get(a["town"], []):
+		if Vector2(other["centre"]).distance_to(here) < 0.6:
+			knots += 1
+	if knots >= 2:
+		return false
 	var now := Time.get_ticks_msec() * 0.001
 	_talk_keys += 1
 	var g := {"key": _talk_keys, "centre": _nav.closest(a["map"], Vector2(target.x - c.x, target.z - c.z)), "members": [], "move": a["work"],

@@ -76,6 +76,8 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 		_crowd(root, life, center, rng, 14, true)
 	elif hungry:
 		_crowd(root, life, center, rng, 4 + mini(int(c.get("size", 1)) / 2, 8), false)
+	if not c.get("disorder", false) and not hungry:
+		_trade(root, life, center, rng)
 	if c.get("celebrating", false):
 		_bonfire(life, center)
 		_revels(root, life, center, rng, 6 + mini(int(c.get("size", 1)), 8))
@@ -486,6 +488,30 @@ func _revels(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGener
 		var f := _stand(root, life, center, want, "townsfolk" if i % 3 else "peasant", move, rng.randi(), Color.WHITE, 0.2)
 		if f:
 			f.rotation.y = atan2(-f.position.x, -f.position.z)
+
+
+## Trade at the market: a keeper behind each stall facing the square, and a
+## buyer or two at its front, haggling.
+func _trade(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenerator) -> void:
+	for st in root.get_meta("stalls", []):
+		var m: Vector3 = st[0]
+		var out := Vector3(m.x, 0, m.z).normalized()  # from the square's heart to the stall
+		# The keeper stands at the counter's end, by the goods, facing the square:
+		# behind it the ground rises off the square and the counter hides him.
+		var along := Vector3(-out.z, 0, out.x) * (1.0 if rng.randf() < 0.5 else -1.0)
+		var at := m + along * (float(st[2]) * 0.5 + 0.05) - out * float(st[1]) * 0.25
+		at.y = _y(center, at)
+		var keeper := _townsperson(life, at, "townsfolk", ["Idle_Talking", "Interact", "Nodding"][rng.randi() % 3], rng.randi())
+		keeper.rotation.y = atan2(-out.x, -out.z)
+		var taken: PackedVector2Array = life.get_meta("standing")
+		taken.append(Vector2(at.x, at.z))
+		life.set_meta("standing", taken)
+		for i in rng.randi_range(1, 2):
+			var side := Vector3(-out.z, 0, out.x) * rng.randf_range(-0.12, 0.12)
+			var buyer := _stand(root, life, center, m - out * (float(st[1]) * 0.5 + 0.12) + side, "townsfolk" if rng.randf() < 0.7 else "peasant", ["Idle_Talking", "Arguing", "Nodding"][rng.randi() % 3], rng.randi(), Color.WHITE, 0.2)
+			if buyer:
+				var to := m - buyer.position
+				buyer.rotation.y = atan2(to.x, to.z)
 
 
 func _unrest(life: Node3D, center: Vector3, rng: RandomNumberGenerator) -> void:

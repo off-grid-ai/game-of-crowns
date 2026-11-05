@@ -450,6 +450,9 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 			continue
 		fronts += m * (1.0 - (stall.y * 0.5 + 0.3) / arc)  # where buyers stand
 		n += 1
+		var kept: Array = root.get_meta("stalls", [])
+		kept.append([m, stall.y, stall.x])  # where it stands (its front toward the square), how deep and how wide
+		root.set_meta("stalls", kept)
 		# Goods at the stall's ends and behind it: crates, baskets, barrels.
 		var along := Vector3(-sin(ang), 0, cos(ang))
 		for e in [-1, 1]:
