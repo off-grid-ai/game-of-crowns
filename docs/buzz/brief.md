@@ -33,6 +33,7 @@ New messages get added here. They add to the picture; they don't replace it.
 ## Where to find players (Mac, 2026-11-05)
 - Not r/LocalLLaMA or the local-AI crowd: Mac has exhausted them and they're allergic to him there.
 - Build a new community, and tap the gaming community. That's where to win.
+- The strategy can't rest on Show HN or any one-shot launch post: they often just don't work (bans, no traction). Plan for repeatable channels that compound.
 
 ## Working with the main session (Mac, 2026-11-05)
 - This session tells the main session what to build and what not to, as soon as the research shows it. Work autonomously; Mac shouldn't have to carry prompts between sessions.

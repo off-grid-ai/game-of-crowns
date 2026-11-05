@@ -23,6 +23,9 @@ Every post and reply ends with the same invite: *join the court and you'll be wr
 
 **Wave 2, after a Windows build:** gaming creators (30 cold DMs with streamer mode), r/indiegames, a free Steam page, short clips handed to creators.
 
+## No single shot
+Nothing here depends on one post landing: no Show HN, no "launch day". Each channel above is repeatable, and the weekly reign gives a new saga card, clip and reason to post every week. A post that flops costs one try; the routine keeps going.
+
 ## How we talk to gamers
 Lead with the game: Game of Thrones politics, lords who remember, a reign in minutes, free. Never lead with "AI" or "local model"; answer plainly if asked.
 
