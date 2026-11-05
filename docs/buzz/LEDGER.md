@@ -55,6 +55,11 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 
 ## Runs
 
+### 11-05 19:50
+**Shipped:** the drier earth ring (6bcabd9); three plain CC BY townsfolk in the crowds (d658028); bodies without glowing trims, solid with cut-out hair, crowds spread in twos and threes (2673f86); before/after (a9c4950). Reviewed: keep.
+**In progress:** stall keepers and buyers (look pass); medieval bodies wait on Mixamo.
+**Needs Mac:** itch images and Publish; post r/macgaming. Downloads: GitHub 2.
+
 ### 11-05 19:20
 **Moved:** itch processed the v0.3 build (channel mac, 0.3-0f052ff). The page is still a draft (public URL 404). Downloads: GitHub 2.
 **Needs Mac:** itch images and Publish; then post r/macgaming.
