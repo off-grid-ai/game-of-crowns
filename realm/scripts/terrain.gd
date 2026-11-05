@@ -992,7 +992,35 @@ func land_path(from: Vector3, to: Vector3) -> PackedVector3Array:
 	return out
 
 
-## The point a fraction t of the way along a path, by distance.
+## Where a road drawn between two tile centres bows at its middle, so roads
+## don't look ruled (roads.gd draws it so, and travellers ride it so). The same
+## whichever way it's travelled.
+func road_bow(a: Vector3, b: Vector3) -> Vector3:
+	var p := a
+	var q := b
+	if q.x < p.x or (q.x == p.x and q.z < p.z):
+		p = b
+		q = a
+	var flat := Vector3(q.x - p.x, 0, q.z - p.z)
+	var mid := p.lerp(q, 0.5) + Vector3(flat.z, 0, -flat.x).normalized() * 0.25 * sin(p.x * 0.7 + q.z * 0.3)
+	mid.y = height_at(mid.x, mid.z)
+	return mid
+
+
+## A land path with each road span bowed as it is drawn, so a traveller rides
+## on the road and not beside it. The first and last spans (off the road, to
+## and from the exact start and end) stay straight.
+func bowed(path: PackedVector3Array) -> PackedVector3Array:
+	if path.size() < 4:
+		return path
+	var out := PackedVector3Array([path[0], path[1]])
+	for i in range(1, path.size() - 2):
+		out.append(road_bow(path[i], path[i + 1]))
+		out.append(path[i + 1])
+	out.append(path[path.size() - 1])
+	return out
+
+
 ## A road as a smooth curve: Godot's Curve3D through the route's points, with
 ## tangents that round each tile's corner instead of turning sharply on it.
 ## Sampled by distance (sample_baked), a traveller keeps an even pace along it.

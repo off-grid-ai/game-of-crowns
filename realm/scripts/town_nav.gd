@@ -282,7 +282,7 @@ func route(towns: Node3D, from: Vector3, to: Vector3) -> PackedVector3Array:
 	var a := _walked(towns, from)
 	var b := _walked(towns, to)
 	if a.is_empty() and b.is_empty():
-		return terrain.land_path(from, to)
+		return terrain.bowed(terrain.land_path(from, to))
 	if not a.is_empty() and not b.is_empty() and a[0] == b[0]:
 		return walk(a[0], a[1], from, to)
 	var out := PackedVector3Array()
@@ -294,7 +294,7 @@ func route(towns: Node3D, from: Vector3, to: Vector3) -> PackedVector3Array:
 		out.append_array(walk(a[0], a[1], from, head))
 	if not b.is_empty():
 		tail = spot(b[0], b[1], head)
-	out.append_array(terrain.land_path(head, tail))
+	out.append_array(terrain.bowed(terrain.land_path(head, tail)))
 	if not b.is_empty():
 		out.append_array(walk(b[0], b[1], tail, to))
 	return out

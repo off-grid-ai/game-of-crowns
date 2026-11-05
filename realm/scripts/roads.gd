@@ -343,9 +343,7 @@ func paths_near(p: Vector3, r: float) -> int:
 
 
 func _segment(a: Vector3, b: Vector3, parent: Node3D = null, width := WIDTH, tint := TINT, owner := "roads") -> void:
-	var flat := Vector3(b.x - a.x, 0, b.z - a.z)
-	var mid := a.lerp(b, 0.5) + Vector3(flat.z, 0, -flat.x).normalized() * 0.25 * sin(a.x * 0.7 + b.z * 0.3)
-	mid.y = terrain.height_at(mid.x, mid.z)
+	var mid: Vector3 = terrain.road_bow(a, b)  # the same bow travellers ride
 	for run in [[a, mid], [mid, b]]:
 		var p: Vector3 = run[0]
 		var q: Vector3 = run[1]
