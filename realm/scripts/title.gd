@@ -565,7 +565,12 @@ func _voice_settings(right: Control) -> void:
 		if String(d.get("note", "")) != "":
 			var col: VBoxContainer = right_ref.get_ref()
 			if col:
-				col.add_child(_label(String(d["note"]), 14, GOLD)))
+				col.add_child(_label(String(d["note"]), 14, GOLD))
+				var link := LinkButton.new()
+				link.text = "github.com/off-grid-ai"
+				link.uri = "https://github.com/off-grid-ai"
+				link.add_theme_font_size_override("font_size", 14)
+				col.add_child(link))
 
 
 

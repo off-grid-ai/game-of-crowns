@@ -1414,6 +1414,24 @@ var _guide_on := false
 var _guide_loaded := false
 
 
+## Whether Off Grid AI is giving people their own words (main.gd asks the bridge).
+var ai_words := true
+const OFFGRID_URL := "https://github.com/off-grid-ai"
+
+
+func _offgrid_told() -> bool:
+	var cfg := ConfigFile.new()
+	cfg.load("user://settings.cfg")
+	return bool(cfg.get_value("offgrid", "told", false))
+
+
+func _offgrid_tell() -> void:
+	var cfg := ConfigFile.new()
+	cfg.load("user://settings.cfg")
+	cfg.set_value("offgrid", "told", true)
+	cfg.save("user://settings.cfg")
+
+
 func _load_guide() -> void:
 	_guide_loaded = true
 	var cfg := ConfigFile.new()
@@ -2138,6 +2156,17 @@ func _show_audience() -> void:
 	else:
 		said.text = String(p["text"])
 	v.add_child(said)
+	# Without Off Grid AI the lords speak in the court's set lines. The first time
+	# that happens, one quiet line says how they get their own words; never again.
+	if spoken == "" and not ai_words and not _offgrid_told():
+		var tip := LinkButton.new()
+		tip.text = "Give the lords their own words: run Off Grid AI"
+		tip.uri = OFFGRID_URL
+		tip.underline = LinkButton.UNDERLINE_MODE_ON_HOVER
+		tip.add_theme_font_size_override("font_size", 13)
+		tip.add_theme_color_override("font_color", T.MUTED)
+		v.add_child(tip)
+		_offgrid_tell()
 	# The petition's facts are what the speaker knew when they came (the model's
 	# brief); shown later they contradict the live houses table, so they stay unsaid.
 	v.add_child(HSeparator.new())

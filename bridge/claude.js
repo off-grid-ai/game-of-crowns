@@ -6,7 +6,7 @@
 // If the gateway isn't running, callers fall back to the rule-based choice.
 
 // The gateway's port moves between dev runs (7878 by default); find it by its /health name.
-// The packaged game also runs its own Omni (bridge/app.js, GOC_LLM_URL): used
+// A model the realm was pointed at by hand (GOC_LLM_URL), if any: used
 // only when Off Grid AI Desktop isn't running, which also brings voices.
 const OWN = process.env.GOC_LLM_URL;
 const GATEWAYS = [process.env.OFFGRID_URL, ...Array.from({ length: 8 }, (_, i) => `http://127.0.0.1:${7878 + i}/v1`), OWN].filter(Boolean);
@@ -458,8 +458,8 @@ export async function aiStatus() {
   }
   out.model = url ? model : null;
   out.words = Boolean(url && model);
-  out.note = !out.gateway ? "Open Off Grid AI to give the realm its voice."
-    : !out.words ? "Load Omni 2B in Off Grid AI so people can answer you."
+  out.note = !out.gateway ? "Give the lords their own words: run Off Grid AI."
+    : !out.words ? "Load Omni 2B in Off Grid AI to give the lords their own words."
     : "";
   return out;
 }

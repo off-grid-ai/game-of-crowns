@@ -281,6 +281,9 @@ func _ready() -> void:
 	bridge.decrees_changed.connect(ui.set_decrees)
 	bridge.decrees(ui.set_decrees)
 	ui.petition_answered.connect(func(id, opt): bridge.answer_petition(id, opt); bridge.court(ui.set_court))
+	# Is Off Grid AI giving people their own words? (Asked once; the court card
+	# mentions it, once, when it isn't.)
+	bridge.ai_status(func(d): ui.ai_words = d is Dictionary and bool(d.get("words", false)))
 	ui.petition_spoken.connect(func(id, words, confirm):
 		bridge.rule_in_words(id, words, confirm, func(_code, d):
 			ui.ruled_in_words(id, d if d is Dictionary else {"error": "The court is silent."})

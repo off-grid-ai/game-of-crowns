@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!-- Off Grid AI Desktop's hardened-runtime entitlements (desktop/build/entitlements.mac.plist),
-     less Apple Events. Node's V8 needs JIT; the bundled Freeciv and llama-server load their own
+     less Apple Events. Node's V8 needs JIT; the bundled Freeciv loads its own
      dylibs; the court listens for spoken rulings. -->
 <plist version="1.0">
 <dict>

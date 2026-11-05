@@ -6,8 +6,8 @@
 #   Contents/Resources/bridge        the Node bridge (bridge/, without chronicles)
 #   Contents/Resources/runtime/node  Node (official nodejs.org build, pinned + checksummed)
 #   Contents/Resources/runtime/freeciv  freeciv-server, its dylibs (dylibbundler) and its data
-#   Contents/Resources/runtime/llama    Off Grid AI Desktop's llama-server, for Omni 2B
-# Omni itself is fetched on first run (bridge/app.js), as Off Grid AI Desktop fetches models.
+# No model ships with the game: the realm plays by its rules, and lords speak in their own
+# words when Off Grid AI (https://github.com/off-grid-ai) is running Omni on the same Mac.
 #
 # Signing and notarisation follow Off Grid AI Desktop's release (OGAD .github/workflows/release.yml),
 # with the same secrets:
@@ -31,10 +31,6 @@ NODE_VERSION=v26.13.0
 NODE_SHA256=d38bd5e5a2ddce6bbb5ce45e46e208337da4d51fffe611e567fd32073d6439f6
 FREECIV_SERVER=${FREECIV_SERVER:-$(command -v freeciv-server)}
 FREECIV_SHARE=${FREECIV_SHARE:-/opt/homebrew/share/freeciv}
-# The llama.cpp engine Off Grid AI Desktop installs and keeps current from its signed engine store
-# (the checkout's resources/bin/llama is older and can't read Omni's lfm3 architecture).
-OGAD_ENGINES="$HOME/Library/Application Support/Off Grid AI Desktop/engines"
-OGAD_LLAMA=${OGAD_LLAMA:-$OGAD_ENGINES/$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["engines"]["llama"]["folder"])' "$OGAD_ENGINES/installed.json" 2>/dev/null)/llama}
 GODOT=(arch -arm64 godot)
 
 mkdir -p "$CACHE"
@@ -76,14 +72,6 @@ dylibbundler -of -b -cd -x "$RT/freeciv/bin/freeciv-server" -d "$RT/freeciv/lib"
 # The server's rulesets, nations and scenarios; not the client's flags, music, sounds or themes.
 rsync -aL --exclude flags --exclude stdmusic --exclude stdsounds --exclude themes "$FREECIV_SHARE/" "$RT/freeciv/share/freeciv/"
 otool -L "$RT/freeciv/bin/freeciv-server" "$RT"/freeciv/lib/*.dylib | grep -q /opt/homebrew && { echo "!! Homebrew path left in Freeciv"; exit 1; }
-
-echo "==> llama-server (Off Grid AI Desktop)"
-test -x "$OGAD_LLAMA/llama-server" || { echo "!! no llama-server at $OGAD_LLAMA (install Off Grid AI Desktop, or set OGAD_LLAMA)"; exit 1; }
-mkdir -p "$RT/llama"
-cp -p "$OGAD_LLAMA"/llama-server "$OGAD_LLAMA"/*.dylib "$RT/llama/"
-for f in "$RT"/llama/*; do
-  if lipo -archs "$f" 2>/dev/null | grep -q x86_64; then lipo "$f" -thin arm64 -output "$f.arm64" && mv "$f.arm64" "$f"; fi
-done
 
 echo "==> Sign"
 KEYCHAIN=""

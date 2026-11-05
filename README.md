@@ -35,7 +35,7 @@ v1 is frozen (see "v1: what ships" in [VISION.md](VISION.md)). In v1 you are the
 - **Freeciv 3.2** runs the world: a custom medieval ruleset (`bridge/data/realmrules`), seven AI great houses (Goldcrest, Highfell, Ironreach, Stormhold, Sunspire, Thornvale, Wolfholt) plus the Crown at Kingsmere, on a hand-shaped continent. One turn is one season.
 - **The bridge** (`bridge/server.js`, port 8787) starts Freeciv, reads every save and turn, and adds what Freeciv doesn't have: named characters with traits, goals and memories, the court and its petitions, the Hand's counsel, the King's decrees, story arcs, the stakes of the reign, and the chronicle. It serves the realm as JSON to the view.
 - **The realm** (`realm/`, Godot 4.7, Forward+) draws it: Terrain3D land, Sky3D light, rivers and coast, towns built from realistic Sketchfab kits, townsfolk going about their day, armies and carts on the roads, and battles, sieges, feasts and the King's wagons as scenes you can watch.
-- **Words** (a lord's petition in their own voice, people's talk, a ruling given in your own words) come from a small local model: Omni 2B, or Omni 1.7B, through the [Off Grid AI](https://github.com/off-grid-ai) desktop gateway (OpenAI-compatible, found on 127.0.0.1 from port 7878). The packaged app can also run its own Omni 2B. If no model is there, everything falls back to rules.
+- **Words** (a lord's petition in their own voice, people's talk, a ruling given in your own words) come from a small local model: Omni 2B, or Omni 1.7B, through the [Off Grid AI](https://github.com/off-grid-ai) desktop gateway (OpenAI-compatible, found on 127.0.0.1 from port 7878). Nothing ships with the game or is downloaded; without Off Grid AI, everything falls back to rules.
 
 ## Setup
 
@@ -112,7 +112,7 @@ The aim of a reign: win every great house to the point where it would answer you
 ```
 bridge/              the simulation bridge (Node, no dependencies)
   server.js          HTTP API, the Freeciv process, turns, scenes, the Hand's counsel
-  app.js             the bridge as the packaged app runs it (bundled Freeciv, its own Omni)
+  app.js             the bridge as the packaged app runs it (bundled Freeciv)
   characters.js      the court: named people, goals, memories, petitions
   minds.js           every person a mind: mood, plans, bonds (docs/MINDS.md)
   townsfolk.js       commoners: name, trade, family, a past
