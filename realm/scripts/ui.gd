@@ -627,7 +627,8 @@ func _build_town_panel() -> void:
 	build.add_child(T.label("Fund  18k cr"))
 	for pair in [["Temple", "temple"], ["Granary", "granary"], ["Walls", "walls"], ["Market", "market"], ["Aqueduct", "aqueduct"]]:
 		var bld: String = pair[1]
-		build.add_child(_btn(pair[0], func(): decree.emit("build", bld, -1)))
+		_build_btns[bld] = _btn(pair[0], func(): decree.emit("build", bld, -1))
+		build.add_child(_build_btns[bld])
 	# A king can't call down drought or plague: the god's powers (Fate) are
 	# gone from the King's game. The box stays, empty and hidden, for v2's god mode.
 	_fate_box = HBoxContainer.new()
@@ -1854,7 +1855,17 @@ func _price(action: String, fallback: int) -> String:
 	return "%dk cr" % int(round(gold * CROWNS / 1000.0))
 
 
+var _build_btns := {}  # build key -> its button on the town card
+# The engine's name for each building the King can fund (an aqueduct may be "Aqueduct, Lake").
+const BUILT_AS := {"temple": "Temple", "granary": "Granary", "walls": "City Walls", "market": "Marketplace", "aqueduct": "Aqueduct"}
+
+
 func _name_decrees(c: Dictionary, house: Dictionary) -> void:
+	# Only what the town hasn't built is offered.
+	var has: Array = c.get("buildings", [])
+	for k in _build_btns:
+		var name: String = BUILT_AS[k]
+		_build_btns[k].visible = not has.any(func(x): return String(x).begins_with(name))
 	var town := String(c.get("title", c["name"]))
 	var lord := String(house.get("name", "")).replace("House ", "")
 	var mine: bool = house.get("crown", false)
