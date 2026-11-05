@@ -30,6 +30,11 @@ New messages get added here. They add to the picture; they don't replace it.
 - The game is already playable and can go open source now; a demo isn't the bottleneck.
 - The bottleneck is getting people to play it: find the virality factor.
 
+## Where the game is going (Mac and the main session, 2026-11-05)
+- **Reign stories:** every chronicle has a main story that comes for the throne, told in acts; survive it and you win, fail and you fall. Tagged by threat, enemy, feel and length; the tags are dials on the simulation. Built from beats (built-in, your own files, a form later). Generate your own from tags or a write-up (Off Grid AI words it; rules assemble it without). A New Chronicle screen to pick, filter or generate a story; an act and threat strip in play. About 20 stories first, starting with The Usurper's Claim.
+- **Powerful politics:** alliances, marching on a house, stripping titles, hostages, the council, spies, executing traitors; gold stops being the answer to everything. A balance pass.
+- **For the pitch, once shipped:** every reign is a story with an ending, which fits short sessions and gives the saga card its ending. Claim none of it in posts until it ships.
+
 ## Where to find players (Mac, 2026-11-05)
 - Not r/LocalLLaMA or the local-AI crowd: Mac has exhausted them and they're allergic to him there.
 - Build a new community, and tap the gaming community. That's where to win.

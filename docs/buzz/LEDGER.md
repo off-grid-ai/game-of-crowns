@@ -9,6 +9,16 @@ Kept by the downloads supervisor (every 15 minutes in the buzz session). Goal: g
 - **The lady's licence:** confirm the Sketchfab ownership claim for 'Princess Nun Royal Queen' (b9f22ea). A licence question only: .gitignore keeps body files out of git, so pushes publish no model files.
 - **Approve the rest of the list below** (everything marked "proposed").
 
+## Direction (agreed with Mac 11-05, from the main session)
+1. Reign stories in acts, ending the reign in victory or fall; tagged by threat, enemy, feel, length (tags drive the simulation).
+2. Built from beats on the arc engine (court matters, branches on rulings, a threat meter, reign end).
+3. Generate a story from tags or a write-up (Off Grid AI or rules).
+4. New Chronicle screen with story cards; an act/threat strip in play.
+5. Powerful politics: alliances, march on a house, strip titles, hostages, council, spies, executions.
+6. Balance pass: costs bite, repeated gifts weaken, rivals resent favourites, long wars cost the crown.
+7. First ~20 stories, starting with The Usurper's Claim.
+Engine support for court matters, rulings, a threat meter and the reign's end is built, not committed. All realms were archived; the game starts clean. Posts claim none of this until it ships.
+
 ## Recommendations
 Current list: **downloads-first** (11-05 ~13:00), which replaced the virality list (~12:40), which replaced the first list (~12:20).
 
