@@ -23,6 +23,7 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 | No bundled model; recommend Off Grid AI (getoffgridai.co/desktop) | **Shipped** 1c04684, 0239e2c (Mac's call). Unverified: packaged build, and the court line on a Mac without Off Grid |
 | A 20–30 s clip of a lord remembering | Proposed (after the lord work lands) |
 | Windows build | Dropped for now (Mac 11-05: Mac only until demand is proven) |
+| Look pass phase 2 (people, animals and life, ground detail, vegetation, shorelines, light and lens) | Approved by Mac ("better, but a lot more scope"); in progress (look-pass session) |
 | First-impression fixes 1–3 (sunk people, captions, map progress text) | Captions (3e0517c) and map text (beb839b) shipped; sunk people in progress (main session diagnosing with close stills) |
 | Look pass #1: capture profile (`--hq`, full res, MSAA+TAA, 8192 shadows) | **Shipped** beb839b |
 | Look pass #2–4 and fixes 4–13 (grade, ground, buildings in the land, smoke, people) | **Shipped** 16d2715, 6e093d7, 7dd662a, 71962ea, 92456d6, 62fc53a (reviewed: clearly better). Open: people detail, a T-posed townsperson at Goldrock, castles on slabs |
