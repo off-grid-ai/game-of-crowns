@@ -133,7 +133,35 @@ function detail() {
   return detailCache.data;
 }
 
+// Lines that repeat across towns in one season are held and written once,
+// grouped: "Plague sweeps through Riverwood and Lionkeep." Keyed by the rest
+// of the sentence, so famine in two houses stays two lines.
+const GROUPED = [
+  [/^Plague sweeps through (.+?)\. (The dead are carted out by night\.)$/, (towns, rest) => `Plague sweeps through ${towns}. ${rest}`],
+  [/^Famine in (.+?)\. (The granaries are empty and .+ starve\.)$/, (towns, rest) => `Famine in ${towns}. ${rest}`],
+  [/^Barracks rise in (.+?)\. (.+ is arming\.)$/, (towns, rest) => `Barracks rise in ${towns}. ${rest}`],
+];
+const held = new Map();  // key -> { entry, towns[], make }
+const andList = (xs) => (xs.length > 1 ? `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}` : xs[0]);
+function flushHeld() {
+  for (const { entry, towns, make, rest } of held.values()) writeRecord({ ...entry, text: make(andList(towns), rest) });
+  held.clear();
+}
+
 function record(entry) {
+  for (const [re, make] of GROUPED) {
+    const m = String(entry.text ?? "").match(re);
+    if (!m) continue;
+    const key = `${re.source}|${m[2]}`;
+    const h = held.get(key);
+    if (h) { if (!h.towns.includes(m[1])) h.towns.push(m[1]); }
+    else held.set(key, { entry, towns: [m[1]], make, rest: m[2] });
+    return;
+  }
+  writeRecord(entry);
+}
+
+function writeRecord(entry) {
   entry.seq = chronicle.length ? chronicle[chronicle.length - 1].seq + 1 : 1;
   entry.at = Date.now();
   chronicle.push(entry);
@@ -589,6 +617,7 @@ const tally = { total: 0, upkeep: 0 };  // the tithe since the last reckoning
 const lastSeason = { net: 0 };  // the tithe less upkeep, this season, for the top bar
 const favourPast = {};  // turn -> {house id: favour}, the last two years
 function collectTithe(turn) {
+  flushHeld();  // last season's grouped lines
   if (!world) return;
   favourPast[turn] = { ...favour };
   for (const t of Object.keys(favourPast)) if (Number(t) < turn - 8) delete favourPast[t];
