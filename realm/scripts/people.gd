@@ -43,6 +43,8 @@ const BODIES := {
 	"akai": {"sex": "m", "roles": ["archer"], "cloth": [], "crowd": true},
 	"brute": {"sex": "m", "roles": ["peasant", "soldier"], "cloth": ["MaleBruteA_Bottoms"], "crowd": false},
 	"uriel": {"sex": "m", "roles": ["noble", "knight"], "cloth": [], "crowd": false},
+	# Gowned and veiled. Her gown shares a material with her hands and shoes, so it keeps its own colour.
+	"noble_lady": {"sex": "f", "roles": ["noble"], "cloth": [], "crowd": false},
 }
 ## How often a crowd figure is a Mixamo character rather than a Quaternius
 ## outfit, by station. No Mixamo character is dressed as a peasant or a cleric
@@ -135,7 +137,7 @@ func make(rng: RandomNumberGenerator, role := "peasant", tint := Color.WHITE, ag
 		if not pool.is_empty():
 			var body: String = pool[(abs(hash(look)) if look != "" else rng.randi()) % pool.size()]
 			return make_body(rng, body, tint, age, build, role)
-	# A lady has no Mixamo body of her own: she wears the dress, in her house's colour.
+	# A lady in a crowd, or too young or old for the gowned body, wears the dress in her house's colour.
 	var outfit_role := "soldier" if role in ["soldier", "archer", "knight"] or (role == "noble" and sex.left(1) != "f") else "peasant"
 	var outfits: Array = OUTFITS[outfit_role].filter(func(o): return sex == "" or o[1] == sex.left(1))
 	if outfits.is_empty():
