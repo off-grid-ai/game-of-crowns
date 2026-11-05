@@ -10,7 +10,7 @@ const FIELD := 7
 const UV_SCALE := [0.8, 0.6, 0.6, 0.32, 1.0, 0.8, 0.72, 0.72]  # a game unit is ~8 m and a Poly Haven set ~2 m: any coarser and the grass smears into streaks
 # Poly Haven's photographed ground (tools/pack_ground.gd) is true to colour:
 # only a touch of grading, so the realm reads as one place.
-const TINT := [Color(0.95, 1.0, 0.9), Color.WHITE, Color.WHITE, Color(0.92, 0.94, 0.97), Color(0.9, 0.9, 0.88), Color.WHITE, Color(0.95, 0.92, 0.88), Color.WHITE]  # the trodden mud drawn toward a dry, packed brown: the photo is red and wet-dark
+const TINT := [Color(0.95, 1.0, 0.9), Color.WHITE, Color.WHITE, Color(0.92, 0.94, 0.97), Color(0.9, 0.9, 0.88), Color.WHITE, Color(0.74, 0.71, 0.66), Color.WHITE]  # the trodden earth a dry grey-brown, a little darker than a beach (warmer and the grade turns it orange)
 
 var land: Terrain3D
 
@@ -30,8 +30,11 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 	for i in LAYERS.size():
 		var ta := Terrain3DTextureAsset.new()
 		ta.name = LAYERS[i]
-		ta.albedo_texture = load("res://assets/ground/packed/%s-albedo-height.png" % LAYERS[i])
-		ta.normal_texture = load("res://assets/ground/packed/%s-normal-rough.png" % LAYERS[i])
+		# The town's trodden ground is dry packed earth (the beach's gravelly
+		# sand, browned): the muddy-tracks photo read as a wet red band.
+		var file: String = "sand" if LAYERS[i] == "mud" else LAYERS[i]
+		ta.albedo_texture = load("res://assets/ground/packed/%s-albedo-height.png" % file)
+		ta.normal_texture = load("res://assets/ground/packed/%s-normal-rough.png" % file)
 		ta.uv_scale = UV_SCALE[i]
 		ta.albedo_color = TINT[i]
 		# Terrain3D's detiling turns and shifts each tile so the repeat never shows.

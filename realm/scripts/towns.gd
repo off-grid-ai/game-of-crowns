@@ -694,7 +694,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	# The square: a cobbled heart laid whole to its edge, and trodden earth
 	# spreading out round it, ragged where it wears into the grass.
 	if terrain.land3d and terrain.land3d.land:
-		terrain.land3d.paint_mud(center, square_r * 1.6, rng.randi())  # in the ground itself
+		terrain.land3d.paint_mud(center, square_r * 1.3, rng.randi())  # in the ground itself
 	else:
 		terrain.paint(root, terrain.tiled(ROAD_TEX, reps + 2, reps + 2, "round"), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2.ONE * square_r * 3.2, rng.randf() * TAU, ROAD_TINT)
 	terrain.paint(root, terrain.tiled(SQUARE_TEX, reps, reps, "setts"), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2(square_r * 2.0, square_r * 1.6), rng.randf() * TAU)
