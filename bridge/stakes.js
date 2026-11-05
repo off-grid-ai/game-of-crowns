@@ -7,7 +7,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { houseFor } from "./narrator.js";
+import { houseFor, cityName } from "./narrator.js";
 
 const SEASONS = ["spring", "summer", "autumn", "winter"];
 const CONQUEST_YEAR = 300; // the realm's calendar starts 300 years after the Conquest
@@ -125,13 +125,25 @@ export class Stakes {
     if (turn >= n.awakeAt && !n.nextAt) {
       this.record({ turn, kind: "unrest", text: "Beyond the old wall, the snow is moving. Rangers do not return. The dead are stirring." });
       n.nextAt = turn + 8;
-    } else if (n.nextAt && turn >= n.nextAt) {
+    }
+    // How the last wave ended, three seasons on: the town held, or fell.
+    if (n.struck && turn - n.struck.turn >= 3) {
+      const town = world.cities.find((c) => c.id === n.struck.id);
+      const name = cityName(n.struck.id);
+      const lord = houseFor(world.players.find((p) => p.id === n.struck.owner) ?? {}).name ?? "its lord";
+      if (town && town.owner === n.struck.owner) this.record({ turn, kind: "decree", text: `The dead broke against the walls of ${name}. ${lord} held, and ${n.struck.men.toLocaleString("en-US")} of them lie in the snow.` });
+      else this.record({ turn, kind: "rebellion", text: `${name} has fallen to the dead. ${lord} could not hold it, and the North is smaller for it.` });
+      n.struck = null;
+    }
+    if (n.nextAt && turn >= n.nextAt && !(turn >= n.awakeAt && !n.nextAt)) {
       n.waves++;
       n.nextAt = turn + Math.max(6, 16 - n.waves);
       const north = world.cities.filter((c) => c.y < 30).sort((a, b) => a.y - b.y)[0];
       const x = north ? north.x : 28;
       const y = north ? Math.max(2, north.y - 4) : 6;
       this.host(ctx, this.theDead(), x, y, ["Warriors", "Archers", "Pikemen"], 3 + n.waves * 2);
+      // Remember where they struck, to tell how it ended.
+      if (north) n.struck = { id: north.id, owner: north.owner, turn, men: (3 + n.waves * 2) * 200 };
       this.record({ turn, kind: "rebellion", text: n.waves === 1 ? "The dead come over the wall. The North bleeds first." : `The dead come again, more than before${n.waves > 4 ? ", as they have for years now" : ""}. The northern houses beg the King for aid.` });
       const northernSeats = world.cities.filter((c) => c.y < 22);
       if (n.waves >= 4 && northernSeats.length === 0) this.endReign("The North is lost to the dead, and the realm with it.", "fallen");
