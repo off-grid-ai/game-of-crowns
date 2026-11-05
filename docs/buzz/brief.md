@@ -1,0 +1,28 @@
+# Running brief: everything Mac has said (read this before any answer)
+
+New messages get added here. They add to the picture; they don't replace it.
+
+## Goal
+- Find out whether people want this, without selling. Get people saying "I want this too" or "I'd do it like this."
+- There's already demand. The job is finding the angle.
+
+## The game, in Mac's words
+- Westworld x Game of Thrones: great houses and their politics, with people who have minds.
+- A mind means memory, a storyline arc, and acting on what they hear. The on-device AI makes that level of intelligence possible. v1 is the first step.
+- Watching a world grow, and setting off chain reactions in it.
+- Short, engaging sessions: about 5 minutes, lots happening, years turning fast, playable with little time.
+- An on-device AI companion that works well with this.
+- Free.
+
+## What we fight on, and what we don't
+- Only fights we can win. Not graphics.
+- Our edge: on-device AI (no cloud, no tokens, offline), short sessions, a world that runs itself.
+
+## How to research
+- Learn from what players actually say: app store reviews (Play Store, App Store), Steam reviews, subreddits, any other user feedback. The WorldBox Play Store paste was an example of the method, not the conclusion.
+- Combine everything into one angle; don't pivot on the latest message.
+
+## Voice
+- Mac's voice (mac-voice skill): outcome first, 3x so what, what's in it for the reader, less is more, no AI slop.
+- Authenticity of a personal story isn't the point; the USPs are.
+- Don't ask Mac questions that research can answer. Make the calls.
