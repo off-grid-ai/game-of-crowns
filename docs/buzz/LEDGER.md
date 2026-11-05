@@ -20,12 +20,12 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 | Seasons 20 s instead of 90 s | **Shipped** beb839b (long reigns: Freeciv itself still takes 30–60 s a season, open) |
 | Repo public | **Shipped** 11-05 13:09 (Mac approved; secrets scan clean) |
 | Signed and notarised Mac dmg + GitHub Release | **Shipped** 11-05 14:03: v0.1-20261105-622eb2d, pre-release, notarised Developer ID (packaging/release-mac.sh) |
-| First-run: the model becomes an opt-in ("Give the lords their own words? 1.8 GB") instead of an automatic download; the first reign shows a lord remembering (works by rules) | Proposed (revised 11-05 after Mac asked why the model is needed) |
+| No bundled model; recommend Off Grid AI (getoffgridai.co/desktop) | **Shipped** 1c04684, 0239e2c (Mac's call). Unverified: packaged build, and the court line on a Mac without Off Grid |
 | A 20–30 s clip of a lord remembering | Proposed (after the lord work lands) |
 | Windows build | Dropped for now (Mac 11-05: Mac only until demand is proven) |
 | First-impression fixes 1–3 (sunk people, captions, map progress text) | Captions (3e0517c) and map text (beb839b) shipped; sunk people in progress (main session diagnosing with close stills) |
 | Look pass #1: capture profile (`--hq`, full res, MSAA+TAA, 8192 shadows) | **Shipped** beb839b |
-| Look pass #2–4 and fixes 4–13 (grade, ground, buildings in the land, smoke, people) | Approved by Mac (started the session); in progress (look-pass session) |
+| Look pass #2–4 and fixes 4–13 (grade, ground, buildings in the land, smoke, people) | **Shipped** 16d2715, 6e093d7, 7dd662a, 71962ea, 92456d6, 62fc53a (reviewed: clearly better). Open: people detail, a T-posed townsperson at Goldrock, castles on slabs |
 | Friends as lords (naming screen; later Discord names) | Proposed, parked (later) |
 | Saga card at the end of a reign | Proposed, parked |
 | Lords answer outrageous rulings in character | Proposed, parked |
@@ -42,6 +42,10 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 - **Buzz session:** this ledger, the supervisor, drafts for the channels once the dmg exists.
 
 ## Runs
+
+### 11-05 17:35
+**Shipped since 16:45:** the rider never sinks into a hill (3a62c90); two bad stills dropped (e2787b7); ground at true scale and dry mud (16d2715); the tavern's stone yard cut (6e093d7); smoke as wisps (7dd662a); grass and flowers in the wind (71962ea); towns up to 80 people (92456d6); the morning look on by default (62fc53a); look-pass renders (57e2963); no model in the app, recommend Off Grid AI (1c04684, 0239e2c); release tooling: notarisation retry, build any pushed commit (a5fa2f1, 0e0c7b6, 9e6033c).
+**Moved:** v0.2 rebuilding from 3a62c90 after Apple's upload dropped; in its final notarisation. v0.3 from origin/main follows it.
 
 ### 11-05 16:45
 **Shipped (beb839b, pushed):** every house keeps a lasting record of what the King did to it, and a lord raises a year-old deed at court; 20 s seasons; bridge stall fixes (30/30 fast replies over 10 min); no battles on mountainsides; no empty notice card; no progress text on the map; the full-quality capture profile (`--hq`); the look.gd hook. Also the explainer's commits (0e6e3e2, d3641af, 53e74a0, c39aa26, 21c3759, 4a6671f).
