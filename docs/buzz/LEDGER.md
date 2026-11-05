@@ -23,7 +23,9 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 | First-run: the model becomes an opt-in ("Give the lords their own words? 1.8 GB") instead of an automatic download; the first reign shows a lord remembering (works by rules) | Proposed (revised 11-05 after Mac asked why the model is needed) |
 | A 20–30 s clip of a lord remembering | Proposed (after the lord work lands) |
 | Windows build | Dropped for now (Mac 11-05: Mac only until demand is proven) |
-| First-impression polish pass (grade, placeholders, watched scenes framed, quieter first screen), before posting | Proposed 11-05 (Mac: the finesse isn't there) |
+| First-impression fixes 1–3 (sunk people, captions, map progress text) | In progress (main session; captions already fixed in 3e0517c) |
+| Look pass #1: capture profile (`--hq`, full res, MSAA+TAA, 8192 shadows) | Built by the main session, not yet committed |
+| Look pass #2–4 and fixes 4–13 (grade, ground, buildings in the land, smoke, people) | Proposed as its own session "Look pass" (card for Mac) |
 | Friends as lords (naming screen; later Discord names) | Proposed, parked (later) |
 | Saga card at the end of a reign | Proposed, parked |
 | Lords answer outrageous rulings in character | Proposed, parked |
