@@ -135,7 +135,7 @@ export function describe(ev, world) {
     case "building_lost":
       // Freeciv also "loses" buildings when they go obsolete or are sold; only violence is news.
       if (!["sabotaged", "razed", "disaster", "conquered", "attacked"].includes(ev.reason)) return null;
-      return `The ${ev.building.toLowerCase()} of ${c} is destroyed.`;
+      return `The ${ev.building.toLowerCase()} of ${c} ${/s$/i.test(ev.building) ? "are" : "is"} destroyed.`;
     case "tech":
       // Techs the realm starts with are granted by script; they aren't news.
       if (ev.source === "script" || Number(ev.turn) <= 1) return null;

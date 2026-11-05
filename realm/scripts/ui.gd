@@ -774,8 +774,10 @@ func _process(delta: float) -> void:
 		_counsel.visible = not ((_digest_panel and _digest_panel.visible) or _town_panel.visible or _court_panel.visible)
 		# Never over the houses table: past its foot, the Hand drops his last matters.
 		if _counsel.visible:
+			_fit_centre(_counsel, 560.0)
 			_counsel.offset_top = _counsel.offset_bottom - _counsel.get_combined_minimum_size().y  # hug its content
-		if _counsel.visible and _houses_panel.visible and _counsel.get_child_count() > 0:
+		var beside := _counsel.get_global_rect().position.x >= _houses_panel.get_global_rect().end.x
+		if _counsel.visible and _houses_panel.visible and not beside and _counsel.get_child_count() > 0:
 			var rows := _counsel.get_child(0).get_children()
 			var foot := _houses_panel.get_global_rect().end.y + 8.0
 			for i in range(rows.size() - 1, 1, -1):  # keep the heading and the first matter
@@ -1419,13 +1421,12 @@ func _show_counsel(items: Array) -> void:
 	if _counsel:
 		_counsel.queue_free()
 	_counsel = _glass_panel()
-	# Bottom left, under the houses: clear of the table, the story offers under
-	# the top bar and a town's card at the bottom centre.
+	# Bottom centre, between the houses table and the minimap, where the map is
+	# open and every matter fits; it steps aside for a town's card (which sits
+	# there too), the court and the away report. _fit_centre places it each frame.
 	_counsel.anchor_top = 1.0
 	_counsel.anchor_bottom = 1.0
 	_counsel.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_counsel.offset_left = 10
-	_counsel.offset_right = 540  # wide enough for two priced orders on one line
 	_counsel.offset_bottom = -12
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
@@ -1641,8 +1642,8 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		var odds := PackedStringArray()
 		var wars := PackedStringArray(p.get("wars", []))
 		if not wars.is_empty():
-			# Two names and a count keep the row to one line; all of them on hover.
-			var shown := ", ".join(wars.slice(0, 2)) + (" +%d" % (wars.size() - 2) if wars.size() > 2 else "")
+			# One name and a count keep the row to one line; all of them on hover.
+			var shown := wars[0] + (" +%d" % (wars.size() - 1) if wars.size() > 1 else "")
 			odds.append("[color=#%s]WAR · %s[/color]" % [T.DANGER.to_html(false), shown.to_upper()])
 		if not p.get("truces", []).is_empty():
 			odds.append("[color=#%s]TRUCE · %s[/color]" % [T.ACCENT.to_html(false), ", ".join(PackedStringArray(p["truces"])).to_upper()])
@@ -1652,7 +1653,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 			var cell := VBoxContainer.new()
 			cell.add_theme_constant_override("separation", -4)
 			cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			cell.custom_minimum_size.x = 175  # "WAR · WOLFHOLT, STORMHOLD +1" on one line
+			cell.custom_minimum_size.x = 130  # "WAR · STORMHOLD +2" on one line
 			cell.add_child(name)
 			var line := RichTextLabel.new()
 			line.bbcode_enabled = true

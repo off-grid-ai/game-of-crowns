@@ -90,7 +90,7 @@
     },
     {
       "id": "leaves", "stage": "resolution", "end": "resolved", "speaker": "dreamer", "at": "place",
-      "text": "{dreamer} walks out of {place} at first light with a staff and no bundle, on the road toward the edge of the map, and does not look back.",
+      "text": "{dreamer} walks out of {place} at first light with a staff and no bundle, on the road toward the edge of the known world, and does not look back.",
       "memory": { "master": "{dreamer} walked out of {place} and never came back.", "friend": "{dreamer} left {place} at first light. I watched from the door and did not follow. Not yet." },
       "do": { "leave": "dreamer", "reverie": { "friend": 0.08 } }
     },
