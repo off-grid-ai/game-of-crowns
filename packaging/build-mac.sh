@@ -97,7 +97,10 @@ sign() {
   if [ "$SIGN_IDENTITY" = "-" ]; then
     codesign --force --sign - --options runtime --entitlements "$ENTITLEMENTS" "$@"
   else
-    codesign --force --sign "$SIGN_IDENTITY" ${KEYCHAIN:+--keychain "$KEYCHAIN"} --timestamp --options runtime --entitlements "$ENTITLEMENTS" "$@"
+    # Apple's timestamp server sometimes doesn't answer ("A timestamp was expected"); try again.
+    codesign --force --sign "$SIGN_IDENTITY" ${KEYCHAIN:+--keychain "$KEYCHAIN"} --timestamp --options runtime --entitlements "$ENTITLEMENTS" "$@" ||
+      codesign --force --sign "$SIGN_IDENTITY" ${KEYCHAIN:+--keychain "$KEYCHAIN"} --timestamp --options runtime --entitlements "$ENTITLEMENTS" "$@" ||
+      codesign --force --sign "$SIGN_IDENTITY" ${KEYCHAIN:+--keychain "$KEYCHAIN"} --timestamp --options runtime --entitlements "$ENTITLEMENTS" "$@"
   fi
 }
 echo "    identity: $SIGN_IDENTITY"
@@ -144,7 +147,10 @@ ln -s /Applications "$stage/Applications"
 hdiutil create -volname "Game of Crowns" -srcfolder "$stage" -fs HFS+ -format UDZO -ov "$DMG" >/dev/null
 rm -rf "$stage"
 if [ "$SIGN_IDENTITY" != "-" ]; then
-  codesign --force --sign "$SIGN_IDENTITY" ${KEYCHAIN:+--keychain "$KEYCHAIN"} --timestamp "$DMG"
+  # Same retry as sign(): the timestamp server can drop a request.
+  codesign --force --sign "$SIGN_IDENTITY" ${KEYCHAIN:+--keychain "$KEYCHAIN"} --timestamp "$DMG" ||
+    codesign --force --sign "$SIGN_IDENTITY" ${KEYCHAIN:+--keychain "$KEYCHAIN"} --timestamp "$DMG" ||
+    codesign --force --sign "$SIGN_IDENTITY" ${KEYCHAIN:+--keychain "$KEYCHAIN"} --timestamp "$DMG"
 fi
 if [ -n "$NOTARIZE" ]; then
   echo "==> Notarise the dmg"
