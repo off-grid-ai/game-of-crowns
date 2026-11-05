@@ -1644,7 +1644,9 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		if not wars.is_empty():
 			# One name and a count keep the row to one line; all of them on hover.
 			var shown := wars[0] + (" +%d" % (wars.size() - 1) if wars.size() > 1 else "")
-			odds.append("[color=#%s]WAR · %s[/color]" % [T.DANGER.to_html(false), shown.to_upper()])
+			# Red only when the war is with the crown; other houses' wars read muted.
+			var tone: Color = T.DANGER if wars.has("the Crown") else T.TEXT_3
+			odds.append("[color=#%s]WAR · %s[/color]" % [tone.to_html(false), shown.to_upper()])
 		if not p.get("truces", []).is_empty():
 			odds.append("[color=#%s]TRUCE · %s[/color]" % [T.ACCENT.to_html(false), ", ".join(PackedStringArray(p["truces"])).to_upper()])
 		if odds.is_empty():

@@ -93,6 +93,11 @@ function load(id) {
   favour = chron.readJson(path.join(P.state, "favour.json"), {});
   for (const k of Object.keys(favourWhy)) delete favourWhy[k];
   Object.assign(favourWhy, chron.readJson(path.join(P.state, "favour-why.json"), {}));
+  // The last two years of favour and the season's income, so trends survive a restart.
+  const past = chron.readJson(path.join(P.state, "favour-past.json"), {});
+  for (const k of Object.keys(favourPast)) delete favourPast[k];
+  Object.assign(favourPast, past.byTurn ?? {});
+  lastSeason.net = past.net ?? 0;
   meta.tithe ??= 0.1;
   court = new Court(P.base, record);
   arcs = new Arcs(P.base, court, record);
@@ -494,6 +499,7 @@ async function runArcs(n = 1, start = true) {
 function saveFavour() {
   fs.writeFileSync(path.join(P.state, "favour.json"), JSON.stringify(favour));
   fs.writeFileSync(path.join(P.state, "favour-why.json"), JSON.stringify(favourWhy));
+  fs.writeFileSync(path.join(P.state, "favour-past.json"), JSON.stringify({ byTurn: favourPast, net: lastSeason.net }));
 }
 
 function favourOf(id) {
@@ -508,6 +514,8 @@ function counsel(players, cities, threat) {
   const great = players.filter((p) => !p.house.wild && !p.house.crown && p.cities?.length !== 0);
   const seatOf = (pid) => cities.find((c) => c.owner === pid && c.capital) ?? cities.find((c) => c.owner === pid);
   const purse = players.find((p) => p.house.crown)?.gold ?? 0;
+  // A war or bond the King has stilled (his peace, or a royal match).
+  const stilled = (x, y) => { const a = court?.lordOfHouse(x), b = court?.lordOfHouse(y); return !!(a && b && court.truce(a.id, b.id)); };
   // A house sliding toward rebellion.
   const cold = great.filter((p) => favourOf(p.id) < 45).sort((a, b) => favourOf(a.id) - favourOf(b.id))[0];
   if (cold && seatOf(cold.id)) {
@@ -516,7 +524,7 @@ function counsel(players, cities, threat) {
     const drain = (favourWhy[cold.id] ?? []).filter((r) => r.d < 0).sort((a, b) => a.d - b.d)[0];
     const cause = drain ? ` What cools them most: ${drain.why} (${Math.round(drain.d)}).` : "";
     // A royal match binds the cold house to the most loyal one: both warm, and a long truce holds.
-    const friend = great.filter((p) => p.id !== cold.id).sort((a, b) => favourOf(b.id) - favourOf(a.id))[0];
+    const friend = great.filter((p) => p.id !== cold.id && !stilled(cold.id, p.id)).sort((a, b) => favourOf(b.id) - favourOf(a.id))[0];
     const match = friend ? [{ label: `Wed them to ${friend.house.name.replace(/^House /, "")}`, action: "marriage", city: seatOf(cold.id).id, to: friend.id }] : [];
     const lighter = drain?.why === "the royal tithe" && meta.tithe > 0 ? [{ label: `Lower the tithe to ${Math.round(meta.tithe * 100) - 5}%`, ui: "tithe_down" }] : [];
     // The two rules, plainly: under 25 the lord may rise any season; two houses
@@ -558,17 +566,22 @@ function counsel(players, cities, threat) {
     const i = out.findIndex((o) => o.text.startsWith(`${who.house.name} grows cold`));
     if (i >= 0) out.splice(i, 1);
   }
-  // When the tithe is what cools a house most, the Hand offers to lighten it.
-  const tithed = great.some((p) => { const r = (favourWhy[p.id] ?? []).filter((x) => x.d < 0).sort((a, b) => a.d - b.d)[0]; return favourOf(p.id) < 35 && r?.why === "the royal tithe"; });
-  if (tithed && meta.tithe > 0) out.push({ urgency: 65, text: "The tithe is what the houses resent most", why: `At ${Math.round(meta.tithe * 100)}% it wears every house's favour a little each season. Lighter, the crown earns less but the houses cool more slowly.`, acts: [{ label: `Lower the tithe to ${Math.round(meta.tithe * 100) - 5}%`, ui: "tithe_down" }] });
-  if (threat.north > 0) out.push({ urgency: 75, text: `The dead come south (wave ${threat.north})`, why: "The northern houses beg the King for men.", acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }] });
+  // (Lowering the tithe sits on the cold house's matter when the tithe is its top cause.)
+  if (threat.north > 0) {
+    const d = threat.dead ?? {};
+    const lord = players.find((p) => p.id === d.owner);
+    const where = d.town ? `on ${d.town}${lord ? ` (${lord.house.crown ? "the crown's own" : lord.house.name})` : ""}` : "on the North";
+    const when = d.in == null ? "" : d.in <= 1 ? " The next host comes next season." : ` The next host comes in ${d.in} seasons.`;
+    out.push({ urgency: 75, text: "The dead come south",
+      why: `${(d.last ?? 0).toLocaleString("en-US")} of them fell ${where} last time; ${(d.next ?? 0).toLocaleString("en-US")} will come with the next.${when} If every northern town falls, the realm falls with it.`,
+      acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }] });
+  }
   const hungry = cities.find((c) => c.famine);
   if (hungry) out.push({ urgency: 80, text: `${hungry.title} is starving`, why: "A hungry town shrinks, riots, and blames its King.", acts: [{ label: "Send grain", action: "relief", city: hungry.id }] });
   const waiting = court?.open?.().length ?? 0;
   if (waiting) out.push({ urgency: 60, text: `${waiting} ${waiting === 1 ? "petitioner waits" : "petitioners wait"} at court`, why: "Lords left waiting go home unheard, and say so.", acts: [{ label: "Hear them", ui: "court" }] });
   // A war the King has stilled (his peace, or a royal match) is no longer the
   // Hand's worry, though the engine still counts the two houses at war.
-  const stilled = (x, y) => { const a = court?.lordOfHouse(x), b = court?.lordOfHouse(y); return !!(a && b && court.truce(a.id, b.id)); };
   const war = great.find((p) => (p.atWarWith ?? []).some((o) => great.some((g) => g.id === o) && !stilled(p.id, o)));
   if (war) {
     const foe = great.find((g) => war.atWarWith.includes(g.id) && !stilled(war.id, g.id));
@@ -586,7 +599,12 @@ function counsel(players, cities, threat) {
   if (purse < 150) out.push({ urgency: 40, text: "The royal treasury is thin", why: "Every decree costs crowns; a higher tithe fills the purse but cools the houses.", acts: [{ label: "Raise the tithe", ui: "tithe_up" }] });
   if (!out.length) out.push({ urgency: 0, text: "The realm is quiet", why: "A good season to win a house's love before you need it.", acts: [] });
   // Every order shows its price before the King gives it, as the town card does: "Command peace  6k cr".
-  for (const o of out) for (const a of o.acts) if (DECREES[a.action]?.cost) a.label += `  ${DECREES[a.action].cost / 10}k cr`;
+  // And what it does, so the King weighs effect against price: "Gift crowns  15k cr · +10".
+  const DOES = { gift: "+10", feast: "+15", relief: "+12", marriage: "+8 each, truce", peace: "+2 each, truce", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2" };
+  for (const o of out) for (const a of o.acts) {
+    if (DECREES[a.action]?.cost) a.label += `  ${DECREES[a.action].cost / 10}k cr`;
+    if (DOES[a.action] && !a.label.includes("(")) a.label += ` · ${DOES[a.action]}`;
+  }
   // Two matters at most: the Hand's card stays clear of the houses table, and the
   // court has its own badge.
   // Up to three; the card drops its last matters itself if it would reach the houses table.
@@ -887,7 +905,12 @@ http.createServer(async (req, res) => {
     const seatNow = stakes?.s.seat;
     const fighting = (pid) => seatNow ? (world?.units ?? []).filter((x) => x.owner === pid && !CIVILIAN.has(x.type) && Math.hypot(x.x - seatNow.x, x.y - seatNow.y) <= 6).length : 0;
     const crownId = players.find((p) => p.house.crown)?.id;
-    const threat = { usurper, north: (stakes?.s.north.waves ?? 0), pretender: u?.house ?? null, since: u?.since ?? 0, turn: world?.turn ?? 0,
+    // The dead: which northern town they strike, how many came, and when the next comes.
+    const nn = stakes?.s.north ?? {};
+    const northTown = (world?.cities ?? []).filter((c) => c.y < 30).sort((a, b) => a.y - b.y)[0];
+    const dead = { town: northTown ? cityName(northTown.id) : null, owner: northTown?.owner ?? null,
+      last: (3 + (nn.waves ?? 0) * 2) * 200, next: (3 + ((nn.waves ?? 0) + 1) * 2) * 200, in: nn.nextAt ? Math.max(0, nn.nextAt - (world?.turn ?? 0)) : null };
+    const threat = { usurper, north: (stakes?.s.north.waves ?? 0), dead, pretender: u?.house ?? null, since: u?.since ?? 0, turn: world?.turn ?? 0,
       // The King's side is his whole host: the garrisons defend Kingsmere too.
       ended: u?.ended && !u.ended.settled && (world?.turn ?? 0) - u.ended.turn <= 8 ? u.ended.house : null,
       theirs: u?.house != null ? fighting(u.house) : 0, ours: crownId != null ? (world?.units ?? []).filter((x) => x.owner === crownId && !CIVILIAN.has(x.type)).length : 0 };
