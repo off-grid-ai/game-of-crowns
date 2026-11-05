@@ -140,7 +140,8 @@ export function decree(cmd, world) {
       return {
         cost: d.cost, favour: { [owner.id]: 12 },
         text: `By royal decree, wagons of grain roll into ${town}. ${lord} remembers the King's mercy.`,
-        lua: [pay, inCity(`local u = edit.create_unit(c.owner, c.tile, find.unit_type("Migrants"), 0, c, -1); if u then u:perform_action(find.action("Join City"), c) end`)],
+        // (It used to send Migrants to join the town: one more mouth, a worse famine.)
+        lua: [pay], relieved: c.id,
       };
     case "gift":
       if (!owner) return { error: "choose a town or house" };
