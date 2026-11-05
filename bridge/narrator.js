@@ -2,7 +2,7 @@
 // its own names: great houses instead of nations, fantasy towns instead of
 // real-world city names.
 
-const HOUSES = {
+export const HOUSES = {
   scottish: { name: "House Wolfholt", seat: "the cold North", words: "Hold Fast", color: "#9aa6b2", sigil: "wolf" },
   english: { name: "House Goldcrest", seat: "the Western hills", words: "Wealth Is Strength", color: "#d4a62a", sigil: "lion" },
   norwegian: { name: "House Ironreach", seat: "the grey islands", words: "The Sea Provides", color: "#3d4a52", sigil: "kraken" },

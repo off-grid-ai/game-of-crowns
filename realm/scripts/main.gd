@@ -145,6 +145,12 @@ func _ready() -> void:
 	add_child(intro)
 	lore = preload("res://scripts/lore.gd").new()
 	lore.person_opened.connect(_open_person)
+	lore.town_opened.connect(func(title):
+		for c in bridge.world.get("cities", []):
+			if String(c.get("title", c.get("name", ""))) == title:
+				_focus_city(int(c["id"]))
+				return
+		ui.toast("%s is no more." % title))
 	add_child(lore)
 	_intro_due = _shot.has("intro")
 	labels = preload("res://scripts/map_labels.gd").new()

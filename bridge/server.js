@@ -11,7 +11,7 @@ import crypto from "node:crypto";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { houseFor, cityName, describe, rememberNames } from "./narrator.js";
+import { houseFor, cityName, describe, rememberNames, HOUSES } from "./narrator.js";
 import { godCommand, healLua } from "./god.js";
 import { readSave, extractDetail } from "./savefile.js";
 import { townsfolk } from "./townsfolk.js";
@@ -607,9 +607,19 @@ function counsel(players, cities, threat) {
     // The Hand never offers an order he knows will be refused: a house too cold
     // to obey (under 40) is to be won first, and he says so.
     const cold = [war, foe].filter((p) => favourOf(p.id) < 40).sort((a, b) => favourOf(a.id) - favourOf(b.id))[0];
-    const acts = cold
-      ? [{ label: `Gift crowns to ${cold.house.name.replace(/^House /, "")}`, action: "gift", city: seatOf(cold.id)?.id }, { label: "Wed them to each other", action: "marriage", city: seatOf(war.id)?.id, to: foe.id }]
-      : [{ label: "Command peace", action: "peace", city: seatOf(war.id)?.id, to: foe.id }, { label: "Wed them to each other", action: "marriage", city: seatOf(war.id)?.id, to: foe.id }];
+    // The King's answers to a war: stop it (by command if both are warm, else by
+    // sending a loyal house to keep the peace), take a side (the weaker one), or
+    // let them bleed. A royal match is the rare, dear bond.
+    const [weak, strong] = [war, foe].sort((a, b) => (a.units ?? 0) - (b.units ?? 0));
+    const keeper = great.filter((p) => p.id !== war.id && p.id !== foe.id).sort((a, b) => favourOf(b.id) - favourOf(a.id))[0];
+    const acts = [
+      cold
+        ? (keeper ? { label: `Send ${keeper.house.name.replace(/^House /, "")} to keep the peace`, action: "settle", city: seatOf(war.id)?.id, to: foe.id } : null)
+        : { label: "Command peace", action: "peace", city: seatOf(war.id)?.id, to: foe.id },
+      { label: `Back ${weak.house.name.replace(/^House /, "")}, the weaker`, action: "back", city: seatOf(weak.id)?.id, to: strong.id },
+      { label: "Sit it out", ui: "sitout", war: `${war.id}:${foe.id}` },
+      { label: "Wed them to each other", action: "marriage", city: seatOf(war.id)?.id, to: foe.id },
+    ].filter((a) => a && (a.ui || a.city !== undefined));
     const why = cold
       ? `${cold.house.name} is too cold to obey a royal peace (favour ${Math.round(favourOf(cold.id))}, it needs 40). Warm them first, or bind the two by marriage.`
       : "Every season of war burns fields and lowers the realm's peace. Both are warm enough to obey the King's peace.";
@@ -619,11 +629,11 @@ function counsel(players, cities, threat) {
   if (!out.length) out.push({ urgency: 0, text: "The realm is quiet", why: "A good season to win a house's love before you need it.", acts: [] });
   // Every order shows its price before the King gives it, as the town card does: "Command peace  6k cr".
   // And what it does, so the King weighs effect against price: "Gift crowns  15k cr · +10".
-  const DOES = { sellswords: "1,000 men", tithe_down: `the houses cool more slowly, the crown takes ${(Math.round(lastSeason.net * 50) / 1).toLocaleString("en-US")} less a season`, grant: "+20 them, −30 the holder", gift: "+10", feast: "+15", relief: "+12", marriage: "+8 each, bound in peace", peace: "+2 each, truce", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2" };
+  const DOES = { sellswords: "1,000 men", back: "+12 them, −12 the other", settle: "a truce, the keeper +6, both −3", sitout: "nothing spent; the war goes on",  tithe_down: `the houses cool more slowly, the crown takes ${(Math.round(lastSeason.net * 50) / 1).toLocaleString("en-US")} less a season`, grant: "+20 them, −30 the holder", gift: "+10", feast: "+15", relief: "+12", marriage: "+8 each, bound in peace", peace: "+2 each, truce", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2" };
   // An order that can't be given now isn't offered: the banners answer once a year.
   for (const o of out) o.acts = o.acts.filter((a) => a.action !== "banners" || bannersReady(world?.turn ?? 0));
   // The Hand's own pick on each matter: the order that does most for its cost.
-  const PREFER = ["court", "ward", "feast", "relief", "tithe_down", "banners", "peace", "buyoff", "marriage", "gift", "grant", "levy", "tithe_up"];
+  const PREFER = ["court", "ward", "feast", "relief", "tithe_down", "banners", "peace", "settle", "buyoff", "marriage", "gift", "grant", "levy", "tithe_up"];
   for (const o of out) {
     const rank = (a) => { const i = PREFER.indexOf(a.action ?? a.ui); return i < 0 ? 99 : i; };
     const best = [...o.acts].sort((a, b) => rank(a) - rank(b))[0];
@@ -1101,7 +1111,7 @@ http.createServer(async (req, res) => {
     if (crownNow) crownNow.gold -= result.cost;
     // The result card says what the order cost and whose favour moved, so the
     // King learns the price of his word.
-    const effects = shiftAndTell(result.favour, { gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "the King's banners: answered or refused", marriage: "a royal match", peace: "the King's peace", buyoff: "the King bought off the pretender", ward: "their heir taken as the King's ward" }[cmd.action] ?? "a royal decree", result.cost);
+    const effects = shiftAndTell(result.favour, { gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "the King's banners: answered or refused", marriage: "a royal match", peace: "the King's peace", back: "the King took a side", settle: "the King's peace, kept by another house", buyoff: "the King bought off the pretender", ward: "their heir taken as the King's ward" }[cmd.action] ?? "a royal decree", result.cost);
     const seat = world.cities.find((c) => c.owner === crownNow?.id && c.capital);
     const target = world.cities.find((c) => c.id === Number(cmd.city));
     if (seat && target && (cmd.action === "relief" || cmd.action === "gift")) scene(cmd.action === "relief" ? "grain" : "tribute", { x: seat.x, y: seat.y, tx: target.x, ty: target.y, city: target.id });
@@ -1304,6 +1314,14 @@ http.createServer(async (req, res) => {
         })),
       };
     }).sort((a, c) => (c.crown ? 1 : 0) - (a.crown ? 1 : 0) || (c.lore ? 1 : 0) - (a.lore ? 1 : 0));
+    // A great house that has lost every town is not forgotten: it stays in the
+    // book, marked fallen, so the realm's seven are always seven.
+    let n = 0;
+    for (const h of Object.values(HOUSES)) {
+      if (h.wild || h.crown || houses.some((x) => x.name === h.name)) continue;
+      houses.push({ id: -100 - n++, name: h.name, words: h.words, color: h.color, sigil: h.sigil, crown: false, fallen: true,
+        seat: null, towns: 0, favour: null, lore: b.houses[h.name] ?? null, notables: [] });
+    }
     // The lesser families sworn to the great houses: one entry each, with
     // every town a branch of it holds, under which liege, and who heads it.
     const lesser = {};

@@ -17,6 +17,8 @@ export const DECREES = {
   buyoff: { cost: 300, label: "Buy off the pretender" },
   ward: { cost: 20, label: "Take a house's heir as a royal ward" },
   sellswords: { cost: 300, label: "Hire sellswords" },
+  back: { cost: 150, label: "Back one side of a war" },
+  settle: { cost: 100, label: "Tell another house to settle a war" },
 };
 
 // When the banners were last called: the houses won't answer twice in a year.
@@ -212,6 +214,29 @@ export function decree(cmd, world) {
       const others = Object.fromEntries(world.players.filter((p) => p.id !== who.id && !houseFor(p).wild && !houseFor(p).crown).map((p) => [p.id, -2]));
       return { cost: d.cost, favour: { [who.id]: 25, ...others }, lua: [pay, home].filter(Boolean), endUsurper: true,
         text: `The King buys off ${lord}: gold for their claim. Their host breaks camp and goes home, and the other houses mutter that treason pays.` };
+    }
+    case "back": {
+      // The King takes a side: gold to the house he favours (the town chosen is
+      // theirs). They love him for it; the other side will not forget.
+      const to = world.players.find((p) => p.id === Number(cmd.to));
+      if (!owner || !to || houseFor(owner).crown || houseFor(to).crown) return { error: "choose two great houses" };
+      return { cost: d.cost, favour: { [owner.id]: 12, [to.id]: -12 }, lua: [pay, `for p in players_iterate() do if p.id == ${owner.id} then edit.change_gold(p, ${d.cost}) end end`],
+        text: `The King backs ${houseFor(owner).name} against ${houseFor(to).name}: crowns for swords, and every lord at court knows whose side the crown is on.` };
+    }
+    case "settle": {
+      // Another house keeps the King's peace with its own men: the warring hosts
+      // are turned home whether or not they love the crown; the peacekeeper is
+      // honoured, the two warring houses resent the meddling.
+      const to = world.players.find((p) => p.id === Number(cmd.to));
+      // The keeper: the most loyal great house not in this war.
+      const fav = cmd.favourOf ?? (() => 50);
+      const keeper = world.players.filter((p) => p.id !== owner?.id && p.id !== Number(cmd.to) && !houseFor(p).wild && !houseFor(p).crown && p.cities > 0)
+        .sort((x, y) => fav(y.id) - fav(x.id))[0];
+      if (!owner || !to || !keeper) return { error: "choose two warring houses and a house to settle it" };
+      const home = (x, y) => `for p in players_iterate() do if p.id == ${x} then for u in p:units_iterate() do local r = u.utype:rule_name(); if r ~= "Workers" and r ~= "Settlers" then for q in players_iterate() do if q.id == ${y} then for c in q:cities_iterate() do if u.tile:sq_distance(c.tile) <= 9 then edit.unit_kill(u, "killed", nil); break end end end end end end end end`;
+      const k = houseFor(keeper).name;
+      return { cost: d.cost, favour: { [keeper.id]: 6, [owner.id]: -3, [to.id]: -3 }, lua: [pay, home(owner.id, to.id), home(to.id, owner.id)], truce: [owner.id, to.id],
+        text: `At the King's word, ${k} rides between ${houseFor(owner).name} and ${houseFor(to).name}. Their hosts are turned home, and ${k} keeps the peace in the King's name.` };
     }
     case "peace": {
       // The King commands two warring houses to lay down arms. Each obeys by its

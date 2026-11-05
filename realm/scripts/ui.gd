@@ -1464,7 +1464,17 @@ func _guide_block() -> Control:
 	return g
 
 
+var _sat_out := {}  # war key -> when the King chose to stay out of it
+
+
 func _show_counsel(items: Array) -> void:
+	# A war the King sat out stays off the card for a year (four seasons of play).
+	items = items.filter(func(it):
+		for a in it.get("acts", []):
+			var k := String(a.get("war", ""))
+			if k != "" and _sat_out.has(k) and Time.get_ticks_msec() - int(_sat_out[k]) < 4 * 90 * 1000:
+				return false
+		return true)
 	var sig := JSON.stringify(items)
 	if sig == _counsel_sig and _counsel:
 		_counsel.visible = not (_digest_panel and _digest_panel.visible)
@@ -1545,6 +1555,11 @@ func _counsel_act(act: Dictionary) -> void:
 		_set_tithe(_tithe + 0.05)
 	elif on == "tithe_down":
 		_set_tithe(_tithe - 0.05)
+	elif on == "sitout":
+		# The King lets them fight it out: the Hand drops this war for a year.
+		_sat_out[String(act.get("war", ""))] = Time.get_ticks_msec()
+		toast("The King stays out of it. Let them bleed; the war is theirs.")
+		_counsel_sig = ""
 	else:
 		decree_at.emit(String(act.get("action", "")), int(act.get("city", -1)), int(act.get("to", -1)))
 

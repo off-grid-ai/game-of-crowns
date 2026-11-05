@@ -7,6 +7,7 @@ extends CanvasLayer
 ## book changes as the reign goes on. Anyone named can be met face to face.
 
 signal person_opened(id: String, house: Dictionary)
+signal town_opened(title: String)  # go to this town on the map
 signal closed
 
 const T := preload("res://scripts/theme.gd")
@@ -200,6 +201,8 @@ func _house(h: Dictionary) -> void:
 	if h.get("favour") != null:
 		facts.append("favour %d of 100" % int(h["favour"]))
 	_page.add_child(T.label("  ·  ".join(facts)))
+	if h.get("fallen", false):
+		_para("Fallen. The house holds no town in this reign; its people are scattered and its banners hang in other men's halls. The realm remembers what it was.")
 	if h.get("crown", false):
 		_para("Your own house, and your throne. The seven great houses owe it their swords for as long as it stays strong.")
 	elif lore.is_empty():
@@ -370,9 +373,33 @@ func _family(f: Dictionary, into: Node = null) -> void:
 			said.append("lost %s" % b["lost"])
 		if not head.is_empty():
 			said.append("%s, %d" % [head.get("name", ""), int(head.get("age", 0))])
-		var l := T.datum("  ·  ".join(said), T.SIZE_DESC + 1, T.TEXT_2)
+		# Their liege's page, a click away.
+		var sworn := Button.new()
+		sworn.text = said[0]
+		sworn.flat = true
+		sworn.focus_mode = Control.FOCUS_NONE
+		sworn.tooltip_text = "Open %s's page" % String(b.get("house", ""))
+		sworn.add_theme_color_override("font_color", T.TEXT_2)
+		sworn.pressed.connect(func():
+			for hh in _book.get("houses", []):
+				if String(hh.get("name", "")) == String(b.get("house", "")):
+					_chosen = int(hh["id"])
+					_build())
+		line.add_child(sworn)
+		var l := T.datum("  ·  " + "  ·  ".join(said.slice(1)) if said.size() > 1 else "", T.SIZE_DESC + 1, T.TEXT_2)
 		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		line.add_child(l)
+		if b.get("seat") != null:
+			var go := Button.new()
+			go.text = "Go to %s" % b["seat"]
+			go.flat = true
+			go.focus_mode = Control.FOCUS_NONE
+			go.tooltip_text = "Close the Lore and go to %s on the map" % b["seat"]
+			go.add_theme_color_override("font_color", T.ACCENT)
+			go.pressed.connect(func():
+				close()
+				town_opened.emit(String(b["seat"])))
+			line.add_child(go)
 		if head.has("id"):
 			var meet := Button.new()
 			meet.text = "Meet"
