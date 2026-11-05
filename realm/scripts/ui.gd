@@ -513,6 +513,10 @@ func _build_houses() -> void:
 	_houses.add_theme_constant_override("separation", 2)
 	v.add_child(_houses)
 	# What favour means, in one line, so nobody has to find it in a tooltip.
+	# The reign's measure: how many great houses stand with the King.
+	_standing = T.title("", 14, T.TEXT)
+	_standing.autowrap_mode = TextServer.AUTOWRAP_WORD
+	v.add_child(_standing)
 	var bands := T.label("Favour: under 25 may rise against you · 35 and up answer your banners · 60 and up are loyal")
 	bands.add_theme_font_size_override("font_size", 10)
 	bands.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -1456,6 +1460,20 @@ func _show_counsel(items: Array) -> void:
 			var act: Dictionary = a
 			var b := _btn(String(act.get("label", "")), func(): _counsel_act(act))
 			b.add_theme_color_override("font_color", T.ACCENT)
+			if act.get("pick", false):
+				# The Hand's own advice: framed in gold, and said so on hover.
+				var frame := StyleBoxFlat.new()
+				frame.bg_color = Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.14)
+				frame.border_color = Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.7)
+				frame.set_border_width_all(1)
+				frame.set_corner_radius_all(6)
+				frame.content_margin_left = 10
+				frame.content_margin_right = 10
+				frame.content_margin_top = 4
+				frame.content_margin_bottom = 4
+				for look in ["normal", "hover", "pressed"]:
+					b.add_theme_stylebox_override(look, frame)
+				b.tooltip_text = "The Hand's advice"
 			acts.add_child(b)
 	_counsel.visible = not (_digest_panel and _digest_panel.visible)
 	if _ticker:
@@ -1545,7 +1563,15 @@ func _set_sigil(icon: TextureRect, house: Dictionary) -> void:
 	icon.modulate = Color.from_string(String(house.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.25)
 
 
+var _standing: Label  # "4 of 6 great houses would answer your banners"
+
+
 func set_world(world: Dictionary, houses: Dictionary) -> void:
+	if _standing:
+		var great := (world.get("players", []) as Array).filter(func(p): return p.get("favour") != null)
+		var with_me := great.filter(func(p): return float(p["favour"]) >= 35.0).size()
+		_standing.text = ("All %d great houses would answer your banners. The realm is yours in truth." % great.size()) if with_me == great.size() and great.size() > 0 \
+			else "%d of %d great houses would answer your banners. Win all of them and the realm is yours in truth." % [with_me, great.size()]
 	_show_counsel(world.get("counsel", []))
 	for pid in houses:
 		_house_by_name[String(houses[pid].get("name", ""))] = houses[pid]
@@ -1562,7 +1588,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 	# What the crown takes in each season, net of the court and castles: where money comes from.
 	var net := int(c.get("perSeason", 0)) * CROWNS
 	if net != 0:
-		_gold.text += "  %s%s" % ["▲" if net > 0 else "▼", _heads(absi(net))]
+		_gold.text += "  %s%s a season" % ["▲" if net > 0 else "▼", _heads(absi(net))]
 	_peace.text = "%d%%" % int(float(world.get("peace", 1)) * 100)
 	_souls.text = _heads(int(world.get("souls", 0)))
 	_tithe_l.text = "%d%%" % int(_tithe * 100)

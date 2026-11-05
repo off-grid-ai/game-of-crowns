@@ -570,13 +570,15 @@ function counsel(players, cities, threat) {
     if (i >= 0) out.splice(i, 1);
   }
   // (Lowering the tithe sits on the cold house's matter when the tithe is its top cause.)
+  // What the banners would bring today: two companies from the loyal (60+), one from the willing (35+).
+  const bannerMen = great.reduce((n, p) => n + (favourOf(p.id) >= 60 ? 2 : favourOf(p.id) >= 35 ? 1 : 0), 0) * 200;
   if (threat.north > 0) {
     const d = threat.dead ?? {};
     const lord = players.find((p) => p.id === d.owner);
     const where = d.town ? `on ${d.town}${lord ? ` (${lord.house.crown ? "the crown's own" : lord.house.name})` : ""}` : "on the North";
     const when = d.in == null ? "" : d.in <= 1 ? " The next host comes next season." : ` The next host comes in ${d.in} seasons.`;
     out.push({ urgency: 75, text: "The dead come south",
-      why: `${(d.last ?? 0).toLocaleString("en-US")} of them fell ${where} last time; ${(d.next ?? 0).toLocaleString("en-US")} will come with the next.${when} If every northern town falls, the realm falls with it.`,
+      why: `${(d.last ?? 0).toLocaleString("en-US")} of them fell ${where} last time; ${(d.next ?? 0).toLocaleString("en-US")} will come with the next.${when} Against them: your ${(threat.ours * 200).toLocaleString("en-US")} men, and about ${bannerMen.toLocaleString("en-US")} more if you call the banners. If every northern town falls, the realm falls with it.`,
       acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }] });
   }
   const hungry = cities.find((c) => c.famine);
@@ -603,7 +605,14 @@ function counsel(players, cities, threat) {
   if (!out.length) out.push({ urgency: 0, text: "The realm is quiet", why: "A good season to win a house's love before you need it.", acts: [] });
   // Every order shows its price before the King gives it, as the town card does: "Command peace  6k cr".
   // And what it does, so the King weighs effect against price: "Gift crowns  15k cr · +10".
-  const DOES = { gift: "+10", feast: "+15", relief: "+12", marriage: "+8 each, truce", peace: "+2 each, truce", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2" };
+  const DOES = { gift: "+10", feast: "+15", relief: "+12", marriage: "+8 each, bound in peace", peace: "+2 each, truce", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2" };
+  // The Hand's own pick on each matter: the order that does most for its cost.
+  const PREFER = ["court", "ward", "feast", "relief", "tithe_down", "banners", "peace", "buyoff", "marriage", "gift", "grant", "levy", "tithe_up"];
+  for (const o of out) {
+    const rank = (a) => { const i = PREFER.indexOf(a.action ?? a.ui); return i < 0 ? 99 : i; };
+    const best = [...o.acts].sort((a, b) => rank(a) - rank(b))[0];
+    if (best && o.acts.length > 1) best.pick = true;
+  }
   for (const o of out) for (const a of o.acts) {
     if (DECREES[a.action]?.cost) a.label += `  ${DECREES[a.action].cost / 10}k cr`;
     if (DOES[a.action] && !a.label.includes("(")) a.label += ` · ${DOES[a.action]}`;
