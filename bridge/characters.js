@@ -697,11 +697,15 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
     let roll = Math.random() * pool.reduce((t, x) => t + x.w, 0);
     const chosen = pool.find((x) => (roll -= x.w) < 0) ?? pool[pool.length - 1];
     const p = { ...base, ...chosen.make() };
-    const d = await this.ask(c, `You stand before the King to say: ${p.text}`, ["speak"]);
-    if (d?.line) p.voice = d.line;
+    // They come to court now; their own words follow when the local model has
+    // them (it can be slow or busy, and the court never waits on it).
     this.petitions.push(p);
     if (this.petitions.length > 60) this.petitions = this.petitions.filter((x) => !x.answered || x.turn > turn - 40);
     this.record({ turn, kind: "court", text: `${c.name} of ${c.house} comes to court.` });
+    this.saveCourt();
+    this.ask(c, `You stand before the King to say: ${p.text}`, ["speak"]).then((d) => {
+      if (d?.line && !p.answered) { p.voice = d.line; this.saveCourt(); }
+    }).catch(() => {});
   }
 
   // --- the deck: dilemmas written as data (data/dilemmas.json) ----------------
