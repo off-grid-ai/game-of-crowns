@@ -5,7 +5,7 @@ Kept by the downloads supervisor (every 15 minutes in the buzz session). Goal: g
 ## Needs Mac
 - **Notarisation:** the App Store Connect API key (`APPLE_API_KEY`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER`). It's with the Off Grid AI Desktop release secrets; signing itself can run here (Developer ID in the keychain).
 - **itch.io:** a free page for the dmg (needs your account).
-- **Push blocked on the lady's licence.** Local main is 16 commits ahead of origin, including b9f22ea (the gowned lady, Sketchfab 'Princess Nun Royal Queen', ownership claim open). Now that the repo is public, no session pushes until you decide on her.
+- **The lady's licence:** confirm the Sketchfab ownership claim for 'Princess Nun Royal Queen' (b9f22ea). A licence question only: .gitignore keeps body files out of git, so pushes publish no model files.
 - **Approve the rest of the list below** (everything marked "proposed").
 
 ## Recommendations
