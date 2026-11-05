@@ -3,7 +3,6 @@
 Kept by the downloads supervisor (every 15 minutes in the buzz session). Goal: get the game into people's hands. Newest run first.
 
 ## Needs Mac
-- **Signing secrets for GitHub's runner:** copy OGAD's `CSC_LINK` and `CSC_KEY_PASSWORD` onto this repo (`gh secret set CSC_LINK -R off-grid-ai/game-of-crowns`, then the same for `CSC_KEY_PASSWORD`). The notarisation key, its ID and the issuer are set.
 - **Disk:** this Mac has ~4 GB free of 460 GB. It killed the first release run and will hurt other sessions' renders.
 - **Promo art:** prompts for Codex in docs/buzz/asset-prompts.md (GitHub social preview, itch.io cover, key art). The social preview has to be set by hand in the repo's Settings.
 - **itch.io:** a free page for the dmg (needs your account).
@@ -20,7 +19,7 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 | The chronicle names the cause when a house cools, rebels or refuses the banners | Approved; in progress |
 | Seasons 20 s instead of 90 s | Approved; in progress |
 | Repo public | **Shipped** 11-05 13:09 (Mac approved; secrets scan clean) |
-| Signed and notarised Mac dmg + GitHub Release | Approved by Mac ("make a GH action", like OGAD). Moving to GitHub's macOS runner: art uploading to the private art-store draft; needs CSC_LINK and CSC_KEY_PASSWORD, then a run |
+| Signed and notarised Mac dmg + GitHub Release | Approved by Mac; building on this Mac (Mac: build here, art never goes to GitHub) with packaging/release-mac.sh from origin/main; in progress |
 | First-run hook: model download at once, a lord remembering in the first reign | Proposed |
 | A 20–30 s clip of a lord remembering | Proposed (after the lord work lands) |
 | Windows build | Proposed |
@@ -37,6 +36,9 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 - **Buzz session:** this ledger, the supervisor, drafts for the channels once the dmg exists.
 
 ## Runs
+
+### 11-05 13:50
+**Moved:** Mac chose to build on this Mac and keep the art off GitHub. The art upload is stopped and its draft deleted; the runner workflow is removed. packaging/release-mac.sh builds from origin/main in a scratch folder (art hard-linked), signs with the keychain's Developer ID, notarises and publishes a pre-release. First run started 13:50. Mac cleared ~25 GB.
 
 ### 11-05 13:40
 **Shipped:** no game commits since the last run.
