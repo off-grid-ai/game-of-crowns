@@ -41,7 +41,8 @@ func _ready() -> void:
 	env.ssil_radius = 3.0
 	env.ssil_intensity = 0.8
 	env.ssao_radius = 1.0
-	env.ssao_intensity = 2.0
+	env.ssao_intensity = 2.6
+	env.ssao_power = 1.8  # dark where a cart meets the ground or eaves meet the wall, not a grey wash
 	env.ssao_light_affect = 0.15
 	# Sunlit air: a thin volumetric haze that thickens with distance and glows
 	# toward the sun, so far hills fall back in warm light.
