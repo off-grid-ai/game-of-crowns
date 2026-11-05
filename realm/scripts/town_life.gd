@@ -412,15 +412,11 @@ func _crowd(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 		smoke.scale_amount_min = 0.03
 		smoke.scale_amount_max = 0.07
 		smoke.color = Color(0.35, 0.33, 0.31, 0.25)
+		smoke.angle_min = -180.0
+		smoke.angle_max = 180.0
 		var q := QuadMesh.new()
 		q.size = Vector2(1, 1)
-		var m := StandardMaterial3D.new()
-		m.albedo_texture = preload("res://scripts/towns.gd").soft_dot()
-		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		m.vertex_color_use_as_albedo = true
-		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-		q.material = m
+		q.material = preload("res://scripts/towns.gd").smoke_material(true)
 		smoke.mesh = q
 		var fp := camp - dir * 0.12
 		smoke.position = Vector3(fp.x, _y(center, fp) + 0.03, fp.z)
@@ -508,15 +504,11 @@ func _unrest(life: Node3D, center: Vector3, rng: RandomNumberGenerator) -> void:
 		grad.set_color(0, Color(0.15, 0.13, 0.12, 0.7))
 		grad.set_color(1, Color(0.2, 0.2, 0.2, 0.0))
 		p.color_ramp = grad
+		p.angle_min = -180.0
+		p.angle_max = 180.0
 		var q := QuadMesh.new()
 		q.size = Vector2(0.6, 0.6)
-		var m := StandardMaterial3D.new()
-		m.albedo_texture = preload("res://scripts/towns.gd").soft_dot()
-		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		m.vertex_color_use_as_albedo = true
-		m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-		q.material = m
+		q.material = preload("res://scripts/towns.gd").smoke_material(true)
 		p.mesh = q
 		p.position = off + Vector3(0, _y(center, off) + 0.6, 0)
 		life.add_child(p)

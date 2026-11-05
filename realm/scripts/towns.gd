@@ -932,6 +932,45 @@ static func soft_dot() -> Texture2D:
 	return _dot
 
 
+static var _puff: Texture2D
+
+
+## A wisp of smoke: Godot's own noise, frayed out to nothing at the edge, so a
+## plume of them reads as smoke and never as a stack of round discs.
+static func soft_puff() -> Texture2D:
+	if _puff == null:
+		var noise := FastNoiseLite.new()
+		noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+		noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+		noise.fractal_octaves = 5
+		noise.frequency = 0.035
+		var n := 128
+		var img := Image.create_empty(n, n, false, Image.FORMAT_RGBA8)
+		for y in n:
+			for x in n:
+				var r := Vector2(x - n / 2.0, y - n / 2.0).length() / (n / 2.0)
+				var wisp := clampf(noise.get_noise_2d(x, y) * 0.9 + 0.55, 0.0, 1.0)
+				var a := smoothstep(1.0, 0.25, r) * wisp
+				img.set_pixel(x, y, Color(1, 1, 1, a * a))
+		_puff = ImageTexture.create_from_image(img)
+	return _puff
+
+
+## The material every smoke plume shares the look of: wisps lit by the sun,
+## turned at random, fading where they touch a roof instead of cutting it.
+static func smoke_material(unshaded := false) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = soft_puff()
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.vertex_color_use_as_albedo = true
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	m.proximity_fade_enabled = true
+	m.proximity_fade_distance = 0.15
+	if unshaded:
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	return m
+
+
 func _smoke(root: Node3D, pos: Vector3) -> void:
 	# A thread of chimney smoke: thin, grey and drifting, never a pillar.
 	var p := CPUParticles3D.new()
@@ -952,14 +991,11 @@ func _smoke(root: Node3D, pos: Vector3) -> void:
 	grad.set_color(0, Color(0.6, 0.59, 0.57, 0.22))
 	grad.set_color(1, Color(0.55, 0.55, 0.55, 0.0))
 	p.color_ramp = grad
+	p.angle_min = -180.0
+	p.angle_max = 180.0
 	var q := QuadMesh.new()
 	q.size = Vector2(0.6, 0.6)
-	var m := StandardMaterial3D.new()
-	m.albedo_texture = soft_dot()
-	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	m.vertex_color_use_as_albedo = true
-	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	q.material = m
+	q.material = smoke_material()
 	p.mesh = q
 	p.position = pos
 	root.add_child(p)
