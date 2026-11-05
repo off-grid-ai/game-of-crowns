@@ -90,6 +90,7 @@ func _ready() -> void:
 	_body.add_theme_constant_override("separation", 8)
 	_body.custom_minimum_size = Vector2(620, 0)
 	col.add_child(_body)
+	_here = show_main
 	show_main()
 	bridge.world_updated.connect(_on_world)
 
@@ -107,10 +108,42 @@ func _on_world(w) -> void:
 var _has_continue := false  # the menu already offers Continue
 
 
-func open() -> void:
+## The menus are pages on a trail: each page you go to is remembered, so Back
+## (or Esc) returns to the page you came from, and from the first page to the
+## realm. Redrawing a page in place (a card chosen, controls reset) isn't a step.
+var _trail: Array[Callable] = []
+var _here: Callable
+
+
+func _go(page: Callable) -> void:
+	if _here.is_valid():
+		_trail.append(_here)
+	_here = page
+	page.call()
+
+
+func _back() -> void:
+	if not _trail.is_empty():
+		_here = _trail.pop_back()
+		_here.call()
+	elif bridge.world.get("reign", {}).is_empty():
+		# No realm to return to yet: the main menu is the floor.
+		if _here != show_main:
+			_here = show_main
+			show_main()
+	else:
+		_close()
+
+
+func _start(page: Callable) -> void:
 	visible = true
-	_from_menu = true
-	show_main()
+	_trail.clear()
+	_here = page
+	page.call()
+
+
+func open() -> void:
+	_start(show_main)
 
 
 func show_main() -> void:
@@ -136,17 +169,17 @@ func show_main() -> void:
 		cont.add_theme_stylebox_override("normal", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.24), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.6), 8, 10))
 		cont.add_theme_stylebox_override("hover", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.36), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.85), 8, 10))
 		cont.add_theme_color_override("font_color", Color(1, 0.93, 0.78))
-	_big("Begin a New Chronicle", show_new)
-	_big("Settings", show_settings)
+	_big("Begin a New Chronicle", _go.bind(show_new))
+	_big("Settings", _go.bind(show_settings))
 	_big("Watch the introduction", func():
 		_close()
 		watch_intro.emit())
 	_big("The Lore of Aldmere", func():
 		_close()
 		read_lore.emit())
-	_big("Chronicles", show_list)
-	_big("Hall of Records", show_records)
-	_big("Credits", show_credits)
+	_big("Chronicles", _go.bind(show_list))
+	_big("Hall of Records", _go.bind(show_records))
+	_big("Credits", _go.bind(show_credits))
 
 
 const HOUSES := ["Wolfholt", "Goldcrest", "Ironreach", "Thornvale", "Stormhold", "Sunspire", "Highfell"]
@@ -331,7 +364,7 @@ func show_new() -> void:
 	begin.pressed.connect(_begin)
 	var back := _toggle("Back", go)
 	back.toggle_mode = false
-	back.pressed.connect(show_main)
+	back.pressed.connect(_back)
 
 
 func _use_scenario(sc: Dictionary) -> void:
@@ -443,11 +476,10 @@ func show_settings() -> void:
 	_voice_settings(right)
 	_controls_settings(page)
 
-	var back := _big("Back", func(): show_main() if _from_menu else _close())
+	var back := _big("Back", _back)
 	back.custom_minimum_size.y = 40
 
 
-var _from_menu := true
 
 
 const Keys := preload("res://scripts/keys.gd")
@@ -510,7 +542,12 @@ func _controls_settings(parent: Control) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if _rebinding == "" or not visible:
+	if not visible:
+		return
+	if _rebinding == "":
+		if event.is_action_pressed(&"back"):
+			get_viewport().set_input_as_handled()
+			_back()
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		get_viewport().set_input_as_handled()
@@ -536,7 +573,9 @@ func _voice_settings(right: Control) -> void:
 	vol.value = float(Settings.get_value("voice_volume"))
 	vol.value_changed.connect(func(v): Settings.set_value("voice_volume", v))
 	right.add_child(vol)
-	for pair in [["Music", "vol_music"], ["Sounds of the realm", "vol_ambience"]]:
+	# Sound: everything at once, then the music and the realm's own sounds.
+	_section(right, "Sound")
+	for pair in [["All sound", "vol_master"], ["Music", "vol_music"], ["Sounds of the realm", "vol_ambience"]]:
 		right.add_child(_label(pair[0], 15, MUTED))
 		var sl := HSlider.new()
 		sl.min_value = 0.0
@@ -548,7 +587,7 @@ func _voice_settings(right: Control) -> void:
 			Settings.set_value(key, v)
 			var main := get_tree().root.get_node_or_null("Main")
 			if main and main.sound:
-				main.sound.set_volume("Music" if key == "vol_music" else "Ambience", v))
+				main.sound.set_volume({"vol_master": "Master", "vol_music": "Music"}.get(key, "Ambience"), v))
 		right.add_child(sl)
 	_choices(right, "When you talk with people", [["Type", "type"], ["Speak (hands-free)", "speak"]], Settings.get_value("talk"), func(v): Settings.set_value("talk", v))
 	_section(right, "The local model")
@@ -576,9 +615,7 @@ func _voice_settings(right: Control) -> void:
 
 ## Straight to the settings from the game's own gear button.
 func open_settings() -> void:
-	visible = true
-	_from_menu = false
-	show_settings()
+	_start(show_settings)
 
 
 func show_list() -> void:
@@ -601,7 +638,7 @@ func _on_list(data) -> void:
 		var world_kind := "random world" if c.get("scenario") == "random" else "Aldmere"
 		var text := "%s%s   ·   %s   ·   %s" % ["▶ " if c["id"] == active else "", c["name"], world_kind, status]
 		_big(text, _choose.bind(String(c["id"]), String(c["name"]), c["id"] == active))
-	_big("Back", show_main)
+	_big("Back", _back)
 
 
 func _choose(id: String, name: String, is_active: bool) -> void:
@@ -627,7 +664,7 @@ func _on_records(data) -> void:
 		_body.add_child(_label("%d.  %s  ·  %s  —  %d   (peace %d%%, %d souls, %d years)" % [rank, String(r.get("title", "The King")), r.get("name", ""), int(r.get("score", 0)), int(float(r.get("peace", 0)) * 100), int(r.get("pop", 0)), int(r.get("turns", 0)) / 4], 16, PARCHMENT))
 		_body.add_child(_label("     “%s”" % r.get("verdict", ""), 14, MUTED))
 		rank += 1
-	_big("Back", show_main)
+	_big("Back", _back)
 
 
 ## Everyone whose work the realm is made from, by kind, from the licence
@@ -658,7 +695,7 @@ func show_credits() -> void:
 		list.add_child(_label(line, 14, PARCHMENT))
 		if String(e["note"]) != "":
 			list.add_child(_label("      " + String(e["note"]), 13, PARCHMENT.darkened(0.35)))
-	_big("Back", show_main)
+	_big("Back", _back)
 
 
 var _name_edit: LineEdit
@@ -677,7 +714,7 @@ func _begin() -> void:
 			_wait_for("", "The realm could not be forged")
 			_body.add_child(_label("The realm did not answer. Give it a moment, then try again.", 15, MUTED))
 			_big("Try again", show_new)
-			_big("Back", show_main))
+			_big("Back", _back))
 	_wait_for("", "The realm is being forged…")
 
 
@@ -711,6 +748,8 @@ func _arrived(w: Dictionary) -> void:
 
 func _close() -> void:
 	visible = false
+	_trail.clear()
+	_here = Callable()
 	closed.emit()
 
 

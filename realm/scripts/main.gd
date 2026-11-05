@@ -54,6 +54,9 @@ func _ready() -> void:
 	_parse_args()
 	if _shot.has("path") or _shot.has("hq"):
 		_capture_quality()
+		# A render is not the game: say so on its window, so a still being drawn
+		# without the interface is never mistaken for the game losing its panels.
+		DisplayServer.window_set_title("Game of Crowns: rendering a still (not the game)")
 	# Started from a shell, macOS opens the window behind whatever is in front:
 	# bring it forward so the game is never hidden on launch. A test shot stays
 	# behind, so it never jumps in front of what you're doing.
@@ -158,6 +161,7 @@ func _ready() -> void:
 	labels = preload("res://scripts/map_labels.gd").new()
 	labels.towns = towns
 	labels.rig = rig
+	labels.scenes = scenes
 	labels.houses = _houses
 	add_child(labels)
 	hero = preload("res://scripts/hero_view.gd").new()
@@ -264,7 +268,7 @@ func _ready() -> void:
 	chatter.bridge = bridge
 	chatter.sound = sound
 	add_child(chatter)
-	for bus in ["Music", "Ambience"]:
+	for bus in ["Master", "Music", "Ambience"]:
 		sound.set_volume(bus, float(Settings.get_value("vol_" + bus.to_lower())))
 	bridge.chronicle_added.connect(_sound_events)
 	interior.opened.connect(func(room): sound.set_interior(room))
@@ -273,6 +277,7 @@ func _ready() -> void:
 	bridge.realm_changed.connect(_on_realm_changed)
 	ui.pause_toggled.connect(func(p): bridge.set_paused(p); ui.toast("The realm holds its breath." if p else "The realm stirs again."))
 	ui.open_menu.connect(func(): title.open())
+	ui.town_closed.connect(func(): _selected = -1)
 	ui.open_settings.connect(func(): title.open_settings())
 	ui.decree.connect(_on_decree)
 	ui.decree_at.connect(func(action, city, to): bridge.decree(action, city, "", to))

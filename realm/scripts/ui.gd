@@ -19,6 +19,7 @@ signal decree(action: String, building: String, to: int)
 signal decree_at(action: String, city: int, to: int)  # a decree straight from the Hand's counsel, at its town (and the other house)
 signal tithe_changed(rate: float)
 signal open_menu
+signal town_closed  # the King put the town card away (Esc): main stops refreshing it
 signal mood_decreed(text: String)
 signal petition_answered(id: String, option: String)
 signal petition_spoken(id: String, words: String, confirm: String)
@@ -87,6 +88,8 @@ var _court_met := false  # the court has opened once this sitting
 
 var _toast: Label
 var _toast_box: PanelContainer  # the card the notice sits on
+var _toast_style: StyleBox  # its usual glass
+var _toast_solid: StyleBox  # fully opaque, for when it must sit over a card
 var _decree_btns := {}  # decree -> its button on the town card, named for whose town it is
 var _stories := {}  # chronicle seq -> a story beat's entry, for its link
 var _offer: PanelContainer  # "Watch": the latest moment worth seeing, for a few seconds
@@ -113,7 +116,11 @@ func _ready() -> void:
 	# panels, on solid smoked glass with a gold edge, so a result is never faint
 	# text lost under a panel.
 	_toast_box = PanelContainer.new()
-	_toast_box.add_theme_stylebox_override("panel", T._box(T.SURFACE_SOLID, Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.55), 10, 14))
+	_toast_style = T._box(T.SURFACE_SOLID, Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.55), 10, 14)
+	var solid := T.SURFACE_SOLID
+	solid.a = 1.0
+	_toast_solid = T._box(solid, Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.8), 10, 14)
+	_toast_box.add_theme_stylebox_override("panel", _toast_style)
 	_toast_box.anchor_left = 0.5
 	_toast_box.anchor_right = 0.5
 	_toast_box.offset_left = -250
@@ -134,6 +141,39 @@ func _ready() -> void:
 ## The cards that come up under the top bar share one place, and only the
 ## latest is ever on screen: one coming up puts away whichever was there.
 var _cards: Array = []
+
+
+## Closes the topmost thing the King has open; false when nothing was.
+func _step_back() -> bool:
+	for c in _cards:
+		if is_instance_valid(c) and c.visible:
+			c.visible = false
+			if c == _court_panel:
+				_court_hidden = true
+			if c == _ledger_panel and _ledger_btn:
+				_ledger_btn.set_pressed_no_signal(false)
+			return true
+	if _town_panel and _town_panel.visible:
+		_town_panel.visible = false
+		town_closed.emit()
+		return true
+	if _offer and _offer.visible:
+		_offer.visible = false
+		return true
+	return false
+
+
+## The free band of screen between the card under the top bar and the town
+## card at the bottom (x: its top, y: its bottom), where notices may sit.
+func _notice_gap() -> Vector2:
+	var top := _toast_top
+	for c in _cards:
+		if is_instance_valid(c) and c.visible:
+			top = maxf(top, c.get_global_rect().end.y + 12.0)
+	var bottom := get_viewport().get_visible_rect().size.y - 16.0
+	if _town_panel and _town_panel.visible:
+		bottom = minf(bottom, _town_panel.get_global_rect().position.y - 12.0)
+	return Vector2(top, bottom)
 
 
 func _card(p: PanelContainer) -> PanelContainer:
@@ -482,9 +522,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		# it when it has a panel of its own to close.
 		if walker and walker.active:
 			return
-		_court_hidden = true
-		_court_panel.visible = false
-		side_panels(false)
+		# One layer at a time, newest first: the card under the top bar, then the
+		# town card, then an offer to watch. With nothing open, the menu.
+		if not _step_back():
+			open_menu.emit()
 	else:
 		return
 	get_viewport().set_input_as_handled()
@@ -784,16 +825,29 @@ func _process(delta: float) -> void:
 		_offer.modulate.a = clampf(_offer_left, 0.0, 1.0)
 		if _offer_left <= 0.0:
 			_offer.visible = false
+	# Notices know where the cards are. They sit in the gap between the card
+	# under the top bar and the town card below; when there is no gap, a passing
+	# notice (a scene's caption, an offer to watch) waits rather than writing over
+	# a card, and the result of the King's own order shows on a solid card.
+	var gap := _notice_gap()
 	if _toast_time > 0:
-		# A notice never writes over an open card: it sits just under it.
-		var top := _toast_top
-		for c in _cards:
-			if is_instance_valid(c) and c.visible:
-				top = maxf(top, c.get_global_rect().end.y + 12.0)
-		_toast_box.offset_top = top
+		var h := _toast_box.get_combined_minimum_size().y
+		if gap.y - gap.x >= h:
+			_toast_box.offset_top = gap.x
+			_toast_box.add_theme_stylebox_override("panel", _toast_style)
+		elif _toast_result:
+			_toast_box.offset_top = _toast_top
+			_toast_box.add_theme_stylebox_override("panel", _toast_solid)
+		else:
+			_toast_time = 0.0  # a caption with nowhere to sit is let go
 		# An offer to watch the order carried out sits under the result, never on it.
 		if _offer and _offer.visible and _toast_box.modulate.a > 0.05:
 			_offer.offset_top = _toast_box.get_global_rect().end.y + 10.0
+	if _offer and _offer.visible:
+		var below := _offer.offset_top if _toast_time > 0 else maxf(_offer.offset_top, gap.x)
+		_offer.offset_top = below
+		if below < gap.x - 1.0 or below + _offer.get_combined_minimum_size().y > gap.y:
+			_offer.visible = false  # no room among the cards: the moment passes
 	# The offer, like every notice, sits between the side panels, never over the table.
 	if _offer and _offer.visible:
 		_fit_centre(_offer, _offer.get_combined_minimum_size().x)  # as wide as its words, centred in the gap

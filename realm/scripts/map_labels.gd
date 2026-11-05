@@ -7,6 +7,7 @@ extends CanvasLayer
 ## A seat shows its house's sigil; a town held by a bannerman, his family's.
 
 var towns: Node3D
+var scenes: Node  # scenes.gd, whose captions town names give way to
 var rig: Node3D
 var houses := {}  # owner id -> house, kept current by main
 
@@ -44,6 +45,16 @@ func _process(_delta: float) -> void:
 	var order: Array = _tags.keys()
 	order.sort_custom(func(a, b): return _rank(a) > _rank(b))
 	var placed: Array[Rect2] = []
+	# A scene's caption (a siege, the King's rider) is what's happening now: a
+	# town's name gives way to it rather than printing over it.
+	if scenes:
+		for c in scenes.get("_tags"):
+			var cap := c as Label3D
+			if cap == null or not cap.visible or cap.modulate.a <= 0.05 or cam.is_position_behind(cap.global_position):
+				continue
+			var at: Vector2 = cam.unproject_position(cap.global_position)
+			var w: float = cap.text.length() * 9.0
+			placed.append(Rect2(at - Vector2(w * 0.5, 22.0), Vector2(w, 44.0)))
 	for id in order:
 		var tag: Dictionary = _tags[id]
 		var box: Control = tag["box"]
