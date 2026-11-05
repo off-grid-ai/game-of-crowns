@@ -25,4 +25,4 @@ It's early. What would keep you playing past the first hour?
 2. A house asks for its taxes back. Whatever you answer, they remember.
 3. Your adviser tells you what matters and what each fix costs. You pick.
 
-**If someone asks "is it AI?":** "No. What the lords do comes from the simulation: who you wronged, who owes what, who's starving. If you run Off Grid AI alongside it, they also speak in their own words."
+**If someone asks "is it AI?":** "No. What the lords do comes from the simulation: who you wronged, who owes what, who's starving. If you run Off Grid AI (getoffgridai.co/desktop) alongside it, they also speak in their own words."

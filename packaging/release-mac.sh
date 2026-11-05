@@ -51,6 +51,6 @@ TAG="v$VERSION-$(date +%Y%m%d)-$SHA"
 echo "==> Release $TAG"
 gh release create "$TAG" "$DMG" $FLAG -R "$REPO" --target "$FULL" \
   --title "Game of Crowns $VERSION ($SHA)" \
-  --notes "Free, nothing locked. For Macs with Apple Silicon. Open the dmg and drag Game of Crowns to Applications. Want the lords to speak in their own words? Run Off Grid AI (https://github.com/off-grid-ai) alongside it."
+  --notes "Free, nothing locked. For Macs with Apple Silicon. Open the dmg and drag Game of Crowns to Applications. Want the lords to speak in their own words? Run Off Grid AI (https://getoffgridai.co/desktop) alongside it."
 mkdir -p build && cp "$DMG" build/
 echo "==> Done: https://github.com/$REPO/releases/tag/$TAG"
