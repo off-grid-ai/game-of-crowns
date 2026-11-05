@@ -1,0 +1,121 @@
+{
+  "id": "crowns-debt",
+  "reign": true,
+  "name": "The Crown's Debt",
+  "about": "The bankers across the sea call in what your father borrowed. Squeeze the houses, pay with what the crown has, or refuse, and meet the sellswords the bankers hire, and the lord they choose to back.",
+  "tags": ["money", "foreign", "political", "cunning", "short"],
+  "kind": "debt",
+  "weight": 1,
+  "title": "The Crown's Debt",
+  "roles": {
+    "rich": { "rank": "lord", "seat": true, "likes": { "traits": ["greedy", "ambitious", "cunning"] } },
+    "poor": { "rank": "lord", "otherHouse": "rich", "seat": true, "likes": { "traits": ["proud", "honourable"] } },
+    "bank": { "town": true, "seatOf": "rich" }
+  },
+  "core": ["rich"],
+  "onDeath": { "rich": "settled" },
+  "beats": [
+    {
+      "id": "the-note",
+      "stage": "rising",
+      "threat": 20,
+      "speaker": "rich",
+      "at": "bank",
+      "text": "A grey ship docks at the river mouth, and a man in grey walks into Kingsmere with your father's seal on a note for more gold than the crown has ever held.",
+      "court": {
+        "from": "rich",
+        "text": "{rich} of {rich.house}, who knows the bankers well: \"They want their gold, Your Grace, and they always get it. One way or another.\"",
+        "options": [
+          { "id": "pay", "label": "Pay the first instalment from the treasury (500 gold)", "hint": "the bankers wait · the crown's coffers empty", "cost": 500, "do": { "threat": -20 }, "result": "The crown pays. The man in grey bows, and says he will return in a year for the next." },
+          { "id": "squeeze", "label": "Raise a special levy on the great houses", "hint": "{rich.houseName} −15 · {poor.houseName} −20 · paid in full", "favour": { "rich": -15, "poor": -20 }, "do": { "threat": -20, "gold": { "rich": -60, "poor": -40 } }, "result": "A special levy goes out under the King's seal. Every great house pays, and every great house remembers it." },
+          { "id": "refuse", "label": "Refuse: the crown does not pay its father's debts", "hint": "nothing now · the bankers have other ways", "do": { "threat": 20 }, "result": "The King tears the note in half. The man in grey picks up both halves, and goes to see {rich}." }
+        ]
+      },
+      "after": [3, 4],
+      "next": [
+        { "if": { "ruled": "refuse" }, "to": "sellswords" },
+        { "to": "second-note" }
+      ],
+      "patience": 6,
+      "otherwise": "sellswords"
+    },
+    {
+      "id": "second-note",
+      "stage": "rising",
+      "threat": 30,
+      "speaker": "rich",
+      "at": "bank",
+      "text": "The man in grey returns, as he said he would. The second instalment is larger than the first.",
+      "court": {
+        "from": "poor",
+        "text": "{poor} of {poor.house}: \"Another levy will ruin my house, Your Grace. Find another way, or I'll find another King who can.\"",
+        "options": [
+          { "id": "pay", "label": "Pay from the treasury again (600 gold)", "hint": "the debt is done · the crown is poor", "cost": 600, "favour": { "poor": 10 }, "do": { "threat": -25 }, "result": "The crown pays the last of it. The man in grey sails home, and the treasury echoes." },
+          { "id": "squeeze", "label": "Levy the houses again", "hint": "{poor.houseName} −30 · {rich.houseName} −10", "favour": { "poor": -30, "rich": -10 }, "do": { "threat": -10 }, "result": "The second levy goes out. {poor} pays it with silver plate from {poor.his} own table." },
+          { "id": "refuse", "label": "Refuse the rest", "hint": "nothing now · the bankers turn to the sword", "do": { "threat": 15 }, "result": "The King refuses. The man in grey does not argue: he simply leaves." }
+        ]
+      },
+      "after": [2, 3],
+      "next": [
+        { "if": { "ruled": "refuse" }, "to": "sellswords" },
+        { "if": { "favour": ["poor", "<", 20] }, "to": "the-bankers-candidate" },
+        { "to": "settled" }
+      ],
+      "patience": 6,
+      "otherwise": "sellswords"
+    },
+    {
+      "id": "sellswords",
+      "stage": "crisis",
+      "threat": 60,
+      "speaker": "rich",
+      "at": "bank",
+      "text": "The bankers' gold has bought a sellsword company, and the company has wintered at {bank}, as {rich}'s guests.",
+      "do": { "units": { "rich": { "type": "Knights", "count": 3 } } },
+      "court": {
+        "from": "poor",
+        "text": "{poor}: \"Five thousand sellswords at {bank}, Your Grace, eating {rich}'s bread. Pay them off, or they will come for what you owe with a different King.\"",
+        "options": [
+          { "id": "outbid", "label": "Outbid the bankers for the sellswords (700 gold)", "hint": "the company changes sides · the debt remains", "cost": 700, "do": { "threat": -30 }, "result": "The crown's gold outweighs the bankers'. The sellsword captain kneels to the King, for a year." },
+          { "id": "seize-bank", "label": "Strip {rich} of {bank} for harbouring them", "hint": "{rich.houseName} −40 · {poor.houseName} +15", "favour": { "rich": -40, "poor": 15 }, "do": { "transfer": ["bank", "poor"], "threat": 5 }, "result": "By royal decree, {bank} is given to {poor.house}. {rich} does not open the gates." }
+        ]
+      },
+      "after": [2, 3],
+      "next": [
+        { "if": { "ruled": "outbid" }, "to": "settled" },
+        { "to": "the-bankers-candidate" }
+      ],
+      "patience": 5,
+      "otherwise": "the-bankers-candidate"
+    },
+    {
+      "id": "the-bankers-candidate",
+      "stage": "crisis",
+      "threat": 90,
+      "speaker": "rich",
+      "at": "bank",
+      "text": "With the bankers' gold and the bankers' swords, {rich} declares that a crown which cannot pay its debts cannot keep its throne, and marches.",
+      "do": { "usurper": "rich", "host": 12 },
+      "after": [3, 3],
+      "next": [{ "if": { "usurper": "none" }, "to": "default" }],
+      "patience": 20,
+      "otherwise": "default"
+    },
+    {
+      "id": "settled",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "poor",
+      "at": "bank",
+      "text": "The debt is paid, one way or another, and the grey ship does not come back. The houses count what it cost them."
+    },
+    {
+      "id": "default",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "poor",
+      "at": "bank",
+      "text": "The bankers' candidate is broken before Kingsmere. The crown never pays, and never borrows across the sea again."
+    }
+  ]
+}

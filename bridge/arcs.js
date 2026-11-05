@@ -79,6 +79,11 @@ export function check(t) {
     if (!b.court) continue;
     if (!(b.court.options ?? []).length) errs.push(`beat ${b.id} brings a matter to court with no answers`);
     for (const o of b.court.options ?? []) if (!o.id || !o.label) errs.push(`beat ${b.id}: every court answer needs an id and a label`);
+    // Every name in what the court hears and answers must be one of the story's roles.
+    for (const text of [b.court.text, ...(b.court.options ?? []).flatMap((o) => [o.label, o.hint, o.result])]) {
+      for (const [, r] of String(text ?? "").matchAll(/\{(\w+)/g)) if (!roles.includes(r) && r !== "thread") errs.push(`beat ${b.id}'s court names {${r}}, which isn't a role`);
+    }
+    for (const o of b.court.options ?? []) for (const k of Object.keys(o.favour ?? {})) if (!roles.includes(k)) errs.push(`beat ${b.id}: answer ${o.id} moves the favour of ${k}, which isn't a role`);
   }
   for (const n of t.interrupts ?? []) if (!ids.includes(n.to)) errs.push(`an interrupt goes to ${n.to}, which isn't a beat`);
   for (const [r, id] of Object.entries(t.onDeath ?? {})) if (!ids.includes(id)) errs.push(`onDeath ${r} goes to ${id}, which isn't a beat`);
@@ -272,6 +277,7 @@ export class Arcs {
   }
 
   finish(arc, how, ctx, text) {
+    if (this.done.includes(arc)) return;  // already ended (a fall ends it before its beat closes)
     arc.status = how;
     arc.ended = this.clock;
     // The reign's story ending is the reign ending: weathered, it's a victory.
@@ -631,7 +637,8 @@ export class Arcs {
     // The story's claimant marches on Kingsmere (the realm's own usurper war).
     if (d.usurper && roles[d.usurper] && ctx.declare) ctx.declare(roles[d.usurper].playerId, Number(d.host ?? 10));
     // The story takes the throne: the reign ends, in the chronicle's words.
-    if (d.fall && ctx.endReign) { const why = this.fill(d.fall, arc, ctx, roles); this.finish(arc, "failed", ctx, why); ctx.endReign(why); return lua; }
+    // (The beat itself tells it in the chronicle; the reign's end carries the fall's own words.)
+    if (d.fall && ctx.endReign) { const why = this.fill(d.fall, arc, ctx, roles); this.finish(arc, "failed", ctx); ctx.endReign(why); return lua; }
     const send = (l) => { lua.push(l); ctx.send(l); };
     const R = (k) => roles[k];
     const court = this.court;

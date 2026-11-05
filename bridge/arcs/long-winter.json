@@ -1,0 +1,126 @@
+{
+  "id": "long-winter",
+  "reign": true,
+  "name": "The Long Winter",
+  "about": "The snows come early and stay. The north starves while the south's granaries are full, and beyond the wall the dead are stirring. You can't feed everyone, and the north remembers who it was left to.",
+  "tags": ["the-dead", "famine", "grim", "gritty", "slow-burn", "epic", "a-reign"],
+  "kind": "winter",
+  "weight": 1,
+  "title": "The Long Winter",
+  "roles": {
+    "north": { "rank": "lord", "seat": true, "likes": { "traits": ["brave", "proud", "stubborn", "honourable"] } },
+    "south": { "rank": "lord", "otherHouse": "north", "seat": true, "likes": { "traits": ["greedy", "cautious", "content"] } },
+    "northseat": { "town": true, "seatOf": "north" },
+    "granary": { "town": true, "seatOf": "south" }
+  },
+  "core": ["north"],
+  "onDeath": { "north": "north-heir" },
+  "beats": [
+    {
+      "id": "early-snow",
+      "stage": "rising",
+      "threat": 15,
+      "speaker": "north",
+      "at": "northseat",
+      "text": "Snow falls on {northseat} before the harvest is in, and does not melt. {north} counts the stores and does not like the sum.",
+      "court": {
+        "from": "north",
+        "text": "{north} of {north.house}: \"The winter has come early to {northseat}, Your Grace, and it means to stay. My people will starve by spring without the south's grain.\"",
+        "options": [
+          { "id": "royal-grain", "label": "Send grain north from the royal stores (200 gold)", "hint": "{north.houseName} +15 · the crown's stores run low", "cost": 200, "favour": { "north": 15 }, "do": { "threat": -10 }, "result": "Wagons of royal grain roll north through the snow. {north} meets them at the gate himself." },
+          { "id": "levy-south", "label": "Order {south.house} to send its surplus north", "hint": "{north.houseName} +15 · {south.houseName} −20", "favour": { "north": 15, "south": -20 }, "do": { "pay": [["south", "north", 80]], "threat": -10 }, "result": "By royal command, {south.house} sends its grain north, and counts every sack." },
+          { "id": "fend", "label": "The north has always fended for itself", "hint": "{north.houseName} −15 · the cold gets in", "favour": { "north": -15 }, "do": { "threat": 10 }, "result": "The crown sends its sympathies north. {north} reads the letter to {north.his} hungry hall." }
+        ]
+      },
+      "after": [3, 4],
+      "next": [{ "to": "hunger" }],
+      "patience": 6,
+      "otherwise": "hunger"
+    },
+    {
+      "id": "hunger",
+      "stage": "crisis",
+      "threat": 40,
+      "speaker": "north",
+      "at": "northseat",
+      "text": [
+        "The second winter is worse than the first. In {northseat} they are eating the seed corn, and in {granary} the granaries are full.",
+        "Wolves come down to the villages around {northseat}, and so do the starving. {south.house}'s barns at {granary} are under armed guard."
+      ],
+      "court": {
+        "from": "north",
+        "text": "{north}: \"{south} sits on full granaries while my people boil leather, Your Grace. If the crown won't open them, the north will.\"",
+        "options": [
+          { "id": "seize", "label": "Seize {south.house}'s granaries for the north", "hint": "{north.houseName} +20 · {south.houseName} −30", "favour": { "north": 20, "south": -30 }, "do": { "pay": [["south", "north", 120]], "threat": -15 }, "result": "The King's men break the seals on {granary}'s barns. {south} watches from the walls." },
+          { "id": "buy", "label": "Buy grain from across the sea (400 gold)", "hint": "everyone fed · the treasury emptied", "cost": 400, "favour": { "north": 10 }, "do": { "threat": -15 }, "result": "Ships from across the sea unload grain at the river mouth. The crown's coffers ring hollow." },
+          { "id": "pray", "label": "Call for prayers and patience", "hint": "nothing now · the north starves", "favour": { "north": -20 }, "do": { "threat": 15 }, "result": "Every church in the realm prays for the north. The north buries its children." }
+        ]
+      },
+      "after": [3, 4],
+      "next": [{ "to": "the-wall" }],
+      "patience": 6,
+      "otherwise": "the-wall"
+    },
+    {
+      "id": "the-wall",
+      "stage": "crisis",
+      "threat": 65,
+      "speaker": "north",
+      "at": "northseat",
+      "text": "Beyond the old wall, in the long dark, the dead are walking. Riders reach {northseat} with frost in their beards and fear in their eyes.",
+      "do": { "units": { "north": { "type": "Pikemen", "count": 3 } } },
+      "court": {
+        "from": "north",
+        "text": "{north}: \"The dead are at the wall, Your Grace. The north will hold if the crown stands with it. Send the royal host, or tell me plainly we are on our own.\"",
+        "options": [
+          { "id": "host", "label": "Send the royal host north (300 gold)", "hint": "{north.houseName} +25 · Kingsmere stands thinner", "cost": 300, "favour": { "north": 25 }, "do": { "units": { "north": { "type": "Knights", "count": 3 } }, "threat": -25 }, "result": "The royal host marches north under the King's banner, and the north sings in the snow." },
+          { "id": "abandon", "label": "The crown cannot spare a man", "hint": "{north.houseName} −40 · the north will remember", "favour": { "north": -40 }, "do": { "threat": 15 }, "result": "The King's answer reaches {northseat}. {north} burns it unread before the hall." }
+        ]
+      },
+      "after": [3, 4],
+      "next": [
+        { "if": { "all": [{ "ruled": "host" }, { "favour": ["north", ">", 35] }] }, "to": "spring" },
+        { "if": { "favour": ["north", "<", 30] }, "to": "the-north-chooses" },
+        { "to": "spring" }
+      ],
+      "patience": 6,
+      "otherwise": "the-north-chooses"
+    },
+    {
+      "id": "the-north-chooses",
+      "stage": "crisis",
+      "threat": 90,
+      "speaker": "north",
+      "at": "northseat",
+      "text": "\"A King who would not feed us, who would not fight for us, is no King of ours.\" {north} takes the old crown of the north from its chest, and marches south.",
+      "do": { "usurper": "north", "host": 10 },
+      "after": [3, 3],
+      "next": [{ "if": { "usurper": "none" }, "to": "thaw" }],
+      "patience": 20,
+      "otherwise": "thaw"
+    },
+    {
+      "id": "spring",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "north",
+      "at": "northseat",
+      "text": "The snows go at last. The north buries its dead, mends its wall, and remembers that the crown came when it was called."
+    },
+    {
+      "id": "thaw",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "south",
+      "at": "granary",
+      "text": "The northern host breaks before Kingsmere, and the thaw finds the realm still under one crown, and the north under a grudge that will outlive everyone in it."
+    },
+    {
+      "id": "north-heir",
+      "stage": "resolution",
+      "end": "resolved",
+      "at": "northseat",
+      "text": "{north} dies in the snow, and {north.house}'s new lord has no stomach for a winter war. {thread} passes with the season."
+    }
+  ]
+}
