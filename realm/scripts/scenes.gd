@@ -1345,8 +1345,9 @@ func _rider(from: Vector3, to: Vector3, label: String, s := {}) -> Node3D:
 		var d := t * length
 		var g := road.sample_baked(d)
 		var p := _stand(g, HORSE_BODY)
+		# Eased, so the ground's bumps and a nudge clear of a wall are glides, not jumps.
 		if last_y[0] != INF:
-			p.y = lerpf(last_y[0], p.y, 0.25)
+			p = Vector3(lerpf(horse.position.x, p.x, 0.35), lerpf(last_y[0], p.y, 0.25), lerpf(horse.position.z, p.z, 0.35))
 		last_y[0] = p.y
 		# It steers toward a point a little way down the road, gently.
 		var ahead := road.sample_baked(minf(length, d + 0.25))
@@ -1531,10 +1532,12 @@ func _caption(root: Node3D, text: String, at: Vector3) -> Label3D:
 	var tag := Label3D.new()
 	tag.visibility_range_begin = 1.6  # gone when you're walking right past it
 	tag.text = text
-	tag.font_size = 36
+	tag.font_size = 30
 	tag.pixel_size = 0.004
 	tag.outline_size = 8
 	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	tag.no_depth_test = true  # read whole: a roof in front never cuts a caption mid-word
+	tag.render_priority = 10
 	tag.modulate = Color(0.95, 0.85, 0.6)
 	root.add_child(tag)
 	_tags.append(tag)

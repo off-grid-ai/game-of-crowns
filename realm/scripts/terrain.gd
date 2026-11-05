@@ -1007,7 +1007,7 @@ static func smooth_road(route: PackedVector3Array) -> Curve3D:
 	for i in pts.size():
 		var prev := pts[maxi(i - 1, 0)]
 		var next := pts[mini(i + 1, pts.size() - 1)]
-		var tan := (next - prev) * 0.25
+		var tan := (next - prev) * 0.15  # rounds the corner, but close to the road, clear of the houses
 		c.add_point(pts[i], -tan, tan)
 	return c
 

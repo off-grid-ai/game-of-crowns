@@ -630,7 +630,7 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
     // A thin treasury: the house asks to be spared the tithe, or for a loan.
     if (me && me.gold < 80) candidates.push({ kind: "debt", weight: 3, make: () => ({ kind: "debt", text: `${c.name} of ${c.house}: "The tithe has bled my coffers dry, Your Grace. ${me.gold} gold is all that stands between my house and ruin. Spare us, or lend us enough to stand."`, facts: facts(c.playerId), options: [
       { id: "forgive", label: "Return this year's tithe (100 gold)", hint: `${c.house} +15 · other houses ask why they still pay`, cost: 100 },
-      { id: "lend", label: "Lend 250 gold, repaid with interest", hint: `They owe the crown 325 in two years · if they cannot pay, they will hate you for asking`, cost: 250 },
+      { id: "lend", label: "Lend 250 gold, repaid with interest", hint: `They owe the crown 325 gold in two years · if they cannot pay, they will hate you for asking`, cost: 250 },
       { id: "refuse", label: "Every house pays its share", hint: `${c.house} −10${has("proud") ? ` · ${c.name} is proud, and will not beg twice` : ""}` },
     ] }) });
 
