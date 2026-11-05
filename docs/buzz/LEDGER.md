@@ -55,6 +55,9 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 
 ## Runs
 
+### 11-05 19:05
+**Moved:** v0.3 dmg uploaded to itch with butler (alichherawalla/game-of-crowns, channel mac); itch is processing it. Left for Mac on itch: the cover and screenshots (docs/buzz/images/itch/), then Publish.
+
 ### 11-05 18:40
 **Moved:** v0.3 released: https://github.com/off-grid-ai/game-of-crowns/releases/tag/v0.1-20261105-0f052ff (pre-release, notarised, Gatekeeper accepted; from 0f052ff: lord memory, 20 s seasons, rider and T-pose fixes, look pass 1, no bundled model). The tag still reads 0.1 because realm/export_presets.cfg's version wasn't bumped. Pushing the dmg to itch with butler (alichherawalla/game-of-crowns:mac).
 
