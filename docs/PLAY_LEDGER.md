@@ -34,7 +34,7 @@ How a round is played: `realm/tools/play/*.play` scenarios feed real input (keys
 
 | # | Expected | Found | Change | Commit |
 |---|---|---|---|---|
-| 85 | The Hand never advises what can't be done | Right after the banners were called, "Call the banners" stayed advised in gold, though the houses answer once a year (r21/03) | The banners leave the Hand's orders until they can be called again | (next) |
+| 85 | The Hand never advises what can't be done | Right after the banners were called, "Call the banners" stayed advised in gold, though the houses answer once a year (r21/03) | The banners leave the Hand's orders until they can be called again | b5ada6f |
 | 84 | Seen working (r21/02–03) | — | The Hand's pick framed in gold ("Call the banners", "A feast in their honour"); "5 of 6 great houses would answer your banners. Win all of them and the realm is yours in truth."; the dead: "your 1,200 men, and about 1,200 more if you call the banners" against 3,400; "▲3,500 a season"; the banners card lists every house's change (Wolfholt 62 → 65 … Thornvale 32 → 29) | r21 |
 | 83 | A goal for the reign (supervisor 12:50 #3, 13:35 #3) | An endless reign with no measure of doing well | Under the table: how many great houses would answer the King's banners, and that winning all of them makes the realm his in truth | 00ab25e |
 | 82 | The Hand advises (supervisor 12:05, 12:50, 13:35) | Every order the same plain gold text | On each matter the order that does most for its cost is framed in gold, "The Hand's advice" on hover | 00ab25e |
