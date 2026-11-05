@@ -4,7 +4,7 @@ extends Node3D
 ## simulation of how many people there are belongs to Freeciv (town size).
 
 const VIEW_RADIUS := 55.0
-const MAX_PER_TOWN := 54
+const MAX_PER_TOWN := 80
 
 var terrain: Node3D
 var towns: Node3D
@@ -164,7 +164,7 @@ func _spawn(id: int) -> void:
 	var homes: Array = town["node"].get_meta("homes", [])
 	var start := rng.randi() % maxi(1, homes.size())
 	# Busier as a town grows: a hamlet has a handful about, a market town a crowd.
-	for i in clampi(6 + size * 5, 8, MAX_PER_TOWN):
+	for i in clampi(10 + size * 6, 12, MAX_PER_TOWN):
 		# Each has a calling that decides where their day goes, and what they wear:
 		# farmers dress as peasants, the pious now and then as clergy, the rest as townsfolk.
 		var roll := rng.randf()
