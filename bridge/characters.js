@@ -408,7 +408,7 @@ export class Court {
       }
       const favour = ctx.favour(c.playerId);
       opts.push({ kind: "petition", score: 20 + (goal.kind === "court" || goal.kind === "peace" ? 20 : 0) + (favour > 60 ? 10 : 0) });
-      if (favour < 25) opts.push({ kind: "rebel", score: 40 + (25 - favour) * 2 + (goal.kind === "crown" ? 40 : 0) + (has("ambitious") ? 15 : 0) - (has("craven") ? 30 : 0) - (c.hostage && this.people[c.hostage]?.alive ? 60 : 0) });
+      if (favour < 25 && !ctx.warded?.(c.playerId)) opts.push({ kind: "rebel", score: 40 + (25 - favour) * 2 + (goal.kind === "crown" ? 40 : 0) + (has("ambitious") ? 15 : 0) - (has("craven") ? 30 : 0) - (c.hostage && this.people[c.hostage]?.alive ? 60 : 0) });
     }
     if (!opts.length) return null;
     // The realm's mood, set by the King in words, tilts everyone at once.

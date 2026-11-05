@@ -513,7 +513,7 @@ func _build_houses() -> void:
 	_houses.add_theme_constant_override("separation", 2)
 	v.add_child(_houses)
 	# What favour means, in one line, so nobody has to find it in a tooltip.
-	var bands := T.label("Favour: under 30 may rise against you · 35 and up answer your banners · 60 and up are loyal")
+	var bands := T.label("Favour: under 25 may rise against you · 35 and up answer your banners · 60 and up are loyal")
 	bands.add_theme_font_size_override("font_size", 10)
 	bands.autowrap_mode = TextServer.AUTOWRAP_WORD
 	v.add_child(bands)
@@ -1609,7 +1609,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		head.mouse_filter = Control.MOUSE_FILTER_PASS
 		grid.add_child(head)
 	var fav_head := T.label("Favour", T.TEXT_3)
-	fav_head.tooltip_text = "How each house feels toward the crown. Below 30 they may rise against you; gifts, feasts and fair rulings raise it."
+	fav_head.tooltip_text = "How each house feels toward the crown. Below 25 they may rise against you; gifts, feasts and fair rulings raise it."
 	fav_head.mouse_filter = Control.MOUSE_FILTER_PASS
 	grid.add_child(fav_head)
 	for p in players:
@@ -1676,7 +1676,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		if p.get("favour") != null:
 			# The number, in the colour of its danger: red may rise, gold grows cold.
 			var f := int(p["favour"])
-			var fav := T.datum("%d" % f, T.SIZE_DESC, T.DANGER if f < 30 else (T.ACCENT if f < 45 else T.TEXT))
+			var fav := T.datum("%d" % f, T.SIZE_DESC, T.DANGER if f < 25 else (T.ACCENT if f < 45 else T.TEXT))
 			fav.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 			# Why they feel so (the bridge's ledger of kindnesses and grievances),
 			# then what it means: CK3's opinion breakdown, in the realm's words.
@@ -1685,7 +1685,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 				var d := int(r.get("d", 0))
 				if d != 0:
 					why.append("%s%d  %s" % ["+" if d > 0 else "", d, String(r.get("why", ""))])
-			var means := "Below 30 they may rise against you and refuse your banners." if f < 30 else ("Growing cold: below 30 they may rise." if f < 45 else ("Loyal: they answer your banners at once." if f >= 60 else "Content, for now."))
+			var means := "Below 25 they may rise against you and refuse your banners." if f < 25 else ("Growing cold: below 25 they may rise." if f < 45 else ("Loyal: they answer your banners at once." if f >= 60 else "Content, for now."))
 			fav.tooltip_text = "Favour toward the crown: %d of 100\n\n%s%s" % [f, ("\n".join(why) + "\n\n") if not why.is_empty() else "", means]
 			fav.mouse_filter = Control.MOUSE_FILTER_PASS
 			# Which way they're going: "37 ▼10" over the last year, so a drift shows

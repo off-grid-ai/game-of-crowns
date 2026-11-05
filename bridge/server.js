@@ -454,7 +454,7 @@ async function runSeason() {
   if (!world || seasonRunning || !court) return;
   seasonRunning = true;
   try {
-    await court.season(world, { favour: favourOf, send: (l) => send(`lua cmd ${l}`), shift: shiftFavour, watched: isWatched(), options: meta.options ?? {} });
+    await court.season(world, { favour: favourOf, warded: (pid) => (stakes?.s.wards?.[pid] ?? -1) > (world?.turn ?? 0), send: (l) => send(`lua cmd ${l}`), shift: shiftFavour, watched: isWatched(), options: meta.options ?? {} });
   } catch (err) {
     console.error("season:", err);
   } finally {
@@ -515,10 +515,19 @@ function counsel(players, cities, threat) {
     // The Hand names what is cooling them most, from the house's ledger of causes.
     const drain = (favourWhy[cold.id] ?? []).filter((r) => r.d < 0).sort((a, b) => a.d - b.d)[0];
     const cause = drain ? ` What cools them most: ${drain.why} (${Math.round(drain.d)}).` : "";
+    // A royal match binds the cold house to the most loyal one: both warm, and a long truce holds.
+    const friend = great.filter((p) => p.id !== cold.id).sort((a, b) => favourOf(b.id) - favourOf(a.id))[0];
+    const match = friend ? [{ label: `Wed them to ${friend.house.name.replace(/^House /, "")}`, action: "marriage", city: seatOf(cold.id).id, to: friend.id }] : [];
     const lighter = drain?.why === "the royal tithe" && meta.tithe > 0 ? [{ label: `Lower the tithe to ${Math.round(meta.tithe * 100) - 5}%`, ui: "tithe_down" }] : [];
-    out.push({ urgency: f < 30 ? 100 : 70, text: `${cold.house.name} grows cold to the crown: favour ${f}`,
-      why: (f < 30 ? "So low, they may raise their banners against you any season." : "Below 30, a house may rise against the crown.") + cause,
-      acts: [...lighter, { label: "Gift crowns", action: "gift", city: seatOf(cold.id).id }, { label: "A feast in their honour", action: "feast", city: seatOf(cold.id).id }] });
+    // The two rules, plainly: under 25 the lord may rise any season; two houses
+    // under 25 and one of them claims the throne.
+    const angryNow = great.filter((p) => favourOf(p.id) < 25).length;
+    const rule = f < 25
+      ? `Under 25, their lord may raise his banners any season, likelier the colder he grows.${angryNow >= 2 ? "" : " One more house under 25 and a pretender will claim the throne."}`
+      : "Under 25, a lord may raise his banners against you; two such houses and one claims the throne.";
+    out.push({ urgency: f < 25 ? 100 : 70, text: `${cold.house.name} grows cold to the crown: favour ${f}`,
+      why: rule + cause,
+      acts: [...lighter, { label: "Gift crowns", action: "gift", city: seatOf(cold.id).id }, { label: "A feast in their honour", action: "feast", city: seatOf(cold.id).id }, ...match] });
   }
   // The usurper by name, how long until they march, and how to stop it: the
   // whispers fade once the angry houses (under 25) are won back.
