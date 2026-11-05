@@ -164,10 +164,17 @@ func _process(delta: float) -> void:
 		if f["t"] < 1.0:
 			f["t"] = minf(1.0, f["t"] + delta / maxf(2.0, turn_seconds * 0.9))
 			var path: PackedVector3Array = f.get("path", PackedVector3Array([f["from"], t]))
-			var p: Vector3 = terrain.along(path, f["t"])
-			var dir: Vector3 = terrain.along(path, minf(1.0, f["t"] + 0.02)) - p
-			if Vector2(dir.x, dir.z).length() > 0.05:
-				n.rotation.y = atan2(dir.x, dir.z)
+			# The road as a smooth curve (made once per march), walked by distance,
+			# and the figure turns into each bend rather than snapping to it.
+			if not f.has("road") or f.get("road_of") != path:
+				f["road"] = terrain.smooth_road(path)
+				f["road_of"] = path
+			var road: Curve3D = f["road"]
+			var length := road.get_baked_length()
+			var p: Vector3 = road.sample_baked(f["t"] * length)
+			var dir: Vector3 = road.sample_baked(minf(length, f["t"] * length + 0.25)) - p
+			if Vector2(dir.x, dir.z).length() > 0.01:
+				n.rotation.y = lerp_angle(n.rotation.y, atan2(dir.x, dir.z), clampf(delta * 4.0, 0.0, 1.0))
 			n.position = Vector3(p.x, terrain.height_at(p.x, p.z), p.z)
 			# Through a town with no walk map the way is a straight line: keep
 			# off its buildings as it goes.

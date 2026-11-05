@@ -1334,19 +1334,24 @@ func _rider(from: Vector3, to: Vector3, label: String, s := {}) -> Node3D:
 	horse.mount(rider)
 	carried_standard(rider, {"name": "The Crown", "crown": true}, Color(0.72, 0.13, 0.16))
 	var tag := _caption(self, label, _ground(from) + Vector3(0, 0.45, 0))
-	var route: PackedVector3Array = _route(from, to)
-	var length := 0.0
-	for i in route.size() - 1:
-		length += route[i].distance_to(route[i + 1])
+	var road: Curve3D = terrain.smooth_road(_route(from, to))
+	var length: float = road.get_baked_length()
 	# Eased in and out, the pace peaks at about pi/2 the average: a gallop
 	# (horse.gd) over the open road, a walk at either end.
 	var secs := clampf(length / (Horse.GALLOP * 0.63), 8.0, 90.0)
+	var last_y := [INF]  # the horse's height eases over the ground's bumps
 	var tw := create_tween()
 	tw.tween_method(func(t: float):
-		var p := _stand(terrain.along(route, t), HORSE_BODY)
-		var ahead := _ground(terrain.along(route, minf(1.0, t + 0.01)))
-		if ahead.distance_to(p) > 0.0001:
-			horse.rotation.y = lerp_angle(horse.rotation.y, atan2(ahead.x - p.x, ahead.z - p.z), 0.2)
+		var d := t * length
+		var g := road.sample_baked(d)
+		var p := _stand(g, HORSE_BODY)
+		if last_y[0] != INF:
+			p.y = lerpf(last_y[0], p.y, 0.25)
+		last_y[0] = p.y
+		# It steers toward a point a little way down the road, gently.
+		var ahead := road.sample_baked(minf(length, d + 0.25))
+		if Vector2(ahead.x - g.x, ahead.z - g.z).length() > 0.001:
+			horse.rotation.y = lerp_angle(horse.rotation.y, atan2(ahead.x - g.x, ahead.z - g.z), 0.12)
 		horse.position = p
 		_place_tag(tag, p + Vector3(0, 0.45, 0)), 0.0, 1.0, secs).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	tw.tween_callback(func(): if not s.is_empty(): arrived.emit(s))
@@ -1377,26 +1382,31 @@ func _convoy(from: Vector3, to: Vector3, grain: bool, label := "", scene := {}) 
 		root.add_child(s)
 		_people.play(s, "Walk")
 		escort.append(s)
-	var route: PackedVector3Array = _route(from, to)
-	var length := 0.0
-	for i in route.size() - 1:
-		length += route[i].distance_to(route[i + 1])
+	var road: Curve3D = terrain.smooth_road(_route(from, to))
+	var length: float = road.get_baked_length()
 	var seconds := clampf(length / 0.35, 12.0, 70.0)
 	var tag := _caption(root, label if label != "" else ("The King's grain" if grain else "The King's gold"), _ground(from) + Vector3(0, 0.45, 0))
+	var heading := [INF]  # eased, so the wagon rounds a bend instead of snapping to it
 	var tw := create_tween()
 	tw.tween_method(func(t: float):
-		var p := _stand(terrain.along(route, t))
-		var ahead := _ground(terrain.along(route, minf(1.0, t + 0.01)))
-		var dir := (ahead - p).normalized() if ahead.distance_to(p) > 0.0001 else Vector3.FORWARD
+		var d := t * length
+		var g := road.sample_baked(d)
+		var p := _stand(g)
+		var ahead := road.sample_baked(minf(length, d + 0.25))
+		var flat := Vector3(ahead.x - g.x, 0, ahead.z - g.z)
+		var dir := flat.normalized() if flat.length() > 0.001 else Vector3.FORWARD
+		var want := atan2(dir.x, dir.z)
+		heading[0] = want if heading[0] == INF else lerp_angle(heading[0], want, 0.12)
+		dir = Vector3(sin(heading[0]), 0, cos(heading[0]))
 		var side := Vector3(-dir.z, 0, dir.x)
 		wagon.position = p
-		wagon.rotation.y = atan2(dir.x, dir.z) + PI
+		wagon.rotation.y = heading[0] + PI
 		_place_tag(tag, p + Vector3(0, 0.45, 0))
 		for i in escort.size():
 			var e: Node3D = escort[i]
-			var trail := _stand(terrain.along(route, maxf(0.0, t - (0.004 + i * 0.003))))
+			var trail := _stand(road.sample_baked(maxf(0.0, d - (0.12 + i * 0.09))))
 			e.position = trail + side * (0.05 if i % 2 == 0 else -0.05)
-			e.rotation.y = atan2(dir.x, dir.z), 0.0, 1.0, seconds)
+			e.rotation.y = heading[0], 0.0, 1.0, seconds)
 	tw.tween_callback(func(): if not scene.is_empty(): arrived.emit(scene))
 	tw.tween_interval(1.0)
 	tw.tween_property(tag, "modulate:a", 0.0, 2.0)

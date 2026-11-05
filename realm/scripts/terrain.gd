@@ -993,6 +993,20 @@ func land_path(from: Vector3, to: Vector3) -> PackedVector3Array:
 
 
 ## The point a fraction t of the way along a path, by distance.
+## A road as a smooth curve: Godot's Curve3D through the route's points, with
+## tangents that round each tile's corner instead of turning sharply on it.
+## Sampled by distance (sample_baked), a traveller keeps an even pace along it.
+static func smooth_road(route: PackedVector3Array) -> Curve3D:
+	var c := Curve3D.new()
+	c.bake_interval = 0.02
+	for i in route.size():
+		var prev := route[maxi(i - 1, 0)]
+		var next := route[mini(i + 1, route.size() - 1)]
+		var tan := (next - prev) * 0.25
+		c.add_point(route[i], -tan, tan)
+	return c
+
+
 static func along(path: PackedVector3Array, t: float) -> Vector3:
 	if path.size() < 2:
 		return path[0] if path.size() == 1 else Vector3.ZERO
