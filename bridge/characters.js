@@ -556,6 +556,20 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
   // A petition at court: a dilemma where every answer costs something. Every
   // kind the lord has cause for is a candidate; one is drawn by weight, and
   // kinds the King has heard lately are drawn less, so the court stays varied.
+  // A court day each season: one lord of a landed house comes with a petition,
+  // while fewer than three wait, so the court is never empty for a year.
+  async courtDay(world, turn, ctx) {
+    const cap = { rare: 2, normal: 3, often: 4 }[ctx.options?.petitions] ?? 3;
+    if (!ctx.watched || this.petitions.filter((p) => !p.answered).length >= cap) return;
+    if (ctx.options?.petitions === "rare" && turn % 2) return;  // a quieter court sits every other season
+    const waiting = new Set(this.petitions.filter((p) => !p.answered).map((p) => p.from));
+    const lords = this.alive().filter((c) => c.rank === "lord" && !waiting.has(c.id) && (world.players.find((p) => p.id === c.playerId)?.cities ?? 0) > 0);
+    if (!lords.length) return;
+    this.turnNow = turn;
+    await this.petition(lords[Math.floor(Math.random() * lords.length)], world, turn, ctx);
+    this.saveCourt();
+  }
+
   async petition(c, world, turn, ctx) {
     if (this.petitions.filter((p) => !p.answered).length >= 3) return;
     const base = { id: `p${Date.now().toString(36)}${Math.floor(Math.random() * 999)}`, turn, from: c.id, name: c.name, house: c.house, answered: false };

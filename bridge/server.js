@@ -698,6 +698,8 @@ const lastSeason = { net: 0 };  // the tithe less upkeep, this season, for the t
 const favourPast = {};  // turn -> {house id: favour}, the last two years
 function collectTithe(turn) {
   flushHeld();  // last season's grouped lines
+  // The court sits every season: a petitioner comes while fewer than three wait.
+  if (court && world) court.courtDay(world, turn, { favour: favourOf, shift: shiftFavour, send: (l) => send(`lua cmd ${l}`), watched: isWatched(), options: meta.options ?? {} }).catch((err) => console.error("court day:", err));
   if (!world) return;
   favourPast[turn] = { ...favour };
   // Old grievances and kindnesses fade (about half in five years), so the cause
