@@ -19,7 +19,7 @@ import { ROLES, GOALS, TRAITS } from "./characters.js";
 import { folkTale, folkPlain, moodRules, speak, ruleFrom, reactTo, speech, voiceFor, transcribe, aiStatus } from "./claude.js";
 import { BUILD_COST, granarySize } from "./rules.js";
 import * as chron from "./chronicles.js";
-import { decree, titheLua, clampFavour, DECREES } from "./crown.js";
+import { decree, titheLua, clampFavour, DECREES, bannersReady } from "./crown.js";
 // Lords whose first names were borrowed from A Song of Ice and Fire, renamed
 // in realm.serv; realms begun before then still carry the old names in their
 // saved game, so they are shown by the new ones.
@@ -606,6 +606,8 @@ function counsel(players, cities, threat) {
   // Every order shows its price before the King gives it, as the town card does: "Command peace  6k cr".
   // And what it does, so the King weighs effect against price: "Gift crowns  15k cr · +10".
   const DOES = { gift: "+10", feast: "+15", relief: "+12", marriage: "+8 each, bound in peace", peace: "+2 each, truce", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2" };
+  // An order that can't be given now isn't offered: the banners answer once a year.
+  for (const o of out) o.acts = o.acts.filter((a) => a.action !== "banners" || bannersReady(world?.turn ?? 0));
   // The Hand's own pick on each matter: the order that does most for its cost.
   const PREFER = ["court", "ward", "feast", "relief", "tithe_down", "banners", "peace", "buyoff", "marriage", "gift", "grant", "levy", "tithe_up"];
   for (const o of out) {

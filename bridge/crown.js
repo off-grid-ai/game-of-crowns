@@ -20,6 +20,8 @@ export const DECREES = {
 
 // When the banners were last called: the houses won't answer twice in a year.
 let bannersCalled = -99;
+// Whether the houses would answer the banners now (once a year).
+export const bannersReady = (turn) => turn - bannersCalled >= 4;
 
 const BUILDABLE = { temple: "Temple", granary: "Granary", walls: "City Walls", market: "Marketplace", aqueduct: "Aqueduct" };
 
