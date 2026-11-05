@@ -629,7 +629,7 @@ function counsel(players, cities, threat) {
   if (!out.length) out.push({ urgency: 0, text: "The realm is quiet", why: "A good season to win a house's love before you need it.", acts: [] });
   // Every order shows its price before the King gives it, as the town card does: "Command peace  6k cr".
   // And what it does, so the King weighs effect against price: "Gift crowns  15k cr · +10".
-  const DOES = { sellswords: "1,000 men", back: "+12 them, −12 the other", settle: "a truce, the keeper +6, both −3", sitout: "nothing spent; the war goes on",  tithe_down: `the houses cool more slowly, the crown takes ${(Math.round(lastSeason.net * 50) / 1).toLocaleString("en-US")} less a season`, grant: "+20 them, −30 the holder", gift: "+10", feast: "+15", relief: "+12, eases the hunger but cannot end a famine", marriage: "+8 each, bound in peace", peace: "+2 each, truce", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2" };
+  const DOES = { sellswords: "1,000 men", back: "+12 them, −12 the other", settle: "truce; keeper +6, both −3", sitout: "the war goes on",  tithe_down: `slower to cool; ${(Math.round(lastSeason.net * 50) / 1000).toFixed(1)}k less a season`, grant: "+20 them, −30 the holder", gift: "+10", feast: "+15", relief: "+12, eases it, cannot end it", marriage: "+8 each, bound in peace", peace: "+2 each, truce", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2" };
   // An order that can't be given now isn't offered: the banners answer once a year.
   for (const o of out) o.acts = o.acts.filter((a) => a.action !== "banners" || bannersReady(world?.turn ?? 0));
   // The Hand's own pick on each matter: the order that does most for its cost.
