@@ -6,6 +6,8 @@ How a round is played: `realm/tools/play/*.play` scenarios feed real input (keys
 
 ## 2026-11-05 (overnight)
 
+**Supervisor 09:20** (r31; frames before the caption and road fixes): (1) Make watching worth it: clear the panels while a scene plays (asked Ali: the panels open by default were his call), a low chase camera, one plain on-screen caption saying who, why and what it buys, an arrival moment. (2) The first ten minutes teachable: the guide on the first screen, a decree's effect before the click, the cause of a favour swing on the table. (3) Numbers that agree: a loan's debt in crowns (fixed), a petitioner's claims matching the table, stale captions cleared when a ride ends.
+
 **Supervisor 18:05** (r30, frames taken before Ali's latest fixes reached the screen): (1) The court never greyed without a reason: "Court · 1 waiting" or when the next comes; the guide's step opens the court (the court now fills each season, seen in Ali's game). (2) One truth for Peace (truces now count; Ali's game shows Peace 100%) and the Hand answering what holds it down; truce marks on one line (built, needs a relaunch). (3) A clean map (no progress labels or ghost names), panels that fold, grain that says what it buys, spending that bites.
 
 **Supervisor 17:20** (r26): (1) The dead's arrival as the climax, played and captured (each wave's ending now chronicled, 96c5d0f): a countdown chip, a host marker, a result card. (2) A goal after the win (Peace above 50%, the wars to end) and prices that make 420k a decision. (3) Truth and onboarding: one count of men, no progress text or ghost labels on the map, a chronicle line when a petitioner leaves and a reason on the greyed Court, a legend for the favour colours and marks, the camera off the ground, a three-step first-reign guide, no duplicate frames.
@@ -46,6 +48,11 @@ How a round is played: `realm/tools/play/*.play` scenarios feed real input (keys
 
 | # | Expected | Found | Change | Commit |
 |---|---|---|---|---|
+| 121 | Travellers ride on the road (Ali's frames) | The rider and the grain cart rode beside the road on the grass: drawn road spans bow at their middle by up to a road's width; travellers took the straight line between tile centres | One shared bow (terrain.road_bow, the same either way) for drawing and riding | 99b65ba |
+| 120 | Captions read whole (Ali's frames) | "…swears to House…", "purse·or a n…ling": a roof cut the scene's caption mid-word | Drawn on top, a size smaller; the rider glides past a nudge clear of a wall; corners stay close to the road | 3e0517c |
+| 119 | Smooth riding doesn't break the armies | After the curve change the log filled with "Zero length interval" every frame (64,000 lines): armies with nowhere to go sampled an empty curve | Repeated points dropped; a standing army doesn't sample; checked: a season with no script errors | 5c30bfe |
+| 118 | Riding looks natural (Ali: "riding in general is not smooth") | Riders, carts and armies took a polyline of tile centres, turning sharply at each tile, bobbing over every bump | A smooth road curve (Godot's Curve3D) walked by distance, steering a little ahead and easing into bends; height eased | a301dbc |
+| 117 | Watching a rider is watchable (Ali: "clumsy", then "stuck") | The camera followed at 3.5, tree height: inside the canopy | Moving scenes filmed from above the trees; the follow drifts; taking the view back lifts it clear | e79be8d |
 | 116 | Watching a rider is watchable (Ali's play) | Following the King's rider to the Stormlands: clumsy, then stuck inside a forest canopy (camera at 3.5, tree height) | Moving scenes filmed from above the trees (9); the camera drifts after the rider; taking the view back lifts it clear. Needs a relaunch to show | e79be8d |
 | 115 | Truces on one line | "TRUCE · WOLFHOLT, STORMHOLD, SUNSPIRE, HIGHFELL" wrapping three lines (r30/02) | One name and a count, all on hover | 0f53d50 |
 | 114 | A click begins (Ali) | "Any key to begin" (a click worked, the words didn't say so) | "Click or press any key to begin" | 00ddd27 |
