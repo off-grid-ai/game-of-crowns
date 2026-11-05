@@ -1354,7 +1354,12 @@ func _rider(from: Vector3, to: Vector3, label: String, s := {}) -> Node3D:
 		var p := _stand(g, HORSE_BODY)
 		# Eased, so the ground's bumps and a nudge clear of a wall are glides, not jumps.
 		if last_y[0] != INF:
-			p = Vector3(lerpf(horse.position.x, p.x, 0.35), lerpf(last_y[0], p.y, 0.25), lerpf(horse.position.z, p.z, 0.35))
+			var x := lerpf(horse.position.x, p.x, 0.35)
+			var z := lerpf(horse.position.z, p.z, 0.35)
+			# The ground under where the horse really is: it glides down over a
+			# bump, but going uphill it never sinks into the slope.
+			var under: float = _stand(Vector3(x, p.y, z), HORSE_BODY).y
+			p = Vector3(x, maxf(lerpf(last_y[0], under, 0.25), under), z)
 		last_y[0] = p.y
 		# It steers toward a point a little way down the road, gently.
 		var ahead := road.sample_baked(minf(length, d + 0.25))
