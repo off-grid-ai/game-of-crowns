@@ -794,7 +794,7 @@ func _process(delta: float) -> void:
 			_offer.offset_top = _toast_box.get_global_rect().end.y + 10.0
 	# The offer, like every notice, sits between the side panels, never over the table.
 	if _offer and _offer.visible:
-		_fit_centre(_offer, 520.0)
+		_fit_centre(_offer, _offer.get_combined_minimum_size().x)  # as wide as its words, centred in the gap
 		_toast_time -= delta
 		_toast_box.modulate.a = clampf(_toast_time, 0.0, 1.0)
 
