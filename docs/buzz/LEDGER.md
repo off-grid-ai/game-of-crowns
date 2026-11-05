@@ -3,7 +3,6 @@
 Kept by the downloads supervisor (every 15 minutes in the buzz session). Goal: get the game into people's hands. Newest run first.
 
 ## Needs Mac
-- **Notarisation issuer ID** (App Store Connect > Users and Access > Integrations > Team keys, the Issuer ID above the keys). Then: `gh secret set APPLE_API_ISSUER -R off-grid-ai/game-of-crowns --body <id>`, or send it and the supervisor sets it. The key itself (TPA8UUJG45) is set.
 - **Runner safety (raised by the main session):** a fork's pull request could bring its own workflow onto the `goc-release` runner, on the Mac that holds the Developer ID. Already set 11-05 13:18: "Require approval for all outside collaborators" (`fork-pr-contributor-approval = all_external_contributors`, checked). So approve no outside PR's workflow run without reading it. Stricter option, your call: stop the runner between releases (`~/actions-runner-goc/svc.sh stop`, `start` before a release).
 - **First release run:** when it signs, macOS may ask to let codesign use the Developer ID key; click Always Allow once.
 - **Promo art:** prompts for Codex in docs/buzz/asset-prompts.md (GitHub social preview, itch.io cover, key art). The social preview has to be set by hand in the repo's Settings.
@@ -38,6 +37,10 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 - **Buzz session:** this ledger, the supervisor, drafts for the channels once the dmg exists.
 
 ## Runs
+
+### 11-05 13:19
+**Moved:** issuer ID set (all three notarisation secrets in place); main pushed to origin (622eb2d) by the main session; first Release (Mac) run started as a pre-release: https://github.com/off-grid-ai/game-of-crowns/actions/runs/41989850181
+**Blocking:** the run itself (it may stop for a keychain prompt on this Mac: click Always Allow).
 
 ### 11-05 13:20
 **Moved:** `Release (Mac)` GitHub Action written after OGAD's (03a7413): self-hosted runner `goc-mac` on this Mac (the art stays out of git by licence, so the runner copies it from the working copy), signs with the keychain's Developer ID, notarises, staples, publishes a Release. Secrets APPLE_API_KEY and APPLE_API_KEY_ID set; outside contributors' PR workflows need approval. Repo made findable: description, 16 topics, README leads with the pitch and the download link.
