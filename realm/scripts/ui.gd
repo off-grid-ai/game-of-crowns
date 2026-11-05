@@ -434,12 +434,12 @@ func _toggle_pause() -> void:
 func _court_waiting_shown(n: int) -> void:
 	_court_btn.modulate.a = 1.0 if n > 0 else 0.45
 	_court_badge.visible = n > 0
-	_court_btn.tooltip_text = _with_key(("The court: %d petitioner%s wait%s for you" % [n, "" if n == 1 else "s", "s" if n == 1 else ""]) if n > 0 else "The court: nobody waits today", "court")
+	_court_btn.tooltip_text = _with_key(("The court: %d petitioner%s wait%s for you" % [n, "" if n == 1 else "s", "s" if n == 1 else ""]) if n > 0 else "The court: nobody waits today. A lord comes to court most seasons.", "court")
 
 
 func _toggle_court() -> void:
 	if _petitions.is_empty():
-		toast("Nobody waits at court today.")
+		toast("Nobody waits at court today. A lord comes most seasons; the crown on the bar lights when one does.")
 		return
 	if _court_panel.visible:
 		_court_hidden = true
@@ -1460,6 +1460,15 @@ func _guide_block() -> Control:
 		l.text = ("✓  " if _guide[i] else "○  ") + GUIDE[i]
 		l.add_theme_font_size_override("font_size", T.SIZE_DESC + 1)
 		l.add_theme_color_override("font_color", T.TEXT_3 if _guide[i] else T.TEXT)
+		# The court step is a door: a click opens the court (or says when someone comes).
+		if i == 0 and not _guide[i]:
+			var go := _btn(l.text, _toggle_court)
+			go.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			go.add_theme_font_size_override("font_size", T.SIZE_DESC + 1)
+			go.add_theme_color_override("font_color", T.ACCENT)
+			go.tooltip_text = "Open the court"
+			g.add_child(go)
+			continue
 		g.add_child(l)
 	return g
 
