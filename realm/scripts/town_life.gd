@@ -13,7 +13,6 @@ var towns_node: Node3D  # towns.gd, for its baked building meshes
 var _person := CapsuleMesh.new()
 var _head := SphereMesh.new()
 var _pole := CylinderMesh.new()
-var _plank := BoxMesh.new()
 var _skin := StandardMaterial3D.new()
 var _wood := StandardMaterial3D.new()
 var _cloth := {}
@@ -26,7 +25,6 @@ func _init() -> void:
 	_head.height = 0.044
 	_pole.top_radius = 0.008
 	_pole.bottom_radius = 0.008
-	_plank.size = Vector3(0.22, 0.025, 0.05)
 	_skin.albedo_color = Color(0.82, 0.66, 0.54)
 	_wood.albedo_color = Color(0.45, 0.32, 0.2)
 	_wood.roughness = 0.9
@@ -80,6 +78,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 		_crowd(root, life, center, rng, 4 + mini(int(c.get("size", 1)) / 2, 8), false)
 	if c.get("celebrating", false):
 		_bonfire(life, center)
+		_revels(root, life, center, rng, 6 + mini(int(c.get("size", 1)), 8))
 	if c.get("disorder", false):
 		_unrest(life, center, rng)
 	_near_only(life)
@@ -272,7 +271,8 @@ func _construction(root: Node3D, life: Node3D, center: Vector3, building: String
 	if site == null:
 		return
 	# The site, its scaffold and its timber stand in the way: walk round them.
-	life.set_meta("footprints", [plot, _rect(base + Vector3(f.x * 0.55 + 0.12, 0, 0).rotated(Vector3.UP, ang), Vector2(0.26, 0.2), ang)])
+	life.set_meta("footprints", [plot, _rect(base + Vector3(f.x * 0.55 + 0.2, 0, 0).rotated(Vector3.UP, ang), Vector2(0.42, 0.36), ang),
+		_rect(base + Vector3(f.x * 0.55 + 0.25, 0, f.y * 0.55 + 0.35).rotated(Vector3.UP, ang), Vector2(0.4, 0.3), ang + 0.4)])
 	site.scale.y = grow
 	site.name = "Site"
 	site.position = base
@@ -288,13 +288,20 @@ func _construction(root: Node3D, life: Node3D, center: Vector3, building: String
 		pole.material_override = _wood
 		pole.position = base + p.rotated(Vector3.UP, ang) + Vector3(0, full * 0.52, 0)
 		life.add_child(pole)
-	for i in 6:
-		var plank := MeshInstance3D.new()
-		plank.mesh = _plank
-		plank.material_override = _wood
-		plank.position = base + Vector3(hx + 0.12, 0.02 + i * 0.026, 0).rotated(Vector3.UP, ang)
-		plank.rotation.y = ang
-		life.add_child(plank)
+	# Timber stacked beside it, a cart that brought it, a ladder up the side.
+	var props := [["wood_pile_pack", Vector3(hx + 0.2, 0, 0), ang], ["medieval_wooden_cart", Vector3(hx + 0.25, 0, hz + 0.35), ang + 0.4],
+		["ph/wooden_ladder", Vector3(-hx - 0.04, 0, 0), ang + PI / 2]]
+	for pr in props:
+		var prop: Node3D = Real.make(pr[0])
+		if prop == null:
+			continue
+		var at: Vector3 = base + Vector3(pr[1]).rotated(Vector3.UP, ang)
+		if not terrain.is_land(center.x + at.x, center.z + at.z):
+			prop.free()
+			continue
+		prop.position = Vector3(at.x, _y(center, at), at.z)
+		prop.rotation.y = pr[2]
+		life.add_child(prop)
 	# Builders at work along its front, each at a task done standing or
 	# kneeling where they are (carrying and barrowing are walks: not on the spot).
 	for i in 3:
@@ -361,6 +368,22 @@ func _crowd(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 			continue  # no room left at the door: the crowd is what fits
 		var look := -f.position + Vector3(rng.randf_range(-0.3, 0.3), 0, rng.randf_range(-0.3, 0.3))
 		f.rotation.y = atan2(look.x, look.z) if angry or i % 2 == 0 else rng.randf() * TAU
+	if angry:
+		# The watch holds the door against them, and here and there it comes to blows.
+		for i in 3:
+			var g := _stand(root, life, center, dir * 0.32 + side * (i - 1) * 0.14, "soldier", "Sword_Idle", rng.randi(), Color(0.55, 0.5, 0.45), 0.2)
+			if g:
+				g.rotation.y = atan2(dir.x, dir.z)  # facing the crowd
+		for k in 2:
+			var at := dir * rng.randf_range(0.8, 1.1) + side * (0.5 if k == 0 else -0.5)
+			var a := _stand(root, life, center, at, "peasant", "Fist_Fight_A", rng.randi(), Color(0.7, 0.66, 0.6), 0.25)
+			if a == null:
+				continue
+			var b := _stand(root, life, center, a.position + side * 0.12, "peasant", "Fist_Fight_B", rng.randi(), Color(0.7, 0.66, 0.6), 0.1)
+			if b == null:
+				continue
+			a.rotation.y = atan2(b.position.x - a.position.x, b.position.z - a.position.z)
+			b.rotation.y = a.rotation.y + PI
 	if not angry:
 		# Where they lie at night: dark bedrolls in a row against the wall, and a
 		# cooking fire that's a few embers and a thread of smoke, not a beacon.
@@ -442,12 +465,31 @@ func _bonfire(life: Node3D, center: Vector3) -> void:
 	p.mesh = q
 	p.position = Vector3(0, _y(center, Vector3.ZERO) + 0.05, 0)
 	life.add_child(p)
+	var ring: Node3D = Real.make("ph/stone_fire_pit")  # the stones it burns in
+	if ring:
+		ring.position = Vector3(0, _y(center, Vector3.ZERO) - 0.005, 0)
+		ring.scale = Vector3.ONE * 1.4
+		life.add_child(ring)
+	life.set_meta("footprints", life.get_meta("footprints") + [_rect(Vector3.ZERO, Vector2(0.34, 0.34), 0.0)])
 	var light := OmniLight3D.new()
 	light.light_color = Color(1.0, 0.6, 0.3)
 	light.light_energy = 0.9
 	light.omni_range = 1.1
 	light.position = p.position + Vector3(0, 0.2, 0)
 	life.add_child(light)
+
+
+## A feast: the town in a ring round the bonfire, dancing, cheering and
+## drinking, everyone turned to the fire.
+func _revels(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenerator, count: int) -> void:
+	var spin := rng.randf() * TAU
+	for i in count:
+		var a := spin + TAU * i / count + rng.randf_range(-0.15, 0.15)
+		var want := Vector3(cos(a), 0, sin(a)) * rng.randf_range(0.34, 0.5)
+		var move: String = ["Dance", "Cheering", "Dance", "Drinking", "Cheering", "Dance"][i % 6]
+		var f := _stand(root, life, center, want, "townsfolk" if i % 3 else "peasant", move, rng.randi(), Color.WHITE, 0.2)
+		if f:
+			f.rotation.y = atan2(-f.position.x, -f.position.z)
 
 
 func _unrest(life: Node3D, center: Vector3, rng: RandomNumberGenerator) -> void:

@@ -14,6 +14,7 @@ var terrain: Node3D
 var roads: Node3D
 var towns: Node3D  # the towns, for their squares, lanes and doors (found beside us if unset)
 var _bush: Mesh
+var _fruit: Array = []  # orchard trees: the nature kit's broadleaf, grown small
 var _field_tex := ["res://assets/ground/field-wheat.jpg", "res://assets/ground/field-green.jpg", "res://assets/ground/field-fallow.jpg"]
 
 var _realm := ""  # the realm the farm sites were surveyed for
@@ -54,6 +55,8 @@ func _update(cities: Array) -> void:
 		towns = get_parent().get("towns")
 	if _bush == null:
 		_bush = preload("res://scripts/house_builder.gd").new().bake_path("res://assets/nature/Plant_1.gltf")
+		for t in ["CommonTree_2", "CommonTree_4"]:
+			_fruit.append(preload("res://scripts/house_builder.gd").new().bake_path("res://assets/nature/%s.gltf" % t))
 	var realm := _realm_now()
 	if realm != _realm:
 		# A new realm: survey its open land once for where farms can stand.
@@ -165,16 +168,31 @@ func _raise(key: String, farms: Array, sig: String) -> void:
 	var hedges: Array = []
 	var steads: Array = []
 	var hay: Array = []
+	var trees: Array = [[], []]
 	for f in farms:
 		var site: Dictionary = f[0]
 		var rng := RandomNumberGenerator.new()
 		rng.seed = site["seed"]
-		steads.append(_farmstead(node, site["at"], rng, hedges, hay))
+		steads.append(_farmstead(node, site["at"], rng, hedges, hay, trees))
 		if roads and f[1] != null:
 			roads.track(site["at"], f[1], roads.WIDTH * 0.45, key)
 	_flush(node)
 	_hedgerows(node, hedges, hash(key))
 	pile_hay(node, hay)
+	for v in trees.size():
+		if trees[v].is_empty() or v >= _fruit.size():
+			continue
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = _fruit[v]
+		mm.instance_count = trees[v].size()
+		for i in trees[v].size():
+			mm.set_instance_transform(i, trees[v][i])
+		var mmi := MultiMeshInstance3D.new()
+		mmi.name = "Orchard"
+		mmi.multimesh = mm
+		_fade(mmi, 45.0)
+		node.add_child(mmi)
 	_patches[key] = {"sig": sig, "node": node, "steads": steads}
 	_laid += 1
 
@@ -182,7 +200,7 @@ func _raise(key: String, farms: Array, sig: String) -> void:
 ## One family's holding: a house, often a barn with hay heaped by it, a
 ## haystack, and two to four fields around it bounded by hedges. Returns what
 ## its grass keeps off: {at, fields, yard}.
-func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: Array, hay: Array) -> Dictionary:
+func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: Array, hay: Array, trees: Array) -> Dictionary:
 	var yaw := rng.randf() * TAU
 	var face := Vector3(sin(yaw), 0, cos(yaw))
 	var side := Vector3(face.z, 0, -face.x)
@@ -203,8 +221,38 @@ func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: A
 		yard.append([at - side * 1.2 + face * 0.6, 0.25])
 	if rng.randf() < 0.5:
 		_place("medieval_wooden_cart", at + face * 1.0 - side * 0.4, yaw + rng.randf_range(-0.8, 0.8))
+	if rng.randf() < 0.6:
+		_place("wood_pile_pack", at - side * 0.75 - face * 0.2, yaw + PI / 2)  # the winter's firewood against the wall
+		yard.append([at - side * 0.75 - face * 0.2, 0.25])
 	# Fields beyond the yard, each a strip with a hedge along its edges.
 	var fields: Array = []
+	# A kitchen garden by the door: cabbages and beans in rows.
+	if rng.randf() < 0.55:
+		var g := at + face * 0.9 + side * rng.randf_range(0.3, 0.6)
+		if terrain.is_land(g.x, g.z):
+			var gsize := Vector2(0.6, 0.4)
+			g = on_furrows(terrain, g, gsize)
+			if terrain.land3d and terrain.land3d.land:
+				plough(terrain, g, gsize, yaw)
+			sow(node, terrain, Vector3.ZERO, ["cabbage", "beans"][rng.randi() % 2], g, gsize, yaw, rng)
+			fields.append([g, gsize, yaw])
+	# An orchard in rows behind the house, its trees small and round.
+	if rng.randf() < 0.4 and not _fruit.is_empty():
+		var o := at - face * 0.6 - side * 1.5
+		for r in 3:
+			for c in 3:
+				var t: Vector3 = o + side * (c - 1) * 0.42 + face * (r - 1) * -0.42 + Vector3(rng.randf_range(-0.05, 0.05), 0, rng.randf_range(-0.05, 0.05))
+				if not terrain.is_land(t.x, t.z):
+					continue
+				var k := 0.12 * rng.randf_range(0.45, 0.6)
+				trees[rng.randi() % 2].append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(k, k * rng.randf_range(0.85, 1.1), k)), Vector3(t.x, terrain.height_at(t.x, t.z) - 0.02, t.z)))
+		yard.append([o, 0.6])
+	# Now and then a mill, where the farms around bring their grain.
+	if rng.randf() < 0.08 and Real.footprint("medieval_mill") != Vector2.ZERO:
+		var m := at + face * 2.1 + side * 0.9
+		if terrain.is_land(m.x, m.z):
+			_place("medieval_mill", m, yaw + PI)
+			yard.append([m, 0.85])
 	for i in rng.randi_range(2, 4):
 		var ang := yaw + PI + rng.randf_range(-1.2, 1.2)
 		var dist := rng.randf_range(2.2, 3.4)
@@ -252,8 +300,18 @@ func _flush(node: Node3D) -> void:
 				mm.set_instance_transform(i, xfs[i] * part[1])
 			var mmi := MultiMeshInstance3D.new()
 			mmi.multimesh = mm
+			# Out in the country a cart or a woodpile is a speck past a short
+			# walk, a farmhouse past a valley: no frame spent on them beyond.
+			var m: float = float(Real.KIT.get(kind, ["", 10.0])[1])
+			_fade(mmi, 18.0 if m < 4.0 else (45.0 if m < 15.0 else 70.0))
 			node.add_child(mmi)
 	_batch.clear()
+
+
+func _fade(g: GeometryInstance3D, end: float) -> void:
+	g.visibility_range_end = end
+	g.visibility_range_end_margin = end * 0.15
+	g.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 
 
 ## Bushes planted shoulder to shoulder along the edges of every field.
@@ -289,6 +347,7 @@ func _hedgerows(node: Node3D, fields: Array, seed: int) -> void:
 	var mmi := MultiMeshInstance3D.new()
 	mmi.multimesh = mm
 	mmi.name = "Hedgerows"
+	_fade(mmi, 35.0)
 	node.add_child(mmi)
 
 

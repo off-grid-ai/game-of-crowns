@@ -203,9 +203,9 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 	# where the roads come through. Seats get more of everything.
 	terrain.flatten(center, Vector2.ONE * square_r * 2.0, 0.0, terrain.height_at(center.x, center.z), 0.6)
 	root.set_meta("square_r", square_r)
-	_plaza(root, center, square_r, rng)
 	var lots: Array = [[Vector3.ZERO, square_r * 0.9]]
-	var want := clampi(12 + size * 3, 14, 34) + (8 if seat else 0)
+	_plaza(root, center, square_r, size, seat, lots, rng)
+	var want := clampi(14 + size * 3, 16, 40) + (8 if seat else 0)
 	var placed := 0
 	# A seat's castle: stone walls, towers and gatehouse, on its own ground at
 	# the town's edge, gate turned toward the square, the house's banner above.
@@ -233,7 +233,8 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 				gap_ang += TAU / 8.0
 		gap_ang += PI * 0.6
 	# The landmarks, on the square's edge, facing in.
-	var rooms := {"medieval_tavern": ["tavern", "tavern"], "medieval_viking_house": ["great_hall", "longhall"], "medieval_church": ["chapel", "church"]}
+	var rooms := {"medieval_tavern": ["tavern", "tavern", "tavern"], "medieval_viking_house": ["great_hall", "longhall", "hall"], "medieval_church": ["chapel", "church", "sept"]}
+	var places: Dictionary = root.get_meta("places", {})
 	for lm in ["medieval_tavern", "medieval_viking_house", "medieval_church"]:
 		var f: Vector2 = Real.footprint(lm)
 		if f == Vector2.ZERO:
@@ -242,10 +243,18 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 		if _put(root, center, lm, p, f, lots, rng, false):
 			placed += 1
 			_door(root, p, f, rooms[lm][0], rooms[lm][1])
+			# Where the town gathers: just out from its door, on the square.
+			places[rooms[lm][2]] = p - p.normalized() * (f.y * 0.5 + 0.35)
 		gap_ang += PI * 0.62
-	# The ring of townhouses framing the square, shoulder to shoulder.
+	root.set_meta("places", places)
+	# The ring of townhouses framing the square, shoulder to shoulder; then the
+	# roads out, lined with houses doors-to-the-road the way a medieval street
+	# fills; then the backlands between them, looser and turned every which way.
 	var ring := square_r + 0.6
+	var edge := ring + 4 * 0.95 - 0.4  # the palisade
 	for r in 4:
+		if r == 1:
+			placed += _street_fronts(root, center, square_r, edge, streets, kinds, lots, rng, want - placed)
 		# Each ring draws from its own sequence, so a bigger town carries on
 		# along the same ring instead of shifting every house after it.
 		var rr := RandomNumberGenerator.new()
@@ -258,40 +267,115 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 			var f: Vector2 = Real.footprint(kind)
 			var span := maxf(f.x, f.y)
 			var p := Vector3(cos(ang), 0, sin(ang)) * ring
-			var step := (span * 0.78 + rr.randf_range(0.0, 0.08)) / ring  # eaves almost touching
+			var step := (span * (0.78 if r == 0 else 0.95) + rr.randf_range(0.0, 0.08 if r == 0 else 0.3)) / ring  # eaves almost touching round the square
 			ang += step
 			walked += step * ring
 			if _on_street(p, streets, 0.32):
 				continue  # keep the roads into the square open
-			if _put(root, center, kind, p, f, lots, rr, true):
+			# Out past the square no one lines up on it: each house sits as its plot fell.
+			var face := Vector3.ZERO if r == 0 else (-p.normalized()).rotated(Vector3.UP, rr.randf_range(-0.6, 0.6))
+			if _put(root, center, kind, p, f, lots, rr, true, face):
 				placed += 1
+				if r > 0 and rr.randf() < 0.4:
+					_croft(root, center, p, face, f, lots, rr)
 		ring += 0.95
-	_palisade(root, center, ring - 0.4, streets, seat)
+	_palisade(root, center, edge, streets, seat)
+
+
+## Houses along each road from the square to the palisade, both sides, front
+## doors on the road, narrow fronts nearly touching with now and then a gap
+## for a yard or an alley, and a kitchen garden behind some. Returns how many.
+func _street_fronts(root: Node3D, center: Vector3, square_r: float, edge: float, streets: Array, kinds: Array, lots: Array, rng: RandomNumberGenerator, budget: int) -> int:
+	var placed := 0
+	for si in streets.size():
+		var dir := Vector3(cos(streets[si]), 0, sin(streets[si]))
+		var side := Vector3(-dir.z, 0, dir.x)
+		for s in [-1, 1]:
+			var rr := RandomNumberGenerator.new()
+			rr.seed = rng.seed + 101 * (si + 1) + s  # its own, so growth only adds at the far end
+			var t := square_r + 1.45
+			while placed < budget:
+				var kind: String = kinds[rr.randi() % kinds.size()]
+				if Real.KIT.get(kind, [""])[0] == "barn":
+					kind = kinds[0]  # barns stand back in the yards, not on the street
+				var f: Vector2 = Real.footprint(kind)
+				var p: Vector3 = dir * (t + f.x * 0.5) + side * s * (0.3 + f.y * 0.5)
+				t += f.x + rr.randf_range(0.04, 0.2)
+				if p.length() + maxf(f.x, f.y) * 0.5 > edge - 0.15:
+					break  # the palisade
+				if rr.randf() < 0.14:
+					continue  # a yard, an alley
+				var face: Vector3 = -side * s
+				if _put(root, center, kind, p, f, lots, rr, true, face):
+					placed += 1
+					if rr.randf() < 0.55:
+						_croft(root, center, p, face, f, lots, rr)
+	return placed
+
+
+## A kitchen garden behind a house: a strip of turned earth with cabbages or
+## beans in rows. Tended by whoever lives there (villagers.gd reads "gardens").
+func _croft(root: Node3D, center: Vector3, hp: Vector3, face: Vector3, f: Vector2, lots: Array, rng: RandomNumberGenerator) -> void:
+	var size := Vector2(clampf(f.x * 0.75, 0.4, 0.8), rng.randf_range(0.3, 0.42))
+	var back := hp - face * (f.y * 0.5 + size.y * 0.5 + 0.1)
+	if _crowded(lots.slice(0, lots.size() - 1), back, size.x * 0.4) or not _flat_enough(center, back, 0.18) or _built_on(root, back):
+		return
+	var yaw := atan2(face.x, face.z) + PI / 2
+	var plots := _plots(root)
+	if terrain.land3d and terrain.land3d.land:
+		Fields.plough(terrain, center + back, size, yaw)
+	else:
+		terrain.paint(plots[0], terrain.tiled(terrain.art("res://assets/ground/field-fallow.jpg", DIRT), 1, 1), back + Vector3(0, _ground_y(center, back), 0), size, yaw, Color(0.55, 0.42, 0.26))
+	Fields.sow(plots[1], terrain, center, ["cabbage", "beans", "cabbage"][rng.randi() % 3], center + back, size, yaw, rng)
+	lots.append([back, size.x * 0.4])
+	var all: Array = root.get_meta("gardens", [])
+	all.append(back)
+	root.set_meta("gardens", all)
+
+
+## The town's Fields (painted crops) and Crops (planted) nodes, made once.
+func _plots(root: Node3D) -> Array:
+	var fields: Node3D = root.get_node_or_null("Fields")
+	if fields == null:
+		fields = Node3D.new()
+		fields.name = "Fields"
+		root.add_child(fields)
+		var crops := Node3D.new()  # beside the fields, not in them: the town's life reads every field as a decal
+		crops.name = "Crops"
+		root.add_child(crops)
+	return [fields, root.get_node("Crops")]
 
 
 ## Builds one house on its plot, facing the square, if the ground allows.
 ## A way in: just outside the building's face toward the square, where someone
 ## you're controlling can step inside. Town-local, like the footprints.
-func _door(root: Node3D, p: Vector3, f: Vector2, room: String, name: String) -> void:
-	var face := -Vector3(p.x, 0, p.z).normalized()
+func _door(root: Node3D, p: Vector3, f: Vector2, room: String, name: String, face := Vector3.ZERO) -> void:
+	if face == Vector3.ZERO:
+		face = -Vector3(p.x, 0, p.z).normalized()
 	var all: Array = root.get_meta("doors", [])
 	all.append({"at": p + face * (f.y * 0.5 + 0.1), "room": room, "name": name})
 	root.set_meta("doors", all)
 
 
-func _put(root: Node3D, center: Vector3, kind: String, p: Vector3, f: Vector2, lots: Array, rng: RandomNumberGenerator, dress: bool) -> bool:
+## `face` is the way its front looks (toward the square unless given).
+func _put(root: Node3D, center: Vector3, kind: String, p: Vector3, f: Vector2, lots: Array, rng: RandomNumberGenerator, dress: bool, face := Vector3.ZERO) -> bool:
 	var span := maxf(f.x, f.y)
 	if _crowded(lots, p, span * 0.42):
 		return false
-	var yaw := atan2(-p.x, -p.z)
+	if face == Vector3.ZERO:
+		face = -p.normalized()
+	var yaw := atan2(face.x, face.z)
 	var seat_y := _seat(center, p, f, yaw)
 	if is_nan(seat_y):
 		return false
-	_place(root, kind, Vector3(p.x, seat_y, p.z), yaw, Vector3.ONE, f)
+	# No two houses the same: each a little larger or smaller than the last.
+	var k := rng.randf_range(0.92, 1.08) if dress else 1.0
+	_place(root, kind, Vector3(p.x, seat_y, p.z), yaw, Vector3.ONE * k, f * k)
 	if dress:
-		_door(root, p, f, "cottage", "house")
-	if dress:
-		var face := -p.normalized()
+		_door(root, p, f, "cottage", "house", face)
+		var homes: Array = root.get_meta("homes", [])
+		homes.append([p + face * (f.y * 0.5 + 0.12), face])  # its doorstep, and which way it looks
+		root.set_meta("homes", homes)
 		_dress(root, center, p, face, Vector3(-face.z, 0, face.x), f.x, f.y, rng)
 	lots.append([p, span * 0.42])
 	return true
@@ -326,23 +410,61 @@ func _palisade(root: Node3D, center: Vector3, r: float, streets: Array, seat: bo
 		_place(root, "wooden_fence_game_ready_asset", p + Vector3(0, _ground_y(center, p) - 0.01, 0), -ang + (PI / 2 if f.y > f.x else 0.0), Vector3(1, 1.6, 1) if seat else Vector3.ONE, Vector2(panel * 1.05, 0.08))
 
 
-## The square's life: a well at its heart, market stalls along one side, and
-## barrels, crates, baskets and buckets where trade and work spill out.
-func _plaza(root: Node3D, center: Vector3, square_r: float, rng: RandomNumberGenerator) -> void:
-	var drop := func(kind: String, p: Vector3, yaw: float) -> void:
+## The square's life: a well at its heart, and the market along one side: a
+## row of stalls (more as the town grows), goods stacked at each stall's ends,
+## a wagon drawn up to unload, and lanterns. The well and the market are
+## recorded as the town's places (villagers.gd sends people to them).
+func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: bool, lots: Array, rng: RandomNumberGenerator) -> void:
+	var drop := func(kind: String, p: Vector3, yaw: float) -> bool:
 		if not terrain.is_land(center.x + p.x, center.z + p.z):
-			return
+			return false
 		_place(root, kind, p + Vector3(0, _ground_y(center, p) - 0.01, 0), yaw)
-	var off := Vector3(rng.randf_range(-0.15, 0.15), 0, rng.randf_range(-0.15, 0.15))
-	drop.call("ph/stone_fire_pit", off, rng.randf() * TAU)  # the well, at the heart
+		return true
+	var places: Dictionary = root.get_meta("places", {})
 	var market_ang := rng.randf() * TAU
-	var m := Vector3(cos(market_ang), 0, sin(market_ang)) * square_r * 0.75
-	drop.call("medieval_market_asset_pack", m, atan2(-m.x, -m.z))
-	var clutter: Array = Real.names_of("clutter")
-	for i in 7 + rng.randi() % 5:
-		var ang := market_ang + rng.randf_range(-1.6, 1.6)
-		var p := Vector3(cos(ang), 0, sin(ang)) * square_r * rng.randf_range(0.55, 1.05)
-		drop.call(clutter[rng.randi() % clutter.size()], p, rng.randf() * TAU)
+	# The well, off the heart toward the side away from the stalls, so the
+	# market keeps its open ground.
+	var well := Vector3(cos(market_ang + PI), 0, sin(market_ang + PI)) * square_r * rng.randf_range(0.42, 0.52)
+	if drop.call("ph/stone_fire_pit", well, rng.randf() * TAU):
+		places["well"] = well
+	var stall := Real.footprint("medieval_market_asset_pack")
+	var stalls := 1 + (1 if size >= 6 else 0) + (1 if seat or size >= 10 else 0)
+	var arc := square_r * 0.8
+	var step := (stall.x * 1.08) / arc
+	var clutter: Array = Real.names_of("clutter").filter(func(n): return n != "ph/stone_fire_pit" and n != "ph/wooden_ladder")
+	var fronts := Vector3.ZERO
+	var n := 0
+	for i in stalls:
+		var ang := market_ang + (i - (stalls - 1) * 0.5) * step
+		var m := Vector3(cos(ang), 0, sin(ang)) * arc
+		var yaw := atan2(-m.x, -m.z)
+		if not drop.call("medieval_market_asset_pack", m, yaw):
+			continue
+		fronts += m * (1.0 - (stall.y * 0.5 + 0.3) / arc)  # where buyers stand
+		n += 1
+		# Goods at the stall's ends and behind it: crates, baskets, barrels.
+		var along := Vector3(-sin(ang), 0, cos(ang))
+		for e in [-1, 1]:
+			for k in rng.randi_range(1, 3):
+				var p: Vector3 = m + along * e * (stall.x * 0.5 + rng.randf_range(0.04, 0.14)) + m.normalized() * rng.randf_range(-0.12, 0.18)
+				drop.call(clutter[rng.randi() % clutter.size()], p, rng.randf() * TAU)
+		if ResourceLoader.exists("res://assets/realistic/ph/wooden_lantern_01/wooden_lantern_01_1k.gltf") and i % 2 == 0:
+			drop.call("ph/wooden_lantern_01", m - m.normalized() * (stall.y * 0.5 + 0.05) + along * stall.x * 0.45, yaw)
+	lots.append([Vector3(cos(market_ang), 0, sin(market_ang)) * arc, stall.x * 0.5])
+	if n > 0:
+		places["market"] = fronts / n
+	# A wagon drawn up at the end of the row, unloading.
+	var wa := market_ang + (stalls * 0.5 + 0.35) * step
+	var wp := Vector3(cos(wa), 0, sin(wa)) * arc
+	drop.call("old_wooden_wagon" if Real.footprint("old_wooden_wagon") != Vector2.ZERO else "medieval_wooden_cart", wp, -wa)  # lying along the row
+	for k in 2:
+		drop.call(clutter[rng.randi() % clutter.size()], wp * (1.0 - (0.16 + k * 0.09) / arc) + Vector3(-sin(wa), 0, cos(wa)) * rng.randf_range(-0.12, 0.12), rng.randf() * TAU)
+	# A few odds and ends where work spills out, by the well.
+	for i in 2 + rng.randi() % 3:
+		var p := well + Vector3(rng.randf_range(-0.3, 0.3), 0, rng.randf_range(-0.3, 0.3))
+		if p.distance_to(well) > 0.16:
+			drop.call(["ph/wooden_bucket_01", "ph/wicker_basket_01", "ph/wooden_bucket_01"][i % 3], p, rng.randf() * TAU)
+	root.set_meta("places", places)
 
 
 func _crowded(lots: Array, p: Vector3, r: float) -> bool:
@@ -564,7 +686,10 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 
 	var per_variant := {}
 	var real := realistic_towns.has(String(c.get("title", c["name"]))) or realistic_towns.has("*")
-	var real_houses: Array = Real.names_of("house") + Real.names_of("house") + Real.names_of("barn")
+	# Townhouses mostly; now and then an inn-like timber house or a barn
+	# (the tavern on the square stays the one that stands out).
+	var homes_only: Array = Real.names_of("house").filter(func(n): return n != "medieval_tavern")
+	var real_houses: Array = homes_only + homes_only + Real.names_of("house") + Real.names_of("barn")
 	var budget := clampi(size * 3, 4, 54)
 	var placed := 0
 	# House footprints in world units, so neighbours sit side by side, never overlapping.
@@ -743,12 +868,9 @@ func _walls(root: Node3D, center: Vector3, r: float) -> void:
 ## Strip fields in the town's surrounding land, more as the town grows.
 func _fields(root: Node3D, center: Vector3, outer: float, size: int, rng: RandomNumberGenerator) -> void:
 	var n := clampi(size * 3, 4, 36)
-	var fields := Node3D.new()
-	fields.name = "Fields"
-	root.add_child(fields)
-	var crops := Node3D.new()  # beside the fields, not in them: the town's life reads every field as a decal
-	crops.name = "Crops"
-	root.add_child(crops)
+	var plots := _plots(root)
+	var fields: Node3D = plots[0]
+	var crops: Node3D = plots[1]
 	var placed := 0
 	for i in n * 5:
 		if placed >= n:

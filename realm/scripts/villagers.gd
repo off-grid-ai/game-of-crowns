@@ -161,6 +161,8 @@ func _spawn(id: int) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = id
 	var list := []
+	var homes: Array = town["node"].get_meta("homes", [])
+	var start := rng.randi() % maxi(1, homes.size())
 	# Busier as a town grows: a hamlet has a handful about, a market town a crowd.
 	for i in clampi(6 + size * 5, 8, MAX_PER_TOWN):
 		# Each has a calling that decides where their day goes, and what they wear:
@@ -170,12 +172,19 @@ func _spawn(id: int) -> void:
 		var station := "peasant" if calling == "farmer" else ("clergy" if calling == "pious" and rng.randf() < 0.3 else "townsfolk")
 		var person: Node3D = _people.make(rng, station)
 		add_child(person)
-		var a := {"i": i, "node": person, "center": center, "rng": rng, "home": _random_spot(center, rng, 1.8, 3.6), "town": id, "route": PackedVector2Array(),
+		# Home is a real house's doorstep, the work done in front of it; a
+		# farmer's strip is one of the town's own fields (or the garden behind
+		# a house), so the work happens where the crops are.
+		var door: Array = homes[(i * 5 + start) % homes.size()] if not homes.is_empty() else []
+		var home := _random_spot(center, rng, 1.8, 3.6) if door.is_empty() else center + Vector3(door[0])
+		var a := {"i": i, "node": person, "center": center, "rng": rng, "home": home, "town": id, "route": PackedVector2Array(),
 			"farmer": false, "wait": rng.randf() * 6.0, "phase": rng.randf() * TAU, "pace": rng.randf_range(0.8, 1.2)}
 		a["role"] = "child" if person.get_meta("age", "") == "child" else calling
 		a["farmer"] = a["role"] == "farmer"
-		a["field"] = _random_spot(center, rng, 4.5, 7.5)  # their own strip, not a random one each time
-		a["bench"] = a["home"] + Vector3(rng.randf_range(-0.2, 0.2), 0, rng.randf_range(-0.2, 0.2))
+		a["field"] = _strip(town["node"], center, rng)
+		var out: Vector3 = Vector3(door[1]) if not door.is_empty() else Vector3.ZERO
+		a["bench"] = home + out * rng.randf_range(0.1, 0.2) + out.rotated(Vector3.UP, PI / 2) * rng.randf_range(-0.2, 0.2) if not door.is_empty() \
+			else home + Vector3(rng.randf_range(-0.2, 0.2), 0, rng.randf_range(-0.2, 0.2))
 		a["early"] = rng.randf_range(-0.6, 0.6)  # an early riser or a late one, in hours
 		a["block"] = ""
 		person.position = a["home"]
@@ -433,16 +442,69 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 	_people.play(n, a.get("gait", "Walk"), clampf(step.length() / delta / WALK_SPEED, 0.5, 1.3))
 
 
-## The town's shared places, fixed per town: the tavern, the sept, the market and the well.
+## The town's shared places: the tavern's door, the church's, the market
+## stalls and the well, where towns.gd built them; somewhere fitting nearby
+## for any it doesn't have. Kept until the town is rebuilt.
 func _places(id: int, center: Vector3) -> Dictionary:
-	if not _town_places.has(id):
+	var node: Node3D = towns.towns[id]["node"] if towns.towns.has(id) else null
+	var made := node.get_instance_id() if node else 0
+	if not _town_places.has(id) or int(_town_places[id].get("made", 0)) != made:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = id * 31 + 7
-		_town_places[id] = {
-			"tavern": _random_spot(center, rng, 1.2, 2.2), "sept": _random_spot(center, rng, 1.5, 2.6),
-			"market": _random_spot(center, rng, 0.5, 1.1), "well": _random_spot(center, rng, 0.3, 0.8),
-		}
+		var built: Dictionary = node.get_meta("places", {}) if node else {}
+		var out := {"made": made}
+		var fallback := {"tavern": [1.2, 2.2], "sept": [1.5, 2.6], "market": [0.5, 1.1], "well": [0.3, 0.8]}
+		for k in fallback:
+			var p: Vector3 = center + Vector3(built[k]) if built.has(k) else _random_spot(center, rng, fallback[k][0], fallback[k][1])
+			if not built.has("sept") and k == "sept" and built.has("hall"):
+				p = center + Vector3(built["hall"])  # no church: they pray at the hall's door
+			p.y = terrain.height_at(p.x, p.z)
+			out[k] = p
+		_town_places[id] = out
 	return _town_places[id]
+
+
+## A spot to work in one of the town's fields, or in a garden behind a house
+## when it has no field in reach (world).
+func _strip(node: Node3D, center: Vector3, rng: RandomNumberGenerator) -> Vector3:
+	var reach := float(node.get_meta("reach", 6.0)) - 0.4
+	var fields: Array = node.get_meta("fields", []).filter(func(f): return Vector3(f[0]).length() < reach)
+	var gardens: Array = node.get_meta("gardens", [])
+	if not fields.is_empty() and (gardens.is_empty() or rng.randf() < 0.7):
+		var f: Array = fields[rng.randi() % fields.size()]
+		var size: Vector2 = f[1]
+		var l := Vector3(rng.randf_range(-0.4, 0.4) * size.x, 0, rng.randf_range(-0.35, 0.35) * size.y)
+		var p: Vector3 = center + Vector3(f[0]) + Basis(Vector3.UP, float(f[2])) * l
+		if terrain.is_land(p.x, p.z):
+			return p
+	if not gardens.is_empty():
+		return center + Vector3(gardens[rng.randi() % gardens.size()]) + Vector3(rng.randf_range(-0.12, 0.12), 0, rng.randf_range(-0.08, 0.08))
+	return _random_spot(center, rng, 4.5, 7.5)
+
+
+## The work a field asks for at this time of year: sowing in spring, watering
+## and weeding in summer, the harvest in autumn; nothing grows in winter.
+func _field_work(rng: RandomNumberGenerator) -> String:
+	match String(terrain.season):
+		"spring":
+			return ["Planting", "Planting", "Watering", "Fixing_Kneeling"][rng.randi() % 4]
+		"autumn":
+			return ["Pick_Fruit", "Pick_Fruit", "Carrying", "Wheelbarrow"][rng.randi() % 4]  # cut, gathered and carted home
+		"winter":
+			return ""
+	return ["Watering", "Pick_Fruit", "Fixing_Kneeling", "Planting"][rng.randi() % 4]
+
+
+## What the town is going through, as its people feel it: "feast", "riot", "hunger" or "".
+func _town_mood(a: Dictionary) -> String:
+	var c: Dictionary = towns.towns.get(a["town"], {}).get("data", {})
+	if c.get("disorder", false):
+		return "riot"
+	if c.get("famine", false):
+		return "hunger"
+	if c.get("celebrating", false):
+		return "feast"
+	return ""
 
 
 ## How much room each shared place has: people stand from `near` to `far`
@@ -541,7 +603,30 @@ func _choose_next(a: Dictionary) -> void:
 	if not plan.is_empty() and a["block"] != "night" and _follow(a, plan, places):
 		return
 	var role: String = a["role"]
-	match String(a["block"]):
+	var block := String(a["block"])
+	var mood := _town_mood(a) if block != "night" and block != "dawn" else ""
+	var day := block in ["work", "work2", "meal", "evening"]
+	if mood == "feast" and day and roll < (0.6 if block == "evening" else 0.3):
+		# A feast: the square fills round the bonfire, dancing, toasting, drinking.
+		target = _at(a, "well")
+		a["work"] = ["Dance", "Cheering", "Drinking", "Dance", "Idle_Talking"][rng.randi() % 5]
+		block = "feasting"
+	elif mood == "riot" and day:
+		if roll < 0.35 and role != "child":
+			target = _at(a, "well")  # to the square, to shout with the rest
+			a["work"] = ["Yelling", "Arguing", "Yelling"][rng.randi() % 3]
+		else:
+			target = _near(a["home"], rng, 0.15)  # doors barred, watching from the step
+			a["work"] = ["Looking_Around", "Terrified", "Idle"][rng.randi() % 3]
+		block = "rioting"
+	elif mood == "hunger" and day and roll < 0.35:
+		# Hunger: standing idle at the empty stalls, or slumped at the door.
+		target = _at(a, "market") if roll < 0.15 else _near(a["home"], rng, 0.2)
+		a["work"] = ["Defeated", "Looking_Around", "Defeated", "Praying"][rng.randi() % 4]
+		block = "hungry"
+	match block:
+		"feasting", "rioting", "hungry":
+			pass  # chosen above
 		"night":
 			if role == "tavern" and roll < 0.5:
 				target = _at(a, "tavern")
@@ -576,11 +661,17 @@ func _choose_next(a: Dictionary) -> void:
 			# The working day, by calling.
 			match role:
 				"farmer":
-					target = _near(a["field"], rng, 0.4) if roll < 0.85 else _at(a, "well")
-					a["work"] = ["Fixing_Kneeling", "Interact", "PickUp_Table", "Watering", "Planting", "Pick_Fruit", "Milking"][rng.randi() % 7] if roll < 0.85 else "Carrying"
+					var tend := _field_work(rng)
+					if tend == "" or roll >= 0.85:
+						# Winter, or a break: wood and water fetched, the yard put to rights.
+						target = a["bench"] if roll < 0.6 or tend == "" else _at(a, "well")
+						a["work"] = ["Carrying", "Wheelbarrow", "Fixing_Kneeling", "Interact"][rng.randi() % 4]
+					else:
+						target = _near(a["field"], rng, 0.25)
+						a["work"] = tend
 				"crafter":
 					target = a["bench"] if roll < 0.8 else _at(a, "market")
-					a["work"] = ["Carrying", "Wheelbarrow", "Kneeling", "Idle"][rng.randi() % 4] if roll < 0.8 else ["Idle_Talking", "Arguing"][rng.randi() % 2]
+					a["work"] = ["Fixing_Kneeling", "Interact", "PickUp_Table", "Carrying", "Wheelbarrow"][rng.randi() % 5] if roll < 0.8 else ["Idle_Talking", "Arguing"][rng.randi() % 2]  # at the trade before the door, or haggling over it
 				"tavern":
 					target = _at(a, "tavern")
 					a["work"] = ["Carrying", "Drinking", "Idle_Talking"][rng.randi() % 3]
