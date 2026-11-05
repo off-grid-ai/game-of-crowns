@@ -42,6 +42,11 @@ const STRIP := {
 	"romano-british_house_in_medieval_london": ["Ground"],
 }
 
+# Kits merged into one mesh can't have their ground stripped by name: the
+# tavern's stone yard is part of the building. Its triangles at floor level
+# (below this height, game units) are dropped, so the house stands in our land.
+const FLOOR_CUT := {"medieval_tavern": 0.02}
+
 static var _cache := {}
 
 
@@ -114,7 +119,7 @@ static func _template(name: String) -> Dictionary:
 	# One mesh, one surface per material: a model authored in hundreds of
 	# pieces (the longhall is 352) costs a draw call for every piece, and on
 	# Metal those calls, not triangles, were what held the frame.
-	var merged := _merge(parts)
+	var merged := _merge(parts, FLOOR_CUT.get(name, -INF))
 	if merged:
 		parts = [[merged, Transform3D.IDENTITY]]
 		var whole := Node3D.new()
@@ -156,7 +161,7 @@ static func _no_glow(root: Node) -> void:
 ## The parts' surfaces gathered by material into one mesh, each vertex moved by
 ## its part's place in the model. Null if a part can't be merged (skinned or
 ## morphing meshes keep their pieces).
-static func _merge(parts: Array) -> ArrayMesh:
+static func _merge(parts: Array, floor_cut := -INF) -> ArrayMesh:
 	var by_mat := {}  # material -> [arrays list]
 	for part in parts:
 		var mesh: Mesh = part[0]
@@ -220,12 +225,15 @@ static func _merge(parts: Array) -> ArrayMesh:
 			else:
 				has_col = false
 			var ind = a[Mesh.ARRAY_INDEX]
-			if ind != null:
-				for i in ind:
-					idx.append(base + i)
-			else:
-				for i in v.size():
-					idx.append(base + i)
+			if ind == null:
+				ind = PackedInt32Array(range(v.size()))
+			for i in range(0, ind.size(), 3):
+				var y0: float = verts[base + ind[i]].y
+				var y1: float = verts[base + ind[i + 1]].y
+				var y2: float = verts[base + ind[i + 2]].y
+				if maxf(y0, maxf(y1, y2)) < floor_cut:
+					continue  # the kit's own ground: ours shows instead
+				idx.append_array([base + ind[i], base + ind[i + 1], base + ind[i + 2]])
 		var arr := []
 		arr.resize(Mesh.ARRAY_MAX)
 		arr[Mesh.ARRAY_VERTEX] = verts
