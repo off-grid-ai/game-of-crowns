@@ -48,6 +48,7 @@ How a round is played: `realm/tools/play/*.play` scenarios feed real input (keys
 
 | # | Expected | Found | Change | Commit |
 |---|---|---|---|---|
+| 122 | Seen working (r32/05) | — | The King's rider on the dirt road through Kingsmere, its caption whole over the roofs; the town card's prices from the bridge ("Arrange a marriage with… 40k cr"); a full season with no script errors in the game log | r32 |
 | 121 | Travellers ride on the road (Ali's frames) | The rider and the grain cart rode beside the road on the grass: drawn road spans bow at their middle by up to a road's width; travellers took the straight line between tile centres | One shared bow (terrain.road_bow, the same either way) for drawing and riding | 99b65ba |
 | 120 | Captions read whole (Ali's frames) | "…swears to House…", "purse·or a n…ling": a roof cut the scene's caption mid-word | Drawn on top, a size smaller; the rider glides past a nudge clear of a wall; corners stay close to the road | 3e0517c |
 | 119 | Smooth riding doesn't break the armies | After the curve change the log filled with "Zero length interval" every frame (64,000 lines): armies with nowhere to go sampled an empty curve | Repeated points dropped; a standing army doesn't sample; checked: a season with no script errors | 5c30bfe |
