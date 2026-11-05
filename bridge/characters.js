@@ -532,6 +532,7 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
   // Every choice states what it does to favour, from the effects it declares:
   // "Elsbeth owes the crown · Ysolde is shamed · House Thornvale −10".
   withFavour(hint, favour, roles) {
+    if (/[+−-]\d/.test(hint)) return hint;  // it already says its numbers
     const said = Object.entries(favour ?? {}).map(([k, n]) => {
       const house = roles[k]?.house;
       if (!house || hint.includes(house)) return null;
