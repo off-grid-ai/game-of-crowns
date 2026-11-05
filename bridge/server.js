@@ -500,9 +500,9 @@ function counsel(players, cities, threat) {
     const angry = great.filter((p) => favourOf(p.id) < 25).map((p) => p.house.name.replace(/^House /, ""));
     out.push({ urgency: 95, text: `${claimant} whispers of a better claim to the throne`,
       why: `In ${left} season${left === 1 ? "" : "s"} they march on Kingsmere, unless the angry houses are won back above 25: ${angry.join(", ") || "none now"}.`,
-      acts: [pretender && seatOf(pretender.id) ? { label: `Gift crowns to ${claimant.replace(/^House /, "")}`, action: "gift", city: seatOf(pretender.id).id } : null, { label: "Call the banners", action: "banners" }].filter(Boolean) });
+      acts: [pretender && seatOf(pretender.id) ? { label: `Gift crowns to ${claimant.replace(/^House /, "")}`, action: "gift", city: seatOf(pretender.id).id } : null, { label: "Buy off their claim", action: "buyoff" }, { label: "Call the banners", action: "banners" }].filter(Boolean) });
   } else if (threat.usurper !== "none") out.push({ urgency: 100, text: `${claimant}'s host marches on Kingsmere`,
-    why: `${(threat.theirs * 200).toLocaleString("en-US")} of their men about the walls against ${(threat.ours * 200).toLocaleString("en-US")} of yours: ${threat.theirs > threat.ours ? "as things stand, the walls would fall" : "for now, the walls would hold"}. If Kingsmere falls, the crown is lost. Loyal houses (favour 35 and up) send men to the banners; the royal levy is yours to pay for.`, acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }] });
+    why: `${(threat.theirs * 200).toLocaleString("en-US")} of their men about the walls against ${(threat.ours * 200).toLocaleString("en-US")} of yours: ${threat.theirs > threat.ours ? "as things stand, the walls would fall" : "for now, the walls would hold"}. If Kingsmere falls, the crown is lost. Loyal houses (favour 35 and up) send men to the banners; the royal levy is yours to pay for. Or buy them off: gold for their claim.`, acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }, { label: "Buy them off", action: "buyoff" }] });
   // The pretender's own coldness is the usurper's story: one matter, not two.
   if (threat.usurper !== "none" && pretender) {
     const i = out.findIndex((o) => o.text.startsWith(`${pretender.house.name} grows cold`));
@@ -935,15 +935,16 @@ http.createServer(async (req, res) => {
     decreesIssued++;
     const cmd = await body(req);
     if (meta.status !== "running") return json(res, 400, { error: "this reign has ended" });
-    const result = decree({ ...cmd, favourOf }, world);
+    const result = decree({ ...cmd, favourOf, usurper: stakes?.s.usurper, seat: stakes?.s.seat }, world);
     if (result.error) return json(res, 400, result);
+    if (result.endUsurper && stakes) { stakes.s.usurper.stage = "none"; stakes.save(); }
     result.lua.forEach((l) => send(`lua cmd ${l}`));
     // Spend now, so a second decree before the next snapshot can't overdraw the treasury.
     const crownNow = world.players.find((p) => houseFor(p).crown);
     if (crownNow) crownNow.gold -= result.cost;
     // The result card says what the order cost and whose favour moved, so the
     // King learns the price of his word.
-    const effects = shiftAndTell(result.favour, { gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "the King's banners: answered or refused", marriage: "a royal match", peace: "the King's peace" }[cmd.action] ?? "a royal decree", result.cost);
+    const effects = shiftAndTell(result.favour, { gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "the King's banners: answered or refused", marriage: "a royal match", peace: "the King's peace", buyoff: "the King bought off the pretender" }[cmd.action] ?? "a royal decree", result.cost);
     const seat = world.cities.find((c) => c.owner === crownNow?.id && c.capital);
     const target = world.cities.find((c) => c.id === Number(cmd.city));
     if (seat && target && (cmd.action === "relief" || cmd.action === "gift")) scene(cmd.action === "relief" ? "grain" : "tribute", { x: seat.x, y: seat.y, tx: target.x, ty: target.y, city: target.id });

@@ -14,6 +14,7 @@ export const DECREES = {
   banners: { cost: 50, label: "Call the banners" },
   marriage: { cost: 80, label: "Arrange a marriage between two houses" },
   peace: { cost: 60, label: "Command peace between two warring houses" },
+  buyoff: { cost: 300, label: "Buy off the pretender" },
 };
 
 // When the banners were last called: the houses won't answer twice in a year.
@@ -175,6 +176,19 @@ export function decree(cmd, world) {
         text: `A feast at Kingsmere in honour of ${lord}. Wine flows; old slights are forgotten, for now.`,
         lua: [pay],
       };
+    case "buyoff": {
+      // Gold for the pretender's claim: their host about Kingsmere goes home and
+      // the whispers stop, at a price every other house will remember.
+      const u = cmd.usurper;
+      const who = world.players.find((p) => p.id === u?.house);
+      if (!u || u.stage === "none" || !who) return { error: "no pretender threatens the throne" };
+      const at = cmd.seat;
+      const home = at ? `for p in players_iterate() do if p.id == ${who.id} then for u in p:units_iterate() do local r = u.utype:rule_name(); if r ~= "Workers" and r ~= "Settlers" and math.sqrt(u.tile:sq_distance(find.tile(${at.x}, ${at.y}))) <= 6 then edit.unit_kill(u, "killed", nil) end end end end` : null;
+      const lord = houseFor(who).name;
+      const others = Object.fromEntries(world.players.filter((p) => p.id !== who.id && !houseFor(p).wild && !houseFor(p).crown).map((p) => [p.id, -2]));
+      return { cost: d.cost, favour: { [who.id]: 25, ...others }, lua: [pay, home].filter(Boolean), endUsurper: true,
+        text: `The King buys off ${lord}: gold for their claim. Their host breaks camp and goes home, and the other houses mutter that treason pays.` };
+    }
     case "peace": {
       // The King commands two warring houses to lay down arms. Each obeys by its
       // favour: if both are warm enough, the soldiers camped by the other's towns

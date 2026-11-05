@@ -512,6 +512,11 @@ func _build_houses() -> void:
 	_houses = VBoxContainer.new()
 	_houses.add_theme_constant_override("separation", 2)
 	v.add_child(_houses)
+	# What favour means, in one line, so nobody has to find it in a tooltip.
+	var bands := T.label("Favour: under 30 may rise against you · 35 and up answer your banners · 60 and up are loyal")
+	bands.add_theme_font_size_override("font_size", 10)
+	bands.autowrap_mode = TextServer.AUTOWRAP_WORD
+	v.add_child(bands)
 	v.add_child(HSeparator.new())
 	# The King's word, folded to one line until wanted: the table stays compact
 	# and the Hand's counsel below it in view.
@@ -1960,7 +1965,14 @@ func _show_audience() -> void:
 		mic.listen()
 	v.add_child(own_row)
 	_own_line = own
-	v.add_child(_btn("Later", func(): _court_hidden = true; _court_panel.visible = false))
+	# Later is not free: a petitioner left too long goes home unheard, and says so.
+	var later := _btn("Later", func(): _court_hidden = true; _court_panel.visible = false)
+	later.tooltip_text = "They wait for now. Left unheard for two years, they go home and their house's favour falls by 12."
+	v.add_child(later)
+	var cost := T.label("Left unheard for two years, they leave: their house −12")
+	cost.add_theme_font_size_override("font_size", 10)
+	cost.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(cost)
 
 
 var _spoken := ""
