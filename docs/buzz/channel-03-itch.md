@@ -27,7 +27,8 @@ itch.io brings its own daily traffic through its browse pages, and its analytics
 > You're the King. You can't move a single soldier. You rule with grain, gold, taxes, marriages and judgement at court, and the lords remember what you did. Refuse a petition, call in a loan, take a town, and it comes back to you years later.
 >
 > - Free, nothing locked.
-> - Native on Apple Silicon Macs, signed and notarised. 1.8 GB, plus a 1.8 GB model fetched on first run that gives the lords their words, running on your own Mac.
+> - Native on Apple Silicon Macs, signed and notarised.
+> - Want the lords to speak in their own words? Run Off Grid AI alongside it.
 > - Open source: https://github.com/off-grid-ai/game-of-crowns
 >
 > It's early. Tell me what breaks.

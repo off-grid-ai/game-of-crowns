@@ -12,9 +12,9 @@ Hi Andrew,
 
 I've just put out the first build of Game of Crowns: a medieval kingdom sim, native on Apple Silicon, free with nothing locked.
 
-Great houses run themselves: they farm, starve, marry and go to war. You're the King and can't move a soldier; you rule through the court, taxes, grain and marriages, and the lords remember what you did to them. The lords' words come from a small model that runs on the Mac itself, offline, which felt like a good fit for your channel.
+Great houses run themselves: they farm, starve, marry and go to war. You're the King and can't move a soldier; you rule through the court, taxes, grain and marriages, and the lords remember what you did to them. It runs natively on Apple Silicon, which felt like a good fit for your channel.
 
-Download (signed and notarised, 1.8 GB): https://github.com/off-grid-ai/game-of-crowns/releases
+Download (signed and notarised): https://github.com/off-grid-ai/game-of-crowns/releases
 
 If you try it, I'd love to hear what breaks first.
 
@@ -23,4 +23,4 @@ Mac
 ---
 
 **Shorter version for X or Discord:**
-Just released a free, native Apple Silicon medieval kingdom sim: great houses run themselves, you're the King, and the lords remember what you did (their words come from a small model running on the Mac, offline). Signed and notarised: https://github.com/off-grid-ai/game-of-crowns/releases
+Just released a free, native Apple Silicon medieval kingdom sim: great houses run themselves, you're the King, and the lords remember what you did. Signed and notarised: https://github.com/off-grid-ai/game-of-crowns/releases

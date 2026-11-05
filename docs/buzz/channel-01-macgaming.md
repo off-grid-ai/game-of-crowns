@@ -12,7 +12,7 @@ I've been building this on my Mac and the first build is out today. Free, nothin
 
 Great houses run themselves: they farm, starve, marry and go to war without you. You're the King, and you can't move a single soldier. You rule with grain, gold, taxes, marriages and judgement at court. Refuse a lord's petition or call in a loan he can't pay, and he remembers.
 
-It's a native Apple Silicon build, signed and notarised. The download is 1.8 GB. On first run it fetches a 1.8 GB model that gives the lords their words, running on your own Mac; the realm plays by its rules until that's ready.
+It's a native Apple Silicon build, signed and notarised.
 
 Download: https://github.com/off-grid-ai/game-of-crowns/releases
 
@@ -25,4 +25,4 @@ It's early. What would keep you playing past the first hour?
 2. A house asks for its taxes back. Whatever you answer, they remember.
 3. Your adviser tells you what matters and what each fix costs. You pick.
 
-**If someone asks "is it AI?":** "The lords' lines come from a small model that runs on your Mac, offline. What they do comes from the simulation: who you wronged, who owes what, who's starving."
+**If someone asks "is it AI?":** "No. What the lords do comes from the simulation: who you wronged, who owes what, who's starving. If you run Off Grid AI alongside it, they also speak in their own words."

@@ -45,7 +45,7 @@ New messages get added here. They add to the picture; they don't replace it.
 
 ## Platform (Mac, 2026-11-05)
 - Mac only for now; no Windows until demand is proven.
-- The AI is optional: the game must stand on its own without the model.
+- No bundled model (Mac, 2026-11-05): the game stands on its own and recommends Off Grid AI for lords' own words. Simple.
 
 ## Working with the main session (Mac, 2026-11-05)
 - This session also directs the explainer/video session: it holds the angle and positioning.
