@@ -402,7 +402,7 @@ func _build_top_bar() -> void:
 		walk.tooltip_text = _with_key("Walk the realm as the King, talk to anyone, draw your sword", "walk_king")
 		walk.add_theme_color_override("font_color", T.ACCENT)
 		act.add_child(walk)
-	_houses_btn = _icon_btn("shield", _with_key("The great houses, and your word", "houses"), func(): _houses_panel.visible = _houses_btn.button_pressed)
+	_houses_btn = _icon_btn("shield", _with_key("The great houses: their strength, their wars and their favour", "houses"), func(): _houses_panel.visible = _houses_btn.button_pressed)
 	_houses_btn.toggle_mode = true
 	act.add_child(_named(_houses_btn, "Houses"))
 	_chron_btn = _icon_btn("scroll", _with_key("Chronicle of the realm", "chronicle"), func(): _chron_panel.visible = _chron_btn.button_pressed)
@@ -522,34 +522,8 @@ func _build_houses() -> void:
 	bands.autowrap_mode = TextServer.AUTOWRAP_WORD
 	v.add_child(bands)
 	v.add_child(HSeparator.new())
-	# The King's word, folded to one line until wanted: the table stays compact
-	# and the Hand's counsel below it in view.
-	var open_word := _btn("Proclaim your word…")
-	open_word.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	open_word.add_theme_color_override("font_color", T.ACCENT)
-	open_word.tooltip_text = "Shape your people's minds in a sentence: everyone, a house, a person, or a group. Each proclamation keeps working until you revoke it."
-	v.add_child(open_word)
-	var word_box := VBoxContainer.new()
-	word_box.visible = false
-	v.add_child(word_box)
-	var word := LineEdit.new()
-	word.placeholder_text = "e.g. the Stormlands are loyal to their King"
-	word.text_submitted.connect(func(t):
-		mood_decreed.emit(t)
-		word.clear()
-		word.release_focus()
-		word_box.visible = false)
-	word_box.add_child(word)
-	var hint := Label.new()
-	hint.text = "Shape your people's minds in a sentence. Each proclamation keeps working until you revoke it."
-	hint.add_theme_color_override("font_color", T.TEXT_2)
-	hint.add_theme_font_size_override("font_size", T.SIZE_DESC)
-	hint.autowrap_mode = TextServer.AUTOWRAP_WORD
-	word_box.add_child(hint)
-	open_word.pressed.connect(func():
-		word_box.visible = not word_box.visible
-		if word_box.visible:
-			word.grab_focus())
+	# (No "Proclaim your word": shaping minds in a sentence was a god's power, not a
+	# King's. Proclamations already made in a reign are listed below to be lifted.)
 	_decree_box = VBoxContainer.new()
 	_decree_box.add_theme_constant_override("separation", 2)
 	v.add_child(_decree_box)
