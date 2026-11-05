@@ -3,6 +3,7 @@
 Kept by the downloads supervisor (every 15 minutes in the buzz session). Goal: get the game into people's hands. Newest run first.
 
 ## Needs Mac
+- **Can the main session relaunch your game now to test, then commit and push for v0.2?** It's holding the lord work (plus fixes for the bridge freezing in long reigns, an empty notice card and battles on mountainsides) until it has seen the lord's deed on screen, and you were playing.
 - **Disk:** this Mac has ~4 GB free of 460 GB. It killed the first release run and will hurt other sessions' renders.
 - **Promo art:** prompts for Codex in docs/buzz/asset-prompts.md (GitHub social preview, itch.io cover, key art). The social preview has to be set by hand in the repo's Settings.
 - **itch.io:** a free page for the dmg (needs your account).
@@ -39,7 +40,7 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 
 ### 11-05 15:20
 **Shipped:** nothing since 14:05. Drafts ready to paste: r/macgaming, Mac creator DMs, itch.io page, r/SimulationGames, r/4Xgaming (docs/buzz/channel-0*.md). Downloads: 1.
-**Blocking:** the approved lord and pace work, uncommitted since 12:38 (main session nudged); none of the drafts posted yet (Mac).
+**Blocking:** the approved lord and pace work, uncommitted since 12:38: the main session is waiting for Mac's OK to relaunch his game and test; none of the drafts posted yet (Mac).
 
 ### 11-05 14:05
 **Moved:** first public build is out: https://github.com/off-grid-ai/game-of-crowns/releases/tag/v0.1-20261105-622eb2d (1.8 GB dmg, signed and notarised, Gatekeeper: accepted, source=Notarized Developer ID). Built from origin/main 622eb2d, so it has none of the in-progress lord and pace work.
