@@ -529,6 +529,10 @@ function counsel(players, cities, threat) {
     // A royal match binds the cold house to the most loyal one: both warm, and a long truce holds.
     const friend = great.filter((p) => p.id !== cold.id && !stilled(cold.id, p.id)).sort((a, b) => favourOf(b.id) - favourOf(a.id))[0];
     const match = friend ? [{ label: `Wed them to ${friend.house.name.replace(/^House /, "")}`, action: "marriage", city: seatOf(cold.id).id, to: friend.id }] : [];
+    // A taken town is answered by giving it back, if the other house still holds it.
+    const took = meta.taken?.[cold.id];
+    const back = drain?.why === "a town granted or taken" && took && cities.some((c) => c.id === took.city && c.owner === took.to)
+      ? [{ label: `Return ${cityName(took.city)} to them`, action: "grant", city: took.city, to: cold.id }] : [];
     const lighter = drain?.why === "the royal tithe" && meta.tithe > 0 ? [{ label: `Lower the tithe to ${Math.round(meta.tithe * 100) - 5}%`, ui: "tithe_down" }] : [];
     // The two rules, plainly: under 25 the lord may rise any season; two houses
     // under 25 and one of them claims the throne.
@@ -538,7 +542,7 @@ function counsel(players, cities, threat) {
       : "Under 25, a lord may raise his banners against you; two such houses and one claims the throne.";
     out.push({ urgency: f < 25 ? 100 : 70, text: `${cold.house.name} grows cold to the crown: favour ${f}`,
       why: rule + cause,
-      acts: [...lighter, { label: "Gift crowns", action: "gift", city: seatOf(cold.id).id }, { label: "A feast in their honour", action: "feast", city: seatOf(cold.id).id }, ...match] });
+      acts: [...back, ...lighter, { label: "Gift crowns", action: "gift", city: seatOf(cold.id).id }, { label: "A feast in their honour", action: "feast", city: seatOf(cold.id).id }, ...match] });
   }
   // The usurper by name, how long until they march, and how to stop it: the
   // whispers fade once the angry houses (under 25) are won back.
@@ -605,7 +609,7 @@ function counsel(players, cities, threat) {
   if (!out.length) out.push({ urgency: 0, text: "The realm is quiet", why: "A good season to win a house's love before you need it.", acts: [] });
   // Every order shows its price before the King gives it, as the town card does: "Command peace  6k cr".
   // And what it does, so the King weighs effect against price: "Gift crowns  15k cr · +10".
-  const DOES = { gift: "+10", feast: "+15", relief: "+12", marriage: "+8 each, bound in peace", peace: "+2 each, truce", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2" };
+  const DOES = { grant: "+20 them, −30 the holder", gift: "+10", feast: "+15", relief: "+12", marriage: "+8 each, bound in peace", peace: "+2 each, truce", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2" };
   // An order that can't be given now isn't offered: the banners answer once a year.
   for (const o of out) o.acts = o.acts.filter((a) => a.action !== "banners" || bannersReady(world?.turn ?? 0));
   // The Hand's own pick on each matter: the order that does most for its cost.
@@ -1035,6 +1039,11 @@ http.createServer(async (req, res) => {
     if (result.endUsurper && stakes) { stakes.s.usurper.stage = "none"; stakes.save(); }
     // A ward holds the house for five years.
     if (result.ward != null && stakes) { (stakes.s.wards ??= {})[result.ward] = (world.turn ?? 0) + 20; stakes.save(); }
+    // A town taken from a house is remembered, so the Hand can offer it back.
+    if (cmd.action === "grant" && cmd.to != null) {
+      const town = world.cities.find((c) => c.id === Number(cmd.city));
+      if (town && town.owner !== Number(cmd.to)) { (meta.taken ??= {})[town.owner] = { city: town.id, to: Number(cmd.to) }; chron.saveMeta(meta); }
+    }
     // Feasting or stripping the house that rose settles what becomes of them.
     const endedU = stakes?.s.usurper.ended;
     if (endedU && !endedU.settled && ["feast", "grant", "ward"].includes(cmd.action) && world.cities.some((c) => c.id === Number(cmd.city) && c.owner === endedU.house)) { endedU.settled = true; stakes.save(); }
