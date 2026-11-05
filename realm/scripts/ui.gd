@@ -1639,8 +1639,11 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 			house_opened.emit(owner))
 		# Whom they're at odds with, under the name: wars in red, the King's truces in gold.
 		var odds := PackedStringArray()
-		if not p.get("wars", []).is_empty():
-			odds.append("[color=#%s]WAR · %s[/color]" % [T.DANGER.to_html(false), ", ".join(PackedStringArray(p["wars"])).to_upper()])
+		var wars := PackedStringArray(p.get("wars", []))
+		if not wars.is_empty():
+			# Two names and a count keep the row to one line; all of them on hover.
+			var shown := ", ".join(wars.slice(0, 2)) + (" +%d" % (wars.size() - 2) if wars.size() > 2 else "")
+			odds.append("[color=#%s]WAR · %s[/color]" % [T.DANGER.to_html(false), shown.to_upper()])
 		if not p.get("truces", []).is_empty():
 			odds.append("[color=#%s]TRUCE · %s[/color]" % [T.ACCENT.to_html(false), ", ".join(PackedStringArray(p["truces"])).to_upper()])
 		if odds.is_empty():
@@ -1649,17 +1652,18 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 			var cell := VBoxContainer.new()
 			cell.add_theme_constant_override("separation", -4)
 			cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			cell.custom_minimum_size.x = 140  # room for most "WAR · THORNVALE" lines on one
+			cell.custom_minimum_size.x = 175  # "WAR · WOLFHOLT, STORMHOLD +1" on one line
 			cell.add_child(name)
 			var line := RichTextLabel.new()
 			line.bbcode_enabled = true
 			line.fit_content = true
 			line.scroll_active = false
 			line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			line.add_theme_font_override("normal_font", T.mono)
 			line.add_theme_font_size_override("normal_font_size", 9)
 			line.text = "  ".join(odds)
+			line.tooltip_text = "At war with " + ", ".join(wars) if not wars.is_empty() else ""
+			line.mouse_filter = Control.MOUSE_FILTER_PASS
 			cell.add_child(line)
 			grid.add_child(cell)
 		var m: Dictionary = p.get("measures") if p.get("measures") is Dictionary else {"towns": int(p["cities"])}
