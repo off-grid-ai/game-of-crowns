@@ -5,7 +5,7 @@ Kept by the downloads supervisor (every 15 minutes in the buzz session). Goal: g
 ## Needs Mac
 - **Disk:** this Mac has ~4 GB free of 460 GB. It killed the first release run and will hurt other sessions' renders.
 - **Promo art:** prompts for Codex in docs/buzz/asset-prompts.md (GitHub social preview, itch.io cover, key art). The social preview has to be set by hand in the repo's Settings.
-- **itch.io:** a free page for the dmg (needs your account).
+- **itch.io:** account created 11-05; next, the project page (docs/buzz/channel-03-itch.md) and the upload with butler (the dmg is over itch's 1 GB web limit).
 - **The lady's licence:** confirm the Sketchfab ownership claim for 'Princess Nun Royal Queen' (b9f22ea). A licence question only: .gitignore keeps body files out of git, so pushes publish no model files.
 - **Approve the rest of the list below** (everything marked "proposed").
 
