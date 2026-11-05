@@ -11,6 +11,11 @@ const WALKS := ["Walk", "Running", "Sprint", "Sneak", "SS_Walk", "GS_Walk", "Axe
 const WALK_PACE := 0.17  # world units a second at a "Walk" played at speed 1
 const RUN_PACE := 0.45  # and at "Running"
 const MOVING_PACE := WALK_PACE * 0.5  # steadier than this across the ground is walking; slower is standing (a turning dance ring, a shuffle)
+## How townsfolk stand about: each keeps one of these as their own "Idle",
+## so a crowd never stands in one pose.
+const IDLES := ["Idle", "Breathing_Idle", "Standing_Idle", "Standing_Idle_2", "Weight_Shift", "Looking_Around"]
+## And how they talk, played for every "Idle_Talking".
+const TALKS := ["Idle_Talking", "Talking", "Talking_2", "Happy_Gesture"]
 const SEEN_TO := 18.0  # world units: beyond this a person isn't drawn or animated (a few pixels tall)
 
 const OUTFITS := {
@@ -256,6 +261,9 @@ func _finish(person: Node3D, skeleton: Skeleton3D, rng: RandomNumberGenerator, r
 	var height: float = rng.randf_range(0.96, 1.04) * {"child": 0.72, "young": 0.98, "adult": 1.0, "elder": 0.96}[age]
 	person.scale = Vector3.ONE * height * k * S
 	person.set_meta("age", age)
+	if role in ["peasant", "townsfolk", "clergy"]:
+		person.set_meta("idle", IDLES[randi() % IDLES.size()])
+		person.set_meta("talk", TALKS[randi() % TALKS.size()])
 	# Who this person is, not just how they look: the character layer reads this.
 	var names: Array = MALE_NAMES if gender == "male" else FEMALE_NAMES
 	person.set_meta("identity", {
@@ -335,6 +343,10 @@ func _bind(skin: Skin, bone: String) -> int:
 static func play(person: Node3D, anim_name: String, speed := 1.0) -> void:
 	if person.get_meta("age", "") == "elder":
 		speed *= 0.75
+	if anim_name == "Idle":
+		anim_name = String(person.get_meta("idle", "Idle"))
+	elif anim_name == "Idle_Talking":
+		anim_name = String(person.get_meta("talk", "Idle_Talking"))
 	var anim: AnimationPlayer = person.get_node_or_null("Anim")
 	if anim == null or not anim.has_animation(anim_name):
 		return

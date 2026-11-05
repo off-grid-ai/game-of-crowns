@@ -50,7 +50,7 @@ func _process(delta: float) -> void:
 			continue
 		var at := body.global_position + Vector3(0, 0.1, 0)
 		var d := at.distance_to(cam.global_position)
-		if d > People.SEEN_TO or not cam.is_position_in_frustum(at):
+		if d > People.SEEN_TO or not in_view(cam, body):
 			_owed.erase(id)
 			_gait.erase(id)
 			if body.has_meta("in_step"):
@@ -107,3 +107,10 @@ func _keep_step(p: AnimationPlayer, body: Node3D, id: int, delta: float) -> void
 			var wish := String(body.get_meta("in_step"))
 			body.remove_meta("in_step")
 			People.play(body, wish if wish != "" else "Idle")
+
+
+## Any of a person in view, feet or head: at the edge of the frame one can be
+## out while the rest stands in shot, and a body never moved shows its T-pose.
+static func in_view(cam: Camera3D, body: Node3D) -> bool:
+	var p := body.global_position
+	return cam.is_position_in_frustum(p) or cam.is_position_in_frustum(p + Vector3(0, 0.22, 0))

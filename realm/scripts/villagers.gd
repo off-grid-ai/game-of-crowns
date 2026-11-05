@@ -27,9 +27,9 @@ const WALK_SPEED := 0.17  # world units per second: an unhurried 1.4 m/s at town
 const GAITS := {"Carrying": "PickUp_Table", "Wheelbarrow": "Interact"}
 ## Moves that need someone there to do them with: talk, argue, haggle, toast.
 ## Chosen only together with a partner (a gathering); never played to the air.
-const SOCIAL := ["Idle_Talking", "Arguing", "Whispering", "Nodding", "Yelling", "Cheering"]
+const SOCIAL := ["Idle_Talking", "Talking", "Talking_2", "Laughing", "Happy_Gesture", "Telling_Secret", "Arguing", "Whispering", "Nodding", "Yelling", "Cheering"]
 ## What one in a gathering does while another has the floor.
-const LISTEN := ["Nodding", "Idle", "Nodding", "Looking_Around"]
+const LISTEN := ["Nodding", "Idle", "Nodding", "Looking_Around", "Thinking", "Laughing"]
 var _talks := {}  # town id -> Array of gatherings: {centre, members, move, kind, until, speaker, turn_at, spin}
 var _talk_keys := 0  # each gathering's key, for chatter.gd to name it by
 # Minds (docs/MINDS.md): the bridge plans each commoner's day; the rules here
@@ -85,7 +85,7 @@ func _pause_unseen() -> void:
 			var anim: AnimationPlayer = n.get_node_or_null("Anim")
 			if anim:
 				var p := n.global_position + Vector3(0, 0.1, 0)
-				anim.active = n.visible and p.distance_to(eye) < _people.SEEN_TO and cam.is_position_in_frustum(p)
+				anim.active = n.visible and p.distance_to(eye) < _people.SEEN_TO and preload("res://scripts/anim_lod.gd").in_view(cam, n)
 
 
 func _refresh() -> void:
