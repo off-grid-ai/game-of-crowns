@@ -32,6 +32,8 @@ How a round is played: `realm/tools/play/*.play` scenarios feed real input (keys
 
 | # | Expected | Found | Change | Commit |
 |---|---|---|---|---|
+| 81 | The chronicle says a thing once | "House Thornvale lays siege to Brightburg with 3 companies" every season, filling the column (r20/02) | The same line within a year is written once | 32db188 |
+| 80 | Orders show what they do (supervisor 12:05 #1, 12:50 #1) | Prices only; the match offered again after the wedding; "Lower the tithe" twice; the dead's matter "wave 3" | "Gift crowns 15k cr · +10", "A feast 10k cr · +15", "Wed them to Goldcrest 40k cr · +8 each, truce" (Wolfholt, already bound, no longer offered), "Raise the royal levy 20k cr · 600 men"; the dead: "2,600 of them fell on Oldcrag (House Wolfholt) last time; 3,000 will come with the next. The next host comes in 6 seasons"; income and trends survive a restart (▲4,000 after one); other houses' wars muted, truces gold (r20/02) | 4d2a3c5 |
 | 79 | The royal match, played at last (supervisor 09:50 #1, 12:05 #2) | Never captured in four rounds: its act sat on a matter that never made the Hand's top three | On the cold house's matter: "Wed them to Wolfholt 40k cr". Played: "Alys Thornvale … will wed Constance Wolfholt … 40,000 crowns · Wolfholt 62 → 70 · Thornvale 24 → 32"; "TRUCE · WOLFHOLT" in gold under Thornvale and the reverse under Wolfholt (r19/02) | 5678f23 |
 | 78 | Prices that weigh | 300k in the treasury, every order 5–20k: click everything | A royal match 40k, a commanded peace 15k | ea82233 |
 | 77 | Red means the crown's loss | The chronicle nearly all red (others' plagues, famines, deaths) (r18) | Red only for risings, betrayals, civil war, or a blow that touches the King; the rest plain (r19/02) | ea82233 |
