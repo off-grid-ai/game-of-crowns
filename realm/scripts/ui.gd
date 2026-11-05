@@ -753,7 +753,7 @@ func _process(delta: float) -> void:
 	# The Hand's counsel steps aside while you read a town, the court or the
 	# away report, and is back when you close them.
 	if _counsel:
-		_counsel.visible = not ((_digest_panel and _digest_panel.visible) or _town_panel.visible or _court_panel.visible)
+		_counsel.visible = not ((_digest_panel and _digest_panel.visible) or _town_panel.visible or _court_panel.visible or _cinema_on)
 		# Never over the houses table: past its foot, the Hand drops his last matters.
 		if _counsel.visible:
 			_fit_centre(_counsel, 560.0)
@@ -1474,6 +1474,31 @@ func _guide_block() -> Control:
 	return g
 
 
+# --- the clear view while the King watches a scene --------------------------------------
+# A scene he chose to Watch gets the whole screen: the panels step aside and the
+# court waits; all come back as they were when he moves or the scene ends.
+var _cinema_on := false
+var _cinema_was := {}
+const CINEMA_HIDES := ["_houses_panel", "_chron_panel", "_town_panel", "_court_panel", "_house_panel", "_offer"]
+
+
+func cinema(on: bool) -> void:
+	if on == _cinema_on:
+		return
+	_cinema_on = on
+	for n in CINEMA_HIDES:
+		var p = get(n)
+		if p == null or not is_instance_valid(p):
+			continue
+		if on:
+			_cinema_was[n] = p.visible
+			p.visible = false
+		elif _cinema_was.get(n, false):
+			p.visible = true
+	if not on:
+		_cinema_was.clear()
+
+
 var _sat_out := {}  # war key -> when the King chose to stay out of it
 
 
@@ -2032,6 +2057,8 @@ func set_court(petitions: Array) -> void:
 	_court_waiting_shown(petitions.size())
 	if petitions.is_empty():
 		_court_panel.visible = false
+	elif _cinema_on:
+		pass  # the court waits while the King watches a scene
 	elif not _court_hidden or not _court_met:
 		# The first petitioner of a sitting is brought straight in: a new King
 		# meets his court at once, then the badge and the Hand call him back.

@@ -40,6 +40,7 @@ var _last_key := ""
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton or event is InputEventKey or event is InputEventMagnifyGesture or event is InputEventPanGesture:
 		_idle = 0.0
+		_clear_view(false)  # the King moves: his panels come back
 		if active:
 			active = false
 			_follow = null
@@ -72,6 +73,7 @@ func _process(delta: float) -> void:
 
 
 func _next_shot() -> void:
+	_clear_view(false)  # the watched scene is over
 	_shot_left = SHOT_SECONDS
 	var best := {}
 	var best_score := -1.0
@@ -98,7 +100,19 @@ func _next_shot() -> void:
 
 ## Takes you to a scene now, as the next shot (the Watch offer), travelling
 ## with `follow` when it moves. Any click, key or scroll gives the camera back.
+var _cinema := false  # a scene the King chose to watch: the panels step aside for it
+
+
+func _clear_view(on: bool) -> void:
+	if _cinema == on:
+		return
+	_cinema = on
+	if ui and ui.has_method("cinema"):
+		ui.cinema(on)
+
+
 func watch(s: Dictionary, follow: Node3D = null) -> void:
+	_clear_view(true)
 	_idle = 0.0
 	active = true
 	_shot_left = SHOT_SECONDS * 2.0
@@ -107,6 +121,7 @@ func watch(s: Dictionary, follow: Node3D = null) -> void:
 
 ## Goes to a place and stays with someone there (a story's people), captioned.
 func watch_at(at: Vector3, dist: float, caption: String, follow: Node3D = null) -> void:
+	_clear_view(true)
 	_idle = 0.0
 	active = true
 	_shot_left = SHOT_SECONDS * 2.0
