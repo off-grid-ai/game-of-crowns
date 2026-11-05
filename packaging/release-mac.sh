@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Cut a public Mac release on this machine: build, sign and notarise Game of Crowns from the last
-# commit (not the working tree, which other sessions may have half-changed), then publish the dmg
-# as a GitHub Release.
+# Cut a public Mac release on this machine: build, sign and notarise Game of Crowns from what's on
+# GitHub (origin/main; not the working tree, which other sessions may have half-changed), then
+# publish the dmg as a GitHub Release of that commit.
 #
 # The build runs in a scratch folder: the committed files from `git archive HEAD`, plus the
 # third-party art and Godot's import cache hard-linked from this working copy (the art stays out
@@ -21,11 +21,13 @@ for v in APPLE_API_KEY APPLE_API_KEY_ID APPLE_API_ISSUER; do
   [ -n "${!v:-}" ] || { echo "!! $v is not set"; exit 1; }
 done
 
-SHA=$(git rev-parse --short HEAD)
+git fetch -q origin main
+FULL=$(git rev-parse origin/main)
+SHA=$(git rev-parse --short origin/main)
 SRC=$(mktemp -d "$HOME/.goc-release.XXXXXX")
 trap 'rm -rf "$SRC"' EXIT
-echo "==> Committed files at $SHA"
-git archive HEAD | tar -x -C "$SRC"
+echo "==> origin/main at $SHA"
+git archive "$FULL" | tar -x -C "$SRC"
 
 echo "==> Art and import cache (hard links)"
 git ls-files -o -i --exclude-standard realm/assets > "$SRC/.art-list"
@@ -43,7 +45,7 @@ xcrun stapler validate "$DMG"
 VERSION=$(sed -n 's/^application\/short_version="\(.*\)"/\1/p' realm/export_presets.cfg)
 TAG="v$VERSION-$(date +%Y%m%d)-$SHA"
 echo "==> Release $TAG"
-gh release create "$TAG" "$DMG" $FLAG -R "$REPO" --target "$(git rev-parse HEAD)" \
+gh release create "$TAG" "$DMG" $FLAG -R "$REPO" --target "$FULL" \
   --title "Game of Crowns $VERSION ($SHA)" \
   --notes "Free, nothing locked. For Macs with Apple Silicon. Open the dmg and drag Game of Crowns to Applications. On first run it downloads its 1.8 GB language model; the realm plays by its rules until the model is ready."
 mkdir -p build && cp "$DMG" build/
