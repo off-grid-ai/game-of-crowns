@@ -34,22 +34,21 @@ const BODIES := {
 	"arissa": {"sex": "f", "roles": ["archer", "townsfolk"], "cloth": ["arissa_Cloak_Geo"], "crowd": true},
 	"erika": {"sex": "f", "roles": ["archer", "townsfolk"], "cloth": [], "crowd": true},
 	"erika_bow": {"sex": "f", "roles": ["archer"], "cloth": [], "crowd": true},
-	"eve": {"sex": "f", "roles": ["townsfolk", "noble", "archer"], "cloth": [], "crowd": true},
-	"knight": {"sex": "m", "roles": ["soldier", "noble"], "cloth": ["Lower_Armor"], "crowd": true},
-	"paladin": {"sex": "m", "roles": ["soldier", "noble"], "cloth": [], "crowd": true},
-	"paladin_prop": {"sex": "m", "roles": ["noble"], "cloth": [], "crowd": false},
+	"knight": {"sex": "m", "roles": ["soldier", "noble", "knight"], "cloth": ["Lower_Armor"], "crowd": true},
+	"paladin": {"sex": "m", "roles": ["soldier", "noble", "knight"], "cloth": [], "crowd": true},
+	"paladin_prop": {"sex": "m", "roles": ["noble", "knight"], "cloth": [], "crowd": false},
 	"heraklios": {"sex": "m", "roles": ["townsfolk", "soldier"], "cloth": [], "crowd": true},
-	"dreyar": {"sex": "m", "roles": ["noble", "soldier"], "cloth": [], "crowd": true},
+	"dreyar": {"sex": "m", "roles": ["noble", "soldier", "knight"], "cloth": [], "crowd": true},
 	"ganfaul": {"sex": "m", "roles": ["soldier"], "cloth": [], "crowd": true},
 	"akai": {"sex": "m", "roles": ["archer"], "cloth": [], "crowd": true},
 	"brute": {"sex": "m", "roles": ["peasant", "soldier"], "cloth": ["MaleBruteA_Bottoms"], "crowd": false},
-	"uriel": {"sex": "m", "roles": ["noble"], "cloth": [], "crowd": false},
+	"uriel": {"sex": "m", "roles": ["noble", "knight"], "cloth": [], "crowd": false},
 }
 ## How often a crowd figure is a Mixamo character rather than a Quaternius
 ## outfit, by station. No Mixamo character is dressed as a peasant or a cleric
 ## yet, so those stay outfits; archers and nobles are all Mixamo. (A Mixamo
 ## body is the cheaper of the two: 1-4 draws against an outfit's ~9.)
-const MIXAMO_SHARE := {"peasant": 0.0, "townsfolk": 0.4, "soldier": 0.5, "archer": 1.0, "noble": 1.0, "clergy": 0.0}
+const MIXAMO_SHARE := {"peasant": 0.0, "townsfolk": 0.4, "soldier": 0.5, "archer": 1.0, "noble": 1.0, "knight": 1.0, "clergy": 0.0}
 
 const HEAD_ONLY := preload("res://scripts/head_only.gdshader")
 
@@ -112,7 +111,7 @@ func _scene(path: String) -> PackedScene:
 	return _scenes[path]
 
 
-## role: "peasant", "townsfolk", "soldier", "archer", "noble" or "clergy".
+## role: "peasant", "townsfolk", "soldier", "archer", "noble", "knight" or "clergy".
 ## Returns a Node3D with an AnimationPlayer named "Anim".
 ## Body: "child", "young", "adult", "elder"; build: "thin", "average", "stout".
 ## sex: "male" or "female" to choose, "" for either.
@@ -136,7 +135,8 @@ func make(rng: RandomNumberGenerator, role := "peasant", tint := Color.WHITE, ag
 		if not pool.is_empty():
 			var body: String = pool[(abs(hash(look)) if look != "" else rng.randi()) % pool.size()]
 			return make_body(rng, body, tint, age, build, role)
-	var outfit_role := "soldier" if role in ["soldier", "archer", "noble"] else "peasant"
+	# A lady has no Mixamo body of her own: she wears the dress, in her house's colour.
+	var outfit_role := "soldier" if role in ["soldier", "archer", "knight"] or (role == "noble" and sex.left(1) != "f") else "peasant"
 	var outfits: Array = OUTFITS[outfit_role].filter(func(o): return sex == "" or o[1] == sex.left(1))
 	if outfits.is_empty():
 		outfits = OUTFITS[outfit_role]
@@ -166,7 +166,9 @@ func make(rng: RandomNumberGenerator, role := "peasant", tint := Color.WHITE, ag
 ## their court role if they have one, else by rank.
 static func station(person: Dictionary) -> String:
 	var role := str(person.get("role")) if person.get("role") else ""
-	if role in ["knight", "hedge_knight", "sellsword"]:
+	if role in ["knight", "hedge_knight"]:
+		return "knight"
+	if role == "sellsword":
 		return "soldier"
 	if role in ["priest", "scholar"]:
 		return "clergy"
