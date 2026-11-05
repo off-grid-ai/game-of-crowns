@@ -40,6 +40,7 @@ New messages get added here. They add to the picture; they don't replace it.
 - Community, Discord, the Founders' Realm and the rest come later, once people are playing.
 
 ## Working with the main session (Mac, 2026-11-05)
+- This session also directs the explainer/video session: it holds the angle and positioning.
 - This session tells the main session what to build and what not to, as soon as the research shows it. Work autonomously; Mac shouldn't have to carry prompts between sessions.
 
 ## Voice

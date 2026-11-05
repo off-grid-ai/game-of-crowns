@@ -33,6 +33,7 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 
 ## In progress
 - **Main session:** the four approved lord and pace changes (not yet committed).
+- **Explainer session (goc-explainer):** briefed 11-05 13:25 by the buzz session: a 20–30 s clip of a lord remembering and a 60–90 s explainer, after the lord work lands; files to docs/buzz/video/.
 - **Buzz session:** this ledger, the supervisor, drafts for the channels once the dmg exists.
 
 ## Runs
