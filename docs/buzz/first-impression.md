@@ -19,3 +19,13 @@ What a stranger sees in the first minute and in every post. Found in the 4K intr
 | 12 | **Broken intro stills**: seat_Deepvale.png and seat_Eaglefell.png are fully black | realm/assets/intro/stills | Re-rendered or dropped from the intro. |
 
 Posting waits on 1–3 at least (they read as bugs), and ideally on 4–8 (they read as unfinished).
+
+## The look pass (Mac: "at the zoom it doesn't look like a game built in 2026")
+Most of the gap is how it's rendered, not what's in it; the buildings hold up close. Today the game renders 3D at 0.67 scale with an upscaler (`project.godot`: `scaling_3d/mode=4`, `scale=0.67`), which is a big part of the blurry ground. Cheapest first:
+
+1. **A capture profile for every marketing still and video:** 3D scale 1.0 or supersampled, top shadow quality, 16x anisotropic filtering, TAA or MSAA. It costs no game-time performance and lifts every screenshot at once.
+2. **Grade and atmosphere:** filmic/AgX tonemapping with one colour-grade LUT, a golden-hour sun, soft volumetric haze in the distance, SSIL with SSAO for contact shading, and a gentle depth of field at town zoom (the miniature look of Manor Lords' screenshots).
+3. **The ground:** sharper terrain textures with normal and height blending, large-scale colour variation, and grass and wildflowers near the camera that move in the wind; roads and the square with real edges.
+4. **People** (item 13) and **foliage** that sways.
+
+Done when a town at the default zoom, side by side with a Manor Lords screenshot at the same distance, looks like it belongs in the same decade.
