@@ -300,7 +300,7 @@ func _forget(owner: String) -> void:
 func _remember(owner: String, a: Vector3, b: Vector3, half: float) -> void:
 	if not _paths.has(owner):
 		_paths[owner] = []
-	_paths[owner].append([Vector2(a.x, a.z), Vector2(b.x, b.z), half])
+	_paths[owner].append([Vector2(a.x, a.z), Vector2(b.x, b.z), half, owner])
 	_grid_stale = true
 	version += 1
 
@@ -330,6 +330,28 @@ func on_path(p: Vector3, margin := 0.0) -> bool:
 		if q.distance_to(Geometry2D.get_closest_point_to_segment(q, s[0], s[1])) < float(s[2]) + margin:
 			return true
 	return false
+
+
+## True when a spot lies within `margin` of a road's verge (the great roads
+## and the King's road, not farm tracks), looking in the neighbouring cells too.
+func near_road(p: Vector3, margin: float) -> bool:
+	var q := Vector2(p.x, p.z)
+	var cells := _cells()
+	var r := ceili(margin / CELL)
+	var c0 := Vector2i(floori(q.x / CELL), floori(q.y / CELL))
+	for dx in range(-r, r + 1):
+		for dz in range(-r, r + 1):
+			for s in cells.get(c0 + Vector2i(dx, dz), []):
+				if s[3] != "roads" and s[3] != "kings":
+					continue
+				if q.distance_to(Geometry2D.get_closest_point_to_segment(q, s[0], s[1])) < float(s[2]) + margin:
+					return true
+	return false
+
+
+## Changes when the great roads or the King's road are laid anew (not farm tracks).
+func trunk_sig() -> int:
+	return _paths.get("roads", []).size() * 100003 + _paths.get("kings", []).size()
 
 
 ## A number that changes when any road or track within `r` of `p` does.

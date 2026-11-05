@@ -31,6 +31,10 @@ var _height: Array[float] = []
 var _ids := {}  # kind -> the Terrain3D mesh id it was planted under
 var _trees := {}  # kind -> its trees' transforms, so felling can replant the rest
 var _felled := {}  # kinds to replant at the end of this frame
+# Where each tree stands and how tall, by 2-unit cell: the camera asks this
+# which way it can look at a rider without a crown in the way.
+const SIGHT_CELL := 2.0
+var _sight := {}  # Vector2i -> Array of Vector4(x, z, ground y, height)
 
 
 ## True when the pine pack is in the project.
@@ -65,6 +69,10 @@ func plant(trees: Array) -> void:
 			var xf: Transform3D = t[1]
 			# Meshes are in metres at the pack's own size.
 			xf.basis = xf.basis * Basis.from_scale(Vector3.ONE * S)  # true height, 13–31 m
+			var cell := Vector2i(floori(xf.origin.x / SIGHT_CELL), floori(xf.origin.z / SIGHT_CELL))
+			if not _sight.has(cell):
+				_sight[cell] = []
+			_sight[cell].append(Vector4(xf.origin.x, xf.origin.z, xf.origin.y, _height[k] * xf.basis.get_scale().y))
 			if not by_kind.has(k):
 				by_kind[k] = []
 			by_kind[k].append(xf)
@@ -212,8 +220,35 @@ func _global(n: Node) -> Transform3D:
 	return xf
 
 
+## How many tree crowns stand between `eye` and `at` (the canopy right over
+## `at` included): 0 means the view is clear.
+func blocking(eye: Vector3, at: Vector3) -> int:
+	var a := Vector2(at.x, at.z)
+	var d := Vector2(eye.x, eye.z) - a
+	var dd := maxf(d.length_squared(), 0.0001)
+	var lo := a.min(a + d) - Vector2.ONE * SIGHT_CELL
+	var hi := a.max(a + d) + Vector2.ONE * SIGHT_CELL
+	var n := 0
+	for cx in range(floori(lo.x / SIGHT_CELL), floori(hi.x / SIGHT_CELL) + 1):
+		for cz in range(floori(lo.y / SIGHT_CELL), floori(hi.y / SIGHT_CELL) + 1):
+			for t in _sight.get(Vector2i(cx, cz), []):
+				var p := Vector2(t.x, t.y)
+				var f := clampf((p - a).dot(d) / dd, 0.0, 1.0)
+				if p.distance_to(a + d * f) > t.w * 0.22:  # a pine's crown is about a fifth as wide as it is tall
+					continue
+				var y := at.y + (eye.y - at.y) * f
+				if y > t.z + t.w * 0.3 and y < t.z + t.w:
+					n += 1
+	return n
+
+
 ## Fells the trees where a town, farm or battle stands.
 func clear(center: Vector3, radius: float) -> void:
+	for cx in range(floori((center.x - radius) / SIGHT_CELL), floori((center.x + radius) / SIGHT_CELL) + 1):
+		for cz in range(floori((center.z - radius) / SIGHT_CELL), floori((center.z + radius) / SIGHT_CELL) + 1):
+			var c := Vector2i(cx, cz)
+			if _sight.has(c):
+				_sight[c] = _sight[c].filter(func(t: Vector4): return Vector2(t.x - center.x, t.y - center.z).length() >= radius)
 	if not _ids.is_empty():
 		for k in _trees:
 			var kept: Array = _trees[k].filter(func(t: Transform3D): return Vector2(t.origin.x - center.x, t.origin.z - center.z).length() >= radius)
@@ -238,6 +273,24 @@ func clear(center: Vector3, radius: float) -> void:
 			var t := mm.get_instance_transform(i)
 			if Vector2(t.origin.x - center.x, t.origin.z - center.z).length() < radius:
 				mm.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3.ZERO), t.origin))
+
+
+## Fells every tree for which `standing_on(origin)` is true: the lanes the
+## roads cut through the woods, so what travels them is seen from above.
+func clear_where(standing_on: Callable) -> int:
+	var felled := 0
+	for c in _sight:
+		_sight[c] = _sight[c].filter(func(t: Vector4): return not standing_on.call(Vector3(t.x, t.z, t.y)))
+	for mmi in get_children():
+		if not (mmi is MultiMeshInstance3D):
+			continue
+		var mm: MultiMesh = mmi.multimesh
+		for i in mm.instance_count:
+			var t := mm.get_instance_transform(i)
+			if t.basis.x != Vector3.ZERO and standing_on.call(t.origin):
+				mm.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3.ZERO), t.origin))
+				felled += 1
+	return felled
 
 
 ## The kinds that lost trees this frame, sent to the instancer again in one go.

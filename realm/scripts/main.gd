@@ -889,6 +889,8 @@ func _on_map(map: Dictionary) -> void:
 	rig.snap(c, terrain.width * terrain.TILE * 1.05)
 
 
+var _lanes_cut := -1  # the great roads the woods were last cut back for
+const LANE_MARGIN := 0.8  # a pine's crown reaches about this far from its trunk
 var _laying := false  # roads and countryside are being laid out, a frame at a time
 func _on_world(world: Dictionary) -> void:
 	if terrain.width == 0:
@@ -929,6 +931,14 @@ func _on_world(world: Dictionary) -> void:
 		Engine.set_meta("stage", "kings_road")
 		roads.kings_road(world)
 		await get_tree().process_frame
+		# A road through the woods runs down a lane cut through them, wide enough
+		# that no crown closes over it: what travels it can be watched from above.
+		if terrain.forest and terrain.forest.has_method("clear_where") and roads.trunk_sig() != _lanes_cut:
+			_lanes_cut = roads.trunk_sig()
+			var t0 := Time.get_ticks_msec()
+			var n: int = terrain.forest.clear_where(func(o: Vector3): return roads.near_road(o, LANE_MARGIN))
+			print("LANES %d trees, %d ms" % [n, Time.get_ticks_msec() - t0])
+			await get_tree().process_frame
 		Engine.set_meta("stage", "countryside")
 		countryside.build(world.get("cities", []))
 		if Time.get_ticks_msec() - tt > 500:
