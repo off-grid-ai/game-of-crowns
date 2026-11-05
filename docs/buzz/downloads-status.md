@@ -5,8 +5,8 @@ Goal: get the game into people's hands. Plan: acquisition.md. Updated each super
 ## Blockers to the first download, in order
 | # | Ask | Owner | Status (2026-11-05 start) |
 |---|---|---|---|
-| 1 | Repo public (open source) | Mac / main session | Private |
-| 2 | Signed and notarised Mac dmg | main session | Not built (no dmg in `build/`, no Developer ID here) |
+| 1 | Repo public (open source) | Mac | Private (checked 11-05 13:06) |
+| 2 | Signed and notarised Mac dmg | main session | Not built. 11-05 13:06: a Developer ID Application identity is in this Mac's keychain (Wednesday Solutions, 84V6KCAC49), so signing can run here (`SIGN_IDENTITY`); notarisation still needs the App Store Connect API key (none found locally) |
 | 3 | GitHub Release with the dmg | main session | No releases |
 | 4 | Free itch.io page with the dmg | Mac (account) | Not started |
 | 5 | First-run hook (model download at once; a lord remembering in the first reign) | main session | Asked |
