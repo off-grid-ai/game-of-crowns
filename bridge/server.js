@@ -796,7 +796,10 @@ function ledger() {
     pop += size;
     soulsAll += souls;
     food += grain;
-    wars += (d?.players[p.id]?.atWarWith ?? []).filter((o) => ids.has(o)).length;
+    // A war the King has stilled (a truce, a match) is peace in the realm's eyes,
+    // though the engine still counts the two houses at war.
+    const calm = (o) => { const a = court?.lordOfHouse(p.id), b = court?.lordOfHouse(o); return !!(a && b && court.truce(a.id, b.id)); };
+    wars += (d?.players[p.id]?.atWarWith ?? []).filter((o) => ids.has(o) && !calm(o)).length;
   }
   const n = ids.size;
   const pairs = (n * (n - 1)) / 2 || 1;
