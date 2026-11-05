@@ -1,0 +1,40 @@
+<template>
+  <style>
+@font-face { font-family:"EB Garamond"; src:url("assets/fonts/EBGaramond.ttf") format("truetype"); font-weight:400 800; }
+@font-face { font-family:"Cinzel"; src:url("assets/fonts/Cinzel.ttf") format("truetype"); font-weight:400 900; }
+#root { position:absolute; inset:0; overflow:hidden; background:#151719; }
+.cam { position:absolute; left:0; top:0; transform-origin:0 0; }
+.cam img { position:absolute; left:0; top:0; display:block; }
+.mark { position:absolute; height:7px; background:#B7A17D; transform-origin:0 50%; border-radius:2px; }
+.rule { position:absolute; width:8px; background:#B7A17D; transform-origin:50% 0; border-radius:2px; }
+.shade { position:absolute; left:0; right:0; bottom:0; height:520px;
+  background:linear-gradient(180deg, rgba(21,23,25,0) 0%, rgba(21,23,25,.62) 58%, rgba(21,23,25,.82) 100%); }
+.pic { position:absolute; left:0; top:0; width:1080px; height:1380px; overflow:hidden; }
+.veil { position:absolute; left:0; right:0; top:0; background:linear-gradient(180deg, #151719 0%, #151719 94%, rgba(21,23,25,0) 100%); }
+.band { position:absolute; left:0; right:0; top:1380px; bottom:0; background:#151719; }
+.lines { position:absolute; left:72px; right:72px; top:1452px; font-family:"EB Garamond", serif; font-weight:500;
+  font-size:88px; line-height:1.08; letter-spacing:-0.01em; color:#EFE7D6; text-shadow:0 2px 18px rgba(0,0,0,.45); }
+.lines .ln { display:block; }
+.lines .w { display:inline-block; }
+
+.top .shade { top:0; bottom:auto; background:linear-gradient(0deg, rgba(21,23,25,0) 0%, rgba(21,23,25,.62) 58%, rgba(21,23,25,.82) 100%); }
+.top .lines { bottom:auto; top:96px; }
+.top .lines .ln { top:0; bottom:auto; }
+.q { color:#B7A17D; }
+.cursor { position:absolute; left:0; top:0; width:64px; height:64px; z-index:5; }
+</style>
+  <div id="root" data-composition-id="v5" data-width="1080" data-height="1920"><div id="v5" style="position:absolute;inset:0">
+    <div class="pic"><div class="cam" id="v5cam" style="width:3024px;height:1898px"><img src="assets/play/b08.jpg" alt="" width="3024" height="1898"><div class="rule" id="v5r0" style="left:2356px;top:390px;height:122px"></div></div></div><div class="band"></div><div class="lines"><span class="ln" id="v5l0"><span class="w" id="v5l0w0">And</span> <span class="w" id="v5l0w1">they</span> <span class="w" id="v5l0w2">marched.</span></span></div>
+  </div></div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.set("#v5cam", { x:-3601.6, y:-178.0, scale:1.55 }, 0);
+    tl.to("#v5cam", { x:-3735.2, y:-206.0, scale:1.6, duration:3.00, ease:"sine.inOut" }, 0);
+    tl.fromTo("#v5r0", { scaleY:0, opacity:1 }, { scaleY:1, duration:.35, ease:"power3.out" }, 0.3);
+    tl.fromTo("#v5l0w0", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.80);
+    tl.fromTo("#v5l0w1", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.85);
+    tl.fromTo("#v5l0w2", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.90);
+    tl.set({}, {}, 3.0);
+    window.__timelines["v5"] = tl;
+  </script>
+</template>
