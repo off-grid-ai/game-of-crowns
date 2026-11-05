@@ -582,7 +582,7 @@ function counsel(players, cities, threat) {
     const where = d.town ? `on ${d.town}${lord ? ` (${lord.house.crown ? "the crown's own" : lord.house.name})` : ""}` : "on the North";
     const when = d.in == null ? "" : d.in <= 1 ? " The next host comes next season." : ` The next host comes in ${d.in} seasons.`;
     out.push({ urgency: 75, text: "The dead come south",
-      why: `${(d.last ?? 0).toLocaleString("en-US")} of them fell ${where} last time; ${(d.next ?? 0).toLocaleString("en-US")} will come with the next.${when} Against them: your ${(threat.ours * 200).toLocaleString("en-US")} men, and about ${bannerMen.toLocaleString("en-US")} more if you call the banners. If every northern town falls, the realm falls with it.`,
+      why: `${(d.last ?? 0).toLocaleString("en-US")} of them fell ${where} last time; ${(d.next ?? 0).toLocaleString("en-US")} will come with the next.${when} Against them: your ${(threat.ours * 200).toLocaleString("en-US")} fighting men, and about ${bannerMen.toLocaleString("en-US")} more if you call the banners. If every northern town falls, the realm falls with it.`,
       acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }] });
   }
   const hungry = cities.find((c) => c.famine);
@@ -697,6 +697,18 @@ function collectTithe(turn) {
     }
   }
   saveFavour();
+  // The reign's goal: every great house would answer the banners (35 and up).
+  // Marked once in the chronicle when won; lost again when a house falls away.
+  const great = world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown && p.cities > 0);
+  const united = great.length > 0 && great.every((p) => favourOf(p.id) >= 35);
+  if (united && !meta.united) {
+    meta.united = true;
+    chron.saveMeta(meta);
+    record({ turn, kind: "decree", text: `All ${great.length} great houses stand behind the King. For the first time in a generation the realm answers to one crown, in truth and not in name.` });
+  } else if (!united && meta.united) {
+    meta.united = false;
+    chron.saveMeta(meta);
+  }
   if (turn % 10 === 0 && (tally.total > 0 || tally.upkeep > 0)) {
     record({ turn, kind: "tithe", text: tally.total > 0
       ? `The royal tithe brings ${tally.total} gold to Kingsmere since the last reckoning; the court, the royal host and the castles cost ${tally.upkeep} gold.`

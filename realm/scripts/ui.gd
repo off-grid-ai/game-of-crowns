@@ -1431,7 +1431,7 @@ func _show_counsel(items: Array) -> void:
 	_counsel.anchor_top = 1.0
 	_counsel.anchor_bottom = 1.0
 	_counsel.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_counsel.offset_bottom = -12
+	_counsel.offset_bottom = -24  # off the screen's edge
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
 	_counsel.add_child(v)

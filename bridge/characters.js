@@ -528,6 +528,17 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
 
   // --- the court: dilemmas with a price on every answer ------------------------
 
+  // Every choice states what it does to favour, from the effects it declares:
+  // "Elsbeth owes the crown · Ysolde is shamed · House Thornvale −10".
+  withFavour(hint, favour, roles) {
+    const said = Object.entries(favour ?? {}).map(([k, n]) => {
+      const house = roles[k]?.house;
+      if (!house || hint.includes(house)) return null;
+      return `${house} ${n > 0 ? "+" : "−"}${Math.abs(n)}`;
+    }).filter(Boolean);
+    return said.length ? `${hint} · ${said.join(" · ")}` : hint;
+  }
+
   houseFacts(pid, world, ctx) {
     const p = world.players.find((x) => x.id === pid);
     if (!p) return "";
@@ -741,7 +752,7 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
       kind: card.id, deck: true, roles: ids,
       text: this.fill(card.text, roles),
       facts: facts(...housesIn),
-      options: card.options.map((o) => ({ id: o.id, label: this.fill(o.label, roles), hint: this.fill(o.hint, roles), ...(o.cost ? { cost: o.cost } : {}) })),
+      options: card.options.map((o) => ({ id: o.id, label: this.fill(o.label, roles), hint: this.withFavour(this.fill(o.hint, roles), o.effects?.favour, roles), ...(o.cost ? { cost: o.cost } : {}) })),
     };
   }
 
