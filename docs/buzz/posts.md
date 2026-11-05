@@ -37,25 +37,18 @@ In each sidebar, look for: self-promotion or developer rules, a required flair, 
 **Where:** r/SimulationGames (Tue 10 Nov), r/grandstrategy (Tue 24 Nov)
 **Format:** text post with the three images in the body
 
-**Title:** Any game where you make one call and watch it play out for years?
+**Title:** I never had time to learn Crusader Kings, so I'm building a kingdom sim that runs itself and only asks you for the big calls
 
-> I'm building a game around this and want to know if it's just me.
+> Six great houses farm, starve, feud and go to war on their own. You're the King, and you can't move a single soldier. When something needs you, it comes to court: a house asking for its taxes back, a famine, a war you could end with a marriage. Every answer costs something, and the houses remember.
 >
-> I want a world that runs itself. Towns grow, harvests fail, families feud. I make one call, like raising a tax, and watch what it causes years later.
+> The King's adviser reads the realm for you, so you don't need a wiki to know what matters.
 >
-> Closest I've found:
-> - WorldBox: fun to watch, but god powers cost nothing and nobody remembers them.
-> - Crusader Kings: great chains, but I'm managing everything.
-> - Dwarf Fortress legends: the best stories, read after the fact.
->
-> The screenshots are from mine, so you can see what I mean.
->
-> What do you play for this?
+> If you've bounced off Crusader Kings or got bored of WorldBox, what would make a game like this worth your evening?
 
 **Images, in order** (`docs/buzz/images/`):
-1. `1a-town.jpg`: a riverside town; the King's gold on the road. *Caption:* "A town on the coast. I sent gold here, and I can watch it travel the road."
-2. `1b-houses-chronicle.jpg`: the houses at war, famine and plague in the chronicle, a castle in snow. *Caption:* "The houses go to war and starve on their own. The chronicle keeps count."
-3. `1c-town-life.jpg`: a town from above, people in the streets. *Caption:* "Nothing here waits for me."
+1. `1a-town.jpg`: a riverside town; the King's gold on the road. *Caption:* "The realm runs itself. I sent gold here, and I can watch it travel the road."
+2. `2a-petition.jpg`: a lady asks for relief from the tax; three answers, each with its cost. *Caption:* "A house asks for its taxes back. Every answer costs something."
+3. `2b-hand.jpg`: the King's adviser on a famine, the dead marching south and a cold house, each fix priced. *Caption:* "The adviser tells me what matters and what each fix costs. I still pick."
 
 ## 2. The levers
 **Where:** r/4Xgaming (Tue 17 Nov)
@@ -68,9 +61,9 @@ In each sidebar, look for: self-promotion or developer rules, a required flair, 
 > Too few levers and you're only watching. Too many and you're running everything. Which game got the balance right for you?
 
 **Images, in order** (`docs/buzz/images/`):
-1. `2a-petition.jpg`: a lady asks for relief from the tax; three answers, each with its cost. *Caption:* "A house asks for its taxes back. Every answer costs something."
-2. `2b-hand.jpg`: the King's adviser on a famine, the dead marching south and a cold house, each fix priced. *Caption:* "The adviser names the trouble and the price. I still pick."
-3. `2c-marriage.jpg`: a royal marriage binds two houses, 40,000 crowns. *Caption:* "A marriage instead of an army. It cost 40,000 crowns."
+1. `1b-houses-chronicle.jpg`: the houses at war, famine and plague in the chronicle, a castle in snow. *Caption:* "Six houses, their wars and their famines. None of it waits for me."
+2. `2c-marriage.jpg`: a royal marriage binds two houses, 40,000 crowns. *Caption:* "A marriage instead of an army. It cost 40,000 crowns."
+3. `1c-town-life.jpg`: a town from above, the crown paying for an aqueduct. *Caption:* "Or pay for a town's aqueduct and win its house over."
 
 ## 3. The chain (later, needs a clip)
 **Where:** r/SimulationGames, then r/indiegames; r/godot with a how-it's-built angle

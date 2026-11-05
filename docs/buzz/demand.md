@@ -20,7 +20,7 @@ Review summaries (vaporlens.app, which groups Steam reviews by theme):
 Game of Thrones is the flavour that pulls a second crowd (877k installed a mod for it). Westworld minds are the depth that keeps people, but they're not what to lead with.
 
 **The pitch, in the players' own words:**
-> WorldBox, but you're the King: the world still runs itself, and now your choices matter.
+> A world that runs itself, where you're the King and your choices matter.
 
 ## Where to find them
 - **WorldBox Steam discussions and r/Worldbox:** don't post the game there. Answer "games like WorldBox" and "got bored" threads, and say you're building one when it fits.
@@ -28,11 +28,7 @@ Game of Thrones is the flavour that pulls a second crowd (877k installed a mod f
 - **r/CK3AGOT:** the GoT politics crowd. Check the rules; a comment in a "games like this" thread first.
 - **r/LocalLLaMA:** later, a separate post about the minds and the local model.
 
-## Post #1, rebuilt on the demand
-**Title:** I loved watching worlds in WorldBox but got bored with nothing at stake, so I'm building one where you're the King
-
-> The world runs itself: six great houses farm, starve, feud and go to war. You can't move a single soldier. You rule with grain, gold, taxes, marriages, and who you back in a war, and every house remembers how you treated it.
->
-> If you've played WorldBox or Ages of Conflict and drifted off after a few hours, what was missing for you?
+## Post #1
+Rebuilt on Mac's own story (no time to learn Crusader Kings), not a WorldBox story Mac doesn't have. See posts.md and fights.md.
 
 Sources: SteamSpy and the Steam Workshop API (read 2026-11-05); [vaporlens: WorldBox](https://vaporlens.app/app/1206560/world_box_god_simulator.md), [Fantasy Map Simulator](https://vaporlens.app/app/3035500/fantasy_map_simulator), [Ages of Conflict](https://vaporlens.app/app/2186320/ages_of_conflict_world_war_simulator.md); [GameWatcher on the AGOT mod](https://www.gamewatcher.com/crusader-kings-3-a-game-of-thrones-mod); [Mantella](https://github.com/art-from-the-machine/Mantella); [arXiv: generative AI in Steam reviews](https://arxiv.org/html/2608.11539v1).
