@@ -58,6 +58,7 @@ realm/assets/crops/**
 # --- The bridge's running state ---
 node_modules/
 bridge/chronicles/
+bridge/stories/
 bridge/archive/
 bridge/saves/
 bridge/state/
@@ -81,3 +82,4 @@ shots/
 # --- Local tool config (the project's skills are shared) ---
 .claude/*
 !.claude/skills/
+build/

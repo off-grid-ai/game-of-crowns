@@ -25,6 +25,10 @@ import { cityName, houseFor } from "./narrator.js";
 import { arcLine } from "./claude.js";
 
 const DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "arcs");
+// The player's own stories (generated or written) live with their realms, not
+// inside the game: the game's own folder is read-only once it's a signed app.
+let OWN = null;
+export function ownStories(dir) { OWN = dir; fs.mkdirSync(dir, { recursive: true }); }
 const MAX_ACTIVE = 5;      // stories running at once
 const START_CHANCE = 0.4;  // a season's chance that a new one begins
 const MAX_ARCS_EACH = 2;   // stories one person can be caught up in at once
@@ -37,10 +41,12 @@ const clamp = (v, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v));
 // without a restart. A file that doesn't parse or check is skipped and named.
 export function templates() {
   const out = [];
-  for (const f of fs.existsSync(DIR) ? fs.readdirSync(DIR).filter((x) => x.endsWith(".json")).sort() : []) {
+  const files = (dir) => (dir && fs.existsSync(dir) ? fs.readdirSync(dir).filter((x) => x.endsWith(".json")).sort().map((f) => [dir, f]) : []);
+  for (const [dir, f] of [...files(DIR), ...files(OWN)]) {
     try {
-      const t = JSON.parse(fs.readFileSync(path.join(DIR, f), "utf8"));
+      const t = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8"));
       t.file = f;
+      if (dir === OWN) t.own = true;
       t.problems = check(t);
       out.push(t);
     } catch (err) {
@@ -110,6 +116,19 @@ function rand(range, r = Math.random) {
 }
 
 const re = (p) => new RegExp(p, "i");
+
+// A reign story's tags are dials on how it plays, not only words on its card:
+// fast-paced acts come sooner and slow-burn ones later, aggressive stories run
+// out of patience sooner, violent ones raise bigger hosts, gritty ones cost more.
+export function dials(tags = []) {
+  const has = (t) => tags.includes(t);
+  return {
+    pace: has("fast-paced") ? 0.6 : has("slow-burn") ? 1.5 : 1,
+    patience: has("aggressive") ? 0.6 : 1,
+    hosts: has("violent") ? 1.5 : 1,
+    prices: has("gritty") ? 1.3 : 1,
+  };
+}
 const cmp = (a, op, b) => ({ "<": a < b, ">": a > b, "<=": a <= b, ">=": a >= b, "=": a === b, "!=": a !== b })[op] ?? false;
 
 export class Arcs {
@@ -220,7 +239,7 @@ export class Arcs {
     if (next) return this.enter(arc, t, t.beats.find((b) => b.id === next.to), ctx);
     // Nothing the realm allows yet: the story stalls, and in time moves on or fades.
     arc.stalled++;
-    if (arc.stalled >= (beat.patience ?? 4)) {
+    if (arc.stalled >= Math.max(1, Math.round((beat.patience ?? 4) * dials(arc.tags).patience))) {
       if (beat.otherwise) return this.enter(arc, t, t.beats.find((b) => b.id === beat.otherwise), ctx);
       return this.finish(arc, "faded", ctx, this.fill(t.fade ?? "{thread} is spoken of less each season, and then not at all.", arc, ctx));
     }
@@ -270,7 +289,7 @@ export class Arcs {
     if (arc.reign && beat.threat != null) arc.threat = Math.max(0, Math.min(100, Number(beat.threat)));
     arc.at = beat.id;
     arc.stalled = 0;
-    arc.wait = Math.max(0, rand(beat.after ?? [1, 2]) - 1);
+    arc.wait = Math.max(0, Math.round(rand(beat.after ?? [1, 2]) * dials(arc.tags).pace) - 1);
     arc.beats.push({ beat: beat.id, stage: beat.stage ?? "rising", clock: this.clock, turn: ctx.world.turn, text: text + said });
     if (lua.length && ctx.refresh) await ctx.refresh();
     if (beat.end) this.finish(arc, beat.end, ctx);
@@ -635,7 +654,7 @@ export class Arcs {
     const lua = [];
     if (d.threat != null && arc.reign) arc.threat = Math.max(0, Math.min(100, (arc.threat ?? 0) + Number(d.threat)));
     // The story's claimant marches on Kingsmere (the realm's own usurper war).
-    if (d.usurper && roles[d.usurper] && ctx.declare) ctx.declare(roles[d.usurper].playerId, Number(d.host ?? 10));
+    if (d.usurper && roles[d.usurper] && ctx.declare) ctx.declare(roles[d.usurper].playerId, Math.round(Number(d.host ?? 10) * dials(arc.tags).hosts));
     // The story takes the throne: the reign ends, in the chronicle's words.
     // (The beat itself tells it in the chronicle; the reign's end carries the fall's own words.)
     if (d.fall && ctx.endReign) { const why = this.fill(d.fall, arc, ctx, roles); this.finish(arc, "failed", ctx); ctx.endReign(why); return lua; }
@@ -673,7 +692,7 @@ export class Arcs {
       const [atk, def] = [R(d.war[0]), R(d.war[1])];
       const prey = (d.war[2] && R(d.war[2])?.town && R(d.war[2])) || ctx.world.cities.find((x) => x.owner === def.playerId && !x.capital) || ctx.world.cities.find((x) => x.owner === def.playerId);
       if (prey && atk.playerId !== def.playerId) {
-        send(`realm_host(realm_find_player(${atk.playerId}), ${prey.x}, ${prey.y}, {"Pikemen","Archers","Knights","Catapult"}, ${Number(d.warSize ?? 6)})`);
+        send(`realm_host(realm_find_player(${atk.playerId}), ${prey.x}, ${prey.y}, {"Pikemen","Archers","Knights","Catapult"}, ${Math.round(Number(d.warSize ?? 6) * dials(arc.tags).hosts)})`);
         court.shift(def.id, atk.id, -50);
         if (court.truces) delete court.truces[[atk.id, def.id].sort().join(":")];
       }
@@ -776,8 +795,8 @@ export class Arcs {
     if (!who || who.town || !this.court.arcPetition) return;
     const pidOf = (k) => roles[k]?.playerId;
     const options = c.options.map((o) => ({
-      id: o.id, label: this.fill(o.label, arc, ctx, roles), hint: this.fill(o.hint ?? "", arc, ctx, roles), result: this.fill(o.result ?? "", arc, ctx, roles),
-      ...(o.cost ? { cost: o.cost } : {}),
+      id: o.id, label: this.fill(o.label, arc, ctx, roles).replace(/\((\d+) gold\)/, (m, n) => `(${Math.round(Number(n) * dials(arc.tags).prices)} gold)`), hint: this.fill(o.hint ?? "", arc, ctx, roles), result: this.fill(o.result ?? "", arc, ctx, roles),
+      ...(o.cost ? { cost: Math.round(o.cost * dials(arc.tags).prices) } : {}),
       favour: Object.fromEntries(Object.entries(o.favour ?? {}).map(([k, n]) => [pidOf(k), n]).filter(([pid]) => pid != null)),
     }));
     this.court.arcPetition({ arc: arc.id, beat: beat.id, thread: arc.title, from: who, text: this.fill(c.text ?? beat.text, arc, ctx, roles), options }, ctx.world);

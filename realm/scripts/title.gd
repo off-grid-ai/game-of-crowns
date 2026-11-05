@@ -186,6 +186,10 @@ const HOUSES := ["Wolfholt", "Goldcrest", "Ironreach", "Thornvale", "Stormhold",
 var _opt := {}  # the chronicle's options as they stand; sent to the bridge as-is
 
 
+## The tags a story of your own can be shaped by: what threatens, and how it feels.
+const STORY_TAGS := ["usurper", "war", "intrigue", "rebellion", "the-dead", "famine", "money", "fast-paced", "slow-burn", "violent", "gritty", "aggressive", "cunning", "tragic", "political", "mysterious", "epic"]
+
+
 static func _default_opt() -> Dictionary:
 	return {"pace": 90, "disasters": "normal", "raiders": "normal", "dead": "normal", "usurper": true, "temper": "mixed",
 		"cunning": "hard", "houseWealth": "asis", "trust": "wary", "host": "standard", "petitions": "normal", "intrigue": "normal", "skip": [], "language": "en"}
@@ -291,12 +295,63 @@ func show_new() -> void:
 				if b is Button:
 					b.set_pressed_no_signal(b == card))
 	tale_card.call("random", "Let the realm decide\nA story chosen for you, revealed as it begins.")
+	# Or the player's own: tags, a few lines of premise, or both.
+	var own := _toggle("Write your own…\nPick tags, describe it, or both, and the realm shapes it.", tales)
+	own.toggle_mode = false
+	own.custom_minimum_size = Vector2(300, 72)
+	own.autowrap_mode = TextServer.AUTOWRAP_WORD
+	own.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	var maker := VBoxContainer.new()
+	maker.add_theme_constant_override("separation", 8)
+	maker.visible = false
+	_body.add_child(maker)
+	_body.move_child(maker, tales.get_index() + 1)
+	own.pressed.connect(func(): maker.visible = not maker.visible)
+	var chips := HFlowContainer.new()
+	chips.add_theme_constant_override("h_separation", 6)
+	chips.add_theme_constant_override("v_separation", 6)
+	maker.add_child(chips)
+	var picked := {}
+	for g in STORY_TAGS:
+		var chip := _toggle(String(g).replace("-", " "), chips)
+		chip.toggle_mode = true
+		var tag: String = g
+		chip.toggled.connect(func(on): if on: picked[tag] = true else: picked.erase(tag))
+	var premise := TextEdit.new()
+	premise.placeholder_text = "Or in your own words: a queen who poisons her way to the throne, a bastard with dragon blood, a winter that never ends…"
+	premise.custom_minimum_size = Vector2(0, 72)
+	premise.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	maker.add_child(premise)
+	var made := _label("", 14, MUTED)
+	var shape_btn := _toggle("Shape the story", maker)
+	shape_btn.toggle_mode = false
+	maker.add_child(made)
+	shape_btn.pressed.connect(func():
+		if picked.is_empty() and premise.text.strip_edges() == "":
+			made.text = "Pick a tag or two, or write a line about it."
+			return
+		shape_btn.disabled = true
+		made.text = "The realm is shaping your story…"
+		bridge.generate_story(picked.keys(), premise.text.strip_edges(), func(code, d):
+			if not is_instance_valid(made):
+				return
+			shape_btn.disabled = false
+			if code != 200 or not d is Dictionary:
+				made.text = String(d.get("error", "The realm couldn't shape it. Try other tags.")) if d is Dictionary else "The realm couldn't shape it."
+				return
+			made.text = "Shaped on %s." % String(d.get("from", "a tested story"))
+			var tags: Array = d.get("tags", [])
+			tale_card.call(String(d["id"]), "%s\n%s\n%s" % [String(d["name"]), String(d.get("about", "")), "  ·  ".join(tags.map(func(g): return String(g).replace("-", " ")))])
+			_opt["story"] = String(d["id"])
+			for b in tales.get_children():
+				if b is Button and b.toggle_mode:
+					b.set_pressed_no_signal(b.get_index() == tales.get_child_count() - 1)))
 	bridge.stories(func(list):
 		if not is_instance_valid(tales):
 			return
 		for t in list:
 			var tags: Array = t.get("tags", [])
-			tale_card.call(String(t["id"]), "%s\n%s\n%s" % [String(t.get("name", t["id"])), String(t.get("about", "")), "  ·  ".join(tags.map(func(g): return String(g).replace("-", " ")))]))
+			tale_card.call(String(t["id"]), "%s%s\n%s\n%s" % ["Yours  ·  " if t.get("own", false) else "", String(t.get("name", t["id"])), String(t.get("about", "")), "  ·  ".join(tags.map(func(g): return String(g).replace("-", " ")))]))
 	var name_edit := LineEdit.new()
 	name_edit.placeholder_text = "Name this chronicle (e.g. The Long Winter)"
 	name_edit.add_theme_font_size_override("font_size", 18)

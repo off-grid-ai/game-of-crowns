@@ -186,6 +186,11 @@ func set_tithe(rate: float) -> void:
 	_post("/tithe", {"rate": rate}, func(_c, _d): pass)
 
 
+## A story of the player's own, from tags, a few lines, or both (see /stories/generate).
+func generate_story(tags: Array, words: String, cb: Callable) -> void:
+	_post("/stories/generate", {"tags": tags, "words": words}, func(c, d): cb.call(c, d))
+
+
 ## The stories a reign can be told by (arc files marked "reign"), each with its tags.
 func stories(cb: Callable) -> void:
 	_http_get("/arcs/templates", func(d):

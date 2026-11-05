@@ -107,6 +107,8 @@ func _play(quit_after: bool) -> void:
 				var hit := false
 				for b in get_tree().root.find_children("*", "BaseButton", true, false):
 					if b.is_visible_in_tree() and String(b.get("text")).to_lower().strip_edges().begins_with(want):
+						if b.toggle_mode:
+							b.button_pressed = not b.button_pressed  # as a click would (it emits toggled)
 						b.emit_signal("pressed")
 						hit = true
 						break

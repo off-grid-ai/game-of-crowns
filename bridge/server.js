@@ -23,6 +23,9 @@ import { decree, titheLua, clampFavour, DECREES, bannersReady } from "./crown.js
 // Lords whose first names were borrowed from A Song of Ice and Fire, renamed
 // in realm.serv; realms begun before then still carry the old names in their
 // saved game, so they are shown by the new ones.
+// Stories the player generates or writes, kept with their realms.
+const OWN_STORIES = path.join(chron.HOME, "stories");
+ownStories(OWN_STORIES);
 const RENAMED = {
   "Lady Olenna Thornvale": "Lady Isolde Thornvale",
   "Lord Robb Stormhold": "Lord Rhys Stormhold",
@@ -31,7 +34,7 @@ const RENAMED = {
 };
 import { Court } from "./characters.js";
 import { Minds, route as mindsRoute } from "./minds.js";
-import { Arcs, templates as arcTemplates, check } from "./arcs.js";
+import { Arcs, templates as arcTemplates, check, ownStories } from "./arcs.js";
 import { Chatter } from "./chatter.js";
 import { bible, FAMILIES, LESSER } from "./lore.js";
 import { Stakes, calendar, epithet } from "./stakes.js";
@@ -1631,7 +1634,7 @@ http.createServer(async (req, res) => {
     return json(res, 200, { name: person.name, trade: person.trade, gender: person.woman ? "female" : "male", ...out });
   }
   if (url.pathname === "/arcs" && req.method === "GET") return json(res, 200, inCrowns(arcs.view(arcCtx())));
-  if (url.pathname === "/arcs/templates") return json(res, 200, arcTemplates().map((t) => ({ id: t.id, file: t.file, name: t.name, title: t.title, about: t.about, reign: Boolean(t.reign), tags: t.tags ?? [], roles: Object.keys(t.roles ?? {}), beats: (t.beats ?? []).length, problems: t.problems })));
+  if (url.pathname === "/arcs/templates") return json(res, 200, arcTemplates().map((t) => ({ id: t.id, file: t.file, name: t.name, title: t.title, about: t.about, reign: Boolean(t.reign), own: Boolean(t.own), tags: t.tags ?? [], roles: Object.keys(t.roles ?? {}), beats: (t.beats ?? []).length, problems: t.problems })));
   // Fast-forward: n seasons of the realm's stories, against the live realm.
   if (url.pathname === "/arcs/tick" && req.method === "POST") {
     const b = await body(req);
@@ -1654,6 +1657,53 @@ http.createServer(async (req, res) => {
   }
   // The King's own story: an arc file dropped in as JSON, or told in words
   // and shaped by the model from the closest existing arc.
+  // A reign story of the player's own: from tags, a few lines of premise, or
+  // both. It is built on the tested story that fits best (so every beat holds),
+  // carries the player's tags (the dials) and their words, and is named by the
+  // local model when it's there, by the tags when it isn't.
+  if (url.pathname === "/stories/generate" && req.method === "POST") {
+    const b = await body(req);
+    const words = String(b.words ?? "").trim().slice(0, 600);
+    let tags = (Array.isArray(b.tags) ? b.tags : []).map(String).filter((t) => /^[a-z-]{1,24}$/.test(t)).slice(0, 8);
+    if (!words && !tags.length) return json(res, 400, { error: "give it some tags, a few lines, or both" });
+    const shapes = arcTemplates().filter((t) => t.reign && !t.problems.length && !t.told);
+    if (!shapes.length) return json(res, 503, { error: "no reign stories to build on" });
+    // Words with no tags: the words suggest the tags.
+    const WORDS = { usurper: /claim|throne|usurp|pretender|crown/, war: /war|feud|battle|siege|raid/, intrigue: /poison|plot|spy|secret|murder|assassin/, "the-dead": /dead|wall|winter|north|undead/, famine: /famine|hunger|starv|grain|harvest/, money: /debt|bank|gold|coin|loan/, rebellion: /rising|peasant|riot|rebel|revolt|poor/, violent: /blood|slaughter|massacre|burn|kill/, "fast-paced": /sudden|swift|quick|fast/, "slow-burn": /slow|years|generation|creeping/, cunning: /cunning|clever|scheme|deceit|betray/, tragic: /tragic|grief|mourning|loss|doomed/ };
+    const asked = tags.length > 0;  // the player chose tags (rather than the words suggesting them)
+    if (words && !tags.length) tags = Object.entries(WORDS).filter(([, r]) => r.test(words.toLowerCase())).map(([t]) => t);
+    // The tested story that shares most with what was asked.
+    const THREATS = /^(usurper|war|intrigue|the-dead|famine|money|rebellion|faith|succession|invasion)$/;
+    const score = (t) => (t.tags ?? []).filter((g) => tags.includes(g)).reduce((n, g) => n + (THREATS.test(g) ? 6 : 1), 0) + (words ? (t.about ?? "").toLowerCase().split(/\W+/).filter((w) => w.length > 4 && words.toLowerCase().includes(w)).length : 0);
+    let base = shapes.slice().sort((a, b2) => score(b2) - score(a) || Math.random() - 0.5)[0];
+    let name = null;
+    if (words) {
+      const out = await Promise.race([arcFromWords(words, shapes.map((t) => ({ id: t.id, name: t.name, about: t.about }))), new Promise((r) => setTimeout(() => r(null), 20000))]);
+      if (out?.shape && !asked) base = shapes.find((t) => t.id === out.shape) ?? base;
+      name = out?.name ?? null;
+    }
+    if (!name) {
+      const ADJ = { violent: "Red", gritty: "Grim", cunning: "Silent", "fast-paced": "Swift", tragic: "Bitter", political: "Gilded", mysterious: "Hidden", epic: "Great", aggressive: "Iron", "slow-burn": "Long" };
+      const NOUN = { usurper: "Claim", war: "Feud", intrigue: "Cup", "the-dead": "Winter", famine: "Hunger", money: "Debt", rebellion: "Rising", faith: "Faith", succession: "Heir", invasion: "Tide" };
+      const adj = tags.map((t) => ADJ[t]).find(Boolean) ?? ["Broken", "Last", "Hollow", "Thorned"][Math.floor(Math.random() * 4)];
+      const noun = tags.map((t) => NOUN[t]).find(Boolean) ?? (base.kind === "usurper" ? "Claim" : "Reckoning");
+      name = `The ${adj} ${noun}`;
+    }
+    const slug = (x) => String(x).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
+    const arc = structuredClone(base);
+    delete arc.own;
+    delete arc.file; delete arc.problems;
+    arc.id = `told-${slug(name)}-${Date.now().toString(36).slice(-4)}`;
+    arc.name = name;
+    arc.title = name;
+    arc.about = words || base.about;
+    arc.tags = [...new Set([...tags, ...(base.tags ?? []).filter((g) => /^(usurper|war|intrigue|the-dead|famine|money|rebellion|faith|succession|invasion|great-house|the-court|the-people|foreign)$/.test(g))])];
+    arc.told = { from: base.id, words, tags };
+    const problems = check(arc);
+    if (problems.length) return json(res, 400, { error: "that story doesn't hold together", problems });
+    fs.writeFileSync(path.join(OWN_STORIES, `${arc.id}.json`), JSON.stringify(arc, null, 2));
+    return json(res, 200, { ok: true, id: arc.id, name: arc.name, about: arc.about, tags: arc.tags, from: base.name });
+  }
   if (url.pathname === "/arcs/write" && req.method === "POST") {
     const b = await body(req);
     const dir = path.join(DIR, "arcs");
