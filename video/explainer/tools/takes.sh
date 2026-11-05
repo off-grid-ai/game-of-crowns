@@ -22,7 +22,7 @@ for t in $TAKES; do
   [ -f $OUT/$name.mp4 ] && continue
   for try in 1 2; do
     rm -rf "${OUT:?}/$name" ; rm -f $OUT/$name.png
-    RES=1280x720 LIMIT=3600 GODOT_ARGS="--fixed-fps 30" realm/tools/render.sh $OUT/$name.png --wait=99999 --film=1920x1080 --frames=$OUT/$name $args
+    RES=1280x720 LIMIT=3600 GODOT_ARGS="--fixed-fps 30" realm/tools/render.sh $OUT/$name.png --wait=99999 --hq --film=${FILM:-1920x1080} --frames=$OUT/$name $args
     grep -q CLIP_END $OUT/$name.log && [ -f $OUT/$name/00000.jpg ] && break
     echo "retake $name"
   done
