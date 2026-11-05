@@ -231,7 +231,10 @@ export class Arcs {
     const speaker = beat.speaker && roles[beat.speaker];
     if (speaker?.alive) {
       const also = this.active.filter((a) => a !== arc && Object.values(a.roles).includes(speaker.id)).map((a) => a.title);
-      line = (await this.voice(speaker, arc.title, text, also)) ?? "";
+      // The model gives one line of colour if it can within a few seconds; the
+      // story never waits longer on it (a busy or absent model stalls nothing).
+      const quiet = new Promise((r) => setTimeout(() => r(""), 4000));
+      line = (await Promise.race([this.voice(speaker, arc.title, text, also).catch(() => ""), quiet])) ?? "";
     }
     const town = this.placeOf(beat, roles);
     const said = line ? ` ${speaker.name.split(" ")[0]}: "${line}"` : "";
@@ -790,7 +793,11 @@ export class Arcs {
     const a = this.active.find((x) => x.reign) ?? this.done.slice().reverse().find((x) => x.reign);
     if (!a) return null;
     const last = a.beats[a.beats.length - 1];
-    return { title: a.title, threat: a.threat ?? 0, status: a.status ?? "running", tags: a.tags ?? [], last: last?.text ?? "", turn: last?.turn ?? null };
+    // Its acts: each beat that brought a matter to the King, or turned the story to crisis, is an act.
+    const t = templates().find((x) => x.id === a.template);
+    const big = (id) => { const b = t?.beats?.find((x) => x.id === id); return Boolean(b?.court || b?.stage === "crisis"); };
+    const act = Math.max(1, a.beats.filter((b) => big(b.beat)).length);
+    return { title: a.title, threat: a.threat ?? 0, act, status: a.status ?? "running", tags: a.tags ?? [], last: last?.text ?? "", turn: last?.turn ?? null };
   }
 
   // --- for the view and the King -------------------------------------------------------

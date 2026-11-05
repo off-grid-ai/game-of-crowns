@@ -368,6 +368,10 @@ func _pill(anchor_x: float, grow: int) -> HBoxContainer:
 	return h
 
 
+var _threat_bar: ProgressBar  # how near the reign's story is to the throne
+var _threat_fill: StyleBoxFlat
+
+
 func _build_top_bar() -> void:
 	# Top-left: when.
 	var when := _pill(0.0, Control.GROW_DIRECTION_END)
@@ -379,6 +383,20 @@ func _build_top_bar() -> void:
 	_reign = T.label("Aldmere")
 	_reign.add_theme_font_size_override("font_size", 9)
 	who.add_child(_reign)
+	# The story that comes for the throne: how near it is, as a thin bar under its name.
+	_threat_bar = ProgressBar.new()
+	_threat_bar.show_percentage = false
+	_threat_bar.custom_minimum_size = Vector2(0, 3)
+	_threat_bar.max_value = 100.0
+	var track := StyleBoxFlat.new()
+	track.bg_color = Color(1, 1, 1, 0.08)
+	_threat_bar.add_theme_stylebox_override("background", track)
+	_threat_fill = StyleBoxFlat.new()
+	_threat_fill.bg_color = T.ACCENT
+	_threat_bar.add_theme_stylebox_override("fill", _threat_fill)
+	_threat_bar.visible = false
+	_threat_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	who.add_child(_threat_bar)
 	when.add_child(who)
 	# Top-centre: the state of the realm (beside the date instead, on a screen
 	# too narrow for both it and the actions; see _arrange_top).
@@ -1810,7 +1828,18 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		danger.append("a usurper marches on Kingsmere")
 	if int(th.get("north", 0)) > 0:
 		danger.append("the dead march on the North")
-	if danger.is_empty():
+	# The reign's story leads the line while it runs: its name, the act, and how
+	# near it is to the throne (the bar turns red past two-thirds).
+	var story: Dictionary = world.get("story", {}) if world.get("story") is Dictionary else {}
+	_threat_bar.visible = not story.is_empty() and String(story.get("status", "")) == "running"
+	if _threat_bar.visible:
+		var threat := float(story.get("threat", 0))
+		_threat_bar.value = threat
+		_threat_fill.bg_color = T.DANGER if threat >= 66.0 else T.ACCENT
+		_reign.text = ("%s  ·  act %d" % [String(story.get("title", "")), int(story.get("act", 1))]).to_upper()
+		_reign.add_theme_color_override("font_color", T.DANGER if threat >= 66.0 else T.ACCENT)
+		_reign.get_parent().get_parent().tooltip_text = "%s\n\n%s\n\nHow near it is to the throne: %d in 100." % [String(story.get("title", "")), String(story.get("last", "")), int(threat)]
+	elif danger.is_empty():
 		_reign.add_theme_color_override("font_color", T.TEXT_3)
 	else:
 		# The gravest danger only: a longer line would push the realm's numbers off the bar.

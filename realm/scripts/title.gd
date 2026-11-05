@@ -271,6 +271,32 @@ func show_new() -> void:
 		card.autowrap_mode = TextServer.AUTOWRAP_WORD
 		card.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		card.pressed.connect(_use_preset.bind(String(name)))
+	# What comes for the throne: the reign's story, or the realm's own choice.
+	_body.add_child(_label("What comes for the throne", 15, MUTED))
+	var tales := HFlowContainer.new()
+	tales.add_theme_constant_override("h_separation", 12)
+	tales.add_theme_constant_override("v_separation", 8)
+	_body.add_child(tales)
+	_opt["story"] = _opt.get("story", "random")
+	var tale_card := func(id: String, text: String) -> void:
+		var card := _toggle(text, tales)
+		card.toggle_mode = true
+		card.button_pressed = _opt["story"] == id
+		card.custom_minimum_size = Vector2(300, 72)
+		card.autowrap_mode = TextServer.AUTOWRAP_WORD
+		card.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		card.pressed.connect(func():
+			_opt["story"] = id
+			for b in tales.get_children():
+				if b is Button:
+					b.set_pressed_no_signal(b == card))
+	tale_card.call("random", "Let the realm decide\nA story chosen for you, revealed as it begins.")
+	bridge.stories(func(list):
+		if not is_instance_valid(tales):
+			return
+		for t in list:
+			var tags: Array = t.get("tags", [])
+			tale_card.call(String(t["id"]), "%s\n%s\n%s" % [String(t.get("name", t["id"])), String(t.get("about", "")), "  ·  ".join(tags.map(func(g): return String(g).replace("-", " ")))]))
 	var name_edit := LineEdit.new()
 	name_edit.placeholder_text = "Name this chronicle (e.g. The Long Winter)"
 	name_edit.add_theme_font_size_override("font_size", 18)

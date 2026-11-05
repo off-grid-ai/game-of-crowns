@@ -186,6 +186,17 @@ func set_tithe(rate: float) -> void:
 	_post("/tithe", {"rate": rate}, func(_c, _d): pass)
 
 
+## The stories a reign can be told by (arc files marked "reign"), each with its tags.
+func stories(cb: Callable) -> void:
+	_http_get("/arcs/templates", func(d):
+		var out := []
+		if d is Array:
+			for t in d:
+				if t is Dictionary and t.get("reign", false) and (t.get("problems", []) as Array).is_empty():
+					out.append(t)
+		cb.call(out))
+
+
 func list_chronicles(cb: Callable) -> void:
 	_http_get("/chronicles", cb)
 

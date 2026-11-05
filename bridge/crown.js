@@ -84,8 +84,10 @@ export function decree(cmd, world) {
   if (!crown) return { error: "the crown has no seat" };
   const d = DECREES[cmd.action];
   if (!d) return { error: "unknown decree" };
-  if (crown.gold < d.cost) return { error: `the treasury holds ${(crown.gold * 100).toLocaleString("en-GB")} crowns; this costs ${(d.cost * 100).toLocaleString("en-GB")}` };
-  const pay = `for p in players_iterate() do if p.id == ${crown.id} then edit.change_gold(p, -${d.cost}) end end`;
+  // What the decree costs now: the server scales it with the treasury (cmd.price).
+  const cost = Math.max(d.cost, Math.round(cmd.price ?? d.cost));
+  if (crown.gold < cost) return { error: `the treasury holds ${(crown.gold * 100).toLocaleString("en-GB")} crowns; this costs ${(cost * 100).toLocaleString("en-GB")}` };
+  const pay = `for p in players_iterate() do if p.id == ${crown.id} then edit.change_gold(p, -${cost}) end end`;
   const c = world.cities.find((x) => x.id === Number(cmd.city));
   const owner = c ? world.players.find((p) => p.id === c.owner) : world.players.find((p) => p.id === Number(cmd.house));
   const lord = owner ? houseFor(owner).name : "";
@@ -143,12 +145,12 @@ export function decree(cmd, world) {
       const firstNo = world.players.find((p) => houseFor(p).name.replace("House ", "") === refused[0]);
       const why = firstNo && cmd.causeOf ? cmd.causeOf(firstNo.id) : "";
       if (why) parts.push(`${refused[0]} has not forgotten ${why}`);
-      return { cost: d.cost, favour, text: `The King calls the banners. ${parts.join("; ").replace(/^./, (c) => c.toUpperCase())}.${men ? ` ${(men * 200).toLocaleString("en-US")} men march to Kingsmere.` : " No one marches."}`, lua, refused };
+      return { cost, favour, text: `The King calls the banners. ${parts.join("; ").replace(/^./, (c) => c.toUpperCase())}.${men ? ` ${(men * 200).toLocaleString("en-US")} men march to Kingsmere.` : " No one marches."}`, lua, refused };
     }
     case "relief":
       if (!c) return { error: "choose a town" };
       return {
-        cost: d.cost, favour: { [owner.id]: 12 },
+        cost, favour: { [owner.id]: 12 },
         text: `By royal decree, wagons of grain roll into ${town}. ${lord} remembers the King's mercy.`,
         // (It used to send Migrants to join the town: one more mouth, a worse famine.)
         lua: [pay], relieved: c.id,
@@ -156,22 +158,22 @@ export function decree(cmd, world) {
     case "gift":
       if (!owner) return { error: "choose a town or house" };
       return {
-        cost: d.cost, favour: { [owner.id]: 10 },
+        cost, favour: { [owner.id]: 10 },
         text: `The King sends a chest of gold to ${lord}.`,
-        lua: [pay, `for p in players_iterate() do if p.id == ${owner.id} then edit.change_gold(p, ${d.cost}) end end`],
+        lua: [pay, `for p in players_iterate() do if p.id == ${owner.id} then edit.change_gold(p, ${cost}) end end`],
       };
     case "sellswords": {
       // Free companies, paid in gold: a thousand men at Kingsmere, owing nothing to any house.
       const seat = world.cities.find((x) => x.owner === crown.id && x.capital);
       if (!seat) return { error: "the crown has no seat" };
-      return { cost: d.cost, favour: {}, text: "The King hires sellswords: a thousand men of the free companies march into Kingsmere, loyal to his gold.",
+      return { cost, favour: {}, text: "The King hires sellswords: a thousand men of the free companies march into Kingsmere, loyal to his gold.",
         lua: [pay, `local c = find.city(nil, ${seat.id}); if c then for i = 1, 5 do edit.create_unit(c.owner, c.tile, find.unit_type(i % 2 == 0 and "Knights" or "Pikemen"), 1, c, -1) end end`] };
     }
     case "levy": {
       const seat = world.cities.find((x) => x.owner === crown.id && x.capital);
       if (!seat) return { error: "the crown has no seat" };
       return {
-        cost: d.cost, favour: {},
+        cost, favour: {},
         text: "The King raises a levy: 600 men, pikemen and knights, muster at Kingsmere.",
         lua: [pay, `local c = find.city(nil, ${seat.id}); if c then for _, n in ipairs({"Pikemen", "Pikemen", "Knights"}) do edit.create_unit(c.owner, c.tile, find.unit_type(n), 1, c, -1) end end`],
       };
@@ -186,7 +188,7 @@ export function decree(cmd, world) {
       // In the King's own town the crown builds for itself: nobody to thank.
       const own = houseFor(owner).crown;
       return {
-        cost: d.cost, favour: own ? {} : { [owner.id]: 8 },
+        cost, favour: own ? {} : { [owner.id]: 8 },
         text: own ? `The King raises ${thing} in ${town} at the crown's cost.` : `The crown pays for ${thing} in ${town}. ${lord} is grateful.`,
         lua: [pay, inCity(`local b = find.building_type("${b}"); if b and not c:has_building(b) then edit.create_building(c, b) end`)],
       };
@@ -196,10 +198,10 @@ export function decree(cmd, world) {
       // At the King's own court: every great house is his guest.
       if (houseFor(owner).crown) {
         const guests = Object.fromEntries(world.players.filter((p) => !houseFor(p).crown && !houseFor(p).wild && p.id !== owner.id).map((p) => [p.id, 5]));
-        return { cost: d.cost, favour: guests, text: "The King holds a feast at court. Every great house sends someone; tempers cool, for now.", lua: [pay] };
+        return { cost, favour: guests, text: "The King holds a feast at court. Every great house sends someone; tempers cool, for now.", lua: [pay] };
       }
       return {
-        cost: d.cost, favour: { [owner.id]: 15 },
+        cost, favour: { [owner.id]: 15 },
         text: `A feast at Kingsmere in honour of ${lord}. Wine flows; old slights are forgotten, for now.`,
         lua: [pay],
       };
@@ -207,7 +209,7 @@ export function decree(cmd, world) {
       // The heir lives at court: the house cannot rise while the King holds them.
       const owner = c ? world.players.find((p) => p.id === c.owner) : null;
       if (!owner || houseFor(owner).crown) return { error: "choose a great house's town" };
-      return { cost: d.cost, favour: { [owner.id]: -5 }, lua: [pay], ward: owner.id,
+      return { cost, favour: { [owner.id]: -5 }, lua: [pay], ward: owner.id,
         text: `${houseFor(owner).name}'s heir rides to Kingsmere as the King's ward. While the child lives at court, the house will not rise.` };
     }
     case "buyoff": {
@@ -220,7 +222,7 @@ export function decree(cmd, world) {
       const home = at ? `for p in players_iterate() do if p.id == ${who.id} then for u in p:units_iterate() do local r = u.utype:rule_name(); if r ~= "Workers" and r ~= "Settlers" and math.sqrt(u.tile:sq_distance(find.tile(${at.x}, ${at.y}))) <= 6 then edit.unit_kill(u, "killed", nil) end end end end` : null;
       const lord = houseFor(who).name;
       const others = Object.fromEntries(world.players.filter((p) => p.id !== who.id && !houseFor(p).wild && !houseFor(p).crown).map((p) => [p.id, -2]));
-      return { cost: d.cost, favour: { [who.id]: 25, ...others }, lua: [pay, home].filter(Boolean), endUsurper: true,
+      return { cost, favour: { [who.id]: 25, ...others }, lua: [pay, home].filter(Boolean), endUsurper: true,
         text: `The King buys off ${lord}: gold for their claim. Their host breaks camp and goes home, and the other houses mutter that treason pays.` };
     }
     case "back": {
@@ -228,7 +230,7 @@ export function decree(cmd, world) {
       // theirs). They love him for it; the other side will not forget.
       const to = world.players.find((p) => p.id === Number(cmd.to));
       if (!owner || !to || houseFor(owner).crown || houseFor(to).crown) return { error: "choose two great houses" };
-      return { cost: d.cost, favour: { [owner.id]: 12, [to.id]: -12 }, lua: [pay, `for p in players_iterate() do if p.id == ${owner.id} then edit.change_gold(p, ${d.cost}) end end`],
+      return { cost, favour: { [owner.id]: 12, [to.id]: -12 }, lua: [pay, `for p in players_iterate() do if p.id == ${owner.id} then edit.change_gold(p, ${cost}) end end`],
         text: `The King backs ${houseFor(owner).name} against ${houseFor(to).name}: crowns for swords, and every lord at court knows whose side the crown is on.` };
     }
     case "settle": {
@@ -243,7 +245,7 @@ export function decree(cmd, world) {
       if (!owner || !to || !keeper) return { error: "choose two warring houses and a house to settle it" };
       const home = (x, y) => `for p in players_iterate() do if p.id == ${x} then for u in p:units_iterate() do local r = u.utype:rule_name(); if r ~= "Workers" and r ~= "Settlers" then for q in players_iterate() do if q.id == ${y} then for c in q:cities_iterate() do if u.tile:sq_distance(c.tile) <= 9 then edit.unit_kill(u, "killed", nil); break end end end end end end end end`;
       const k = houseFor(keeper).name;
-      return { cost: d.cost, favour: { [keeper.id]: 6, [owner.id]: -3, [to.id]: -3 }, lua: [pay, home(owner.id, to.id), home(to.id, owner.id)], truce: [owner.id, to.id],
+      return { cost, favour: { [keeper.id]: 6, [owner.id]: -3, [to.id]: -3 }, lua: [pay, home(owner.id, to.id), home(to.id, owner.id)], truce: [owner.id, to.id],
         text: `At the King's word, ${k} rides between ${houseFor(owner).name} and ${houseFor(to).name}. Their hosts are turned home, and ${k} keeps the peace in the King's name.` };
     }
     case "peace": {
@@ -259,10 +261,10 @@ export function decree(cmd, world) {
       const cold = [owner, to].filter((p) => fav(p.id) < 40);
       if (cold.length) {
         const who = cold.map((p) => houseFor(p).name).join(" and ");
-        return { cost: d.cost, favour: Object.fromEntries(cold.map((p) => [p.id, -5])), lua: [pay], text: `The King commands peace between ${a} and ${b}. ${who} ${cold.length > 1 ? "refuse" : "refuses"} the King's peace, and the war goes on.` };
+        return { cost, favour: Object.fromEntries(cold.map((p) => [p.id, -5])), lua: [pay], text: `The King commands peace between ${a} and ${b}. ${who} ${cold.length > 1 ? "refuse" : "refuses"} the King's peace, and the war goes on.` };
       }
       const home = (x, y) => `for p in players_iterate() do if p.id == ${x} then for u in p:units_iterate() do local r = u.utype:rule_name(); if r ~= "Workers" and r ~= "Settlers" then for q in players_iterate() do if q.id == ${y} then for c in q:cities_iterate() do if u.tile:sq_distance(c.tile) <= 9 then edit.unit_kill(u, "killed", nil); break end end end end end end end end`;
-      return { cost: d.cost, favour: { [owner.id]: 2, [to.id]: 2 }, lua: [pay, home(owner.id, to.id), home(to.id, owner.id)], text: `The King commands peace between ${a} and ${b}. Both bow to the crown; their hosts break camp and turn for home.`, truce: [owner.id, to.id] };
+      return { cost, favour: { [owner.id]: 2, [to.id]: 2 }, lua: [pay, home(owner.id, to.id), home(to.id, owner.id)], text: `The King commands peace between ${a} and ${b}. Both bow to the crown; their hosts break camp and turn for home.`, truce: [owner.id, to.id] };
     }
     case "marriage": {
       // A royal match binds two great houses by blood: both thank the crown,
@@ -271,7 +273,7 @@ export function decree(cmd, world) {
       if (!c) return { error: "choose a town of one of the two houses" };
       const to = world.players.find((p) => p.id === Number(cmd.to));
       if (!to || to.id === owner.id || houseFor(to).wild || houseFor(to).crown || houseFor(owner).crown) return { error: "choose two great houses to wed" };
-      return { cost: d.cost, favour: { [owner.id]: 8, [to.id]: 8 }, text: `By the King's word, ${lord} and ${houseFor(to).name} are to be joined by marriage.`, lua: [pay], pact: [owner.id, to.id] };
+      return { cost, favour: { [owner.id]: 8, [to.id]: 8 }, text: `By the King's word, ${lord} and ${houseFor(to).name} are to be joined by marriage.`, lua: [pay], pact: [owner.id, to.id] };
     }
     case "grant": {
       if (!c) return { error: "choose a town" };
@@ -299,7 +301,7 @@ export function decree(cmd, world) {
       const f = (cmd.favourOf ?? (() => 60))(owner.id);
       if (f < 50) return { error: `${lord} will not swear an oath to a crown it does not trust (favour ${Math.round(f)}; it needs 50). Win them first.` };
       if ((cmd.sworn ?? (() => false))(owner.id)) return { error: `${lord} is already sworn to the crown` };
-      return { cost: d.cost, lua: [pay], favour: { [owner.id]: 5 }, alliance: owner.id,
+      return { cost, lua: [pay], favour: { [owner.id]: 5 }, alliance: owner.id,
         text: `${lord} kneels and swears an oath to the crown: its swords are the King's for four years, and it will not rise against him while the oath holds.` };
     }
     case "march": {
@@ -308,7 +310,7 @@ export function decree(cmd, world) {
       if (!c || !owner || houseFor(owner).crown || houseFor(owner).wild) return { error: "choose a great house's town to march on" };
       if ((cmd.marching ?? (() => false))(c.id)) return { error: `the royal host is already before ${town}` };
       const others = world.players.filter((p) => p.id !== owner.id && !houseFor(p).crown && !houseFor(p).wild && world.cities.some((x) => x.owner === p.id));
-      return { cost: d.cost, lua: [pay, `realm_host(realm_find_player(${crown.id}), ${c.x}, ${c.y}, {"Pikemen","Knights","Archers","Catapult"}, 8)`],
+      return { cost, lua: [pay, `realm_host(realm_find_player(${crown.id}), ${c.x}, ${c.y}, {"Pikemen","Knights","Archers","Catapult"}, 8)`],
         favour: { [owner.id]: -25, ...Object.fromEntries(others.map((p) => [p.id, -2])) }, march: { city: c.id, house: owner.id },
         text: `The royal host marches on ${town}. ${lord} calls every man to its walls, and every house in the realm watches.` };
     }

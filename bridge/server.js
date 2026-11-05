@@ -107,6 +107,7 @@ function load(id) {
   court = new Court(P.base, record);
   court.deedsOf = (pid) => (deeds[pid] ??= []);
   arcs = new Arcs(P.base, court, record);
+  arcsRunning = false;  // a new realm's stories start free of the last one's
   court.onArcRuling = (arc, beat, option) => arcs.rule(arc, beat, option);
   chatter?.stop();
   chatter = new Chatter(P.state, { world: () => world, turn: () => world?.turn ?? 0, minds: () => minds });
@@ -515,9 +516,13 @@ function arcCtx() {
   };
 }
 
+let arcsSince = 0;
 async function runArcs(n = 1, start = true) {
+  // A run stuck for over a minute (a call that never came back) frees itself.
+  if (arcsRunning && Date.now() - arcsSince > 60000) arcsRunning = false;
   if (!world || !arcs || arcsRunning) return false;
   arcsRunning = true;
+  arcsSince = Date.now();
   try {
     for (let i = 0; i < n; i++) await arcs.season(arcCtx(), { start });
   } catch (err) {
@@ -734,6 +739,33 @@ function noteFavour(id, d, why) {
   while (list.length > 6) list.shift();
 }
 
+// --- What the crown's favour costs -------------------------------------------------
+
+// A decree's price grows with the treasury: a rich King's gift must be a real
+// share of what he holds, or it means nothing to the house that gets it.
+const SHARE = { gift: 0.04, feast: 0.03, relief: 0.03, marriage: 0.08, alliance: 0.06, march: 0.08, buyoff: 0.1, build: 0.04 };
+function priceOf(action) {
+  const base = DECREES[action]?.cost ?? 0;
+  const purse = world?.players?.find((p) => houseFor(p).crown)?.gold ?? 0;
+  return Math.max(base, Math.round(purse * (SHARE[action] ?? 0)));
+}
+
+// Kindness wears thin: the same house warmed again within a year is warmed
+// less (a half, then a fifth), and the houses at war with it grow colder.
+const KIND = new Set(["gift", "feast", "relief", "marriage"]);
+function temper(action, house, changes) {
+  if (!KIND.has(action) || house == null || !(changes?.[house] > 0)) return changes;
+  const turn = world?.turn ?? 0;
+  const seen = (meta.kindness ??= {});
+  seen[house] = (seen[house] ?? []).filter((t) => t > turn - 4);
+  const again = seen[house].length;
+  seen[house].push(turn);
+  const out = { ...changes, [house]: Math.max(1, Math.round(changes[house] * [1, 0.5, 0.2][Math.min(again, 2)])) };
+  const foes = detail()?.players?.[house]?.atWarWith ?? [];
+  for (const f of foes) if (f !== house && favour[f] != null) out[f] = (out[f] ?? 0) - Math.max(1, Math.round(out[house] * 0.4));
+  return out;
+}
+
 // --- Oaths and the royal host ------------------------------------------------------
 
 // A house sworn to the crown (an alliance not yet run out).
@@ -836,7 +868,9 @@ function collectTithe(turn) {
     favourWhy[id] = (favourWhy[id] ?? []).map((r) => ({ ...r, d: r.d * 0.97 })).filter((r) => Math.abs(r.d) >= 1);
   }
   for (const t of Object.keys(favourPast)) if (Number(t) < turn - 8) delete favourPast[t];
-  const t = titheLua(world, meta.tithe);
+  // War between the houses chokes the roads: the less peace, the less tithe reaches Kingsmere.
+  const peaceNow = history[history.length - 1]?.peace ?? 1;
+  const t = titheLua(world, meta.tithe * (0.4 + 0.6 * peaceNow));
   tally.total += t.total;
   tally.upkeep += t.upkeep;
   lastSeason.net = t.total - t.upkeep;
@@ -846,7 +880,9 @@ function collectTithe(turn) {
     if (houseFor(p).wild || houseFor(p).crown) continue;
     const before = favourOf(p.id);
     // Favour drifts back toward the house's own temper, minus the tithe's wear.
-    favour[p.id] = clampFavour(before + (restingFavour(p) - before) * 0.03 - wear);
+    // Gratitude fades: a house well above its own temper cools faster than one near it.
+    const rest = restingFavour(p);
+    favour[p.id] = clampFavour(before + (rest - before) * (before - rest > 15 ? 0.08 : 0.03) - wear);
     if (wear) noteFavour(p.id, -wear, "the royal tithe");
     // A heavy tithe, year on year, becomes a deed of its own: what a house paid
     // in a year it remembers at the year's end.
@@ -1062,7 +1098,7 @@ http.createServer(async (req, res) => {
     });
     const last = history[history.length - 1];
     const crownP = players.find((p) => p.house.crown);
-    const crown = { treasury: crownP?.gold ?? 0, tithe: meta.tithe, decrees: DECREES, perSeason: lastSeason.net };
+    const crown = { treasury: crownP?.gold ?? 0, tithe: meta.tithe, decrees: Object.fromEntries(Object.entries(DECREES).map(([k, v]) => [k, { ...v, cost: priceOf(k) }])), perSeason: lastSeason.net };
     for (const p of players) {
       p.favour = p.house.wild || p.house.crown ? null : favourOf(p.id);
       p.favourWhy = favourWhy[p.id] ?? [];
@@ -1234,12 +1270,14 @@ http.createServer(async (req, res) => {
         }
       }
     }
-    const result = decree({ ...cmd, favourOf, causeOf, sworn, marching: (city) => (meta.campaigns ?? []).some((x) => x.city === city), usurper: stakes?.s.usurper, seat: stakes?.s.seat }, world);
+    const result = decree({ ...cmd, price: priceOf(cmd.action), favourOf, causeOf, sworn, marching: (city) => (meta.campaigns ?? []).some((x) => x.city === city), usurper: stakes?.s.usurper, seat: stakes?.s.seat }, world);
     if (result.error) return json(res, 400, result);
     if (result.endUsurper && stakes) { stakes.s.usurper.stage = "none"; stakes.save(); }
     if (result.relieved != null) { (meta.relieved ??= {})[result.relieved] = world.turn ?? 0; chron.saveMeta(meta); }
     if (result.alliance != null) { (meta.alliances ??= {})[result.alliance] = (world.turn ?? 0) + 16; chron.saveMeta(meta); }
     if (result.march) startCampaign(result.march);
+    const warmed = world.cities.find((c) => c.id === Number(cmd.city))?.owner ?? (cmd.house != null ? Number(cmd.house) : null);
+    result.favour = temper(cmd.action, warmed, result.favour);
     // A ward holds the house for five years.
     if (result.ward != null && stakes) { (stakes.s.wards ??= {})[result.ward] = (world.turn ?? 0) + 20; stakes.save(); }
     // A town taken from a house is remembered, so the Hand can offer it back.
@@ -1593,7 +1631,7 @@ http.createServer(async (req, res) => {
     return json(res, 200, { name: person.name, trade: person.trade, gender: person.woman ? "female" : "male", ...out });
   }
   if (url.pathname === "/arcs" && req.method === "GET") return json(res, 200, inCrowns(arcs.view(arcCtx())));
-  if (url.pathname === "/arcs/templates") return json(res, 200, arcTemplates().map((t) => ({ id: t.id, file: t.file, name: t.name, title: t.title, about: t.about, roles: Object.keys(t.roles ?? {}), beats: (t.beats ?? []).length, problems: t.problems })));
+  if (url.pathname === "/arcs/templates") return json(res, 200, arcTemplates().map((t) => ({ id: t.id, file: t.file, name: t.name, title: t.title, about: t.about, reign: Boolean(t.reign), tags: t.tags ?? [], roles: Object.keys(t.roles ?? {}), beats: (t.beats ?? []).length, problems: t.problems })));
   // Fast-forward: n seasons of the realm's stories, against the live realm.
   if (url.pathname === "/arcs/tick" && req.method === "POST") {
     const b = await body(req);
