@@ -23,6 +23,13 @@ v1 is frozen (see "v1: what ships" in [VISION.md](VISION.md)). In v1 you are the
 - People talk among themselves as captions over their heads, not aloud.
 - Walking the realm as the King or a lord (the streets, talking face to face, fighting, riding, going indoors) is built and kept in the code for version 2, switched off by one flag: `WALKING` in [`realm/scripts/features.gd`](realm/scripts/features.gd).
 
+## Where it's going
+
+- **Every reign is a story that comes for your throne.** Pick one when you begin (The Usurper's Claim, The Broken Oath, The Poisoned Court, The Long Winter, The Crown's Debt and more), filter by tags (fast-paced, gritty, violent, cunning, political…), let the realm decide, or generate your own from tags or a few lines of premise. It plays out in acts, through choices brought to your court, and the reign ends when the story does: weather it and you win, fail and you fall.
+- **Stories are data, built from beats.** Write your own beats and stories as files; the game checks them and plays them against the live realm. See [docs/STORY_ARCS.md](docs/STORY_ARCS.md).
+- **Politics with teeth:** alliances that bind a house to your wars, marching the royal host on a rebel, stripping titles, hostages, the council, spies, the headsman. Gold alone won't hold the realm.
+- **Lords remember.** Every house keeps a record of what the crown did to it, and its lord brings it back to your court years later.
+
 ## How it fits together
 
 ```
