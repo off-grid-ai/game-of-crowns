@@ -100,6 +100,9 @@ export function cleanOptions(o = {}, fate) {
     if (k in CHOICES && CHOICES[k].includes(v)) out[k] = v;
   }
   out.pace = 20;  // one pace for every realm
+  // The reign's story: an arc id, or "random" (from the tags, if any), or none.
+  out.story = typeof o?.story === "string" && /^[a-z0-9-]{1,60}$/.test(o.story) ? o.story : null;
+  out.storyTags = (Array.isArray(o?.storyTags) ? o.storyTags : []).filter((t) => typeof t === "string" && /^[a-z-]{1,24}$/.test(t)).slice(0, 6);
   out.usurper = o?.usurper === undefined ? true : Boolean(o.usurper);
   out.skip = (Array.isArray(o?.skip) ? o.skip : []).filter((h) => h in HOUSE_NATIONS).slice(0, 5);
   return out;

@@ -740,6 +740,16 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
     }).catch(() => {});
   }
 
+  // A matter a story brings to the King (arcs.js toCourt): it comes whatever
+  // else is waiting, and his answer goes back to the story.
+  arcPetition({ arc, beat, thread, from, text, options }, world) {
+    if (this.petitions.some((p) => !p.answered && p.arc === arc && p.beat === beat)) return;
+    const p = { id: `p${Date.now().toString(36)}${Math.floor(Math.random() * 999)}`, turn: world?.turn ?? 0, from: from.id, name: from.name, house: from.house, answered: false, kind: "arc", arc, beat, thread, text, options };
+    this.petitions.push(p);
+    this.record({ turn: p.turn, kind: "court", text: `${from.name} of ${from.house} comes to court: ${thread}.` });
+    this.saveCourt();
+  }
+
   // --- the deck: dilemmas written as data (data/dilemmas.json) ----------------
 
   // Finds who plays each part a card needs, or null if the card can't be dealt
@@ -890,6 +900,7 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
       p.seasons = (p.seasons ?? 0) + 1;
       if (p.answered || p.seasons < 8 || p.waitedMs < 5 * 60000) continue;
       p.answered = "ignored";
+      if (p.kind === "arc") this.onArcRuling?.(p.arc, p.beat, "ignored");
       const c = this.people[p.from];
       if (!c) continue;
       shift({ [c.playerId]: -12 }, "left unheard at court");
@@ -924,7 +935,11 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
     p.answered = option;
     const out = { cost: opt.cost ?? 0, favour: {}, lua: [], text: "" };
     const gold = (pid2, amount) => out.lua.push(`for p in players_iterate() do if p.id == ${pid2} then edit.change_gold(p, ${amount}) end end`);
-    if (p.deck) {
+    if (p.kind === "arc") {
+      for (const [pid, n] of Object.entries(opt.favour ?? {})) out.favour[pid] = n;
+      out.text = opt.result || `The King gives his answer: ${String(opt.label).toLowerCase()}.`;
+      this.onArcRuling?.(p.arc, p.beat, option);
+    } else if (p.deck) {
       this.play(p, option, world, out, gold);
     } else if (p.kind === "claim") {
       const k = p.claim;

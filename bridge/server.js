@@ -107,6 +107,7 @@ function load(id) {
   court = new Court(P.base, record);
   court.deedsOf = (pid) => (deeds[pid] ??= []);
   arcs = new Arcs(P.base, court, record);
+  court.onArcRuling = (arc, beat, option) => arcs.rule(arc, beat, option);
   chatter?.stop();
   chatter = new Chatter(P.state, { world: () => world, turn: () => world?.turn ?? 0, minds: () => minds });
   stakes = new Stakes(P.state, record, endReign);
@@ -503,6 +504,10 @@ function arcCtx() {
       return x ? { food: x.foodStock, famine: x.hadFamine, plague: x.plagueTurn >= 0 && world.turn - x.plagueTurn <= 16 } : {};
     },
     recent: (turns = 16) => chronicle.filter((e) => e.turn >= world.turn - turns),
+    // The reign's story, chosen when the chronicle began, and how it ends the reign.
+    story: meta.options?.story ?? null,
+    storyTags: meta.options?.storyTags ?? [],
+    endReign: (why, outcome = "deposed") => endReign(why, outcome),
     refresh: () => new Promise((r) => { snapshot(); setTimeout(r, 900); }),
   };
 }
@@ -900,6 +905,7 @@ function endReign(why, outcome = "completed") {
   if (meta.status !== "running") return;
   const s = score();
   if (outcome === "deposed") { s.score = Math.round(s.score * 0.4); s.verdict = "Deposed. The crown passed to another while you watched."; }
+  if (outcome === "won") { s.score = Math.round(s.score * 1.5); s.verdict = "The crown held. The tale that came for it is told, and the King is still in his seat."; }
   if (outcome === "fallen") { s.score = Math.round(s.score * 0.3); s.verdict = "The realm fell to the dead. No one is left to remember."; }
   s.title = `The King ${epithet(history, outcome, decreesIssued)}`;
   s.outcome = outcome;
@@ -1044,7 +1050,7 @@ http.createServer(async (req, res) => {
       // The King's side is his whole host: the garrisons defend Kingsmere too.
       ended: u?.ended && !u.ended.settled && (world?.turn ?? 0) - u.ended.turn <= 8 ? u.ended.house : null,
       theirs: u?.house != null ? fighting(u.house) : 0, ours: crownId != null ? (world?.units ?? []).filter((x) => x.owner === crownId && !CIVILIAN.has(x.type)).length : 0 };
-    return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), date: calendar(world.turn), threat, counsel: counsel(players, cities, threat), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000) });
+    return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), story: arcs?.reignView() ?? null, date: calendar(world.turn), threat, counsel: counsel(players, cities, threat), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000) });
   }
   if (url.pathname === "/map") {
     const map = chron.readJson(path.join(P.state, "map.json"));

@@ -75,6 +75,11 @@ export function check(t) {
       for (const [, r] of String(text ?? "").matchAll(/\{(\w+)/g)) if (!roles.includes(r) && r !== "thread") errs.push(`beat ${b.id} names {${r}}, which isn't a role`);
     }
   }
+  for (const b of beats) {
+    if (!b.court) continue;
+    if (!(b.court.options ?? []).length) errs.push(`beat ${b.id} brings a matter to court with no answers`);
+    for (const o of b.court.options ?? []) if (!o.id || !o.label) errs.push(`beat ${b.id}: every court answer needs an id and a label`);
+  }
   for (const n of t.interrupts ?? []) if (!ids.includes(n.to)) errs.push(`an interrupt goes to ${n.to}, which isn't a beat`);
   for (const [r, id] of Object.entries(t.onDeath ?? {})) if (!ids.includes(id)) errs.push(`onDeath ${r} goes to ${id}, which isn't a beat`);
   return [...new Set(errs)];
@@ -113,11 +118,12 @@ export class Arcs {
     this.done = saved.done ?? [];
     this.cooldown = saved.cooldown ?? {};
     this.seq = saved.seq ?? 1;
+    this.reignBegun = saved.reignBegun ?? false;
     this.voice = arcLine; // the words; the story never waits on them
   }
 
   save() {
-    fs.writeFileSync(this.file, JSON.stringify({ clock: this.clock, seq: this.seq, cooldown: this.cooldown, active: this.active, done: this.done.slice(-80) }, null, 1));
+    fs.writeFileSync(this.file, JSON.stringify({ clock: this.clock, seq: this.seq, cooldown: this.cooldown, active: this.active, done: this.done.slice(-80), reignBegun: this.reignBegun }, null, 1));
   }
 
   // --- the season --------------------------------------------------------------
@@ -137,7 +143,13 @@ export class Arcs {
       if (!t) { this.finish(arc, "faded", ctx, "Its tale is no longer told."); continue; }
       await this.advance(arc, t, ctx);
     }
-    if (start && this.active.length < MAX_ACTIVE && Math.random() < START_CHANCE) await this.begin(all, ctx);
+    // The reign's own story (chosen when the chronicle began) starts once, at the outset.
+    if (ctx.story && !this.reignBegun) {
+      this.reignBegun = true;
+      const pick = ctx.story === "random" ? all.filter((t) => t.reign && (!ctx.storyTags?.length || ctx.storyTags.every((g) => (t.tags ?? []).includes(g)))) : all.filter((t) => t.id === ctx.story);
+      for (const t of pick.sort(() => Math.random() - 0.5)) if (await this.begin(all, ctx, t.id)) break;
+    }
+    if (start && this.active.length < MAX_ACTIVE && Math.random() < START_CHANCE) await this.begin(all.filter((t) => !t.reign), ctx);
     // Whoever a story touched this season is in it now: their minds think hot.
     if (ctx.minds && this.touched.size) ctx.minds.attend({ cast: [...this.touched] });
     this.save();
@@ -156,7 +168,7 @@ export class Arcs {
     if (!ready.length) return null;
     let roll = Math.random() * ready.reduce((s, x) => s + (x.t.weight ?? 1), 0);
     const { t, roles } = ready.find((x) => (roll -= x.t.weight ?? 1) < 0) ?? ready[ready.length - 1];
-    const arc = { id: `a${this.seq++}`, template: t.id, kind: t.kind ?? t.id, roles: {}, at: null, wait: 0, stalled: 0, started: this.clock, turn: ctx.world.turn, beats: [] };
+    const arc = { id: `a${this.seq++}`, template: t.id, kind: t.kind ?? t.id, roles: {}, at: null, wait: 0, stalled: 0, started: this.clock, turn: ctx.world.turn, beats: [], ...(t.reign ? { reign: true, threat: 0, tags: t.tags ?? [] } : {}) };
     for (const [k, v] of Object.entries(roles)) arc.roles[k] = v.town ? `town:${v.id}` : v.id;
     arc.title = this.fill(t.title, arc, ctx);
     this.active.push(arc);
@@ -170,6 +182,17 @@ export class Arcs {
     const beat = t.beats.find((b) => b.id === arc.at);
     if (!beat) return this.finish(arc, "faded", ctx);
     const roles = this.roles(arc, ctx);
+    // The King answered a matter this story brought to court: his answer's own
+    // effects land now, and the story goes on from what he chose.
+    if (arc.answered) {
+      const opt = t.beats.find((b) => b.id === arc.answered.beat)?.court?.options?.find((o) => o.id === arc.answered.option);
+      if (opt?.do) { const lua = this.act(opt.do, arc, roles, ctx); if (lua.length && ctx.refresh) await ctx.refresh(); }
+      arc.awaiting = null;
+      arc.answered = null;
+      if (arc.status) return;  // the answer ended it (a fall)
+    }
+    // A matter still before the King holds the story where it is.
+    if (arc.awaiting && !(arc.ruled ?? {})[arc.awaiting]) { arc.stalled++; return; }
     // Someone in the story has died, perhaps in another story, or of age.
     // Each death is met once: by the beat the file names for it, by a branch
     // waiting on it, or, for someone the story can't go on without, the end.
@@ -235,6 +258,8 @@ export class Arcs {
       // A named person's memories stay in their Court record; the mind carries how it felt.
       if (mind) { ctx.minds.feel(mind, moves(k), weight); ctx.minds.save(); }
     }
+    if (beat.court) this.toCourt(arc, beat, roles, ctx);
+    if (arc.reign && beat.threat != null) arc.threat = Math.max(0, Math.min(100, Number(beat.threat)));
     arc.at = beat.id;
     arc.stalled = 0;
     arc.wait = Math.max(0, rand(beat.after ?? [1, 2]) - 1);
@@ -246,6 +271,11 @@ export class Arcs {
   finish(arc, how, ctx, text) {
     arc.status = how;
     arc.ended = this.clock;
+    // The reign's story ending is the reign ending: weathered, it's a victory.
+    if (arc.reign && how === "resolved" && ctx?.endReign) {
+      const last = arc.beats[arc.beats.length - 1]?.text ?? "";
+      setTimeout(() => ctx.endReign(`${arc.title} is over, and the crown still stands. ${last}`.trim(), "won"), 0);
+    }
     if (text) {
       this.record({ turn: ctx.world.turn, kind: "arc", thread: arc.title, arc: arc.id, stage: "resolution", text });
       arc.beats.push({ beat: how, stage: "resolution", clock: this.clock, turn: ctx.world.turn, text });
@@ -576,6 +606,9 @@ export class Arcs {
           case "believes": { const m = this.mindOf(R(v[0]), ctx); return Boolean(m?.beliefs?.some((b) => re(v[1]).test(b))); }
           case "gone": return Boolean(R(v)?.folk && R(v).mind.gone);
           case "seasons": return cmp(this.clock - (arc.started ?? this.clock), v[0], v[1]);
+          // What the King answered: "option" (the last matter) or ["beat", "option"]; "ignored" if he never did.
+          case "ruled": { const [b, o] = Array.isArray(v) ? v : [arc.lastRuled, v]; return Boolean(b) && re(`^(${o})$`).test((arc.ruled ?? {})[b] ?? ""); }
+          case "threat": return cmp(arc.threat ?? 0, v[0], v[1]);
           case "happened": return ctx.recent().some((e) => re(v.kind ?? ".").test(e.kind) && re(v.text ?? ".").test(e.text ?? "") && (!v.town || e.city === R(v.town)?.id) && (!v.house || (e.text ?? "").includes(R(v.house)?.house ?? "\0")));
           default: return false; // a key no one knows holds nothing, so a typo can't fire a branch
         }
@@ -590,6 +623,9 @@ export class Arcs {
   // The levers, the same ones the court pulls. Returns the Lua sent to Freeciv.
   act(d, arc, roles, ctx) {
     const lua = [];
+    if (d.threat != null && arc.reign) arc.threat = Math.max(0, Math.min(100, (arc.threat ?? 0) + Number(d.threat)));
+    // The story takes the throne: the reign ends, in the chronicle's words.
+    if (d.fall && ctx.endReign) { const why = this.fill(d.fall, arc, ctx, roles); this.finish(arc, "failed", ctx, why); ctx.endReign(why); return lua; }
     const send = (l) => { lua.push(l); ctx.send(l); };
     const R = (k) => roles[k];
     const court = this.court;
@@ -716,6 +752,42 @@ export class Arcs {
       if (field === "station" || field === "born") return String(r[field] ?? r.station ?? r.rank ?? "");
       return String(r[field] ?? "");
     });
+  }
+
+  // A matter for the King: the story's speaker comes to court with it, and the
+  // story waits on his answer. Each answer can move houses' favour (by role),
+  // cost the crown, and carry effects of its own (applied next season).
+  toCourt(arc, beat, roles, ctx) {
+    const c = beat.court;
+    const who = roles[c.from ?? beat.speaker] ?? Object.values(roles).find((x) => !x.town && x.alive && x.rank === "lord");
+    if (!who || who.town || !this.court.arcPetition) return;
+    const pidOf = (k) => roles[k]?.playerId;
+    const options = c.options.map((o) => ({
+      id: o.id, label: this.fill(o.label, arc, ctx, roles), hint: this.fill(o.hint ?? "", arc, ctx, roles), result: this.fill(o.result ?? "", arc, ctx, roles),
+      ...(o.cost ? { cost: o.cost } : {}),
+      favour: Object.fromEntries(Object.entries(o.favour ?? {}).map(([k, n]) => [pidOf(k), n]).filter(([pid]) => pid != null)),
+    }));
+    this.court.arcPetition({ arc: arc.id, beat: beat.id, thread: arc.title, from: who, text: this.fill(c.text ?? beat.text, arc, ctx, roles), options }, ctx.world);
+    arc.awaiting = beat.id;
+  }
+
+  // The King's answer (or his silence: "ignored") to a matter a story brought.
+  rule(arcId, beatId, option) {
+    const arc = this.active.find((a) => a.id === arcId);
+    if (!arc) return;
+    (arc.ruled ??= {})[beatId] = option;
+    arc.lastRuled = beatId;
+    arc.answered = { beat: beatId, option };
+    this.save();
+  }
+
+  // The story against the throne, for the top of the screen: its name, where it
+  // has got to, and how near it is to taking the crown.
+  reignView() {
+    const a = this.active.find((x) => x.reign) ?? this.done.slice().reverse().find((x) => x.reign);
+    if (!a) return null;
+    const last = a.beats[a.beats.length - 1];
+    return { title: a.title, threat: a.threat ?? 0, status: a.status ?? "running", tags: a.tags ?? [], last: last?.text ?? "", turn: last?.turn ?? null };
   }
 
   // --- for the view and the King -------------------------------------------------------
