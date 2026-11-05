@@ -1,12 +1,13 @@
 name: Release (Mac)
 
-# Builds, signs and notarises Game of Crowns for Apple Silicon and publishes the dmg as a
-# GitHub Release. Modelled on Off Grid AI Desktop's release (OGAD .github/workflows/release.yml).
+# Builds, signs and notarises Game of Crowns for Apple Silicon on GitHub's macOS runner and
+# publishes the dmg as a GitHub Release. Modelled on Off Grid AI Desktop's release
+# (OGAD .github/workflows/release.yml), with the same secrets.
 #
-# Runs on the self-hosted Mac runner labelled goc-release, because the third-party art (3.6 GB of
-# Sketchfab, Mixamo, Quaternius and other kits) stays out of git by licence (see .gitignore):
-# the runner copies it, with Godot's import cache, from the working copy on that Mac. The shipped
-# app carries the art inside its .pck, which those licences allow.
+# The third-party art (Sketchfab, Mixamo, Quaternius and other kits) stays out of git: its
+# licences allow shipping it inside the game, not handing out the raw files. It lives as parts of
+# the repo's private DRAFT release "art-store" (uploaded by packaging/upload-art.py), which only
+# the team and this workflow's token can read. The shipped app carries the art inside its .pck.
 #
 # Manual only: Actions -> Release (Mac) -> Run workflow.
 on:
@@ -18,48 +19,101 @@ on:
         default: true
 
 permissions:
-  contents: write
+  contents: write # publish the release, and read the art-store draft
 
 concurrency:
   group: release-mac
   cancel-in-progress: false
 
+env:
+  GODOT_VERSION: 4.7.2
+  LLAMA_BUILD: b12019 # the llama.cpp build Off Grid AI Desktop ships (reads Omni's lfm3)
+
 jobs:
   build-mac:
-    runs-on: [self-hosted, macOS, ARM64, goc-release]
-    timeout-minutes: 180
-    env:
-      # The working copy on the runner's Mac that holds the art and the import cache.
-      GOC_ART_FROM: ${{ vars.GOC_ART_FROM || '/Users/user/wednesday/civilization' }}
-      PATH: /opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+    runs-on: macos-15 # Apple Silicon
+    timeout-minutes: 240
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 1
 
-      - name: Bring in the art and the import cache
+      - name: Make room on the runner
+        run: |
+          # The art, Godot's import cache and the export need ~15 GB; the runner image's spare
+          # Xcode versions and Android SDK take far more than that.
+          SELECTED=$(xcode-select -p | sed 's|/Contents/Developer||')
+          for x in /Applications/Xcode_*.app; do [ "$x" = "$SELECTED" ] || sudo rm -rf "$x"; done
+          rm -rf "$HOME/Library/Android" || true
+          df -h /
+
+      - name: Tools (Freeciv, dylibbundler, zstd)
+        run: brew install freeciv dylibbundler zstd
+
+      - name: Godot ${{ env.GODOT_VERSION }} and its export templates
         run: |
           set -euo pipefail
-          test -d "$GOC_ART_FROM/realm/assets" || { echo "::error::no art at $GOC_ART_FROM/realm/assets"; exit 1; }
-          # Only files git doesn't carry: the checkout's own files win.
-          rsync -a --ignore-existing "$GOC_ART_FROM/realm/assets/" realm/assets/
-          if [ -d "$GOC_ART_FROM/realm/.godot" ]; then rsync -a --delete "$GOC_ART_FROM/realm/.godot/" realm/.godot/; fi
+          cd "$RUNNER_TEMP"
+          base="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable"
+          curl -fsSL -o godot.zip "$base/Godot_v${GODOT_VERSION}-stable_macos.universal.zip"
+          unzip -q godot.zip -d godot && rm godot.zip
+          curl -fsSL -o templates.tpz "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          dest="$HOME/Library/Application Support/Godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$dest" && unzip -q templates.tpz -d tpl && mv tpl/templates/* "$dest/" && rm -rf templates.tpz tpl
+          mkdir -p "$RUNNER_TEMP/bin"
+          printf '#!/bin/sh\nexec "%s/godot/Godot.app/Contents/MacOS/Godot" "$@"\n' "$RUNNER_TEMP" > "$RUNNER_TEMP/bin/godot"
+          chmod +x "$RUNNER_TEMP/bin/godot"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+      - name: llama-server (llama.cpp ${{ env.LLAMA_BUILD }})
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          gh release download "$LLAMA_BUILD" -R ggml-org/llama.cpp -p "llama-${LLAMA_BUILD}-bin-macos-arm64.tar.gz"
+          mkdir llama && tar -xzf "llama-${LLAMA_BUILD}-bin-macos-arm64.tar.gz" -C llama && rm -f llama-*.tar.gz
+          dir=$(dirname "$(find "$RUNNER_TEMP/llama" -name llama-server -type f | head -1)")
+          test -x "$dir/llama-server"
+          echo "OGAD_LLAMA=$dir" >> "$GITHUB_ENV"
+
+      - name: The art, from the private art-store draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/art"
+          gh release download art-store -R "$GITHUB_REPOSITORY" -p 'art.tar.zst.part-*' -D "$RUNNER_TEMP/art"
+          want=$(cut -d' ' -f1 packaging/art.sha256)
+          got=$(cat "$RUNNER_TEMP"/art/art.tar.zst.part-* | shasum -a 256 | cut -d' ' -f1)
+          [ "$want" = "$got" ] || { echo "::error::art checksum $got, expected $want (re-run packaging/upload-art.py and commit packaging/art.sha256)"; exit 1; }
+          cat "$RUNNER_TEMP"/art/art.tar.zst.part-* | zstd -d -q | tar -xf -
+          rm -rf "$RUNNER_TEMP/art"
           du -sh realm/assets
 
-      - name: Re-import changed art
-        run: cd realm && arch -arm64 godot --headless --path . --import
+      - name: Godot's import cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: realm/.godot
+          key: godot-import-${{ env.GODOT_VERSION }}-${{ hashFiles('packaging/art.sha256', 'realm/project.godot', 'realm/**/*.import') }}
+          restore-keys: godot-import-${{ env.GODOT_VERSION }}-
+
+      - name: Import the art
+        run: cd realm && godot --headless --path . --import
 
       - name: Build, sign and notarise
         env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           APPLE_API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY }}
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: |
           set -euo pipefail
+          test -n "$CSC_LINK" || { echo "::error::CSC_LINK is not set (the Developer ID .p12, as in OGAD)"; exit 1; }
           # notarytool needs the key as a file; write it from the secret, as OGAD does.
           printf '%s' "$APPLE_API_KEY_CONTENT" > "$RUNNER_TEMP/AuthKey.p8"
           export APPLE_API_KEY="$RUNNER_TEMP/AuthKey.p8"
-          # Signs with the Developer ID Application identity in the runner Mac's keychain.
           packaging/build-mac.sh
           rm -f "$APPLE_API_KEY"
 
