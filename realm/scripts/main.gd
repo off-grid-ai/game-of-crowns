@@ -430,6 +430,7 @@ func _capture_quality() -> void:
 	vp.msaa_3d = Viewport.MSAA_4X
 	vp.use_taa = true
 	vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+	vp.mesh_lod_threshold = 1.0  # every mesh at full detail (play simplifies at 4 px)
 	RenderingServer.directional_shadow_atlas_set_size(8192, true)
 	RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_HIGH)
 
