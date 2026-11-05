@@ -1,0 +1,11 @@
+Model Information:
+* title:	.Fuse Woman 1
+* source:	https://sketchfab.com/3d-models/fuse-woman-1-c6436897da494b4e8e1f8188aea620c6
+* author:	Leonardo Carvalho (https://sketchfab.com/livrosparacriancas)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on ".Fuse Woman 1" (https://sketchfab.com/3d-models/fuse-woman-1-c6436897da494b4e8e1f8188aea620c6) by Leonardo Carvalho (https://sketchfab.com/livrosparacriancas) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

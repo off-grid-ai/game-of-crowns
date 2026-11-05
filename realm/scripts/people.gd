@@ -37,25 +37,30 @@ const CLOTH := [Color(1, 1, 1), Color(0.85, 0.75, 0.62), Color(0.7, 0.8, 0.7), C
 ## enough to fill a square; the rest stand alone (the court, the close-up).
 const BODIES := {
 	"arissa": {"sex": "f", "roles": ["archer", "townsfolk"], "cloth": ["arissa_Cloak_Geo"], "crowd": true},
-	"erika": {"sex": "f", "roles": ["archer", "townsfolk"], "cloth": [], "crowd": true},
+	"erika": {"sex": "f", "roles": ["archer"], "cloth": [], "crowd": true},
 	"erika_bow": {"sex": "f", "roles": ["archer"], "cloth": [], "crowd": true},
 	"knight": {"sex": "m", "roles": ["soldier", "noble", "knight"], "cloth": ["Lower_Armor"], "crowd": true},
 	"paladin": {"sex": "m", "roles": ["soldier", "noble", "knight"], "cloth": [], "crowd": true},
 	"paladin_prop": {"sex": "m", "roles": ["noble", "knight"], "cloth": [], "crowd": false},
-	"heraklios": {"sex": "m", "roles": ["townsfolk", "soldier"], "cloth": [], "crowd": true},
+	"heraklios": {"sex": "m", "roles": ["soldier"], "cloth": [], "crowd": true},
 	"dreyar": {"sex": "m", "roles": ["noble", "soldier", "knight"], "cloth": [], "crowd": true},
 	"ganfaul": {"sex": "m", "roles": ["soldier"], "cloth": [], "crowd": true},
 	"akai": {"sex": "m", "roles": ["archer"], "cloth": [], "crowd": true},
 	"brute": {"sex": "m", "roles": ["peasant", "soldier"], "cloth": ["MaleBruteA_Bottoms"], "crowd": false},
 	"uriel": {"sex": "m", "roles": ["noble", "knight"], "cloth": [], "crowd": false},
+	# Plain townsfolk in tunics and hose (Leonardo Carvalho's Fuse civilians, CC BY, by way of Sketchfab).
+	"fuse_civilian_1": {"sex": "m", "roles": ["townsfolk", "peasant"], "cloth": [], "crowd": true},
+	"fuse_civilian_2": {"sex": "m", "roles": ["townsfolk", "peasant"], "cloth": [], "crowd": true},
+	"fuse_woman_1": {"sex": "f", "roles": ["townsfolk"], "cloth": [], "crowd": true},
 	# Gowned and veiled. Her gown shares a material with her hands and shoes, so it keeps its own colour.
 	"noble_lady": {"sex": "f", "roles": ["noble"], "cloth": [], "crowd": false},
 }
 ## How often a crowd figure is a Mixamo character rather than a Quaternius
-## outfit, by station. No Mixamo character is dressed as a peasant or a cleric
-## yet, so those stay outfits; archers and nobles are all Mixamo. (A Mixamo
+## outfit, by station. The plain Fuse townsfolk stand in for peasants and
+## townsfolk; no Mixamo character is dressed as a cleric yet, so clergy stay
+## outfits; archers and nobles are all Mixamo. (A Mixamo
 ## body is the cheaper of the two: 1-4 draws against an outfit's ~9.)
-const MIXAMO_SHARE := {"peasant": 0.0, "townsfolk": 0.4, "soldier": 0.5, "archer": 1.0, "noble": 1.0, "knight": 1.0, "clergy": 0.0}
+const MIXAMO_SHARE := {"peasant": 0.35, "townsfolk": 0.6, "soldier": 0.5, "archer": 1.0, "noble": 1.0, "knight": 1.0, "clergy": 0.0}
 
 const HEAD_ONLY := preload("res://scripts/head_only.gdshader")
 
@@ -202,11 +207,17 @@ func _bodies(role: String, sex: String, coloured: bool, crowd: bool) -> Array:
 ## as one, whatever units it came in.
 func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, age := "adult", build := "average", role := "") -> Node3D:
 	var info: Dictionary = BODIES[body]
-	var person: Node3D = _scene("res://assets/people/mixamo/%s/%s.fbx" % [body, body]).instantiate()
+	var path := "res://assets/people/mixamo/%s/%s.fbx" % [body, body]
+	if not ResourceLoader.exists(path):
+		path = path.get_basename() + ".gltf"  # a Mixamo rig that came by way of Sketchfab
+	var person: Node3D = _scene(path).instantiate()
 	for n in person.get_children():
 		if n is AnimationPlayer:
 			n.free()
-	var skeleton: Skeleton3D = person.get_node("GeneralSkeleton")
+	var skeleton: Skeleton3D = person.get_node_or_null("GeneralSkeleton")
+	var nested := skeleton == null
+	if nested:
+		skeleton = person.find_child("GeneralSkeleton", true, false)
 	var armature := Node3D.new()
 	armature.name = "Armature"
 	person.add_child(armature)
@@ -214,7 +225,17 @@ func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, ag
 	var meshes := skeleton.get_children()
 	for n in [skeleton] + meshes:
 		n.owner = null
-	skeleton.reparent(armature, false)
+	if nested:
+		# Sketchfab wraps the rig in its own nodes, turned and scaled to stand
+		# up: it is lifted out as it stands, and the wrapping dropped.
+		var xf := _local_xf(person, skeleton)
+		skeleton.reparent(armature, false)
+		skeleton.transform = xf
+		for n in person.get_children():
+			if n != armature:
+				n.free()  # the empty wrapping
+	else:
+		skeleton.reparent(armature, false)
 	# The moves find the skeleton by its unique name, which needs its owner back.
 	skeleton.owner = person
 	skeleton.unique_name_in_owner = true
@@ -226,6 +247,17 @@ func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, ag
 	if role == "":
 		role = info["roles"][0]
 	return _finish(person, skeleton, rng, role, age, build, "male" if info["sex"] == "m" else "female", _height(body, skeleton, info["sex"]))
+
+
+## Where a node stands relative to an ancestor, from the transforms between them.
+static func _local_xf(top: Node, n: Node3D) -> Transform3D:
+	var xf := Transform3D.IDENTITY
+	var p: Node = n
+	while p != null and p != top:
+		if p is Node3D:
+			xf = (p as Node3D).transform * xf
+		p = p.get_parent()
+	return xf
 
 
 ## The scale that puts a Mixamo character's head where an outfit's is.
