@@ -135,6 +135,10 @@ export function decree(cmd, world) {
       if (came.length) parts.push(`gladly: ${list(came)}`);
       if (few.length) parts.push(`grudgingly: ${list(few)}`);
       if (refused.length) parts.push(`${list(refused)} ${verb(refused, "refuses", "refuse")} the summons`);
+      // The coldest refusal says why, from what that house has not forgotten.
+      const firstNo = world.players.find((p) => houseFor(p).name.replace("House ", "") === refused[0]);
+      const why = firstNo && cmd.causeOf ? cmd.causeOf(firstNo.id) : "";
+      if (why) parts.push(`${refused[0]} has not forgotten ${why}`);
       return { cost: d.cost, favour, text: `The King calls the banners. ${parts.join("; ").replace(/^./, (c) => c.toUpperCase())}.${men ? ` ${(men * 200).toLocaleString("en-US")} men march to Kingsmere.` : " No one marches."}`, lua, refused };
     }
     case "relief":

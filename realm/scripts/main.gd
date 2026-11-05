@@ -52,6 +52,8 @@ var _snowed := -1  # town count when the season was last laid on them
 
 func _ready() -> void:
 	_parse_args()
+	if _shot.has("path") or _shot.has("hq"):
+		_capture_quality()
 	# Started from a shell, macOS opens the window behind whatever is in front:
 	# bring it forward so the game is never hidden on launch. A test shot stays
 	# behind, so it never jumps in front of what you're doing.
@@ -410,6 +412,20 @@ func _input(event: InputEvent) -> void:
 					get_viewport().set_input_as_handled()
 
 
+## A still or a film is made once and looked at closely: drawn at full
+## resolution (no upscaler), with antialiasing and the finest shadows. Play keeps
+## the faster settings.
+func _capture_quality() -> void:
+	var vp := get_viewport()
+	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+	vp.scaling_3d_scale = 1.0
+	vp.msaa_3d = Viewport.MSAA_4X
+	vp.use_taa = true
+	vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+	RenderingServer.directional_shadow_atlas_set_size(8192, true)
+	RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_HIGH)
+
+
 func _parse_args() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--shot="):
@@ -451,6 +467,8 @@ func _parse_args() -> void:
 			_shot["hero"] = int(a.substr(7))
 		elif a.begins_with("--control="):
 			_shot["control"] = int(a.substr(10))
+		elif a == "--hq":
+			_shot["hq"] = true  # full-quality drawing for a film take (stills get it already)
 		elif a == "--clean":
 			_shot["clean"] = true  # no interface: stills for the intro and the launch video
 		elif a == "--settings":
@@ -598,6 +616,9 @@ func _setup_environment() -> void:
 	# the view never reaches far enough to need the outer two.
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	_try_look(OS.get_environment("GOC_LOOK"))
+	# The grade and atmosphere (look.gd, the look pass), once the scene is up.
+	if ResourceLoader.exists("res://scripts/look.gd"):
+		load("res://scripts/look.gd").apply.call_deferred(self)
 
 
 ## Trying a look from the shell, for side-by-side renders: GOC_LOOK=filmic,aces,nogi,nossao,nofog.
@@ -940,6 +961,7 @@ func _on_world(world: Dictionary) -> void:
 			print("LANES %d trees, %d ms" % [n, Time.get_ticks_msec() - t0])
 			await get_tree().process_frame
 		Engine.set_meta("stage", "countryside")
+		countryside.SEASON_SECONDS = float(world.get("turnSeconds", 20.0))
 		countryside.build(world.get("cities", []))
 		if Time.get_ticks_msec() - tt > 500:
 			print_verbose("BUILD roads+countryside %d ms" % (Time.get_ticks_msec() - tt))

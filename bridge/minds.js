@@ -133,9 +133,17 @@ export class Minds {
     this.timer = null;
   }
 
+  // Everyone's minds run to many megabytes: written at most every half minute
+  // (and on shutdown), not on every change, so the realm never stalls to save.
   save() {
+    if (this.timer) return;
+    this.timer = setTimeout(() => this.flush(), 30000);
+  }
+
+  flush() {
     clearTimeout(this.timer);
-    this.timer = setTimeout(() => fs.writeFileSync(this.file, JSON.stringify({ minds: this.minds, seen: this.seen })), 2000);
+    this.timer = null;
+    fs.writeFileSync(this.file, JSON.stringify({ minds: this.minds, seen: this.seen }));
   }
 
   now() {
@@ -448,20 +456,25 @@ export class Minds {
     this.hot[id] = Math.max(this.hot[id] ?? 0, Date.now() + SPOKEN_MS);
   }
 
-  tier(id) {
+  tier(id, tied = null) {
     const now = Date.now();
     if ((this.hot[id] ?? 0) > now) return "hot";
     const m = this.minds[id];
     if (m && (this.warm[m.town] ?? 0) > now) return "warm";
     // Tied to a hot mind: warm.
+    if (tied) return tied.has(id) ? "warm" : "cold";
     for (const h of Object.keys(this.hot)) if (this.hot[h] > now && this.minds[h]?.bonds?.[id]) return "warm";
     return "cold";
   }
 
   tiers() {
     const out = { hot: [], warm: [], cold: 0 };
+    // Who is tied to a hot mind, worked out once rather than once per mind.
+    const now = Date.now();
+    const tied = new Set();
+    for (const h of Object.keys(this.hot)) if (this.hot[h] > now) for (const b of Object.keys(this.minds[h]?.bonds ?? {})) tied.add(b);
     for (const id of Object.keys(this.minds)) {
-      const t = this.tier(id);
+      const t = this.tier(id, tied);
       if (t === "cold") out.cold++;
       else out[t].push(id);
     }

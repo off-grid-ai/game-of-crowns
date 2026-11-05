@@ -508,7 +508,7 @@ static func pile_hay(parent: Node3D, xfs: Array) -> void:
 ## crop stands full and green, the grain yellowing toward the season's end.
 ## Autumn: gold until the field's harvest day, then stubble (or, for cabbages
 ## and beans, bare earth once lifted). Winter: bare, under the snow.
-const SEASON_SECONDS := 90.0  # the realm's pace: a season every 90 seconds
+static var SEASON_SECONDS := 20.0  # the realm's pace, from the bridge (main.gd sets it with each world)
 const TINTS := {"green": Color(0.5, 0.95, 0.32), "yellowing": Color(0.85, 0.95, 0.5), "gold": Color.WHITE, "stubble": Color(0.78, 0.66, 0.46)}
 const FLAX_TINTS := {"green": Color(0.8, 1.0, 0.8), "yellowing": Color(1.0, 0.95, 0.6), "gold": Color(1.25, 0.9, 0.5), "stubble": Color(1.0, 0.8, 0.55)}
 static var _season_name := ""

@@ -915,6 +915,8 @@ func _battlefield(near: Vector3) -> Vector3:
 	return Vector3.INF
 
 
+## The most the ground may rise or fall across a field, from its centre.
+const FIELD_RISE := 0.3
 ## How far out (in rings 0.8 apart) the field is looked for.
 const RINGS := 40
 ## How far a field's edge keeps from a town's reach, and its centre from a farmstead.
@@ -949,9 +951,14 @@ func _field_cost(c: Vector3, roads) -> float:
 		if not terrain.is_land(q.x, q.z):
 			cost += 50.0
 			continue
-		cost += absf(terrain.height_at(q.x, q.z) - c.y) * 30.0
+		var rise := absf(terrain.height_at(q.x, q.z) - c.y)
 		var tile: Vector2i = terrain.tile_of(q)
-		cost += float(ROUGH_GROUND.get(terrain.tile_at(tile.x, tile.y), 0.0))
+		var kind := String(terrain.tile_at(tile.x, tile.y))
+		# A mountainside is never a battlefield: the lines can't stand on it.
+		if rise > FIELD_RISE or kind == "Mountains" or kind == "Glacier":
+			return INF
+		cost += rise * 30.0
+		cost += float(ROUGH_GROUND.get(kind, 0.0))
 		if roads and roads.on_path(q, 0.05):
 			cost += 3.0
 	return cost

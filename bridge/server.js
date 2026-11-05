@@ -51,11 +51,14 @@ let world = null;
 let scars = [];
 let history = [];
 let detailCache = { file: null, mtime: 0, data: null };
-let turnSeconds = 90;
+let turnSeconds = 20;
 let paused = false;
 // Each great house's regard for the crown (0-100), by Freeciv player id.
 let favour = {};
 const favourWhy = {};  // player id -> [{ d, why }], newest last: why each house feels as it does
+// What the King has done to each house, kept for good: favourWhy fades, a
+// house's memory of the crown does not. player id -> [{ turn, last, d, what }].
+let deeds = {};
 let court = null;
 let minds = null;
 let arcs = null;
@@ -88,11 +91,13 @@ function load(id) {
   world = chron.readJson(path.join(P.state, "world.json"));
   scars = chron.readJson(path.join(P.state, "scars.json"), []);
   detailCache = { file: null, mtime: 0, data: null };
-  turnSeconds = 90;  // one pace for every realm: a season a minute and a half
+  turnSeconds = 20;  // one pace for every realm: a season in twenty seconds, a year in under a minute and a half
   paused = meta.status !== "running";
   favour = chron.readJson(path.join(P.state, "favour.json"), {});
   for (const k of Object.keys(favourWhy)) delete favourWhy[k];
   Object.assign(favourWhy, chron.readJson(path.join(P.state, "favour-why.json"), {}));
+  deeds = chron.readJson(path.join(P.state, "deeds.json"), {});
+  for (const [k, list] of Object.entries(deeds)) if (Array.isArray(list)) for (const x of list) x.d = Math.max(-60, Math.min(60, x.d));
   // The last two years of favour and the season's income, so trends survive a restart.
   const past = chron.readJson(path.join(P.state, "favour-past.json"), {});
   for (const k of Object.keys(favourPast)) delete favourPast[k];
@@ -100,11 +105,13 @@ function load(id) {
   lastSeason.net = past.net ?? 0;
   meta.tithe ??= 0.1;
   court = new Court(P.base, record);
+  court.deedsOf = (pid) => (deeds[pid] ??= []);
   arcs = new Arcs(P.base, court, record);
   chatter?.stop();
   chatter = new Chatter(P.state, { world: () => world, turn: () => world?.turn ?? 0, minds: () => minds });
   stakes = new Stakes(P.state, record, endReign);
   rememberNames(world);
+  if (minds?.timer) minds.flush();  // the last realm's minds, written before the next is opened
   minds = new Minds(P.state, {
     world: () => world, court: () => court, tithe: () => meta.tithe,
     town: (id) => {
@@ -115,11 +122,19 @@ function load(id) {
   minds.catchUp(chronicle);
 }
 
+// The game asks every second; a reign keeps hundreds of saves. Each file's time is
+// read once, and the folder is only listed again when Freeciv has written to it.
+const savesSeen = { dir: null, mtime: 0, list: [] };
 function newestSave(kind = "") {
-  const saves = fs.readdirSync(P.saves).filter((f) => f.startsWith("realm") && f.includes(".sav") && f.includes(kind));
-  if (!saves.length) return null;
-  saves.sort((a, b) => fs.statSync(path.join(P.saves, b)).mtimeMs - fs.statSync(path.join(P.saves, a)).mtimeMs);
-  return path.join(P.saves, saves[0]);
+  const mtime = fs.statSync(P.saves).mtimeMs;
+  if (savesSeen.dir !== P.saves || savesSeen.mtime !== mtime) {
+    savesSeen.list = fs.readdirSync(P.saves).filter((f) => f.startsWith("realm") && f.includes(".sav"))
+      .map((f) => ({ f, t: fs.statSync(path.join(P.saves, f)).mtimeMs })).sort((a, b) => b.t - a.t);
+    savesSeen.dir = P.saves;
+    savesSeen.mtime = mtime;
+  }
+  const hit = savesSeen.list.find((x) => x.f.includes(kind));
+  return hit ? path.join(P.saves, hit.f) : null;
 }
 
 // Details only the save file holds (food stores, construction, orders, wars),
@@ -301,6 +316,7 @@ function applyStartOptions() {
     const lean = LEAN[houseFor(p).name] ?? 0;
     favour[p.id] = restingFavour(p);
     favourWhy[p.id] = [];
+    deeds[p.id] = [];
     noteFavour(p.id, ({ loyal: 19, wary: 0, resentful: -21 }[o.trust] ?? 0), "the realm's mood at your crowning");
     noteFavour(p.id, lean, lean > 0 ? "their old loyalty to the crown" : "their old grievances against the crown");
   }
@@ -385,6 +401,8 @@ function rule(id, option) {
   }
   out.lua.forEach((l) => send(`lua cmd ${l}`));
   const effects = shiftAndTell(out.favour, "your ruling at court", out.cost);
+  // Every ruling is told, even one whose answer has no words of its own written for it.
+  if (!String(out.text ?? "").trim()) out.text = `The King gives his answer${petition ? ` to ${petition.name}` : ""}: ${String(asked?.label ?? option).replace(/ \(.*\)$/, "").toLowerCase()}.`;
   record({ turn: world.turn, kind: "decree", text: out.text });
   rulingScene(id, option, out);
   return { ok: true, text: crowns(out.text) + (effects ? `\n${effects}` : "") };
@@ -465,7 +483,7 @@ async function runSeason() {
   if (!world || seasonRunning || !court) return;
   seasonRunning = true;
   try {
-    await court.season(world, { favour: favourOf, warded: (pid) => (stakes?.s.wards?.[pid] ?? -1) > (world?.turn ?? 0), send: (l) => send(`lua cmd ${l}`), shift: shiftFavour, watched: isWatched(), options: meta.options ?? {} });
+    await court.season(world, { favour: favourOf, cause: causeOf, warded: (pid) => (stakes?.s.wards?.[pid] ?? -1) > (world?.turn ?? 0), send: (l) => send(`lua cmd ${l}`), shift: shiftFavour, watched: isWatched(), options: meta.options ?? {} });
   } catch (err) {
     console.error("season:", err);
   } finally {
@@ -505,6 +523,7 @@ async function runArcs(n = 1, start = true) {
 function saveFavour() {
   fs.writeFileSync(path.join(P.state, "favour.json"), JSON.stringify(favour));
   fs.writeFileSync(path.join(P.state, "favour-why.json"), JSON.stringify(favourWhy));
+  fs.writeFileSync(path.join(P.state, "deeds.json"), JSON.stringify(deeds));
   fs.writeFileSync(path.join(P.state, "favour-past.json"), JSON.stringify({ byTurn: favourPast, net: lastSeason.net }));
 }
 
@@ -653,8 +672,51 @@ function counsel(players, cities, threat) {
 // Why each house feels as it does: the last few things that moved its favour,
 // shown to the King like a ledger of grievances and kindnesses.
 
+// What a cause means as a deed the lord would name, said to the King's face:
+// [when it warmed them, when it cooled them]. Only the King's own acts count.
+const DEED_WORDS = {
+  "a gift of crowns": ["sent us a chest of gold", null],
+  "a feast in their honour": ["feasted us before the whole court", null],
+  "grain from the crown": ["fed our people when they starved", null],
+  "a building paid by the crown": ["paid for stone in our town", null],
+  "a town granted or taken": ["granted us a town", "took a town that was ours"],
+  "a royal match": ["wed our blood into a great house", "married off our blood against our wishes"],
+  "the King's peace": ["kept the peace for us", "forced a peace on us"],
+  "the King took a side": ["took our side in war", "took our enemy's side in war"],
+  "the King's peace, kept by another house": ["sent a house to keep our peace", "set another house over our quarrel"],
+  "their heir taken as the King's ward": ["raised our heir at court", "took our heir from us"],
+  "your ruling at court": ["ruled for us at court", "ruled against us at court"],
+  "shamed over the crown's loan": [null, "shamed us over the crown's loan"],
+  "left unheard at court": [null, "left us waiting at court and never answered"],
+  "the royal tithe": [null, "bled us with the tithe"],
+};
+
+// A deed the house will not forget. The same deed again adds to the old one;
+// a house keeps its eight weightiest, so a great grudge never slips away.
+function recordDeed(id, d, why, turn) {
+  const what = DEED_WORDS[why]?.[d > 0 ? 0 : 1];
+  if (!what || !turn) return;
+  const list = (deeds[id] ??= []);
+  const same = list.find((x) => x.what === what);
+  // Done again, it weighs more, up to a point: a lifetime of tithes is one great grudge, not a number without end.
+  if (same) { same.d = Math.max(-60, Math.min(60, same.d + d)); same.last = turn; }
+  else list.push({ turn, last: turn, d, what });
+  if (list.length > 8) deeds[id] = list.sort((a, b) => Math.abs(b.d) - Math.abs(a.d)).slice(0, 8).sort((a, b) => a.turn - b.turn);
+}
+
+// "the winter of 352, when the King took a town that was theirs": the
+// house's sharpest grievance, for the chronicle to name as the cause.
+const theirs = (t) => t.replace(/\bours\b/g, "theirs").replace(/\bour\b/g, "their").replace(/\bus\b/g, "them");
+function causeOf(id) {
+  const worst = (deeds[id] ?? []).filter((x) => x.d <= -8).sort((a, b) => a.d - b.d)[0];
+  if (!worst) return "";
+  const when = calendar(worst.turn);
+  return `the ${when.season} of ${when.year}, when the King ${theirs(worst.what)}`;
+}
+
 function noteFavour(id, d, why) {
   if (!d || !why) return;
+  if (Math.abs(d) >= 8 && why !== "the royal tithe") recordDeed(id, d, why, world?.turn);
   const list = (favourWhy[id] ??= []);
   const same = list.find((x) => x.why === why);
   if (same) same.d += d;  // the same cause again adds up, not repeats
@@ -720,8 +782,14 @@ function collectTithe(turn) {
     // Favour drifts back toward the house's own temper, minus the tithe's wear.
     favour[p.id] = clampFavour(before + (restingFavour(p) - before) * 0.03 - wear);
     if (wear) noteFavour(p.id, -wear, "the royal tithe");
+    // A heavy tithe, year on year, becomes a deed of its own: what a house paid
+    // in a year it remembers at the year's end.
+    const pain = (deeds._tithe ??= {});
+    pain[p.id] = (pain[p.id] ?? 0) + wear;
+    if (turn % 4 === 0) { if (pain[p.id] >= 3) recordDeed(p.id, -pain[p.id], "the royal tithe", turn - 1); pain[p.id] = 0; }
     if (before >= 20 && favour[p.id] < 20) {
-      record({ turn, kind: "unrest", text: `${houseFor(p).name} speaks openly against the crown. Their loyalty hangs by a thread.` });
+      const why = causeOf(p.id);
+      record({ turn, kind: "unrest", text: `${houseFor(p).name} speaks openly against the crown. Their loyalty hangs by a thread.${why ? ` They have not forgotten ${why}.` : ""}` });
     }
   }
   saveFavour();
@@ -856,6 +924,7 @@ setInterval(() => {
 
 function shutdown() {
   if (meta) chron.saveMeta(meta);
+  try { minds?.flush?.(); } catch (err) { console.error("minds flush:", err); }
   switching = true;
   stopFreeciv().then(() => process.exit(0));
   setTimeout(() => process.exit(0), 8000);
@@ -1096,7 +1165,7 @@ http.createServer(async (req, res) => {
         }
       }
     }
-    const result = decree({ ...cmd, favourOf, usurper: stakes?.s.usurper, seat: stakes?.s.seat }, world);
+    const result = decree({ ...cmd, favourOf, causeOf, usurper: stakes?.s.usurper, seat: stakes?.s.seat }, world);
     if (result.error) return json(res, 400, result);
     if (result.endUsurper && stakes) { stakes.s.usurper.stage = "none"; stakes.save(); }
     if (result.relieved != null) { (meta.relieved ??= {})[result.relieved] = world.turn ?? 0; chron.saveMeta(meta); }

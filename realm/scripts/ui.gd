@@ -1376,6 +1376,8 @@ func offer_watch(text: String, go: Callable) -> void:
 
 
 func toast(text: String) -> void:
+	if text.strip_edges() == "":
+		return  # nothing to say: no empty card
 	_toast.text = text
 	_toast_time = 7.0  # long enough to read a sentence or two
 	_toast_result = true
@@ -1384,7 +1386,7 @@ func toast(text: String) -> void:
 ## A caption for what the camera shows ("The King's rider, bound for Stormwatch"):
 ## never over the result of the King's own order while that is still up.
 func caption(text: String) -> void:
-	if _toast_result and _toast_time > 0.5:
+	if text.strip_edges() == "" or (_toast_result and _toast_time > 0.5):
 		return
 	_toast.text = text
 	_toast_time = 5.0
@@ -1510,7 +1512,7 @@ func _show_counsel(items: Array) -> void:
 	items = items.filter(func(it):
 		for a in it.get("acts", []):
 			var k := String(a.get("war", ""))
-			if k != "" and _sat_out.has(k) and Time.get_ticks_msec() - int(_sat_out[k]) < 4 * 90 * 1000:
+			if k != "" and _sat_out.has(k) and Time.get_ticks_msec() - int(_sat_out[k]) < 4 * _season_s * 1000.0:
 				return false
 		return true)
 	var sig := JSON.stringify(items)
@@ -1677,7 +1679,11 @@ var _standing: Label  # "4 of 6 great houses would answer your banners"
 var _was_united := -1  # -1 until the first reading, so a reign already won doesn't announce itself on load
 
 
+var _season_s := 20.0  # seconds a season lasts, from the bridge
+
+
 func set_world(world: Dictionary, houses: Dictionary) -> void:
+	_season_s = float(world.get("turnSeconds", _season_s))
 	if _standing:
 		var great := (world.get("players", []) as Array).filter(func(p): return p.get("favour") != null)
 		var with_me := great.filter(func(p): return float(p["favour"]) >= 35.0).size()

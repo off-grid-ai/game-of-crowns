@@ -57,10 +57,9 @@ func _process(_delta: float) -> void:
 			box.visible = false
 			continue
 		_refresh(tag, data)
-		var life: Node = towns.towns[id]["node"].get_node_or_null("Life")
-		var doing: String = life.get_meta("doing", "") if life else ""
-		tag["doing"].text = doing
-		tag["doing"].visible = doing != "" and d < 60.0
+		# What a town is building or raising is on its card, in words; the map
+		# carries names only, never the engine's progress ("Choosing envoys · 50%").
+		tag["doing"].visible = false
 		var p := cam.unproject_position(at)
 		var size := box.get_combined_minimum_size()
 		var rect := Rect2(p - Vector2(size.x * 0.5, size.y), size)
