@@ -14,17 +14,17 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 
 | Ask | Status |
 |---|---|
-| Lords keep a lasting record of the King's deeds | Approved by Mac ("Do all of it"); in progress (main session) |
-| A lord brings a year-old deed up at court in his own words | Approved; in progress |
-| The chronicle names the cause when a house cools, rebels or refuses the banners | Approved; in progress |
-| Seasons 20 s instead of 90 s | Approved; in progress |
+| Lords keep a lasting record of the King's deeds | **Shipped** beb839b (pushed) |
+| A lord brings a year-old deed up at court in his own words | **Shipped** beb839b (seen in the bridge: Bryony Thornvale on the tithe) |
+| The chronicle names the cause when a house cools, rebels or refuses the banners | **Shipped** beb839b |
+| Seasons 20 s instead of 90 s | **Shipped** beb839b (long reigns: Freeciv itself still takes 30–60 s a season, open) |
 | Repo public | **Shipped** 11-05 13:09 (Mac approved; secrets scan clean) |
 | Signed and notarised Mac dmg + GitHub Release | **Shipped** 11-05 14:03: v0.1-20261105-622eb2d, pre-release, notarised Developer ID (packaging/release-mac.sh) |
 | First-run: the model becomes an opt-in ("Give the lords their own words? 1.8 GB") instead of an automatic download; the first reign shows a lord remembering (works by rules) | Proposed (revised 11-05 after Mac asked why the model is needed) |
 | A 20–30 s clip of a lord remembering | Proposed (after the lord work lands) |
 | Windows build | Dropped for now (Mac 11-05: Mac only until demand is proven) |
-| First-impression fixes 1–3 (sunk people, captions, map progress text) | In progress (main session; captions already fixed in 3e0517c) |
-| Look pass #1: capture profile (`--hq`, full res, MSAA+TAA, 8192 shadows) | Built by the main session, not yet committed |
+| First-impression fixes 1–3 (sunk people, captions, map progress text) | Captions (3e0517c) and map text (beb839b) shipped; sunk people in progress (main session diagnosing with close stills) |
+| Look pass #1: capture profile (`--hq`, full res, MSAA+TAA, 8192 shadows) | **Shipped** beb839b |
 | Look pass #2–4 and fixes 4–13 (grade, ground, buildings in the land, smoke, people) | Approved by Mac (started the session); in progress (look-pass session) |
 | Friends as lords (naming screen; later Discord names) | Proposed, parked (later) |
 | Saga card at the end of a reign | Proposed, parked |
@@ -37,11 +37,15 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 - **Look-pass session (local_07cac2ca):** grade, ground, buildings, smoke, people, with before/after renders.
 - **Explainer:** pass 2 planned (PASS2.md: 70% world, memory one beat); holding takes until the look pass and the main session's fixes are pushed.
 - **Main session:** testing the lord work in Mac's relaunched game; then close-up stills (docs/buzz/images/zoom/live/) and the first-impression fixes 1–3 (docs/buzz/first-impression.md) before pushing.
-- **Main session:** the four approved lord and pace changes (not yet committed).
 - **Explainer session (goc-explainer):** briefed 11-05 13:25 by the buzz session: a 20–30 s clip of a lord remembering and a 60–90 s explainer, after the lord work lands; files to docs/buzz/video/.
 - **Buzz session:** this ledger, the supervisor, drafts for the channels once the dmg exists.
 
 ## Runs
+
+### 11-05 16:45
+**Shipped (beb839b, pushed):** every house keeps a lasting record of what the King did to it, and a lord raises a year-old deed at court; 20 s seasons; bridge stall fixes (30/30 fast replies over 10 min); no battles on mountainsides; no empty notice card; no progress text on the map; the full-quality capture profile (`--hq`); the look.gd hook. Also the explainer's commits (0e6e3e2, d3641af, 53e74a0, c39aa26, 21c3759, 4a6671f).
+**Moved:** cutting v0.2 from beb839b now (packaging/release-mac.sh).
+**Open:** people sunk in the ground (main session diagnosing); Freeciv 30–60 s a season in long reigns.
 
 ### 11-05 16:04
 **Shipped:** explainer cuts committed as source (0e6e3e2; renders stay out of git). Downloads: 1.
