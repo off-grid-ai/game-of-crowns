@@ -55,6 +55,10 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 
 ## Runs
 
+### 11-05 19:20
+**Moved:** itch processed the v0.3 build (channel mac, 0.3-0f052ff). The page is still a draft (public URL 404). Downloads: GitHub 2.
+**Needs Mac:** itch images and Publish; then post r/macgaming.
+
 ### 11-05 19:05
 **Moved:** v0.3 dmg uploaded to itch with butler (alichherawalla/game-of-crowns, channel mac); itch is processing it. Left for Mac on itch: the cover and screenshots (docs/buzz/images/itch/), then Publish.
 
