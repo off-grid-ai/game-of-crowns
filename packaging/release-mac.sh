@@ -10,12 +10,14 @@
 #
 # Needs: a Developer ID Application identity in the keychain, and for notarisation
 #   APPLE_API_KEY (path to the .p8), APPLE_API_KEY_ID, APPLE_API_ISSUER
-# Usage: packaging/release-mac.sh [--prerelease] [commit]   (commit: a pushed commit; default origin/main)
+# Usage: packaging/release-mac.sh [--prerelease] [--version X.Y] [commit]   (commit: a pushed commit; default origin/main)
+# --version stamps the build with X.Y (realm/export_presets.cfg in the scratch copy) and records it in this working copy.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT="$PWD"
 REPO=off-grid-ai/game-of-crowns
 FLAG=""; [ "${1:-}" = "--prerelease" ] && { FLAG="--prerelease"; shift; }
+STAMP=""; [ "${1:-}" = "--version" ] && { STAMP="$2"; shift 2; }
 WANT="${1:-origin/main}"
 
 for v in APPLE_API_KEY APPLE_API_KEY_ID APPLE_API_ISSUER; do
@@ -32,6 +34,9 @@ echo "==> Building $SHA"
 git archive "$FULL" | tar -x -C "$SRC"
 # The packaging tools come from this working copy, so a fix to them applies before it is pushed.
 cp "$ROOT/packaging/build-mac.sh" "$SRC/packaging/build-mac.sh"
+if [ -n "$STAMP" ]; then
+  sed -i '' -E "s/^(application\/(short_)?version=)\"[^\"]*\"/\1\"$STAMP\"/" "$SRC/realm/export_presets.cfg"
+fi
 
 echo "==> Art and import cache (hard links)"
 git ls-files -o -i --exclude-standard realm/assets > "$SRC/.art-list"
@@ -46,11 +51,15 @@ DMG=$(ls "$SRC"/build/Game-of-Crowns-*-arm64.dmg)
 spctl -a -vv -t open --context context:primary-signature "$DMG"
 xcrun stapler validate "$DMG"
 
-VERSION=$(sed -n 's/^application\/short_version="\(.*\)"/\1/p' realm/export_presets.cfg)
+VERSION=$(sed -n 's/^application\/short_version="\(.*\)"/\1/p' "$SRC/realm/export_presets.cfg")
 TAG="v$VERSION-$(date +%Y%m%d)-$SHA"
 echo "==> Release $TAG"
 gh release create "$TAG" "$DMG" $FLAG -R "$REPO" --target "$FULL" \
   --title "Game of Crowns $VERSION ($SHA)" \
   --notes "Free, nothing locked. For Macs with Apple Silicon. Open the dmg and drag Game of Crowns to Applications. Want the lords to speak in their own words? Run Off Grid AI (https://getoffgridai.co/desktop) alongside it."
 mkdir -p build && cp "$DMG" build/
+if [ -n "$STAMP" ]; then
+  sed -i '' -E "s/^(application\/(short_)?version=)\"[^\"]*\"/\1\"$STAMP\"/" realm/export_presets.cfg
+  git commit -q -m "Version $STAMP (released as $TAG)" -- realm/export_presets.cfg || true
+fi
 echo "==> Done: https://github.com/$REPO/releases/tag/$TAG"
