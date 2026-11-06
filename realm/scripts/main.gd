@@ -1432,6 +1432,7 @@ func _tell_the_story() -> void:
 		_back_to_menu = false
 		ui.visible = not title.visible and not _shot.has("clean")
 		labels.visible = ui.visible, CONNECT_ONE_SHOT)
+	intro.watching = _back_to_menu
 	intro.play(houses, seats)
 var _opened_in_intro := false  # a chronicle was opened while the intro played: no menu after it
 var _back_to_menu := false  # the intro was asked for from the menu: the menu comes back after it

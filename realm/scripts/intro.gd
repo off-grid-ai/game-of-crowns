@@ -40,6 +40,7 @@ const TIPS := [
 
 var say := Callable()  # (text) -> void: a voice for each page; unset, the intro is read, not narrated
 var ready_check := Callable()  # () -> bool: the realm is built and can be shown
+var watching := false  # watched from the menu, not the loading screen: it ends after the last page, and Esc leaves
 var _pages: Array = []  # [still, title, line, house, keys, atlas uv, atlas zoom]
 var _page := -1
 var _image: TextureRect
@@ -172,24 +173,30 @@ func _build() -> void:
 	_keys.add_theme_color_override("font_color", T.ACCENT)
 	box.add_child(_keys)
 	_hint = T.label("")
+	# Right-aligned at the caption's margin, growing leftward so a long hint
+	# never runs off the screen.
 	_hint.anchor_left = 1.0
 	_hint.anchor_right = 1.0
-	_hint.offset_left = -360
-	_hint.offset_right = -40
-	_hint.offset_top = 32
+	_hint.offset_left = -72
+	_hint.offset_right = -72
+	_hint.offset_top = 48
+	_hint.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(_hint)
 
 
 func _process(_delta: float) -> void:
 	if visible and _hint:
-		_hint.text = ("Click or press any key to begin" if _is_ready() else "The realm is forming… click for the next page").to_upper()
+		var words := "Click for the next page  ·  Esc to return to the menu" if watching \
+			else "Click or press any key to begin" if _is_ready() \
+			else "The realm is forming…  click for the next page"
+		_hint.text = words.to_upper()
 
 
 func _next() -> void:
 	_page += 1
 	if _page >= _pages.size():
-		if _is_ready():
+		if watching or _is_ready():
 			_end()
 			return
 		# Still forming: go round the tips again.
@@ -279,7 +286,12 @@ func _input(event: InputEvent) -> void:
 		return
 	if (event is InputEventKey and event.pressed and not event.echo) or (event is InputEventMouseButton and event.pressed):
 		get_viewport().set_input_as_handled()
-		if _is_ready():
+		if watching:
+			if event is InputEventKey and event.keycode == KEY_ESCAPE:
+				_end()
+			else:
+				_next()
+		elif _is_ready():
 			_end()
 		else:
 			_next()
