@@ -536,7 +536,6 @@ func show_new() -> void:
 	_choices(left, "The royal treasury", [["Poor · 15k", "poor"], ["Comfortable · 50k", "comfortable"], ["Rich · 150k", "rich"]], _wealth, func(v): _wealth = v)
 	_choices(left, "The royal host at the start", [["A few loyal men", "small"], ["A garrison", "standard"], ["A great host", "strong"]], _opt["host"], func(v): _opt["host"] = v)
 	_choices(left, "Lords at court each season", [["Seldom", "rare"], ["Some", "normal"], ["Many", "often"]], _opt["petitions"], func(v): _opt["petitions"] = v)
-	_choices(left, "The tongue people speak to you in", [["English", "en"], ["Français", "fr"], ["Deutsch", "de"], ["Español", "es"], ["Italiano", "it"], ["Português", "pt"], ["हिन्दी", "hi"]], _opt["language"], func(v): _opt["language"] = v)
 	left.add_child(_label("The opening mood, in your own words", 15, MUTED))
 	_mood_edit = LineEdit.new()
 	_mood_edit.placeholder_text = "e.g. a fragile peace after a long war; the North trusts no one"
@@ -995,7 +994,6 @@ func show_settings() -> void:
 		var o: Dictionary = d["options"]
 		var apply := func(key: String, value) -> void:
 			bridge.set_reign_options({key: value}, func(_c, _r): pass)
-		_choices(col, "The tongue people speak to you in", [["English", "en"], ["Français", "fr"], ["Deutsch", "de"], ["Español", "es"], ["Italiano", "it"], ["Português", "pt"], ["हिन्दी", "hi"]], o.get("language", "en"), func(v): apply.call("language", v))
 		_choices(col, "Floods, fires and famine", [["None", "none"], ["Gentle", "gentle"], ["Normal", "normal"], ["Cruel", "cruel"]], o.get("disasters", "normal"), func(v): apply.call("disasters", v))
 		_choices(col, "Raiders from the wilds", [["None", "none"], ["Some", "normal"], ["Hordes", "hordes"]], o.get("raiders", "normal"), func(v): apply.call("raiders", v))
 		_choices(col, "The dead beyond the wall", [["Never", "off"], ["Late", "late"], ["In time", "normal"], ["Soon", "soon"]], o.get("dead", "normal"), func(v): apply.call("dead", v))
@@ -1137,7 +1135,6 @@ func _voice_settings(right: Control) -> void:
 			if main and main.sound:
 				main.sound.set_volume({"vol_master": "Master", "vol_music": "Music"}.get(key, "Ambience"), v))
 		right.add_child(sl)
-	_choices(right, "When you talk with people", [["Type", "type"], ["Speak (hands-free)", "speak"]], Settings.get_value("talk"), func(v): Settings.set_value("talk", v))
 	_section(right, "The local model")
 	var ai := _label("Asking Off Grid AI…", 14, MUTED)
 	right.add_child(ai)
