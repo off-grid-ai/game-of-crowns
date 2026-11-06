@@ -107,7 +107,16 @@ func _build() -> void:
 	_page = VBoxContainer.new()
 	_page.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_page.add_theme_constant_override("separation", 14)
-	_scroll.add_child(_page)
+	# Held clear of the scrollbar and the panel's edges: cards and their buttons
+	# never run into the bar.
+	var gutter := MarginContainer.new()
+	gutter.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	gutter.add_theme_constant_override("margin_right", 28)
+	gutter.add_theme_constant_override("margin_left", 4)
+	gutter.add_theme_constant_override("margin_top", 4)
+	gutter.add_theme_constant_override("margin_bottom", 16)
+	gutter.add_child(_page)
+	_scroll.add_child(gutter)
 
 
 func _chapter(text: String, id: int, house: Dictionary) -> void:
