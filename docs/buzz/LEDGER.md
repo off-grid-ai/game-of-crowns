@@ -5,7 +5,7 @@ Kept by the downloads supervisor (every 15 minutes in the buzz session). Goal: g
 ## Needs Mac
 - **Disk:** Mac freed ~20 GB; the 0.4 release build is running.
 - **Promo art:** prompts for Codex in docs/buzz/asset-prompts.md (GitHub social preview, itch.io cover, key art). The social preview has to be set by hand in the repo's Settings.
-- **itch.io (today, 18:40 IST):** cover, eight screenshots, 0.4 description and the launch devlog (draft) are ready. Mac: paste the trailer link if the clip is up, then Publish the page and the devlog.
+- **itch.io (today, 18:40 IST):** the 0.5 build is live on the channel; cover, eight screenshots, 0.5 description and the launch devlog (draft) are ready. Mac: paste the trailer link if the clip is up, then Publish the page and the devlog.
 - **Launch is today, 6 Nov (Mac's call), runbook in docs/buzz/launch-today.md:** Mac posts r/macgaming at 19:00 IST, r/IndieGaming and r/godot at 19:20, sends creator emails from 19:30, and replies all evening. AppleGamingWiki page this week.
 - **The lady's licence:** confirm the Sketchfab ownership claim for 'Princess Nun Royal Queen' (b9f22ea). A licence question only: .gitignore keeps body files out of git, so pushes publish no model files.
 - **Approve the rest of the list below** (everything marked "proposed").
@@ -56,6 +56,8 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 - **Buzz session:** this ledger, the supervisor, drafts for the channels once the dmg exists.
 
 ## Runs
+
+**2026-11-06 17:55:** Shipped: 0.5 released (v0.5-20261106-f5ba354: court fix, notarised, both hook clips attached); 15a45cf (README as a sales page). Moved: the 0.5 dmg is on itch (channel mac, build #2312884, labelled 0.5; Gatekeeper: Notarized Developer ID). Left: Mac's Publish on itch (page and devlog) at 18:40, then the posts.
 
 **2026-11-06 17:38:** Shipped: e9ba53d (README: the throne-hall painting on top, a trailer preview linking the full clip, the seven houses in their paintings). Moved: the 0.5 release build is running (scratch folder up, 18G free). Blocks: the 0.5 release (due ~18:00), then Mac's Publish on itch at 18:40. Downloads: GitHub 3.
 
