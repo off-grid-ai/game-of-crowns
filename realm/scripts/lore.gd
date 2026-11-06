@@ -295,7 +295,7 @@ func _live_map() -> Control:
 	var view: Control = preload("res://scripts/realm_map.gd").new()
 	# Shaped like the map itself, so the whole realm fills it exactly.
 	var h := maxf(420.0, get_viewport().get_visible_rect().size.y - 520.0)  # the whole map on the page, under its title
-	view.custom_minimum_size = Vector2(h * 3040.0 / 4800.0, h)
+	view.custom_minimum_size = Vector2(h * 896.0 / 1408.0, h)
 	view.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	view.data = _map
 	view.mark = _mark

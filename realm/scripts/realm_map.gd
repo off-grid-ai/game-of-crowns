@@ -24,7 +24,10 @@ var max_zoom := 6.0
 var center := Vector2(27.5, 43.5)  # the tile at the middle of the view
 var mark := ""  # a town ringed in gold
 
-var _atlas: Texture2D = load("res://assets/maps/atlas.png")
+# The realm's painted relief (the minimap's own): shaded hills, forests, snow,
+# graded sea. The flat atlas only where it's missing.
+var _atlas: Texture2D = load("res://assets/maps/belia-map.png") if ResourceLoader.exists("res://assets/maps/belia-map.png") else load("res://assets/maps/atlas.png")
+var _aspect := float(_atlas.get_width()) / float(_atlas.get_height()) if _atlas else 3040.0 / 4800.0
 var _sea := Color(0.2, 0.33, 0.52)  # the painting's own open sea, in case an edge ever shows
 var _lands_tex: Texture2D
 var _hover := ""
@@ -48,7 +51,7 @@ func tiles() -> Vector2:
 
 ## The whole map's size on screen.
 func _map_size() -> Vector2:
-	return Vector2(size.y * 3040.0 / 4800.0, size.y) * zoom
+	return Vector2(size.y * _aspect, size.y) * zoom
 
 
 func to_screen(tx: float, ty: float) -> Vector2:
@@ -63,7 +66,7 @@ func to_tile(p: Vector2) -> Vector2:
 ## As far out as the map goes: it fills the view, never less, so nothing past
 ## its edges ever shows.
 func min_zoom() -> float:
-	return maxf(1.0, size.x / maxf(1.0, size.y * 3040.0 / 4800.0))
+	return maxf(1.0, size.x / maxf(1.0, size.y * _aspect))
 
 
 ## The view kept on the map: no sea past its edges, wherever you drag.
@@ -129,26 +132,9 @@ func _draw() -> void:
 	if _lands_tex == null and not data.is_empty():
 		_lands_tex = _lands_of()
 	if _lands_tex:
-		draw_texture_rect(_lands_tex, Rect2(origin, ms), false, Color(1, 1, 1, 0.32))
+		draw_texture_rect(_lands_tex, Rect2(origin, ms), false, Color(1, 1, 1, 0.2))  # a wash, the land showing through
 	var font: Font = T.get_theme().default_font
-	# Roads: neighbouring road tiles joined, corners cut only where the road
-	# doesn't already turn through a side tile (no crosses in a block of four).
-	var roads: Array = data.get("roads", [])
-	var on := {}
-	for r in roads:
-		on[Vector2i(int(r[0]), int(r[1]))] = true
-	var road_col := Color(0.42, 0.27, 0.14, 0.85)
-	for i in roads.size():
-		for j in range(i + 1, roads.size()):
-			var a: Array = roads[i]
-			var c: Array = roads[j]
-			var dx := absi(int(a[0]) - int(c[0]))
-			var dy := absi(int(a[1]) - int(c[1]))
-			if dx > 1 or dy > 1:
-				continue
-			if dx == 1 and dy == 1 and (on.has(Vector2i(int(a[0]), int(c[1]))) or on.has(Vector2i(int(c[0]), int(a[1])))):
-				continue
-			draw_line(to_screen(float(a[0]), float(a[1])), to_screen(float(c[0]), float(c[1])), road_col, 1.5 + zoom * 0.5, true)
+	# No road lines: the roads are tiles, and joined they drew brackets, not routes.
 	var named := zoom >= 1.8  # every town named once you're close
 	for t in data.get("towns", []):
 		var at := to_screen(float(t["x"]), float(t["y"]))
@@ -157,37 +143,34 @@ func _draw() -> void:
 		var col := Color.from_string(String(t.get("color", "#888")), Color.GRAY)
 		var seat: bool = t.get("capital", false)
 		var marked: bool = String(t["title"]) == mark or String(t["title"]) == _hover
-		var r := (6.0 if seat else 3.2) * (1.0 + (zoom - 1.0) * 0.25)
+		var r := (4.5 if seat else 2.4) * (1.0 + (zoom - 1.0) * 0.15)
 		if t.get("besieged", false):  # a host at the walls
 			draw_arc(at, r + 5.0, 0.0, TAU, 32, Color(0.85, 0.22, 0.16), 2.5, true)
 		if marked:
 			draw_arc(at, r + 8.0, 0.0, TAU, 32, T.ACCENT, 3.0, true)
-		draw_circle(at, r + 1.5, Color(0, 0, 0, 0.55))
-		draw_circle(at, r, col.lerp(Color.WHITE, 0.25))
+		draw_circle(at, r + 1.2, Color(0.08, 0.06, 0.04, 0.85))
+		draw_circle(at, r, col.lerp(Color(0.92, 0.88, 0.78), 0.2))
 		if seat or named or marked:
-			var fs := (15 if seat else 13) + int(minf(zoom, 6.0))
+			var fs := (15 if seat else 12) + int(minf(zoom, 4.0) * 0.5)
 			var pos := at + Vector2(r + 5.0, 5.0)
-			draw_string_outline(font, pos, String(t["title"]), HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 5, Color(0, 0, 0, 0.8))
+			draw_string_outline(font, pos, String(t["title"]), HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 3, Color(0.06, 0.05, 0.03, 0.75))
 			draw_string(font, pos, String(t["title"]), HORIZONTAL_ALIGNMENT_LEFT, -1, fs, T.ACCENT if marked else T.TEXT)
-	# Hosts in the field: the house's sigil on a banner of its colour, and how
-	# many companies march under it.
+	# Hosts in the field: the house's sigil, dark-edged, and how many companies
+	# march under it.
 	for g in data.get("armies", []):
 		var at := to_screen(float(g["x"]), float(g["y"]))
 		if not Rect2(Vector2.ZERO, size).grow(60).has_point(at):
 			continue
-		var col := Color.from_string(String(g.get("color", "#888")), Color.GRAY)
-		var s := 20.0 + minf(zoom, 6.0) * 2.0
-		var flag := Rect2(at - Vector2(s * 0.5, s * 1.3), Vector2(s, s))
-		draw_line(at, at - Vector2(0, s * 1.3), Color(0.1, 0.08, 0.06), 2.0, true)
-		draw_rect(flag.grow(1.5), Color(0, 0, 0, 0.6))
-		draw_rect(flag, col)
+		var s := 22.0 + minf(zoom, 4.0) * 2.0
+		var box := Rect2(at - Vector2(s, s) * 0.5, Vector2(s, s))
 		var sig := Heraldry.sigil({"name": g.get("key", g.get("house", "")), "sigil": g.get("sigil", ""), "crown": g.get("crown", false)})
 		if sig:
-			draw_texture_rect(sig, flag.grow(-3.0), false, Color(1, 1, 1, 0.92))
+			draw_texture_rect(sig, box.grow(1.5), false, Color(0, 0, 0, 0.7))
+			draw_texture_rect(sig, box, false, Color.from_string(String(g.get("color", "#ddd")), Color.WHITE).lerp(Color.WHITE, 0.35))
 		var n := str(int(g.get("companies", 1)))
-		var np := at + Vector2(s * 0.5 + 3.0, -s * 0.4)
-		draw_string_outline(font, np, n, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, 4, Color(0, 0, 0, 0.8))
-		draw_string(font, np, n, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, T.TEXT)
+		var np := at + Vector2(s * 0.5 + 3.0, s * 0.25)
+		draw_string_outline(font, np, n, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, 3, Color(0.06, 0.05, 0.03, 0.75))
+		draw_string(font, np, n, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, T.TEXT)
 
 
 ## Each house's lands: every land tile shaded in the colour of the nearest
