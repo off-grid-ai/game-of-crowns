@@ -35,20 +35,18 @@ Mac's call: "we're gonna launch today." This replaces launch.md's 8 December dat
 ## r/macgaming (19:00)
 Video post: upload docs/buzz/video/game-of-crowns-0.4-hook-16x9.mp4. Flair: "Self promotion".
 
-**Title:** Free on Apple Silicon: I made a game where you find out what kind of king you'd be
+**Title:** Free on Apple Silicon: find out what kind of king you'd be
 
-Seven great houses farm, scheme, marry and go to war on their own, and every one of them wants your throne. You can't move a single soldier, so you hold on with grain, gold and judgement at court. When your reign ends, history names you for how you ruled: the Golden, the Bloody, the Meddler, or the Deposed.
+You're the king, and seven great houses want your throne. All you've got to hold onto it is grain, gold and your word at court. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed.
 
-A season passes every twenty seconds, so five minutes covers nearly four years of politics.
-
-It's version 0.5, free with nothing locked, native on Apple Silicon, signed and notarised: https://alichherawalla.itch.io/game-of-crowns
+It's version 0.5, free with nothing locked, and native on Apple Silicon: https://alichherawalla.itch.io/game-of-crowns
 
 It's early. What do you think history would call you?
 
 ## r/IndieGaming (21:00)
-**Title:** I made a free kingdom sim where history names you for how you ruled: the Golden, the Bloody, the Meddler or the Deposed
+**Title:** My free kingdom game names you for how you ruled: the Golden, the Bloody, or worse, the Deposed
 
-Seven great houses farm, scheme, marry and go to war on their own, and every one of them wants your throne. You're the King, and you can't move a single soldier, so you rule through the court, taxes, grain and marriages. Keep the peace while the realm grows and you go down as the Golden. Let it bleed and you're the Bloody. Meddle in everything and you're the Meddler. Lose Kingsmere and you're the Deposed.
+You're the king, and seven great houses want your throne. All you've got to hold onto it is grain, gold and your word at court. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed.
 
 It's free, Mac only for now (Apple Silicon): https://alichherawalla.itch.io/game-of-crowns
 
@@ -61,7 +59,7 @@ Video or images. Flair: "selfpromo (games)".
 
 Godot draws everything you see: the land, the towns and their crowds, the castles, and the painted map you get when you zoom all the way out. Underneath, a Freeciv server runs the world, and a small Node bridge sits between the two and keeps the lords' memories.
 
-You play the King. The houses farm, marry and go to war on their own, so you rule through the court, taxes and grain, and when the reign ends the game names you for it: the Golden, the Bloody, the Meddler or the Deposed.
+You play the king, and seven great houses want your throne. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed.
 
 It's free, native on Apple Silicon: https://alichherawalla.itch.io/game-of-crowns
 
@@ -72,9 +70,9 @@ Ask me anything about running Freeciv under Godot. What would you want to know?
 
 Game of Crowns is free on Apple Silicon Macs from today.
 
-The great houses farm, marry and go to war on their own. You're the King, and you rule through the court, taxes, grain and marriages. The lords remember what you did, and every one of the realm's 83 nobles starts with a past of their own. You can rename anyone and rewrite their story. When your reign ends, history names you for how you ruled: the Golden, the Bloody, the Meddler or the Deposed.
+You're the king, and seven great houses want your throne. All you've got to hold onto it is grain, gold and your word at court. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed.
 
-Lords speak in their own words when Off Grid AI is running on the same Mac (getoffgridai.co/desktop). Without it, the realm plays exactly the same.
+The lords can speak in their own words if you run Off Grid AI on the same Mac (getoffgridai.co/desktop).
 
 Tell me in the comments what kept you playing, and what made you stop.
 
@@ -85,7 +83,7 @@ Hi [name],
 
 I watched your [video title] and [one real line about it]. I've just released Game of Crowns, a free medieval kingdom sim for Apple Silicon Macs.
 
-The great houses farm, marry and go to war on their own, and you're the King who can't move a single soldier. The lords remember what you did, so a lord can bring up the town you took from his house years ago, just when you need his banners. When your reign ends, history names you for how you ruled: the Golden, the Bloody, the Meddler or the Deposed.
+You're the king, and seven great houses want your throne. All you've got to hold onto it is grain, gold and your word at court. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed.
 
 Download (free, signed, no key needed): https://alichherawalla.itch.io/game-of-crowns
 Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
