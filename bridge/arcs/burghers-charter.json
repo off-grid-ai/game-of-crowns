@@ -1,0 +1,194 @@
+{
+  "id": "burghers-charter",
+  "reign": true,
+  "name": "The Burghers' Charter",
+  "about": "The guilds of a rich town ask the King for a charter: their own council, their own tolls, answerable to the crown and not to their lord. Grant it and anger the lord; refuse and the looms stop, the gates shut, and a rival lord offers the town his protection.",
+  "tags": ["rebellion", "the-people", "political", "money", "slow-burn", "a-reign"],
+  "kind": "rebellion",
+  "weight": 1,
+  "title": "The Charter of {town}",
+  "roles": {
+    "town": { "town": true, "notCapital": true, "size": [4, 40] },
+    "lord": { "rank": "lord", "rules": "town", "likes": { "traits": ["proud", "greedy", "wrathful"] } },
+    "master": { "either": [{ "rank": "commoner", "townOf": "town" }], "traits": ["a hard worker", "sharp-tongued", "a miser", "a busybody", "cheerful", "a gossip", "quarrelsome"], "create": { "name": "Master {first} Weaver", "rank": "sworn", "traits": ["proud", "cunning"], "memory": "My father wove for the lord of this town and died owing him.", "goal": { "kind": "charter", "text": "A charter for the guilds, under the King's seal" }, "like": "lord" } },
+    "protector": { "rank": "lord", "otherHouse": "lord", "likes": { "traits": ["ambitious", "cunning", "generous"] } }
+  },
+  "core": ["lord"],
+  "onDeath": { "master": "the-commune" },
+  "beats": [
+    {
+      "id": "the-petition",
+      "stage": "rising",
+      "threat": 15,
+      "speaker": "master",
+      "at": "town",
+      "text": "The guilds of {town} send their wardens to Kingsmere in their best wool, with a petition sealed by every guild in the town: a charter, a council of their own, and the tolls of their market answerable to the King, not to {lord}.",
+      "court": {
+        "from": "lord",
+        "text": "{lord} of {lord.house}, who followed them to court: \"Weavers and tanners, Your Grace, asking to be lords. If you give them {town}, give them my sword too, for I'll have no use for it.\"",
+        "options": [
+          { "id": "grant", "label": "Grant {town} its charter", "hint": "{lord.houseName} −25 · the guilds pay the crown direct", "favour": { "lord": -25 }, "do": { "threat": -5, "gold": { "lord": -40 } }, "result": "The King's seal goes on {town}'s charter. The wardens carry it home under a canopy, and {lord} rides behind them in silence." },
+          { "id": "refuse", "label": "Refuse: {town} answers to its lord", "hint": "{lord.houseName} +10 · the guilds go home angry", "favour": { "lord": 10 }, "do": { "threat": 10 }, "result": "The petition goes back unsealed. On the road home the wardens stop talking about charters, and start talking about gates." },
+          { "id": "lord", "label": "Let {lord} settle it", "hint": "{lord.houseName} +15 · {lord.he} will settle it hard", "favour": { "lord": 15 }, "do": { "threat": 10 }, "result": "The King hands the petition to {lord}, who folds it small and puts it in {lord.his} boot." }
+        ]
+      },
+      "after": [2, 3],
+      "next": [
+        { "if": { "ruled": "grant" }, "to": "the-lords-grudge" },
+        { "if": { "ruled": "lord" }, "to": "the-hanging-warden" },
+        { "to": "the-looms-stop" }
+      ],
+      "patience": 5,
+      "otherwise": "the-looms-stop"
+    },
+    {
+      "id": "the-lords-grudge",
+      "stage": "rising",
+      "threat": 30,
+      "speaker": "lord",
+      "at": "town",
+      "text": "{town} elects its first council and stops paying {lord}'s tolls. {lord} counts {lord.his} purse and the King's letters, and the gap between them.",
+      "after": [2, 3],
+      "next": [
+        { "if": { "favour": ["lord", "<", 25] }, "to": "the-lords-due" },
+        { "to": "the-free-town" }
+      ],
+      "patience": 3,
+      "otherwise": "the-free-town"
+    },
+    {
+      "id": "the-lords-due",
+      "stage": "crisis",
+      "threat": 50,
+      "speaker": "lord",
+      "at": "town",
+      "text": "{lord} says the charter was never the King's to give, and sets knights on the road into {town} to collect the old tolls by force.",
+      "court": {
+        "from": "lord",
+        "text": "{lord}: \"My father held {town}, and his father. I'll hold it, Your Grace, or I'll hold your crown to account for it.\"",
+        "options": [
+          { "id": "compensate", "label": "Pay {lord} for the lost tolls (300 gold)", "hint": "{lord.houseName} +25 · the charter stands", "cost": 300, "favour": { "lord": 25 }, "do": { "threat": -20 }, "result": "The King buys {lord}'s rights in {town} for a sum {lord.he} pretends to find insulting." },
+          { "id": "uphold", "label": "The charter stands: call off the knights", "hint": "{lord.houseName} −20", "favour": { "lord": -20 }, "do": { "threat": 10 }, "result": "Royal heralds read the charter at the crossroads. {lord}'s knights hear it, and go on collecting." }
+        ]
+      },
+      "after": [2, 3],
+      "next": [
+        { "if": { "ruled": "compensate" }, "to": "the-free-town" },
+        { "if": { "favour": ["lord", "<", 15] }, "to": "the-lord-rises" },
+        { "to": "the-free-town" }
+      ],
+      "patience": 4,
+      "otherwise": "the-lord-rises"
+    },
+    {
+      "id": "the-hanging-warden",
+      "stage": "crisis",
+      "threat": 45,
+      "speaker": "lord",
+      "at": "town",
+      "text": "{lord} settles it: the warden who carried the petition hangs from {town}'s market cross in his best wool. {master} cuts him down at night, and the guilds swear an oath over the body.",
+      "do": { "opinion": [["master", "lord", -60]], "reverie": { "master": 0.1 } },
+      "feel": { "master": { "anger": 0.5, "grief": 0.3 } },
+      "after": [1, 2],
+      "next": [{ "to": "the-commune" }],
+      "patience": 2,
+      "otherwise": "the-commune"
+    },
+    {
+      "id": "the-looms-stop",
+      "stage": "crisis",
+      "threat": 40,
+      "speaker": "master",
+      "at": "town",
+      "text": "Every loom, forge and tannery in {town} goes still on the same morning. The tolls aren't paid, the wool isn't shipped, and {lord}'s treasury hears the silence first.",
+      "do": { "gold": { "lord": -60 } },
+      "court": {
+        "from": "lord",
+        "text": "{lord}: \"They're starving my house to make a point, Your Grace. Send me men and I'll make one back.\"",
+        "options": [
+          { "id": "grant", "label": "Grant the charter after all", "hint": "{lord.houseName} −25 · the looms start", "favour": { "lord": -25 }, "do": { "threat": -10 }, "result": "The King seals {town}'s charter. The looms start again by noon." },
+          { "id": "soldiers", "label": "Send soldiers to open the shops", "hint": "{lord.houseName} +10 · the guilds dig in", "favour": { "lord": 10 }, "do": { "units": { "lord": { "type": "Pikemen", "count": 2 } }, "threat": 15 }, "result": "Pikemen kick in the guild-hall doors of {town}. They find the looms, and nobody to work them." },
+          { "id": "buy", "label": "Buy the guild masters off quietly (200 gold)", "hint": "the strike breaks · the grievance stays", "cost": 200, "do": { "threat": -10 }, "result": "Purses go to the right houses at night. The strike falls apart by the end of the week, and nobody admits to taking anything." }
+        ]
+      },
+      "after": [2, 3],
+      "next": [
+        { "if": { "ruled": "grant" }, "to": "the-lords-grudge" },
+        { "if": { "ruled": "buy" }, "to": "a-quiet-town" },
+        { "to": "the-commune" }
+      ],
+      "patience": 4,
+      "otherwise": "the-commune"
+    },
+    {
+      "id": "the-commune",
+      "stage": "crisis",
+      "threat": 65,
+      "speaker": "master",
+      "at": "town",
+      "text": "{town} shuts its gates against {lord}, rings its own bell, and swears itself a commune. Its letters go out to every market town in the realm, and {protector} answers first.",
+      "do": { "opinion": [["master", "protector", 20]] },
+      "court": {
+        "from": "protector",
+        "text": "{protector} of {protector.house}: \"The free folk of {town} have asked my protection, Your Grace. I'd rather they had the King's. Will you give it, or shall I?\"",
+        "options": [
+          { "id": "recognise", "label": "Recognise the commune under the crown", "hint": "{lord.houseName} −35 · the realm's towns watch and learn", "favour": { "lord": -35, "protector": -5 }, "do": { "threat": -15 }, "result": "The King's banner goes up over {town}'s bell tower beside the guilds' own. {lord} is not there to see it." },
+          { "id": "storm", "label": "Storm the gates and end it", "hint": "{lord.houseName} +15 · {protector.houseName} −20 · blood in the streets", "favour": { "lord": 15, "protector": -20 }, "do": { "units": { "lord": { "type": "Knights", "count": 2 } }, "threat": 15, "die": { "who": "master", "chance": 0.6, "how": "They broke our gates and I died in the guild-hall door." } }, "result": "{lord}'s knights go over {town}'s walls with the King's leave." },
+          { "id": "protector", "label": "Give {town} to {protector}", "hint": "{protector.houseName} +25 · {lord.houseName} −40", "favour": { "protector": 25, "lord": -40 }, "do": { "transfer": ["town", "protector"], "threat": 5 }, "result": "{town} opens its gates to {protector}'s banner, and swears to a lord who promises to leave its charter alone." }
+        ]
+      },
+      "after": [2, 3],
+      "next": [
+        { "if": { "ruled": "recognise" }, "to": "the-lords-due" },
+        { "if": { "all": [{ "ruled": "storm" }, { "realmHungry": 4 }] }, "to": "the-towns-rise" },
+        { "if": { "ruled": "storm" }, "to": "a-quiet-town" },
+        { "if": { "ruled": "protector" }, "to": "the-lord-rises" },
+        { "to": "the-towns-rise" }
+      ],
+      "patience": 4,
+      "otherwise": "the-towns-rise"
+    },
+    {
+      "id": "the-towns-rise",
+      "stage": "crisis",
+      "threat": 95,
+      "speaker": "protector",
+      "at": "town",
+      "text": "Market town after market town rings its bell and shuts its gates. {protector} rides at the head of their militias toward Kingsmere, promising a charter to every one.",
+      "do": { "usurper": "protector", "host": 11 },
+      "after": [3, 3],
+      "next": [{ "if": { "usurper": "none" }, "to": "a-quiet-town" }],
+      "patience": 20,
+      "otherwise": "a-quiet-town"
+    },
+    {
+      "id": "the-lord-rises",
+      "stage": "crisis",
+      "threat": 90,
+      "speaker": "lord",
+      "at": "town",
+      "text": "{lord} will not be a lord of nothing. {lord.He} calls {lord.his} banners against a King who sells towns to weavers, and marches.",
+      "do": { "usurper": "lord", "host": 11 },
+      "after": [3, 3],
+      "next": [{ "if": { "usurper": "none" }, "to": "the-free-town" }],
+      "patience": 20,
+      "otherwise": "the-free-town"
+    },
+    {
+      "id": "the-free-town",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "master",
+      "at": "town",
+      "text": "{town} rings its own bell and pays its tolls to Kingsmere. Its council sits in the old wool hall, and three other towns have sent wardens to ask how it was done."
+    },
+    {
+      "id": "a-quiet-town",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "lord",
+      "at": "town",
+      "text": "The looms of {town} run again under {lord}'s tolls. The charter is never spoken of, and the guild-hall's founding stone is turned to face the wall."
+    }
+  ]
+}

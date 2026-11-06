@@ -1,0 +1,166 @@
+{
+  "id": "the-long-siege",
+  "reign": true,
+  "name": "The Long Siege",
+  "about": "A warlike house lays siege to a loyal lord's seat, and the walls can hold only so long. March the royal host to relieve it, pay for its walls, or parley and give ground. If the town falls, its conqueror looks next at Kingsmere.",
+  "tags": ["war", "epic", "aggressive", "violent", "great-house", "a-reign"],
+  "kind": "siege",
+  "weight": 1,
+  "title": "The Siege of {keep}",
+  "roles": {
+    "besieger": { "rank": "lord", "seat": true, "likes": { "traits": ["wrathful", "ambitious", "brave", "proud"] } },
+    "holder": { "rank": "lord", "otherHouse": "besieger", "seat": true, "likes": { "traits": ["honourable", "brave", "just"] } },
+    "keep": { "town": true, "seatOf": "holder" }
+  },
+  "core": ["besieger", "holder"],
+  "onDeath": { "holder": "the-walls-break", "besieger": "the-siege-lifted" },
+  "beats": [
+    {
+      "id": "the-banners",
+      "stage": "rising",
+      "threat": 25,
+      "speaker": "holder",
+      "at": "keep",
+      "text": "{besieger.house}'s banners come over the hills at dawn and do not stop until they ring {keep}. By nightfall there are trenches, and by the week's end, a trebuchet.",
+      "do": { "war": ["besieger", "holder", "keep"], "warSize": 7 },
+      "court": {
+        "from": "holder",
+        "text": "{holder} of {holder.house}'s rider, half dead from the road: \"My lord holds {keep} for the crown, Your Grace. The walls will stand a season, perhaps two. Not three.\"",
+        "options": [
+          { "id": "march", "label": "March the royal host to relieve {keep}", "hint": "{holder.houseName} +20 · {besieger.houseName} −25 · battle", "favour": { "holder": 20, "besieger": -25 }, "do": { "units": { "holder": { "type": "Knights", "count": 3 } }, "threat": 5 }, "result": "The royal host marches out of Kingsmere with the King's banner at its head, on the road to {keep}." },
+          { "id": "walls", "label": "Smuggle gold and grain into {keep} (250 gold)", "hint": "{holder.houseName} +10 · the walls hold longer", "cost": 250, "favour": { "holder": 10 }, "do": { "units": { "holder": { "type": "Pikemen", "count": 2 } } }, "result": "Barges of grain and sacks of silver slip into {keep} by the water gate, by night." },
+          { "id": "parley", "label": "Summon {besieger} to parley", "hint": "{besieger.houseName} +10 · {holder.houseName} −15", "favour": { "besieger": 10, "holder": -15 }, "do": { "threat": 5 }, "result": "The King's herald rides through the siege lines under a white flag, to {besieger}'s tent." }
+        ]
+      },
+      "after": [2, 3],
+      "next": [
+        { "if": { "ruled": "march" }, "to": "the-relief" },
+        { "if": { "ruled": "parley" }, "to": "the-terms" },
+        { "to": "the-hungry-walls" }
+      ],
+      "patience": 5,
+      "otherwise": "the-hungry-walls"
+    },
+    {
+      "id": "the-hungry-walls",
+      "stage": "crisis",
+      "threat": 45,
+      "speaker": "holder",
+      "at": "keep",
+      "text": "{keep} eats its horses, then its dogs. The trebuchet takes down the chapel tower, and {holder} has the bells hung from the gatehouse so they can still ring.",
+      "feel": { "holder": { "fear": 0.2, "anger": 0.2 } },
+      "court": {
+        "from": "holder",
+        "text": "{holder}, in a letter tied to an arrow: \"We have a month, Your Grace. Then I open the gates or my people eat each other.\"",
+        "options": [
+          { "id": "march", "label": "March the royal host now", "hint": "{holder.houseName} +15 · battle at the walls", "favour": { "holder": 15, "besieger": -20 }, "do": { "units": { "holder": { "type": "Knights", "count": 3 } } }, "result": "The royal host marches through the night. At dawn the defenders see the King's banner on the hill and ring every bell they have left." },
+          { "id": "yield", "label": "Tell {holder} to yield {keep} on terms", "hint": "{holder.houseName} −30 · the town lost, the war ended", "favour": { "holder": -30, "besieger": 15 }, "do": { "transfer": ["keep", "besieger"], "threat": 10 }, "result": "{holder} opens the gates of {keep} on the King's order and walks out with {holder.his} sword reversed." }
+        ]
+      },
+      "after": [2, 3],
+      "next": [
+        { "if": { "ruled": "march" }, "to": "the-relief" },
+        { "to": "the-walls-break" }
+      ],
+      "patience": 4,
+      "otherwise": "the-walls-break"
+    },
+    {
+      "id": "the-terms",
+      "stage": "rising",
+      "threat": 35,
+      "speaker": "besieger",
+      "at": "keep",
+      "text": "In {besieger}'s tent, with the trebuchet still loosing outside, {besieger} names a price for lifting the siege: {keep} itself, and a seat on the King's council.",
+      "court": {
+        "from": "besieger",
+        "text": "{besieger} of {besieger.house}: \"Give me {keep}, Your Grace, and you'll have no truer friend in the realm. Refuse, and I'll take it anyway, and remember you refused.\"",
+        "options": [
+          { "id": "give", "label": "Give {besieger} {keep}", "hint": "{besieger.houseName} +25 · {holder.houseName} −40", "favour": { "besieger": 25, "holder": -40 }, "do": { "transfer": ["keep", "besieger"], "threat": -10, "truce": ["besieger", "holder", 2] }, "result": "The King's seal gives {keep} to {besieger.house}. {holder} is offered a pension, and spits on it." },
+          { "id": "gold", "label": "Buy the siege off (400 gold)", "hint": "{besieger.houseName} +10 · {keep} stays", "cost": 400, "favour": { "besieger": 10, "holder": 10 }, "do": { "threat": -20, "truce": ["besieger", "holder", 2] }, "result": "{besieger} takes the gold, burns the trebuchet, and marches home whistling." },
+          { "id": "refuse", "label": "Refuse, and march", "hint": "{besieger.houseName} −20 · battle", "favour": { "besieger": -20, "holder": 10 }, "do": { "units": { "holder": { "type": "Knights", "count": 2 } } }, "result": "The herald rides back. The royal host is already on the road behind him." }
+        ]
+      },
+      "after": [2, 3],
+      "next": [
+        { "if": { "ruled": "give" }, "to": "the-bitter-peace" },
+        { "if": { "ruled": "gold" }, "to": "the-siege-lifted" },
+        { "if": { "ruled": "refuse" }, "to": "the-relief" },
+        { "to": "the-hungry-walls" }
+      ],
+      "patience": 5,
+      "otherwise": "the-hungry-walls"
+    },
+    {
+      "id": "the-relief",
+      "stage": "crisis",
+      "threat": 55,
+      "speaker": "holder",
+      "at": "keep",
+      "text": "The royal host and the besiegers meet in the trenches below {keep}'s walls. The defenders sally out to join them, and for a day nobody can tell whose banner is whose for the mud.",
+      "do": { "war": ["holder", "besieger"], "warSize": 5 },
+      "after": [2, 3],
+      "next": [
+        { "if": { "holds": ["besieger", "keep"] }, "to": "the-walls-break" },
+        { "if": { "stronger": ["holder", "besieger"] }, "to": "the-siege-lifted" },
+        { "if": { "chance": 0.55 }, "to": "the-siege-lifted" },
+        { "to": "the-hungry-walls" }
+      ],
+      "patience": 3,
+      "otherwise": "the-siege-lifted"
+    },
+    {
+      "id": "the-walls-break",
+      "stage": "crisis",
+      "threat": 75,
+      "speaker": "besieger",
+      "at": "keep",
+      "text": "{keep}'s gate falls to the ram at last. {besieger.house}'s men pour into the streets, and {besieger} stands on the broken walls looking toward Kingsmere.",
+      "do": { "transfer": ["keep", "besieger"] },
+      "court": {
+        "from": "besieger",
+        "text": "{besieger}, from {keep}'s own hall: \"{keep} is mine by the sword, Your Grace. Name it mine by the law, and my sword is yours.\"",
+        "options": [
+          { "id": "recognise", "label": "Recognise the conquest", "hint": "{besieger.houseName} +20 · {holder.houseName} −40 · war ends", "favour": { "besieger": 20, "holder": -40 }, "do": { "threat": -25, "truce": ["besieger", "holder", 3] }, "result": "The King names {besieger} lord of {keep}. {holder} goes into the hills with what is left of {holder.his} household." },
+          { "id": "defy", "label": "Demand {keep} back, by force if need be", "hint": "{besieger.houseName} −30 · {besieger.he} will march on you", "favour": { "besieger": -30, "holder": 15 }, "do": { "threat": 20 }, "result": "The King's answer is one line: {keep} belongs to the crown's friend. {besieger} reads it aloud to {besieger.his} captains, laughing." }
+        ]
+      },
+      "after": [2, 3],
+      "next": [
+        { "if": { "ruled": "recognise" }, "to": "the-bitter-peace" },
+        { "to": "the-conqueror-marches" }
+      ],
+      "patience": 4,
+      "otherwise": "the-conqueror-marches"
+    },
+    {
+      "id": "the-conqueror-marches",
+      "stage": "crisis",
+      "threat": 95,
+      "speaker": "besieger",
+      "at": "keep",
+      "text": "Flush from {keep}, {besieger} turns the siege train toward Kingsmere. If one crown town's walls broke, so can another's.",
+      "do": { "usurper": "besieger", "host": 13 },
+      "after": [3, 3],
+      "next": [{ "if": { "usurper": "none" }, "to": "the-siege-lifted" }],
+      "patience": 20,
+      "otherwise": "the-siege-lifted"
+    },
+    {
+      "id": "the-siege-lifted",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "holder",
+      "at": "keep",
+      "text": "The besiegers' camp below {keep} is empty but for crows and a burned trebuchet. {holder} rings the gatehouse bells for a full day, and has them rehung in the chapel."
+    },
+    {
+      "id": "the-bitter-peace",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "besieger",
+      "at": "keep",
+      "text": "{keep} flies {besieger.house}'s banner now, and the war is over. The crown kept its throne by giving a friend's town to an enemy, and every lord in the realm has done that sum."
+    }
+  ]
+}
