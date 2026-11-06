@@ -328,6 +328,10 @@ func _ready() -> void:
 	lore.fetch = bridge.lore
 	add_child(title)
 	title.began.connect(func(): _intro_due = true)
+	# The launch screens play over the menu (never in renders or film takes).
+	var Splash := preload("res://scripts/splash.gd")
+	if not _shot.has("path") and Splash.any():
+		add_child(Splash.new())
 	# The menu stands alone: the game's interface hides behind it until a
 	# chronicle is open (and again whenever the menu is brought back).
 	title.visibility_changed.connect(func():
@@ -348,12 +352,16 @@ func _ready() -> void:
 				_intro_due = true
 			else:
 				_tell_the_story())
+	# From the menu, the introduction and the lore come back to the menu after.
 	title.watch_intro.connect(func():
+		_back_to_menu = true
+		if not bridge.active:
+			bridge.wake()  # the intro needs the realm's houses and seats
 		if bridge.world.is_empty():
 			_intro_due = true
 		else:
 			_tell_the_story())
-	title.read_lore.connect(lore.open)
+	title.read_lore.connect(func(): lore.open())
 	if _shot.has("path") and not _shot.has("title"):
 		title.visible = false
 	ui.visible = not title.visible and not _shot.has("clean")
@@ -1420,11 +1428,13 @@ func _tell_the_story() -> void:
 		# interface follows the one rule (shown whenever the menu isn't), not
 		# what was on screen when the intro began (a new realm began from the
 		# menu, which left the interface hidden after the intro).
-		title.visible = was[0] and not _opened_in_intro
+		title.visible = (was[0] or _back_to_menu) and not _opened_in_intro
+		_back_to_menu = false
 		ui.visible = not title.visible and not _shot.has("clean")
 		labels.visible = ui.visible, CONNECT_ONE_SHOT)
 	intro.play(houses, seats)
 var _opened_in_intro := false  # a chronicle was opened while the intro played: no menu after it
+var _back_to_menu := false  # the intro was asked for from the menu: the menu comes back after it
 var _voice: AudioStreamPlayer
 
 

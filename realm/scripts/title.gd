@@ -178,16 +178,35 @@ func show_main() -> void:
 		_name_typed = false
 		_go(show_new))
 	_big("Settings", _go.bind(show_settings))
+	# These two open over the menu and come back to it: they step the menu aside
+	# without closing it (closing it is what starts play).
 	_big("Watch the introduction", func():
-		_close()
+		visible = false
 		watch_intro.emit())
-	_big("The Lore of Aldmere", func():
-		_close()
-		read_lore.emit())
+	_big("The Lore of Aldmere", func(): read_lore.emit())  # it opens over the menu, which stays beneath it
 	_big("Chronicles", _go.bind(show_list))
 	_big("Hall of Records", _go.bind(show_records))
 	_big("Credits", _go.bind(show_credits))
-	_offgrid_line(_body, "Lords speak in their own words, and stories write themselves, with Off Grid AI: free, on your Mac.")
+	# A quiet footer, centred under the menu: what Off Grid AI adds, and where to get it.
+	var foot := HBoxContainer.new()
+	foot.alignment = BoxContainer.ALIGNMENT_CENTER
+	foot.add_theme_constant_override("separation", 10)
+	var gap := Control.new()
+	gap.custom_minimum_size.y = 18
+	_body.add_child(gap)
+	_body.add_child(foot)
+	var said := Label.new()
+	said.text = "✦  Lords speak in their own words with Off Grid AI, free on your Mac."
+	said.add_theme_font_size_override("font_size", 14)
+	said.add_theme_color_override("font_color", MUTED)
+	foot.add_child(said)
+	var get_it := LinkButton.new()
+	get_it.text = "Get it"
+	get_it.uri = OFFGRID_URL
+	get_it.underline = LinkButton.UNDERLINE_MODE_ON_HOVER
+	get_it.add_theme_font_size_override("font_size", 14)
+	get_it.add_theme_color_override("font_color", GOLD)
+	foot.add_child(get_it)
 
 
 const HOUSES := ["Wolfholt", "Goldcrest", "Ironreach", "Thornvale", "Stormhold", "Sunspire", "Highfell"]
