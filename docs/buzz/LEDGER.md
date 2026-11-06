@@ -5,7 +5,8 @@ Kept by the downloads supervisor (every 15 minutes in the buzz session). Goal: g
 ## Needs Mac
 - **Disk:** this Mac has ~4 GB free of 460 GB. It killed the first release run and will hurt other sessions' renders.
 - **Promo art:** prompts for Codex in docs/buzz/asset-prompts.md (GitHub social preview, itch.io cover, key art). The social preview has to be set by hand in the repo's Settings.
-- **itch.io images:** the draft page is made (alichherawalla.itch.io/game-of-crowns: description, Strategy, 7 tags, free, comments, AI disclosure, draft). Upload the cover and screenshots by hand from docs/buzz/images/itch/ (itch's uploader opens a file picker I can't drive). The dmg goes up with butler once v0.3 is out.
+- **itch.io:** cover and eight screenshots up (latest gameplay plus the intro paintings), saved as Draft. Left for Mac: a trailer link once the launch clip is on YouTube, then Publish.
+- **Launch plan (docs/buzz/launch.md):** launch day Tue 8 Dec. Mac sends the creator emails as himself (17 and 24 Nov) and makes an AppleGamingWiki page. **r/macgaming now waits for launch day.**
 - **The lady's licence:** confirm the Sketchfab ownership claim for 'Princess Nun Royal Queen' (b9f22ea). A licence question only: .gitignore keeps body files out of git, so pushes publish no model files.
 - **Approve the rest of the list below** (everything marked "proposed").
 
@@ -55,6 +56,8 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 - **Buzz session:** this ledger, the supervisor, drafts for the channels once the dmg exists.
 
 ## Runs
+
+**2026-11-06 late:** Studied zero-budget indie launches (Buckshot Roulette, Gambler's Table, The Hive, Content Warning, Digging a Hole, itch-first hits) into docs/buzz/launch.md: 8 Dec launch, creator emails from three weeks out, a hook clip that opens on the payoff, r/macgaming held for launch day, a 1.1 on 20 Dec. Build asks sent to the main session. itch page dressed. The disk filled during the 0.4 dmg build; I flagged it to the main session.
 
 ### 11-05 19:50
 **Shipped:** the drier earth ring (6bcabd9); three plain CC BY townsfolk in the crowds (d658028); bodies without glowing trims, solid with cut-out hair, crowds spread in twos and threes (2673f86); before/after (a9c4950). Reviewed: keep.
