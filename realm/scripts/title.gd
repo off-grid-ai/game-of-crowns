@@ -391,7 +391,7 @@ func show_new() -> void:
 		_scenario = v
 		_houses_enabled(house_row))
 	# Endless first: a reign is a life's work; a clock is a challenge you choose.
-	_choices(left, "Length of the reign", [["Endless", 0], ["A 30-minute challenge", 30], ["An hour's challenge", 60]], _minutes, func(v): _minutes = v)
+	_choices(left, "Length of the reign", [["Endless", 0], ["A 15-minute challenge", 15], ["A 30-minute challenge", 30], ["An hour's challenge", 60]], _minutes, func(v): _minutes = v)
 	_section(left, "The crown")
 	_choices(left, "The royal treasury", [["Poor · 15k", "poor"], ["Comfortable · 50k", "comfortable"], ["Rich · 150k", "rich"]], _wealth, func(v): _wealth = v)
 	_choices(left, "The royal host at the start", [["A few loyal men", "small"], ["A garrison", "standard"], ["A great host", "strong"]], _opt["host"], func(v): _opt["host"] = v)
