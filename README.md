@@ -18,7 +18,7 @@ You're the king, and seven great houses want your throne. All you've got to hold
 | ![A lord stands before the King at court with his grievance and three ways to answer](docs/play/gameplay/court.jpg) | ![Goldrock's market square, the castle walls behind it](docs/play/gameplay/goldrock.jpg) |
 | *A lord brings an old grudge to court.* | *Goldrock, seat of House Goldcrest.* |
 | ![The Hand of the King's counsel over a town street: a cold house, a starving town, the dead coming south](docs/play/gameplay/hand.jpg) | ![Farmers working the fields outside a town by the water](docs/play/gameplay/farms.jpg) |
-| *Your Hand tells you what needs answering.* | *The realm works its fields whether you're watching or not.* |
+| *Your Hand tells you what needs answering.* | *The harvest that feeds your houses, or doesn't.* |
 
 ## Why you'll keep playing
 
