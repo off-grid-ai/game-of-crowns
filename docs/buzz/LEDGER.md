@@ -5,7 +5,7 @@ Kept by the downloads supervisor (every 15 minutes in the buzz session). Goal: g
 ## Needs Mac
 - **Disk:** Mac freed ~20 GB; the 0.4 release build is running.
 - **Promo art:** prompts for Codex in docs/buzz/asset-prompts.md (GitHub social preview, itch.io cover, key art). The social preview has to be set by hand in the repo's Settings.
-- **itch.io (today, 18:40 IST):** the 0.5 build is live on the channel; cover, eight screenshots, 0.5 description and the launch devlog (draft) are ready. Mac: paste the trailer link if the clip is up, then Publish the page and the devlog.
+- **itch.io:** public since ~19:00 on 6 Nov, devlog live. Left: a YouTube link for the trailer slot once the new video is up.
 - **Launch is today, 6 Nov (Mac's call), runbook in docs/buzz/launch-today.md:** Mac posts r/macgaming at 19:00 IST, r/IndieGaming and r/godot at 19:20, sends creator emails from 19:30, and replies all evening. AppleGamingWiki page this week.
 - **The lady's licence:** confirm the Sketchfab ownership claim for 'Princess Nun Royal Queen' (b9f22ea). A licence question only: .gitignore keeps body files out of git, so pushes publish no model files.
 - **Approve the rest of the list below** (everything marked "proposed").
@@ -56,6 +56,8 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 - **Buzz session:** this ledger, the supervisor, drafts for the channels once the dmg exists.
 
 ## Runs
+
+**2026-11-06 19:09:** Shipped: 0.5.1 released on GitHub as Latest, a full release (v0.5.1-20261106-b55fe8e; c396fef); 345a43b (README: "Coming soon", each item a GitHub issue to vote on); buzz 497303f and f0ca53c (Mac's launch-night checklist: https://claude.ai/artifact/R24TDPuL8BPwxe54XTZ8id). Moved: **itch is public** (Mac published it ~19:00) with his final copy and the 0.5 build. The "0.5 is out" devlog is live. Tags fixed (choices-matter, politics, fantasy added; 10/10). 0.5.1 is pushing to itch now. Mac is holding the Reddit posts and creator emails for a better explainer video: post tonight if it's ready by ~21:15 IST, else tomorrow 19:00 IST. Downloads: GitHub 4 (0.5.1: 0). itch numbers: ask Mac.
 
 **2026-11-06 18:57:** Shipped: 3c04d04, 609a8f4 and 7e9f82a (launch film plan and Codex brief: a painted story of Gareth's grudge ending on the King's name in history, in Mac's final copy); 4a77409 (README: the new hook, the roadmap as one list, release history); buzz b799978, b17047f, df6373c and a26c9c6 (tonight's posts, emails, itch devlog and old drafts on Mac's final copy). Moved: Mac's final itch copy is live on the page: "Find out what kind of king you'd be", only what the player gets, no "it's early". 0.5.1 is being notarised for a full release today. Blocks: the itch page is still Draft (404), so the 19:00 r/macgaming post has nothing to link until Mac publishes. Downloads: GitHub 4.
 
