@@ -30,6 +30,7 @@ const LESSER := -3
 const MAP := -4  # the map of Aldmere as every chronicle finds it
 var fetch_map := Callable()  # (cb) -> void: asks the bridge for /lore/map
 var fetch_written := Callable()  # (cb) -> void: the book as written (/lore?as=written)
+var rename_name := Callable()  # (from, to, cb) -> void: the player's own name for a word
 var _map := {}
 var _mark := ""  # the town the map was opened on, ringed in gold
 
@@ -221,6 +222,39 @@ func _show(id: int) -> void:
 
 
 # --- the realm ------------------------------------------------------------------
+
+## A small Rename: press it, type a new name, Enter keeps it (empty gives the
+## old name back). Every page and the realm itself then use the new one.
+func _renamer(own: String, now: String, label: String) -> Control:
+	var box := HBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	var b := Button.new()
+	b.text = label
+	b.flat = true
+	b.focus_mode = Control.FOCUS_NONE
+	b.add_theme_color_override("font_color", T.TEXT_3)
+	b.add_theme_font_size_override("font_size", T.SIZE_DESC)
+	box.add_child(b)
+	var edit := LineEdit.new()
+	edit.visible = false
+	edit.custom_minimum_size.x = 180
+	edit.text = now
+	edit.placeholder_text = "A new name"
+	box.add_child(edit)
+	b.pressed.connect(func():
+		b.visible = false
+		edit.visible = true
+		edit.grab_focus()
+		edit.select_all())
+	edit.text_submitted.connect(func(t: String):
+		var to := t.strip_edges()
+		rename_name.call(own, "" if to == own else to, func(code, d):
+			if code == 200:
+				open(_chosen, baseline)  # the book again, in the new names
+			else:
+				edit.text = String(d.get("error", "That name won't do.")) if d is Dictionary else "That name won't do."))
+	return box
+
 
 ## The map of Aldmere opened on a town, ringed in gold.
 func show_on_map(town: String) -> void:
@@ -475,7 +509,7 @@ func _house(h: Dictionary) -> void:
 	# The house's own painting across the top (the Crown's is Kingsmere), else the
 	# game's still of its seat; none, and the page starts with its arms.
 	var seat_still := "res://assets/intro/stills/seat_%s.png" % String(h.get("seat", ""))
-	_plate(_art("house_crown" if h.get("crown", false) else "house_" + String(h.get("name", "")).trim_prefix("House ").to_lower().replace(" ", "_"), seat_still))
+	_plate(_art("house_crown" if h.get("crown", false) else "house_" + String(h.get("key", h.get("name", ""))).trim_prefix("House ").to_lower().replace(" ", "_"), seat_still))
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 18)
 	_page.add_child(head)
@@ -490,6 +524,10 @@ func _house(h: Dictionary) -> void:
 	names.alignment = BoxContainer.ALIGNMENT_CENTER
 	head.add_child(names)
 	names.add_child(T.title(String(h.get("name", "")), 34))
+	# Call it what you like: its own name stays underneath (names.js).
+	var own_word := String(h.get("key", h.get("name", ""))).trim_prefix("House ").trim_prefix("The ")
+	if not h.get("crown", false) and rename_name.is_valid():
+		names.add_child(_renamer(own_word, String(h.get("name", "")).trim_prefix("House "), "Rename the house"))
 	if String(h.get("words", "")) != "":
 		names.add_child(T.title("“%s”" % h["words"], 18, T.ACCENT))
 	var lore: Dictionary = h.get("lore", {}) if h.get("lore") is Dictionary else {}
@@ -619,6 +657,9 @@ func _person(p: Dictionary, h: Dictionary, into: Node = null) -> void:
 	var name := T.title(String(p.get("name", "")), 20)
 	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(name)
+	if rename_name.is_valid():
+		var first := String(p.get("key", p.get("name", ""))).get_slice(" ", 0)
+		top.add_child(_renamer(first, String(p.get("name", "")).get_slice(" ", 0), "Rename"))
 	var meet := Button.new()
 	meet.text = "Meet"
 	meet.flat = true
@@ -686,25 +727,16 @@ func _family(f: Dictionary, into: Node = null) -> void:
 		v.add_child(T.label(String(f["arms"]), T.ACCENT))
 	if String(f.get("character", "")) != "":
 		v.add_child(_text(String(f["character"])))
-	var told := {}  # as written, one line per liege (their towns, which made the rest, are a reign's)
+	# One line a branch: each holds its own town under the lord of that land,
+	# so one family can kneel to several houses.
 	for b in f.get("branches", []):
-		if baseline:
-			if told.has(String(b.get("house", ""))):
-				continue
-			told[String(b.get("house", ""))] = true
 		var line := HBoxContainer.new()
 		line.add_theme_constant_override("separation", 8)
 		v.add_child(line)
 		var liege := {"name": b.get("house", ""), "color": b.get("color", "#888"), "sigil": b.get("sigil", ""), "crown": b.get("crown", false)}
 		line.add_child(_sigil(liege, _tint(liege), 18))
-		# The world as written (from the menu): whom they're sworn to, nothing of a
-		# reign (what they hold, who leads them now, a town to go to, a lord to meet).
-		var head: Dictionary = {} if baseline else (b.get("head", {}) if b.get("head") is Dictionary else {})
+		var head: Dictionary = b.get("head", {}) if b.get("head") is Dictionary else {}
 		var said := ["Sworn to %s" % String(b.get("house", "")).replace("House ", "")]
-		if baseline:
-			b = b.duplicate()
-			b.erase("seat")
-			b.erase("lost")
 		if b.get("seat") != null:
 			said.append("holds %s" % b["seat"])
 		elif b.get("lost") != null:
@@ -726,6 +758,9 @@ func _family(f: Dictionary, into: Node = null) -> void:
 		var l := T.datum("  ·  " + "  ·  ".join(said.slice(1)) if said.size() > 1 else "", T.SIZE_DESC + 1, T.TEXT_2)
 		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		line.add_child(l)
+		# As written (from the menu) there's no reign to step into: no town to go to.
+		if baseline:
+			continue
 		if b.get("seat") != null:
 			var go := Button.new()
 			go.text = "Go to %s" % b["seat"]

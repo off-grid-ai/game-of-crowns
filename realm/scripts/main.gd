@@ -334,6 +334,7 @@ func _ready() -> void:
 	lore.fetch = bridge.lore
 	lore.fetch_map = bridge.lore_map
 	lore.fetch_written = bridge.lore_written
+	lore.rename_name = bridge.rename
 	add_child(title)
 	title.began.connect(func(): _intro_due = true)
 	# The launch screens play over the menu (in renders only with --splash).

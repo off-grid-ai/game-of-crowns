@@ -169,6 +169,17 @@ func lore(cb: Callable) -> void:
 	_http_get("/lore", cb)
 
 
+## Give a house or a person a name of the player's own (from: their own word,
+## to: the player's; empty gives it back). The reply is every name given.
+func rename(from: String, to: String, cb: Callable) -> void:
+	_post("/names", {"from": from, "to": to}, func(c, d): cb.call(c, d))
+
+
+## The player's own names for houses and people: {inner word: shown word}.
+func names(cb: Callable) -> void:
+	_http_get("/names", func(d): cb.call(d.get("names", {}) if d is Dictionary else {}))
+
+
 ## The book as written: the starting cast, read from the baseline realm.
 func lore_written(cb: Callable) -> void:
 	_http_get("/lore?as=written", cb)

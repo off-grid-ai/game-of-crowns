@@ -543,8 +543,10 @@ func show_new() -> void:
 	right.add_child(_label("Who holds a seat (a fresh realm only)", 15, MUTED))
 	house_row.add_theme_constant_override("h_separation", 6)
 	right.add_child(house_row)
+	var toggles := {}
 	for h in HOUSES:
 		var b := _toggle(h, house_row)
+		toggles[h] = b
 		b.button_pressed = not _opt["skip"].has(h)
 		b.toggled.connect(func(on):
 			if on:
@@ -554,6 +556,11 @@ func show_new() -> void:
 			else:
 				b.set_pressed_no_signal(true))
 	_houses_enabled(house_row)
+	# Shown by the player's names for them, if they've given any.
+	bridge.names(func(n):
+		for h in toggles:
+			if is_instance_valid(toggles[h]):
+				toggles[h].text = String(n.get(h, h)))
 	_section(right, "What tests the reign")
 	_choices(right, "Floods, fires and famine", [["None", "none"], ["Gentle", "gentle"], ["Normal", "normal"], ["Cruel", "cruel"]], _opt["disasters"], func(v): _opt["disasters"] = v)
 	_choices(right, "Raiders from the wilds", [["None", "none"], ["Some", "normal"], ["Hordes", "hordes"]], _opt["raiders"], func(v): _opt["raiders"] = v)

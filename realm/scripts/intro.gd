@@ -86,7 +86,8 @@ func play(houses: Array, seats: Dictionary) -> void:
 			continue
 		var name: String = h["name"]
 		var town: String = seats[name][0]
-		page.call(_art_of(name), name, "%s. Their words: \"%s\". %s" % [town, h.get("words", ""), CHARACTER.get(name, "")], h, "", uv.call(seats[name][1]), 3.0)
+		var key := String(h.get("key", name))  # art and lore by the house's own name; the player's name on screen
+		page.call(_art_of(key), name, "%s. Their words: \"%s\". %s" % [town, h.get("words", ""), CHARACTER.get(key, "")], h, "", uv.call(seats[name][1]), 3.0)
 	page.call("hall", "Rule in your own words", "Petitioners kneel before you: a starving town, a stolen bride, a blood feud. Pick a ruling, or just say what you would do, typed or spoken. They will remember it.", {}, "{court}  court", home, 2.2)
 	page.call("hero", "Every lord a life", "Each lord has a temper, an ambition and a long memory. Raise one up, break another, or rewrite who they are.", {}, "{houses}  houses    {chronicle}  chronicle", home, 1.8)
 	page.call("battle", "War is one insult away", "Grudges boil over into marching armies, burning fields and towns under siege. One ruling can stop a war. Another can start one.", {}, "", Vector2(0.45, 0.75), 2.0)

@@ -19,6 +19,7 @@ import { ROLES, GOALS, TRAITS } from "./characters.js";
 import { folkTale, folkPlain, moodRules, speak, ruleFrom, reactTo, speech, voiceFor, transcribe, aiStatus } from "./claude.js";
 import { BUILD_COST, granarySize } from "./rules.js";
 import * as chron from "./chronicles.js";
+import * as names from "./names.js";
 import { decree, titheLua, clampFavour, DECREES, bannersReady } from "./crown.js";
 // Lords whose first names were borrowed from A Song of Ice and Fire, renamed
 // in realm.serv; realms begun before then still carry the old names in their
@@ -1121,14 +1122,14 @@ process.on("SIGTERM", shutdown);
 
 function json(res, code, body) {
   res.writeHead(code, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
-  res.end(JSON.stringify(body));
+  res.end(JSON.stringify(names.showAll(body)));  // in the player's names (names.js)
 }
 
 function body(req) {
   return new Promise((resolve) => {
     let b = "";
     req.on("data", (d) => (b += d));
-    req.on("end", () => { try { resolve(JSON.parse(b || "{}")); } catch { resolve({}); } });
+    req.on("end", () => { try { resolve(names.innerAll(JSON.parse(b || "{}"))); } catch { resolve({}); } });  // the player's names, turned back
   });
 }
 
@@ -1480,7 +1481,7 @@ http.createServer(async (req, res) => {
     // Someone's words, spoken aloud by Off Grid's Kokoro: a voice of their own,
     // in the realm's language. WAV bytes; cached, so a line is only made once.
     const { text, who } = await body(req);
-    const line = String(text ?? "").trim().slice(0, 600);
+    const line = names.shown(String(text ?? "").trim().slice(0, 600));  // spoken in the player's names
     if (!line) return json(res, 400, { error: "nothing to say" });
     const voice = voiceFor(who ?? {}, meta.options?.language);
     const dir = path.join(P.state, "voices");
@@ -1554,13 +1555,25 @@ http.createServer(async (req, res) => {
   // Aldmere as every new chronicle finds it (the baseline, nine years in): its
   // towns on the map, each with its house, for the Lore's map. Never the reign
   // being played.
+  // The player's names for houses and people: GET them, or POST {from, to} to
+  // rename one (an empty `to` gives the word its own name back).
+  if (url.pathname === "/names") {
+    if (req.method === "POST") {
+      const raw = await new Promise((r) => { let b = ""; req.on("data", (d) => (b += d)); req.on("end", () => { try { r(JSON.parse(b || "{}")); } catch { r({}); } }); });
+      const done = names.rename(raw.from, raw.to);
+      res.writeHead(done.error ? 400 : 200, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify(done));
+    }
+    res.writeHead(200, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ names: names.all() }));
+  }
   if (url.pathname === "/lore/map") {
     let w = {};
     try { w = JSON.parse(fs.readFileSync(path.join(chron.BASELINE, "state", "world.json"), "utf8")); } catch { /* no baseline */ }
     const players = new Map((w.players ?? []).map((p) => [p.id, p]));
     const towns = (w.cities ?? []).map((c) => {
       const h = players.get(c.owner) ? houseFor(players.get(c.owner)) : null;
-      return { title: nameIn(c.id, c.name), x: c.x, y: c.y, size: c.size, capital: !!c.capital, house: h?.name ?? "", color: h?.color ?? "#888", sigil: h?.sigil ?? "" };
+      return { title: nameIn(c.id, c.name), x: c.x, y: c.y, size: c.size, capital: !!c.capital, house: h?.name ?? "", key: h?.name ?? "", color: h?.color ?? "#888", sigil: h?.sigil ?? "" };
     });
     let land = [];
     try {
@@ -1607,11 +1620,11 @@ http.createServer(async (req, res) => {
       const family = lord ? people.filter((c) => c.id === lord.spouse || (c.rank === "heir" && c.parents?.includes(lord.id))) : [];
       const notables = [...(lord ? [lord] : []), ...family, ...people.filter((c) => c.rank === "bannerman").slice(0, 4)];
       return {
-        id: p.id, name: h.name, words: h.words, color: h.color, sigil: h.sigil, crown: !!h.crown,
+        id: p.id, name: h.name, key: h.name, words: h.words, color: h.color, sigil: h.sigil, crown: !!h.crown,
         seat: seat ? cityName(seat.id) : null, towns: world.cities.filter((c) => c.owner === p.id).length,
         favour: h.crown ? null : favourOf(p.id), lore: b.houses[h.name] ?? rebel(h.name),
         notables: notables.map((c) => ({
-          id: c.id, name: c.name, surname: c.surname ?? null, gender: c.gender, age: c.age, rank: c.rank, traits: c.traits,
+          id: c.id, name: c.name, key: c.name, surname: c.surname ?? null, gender: c.gender, age: c.age, rank: c.rank, traits: c.traits,
           goal: c.goals?.[0]?.text ?? null, role: c.role ? ROLES[c.role]?.title : null,
           seat: c.seat != null ? seatName(c.seat) : null, loyalty: c.loyalty, written,
           // In their own words: their latest memory told as theirs, never a
@@ -1625,14 +1638,15 @@ http.createServer(async (req, res) => {
     let n = 0;
     for (const h of Object.values(HOUSES)) {
       if (h.wild || h.crown || houses.some((x) => x.name === h.name)) continue;
-      houses.push({ id: -100 - n++, name: h.name, words: h.words, color: h.color, sigil: h.sigil, crown: false, fallen: true,
+      houses.push({ id: -100 - n++, name: h.name, key: h.name, words: h.words, color: h.color, sigil: h.sigil, crown: false, fallen: true,
         seat: null, towns: 0, favour: null, lore: b.houses[h.name] ?? null, notables: [] });
     }
     // The lesser families sworn to the great houses: one entry each, with
     // every town a branch of it holds, under which liege, and who heads it.
     const lesser = {};
-    const held = (c) => c.seat != null && (world?.cities ?? []).some((t) => t.id === c.seat && t.owner === c.playerId);
-    for (const c of court.alive().filter((x) => x.rank === "bannerman" && FAMILIES[x.surname])) {
+    // As written, the branches as every chronicle begins (the baseline cast and towns).
+    const held = (c) => c.seat != null && (written ? baseCities : world?.cities ?? []).some((t) => t.id === Number(c.seat) && t.owner === c.playerId);
+    for (const c of (written ? cast : court.alive()).filter((x) => x.rank === "bannerman" && FAMILIES[x.surname])) {
       const p = world?.players.find((x) => x.id === c.playerId);
       if (!p || p.alive === false) continue;
       const h = houseFor(p);
@@ -1640,7 +1654,7 @@ http.createServer(async (req, res) => {
       f.branches.push({
         house: h.name, house_id: p.id, color: h.color, sigil: h.sigil, crown: !!h.crown,
         // A seat lost to another house (or razed) is told as lost, not held.
-        seat: held(c) ? cityName(c.seat) : null, lost: c.seat != null && !held(c) ? cityName(c.seat) : null,
+        seat: held(c) ? seatName(c.seat) : null, lost: c.seat != null && !held(c) ? seatName(c.seat) : null,
         head: { id: c.id, name: c.name, gender: c.gender, age: c.age, loyalty: c.loyalty, traits: c.traits, role: c.role ? ROLES[c.role]?.title : null },
       });
     }

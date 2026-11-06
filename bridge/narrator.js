@@ -16,6 +16,10 @@ export const HOUSES = {
   pirate: { name: "sea raiders", color: "#2a2a3a", sigil: "skull", wild: true },
 };
 
+// Each house's own name is its key: what art and lore are found by, whatever
+// the player calls it (names.js shows their name, never touching `key`).
+for (const h of Object.values(HOUSES)) h.key = h.name;
+
 export function houseFor(player) {
   const nation = String(player?.nation || "").toLowerCase();
   if (HOUSES[nation]) return HOUSES[nation];

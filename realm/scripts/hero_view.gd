@@ -201,7 +201,7 @@ func _flame() -> Node3D:
 ## The painting behind a person of this house: res://assets/intro/art/house_<name>
 ## (jpg or png), else the seat's still in res://assets/intro/stills.
 static func _backdrop_of(house: Dictionary) -> String:
-	var name := String(house.get("name", ""))
+	var name := String(house.get("key", house.get("name", "")))  # the house's own name: its painting, whatever the player calls it
 	var key := "house_" + name.trim_prefix("House ").trim_prefix("The ").to_lower().replace(" ", "_")
 	for ext in [".jpg", ".png"]:
 		if ResourceLoader.exists("res://assets/intro/art/" + key + ext):
