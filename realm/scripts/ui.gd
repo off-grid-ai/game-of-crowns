@@ -176,6 +176,9 @@ func _notice_gap() -> Vector2:
 	var bottom := get_viewport().get_visible_rect().size.y - 16.0
 	if _town_panel and _town_panel.visible:
 		bottom = minf(bottom, _town_panel.get_global_rect().position.y - 12.0)
+	# Nor over the Hand's counsel: a notice with no room above it is let go.
+	if _counsel and _counsel.visible:
+		bottom = minf(bottom, _counsel.get_global_rect().position.y - 12.0)
 	return Vector2(top, bottom)
 
 

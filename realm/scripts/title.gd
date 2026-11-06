@@ -345,6 +345,15 @@ func show_new() -> void:
 	tales.add_theme_constant_override("v_separation", 8)
 	tales.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tales_scroll.add_child(_gutter(tales))
+	# The cards share the row out between them: as many columns as fit at about
+	# 300 wide, each stretched so the row ends at the page's edge, no strip left.
+	tales.resized.connect(func():
+		var w := tales.size.x
+		var cols := maxi(1, floori((w + 12.0) / 312.0))
+		var cw := floorf((w - 12.0 * (cols - 1)) / cols) - 1.0
+		for c in tales.get_children():
+			if c is Button and absf(c.custom_minimum_size.x - cw) > 0.5:
+				c.custom_minimum_size.x = cw)
 	_opt["story"] = _opt.get("story", "random")
 	var beats_box := VBoxContainer.new()  # the player's own beats, under the maker
 	var tale_card := func(id: String, text: String, own_story: bool) -> void:
