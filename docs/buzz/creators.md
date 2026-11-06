@@ -15,7 +15,7 @@ Your "Mac Gaming FINALLY Got Good" list is why I'm writing. I've just released G
 You're the king, and seven great houses want your throne. All you've got to hold onto it is grain, gold and your word at court. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed.
 
 Download: https://alichherawalla.itch.io/game-of-crowns
-Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
+Trailer (33s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.5.1-20261106-b55fe8e/game-of-crowns-launch-16x9.mp4
 
 A season passes every twenty seconds, so twenty minutes of footage covers fifteen years. No embargo and nothing you have to do. Happy to answer anything.
 
@@ -31,7 +31,7 @@ Your "Top 25 Mac Games 2025" is why I'm writing. I've just released Game of Crow
 You're the king, and seven great houses want your throne. All you've got to hold onto it is grain, gold and your word at court. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed.
 
 Download: https://alichherawalla.itch.io/game-of-crowns
-Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
+Trailer (33s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.5.1-20261106-b55fe8e/game-of-crowns-launch-16x9.mp4
 
 No embargo and nothing you have to do. Happy to answer anything.
 
@@ -47,7 +47,7 @@ Your "Why I'm Gaming on My M5 Mac Studio More Than My PS5" is why I'm writing. I
 You're the king, and seven great houses want your throne. All you've got to hold onto it is grain, gold and your word at court. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed.
 
 Download: https://alichherawalla.itch.io/game-of-crowns
-Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
+Trailer (33s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.5.1-20261106-b55fe8e/game-of-crowns-launch-16x9.mp4
 
 No embargo and nothing you have to do. Happy to answer anything.
 
@@ -63,7 +63,7 @@ Your "PC Gaming on the M5 MacBook Air in 2026" is why I'm writing. Here's one th
 You're the king, and seven great houses want your throne. All you've got to hold onto it is grain, gold and your word at court. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed.
 
 Download: https://alichherawalla.itch.io/game-of-crowns
-Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
+Trailer (33s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.5.1-20261106-b55fe8e/game-of-crowns-launch-16x9.mp4
 
 No embargo and nothing you have to do. Happy to answer anything.
 
@@ -79,7 +79,7 @@ Your "Top Indie Games of 2025 You Can Play on Mac!" is why I'm writing. I've jus
 You're the king, and seven great houses want your throne. All you've got to hold onto it is grain, gold and your word at court. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed.
 
 Download: https://alichherawalla.itch.io/game-of-crowns
-Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
+Trailer (33s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.5.1-20261106-b55fe8e/game-of-crowns-launch-16x9.mp4
 
 No embargo and nothing you have to do. Happy to answer anything.
 
@@ -95,7 +95,7 @@ Your "M6 Mac Mini Gaming is AMAZING" is why I'm writing. I've just released Game
 You're the king, and seven great houses want your throne. All you've got to hold onto it is grain, gold and your word at court. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed.
 
 Download: https://alichherawalla.itch.io/game-of-crowns
-Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
+Trailer (33s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.5.1-20261106-b55fe8e/game-of-crowns-launch-16x9.mp4
 
 No embargo and nothing you have to do. Happy to answer anything.
 
@@ -111,7 +111,7 @@ Your "Can a Mac Replace Your Gaming PC in 2026?" is why I'm writing. I've just r
 You're the king, and seven great houses want your throne. All you've got to hold onto it is grain, gold and your word at court. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed.
 
 Download: https://alichherawalla.itch.io/game-of-crowns
-Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
+Trailer (33s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.5.1-20261106-b55fe8e/game-of-crowns-launch-16x9.mp4
 
 No embargo and nothing you have to do. Happy to answer anything.
 

@@ -11,19 +11,19 @@ steps.append(step('itch','Now','Publish the itch page', '''<p>Done. It's live at
 steps.append(step('devlog','Now','Publish the launch devlog', '''<p>Done. <a href="https://alichherawalla.itch.io/game-of-crowns/devlog" target="_blank" rel="noopener">"0.5 is out"</a> is live, and the tags now include choices-matter, politics and fantasy.</p>'''))
 steps.append(step('test','Now','Download it once, the way a stranger would', '''<p>Open <a href="https://alichherawalla.itch.io/game-of-crowns" target="_blank" rel="noopener">alichherawalla.itch.io/game-of-crowns</a> in a private window, download, open the dmg, and launch it. If anything stops you, tell me before posting.</p>'''))
 t,b=d['mac']
-steps.append(step('mac','When the new video is ready','Post on r/macgaming', f'''<p><b>Wait for the new explainer video.</b> Post by 9:30pm IST (noon in New York); if it lands later, post tomorrow at 7pm IST instead. Create a <b>video post</b> and upload the new video. Flair: <b>Self promotion</b>. Check the sub's rules page once while logged in.</p>{copyblock('Title',t,'mac-t')}{copyblock('Body',b,'mac-b')}<p class="note">Then stay for the first hour and answer every comment.</p>'''))
+steps.append(step('mac','Now','Post on r/macgaming', f'''<p><b>The launch film is ready.</b> Post now, by 9:30pm IST at the latest. Create a <b>video post</b> and upload <code>docs/buzz/video/game-of-crowns-launch-16x9.mp4</code>. Flair: <b>Self promotion</b>. Check the sub's rules page once while logged in.</p>{copyblock('Title',t,'mac-t')}{copyblock('Body',b,'mac-b')}<p class="note">Then stay for the first hour and answer every comment.</p>'''))
 cards=[]
 for i,e in enumerate(d['emails']):
     to_is_form=e['to'].startswith('Contact form')
     to_html = f'<a href="{E(e["to"].split(": ",1)[1])}" target="_blank" rel="noopener">{E(e["to"])}</a>' if to_is_form else copyblock('To', e['to'], f'em{i}-to')
     cards.append(f'''<details class="email"><summary><label class="mini" onclick="event.stopPropagation()"><input type="checkbox" id="c-em{i}" data-k="em{i}"><span class="box" aria-hidden="true"></span></label><span class="ename">{E(e["name"])}</span><span class="esubs">{E(e["subs"])}</span></summary><div class="ebody">{to_html}{copyblock('Subject',e['subject'],f'em{i}-s')}{copyblock('Email',e['body'],f'em{i}-b')}</div></details>''')
-steps.append(step('emails','Right after r/macgaming','Send the eight creator emails', '<p>From your own email. I will swap in the new video link as soon as it is up. Each one names a real video of theirs. One follow-up in a week at most, never more.</p><div class="emails">'+''.join(cards)+'</div>'))
+steps.append(step('emails','Right after r/macgaming','Send the eight creator emails', '<p>From your own email. Each links the 33-second launch film. Each one names a real video of theirs. One follow-up in a week at most, never more.</p><div class="emails">'+''.join(cards)+'</div>'))
 t,b=d['god']
-steps.append(step('godot','An hour after r/macgaming','Post on r/godot', f'''<p>Video post with the same clip. Flair: <b>selfpromo (games)</b>. Their rule: you stay and answer questions.</p>{copyblock('Title',t,'god-t')}{copyblock('Body',b,'god-b')}'''))
+steps.append(step('godot','An hour after r/macgaming','Post on r/godot', f'''<p>Video post with the same film. Flair: <b>selfpromo (games)</b>. Their rule: you stay and answer questions.</p>{copyblock('Title',t,'god-t')}{copyblock('Body',b,'god-b')}'''))
 t,b=d['ig']
-steps.append(step('ig','Two hours after r/macgaming','Post on r/IndieGaming', f'''<p>Video post with the same clip. An hour after r/godot, so it doesn't look like cross-posting.</p>{copyblock('Title',t,'ig-t')}{copyblock('Body',b,'ig-b')}'''))
+steps.append(step('ig','Two hours after r/macgaming','Post on r/IndieGaming', f'''<p>Video post with the same film. An hour after r/godot, so it doesn't look like cross-posting.</p>{copyblock('Title',t,'ig-t')}{copyblock('Body',b,'ig-b')}'''))
 steps.append(step('reply','All evening','Reply to every comment', '<p>Answer what was asked, plainly. If someone hits a bug, thank them and tell me; I\'ll get it into 0.5.1.</p>'))
-later=[('Sat 7 Nov','Post the vertical clip on Shorts, TikTok and Reels','<code>docs/buzz/video/game-of-crowns-0.4-hook-9x16.mp4</code>. Upload it to each one separately so there are no watermarks.'),
+later=[('Sat 7 Nov','Post the vertical clip on Shorts, TikTok and Reels','<code>docs/buzz/video/game-of-crowns-launch-9x16.mp4</code>. Upload it to each one separately so there are no watermarks.'),
 ('Sat 7 Nov','Put the trailer on YouTube and send me the link','itch\'s trailer slot only takes a YouTube or Vimeo link. I\'ll add it.'),
 ('This week','Make an AppleGamingWiki page marked native','It needs an account, so it has to be you. <a href="https://applegamingwiki.com" target="_blank" rel="noopener">applegamingwiki.com</a>'),
 ('Mon 9 Nov','Send 15 more creator emails','Strategy and sim channels, in docs/buzz/creators.md under Batch 2.'),
@@ -93,7 +93,7 @@ details.email[open] summary::after{{content:"Close"}}
 <p class="hook">Find out what kind of king you'd be.</p>
 <div class="progress"><div class="bar"><i id="bar"></i></div><span id="count">0 of 0 done</span></div>
 </header>
-<section><h2>Tonight, once the video is ready</h2><ol>{''.join(steps)}</ol></section>
+<section><h2>Tonight</h2><ol>{''.join(steps)}</ol></section>
 <section><h2>Next two weeks</h2><ol>{lat}</ol></section>
 </div>
 <script>

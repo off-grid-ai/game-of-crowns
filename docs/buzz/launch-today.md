@@ -33,7 +33,7 @@ Mac's call: "we're gonna launch today." This replaces launch.md's 8 December dat
 ---
 
 ## r/macgaming (19:00)
-Video post: upload docs/buzz/video/game-of-crowns-0.4-hook-16x9.mp4. Flair: "Self promotion".
+Video post: upload docs/buzz/video/game-of-crowns-launch-16x9.mp4. Flair: "Self promotion".
 
 **Title:** Free on Apple Silicon: find out what kind of king you'd be
 
@@ -86,7 +86,7 @@ I watched your [video title] and [one real line about it]. I've just released Ga
 You're the king, and seven great houses want your throne. All you've got to hold onto it is grain, gold and your word at court. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed.
 
 Download (free, signed, no key needed): https://alichherawalla.itch.io/game-of-crowns
-Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
+Trailer (33s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.5.1-20261106-b55fe8e/game-of-crowns-launch-16x9.mp4
 
 For a video: a season passes every twenty seconds, so twenty minutes covers fifteen years. Rename a lord after a viewer and their story follows them.
 
