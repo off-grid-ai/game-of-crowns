@@ -1169,23 +1169,52 @@ func open_settings() -> void:
 func show_list() -> void:
 	_clear()
 	_on_main = false
+	var room := _root.get_viewport_rect().size
+	_body.custom_minimum_size = Vector2(minf(1560.0, room.x - 160.0), 0)  # the whole width: cards, not a thin list
 	_heading("Chronicles")
 	bridge.list_chronicles(_on_list)
 
 
 func _on_list(data) -> void:
+	# Each chronicle a card across the page: its name, where it stands (in
+	# progress, or ended with the King's name and score), its verdict, and when it
+	# began. The one in progress is lit; any card opens its chronicle.
 	var active := String(data.get("active", ""))
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.custom_minimum_size = Vector2(0, maxf(300.0, _root.get_viewport_rect().size.y - 330.0))
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_body.add_child(scroll)
+	var cards := HFlowContainer.new()
+	cards.add_theme_constant_override("h_separation", 12)
+	cards.add_theme_constant_override("v_separation", 10)
+	cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(_gutter(cards))
+	cards.resized.connect(func():
+		var w := cards.size.x
+		var cols := maxi(1, floori((w + 12.0) / 352.0))
+		var cw := floorf((w - 12.0 * (cols - 1)) / cols) - 1.0
+		for c in cards.get_children():
+			if c is Button and absf(c.custom_minimum_size.x - cw) > 0.5:
+				c.custom_minimum_size.x = cw)
 	for c in data.get("list", []):
-		var status := ""
+		var is_active: bool = c["id"] == active
+		var lines := []
 		if c.get("status") == "ended":
-			status = "ended · score %d" % int(c.get("score", 0))
-		elif int(c.get("minutes", 0)) > 0:
-			status = "%d min reign" % int(c.get("minutes"))
+			lines.append("Ended  ·  %s  ·  %s points" % [String(c.get("title", "the reign is told")), _thousands(int(c.get("score", 0)))])
+			if String(c.get("verdict", "")) != "":
+				lines.append("“%s”" % String(c["verdict"]))
 		else:
-			status = "endless"
-		var world_kind := "random world" if c.get("scenario") == "random" else "Aldmere"
-		var text := "%s%s   ·   %s   ·   %s" % ["▶ " if c["id"] == active else "", c["name"], world_kind, status]
-		_big(text, _choose.bind(String(c["id"]), String(c["name"]), c["id"] == active))
+			var played := int(c.get("elapsedMs", 0)) / 60000
+			var length := "endless" if int(c.get("minutes", 0)) <= 0 else "a %d-minute reign" % int(c.get("minutes"))
+			lines.append(("In progress, continue where you left off" if is_active else "In progress") + "  ·  %s  ·  %d min played" % [length, played])
+		var d := Time.get_datetime_dict_from_unix_time(int(c.get("created", 0)) / 1000)
+		lines.append("Begun %d %s" % [int(d["day"]), ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][int(d["month"]) - 1]])
+		var card := _text_card("%s\n%s" % [String(c["name"]), "\n".join(lines)], cards)
+		card.button_pressed = is_active
+		card.pressed.connect(func():
+			card.set_pressed_no_signal(is_active)
+			_choose(String(c["id"]), String(c["name"]), is_active))
 	_big("Back", _back)
 
 
@@ -1200,6 +1229,8 @@ func _choose(id: String, name: String, is_active: bool) -> void:
 func show_records() -> void:
 	_clear()
 	_on_main = false
+	var room := _root.get_viewport_rect().size
+	_body.custom_minimum_size = Vector2(minf(1560.0, room.x - 160.0), 0)  # two reigns to a row across the page
 	_heading("Hall of Records")
 	bridge.records(_on_records)
 
@@ -1213,10 +1244,15 @@ func _on_records(data) -> void:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.custom_minimum_size = Vector2(0, maxf(260.0, _root.get_viewport_rect().size.y - 300.0))
 	_body.add_child(scroll)
-	var list := VBoxContainer.new()
-	list.add_theme_constant_override("separation", 18)
+	var list := HFlowContainer.new()
+	list.add_theme_constant_override("h_separation", 40)
+	list.add_theme_constant_override("v_separation", 22)
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(_gutter(list))
+	list.resized.connect(func():
+		var half := floorf((list.size.x - 40.0) / 2.0) - 1.0
+		for row in list.get_children():
+			row.custom_minimum_size.x = half)
 	var speech: Font = preload("res://scripts/theme.gd").speech
 	var rank := 1
 	for r in data.slice(0, 12):
@@ -1274,7 +1310,7 @@ func show_credits() -> void:
 	_clear()
 	_on_main = false
 	var room := _root.get_viewport_rect().size
-	_body.custom_minimum_size = Vector2(minf(820.0, room.x - 120.0), 0)
+	_body.custom_minimum_size = Vector2(minf(1560.0, room.x - 160.0), 0)
 	_heading("Credits")
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -1284,18 +1320,39 @@ func show_credits() -> void:
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list.add_theme_constant_override("separation", 4)
 	scroll.add_child(list)
+	# Each section's works three to a row across the page: who made it, under
+	# what licence, and what it gives the realm.
 	var section := ""
+	var flow: HFlowContainer = null
+	var flows: Array = []
 	for e in preload("res://scripts/credits.gd").entries():
 		if e["section"] != section:
 			section = e["section"]
 			_section(list, section)
+			flow = HFlowContainer.new()
+			flow.add_theme_constant_override("h_separation", 28)
+			flow.add_theme_constant_override("v_separation", 10)
+			list.add_child(flow)
+			flows.append(flow)
 		var by := String(e["by"])
 		var line := String(e["title"]) + ("  ·  %s" % by if by != "" and by != e["title"] else "")
 		if String(e["licence"]) != "":
 			line += "  ·  " + String(e["licence"])
-		list.add_child(_label(line, 14, PARCHMENT))
+		var item := VBoxContainer.new()
+		item.add_theme_constant_override("separation", 1)
+		var head := _label(line, 14, PARCHMENT)
+		head.autowrap_mode = TextServer.AUTOWRAP_WORD
+		item.add_child(head)
 		if String(e["note"]) != "":
-			list.add_child(_label("      " + String(e["note"]), 13, PARCHMENT.darkened(0.35)))
+			var note := _label(String(e["note"]), 13, PARCHMENT.darkened(0.35))
+			note.autowrap_mode = TextServer.AUTOWRAP_WORD
+			item.add_child(note)
+		flow.add_child(item)
+	list.resized.connect(func():
+		var third := floorf((list.size.x - 56.0) / 3.0) - 1.0
+		for f in flows:
+			for it in f.get_children():
+				it.custom_minimum_size.x = third)
 	_big("Back", _back)
 
 

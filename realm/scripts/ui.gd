@@ -941,10 +941,10 @@ func _process(delta: float) -> void:
 				c.offset_top = maxf(70.0, below)
 		if _chron_panel:
 			_chron_panel.offset_top = maxf(84.0, _bar_pill.get_global_rect().end.y + 10.0)
-	# The Hand's counsel steps aside while you read a town, the court or the
-	# away report, and is back when you close them.
+	# The Hand's counsel steps aside while you read a town, the court, the ledger
+	# or the away report, and is back when you close them.
 	if _counsel:
-		_counsel.visible = not ((_digest_panel and _digest_panel.visible) or _town_panel.visible or _court_panel.visible or _cinema_on or _counsel_matters == _counsel_aside)
+		_counsel.visible = not ((_digest_panel and _digest_panel.visible) or _town_panel.visible or _court_panel.visible or (_ledger_panel and _ledger_panel.visible) or _cinema_on or _counsel_matters == _counsel_aside)
 		# Never over the houses table: past its foot, the Hand drops his last matters.
 		if _counsel.visible:
 			_fit_centre(_counsel, 560.0)

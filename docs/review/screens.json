@@ -91,7 +91,8 @@
   "name": "Lore: a great house",
   "group": "Lore of Aldmere",
   "what": "House Goldcrest: its painting, words, people; Edit beside its name",
-  "file": "screens/lore-house.jpg"
+  "file": "screens/lore-house.jpg",
+  "before": "screens/before/lore-house.jpg"
  },
  {
   "id": "lore-lesser",
