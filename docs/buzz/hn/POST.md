@@ -5,7 +5,7 @@ below names the evidence it rests on.
 
 ## Title (chosen by Mac, 6 Nov)
 
-Show HN: A kingdom sim where history names you for how you ruled
+Show HN: A medieval kingdom sim where history names you for how you ruled
 
 Scores 8/8 on the title rubric (RUBRIC.md): promises an experience, an unexpected twist,
 no stack or "AI-powered", understood instantly.

@@ -19,7 +19,7 @@ T1 promises value or an experience, not a genre. T2 an unexpected twist. T3 no s
 | Rule a medieval kingdom where the lords think on your Mac | 1 | 1 | 2 | 1 | 5 |
 | I built a kingdom sim where the lords run on a 2B model on your Mac | 1 | 1 | 1 | 2 | 5 |
 | Game of Crowns – find out what kind of king you'd be | 2 | 1 | 2 | 2 | 7 |
-| **A kingdom sim where history names you for how you ruled** (chosen) | 2 | 2 | 2 | 2 | 8 |
+| **A medieval kingdom sim where history names you for how you ruled** (chosen) | 2 | 2 | 2 | 2 | 8 |
 
 ## Post rubric (0-2 each)
 1 line one says what the game is · 2 a player's moment, not features · 3 a real human reason ·
