@@ -16,7 +16,9 @@ const ANIM_DIR := "res://assets/hero/anims"
 signal closed
 signal edit_requested(person: Dictionary, house: Dictionary)
 signal control_requested(person: Dictionary, house: Dictionary)
-signal name_changed  # the player gave someone a new first name
+signal name_changed  # the player gave someone a new name, or rewrote who they are
+var save_person := Callable()  # (person, spec, cb(code, d)) -> void: their rewrite, kept (main.gd)
+var trait_options := Callable()  # (cb(options)) -> void: the natures a person may have
 var rename_name := Callable()  # (from, to, cb) -> void: the player's own name for a word
 
 var _viewport: SubViewport
@@ -401,7 +403,7 @@ func _build_panel() -> void:
 	add_child(back)
 
 
-func _fill_panel(p: Dictionary, house: Dictionary) -> void:
+func _fill_panel(p: Dictionary, house: Dictionary, editing := false) -> void:
 	for c in _panel.get_children():
 		c.queue_free()
 	var pad := MarginContainer.new()
@@ -504,6 +506,9 @@ func _fill_panel(p: Dictionary, house: Dictionary) -> void:
 	if house.get("words"):
 		v.add_child(T.datum("“%s”" % String(house["words"]), T.SIZE_DESC, T.ACCENT))
 	v.add_child(HSeparator.new())
+	if editing:
+		_editor(v, p, house)
+		return
 	v.add_child(T.label("Nature"))
 	var nature := ", ".join(p.get("traits", []))
 	v.add_child(T.datum(nature.left(1).to_upper() + nature.substr(1), T.SIZE_BODY))
@@ -531,9 +536,10 @@ func _fill_panel(p: Dictionary, house: Dictionary) -> void:
 	change.flat = true
 	change.focus_mode = Control.FOCUS_NONE
 	change.add_theme_color_override("font_color", T.ACCENT)
-	change.pressed.connect(func(): edit_requested.emit(p, house))
-	# Reshaping someone happens in a reign; the book as written (from the menu) is read, not changed.
-	change.visible = not p.get("written", false)
+	# The card turns into its own editor: their story, what they remember, their
+	# nature, their loyalty. From the menu it rewrites the starting cast.
+	change.pressed.connect(func(): _fill_panel(p, house, true))
+	change.visible = save_person.is_valid()
 	var take := Button.new()
 	take.visible = preload("res://scripts/features.gd").WALKING  # stepping into someone's boots: version 2
 	take.text = "Take control"
@@ -552,6 +558,127 @@ func _fill_panel(p: Dictionary, house: Dictionary) -> void:
 		v.add_child(T.label("Remembers"))
 		for i in range(mem.size() - 1, -1, -1):
 			v.add_child(_para("[i]“%s”[/i]" % String(mem[i])))
+
+
+## Who they are, open to rewrite: their story, what they remember, their nature
+## and their loyalty. Save keeps it; Cancel leaves them as they were.
+func _editor(v: VBoxContainer, p: Dictionary, house: Dictionary) -> void:
+	v.add_child(T.label("Their story"))
+	var story := TextEdit.new()
+	story.text = String(p.get("backstory", p.get("story", ""))) if (p.get("backstory") or p.get("story")) else ""
+	story.placeholder_text = "Where they come from, what they lost, whom they hate"
+	story.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	story.custom_minimum_size.y = 110
+	v.add_child(story)
+	v.add_child(T.label("Remembers"))
+	var mems := VBoxContainer.new()
+	mems.add_theme_constant_override("separation", 6)
+	v.add_child(mems)
+	var add_mem := func(text: String) -> void:
+		var r := HBoxContainer.new()
+		var e := LineEdit.new()
+		e.text = text
+		e.placeholder_text = "Something they'll never forget"
+		e.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		r.add_child(e)
+		var x := Button.new()
+		x.text = "×"
+		x.flat = true
+		x.focus_mode = Control.FOCUS_NONE
+		x.tooltip_text = "Forget this"
+		x.pressed.connect(func(): r.queue_free())
+		r.add_child(x)
+		mems.add_child(r)
+	var seen: Array = []
+	for m in p.get("memories", []):
+		if not seen.has(m):
+			seen.append(m)
+			add_mem.call(String(m))
+	var more := Button.new()
+	more.text = "+  Add a memory"
+	more.flat = true
+	more.focus_mode = Control.FOCUS_NONE
+	more.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	more.add_theme_color_override("font_color", T.ACCENT)
+	more.pressed.connect(func():
+		if mems.get_child_count() < 8:
+			add_mem.call(""))
+	v.add_child(more)
+	v.add_child(T.label("Nature (up to four)"))
+	var picked: Array = (p.get("traits", []) as Array).duplicate()
+	var natures := HFlowContainer.new()
+	natures.add_theme_constant_override("h_separation", 6)
+	natures.add_theme_constant_override("v_separation", 6)
+	v.add_child(natures)
+	if trait_options.is_valid():
+		trait_options.call(func(opts):
+			var all: Array = opts.get("traits", []) if opts is Dictionary else []
+			picked = picked.filter(func(t): return all.has(t))
+			for t in all:
+				var b := Button.new()
+				b.text = String(t).capitalize()
+				b.toggle_mode = true
+				b.focus_mode = Control.FOCUS_NONE
+				b.button_pressed = picked.has(t)
+				b.toggled.connect(func(on):
+					if on and not picked.has(t):
+						if picked.size() >= 4:
+							b.set_pressed_no_signal(false)
+							return
+						picked.append(t)
+					elif not on:
+						picked.erase(t))
+				if is_instance_valid(natures):
+					natures.add_child(b))
+	v.add_child(T.label("Loyalty to their liege"))
+	var loyalty := HSlider.new()
+	loyalty.min_value = 0
+	loyalty.max_value = 100
+	loyalty.value = int(p.get("loyalty", 50))
+	v.add_child(loyalty)
+	var note := T.label("")
+	note.visible = false
+	v.add_child(note)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_END
+	row.add_theme_constant_override("separation", 10)
+	v.add_child(row)
+	var cancel := Button.new()
+	cancel.text = "Cancel"
+	cancel.flat = true
+	cancel.focus_mode = Control.FOCUS_NONE
+	cancel.pressed.connect(func(): _fill_panel(p, house))
+	row.add_child(cancel)
+	var save := Button.new()
+	save.text = "Save"
+	save.focus_mode = Control.FOCUS_NONE
+	save.add_theme_color_override("font_color", T.ACCENT)
+	row.add_child(save)
+	save.pressed.connect(func():
+		var memories: Array = []
+		for r in mems.get_children():
+			if not r.is_queued_for_deletion():
+				var t := String((r.get_child(0) as LineEdit).text).strip_edges()
+				if t != "":
+					memories.append(t)
+		var spec := {"id": str(p.get("id", "")), "backstory": story.text.strip_edges(), "past": story.text.strip_edges(),
+			"memories": memories, "traits": picked, "loyalty": int(loyalty.value)}
+		save.disabled = true
+		save_person.call(p, spec, func(code, d):
+			save.disabled = false
+			if code == 200:
+				var now := p.duplicate()
+				now["backstory"] = spec["backstory"]
+				now["story"] = spec["backstory"]
+				now["memories"] = memories
+				if not picked.is_empty():
+					now["traits"] = picked
+				now["loyalty"] = spec["loyalty"]
+				_fill_panel(now, house)
+				name_changed.emit()
+			else:
+				note.text = String(d.get("error", "That didn't save.")) if d is Dictionary else "That didn't save."
+				note.visible = true))
 
 
 ## The card as tall as what it says, up to the screen's height (then it scrolls).

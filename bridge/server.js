@@ -20,6 +20,7 @@ import { folkTale, folkPlain, moodRules, speak, ruleFrom, reactTo, speech, voice
 import { BUILD_COST, granarySize } from "./rules.js";
 import * as chron from "./chronicles.js";
 import * as names from "./names.js";
+import * as rewrites from "./written.js";
 import { decree, titheLua, clampFavour, DECREES, bannersReady } from "./crown.js";
 // Lords whose first names were borrowed from A Song of Ice and Fire, renamed
 // in realm.serv; realms begun before then still carry the old names in their
@@ -1264,6 +1265,7 @@ http.createServer(async (req, res) => {
     const b = await body(req);
     const scenario = ["random", "aldmere", "aldmere_fresh"].includes(b.scenario) ? b.scenario : "aldmere";
     const m = chron.create({ name: String(b.name || "A New Realm").slice(0, 40), scenario, minutes: b.minutes, pace: b.options?.pace ?? turnSeconds, fate: b.fate, wealth: b.wealth, mood: b.mood, options: b.options });
+    rewrites.applyTo(path.join(chron.paths(m.id).base, "characters"));  // the starting cast as the player rewrote it
     switchTo(m.id);
     return json(res, 200, m);
   }
@@ -1557,6 +1559,12 @@ http.createServer(async (req, res) => {
   // being played.
   // The player's names for houses and people: GET them, or POST {from, to} to
   // rename one (an empty `to` gives the word its own name back).
+  if (url.pathname === "/lore/written/person" && req.method === "POST") {
+    // Someone of the starting cast rewritten from the menu's Lore: every chronicle begun after this has them so.
+    const b = await body(req);
+    const out = rewrites.set(String(b.id ?? ""), b);
+    return json(res, out.error ? 400 : 200, out);
+  }
   if (url.pathname === "/names") {
     if (req.method === "POST") {
       const raw = await new Promise((r) => { let b = ""; req.on("data", (d) => (b += d)); req.on("end", () => { try { r(JSON.parse(b || "{}")); } catch { r({}); } }); });
@@ -1620,7 +1628,7 @@ http.createServer(async (req, res) => {
     if (written) {
       cast = [];
       const dir = path.join(chron.BASELINE, "characters");
-      try { for (const f of fs.readdirSync(dir)) if (f.endsWith(".json")) cast.push(JSON.parse(fs.readFileSync(path.join(dir, f), "utf8"))); } catch { /* none */ }
+      try { for (const f of fs.readdirSync(dir)) if (f.endsWith(".json")) cast.push(rewrites.apply(JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")))); } catch { /* none */ }
       cast = cast.filter((c) => c.alive !== false);
     }
     let baseCities = [];

@@ -140,6 +140,11 @@ func person_fell(id: String, how: String, cb: Callable) -> void:
 	_post("/person/fall", {"id": id, "how": how}, cb)
 
 
+## Someone of the starting cast rewritten from the menu's Lore (kept on this Mac).
+func write_person(spec: Dictionary, cb: Callable) -> void:
+	_post("/lore/written/person", spec, cb)
+
+
 func edit_character(spec: Dictionary, cb: Callable) -> void:
 	_post("/person", spec, cb)
 

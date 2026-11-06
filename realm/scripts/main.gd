@@ -337,6 +337,15 @@ func _ready() -> void:
 	lore.fetch_written = bridge.lore_written
 	lore.rename_name = bridge.rename
 	hero.rename_name = bridge.rename
+	hero.trait_options = bridge.character_options
+	# A rewrite from the close-up: the starting cast (from the menu's Lore), or the person in this reign.
+	hero.save_person = func(p: Dictionary, spec: Dictionary, cb: Callable):
+		if p.get("written", false):
+			bridge.write_person(spec, cb)
+		else:
+			var change := spec.duplicate()
+			change.erase("backstory")  # in a reign that key adds a memory; their past is "past"
+			bridge.edit_character(change, cb)
 	var figures: Node = preload("res://scripts/portrait.gd").new()
 	add_child(figures)
 	lore.portrait = figures.request

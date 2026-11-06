@@ -301,6 +301,7 @@ export class Court {
     }
     if (spec.loyalty != null) c.loyalty = Math.max(0, Math.min(100, Number(spec.loyalty)));
     if (spec.role && spec.role in ROLES) c.role = spec.role;
+    if (Array.isArray(spec.memories)) c.memories = spec.memories.map((m) => String(m).trim().slice(0, 200)).filter(Boolean).slice(-12);  // what they remember, as the King rewrites it
     if (spec.past != null) c.backstory = String(spec.past).slice(0, 300) || undefined;  // rewritten, or cleared
     if (spec.backstory) this.remember(c.id, String(spec.backstory).slice(0, 300));
     this.save(c);
