@@ -39,7 +39,7 @@
       "memory": { "elder": "My {a.son} {a} has been writing to {b}, the {b.son} of {rival}." },
       "after": [1, 1],
       "next": [
-        { "if": { "all": [{ "trait": ["elder", "just|generous|content|patient|lustful"] }, { "opinion": ["elder", "rival", ">", -50] }] }, "to": "asked" }
+        { "if": { "all": [{ "trait": ["elder", "just|generous|content|patient"] }, { "opinion": ["elder", "rival", ">", -50] }] }, "to": "asked" }
       ],
       "patience": 1, "otherwise": "forbidden"
     },
@@ -66,7 +66,7 @@
       "do": { "opinion": [["a", "elder", -30]] },
       "after": [1, 2],
       "next": [
-        { "if": { "trait": ["a", "brave|lustful|ambitious|proud|wrathful|vengeful"] }, "to": "elope" },
+        { "if": { "trait": ["a", "brave|ambitious|proud|wrathful|vengeful"] }, "to": "elope" },
         { "if": { "chance": 0.45 }, "to": "elope" }
       ],
       "patience": 1, "otherwise": "obeys"
@@ -85,7 +85,7 @@
       "after": [1, 2],
       "next": [
         { "if": { "any": [{ "trait": ["elder", "wrathful|vengeful|proud"] }, { "opinion": ["elder", "rival", "<", -50] }] }, "to": "pursuit" },
-        { "if": { "trait": ["elder", "content|generous|lustful|just"] }, "to": "grudging" }
+        { "if": { "trait": ["elder", "content|generous|just"] }, "to": "grudging" }
       ],
       "patience": 1, "otherwise": "pursuit"
     },

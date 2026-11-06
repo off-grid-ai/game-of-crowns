@@ -35,9 +35,9 @@ const PASTS = [
   "came back from a pilgrimage changed, and gives to every beggar",
 ];
 // Every town has its characters; the first few are guaranteed in each town.
-const TOWN_TYPES = ["flirtatious", "a gossip", "a drunkard", "a miser"];
+const TOWN_TYPES = ["a gossip", "a drunkard", "a miser"];
 const NATURES = [
-  "flirtatious", "a gossip", "a drunkard", "a miser", "a busybody", "pious", "quarrelsome", "kind-hearted", "lazy", "cheerful",
+  "a gossip", "a drunkard", "a miser", "a busybody", "pious", "quarrelsome", "kind-hearted", "lazy", "cheerful",
   "proud", "sharp-tongued", "superstitious", "a hard worker", "shy", "boastful", "jealous", "generous", "sly", "gentle",
 ];
 const WANTS = [

@@ -9,7 +9,7 @@
   "title": "The Inquisition",
   "roles": {
     "patron": { "rank": "lord", "seat": true, "likes": { "traits": ["pious", "paranoid", "just"] } },
-    "accused": { "rank": "lord", "otherHouse": "patron", "seat": true, "likes": { "traits": ["lustful", "cunning", "greedy", "proud"] } },
+    "accused": { "rank": "lord", "otherHouse": "patron", "seat": true, "likes": { "traits": ["cunning", "greedy", "proud"] } },
     "pyre": { "town": true, "seatOf": "accused" },
     "inquisitor": { "new": { "name": "Brother {first}", "gender": "male", "age": [40, 65], "rank": "sworn", "traits": ["pious", "wrathful", "paranoid"], "memory": "The gods showed me the rot in this realm, and gave me fire to cut it out.", "goal": { "kind": "purge", "text": "Burn the heresy out of every house, however high" }, "like": "patron" } }
   },

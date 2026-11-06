@@ -7,7 +7,7 @@
   "cooldown": 16,
   "title": "The Bastard of {father.seat}",
   "roles": {
-    "father": { "rank": ["lord", "bannerman"], "age": [38, 85], "seat": true, "either": [{ "traits": ["lustful"] }, { "traits": ["proud", "greedy"], "children": true }] },
+    "father": { "rank": ["lord", "bannerman"], "age": [38, 85], "seat": true, "either": [{ "traits": ["proud", "greedy"], "children": true }] },
     "trueborn": { "childOf": "father", "rank": ["heir", "child"], "age": [12, 50] },
     "hall": { "town": true, "seatOf": "father" },
     "bastard": {

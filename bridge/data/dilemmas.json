@@ -16,14 +16,14 @@
   },
   {
     "id": "elopement", "weight": 3, "needs": ["heir", "rival"], "when": { "chance": 0.6 },
-    "text": "{heir}, heir of {me.house}, has run off with a girl of {rival.house}. {me} wants the King's men to bring the young fool home. {rival} says the girl was seduced, and wants blood.",
+    "text": "{heir}, heir of {me.house}, has run off with a girl of {rival.house}. {me} wants the King's men to bring the young fool home. {rival} says {rival.his} house has been shamed, and wants blood.",
     "options": [
       { "id": "home", "label": "Bring {heir} home in chains", "hint": "{rival.house} +10 · {heir} never forgives {heir.his} {me.father} or the crown",
         "effects": { "favour": { "rival": 10 }, "memory": { "heir": "The King dragged me home in chains." }, "loyalty": { "heir": -30 } },
         "text": "The King's riders bring {heir} home in chains. The girl is sent back to {rival.house}, ruined." },
       { "id": "bless", "label": "Let love have its way", "hint": "{me.house} and {rival.house} drawn together · both lords −10, both furious",
         "effects": { "favour": { "me": -10, "rival": -10 }, "opinion": [["me", "rival", 15], ["rival", "me", 15]] },
-        "text": "The King lets the lovers be. Both fathers rage, and slowly, grudgingly, begin to talk." },
+        "text": "The King lets the pair be. Both fathers rage, and slowly, grudgingly, begin to talk." },
       { "id": "pay", "label": "Pay {rival.house} for the insult (120 gold)", "cost": 120, "hint": "Blood is bought off · {rival.house} +5",
         "effects": { "gold": { "rival": 120 }, "favour": { "rival": 5 }, "truce": 1 },
         "text": "The crown pays {rival.house} for its daughter's honour. The matter is closed, on paper." }
@@ -105,7 +105,7 @@
     ]
   },
   {
-    "id": "bastard", "weight": 2, "needs": ["bannerman"], "when": { "trait": ["lustful", "proud", "ambitious"] },
+    "id": "bastard", "weight": 2, "needs": ["bannerman"], "when": { "trait": ["proud", "ambitious"] },
     "text": "A boy of fourteen stands in the hall with {bannerman}'s face and none of {bannerman.his} name. {bannerman} asks the King to legitimise him. {me}'s trueborn kin are scandalised.",
     "options": [
       { "id": "legitimise", "label": "Legitimise him", "hint": "{bannerman} +loyalty to the crown · {me.house} −10",
@@ -364,13 +364,13 @@
   },
   {
     "id": "faithless_wife", "weight": 2, "needs": ["rival"], "when": { "trait": ["paranoid", "proud", "wrathful", "vengeful"] },
-    "text": "{me} of {me.house} believes {me.his} {me.wife} has taken {rival} of {rival.house} as a lover, and wants the marriage set aside, and {rival} named before the court.",
+    "text": "{me} of {me.house} believes {me.his} {me.wife} has been passing the secrets of {me.house} to {rival} of {rival.house}, and wants the marriage set aside, and {rival} named before the court.",
     "options": [
       { "id": "annul", "label": "Grant the annulment", "hint": "{me.house} +10 · {rival.house} −15 · the realm gossips",
         "effects": { "favour": { "me": 10, "rival": -15 }, "opinion": [["me", "rival", -40]] },
         "text": "The marriage is set aside. {rival}'s name is said in every tavern." },
       { "id": "deny", "label": "Refuse without proof", "hint": "{me.house} −10 · {me} seeks proof {me.himself}",
-        "effects": { "favour": { "me": -10 }, "goal": { "me": { "kind": "revenge", "text": "catch {rival} and my {me.wife} together" } } },
+        "effects": { "favour": { "me": -10 }, "goal": { "me": { "kind": "revenge", "text": "catch {rival} and my {me.wife} at their letters" } } },
         "text": "The King refuses. {me} hires men to follow {me.his} own {me.wife}." },
       { "id": "septon", "label": "Let the Archbishop decide", "hint": "Both −3 · it drags on for years",
         "effects": { "favour": { "me": -3, "rival": -3 } },

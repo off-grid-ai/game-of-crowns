@@ -111,6 +111,9 @@ export function modelQueue() {
   return { slots: SLOTS, running, waiting, levels, recent: timings.slice(-30) };
 }
 
+// Every line the model writes is for all ages: a medieval court's politics, never its bedrooms.
+const SAFE = "\n\nKeep it fit for all ages: no sexual content, no lovers or affairs, no nudity, no innuendo.";
+
 async function complete(system, prompt, maxTokens = 220, retry = true, turns = [], pri = "warm") {
   const first = await queued(pri, () => completeOnce(system, prompt, maxTokens, turns));
   if (first || !retry) return first;
@@ -140,7 +143,7 @@ async function sayOnce(system, turns, prompt, maxTokens) {
       signal: AbortSignal.timeout(90000),
       body: JSON.stringify({
         model,
-        messages: [{ role: "system", content: system }, ...turns, { role: "user", content: prompt }],
+        messages: [{ role: "system", content: system + SAFE }, ...turns, { role: "user", content: prompt }],
         max_tokens: maxTokens,
         temperature: 0.8,
         chat_template_kwargs: { enable_thinking: false },
@@ -171,7 +174,7 @@ async function completeOnce(system, prompt, maxTokens, turns = []) {
       signal: AbortSignal.timeout(90000), // the first call may wait for the model to load
       body: JSON.stringify({
         model,
-        messages: [{ role: "system", content: system }, ...turns, { role: "user", content: prompt + "\nRespond with only the JSON object." }],
+        messages: [{ role: "system", content: system + SAFE }, ...turns, { role: "user", content: prompt + "\nRespond with only the JSON object." }],
         max_tokens: maxTokens,
         temperature: 0.8,
         chat_template_kwargs: { enable_thinking: false },
@@ -224,7 +227,7 @@ export function tidyLine(text) {
   return t.length > 220 ? t.slice(0, t.lastIndexOf(" ", 217)) + "…" : t;
 }
 
-const TRAITS = ["ambitious", "honourable", "greedy", "vengeful", "pious", "cunning", "craven", "brave", "lustful", "content", "paranoid", "generous", "proud", "patient", "wrathful", "just"];
+const TRAITS = ["ambitious", "honourable", "greedy", "vengeful", "pious", "cunning", "craven", "brave", "content", "paranoid", "generous", "proud", "patient", "wrathful", "just"];
 
 // The King's decree in words -> who it applies to and how they change.
 // Scope can be the whole realm, houses, named characters, or a group.
@@ -240,7 +243,7 @@ Return {
  "characters": [exact character names, if scope is characters],
  "group": {"rank": "lord"|"bannerman"|"heir"|"any", "gender": "male"|"female"|"any", "minAge": n, "maxAge": n, "trait": "a trait or empty"} (if scope is group),
  "aggression": n, "loyalty": n, "ambition": n, "caution": n, "cunning": n, "piety": n, "greed": n,
- "addTraits": [traits to give, from: ambitious honourable greedy vengeful pious cunning craven brave lustful content paranoid generous proud patient wrathful just],
+ "addTraits": [traits to give, from: ambitious honourable greedy vengeful pious cunning craven brave content paranoid generous proud patient wrathful just],
  "removeTraits": [traits to take away],
  "goal": "a new personal goal in first person, or empty",
  "summary": "one short sentence describing the change"

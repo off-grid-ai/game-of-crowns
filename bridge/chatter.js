@@ -17,9 +17,9 @@ import { cityName } from "./narrator.js";
 // Who carries news between towns.
 const TRAVELLERS = new Set(["carter", "friar", "anchoress", "pedlar", "soldier", "minstrel"]);
 // Talkers and the tight-lipped: how many lines they're good for, and how they take each other.
-const TALKATIVE = /gossip|busybody|boastful|flirtatious|drunkard|cheerful|sharp-tongued/;
+const TALKATIVE = /gossip|busybody|boastful|drunkard|cheerful|sharp-tongued/;
 const QUIET = /shy|miser|gentle|lazy/;
-const WARMING = /kind|cheerful|generous|gentle|flirtatious|gossip/;
+const WARMING = /kind|cheerful|generous|gentle|gossip/;
 const COOLING = /quarrelsome|jealous|proud|sharp-tongued|miser|sly/;
 const MOODS = { fear: "afraid", anger: "angry", joy: "glad", grief: "grieving", faith: "full of faith", hunger: "hungry" };
 // Played conversations stay on offer this long; a gathering's own talk is kept for its life.
@@ -118,7 +118,7 @@ function react(m) {
   const n = natureOf(m);
   return /quarrel|sharp|proud|jealous/.test(n) ? "doesn't believe a word and says so"
     : /pious|gentle|kind/.test(n) ? "thinks it unkind to say, but asks more"
-      : /gossip|busybody|flirt|sly/.test(n) ? "wants every detail and adds a bit of their own"
+      : /gossip|busybody|sly/.test(n) ? "wants every detail and adds a bit of their own"
         : /drunk|lazy|cheerful|boast/.test(n) ? "laughs and makes a crude joke of it"
           : /superstitious/.test(n) ? "takes it for an ill omen"
             : "is wary, and asks who told them";

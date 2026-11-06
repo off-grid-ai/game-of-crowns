@@ -10,7 +10,7 @@
   "roles": {
     "thief": { "rank": "lord", "seat": true, "likes": { "traits": ["cunning", "ambitious", "greedy", "paranoid"] } },
     "hall": { "town": true, "seatOf": "thief" },
-    "named": { "rank": "lord", "otherHouse": "thief", "likes": { "traits": ["proud", "lustful", "greedy"] } }
+    "named": { "rank": "lord", "otherHouse": "thief", "likes": { "traits": ["proud", "greedy"] } }
   },
   "core": ["thief"],
   "beats": [

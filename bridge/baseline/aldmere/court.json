@@ -21,7 +21,7 @@
    },
    "text": "Your spymaster reports that Ewan Roswell, sworn to House Thornvale, was seen at an inn on the border with men in House Wolfholt's colours. Money changed hands. Ysolde Thornvale does not yet know.",
    "facts": [
-    "House Thornvale: 4 towns, 6 soldiers, 36 gold, favour 57, lord is lustful, content",
+    "House Thornvale: 4 towns, 6 soldiers, 36 gold, favour 57, lord is proud, content",
     "House Wolfholt: 1 towns, 8 soldiers, 35 gold, favour 57, lord is content, brave"
    ],
    "options": [
@@ -65,7 +65,7 @@
    },
    "text": "A raven intercepted on the Kingsroad: Ysolde Thornvale of House Thornvale and Tobin Highfell of House Highfell have sworn a pact, sealed with a marriage contract. The letter does not mention the King at all.",
    "facts": [
-    "House Thornvale: 5 towns, 4 soldiers, 38 gold, favour 37, lord is lustful, content",
+    "House Thornvale: 5 towns, 4 soldiers, 38 gold, favour 37, lord is proud, content",
     "House Wolfholt: 3 towns, 6 soldiers, 21 gold, favour 49, lord is content, brave",
     "House Highfell: 2 towns, 4 soldiers, 26 gold, favour 49, lord is vengeful, content"
    ],
@@ -98,7 +98,7 @@
    "kind": "debt",
    "text": "Ysolde Thornvale of House Thornvale: \"The tithe has bled my coffers dry, Your Grace. 46 gold is all that stands between my house and ruin. Spare us, or lend us enough to stand.\"",
    "facts": [
-    "House Thornvale: 6 towns, 7 soldiers, 46 gold, favour 37, lord is lustful, content"
+    "House Thornvale: 6 towns, 7 soldiers, 46 gold, favour 37, lord is proud, content"
    ],
    "options": [
     {
@@ -132,7 +132,7 @@
    "man": "c24",
    "text": "Corwin Greyford, bannerman of House Thornvale, kneels before the throne. He held the line when others ran and asks to be made a lord in his own right, sworn to the crown alone. Ysolde Thornvale stands stiffly beside him.",
    "facts": [
-    "House Thornvale: 9 towns, 4 soldiers, 59 gold, favour 25, lord is lustful, content"
+    "House Thornvale: 9 towns, 4 soldiers, 59 gold, favour 25, lord is proud, content"
    ],
    "options": [
     {
@@ -175,7 +175,7 @@
    },
    "text": "House Wolfholt has raised a toll on the only bridge between House Thornvale's lands and the Kingsroad. Ysolde Thornvale calls it robbery.",
    "facts": [
-    "House Thornvale: 9 towns, 4 soldiers, 86 gold, favour 13, lord is lustful, content",
+    "House Thornvale: 9 towns, 4 soldiers, 86 gold, favour 13, lord is proud, content",
     "House Wolfholt: 3 towns, 3 soldiers, 3 gold, favour 45, lord is content, brave"
    ],
    "options": [
@@ -374,7 +374,7 @@
    },
    "text": "Ysolde Thornvale of House Thornvale is 65 and forgets her own children's names. Elsbeth Thornvale asks the King to let them rule now, before the house is lost.",
    "facts": [
-    "House Thornvale: 9 towns, 11 soldiers, 171 gold, favour 5, lord is lustful, content"
+    "House Thornvale: 9 towns, 11 soldiers, 171 gold, favour 5, lord is proud, content"
    ],
    "options": [
     {

@@ -20,7 +20,7 @@ const NATURE_MOOD = {
   quarrelsome: { anger: 0.4 }, "sharp-tongued": { anger: 0.3 }, jealous: { anger: 0.3, grief: 0.15 }, proud: { anger: 0.25, joy: 0.45 },
   superstitious: { fear: 0.4, faith: 0.55 }, shy: { fear: 0.35, joy: 0.3 }, "a miser": { fear: 0.3, joy: 0.3 },
   cheerful: { joy: 0.65 }, "kind-hearted": { joy: 0.5, faith: 0.5 }, gentle: { joy: 0.5, anger: 0.05 }, generous: { joy: 0.5 },
-  flirtatious: { joy: 0.6 }, boastful: { joy: 0.55 }, lazy: { joy: 0.45, hunger: 0.25 }, sly: { anger: 0.2 },
+  boastful: { joy: 0.55 }, lazy: { joy: 0.45, hunger: 0.25 }, sly: { anger: 0.2 },
   "a gossip": { joy: 0.5 }, "a busybody": { anger: 0.2 }, "a hard worker": { joy: 0.4 },
   // The named, by their traits.
   vengeful: { anger: 0.4 }, wrathful: { anger: 0.45 }, paranoid: { fear: 0.45 }, craven: { fear: 0.45 }, brave: { fear: 0.08 },
@@ -178,7 +178,7 @@ export class Minds {
     for (let k = 0; k < 2 + (r % 2); k++) {
       const j = (p.i + 1 + ((r >>> (k * 5)) % (folk.length - 1))) % folk.length;
       const [note, trust, warmth] = BONDS[(r >>> (k * 3 + 1)) % BONDS.length];
-      if (j !== p.i) bonds[`folk:${city.id}:${j}`] = { trust, warmth, note: p.nature === "flirtatious" && k === 0 ? "sweet on them" : note };
+      if (j !== p.i) bonds[`folk:${city.id}:${j}`] = { trust, warmth, note };
     }
     const m = {
       id, name: p.name, town: city.id, station: p.trade, sex: p.woman ? "female" : "male", age: p.age, i: p.i,
@@ -560,7 +560,6 @@ export class Minds {
         if (mood.anger > 0.5) return { doing: "grumbling about the tithe over ale", where: "tavern" };
         if (/drunkard/.test(nature) || (mood.joy > 0.55 && r < 50)) return { doing: mood.joy > 0.6 ? "singing in the tavern" : "drinking", where: "tavern" };
         if (mood.faith > 0.6 && r < 50) return { doing: "at evening prayers", where: "sept" };
-        if (/flirtatious/.test(nature) && r < 60) return { doing: "lingering by the well, hoping to be seen", where: "well" };
         return r < 45 ? { doing: "talking on the bench as the light goes", where: "bench" } : { doing: hour > 20 ? "banking the fire" : "supper at home", where: "home" };
       }
     }

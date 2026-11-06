@@ -5,8 +5,8 @@
   "age": 65,
   "alive": true,
   "traits": [
-    "lustful",
-    "content"
+    "content",
+    "proud"
   ],
   "loyalty": 49,
   "goals": [
@@ -33,6 +33,6 @@
   "playerId": 3,
   "rank": "lord",
   "seat": 207,
-  "voice": "lustful, content lord of House Thornvale; speaks like a proud noble",
-  "backstory": "Waited two years at Kingsmere for the crown to answer Ironreach's raids on her coast, and came home with nothing. Wants a Thornvale queen and full granaries. Kept lovers in her youth, and some of their letters still survive."
+  "voice": "proud, content lord of House Thornvale; speaks like a proud noble",
+  "backstory": "Waited two years at Kingsmere for the crown to answer Ironreach's raids on her coast, and came home with nothing. Wants a Thornvale queen and full granaries. Wrote rash letters against the crown in her youth, and some of them still survive."
 }
