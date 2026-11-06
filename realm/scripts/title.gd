@@ -177,16 +177,27 @@ func show_main() -> void:
 		_new_step = 0  # a new chronicle starts at its first page
 		_name_typed = false
 		_go(show_new))
-	_big("Settings", _go.bind(show_settings))
-	# These two open over the menu and come back to it: they step the menu aside
-	# without closing it (closing it is what starts play).
+	_big("Chronicles", _go.bind(show_list))
+	# The realm: its story and its past. These open over the menu and come back
+	# to it (they step it aside without closing it; closing it is what starts play).
+	_menu_gap()
+	_big("The Lore of Aldmere", func(): read_lore.emit())  # it opens over the menu, which stays beneath it
 	_big("Watch the introduction", func():
 		visible = false
 		watch_intro.emit())
-	_big("The Lore of Aldmere", func(): read_lore.emit())  # it opens over the menu, which stays beneath it
-	_big("Chronicles", _go.bind(show_list))
 	_big("Hall of Records", _go.bind(show_records))
-	_big("Credits", _go.bind(show_credits))
+	# The quiet things, small and side by side at the foot.
+	_menu_gap()
+	var small := HBoxContainer.new()
+	small.alignment = BoxContainer.ALIGNMENT_CENTER
+	small.add_theme_constant_override("separation", 28)
+	_body.add_child(small)
+	for pair in [["Settings", _go.bind(show_settings)], ["Credits", _go.bind(show_credits)]]:
+		var b := _big(String(pair[0]), pair[1])
+		b.reparent(small)
+		b.custom_minimum_size = Vector2(140, 40)
+		b.add_theme_font_size_override("font_size", 17)
+		b.add_theme_color_override("font_color", MUTED)
 	# A quiet footer, centred under the menu: what Off Grid AI adds, and where to get it.
 	var foot := HBoxContainer.new()
 	foot.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -1295,6 +1306,13 @@ func _label(text: String, size: int, color: Color) -> Label:
 	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", color)
 	return l
+
+
+## A breath between the menu's groups.
+func _menu_gap() -> void:
+	var g := Control.new()
+	g.custom_minimum_size.y = 14
+	_body.add_child(g)
 
 
 func _big(text: String, cb: Callable) -> Button:
