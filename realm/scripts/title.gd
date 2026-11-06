@@ -318,7 +318,7 @@ func show_new() -> void:
 	tales.add_theme_constant_override("h_separation", 12)
 	tales.add_theme_constant_override("v_separation", 8)
 	tales.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	tales_scroll.add_child(tales)
+	tales_scroll.add_child(_gutter(tales))
 	_opt["story"] = _opt.get("story", "random")
 	var beats_box := VBoxContainer.new()  # the player's own beats, under the maker
 	var tale_card := func(id: String, text: String, own_story: bool) -> void:
@@ -357,7 +357,7 @@ func show_new() -> void:
 	var maker := VBoxContainer.new()
 	maker.add_theme_constant_override("separation", 8)
 	maker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	maker_scroll.add_child(maker)
+	maker_scroll.add_child(_gutter(maker))
 	var open_maker := func(on: bool) -> void:
 		maker_scroll.visible = on
 		if on:
@@ -733,6 +733,18 @@ func _reveal(c: Control) -> void:
 ## "the warden" as it starts a line: "The warden".
 func _first_up(text: String) -> String:
 	return text.left(1).to_upper() + text.substr(1)
+
+
+## A scroll's content held off its edges and clear of the scrollbar.
+func _gutter(content: Control) -> MarginContainer:
+	var pad := MarginContainer.new()
+	pad.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pad.add_theme_constant_override("margin_left", 2)
+	pad.add_theme_constant_override("margin_top", 4)
+	pad.add_theme_constant_override("margin_bottom", 8)
+	pad.add_theme_constant_override("margin_right", 24)
+	pad.add_child(content)
+	return pad
 
 
 ## A line about Off Grid AI with its link, where it does something for you.

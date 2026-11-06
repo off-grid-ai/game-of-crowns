@@ -429,7 +429,11 @@ func _fill_story() -> void:
 	var list := VBoxContainer.new()
 	list.add_theme_constant_override("separation", 12)
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(list)
+	var gutter := MarginContainer.new()  # clear of the scrollbar once it's long
+	gutter.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	gutter.add_theme_constant_override("margin_right", 16)
+	gutter.add_child(list)
+	scroll.add_child(gutter)
 	if beats.is_empty():
 		var none := Label.new()
 		none.text = "Nothing has come of it yet. Its first turn reaches your court soon."
