@@ -169,7 +169,10 @@ func _ready() -> void:
 	intro.ready_check = func(): return terrain.built and towns != null and not towns.building() and not towns.towns.is_empty()
 	add_child(intro)
 	lore = preload("res://scripts/lore.gd").new()
-	lore.person_opened.connect(_open_person)
+	# Met from the Lore, Back returns to the Lore at that house.
+	lore.person_opened.connect(func(id, house):
+		_open_person(id, house, "the Lore")
+		hero.closed.connect(func(): lore.visible = true, CONNECT_ONE_SHOT))
 	lore.town_opened.connect(func(title):
 		for c in bridge.world.get("cities", []):
 			if String(c.get("title", c.get("name", ""))) == title:
@@ -361,7 +364,7 @@ func _ready() -> void:
 			_intro_due = true
 		else:
 			_tell_the_story())
-	title.read_lore.connect(func(): lore.open())
+	title.read_lore.connect(func(): lore.open(-2, true))  # from the menu: the world as written
 	if _shot.has("path") and not _shot.has("title"):
 		title.visible = false
 	ui.visible = not title.visible and not _shot.has("clean")
@@ -1512,11 +1515,11 @@ func _take_control(p: Dictionary, h: Dictionary) -> void:
 	control.start(p, h, town)
 
 
-func _open_person(id: String, house: Dictionary) -> void:
+func _open_person(id: String, house: Dictionary, from := "the realm") -> void:
 	var h: Dictionary = _houses.get(int(house.get("id", -1)), house) if house.has("id") else house
 	bridge.person(id, func(d):
 		if d is Dictionary and d.has("name"):
-			hero.open(d, h))
+			hero.open(d, h, from))
 
 
 

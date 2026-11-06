@@ -21,6 +21,10 @@ var _chapters: VBoxContainer
 var _page: VBoxContainer
 var _scroll: ScrollContainer
 var _chosen := -2  # -1 = the realm, -3 = the lesser houses, otherwise a house id
+## Opened from the main menu, the book is the world as written: the houses, their
+## arms and grudges, the lesser houses. None of the last chronicle's state (its
+## towns, favour, the fallen, its living people and what they remember).
+var baseline := false
 const LESSER := -3
 
 
@@ -30,7 +34,8 @@ func _ready() -> void:
 
 
 ## Opens the book, at a house's chapter when given one.
-func open(house_id := -2) -> void:
+func open(house_id := -2, as_written := false) -> void:
+	baseline = as_written
 	if house_id != -2:
 		_chosen = house_id
 	if fetch.is_valid():
@@ -207,11 +212,12 @@ func _house(h: Dictionary) -> void:
 		facts.append(lore["region"])
 	if h.get("seat") != null:
 		facts.append("seat at %s" % h["seat"])
-	facts.append("%d towns" % int(h.get("towns", 0)))
-	if h.get("favour") != null:
+	if not baseline:
+		facts.append("%d towns" % int(h.get("towns", 0)))
+	if h.get("favour") != null and not baseline:
 		facts.append("favour %d of 100" % int(h["favour"]))
 	_page.add_child(T.label("  ·  ".join(facts)))
-	if h.get("fallen", false):
+	if h.get("fallen", false) and not baseline:
 		_para("Fallen. The house holds no town in this reign; its people are scattered and its banners hang in other men's halls. The realm remembers what it was.")
 	if h.get("crown", false):
 		# Your own house, set out like the others: its arms, its line, what it holds
@@ -238,7 +244,7 @@ func _house(h: Dictionary) -> void:
 			var mine: Dictionary = f.duplicate()
 			mine["branches"] = ours
 			sworn.append(mine)
-	var people: Array = h.get("notables", [])
+	var people: Array = [] if baseline else h.get("notables", [])  # the living belong to a reign, not the book
 	if people.is_empty() and sworn.is_empty():
 		return
 	_page.add_child(HSeparator.new())
@@ -320,7 +326,7 @@ func _person(p: Dictionary, h: Dictionary, into: Node = null) -> void:
 	meet.tooltip_text = "Meet them face to face"
 	meet.add_theme_color_override("font_color", T.ACCENT)
 	meet.pressed.connect(func():
-		close()
+		visible = false  # stepped aside, not closed: Back from the meeting returns here
 		person_opened.emit(str(p.get("id", "")), h))
 	top.add_child(meet)
 	var rank: String = String(p.get("role", "")) if p.get("role") != null else RANKS.get(String(p.get("rank", "")), "")

@@ -74,7 +74,15 @@ func _process(delta: float) -> void:
 
 
 ## Opens the view on a person (the /person record) of a house (world house dict).
-func open(person: Dictionary, house: Dictionary) -> void:
+## Where Back leads: the page you came from, named on the button.
+var back_to := "the realm"
+var _back_btn: Button
+
+
+func open(person: Dictionary, house: Dictionary, from := "the realm") -> void:
+	back_to = from
+	if _back_btn:
+		_back_btn.text = "  ←  Back to %s   (%s)  " % [back_to, Keys.label("back").get_slice(" / ", 0)]
 	visible = true
 	_orbit = 0.0
 	_dress_stage(house, _family(person, house))
@@ -312,7 +320,8 @@ func _build_panel() -> void:
 	_panel.offset_bottom = -24
 	add_child(_panel)
 	var back := Button.new()
-	back.text = "  ←  Back to the realm   (%s)  " % Keys.label("back").get_slice(" / ", 0)
+	back.text = "  ←  Back to %s   (%s)  " % [back_to, Keys.label("back").get_slice(" / ", 0)]
+	_back_btn = back
 	back.position = Vector2(24, 24)
 	back.pressed.connect(close)
 	add_child(back)
