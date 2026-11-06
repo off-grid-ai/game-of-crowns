@@ -293,14 +293,11 @@ func show_new() -> void:
 	presets.add_theme_constant_override("separation", 12)
 	pages[0].add_child(presets)
 	for name in PRESETS:
-		var card := _toggle(String(name), presets)
+		var card := _text_card("%s\n%s" % [name, PRESETS[name]["about"]], presets)
 		card.toggle_mode = true
 		card.button_pressed = name == _preset
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		card.custom_minimum_size.y = 140
-		card.text = "%s\n%s" % [name, PRESETS[name]["about"]]
-		card.autowrap_mode = TextServer.AUTOWRAP_WORD
-		card.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		card.pressed.connect(_use_preset.bind(String(name)))
 	# How long a sitting: whatever the story, every player chooses it, so it
 	# stands up here rather than among the customised choices.
@@ -322,12 +319,10 @@ func show_new() -> void:
 	_opt["story"] = _opt.get("story", "random")
 	var beats_box := VBoxContainer.new()  # the player's own beats, under the maker
 	var tale_card := func(id: String, text: String, own_story: bool) -> void:
-		var card := _toggle(text, tales)
+		var card := _text_card(text, tales)
 		card.toggle_mode = true
 		card.button_pressed = _opt["story"] == id
-		card.custom_minimum_size = Vector2(300, 72)
-		card.autowrap_mode = TextServer.AUTOWRAP_WORD
-		card.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		card.custom_minimum_size.x = 300
 		card.pressed.connect(func():
 			_opt["story"] = id
 			# The chronicle takes the story's name, unless you've named it yourself.
@@ -342,11 +337,9 @@ func show_new() -> void:
 					b.set_pressed_no_signal(b == card))
 	tale_card.call("random", "Let the realm decide\nA story chosen for you, revealed as it begins.", false)
 	# Or the player's own: tags, a few lines of premise, or both.
-	var own := _toggle("Write your own…\nPick tags, describe it, or both, and the realm shapes it.", tales)
+	var own := _text_card("Write your own…\nPick tags, describe it, or both, and the realm shapes it.", tales)
 	own.toggle_mode = false
-	own.custom_minimum_size = Vector2(300, 72)
-	own.autowrap_mode = TextServer.AUTOWRAP_WORD
-	own.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	own.custom_minimum_size.x = 300
 	# Writing your own is a layer over the cards: it takes their place, and Esc
 	# (or Done) brings them back.
 	var maker_scroll := ScrollContainer.new()
@@ -1301,6 +1294,55 @@ func _big(text: String, cb: Callable) -> Button:
 	b.pressed.connect(cb)
 	_body.add_child(b)
 	return b
+
+
+## A choice as a card: its words held top-left, however long, the card as tall
+## as they need (a button's own text sits in its middle). Coloured like the
+## button's text: gold when chosen.
+func _text_card(text: String, parent: Control) -> Button:
+	var b := _toggle("", parent)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	box.offset_left = 14
+	box.offset_top = 12
+	box.offset_right = -14
+	box.offset_bottom = -12
+	b.add_child(box)
+	# Its name in semibold, what it is beneath in the reading weight.
+	var head := Label.new()
+	head.text = text.get_slice("\n", 0)
+	head.autowrap_mode = TextServer.AUTOWRAP_WORD
+	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	head.add_theme_font_override("font", _semibold())
+	head.add_theme_font_size_override("font_size", 16)
+	box.add_child(head)
+	var rest := text.substr(text.find("\n") + 1) if text.contains("\n") else ""
+	var body := Label.new()
+	body.text = rest
+	body.visible = rest != ""
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD
+	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	body.add_theme_font_size_override("font_size", 14)
+	box.add_child(body)
+	b.draw.connect(func():
+		var key := "font_pressed_color" if b.button_pressed else ("font_hover_color" if b.is_hovered() else "font_color")
+		var c: Color = b.get_theme_color(key)
+		head.add_theme_color_override("font_color", c)
+		body.add_theme_color_override("font_color", c if b.button_pressed else c.darkened(0.18)))
+	# As tall as its words once it knows its width.
+	box.resized.connect(func(): b.custom_minimum_size.y = maxf(72.0, box.get_combined_minimum_size().y + 24.0))
+	return b
+
+
+static var _semi: FontVariation
+static func _semibold() -> FontVariation:
+	if _semi == null:
+		_semi = FontVariation.new()
+		_semi.base_font = load("res://assets/fonts/Geist.ttf")
+		_semi.variation_opentype = {"wght": 600}
+	return _semi
 
 
 func _toggle(text: String, parent: Control) -> Button:

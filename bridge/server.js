@@ -1777,7 +1777,7 @@ http.createServer(async (req, res) => {
   // Off Grid AI fills (or carries on) any free-text box: {kind, context, draft}.
   if (url.pathname === "/write" && req.method === "POST") {
     const b = await body(req);
-    const text = await Promise.race([writeFor(String(b.kind ?? ""), String(b.context ?? "").slice(0, 1200), String(b.draft ?? "").trim().slice(0, 300)).catch(() => null), new Promise((r) => setTimeout(() => r(null), 25000))]);
+    const text = await Promise.race([writeFor(String(b.kind ?? ""), String(b.context ?? "").slice(0, 1200), String(b.draft ?? "").trim().slice(0, 300)).catch(() => null), new Promise((r) => setTimeout(() => r(null), 45000))]);
     if (!text) return json(res, 503, { error: "Off Grid AI is busy and didn't answer in time. Try again in a moment." });
     return json(res, 200, { text });
   }
@@ -1787,7 +1787,7 @@ http.createServer(async (req, res) => {
     const b = await body(req);
     const tags = (Array.isArray(b.tags) ? b.tags : []).map(String).slice(0, 8);
     const draft = String(b.draft ?? "").trim().slice(0, 300);
-    const text = await Promise.race([premiseIdea({ tags, draft }).catch(() => null), new Promise((r) => setTimeout(() => r(null), 25000))]);
+    const text = await Promise.race([premiseIdea({ tags, draft }).catch(() => null), new Promise((r) => setTimeout(() => r(null), 45000))]);
     if (!text) return json(res, 503, { error: "Off Grid AI is busy and didn't answer in time. Try again in a moment, or write it yourself." });
     return json(res, 200, { text });
   }
@@ -1800,7 +1800,7 @@ http.createServer(async (req, res) => {
     const roles = rolesOf(t).filter((r) => !r.town);
     const beats = [...(t.beats ?? []), ...(t.asides ?? [])].map((x) => x.text).filter(Boolean);
     const draft = String(b.draft ?? "").trim().slice(0, 300);
-    const text = await Promise.race([beatIdea({ name: t.name, about: t.about ?? "", roles, beats, draft }).catch(() => null), new Promise((r) => setTimeout(() => r(null), 25000))]);
+    const text = await Promise.race([beatIdea({ name: t.name, about: t.about ?? "", roles, beats, draft }).catch(() => null), new Promise((r) => setTimeout(() => r(null), 45000))]);
     if (!text) return json(res, 503, { error: "Off Grid AI is busy and didn't answer in time. Try again in a moment, or write the beat yourself." });
     return json(res, 200, { text });
   }

@@ -64,7 +64,9 @@ async function gateway() {
 // minds on screen) before cold. A call that has waited climbs a level every
 // 30 seconds, so nothing starves.
 const RANK = { hot: 0, warm: 1, cold: 2 };
-const SLOTS = Math.max(1, Number(process.env.GOC_MODEL_SLOTS) || 1);
+// No queue: every request goes to Off Grid AI the moment it's made, and Off
+// Grid AI does any queueing itself. (GOC_MODEL_SLOTS can cap it if ever needed.)
+const SLOTS = Number(process.env.GOC_MODEL_SLOTS) || Infinity;
 const queue = [];
 const timings = [];
 let running = 0;
@@ -510,7 +512,7 @@ export async function beatIdea({ name, about, roles, beats, draft }) {
     ? `Carry this on and finish it, keeping its words: "${draft}"`
     : "Write one new turn of the story, something that could happen next.";
   const out = await say("You write one turn of a story in a medieval realm's chronicle: one or two plain, specific sentences, at most 40 words, no quotation marks. Name people only by their tags in braces, exactly as given; never invent other names for them.", [],
-    `Story: ${name}. ${about}\nPeople: ${people}${before}\n${ask}`, 90);
+    `Story: ${name}. ${about}\nPeople: ${people}${before}\n${ask}`, 90, "hot");
   return String(out ?? "").replace(/^["“]|["”]$/g, "").replace(/\s+/g, " ").trim().slice(0, 300) || null;
 }
 
@@ -519,7 +521,7 @@ export async function beatIdea({ name, about, roles, beats, draft }) {
 export async function premiseIdea({ tags, draft }) {
   const feel = tags.length ? `Its tags: ${tags.join(", ")}.` : "Surprise me: any threat to a medieval king's throne.";
   const ask = draft ? `Carry this premise on and finish it, keeping its words: "${draft}"` : `Write the premise. ${feel}`;
-  const out = await say("You write premises for stories that threaten a king's throne in a medieval realm: one or two vivid, specific sentences, at most 35 words, no names of real places, no quotation marks.", [], ask, 80);
+  const out = await say("You write premises for stories that threaten a king's throne in a medieval realm: one or two vivid, specific sentences, at most 35 words, no names of real places, no quotation marks.", [], ask, 80, "hot");
   return String(out ?? "").replace(/^["“]|["”]$/g, "").replace(/\s+/g, " ").trim().slice(0, 300) || null;
 }
 
@@ -539,7 +541,7 @@ export async function writeFor(kind, context, draft) {
   const [system, tokens] = WRITE[kind] ?? [];
   if (!system) return null;
   const ask = draft ? `${context}\nCarry this on and finish it, keeping its words: "${draft}"` : `${context}\nWrite it.`;
-  const out = await say(`${system} No quotation marks.`, [], ask, tokens);
+  const out = await say(`${system} No quotation marks.`, [], ask, tokens, "hot");  // the player is waiting
   return String(out ?? "").replace(/^["“]|["”]$/g, "").replace(/\s+/g, " ").trim().slice(0, 300) || null;
 }
 
