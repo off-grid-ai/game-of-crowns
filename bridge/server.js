@@ -1562,7 +1562,12 @@ http.createServer(async (req, res) => {
       const h = players.get(c.owner) ? houseFor(players.get(c.owner)) : null;
       return { title: nameIn(c.id, c.name), x: c.x, y: c.y, size: c.size, capital: !!c.capital, house: h?.name ?? "", color: h?.color ?? "#888", sigil: h?.sigil ?? "" };
     });
-    return json(res, 200, { tiles: [56, 88], towns });
+    let land = [];
+    try {
+      const m = JSON.parse(fs.readFileSync(path.join(chron.BASELINE, "state", "map.json"), "utf8"));
+      land = (m.tiles ?? []).filter((t) => !/Ocean|Lake/.test(String(t[2]))).map((t) => [t[0], t[1]]);
+    } catch { /* no map */ }
+    return json(res, 200, { tiles: [56, 88], towns, land, roads: w.roads ?? [] });
   }
   if (url.pathname === "/lore") {
     // The book of the realm: its story from the world bible, and each great
@@ -1575,10 +1580,27 @@ http.createServer(async (req, res) => {
       const f = FAMILIES[name.replace("House ", "")];
       return f ? { region: "Born of civil war", arms: f.arms, character: f.character } : null;
     };
+    // As written (the Lore from the menu): the cast as every chronicle begins,
+    // read from the baseline realm, never the reign being played.
+    const written = url.searchParams.get("as") === "written";
+    let cast = null;
+    if (written) {
+      cast = [];
+      const dir = path.join(chron.BASELINE, "characters");
+      try { for (const f of fs.readdirSync(dir)) if (f.endsWith(".json")) cast.push(JSON.parse(fs.readFileSync(path.join(dir, f), "utf8"))); } catch { /* none */ }
+      cast = cast.filter((c) => c.alive !== false);
+    }
+    let baseCities = [];
+    if (written) try { baseCities = JSON.parse(fs.readFileSync(path.join(chron.BASELINE, "state", "world.json"), "utf8")).cities ?? []; } catch { /* none */ }
+    const seatName = (id) => {
+      if (!written) return cityName(id);
+      const c = baseCities.find((x) => x.id === Number(id));
+      return c ? nameIn(c.id, c.name) : null;
+    };
     const houses = (world?.players ?? []).filter((p) => p.alive !== false && !houseFor(p).wild).map((p) => {
       const h = houseFor(p);
       const seat = world.cities.find((c) => c.owner === p.id && c.capital);
-      const people = court.alive().filter((c) => c.playerId === p.id && c.rank in RANK)
+      const people = (written ? cast.filter((c) => c.house === h.name) : court.alive().filter((c) => c.playerId === p.id)).filter((c) => c.rank in RANK)
         .sort((a, c) => RANK[a.rank] - RANK[c.rank] || (c.created ? 1 : 0) - (a.created ? 1 : 0) || c.age - a.age);
       // The lord, the lord's spouse and heir, then the leading bannermen.
       const lord = people.find((c) => c.rank === "lord");
@@ -1591,7 +1613,7 @@ http.createServer(async (req, res) => {
         notables: notables.map((c) => ({
           id: c.id, name: c.name, surname: c.surname ?? null, gender: c.gender, age: c.age, rank: c.rank, traits: c.traits,
           goal: c.goals?.[0]?.text ?? null, role: c.role ? ROLES[c.role]?.title : null,
-          seat: c.seat != null ? cityName(c.seat) : null, loyalty: c.loyalty,
+          seat: c.seat != null ? seatName(c.seat) : null, loyalty: c.loyalty, written,
           // In their own words: their latest memory told as theirs, never a
           // story's beat about other people that they heard.
           story: c.backstory ?? [...new Set(c.memories ?? [])].filter((m) => /\b(I|my|me)\b/.test(m) && !/^[^:]{3,60}: /.test(m)).slice(-1)[0] ?? null,

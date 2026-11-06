@@ -169,6 +169,11 @@ func lore(cb: Callable) -> void:
 	_http_get("/lore", cb)
 
 
+## The book as written: the starting cast, read from the baseline realm.
+func lore_written(cb: Callable) -> void:
+	_http_get("/lore?as=written", cb)
+
+
 ## Aldmere as every new chronicle finds it: its towns and their houses, for the Lore's map.
 func lore_map(cb: Callable) -> void:
 	_http_get("/lore/map", cb)

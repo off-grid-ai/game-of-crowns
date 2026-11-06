@@ -169,6 +169,9 @@ func _ready() -> void:
 	intro.ready_check = func(): return terrain.built and towns != null and not towns.building() and not towns.towns.is_empty()
 	add_child(intro)
 	lore = preload("res://scripts/lore.gd").new()
+	lore.person_written.connect(func(p, house):
+		hero.open(p, house, "the Lore")
+		hero.closed.connect(func(): lore.visible = true, CONNECT_ONE_SHOT))
 	# Met from the Lore, Back returns to the Lore at that house.
 	lore.person_opened.connect(func(id, house):
 		_open_person(id, house, "the Lore")
@@ -330,6 +333,7 @@ func _ready() -> void:
 	title.bridge = bridge
 	lore.fetch = bridge.lore
 	lore.fetch_map = bridge.lore_map
+	lore.fetch_written = bridge.lore_written
 	add_child(title)
 	title.began.connect(func(): _intro_due = true)
 	# The launch screens play over the menu (in renders only with --splash).
