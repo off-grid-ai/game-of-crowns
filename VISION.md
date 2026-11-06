@@ -41,6 +41,7 @@ Nothing new goes in unless it blocks the bar below; ideas go to v1.1.
   - **Balance:** decree costs bite against the treasury, gifts lose force when repeated, rivals resent the King's favourites, and long wars cost the crown. Gold is never the answer to everything.
   - **A catalogue of about 20 stories**, each with versions, starting with The Usurper's Claim.
 - **No model in the app (2026-11-05, Mac):** the game ships no model and downloads none. It plays by its rules, and lords speak in their own words when Off Grid AI (getoffgridai.co/desktop) is running. Settings and, once, the court say so.
+- **v2: multiplayer, first and third person (2026-11-06, Mac):** friends share one realm, playing in first or third person on top of the walking that is built and switched off today; the likely shape is one King and friends as lords who scheme, wed, betray and march on the throne. Open: which machine hosts the world and the minds, and a Windows build so friends can join.
 - **v1.1:** mouse-look controls; levies raised from a town's real commoners; live reactions to what happens in front of people; more reverie arcs; 120 fps; the launch kit.
 
 ## Approach
