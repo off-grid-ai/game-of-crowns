@@ -1,5 +1,8 @@
 # Mac gaming creators: DMs, ready to paste
 
+**Superseded 6 Nov:** the live itch text is Mac's final copy (on the page), and the creator emails are in creators.md. This old draft leads with how the world works and says the game is early, both of which Mac cut.
+
+
 **Who first:** Andrew Tsai (@andytizer on YouTube, ~109k subscribers; covers native Mac games). Then smaller Mac channels found the same way: search YouTube for "native Apple Silicon game" and "Mac gaming 2026", pick channels with 5k–100k subscribers that posted in the last month.
 **Where:** the business email on the channel's About page, or X/Discord if listed. One message each, no follow-up for a week.
 **Attach:** `images/1a-town.jpg`; the clip once the explainer session delivers it.

@@ -1,5 +1,8 @@
 # itch.io page: ready to fill in
 
+**Superseded 6 Nov:** the live itch text is Mac's final copy (on the page), and the creator emails are in creators.md. This old draft leads with how the world works and says the game is early, both of which Mac cut.
+
+
 itch.io brings its own daily traffic through its browse pages, and its analytics show where each download came from. Needs Mac's itch.io account (free).
 
 **Create:** Dashboard → Create new project.
