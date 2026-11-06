@@ -25,12 +25,12 @@
 .cursor { position:absolute; left:0; top:0; width:64px; height:64px; z-index:5; }
 </style>
   <div id="root" data-composition-id="v1" data-width="1080" data-height="1920"><div id="v1" style="position:absolute;inset:0">
-    <div class="pic"><div class="cam" id="v1cam" style="width:2000px;height:1255px"><img src="assets/world/gareth.jpg" alt="" width="2000" height="1255"><div class="mark" id="v1m0" style="left:773px;top:262px;width:180px"></div></div></div><div class="band"></div>
+    <div class="pic"><div class="cam" id="v1cam" style="width:2000px;height:1255px"><img src="assets/world/gareth.jpg" alt="" width="2000" height="1255"><div class="mark" id="v1m0" style="left:773px;top:262px;width:180px"></div></div></div><div class="band"></div><div class="lines" style="font-size:68px"><span class="ln" id="v1l0"><span class="w" id="v1l0w0">“10</span> <span class="w" id="v1l0w1">years</span> <span class="w" id="v1l0w2">ago,</span> <span class="w" id="v1l0w3">you</span> <span class="w" id="v1l0w4">took</span> <span class="w" id="v1l0w5">our</span></span><span class="ln" id="v1l1"><span class="w" id="v1l1w0">enemy’s</span> <span class="w" id="v1l1w1">side</span> <span class="w" id="v1l1w2">in</span> <span class="w" id="v1l1w3">war.</span> <span class="w" id="v1l1w4">House</span></span><span class="ln" id="v1l2"><span class="w" id="v1l2w0">Thornvale</span> <span class="w" id="v1l2w1">has</span> <span class="w" id="v1l2w2">not</span> <span class="w" id="v1l2w3">forgotten</span> <span class="w" id="v1l2w4">it.”</span></span></div>
   </div></div>
   <script>
     const tl = gsap.timeline({ paused: true });
-    tl.set("#v1cam", { x:-1091.2, y:-8.5, scale:1.45 }, 0);
-    tl.to("#v1cam", { x:-1170.0, y:-1.6, scale:1.52, duration:5.00, ease:"sine.inOut" }, 0);
+    tl.set("#v1cam", { x:-1075.9, y:-17.5, scale:1.43 }, 0);
+    tl.to("#v1cam", { x:-1098.5, y:-12.5, scale:1.45, duration:5.00, ease:"sine.inOut" }, 0);
     tl.fromTo("#v1m0", { scaleX:0 }, { scaleX:1, duration:.45, ease:"power3.out" }, 1.2);
     tl.set({}, {}, 5.0);
     window.__timelines["v1"] = tl;

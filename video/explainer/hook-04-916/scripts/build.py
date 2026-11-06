@@ -18,9 +18,13 @@ BRONZE = "#B7A17D"
 # marks: bronze lines drawn on the frame in source pixels (x, y, w, t) or left rules (x, y, h, t)
 # lines: on-screen type [(text, t_in)], bronze=words to tint
 SHOTS = [
+    # His own words, twice: the quote itself fills the picture, and the band says it in large type
+    # (shortened from the card: "10 years ago, in the spring of 315, you took our enemy's side in war. ...").
     dict(id="v1", start=0.0, dur=5.0, img="assets/world/gareth.jpg", iw=2000, ih=1255,
-         cam=[(0, 1125, 330, 1.45, 540, 470, None), (5.0, 1125, 330, 1.52, 540, 500, "sine.inOut")],
-         marks=[(773, 262, 180, 1.2)]),
+         cam=[(0, 1130, 250, 1.43, 540, 340, None), (5.0, 1130, 250, 1.45, 540, 350, "sine.inOut")],
+         marks=[(773, 262, 180, 1.2)], fs=68, hold_first=True,
+         lines=[("\u201c10 years ago, you took our", 0.0), ("enemy\u2019s side in war. House", 0.0),
+                ("Thornvale has not forgotten it.\u201d", 0.0)]),
     dict(id="v2", start=5.0, dur=3.2, img="assets/world/hand-war.jpg", iw=3024, ih=1898,
          cam=[(0, 1450, 1640, 1.30, 540, 1050, None), (3.2, 1450, 1640, 1.34, 540, 1060, "sine.inOut")],
          marks=[(1068, 1762, 756, 0.8)],
@@ -112,7 +116,8 @@ def lines_html(sh):
     if sh.get("replace"):
         # one line at a time, stacked in the same place
         css_pos = f'<style>#{sh["id"]} .lines .ln {{ position:absolute; left:0; bottom:0; }}</style>'
-    return css_pos + '<div class="lines">' + "".join(html) + "</div>", js
+    fs = f' style="font-size:{sh["fs"]}px"' if sh.get("fs") else ""
+    return css_pos + f'<div class="lines"{fs}>' + "".join(html) + "</div>", js
 
 
 def frame_html(prefix, img, iw, ih, marks=(), rules=()):
