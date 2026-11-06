@@ -1,0 +1,23 @@
+[
+  {"id": "title", "name": "Main menu", "group": "Title", "what": "The first thing a player sees, and where Esc takes you during play", "file": "screens/title.jpg"},
+  {"id": "new-1", "name": "New chronicle: top", "group": "Title", "what": "Naming the reign, presets and length (15, 30, 60 minutes or endless)", "file": "screens/new-1.jpg"},
+  {"id": "new-2", "name": "New chronicle: stories", "group": "Title", "what": "What comes for the throne: the reign story cards", "file": "screens/new-2.jpg"},
+  {"id": "new-3", "name": "New chronicle: options", "group": "Title", "what": "The realm's options further down the page", "file": "screens/new-3.jpg"},
+  {"id": "new-4", "name": "New chronicle: bottom", "group": "Title", "what": "The end of the page and Begin", "file": "screens/new-4.jpg"},
+  {"id": "settings-1", "name": "Settings: top", "group": "Title", "what": "Graphics, sound and the realm's pace", "file": "screens/settings-1.jpg"},
+  {"id": "settings-2", "name": "Settings: controls", "group": "Title", "what": "Keys and the rest of the settings", "file": "screens/settings-2.jpg"},
+  {"id": "chronicles", "name": "Chronicles", "group": "Title", "what": "Your saved reigns", "file": "screens/chronicles.jpg"},
+  {"id": "records", "name": "Hall of Records", "group": "Title", "what": "Reigns that have ended and how they scored", "file": "screens/records.jpg"},
+  {"id": "credits", "name": "Credits", "group": "Title", "what": "Who made what", "file": "screens/credits.jpg"},
+  {"id": "intro", "name": "Introduction", "group": "Opening", "what": "The opening pages before you take the throne", "file": "screens/intro.jpg"},
+  {"id": "digest", "name": "While you were away", "group": "Opening", "what": "What happened since you last looked", "file": "screens/digest.jpg"},
+  {"id": "realm", "name": "The realm", "group": "Play", "what": "The view you land in, with the four corners of the interface", "file": "screens/realm.jpg"},
+  {"id": "region", "name": "Whole realm", "group": "Play", "what": "Pulled right back over Aldmere", "file": "screens/region.jpg"},
+  {"id": "town", "name": "Town card", "group": "Play", "what": "Kingsmere with its card open: decrees, building, the town's state", "file": "screens/town.jpg"},
+  {"id": "street", "name": "Street level", "group": "Play", "what": "Closest zoom inside Kingsmere", "file": "screens/street.jpg"},
+  {"id": "court", "name": "Court", "group": "Panels", "what": "Petitions waiting for the King's ruling", "file": "screens/court.jpg"},
+  {"id": "houses", "name": "The Great Houses", "group": "Panels", "what": "Every house: towns, men, crowns, grain, favour", "file": "screens/houses.jpg"},
+  {"id": "chronicle", "name": "Chronicle", "group": "Panels", "what": "What the realm has done, newest first", "file": "screens/chronicle.jpg"},
+  {"id": "lore", "name": "Lore", "group": "Panels", "what": "The Lore of Aldmere", "file": "screens/lore.jpg"},
+  {"id": "ledger", "name": "Ledger", "group": "Panels", "what": "The crown's money and the realm's numbers over time", "file": "screens/ledger.jpg"}
+]

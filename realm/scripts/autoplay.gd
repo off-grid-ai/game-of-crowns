@@ -125,6 +125,16 @@ func _play(quit_after: bool) -> void:
 				if main.rig.is_processing_input() == false:
 					main.rig._apply()
 				await get_tree().create_timer(3.0).timeout
+			"scroll":
+				# Scroll the longest visible scrolling page to a fraction of its length (0-1).
+				var best: ScrollContainer = null
+				for sc in get_tree().root.find_children("*", "ScrollContainer", true, false):
+					if sc.is_visible_in_tree() and (best == null or sc.get_v_scroll_bar().max_value > best.get_v_scroll_bar().max_value):
+						best = sc
+				if best:
+					var bar := best.get_v_scroll_bar()
+					best.scroll_vertical = int(float(w[1]) * maxf(0.0, bar.max_value - bar.page))
+				await get_tree().create_timer(0.4).timeout
 			"freeze":
 				# For like-for-like stills: the director never takes the camera, the
 				# scenes and the interface are hidden, so only the land is compared.
