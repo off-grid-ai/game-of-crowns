@@ -160,12 +160,12 @@ func show_main() -> void:
 	var reign: Dictionary = bridge.world.get("reign", {})
 	_has_continue = not reign.is_empty()
 	if not reign.is_empty():
-		var label := "Continue  —  %s" % reign.get("name", "the realm")
+		var label := "Continue  ·  %s" % reign.get("name", "the realm")
 		var go := _close
 		# A reign whose clock ran out isn't over for the King: he rules on, in the
 		# same realm, with no clock (its score stays in the Hall of Records).
 		if reign.get("status", "") == "ended":
-			label = "Rule on  —  %s" % reign.get("name", "")
+			label = "Rule on  ·  %s" % reign.get("name", "")
 			go = func(): bridge.continue_reign(func(_c, _d): _close())
 		# The one thing most players came back to do: the primary choice, in gold.
 		var cont := _big(label, go)
@@ -207,7 +207,7 @@ func show_main() -> void:
 	_body.add_child(gap)
 	_body.add_child(foot)
 	var said := Label.new()
-	said.text = "✦  Lords speak in their own words with Off Grid AI, free on your Mac."
+	said.text = "✦  Hear your lords plead, scheme and threaten you in their own words, and remember every slight. Off Grid AI does it free, on your Mac."
 	said.add_theme_font_size_override("font_size", 14)
 	said.add_theme_color_override("font_color", MUTED)
 	foot.add_child(said)

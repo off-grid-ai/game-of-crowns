@@ -237,7 +237,7 @@ func _map_page() -> void:
 		_page.add_child(T.label("Unrolling the map…"))
 		return
 	_page.add_child(T.title("Aldmere", 34))
-	_para("From the snows of the north to the red sands of the south: seven great houses, and the crown between them.")
+	_para("Seven houses, one throne. Every seat on this map can be won over, married into, or brought down.")
 	var tiles: Array = _map.get("tiles", [56, 88])
 	var frame := AspectRatioContainer.new()
 	frame.ratio = 3040.0 / 4800.0
@@ -407,12 +407,12 @@ func _house(h: Dictionary) -> void:
 		# Your own house, set out like the others: its arms, its line, what it holds
 		# and commands, and what threatens it.
 		_para("Your own house, and your throne. The seven great houses owe it their swords for as long as it stays strong.")
-		_fact("Arms", "A red eagle, crowned in gold. It flies over Kingsmere and wherever the royal host marches.")
-		_fact("The line", "The Conqueror's blood. Three hundred years ago he bent seven kings by sword and by marriage, and his heirs have sat the throne since. The houses kneel to the crown for what it holds, not for who wears it.")
-		_fact("Holds", "Kingsmere and the river delta at the heart of the realm, the royal treasury, a royal host of a few thousand, and the tithe of every town.")
-		_fact("Commands", "Feasts and gifts warm a house; the royal levy and the banners raise men; an alliance binds a house to your wars; the royal host marches on a rebel's walls; the court hears every lord who comes; the Hand advises.")
-		_fact("Old enemies", "Any house that remembers being kings. A lord whose favour falls under 25 may raise his banners; two such, and one will claim the throne. In the far north, beyond the old wall, something stirs in long winters.")
-		_fact("The Faith", "The septs bless the crown, or curse it. A King the Faith calls accursed finds his oaths void.")
+		_fact("Arms", "A red eagle, crowned in gold. It flies over Kingsmere and over every host the King sends out.")
+		_fact("The line", "The Conqueror bent seven kings by sword and by marriage, and his heirs have held the throne for three hundred years. The houses kneel to what the crown holds, not to the man who wears it.")
+		_fact("Holds", "Kingsmere and the river delta, the treasury, a few thousand men, and a tithe from every town.")
+		_fact("What you can do", "Feast a house and it warms to you. Pay for a levy, or call the banners, and men come. Bind a house in alliance and it fights your wars. March your host on a rebel's walls.")
+		_fact("What can take it from you", "Any house that remembers being king. A lord whose favour falls below 25 may raise his banners, and if two do, one will claim your throne. In long winters, something stirs beyond the old wall in the north.")
+		_fact("The Faith", "The septons can bless your reign or curse it. If they curse it, every oath sworn to you is void.")
 	elif lore.is_empty():
 		_para("A house born of the realm's own wars, owing little to the old order and forgiving less. Its story is still being written, in this reign.")
 	else:
