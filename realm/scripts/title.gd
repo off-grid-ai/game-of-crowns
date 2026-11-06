@@ -1062,6 +1062,12 @@ func _controls_settings(parent: Control) -> void:
 func _input(event: InputEvent) -> void:
 	if not visible:
 		return
+	# A view open over the menu (the Lore, a meeting) answers its own keys.
+	var top: Node = get_parent()
+	for over in ["hero", "lore"]:
+		var v = top.get(over) if top else null
+		if v and v.visible:
+			return
 	if _rebinding == "":
 		if event.is_action_pressed(&"back"):
 			get_viewport().set_input_as_handled()

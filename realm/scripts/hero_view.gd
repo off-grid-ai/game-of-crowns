@@ -50,8 +50,10 @@ func _ready() -> void:
 	_build_panel()
 
 
-func _unhandled_input(event: InputEvent) -> void:
-	if visible and event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+## Escape is the top view's first: it closes the meeting before the menu or the
+## realm underneath can take it.
+func _input(event: InputEvent) -> void:
+	if visible and event is InputEventKey and event.pressed and not event.echo and (event.keycode == KEY_ESCAPE or event.is_action_pressed(&"back")):
 		close()
 		get_viewport().set_input_as_handled()
 
