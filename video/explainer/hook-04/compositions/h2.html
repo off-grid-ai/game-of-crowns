@@ -1,0 +1,41 @@
+<template>
+  <style>
+@font-face { font-family:"EB Garamond"; src:url("assets/fonts/EBGaramond.ttf") format("truetype"); font-weight:400 800; }
+@font-face { font-family:"Cinzel"; src:url("assets/fonts/Cinzel.ttf") format("truetype"); font-weight:400 900; }
+#root { position:absolute; inset:0; overflow:hidden; background:#151719; }
+.cam { position:absolute; left:0; top:0; transform-origin:0 0; }
+.cam img { position:absolute; left:0; top:0; display:block; }
+.mark { position:absolute; height:7px; background:#B7A17D; transform-origin:0 50%; border-radius:2px; }
+.rule { position:absolute; width:8px; background:#B7A17D; transform-origin:50% 0; border-radius:2px; }
+.shade { position:absolute; left:0; right:0; bottom:0; height:400px;
+  background:linear-gradient(180deg, rgba(21,23,25,0) 0%, rgba(21,23,25,1) 22%, rgba(21,23,25,1) 100%); }
+.lines { position:absolute; left:120px; right:120px; bottom:118px; font-family:"EB Garamond", serif; font-weight:500;
+  font-size:104px; line-height:1.05; letter-spacing:-0.01em; color:#EFE7D6; text-shadow:0 2px 18px rgba(0,0,0,.45); }
+.lines .ln { display:block; }
+.lines .w { display:inline-block; }
+.final .lines { font-size:128px; }
+.top .shade { top:0; bottom:auto; height:330px; background:linear-gradient(0deg, rgba(21,23,25,0) 0%, rgba(21,23,25,1) 22%, rgba(21,23,25,1) 100%); }
+.top .lines { bottom:auto; top:96px; }
+.top .lines .ln { top:0; bottom:auto; }
+.q { color:#B7A17D; }
+.cursor { position:absolute; left:0; top:0; width:64px; height:64px; z-index:5; }
+</style>
+  <div id="root" data-composition-id="h2" data-width="1920" data-height="1080"><div id="h2" class="top" style="position:absolute;inset:0">
+    <div class="cam" id="h2cam" style="width:3024px;height:1898px"><img src="assets/world/hand-war.jpg" alt="" width="3024" height="1898"><div class="mark" id="h2m0" style="left:1068px;top:1762px;width:756px"></div></div><div class="shade"></div><div class="lines"><span class="ln" id="h2l0"><span class="w" id="h2l0w0">Ten</span> <span class="w" id="h2l0w1">years</span> <span class="w" id="h2l0w2">earlier,</span> <span class="w" id="h2l0w3">you</span> <span class="w" id="h2l0w4">took</span> <span class="w" id="h2l0w5">a</span> <span class="w" id="h2l0w6">side.</span></span></div>
+  </div></div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.set("#h2cam", { x:-852.5, y:-1290.0, scale:1.25 }, 0);
+    tl.to("#h2cam", { x:-925.0, y:-1372.0, scale:1.3, duration:3.20, ease:"sine.inOut" }, 0);
+    tl.fromTo("#h2m0", { scaleX:0 }, { scaleX:1, duration:.45, ease:"power3.out" }, 0.8);
+    tl.fromTo("#h2l0w0", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.20);
+    tl.fromTo("#h2l0w1", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.25);
+    tl.fromTo("#h2l0w2", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.30);
+    tl.fromTo("#h2l0w3", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.35);
+    tl.fromTo("#h2l0w4", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.40);
+    tl.fromTo("#h2l0w5", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.45);
+    tl.fromTo("#h2l0w6", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.50);
+    tl.set({}, {}, 3.2);
+    window.__timelines["h2"] = tl;
+  </script>
+</template>

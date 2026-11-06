@@ -1,0 +1,42 @@
+<template>
+  <style>
+@font-face { font-family:"EB Garamond"; src:url("assets/fonts/EBGaramond.ttf") format("truetype"); font-weight:400 800; }
+@font-face { font-family:"Cinzel"; src:url("assets/fonts/Cinzel.ttf") format("truetype"); font-weight:400 900; }
+#root { position:absolute; inset:0; overflow:hidden; background:#151719; }
+.cam { position:absolute; left:0; top:0; transform-origin:0 0; }
+.cam img { position:absolute; left:0; top:0; display:block; }
+.mark { position:absolute; height:7px; background:#B7A17D; transform-origin:0 50%; border-radius:2px; }
+.rule { position:absolute; width:8px; background:#B7A17D; transform-origin:50% 0; border-radius:2px; }
+.shade { position:absolute; left:0; right:0; bottom:0; height:400px;
+  background:linear-gradient(180deg, rgba(21,23,25,0) 0%, rgba(21,23,25,1) 22%, rgba(21,23,25,1) 100%); }
+.lines { position:absolute; left:120px; right:120px; bottom:118px; font-family:"EB Garamond", serif; font-weight:500;
+  font-size:104px; line-height:1.05; letter-spacing:-0.01em; color:#EFE7D6; text-shadow:0 2px 18px rgba(0,0,0,.45); }
+.lines .ln { display:block; }
+.lines .w { display:inline-block; }
+.final .lines { font-size:128px; }
+.top .shade { top:0; bottom:auto; height:330px; background:linear-gradient(0deg, rgba(21,23,25,0) 0%, rgba(21,23,25,1) 22%, rgba(21,23,25,1) 100%); }
+.top .lines { bottom:auto; top:96px; }
+.top .lines .ln { top:0; bottom:auto; }
+.q { color:#B7A17D; }
+.cursor { position:absolute; left:0; top:0; width:64px; height:64px; z-index:5; }
+</style>
+  <div id="root" data-composition-id="h5" data-width="1920" data-height="1080"><div id="h5" style="position:absolute;inset:0">
+    <div class="cam" id="h5cam" style="width:1600px;height:1004px"><img src="assets/world/cecily.jpg" alt="" width="1600" height="1004"></div><div class="shade"></div><div class="lines"><span class="ln" id="h5l0"><span class="w" id="h5l0w0">Cecily</span> <span class="w" id="h5l0w1">Goldcrest</span> <span class="w" id="h5l0w2">still</span> <span class="w" id="h5l0w3">blames</span></span><span class="ln" id="h5l1"><span class="w" id="h5l1w0">House</span> <span class="w" id="h5l1w1">Wolfholt</span> <span class="w" id="h5l1w2">for</span> <span class="w" id="h5l1w3">her</span> <span class="w" id="h5l1w4">daughter.</span></span></div>
+  </div></div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.set("#h5cam", { x:-165.0, y:-147.5, scale:1.25 }, 0);
+    tl.to("#h5cam", { x:-440.0, y:-176.0, scale:1.4, duration:4.60, ease:"cubic-bezier(.45,0,.25,1)" }, 0);
+    tl.fromTo("#h5l0w0", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.90);
+    tl.fromTo("#h5l0w1", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 0.95);
+    tl.fromTo("#h5l0w2", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 1.00);
+    tl.fromTo("#h5l0w3", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 1.05);
+    tl.fromTo("#h5l1w0", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 1.00);
+    tl.fromTo("#h5l1w1", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 1.05);
+    tl.fromTo("#h5l1w2", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 1.10);
+    tl.fromTo("#h5l1w3", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 1.15);
+    tl.fromTo("#h5l1w4", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 1.20);
+    tl.set({}, {}, 4.6);
+    window.__timelines["h5"] = tl;
+  </script>
+</template>
