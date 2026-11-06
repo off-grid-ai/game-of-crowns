@@ -56,6 +56,17 @@ func open(house_id := -2, as_written := false) -> void:
 	visible = true
 
 
+## The book read again where it stands (after a rename): same page, same way
+## back, shown or not.
+func refresh() -> void:
+	var ask: Callable = fetch_written if baseline and fetch_written.is_valid() else fetch
+	if ask.is_valid():
+		ask.call(func(d):
+			_book = d if d is Dictionary else {}
+			_build()
+			_show(_chosen if _chosen != -2 else -1))
+
+
 func close() -> void:
 	visible = false
 	closed.emit()
@@ -250,7 +261,7 @@ func _renamer(own: String, now: String, label: String) -> Control:
 		var to := t.strip_edges()
 		rename_name.call(own, "" if to == own else to, func(code, d):
 			if code == 200:
-				open(_chosen, baseline)  # the book again, in the new names
+				refresh()  # the book again, in the new names
 			else:
 				edit.text = String(d.get("error", "That name won't do.")) if d is Dictionary else "That name won't do."))
 	return box
@@ -282,8 +293,10 @@ func _map_page() -> void:
 ## house's page; any other town is ringed.
 func _live_map() -> Control:
 	var view: Control = preload("res://scripts/realm_map.gd").new()
-	view.custom_minimum_size = Vector2(0, maxf(460.0, get_viewport().get_visible_rect().size.y - 240.0))
-	view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# Shaped like the map itself, so the whole realm fills it exactly.
+	var h := maxf(420.0, get_viewport().get_visible_rect().size.y - 520.0)  # the whole map on the page, under its title
+	view.custom_minimum_size = Vector2(h * 3040.0 / 4800.0, h)
+	view.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	view.data = _map
 	view.mark = _mark
 	view.town_pressed.connect(func(t: Dictionary):
@@ -297,7 +310,7 @@ func _live_map() -> Control:
 		view.queue_redraw())
 	# Fitted once it has its size; opened on a town (from a house's page), closed in on it.
 	view.resized.connect(func():
-		if view.zoom <= 1.0:
+		if view.zoom <= view.min_zoom() + 0.001:
 			view.fit()
 			if _mark != "":
 				view.show_town(_mark))
@@ -389,11 +402,16 @@ func _house(h: Dictionary) -> void:
 	var names := VBoxContainer.new()
 	names.alignment = BoxContainer.ALIGNMENT_CENTER
 	head.add_child(names)
-	names.add_child(T.title(String(h.get("name", "")), 34))
-	# Call it what you like: its own name stays underneath (names.js).
+	# Call it what you like (Edit, beside its name): its own name stays underneath (names.js).
+	var title_row := HBoxContainer.new()
+	title_row.add_theme_constant_override("separation", 12)
+	names.add_child(title_row)
+	title_row.add_child(T.title(String(h.get("name", "")), 34))
 	var own_word := String(h.get("key", h.get("name", ""))).trim_prefix("House ").trim_prefix("The ")
 	if not h.get("crown", false) and rename_name.is_valid():
-		names.add_child(_renamer(own_word, String(h.get("name", "")).trim_prefix("House "), "Rename the house"))
+		var r := _renamer(own_word, String(h.get("name", "")).trim_prefix("House "), "Edit")
+		r.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		title_row.add_child(r)
 	if String(h.get("words", "")) != "":
 		names.add_child(T.title("“%s”" % h["words"], 18, T.ACCENT))
 	var lore: Dictionary = h.get("lore", {}) if h.get("lore") is Dictionary else {}
@@ -523,9 +541,6 @@ func _person(p: Dictionary, h: Dictionary, into: Node = null) -> void:
 	var name := T.title(String(p.get("name", "")), 20)
 	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(name)
-	if rename_name.is_valid():
-		var first := String(p.get("key", p.get("name", ""))).get_slice(" ", 0)
-		top.add_child(_renamer(first, String(p.get("name", "")).get_slice(" ", 0), "Rename"))
 	var meet := Button.new()
 	meet.text = "Meet"
 	meet.flat = true

@@ -336,6 +336,8 @@ func _ready() -> void:
 	lore.fetch_map = bridge.lore_map
 	lore.fetch_written = bridge.lore_written
 	lore.rename_name = bridge.rename
+	hero.rename_name = bridge.rename
+	hero.name_changed.connect(lore.refresh)
 	add_child(title)
 	title.began.connect(func(): _intro_due = true)
 	# The launch screens play over the menu (in renders only with --splash).
@@ -1049,7 +1051,7 @@ func _overview_open(whole := false) -> void:
 	var tw := create_tween().set_parallel(true)
 	tw.tween_property(_over_map, "modulate:a", 1.0, 0.0 if whole else 0.35)
 	if not whole:  # still drawing back as the painting comes up
-		tw.tween_property(_over_map, "zoom", 2.6, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		tw.tween_property(_over_map, "zoom", maxf(2.6, _over_map.min_zoom()), 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 		tw.tween_method(func(_v): _over_map.queue_redraw(), 0.0, 1.0, 0.5)
 	tw = tw.chain()
 	tw.tween_callback(func():

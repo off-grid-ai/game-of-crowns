@@ -16,6 +16,8 @@ const ANIM_DIR := "res://assets/hero/anims"
 signal closed
 signal edit_requested(person: Dictionary, house: Dictionary)
 signal control_requested(person: Dictionary, house: Dictionary)
+signal name_changed  # the player gave someone a new first name
+var rename_name := Callable()  # (from, to, cb) -> void: the player's own name for a word
 
 var _viewport: SubViewport
 var _stage: Node3D
@@ -348,13 +350,15 @@ func _build_panel() -> void:
 	_panel.anchor_left = 1.0
 	_panel.anchor_right = 1.0
 	_panel.anchor_top = 0.0
-	_panel.anchor_bottom = 1.0
+	_panel.anchor_bottom = 0.0  # as tall as what it says (_fit_panel), never a long empty card
 	_panel.offset_left = -380
 	_panel.offset_right = -24
 	_panel.offset_top = 24
-	_panel.offset_bottom = -24
+	_panel.offset_bottom = 24
+	_panel.theme = T.get_theme()  # the game's own type and buttons
 	add_child(_panel)
 	var back := Button.new()
+	back.theme = T.get_theme()
 	back.text = "  ←  Back to %s   (%s)  " % [back_to, Keys.label("back").get_slice(" / ", 0)]
 	_back_btn = back
 	back.position = Vector2(24, 24)
@@ -376,6 +380,7 @@ func _fill_panel(p: Dictionary, house: Dictionary) -> void:
 	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	v.add_theme_constant_override("separation", 10)
 	scroll.add_child(v)
+	_fit_panel.call_deferred(scroll, v)
 	# Their arms beside their name: a lesser family's own, their liege's smaller.
 	var family := _family(p, house)
 	var head := HBoxContainer.new()
@@ -398,7 +403,54 @@ func _fill_panel(p: Dictionary, house: Dictionary) -> void:
 	names.add_child(hl)
 	var title := T.title(String(p.get("name", "")), 26)
 	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	names.add_child(title)
+	# Their first name is yours to change: Edit turns the name itself into the
+	# field, full width; Enter keeps it, Esc leaves it. The realm keeps its own
+	# underneath, and every page and line uses yours.
+	var title_row := HBoxContainer.new()
+	title_row.add_theme_constant_override("separation", 10)
+	names.add_child(title_row)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_row.add_child(title)
+	if rename_name.is_valid():
+		var own := String(p.get("key", p.get("name", ""))).get_slice(" ", 0)
+		var first := String(p.get("name", "")).get_slice(" ", 0)
+		var rest := String(p.get("name", "")).substr(first.length())
+		var edit_b := Button.new()
+		edit_b.text = "Edit"
+		edit_b.flat = true
+		edit_b.focus_mode = Control.FOCUS_NONE
+		edit_b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		edit_b.add_theme_color_override("font_color", T.TEXT_3)
+		edit_b.add_theme_font_size_override("font_size", T.SIZE_DESC)
+		title_row.add_child(edit_b)
+		var field := LineEdit.new()
+		field.visible = false
+		field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		field.add_theme_font_size_override("font_size", 22)
+		field.text = first
+		field.placeholder_text = "Their first name"
+		names.add_child(field)
+		var shut := func():
+			field.visible = false
+			title_row.visible = true
+		edit_b.pressed.connect(func():
+			title_row.visible = false
+			field.visible = true
+			field.grab_focus()
+			field.select_all())
+		field.gui_input.connect(func(e: InputEvent):
+			if e is InputEventKey and e.pressed and e.keycode == KEY_ESCAPE:
+				shut.call()
+				field.accept_event())
+		field.text_submitted.connect(func(t: String):
+			var to := t.strip_edges()
+			rename_name.call(own, "" if to == own else to, func(code, d):
+				if code == 200:
+					title.text = (to if to != "" else own) + rest
+					shut.call()
+					name_changed.emit()
+				else:
+					field.text = String(d.get("error", "That name won't do.")) if d is Dictionary else "That name won't do."))
 	var rank := str(p["role"]) if p.get("role") else (str(p["rank"]).capitalize() if p.get("rank") else "")
 	if str(p.get("gender", "")) == "female":
 		rank = {"Lord": "Lady", "Bannerman": "Bannerwoman", "Heir": "Heiress"}.get(rank, rank)
@@ -430,6 +482,9 @@ func _fill_panel(p: Dictionary, house: Dictionary) -> void:
 		v.add_child(_para(String(p["backstory"])))
 	var change := Button.new()
 	change.text = "Change who they are"
+	change.flat = true
+	change.focus_mode = Control.FOCUS_NONE
+	change.add_theme_color_override("font_color", T.ACCENT)
 	change.pressed.connect(func(): edit_requested.emit(p, house))
 	var take := Button.new()
 	take.visible = preload("res://scripts/features.gd").WALKING  # stepping into someone's boots: version 2
@@ -449,6 +504,16 @@ func _fill_panel(p: Dictionary, house: Dictionary) -> void:
 		v.add_child(T.label("Remembers"))
 		for i in range(mem.size() - 1, -1, -1):
 			v.add_child(_para("[i]“%s”[/i]" % String(mem[i])))
+
+
+## The card as tall as what it says, up to the screen's height (then it scrolls).
+func _fit_panel(scroll: ScrollContainer, v: Control) -> void:
+	await get_tree().process_frame
+	if not is_instance_valid(v):
+		return
+	var room := get_viewport().get_visible_rect().size.y - 48.0 - 52.0
+	scroll.custom_minimum_size.y = minf(v.get_combined_minimum_size().y, room)
+	_panel.reset_size()
 
 
 ## The lesser family a person belongs to (from their surname), or {} for

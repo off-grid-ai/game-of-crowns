@@ -25,7 +25,7 @@ var center := Vector2(27.5, 43.5)  # the tile at the middle of the view
 var mark := ""  # a town ringed in gold
 
 var _atlas: Texture2D = load("res://assets/maps/atlas.png")
-var _sea := Color(0.13, 0.2, 0.29)  # the open sea at the map's edge, carried on past it
+var _sea := Color(0.2, 0.33, 0.52)  # the painting's own open sea, in case an edge ever shows
 var _lands_tex: Texture2D
 var _hover := ""
 var _drag := false
@@ -36,8 +36,9 @@ func _ready() -> void:
 	clip_contents = true
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	mouse_default_cursor_shape = Control.CURSOR_DRAG
-	if _atlas:
-		_sea = _atlas.get_image().get_pixel(6, 6)
+	resized.connect(func():
+		_settle()
+		queue_redraw())
 
 
 func tiles() -> Vector2:
@@ -59,22 +60,40 @@ func to_tile(p: Vector2) -> Vector2:
 	return center + (p - size * 0.5) / _map_size() * tiles()
 
 
-## The whole realm in view.
+## As far out as the map goes: it fills the view, never less, so nothing past
+## its edges ever shows.
+func min_zoom() -> float:
+	return maxf(1.0, size.x / maxf(1.0, size.y * 3040.0 / 4800.0))
+
+
+## The view kept on the map: no sea past its edges, wherever you drag.
+func _settle() -> void:
+	zoom = clampf(zoom, min_zoom(), maxf(max_zoom, min_zoom()))
+	var half := size * 0.5 / _map_size() * tiles()
+	var lo := half - Vector2(0.5, 0.5)
+	var hi := tiles() - Vector2(0.5, 0.5) - half
+	center.x = clampf(center.x, lo.x, hi.x) if lo.x <= hi.x else (tiles().x - 1.0) * 0.5
+	center.y = clampf(center.y, lo.y, hi.y) if lo.y <= hi.y else (tiles().y - 1.0) * 0.5
+
+
+## As much of the realm as the view holds.
 func fit() -> void:
-	zoom = 1.0
+	zoom = min_zoom()
 	center = (tiles() - Vector2.ONE) * 0.5
+	_settle()
 	queue_redraw()
 
 
 ## Zooms by `factor` keeping the point under `at` where it is.
 func zoom_at(factor: float, at: Vector2) -> void:
 	var under := to_tile(at)
-	var z := clampf(zoom * factor, 1.0, max_zoom)
+	var z := clampf(zoom * factor, min_zoom(), maxf(max_zoom, min_zoom()))
 	if factor > 1.0 and zoom >= max_zoom - 0.001:
 		zoomed_past.emit(under)
 		return
 	zoom = z
 	center = under - (at - size * 0.5) / _map_size() * tiles()
+	_settle()
 	queue_redraw()
 
 
@@ -83,8 +102,9 @@ func show_town(title: String, z := 2.6) -> void:
 	for t in data.get("towns", []):
 		if String(t["title"]) == title:
 			mark = title
-			zoom = clampf(z, 1.0, max_zoom)
+			zoom = z
 			center = Vector2(float(t["x"]), float(t["y"]))
+			_settle()
 			queue_redraw()
 			return
 
@@ -215,12 +235,14 @@ func _gui_input(e: InputEvent) -> void:
 		accept_event()
 	elif e is InputEventPanGesture:
 		center += e.delta * 12.0 / _map_size() * tiles()
+		_settle()
 		queue_redraw()
 		accept_event()
 	elif e is InputEventMouseMotion:
 		if _drag:
 			_moved += e.relative.length()
 			center -= e.relative / _map_size() * tiles()
+			_settle()
 			queue_redraw()
 			return
 		var t := town_at(e.position)
