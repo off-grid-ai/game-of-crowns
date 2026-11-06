@@ -1521,6 +1521,20 @@ func _tell_the_story() -> void:
 	title.visible = false
 	ui.visible = false
 	labels.visible = false
+	# What the intro hides needn't run under it: the people, soldiers and their
+	# animation, chatter, the camera's director and the map's names stop while it
+	# covers the screen (they cost 50-150 ms a frame and made the story stutter
+	# at 12-30 fps); the land, towns, fields and the bridge go on building.
+	var held := []
+	for n in [villagers, units, scenes, labels, director, get_node_or_null("AnimLOD"), get_node_or_null("Chatter")]:
+		if n and n.process_mode != Node.PROCESS_MODE_DISABLED:
+			held.append([n, n.process_mode])
+			n.process_mode = Node.PROCESS_MODE_DISABLED
+	intro.finished.connect(func():
+		for h in held:
+			if is_instance_valid(h[0]):
+				h[0].process_mode = h[1]
+	, CONNECT_ONE_SHOT)
 	intro.finished.connect(func():
 		# The menu comes back only if no chronicle was opened meanwhile; the
 		# interface follows the one rule (shown whenever the menu isn't), not
