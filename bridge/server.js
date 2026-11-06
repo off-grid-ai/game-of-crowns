@@ -38,7 +38,7 @@ import { Arcs, templates as arcTemplates, check, ownStories, storiesChanged } fr
 import { Chatter } from "./chatter.js";
 import { bible, FAMILIES, LESSER } from "./lore.js";
 import { Stakes, calendar, epithet } from "./stakes.js";
-import { watched, usageToday, moodFrom, isWatched, arcFromWords, beatIdea, premiseIdea } from "./claude.js";
+import { watched, usageToday, moodFrom, isWatched, arcFromWords, beatIdea, premiseIdea, writeFor } from "./claude.js";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8787);
@@ -1774,6 +1774,14 @@ http.createServer(async (req, res) => {
   // One beat of the player's own, added to (or taken out of) their story: what
   // happens, who is in it, when it happens, and what it does, from short menus.
   // It happens once, when its moment comes, and the story goes on from there.
+  // Off Grid AI fills (or carries on) any free-text box: {kind, context, draft}.
+  if (url.pathname === "/write" && req.method === "POST") {
+    const b = await body(req);
+    const text = await Promise.race([writeFor(String(b.kind ?? ""), String(b.context ?? "").slice(0, 1200), String(b.draft ?? "").trim().slice(0, 300)).catch(() => null), new Promise((r) => setTimeout(() => r(null), 25000))]);
+    if (!text) return json(res, 503, { error: "Off Grid AI is busy and didn't answer in time. Try again in a moment." });
+    return json(res, 200, { text });
+  }
+
   // Off Grid AI writes a story's premise from its tags, or carries on the one begun.
   if (url.pathname === "/stories/premise/idea" && req.method === "POST") {
     const b = await body(req);

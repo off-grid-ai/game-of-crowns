@@ -1175,6 +1175,7 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 	name.placeholder_text = "Their name, e.g. Ser Aldous Crane"
 	name.text = String(person.get("name", ""))
 	v.add_child(name)
+	preload("res://scripts/spark.gd").attach(name, get_tree().current_scene.get("bridge"), "character-name", func(): return "A person of %s, in a medieval realm." % house_name)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	v.add_child(row)
@@ -1230,6 +1231,7 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 	other.placeholder_text = "Anything else, in your words: superstitious, loves his horses"
 	other.text = ", ".join(others)
 	v.add_child(other)
+	preload("res://scripts/spark.gd").attach(other, get_tree().current_scene.get("bridge"), "character-traits", func(): return "%s of %s." % [name.text if name.text != "" else "A person", house_name])
 	v.add_child(T.label("What they want"))
 	var goal := OptionButton.new()
 	var goals: Array = opts.get("goals", []).duplicate()
@@ -1253,6 +1255,7 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 	var past := LineEdit.new()
 	past.placeholder_text = "Something that happens to them (they'll remember it)" if editing else "A line of their past (they'll remember it)"
 	v.add_child(past)
+	preload("res://scripts/spark.gd").attach(past, get_tree().current_scene.get("bridge"), "character-past", func(): return "%s of %s; %s." % [name.text if name.text != "" else "A person", house_name, other.text if other.text != "" else "no quirks named"])
 	var go := HBoxContainer.new()
 	go.alignment = BoxContainer.ALIGNMENT_END
 	v.add_child(go)
@@ -2447,6 +2450,9 @@ func _show_audience() -> void:
 		own_row.add_child(get)
 	v.add_child(own_row)
 	_own_line = own
+	if ai_words and own.editable:
+		var choices := ", ".join(p.get("options", []).map(func(o): return String(o.get("text", o.get("label", "")))))
+		preload("res://scripts/spark.gd").attach(own, get_tree().current_scene.get("bridge"), "ruling", func(): return "The petition: %s\nThe rulings on offer: %s" % [String(p.get("text", "")), choices], true)
 	# Later is not free: a petitioner left too long goes home unheard, and says so.
 	var later := _btn("Later", func(): _court_hidden = true; _court_panel.visible = false)
 	later.tooltip_text = "They wait for now. Left unheard for two years, they go home and their house's favour falls by 12."

@@ -523,6 +523,26 @@ export async function premiseIdea({ tags, draft }) {
   return String(out ?? "").replace(/^["“]|["”]$/g, "").replace(/\s+/g, " ").trim().slice(0, 300) || null;
 }
 
+// Any free-text box in the game: Off Grid AI writes it fresh, or carries on and
+// finishes what the player began. Each kind says what the box is for; context is
+// what the box knows (the story, the petition, the house…).
+const WRITE = {
+  "chronicle-name": ["You name chronicles of a medieval reign: two to five evocative words, no quotation marks.", 16],
+  "mood": ["You set the opening mood of a medieval realm in one short clause: its peace, its fears, who trusts whom. At most 20 words.", 50],
+  "character-name": ["You name people of a medieval realm: a given name and a family or place name, with a title if they'd have one. Only the name.", 16],
+  "character-traits": ["You describe a medieval person's quirks as a short comma-separated list of three or four, at most 12 words.", 30],
+  "character-past": ["You write one line of a medieval person's past that they'd always remember: specific, at most 25 words.", 60],
+  "ruling": ["You are a medieval King answering a petitioner at court, in the first person, in one or two plain sentences, at most 35 words. Rule decisively.", 80],
+  "speech": ["You are a medieval King speaking to someone you've met in your realm: one short, natural line, at most 20 words, in character.", 50],
+};
+export async function writeFor(kind, context, draft) {
+  const [system, tokens] = WRITE[kind] ?? [];
+  if (!system) return null;
+  const ask = draft ? `${context}\nCarry this on and finish it, keeping its words: "${draft}"` : `${context}\nWrite it.`;
+  const out = await say(`${system} No quotation marks.`, [], ask, tokens);
+  return String(out ?? "").replace(/^["“]|["”]$/g, "").replace(/\s+/g, " ").trim().slice(0, 300) || null;
+}
+
 export async function arcFromWords(words, shapes) {
   if (shapes.length === 1) return arcNamed(words, shapes[0]);
   const list = shapes.map((s, i) => `${i + 1}. ${s.name}: ${s.about}`).join("\n");

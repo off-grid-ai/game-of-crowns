@@ -475,6 +475,7 @@ func show_new() -> void:
 	pages[1].add_child(name_edit)
 	_name_edit = name_edit
 	name_edit.text_changed.connect(func(_t): _name_typed = true)
+	preload("res://scripts/spark.gd").attach(name_edit, bridge, "chronicle-name", func(): return "A chronicle of a medieval reign. Its story: %s." % String(_opt.get("story", "chosen by the realm")).replace("-", " "))
 	# Every other choice about the realm, a page of its own.
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -509,6 +510,7 @@ func show_new() -> void:
 	_mood_edit = LineEdit.new()
 	_mood_edit.placeholder_text = "e.g. a fragile peace after a long war; the North trusts no one"
 	left.add_child(_mood_edit)
+	preload("res://scripts/spark.gd").attach(_mood_edit, bridge, "mood", func(): return "The realm of Aldmere, seven great houses under one crown, as the reign begins.")
 
 	_section(right, "The great houses")
 	_choices(right, "Their temper", [["Peaceful", "peaceful"], ["Mixed", "mixed"], ["Warlike", "warlike"]], _opt["temper"], func(v): _opt["temper"] = v)

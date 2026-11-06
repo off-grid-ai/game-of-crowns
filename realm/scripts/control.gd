@@ -621,6 +621,9 @@ func _open_chat(town: int, i: int, person := "", person_name := "") -> void:
 		_chat_line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_chat_line.text_submitted.connect(_speak)
 		line.add_child(_chat_line)
+		preload("res://scripts/spark.gd").attach(_chat_line, get_tree().current_scene.get("bridge"), "speech", func():
+			var said_so_far := "\n".join(_chat_lines.slice(-4).map(func(l): return RegEx.create_from_string("\\[[^\\]]*\\]").sub(String(l), "", true)))
+			return "Speaking with %s.\n%s" % [String(_chat_with.get("name", "someone")), said_so_far], true)
 		_hearing = T.label("")
 		_hearing.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		line.add_child(_hearing)
