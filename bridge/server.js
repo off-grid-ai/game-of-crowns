@@ -498,6 +498,54 @@ async function runSeason() {
 
 // Each season the realm's story arcs move on (arcs.js); n seasons at once
 // fast-forwards them, re-reading the realm whenever a beat pulled a lever.
+// --- the player's own beats (the beat form on the title screen) -------------------
+
+// A story file of the player's own, read fresh (never one of the game's).
+function ownStory(id) {
+  if (!/^[a-z0-9-]{1,80}$/.test(String(id ?? ""))) return null;
+  const file = path.join(OWN_STORIES, `${id}.json`);
+  try { return fs.existsSync(file) ? { ...JSON.parse(fs.readFileSync(file, "utf8")), own: true } : null; } catch { return null; }
+}
+
+// A story's roles in words for the form: "firstChild" is "the first child".
+function rolesOf(t) {
+  const word = (id) => id.replace(/([A-Z])/g, " $1").toLowerCase();
+  // A town is named by whose it is: "the warden's seat", "a town of the rival".
+  const town = (spec) => spec.seatOf || spec.homeOf ? `the ${word(spec.seatOf ?? spec.homeOf)}'s seat` : spec.ownedBy ? `a town of the ${word(spec.ownedBy)}` : "the town";
+  return Object.entries(t.roles ?? {}).map(([id, spec]) => ({ id, town: Boolean(spec.town), label: spec.label ?? (spec.town ? town(spec) : `the ${word(id)}`) }));
+}
+
+// When a beat of the player's own happens.
+const BEAT_WHEN = {
+  act1: { label: "In the first act", if: { act: [">=", 1] } },
+  act2: { label: "In the second act", if: { act: [">=", 2] } },
+  act3: { label: "In the third act", if: { act: [">=", 3] } },
+  late: { label: "Late in the story", if: { seasons: [">=", 8] } },
+  dire: { label: "When the threat runs high", if: { threat: [">=", 60] } },
+  march: { label: "When a usurper marches", if: { usurper: "march" } },
+};
+
+// What it does, to whoever is in it.
+const BEAT_DOES = {
+  nothing: { label: "Only what is told", do: () => ({}) },
+  darker: { label: "Raises the threat", stage: "crisis", do: () => ({ threat: 15 }) },
+  calmer: { label: "Eases the threat", do: () => ({ threat: -15 }) },
+  arms: { label: "They raise soldiers", do: (who) => ({ units: { [who]: { type: "Pikemen", count: 3 } } }) },
+  costs: { label: "Their house loses gold", do: (who) => ({ gold: { [who]: -80 } }) },
+  turns: { label: "Their house turns from the crown", do: (who) => ({ favour: { [who]: -15 } }) },
+  warms: { label: "Their house warms to the crown", do: (who) => ({ favour: { [who]: 15 } }) },
+  dies: { label: "They die", stage: "crisis", do: (who, text) => ({ die: { who, how: text.replace(/\{\w+(\.\w+)?\}/g, "").slice(0, 120) } }) },
+};
+
+function storyForForm(t) {
+  return {
+    id: t.id, name: t.name, roles: rolesOf(t),
+    when: Object.entries(BEAT_WHEN).map(([id, w]) => ({ id, label: w.label })),
+    does: Object.entries(BEAT_DOES).map(([id, d]) => ({ id, label: d.label })),
+    beats: (t.asides ?? []).map((b) => ({ id: b.id, text: b.text, who: b.form?.who ?? b.speaker, when: BEAT_WHEN[b.form?.when]?.label ?? "", does: BEAT_DOES[b.form?.does]?.label ?? "" })),
+  };
+}
+
 function arcCtx() {
   const d = detail();
   return {
@@ -1669,11 +1717,11 @@ http.createServer(async (req, res) => {
     const shapes = arcTemplates().filter((t) => t.reign && !t.problems.length && !t.told);
     if (!shapes.length) return json(res, 503, { error: "no reign stories to build on" });
     // Words with no tags: the words suggest the tags.
-    const WORDS = { usurper: /claim|throne|usurp|pretender|crown/, war: /war|feud|battle|siege|raid/, intrigue: /poison|plot|spy|secret|murder|assassin/, "the-dead": /dead|wall|winter|north|undead/, famine: /famine|hunger|starv|grain|harvest/, money: /debt|bank|gold|coin|loan/, rebellion: /rising|peasant|riot|rebel|revolt|poor/, violent: /blood|slaughter|massacre|burn|kill/, "fast-paced": /sudden|swift|quick|fast/, "slow-burn": /slow|years|generation|creeping/, cunning: /cunning|clever|scheme|deceit|betray/, tragic: /tragic|grief|mourning|loss|doomed/ };
+    const WORDS = { usurper: /claim|throne|usurp|pretender|crown/, war: /war|feud|battle|siege|raid/, intrigue: /poison|plot|spy|secret|murder|assassin/, "the-dead": /dead|wall|winter|north|undead/, famine: /famine|hunger|starv|grain|harvest/, plague: /plague|fever|sick|pestilence|pox/, money: /debt|bank|gold|coin|loan/, rebellion: /rising|peasant|riot|rebel|revolt|poor/, violent: /blood|slaughter|massacre|burn|kill/, "fast-paced": /sudden|swift|quick|fast/, "slow-burn": /slow|years|generation|creeping/, cunning: /cunning|clever|scheme|deceit|betray/, tragic: /tragic|grief|mourning|loss|doomed/ };
     const asked = tags.length > 0;  // the player chose tags (rather than the words suggesting them)
     if (words && !tags.length) tags = Object.entries(WORDS).filter(([, r]) => r.test(words.toLowerCase())).map(([t]) => t);
     // The tested story that shares most with what was asked.
-    const THREATS = /^(usurper|war|intrigue|the-dead|famine|money|rebellion|faith|succession|invasion)$/;
+    const THREATS = /^(usurper|war|intrigue|the-dead|famine|plague|money|rebellion|faith|succession|invasion)$/;
     const score = (t) => (t.tags ?? []).filter((g) => tags.includes(g)).reduce((n, g) => n + (THREATS.test(g) ? 6 : 1), 0) + (words ? (t.about ?? "").toLowerCase().split(/\W+/).filter((w) => w.length > 4 && words.toLowerCase().includes(w)).length : 0);
     let base = shapes.slice().sort((a, b2) => score(b2) - score(a) || Math.random() - 0.5)[0];
     let name = null;
@@ -1684,7 +1732,7 @@ http.createServer(async (req, res) => {
     }
     if (!name) {
       const ADJ = { violent: "Red", gritty: "Grim", cunning: "Silent", "fast-paced": "Swift", tragic: "Bitter", political: "Gilded", mysterious: "Hidden", epic: "Great", aggressive: "Iron", "slow-burn": "Long" };
-      const NOUN = { usurper: "Claim", war: "Feud", intrigue: "Cup", "the-dead": "Winter", famine: "Hunger", money: "Debt", rebellion: "Rising", faith: "Faith", succession: "Heir", invasion: "Tide" };
+      const NOUN = { usurper: "Claim", war: "Feud", intrigue: "Cup", "the-dead": "Winter", famine: "Hunger", plague: "Fever", money: "Debt", rebellion: "Rising", faith: "Faith", succession: "Heir", invasion: "Tide" };
       const adj = tags.map((t) => ADJ[t]).find(Boolean) ?? ["Broken", "Last", "Hollow", "Thorned"][Math.floor(Math.random() * 4)];
       const noun = tags.map((t) => NOUN[t]).find(Boolean) ?? (base.kind === "usurper" ? "Claim" : "Reckoning");
       name = `The ${adj} ${noun}`;
@@ -1697,13 +1745,50 @@ http.createServer(async (req, res) => {
     arc.name = name;
     arc.title = name;
     arc.about = words || base.about;
-    arc.tags = [...new Set([...tags, ...(base.tags ?? []).filter((g) => /^(usurper|war|intrigue|the-dead|famine|money|rebellion|faith|succession|invasion|great-house|the-court|the-people|foreign)$/.test(g))])];
+    arc.tags = [...new Set([...tags, ...(base.tags ?? []).filter((g) => /^(usurper|war|intrigue|the-dead|famine|plague|money|rebellion|faith|succession|invasion|great-house|the-court|the-people|foreign)$/.test(g))])];
     arc.told = { from: base.id, words, tags };
     const problems = check(arc);
     if (problems.length) return json(res, 400, { error: "that story doesn't hold together", problems });
     fs.writeFileSync(path.join(OWN_STORIES, `${arc.id}.json`), JSON.stringify(arc, null, 2));
     storiesChanged();
     return json(res, 200, { ok: true, id: arc.id, name: arc.name, about: arc.about, tags: arc.tags, from: base.name });
+  }
+  // A story of the player's own, for the beat form: who is in it (its roles, in
+  // words) and the beats they have added so far.
+  if (url.pathname === "/stories/own" && req.method === "GET") {
+    const t = ownStory(url.searchParams.get("id"));
+    if (!t) return json(res, 404, { error: "that isn't a story of your own" });
+    return json(res, 200, storyForForm(t));
+  }
+  // One beat of the player's own, added to (or taken out of) their story: what
+  // happens, who is in it, when it happens, and what it does, from short menus.
+  // It happens once, when its moment comes, and the story goes on from there.
+  if (url.pathname === "/stories/beat" && req.method === "POST") {
+    const b = await body(req);
+    const t = ownStory(b.story);
+    if (!t) return json(res, 404, { error: "add beats to a story of your own: shape one first" });
+    delete t.own; delete t.file; delete t.problems;
+    t.asides ??= [];
+    if (b.remove) {
+      t.asides = t.asides.filter((x) => x.id !== String(b.remove));
+    } else {
+      const text = String(b.text ?? "").trim().replace(/\s+/g, " ").slice(0, 300);
+      if (text.length < 8) return json(res, 400, { error: "say what happens, in a line or two" });
+      const people = rolesOf(t).filter((r) => !r.town).map((r) => r.id);
+      const who = String(b.who ?? "");
+      if (!people.includes(who)) return json(res, 400, { error: "choose who is in it" });
+      const when = BEAT_WHEN[b.when];
+      if (!when) return json(res, 400, { error: "choose when it happens" });
+      const does = BEAT_DOES[b.does ?? "nothing"];
+      if (!does) return json(res, 400, { error: "choose what it does" });
+      const n = Math.max(0, ...t.asides.map((x) => Number(String(x.id).replace(/\D/g, "")) || 0)) + 1;
+      t.asides.push({ id: `yours-${n}`, text, speaker: who, stage: does.stage ?? "rising", when: when.if, do: does.do(who, text), form: { who, when: b.when, does: b.does ?? "nothing" } });
+    }
+    const problems = check(t);
+    if (problems.length) return json(res, 400, { error: "that beat doesn't hold together", problems });
+    fs.writeFileSync(path.join(OWN_STORIES, `${t.id}.json`), JSON.stringify(t, null, 2));
+    storiesChanged();
+    return json(res, 200, storyForForm({ ...t, own: true }));
   }
   if (url.pathname === "/arcs/write" && req.method === "POST") {
     const b = await body(req);

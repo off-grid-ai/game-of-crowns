@@ -1101,6 +1101,6 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
   }
 
   open() {
-    return this.petitions.filter((p) => !p.answered).map(({ id, text, voice, facts, options, house, name, from }) => ({ id, text, voice, facts, options, house, name, from }));
+    return this.petitions.filter((p) => !p.answered).map(({ id, text, voice, facts, options, house, name, from, arc, beat, thread }) => ({ id, text, voice, facts, options, house, name, from, ...(arc ? { arc, beat, thread } : {}) }));
   }
 }

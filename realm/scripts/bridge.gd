@@ -191,6 +191,20 @@ func generate_story(tags: Array, words: String, cb: Callable) -> void:
 	_post("/stories/generate", {"tags": tags, "words": words}, func(c, d): cb.call(c, d))
 
 
+## A story of the player's own for the beat form: its roles, the menus of when
+## and what, and the beats added so far.
+func own_story(id: String, cb: Callable) -> void:
+	_http_get("/stories/own?id=%s" % id.uri_encode(), cb)
+
+
+## One beat of the player's own added to their story ({text, who, when, does}),
+## or taken out ({remove: id}). The reply is the story as own_story gives it.
+func story_beat(id: String, beat: Dictionary, cb: Callable) -> void:
+	var b := beat.duplicate()
+	b["story"] = id
+	_post("/stories/beat", b, func(c, d): cb.call(c, d))
+
+
 ## The stories a reign can be told by (arc files marked "reign"), each with its tags.
 func stories(cb: Callable) -> void:
 	_http_get("/arcs/templates", func(d):

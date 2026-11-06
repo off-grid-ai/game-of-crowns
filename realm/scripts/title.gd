@@ -187,7 +187,7 @@ var _opt := {}  # the chronicle's options as they stand; sent to the bridge as-i
 
 
 ## The tags a story of your own can be shaped by: what threatens, and how it feels.
-const STORY_TAGS := ["usurper", "war", "intrigue", "rebellion", "succession", "faith", "invasion", "the-dead", "famine", "money", "fast-paced", "slow-burn", "violent", "gritty", "aggressive", "cunning", "tragic", "political", "mysterious", "epic"]
+const STORY_TAGS := ["usurper", "war", "intrigue", "rebellion", "succession", "faith", "invasion", "the-dead", "famine", "plague", "money", "fast-paced", "slow-burn", "violent", "gritty", "aggressive", "cunning", "tragic", "political", "mysterious", "epic"]
 
 
 static func _default_opt() -> Dictionary:
@@ -277,12 +277,20 @@ func show_new() -> void:
 		card.pressed.connect(_use_preset.bind(String(name)))
 	# What comes for the throne: the reign's story, or the realm's own choice.
 	_body.add_child(_label("What comes for the throne", 15, MUTED))
+	# The cards scroll within a band of the page: there are a score of stories,
+	# and the name and Begin must stay on the screen beneath them.
+	var tales_scroll := ScrollContainer.new()
+	tales_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	tales_scroll.custom_minimum_size = Vector2(0, clampf(room.y - 560.0, 220.0, 420.0))
+	_body.add_child(tales_scroll)
 	var tales := HFlowContainer.new()
 	tales.add_theme_constant_override("h_separation", 12)
 	tales.add_theme_constant_override("v_separation", 8)
-	_body.add_child(tales)
+	tales.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tales_scroll.add_child(tales)
 	_opt["story"] = _opt.get("story", "random")
-	var tale_card := func(id: String, text: String) -> void:
+	var beats_box := VBoxContainer.new()  # the player's own beats, under the maker
+	var tale_card := func(id: String, text: String, own_story: bool) -> void:
 		var card := _toggle(text, tales)
 		card.toggle_mode = true
 		card.button_pressed = _opt["story"] == id
@@ -291,22 +299,41 @@ func show_new() -> void:
 		card.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		card.pressed.connect(func():
 			_opt["story"] = id
+			# A story of your own takes beats of your own.
+			if own_story:
+				_own_story = id
+				_beats_panel(beats_box)
 			for b in tales.get_children():
 				if b is Button:
 					b.set_pressed_no_signal(b == card))
-	tale_card.call("random", "Let the realm decide\nA story chosen for you, revealed as it begins.")
+	tale_card.call("random", "Let the realm decide\nA story chosen for you, revealed as it begins.", false)
 	# Or the player's own: tags, a few lines of premise, or both.
 	var own := _toggle("Write your own…\nPick tags, describe it, or both, and the realm shapes it.", tales)
 	own.toggle_mode = false
 	own.custom_minimum_size = Vector2(300, 72)
 	own.autowrap_mode = TextServer.AUTOWRAP_WORD
 	own.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	# Writing your own is a layer over the cards: it takes their place, and Esc
+	# (or Done) brings them back.
+	var maker_scroll := ScrollContainer.new()
+	maker_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	maker_scroll.custom_minimum_size = Vector2(0, clampf(room.y - 480.0, 300.0, 720.0))
+	maker_scroll.visible = false
+	_body.add_child(maker_scroll)
+	_body.move_child(maker_scroll, tales_scroll.get_index() + 1)
 	var maker := VBoxContainer.new()
 	maker.add_theme_constant_override("separation", 8)
-	maker.visible = false
-	_body.add_child(maker)
-	_body.move_child(maker, tales.get_index() + 1)
-	own.pressed.connect(func(): maker.visible = not maker.visible)
+	maker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	maker_scroll.add_child(maker)
+	var open_maker := func(on: bool) -> void:
+		maker_scroll.visible = on
+		if on:
+			_layers.append(maker_scroll)
+	maker_scroll.visibility_changed.connect(func():
+		if is_instance_valid(tales_scroll):
+			tales_scroll.visible = not maker_scroll.visible)
+	own.pressed.connect(open_maker.bind(true))
+	maker.add_child(_label("Write your own", 19, GOLD))
 	var chips := HFlowContainer.new()
 	chips.add_theme_constant_override("h_separation", 6)
 	chips.add_theme_constant_override("v_separation", 6)
@@ -326,6 +353,12 @@ func show_new() -> void:
 	var shape_btn := _toggle("Shape the story", maker)
 	shape_btn.toggle_mode = false
 	maker.add_child(made)
+	beats_box.add_theme_constant_override("separation", 8)
+	maker.add_child(beats_box)
+	_beats_panel(beats_box)
+	var done := _toggle("Done", maker)
+	done.toggle_mode = false
+	done.pressed.connect(open_maker.bind(false))
 	shape_btn.pressed.connect(func():
 		if picked.is_empty() and premise.text.strip_edges() == "":
 			made.text = "Pick a tag or two, or write a line about it."
@@ -341,8 +374,10 @@ func show_new() -> void:
 				return
 			made.text = "Shaped on %s." % String(d.get("from", "a tested story"))
 			var tags: Array = d.get("tags", [])
-			tale_card.call(String(d["id"]), "%s\n%s\n%s" % [String(d["name"]), String(d.get("about", "")), "  ·  ".join(tags.map(func(g): return String(g).replace("-", " ")))])
+			tale_card.call(String(d["id"]), "%s\n%s\n%s" % [String(d["name"]), String(d.get("about", "")), "  ·  ".join(tags.map(func(g): return String(g).replace("-", " ")))], true)
 			_opt["story"] = String(d["id"])
+			_own_story = String(d["id"])
+			_beats_panel(beats_box)
 			for b in tales.get_children():
 				if b is Button and b.toggle_mode:
 					b.set_pressed_no_signal(b.get_index() == tales.get_child_count() - 1)))
@@ -351,7 +386,16 @@ func show_new() -> void:
 			return
 		for t in list:
 			var tags: Array = t.get("tags", [])
-			tale_card.call(String(t["id"]), "%s%s\n%s\n%s" % ["Yours  ·  " if t.get("own", false) else "", String(t.get("name", t["id"])), String(t.get("about", "")), "  ·  ".join(tags.map(func(g): return String(g).replace("-", " ")))]))
+			tale_card.call(String(t["id"]), "%s%s\n%s\n%s" % ["Yours  ·  " if t.get("own", false) else "", String(t.get("name", t["id"])), String(t.get("about", "")), "  ·  ".join(tags.map(func(g): return String(g).replace("-", " ")))], t.get("own", false))
+		# A still of the beat form (--beats, for renders only): the maker open on a story of your own.
+		if _probe_beats:
+			for t in list:
+				if t.get("own", false):
+					_own_story = String(t["id"])
+					_opt["story"] = _own_story
+					open_maker.call(true)
+					_beats_panel(beats_box)
+					break)
 	var name_edit := LineEdit.new()
 	name_edit.placeholder_text = "Name this chronicle (e.g. The Long Winter)"
 	name_edit.add_theme_font_size_override("font_size", 18)
@@ -446,6 +490,171 @@ func show_new() -> void:
 	var back := _toggle("Back", go)
 	back.toggle_mode = false
 	back.pressed.connect(_back)
+
+
+var _own_story := ""  # the story of your own that beats are added to
+var _probe_beats := "--beats" in OS.get_cmdline_user_args()  # a render of the beat form, never in play
+
+
+## Beats of your own, one at a time, in the story you shaped: what happens, who
+## is in it, when it happens and what it does. Each is checked by the realm and
+## saved into your story; it happens once, when its moment comes.
+func _beats_panel(box: VBoxContainer) -> void:
+	if not is_instance_valid(box):
+		return
+	for c in box.get_children():
+		c.queue_free()
+	if _own_story == "":
+		box.add_child(_label("Shape a story, or choose one of yours, and you can add beats of your own to it.", 14, MUTED))
+		return
+	var box_ref: WeakRef = weakref(box)
+	bridge.own_story(_own_story, func(d):
+		var b: VBoxContainer = box_ref.get_ref()
+		if b == null or not d is Dictionary or not d.has("roles"):
+			return
+		_fill_beats(b, d))
+
+
+func _fill_beats(box: VBoxContainer, d: Dictionary) -> void:
+	for c in box.get_children():
+		c.queue_free()
+	var people: Array = d["roles"].filter(func(r): return not r.get("town", false))
+	var label_of := func(id: String) -> String:
+		for r in d["roles"]:
+			if r["id"] == id:
+				return String(r["label"])
+		return id
+	box.add_child(_label("Your own beats in %s" % String(d.get("name", "your story")), 15, MUTED))
+	var status := _label("", 14, MUTED)
+	for beat in d.get("beats", []):
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		box.add_child(row)
+		var line := _label("%s  ·  %s  ·  %s\n%s" % [String(beat["when"]), _first_up(label_of.call(String(beat["who"]))), String(beat["does"]), _first_up(_named(String(beat["text"]), label_of))], 14, PARCHMENT)
+		line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(line)
+		var drop := _toggle("Remove", row)
+		drop.toggle_mode = false
+		var id := String(beat["id"])
+		drop.pressed.connect(func():
+			bridge.story_beat(_own_story, {"remove": id}, func(code, r):
+				if code == 200 and is_instance_valid(box):
+					_fill_beats(box, r)))
+	var add := _toggle("Add a beat", box)
+	add.toggle_mode = false
+	# The form: one beat, from a line of words and three short menus.
+	var form := VBoxContainer.new()
+	form.add_theme_constant_override("separation", 6)
+	form.visible = false
+	box.add_child(form)
+	box.add_child(status)
+	add.pressed.connect(func():
+		form.visible = not form.visible
+		add.visible = not form.visible
+		if form.visible:
+			_layers.append(form)
+			_reveal(form))
+	form.visibility_changed.connect(func():
+		if is_instance_valid(add):
+			add.visible = not form.visible)
+	var beat := {"who": String(people[0]["id"]) if not people.is_empty() else "", "when": "act2", "does": "nothing"}
+	if _probe_beats:
+		form.visible = true
+		_reveal(form)
+	form.add_child(_label("What happens", 15, MUTED))
+	var what := TextEdit.new()
+	what.placeholder_text = "A bridge burns on the king's road, and every finger points the same way…"
+	what.custom_minimum_size = Vector2(0, 64)
+	what.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	form.add_child(what)
+	if _probe_beats:
+		what.text = "{warden} rides into Kingsmere at night with the King's own physician bound across the saddle."
+	# Names go into the words as the story's own parts, filled in when it's told.
+	var names := HFlowContainer.new()
+	names.add_theme_constant_override("h_separation", 6)
+	form.add_child(names)
+	names.add_child(_label("Name in it  ", 14, MUTED))
+	for r in d["roles"]:
+		var chip := _toggle(String(r["label"]), names)
+		chip.toggle_mode = false
+		var key := String(r["id"])
+		chip.pressed.connect(func():
+			what.insert_text_at_caret("{%s}" % key)
+			what.grab_focus())
+	_choices(form, "Who is in it", people.map(func(r): return [_first_up(String(r["label"])), String(r["id"])]), beat["who"], func(v): beat["who"] = v)
+	_choices(form, "When it happens", d.get("when", []).map(func(w): return [String(w["label"]), String(w["id"])]), beat["when"], func(v): beat["when"] = v)
+	_choices(form, "What it does", d.get("does", []).map(func(w): return [String(w["label"]), String(w["id"])]), beat["does"], func(v): beat["does"] = v)
+	var go := HBoxContainer.new()
+	go.add_theme_constant_override("separation", 10)
+	form.add_child(go)
+	var save := _toggle("Add to the story", go)
+	save.toggle_mode = false
+	save.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var T := preload("res://scripts/theme.gd")
+	save.add_theme_stylebox_override("normal", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.22), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.55), 8, 10))
+	save.add_theme_stylebox_override("hover", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.34), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.8), 8, 10))
+	save.add_theme_color_override("font_color", T.ACCENT)
+	var cancel := _toggle("Cancel", go)
+	cancel.toggle_mode = false
+	cancel.pressed.connect(func(): form.visible = false)
+	save.pressed.connect(func():
+		if what.text.strip_edges().length() < 8:
+			status.text = "Say what happens, in a line or two."
+			return
+		save.disabled = true
+		status.text = "The realm is weighing your beat…"
+		var send := beat.duplicate()
+		send["text"] = what.text.strip_edges()
+		bridge.story_beat(_own_story, send, func(code, r):
+			if not is_instance_valid(box):
+				return
+			if code == 200 and r is Dictionary and r.has("roles"):
+				_fill_beats(box, r)
+				return
+			save.disabled = false
+			var why: Array = r.get("problems", []) if r is Dictionary else []
+			status.text = String(r.get("error", "The realm couldn't take that beat.")) if r is Dictionary else "The realm couldn't take that beat."
+			if not why.is_empty():
+				status.text += ": " + String(why[0])))
+
+
+## Scrolls whatever scroll holds it so all of a control can be seen, once it has its size.
+func _reveal(c: Control) -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var p := c.get_parent()
+	while p and not p is ScrollContainer:
+		p = p.get_parent()
+	if p and is_instance_valid(c):
+		(p as ScrollContainer).ensure_control_visible(c)
+
+
+## "the warden" as it starts a line: "The warden".
+func _first_up(text: String) -> String:
+	return text.left(1).to_upper() + text.substr(1)
+
+
+## A beat's words as the player reads them: {warden} becomes "the warden".
+func _named(text: String, label_of: Callable) -> String:
+	var re := RegEx.create_from_string("\\{(\\w+)(?:\\.\\w+)?\\}")
+	var out := text
+	for m in re.search_all(text):
+		out = out.replace(m.get_string(), String(label_of.call(m.get_string(1))))
+	return out
+
+
+## Esc closes what was opened last on the page (the beat form, the story maker)
+## before it leaves the page.
+var _layers: Array[Control] = []
+
+
+func _step_back() -> bool:
+	while not _layers.is_empty():
+		var c: Control = _layers.pop_back()
+		if is_instance_valid(c) and c.visible:
+			c.visible = false
+			return true
+	return false
 
 
 func _use_scenario(sc: Dictionary) -> void:
@@ -628,7 +837,8 @@ func _input(event: InputEvent) -> void:
 	if _rebinding == "":
 		if event.is_action_pressed(&"back"):
 			get_viewport().set_input_as_handled()
-			_back()
+			if not _step_back():
+				_back()
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		get_viewport().set_input_as_handled()
@@ -848,6 +1058,7 @@ func _clear() -> void:
 	if _scrim:
 		_scrim.visible = true
 	_body.custom_minimum_size = Vector2(620, 0)
+	_layers.clear()
 	for c in _body.get_children():
 		c.queue_free()
 

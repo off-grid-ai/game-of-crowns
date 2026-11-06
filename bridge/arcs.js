@@ -104,6 +104,15 @@ export function check(t) {
     }
     for (const o of b.court.options ?? []) for (const k of Object.keys(o.favour ?? {})) if (!roles.includes(k)) errs.push(`beat ${b.id}: answer ${o.id} moves the favour of ${k}, which isn't a role`);
   }
+  // The player's own beats: each needs words, a moment, and names only the story's roles.
+  for (const b of t.asides ?? []) {
+    if (!b.id || ids.includes(b.id)) errs.push(`a beat of your own needs an id of its own (${b.id ?? "none"})`);
+    if (!String(b.text ?? "").trim()) errs.push(`your beat ${b.id} says nothing happens`);
+    if (!b.when || !Object.keys(b.when).length) errs.push(`your beat ${b.id} has no moment to happen`);
+    if (b.speaker && !roles.includes(b.speaker)) errs.push(`your beat ${b.id} is told by ${b.speaker}, who isn't in the story`);
+    for (const [, r] of String(b.text ?? "").matchAll(/\{(\w+)/g)) if (!roles.includes(r) && r !== "thread") errs.push(`your beat ${b.id} names {${r}}, which isn't a role`);
+    for (const r of refsInDo(b.do)) if (!roles.includes(r)) errs.push(`your beat ${b.id} acts on ${r}, who isn't in the story`);
+  }
   for (const n of t.interrupts ?? []) if (!ids.includes(n.to)) errs.push(`an interrupt goes to ${n.to}, which isn't a beat`);
   for (const [r, id] of Object.entries(t.onDeath ?? {})) if (!ids.includes(id)) errs.push(`onDeath ${r} goes to ${id}, which isn't a beat`);
   return [...new Set(errs)];
@@ -120,6 +129,16 @@ function refsIn(spec) {
     for (const e of s.either ?? []) walk(e);
   };
   walk(spec);
+  return out;
+}
+
+// Roles a beat's effects act on.
+function refsInDo(d = {}) {
+  const out = [];
+  for (const k of ["gold", "units", "favour", "loyalty"]) out.push(...Object.keys(d[k] ?? {}));
+  for (const k of ["usurper"]) if (typeof d[k] === "string") out.push(d[k]);
+  for (const k of ["war", "raid", "transfer"]) if (Array.isArray(d[k])) out.push(...d[k].filter((x) => typeof x === "string"));
+  for (const x of [d.die ?? []].flat()) if (x?.who) out.push(x.who);
   return out;
 }
 
@@ -252,6 +271,10 @@ export class Arcs {
       if (to && to !== arc.at) return this.enter(arc, t, t.beats.find((b) => b.id === to), ctx);
       if (core.includes(dead)) return this.finish(arc, "failed", ctx, `With ${roles[dead].name} in the grave, ${arc.title} ends unfinished.`);
     }
+    // The player's own beats: each happens once, when its moment comes, and the
+    // story goes on afterwards from where it was.
+    const aside = (t.asides ?? []).find((b) => !(arc.asides ?? []).includes(b.id) && this.test(b.when, arc, ctx));
+    if (aside) return this.enter(arc, t, aside, ctx, { aside: true });
     // What another story (or the realm) did can overtake this one at any time.
     const over = (t.interrupts ?? []).find((n) => n.to !== arc.at && this.test(n.if, arc, ctx));
     if (over) return this.enter(arc, t, t.beats.find((b) => b.id === over.to), ctx);
@@ -268,7 +291,7 @@ export class Arcs {
 
   // A beat happens: the chronicle tells it under the arc's name, its people
   // remember it, the realm feels it, and the story waits for the next.
-  async enter(arc, t, beat, ctx) {
+  async enter(arc, t, beat, ctx, { aside = false } = {}) {
     const roles = this.roles(arc, ctx);
     const text = this.fill(Array.isArray(beat.text) ? beat.text[Math.floor(Math.random() * beat.text.length)] : beat.text, arc, ctx);
     const lua = this.act(beat.do ?? {}, arc, roles, ctx);
@@ -305,6 +328,12 @@ export class Arcs {
       if (text2) { this.court.remember(who.id, text2); this.court.save(who); }
       // A named person's memories stay in their Court record; the mind carries how it felt.
       if (mind) { ctx.minds.feel(mind, moves(k), weight); ctx.minds.save(); }
+    }
+    if (aside) {
+      (arc.asides ??= []).push(beat.id);
+      arc.beats.push({ beat: beat.id, stage: beat.stage ?? "rising", clock: this.clock, turn: ctx.world.turn, text: text + said, yours: true });
+      if (lua.length && ctx.refresh) await ctx.refresh();
+      return;
     }
     if (beat.court) this.toCourt(arc, beat, roles, ctx);
     if (arc.reign && beat.threat != null) arc.threat = Math.max(0, Math.min(100, Number(beat.threat)));
@@ -658,6 +687,7 @@ export class Arcs {
           // What the King answered: "option" (the last matter) or ["beat", "option"]; "ignored" if he never did.
           case "ruled": { const [b, o] = Array.isArray(v) ? v : [arc.lastRuled, v]; return Boolean(b) && re(`^(${o})$`).test((arc.ruled ?? {})[b] ?? ""); }
           case "threat": return cmp(arc.threat ?? 0, v[0], v[1]);
+          case "act": return cmp(this.actOf(arc), v[0], v[1]);
           case "usurper": return re(`^(${v})$`).test(ctx.usurperStage?.() ?? "none");
           case "happened": return ctx.recent().some((e) => re(v.kind ?? ".").test(e.kind) && re(v.text ?? ".").test(e.text ?? "") && (!v.town || e.city === R(v.town)?.id) && (!v.house || (e.text ?? "").includes(R(v.house)?.house ?? "\0")));
           default: return false; // a key no one knows holds nothing, so a typo can't fire a branch
@@ -834,17 +864,20 @@ export class Arcs {
     this.save();
   }
 
+  // Its acts: each beat that brought a matter to the King, or turned the story to crisis, is an act.
+  actOf(a) {
+    const t = templates().find((x) => x.id === a.template);
+    const big = (id) => { const b = t?.beats?.find((x) => x.id === id); return Boolean(b?.court || b?.stage === "crisis"); };
+    return Math.max(1, a.beats.filter((b) => big(b.beat)).length);
+  }
+
   // The story against the throne, for the top of the screen: its name, where it
   // has got to, and how near it is to taking the crown.
   reignView() {
     const a = this.active.find((x) => x.chosen) ?? this.done.slice().reverse().find((x) => x.chosen) ?? this.active.find((x) => x.reign);
     if (!a) return null;
     const last = a.beats[a.beats.length - 1];
-    // Its acts: each beat that brought a matter to the King, or turned the story to crisis, is an act.
-    const t = templates().find((x) => x.id === a.template);
-    const big = (id) => { const b = t?.beats?.find((x) => x.id === id); return Boolean(b?.court || b?.stage === "crisis"); };
-    const act = Math.max(1, a.beats.filter((b) => big(b.beat)).length);
-    return { title: a.title, threat: a.threat ?? 0, act, status: a.status ?? "running", tags: a.tags ?? [], last: last?.text ?? "", turn: last?.turn ?? null };
+    return { title: a.title, threat: a.threat ?? 0, act: this.actOf(a), status: a.status ?? "running", tags: a.tags ?? [], last: last?.text ?? "", turn: last?.turn ?? null };
   }
 
   // --- for the view and the King -------------------------------------------------------

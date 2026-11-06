@@ -160,6 +160,24 @@ Every key in a condition must hold. Combine conditions with `all: [...]`, `any: 
 | `reverie: { "x": 0.1 }`, `believe: { "x": "..." }`, `want: { "x": "..." }` | the mind itself. A belief is what they bring to their next talk with you. |
 | `leave: "x"` | a commoner walks out of town; a named person goes into exile |
 
+## Beats of your own (`asides`)
+
+A story can carry `asides`: beats that are not on its branching path. Each happens once, the first season its `when` holds, and then the story goes on from the beat it was on. They are how the player's own beats join a story (the beat form under "Write your own…" on the New Chronicle screen), and they work in any file.
+
+```json
+"asides": [
+  { "id": "yours-1", "text": "A bridge burns on the king's road, and {rival} is blamed.", "speaker": "rival",
+    "when": { "act": [">=", 2] }, "do": { "favour": { "rival": -15 } } }
+]
+```
+
+`when` takes any condition, plus `act: [">=", 2]`: the story's act, counted as the strip under the date counts it (each beat that went to court or into crisis). The form offers six moments (the first, second or third act, late in the story, when the threat runs high, when a usurper marches) and eight effects (none, threat up or down, soldiers, gold lost, favour down or up, death).
+
+| Call | |
+|---|---|
+| `GET /stories/own?id=<story>` | a story of the player's own: its roles in words, the menus, the beats added so far |
+| `POST /stories/beat {"story", "text", "who", "when", "does"}` | add a beat; `{"story", "remove": "yours-1"}` takes one out. Checked with `check()` before it's saved. |
+
 ## Telling a story in plain words
 
 ```bash
