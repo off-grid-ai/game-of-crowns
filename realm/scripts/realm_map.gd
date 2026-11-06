@@ -112,14 +112,24 @@ func show_town(title: String, z := 2.6) -> void:
 			return
 
 
+## The town under a point: its mark or its name, when the name is shown.
 func town_at(p: Vector2) -> Dictionary:
+	var font: Font = T.get_theme().default_font
+	var named := zoom >= 1.8
 	var best := {}
-	var near := 14.0
+	var near := 16.0
 	for t in data.get("towns", []):
-		var d: float = to_screen(float(t["x"]), float(t["y"])).distance_to(p)
+		var at := to_screen(float(t["x"]), float(t["y"]))
+		var d: float = at.distance_to(p)
 		if d < near:
 			near = d
 			best = t
+		var seat: bool = t.get("capital", false)
+		if best.is_empty() and (seat or named or String(t["title"]) == mark):
+			var fs := (15 if seat else 12) + int(minf(zoom, 4.0) * 0.5)
+			var w := font.get_string_size(String(t["title"]), HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			if Rect2(at + Vector2(0, -fs), Vector2(w + 18.0, fs + 10.0)).has_point(p):
+				best = t
 	return best
 
 

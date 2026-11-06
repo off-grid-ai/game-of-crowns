@@ -298,13 +298,13 @@ func _live_map() -> Control:
 	view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	view.data = _map
 	view.mark = _mark
+	# Any town opens its house's page; the town stays ringed for when you come back.
 	view.town_pressed.connect(func(t: Dictionary):
-		if t.get("capital", false):
-			for hh in _book.get("houses", []):
-				if String(hh.get("name", "")) == String(t.get("house", "")):
-					_go(int(hh["id"]))
-					return
 		_mark = String(t["title"])
+		for hh in _book.get("houses", []):
+			if String(hh.get("name", "")) == String(t.get("house", "")):
+				_go(int(hh["id"]))
+				return
 		view.mark = _mark
 		view.queue_redraw())
 	# Fitted once it has its size; opened on a town (from a house's page), closed in on it.
