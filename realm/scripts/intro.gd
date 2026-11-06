@@ -47,6 +47,7 @@ var watching := false  # watched from the menu, not the loading screen: it ends 
 var _pages: Array = []  # [still, title, line, house, keys, atlas uv, atlas zoom]
 var _page := -1
 var _image: TextureRect
+var _under: TextureRect  # the page before, under the new one while it fades in
 var _map: TextureRect
 var _title: Label
 var _line: Label
@@ -123,6 +124,14 @@ func _build() -> void:
 	_map.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_map.stretch_mode = TextureRect.STRETCH_SCALE
 	add_child(_map)
+	# The page before, held under the new painting while it fades in, so a turn
+	# crosses from one picture to the next and never shows black.
+	_under = TextureRect.new()
+	_under.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_under.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_under.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_under.pivot_offset = get_viewport().get_visible_rect().size * 0.5
+	add_child(_under)
 	_image = TextureRect.new()
 	_image.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -234,6 +243,11 @@ func _next() -> void:
 	if not ResourceLoader.exists(path):
 		path = BACKDROP
 	var still := ResourceLoader.exists(path)
+	_under.texture = _image.texture if _image.visible else null
+	_under.scale = _image.scale
+	_under.position = _image.position
+	_under.modulate.a = 1.0
+	_under.visible = _under.texture != null
 	var t0 := Time.get_ticks_usec()
 	_image.texture = _take(path) if still else null
 	_loads.append((Time.get_ticks_usec() - t0) / 1000.0)
@@ -266,6 +280,7 @@ func _next() -> void:
 	var pic: Control = _image if still else _map
 	pic.modulate.a = 0.0
 	_tween.tween_property(pic, "modulate:a", 1.0, 1.0)
+	_tween.tween_property(_under, "modulate:a", 0.0, 0.4).set_delay(1.0)
 	if still:
 		_image.scale = Vector2.ONE * 1.08
 		_image.position = Vector2(-30 * dir, 0)
