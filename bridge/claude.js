@@ -528,9 +528,9 @@ export async function premiseIdea({ tags, draft }) {
 // what the box knows (the story, the petition, the house…).
 const WRITE = {
   "chronicle-name": ["You name chronicles of a medieval reign: two to five evocative words, no quotation marks.", 16],
-  "mood": ["You set the opening mood of a medieval realm in one short clause: its peace, its fears, who trusts whom. At most 20 words.", 50],
+  "mood": ["You write the mood of a medieval realm as a new reign begins, as one clause of at most 20 words. For example: a brittle peace after the long war; the North trusts no one. Write a different one.", 50],
   "character-name": ["You name people of a medieval realm: a given name and a family or place name, with a title if they'd have one. Only the name.", 16],
-  "character-traits": ["You describe a medieval person's quirks as a short comma-separated list of three or four, at most 12 words.", 30],
+  "character-traits": ["You list a medieval person's quirks, three or four, comma-separated, at most 12 words. For example: superstitious, loves his horses, never forgets a debt. Write different ones.", 30],
   "character-past": ["You write one line of a medieval person's past that they'd always remember: specific, at most 25 words.", 60],
   "ruling": ["You are a medieval King answering a petitioner at court, in the first person, in one or two plain sentences, at most 35 words. Rule decisively.", 80],
   "speech": ["You are a medieval King speaking to someone you've met in your realm: one short, natural line, at most 20 words, in character.", 50],
