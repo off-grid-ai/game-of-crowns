@@ -1,0 +1,188 @@
+{
+  "id": "pale-fever",
+  "reign": true,
+  "name": "The Pale Fever",
+  "about": "A fever with no name empties a lord's town street by street. Shut the gates and let it starve, spend on physicians, or trust a hedge-woman's cure, and if it reaches Kingsmere, decide whether the King stays with his people or flees to a rival's hall.",
+  "tags": ["plague", "the-people", "grim", "gritty", "slow-burn", "a-reign"],
+  "kind": "plague",
+  "weight": 1,
+  "title": "The Pale Fever",
+  "roles": {
+    "warden": { "rank": "lord", "seat": true, "likes": { "traits": ["just", "patient", "pious"] } },
+    "sick": { "town": true, "seatOf": "warden" },
+    "rival": { "rank": "lord", "otherHouse": "warden", "seat": true, "likes": { "traits": ["ambitious", "cunning", "paranoid"] } },
+    "refuge": { "town": true, "seatOf": "rival" },
+    "healer": { "new": { "name": "Mother {first}", "gender": "female", "age": [40, 70], "rank": "sworn", "traits": ["superstitious", "kind-hearted"], "memory": "I have seen this fever before, in the marsh villages, and I know what breaks it.", "like": "warden" } }
+  },
+  "core": ["warden"],
+  "onDeath": { "warden": "fever-at-court" },
+  "beats": [
+    {
+      "id": "first-sick",
+      "stage": "rising",
+      "threat": 15,
+      "speaker": "warden",
+      "at": "sick",
+      "text": "In {sick} the dyers fall sick first, then the bakers. Their skin goes white as tallow and they sleep and do not wake. By the new moon the bells ring for the dead every morning.",
+      "court": {
+        "from": "warden",
+        "text": "{warden} of {warden.house}, grey with sleeplessness: \"The fever is in {sick}, Your Grace. If I shut the gates my people starve. If I don't, it walks out on the merchants' carts.\"",
+        "options": [
+          { "id": "gates", "label": "Shut {sick}'s gates until it burns out", "hint": "{warden.houseName} −15 · the fever is held · the town goes hungry", "favour": { "warden": -15 }, "do": { "threat": -5, "gold": { "warden": -40 } }, "result": "Chains go across {sick}'s gates. Nobody goes in or out, and the bread runs low." },
+          { "id": "physicians", "label": "Send the royal physicians (150 gold)", "hint": "{warden.houseName} +10 · they may find a cure, or die trying", "cost": 150, "favour": { "warden": 10 }, "do": { "threat": -5 }, "result": "Three royal physicians ride for {sick} in beaked masks, with a cart of vinegar and myrrh." },
+          { "id": "trade", "label": "Keep the roads open: trade must go on", "hint": "nothing now · the fever travels", "do": { "threat": 15 }, "result": "The carts keep rolling out of {sick}, and some of the carters are pale." }
+        ]
+      },
+      "after": [2, 3],
+      "next": [
+        { "if": { "ruled": "gates" }, "to": "behind-the-gates" },
+        { "if": { "all": [{ "ruled": "physicians" }, { "chance": 0.6 }] }, "to": "the-hedge-woman" },
+        { "to": "fever-at-court" }
+      ],
+      "patience": 5,
+      "otherwise": "fever-at-court"
+    },
+    {
+      "id": "behind-the-gates",
+      "stage": "crisis",
+      "threat": 35,
+      "speaker": "warden",
+      "at": "sick",
+      "text": "Behind {sick}'s chained gates the living eat the seed corn, then the dogs. Mothers lower their children from the walls on ropes, begging the guards to take them.",
+      "feel": { "warden": { "grief": 0.3, "anger": 0.1 } },
+      "court": {
+        "from": "warden",
+        "text": "{warden}: \"I kept the gates shut as you commanded, Your Grace. Now the fever has company: hunger. Send bread, or let me open them.\"",
+        "options": [
+          { "id": "bread", "label": "Send grain over the walls (200 gold)", "hint": "{warden.houseName} +15 · the town lives to see the cure", "cost": 200, "favour": { "warden": 15 }, "do": { "threat": -10 }, "result": "Royal grain goes over {sick}'s walls in baskets. The ropes come down with thanks tied to them." },
+          { "id": "hold", "label": "The gates stay shut", "hint": "{warden.houseName} −25 · the hungry may break out", "favour": { "warden": -25 }, "do": { "threat": 10 }, "result": "The gates stay shut. That night the guards hear singing behind them, then axes." }
+        ]
+      },
+      "after": [2, 3],
+      "next": [
+        { "if": { "ruled": "bread" }, "to": "the-hedge-woman" },
+        { "to": "gates-broken" }
+      ],
+      "patience": 5,
+      "otherwise": "gates-broken"
+    },
+    {
+      "id": "gates-broken",
+      "stage": "crisis",
+      "threat": 55,
+      "speaker": "warden",
+      "at": "sick",
+      "text": "The starving of {sick} break the chains with a smith's hammer and scatter along every road, and the fever goes with them.",
+      "do": { "gold": { "warden": -60 }, "opinion": [["warden", "rival", -10]] },
+      "after": [1, 2],
+      "next": [{ "to": "fever-at-court" }],
+      "patience": 2,
+      "otherwise": "fever-at-court"
+    },
+    {
+      "id": "the-hedge-woman",
+      "stage": "rising",
+      "threat": 30,
+      "speaker": "healer",
+      "at": "sick",
+      "text": "An old woman out of the marshes walks into {sick} with willow bark, moss and a knife for bleeding. The first three she tends wake up. The physicians call it witchcraft.",
+      "court": {
+        "from": "rival",
+        "text": "{rival} of {rival.house}: \"A marsh witch is cutting your subjects open in {sick}, Your Grace, and calling it medicine. The septons want her burned. So do I.\"",
+        "options": [
+          { "id": "trust", "label": "Put {healer} under the crown's protection", "hint": "{rival.houseName} −15 · the cure may spread", "favour": { "rival": -15, "warden": 10 }, "do": { "threat": -15, "opinion": [["healer", "warden", 20]] }, "result": "A royal writ hangs over {healer}'s door. She keeps working, and asks for more moss." },
+          { "id": "burn", "label": "Let the septons burn her", "hint": "{rival.houseName} +15 · the cure burns with her", "favour": { "rival": 15, "warden": -10 }, "do": { "threat": 20, "die": { "who": "healer", "how": "They burned me at {sick} for curing their children." } }, "result": "{healer} burns in {sick}'s square. The next morning the bells ring again." }
+        ]
+      },
+      "after": [2, 3],
+      "next": [
+        { "if": { "all": [{ "ruled": "trust" }, { "chance": 0.75 }] }, "to": "cure-found" },
+        { "to": "fever-at-court" }
+      ],
+      "patience": 5,
+      "otherwise": "fever-at-court"
+    },
+    {
+      "id": "fever-at-court",
+      "stage": "crisis",
+      "threat": 70,
+      "speaker": "rival",
+      "at": "refuge",
+      "text": "A cupbearer at Kingsmere goes white at the high table and falls among the dishes. The Pale Fever is in the King's own hall.",
+      "court": {
+        "from": "rival",
+        "text": "{rival}, already in the saddle: \"Kingsmere is a charnel house, Your Grace. {refuge} is clean. Come with me, tonight, and rule from my hall until it passes.\"",
+        "options": [
+          { "id": "stay", "label": "The King stays with his people", "hint": "the people love you for it · the fever may not", "favour": { "warden": 15 }, "do": { "threat": 5 }, "result": "The King walks the fever streets of Kingsmere with a vinegar cloth over his face, and the city weeps to see it." },
+          { "id": "keep", "label": "Seal the King in the inner keep (300 gold)", "hint": "safe behind stone · the realm runs without you", "cost": 300, "favour": { "warden": -10, "rival": -5 }, "do": { "threat": -20 }, "result": "The keep's doors are bricked up behind the King with a year's stores. The realm hears his voice only through a grate." },
+          { "id": "flee", "label": "Ride to {refuge} with {rival}", "hint": "{rival.houseName} +20 · the King in a rival's hands", "favour": { "rival": 20, "warden": -20 }, "do": { "threat": 10 }, "result": "The King's household rides out of Kingsmere at midnight under {rival.house}'s banners." }
+        ]
+      },
+      "after": [2, 3],
+      "next": [
+        { "if": { "all": [{ "ruled": "stay" }, { "chance": 0.3 }] }, "to": "the-king-falls-sick" },
+        { "if": { "ruled": "stay" }, "to": "burning-out" },
+        { "if": { "ruled": "flee" }, "to": "guest-of-refuge" },
+        { "if": { "ruled": "keep" }, "to": "burning-out" },
+        { "if": { "chance": 0.5 }, "to": "the-king-falls-sick" },
+        { "to": "burning-out" }
+      ],
+      "patience": 4,
+      "otherwise": "the-king-falls-sick"
+    },
+    {
+      "id": "the-king-falls-sick",
+      "stage": "crisis",
+      "threat": 100,
+      "speaker": "rival",
+      "at": "refuge",
+      "text": "The King wakes with tallow-white hands and does not wake again. Kingsmere rings its bells for nine days.",
+      "do": { "fall": "The Pale Fever takes the King in his own bed. {rival} rides into a silent Kingsmere and is crowned before the bells stop ringing." },
+      "end": "failed"
+    },
+    {
+      "id": "guest-of-refuge",
+      "stage": "crisis",
+      "threat": 60,
+      "speaker": "rival",
+      "at": "refuge",
+      "text": "At {refuge} the King's chambers are fine, and the doors are guarded by {rival.house}'s men, and the letters he sends go out by {rival}'s riders.",
+      "after": [2, 3],
+      "next": [
+        { "if": { "favour": ["rival", "<", 35] }, "to": "the-gilded-cage" },
+        { "to": "burning-out" }
+      ],
+      "patience": 3,
+      "otherwise": "burning-out"
+    },
+    {
+      "id": "the-gilded-cage",
+      "stage": "crisis",
+      "threat": 90,
+      "speaker": "rival",
+      "at": "refuge",
+      "text": "{rival} announces that the King is too ill to rule, and that {rival.he} will ride to Kingsmere to rule for him. The King's own guard is held at {refuge}'s gate.",
+      "do": { "usurper": "rival", "host": 10 },
+      "after": [3, 3],
+      "next": [{ "if": { "usurper": "none" }, "to": "burning-out" }],
+      "patience": 20,
+      "otherwise": "burning-out"
+    },
+    {
+      "id": "cure-found",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "healer",
+      "at": "sick",
+      "text": "{healer}'s willow and moss go from town to town in the King's own carts. By the thaw the bells of {sick} ring only for weddings, and the people call the fever by the King's name, for breaking it."
+    },
+    {
+      "id": "burning-out",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "warden",
+      "at": "sick",
+      "text": "The Pale Fever burns itself out with the first frost. A third of {sick} lies in the lime pits outside its walls, and the crown that outlived it is older for it."
+    }
+  ]
+}

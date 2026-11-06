@@ -1,0 +1,171 @@
+{
+  "id": "the-inquisition",
+  "reign": true,
+  "name": "The Inquisition",
+  "about": "A pious lord's confessor starts hunting heretics, and his pyres creep from hedge-witches to a great house's own household, then to the King's court. Rein in the church and be called godless, or let it burn and watch whom it burns next.",
+  "tags": ["faith", "the-court", "grim", "mysterious", "violent", "a-reign"],
+  "kind": "faith",
+  "weight": 1,
+  "title": "The Inquisition",
+  "roles": {
+    "patron": { "rank": "lord", "seat": true, "likes": { "traits": ["pious", "paranoid", "just"] } },
+    "accused": { "rank": "lord", "otherHouse": "patron", "seat": true, "likes": { "traits": ["lustful", "cunning", "greedy", "proud"] } },
+    "pyre": { "town": true, "seatOf": "accused" },
+    "inquisitor": { "new": { "name": "Brother {first}", "gender": "male", "age": [40, 65], "rank": "sworn", "traits": ["pious", "wrathful", "paranoid"], "memory": "The gods showed me the rot in this realm, and gave me fire to cut it out.", "goal": { "kind": "purge", "text": "Burn the heresy out of every house, however high" }, "like": "patron" } }
+  },
+  "core": ["inquisitor"],
+  "onDeath": { "inquisitor": "ashes-cool", "accused": "the-fires-spread" },
+  "beats": [
+    {
+      "id": "the-first-pyre",
+      "stage": "rising",
+      "threat": 15,
+      "speaker": "inquisitor",
+      "at": "pyre",
+      "text": "{inquisitor}, confessor to {patron}, burns a herbwife in {pyre}'s market for speaking to the dead. Before she dies she names the women of {accused}'s household as her customers.",
+      "court": {
+        "from": "accused",
+        "text": "{accused} of {accused.house}: \"A mad friar burns women in my own town, Your Grace, and now he wants my household. Leash him.\"",
+        "options": [
+          { "id": "leash", "label": "Forbid church trials in {pyre}", "hint": "{patron.houseName} −15 · {accused.houseName} +10", "favour": { "patron": -15, "accused": 10 }, "do": { "threat": 10 }, "result": "The King's writ forbids the friar's trials in {pyre}. {inquisitor} preaches that night on kings who shelter witches." },
+          { "id": "justices", "label": "Send royal justices to try any charge (100 gold)", "hint": "the King's law, not the friar's", "cost": 100, "do": { "threat": -5 }, "result": "Royal justices ride for {pyre}, with orders that nobody burns without the King's seal." },
+          { "id": "allow", "label": "The church may try its heretics", "hint": "{accused.houseName} −20 · {patron.houseName} +10", "favour": { "accused": -20, "patron": 10 }, "do": { "threat": 5 }, "result": "{inquisitor} has the King's leave. He builds a larger pyre." }
+        ]
+      },
+      "after": [2, 3],
+      "next": [
+        { "if": { "ruled": "justices" }, "to": "the-trial" },
+        { "if": { "ruled": "leash" }, "to": "the-sermons" },
+        { "to": "the-trial" }
+      ],
+      "patience": 5,
+      "otherwise": "the-trial"
+    },
+    {
+      "id": "the-sermons",
+      "stage": "rising",
+      "threat": 35,
+      "speaker": "inquisitor",
+      "text": "Leashed in {pyre}, {inquisitor} preaches in every other town instead. The crowds grow, and his sermons name the King as the heretics' shield.",
+      "do": { "favour": { "patron": -5 } },
+      "after": [2, 3],
+      "next": [
+        { "if": { "favour": ["patron", "<", 35] }, "to": "the-ban" },
+        { "to": "the-fires-spread" }
+      ],
+      "patience": 3,
+      "otherwise": "the-fires-spread"
+    },
+    {
+      "id": "the-trial",
+      "stage": "crisis",
+      "threat": 40,
+      "speaker": "inquisitor",
+      "at": "pyre",
+      "text": "Under the rope, {accused}'s steward confesses to everything he is asked: the herbwife, the black candles, a goat in the cellar. {inquisitor} demands {accused} answer for {accused.his} household.",
+      "court": {
+        "from": "patron",
+        "text": "{patron} of {patron.house}: \"The confession is sworn, Your Grace. If a great lord can shelter witches, so can anyone. Let the church have {accused}.\"",
+        "options": [
+          { "id": "acquit", "label": "Throw out the confession: it was taken by the rope", "hint": "{patron.houseName} −20 · {accused.houseName} +15 · the church is shamed", "favour": { "patron": -20, "accused": 15 }, "do": { "threat": 15 }, "result": "The King's justices free the steward, what is left of him. {inquisitor} curses the court from the steps." },
+          { "id": "condemn", "label": "Let the church try {accused}", "hint": "{accused.houseName} −30 · {patron.houseName} +15", "favour": { "accused": -30, "patron": 15 }, "do": { "threat": 10, "opinion": [["accused", "patron", -40]] }, "result": "{accused} is summoned to answer before the friars. {accused.He} does not go." },
+          { "id": "away", "label": "Send {inquisitor} to preach overseas (300 gold)", "hint": "{patron.houseName} −10 · the fire goes with him", "cost": 300, "favour": { "patron": -10, "accused": 10 }, "do": { "threat": -25, "leave": "inquisitor" }, "result": "A ship, a mission to the heathen isles, and a heavy purse for the abbey. {inquisitor} goes, preaching to the sailors." }
+        ]
+      },
+      "after": [2, 3],
+      "next": [
+        { "if": { "ruled": "away" }, "to": "ashes-cool" },
+        { "if": { "ruled": "acquit" }, "to": "the-ban" },
+        { "if": { "favour": ["accused", "<", 25] }, "to": "the-hunted-lord" },
+        { "to": "the-fires-spread" }
+      ],
+      "patience": 5,
+      "otherwise": "the-fires-spread"
+    },
+    {
+      "id": "the-fires-spread",
+      "stage": "crisis",
+      "threat": 55,
+      "speaker": "inquisitor",
+      "text": "The pyres spread from {pyre} to every town {patron} holds. Then {inquisitor} names a lady of the King's own household, and the court goes very quiet.",
+      "do": { "favour": { "accused": -10 } },
+      "after": [1, 2],
+      "next": [{ "to": "the-ban" }],
+      "patience": 2,
+      "otherwise": "the-ban"
+    },
+    {
+      "id": "the-ban",
+      "stage": "crisis",
+      "threat": 75,
+      "speaker": "inquisitor",
+      "text": "From the steps of the great sept, {inquisitor} declares the King accursed, and every oath sworn to him void in the sight of the gods. {patron} sends no word to Kingsmere at all.",
+      "court": {
+        "from": "patron",
+        "text": "{patron}: \"The church has spoken, Your Grace. I would hear the King speak back, and choose his words with care.\"",
+        "options": [
+          { "id": "penance", "label": "Walk barefoot to the sept and do penance (500 gold)", "hint": "{patron.houseName} +25 · {accused.houseName} −20 · the church wins", "cost": 500, "favour": { "patron": 25, "accused": -20 }, "do": { "threat": -40 }, "result": "The King walks barefoot through the snow to the great sept and kneels at {inquisitor}'s feet. The ban is lifted, and the friar's power has no ceiling now." },
+          { "id": "seize", "label": "Arrest {inquisitor} for treason", "hint": "{patron.houseName} −30 · the church has a martyr or a prisoner", "favour": { "patron": -30, "accused": 15 }, "do": { "threat": 10 }, "result": "Royal guards drag {inquisitor} from the sept steps in front of the crowd. {patron} rides home without a word." }
+        ]
+      },
+      "after": [2, 3],
+      "next": [
+        { "if": { "ruled": "penance" }, "to": "the-kneeling-crown" },
+        { "if": { "all": [{ "ruled": "seize" }, { "favour": ["patron", "<", 25] }] }, "to": "the-holy-war" },
+        { "if": { "ruled": "seize" }, "to": "ashes-cool" },
+        { "to": "oaths-unsworn" }
+      ],
+      "patience": 4,
+      "otherwise": "oaths-unsworn"
+    },
+    {
+      "id": "oaths-unsworn",
+      "stage": "crisis",
+      "threat": 100,
+      "speaker": "patron",
+      "text": "The King says nothing to the ban, and his silence is taken for guilt. One by one the great houses send back their oaths, sealed with the sept's mark.",
+      "do": { "fall": "Released from their oaths by the church, the great houses stop answering the King's summons. {patron} rides into Kingsmere with {inquisitor} beside {patron.him}, and the King is led out to the sept to answer for his soul." },
+      "end": "failed"
+    },
+    {
+      "id": "the-hunted-lord",
+      "stage": "crisis",
+      "threat": 80,
+      "speaker": "accused",
+      "at": "pyre",
+      "text": "Hunted by the friars and abandoned by the crown, {accused} burns the sept at {pyre} and marches on Kingsmere, swearing to hang every priest who stands between {accused.him} and the throne.",
+      "do": { "usurper": "accused", "host": 10 },
+      "after": [3, 3],
+      "next": [{ "if": { "usurper": "none" }, "to": "ashes-cool" }],
+      "patience": 20,
+      "otherwise": "ashes-cool"
+    },
+    {
+      "id": "the-holy-war",
+      "stage": "crisis",
+      "threat": 90,
+      "speaker": "patron",
+      "text": "{patron} takes up the friar's cause and the friar's cross, and marches on Kingsmere to free {inquisitor} and cleanse the throne.",
+      "do": { "usurper": "patron", "host": 12 },
+      "after": [3, 3],
+      "next": [{ "if": { "usurper": "none" }, "to": "ashes-cool" }],
+      "patience": 20,
+      "otherwise": "ashes-cool"
+    },
+    {
+      "id": "the-kneeling-crown",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "inquisitor",
+      "text": "The crown endures, and kneels. The church's courts sit in every town now, and the King signs the warrants {inquisitor} sends him."
+    },
+    {
+      "id": "ashes-cool",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "accused",
+      "at": "pyre",
+      "text": "The fires go out. The market at {pyre} is swept, and the stakes are cut up for firewood. Nobody in the realm says the word heresy above a whisper for a generation."
+    }
+  ]
+}

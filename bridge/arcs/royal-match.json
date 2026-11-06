@@ -1,0 +1,862 @@
+{
+  "id": "royal-match",
+  "reign": true,
+  "name": "The Royal Match",
+  "about": "The council says the crown needs an heir, and two great houses each offer a child to wed. Choose one and the other is shamed; choose neither and both turn. Then the childbed, which spares no one for being royal.",
+  "tags": [
+    "succession",
+    "the-court",
+    "political",
+    "tragic",
+    "slow-burn",
+    "a-reign"
+  ],
+  "kind": "succession",
+  "weight": 1,
+  "title": "The Royal Match",
+  "roles": {
+    "first": {
+      "rank": "lord",
+      "children": true,
+      "likes": {
+        "traits": [
+          "proud",
+          "ambitious"
+        ]
+      }
+    },
+    "firstChild": {
+      "childOf": "first",
+      "unwed": true,
+      "age": [
+        16,
+        34
+      ],
+      "gender": "female"
+    },
+    "second": {
+      "rank": "lord",
+      "otherHouse": "first",
+      "children": true,
+      "likes": {
+        "traits": [
+          "proud",
+          "wrathful",
+          "vengeful"
+        ]
+      }
+    },
+    "secondChild": {
+      "childOf": "second",
+      "unwed": true,
+      "age": [
+        16,
+        34
+      ],
+      "gender": "female"
+    }
+  },
+  "core": [
+    "first",
+    "second"
+  ],
+  "onDeath": {
+    "firstChild": "a-match-in-mourning",
+    "secondChild": "a-match-in-mourning"
+  },
+  "beats": [
+    {
+      "id": "the-council-asks",
+      "stage": "rising",
+      "threat": 15,
+      "speaker": "first",
+      "text": "The small council says aloud what the realm whispers: the crown has no heir of its body, and a throne without one is a prize. Two houses answer at once.",
+      "court": {
+        "from": "first",
+        "text": "{first} of {first.house} and {second} of {second.house} stand either side of the hall, each with a portrait. \"{firstChild} is of age, Your Grace.\" \"So is {secondChild}, and of better blood.\"",
+        "options": [
+          {
+            "id": "first",
+            "label": "Wed {firstChild} of {first.house}",
+            "hint": "{first.houseName} +25 · {second.houseName} −25",
+            "favour": {
+              "first": 25,
+              "second": -25
+            },
+            "do": {
+              "threat": 5,
+              "opinion": [
+                [
+                  "second",
+                  "first",
+                  -25
+                ]
+              ]
+            },
+            "result": "The banns are read for the King and {firstChild}. {second} leaves the hall before the reading ends."
+          },
+          {
+            "id": "second",
+            "label": "Wed {secondChild} of {second.house}",
+            "hint": "{second.houseName} +25 · {first.houseName} −25",
+            "favour": {
+              "second": 25,
+              "first": -25
+            },
+            "do": {
+              "threat": 5,
+              "opinion": [
+                [
+                  "first",
+                  "second",
+                  -25
+                ]
+              ]
+            },
+            "result": "The banns are read for the King and {secondChild}. {first} smiles too widely, and says nothing."
+          },
+          {
+            "id": "neither",
+            "label": "The King will choose in his own time",
+            "hint": "both houses wait · neither for long",
+            "favour": {
+              "first": -5,
+              "second": -5
+            },
+            "do": {
+              "threat": 10
+            },
+            "result": "The portraits go into a cupboard. Both houses begin looking for other friends."
+          }
+        ]
+      },
+      "after": [
+        2,
+        3
+      ],
+      "next": [
+        {
+          "if": {
+            "ruled": "first"
+          },
+          "to": "second-shamed"
+        },
+        {
+          "if": {
+            "ruled": "second"
+          },
+          "to": "first-shamed"
+        },
+        {
+          "to": "an-empty-cradle"
+        }
+      ],
+      "patience": 6,
+      "otherwise": "an-empty-cradle"
+    },
+    {
+      "id": "second-shamed",
+      "stage": "crisis",
+      "threat": 40,
+      "speaker": "second",
+      "text": "{second.house} wears grey to the royal wedding. At the feast {second} raises a cup to the bride's health, and to the health of every child she may never bear.",
+      "feel": {
+        "second": {
+          "anger": 0.4
+        }
+      },
+      "court": {
+        "from": "second",
+        "text": "{second}: \"My house has been passed over in front of the realm, Your Grace. Words won't mend it.\"",
+        "options": [
+          {
+            "id": "amends",
+            "label": "Make amends: a royal gift and a seat on the council (300 gold)",
+            "hint": "{second.houseName} +25 · the wound closes",
+            "cost": 300,
+            "favour": {
+              "second": 25
+            },
+            "do": {
+              "threat": -15
+            },
+            "result": "{second} takes the council seat, and the gold, and bows exactly as low as the law demands."
+          },
+          {
+            "id": "refuse",
+            "label": "The King's choice needs no amends",
+            "hint": "{second.houseName} −15 · the wound festers",
+            "favour": {
+              "second": -15
+            },
+            "do": {
+              "threat": 10
+            },
+            "result": "The King offers nothing. {second} rides home, and {second.his} letters go out to every enemy of {first.house}."
+          }
+        ]
+      },
+      "after": [
+        2,
+        3
+      ],
+      "next": [
+        {
+          "if": {
+            "ruled": "amends"
+          },
+          "to": "the-childbed"
+        },
+        {
+          "if": {
+            "favour": [
+              "second",
+              "<",
+              30
+            ]
+          },
+          "to": "spurned-war"
+        },
+        {
+          "to": "the-childbed"
+        }
+      ],
+      "patience": 5,
+      "otherwise": "spurned-war"
+    },
+    {
+      "id": "first-shamed",
+      "stage": "crisis",
+      "threat": 40,
+      "speaker": "first",
+      "text": "{first.house} sends a wedding gift of a silver cradle, beautifully made, with a crack down the middle of it.",
+      "feel": {
+        "first": {
+          "anger": 0.4
+        }
+      },
+      "court": {
+        "from": "first",
+        "text": "{first}: \"You chose {second.house}, Your Grace. The realm saw it. My house will need to see something else.\"",
+        "options": [
+          {
+            "id": "amends",
+            "label": "Make amends: a royal gift and a seat on the council (300 gold)",
+            "hint": "{first.houseName} +25 · the wound closes",
+            "cost": 300,
+            "favour": {
+              "first": 25
+            },
+            "do": {
+              "threat": -15
+            },
+            "result": "{first} takes the council seat, and the gold, and says the cradle was a jest."
+          },
+          {
+            "id": "refuse",
+            "label": "The King's choice needs no amends",
+            "hint": "{first.houseName} −15 · the wound festers",
+            "favour": {
+              "first": -15
+            },
+            "do": {
+              "threat": 10
+            },
+            "result": "The King sends the cracked cradle back. {first} has it mended, and keeps it on {first.his} table."
+          }
+        ]
+      },
+      "after": [
+        2,
+        3
+      ],
+      "next": [
+        {
+          "if": {
+            "ruled": "amends"
+          },
+          "to": "the-childbed"
+        },
+        {
+          "if": {
+            "favour": [
+              "first",
+              "<",
+              30
+            ]
+          },
+          "to": "spurned-war-by-first"
+        },
+        {
+          "to": "the-childbed"
+        }
+      ],
+      "patience": 5,
+      "otherwise": "spurned-war-by-first"
+    },
+    {
+      "id": "spurned-war",
+      "stage": "crisis",
+      "threat": 60,
+      "speaker": "second",
+      "text": "The quarrel between {first.house} and {second.house} leaves the hall for the field. Banners go up along the border of their lands, and the royal in-laws send to the King for help.",
+      "do": {
+        "war": [
+          "second",
+          "first"
+        ],
+        "warSize": 6
+      },
+      "court": {
+        "from": "first",
+        "text": "{first}: \"They burn my villages because you honoured one house over another, Your Grace. Stand with your kin, or stand aside.\"",
+        "options": [
+          {
+            "id": "kin",
+            "label": "Send the royal host to your in-laws",
+            "hint": "{first.houseName} +15 · {second.houseName} −30",
+            "favour": {
+              "first": 15,
+              "second": -30
+            },
+            "do": {
+              "units": {
+                "first": {
+                  "type": "Knights",
+                  "count": 2
+                }
+              },
+              "threat": 5
+            },
+            "result": "Royal knights ride to stand beside the Queen's house."
+          },
+          {
+            "id": "peace",
+            "label": "Broker a peace between them (200 gold)",
+            "hint": "both +5 · truce for two years",
+            "cost": 200,
+            "favour": {
+              "first": 5,
+              "second": 5
+            },
+            "do": {
+              "truce": [
+                "first",
+                "second",
+                2
+              ],
+              "threat": -20
+            },
+            "result": "The King's heralds stand between the two hosts until both lords are too cold to keep fighting."
+          }
+        ]
+      },
+      "after": [
+        2,
+        3
+      ],
+      "next": [
+        {
+          "if": {
+            "ruled": "peace"
+          },
+          "to": "the-childbed"
+        },
+        {
+          "if": {
+            "any": [
+              {
+                "favour": [
+                  "second",
+                  "<",
+                  15
+                ]
+              },
+              {
+                "favour": [
+                  "first",
+                  "<",
+                  15
+                ]
+              }
+            ]
+          },
+          "to": "the-spurned-claim"
+        },
+        {
+          "to": "the-childbed"
+        }
+      ],
+      "patience": 5,
+      "otherwise": "the-spurned-claim"
+    },
+    {
+      "id": "spurned-war-by-first",
+      "stage": "crisis",
+      "threat": 60,
+      "speaker": "first",
+      "text": "The quarrel between {second.house} and {first.house} leaves the hall for the field. Banners go up along the border of their lands, and the royal in-laws send to the King for help.",
+      "do": {
+        "war": [
+          "first",
+          "second"
+        ],
+        "warSize": 6
+      },
+      "court": {
+        "from": "second",
+        "text": "{second}: \"They burn my villages because you honoured one house over another, Your Grace. Stand with your kin, or stand aside.\"",
+        "options": [
+          {
+            "id": "kin",
+            "label": "Send the royal host to your in-laws",
+            "hint": "{second.houseName} +15 · {first.houseName} −30",
+            "favour": {
+              "second": 15,
+              "first": -30
+            },
+            "do": {
+              "units": {
+                "second": {
+                  "type": "Knights",
+                  "count": 2
+                }
+              },
+              "threat": 5
+            },
+            "result": "Royal knights ride to stand beside the Queen's house."
+          },
+          {
+            "id": "peace",
+            "label": "Broker a peace between them (200 gold)",
+            "hint": "both +5 · truce for two years",
+            "cost": 200,
+            "favour": {
+              "second": 5,
+              "first": 5
+            },
+            "do": {
+              "truce": [
+                "second",
+                "first",
+                2
+              ],
+              "threat": -20
+            },
+            "result": "The King's heralds stand between the two hosts until both lords are too cold to keep fighting."
+          }
+        ]
+      },
+      "after": [
+        2,
+        3
+      ],
+      "next": [
+        {
+          "if": {
+            "ruled": "peace"
+          },
+          "to": "the-childbed"
+        },
+        {
+          "if": {
+            "any": [
+              {
+                "favour": [
+                  "first",
+                  "<",
+                  15
+                ]
+              },
+              {
+                "favour": [
+                  "second",
+                  "<",
+                  15
+                ]
+              }
+            ]
+          },
+          "to": "the-first-claim"
+        },
+        {
+          "to": "the-childbed"
+        }
+      ],
+      "patience": 5,
+      "otherwise": "the-first-claim"
+    },
+    {
+      "id": "an-empty-cradle",
+      "stage": "crisis",
+      "threat": 55,
+      "speaker": "first",
+      "text": "Two winters and no royal wedding. {first} and {second}, who agree on nothing, are seen riding together, and the word in the taverns is that the realm will choose its own heir.",
+      "court": {
+        "from": "second",
+        "text": "{second}: \"The realm is tired of waiting, Your Grace. Choose now, or the lords will choose for you, and not a bride.\"",
+        "options": [
+          {
+            "id": "first",
+            "label": "Wed {firstChild} of {first.house}, now",
+            "hint": "{first.houseName} +20 · {second.houseName} −20",
+            "favour": {
+              "first": 20,
+              "second": -20
+            },
+            "do": {
+              "threat": -10
+            },
+            "result": "The King weds {firstChild} within the month, in haste and in rain."
+          },
+          {
+            "id": "second",
+            "label": "Wed {secondChild} of {second.house}, now",
+            "hint": "{second.houseName} +20 · {first.houseName} −20",
+            "favour": {
+              "second": 20,
+              "first": -20
+            },
+            "do": {
+              "threat": -10
+            },
+            "result": "The King weds {secondChild} within the month, in haste and in rain."
+          },
+          {
+            "id": "never",
+            "label": "The King will not be hurried to the altar",
+            "hint": "both houses −15 · they choose an heir of their own",
+            "favour": {
+              "first": -15,
+              "second": -15
+            },
+            "do": {
+              "threat": 20
+            },
+            "result": "The King refuses. {first} and {second} leave together."
+          }
+        ]
+      },
+      "after": [
+        2,
+        3
+      ],
+      "next": [
+        {
+          "if": {
+            "ruled": "first"
+          },
+          "to": "second-shamed"
+        },
+        {
+          "if": {
+            "ruled": "second"
+          },
+          "to": "first-shamed"
+        },
+        {
+          "to": "the-lords-choose"
+        }
+      ],
+      "patience": 4,
+      "otherwise": "the-lords-choose"
+    },
+    {
+      "id": "the-lords-choose",
+      "stage": "crisis",
+      "threat": 90,
+      "speaker": "first",
+      "text": "At {first.seat}, {first} and {second} swear on the old stones that a King with no heir is no King at all, and {first} marches on Kingsmere to be the realm's protector.",
+      "do": {
+        "usurper": "first",
+        "host": 12
+      },
+      "after": [
+        3,
+        3
+      ],
+      "next": [
+        {
+          "if": {
+            "usurper": "none"
+          },
+          "to": "a-crown-alone"
+        }
+      ],
+      "patience": 20,
+      "otherwise": "a-crown-alone"
+    },
+    {
+      "id": "the-spurned-claim",
+      "stage": "crisis",
+      "threat": 90,
+      "speaker": "second",
+      "text": "{second} stops calling it a quarrel between houses. {second.His} heralds read a new claim: that the crown has made itself one house's creature, and must be unmade.",
+      "do": {
+        "usurper": "second",
+        "host": 11
+      },
+      "after": [
+        3,
+        3
+      ],
+      "next": [
+        {
+          "if": {
+            "usurper": "none"
+          },
+          "to": "the-childbed"
+        }
+      ],
+      "patience": 20,
+      "otherwise": "a-crown-alone"
+    },
+    {
+      "id": "the-first-claim",
+      "stage": "crisis",
+      "threat": 90,
+      "speaker": "first",
+      "text": "{first} stops calling it a quarrel between houses. {first.His} heralds read a new claim: that the crown has made itself one house's creature, and must be unmade.",
+      "do": {
+        "usurper": "first",
+        "host": 11
+      },
+      "after": [
+        3,
+        3
+      ],
+      "next": [
+        {
+          "if": {
+            "usurper": "none"
+          },
+          "to": "an-heir-is-born"
+        }
+      ],
+      "patience": 20,
+      "otherwise": "a-crown-alone"
+    },
+    {
+      "id": "the-childbed",
+      "stage": "rising",
+      "threat": 30,
+      "speaker": "first",
+      "text": "The Queen is with child. The midwives come from three houses, and none of them trusts the other two. All Kingsmere waits under the windows.",
+      "after": [
+        3,
+        4
+      ],
+      "next": [
+        {
+          "if": {
+            "chance": 0.7
+          },
+          "to": "an-heir-is-born"
+        },
+        {
+          "if": {
+            "any": [
+              {
+                "ruled": [
+                  "the-council-asks",
+                  "second"
+                ]
+              },
+              {
+                "ruled": [
+                  "an-empty-cradle",
+                  "second"
+                ]
+              }
+            ]
+          },
+          "to": "the-cold-bed-second"
+        },
+        {
+          "to": "the-cold-bed"
+        }
+      ],
+      "patience": 2,
+      "otherwise": "an-heir-is-born"
+    },
+    {
+      "id": "the-cold-bed",
+      "stage": "crisis",
+      "threat": 60,
+      "speaker": "first",
+      "text": "The child is born living, and the Queen does not see the morning. {first}, her {first.father}, demands to know which midwife washed her hands, and which did not.",
+      "feel": {
+        "first": {
+          "grief": 0.5
+        }
+      },
+      "court": {
+        "from": "first",
+        "text": "{first}, in mourning black: \"My blood died in your bed, Your Grace. Give my house the raising of the child, or give me the midwife who killed her.\"",
+        "options": [
+          {
+            "id": "ward",
+            "label": "Give the Queen's house the raising of the heir",
+            "hint": "{first.houseName} +25 · they hold the heir",
+            "favour": {
+              "first": 25
+            },
+            "do": {
+              "threat": -20
+            },
+            "result": "The heir goes to be raised by the Queen's kin. They swear the child will know its mother's face from the portraits."
+          },
+          {
+            "id": "keep",
+            "label": "The heir stays at Kingsmere, with the King",
+            "hint": "{first.houseName} −25",
+            "favour": {
+              "first": -25
+            },
+            "do": {
+              "threat": 15
+            },
+            "result": "The heir stays at Kingsmere. The Queen's father does not come to the naming."
+          }
+        ]
+      },
+      "after": [
+        2,
+        3
+      ],
+      "next": [
+        {
+          "if": {
+            "ruled": "ward"
+          },
+          "to": "an-heir-is-born"
+        },
+        {
+          "if": {
+            "favour": [
+              "first",
+              "<",
+              20
+            ]
+          },
+          "to": "the-first-claim"
+        },
+        {
+          "to": "an-heir-is-born"
+        }
+      ],
+      "patience": 4,
+      "otherwise": "an-heir-is-born"
+    },
+    {
+      "id": "the-cold-bed-second",
+      "stage": "crisis",
+      "threat": 60,
+      "speaker": "second",
+      "text": "The child is born living, and the Queen does not see the morning. {second}, her {second.father}, demands to know which midwife washed her hands, and which did not.",
+      "feel": {
+        "second": {
+          "grief": 0.5
+        }
+      },
+      "court": {
+        "from": "second",
+        "text": "{second}, in mourning black: \"My blood died in your bed, Your Grace. Give my house the raising of the child, or give me the midwife who killed her.\"",
+        "options": [
+          {
+            "id": "ward",
+            "label": "Give the Queen's house the raising of the heir",
+            "hint": "{second.houseName} +25 · they hold the heir",
+            "favour": {
+              "second": 25
+            },
+            "do": {
+              "threat": -20
+            },
+            "result": "The heir goes to be raised by the Queen's kin. They swear the child will know its mother's face from the portraits."
+          },
+          {
+            "id": "keep",
+            "label": "The heir stays at Kingsmere, with the King",
+            "hint": "{second.houseName} −25",
+            "favour": {
+              "second": -25
+            },
+            "do": {
+              "threat": 15
+            },
+            "result": "The heir stays at Kingsmere. The Queen's father does not come to the naming."
+          }
+        ]
+      },
+      "after": [
+        2,
+        3
+      ],
+      "next": [
+        {
+          "if": {
+            "ruled": "ward"
+          },
+          "to": "an-heir-is-born"
+        },
+        {
+          "if": {
+            "favour": [
+              "second",
+              "<",
+              20
+            ]
+          },
+          "to": "the-spurned-claim"
+        },
+        {
+          "to": "an-heir-is-born"
+        }
+      ],
+      "patience": 4,
+      "otherwise": "an-heir-is-born"
+    },
+    {
+      "id": "a-match-in-mourning",
+      "stage": "crisis",
+      "threat": 50,
+      "speaker": "second",
+      "text": "One of the King's two promised brides is dead, and the other house is accused of it before the body is cold.",
+      "after": [
+        2,
+        3
+      ],
+      "next": [
+        {
+          "if": {
+            "atWar": [
+              "first",
+              "second"
+            ]
+          },
+          "to": "the-spurned-claim"
+        },
+        {
+          "to": "spurned-war"
+        }
+      ],
+      "patience": 3,
+      "otherwise": "spurned-war"
+    },
+    {
+      "id": "an-heir-is-born",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "first",
+      "text": "The bells of Kingsmere ring for a royal heir, loud and healthy. The lords who wanted the throne for themselves come to the naming, and kneel to the cradle."
+    },
+    {
+      "id": "a-crown-alone",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "second",
+      "text": "The lords who would have chosen the King's heir for him are broken. He rules on with no Queen and no heir, and the realm learns to stop asking."
+    }
+  ]
+}
