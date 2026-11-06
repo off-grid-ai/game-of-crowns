@@ -11,11 +11,15 @@ steps.append(step('itch','Now','Publish the itch page', '''<p>Done. It's live at
 steps.append(step('devlog','Now','Publish the launch devlog', '''<p>Done. <a href="https://alichherawalla.itch.io/game-of-crowns/devlog" target="_blank" rel="noopener">"0.5 is out"</a> is live, and the tags now include choices-matter, politics and fantasy.</p>'''))
 steps.append(step('test','Now','Download it once, the way a stranger would', '''<p>Open <a href="https://alichherawalla.itch.io/game-of-crowns" target="_blank" rel="noopener">alichherawalla.itch.io/game-of-crowns</a> in a private window, download, open the dmg, and launch it. If anything stops you, tell me before posting.</p>'''))
 mt="History names you the Golden, the Bloody or the Deposed in the free kingdom game I built on my Mac"
-mb="""All you've got to hold onto the throne is grain, gold and your word at court. You send grain to starving towns, hold a feast to win back a house that's gone cold, and when two houses go to war, you order peace or marry them off. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed.
+mb="""Game of Crowns is a medieval kingdom sim. You're the king, and seven great houses want your throne. You hold it with grain, gold, marriages and your rulings at court. Side against a house in a war, and ten years later its lord stands up at court to remind you. When your reign ends, history names you: the Golden, the Bloody, or the Deposed.
 
-It's called Game of Crowns. It's free with nothing locked and runs native on Apple Silicon. It's signed and notarised, so it opens like any other app (macOS 12 or later, a 2 GB download).
+I wanted my own Game of Thrones story, so I built one where you can rename anyone, rewrite their past and pick the story that comes for your throne. A season passes every 20 seconds, so a whole reign fits in an evening.
 
-https://alichherawalla.itch.io/game-of-crowns
+With an optional local model, you can answer petitioners in your own words instead of picking from a list, and it can write you a new story for your next reign.
+
+It's free and open source on Apple Silicon Macs, with Windows next. I built it with Claude on top of Freeciv, and I'm happy to go into how any of it works.
+
+https://alichherawalla.itch.io/game-of-crowns (signed and notarised, macOS 12 or later, a 2 GB download)
 
 I'm in the comments tonight. How does it run on your Mac?"""
 ai="""Partly. The paintings in the trailer and on the game's intro screens were made with AI. In the game, if you also run Off Grid AI, another app I make, the lords speak in their own words through a small model on your own Mac. Nothing goes online, and without it the game runs on its own rules."""
