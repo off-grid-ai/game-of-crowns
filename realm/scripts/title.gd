@@ -16,11 +16,12 @@ var bridge: Node
 var _root: Control
 var _body: VBoxContainer
 var _logo: TextureRect
-var _minutes := 0
+var _minutes := 15  # a 15-minute reign unless the player picks another length
 var _preset := "Balanced"  # the card chosen on the new-chronicle page
 var _more := false  # every other choice unfolded (unused since setup has pages)
 var _new_show_step: Callable  # the page shown on New Chronicle; Esc steps back through them
-var _new_step := 0  # which page of setting up a chronicle: 0 the reign, 1 its story, 2 the realm
+var _new_step := 0
+var _name_typed := false  # the player wrote the chronicle's name themself  # which page of setting up a chronicle: 0 the reign, 1 its story, 2 the realm
 const NEW_STEPS := ["The reign", "Its story", "Your realm"]
 var _scenario := "aldmere"
 var _wealth := "comfortable"
@@ -174,6 +175,7 @@ func show_main() -> void:
 		cont.add_theme_color_override("font_color", Color(1, 0.93, 0.78))
 	_big("Begin a New Chronicle", func():
 		_new_step = 0  # a new chronicle starts at its first page
+		_name_typed = false
 		_go(show_new))
 	_big("Settings", _go.bind(show_settings))
 	_big("Watch the introduction", func():
@@ -185,6 +187,7 @@ func show_main() -> void:
 	_big("Chronicles", _go.bind(show_list))
 	_big("Hall of Records", _go.bind(show_records))
 	_big("Credits", _go.bind(show_credits))
+	_offgrid_line(_body, "Lords speak in their own words, and stories write themselves, with Off Grid AI: free, on your Mac.")
 
 
 const HOUSES := ["Wolfholt", "Goldcrest", "Ironreach", "Thornvale", "Stormhold", "Sunspire", "Highfell"]
@@ -309,7 +312,7 @@ func show_new() -> void:
 	var tales_scroll := ScrollContainer.new()
 	tales_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	# Every bit of height the heading, the presets, the name and Begin leave.
-	tales_scroll.custom_minimum_size = Vector2(0, page_h - 30.0)
+	tales_scroll.custom_minimum_size = Vector2(0, page_h - 110.0)  # room for the name beneath
 	pages[1].add_child(tales_scroll)
 	var tales := HFlowContainer.new()
 	tales.add_theme_constant_override("h_separation", 12)
@@ -327,6 +330,9 @@ func show_new() -> void:
 		card.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		card.pressed.connect(func():
 			_opt["story"] = id
+			# The chronicle takes the story's name, unless you've named it yourself.
+			if not _name_typed and _name_edit and is_instance_valid(_name_edit) and id != "random":
+				_name_edit.text = text.get_slice("\n", 0).trim_prefix("Yours  ·  ")
 			# A story of your own takes beats of your own.
 			if own_story:
 				_own_story = id
@@ -345,7 +351,7 @@ func show_new() -> void:
 	# (or Done) brings them back.
 	var maker_scroll := ScrollContainer.new()
 	maker_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	maker_scroll.custom_minimum_size = Vector2(0, page_h - 30.0)
+	maker_scroll.custom_minimum_size = Vector2(0, page_h - 110.0)
 	maker_scroll.visible = false
 	pages[1].add_child(maker_scroll)
 	var maker := VBoxContainer.new()
@@ -361,6 +367,7 @@ func show_new() -> void:
 			tales_scroll.visible = not maker_scroll.visible)
 	own.pressed.connect(open_maker.bind(true))
 	maker.add_child(_label("Write your own", 19, GOLD))
+	_offgrid_line(maker, "Off Grid AI shapes your story and writes beats for it, on your Mac.")
 	var chips := HFlowContainer.new()
 	chips.add_theme_constant_override("h_separation", 6)
 	chips.add_theme_constant_override("v_separation", 6)
@@ -427,9 +434,12 @@ func show_new() -> void:
 	name_edit.placeholder_text = "Name this chronicle (e.g. The Long Winter)"
 	name_edit.add_theme_font_size_override("font_size", 18)
 	name_edit.text = _reign_name()
-	pages[0].add_child(_label("Its name", 15, MUTED))
-	pages[0].add_child(name_edit)
+	# Named once its story is chosen: under the cards, and it takes the story's
+	# name until you write one of your own.
+	pages[1].add_child(_label("Its name", 15, MUTED))
+	pages[1].add_child(name_edit)
 	_name_edit = name_edit
+	name_edit.text_changed.connect(func(_t): _name_typed = true)
 	# Every other choice about the realm, a page of its own.
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -604,7 +614,7 @@ func _fill_beats(box: VBoxContainer, d: Dictionary) -> void:
 	add.toggle_mode = false
 	# The form: one beat, from a line of words and three short menus.
 	var form := VBoxContainer.new()
-	form.add_theme_constant_override("separation", 6)
+	form.add_theme_constant_override("separation", 12)
 	form.visible = false
 	box.add_child(form)
 	box.add_child(status)
@@ -621,14 +631,41 @@ func _fill_beats(box: VBoxContainer, d: Dictionary) -> void:
 	if _probe_beats:
 		form.visible = true
 		_reveal(form)
-	form.add_child(_label("What happens", 15, MUTED))
+	form.add_child(_label("A beat of your own", 18, GOLD))
+	var what_row := HBoxContainer.new()
+	what_row.add_theme_constant_override("separation", 12)
+	form.add_child(what_row)
+	what_row.add_child(_label("What happens", 15, MUTED))
+	var spark := _toggle("✦  Write it for me", what_row)
+	spark.toggle_mode = false
+	spark.tooltip_text = "Off Grid AI writes a beat for this story, or carries on the one you've begun."
+	var spark_note := _label("", 14, MUTED)
 	var what := TextEdit.new()
 	what.placeholder_text = "A bridge burns on the king's road, and every finger points the same way…"
-	what.custom_minimum_size = Vector2(0, 64)
+	what.custom_minimum_size = Vector2(0, 84)
 	what.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	form.add_child(what)
+	form.add_child(spark_note)
+	spark_note.visible = false
+	# Empty: it writes one. Begun: it carries yours on and finishes it.
+	what.text_changed.connect(func(): spark.text = "✦  Carry it on" if what.text.strip_edges() != "" else "✦  Write it for me")
+	spark.pressed.connect(func():
+		spark.disabled = true
+		spark_note.visible = true
+		spark_note.text = "Off Grid AI is writing…"
+		bridge.beat_idea(_own_story, _tagged(what.text.strip_edges(), d["roles"]), func(code, d):
+			if not is_instance_valid(spark):
+				return
+			spark.disabled = false
+			if code == 200 and d is Dictionary and String(d.get("text", "")) != "":
+				what.text = _first_up(_named(String(d["text"]), label_of))
+				spark.text = "✦  Carry it on"
+				spark_note.visible = false
+			else:
+				spark_note.text = String(d.get("error", "Off Grid AI didn't answer.")) if d is Dictionary else "Off Grid AI didn't answer."
+				_offgrid_line(form, "", spark_note.get_index() + 1)))
 	if _probe_beats:
-		what.text = "{warden} rides into Kingsmere at night with the King's own physician bound across the saddle."
+		what.text = "The warden rides into Kingsmere at night with the King's own physician bound across the saddle."
 	# Names go into the words as the story's own parts, filled in when it's told.
 	var names := HFlowContainer.new()
 	names.add_theme_constant_override("h_separation", 6)
@@ -638,8 +675,12 @@ func _fill_beats(box: VBoxContainer, d: Dictionary) -> void:
 		var chip := _toggle(String(r["label"]), names)
 		chip.toggle_mode = false
 		var key := String(r["id"])
+		var said := String(r["label"])
 		chip.pressed.connect(func():
-			what.insert_text_at_caret("{%s}" % key)
+			# The name as you'd write it ("the rich"), spaced from the word before;
+			# it becomes the story's part only when the beat is saved.
+			var before := what.get_line(what.get_caret_line()).substr(0, what.get_caret_column())
+			what.insert_text_at_caret(("" if before == "" or before.ends_with(" ") else " ") + said + " ")
 			what.grab_focus())
 	_choices(form, "Who is in it", people.map(func(r): return [_first_up(String(r["label"])), String(r["id"])]), beat["who"], func(v): beat["who"] = v)
 	_choices(form, "When it happens", d.get("when", []).map(func(w): return [String(w["label"]), String(w["id"])]), beat["when"], func(v): beat["when"] = v)
@@ -664,7 +705,7 @@ func _fill_beats(box: VBoxContainer, d: Dictionary) -> void:
 		save.disabled = true
 		status.text = "The realm is weighing your beat…"
 		var send := beat.duplicate()
-		send["text"] = what.text.strip_edges()
+		send["text"] = _tagged(what.text.strip_edges(), d["roles"])
 		bridge.story_beat(_own_story, send, func(code, r):
 			if not is_instance_valid(box):
 				return
@@ -692,6 +733,43 @@ func _reveal(c: Control) -> void:
 ## "the warden" as it starts a line: "The warden".
 func _first_up(text: String) -> String:
 	return text.left(1).to_upper() + text.substr(1)
+
+
+## A line about Off Grid AI with its link, where it does something for you.
+const OFFGRID_URL := "https://getoffgridai.co/desktop"
+func _offgrid_line(parent: Control, words: String, at := -1) -> void:
+	var row := HFlowContainer.new()
+	row.add_theme_constant_override("h_separation", 8)
+	if words != "":
+		row.add_child(_label(words, 14, MUTED))
+	var link := LinkButton.new()
+	link.text = "Get Off Grid AI: getoffgridai.co/desktop"
+	link.uri = OFFGRID_URL
+	link.add_theme_font_size_override("font_size", 14)
+	link.add_theme_color_override("font_color", GOLD)
+	row.add_child(link)
+	parent.add_child(row)
+	if at >= 0:
+		parent.move_child(row, at)
+
+
+## A beat's words as the story keeps them: "the warden" becomes {warden}, the
+## longest names first so "the rich's seat" isn't read as "the rich".
+func _tagged(text: String, roles: Array) -> String:
+	var by_len := roles.duplicate()
+	by_len.sort_custom(func(a, b): return String(a["label"]).length() > String(b["label"]).length())
+	var out := text
+	for r in by_len:
+		var re := RegEx.create_from_string("(?i)\\b" + _escape_re(String(r["label"])) + "\\b")
+		out = re.sub(out, "{%s}" % String(r["id"]), true)
+	return out
+
+
+static func _escape_re(s: String) -> String:
+	var out := ""
+	for ch in s:
+		out += ("\\" + ch) if ".*+?^$()[]{}|\\".contains(ch) else ch
+	return out
 
 
 ## A beat's words as the player reads them: {warden} becomes "the warden".

@@ -96,6 +96,14 @@ static func get_theme() -> Theme:
 	t.set_color("font_color", "LineEdit", TEXT)
 	t.set_color("font_placeholder_color", "LineEdit", TEXT_3)
 	t.set_color("caret_color", "LineEdit", ACCENT)
+	# Text boxes of more than one line look like the one-line ones: soft and
+	# rounded, a gold edge only while you type (Godot's own was a hard white line).
+	t.set_stylebox("normal", "TextEdit", _box(Color(1, 1, 1, 0.04), HAIRLINE, 8, 10))
+	t.set_stylebox("focus", "TextEdit", _box(Color(1, 1, 1, 0.06), Color(ACCENT.r, ACCENT.g, ACCENT.b, 0.6), 8, 10))
+	t.set_stylebox("read_only", "TextEdit", _box(Color(1, 1, 1, 0.02), HAIRLINE, 8, 10))
+	t.set_color("font_color", "TextEdit", TEXT)
+	t.set_color("font_placeholder_color", "TextEdit", TEXT_3)
+	t.set_color("caret_color", "TextEdit", ACCENT)
 	t.set_color("font_color", "Label", TEXT)
 	t.set_color("default_color", "RichTextLabel", TEXT)
 	t.set_font("italics_font", "RichTextLabel", speech)

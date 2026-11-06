@@ -38,7 +38,7 @@ import { Arcs, templates as arcTemplates, check, ownStories, storiesChanged } fr
 import { Chatter } from "./chatter.js";
 import { bible, FAMILIES, LESSER } from "./lore.js";
 import { Stakes, calendar, epithet } from "./stakes.js";
-import { watched, usageToday, moodFrom, isWatched, arcFromWords } from "./claude.js";
+import { watched, usageToday, moodFrom, isWatched, arcFromWords, beatIdea } from "./claude.js";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8787);
@@ -1774,6 +1774,19 @@ http.createServer(async (req, res) => {
   // One beat of the player's own, added to (or taken out of) their story: what
   // happens, who is in it, when it happens, and what it does, from short menus.
   // It happens once, when its moment comes, and the story goes on from there.
+  // Off Grid AI writes a beat for the player's own story, or carries on the one begun.
+  if (url.pathname === "/stories/beat/idea" && req.method === "POST") {
+    const b = await body(req);
+    const t = ownStory(b.story);
+    if (!t) return json(res, 404, { error: "shape a story of your own first" });
+    const roles = rolesOf(t).filter((r) => !r.town);
+    const beats = [...(t.beats ?? []), ...(t.asides ?? [])].map((x) => x.text).filter(Boolean);
+    const draft = String(b.draft ?? "").trim().slice(0, 300);
+    const text = await Promise.race([beatIdea({ name: t.name, about: t.about ?? "", roles, beats, draft }).catch(() => null), new Promise((r) => setTimeout(() => r(null), 25000))]);
+    if (!text) return json(res, 503, { error: "Off Grid AI isn't answering. Open it with a model loaded, or write the beat yourself." });
+    return json(res, 200, { text });
+  }
+
   if (url.pathname === "/stories/beat" && req.method === "POST") {
     const b = await body(req);
     const t = ownStory(b.story);

@@ -500,6 +500,20 @@ export function colour(said, happening, name = "") {
 // shape fits it best and names it. The beats keep their tested lines: a small
 // model retells them badly, so the only words it adds are each speaker's one
 // line of colour as the story plays.
+// A beat for the player's own story, from Off Grid AI: a fresh one when the box
+// is empty, or the player's own line carried on and finished. People only by
+// their tags in braces ({warden}), so the story fills in who they are.
+export async function beatIdea({ name, about, roles, beats, draft }) {
+  const people = roles.map((r) => `{${r.id}} (${r.label})`).join(", ");
+  const before = beats.length ? `\nAlready in the story:\n${beats.slice(-4).map((b) => `- ${b}`).join("\n")}` : "";
+  const ask = draft
+    ? `Carry this on and finish it, keeping its words: "${draft}"`
+    : "Write one new turn of the story, something that could happen next.";
+  const out = await say("You write one turn of a story in a medieval realm's chronicle: one or two plain, specific sentences, at most 40 words, no quotation marks. Name people only by their tags in braces, exactly as given; never invent other names for them.", [],
+    `Story: ${name}. ${about}\nPeople: ${people}${before}\n${ask}`, 90);
+  return String(out ?? "").replace(/^["“]|["”]$/g, "").replace(/\s+/g, " ").trim().slice(0, 300) || null;
+}
+
 export async function arcFromWords(words, shapes) {
   if (shapes.length === 1) return arcNamed(words, shapes[0]);
   const list = shapes.map((s, i) => `${i + 1}. ${s.name}: ${s.about}`).join("\n");
