@@ -195,6 +195,10 @@ func _build() -> void:
 	_hint.add_theme_font_size_override("font_size", 14)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(_hint)
+	# The storybook takes its clicks in _input; its pictures never catch the
+	# mouse, so nothing of it can sit over the realm swallowing clicks.
+	for c in find_children("*", "Control", true, false):
+		(c as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
 func _process(delta: float) -> void:

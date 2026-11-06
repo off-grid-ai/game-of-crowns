@@ -88,6 +88,18 @@ func _play(quit_after: bool) -> void:
 					e.factor = 1.0
 					Input.parse_input_event(e)
 					await get_tree().create_timer(0.12).timeout
+			"probe":
+				# probe fx fy: what the pointer is over there (the control that takes a click), for finding what swallows clicks.
+				var at := get_viewport().get_visible_rect().size * Vector2(float(w[1]), float(w[2]))
+				get_viewport().warp_mouse(at)
+				var mv := InputEventMouseMotion.new()
+				mv.position = at
+				mv.global_position = at
+				Input.parse_input_event(mv)
+				await get_tree().process_frame
+				await get_tree().process_frame
+				var c := get_viewport().gui_get_hovered_control()
+				_note("  probe %s: %s" % [at, (str(c.get_path()) + " (" + c.get_class() + ", layer " + str(_layer_of(c)) + ")") if c else "nothing: the world takes it"])
 			"fill":
 				# fill <text>: the first visible multi-line box takes this text (a test aid for forms).
 				var said := " ".join(w.slice(1))
@@ -241,3 +253,11 @@ func _observe() -> Dictionary:
 func _note(s: String) -> void:
 	_log.store_line("%7.1f %s" % [Time.get_ticks_msec() / 1000.0, s])
 	_log.flush()
+
+
+static func _layer_of(n: Node) -> int:
+	while n:
+		if n is CanvasLayer:
+			return (n as CanvasLayer).layer
+		n = n.get_parent()
+	return 0
