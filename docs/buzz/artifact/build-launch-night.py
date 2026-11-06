@@ -30,16 +30,30 @@ for i,e in enumerate(d['emails']):
     to_html = f'<a href="{E(e["to"].split(": ",1)[1])}" target="_blank" rel="noopener">{E(e["to"])}</a>' if to_is_form else copyblock('To', e['to'], f'em{i}-to')
     cards.append(f'''<details class="email"><summary><label class="mini" onclick="event.stopPropagation()"><input type="checkbox" id="c-em{i}" data-k="em{i}"><span class="box" aria-hidden="true"></span></label><span class="ename">{E(e["name"])}</span><span class="esubs">{E(e["subs"])}</span></summary><div class="ebody">{to_html}{copyblock('Subject',e['subject'],f'em{i}-s')}{copyblock('Email',e['body'],f'em{i}-b')}</div></details>''')
 steps.append(step('emails','Right after r/macgaming','Send the eight creator emails', '<p>From your own email. Each links the 33-second launch film. Each one names a real video of theirs. One follow-up in a week at most, never more.</p><div class="emails">'+''.join(cards)+'</div>'))
-t,b=d['god']
-steps.append(step('godot','An hour after r/macgaming','Post on r/godot', f'''<p>Video post with the same film. Flair: <b>selfpromo (games)</b>. Their rule: you stay and answer questions.</p>{copyblock('Title',t,'god-t')}{copyblock('Body',b,'god-b')}'''))
-t,b=d['ig']
-steps.append(step('ig','On hold','r/IndieGaming', f'''<p><b>Hold this one.</b> r/IndieGaming removes AI-generated content, and the launch film is AI paintings. A real-gameplay post is being written for it separately; skip it tonight.</p>{copyblock('Title',t,'ig-t')}{copyblock('Body',b,'ig-b')}'''))
 steps.append(step('reply','All evening','Reply to every comment', '<p>Answer what was asked, plainly. If someone hits a bug, thank them and tell me; I\'ll get it into 0.5.1.</p>'))
+
+def gh(path): return f'<a href="https://github.com/off-grid-ai/game-of-crowns/blob/main/{path}" target="_blank" rel="noopener"><code>{path}</code></a>'
+hn=[]
+hn.append(step('hn-email','Tonight','Email Hacker News to restore the post', f'''<p>The post (<a href="https://news.ycombinator.com/item?id=50393044" target="_blank" rel="noopener">item 50393044</a>) was killed on submission: [flagged], dead at 1 point. The cause is the account, not the post. ali_chherawalla (February 2026, 53 karma) has many dead 1-point stories and flagged comments, mostly about Off Grid AI, so HN's filter kills its posts automatically.</p><p>Email <b>hn@ycombinator.com</b> and ask for it to be restored or given a second chance. The draft is in your chat with the main session. Don't repost it, and don't use another account.</p>'''))
+hn.append(step('hn-karma','This week','Comment on other people\'s posts, with no links to your own', f'<p>This is what clears the account\'s penalty. The post copy and title stay in {gh("docs/buzz/hn/POST.md")} for a second chance.</p>'))
+subs=[
+ ('r-mac','Tonight','r/macgaming','docs/buzz/reddit/macgaming/POST.md','11/12','Ready. The painted film is allowed there, and the honest "is it AI?" reply is ready. Copy is in the r/macgaming step above.'),
+ ('ig','Blocked','r/IndieGaming','docs/buzz/reddit/indiegaming/POST.md','15/18','Needs a real-gameplay clip, since GenAI posts are removed (no painted scenes), and a yes from the mods.'),
+ ('r-indiegames','Blocked','r/indiegames','docs/buzz/reddit/indiegames/POST.md','14/16','The same two blockers: Rule 12 bans GenAI games, so it needs a real-gameplay clip and a yes from the mods.'),
+ ('r-sim','A few days after r/macgaming','r/SimulationGames','docs/buzz/reddit/simulationgames/POST.md','','Ready; only the timing is left.'),
+ ('r-4x','A few days after r/macgaming','r/4Xgaming','docs/buzz/reddit/4xgaming/POST.md','','Ready; only the timing is left.'),
+ ('r-llama','When you\'ve checked three things','r/LocalLLaMA','docs/buzz/reddit/localllama/POST.md','','Needs you to add the quant, confirm the M5 timings and check Off Grid Pro\'s status.'),
+ ('godot','Waiting','r/godot','docs/buzz/reddit/godot/POST.md','','The study is still running.'),
+]
+rd=[]
+for k,w,name,path,score,need in subs:
+    sc=f' <span class="score">{score}</span>' if score else ''
+    rd.append(step(k,w,E(name)+sc,f'<p>{need}</p><p class="note">Post: {gh(path)}</p>'))
+
 later=[('Sat 7 Nov','Post the vertical clip on Shorts, TikTok and Reels','<code>docs/buzz/video/game-of-crowns-launch-9x16.mp4</code>. Upload it to each one separately so there are no watermarks.'),
 ('Sat 7 Nov','Put the trailer on YouTube and send me the link','itch\'s trailer slot only takes a YouTube or Vimeo link. I\'ll add it.'),
 ('This week','Make an AppleGamingWiki page marked native','It needs an account, so it has to be you. <a href="https://applegamingwiki.com" target="_blank" rel="noopener">applegamingwiki.com</a>'),
 ('Mon 9 Nov','Send 15 more creator emails','Strategy and sim channels, in docs/buzz/creators.md under Batch 2.'),
-('Mon 9 Nov','Post on r/SimulationGames','Ready in docs/buzz/channel-04-simulationgames.md.'),
 ('Fri 13 Nov','Post the week-one devlog','"The realms you made", with players\' screenshots.'),
 ('Wed 18 Nov','Update 0.6, the second beat','A new feature, a new clip, an email to every creator who covered it.')]
 lat=''.join(step(f'l{i}',w,E(t),f'<p>{b}</p>') for i,(w,t,b) in enumerate(later))
@@ -93,7 +107,9 @@ details.email summary{{display:flex;align-items:center;gap:12px;padding:10px 12p
 details.email summary::-webkit-details-marker{{display:none}}
 details.email summary::after{{content:"Open";margin-left:auto;font-size:13px;color:var(--gold)}}
 details.email[open] summary::after{{content:"Close"}}
-.ename{{font-weight:700}}.esubs{{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}}
+.ename{{font-weight:700}}
+.score{{font:600 13px var(--mono);color:var(--gold);background:var(--gold-soft);border-radius:4px;padding:1px 6px;margin-left:6px}}
+.esubs{{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}}
 .ebody{{display:grid;gap:8px;padding:0 12px 12px}}
 @media (prefers-reduced-motion:reduce){{.bar i{{transition:none}}}}
 </style>
@@ -106,6 +122,8 @@ details.email[open] summary::after{{content:"Close"}}
 <div class="progress"><div class="bar"><i id="bar"></i></div><span id="count">0 of 0 done</span></div>
 </header>
 <section><h2>Tonight</h2><ol>{''.join(steps)}</ol></section>
+<section><h2>Hacker News</h2><ol>{''.join(hn)}</ol></section>
+<section><h2>Reddit, one sub at a time</h2><ol>{''.join(rd)}</ol></section>
 <section><h2>Next two weeks</h2><ol>{lat}</ol></section>
 </div>
 <script>
