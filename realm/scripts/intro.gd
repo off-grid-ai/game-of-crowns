@@ -2,16 +2,15 @@ extends CanvasLayer
 ## The opening of a reign, and the loading screen while the realm comes up: a
 ## sequence of pages, each a picture with a caption that tells the lore, shows
 ## how the game works, or gives a tip with its keys. The pictures are stills of
-## the game itself (assets/intro/stills, rendered by tools/stills.sh); a page
-## whose still isn't there yet shows the realm's painted atlas, panned to the
-## place it speaks of. Each picture drifts slowly (a Ken Burns pan), narrated
+## realm (assets/intro/art, brought in by tools/intro_art.sh); a page whose
+## painting isn't there yet shows the title's painted vista. Each picture drifts slowly (a Ken Burns pan), narrated
 ## aloud when voices are on. It starts the moment a chronicle is chosen; while
 ## the realm is still forming it keeps turning pages (a key turns the next),
 ## and once the realm is ready a key or click goes in.
 
 signal finished
 
-const STILLS := "res://assets/intro/stills/"
+const ART := "res://assets/intro/art/"
 const ATLAS := "res://assets/maps/atlas.png"
 const BACKDROP := "res://assets/ui/title-background.png"
 const REALM_TILES := Vector2(56, 88)  # the atlas covers the whole map (bridge/tools/azgaar_world.py)
@@ -33,10 +32,10 @@ const CHARACTER := {
 
 ## Tips shown again while the realm is still forming, after the story.
 const TIPS := [
-	["Its own clock", "The realm runs on its own clock: a season every twenty seconds, a year in under a minute and a half. Pause it whenever you need to think.", "{pause}  pause"],
-	["Petitions remember", "Every ruling is remembered by the one who asked, and by their house. Favour rises and falls with what you decide.", "{court}  court"],
-	["The chronicle", "Everything that happens is written down: births, deaths, marriages, battles and your rulings.", "{chronicle}  chronicle    {ledger}  ledger"],
-	["Meet anyone", "Click a lord, a lady or a bannerman to see them face to face, hear what they want, and what they remember of you.", "{houses}  houses, then See"],
+	["clock", "Its own clock", "The realm runs on its own clock: a season every twenty seconds, a year in under a minute and a half. Pause it whenever you need to think.", "{pause}  pause"],
+	["petitions", "Petitions remember", "Every ruling is remembered by the one who asked, and by their house. Favour rises and falls with what you decide.", "{court}  court"],
+	["chronicle", "The chronicle", "Everything that happens is written down: births, deaths, marriages, battles and your rulings.", "{chronicle}  chronicle    {ledger}  ledger"],
+	["meet", "Meet anyone", "Click a lord, a lady or a bannerman to see them face to face, hear what they want, and what they remember of you.", "{houses}  houses, then See"],
 ]
 
 var say := Callable()  # (text) -> void: a voice for each page; unset, the intro is read, not narrated
@@ -75,18 +74,18 @@ func play(houses: Array, seats: Dictionary) -> void:
 		_pages.append([still, title, line, house, keys, at, zoom])
 	# The story and how to play, woven together: each page of the realm's tale
 	# is followed by what you do in it, with the keys that do it.
-	page.call("realm", "Seven houses. One throne. Yours.", "Aldmere: snow and pine in the north, gold in the western hills, red sand in the south. Every acre of it answers to you. For now.")
-	page.call("realm", "They remember being kings", "Three hundred years ago the Conqueror forged seven kingdoms into one crown. The houses bent the knee. They never forgot they once wore crowns of their own.", {}, "B  the Lore, any time", Vector2(0.5, 0.3), 1.6)
-	page.call("realm", "A realm that never waits", "Lords scheme, marry, feud and die while you watch. Wars start without your leave. Look away, and the realm moves on without you.", {}, "drag  pan    scroll  zoom    Q E  turn    WASD  move", Vector2(0.5, 0.6), 1.4)
+	page.call("realm_land", "Seven houses. One throne. Yours.", "Aldmere: snow and pine in the north, gold in the western hills, red sand in the south. Every acre of it answers to you. For now.")
+	page.call("realm_kings", "They remember being kings", "Three hundred years ago the Conqueror forged seven kingdoms into one crown. The houses bent the knee. They never forgot they once wore crowns of their own.", {}, "B  the Lore, any time", Vector2(0.5, 0.3), 1.6)
+	page.call("realm_never_waits", "A realm that never waits", "Lords scheme, marry, feud and die while you watch. Wars start without your leave. Look away, and the realm moves on without you.", {}, "drag  pan    scroll  zoom    Q E  turn    WASD  move", Vector2(0.5, 0.6), 1.4)
 	if not crown.is_empty() and seats.has(crown.get("name", "")):
 		var town: String = seats[crown["name"]][0]
-		page.call("seat_" + town, "Kingsmere", "%s is yours. Seven great houses owe you their swords. How long they keep paying is up to you." % town, crown, "Z  back to Kingsmere", home, 3.0)
+		page.call("house_crown", "Kingsmere", "%s is yours. Seven great houses owe you their swords. How long they keep paying is up to you." % town, crown, "Z  back to Kingsmere", home, 3.0)
 	for h in houses:
 		if h.get("crown", false) or h.get("wild", false) or not seats.has(h.get("name", "")):
 			continue
 		var name: String = h["name"]
 		var town: String = seats[name][0]
-		page.call("seat_" + town, name, "%s. Their words: \"%s\". %s" % [town, h.get("words", ""), CHARACTER.get(name, "")], h, "", uv.call(seats[name][1]), 3.0)
+		page.call(_art_of(name), name, "%s. Their words: \"%s\". %s" % [town, h.get("words", ""), CHARACTER.get(name, "")], h, "", uv.call(seats[name][1]), 3.0)
 	page.call("hall", "Rule in your own words", "Petitioners kneel before you: a starving town, a stolen bride, a blood feud. Pick a ruling, or just say what you would do, typed or spoken. They will remember it.", {}, "{court}  court", home, 2.2)
 	page.call("hero", "Every lord a life", "Each lord has a temper, an ambition and a long memory. Raise one up, break another, or rewrite who they are.", {}, "{houses}  houses    {chronicle}  chronicle", home, 1.8)
 	page.call("battle", "War is one insult away", "Grudges boil over into marching armies, burning fields and towns under siege. One ruling can stop a war. Another can start one.", {}, "", Vector2(0.45, 0.75), 2.0)
@@ -94,7 +93,7 @@ func play(houses: Array, seats: Dictionary) -> void:
 	if preload("res://scripts/features.gd").WALKING:  # walking the realm: version 2
 		page.call("walk", "Then step down from the throne", "Take any lord's place. Walk the streets, talk to anyone, push into the tavern, and draw steel when talking fails.", {}, "Every control is in Settings", home, 3.0)
 	for tip in TIPS:
-		page.call("tip", tip[0], tip[1], {}, tip[2], Vector2(0.3 + randf() * 0.4, 0.2 + randf() * 0.6), 2.0)
+		page.call("tip_" + tip[0], tip[1], tip[2], {}, tip[3], Vector2(0.3 + randf() * 0.4, 0.2 + randf() * 0.6), 2.0)
 	_build()
 	visible = true
 	# The intro covers the screen: the realm behind it need not be drawn while
@@ -196,8 +195,8 @@ func _next() -> void:
 		# Still forming: go round the tips again.
 		_page = _pages.size() - TIPS.size()
 	var p: Array = _pages[_page]
-	var path := STILLS + String(p[0]) + ".png"
-	# A page without a still of its own is told over the painted realm (the
+	var path := ART + String(p[0]) + ".jpg"
+	# A page without a painting of its own is told over the painted realm (the
 	# title's vista), not over the flat atlas.
 	if not ResourceLoader.exists(path):
 		path = BACKDROP
@@ -250,6 +249,12 @@ func _next() -> void:
 	_tween.chain().tween_callback(_next)
 	if say.is_valid():
 		say.call(String(p[2]))
+
+
+## A house's painting, named for the house rather than its seat (seats change
+## from one realm to the next): "House Wolfholt" is house_wolfholt.
+static func _art_of(house: String) -> String:
+	return "house_" + house.trim_prefix("House ").trim_prefix("The ").to_lower().replace(" ", "_")
 
 
 ## A map position pulled back just enough that the map still covers the
