@@ -2,11 +2,11 @@
 
 ![The empty throne of Aldmere, the seven houses' banners down the hall](docs/play/v05/throne.jpg)
 
-**A free medieval kingdom sim where every lord remembers what you did.**
+**Find out what kind of king you'd be.**
 
 **[Download it free for your Mac](https://github.com/off-grid-ai/game-of-crowns/releases)** (Apple Silicon, nothing locked, no account) · **[Watch the 27-second trailer](https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4)**
 
-You're the King of Aldmere, and seven great houses are watching how you rule. They grow their towns, marry, scheme and go to war whether you're looking or not, and every one of them keeps score. Tax a house too hard and, ten years later, its lord stands up in front of your whole court and says so.
+You're the king, and seven great houses want your throne. All you've got to hold onto it is grain, gold and your word at court. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed. It's free on any Apple Silicon Mac.
 
 [![Gareth Varn reminds the King, in front of the court, of the war he sided against them ten years ago](docs/play/v05/hook.gif)](https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4)
 *"10 years ago, in the spring of 315, you took our enemy's side in war." Make amends, hear him out, or tell him the crown did what it must. Click to watch.*
@@ -37,11 +37,32 @@ You're the King of Aldmere, and seven great houses are watching how you rule. Th
 
 **[Download Game of Crowns free](https://github.com/off-grid-ai/game-of-crowns/releases)** for any Mac with Apple Silicon. Windows is coming.
 
-## What's coming
+## Roadmap
 
-- **Nights** in the realm, with lit windows and torches.
-- **Windows.**
-- **Walking the realm** as the King or a lord: the streets, talking face to face, riding and fighting. It's built and switched off for now.
+- [ ] Multiplayer, with your friends as rival houses
+- [ ] Walk your realm in first person
+- [ ] Ride into battle in third person
+- [ ] Take control of anyone
+- [ ] Grow from commoner to king
+- [ ] Talk to anyone, and be remembered
+- [ ] Found a dynasty that outlives you
+- [ ] Rivals who plot for your throne
+- [ ] Nights lit by torch and fire
+- [ ] New continents to conquer
+- [ ] Magic and old blood
+- [ ] Lore that runs centuries deep
+- [ ] Bring your own maps
+- [ ] Bring your own characters
+- [ ] Write stories others can play
+- [ ] Play on Windows
+
+## Releases
+
+Every build is signed and notarised by Apple. [All releases](https://github.com/off-grid-ai/game-of-crowns/releases)
+
+- **0.5.1**: every reign ends with the name history gives you, your score and the reign in numbers. Your Hand brings you a new crisis every year: plague, riots, a lord grown too strong, an heir to marry off. A house can have one royal favour a year, so gold can't buy everyone. Cards wait their turn instead of jumping in while you click.
+- **0.5**: lords with written pasts and memories you can rewrite, full-length portraits of everyone at court, a painted map of the realm, and a new name for anyone you like.
+- **0.4**: the first build we shared.
 
 ---
 
