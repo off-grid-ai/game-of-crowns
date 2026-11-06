@@ -57,6 +57,8 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 
 ## Runs
 
+**2026-11-06 19:53:** Shipped: 4e22358 (README: the trailer link plays the launch film). Moved: both film cuts are public on the 0.5.1 release; the email link returns 200 and the byte size matches. Needs Mac: post r/macgaming with the film (US window until ~21:30 IST), then send the creator emails. Downloads: GitHub 4.
+
 **2026-11-06 19:50:** Shipped: a58865a (the 0.5 launch film: 33s, Mac's final copy over the Codex paintings, with the real court card as proof; 16:9 and 9:16). Moved: the 0.5.1 devlog is live (Mac approved it here). The film is approved; the main session is attaching it to the 0.5.1 release; posts, emails and the checklist now point at it. Mac can post r/macgaming now. Downloads: GitHub 4.
 
 **2026-11-06 19:23:** Shipped: fa1812d (roadmap: rule from your phone); 2a92455, 10f5f6d, 14fead0 and 5048f87 (README: opens on the painted throne room, a plain trailer link, download goes straight to the latest release, Coming soon as a checklist); buzz 86c610e (itch cover, banner and story screenshots from the launch paintings), 416915e (r/macgaming post without a version number). Moved: **0.5.1 is live on itch** (build #2313350). The itch cover, banner and first two screenshots are the Codex launch paintings, with six gameplay shots after them. The explainer is recutting the launch film from Codex's second set; posts go tonight if it's ready by ~21:15 IST, else tomorrow 19:00. Waiting on Mac: whether to publish the 0.5.1 devlog draft. Downloads: GitHub 4 (my own checks account for the 0.5 and 0.5.1 ones).
