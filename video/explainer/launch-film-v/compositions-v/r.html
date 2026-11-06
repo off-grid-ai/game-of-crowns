@@ -1,0 +1,33 @@
+<template>
+  <style>
+@font-face { font-family:"EB Garamond"; src:url("assets/fonts/EBGaramond.ttf") format("truetype"); font-weight:400 800; }
+@font-face { font-family:"Cinzel"; src:url("assets/fonts/Cinzel.ttf") format("truetype"); font-weight:400 900; }
+#root { position:absolute; inset:0; overflow:hidden; background:transparent; }
+.in { position:absolute; inset:0; opacity:1; }
+.cam { position:absolute; left:0; top:0; transform-origin:0 0; }
+.cam img { position:absolute; left:0; top:0; display:block; }
+.shade { position:absolute; left:0; right:0; bottom:0; height:40%;
+  background:linear-gradient(180deg, rgba(10,11,12,0) 0%, rgba(10,11,12,.55) 55%, rgba(10,11,12,.78) 100%); }
+.words { position:absolute; left:7%; right:7%; bottom:13%;
+  text-align:center; font-family:"EB Garamond", serif; font-weight:500; font-size:74px; line-height:1.18;
+  letter-spacing:.005em; color:#F1EADB; text-shadow:0 2px 24px rgba(0,0,0,.55); }
+.words .ln { display:block; }
+.words .q { font-style:italic; }
+</style>
+  <div id="root" data-composition-id="r" data-width="1080" data-height="1920">
+    <div class="in" id="rin">
+      <div class="cam" id="rcam" style="width:1080px;height:1920px"><img src="assets/v/launch_gathering.png" alt="" width="1080" height="1920"></div>
+      <div class="shade"></div><div class="words"><span class="ln " id="rw0">and seven great houses</span><span class="ln " id="rw1">want your throne.</span></div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#rin", { opacity:0 }, { opacity:1, duration:0.7, ease:"sine.inOut" }, 0);
+    tl.fromTo("#rw0", { opacity:0, y:10 }, { opacity:1, y:0, duration:.9, ease:"power2.out" }, 0.3);
+    tl.fromTo("#rw1", { opacity:0, y:10 }, { opacity:1, y:0, duration:.9, ease:"power2.out" }, 0.3);
+    tl.set("#rcam", { x:-10.8, y:-19.2, scale:1.0200 }, 0);
+    tl.to("#rcam", { x:-76.0, y:-74.0, scale:1.1000, duration:3.40, ease:"sine.inOut" }, 0);
+    tl.set({}, {}, 3.4);
+    window.__timelines["r"] = tl;
+  </script>
+</template>

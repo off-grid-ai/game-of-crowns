@@ -1,0 +1,48 @@
+<template>
+  <style>
+@font-face { font-family:"EB Garamond"; src:url("assets/fonts/EBGaramond.ttf") format("truetype"); font-weight:400 800; }
+@font-face { font-family:"Cinzel"; src:url("assets/fonts/Cinzel.ttf") format("truetype"); font-weight:400 900; }
+#root { position:absolute; inset:0; overflow:hidden; background:transparent; }
+.in { position:absolute; inset:0; opacity:1; }
+.cam { position:absolute; left:0; top:0; transform-origin:0 0; }
+.cam img { position:absolute; left:0; top:0; display:block; }
+.shade { position:absolute; left:0; right:0; bottom:0; height:46%;
+  background:linear-gradient(180deg, rgba(10,11,12,0) 0%, rgba(10,11,12,.55) 55%, rgba(10,11,12,.78) 100%); }
+.words { position:absolute; left:8%; right:8%; bottom:11%;
+  text-align:center; font-family:"EB Garamond", serif; font-weight:500; font-size:66px; line-height:1.18;
+  letter-spacing:.005em; color:#F1EADB; text-shadow:0 2px 24px rgba(0,0,0,.55); }
+.words .ln { display:block; }
+.words .q { font-style:italic; }
+
+#e .seal { position:absolute; left:50%; top:13%; width:110px; height:110px; margin-left:-55px; }
+#e .hook { position:absolute; left:6%; right:6%; top:28%; text-align:center; font-family:"EB Garamond", serif;
+  font-weight:500; font-size:92px; line-height:1.1; color:#F1EADB; text-shadow:0 2px 30px rgba(0,0,0,.6); }
+#e .sub { position:absolute; left:0; right:0; top:41%; text-align:center; font-family:"EB Garamond", serif;
+  font-weight:500; font-size:40px; color:#F1EADB; opacity:.92; }
+#e .link { position:absolute; left:0; right:0; top:47%; text-align:center; font-family:"EB Garamond", serif;
+  font-size:30px; letter-spacing:.02em; color:#B7A17D; }
+#e .veil { position:absolute; inset:0; background:radial-gradient(ellipse at 50% 25%, rgba(8,9,11,.55), rgba(8,9,11,.15) 70%); }
+  </style>
+  <div id="root" data-composition-id="e" data-width="1920" data-height="1080">
+    <div class="in" id="ein"><div id="e">
+      <div class="cam" id="ecam" style="width:1920px;height:1080px"><img src="assets/art/launch_kingsmere_dusk.png" alt="" width="1920" height="1080"></div>
+      <div class="veil"></div>
+      <img class="seal" id="eseal" src="assets/ui/seal.png" alt="Off Grid AI">
+      <div class="hook" id="ehook">Find out what kind of king you’d be.</div>
+      <div class="sub" id="esub">Free on any Apple Silicon Mac.</div>
+      <div class="link" id="elink">alichherawalla.itch.io/game-of-crowns</div>
+    </div></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#ein", { opacity:0 }, { opacity:1, duration:0.7, ease:"sine.inOut" }, 0);
+    tl.set("#ecam", { x:-38.4, y:-21.6, scale:1.0400 }, 0);
+    tl.to("#ecam", { x:-96.0, y:-54.0, scale:1.1000, duration:5.5, ease:"sine.inOut" }, 0);
+    tl.fromTo("#eseal", { opacity:0, scale:.94 }, { opacity:1, scale:1, duration:1.0, ease:"power2.out" }, 0.5);
+    tl.fromTo("#ehook", { opacity:0, y:12 }, { opacity:1, y:0, duration:1.1, ease:"power2.out" }, 0.9);
+    tl.fromTo("#esub", { opacity:0 }, { opacity:1, duration:.9 }, 1.9);
+    tl.fromTo("#elink", { opacity:0 }, { opacity:1, duration:.9 }, 2.3);
+    tl.set({}, {}, 5.5);
+    window.__timelines["e"] = tl;
+  </script>
+</template>

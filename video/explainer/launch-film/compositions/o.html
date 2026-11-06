@@ -1,0 +1,31 @@
+<template>
+  <style>
+@font-face { font-family:"EB Garamond"; src:url("assets/fonts/EBGaramond.ttf") format("truetype"); font-weight:400 800; }
+@font-face { font-family:"Cinzel"; src:url("assets/fonts/Cinzel.ttf") format("truetype"); font-weight:400 900; }
+#root { position:absolute; inset:0; overflow:hidden; background:transparent; }
+.in { position:absolute; inset:0; opacity:1; }
+.cam { position:absolute; left:0; top:0; transform-origin:0 0; }
+.cam img { position:absolute; left:0; top:0; display:block; }
+.shade { position:absolute; left:0; right:0; bottom:0; height:46%;
+  background:linear-gradient(180deg, rgba(10,11,12,0) 0%, rgba(10,11,12,.55) 55%, rgba(10,11,12,.78) 100%); }
+.words { position:absolute; left:8%; right:8%; bottom:11%;
+  text-align:center; font-family:"EB Garamond", serif; font-weight:500; font-size:66px; line-height:1.18;
+  letter-spacing:.005em; color:#F1EADB; text-shadow:0 2px 24px rgba(0,0,0,.55); }
+.words .ln { display:block; }
+.words .q { font-style:italic; }
+</style>
+  <div id="root" data-composition-id="o" data-width="1920" data-height="1080">
+    <div class="in" id="oin">
+      <div class="cam" id="ocam" style="width:1920px;height:1080px"><img src="assets/art/launch_boy_orchard.png" alt="" width="1920" height="1080"></div>
+      
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#oin", { opacity:0 }, { opacity:1, duration:0.7, ease:"sine.inOut" }, 0);
+    tl.set("#ocam", { x:0.0, y:0.0, scale:1.0000 }, 0);
+    tl.to("#ocam", { x:-307.2, y:-345.6, scale:1.3200, duration:2.80, ease:"sine.inOut" }, 0);
+    tl.set({}, {}, 2.8);
+    window.__timelines["o"] = tl;
+  </script>
+</template>

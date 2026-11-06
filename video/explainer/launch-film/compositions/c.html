@@ -1,0 +1,32 @@
+<template>
+  <style>
+@font-face { font-family:"EB Garamond"; src:url("assets/fonts/EBGaramond.ttf") format("truetype"); font-weight:400 800; }
+@font-face { font-family:"Cinzel"; src:url("assets/fonts/Cinzel.ttf") format("truetype"); font-weight:400 900; }
+#root { position:absolute; inset:0; overflow:hidden; background:transparent; }
+.in { position:absolute; inset:0; opacity:1; }
+.cam { position:absolute; left:0; top:0; transform-origin:0 0; }
+.cam img { position:absolute; left:0; top:0; display:block; }
+.shade { position:absolute; left:0; right:0; bottom:0; height:46%;
+  background:linear-gradient(180deg, rgba(10,11,12,0) 0%, rgba(10,11,12,.55) 55%, rgba(10,11,12,.78) 100%); }
+.words { position:absolute; left:8%; right:8%; bottom:11%;
+  text-align:center; font-family:"EB Garamond", serif; font-weight:500; font-size:66px; line-height:1.18;
+  letter-spacing:.005em; color:#F1EADB; text-shadow:0 2px 24px rgba(0,0,0,.55); }
+.words .ln { display:block; }
+.words .q { font-style:italic; }
+</style>
+  <div id="root" data-composition-id="c" data-width="1920" data-height="1080">
+    <div class="in" id="cin">
+      <div class="cam" id="ccam" style="width:2000px;height:1255px"><img src="assets/ui/court.jpg" alt="" width="2000" height="1255"></div>
+      <div class="shade" style="background:linear-gradient(180deg, rgba(10,11,12,0) 0%, rgba(10,11,12,.86) 40%, rgba(10,11,12,.94) 100%)"></div><div class="words"><span class="ln " id="cw0">and your word at court.</span></div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#cin", { opacity:0 }, { opacity:1, duration:0.7, ease:"sine.inOut" }, 0);
+    tl.fromTo("#cw0", { opacity:0, y:10 }, { opacity:1, y:0, duration:.9, ease:"power2.out" }, 0.3);
+    tl.set("#ccam", { x:-714.0, y:-25.4, scale:1.4880 }, 0);
+    tl.to("#ccam", { x:-800.4, y:-85.9, scale:1.5648, duration:3.40, ease:"sine.inOut" }, 0);
+    tl.set({}, {}, 3.4);
+    window.__timelines["c"] = tl;
+  </script>
+</template>
