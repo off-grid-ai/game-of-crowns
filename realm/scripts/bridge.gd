@@ -169,6 +169,11 @@ func lore(cb: Callable) -> void:
 	_http_get("/lore", cb)
 
 
+## Aldmere as every new chronicle finds it: its towns and their houses, for the Lore's map.
+func lore_map(cb: Callable) -> void:
+	_http_get("/lore/map", cb)
+
+
 func person(id: String, cb: Callable) -> void:
 	_http_get("/person?id=%s" % id.uri_encode(), cb)
 

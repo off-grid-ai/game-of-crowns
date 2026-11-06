@@ -26,6 +26,10 @@ var _chosen := -2  # -1 = the realm, -3 = the lesser houses, otherwise a house i
 ## towns, favour, the fallen, its living people and what they remember).
 var baseline := false
 const LESSER := -3
+const MAP := -4  # the map of Aldmere as every chronicle finds it
+var fetch_map := Callable()  # (cb) -> void: asks the bridge for /lore/map
+var _map := {}
+var _mark := ""  # the town the map was opened on, ringed in gold
 
 
 func _ready() -> void:
@@ -91,6 +95,7 @@ func _build() -> void:
 	_chapters.add_theme_constant_override("separation", 4)
 	left.add_child(_chapters)
 	_chapter("The Realm", -1, {})
+	_chapter("The map", MAP, {})
 	for h in _book.get("houses", []):
 		_chapter(String(h.get("name", "")), int(h.get("id", -1)), h)
 	if not _book.get("families", []).is_empty():
@@ -156,12 +161,69 @@ func _show(id: int) -> void:
 	if id == LESSER:
 		_lesser()
 		return
+	if id == MAP:
+		_map_page()
+		return
 	for h in _book.get("houses", []):
 		if int(h.get("id", -2)) == id:
 			_house(h)
 
 
 # --- the realm ------------------------------------------------------------------
+
+## The map of Aldmere opened on a town, ringed in gold.
+func show_on_map(town: String) -> void:
+	_mark = town
+	_show(MAP)
+
+
+## The painted map with every town of the realm as every chronicle finds it:
+## seats large in their house's colour and named, other towns small.
+func _map_page() -> void:
+	if _map.is_empty():
+		if fetch_map.is_valid():
+			fetch_map.call(func(d):
+				_map = d if d is Dictionary else {}
+				if _chosen == MAP and not _map.is_empty():
+					_show(MAP))
+		_page.add_child(T.label("Unrolling the map…"))
+		return
+	_page.add_child(T.title("Aldmere", 34))
+	_para("As every new chronicle finds it, nine years into the reign: the seven seats of the great houses, and the towns that answer to them." + (("  " + _mark + " is ringed in gold.") if _mark != "" else ""))
+	var tiles: Array = _map.get("tiles", [56, 88])
+	var frame := AspectRatioContainer.new()
+	frame.ratio = 3040.0 / 4800.0
+	frame.custom_minimum_size = Vector2(0, maxf(420.0, get_viewport().get_visible_rect().size.y - 260.0))
+	frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_page.add_child(frame)
+	var art := TextureRect.new()
+	art.texture = load("res://assets/maps/atlas.png")
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_SCALE
+	frame.add_child(art)
+	var marks := Control.new()
+	marks.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	marks.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	art.add_child(marks)
+	var font: Font = T.get_theme().default_font
+	marks.draw.connect(func():
+		var sz := marks.size
+		for t in _map.get("towns", []):
+			var at := Vector2((float(t["x"]) + 0.5) / float(tiles[0]), (float(t["y"]) + 0.5) / float(tiles[1])) * sz
+			var col := Color.from_string(String(t.get("color", "#888")), Color.GRAY)
+			var seat: bool = t.get("capital", false)
+			var marked: bool = String(t["title"]) == _mark
+			if marked:
+				marks.draw_arc(at, 14.0, 0.0, TAU, 32, T.ACCENT, 3.0, true)
+			marks.draw_circle(at, 7.0 if seat else 3.5, Color(0, 0, 0, 0.55))
+			marks.draw_circle(at, 5.5 if seat else 2.5, col.lerp(Color.WHITE, 0.25))
+			if seat or marked:
+				var size := 15 if seat else 13
+				var pos := at + Vector2(10, 5)
+				marks.draw_string_outline(font, pos, String(t["title"]), HORIZONTAL_ALIGNMENT_LEFT, -1, size, 5, Color(0, 0, 0, 0.8))
+				marks.draw_string(font, pos, String(t["title"]), HORIZONTAL_ALIGNMENT_LEFT, -1, size, T.ACCENT if marked else T.TEXT))
+	marks.resized.connect(marks.queue_redraw)
+
 
 ## A painting of the intro's (res://assets/intro/art/<key>.jpg or .png), else the
 ## fallback if it exists, else "".
@@ -239,6 +301,7 @@ func _house(h: Dictionary) -> void:
 	var facts := []
 	if lore.has("region"):
 		facts.append(lore["region"])
+	# Its seat, a click from the map.
 	if h.get("seat") != null:
 		facts.append("seat at %s" % h["seat"])
 	if not baseline:
@@ -246,6 +309,16 @@ func _house(h: Dictionary) -> void:
 	if h.get("favour") != null and not baseline:
 		facts.append("favour %d of 100" % int(h["favour"]))
 	_page.add_child(T.label("  ·  ".join(facts)))
+	if baseline and h.get("seat") != null and fetch_map.is_valid():  # in a reign, Go to flies there instead
+		var on_map := Button.new()
+		on_map.text = "%s on the map  →" % String(h["seat"])
+		on_map.flat = true
+		on_map.focus_mode = Control.FOCUS_NONE
+		on_map.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		on_map.add_theme_color_override("font_color", T.ACCENT)
+		var seat := String(h["seat"])
+		on_map.pressed.connect(func(): show_on_map(seat))
+		_page.add_child(on_map)
 	if h.get("fallen", false) and not baseline:
 		_para("Fallen. The house holds no town in this reign; its people are scattered and its banners hang in other men's halls. The realm remembers what it was.")
 	if h.get("crown", false):

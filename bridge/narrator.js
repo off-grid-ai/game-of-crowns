@@ -47,6 +47,12 @@ export function rememberNames(world) {
   for (const c of world?.cities ?? []) names[c.id] = c.name;
 }
 
+// A town's name in a world that isn't the one being played (the baseline the
+// Lore shows): its own authored name, else the name its id always gets.
+export function nameIn(id, name) {
+  return AUTHORED.has(name) ? name : generatedName(id);
+}
+
 export function cityName(id) {
   const given = names[Number(id)];
   if (given && AUTHORED.has(given)) return given;

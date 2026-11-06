@@ -11,7 +11,7 @@ import crypto from "node:crypto";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { houseFor, cityName, describe, rememberNames, HOUSES } from "./narrator.js";
+import { houseFor, cityName, nameIn, describe, rememberNames, HOUSES } from "./narrator.js";
 import { godCommand, healLua } from "./god.js";
 import { readSave, extractDetail } from "./savefile.js";
 import { townsfolk } from "./townsfolk.js";
@@ -1550,6 +1550,19 @@ http.createServer(async (req, res) => {
       })(),
       allies: (d?.allies ?? []).filter((id) => id !== pid && great(id)).map(nameOf),
     });
+  }
+  // Aldmere as every new chronicle finds it (the baseline, nine years in): its
+  // towns on the map, each with its house, for the Lore's map. Never the reign
+  // being played.
+  if (url.pathname === "/lore/map") {
+    let w = {};
+    try { w = JSON.parse(fs.readFileSync(path.join(chron.BASELINE, "state", "world.json"), "utf8")); } catch { /* no baseline */ }
+    const players = new Map((w.players ?? []).map((p) => [p.id, p]));
+    const towns = (w.cities ?? []).map((c) => {
+      const h = players.get(c.owner) ? houseFor(players.get(c.owner)) : null;
+      return { title: nameIn(c.id, c.name), x: c.x, y: c.y, size: c.size, capital: !!c.capital, house: h?.name ?? "", color: h?.color ?? "#888", sigil: h?.sigil ?? "" };
+    });
+    return json(res, 200, { tiles: [56, 88], towns });
   }
   if (url.pathname === "/lore") {
     // The book of the realm: its story from the world bible, and each great

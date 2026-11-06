@@ -329,6 +329,7 @@ func _ready() -> void:
 	title = preload("res://scripts/title.gd").new()
 	title.bridge = bridge
 	lore.fetch = bridge.lore
+	lore.fetch_map = bridge.lore_map
 	add_child(title)
 	title.began.connect(func(): _intro_due = true)
 	# The launch screens play over the menu (in renders only with --splash).
