@@ -4,7 +4,7 @@
 
 **Find out what kind of king you'd be.**
 
-**[Download it free for your Mac](https://github.com/off-grid-ai/game-of-crowns/releases/latest)** · **[Watch the trailer](https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4)**
+**[Download it free for your Mac](https://github.com/off-grid-ai/game-of-crowns/releases/latest)** · **[Watch the trailer](https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.5.1-20261106-b55fe8e/game-of-crowns-launch-16x9.mp4)**
 
 You're the king, and seven great houses want your throne. All you've got to hold onto it is grain, gold and your word at court. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed. It's free on any Apple Silicon Mac.
 
