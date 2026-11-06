@@ -1,0 +1,146 @@
+<title>Game of Crowns Roadmap</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Geist:wght@400;500&family=Geist+Mono:wght@400&display=swap">
+<style>
+/* Layout: one narrow column, a ledger of milestones; each milestone a heading, its items as tick rows, one add row at the foot. */
+:root {
+  --bg: #f4efe6; --surface: #fbf8f2; --line: #e2d8c6; --fg: #2a241c; --muted: #7a6d5a; --accent: #a87a1f; --accent-soft: #a87a1f1f; --done: #8c8170;
+  --display: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+  --body: "Geist", ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #17130f; --surface: #211b15; --line: #352c22; --fg: #efe7da; --muted: #a39581; --accent: #d9a84a; --accent-soft: #d9a84a24; --done: #7d7262; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #17130f; --surface: #211b15; --line: #352c22; --fg: #efe7da; --muted: #a39581; --accent: #d9a84a; --accent-soft: #d9a84a24; --done: #7d7262; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 720px; margin: 0 auto; padding-block: 40px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 36px; }
+header { display: grid; gap: 6px; }
+.eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--display); font-weight: 600; font-size: clamp(34px, 6vw, 46px); line-height: 1.05; margin: 0; text-wrap: balance; }
+.sum { color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; margin-top: 8px; }
+.bar i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .4s; }
+section { display: grid; gap: 8px; }
+.mhead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 26px; margin: 0; }
+.when { font-family: var(--mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+ul { list-style: none; margin: 0; padding: 0; display: grid; }
+li { display: grid; grid-template-columns: 22px 1fr auto; gap: 12px; align-items: start; padding: 9px 0; border-bottom: 1px dashed var(--line); }
+li:last-child { border-bottom: 0; }
+input[type=checkbox] { appearance: none; width: 18px; height: 18px; margin: 2px 0 0; border: 1.5px solid var(--muted); border-radius: 4px; display: grid; place-content: center; cursor: pointer; background: var(--surface); }
+input[type=checkbox]:checked { background: var(--accent); border-color: var(--accent); }
+input[type=checkbox]:checked::after { content: ""; width: 9px; height: 5px; border: 2px solid var(--bg); border-top: 0; border-right: 0; transform: rotate(-45deg) translate(1px, -1px); }
+input[type=checkbox]:focus-visible, button:focus-visible, select:focus-visible, input[type=text]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.text { min-width: 0; overflow-wrap: anywhere; }
+li.done .text { color: var(--done); text-decoration: line-through; text-decoration-color: var(--line); }
+.who { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-left: 8px; }
+.x { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 4px; border-radius: 4px; opacity: .55; }
+.x:hover { opacity: 1; color: var(--fg); }
+.empty { color: var(--muted); font-style: italic; padding: 8px 0; }
+form { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+form input[type=text] { min-width: 0; border: 0; background: none; color: var(--fg); font: inherit; padding: 6px 4px; }
+form input[type=text]::placeholder { color: var(--muted); }
+select { font: inherit; font-size: 13px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+form button { font: inherit; font-weight: 500; color: var(--bg); background: var(--accent); border: 0; border-radius: 6px; padding: 6px 14px; cursor: pointer; }
+form button:disabled { opacity: .5; cursor: default; }
+.note { font-size: 13px; color: var(--muted); min-height: 1.2em; }
+@media (max-width: 520px) { form { grid-template-columns: 1fr 1fr; } form input[type=text] { grid-column: 1 / -1; } }
+@media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Aldmere · what we're building</div>
+    <h1>Game of Crowns Roadmap</h1>
+    <div class="sum" id="sum">Loading the list…</div>
+    <div class="bar"><i id="bar"></i></div>
+  </header>
+  <div id="milestones"></div>
+  <form id="add">
+    <input type="text" id="new-text" placeholder="Add something to the roadmap" maxlength="240" autocomplete="off">
+    <select id="new-phase" aria-label="Milestone"></select>
+    <button type="submit" id="new-btn">Add</button>
+  </form>
+  <div class="note" id="note"></div>
+</div>
+
+<script>
+const PHASES = [
+  { id: "0.5.1", name: "0.5.1", when: "Today" },
+  { id: "0.6", name: "0.6", when: "18 Nov" },
+  { id: "1.1", name: "v1.1", when: "After 0.6" },
+  { id: "2", name: "v2", when: "Later" },
+];
+const $ = (id) => document.getElementById(id);
+const sel = $("new-phase");
+for (const p of PHASES) { const o = document.createElement("option"); o.value = p.id; o.textContent = p.name; sel.append(o); }
+sel.value = "0.6";
+let items = [];
+let col = null, me = null;
+
+function render() {
+  const box = $("milestones");
+  box.replaceChildren();
+  for (const p of PHASES) {
+    const mine = items.filter((it) => (it.phase ?? "0.6") === p.id).sort((a, b) => (a.created ?? 0) - (b.created ?? 0));
+    const s = document.createElement("section");
+    const head = document.createElement("div"); head.className = "mhead";
+    const h = document.createElement("h2"); h.textContent = p.name;
+    const w = document.createElement("span"); w.className = "when";
+    const done = mine.filter((x) => x.done).length;
+    w.textContent = `${p.when} · ${done} of ${mine.length} done`;
+    head.append(h, w);
+    const ul = document.createElement("ul");
+    if (!mine.length) { const e = document.createElement("li"); e.className = "empty"; e.style.display = "block"; e.textContent = "Nothing here yet."; ul.append(e); }
+    for (const it of mine) {
+      const li = document.createElement("li"); if (it.done) li.className = "done";
+      const cb = document.createElement("input"); cb.type = "checkbox"; cb.id = "cb-" + it.id; cb.checked = !!it.done;
+      cb.setAttribute("aria-label", it.text);
+      cb.addEventListener("change", () => write(() => col.doc(it.id).update({ done: cb.checked })));
+      const t = document.createElement("label"); t.className = "text"; t.htmlFor = cb.id; t.textContent = it.text;
+      if (it.by === "claude") { const who = document.createElement("span"); who.className = "who"; who.textContent = "Claude"; t.append(who); }
+      const x = document.createElement("button"); x.className = "x"; x.type = "button"; x.title = "Remove"; x.setAttribute("aria-label", "Remove " + it.text); x.textContent = "×";
+      x.addEventListener("click", () => write(() => col.doc(it.id).delete()));
+      li.append(cb, t, x); ul.append(li);
+    }
+    s.append(head, ul); box.append(s);
+  }
+  const all = items.length, done = items.filter((x) => x.done).length;
+  $("sum").textContent = all ? `${done} of ${all} done` : "Nothing on the list yet. Add the first item below.";
+  $("bar").style.width = all ? `${(done / all) * 100}%` : "0";
+}
+
+async function write(fn) {
+  if (!col) { $("note").textContent = "The list can't be saved from this view."; return; }
+  try { await fn(); $("note").textContent = ""; }
+  catch (e) { $("note").textContent = "That didn't save: " + (e?.message || "try again"); }
+}
+
+$("add").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const text = $("new-text").value.trim();
+  if (!text) return;
+  $("new-btn").disabled = true;
+  await write(() => col.add({ text, phase: sel.value, done: false, created: Date.now(), by: me ?? "someone" }));
+  $("new-text").value = "";
+  $("new-btn").disabled = false;
+  $("new-text").focus();
+});
+
+render();
+(async () => {
+  const timer = setTimeout(() => { if (!col) $("sum").textContent = "The list didn't load. Reopen the page to try again."; }, 10000);
+  const db = await claude.use("db");
+  if (!db) { clearTimeout(timer); $("sum").textContent = "Sign in to see and edit the list."; $("new-btn").disabled = true; return; }
+  const user = await claude.use("user");
+  try { me = user ? await user.id() : null; } catch { me = null; }
+  col = db.collection("items");
+  col.onSnapshot((snap) => {
+    clearTimeout(timer);
+    items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    render();
+  }, (err) => { clearTimeout(timer); $("note").textContent = "The list stopped updating: " + (err?.message || "reopen the page"); });
+})();
+</script>
