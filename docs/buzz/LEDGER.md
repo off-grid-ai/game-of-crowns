@@ -57,6 +57,8 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 
 ## Runs
 
+**2026-11-06 18:38:** Shipped (on main): ce21596 (VISION: v2 is multiplayer in first and third person); 8e6ec14 (launch film: a Codex brief for six paintings telling Gareth Varn's grudge); b55fe8e (Settings drop the language and Type/Speak choices); 122d2b1 (a shared, editable roadmap checklist page); d69c3d1 (VISION: continents, your own maps and characters, deeper lore, magic). Moved: nothing public. Blocks: the itch page is still Draft (404), and Publish is due now at 18:40, before r/macgaming at 19:00. Downloads: GitHub 4.
+
 **2026-11-06 18:24:** Shipped (on main, not in 0.5): a8233a7 (the reign ends on its own screen with the verdict; the Hand raises plague, unrest, thin granaries and more; one royal favour per house a year; cards wait their turn; the camera stays above roofs); da89092 (the Hand offers each order once). These are candidates for 0.5.1 on 13 Nov. Moved: nothing public. Blocks: the itch page is still Draft (public URL 404); Mac's Publish is due at 18:40. Downloads: GitHub 4 (0.5's one download is my own check).
 
 **2026-11-06 17:55:** Shipped: 0.5 released (v0.5-20261106-f5ba354: court fix, notarised, both hook clips attached); 15a45cf (README as a sales page). Moved: the 0.5 dmg is on itch (channel mac, build #2312884, labelled 0.5; Gatekeeper: Notarized Developer ID). Left: Mac's Publish on itch (page and devlog) at 18:40, then the posts.
