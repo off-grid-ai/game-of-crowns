@@ -1185,12 +1185,65 @@ func show_records() -> void:
 func _on_records(data) -> void:
 	if data.is_empty():
 		_body.add_child(_label("No reign has ended yet. Set a length when you begin a chronicle, or lay down the crown.", 15, MUTED))
+	# Each reign a row: its place, its name and the King's, its numbers on one
+	# quiet line, and the verdict as the chronicle would say it, in its own voice.
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.custom_minimum_size = Vector2(0, maxf(260.0, _root.get_viewport_rect().size.y - 300.0))
+	_body.add_child(scroll)
+	var list := VBoxContainer.new()
+	list.add_theme_constant_override("separation", 18)
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(_gutter(list))
+	var speech: Font = preload("res://scripts/theme.gd").speech
 	var rank := 1
 	for r in data.slice(0, 12):
-		_body.add_child(_label("%d.  %s  ·  %s  —  %d   (peace %d%%, %d souls, %d years)" % [rank, String(r.get("title", "The King")), r.get("name", ""), int(r.get("score", 0)), int(float(r.get("peace", 0)) * 100), int(r.get("pop", 0)), int(r.get("turns", 0)) / 4], 16, PARCHMENT))
-		_body.add_child(_label("     “%s”" % r.get("verdict", ""), 14, MUTED))
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 18)
+		list.add_child(row)
+		var place := Label.new()
+		place.text = str(rank)
+		place.custom_minimum_size.x = 36
+		place.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		place.add_theme_font_override("font", _semibold())
+		place.add_theme_font_size_override("font_size", 24)
+		place.add_theme_color_override("font_color", GOLD if rank <= 3 else MUTED)
+		row.add_child(place)
+		var col := VBoxContainer.new()
+		col.add_theme_constant_override("separation", 3)
+		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(col)
+		var head := Label.new()
+		head.text = "%s  ·  %s" % [String(r.get("name", "")), String(r.get("title", "The King"))]
+		head.add_theme_font_override("font", _semibold())
+		head.add_theme_font_size_override("font_size", 18)
+		head.add_theme_color_override("font_color", PARCHMENT)
+		col.add_child(head)
+		var nums := Label.new()
+		nums.text = "%s points  ·  peace %d%%  ·  %d souls  ·  %d years" % [_thousands(int(r.get("score", 0))), int(float(r.get("peace", 0)) * 100), int(r.get("pop", 0)), int(r.get("turns", 0)) / 4]
+		nums.add_theme_font_size_override("font_size", 14)
+		nums.add_theme_color_override("font_color", MUTED)
+		col.add_child(nums)
+		if String(r.get("verdict", "")) != "":
+			var said := Label.new()
+			said.text = "“%s”" % String(r.get("verdict", ""))
+			said.autowrap_mode = TextServer.AUTOWRAP_WORD
+			if speech:
+				said.add_theme_font_override("font", speech)
+			said.add_theme_font_size_override("font_size", 17)
+			said.add_theme_color_override("font_color", PARCHMENT.darkened(0.15))
+			col.add_child(said)
 		rank += 1
 	_big("Back", _back)
+
+
+static func _thousands(n: int) -> String:
+	var s := str(n)
+	var out := ""
+	while s.length() > 3:
+		out = "," + s.right(3) + out
+		s = s.left(s.length() - 3)
+	return s + out
 
 
 ## Everyone whose work the realm is made from, by kind, from the licence
