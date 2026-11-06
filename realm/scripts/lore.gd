@@ -268,6 +268,9 @@ func _house(h: Dictionary) -> void:
 			for p in people:
 				_person(p, h, body)
 	for t in [["people", "Notable people (%d)" % people.size()], ["sworn", "Sworn houses (%d)" % sworn.size()]]:
+		# An empty tab isn't offered (the world as written has no living people).
+		if (t[0] == "people" and people.is_empty()) or (t[0] == "sworn" and sworn.is_empty()):
+			continue
 		var b := Button.new()
 		b.text = t[1]
 		b.toggle_mode = true
