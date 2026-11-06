@@ -4,12 +4,21 @@
 
 **A free medieval kingdom sim where every lord remembers what you did.**
 
-You're the King of Aldmere. Seven great houses grow their towns, marry, scheme and go to war whether you're watching or not. You keep them loyal with grain, gold, decrees and judgement at court, and they keep score. Tax a house too hard and, years later, its lord brings it up in front of the whole court.
+**[Download it free for your Mac](https://github.com/off-grid-ai/game-of-crowns/releases)** (Apple Silicon, nothing locked, no account) · **[Watch the 27-second trailer](https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4)**
 
-**Download:** free, nothing locked, for Macs with Apple Silicon, from [Releases](https://github.com/off-grid-ai/game-of-crowns/releases). Windows is coming. Run [Off Grid AI](https://getoffgridai.co/desktop) alongside it and the lords plead, scheme and threaten you in their own words. It's free and runs on your Mac.
+You're the King of Aldmere, and seven great houses are watching how you rule. They grow their towns, marry, scheme and go to war whether you're looking or not, and every one of them keeps score. Tax a house too hard and, ten years later, its lord stands up in front of your whole court and says so.
 
-[![Watch the 27-second trailer: Gareth Varn reminds the King of a war ten years gone](docs/play/v05/hook.gif)](https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4)
-*The 27-second trailer. A lord brings up what you did ten years ago, in front of the whole court.*
+[![Gareth Varn reminds the King, in front of the court, of the war he sided against them ten years ago](docs/play/v05/hook.gif)](https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4)
+*"10 years ago, in the spring of 315, you took our enemy's side in war." Make amends, hear him out, or tell him the crown did what it must. Click to watch.*
+
+## Why you'll keep playing
+
+- **Your choices come back for you.** Every house remembers what the crown did to it. Feed one through a famine and it answers your banners; snub its lord and he brings it up at court years later, with the year and the reason.
+- **Every lord has a secret worth knowing.** All 83 lords, consorts, heirs and bannermen start with a past that matches everyone else's, from who refused whose daughter to who opened the gates at Windcross. Ten bannermen already have a reason to turn their coats, so find them before your enemies do.
+- **No two reigns end the same way.** Pick the story that comes for your throne, like The Broken Oath, The Long Winter or The Crown's Debt, or let the realm choose. It plays out through the choices brought to your court, and you either hold the crown or lose it.
+- **Watch the war, then step into it.** Zoom out and a painted map shows every town under whoever holds it, every host on the march and every siege. Click a town and you're on the ground watching the battle, the feast or your own rider on the road.
+- **The lords talk back.** Run [Off Grid AI](https://getoffgridai.co/desktop) next to it and they plead, scheme and threaten you in their own words. It's free, it runs on your Mac, and nothing you say leaves it.
+- **Make Aldmere yours.** Rename any house or person and rewrite anyone's story, memories, nature and loyalty right on their card. Do it from the menu and every reign you start after that begins your way.
 
 ## Seven houses, one throne
 
@@ -23,34 +32,30 @@ You're the King of Aldmere. Seven great houses grow their towns, marry, scheme a
 ![Cecily Goldcrest, Lady of Goldrock, in her own oak grove at golden hour](docs/play/v04/meet-goldcrest.jpg)
 *Know what a lord is hiding before you sit across from them. Cecily Goldcrest holds the debts of half the western lords, and she swears the Wolfholt bride died of fever.*
 
-## New in 0.5
-
-- **Every lord has a history you can use.** All 83 lords, consorts, heirs and bannermen start with a past that matches everyone else's, like who refused whose daughter and who opened the gates at Windcross. Ten of the bannermen already have a reason to turn their coats, so you'll want to find them before your enemies do.
-- **Make Aldmere yours.** Rename any house or person, and rewrite anyone's story, memories, nature and loyalty right on their card. Do it from the menu and every reign you start after that begins your way.
-- **See the whole war at once.** Zoom out and the painted map of Aldmere takes over, with every town under whoever holds it now, hosts on the march and towns under siege. Click a town and you're on the ground there.
-- **Learn who's who before you're crowned.** The Lore of Aldmere opens from the menu with every house, the people who matter in it, and which bannermen kneel to whom.
-- **Pick up any reign where you left it.** Chronicles keeps every reign you've played, with the ones that ended showing your title, score and how the realm remembers you.
-
 ![Chronicles: every reign as a card, the one in progress ready to continue](docs/play/v04/chronicles.jpg)
+*Every reign you play is kept. Pick up the one in progress, or look back at how the realm remembers the ones that ended.*
 
-Decisions live in [VISION.md](VISION.md) and [DESIGN.md](DESIGN.md). The interface rules are in [UI.md](UI.md).
+**[Download Game of Crowns free](https://github.com/off-grid-ai/game-of-crowns/releases)** for any Mac with Apple Silicon. Windows is coming.
+
+## What's coming
+
+- **Nights** in the realm, with lit windows and torches.
+- **Windows.**
+- **Walking the realm** as the King or a lord: the streets, talking face to face, riding and fighting. It's built and switched off for now.
 
 ---
 
-## Version 1
+## For developers
+
+Decisions live in [VISION.md](VISION.md) and [DESIGN.md](DESIGN.md), and the interface rules in [UI.md](UI.md). Write your own stories as data files: the game checks them and plays them against the live realm ([docs/STORY_ARCS.md](docs/STORY_ARCS.md)).
+
+### Version 1
 
 v1 is frozen (see "v1: what ships" in [VISION.md](VISION.md)). In v1 you are the King on the throne and rule from above: the realm, the court, decrees, the houses, the chronicle, and anyone you choose to see up close.
 
 - It is always day. Nights, with lit windows and torches, come in v1.1.
 - People talk among themselves as captions over their heads, not aloud.
 - Walking the realm as the King or a lord (the streets, talking face to face, fighting, riding, going indoors) is built and kept in the code for version 2, switched off by one flag: `WALKING` in [`realm/scripts/features.gd`](realm/scripts/features.gd).
-
-## Where it's going
-
-- **Every reign is a story that comes for your throne.** Pick one when you begin (The Usurper's Claim, The Broken Oath, The Poisoned Court, The Long Winter, The Crown's Debt and more), filter by tags (fast-paced, gritty, violent, cunning, political…), let the realm decide, or generate your own from tags or a few lines of premise. It plays out in acts, through choices brought to your court, and the reign ends when the story does: weather it and you win, fail and you fall.
-- **Stories are data, built from beats.** Write your own beats and stories as files; the game checks them and plays them against the live realm. See [docs/STORY_ARCS.md](docs/STORY_ARCS.md).
-- **Politics with teeth:** alliances that bind a house to your wars, marching the royal host on a rebel, stripping titles, hostages, the council, spies, the headsman. Gold alone won't hold the realm.
-- **Lords remember.** Every house keeps a record of what the crown did to it, and its lord brings it back to your court years later.
 
 ## How it fits together
 
