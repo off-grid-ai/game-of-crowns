@@ -39,25 +39,23 @@ You're the king, and seven great houses want your throne. All you've got to hold
 
 ## Coming soon
 
-Give a 👍 to the ones you want first, and the most wanted get built first. [See them all](https://github.com/off-grid-ai/game-of-crowns/issues?q=is%3Aissue+is%3Aopen+label%3Aroadmap+sort%3Areactions-%2B1-desc)
-
-- [Multiplayer, with your friends as rival houses](https://github.com/off-grid-ai/game-of-crowns/issues/1)
-- [Walk your realm in first person](https://github.com/off-grid-ai/game-of-crowns/issues/2)
-- [Ride into battle in third person](https://github.com/off-grid-ai/game-of-crowns/issues/3)
-- [Take control of anyone](https://github.com/off-grid-ai/game-of-crowns/issues/4)
-- [Grow from commoner to king](https://github.com/off-grid-ai/game-of-crowns/issues/5)
-- [Talk to anyone, and be remembered](https://github.com/off-grid-ai/game-of-crowns/issues/6)
-- [Found a dynasty that outlives you](https://github.com/off-grid-ai/game-of-crowns/issues/7)
-- [Rivals who plot for your throne](https://github.com/off-grid-ai/game-of-crowns/issues/8)
-- [Nights lit by torch and fire](https://github.com/off-grid-ai/game-of-crowns/issues/9)
-- [New continents to conquer](https://github.com/off-grid-ai/game-of-crowns/issues/10)
-- [Magic and old blood](https://github.com/off-grid-ai/game-of-crowns/issues/11)
-- [Lore that runs centuries deep](https://github.com/off-grid-ai/game-of-crowns/issues/12)
-- [Bring your own maps](https://github.com/off-grid-ai/game-of-crowns/issues/13)
-- [Bring your own characters](https://github.com/off-grid-ai/game-of-crowns/issues/14)
-- [Write stories others can play](https://github.com/off-grid-ai/game-of-crowns/issues/15)
-- [Play on Windows](https://github.com/off-grid-ai/game-of-crowns/issues/16)
-- [Rule from your phone](https://github.com/off-grid-ai/game-of-crowns/issues/17)
+- [ ] Multiplayer, with your friends as rival houses
+- [ ] Walk your realm in first person
+- [ ] Ride into battle in third person
+- [ ] Take control of anyone
+- [ ] Grow from commoner to king
+- [ ] Talk to anyone, and be remembered
+- [ ] Found a dynasty that outlives you
+- [ ] Rivals who plot for your throne
+- [ ] Nights lit by torch and fire
+- [ ] New continents to conquer
+- [ ] Magic and old blood
+- [ ] Lore that runs centuries deep
+- [ ] Bring your own maps
+- [ ] Bring your own characters
+- [ ] Write stories others can play
+- [ ] Play on Windows
+- [ ] Rule from your phone
 
 ## Releases
 
