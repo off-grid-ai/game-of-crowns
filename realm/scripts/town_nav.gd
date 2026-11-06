@@ -7,6 +7,7 @@ extends RefCounted
 const WATER_STEP := 0.1  # how finely the shore is traced, in game units (about 0.8 m)
 
 var terrain: Node3D  # set by whoever walks: what is land and what is water
+var roads: Node  # the realm's roads (roads.gd): between towns, the way keeps to them
 # One map per town for everyone who walks it (villagers, and soldiers marching
 # in or out), so their avoidance agents share it and step aside for each other.
 static var _maps := {}  # town id -> RID
@@ -282,7 +283,8 @@ func route(towns: Node3D, from: Vector3, to: Vector3) -> PackedVector3Array:
 	var a := _walked(towns, from)
 	var b := _walked(towns, to)
 	if a.is_empty() and b.is_empty():
-		return terrain.bowed(terrain.land_path(from, to))
+		var on_road: PackedVector3Array = roads.route(from, to) if roads and roads.has_method("route") else PackedVector3Array()
+		return on_road if not on_road.is_empty() else terrain.bowed(terrain.land_path(from, to))
 	if not a.is_empty() and not b.is_empty() and a[0] == b[0]:
 		return walk(a[0], a[1], from, to)
 	var out := PackedVector3Array()
@@ -294,7 +296,9 @@ func route(towns: Node3D, from: Vector3, to: Vector3) -> PackedVector3Array:
 		out.append_array(walk(a[0], a[1], from, head))
 	if not b.is_empty():
 		tail = spot(b[0], b[1], head)
-	out.append_array(terrain.bowed(terrain.land_path(head, tail)))
+	# Between towns, along the drawn roads where they join the two; over the land where they don't.
+	var on_road: PackedVector3Array = roads.route(head, tail) if roads and roads.has_method("route") else PackedVector3Array()
+	out.append_array(on_road if not on_road.is_empty() else terrain.bowed(terrain.land_path(head, tail)))
 	if not b.is_empty():
 		out.append_array(walk(b[0], b[1], tail, to))
 	return out

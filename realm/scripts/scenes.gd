@@ -123,6 +123,8 @@ func _stand(p: Vector3, body := 0.0) -> Vector3:
 	if towns == null:
 		towns = get_parent().get("towns")
 	_nav.terrain = terrain
+	if _nav.roads == null:
+		_nav.roads = get_parent().get("roads")
 	return _nav.stand(towns, p, body)
 
 

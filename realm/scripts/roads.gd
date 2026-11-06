@@ -323,6 +323,49 @@ func _cells() -> Dictionary:
 	return _grid
 
 
+## A way along the drawn roads from near `from` to near `to` (world points,
+## the ends included), so carts and riders keep to the road. Empty when either
+## end is far from any road or the roads don't join them: the caller then goes
+## over the land. The great roads and the King's road only, not farm tracks.
+var _graph: AStar3D
+var _graph_version := -1
+const ROAD_REACH := 2.5  # how far an end may be from the road to set out along it
+func route(from: Vector3, to: Vector3) -> PackedVector3Array:
+	if _graph == null or _graph_version != version:
+		_graph = AStar3D.new()
+		_graph_version = version
+		var ids := {}
+		var id_of := func(v: Vector2) -> int:
+			var k := Vector2i(roundi(v.x * 200.0), roundi(v.y * 200.0))
+			if not ids.has(k):
+				ids[k] = ids.size()
+				_graph.add_point(ids[k], Vector3(v.x, 0, v.y))
+			return ids[k]
+		for owner in ["roads", "kings"]:
+			for s in _paths.get(owner, []):
+				var a: int = id_of.call(s[0])
+				var b: int = id_of.call(s[1])
+				if a != b and not _graph.are_points_connected(a, b):
+					_graph.connect_points(a, b)
+	var out := PackedVector3Array()
+	if _graph.get_point_count() == 0:
+		return out
+	var a := _graph.get_closest_point(Vector3(from.x, 0, from.z))
+	var b := _graph.get_closest_point(Vector3(to.x, 0, to.z))
+	var pa := _graph.get_point_position(a)
+	var pb := _graph.get_point_position(b)
+	if Vector2(pa.x - from.x, pa.z - from.z).length() > ROAD_REACH or Vector2(pb.x - to.x, pb.z - to.z).length() > ROAD_REACH:
+		return out
+	var way := _graph.get_point_path(a, b)
+	if way.is_empty():
+		return out
+	out.append(from)
+	for p in way:
+		out.append(Vector3(p.x, terrain.height_at(p.x, p.z), p.z))
+	out.append(to)
+	return out
+
+
 ## True when a spot lies on a road or track, or within `margin` of its verge.
 func on_path(p: Vector3, margin := 0.0) -> bool:
 	var q := Vector2(p.x, p.z)
