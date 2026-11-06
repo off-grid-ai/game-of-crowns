@@ -6,10 +6,10 @@
 
 You're the King of Aldmere. Seven great houses grow their towns, marry, scheme and go to war whether you're watching or not. You keep them loyal with grain, gold, decrees and judgement at court, and they keep score. Tax a house too hard and, years later, its lord brings it up in front of the whole court.
 
-**Download:** free, nothing locked, for Macs with Apple Silicon, from [Releases](https://github.com/off-grid-ai/game-of-crowns/releases). Windows is coming. Want the lords to plead, scheme and threaten you in their own words? Run [Off Grid AI](https://getoffgridai.co/desktop) alongside it. It's free and runs on your Mac.
+**Download:** free, nothing locked, for Macs with Apple Silicon, from [Releases](https://github.com/off-grid-ai/game-of-crowns/releases). Windows is coming. Run [Off Grid AI](https://getoffgridai.co/desktop) alongside it and the lords plead, scheme and threaten you in their own words. It's free and runs on your Mac.
 
 [![Watch the 27-second trailer: Gareth Varn reminds the King of a war ten years gone](docs/play/v05/hook.gif)](https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4)
-*Watch the trailer (27 seconds). A lord brings up what you did ten years ago, in front of the whole court.*
+*The 27-second trailer. A lord brings up what you did ten years ago, in front of the whole court.*
 
 ## Seven houses, one throne
 
@@ -21,17 +21,15 @@ You're the King of Aldmere. Seven great houses grow their towns, marry, scheme a
 | **Sunspire.** The last to bend the knee. | **Highfell.** Untouchable in their mountains. | **Ironreach.** They take what they want from the coasts. | **The Crown.** Yours, as long as it stays strong. |
 
 ![Cecily Goldcrest, Lady of Goldrock, in her own oak grove at golden hour](docs/play/v04/meet-goldcrest.jpg)
-*Meet anyone and they stand in their own land. Cecily Goldcrest holds the debts of half the western lords, and swears the Wolfholt bride died of fever.*
+*Know what a lord is hiding before you sit across from them. Cecily Goldcrest holds the debts of half the western lords, and she swears the Wolfholt bride died of fever.*
 
 ## New in 0.5
 
-- **Everyone has a past.** All 83 lords, consorts, heirs and bannermen start with a history that agrees with everyone else's: who refused whose daughter, who opened the gates at Windcross, who served the Wolfholt bride her last cup. Ten bannermen have a quiet reason to turn their coats.
-- **The realm is yours to rewrite.** Rename any house or person. Rewrite anyone's story, what they remember, their nature and their loyalty, right on their card. Do it from the menu and every chronicle you start after that begins your way. It stays on your Mac.
-- **The whole realm at a glance.** Zoom out and a painted map of Aldmere takes over: every town under whoever holds it now, each house's lands, hosts on the march, towns under siege. Click a town and you're on the ground there.
-- **The Lore of Aldmere.** The book of the realm, open from the menu: its seven houses, the people who matter in each, the bannermen and whom they kneel to, and a map you can drag, zoom and click.
-- **A proper opening.** The Off Grid AI seal, the war table, then a storybook that plays smoothly and turns its own pages.
-- **Your reigns, kept.** Chronicles shows every reign you've played: the one in progress, ready to continue, and the ones that ended, with the King's name, score and verdict.
-- **Fit for all ages.** Nothing sexual anywhere: traits, events, pasts or anything the model writes.
+- **Every lord has a history you can use.** All 83 lords, consorts, heirs and bannermen start with a past that matches everyone else's, like who refused whose daughter and who opened the gates at Windcross. Ten of the bannermen already have a reason to turn their coats, so you'll want to find them before your enemies do.
+- **Make Aldmere yours.** Rename any house or person, and rewrite anyone's story, memories, nature and loyalty right on their card. Do it from the menu and every reign you start after that begins your way.
+- **See the whole war at once.** Zoom out and the painted map of Aldmere takes over, with every town under whoever holds it now, hosts on the march and towns under siege. Click a town and you're on the ground there.
+- **Learn who's who before you're crowned.** The Lore of Aldmere opens from the menu with every house, the people who matter in it, and which bannermen kneel to whom.
+- **Pick up any reign where you left it.** Chronicles keeps every reign you've played, with the ones that ended showing your title, score and how the realm remembers you.
 
 ![Chronicles: every reign as a card, the one in progress ready to continue](docs/play/v04/chronicles.jpg)
 
