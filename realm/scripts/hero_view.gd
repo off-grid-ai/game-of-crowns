@@ -107,68 +107,65 @@ func close() -> void:
 func _build_stage() -> void:
 	_stage = Node3D.new()
 	_viewport.add_child(_stage)
+	# A real place, not a set: sky, ground and haze are one world (each house's
+	# land is dressed in _dress_stage), lit by a low warm sun.
 	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	# A torchlit hall, not a cellar: warm dark behind, enough light to see a face.
-	env.background_color = Color(0.075, 0.06, 0.05)
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.42, 0.36, 0.3)
-	env.ambient_light_energy = 0.75
+	env.background_mode = Environment.BG_SKY
+	env.sky = Sky.new()
+	env.sky.sky_material = ProceduralSkyMaterial.new()
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	env.ambient_light_energy = 0.9
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
 	env.fog_enabled = true
-	env.fog_light_color = Color(0.14, 0.11, 0.08)
-	env.fog_density = 0.03
+	env.fog_density = 0.006
+	env.fog_aerial_perspective = 0.45  # the far land takes the sky's colour, as distance does
+	env.fog_sky_affect = 0.4
 	env.glow_enabled = true
-	env.glow_intensity = 0.35
+	env.glow_intensity = 0.25
 	env.ssao_enabled = true
 	var we := WorldEnvironment.new()
 	we.environment = env
+	_env = env
 	_stage.add_child(we)
 	_cam = Camera3D.new()
 	_cam.fov = 38.0
+	_cam.far = 400.0
 	_stage.add_child(_cam)
 	_cam.current = true
-	# Stone underfoot, fading into the dark.
-	var ground := MeshInstance3D.new()
-	var disc := CylinderMesh.new()
-	disc.top_radius = 6.0
-	disc.bottom_radius = 6.0
-	disc.height = 0.1
-	ground.mesh = disc
-	ground.position.y = -0.05
-	var stone := StandardMaterial3D.new()
-	var tex_path: String = preload("res://scripts/terrain.gd").art("res://assets/ground/square-cobbles.jpg", "res://assets/village/T_UnevenBrick_BaseColor.png")
-	if ResourceLoader.exists(tex_path):
-		stone.albedo_texture = load(tex_path)
-	stone.uv1_scale = Vector3(6, 6, 6)
-	stone.albedo_color = Color(0.6, 0.56, 0.52)
-	stone.roughness = 0.9
-	ground.material_override = stone
-	_stage.add_child(ground)
-	# A warm key from the torches, a cool rim from a high window behind.
-	for side in [-1, 1]:
-		var torch := OmniLight3D.new()
-		torch.light_color = Color(1.0, 0.62, 0.3)
-		torch.omni_range = 7.0
-		torch.shadow_enabled = side == 1
-		torch.position = Vector3(1.7 * side, 2.2, 0.9)
-		_stage.add_child(torch)
-		_torches.append(torch)
-		var flame := _flame()
-		flame.position = torch.position
-		_stage.add_child(flame)
-	# A soft key from the front, as from a brazier at the viewer's side: the face
-	# and clothes read; the torches still warm the edges.
-	var key := DirectionalLight3D.new()
-	key.light_color = Color(1.0, 0.86, 0.7)
-	key.light_energy = 0.8
-	key.rotation = Vector3(deg_to_rad(-25), deg_to_rad(-20), 0)
-	_stage.add_child(key)
-	var rim := DirectionalLight3D.new()
-	rim.light_color = Color(0.55, 0.65, 0.85)
-	rim.light_energy = 0.9
-	rim.rotation = Vector3(deg_to_rad(-35), deg_to_rad(160), 0)
-	_stage.add_child(rim)
+	# The ground, wide enough to meet the haze; its look is the house's land.
+	_ground = MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(240, 240)
+	_ground.mesh = plane
+	_stage.add_child(_ground)
+	_sun = DirectionalLight3D.new()
+	_sun.shadow_enabled = true
+	_sun.directional_shadow_max_distance = 40.0
+	_sun.rotation = Vector3(deg_to_rad(-22), deg_to_rad(-40), 0)  # low, from the left and a little behind the viewer
+	_stage.add_child(_sun)
+	var fill := DirectionalLight3D.new()
+	fill.light_color = Color(0.7, 0.75, 0.9)
+	fill.light_energy = 0.35
+	fill.rotation = Vector3(deg_to_rad(-30), deg_to_rad(150), 0)
+	_stage.add_child(fill)
+
+
+var _env: Environment
+var _ground: MeshInstance3D
+var _sun: DirectionalLight3D
+var _trees: Node = null  # forest.gd, for its tree meshes in metres
+
+## Each house's land as you'd stand in it: ground texture, its trees, its sky.
+const LANDS := {
+	"wolfholt": {"ground": "snow", "trees": "pine", "sky": Color(0.52, 0.62, 0.78), "horizon": Color(0.82, 0.84, 0.88), "sun": Color(1.0, 0.86, 0.72)},
+	"highfell": {"ground": "rock", "trees": "pine", "sky": Color(0.42, 0.56, 0.78), "horizon": Color(0.78, 0.8, 0.84), "sun": Color(1.0, 0.9, 0.78)},
+	"ironreach": {"ground": "rock", "trees": "pine", "sky": Color(0.45, 0.52, 0.6), "horizon": Color(0.7, 0.72, 0.74), "sun": Color(0.95, 0.88, 0.8)},
+	"stormhold": {"ground": "grass", "trees": "pine", "sky": Color(0.42, 0.48, 0.58), "horizon": Color(0.72, 0.72, 0.7), "sun": Color(1.0, 0.84, 0.7)},
+	"goldcrest": {"ground": "grass", "trees": "oak", "sky": Color(0.45, 0.6, 0.82), "horizon": Color(0.95, 0.82, 0.62), "sun": Color(1.0, 0.8, 0.55)},
+	"thornvale": {"ground": "grass", "trees": "oak", "sky": Color(0.42, 0.6, 0.85), "horizon": Color(0.9, 0.84, 0.7), "sun": Color(1.0, 0.85, 0.62)},
+	"sunspire": {"ground": "sand", "trees": "", "sky": Color(0.5, 0.62, 0.82), "horizon": Color(0.98, 0.82, 0.6), "sun": Color(1.0, 0.78, 0.5)},
+	"crown": {"ground": "grass", "trees": "oak", "sky": Color(0.44, 0.6, 0.84), "horizon": Color(0.95, 0.84, 0.66), "sun": Color(1.0, 0.82, 0.58)},
+}
 
 
 func _flame() -> Node3D:
@@ -219,25 +216,63 @@ func _dress_stage(house: Dictionary, family: Dictionary) -> void:
 		if n.is_in_group("hero_dressing"):
 			n.queue_free()
 	var col := Color.from_string(String(house.get("color", "#8a6d3b")), Color(0.55, 0.42, 0.25))
-	# Their own house behind them: its painting (the intro's, briefed for Codex),
-	# else the game's own still of its seat, as a backdrop that always faces the
-	# camera; with neither, the torchlit hall alone.
-	var art := _backdrop_of(house)
-	if art != "":
-		var quad := MeshInstance3D.new()
-		var plane := QuadMesh.new()
-		plane.size = Vector2(16.0, 9.0)
-		quad.mesh = plane
-		var m := StandardMaterial3D.new()
-		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		m.albedo_texture = load(art)
-		m.albedo_color = Color(0.62, 0.58, 0.54)  # dimmed, so the person and the card stay first
-		m.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-		m.disable_fog = true
-		quad.material_override = m
-		quad.position = Vector3(0, 3.2, -7.5)
-		quad.add_to_group("hero_dressing")
-		_stage.add_child(quad)
+	# Their own land around them: its ground, sky, trees and, far off, a castle.
+	var who := "crown" if house.get("crown", false) else String(house.get("key", house.get("name", ""))).trim_prefix("House ").to_lower()
+	var land: Dictionary = LANDS.get(who, LANDS["thornvale"])
+	var sky: ProceduralSkyMaterial = _env.sky.sky_material
+	sky.sky_top_color = land["sky"]
+	sky.sky_horizon_color = land["horizon"]
+	sky.ground_horizon_color = land["horizon"]
+	sky.ground_bottom_color = land["horizon"].darkened(0.4)
+	_env.fog_light_color = land["horizon"]
+	_sun.light_color = land["sun"]
+	_sun.light_energy = 1.35
+	var g := StandardMaterial3D.new()
+	var tex := "res://assets/ground/%s-albedo.jpg" % land["ground"]
+	if ResourceLoader.exists(tex):
+		g.albedo_texture = load(tex)
+	var nrm := "res://assets/ground/%s-normal.jpg" % land["ground"]
+	if ResourceLoader.exists(nrm):
+		g.normal_enabled = true
+		g.normal_texture = load(nrm)
+	g.uv1_scale = Vector3(60, 60, 60)
+	g.roughness = 0.95
+	_ground.material_override = g
+	if String(land["trees"]) != "" and preload("res://scripts/forest.gd").available():
+		if _trees == null:
+			_trees = preload("res://scripts/forest.gd").new()
+			_trees._load()
+		var pool: Array = []
+		var lo: int = 0 if land["trees"] == "pine" else _trees.OAK_FIRST
+		var hi: int = _trees.OAK_FIRST if land["trees"] == "pine" else mini(_trees._full.size(), _trees.OAK_FIRST + 7)
+		for i in range(lo, hi):
+			if i < _trees._full.size() and _trees._full[i] != null:
+				pool.append(_trees._full[i])
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash(who)
+		for i in 90:
+			if pool.is_empty():
+				break
+			# A wood behind and to the sides, never between them and you.
+			var ang := rng.randf_range(-2.4, 2.4)
+			var dist := rng.randf_range(18.0, 70.0)  # a wood at a distance: its edge, not single trees up close
+			var at := Vector3(sin(ang) * dist, 0, -cos(ang) * dist)
+			if at.z > -12.0:
+				continue
+			var t := MeshInstance3D.new()
+			t.mesh = pool[rng.randi() % pool.size()]
+			t.position = at
+			t.rotation.y = rng.randf() * TAU
+			t.scale = Vector3.ONE * rng.randf_range(0.8, 1.2)
+			t.add_to_group("hero_dressing")
+			_stage.add_child(t)
+	var castle: Node3D = preload("res://scripts/realistic.gd").make("medieval_castle")
+	if castle:
+		castle.scale = Vector3.ONE / preload("res://scripts/realistic.gd").S  # its real size, in metres
+		castle.position = Vector3(-20, 0, -85)  # off to the left, clear of the card
+		castle.rotation.y = deg_to_rad(200)
+		castle.add_to_group("hero_dressing")
+		_stage.add_child(castle)
 	# The house's banner hangs behind them, a little off to one side; one of a
 	# lesser family stands between their own banner and their liege's.
 	for x in [-1.3, 1.3]:
@@ -351,7 +386,7 @@ func _build_panel() -> void:
 	_panel.anchor_right = 1.0
 	_panel.anchor_top = 0.0
 	_panel.anchor_bottom = 0.0  # as tall as what it says (_fit_panel), never a long empty card
-	_panel.offset_left = -440  # room for a name and Edit on one line
+	_panel.offset_left = -480  # room for a name and Edit on one line
 	_panel.offset_right = -24
 	_panel.offset_top = 24
 	_panel.offset_bottom = 24
@@ -380,6 +415,9 @@ func _fill_panel(p: Dictionary, house: Dictionary) -> void:
 	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	v.add_theme_constant_override("separation", 10)
 	scroll.add_child(v)
+	# As tall as everything in it once the words have wrapped, up to the screen's
+	# height; it measures again whenever its content grows.
+	v.minimum_size_changed.connect(func(): _fit_panel(scroll, v))
 	_fit_panel.call_deferred(scroll, v)
 	# Their arms beside their name: a lesser family's own, their liege's smaller.
 	var family := _family(p, house)
@@ -400,9 +438,14 @@ func _fill_panel(p: Dictionary, house: Dictionary) -> void:
 		house_line = "The %s family  ·  sworn to %s" % [String(family["name"]).trim_prefix("House "), house_line.replace("House ", "")]
 	var hl := T.label(house_line)
 	hl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	names.add_child(hl)
-	var title := T.title(String(p.get("name", "")), 26)
-	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var head_row := HBoxContainer.new()  # the house line, and Edit at its end: the name below gets the full width
+	names.add_child(head_row)
+	head_row.add_child(hl)
+	var title := T.title(String(p.get("name", "")), 24)
+	title.autowrap_mode = TextServer.AUTOWRAP_OFF  # one line beside Edit
+	title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	title.clip_text = true
 	# Their first name is yours to change: Edit turns the name itself into the
 	# field, full width; Enter keeps it, Esc leaves it. The realm keeps its own
 	# underneath, and every page and line uses yours.
@@ -422,7 +465,7 @@ func _fill_panel(p: Dictionary, house: Dictionary) -> void:
 		edit_b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		edit_b.add_theme_color_override("font_color", T.TEXT_3)
 		edit_b.add_theme_font_size_override("font_size", T.SIZE_DESC)
-		title_row.add_child(edit_b)
+		head_row.add_child(edit_b)
 		var field := LineEdit.new()
 		field.visible = false
 		field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -513,8 +556,7 @@ func _fill_panel(p: Dictionary, house: Dictionary) -> void:
 
 ## The card as tall as what it says, up to the screen's height (then it scrolls).
 func _fit_panel(scroll: ScrollContainer, v: Control) -> void:
-	await get_tree().process_frame
-	if not is_instance_valid(v):
+	if not is_instance_valid(v) or not v.is_inside_tree():
 		return
 	var room := get_viewport().get_visible_rect().size.y - 48.0 - 52.0
 	scroll.custom_minimum_size.y = minf(v.get_combined_minimum_size().y, room)

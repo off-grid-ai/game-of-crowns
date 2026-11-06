@@ -337,6 +337,9 @@ func _ready() -> void:
 	lore.fetch_written = bridge.lore_written
 	lore.rename_name = bridge.rename
 	hero.rename_name = bridge.rename
+	var figures: Node = preload("res://scripts/portrait.gd").new()
+	add_child(figures)
+	lore.portrait = figures.request
 	hero.name_changed.connect(lore.refresh)
 	add_child(title)
 	title.began.connect(func(): _intro_due = true)

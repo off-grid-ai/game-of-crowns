@@ -31,6 +31,7 @@ const MAP := -4  # the map of Aldmere as every chronicle finds it
 var fetch_map := Callable()  # (cb) -> void: asks the bridge for /lore/map
 var fetch_written := Callable()  # (cb) -> void: the book as written (/lore?as=written)
 var rename_name := Callable()  # (from, to, cb) -> void: the player's own name for a word
+var portrait := Callable()  # (person, house, cb(texture)) -> void: their figure (portrait.gd)
 var _map := {}
 var _mark := ""  # the town the map was opened on, ringed in gold
 
@@ -525,9 +526,24 @@ func _person(p: Dictionary, h: Dictionary, into: Node = null) -> void:
 	sb.set_content_margin_all(16)
 	card.add_theme_stylebox_override("panel", sb)
 	(into if into else _page).add_child(card)
+	# The person standing, head to foot, beside their words: who they are at a glance.
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+	card.add_child(row)
+	if portrait.is_valid():
+		var figure := TextureRect.new()
+		figure.custom_minimum_size = Vector2(75, 120)
+		figure.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		figure.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		figure.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		row.add_child(figure)
+		portrait.call(p, h, func(tex):
+			if is_instance_valid(figure):
+				figure.texture = tex)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 4)
-	card.add_child(v)
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(v)
 	var top := HBoxContainer.new()
 	v.add_child(top)
 	top.add_theme_constant_override("separation", 10)
