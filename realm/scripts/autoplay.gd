@@ -88,6 +88,13 @@ func _play(quit_after: bool) -> void:
 					e.factor = 1.0
 					Input.parse_input_event(e)
 					await get_tree().create_timer(0.12).timeout
+			"fill":
+				# fill <text>: the first visible multi-line box takes this text (a test aid for forms).
+				var said := " ".join(w.slice(1))
+				for te in get_tree().root.find_children("*", "TextEdit", true, false):
+					if (te as TextEdit).is_visible_in_tree():
+						(te as TextEdit).text = said
+						break
 			"hold":
 				_action(w[1], true)
 				await get_tree().create_timer(float(w[2])).timeout

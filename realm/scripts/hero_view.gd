@@ -156,6 +156,7 @@ var _env: Environment
 var _ground: MeshInstance3D
 var _sun: DirectionalLight3D
 var _trees: Node = null  # forest.gd, for its tree meshes in metres
+var _fine_pines: Array = []  # the pine pack at its finest, for trees seen this close
 
 ## Each house's land as you'd stand in it: ground texture, its trees, its sky.
 const LANDS := {
@@ -245,11 +246,21 @@ func _dress_stage(house: Dictionary, family: Dictionary) -> void:
 			_trees = preload("res://scripts/forest.gd").new()
 			_trees._load()
 		var pool: Array = []
+		# Close enough to see, the pack's finest level of each tree: fuller crowns.
+		if land["trees"] == "pine" and _fine_pines.is_empty():
+			var scene: Node = (load(_trees.PACK) as PackedScene).instantiate()
+			for kind in _trees.KINDS:
+				var m: ArrayMesh = _trees._merge(scene, kind + "_LOD0")
+				if m:
+					_fine_pines.append(m)
+			scene.free()
+		pool.append_array(_fine_pines if land["trees"] == "pine" else [])
 		var lo: int = 0 if land["trees"] == "pine" else _trees.OAK_FIRST
 		var hi: int = _trees.OAK_FIRST if land["trees"] == "pine" else mini(_trees._full.size(), _trees.OAK_FIRST + 7)
-		for i in range(lo, hi):
-			if i < _trees._full.size() and _trees._full[i] != null:
-				pool.append(_trees._full[i])
+		if pool.is_empty():
+			for i in range(lo, hi):
+				if i < _trees._full.size() and _trees._full[i] != null:
+					pool.append(_trees._full[i])
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash(who)
 		for i in 90:
@@ -268,6 +279,26 @@ func _dress_stage(house: Dictionary, family: Dictionary) -> void:
 			t.scale = Vector3.ONE * rng.randf_range(0.8, 1.2)
 			t.add_to_group("hero_dressing")
 			_stage.add_child(t)
+	# Low hills all round, far off in the haze, so the land rolls away instead of
+	# ending in a ruled line at the sky.
+	var hrng := RandomNumberGenerator.new()
+	hrng.seed = hash(who + "hills")
+	for i in 14:
+		var hill := MeshInstance3D.new()
+		var dome := SphereMesh.new()
+		dome.radius = 1.0
+		dome.height = 2.0
+		dome.radial_segments = 24
+		dome.rings = 12
+		hill.mesh = dome
+		hill.material_override = g
+		var ang := (float(i) / 14.0) * TAU + hrng.randf_range(-0.2, 0.2)
+		var far := hrng.randf_range(110.0, 170.0)
+		hill.position = Vector3(sin(ang) * far, -6.0, -cos(ang) * far)
+		hill.scale = Vector3(hrng.randf_range(45.0, 80.0), hrng.randf_range(10.0, 22.0), hrng.randf_range(30.0, 50.0))
+		hill.rotation.y = ang
+		hill.add_to_group("hero_dressing")
+		_stage.add_child(hill)
 	var castle: Node3D = preload("res://scripts/realistic.gd").make("medieval_castle")
 	if castle:
 		castle.scale = Vector3.ONE / preload("res://scripts/realistic.gd").S  # its real size, in metres
@@ -405,6 +436,7 @@ func _build_panel() -> void:
 
 func _fill_panel(p: Dictionary, house: Dictionary, editing := false) -> void:
 	for c in _panel.get_children():
+		_panel.remove_child(c)  # out of the card's measure at once, so it shrinks to what's new
 		c.queue_free()
 	var pad := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
