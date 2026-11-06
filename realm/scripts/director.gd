@@ -5,7 +5,7 @@ extends Node
 ## With nothing happening, it drifts slowly between towns. Any click, key or
 ## scroll hands the camera straight back to you.
 
-const IDLE_SECONDS := 30.0
+const IDLE_SECONDS := 90.0  # truly left alone: never while the King reads or moves the mouse
 const SHOT_SECONDS := 18.0
 # Scene kind -> [interest, camera distance, caption]. Anything that moves along a
 # road is filmed from well above the trees (9), never from inside a forest canopy.
@@ -38,6 +38,9 @@ var _last_key := ""
 
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion and not active:
+		_idle = 0.0  # a hand on the mouse is a King at the table, not an idle one
+		return
 	if event is InputEventMouseButton or event is InputEventKey or event is InputEventMagnifyGesture or event is InputEventPanGesture:
 		_idle = 0.0
 		_clear_view(false)  # the King moves: his panels come back
@@ -58,6 +61,10 @@ func _process(delta: float) -> void:
 	if world.is_empty() or rig == null:
 		return
 	if not active:
+		# Reading a card (the court, the Hand, a town, the ledger) is not being idle.
+		if ui and ui.has_method("reading") and ui.reading():
+			_idle = 0.0
+			return
 		_idle += delta
 		if _idle >= IDLE_SECONDS:
 			start()

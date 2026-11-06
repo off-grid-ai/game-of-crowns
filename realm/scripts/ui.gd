@@ -572,6 +572,9 @@ func _build_top_bar() -> void:
 	_court_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_court_btn.add_child(_court_badge)
 	act.add_child(_named(_court_btn, "Court"))
+	# The Hand's counsel, called back or put away: put aside with Later, it is
+	# never out of reach.
+	act.add_child(_named(_icon_btn("scales", _with_key("The Hand of the King: his counsel", "counsel"), _toggle_counsel), "Hand"))
 	# You are the King: one press to walk among your people as him.
 	if Features.WALKING:
 		var walk := _btn("Walk as the King", func(): walk_as_king.emit())
@@ -637,6 +640,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	elif event.is_action_pressed(&"houses"):
 		_houses_btn.button_pressed = not _houses_btn.button_pressed
 		_houses_panel.visible = _houses_btn.button_pressed
+	elif event.is_action_pressed(&"counsel"):
+		_toggle_counsel()
 	elif event.is_action_pressed(&"chronicle"):
 		_chron_btn.button_pressed = not _chron_btn.button_pressed
 		_chron_panel.visible = _chron_btn.button_pressed
@@ -928,6 +933,7 @@ func _build_court() -> void:
 
 func _process(delta: float) -> void:
 	_reveal_pad(delta)
+	_catch_up()
 	# The houses table sits under the date card however tall it grows (the
 	# story's line and its bar make it taller), never over it.
 	if _date_pill and _houses_panel:
@@ -1576,8 +1582,8 @@ func _fit_centre(panel: Control, widest: float) -> void:
 ## Something worth seeing has begun (your convoy on the road, a battle, a
 ## story's turn): a line under the top bar with a Watch button, for a while.
 func offer_watch(text: String, go: Callable) -> void:
-	if _cinema_on:
-		return  # one scene at a time: no new offers while the King is watching
+	if _cinema_on or busy():
+		return  # one scene at a time, and nothing new while he's using a card
 	if _offer:
 		_offer.queue_free()
 	_offer = _glass_panel()
@@ -1749,6 +1755,60 @@ var _counsel_matters := ""  # what the Hand is advising on now, by its headings
 var _counsel_aside := ""  # what the King put aside (Later): the card waits until the matters change
 
 
+# --- the King at work: nothing jumps in or out while he's using a card ---------
+var _touched := -100000  # when he last clicked a card (msec)
+var _held_counsel = null  # the Hand's newest matters, waiting until he's done
+var _held_court := false  # a new petitioner arrived while he was busy
+
+
+func _input(e: InputEvent) -> void:
+	if e is InputEventMouseButton and e.pressed and get_viewport().gui_get_hovered_control() != null:
+		_touched = Time.get_ticks_msec()
+
+
+## He's using a card: the pointer is on one, or he clicked one a moment ago.
+func busy() -> bool:
+	return Time.get_ticks_msec() - _touched < 6000 or get_viewport().gui_get_hovered_control() != null
+
+
+## What waited while he was busy, put on screen once he's done.
+func _catch_up() -> void:
+	if busy():
+		return
+	if _held_counsel != null:
+		var items: Array = _held_counsel
+		_held_counsel = null
+		_show_counsel(items)
+	if _held_court:
+		_held_court = false
+		if _court_panel.visible:
+			_show_audience()
+
+
+## A card is open that the King is reading (the director waits for him).
+func reading() -> bool:
+	for p in [_court_panel, _town_panel, _counsel, _ledger_panel, _digest_panel, _house_panel, _folk_panel]:
+		if p and is_instance_valid(p) and p.visible:
+			return true
+	return false
+
+
+## The Hand's card back (the court or a town's card stepping aside for it), or put away.
+func _toggle_counsel() -> void:
+	if _counsel and _counsel.visible:
+		_counsel_aside = _counsel_matters
+		return
+	_counsel_aside = ""
+	if _court_panel.visible:
+		_court_hidden = true
+		_court_panel.visible = false
+	_town_panel.visible = false
+	if _ledger_panel and _ledger_panel.visible:
+		_ledger_panel.visible = false
+		if _ledger_btn:
+			_ledger_btn.set_pressed_no_signal(false)
+
+
 func _show_counsel(items: Array) -> void:
 	# A war the King sat out stays off the card for a year (four seasons of play).
 	items = items.filter(func(it):
@@ -1758,9 +1818,13 @@ func _show_counsel(items: Array) -> void:
 				return false
 		return true)
 	var sig := JSON.stringify(items) + "|" + str(_purse)  # what the treasury can pay for changes the buttons too
-	_counsel_matters = JSON.stringify(items.map(func(it): return String(it.get("text", ""))))
 	if sig == _counsel_sig and _counsel:
 		return
+	# Mid-decision, the card he's using stays as it is; the update waits.
+	if busy() and _counsel and _counsel.visible:
+		_held_counsel = items
+		return
+	_counsel_matters = JSON.stringify(items.map(func(it): return String(it.get("text", ""))))
 	_counsel_sig = sig
 	if _counsel:
 		_counsel.queue_free()
@@ -2385,6 +2449,8 @@ func set_court(petitions: Array) -> void:
 		_court_panel.visible = false
 	elif _cinema_on:
 		pass  # the court waits while the King watches a scene
+	elif busy():
+		_held_court = true  # he's using a card: the newcomer waits on the badge, nothing swaps under him
 	elif not _court_hidden or not _court_met:
 		# The first petitioner of a sitting is brought straight in: a new King
 		# meets his court at once, then the badge and the Hand call him back.
