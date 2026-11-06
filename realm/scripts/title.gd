@@ -297,7 +297,6 @@ func show_new() -> void:
 		card.toggle_mode = true
 		card.button_pressed = name == _preset
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		card.custom_minimum_size.y = 140
 		card.pressed.connect(_use_preset.bind(String(name)))
 	# How long a sitting: whatever the story, every player chooses it, so it
 	# stands up here rather than among the customised choices.
@@ -1331,8 +1330,19 @@ func _text_card(text: String, parent: Control) -> Button:
 		var c: Color = b.get_theme_color(key)
 		head.add_theme_color_override("font_color", c)
 		body.add_theme_color_override("font_color", c if b.button_pressed else c.darkened(0.18)))
-	# As tall as its words once it knows its width.
-	box.resized.connect(func(): b.custom_minimum_size.y = maxf(72.0, box.get_combined_minimum_size().y + 24.0))
+	# As tall as its words at the card's real width, measured with the fonts
+	# themselves (a label's own measure, taken before its width is known, made
+	# cards tower and stay that way). Depends on the width only, so it settles.
+	b.resized.connect(func():
+		var w := b.size.x - 28.0
+		if w < 40.0:
+			return
+		var h := _semibold().get_multiline_string_size(head.text, HORIZONTAL_ALIGNMENT_LEFT, w, 16).y
+		if body.visible:
+			h += 4.0 + body.get_theme_font("font").get_multiline_string_size(body.text, HORIZONTAL_ALIGNMENT_LEFT, w, 14).y
+		var want := maxf(72.0, ceilf(h) + 26.0)
+		if absf(b.custom_minimum_size.y - want) > 1.0:
+			b.custom_minimum_size.y = want)
 	return b
 
 
