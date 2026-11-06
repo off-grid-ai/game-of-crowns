@@ -14,14 +14,16 @@ Study and scores: [STUDY.md](STUDY.md), [RUBRIC.md](RUBRIC.md). Nothing here has
 
 | Option | Title | Score /8 |
 |---|---|---|
-| **A (recommended)** | Game of Crowns, a free medieval grand strategy where you're the king but can't move a single soldier | 8 |
+| **C (recommended)** | Game of Crowns, a medieval grand strategy where history names you for how you ruled | 8 |
+| A | Game of Crowns, a free medieval grand strategy where you're the king but can't move a single soldier | 8 |
+| Mac's line | A medieval kingdom sim where history names you for how you ruled | 6 |
 | B | You're the king, seven great houses want your throne, and you can't move a single soldier | 6 |
 
-A wins because the mods remove anything they don't read as 4X or 4X-adjacent, and A says "grand strategy" before anything else. B is the better hook for a general crowd, but it never names the genre.
+C is Mac's line, wearing the name and the genre this sub's mods look for. The mods remove anything they don't read as 4X or 4X-adjacent, and their megathread list is "grand strategy or HoMM-like", so "kingdom sim" alone loses a point. C ties A on score, carries Mac's value line, and doesn't lean on "can't move a single soldier", which someone should check against the "Raise the royal levy" choice before it's used anywhere.
 
 ## The entry (paste as plain text, attach the image)
 
-Game of Crowns, a free medieval grand strategy where you're the king but can't move a single soldier.
+Game of Crowns, a medieval grand strategy where history names you for how you ruled.
 
 Seven great houses want your throne, and all you've got to hold it is grain, gold, marriages and your word at court. Every choice you make lands on one of those houses. Side against Gareth Varn's house in a war, and ten years later he stands up in front of the whole court and tells you to your face: "10 years ago, in the spring of 315, you took our enemy's side in war." Then you decide whether to make amends, hear him out, or tell him the crown did what it must.
 
@@ -44,7 +46,7 @@ If you play a reign, tell me which house came for the throne first.
 | Planned | Now | Why |
 |---|---|---|
 | A standalone thread on Tue 17 Nov | A megathread comment on a Saturday | The self-promotion rule since Oct 2026, with a permanent-ban warning |
-| Title: "You can't move a single soldier. How many levers does a ruler need?" | Title A | Generic design questions that hide a game all scored 0 here and got called ads ("Is this... an ad??") |
+| Title: "You can't move a single soldier. How many levers does a ruler need?" | Title C | Generic design questions that hide a game all scored 0 here and got called ads ("Is this... an ad??") |
 | "I'm building a medieval sim where six noble houses run themselves" | Seven houses, the Gareth Varn moment, no "run themselves" | Seven is the current count; Mac's voice rule bans lines about how the sim works; one real moment beats a description |
 | Link in brackets at the end, "if you want to see where I landed" | The link stated plainly with price and platform | The megathread asks for the game outright, and hedging reads as a disguised ad |
 | Three images: the adviser, a marriage, a town | One map screen | The map makes the 4X case; megathread comments take one image |

@@ -66,6 +66,20 @@ Keep T1, T2, P1, P3, P4 and P5. Winners now average **10.4** (range 8 to 12), fl
 | Draft, title A, with the hook clip | 2 | 2 | 2 | 2 | 2 | 2 | **12** | Names the fantasy first, native video, free |
 | Draft, title B, with the hook clip | 2 | 1 | 2 | 2 | 2 | 2 | **11** | A stronger story hook, but it never says you're the king |
 
-On the version 1 scale (out of 16) the three score 13, 16 and 15.
+| Draft, Mac's line ("A medieval kingdom sim where history names you for how you ruled"), with the hook clip | 2 | 2 | 2 | 2 | 2 | 2 | **12** | Names the fantasy and the payoff (who you become). "Kingdom sim" is exactly the sub's own language. |
 
-**Recommendation: title A, posted as a native video.** The planned post also breaks two of Mac's voice rules (a line about how the game works, and "I made" in the title), which the rubric doesn't score but the draft fixes.
+On the version 1 scale (out of 16) the four score 13, 16, 15 and 16.
+
+**Recommendation: Mac's line, posted as a native video.** It ties A at the top, it's the line Mac picked for Hacker News, and it doesn't lean on "can't move a single soldier", which needs checking against the "Raise the royal levy" choice in the game.
+
+## Does the Hacker News finding hold here?
+
+On HN, titles separated winners from flops and post bodies barely did (docs/buzz/hn/RUBRIC.md). **Here it mostly holds**, with thin evidence:
+
+| Part | Winners | Flops | Gap (share of scale) | Best cut sorts |
+|---|---|---|---|---|
+| Title (v2: T1, T2, out of 4) | 3.4 | 2.0 | 34% | 15 of 20 |
+| Post (v2: P1, P3 to P5, out of 8) | 7.0 | 5.2 | 22% | 15 of 20 |
+| Body text alone (v1 P2) | 0.6 | 1.2 | points the wrong way | |
+
+The title carries more of the gap than the post does, and the written body predicts nothing (winners often had none, and let the video talk). Both halves sort only 15 of 20, though, because scores this small are mostly chance. One difference from HN: the media matters a lot here. Every winner was a native video. The planned post also breaks two of Mac's voice rules (a line about how the game works, and "I made" in the title), which the rubric doesn't score but the draft fixes.

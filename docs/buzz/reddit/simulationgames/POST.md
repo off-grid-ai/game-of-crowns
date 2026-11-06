@@ -15,10 +15,11 @@ Study and scores: [STUDY.md](STUDY.md), [RUBRIC.md](RUBRIC.md). Nothing here has
 
 | Option | Title | Score (v2, /12) |
 |---|---|---|
-| **A (recommended)** | You're the king, seven great houses want your throne, and you can't move a single soldier | 12 |
+| **Mac's line (recommended)** | A medieval kingdom sim where history names you for how you ruled | 12 |
+| A | You're the king, seven great houses want your throne, and you can't move a single soldier | 12 |
 | B | Side against a lord's house in a war, and ten years later he brings it up in front of your whole court | 11 |
 
-A names the fantasy in the first three words, which is what the winning sim titles do ("run a tattoo removal clinic", "my own mall game"). B is the more curious line and pairs well with the clip, but it never says you're the king.
+Mac's line and A tie. Both name the fantasy, which is what the winning sim titles do ("run a tattoo removal clinic", "my own mall game"). Mac's line wins the tie: it says who you become, it matches the Hacker News post, and it uses the sub's own word, "sim". A leans on "can't move a single soldier", which someone should check against the "Raise the royal levy" choice before it's used. B is the most curious line and pairs well with the clip, but it never says you're the king.
 
 ## The post (paste as plain text under the video)
 
@@ -41,7 +42,7 @@ Which sim made you care what happened to the people in it?
 
 | Planned | Now | Why |
 |---|---|---|
-| Title: "In most world sims, wars are dice rolls. I made one where the lords remember what you did." | Title A | It names a mechanic, not the fantasy. Mac's voice rules ban "the lords remember" lines and opening with "I made". |
+| Title: "In most world sims, wars are dice rolls. I made one where the lords remember what you did." | Mac's line | It names a mechanic, not the fantasy. Mac's voice rules ban "the lords remember" lines and opening with "I made". |
 | "Great houses run themselves in my game: they farm, starve, marry..." | Starts from what the player holds: grain, gold, marriages, word at court | Bans lines about how the world works; says what the player gets |
 | Three stills, with the clip only "if it's out" | The 27-second hook clip as a native video | The clip exists now, and video is the one thing every winner shared |
 | "years later its lord stands up at court and names the season and year" | The real line from the clip, with Gareth Varn's name and the year 315 | Real beats described |

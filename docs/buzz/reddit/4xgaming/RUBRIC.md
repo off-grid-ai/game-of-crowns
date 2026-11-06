@@ -86,4 +86,18 @@ Per-criterion gap (winner mean minus flop mean):
 | Draft, title A, in the megathread | 8 | 11 | **19** | Says "grand strategy" first, one real moment, free and open source, plain voice. One image only, because it's a comment (P1 = 1). |
 | Draft, title B, in the megathread | 6 | 11 | **17** | A stronger hook but no genre word, so a higher removal risk |
 
-**Recommendation: title A, as a megathread comment.**
+| Draft, Mac's line ("A medieval kingdom sim where history names you for how you ruled") | 6 | 11 | **17** | The strongest value in any candidate (who you become), but "kingdom sim" isn't on the megathread's list ("4X or 4X-adjacent: grand strategy or HoMM-like"), so T2 = 1; it also doesn't name the game, so T4 = 1 |
+| Draft, title C (Mac's line with the name and genre) | 8 | 11 | **19** | "Game of Crowns, a medieval grand strategy where history names you for how you ruled" |
+
+**Recommendation: title C, as a megathread comment.** It ties A on score, keeps Mac's line and the value it carries, and passes the genre gate. It also drops "can't move a single soldier", which needs checking against the "Raise the royal levy" choice on the map screen.
+
+## Does the Hacker News finding hold here?
+
+On HN, post bodies barely separated winners from flops, and titles did (docs/buzz/hn/RUBRIC.md). **In r/4Xgaming it's the other way round.** On the 19 scored posts:
+
+| Part | Winners | Flops | Gap (share of scale) | Best cut sorts |
+|---|---|---|---|---|
+| Title (T1 to T4, out of 8) | 7.2 | 4.7 | 32% | 16 of 19 |
+| Post (P1 to P6, out of 12) | 9.8 | 4.6 | 43% | 17 of 19 |
+
+The post separates them more, because this crowd reads the body and judges it: the AI-sounding prose (P3, the biggest single gap at +1.3) and the media (P1, +1.2). Two flops had titles as good as the winners' (the 4-hour post scored 8/8 on its title) and died on a body that read AI-written. One part of the HN result does carry over: a value or curiosity title beats a genre label (T1 +0.8), and AI in the title is fatal (T3).
