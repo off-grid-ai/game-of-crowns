@@ -83,7 +83,8 @@
   "name": "Lore: the map",
   "group": "Lore of Aldmere",
   "what": "The painted map: hover a town, click a seat",
-  "file": "screens/lore-map.jpg"
+  "file": "screens/lore-map.jpg",
+  "before": "screens/before/lore-map.jpg"
  },
  {
   "id": "lore-house",
@@ -104,7 +105,8 @@
   "name": "Character close-up",
   "group": "Lore of Aldmere",
   "what": "Meet: a lord in front of their house's backdrop",
-  "file": "screens/lore-person.jpg"
+  "file": "screens/lore-person.jpg",
+  "before": "screens/before/lore-person.jpg"
  },
  {
   "id": "intro",
@@ -139,9 +141,9 @@
  },
  {
   "id": "town",
-  "name": "A town",
+  "name": "Kingsmere",
   "group": "Play",
-  "what": "A town framed from above",
+  "what": "Your seat, its castle in daylight",
   "file": "screens/town.jpg",
   "before": "screens/before/town.jpg"
  },
