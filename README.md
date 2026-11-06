@@ -1,10 +1,24 @@
 # Game of Crowns
 
+![The empty throne of Aldmere, the seven houses' banners down the hall](docs/play/v05/throne.jpg)
+
 **A free medieval kingdom sim where every lord remembers what you did.**
 
 You're the King of Aldmere. Seven great houses grow their towns, marry, scheme and go to war whether you're watching or not. You keep them loyal with grain, gold, decrees and judgement at court, and they keep score. Tax a house too hard and, years later, its lord brings it up in front of the whole court.
 
 **Download:** free, nothing locked, for Macs with Apple Silicon, from [Releases](https://github.com/off-grid-ai/game-of-crowns/releases). Windows is coming. Want the lords to plead, scheme and threaten you in their own words? Run [Off Grid AI](https://getoffgridai.co/desktop) alongside it. It's free and runs on your Mac.
+
+[![Watch the 27-second trailer: Gareth Varn reminds the King of a war ten years gone](docs/play/v05/hook.gif)](https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4)
+*Watch the trailer (27 seconds). A lord brings up what you did ten years ago, in front of the whole court.*
+
+## Seven houses, one throne
+
+| | | | |
+| --- | --- | --- | --- |
+| ![House Wolfholt](docs/play/v05/house_wolfholt.jpg) | ![House Goldcrest](docs/play/v05/house_goldcrest.jpg) | ![House Thornvale](docs/play/v05/house_thornvale.jpg) | ![House Stormhold](docs/play/v05/house_stormhold.jpg) |
+| **Wolfholt.** Honourable, proud, and they never forget. | **Goldcrest.** They buy what others must fight for. | **Thornvale.** The realm's breadbasket, and schemers who smile. | **Stormhold.** Fierce and loyal, until they aren't. |
+| ![House Sunspire](docs/play/v05/house_sunspire.jpg) | ![House Highfell](docs/play/v05/house_highfell.jpg) | ![House Ironreach](docs/play/v05/house_ironreach.jpg) | ![The Crown at Kingsmere](docs/play/v05/house_crown.jpg) |
+| **Sunspire.** The last to bend the knee. | **Highfell.** Untouchable in their mountains. | **Ironreach.** They take what they want from the coasts. | **The Crown.** Yours, as long as it stays strong. |
 
 ![Cecily Goldcrest, Lady of Goldrock, in her own oak grove at golden hour](docs/play/v04/meet-goldcrest.jpg)
 *Meet anyone and they stand in their own land. Cecily Goldcrest holds the debts of half the western lords, and swears the Wolfholt bride died of fever.*
