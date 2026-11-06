@@ -1,6 +1,6 @@
 # Creators (checked on YouTube 6 Nov 2026)
 
-Mac sends every email as himself. One email each, one follow-up a week later at most. Fill in [clip] once the hook clip has a link; if it doesn't, delete that line.
+Mac sends every email as himself. One email each, one follow-up a week later at most. The clip link points to the 27-second hook on the 0.4 release.
 Emails and videos below were seen in public on each channel's About page or own site. Skip anyone marked "no public email" unless Mac wants to use YouTube's "View email address" button himself.
 
 ## Batch 1: Mac channels (send today from 19:30 IST)
@@ -15,7 +15,7 @@ Your "Mac Gaming FINALLY Got Good" list is why I'm writing. I've just released G
 The great houses farm, marry and go to war on their own, and you're the King who can't move a single soldier. The lords remember what you did, so years after you take a town from a house, its lord stands up at court and names the season you did it.
 
 Download: https://alichherawalla.itch.io/game-of-crowns
-Clip: [clip]
+Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
 
 A season passes every twenty seconds, so twenty minutes of footage covers fifteen years. No embargo and nothing you have to do. Happy to answer anything.
 
@@ -31,7 +31,7 @@ Your "Top 25 Mac Games 2025" is why I'm writing. I've just released Game of Crow
 The great houses farm, marry and go to war on their own. You're the King, you can't move a single soldier, and the lords remember what you did, down to the season and year.
 
 Download: https://alichherawalla.itch.io/game-of-crowns
-Clip: [clip]
+Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
 
 No embargo and nothing you have to do. Happy to answer anything.
 
@@ -47,7 +47,7 @@ Your "Why I'm Gaming on My M5 Mac Studio More Than My PS5" is why I'm writing. I
 The great houses farm, marry and go to war on their own, and you're the King who rules through the court, taxes, grain and marriages. The lords remember what you did, and every one of the realm's 83 nobles starts with a past.
 
 Download: https://alichherawalla.itch.io/game-of-crowns
-Clip: [clip]
+Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
 
 No embargo and nothing you have to do. Happy to answer anything.
 
@@ -63,7 +63,7 @@ Your "PC Gaming on the M5 MacBook Air in 2026" is why I'm writing. Here's one th
 The great houses farm, marry and go to war on their own. You're the King, and the lords remember what you did, so a grudge from ten years ago can cost you their banners.
 
 Download: https://alichherawalla.itch.io/game-of-crowns
-Clip: [clip]
+Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
 
 No embargo and nothing you have to do. Happy to answer anything.
 
@@ -79,7 +79,7 @@ Your "Top Indie Games of 2025 You Can Play on Mac!" is why I'm writing. I've jus
 The great houses farm, marry and go to war on their own, and you're the King who can't move a single soldier. The lords remember what you did, and you can rename anyone and rewrite their story.
 
 Download: https://alichherawalla.itch.io/game-of-crowns
-Clip: [clip]
+Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
 
 No embargo and nothing you have to do. Happy to answer anything.
 
@@ -95,7 +95,7 @@ Your "M6 Mac Mini Gaming is AMAZING" is why I'm writing. I've just released Game
 You're the King, the houses run themselves, and the lords remember what you did.
 
 Download: https://alichherawalla.itch.io/game-of-crowns
-Clip: [clip]
+Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
 
 No embargo and nothing you have to do. Happy to answer anything.
 
@@ -111,7 +111,7 @@ Your "Can a Mac Replace Your Gaming PC in 2026?" is why I'm writing. I've just r
 The great houses farm, marry and go to war on their own. You're the King, and the lords remember what you did.
 
 Download: https://alichherawalla.itch.io/game-of-crowns
-Clip: [clip]
+Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
 
 No embargo and nothing you have to do. Happy to answer anything.
 

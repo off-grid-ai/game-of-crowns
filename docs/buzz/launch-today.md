@@ -95,7 +95,7 @@ I watched your [video title] and [one real line about it]. I've just released Ga
 The great houses farm, marry and go to war on their own, and you're the King who can't move a single soldier. The lords remember what you did, so a lord can bring up the town you took from his house years ago, just when you need his banners.
 
 Download (free, signed, no key needed): https://alichherawalla.itch.io/game-of-crowns
-Clip: [link]
+Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
 
 For a video: a season passes every twenty seconds, so twenty minutes covers fifteen years. Rename a lord after a viewer and their story follows them.
 
