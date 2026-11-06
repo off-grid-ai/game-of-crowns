@@ -1802,11 +1802,15 @@ func _toggle_counsel() -> void:
 	if _court_panel.visible:
 		_court_hidden = true
 		_court_panel.visible = false
-	_town_panel.visible = false
+	if _town_panel.visible:
+		_town_panel.visible = false
+		town_closed.emit()  # put away for good, or the next update brings the town back over the Hand
 	if _ledger_panel and _ledger_panel.visible:
 		_ledger_panel.visible = false
 		if _ledger_btn:
 			_ledger_btn.set_pressed_no_signal(false)
+	if _digest_panel and _digest_panel.visible:
+		_digest_panel.visible = false  # the away report read: the Hand speaks
 
 
 func _show_counsel(items: Array) -> void:
