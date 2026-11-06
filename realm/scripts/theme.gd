@@ -71,6 +71,11 @@ static func get_theme() -> Theme:
 	panel.border_color = HAIRLINE
 	# No stylebox shadow: the glass shader would paint its blur into the shadow too.
 	t.set_stylebox("panel", "PanelContainer", panel)
+	# Hover tips sit in their own window, out of the glass: solid smoked warm, so
+	# what's under them never shows through the words.
+	t.set_stylebox("panel", "TooltipPanel", _box(Color(0.11, 0.10, 0.085, 0.97), HAIRLINE, 8, 10))
+	t.set_color("font_color", "TooltipLabel", TEXT)
+	t.set_font_size("font_size", "TooltipLabel", SIZE_DESC)
 	# Buttons: quiet text until hovered; the accent only when active.
 	var normal := _box(Color(1, 1, 1, 0.0), Color(1, 1, 1, 0.0), 7, 11)
 	var hover := _box(Color(1, 1, 1, 0.07), Color(0, 0, 0, 0), 7, 11)

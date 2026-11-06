@@ -715,10 +715,81 @@ function counsel(players, cities, threat) {
   // Every order shows its price before the King gives it, as the town card does: "Command peace  6k cr".
   // And what it does, so the King weighs effect against price: "Gift crowns  15k cr · +10".
   const DOES = { sellswords: "1,000 men", back: "+12 them, −12 the other", settle: "truce; keeper +6, both −3", sitout: "the war goes on",  tithe_down: `slower to cool; ${(Math.round(lastSeason.net * 50) / 1000).toFixed(1)}k less a season`, grant: "+20 them, −30 the holder", gift: "+10", feast: "+15", relief: "+12, eases it, cannot end it", marriage: "+8 each, bound in peace", peace: "+2 each, truce", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2", alliance: "sworn 4 years, +5", march: "the host besieges; −25 them" };
+  // The realm's lesser matters: plague, unrest, a thin granary, bare walls, a
+  // house grown too strong, a loyal one unrewarded, a full treasury, an heir of
+  // age. The Hand raises the one he has raised least lately, so his counsel
+  // changes with the realm instead of saying the same thing every season.
+  const turn = world?.turn ?? 0;
+  const short = (h) => h.house.name.replace(/^House /, "");
+  const ofHouse = (c) => great.find((p) => p.id === c.owner);
+  const lacks = (c, b) => !(c.buildings ?? []).some((x) => String(x).startsWith(b));
+  const occasions = [];
+  const sick = cities.find((c) => c.plagueTurn != null && turn - c.plagueTurn <= 2 && !c.famine);
+  if (sick) occasions.push({ kind: "plague", urgency: 55, text: `Plague in ${sick.title}`, why: "The death-carts go out at night. Clean water slows it; a sept tends the dying and keeps the people from blaming the crown.",
+    acts: [lacks(sick, "Aqueduct") ? { label: `Pay for an aqueduct in ${sick.title}`, action: "build", building: "aqueduct", city: sick.id } : null,
+      lacks(sick, "Temple") ? { label: `Pay for a sept in ${sick.title}`, action: "build", building: "temple", city: sick.id } : null,
+      { label: "Send grain", action: "relief", city: sick.id }].filter(Boolean) });
+  const riot = cities.find((c) => c.disorder);
+  if (riot) { const h = ofHouse(riot); occasions.push({ kind: "unrest", urgency: 55, text: `${riot.title} is in uproar`, why: "The people have stopped working and started shouting. Bread quiets a crowd; a sept or a market gives it something to lose.",
+    acts: [{ label: "Send grain", action: "relief", city: riot.id }, lacks(riot, "Temple") ? { label: "Pay for a sept", action: "build", building: "temple", city: riot.id } : null,
+      lacks(riot, "Marketplace") ? { label: "Pay for a market", action: "build", building: "market", city: riot.id } : null, h ? { label: `A feast for ${short(h)}`, action: "feast", city: riot.id } : null].filter(Boolean) }); }
+  const lean = cities.filter((c) => !c.famine && c.granary != null && c.granary < 0.25 && (c.size ?? 0) >= 5 && lacks(c, "Granary")).sort((a, b) => (b.size ?? 0) - (a.size ?? 0))[0];
+  if (lean) occasions.push({ kind: "granary", urgency: 40, text: `${lean.title}'s granary runs low`, why: `${lean.title} eats what it grows and keeps nothing back. One bad harvest and it starves; a granary carries it through.`,
+    acts: [{ label: `Pay for a granary in ${lean.title}`, action: "build", building: "granary", city: lean.id }, { label: "Send grain now", action: "relief", city: lean.id }] });
+  const fighting = great.filter((p) => (p.atWarWith ?? []).length);
+  const bare = cities.filter((c) => fighting.some((p) => p.id === c.owner) && lacks(c, "City Walls") && (c.size ?? 0) >= 4).sort((a, b) => (b.size ?? 0) - (a.size ?? 0))[0];
+  if (bare) { const h = ofHouse(bare); occasions.push({ kind: "walls", urgency: 45, text: `${bare.title} has no walls, and war is near`, why: `${h ? h.house.name : "Its house"} is at war, and ${bare.title} would fall to the first host that reaches it. Walls paid by the crown are remembered.`,
+    acts: [{ label: `Pay for walls at ${bare.title}`, action: "build", building: "walls", city: bare.id }, h && favourOf(h.id) >= 50 ? { label: `Swear an alliance with ${short(h)}`, action: "alliance", city: bare.id } : null].filter(Boolean) }); }
+  const mighty = [...great].sort((a, b) => (b.cities?.length ?? 0) * 2 + (b.units ?? 0) - (a.cities?.length ?? 0) * 2 - (a.units ?? 0))[0];
+  const avgTowns = great.reduce((n, p) => n + (p.cities?.length ?? 0), 0) / Math.max(1, great.length);
+  if (mighty && (mighty.cities?.length ?? 0) >= avgTowns * 1.5 && seatOf(mighty.id) && !(stakes?.s.wards?.[mighty.id] > turn)) {
+    const f = favourOf(mighty.id);
+    occasions.push({ kind: "mighty", urgency: 45, text: `${mighty.house.name} grows too strong`, why: `${mighty.cities.length} towns, more than any other house. Today they kneel; a house that size could take the throne tomorrow. Bind them to you, or hold their heir at court.`,
+      acts: [f >= 50 ? { label: `Swear an alliance with ${short(mighty)}`, action: "alliance", city: seatOf(mighty.id).id } : null,
+        { label: `Take their heir as your ward`, action: "ward", city: seatOf(mighty.id).id },
+        { label: `A feast in their honour`, action: "feast", city: seatOf(mighty.id).id }].filter(Boolean) });
+  }
+  const loyal = great.filter((p) => favourOf(p.id) >= 75 && seatOf(p.id)).sort((a, b) => favourOf(b.id) - favourOf(a.id))[0];
+  if (loyal) occasions.push({ kind: "loyal", urgency: 30, text: `${loyal.house.name} has served you well`, why: `Favour ${Math.round(favourOf(loyal.id))}: they answer every summons. Loyalty left unrewarded cools, and the other houses watch what it earns.`,
+    acts: [{ label: `Swear an alliance with ${short(loyal)}`, action: "alliance", city: seatOf(loyal.id).id }, { label: "Gift crowns", action: "gift", city: seatOf(loyal.id).id },
+      lacks(seatOf(loyal.id), "Marketplace") ? { label: `Pay for a market at ${seatOf(loyal.id).title}`, action: "build", building: "market", city: seatOf(loyal.id).id } : null].filter(Boolean) });
+  const crownSeat = cities.find((c) => players.find((p) => p.id === c.owner)?.house.crown && c.capital);
+  if (purse >= 600 && crownSeat) occasions.push({ kind: "rich", urgency: 30, text: "The royal treasury is full", why: "Gold in a chest wins nobody. Spend it where the realm will see it, or ease the tithe and let the houses keep more.",
+    acts: [{ label: "Hold a feast at court", action: "feast", city: crownSeat.id }, meta.tithe > 0 ? { label: `Lower the tithe to ${Math.round(meta.tithe * 100) - 5}%`, ui: "tithe_down" } : null,
+      lacks(crownSeat, "Marketplace") ? { label: "Pay for a market at Kingsmere", action: "build", building: "market", city: crownSeat.id } : null].filter(Boolean) });
+  if (court) {
+    for (const h of [...great].sort(() => 0.5 - ((turn * 7 + great.length) % 10) / 10)) {
+      const lord = court.lordOfHouse(h.id);
+      const heir = lord && court.alive().find((k) => k.parents?.includes(lord.id) && !k.spouse && k.age >= 16);
+      const match = heir && great.filter((g) => g.id !== h.id && seatOf(g.id)).map((g) => [g, court.lordOfHouse(g.id)]).find(([, l]) => l && court.alive().some((k) => k.parents?.includes(l.id) && !k.spouse && k.age >= 16 && k.gender !== heir.gender));
+      if (heir && match && seatOf(h.id)) {
+        const [other] = match;
+        occasions.push({ kind: "match", urgency: 35, text: `${heir.name} of ${h.house.name} is of age to wed`, why: `A royal match with ${other.house.name} would bind both houses to the crown and to each other: no war between them while it holds.`,
+          acts: [{ label: `Wed them to ${short(other)}`, action: "marriage", city: seatOf(h.id).id, to: other.id }, { label: "A feast for the betrothal talk", action: "feast", city: seatOf(h.id).id }] });
+        break;
+      }
+    }
+  }
+  // Two of them at most. Those on the card stay a year (nothing swaps each
+  // season); then the ones raised least lately come up. A matter the King has
+  // answered (an order at its town) is put to rest for a year.
+  const told = (meta.counselTold ??= {});
+  const answered = meta.answeredAt ?? {};
+  const open = occasions.filter((o) => o.acts.length && !o.acts.some((a) => a.city != null && turn - (answered[a.city] ?? -99) < 4));
+  const now = meta.counselNow ?? { kinds: [], since: -99 };
+  let lesser = turn - now.since < 4 ? open.filter((o) => now.kinds.includes(o.kind)) : [];
+  if (!lesser.length) {
+    lesser = open.sort((a, b) => (told[a.kind] ?? -99) - (told[b.kind] ?? -99) || b.urgency - a.urgency).slice(0, 2);
+    for (const o of lesser) told[o.kind] = turn;
+    meta.counselNow = { kinds: lesser.map((o) => o.kind), since: turn };
+    if (lesser.length) chron.saveMeta(meta);
+  }
+  if (lesser.length) for (let i = out.length - 1; i >= 0; i--) if (out[i].urgency === 0) out.splice(i, 1);  // not "quiet" after all
+  out.push(...lesser);
   // An order that can't be given now isn't offered: the banners answer once a year.
   // Once a year means once a year here too: the banners and the levy aren't
   // offered again until their year is out (the decree would refuse them anyway).
-  for (const o of out) o.acts = o.acts.filter((a) => !(a.action === "banners" && (!bannersReady(world?.turn ?? 0) || seasonsLeft("banners") > 0)) && !(a.action === "levy" && seasonsLeft("levy") > 0));
+  for (const o of out) o.acts = o.acts.filter((a) => !(a.action === "banners" && (!bannersReady(world?.turn ?? 0) || seasonsLeft("banners") > 0)) && !(a.action === "levy" && seasonsLeft("levy") > 0) && !(FAVOUR.has(a.action) && a.city != null && seasonsLeft(yearlyKey(a) ?? "") > 0));
   // The Hand's own pick on each matter: the order that does most for its cost.
   const PREFER = ["court", "ward", "feast", "relief", "tithe_down", "banners", "peace", "settle", "buyoff", "marriage", "gift", "grant", "levy", "tithe_up"];
   for (const o of out) {
@@ -738,7 +809,13 @@ function counsel(players, cities, threat) {
   // Two matters at most: the Hand's card stays clear of the houses table, and the
   // court has its own badge.
   // Up to three; the card drops its last matters itself if it would reach the houses table.
-  return out.sort((a, b) => b.urgency - a.urgency).slice(0, 3);
+  // The pressing matters first, but one of the realm's lesser ones always has
+  // a place, so the card isn't the same three alarms every season.
+  const ranked = out.sort((a, b) => b.urgency - a.urgency);
+  const pick = ranked.slice(0, 3);
+  const aside = ranked.find((o) => o.kind && !pick.includes(o));
+  if (aside && !pick.some((o) => o.kind)) pick[pick.length - 1] = aside;
+  return pick;
 }
 
 // Why each house feels as it does: the last few things that moved its favour,
@@ -814,12 +891,20 @@ function storyNow() {
 // men, a feast at court is an event, the banners answer once. The turn each was
 // last given is kept with the reign; seat feasts are keyed apart from a lord's.
 const YEARLY = 4;  // seasons
+const FAVOUR = new Set(["gift", "feast", "relief"]);
 function yearlyKey(cmd) {
   if (cmd.action === "levy" || cmd.action === "banners") return cmd.action;
   if (cmd.action === "feast") {
     const c = world?.cities?.find((x) => x.id === Number(cmd.city));
     const owner = c ? world.players.find((p) => p.id === c.owner) : null;
     if (owner && houseFor(owner).crown) return "feast:court";
+  }
+  // One royal favour to a house a year: grain, crowns or a feast in their honour.
+  if (FAVOUR.has(cmd.action)) {
+    const c = world?.cities?.find((x) => x.id === Number(cmd.city));
+    // Grain to the crown's own towns is counted town by town.
+    const own = world.players.find((p) => p.id === c?.owner);
+    if (c) return own && houseFor(own).crown ? `relief:${c.id}` : `favour:${c.owner}`;
   }
   return null;
 }
@@ -1094,6 +1179,8 @@ function endReign(why, outcome = "completed") {
   meta.score = s.score;
   meta.verdict = s.verdict;
   meta.title = s.title;
+  meta.outcome = outcome;
+  meta.endedAt = { turn: world?.turn ?? 0, peace: s.peace, pop: s.pop, houses: world?.players?.filter((p) => !houseFor(p).wild && !houseFor(p).crown && world.cities.some((c) => c.owner === p.id)).length ?? 0 };
   chron.saveMeta(meta);
   chron.addRecord({ id: meta.id, name: meta.name, scenario: meta.scenario, minutes: meta.minutes, turns: world?.turn ?? 0, ended: Date.now(), ...s });
   record({ turn: world?.turn ?? 0, kind: "reign_end", text: `${why} So ends the reign of ${s.title}. ${s.verdict} (Score ${s.score}.)` });
@@ -1146,7 +1233,8 @@ function reignInfo() {
   return {
     id: meta.id, name: meta.name, scenario: meta.scenario, status: meta.status, paused, minutes: meta.minutes,
     elapsedMs: meta.elapsedMs, remainingMs: meta.minutes > 0 ? Math.max(0, meta.minutes * 60000 - meta.elapsedMs) : null,
-    score: meta.score, verdict: meta.verdict, title: meta.title,
+    score: meta.score, verdict: meta.verdict, title: meta.title, outcome: meta.outcome, ended: meta.endedAt,
+    souls: world?.cities?.reduce((t, c) => t + soulsOf(c.size), 0) ?? 0,
   };
 }
 
@@ -1182,7 +1270,7 @@ http.createServer(async (req, res) => {
     });
     const last = history[history.length - 1];
     const crownP = players.find((p) => p.house.crown);
-    const crown = { treasury: crownP?.gold ?? 0, tithe: meta.tithe, decrees: Object.fromEntries(Object.entries(DECREES).map(([k, v]) => [k, { ...v, cost: priceOf(k), wait: seasonsLeft(k === "feast" ? "feast:court" : k) }])), perSeason: lastSeason.net };
+    const crown = { treasury: crownP?.gold ?? 0, tithe: meta.tithe, decrees: Object.fromEntries(Object.entries(DECREES).map(([k, v]) => [k, { ...v, cost: priceOf(k), wait: seasonsLeft(k === "feast" ? "feast:court" : k) }])), favourWait: Object.fromEntries(world.players.map((p) => [p.id, seasonsLeft(`favour:${p.id}`)]).filter(([, n]) => n > 0)), perSeason: lastSeason.net };
     for (const p of players) {
       p.favour = p.house.wild || p.house.crown ? null : favourOf(p.id);
       p.favourWhy = favourWhy[p.id] ?? [];
@@ -1367,6 +1455,7 @@ http.createServer(async (req, res) => {
     if (result.alliance != null) { (meta.alliances ??= {})[result.alliance] = (world.turn ?? 0) + 16; chron.saveMeta(meta); }
     if (result.march) startCampaign(result.march);
     if (yearly) { (meta.decreeAt ??= {})[yearly] = world.turn ?? 0; chron.saveMeta(meta); }
+    if (cmd.city != null) { (meta.answeredAt ??= {})[Number(cmd.city)] = world.turn ?? 0; chron.saveMeta(meta); }
     const warmed = world.cities.find((c) => c.id === Number(cmd.city))?.owner ?? (cmd.house != null ? Number(cmd.house) : null);
     result.favour = temper(cmd.action, warmed, result.favour);
     // A ward holds the house for five years.

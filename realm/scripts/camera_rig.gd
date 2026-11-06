@@ -198,20 +198,40 @@ func _ground_under(screen: Vector2) -> Vector3:
 ## towers stand far taller than a house). From the footprints each town keeps
 ## for its walkers; nowhere near a town, no limit.
 var towns: Node3D
+## The camera never goes inside a building, a wall or a stockade: near one
+## (or over it) it stays above its roof, with room to spare for the lens.
 func _roofline(p: Vector3) -> float:
 	if towns == null:
 		return -INF
+	const SPARE := 0.45  # how near the lens may come to a wall's face
+	var high := -INF
 	for id in towns.towns:
 		var root: Node3D = towns.towns[id]["node"]
 		var local := Vector2(p.x - root.position.x, p.z - root.position.z)
-		if local.length() > float(root.get_meta("reach", 6.0)):
+		if local.length() > float(root.get_meta("reach", 6.0)) + 1.0:
 			continue
-		for fp in root.get_meta("footprints", []):
-			if Geometry2D.is_point_in_polygon(local, fp):
+		var tops: Array = root.get_meta("tops", [])
+		var fps: Array = root.get_meta("footprints", [])
+		for i in fps.size():
+			var fp: PackedVector2Array = fps[i]
+			if not (Geometry2D.is_point_in_polygon(local, fp) or _near_edge(local, fp, SPARE)):
+				continue
+			var top: float = tops[i] if i < tops.size() else -1.0
+			if top < 0.0:
 				var area := absf((fp[1] - fp[0]).cross(fp[3] - fp[0]))
-				return root.position.y + (2.4 if area > 3.0 else 0.95)
-		return -INF
-	return -INF
+				top = 2.4 if area > 3.0 else 0.95
+			high = maxf(high, root.position.y + top + 0.3)
+		for w in root.get_meta("walls", []):
+			if Geometry2D.is_point_in_polygon(local, w[0]) or _near_edge(local, w[0], SPARE):
+				high = maxf(high, root.position.y + float(w[1]) + 0.3)
+	return high
+
+
+func _near_edge(p: Vector2, fp: PackedVector2Array, r: float) -> bool:
+	for i in fp.size():
+		if p.distance_to(Geometry2D.get_closest_point_to_segment(p, fp[i], fp[(i + 1) % fp.size()])) < r:
+			return true
+	return false
 
 
 func _floor_at(p: Vector3) -> float:

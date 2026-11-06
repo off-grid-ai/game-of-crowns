@@ -16,7 +16,7 @@ signal character_edited(spec: Dictionary)
 signal focus_city(city_id: int)
 signal pause_toggled(paused: bool)
 signal decree(action: String, building: String, to: int)
-signal decree_at(action: String, city: int, to: int)  # a decree straight from the Hand's counsel, at its town (and the other house)
+signal decree_at(action: String, city: int, to: int, building: String)  # a decree straight from the Hand's counsel, at its town (and the other house, or what to build)
 signal tithe_changed(rate: float)
 signal open_menu
 signal town_closed  # the King put the town card away (Esc): main stops refreshing it
@@ -30,7 +30,8 @@ signal petition_voiced(id: String, wav: PackedByteArray)
 signal decree_revoked(id: String)
 signal person_opened(id: String, house: Dictionary)  # the character view
 signal walk_as_king  # step into the King himself, at Kingsmere
-signal story_opened(entry: Dictionary)  # a story's name clicked in the chronicle
+signal story_opened(entry: Dictionary)
+signal reign_continued  # the reign was scored, and the King rules on  # a story's name clicked in the chronicle
 
 const Features := preload("res://scripts/features.gd")
 const T := preload("res://scripts/theme.gd")
@@ -933,7 +934,13 @@ func _build_court() -> void:
 
 func _process(delta: float) -> void:
 	_reveal_pad(delta)
-	_catch_up()
+	# The reign's end is the only card while it stands.
+	if _end_panel and _end_panel.visible:
+		for p in [_counsel, _court_panel, _digest_panel, _offer]:
+			if p and is_instance_valid(p) and p.visible:
+				p.visible = false
+	else:
+		_catch_up()
 	# The houses table sits under the date card however tall it grows (the
 	# story's line and its bar make it taller), never over it.
 	if _date_pill and _houses_panel:
@@ -1757,6 +1764,7 @@ var _counsel_aside := ""  # what the King put aside (Later): the card waits unti
 
 # --- the King at work: nothing jumps in or out while he's using a card ---------
 var _touched := -100000  # when he last clicked a card (msec)
+var _moved := -100000  # when he last moved the mouse (msec): a hand on its way to a button
 var _held_counsel = null  # the Hand's newest matters, waiting until he's done
 var _held_court := false  # a new petitioner arrived while he was busy
 
@@ -1764,11 +1772,24 @@ var _held_court := false  # a new petitioner arrived while he was busy
 func _input(e: InputEvent) -> void:
 	if e is InputEventMouseButton and e.pressed and get_viewport().gui_get_hovered_control() != null:
 		_touched = Time.get_ticks_msec()
+	elif e is InputEventMouseMotion:
+		_moved = Time.get_ticks_msec()
 
 
-## He's using a card: the pointer is on one, or he clicked one a moment ago.
+## He's using a card: the pointer is on one, he clicked one a moment ago, or
+## his hand is moving (perhaps to a button). Nothing on screen changes then.
 func busy() -> bool:
-	return Time.get_ticks_msec() - _touched < 6000 or get_viewport().gui_get_hovered_control() != null
+	var now := Time.get_ticks_msec()
+	return now - _touched < 6000 or now - _moved < 2500 or get_viewport().gui_get_hovered_control() != null
+
+
+## One of the game's own cards is up (the Hand, a petitioner, the away report):
+## a different one waits its turn instead of coming up beside or over it.
+func _card_up(but: Control = null) -> bool:
+	for p in [_counsel, _court_panel, _digest_panel, _end_panel]:
+		if p and is_instance_valid(p) and p.visible and p != but:
+			return true
+	return false
 
 
 ## What waited while he was busy, put on screen once he's done.
@@ -1779,10 +1800,11 @@ func _catch_up() -> void:
 		var items: Array = _held_counsel
 		_held_counsel = null
 		_show_counsel(items)
-	if _held_court:
+	if _held_court and not _card_up(_court_panel) and not _court_hidden:
 		_held_court = false
-		if _court_panel.visible:
-			_show_audience()
+		_court_hidden = false
+		_court_met = true
+		_show_audience()
 
 
 ## A card is open that the King is reading (the director waits for him).
@@ -1824,8 +1846,9 @@ func _show_counsel(items: Array) -> void:
 	var sig := JSON.stringify(items) + "|" + str(_purse)  # what the treasury can pay for changes the buttons too
 	if sig == _counsel_sig and _counsel:
 		return
-	# Mid-decision, the card he's using stays as it is; the update waits.
-	if busy() and _counsel and _counsel.visible:
+	# Mid-decision, the card he's using stays as it is; the update waits. And a
+	# petitioner or the away report on screen finishes before the Hand speaks.
+	if (busy() and _counsel and _counsel.visible) or (not (_counsel and _counsel.visible) and _card_up(_counsel)):
 		_held_counsel = items
 		return
 	_counsel_matters = JSON.stringify(items.map(func(it): return String(it.get("text", ""))))
@@ -1916,7 +1939,7 @@ func _show_counsel(items: Array) -> void:
 					b.add_theme_stylebox_override(look, frame)
 				b.tooltip_text = "The Hand's advice"
 			acts.add_child(b)
-	_counsel.visible = not (_digest_panel and _digest_panel.visible)
+	_counsel.visible = not (_digest_panel and _digest_panel.visible) and not (_end_panel and _end_panel.visible)
 	if _ticker:
 		_ticker.visible = false  # the counsel holds the bottom-left corner; the chronicle has the news
 
@@ -1939,7 +1962,7 @@ func _counsel_act(act: Dictionary) -> void:
 		toast("The King stays out of it. Let them bleed; the war is theirs.")
 		_counsel_sig = ""
 	else:
-		decree_at.emit(String(act.get("action", "")), int(act.get("city", -1)), int(act.get("to", -1)))
+		decree_at.emit(String(act.get("action", "")), int(act.get("city", -1)), int(act.get("to", -1)), String(act.get("building", "")))
 
 
 func _set_tithe(rate: float) -> void:
@@ -1964,6 +1987,133 @@ func set_reign(r: Dictionary) -> void:
 	_pause_btn.button_pressed = _paused
 	_pause_btn.disabled = r.get("status", "") == "ended"
 	_reign.text = ("%s  ·  %s" % [r.get("name", ""), clock]).to_upper()
+	if r.get("status", "") == "ended":
+		_reign_end(r)
+	elif _end_panel:
+		_end_panel.get_parent().queue_free()
+		_end_panel = null
+
+
+var _end_panel: Control = null
+var _end_seen := ""  # the ended reign whose card was shown (once, unless he rules on and it ends again)
+
+
+## The reign is over, and it feels like it: the realm fades into a painting
+## (the throne hall; a battlefield if the King was deposed or the realm fell),
+## and on it what the realm calls him, its verdict, the reign in numbers, and
+## what next (rule on in the same realm, or the menu).
+func _reign_end(r: Dictionary) -> void:
+	var key := "%s|%s|%s" % [r.get("id", ""), r.get("title", ""), r.get("score", 0)]
+	if key == _end_seen:
+		return
+	_end_seen = key
+	if _end_panel:
+		_end_panel.get_parent().queue_free()
+	var layer := CanvasLayer.new()
+	layer.layer = 40  # over the map, the cards and the bar; under the menu
+	add_child(layer)
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_STOP  # the realm behind is finished with
+	root.modulate.a = 0.0
+	layer.add_child(root)
+	_end_panel = root
+	var lost := String(r.get("outcome", "")) in ["deposed", "fallen"]
+	var art := TextureRect.new()
+	art.texture = load("res://assets/intro/art/%s.jpg" % ("battle" if lost else "hall"))
+	art.set_anchors_preset(Control.PRESET_FULL_RECT)
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	root.add_child(art)
+	# Dark from below, so the words read over the painting.
+	var shade := TextureRect.new()
+	var g := Gradient.new()
+	g.set_color(0, Color(0.05, 0.04, 0.03, 0.25))
+	g.set_color(1, Color(0.05, 0.04, 0.03, 0.92))
+	var gt := GradientTexture2D.new()
+	gt.gradient = g
+	gt.fill_from = Vector2(0, 0)
+	gt.fill_to = Vector2(0, 1)
+	shade.texture = gt
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	root.add_child(shade)
+	var col := VBoxContainer.new()
+	col.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	col.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	col.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	col.offset_bottom = -90
+	col.alignment = BoxContainer.ALIGNMENT_END
+	col.add_theme_constant_override("separation", 16)
+	root.add_child(col)
+	var head := T.label("The reign ends")
+	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(head)
+	var name_l := T.title(String(r.get("title", "The King")), 56)
+	name_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(name_l)
+	var verdict := Label.new()
+	verdict.text = String(r.get("verdict", ""))
+	verdict.autowrap_mode = TextServer.AUTOWRAP_WORD
+	verdict.custom_minimum_size.x = 760
+	verdict.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	verdict.add_theme_font_override("font", T.speech)
+	verdict.add_theme_font_size_override("font_size", 26)
+	verdict.add_theme_color_override("font_color", Color(0.92, 0.88, 0.8))
+	col.add_child(verdict)
+	# The reign in numbers.
+	var e: Dictionary = r.get("ended", {}) if r.get("ended") is Dictionary else {}
+	var turns := int(e.get("turn", 0))
+	var years := turns / 4
+	var facts := [["Score", _heads(int(r.get("score", 0)))],
+		["Reigned", ("%d years" % years) if years != 1 else "a year"],
+		["Peace", "%d%%" % roundi(float(e.get("peace", 0.0)) * 100.0)],
+		["Souls", _heads(int(r.get("souls", 0)))],
+		["Great houses standing", str(int(e.get("houses", 0)))]]
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 44)
+	col.add_child(row)
+	for f in facts:
+		var cell := VBoxContainer.new()
+		cell.add_theme_constant_override("separation", 2)
+		var v := T.title(String(f[1]), 30, T.ACCENT if f[0] == "Score" else T.TEXT)
+		v.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		cell.add_child(v)
+		var k := T.label(String(f[0]))
+		k.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		cell.add_child(k)
+		row.add_child(cell)
+	var gap := Control.new()
+	gap.custom_minimum_size.y = 12
+	col.add_child(gap)
+	var go := HBoxContainer.new()
+	go.alignment = BoxContainer.ALIGNMENT_CENTER
+	go.add_theme_constant_override("separation", 16)
+	col.add_child(go)
+	var on := _btn("Rule on", func():
+		var tw := root.create_tween()
+		tw.tween_property(root, "modulate:a", 0.0, 0.8)
+		tw.tween_callback(layer.queue_free)
+		_end_panel = null
+		reign_continued.emit())
+	on.custom_minimum_size = Vector2(200, 48)
+	on.add_theme_font_size_override("font_size", 18)
+	on.add_theme_stylebox_override("normal", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.24), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.6), 8, 10))
+	on.add_theme_stylebox_override("hover", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.36), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.85), 8, 10))
+	on.add_theme_color_override("font_color", Color(1, 0.93, 0.78))
+	on.tooltip_text = "The same realm, with no clock. This score stays in the Hall of Records."
+	go.add_child(on)
+	var menu := _btn("Back to the menu", func():
+		layer.queue_free()
+		_end_panel = null
+		open_menu.emit())
+	menu.custom_minimum_size = Vector2(200, 48)
+	menu.add_theme_font_size_override("font_size", 18)
+	go.add_child(menu)
+	var tw := root.create_tween()
+	tw.tween_interval(0.6)
+	tw.tween_property(root, "modulate:a", 1.0, 2.2).set_trans(Tween.TRANS_SINE)
 
 
 ## A house's sigil in its colour, `px` square; blank (but holding its space)
@@ -2049,6 +2199,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		_tithe = reported
 		_tithe_asked = -1.0
 	_decrees = c.get("decrees", {})
+	_favour_wait = c.get("favourWait", {})
 	_gold.text = _heads(int(c.get("treasury", 0)) * CROWNS)
 	# What the crown takes in each season, net of the court and castles: where money comes from.
 	var net := int(c.get("perSeason", 0)) * CROWNS
@@ -2240,6 +2391,7 @@ const HOUSE_COLUMNS := [["towns", "Towns", "Towns held"], ["armies", "Men", "Men
 ## royal stores, granting it away), or a house's (grain and gold sent to them, a
 ## feast in their honour, taking the town for another house).
 var _decrees := {}  # the bridge's own decree list: action -> {cost (in gold), label}
+var _favour_wait := {}  # house id -> seasons until it may have another royal favour
 
 
 ## A decree's price as the bridge has it, in crowns: "12k cr".
@@ -2291,6 +2443,9 @@ func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 		# The crown's great occasions come once a year: the levy, the banners, a
 		# feast at court (a feast in a lord's honour is another matter).
 		var wait := int(_decrees.get(a, {}).get("wait", 0)) if (seat or a in ["levy", "banners"]) else 0
+		# One royal favour to a house a year: grain, crowns or a feast in their honour.
+		if not seat and not mine and a in ["relief", "gift", "feast"]:
+			wait = int(_favour_wait.get(str(int(c.get("owner", -1))), 0))
 		if wait > 0 and names[a] != "":
 			_decree_btns[a].text = "%s  ·  again in %d season%s" % [names[a].get_slice("  ", 0), wait, "" if wait == 1 else "s"]
 		_decree_btns[a].disabled = short or wait > 0
@@ -2453,9 +2608,10 @@ func set_court(petitions: Array) -> void:
 		_court_panel.visible = false
 	elif _cinema_on:
 		pass  # the court waits while the King watches a scene
-	elif busy():
-		_held_court = true  # he's using a card: the newcomer waits on the badge, nothing swaps under him
 	elif not _court_hidden or not _court_met:
+		if busy() or _card_up(_court_panel):
+			_held_court = true  # he's using a card, or another is up: the newcomer waits its turn on the badge
+			return
 		# The first petitioner of a sitting is brought straight in: a new King
 		# meets his court at once, then the badge and the Hand call him back.
 		_court_met = true

@@ -182,7 +182,7 @@ var _house_colour := Color.GRAY  # town names drawn from the realistic kit; "*" 
 
 
 ## A footprint for navigation when the building isn't one mesh: a turned rectangle.
-func _footprint_rect(root: Node3D, at: Vector3, size: Vector2, rot: float) -> void:
+func _footprint_rect(root: Node3D, at: Vector3, size: Vector2, rot: float, top := -1.0) -> void:
 	var b := Basis(Vector3.UP, rot)
 	var pts := PackedVector2Array()
 	for c in [Vector3(-size.x, 0, -size.y), Vector3(size.x, 0, -size.y), Vector3(size.x, 0, size.y), Vector3(-size.x, 0, size.y)]:
@@ -191,6 +191,15 @@ func _footprint_rect(root: Node3D, at: Vector3, size: Vector2, rot: float) -> vo
 	var all: Array = root.get_meta("footprints", [])
 	all.append(pts)
 	root.set_meta("footprints", all)
+	_top(root, top)
+
+
+## How high a footprint's building stands (local to the town), kept beside it
+## so the camera can stay above it; -1 when unknown (the camera guesses).
+func _top(root: Node3D, top: float) -> void:
+	var tops: Array = root.get_meta("tops", [])
+	tops.append(top)
+	root.set_meta("tops", tops)
 
 
 ## A realistic town laid out in lots: houses on rings around the square, each
@@ -570,7 +579,7 @@ func _place(root: Node3D, kind: String, pos: Vector3, yaw: float, scale := Vecto
 	if foot == Vector2.ZERO:
 		foot = Real.footprint(kind) * Vector2(scale.x, scale.z)
 	if foot != Vector2.ZERO:
-		_footprint_rect(root, Vector3(pos.x, 0, pos.z), foot, yaw)
+		_footprint_rect(root, Vector3(pos.x, 0, pos.z), foot, yaw, pos.y + Real.height(kind) * scale.y)
 
 
 func _flush(root: Node3D) -> void:
@@ -666,6 +675,7 @@ func _footprint(root: Node3D, mesh: Mesh, xf: Transform3D) -> void:
 	var all: Array = root.get_meta("footprints", [])
 	all.append(pts)
 	root.set_meta("footprints", all)
+	_top(root, (xf * Vector3(0, bb.end.y, 0)).y)
 
 
 func _single(parent: Node3D, mesh: Mesh, pos: Vector3, rot := 0.0, scale := S) -> void:
@@ -897,6 +907,17 @@ func _walls(root: Node3D, center: Vector3, r: float) -> void:
 			panels.append(Transform3D(Basis(Vector3.UP, -a + PI / 2).scaled(Vector3(S, S * 0.9, S)), off + Vector3(0, y - 0.05, 0)))
 	_instances(root, _wall_panel, panels)
 	_instances(root, _wall_tower, towers)
+	# The camera keeps above them (townsfolk keep their own way through).
+	var shells: Array = root.get_meta("walls", [])
+	for pair in [[_wall_panel, panels], [_wall_tower, towers]]:
+		var bb: AABB = (pair[0] as Mesh).get_aabb()
+		for xf in pair[1]:
+			var pts := PackedVector2Array()
+			for c in [Vector3(bb.position.x, 0, bb.position.z), Vector3(bb.end.x, 0, bb.position.z), Vector3(bb.end.x, 0, bb.end.z), Vector3(bb.position.x, 0, bb.end.z)]:
+				var w: Vector3 = xf * c
+				pts.append(Vector2(w.x, w.z))
+			shells.append([pts, (xf * Vector3(0, bb.end.y, 0)).y])
+	root.set_meta("walls", shells)
 
 
 ## Strip fields in the town's surrounding land, more as the town grows.
