@@ -189,7 +189,7 @@ func _map_page() -> void:
 		_page.add_child(T.label("Unrolling the map…"))
 		return
 	_page.add_child(T.title("Aldmere", 34))
-	_para("As every new chronicle finds it, nine years into the reign: the seven seats of the great houses, and the towns that answer to them." + (("  " + _mark + " is ringed in gold.") if _mark != "" else ""))
+	_para("From the snows of the north to the red sands of the south: seven great houses, and the crown between them.")
 	var tiles: Array = _map.get("tiles", [56, 88])
 	var frame := AspectRatioContainer.new()
 	frame.ratio = 3040.0 / 4800.0
@@ -203,8 +203,42 @@ func _map_page() -> void:
 	frame.add_child(art)
 	var marks := Control.new()
 	marks.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	marks.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	marks.mouse_filter = Control.MOUSE_FILTER_STOP
 	art.add_child(marks)
+	var hover := [""]  # the town under the pointer, named while it's there
+	var at_of := func(t: Dictionary) -> Vector2:
+		return Vector2((float(t["x"]) + 0.5) / float(tiles[0]), (float(t["y"]) + 0.5) / float(tiles[1])) * marks.size
+	var town_at := func(p: Vector2) -> Dictionary:
+		var best := {}
+		var near := 14.0
+		for t in _map.get("towns", []):
+			var d: float = (at_of.call(t) as Vector2).distance_to(p)
+			if d < near:
+				near = d
+				best = t
+		return best
+	# Hover names a town and its house; a seat opens its house's page; any
+	# other town is ringed and named.
+	marks.gui_input.connect(func(e: InputEvent):
+		if e is InputEventMouseMotion:
+			var t: Dictionary = town_at.call(e.position)
+			var name := String(t.get("title", ""))
+			if name != hover[0]:
+				hover[0] = name
+				marks.tooltip_text = ("%s  ·  %s%s" % [name, String(t.get("house", "")), "'s seat" if t.get("capital", false) else ""]) if name != "" else ""
+				marks.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if name != "" else Control.CURSOR_ARROW
+				marks.queue_redraw()
+		elif e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+			var t: Dictionary = town_at.call(e.position)
+			if t.is_empty():
+				return
+			if t.get("capital", false):
+				for hh in _book.get("houses", []):
+					if String(hh.get("name", "")) == String(t.get("house", "")):
+						_show(int(hh["id"]))
+						return
+			_mark = String(t["title"])
+			marks.queue_redraw())
 	var font: Font = T.get_theme().default_font
 	marks.draw.connect(func():
 		var sz := marks.size
@@ -212,7 +246,7 @@ func _map_page() -> void:
 			var at := Vector2((float(t["x"]) + 0.5) / float(tiles[0]), (float(t["y"]) + 0.5) / float(tiles[1])) * sz
 			var col := Color.from_string(String(t.get("color", "#888")), Color.GRAY)
 			var seat: bool = t.get("capital", false)
-			var marked: bool = String(t["title"]) == _mark
+			var marked: bool = String(t["title"]) == _mark or String(t["title"]) == hover[0]
 			if marked:
 				marks.draw_arc(at, 14.0, 0.0, TAU, 32, T.ACCENT, 3.0, true)
 			marks.draw_circle(at, 7.0 if seat else 3.5, Color(0, 0, 0, 0.55))
