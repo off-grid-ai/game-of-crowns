@@ -714,7 +714,9 @@ function counsel(players, cities, threat) {
   // And what it does, so the King weighs effect against price: "Gift crowns  15k cr · +10".
   const DOES = { sellswords: "1,000 men", back: "+12 them, −12 the other", settle: "truce; keeper +6, both −3", sitout: "the war goes on",  tithe_down: `slower to cool; ${(Math.round(lastSeason.net * 50) / 1000).toFixed(1)}k less a season`, grant: "+20 them, −30 the holder", gift: "+10", feast: "+15", relief: "+12, eases it, cannot end it", marriage: "+8 each, bound in peace", peace: "+2 each, truce", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2", alliance: "sworn 4 years, +5", march: "the host besieges; −25 them" };
   // An order that can't be given now isn't offered: the banners answer once a year.
-  for (const o of out) o.acts = o.acts.filter((a) => a.action !== "banners" || bannersReady(world?.turn ?? 0));
+  // Once a year means once a year here too: the banners and the levy aren't
+  // offered again until their year is out (the decree would refuse them anyway).
+  for (const o of out) o.acts = o.acts.filter((a) => !(a.action === "banners" && (!bannersReady(world?.turn ?? 0) || seasonsLeft("banners") > 0)) && !(a.action === "levy" && seasonsLeft("levy") > 0));
   // The Hand's own pick on each matter: the order that does most for its cost.
   const PREFER = ["court", "ward", "feast", "relief", "tithe_down", "banners", "peace", "settle", "buyoff", "marriage", "gift", "grant", "levy", "tithe_up"];
   for (const o of out) {
@@ -804,6 +806,24 @@ function storyNow() {
   const s = arcs?.reignView();
   if (!s) return null;
   return { ...s, beats: (s.beats ?? []).map((b) => ({ ...b, when: b.turn != null ? calendar(b.turn) : null })) };
+}
+
+// The crown's great occasions come once a year: a levy drains the countryside of
+// men, a feast at court is an event, the banners answer once. The turn each was
+// last given is kept with the reign; seat feasts are keyed apart from a lord's.
+const YEARLY = 4;  // seasons
+function yearlyKey(cmd) {
+  if (cmd.action === "levy" || cmd.action === "banners") return cmd.action;
+  if (cmd.action === "feast") {
+    const c = world?.cities?.find((x) => x.id === Number(cmd.city));
+    const owner = c ? world.players.find((p) => p.id === c.owner) : null;
+    if (owner && houseFor(owner).crown) return "feast:court";
+  }
+  return null;
+}
+function seasonsLeft(key) {
+  const at = meta?.decreeAt?.[key];
+  return at == null ? 0 : Math.max(0, YEARLY - ((world?.turn ?? 0) - at));
 }
 
 function priceOf(action) {
@@ -1160,7 +1180,7 @@ http.createServer(async (req, res) => {
     });
     const last = history[history.length - 1];
     const crownP = players.find((p) => p.house.crown);
-    const crown = { treasury: crownP?.gold ?? 0, tithe: meta.tithe, decrees: Object.fromEntries(Object.entries(DECREES).map(([k, v]) => [k, { ...v, cost: priceOf(k) }])), perSeason: lastSeason.net };
+    const crown = { treasury: crownP?.gold ?? 0, tithe: meta.tithe, decrees: Object.fromEntries(Object.entries(DECREES).map(([k, v]) => [k, { ...v, cost: priceOf(k), wait: seasonsLeft(k === "feast" ? "feast:court" : k) }])), perSeason: lastSeason.net };
     for (const p of players) {
       p.favour = p.house.wild || p.house.crown ? null : favourOf(p.id);
       p.favourWhy = favourWhy[p.id] ?? [];
@@ -1332,12 +1352,18 @@ http.createServer(async (req, res) => {
         }
       }
     }
+    const yearly = yearlyKey(cmd);
+    if (yearly && seasonsLeft(yearly) > 0) {
+      const n = seasonsLeft(yearly);
+      return json(res, 400, { error: `once a year: again in ${n} season${n === 1 ? "" : "s"}` });
+    }
     const result = decree({ ...cmd, price: priceOf(cmd.action), favourOf, causeOf, sworn, marching: (city) => (meta.campaigns ?? []).some((x) => x.city === city), usurper: stakes?.s.usurper, seat: stakes?.s.seat }, world);
     if (result.error) return json(res, 400, result);
     if (result.endUsurper && stakes) { stakes.s.usurper.stage = "none"; stakes.save(); }
     if (result.relieved != null) { (meta.relieved ??= {})[result.relieved] = world.turn ?? 0; chron.saveMeta(meta); }
     if (result.alliance != null) { (meta.alliances ??= {})[result.alliance] = (world.turn ?? 0) + 16; chron.saveMeta(meta); }
     if (result.march) startCampaign(result.march);
+    if (yearly) { (meta.decreeAt ??= {})[yearly] = world.turn ?? 0; chron.saveMeta(meta); }
     const warmed = world.cities.find((c) => c.id === Number(cmd.city))?.owner ?? (cmd.house != null ? Number(cmd.house) : null);
     result.favour = temper(cmd.action, warmed, result.favour);
     // A ward holds the house for five years.

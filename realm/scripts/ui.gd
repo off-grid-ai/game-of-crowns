@@ -2170,8 +2170,13 @@ func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 		_decree_btns[a].text = names[a]
 		_decree_btns[a].visible = names[a] != ""
 		var short: bool = _purse * 100 < int(COST.get(a, 0))
-		_decree_btns[a].disabled = short
-		_decree_btns[a].tooltip_text = ("The treasury holds %s crowns. Raise the tithe (the %% in the top bar) to fill it." % _heads(_purse * 100)) if short else ""
+		# The crown's great occasions come once a year: the levy, the banners, a
+		# feast at court (a feast in a lord's honour is another matter).
+		var wait := int(_decrees.get(a, {}).get("wait", 0)) if (seat or a in ["levy", "banners"]) else 0
+		if wait > 0 and names[a] != "":
+			_decree_btns[a].text = "%s  ·  again in %d season%s" % [names[a].get_slice("  ", 0), wait, "" if wait == 1 else "s"]
+		_decree_btns[a].disabled = short or wait > 0
+		_decree_btns[a].tooltip_text = ("Once a year. Again in %d season%s." % [wait, "" if wait == 1 else "s"]) if wait > 0 else (("The treasury holds %s crowns. Raise the tithe (the %% in the top bar) to fill it." % _heads(_purse * 100)) if short else "")
 	_grant_menu.visible = not c.get("capital", false)  # a house's seat is never granted away
 	_marriage_menu.visible = not mine  # a match is made between two great houses
 	# The other great houses, not this one: the names as the houses table has them.
