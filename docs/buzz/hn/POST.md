@@ -10,15 +10,15 @@ Show HN: A medieval kingdom sim where history names you for how you ruled
 Scores 8/8 on the title rubric (RUBRIC.md): promises an experience, an unexpected twist,
 no stack or "AI-powered", understood instantly.
 
-## First comment (Mac posts it the moment the link goes up)
+## First comment (final, Mac 6 Nov)
 
-Game of Crowns is a medieval kingdom sim where you're the king and seven great houses want your throne. You hold it with grain, gold, marriages and your rulings at court, while Freeciv runs the harvests and the wars underneath. Side against a house in a war, and ten years later its lord stands up at court and reminds you of the season and the year. When your reign ends, history names you: the Golden, the Bloody, or the Deposed.
+Game of Crowns is a medieval kingdom sim. You're the king, and seven great houses want your throne. You hold it with grain, gold, marriages and your rulings at court. Side against a house in a war, and ten years later its lord stands up at court to remind you. When your reign ends, history names you: the Golden, the Bloody, or the Deposed.
 
-I wanted my own version of the stories I love in Game of Thrones, so I built one with Claude where you can rename anyone, rewrite their past and choose the story that comes for your throne. A season passes every 20 seconds, so a whole reign fits in an evening.
+I wanted my own Game of Thrones story, so I built one where you can rename anyone, rewrite their past and pick the story that comes for your throne. A season passes every 20 seconds, so a whole reign fits in an evening.
 
-If you run an optional local model, you can answer every petitioner in your own words instead of picking from a list, and have it write you a fresh story for your next reign.
+With an optional local model, you can answer petitioners in your own words instead of picking from a list, and it can write you a new story for your next reign.
 
-It's free and open source on Apple Silicon Macs, with Windows next. I'm happy to go into how any of it works.
+It's free and open source on Apple Silicon Macs, with Windows next. I built it with Claude on top of Freeciv, and I'm happy to go into how any of it works.
 
 Why it reads this way (evidence in RUBRIC.md and the hits-vs-flops numbers below):
 - The AI is the answer to "how, and who pays", never the pitch: 14 of 23 AI-game flops sold
