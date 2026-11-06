@@ -38,7 +38,7 @@ import { Arcs, templates as arcTemplates, check, ownStories, storiesChanged } fr
 import { Chatter } from "./chatter.js";
 import { bible, FAMILIES, LESSER } from "./lore.js";
 import { Stakes, calendar, epithet } from "./stakes.js";
-import { watched, usageToday, moodFrom, isWatched, arcFromWords, beatIdea } from "./claude.js";
+import { watched, usageToday, moodFrom, isWatched, arcFromWords, beatIdea, premiseIdea } from "./claude.js";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8787);
@@ -1774,6 +1774,16 @@ http.createServer(async (req, res) => {
   // One beat of the player's own, added to (or taken out of) their story: what
   // happens, who is in it, when it happens, and what it does, from short menus.
   // It happens once, when its moment comes, and the story goes on from there.
+  // Off Grid AI writes a story's premise from its tags, or carries on the one begun.
+  if (url.pathname === "/stories/premise/idea" && req.method === "POST") {
+    const b = await body(req);
+    const tags = (Array.isArray(b.tags) ? b.tags : []).map(String).slice(0, 8);
+    const draft = String(b.draft ?? "").trim().slice(0, 300);
+    const text = await Promise.race([premiseIdea({ tags, draft }).catch(() => null), new Promise((r) => setTimeout(() => r(null), 25000))]);
+    if (!text) return json(res, 503, { error: "Off Grid AI is busy and didn't answer in time. Try again in a moment, or write it yourself." });
+    return json(res, 200, { text });
+  }
+
   // Off Grid AI writes a beat for the player's own story, or carries on the one begun.
   if (url.pathname === "/stories/beat/idea" && req.method === "POST") {
     const b = await body(req);
@@ -1783,7 +1793,7 @@ http.createServer(async (req, res) => {
     const beats = [...(t.beats ?? []), ...(t.asides ?? [])].map((x) => x.text).filter(Boolean);
     const draft = String(b.draft ?? "").trim().slice(0, 300);
     const text = await Promise.race([beatIdea({ name: t.name, about: t.about ?? "", roles, beats, draft }).catch(() => null), new Promise((r) => setTimeout(() => r(null), 25000))]);
-    if (!text) return json(res, 503, { error: "Off Grid AI isn't answering. Open it with a model loaded, or write the beat yourself." });
+    if (!text) return json(res, 503, { error: "Off Grid AI is busy and didn't answer in time. Try again in a moment, or write the beat yourself." });
     return json(res, 200, { text });
   }
 

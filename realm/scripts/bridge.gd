@@ -199,6 +199,11 @@ func own_story(id: String, cb: Callable) -> void:
 
 ## One beat of the player's own added to their story ({text, who, when, does}),
 ## or taken out ({remove: id}). The reply is the story as own_story gives it.
+## Off Grid AI writes a story's premise from tags (draft empty), or carries the draft on.
+func premise_idea(tags: Array, draft: String, cb: Callable) -> void:
+	_post("/stories/premise/idea", {"tags": tags, "draft": draft}, func(c, d): cb.call(c, d))
+
+
 ## Off Grid AI writes a beat for the story (draft empty), or carries the draft on.
 func beat_idea(id: String, draft: String, cb: Callable) -> void:
 	_post("/stories/beat/idea", {"story": id, "draft": draft}, func(c, d): cb.call(c, d))

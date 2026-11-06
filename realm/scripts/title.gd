@@ -378,11 +378,46 @@ func show_new() -> void:
 		chip.toggle_mode = true
 		var tag: String = g
 		chip.toggled.connect(func(on): if on: picked[tag] = true else: picked.erase(tag))
+	var premise_row := HBoxContainer.new()
+	premise_row.add_theme_constant_override("separation", 12)
+	maker.add_child(premise_row)
+	premise_row.add_child(_label("The story in your own words", 15, MUTED))
+	var spark := _toggle("✦  Write it for me", premise_row)
+	spark.toggle_mode = false
+	spark.tooltip_text = "Off Grid AI writes a premise from the tags you picked, or carries on the one you've begun."
+	var spark_note := _label("", 14, MUTED)
+	spark_note.visible = false
 	var premise := TextEdit.new()
 	premise.placeholder_text = "Or in your own words: a queen who poisons her way to the throne, a bastard with dragon blood, a winter that never ends…"
 	premise.custom_minimum_size = Vector2(0, 72)
 	premise.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	maker.add_child(premise)
+	maker.add_child(spark_note)
+	var ai_ready := [true]
+	var spark_label := func() -> void:
+		if is_instance_valid(spark):
+			spark.text = "✦  Get Off Grid AI to write it for you" if not ai_ready[0] else ("✦  Carry it on" if premise.text.strip_edges() != "" else "✦  Write it for me")
+	bridge.ai_status(func(st):
+		ai_ready[0] = st is Dictionary and bool(st.get("words", false))
+		spark_label.call())
+	premise.text_changed.connect(spark_label)
+	spark.pressed.connect(func():
+		if not ai_ready[0]:
+			OS.shell_open(OFFGRID_URL)
+			return
+		spark.disabled = true
+		spark_note.visible = true
+		spark_note.text = "Off Grid AI is writing…"
+		bridge.premise_idea(picked.keys(), premise.text.strip_edges(), func(code, d):
+			if not is_instance_valid(spark):
+				return
+			spark.disabled = false
+			if code == 200 and d is Dictionary and String(d.get("text", "")) != "":
+				premise.text = String(d["text"])
+				spark_label.call()
+				spark_note.visible = false
+			else:
+				spark_note.text = String(d.get("error", "Off Grid AI didn't answer.")) if d is Dictionary else "Off Grid AI didn't answer."))
 	var made := _label("", 14, MUTED)
 	var shape_btn := _toggle("Shape the story", maker)
 	shape_btn.toggle_mode = false

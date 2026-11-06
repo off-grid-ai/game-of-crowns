@@ -514,6 +514,15 @@ export async function beatIdea({ name, about, roles, beats, draft }) {
   return String(out ?? "").replace(/^["“]|["”]$/g, "").replace(/\s+/g, " ").trim().slice(0, 300) || null;
 }
 
+// A premise for a story of the player's own: from the tags they picked (or a
+// surprise when none), or their own words carried on and finished.
+export async function premiseIdea({ tags, draft }) {
+  const feel = tags.length ? `Its tags: ${tags.join(", ")}.` : "Surprise me: any threat to a medieval king's throne.";
+  const ask = draft ? `Carry this premise on and finish it, keeping its words: "${draft}"` : `Write the premise. ${feel}`;
+  const out = await say("You write premises for stories that threaten a king's throne in a medieval realm: one or two vivid, specific sentences, at most 35 words, no names of real places, no quotation marks.", [], ask, 80);
+  return String(out ?? "").replace(/^["“]|["”]$/g, "").replace(/\s+/g, " ").trim().slice(0, 300) || null;
+}
+
 export async function arcFromWords(words, shapes) {
   if (shapes.length === 1) return arcNamed(words, shapes[0]);
   const list = shapes.map((s, i) => `${i + 1}. ${s.name}: ${s.about}`).join("\n");
