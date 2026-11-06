@@ -29,4 +29,4 @@ What would keep you playing past the first hour?
 2. Beatrix Strand served the Wolfholt bride her last cup. She's never said what was in it.
 3. Zoom out far enough and the land turns into the map of the realm.
 
-**If someone asks "is it AI?":** "No. What the lords do comes from the simulation: who you wronged, who owes what, who's starving. If you run Off Grid AI (getoffgridai.co/desktop) alongside it, they also speak in their own words."
+**If someone asks "is it AI?":** see docs/buzz/reddit/macgaming/POST.md. The old answer here ("No...") is no longer true: the trailer and intro paintings are AI-made.
