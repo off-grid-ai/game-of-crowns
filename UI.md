@@ -33,7 +33,7 @@ Side drawers slide in from the edges and close with Esc.
 - The serif exists only for a character's own spoken words.
 
 ## 6. Disclose progressively
-At rest: numbers. On hover: the explanation and the price. On click: the full panel. Nothing needs configuring before it works.
+At rest: numbers. On hover: the explanation and the price. On click: the full panel. Nothing needs configuring before it works. A first reign shows the essentials; more of the realm's machinery appears as the player reaches for it, never all at once.
 
 ## 7. Keyboard first
 
@@ -48,3 +48,15 @@ At rest: numbers. On hover: the explanation and the price. On click: the full pa
 
 ## 8. Motion only to direct attention
 New events slide in and fade out. A waiting court gently glows. Nothing else moves. All motion is 120–200 ms, ease-out.
+
+## 9. Fill the frame, or fit it exactly
+A view shows its whole subject edge to edge: no black around a map, no empty strip beside a row of cards. A card is as tall as its words, never taller, never cut short.
+
+## 10. One world, never a stage set
+Everything in a scene belongs to one place: ground, sky and light agree. No painting pasted behind a 3D figure, no flat or toy-like stand-in. The realm is shown only at distances where it reads well.
+
+## 11. Change it where you see it; nothing on screen is dead
+Edit a thing where it's shown (a name, a story, a memory), not through a button repeated on every row. Every card can be put away. Anything that looks clickable does something, and nothing invisible ever sits over the world.
+
+## 12. For all ages
+No sexual content anywhere: traits, events, pasts, or anything the model writes.
