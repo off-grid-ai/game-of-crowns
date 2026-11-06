@@ -12,7 +12,7 @@ Hi Andrew,
 
 Your "Mac Gaming FINALLY Got Good" list is why I'm writing. I've just released Game of Crowns, a medieval kingdom sim built for Apple Silicon: native, signed and notarised, and free with nothing locked. No CrossOver needed.
 
-The great houses farm, marry and go to war on their own, and you're the King who can't move a single soldier. The lords remember what you did, so years after you take a town from a house, its lord stands up at court and names the season you did it.
+The great houses farm, marry and go to war on their own, and you're the King who can't move a single soldier. The lords remember what you did, so years after you take a town from a house, its lord stands up at court and names the season you did it. When your reign ends, history names you for how you ruled: the Golden, the Bloody, the Meddler or the Deposed.
 
 Download: https://alichherawalla.itch.io/game-of-crowns
 Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
@@ -22,13 +22,13 @@ A season passes every twenty seconds, so twenty minutes of footage covers fiftee
 Mac
 
 **2. MrMacRight** (116K) · business@mrmacright.com
-Subject: A free native Mac game for your next list: a kingdom where the lords remember
+Subject: A free native Mac game for your next list: find out what kind of king you'd be
 
 Hi,
 
 Your "Top 25 Mac Games 2025" is why I'm writing. I've just released Game of Crowns, a free medieval kingdom sim that runs natively on Apple Silicon, signed and notarised.
 
-The great houses farm, marry and go to war on their own. You're the King, you can't move a single soldier, and the lords remember what you did, down to the season and year.
+The great houses farm, marry and go to war on their own. You're the King, you can't move a single soldier, and the lords remember what you did, down to the season and year. When your reign ends, history names you for how you ruled: the Golden, the Bloody, the Meddler or the Deposed.
 
 Download: https://alichherawalla.itch.io/game-of-crowns
 Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
@@ -44,7 +44,7 @@ Hi Nick,
 
 Your "Why I'm Gaming on My M5 Mac Studio More Than My PS5" is why I'm writing. I've just released Game of Crowns, a free medieval kingdom sim built natively for Apple Silicon.
 
-The great houses farm, marry and go to war on their own, and you're the King who rules through the court, taxes, grain and marriages. The lords remember what you did, and every one of the realm's 83 nobles starts with a past.
+The great houses farm, marry and go to war on their own, and you're the King who rules through the court, taxes, grain and marriages. The lords remember what you did, and every one of the realm's 83 nobles starts with a past. When your reign ends, history names you for how you ruled: the Golden, the Bloody, the Meddler or the Deposed.
 
 Download: https://alichherawalla.itch.io/game-of-crowns
 Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
@@ -54,13 +54,13 @@ No embargo and nothing you have to do. Happy to answer anything.
 Mac
 
 **4. Okami's Den** (16K) · denofokami@gmail.com
-Subject: A free native game for the M5 MacBook Air: a kingdom where the lords remember
+Subject: A free native game for the M5 MacBook Air: find out what kind of king you'd be
 
 Hi,
 
 Your "PC Gaming on the M5 MacBook Air in 2026" is why I'm writing. Here's one that needs no translation layer at all: Game of Crowns, a free medieval kingdom sim built natively for Apple Silicon.
 
-The great houses farm, marry and go to war on their own. You're the King, and the lords remember what you did, so a grudge from ten years ago can cost you their banners.
+The great houses farm, marry and go to war on their own. You're the King, and the lords remember what you did, so a grudge from ten years ago can cost you their banners. When your reign ends, history names you for how you ruled: the Golden, the Bloody, the Meddler or the Deposed.
 
 Download: https://alichherawalla.itch.io/game-of-crowns
 Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
@@ -76,7 +76,7 @@ Hi,
 
 Your "Top Indie Games of 2025 You Can Play on Mac!" is why I'm writing. I've just released Game of Crowns, a free medieval kingdom sim, native on Apple Silicon.
 
-The great houses farm, marry and go to war on their own, and you're the King who can't move a single soldier. The lords remember what you did, and you can rename anyone and rewrite their story.
+The great houses farm, marry and go to war on their own, and you're the King who can't move a single soldier. The lords remember what you did, and you can rename anyone and rewrite their story. When your reign ends, history names you for how you ruled: the Golden, the Bloody, the Meddler or the Deposed.
 
 Download: https://alichherawalla.itch.io/game-of-crowns
 Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
@@ -92,7 +92,7 @@ Hi Tommy,
 
 Your "M6 Mac Mini Gaming is AMAZING" is why I'm writing. I've just released Game of Crowns, a free medieval kingdom sim built natively for Apple Silicon: a living realm with towns, crowds and battles, and a painted map when you zoom out.
 
-You're the King, the houses run themselves, and the lords remember what you did.
+You're the King, the houses run themselves, and the lords remember what you did. When your reign ends, history names you for how you ruled: the Golden, the Bloody, the Meddler or the Deposed.
 
 Download: https://alichherawalla.itch.io/game-of-crowns
 Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
@@ -108,7 +108,7 @@ Hi Sal,
 
 Your "Can a Mac Replace Your Gaming PC in 2026?" is why I'm writing. I've just released Game of Crowns, a free medieval kingdom sim built natively for Apple Silicon, signed and notarised.
 
-The great houses farm, marry and go to war on their own. You're the King, and the lords remember what you did.
+The great houses farm, marry and go to war on their own. You're the King, and the lords remember what you did. When your reign ends, history names you for how you ruled: the Golden, the Bloody, the Meddler or the Deposed.
 
 Download: https://alichherawalla.itch.io/game-of-crowns
 Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
@@ -123,7 +123,7 @@ Paste the MacProTips email, opening instead with: "I read your M4 MacBook Pro ga
 Not emailed: MacResearch Gaming (no public email), Jimmy Tries World (business mail only through YouTube's button; Mac can use it himself).
 
 ## Batch 2: strategy and sim channels (Mon 9 Nov)
-Same email, opening on their video. Leave Off Grid AI out; lead with the lords remembering.
+Same email, opening on their video. Leave Off Grid AI out; lead with what kind of king you'd be.
 
 | Creator | Subs | Their video to name | Email |
 |---|---|---|---|

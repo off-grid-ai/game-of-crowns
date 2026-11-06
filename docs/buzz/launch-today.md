@@ -33,42 +33,35 @@ Mac's call: "we're gonna launch today." This replaces launch.md's 8 December dat
 ---
 
 ## r/macgaming (19:00)
-Image post or video. Images: final/1-court.jpg, final/2-street.jpg, final/5-lore-person.jpg. Flair: "Self promotion".
+Video post: upload docs/buzz/video/game-of-crowns-0.4-hook-16x9.mp4. Flair: "Self promotion".
 
-**Title:** Free on Apple Silicon: a medieval kingdom where every lord remembers what you did
+**Title:** Free on Apple Silicon: I made a game where you find out what kind of king you'd be
 
-I've been building this on my Mac and version 0.5 is out today. It's free and nothing's locked.
+Seven great houses farm, scheme, marry and go to war on their own, and every one of them wants your throne. You can't move a single soldier, so you hold on with grain, gold and judgement at court. When your reign ends, history names you for how you ruled: the Golden, the Bloody, the Meddler, or the Deposed.
 
-Great houses farm, starve, marry and go to war on their own. You're the King, but you can't move a single soldier, so you rule through the court, taxes, grain and marriages, and the lords remember all of it. Every one of the realm's 83 nobles starts with a past too: grudges, debts, the odd secret. One of them served a bride her last cup and has never said what was in it.
+A season passes every twenty seconds, so five minutes covers nearly four years of politics.
 
-You can rename anyone and rewrite their story on their card, so your brother can be the lord who turns on you.
+It's version 0.5, free with nothing locked, native on Apple Silicon, signed and notarised: https://alichherawalla.itch.io/game-of-crowns
 
-It's a native Apple Silicon build, signed and notarised: https://alichherawalla.itch.io/game-of-crowns
-
-It's early. What would keep you playing past the first hour?
-
-**Captions:**
-1. Ten years on, Gareth Varn still remembers what the crown took from his house.
-2. Goldrock on market day. Nobody here waits for you.
-3. Cecily Goldcrest. Every noble has a past like this, and you can rewrite it.
+It's early. What do you think history would call you?
 
 ## r/IndieGaming (21:00)
-**Title:** My free medieval kingdom sim is out today: you rule through marriages and grain, and every lord remembers
+**Title:** I made a free kingdom sim where history names you for how you ruled: the Golden, the Bloody, the Meddler or the Deposed
 
-The houses in my game run themselves. They farm, marry, starve and go to war, and you're the King who can't move a single soldier. You get the court, the taxes, the grain and the marriages, and every lord remembers how you used them. Bleed a house with the tithe or take one of its towns, and years later its lord brings it up at court, down to the season and the year.
+Seven great houses farm, scheme, marry and go to war on their own, and every one of them wants your throne. You're the King, and you can't move a single soldier, so you rule through the court, taxes, grain and marriages. Keep the peace while the realm grows and you go down as the Golden. Let it bleed and you're the Bloody. Meddle in everything and you're the Meddler. Lose Kingsmere and you're the Deposed.
 
-A season passes every twenty seconds, so a five-minute sitting covers nearly four years. It's free, Mac only for now (Apple Silicon): https://alichherawalla.itch.io/game-of-crowns
+It's free, Mac only for now (Apple Silicon): https://alichherawalla.itch.io/game-of-crowns
 
-What's the one thing a kingdom sim has to get right for you?
+What would yours be?
 
 ## r/godot (20:00)
 Video or images. Flair: "selfpromo (games)".
 
-**Title:** I built a medieval kingdom in Godot 4 where the lords remember what you did. It's out on Mac today
+**Title:** I built a medieval kingdom in Godot 4 where history names you for how you ruled. It's out on Mac today
 
 Godot draws everything you see: the land, the towns and their crowds, the castles, and the painted map you get when you zoom all the way out. Underneath, a Freeciv server runs the world, and a small Node bridge sits between the two and keeps the lords' memories.
 
-You play the King. The houses farm, marry and go to war on their own, so you rule through the court, taxes and grain, and the lords remember all of it.
+You play the King. The houses farm, marry and go to war on their own, so you rule through the court, taxes and grain, and when the reign ends the game names you for it: the Golden, the Bloody, the Meddler or the Deposed.
 
 It's free, native on Apple Silicon: https://alichherawalla.itch.io/game-of-crowns
 
@@ -79,20 +72,20 @@ Ask me anything about running Freeciv under Godot. What would you want to know?
 
 Game of Crowns is free on Apple Silicon Macs from today.
 
-The great houses farm, marry and go to war on their own. You're the King, and you rule through the court, taxes, grain and marriages. The lords remember what you did, and every one of the realm's 83 nobles starts with a past of their own. You can rename anyone and rewrite their story.
+The great houses farm, marry and go to war on their own. You're the King, and you rule through the court, taxes, grain and marriages. The lords remember what you did, and every one of the realm's 83 nobles starts with a past of their own. You can rename anyone and rewrite their story. When your reign ends, history names you for how you ruled: the Golden, the Bloody, the Meddler or the Deposed.
 
 Lords speak in their own words when Off Grid AI is running on the same Mac (getoffgridai.co/desktop). Without it, the realm plays exactly the same.
 
 Tell me in the comments what kept you playing, and what made you stop.
 
 ## Creator email (one per creator; names and videos in creators.md)
-**Subject:** A free Mac kingdom sim for your channel: the lords remember what you did
+**Subject:** A free Mac kingdom sim for your channel: find out what kind of king you'd be
 
 Hi [name],
 
 I watched your [video title] and [one real line about it]. I've just released Game of Crowns, a free medieval kingdom sim for Apple Silicon Macs.
 
-The great houses farm, marry and go to war on their own, and you're the King who can't move a single soldier. The lords remember what you did, so a lord can bring up the town you took from his house years ago, just when you need his banners.
+The great houses farm, marry and go to war on their own, and you're the King who can't move a single soldier. The lords remember what you did, so a lord can bring up the town you took from his house years ago, just when you need his banners. When your reign ends, history names you for how you ruled: the Golden, the Bloody, the Meddler or the Deposed.
 
 Download (free, signed, no key needed): https://alichherawalla.itch.io/game-of-crowns
 Clip (27s): https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4
