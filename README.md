@@ -57,6 +57,7 @@ Give a 👍 to the ones you want first, and the most wanted get built first. [Se
 - [Bring your own characters](https://github.com/off-grid-ai/game-of-crowns/issues/14)
 - [Write stories others can play](https://github.com/off-grid-ai/game-of-crowns/issues/15)
 - [Play on Windows](https://github.com/off-grid-ai/game-of-crowns/issues/16)
+- [Rule from your phone](https://github.com/off-grid-ai/game-of-crowns/issues/17)
 
 ## Releases
 
