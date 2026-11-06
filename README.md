@@ -2,16 +2,26 @@
 
 **A free medieval kingdom sim where every lord remembers what you did.**
 
-Great houses grow, starve, marry, scheme and go to war on their own. You're the King: rule with grain, gold, decrees and judgement at court, and live with what the lords remember. Tax a house too hard and, years later, its lord may be whispering a better claim to your throne.
+You're the King of Aldmere. Seven great houses grow their towns, marry, scheme and go to war whether you're watching or not. You keep them loyal with grain, gold, decrees and judgement at court, and they keep score. Tax a house too hard and, years later, its lord brings it up in front of the whole court.
 
-**Download:** free, nothing locked, for Macs with Apple Silicon, from [Releases](https://github.com/off-grid-ai/game-of-crowns/releases). Windows is coming.
+**Download:** free, nothing locked, for Macs with Apple Silicon, from [Releases](https://github.com/off-grid-ai/game-of-crowns/releases). Windows is coming. Want the lords to plead, scheme and threaten you in their own words? Run [Off Grid AI](https://getoffgridai.co/desktop) alongside it. It's free and runs on your Mac.
 
-A living medieval world that runs on its own, set in the fictional realm of **Aldmere**. You are its King. Seven great houses rule their lands, grow their towns, marry, scheme and go to war whether you watch or not; you keep them loyal and the realm at peace with grain, gold, decrees, judgement at court and, when you must, the banners and the royal host. The dead are coming down from beyond the northern wall, and a lord who loses faith in the crown may raise a pretender.
+![Cecily Goldcrest, Lady of Goldrock, in her own oak grove at golden hour](docs/play/v04/meet-goldcrest.jpg)
+*Meet anyone and they stand in their own land. Cecily Goldcrest holds the debts of half the western lords, and swears the Wolfholt bride died of fever.*
 
-Open source, macOS on Apple Silicon. Decisions live in [VISION.md](VISION.md) and [DESIGN.md](DESIGN.md).
+## New in 0.4
 
-![The King's rider on the road into Goldrock, the seat of House Goldcrest](docs/play/r32-on-road/06-ride.jpg)
-*The King's rider carries the crown's purse into Goldrock; the town card below holds the royal decrees.*
+- **Everyone has a past.** All 83 lords, consorts, heirs and bannermen start with a history that agrees with everyone else's: who refused whose daughter, who opened the gates at Windcross, who served the Wolfholt bride her last cup. Ten bannermen have a quiet reason to turn their coats.
+- **The realm is yours to rewrite.** Rename any house or person. Rewrite anyone's story, what they remember, their nature and their loyalty, right on their card. Do it from the menu and every chronicle you start after that begins your way. It stays on your Mac.
+- **The whole realm at a glance.** Zoom out and a painted map of Aldmere takes over: every town under whoever holds it now, each house's lands, hosts on the march, towns under siege. Click a town and you're on the ground there.
+- **The Lore of Aldmere.** The book of the realm, open from the menu: its seven houses, the people who matter in each, the bannermen and whom they kneel to, and a map you can drag, zoom and click.
+- **A proper opening.** The Off Grid AI seal, the war table, then a storybook that plays smoothly and turns its own pages.
+- **Your reigns, kept.** Chronicles shows every reign you've played: the one in progress, ready to continue, and the ones that ended, with the King's name, score and verdict.
+- **Fit for all ages.** Nothing sexual anywhere: traits, events, pasts or anything the model writes.
+
+![Chronicles: every reign as a card, the one in progress ready to continue](docs/play/v04/chronicles.jpg)
+
+Decisions live in [VISION.md](VISION.md) and [DESIGN.md](DESIGN.md). The interface rules are in [UI.md](UI.md).
 
 ---
 
