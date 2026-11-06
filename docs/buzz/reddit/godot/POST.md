@@ -40,24 +40,26 @@ The technical claims are true against the code: Godot draws the land, towns, cro
 
 Mac's line is the better line for players, and it won the HN study for a reason. r/godot rewards a thing to look at and a surprise about how it's made, and its strategy premises flop: Houses of Veyra, a noble-houses pitch, scored 2 and then 5. Use Mac's line on r/macgaming and itch, and the Freeciv line here.
 
-## The post (Mac's voice, no markdown, flair `selfpromo (games)`)
+## The post (Mac's final copy of 6 Nov, flair `selfpromo (games)`)
+The body is Mac's final copy (docs/buzz/hn/POST.md, 03a5804), word for word. For r/godot I added three things: the title, one short Godot paragraph (the study shows a real "how" is what earns votes here, and Rule 8 wants Godot at the centre), and the link on its own line at the end (a Reddit post has no URL field). Off Grid AI and "nothing leaves your Mac" stay out of the post, for replies only.
+
 **Title:** Freeciv runs my medieval kingdom sim headless, and Godot draws all of it
 
-Godot draws everything in the clip: the land on Terrain3D, the towns and the people in them, the castles, and the painted map you get when you pull all the way back. The rules live somewhere else. A Freeciv server runs headless underneath and decides who has grain and where the armies go. A Lua script inside it prints each event as a line of JSON, a small Node bridge reads those lines off stdout and serves the state of the world on localhost, and Godot polls that once a second and builds what the camera can see.
+Game of Crowns is a medieval kingdom sim. You're the king, and seven great houses want your throne. You hold it with grain, gold, marriages and your rulings at court. Side against a house in a war, and ten years later its lord stands up at court to remind you. When your reign ends, history names you: the Golden, the Bloody, or the Deposed.
 
-The crowds fought me hardest. Godot advances every AnimationPlayer every frame unless you tell it otherwise, whether anyone can see it or not, so a town full of Mixamo people ate the frame. Each player is on manual now. People near the camera animate every frame, people further out every third frame with the skipped time added back so they keep pace, and anyone out of view doesn't animate at all.
+I wanted my own Game of Thrones story, so I built one where you can rename anyone, rewrite their past and pick the story that comes for your throne. A season passes every 20 seconds, so a whole reign fits in an evening.
 
-As a game, you're the king and seven great houses want your throne. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed.
+With an optional local model, you can answer petitioners in your own words instead of picking from a list, and it can write you a new story for your next reign.
 
-Since someone will ask, I built it with Claude. If you run a small local model on the same Mac the lords speak in their own words, and the game plays fine without it.
+Godot draws all of it: the land on Terrain3D, the towns and their crowds, and the painted map you get when you pull all the way back. Freeciv runs headless underneath, and Godot asks it for the world once a second. Godot animates every AnimationPlayer every frame unless you stop it, so the crowds are on manual. People near the camera move every frame, people further out every third frame, and nobody out of view moves at all.
 
-It's free and MIT licensed, for Apple Silicon Macs: https://github.com/off-grid-ai/game-of-crowns
+It's free and open source on Apple Silicon Macs, with Windows next. I built it with Claude on top of Freeciv, and I'm happy to go into how any of it works.
 
-Has anyone else put an outside simulation behind a Godot view? I'd like to know how you kept the two in step.
+https://github.com/off-grid-ai/game-of-crowns
 
-*Only if posting before the asset swap:* after "I built it with Claude", add "and the house banners, sigils and some ground textures came from an image model."
+*Only if posting before the asset swap:* after "I built it with Claude on top of Freeciv", add "(the house banners, sigils and some ground textures came from an image model)".
 
-**Score:** gate passes after the swap; title 8; post P1 2, P2 2, P3 2, P4 2, P5 2, P6 2 = 12. **20/20, or 19/20 with Mac's title.** The rubric can't see how good the clip looks, which is probably what decides it, so treat the 20 as "no known mistakes", not a forecast.
+**Score:** gate passes after the swap; title 8; post P1 2 (with the clip below), P2 2 (the AnimationPlayer paragraph), P3 2 (short, human, one link at the end), P4 2, P5 2 ("I built it with Claude", plain and not the subject), P6 2. **20/20, or 19/20 with Mac's title.** Without the Godot paragraph, P2 drops to 0 and P6 to 1: 17/20. The rubric can't see how good the clip looks, which is probably what decides it, so treat the 20 as "no known mistakes", not a forecast.
 
 **Every claim, checked in the code:**
 - Terrain3D is the ground (`realm/addons/terrain_3d`, `realm/scripts/terrain.gd`).
@@ -67,8 +69,9 @@ Has anyone else put an outside simulation behind a Godot view? I'd like to know 
 - The painted map is drawn by `realm/scripts/realm_map.gd`.
 - The crowd stepping is in `realm/scripts/anim_lod.gd`: `ANIMATION_CALLBACK_MODE_PROCESS_MANUAL`; within `NEAR` = 6 world units every frame; otherwise one frame in `STRIDE` = 3 with the owed time added back; nothing once out of frustum or past `SEEN_TO`.
 - People are Mixamo (`realm/assets/people/mixamo`), and the licence is MIT (`LICENSE`).
+- The rest of the body is Mac's copy, checked against the README and ledger: seasons of 20 s (shipped in beb839b), renaming and rewriting anyone, picking the story, the local model writing stories (docs/play/r42-generate), and Windows listed as coming.
 
-The post says "near the camera" rather than a distance, because world units aren't metres. "Decides who has grain" stands: Freeciv cities starve and shrink, and `events.lua` reports famine.
+The post says "near the camera" rather than a distance, because world units aren't metres.
 
 ## What to post with it
 1. **Best: a new 20-30 s single take in-engine, no captions**, recorded after the asset swap. Start on the painted map, scroll into Goldrock, and keep going down to street level among the crowd, so the clip shows the title's claim (Godot drawing all of it). Native upload as video, not a YouTube link: uploaded video reaches 100 points 16.3% of the time, YouTube 0.6%. Optional, and the strongest r/godot pattern if cheap: a second pass with each person tinted by animation rate (every frame, every third, off). That's the Psych Rift move (2,364), but it means building a debug view, so only if it's small.
