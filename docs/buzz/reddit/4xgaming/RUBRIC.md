@@ -89,7 +89,9 @@ Per-criterion gap (winner mean minus flop mean):
 | Draft, Mac's line ("A medieval kingdom sim where history names you for how you ruled") | 6 | 11 | **17** | The strongest value in any candidate (who you become), but "kingdom sim" isn't on the megathread's list ("4X or 4X-adjacent: grand strategy or HoMM-like"), so T2 = 1; it also doesn't name the game, so T4 = 1 |
 | Draft, title C (Mac's line with the name and genre) | 8 | 11 | **19** | "Game of Crowns, a medieval grand strategy where history names you for how you ruled" |
 
-**Recommendation: title C, as a megathread comment.** It ties A on score, keeps Mac's line and the value it carries, and passes the genre gate. It also drops "can't move a single soldier", which needs checking against the "Raise the royal levy" choice on the map screen.
+| **Final: Mac's copy (6 Nov) as the megathread entry** | 7 | 11 | **18** | Opens on "Game of Crowns is a medieval grand strategy game", a plain genre line (T1 = 1), but it names the game and passes the genre gate; the body is plain, specific and ends on an open offer. Untested risk: it names Claude and a local model in the body (see POST.md). |
+
+**Recommendation: Mac's final copy as the megathread entry, scoring 18. Use title C only if the mods approve a standalone Saturday post (19).** It ties A on score, keeps Mac's line and the value it carries, and passes the genre gate. It also drops "can't move a single soldier", which needs checking against the "Raise the royal levy" choice on the map screen.
 
 ## Does the Hacker News finding hold here?
 

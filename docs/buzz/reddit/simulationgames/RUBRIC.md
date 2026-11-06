@@ -70,7 +70,7 @@ Keep T1, T2, P1, P3, P4 and P5. Winners now average **10.4** (range 8 to 12), fl
 
 On the version 1 scale (out of 16) the four score 13, 16, 15 and 16.
 
-**Recommendation: Mac's line, posted as a native video.** It ties A at the top, it's the line Mac picked for Hacker News, and it doesn't lean on "can't move a single soldier", which needs checking against the "Raise the royal levy" choice in the game.
+**Recommendation: Mac's line, posted as a native video, with Mac's final copy (6 Nov) as the body.** The copy doesn't change the score: in this sub the body barely matters (see below), and the AI penalty seen here was for AI art, which the post doesn't show. It ties A at the top, it's the line Mac picked for Hacker News, and it doesn't lean on "can't move a single soldier", which needs checking against the "Raise the royal levy" choice in the game.
 
 ## Does the Hacker News finding hold here?
 

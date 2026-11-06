@@ -23,19 +23,23 @@ Mac's line and A tie. Both name the fantasy, which is what the winning sim title
 
 ## The post (paste as plain text under the video)
 
-Seven great houses want your throne, and all you've got to hold onto it is grain, gold, marriages and your word at court. In the clip, Gareth Varn stands up in front of the whole court and reminds the king that ten years ago, in the spring of 315, the crown took his enemy's side in a war. You can make amends, hear him out, or tell him the crown did what it must.
+Mac's final copy (6 Nov, the same as docs/buzz/hn/POST.md), word for word. The only addition is the download link, because the post needs one. "Medieval kingdom sim" already uses this sub's own word, so it stays.
 
-A season passes every 20 seconds, so five minutes covers nearly four years. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed.
+Game of Crowns is a medieval kingdom sim. You're the king, and seven great houses want your throne. You hold it with grain, gold, marriages and your rulings at court. Side against a house in a war, and ten years later its lord stands up at court to remind you. When your reign ends, history names you: the Golden, the Bloody, or the Deposed.
 
-I'm building it, and it's free on any Apple Silicon Mac, with Windows coming: https://alichherawalla.itch.io/game-of-crowns
+I wanted my own Game of Thrones story, so I built one where you can rename anyone, rewrite their past and pick the story that comes for your throne. A season passes every 20 seconds, so a whole reign fits in an evening.
 
-Which sim made you care what happened to the people in it?
+With an optional local model, you can answer petitioners in your own words instead of picking from a list, and it can write you a new story for your next reign.
+
+It's free and open source on Apple Silicon Macs, with Windows next. I built it with Claude on top of Freeciv, and I'm happy to go into how any of it works.
+
+https://alichherawalla.itch.io/game-of-crowns
 
 ## In the thread
 
 - Answer every comment on the day, warmly and in full.
-- **"Is this AI?"** Never deny it or dodge it. Suggested answer, Mac's call on the wording: "I built it with Claude's help. The lords can also speak in their own words through a small model that runs on your own Mac, but the game plays fully without it." Don't lead with it: both AI-art posts in r/SimulationGaming scored 1 to 3, with comments like "AI generated thumbnail, horrible."
-- **"Windows? Consoles?"** "Windows is coming. Mac first because that's what I have."
+- **AI questions:** the post already says it, so stay plain. In replies, Mac can name Off Grid AI and say the model runs on your Mac and nothing leaves it (that stays out of the post itself). The evidence here covers AI *art* only (two posts at 1 to 3 points, "AI generated thumbnail, horrible."). Nothing in the sample disclosed AI-built code or a local model, so how this sub takes it is unknown. Keep the painted stills out of the post and let the gameplay clip carry it.
+- **"Windows? Consoles?"** "Windows is next. Mac first because that's what I have."
 - Don't add the GitHub, itch and Discord links in a pile. One link, in the post.
 
 ## What changed from the planned post (channel-04)
@@ -43,7 +47,7 @@ Which sim made you care what happened to the people in it?
 | Planned | Now | Why |
 |---|---|---|
 | Title: "In most world sims, wars are dice rolls. I made one where the lords remember what you did." | Mac's line | It names a mechanic, not the fantasy. Mac's voice rules ban "the lords remember" lines and opening with "I made". |
-| "Great houses run themselves in my game: they farm, starve, marry..." | Starts from what the player holds: grain, gold, marriages, word at court | Bans lines about how the world works; says what the player gets |
+| "Great houses run themselves in my game: they farm, starve, marry..." | Mac's final copy (6 Nov), word for word, plus the link | Mac's voice rules ban lines about how the world works; his copy says what the player gets |
 | Three stills, with the clip only "if it's out" | The 27-second hook clip as a native video | The clip exists now, and video is the one thing every winner shared |
-| "years later its lord stands up at court and names the season and year" | The real line from the clip, with Gareth Varn's name and the year 315 | Real beats described |
-| "What made you stop caring in the world sims you've played?" | "Which sim made you care what happened to the people in it?" | Same idea, asked as a happy memory instead of a complaint. It's easy to answer from experience. |
+| "years later its lord stands up at court and names the season and year" | "Side against a house in a war, and ten years later its lord stands up at court to remind you", with the clip showing it happen | The clip shows the real moment, so the text doesn't need to describe it |
+| "What made you stop caring in the world sims you've played?" | "I'm happy to go into how any of it works" | Mac's copy ends on an open offer instead of a question. That fits here: winning sim posts rarely asked anything. |
