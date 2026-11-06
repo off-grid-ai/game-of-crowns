@@ -374,6 +374,7 @@ func _pill(anchor_x: float, grow: int) -> HBoxContainer:
 var _threat_bar: ProgressBar  # how near the reign's story is to the throne
 var _threat_fill: StyleBoxFlat
 var _date_pill: Control  # the date card, top-left: the houses table keeps below it
+var _bar_pill: Control  # the buttons, top-right: the cards under the top bar keep below it
 var _story: Dictionary = {}  # the reign's story as the world last told it
 var _story_panel: PanelContainer
 var _story_sig := ""
@@ -527,6 +528,7 @@ func _build_top_bar() -> void:
 	state.add_child(tithe)
 	# Top-right: what you can do.
 	var act := _pill(1.0, Control.GROW_DIRECTION_BEGIN)
+	_bar_pill = act.get_parent()
 	act.get_parent().offset_right = -10
 	_top.append(act.get_parent())
 	get_viewport().size_changed.connect(_arrange_top)
@@ -919,6 +921,15 @@ func _process(delta: float) -> void:
 	# story's line and its bar make it taller), never over it.
 	if _date_pill and _houses_panel:
 		_houses_panel.offset_top = _date_pill.get_global_rect().end.y + 8.0
+	# Every card that hangs under the top bar starts below its lowest piece (the
+	# buttons grew taller with their names), never over it.
+	if _bar_pill and _date_pill:
+		var below := maxf(_bar_pill.get_global_rect().end.y, _date_pill.get_global_rect().end.y) + 10.0
+		for c in [_court_panel, _house_panel, _folk_panel, _form_panel, _ledger_panel, _digest_panel]:
+			if c and is_instance_valid(c):
+				c.offset_top = maxf(70.0, below)
+		if _chron_panel:
+			_chron_panel.offset_top = maxf(84.0, _bar_pill.get_global_rect().end.y + 10.0)
 	# The Hand's counsel steps aside while you read a town, the court or the
 	# away report, and is back when you close them.
 	if _counsel:
