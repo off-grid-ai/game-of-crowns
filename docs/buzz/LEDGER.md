@@ -57,6 +57,21 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 
 ## Runs
 
+**2026-11-06 20:23:** Shipped:
+- HN post, now final per Mac on 6 Nov: 2749f33, 77c10ea, 7f365b4, dde5276, 8dd1958, a5fc6e0, 78df33d, 03a5804. Off Grid AI is out of the post and disclosed in the first reply that asks.
+- Reddit studies, each a year of posts with rubrics and rewritten posts:
+  - 4384d54: r/4Xgaming and r/SimulationGames.
+  - 278eb85: r/indiegames and r/IndieGaming. Both remove GenAI, so the painted film is held there.
+  - 1c57b24: r/LocalLLaMA.
+  - bbd0627: Mac's title scored.
+- Buzz 0325e9a and aa3cb87: the r/macgaming step uses the study's post with an honest AI answer; r/IndieGaming is held.
+
+Moved: Mac has changed direction: Hacker News and r/LocalLLaMA are now in play (the earlier "no HN or LocalLLaMA" in brief.md is superseded). Sessions reddit-macgaming, reddit-sim-4x, reddit-localllama, reddit-godot and reddit-indie each own a sub.
+
+Needs Mac: post r/macgaming (window until ~22:30 IST), then the creator emails.
+
+Downloads: GitHub 4.
+
 **2026-11-06 20:08:** Shipped: 7dd0c70 and de7b2cc (a Hacker News post and rubric in docs/buzz/hn/, written by another session). Note: Mac's earlier direction was no Hacker News (brief.md). If he has changed his mind, that's his call; flagged to him. Moved: nothing public. Needs Mac: r/macgaming with the film (US window until ~21:30 IST), then the creator emails. Downloads: GitHub 4.
 
 **2026-11-06 19:53:** Shipped: 4e22358 (README: the trailer link plays the launch film). Moved: both film cuts are public on the 0.5.1 release; the email link returns 200 and the byte size matches. Needs Mac: post r/macgaming with the film (US window until ~21:30 IST), then send the creator emails. Downloads: GitHub 4.
