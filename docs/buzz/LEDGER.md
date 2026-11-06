@@ -57,6 +57,8 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 
 ## Runs
 
+**2026-11-06 17:38:** Shipped: e9ba53d (README: the throne-hall painting on top, a trailer preview linking the full clip, the seven houses in their paintings). Moved: the 0.5 release build is running (scratch folder up, 18G free). Blocks: the 0.5 release (due ~18:00), then Mac's Publish on itch at 18:40. Downloads: GitHub 3.
+
 **2026-11-06 17:23:** Shipped: aec70d7 (README: what's new is 0.5); 2c4981b (buzz: tonight's posts, itch description and devlog draft relabelled 0.5; the 18 Nov update is 0.6). Moved: Mac named the fixed build 0.5, since the 0.4 with the empty-court bug is already public. 0.5 is building, due ~18:00, and goes to itch with --userversion 0.5. itch still holds only the 0.3 build (page in Draft). Blocks: the 0.5 release, then Mac's Publish on itch. Downloads: GitHub 3 (0.4: 1).
 
 **2026-11-06 17:08:** Shipped: 62b2ecd (9:16 hook clip: the grudge reads at phone size from the first frame); 9644fb4 (buzz: creator emails link the clip). Moved: fallback 0.4 released (v0.4-20261106-bef6218, pre-release, with both hook clips attached), but it still has the empty-court bug. The fixed 0.4 is building, due ~17:50, and is the one that goes to itch. Blocks: the fixed release, then Mac's Publish on itch at 18:40. Downloads: GitHub 2 (0.4: 0).
