@@ -145,6 +145,9 @@ var _cards: Array = []
 
 ## Closes the topmost thing the King has open; false when nothing was.
 func _step_back() -> bool:
+	if _story_panel and _story_panel.visible:
+		_story_panel.visible = false
+		return true
 	for c in _cards:
 		if is_instance_valid(c) and c.visible:
 			c.visible = false
@@ -370,6 +373,95 @@ func _pill(anchor_x: float, grow: int) -> HBoxContainer:
 
 var _threat_bar: ProgressBar  # how near the reign's story is to the throne
 var _threat_fill: StyleBoxFlat
+var _date_pill: Control  # the date card, top-left: the houses table keeps below it
+var _story: Dictionary = {}  # the reign's story as the world last told it
+var _story_panel: PanelContainer
+var _story_sig := ""
+
+
+## The story so far: what has happened in the reign's story, oldest first, the
+## latest marked as where it stands now. Never what is still to come.
+func _toggle_story(pill: Control) -> void:
+	if _story_panel and _story_panel.visible:
+		_story_panel.visible = false
+		return
+	if _story.is_empty():
+		toast("No story has come for the throne yet. It shows here when one does.")
+		return
+	if _story_panel == null:
+		_story_panel = _glass_panel()
+		_story_panel.z_index = 20  # over the houses table while it's open
+		_story_panel.custom_minimum_size = Vector2(440, 0)
+	_story_panel.offset_left = pill.get_global_rect().position.x
+	_story_panel.offset_top = pill.get_global_rect().end.y + 8.0
+	_story_sig = ""
+	_fill_story()
+	_story_panel.visible = true
+
+
+func _fill_story() -> void:
+	if _story_panel == null:
+		return
+	var beats: Array = _story.get("beats", [])
+	var sig := "%s|%d|%d|%s" % [_story.get("title", ""), int(_story.get("act", 1)), beats.size(), _story.get("status", "")]
+	if sig == _story_sig:
+		return
+	_story_sig = sig
+	for c in _story_panel.get_children():
+		c.queue_free()
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	_story_panel.add_child(v)
+	v.add_child(T.label("The story so far"))
+	v.add_child(T.title(String(_story.get("title", "")), 18))
+	var threat := float(_story.get("threat", 0))
+	var where := Label.new()
+	var ended := String(_story.get("status", "running")) != "running"
+	where.text = "It has ended." if ended else "Act %d  ·  how near it is to the throne: %d in 100" % [int(_story.get("act", 1)), int(threat)]
+	where.add_theme_color_override("font_color", T.DANGER if threat >= 66.0 and not ended else T.TEXT_2)
+	where.add_theme_font_size_override("font_size", T.SIZE_DESC)
+	v.add_child(where)
+	v.add_child(HSeparator.new())
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	var tallest := minf(440.0, get_viewport().get_visible_rect().size.y * 0.55)
+	v.add_child(scroll)
+	var list := VBoxContainer.new()
+	list.add_theme_constant_override("separation", 12)
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(list)
+	if beats.is_empty():
+		var none := Label.new()
+		none.text = "Nothing has come of it yet. Its first turn reaches your court soon."
+		none.add_theme_color_override("font_color", T.TEXT_2)
+		none.autowrap_mode = TextServer.AUTOWRAP_WORD
+		list.add_child(none)
+	for i in beats.size():
+		var b: Dictionary = beats[i]
+		var row := VBoxContainer.new()
+		row.add_theme_constant_override("separation", 2)
+		var latest := i == beats.size() - 1 and not ended
+		var when: Dictionary = b.get("when", {}) if b.get("when") is Dictionary else {}
+		var head := String(when.get("text", ""))
+		if latest:
+			head = ("Now  ·  " + head) if head != "" else "Now"
+		if b.get("yours", false):
+			head += "  ·  your beat"
+		row.add_child(T.label(head, T.ACCENT if latest else T.TEXT_3))
+		var t := Label.new()
+		t.text = String(b.get("text", ""))
+		t.autowrap_mode = TextServer.AUTOWRAP_WORD
+		t.add_theme_color_override("font_color", T.TEXT if latest else T.TEXT_2)
+		row.add_child(t)
+		list.add_child(row)
+	# As tall as what has happened, up to a limit; then it scrolls, the latest
+	# at the foot, in view.
+	scroll.custom_minimum_size.y = minf(list.get_combined_minimum_size().y, tallest)
+	get_tree().process_frame.connect(func():
+		if is_instance_valid(scroll):
+			scroll.custom_minimum_size.y = minf(list.get_combined_minimum_size().y, tallest)
+			_story_panel.reset_size()
+			scroll.scroll_vertical = 1 << 20, CONNECT_ONE_SHOT)
 
 
 func _build_top_bar() -> void:
@@ -398,6 +490,15 @@ func _build_top_bar() -> void:
 	_threat_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	who.add_child(_threat_bar)
 	when.add_child(who)
+	# Click the date and the story's line for the story so far.
+	var date_pill := when.get_parent() as Control
+	_date_pill = date_pill
+	date_pill.mouse_filter = Control.MOUSE_FILTER_STOP
+	date_pill.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	date_pill.tooltip_text = "The story so far"
+	date_pill.gui_input.connect(func(e: InputEvent):
+		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+			_toggle_story(date_pill))
 	# Top-centre: the state of the realm (beside the date instead, on a screen
 	# too narrow for both it and the actions; see _arrange_top).
 	var state := _pill(0.5, Control.GROW_DIRECTION_BOTH)
@@ -810,6 +911,10 @@ func _build_court() -> void:
 
 func _process(delta: float) -> void:
 	_reveal_pad(delta)
+	# The houses table sits under the date card however tall it grows (the
+	# story's line and its bar make it taller), never over it.
+	if _date_pill and _houses_panel:
+		_houses_panel.offset_top = _date_pill.get_global_rect().end.y + 8.0
 	# The Hand's counsel steps aside while you read a town, the court or the
 	# away report, and is back when you close them.
 	if _counsel:
@@ -1842,6 +1947,9 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 	# The reign's story leads the line while it runs: its name, the act, and how
 	# near it is to the throne (the bar turns red past two-thirds).
 	var story: Dictionary = world.get("story", {}) if world.get("story") is Dictionary else {}
+	_story = story
+	if _story_panel and _story_panel.visible:
+		_fill_story()  # rebuilt only when a beat lands or the act turns
 	_threat_bar.visible = not story.is_empty() and String(story.get("status", "")) == "running"
 	if _threat_bar.visible:
 		var threat := float(story.get("threat", 0))

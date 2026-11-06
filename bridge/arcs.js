@@ -877,7 +877,10 @@ export class Arcs {
     const a = this.active.find((x) => x.chosen) ?? this.done.slice().reverse().find((x) => x.chosen) ?? this.active.find((x) => x.reign);
     if (!a) return null;
     const last = a.beats[a.beats.length - 1];
-    return { title: a.title, threat: a.threat ?? 0, act: this.actOf(a), status: a.status ?? "running", tags: a.tags ?? [], last: last?.text ?? "", turn: last?.turn ?? null };
+    // What has happened so far, oldest first (never what is still to come): the
+    // King opens it from the story's line under the date.
+    const so_far = a.beats.filter((b) => b.text).map((b) => ({ text: b.text, turn: b.turn ?? null, stage: b.stage ?? "rising", yours: !!b.yours }));
+    return { title: a.title, threat: a.threat ?? 0, act: this.actOf(a), status: a.status ?? "running", tags: a.tags ?? [], last: last?.text ?? "", turn: last?.turn ?? null, beats: so_far };
   }
 
   // --- for the view and the King -------------------------------------------------------
