@@ -114,9 +114,17 @@ const SNOW_FADE := 20.0  # seconds for snow to settle or melt: about half a seas
 var _snow_fade: Tween
 
 
+## Snow laid over roofs, trees and people as an overlay: off. It covered whole
+## roofs as flat grey sheets, whitened heads, and came and went as towns were
+## rebuilt. Winter shows in the snow on the ground and the land's colder tint.
+const OVERLAY_SNOW := false
+
+
 func set_season(name: String, towns: Array = []) -> void:
 	if not SEASONS.has(name):
 		return
+	if not OVERLAY_SNOW:
+		towns = []  # nothing in the towns takes the overlay
 	var s: Dictionary = SEASONS[name]
 	if _snow == null:
 		_snow = ShaderMaterial.new()
@@ -153,7 +161,7 @@ func set_season(name: String, towns: Array = []) -> void:
 			if not _leaf_mats.has(mat):
 				_leaf_mats[mat] = mat.albedo_color
 			mat.albedo_color = _leaf_mats[mat] * s[key]
-		if s["snow"] > 0.0:
+		if s["snow"] > 0.0 and OVERLAY_SNOW:
 			mmi.material_overlay = _snow  # left on as it melts; the fade takes it to nothing
 	if land3d:
 		land3d.set_grass(s["ground"], s["snow"] > 0.0)
@@ -161,7 +169,7 @@ func set_season(name: String, towns: Array = []) -> void:
 
 ## A town raised after the season was set: give it the season's snow too.
 func season_on(node: Node) -> void:
-	if season != "" and SEASONS[season]["snow"] > 0.0:
+	if OVERLAY_SNOW and season != "" and SEASONS[season]["snow"] > 0.0:
 		_snow_on(node, true)
 
 
