@@ -1,0 +1,53 @@
+<template>
+  <style>
+@font-face { font-family:"EB Garamond"; src:url("assets/fonts/EBGaramond.ttf") format("truetype"); font-weight:400 800; }
+@font-face { font-family:"Cinzel"; src:url("assets/fonts/Cinzel.ttf") format("truetype"); font-weight:400 900; }
+#root { position:absolute; inset:0; overflow:hidden; background:#151719; }
+.cam { position:absolute; left:0; top:0; transform-origin:0 0; }
+.cam img { position:absolute; left:0; top:0; display:block; }
+.mark { position:absolute; height:7px; background:#B7A17D; transform-origin:0 50%; border-radius:2px; }
+.rule { position:absolute; width:8px; background:#B7A17D; transform-origin:50% 0; border-radius:2px; }
+.shade { position:absolute; left:0; right:0; bottom:0; height:520px;
+  background:linear-gradient(180deg, rgba(21,23,25,0) 0%, rgba(21,23,25,.62) 58%, rgba(21,23,25,.82) 100%); }
+.pic { position:absolute; left:0; top:0; width:1080px; height:1380px; overflow:hidden; }
+.veil { position:absolute; left:0; right:0; top:0; background:linear-gradient(180deg, #151719 0%, #151719 94%, rgba(21,23,25,0) 100%); }
+.footveil { position:absolute; left:0; right:0; bottom:0; background:linear-gradient(0deg, #151719 0%, #151719 55%, rgba(21,23,25,0) 100%); }
+.band { position:absolute; left:0; right:0; top:1380px; bottom:0; background:#151719; }
+.lines { position:absolute; left:72px; right:72px; top:1452px; font-family:"EB Garamond", serif; font-weight:500;
+  font-size:88px; line-height:1.08; letter-spacing:-0.01em; color:#EFE7D6; text-shadow:0 2px 18px rgba(0,0,0,.45); }
+.lines .ln { display:block; }
+.lines .w { display:inline-block; }
+
+.top .shade { top:0; bottom:auto; background:linear-gradient(0deg, rgba(21,23,25,0) 0%, rgba(21,23,25,.62) 58%, rgba(21,23,25,.82) 100%); }
+.top .lines { bottom:auto; top:96px; }
+.top .lines .ln { top:0; bottom:auto; }
+.q { color:#B7A17D; }
+.cursor { position:absolute; left:0; top:0; width:64px; height:64px; z-index:5; }
+
+#v6s { position:absolute; left:430px; top:420px; width:220px; height:220px; }
+#v6p { position:absolute; left:0; right:0; top:668px; text-align:center; font-family:"Cinzel", serif; font-weight:600;
+  font-size:24px; letter-spacing:.3em; color:#B7A17D; }
+#v6t { position:absolute; left:60px; top:740px; width:960px; height:auto; }
+#v6l { position:absolute; left:0; right:0; top:1100px; text-align:center; font-family:"EB Garamond", serif;
+  font-weight:500; font-size:64px; color:#EFE7D6; }
+#v6u { position:absolute; left:0; right:0; top:1200px; text-align:center; font-family:"EB Garamond", serif;
+  font-weight:500; font-size:38px; letter-spacing:.01em; color:#B7A17D; }
+  </style>
+  <div id="root" data-composition-id="v6" data-width="1080" data-height="1920">
+    <img id="v6s" src="assets/world/seal.png" alt="Off Grid AI">
+    <div id="v6p">OFF GRID AI PRESENTS</div>
+    <img id="v6t" src="assets/world/title.png" alt="Game of Crowns">
+    <div id="v6l">Free on Apple Silicon.</div>
+    <div id="v6u">alichherawalla.itch.io/game-of-crowns</div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#v6s", { opacity:0, scale:.9 }, { opacity:1, scale:1, duration:.6, ease:"power3.out" }, 0.05);
+    tl.fromTo("#v6p", { opacity:0 }, { opacity:1, duration:.5 }, 0.35);
+    tl.fromTo("#v6t", { clipPath:"inset(0 100% 0 0)", opacity:1 }, { clipPath:"inset(0 0% 0 0)", duration:.9, ease:"power2.inOut" }, 0.15);
+    tl.fromTo("#v6l", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 1.05);
+    tl.fromTo("#v6u", { opacity:0, y:14 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 1.35);
+    tl.set({}, {}, 5.0);
+    window.__timelines["v6"] = tl;
+  </script>
+</template>

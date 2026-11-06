@@ -1,0 +1,42 @@
+<template>
+  <style>
+@font-face { font-family:"EB Garamond"; src:url("assets/fonts/EBGaramond.ttf") format("truetype"); font-weight:400 800; }
+@font-face { font-family:"Cinzel"; src:url("assets/fonts/Cinzel.ttf") format("truetype"); font-weight:400 900; }
+#root { position:absolute; inset:0; overflow:hidden; background:#151719; }
+.cam { position:absolute; left:0; top:0; transform-origin:0 0; }
+.cam img { position:absolute; left:0; top:0; display:block; }
+.mark { position:absolute; height:7px; background:#B7A17D; transform-origin:0 50%; border-radius:2px; }
+.rule { position:absolute; width:8px; background:#B7A17D; transform-origin:50% 0; border-radius:2px; }
+.shade { position:absolute; left:0; right:0; bottom:0; height:520px;
+  background:linear-gradient(180deg, rgba(21,23,25,0) 0%, rgba(21,23,25,.62) 58%, rgba(21,23,25,.82) 100%); }
+.pic { position:absolute; left:0; top:0; width:1080px; height:1380px; overflow:hidden; }
+.veil { position:absolute; left:0; right:0; top:0; background:linear-gradient(180deg, #151719 0%, #151719 94%, rgba(21,23,25,0) 100%); }
+.footveil { position:absolute; left:0; right:0; bottom:0; background:linear-gradient(0deg, #151719 0%, #151719 55%, rgba(21,23,25,0) 100%); }
+.band { position:absolute; left:0; right:0; top:1380px; bottom:0; background:#151719; }
+.lines { position:absolute; left:72px; right:72px; top:1452px; font-family:"EB Garamond", serif; font-weight:500;
+  font-size:88px; line-height:1.08; letter-spacing:-0.01em; color:#EFE7D6; text-shadow:0 2px 18px rgba(0,0,0,.45); }
+.lines .ln { display:block; }
+.lines .w { display:inline-block; }
+
+.top .shade { top:0; bottom:auto; background:linear-gradient(0deg, rgba(21,23,25,0) 0%, rgba(21,23,25,.62) 58%, rgba(21,23,25,.82) 100%); }
+.top .lines { bottom:auto; top:96px; }
+.top .lines .ln { top:0; bottom:auto; }
+.q { color:#B7A17D; }
+.cursor { position:absolute; left:0; top:0; width:64px; height:64px; z-index:5; }
+</style>
+  <div id="root" data-composition-id="v4" data-width="1080" data-height="1920"><div id="v4" style="position:absolute;inset:0">
+    <div class="pic"><div class="cam" id="v4cam" style="width:1600px;height:900px"><video id="v4v" class="clip" src="assets/takes/back.mp4" muted playsinline data-start="0" data-duration="5.00" data-media-start="0.0" data-track-index="0" style="position:absolute;left:0;top:0;width:1600px;height:900px"></video></div><div class="footveil" style="height:420px"></div></div><div class="band"></div><div class="lines"><span class="ln" id="v4l0"><span class="w" id="v4l0w0">A</span> <span class="w" id="v4l0w1">kingdom</span> <span class="w" id="v4l0w2">that</span></span><span class="ln" id="v4l1"><span class="w" id="v4l1w0">runs</span> <span class="w" id="v4l1w1">itself.</span></span></div>
+  </div></div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.set("#v4cam", { x:-1060.0, y:0.0, scale:2.0 }, 0);
+    tl.to("#v4cam", { x:-1060.0, y:0.0, scale:2.0, duration:5.00, ease:"sine.inOut" }, 0);
+    tl.fromTo("#v4l0w0", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 1.00);
+    tl.fromTo("#v4l0w1", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 1.05);
+    tl.fromTo("#v4l0w2", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 1.10);
+    tl.fromTo("#v4l1w0", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 1.10);
+    tl.fromTo("#v4l1w1", { opacity:0, y:18 }, { opacity:1, y:0, duration:.5, ease:"power3.out" }, 1.15);
+    tl.set({}, {}, 5.0);
+    window.__timelines["v4"] = tl;
+  </script>
+</template>

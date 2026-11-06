@@ -136,7 +136,7 @@ def mark_tweens(prefix, marks=(), rules=(), ox=0):
 
 
 END_CARD = {"seal": "assets/world/seal.png", "title": "assets/world/title.png", "line": "Free on Apple Silicon.",
-            "link": "github.com/off-grid-ai/game-of-crowns"}
+            "link": "alichherawalla.itch.io/game-of-crowns"}
 
 
 def end_scene(sh):
