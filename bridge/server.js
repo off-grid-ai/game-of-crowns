@@ -790,6 +790,15 @@ function counsel(players, cities, threat) {
   // Once a year means once a year here too: the banners and the levy aren't
   // offered again until their year is out (the decree would refuse them anyway).
   for (const o of out) o.acts = o.acts.filter((a) => !(a.action === "banners" && (!bannersReady(world?.turn ?? 0) || seasonsLeft("banners") > 0)) && !(a.action === "levy" && seasonsLeft("levy") > 0) && !(FAVOUR.has(a.action) && a.city != null && seasonsLeft(yearlyKey(a) ?? "") > 0));
+  // An order offered once is not offered again under another matter (the
+  // banners answer the usurper and the dead alike): the first matter keeps it.
+  const given = new Set();
+  for (const o of out.sort((a, b) => b.urgency - a.urgency)) o.acts = o.acts.filter((a) => {
+    const k = `${a.action ?? a.ui}:${a.city ?? ""}:${a.to ?? ""}:${a.building ?? ""}`;
+    if (given.has(k)) return false;
+    given.add(k);
+    return true;
+  });
   // The Hand's own pick on each matter: the order that does most for its cost.
   const PREFER = ["court", "ward", "feast", "relief", "tithe_down", "banners", "peace", "settle", "buyoff", "marriage", "gift", "grant", "levy", "tithe_up"];
   for (const o of out) {
