@@ -57,6 +57,8 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 
 ## Runs
 
+**2026-11-06 18:24:** Shipped (on main, not in 0.5): a8233a7 (the reign ends on its own screen with the verdict; the Hand raises plague, unrest, thin granaries and more; one royal favour per house a year; cards wait their turn; the camera stays above roofs); da89092 (the Hand offers each order once). These are candidates for 0.5.1 on 13 Nov. Moved: nothing public. Blocks: the itch page is still Draft (public URL 404); Mac's Publish is due at 18:40. Downloads: GitHub 4 (0.5's one download is my own check).
+
 **2026-11-06 17:55:** Shipped: 0.5 released (v0.5-20261106-f5ba354: court fix, notarised, both hook clips attached); 15a45cf (README as a sales page). Moved: the 0.5 dmg is on itch (channel mac, build #2312884, labelled 0.5; Gatekeeper: Notarized Developer ID). Left: Mac's Publish on itch (page and devlog) at 18:40, then the posts.
 
 **2026-11-06 17:38:** Shipped: e9ba53d (README: the throne-hall painting on top, a trailer preview linking the full clip, the seven houses in their paintings). Moved: the 0.5 release build is running (scratch folder up, 18G free). Blocks: the 0.5 release (due ~18:00), then Mac's Publish on itch at 18:40. Downloads: GitHub 3.
