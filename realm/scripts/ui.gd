@@ -2395,6 +2395,7 @@ func set_court(petitions: Array) -> void:
 
 func _show_audience() -> void:
 	for c in _court_panel.get_children():
+		_court_panel.remove_child(c)  # gone at once: the new "Scroll" keeps its name, so the card is measured by it, not left an empty bar
 		c.queue_free()
 	if _petitions.is_empty():
 		_court_panel.visible = false
