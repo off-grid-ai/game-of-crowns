@@ -1,6 +1,6 @@
 # Game of Crowns
 
-![The empty throne of Aldmere, the seven houses' banners down the hall](docs/play/v05/throne.jpg)
+![The King on his throne as a lord stands before the court of Aldmere](docs/play/launch/king_throne.jpg)
 
 **Find out what kind of king you'd be.**
 
