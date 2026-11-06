@@ -40,6 +40,8 @@ func _ready() -> void:
 ## Opens the book, at a house's chapter when given one.
 func open(house_id := -2, as_written := false) -> void:
 	baseline = as_written
+	_back_stack.clear()  # a book opened afresh has no way back yet
+	_fwd_stack.clear()
 	if house_id != -2:
 		_chosen = house_id
 	if fetch.is_valid():
@@ -144,8 +146,39 @@ func _chapter(text: String, id: int, house: Dictionary) -> void:
 		b.expand_icon = false
 		b.add_theme_constant_override("icon_max_width", 24)
 		b.add_theme_color_override("icon_normal_color", Color.from_string(String(house.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.35))
-	b.pressed.connect(func(): _show(id))
+	b.pressed.connect(func(): _go(id))
 	_chapters.add_child(b)
+
+
+## The pages read, as a browser keeps them: Back (⌘[ or Esc) and Forward (⌘]).
+var _back_stack: Array = []
+var _fwd_stack: Array = []
+
+
+## A page the reader chose: the one they leave is kept to come back to.
+func _go(id: int) -> void:
+	if id == _chosen:
+		return
+	if _chosen != -2:
+		_back_stack.append(_chosen)
+	_fwd_stack.clear()
+	_show(id)
+
+
+func go_back() -> bool:
+	if _back_stack.is_empty():
+		return false
+	_fwd_stack.append(_chosen)
+	_show(_back_stack.pop_back())
+	return true
+
+
+func go_forward() -> bool:
+	if _fwd_stack.is_empty():
+		return false
+	_back_stack.append(_chosen)
+	_show(_fwd_stack.pop_back())
+	return true
 
 
 func _show(id: int) -> void:
@@ -155,6 +188,21 @@ func _show(id: int) -> void:
 	for c in _page.get_children():
 		c.queue_free()
 	_scroll.scroll_vertical = 0
+	if not _back_stack.is_empty() or not _fwd_stack.is_empty():
+		var nav := HBoxContainer.new()
+		nav.add_theme_constant_override("separation", 6)
+		_page.add_child(nav)
+		for pair in [["←  Back", "⌘[", _back_stack, go_back], ["Forward  →", "⌘]", _fwd_stack, go_forward]]:
+			var nb := Button.new()
+			nb.text = pair[0]
+			nb.flat = true
+			nb.focus_mode = Control.FOCUS_NONE
+			nb.tooltip_text = pair[1]
+			nb.disabled = (pair[2] as Array).is_empty()
+			nb.add_theme_color_override("font_color", T.TEXT_2)
+			var call: Callable = pair[3]
+			nb.pressed.connect(func(): call.call())
+			nav.add_child(nb)
 	if id == -1:
 		_realm()
 		return
@@ -174,7 +222,7 @@ func _show(id: int) -> void:
 ## The map of Aldmere opened on a town, ringed in gold.
 func show_on_map(town: String) -> void:
 	_mark = town
-	_show(MAP)
+	_go(MAP)
 
 
 ## The painted map with every town of the realm as every chronicle finds it:
@@ -235,7 +283,7 @@ func _map_page() -> void:
 			if t.get("capital", false):
 				for hh in _book.get("houses", []):
 					if String(hh.get("name", "")) == String(t.get("house", "")):
-						_show(int(hh["id"]))
+						_go(int(hh["id"]))
 						return
 			_mark = String(t["title"])
 			marks.queue_redraw())
@@ -552,8 +600,7 @@ func _family(f: Dictionary, into: Node = null) -> void:
 		sworn.pressed.connect(func():
 			for hh in _book.get("houses", []):
 				if String(hh.get("name", "")) == String(b.get("house", "")):
-					_chosen = int(hh["id"])
-					_build())
+					_go(int(hh["id"])))
 		line.add_child(sworn)
 		var l := T.datum("  ·  " + "  ·  ".join(said.slice(1)) if said.size() > 1 else "", T.SIZE_DESC + 1, T.TEXT_2)
 		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -614,7 +661,18 @@ func _text(text: String, color := T.TEXT) -> Label:
 	return l
 
 
-func _unhandled_key_input(event: InputEvent) -> void:
-	if visible and event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		close()
-		get_viewport().set_input_as_handled()
+## The open book answers its keys first, before the menu or the realm beneath.
+func _input(event: InputEvent) -> void:
+	if not visible or not (event is InputEventKey) or not event.pressed or event.echo:
+		return
+	var k := event as InputEventKey
+	if k.meta_pressed and k.keycode == KEY_BRACKETLEFT:
+		go_back()
+	elif k.meta_pressed and k.keycode == KEY_BRACKETRIGHT:
+		go_forward()
+	elif k.keycode == KEY_ESCAPE:
+		if not go_back():  # Esc steps back through the pages, then closes the book
+			close()
+	else:
+		return
+	get_viewport().set_input_as_handled()
