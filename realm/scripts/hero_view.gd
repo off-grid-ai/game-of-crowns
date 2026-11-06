@@ -351,7 +351,7 @@ func _build_panel() -> void:
 	_panel.anchor_right = 1.0
 	_panel.anchor_top = 0.0
 	_panel.anchor_bottom = 0.0  # as tall as what it says (_fit_panel), never a long empty card
-	_panel.offset_left = -380
+	_panel.offset_left = -440  # room for a name and Edit on one line
 	_panel.offset_right = -24
 	_panel.offset_top = 24
 	_panel.offset_bottom = 24
@@ -477,6 +477,9 @@ func _fill_panel(p: Dictionary, house: Dictionary) -> void:
 		v.add_child(T.label("Wants to"))
 		for g in goals:
 			v.add_child(_para("·  " + String(g)))
+	if not p.get("backstory") and p.get("story"):
+		p = p.duplicate()
+		p["backstory"] = p["story"]  # the book as written calls their past their story
 	if p.get("backstory"):
 		v.add_child(T.label("Their story"))
 		v.add_child(_para(String(p["backstory"])))
@@ -486,6 +489,8 @@ func _fill_panel(p: Dictionary, house: Dictionary) -> void:
 	change.focus_mode = Control.FOCUS_NONE
 	change.add_theme_color_override("font_color", T.ACCENT)
 	change.pressed.connect(func(): edit_requested.emit(p, house))
+	# Reshaping someone happens in a reign; the book as written (from the menu) is read, not changed.
+	change.visible = not p.get("written", false)
 	var take := Button.new()
 	take.visible = preload("res://scripts/features.gd").WALKING  # stepping into someone's boots: version 2
 	take.text = "Take control"

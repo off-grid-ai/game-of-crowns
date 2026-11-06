@@ -1647,6 +1647,7 @@ http.createServer(async (req, res) => {
           id: c.id, name: c.name, key: c.name, surname: c.surname ?? null, gender: c.gender, age: c.age, rank: c.rank, traits: c.traits,
           goal: c.goals?.[0]?.text ?? null, role: c.role ? ROLES[c.role]?.title : null,
           seat: c.seat != null ? seatName(c.seat) : null, loyalty: c.loyalty, written,
+          memories: [...new Set(c.memories ?? [])].slice(-6), backstory: c.backstory ?? null,
           // In their own words: their latest memory told as theirs, never a
           // story's beat about other people that they heard.
           story: c.backstory ?? [...new Set(c.memories ?? [])].filter((m) => /\b(I|my|me)\b/.test(m) && !/^[^:]{3,60}: /.test(m)).slice(-1)[0] ?? null,
