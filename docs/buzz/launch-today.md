@@ -41,7 +41,7 @@ You're the king, and seven great houses want your throne. All you've got to hold
 
 It's version 0.5, free with nothing locked, and native on Apple Silicon: https://alichherawalla.itch.io/game-of-crowns
 
-It's early. What do you think history would call you?
+What do you think history would call you?
 
 ## r/IndieGaming (21:00)
 **Title:** My free kingdom game names you for how you ruled: the Golden, the Bloody, or worse, the Deposed

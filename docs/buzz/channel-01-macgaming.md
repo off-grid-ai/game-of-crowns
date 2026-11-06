@@ -1,4 +1,8 @@
-# r/macgaming: ready to paste (updated for 0.5)
+# r/macgaming: superseded
+
+**Use the r/macgaming post in launch-today.md.** This older draft leads with how the world works, which Mac cut on 6 Nov.
+
+# Old draft
 
 **Before posting:** read the sidebar (self-promotion, flair, image posts), and install the dmg once on a Mac that has never run the game, to see what a stranger sees.
 **Post type:** the launch video if it's ready (docs/buzz/video/), else a text post with images: `images/itch/s1-goldrock.jpg`, a lord's card from the Lore, the painted map.
@@ -16,7 +20,7 @@ You can rename anyone and rewrite their story on their card, so your brother can
 
 It's a native Apple Silicon build, signed and notarised. Download: https://github.com/off-grid-ai/game-of-crowns/releases
 
-It's early. What would keep you playing past the first hour?
+What would keep you playing past the first hour?
 
 ---
 
