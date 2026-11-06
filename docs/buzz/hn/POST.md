@@ -3,25 +3,22 @@
 Built from the study of 79 Show HN game launches (launches.md, records_F*.md). Each choice
 below names the evidence it rests on.
 
-## Title
+## Title (chosen by Mac, 6 Nov)
 
-Show HN: Game of Crowns – rule a medieval kingdom where the lords think on your Mac
+Show HN: A kingdom sim where history names you for how you ruled
 
-(Safer if HN tests "think": "...where the lords run on a 2B model on your Mac".)
+Scores 8/8 on the title rubric (RUBRIC.md): promises an experience, an unexpected twist,
+no stack or "AI-powered", understood instantly.
 
-- The premise told to the player, the winning shape when there's no big personal fact
-  (Time Portal 497). No stack, no "AI-powered" (State Sandbox 2, Machinations 3).
-- "on your Mac" answers the top AI objection (cloud, cost) in the title.
+## First comment (Mac posts it the moment the link goes up; scores 19/20 on the post rubric)
 
-## First comment (Mac posts it the moment the link goes up; ~115 words, winners' median 85)
+Game of Crowns is a medieval kingdom sim where you're the king and seven great houses want your throne. You hold it with grain, gold, marriages and your rulings at court. Side against a house in a war, and ten years later its lord stands up at court and reminds you of the season and the year. When your reign ends, history names you: the Golden, the Bloody, or the Deposed.
 
-Game of Crowns is a medieval kingdom sim. You're the king, seven great houses want your throne, and you keep it with grain, gold, marriages and your rulings at court. When your reign ends, history names you: the Golden, the Bloody, the Deposed.
+I made it because long games lose me before they get good, so here a season passes every 20 seconds and a whole reign fits in an evening.
 
-I made it because I keep buying long games and dropping them. Here a season lasts 20 seconds, so a reign takes an evening.
+The lords think with a 2B model (LFM3 Omni 2B) running on your Mac through Off Grid AI, which I make, so there's no cloud and nothing to pay per turn. Without it, the game plays on its own rules. Freeciv runs the world underneath, and I built the rest with Claude.
 
-The lords' words and choices come from a 2B model (LFM3 Omni 2B) running on your Mac through Off Grid AI, which I make. No cloud, no cost per turn, and the game still plays without it. Freeciv runs the world underneath. I built it with Claude, and the full history is in the repo.
-
-Free, open source, Apple Silicon only for now. It's rough in places, so tell me where.
+It's free and open source on Apple Silicon Macs, with Windows next. What do you think history would call you?
 
 ## Links in the post
 - URL field: the GitHub repo (download at the top, trailer one click away).
