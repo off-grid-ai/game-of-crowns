@@ -33,3 +33,19 @@ The game's launch (the seal, the war table, the storybook intro) is recorded too
 - Typing a name: play.sh's `key` sends no characters to a text field, so try macOS keystrokes (System Events). If
   that's refused, use the screen-review frames of the renamed card.
 - Avoid Goldrock's square for close shots (a townsperson is in a T-pose).
+
+## The painted film, aligned to the 0.5 copy (2026-11-06, Mac: "Find out what kind of king you'd be")
+Paintings from Codex (CODEX_BRIEF.md, ~/Downloads/Aldmere/launch/) carry the story; one real court card is the proof;
+the reign-end throne painting (docs/play/v05/throne.jpg) carries the promise. The names are the game's real epithets
+(bridge/stakes.js: the Golden, the Bloody, the Meddler, the Deposed...); the film never says which one Gareth's
+grudge earns, because each comes from the whole reign.
+| s | Picture | Words |
+|---|---|---|
+| 0–4 | launch_gareth_hall | "Ten years ago, you took our enemy's side in war. House Thornvale has not forgotten it." |
+| 4–7 | launch_war_315 | Ten years ago, you took a side. |
+| 7–10 | launch_boy_orchard | He was fourteen. |
+| 10–13 | launch_years | He never forgot. |
+| 13–17 | the real court card (docs/review/screens/court.jpg) | Every lord remembers what you did. |
+| 17–20 | launch_gathering | And they act on it. |
+| 20–26 | throne.jpg, the names fade in one by one | Find out what kind of king you'd be. |
+| 26–31 | launch_kingsmere_dusk + seal + title | Free on Apple Silicon. / alichherawalla.itch.io/game-of-crowns |
