@@ -56,7 +56,16 @@ New messages get added here. They add to the picture; they don't replace it.
 - This session also directs the explainer/video session: it holds the angle and positioning.
 - This session tells the main session what to build and what not to, as soon as the research shows it. Work autonomously; Mac shouldn't have to carry prompts between sessions.
 
+## What 0.4 adds (main session, 2026-11-06)
+- A launch: the Off Grid AI seal, the war table, a smooth storybook intro.
+- The painted map of Aldmere when you zoom out; click a town to dive in.
+- People with a past: 83 nobles with grudges, debts and secrets that agree with each other.
+- Meet someone in their own land; the Lore shows everyone head to foot.
+- Make the realm yours: rename anyone, rewrite their story, memory, nature and loyalty on their card (this is 'friends in the realm', shipped).
+- Fit for all ages. Graphics: Smooth by default, Beautiful for every screenshot and film take.
+
 ## Voice
+- Use /mac-voice for everything written from now on (Mac, 2026-11-06), and /no-ai-slop last.
 - Mac's voice (mac-voice skill): outcome first, 3x so what, what's in it for the reader, less is more, no AI slop.
 - Authenticity of a personal story isn't the point; the USPs are.
 - Don't ask Mac questions that research can answer. Make the calls.
