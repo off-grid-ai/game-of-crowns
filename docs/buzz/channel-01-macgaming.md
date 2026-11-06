@@ -1,4 +1,4 @@
-# r/macgaming: ready to paste (updated for 0.4)
+# r/macgaming: ready to paste (updated for 0.5)
 
 **Before posting:** read the sidebar (self-promotion, flair, image posts), and install the dmg once on a Mac that has never run the game, to see what a stranger sees.
 **Post type:** the launch video if it's ready (docs/buzz/video/), else a text post with images: `images/itch/s1-goldrock.jpg`, a lord's card from the Lore, the painted map.
@@ -8,7 +8,7 @@
 
 **Title:** Free on Apple Silicon: a medieval kingdom where every lord remembers what you did
 
-I've been building this on my Mac and version 0.4 is out today. It's free and nothing's locked.
+I've been building this on my Mac and version 0.5 is out today. It's free and nothing's locked.
 
 Great houses farm, starve, marry and go to war on their own. You're the King, but you can't move a single soldier, so you rule through the court, taxes, grain and marriages, and the lords remember all of it. Every one of the realm's 83 nobles starts with a past too: grudges, debts, the odd secret. One of them served a bride her last cup and has never said what was in it.
 

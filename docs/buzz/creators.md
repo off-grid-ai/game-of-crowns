@@ -1,6 +1,6 @@
 # Creators (checked on YouTube 6 Nov 2026)
 
-Mac sends every email as himself. One email each, one follow-up a week later at most. The clip link points to the 27-second hook on the 0.4 release.
+Mac sends every email as himself. One email each, one follow-up a week later at most. The clip link points to the 27-second hook (attached to the 0.4 GitHub release; the link stays valid).
 Emails and videos below were seen in public on each channel's About page or own site. Skip anyone marked "no public email" unless Mac wants to use YouTube's "View email address" button himself.
 
 ## Batch 1: Mac channels (send today from 19:30 IST)

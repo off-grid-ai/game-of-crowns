@@ -1,4 +1,4 @@
-# r/SimulationGames: ready to paste (Mon 9 Nov, updated for 0.4)
+# r/SimulationGames: ready to paste (Mon 9 Nov, updated for 0.5)
 
 **Before posting:** check the sidebar rules (see the rules check in launch-today.md); post three days after r/macgaming, not the same day.
 **Post type:** the hook clip if it's out, else images: `images/itch/final/1-court.jpg`, `final/4-houses.jpg`, `final/3-chronicle.jpg`.

@@ -10,8 +10,8 @@ Mac's call: "we're gonna launch today." This replaces launch.md's 8 December dat
 ## Today (IST; US Eastern in brackets)
 | Time | Who | What |
 |---|---|---|
-| by 18:30 | main session | 0.4 release published on GitHub (notarised). |
-| 18:30 | buzz | Push the 0.4 dmg to itch with butler; check it's processed. |
+| by 18:30 | main session | 0.5 release published on GitHub (notarised; Mac named it 0.5 because a 0.4 with the empty-court bug was already public). |
+| 18:30 | buzz | Push the 0.5 dmg to itch with butler (--userversion 0.5); check it's processed. |
 | 18:40 | **Mac** | itch: paste the trailer link if the clip is up, then **Publish**. Download it once from the public page to check. |
 | 19:00 (9:30am) | **Mac** | Post r/macgaming (below), flair "Self promotion". |
 | 20:00 | **Mac** | Post r/godot, flair "selfpromo (games)". Their rule: stay and answer comments. |
@@ -23,11 +23,11 @@ Mac's call: "we're gonna launch today." This replaces launch.md's 8 December dat
 | When | What |
 |---|---|
 | Sat 7 Nov | Hook clip to Shorts, TikTok and Reels (cut each separately). |
-| Mon 9 Nov | Creator emails, batch 2. r/SimulationGames discussion post (channel-04, updated for 0.4). |
+| Mon 9 Nov | Creator emails, batch 2. r/SimulationGames discussion post (channel-04, updated for 0.5). |
 | Tue 10 Nov | Comment in WorldBox and Ages of Conflict threads where someone asks for games like them. |
 | Wed 11 Nov | A second cut of whichever clip did best. |
-| Fri 13 Nov | itch devlog "Week one: the realms you made" with players' screenshots; ship 0.4.1 if fixes are ready. |
-| Wed 18 Nov | **Update 0.5**: one named feature, a new clip, an email to every creator who covered it, a new Reddit beat. |
+| Fri 13 Nov | itch devlog "Week one: the realms you made" with players' screenshots; ship 0.5.1 if fixes are ready. |
+| Wed 18 Nov | **Update 0.6**: one named feature, a new clip, an email to every creator who covered it, a new Reddit beat. |
 | Tue 8 Dec | v1. |
 
 ---
@@ -37,7 +37,7 @@ Image post or video. Images: final/1-court.jpg, final/2-street.jpg, final/5-lore
 
 **Title:** Free on Apple Silicon: a medieval kingdom where every lord remembers what you did
 
-I've been building this on my Mac and version 0.4 is out today. It's free and nothing's locked.
+I've been building this on my Mac and version 0.5 is out today. It's free and nothing's locked.
 
 Great houses farm, starve, marry and go to war on their own. You're the King, but you can't move a single soldier, so you rule through the court, taxes, grain and marriages, and the lords remember all of it. Every one of the realm's 83 nobles starts with a past too: grudges, debts, the odd secret. One of them served a bride her last cup and has never said what was in it.
 
@@ -75,7 +75,7 @@ It's free, native on Apple Silicon: https://alichherawalla.itch.io/game-of-crown
 Ask me anything about running Freeciv under Godot. What would you want to know?
 
 ## itch devlog (post with Publish)
-**Title:** 0.4 is out
+**Title:** 0.5 is out
 
 Game of Crowns is free on Apple Silicon Macs from today.
 
