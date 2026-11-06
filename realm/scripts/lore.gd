@@ -293,10 +293,9 @@ func _map_page() -> void:
 ## house's page; any other town is ringed.
 func _live_map() -> Control:
 	var view: Control = preload("res://scripts/realm_map.gd").new()
-	# Shaped like the map itself, so the whole realm fills it exactly.
-	var h := maxf(420.0, get_viewport().get_visible_rect().size.y - 520.0)  # the whole map on the page, under its title
-	view.custom_minimum_size = Vector2(h * 896.0 / 1408.0, h)
-	view.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	# The whole page, edge to edge: the map fills it and drags within it.
+	view.custom_minimum_size = Vector2(0, maxf(460.0, get_viewport().get_visible_rect().size.y - 330.0))
+	view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	view.data = _map
 	view.mark = _mark
 	view.town_pressed.connect(func(t: Dictionary):

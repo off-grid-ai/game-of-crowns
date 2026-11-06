@@ -944,7 +944,7 @@ func _process(delta: float) -> void:
 	# The Hand's counsel steps aside while you read a town, the court or the
 	# away report, and is back when you close them.
 	if _counsel:
-		_counsel.visible = not ((_digest_panel and _digest_panel.visible) or _town_panel.visible or _court_panel.visible or _cinema_on)
+		_counsel.visible = not ((_digest_panel and _digest_panel.visible) or _town_panel.visible or _court_panel.visible or _cinema_on or _counsel_matters == _counsel_aside)
 		# Never over the houses table: past its foot, the Hand drops his last matters.
 		if _counsel.visible:
 			_fit_centre(_counsel, 560.0)
@@ -1745,6 +1745,8 @@ func cinema(on: bool) -> void:
 
 
 var _sat_out := {}  # war key -> when the King chose to stay out of it
+var _counsel_matters := ""  # what the Hand is advising on now, by its headings
+var _counsel_aside := ""  # what the King put aside (Later): the card waits until the matters change
 
 
 func _show_counsel(items: Array) -> void:
@@ -1756,8 +1758,8 @@ func _show_counsel(items: Array) -> void:
 				return false
 		return true)
 	var sig := JSON.stringify(items) + "|" + str(_purse)  # what the treasury can pay for changes the buttons too
+	_counsel_matters = JSON.stringify(items.map(func(it): return String(it.get("text", ""))))
 	if sig == _counsel_sig and _counsel:
-		_counsel.visible = not (_digest_panel and _digest_panel.visible)
 		return
 	_counsel_sig = sig
 	if _counsel:
@@ -1773,7 +1775,17 @@ func _show_counsel(items: Array) -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
 	_counsel.add_child(v)
-	v.add_child(T.label("The Hand of the King advises"))
+	# Its heading, and Later: the card stands aside until the Hand has something new.
+	var top := HBoxContainer.new()
+	v.add_child(top)
+	var heading := T.label("The Hand of the King advises")
+	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(heading)
+	var later := _btn("Later", func(): _counsel_aside = _counsel_matters)
+	later.flat = true
+	later.add_theme_color_override("font_color", T.TEXT_3)
+	later.add_theme_font_size_override("font_size", T.SIZE_DESC)
+	top.add_child(later)
 	if not _guide_loaded:
 		_load_guide()
 	if _guide_on:
