@@ -1767,6 +1767,9 @@ func _show_counsel(items: Array) -> void:
 			var b := _btn(String(act.get("label", "")), func(): pass)
 			answers.append(b)
 			b.pressed.connect(func():
+				if String(act.get("ui", "")) == "court":
+					_counsel_act(act)  # opening the court isn't an order: nothing settles
+					return
 				# One answer to a matter: the one given says so, the others go quiet
 				# until the Hand's counsel changes (if the matter stands next
 				# season, he raises it again), so nothing is paid for twice.
