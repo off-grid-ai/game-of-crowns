@@ -169,17 +169,34 @@ static func carried_standard(bearer: Node3D, house: Dictionary, color: Color) ->
 ## every move: "sword" (sword and shield), "spear" (spear and shield), "lance"
 ## (a knight's shield; the lance is the horse's to carry, see horse.gd), or
 ## "bow" (archers keep their hands free; there is no bow model yet).
-static func arm(person: Node3D, kit: String) -> void:
+static func arm(person: Node3D, kit: String, paint := Color.TRANSPARENT) -> void:
 	var skel: Skeleton3D = person.get_node_or_null("Armature/GeneralSkeleton")
 	if skel == null or kit == "bow":
 		return
-	_hold(skel, "LeftHand", SHIELD.instantiate(), SHIELD_GRIP)
+	var shield: Node3D = SHIELD.instantiate()
+	if paint.a > 0.0:
+		_paint(shield, paint)
+	_hold(skel, "LeftHand", shield, SHIELD_GRIP)
 	if kit == "lance":
 		var h: Node = person.get_meta("mounted", null)
 		if h:
 			h.bear_lance()
 		return
 	_hold(skel, "RightHand", SWORD.instantiate() if kit == "sword" else _spear(), SWORD_GRIP if kit == "sword" else SPEAR_GRIP)
+
+
+## A shield painted in its side's colour: half the soldiers wear their own
+## clothes, so in the press the shields are what tells the two sides apart.
+static var _paints := {}
+static func _paint(shield: Node3D, col: Color) -> void:
+	var key := col.to_html()
+	if not _paints.has(key):
+		var m := StandardMaterial3D.new()
+		m.albedo_color = col
+		m.roughness = 0.75
+		_paints[key] = m
+	for mi in shield.find_children("*", "MeshInstance3D", true, false):
+		(mi as MeshInstance3D).material_override = _paints[key]
 
 
 static func _hold(skel: Skeleton3D, bone: String, item: Node3D, grip: Transform3D) -> void:
@@ -255,6 +272,10 @@ const FIELD := 3.4  # how far the fight reaches from its centre: lines, the atta
 signal framing(pos: Vector3, dist: float, yaw: float)
 
 
+var _fighting: Array = []  # [centre, battle root] of every battle on the field now
+var last_view_yaw := 0.0  # the side the last battle is watched from (its trees cleared); the film takes use it
+
+
 func _battle(at: Vector3, loser: Dictionary, victor := {}) -> void:
 	var root := Node3D.new()
 	root.name = "Battle"
@@ -264,7 +285,7 @@ func _battle(at: Vector3, loser: Dictionary, victor := {}) -> void:
 	var won := Color.from_string(String(victor.get("color", "#7f2b26")), Color(0.5, 0.17, 0.15))
 	# Two houses in like colours (or victors unknown, in blood red, against a red
 	# house): the victors go in steel blue, so you can tell the sides apart.
-	if absf(wrapf(lost.h - won.h, -0.5, 0.5)) < 0.08 and lost.s > 0.25 and won.s > 0.25:
+	if absf(wrapf(lost.h - won.h, -0.5, 0.5)) < 0.12 and lost.s > 0.25 and won.s > 0.25:
 		won = Color(0.22, 0.3, 0.46)
 	var cols := [lost.lerp(Color.WHITE, 0.3), won.lerp(Color.WHITE, 0.15)]
 	# Battles are fought on open ground: out past the town, off its roads and
@@ -279,6 +300,7 @@ func _battle(at: Vector3, loser: Dictionary, victor := {}) -> void:
 	if at == Vector3.INF:
 		root.queue_free()
 		return  # no open ground near: the battle is told, not shown
+	_fighting.append([at, root])
 	terrain.clear_around(at, FIELD)
 	# The lines meet across the view, so you watch the clash from the side.
 	var dir := Vector3(cos(r.randf() * TAU), 0, 0)
@@ -290,6 +312,7 @@ func _battle(at: Vector3, loser: Dictionary, victor := {}) -> void:
 	# One side of the field for the whole battle: moving round it puts houses
 	# and trees between you and the fighting.
 	var view_yaw := atan2(side.x, side.z) + 0.35
+	last_view_yaw = view_yaw
 	# The camera watches low across the field from that side: fell the trees
 	# between it and the fight, in a cone opening toward where it stands.
 	var toward_cam := Vector3(sin(view_yaw), 0, cos(view_yaw))
@@ -314,7 +337,7 @@ func _battle(at: Vector3, loser: Dictionary, victor := {}) -> void:
 					kit = "spear"
 				elif team == 0 and rank == 2:
 					kit = "bow"
-				arm(f, kit)
+				arm(f, kit, cols[team])
 				_people.play(f, "Bow_Idle" if kit == "bow" else "Sword_Idle", r.randf_range(0.9, 1.1))
 				teams[team].append({"node": f, "rank": rank, "file": file, "face": face, "slot": slot, "alive": true, "engaged": false, "kit": kit})
 	# Each side's standard, carried by a bearer behind the middle of its line.
@@ -333,6 +356,7 @@ func _battle(at: Vector3, loser: Dictionary, victor := {}) -> void:
 		var flag: Node3D = _standard(root, p + side * 0.06, cols[team], face, house)
 		bearers.append({"node": bearer, "flag": flag, "face": face})
 	var knights := _flank_company(root, at, dir, side, cols[1], r)
+	root.set_meta("fallen", [])
 	framing.emit(_ground(at), 5.5, view_yaw)
 	# 1. Formed up (0-3 s): the attackers' captain shouts them on.
 	var captain: Dictionary = teams[1][FILES / 2]
@@ -545,9 +569,44 @@ func _fall(team: Array, r: RandomNumberGenerator) -> void:
 			break
 
 
+## The fallen lie apart, never on one another: a body that would land on
+## another (`size` its half-length: a man about 0.1, a horse 0.17) staggers to
+## the nearest free ground as it goes down. The battle keeps its list of them.
+func _lie_clear(n: Node3D, size: float, body: float) -> void:
+	var root: Node = n.get_parent()
+	if root == null or not root.has_meta("fallen"):
+		return
+	var fallen: Array = root.get_meta("fallen")
+	var p := n.global_position
+	var free := func(q: Vector3) -> bool:
+		for f in fallen:
+			if _flat_gap(q, f[0]) < size + float(f[1]):
+				return false
+		return true
+	var to := p
+	if not free.call(p):
+		var found := false
+		for k in range(1, 8):
+			for i in 12:
+				var a := TAU * i / 12.0
+				var q := p + Vector3(cos(a), 0, sin(a)) * k * 0.05
+				if free.call(q):
+					to = q
+					found = true
+					break
+			if found:
+				break
+	fallen.append([to, size])
+	if to != p:
+		var tw := n.create_tween()
+		var from := p
+		tw.tween_method(func(t: float): n.global_position = _stand(from.lerp(to, t), body), 0.0, 1.0, 0.5).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+
+
 ## A man goes down and stays down: the death plays once and holds its last frame.
 func _die(n: Node3D, how: String, r: RandomNumberGenerator) -> void:
 	n.set_meta("dead", true)
+	_lie_clear(n, 0.1, 0.0)
 	var ap: AnimationPlayer = n.get_node_or_null("Anim")
 	if ap == null or not ap.has_animation(how):
 		return
@@ -624,7 +683,7 @@ func _flank_company(root: Node3D, at: Vector3, dir: Vector3, side: Vector3, col:
 		var h: Node3D = Horse.new(r.randi() % 5)
 		root.add_child(h)
 		h.mount(_people.make(r, "soldier", col, "adult"))
-		arm(h.rider, "lance")
+		arm(h.rider, "lance", col)
 		var wing: Vector3 = at + side * ((FILES / 2.0) * GAP + 0.55 + (i / 2) * 0.24) - dir * ((i % 2) * 0.22)
 		h.position = _stand(wing - dir * (REACH + RANKS * ROW + 1.8), HORSE_BODY)
 		h.rotation.y = atan2(dir.x, dir.z)
@@ -677,9 +736,12 @@ func _charge_flank(knights: Array, wall: Array, at: Vector3, dir: Vector3, side:
 			if i % 3 == 1 and r.randf() < 0.75:
 				k["alive"] = false
 				h.fall()
+				_lie_clear(h, 0.17, HORSE_BODY)
 				var thrown: Node3D = h.dismount()
 				if thrown:
-					thrown.global_position = _stand(thrown.global_position)
+					# Thrown clear, ahead of the horse.
+					var fwd := Vector3(sin(h.rotation.y), 0, cos(h.rotation.y))
+					thrown.global_position = _stand(h.global_position + fwd * 0.25)
 					_die(thrown, "Death_Front", r))
 		# The rest ride on through the broken flank and slow to a walk.
 		tw.tween_method(func(t: float):
@@ -893,6 +955,10 @@ func _battlefield(near: Vector3) -> Vector3:
 			var reach := float(t.get_meta("reach", 6.0)) if is_instance_valid(t) else 0.0
 			if reach > 0.0 and _flat_gap(t.global_position, near) < span + reach:
 				walls.append([t.global_position, reach])
+	# A field already being fought over is taken: the next battle finds its own.
+	_fighting = _fighting.filter(func(b): return is_instance_valid(b[1]))
+	for b in _fighting:
+		walls.append([b[0], FIELD])
 	var farms := []
 	for f in (country.get("_sites") if country else []):
 		if _flat_gap(f["at"], near) < span + FARM_CLEAR:
@@ -921,7 +987,7 @@ const FIELD_RISE := 0.3
 const RINGS := 40
 ## How far a field's edge keeps from a town's reach, and its centre from a farmstead.
 const TOWN_CLEAR := 0.4
-const FARM_CLEAR := FIELD + 0.6
+const FARM_CLEAR := FIELD + 4.8  # a farmstead's fields reach up to 4.6 from it (countryside._farmstead)
 ## What the land itself costs a battle, per sample: woods hide it, hills break the lines.
 const ROUGH_GROUND := {"Forest": 12.0, "Jungle": 12.0, "Swamp": 8.0, "Hills": 4.0, "Mountains": 50.0, "Glacier": 50.0}
 
@@ -948,9 +1014,9 @@ func _field_cost(c: Vector3, roads) -> float:
 	for k in 25:
 		var ring := int(ceil(k / 8.0))
 		var q := c + Vector3(cos(TAU * k / 8.0), 0, sin(TAU * k / 8.0)) * FIELD * ring / 3.0 if k > 0 else c
+		# Men stand everywhere out to the field's edge: none of it may be water.
 		if not terrain.is_land(q.x, q.z):
-			cost += 50.0
-			continue
+			return INF
 		var rise := absf(terrain.height_at(q.x, q.z) - c.y)
 		var tile: Vector2i = terrain.tile_of(q)
 		var kind := String(terrain.tile_at(tile.x, tile.y))

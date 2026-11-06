@@ -153,7 +153,8 @@ func _stage() -> void:
 				_seat_yaw = atan2(-d.x, -d.z)
 		"battle":
 			var field: Vector3 = main.terrain.world_pos(float(city["x"]) + 1.5, float(city["y"]))
-			_at = field
+			# The battle moves itself to open ground near there: film where it stands.
+			_at = main.scenes._battlefield(field)
 			main.scenes._battle(field, main._houses.get(int(city["owner"]), {}))
 		"siege":
 			var foe := {}
@@ -231,7 +232,8 @@ func _move(u: float, e: float) -> void:
 			# looks a little steeper than asked.)
 			_cam(_at + dir * lerpf(1.2, -1.2, e), 1.1, 0.6 + e * 0.4, 14.0)
 		"battle":
-			_cam(_at, lerpf(4.2, 3.0, e), 0.2 + e * 1.0, 22.0)
+			# From the side the battle cleared of trees, sweeping a little across it.
+			_cam(_at, lerpf(4.2, 3.0, e), main.scenes.last_view_yaw - 0.3 + e * 0.6, 22.0)
 		"siege":
 			_cam(_at, lerpf(6.5, 5.0, e), 0.5 + e * 0.8, 24.0)
 		"feast":
