@@ -367,8 +367,9 @@ func _ready() -> void:
 	# From the menu, the introduction and the lore come back to the menu after.
 	title.watch_intro.connect(func():
 		_back_to_menu = true
-		if not bridge.active:
-			bridge.wake()  # the intro needs the realm's houses and seats
+		# The realm stays asleep: its houses and seats come from the world report
+		# the bridge sends every second anyway. Waking it here built the whole
+		# realm (land, rivers, woods, towns) behind the story: the lag.
 		if bridge.world.is_empty():
 			_intro_due = true
 		else:
@@ -1086,12 +1087,14 @@ var _lanes_cut := -1  # the great roads the woods were last cut back for
 const LANE_MARGIN := 0.8  # a pine's crown reaches about this far from its trunk
 var _laying := false  # roads and countryside are being laid out, a frame at a time
 func _on_world(world: Dictionary) -> void:
-	if terrain.width == 0:
-		return
-	director.world = world
+	# The story needs only the houses and seats, not the land: it can begin
+	# before the map has come.
 	if _intro_due and not world.is_empty():
 		_intro_due = false
 		_tell_the_story.call_deferred()
+	if terrain.width == 0:
+		return
+	director.world = world
 	director.set_process(not _shot.has("path") or _shot.get("director", false))
 	if _shot.get("director", false) and not director.active:
 		director.start()

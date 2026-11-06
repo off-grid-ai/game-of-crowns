@@ -7,8 +7,9 @@ extends Control
 
 const DIR := "res://assets/intro/seal/"
 const MARK := "res://assets/ui/offgrid-mark.png"
-const BAND := 0.835  # the band's middle, as a share of the seal's radius
-const LETTER := 0.07  # letter height, as a share of the seal's radius
+const FILL := 0.92  # the seal's radius, as a share of half the painting (Codex's brief)
+const BAND := 0.81  # the band's middle, as a share of the seal's radius (measured: 0.72 to 0.90)
+const LETTER := 0.12  # letter size, as a share of the seal's radius
 const GOLD := Color(0.93, 0.81, 0.59)
 
 var face: TextureRect  # the seal itself, carrying the light (seal_sheen)
@@ -62,8 +63,9 @@ func light(sweep: float, flash: float) -> void:
 ## reading clockwise over the top, "presents" anticlockwise under the foot so
 ## both read left to right; a small diamond at either side between them.
 func _letter(c: Control) -> void:
-	var r := size.x * 0.5 * BAND
-	var px := int(size.x * 0.5 * LETTER * 1.35)
+	var seal_r := size.x * 0.5 * FILL
+	var r := seal_r * BAND
+	var px := int(seal_r * LETTER)
 	_arc(c, "OFF GRID AI", -PI * 0.5, r, px, false)
 	_arc(c, "PRESENTS", PI * 0.5, r, px, true)
 	for a in [PI, 0.0]:

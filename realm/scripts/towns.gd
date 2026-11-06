@@ -120,6 +120,7 @@ func _process(_delta: float) -> void:
 		_refresh_life(Time.get_ticks_msec())
 		return
 	var start := Time.get_ticks_msec()
+	Engine.set_meta("stage", "towns.build")
 	if _raising_since == 0:
 		_raising_since = start
 		_raised = 0

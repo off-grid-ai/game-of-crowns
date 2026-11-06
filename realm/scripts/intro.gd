@@ -16,7 +16,10 @@ const BACKDROP := "res://assets/ui/title-background.png"
 const REALM_TILES := Vector2(56, 88)  # the atlas covers the whole map (bridge/tools/azgaar_world.py)
 const T := preload("res://scripts/theme.gd")
 const Keys := preload("res://scripts/keys.gd")
-const HOLD := 8.0  # seconds on each page
+## Seconds on a page: long enough to read its words at an easy pace, never
+## so long it seems stuck.
+static func _hold(words: String) -> float:
+	return clampf(2.5 + words.split(" ", false).size() / 4.0, 6.0, 10.0)
 
 ## What the world bible says of each house: who they are, in one line.
 const CHARACTER := {
@@ -102,6 +105,7 @@ func play(houses: Array, seats: Dictionary) -> void:
 	# it builds, which is what made the pages stutter.
 	get_viewport().disable_3d = true
 	_page = -1
+	_began = Time.get_ticks_msec()
 	_next()
 
 
@@ -182,11 +186,28 @@ func _build() -> void:
 	_hint.offset_right = -72
 	_hint.offset_top = 48
 	_hint.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	# A soft shadow under it, so it reads over a bright sky too.
+	_hint.add_theme_color_override("font_color", T.TEXT_2)
+	_hint.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.75))
+	_hint.add_theme_constant_override("shadow_offset_x", 0)
+	_hint.add_theme_constant_override("shadow_offset_y", 1)
+	_hint.add_theme_constant_override("shadow_outline_size", 6)
+	_hint.add_theme_font_size_override("font_size", 14)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(_hint)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	if visible and _page >= 0 and Time.get_ticks_msec() >= _turn_at:
+		_next()
+	# A page's painting is fully in a second after it turns; if anything ever
+	# stopped its fade part-way, it is put fully in rather than left dim.
+	if visible and _page >= 0 and _image and _image.visible and _image.modulate.a < 1.0 and Time.get_ticks_msec() > _turned_at + 1500:
+		_image.modulate.a = 1.0
+	if visible:
+		_frames += 1
+		if delta > 0.034:  # a frame that missed 30 fps: what the realm was doing
+			_hitches.append([delta, String(Engine.get_meta("stage", ""))])
 	if visible and _hint:
 		var words := "Click for the next page  ·  Esc to return to the menu" if watching \
 			else "Click or press any key to begin" if _is_ready() \
@@ -209,7 +230,11 @@ func _next() -> void:
 	if not ResourceLoader.exists(path):
 		path = BACKDROP
 	var still := ResourceLoader.exists(path)
-	_image.texture = load(path) if still else null
+	var t0 := Time.get_ticks_usec()
+	_image.texture = _take(path) if still else null
+	_loads.append((Time.get_ticks_usec() - t0) / 1000.0)
+	_turns.append(snappedf((Time.get_ticks_msec() - _began) / 1000.0, 0.1))
+	_ask(_page + 1)
 	_image.visible = still
 	_map.visible = not still and _map.texture != null
 	_title.text = String(p[1])
@@ -224,6 +249,11 @@ func _next() -> void:
 	_sigil.visible = _sigil.texture != null
 	if not house.is_empty():
 		_sigil.modulate = Color.from_string(String(house.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.35)
+	# The page turns on the clock, not on its drift: building the realm behind
+	# the story stalls frames, and a stalled tween held the first page for 18 s.
+	var hold := _hold(String(p[2]))
+	_turned_at = Time.get_ticks_msec()
+	_turn_at = _turned_at + int(hold * 1000.0)
 	if _tween:
 		_tween.kill()
 	_tween = create_tween().set_parallel(true)
@@ -235,8 +265,8 @@ func _next() -> void:
 	if still:
 		_image.scale = Vector2.ONE * 1.08
 		_image.position = Vector2(-30 * dir, 0)
-		_tween.tween_property(_image, "scale", Vector2.ONE * 1.16, HOLD).set_trans(Tween.TRANS_SINE)
-		_tween.tween_property(_image, "position", Vector2(30 * dir, -14), HOLD).set_trans(Tween.TRANS_SINE)
+		_tween.tween_property(_image, "scale", Vector2.ONE * 1.16, hold).set_trans(Tween.TRANS_SINE)
+		_tween.tween_property(_image, "position", Vector2(30 * dir, -14), hold).set_trans(Tween.TRANS_SINE)
 	elif _map.visible:
 		# The atlas sized so the whole realm fills the height at zoom 1, with the
 		# page's place drawn toward the middle, pushing in and drifting.
@@ -252,9 +282,8 @@ func _next() -> void:
 		var focus := screen * Vector2(0.5, 0.42)
 		_map.size = start
 		_map.position = _cover(focus - at * start + Vector2(-24 * dir, 0), start, screen)
-		_tween.tween_property(_map, "size", end, HOLD).set_trans(Tween.TRANS_SINE)
-		_tween.tween_property(_map, "position", _cover(focus - at * end + Vector2(24 * dir, -10), end, screen), HOLD).set_trans(Tween.TRANS_SINE)
-	_tween.chain().tween_callback(_next)
+		_tween.tween_property(_map, "size", end, hold).set_trans(Tween.TRANS_SINE)
+		_tween.tween_property(_map, "position", _cover(focus - at * end + Vector2(24 * dir, -10), end, screen), hold).set_trans(Tween.TRANS_SINE)
 	if say.is_valid():
 		say.call(String(p[2]))
 
@@ -272,7 +301,61 @@ static func _cover(pos: Vector2, size: Vector2, screen: Vector2) -> Vector2:
 	return Vector2(clampf(pos.x, screen.x - size.x, 0.0), clampf(pos.y, screen.y - size.y, 0.0))
 
 
+## A page's painting, from the background load asked for while the page
+## before it played; loaded here only if that hasn't finished.
+func _take(path: String) -> Texture2D:
+	if ResourceLoader.load_threaded_get_status(path) != ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+		return ResourceLoader.load_threaded_get(path)
+	return load(path)
+
+
+## Starts loading a page's painting off the main thread, so turning to it
+## never stalls the frame.
+func _ask(page: int) -> void:
+	if page >= _pages.size():
+		page = _pages.size() - TIPS.size()
+	var path := ART + String(_pages[page][0]) + ".jpg"
+	if ResourceLoader.exists(path) and ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+		ResourceLoader.load_threaded_request(path)
+
+
+var _frames := 0
+var _hitches: Array = []  # [seconds, what the realm was building]
+var _loads: Array = []  # ms each page's painting took to put up
+var _turns: Array = []  # seconds into the intro at which each page turned
+var _began := 0
+var _turn_at := 0  # when the page on screen turns by itself (ticks, ms)
+var _turned_at := 0  # when it turned to the page on screen
+
+
+## How smoothly it played: frames, the slow ones and what was under way, and
+## the time each painting took to put up (in the log, for finding lag).
+func _report() -> void:
+	var worst := {}
+	var count := {}
+	var slow := 0.0
+	for h in _hitches:
+		slow += h[0]
+		worst[h[1]] = maxf(worst.get(h[1], 0.0), h[0])
+		count[h[1]] = count.get(h[1], 0) + 1
+	var ms := func(v): return "%d" % roundi(v * 1000.0)
+	var parts := []
+	for k in worst:
+		parts.append("%s %d× worst %s ms" % [k if k != "" else "-", count[k], ms.call(worst[k])])
+	print("INTRO %d frames, %d over 34 ms (%.1f s lost); worst by stage: %s; painting loads ms: %s; pages turned at s: %s" % [_frames, _hitches.size(), slow, ", ".join(parts), str(_loads.map(func(v): return snappedf(v, 0.1))), str(_turns)])
+
+
+func _exit_tree() -> void:
+	if _frames > 0:
+		_report()  # a render that quits mid-intro still says how it ran
+
+
 func _end() -> void:
+	_report()
+	_frames = 0
+	_hitches.clear()
+	_loads.clear()
+	_turns.clear()
 	if _tween:
 		_tween.kill()
 	visible = false
