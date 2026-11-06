@@ -271,6 +271,7 @@ export class Court {
       loyalty: Math.max(0, Math.min(100, Number(spec.loyalty ?? role.loyalty))),
       goals: [{ kind: goal.kind, text: goal.text }], created: true,
     }, Math.random);
+    if (spec.past) c.backstory = String(spec.past).slice(0, 300);  // their past, as their card tells it
     if (spec.backstory) this.remember(c.id, String(spec.backstory).slice(0, 300));
     if (lord) this.shift(c.id, lord.id, role.loyalty - 50);
     this.save(c);
@@ -300,6 +301,7 @@ export class Court {
     }
     if (spec.loyalty != null) c.loyalty = Math.max(0, Math.min(100, Number(spec.loyalty)));
     if (spec.role && spec.role in ROLES) c.role = spec.role;
+    if (spec.past != null) c.backstory = String(spec.past).slice(0, 300) || undefined;  // rewritten, or cleared
     if (spec.backstory) this.remember(c.id, String(spec.backstory).slice(0, 300));
     this.save(c);
     this.record({ turn: world?.turn ?? 0, kind: "person", text: `By the King's hand, ${c.name} of ${c.house} is changed: ${c.traits.join(", ")}.${c.goals?.[0] ? ` "I mean to ${c.goals[0].text}."` : ""}`, city: c.seat });

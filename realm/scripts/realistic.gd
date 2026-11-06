@@ -106,7 +106,7 @@ static func _template(name: String) -> Dictionary:
 	model.scale = Vector3.ONE * k
 	model.position = -Vector3(box.get_center().x, box.position.y, box.get_center().z) * k
 	_own(model, root)
-	_no_glow(root)
+	_no_glow(root, name in STONE)
 	# The same model as plain meshes, for drawing many copies in one batch.
 	var parts := []
 	for mi in root.find_children("*", "MeshInstance3D", true, false):
@@ -144,10 +144,17 @@ static func _template(name: String) -> Dictionary:
 	return _cache[name]
 
 
+## Kits whose walls are stone but whose file never says how metallic it is, so
+## glTF's default (fully metal) made the castle near black, its tops glaring
+## with the sky.
+const STONE := ["medieval_castle"]
+
+
 ## A building is lit by the sun and the moon, never by itself: some kits come
 ## out of their exporter with emission on at full white (the thatched cottages
 ## glowed in daylight colours all night). Their surfaces take a copy without it.
-static func _no_glow(root: Node) -> void:
+## A stone kit's surfaces also lose the metal its file never meant.
+static func _no_glow(root: Node, stone := false) -> void:
 	var lit_of := {}  # one copy per material, so merged surfaces still share it
 	for mi in root.find_children("*", "MeshInstance3D", true, false):
 		var m: MeshInstance3D = mi
@@ -155,10 +162,13 @@ static func _no_glow(root: Node) -> void:
 			continue
 		for i in m.mesh.get_surface_count():
 			var mat := m.get_active_material(i) as BaseMaterial3D
-			if mat and mat.emission_enabled:
+			if mat and (mat.emission_enabled or (stone and mat.metallic > 0.0)):
 				if not lit_of.has(mat):
 					var lit: BaseMaterial3D = mat.duplicate()
 					lit.emission_enabled = false
+					if stone:
+						lit.metallic = 0.0
+						lit.metallic_texture = null
 					lit_of[mat] = lit
 				m.set_surface_override_material(i, lit_of[mat])
 

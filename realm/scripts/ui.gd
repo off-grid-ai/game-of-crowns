@@ -1279,8 +1279,15 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 	loyalty.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	loyal_row.add_child(loyalty)
 	v.add_child(loyal_row)
+	# Their past, as their card tells it: yours to rewrite.
+	var story := TextEdit.new()
+	story.text = String(person.get("backstory", "")) if person.get("backstory") is String else ""
+	story.placeholder_text = "Their past: where they come from, what they lost, whom they hate"
+	story.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	story.custom_minimum_size.y = 84
+	v.add_child(story)
 	var past := LineEdit.new()
-	past.placeholder_text = "Something that happens to them (they'll remember it)" if editing else "A line of their past (they'll remember it)"
+	past.placeholder_text = "Something that happens to them now (they'll remember it)" if editing else "A moment they'll never forget"
 	v.add_child(past)
 	preload("res://scripts/spark.gd").attach(past, get_tree().current_scene.get("bridge"), "character-past", func(): return "%s of %s; %s." % [name.text if name.text != "" else "A person", house_name, other.text if other.text != "" else "no quirks named"])
 	var go := HBoxContainer.new()
@@ -1293,7 +1300,7 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 			return
 		var spec := {"house": house_id, "name": name.text.strip_edges(), "gender": "female" if gender.selected == 1 else "male",
 			"age": int(age.value), "traits": picked, "other": other.text.strip_edges(), "goal": goals[goal.selected]["kind"],
-			"loyalty": int(loyalty.value), "backstory": past.text.strip_edges()}
+			"loyalty": int(loyalty.value), "backstory": past.text.strip_edges(), "past": story.text.strip_edges().left(300)}
 		if role.visible and not role_keys.is_empty():
 			spec["role"] = role_keys[role.selected]
 		if editing:
