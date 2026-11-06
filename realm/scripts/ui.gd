@@ -248,6 +248,14 @@ func _named(b: Button, word: String) -> Button:
 	b.add_theme_color_override("font_pressed_color", T.ACCENT)
 	b.add_theme_color_override("font_hover_pressed_color", T.ACCENT)
 	b.add_theme_constant_override("icon_max_width", 20)
+	# Room above the icon and below the name, so neither sits on the key's edge.
+	b.custom_minimum_size = Vector2(62, 58)
+	for look in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
+		if b.has_theme_stylebox_override(look):
+			var sb: StyleBox = b.get_theme_stylebox(look).duplicate()
+			sb.content_margin_top = 10
+			sb.content_margin_bottom = 7
+			b.add_theme_stylebox_override(look, sb)
 	return b
 
 
@@ -989,8 +997,13 @@ func _process(delta: float) -> void:
 	# The offer, like every notice, sits between the side panels, never over the table.
 	if _offer and _offer.visible:
 		_fit_centre(_offer, _offer.get_combined_minimum_size().x)  # as wide as its words, centred in the gap
-		_toast_time -= delta
-		_toast_box.modulate.a = clampf(_toast_time, 0.0, 1.0)
+	# The notice fades on its own clock, offer or not (it sat inside the offer's
+	# block and stayed up for good), and a card with no words is never shown.
+	_toast_time = maxf(0.0, _toast_time - delta)
+	if _toast.text.strip_edges() == "":
+		_toast_time = 0.0
+	_toast_box.modulate.a = clampf(_toast_time, 0.0, 1.0)
+	_toast_box.visible = _toast_box.modulate.a > 0.01
 
 
 ## A great house in full: its standing now and how it has moved, its lord,
