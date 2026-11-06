@@ -409,8 +409,8 @@ func _palisade(root: Node3D, center: Vector3, r: float, streets: Array, seat: bo
 	for i in n:
 		var ang := TAU * i / n
 		var p := Vector3(cos(ang), 0, sin(ang)) * r
-		if _on_street(p, streets, 0.45):
-			continue  # the gate
+		if _on_street(p, streets, 0.45) or _on_road(p, 0.12):
+			continue  # the gate, where a street or a road comes through
 		if not terrain.is_land(center.x + p.x, center.z + p.z):
 			continue
 		# A seat's stockade stands taller.
@@ -482,7 +482,16 @@ func _crowded(lots: Array, p: Vector3, r: float) -> bool:
 	for l in lots:
 		if Vector2(p.x - l[0].x, p.z - l[0].z).length() < r + float(l[1]) + 0.04:
 			return true
-	return false
+	return _on_road(p, r * 0.6)
+
+
+## Whether a town-local spot lies on one of the realm's roads or tracks through
+## the town (roads.gd), within `margin` of its verge: nothing is built, planted
+## or stood on a road.
+var _center := Vector3.ZERO  # the town being built, for its spots in the world
+func _on_road(p: Vector3, margin := 0.05) -> bool:
+	var roads = get_parent().get("roads") if get_parent() else null
+	return roads != null and roads.has_method("on_path") and roads.on_path(_center + p, margin)
 
 
 ## Levels the plot for a building and returns its floor height (town-local),
@@ -533,7 +542,7 @@ func _dress(root: Node3D, center: Vector3, hp: Vector3, face: Vector3, out: Vect
 		if rng.randf() > spot[2]:
 			continue
 		var p: Vector3 = spot[1]
-		if not terrain.is_land(center.x + p.x, center.z + p.z):
+		if not terrain.is_land(center.x + p.x, center.z + p.z) or _on_road(p, 0.08):
 			continue
 		var yaw := atan2(face.x, face.z) + (PI / 2 if spot[0] == "wooden_fence_game_ready_asset" else rng.randf_range(-0.6, 0.6))
 		_place(root, spot[0], p + Vector3(0, _ground_y(center, p), 0), yaw)
@@ -670,6 +679,7 @@ func _single(parent: Node3D, mesh: Mesh, pos: Vector3, rot := 0.0, scale := S) -
 func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	var root := Node3D.new()
 	var center: Vector3 = terrain.world_pos(float(c["x"]), float(c["y"]))
+	_center = center
 	root.position = center
 	var size := int(c["size"])
 	var buildings: Array = c["buildings"]
