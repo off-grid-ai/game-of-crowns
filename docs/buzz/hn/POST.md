@@ -16,7 +16,7 @@ Game of Crowns is a medieval kingdom sim where you're the king and seven great h
 
 I wanted my own version of the stories I love in Game of Thrones, so I built one with Claude where you can rename anyone, rewrite their past and choose the story that comes for your throne. A season passes every 20 seconds, so a whole reign fits in an evening.
 
-The game runs on its own rules, and if you run a small model on your Mac alongside it, the lords get their own words and plans, with nothing sent to the cloud.
+If you run an optional local model alongside it, the lords get their own words and plans, and nothing leaves your Mac.
 
 It's free and open source on Apple Silicon Macs, with Windows next. I'm happy to go into how any of it works.
 
