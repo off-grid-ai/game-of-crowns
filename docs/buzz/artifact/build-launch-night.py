@@ -10,18 +10,22 @@ steps=[]
 steps.append(step('itch','Now','Publish the itch page', '''<p>Done. It's live at <a href="https://alichherawalla.itch.io/game-of-crowns" target="_blank" rel="noopener">alichherawalla.itch.io/game-of-crowns</a> with your copy and the 0.5 download.</p>'''))
 steps.append(step('devlog','Now','Publish the launch devlog', '''<p>Done. <a href="https://alichherawalla.itch.io/game-of-crowns/devlog" target="_blank" rel="noopener">"0.5 is out"</a> is live, and the tags now include choices-matter, politics and fantasy.</p>'''))
 steps.append(step('test','Now','Download it once, the way a stranger would', '''<p>Open <a href="https://alichherawalla.itch.io/game-of-crowns" target="_blank" rel="noopener">alichherawalla.itch.io/game-of-crowns</a> in a private window, download, open the dmg, and launch it. If anything stops you, tell me before posting.</p>'''))
-mt="I built a free Game of Thrones world sim on my Mac, and history names you the Golden, the Bloody or the Deposed"
-mb="""Game of Crowns is a Game of Thrones-style world simulation. You're the king, and seven great houses want your throne. You hold it with grain, gold, marriages and your rulings at court. Side against a house in a war, and ten years later its lord stands up at court to remind you. When your reign ends, history names you: the Golden, the Bloody, or the Deposed.
+mt="I built a free Game of Thrones world sim on my Mac. History names you for how you rule."
+mb="""Game of Crowns is a Game of Thrones world sim. You're the king, and seven great houses want your throne.
 
-I wanted a story like that of my own, so I built one where you can rename anyone, rewrite their past and pick the story that comes for your throne. A season passes every 20 seconds, so a whole reign fits in an evening.
+You keep it with grain, gold, marriages and your word at court. Take sides against a house in a war, and ten years later its lord brings it up in front of everyone. When your reign ends, history gives you a name: the Golden, the Bloody, or the Deposed.
 
-With an optional local model, you can answer petitioners in your own words instead of picking from a list, and it can write you a new story for your next reign.
+I wanted my own Game of Thrones story, so I built one. You can rename anyone, change their past and pick the story that comes for your throne. A season takes 20 seconds, so a whole reign fits in one evening.
 
-It's free and open source on Apple Silicon Macs, with Windows next. I built it with Claude on top of Freeciv, and I'm happy to go into how any of it works.
+If you run a local model too, you can answer people at court in your own words. It can also write you a new story for your next reign.
 
-https://alichherawalla.itch.io/game-of-crowns (signed and notarised, macOS 12 or later, a 2 GB download)
+It's free and open source. It runs on Apple Silicon Macs, and Windows is next. I built it with Claude on top of Freeciv, so ask me anything about how it works.
 
-I'm in the comments tonight. How does it run on your Mac?"""
+https://alichherawalla.itch.io/game-of-crowns
+
+It's signed and notarised. You need macOS 12 or later, and it's a 2 GB download.
+
+I'll be in the comments tonight. How does it run on your Mac?"""
 ai="""Partly. The paintings in the trailer and on the game's intro screens were made with AI. In the game, if you also run Off Grid AI, another app I make, the lords speak in their own words through a small model on your own Mac. Nothing goes online, and without it the game runs on its own rules."""
 steps.append(step('mac','Now, before 10:30pm','Post on r/macgaming', f'''<p>Make a <b>video post</b> and upload <code>docs/buzz/video/game-of-crowns-launch-16x9.mp4</code> to Reddit itself, not a YouTube link. Flair: <b>Self promotion</b>. Post it once; if it sinks, don't repost.</p>{copyblock('Title',mt,'mac-t')}{copyblock('Body',mb,'mac-b')}{copyblock('If someone asks "is it AI?"',ai,'mac-ai')}<p class="note">Then stay and reply to everything tonight, bug reports first. Developers whose posts did well replied to around 16 comments; the ones that sank replied to none.</p>'''))
 cards=[]
