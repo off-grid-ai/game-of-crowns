@@ -163,7 +163,32 @@ func _show(id: int) -> void:
 
 # --- the realm ------------------------------------------------------------------
 
+## A painting of the intro's (res://assets/intro/art/<key>.jpg or .png), else the
+## fallback if it exists, else "".
+static func _art(key: String, fallback := "") -> String:
+	for ext in [".jpg", ".png"]:
+		if ResourceLoader.exists("res://assets/intro/art/" + key + ext):
+			return "res://assets/intro/art/" + key + ext
+	return fallback if fallback != "" and ResourceLoader.exists(fallback) else ""
+
+
+## A painting across the top of a page, cropped to a wide band.
+func _plate(path: String) -> void:
+	if path == "":
+		return
+	var pic := TextureRect.new()
+	pic.texture = load(path)
+	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	pic.custom_minimum_size = Vector2(0, 260)
+	pic.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pic.clip_contents = true
+	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_page.add_child(pic)
+
+
 func _realm() -> void:
+	_plate(_art("realm_land", "res://assets/ui/title-background.png"))
 	_page.add_child(T.title("Aldmere", 34))
 	for p in _book.get("intro", []):
 		_para(String(p))
@@ -190,6 +215,10 @@ func _section(title: String, items: Array) -> void:
 # --- a house --------------------------------------------------------------------
 
 func _house(h: Dictionary) -> void:
+	# The house's own painting across the top (the Crown's is Kingsmere), else the
+	# game's still of its seat; none, and the page starts with its arms.
+	var seat_still := "res://assets/intro/stills/seat_%s.png" % String(h.get("seat", ""))
+	_plate(_art("house_crown" if h.get("crown", false) else "house_" + String(h.get("name", "")).trim_prefix("House ").to_lower().replace(" ", "_"), seat_still))
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 18)
 	_page.add_child(head)
