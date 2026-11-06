@@ -2435,6 +2435,16 @@ func _show_audience() -> void:
 		if not mic.utterance.is_connected(_on_court_words):
 			mic.utterance.connect(_on_court_words)
 		mic.listen()
+	# Without Off Grid AI nobody can read your words: say so before you write,
+	# with where to get it, rather than after.
+	if not ai_words and own.editable:
+		own.editable = false
+		own.placeholder_text = "Ruling in your own words needs Off Grid AI, free on your Mac"
+		var get := LinkButton.new()
+		get.text = "Get Off Grid AI"
+		get.uri = OFFGRID_URL
+		get.add_theme_color_override("font_color", T.ACCENT)
+		own_row.add_child(get)
 	v.add_child(own_row)
 	_own_line = own
 	# Later is not free: a petitioner left too long goes home unheard, and says so.

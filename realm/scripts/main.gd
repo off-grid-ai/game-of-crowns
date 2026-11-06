@@ -309,6 +309,12 @@ func _ready() -> void:
 	# Is Off Grid AI giving people their own words? (Asked once; the court card
 	# mentions it, once, when it isn't.)
 	bridge.ai_status(func(d): ui.ai_words = d is Dictionary and bool(d.get("words", false)))
+	# Asked again now and then: Off Grid AI opened mid-reign is noticed.
+	var ai_check := Timer.new()
+	ai_check.wait_time = 30.0
+	ai_check.autostart = true
+	add_child(ai_check)
+	ai_check.timeout.connect(func(): bridge.ai_status(func(d): ui.ai_words = d is Dictionary and bool(d.get("words", false))))
 	ui.petition_spoken.connect(func(id, words, confirm):
 		bridge.rule_in_words(id, words, confirm, func(_code, d):
 			ui.ruled_in_words(id, d if d is Dictionary else {"error": "The court is silent."})

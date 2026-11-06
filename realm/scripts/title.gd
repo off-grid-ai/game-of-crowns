@@ -648,8 +648,23 @@ func _fill_beats(box: VBoxContainer, d: Dictionary) -> void:
 	form.add_child(spark_note)
 	spark_note.visible = false
 	# Empty: it writes one. Begun: it carries yours on and finishes it.
-	what.text_changed.connect(func(): spark.text = "✦  Carry it on" if what.text.strip_edges() != "" else "✦  Write it for me")
+	# Without Off Grid AI the button says what it needs and opens where to get it.
+	var ai_ready := [true]
+	var spark_label := func() -> void:
+		if not is_instance_valid(spark):
+			return
+		if not ai_ready[0]:
+			spark.text = "✦  Get Off Grid AI to write it for you"
+		else:
+			spark.text = "✦  Carry it on" if what.text.strip_edges() != "" else "✦  Write it for me"
+	bridge.ai_status(func(st):
+		ai_ready[0] = st is Dictionary and bool(st.get("words", false))
+		spark_label.call())
+	what.text_changed.connect(spark_label)
 	spark.pressed.connect(func():
+		if not ai_ready[0]:
+			OS.shell_open(OFFGRID_URL)
+			return
 		spark.disabled = true
 		spark_note.visible = true
 		spark_note.text = "Off Grid AI is writing…"
