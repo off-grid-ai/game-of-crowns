@@ -12,7 +12,11 @@ Built from [STUDY.md](STUDY.md) and scored with [RUBRIC.md](RUBRIC.md). It repla
 
 ## Title (recommended, 11 of 12)
 
-History names you the Golden, the Bloody or the Deposed in the free kingdom game I built on my Mac
+A medieval kingdom sim where history names you for how you ruled. I built it on my Mac, and it's free on Apple Silicon
+
+This is Mac's chosen line (from the HN work) with one sentence added. On its own the line scores 8, because on this sub the winners put themselves and their Mac in the title.
+
+Also 11: "History names you the Golden, the Bloody or the Deposed in the free kingdom game I built on my Mac".
 
 ## Body
 
@@ -28,7 +32,7 @@ I'm in the comments tonight. How does it run on your Mac?
 
 Seven great houses want your throne in the free kingdom game I built on my Mac
 
-Both titles score the same, and the data can't pick between them. I'd go with the first: it's the line nobody else on the sub could write, and a reader learns from it what they get out of playing. The second is clearer about what you do, but "seven houses want your throne" sounds like a lot of strategy games.
+All three 11s score the same, and the data can't pick between them. The recommended one keeps the line Mac already chose for HN, so the launch speaks with one voice. "Seven houses want your throne" sounds like a lot of strategy games.
 
 **Getting to 12:** a real feeling in the title was the strongest single signal (MEATSHOT's "it almost broke me" 483; "I'm more nervous than anything" 696; "I'm shaking" 193). Add one only if it's true for you tonight, for example "...the free kingdom game I built on my Mac. It's out today and I'm nervous." If it isn't true, leave it out.
 
@@ -58,4 +62,4 @@ The questions this sub asks most, from the comments in the study:
 
 - **October and November 2026 are hard for original games here.** The sub is flooded with ports and tools, and most indie launches got 0 to 15. The closest games to ours got 30 to 43 (Salt and Soil, a historical city builder). A good post may still land in the tens.
 - **itch rather than Steam.** Every winner linked Steam; the two itch games in the study both flopped. Two cases can't prove it, but it's a headwind you can't change tonight.
-- **The film is AI-painted.** No rule here bans that (r/IndieGaming's does, which is why that post is on hold). Expect someone to ask, and answer as above.
+- **The film is AI-painted.** No rule in the sidebar bans that (r/IndieGaming's does). No removal I found was for AI, and posts that disclosed AI art this month stayed up. So it's allowed, but every game winner in the study used real gameplay footage, and the sub is sore about AI. If a 20 to 40 second gameplay clip exists, it's the better bet; if Mac posts the film, answer "is it AI?" honestly, as above.

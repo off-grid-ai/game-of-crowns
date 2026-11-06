@@ -74,6 +74,15 @@ The flops describe their games well and link them neatly; that's the store-page 
 
 **Caveat:** I scored these posts knowing which won, so the separation is optimistic. Score the next 10 r/macgaming launches blind before trusting the cut-off.
 
+## Does the Hacker News finding hold here?
+
+The HN study (docs/buzz/hn/) found that bodies barely separated winners from flops, titles did, and value or curiosity beat genre or stack. On r/macgaming it only half holds:
+- **The title matters most here too**, but what wins is different: a person with something at stake, and their Mac. A premise or genre in the title doesn't predict (flops 1.07, winners 0.75).
+- **Bodies do separate here.** Body voice was the second-biggest gap (winners 1.9, flops 0.6). Store-page bodies sink posts on this sub.
+- No stack-first title won here either ("I built an F2P... card game from scratch using Swift and Metal" got 12).
+
+Mac's line, "A medieval kingdom sim where history names you for how you ruled", scores 8: no catalogue markers and a strong value hook, but no person and no Mac. Adding one plain sentence with both takes it to 11 without touching his wording.
+
 ## What doesn't predict
 
 - A premise or genre in the title (flops do it more).
@@ -91,6 +100,8 @@ The flops describe their games well and link them neatly; that's the store-page 
 | Planned (launch-today.md) | Free on Apple Silicon: find out what kind of king you'd be | 0 | 1 | 1 | 2 | 1 | 2* | **7** |
 | New, option A | History names you the Golden, the Bloody or the Deposed in the free kingdom game I built on my Mac | 1 | 2 | 2 | 2 | 2 | 2* | **11** |
 | New, option B | Seven great houses want your throne in the free kingdom game I built on my Mac | 1 | 2 | 2 | 2 | 2 | 2* | **11** |
+| Mac's HN line as it stands | A medieval kingdom sim where history names you for how you ruled | 0 | 0 | 2 | 2 | 2 | 2* | **8** |
+| **Mac's line + Mac tie (recommended)** | A medieval kingdom sim where history names you for how you ruled. I built it on my Mac, and it's free on Apple Silicon | 1 | 2 | 2 | 2 | 2 | 2* | **11** |
 | Option A or B plus a true feeling | e.g. "...built on my Mac. It's out today and I'm nervous", only if it's true | 2 | 2 | 2 | 2 | 2 | 2* | **12** |
 
 \* Only if it goes up before 16:59 UTC (22:29 IST).
