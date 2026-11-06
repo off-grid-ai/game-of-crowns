@@ -70,7 +70,7 @@ func _process(delta: float) -> void:
 	_cam.h_offset = 0.75
 	var t := Time.get_ticks_msec() / 1000.0
 	for i in _torches.size():
-		_torches[i].light_energy = 2.6 + sin(t * 7.0 + i * 2.1) * 0.25 + sin(t * 13.0 + i) * 0.15
+		_torches[i].light_energy = 3.4 + sin(t * 7.0 + i * 2.1) * 0.25 + sin(t * 13.0 + i) * 0.15
 
 
 ## Opens the view on a person (the /person record) of a house (world house dict).
@@ -97,14 +97,15 @@ func _build_stage() -> void:
 	_viewport.add_child(_stage)
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.015, 0.012, 0.01)
+	# A torchlit hall, not a cellar: warm dark behind, enough light to see a face.
+	env.background_color = Color(0.075, 0.06, 0.05)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.32, 0.27, 0.22)
-	env.ambient_light_energy = 0.35
+	env.ambient_light_color = Color(0.42, 0.36, 0.3)
+	env.ambient_light_energy = 0.75
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
 	env.fog_enabled = true
-	env.fog_light_color = Color(0.08, 0.06, 0.05)
-	env.fog_density = 0.04
+	env.fog_light_color = Color(0.14, 0.11, 0.08)
+	env.fog_density = 0.03
 	env.glow_enabled = true
 	env.glow_intensity = 0.35
 	env.ssao_enabled = true
@@ -144,6 +145,13 @@ func _build_stage() -> void:
 		var flame := _flame()
 		flame.position = torch.position
 		_stage.add_child(flame)
+	# A soft key from the front, as from a brazier at the viewer's side: the face
+	# and clothes read; the torches still warm the edges.
+	var key := DirectionalLight3D.new()
+	key.light_color = Color(1.0, 0.86, 0.7)
+	key.light_energy = 0.8
+	key.rotation = Vector3(deg_to_rad(-25), deg_to_rad(-20), 0)
+	_stage.add_child(key)
 	var rim := DirectionalLight3D.new()
 	rim.light_color = Color(0.55, 0.65, 0.85)
 	rim.light_energy = 0.9
