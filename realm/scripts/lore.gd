@@ -392,8 +392,14 @@ func _family(f: Dictionary, into: Node = null) -> void:
 		v.add_child(line)
 		var liege := {"name": b.get("house", ""), "color": b.get("color", "#888"), "sigil": b.get("sigil", ""), "crown": b.get("crown", false)}
 		line.add_child(_sigil(liege, _tint(liege), 18))
-		var head: Dictionary = b.get("head", {}) if b.get("head") is Dictionary else {}
+		# The world as written (from the menu): whom they're sworn to, nothing of a
+		# reign (what they hold, who leads them now, a town to go to, a lord to meet).
+		var head: Dictionary = {} if baseline else (b.get("head", {}) if b.get("head") is Dictionary else {})
 		var said := ["Sworn to %s" % String(b.get("house", "")).replace("House ", "")]
+		if baseline:
+			b = b.duplicate()
+			b.erase("seat")
+			b.erase("lost")
 		if b.get("seat") != null:
 			said.append("holds %s" % b["seat"])
 		elif b.get("lost") != null:
@@ -435,7 +441,7 @@ func _family(f: Dictionary, into: Node = null) -> void:
 			meet.tooltip_text = "Meet them face to face"
 			meet.add_theme_color_override("font_color", T.ACCENT)
 			meet.pressed.connect(func():
-				close()
+				visible = false  # stepped aside: Back from the meeting returns here
 				person_opened.emit(str(head["id"]), liege))
 			line.add_child(meet)
 
