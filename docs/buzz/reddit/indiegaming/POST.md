@@ -31,17 +31,23 @@ From [launch-today.md](../../launch-today.md), with the launch film as the video
 ## The post
 **Title (recommended, A):** I made a medieval kingdom sim where history names you for how you ruled
 
-**Body:**
+**Body** (Mac's final copy of 6 Nov. The only changes are the AI-paintings line this sub needs and the link):
 
-You're the king, and seven great houses want your throne. All you've got to hold onto it is grain, gold and your word at court. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed.
+Game of Crowns is a medieval kingdom sim. You're the king, and seven great houses want your throne. You hold it with grain, gold, marriages and your rulings at court. Side against a house in a war, and ten years later its lord stands up at court to remind you. When your reign ends, history names you: the Golden, the Bloody, or the Deposed.
 
-AI comes up a lot here, so I'll say it up front. I built it with Claude, and the paintings in the intro and on the itch page were made with AI. Everything in this clip is real play, and the people and buildings are artists' models, credited in the game. The lords can also speak in their own words through a small model on your Mac, if you run one.
+I wanted my own Game of Thrones story, so I built one where you can rename anyone, rewrite their past and pick the story that comes for your throne. A season passes every 20 seconds, so a whole reign fits in an evening.
 
-It's free on Apple Silicon Macs: https://alichherawalla.itch.io/game-of-crowns
+With an optional local model, you can answer petitioners in your own words instead of picking from a list, and it can write you a new story for your next reign.
 
-Which one do you think you'd end up as?
+It's free and open source on Apple Silicon Macs, with Windows next: https://alichherawalla.itch.io/game-of-crowns
 
-(About 690 characters. One link, the itch page; the sidebar bans direct downloads, so never link the .dmg.)
+I built it with Claude on top of Freeciv. The paintings in the intro and on the itch page were made with AI. Everything in the clip is real play, with artists' models for the people and buildings. I'm happy to go into how any of it works.
+
+Notes on the changes:
+- **The AI-paintings line is the one this sub demands.** Here, AI that shows up in the visuals and isn't disclosed gets removed.
+- **The link goes in the body.** Store or itch links in the body don't hurt here (×1.2). Link the itch page; the sidebar bans direct downloads, so never the .dmg.
+- **Length:** about 1,050 characters, which scores 1 on P2 instead of 2. Across the year, bodies of 400–1,200 characters do no worse here (×1.0), so I kept every line of Mac's copy.
+- **Mac's rules for the post:** Off Grid AI isn't named, and "nothing leaves your Mac" stays for replies.
 
 ## Title options
 | Title | T1 | T2 | T3 | T4 | /8 |
@@ -55,8 +61,9 @@ Which one do you think you'd end up as?
 
 ## Score of the new post
 - Title A: 7/8.
-- Post: P1 2 (once the gameplay clip exists), P2 2, P3 2, P4 2 (no AI shown, AI in the game named plainly), P5 2. 10/10.
-- **17/18.** That matches the top winners in the sample. The score can't price in the rule: a mod can still remove the post because the game contains AI paintings.
+- Post: P1 2 (once the gameplay clip exists), P2 1 (about 1,050 characters), P3 2, P4 2 (no AI shown, AI in the game named plainly), P5 1 (it invites questions instead of asking one). 8/10.
+- **15/18.** That's in the winners' range in the sample (11–17).
+- To reach 17, trim the body below about 650 characters and end on a question. The data says those two points count for little here: body length doesn't predict, and the question criterion is weak. The score can't price in the rule: a mod can still remove the post because the game contains AI paintings.
 
 ## Message to the mods (send first, from the posting account)
 Hi, I'm about to post my game and want to check it fits your GenAI rule first. It's a free medieval kingdom sim for Mac. The clip I'd post is all real gameplay, and the people and buildings are artists' models. Two parts use AI: the intro paintings, and the lords' words if the player runs a small model on their own Mac. Is that OK to post here, or would you rather I didn't?

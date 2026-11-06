@@ -34,17 +34,25 @@ The same re-cut as for r/IndieGaming:
 
 **Title (recommended, A):** I made a medieval kingdom sim where history names you for how you ruled
 
-**Body:**
+**Body** (Mac's final copy of 6 Nov. The only change is the AI-paintings line this sub needs):
 
-You're the king, and seven great houses want your throne. All you've got to hold onto it is grain, gold and your word at court. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed.
+Game of Crowns is a medieval kingdom sim. You're the king, and seven great houses want your throne. You hold it with grain, gold, marriages and your rulings at court. Side against a house in a war, and ten years later its lord stands up at court to remind you. When your reign ends, history names you: the Golden, the Bloody, or the Deposed.
 
-AI comes up a lot here, so I'll say it up front. I built it with Claude, and the paintings in the intro and on the itch page were made with AI. Everything in this clip is real play, and the people and buildings are artists' models, credited in the game. The lords can also speak in their own words through a small model on your Mac, if you run one.
+I wanted my own Game of Thrones story, so I built one where you can rename anyone, rewrite their past and pick the story that comes for your throne. A season passes every 20 seconds, so a whole reign fits in an evening.
 
-It's free on Apple Silicon Macs: https://alichherawalla.itch.io/game-of-crowns
+With an optional local model, you can answer petitioners in your own words instead of picking from a list, and it can write you a new story for your next reign.
 
-What do you think history would call you?
+It's free and open source on Apple Silicon Macs, with Windows next.
 
-(About 690 characters, one link. A store or itch link in the body goes with fewer winners here (×0.5). If the mods allow it but ask for no link, move the link to your first comment.)
+I built it with Claude on top of Freeciv. The paintings in the intro were made with AI. Everything in the clip is real play, with artists' models for the people and buildings. I'm happy to go into how any of it works.
+
+**First comment, posted right after:** "Download: https://alichherawalla.itch.io/game-of-crowns (the itch page art is AI too)."
+
+Notes on the changes:
+- **The AI-paintings line is the one Rule 12 makes necessary.** Hiding it risks a report and removal.
+- **The link goes in the first comment.** A store or itch link in the body goes with half as many winners here (×0.5). The winners at the top of the year left the link to a comment.
+- **Length:** about 1,000 characters. That's P2 1 instead of 2: bodies of 400–1,200 characters do a little worse here (×0.8), but I kept every line of Mac's copy.
+- **Mac's rules for the post:** Off Grid AI isn't named, and "nothing leaves your Mac" stays for replies.
 
 ## Title options
 | Title | T1 | T2 | T3 | T4 | /8 |
@@ -58,8 +66,8 @@ What do you think history would call you?
 
 ## Score of the new post
 - Title A: 7/8.
-- Post: P1 2 (once the clip exists), P2 2, P3 2, P4 2. 8/8.
-- **15/16.** That matches the sample's best winners. The score can't price in the rule: Rule 12 can still remove the post.
+- Post: P1 2 (once the clip exists), P2 1 (about 1,000 characters), P3 2 (no link in the body), P4 2. 7/8.
+- **14/16.** That's in the winners' range in the sample (14–15). Trimming the body below about 650 characters would make it 15. The score can't price in the rule: Rule 12 can still remove the post.
 
 ## Message to the mods (send first)
 Hi, I'd like to post my game and want to check Rule 12 first. It's a free medieval kingdom sim for Mac. The clip would be all real gameplay, and the people and buildings are artists' models. Two parts use AI: the intro paintings, and the lords' words if the player runs a small model on their own Mac. Is that allowed here, or should I skip the sub?
