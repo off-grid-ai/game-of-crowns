@@ -205,7 +205,15 @@ func _house(h: Dictionary) -> void:
 	if h.get("fallen", false):
 		_para("Fallen. The house holds no town in this reign; its people are scattered and its banners hang in other men's halls. The realm remembers what it was.")
 	if h.get("crown", false):
+		# Your own house, set out like the others: its arms, its line, what it holds
+		# and commands, and what threatens it.
 		_para("Your own house, and your throne. The seven great houses owe it their swords for as long as it stays strong.")
+		_fact("Arms", "A red eagle, crowned in gold. It flies over Kingsmere and wherever the royal host marches.")
+		_fact("The line", "The Conqueror's blood. Three hundred years ago he bent seven kings by sword and by marriage, and his heirs have sat the throne since. The houses kneel to the crown for what it holds, not for who wears it.")
+		_fact("Holds", "Kingsmere and the river delta at the heart of the realm, the royal treasury, a royal host of a few thousand, and the tithe of every town.")
+		_fact("Commands", "Feasts and gifts warm a house; the royal levy and the banners raise men; an alliance binds a house to your wars; the royal host marches on a rebel's walls; the court hears every lord who comes; the Hand advises.")
+		_fact("Old enemies", "Any house that remembers being kings. A lord whose favour falls under 25 may raise his banners; two such, and one will claim the throne. In the far north, beyond the old wall, something stirs in long winters.")
+		_fact("The Faith", "The septs bless the crown, or curse it. A King the Faith calls accursed finds his oaths void.")
 	elif lore.is_empty():
 		_para("A house born of the realm's own wars, owing little to the old order and forgiving less. Its story is still being written, in this reign.")
 	else:
