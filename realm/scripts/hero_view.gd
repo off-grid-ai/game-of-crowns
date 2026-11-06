@@ -198,11 +198,44 @@ func _flame() -> Node3D:
 	return p
 
 
+## The painting behind a person of this house: res://assets/intro/art/house_<name>
+## (jpg or png), else the seat's still in res://assets/intro/stills.
+static func _backdrop_of(house: Dictionary) -> String:
+	var name := String(house.get("name", ""))
+	var key := "house_" + name.trim_prefix("House ").trim_prefix("The ").to_lower().replace(" ", "_")
+	for ext in [".jpg", ".png"]:
+		if ResourceLoader.exists("res://assets/intro/art/" + key + ext):
+			return "res://assets/intro/art/" + key + ext
+	var seat := String(house.get("seat", ""))
+	if seat != "" and ResourceLoader.exists("res://assets/intro/stills/seat_%s.png" % seat):
+		return "res://assets/intro/stills/seat_%s.png" % seat
+	return ""
+
+
 func _dress_stage(house: Dictionary, family: Dictionary) -> void:
 	for n in _stage.get_children():
 		if n.is_in_group("hero_dressing"):
 			n.queue_free()
 	var col := Color.from_string(String(house.get("color", "#8a6d3b")), Color(0.55, 0.42, 0.25))
+	# Their own house behind them: its painting (the intro's, briefed for Codex),
+	# else the game's own still of its seat, as a backdrop that always faces the
+	# camera; with neither, the torchlit hall alone.
+	var art := _backdrop_of(house)
+	if art != "":
+		var quad := MeshInstance3D.new()
+		var plane := QuadMesh.new()
+		plane.size = Vector2(16.0, 9.0)
+		quad.mesh = plane
+		var m := StandardMaterial3D.new()
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.albedo_texture = load(art)
+		m.albedo_color = Color(0.62, 0.58, 0.54)  # dimmed, so the person and the card stay first
+		m.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		m.disable_fog = true
+		quad.material_override = m
+		quad.position = Vector3(0, 3.2, -7.5)
+		quad.add_to_group("hero_dressing")
+		_stage.add_child(quad)
 	# The house's banner hangs behind them, a little off to one side; one of a
 	# lesser family stands between their own banner and their liege's.
 	for x in [-1.3, 1.3]:
