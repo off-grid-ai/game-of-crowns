@@ -9,7 +9,7 @@ You're the King of Aldmere. Seven great houses grow their towns, marry, scheme a
 ![Cecily Goldcrest, Lady of Goldrock, in her own oak grove at golden hour](docs/play/v04/meet-goldcrest.jpg)
 *Meet anyone and they stand in their own land. Cecily Goldcrest holds the debts of half the western lords, and swears the Wolfholt bride died of fever.*
 
-## New in 0.4
+## New in 0.5
 
 - **Everyone has a past.** All 83 lords, consorts, heirs and bannermen start with a history that agrees with everyone else's: who refused whose daughter, who opened the gates at Windcross, who served the Wolfholt bride her last cup. Ten bannermen have a quiet reason to turn their coats.
 - **The realm is yours to rewrite.** Rename any house or person. Rewrite anyone's story, what they remember, their nature and their loyalty, right on their card. Do it from the menu and every chronicle you start after that begins your way. It stays on your Mac.
