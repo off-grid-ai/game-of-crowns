@@ -4,14 +4,18 @@ Mac's call: "we're gonna launch today." This replaces launch.md's 8 December dat
 
 **The link everywhere:** https://alichherawalla.itch.io/game-of-crowns (once Mac clicks Publish). itch counts the downloads, and outside traffic pushes the page up its own New & Popular lists. GitHub releases stays the backup link.
 
+**Subreddit rules:** Reddit blocked every automated read, so nothing below is confirmed. Before each post, open the sub's /about/rules while logged in. Each post is written for its own sub; post them an hour apart, because the same text across subs within minutes looks like spam.
+**Later subs:** r/indiegames (flair "Promotion", gameplay video in the post) and r/StrategyGames (flair "DevPost") next week. Skip r/FreeGameFindings (giveaways of paid games only) and the WorldBox and Ages of Conflict subs (fan subs: comment in "games like this" threads instead).
+
 ## Today (IST; US Eastern in brackets)
 | Time | Who | What |
 |---|---|---|
 | by 18:30 | main session | 0.4 release published on GitHub (notarised). |
 | 18:30 | buzz | Push the 0.4 dmg to itch with butler; check it's processed. |
 | 18:40 | **Mac** | itch: paste the trailer link if the clip is up, then **Publish**. Download it once from the public page to check. |
-| 19:00 (9:30am) | **Mac** | Post r/macgaming (below). |
-| 19:20 | **Mac** | Post r/IndieGaming, then r/godot (below), if the rules check allows them. |
+| 19:00 (9:30am) | **Mac** | Post r/macgaming (below), flair "Self promotion". |
+| 20:00 | **Mac** | Post r/godot, flair "selfpromo (games)". Their rule: stay and answer comments. |
+| 21:00 | **Mac** | Post r/IndieGaming. |
 | 19:30 | **Mac** | Send creator emails, batch 1 (the Mac-gaming channels), from creators.md. |
 | all evening | **Mac** | Reply to every comment. Answer the question asked, plainly. |
 
@@ -29,7 +33,7 @@ Mac's call: "we're gonna launch today." This replaces launch.md's 8 December dat
 ---
 
 ## r/macgaming (19:00)
-Image post or video. Images: final/1-court.jpg, final/2-street.jpg, final/5-lore-person.jpg. Flair: check on posting.
+Image post or video. Images: final/1-court.jpg, final/2-street.jpg, final/5-lore-person.jpg. Flair: "Self promotion".
 
 **Title:** Free on Apple Silicon: a medieval kingdom where every lord remembers what you did
 
@@ -48,7 +52,7 @@ It's early. What would keep you playing past the first hour?
 2. Goldrock on market day. Nobody here waits for you.
 3. Cecily Goldcrest. Every noble has a past like this, and you can rewrite it.
 
-## r/IndieGaming (19:20)
+## r/IndieGaming (21:00)
 **Title:** My free medieval kingdom sim is out today: you rule through marriages and grain, and every lord remembers
 
 The houses in my game run themselves. They farm, marry, starve and go to war, and you're the King who can't move a single soldier. You get the court, the taxes, the grain and the marriages, and every lord remembers how you used them. Bleed a house with the tithe or take one of its towns, and years later its lord brings it up at court, down to the season and the year.
@@ -57,8 +61,8 @@ A season passes every twenty seconds, so a five-minute sitting covers nearly fou
 
 What's the one thing a kingdom sim has to get right for you?
 
-## r/godot (19:20)
-Video or images. Flair: probably "selfpromo" or "showcase"; check on posting.
+## r/godot (20:00)
+Video or images. Flair: "selfpromo (games)".
 
 **Title:** I built a medieval kingdom in Godot 4 where the lords remember what you did. It's out on Mac today
 

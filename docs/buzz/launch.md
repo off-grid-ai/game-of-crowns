@@ -1,5 +1,7 @@
 # The launch (2026-11-06)
 
+**Superseded on the date:** Mac moved launch to today, 6 Nov. The beats and calendar now run from launch-today.md. The research below still stands.
+
 Mac: "study the GTM strategy for indie games, then we replicate that. No studio budget, but a kickass launch."
 This builds on gtm.md (what moves a small game) and covers only the launch itself. Sources at the end.
 
