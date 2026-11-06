@@ -25,4 +25,4 @@ A cinematic oil painting, 16:9, no text or letters anywhere. Dawn in a vast medi
 
 ---
 
-Once both files are in place, tell the game session. The screens are already wired to use them and skip themselves until they exist.
+Once both files are in place, tell the game session; `realm/tools/intro_art.sh` brings them into the game as ~1 MB JPGs. The screens are already wired to use them and skip themselves until they exist.

@@ -8,9 +8,18 @@ extends CanvasLayer
 signal finished
 
 const PAGES := [
-	["res://assets/intro/splash/splash_1.png", "Off Grid AI presents", ""],
-	["res://assets/intro/splash/splash_2.png", "", "res://assets/logo.png"],
+	["res://assets/intro/splash/splash_1", "Off Grid AI presents", ""],
+	["res://assets/intro/splash/splash_2", "", "res://assets/logo.png"],
 ]
+
+
+## A painting as kept in the game: a 1 MB JPG (tools/intro_art.sh brings Codex's
+## PNGs in that way), or the PNG as delivered.
+static func _art(base: String) -> String:
+	for ext in [".jpg", ".png"]:
+		if ResourceLoader.exists(base + ext):
+			return base + ext
+	return ""
 const HOLD := 3.2  # seconds each painting is on screen
 const FADE := 0.9
 
@@ -19,7 +28,7 @@ var _skip := false
 
 static func any() -> bool:
 	for p in PAGES:
-		if ResourceLoader.exists(p[0]):
+		if _art(p[0]) != "":
 			return true
 	return false
 
@@ -34,14 +43,14 @@ func _ready() -> void:
 	for p in PAGES:
 		if _skip:
 			break
-		if not ResourceLoader.exists(p[0]):
+		if _art(p[0]) == "":
 			continue
 		var page := Control.new()
 		page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		page.modulate.a = 0.0
 		add_child(page)
 		var art := TextureRect.new()
-		art.texture = load(p[0])
+		art.texture = load(_art(p[0]))
 		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
