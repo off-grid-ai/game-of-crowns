@@ -226,6 +226,9 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 					castle.rotation.y = atan2(-cp.x, -cp.z)
 					root.add_child(castle)
 					_footprint_rect(root, cp, cf, castle.rotation.y)
+					# No wood stands inside its walls or leans over them: felled to
+					# the corners, and a crown's reach (about 0.8) beyond.
+					terrain.clear_around(center + cp, cf.length() * 0.5 + 0.8)
 					lots.append([cp, maxf(cf.x, cf.y) * 0.55])
 					_banner(root, cp + Vector3(0, cy + 1.6, 0), _house_colour, _house)
 					_door(root, cp, cf, "great_hall", "great hall")

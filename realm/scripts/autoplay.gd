@@ -71,6 +71,23 @@ func _play(quit_after: bool) -> void:
 				await get_tree().process_frame
 				_action(w[1], false)
 				await get_tree().create_timer(0.3).timeout
+			"wheel":
+				# wheel fx fy n: n notches at a screen point (fractions), out if n > 0.
+				var at := get_viewport().get_visible_rect().size * Vector2(float(w[1]), float(w[2]))
+				var mv := InputEventMouseMotion.new()  # the pointer there first, so what's under it is what it's over
+				mv.position = at
+				mv.global_position = at
+				Input.parse_input_event(mv)
+				await get_tree().process_frame
+				for i in absi(int(w[3])):
+					var e := InputEventMouseButton.new()
+					e.button_index = MOUSE_BUTTON_WHEEL_DOWN if int(w[3]) > 0 else MOUSE_BUTTON_WHEEL_UP
+					e.position = at
+					e.global_position = at
+					e.pressed = true
+					e.factor = 1.0
+					Input.parse_input_event(e)
+					await get_tree().create_timer(0.12).timeout
 			"hold":
 				_action(w[1], true)
 				await get_tree().create_timer(float(w[2])).timeout

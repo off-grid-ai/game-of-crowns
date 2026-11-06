@@ -190,6 +190,11 @@ func lore_map(cb: Callable) -> void:
 	_http_get("/lore/map", cb)
 
 
+## The realm map as the reign stands: towns as held now, hosts, sieges.
+func realm_map(cb: Callable) -> void:
+	_http_get("/lore/map?live=1", cb)
+
+
 func person(id: String, cb: Callable) -> void:
 	_http_get("/person?id=%s" % id.uri_encode(), cb)
 

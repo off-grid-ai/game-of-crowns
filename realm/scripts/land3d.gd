@@ -86,6 +86,19 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 				var y: float = terrain.height_at(x, z)
 				heights.set_pixel(x, z, Color(y, 0, 0, 1))
 				control.set_pixel(x, z, Color(_control(terrain._layers_at(x, z, y)), 0, 0, 1))
+	# The ground is laid in whole regions; what of the last ones lies past the
+	# realm's edge is deep sea floor, not flat ground standing out of the water.
+	var rs := int(land.region_size)
+	var pw := ceili(heights.get_width() / float(rs)) * rs
+	var ph := ceili(heights.get_height() / float(rs)) * rs
+	if pw != heights.get_width() or ph != heights.get_height():
+		var deep := Image.create_empty(pw, ph, false, heights.get_format())
+		deep.fill(Color(-3.2, 0, 0, 1))
+		deep.blit_rect(heights, Rect2i(Vector2i.ZERO, heights.get_size()), Vector2i.ZERO)
+		heights = deep
+		var floor := Image.create_empty(pw, ph, false, control.get_format())
+		floor.blit_rect(control, Rect2i(Vector2i.ZERO, control.get_size()), Vector2i.ZERO)
+		control = floor
 	land.data.import_images([heights, control, null], Vector3.ZERO, 0.0, 1.0)
 
 

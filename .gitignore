@@ -83,3 +83,6 @@ shots/
 .claude/*
 !.claude/skills/
 build/
+
+# Your own names for houses and people (the Lore's Rename): yours, never pushed
+bridge/names.json

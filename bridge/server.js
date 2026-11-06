@@ -1580,7 +1580,27 @@ http.createServer(async (req, res) => {
       const m = JSON.parse(fs.readFileSync(path.join(chron.BASELINE, "state", "map.json"), "utf8"));
       land = (m.tiles ?? []).filter((t) => !/Ocean|Lake/.test(String(t[2]))).map((t) => [t[0], t[1]]);
     } catch { /* no map */ }
-    return json(res, 200, { tiles: [56, 88], towns, land, roads: w.roads ?? [] });
+    if (url.searchParams.get("live") !== "1" || !world?.cities) return json(res, 200, { tiles: [56, 88], towns, land, roads: w.roads ?? [] });
+    // The realm as it stands in this reign: each town under whoever holds it now,
+    // the hosts in the field (a house's companies within a day's march of each
+    // other, as one), and the towns under siege.
+    const now = world.cities.map((c) => {
+      const h = houseFor(world.players.find((p) => p.id === c.owner) ?? {});
+      const foes = world.units.filter((u) => u.owner !== c.owner && !CIVILIAN.has(u.type) && Math.max(Math.abs(u.x - c.x), Math.abs(u.y - c.y)) === 1);
+      return { title: cityName(c.id), x: c.x, y: c.y, size: c.size, capital: !!c.capital, house: h?.name ?? "", key: h?.name ?? "", color: h?.color ?? "#888", sigil: h?.sigil ?? "", besieged: foes.length >= 3 };
+    });
+    const hosts = [];
+    for (const u of (world.units ?? []).filter((x) => !CIVILIAN.has(x.type) && !/Trireme|Caravel|Galleon|Frigate|Transport/.test(x.type))) {
+      if (world.cities.some((c) => c.x === u.x && c.y === u.y)) continue;  // a garrison, not a host
+      const near = hosts.find((g) => g.owner === u.owner && Math.max(Math.abs(g.x - u.x), Math.abs(g.y - u.y)) <= 2);
+      if (near) { near.x = (near.x * near.companies + u.x) / (near.companies + 1); near.y = (near.y * near.companies + u.y) / (near.companies + 1); near.companies++; }
+      else hosts.push({ owner: u.owner, x: u.x, y: u.y, companies: 1 });
+    }
+    const armies = hosts.filter((g) => g.companies >= 2).map((g) => {
+      const h = houseFor(world.players.find((p) => p.id === g.owner) ?? {});
+      return { x: g.x, y: g.y, companies: g.companies, house: h?.name ?? "", key: h?.name ?? "", color: h?.color ?? "#888", sigil: h?.sigil ?? "", crown: !!h?.crown };
+    });
+    return json(res, 200, { tiles: [56, 88], towns: now, land, roads: world.roads ?? w.roads ?? [], armies });
   }
   if (url.pathname === "/lore") {
     // The book of the realm: its story from the world bible, and each great

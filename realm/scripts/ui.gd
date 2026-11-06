@@ -1146,7 +1146,7 @@ func close_folk() -> void:
 		_folk_panel.visible = false
 	if _court_waiting:
 		_court_waiting = false
-		_court_panel.visible = true
+		_show_audience()  # built afresh: set aside behind the digest, its card was cleared
 
 
 ## One of the common folk, met in the street: who they are, and their story.
@@ -1546,7 +1546,11 @@ func _fit_centre(panel: Control, widest: float) -> void:
 	var map_frame := minimap.get_parent() as Control if minimap else null
 	var reaches := panel.anchor_top == 1.0 or (map_frame != null and panel.get_global_rect().end.y > map_frame.get_global_rect().position.y)
 	if reaches and map_frame and map_frame.is_visible_in_tree():
-		right = minf(right, map_frame.get_global_rect().position.x - 12.0)
+		# Only when centred it would run into the minimap: a short card stays
+		# centred with the cards above it.
+		var w0 := minf(widest, right - left)
+		if (left + right + w0) / 2.0 > map_frame.get_global_rect().position.x - 12.0:
+			right = minf(right, map_frame.get_global_rect().position.x - 12.0)
 	var w := minf(widest, right - left)
 	var x := (left + right - w) / 2.0
 	panel.anchor_left = 0.0

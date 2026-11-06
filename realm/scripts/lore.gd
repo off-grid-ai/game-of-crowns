@@ -278,128 +278,29 @@ func _map_page() -> void:
 	_page.add_child(_live_map())
 
 
-## The realm's map, alive like Azgaar's: drag to pan, scroll or +/− to zoom; each
-## house's lands shaded in its colour, the roads, the towns (every name once
-## you're close). Hover names a town and its house; a seat opens its house's
-## page; any other town is ringed. The land only: no people, no armies.
-var _zoom := 1.0
-var _pan := Vector2.ZERO  # the map's top-left inside the view, in view pixels
-var _lands_tex: Texture2D
+## The realm's map (realm_map.gd) as every chronicle finds it: a seat opens its
+## house's page; any other town is ringed.
 func _live_map() -> Control:
-	var tiles: Array = _map.get("tiles", [56, 88])
-	var view := Control.new()
-	view.clip_contents = true
+	var view: Control = preload("res://scripts/realm_map.gd").new()
 	view.custom_minimum_size = Vector2(0, maxf(460.0, get_viewport().get_visible_rect().size.y - 240.0))
 	view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	view.mouse_filter = Control.MOUSE_FILTER_STOP
-	var atlas: Texture2D = load("res://assets/maps/atlas.png")
-	if _lands_tex == null:
-		_lands_tex = _lands_of(tiles)
-	var font: Font = T.get_theme().default_font
-	var hover := [""]
-	var drag := [false, Vector2.ZERO, false]  # dragging, last pointer, moved
-	# The map's size at zoom 1: the whole of it fitted in the view's height.
-	var base := func() -> Vector2:
-		var h := view.size.y
-		return Vector2(h * 3040.0 / 4800.0, h)
-	var fit := func() -> void:
-		_zoom = 1.0
-		var b: Vector2 = base.call()
-		_pan = Vector2((view.size.x - b.x) * 0.5, 0)
-	var to_screen := func(tx: float, ty: float) -> Vector2:
-		var b: Vector2 = base.call() * _zoom
-		return _pan + Vector2((tx + 0.5) / float(tiles[0]) * b.x, (ty + 0.5) / float(tiles[1]) * b.y)
-	var town_at := func(p: Vector2) -> Dictionary:
-		var best := {}
-		var near := 14.0
-		for t in _map.get("towns", []):
-			var d: float = (to_screen.call(float(t["x"]), float(t["y"])) as Vector2).distance_to(p)
-			if d < near:
-				near = d
-				best = t
-		return best
-	var zoom_at := func(factor: float, at: Vector2) -> void:
-		var z := clampf(_zoom * factor, 1.0, 6.0)
-		_pan = at - (at - _pan) * (z / _zoom)
-		_zoom = z
-		view.queue_redraw()
-	view.resized.connect(func():
-		if _zoom <= 1.0:
-			fit.call()
+	view.data = _map
+	view.mark = _mark
+	view.town_pressed.connect(func(t: Dictionary):
+		if t.get("capital", false):
+			for hh in _book.get("houses", []):
+				if String(hh.get("name", "")) == String(t.get("house", "")):
+					_go(int(hh["id"]))
+					return
+		_mark = String(t["title"])
+		view.mark = _mark
 		view.queue_redraw())
-	view.draw.connect(func():
-		var b: Vector2 = base.call() * _zoom
-		view.draw_rect(Rect2(Vector2.ZERO, view.size), Color(0.13, 0.2, 0.29))  # the sea beyond the map's edge
-		view.draw_texture_rect(atlas, Rect2(_pan, b), false)
-		if _lands_tex:
-			view.draw_texture_rect(_lands_tex, Rect2(_pan, b), false, Color(1, 1, 1, 0.42))
-		# Roads: neighbouring road tiles joined, and each to its nearest town.
-		var roads: Array = _map.get("roads", [])
-		var road_col := Color(0.42, 0.27, 0.14, 0.85)
-		for i in roads.size():
-			for j in range(i + 1, roads.size()):
-				var a: Array = roads[i]
-				var c: Array = roads[j]
-				if absi(int(a[0]) - int(c[0])) <= 1 and absi(int(a[1]) - int(c[1])) <= 1:
-					view.draw_line(to_screen.call(float(a[0]), float(a[1])), to_screen.call(float(c[0]), float(c[1])), road_col, 1.5 + _zoom * 0.5, true)
-		var named := _zoom >= 1.8  # every town named once you're close
-		for t in _map.get("towns", []):
-			var at: Vector2 = to_screen.call(float(t["x"]), float(t["y"]))
-			var col := Color.from_string(String(t.get("color", "#888")), Color.GRAY)
-			var seat: bool = t.get("capital", false)
-			var marked: bool = String(t["title"]) == _mark or String(t["title"]) == hover[0]
-			var r := (6.0 if seat else 3.2) * (1.0 + (_zoom - 1.0) * 0.25)
-			if marked:
-				view.draw_arc(at, r + 8.0, 0.0, TAU, 32, T.ACCENT, 3.0, true)
-			view.draw_circle(at, r + 1.5, Color(0, 0, 0, 0.55))
-			view.draw_circle(at, r, col.lerp(Color.WHITE, 0.25))
-			if seat or named or marked:
-				var size := (15 if seat else 13) + int(_zoom)
-				var pos := at + Vector2(r + 5.0, 5.0)
-				view.draw_string_outline(font, pos, String(t["title"]), HORIZONTAL_ALIGNMENT_LEFT, -1, size, 5, Color(0, 0, 0, 0.8))
-				view.draw_string(font, pos, String(t["title"]), HORIZONTAL_ALIGNMENT_LEFT, -1, size, T.ACCENT if marked else T.TEXT))
-	view.gui_input.connect(func(e: InputEvent):
-		if e is InputEventMouseButton:
-			if e.button_index == MOUSE_BUTTON_WHEEL_UP and e.pressed:
-				zoom_at.call(1.15, e.position)
-			elif e.button_index == MOUSE_BUTTON_WHEEL_DOWN and e.pressed:
-				zoom_at.call(1.0 / 1.15, e.position)
-			elif e.button_index == MOUSE_BUTTON_LEFT:
-				if e.pressed:
-					drag[0] = true
-					drag[1] = e.position
-					drag[2] = false
-				else:
-					drag[0] = false
-					if not drag[2]:  # a click, not a drag
-						var t: Dictionary = town_at.call(e.position)
-						if not t.is_empty():
-							if t.get("capital", false):
-								for hh in _book.get("houses", []):
-									if String(hh.get("name", "")) == String(t.get("house", "")):
-										_go(int(hh["id"]))
-										return
-							_mark = String(t["title"])
-							view.queue_redraw()
-		elif e is InputEventMagnifyGesture:
-			zoom_at.call(e.factor, e.position)
-		elif e is InputEventPanGesture:
-			_pan -= e.delta * 12.0
-			view.queue_redraw()
-		elif e is InputEventMouseMotion:
-			if drag[0]:
-				_pan += e.position - drag[1]
-				drag[1] = e.position
-				drag[2] = true
-				view.queue_redraw()
-				return
-			var t: Dictionary = town_at.call(e.position)
-			var name := String(t.get("title", ""))
-			if name != hover[0]:
-				hover[0] = name
-				view.tooltip_text = ("%s  ·  %s%s" % [name, String(t.get("house", "")), "'s seat" if t.get("capital", false) else ""]) if name != "" else ""
-				view.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if name != "" else Control.CURSOR_DRAG
-				view.queue_redraw())
+	# Fitted once it has its size; opened on a town (from a house's page), closed in on it.
+	view.resized.connect(func():
+		if view.zoom <= 1.0:
+			view.fit()
+			if _mark != "":
+				view.show_town(_mark))
 	# +, − and the whole realm, in the corner.
 	var tools := HBoxContainer.new()
 	tools.position = Vector2(10, 10)
@@ -412,46 +313,11 @@ func _live_map() -> Control:
 		var f: float = pair[1]
 		tb.pressed.connect(func():
 			if f == 0.0:
-				fit.call()
-				view.queue_redraw()
+				view.fit()
 			else:
-				zoom_at.call(f, view.size * 0.5))
+				view.zoom_at(f, view.size * 0.5))
 		tools.add_child(tb)
-	# Opened on a town (from a house's page): close in on it.
-	if _mark != "":
-		view.ready.connect(func():
-			await get_tree().process_frame
-			fit.call()
-			for t in _map.get("towns", []):
-				if String(t["title"]) == _mark:
-					zoom_at.call(2.6, to_screen.call(float(t["x"]), float(t["y"])))
-					_pan += view.size * 0.5 - (to_screen.call(float(t["x"]), float(t["y"])) as Vector2)
-					view.queue_redraw(), CONNECT_ONE_SHOT)
 	return view
-
-
-## Each house's lands as the realm begins: every land tile shaded in the colour
-## of the nearest town's house, within a few days' ride of it.
-func _lands_of(tiles: Array) -> Texture2D:
-	var w := int(tiles[0])
-	var h := int(tiles[1])
-	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-	var towns: Array = _map.get("towns", [])
-	for p in _map.get("land", []):
-		var x := int(p[0])
-		var y := int(p[1])
-		var best := {}
-		var near := 6.5
-		for t in towns:
-			var d := Vector2(x - int(t["x"]), y - int(t["y"])).length()
-			if d < near:
-				near = d
-				best = t
-		if not best.is_empty():
-			img.set_pixel(x, y, Color.from_string(String(best.get("color", "#888")), Color.GRAY))
-	img.resize(w * 8, h * 8, Image.INTERPOLATE_BILINEAR)  # soft edges between houses
-	return ImageTexture.create_from_image(img)
 
 
 ## A painting of the intro's (res://assets/intro/art/<key>.jpg or .png), else the

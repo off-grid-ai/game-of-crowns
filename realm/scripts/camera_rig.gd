@@ -8,6 +8,11 @@ extends Node3D
 ## whatever the frame rate, and zoom eases evenly at every scale.
 
 signal clicked(ground: Vector3)
+signal overview  # drawn back past OVERVIEW: the painted map takes over from here
+
+## Past this the land can't be read (towns are smudges), so zooming out hands
+## over to the realm's painted map (main._overview) instead of going higher.
+const OVERVIEW := 60.0
 
 var terrain: Node3D
 var target := Vector3.ZERO
@@ -49,7 +54,10 @@ func focus(pos: Vector3, dist := -1.0) -> void:
 func nudge(action: String) -> void:
 	match action:
 		"in": _goal_distance = maxf(min_distance, _goal_distance * 0.93)
-		"out": _goal_distance = minf(max_distance, _goal_distance * 1.07)
+		"out":
+			if _goal_distance >= OVERVIEW * 0.999:
+				overview.emit()
+			_goal_distance = minf(minf(max_distance, OVERVIEW), _goal_distance * 1.07)
 		"up": _pan(Vector2(0, -1) * _goal_distance * 0.04)
 		"down": _pan(Vector2(0, 1) * _goal_distance * 0.04)
 		"left": _pan(Vector2(-1, 0) * _goal_distance * 0.04)
@@ -126,7 +134,10 @@ func _unhandled_input(event: InputEvent) -> void:
 ## you're pointing at stays where it is while everything else comes closer.
 func _zoom_at(screen: Vector2, f: float) -> void:
 	var before := _goal_distance
-	_goal_distance = clampf(_goal_distance * f, min_distance, max_distance)
+	if f > 1.0 and _goal_distance >= OVERVIEW * 0.999:
+		overview.emit()
+		return
+	_goal_distance = clampf(_goal_distance * f, min_distance, minf(max_distance, OVERVIEW))
 	var p := _ground_under(screen)
 	if p == Vector3.INF:
 		return
