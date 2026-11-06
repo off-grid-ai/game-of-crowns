@@ -18,7 +18,10 @@ var _body: VBoxContainer
 var _logo: TextureRect
 var _minutes := 0
 var _preset := "Balanced"  # the card chosen on the new-chronicle page
-var _more := false  # every other choice unfolded
+var _more := false  # every other choice unfolded (unused since setup has pages)
+var _new_show_step: Callable  # the page shown on New Chronicle; Esc steps back through them
+var _new_step := 0  # which page of setting up a chronicle: 0 the reign, 1 its story, 2 the realm
+const NEW_STEPS := ["The reign", "Its story", "Your realm"]
 var _scenario := "aldmere"
 var _wealth := "comfortable"
 var _mood_edit: LineEdit
@@ -169,7 +172,9 @@ func show_main() -> void:
 		cont.add_theme_stylebox_override("normal", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.24), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.6), 8, 10))
 		cont.add_theme_stylebox_override("hover", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.36), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.85), 8, 10))
 		cont.add_theme_color_override("font_color", Color(1, 0.93, 0.78))
-	_big("Begin a New Chronicle", _go.bind(show_new))
+	_big("Begin a New Chronicle", func():
+		_new_step = 0  # a new chronicle starts at its first page
+		_go(show_new))
 	_big("Settings", _go.bind(show_settings))
 	_big("Watch the introduction", func():
 		_close()
@@ -245,9 +250,28 @@ func show_new() -> void:
 	var room := _root.get_viewport_rect().size
 	_body.custom_minimum_size = Vector2(minf(1560.0, room.x - 160.0), 0)
 	_heading("A New Chronicle")
+	# Three pages, one decision each: the reign, its story, then (if you like)
+	# every other choice about the realm. The steps across the top say where
+	# you are and take you to any of them.
+	var steps := HBoxContainer.new()
+	steps.alignment = BoxContainer.ALIGNMENT_CENTER
+	steps.add_theme_constant_override("separation", 28)
+	_body.add_child(steps)
+	var pages: Array[VBoxContainer] = []
+	for i in NEW_STEPS.size():
+		var pg := VBoxContainer.new()
+		pg.add_theme_constant_override("separation", 14)
+		pg.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		_body.add_child(pg)
+		pages.append(pg)
+	var page_h := maxf(320.0, room.y - 330.0)  # what the heading, the steps and the buttons leave
+	# Every page takes the same height, so the buttons stay put as you step through.
+	for pg in pages:
+		pg.custom_minimum_size.y = page_h
+	pages[0].add_theme_constant_override("separation", 22)
 	var saved := HFlowContainer.new()
 	saved.add_theme_constant_override("h_separation", 6)
-	_body.add_child(saved)
+	pages[0].add_child(saved)
 	# Held weakly: the reply can come after this page has gone.
 	var saved_ref: WeakRef = weakref(saved)
 	bridge.scenarios(func(list):
@@ -261,29 +285,32 @@ func show_new() -> void:
 			b.pressed.connect(_use_scenario.bind(sc)))
 	# How hard a reign: one press sets every choice below (each can still be changed).
 	# How hard a reign, as three cards: the one decision most players need.
-	_body.add_child(_label("How hard a reign", 15, MUTED))
+	pages[0].add_child(_label("How hard a reign", 15, MUTED))
 	var presets := HBoxContainer.new()
 	presets.add_theme_constant_override("separation", 12)
-	_body.add_child(presets)
+	pages[0].add_child(presets)
 	for name in PRESETS:
 		var card := _toggle(String(name), presets)
 		card.toggle_mode = true
 		card.button_pressed = name == _preset
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		card.custom_minimum_size.y = 84
+		card.custom_minimum_size.y = 140
 		card.text = "%s\n%s" % [name, PRESETS[name]["about"]]
 		card.autowrap_mode = TextServer.AUTOWRAP_WORD
 		card.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		card.pressed.connect(_use_preset.bind(String(name)))
+	# How long a sitting: whatever the story, every player chooses it, so it
+	# stands up here rather than among the customised choices.
+	_choices(pages[0], "Length of the reign", [["Endless", 0], ["15 minutes", 15], ["30 minutes", 30], ["An hour", 60]], _minutes, func(v): _minutes = v)
 	# What comes for the throne: the reign's story, or the realm's own choice.
-	_body.add_child(_label("What comes for the throne", 15, MUTED))
+	pages[1].add_child(_label("What comes for the throne", 15, MUTED))
 	# The cards scroll within a band of the page: there are a score of stories,
 	# and the name and Begin must stay on the screen beneath them.
 	var tales_scroll := ScrollContainer.new()
 	tales_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	# Every bit of height the heading, the presets, the name and Begin leave.
-	tales_scroll.custom_minimum_size = Vector2(0, maxf(220.0, room.y - 600.0))
-	_body.add_child(tales_scroll)
+	tales_scroll.custom_minimum_size = Vector2(0, page_h - 30.0)
+	pages[1].add_child(tales_scroll)
 	var tales := HFlowContainer.new()
 	tales.add_theme_constant_override("h_separation", 12)
 	tales.add_theme_constant_override("v_separation", 8)
@@ -318,10 +345,9 @@ func show_new() -> void:
 	# (or Done) brings them back.
 	var maker_scroll := ScrollContainer.new()
 	maker_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	maker_scroll.custom_minimum_size = Vector2(0, clampf(room.y - 480.0, 300.0, 720.0))
+	maker_scroll.custom_minimum_size = Vector2(0, page_h - 30.0)
 	maker_scroll.visible = false
-	_body.add_child(maker_scroll)
-	_body.move_child(maker_scroll, tales_scroll.get_index() + 1)
+	pages[1].add_child(maker_scroll)
 	var maker := VBoxContainer.new()
 	maker.add_theme_constant_override("separation", 8)
 	maker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -401,21 +427,14 @@ func show_new() -> void:
 	name_edit.placeholder_text = "Name this chronicle (e.g. The Long Winter)"
 	name_edit.add_theme_font_size_override("font_size", 18)
 	name_edit.text = _reign_name()
-	_body.add_child(name_edit)
+	pages[0].add_child(_label("Its name", 15, MUTED))
+	pages[0].add_child(name_edit)
 	_name_edit = name_edit
-	# Every other choice, folded away until asked for: it fits the window
-	# beneath the cards rather than pushing the page off the screen.
-	var more := _toggle("Customise every choice", _body)
-	more.toggle_mode = true
-	more.button_pressed = _more
+	# Every other choice about the realm, a page of its own.
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.custom_minimum_size = Vector2(0, clampf(room.y - 520.0, 200.0, 640.0))
-	scroll.visible = _more
-	_body.add_child(scroll)
-	more.toggled.connect(func(on):
-		_more = on
-		scroll.visible = on)
+	scroll.custom_minimum_size = Vector2(0, page_h)
+	pages[2].add_child(scroll)
 	# Breathing room inside the scroll: off the edges, and clear of the scrollbar.
 	var pad := MarginContainer.new()
 	pad.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -436,7 +455,6 @@ func show_new() -> void:
 		_scenario = v
 		_houses_enabled(house_row))
 	# Endless first: a reign is a life's work; a clock is a challenge you choose.
-	_choices(left, "Length of the reign", [["Endless", 0], ["A 15-minute challenge", 15], ["A 30-minute challenge", 30], ["An hour's challenge", 60]], _minutes, func(v): _minutes = v)
 	_section(left, "The crown")
 	_choices(left, "The royal treasury", [["Poor · 15k", "poor"], ["Comfortable · 50k", "comfortable"], ["Rich · 150k", "rich"]], _wealth, func(v): _wealth = v)
 	_choices(left, "The royal host at the start", [["A few loyal men", "small"], ["A garrison", "standard"], ["A great host", "strong"]], _opt["host"], func(v): _opt["host"] = v)
@@ -476,10 +494,18 @@ func show_new() -> void:
 	var go := HBoxContainer.new()
 	go.add_theme_constant_override("separation", 10)
 	_body.add_child(go)
+	var back := _toggle("Back", go)
+	back.toggle_mode = false
+	back.custom_minimum_size = Vector2(120, 46)
+	var gap := Control.new()
+	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	go.add_child(gap)
+	var next := _toggle("", go)
+	next.toggle_mode = false
+	next.custom_minimum_size = Vector2(240, 46)
 	var begin := _toggle("Begin", go)
 	begin.toggle_mode = false
-	begin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	begin.custom_minimum_size.y = 46
+	begin.custom_minimum_size = Vector2(240, 46)
 	# The one primary action on the page: filled with the accent, not just tinted.
 	var T := preload("res://scripts/theme.gd")
 	begin.add_theme_stylebox_override("normal", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.22), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.55), 8, 10))
@@ -488,9 +514,42 @@ func show_new() -> void:
 	begin.add_theme_color_override("font_hover_color", T.TEXT)
 	begin.add_theme_font_size_override("font_size", 17)
 	begin.pressed.connect(_begin)
-	var back := _toggle("Back", go)
-	back.toggle_mode = false
-	back.pressed.connect(_back)
+	# Next is the page's way on: the same gold as Begin.
+	for look in ["normal", "hover"]:
+		next.add_theme_stylebox_override(look, begin.get_theme_stylebox(look))
+	next.add_theme_color_override("font_color", T.ACCENT)
+	next.add_theme_color_override("font_hover_color", T.TEXT)
+	next.add_theme_font_size_override("font_size", 17)
+	# Showing a page: its own content, the steps lit to match, and the buttons
+	# it needs (no Begin until the story is chosen; Next names where it goes).
+	var show_step := func(i: int) -> void:
+		_new_step = clampi(i, 0, NEW_STEPS.size() - 1)
+		for k in pages.size():
+			pages[k].visible = k == _new_step
+		for k in steps.get_child_count():
+			var st: Button = steps.get_child(k)
+			st.add_theme_color_override("font_color", GOLD if k == _new_step else MUTED)
+		next.visible = _new_step < NEW_STEPS.size() - 1
+		next.text = "Next: its story" if _new_step == 0 else "Customise the realm"
+		begin.visible = _new_step >= 1
+		back.text = "Back" if _new_step > 0 else "Cancel"
+	for i in NEW_STEPS.size():
+		var st := Button.new()
+		st.flat = true
+		st.focus_mode = Control.FOCUS_NONE
+		st.text = "%d   %s%s" % [i + 1, NEW_STEPS[i], "  (optional)" if i == 2 else ""]
+		st.add_theme_font_size_override("font_size", 16)
+		st.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		st.pressed.connect(func(): show_step.call(i))
+		steps.add_child(st)
+	next.pressed.connect(func(): show_step.call(_new_step + 1))
+	back.pressed.connect(func():
+		if _new_step > 0:
+			show_step.call(_new_step - 1)
+		else:
+			_back())
+	_new_show_step = show_step
+	show_step.call(_new_step)
 
 
 var _own_story := ""  # the story of your own that beats are added to
@@ -655,6 +714,10 @@ func _step_back() -> bool:
 		if is_instance_valid(c) and c.visible:
 			c.visible = false
 			return true
+	# On a later page of New Chronicle, Esc goes to the page before it.
+	if _name_edit and is_instance_valid(_name_edit) and _name_edit.is_inside_tree() and _new_step > 0 and _new_show_step.is_valid():
+		_new_show_step.call(_new_step - 1)
+		return true
 	return false
 
 
