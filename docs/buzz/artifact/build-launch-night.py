@@ -10,10 +10,10 @@ steps=[]
 steps.append(step('itch','Now','Publish the itch page', '''<p>Done. It's live at <a href="https://alichherawalla.itch.io/game-of-crowns" target="_blank" rel="noopener">alichherawalla.itch.io/game-of-crowns</a> with your copy and the 0.5 download.</p>'''))
 steps.append(step('devlog','Now','Publish the launch devlog', '''<p>Done. <a href="https://alichherawalla.itch.io/game-of-crowns/devlog" target="_blank" rel="noopener">"0.5 is out"</a> is live, and the tags now include choices-matter, politics and fantasy.</p>'''))
 steps.append(step('test','Now','Download it once, the way a stranger would', '''<p>Open <a href="https://alichherawalla.itch.io/game-of-crowns" target="_blank" rel="noopener">alichherawalla.itch.io/game-of-crowns</a> in a private window, download, open the dmg, and launch it. If anything stops you, tell me before posting.</p>'''))
-mt="History names you the Golden, the Bloody or the Deposed in the free kingdom game I built on my Mac"
-mb="""Game of Crowns is a medieval kingdom sim. You're the king, and seven great houses want your throne. You hold it with grain, gold, marriages and your rulings at court. Side against a house in a war, and ten years later its lord stands up at court to remind you. When your reign ends, history names you: the Golden, the Bloody, or the Deposed.
+mt="I built a free Game of Thrones world sim on my Mac, and history names you the Golden, the Bloody or the Deposed"
+mb="""Game of Crowns is a Game of Thrones-style world simulation. You're the king, and seven great houses want your throne. You hold it with grain, gold, marriages and your rulings at court. Side against a house in a war, and ten years later its lord stands up at court to remind you. When your reign ends, history names you: the Golden, the Bloody, or the Deposed.
 
-I wanted my own Game of Thrones story, so I built one where you can rename anyone, rewrite their past and pick the story that comes for your throne. A season passes every 20 seconds, so a whole reign fits in an evening.
+I wanted a story like that of my own, so I built one where you can rename anyone, rewrite their past and pick the story that comes for your throne. A season passes every 20 seconds, so a whole reign fits in an evening.
 
 With an optional local model, you can answer petitioners in your own words instead of picking from a list, and it can write you a new story for your next reign.
 

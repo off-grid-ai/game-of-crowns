@@ -57,6 +57,8 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 
 ## Runs
 
+**2026-11-07 03:23:** Shipped: 3f28691 and 96d2879 (README: four gameplay screenshots from the itch page, with a caption about the realm); buzz checklist v10. Moved: on Mac's ask, the r/macgaming post now leads with "a free Game of Thrones world sim". Downloads: GitHub 4.
+
 **2026-11-06 21:12:** Shipped:
 - dec0c14: r/godot study. The post is on hold until the image-model assets are swapped.
 - 1a96f3a: indie posts on Mac's final copy, with an AI-paintings line.
