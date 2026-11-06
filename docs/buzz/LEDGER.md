@@ -57,6 +57,23 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 
 ## Runs
 
+**2026-11-06 21:12:** Shipped:
+- dec0c14: r/godot study. The post is on hold until the image-model assets are swapped.
+- 1a96f3a: indie posts on Mac's final copy, with an AI-paintings line.
+- cdd3464: 4X and sim posts on Mac's final copy.
+- 6f055f2: r/LocalLLaMA post (22/24, Showcase flair).
+- 134ef89: r/godot post on Mac's final copy.
+- 40c460c: buzz checklist, with HN killed on submission (email hn@ycombinator.com) and one row per subreddit.
+
+Moved: every Reddit post is now on Mac's final copy. HN item 50393044 is dead because of the account's history.
+
+Needs Mac:
+- r/macgaming. The US window closes ~22:30 IST.
+- The creator emails.
+- The HN restore email.
+
+Downloads: GitHub 4. itch: ask Mac.
+
 **2026-11-06 20:23:** Shipped:
 - HN post, now final per Mac on 6 Nov: 2749f33, 77c10ea, 7f365b4, dde5276, 8dd1958, a5fc6e0, 78df33d, 03a5804. Off Grid AI is out of the post and disclosed in the first reply that asks.
 - Reddit studies, each a year of posts with rubrics and rewritten posts:
