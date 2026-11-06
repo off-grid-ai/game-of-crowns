@@ -377,7 +377,7 @@ func _build_top_bar() -> void:
 	var when := _pill(0.0, Control.GROW_DIRECTION_END)
 	when.get_parent().offset_left = 10
 	var who := VBoxContainer.new()
-	who.add_theme_constant_override("separation", -2)
+	who.add_theme_constant_override("separation", 3)  # the date, the story and its bar each get room
 	_year = T.title("The realm is forming", 15)
 	who.add_child(_year)
 	_reign = T.label("Aldmere")
@@ -1605,7 +1605,7 @@ func _show_counsel(items: Array) -> void:
 			if k != "" and _sat_out.has(k) and Time.get_ticks_msec() - int(_sat_out[k]) < 4 * _season_s * 1000.0:
 				return false
 		return true)
-	var sig := JSON.stringify(items)
+	var sig := JSON.stringify(items) + "|" + str(_purse)  # what the treasury can pay for changes the buttons too
 	if sig == _counsel_sig and _counsel:
 		_counsel.visible = not (_digest_panel and _digest_panel.visible)
 		return
@@ -1651,8 +1651,18 @@ func _show_counsel(items: Array) -> void:
 		row.add_child(acts)
 		for a in it.get("acts", []):
 			var act: Dictionary = a
-			var b := _btn(String(act.get("label", "")), func(): _counsel_act(act))
+			var b := _btn(String(act.get("label", "")), func(): pass)
+			b.pressed.connect(func():
+				# Given once: the button says so until the Hand's counsel changes,
+				# so the same order isn't paid for again and again.
+				b.disabled = true
+				b.text = String(act.get("label", "")).get_slice("  ", 0) + "  ·  ordered"
+				_counsel_act(act))
 			b.add_theme_color_override("font_color", T.ACCENT)
+			if act.has("cost") and int(act["cost"]) > _purse:
+				b.disabled = true
+				b.tooltip_text = "The treasury holds too little for this."
+				b.add_theme_color_override("font_disabled_color", T.TEXT_3)
 			if act.get("pick", false):
 				# The Hand's own advice: framed in gold, and said so on hover.
 				var frame := StyleBoxFlat.new()
@@ -1787,6 +1797,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		var next_aim := (" Next: end the wars between them, Peace %d%% of 50%%." % peace_now) if peace_now < 50 else " The realm is at peace with itself."
 		_standing.text = ("All %d great houses would answer your banners. The realm is yours in truth." % great.size() + next_aim) if all_in \
 			else "%d of %d great houses would answer your banners. Win all of them and the realm is yours in truth." % [with_me, great.size()]
+	_purse = int(world.get("crown", {}).get("treasury", 0))  # before the counsel: its buttons check the purse
 	_show_counsel(world.get("counsel", []))
 	for pid in houses:
 		_house_by_name[String(houses[pid].get("name", ""))] = houses[pid]
@@ -1836,12 +1847,18 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		var threat := float(story.get("threat", 0))
 		_threat_bar.value = threat
 		_threat_fill.bg_color = T.DANGER if threat >= 66.0 else T.ACCENT
-		_reign.text = ("%s  ·  act %d" % [String(story.get("title", "")), int(story.get("act", 1))]).to_upper()
+		_reign.text = "%s  ·  Act %d" % [String(story.get("title", "")), int(story.get("act", 1))]
+		_reign.add_theme_font_size_override("font_size", 12)
+		_reign.remove_theme_font_override("font")  # the story's name in the reading face, not tiny capitals
 		_reign.add_theme_color_override("font_color", T.DANGER if threat >= 66.0 else T.ACCENT)
 		_reign.get_parent().get_parent().tooltip_text = "%s\n\n%s\n\nHow near it is to the throne: %d in 100." % [String(story.get("title", "")), String(story.get("last", "")), int(threat)]
 	elif danger.is_empty():
+		_reign.add_theme_font_override("font", T.mono)
+		_reign.add_theme_font_size_override("font_size", 9)
 		_reign.add_theme_color_override("font_color", T.TEXT_3)
 	else:
+		_reign.add_theme_font_override("font", T.mono)
+		_reign.add_theme_font_size_override("font_size", 9)
 		# The gravest danger only: a longer line would push the realm's numbers off the bar.
 		_reign.text = String(danger[0]).to_upper()
 		_reign.add_theme_color_override("font_color", T.DANGER)
@@ -2204,7 +2221,11 @@ func _show_audience() -> void:
 		_court_panel.visible = false
 		return
 	if _digest_panel and _digest_panel.visible:
-		return  # the court waits until you've read what happened
+		# The court waits until you've read what happened (and its card, just
+		# cleared, mustn't stand there empty).
+		_court_panel.visible = false
+		_court_waiting = true
+		return
 	# One card at a time in that place: the court comes up, a commoner's card goes.
 	if _folk_panel:
 		_folk_panel.visible = false

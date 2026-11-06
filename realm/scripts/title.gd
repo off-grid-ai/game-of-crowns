@@ -240,10 +240,10 @@ func show_new() -> void:
 	_on_main = false
 	if _opt.is_empty():
 		_opt = _default_opt()
-	# As wide as the window allows (two columns want ~1060), and the choices
-	# scroll within whatever height is left, so nothing runs off the screen.
+	# As wide as the window allows, so the story cards sit four or five to a
+	# row on a big screen, and they scroll within whatever height is left.
 	var room := _root.get_viewport_rect().size
-	_body.custom_minimum_size = Vector2(minf(1060.0, room.x - 120.0), 0)
+	_body.custom_minimum_size = Vector2(minf(1560.0, room.x - 160.0), 0)
 	_heading("A New Chronicle")
 	var saved := HFlowContainer.new()
 	saved.add_theme_constant_override("h_separation", 6)
@@ -281,7 +281,8 @@ func show_new() -> void:
 	# and the name and Begin must stay on the screen beneath them.
 	var tales_scroll := ScrollContainer.new()
 	tales_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	tales_scroll.custom_minimum_size = Vector2(0, clampf(room.y - 560.0, 220.0, 420.0))
+	# Every bit of height the heading, the presets, the name and Begin leave.
+	tales_scroll.custom_minimum_size = Vector2(0, maxf(220.0, room.y - 600.0))
 	_body.add_child(tales_scroll)
 	var tales := HFlowContainer.new()
 	tales.add_theme_constant_override("h_separation", 12)

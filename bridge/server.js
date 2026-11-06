@@ -723,7 +723,11 @@ function counsel(players, cities, threat) {
     if (best && o.acts.length > 1) best.pick = true;
   }
   for (const o of out) for (const a of o.acts) {
-    if (DECREES[a.action]?.cost) a.label += `  ${DECREES[a.action].cost / 10}k cr`;
+    // The price the crown will really pay (a share of a full treasury), never the base.
+    if (DECREES[a.action]?.cost) {
+      a.cost = priceOf(a.action);
+      a.label += `  ${a.cost >= 10000 ? `${Math.round(a.cost / 1000) / 10}m` : `${Math.round(a.cost / 10)}k`} cr`;  // gold ×100 crowns
+    }
     const does = DOES[a.action ?? a.ui];
     if (does && !a.label.includes("(")) a.label += ` · ${does}`;
   }
