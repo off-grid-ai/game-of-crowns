@@ -11,6 +11,15 @@ You're the king, and seven great houses want your throne. All you've got to hold
 [![Gareth Varn reminds the King, in front of the court, of the war he sided against them ten years ago](docs/play/v05/hook.gif)](https://github.com/off-grid-ai/game-of-crowns/releases/download/v0.4-20261106-bef6218/game-of-crowns-0.4-hook-16x9.mp4)
 *"10 years ago, in the spring of 315, you took our enemy's side in war." Make amends, hear him out, or tell him the crown did what it must. Click to watch.*
 
+## In the game
+
+| | |
+|---|---|
+| ![A lord stands before the King at court with his grievance and three ways to answer](docs/play/gameplay/court.jpg) | ![Goldrock's market square, the castle walls behind it](docs/play/gameplay/goldrock.jpg) |
+| *A lord brings an old grudge to court.* | *Goldrock, seat of House Goldcrest.* |
+| ![The Hand of the King's counsel over a town street: a cold house, a starving town, the dead coming south](docs/play/gameplay/hand.jpg) | ![Farmers working the fields outside a town by the water](docs/play/gameplay/farms.jpg) |
+| *Your Hand tells you what needs answering.* | *The realm works its fields whether you're watching or not.* |
+
 ## Why you'll keep playing
 
 - **Your choices come back for you.** Every house remembers what the crown did to it. Feed one through a famine and it answers your banners; snub its lord and he brings it up at court years later, with the year and the reason.
