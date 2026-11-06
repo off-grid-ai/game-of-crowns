@@ -331,9 +331,9 @@ func _ready() -> void:
 	lore.fetch = bridge.lore
 	add_child(title)
 	title.began.connect(func(): _intro_due = true)
-	# The launch screens play over the menu (never in renders or film takes).
+	# The launch screens play over the menu (in renders only with --splash).
 	var Splash := preload("res://scripts/splash.gd")
-	if not _shot.has("path") and Splash.any():
+	if (not _shot.has("path") or _shot.has("splash")) and Splash.any():
 		add_child(Splash.new())
 	# The menu stands alone: the game's interface hides behind it until a
 	# chronicle is open (and again whenever the menu is brought back).
@@ -530,6 +530,9 @@ func _parse_args() -> void:
 			_shot["panels"] = true
 		elif a == "--title":
 			_shot["title"] = true
+		elif a == "--splash":
+			_shot["title"] = true
+			_shot["splash"] = true  # the launch screens over the menu; --wait=3 the first, 7.5 the second
 		elif a == "--new":
 			_shot["title"] = true
 			_shot["new"] = true

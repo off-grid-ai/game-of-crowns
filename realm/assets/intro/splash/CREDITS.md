@@ -1,0 +1,25 @@
+# Launch painting credits
+
+Date: 2026-11-06.
+
+Both paintings were created with OpenAI `image_gen.imagegen` (built-in tool). The tool did not report its model name or ID. The title painting at `realm/assets/ui/title-background.png` was used as a style reference and is unchanged.
+
+Final files: `splash_1.png` and `splash_2.png`, each 3840 × 2160 PNG. Native tool output was 1672 × 941. ImageMagick 7.1.2-27 resized it to the required 4K dimensions with Lanczos filtering and a small centre crop for exact 16:9. The final files contain no added text or logo.
+
+Source copies and exact prompt records are kept in `/Users/user/Downloads/Aldmere/intro/source/`.
+
+## splash_1.png
+
+Tool: OpenAI `image_gen.imagegen`; date: 2026-11-06.
+
+```text
+Use case: stylized-concept. Create one finished cinematic oil painting for a medieval game's launch screen, native 3840 x 2160 PNG if possible, full bleed 16:9. STYLE REFERENCE ONLY: use supplied title painting's fine layered oil brushwork, grounded historical materials, amber/gold highlights and muted blue-grey shadows; completely replace its landscape with this new interior. A cinematic oil painting, 16:9, no text or letters anywhere. Night, inside a stone keep. A heavy oak war table fills the frame, seen LOW from its near edge at seated human eye height, looking obliquely across it, never overhead/top-down. On it lies a hand-drawn parchment map of a LONG CONTINENT, with snowy north, green heartland, red southern desert, a ring of mountains, and islands to the WEST/left. The map is pictorial terrain wash ONLY, with NO writing, labels, numbers, grid, compass lettering, or cartouches. Corners weighted with a few simple daggers and a candlestick. EXACTLY SEVEN small carved wooden house tokens stand on the map, each a clear simple tabletop carving on a small base: ONE wolf, ONE lion, ONE rose flower, ONE stag, ONE sun disk, ONE eagle, ONE kraken. No duplicates or extra tokens. In the CENTRE, a plain unlettered iron crown rests on its SIDE, its open circlet visible and in focus; the crown is the strongest focal point in the middle band, around y=48%. Candle flames are the ONLY illumination in the room: warm amber pools, long shadows, wax drips, smoke curling up. Far behind, out of focus, a tall arched window shows cold blue night and falling snow; it gives no strong room lighting. Shallow depth of field focused on crown. Painterly brushwork, grounded 13th–14th century realism, muted earth tones with gold highlights, NOT photoreal, cartoon or toy-like. The BOTTOM THIRD falls into soft darkness: only the dark near table edge and empty foreground shadow, no crown, tokens, candlestick, daggers or important map detail in lower y=67–100%. All key objects have margin for slow push-in. No people, magic, creatures as living beings, text, letters, numbers, logos, signatures, watermarks, border or frame. Do not paint 'Off Grid AI presents'; the game adds those words later.
+```
+
+## splash_2.png
+
+Tool: OpenAI `image_gen.imagegen`; date: 2026-11-06.
+
+```text
+Use case: stylized-concept. Create one finished cinematic oil painting for a medieval game's launch screen, native 3840 x 2160 PNG if possible, full bleed 16:9. STYLE REFERENCE ONLY: use supplied title painting's fine layered oil brushwork, grounded historical materials, restrained amber/gold and atmospheric blue-grey; completely replace the landscape with this NEW interior. A cinematic oil painting, 16:9, no text or letters anywhere. DAWN in a vast EMPTY medieval great hall. An empty STONE throne stands at the far end on EXACTLY THREE worn steps, with ONE plain medieval SWORD LAID HORIZONTALLY ACROSS ITS SEAT, clearly visible as the focal object in the upper/middle band. Shafts of early sunlight fall through HIGH NARROW windows onto the throne, gold in dusty air. Down both sides of the hall hang EXACTLY SEVEN long house banners IN TOTAL, arranged FOUR on one side and THREE on the other, no duplicates. Each has one different field colour and one very simple clear flat silhouette emblem: grey field with wolf; gold field with lion; green field with rose; red field with stag; orange field with sun; blue field with eagle; dark slate field with kraken. These are cloth heraldic silhouettes, never faces, lettering, ornate patterns or garbled crests. The banners hang still in windless air. The stone floor runs from viewer toward throne, LOW AND CENTRED human-height oblique view, so eye travels down the hall, never overhead/top-down. Cold blue shadow in corners, warm gold on throne. Painterly oil brushwork, grounded 13th–14th century architectural realism, grand and quiet, a sense that someone must take the seat; NOT cartoon, anime, toy or photograph. Entire throne, sword and all banners comfortably inside upper two-thirds with room for a slow push in. BOTTOM THIRD only broad quiet empty stone floor falling into soft shadow, no bright objects, stairs, banners or props there; the game overlays its logo there. No people, fantasy creatures, magic, text, words, letters, numerals, inscriptions, logos, signatures, watermarks, borders or frames. DO NOT paint the Game of Crowns logo or any title.
+```
