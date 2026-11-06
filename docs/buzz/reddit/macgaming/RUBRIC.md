@@ -101,7 +101,7 @@ Mac's line, "A medieval kingdom sim where history names you for how you ruled", 
 | New, option A | History names you the Golden, the Bloody or the Deposed in the free kingdom game I built on my Mac | 1 | 2 | 2 | 2 | 2 | 2* | **11** |
 | New, option B | Seven great houses want your throne in the free kingdom game I built on my Mac | 1 | 2 | 2 | 2 | 2 | 2* | **11** |
 | Mac's HN line as it stands | A medieval kingdom sim where history names you for how you ruled | 0 | 0 | 2 | 2 | 2 | 2* | **8** |
-| **Mac's line + Mac tie (recommended)** | A medieval kingdom sim where history names you for how you ruled. I built it on my Mac, and it's free on Apple Silicon | 1 | 2 | 2 | 2 | 2 | 2* | **11** |
+| **Mac's line + Mac tie (recommended; body is Mac's final copy + a link line)** | A medieval kingdom sim where history names you for how you ruled. I built it on my Mac, and it's free on Apple Silicon | 1 | 2 | 2 | 2 | 2 | 2* | **11** |
 | Option A or B plus a true feeling | e.g. "...built on my Mac. It's out today and I'm nervous", only if it's true | 2 | 2 | 2 | 2 | 2 | 2* | **12** |
 
 \* Only if it goes up before 16:59 UTC (22:29 IST).
