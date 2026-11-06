@@ -10,15 +10,21 @@ Show HN: A medieval kingdom sim where history names you for how you ruled
 Scores 8/8 on the title rubric (RUBRIC.md): promises an experience, an unexpected twist,
 no stack or "AI-powered", understood instantly.
 
-## First comment (Mac posts it the moment the link goes up; scores 19/20 on the post rubric)
+## First comment (Mac posts it the moment the link goes up)
 
-Game of Crowns is a medieval kingdom sim where you're the king and seven great houses want your throne. You hold it with grain, gold, marriages and your rulings at court. Side against a house in a war, and ten years later its lord stands up at court and reminds you of the season and the year. When your reign ends, history names you: the Golden, the Bloody, or the Deposed.
+Game of Crowns is a medieval kingdom sim where you're the king and seven great houses want your throne. You hold it with grain, gold, marriages and your rulings at court, while Freeciv runs the harvests and the wars underneath. Side against a house in a war, and ten years later its lord stands up at court and reminds you of the season and the year. When your reign ends, history names you: the Golden, the Bloody, or the Deposed.
 
-I made it because long games lose me before they get good, so here a season passes every 20 seconds and a whole reign fits in an evening.
+I wanted my own version of the stories I love in Game of Thrones, so I built one with Claude where you can rename anyone, rewrite their past and choose the story that comes for your throne. A season passes every 20 seconds, so a whole reign fits in an evening.
 
-The lords think with a 2B model (LFM3 Omni 2B) running on your Mac through Off Grid AI, which I make, so there's no cloud and nothing to pay per turn. Without it, the game plays on its own rules. Freeciv runs the world underneath, and I built the rest with Claude.
+The lords' words and plans come from a small model running on your own Mac, so nothing goes to the cloud and nobody pays per turn. It runs through Off Grid AI, which I make, and the game plays fine without it.
 
-It's free and open source on Apple Silicon Macs, with Windows next. What do you think history would call you?
+It's free and open source on Apple Silicon Macs, with Windows next. I'm happy to go into how any of it works.
+
+Why it reads this way (evidence in RUBRIC.md and the hits-vs-flops numbers below):
+- The AI is the answer to "how, and who pays", never the pitch: 14 of 23 AI-game flops sold
+  "LLM-powered NPCs"; none of the 9 AI-game hits did.
+- No "feedback welcome / what do you think?" ending: flops end on one twice as often as hits.
+- Model name (LFM3 Omni 2B), latency and prompts are for Mac's replies, not the post.
 
 ## Links in the post
 - URL field: the GitHub repo (download at the top, trailer one click away).
@@ -35,4 +41,5 @@ It's free and open source on Apple Silicon Macs, with Windows next. What do you 
 2. Is it a game or a chat toy: the reign loop (grain, gold, marriages, rulings, seven houses, the name history gives you); Freeciv holds the state.
 3. Slop, NPCs that just obey: they act from their own memories and wants and refuse cold orders; they can't change the realm's state. Show one real court exchange.
 4. Vibecoded jank: disclosed up front; what Mac decided himself; known bugs owned and fixed in the thread.
-5. Apple Silicon only, an Off Grid ad: why (on-device model), Windows next, and the Off Grid disclosure is in the first line.
+5. Apple Silicon only, an Off Grid ad: why (on-device model), Windows next, and Off Grid is disclosed in the post.
+6. Which model: LFM3 Omni 2B through Off Grid AI; Mac answers this one himself.

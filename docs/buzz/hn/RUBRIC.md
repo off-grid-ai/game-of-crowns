@@ -41,3 +41,20 @@ front · 7 no walls · 8 credits what it stands on · 9 one easy ask · 10 reads
 
 What decides the thread once the title earns the click: a video to watch (download-only
 games need one), no walls, and Mac present for 8+ hours fixing live.
+
+## Hits vs flops, measured (all 67 launches with a score; 24 hits 250+, 43 flops <40)
+| Feature | Hits | Flops |
+|---|---|---|
+| Title first person ("I made…") | 67% | 35% |
+| Title talks to "you" | 21% | 9% |
+| Title names tech or engine | 4% | 26% |
+| Title says AI/LLM | 17% | 47% |
+| Post asks for feedback / ends on a question | 29% | 58% |
+| Median post length | 112 words | 138 words |
+
+AI-character games only (9 hits 100+, 23 flops <40): every hit sells what the player does or
+a twist ("Interview AI suspects with your voice" 215, "question LLM suspects that lie" 127,
+"turns any book into a text adventure" 280); 14 flops sell "LLM-powered/AI NPCs" as the feature
+("RPG with LLM-Powered NPCs" 29, "LLM-powered NPCs running on your hardware" 24, "AI-powered
+political simulation" 2). Small samples and real luck (one game: 276 vs 9 under two titles):
+the title finding is strong; ending and length are weak signals.
