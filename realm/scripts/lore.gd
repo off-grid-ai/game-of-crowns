@@ -570,7 +570,12 @@ func _family(f: Dictionary, into: Node = null) -> void:
 		v.add_child(T.label(String(f["arms"]), T.ACCENT))
 	if String(f.get("character", "")) != "":
 		v.add_child(_text(String(f["character"])))
+	var told := {}  # as written, one line per liege (their towns, which made the rest, are a reign's)
 	for b in f.get("branches", []):
+		if baseline:
+			if told.has(String(b.get("house", ""))):
+				continue
+			told[String(b.get("house", ""))] = true
 		var line := HBoxContainer.new()
 		line.add_theme_constant_override("separation", 8)
 		v.add_child(line)
