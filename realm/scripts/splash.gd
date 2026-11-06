@@ -3,8 +3,11 @@ extends CanvasLayer
 ## faded in and out, with the game's own words over the dark lower third.
 ## "Off Grid AI presents" over the war table, then the Game of Crowns title over
 ## the empty throne. "Off Grid AI presents" is the studio's own lockup: its
-## green chip mark beside the name, "presents" small beneath. Any key or click skips. Missing paintings are skipped, so
-## until they exist (docs/CODEX_LAUNCH_SPLASH_BRIEF.md) the game opens as before.
+## green chip mark beside the name, "presents" small beneath. Once the studio
+## seal is painted (assets/intro/seal, seal.gd) it comes first instead, alone on
+## black: struck, caught by a sweep of light, then the war table follows with
+## no words. Any key or click skips. Missing paintings are skipped, so until
+## they exist (docs/CODEX_LAUNCH_SPLASH_BRIEF.md) the game opens as before.
 
 signal finished
 
@@ -41,6 +44,10 @@ func _ready() -> void:
 	black.color = Color.BLACK
 	black.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(black)
+	var Seal := preload("res://scripts/seal.gd")
+	var sealed := Seal.art() != ""
+	if sealed:
+		await _seal(Seal)
 	for p in PAGES:
 		if _skip:
 			break
@@ -76,7 +83,9 @@ func _ready() -> void:
 		words.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		words.offset_top = get_viewport().get_visible_rect().size.y * 0.62
 		page.add_child(words)
-		if String(p[1]) == "presents":
+		if String(p[1]) == "presents" and sealed:
+			fall.visible = false  # the seal said it: the war table stands alone
+		elif String(p[1]) == "presents":
 			words.add_child(_studio())
 		elif String(p[2]) != "" and ResourceLoader.exists(p[2]):
 			var logo := TextureRect.new()
@@ -103,6 +112,47 @@ func _ready() -> void:
 	await out.finished
 	finished.emit()
 	queue_free()
+
+
+## The studio seal alone on black: a warm glow rises, the seal is struck (it
+## settles from a little large with a flash), a band of light crosses the
+## metal, it holds, and fades.
+func _seal(Seal: GDScript) -> void:
+	var screen := get_viewport().get_visible_rect().size
+	var page := Control.new()
+	page.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	page.modulate.a = 0.0
+	add_child(page)
+	var glow := TextureRect.new()
+	var g := Gradient.new()
+	g.set_color(0, Color(0.30, 0.20, 0.10, 0.9))
+	g.set_color(1, Color(0, 0, 0, 0))
+	var gt := GradientTexture2D.new()
+	gt.gradient = g
+	gt.fill = GradientTexture2D.FILL_RADIAL
+	gt.fill_from = Vector2(0.5, 0.5)
+	gt.fill_to = Vector2(0.5, 0.0)
+	glow.texture = gt
+	glow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	glow.stretch_mode = TextureRect.STRETCH_SCALE
+	glow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	page.add_child(glow)
+	var side := screen.y * 0.56
+	var seal: Control = Seal.new(side)
+	seal.position = (screen - Vector2(side, side)) * 0.5
+	page.add_child(seal)
+	seal.light(-0.4, 0.0)
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(page, "modulate:a", 1.0, 0.7)
+	tw.tween_property(seal, "scale", Vector2.ONE, 0.75).from(Vector2.ONE * 1.07).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+	tw.tween_method(func(f): seal.light(-0.4, f), 0.8, 0.0, 0.6).set_delay(0.55)
+	tw.tween_method(func(x): seal.light(x, 0.0), -0.4, 1.4, 1.5).set_delay(1.1).set_trans(Tween.TRANS_SINE)
+	tw.chain().tween_interval(0.6)
+	tw.chain().tween_property(page, "modulate:a", 0.0, 0.8)
+	while tw.is_running() and not _skip:
+		await get_tree().process_frame
+	tw.kill()  # skipped mid-strike: the light's callbacks stop with the seal
+	page.queue_free()
 
 
 ## Off Grid AI's lockup: the chip mark, the name in Geist beside it, and
