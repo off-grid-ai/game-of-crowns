@@ -5,23 +5,23 @@ below names the evidence it rests on.
 
 ## Title
 
-Show HN: I built a kingdom sim where the lords think for themselves, on your Mac
+Show HN: Game of Crowns – rule a medieval kingdom where the lords think on your Mac
 
-- The player's experience plus a human hook ("I built"), no stack, no "AI-powered":
-  "Interview AI suspects with your voice" 215 vs "An AI-powered political simulation game" 2.
-- "on your Mac" answers the top AI objection (cloud, cost) in the title itself.
+(Safer if HN tests "think": "...where the lords run on a 2B model on your Mac".)
 
-## First comment (Mac posts it the moment the link goes up)
+- The premise told to the player, the winning shape when there's no big personal fact
+  (Time Portal 497). No stack, no "AI-powered" (State Sandbox 2, Machinations 3).
+- "on your Mac" answers the top AI objection (cloud, cost) in the title.
 
-Hi HN, I'm [your name]. I make Off Grid AI, an app that runs AI models on your own phone or Mac, with no cloud and no account. I kept wondering what a strategy game would feel like if the people in it could actually think, without anyone paying per turn or sending your game to a server. So I built one.
+## First comment (Mac posts it the moment the link goes up; ~115 words, winners' median 85)
 
-You're the king of a medieval realm, and seven great houses want your throne. Freeciv runs the world underneath: harvests, armies, sieges, the economy. On top of that, every lord, heir and bannerman has a mind: memories, moods, wants and grudges. The on-device model gives them their reasons and their words. You hold the crown with grain, gold, marriages and your rulings at court. A lord whose enemy you sided with in a war ten years ago will stand up in front of the whole court and remind you of the season and the year, and a house you've let go cold will refuse your order to make peace. When your reign ends, history names you for how you ruled: the Golden, the Bloody, the Deposed.
+Game of Crowns is a medieval kingdom sim. You're the king, seven great houses want your throne, and you keep it with grain, gold, marriages and your rulings at court. When your reign ends, history names you: the Golden, the Bloody, the Deposed.
 
-The model never decides what's true in the realm. Freeciv and the game's rules hold the state, and the lords can only act through the same levers you have, so they can scheme and refuse but they can't rewrite the world. With Off Grid AI off, the game still plays fully on its rules; the lords just speak in set lines.
+I made it because I keep buying long games and dropping them. Here a season lasts 20 seconds, so a reign takes an evening.
 
-I built it with Claude writing most of the code while I made the calls on design and checked every build, and the whole history is in the repo. It's free, open source (MIT, Freeciv is GPL and credited), Apple Silicon only for now because the model runs on the device. Windows is next. No sign-in, nothing locked.
+The lords' words and choices come from a 2B model (LFM3 Omni 2B) running on your Mac through Off Grid AI, which I make. No cloud, no cost per turn, and the game still plays without it. Freeciv runs the world underneath. I built it with Claude, and the full history is in the repo.
 
-It's rough in places and I'll be here all day fixing what you find. I'd love to know what history ends up calling you.
+Free, open source, Apple Silicon only for now. It's rough in places, so tell me where.
 
 ## Links in the post
 - URL field: the GitHub repo (download at the top, trailer one click away).
