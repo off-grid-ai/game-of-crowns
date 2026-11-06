@@ -43,7 +43,7 @@ It's free with nothing locked, and native on Apple Silicon: https://alichherawal
 
 What do you think history would call you?
 
-## r/IndieGaming (21:00)
+## r/IndieGaming: ON HOLD (the sub removes GenAI content; use real gameplay only, see docs/buzz/reddit/indiegaming)
 **Title:** My free kingdom game names you for how you ruled: the Golden, the Bloody, or worse, the Deposed
 
 You're the king, and seven great houses want your throne. All you've got to hold onto it is grain, gold and your word at court. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed.

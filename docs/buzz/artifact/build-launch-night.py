@@ -21,7 +21,7 @@ steps.append(step('emails','Right after r/macgaming','Send the eight creator ema
 t,b=d['god']
 steps.append(step('godot','An hour after r/macgaming','Post on r/godot', f'''<p>Video post with the same film. Flair: <b>selfpromo (games)</b>. Their rule: you stay and answer questions.</p>{copyblock('Title',t,'god-t')}{copyblock('Body',b,'god-b')}'''))
 t,b=d['ig']
-steps.append(step('ig','Two hours after r/macgaming','Post on r/IndieGaming', f'''<p>Video post with the same film. An hour after r/godot, so it doesn't look like cross-posting.</p>{copyblock('Title',t,'ig-t')}{copyblock('Body',b,'ig-b')}'''))
+steps.append(step('ig','On hold','r/IndieGaming', f'''<p><b>Hold this one.</b> r/IndieGaming removes AI-generated content, and the launch film is AI paintings. A real-gameplay post is being written for it separately; skip it tonight.</p>{copyblock('Title',t,'ig-t')}{copyblock('Body',b,'ig-b')}'''))
 steps.append(step('reply','All evening','Reply to every comment', '<p>Answer what was asked, plainly. If someone hits a bug, thank them and tell me; I\'ll get it into 0.5.1.</p>'))
 later=[('Sat 7 Nov','Post the vertical clip on Shorts, TikTok and Reels','<code>docs/buzz/video/game-of-crowns-launch-9x16.mp4</code>. Upload it to each one separately so there are no watermarks.'),
 ('Sat 7 Nov','Put the trailer on YouTube and send me the link','itch\'s trailer slot only takes a YouTube or Vimeo link. I\'ll add it.'),
