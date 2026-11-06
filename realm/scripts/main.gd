@@ -47,6 +47,26 @@ var _reign_id := ""
 var _first_batch: Array = []
 var _digest_done := false
 var _world_turn := 0
+## The season the land shows: the realm's own, but changed at most once every
+## two minutes. A realm season passes in seconds, too fast for snow to settle or
+## leaves to turn, so the land takes up whatever season it is when its two
+## minutes are up, and holds it.
+const LOOK_SEASON_SECONDS := 120.0
+var _look_season := ""
+var _look_since := 0
+
+
+func look_season(world: Dictionary) -> String:
+	if _shot.has("season"):
+		return String(_shot["season"])
+	var now := Time.get_ticks_msec()
+	var real := String(world.get("date", {}).get("season", "summer"))
+	if _look_season == "" or (real != _look_season and now - _look_since >= int(LOOK_SEASON_SECONDS * 1000.0)):
+		_look_season = real
+		_look_since = now
+	return _look_season
+
+
 var _snowed := -1  # town count when the season was last laid on them
 
 
@@ -705,7 +725,7 @@ func _listen() -> void:
 		near = {"size": int(c.get("size", 1)), "market": b.contains("Marketplace") or int(c.get("size", 1)) >= 4,
 			"church": b.contains("Temple") or b.contains("Cathedral"), "forge": b.contains("Barracks") or b.contains("Blacksmith"),
 			"tavern": int(c.get("size", 1)) >= 3, "siege": c.get("besieged", false), "north": float(c.get("y", 999)) < 25.0}
-	var season := String(bridge.world.get("date", {}).get("season", "summer"))
+	var season := look_season(bridge.world)
 	sound.set_view(rig.distance, near, season, sky3d != null and sky3d.is_night(), "snow" if season == "winter" else "clear")
 	var th: Dictionary = bridge.world.get("threat", {})
 	sound.mood("dead" if int(th.get("north", 0)) > 0 and rig.distance > 60.0 else ("tension" if String(th.get("usurper", "none")) != "none" else "calm"))
@@ -980,7 +1000,7 @@ func _on_world(world: Dictionary) -> void:
 	if Time.get_ticks_msec() - tt > 500:
 		print_verbose("BUILD towns %d ms" % (Time.get_ticks_msec() - tt))
 	terrain.set_realm(world.get("owners", []), world.get("players", []))
-	var season := String(_shot.get("season", world.get("date", {}).get("season", "summer")))
+	var season := look_season(world)
 	if season != terrain.season or towns.towns.size() != _snowed:
 		_snowed = towns.towns.size()
 		terrain.set_season(season, towns.towns.values().map(func(t): return t["node"]))
@@ -1004,7 +1024,7 @@ func _on_world(world: Dictionary) -> void:
 			print("LANES %d trees, %d ms" % [n, Time.get_ticks_msec() - t0])
 			await get_tree().process_frame
 		Engine.set_meta("stage", "countryside")
-		countryside.SEASON_SECONDS = float(world.get("turnSeconds", 20.0))
+		countryside.SEASON_SECONDS = LOOK_SEASON_SECONDS
 		countryside.build(world.get("cities", []))
 		if Time.get_ticks_msec() - tt > 500:
 			print_verbose("BUILD roads+countryside %d ms" % (Time.get_ticks_msec() - tt))
