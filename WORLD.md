@@ -21,6 +21,11 @@ Three hundred years ago the Conqueror united the seven kingdoms under one crown,
 | **Sunspire** | The southern sands | *Sunspire* | "Unbowed" | Proud, independent, the last to bend the knee | Autonomy; vengeance for an old massacre | **Stormhold** (as above); distrusts the crown itself |
 | **Highfell** | The high Vale | *Highfell*, a fortress on a peak | "As High as Honor" | Isolated, cautious, untouchable in their mountains | To be left out of others' wars | None; the realm's natural peacemakers, or fence-sitters |
 
+## The Faith
+- **The gods:** the realm prays to the old gods of the seven kingdoms, older than the crown. Their houses of prayer are the **septs**: one in every town, a great sept in every seat.
+- **The septons and the friars:** septons keep the septs and their courts; barefoot friars walk the roads and preach to whoever will listen. The Faith answers to no house, and every house needs it.
+- **Its weight:** a lord who kneels in the sept is believed; a King the Faith calls accursed finds his oaths void. A pious realm forgives much; a godless crown is forgiven nothing.
+
 ## Fault lines at the start of your reign
 - **The marches:** Stormhold and Sunspire both claim the river towns between them. Skirmishes every summer.
 - **The western coast:** Ironreach longships raid Thornvale's farms. Thornvale demands the crown act.

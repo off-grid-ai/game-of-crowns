@@ -37,6 +37,7 @@ export function bible(file) {
   cached = {
     intro: paras(sections.intro),
     crown: bullets(sections["the crown: you"]),
+    faith: bullets(sections["the faith"]),
     faults: bullets(sections["fault lines at the start of your reign"]),
     fate: bullets(sections["fate: what tests a reign"]),
     tone: paras(sections.tone).join(" "),

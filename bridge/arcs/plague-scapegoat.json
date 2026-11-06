@@ -98,7 +98,7 @@
       "speaker": "lord",
       "text": [
         "Sickness comes to {town}: first the tanners' street, then the market. The death-carts go out at night.",
-        "In {town} the bread runs out and the coughing starts. The church bell rings for the dead three times before noon."
+        "In {town} the bread runs out and the coughing starts. The sept bell rings for the dead three times before noon."
       ],
       "memory": {
         "lord": "The sickness came to {town}, and the people look to me.",
@@ -402,7 +402,7 @@
       "stage": "resolution",
       "end": "resolved",
       "at": "town",
-      "text": "The sickness burns itself out. Nobody in {town} speaks of {scapegoat} again, and {lord}'s name is blessed in the churches.",
+      "text": "The sickness burns itself out. Nobody in {town} speaks of {scapegoat} again, and {lord}'s name is blessed in the septs.",
       "do": {
         "favour": {
           "lord": 3

@@ -73,10 +73,10 @@ function town(id) {
 
 const NOTABLE_BUILDINGS = {
   "City Walls": (c, h) => `${c} raises walls of stone. ${h} expects war.`,
-  Temple: (c, h) => `${h} raises a temple in ${c}; the people turn to the gods.`,
+  Temple: (c, h) => `${h} raises a sept in ${c}; the people turn to the gods.`,
   Granary: (c, h) => `${c} builds a great granary, remembering hungry winters.`,
   Barracks: (c, h) => `Barracks rise in ${c}. ${h} is arming.`,
-  Cathedral: (c, h) => `A cathedral towers over ${c}, the pride of ${h}.`,
+  Cathedral: (c, h) => `A great sept rises over ${c}, the pride of ${h}.`,
   Harbor: (c, h) => `${c} opens its harbour to the sea.`,
   Colosseum: (c, h) => `${h} builds an arena in ${c} to quiet the restless crowds.`,
   Amphitheater: (c, h) => `${h} builds an arena in ${c} to quiet the restless crowds.`,

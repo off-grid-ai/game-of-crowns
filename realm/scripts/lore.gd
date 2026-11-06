@@ -154,6 +154,7 @@ func _realm() -> void:
 	for p in _book.get("intro", []):
 		_para(String(p))
 	_section("The Crown: you", _book.get("crown", []))
+	_section("The Faith", _book.get("faith", []))
 	_section("Fault lines at the start of your reign", _book.get("faults", []))
 	_section("What tests a reign", _book.get("fate", []))
 	if String(_book.get("tone", "")) != "":

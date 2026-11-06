@@ -51,7 +51,7 @@
         "text": "{named}, alone and low: \"{thief} has the ledger, Your Grace. {thief.He} has my secrets, and half the realm's. Take it from {thief.him}, and I am yours.\"",
         "options": [
           { "id": "raid", "label": "Send the King's men to search {hall}", "hint": "{thief.houseName} −30 · if it isn't there, you look a tyrant", "favour": { "thief": -30, "named": 10 }, "do": { "threat": -10 }, "result": "The King's men tear {hall} apart by torchlight." },
-          { "id": "buy", "label": "Buy the ledger from {thief} (500 gold)", "hint": "{thief.houseName} +10 · the crown holds the realm's secrets", "cost": 500, "favour": { "thief": 10 }, "do": { "threat": -20 }, "result": "The ledger changes hands in a church at midnight. {thief} keeps the copy, of course." },
+          { "id": "buy", "label": "Buy the ledger from {thief} (500 gold)", "hint": "{thief.houseName} +10 · the crown holds the realm's secrets", "cost": 500, "favour": { "thief": 10 }, "do": { "threat": -20 }, "result": "The ledger changes hands in a sept at midnight. {thief} keeps the copy, of course." },
           { "id": "wait", "label": "Let {thief} overreach", "hint": "nothing now · the lords bend to {thief}", "do": { "threat": 15 }, "result": "The King waits. {thief}'s friends at court grow in number every week." }
         ]
       },

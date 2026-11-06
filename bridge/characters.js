@@ -698,7 +698,7 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
     // The Faith: a preacher blames the King for the realm's troubles.
     const troubled = world.cities.filter((x) => x.food !== undefined && x.food < 3).length;
     if (has("pious") || troubled >= 3) candidates.push({ kind: "faith", weight: 1 + Math.min(4, troubled), make: () => ({ kind: "faith", text: `A barefoot friar has come to ${c.house}'s lands with ${troubled ? `${troubled} hungry towns` : "the poor"} at his back. He preaches that the gods have turned from a sinful King. ${c.name}${has("pious") ? ", a pious man," : ""} asks what the crown will do.`, facts: facts(c.playerId), options: [
-      { id: "endow", label: "Endow the Faith (150 gold)", hint: "Every house +4 · the Church blesses your name", cost: 150 },
+      { id: "endow", label: "Endow the Faith (150 gold)", hint: "Every house +4 · the Faith blesses your name", cost: 150 },
       { id: "silence", label: "Have him silenced", hint: `The preaching stops · ${has("pious") ? `${c.house} −20, ${c.name} is appalled` : `${c.house} −5`} · the poor remember` },
       { id: "ignore", label: "Words are wind", hint: "Every house −3 · the sermon spreads" },
     ] }) });
@@ -1074,7 +1074,7 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
       this.save(regent);
     } else if (p.kind === "faith") {
       const houses = world.players.filter((o) => !houseFor(o).crown && !houseFor(o).wild);
-      if (option === "endow") { for (const o of houses) out.favour[o.id] = 4; out.text = "The crown endows the Faith. In every church, the King's name is blessed."; }
+      if (option === "endow") { for (const o of houses) out.favour[o.id] = 4; out.text = "The crown endows the Faith. In every sept, the King's name is blessed."; }
       if (option === "silence") { out.favour[c.playerId] = c.traits.includes("pious") ? -20 : -5; this.remember(c.id, "The King had a holy man silenced in my lands."); out.text = "The friar is taken in the night. The preaching stops. The poor do not forget his face."; }
       if (option === "ignore") { for (const o of houses) out.favour[o.id] = -3; out.text = "The King ignores the friar. His sermon spreads from village to village."; }
     } else if (p.kind === "raise") {

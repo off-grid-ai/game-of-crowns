@@ -53,7 +53,7 @@
         "options": [
           { "id": "seize", "label": "Seize {south.house}'s granaries for the north", "hint": "{north.houseName} +20 · {south.houseName} −30", "favour": { "north": 20, "south": -30 }, "do": { "pay": [["south", "north", 120]], "threat": -15 }, "result": "The King's men break the seals on {granary}'s barns. {south} watches from the walls." },
           { "id": "buy", "label": "Buy grain from across the sea (400 gold)", "hint": "everyone fed · the treasury emptied", "cost": 400, "favour": { "north": 10 }, "do": { "threat": -15 }, "result": "Ships from across the sea unload grain at the river mouth. The crown's coffers ring hollow." },
-          { "id": "pray", "label": "Call for prayers and patience", "hint": "nothing now · the north starves", "favour": { "north": -20 }, "do": { "threat": 15 }, "result": "Every church in the realm prays for the north. The north buries its children." }
+          { "id": "pray", "label": "Call for prayers and patience", "hint": "nothing now · the north starves", "favour": { "north": -20 }, "do": { "threat": 15 }, "result": "Every sept in the realm prays for the north. The north buries its children." }
         ]
       },
       "after": [3, 4],

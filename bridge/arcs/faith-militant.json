@@ -27,7 +27,7 @@
         "options": [
           { "id": "endow", "label": "Endow the temple at {temple} and hear him out (200 gold)", "hint": "{patron.houseName} +15 · the faithful soften", "cost": 200, "favour": { "patron": 15 }, "do": { "threat": -10 }, "result": "The King's gold rebuilds the temple at {temple}. The preacher blesses the crown, once, grudgingly." },
           { "id": "silence", "label": "Have the preacher silenced", "hint": "{patron.houseName} −20 · a martyr in the making", "favour": { "patron": -20, "skeptic": 5 }, "do": { "threat": 15 }, "result": "The preacher is taken in the night. By morning there are three preaching in his place." },
-          { "id": "ignore", "label": "Let him preach", "hint": "nothing now · the faith grows", "do": { "threat": 5 }, "result": "The King lets him preach. His crowds grow every Sabbath." }
+          { "id": "ignore", "label": "Let him preach", "hint": "nothing now · the faith grows", "do": { "threat": 5 }, "result": "The King lets him preach. His crowds grow every holy day." }
         ]
       },
       "after": [3, 4],

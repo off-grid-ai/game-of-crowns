@@ -35,7 +35,7 @@
         "options": [
           { "id": "inquiry", "label": "Send the King's justice to {hall} to learn the truth", "hint": "{groom.houseName} −5 · {kin.houseName} +5 · time to cool", "favour": { "groom": -5, "kin": 5 }, "do": { "threat": -5 }, "result": "The King's justiciar rides to {hall}. Both houses wait for his word, and for now they only wait." },
           { "id": "blame", "label": "Hold {groom} to blame", "hint": "{groom.houseName} −20 · {kin.houseName} +15 · {groom} will not forget", "favour": { "groom": -20, "kin": 15 }, "do": { "threat": 5 }, "result": "The King names {groom} responsible. In {hall}, {groom} breaks a cup against the wall." },
-          { "id": "hush", "label": "Pay for masses and say no more of it (150 gold)", "hint": "{groom.houseName} +5 · {kin.houseName} −15 · the wound stays open", "cost": 150, "favour": { "groom": 5, "kin": -15 }, "do": { "threat": 10 }, "result": "Masses are sung for the dead bride in every church. {kin} hears them, and is not consoled." }
+          { "id": "hush", "label": "Pay for prayers and say no more of it (150 gold)", "hint": "{groom.houseName} +5 · {kin.houseName} −15 · the wound stays open", "cost": 150, "favour": { "groom": 5, "kin": -15 }, "do": { "threat": 10 }, "result": "Prayers are sung for the dead bride in every sept. {kin} hears them, and is not consoled." }
         ]
       },
       "after": [2, 3],

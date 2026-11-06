@@ -800,7 +800,7 @@ func _build_town_panel() -> void:
 	v.add_child(build)
 	_fund_label = T.label("Fund  18k cr")
 	build.add_child(_fund_label)
-	for pair in [["Temple", "temple"], ["Granary", "granary"], ["Walls", "walls"], ["Market", "market"], ["Aqueduct", "aqueduct"]]:
+	for pair in [["Sept", "temple"], ["Granary", "granary"], ["Walls", "walls"], ["Market", "market"], ["Aqueduct", "aqueduct"]]:
 		var bld: String = pair[1]
 		_build_btns[bld] = _btn(pair[0], func(): decree.emit("build", bld, -1))
 		build.add_child(_build_btns[bld])
