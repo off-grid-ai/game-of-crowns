@@ -85,7 +85,7 @@ Unlike Show HN, where the title decided (docs/buzz/hn/RUBRIC.md), here the **pos
 | Mac's HN title: "A medieval kingdom sim where history names you for how you ruled" | 2 | 0 | 1 | 2 | 5 | | | | | | | | | | | |
 | **Title A (recommended):** "A 2B model on your Mac writes what the lords and villagers say in this kingdom sim, and the rules decide what actually happens" | 2 | 2 | 2 | 2 | **8** | | | | | | | | | | | |
 | **Title B:** "A rumour one villager made up reached 48 people in two towns. Every mind in this kingdom sim runs on rules and a 2B model." | 2 | 2 | 2 | 2 | **8** | | | | | | | | | | | |
-| **POST.md body**, once the video is recorded, the quant added and Mac has edited it in his own words | | | | | | 2 | 2 | 2 | 2 | 2 | 1 | 2 | (2) | **13/14 now, 15/16 with Mac in the thread** | **23/24** | ✓ once the video is in |
+| **POST.md: Mac's final copy plus the model section**, once the video is recorded and the quant added | | | | | | 2 | 2 | 2 | 2 | 2 | 0 | 2 | 2 | **14/16** | **22/24** with title A | ✓ once the video is in |
 
 Why the planned line scores low:
 - It's a trademark mashup, which mac-voice rules out.
@@ -97,4 +97,6 @@ Why the HN title scores 5 here:
 - But r/LocalLLaMA pays for the model and the design boundary. Titles without a model or size hit 50+ at 6.3% against 14.1% with one.
 - It says nothing this sub would argue with.
 
-P6 is 1, not 2, because `GOC_LLM_URL` works only when running from source and is untested against llama-server (see POST.md).
+P6 is 0 because Mac chose not to offer other model servers (6 Nov). Expect "let us input a URL" in the thread.
+
+**Option B title** ("A medieval kingdom sim where history names you for how you ruled. The lords' words come from an optional 2B model on your Mac."): T1 2, T2 2, T3 1, T4 2, so 7/8.
