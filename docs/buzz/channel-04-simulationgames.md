@@ -1,23 +1,21 @@
-# r/SimulationGames: ready to paste
+# r/SimulationGames: ready to paste (Mon 9 Nov, updated for 0.4)
 
-Post #1 from posts.md, made true to build v0.1 (it doesn't yet have fast years or a lord bringing up a deed on screen; those are coming, so this post doesn't promise them).
-
-**Before posting:** check the sidebar rules; post a few days after r/macgaming, not the same day.
-**Post type:** text post with images: `images/1a-town.jpg`, `images/2a-petition.jpg`, `images/1b-houses-chronicle.jpg`. Swap in the explainer clip when it exists.
+**Before posting:** check the sidebar rules (see the rules check in launch-today.md); post three days after r/macgaming, not the same day.
+**Post type:** the hook clip if it's out, else images: `images/itch/final/1-court.jpg`, `final/4-houses.jpg`, `final/3-chronicle.jpg`.
 
 ---
 
-**Title:** In most world sims, wars are dice rolls. I'm building one where the lords remember what you did.
+**Title:** In most world sims, wars are dice rolls. I made one where the lords remember what you did.
 
-Great houses run themselves: they farm, starve, marry and go to war on their own. You're the King, and you can't move a single soldier. You rule through the court, taxes, grain and marriages. Refuse a lord's petition, call in a loan he can't pay, or hand his town to a rival, and he remembers. A house that cools far enough starts whispering a better claim to your throne, and you can see why.
+Great houses run themselves in my game: they farm, starve, marry and go to war on their own. You're the King, and you can't move a single soldier, so you rule through the court, taxes, grain and marriages. Take a town from a house or bleed it with the tithe, and years later its lord stands up at court and names the season and year you did it. Let a house cool far enough and it raises its banners against you, and the chronicle says why.
 
-It's free, nothing locked, and the first build is out for Apple Silicon Macs (Windows is coming): https://github.com/off-grid-ai/game-of-crowns/releases
+A season passes every twenty seconds, so five minutes covers nearly four years. It's free, Mac only for now (Apple Silicon): https://alichherawalla.itch.io/game-of-crowns
 
 What made you stop caring in the world sims you've played?
 
 ---
 
 **Captions:**
-1. The realm runs itself. I sent gold here, and you can watch it travel the road.
-2. A house asks for its taxes back. Whatever you answer, they remember.
-3. The chronicle keeps the chain: who starved, who marched, and why.
+1. Gareth Varn hasn't forgotten what the crown took from his house, ten years on.
+2. The houses farm and feed their towns whether you're watching or not.
+3. Nobody asked the King before this battle started.
