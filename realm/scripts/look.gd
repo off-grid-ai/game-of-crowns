@@ -90,3 +90,7 @@ func _process(_delta: float) -> void:
 	_attrs.dof_blur_near_distance = d * 0.55
 	_attrs.dof_blur_near_transition = d * 0.35
 	_attrs.dof_blur_amount = 0.05 * town
+	# The haze is for the far hills seen across the land; from high over the
+	# realm the camera looks down through a hundred units of it and the whole
+	# map goes grey, so it thins away as the camera pulls back.
+	main.env.volumetric_fog_density = 0.006 * (1.0 - smoothstep(30.0, 70.0, d))

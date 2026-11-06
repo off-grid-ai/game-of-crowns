@@ -440,10 +440,12 @@ func apply_graphics() -> void:
 	env.ssil_enabled = _rich["ssil"] and not graphics_smooth
 	env.volumetric_fog_enabled = _rich["vol"] and not graphics_smooth
 	env.glow_enabled = _rich["glow"] and not graphics_smooth
-	# On a Retina screen the 3D is drawn at half size and the upscaler sharpens it
-	# (stills and films draw at full size in _capture_quality, which sets its own).
+	# Both draw the 3D at the project's scale and the upscaler sharpens it. Half
+	# size was tried for Smooth and smeared people and ground; the effects it
+	# drops buy nearly all its frame rate. (Stills and films draw at full size in
+	# _capture_quality, which sets its own.)
 	if not (_shot.has("path") or _shot.has("hq")):
-		get_viewport().scaling_3d_scale = 0.5 if graphics_smooth else float(ProjectSettings.get_setting("rendering/scaling_3d/scale", 0.67))
+		get_viewport().scaling_3d_scale = float(ProjectSettings.get_setting("rendering/scaling_3d/scale", 0.67))
 	sun.directional_shadow_max_distance = minf(_rich["shadow"], 40.0) if graphics_smooth else _rich["shadow"]
 	# The woods: their leafy middle detail runs out sooner, and painted cards take over.
 	if terrain and terrain.forest and terrain.forest.has_method("set_reach"):
