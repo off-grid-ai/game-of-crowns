@@ -1761,14 +1761,19 @@ func _show_counsel(items: Array) -> void:
 		var acts := HFlowContainer.new()
 		acts.add_theme_constant_override("h_separation", 6)
 		row.add_child(acts)
+		var answers: Array[Button] = []  # one matter's answers: choosing one settles it
 		for a in it.get("acts", []):
 			var act: Dictionary = a
 			var b := _btn(String(act.get("label", "")), func(): pass)
+			answers.append(b)
 			b.pressed.connect(func():
-				# Given once: the button says so until the Hand's counsel changes,
-				# so the same order isn't paid for again and again.
-				b.disabled = true
+				# One answer to a matter: the one given says so, the others go quiet
+				# until the Hand's counsel changes (if the matter stands next
+				# season, he raises it again), so nothing is paid for twice.
+				for other in answers:
+					other.disabled = true
 				b.text = String(act.get("label", "")).get_slice("  ", 0) + "  ·  ordered"
+				b.add_theme_color_override("font_disabled_color", T.ACCENT)
 				_counsel_act(act))
 			b.add_theme_color_override("font_color", T.ACCENT)
 			if act.has("cost") and int(act["cost"]) > _purse:
