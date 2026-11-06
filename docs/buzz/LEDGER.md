@@ -3,10 +3,10 @@
 Kept by the downloads supervisor (every 15 minutes in the buzz session). Goal: get the game into people's hands. Newest run first.
 
 ## Needs Mac
-- **Disk:** this Mac has ~4 GB free of 460 GB. It killed the first release run and will hurt other sessions' renders.
+- **Disk:** Mac freed ~20 GB; the 0.4 release build is running.
 - **Promo art:** prompts for Codex in docs/buzz/asset-prompts.md (GitHub social preview, itch.io cover, key art). The social preview has to be set by hand in the repo's Settings.
-- **itch.io:** cover and eight screenshots up (latest gameplay plus the intro paintings), saved as Draft. Left for Mac: a trailer link once the launch clip is on YouTube, then Publish.
-- **Launch plan (docs/buzz/launch.md):** launch day Tue 8 Dec. Mac sends the creator emails as himself (17 and 24 Nov) and makes an AppleGamingWiki page. **r/macgaming now waits for launch day.**
+- **itch.io (today, 18:40 IST):** cover, eight screenshots, 0.4 description and the launch devlog (draft) are ready. Mac: paste the trailer link if the clip is up, then Publish the page and the devlog.
+- **Launch is today, 6 Nov (Mac's call), runbook in docs/buzz/launch-today.md:** Mac posts r/macgaming at 19:00 IST, r/IndieGaming and r/godot at 19:20, sends creator emails from 19:30, and replies all evening. AppleGamingWiki page this week.
 - **The lady's licence:** confirm the Sketchfab ownership claim for 'Princess Nun Royal Queen' (b9f22ea). A licence question only: .gitignore keeps body files out of git, so pushes publish no model files.
 - **Approve the rest of the list below** (everything marked "proposed").
 
@@ -56,6 +56,8 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 - **Buzz session:** this ledger, the supervisor, drafts for the channels once the dmg exists.
 
 ## Runs
+
+**2026-11-06 16:38:** Shipped: 8c6ea28 (launch video plan: the hook opens on a lord bringing up the King's tithe); c27703f and 6d9e5a4 (buzz: launch-day runbook, r/SimulationGames post for 0.4). Moved: Mac moved launch to today. The 0.4 release is building again after Mac freed disk (export done, signing next, expected ~17:15). The explainer has resumed the hook clip (due 18:45). itch page description is updated for 0.4 and the devlog is drafted. Agents are checking subreddit rules and building the creator list. Blocks: the release (in progress), Mac's Publish on itch. Downloads: GitHub 2.
 
 **2026-11-06 late:** Studied zero-budget indie launches (Buckshot Roulette, Gambler's Table, The Hive, Content Warning, Digging a Hole, itch-first hits) into docs/buzz/launch.md: 8 Dec launch, creator emails from three weeks out, a hook clip that opens on the payoff, r/macgaming held for launch day, a 1.1 on 20 Dec. Build asks sent to the main session. itch page dressed. The disk filled during the 0.4 dmg build; I flagged it to the main session.
 
