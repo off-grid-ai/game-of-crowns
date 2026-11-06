@@ -179,12 +179,13 @@ func _spawn(id: int) -> void:
 	# Busier as a town grows: a hamlet has a handful about, a market town a crowd.
 	for i in clampi(6 + size * 4, 8, MAX_PER_TOWN):
 		# Each has a calling that decides where their day goes, and what they wear:
-		# farmers dress as peasants, the pious now and then as clergy, the rest as townsfolk.
+		# farmers dress as peasants, the pious often as clergy, a gentlewoman in
+		# her gown, the rest as townsfolk.
 		var roll := rng.randf()
 		# The market is where a town is seen: a good share of its people are there.
-		var calling := "farmer" if roll < 0.3 else ("crafter" if roll < 0.5 else ("tavern" if roll < 0.6 else ("pious" if roll < 0.66 else ("market" if roll < 0.88 else "idler"))))
-		var station := "peasant" if calling == "farmer" else ("clergy" if calling == "pious" and rng.randf() < 0.3 else "townsfolk")
-		var person: Node3D = _people.make(rng, station)
+		var calling := "farmer" if roll < 0.3 else ("crafter" if roll < 0.5 else ("tavern" if roll < 0.6 else ("pious" if roll < 0.66 else ("market" if roll < 0.85 else ("gentry" if roll < 0.88 else "idler")))))
+		var station := "peasant" if calling == "farmer" else ("clergy" if calling == "pious" and rng.randf() < 0.6 else ("noble" if calling == "gentry" else "townsfolk"))
+		var person: Node3D = _people.make(rng, station, Color.WHITE, "", "", "female" if calling == "gentry" else "")
 		add_child(person)
 		# Home is a real house's doorstep, the work done in front of it; a
 		# farmer's strip is one of the town's own fields (or the garden behind
@@ -654,7 +655,7 @@ func _choose_next(a: Dictionary) -> void:
 				a["work"] = "Idle_Talking"
 		"dawn":
 			# Water from the well, a prayer at the sept, or the day's first chores.
-			if role == "pious":
+			if role in ["pious", "gentry"]:
 				target = _at(a, "sept")
 			elif roll < 0.4 and role != "child":
 				target = _at(a, "well")
@@ -669,7 +670,7 @@ func _choose_next(a: Dictionary) -> void:
 			if role == "child":
 				target = _near(a["home"], rng, 0.4)
 				a["work"] = "Dance" if roll < 0.4 else ("Waving" if roll < 0.55 else "Idle")
-			elif role == "pious" or roll < 0.12:
+			elif role in ["pious", "gentry"] or roll < 0.12:
 				target = _at(a, "sept")
 				a["work"] = "Praying"
 			elif role == "tavern" or roll < 0.45:
@@ -702,6 +703,10 @@ func _choose_next(a: Dictionary) -> void:
 				"market":
 					target = _at(a, "market")
 					a["work"] = ["Idle_Talking", "Arguing", "Carrying", "Nodding", "Whispering", "Yelling"][rng.randi() % 6]  # haggling at the stalls
+				"gentry":
+					# A lady's day: the stalls, never the haggling, and her prayers.
+					target = _at(a, "market") if roll < 0.65 else _at(a, "sept")
+					a["work"] = ["Idle_Talking", "Nodding", "Whispering", "Looking_Around"][rng.randi() % 4] if roll < 0.65 else "Praying"
 				"child":
 					target = _near(a["home"], rng, 0.7) if roll < 0.6 else _at(a, "well")
 					a["work"] = "Dance" if roll < 0.25 else "Idle"

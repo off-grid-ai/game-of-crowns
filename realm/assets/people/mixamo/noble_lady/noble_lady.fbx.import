@@ -41,7 +41,7 @@ materials/extract_format=0
 materials/extract_path=""
 _subresources={
 "nodes": {
-"PATH:Skeleton3D": {
+"PATH:Armature/Skeleton3D": {
 "retarget/bone_map": Resource("res://assets/retarget/mixamo_map.tres"),
 "retarget/rest_fixer/fix_silhouette/enable": true
 }

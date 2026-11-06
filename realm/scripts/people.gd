@@ -52,15 +52,22 @@ const BODIES := {
 	"fuse_civilian_1": {"sex": "m", "roles": ["townsfolk", "peasant"], "cloth": [], "crowd": true},
 	"fuse_civilian_2": {"sex": "m", "roles": ["townsfolk", "peasant"], "cloth": [], "crowd": true},
 	"fuse_woman_1": {"sex": "f", "roles": ["townsfolk"], "cloth": [], "crowd": true, "dyed": ["Object_7"]},  # her linen top, near her skin's colour undyed
+	# A townsman in a wool tunic (ChamberSu's Svend, CC BY), his Unreal bones renamed to Mixamo's (tools/ue_to_mixamo.py).
+	"svend": {"sex": "m", "roles": ["townsfolk", "peasant"], "cloth": [], "crowd": true},
+	# A peasant in a belted jerkin and boots (EmanuelP's Medieval Man, CC BY), rigged by Mixamo.
+	"medieval_man": {"sex": "m", "roles": ["peasant", "townsfolk"], "cloth": [], "crowd": true},
+	# A mendicant friar in a hooded habit (Götz von Berlichingen's monk, CC BY), rigged by Mixamo.
+	"monk": {"sex": "m", "roles": ["clergy"], "cloth": [], "crowd": true},
 	# Gowned and veiled. Her gown shares a material with her hands and shoes, so it keeps its own colour.
-	"noble_lady": {"sex": "f", "roles": ["noble"], "cloth": [], "crowd": false},
+	# Light enough (19k triangles) for the few gentlewomen about a town's market and sept.
+	"noble_lady": {"sex": "f", "roles": ["noble"], "cloth": [], "crowd": true},
 }
 ## How often a crowd figure is a Mixamo character rather than a Quaternius
-## outfit, by station. The plain Fuse townsfolk stand in for peasants and
-## townsfolk; no Mixamo character is dressed as a cleric yet, so clergy stay
-## outfits; archers and nobles are all Mixamo. (A Mixamo
-## body is the cheaper of the two: 1-4 draws against an outfit's ~9.)
-const MIXAMO_SHARE := {"peasant": 0.35, "townsfolk": 0.6, "soldier": 0.5, "archer": 1.0, "noble": 1.0, "knight": 1.0, "clergy": 0.0}
+## outfit, by station. The plain Fuse townsfolk, Svend and the jerkined
+## peasant stand in for peasants and townsfolk; most clergy wear the friar's habit; archers and
+## nobles are all Mixamo. (A Mixamo body is the cheaper of the two: 1-4 draws
+## against an outfit's ~9.)
+const MIXAMO_SHARE := {"peasant": 0.5, "townsfolk": 0.6, "soldier": 0.5, "archer": 1.0, "noble": 1.0, "knight": 1.0, "clergy": 0.8}
 
 const HEAD_ONLY := preload("res://scripts/head_only.gdshader")
 
@@ -69,6 +76,7 @@ const ANIMS := "res://assets/anims/mixamo/"
 var _lib: AnimationLibrary
 var _scenes := {}
 var _heights := {}  # Mixamo body -> scale that stands it as tall as an outfit
+var _ok := {}  # Mixamo body -> whether it loads with the shared skeleton
 
 
 func _init() -> void:
@@ -197,9 +205,28 @@ static func station(person: Dictionary) -> String:
 ## any are, able to wear a house's colour if one is asked, and light enough
 ## for a crowd unless they stand alone.
 func _bodies(role: String, sex: String, coloured: bool, crowd: bool) -> Array:
-	var pool := BODIES.keys().filter(func(b): return role in BODIES[b]["roles"] and (not crowd or BODIES[b]["crowd"]) and (not coloured or not BODIES[b]["cloth"].is_empty()))
+	var pool := BODIES.keys().filter(func(b): return role in BODIES[b]["roles"] and (not crowd or BODIES[b]["crowd"]) and (not coloured or not BODIES[b]["cloth"].is_empty()) and _usable(b))
 	# Never the other sex: with no body of theirs, they wear an outfit instead.
 	return pool.filter(func(b): return sex == "" or BODIES[b]["sex"] == sex.left(1))
+
+
+## A body whose file is on disk and imported with the shared skeleton: one
+## that isn't (not fetched yet, or its retarget lost) is never cast, so the
+## station falls back to an outfit rather than to nobody.
+func _usable(body: String) -> bool:
+	if not _ok.has(body):
+		var path := _path(body)
+		var scene: PackedScene = _scene(path) if ResourceLoader.exists(path) else null
+		var probe: Node = scene.instantiate() if scene else null
+		_ok[body] = probe != null and probe.find_child("GeneralSkeleton", true, false) != null
+		if probe:
+			probe.free()
+	return _ok[body]
+
+
+static func _path(body: String) -> String:
+	var path := "res://assets/people/mixamo/%s/%s.fbx" % [body, body]
+	return path if ResourceLoader.exists(path) else path.get_basename() + ".gltf"  # a Mixamo rig that came by way of Sketchfab
 
 
 ## One Mixamo character by name, laid out like the outfits (Armature/
@@ -207,10 +234,7 @@ func _bodies(role: String, sex: String, coloured: bool, crowd: bool) -> Array:
 ## as one, whatever units it came in.
 func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, age := "adult", build := "average", role := "") -> Node3D:
 	var info: Dictionary = BODIES[body]
-	var path := "res://assets/people/mixamo/%s/%s.fbx" % [body, body]
-	if not ResourceLoader.exists(path):
-		path = path.get_basename() + ".gltf"  # a Mixamo rig that came by way of Sketchfab
-	var person: Node3D = _scene(path).instantiate()
+	var person: Node3D = _scene(_path(body)).instantiate()
 	for n in person.get_children():
 		if n is AnimationPlayer:
 			n.free()
@@ -249,6 +273,7 @@ func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, ag
 				_tint(mi, DYES[rng.randi() % DYES.size()])
 	if role == "":
 		role = info["roles"][0]
+	person.set_meta("body", body)
 	return _finish(person, skeleton, rng, role, age, build, "male" if info["sex"] == "m" else "female", _height(body, skeleton, info["sex"]))
 
 

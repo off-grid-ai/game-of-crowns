@@ -2,16 +2,19 @@ extends SceneTree
 ## Checkpoint render: every Mixamo character in assets/people/mixamo in a row,
 ## or one role's crowd, playing moves from the shared Mixamo library, seen from
 ## a low oblique camera.
-##   godot --path realm --script tools/people_lineup.gd -- --shot=out.png [--role=soldier] [--count=12] [--move=Walk]
+##   godot --path realm --script tools/people_lineup.gd -- --shot=out.png [--role=soldier] [--count=12] [--move=Walk] [--bodies=svend,noble_lady] [--frame=60] [--turn=90]
 
 var _shot := "user://lineup.png"
 var _frames := 0
+var _at := 60  # the frame the shot is taken on: later frames catch a move at another point in its cycle
 
 
 func _init() -> void:
 	var role := ""
 	var count := 12
 	var move := "Idle"
+	var only: PackedStringArray = []
+	var turn := 0.0  # degrees each figure is turned from facing the camera (90: seen side on)
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--shot="):
 			_shot = a.substr(7)
@@ -21,6 +24,12 @@ func _init() -> void:
 			count = int(a.substr(8))
 		elif a.begins_with("--move="):
 			move = a.substr(7)
+		elif a.begins_with("--bodies="):
+			only = a.substr(9).split(",")
+		elif a.begins_with("--turn="):
+			turn = float(a.substr(7))
+		elif a.begins_with("--frame="):
+			_at = int(a.substr(8))
 	var root := Node3D.new()
 	get_root().add_child(root)
 	var env := Environment.new()
@@ -48,12 +57,15 @@ func _init() -> void:
 	gm.uv1_scale = Vector3(8, 8, 8)
 	ground.material_override = gm
 	root.add_child(ground)
+	root.add_child(preload("res://scripts/anim_lod.gd").new())  # people's players are stepped by it, as in the realm
 	var people = load("res://scripts/people.gd").new()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
 	var figures: Array[Node3D] = []
 	if role == "":
 		for body in people.BODIES:
+			if not only.is_empty() and body not in only:
+				continue
 			figures.append(people.make_body(rng, body))
 	else:
 		for i in count:
@@ -62,6 +74,7 @@ func _init() -> void:
 	for i in n:
 		var p := figures[i]
 		p.position = Vector3((i - (n - 1) * 0.5) * 0.16, 0, 0)
+		p.rotation_degrees.y = turn
 		root.add_child(p)
 		people.play(p, move)
 	var cam := Camera3D.new()
@@ -74,7 +87,7 @@ func _init() -> void:
 
 func _process(_delta: float) -> bool:
 	_frames += 1
-	if _frames == 60:
+	if _frames == _at:
 		get_root().get_texture().get_image().save_png(_shot)
 		print("Saved ", _shot)
 		return true

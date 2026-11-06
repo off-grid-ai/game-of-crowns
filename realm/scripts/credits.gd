@@ -36,7 +36,14 @@ static func entries() -> Array:
 	_walk(ROOT, out)
 	_audio(out)
 	out.sort_custom(func(a, b): return _key(a) < _key(b))
-	return out
+	# A work whose licence ships in two places (beside the model and its copy) is credited once.
+	var seen := {}
+	return out.filter(func(e):
+		var k := "%s|%s|%s" % [e["section"], e["title"], e["by"]]
+		if seen.has(k):
+			return false
+		seen[k] = true
+		return true)
 
 
 ## The order the page reads in: what the realm runs on first, then its things.
@@ -111,7 +118,7 @@ static func _audio(out: Array) -> void:
 
 
 static func _section_of(path: String) -> String:
-	for pair in [["/interiors/", "Rooms"], ["/hero/", "People"], ["/cavalry/", "Horses"], ["/weapons/", "Arms"], ["/realistic/", "Buildings, trees and goods"]]:
+	for pair in [["/interiors/", "Rooms"], ["/hero/", "People"], ["/people/", "People"], ["/cavalry/", "Horses"], ["/weapons/", "Arms"], ["/realistic/", "Buildings, trees and goods"]]:
 		if pair[0] in path:
 			return pair[1]
 	return "Other"

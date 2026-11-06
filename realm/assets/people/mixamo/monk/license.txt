@@ -1,0 +1,13 @@
+Model Information:
+* title:	mendicant monk (low poly)
+* source:	https://sketchfab.com/3d-models/mendicant-monk-low-poly-36e72d20f4354cdc8de26c4aa8ef00bb
+* author:	Götz von Berlichingen (https://sketchfab.com/vonBerlichingen)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "mendicant monk (low poly)" (https://sketchfab.com/3d-models/mendicant-monk-low-poly-36e72d20f4354cdc8de26c4aa8ef00bb) by Götz von Berlichingen (https://sketchfab.com/vonBerlichingen) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+
+Changes: rescaled and rigged with Mixamo's auto-rigger.

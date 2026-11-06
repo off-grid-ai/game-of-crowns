@@ -1,0 +1,13 @@
+Model Information:
+* title:	Medieval Man
+* source:	https://sketchfab.com/3d-models/medieval-man-07794757add64fda8dd7d7cc35dd7040
+* author:	EmanuelP (https://sketchfab.com/EmanuelP)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Medieval Man" (https://sketchfab.com/3d-models/medieval-man-07794757add64fda8dd7d7cc35dd7040) by EmanuelP (https://sketchfab.com/EmanuelP) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+
+Changes: vertices welded and rigged with Mixamo's auto-rigger.

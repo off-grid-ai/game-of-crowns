@@ -1,0 +1,13 @@
+Model Information:
+* title:	Virtual model wool tunic Svend
+* source:	https://sketchfab.com/3d-models/virtual-model-wool-tunic-svend-3431fac5452347c2b5291bf3d6d2ba50
+* author:	ChamberSu (https://sketchfab.com/chambersu1996)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Virtual model wool tunic Svend" (https://sketchfab.com/3d-models/virtual-model-wool-tunic-svend-3431fac5452347c2b5291bf3d6d2ba50) by ChamberSu (https://sketchfab.com/chambersu1996) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+
+Changes: bones renamed from Unreal's mannequin names to Mixamo's, maps scaled down (realm/tools/ue_to_mixamo.py).
