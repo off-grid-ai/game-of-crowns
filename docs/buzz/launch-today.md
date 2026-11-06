@@ -39,7 +39,7 @@ Video post: upload docs/buzz/video/game-of-crowns-0.4-hook-16x9.mp4. Flair: "Sel
 
 You're the king, and seven great houses want your throne. All you've got to hold onto it is grain, gold and your word at court. Rule well and history calls you the Golden. Mess it up and you're the Bloody, or worse, the Deposed.
 
-It's version 0.5, free with nothing locked, and native on Apple Silicon: https://alichherawalla.itch.io/game-of-crowns
+It's free with nothing locked, and native on Apple Silicon: https://alichherawalla.itch.io/game-of-crowns
 
 What do you think history would call you?
 
