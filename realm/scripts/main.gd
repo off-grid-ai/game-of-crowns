@@ -1417,11 +1417,19 @@ func _frame_for_shot(world: Dictionary) -> void:
 			if _shot.get("castle", false):
 				# The castle goes up with the town: frame its courtyard once it stands.
 				var tid := int(best["id"])
-				get_tree().create_timer(3.0).timeout.connect(func():
-					var t: Dictionary = towns.towns.get(tid, {})
-					var castle: Node3D = t["node"].get_node_or_null("Castle") if not t.is_empty() else null
-					if castle:
-						rig.snap(castle.global_position, float(_shot.get("dist", 1.8)), castle.rotation.y))  # from the square side, over the gate
+				for wait in range(3, 40, 3):  # until the castle stands (a big town takes a while)
+					get_tree().create_timer(float(wait)).timeout.connect(func():
+						if _shot.get("castle_framed", false):
+							return
+						var castle: Node3D = null
+						for id in [tid] + towns.towns.keys():  # this town's castle, else any seat's
+							var t: Dictionary = towns.towns.get(id, {})
+							if not t.is_empty() and is_instance_valid(t.get("node")) and t["node"].get_node_or_null("Castle"):
+								castle = t["node"].get_node("Castle")
+								break
+						if castle:
+							_shot["castle_framed"] = true
+							rig.snap(castle.global_position, float(_shot.get("dist", 1.8)), castle.rotation.y))  # from the square side, over the gate
 			if _shot.get("battle", false):
 				_stage_test_battle(world, best)
 			if _shot.get("siege", false):
