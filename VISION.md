@@ -50,7 +50,7 @@ Nothing new goes in unless it blocks the bar below; ideas go to v1.1.
   4. **The world shows it:** house banners rise and fall with favour; funded buildings appear in the town; carts, feasts and musters play where they land.
   5. **A running verdict** ("If your reign ended today, history would call you the Meddler"), **act interludes** (a painted card at each act's end tracing two or three choices to what they caused), and **the camera for big moments only**, never while the King is busy.
   - **Timed reigns only:** 15, 30, 45 or 60 minutes; endless mode goes, and "Rule on" after the end grants another 15 minutes. Acts land at the reign's quarters.
-  - Each step is played and shown to Mac before the next; nothing risks what works today.
+  - Built in batches and tested together in one filmed run; nothing risks what works today.
 - **v1.1:** mouse-look controls; levies raised from a town's real commoners; live reactions to what happens in front of people; more reverie arcs; 120 fps; the launch kit.
 
 ## Approach

@@ -11,4 +11,5 @@ description: How Game of Crowns changes are proven to work. There is no unit sui
 4. **Renders for anything visible.** Use the screenshot flags (see `goc-run`) and look at every image yourself before calling it done.
 5. **Probe, don't guess.** When something's wrong, add a temporary `# DEBUG-PROBE` print, measure, fix the cause, then strip the probes.
 6. **Throwaway realms for risky tests.** Create a test chronicle, then reopen Ali's realm and delete the test one.
-7. **A failure is a finding.** Fix the cause; never paper over it with a longer wait or a looser check.
+7. **Batch, then test together.** Make all the related changes, compile-check every touched script (`arch -arm64 godot --headless --path realm --check-only --script res://scripts/<file>.gd`; there is no `timeout` command in this shell, so never wrap checks in it), then one launch or render that films all of them, judged frame by frame. Fix, run again.
+8. **A failure is a finding.** Fix the cause; never paper over it with a longer wait or a looser check.

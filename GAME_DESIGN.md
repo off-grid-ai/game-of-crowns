@@ -49,7 +49,7 @@ and it comes back to you later. Repeat until the reign ends and history gives yo
   mechanics players already understand, in our world and our words.
 - The model (an optional local one) enhances what the player says and reads. The game must play fully
   without it, and it is never the pitch.
-- Every new mechanic is played in a real reign and shown before the next one starts. Nothing risks what works.
+- Changes are built in batches and tested together: one run, filmed, every change judged on film, fixed, run again. Nothing risks what works.
 
 ## We don't
 - A year-in-review screen, a new dashboard, or any panel that competes with the world.
