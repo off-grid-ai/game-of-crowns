@@ -1347,7 +1347,10 @@ func _frame_for_shot(world: Dictionary) -> void:
 						scenes._feast(at, owner)
 					else:
 						scenes._handover(at, owner, other, String(c.get("title", c["name"])))
-					rig.snap(at, float(_shot.get("dist", 3.0)), 0.6))
+					rig.snap(at, float(_shot.get("dist", 3.0)), 0.6)
+					# The scene under test holds the camera, as test battles do.
+					_framed_at = at
+					_framed_until = int(_game_ms) + 600000)
 				break
 		return
 	if _shot.has("rider"):

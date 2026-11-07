@@ -147,6 +147,31 @@
   ]
  },
  {
+  "id": "feast",
+  "name": "A feast",
+  "group": "Play",
+  "what": "A town feasting round a fire in its square.",
+  "file": "screens/v/feast-2.jpg",
+  "clip": "screens/v/feast-2.mp4",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Smoke over everyone",
+    "at": "2026-11-07T15:30:00+00:00",
+    "file": "screens/v/feast-1.jpg",
+    "what": "The fire's smoke sat over the dancers as a dense white ball."
+   },
+   {
+    "v": 2,
+    "label": "A thin drifting haze",
+    "at": "2026-11-07T15:40:00+00:00",
+    "file": "screens/v/feast-2.jpg",
+    "clip": "screens/v/feast-2.mp4",
+    "what": "Thin, see-through smoke that drifts off on the air; the ring round the fire reads, most dancing and some clapping, laughing and waving them on."
+   }
+  ]
+ },
+ {
   "id": "title",
   "name": "Main menu",
   "group": "Title",

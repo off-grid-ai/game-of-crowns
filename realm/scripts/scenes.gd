@@ -1569,7 +1569,10 @@ func _feast(at: Vector3, house: Dictionary) -> void:
 		fire.position = centre + Vector3(0.0, 0.0, 0.0)
 		root.add_child(fire)
 	# A roasting fire: seen by day as its smoke, a thin grey column.
-	var flame := _puffs(Color(0.55, 0.53, 0.5, 0.5), 10, 3.0, 0.06, 0.14)
+	# Thin and see-through, and drifting off on the air, so it never hides the
+	# dancers round the fire.
+	var flame := _puffs(Color(0.5, 0.48, 0.46, 0.22), 10, 3.5, 0.04, 0.09)
+	flame.gravity = Vector3(0.12, 0.06, 0.05)
 	flame.position = centre + Vector3(0, 0.08, 0)
 	root.add_child(flame)
 	for i in 3:
