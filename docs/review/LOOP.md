@@ -19,6 +19,6 @@ Checked and holding: the battle (v4: every man in the fight, the dead stay down,
 
 | Screen | Gap (rule) | State |
 | --- | --- | --- |
-| The King's grain on the road (v3) | Close to the coast town the camera hangs steep over a wood and crowns fill the bottom of the frame (look bar: low oblique) | Open. The sight check isn't the cause (the cart is never hidden); three tries there changed nothing and were undone. Next: stand back and lower over woods |
+| The King's grain on the road (v3) | Close to the coast town the camera hangs steep over a wood and crowns fill the bottom of the frame (look bar: low oblique) | Open. The sight check isn't the cause (the cart is never hidden); three tries there changed nothing and were undone. Next: stand back and lower over woods. Later: the real game follows a convoy through the director, which already turns to a side with no crowns (`_clear_sight`); only the test steers the camera itself. Making the test use the director put the camera out over the sea, so it was undone; the test needs the director's world set first |
 
-Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). itch waits on the dmg download.
+Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). itch waits on the dmg download (the network is running at about 57 KB/s).
