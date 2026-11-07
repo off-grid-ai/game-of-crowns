@@ -57,6 +57,8 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 
 ## Runs
 
+**2026-11-07 10:38:** Shipped: f1da49b (the 0.6 plan: promises with a fuse, silence has a price, every change seen, timed reigns only; one UX rule sharpened and one UI rule added). Moved: the 0.6 beat (Wed 18 Nov) has a plan. Needs Mac: r/macgaming today at ~19:00 IST with the film and the shorter copy, then the creator emails and the HN restore email. Downloads: GitHub 4.
+
 **2026-11-07 03:23:** Shipped: 3f28691 and 96d2879 (README: four gameplay screenshots from the itch page, with a caption about the realm); buzz checklist v10. Moved: on Mac's ask, the r/macgaming post now leads with "a free Game of Thrones world sim". Downloads: GitHub 4.
 
 **2026-11-06 21:12:** Shipped:
