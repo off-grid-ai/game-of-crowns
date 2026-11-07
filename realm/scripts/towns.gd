@@ -53,6 +53,7 @@ func _ready() -> void:
 ## camera first, so a new realm fills in before your eyes instead of freezing
 ## the screen, and a season's growth never stalls the game.
 func sync(world: Dictionary, houses: Dictionary) -> void:
+	_raise_banners(world)
 	var seen := {}
 	for c in world.get("cities", []):
 		var id := int(c["id"])
@@ -692,6 +693,7 @@ func _single(parent: Node3D, mesh: Mesh, pos: Vector3, rot := 0.0, scale := S) -
 
 func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	var root := Node3D.new()
+	root.set_meta("owner", int(c["owner"]))  # whose favour its banners show
 	var center: Vector3 = terrain.world_pos(float(c["x"]), float(c["y"]))
 	_center = center
 	root.position = center
@@ -1002,6 +1004,54 @@ func _banner(root: Node3D, pos: Vector3, color: Color, house: Dictionary) -> voi
 	var b: Node3D = preload("res://scripts/heraldry.gd").standard(house, color, 0.65)
 	b.position = pos
 	root.add_child(b)
+	# The house's banners show its favour: kept for raising and lowering.
+	var flag := b.get_node_or_null("Banner")
+	if flag:
+		var all: Array = root.get_meta("banners", [])
+		all.append(flag)
+		root.set_meta("banners", all)
+		flag.set_meta("top", flag.position.y)
+		_hoist(flag, _banner_at.get(int(root.get_meta("owner", -1)), 1.0), false)
+
+
+## Every decision is seen (GAME_DESIGN pillar 3): a house's banners stand as
+## high as its favour toward the crown. Full height when loyal, half-mast when
+## cooling, near the ground when it may rise; the cloth slides when it changes.
+var _banner_at := {}  # house id -> 0..1 of the pole
+
+
+static func banner_height(favour) -> float:
+	if favour == null:
+		return 1.0  # the crown's own towns, and houses with no favour
+	var f := float(favour)
+	return 1.0 if f >= 60.0 else (0.8 if f >= 35.0 else (0.5 if f >= 25.0 else 0.18))
+
+
+func _hoist(flag: Node3D, frac: float, slide := true) -> void:
+	var top: float = flag.get_meta("top", flag.position.y)
+	var y := lerpf(0.04, top, frac)
+	if is_equal_approx(float(flag.get_meta("at", -1.0)), frac):
+		return
+	flag.set_meta("at", frac)
+	if slide and flag.is_inside_tree():
+		flag.create_tween().tween_property(flag, "position:y", y, 3.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	else:
+		flag.position.y = y
+
+
+func _raise_banners(world: Dictionary) -> void:
+	var by_owner := {}
+	for p in world.get("players", []):
+		by_owner[int(p.get("id", -1))] = banner_height(p.get("favour"))
+	_banner_at = by_owner
+	for id in towns:
+		var root: Node3D = towns[id]["node"]
+		if not is_instance_valid(root):
+			continue
+		var frac: float = by_owner.get(int(root.get_meta("owner", -1)), 1.0)
+		for flag in root.get_meta("banners", []):
+			if is_instance_valid(flag):
+				_hoist(flag, frac)
 
 
 static var _dot: Texture2D
