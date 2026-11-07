@@ -42,6 +42,24 @@
   ]
  },
  {
+  "id": "siege",
+  "name": "A siege",
+  "group": "Play",
+  "what": "Kingsmere under siege: engines, the besiegers' camp, assault parties going to the wall and back.",
+  "file": "screens/v/siege-1.jpg",
+  "clip": "screens/v/siege-1.mp4",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Assault parties on LimboAI",
+    "at": "2026-11-07T13:30:00+00:00",
+    "file": "screens/v/siege-1.jpg",
+    "clip": "screens/v/siege-1.mp4",
+    "what": "Each attacker has his own state machine: waits in camp, goes forward behind his shield, runs the last stretch, fights at the foot of the wall with varied cuts and guards, falls back, or is cut down and stays down while the camp sends a fresh man."
+   }
+  ]
+ },
+ {
   "id": "title",
   "name": "Main menu",
   "group": "Title",

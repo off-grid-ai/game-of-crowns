@@ -1410,6 +1410,9 @@ func _frame_for_shot(world: Dictionary) -> void:
 						foe = _houses[pid]
 				scenes._siege(int(best["id"]), center, terrain.world_pos(float(best["x"]) + 1.0, float(best["y"]) + 0.4), int(best["size"]), 2, foe, _houses.get(int(best["owner"]), {}), 600.0)
 				rig.snap(scenes._sieges[int(best["id"])]["front"], float(_shot.get("dist", 6.0)), 0.6)
+				# The siege under test holds the camera, as a test battle does.
+				_framed_at = scenes._sieges[int(best["id"])]["front"]
+				_framed_until = int(_game_ms) + 600000
 
 
 func _on_chronicle(entries: Array) -> void:
