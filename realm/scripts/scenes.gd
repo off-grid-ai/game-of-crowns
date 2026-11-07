@@ -1520,6 +1520,13 @@ func _convoy(from: Vector3, to: Vector3, grain: bool, label := "", scene := {}) 
 	var road: Curve3D = terrain.smooth_road(_route(from, to))
 	var length: float = maxf(road.get_baked_length(), 0.01)
 	var seconds := clampf(length / 0.35, 12.0, 70.0)
+	# No road joins the two towns and the way runs over the land: a cart track
+	# through any wood it crosses, wide enough that no crown closes over it, so
+	# what travels it can be watched (drawn roads have their lanes already).
+	var along := 0.0
+	while along < length:
+		terrain.clear_around(road.sample_baked(along), 0.85)  # a crown reaches about 0.8 from its trunk (main.gd LANE_MARGIN)
+		along += 0.4
 	var tag := _caption(root, label if label != "" else ("The King's grain" if grain else "The King's gold"), _ground(from) + Vector3(0, 0.45, 0))
 	var heading := [INF]  # eased, so the wagon rounds a bend instead of snapping to it
 	var tw := create_tween()
