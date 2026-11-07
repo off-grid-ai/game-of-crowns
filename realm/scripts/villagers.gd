@@ -228,6 +228,21 @@ func _spawn(id: int) -> void:
 
 ## The villager nearest a point on the ground, within reach of a click:
 ## {town, i} so the bridge can say who they are, or empty.
+## Moves that need someone else there to make sense.
+const TOGETHER := ["Cheering", "Dance", "Idle_Talking", "Talking", "Talking_2", "Laughing", "Happy_Gesture", "Telling_Secret", "Arguing", "Whispering", "Nodding", "Yelling", "Waving"]
+
+
+## Anyone else within `reach` of `p` in this person's town.
+func _company(a: Dictionary, p: Vector3, reach: float) -> bool:
+	for b in _crowds.get(a["town"], []):
+		if b == a:
+			continue
+		var m: Node3D = b["node"]
+		if is_instance_valid(m) and m.visible and Vector2(m.position.x - p.x, m.position.z - p.z).length() < reach:
+			return true
+	return false
+
+
 func who_at(p: Vector3, reach := 0.35) -> Dictionary:
 	var best := {}
 	var best_d := reach
@@ -383,8 +398,15 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 			_converse(a, delta)
 			return
 		a["wait"] -= delta
+		# A cheer, a dance or a word needs someone to share it with: alone,
+		# they stand and look about instead of cheering at nobody.
+		if TOGETHER.has(String(a.get("work", ""))) and not a.get("checked_company", false):
+			a["checked_company"] = true
+			if not _company(a, n.position, 0.8):
+				a["work"] = ["Idle", "Looking_Around", "Bored"][a["rng"].randi() % 3]
 		_people.play(n, a.get("work", "Idle"))
 		if a["wait"] <= 0.0:
+			a["checked_company"] = false
 			_choose_next(a)
 			_set_off(a)
 		return

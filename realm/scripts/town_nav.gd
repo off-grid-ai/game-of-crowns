@@ -28,40 +28,83 @@ func map_for(id: int, root: Node3D) -> RID:
 	forget(id)
 	_built_from[id] = made
 	var reach: float = root.get_meta("reach", 6.0)
-	var poly := NavigationPolygon.new()
-	poly.agent_radius = 0.035
-	poly.cell_size = 0.01
-	var src := NavigationMeshSourceGeometryData2D.new()
 	var outline := PackedVector2Array()
 	for i in 24:
 		var a := TAU * i / 24
 		outline.append(Vector2(cos(a), sin(a)) * reach)
-	src.add_traversable_outline(outline)
 	var standing: Array = []
 	if life:
 		standing = life.get_meta("footprints", []).duplicate()
 		for p: Vector2 in life.get_meta("standing", PackedVector2Array()):
 			var o := 0.045  # a person standing, about 0.4 m across
 			standing.append(PackedVector2Array([p + Vector2(-o, -o), p + Vector2(o, -o), p + Vector2(o, o), p + Vector2(-o, o)]))
+	var blocks: Array = []
 	for fp in root.get_meta("footprints", []) + standing:
 		# Slightly enlarged so people pass alongside walls, not inside them.
 		var c: Vector2 = (fp[0] + fp[1] + fp[2] + fp[3]) / 4.0
 		var grown := PackedVector2Array()
 		for p in fp:
 			grown.append(c + (p - c) * 1.08)
-		src.add_obstruction_outline(grown)
+		blocks.append(grown)
+	# People keep to the streets, the square and the footpaths: those are cheap
+	# to walk, open ground costs several times as much, so a path crosses grass
+	# only where it has to (out to the fields, a house off the lanes).
+	var ways := _ways(root)
+	var map := NavigationServer2D.map_create()
+	NavigationServer2D.map_set_cell_size(map, CELL)
+	NavigationServer2D.map_set_edge_connection_margin(map, 0.12)
+	NavigationServer2D.map_set_active(map, true)
+	var regions: Array = []
+	if not ways.is_empty():
+		regions.append(_region(map, root, reach, ways, blocks, 1.0))
+	regions.append(_region(map, root, reach, [outline], blocks + ways, OPEN_COST))
+	_maps[id] = map
+	_regions[id] = regions
+	_live[map] = true
+	return map
+
+
+const CELL := 0.01
+const OPEN_COST := 6.0  # how much dearer a step on open ground is than one on a street
+
+
+## One walkable region of the town's map: `walk` outlines, less `blocks` and water.
+func _region(map: RID, root: Node3D, reach: float, walk: Array, blocks: Array, cost: float) -> RID:
+	var poly := NavigationPolygon.new()
+	poly.agent_radius = 0.035
+	poly.cell_size = CELL
+	var src := NavigationMeshSourceGeometryData2D.new()
+	for o in walk:
+		src.add_traversable_outline(o)
+	for b in blocks:
+		src.add_obstruction_outline(b)
 	_cut_water(src, root.position, reach)
 	NavigationServer2D.bake_from_source_geometry_data(poly, src)
-	var map := NavigationServer2D.map_create()
-	NavigationServer2D.map_set_cell_size(map, poly.cell_size)
-	NavigationServer2D.map_set_active(map, true)
 	var region := NavigationServer2D.region_create()
 	NavigationServer2D.region_set_map(region, map)
 	NavigationServer2D.region_set_navigation_polygon(region, poly)
-	_maps[id] = map
-	_regions[id] = region
-	_live[map] = true
-	return map
+	NavigationServer2D.region_set_travel_cost(region, cost)
+	return region
+
+
+## The town's streets, footpaths and square, as outlines in town-local XZ.
+static func _ways(root: Node3D) -> Array:
+	var out: Array = []
+	for lane in root.get_meta("lanes", []):
+		var a: Vector2 = lane[0]
+		var b: Vector2 = lane[1]
+		if a.distance_to(b) < 0.05:
+			continue
+		var side: Vector2 = (b - a).normalized().orthogonal() * 0.16  # a street is about 0.34 wide
+		out.append(PackedVector2Array([a + side, b + side, b - side, a - side]))
+	var sq: float = root.get_meta("square_r", 0.0)
+	if sq > 0.0:
+		var ring := PackedVector2Array()
+		for i in 20:
+			var t := TAU * i / 20
+			ring.append(Vector2(cos(t), sin(t)) * sq)
+		out.append(ring)
+	return out
 
 
 ## The sea and lakes within reach, as one obstruction per run of water along
@@ -335,7 +378,8 @@ static func _out_of(root: Node3D, fp: PackedVector2Array, p: Vector3) -> Vector3
 func forget(id: int) -> void:
 	if _maps.has(id):
 		_live.erase(_maps[id])
-		NavigationServer2D.free_rid(_regions[id])
+		for r in _regions[id]:
+			NavigationServer2D.free_rid(r)
 		NavigationServer2D.free_rid(_maps[id])
 		_regions.erase(id)
 		_maps.erase(id)

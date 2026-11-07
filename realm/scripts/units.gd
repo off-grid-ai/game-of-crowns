@@ -22,6 +22,8 @@ const BOWS := ["Archers", "Longbowmen", "Crossbowmen"]
 const BEASTS := ["Bear", "Wolf", "Lion", "Tiger", "Elephant", "Crocodile", "Polar Bear", "Snake", "Mammoth", "Jaguar", "Kraken", "Giant Squid", "Dragon", "Monkey", "Moose", "Deer", "Buffalo"]
 
 
+const MARCH_SPEED := 0.22  # world units a second: a soldier's steady march, a little brisker than a townsman's walk
+
 func _ready() -> void:
 	if towns == null:
 		towns = get_parent().get("towns")
@@ -162,7 +164,6 @@ func _process(delta: float) -> void:
 			continue
 		# March across the whole turn, so armies are always visibly on the move.
 		if f["t"] < 1.0:
-			f["t"] = minf(1.0, f["t"] + delta / maxf(2.0, turn_seconds * 0.9))
 			var path: PackedVector3Array = f.get("path", PackedVector3Array([f["from"], t]))
 			# The road as a smooth curve (made once per march), walked by distance,
 			# and the figure turns into each bend rather than snapping to it.
@@ -171,6 +172,11 @@ func _process(delta: float) -> void:
 				f["road_of"] = path
 			var road: Curve3D = f["road"]
 			var length := road.get_baked_length()
+			# A steady march: across the season if the road is short, never faster
+			# than a soldier's pace if it is long (a sprint reads as fleeing).
+			var speed := minf(length / maxf(2.0, turn_seconds * 0.9), MARCH_SPEED)
+			f["t"] = minf(1.0, f["t"] + (delta * speed / length if length > 0.01 else 1.0))
+			f["pace"] = speed
 			# A march with nowhere to go (already there) stands: no curve to walk.
 			var p: Vector3 = path[path.size() - 1] if length < 0.01 else road.sample_baked(f["t"] * length)
 			var dir: Vector3 = Vector3.ZERO if length < 0.01 else road.sample_baked(minf(length, f["t"] * length + 0.25)) - p
@@ -182,7 +188,7 @@ func _process(delta: float) -> void:
 			if not TownNav.towns_at(towns, p).is_empty():
 				n.position = _nav.stand(towns, n.position, 0.17 if f.get("horse", false) else 0.0)
 			if not f.get("horse", false):
-				_people.play(n, "Walk")
+				_people.play(n, "Walk", clampf(float(f.get("pace", MARCH_SPEED)) / MARCH_SPEED, 0.6, 1.1))  # the stride matches the ground covered
 		elif f.get("horse", false):
 			pass  # the horse stands; its gait follows how it is moved
 		else:
