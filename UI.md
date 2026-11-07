@@ -60,3 +60,6 @@ Edit a thing where it's shown (a name, a story, a memory), not through a button 
 
 ## 12. For all ages
 No sexual content anywhere: traits, events, pasts, or anything the model writes.
+
+## 13. Every decision is seen
+What a decision changed, or what silence cost, shows where it lives: the house's row flashes and counts to its new favour (gold up, red down), and one line in the bottom-left says cause and effect ("Your feast: Goldcrest +15", "You ignored Varn: Stormhold −10"). Big results also show in the world (a building rising, a banner falling), and the camera goes there only for the biggest, never while the King is using a card.

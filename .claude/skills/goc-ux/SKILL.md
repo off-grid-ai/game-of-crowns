@@ -11,5 +11,5 @@ description: The Game of Crowns product and look bar. Load before designing, bui
 4. **The interface:** approved layout (UI.md): four quiet corners, Geist and Geist Mono, warm smoked glass (not black), one gold accent, red only for loss. Map names flat on screen, decluttered. Minimap and camera pad together bottom-right.
 5. **Loops.** After any result or failure, the next action is right there; a blocked state says why in one line and what to do.
 6. **Smart defaults.** Decide from what the realm knows; ask once, where the choice arises, with a recommendation.
-7. **The world never stops.** No screen freezes; things build in before your eyes. A chronicle starts when it's ready, not on a timer.
+7. **The world never stops on its own.** No screen freezes; things build in before your eyes. It pauses only for a decision that matters (a promise coming due, an act ending), and only until the King decides. A chronicle starts when it's ready, not on a timer.
 8. **The realm's voice.** Medieval, plain, specific copy: "Outlaws come for you", not "Enemy spawned". People speak to their station.
