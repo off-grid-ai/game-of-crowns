@@ -564,6 +564,7 @@ const ROOM := {"market": {"near": 0.3, "far": 1.0, "room": 8}, "well": {"near": 
 ## Where those who find a place full go instead.
 const OVERFLOW := {"market": ["well", "tavern"], "well": ["market", "sept"], "tavern": ["market", "well"], "sept": ["well", "market"]}
 const SHOULDER := 0.11  # two people standing: a shoulder's width apart
+const SQUARE_HOLDS := 14  # at most this many bound for the square at once
 const KNOT := 0.26  # a gathering keeps this clear round its middle: knots of two or three, never one blob
 
 
@@ -805,6 +806,17 @@ func _choose_next(a: Dictionary) -> void:
 		_keep_up(a["town"])  # baked afresh: the whole town walks its new streets
 	var from := _nav.closest(map, Vector2(n.position.x - center.x, n.position.z - center.z))
 	var goal := _nav.closest(map, Vector2(target.x - center.x, target.z - center.z))
+	# The square holds so many and no more: bound there when it's full, they
+	# keep to their own door instead, so the square stays busy but never a press.
+	var sq: float = town["node"].get_meta("square_r", 0.0) + 0.1
+	if goal.length() < sq and a.get("talk", {}).is_empty():
+		var there := 0
+		for b in _crowds.get(a["town"], []):
+			if not is_same(b, a) and Vector2(b.get("goal", Vector2(99, 99))).length() < sq:
+				there += 1
+		if there >= SQUARE_HOLDS:
+			target = _near(a["home"], rng, 0.2)
+			goal = _nav.closest(map, Vector2(target.x - center.x, target.z - center.z))
 	# Never the very spot someone else is bound for: a step along until it's free.
 	for tries in 6:
 		if not _spoken_for(a, goal):

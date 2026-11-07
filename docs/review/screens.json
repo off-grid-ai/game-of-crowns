@@ -101,6 +101,29 @@
   ]
  },
  {
+  "id": "midtown",
+  "name": "A town at mid zoom",
+  "group": "Play",
+  "what": "Goldrock seen at a mid zoom: its square, streets and houses.",
+  "file": "screens/v/midtown-2.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "The square packed",
+    "at": "2026-11-07T14:25:00+00:00",
+    "file": "screens/v/midtown-1.jpg",
+    "what": "About 35 people bunched in the middle of the square."
+   },
+   {
+    "v": 2,
+    "label": "Busy, never a press",
+    "at": "2026-11-07T14:37:00+00:00",
+    "file": "screens/v/midtown-2.jpg",
+    "what": "The square holds at most 14 bound for it at once; anyone else keeps to their own door. People read one by one."
+   }
+  ]
+ },
+ {
   "id": "title",
   "name": "Main menu",
   "group": "Title",
