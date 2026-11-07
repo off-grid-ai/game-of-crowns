@@ -4,8 +4,8 @@
     "name": "A battle",
     "group": "Play",
     "what": "Battles fought by the men in them: each man closes, fights, reels, falls or breaks; knights charge, ride through and come round again.",
-    "file": "screens/v/battle-4.jpg",
-    "clip": "screens/v/battle-4.mp4",
+    "file": "screens/v/battle-5.jpg",
+    "clip": "screens/v/battle-5.mp4",
     "versions": [
       {
         "v": 1,
@@ -38,6 +38,14 @@
         "file": "screens/v/battle-4.jpg",
         "clip": "screens/v/battle-4.mp4",
         "what": "The ranks behind push in on their own count instead of standing for the whole fight; legs follow how fast each man really moves (no running on the spot, no gliding); the crowd moves through Godot's avoidance so nobody walks through anyone; the camera stays on the fight."
+      },
+      {
+        "v": 5,
+        "label": "In close on the blows",
+        "at": "2026-11-08T04:30:00+00:00",
+        "file": "screens/v/battle-5.jpg",
+        "clip": "screens/v/battle-5.mp4",
+        "what": "The camera takes the fight in turns: close on the blows, where each man, shield and fall reads, then back out on the whole melee. At one distance it read as a blob of small men."
       }
     ]
   },
