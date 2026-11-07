@@ -18,6 +18,7 @@
   --gold: #c9a45c;        /* the game's one accent */
   --gold-ink: #1b150c;
   --done: #7d9a6a;        /* a settled note */
+  --mark: #e5484d;        /* Claude's marks: a problem it points out */
   --font: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
@@ -102,6 +103,12 @@ button, textarea { font: inherit; color: inherit; }
 .pin.done { background: var(--done); }
 .pin.draft { background: var(--fg); }
 .pin.lit { transform: scale(1.25); z-index: 2; }
+/* marks: a box Claude draws round a problem, its numbered pin on the top right corner */
+.mark { position: absolute; border: 2px solid var(--mark); border-radius: 4px; pointer-events: none; box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
+.mark.lit { border-width: 3px; background: color-mix(in srgb, var(--mark) 14%, transparent); }
+.mark.later { opacity: 0; }
+.pin.mk { background: var(--mark); color: #fff; z-index: 4; }
+.pin.mk.done { background: var(--done); color: var(--gold-ink); }
 /* --- notes --- */
 .notes { border-left: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
 .notes header { padding: 14px 16px 10px; border-bottom: 1px solid var(--line); }
@@ -113,6 +120,8 @@ button, textarea { font: inherit; color: inherit; }
 .note.done .num { background: var(--done); }
 .note.done .text { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line); }
 .note .text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.note .title { font-weight: 600; color: var(--mark); margin-bottom: 2px; }
+.note.done .title { color: inherit; }
 .note .reply { white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 6px; padding: 6px 8px; border-left: 2px solid var(--line); color: var(--muted); }
 .note .reply b { color: inherit; font-weight: 600; }
 .note.done .reply { text-decoration: none; }
@@ -489,15 +498,39 @@ function pinAt(x, y, label, cls, onclick) {
 function renderPins() {
   $("shot").querySelectorAll(".shot").forEach((shot) => {
     const v = shot.dataset.view;
-    shot.querySelectorAll(".pin").forEach((p) => p.remove());
+    shot.querySelectorAll(".pin, .mark").forEach((p) => p.remove());
     const m = players[v];
     inView(screenId(), v).forEach((n) => {
       const away = m && n.t != null && Math.abs(m.currentTime - n.t) > 0.75;
-      const p = pinAt(n.x, n.y, label(n), (n.done ? "done" : "") + (lit === n.id ? " lit" : "") + (away ? " later" : ""), () => { lit = n.id; seek(n); renderPins(); renderThread(); });
+      // A mark (a note with a box) draws the box, and its pin sits on the box's top right corner.
+      const b = n.box;
+      if (b) {
+        const m = document.createElement("div");
+        m.className = "mark" + (lit === n.id ? " lit" : "") + (away ? " later" : "");
+        Object.assign(m.style, { left: b.x * 100 + "%", top: b.y * 100 + "%", width: b.w * 100 + "%", height: b.h * 100 + "%" });
+        shot.append(m);
+      }
+      // A short box gets its pin halfway down its right edge; a tall one at its top right corner.
+      const px = b ? b.x + b.w : n.x, py = b ? (b.h > 0.08 ? b.y : b.y + b.h / 2 + 0.01) : n.y;
+      const p = pinAt(px, py, label(n), (b ? "mk " : "") + (n.done ? "done" : "") + (lit === n.id ? " lit" : "") + (away ? " later" : ""), () => { lit = n.id; seek(n); renderPins(); renderThread(); });
       p.setAttribute("aria-label", `Note ${label(n)}`);
       shot.append(p);
     });
     if (draft && draft.on === v) shot.append(pinAt(draft.x, draft.y, "+", "draft"));
+    unstack(shot);
+  });
+}
+
+// Pins that would cover each other move down, in number order, until each one is clear.
+function unstack(shot) {
+  const placed = [];
+  shot.querySelectorAll(".pin").forEach((p) => {
+    const r = p.getBoundingClientRect();
+    let dy = 0;
+    const hits = (q) => r.left < q.right && q.left < r.right && r.top + dy < q.bottom && q.top < r.bottom + dy;
+    while (placed.some(hits)) dy += r.height + 2;
+    if (dy) p.style.top = `calc(${p.style.top} + ${dy}px)`;
+    placed.push({ left: r.left, right: r.right, top: r.top + dy, bottom: r.bottom + dy });
   });
 }
 
@@ -537,6 +570,7 @@ async function renderThread() {
     const body = document.createElement("div");
     const t = document.createElement("div"); t.className = "text"; t.textContent = n.text;
     const parts = [t];
+    if (n.title) { const h = document.createElement("div"); h.className = "title"; h.textContent = n.title; parts.unshift(h); }
     if (n.reply) {
       const r = document.createElement("div"); r.className = "reply";
       const b = document.createElement("b"); b.textContent = "Claude: ";
