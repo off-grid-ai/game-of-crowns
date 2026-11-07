@@ -127,10 +127,12 @@
  },
  {
   "id": "counsel",
-  "name": "The Hand advises",
+  "name": "The Hand's counsel",
   "group": "Play",
-  "what": "The Hand of the King's counsel",
-  "file": "screens/counsel.jpg"
+  "what": "0.6: one matter at a time; the bar drains, and when it runs out the realm answers for you. The clip shows a matter burning down and its cost.",
+  "file": "screens/counsel.jpg",
+  "before": "screens/before/counsel.jpg",
+  "clip": "screens/counsel.mp4"
  },
  {
   "id": "region",
@@ -160,7 +162,7 @@
   "id": "court",
   "name": "Court",
   "group": "Play",
-  "what": "A lord's audience",
+  "what": "0.6: the petitioner in front of you waits three seasons; the bar under the card drains.",
   "file": "screens/court.jpg",
   "before": "screens/before/court.jpg"
  },
@@ -179,5 +181,12 @@
   "what": "The Lore opened during a reign",
   "file": "screens/lore.jpg",
   "before": "screens/before/lore.jpg"
+ },
+ {
+  "id": "reign-end",
+  "name": "The reign ends",
+  "group": "Reign",
+  "what": "0.5.1: history names you, with the reign in numbers.",
+  "file": "screens/reign-end.jpg"
  }
 ]
