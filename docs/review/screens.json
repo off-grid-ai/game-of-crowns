@@ -144,7 +144,7 @@
     "name": "A town up close",
     "group": "Play",
     "what": "Goldrock's square with the camera close in.",
-    "file": "screens/v/closeview-2.jpg",
+    "file": "screens/v/closeview-3.jpg",
     "versions": [
       {
         "v": 1,
@@ -159,8 +159,17 @@
         "at": "2026-11-07T15:15:00+00:00",
         "file": "screens/v/closeview-2.jpg",
         "what": "Past 42 degrees the camera steps back along its line instead of climbing: walls, stalls and people read."
+      },
+      {
+        "v": 3,
+        "label": "Mourning in small knots",
+        "at": "2026-11-08T05:30:00+00:00",
+        "file": "screens/v/closeview-3.jpg",
+        "clip": "screens/v/closeview-3.mp4",
+        "what": "Your call: a grieving town mourns in knots of two or three at their own doors, never one crowd in the square. The hungry keep in small knots round the town's edge too. The square is busy again, not a press."
       }
-    ]
+    ],
+    "clip": "screens/v/closeview-3.mp4"
   },
   {
     "id": "feast",
