@@ -824,7 +824,75 @@ function counsel(players, cities, threat) {
   const pick = ranked.slice(0, 3);
   const aside = ranked.find((o) => o.kind && !pick.includes(o));
   if (aside && !pick.some((o) => o.kind)) pick[pick.length - 1] = aside;
-  return pick;
+  return promise(pick.filter((o) => !matterResting(o)), turn);
+}
+
+// One matter at a time, and it waits for the King only so long. The Hand's
+// most pressing matter is put to him with a fuse (FUSE seasons, counted from
+// when it was first put to him); the others wait their turn behind it and
+// don't tick. Answered, it rests a year; left to burn down, the realm answers
+// for the King, it costs him, and the chronicle says so.
+const FUSE = 3;
+const matterKey = (o) => o.kind ?? (/is starving$/.test(o.text) ? "starving" : o.text.replace(/[\d.,]+/g, "#").replace(/:.*$/, ""));
+function matterResting(o) {
+  const at = meta.mattersRest?.[matterKey(o)];
+  return at != null && (world?.turn ?? 0) - at < 4;
+}
+function promise(items, turn) {
+  // The petitioners' matter has its own fuse at court; the thin treasury has no one to offend.
+  const fused = (o) => !o.acts?.some((a) => a.ui === "court") && !/treasury is thin|realm is quiet/.test(o.text);
+  const head = items.find((o) => meta.matter && matterKey(o) === meta.matter.key) ?? items.find(fused);
+  if (!head) { if (meta.matter) { meta.matter = null; chron.saveMeta(meta); } return items; }
+  const key = matterKey(head);
+  if (meta.matter?.key !== key) { meta.matter = { key, seen: turn, ticks: 0, text: head.text, lapse: lapseOf(head) }; chron.saveMeta(meta); }
+  // Only seasons the King watches burn the fuse: a realm left closed doesn't answer for him.
+  if (turn > (meta.matter.seen ?? turn)) {
+    if (isWatched()) meta.matter.ticks = (meta.matter.ticks ?? 0) + (turn - meta.matter.seen);
+    meta.matter.seen = turn;
+    chron.saveMeta(meta);
+  }
+  const left = FUSE - (meta.matter.ticks ?? 0);
+  if (left <= 0) {
+    lapse(meta.matter, turn);
+    return promise(items.filter((o) => o !== head), turn);
+  }
+  head.due = left;
+  head.key = key;
+  return [head, ...items.filter((o) => o !== head).map((o) => ({ ...o, acts: [], waiting: true }))];
+}
+
+// What the King's silence costs, matter by matter: the house it touches takes
+// it as an answer, in its favour and in the chronicle.
+function lapseOf(o) {
+  const ownerOf = (c) => world.players.find((p) => p.id === c.owner);
+  const city = (o.acts ?? []).map((a) => world?.cities?.find((c) => c.id === Number(a.city))).find((c) => c && ownerOf(c) && !houseFor(ownerOf(c)).crown);
+  const owner = city ? world.players.find((p) => p.id === city.owner) : null;
+  const house = owner ? houseFor(owner).name : null;
+  const loyal = (world?.players ?? []).filter((p) => !houseFor(p).wild && !houseFor(p).crown && favourOf(p.id) >= 35);
+  const t = o.text;
+  const said = (rest) => `The King said nothing ${rest}`;
+  if (/grows cold/.test(t) && owner) return { shift: { [owner.id]: -6 }, text: said(`to ${house}. They take it as an answer.`) };
+  if (/is starving/.test(t) && owner) return { shift: { [owner.id]: -8 }, text: said(`while ${city.title ?? city.name} starved. ${house} counts its dead and remembers.`) };
+  if (/at war/.test(t)) { const ids = o.acts.map((a) => world.cities.find((c) => c.id === Number(a.city))?.owner).concat(o.acts.map((a) => a.to)).filter((x) => x != null); return { shift: Object.fromEntries([...new Set(ids)].map((id) => [id, -3])), text: said("of the war, and it burns on. Both houses note whose side the crown was on: neither.") }; }
+  if (o.kind === "plague" && owner) return { shift: { [owner.id]: -5 }, text: said(`while plague emptied ${city.title ?? city.name}. ${house} buries its dead alone.`) };
+  if (o.kind === "unrest" && owner) return { shift: { [owner.id]: -5 }, text: said(`to the crowds of ${city.title ?? city.name}. They shout louder.`) };
+  if (o.kind === "granary" && owner) return { shift: { [owner.id]: -3 }, text: said(`of ${city.title ?? city.name}'s empty granary. Its people store their grudge instead.`) };
+  if (o.kind === "walls" && owner) return { shift: { [owner.id]: -4 }, text: said(`of ${city.title ?? city.name}'s walls. ${house} builds its own, and remembers who didn't.`) };
+  if (o.kind === "loyal" && owner) return { shift: { [owner.id]: -5 }, text: said(`to ${house}'s loyalty. Unrewarded, it cools.`) };
+  if (o.kind === "mighty" && owner) return { shift: { [owner.id]: 3 }, text: said(`as ${house} grew. They take the crown's silence for weakness, and grow bolder.`) };
+  if (o.kind === "match" && owner) return { shift: { [owner.id]: -3 }, text: said(`of ${house}'s heir. Another house will make the match instead.`) };
+  if (o.kind === "rich") return { shift: {}, text: said("while the gold sat in the royal chest. The houses saw it sit.") };
+  if (/claim to the throne|marches on Kingsmere|march is over|dead come south/.test(t)) return { shift: Object.fromEntries(loyal.map((p) => [p.id, -2])), text: said(`while ${t.replace(/[:.].*$/, "").toLowerCase()}. The loyal houses wonder whether the crown will act at all.`) };
+  return { shift: owner ? { [owner.id]: -4 } : {}, text: said(`of it: ${t.replace(/:.*$/, "").toLowerCase()}.`) };
+}
+
+function lapse(m, turn) {
+  const told = m.lapse ?? { shift: {}, text: `The King said nothing of it: ${m.text}.` };
+  if (Object.keys(told.shift).length) shiftFavour(Object.fromEntries(Object.entries(told.shift).map(([id, d]) => [Number(id), d])), "the King's silence");
+  record({ turn, kind: "unrest", text: told.text });
+  (meta.mattersRest ??= {})[m.key] = turn;
+  meta.matter = null;
+  chron.saveMeta(meta);
 }
 
 // Why each house feels as it does: the last few things that moved its favour,
@@ -1428,6 +1496,12 @@ http.createServer(async (req, res) => {
     chron.saveMeta(meta);
     if (!paused) send(`set timeout ${turnSeconds}`);
     return json(res, 200, { turnSeconds });
+  }
+  if (url.pathname === "/counsel/answer" && req.method === "POST") {
+    // The King answered the Hand's matter: it rests a year, and the next one comes up.
+    const { key } = await body(req);
+    if (key) { (meta.mattersRest ??= {})[String(key)] = world?.turn ?? 0; if (meta.matter?.key === key) meta.matter = null; chron.saveMeta(meta); }
+    return json(res, 200, { ok: true });
   }
   if (url.pathname === "/decree" && req.method === "POST") {
     decreesIssued++;

@@ -10,6 +10,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { cityName, houseFor } from "./narrator.js";
 import { decide } from "./claude.js";
+
+const PETITION_FUSE = 3;  // seasons a petitioner waits before the King, once it is their turn
 import { calendar } from "./stakes.js";
 
 // The court's deck of dilemmas: data, so new ones are written, not coded.
@@ -914,26 +916,26 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
     }
   }
 
-  // Petitions left unanswered for two years are answered by silence.
+  // One petitioner at a time stands before the King, and only they wait on a
+  // fuse: PETITION_FUSE seasons of play (time the King is watching), then they
+  // go home unheard and their house takes the silence as an answer. Those
+  // behind them in the hall don't tick until it's their turn.
   expire(turn, shift) {
-    for (const p of this.petitions) {
-      // Patience in the King's time too: two years of seasons pass in a minute or
-      // two of play, so a petitioner also waits five real minutes before leaving.
-      // Only time the King is watching counts: a realm left closed for an hour
-      // doesn't empty his court (each watched season adds at most half a minute).
-      const now = Date.now();
-      p.waitedMs = (p.waitedMs ?? 0) + Math.min(30000, now - (p.tick ?? now));
-      p.tick = now;
-      p.seasons = (p.seasons ?? 0) + 1;
-      if (p.answered || p.seasons < 8 || p.waitedMs < 5 * 60000) continue;
-      p.answered = "ignored";
-      if (p.kind === "arc") this.onArcRuling?.(p.arc, p.beat, "ignored");
-      const c = this.people[p.from];
-      if (!c) continue;
-      shift({ [c.playerId]: -12 }, "left unheard at court");
-      this.remember(c.id, "I waited at court for two years. The King never answered.");
-      this.record({ turn, kind: "unrest", text: `${c.name} of ${c.house} leaves Kingsmere unheard, and says so to anyone who will listen.` });
-    }
+    const p = this.petitions.find((x) => !x.answered);
+    if (!p) return;
+    const now = Date.now();
+    p.waitedMs = (p.waitedMs ?? 0) + Math.min(30000, now - (p.tick ?? now));
+    p.tick = now;
+    p.seasons = (p.front ? (p.seasons ?? 0) + 1 : 0);
+    p.front = true;
+    if (p.seasons < PETITION_FUSE || p.waitedMs < PETITION_FUSE * 12000) return;
+    p.answered = "ignored";
+    if (p.kind === "arc") this.onArcRuling?.(p.arc, p.beat, "ignored");
+    const c = this.people[p.from];
+    if (!c) return;
+    shift({ [c.playerId]: -12 }, "left unheard at court");
+    this.remember(c.id, "I waited at court, and the King never answered.");
+    this.record({ turn, kind: "unrest", text: `The King said nothing to ${c.name} of ${c.house}, who leaves Kingsmere unheard and says so to anyone who will listen.` });
   }
 
   // A truce that runs out is news: the King's peace between two houses has ended.
@@ -1104,6 +1106,6 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
   }
 
   open() {
-    return this.petitions.filter((p) => !p.answered).map(({ id, text, voice, facts, options, house, name, from, arc, beat, thread }) => ({ id, text, voice, facts, options, house, name, from, ...(arc ? { arc, beat, thread } : {}) }));
+    return this.petitions.filter((p) => !p.answered).map(({ id, text, voice, facts, options, house, name, from, arc, beat, thread, front, seasons }, i) => ({ id, text, voice, facts, options, house, name, from, ...(arc ? { arc, beat, thread } : {}), due: i === 0 ? Math.max(1, PETITION_FUSE - (front ? seasons ?? 0 : 0)) : null }));
   }
 }

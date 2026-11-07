@@ -31,7 +31,8 @@ signal decree_revoked(id: String)
 signal person_opened(id: String, house: Dictionary)  # the character view
 signal walk_as_king  # step into the King himself, at Kingsmere
 signal story_opened(entry: Dictionary)
-signal reign_continued  # the reign was scored, and the King rules on  # a story's name clicked in the chronicle
+signal reign_continued  # the reign was scored, and the King rules on
+signal counsel_answered(key: String)  # the King answered the Hand's matter  # a story's name clicked in the chronicle
 
 const Features := preload("res://scripts/features.gd")
 const T := preload("res://scripts/theme.gd")
@@ -1882,7 +1883,11 @@ func _show_counsel(items: Array) -> void:
 	if _guide_on:
 		v.add_child(_guide_block())
 		v.add_child(HSeparator.new())
+	var queued := []  # the matters waiting behind the one put to the King
 	for it in items:
+		if it.get("waiting", false):
+			queued.append(String(it.get("text", "")))
+			continue
 		var row := VBoxContainer.new()
 		row.add_theme_constant_override("separation", 2)
 		v.add_child(row)
@@ -1899,6 +1904,12 @@ func _show_counsel(items: Array) -> void:
 		why.add_theme_color_override("font_color", T.TEXT_2)
 		why.add_theme_font_size_override("font_size", T.SIZE_DESC)
 		row.add_child(why)
+		# The fuse: how long this waits for the King before the realm answers for him.
+		var due := int(it.get("due", 0))
+		if due > 0:
+			var fuse := T.label("Answer within %s, or the realm answers for you" % ("this season" if due == 1 else "%d seasons" % due))
+			fuse.add_theme_color_override("font_color", T.DANGER if due == 1 else T.ACCENT)
+			row.add_child(fuse)
 		var acts := HFlowContainer.new()
 		acts.add_theme_constant_override("h_separation", 6)
 		row.add_child(acts)
@@ -1918,6 +1929,8 @@ func _show_counsel(items: Array) -> void:
 					other.disabled = true
 				b.text = String(act.get("label", "")).get_slice("  ", 0) + "  ·  ordered"
 				b.add_theme_color_override("font_disabled_color", T.ACCENT)
+				if String(it.get("key", "")) != "":
+					counsel_answered.emit(String(it["key"]))  # answered: it rests, and the next matter comes up
 				_counsel_act(act))
 			b.add_theme_color_override("font_color", T.ACCENT)
 			if act.has("cost") and int(act["cost"]) > _purse:
@@ -1939,6 +1952,12 @@ func _show_counsel(items: Array) -> void:
 					b.add_theme_stylebox_override(look, frame)
 				b.tooltip_text = "The Hand's advice"
 			acts.add_child(b)
+	# What waits behind it, one quiet line: it comes up when this one is settled.
+	if not queued.is_empty():
+		var next := T.label("Then: " + ", ".join(queued.map(func(t): return String(t).get_slice(":", 0))))
+		next.autowrap_mode = TextServer.AUTOWRAP_WORD
+		next.add_theme_color_override("font_color", T.TEXT_3)
+		v.add_child(next)
 	_counsel.visible = not (_digest_panel and _digest_panel.visible) and not (_end_panel and _end_panel.visible)
 	if _ticker:
 		_ticker.visible = false  # the counsel holds the bottom-left corner; the chronicle has the news
@@ -2597,7 +2616,7 @@ func clear_chronicle() -> void:
 # --- the court --------------------------------------------------------------------------
 
 func set_court(petitions: Array) -> void:
-	var sig := str(petitions.map(func(p): return p["id"]))
+	var sig := str(petitions.map(func(p): return p["id"])) + "|" + str(petitions[0].get("due", "") if not petitions.is_empty() else "")
 	if sig == _court_sig:
 		return
 	_court_sig = sig
@@ -2746,9 +2765,12 @@ func _show_audience() -> void:
 		preload("res://scripts/spark.gd").attach(own, get_tree().current_scene.get("bridge"), "ruling", func(): return "The petition: %s\nThe rulings on offer: %s" % [String(p.get("text", "")), choices], true)
 	# Later is not free: a petitioner left too long goes home unheard, and says so.
 	var later := _btn("Later", func(): _court_hidden = true; _court_panel.visible = false)
-	later.tooltip_text = "They wait for now. Left unheard for two years, they go home and their house's favour falls by 12."
+	var due := int(p.get("due", 3)) if p.get("due") != null else 3
+	var when := "this season" if due <= 1 else "%d seasons" % due
+	later.tooltip_text = "They wait for now. Unanswered within %s, they go home and their house's favour falls by 12." % when
 	v.add_child(later)
-	var cost := T.label("Left unheard for two years, they leave: their house −12")
+	var cost := T.label("Answer within %s, or they leave: their house −12" % when)
+	cost.add_theme_color_override("font_color", T.DANGER if due <= 1 else T.ACCENT)
 	cost.add_theme_font_size_override("font_size", 10)
 	cost.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(cost)

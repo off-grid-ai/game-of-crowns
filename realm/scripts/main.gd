@@ -304,6 +304,7 @@ func _ready() -> void:
 	bridge.realm_changed.connect(_on_realm_changed)
 	ui.pause_toggled.connect(func(p): bridge.set_paused(p); ui.toast("The realm holds its breath." if p else "The realm stirs again."))
 	ui.open_menu.connect(func(): title.open())
+	ui.counsel_answered.connect(func(key): bridge.counsel_answered(key))
 	ui.reign_continued.connect(func(): bridge.continue_reign(func(_c, d): if d is Dictionary: ui.set_reign(d)))
 	ui.town_closed.connect(func(): _selected = -1)
 	ui.open_settings.connect(func(): title.open_settings())
