@@ -272,6 +272,21 @@ func _ready() -> void:
 	# Battles and musters call their own camera beats while the director (or a test shot) holds the camera.
 	scenes.framing.connect(func(p: Vector3, d: float, y: float):
 		if director.active or _shot.has("battle") or _shot.has("muster") or _shot.has("siege"):
+			# The camera stays with the scene it's showing: another one starting
+			# elsewhere in the realm doesn't pull it away mid-fight. Beats of the
+			# same scene (close by) still move it; a new place only once this
+			# scene has had its time.
+			var now := Time.get_ticks_msec()
+			if _framed_until > now and Vector2(p.x - _framed_at.x, p.z - _framed_at.z).length() > 6.0:
+				return
+			if _framed_until <= now or Vector2(p.x - _framed_at.x, p.z - _framed_at.z).length() > 6.0:
+				_framed_at = p
+			_framed_until = now + 40000  # a scene's length, give or take; each beat keeps it
+			# No camera inside a wood: the trees between the camera and the scene
+			# are felled in a cone opening toward it, as battles already do.
+			var toward := Vector3(sin(y), 0, cos(y))
+			for k in 6:
+				terrain.clear_around(p + toward * (1.0 + k * 1.2) * maxf(1.0, d / 4.0), 1.2 + k * 0.35)
 			rig.focus(p, d)
 			rig._goal_yaw = y
 			rig._goal_tilt = -12.0)  # lower than the rig's own pitch: Ali's low oblique view
@@ -1560,6 +1575,8 @@ func _tell_the_story() -> void:
 		labels.visible = ui.visible, CONNECT_ONE_SHOT)
 	intro.watching = _back_to_menu
 	intro.play(houses, seats)
+var _framed_at := Vector3.ZERO  # where the scene the camera is showing is
+var _framed_until := 0  # msec: until then, other scenes don't take the camera
 var _opened_in_intro := false  # a chronicle was opened while the intro played: no menu after it
 var _back_to_menu := false  # the intro was asked for from the menu: the menu comes back after it
 var _voice: AudioStreamPlayer
