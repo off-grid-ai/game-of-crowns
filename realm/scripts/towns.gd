@@ -243,11 +243,15 @@ func _bailey(root: Node3D, cp: Vector3, cy: float, yaw: float, rng: RandomNumber
 			continue  # not in this build's kit: the yard goes without it
 		var at: Vector3 = cp + b * item[1]
 		_place(root, kind, Vector3(at.x, cy, at.z), yaw + float(item[2]) + rng.randf_range(-0.05, 0.05))
+		if kind == "ph/stone_fire_pit":
+			_hearth(root, Vector3(at.x, cy, at.z))  # a fire the groom can warm himself at
 	# The yard lived in: the garrison drilling under a sergeant, each at his own
 	# move, a groom warming at the fire, a servant carrying.
 	for f in BAILEY_FOLK:
 		var at: Vector3 = cp + b * f[1]
-		var p: Node3D = life._townsperson(root, Vector3(at.x, cy, at.z), f[0], f[2], rng.randi(), Color.WHITE)
+		# The garrison in its lord's colour; the household in its own clothes.
+		var tint: Color = _house_colour.lerp(Color.WHITE, 0.3) if f[0] == "soldier" else Color.WHITE
+		var p: Node3D = life._townsperson(root, Vector3(at.x, cy, at.z), f[0], f[2], rng.randi(), tint)
 		if p:
 			p.rotation.y = yaw + float(f[3])
 
@@ -1171,6 +1175,48 @@ static func smoke_material(unshaded := false) -> StandardMaterial3D:
 	if unshaded:
 		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	return m
+
+
+## A yard fire burning low in its pit: small flames, a warm light on the
+## stones round it, and a thread of smoke.
+func _hearth(root: Node3D, pos: Vector3) -> void:
+	# Built like the town bonfire (town_life._bonfire), smaller: on the CPU,
+	# since the GPU conversion drops the tiny per-flame scale.
+	var p := CPUParticles3D.new()
+	p.amount = 12
+	p.lifetime = 0.5
+	p.direction = Vector3.UP
+	p.spread = 12
+	p.initial_velocity_min = 0.15
+	p.initial_velocity_max = 0.3
+	p.gravity = Vector3.ZERO
+	p.scale_amount_min = 0.4
+	p.scale_amount_max = 0.8
+	var grad := Gradient.new()
+	grad.set_color(0, Color(1.0, 0.6, 0.2, 0.8))
+	grad.set_color(1, Color(0.8, 0.2, 0.05, 0.0))
+	p.color_ramp = grad
+	var q := QuadMesh.new()
+	q.size = Vector2(0.08, 0.08)
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = soft_dot()
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	m.vertex_color_use_as_albedo = true
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	q.material = m
+	p.mesh = q
+	p.visibility_range_end = 30.0
+	p.position = pos + Vector3(0, 0.02, 0)
+	root.add_child(p)
+	var light := OmniLight3D.new()
+	light.light_color = Color(1.0, 0.55, 0.25)
+	light.light_energy = 0.5
+	light.omni_range = 0.6
+	light.position = pos + Vector3(0, 0.12, 0)
+	root.add_child(light)
+	_smoke(root, pos + Vector3(0, 0.1, 0))
 
 
 func _smoke(root: Node3D, pos: Vector3) -> void:
