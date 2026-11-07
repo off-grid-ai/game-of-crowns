@@ -59,11 +59,11 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 
 **2026-11-07 11:23:** Shipped:
 - 939d52b: the review page takes clips; notes can be pinned to a moment.
-- b26fd0d: 0.6 step 4a. A house's banners stand as high as its favour.
+- b26fd0d: Improvement: A house's banners stand as high as its favour.
 - 5b82f00: townsfolk keep to the streets, nobody cheers alone, and standard-bearers march in step.
 - ec20ae1: no two cards sit over each other.
 
-Moved: 0.6 is building.
+Moved: the game keeps improving.
 
 Needs Mac: r/macgaming at ~19:00 IST today.
 
@@ -71,21 +71,21 @@ Downloads: GitHub 4.
 
 **2026-11-07 11:08:** Shipped:
 - fc3854a: GAME_DESIGN.md. It sets out the promise, the core loop, the pillars, the feedback ladder and how the team decides.
-- 1d5ad04: 0.6 step 3, every decision is seen.
+- 1d5ad04: Improvement: every decision is seen.
   - The fuse drains as a bar.
   - A house's favour counts to its new value and glows.
   - Silence shows as one line, e.g. "Wolfholt 33 → 29".
   - A worse matter cuts in ahead of the current one.
 
-Moved: 0.6 is building.
+Moved: the game keeps improving.
 
 Needs Mac: r/macgaming at ~19:00 IST today.
 
 Downloads: GitHub 4.
 
-**2026-11-07 10:53:** Shipped: b377249 (0.6 step 2: the Hand puts one matter at a time with a three-season fuse. Leave it, and the realm answers for you; the chronicle says "The King said nothing…"). Moved: 0.6 is being built. Needs Mac: r/macgaming at ~19:00 IST today. Downloads: GitHub 4.
+**2026-11-07 10:53:** Shipped: b377249 (improvement: the Hand puts one matter at a time with a three-season fuse. Leave it, and the realm answers for you; the chronicle says "The King said nothing…"). Moved: the game keeps improving. Needs Mac: r/macgaming at ~19:00 IST today. Downloads: GitHub 4.
 
-**2026-11-07 10:38:** Shipped: f1da49b (the 0.6 plan: promises with a fuse, silence has a price, every change seen, timed reigns only; one UX rule sharpened and one UI rule added). Moved: the 0.6 beat (Wed 18 Nov) has a plan. Needs Mac: r/macgaming today at ~19:00 IST with the film and the shorter copy, then the creator emails and the HN restore email. Downloads: GitHub 4.
+**2026-11-07 10:38:** Shipped: f1da49b (the plan for the next improvements: promises with a fuse, silence has a price, every change seen, timed reigns only; one UX rule sharpened and one UI rule added). Moved: the next update (Wed 18 Nov) has a plan. Needs Mac: r/macgaming today at ~19:00 IST with the film and the shorter copy, then the creator emails and the HN restore email. Downloads: GitHub 4.
 
 **2026-11-07 03:23:** Shipped: 3f28691 and 96d2879 (README: four gameplay screenshots from the itch page, with a caption about the realm); buzz checklist v10. Moved: on Mac's ask, the r/macgaming post now leads with "a free Game of Thrones world sim". Downloads: GitHub 4.
 

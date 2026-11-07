@@ -27,7 +27,7 @@ Mac's call: "we're gonna launch today." This replaces launch.md's 8 December dat
 | Tue 10 Nov | Comment in WorldBox and Ages of Conflict threads where someone asks for games like them. |
 | Wed 11 Nov | A second cut of whichever clip did best. |
 | Fri 13 Nov | itch devlog "Week one: the realms you made" with players' screenshots; ship 0.5.1 if fixes are ready. |
-| Wed 18 Nov | **Update 0.6**: one named feature, a new clip, an email to every creator who covered it, a new Reddit beat. |
+| Wed 18 Nov | **The next update**: what got better since launch, a new clip, an email to every creator who covered it, a new Reddit beat. |
 | Tue 8 Dec | v1. |
 
 ---

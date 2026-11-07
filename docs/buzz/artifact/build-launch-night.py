@@ -59,7 +59,7 @@ later=[('Sat 7 Nov','Post the vertical clip on Shorts, TikTok and Reels','<code>
 ('This week','Make an AppleGamingWiki page marked native','It needs an account, so it has to be you. <a href="https://applegamingwiki.com" target="_blank" rel="noopener">applegamingwiki.com</a>'),
 ('Mon 9 Nov','Send 15 more creator emails','Strategy and sim channels, in docs/buzz/creators.md under Batch 2.'),
 ('Fri 13 Nov','Post the week-one devlog','"The realms you made", with players\' screenshots.'),
-('Wed 18 Nov','Update 0.6, the second beat','A new feature, a new clip, an email to every creator who covered it.')]
+('Wed 18 Nov','The next update, the second beat','What got better since launch, a new clip, an email to every creator who covered it.')]
 lat=''.join(step(f'l{i}',w,E(t),f'<p>{b}</p>') for i,(w,t,b) in enumerate(later))
 out=f'''<title>Launch Night Checklist</title>
 <meta name="claude:viewport-fit-sides" content="cover">
