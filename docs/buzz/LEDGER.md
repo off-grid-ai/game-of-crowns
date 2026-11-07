@@ -57,6 +57,8 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 
 ## Runs
 
+**2026-11-08 03:20:** Shipped: **0.6 released** on GitHub as v0.6-20261107-b39885f (notarised, player notes from docs/buzz/release-0.6.md) and **live on itch** (channel mac, build #2325751, version 0.6). Left: the 0.6 itch devlog waits on Mac's yes.
+
 **2026-11-07 12:23:** Shipped: 47bf3b6 (design rule: variety and reaction, never repetition). Moved: nothing public. Needs Mac: r/macgaming at ~19:00 IST today. Downloads: GitHub 4.
 
 **2026-11-07 11:53:** Shipped: 4c319e3 (team rule: build in batches and test them together in one filmed run). Moved: nothing public. Needs Mac: r/macgaming at ~19:00 IST today. Downloads: GitHub 4.
