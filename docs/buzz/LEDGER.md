@@ -57,6 +57,8 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 
 ## Runs
 
+**2026-11-07 12:23:** Shipped: 47bf3b6 (design rule: variety and reaction, never repetition). Moved: nothing public. Needs Mac: r/macgaming at ~19:00 IST today. Downloads: GitHub 4.
+
 **2026-11-07 11:53:** Shipped: 4c319e3 (team rule: build in batches and test them together in one filmed run). Moved: nothing public. Needs Mac: r/macgaming at ~19:00 IST today. Downloads: GitHub 4.
 
 **2026-11-07 11:38:** Shipped:
