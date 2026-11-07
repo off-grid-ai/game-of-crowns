@@ -1373,7 +1373,11 @@ func _frame_for_shot(world: Dictionary) -> void:
 					scenes._muster(from, to)
 				else:
 					scenes._rider(from, to, "The King rules for House Thornvale")
-				rig.snap(from + (to - from).normalized() * 1.6, float(_shot.get("dist", 4.0)), 0.6))
+				var spot: Vector3 = from + (to - from).normalized() * 1.6
+				rig.snap(spot, float(_shot.get("dist", 4.0)), rig.clear_yaw(spot, float(_shot.get("dist", 4.0)), 0.6))
+				# The scene under test holds the camera, as test battles do.
+				_framed_at = from + (to - from).normalized() * 1.6
+				_framed_until = int(_game_ms) + 600000)
 		return
 	if _shot.has("scene"):
 		for sc in world.get("scenes", []):

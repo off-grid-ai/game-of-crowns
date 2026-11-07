@@ -103,12 +103,14 @@ func _blocked(a: Vector3, b: Vector3) -> bool:
 		var tops: Array = root.get_meta("tops", [])
 		var fps: Array = root.get_meta("footprints", [])
 		for i in fps.size():
+			var fp: PackedVector2Array = fps[i]
 			var top: float = tops[i] if i < tops.size() else -1.0
+			if top < 0.0:  # height unknown: a big footprint stands tall (as _roofline guesses)
+				top = 2.4 if absf((fp[1] - fp[0]).cross(fp[3] - fp[0])) > 3.0 else 0.95
 			if top < 1.2:
 				continue
-			var fp: PackedVector2Array = fps[i]
-			for t in 8:
-				if Geometry2D.is_point_in_polygon(la.lerp(lb, 0.15 + t * 0.1), fp):
+			for t in 10:
+				if Geometry2D.is_point_in_polygon(la.lerp(lb, 0.15 + t * 0.095), fp):
 					return true
 	return false
 

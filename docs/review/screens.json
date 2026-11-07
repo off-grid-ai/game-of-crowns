@@ -197,6 +197,31 @@
   ]
  },
  {
+  "id": "muster",
+  "name": "A muster",
+  "group": "Play",
+  "what": "A lord's men form up under his banners and march out.",
+  "file": "screens/v/muster-2.jpg",
+  "clip": "screens/v/muster-2.mp4",
+  "versions": [
+   {
+    "v": 1,
+    "label": "A tower in the way",
+    "at": "2026-11-07T16:20:00+00:00",
+    "file": "screens/v/muster-1.jpg",
+    "what": "A castle tower filled the front of the shot: the clear-view check didn't count buildings of unknown height or the stretch nearest the lens."
+   },
+   {
+    "v": 2,
+    "label": "In clear view",
+    "at": "2026-11-07T16:27:00+00:00",
+    "file": "screens/v/muster-2.jpg",
+    "clip": "screens/v/muster-2.mp4",
+    "what": "The camera finds a side with no tall building anywhere along its line of sight; the ranks form in the square and march out in a column."
+   }
+  ]
+ },
+ {
   "id": "title",
   "name": "Main menu",
   "group": "Title",
