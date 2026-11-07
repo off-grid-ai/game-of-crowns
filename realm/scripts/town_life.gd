@@ -363,8 +363,15 @@ func _drill(root: Node3D, life: Node3D, center: Vector3, progress: float, color:
 func _crowd(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenerator, count: int, angry: bool) -> void:
 	var dir := Vector3(cos(rng.randf() * TAU), 0, sin(rng.randf() * TAU))
 	var side := Vector3(-dir.z, 0, dir.x)
+	var knots := maxi(1, ceili(count / 3.0))
 	for i in count:
-		var p := dir * rng.randf_range(0.55, 0.95 if angry else 1.25) + side * rng.randf_range(-0.45, 0.45)
+		var p := dir * rng.randf_range(0.55, 0.95) + side * rng.randf_range(-0.45, 0.45)
+		if not angry:
+			# The hungry and the grieving keep in knots of two or three spread
+			# round the town's edge, never one crowd at a door (Mac's call).
+			var ang := atan2(dir.z, dir.x) + TAU * float(i / 3) / knots + rng.randf_range(-0.15, 0.15)
+			var hub := Vector3(cos(ang), 0, sin(ang)) * rng.randf_range(1.0, 1.4)
+			p = hub + Vector3(rng.randf_range(-0.09, 0.09), 0, rng.randf_range(-0.09, 0.09))
 		var anim: String
 		if angry:
 			anim = ["Arguing", "Yelling", "Arguing", "Yelling"][i % 4]  # arguing, shouting at the door they all face
