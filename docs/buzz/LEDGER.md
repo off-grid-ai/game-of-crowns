@@ -57,6 +57,20 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 
 ## Runs
 
+**2026-11-07 11:08:** Shipped:
+- fc3854a: GAME_DESIGN.md. It sets out the promise, the core loop, the pillars, the feedback ladder and how the team decides.
+- 1d5ad04: 0.6 step 3, every decision is seen.
+  - The fuse drains as a bar.
+  - A house's favour counts to its new value and glows.
+  - Silence shows as one line, e.g. "Wolfholt 33 → 29".
+  - A worse matter cuts in ahead of the current one.
+
+Moved: 0.6 is building.
+
+Needs Mac: r/macgaming at ~19:00 IST today.
+
+Downloads: GitHub 4.
+
 **2026-11-07 10:53:** Shipped: b377249 (0.6 step 2: the Hand puts one matter at a time with a three-season fuse. Leave it, and the realm answers for you; the chronicle says "The King said nothing…"). Moved: 0.6 is being built. Needs Mac: r/macgaming at ~19:00 IST today. Downloads: GitHub 4.
 
 **2026-11-07 10:38:** Shipped: f1da49b (the 0.6 plan: promises with a fuse, silence has a price, every change seen, timed reigns only; one UX rule sharpened and one UI rule added). Moved: the 0.6 beat (Wed 18 Nov) has a plan. Needs Mac: r/macgaming today at ~19:00 IST with the film and the shorter copy, then the creator emails and the HN restore email. Downloads: GitHub 4.
