@@ -203,6 +203,35 @@ func _top(root: Node3D, top: float) -> void:
 	root.set_meta("tops", tops)
 
 
+## The castle's bailey, lived in: a great hall along the far wall, stables
+## (a barn) with hay and a woodpile on one side, carts and a forge corner on the
+## other, a well at its heart and the clutter of work about the yard. Laid out
+## in the castle's own frame, from the kit the towns already use.
+const BAILEY := [
+	["medieval_viking_house", Vector3(0.0, 0, 1.45), 0.0],
+	["old_wooden_barn", Vector3(-1.75, 0, -0.1), PI / 2],
+	["haystack_2", Vector3(-1.2, 0, -0.85), 0.4],
+	["haystack_2", Vector3(-1.05, 0, -1.1), 1.7],
+	["wood_pile_pack", Vector3(-1.75, 0, 0.95), PI / 2],
+	["medieval_wooden_cart", Vector3(1.5, 0, -0.75), 2.2],
+	["medieval_wooden_cart", Vector3(1.85, 0, 0.1), 1.4],
+	["ph/stone_fire_pit", Vector3(0.0, 0, 0.1), 0.0],
+	["ph/wooden_bucket_01", Vector3(0.35, 0, 0.25), 0.0],
+	["ph/wicker_basket_01", Vector3(0.9, 0, 1.0), 0.0],
+	["ph/wooden_bucket_01", Vector3(-0.95, 0, 0.75), 0.0],
+]
+
+
+func _bailey(root: Node3D, cp: Vector3, cy: float, yaw: float, rng: RandomNumberGenerator) -> void:
+	var b := Basis(Vector3.UP, yaw)
+	for item in BAILEY:
+		var kind: String = item[0]
+		if Real.footprint(kind) == Vector2.ZERO:
+			continue  # not in this build's kit: the yard goes without it
+		var at: Vector3 = cp + b * item[1]
+		_place(root, kind, Vector3(at.x, cy, at.z), yaw + float(item[2]) + rng.randf_range(-0.05, 0.05))
+
+
 ## A realistic town laid out in lots: houses on rings around the square, each
 ## turned to face it, spaced by its own size. Real towns sit on slopes, so a
 ## house is seated at the low corner of its plot (its foundation takes up the
@@ -241,8 +270,9 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 					# the corners, and a crown's reach (about 0.8) beyond.
 					terrain.clear_around(center + cp, cf.length() * 0.5 + 0.8)
 					lots.append([cp, maxf(cf.x, cf.y) * 0.55])
-					_banner(root, cp + Vector3(0, cy + 1.6, 0), _house_colour, _house)
+					_banner(root, cp + Vector3(0, cy + 1.6, 0), _house_colour, _house, 1.2)
 					_door(root, cp, cf, "great_hall", "great hall")
+					_bailey(root, cp, cy, castle.rotation.y, rng)
 					break
 				gap_ang += TAU / 8.0
 		gap_ang += PI * 0.6
@@ -828,10 +858,10 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	if c.get("family") is String and not c["capital"] and not house.get("crown", false):
 		family = preload("res://scripts/heraldry.gd").family(String(c["family"]))
 	if not stone:
-		_banner(root, keep_off + Vector3(0, _ground_y(center, keep_off) + (2.0 if c["capital"] else 1.75), 0), color, house if family.is_empty() else family)
+		_banner(root, keep_off + Vector3(0, _ground_y(center, keep_off) + (2.0 if c["capital"] else 1.75), 0), color, house if family.is_empty() else family, 1.1)  # big enough to read its favour from afar
 	if not family.is_empty():
 		var sq := -keep_off.normalized() * (square_r + 0.15)
-		_banner(root, sq + Vector3(0, _ground_y(center, sq), 0), color, family if stone else house)
+		_banner(root, sq + Vector3(0, _ground_y(center, sq), 0), color, family if stone else house, 0.85)
 
 	# Great buildings take their places around the square. A realistic town's
 	# church, hall and tavern are already on its square, from the kit.
@@ -1000,8 +1030,8 @@ func _built_on(root: Node3D, p: Vector3) -> bool:
 			return true
 	return false
 
-func _banner(root: Node3D, pos: Vector3, color: Color, house: Dictionary) -> void:
-	var b: Node3D = preload("res://scripts/heraldry.gd").standard(house, color, 0.65)
+func _banner(root: Node3D, pos: Vector3, color: Color, house: Dictionary, height := 0.65) -> void:
+	var b: Node3D = preload("res://scripts/heraldry.gd").standard(house, color, height)
 	b.position = pos
 	root.add_child(b)
 	# The house's banners show its favour: kept for raising and lowering.

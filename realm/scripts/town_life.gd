@@ -172,7 +172,12 @@ func _townsperson(parent: Node3D, pos: Vector3, role: String, anim: String, seed
 	var p: Node3D = _people.make(rng, role, tint, "adult" if role == "soldier" else "")
 	p.position = pos
 	parent.add_child(p)
-	_people.play(p, anim)
+	# A drill is practised over and over: a one-off move (a cut, a draw of the
+	# bow) repeats rather than playing once and standing down.
+	if preload("res://scripts/motion.gd").is_once(anim):
+		_people.repeat(p, anim)
+	else:
+		_people.play(p, anim)
 	return p
 
 
@@ -341,7 +346,7 @@ func _drill(root: Node3D, life: Node3D, center: Vector3, progress: float, color:
 		for i in count:
 			var p := spots[i]
 			p.y = _y(center, p)
-			var drill: String = (["Bow_Draw", "Bow_Aim", "Bow_Shoot"][i % 3]) if unit.contains("Archer") or unit.contains("bow") else ("Sword_Idle" if i % 3 else "Sword_Attack")
+			var drill: String = (["Bow_Draw", "Bow_Aim", "Bow_Shoot"][i % 3]) if unit.contains("Archer") or unit.contains("bow") else (["Sword_Idle", "SS_Slash_1", "SS_Block_Idle", "SS_Slash_4", "Spear_Thrust", "SS_Attack_3"][(i + hash(unit)) % 6])
 			var s := _townsperson(life, p, "soldier", drill, hash(unit) + i, color.lerp(Color.WHITE, 0.35))
 			s.rotation.y = atan2(face.x, face.z)
 			taken.append(Vector2(p.x, p.z))

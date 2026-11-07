@@ -89,6 +89,9 @@ func _ready() -> void:
 		# Screenshot runs keep out of the way: the window sits almost entirely off
 		# the bottom-right of the screen, never takes focus, and still renders in full.
 		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
+		# Its sliver stays above other windows: covered over, macOS stops
+		# drawing it and a film run stalls waiting on the screen.
+		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_ALWAYS_ON_TOP, true)
 		var screen := DisplayServer.screen_get_usable_rect()
 		DisplayServer.window_set_position(screen.end - Vector2i(24, 24))
 	_apply_icon()
@@ -276,7 +279,7 @@ func _ready() -> void:
 			# elsewhere in the realm doesn't pull it away mid-fight. Beats of the
 			# same scene (close by) still move it; a new place only once this
 			# scene has had its time.
-			var now := Time.get_ticks_msec()
+			var now := int(_game_ms)  # game time: a slow frame or a filmed run doesn't cut a scene short
 			if _framed_until > now and Vector2(p.x - _framed_at.x, p.z - _framed_at.z).length() > 6.0:
 				return
 			if _framed_until <= now or Vector2(p.x - _framed_at.x, p.z - _framed_at.z).length() > 6.0:
@@ -554,6 +557,9 @@ func _parse_args() -> void:
 		elif a.begins_with("--time="):
 			_time_of_day = float(a.substr(7))
 			_shot["night_ok"] = true
+		elif a == "--castle":
+			_shot["town"] = true
+			_shot["castle"] = true  # frame the seat's castle and its courtyard, once the town is up
 		elif a == "--town":
 			_shot["town"] = true
 		elif a.begins_with("--city="):
@@ -955,6 +961,7 @@ var _folk_held := {}  # the villager whose card is open: they stand still for it
 
 
 func _process(_delta: float) -> void:
+	_game_ms += _delta * 1000.0
 	# The game took the camera down to the land (a town framed, a battle): the map steps aside.
 	if _over_open and rig._goal_distance < rig.OVERVIEW * 0.9:
 		_overview_close()
@@ -1384,11 +1391,31 @@ func _frame_for_shot(world: Dictionary) -> void:
 			_selected = int(best["id"])
 			_show_selected(world)
 			rig.snap(terrain.world_pos(float(best["x"]), float(best["y"])), float(_shot.get("dist", 16.0)), 0.6)
+			if _shot.get("castle", false):
+				# The castle goes up with the town: frame its courtyard once it stands.
+				var tid := int(best["id"])
+				get_tree().create_timer(3.0).timeout.connect(func():
+					var t: Dictionary = towns.towns.get(tid, {})
+					var castle: Node3D = t["node"].get_node_or_null("Castle") if not t.is_empty() else null
+					if castle:
+						rig.snap(castle.global_position, float(_shot.get("dist", 1.8)), castle.rotation.y))  # from the square side, over the gate
 			if _shot.get("battle", false):
 				# Stage a battle on open ground beside the town, for testing.
 				var field: Vector3 = terrain.world_pos(float(best["x"]) + 1.5, float(best["y"]))
+				# No open ground beside this town (it has grown, or it's ringed by
+				# wood or water): the test takes the first town that has a field.
+				if scenes._battlefield(field) == Vector3.INF:
+					for c in world.get("cities", []):
+						var f: Vector3 = terrain.world_pos(float(c["x"]) + 1.5, float(c["y"]))
+						if scenes._battlefield(f) != Vector3.INF:
+							field = f
+							best = c
+							break
 				# The battle finds its own open ground near there: frame that, not the town.
 				rig.snap(scenes._battlefield(field), float(_shot.get("dist", 4.0)), 0.6)
+				# The battle under test holds the camera: no other scene in the realm takes it.
+				_framed_at = scenes._battlefield(field)
+				_framed_until = int(_game_ms) + 600000
 				scenes._battle(field, _houses.get(int(best["owner"]), {}))
 			if _shot.get("siege", false):
 				# Stage a siege of the town by another house, for testing.
@@ -1576,7 +1603,8 @@ func _tell_the_story() -> void:
 	intro.watching = _back_to_menu
 	intro.play(houses, seats)
 var _framed_at := Vector3.ZERO  # where the scene the camera is showing is
-var _framed_until := 0  # msec: until then, other scenes don't take the camera
+var _framed_until := 0  # game msec: until then, other scenes don't take the camera
+var _game_ms := 0.0  # milliseconds of game time since the view began
 var _opened_in_intro := false  # a chronicle was opened while the intro played: no menu after it
 var _back_to_menu := false  # the intro was asked for from the menu: the menu comes back after it
 var _voice: AudioStreamPlayer

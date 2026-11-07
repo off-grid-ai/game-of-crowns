@@ -185,9 +185,9 @@ func _eye(at: Vector3, yaw: float, tilt: float, dist: float) -> Vector3:
 func caption(s: Dictionary) -> String:
 	var at: Vector3 = terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0)))
 	# A battle names who bleeds: "House Sunspire loses men near Crowbarrow".
-	if String(s.get("kind", "")) == "battle" and String(s.get("house", "")) != "":
-		return "%s loses men near %s" % [String(s["house"]), _town_near(s, at)]
-	return String(SCENES.get(String(s.get("kind", "")), [0, 0.0, "%s"])[2]) % _town_near(s, at)
+	if str(s.get("kind", "")) == "battle" and str(s.get("house", "")) != "":
+		return "%s loses men near %s" % [str(s["house"]), _town_near(s, at)]
+	return str(SCENES.get(str(s.get("kind", "")), [0, 0.0, "%s"])[2]) % _town_near(s, at)
 
 
 func _frame(s: Dictionary, follow: Node3D) -> void:

@@ -57,7 +57,7 @@ func map_for(id: int, root: Node3D) -> RID:
 	var regions: Array = []
 	if not ways.is_empty():
 		regions.append(_region(map, root, reach, ways, blocks, 1.0))
-	regions.append(_region(map, root, reach, [outline], blocks + ways, OPEN_COST))
+	regions.append(_region(map, root, reach, [outline], blocks, OPEN_COST, ways))
 	_maps[id] = map
 	_regions[id] = regions
 	_live[map] = true
@@ -65,11 +65,25 @@ func map_for(id: int, root: Node3D) -> RID:
 
 
 const CELL := 0.01
-const OPEN_COST := 6.0  # how much dearer a step on open ground is than one on a street
+const OPEN_COST := 6.0  # open ground: six times a street, so people keep to the streets but cross a green between two neighbouring lanes rather than all funnelling through the square
 
 
 ## One walkable region of the town's map: `walk` outlines, less `blocks` and water.
-func _region(map: RID, root: Node3D, reach: float, walk: Array, blocks: Array, cost: float) -> RID:
+func _region(map: RID, root: Node3D, reach: float, walk: Array, blocks: Array, cost: float, cut := []) -> RID:
+	var poly := _bake(root, reach, walk, blocks + cut)
+	if poly.get_polygon_count() == 0 and not cut.is_empty():
+		# Streets crossing each other can't all be cut out of the open ground
+		# in one bake: bake it with only the buildings cut out. The streets
+		# overlap it but stay far cheaper, so people still keep to them.
+		poly = _bake(root, reach, walk, blocks)
+	var region := NavigationServer2D.region_create()
+	NavigationServer2D.region_set_map(region, map)
+	NavigationServer2D.region_set_navigation_polygon(region, poly)
+	NavigationServer2D.region_set_travel_cost(region, cost)
+	return region
+
+
+func _bake(root: Node3D, reach: float, walk: Array, blocks: Array) -> NavigationPolygon:
 	var poly := NavigationPolygon.new()
 	poly.agent_radius = 0.035
 	poly.cell_size = CELL
@@ -80,11 +94,7 @@ func _region(map: RID, root: Node3D, reach: float, walk: Array, blocks: Array, c
 		src.add_obstruction_outline(b)
 	_cut_water(src, root.position, reach)
 	NavigationServer2D.bake_from_source_geometry_data(poly, src)
-	var region := NavigationServer2D.region_create()
-	NavigationServer2D.region_set_map(region, map)
-	NavigationServer2D.region_set_navigation_polygon(region, poly)
-	NavigationServer2D.region_set_travel_cost(region, cost)
-	return region
+	return poly
 
 
 ## The town's streets, footpaths and square, as outlines in town-local XZ.
@@ -104,6 +114,53 @@ static func _ways(root: Node3D) -> Array:
 			var t := TAU * i / 20
 			ring.append(Vector2(cos(t), sin(t)) * sq)
 		out.append(ring)
+	# Every place people go is joined to the streets by a short worn path: each
+	# door and doorstep, the well, the market, the keep, and the edge of each
+	# field and garden (whose ground is walked in full, by those who work it).
+	var segs: Array = []
+	for lane in root.get_meta("lanes", []):
+		segs.append([lane[0], lane[1]])
+	var goals: Array = []
+	for d in root.get_meta("doors", []):
+		var at = d.get("at") if d is Dictionary else null
+		if at is Vector3:
+			goals.append(Vector2(at.x, at.z))
+	for h in root.get_meta("homes", []):
+		if h is Array and h.size() > 0 and h[0] is Vector3:
+			goals.append(Vector2(h[0].x, h[0].z))
+	var places = root.get_meta("places", {})
+	if places is Dictionary:
+		for k in places:
+			if places[k] is Vector3:
+				goals.append(Vector2(places[k].x, places[k].z))
+	for key in ["fields", "gardens"]:
+		for f in root.get_meta(key, []):
+			if not (f is Array) or f.size() < 3 or not (f[0] is Vector3) or not (f[1] is Vector2):
+				continue
+			var c := Vector2(f[0].x, f[0].z)
+			var half: Vector2 = f[1] * 0.5
+			var b := Basis(Vector3.UP, float(f[2]))
+			var rect := PackedVector2Array()
+			for corner in [Vector2(-half.x, -half.y), Vector2(half.x, -half.y), Vector2(half.x, half.y), Vector2(-half.x, half.y)]:
+				var w: Vector3 = b * Vector3(corner.x, 0, corner.y)
+				rect.append(c + Vector2(w.x, w.z))
+			out.append(rect)
+			goals.append(c - c.normalized() * minf(half.x, half.y))  # its near edge, toward the town
+	for g: Vector2 in goals:
+		var best := Vector2.ZERO if sq > 0.0 else g
+		var best_d := maxf(0.0, g.length() - sq) if sq > 0.0 else INF
+		var near := g.normalized() * sq
+		for seg in segs:
+			var q := Geometry2D.get_closest_point_to_segment(g, seg[0], seg[1])
+			if g.distance_to(q) < best_d:
+				best_d = g.distance_to(q)
+				near = q
+		if best_d < 0.02 or best_d == INF:
+			continue
+		var side := (near - g).normalized().orthogonal() * 0.07  # a footpath, about 0.15 wide
+		out.append(PackedVector2Array([g + side, near + side, near - side, g - side]))
+		var o := 0.09
+		out.append(PackedVector2Array([g + Vector2(-o, -o), g + Vector2(o, -o), g + Vector2(o, o), g + Vector2(-o, o)]))
 	return out
 
 

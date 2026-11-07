@@ -65,6 +65,7 @@ func _process(delta: float) -> void:
 	if _check <= 0.0:
 		_check = 1.0
 		_refresh()
+		_square_count()
 	_cull -= delta
 	if _cull <= 0.0:
 		_cull = 0.25
@@ -95,7 +96,7 @@ func _pause_unseen() -> void:
 	for id in _crowds:
 		for a in _crowds[id]:
 			var n: Node3D = a["node"]
-			var anim: AnimationPlayer = n.get_node_or_null("Anim")
+			var anim: AnimationMixer = _people.motion(n) if _people.motion(n) else n.get_node_or_null("Anim")
 			if anim:
 				var p := n.global_position + Vector3(0, 0.1, 0)
 				anim.active = n.visible and p.distance_to(eye) < _people.SEEN_TO and preload("res://scripts/anim_lod.gd").in_view(cam, n)
@@ -209,7 +210,7 @@ func _spawn(id: int) -> void:
 		var agent := NavigationServer2D.agent_create()
 		NavigationServer2D.agent_set_map(agent, map)
 		a["map"] = map
-		NavigationServer2D.agent_set_radius(agent, 0.045)  # about 0.4 m
+		NavigationServer2D.agent_set_radius(agent, 0.055)  # a shoulder's width, about 0.5 m: passers-by give way, never walk through
 		NavigationServer2D.agent_set_neighbor_distance(agent, 0.5)
 		NavigationServer2D.agent_set_max_neighbors(agent, 8)
 		NavigationServer2D.agent_set_time_horizon_agents(agent, 1.5)
@@ -349,6 +350,18 @@ func _set_down(a: Dictionary) -> bool:
 		a["home"] = n.position
 		a["goal"] = snap
 	a["placed"] = true
+	# A town comes into view in the middle of its day, not all at once out of
+	# their doors: each is already somewhere along their first errand (still at
+	# home, on the way, or there), so nobody arrives as one crowd.
+	_choose_next(a)
+	var route := PackedVector2Array(a["route"])
+	if not route.is_empty():
+		var k: int = a["rng"].randi() % (route.size() + 1)
+		if k > 0:
+			var p: Vector2 = route[k - 1]
+			n.position = Vector3(c.x + p.x, terrain.height_at(c.x + p.x, c.z + p.y), c.z + p.y)
+			a["route"] = route.slice(k)
+	_set_off(a)
 	return true
 
 
@@ -546,7 +559,7 @@ func _town_mood(a: Dictionary) -> String:
 
 ## How much room each shared place has: people stand from `near` to `far`
 ## out from its heart, and no more than `room` of them at once.
-const ROOM := {"market": {"near": 0.3, "far": 1.0, "room": 14}, "well": {"near": 0.15, "far": 0.65, "room": 10},
+const ROOM := {"market": {"near": 0.3, "far": 1.0, "room": 8}, "well": {"near": 0.15, "far": 0.65, "room": 6},
 	"tavern": {"near": 0.15, "far": 0.6, "room": 10}, "sept": {"near": 0.15, "far": 0.55, "room": 8}}
 ## Where those who find a place full go instead.
 const OVERFLOW := {"market": ["well", "tavern"], "well": ["market", "sept"], "tavern": ["market", "well"], "sept": ["well", "market"]}
@@ -559,7 +572,7 @@ const KNOT := 0.26  # a gathering keeps this clear round its middle: knots of tw
 ## them on to the next that fits, and failing all, home.
 func _at(a: Dictionary, key: String, knot := false) -> Vector3:
 	for k in [key] + Array(OVERFLOW.get(key, [])):
-		var p := _claim(a, k, KNOT if knot else SHOULDER * 1.8)  # alone, a stride from the next
+		var p := _claim(a, k, KNOT if knot else SHOULDER * 2.6)  # alone, a couple of strides from the next: a lively square, not a crowd
 		if not is_nan(p.x):
 			a["place_key"] = k
 			return p
@@ -609,6 +622,39 @@ func _claim(a: Dictionary, key: String, clear: float) -> Vector3:
 			if clear_here:
 				return Vector3(c.x + q.x, terrain.height_at(c.x + q.x, c.z + q.y), c.z + q.y)
 	return Vector3(NAN, 0, 0)
+
+
+## For test runs: how many townsfolk stand in each square's heart and how many
+## are passing through it, logged (SQUARE lines) so a film run shows a crowd's cause.
+var _square_t := 0.0
+
+
+func _square_count() -> void:
+	if not " ".join(OS.get_cmdline_user_args()).contains("--shot"):
+		return
+	_square_t += 1.0
+	if fmod(_square_t, 5.0) > 0.5:
+		return
+	for id in _crowds:
+		if not towns.towns.has(id):
+			continue
+		var heart: Vector3 = towns.towns[id]["node"].global_position
+		var walking := 0
+		var standing := 0
+		var doing := {}
+		for a in _crowds[id]:
+			var n: Node3D = a["node"]
+			if not n.visible:
+				continue
+			if Vector2(n.global_position.x - heart.x, n.global_position.z - heart.z).length() < 0.5:
+				if PackedVector2Array(a.get("route", PackedVector2Array())).is_empty():
+					standing += 1
+					var why := "%s/%s/%s%s" % [a.get("block", ""), a.get("place_key", ""), a.get("work", ""), "/talk" if not a.get("talk", {}).is_empty() else ""]
+					doing[why] = doing.get(why, 0) + 1
+				else:
+					walking += 1
+		if walking + standing > 6:
+			print("SQUARE town=%s standing=%d walking=%d doing=%s" % [id, standing, walking, doing])
 
 
 ## A spot near a place, spread so a gathering is a loose knot, never a pile.
@@ -1319,12 +1365,12 @@ func _talk_audit() -> void:
 		planned += _plans.get(id, {}).size()
 		for a in _crowds[id]:
 			var n: Node3D = a["node"]
-			var anim: AnimationPlayer = n.get_node_or_null("Anim")
-			if not n.visible or anim == null or not anim.current_animation in SOCIAL + ["Drinking"]:
+			var now := _people.clip(n)
+			if not n.visible or not now in SOCIAL + ["Drinking"]:
 				continue
 			if Time.get_ticks_msec() < int(a.get("hold_until", 0)):
 				continue  # talking to the player
-			if anim.current_animation == "Drinking" and a.get("talk", {}).is_empty():
+			if now == "Drinking" and a.get("talk", {}).is_empty():
 				continue  # a drink alone is no conversation
 			talkers += 1
 			var faced := false
@@ -1343,7 +1389,7 @@ func _talk_audit() -> void:
 				for b in g.get("members", []):
 					if not is_same(b, a):
 						gaps.append("%.2f/%s/%s" % [Vector2(n.position.x - b["node"].position.x, n.position.z - b["node"].position.z).length(), _present(b, g), PackedVector2Array(b["route"]).size()])
-				print("UNFACED %s in_talk=%s self_present=%s others=%s" % [anim.current_animation, not g.is_empty(), _present(a, g) if not g.is_empty() else false, gaps])
+				print("UNFACED %s in_talk=%s self_present=%s others=%s" % [now, not g.is_empty(), _present(a, g) if not g.is_empty() else false, gaps])
 	print("TALK hour=%.1f planned=%d gatherings=%d talkers=%d unfaced=%d" % [hour, planned, groups, talkers, unfaced])
 	# How the town's places fill: people at each, the biggest gathering, and the
 	# biggest cluster of people standing within a shoulder's reach of each other.

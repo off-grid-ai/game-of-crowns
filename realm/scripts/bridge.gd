@@ -345,6 +345,7 @@ func _on_world(data) -> void:
 	var rid := String(data.get("reign", {}).get("id", ""))
 	if _reign_id != "" and rid != "" and rid != _reign_id:
 		# A different chronicle is now running: start over with its map and story.
+		print("REALM CHANGED %s -> %s at %.1f s" % [_reign_id, rid, Time.get_ticks_msec() / 1000.0])
 		_reign_id = rid
 		_map_loaded = false
 		_last_seq = 0

@@ -188,7 +188,7 @@ func _process(delta: float) -> void:
 			if not TownNav.towns_at(towns, p).is_empty():
 				n.position = _nav.stand(towns, n.position, 0.17 if f.get("horse", false) else 0.0)
 			if not f.get("horse", false):
-				_people.play(n, "Walk", clampf(float(f.get("pace", MARCH_SPEED)) / MARCH_SPEED, 0.6, 1.1))  # the stride matches the ground covered
+				_people.play(n, "Walk", clampf(float(f.get("pace", MARCH_SPEED)) / _people.WALK_PACE, 0.6, 1.5))  # the stride matches the ground covered
 		elif f.get("horse", false):
 			pass  # the horse stands; its gait follows how it is moved
 		else:

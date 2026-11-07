@@ -332,6 +332,7 @@ func _cast(person: Dictionary, house: Dictionary) -> void:
 	_body.add_child(model)
 	_stage.add_child(_body)
 	_body.rotation.y = 0.25
+	People.release(model)  # this stage drives the player itself
 	_player = model.get_node("Anim")
 	_load_clips()
 	var lib := AnimationLibrary.new()

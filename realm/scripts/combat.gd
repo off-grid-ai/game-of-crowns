@@ -46,7 +46,7 @@ const WOUND_AT := {"head": 1.6, "body": 1.2, "legs": 0.55}  # metres up the body
 # the moves' speed.
 const KITS := {
 	"sword": {"weapon": "sword", "shield": true, "idle": "Sword_Idle", "walk": "SS_Walk",
-		"attacks": ["SS_Slash_1", "SS_Slash_3", "SS_Slash_4", "SS_Slash_5", "SS_Attack_3", "SS_Attack_4", "Sword_Attack_2"],
+		"attacks": ["SS_Slash_1", "SS_Slash_3", "SS_Slash_4", "SS_Slash_5", "SS_Attack_3", "SS_Attack_4"],
 		"kick": "SS_Kick", "guard": "SS_Block_Idle", "parry": ["SS_Block_1", "SS_Block_2", "Shield_Block"],
 		"hurt": ["SS_Impact_1", "SS_Impact_2", "SS_Impact_3"],
 		"fall_back": ["SS_Death_1", "Sword_Death"], "fall_forward": ["SS_Death_2", "Death_Back"],
@@ -97,6 +97,7 @@ var _swing_at := -1.0
 var _last := ""
 var _kicking := false
 var _hurt_until := 0.0  # seconds (ticks clock) until a knockdown stops showing
+var threatened := false  # a foe close by: set by whoever runs the fight (control.gd)
 var on_land := Callable()  # (attacker) -> void: asked to resolve a strike that just arrived
 
 
@@ -125,7 +126,10 @@ func hurt() -> bool:
 
 
 func idle_clip() -> String:
-	return "Injured_Idle" if hurt() else style()["idle"]
+	if hurt():
+		return "Injured_Idle"
+	# Sword sheathed, nobody to fight: they stand as themselves, not in a boxer's guard.
+	return "Idle" if not armed and not threatened else style()["idle"]
 
 
 func walk_clip(running := false) -> String:
@@ -237,7 +241,8 @@ func take(attacker, damage: float) -> bool:
 		_swing_at = -1.0
 		# Struck from the front they go over backwards; from behind, onto their face.
 		var falls: Array = s["fall_back"] if front > -0.2 else s["fall_forward"]
-		_once(falls[randi() % falls.size()], 1.0)
+		# Into the Dead state of their machine (motion.gd), which nothing leaves.
+		people.die(node, falls[randi() % falls.size()], 1.0)
 		if bladed or attacker.armed:
 			var at := node.global_position
 			var parent := node.get_parent()
@@ -332,12 +337,6 @@ func _guard() -> void:
 ## Plays a move once from its start, holding its last frame when done (the
 ## shared clips loop for the townsfolk; these don't). Returns its length.
 func _once(clip: String, speed := 1.0) -> float:
-	var a: AnimationPlayer = node.get_node_or_null("Anim")
-	if a == null or not a.has_animation(clip):
-		return 0.5
-	var anim := a.get_animation(clip)
-	anim.loop_mode = Animation.LOOP_NONE
-	a.play(clip, 0.12)
-	a.seek(0.0, true)
-	a.speed_scale = speed
-	return anim.length
+	# Through the person's state machine (motion.gd): played once, held on its
+	# last frame; a dead fighter's machine refuses it.
+	return people.once(node, clip, speed)

@@ -1,11 +1,59 @@
 [
  {
+  "id": "battle",
+  "name": "A battle",
+  "group": "Play",
+  "what": "Battles fought by the men in them: each man closes, fights, reels, falls or breaks; knights charge, ride through and come round again.",
+  "file": "screens/v/battle-3.jpg",
+  "clip": "screens/v/battle-3.mp4",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Men fight on their own, two attack clips",
+    "at": "2026-11-07T06:29:00+00:00",
+    "file": "screens/v/battle-1.jpg",
+    "clip": "screens/v/battle-1.mp4",
+    "what": "First cut on the new battle mind: the fight works, but every man repeats the same two attacks (the jumping slash). Your note."
+   },
+   {
+    "v": 2,
+    "label": "Every fight move, with answers",
+    "at": "2026-11-07T06:56:00+00:00",
+    "file": "screens/v/battle-2.jpg",
+    "clip": "screens/v/battle-2.mp4",
+    "what": "Each man varies his cuts (five slashes, two thrusts, a kick); the other parries, dodges or reels on the same frame; men fall the way the blow drives them; the beaten break sooner and some wounded yield. Part of the run; the full film follows."
+   },
+   {
+    "v": 3,
+    "label": "Dead stay down, sides in colour",
+    "at": "2026-11-07T07:42:00+00:00",
+    "file": "screens/v/battle-3.jpg",
+    "clip": "screens/v/battle-3.mp4",
+    "what": "Every man now moves through Godot's animation state machine, whose Dead state nothing leaves: the fallen stay down. Each army wears its house's colour (green against tan), knights ride through and come round, the beaten break and their standard falls, the victors cheer."
+   }
+  ]
+ },
+ {
   "id": "title",
   "name": "Main menu",
   "group": "Title",
   "what": "The first thing a player sees",
   "file": "screens/title.jpg",
-  "before": "screens/before/title.jpg"
+  "before": "screens/before/title.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Before",
+    "at": "2026-11-06T07:35:28.412356+00:00",
+    "file": "screens/before/title.jpg"
+   },
+   {
+    "v": 2,
+    "label": "After",
+    "at": "2026-11-06T07:36:12.650771+00:00",
+    "file": "screens/title.jpg"
+   }
+  ]
  },
  {
   "id": "new-1",
@@ -13,7 +61,21 @@
   "group": "Title",
   "what": "Page 1: how hard a reign, and how long",
   "file": "screens/new-1.jpg",
-  "before": "screens/before/new-1.jpg"
+  "before": "screens/before/new-1.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Before",
+    "at": "2026-11-06T07:35:28.432595+00:00",
+    "file": "screens/before/new-1.jpg"
+   },
+   {
+    "v": 2,
+    "label": "After",
+    "at": "2026-11-06T07:36:10.155286+00:00",
+    "file": "screens/new-1.jpg"
+   }
+  ]
  },
  {
   "id": "new-2",
@@ -21,7 +83,21 @@
   "group": "Title",
   "what": "Page 2: what comes for the throne, and the chronicle's name",
   "file": "screens/new-2.jpg",
-  "before": "screens/before/new-2.jpg"
+  "before": "screens/before/new-2.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Before",
+    "at": "2026-11-06T07:35:28.452584+00:00",
+    "file": "screens/before/new-2.jpg"
+   },
+   {
+    "v": 2,
+    "label": "After",
+    "at": "2026-11-06T07:36:10.472989+00:00",
+    "file": "screens/new-2.jpg"
+   }
+  ]
  },
  {
   "id": "new-3",
@@ -29,7 +105,21 @@
   "group": "Title",
   "what": "Page 3 (optional): the realm's options",
   "file": "screens/new-3.jpg",
-  "before": "screens/before/new-3.jpg"
+  "before": "screens/before/new-3.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Before",
+    "at": "2026-11-06T07:35:28.475774+00:00",
+    "file": "screens/before/new-3.jpg"
+   },
+   {
+    "v": 2,
+    "label": "After",
+    "at": "2026-11-06T07:36:10.748119+00:00",
+    "file": "screens/new-3.jpg"
+   }
+  ]
  },
  {
   "id": "settings-1",
@@ -37,7 +127,21 @@
   "group": "Title",
   "what": "Settings, top",
   "file": "screens/settings-1.jpg",
-  "before": "screens/before/settings-1.jpg"
+  "before": "screens/before/settings-1.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Before",
+    "at": "2026-11-06T09:58:00.098907+00:00",
+    "file": "screens/before/settings-1.jpg"
+   },
+   {
+    "v": 2,
+    "label": "After",
+    "at": "2026-11-06T09:58:00.332885+00:00",
+    "file": "screens/settings-1.jpg"
+   }
+  ]
  },
  {
   "id": "settings-2",
@@ -45,7 +149,21 @@
   "group": "Title",
   "what": "Settings, scrolled",
   "file": "screens/settings-2.jpg",
-  "before": "screens/before/settings-2.jpg"
+  "before": "screens/before/settings-2.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Before",
+    "at": "2026-11-06T09:58:00.353433+00:00",
+    "file": "screens/before/settings-2.jpg"
+   },
+   {
+    "v": 2,
+    "label": "After",
+    "at": "2026-11-06T09:58:00.606756+00:00",
+    "file": "screens/settings-2.jpg"
+   }
+  ]
  },
  {
   "id": "chronicles",
@@ -53,7 +171,21 @@
   "group": "Title",
   "what": "Your saved reigns",
   "file": "screens/chronicles.jpg",
-  "before": "screens/before/chronicles.jpg"
+  "before": "screens/before/chronicles.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Before",
+    "at": "2026-11-06T09:57:59.500399+00:00",
+    "file": "screens/before/chronicles.jpg"
+   },
+   {
+    "v": 2,
+    "label": "After",
+    "at": "2026-11-06T09:57:59.676884+00:00",
+    "file": "screens/chronicles.jpg"
+   }
+  ]
  },
  {
   "id": "records",
@@ -61,7 +193,21 @@
   "group": "Title",
   "what": "Your best reigns",
   "file": "screens/records.jpg",
-  "before": "screens/before/records.jpg"
+  "before": "screens/before/records.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Before",
+    "at": "2026-11-06T09:57:59.694551+00:00",
+    "file": "screens/before/records.jpg"
+   },
+   {
+    "v": 2,
+    "label": "After",
+    "at": "2026-11-06T09:57:59.850121+00:00",
+    "file": "screens/records.jpg"
+   }
+  ]
  },
  {
   "id": "credits",
@@ -69,22 +215,59 @@
   "group": "Title",
   "what": "Credits",
   "file": "screens/credits.jpg",
-  "before": "screens/before/credits.jpg"
+  "before": "screens/before/credits.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Before",
+    "at": "2026-11-06T09:57:59.878326+00:00",
+    "file": "screens/before/credits.jpg"
+   },
+   {
+    "v": 2,
+    "label": "After",
+    "at": "2026-11-06T09:58:00.069687+00:00",
+    "file": "screens/credits.jpg"
+   }
+  ]
  },
  {
   "id": "lore-realm",
   "name": "Lore: the realm",
   "group": "Lore of Aldmere",
   "what": "The book of the realm, opened from the menu",
-  "file": "screens/lore-realm.jpg"
+  "file": "screens/lore-realm.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "",
+    "at": "2026-11-06T07:36:09.577111+00:00",
+    "file": "screens/lore-realm.jpg"
+   }
+  ]
  },
  {
   "id": "lore-map",
   "name": "Lore: the map",
   "group": "Lore of Aldmere",
   "what": "The painted map: hover a town, click a seat",
-  "file": "screens/lore-map.jpg",
-  "before": "screens/before/lore-map.jpg"
+  "file": "screens/v/lore-map-2.jpg",
+  "before": "screens/before/lore-map.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Black around the map",
+    "at": "2026-11-06T09:58:00.838632+00:00",
+    "file": "screens/v/lore-map-1.jpg"
+   },
+   {
+    "v": 2,
+    "label": "Map fills the frame",
+    "at": "2026-11-07T07:25:00+00:00",
+    "file": "screens/v/lore-map-2.jpg",
+    "what": "The map fills its frame edge to edge and never zooms out past that; drag to see the rest. + and \u2212 zoom, The whole realm goes back to full."
+   }
+  ]
  },
  {
   "id": "lore-house",
@@ -92,14 +275,36 @@
   "group": "Lore of Aldmere",
   "what": "House Goldcrest: its painting, words, people; Edit beside its name",
   "file": "screens/lore-house.jpg",
-  "before": "screens/before/lore-house.jpg"
+  "before": "screens/before/lore-house.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Before",
+    "at": "2026-11-06T09:58:00.867792+00:00",
+    "file": "screens/before/lore-house.jpg"
+   },
+   {
+    "v": 2,
+    "label": "After",
+    "at": "2026-11-06T09:58:01.039947+00:00",
+    "file": "screens/lore-house.jpg"
+   }
+  ]
  },
  {
   "id": "lore-lesser",
   "name": "Lore: lesser houses",
   "group": "Lore of Aldmere",
   "what": "The bannermen families and whom each branch kneels to",
-  "file": "screens/lore-lesser.jpg"
+  "file": "screens/lore-lesser.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "",
+    "at": "2026-11-06T07:36:08.760186+00:00",
+    "file": "screens/lore-lesser.jpg"
+   }
+  ]
  },
  {
   "id": "lore-person",
@@ -107,7 +312,21 @@
   "group": "Lore of Aldmere",
   "what": "Meet: a lord in front of their house's backdrop",
   "file": "screens/lore-person.jpg",
-  "before": "screens/before/lore-person.jpg"
+  "before": "screens/before/lore-person.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Before",
+    "at": "2026-11-06T09:58:01.063287+00:00",
+    "file": "screens/before/lore-person.jpg"
+   },
+   {
+    "v": 2,
+    "label": "After",
+    "at": "2026-11-06T09:58:01.230680+00:00",
+    "file": "screens/lore-person.jpg"
+   }
+  ]
  },
  {
   "id": "intro",
@@ -115,7 +334,21 @@
   "group": "Opening",
   "what": "The storybook before a reign",
   "file": "screens/intro.jpg",
-  "before": "screens/before/intro.jpg"
+  "before": "screens/before/intro.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Before",
+    "at": "2026-11-06T07:35:28.600935+00:00",
+    "file": "screens/before/intro.jpg"
+   },
+   {
+    "v": 2,
+    "label": "After",
+    "at": "2026-11-06T07:36:07.881814+00:00",
+    "file": "screens/intro.jpg"
+   }
+  ]
  },
  {
   "id": "realm",
@@ -123,7 +356,21 @@
   "group": "Play",
   "what": "The realm in play, with the houses and the chronicle",
   "file": "screens/realm.jpg",
-  "before": "screens/before/realm.jpg"
+  "before": "screens/before/realm.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Before",
+    "at": "2026-11-06T07:35:28.620463+00:00",
+    "file": "screens/before/realm.jpg"
+   },
+   {
+    "v": 2,
+    "label": "After",
+    "at": "2026-11-06T07:36:11.033141+00:00",
+    "file": "screens/realm.jpg"
+   }
+  ]
  },
  {
   "id": "counsel",
@@ -132,7 +379,22 @@
   "what": "0.6: one matter at a time; the bar drains, and when it runs out the realm answers for you. The clip shows a matter burning down and its cost.",
   "file": "screens/counsel.jpg",
   "before": "screens/before/counsel.jpg",
-  "clip": "screens/counsel.mp4"
+  "clip": "screens/counsel.mp4",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Before",
+    "at": "2026-11-07T11:09:54+05:30",
+    "file": "screens/before/counsel.jpg"
+   },
+   {
+    "v": 2,
+    "label": "After",
+    "at": "2026-11-07T11:09:54+05:30",
+    "file": "screens/counsel.jpg",
+    "clip": "screens/counsel.mp4"
+   }
+  ]
  },
  {
   "id": "region",
@@ -140,7 +402,21 @@
   "group": "Play",
   "what": "Drawn back past where the land reads: the painted map takes over",
   "file": "screens/region.jpg",
-  "before": "screens/before/region.jpg"
+  "before": "screens/before/region.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Before",
+    "at": "2026-11-06T07:35:28.639500+00:00",
+    "file": "screens/before/region.jpg"
+   },
+   {
+    "v": 2,
+    "label": "After",
+    "at": "2026-11-06T07:36:11.546344+00:00",
+    "file": "screens/region.jpg"
+   }
+  ]
  },
  {
   "id": "town",
@@ -148,7 +424,21 @@
   "group": "Play",
   "what": "Your seat, its castle in daylight",
   "file": "screens/town.jpg",
-  "before": "screens/before/town.jpg"
+  "before": "screens/before/town.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Before",
+    "at": "2026-11-06T07:35:28.661015+00:00",
+    "file": "screens/before/town.jpg"
+   },
+   {
+    "v": 2,
+    "label": "After",
+    "at": "2026-11-06T08:06:26.533106+00:00",
+    "file": "screens/town.jpg"
+   }
+  ]
  },
  {
   "id": "street",
@@ -156,7 +446,21 @@
   "group": "Play",
   "what": "Down among the people",
   "file": "screens/street.jpg",
-  "before": "screens/before/street.jpg"
+  "before": "screens/before/street.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Before",
+    "at": "2026-11-06T07:35:28.683614+00:00",
+    "file": "screens/before/street.jpg"
+   },
+   {
+    "v": 2,
+    "label": "After",
+    "at": "2026-11-06T07:36:12.369941+00:00",
+    "file": "screens/street.jpg"
+   }
+  ]
  },
  {
   "id": "court",
@@ -164,7 +468,21 @@
   "group": "Play",
   "what": "0.6: the petitioner in front of you waits three seasons; the bar under the card drains.",
   "file": "screens/court.jpg",
-  "before": "screens/before/court.jpg"
+  "before": "screens/before/court.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Before",
+    "at": "2026-11-07T11:09:54+05:30",
+    "file": "screens/before/court.jpg"
+   },
+   {
+    "v": 2,
+    "label": "After",
+    "at": "2026-11-07T11:09:54+05:30",
+    "file": "screens/court.jpg"
+   }
+  ]
  },
  {
   "id": "ledger",
@@ -172,7 +490,21 @@
   "group": "Play",
   "what": "The ledger of the realm",
   "file": "screens/ledger.jpg",
-  "before": "screens/before/ledger.jpg"
+  "before": "screens/before/ledger.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Before",
+    "at": "2026-11-06T07:35:28.750803+00:00",
+    "file": "screens/before/ledger.jpg"
+   },
+   {
+    "v": 2,
+    "label": "After",
+    "at": "2026-11-06T07:36:08.216643+00:00",
+    "file": "screens/ledger.jpg"
+   }
+  ]
  },
  {
   "id": "lore",
@@ -180,13 +512,35 @@
   "group": "Play",
   "what": "The Lore opened during a reign",
   "file": "screens/lore.jpg",
-  "before": "screens/before/lore.jpg"
+  "before": "screens/before/lore.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Before",
+    "at": "2026-11-06T07:35:28.729886+00:00",
+    "file": "screens/before/lore.jpg"
+   },
+   {
+    "v": 2,
+    "label": "After",
+    "at": "2026-11-06T07:36:09.846883+00:00",
+    "file": "screens/lore.jpg"
+   }
+  ]
  },
  {
   "id": "reign-end",
   "name": "The reign ends",
   "group": "Reign",
   "what": "0.5.1: history names you, with the reign in numbers.",
-  "file": "screens/reign-end.jpg"
+  "file": "screens/reign-end.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "",
+    "at": "2026-11-07T11:09:54+05:30",
+    "file": "screens/reign-end.jpg"
+   }
+  ]
  }
 ]

@@ -330,6 +330,19 @@ func _apply() -> void:
 	if terrain and terrain.width > 0:
 		pos.y = maxf(pos.y, maxf(terrain.height_at(pos.x, pos.z), 0.0) + lerpf(1.5, EYE, ground_view))
 	pos.y = maxf(pos.y, _roofline(pos))
+	# Lifted over a roof or a castle wall, the view must stay oblique: past
+	# about 55 degrees down, the camera steps back along its line instead of
+	# climbing higher, and clears the roofs from there.
+	for k in 3:
+		var flat := Vector2(pos.x - look.x, pos.z - look.z)
+		var rise := pos.y - look.y
+		var most := tan(deg_to_rad(55.0))
+		if flat.length() < 0.001 or rise / flat.length() <= most:
+			break
+		var back := flat.normalized() * (rise / most)
+		var to := Vector3(look.x + back.x, look.y + rise * 0.9, look.z + back.y)
+		to.y = maxf(to.y, _roofline(to))
+		pos = to
 	cam.fov = lerpf(45.0, 62.0, ground_view)  # wider on the ground, as a person sees
 	cam.global_position = pos
 	cam.look_at(look + Vector3(0, distance * 0.02 * (1.0 - ground_view), 0), Vector3.UP)

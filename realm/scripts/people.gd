@@ -72,6 +72,9 @@ const MIXAMO_SHARE := {"peasant": 0.5, "townsfolk": 0.6, "soldier": 0.5, "archer
 const HEAD_ONLY := preload("res://scripts/head_only.gdshader")
 
 const ANIMS := "res://assets/anims/mixamo/"
+const Motion := preload("res://scripts/motion.gd")
+# Ways a soldier stands ready (all on the shared skeleton), one per man.
+const GUARDS := ["Sword_Idle", "Sword_Idle", "SS_Idle_2", "SS_Block_Idle"]
 
 var _lib: AnimationLibrary
 var _scenes := {}
@@ -164,9 +167,10 @@ func make(rng: RandomNumberGenerator, role := "peasant", tint := Color.WHITE, ag
 	var person: Node3D = _scene("res://assets/people/%s.gltf" % pick[0]).instantiate()
 	var skeleton: Skeleton3D = person.get_node("Armature/GeneralSkeleton")
 	var cloth: Color = tint if tint != Color.WHITE else CLOTH[rng.randi() % CLOTH.size()]
+	var livery := tint != Color.WHITE and outfit_role == "soldier"
 	for child in skeleton.get_children():
 		if child is MeshInstance3D:
-			_tint(child, cloth)
+			_tint(child, cloth, livery)
 	# The outfits are clothing only; the base character supplies head, hands and face.
 	var styles: Array = HAIR[pick[1]]
 	var hair_colour: Color = HAIR_COLOURS[rng.randi() % HAIR_COLOURS.size()]
@@ -268,7 +272,7 @@ func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, ag
 			mi.owner = person
 			_solid(mi, nested)
 			if tint != Color.WHITE and String(mi.name) in info["cloth"]:
-				_tint(mi, tint)
+				_tint(mi, tint, role in ["soldier", "archer", "knight"])
 			elif String(mi.name) in info.get("dyed", []):
 				_tint(mi, DYES[rng.randi() % DYES.size()])
 	if role == "":
@@ -337,7 +341,14 @@ func _finish(person: Node3D, skeleton: Skeleton3D, rng: RandomNumberGenerator, r
 	anim.name = "Anim"
 	person.add_child(anim)
 	anim.add_animation_library("", _lib)
-	preload("res://scripts/anim_lod.gd").add(anim)  # moved by distance, not every frame regardless
+	anim.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+	# Every move goes through the person's state machine (motion.gd); the player
+	# only holds the moves.
+	var stance := "Sword_Idle" if role in ["soldier", "knight"] else ("Bow_Idle" if role == "archer" else "Idle")
+	var mo: AnimationTree = Motion.new()
+	person.add_child(mo)
+	mo.setup(anim, stance)
+	preload("res://scripts/anim_lod.gd").add(mo)  # moved by distance, not every frame regardless
 	# Past arm's length of the camera a person is a speck: they fade out and stop
 	# costing draws, so a crowd only costs what's near.
 	for mi in skeleton.get_children():
@@ -349,9 +360,14 @@ func _finish(person: Node3D, skeleton: Skeleton3D, rng: RandomNumberGenerator, r
 	var height: float = rng.randf_range(0.96, 1.04) * {"child": 0.72, "young": 0.98, "adult": 1.0, "elder": 0.96}[age]
 	person.scale = Vector3.ONE * height * k * S
 	person.set_meta("age", age)
-	if role in ["peasant", "townsfolk", "clergy"]:
+	if role in ["peasant", "townsfolk", "clergy", "noble"]:
 		person.set_meta("idle", IDLES[randi() % IDLES.size()])
 		person.set_meta("talk", TALKS[randi() % TALKS.size()])
+	if role in ["soldier", "knight"]:
+		# Each soldier has his own way of standing ready, so a company at ease
+		# isn't one pose copied down the ranks.
+		person.set_meta("guard", GUARDS[randi() % GUARDS.size()])
+		mo.set_ready(String(person.get_meta("guard")))
 	# Who this person is, not just how they look: the character layer reads this.
 	var names: Array = MALE_NAMES if gender == "male" else FEMALE_NAMES
 	person.set_meta("identity", {
@@ -380,13 +396,38 @@ func _shape(skeleton: Skeleton3D, build: String, age: String) -> void:
 			skeleton.set_bone_pose_scale(head, Vector3.ONE * 1.1)
 
 
-func _tint(mi: MeshInstance3D, colour: Color) -> void:
+func _tint(mi: MeshInstance3D, colour: Color, livery := false) -> void:
 	for s in mi.mesh.get_surface_count():
 		var m: Material = mi.get_active_material(s)
 		if m is StandardMaterial3D:
 			var copy: StandardMaterial3D = m.duplicate()
 			copy.albedo_color = m.albedo_color * colour
+			# A house's livery reads in its own colour: the cloth's weave kept,
+			# its dyed colour taken out first (a grey house on green cloth
+			# would otherwise still look green).
+			if livery and copy.albedo_texture:
+				copy.albedo_texture = _undyed(copy.albedo_texture)
+				copy.albedo_color = colour * 1.15
 			mi.set_surface_override_material(s, copy)
+
+
+static var _undyed_of := {}
+
+
+## A cloth texture with its colour taken out, kept for every soldier that wears it.
+static func _undyed(tex: Texture2D) -> Texture2D:
+	if not _undyed_of.has(tex):
+		var img := tex.get_image()
+		if img == null:
+			return tex
+		img = img.duplicate()
+		if img.is_compressed():
+			img.decompress()
+		img.convert(Image.FORMAT_L8)
+		img.convert(Image.FORMAT_RGBA8)
+		img.generate_mipmaps()
+		_undyed_of[tex] = ImageTexture.create_from_image(img)
+	return _undyed_of[tex]
 
 
 ## Hair and beards are skinned to the head bone; re-home their meshes on our skeleton.
@@ -428,28 +469,91 @@ func _bind(skin: Skin, bone: String) -> int:
 	return -1
 
 
-static func play(person: Node3D, anim_name: String, speed := 1.0) -> void:
+## A person's state machine (motion.gd), or null for a body without one.
+static func motion(person: Node) -> AnimationTree:
+	return person.get_node_or_null("Motion") as AnimationTree if person else null
+
+
+## The move a person is making now.
+static func clip(person: Node) -> String:
+	var mo := motion(person)
+	if mo:
+		return mo.current()
+	var ap: AnimationPlayer = person.get_node_or_null("Anim") if person else null
+	return String(ap.current_animation) if ap else ""
+
+
+## Plays a move once and holds its last frame (a guard raised, a fall). Returns
+## the move's length at normal pace.
+static func once(person: Node3D, anim_name: String, speed := 1.0, hold := true) -> float:
+	var mo := motion(person)
+	if mo == null:
+		return 0.5
+	if mo.dead():
+		print("CHECK dead man asked to play %s" % anim_name)
+		return 0.0
+	# The clip's own length, as the player gave it: callers time by length / speed.
+	var rate := speed * float(person.get_meta("tempo", 1.0))
+	return mo.play(anim_name, rate, hold, 0.0) * rate
+
+
+## A one-off move practised over and over (a drill): loops instead of returning to rest.
+static func repeat(person: Node3D, anim_name: String, speed := 1.0) -> void:
+	var mo := motion(person)
+	if mo and not mo.dead():
+		if not person.has_meta("tempo"):
+			person.set_meta("tempo", randf_range(0.85, 1.15))
+		mo.play(anim_name, speed * float(person.get_meta("tempo")), false, -1.0, true)
+
+
+## A person dies: the machine goes to Dead, which nothing leaves.
+static func die(person: Node3D, anim_name: String, speed := 1.0) -> void:
+	var mo := motion(person)
+	if mo:
+		mo.die(anim_name, speed)
+
+
+## A set of moves of its own (a rider's seat), played as "<name>/<move>".
+static func add_moves(person: Node3D, lib_name: String, lib: AnimationLibrary) -> void:
+	var ap: AnimationPlayer = person.get_node_or_null("Anim")
+	if ap and not ap.has_animation_library(lib_name):
+		ap.add_animation_library(lib_name, lib)
+	var mo := motion(person)
+	if mo:
+		mo.add_moves(lib_name, lib)
+
+
+## For a close-up stage that drives the player itself (a portrait, the hero
+## view): the state machine steps aside.
+static func release(person: Node3D) -> void:
+	var mo := motion(person)
+	if mo:
+		mo.active = false
+		mo.queue_free()
+		mo.name = "MotionReleased"
+	var ap: AnimationPlayer = person.get_node_or_null("Anim")
+	if ap:
+		ap.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE
+
+
+static func play(person: Node3D, anim_name: String, speed := 1.0, phase := -1.0) -> void:
+	# The dead stay down: their machine is in Dead, which nothing leaves. Asking
+	# is flagged in the log (CHECK lines), so a film run shows the caller.
+	var mo := motion(person)
+	if mo and mo.dead():
+		print("CHECK dead man asked to play %s" % anim_name)
+		return
 	if person.get_meta("age", "") == "elder":
 		speed *= 0.75
 	if anim_name == "Idle":
 		anim_name = String(person.get_meta("idle", "Idle"))
+	elif anim_name == "Sword_Idle":
+		anim_name = String(person.get_meta("guard", "Sword_Idle"))
 	elif anim_name == "Idle_Talking":
 		anim_name = String(person.get_meta("talk", "Idle_Talking"))
-	var anim: AnimationPlayer = person.get_node_or_null("Anim")
-	if anim == null or not anim.has_animation(anim_name):
+	if mo == null or not mo.has_animation(anim_name):
 		return
-	# Being carried across the ground (anim_lod.gd keeps their legs in step):
-	# a standing move waits until they stop.
-	if person.has_meta("in_step") and anim_name not in WALKS:
-		person.set_meta("in_step", anim_name)
-		return
-	if anim.current_animation != anim_name:
-		anim.play(anim_name, 0.25)
-		var a := anim.get_animation(anim_name)
-		a.loop_mode = Animation.LOOP_LINEAR
-		# Each person joins the motion at their own point in it, so no two move in step.
-		anim.seek(randf() * a.length, false)
-	# And at their own tempo, a little quicker or slower than the next.
+	# Each at their own tempo, a little quicker or slower than the next.
 	if not person.has_meta("tempo"):
 		person.set_meta("tempo", randf_range(0.85, 1.15))
-	anim.speed_scale = speed * float(person.get_meta("tempo"))
+	mo.play(anim_name, speed * float(person.get_meta("tempo")), false, phase)

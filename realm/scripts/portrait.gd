@@ -128,6 +128,7 @@ func _paint(person: Dictionary, house: Dictionary) -> Texture2D:
 	model.scale /= People.S  # in metres, as on the close-up's stage
 	model.rotation.y = 0.35  # turned a little toward the light
 	_stage.add_child(model)
+	People.release(model)  # the portrait drives the player itself
 	var ap := model.get_node_or_null("Anim") as AnimationPlayer
 	if ap and _idle:
 		var lib := AnimationLibrary.new()

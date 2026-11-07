@@ -39,6 +39,11 @@ for attempt in 1 2 3 4 5 6; do
   while kill -0 $pid 2>/dev/null && [ $t -lt ${LIMIT:-300} ]; do
     sleep 2; t=$((t+2))
     if playing; then kill $pid 2>/dev/null; yielded=1; break; fi
+    # Stalled: macOS stops drawing the window when it's off the desktop in
+    # view (another Space, a full-screen app). Start the shot again shortly.
+    if [ $(grep -c "timeout waiting for fence" ${OUT%.png}.log 2>/dev/null) -gt 60 ]; then
+      kill $pid 2>/dev/null; yielded=1; echo "stalled, retrying $OUT"; sleep 20; break
+    fi
   done
   kill $pid 2>/dev/null
   [ $yielded = 1 ] && continue

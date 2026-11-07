@@ -502,6 +502,8 @@ func _square_up(delta: float, still: bool) -> void:
 ## a shield when you swing. Outlaws haunt the roads beyond the houses, come out
 ## of the dark at night, and a town in disorder turns on whoever walks it.
 func _fight(delta: float) -> void:
+	# A foe close by puts you on guard; otherwise you stand as yourself.
+	_me.threatened = _foes.any(func(f): return f.alive() and f.node.global_position.distance_to(_body.global_position) < 1.2)
 	_threat_check -= delta
 	if _threat_check <= 0.0:
 		_threat_check = 20.0
@@ -702,6 +704,11 @@ func _fill_moves(named: bool) -> void:
 
 
 func _close_chat() -> void:
+	# The one you spoke with goes back to standing as themselves.
+	if String(_chat_with.get("person", "")) != "":
+		for n in _notables:
+			if n["id"] == _chat_with["person"] and is_instance_valid(n["node"]):
+				villagers._people.play(n["node"], "Idle", 1.0)
 	_chat.visible = false
 	_chat_line.release_focus()
 	mic.stop()

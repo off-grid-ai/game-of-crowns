@@ -124,12 +124,9 @@ func mount(person: Node3D) -> void:
 	# The attachment carries the horse's scale; the rider keeps their own.
 	person.scale = k / _unit
 	person.rotation = Vector3.ZERO
-	var anim: AnimationPlayer = person.get_node_or_null("Anim")
-	if anim:
-		if not anim.has_animation_library("ride"):
-			anim.add_animation_library("ride", _seat())
-		anim.play("ride/Seat", 0.2)
-		anim.speed_scale = 1.0
+	var people = load("res://scripts/people.gd")
+	people.add_moves(person, "ride", _seat())
+	people.play(person, "ride/Seat", 1.0)
 	_seat_rider()
 	for side in [-1.0, 1.0]:
 		_reins.append(_rein())

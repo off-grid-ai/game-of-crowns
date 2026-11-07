@@ -63,9 +63,8 @@ func _look() -> String:
 		elif _first.has(body.get_instance_id()) and _second.has(body.get_instance_id()) and _in_view(feet):
 			var a: Vector3 = _first[body.get_instance_id()]
 			var b: Vector3 = _second[body.get_instance_id()]
-			var anim: AnimationPlayer = body.get_node_or_null("Anim")
 			var pace := People.MOVING_PACE * SAMPLE
-			if anim and Vector2(b.x - a.x, b.z - a.z).length() > pace and Vector2(feet.x - b.x, feet.z - b.z).length() > pace and String(anim.current_animation) not in People.WALKS:
+			if Vector2(b.x - a.x, b.z - a.z).length() > pace and Vector2(feet.x - b.x, feet.z - b.z).length() > pace and People.clip(body) not in People.WALKS:
 				wrong = "slide"
 		if wrong == "":
 			continue
