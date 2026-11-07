@@ -57,6 +57,18 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 
 ## Runs
 
+**2026-11-07 11:23:** Shipped:
+- 939d52b: the review page takes clips; notes can be pinned to a moment.
+- b26fd0d: 0.6 step 4a. A house's banners stand as high as its favour.
+- 5b82f00: townsfolk keep to the streets, nobody cheers alone, and standard-bearers march in step.
+- ec20ae1: no two cards sit over each other.
+
+Moved: 0.6 is building.
+
+Needs Mac: r/macgaming at ~19:00 IST today.
+
+Downloads: GitHub 4.
+
 **2026-11-07 11:08:** Shipped:
 - fc3854a: GAME_DESIGN.md. It sets out the promise, the core loop, the pillars, the feedback ladder and how the team decides.
 - 1d5ad04: 0.6 step 3, every decision is seen.
