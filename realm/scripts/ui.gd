@@ -1861,7 +1861,7 @@ func busy() -> bool:
 ## One of the game's own cards is up (the Hand, a petitioner, the away report):
 ## a different one waits its turn instead of coming up beside or over it.
 func _card_up(but: Control = null) -> bool:
-	for p in [_counsel, _court_panel, _digest_panel, _end_panel]:
+	for p in [_counsel, _court_panel, _digest_panel, _end_panel, _town_panel]:
 		if p and is_instance_valid(p) and p.visible and p != but:
 			return true
 	return false
@@ -2580,6 +2580,11 @@ func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 		_cinema_was["_town_panel"] = true
 	else:
 		_town_panel.visible = true
+		# The King opened a town: a petitioner on screen steps back and waits on
+		# the court's badge, and comes back in when the town's card is put away.
+		if _court_panel.visible:
+			_court_panel.visible = false
+			_held_court = true
 	_ticker.visible = false
 	_town_title.text = "%s  ·  %s" % [c.get("title", c["name"]), house.get("name", "")]
 	_name_decrees(c, house)
