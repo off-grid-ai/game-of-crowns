@@ -471,6 +471,14 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 			if (goal - here).length() < 0.35 or a["tries"] > 2:
 				a["route"] = PackedVector2Array()
 				a["tries"] = 0
+				# Held up in the square on the way somewhere else: never stranded
+				# there to stand in the press; they take up another errand and go.
+				var town: Dictionary = towns.towns.get(a["town"], {})
+				var sq: float = town["node"].get_meta("square_r", 0.0) + 0.1 if not town.is_empty() else 0.0
+				if here.length() < sq and (goal - here).length() >= 0.35 and a.get("talk", {}).is_empty():
+					_choose_next(a)
+					_set_off(a)
+					return
 				if a.get("talk", {}).is_empty():
 					a["goal"] = here  # settled here instead (one bound for a gathering keeps their place in it)
 				return
@@ -564,7 +572,7 @@ const ROOM := {"market": {"near": 0.3, "far": 1.0, "room": 8}, "well": {"near": 
 ## Where those who find a place full go instead.
 const OVERFLOW := {"market": ["well", "tavern"], "well": ["market", "sept"], "tavern": ["market", "well"], "sept": ["well", "market"]}
 const SHOULDER := 0.11  # two people standing: a shoulder's width apart
-const SQUARE_HOLDS := 14  # at most this many bound for the square at once
+const SQUARE_HOLDS := 10  # at most this many bound for the square at once (talkers included)
 const KNOT := 0.26  # a gathering keeps this clear round its middle: knots of two or three, never one blob
 
 
@@ -806,17 +814,7 @@ func _choose_next(a: Dictionary) -> void:
 		_keep_up(a["town"])  # baked afresh: the whole town walks its new streets
 	var from := _nav.closest(map, Vector2(n.position.x - center.x, n.position.z - center.z))
 	var goal := _nav.closest(map, Vector2(target.x - center.x, target.z - center.z))
-	# The square holds so many and no more: bound there when it's full, they
-	# keep to their own door instead, so the square stays busy but never a press.
-	var sq: float = town["node"].get_meta("square_r", 0.0) + 0.1
-	if goal.length() < sq and a.get("talk", {}).is_empty():
-		var there := 0
-		for b in _crowds.get(a["town"], []):
-			if not is_same(b, a) and Vector2(b.get("goal", Vector2(99, 99))).length() < sq:
-				there += 1
-		if there >= SQUARE_HOLDS:
-			target = _near(a["home"], rng, 0.2)
-			goal = _nav.closest(map, Vector2(target.x - center.x, target.z - center.z))
+	goal = _room_in_square(a, goal, map)
 	# Never the very spot someone else is bound for: a step along until it's free.
 	for tries in 6:
 		if not _spoken_for(a, goal):
@@ -1138,9 +1136,30 @@ func _follow(a: Dictionary, plan: Dictionary, places: Dictionary) -> bool:
 	var map: RID = a["map"]
 	var c: Vector3 = a["center"]
 	var n: Node3D = a["node"]
-	a["goal"] = _nav.closest(map, Vector2(target.x - c.x, target.z - c.z))
+	a["goal"] = _room_in_square(a, _nav.closest(map, Vector2(target.x - c.x, target.z - c.z)), map)
 	a["route"] = _nav.path(map, _nav.closest(map, Vector2(n.position.x - c.x, n.position.z - c.z)), a["goal"])
 	return true
+
+
+## The square holds so many and no more, whatever sends them (an errand, a
+## talk, a mind's plan, a mourning): bound there when it's full, they keep to
+## their own door instead, so the square stays busy but never a press.
+func _room_in_square(a: Dictionary, goal: Vector2, map: RID) -> Vector2:
+	var town: Dictionary = towns.towns.get(a["town"], {})
+	if town.is_empty():
+		return goal
+	var sq: float = town["node"].get_meta("square_r", 0.0) + 0.1
+	if goal.length() >= sq:
+		return goal
+	var there := 0
+	for b in _crowds.get(a["town"], []):
+		if not is_same(b, a) and Vector2(b.get("goal", Vector2(99, 99))).length() < sq:
+			there += 1
+	if there < SQUARE_HOLDS:
+		return goal
+	var c: Vector3 = a["center"]
+	var near := _near(a["home"], a["rng"], 0.2)
+	return _nav.closest(map, Vector2(near.x - c.x, near.z - c.z))
 
 
 ## Meets the people the plan names: in the gathering one of them is already
