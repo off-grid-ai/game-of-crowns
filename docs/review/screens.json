@@ -222,6 +222,31 @@
   ]
  },
  {
+  "id": "convoy",
+  "name": "The King's grain on the road",
+  "group": "Play",
+  "what": "A grain convoy from Kingsmere to the nearest town, the camera riding along.",
+  "file": "screens/v/convoy-2.jpg",
+  "clip": "screens/v/convoy-2.mp4",
+  "versions": [
+   {
+    "v": 1,
+    "label": "In the leaves",
+    "at": "2026-11-07T16:40:00+00:00",
+    "file": "screens/v/convoy-1.jpg",
+    "what": "Following the cart along a forest road, the camera sat inside the tree canopy for about 15 seconds."
+   },
+   {
+    "v": 2,
+    "label": "Above the canopy",
+    "at": "2026-11-07T16:55:00+00:00",
+    "file": "screens/v/convoy-2.jpg",
+    "clip": "screens/v/convoy-2.mp4",
+    "what": "Whenever tree crowns stand between the lens and what it follows, the camera rises over the canopy (forest.gd's sight lines). The escort hails the town on arrival."
+   }
+  ]
+ },
+ {
   "id": "title",
   "name": "Main menu",
   "group": "Title",

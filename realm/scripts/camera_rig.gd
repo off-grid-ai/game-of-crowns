@@ -388,6 +388,17 @@ func _apply() -> void:
 		var to := Vector3(look.x + back.x, look.y + rise * 0.9, look.z + back.y)
 		to.y = maxf(to.y, _roofline(to))
 		pos = to
+	# Following something through a wood (a convoy on a forest road, a rider):
+	# with tree crowns between the lens and what it shows, the camera rises over
+	# the canopy rather than sitting in the leaves (forest.gd's sight lines).
+	# Last, so it wins over the oblique limit above: leaves are worse than a
+	# steeper view.
+	var woods = terrain.get("forest") if terrain else null
+	if woods and woods.has_method("blocking"):
+		for k in 12:
+			if woods.blocking(pos, look) == 0:
+				break
+			pos.y += 0.3
 	cam.fov = lerpf(45.0, 62.0, ground_view)  # wider on the ground, as a person sees
 	cam.global_position = pos
 	cam.look_at(look + Vector3(0, distance * 0.02 * (1.0 - ground_view), 0), Vector3.UP)

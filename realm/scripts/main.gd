@@ -622,6 +622,9 @@ func _parse_args() -> void:
 			_shot["stage"] = a.substr(2)
 		elif a == "--rider":
 			_shot["rider"] = true
+		elif a == "--convoy":
+			_shot["rider"] = true
+			_shot["convoy"] = true  # the King's grain on the road, the camera riding along
 		elif a == "--muster":
 			_shot["rider"] = true
 			_shot["muster"] = true
@@ -1369,6 +1372,18 @@ func _frame_for_shot(world: Dictionary) -> void:
 					near = c
 			var to: Vector3 = terrain.world_pos(float(near["x"]), float(near["y"]))
 			get_tree().create_timer(maxf(1.0, float(_shot.get("wait", 8.0)) - float(_shot.get("lead", 4.0)))).timeout.connect(func():
+				if _shot.get("convoy", false):
+					var cart: Node3D = scenes._convoy(from, to, true)
+					_framed_until = int(_game_ms) + 600000
+					var ride := Timer.new()
+					ride.wait_time = 0.1
+					ride.autostart = true
+					add_child(ride)
+					ride.timeout.connect(func():
+						if is_instance_valid(cart):
+							_framed_at = cart.global_position
+							rig.focus(cart.global_position, float(_shot.get("dist", 2.0))))
+					return
 				if _shot.get("muster", false):
 					scenes._muster(from, to)
 				else:
