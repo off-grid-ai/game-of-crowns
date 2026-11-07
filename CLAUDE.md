@@ -1,5 +1,7 @@
 # Game of Crowns
 
+**We are system integrators with design taste** ([VISION.md](VISION.md), "Decided"). Every layer comes from an existing project (Freeciv for the world, Godot and its add-ons, asset kits); our code is glue. Before building anything, ask "who already built this?": survey the proven building blocks (maturity, Godot 4.7 fit, licence), show Mac the pick, then integrate. Never hand-build a system where a block exists; if none does, say so and let Mac decide.
+
 Read these before deciding anything about the game:
 
 - [GAME_DESIGN.md](GAME_DESIGN.md): how it should play and feel (the promise, the core loop, the pillars, the feedback ladder, how we decide). Start here.
