@@ -70,6 +70,8 @@ let arcs = null;
 let chatter = null; // talk and gossip between minds (chatter.js)
 let arcsRunning = false;
 let stakes = null;
+const effects = [];  // recent favour changes and their causes, for the game to show
+let effectSeq = 0;
 let decreesIssued = 0;
 let seasonRunning = false;
 // Recent events with a place on the map, so the view can show them happening.
@@ -841,7 +843,11 @@ function matterResting(o) {
 function promise(items, turn) {
   // The petitioners' matter has its own fuse at court; the thin treasury has no one to offend.
   const fused = (o) => !o.acts?.some((a) => a.ui === "court") && !/treasury is thin|realm is quiet/.test(o.text);
-  const head = items.find((o) => meta.matter && matterKey(o) === meta.matter.key) ?? items.find(fused);
+  // The matter already put to the King stays, unless something far worse comes up
+  // (a host at the gates beats a town's walls): then the worse one cuts in.
+  const held = items.find((o) => meta.matter && matterKey(o) === meta.matter.key);
+  const worst = items.filter(fused).sort((a, b) => b.urgency - a.urgency)[0];
+  const head = held && !(worst && worst.urgency >= held.urgency + 30) ? held : (worst ?? held);
   if (!head) { if (meta.matter) { meta.matter = null; chron.saveMeta(meta); } return items; }
   const key = matterKey(head);
   if (meta.matter?.key !== key) { meta.matter = { key, seen: turn, ticks: 0, text: head.text, lapse: lapseOf(head) }; chron.saveMeta(meta); }
@@ -1070,7 +1076,7 @@ function resolveCampaigns(turn) {
 // Shifts favour and says what it did, for the result card: "6,000 crowns · Thornvale 34 → 29".
 function shiftAndTell(changes, why, cost = 0) {
   const was = Object.fromEntries(Object.keys(changes ?? {}).map((id) => [id, Math.round(favourOf(Number(id)))]));
-  shiftFavour(changes ?? {}, why);
+  shiftFavour(changes ?? {}, why, true);
   const moved = Object.keys(was).map((id) => {
     const p = world?.players.find((x) => x.id === Number(id));
     const now = Math.round(favourOf(Number(id)));
@@ -1081,12 +1087,20 @@ function shiftAndTell(changes, why, cost = 0) {
   return [...price, ...shown].join("  ·  ");
 }
 
-function shiftFavour(changes, why = "") {
+function shiftFavour(changes, why = "", told = false) {
+  const moves = [];
   for (const [id, delta] of Object.entries(changes)) {
+    const was = Math.round(favourOf(Number(id)));
     favour[id] = clampFavour(favourOf(Number(id)) + delta);
     noteFavour(id, delta, why);
+    const now = Math.round(favourOf(Number(id)));
+    const p = world?.players?.find((x) => x.id === Number(id));
+    if (p && now !== was) moves.push({ id: Number(id), house: houseFor(p).name.replace(/^House /, ""), from: was, to: now });
   }
   saveFavour();
+  // Every change is seen (UI rule 13): the game shows what moved and why.
+  // A decree's own result card already says it ("told"), so the game doesn't repeat it.
+  if (moves.length && why) { effects.push({ seq: ++effectSeq, why, told, moves }); while (effects.length > 20) effects.shift(); }
 }
 
 // Each house's own history with the crown (the world bible), within the reign's mood.
@@ -1398,7 +1412,7 @@ http.createServer(async (req, res) => {
       // The King's side is his whole host: the garrisons defend Kingsmere too.
       ended: u?.ended && !u.ended.settled && (world?.turn ?? 0) - u.ended.turn <= 8 ? u.ended.house : null,
       theirs: u?.house != null ? fighting(u.house) : 0, ours: crownId != null ? (world?.units ?? []).filter((x) => x.owner === crownId && !CIVILIAN.has(x.type)).length : 0 };
-    return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), story: storyNow(), date: calendar(world.turn), threat, counsel: counsel(players, cities, threat), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000) });
+    return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), story: storyNow(), date: calendar(world.turn), threat, counsel: counsel(players, cities, threat), effects: effects.slice(-10), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000) });
   }
   if (url.pathname === "/map") {
     const map = chron.readJson(path.join(P.state, "map.json"));

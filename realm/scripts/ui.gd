@@ -933,8 +933,82 @@ func _build_court() -> void:
 
 # --- state ----------------------------------------------------------------------------
 
+## The time a matter waits for the King, as a thin bar that drains on its own:
+## gold while there's time, red in the last stretch. Its end is kept per matter,
+## so a card that redraws doesn't refill it.
+var _fav_seen := {}  # house id -> the favour last shown, so a change can be seen happening
+var _fuse_ends := {}  # matter -> msec it runs out
+var _fuse_total := {}  # matter -> its whole length, msec
+var _fuse_bars: Array = []  # [bar, matter, total msec]
+
+
+## What changed that the King didn't order himself (his silence, a petitioner
+## leaving, a story's turn), said once, as cause and effect: "The King's
+## silence: Sunspire 25 → 19". His own decrees already say theirs.
+var _effect_seq := -1
+
+
+func _tell_effects(list: Array) -> void:
+	var fresh := list.filter(func(e): return int(e.get("seq", 0)) > _effect_seq)
+	if list.size() > 0:
+		var top := int(list[-1].get("seq", 0))
+		if _effect_seq < 0:
+			_effect_seq = top  # the first look: what happened before isn't news
+			return
+		_effect_seq = maxi(_effect_seq, top)
+	var lines := PackedStringArray()
+	for e in fresh:
+		if e.get("told", false):
+			continue
+		var why := String(e.get("why", ""))
+		var moved := PackedStringArray()
+		for m in e.get("moves", []):
+			moved.append("%s %d → %d" % [String(m.get("house", "")), int(m.get("from", 0)), int(m.get("to", 0))])
+		if not moved.is_empty() and why != "":
+			lines.append("%s: %s" % [why.left(1).to_upper() + why.substr(1), "  ·  ".join(moved.slice(0, 4))])
+	if not lines.is_empty():
+		toast("\n".join(lines.slice(-2)))
+
+
+func _fuse_bar(matter: String, seasons: int) -> Control:
+	var total := maxf(1.0, float(seasons)) * _season_s * 1000.0
+	var now := Time.get_ticks_msec()
+	var left := float(_fuse_ends.get(matter, 0)) - now
+	# The bridge counts whole seasons; only re-time when it disagrees by more than one.
+	if not _fuse_ends.has(matter) or absf(left - total) > _season_s * 1000.0:
+		_fuse_ends[matter] = now + total
+		_fuse_total[matter] = total
+	var bar := ProgressBar.new()
+	bar.show_percentage = false
+	bar.custom_minimum_size = Vector2(0, 4)
+	bar.max_value = 1.0
+	bar.mouse_filter = Control.MOUSE_FILTER_PASS
+	bar.tooltip_text = "When this runs out, the realm answers for you."
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(1, 1, 1, 0.08)
+	bg.set_corner_radius_all(2)
+	bar.add_theme_stylebox_override("background", bg)
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = T.ACCENT
+	fill.set_corner_radius_all(2)
+	bar.add_theme_stylebox_override("fill", fill)
+	_fuse_bars.append([bar, matter, float(_fuse_total.get(matter, total))])
+	_drain(bar, matter, _fuse_bars[-1][2])
+	return bar
+
+
+func _drain(bar: ProgressBar, matter: String, total: float) -> void:
+	var left := clampf((float(_fuse_ends.get(matter, 0)) - Time.get_ticks_msec()) / total, 0.0, 1.0)
+	bar.value = left
+	var fill: StyleBoxFlat = bar.get_theme_stylebox("fill")
+	fill.bg_color = T.DANGER if left < 0.34 else T.ACCENT
+
+
 func _process(delta: float) -> void:
 	_reveal_pad(delta)
+	_fuse_bars = _fuse_bars.filter(func(f): return is_instance_valid(f[0]))
+	for f in _fuse_bars:
+		_drain(f[0], f[1], f[2])
 	# The reign's end is the only card while it stands.
 	if _end_panel and _end_panel.visible:
 		for p in [_counsel, _court_panel, _digest_panel, _offer]:
@@ -1907,9 +1981,7 @@ func _show_counsel(items: Array) -> void:
 		# The fuse: how long this waits for the King before the realm answers for him.
 		var due := int(it.get("due", 0))
 		if due > 0:
-			var fuse := T.label("Answer within %s, or the realm answers for you" % ("this season" if due == 1 else "%d seasons" % due))
-			fuse.add_theme_color_override("font_color", T.DANGER if due == 1 else T.ACCENT)
-			row.add_child(fuse)
+			row.add_child(_fuse_bar("hand:" + String(it.get("key", "")), due))
 		var acts := HFlowContainer.new()
 		acts.add_theme_constant_override("h_separation", 6)
 		row.add_child(acts)
@@ -2191,6 +2263,7 @@ var _season_s := 20.0  # seconds a season lasts, from the bridge
 
 func set_world(world: Dictionary, houses: Dictionary) -> void:
 	_season_s = float(world.get("turnSeconds", _season_s))
+	_tell_effects(world.get("effects", []))
 	if _standing:
 		var great := (world.get("players", []) as Array).filter(func(p): return p.get("favour") != null)
 		var with_me := great.filter(func(p): return float(p["favour"]) >= 35.0).size()
@@ -2394,9 +2467,19 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 			# Which way they're going: "37 ▼10" over the last year, so a drift shows
 			# before it becomes a rising.
 			var trend := int(p.get("favourTrend", 0))
-			if absi(trend) >= 3:
-				fav.text = "%s %d" % ["▲" if trend > 0 else "▼", absi(trend)] + "  %d" % f
+			var lead := ("%s %d  " % ["▲" if trend > 0 else "▼", absi(trend)]) if absi(trend) >= 3 else ""
+			fav.text = lead + "%d" % f
 			grid.add_child(fav)
+			# Every decision is seen (UI rule 13): a favour that moved counts to its
+			# new value and glows gold if it rose, red if it fell.
+			var pid := int(p.get("id", -1))
+			var was := int(_fav_seen.get(pid, f))
+			_fav_seen[pid] = f
+			if was != f:
+				var tw := fav.create_tween()
+				tw.tween_method(func(v: float): fav.text = lead + "%d" % roundi(v), float(was), float(f), 1.2)
+				fav.modulate = Color(1.9, 1.5, 0.6) if f > was else Color(2.0, 0.6, 0.55)
+				fav.create_tween().tween_property(fav, "modulate", Color.WHITE, 3.0).set_delay(0.6)
 		else:
 			grid.add_child(Control.new())  # the crown has no favour toward itself: keep the column
 
@@ -2769,10 +2852,8 @@ func _show_audience() -> void:
 	var when := "this season" if due <= 1 else "%d seasons" % due
 	later.tooltip_text = "They wait for now. Unanswered within %s, they go home and their house's favour falls by 12." % when
 	v.add_child(later)
-	var cost := T.label("Answer within %s, or they leave: their house −12" % when)
-	cost.add_theme_color_override("font_color", T.DANGER if due <= 1 else T.ACCENT)
-	cost.add_theme_font_size_override("font_size", 10)
-	cost.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var cost := _fuse_bar("court:" + String(p.get("id", "")), due)
+	cost.tooltip_text = "When this runs out, they go home unheard: their house −12."
 	v.add_child(cost)
 
 

@@ -1,5 +1,7 @@
 # Aldmere: interface philosophy
 
+How the game should play and feel is [GAME_DESIGN.md](GAME_DESIGN.md); these are the screen rules that serve it.
+
 Inherits Off Grid's disposition (quiet, honest, restraint over ornament) and adapts it to a game. A game HUD is read in a glance, mid-action, at the edge of attention. The world is the content; the interface is a thin instrument panel over it.
 
 ## 1. The world is the interface
