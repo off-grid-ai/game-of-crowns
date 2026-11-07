@@ -49,6 +49,8 @@ and it comes back to you later. Repeat until the reign ends and history gives yo
   mechanics players already understand, in our world and our words.
 - The model (an optional local one) enhances what the player says and reads. The game must play fully
   without it, and it is never the pitch.
+- Variety and reaction make it real: every move we have gets used, nothing repeats on a loop, and every action
+  draws a fitting reaction (a blow is parried, dodged or taken; a crowd answers its king). Repetition is a bug.
 - Changes are built in batches and tested together: one run, filmed, every change judged on film, fixed, run again. Nothing risks what works.
 
 ## We don't
