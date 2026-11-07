@@ -172,6 +172,31 @@
   ]
  },
  {
+  "id": "handover",
+  "name": "A town changes hands",
+  "group": "Play",
+  "what": "The old lord's banner falls, the new lord's men march in, his banner rises.",
+  "file": "screens/v/handover-2.jpg",
+  "clip": "screens/v/handover-2.mp4",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Hidden behind the church",
+    "at": "2026-11-07T15:55:00+00:00",
+    "file": "screens/v/handover-1.jpg",
+    "what": "The camera looked across the town's tall church; the scene in the square was a blur behind it."
+   },
+   {
+    "v": 2,
+    "label": "From a clear side",
+    "at": "2026-11-07T16:10:00+00:00",
+    "file": "screens/v/handover-2.jpg",
+    "clip": "screens/v/handover-2.mp4",
+    "what": "Before framing any scene the camera picks a side with no tall building in the way (and fells trees on that side). The new lord's men march in, his banner rises, they salute and cheer."
+   }
+  ]
+ },
+ {
   "id": "title",
   "name": "Main menu",
   "group": "Title",

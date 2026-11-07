@@ -78,6 +78,41 @@ func frame_town(pos: Vector3, size: int) -> void:
 	_goal_yaw = deg_to_rad(35.0)
 
 
+## A side to look at `pos` from with nothing tall in the way: starting at
+## `yaw`, the first of twelve turns whose line of sight, from about where the
+## lens would stand, crosses no building taller than the scene's eye-line.
+func clear_yaw(pos: Vector3, dist: float, yaw: float) -> float:
+	if towns == null:
+		return yaw
+	for k in 12:
+		var y := yaw + (k / 2) * (TAU / 12.0) * (1.0 if k % 2 == 0 else -1.0)
+		var back := Vector3(sin(y), 0, cos(y)) * dist * 0.85
+		if not _blocked(pos, pos + back):
+			return y
+	return yaw
+
+
+## Whether a building more than a storey tall stands on the ground line from `a` to `b`.
+func _blocked(a: Vector3, b: Vector3) -> bool:
+	for id in towns.towns:
+		var root: Node3D = towns.towns[id]["node"]
+		var la := Vector2(a.x - root.position.x, a.z - root.position.z)
+		var lb := Vector2(b.x - root.position.x, b.z - root.position.z)
+		if la.length() > float(root.get_meta("reach", 6.0)) + 2.0 and lb.length() > float(root.get_meta("reach", 6.0)) + 2.0:
+			continue
+		var tops: Array = root.get_meta("tops", [])
+		var fps: Array = root.get_meta("footprints", [])
+		for i in fps.size():
+			var top: float = tops[i] if i < tops.size() else -1.0
+			if top < 1.2:
+				continue
+			var fp: PackedVector2Array = fps[i]
+			for t in 8:
+				if Geometry2D.is_point_in_polygon(la.lerp(lb, 0.15 + t * 0.1), fp):
+					return true
+	return false
+
+
 func snap(pos: Vector3, dist: float, y := 0.0) -> void:
 	target = pos
 	_goal_target = pos

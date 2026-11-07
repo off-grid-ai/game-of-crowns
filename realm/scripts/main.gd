@@ -287,6 +287,7 @@ func _ready() -> void:
 			_framed_until = now + 40000  # a scene's length, give or take; each beat keeps it
 			# No camera inside a wood: the trees between the camera and the scene
 			# are felled in a cone opening toward it, as battles already do.
+			y = rig.clear_yaw(p, d, y)  # from a side where no tall building hides it
 			var toward := Vector3(sin(y), 0, cos(y))
 			for k in 6:
 				terrain.clear_around(p + toward * (1.0 + k * 1.2) * maxf(1.0, d / 4.0), 1.2 + k * 0.35)
@@ -1347,7 +1348,7 @@ func _frame_for_shot(world: Dictionary) -> void:
 						scenes._feast(at, owner)
 					else:
 						scenes._handover(at, owner, other, String(c.get("title", c["name"])))
-					rig.snap(at, float(_shot.get("dist", 3.0)), 0.6)
+					rig.snap(at, float(_shot.get("dist", 3.0)), rig.clear_yaw(at, float(_shot.get("dist", 3.0)), 0.6))
 					# The scene under test holds the camera, as test battles do.
 					_framed_at = at
 					_framed_until = int(_game_ms) + 600000)
