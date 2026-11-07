@@ -57,6 +57,8 @@ Current list: **downloads-first** (11-05 ~13:00), which replaced the virality li
 
 ## Runs
 
+**2026-11-07 11:53:** Shipped: 4c319e3 (team rule: build in batches and test them together in one filmed run). Moved: nothing public. Needs Mac: r/macgaming at ~19:00 IST today. Downloads: GitHub 4.
+
 **2026-11-07 11:38:** Shipped:
 - faf2d40: battles. The camera stays with the fight it's showing, and the trees between it and the scene are cleared.
 - feec109: CLAUDE.md leads with the system-integrator rule.
