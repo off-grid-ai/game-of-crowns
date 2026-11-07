@@ -68,6 +68,31 @@
   ]
  },
  {
+  "id": "castle",
+  "name": "A castle's courtyard",
+  "group": "Play",
+  "what": "Kingsmere's bailey: the yard inside the castle walls.",
+  "file": "screens/v/castle-2.jpg",
+  "clip": "screens/v/castle-2.mp4",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Furnished, seen from above",
+    "at": "2026-11-07T13:01:00+00:00",
+    "file": "screens/v/castle-1.jpg",
+    "what": "Barn, carts, hay, a fire pit and a log pile in the yard, but nobody there, the house blocking the gate, and the camera only able to look down from over the walls."
+   },
+   {
+    "v": 2,
+    "label": "Lived in, and the camera can come into the yard",
+    "at": "2026-11-07T13:55:00+00:00",
+    "file": "screens/v/castle-2.jpg",
+    "clip": "screens/v/castle-2.mp4",
+    "what": "The garrison drills under a sergeant, a groom warms at the fire, a servant carries; the house moved off the gate; the yard is open air to the camera, so it comes down inside."
+   }
+  ]
+ },
+ {
   "id": "title",
   "name": "Main menu",
   "group": "Title",

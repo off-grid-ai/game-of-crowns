@@ -212,7 +212,15 @@ func _roofline(p: Vector3) -> float:
 			continue
 		var tops: Array = root.get_meta("tops", [])
 		var fps: Array = root.get_meta("footprints", [])
+		# In a castle's open yard, its own footprint doesn't lift the lens: only
+		# its walls do, as the eye nears them.
+		var open_yard := -1
+		for y in root.get_meta("yards", []):
+			if Geometry2D.is_point_in_polygon(local, y[0]):
+				open_yard = int(y[1])
 		for i in fps.size():
+			if i == open_yard:
+				continue
 			var fp: PackedVector2Array = fps[i]
 			if not (Geometry2D.is_point_in_polygon(local, fp) or _near_edge(local, fp, SPARE)):
 				continue

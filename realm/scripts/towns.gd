@@ -284,6 +284,16 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 					castle.rotation.y = atan2(-cp.x, -cp.z)
 					root.add_child(castle)
 					_footprint_rect(root, cp, cf, castle.rotation.y)
+					# The front of its bailey, between the gate and the keep, is open
+					# air: the camera may come down into the yard there (camera_rig).
+					var yb := Basis(Vector3.UP, castle.rotation.y)
+					var yard := PackedVector2Array()
+					for c in [Vector2(-0.36, -0.05), Vector2(0.36, -0.05), Vector2(0.36, 0.36), Vector2(-0.36, 0.36)]:
+						var w: Vector3 = cp + yb * Vector3(c.x * cf.x, 0, c.y * cf.y)
+						yard.append(Vector2(w.x, w.z))
+					var yards: Array = root.get_meta("yards", [])
+					yards.append([yard, root.get_meta("footprints").size() - 1])
+					root.set_meta("yards", yards)
 					# No wood stands inside its walls or leans over them: felled to
 					# the corners, and a crown's reach (about 0.8) beyond.
 					terrain.clear_around(center + cp, cf.length() * 0.5 + 0.8)
