@@ -1155,6 +1155,13 @@ func _room_in_square(a: Dictionary, goal: Vector2, map: RID) -> Vector2:
 	for b in _crowds.get(a["town"], []):
 		if not is_same(b, a) and Vector2(b.get("goal", Vector2(99, 99))).length() < sq:
 			there += 1
+	# Those town life already stands there (beggars, a mob, revellers, buyers
+	# at the stalls) count too: two crowds in one square make a press.
+	var life: Node = town["node"].get_node_or_null("Life")
+	if life:
+		for p: Vector2 in life.get_meta("standing", PackedVector2Array()):
+			if p.length() < sq:
+				there += 1
 	if there < SQUARE_HOLDS:
 		return goal
 	var c: Vector3 = a["center"]
