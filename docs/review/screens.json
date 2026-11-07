@@ -124,6 +124,29 @@
   ]
  },
  {
+  "id": "closeview",
+  "name": "A town up close",
+  "group": "Play",
+  "what": "Goldrock's square with the camera close in.",
+  "file": "screens/v/closeview-2.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Looking down from above",
+    "at": "2026-11-07T15:05:00+00:00",
+    "file": "screens/v/closeview-1.jpg",
+    "what": "Clearing the roofs, the camera climbed until it looked about 55 degrees down: roofs, not the town."
+   },
+   {
+    "v": 2,
+    "label": "Low and oblique",
+    "at": "2026-11-07T15:15:00+00:00",
+    "file": "screens/v/closeview-2.jpg",
+    "what": "Past 42 degrees the camera steps back along its line instead of climbing: walls, stalls and people read."
+   }
+  ]
+ },
+ {
   "id": "title",
   "name": "Main menu",
   "group": "Title",
