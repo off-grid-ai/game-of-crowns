@@ -112,6 +112,19 @@ func _man(m: Dictionary) -> void:
 ## A party is sent: the fallen are replaced from the camp, and each man goes
 ## forward on his own beat.
 func _send(p: int) -> void:
+	# The camera comes in on the rush: low, from the camp side, on the stretch
+	# of wall this party goes for (a beat of the siege, as battles call theirs).
+	var men: Array = parties[p]
+	if not men.is_empty():
+		var foot := Vector3.ZERO
+		var home := Vector3.ZERO
+		for m in men:
+			foot += m["foot"]
+			home += m["home"]
+		foot /= men.size()
+		home /= men.size()
+		var back: Vector3 = home - foot
+		scenes.framing.emit(scenes._ground(foot.lerp(home, 0.3)), 2.0, atan2(back.x, back.z))
 	for m in parties[p]:
 		if not m["alive"]:
 			_man(m)

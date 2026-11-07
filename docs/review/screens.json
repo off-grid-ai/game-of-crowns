@@ -46,8 +46,8 @@
   "name": "A siege",
   "group": "Play",
   "what": "Kingsmere under siege: engines, the besiegers' camp, assault parties going to the wall and back.",
-  "file": "screens/v/siege-1.jpg",
-  "clip": "screens/v/siege-1.mp4",
+  "file": "screens/v/siege-2.jpg",
+  "clip": "screens/v/siege-2.mp4",
   "versions": [
    {
     "v": 1,
@@ -56,6 +56,14 @@
     "file": "screens/v/siege-1.jpg",
     "clip": "screens/v/siege-1.mp4",
     "what": "Each attacker has his own state machine: waits in camp, goes forward behind his shield, runs the last stretch, fights at the foot of the wall with varied cuts and guards, falls back, or is cut down and stays down while the camp sends a fresh man."
+   },
+   {
+    "v": 2,
+    "label": "The camera goes in on each rush",
+    "at": "2026-11-07T13:45:00+00:00",
+    "file": "screens/v/siege-2.jpg",
+    "clip": "screens/v/siege-2.mp4",
+    "what": "When a party is sent at the wall, the camera comes in low from the camp side on that stretch, so the fight at the foot of the wall reads."
    }
   ]
  },
