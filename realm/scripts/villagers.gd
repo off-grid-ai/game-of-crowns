@@ -663,7 +663,19 @@ func _square_count() -> void:
 				else:
 					walking += 1
 		if walking + standing > 6:
-			print("SQUARE town=%s standing=%d walking=%d doing=%s" % [id, standing, walking, doing])
+			# Everyone there, by who placed them (villagers are only some of it).
+			var by := {}
+			var r_sq: float = float(towns.towns[id]["node"].get_meta("square_r", 0.8)) + 0.1
+			by["r"] = snappedf(r_sq, 0.01)
+			var life: Node = towns.towns[id]["node"].get_node_or_null("Life")
+			if life:
+				by["life_all"] = life.get_child_count()
+			for p in get_tree().get_nodes_in_group("people"):
+				var pn: Node3D = p
+				if pn.is_visible_in_tree() and Vector2(pn.global_position.x - heart.x, pn.global_position.z - heart.z).length() < r_sq:
+					var k := "%s/%s" % [pn.get_parent().name, pn.get_parent().get_parent().name if pn.get_parent().get_parent() else ""]
+					by[k] = by.get(k, 0) + 1
+			print("SQUARE town=%s standing=%d walking=%d doing=%s all=%s" % [id, standing, walking, doing, by])
 
 
 ## A spot near a place, spread so a gathering is a loose knot, never a pile.
@@ -1110,6 +1122,8 @@ func _follow(a: Dictionary, plan: Dictionary, places: Dictionary) -> bool:
 	var target := _plan_place(a, String(plan.get("where", "")), places)
 	var move := _plan_move(String(plan.get("doing", "")))
 	var with: Array = plan.get("with", [])
+	if _grieving(a):
+		with = with.slice(0, 2)  # a town mourns in knots of two or three (Mac's call)
 	var town: Array = _crowds.get(a["town"], [])
 	var partners := []
 	for w in with:
@@ -1141,6 +1155,10 @@ func _follow(a: Dictionary, plan: Dictionary, places: Dictionary) -> bool:
 	return true
 
 
+func _grieving(a: Dictionary) -> bool:
+	return float(_mood(a).get("grief", 0.0)) > 0.6
+
+
 ## The square holds so many and no more, whatever sends them (an errand, a
 ## talk, a mind's plan, a mourning): bound there when it's full, they keep to
 ## their own door instead, so the square stays busy but never a press.
@@ -1151,6 +1169,15 @@ func _room_in_square(a: Dictionary, goal: Vector2, map: RID) -> Vector2:
 	var sq: float = town["node"].get_meta("square_r", 0.0) + 0.1
 	if goal.length() >= sq:
 		return goal
+	if _grieving(a):
+		# A town mourns in small knots spread through it, never one crowd in
+		# the square (Mac's call): the grieving keep to their own door, or
+		# just beyond the square's edge when their door is on it.
+		var c0: Vector3 = a["center"]
+		var home := Vector2(a["home"].x - c0.x, a["home"].z - c0.z)
+		if home.length() < sq + 0.15:
+			home = home.normalized() * (sq + 0.25) if home.length() > 0.01 else Vector2(sq + 0.25, 0)
+		return _nav.closest(map, home)
 	var there := 0
 	for b in _crowds.get(a["town"], []):
 		if not is_same(b, a) and Vector2(b.get("goal", Vector2(99, 99))).length() < sq:
