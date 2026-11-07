@@ -72,8 +72,8 @@
   "name": "A castle's courtyard",
   "group": "Play",
   "what": "Kingsmere's bailey: the yard inside the castle walls.",
-  "file": "screens/v/castle-2.jpg",
-  "clip": "screens/v/castle-2.mp4",
+  "file": "screens/v/castle-3.jpg",
+  "clip": "screens/v/castle-3.mp4",
   "versions": [
    {
     "v": 1,
@@ -89,6 +89,14 @@
     "file": "screens/v/castle-2.jpg",
     "clip": "screens/v/castle-2.mp4",
     "what": "The garrison drills under a sergeant, a groom warms at the fire, a servant carries; the house moved off the gate; the yard is open air to the camera, so it comes down inside."
+   },
+   {
+    "v": 3,
+    "label": "The drill out in the open",
+    "at": "2026-11-07T14:10:00+00:00",
+    "file": "screens/v/castle-3.jpg",
+    "clip": "screens/v/castle-3.mp4",
+    "what": "The garrison drills in the open half of the yard, clear of the keep's shadow, each at his own move, the sergeant facing them from the gate side."
    }
   ]
  },

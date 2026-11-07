@@ -224,10 +224,12 @@ const BAILEY := [
 
 ## Who's in the yard: role, place (castle frame), move, facing.
 const BAILEY_FOLK := [
-	["soldier", Vector3(-0.35, 0, -0.55), "SS_Slash_1", PI],
-	["soldier", Vector3(0.0, 0, -0.6), "Spear_Thrust", PI],
-	["soldier", Vector3(0.35, 0, -0.5), "SS_Block_Idle", PI],
-	["soldier", Vector3(0.0, 0, -0.15), "Yelling", 0.0],
+	# The drill in the open half of the yard, between the fire and the gate,
+	# clear of the keep's shadow; the sergeant faces them from the gate side.
+	["soldier", Vector3(-0.75, 0, 0.5), "SS_Slash_1", 0.0],
+	["soldier", Vector3(-0.4, 0, 0.55), "Spear_Thrust", 0.0],
+	["soldier", Vector3(-0.05, 0, 0.5), "SS_Slash_4", 0.0],
+	["soldier", Vector3(-0.4, 0, 0.95), "Yelling", PI],
 	["peasant", Vector3(0.25, 0, 0.35), "Idle", -2.4],
 	["peasant", Vector3(-1.3, 0, 0.6), "Carrying", PI / 2],
 ]
