@@ -10,7 +10,9 @@ description: How Game of Crowns changes are proven to work. There is no unit sui
 3. **Seed through the product.** Make test state the way the game does: create a chronicle, edit a character, answer a petition via the bridge. Never hand-edit `bridge/chronicles/*/state`.
 4. **Renders for anything visible.** Use the screenshot flags (see `goc-run`) and look at every image yourself before calling it done.
 5. **Probe, don't guess.** When something's wrong, add a temporary `# DEBUG-PROBE` print, measure, fix the cause, then strip the probes.
-6. **Throwaway realms for risky tests.** Create a test chronicle, then reopen Ali's realm and delete the test one.
+6. **Throwaway realms for risky tests.** Create a test chronicle, then reopen Mac's realm and delete the test one.
 7. **Batch, then test together.** Make all the related changes, compile-check every touched script (`arch -arm64 godot --headless --path realm --check-only --script res://scripts/<file>.gd`; there is no `timeout` command in this shell, so never wrap checks in it), then one launch or render that films all of them, judged frame by frame. Fix, run again.
 8. **A failure is a finding.** Fix the cause; never paper over it with a longer wait or a looser check.
 9. **Motion is checked man by man, and by the game itself.** Before any clip goes to Mac: crop close on the action, read strips at 4+ fps, and follow single people to the end (a fallen man stays down, an attack plays out, nobody glides). The game guards what it can: grep the run's log for `CHECK` lines (e.g. a dead man asked to move) and fix every one before showing.
+10. **The dev run isn't the shipped build.** A check passed in the editor or a `--shot` run doesn't pass for the exported game: before a release, check the export itself.
+11. **Results go on the review page.** What a test shows goes on the page as a new version (clip for anything that moves), with a Claude note on what changed and a mark on anything still wrong (`screen-review` sections 5 and 6).
