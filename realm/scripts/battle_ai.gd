@@ -663,6 +663,9 @@ func _bearers(dt: float) -> void:
 
 
 ## The camera stays on the thick of it: wherever most men are fighting.
+var _close := false  # this beat in close on the blows, or out on the melee
+
+
 func _frame(dt: float) -> void:
 	_frame_t -= dt
 	if _frame_t > 0.0 or clash < 0.0 or routed:
@@ -675,7 +678,10 @@ func _frame(dt: float) -> void:
 			mid += m["node"].position
 			n += 1
 	if n > 3:
-		scenes.framing.emit(scenes._ground(mid / n), 2.8, view_yaw)
+		# In close on the blows, then back out on the whole melee, by turns:
+		# one distance the whole fight reads as a blob of small men.
+		_close = not _close
+		scenes.framing.emit(scenes._ground(mid / n), 1.6 if _close else 2.8, view_yaw + (0.35 if _close else 0.0))
 
 
 # ---- helpers ----------------------------------------------------------------
