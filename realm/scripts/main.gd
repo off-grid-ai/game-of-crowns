@@ -1400,23 +1400,7 @@ func _frame_for_shot(world: Dictionary) -> void:
 					if castle:
 						rig.snap(castle.global_position, float(_shot.get("dist", 1.8)), castle.rotation.y))  # from the square side, over the gate
 			if _shot.get("battle", false):
-				# Stage a battle on open ground beside the town, for testing.
-				var field: Vector3 = terrain.world_pos(float(best["x"]) + 1.5, float(best["y"]))
-				# No open ground beside this town (it has grown, or it's ringed by
-				# wood or water): the test takes the first town that has a field.
-				if scenes._battlefield(field) == Vector3.INF:
-					for c in world.get("cities", []):
-						var f: Vector3 = terrain.world_pos(float(c["x"]) + 1.5, float(c["y"]))
-						if scenes._battlefield(f) != Vector3.INF:
-							field = f
-							best = c
-							break
-				# The battle finds its own open ground near there: frame that, not the town.
-				rig.snap(scenes._battlefield(field), float(_shot.get("dist", 4.0)), 0.6)
-				# The battle under test holds the camera: no other scene in the realm takes it.
-				_framed_at = scenes._battlefield(field)
-				_framed_until = int(_game_ms) + 600000
-				scenes._battle(field, _houses.get(int(best["owner"]), {}))
+				_stage_test_battle(world, best)
 			if _shot.get("siege", false):
 				# Stage a siege of the town by another house, for testing.
 				var center: Vector3 = terrain.world_pos(float(best["x"]), float(best["y"]))
@@ -1445,6 +1429,31 @@ func _on_chronicle(entries: Array) -> void:
 const KINGS_OWN := ["grain", "tribute", "rider", "ward", "muster", "feast", "handover"]
 const WAR := ["battle", "siege", "sack", "razed"]
 var _offered_at := -100000
+
+
+## For testing: a battle on open ground beside a town, staged once the towns
+## stand (their fields and gardens decide what ground is open), at the first
+## town that has a field, with the camera held on it.
+func _stage_test_battle(world: Dictionary, best: Dictionary) -> void:
+	if not scenes._towns_up():
+		get_tree().create_timer(0.5).timeout.connect(_stage_test_battle.bind(world, best))
+		return
+	var field: Vector3 = terrain.world_pos(float(best["x"]) + 1.5, float(best["y"]))
+	if scenes._battlefield(field) == Vector3.INF:
+		for c in world.get("cities", []):
+			var f: Vector3 = terrain.world_pos(float(c["x"]) + 1.5, float(c["y"]))
+			if scenes._battlefield(f) != Vector3.INF:
+				field = f
+				best = c
+				break
+	var ground: Vector3 = scenes._battlefield(field)
+	print("SHOT battle town=%s ground=%s" % [best.get("title", "?"), ground])
+	if ground == Vector3.INF:
+		return
+	rig.snap(ground, float(_shot.get("dist", 4.0)), 0.6)
+	_framed_at = ground
+	_framed_until = int(_game_ms) + 600000
+	scenes._battle(field, _houses.get(int(best["owner"]), {}))
 
 
 func _on_staged(s: Dictionary, follow: Node3D) -> void:

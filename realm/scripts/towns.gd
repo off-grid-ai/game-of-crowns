@@ -208,7 +208,7 @@ func _top(root: Node3D, top: float) -> void:
 ## other, a well at its heart and the clutter of work about the yard. Laid out
 ## in the castle's own frame, from the kit the towns already use.
 const BAILEY := [
-	["medieval_viking_house", Vector3(0.0, 0, 1.45), 0.0],
+	["medieval_viking_house", Vector3(1.55, 0, 1.15), -PI / 2],  # to the side: the gate's view into the yard stays open
 	["old_wooden_barn", Vector3(-1.75, 0, -0.1), PI / 2],
 	["haystack_2", Vector3(-1.2, 0, -0.85), 0.4],
 	["haystack_2", Vector3(-1.05, 0, -1.1), 1.7],
@@ -222,6 +222,17 @@ const BAILEY := [
 ]
 
 
+## Who's in the yard: role, place (castle frame), move, facing.
+const BAILEY_FOLK := [
+	["soldier", Vector3(-0.35, 0, -0.55), "SS_Slash_1", PI],
+	["soldier", Vector3(0.0, 0, -0.6), "Spear_Thrust", PI],
+	["soldier", Vector3(0.35, 0, -0.5), "SS_Block_Idle", PI],
+	["soldier", Vector3(0.0, 0, -0.15), "Yelling", 0.0],
+	["peasant", Vector3(0.25, 0, 0.35), "Idle", -2.4],
+	["peasant", Vector3(-1.3, 0, 0.6), "Carrying", PI / 2],
+]
+
+
 func _bailey(root: Node3D, cp: Vector3, cy: float, yaw: float, rng: RandomNumberGenerator) -> void:
 	var b := Basis(Vector3.UP, yaw)
 	for item in BAILEY:
@@ -230,6 +241,13 @@ func _bailey(root: Node3D, cp: Vector3, cy: float, yaw: float, rng: RandomNumber
 			continue  # not in this build's kit: the yard goes without it
 		var at: Vector3 = cp + b * item[1]
 		_place(root, kind, Vector3(at.x, cy, at.z), yaw + float(item[2]) + rng.randf_range(-0.05, 0.05))
+	# The yard lived in: the garrison drilling under a sergeant, each at his own
+	# move, a groom warming at the fire, a servant carrying.
+	for f in BAILEY_FOLK:
+		var at: Vector3 = cp + b * f[1]
+		var p: Node3D = life._townsperson(root, Vector3(at.x, cy, at.z), f[0], f[2], rng.randi(), Color.WHITE)
+		if p:
+			p.rotation.y = yaw + float(f[3])
 
 
 ## A realistic town laid out in lots: houses on rings around the square, each

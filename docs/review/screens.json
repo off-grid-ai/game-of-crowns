@@ -4,8 +4,8 @@
   "name": "A battle",
   "group": "Play",
   "what": "Battles fought by the men in them: each man closes, fights, reels, falls or breaks; knights charge, ride through and come round again.",
-  "file": "screens/v/battle-3.jpg",
-  "clip": "screens/v/battle-3.mp4",
+  "file": "screens/v/battle-4.jpg",
+  "clip": "screens/v/battle-4.mp4",
   "versions": [
    {
     "v": 1,
@@ -30,6 +30,14 @@
     "file": "screens/v/battle-3.jpg",
     "clip": "screens/v/battle-3.mp4",
     "what": "Every man now moves through Godot's animation state machine, whose Dead state nothing leaves: the fallen stay down. Each army wears its house's colour (green against tan), knights ride through and come round, the beaten break and their standard falls, the victors cheer."
+   },
+   {
+    "v": 4,
+    "label": "Every man in the fight, legs on the ground",
+    "at": "2026-11-07T13:12:00+00:00",
+    "file": "screens/v/battle-4.jpg",
+    "clip": "screens/v/battle-4.mp4",
+    "what": "The ranks behind push in on their own count instead of standing for the whole fight; legs follow how fast each man really moves (no running on the spot, no gliding); the crowd moves through Godot's avoidance so nobody walks through anyone; the camera stays on the fight."
    }
   ]
  },
