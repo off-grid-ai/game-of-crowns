@@ -251,8 +251,8 @@
     "name": "The King's grain on the road",
     "group": "Play",
     "what": "A grain convoy from Kingsmere to the nearest town, the camera riding along.",
-    "file": "screens/v/convoy-3.jpg",
-    "clip": "screens/v/convoy-3.mp4",
+    "file": "screens/v/convoy-4.jpg",
+    "clip": "screens/v/convoy-4.mp4",
     "versions": [
       {
         "v": 1,
@@ -276,6 +276,14 @@
         "file": "screens/v/convoy-3.jpg",
         "clip": "screens/v/convoy-3.mp4",
         "what": "A convoy over land with no road cuts a track through any wood it crosses, so the cart runs over open ground. Still open: near the coast town the camera looks down through one tree crown by the river."
+      },
+      {
+        "v": 4,
+        "label": "Low and clear of the leaves",
+        "at": "2026-11-08T07:00:00+00:00",
+        "file": "screens/v/convoy-4.jpg",
+        "clip": "screens/v/convoy-4.mp4",
+        "what": "Following the cart, the camera turns each second to a side with no tree crowns in the way (the director's own choice in play), so it stays low and oblique with the cart and its track in view, instead of steep over a wood with leaves filling the frame. Still open: at the coast town a house can stand between the camera and the cart."
       }
     ]
   },
