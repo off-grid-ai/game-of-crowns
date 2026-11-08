@@ -1379,10 +1379,17 @@ func _frame_for_shot(world: Dictionary) -> void:
 					ride.wait_time = 0.1
 					ride.autostart = true
 					add_child(ride)
+					director._follow = cart
+					var looked := [0]
 					ride.timeout.connect(func():
 						if is_instance_valid(cart):
 							_framed_at = cart.global_position
-							rig.focus(cart.global_position, float(_shot.get("dist", 2.0))))
+							rig.focus(cart.global_position, float(_shot.get("dist", 2.0)))
+							# Each second, the side with no tree crowns in the way,
+							# as the director picks it in play.
+							looked[0] += 1
+							if looked[0] % 10 == 0:
+								director._clear_sight())
 					return
 				if _shot.get("muster", false):
 					scenes._muster(from, to)
