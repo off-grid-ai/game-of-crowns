@@ -592,7 +592,16 @@ func _build_vegetation() -> void:
 	for k in kinds:
 		meshes[k] = []
 		for name in kinds[k]:
-			meshes[k].append(builder.bake_path("res://assets/nature/%s.gltf" % name))
+			var baked: Mesh = builder.bake_path("res://assets/nature/%s.gltf" % name)
+			if baked and k in ["broad", "pine", "dead"]:
+				# A crown right in front of the lens dissolves (realistic.gd's fade).
+				for si in baked.get_surface_count():
+					var m := baked.surface_get_material(si) as BaseMaterial3D
+					if m:
+						m = m.duplicate()
+						preload("res://scripts/realistic.gd").fade_near(m, 0.25, 0.8)
+						baked.surface_set_material(si, m)
+			meshes[k].append(baked)
 			placed["%s:%d" % [k, meshes[k].size() - 1]] = []
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 42

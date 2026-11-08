@@ -154,6 +154,21 @@ const STONE := ["medieval_castle"]
 ## out of their exporter with emission on at full white (the thatched cottages
 ## glowed in daylight colours all night). Their surfaces take a copy without it.
 ## A stone kit's surfaces also lose the metal its file never meant.
+## What stands right in front of the lens (a roof, a wall, a tree's crown)
+## dissolves so the view sees past it: Godot's own distance fade, dithered, on
+## the material. Distances in game units from the camera.
+const NEAR_GONE := 0.2
+const NEAR_SOLID := 0.6
+
+
+static func fade_near(mat: BaseMaterial3D, gone := NEAR_GONE, solid := NEAR_SOLID) -> void:
+	if mat == null:
+		return
+	mat.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_DITHER
+	mat.distance_fade_min_distance = gone
+	mat.distance_fade_max_distance = solid
+
+
 static func _no_glow(root: Node, stone := false) -> void:
 	var lit_of := {}  # one copy per material, so merged surfaces still share it
 	for mi in root.find_children("*", "MeshInstance3D", true, false):
@@ -162,6 +177,7 @@ static func _no_glow(root: Node, stone := false) -> void:
 			continue
 		for i in m.mesh.get_surface_count():
 			var mat := m.get_active_material(i) as BaseMaterial3D
+			fade_near(mat)  # the shared material: every copy of the model, batched or not
 			if mat and (mat.emission_enabled or (stone and mat.metallic > 0.0)):
 				if not lit_of.has(mat):
 					var lit: BaseMaterial3D = mat.duplicate()
@@ -169,6 +185,7 @@ static func _no_glow(root: Node, stone := false) -> void:
 					if stone:
 						lit.metallic = 0.0
 						lit.metallic_texture = null
+					fade_near(lit)
 					lit_of[mat] = lit
 				m.set_surface_override_material(i, lit_of[mat])
 

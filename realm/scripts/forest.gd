@@ -162,12 +162,15 @@ func _load_pack(path: String, kinds: Array, full_suffix: String, mid_suffix: Str
 var _cut := {}
 func _cutout(mat: Material) -> Material:
 	var m := mat as BaseMaterial3D
-	if m == null or m.transparency != BaseMaterial3D.TRANSPARENCY_ALPHA:
+	if m == null:
 		return mat
 	if not _cut.has(mat):
 		var c: BaseMaterial3D = m.duplicate()
-		c.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-		c.alpha_scissor_threshold = 0.5
+		if c.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA:
+			c.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+			c.alpha_scissor_threshold = 0.5
+		# A crown right in front of the lens dissolves (realistic.gd's fade).
+		preload("res://scripts/realistic.gd").fade_near(c, 0.25, 0.8)
 		_cut[mat] = c
 	return _cut[mat]
 
