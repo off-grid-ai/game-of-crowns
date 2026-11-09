@@ -35,6 +35,7 @@ var _idle := 0.0
 var _shot_left := 0.0
 var _follow: Node3D  # what this shot travels with (a convoy's wagon, a rider's horse, a villager)
 var _last_key := ""
+var _soon := -1.0  # seconds until the camera goes to look, after the court closes; -1: not asked
 
 
 func _input(event: InputEvent) -> void:
@@ -43,6 +44,7 @@ func _input(event: InputEvent) -> void:
 		return
 	if event is InputEventMouseButton or event is InputEventKey or event is InputEventMagnifyGesture or event is InputEventPanGesture:
 		_idle = 0.0
+		_soon = -1.0  # he took the camera himself
 		_clear_view(false)  # the King moves: his panels come back
 		if active:
 			active = false
@@ -57,11 +59,22 @@ func start() -> void:
 	_shot_left = 0.0
 
 
+## The court has closed: the realm moves, so the camera goes to look at it in a
+## few seconds, unless the King takes the camera first (a click or a key).
+func soon() -> void:
+	_soon = 5.0
+
+
 func _process(delta: float) -> void:
 	if world.is_empty() or rig == null:
 		return
+	if not active and _soon >= 0.0:
+		_soon -= delta
+		if _soon < 0.0 and not (ui and ui.has_method("reading") and ui.reading()):
+			start()
+		return
 	if not active:
-		# Reading a card (the court, the Hand, a town, the ledger) is not being idle.
+		# Reading a card (the court, a town, the ledger) is not being idle.
 		if ui and ui.has_method("reading") and ui.reading():
 			_idle = 0.0
 			return

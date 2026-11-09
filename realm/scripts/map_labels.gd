@@ -10,6 +10,7 @@ var towns: Node3D
 var scenes: Node  # scenes.gd, whose captions town names give way to
 var rig: Node3D
 var houses := {}  # owner id -> house, kept current by main
+var ui: CanvasLayer  # the interface, whose cards and bars town names give way to
 
 const T := preload("res://scripts/theme.gd")
 const GAP := 6.0  # pixels kept clear around every name
@@ -45,6 +46,11 @@ func _process(_delta: float) -> void:
 	var order: Array = _tags.keys()
 	order.sort_custom(func(a, b): return _rank(a) > _rank(b))
 	var placed: Array[Rect2] = []
+	# The interface first: a name never sits under a bar, a card or the minimap.
+	if ui == null:
+		ui = get_tree().current_scene.get("ui") as CanvasLayer
+	if ui and ui.has_method("covered"):
+		placed.append_array(ui.covered())
 	# A scene's caption (a siege, the King's rider) is what's happening now: a
 	# town's name gives way to it rather than printing over it.
 	if scenes:

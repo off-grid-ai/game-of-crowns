@@ -11,7 +11,8 @@ var rig: Node3D
 var _tex: ImageTexture
 var _base: Texture2D
 var _tint: ImageTexture  # each house's land in its colour (a = owner id / 64), one pixel a tile
-var _tint_was: ImageTexture  # as it was before the last change, for the flood to cross
+var _tint_img: Image  # the colours as last shown, for the next flood to cross
+var _floods: Array = []  # floods waiting their turn: [colours after, before, {at, reach}]
 var _ids: Array = []  # the owner of every tile, as last shown
 var _base_rect: TextureRect  # the painted map, under everything
 var _wash: TextureRect  # the houses' colours over it, drawn by WASH
@@ -26,18 +27,18 @@ shader_type canvas_item;
 uniform sampler2D realm_tex : filter_nearest, repeat_disable;
 uniform sampler2D realm_prev : filter_nearest, repeat_disable;
 uniform vec2 realm_size = vec2(1.0);
-uniform vec2 flood_at[4];
+uniform vec2 flood_at[8];
 uniform int flood_n = 0;
 uniform float flood_r = 100000.0;
 float flood_d(vec2 t) {
 	float d = 100000.0;
 	for (int i = 0; i < flood_n; i++) d = min(d, distance(t, flood_at[i]));
-	return flood_n > 0 ? d : 0.0;
+	return d;
 }
 vec4 owner(ivec2 c) {
 	c = clamp(c, ivec2(0), ivec2(realm_size) - 1);
-	vec4 now = texelFetch(realm_tex, c, 0);
-	return flood_d(vec2(c) + 0.5) <= flood_r ? now : texelFetch(realm_prev, c, 0);
+	if (flood_n > 0 && flood_d(vec2(c) + 0.5) > flood_r) return texelFetch(realm_prev, c, 0);
+	return texelFetch(realm_tex, c, 0);
 }
 vec4 held(ivec2 c) {
 	vec4 o = owner(c);
@@ -61,7 +62,7 @@ void fragment() {
 		if (abs(owner(c + dirs[i]).a - own.a) > 0.001 && near[i] < 0.8) edge = 1.0;
 	}
 	vec4 col = soft.a > 0.001 ? vec4(soft.rgb / soft.a, soft.a * 0.5) : vec4(0.0);
-	float front = flood_r < 10000.0 ? exp(-abs(flood_d(t) - flood_r) * 1.5) : 0.0;
+	float front = flood_n > 0 ? exp(-abs(flood_d(t) - flood_r) * 1.5) : 0.0;
 	col = mix(col, vec4(mix(own.rgb, vec3(1.0, 0.95, 0.8), 0.3), 0.9), front * (own.a > 0.0 ? 1.0 : 0.0));
 	if (edge > 0.5 && own.a > 0.0) col = vec4(own.rgb * 0.5, 0.85);
 	COLOR = col;
@@ -125,24 +126,17 @@ func refresh(world: Dictionary, houses: Dictionary) -> void:
 				var hc := Color.from_string(String(houses[o].get("color", "#888")), Color.GRAY)
 				tint.set_pixel(x, y, Color(hc.r, hc.g, hc.b, (o + 1) / 64.0))
 		ids.append(cells)
-	var flood: Dictionary = terrain._flood_of(_ids, ids)
+	var stages: Array = terrain.flood_stages(_ids, ids, _tint_img, tint)
 	_ids = ids
-	_tint_was = _tint
+	_tint_img = tint
 	_tint = ImageTexture.create_from_image(tint)
 	_base_rect.texture = _base
 	_wash.texture = _tint
-	var m: ShaderMaterial = _wash.material
-	m.set_shader_parameter("realm_tex", _tint)
-	m.set_shader_parameter("realm_prev", _tint_was if _tint_was and not flood.is_empty() else _tint)
-	m.set_shader_parameter("realm_size", Vector2(w, h))
-	if flood.is_empty():
-		m.set_shader_parameter("flood_r", 100000.0)
-		_flood_t = -1.0
-	else:
-		m.set_shader_parameter("flood_at", flood["at"])
-		m.set_shader_parameter("flood_n", (flood["at"] as PackedVector2Array).size())
-		_flood_reach = float(flood["reach"]) + 2.0
-		_flood_t = 0.0
+	(_wash.material as ShaderMaterial).set_shader_parameter("realm_size", Vector2(w, h))
+	if stages.is_empty():
+		_wash_show(_tint, _tint, {})
+	for st in stages:
+		_wash_show(st[0], st[1], st[2])
 	var img := Image.create(1, 1, false, Image.FORMAT_RGBA8)
 	_tex = ImageTexture.create_from_image(img)
 	_seats.clear()
@@ -168,14 +162,41 @@ func _activity(world: Dictionary) -> void:
 			_pings.append([at, TROUBLE, "hunger"])
 
 
+## Shows the houses' colours, flooding them in from {at, reach}, or at once
+## ({}); a flood that comes while one is crossing the map waits for it.
+func _wash_show(now: Texture2D, before: Texture2D, flood: Dictionary) -> void:
+	if _flood_t >= 0.0:
+		_floods.append([now, before if not flood.is_empty() else now, flood])
+		return
+	var m: ShaderMaterial = _wash.material
+	m.set_shader_parameter("realm_tex", now)
+	m.set_shader_parameter("realm_prev", before if not flood.is_empty() else now)
+	if flood.is_empty():
+		m.set_shader_parameter("flood_n", 0)
+		m.set_shader_parameter("flood_r", 100000.0)
+	else:
+		m.set_shader_parameter("flood_at", flood["at"])
+		m.set_shader_parameter("flood_n", (flood["at"] as PackedVector2Array).size())
+		m.set_shader_parameter("flood_r", 0.0)
+		_flood_reach = float(flood["reach"]) + 2.0
+		_flood_t = 0.0
+
+
 func _process(delta: float) -> void:
 	queue_redraw()  # the view marker follows the camera
 	if _flood_t >= 0.0:
 		_flood_t += delta
 		var k := clampf(_flood_t / FLOOD_S, 0.0, 1.0)
-		(_wash.material as ShaderMaterial).set_shader_parameter("flood_r", 100000.0 if k >= 1.0 else _flood_reach * (1.0 - pow(1.0 - k, 2.0)))
+		var m: ShaderMaterial = _wash.material
+		m.set_shader_parameter("flood_r", _flood_reach * (1.0 - pow(1.0 - k, 2.0)))
 		if k >= 1.0:
+			# Done: the flood's loop leaves the shader, and the next waiting flood begins.
 			_flood_t = -1.0
+			m.set_shader_parameter("flood_n", 0)
+			# An instant change shows and the queue goes on; a flood plays and waits its turn.
+			while not _floods.is_empty() and _flood_t < 0.0:
+				var f: Array = _floods.pop_front()
+				_wash_show(f[0], f[1], f[2])
 
 
 func _scale() -> Vector2:

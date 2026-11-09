@@ -727,7 +727,7 @@
     "name": "Court",
     "group": "Play",
     "what": "0.6: the petitioner in front of you waits three seasons; the bar under the card drains.",
-    "file": "screens/v/court-3.jpg",
+    "file": "screens/v/court-4.jpg",
     "before": "screens/before/court.jpg",
     "versions": [
       {
@@ -748,6 +748,13 @@
         "at": "2026-11-09T07:00:41Z",
         "file": "screens/v/court-3.jpg",
         "what": "The court sits once a year, in spring, with two or three matters. The Hand speaks on each petitioner's card in one line."
+      },
+      {
+        "v": 4,
+        "label": "A paused court, when it has matters",
+        "at": "2026-11-09T08:40:28Z",
+        "file": "screens/v/court-4.jpg",
+        "what": "The court sits when it has something worth hearing (one matter early, up to three at the climax); the realm and the reign's clock hold still while it sits; Later sets the card aside, Close the court lets silence settle the rest. Fun bar, Room to breathe (timed 15-minute reign, 6.5 min measured): before 3.6 decisions a minute, the Hand's card always up (≈0% quiet); after 1.08 a minute, 86% quiet."
       }
     ]
   },
@@ -907,9 +914,16 @@
         "at": "2026-11-09T07:49:27Z",
         "file": "screens/v/house-colours-2.jpg",
         "what": "Each house's land washed in its colour with a fine border; the minimap washes stronger, with borders; the seven houses ranked by power above it, the turning ones barred red. Fun bar, I can read the board: before, no ownership on the land (0 of 3 zooms); after, 3 of 3."
+      },
+      {
+        "v": 3,
+        "label": "True house colours, smooth borders",
+        "at": "2026-11-09T08:40:28Z",
+        "file": "screens/v/house-colours-3.jpg",
+        "what": "The land takes each house's own colour at its own brightness (the minimap's colour), strongest in a band along the border, with a fine line at every zoom on a smooth contour, not tile steps."
       }
     ],
-    "file": "screens/v/house-colours-2.jpg"
+    "file": "screens/v/house-colours-3.jpg"
   },
   {
     "id": "house-colours-far",
@@ -1003,8 +1017,31 @@
         "at": "2026-11-09T07:54:31Z",
         "file": "screens/v/ranked-houses-1.jpg",
         "what": "Above the minimap: the great houses by power; a red bar fills under a house turning against the crown."
+      },
+      {
+        "v": 2,
+        "label": "Seven houses, numbered, with power bars",
+        "at": "2026-11-09T08:40:28Z",
+        "file": "screens/v/ranked-houses-2.jpg",
+        "what": "All seven great houses, numbered by power, each with a bar in its own colour (the colour of its land); a red ember marks a house turning against you."
       }
     ],
-    "file": "screens/v/ranked-houses-1.jpg"
+    "file": "screens/v/ranked-houses-2.jpg"
+  },
+  {
+    "id": "director-after-court",
+    "name": "After the court closes",
+    "group": "Play",
+    "what": "Five seconds after the doors close the camera goes to what is happening in the realm (here a battle), until the King takes it back.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "The camera goes to look",
+        "at": "2026-11-09T08:40:29Z",
+        "file": "screens/v/director-after-court-1.jpg",
+        "what": "Five seconds after the doors close the camera goes to what is happening in the realm (here a battle), until the King takes it back."
+      }
+    ],
+    "file": "screens/v/director-after-court-1.jpg"
   }
 ]

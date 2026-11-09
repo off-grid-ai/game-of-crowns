@@ -18,6 +18,7 @@ extends Node
 ##   button Continue     press the visible button whose words begin so
 ##   town Kingsmere      open a town's card
 ##   answer              give the matter on the court card its first answer
+##   director            let the camera director run, as it does in play
 
 var main: Node
 var out := ""
@@ -162,6 +163,10 @@ func _play(quit_after: bool) -> void:
 				if main.rig.is_processing_input() == false:
 					main.rig._apply()
 				await get_tree().create_timer(3.0).timeout
+			"director":
+				# director: the camera director runs as in play (shots turn it off).
+				main._shot["director"] = true
+				main.director.set_process(true)
 			"answer":
 				# answer: give the matter on the court card its first answer (not Later or See).
 				var given := ""

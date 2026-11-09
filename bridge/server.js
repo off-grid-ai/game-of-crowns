@@ -98,7 +98,8 @@ function load(id) {
   world = chron.readJson(path.join(P.state, "world.json"));
   scars = chron.readJson(path.join(P.state, "scars.json"), []);
   detailCache = { file: null, mtime: 0, data: null };
-  turnSeconds = 20;  // one pace for every realm: a season in twenty seconds, a year in under a minute and a half
+  turnSeconds = 40;  // one pace for every realm: a season in forty seconds, with a court at each (GAME_DESIGN)
+  sitting = meta.court?.sitting != null;  // a realm reopened mid-sitting still holds
   paused = meta.status !== "running";
   favour = chron.readJson(path.join(P.state, "favour.json"), {});
   for (const k of Object.keys(favourWhy)) delete favourWhy[k];
@@ -265,7 +266,7 @@ function startFreeciv() {
     send(`lua unsafe-cmd SNAP_DIR = "${P.state}/"`);
     // The Crown's soldiers defend and never take a town unbidden: the ruleset
     // forbids the Normans "Conquer City" (data/realmrules/actions.ruleset).
-    send(`set timeout ${paused ? 0 : turnSeconds}`);
+    send(`set timeout ${timeoutNow()}`);
     snapshot();
   }, 4000);
 }
@@ -834,9 +835,7 @@ function counsel(players, cities, threat) {
   return out.sort((a, b) => b.urgency - a.urgency).filter((o) => !matterResting(o)).map((o) => ({ ...o, key: heardKey(o) }));
 }
 
-// A matter waits for the King only so long: FUSE seasons he watches, then the
-// realm answers for him, it costs him, and the chronicle says so.
-const FUSE = 3;
+// What a matter is, for resting it after it is answered.
 const matterKey = (o) => o.kind ?? (/is starving$/.test(o.text) ? "starving" : o.text.replace(/[\d.,]+/g, "#").replace(/:.*$/, ""));
 function matterResting(o) {
   const at = meta.mattersRest?.[matterKey(o)];
@@ -847,71 +846,109 @@ function matterResting(o) {
 // year) the time it came.
 const heardKey = (o) => `${o.text.replace(/[\d.,]+/g, "#").replace(/:.*$/, "")}${o.occur != null ? `@${o.occur}` : ""}`;
 
-// --- the court's year ---------------------------------------------------------
-// The court sits once a year, in spring. Its doors open on two or three
-// matters (lords with petitions, and one of the realm's own matters, brought
-// by the lord of the house it touches); the King answers them, the doors
-// close, and the board is his until the next spring. Between sittings the Hand
-// calls him only for a crisis (a host on the march, the dead, famine, war, a
-// house near rising), and never within CALL_GAP of the last time the court
-// called him. No matter is put to him twice in a reign.
-const CALL_GAP = 30000;
+// --- the court's season -------------------------------------------------------
+// Once a season the court sits and the realm holds still: Freeciv's turn timer
+// stops, and the reign's clock with it. Petitioners bring their matters, and the
+// realm's own matters come with the lord of the house they touch; the Hand
+// speaks a line on each. The King answers, or closes the court and lets his
+// silence answer. Then the doors shut and the realm moves until next season.
+// One matter early in the reign, rising to three at the climax; a crisis takes
+// the head of the next sitting. No matter is put to him twice in a reign.
 let counselNow = [];  // the realm's matters, as the last reading of the world found them
+let sitting = false;  // a sitting holds the realm until the court closes
+const timeoutNow = () => (paused || sitting ? 0 : turnSeconds);
 const isCrisis = (o) => o.urgency >= 75 || /are at war$/.test(o.text);
 const courtYearOf = () => (meta.court ??= { sitting: null, hand: {}, heard: {}, lastCall: 0 });
 const heardCtx = () => ({ heard: (k) => courtYearOf().heard[k] != null, hear: (k) => { courtYearOf().heard[k] = world?.turn ?? 0; } });
 const courtCtx = () => ({ favour: favourOf, shift: shiftFavour, send: (l) => send(`lua cmd ${l}`), watched: isWatched(), options: meta.options ?? {}, ...heardCtx() });
 
+function hold(on) {
+  // Only while the King watches: a realm left alone lives on, court or no court.
+  on = on && isWatched();
+  if (sitting === on) return;
+  sitting = on;
+  send(`set timeout ${timeoutNow()}`);
+}
+
 function callMatter(o, turn, crisis) {
   const c = courtYearOf();
-  c.hand[o.key] = { ticks: 0, seen: turn, crisis, sitting: crisis ? null : c.sitting };
+  c.hand[o.key] = { crisis, sitting: turn };
   c.heard[o.key] = turn;
 }
 
-async function courtYear(turn) {
+// The court's pace: it sits only when it has something worth hearing. Through
+// the first half of the reign that is one matter every third season; in the
+// third quarter one or two every other season; at the climax every season, one
+// to three (about two); with no clock, one every other season. The petitions
+// setting thins or thickens it. Over a 15-minute reign: about 18 matters in 18
+// minutes of play, so one decision a minute, the board the King's about 80%
+// of the time (at ten seconds a decision).
+function pace() {
+  const k = meta.minutes ? meta.elapsedMs / (meta.minutes * 60000) : null;
+  const r = Math.random();
+  let [every, want] = k == null ? [2, 1] : k < 0.5 ? [3, 1] : k < 0.75 ? [2, r < 0.5 ? 1 : 2] : [1, r < 0.4 ? 1 : r < 0.8 ? 2 : 3];
+  const how = meta.options?.petitions;
+  if (how === "rare") { every += 1; want = Math.max(1, want - 1); }
+  if (how === "often") { every = Math.max(1, every - 1); want = Math.min(3, want + 1); }
+  return { every, want };
+}
+const HAND_YEAR = 4;  // seasons: the Hand calls the King in for a crisis at most once a year
+
+async function courtSeason(turn) {
   if (!court || !world) return;
   const c = courtYearOf();
-  const watched = isWatched();
-  if (watched) court.expire(turn, shiftFavour);
-  // A matter the King leaves burns down in the seasons he watches; one the
-  // realm has settled on its own (the famine ended, the war is over) goes quietly.
-  for (const [key, m] of Object.entries(c.hand)) {
+  // A matter the realm settled on its own (the famine ended, the war is over) goes quietly.
+  if (counselNow.length) for (const key of Object.keys(c.hand)) if (!counselNow.some((x) => x.key === key)) delete c.hand[key];
+  turnHouses(turn);  // watched or not: a house turns, and warns, either way
+  if (!isWatched() || c.sitting != null) { chron.saveMeta(meta); return; }
+  const { every, want: wanted } = pace();
+  const crises = counselNow.filter((o) => isCrisis(o) && o.acts?.length && c.heard[o.key] == null && !c.hand[o.key]);
+  const due = c.lastSat == null || turn - c.lastSat >= every;
+  // Between sittings the Hand calls the King in only for a real crisis, at most once a year.
+  const push = !due && crises.length > 0 && (c.lastPush == null || turn - c.lastPush >= HAND_YEAR);
+  if (!due && !push) { chron.saveMeta(meta); return; }
+  let want = wanted;
+  // The crises head the sitting, two at most (a realm in crisis is pressed, not
+  // flooded); the gravest first, the rest wait for the next sitting.
+  for (const o of crises.slice(0, 2)) { callMatter(o, turn, true); want--; }
+  if (!push) {
+    const own = counselNow.find((o) => !isCrisis(o) && o.acts?.length && c.heard[o.key] == null && !c.hand[o.key]);
+    if (own && want > 0 && (want > 1 || Math.random() < 0.4)) { callMatter(own, turn, false); want--; }
+    if (want > 0) await court.callSitting(world, turn, want, courtCtx());
+    // A story's matter waiting in the hall is heard now, whatever the count.
+    for (const p of court.petitions) if (!p.answered && p.called == null && p.kind === "arc") p.called = turn;
+  }
+  // Only now, with the matters called, does the court sit (a reading taken
+  // meanwhile must not find an empty court and close it under them).
+  const n = Object.keys(c.hand).length + court.petitions.filter((p) => !p.answered && p.called != null).length;
+  if (n) {
+    c.sitting = turn;
+    c.push = push;
+    if (push) c.lastPush = turn;
+    else c.lastSat = turn;
+    c.lastCall = Date.now();
+    hold(true);
+    record({ turn, kind: "court", text: push ? `The Hand calls the King to court: ${crises[0].text}.` : `The court sits for the ${calendar(turn).season} of ${calendar(turn).year}: ${n} ${n === 1 ? "matter waits" : "matters wait"} for the King.` });
+  } else if (due) c.lastSat = turn;
+  chron.saveMeta(meta);
+}
+
+// The King closes the court: whatever he left settles itself. Each house takes
+// his silence as an answer, the chronicle says so, and the realm moves again.
+function closeCourt(turn) {
+  const c = courtYearOf();
+  for (const key of Object.keys(c.hand)) {
     const o = counselNow.find((x) => x.key === key);
-    if (!o) { delete c.hand[key]; continue; }
-    if (watched && turn > m.seen) m.ticks += turn - m.seen;
-    m.seen = turn;
-    if (m.ticks >= FUSE) {
+    if (o) {
       lapse({ key: matterKey(o), text: o.text, lapse: lapseOf(o) }, turn);
-      delete c.hand[key];
-      // An ultimatum left unanswered is refused: now the lord may rise.
+      // An ultimatum met with silence is refused: now the lord may rise.
       if (o.kind === "ultimatum") for (const t of Object.values(meta.turning ?? {})) if (t.state === "sent" && t.at === o.occur) t.state = "refused";
     }
+    delete c.hand[key];
   }
-  turnHouses(turn);  // watched or not: a house turns, and warns, either way
-  closeIfDone(turn);
-  if (watched && (turn - 1) % 4 === 0 && c.sitting !== turn) {
-    // Spring: the doors open. Two or three matters (rare: two, often: three).
-    c.sitting = turn;
-    let want = { rare: 2, often: 3 }[meta.options?.petitions] ?? (Math.random() < 0.5 ? 2 : 3);
-    const own = counselNow.find((o) => !isCrisis(o) && o.acts?.length && c.heard[o.key] == null && !c.hand[o.key]);
-    if (own) { callMatter(own, turn, false); want--; }
-    await court.callSitting(world, turn, want, courtCtx());
-    const n = Object.values(c.hand).filter((m) => m.sitting === turn).length + court.petitions.filter((p) => !p.answered && p.called === turn).length;
-    if (n) record({ turn, kind: "court", text: `The court sits for the spring of ${calendar(turn).year}: ${n} ${n === 1 ? "matter waits" : "matters wait"} for the King.` });
-    c.lastCall = Date.now();
-  }
-  // A story's matter that comes while the doors are open is heard at this sitting.
-  if (c.sitting != null) for (const p of court.petitions) if (!p.answered && p.called == null && p.kind === "arc") p.called = c.sitting;
-  // Between sittings, the Hand calls the King only for a crisis, one at a time.
-  const crisis = counselNow.find((o) => isCrisis(o) && o.acts?.length && c.heard[o.key] == null && !c.hand[o.key]);
-  const calling = Object.values(c.hand).some((m) => m.crisis);
-  // An ultimatum is never held back: the two seasons it gives the King are all he gets.
-  if (crisis && watched && !calling && (c.sitting != null || crisis.kind === "ultimatum" || Date.now() - c.lastCall >= CALL_GAP)) {
-    callMatter(crisis, turn, true);
-    c.lastCall = Date.now();
-  }
-  closeIfDone(turn);
-  chron.saveMeta(meta);
+  for (const p of court.petitions.filter((x) => !x.answered && x.called != null)) court.unheard(p, turn, shiftFavour);
+  court.saveCourt?.();
+  closeIfDone(turn, true);
 }
 
 // A house turning against the King: each season it stays under 25 its anger
@@ -946,14 +983,21 @@ function rose(pid) {
 }
 
 // Every matter of the sitting answered (or gone home unheard): the doors close.
-function closeIfDone(turn) {
+function closeIfDone(turn, closing = false) {
   const c = courtYearOf();
-  if (c.sitting == null) return;
-  const open = Object.values(c.hand).some((m) => m.sitting === c.sitting) || court?.petitions.some((p) => !p.answered && p.called != null);
-  if (open) return;
+  if (c.sitting == null) {
+    hold(false);  // never held with no court sitting
+    return;
+  }
+  // A matter the realm settled on its own while the court sat (the war ended, the
+  // famine eased) is off the docket: it must not hold the doors, and the realm, shut.
+  if (counselNow.length) for (const key of Object.keys(c.hand)) if (!counselNow.some((x) => x.key === key)) delete c.hand[key];
+  const open = Object.keys(c.hand).length || court?.petitions.some((p) => !p.answered && p.called != null);
+  if (open && !closing) return;
   c.sitting = null;
   c.lastCall = Date.now();
-  record({ turn, kind: "court", text: "The doors of the court close. The realm is the King's until the spring." });
+  hold(false);
+  record({ turn, kind: "court", text: "The doors of the court close, and the realm moves again." });
   chron.saveMeta(meta);
 }
 
@@ -987,6 +1031,7 @@ function handLine(p) {
 // matters (the realm's, then the petitioners). Empty between sittings.
 function docket() {
   const c = courtYearOf();
+  closeIfDone(world?.turn ?? 0);
   const ownerOf = (o) => (o.acts ?? []).map((a) => world?.cities?.find((x) => x.id === Number(a.city))).map((x) => x && world.players.find((p) => p.id === x.owner)).find((p) => p && !houseFor(p).crown && !houseFor(p).wild);
   const hand = Object.entries(c.hand).map(([key, m]) => {
     const o = counselNow.find((x) => x.key === key);
@@ -995,10 +1040,13 @@ function docket() {
     const owner = ownerOf(o);
     const lord = owner ? court.lordOfHouse(owner.id) : null;
     return { id: `hand:${key}`, hand: true, key, crisis: m.crisis, sitting: m.sitting, text: o.text, why: o.why, acts: o.acts,
-      name: lord?.name ?? "The Hand of the King", house: lord ? houseFor(owner).name : "", from: lord?.id ?? null, due: Math.max(1, FUSE - m.ticks) };
+      name: lord?.name ?? "The Hand of the King", house: lord ? houseFor(owner).name : "", from: lord?.id ?? null, due: null };
   }).filter(Boolean).sort((a, b) => Number(b.crisis) - Number(a.crisis));
-  const pets = court.open().filter((p) => p.called != null).map((p) => ({ ...p, sitting: p.called, counsel: handLine(p) }));
-  return [...hand, ...pets];
+  // No fuse at court: the realm holds while it sits, so no timer would tell true.
+  const pets = court.open().filter((p) => p.called != null).map((p) => ({ ...p, due: null, sitting: p.called, counsel: handLine(p), push: !!c.push }));
+  // A court with nothing left to show the King is no court: the doors close, the realm moves.
+  if (c.sitting != null && !hand.length && !pets.length) { c.hand = {}; closeIfDone(world?.turn ?? 0, true); }
+  return [...hand.map((x) => ({ ...x, push: !!c.push })), ...pets];
 }
 
 // What the King's silence costs, matter by matter: the house it touches takes
@@ -1257,8 +1305,8 @@ const lastSeason = { net: 0 };  // the tithe less upkeep, this season, for the t
 const favourPast = {};  // turn -> {house id: favour}, the last two years
 function collectTithe(turn) {
   flushHeld();  // last season's grouped lines
-  // The court's year: a sitting each spring, a crisis between (courtYear).
-  courtYear(turn).catch((err) => console.error("court year:", err));
+  // The court sits each season (courtSeason).
+  courtSeason(turn).catch((err) => console.error("court season:", err));
   if (!world) return;
   favourPast[turn] = { ...favour };
   resolveCampaigns(turn);
@@ -1492,7 +1540,9 @@ function endReign(why, outcome = "completed") {
 
 // The reign's clock only runs while the realm does.
 setInterval(() => {
-  if (!meta || paused || meta.status !== "running" || !fc) return;
+  // The court holds the realm while the King watches; left alone, the realm lives on.
+  if (meta?.court?.sitting != null) hold(true);
+  if (!meta || paused || sitting || meta.status !== "running" || !fc) return;  // the court sitting holds the clock too
   meta.elapsedMs += 5000;
   if (meta.minutes > 0 && meta.elapsedMs >= meta.minutes * 60000) endReign("The appointed time has passed. The reign ends.");
   else {
@@ -1629,7 +1679,7 @@ http.createServer(async (req, res) => {
       // The King's side is his whole host: the garrisons defend Kingsmere too.
       ended: u?.ended && !u.ended.settled && (world?.turn ?? 0) - u.ended.turn <= 8 ? u.ended.house : null,
       theirs: u?.house != null ? fighting(u.house) : 0, ours: crownId != null ? (world?.units ?? []).filter((x) => x.owner === crownId && !CIVILIAN.has(x.type)).length : 0 };
-    return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), story: storyNow(), date: calendar(world.turn), threat, counsel: (counselNow = counsel(players, cities, threat)), effects: effects.slice(-10), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000) });
+    return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), story: storyNow(), date: calendar(world.turn), threat, counsel: (counselNow = counsel(players, cities, threat)), sitting: meta.court?.sitting ?? null, effects: effects.slice(-10), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000) });
   }
   if (url.pathname === "/map") {
     const map = chron.readJson(path.join(P.state, "map.json"));
@@ -1683,14 +1733,14 @@ http.createServer(async (req, res) => {
     meta.minutes = 0;
     paused = false;
     chron.saveMeta(meta);
-    send(`set timeout ${turnSeconds}`);
+    send(`set timeout ${timeoutNow()}`);
     record({ turn: world?.turn ?? 0, kind: "decree", text: "The King rules on." });
     return json(res, 200, reignInfo());
   }
   if ((url.pathname === "/pause" || url.pathname === "/resume") && req.method === "POST") {
     if (meta.status !== "running") return json(res, 400, { error: "this reign has ended" });
     paused = url.pathname === "/pause";
-    send(`set timeout ${paused ? 0 : turnSeconds}`);
+    send(`set timeout ${timeoutNow()}`);
     return json(res, 200, reignInfo());
   }
   if (url.pathname === "/reign/options") {
@@ -1707,7 +1757,7 @@ http.createServer(async (req, res) => {
     if ("pace" in b) {
       meta.pace = meta.options.pace;
       turnSeconds = meta.pace;
-      if (!paused) send(`set timeout ${turnSeconds}`);
+      send(`set timeout ${timeoutNow()}`);
     }
     meta.options.pace = meta.pace ?? meta.options.pace;
     chron.saveMeta(meta);
@@ -1725,7 +1775,7 @@ http.createServer(async (req, res) => {
     turnSeconds = Math.max(1, Math.min(600, Number(seconds) || 90));
     meta.pace = turnSeconds;
     chron.saveMeta(meta);
-    if (!paused) send(`set timeout ${turnSeconds}`);
+    send(`set timeout ${timeoutNow()}`);
     return json(res, 200, { turnSeconds });
   }
   if (url.pathname === "/counsel/answer" && req.method === "POST") {
@@ -1910,6 +1960,10 @@ http.createServer(async (req, res) => {
     }
     res.writeHead(200, { "content-type": "audio/wav" });
     return res.end(fs.readFileSync(file));
+  }
+  if (url.pathname === "/court/close" && req.method === "POST") {
+    closeCourt(world?.turn ?? 0);
+    return json(res, 200, inCrowns(docket()));
   }
   if (url.pathname === "/court/answer" && req.method === "POST") {
     const { id, option } = await body(req);

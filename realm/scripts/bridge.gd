@@ -212,6 +212,11 @@ func court(cb: Callable) -> void:
 	_http_get("/court", cb)
 
 
+## Closes the court: what the King left settles itself; cb gets what still stands (nothing).
+func close_court(cb: Callable) -> void:
+	_post("/court/close", {}, func(_c, d): cb.call(d if d is Array else []))
+
+
 func answer_petition(id: String, option: String) -> void:
 	_post("/court/answer", {"id": id, "option": option}, func(code, data):
 		command_done.emit(code == 200, data.get("text", data.get("error", ""))))

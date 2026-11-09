@@ -825,7 +825,7 @@ func set_realm(owners: Array, players: Array) -> void:
 		for v in String(row).split(","):
 			cells.append(-1 if v == "-" or v == "" else int(v))
 		ids.append(cells)
-	var flood := _flood_of(_realm_ids, ids)
+	var was_ids := _realm_ids
 	_realm_ids = ids
 	var realm := Image.create(width, height, false, Image.FORMAT_RGBA8)
 	var war := Image.create(width, height, false, Image.FORMAT_R8)
@@ -848,22 +848,27 @@ func set_realm(owners: Array, players: Array) -> void:
 	_land_mat.set_shader_parameter("realm_tex", realm_tex)
 	_land_mat.set_shader_parameter("war_tex", war_tex)
 	if land3d:
-		land3d.set_realm(realm_tex, _realm_was if _realm_was else realm_tex, war_tex, flood)
-	_realm_was = realm_tex
+		var stages := flood_stages(was_ids, ids, _realm_img, realm)
+		if stages.is_empty():
+			land3d.set_realm(realm_tex, realm_tex, war_tex, {})
+		for st in stages:
+			land3d.set_realm(st[0], st[1], war_tex, st[2])
+	_realm_img = realm
 
 
 var _realm_ids := []  # the owner of every tile, as last shown
-var _realm_was: Texture2D  # the house colours as last shown, for a flood to cross
+var _realm_img: Image  # the house colours as last shown, for a flood to cross
 
 
-## Where land changed hands since the last reading, for its new colour to flood
-## out from: each patch of changed land (a town's fields, usually) floods from
-## its own middle, up to FLOODS of them, as far as the farthest tile changed.
-## Nothing (shown at once) on the first reading or when much of the realm changed.
-const FLOODS := 4
-static func _flood_of(was: Array, now: Array) -> Dictionary:
-	if was.size() != now.size() or was.is_empty():
-		return {}
+## Where land changed hands since the last reading, flooded in stages: each
+## patch of changed land (a town's fields, usually) floods from its own middle,
+## FLOODS patches at a time; more wait for the next stage, so none pops. Each
+## stage is [the colours after it, the colours before it, {at, reach}]. None
+## (shown at once) on the first reading or when much of the realm changed.
+const FLOODS := 8
+static func flood_stages(was: Array, now: Array, was_img: Image, now_img: Image) -> Array:
+	if was.size() != now.size() or was.is_empty() or was_img == null or was_img.get_size() != now_img.get_size():
+		return []
 	var changed := {}
 	for y in now.size():
 		var a: Array = was[y]
@@ -872,7 +877,7 @@ static func _flood_of(was: Array, now: Array) -> Dictionary:
 			if a[x] != b[x]:
 				changed[Vector2i(x, y)] = true
 	if changed.is_empty() or changed.size() > 400:
-		return {}
+		return []
 	# Patches: changed tiles that touch, corners included.
 	var patches: Array = []
 	var seen := {}
@@ -893,17 +898,25 @@ static func _flood_of(was: Array, now: Array) -> Dictionary:
 						todo.append(n)
 		patches.append(patch)
 	patches.sort_custom(func(p, q): return p.size() > q.size())
-	var at := PackedVector2Array()
-	var reach := 0.0
-	for patch in patches.slice(0, FLOODS):
-		var mid := Vector2.ZERO
-		for t in patch:
-			mid += Vector2(t) + Vector2(0.5, 0.5)
-		mid /= patch.size()
-		at.append(mid)
-		for t in patch:
-			reach = maxf(reach, (Vector2(t) + Vector2(0.5, 0.5)).distance_to(mid))
-	return {"at": at, "reach": reach}
+	var out: Array = []
+	var work := was_img.duplicate() as Image
+	var before: Texture2D = ImageTexture.create_from_image(work)
+	for k in range(0, patches.size(), FLOODS):
+		var at := PackedVector2Array()
+		var reach := 0.0
+		for patch in patches.slice(k, k + FLOODS):
+			var mid := Vector2.ZERO
+			for t in patch:
+				mid += Vector2(t) + Vector2(0.5, 0.5)
+				work.set_pixelv(t, now_img.get_pixelv(t))
+			mid /= patch.size()
+			at.append(mid)
+			for t in patch:
+				reach = maxf(reach, (Vector2(t) + Vector2(0.5, 0.5)).distance_to(mid))
+		var after: Texture2D = ImageTexture.create_from_image(work)
+		out.append([after, before, {"at": at, "reach": reach}])
+		before = after
+	return out
 
 
 ## 0 down among the streets, 1 looking at the whole realm.

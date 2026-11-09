@@ -40,12 +40,12 @@ void fragment() {
 	vec2 c = (uv - 0.5) * vec2(SCREEN_PIXEL_SIZE.y / SCREEN_PIXEL_SIZE.x, 1.0) * 1.6;
 	float r = length(c);
 	float ragged = (fbm(uv * 5.0) - 0.5) * 0.35;
-	// The more the war, the further in it comes.
-	float soot = smoothstep(0.95 - blood * 0.35, 1.3, r + ragged) * blood;
+	// A rim, never the middle: the more the war, the thicker it grows, a sixth of the way in at most.
+	float soot = smoothstep(1.25 - blood * 0.12, 1.55, r + ragged * 0.6) * blood;
 	// The stains come from the same noise, read further out: one pass, not two.
-	float stain = smoothstep(0.62, 0.74, fbm(uv * 5.0) + noise(uv * 23.0) * 0.25) * smoothstep(0.85 - blood * 0.25, 1.15, r + ragged * 0.5) * blood;
-	col = mix(col, vec3(0.05, 0.04, 0.035), soot * 0.85);
-	col = mix(col, vec3(0.32, 0.02, 0.015), stain * 0.85);
+	float stain = smoothstep(0.66, 0.78, fbm(uv * 5.0) + noise(uv * 23.0) * 0.25) * smoothstep(1.2 - blood * 0.1, 1.45, r + ragged * 0.4) * blood;
+	col = mix(col, vec3(0.05, 0.04, 0.035), soot * 0.7);
+	col = mix(col, vec3(0.3, 0.03, 0.02), stain * 0.6);
 	col *= 1.0 - drain * smoothstep(0.7, 1.4, r) * 0.45;
 	COLOR = vec4(col, 1.0);
 }
@@ -54,7 +54,7 @@ void fragment() {
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var sh := Shader.new()
 	sh.code = SHADER
 	material = ShaderMaterial.new()
@@ -76,5 +76,10 @@ func _process(delta: float) -> void:
 	_drain = move_toward(_drain, drain, delta * 0.25)
 	visible = _blood > 0.01 or _drain > 0.01
 	if visible:
+		# The whole screen, always (it once came up with no size and drew nothing).
+		var screen := get_viewport().get_visible_rect().size
+		if size != screen:
+			position = Vector2.ZERO
+			size = screen
 		(material as ShaderMaterial).set_shader_parameter("blood", _blood)
 		(material as ShaderMaterial).set_shader_parameter("drain", _drain)

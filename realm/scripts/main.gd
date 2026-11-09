@@ -324,6 +324,7 @@ func _ready() -> void:
 	ui.pause_toggled.connect(func(p): bridge.set_paused(p); ui.toast("The realm holds its breath." if p else "The realm stirs again."))
 	ui.open_menu.connect(func(): title.open())
 	ui.counsel_answered.connect(func(key): bridge.counsel_answered(key))
+	ui.court_closed.connect(func(): director.soon())  # the doors shut: the camera goes to look
 	ui.reign_continued.connect(func(): bridge.continue_reign(func(_c, d): if d is Dictionary: ui.set_reign(d)))
 	ui.town_closed.connect(func(): _selected = -1)
 	ui.open_settings.connect(func(): title.open_settings())
@@ -1191,7 +1192,9 @@ func _on_world(world: Dictionary) -> void:
 		ui.minimap.terrain = terrain
 		ui.minimap.rig = rig
 	ui.minimap.refresh(world, _houses)
-	if int(world.get("turn", 0)) != _court_turn:
+	# Each season, and every reading while the court sits (the realm holds its
+	# turn then, so a sitting that opened after this season's fetch still comes in).
+	if int(world.get("turn", 0)) != _court_turn or world.get("sitting") != null:
 		_court_turn = int(world.get("turn", 0))
 		bridge.court(ui.set_court)
 	if _selected >= 0:

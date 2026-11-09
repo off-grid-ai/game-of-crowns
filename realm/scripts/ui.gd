@@ -32,6 +32,7 @@ signal person_opened(id: String, house: Dictionary)  # the character view
 signal walk_as_king  # step into the King himself, at Kingsmere
 signal story_opened(entry: Dictionary)
 signal reign_continued  # the reign was scored, and the King rules on
+signal court_closed  # the doors shut: the realm moves, and the camera may go and look
 signal counsel_answered(key: String)  # the King answered the Hand's matter  # a story's name clicked in the chronicle
 
 const Features := preload("res://scripts/features.gd")
@@ -537,19 +538,19 @@ func _build_top_bar() -> void:
 		icon.texture = _icon(k[1])
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.custom_minimum_size = Vector2(11, 11)
-		icon.modulate = T.TEXT_3
+		icon.custom_minimum_size = Vector2(15, 15)
+		icon.modulate = T.TEXT_2
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_heading.add_child(icon)
 		var way := Label.new()
 		way.add_theme_font_override("font", T.mono)
-		way.add_theme_font_size_override("font_size", 9)
+		way.add_theme_font_size_override("font_size", 13)
 		way.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_heading.add_child(way)
 		_ways[k[0]] = way
 	_earning = Label.new()
-	_earning.add_theme_font_size_override("font_size", 11)
-	_earning.add_theme_color_override("font_color", T.TEXT_2)
+	_earning.add_theme_font_size_override("font_size", 13)
+	_earning.add_theme_color_override("font_color", T.TEXT)
 	_earning.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_heading.add_child(_earning)
 	who.add_child(_heading)
@@ -664,12 +665,12 @@ func _toggle_pause() -> void:
 func _court_waiting_shown(n: int) -> void:
 	_court_btn.modulate.a = 1.0 if n > 0 else 0.45
 	_court_badge.visible = n > 0
-	_court_btn.tooltip_text = _with_key(("The court: %d matter%s wait%s for you" % [n, "" if n == 1 else "s", "s" if n == 1 else ""]) if n > 0 else "The court sits again in spring. Before then, the Hand calls you only for a crisis.", "court")
+	_court_btn.tooltip_text = _with_key(("The court: %d matter%s wait%s for you" % [n, "" if n == 1 else "s", "s" if n == 1 else ""]) if n > 0 else "The court sits when it has matters for you; the Hand calls you sooner only for a crisis.", "court")
 
 
 func _toggle_court() -> void:
 	if _petitions.is_empty():
-		toast("The court sits again in spring. Before then, the Hand calls you only for a crisis.")
+		toast("Nobody waits at court. It sits when it has matters for you; the Hand calls you sooner only for a crisis.")
 		return
 	if _court_panel.visible:
 		_court_hidden = true
@@ -967,7 +968,7 @@ func _build_minimap() -> void:
 	stack.add_theme_constant_override("separation", 4)
 	frame.add_child(stack)
 	_ranks = Control.new()
-	_ranks.custom_minimum_size = Vector2(MINIMAP_SIZE.x, 30)
+	_ranks.custom_minimum_size = Vector2(MINIMAP_SIZE.x, 40)
 	_ranks.mouse_filter = Control.MOUSE_FILTER_PASS
 	stack.add_child(_ranks)
 	minimap = preload("res://scripts/minimap.gd").new()
@@ -986,11 +987,12 @@ var _rank_order: Array = []
 
 
 func _rank_houses(players: Array) -> void:
-	var great := players.filter(func(p): return p.get("favour") != null and int(p.get("cities", 0)) > 0)
+	var great := players.filter(func(p): return not p["house"].get("wild", false) and not p["house"].get("crown", false) and int(p.get("cities", 0)) > 0)
 	var power := func(p): return int(p.get("cities", 0)) * 2 + int(p.get("units", 0))
 	great.sort_custom(func(a, b): return power.call(a) > power.call(b))
 	great = great.slice(0, 7)  # the seven great houses, never more on the strip
 	var order := great.map(func(p): return int(p["id"]))
+	var most := maxf(1.0, float(power.call(great[0]))) if not great.is_empty() else 1.0
 	var slot := MINIMAP_SIZE.x / maxf(1.0, float(order.size()))
 	for id in _rank_chips.keys():
 		if not order.has(id):
@@ -999,43 +1001,61 @@ func _rank_houses(players: Array) -> void:
 	for i in order.size():
 		var p: Dictionary = great[i]
 		var id: int = order[i]
+		var col := Color.from_string(String(p["house"].get("color", "#888")), Color.GRAY)
 		var chip: Control = _rank_chips.get(id)
 		var fresh := chip == null
 		if fresh:
 			chip = Control.new()
-			chip.size = Vector2(slot, 30)
 			chip.mouse_filter = Control.MOUSE_FILTER_STOP
-			var icon := _sigil_icon(p["house"], 24)
-			icon.position = Vector2((slot - 24.0) * 0.5, 3)
-			icon.size = Vector2(24, 24)
+			# Its place: a number, small, top-left.
+			var place := Label.new()
+			place.name = "Place"
+			place.add_theme_font_override("font", T.mono)
+			place.add_theme_font_size_override("font_size", 10)
+			place.add_theme_color_override("font_color", T.TEXT_3)
+			place.position = Vector2(3, 0)
+			place.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			chip.add_child(place)
+			var icon := _sigil_icon(p["house"], 22)
+			icon.size = Vector2(22, 22)
 			icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			icon.name = "Sigil"
 			chip.add_child(icon)
-			# How far the house has turned against the King: red, filling over seasons.
-			var turn := ProgressBar.new()
-			turn.name = "Turning"
-			turn.show_percentage = false
-			turn.max_value = 1.0
-			turn.position = Vector2((slot - 22.0) * 0.5, 27)
-			turn.size = Vector2(22, 3)
-			turn.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			var track := StyleBoxFlat.new()
-			track.bg_color = Color(1, 1, 1, 0.08)
-			turn.add_theme_stylebox_override("background", track)
-			var fill := StyleBoxFlat.new()
-			fill.bg_color = T.DANGER
-			turn.add_theme_stylebox_override("fill", fill)
-			chip.add_child(turn)
+			# Its power, as a bar in the house's own colour (the colour of its land).
+			for n in ["Track", "Power"]:
+				var bar := ColorRect.new()
+				bar.name = n
+				bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				chip.add_child(bar)
+			# Turning against the King: an ember by the sigil, not a bar that reads as rank.
+			var ember := Panel.new()
+			ember.name = "Ember"
+			var dot := StyleBoxFlat.new()
+			dot.bg_color = T.DANGER
+			dot.set_corner_radius_all(4)
+			ember.add_theme_stylebox_override("panel", dot)
+			ember.size = Vector2(8, 8)
+			ember.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			chip.add_child(ember)
 			_ranks.add_child(chip)
 			_rank_chips[id] = chip
 		# The slots widen or narrow as houses fall or rise.
-		chip.size = Vector2(slot, 30)
-		(chip.get_node("Sigil") as Control).position.x = (slot - 24.0) * 0.5
+		chip.size = Vector2(slot, 40)
+		(chip.get_node("Place") as Label).text = str(i + 1)
+		(chip.get_node("Sigil") as Control).position = Vector2((slot - 22.0) * 0.5, 4)
+		var track := chip.get_node("Track") as ColorRect
+		track.color = Color(col.r, col.g, col.b, 0.22)
+		track.position = Vector2(5, 31)
+		track.size = Vector2(slot - 10.0, 4)
+		var bar := chip.get_node("Power") as ColorRect
+		bar.color = col
+		bar.position = Vector2(5, 31)
+		bar.size = Vector2(maxf(2.0, (slot - 10.0) * float(power.call(p)) / most), 4)
 		var turning := float(p.get("turning", 0.0))
-		var bar := chip.get_node("Turning") as ProgressBar
-		bar.position.x = (slot - 22.0) * 0.5
-		bar.value = turning
-		bar.visible = turning > 0.0
+		var ember := chip.get_node("Ember") as Panel
+		ember.position = Vector2((slot + 22.0) * 0.5 - 2.0, 3)
+		ember.visible = turning > 0.0
+		ember.modulate.a = 0.55 + 0.45 * turning
 		chip.tooltip_text = "%d. %s\n%d towns  ·  %s men-at-arms  ·  favour %d" % [i + 1, String(p["house"].get("name", "")), int(p.get("cities", 0)), _heads(int(p.get("units", 0)) * 200), int(p.get("favour", 0))]
 		if turning > 0.0:
 			chip.tooltip_text += "\n" + ("Turned against you: their ultimatum is on its way." if turning >= 1.0 else "Turning against you. Left under 25, they send an ultimatum before they rise.")
@@ -1062,13 +1082,7 @@ func _build_court() -> void:
 
 # --- state ----------------------------------------------------------------------------
 
-## The time a matter waits for the King, as a thin bar that drains on its own:
-## gold while there's time, red in the last stretch. Its end is kept per matter,
-## so a card that redraws doesn't refill it.
 var _fav_seen := {}  # house id -> the favour last shown, so a change can be seen happening
-var _fuse_ends := {}  # matter -> msec it runs out
-var _fuse_total := {}  # matter -> its whole length, msec
-var _fuse_bars: Array = []  # [bar, matter, total msec]
 
 
 ## What changed that the King didn't order himself (his silence, a petitioner
@@ -1099,45 +1113,8 @@ func _tell_effects(list: Array) -> void:
 		toast("\n".join(lines.slice(-2)))
 
 
-func _fuse_bar(matter: String, seasons: int) -> Control:
-	var total := maxf(1.0, float(seasons)) * _season_s * 1000.0
-	var now := Time.get_ticks_msec()
-	var left := float(_fuse_ends.get(matter, 0)) - now
-	# The bridge counts whole seasons; only re-time when it disagrees by more than one.
-	if not _fuse_ends.has(matter) or absf(left - total) > _season_s * 1000.0:
-		_fuse_ends[matter] = now + total
-		_fuse_total[matter] = total
-	var bar := ProgressBar.new()
-	bar.show_percentage = false
-	bar.custom_minimum_size = Vector2(0, 4)
-	bar.max_value = 1.0
-	bar.mouse_filter = Control.MOUSE_FILTER_PASS
-	bar.tooltip_text = "When this runs out, the realm answers for you."
-	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(1, 1, 1, 0.08)
-	bg.set_corner_radius_all(2)
-	bar.add_theme_stylebox_override("background", bg)
-	var fill := StyleBoxFlat.new()
-	fill.bg_color = T.ACCENT
-	fill.set_corner_radius_all(2)
-	bar.add_theme_stylebox_override("fill", fill)
-	_fuse_bars.append([bar, matter, float(_fuse_total.get(matter, total))])
-	_drain(bar, matter, _fuse_bars[-1][2])
-	return bar
-
-
-func _drain(bar: ProgressBar, matter: String, total: float) -> void:
-	var left := clampf((float(_fuse_ends.get(matter, 0)) - Time.get_ticks_msec()) / total, 0.0, 1.0)
-	bar.value = left
-	var fill: StyleBoxFlat = bar.get_theme_stylebox("fill")
-	fill.bg_color = T.DANGER if left < 0.34 else T.ACCENT
-
-
 func _process(delta: float) -> void:
 	_reveal_pad(delta)
-	_fuse_bars = _fuse_bars.filter(func(f): return is_instance_valid(f[0]))
-	for f in _fuse_bars:
-		_drain(f[0], f[1], f[2])
 	# The reign's end is the only card while it stands.
 	if _end_panel and _end_panel.visible:
 		for p in [_court_panel, _digest_panel, _offer]:
@@ -1153,6 +1130,9 @@ func _process(delta: float) -> void:
 	# buttons grew taller with their names), never over it.
 	if _bar_pill and _date_pill:
 		var below := maxf(_bar_pill.get_global_rect().end.y, _date_pill.get_global_rect().end.y) + 10.0
+		# The realm's numbers too, wherever the bar put them (beside the date on a narrow screen).
+		if _top.size() > 1 and (_top[1] as Control).visible:
+			below = maxf(below, (_top[1] as Control).get_global_rect().end.y + 10.0)
 		for c in [_court_panel, _house_panel, _folk_panel, _form_panel, _ledger_panel, _digest_panel]:
 			if c and is_instance_valid(c):
 				c.offset_top = maxf(70.0, below)
@@ -2094,16 +2074,29 @@ func _epilogue_hold(seconds: float, run: int) -> bool:
 ## Ends a telling under way: its card goes, the camera stops jumping, the panels come back.
 func _epilogue_stop() -> void:
 	_epilogue_run += 1
+	for c in _epilogue_hid:
+		if is_instance_valid(c):
+			(c as CanvasItem).visible = true
+	_epilogue_hid.clear()
 	if _epilogue_card and is_instance_valid(_epilogue_card):
 		_epilogue_card.queue_free()
 		_epilogue_card = null
 		cinema(false)
 
 
+var _epilogue_hid: Array = []  # the bars, minimap and pad put away for the flight
+
+
 func _epilogue(ep: Dictionary) -> void:
 	_epilogue_run += 1
 	var run := _epilogue_run
 	cinema(true)
+	# The whole interface steps aside for the flight: only the realm and the telling.
+	_epilogue_hid.clear()
+	for c in _root.get_children():
+		if c != _omens and (c as CanvasItem).visible:
+			(c as CanvasItem).visible = false
+			_epilogue_hid.append(c)
 	var card := _glass_panel()
 	_epilogue_card = card
 	# A click anywhere moves the telling on.
@@ -2804,8 +2797,8 @@ func clear_chronicle() -> void:
 
 # --- the court --------------------------------------------------------------------------
 
-## What stands before the King (the bridge's docket): a crisis the Hand calls
-## him for, then the spring sitting's matters. A new sitting or crisis brings
+## What stands before the King (the bridge's docket): the crises first, then
+## the sitting's other matters. A new sitting or crisis brings
 ## the court up once, when he isn't using a card; the rest wait on the badge.
 var _court_seen := {}  # matters already put before him, by id
 
@@ -2828,7 +2821,8 @@ func set_court(petitions: Array) -> void:
 		_court_panel.visible = false
 		_held_court = false
 		if had > 0 and _court_met:
-			toast("The doors of the court close. The realm is yours until the spring.")
+			toast("The doors of the court close, and the realm moves again.")
+			court_closed.emit()
 		return
 	if fresh:
 		_court_hidden = false  # a new sitting, or a crisis: the court comes to him once
@@ -2881,8 +2875,8 @@ func _show_audience() -> void:
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 16)
 	v.add_child(head)
-	# The spring sitting, or the Hand calling the King between sittings for a crisis.
-	var where := "The Hand calls you" if p.get("crisis", false) else "The court sits"
+	# The court's own sitting, or the Hand calling the King in between for a crisis.
+	var where := ("The Hand calls you" if p.get("push", false) else "The court sits") + "  ·  the realm holds still"
 	var who := T.label(where + ("  ·  %s" % p["house"] if String(p.get("house", "")) != "" else ""))
 	who.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(who)
@@ -2984,20 +2978,31 @@ func _show_audience() -> void:
 	if ai_words and own.editable:
 		var choices := ", ".join(p.get("options", []).map(func(o): return String(o.get("text", o.get("label", "")))))
 		preload("res://scripts/spark.gd").attach(own, get_tree().current_scene.get("bridge"), "ruling", func(): return "The petition: %s\nThe rulings on offer: %s" % [String(p.get("text", "")), choices], true)
-	# Later is not free: a petitioner left too long goes home unheard, and says so.
-	var due := int(p.get("due", 3)) if p.get("due") != null else 3
-	var when := "this season" if due <= 1 else "%d seasons" % due
-	_court_later(v, "court:" + String(p.get("id", "")), due, "They wait for now. Unanswered within %s, they go home and their house's favour falls by 12." % when, "When this runs out, they go home unheard: their house −12.")
+	_court_later(v, "They wait while you look at the realm; it holds still while the court sits.")
 
 
-## Later, and the fuse under it: the card stands aside, the matter keeps burning.
-func _court_later(v: VBoxContainer, matter: String, due: int, tip: String, fuse_tip: String) -> void:
+## Later (the card stands aside while he looks at the realm, which holds still
+## while the court sits) and Close the court (what he leaves settles itself:
+## each house takes his silence as an answer, and the realm moves again).
+func _court_later(v: VBoxContainer, tip: String) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.add_child(row)
 	var later := _btn("Later", func(): _court_hidden = true; _court_panel.visible = false)
 	later.tooltip_text = tip
-	v.add_child(later)
-	var cost := _fuse_bar(matter, due)
-	cost.tooltip_text = fuse_tip
-	v.add_child(cost)
+	row.add_child(later)
+	var shut := _btn("Close the court", _close_court)
+	shut.tooltip_text = "What you leave settles itself: each house takes your silence as an answer, and the realm moves again."
+	row.add_child(shut)
+
+
+## The King closes the court: the bridge settles what he left, and the doors shut.
+func _close_court() -> void:
+	_court_panel.visible = false
+	var b = get_tree().current_scene.get("bridge")
+	if b and b.has_method("close_court"):
+		b.close_court(set_court)
 
 
 ## The Hand's word, at the King's shoulder: his voice, set apart from the petitioner's.
@@ -3061,8 +3066,7 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 				b.add_theme_stylebox_override(look, frame)
 			b.tooltip_text = "The Hand's advice"
 		acts.add_child(b)
-	var due := int(it.get("due", 3))
-	_court_later(v, "hand:" + String(it.get("key", "")), due, "It waits for now. Left %s, the realm answers for you, and the house it touches takes your silence as an answer." % ("this season" if due <= 1 else "%d seasons" % due), "When this runs out, the realm answers for you.")
+	_court_later(v, "It waits while you look at the realm; the realm holds still while the court sits.")
 
 
 ## A matter settled at court: a moment to see the order taken, then the next,
@@ -3074,7 +3078,8 @@ func _settled(it: Dictionary) -> void:
 	await get_tree().create_timer(0.8).timeout
 	if _petitions.is_empty():
 		_court_panel.visible = false
-		toast("The doors of the court close. The realm is yours until the spring.")
+		toast("The doors of the court close, and the realm moves again.")
+		court_closed.emit()
 	elif _court_panel.visible:
 		_show_audience()
 

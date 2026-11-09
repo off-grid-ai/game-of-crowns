@@ -11,7 +11,6 @@ import path from "node:path";
 import { cityName, houseFor } from "./narrator.js";
 import { decide } from "./claude.js";
 
-const PETITION_FUSE = 3;  // seasons a petitioner waits before the King, once it is their turn
 import { calendar } from "./stakes.js";
 
 // The court's deck of dilemmas: data, so new ones are written, not coded.
@@ -929,22 +928,9 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
     }
   }
 
-  // Those called to a sitting wait on a fuse, each season the King watches
-  // (server.js courtYear): PETITION_FUSE seasons, then they go home unheard and
-  // their house takes the silence as an answer. Those still in the hall, not
-  // yet called, don't tick.
-  expire(turn, shift) {
-    for (const p of this.petitions.filter((x) => !x.answered && x.called != null)) this.expireOne(p, turn, shift);
-  }
-
-  expireOne(p, turn, shift) {
-    const now = Date.now();
-    p.waitedMs = (p.waitedMs ?? 0) + Math.min(30000, now - (p.tick ?? now));
-    p.tick = now;
-    // Each season counts, the first included, so the fuse on the card tells true.
-    p.seasons = (p.front ? p.seasons ?? 0 : 0) + 1;
-    p.front = true;
-    if (p.seasons < PETITION_FUSE || p.waitedMs < (PETITION_FUSE - 1) * 12000) return;
+  // The court closed with this petitioner unheard (server.js closeCourt): they
+  // go home, and their house takes the King's silence as an answer.
+  unheard(p, turn, shift) {
     p.answered = "ignored";
     if (p.kind === "arc") this.onArcRuling?.(p.arc, p.beat, "ignored");
     const c = this.people[p.from];
@@ -1122,7 +1108,6 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
   }
 
   open() {
-    return this.petitions.filter((p) => !p.answered).map(({ id, text, voice, facts, options, house, name, from, arc, beat, thread, front, seasons, called, kind }) => ({ id, text, voice, facts, options, house, name, from, kind, called: called ?? null, ...(arc ? { arc, beat, thread } : {}), seasons: front ? seasons ?? 0 : 0 }))
-      .map((p) => ({ ...p, due: p.called != null ? Math.max(1, PETITION_FUSE - p.seasons) : null }));
+    return this.petitions.filter((p) => !p.answered).map(({ id, text, voice, facts, options, house, name, from, arc, beat, thread, called, kind }) => ({ id, text, voice, facts, options, house, name, from, kind, called: called ?? null, ...(arc ? { arc, beat, thread } : {}), due: null }));
   }
 }

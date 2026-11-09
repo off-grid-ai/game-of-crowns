@@ -1630,8 +1630,13 @@ func _feast(at: Vector3, house: Dictionary) -> void:
 ## comes down, a file of the new lord's men marches in, and his goes up.
 func _handover(at: Vector3, old_house: Dictionary, new_house: Dictionary, town: String) -> void:
 	var r := _rng(at)
+	# Only the latest hand a town passes into is told: an older ceremony there goes.
+	for old in get_children():
+		if old.has_meta("handover") and String(old.get_meta("handover")) == town:
+			old.queue_free()
 	var root := Node3D.new()
 	root.name = "Handover"
+	root.set_meta("handover", town)
 	add_child(root)
 	var old_col := Color.from_string(String(old_house.get("color", "#777")), Color.GRAY)
 	var new_col := Color.from_string(String(new_house.get("color", "#ccc")), Color.WHITE)
@@ -1674,7 +1679,8 @@ func _handover(at: Vector3, old_house: Dictionary, new_house: Dictionary, town: 
 			var st: Tween = s.create_tween()
 			st.tween_interval(r.randf_range(0.8, 2.2))
 			st.tween_callback(func(): _people.play(s, ["Salute", "Cheering", "Battlecry", "Cheering"][r.randi() % 4], r.randf_range(0.9, 1.1))))
-	var tag := _caption(root, "%s passes to %s" % [town, String(new_house.get("name", "a new lord"))], _ground(spot) + Vector3(0, 1.3, 0))
+	# Out on the road the new lord's men came in by, not over the town in the middle of the view.
+	var tag := _caption(root, "%s passes to %s" % [town, String(new_house.get("name", "a new lord"))], _ground(spot + dir * 2.2) + Vector3(0, 0.5, 0))
 	_fade_out(root, 60.0, tag)
 
 

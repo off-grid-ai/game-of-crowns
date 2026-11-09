@@ -210,10 +210,13 @@ func _drape_atlas(mat: Terrain3DMaterial, terrain: Node3D) -> void:
 # --- the houses' land: each house's colour washed over what it holds ----------
 
 ## Freeciv's owner layer on the ground, in the same shader: each house's land
-## faintly in its colour (stronger as the camera pulls back), a fine line where
-## two houses meet, red where they are at war. When land changes hands the new
-## colour floods out across it from where it changed (flood_at, in tiles),
-## over the old (realm_prev). realm_tex: rgb = colour, a = owner id / 64.
+## takes its colour at the land's own brightness (the minimap's colour, the
+## ground still showing through), strongest in a band along its borders, with
+## a fine dark line where two houses meet (red where they are at war), the
+## same few pixels wide at every zoom. The borders follow a smooth contour
+## between tiles, never their square steps. When land changes hands the new
+## colour floods out from each changed patch (flood_at, in tiles) over the old
+## (realm_prev). realm_tex: rgb = colour, a = owner id / 64.
 const REALM_UNIFORMS := """
 uniform sampler2D realm_tex : filter_nearest, repeat_disable;
 uniform sampler2D realm_prev : filter_nearest, repeat_disable;
@@ -221,83 +224,101 @@ uniform sampler2D war_tex : filter_nearest, repeat_disable;
 uniform vec2 realm_size = vec2(1.0);
 uniform float realm_tile = 4.0;
 uniform float realm_mix = 0.0;
-uniform vec2 flood_at[4];
+uniform vec2 flood_at[8];
 uniform int flood_n = 0;
 uniform float flood_r = 100000.0;
 uniform float realm_on = 0.0;
 float flood_d(vec2 t) {
 	float d = 100000.0;
 	for (int i = 0; i < flood_n; i++) d = min(d, distance(t, flood_at[i]));
-	return flood_n > 0 ? d : 0.0;
+	return d;
 }
 vec4 realm_owner(ivec2 c) {
 	c = clamp(c, ivec2(0), ivec2(realm_size) - 1);
-	vec4 now = texelFetch(realm_tex, c, 0);
-	return flood_d(vec2(c) + 0.5) <= flood_r ? now : texelFetch(realm_prev, c, 0);
-}
-vec4 realm_held(ivec2 c) {
-	vec4 o = realm_owner(c);
-	return o.a > 0.0 ? vec4(o.rgb, 1.0) : vec4(0.0);
+	if (flood_n > 0 && flood_d(vec2(c) + 0.5) > flood_r) return texelFetch(realm_prev, c, 0);
+	return texelFetch(realm_tex, c, 0);
 }
 """
 const REALM_WASH := """
 	if (realm_on > 0.5) {
 		vec2 rt = v_vertex.xz / realm_tile;
-		ivec2 rc = ivec2(floor(rt));
-		vec4 own = realm_owner(rc);
-		vec2 rf = fract(rt);
-		float edge = 0.0;
-		float war = 0.0;
-		ivec2 dirs[4] = {ivec2(-1, 0), ivec2(1, 0), ivec2(0, -1), ivec2(0, 1)};
-		float near[4] = {rf.x, 1.0 - rf.x, rf.y, 1.0 - rf.y};
-		for (int i = 0; i < 4; i++) {
-			vec4 other = realm_owner(rc + dirs[i]);
-			if (abs(other.a - own.a) > 0.001) {
-				bool at_war = texelFetch(war_tex, clamp(rc, ivec2(0), ivec2(realm_size) - 1), 0).r > 0.5 && texelFetch(war_tex, clamp(rc + dirs[i], ivec2(0), ivec2(realm_size) - 1), 0).r > 0.5 && other.a > 0.0 && own.a > 0.0;
-				if (near[i] < (at_war ? 0.14 : 0.07)) {
-					edge = 1.0;
-					war = max(war, at_war ? 1.0 : 0.0);
-				}
-			}
-		}
-		// Faint from a little way off, plain from across the realm; never down among the streets.
-		float far_off = smoothstep(14.0, 40.0, length(VERTEX));
-		float wash = far_off * mix(0.32, 0.5, realm_mix);
-		// The front of a flood glows as it crosses the land.
-		float front = flood_r < 10000.0 ? exp(-abs(flood_d(rt) - flood_r) * 2.0) : 0.0;
-		// The wash is smoothed between tiles (no blocky squares); the borders stay sharp.
 		vec2 rg = rt - 0.5;
 		ivec2 rb = ivec2(floor(rg));
 		vec2 rw = fract(rg);
-		vec4 soft = mix(mix(realm_held(rb), realm_held(rb + ivec2(1, 0)), rw.x), mix(realm_held(rb + ivec2(0, 1)), realm_held(rb + ivec2(1, 1)), rw.x), rw.y);
-		if (soft.a > 0.001) {
-			ALBEDO = mix(ALBEDO, soft.rgb / soft.a, (wash + front * 0.35 * far_off) * soft.a);
+		// The four tiles round this spot, each fetched once.
+		ivec2 cs[4] = {rb, rb + ivec2(1, 0), rb + ivec2(0, 1), rb + ivec2(1, 1)};
+		vec4 o[4] = {realm_owner(cs[0]), realm_owner(cs[1]), realm_owner(cs[2]), realm_owner(cs[3])};
+		float w[4] = {(1.0 - rw.x) * (1.0 - rw.y), rw.x * (1.0 - rw.y), (1.0 - rw.x) * rw.y, rw.x * rw.y};
+		// Who holds this spot: the house with most weight among the four (a smooth contour, not tile steps).
+		int best = 0;
+		float lead = -1.0;
+		int other = -1;
+		for (int i = 0; i < 4; i++) {
+			float sc = 0.0;
+			for (int j = 0; j < 4; j++) sc += abs(o[i].a - o[j].a) < 0.001 ? w[j] : 0.0;
+			if (sc > lead) { lead = sc; best = i; }
 		}
-		vec3 line = war > 0.5 ? vec3(0.85, 0.12, 0.1) : (own.a > 0.0 ? own.rgb * 0.45 : vec3(0.1));
-		// The borders stay down among the streets, where the wash gives way.
-		ALBEDO = mix(ALBEDO, line, edge * mix(0.55, 1.0, far_off) * mix(0.7, 0.95, realm_mix));
+		for (int i = 0; i < 4; i++) if (abs(o[i].a - o[best].a) > 0.001) other = i;
+		vec4 own = o[best];
+		float far_off = smoothstep(14.0, 40.0, length(VERTEX));
+		// The border: a few pixels wide at any zoom, where the leading house barely leads.
+		float px = max(fwidth(rt.x), fwidth(rt.y));
+		float gap = lead - 0.5;
+		float edge = other >= 0 ? 1.0 - smoothstep(px * 1.2, px * 2.6 + 0.01, gap) : 0.0;
+		// A band of stronger colour just inside it, as a map would draw a realm's edge.
+		float band = other >= 0 ? 1.0 - smoothstep(0.0, 0.4, gap) : 0.0;
+		bool at_war = other >= 0 && own.a > 0.0 && o[other].a > 0.0
+			&& texelFetch(war_tex, clamp(cs[best], ivec2(0), ivec2(realm_size) - 1), 0).r > 0.5
+			&& texelFetch(war_tex, clamp(cs[other], ivec2(0), ivec2(realm_size) - 1), 0).r > 0.5;
+		float front = flood_n > 0 ? exp(-abs(flood_d(rt) - flood_r) * 2.0) : 0.0;
+		if (own.a > 0.0) {
+			// The house's own colour at the land's brightness: a hue, the ground still showing.
+			float lum = dot(ALBEDO, vec3(0.299, 0.587, 0.114));
+			float hl = max(dot(own.rgb, vec3(0.299, 0.587, 0.114)), 0.05);
+			vec3 tinted = clamp(own.rgb * lum / hl * 1.1, 0.0, 1.0);
+			// Wide washes only from a little way off (never a flat coat over the streets); the band always.
+			float k = far_off * mix(0.45, 0.7, realm_mix) + band * mix(0.35, 0.55, far_off) + front * 0.4 * far_off;
+			ALBEDO = mix(ALBEDO, tinted, clamp(k, 0.0, 0.85));
+		}
+		vec3 line = at_war ? vec3(0.85, 0.12, 0.1) : (own.a > 0.0 ? own.rgb * 0.4 : vec3(0.1));
+		ALBEDO = mix(ALBEDO, line, edge * 0.9);
 	}
 """
 var _flood_t := -1.0  # seconds into a flood; -1: none running
 var _flood_reach := 0.0  # tiles from where it began to the farthest land that changed
+var _floods: Array = []  # floods waiting their turn: [realm, prev, war, {at, reach}]
 
 
 ## The houses' land as the realm reports it (terrain.gd builds the textures).
-## flood: {at: Vector2 tiles, reach: tiles} to flood it out from there, or {} to show it at once.
+## flood: {at: PackedVector2Array of tiles, reach: tiles} to flood it out from
+## there, or {} to show it at once. A flood that comes while one is crossing the
+## land waits for it to finish, so nothing pops.
 func set_realm(realm: Texture2D, prev: Texture2D, war: Texture2D, flood: Dictionary) -> void:
 	if land == null:
 		return
+	if _flood_t >= 0.0 and not flood.is_empty():
+		_floods.append([realm, prev, war, flood])
+		return
+	if _flood_t >= 0.0:
+		_floods.append([realm, realm, war, {}])
+		return
+	_show_realm(realm, prev, war, flood)
+
+
+func _show_realm(realm: Texture2D, prev: Texture2D, war: Texture2D, flood: Dictionary) -> void:
 	var mat: Terrain3DMaterial = land.material
 	mat.set_shader_param("realm_tex", realm)
 	mat.set_shader_param("realm_prev", prev if not flood.is_empty() else realm)
 	mat.set_shader_param("war_tex", war)
 	mat.set_shader_param("realm_on", 1.0)
 	if flood.is_empty():
+		mat.set_shader_param("flood_n", 0)
 		mat.set_shader_param("flood_r", 100000.0)
 		_flood_t = -1.0
 	else:
 		mat.set_shader_param("flood_at", flood["at"])
 		mat.set_shader_param("flood_n", (flood["at"] as PackedVector2Array).size())
+		mat.set_shader_param("flood_r", 0.0)
 		_flood_reach = float(flood["reach"]) + 2.0
 		_flood_t = 0.0
 
@@ -317,9 +338,15 @@ func _process(delta: float) -> void:
 		return
 	_flood_t += delta
 	var k := clampf(_flood_t / FLOOD_S, 0.0, 1.0)
-	land.material.set_shader_param("flood_r", 100000.0 if k >= 1.0 else _flood_reach * (1.0 - pow(1.0 - k, 2.0)))
+	land.material.set_shader_param("flood_r", _flood_reach * (1.0 - pow(1.0 - k, 2.0)))
 	if k >= 1.0:
+		# Done: the flood's loop leaves the shader, and the next waiting flood begins.
 		_flood_t = -1.0
+		land.material.set_shader_param("flood_n", 0)
+		# An instant change shows and the queue goes on; a flood plays and waits its turn.
+		while not _floods.is_empty() and _flood_t < 0.0:
+			var f: Array = _floods.pop_front()
+			_show_realm(f[0], f[1], f[2], f[3])
 
 
 var _atlas_mix := -1.0

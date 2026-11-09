@@ -69,7 +69,7 @@ export function addRecord(entry) {
 // one drives the simulation: Freeciv's settings, the houses' AI traits, the
 // stakes, the court, or a one-time act when the realm first stirs.
 export const OPTION_DEFAULTS = {
-  pace: 20,              // seconds a season lasts: a year in eighty seconds, so a reign's years fly and its consequences come round
+  pace: 40,              // seconds a season lasts, with a court at each: a year in under three minutes
   disasters: "normal",   // floods, fires, famine: none | gentle | normal | cruel
   raiders: "normal",     // barbarians from the wilds: none | normal | hordes
   dead: "normal",        // the dead beyond the wall: off | late | normal | soon
@@ -231,7 +231,7 @@ export function adoptLegacy() {
   fs.cpSync(path.join(DIR, "data", "nation"), path.join(p.data, "nation"), { recursive: true });
   fs.writeFileSync(p.serv, fs.readFileSync(path.join(DIR, "realm.serv"), "utf8"));
   const meta = {
-    id, name: "Aldmere I", scenario: "aldmere", seed: 1066, minutes: 0, pace: 20, created: Date.now(),
+    id, name: "Aldmere I", scenario: "aldmere", seed: 1066, minutes: 0, pace: 40, created: Date.now(),
     elapsedMs: 0, status: "running", score: null, verdict: null,
   };
   saveMeta(meta);
