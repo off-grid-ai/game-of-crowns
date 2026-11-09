@@ -269,3 +269,9 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Not yet seen:** the council in the game window (it opened on the server test). The first act's interlude fired; the three ambitions were picked, none met.
 - **New mark:** the ground reads as grey static on the coast (a look-pass item).
 - **Verdict:** on course. All approved items are built and pushed, with most on the review page.
+
+## 2026-11-09, late (autopilot)
+
+- **Direction:** every approved item is built and pushed; the review page carries all but the council.
+- **Left:** a film of the council in the game window (proven on the server already). The coast ground "grey static" mark is a look item for Mac's call, not approved work.
+- **Verdict:** on course; nothing approved left to build. Waiting on Mac's review.
