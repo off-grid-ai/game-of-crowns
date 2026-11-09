@@ -85,3 +85,17 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - Fun bar, "I can read the board": ownership now shows at 3 of 3 zooms, up from 0 (play-feedback's count from shots).
   - Off on order: the top-leverage Court v2 was queued behind a standalone flood clip, and code edits were held for every film.
 - **Verdict:** off course on sequencing. **Correction:** Court v2 starts the moment step 4 loads. The flood clip and both mark fixes fold into Court v2's single test run (build in batches, test together), and that run is measured for decisions a minute and quiet share. Supervisor this turn: a fresh agent reviewing 6747ff8 and its shots.
+
+## 2026-11-09, 14:05 (autopilot)
+
+- **What's going on:**
+  - Step 4 landed (d76ecc9): the name being earned shown live, an ultimatum before any rising, the last act at three-quarters, and the epilogue flight.
+  - It's on the review page with notes and three marks: the heading is too small to read, the court card covers the treasury bar, and the HUD stays up during the ending.
+  - The supervisor's review of step 3 added two marks: land colour doesn't match the house, and the ladder doesn't rank. It also flagged shader cost.
+  - All of it is folded into the Court v2 batch, which play-feedback started after the last turn's correction (the correction took).
+- **Where we're heading:** Court v2 (a paused seasonal court, 40 s seasons, the director after court), measured in one test run.
+- **Right way?** On the leverage order. Fun bar (play-feedback's counts):
+  - "It says who I am": from the end screen only to always on screen.
+  - "Failure feels fair": from risings with no warning to an ultimatum every time.
+  - "Room to breathe" is still unmeasured (Mac's reign: 3.6 decisions a minute).
+- **Verdict:** on course. Next turn: check Court v2's edits are moving and its run is queued.
