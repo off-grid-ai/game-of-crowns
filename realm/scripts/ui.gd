@@ -538,19 +538,20 @@ func _build_top_bar() -> void:
 		icon.texture = _icon(k[1])
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.custom_minimum_size = Vector2(15, 15)
-		icon.modulate = T.TEXT_2
+		icon.custom_minimum_size = Vector2(17, 17)
+		icon.modulate = T.TEXT
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_heading.add_child(icon)
 		var way := Label.new()
 		way.add_theme_font_override("font", T.mono)
-		way.add_theme_font_size_override("font_size", 13)
+		way.add_theme_font_size_override("font_size", 15)
 		way.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_heading.add_child(way)
 		_ways[k[0]] = way
 	_earning = Label.new()
-	_earning.add_theme_font_size_override("font_size", 13)
+	_earning.add_theme_font_size_override("font_size", 15)
 	_earning.add_theme_color_override("font_color", T.TEXT)
+	_earning.add_theme_font_override("font", T.sans)  # a step heavier than the light titles: read at a glance
 	_earning.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_heading.add_child(_earning)
 	who.add_child(_heading)
@@ -986,7 +987,7 @@ var _rank_chips := {}  # house id -> its sigil
 var _rank_order: Array = []
 
 
-func _rank_houses(players: Array) -> void:
+func _rank_houses(players: Array, fallen: Array = []) -> void:
 	var great := players.filter(func(p): return not p["house"].get("wild", false) and not p["house"].get("crown", false) and int(p.get("cities", 0)) > 0)
 	var power := func(p): return int(p.get("cities", 0)) * 2 + int(p.get("units", 0))
 	great.sort_custom(func(a, b): return power.call(a) > power.call(b))
@@ -1068,6 +1069,27 @@ func _rank_houses(players: Array) -> void:
 		chip.modulate = Color(1.9, 1.6, 0.9) if i < was else Color(0.45, 0.45, 0.45)
 		tw.tween_property(chip, "modulate", Color.WHITE, 1.4).set_delay(0.2)
 	_rank_order = order
+	# The houses that have fallen keep their place at the end, dimmed: seven
+	# sigils always, and the realm remembers who is gone.
+	for n in _ranks.get_children():
+		if n.has_meta("fallen"):
+			n.queue_free()
+	var left := mini(fallen.size(), 7 - order.size())
+	for k in left:
+		var h: Dictionary = fallen[k]
+		var chip := Control.new()
+		chip.set_meta("fallen", true)
+		chip.size = Vector2(slot, 40)
+		chip.position.x = (order.size() + k) * slot
+		chip.mouse_filter = Control.MOUSE_FILTER_STOP
+		chip.modulate = Color(1, 1, 1, 0.35)
+		chip.tooltip_text = "%s has fallen: no town flies its banner." % String(h.get("name", ""))
+		var icon := _sigil_icon(h, 22)
+		icon.size = Vector2(22, 22)
+		icon.position = Vector2((slot - 22.0) * 0.5, 4)
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		chip.add_child(icon)
+		_ranks.add_child(chip)
 
 
 func _build_court() -> void:
@@ -1114,6 +1136,13 @@ func _tell_effects(list: Array) -> void:
 
 
 func _process(delta: float) -> void:
+	var _probe_t := Time.get_ticks_usec()  # DEBUG-PROBE
+	_process_probed(delta)  # DEBUG-PROBE
+	var _probe_dt := Time.get_ticks_usec() - _probe_t  # DEBUG-PROBE
+	if _probe_dt > 20000: print("DEBUG-PROBE slow ui.gd ms=", _probe_dt / 1000)  # DEBUG-PROBE
+
+
+func _process_probed(delta: float) -> void:  # DEBUG-PROBE
 	_reveal_pad(delta)
 	# The reign's end is the only card while it stands.
 	if _end_panel and _end_panel.visible:
@@ -1164,7 +1193,14 @@ func _process(delta: float) -> void:
 			_toast_box.offset_top = gap.x
 			_toast_box.add_theme_stylebox_override("panel", _toast_style)
 		elif _toast_result:
-			_toast_box.offset_top = _toast_top
+			# Never over the card he is reading: under the cards, at the screen's foot,
+			# if that's clear; only with no room anywhere does it sit up top.
+			var low := get_viewport().get_visible_rect().size.y - h - 24.0
+			var clear := true
+			for c in _cards + [_town_panel]:
+				if c and is_instance_valid(c) and c.visible and c.get_global_rect().end.y > low:
+					clear = false
+			_toast_box.offset_top = low if clear else _toast_top
 			_toast_box.add_theme_stylebox_override("panel", _toast_solid)
 		else:
 			_toast_time = 0.0  # a caption with nowhere to sit is let go
@@ -2364,7 +2400,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		_standing.text = ("All %d great houses would answer your banners. The realm is yours in truth." % great.size() + next_aim) if all_in \
 			else "%d of %d great houses would answer your banners. Win all of them and the realm is yours in truth." % [with_me, great.size()]
 	_purse = int(world.get("crown", {}).get("treasury", 0))  # the court's orders check the purse
-	_rank_houses(world.get("players", []))
+	_rank_houses(world.get("players", []), world.get("fallen", []))
 	_omens.read(float(world.get("peace", 1.0)), float((world.get("crown", {}) as Dictionary).get("treasury", -1)) if world.has("crown") else -1.0)
 	for pid in houses:
 		_house_by_name[String(houses[pid].get("name", ""))] = houses[pid]
