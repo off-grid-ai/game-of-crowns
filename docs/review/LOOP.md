@@ -256,3 +256,16 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Fixed:** the server points at The Broken Oath again; it's running and paused.
 - **Prevention:** the script now waits for the server to answer before it starts, and only moves a test reign once Mac's realm is confirmed active.
 - **Side effect:** The Broken Oath's world moved on during tests (now turn 257). That reign had already ended and been scored.
+
+## 2026-11-09, night (measured reign)
+
+- **Run:** 8.5 minutes of a timed 15-minute reign, after every bet landed. The harness answered the court, read the interludes and followed a house.
+- **Room to breathe:** about 0.65 decisions a minute (target ≤1; Mac's reign was 3.6). Once flowing, a sitting took 8–11 s from opening to closing.
+  - The realm was held for about half of wall time, but most of that was the harness: two minutes to clear the opening screen, and an unanswerable crisis card. That needs a human run to read properly.
+- **Filmed:**
+  - A lord's petition card: face, want, and the chips for who each answer helps and hurts.
+  - Following a house: the camera rode with a host into a skirmish.
+  - The roads.
+- **Not yet seen:** the council in the game window (it opened on the server test). The first act's interlude fired; the three ambitions were picked, none met.
+- **New mark:** the ground reads as grey static on the coast (a look-pass item).
+- **Verdict:** on course. All approved items are built and pushed, with most on the review page.
