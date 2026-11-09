@@ -26,8 +26,7 @@ A living medieval-fantasy world that runs on its own on your laptop. You are its
 - **Our edge is the local model (Off Grid AI Desktop).** With no call caps and no cloud cost, every NPC can have a mind of its own, not just the named lords.
 - **You are guest and Ford at once.** You walk among them and talk (they remember you), and you write their narratives (story arcs), which they then live out in their own way.
 
-## v1: what ships (frozen 2026-11-05)
-Nothing new goes in unless it blocks the bar below; ideas go to v1.1.
+## v1: what ships
 - **In v1:** the world, towns, seasons, crops, coast and rivers; battles on open ground with no one inside a building, and the mounted messenger; every person a mind (memory, mood, plans, talk with you by voice and with each other, gossip that travels); story arcs, commoners included; the double-click Mac app.
 - **The bar:** one combined check passes (no one inside a building or sunk, no script errors, screenshots look right); Ali plays a session from the app and it holds up (speed as it stands is fine, Ali 2026-11-05); signed with the Off Grid AI Developer ID.
 - **Release calls (2026-11-05, agreed):** always day for v1, with no day/night toggle (nights return in v1.1 with lit windows and torches); no tall grass inside towns; a richer colour grade; conversations as captions, not spoken; arc beats in short fixed lines with one line of colour from the model; any scene that fails the final pass (duel, siege, interiors, close-up battle) stops playing rather than being fixed.
