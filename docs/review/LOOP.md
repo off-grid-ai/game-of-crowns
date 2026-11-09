@@ -164,3 +164,14 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Where we're heading:** steady frames at season turns, then unique names.
 - **Right way?** Yes. Performance is the #1 negative-review driver, and the stutter covers 19–26% of play time.
 - **Verdict:** on course. Supervisor this turn: a read-only search for the stutter's cause, with file:line and the proven Godot fix for each. The findings go to play-feedback to speed it up.
+
+## 2026-11-09, 15:45 (stutter causes)
+
+- **Evidence:** perf.log shows +227 people and +7,460 nodes in one turn, then 3 fps with 333 ms frames.
+- **Likely causes:**
+  1. scenes.sync stages every new battle and muster in one frame, with no budget.
+  2. Town walk maps re-bake synchronously at a fine cell size, most turns.
+  3. A single town build overruns the 12 ms budget, plus repeated Terrain3D update_maps.
+  4. units.sync builds figures and routes all at once.
+  5. Synchronous first-use loads.
+- **Sent to play-feedback** with the proven Godot fixes: per-frame time budgets with await, async navigation bakes, WorkerThreadPool, pooling, threaded loads. Target: no frame over 50 ms at a season turn, a median of at least 30 fps, every behaviour kept.
