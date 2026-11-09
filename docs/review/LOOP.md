@@ -109,3 +109,17 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Where we're heading:** commit Court v2 with "Room to breathe" measured.
 - **Right way?** Yes on content and order. Three runs means fixes are converging, not looping; each run found a new real bug. Watch item: the director didn't tour in run #1, and a probe is checking why.
 - **Verdict:** on course. Supervisor this turn: a fresh agent reviewing the uncommitted Court v2 diff for lost behaviour, deadlocks and the pacing arithmetic, before commit.
+
+## 2026-11-09, 14:35 (supervisor findings on Court v2)
+
+- **Deadlocks:**
+  - A race in courtSeason can leave the realm paused forever (server.js:893/965).
+  - The realm can pause with no card showing (server.js:968/1012).
+  - The flood queue can stall (land3d.gd:299).
+- **Lost behaviour:**
+  - The Hand's crisis push-in is gone.
+  - Only one crisis is heard per sitting.
+  - Unwatched realms freeze mid-sitting.
+  - The petitions setting is half dead.
+- **Pacing, by the code's arithmetic:** about 1.7 decisions a minute and 77% quiet. The quiet passes; "≤1 a minute" fails, because a court every 40 s season can't pass it.
+- **Course correction:** all of it sent back before commit. Pacing fix within approval: 40 s seasons and "one rising to three" kept, plus a budget so the court sits only when it has something worth hearing (about every other season early, every season at the climax), targeting ≤1 a minute and ≥60% quiet. Flagged on the brief for Mac.
