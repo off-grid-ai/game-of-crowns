@@ -333,6 +333,7 @@ export class Arcs {
     }
     if (aside) {
       (arc.asides ??= []).push(beat.id);
+      if (beat.court) this.toCourt(arc, beat, roles, ctx);  // a beat of your own that comes before the King
       arc.beats.push({ beat: beat.id, stage: beat.stage ?? "rising", clock: this.clock, turn: ctx.world.turn, text: text + said, yours: true });
       if (lua.length && ctx.refresh) await ctx.refresh();
       return;

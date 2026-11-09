@@ -525,6 +525,7 @@ const BEAT_WHEN = {
   act1: { label: "In the first act", if: { act: [">=", 1] } },
   act2: { label: "In the second act", if: { act: [">=", 2] } },
   act3: { label: "In the third act", if: { act: [">=", 3] } },
+  act4: { label: "In the last act", if: { act: [">=", 4] } },
   late: { label: "Late in the story", if: { seasons: [">=", 8] } },
   dire: { label: "When the threat runs high", if: { threat: [">=", 60] } },
   march: { label: "When a usurper marches", if: { usurper: "march" } },
@@ -540,6 +541,11 @@ const BEAT_DOES = {
   turns: { label: "Their house turns from the crown", do: (who) => ({ favour: { [who]: -15 } }) },
   warms: { label: "Their house warms to the crown", do: (who) => ({ favour: { [who]: 15 } }) },
   dies: { label: "They die", stage: "crisis", do: (who, text) => ({ die: { who, how: text.replace(/\{\w+(\.\w+)?\}/g, "").slice(0, 120) } }) },
+  // They come before the King with it: two answers, and neither is free.
+  court: { label: "They bring it to the King", do: () => ({}), court: (who, text) => ({ from: who, text: `{${who}} comes before the King: "${text.replace(/"/g, "'")}"`, options: [
+    { id: "grant", label: "Grant {" + who + "} what they ask (200 gold)", hint: "{" + who + ".houseName} +15 · the treasury pays for it", cost: 200, favour: { [who]: 15 }, result: "The King grants it. {" + who + "} bows low, and {" + who + ".he} will remember." },
+    { id: "refuse", label: "Send {" + who + "} away", hint: "{" + who + ".houseName} −15 · they leave with nothing", favour: { [who]: -15 }, result: "The King refuses. {" + who + "} leaves the hall without a word." },
+  ] }) },
 };
 
 function storyForForm(t) {
@@ -569,6 +575,8 @@ function arcCtx() {
     // A story's march waits on the house's ultimatum, as any rising does (turnHouses).
     declare: (pid, size) => storyMarch(pid, size),
     usurperStage: () => stakes?.s.usurper.stage ?? "none",
+    // How far through its clock the reign is (0-1): a story's acts land at its quarters.
+    reignAt: meta.minutes > 0 ? Math.min(1, meta.elapsedMs / (meta.minutes * 60000)) : null,
     refresh: () => new Promise((r) => { snapshot(); setTimeout(r, 900); }),
   };
 }
@@ -864,6 +872,8 @@ const heardCtx = () => ({ heard: (k) => courtYearOf().heard[k] != null, hear: (k
 const courtCtx = () => ({ favour: favourOf, shift: shiftFavour, send: (l) => send(`lua cmd ${l}`), watched: isWatched(), options: meta.options ?? {}, ...heardCtx() });
 
 function hold(on) {
+  // An act told back holds the realm until the King has read it, whatever else lets go.
+  on = on || (meta?.status === "running" && meta?.interlude != null && !meta.interlude.seen);
   // Only while the King watches: a realm left alone lives on, court or no court.
   on = on && isWatched();
   if (sitting === on) return;
@@ -1492,6 +1502,70 @@ function lastAct() {
   record({ turn: world?.turn ?? 0, kind: "act", text: `The last act of the reign begins. What comes for the throne now: ${threat}.` });
 }
 
+// The King's ambitions: three goals he carries from his first season, each a
+// way to be remembered. Met, it is told in the chronicle, the great houses
+// warm to a King who does what he set out to do, and history counts it.
+const AMBITIONS = [
+  { key: "peace", text: "Keep the realm truly at peace for two whole years", met: () => history.length >= 8 && history.slice(-8).every((r) => r.peace >= 0.85) },
+  { key: "treasury", text: "Fill the royal treasury to 200,000 crowns", met: () => (history.at(-1)?.treasury ?? 0) >= 2000 },  // history keeps gold; a crown is a hundredth of it
+  { key: "loyal", text: "Win four of the great houses to the crown", met: () => (world?.players ?? []).filter((p) => !houseFor(p).wild && !houseFor(p).crown && favourOf(p.id) >= 60).length >= 4 },
+  { key: "grow", text: "Grow the realm by a fifth", met: () => meta.ambitionsFrom?.pop > 0 && (history.at(-1)?.pop ?? 0) >= meta.ambitionsFrom.pop * 1.2 },
+  { key: "decrees", text: "Rule with a firm hand: twenty decrees in the King's name", met: () => chronicle.filter((e) => e.kind === "decree" && e.turn >= (meta.ambitionsFrom?.turn ?? 0)).length >= 20 },
+];
+
+function ambitions() {
+  if (!meta.minutes || meta.status !== "running" || !world) return;
+  if (!meta.ambitions) {
+    // Three that aren't already true when the reign begins, chosen by the realm's own seed.
+    meta.ambitionsFrom = { turn: world.turn, pop: history.at(-1)?.pop ?? 0 };  // what this reign is measured from
+    const open = AMBITIONS.filter((a) => !a.met());
+    const hash = (t) => t.split("").reduce((h, ch) => (Math.imul(h, 31) + ch.charCodeAt(0)) >>> 0, 7);
+    meta.ambitions = [...open].sort((a, b) => hash(meta.id + a.key) - hash(meta.id + b.key)).slice(0, 3).map((a) => ({ key: a.key, text: a.text, met: null }));
+    chron.saveMeta(meta);
+  }
+  for (const a of meta.ambitions) {
+    if (a.met != null || !AMBITIONS.find((x) => x.key === a.key)?.met()) continue;
+    a.met = world.turn;
+    for (const p of world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown)) favour[p.id] = Math.min(100, favourOf(p.id) + 5);
+    saveFavour();
+    record({ turn: world.turn, kind: "ambition", text: `The King's ambition is fulfilled: ${a.text.toLowerCase()}. The great houses take note.` });
+    chron.saveMeta(meta);
+  }
+}
+
+// The reign in acts: at each quarter of its clock the act just gone is told
+// back. Two or three of the King's weightiest choices in it, each where it
+// happened and what came of it, then the name he is earning. The realm waits
+// while he reads it (the clock and the seasons hold), and goes on when he has.
+function interlude() {
+  if (!meta.minutes || meta.status !== "running") return;
+  const q = Math.floor((meta.elapsedMs / (meta.minutes * 60000)) * 4);
+  if (q < 1 || q > 3 || (meta.interludes ??= []).includes(q)) return;
+  const from = meta.interlude?.turn ?? 0;
+  meta.interludes.push(q);
+  const picked = [];
+  for (const c of [...(meta.choices ?? [])].filter((c) => c.turn > from).sort((a, b) => Math.abs(b.d) - Math.abs(a.d))) {
+    if (picked.length >= 3) break;
+    if (c.city == null || picked.some((x) => x.pid === c.pid)) continue;
+    picked.push(c);
+  }
+  const named = epithetNear(history, decreesIssued);
+  const choices = picked.sort((a, b) => a.turn - b.turn).map((c) => {
+    const p = world?.players?.find((x) => x.id === c.pid);
+    const when = calendar(c.turn);
+    const f = Math.round(favourOf(c.pid));
+    return { city: c.city, text: `${when.season[0].toUpperCase()}${when.season.slice(1)} of ${when.year}, ${p ? houseFor(p).name : "a great house"}: you ${theirs(c.what)}.`,
+      after: f >= 60 ? "They stand by you for it." : f < 25 ? "They have not forgiven it." : c.d > 0 ? "They remember it." : "They bent the knee, and kept the grudge." };
+  });
+  const acts = ["first", "second", "third"];
+  const met = (meta.ambitions ?? []).filter((a) => a.met != null).length;
+  const ambit = meta.ambitions?.length ? ` Your ambitions: ${met} of ${meta.ambitions.length} fulfilled.` : "";
+  choices.push({ city: -1, text: `So far, history would name you ${named.name}.`, after: (named.next ? `Close behind: ${named.next}.` : "") + ambit });
+  meta.interlude = { q, title: `The ${acts[q - 1]} act ends`, turn: world?.turn ?? 0, choices, fates: [], seen: false };
+  chron.saveMeta(meta);
+  record({ turn: world?.turn ?? 0, kind: "act", text: `The ${acts[q - 1]} act of the reign ends.` });
+}
+
 // How the reign ends, shown before its name: the King's weightiest choices,
 // three or four, each where it happened, and what became of every great house.
 function epilogue() {
@@ -1510,6 +1584,11 @@ function epilogue() {
     return { city: c.city, text: `${when.season[0].toUpperCase()}${when.season.slice(1)} of ${when.year}, ${p ? houseFor(p).name : "a great house"}: you ${theirs(c.what)}.`,
       after: f >= 60 ? "They stood by you to the end." : f < 25 ? "They never forgave it." : c.d > 0 ? "They remembered it." : "They bent the knee, and kept the grudge." };
   });
+  if (meta.ambitions?.length) {
+    const met = meta.ambitions.filter((a) => a.met != null);
+    choices.push({ city: -1, text: met.length ? `You set out to ${met.map((a) => a.text.charAt(0).toLowerCase() + a.text.slice(1)).join(", and to ")}, and you did.` : "You set out with three ambitions, and met none of them.",
+      after: `${met.length} of ${meta.ambitions.length} ambitions fulfilled.` });
+  }
   const power = (p) => world.cities.filter((c) => c.owner === p.id).length * 2 + (p.units ?? 0);
   const mightiest = [...great].sort((a, b) => power(b) - power(a))[0];
   const fates = great.map((p) => {
@@ -1565,12 +1644,14 @@ function endReign(why, outcome = "completed") {
 // The reign's clock only runs while the realm does.
 setInterval(() => {
   // The court holds the realm while the King watches; left alone, the realm lives on.
-  if (meta?.court?.sitting != null) hold(true);
+  if (meta?.court?.sitting != null || (meta?.status === "running" && meta?.interlude && !meta.interlude.seen)) hold(true);
   if (!meta || paused || sitting || meta.status !== "running" || !fc) return;  // the court sitting holds the clock too
   meta.elapsedMs += 5000;
   if (meta.minutes > 0 && meta.elapsedMs >= meta.minutes * 60000) endReign("The appointed time has passed. The reign ends.");
   else {
     lastAct();
+    ambitions();
+    interlude();
     if (meta.elapsedMs % 30000 === 0) chron.saveMeta(meta);
   }
 }, 5000);
@@ -1613,7 +1694,7 @@ function reignInfo() {
     id: meta.id, name: meta.name, scenario: meta.scenario, status: meta.status, paused, minutes: meta.minutes,
     elapsedMs: meta.elapsedMs, remainingMs: meta.minutes > 0 ? Math.max(0, meta.minutes * 60000 - meta.elapsedMs) : null,
     score: meta.score, verdict: meta.verdict, title: meta.title, outcome: meta.outcome, ended: meta.endedAt,
-    epilogue: meta.epilogue ?? null, lastAct: meta.lastAct ?? null, readings: meta.status === "running" ? readings() : null,
+    epilogue: meta.epilogue ?? null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, readings: meta.status === "running" ? readings() : null,
     souls: world?.cities?.reduce((t, c) => t + soulsOf(c.size), 0) ?? 0,
   };
 }
@@ -1984,6 +2065,12 @@ http.createServer(async (req, res) => {
     }
     res.writeHead(200, { "content-type": "audio/wav" });
     return res.end(fs.readFileSync(file));
+  }
+  if (url.pathname === "/interlude/close" && req.method === "POST") {
+    if (meta.interlude) meta.interlude.seen = true;
+    chron.saveMeta(meta);
+    if (meta.court?.sitting == null) hold(false);
+    return json(res, 200, { ok: true });
   }
   if (url.pathname === "/court/close" && req.method === "POST") {
     closeCourt(world?.turn ?? 0);
@@ -2421,7 +2508,7 @@ http.createServer(async (req, res) => {
       const does = BEAT_DOES[b.does ?? "nothing"];
       if (!does) return json(res, 400, { error: "choose what it does" });
       const n = Math.max(0, ...t.asides.map((x) => Number(String(x.id).replace(/\D/g, "")) || 0)) + 1;
-      t.asides.push({ id: `yours-${n}`, text, speaker: who, stage: does.stage ?? "rising", when: when.if, do: does.do(who, text), form: { who, when: b.when, does: b.does ?? "nothing" } });
+      t.asides.push({ id: `yours-${n}`, text, speaker: who, stage: does.stage ?? "rising", when: when.if, do: does.do(who, text), ...(does.court ? { court: does.court(who, text) } : {}), form: { who, when: b.when, does: b.does ?? "nothing" } });
     }
     const problems = check(t);
     if (problems.length) return json(res, 400, { error: "that beat doesn't hold together", problems });

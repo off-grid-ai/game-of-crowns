@@ -212,6 +212,11 @@ func court(cb: Callable) -> void:
 	_http_get("/court", cb)
 
 
+## The King has read an act's interlude: the realm goes on.
+func close_interlude() -> void:
+	_post("/interlude/close", {}, func(_c, _d): pass)
+
+
 ## Closes the court: what the King left settles itself; cb gets what still stands (nothing).
 func close_court(cb: Callable) -> void:
 	_post("/court/close", {}, func(_c, d): cb.call(d if d is Array else []))

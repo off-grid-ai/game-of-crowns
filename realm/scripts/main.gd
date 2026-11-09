@@ -325,6 +325,7 @@ func _ready() -> void:
 	ui.open_menu.connect(func(): title.open())
 	ui.counsel_answered.connect(func(key): bridge.counsel_answered(key))
 	ui.court_closed.connect(func(): director.soon())  # the doors shut: the camera goes to look
+	ui.interlude_closed.connect(func(): bridge.close_interlude())  # the act told back: the realm goes on
 	ui.reign_continued.connect(func(): bridge.continue_reign(func(_c, d): if d is Dictionary: ui.set_reign(d)))
 	ui.town_closed.connect(func(): _selected = -1)
 	ui.open_settings.connect(func(): title.open_settings())
@@ -371,6 +372,7 @@ func _ready() -> void:
 	var figures: Node = preload("res://scripts/portrait.gd").new()
 	add_child(figures)
 	lore.portrait = figures.request
+	ui.portrait = figures.request  # the petitioner, painted on the court's card
 	hero.name_changed.connect(lore.refresh)
 	add_child(title)
 	title.began.connect(func(): _intro_due = true)

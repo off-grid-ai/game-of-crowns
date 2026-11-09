@@ -279,7 +279,7 @@
       { "id": "settle", "label": "Let them settle empty land", "hint": "{town} grows · {me.house} −10, furious",
         "effects": { "favour": { "me": -10 }, "units": { "me": { "count": 1, "type": "Warriors" } } },
         "text": "The clansfolk settle the empty hills by {town}. {me} posts guards on every road." },
-      { "id": "drive", "label": "Drive them back", "hint": "{me.house} +5 · they will come back angrier",
+      { "id": "drive", "label": "Drive them back (80 gold)", "cost": 80, "hint": "{me.house} +5 · the riders are the crown's to pay · they will come back angrier",
         "effects": { "favour": { "me": 5 } },
         "text": "{me.house}'s riders drive the clansfolk back into the snow." },
       { "id": "levy", "label": "Take their fighters into the King's host", "hint": "The crown gains warriors · {me.house} −5",
@@ -354,7 +354,7 @@
       { "id": "hang", "label": "Demand them for hanging", "hint": "{me.house} −15 · every levy hears of it",
         "effects": { "favour": { "me": -15 } },
         "text": "The deserters are handed over and hanged at the crossroads. The levies stop running." },
-      { "id": "pardon", "label": "Pardon them, back to the levy", "hint": "The crown gains men · {me.house} +5",
+      { "id": "pardon", "label": "Pardon them, back to the levy (50 gold)", "cost": 50, "hint": "The crown gains men, and pays to rearm them · {me.house} +5",
         "effects": { "units": { "crown": { "count": 2, "type": "Pikemen" } }, "favour": { "me": 5 } },
         "text": "The deserters are pardoned and march back to the King's banner." },
       { "id": "let", "label": "Let {me.house} keep them", "hint": "{me.house} +10 · the King's levy is a joke",
@@ -483,7 +483,7 @@
       { "id": "strike", "label": "Strike {rival.house} first", "hint": "War: {me.house} marches on {rival.house} in your name",
         "effects": { "war": ["me", "rival"], "favour": { "me": 15, "rival": -30 } },
         "text": "The King names {rival} a traitor. {me.house} marches in the crown's name." },
-      { "id": "quiet", "label": "Keep it quiet and watch", "hint": "{me.house} +5 · {rival} does not know you know",
+      { "id": "quiet", "label": "Keep it quiet and watch (60 gold)", "cost": 60, "hint": "{me.house} +5 · a watcher on {rival}, paid by the crown · {rival} does not know you know",
         "effects": { "favour": { "me": 5 } },
         "text": "The King thanks {me} and burns the letter. The court never hears of it." }
     ]

@@ -990,6 +990,8 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
     if (p.kind === "arc") {
       for (const [pid, n] of Object.entries(opt.favour ?? {})) out.favour[pid] = n;
       out.text = opt.result || `The King gives his answer: ${String(opt.label).toLowerCase()}.`;
+      // The petitioner keeps the King's answer: it comes back in what they ask later.
+      if (c) { this.remember(c.id, `I came before the King and he chose: ${String(opt.label).toLowerCase()}.`); this.save(c); }
       this.onArcRuling?.(p.arc, p.beat, option);
     } else if (p.deck) {
       this.play(p, option, world, out, gold);
@@ -1129,6 +1131,22 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
   }
 
   open() {
-    return this.petitions.filter((p) => !p.answered).map(({ id, text, voice, facts, options, house, name, from, arc, beat, thread, called, kind }) => ({ id, text, voice, facts, options, house, name, from, kind, called: called ?? null, ...(arc ? { arc, beat, thread } : {}), due: null }));
+    // Who stands before the King, enough to paint them on the card (portrait.gd).
+    // Each great house speaks in its own register before its matter: plain in the
+    // North, by the ledger in the West, by the tide on the islands, and so on.
+    const ADDRESS = {
+      "House Wolfholt": "Plain words from the North, Your Grace.",
+      "House Goldcrest": "Your Grace, a matter of accounts, and of what is owed.",
+      "House Ironreach": "The sea doesn't wait, Sire, and neither will we.",
+      "House Thornvale": "With respect, and the gods' blessing on the King.",
+      "House Stormhold": "We have weathered worse, Your Grace. Hear us all the same.",
+      "House Sunspire": "The South has waited long enough, Your Grace.",
+      "House Highfell": "On our oath to the crown, Your Grace.",
+    };
+    // And the one thing they want of this reign, shown on their card.
+    const who = (cid) => { const c = this.people[cid]; return c ? { id: c.id, name: c.name, age: c.age, gender: c.gender, role: c.role ?? null, rank: c.rank ?? null, want: c.goals?.[0]?.text ? theirWords(c.goals[0].text) : null } : null; };
+    // A lord's aim is in their own words ("see my daughter wed"); the card says it of them.
+    function theirWords(t) { return t.replace(/\bmy\b/g, "their").replace(/\bme\b/g, "them").replace(/\bI am\b/g, "they are").replace(/\bI\b/g, "they"); }
+    return this.petitions.filter((p) => !p.answered).map(({ id, text, voice, facts, options, house, name, from, arc, beat, thread, called, kind }) => ({ id, text, voice, facts, options, house, name, from, who: who(from), address: ADDRESS[house] ?? null, kind, called: called ?? null, ...(arc ? { arc, beat, thread } : {}), due: null }));
   }
 }

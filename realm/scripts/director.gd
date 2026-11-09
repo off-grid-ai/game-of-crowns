@@ -25,6 +25,10 @@ const SCENES := {
 	"ward": [2, 9.0, "A ward on the road to %s"],
 }
 
+# What the King's rulings and decrees set moving: shown first when the court closes.
+const ROYAL := ["grain", "tribute", "rider", "feast", "ward", "muster", "handover"]
+var _after_court := false
+
 var rig: Node3D
 var terrain: Node3D
 var towns: Node3D
@@ -63,6 +67,7 @@ func start() -> void:
 ## few seconds, unless the King takes the camera first (a click or a key).
 func soon() -> void:
 	_soon = 5.0
+	_after_court = true
 
 
 func _process(delta: float) -> void:
@@ -111,10 +116,14 @@ func _next_shot() -> void:
 			continue
 		var key := "%s:%d:%d:%d" % [kind, int(s.get("x", 0)), int(s.get("y", 0)), int(s.get("turn", 0))]
 		var score: float = SCENES[kind][0] - age * 3.0 - (8.0 if key == _last_key else 0.0)
+		# Just after the court: first, what the King's own rulings set going.
+		if _after_court and kind in ROYAL and age <= 1:
+			score += 10.0
 		if score > best_score:
 			best_score = score
 			best = s
 			best["_key"] = key
+	_after_court = false
 	if not best.is_empty() and best_score > 0.0:
 		_last_key = String(best["_key"])
 		_frame(best, null)

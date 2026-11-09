@@ -33,6 +33,7 @@ signal walk_as_king  # step into the King himself, at Kingsmere
 signal story_opened(entry: Dictionary)
 signal reign_continued  # the reign was scored, and the King rules on
 signal court_closed  # the doors shut: the realm moves, and the camera may go and look
+signal interlude_closed  # the King has read the act just gone: the realm goes on
 signal counsel_answered(key: String)  # the King answered the Hand's matter  # a story's name clicked in the chronicle
 
 const Features := preload("res://scripts/features.gd")
@@ -938,6 +939,10 @@ func _build_camera_controls() -> void:
 var _pad: Control
 func _reveal_pad(delta: float) -> void:
 	if _pad == null:
+		return
+	# A telling (an act's interlude, the reign's end) is the realm and its words alone.
+	if not _epilogue_hid.is_empty():
+		_pad.visible = false
 		return
 	var mode := String(preload("res://scripts/settings.gd").get_value("camera_pad"))
 	var near := mode == "always" or (mode == "near" and _pad.get_global_rect().grow(140).has_point(get_viewport().get_mouse_position()))
@@ -2062,7 +2067,23 @@ func _show_heading(r: Dictionary) -> void:
 	var next := String(rd.get("next", "")) if rd.get("next") != null else ""
 	_earning.text = name + ("  ·  then %s" % next if next != "" else "")
 	tip.append("If the reign ended today, history would name you %s%s." % [name, ("; close behind, %s" % next) if next != "" else ""])
+	# The King's three ambitions: a diamond each, filled when met.
+	var am = r.get("ambitions")
+	if am is Array and not (am as Array).is_empty():
+		var marks := ""
+		tip.append("Your ambitions:")
+		for a in am:
+			var done: bool = (a as Dictionary).get("met") != null
+			marks += "◆" if done else "◇"
+			tip.append("  %s %s" % ["◆" if done else "◇", String((a as Dictionary).get("text", ""))])
+		_earning.text += "   " + marks
 	_heading.tooltip_text = "\n".join(tip)
+	# The act just gone, told back at each quarter of the reign: the realm waits for him.
+	var il = r.get("interlude")
+	var il_key := "%s:%d" % [String(r.get("id", "")), int(il.get("q", 0))] if il is Dictionary else ""
+	if il_key != "" and il_key != _interlude_told and not _interlude_on:
+		_interlude_told = il_key
+		_tell_interlude(il)
 	# The last act, named at three quarters of the reign, once.
 	var la = r.get("lastAct")
 	_last_act.visible = la is Dictionary
@@ -2072,6 +2093,21 @@ func _show_heading(r: Dictionary) -> void:
 			if _last_act_told == "" and _court_met:
 				toast("The last act of the reign begins. What comes for the throne now: %s." % String(la.get("threat", "")))
 			_last_act_told = String(la.get("threat", ""))
+
+
+var _interlude_told := ""  # "reign id:quarter" of the interlude told
+var _interlude_on := false  # an act is being told back: the court waits behind it
+var portrait := Callable()  # (person, house, cb(texture)): their painted figure (portrait.gd)
+var _FAVOUR_RE := RegEx.create_from_string("((?:House|The) [A-Z][a-z]+)\\s*([+−-]\\d+)")  # "House Thornvale +15" in an answer's hint
+
+
+func _tell_interlude(il: Dictionary) -> void:
+	_interlude_on = true
+	await _epilogue(il, String(il.get("title", "The act ends")), true)
+	_interlude_on = false
+	interlude_closed.emit()
+	if not _petitions.is_empty():
+		_show_audience()  # the court that waited behind the telling
 
 
 func set_reign(r: Dictionary) -> void:
@@ -2091,7 +2127,8 @@ func set_reign(r: Dictionary) -> void:
 	if r.get("status", "") == "ended":
 		_reign_end(r)
 	else:
-		_epilogue_stop()  # a new reign, or he rules on: a telling under way ends
+		if not _interlude_on:
+			_epilogue_stop()  # a new reign, or he rules on: a telling under way ends
 		if _end_panel:
 			_end_panel.get_parent().queue_free()
 			_end_panel = null
@@ -2136,7 +2173,7 @@ func _epilogue_stop() -> void:
 var _epilogue_hid: Array = []  # the bars, minimap and pad put away for the flight
 
 
-func _epilogue(ep: Dictionary) -> void:
+func _epilogue(ep: Dictionary, title := "The reign, as it will be told", wait_click := false) -> void:
 	_epilogue_run += 1
 	var run := _epilogue_run
 	cinema(true)
@@ -2166,7 +2203,7 @@ func _epilogue(ep: Dictionary) -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
 	card.add_child(v)
-	var head := T.label("The reign, as it will be told")
+	var head := T.label(title)
 	v.add_child(head)
 	var said := Label.new()
 	said.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -2179,13 +2216,29 @@ func _epilogue(ep: Dictionary) -> void:
 	after.add_theme_color_override("font_color", T.TEXT_2)
 	v.add_child(after)
 	for c in ep.get("choices", []):
-		focus_city.emit(int(c.get("city", -1)))
+		if int(c.get("city", -1)) >= 0:
+			focus_city.emit(int(c.get("city", -1)))
 		said.text = String(c.get("text", ""))
 		after.text = String(c.get("after", ""))
 		card.modulate.a = 0.0
 		create_tween().tween_property(card, "modulate:a", 1.0, 0.6)
 		if not await _epilogue_hold(5.5, run):
 			return
+	# An act's interlude ends here, on his click: the realm and its panels come back.
+	if (ep.get("fates", []) as Array).is_empty():
+		if wait_click:
+			card.tooltip_text = "Click to go on"
+			while run == _epilogue_run and not _epilogue_skip:
+				await get_tree().process_frame
+			_epilogue_skip = false
+		card.queue_free()
+		_epilogue_card = null
+		for c in _epilogue_hid:
+			if is_instance_valid(c):
+				(c as CanvasItem).visible = true
+		_epilogue_hid.clear()
+		cinema(false)
+		return
 	# What became of every great house, one line each.
 	for n in [said, after]:
 		n.queue_free()
@@ -2894,6 +2947,10 @@ func _show_audience() -> void:
 	if _petitions.is_empty():
 		_court_panel.visible = false
 		return
+	if _interlude_on:
+		_court_panel.visible = false
+		_court_waiting = true
+		return
 	if _digest_panel and _digest_panel.visible:
 		# The court waits until you've read what happened (and its card, just
 		# cleared, mustn't stand there empty).
@@ -2930,14 +2987,41 @@ func _show_audience() -> void:
 	who.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(who)
 	head.add_child(T.label("%d before you" % _petitions.size()))
-	# The petitioner beneath their house's sigil.
+	# The petitioner, standing (their own painted figure, as the Lore book shows
+	# them), beneath their house's sigil.
 	var named := HBoxContainer.new()
 	named.add_theme_constant_override("separation", 14)
 	v.add_child(named)
+	var sitter = p.get("who")
+	if portrait.is_valid() and sitter is Dictionary:
+		var figure := TextureRect.new()
+		figure.custom_minimum_size = Vector2(56, 90)
+		figure.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		figure.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		figure.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		named.add_child(figure)
+		portrait.call(sitter, _house_by_name.get(String(p.get("house", "")), {}), func(tex):
+			if is_instance_valid(figure):
+				figure.texture = tex)
 	_arms_pair(named, String(p.get("name", "")), _house_by_name.get(String(p.get("house", "")), {}), 40)
 	var pname := T.title(String(p.get("name", "")), 22)
 	pname.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	named.add_child(pname)
+	# What this lord wants of the reign, under their name: the thing to grant or deny them.
+	var want := String((sitter as Dictionary).get("want", "")) if sitter is Dictionary and (sitter as Dictionary).get("want") != null else ""
+	if want != "":
+		var names := VBoxContainer.new()
+		names.add_theme_constant_override("separation", 2)
+		names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		pname.size_flags_horizontal = Control.SIZE_FILL
+		names.add_child(pname)
+		var wl := Label.new()
+		wl.text = "Wants to %s" % want
+		wl.autowrap_mode = TextServer.AUTOWRAP_WORD
+		wl.add_theme_color_override("font_color", T.TEXT_2)
+		names.add_child(wl)
+		named.add_child(names)
+	else:
+		named.add_child(pname)
 	if p.get("from") != null:
 		named.add_child(_see_btn({"id": p["from"]}, _house_by_name.get(String(p.get("house", "")), {})))
 	# A matter of the realm (a famine, a war, a house growing cold) is answered
@@ -2956,6 +3040,9 @@ func _show_audience() -> void:
 			said.text += "\n\n[color=#a3a39f]%s[/color]" % String(p["text"])
 	else:
 		said.text = String(p["text"])
+		# Without the model, the house still speaks in its own register first.
+		if p.get("address") != null:
+			said.text = "[i]%s[/i]\n%s" % [String(p["address"]), said.text]
 	v.add_child(said)
 	# The Hand stands at the King's shoulder: one line on what this answer costs him.
 	if String(p.get("counsel", "")) != "":
@@ -2983,9 +3070,34 @@ func _show_audience() -> void:
 		b.add_theme_color_override("font_color", T.TEXT)
 		b.pressed.connect(_answer.bind(String(p["id"]), String(o["id"])))
 		row.add_child(b)
-		if String(o.get("hint", "")) != "":
+		# Who this answer helps and hurts, before he chooses: each house the hint names
+		# with its sigil and its change, gold up and red down (Reigns' preview, our way).
+		var rest := String(o.get("hint", ""))
+		var moves := HBoxContainer.new()
+		moves.add_theme_constant_override("separation", 10)
+		for m in _FAVOUR_RE.search_all(rest):
+			var chip := HBoxContainer.new()
+			chip.add_theme_constant_override("separation", 3)
+			chip.add_child(_sigil_icon(_house_by_name.get(m.get_string(1), {}), 16))
+			var n := Label.new()
+			var up := not m.get_string(2).begins_with("−") and not m.get_string(2).begins_with("-")
+			n.text = "%s %s" % [m.get_string(1).trim_prefix("House ").trim_prefix("The "), m.get_string(2)]
+			n.add_theme_color_override("font_color", T.ACCENT if up else T.DANGER)
+			n.add_theme_font_size_override("font_size", T.SIZE_DESC)
+			chip.add_child(n)
+			chip.tooltip_text = "%s %s" % [m.get_string(1), m.get_string(2)]
+			moves.add_child(chip)
+			rest = rest.replace(m.get_string(0), "")
+		rest = rest.strip_edges().trim_prefix("·").trim_suffix("·").strip_edges().replace("·  ·", "·").replace("· ·", "·")
+		rest = rest.trim_prefix(",").strip_edges().trim_prefix("·").strip_edges()
+		if moves.get_child_count() > 0:
+			var pad := MarginContainer.new()
+			pad.add_theme_constant_override("margin_left", 12)
+			pad.add_child(moves)
+			row.add_child(pad)
+		if rest != "":
 			var hint := Label.new()
-			hint.text = "   " + String(o["hint"])
+			hint.text = "   " + rest
 			hint.add_theme_color_override("font_color", T.TEXT_3)
 			hint.add_theme_font_size_override("font_size", T.SIZE_DESC)
 			hint.autowrap_mode = TextServer.AUTOWRAP_WORD
