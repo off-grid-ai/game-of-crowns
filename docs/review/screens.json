@@ -4,7 +4,7 @@
   "name": "An act ends",
   "group": "Play",
   "what": "At each quarter of the reign the act just gone is told back: your weightiest choices where they happened, then the name you're earning and how your ambitions stand. The realm waits until you click on.",
-  "file": "screens/v/interlude-1.jpg",
+  "file": "screens/v/interlude-2.jpg",
   "versions": [
    {
     "v": 1,
@@ -12,6 +12,13 @@
     "at": "2026-11-09T15:40:00Z",
     "file": "screens/v/interlude-1.jpg",
     "what": "The first act ends: 'So far, history would name you the Golden. Close behind: the Builder. Your ambitions: 0 of 3 fulfilled.' Fun bar, The reign has a shape: from no acts to four, each closing on this."
+   },
+   {
+    "v": 2,
+    "label": "A real choice told back, panels away",
+    "at": "2026-11-09T17:30:00Z",
+    "file": "screens/v/interlude-2.jpg",
+    "what": "The first act ends on a choice the King made: 'Autumn of 309, House Thornvale: you wed their blood into a great house. They stand by you for it.' The side panels, minimap and camera pad step away for the telling."
    }
   ]
  },
