@@ -29,13 +29,10 @@ collections `decisions`, `picks`, `notes`). In leverage order:
 
 ## Who does what
 
-- **play-feedback** (`local_7b94615c-d78a-4d19-a778-5a4a84645ee7`) builds bets 1–6. It owns `ui.gd`,
-  the court and story files in `bridge/`, and `title.gd`'s beat form.
-- **finish-the-phantom-camer** (`local_7048d4d5-6025-4ad4-b02f-924b673cab3a`) finishes the Phantom
-  Camera move. It owns `camera_rig.gd`, `director.gd`, `main.gd`, `cinematics.gd` and `project.godot`
-  until it commits.
-- **This session (the loop)** directs, supervises, measures, keeps the review page and the brief, and
-  builds only approved items that sit in nobody else's files.
+- **This session builds everything,** one step after another (goc-cpto; Mac, 2026-11-09: no parallel builders). Read-only agents may review, research or find causes; they never edit.
+- **Performance is dropped** (Mac, 2026-11-09).
+- **Order:** the three UI review fixes (play-feedback commits them, then stops) → bet 3 (four acts by the clock with interludes, ambitions, Endless dropped) → bet 4 (faces on Court cards, one want per lord, asks that remember rulings, a voice per house) → bet 5 (who each answer helps and hurts, shown before choosing; the result glowing on the card; the camera to the biggest ruling) → the rest of bet 6 (an ultimatum before every story march, player beats that bring matters to court, no free answers, rulings count toward the name) → smaller items (workers and carts on the roads, following a house's army, council votes) → the review page for each.
+- **Proof:** logic is proven with bridge calls; only visual items get films, batched into one film run per batch.
 
 ## One turn
 
