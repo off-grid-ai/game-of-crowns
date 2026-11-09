@@ -184,3 +184,15 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - Not solved: physics spikes from the villagers' avoidance, and a baseline of 70–100 ms process time at distance 60 (15–20 fps).
 - **Decision:** unique names now (small; repetition is the #2 negative-review driver), then back to performance with a reliable benchmark first: a fixed seed and camera path, 3 runs each, the median of medians. Single runs swing 12–20 fps at load 4–7.
 - **Verdict:** on course. Performance needs several passes, and the benchmark makes each pass measurable.
+
+## 2026-11-09, 16:35 (autopilot)
+
+- **What's going on:** play-feedback is on unique names. The review of 2447859 found three issues, queued right after names:
+  - fallen chips draw outside the ladder strip (ui.gd:1083);
+  - "fallen" ignores armies still in the field (server.js:1682);
+  - results almost never move to the foot of the screen (ui.gd:1188).
+  
+  a14d76f's physics cap is clean.
+- **Where we're heading:** names, then the three fixes, filmed together, then performance with a benchmark.
+- **Right way?** Yes, on the review data's order (stability and repetition).
+- **Verdict:** on course.
