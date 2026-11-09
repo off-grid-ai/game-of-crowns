@@ -939,9 +939,10 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
     const now = Date.now();
     p.waitedMs = (p.waitedMs ?? 0) + Math.min(30000, now - (p.tick ?? now));
     p.tick = now;
-    p.seasons = (p.front ? (p.seasons ?? 0) + 1 : 0);
+    // Each season counts, the first included, so the fuse on the card tells true.
+    p.seasons = (p.front ? p.seasons ?? 0 : 0) + 1;
     p.front = true;
-    if (p.seasons < PETITION_FUSE || p.waitedMs < PETITION_FUSE * 12000) return;
+    if (p.seasons < PETITION_FUSE || p.waitedMs < (PETITION_FUSE - 1) * 12000) return;
     p.answered = "ignored";
     if (p.kind === "arc") this.onArcRuling?.(p.arc, p.beat, "ignored");
     const c = this.people[p.from];

@@ -349,10 +349,11 @@ export class Arcs {
     if (this.done.includes(arc)) return;  // already ended (a fall ends it before its beat closes)
     arc.status = how;
     arc.ended = this.clock;
-    // The reign's story ending is the reign ending: weathered, it's a victory.
-    if (arc.reign && arc.chosen && how === "resolved" && ctx?.endReign) {
-      const last = arc.beats[arc.beats.length - 1]?.text ?? "";
-      setTimeout(() => ctx.endReign(`${arc.title} is over, and the crown still stands. ${last}`.trim(), "won"), 0);
+    // The reign's story weathered is told as such, but it never ends the reign:
+    // no single event does (GAME_DESIGN, pillar 4). The clock ends it, and the
+    // last act names whatever comes for the throne next.
+    if (arc.reign && arc.chosen && how === "resolved") {
+      this.record({ turn: ctx?.world?.turn ?? 0, kind: "arc", thread: arc.title, arc: arc.id, stage: "resolution", text: `${arc.title} is over, and the crown still stands.` });
     }
     if (text) {
       this.record({ turn: ctx.world.turn, kind: "arc", thread: arc.title, arc: arc.id, stage: "resolution", text });
