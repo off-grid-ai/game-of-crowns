@@ -177,9 +177,6 @@ func _notice_gap() -> Vector2:
 	var bottom := get_viewport().get_visible_rect().size.y - 16.0
 	if _town_panel and _town_panel.visible:
 		bottom = minf(bottom, _town_panel.get_global_rect().position.y - 12.0)
-	# Nor over the Hand's counsel: a notice with no room above it is let go.
-	if _counsel and _counsel.visible:
-		bottom = minf(bottom, _counsel.get_global_rect().position.y - 12.0)
 	return Vector2(top, bottom)
 
 
@@ -555,7 +552,7 @@ func _build_top_bar() -> void:
 	get_viewport().size_changed.connect(_arrange_top)
 	_arrange_top.call_deferred()
 	act.add_theme_constant_override("separation", 6)  # each key stands on its own
-	_court_btn = _icon_btn("crown", _with_key("The court: petitioners waiting", "court"), _toggle_court)
+	_court_btn = _icon_btn("crown", _with_key("The court: what waits for the King", "court"), _toggle_court)
 	_court_btn.modulate.a = 0.45  # an empty court until someone comes
 	# Petitioners waiting: the crown in gold, and how many on a round badge on
 	# its corner, the way an app shows unread messages, never over the crown.
@@ -582,9 +579,6 @@ func _build_top_bar() -> void:
 	_court_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_court_btn.add_child(_court_badge)
 	act.add_child(_named(_court_btn, "Court"))
-	# The Hand's counsel, called back or put away: put aside with Later, it is
-	# never out of reach.
-	act.add_child(_named(_icon_btn("scales", _with_key("The Hand of the King: his counsel", "counsel"), _toggle_counsel), "Hand"))
 	# You are the King: one press to walk among your people as him.
 	if Features.WALKING:
 		var walk := _btn("Walk as the King", func(): walk_as_king.emit())
@@ -623,12 +617,12 @@ func _toggle_pause() -> void:
 func _court_waiting_shown(n: int) -> void:
 	_court_btn.modulate.a = 1.0 if n > 0 else 0.45
 	_court_badge.visible = n > 0
-	_court_btn.tooltip_text = _with_key(("The court: %d petitioner%s wait%s for you" % [n, "" if n == 1 else "s", "s" if n == 1 else ""]) if n > 0 else "The court: nobody waits today. A lord comes to court most seasons.", "court")
+	_court_btn.tooltip_text = _with_key(("The court: %d matter%s wait%s for you" % [n, "" if n == 1 else "s", "s" if n == 1 else ""]) if n > 0 else "The court sits again in spring. Before then, the Hand calls you only for a crisis.", "court")
 
 
 func _toggle_court() -> void:
 	if _petitions.is_empty():
-		toast("Nobody waits at court today. A lord comes most seasons; the crown on the bar lights when one does.")
+		toast("The court sits again in spring. Before then, the Hand calls you only for a crisis.")
 		return
 	if _court_panel.visible:
 		_court_hidden = true
@@ -651,7 +645,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		_houses_btn.button_pressed = not _houses_btn.button_pressed
 		_houses_panel.visible = _houses_btn.button_pressed
 	elif event.is_action_pressed(&"counsel"):
-		_toggle_counsel()
+		_toggle_court()  # the Hand speaks at court now
 	elif event.is_action_pressed(&"chronicle"):
 		_chron_btn.button_pressed = not _chron_btn.button_pressed
 		_chron_panel.visible = _chron_btn.button_pressed
@@ -665,8 +659,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	elif event.is_action_pressed(&"lore"):
 		lore_opened.emit(-1)
 	elif event.is_action_pressed(&"court"):
-		if not _petitions.is_empty():
-			_toggle_court()
+		_toggle_court()
 	elif event.is_action_pressed(&"back"):
 		# While you walk the realm, Esc is walking mode's: it closes a talk or
 		# steps you back up to the realm (control.gd). The interface only takes
@@ -760,6 +753,7 @@ func _build_ticker() -> void:
 	_ticker.alignment = BoxContainer.ALIGNMENT_END
 	_ticker.add_theme_constant_override("separation", 5)
 	_ticker.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ticker.visible = false  # the chronicle down the right carries the news; this corner stays clear for the world
 	_root.add_child(_ticker)
 
 
@@ -929,6 +923,7 @@ func _build_minimap() -> void:
 	frame.add_child(minimap)
 
 
+
 func _build_court() -> void:
 	_court_panel = _card(_glass_panel())
 	_court_panel.anchor_left = 0.5
@@ -1019,7 +1014,7 @@ func _process(delta: float) -> void:
 		_drain(f[0], f[1], f[2])
 	# The reign's end is the only card while it stands.
 	if _end_panel and _end_panel.visible:
-		for p in [_counsel, _court_panel, _digest_panel, _offer]:
+		for p in [_court_panel, _digest_panel, _offer]:
 			if p and is_instance_valid(p) and p.visible:
 				p.visible = false
 	else:
@@ -1037,24 +1032,6 @@ func _process(delta: float) -> void:
 				c.offset_top = maxf(70.0, below)
 		if _chron_panel:
 			_chron_panel.offset_top = maxf(84.0, _bar_pill.get_global_rect().end.y + 10.0)
-	# The Hand's counsel steps aside while you read a town, the court, the ledger
-	# or the away report, and is back when you close them.
-	if _counsel:
-		_counsel.visible = not ((_digest_panel and _digest_panel.visible) or _town_panel.visible or _court_panel.visible or (_ledger_panel and _ledger_panel.visible) or _cinema_on or _counsel_matters == _counsel_aside)
-		# Never over the houses table: past its foot, the Hand drops his last matters.
-		if _counsel.visible:
-			_fit_centre(_counsel, 560.0)
-			_counsel.offset_top = _counsel.offset_bottom - _counsel.get_combined_minimum_size().y  # hug its content
-		var beside := _counsel.get_global_rect().position.x >= _houses_panel.get_global_rect().end.x
-		if _counsel.visible and _houses_panel.visible and not beside and _counsel.get_child_count() > 0:
-			var rows := _counsel.get_child(0).get_children()
-			var foot := _houses_panel.get_global_rect().end.y + 8.0
-			for i in range(rows.size() - 1, 1, -1):  # keep the heading and the first matter
-				if _counsel.get_global_rect().position.y >= foot:
-					break
-				if rows[i].visible:
-					rows[i].visible = false
-					break  # one a frame: the card re-measures before the next
 	_arrange_top()  # the date line grows (a usurper marches…), so keep the bar from overlapping
 	_fit_centre(_digest_panel, 620.0)
 	_fit_centre(_house_panel, 640.0)
@@ -1627,7 +1604,6 @@ func show_digest(entries: Array, turns: int) -> void:
 		v.add_child(T.label("%d wait at court" % _petitions.size(), T.TEXT_2))
 	var go := _btn("To the realm", func():
 		_digest_panel.visible = false
-		_ticker.visible = not _town_panel.visible
 		_show_audience())
 	go.size_flags_horizontal = Control.SIZE_SHRINK_END
 	v.add_child(go)
@@ -1716,17 +1692,11 @@ var _toast_result := false  # the card shows an order's result, not a camera cap
 
 var _tithe_asked := -1.0  # a tithe the King set that the realm hasn't reported back yet
 var _tithe_asked_at := 0  # when; after half a minute the realm's word stands
-## The Hand of the King advises: the realm's most pressing matters, each with
-## why it matters and the decree that answers it, top centre under the realm's
-## numbers. Rebuilt only when the counsel changes. It teaches the game as it is
-## played: there is always a next thing to do, and a button that does it.
-var _counsel: PanelContainer
 var _purse := 0  # the royal treasury, in the bridge's gold (×100 crowns)
-var _counsel_sig := ""
 # --- the first reign's guide ---------------------------------------------------------
 # Three steps the Hand teaches inside his own card, each ticked when the King does
 # it; kept once per player in settings.cfg, never shown again once done or skipped.
-const GUIDE := ["Answer a petitioner at court", "Follow one of the Hand's orders", "Call the banners"]
+const GUIDE := ["Answer a petitioner at court", "Follow the Hand's counsel at court", "Call the banners"]
 var _guide := [false, false, false]
 var _guide_on := false
 var _guide_loaded := false
@@ -1779,7 +1749,8 @@ func _guide_mark(i: int) -> void:
 	if all_done:
 		_guide_on = false
 		toast("You have the measure of the throne. The Hand will keep counsel; the choices are yours.")
-	_counsel_sig = ""  # the Hand's card redraws with the step ticked
+	if _court_panel.visible and not busy():
+		_show_audience.call_deferred()  # the court redraws with the step ticked
 
 
 func _guide_block() -> Control:
@@ -1793,7 +1764,7 @@ func _guide_block() -> Control:
 	var skip := _btn("Skip", func():
 		_guide_on = false
 		_save_guide(true)
-		_counsel_sig = "")
+		_show_audience.call_deferred())
 	skip.add_theme_font_size_override("font_size", T.SIZE_DESC)
 	head.add_child(skip)
 	g.add_child(head)
@@ -1802,15 +1773,6 @@ func _guide_block() -> Control:
 		l.text = ("✓  " if _guide[i] else "○  ") + GUIDE[i]
 		l.add_theme_font_size_override("font_size", T.SIZE_DESC + 1)
 		l.add_theme_color_override("font_color", T.TEXT_3 if _guide[i] else T.TEXT)
-		# The court step is a door: a click opens the court (or says when someone comes).
-		if i == 0 and not _guide[i]:
-			var go := _btn(l.text, _toggle_court)
-			go.alignment = HORIZONTAL_ALIGNMENT_LEFT
-			go.add_theme_font_size_override("font_size", T.SIZE_DESC + 1)
-			go.add_theme_color_override("font_color", T.ACCENT)
-			go.tooltip_text = "Open the court"
-			g.add_child(go)
-			continue
 		g.add_child(l)
 	return g
 
@@ -1840,15 +1802,11 @@ func cinema(on: bool) -> void:
 		_cinema_was.clear()
 
 
-var _sat_out := {}  # war key -> when the King chose to stay out of it
-var _counsel_matters := ""  # what the Hand is advising on now, by its headings
-var _counsel_aside := ""  # what the King put aside (Later): the card waits until the matters change
 
 
 # --- the King at work: nothing jumps in or out while he's using a card ---------
 var _touched := -100000  # when he last clicked a card (msec)
 var _moved := -100000  # when he last moved the mouse (msec): a hand on its way to a button
-var _held_counsel = null  # the Hand's newest matters, waiting until he's done
 var _held_court := false  # a new petitioner arrived while he was busy
 
 
@@ -1870,7 +1828,7 @@ func busy() -> bool:
 ## opened himself: a town, a house, a person, the ledger): a card the game
 ## brings waits its turn instead of coming up beside or over it.
 func _card_up(but: Control = null) -> bool:
-	for p in [_counsel, _court_panel, _digest_panel, _end_panel, _town_panel, _house_panel, _folk_panel, _form_panel, _ledger_panel]:
+	for p in [_court_panel, _digest_panel, _end_panel, _town_panel, _house_panel, _folk_panel, _form_panel, _ledger_panel]:
 		if p and is_instance_valid(p) and p.visible and p != but:
 			return true
 	return false
@@ -1880,10 +1838,6 @@ func _card_up(but: Control = null) -> bool:
 func _catch_up() -> void:
 	if busy():
 		return
-	if _held_counsel != null:
-		var items: Array = _held_counsel
-		_held_counsel = null
-		_show_counsel(items)
 	if _held_court and not _card_up(_court_panel) and not _court_hidden:
 		_held_court = false
 		_court_hidden = false
@@ -1893,153 +1847,10 @@ func _catch_up() -> void:
 
 ## A card is open that the King is reading (the director waits for him).
 func reading() -> bool:
-	for p in [_court_panel, _town_panel, _counsel, _ledger_panel, _digest_panel, _house_panel, _folk_panel]:
+	for p in [_court_panel, _town_panel, _ledger_panel, _digest_panel, _house_panel, _folk_panel]:
 		if p and is_instance_valid(p) and p.visible:
 			return true
 	return false
-
-
-## The Hand's card back (the court or a town's card stepping aside for it), or put away.
-func _toggle_counsel() -> void:
-	if _counsel and _counsel.visible:
-		_counsel_aside = _counsel_matters
-		return
-	_counsel_aside = ""
-	if _court_panel.visible:
-		_court_hidden = true
-		_court_panel.visible = false
-	_put_town_away()  # for good, or the next update brings the town back over the Hand
-	if _ledger_panel and _ledger_panel.visible:
-		_ledger_panel.visible = false
-		if _ledger_btn:
-			_ledger_btn.set_pressed_no_signal(false)
-	if _digest_panel and _digest_panel.visible:
-		_digest_panel.visible = false  # the away report read: the Hand speaks
-
-
-func _show_counsel(items: Array) -> void:
-	# A war the King sat out stays off the card for a year (four seasons of play).
-	items = items.filter(func(it):
-		for a in it.get("acts", []):
-			var k := String(a.get("war", ""))
-			if k != "" and _sat_out.has(k) and Time.get_ticks_msec() - int(_sat_out[k]) < 4 * _season_s * 1000.0:
-				return false
-		return true)
-	var sig := JSON.stringify(items) + "|" + str(_purse)  # what the treasury can pay for changes the buttons too
-	if sig == _counsel_sig and _counsel:
-		return
-	# Mid-decision, the card he's using stays as it is; the update waits. And a
-	# petitioner or the away report on screen finishes before the Hand speaks.
-	if (busy() and _counsel and _counsel.visible) or (not (_counsel and _counsel.visible) and _card_up(_counsel)):
-		_held_counsel = items
-		return
-	_counsel_matters = JSON.stringify(items.map(func(it): return String(it.get("text", ""))))
-	_counsel_sig = sig
-	if _counsel:
-		_counsel.queue_free()
-	_counsel = _glass_panel()
-	# Bottom centre, between the houses table and the minimap, where the map is
-	# open and every matter fits; it steps aside for a town's card (which sits
-	# there too), the court and the away report. _fit_centre places it each frame.
-	_counsel.anchor_top = 1.0
-	_counsel.anchor_bottom = 1.0
-	_counsel.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_counsel.offset_bottom = -24  # off the screen's edge
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 8)
-	_counsel.add_child(v)
-	# Its heading, and Later: the card stands aside until the Hand has something new.
-	var top := HBoxContainer.new()
-	v.add_child(top)
-	var heading := T.label("The Hand of the King advises")
-	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top.add_child(heading)
-	var later := _btn("Later", func(): _counsel_aside = _counsel_matters)
-	later.flat = true
-	later.add_theme_color_override("font_color", T.TEXT_3)
-	later.add_theme_font_size_override("font_size", T.SIZE_DESC)
-	top.add_child(later)
-	if not _guide_loaded:
-		_load_guide()
-	if _guide_on:
-		v.add_child(_guide_block())
-		v.add_child(HSeparator.new())
-	var queued := []  # the matters waiting behind the one put to the King
-	for it in items:
-		if it.get("waiting", false):
-			queued.append(String(it.get("text", "")))
-			continue
-		var row := VBoxContainer.new()
-		row.add_theme_constant_override("separation", 2)
-		v.add_child(row)
-		var urgent: bool = int(it.get("urgency", 0)) >= 75
-		var head := Label.new()
-		head.text = String(it.get("text", ""))
-		head.autowrap_mode = TextServer.AUTOWRAP_WORD
-		head.add_theme_font_size_override("font_size", T.SIZE_BODY + 1)
-		head.add_theme_color_override("font_color", T.DANGER if urgent else T.TEXT)
-		row.add_child(head)
-		var why := Label.new()
-		why.text = String(it.get("why", ""))
-		why.autowrap_mode = TextServer.AUTOWRAP_WORD
-		why.add_theme_color_override("font_color", T.TEXT_2)
-		why.add_theme_font_size_override("font_size", T.SIZE_DESC)
-		row.add_child(why)
-		# The fuse: how long this waits for the King before the realm answers for him.
-		var due := int(it.get("due", 0))
-		if due > 0:
-			row.add_child(_fuse_bar("hand:" + String(it.get("key", "")), due))
-		var acts := HFlowContainer.new()
-		acts.add_theme_constant_override("h_separation", 6)
-		row.add_child(acts)
-		var answers: Array[Button] = []  # one matter's answers: choosing one settles it
-		for a in it.get("acts", []):
-			var act: Dictionary = a
-			var b := _btn(String(act.get("label", "")), func(): pass)
-			answers.append(b)
-			b.pressed.connect(func():
-				if String(act.get("ui", "")) == "court":
-					_counsel_act(act)  # opening the court isn't an order: nothing settles
-					return
-				# One answer to a matter: the one given says so, the others go quiet
-				# until the Hand's counsel changes (if the matter stands next
-				# season, he raises it again), so nothing is paid for twice.
-				for other in answers:
-					other.disabled = true
-				b.text = String(act.get("label", "")).get_slice("  ", 0) + "  ·  ordered"
-				b.add_theme_color_override("font_disabled_color", T.ACCENT)
-				if String(it.get("key", "")) != "":
-					counsel_answered.emit(String(it["key"]))  # answered: it rests, and the next matter comes up
-				_counsel_act(act))
-			b.add_theme_color_override("font_color", T.ACCENT)
-			if act.has("cost") and int(act["cost"]) > _purse:
-				b.disabled = true
-				b.tooltip_text = "The treasury holds too little for this."
-				b.add_theme_color_override("font_disabled_color", T.TEXT_3)
-			if act.get("pick", false):
-				# The Hand's own advice: framed in gold, and said so on hover.
-				var frame := StyleBoxFlat.new()
-				frame.bg_color = Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.14)
-				frame.border_color = Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.7)
-				frame.set_border_width_all(1)
-				frame.set_corner_radius_all(6)
-				frame.content_margin_left = 10
-				frame.content_margin_right = 10
-				frame.content_margin_top = 4
-				frame.content_margin_bottom = 4
-				for look in ["normal", "hover", "pressed"]:
-					b.add_theme_stylebox_override(look, frame)
-				b.tooltip_text = "The Hand's advice"
-			acts.add_child(b)
-	# What waits behind it, one quiet line: it comes up when this one is settled.
-	if not queued.is_empty():
-		var next := T.label("Then: " + ", ".join(queued.map(func(t): return String(t).get_slice(":", 0))))
-		next.autowrap_mode = TextServer.AUTOWRAP_WORD
-		next.add_theme_color_override("font_color", T.TEXT_3)
-		v.add_child(next)
-	_counsel.visible = not (_digest_panel and _digest_panel.visible) and not (_end_panel and _end_panel.visible)
-	if _ticker:
-		_ticker.visible = false  # the counsel holds the bottom-left corner; the chronicle has the news
 
 
 func _counsel_act(act: Dictionary) -> void:
@@ -2055,10 +1866,8 @@ func _counsel_act(act: Dictionary) -> void:
 	elif on == "tithe_down":
 		_set_tithe(_tithe - 0.05)
 	elif on == "sitout":
-		# The King lets them fight it out: the Hand drops this war for a year.
-		_sat_out[String(act.get("war", ""))] = Time.get_ticks_msec()
+		# The King lets them fight it out: answered, the court never brings this war again.
 		toast("The King stays out of it. Let them bleed; the war is theirs.")
-		_counsel_sig = ""
 	else:
 		decree_at.emit(String(act.get("action", "")), int(act.get("city", -1)), int(act.get("to", -1)), String(act.get("building", "")))
 
@@ -2284,8 +2093,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		var next_aim := (" Next: end the wars between them, Peace %d%% of 50%%." % peace_now) if peace_now < 50 else " The realm is at peace with itself."
 		_standing.text = ("All %d great houses would answer your banners. The realm is yours in truth." % great.size() + next_aim) if all_in \
 			else "%d of %d great houses would answer your banners. Win all of them and the realm is yours in truth." % [with_me, great.size()]
-	_purse = int(world.get("crown", {}).get("treasury", 0))  # before the counsel: its buttons check the purse
-	_show_counsel(world.get("counsel", []))
+	_purse = int(world.get("crown", {}).get("treasury", 0))  # the court's orders check the purse
 	for pid in houses:
 		_house_by_name[String(houses[pid].get("name", ""))] = houses[pid]
 	set_reign(world.get("reign", {}))
@@ -2582,7 +2390,7 @@ func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 	if c.is_empty():
 		_town_id = -1
 		_town_panel.visible = false
-		_ticker.visible = _counsel == null  # the Hand's counsel holds that corner
+		_ticker.visible = false  # as before: the chronicle down the right carries the news
 		return
 	# The realm's update for a town whose card is already down refreshes its
 	# words only: it never brings the card back over what the King opened since.
@@ -2717,27 +2525,44 @@ func clear_chronicle() -> void:
 
 # --- the court --------------------------------------------------------------------------
 
+## What stands before the King (the bridge's docket): a crisis the Hand calls
+## him for, then the spring sitting's matters. A new sitting or crisis brings
+## the court up once, when he isn't using a card; the rest wait on the badge.
+var _court_seen := {}  # matters already put before him, by id
+
+
 func set_court(petitions: Array) -> void:
-	var sig := str(petitions.map(func(p): return p["id"])) + "|" + str(petitions[0].get("due", "") if not petitions.is_empty() else "")
+	var sig := str(petitions.map(func(p): return [p["id"], p.get("due")]))
 	if sig == _court_sig:
 		return
 	_court_sig = sig
+	var had := _petitions.size()
 	_petitions = petitions
 	_court_badge.text = str(petitions.size())
 	_court_waiting_shown(petitions.size())
+	var fresh := false
+	for p in petitions:
+		if not _court_seen.has(String(p["id"])):
+			_court_seen[String(p["id"])] = true
+			fresh = true
 	if petitions.is_empty():
 		_court_panel.visible = false
-	elif _cinema_on:
-		pass  # the court waits while the King watches a scene
-	elif not _court_hidden or not _court_met:
-		if busy() or _card_up(_court_panel):
-			_held_court = true  # he's using a card, or another is up: the newcomer waits its turn on the badge
-			return
-		# The first petitioner of a sitting is brought straight in: a new King
-		# meets his court at once, then the badge and the Hand call him back.
-		_court_met = true
-		_court_hidden = false
-		_show_audience()
+		_held_court = false
+		if had > 0 and _court_met:
+			toast("The doors of the court close. The realm is yours until the spring.")
+		return
+	if fresh:
+		_court_hidden = false  # a new sitting, or a crisis: the court comes to him once
+	if _cinema_on:
+		return  # the court waits while the King watches a scene
+	if _court_hidden and not _court_panel.visible:
+		return
+	if busy() or _card_up(_court_panel):
+		_held_court = true  # he's using a card, or another is up: it waits its turn on the badge
+		return
+	_court_met = true
+	_court_hidden = false
+	_show_audience()
 
 
 func _show_audience() -> void:
@@ -2769,13 +2594,20 @@ func _show_audience() -> void:
 	v.add_theme_constant_override("separation", 10)
 	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(v)
+	if not _guide_loaded:
+		_load_guide()
+	if _guide_on:
+		v.add_child(_guide_block())
+		v.add_child(HSeparator.new())
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 16)
 	v.add_child(head)
-	var who := T.label("Audience  ·  %s" % p.get("house", ""))
+	# The spring sitting, or the Hand calling the King between sittings for a crisis.
+	var where := "The Hand calls you" if p.get("crisis", false) else "The court sits"
+	var who := T.label(where + ("  ·  %s" % p["house"] if String(p.get("house", "")) != "" else ""))
 	who.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(who)
-	head.add_child(T.label("%d waiting" % _petitions.size()))
+	head.add_child(T.label("%d before you" % _petitions.size()))
 	# The petitioner beneath their house's sigil.
 	var named := HBoxContainer.new()
 	named.add_theme_constant_override("separation", 14)
@@ -2786,6 +2618,11 @@ func _show_audience() -> void:
 	named.add_child(pname)
 	if p.get("from") != null:
 		named.add_child(_see_btn({"id": p["from"]}, _house_by_name.get(String(p.get("house", "")), {})))
+	# A matter of the realm (a famine, a war, a house growing cold) is answered
+	# with the King's own orders, and the Hand says why it matters.
+	if p.get("hand", false):
+		_realm_matter(v, p)
+		return
 	var said := RichTextLabel.new()
 	said.bbcode_enabled = true
 	said.fit_content = true
@@ -2798,6 +2635,9 @@ func _show_audience() -> void:
 	else:
 		said.text = String(p["text"])
 	v.add_child(said)
+	# The Hand stands at the King's shoulder: one line on what this answer costs him.
+	if String(p.get("counsel", "")) != "":
+		v.add_child(_hand_says(String(p["counsel"])))
 	# Without Off Grid AI the lords speak in the court's set lines. The first time
 	# that happens, one quiet line says how they get their own words; never again.
 	if spoken == "" and not ai_words and not _offgrid_told():
@@ -2866,14 +2706,98 @@ func _show_audience() -> void:
 		var choices := ", ".join(p.get("options", []).map(func(o): return String(o.get("text", o.get("label", "")))))
 		preload("res://scripts/spark.gd").attach(own, get_tree().current_scene.get("bridge"), "ruling", func(): return "The petition: %s\nThe rulings on offer: %s" % [String(p.get("text", "")), choices], true)
 	# Later is not free: a petitioner left too long goes home unheard, and says so.
-	var later := _btn("Later", func(): _court_hidden = true; _court_panel.visible = false)
 	var due := int(p.get("due", 3)) if p.get("due") != null else 3
 	var when := "this season" if due <= 1 else "%d seasons" % due
-	later.tooltip_text = "They wait for now. Unanswered within %s, they go home and their house's favour falls by 12." % when
+	_court_later(v, "court:" + String(p.get("id", "")), due, "They wait for now. Unanswered within %s, they go home and their house's favour falls by 12." % when, "When this runs out, they go home unheard: their house −12.")
+
+
+## Later, and the fuse under it: the card stands aside, the matter keeps burning.
+func _court_later(v: VBoxContainer, matter: String, due: int, tip: String, fuse_tip: String) -> void:
+	var later := _btn("Later", func(): _court_hidden = true; _court_panel.visible = false)
+	later.tooltip_text = tip
 	v.add_child(later)
-	var cost := _fuse_bar("court:" + String(p.get("id", "")), due)
-	cost.tooltip_text = "When this runs out, they go home unheard: their house −12."
+	var cost := _fuse_bar(matter, due)
+	cost.tooltip_text = fuse_tip
 	v.add_child(cost)
+
+
+## The Hand's word, at the King's shoulder: his voice, set apart from the petitioner's.
+func _hand_says(words: String) -> Control:
+	var l := RichTextLabel.new()
+	l.bbcode_enabled = true
+	l.fit_content = true
+	l.custom_minimum_size = Vector2(240, 0)
+	l.text = "[color=#c9a95a]The Hand[/color]  [i]“%s”[/i]" % words.replace("\"", "")
+	return l
+
+
+## A matter of the realm at court, answered by the King's orders: the matter,
+## the Hand's reasons, and the orders that answer it, his own pick framed in
+## gold. One order settles it, and the court moves to what is next.
+func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
+	var head := Label.new()
+	head.text = String(it.get("text", ""))
+	head.autowrap_mode = TextServer.AUTOWRAP_WORD
+	head.add_theme_font_size_override("font_size", T.SIZE_BODY + 1)
+	head.add_theme_color_override("font_color", T.DANGER if it.get("crisis", false) else T.TEXT)
+	v.add_child(head)
+	v.add_child(_hand_says(String(it.get("why", ""))))
+	v.add_child(HSeparator.new())
+	var acts := HFlowContainer.new()
+	acts.add_theme_constant_override("h_separation", 6)
+	acts.add_theme_constant_override("v_separation", 6)
+	v.add_child(acts)
+	var answers: Array[Button] = []  # its answers: choosing one settles it
+	for a in it.get("acts", []):
+		var act: Dictionary = a
+		var b := _btn(String(act.get("label", "")), func(): pass)
+		answers.append(b)
+		b.pressed.connect(func():
+			# One answer to a matter: the one given says so, the others go quiet,
+			# so nothing is paid for twice; then the next matter comes up.
+			for other in answers:
+				other.disabled = true
+			b.text = String(act.get("label", "")).get_slice("  ", 0) + "  ·  ordered"
+			b.add_theme_color_override("font_disabled_color", T.ACCENT)
+			counsel_answered.emit(String(it.get("key", "")))
+			_counsel_act(act)
+			_settled(it))
+		b.add_theme_color_override("font_color", T.ACCENT)
+		if act.has("cost") and int(act["cost"]) > _purse:
+			b.disabled = true
+			b.tooltip_text = "The treasury holds too little for this."
+			b.add_theme_color_override("font_disabled_color", T.TEXT_3)
+		if act.get("pick", false):
+			# The Hand's own advice: framed in gold, and said so on hover.
+			var frame := StyleBoxFlat.new()
+			frame.bg_color = Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.14)
+			frame.border_color = Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.7)
+			frame.set_border_width_all(1)
+			frame.set_corner_radius_all(6)
+			frame.content_margin_left = 10
+			frame.content_margin_right = 10
+			frame.content_margin_top = 4
+			frame.content_margin_bottom = 4
+			for look in ["normal", "hover", "pressed"]:
+				b.add_theme_stylebox_override(look, frame)
+			b.tooltip_text = "The Hand's advice"
+		acts.add_child(b)
+	var due := int(it.get("due", 3))
+	_court_later(v, "hand:" + String(it.get("key", "")), due, "It waits for now. Left %s, the realm answers for you, and the house it touches takes your silence as an answer." % ("this season" if due <= 1 else "%d seasons" % due), "When this runs out, the realm answers for you.")
+
+
+## A matter settled at court: a moment to see the order taken, then the next,
+## or the doors close.
+func _settled(it: Dictionary) -> void:
+	_petitions = _petitions.filter(func(p): return String(p["id"]) != String(it["id"]))
+	_court_badge.text = str(_petitions.size())
+	_court_waiting_shown(_petitions.size())
+	await get_tree().create_timer(0.8).timeout
+	if _petitions.is_empty():
+		_court_panel.visible = false
+		toast("The doors of the court close. The realm is yours until the spring.")
+	elif _court_panel.visible:
+		_show_audience()
 
 
 var _spoken := ""

@@ -365,7 +365,6 @@ export class Court {
     // Every year at least one lord comes to court, if any has cause to.
     this.turnNow = turn;
     if (ctx.watched) {
-      this.expire(turn, ctx.shift);
       this.endTruces(turn);
       this.collect(world, turn, ctx);
     }
@@ -587,22 +586,29 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
   // A petition at court: a dilemma where every answer costs something. Every
   // kind the lord has cause for is a candidate; one is drawn by weight, and
   // kinds the King has heard lately are drawn less, so the court stays varied.
-  // A court day each season: one lord of a landed house comes with a petition,
-  // while fewer than three wait, so the court is never empty for a year.
-  async courtDay(world, turn, ctx) {
-    const cap = { rare: 2, normal: 3, often: 4 }[ctx.options?.petitions] ?? 3;
-    if (!ctx.watched || this.petitions.filter((p) => !p.answered).length >= cap) return;
-    if (ctx.options?.petitions === "rare" && turn % 2) return;  // a quieter court sits every other season
-    const waiting = new Set(this.petitions.filter((p) => !p.answered).map((p) => p.from));
-    const lords = this.alive().filter((c) => c.rank === "lord" && !waiting.has(c.id) && (world.players.find((p) => p.id === c.playerId)?.cities ?? 0) > 0);
-    if (!lords.length) return;
-    this.turnNow = turn;
-    await this.petition(lords[Math.floor(Math.random() * lords.length)], world, turn, ctx);
+  // The court sits once a year (server.js): those already waiting in the hall
+  // are called first, then lords with cause come, until `want` stand before
+  // the King. Only called petitioners wait on a fuse.
+  async callSitting(world, turn, want, ctx) {
+    for (const p of this.petitions.filter((x) => !x.answered && !x.called)) {
+      if (want <= 0) break;
+      p.called = turn;
+      want--;
+    }
+    for (let tries = 0; want > 0 && tries < 8; tries++) {
+      const waiting = new Set(this.petitions.filter((p) => !p.answered).map((p) => p.from));
+      const lords = this.alive().filter((c) => c.rank === "lord" && !waiting.has(c.id) && (world.players.find((p) => p.id === c.playerId)?.cities ?? 0) > 0);
+      if (!lords.length) break;
+      this.turnNow = turn;
+      const made = await this.petition(lords[Math.floor(Math.random() * lords.length)], world, turn, ctx, true);
+      if (made) { made.called = turn; want--; }
+    }
     this.saveCourt();
   }
 
-  async petition(c, world, turn, ctx) {
-    if (this.petitions.filter((p) => !p.answered).length >= 3) return;
+  async petition(c, world, turn, ctx, sitting = false) {
+    // Outside a sitting, at most three wait in the hall for the next one.
+    if (!sitting && this.petitions.filter((p) => !p.answered).length >= 3) return;
     const base = { id: `p${Date.now().toString(36)}${Math.floor(Math.random() * 999)}`, turn, from: c.id, name: c.name, house: c.house, answered: false };
     const me = world.players.find((x) => x.id === c.playerId);
     const facts = (...pids) => pids.filter((x) => x !== undefined && x !== null && x >= 0).map((x) => this.houseFacts(x, world, ctx)).filter(Boolean);
@@ -715,7 +721,7 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
     const grudge = owed.filter((x) => x.d < 0).sort((a, b) => a.d - b.d)[0];
     const kindness = owed.filter((x) => x.d > 0).sort((a, b) => b.d - a.d)[0];
     const deed = fav < 55 ? (grudge ?? kindness) : (kindness ?? grudge);
-    if (deed) candidates.push({ kind: "remembers", weight: deed.d < 0 ? 7 : 4, make: () => {
+    if (deed) candidates.push({ kind: "remembers", deed: deed.what, weight: deed.d < 0 ? 7 : 4, make: () => {
       deed.raised = turn;
       const when = calendar(deed.turn);
       // Once: "Two years ago, in the winter of 352, you took a town that was ours."
@@ -748,16 +754,20 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
 
     for (const card of loadDeck()) {
       const roles = this.cast(card, c, world, ctx);
-      if (roles) candidates.push({ kind: card.id, weight: card.weight ?? 2, make: () => this.deal(card, roles, c, world, facts) });
+      if (roles) candidates.push({ kind: card.id, deck: true, weight: card.weight ?? 2, make: () => this.deal(card, roles, c, world, facts) });
     }
 
     const open = new Set(this.petitions.filter((p) => !p.answered).map((p) => p.kind));
     const recent = this.petitions.slice(-6).map((p) => p.kind);
-    const pool = candidates.filter((x) => !open.has(x.kind)).map((x) => ({ ...x, w: x.weight / (1 + 2 * recent.filter((k) => k === x.kind).length) }));
+    // No matter is put to the King twice in a reign: a dealt dilemma once, a
+    // lord's own kind of plea once per house, a remembered deed once.
+    const heard = (x) => x.deck ? `card:${x.kind}` : x.deed ? `remembers:${c.house}:${x.deed}` : `${x.kind}:${c.house}`;
+    const pool = candidates.filter((x) => !open.has(x.kind) && !ctx.heard?.(heard(x))).map((x) => ({ ...x, w: x.weight / (1 + 2 * recent.filter((k) => k === x.kind).length) }));
     if (!pool.length) return;
     let roll = Math.random() * pool.reduce((t, x) => t + x.w, 0);
     const chosen = pool.find((x) => (roll -= x.w) < 0) ?? pool[pool.length - 1];
-    const p = { ...base, ...chosen.make() };
+    const p = { ...base, ...chosen.make(), heard: heard(chosen) };
+    ctx.hear?.(p.heard);
     // They come to court now; their own words follow when the local model has
     // them (it can be slow or busy, and the court never waits on it).
     this.petitions.push(p);
@@ -767,6 +777,7 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
     this.ask(c, `You stand before the King to say: ${p.text}`, ["speak"]).then((d) => {
       if (d?.line && !p.answered) { p.voice = d.line; this.saveCourt(); }
     }).catch(() => {});
+    return p;
   }
 
   // A matter a story brings to the King (arcs.js toCourt): it comes whatever
@@ -916,13 +927,15 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
     }
   }
 
-  // One petitioner at a time stands before the King, and only they wait on a
-  // fuse: PETITION_FUSE seasons of play (time the King is watching), then they
-  // go home unheard and their house takes the silence as an answer. Those
-  // behind them in the hall don't tick until it's their turn.
+  // Those called to a sitting wait on a fuse, each season the King watches
+  // (server.js courtYear): PETITION_FUSE seasons, then they go home unheard and
+  // their house takes the silence as an answer. Those still in the hall, not
+  // yet called, don't tick.
   expire(turn, shift) {
-    const p = this.petitions.find((x) => !x.answered);
-    if (!p) return;
+    for (const p of this.petitions.filter((x) => !x.answered && x.called != null)) this.expireOne(p, turn, shift);
+  }
+
+  expireOne(p, turn, shift) {
     const now = Date.now();
     p.waitedMs = (p.waitedMs ?? 0) + Math.min(30000, now - (p.tick ?? now));
     p.tick = now;
@@ -1106,6 +1119,7 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
   }
 
   open() {
-    return this.petitions.filter((p) => !p.answered).map(({ id, text, voice, facts, options, house, name, from, arc, beat, thread, front, seasons }, i) => ({ id, text, voice, facts, options, house, name, from, ...(arc ? { arc, beat, thread } : {}), due: i === 0 ? Math.max(1, PETITION_FUSE - (front ? seasons ?? 0 : 0)) : null }));
+    return this.petitions.filter((p) => !p.answered).map(({ id, text, voice, facts, options, house, name, from, arc, beat, thread, front, seasons, called, kind }) => ({ id, text, voice, facts, options, house, name, from, kind, called: called ?? null, ...(arc ? { arc, beat, thread } : {}), seasons: front ? seasons ?? 0 : 0 }))
+      .map((p) => ({ ...p, due: p.called != null ? Math.max(1, PETITION_FUSE - p.seasons) : null }));
   }
 }

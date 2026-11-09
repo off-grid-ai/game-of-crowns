@@ -492,7 +492,7 @@ async function runSeason() {
   if (!world || seasonRunning || !court) return;
   seasonRunning = true;
   try {
-    await court.season(world, { favour: favourOf, cause: causeOf, warded: (pid) => (stakes?.s.wards?.[pid] ?? -1) > (world?.turn ?? 0) || sworn(pid), send: (l) => send(`lua cmd ${l}`), shift: shiftFavour, watched: isWatched(), options: meta.options ?? {} });
+    await court.season(world, { favour: favourOf, cause: causeOf, warded: (pid) => (stakes?.s.wards?.[pid] ?? -1) > (world?.turn ?? 0) || sworn(pid), send: (l) => send(`lua cmd ${l}`), shift: shiftFavour, watched: isWatched(), options: meta.options ?? {}, ...heardCtx() });
   } catch (err) {
     console.error("season:", err);
   } finally {
@@ -642,10 +642,10 @@ function counsel(players, cities, threat) {
   if (threat.usurper === "rumour") {
     const left = Math.max(1, 8 - (threat.turn - threat.since));
     const angry = great.filter((p) => favourOf(p.id) < 25).map((p) => p.house.name.replace(/^House /, ""));
-    out.push({ urgency: 95, text: `${claimant} whispers of a better claim to the throne`,
+    out.push({ urgency: 95, occur: threat.since, text: `${claimant} whispers of a better claim to the throne`,
       why: `In ${left} season${left === 1 ? "" : "s"} they march on Kingsmere, unless the angry houses are won back above 25: ${angry.join(", ") || "none now"}.`,
       acts: [pretender && seatOf(pretender.id) ? { label: `Gift crowns to ${claimant.replace(/^House /, "")}`, action: "gift", city: seatOf(pretender.id).id } : null, { label: "Buy off their claim", action: "buyoff" }, { label: "Call the banners", action: "banners" }].filter(Boolean) });
-  } else if (threat.usurper !== "none") out.push({ urgency: 100, text: `${claimant}'s host marches on Kingsmere`,
+  } else if (threat.usurper !== "none") out.push({ urgency: 100, occur: threat.since, text: `${claimant}'s host marches on Kingsmere`,
     why: `${(threat.theirs * 200).toLocaleString("en-US")} of their men about the walls against ${(threat.ours * 200).toLocaleString("en-US")} of yours: ${threat.theirs > threat.ours ? "as things stand, the walls would fall" : "for now, the walls would hold"}. If Kingsmere falls, the crown is lost. Loyal houses (favour 35 and up) send men to the banners; the royal levy is yours to pay for. Or buy them off: gold for their claim.`, acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }, { label: "Buy them off", action: "buyoff" }] });
   // After a march: the King decides what becomes of the house that rose.
   const rose = players.find((p) => p.id === threat.ended);
@@ -653,7 +653,7 @@ function counsel(players, cities, threat) {
     const towns = cities.filter((c) => c.owner === rose.id && !c.capital).sort((a, b) => (a.size ?? 0) - (b.size ?? 0));
     const loyal = great.filter((p) => p.id !== rose.id).sort((a, b) => favourOf(b.id) - favourOf(a.id))[0];
     const name = rose.house.name.replace(/^House /, "");
-    out.push({ urgency: 90, text: `The march is over. What of House ${name}?`,
+    out.push({ urgency: 90, occur: threat.since, text: `The march is over. What of House ${name}?`,
       why: `They rose against the throne and went home (favour ${Math.round(favourOf(rose.id))}). Pardon them with a feast to win them back, hold their heir at court so they cannot rise, or take a town and give it to ${loyal ? loyal.house.name : "a loyal house"} so the realm sees the price of treason; a house driven below 25 may rise again.`,
       acts: [seatOf(rose.id) ? { label: "Pardon them with a feast", action: "feast", city: seatOf(rose.id).id } : null,
         seatOf(rose.id) ? { label: `Take their heir as your ward (${name} −5; they cannot rise for five years)`, action: "ward", city: seatOf(rose.id).id } : null,
@@ -677,15 +677,14 @@ function counsel(players, cities, threat) {
     // nothing more; if only the banners are needed, he advises only the banners.
     if ((d.next ?? 0) - threat.ours * 200 <= 0) d.hold = true;
     const onlyBanners = !d.hold && gap <= 0;
-    out.push({ urgency: d.hold ? 40 : 75, text: d.hold ? "The dead come south, and you would hold" : "The dead come south",
+    out.push({ urgency: d.hold ? 40 : 75, occur: (world?.turn ?? 0) + (d.in ?? 0), text: d.hold ? "The dead come south, and you would hold" : "The dead come south",
       why: `${(d.last ?? 0).toLocaleString("en-US")} of them fell ${where} last time; ${(d.next ?? 0).toLocaleString("en-US")} will come with the next.${when} Against them: your ${(threat.ours * 200).toLocaleString("en-US")} fighting men${bannerMen ? `, and about ${bannerMen.toLocaleString("en-US")} more if you call the banners` : " (the banners are already called this year)"}: ${d.hold ? "your own men would hold" : gap <= 0 ? "with the banners, you would hold" : gap <= 1600 ? `you would lose by ${gap.toLocaleString("en-US")}: a levy (600) and sellswords (1,000) close it` : `you would lose by ${gap.toLocaleString("en-US")}, even with a levy and sellswords`}. If every northern town falls, the realm falls with it.`,
       acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }, { label: "Hire sellswords", action: "sellswords" }].filter((a) => !d.hold && (!onlyBanners || a.action === "banners")) });
   }
   // A town the King has fed this year isn't brought to him again while the grain lasts.
   const hungry = cities.find((c) => c.famine && !((meta.relieved?.[c.id] ?? -99) > (world?.turn ?? 0) - 4));
-  if (hungry) out.push({ urgency: 80, text: `${hungry.title} is starving`, why: "A hungry town shrinks, riots, and blames its King.", acts: [{ label: "Send grain", action: "relief", city: hungry.id }] });
-  const waiting = court?.open?.().length ?? 0;
-  if (waiting) out.push({ urgency: 60, text: `${waiting} ${waiting === 1 ? "petitioner waits" : "petitioners wait"} at court`, why: "Lords left waiting go home unheard, and say so.", acts: [{ label: "Hear them", ui: "court" }] });
+  if (hungry) out.push({ urgency: 80, occur: calendar(world?.turn ?? 0).year, text: `${hungry.title} is starving`, why: "A hungry town shrinks, riots, and blames its King.", acts: [{ label: "Send grain", action: "relief", city: hungry.id }] });
+  // (Petitioners are the court's own: the Hand's matters stand beside them there.)
   // A war the King has stilled (his peace, or a royal match) is no longer the
   // Hand's worry, though the engine still counts the two houses at war.
   const war = great.find((p) => (p.atWarWith ?? []).some((o) => great.some((g) => g.id === o) && !stilled(p.id, o)));
@@ -817,54 +816,138 @@ function counsel(players, cities, threat) {
     const does = DOES[a.action ?? a.ui];
     if (does && !a.label.includes("(")) a.label += ` · ${does}`;
   }
-  // Two matters at most: the Hand's card stays clear of the houses table, and the
-  // court has its own badge.
-  // Up to three; the card drops its last matters itself if it would reach the houses table.
-  // The pressing matters first, but one of the realm's lesser ones always has
-  // a place, so the card isn't the same three alarms every season.
-  const ranked = out.sort((a, b) => b.urgency - a.urgency);
-  const pick = ranked.slice(0, 3);
-  const aside = ranked.find((o) => o.kind && !pick.includes(o));
-  if (aside && !pick.some((o) => o.kind)) pick[pick.length - 1] = aside;
-  return promise(pick.filter((o) => !matterResting(o)), turn);
+  // Every matter the realm has, worst first: the court (courtYear) chooses
+  // which are put to the King, and when.
+  return out.sort((a, b) => b.urgency - a.urgency).filter((o) => !matterResting(o)).map((o) => ({ ...o, key: heardKey(o) }));
 }
 
-// One matter at a time, and it waits for the King only so long. The Hand's
-// most pressing matter is put to him with a fuse (FUSE seasons, counted from
-// when it was first put to him); the others wait their turn behind it and
-// don't tick. Answered, it rests a year; left to burn down, the realm answers
-// for the King, it costs him, and the chronicle says so.
+// A matter waits for the King only so long: FUSE seasons he watches, then the
+// realm answers for him, it costs him, and the chronicle says so.
 const FUSE = 3;
 const matterKey = (o) => o.kind ?? (/is starving$/.test(o.text) ? "starving" : o.text.replace(/[\d.,]+/g, "#").replace(/:.*$/, ""));
 function matterResting(o) {
   const at = meta.mattersRest?.[matterKey(o)];
   return at != null && (world?.turn ?? 0) - at < 4;
 }
-function promise(items, turn) {
-  // The petitioners' matter has its own fuse at court; the thin treasury has no one to offend.
-  const fused = (o) => !o.acts?.some((a) => a.ui === "court") && !/treasury is thin|realm is quiet/.test(o.text);
-  // The matter already put to the King stays, unless something far worse comes up
-  // (a host at the gates beats a town's walls): then the worse one cuts in.
-  const held = items.find((o) => meta.matter && matterKey(o) === meta.matter.key);
-  const worst = items.filter(fused).sort((a, b) => b.urgency - a.urgency)[0];
-  const head = held && !(worst && worst.urgency >= held.urgency + 30) ? held : (worst ?? held);
-  if (!head) { if (meta.matter) { meta.matter = null; chron.saveMeta(meta); } return items; }
-  const key = matterKey(head);
-  if (meta.matter?.key !== key) { meta.matter = { key, seen: turn, ticks: 0, text: head.text, lapse: lapseOf(head) }; chron.saveMeta(meta); }
-  // Only seasons the King watches burn the fuse: a realm left closed doesn't answer for him.
-  if (turn > (meta.matter.seen ?? turn)) {
-    if (isWatched()) meta.matter.ticks = (meta.matter.ticks ?? 0) + (turn - meta.matter.seen);
-    meta.matter.seen = turn;
-    chron.saveMeta(meta);
+// The matter itself, for "never twice in a reign": its words without numbers,
+// and for a threat that comes again (a march, a host of the dead, a famine
+// year) the time it came.
+const heardKey = (o) => `${o.text.replace(/[\d.,]+/g, "#").replace(/:.*$/, "")}${o.occur != null ? `@${o.occur}` : ""}`;
+
+// --- the court's year ---------------------------------------------------------
+// The court sits once a year, in spring. Its doors open on two or three
+// matters (lords with petitions, and one of the realm's own matters, brought
+// by the lord of the house it touches); the King answers them, the doors
+// close, and the board is his until the next spring. Between sittings the Hand
+// calls him only for a crisis (a host on the march, the dead, famine, war, a
+// house near rising), and never within CALL_GAP of the last time the court
+// called him. No matter is put to him twice in a reign.
+const CALL_GAP = 30000;
+let counselNow = [];  // the realm's matters, as the last reading of the world found them
+const isCrisis = (o) => o.urgency >= 75 || /are at war$/.test(o.text);
+const courtYearOf = () => (meta.court ??= { sitting: null, hand: {}, heard: {}, lastCall: 0 });
+const heardCtx = () => ({ heard: (k) => courtYearOf().heard[k] != null, hear: (k) => { courtYearOf().heard[k] = world?.turn ?? 0; } });
+const courtCtx = () => ({ favour: favourOf, shift: shiftFavour, send: (l) => send(`lua cmd ${l}`), watched: isWatched(), options: meta.options ?? {}, ...heardCtx() });
+
+function callMatter(o, turn, crisis) {
+  const c = courtYearOf();
+  c.hand[o.key] = { ticks: 0, seen: turn, crisis, sitting: crisis ? null : c.sitting };
+  c.heard[o.key] = turn;
+}
+
+async function courtYear(turn) {
+  if (!court || !world) return;
+  const c = courtYearOf();
+  const watched = isWatched();
+  if (watched) court.expire(turn, shiftFavour);
+  // A matter the King leaves burns down in the seasons he watches; one the
+  // realm has settled on its own (the famine ended, the war is over) goes quietly.
+  for (const [key, m] of Object.entries(c.hand)) {
+    const o = counselNow.find((x) => x.key === key);
+    if (!o) { delete c.hand[key]; continue; }
+    if (watched && turn > m.seen) m.ticks += turn - m.seen;
+    m.seen = turn;
+    if (m.ticks >= FUSE) { lapse({ key: matterKey(o), text: o.text, lapse: lapseOf(o) }, turn); delete c.hand[key]; }
   }
-  const left = FUSE - (meta.matter.ticks ?? 0);
-  if (left <= 0) {
-    lapse(meta.matter, turn);
-    return promise(items.filter((o) => o !== head), turn);
+  closeIfDone(turn);
+  if (watched && (turn - 1) % 4 === 0 && c.sitting !== turn) {
+    // Spring: the doors open. Two or three matters (rare: two, often: three).
+    c.sitting = turn;
+    let want = { rare: 2, often: 3 }[meta.options?.petitions] ?? (Math.random() < 0.5 ? 2 : 3);
+    const own = counselNow.find((o) => !isCrisis(o) && o.acts?.length && c.heard[o.key] == null && !c.hand[o.key]);
+    if (own) { callMatter(own, turn, false); want--; }
+    await court.callSitting(world, turn, want, courtCtx());
+    const n = Object.values(c.hand).filter((m) => m.sitting === turn).length + court.petitions.filter((p) => !p.answered && p.called === turn).length;
+    if (n) record({ turn, kind: "court", text: `The court sits for the spring of ${calendar(turn).year}: ${n} ${n === 1 ? "matter waits" : "matters wait"} for the King.` });
+    c.lastCall = Date.now();
   }
-  head.due = left;
-  head.key = key;
-  return [head, ...items.filter((o) => o !== head).map((o) => ({ ...o, acts: [], waiting: true }))];
+  // A story's matter that comes while the doors are open is heard at this sitting.
+  if (c.sitting != null) for (const p of court.petitions) if (!p.answered && p.called == null && p.kind === "arc") p.called = c.sitting;
+  // Between sittings, the Hand calls the King only for a crisis, one at a time.
+  const crisis = counselNow.find((o) => isCrisis(o) && o.acts?.length && c.heard[o.key] == null && !c.hand[o.key]);
+  const calling = Object.values(c.hand).some((m) => m.crisis);
+  if (crisis && watched && !calling && (c.sitting != null || Date.now() - c.lastCall >= CALL_GAP)) {
+    callMatter(crisis, turn, true);
+    c.lastCall = Date.now();
+  }
+  closeIfDone(turn);
+  chron.saveMeta(meta);
+}
+
+// Every matter of the sitting answered (or gone home unheard): the doors close.
+function closeIfDone(turn) {
+  const c = courtYearOf();
+  if (c.sitting == null) return;
+  const open = Object.values(c.hand).some((m) => m.sitting === c.sitting) || court?.petitions.some((p) => !p.answered && p.called != null);
+  if (open) return;
+  c.sitting = null;
+  c.lastCall = Date.now();
+  record({ turn, kind: "court", text: "The doors of the court close. The realm is the King's until the spring." });
+  chron.saveMeta(meta);
+}
+
+// The Hand's word on a petition, one line, from where the house stands with
+// the crown: what the King's answer will cost him with them.
+const HAND_ON = {
+  remembers: (h) => `${h} has waited a long time to say that, Sire.`,
+  informer: () => "Informers are paid by both sides, Sire.",
+  justice: (h) => `Rule for ${h} and you make an enemy of the other, Sire.`,
+  claim: () => "Whatever you rule, every bannerman is watching, Sire.",
+  debt: (h) => `${h} cannot pay, Sire. The question is what it costs you.`,
+  grain: () => "Hungry towns remember who fed them, Sire.",
+  arc: () => "This is part of a larger tale, Sire. What you rule here, it carries on.",
+};
+function handLine(p) {
+  const lord = court?.people?.[p.from];
+  const h = String(p.house ?? "").replace(/^House /, "");
+  if (!lord || !h) return "";
+  const f = Math.round(favourOf(lord.playerId));
+  const purse = world?.players?.find((x) => houseFor(x).crown)?.gold ?? 0;
+  const paid = (p.options ?? []).filter((o) => o.cost);
+  if (f < 25) return `${h} is near rising against you, Sire. Send them home empty and they may march.`;
+  if (f < 35) return `${h} will remember this, Sire. They are cold to you already.`;
+  if (paid.length && paid.every((o) => o.cost > purse)) return "The treasury cannot pay for what they ask, Sire.";
+  if (HAND_ON[p.kind]) return HAND_ON[p.kind](h);
+  if (f >= 75) return `${h} has served you well, Sire. They will bear a hard answer.`;
+  return `${h} will remember this, Sire.`;
+}
+
+// What stands before the King now: a crisis first, then the sitting's own
+// matters (the realm's, then the petitioners). Empty between sittings.
+function docket() {
+  const c = courtYearOf();
+  const ownerOf = (o) => (o.acts ?? []).map((a) => world?.cities?.find((x) => x.id === Number(a.city))).map((x) => x && world.players.find((p) => p.id === x.owner)).find((p) => p && !houseFor(p).crown && !houseFor(p).wild);
+  const hand = Object.entries(c.hand).map(([key, m]) => {
+    const o = counselNow.find((x) => x.key === key);
+    if (!o) return null;
+    // Brought by the lord of the house it touches; a matter of the whole realm, by the Hand himself.
+    const owner = ownerOf(o);
+    const lord = owner ? court.lordOfHouse(owner.id) : null;
+    return { id: `hand:${key}`, hand: true, key, crisis: m.crisis, sitting: m.sitting, text: o.text, why: o.why, acts: o.acts,
+      name: lord?.name ?? "The Hand of the King", house: lord ? houseFor(owner).name : "", from: lord?.id ?? null, due: Math.max(1, FUSE - m.ticks) };
+  }).filter(Boolean).sort((a, b) => Number(b.crisis) - Number(a.crisis));
+  const pets = court.open().filter((p) => p.called != null).map((p) => ({ ...p, sitting: p.called, counsel: handLine(p) }));
+  return [...hand, ...pets];
 }
 
 // What the King's silence costs, matter by matter: the house it touches takes
@@ -1117,8 +1200,8 @@ const lastSeason = { net: 0 };  // the tithe less upkeep, this season, for the t
 const favourPast = {};  // turn -> {house id: favour}, the last two years
 function collectTithe(turn) {
   flushHeld();  // last season's grouped lines
-  // The court sits every season: a petitioner comes while fewer than three wait.
-  if (court && world) court.courtDay(world, turn, { favour: favourOf, shift: shiftFavour, send: (l) => send(`lua cmd ${l}`), watched: isWatched(), options: meta.options ?? {} }).catch((err) => console.error("court day:", err));
+  // The court's year: a sitting each spring, a crisis between (courtYear).
+  courtYear(turn).catch((err) => console.error("court year:", err));
   if (!world) return;
   favourPast[turn] = { ...favour };
   resolveCampaigns(turn);
@@ -1412,7 +1495,7 @@ http.createServer(async (req, res) => {
       // The King's side is his whole host: the garrisons defend Kingsmere too.
       ended: u?.ended && !u.ended.settled && (world?.turn ?? 0) - u.ended.turn <= 8 ? u.ended.house : null,
       theirs: u?.house != null ? fighting(u.house) : 0, ours: crownId != null ? (world?.units ?? []).filter((x) => x.owner === crownId && !CIVILIAN.has(x.type)).length : 0 };
-    return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), story: storyNow(), date: calendar(world.turn), threat, counsel: counsel(players, cities, threat), effects: effects.slice(-10), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000) });
+    return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), story: storyNow(), date: calendar(world.turn), threat, counsel: (counselNow = counsel(players, cities, threat)), effects: effects.slice(-10), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000) });
   }
   if (url.pathname === "/map") {
     const map = chron.readJson(path.join(P.state, "map.json"));
@@ -1514,7 +1597,14 @@ http.createServer(async (req, res) => {
   if (url.pathname === "/counsel/answer" && req.method === "POST") {
     // The King answered the Hand's matter: it rests a year, and the next one comes up.
     const { key } = await body(req);
-    if (key) { (meta.mattersRest ??= {})[String(key)] = world?.turn ?? 0; if (meta.matter?.key === key) meta.matter = null; chron.saveMeta(meta); }
+    if (key) {
+      // A matter at court is keyed by the matter itself; it rests as its kind does.
+      const o = counselNow.find((x) => x.key === String(key));
+      (meta.mattersRest ??= {})[o ? matterKey(o) : String(key)] = world?.turn ?? 0;
+      delete courtYearOf().hand[String(key)];
+      closeIfDone(world?.turn ?? 0);
+      chron.saveMeta(meta);
+    }
     return json(res, 200, { ok: true });
   }
   if (url.pathname === "/decree" && req.method === "POST") {
@@ -1659,7 +1749,7 @@ http.createServer(async (req, res) => {
     record({ turn: world?.turn ?? 0, kind: "decree", text: `By the King's word: ${mood.summary}` });
     return json(res, 200, mood);
   }
-  if (url.pathname === "/court" && req.method === "GET") return json(res, 200, inCrowns(court.open()));
+  if (url.pathname === "/court" && req.method === "GET") return json(res, 200, inCrowns(docket()));
   if (url.pathname === "/hear" && req.method === "POST") {
     // What the King said into the microphone (a WAV), as words, by Off Grid's Whisper.
     const wav = await bytes(req);
@@ -1688,6 +1778,7 @@ http.createServer(async (req, res) => {
   if (url.pathname === "/court/answer" && req.method === "POST") {
     const { id, option } = await body(req);
     const out = rule(id, option);
+    closeIfDone(world?.turn ?? 0);
     return json(res, out.error ? 400 : 200, out);
   }
   if (url.pathname === "/court/say" && req.method === "POST") {

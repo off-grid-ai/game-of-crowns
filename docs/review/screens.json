@@ -631,9 +631,8 @@
     "name": "The Hand's counsel",
     "group": "Play",
     "what": "0.6: one matter at a time; the bar drains, and when it runs out the realm answers for you. The clip shows a matter burning down and its cost.",
-    "file": "screens/counsel.jpg",
+    "file": "screens/v/counsel-3.jpg",
     "before": "screens/before/counsel.jpg",
-    "clip": "screens/counsel.mp4",
     "versions": [
       {
         "v": 1,
@@ -647,6 +646,13 @@
         "at": "2026-11-07T11:09:54+05:30",
         "file": "screens/counsel.jpg",
         "clip": "screens/counsel.mp4"
+      },
+      {
+        "v": 3,
+        "label": "The Hand calls you to court for a crisis",
+        "at": "2026-11-09T07:00:41Z",
+        "file": "screens/v/counsel-3.jpg",
+        "what": "No separate card or button: between sittings the Hand calls the King to court only for a crisis, with every order he used to offer."
       }
     ]
   },
@@ -721,7 +727,7 @@
     "name": "Court",
     "group": "Play",
     "what": "0.6: the petitioner in front of you waits three seasons; the bar under the card drains.",
-    "file": "screens/court.jpg",
+    "file": "screens/v/court-3.jpg",
     "before": "screens/before/court.jpg",
     "versions": [
       {
@@ -735,6 +741,13 @@
         "label": "After",
         "at": "2026-11-07T11:09:54+05:30",
         "file": "screens/court.jpg"
+      },
+      {
+        "v": 3,
+        "label": "One court, a sitting each spring",
+        "at": "2026-11-09T07:00:41Z",
+        "file": "screens/v/court-3.jpg",
+        "what": "The court sits once a year, in spring, with two or three matters. The Hand speaks on each petitioner's card in one line."
       }
     ]
   },
@@ -842,5 +855,37 @@
       }
     ],
     "file": "screens/v/hand-over-town-2.jpg"
+  },
+  {
+    "id": "court-realm-matter",
+    "name": "A realm matter at court",
+    "group": "Play",
+    "what": "The realm's own matters (walls, plague, a house growing strong) come to court with the lord of the house they touch, the Hand's reasons and his orders.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "A realm matter, brought by its lord",
+        "at": "2026-11-09T07:00:41Z",
+        "file": "screens/v/court-realm-matter-1.jpg",
+        "what": "The realm's own matters (walls, plague, a house growing strong) come to court with the lord of the house they touch, the Hand's reasons and his orders."
+      }
+    ],
+    "file": "screens/v/court-realm-matter-1.jpg"
+  },
+  {
+    "id": "court-closed",
+    "name": "After the court",
+    "group": "Play",
+    "what": "Every matter answered: the result shows, the court closes and dims until spring.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Answered: the board is yours",
+        "at": "2026-11-09T07:00:42Z",
+        "file": "screens/v/court-closed-1.jpg",
+        "what": "Every matter answered: the result shows, the court closes and dims until spring."
+      }
+    ],
+    "file": "screens/v/court-closed-1.jpg"
   }
 ]
