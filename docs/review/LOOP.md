@@ -241,3 +241,11 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - clicking a house on the ladder follows its host, or goes to its seat;
   - the great council at two fifths and two thirds of the reign over a war between houses, with each house's stand; commanding peace sends both hosts home.
 - **Verdict:** on course. Every approved item is now built; what's left is proof on film and the review page.
+
+## 2026-11-09, night (autopilot)
+
+- **What's going on:**
+  - The smaller items are built and fixed after a fresh review: the council's peace (no double charge, a real truce, no repeat war); travellers (land routes only, a horse for carters, varied people); following a house (soldiers only, the biggest stack).
+  - Side panels now hide during a telling.
+  - The film harness is hardened: it presses Continue until the realm opens and clicks through interludes. The film is rerunning.
+- **Verdict:** on course. The harness failures cost two film runs, but each one caught a real flaw (panels showing during an interlude).
