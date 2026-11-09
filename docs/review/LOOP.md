@@ -50,3 +50,15 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Where we're heading:** commit steps 3 and 4 (read the realm), then Court v2 (bet 1).
 - **Right way?** The order is right. Risk: a large uncommitted batch, and a low-leverage camera move blocking top move 2. No new fun-bar numbers yet.
 - **Verdict:** on course, with one correction already in force (the camera timebox). This turn's supervisor is reviewing play-feedback's uncommitted batch for lost behaviour and UI.md breaches before it lands.
+
+## 2026-11-09, 13:10 (Phantom Camera, second try, backed out)
+
+- **Result:** backed out again. director.gd, main.gd, camera_rig.gd and project.godot are back at HEAD; the add-on is out of `realm/addons`. Nothing of it is committed.
+- **What held:** convoy, town and castle shots matched the old camera on film (the castle framed over the gate, the cart followed).
+- **What broke:** battle close beats. The beats fired on time (shot log: distance 1.6 to 2.8 every ~3 s), but on the 2.8 takes the lens pointed straight along -Z, level and unaimed, so it looked across the water at the castle. The lens log showed one of the two alternating takes ending up with an identity rotation; the add-on's look-at never turned it.
+- **Learned for next time:**
+  - The add-on needs its manager registered as an autoload (`PhantomCameraManager`), or every phantom camera fails.
+  - Its manager sets `Engine.physics_jitter_fix = 0`; restore the project's value after it loads.
+  - Short films weren't the camera. The game ran all its frames, but the movie recorder skips frames while the game window can't draw (covered, another desktop). Check `Engine.get_process_frames()` against the film's frame count before blaming code.
+  - The bridge is shared: another session's testing moves the world on (season, place), so judge before and after by behaviour, or film both in one run.
+  - Next pass: drive take rotation ourselves (look-at mode off, aim in `_aim`) instead of the add-on's look-at, and re-film the battle first.
