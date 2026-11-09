@@ -249,3 +249,10 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - Side panels now hide during a telling.
   - The film harness is hardened: it presses Continue until the realm opens and clicks through interludes. The film is rerunning.
 - **Verdict:** on course. The harness failures cost two film runs, but each one caught a real flaw (panels showing during an interlude).
+
+## 2026-11-09, night (incident)
+
+- **What happened:** my test script moved its test reign away before the server had switched back to Mac's realm, and the server crash-looped on the missing folder.
+- **Fixed:** the server points at The Broken Oath again; it's running and paused.
+- **Prevention:** the script now waits for the server to answer before it starts, and only moves a test reign once Mac's realm is confirmed active.
+- **Side effect:** The Broken Oath's world moved on during tests (now turn 257). That reign had already ended and been scored.
