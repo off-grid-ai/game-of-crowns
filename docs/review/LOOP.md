@@ -146,3 +146,14 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - Cap crisis matters at 2 per sitting.
   - The season-turn stutter (25–37% of play time at 40 s seasons) becomes the next item, ahead of unique names, because bugs and performance are the #1 negative-review driver.
   - Close the sitting left open in the shared realm.
+
+## 2026-11-09, 15:25 (Court v2 landed)
+
+- **cf8c6ed:** Court v2. Measured on a timed 15-minute reign, 6.5 min of play:
+  - **Room to breathe:** 1.08 decisions a minute (was 3.6); 86% of the time with no card up (was about 0%). Both near or past target.
+  - No deadlocks.
+  - The director tours 5 s after the court closes.
+  - House colours cost 3.7 ms per realm update and are not the stutter.
+- **On the review page:** 4 marks resolved, 2 still open (the ladder shows 6 houses not 7; the heading is still small), 2 new (a ruling's result covers the next card; the ground looks grey and noisy in the after-court shot).
+- **Next:** the season-turn stutter (3–6 fps for 10–15 s, predates this work; performance is the #1 negative-review driver), then unique names.
+- **Verdict:** on course; bet 1's core is shipped.
