@@ -134,3 +134,15 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Where we're heading:** Court v2 fixed, measured and committed, then unique names.
 - **Right way?** Yes. The review data confirms the order: stability, then pacing, then repetition.
 - **Verdict:** on course. Watch item: Court v2 has gone 3 runs without a commit. If run #4 (with the fixes) doesn't pass, split the batch: commit the colour, ladder and label fixes on their own, keep the court separate.
+
+## 2026-11-09, 15:00 (Court v2, run #4)
+
+- **No deadlock:** the court opened, was answered and closed, and the realm moved on.
+- **Quiet share:** 73%, passes the ≥60% target.
+- **Decisions:** 2.06 a minute, fails the ≤1 target. Measured in a realm in crisis, where every crisis is heard.
+- **Frame rate:** median 20 fps, with 3–6 fps for 10–15 s at every season turn.
+- **Course correction:**
+  - Measure pacing on a fresh, timed 15-minute reign.
+  - Cap crisis matters at 2 per sitting.
+  - The season-turn stutter (25–37% of play time at 40 s seasons) becomes the next item, ahead of unique names, because bugs and performance are the #1 negative-review driver.
+  - Close the sitting left open in the shared realm.
