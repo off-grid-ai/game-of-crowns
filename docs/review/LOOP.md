@@ -62,3 +62,14 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - Short films weren't the camera. The game ran all its frames, but the movie recorder skips frames while the game window can't draw (covered, another desktop). Check `Engine.get_process_frames()` against the film's frame count before blaming code.
   - The bridge is shared: another session's testing moves the world on (season, place), so judge before and after by behaviour, or film both in one run.
   - Next pass: drive take rotation ourselves (look-at mode off, aim in `_aim`) instead of the add-on's look-at, and re-film the battle first.
+
+## 2026-11-09, 13:25 (autopilot)
+
+- **What's going on:**
+  - Phantom Camera is backed out (7498fd0) after the timebox, so the camera files are free.
+  - A new review page is published from this account (b0e3927).
+  - play-feedback applied the supervisor's fixes: risings get an ultimatum 2 seasons ahead, also when unwatched; no drain before the treasury loads; a cheaper screen-edge shader.
+  - That session is idle, no render is running, and its batch has been uncommitted for over an hour.
+- **Where we're heading:** land steps 3 and 4 on the review page, then Court v2 and the director start after court (top moves 1 and 2).
+- **Right way?** The order is right, but the work is stalled: a big uncommitted batch and an idle builder. No new fun-bar numbers yet.
+- **Verdict:** off course on cadence. **Correction:** play-feedback told to land the batch this turn, with review-page versions, then go straight to Court v2. Next turn: check the commit landed.
