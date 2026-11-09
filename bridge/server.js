@@ -116,7 +116,7 @@ function load(id) {
   court.deedsOf = (pid) => (deeds[pid] ??= []);
   arcs = new Arcs(P.base, court, record);
   arcsRunning = false;  // a new realm's stories start free of the last one's
-  court.onArcRuling = (arc, beat, option) => arcs.rule(arc, beat, option);
+  court.onArcRuling = (arc, beat, option) => arc === "council" ? councilRuled(beat, option) : arcs.rule(arc, beat, option);
   chatter?.stop();
   chatter = new Chatter(P.state, { world: () => world, turn: () => world?.turn ?? 0, minds: () => minds });
   stakes = new Stakes(P.state, record, endReign);
@@ -1533,6 +1533,76 @@ function ambitions() {
   }
 }
 
+// The council: twice a reign (at two fifths and two thirds of the clock) the
+// great houses divide over a war between two of them, and each says where it
+// stands. The matter comes to the King's court with the count; whichever camp
+// he sides with warms to him, and the other remembers.
+function council() {
+  if (!meta.minutes || meta.status !== "running" || !world || !court) return;
+  const at = meta.elapsedMs / (meta.minutes * 60000);
+  const passed = [0.4, 0.65].filter((x) => at >= x && !(meta.councils ?? []).includes(x));
+  if (!passed.length) return;
+  const due = passed[passed.length - 1];
+  (meta.councils ??= []).push(...passed);  // after a reload, the thresholds passed are spent at once: one council
+  const d = detail();
+  const great = world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown && world.cities.some((c) => c.owner === p.id));
+  const stilled = (x, y) => { const l1 = court.lordOfHouse(x), l2 = court.lordOfHouse(y); return !!(l1 && l2 && court.truce(l1.id, l2.id)); };
+  const war = (a, b) => (d?.players?.[a.id]?.atWarWith ?? []).includes(b.id) && !stilled(a.id, b.id);
+  const power = (p) => world.cities.filter((c) => c.owner === p.id).length * 2 + (p.units ?? 0);
+  let pair = null;
+  for (const a of great) for (const b of great) if (a.id < b.id && war(a, b) && (!pair || power(a) + power(b) > power(pair[0]) + power(pair[1]))) pair = [a, b];
+  if (!pair) { chron.saveMeta(meta); return; }  // the realm at peace: no council this time
+  const [a, b] = pair;
+  // Each other house stands with the side it isn't fighting; with neither, the stronger.
+  const votes = { [a.id]: [], [b.id]: [] };
+  for (const h of great.filter((x) => x !== a && x !== b)) {
+    const side = war(h, a) && !war(h, b) ? b : war(h, b) && !war(h, a) ? a : power(a) >= power(b) ? a : b;
+    votes[side.id].push(houseFor(h).name.replace("House ", ""));
+  }
+  const lord = (p) => Object.values(court.people).find((c) => c.alive && c.rank === "lord" && c.playerId === p.id);
+  const from = lord(a) ?? lord(b);
+  if (!from) { chron.saveMeta(meta); return; }
+  const name = (p) => houseFor(p).name;
+  const camp = (p) => votes[p.id].length ? `${votes[p.id].join(", ")} stand with ${name(p)}` : `no house stands with ${name(p)}`;
+  court.arcPetition({ arc: "council", beat: `council-${due}`, thread: "the great council", from,
+    text: `The great council divides over the war between ${name(a)} and ${name(b)}. ${camp(a)}; ${camp(b)}. The lords wait on the King's word.`,
+    options: [
+      { id: "a", label: `Side with ${name(a)}`, hint: `${name(a)} +15 · ${name(b)} −20`, favour: { [a.id]: 15, [b.id]: -20 }, result: `The King sides with ${name(a)}. ${name(b)} leaves the council hall without bowing.` },
+      { id: "b", label: `Side with ${name(b)}`, hint: `${name(b)} +15 · ${name(a)} −20`, favour: { [b.id]: 15, [a.id]: -20 }, result: `The King sides with ${name(b)}. ${name(a)} leaves the council hall without bowing.` },
+      { id: "peace", label: "Command them both to make peace (300 gold)", hint: `${name(a)} −5 · ${name(b)} −5 · the crown pays the blood-price`, cost: 300, favour: { [a.id]: -5, [b.id]: -5 }, result: `The King orders peace and pays the blood-price himself. Neither house thanks him for it.` },
+    ] }, world);
+  (meta.councilWar ??= {})[`council-${due}`] = [a.id, b.id];
+  record({ turn: world.turn, kind: "council", text: `The great council divides over the war between ${name(a)} and ${name(b)}.` });
+  chron.saveMeta(meta);
+}
+
+// A commanded peace: the two lords' houses keep a truce (no raids, no plots).
+function keepTruce(pair) {
+  if (!court) return;
+  const [a, b] = pair.map((pid) => court.lordOfHouse(pid));
+  if (!a || !b) return;
+  court.truces ??= {};
+  court.truces[[a.id, b.id].sort().join(":")] = (world?.turn ?? 0) + 16;
+  court.remember(a.id, `The King commanded peace with ${b.house}, and I bowed to it.`);
+  court.remember(b.id, `The King commanded peace with ${a.house}, and I bowed to it.`);
+  court.saveCourt?.();
+}
+
+// The King commanded peace at the council: both hosts are turned home, as the
+// peace decree does (crown.js), the blood-price already paid at court.
+function councilRuled(beat, option) {
+  const pair = meta.councilWar?.[beat];
+  if (option !== "peace" || !pair || !world) return;
+  const [a, b] = world.cities.some((x) => x.owner === pair[0]) ? pair : [pair[1], pair[0]];
+  const c = world.cities.find((x) => x.owner === a);
+  if (!c) return;
+  // The court took the blood-price already: the decree's own fee is waived (its first line pays it).
+  const r = decree({ action: "peace", city: c.id, to: b, price: 0, favourOf: () => 60, causeOf }, { ...world, players: world.players.map((p) => houseFor(p).crown ? { ...p, gold: 1e9 } : p) });
+  if (r.error) { console.error("council peace:", r.error); return; }
+  (r.lua ?? []).slice(1).forEach((l) => send(`lua cmd ${l}`));
+  if (r.truce) keepTruce(r.truce);
+}
+
 // The reign in acts: at each quarter of its clock the act just gone is told
 // back. Two or three of the King's weightiest choices in it, each where it
 // happened and what came of it, then the name he is earning. The realm waits
@@ -1651,6 +1721,7 @@ setInterval(() => {
   else {
     lastAct();
     ambitions();
+    council();
     interlude();
     if (meta.elapsedMs % 30000 === 0) chron.saveMeta(meta);
   }
@@ -1972,16 +2043,7 @@ http.createServer(async (req, res) => {
       scene("muster", { x: seat.x, y: seat.y, tx: goal.x, ty: goal.y, city: seat.id });
     }
     // A commanded peace: the two lords' houses keep a truce (no raids, no plots).
-    if (result.truce && court) {
-      const [a, b] = result.truce.map((pid) => court.lordOfHouse(pid));
-      if (a && b) {
-        court.truces ??= {};
-        court.truces[[a.id, b.id].sort().join(":")] = (world?.turn ?? 0) + 16;
-        court.remember(a.id, `The King commanded peace with ${b.house}, and I bowed to it.`);
-        court.remember(b.id, `The King commanded peace with ${a.house}, and I bowed to it.`);
-        court.saveCourt?.();
-      }
-    }
+    if (result.truce) keepTruce(result.truce);
     // A royal match: the two lords' heirs (or kin) are named, they warm to each
     // other, and a long truce holds their houses from raids and plots.
     if (result.pact && court && pair) {

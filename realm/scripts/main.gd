@@ -325,6 +325,7 @@ func _ready() -> void:
 	ui.open_menu.connect(func(): title.open())
 	ui.counsel_answered.connect(func(key): bridge.counsel_answered(key))
 	ui.court_closed.connect(func(): director.soon())  # the doors shut: the camera goes to look
+	ui.house_followed.connect(_follow_house)  # a house's sigil clicked: go with its host
 	ui.interlude_closed.connect(func(): bridge.close_interlude())  # the act told back: the realm goes on
 	ui.reign_continued.connect(func(): bridge.continue_reign(func(_c, d): if d is Dictionary: ui.set_reign(d)))
 	ui.town_closed.connect(func(): _selected = -1)
@@ -1570,6 +1571,26 @@ func _show_selected(world: Dictionary) -> void:
 			return
 	_selected = -1
 	ui.show_town({}, {}, {})
+
+
+## Goes with a house's host in the field, or, with none out, to its seat.
+func _follow_house(pid: int) -> void:
+	var name := "The house"
+	for p in bridge.world.get("players", []):
+		if int(p["id"]) == pid:
+			name = String((p.get("house", {}) as Dictionary).get("name", name))
+	var host: Node3D = units.army_of(pid, bridge.world)
+	if host:
+		director.watch_at(host.global_position, 6.0, "%s's host" % name, host)
+		return
+	for c in bridge.world.get("cities", []):
+		if int(c["owner"]) == pid and c.get("capital", false):
+			_focus_city(int(c["id"]))
+			return
+	for c in bridge.world.get("cities", []):
+		if int(c["owner"]) == pid:
+			_focus_city(int(c["id"]))
+			return
 
 
 func _focus_city(city_id: int) -> void:

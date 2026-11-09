@@ -34,6 +34,7 @@ signal story_opened(entry: Dictionary)
 signal reign_continued  # the reign was scored, and the King rules on
 signal court_closed  # the doors shut: the realm moves, and the camera may go and look
 signal interlude_closed  # the King has read the act just gone: the realm goes on
+signal house_followed(player_id: int)  # a sigil on the ladder clicked: the camera goes with that house's host
 signal counsel_answered(key: String)  # the King answered the Hand's matter  # a story's name clicked in the chronicle
 
 const Features := preload("res://scripts/features.gd")
@@ -1015,6 +1016,12 @@ func _rank_houses(players: Array, fallen: Array = []) -> void:
 		if fresh:
 			chip = Control.new()
 			chip.mouse_filter = Control.MOUSE_FILTER_STOP
+			# Click a house to follow its host in the field (or see its seat).
+			chip.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+			chip.tooltip_text = "Follow %s's host" % String(p["house"].get("name", "this house"))
+			chip.gui_input.connect(func(e: InputEvent):
+				if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+					house_followed.emit(id))
 			# Its place: a number, small, top-left.
 			var place := Label.new()
 			place.name = "Place"
@@ -2183,6 +2190,12 @@ func _epilogue(ep: Dictionary, title := "The reign, as it will be told", wait_cl
 		if c != _omens and (c as CanvasItem).visible:
 			(c as CanvasItem).visible = false
 			_epilogue_hid.append(c)
+	# The side panels and cards too, whether or not the camera was already filming.
+	for n in CINEMA_HIDES:
+		var pnl = get(n)
+		if pnl is CanvasItem and is_instance_valid(pnl) and (pnl as CanvasItem).visible:
+			(pnl as CanvasItem).visible = false
+			_epilogue_hid.append(pnl)
 	var card := _glass_panel()
 	_epilogue_card = card
 	# A click anywhere moves the telling on.

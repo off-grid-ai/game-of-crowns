@@ -38,6 +38,9 @@ func _towns_up() -> bool:
 
 ## The top node under `sys` that `n` belongs to: a scene's name, for the gate.
 func sync(world: Dictionary, houses: Dictionary) -> void:
+	_town_spots.clear()
+	for c in world.get("cities", []):
+		_town_spots.append(terrain.world_pos(float(c["x"]), float(c["y"])))
 	if not _towns_up():
 		get_tree().create_timer(1.0).timeout.connect(sync.bind(world, houses))
 		return
@@ -107,6 +110,95 @@ func _victor(world: Dictionary, s: Dictionary) -> int:
 			near = d
 			best = int(u["owner"])
 	return best
+
+
+# --- the roads alive: carters and pedlars between the King's moments ---------------
+
+const TRAVELLERS := 3  # at most this many on the roads near the view at once
+var _town_spots: Array = []  # where each town stands
+var _travellers := 0
+var _travel_left := 6.0
+
+
+## Now and then a carter or a pedlar sets out between two neighbouring towns
+## near where the King is looking: the realm busy between his rulings, as a
+## realm is. Never a crowd: a few at a time, and only where he can see them.
+func _process(delta: float) -> void:
+	_traffic(delta)
+
+
+func _traffic(delta: float) -> void:
+	_travel_left -= delta
+	if _travel_left > 0.0 or _travellers >= TRAVELLERS or _town_spots.size() < 2 or not _towns_up():
+		return
+	_travel_left = randf_range(7.0, 14.0)
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	var seen := Vector3(cam.global_position.x, 0, cam.global_position.z)
+	var near := _town_spots.filter(func(t: Vector3): return Vector3(t.x, 0, t.z).distance_to(seen) < 30.0)
+	if near.size() < 2:
+		return
+	# Any neighbour within a day's walk, not always the nearest: the roads vary.
+	var a: Vector3 = near[randi() % near.size()]
+	var ends := near.filter(func(t: Vector3): return t != a and a.distance_to(t) <= 18.0)
+	if ends.is_empty():
+		return
+	_traveller(a, ends[randi() % ends.size()])
+
+
+func _traveller(from: Vector3, to: Vector3) -> void:
+	var r := _rng(from + Vector3(randf(), 0, randf()))
+	# Only where there's a way: a straight line between two towns means no road
+	# and no land joins them (it would cross the water).
+	var way := _route(from, to)
+	if way.size() <= 2:
+		return
+	var root := Node3D.new()
+	root.name = "Traveller"
+	add_child(root)
+	_travellers += 1
+	# A carter with his horse and cart, or someone on foot: each their own clothes and age.
+	var carter := r.randf() < 0.5
+	var cart: MeshInstance3D = null
+	var horse: Node3D = null
+	if carter:
+		cart = MeshInstance3D.new()
+		cart.mesh = _wagon
+		cart.scale = Vector3.ONE * 0.1
+		root.add_child(cart)
+		horse = Horse.new(r.randi() % Horse.COATS.size())
+		root.add_child(horse)
+	var cloth: Color = [Color(0.55, 0.47, 0.36), Color(0.42, 0.45, 0.38), Color(0.5, 0.36, 0.3), Color(0.38, 0.4, 0.47), Color(0.6, 0.55, 0.45)][r.randi() % 5]
+	var who: Node3D = _people.make(r, ["townsfolk", "peasant", "peasant", "townsfolk"][r.randi() % 4], cloth, ["adult", "adult", "elder"][r.randi() % 3])
+	root.add_child(who)
+	_people.play(who, "Walk", r.randf_range(0.9, 1.1))
+	var road: Curve3D = terrain.smooth_road(way)
+	var length: float = maxf(road.get_baked_length(), 0.01)
+	var seconds := clampf(length / (0.22 if carter else 0.26), 15.0, 90.0)
+	var heading := [INF]
+	var tw := create_tween()
+	tw.tween_method(func(t: float):
+		var d := t * length
+		var g := road.sample_baked(d)
+		var ahead := road.sample_baked(minf(length, d + 0.25))
+		var flat := Vector3(ahead.x - g.x, 0, ahead.z - g.z)
+		var dir := flat.normalized() if flat.length() > 0.001 else Vector3.FORWARD
+		var want := atan2(dir.x, dir.z)
+		heading[0] = want if heading[0] == INF else lerp_angle(heading[0], want, 0.12)
+		dir = Vector3(sin(heading[0]), 0, cos(heading[0]))
+		if cart:
+			cart.position = _stand(g)
+			cart.rotation.y = heading[0] + PI
+			horse.position = _stand(road.sample_baked(minf(length, d + 0.16)), HORSE_BODY)
+			horse.rotation.y = heading[0]
+			who.position = _stand(road.sample_baked(maxf(0.0, d - 0.12))) + Vector3(-dir.z, 0, dir.x) * 0.05
+		else:
+			who.position = _stand(g)
+		who.rotation.y = heading[0], 0.0, 1.0, seconds)
+	tw.tween_callback(func():
+		_travellers -= 1
+		root.queue_free())
 
 
 func _rng(at: Vector3) -> RandomNumberGenerator:

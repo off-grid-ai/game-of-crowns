@@ -7,6 +7,30 @@ var towns: Node3D  # towns.gd: inside a town's reach, soldiers keep to its stree
 const TownNav = preload("res://scripts/town_nav.gd")
 var _nav = TownNav.new()
 var _figures := {}  # unit id -> {node, target}
+
+
+const NOT_SOLDIERS := ["Workers", "Settlers", "Migrants", "Engineers", "Explorer", "Caravan", "Freight", "Diplomat", "Spy", "Leader"]
+
+
+## A house's host to follow: soldiers only, the biggest stack in the field
+## first, then its biggest garrison.
+func army_of(owner: int, world: Dictionary) -> Node3D:
+	var stacks := {}  # tile -> [count, node, in the field]
+	for u in world.get("units", []):
+		if int(u["owner"]) != owner or String(u["type"]) in NOT_SOLDIERS or not _figures.has(int(u["id"])):
+			continue
+		var node: Node3D = _figures[int(u["id"])]["node"]
+		if not is_instance_valid(node):
+			continue
+		var key := "%d,%d" % [int(u["x"]), int(u["y"])]
+		var st: Array = stacks.get(key, [0, node, not _town_tiles.has(key)])
+		st[0] += 1
+		stacks[key] = st
+	var best: Array = []
+	for st in stacks.values():
+		if best.is_empty() or (st[2] and not best[2]) or (st[2] == best[2] and st[0] > best[0]):
+			best = st
+	return best[1] if not best.is_empty() else null
 var _body := CapsuleMesh.new()
 var _beast := BoxMesh.new()
 var _mats := {}
