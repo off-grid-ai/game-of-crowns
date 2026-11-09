@@ -207,3 +207,16 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - Fun bar, Failure feels fair: 3 random falls → 0.
 - **Next own work, in the story files only:** the remaining free answers, then story marches through the ultimatum. The march needs server.js, which play-feedback holds, so that one gets coordinated.
 - **Verdict:** on course; throughput up.
+
+## 2026-11-09, evening (autopilot)
+
+- **What's going on:**
+  - Mac's direction: no parallel builders (goc-cpto), performance dropped. This session builds everything; the feedback session has handed over and stopped.
+  - **Landed:** Endless reigns gone (317f3a1); no free story answers; acts by the clock in arcs.js (6ac8db0); the review fixes plus story marches through the ultimatum (6151238).
+  - **Built, uncommitted:**
+    - Bet 3: interludes at each quarter, three ambitions, reignAt.
+    - Bet 4: the portrait on the Court card, the lord's want, story answers remembered, a voice per house.
+    - Bet 5: help and hurt chips on answers, the first shot after court on the King's ruling, three free deck answers priced.
+  - A 1-minute test reign is running on the game server.
+- **Where we're heading:** commit bets 3–5 once the test and a fresh pre-commit review pass, then one batch film for the review page, then player beats bringing matters to court, then the smaller items.
+- **Verdict:** on course, and throughput is up with one builder working continuously.
