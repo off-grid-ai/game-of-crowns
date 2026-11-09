@@ -1,6 +1,6 @@
 # Autopilot: how the game gets better while Mac is away
 
-The plan the recurring loop follows, one turn every 20 minutes. Read it at the start of every turn.
+The plan the recurring loop follows, one turn every 10 minutes. Read it at the start of every turn.
 
 ## Who we are
 
@@ -47,21 +47,39 @@ collections `decisions`, `picks`, `notes`). In leverage order:
    - The linked sessions' state and notes, and any messages waiting.
    - The brief's `decisions`, `picks` and `notes`.
    - The review page's open comments.
-2. **Steer.**
+2. **Check the direction, every turn.** Answer these four, in LOOP.md, with evidence:
+   - **What's going on?** What each session is doing right now and what landed since last turn.
+   - **Where are we heading?** The next approved item in leverage order, and whether that is what's
+     being built.
+   - **Are we moving the right way?**
+     - The fun-bar numbers from the latest measured reign compared with the last, line by line.
+     - Whether the work follows the approved bets and their order.
+     - Whether any session is stuck, looping, redoing work, polishing something low-leverage, building
+       something unapproved, or breaking what works.
+   - **Verdict:** on course, or off course and why.
+3. **Course-correct when off course.** Act the same turn:
+   - Tell the owning session exactly what to stop and what to do instead.
+   - Reorder its queue to the leverage order.
+   - Unblock it, or take over a stalled item whose files are free.
+   - Revert a change that lowered a fun-bar line or lost behaviour.
+   - If a whole bet is pointing the wrong way, say so on the brief with the evidence, and park it for
+     Mac's call.
+   - Check the next turn that the correction took.
+4. **Steer.**
    - Answer blocked sessions.
    - Read every new commit's diff: no lost behaviour, no line of the fun bar dropping, UI.md kept.
    - Send corrections to the session that owns the files. Free files the moment a session commits.
-3. **Supervise, every other turn.** Spawn a fresh agent, not my own review. It judges the newest shots and
+5. **Supervise, every other turn.** Spawn a fresh agent, not my own review. It judges the newest shots and
    clips plus the last commits against GAME_DESIGN.md's fun bar, UI.md and goc-ux's look bar, as a
    demanding strategy player, and returns the 3 biggest gaps. Route each gap in scope to the owning
    session. Log the rest in LOOP.md.
-4. **Measure.**
+6. **Measure.**
    - When a pacing, court or story change lands and no Godot is running, play one 15-minute reign on its
      own chronicle.
    - Count the fun bar from that chronicle: decisions a minute, quiet share, repeats, names, time to
      feedback.
    - Put the numbers in the brief's measured table, next to the last run's.
-5. **Review page.**
+7. **Review page.**
    - When shots or clips are committed in `docs/review/screens.json`, publish or refresh the review page
      from this session, following screen-review sections 3 and 5.
    - Its URL is in `docs/review/ARTIFACT_URL`. The old page belongs to another claude.ai account, so the
@@ -69,14 +87,14 @@ collections `decisions`, `picks`, `notes`). In leverage order:
    - Every changed screen gets its before and after and a Claude note: what changed, why, and its
      fun-bar numbers.
    - Promoting a change is Mac's call. Read his comments with `review-loop` and act on them.
-6. **Research.** Fold any pending research (the Steam review dataset) into the brief, tagged measured,
+8. **Research.** Fold any pending research (the Steam review dataset) into the brief, tagged measured,
    sourced or estimated.
-7. **Own work.** If nothing needs steering, take the next approved item in nobody else's files: build it,
+9. **Own work.** If nothing needs steering, take the next approved item in nobody else's files: build it,
    film it (3-8 s, read as frame strips), fix, prove it, commit.
-8. **Log and ship.**
+10. **Log and ship.**
    - Add a dated entry to `docs/review/LOOP.md`: what changed, the numbers, what's open.
    - Commit with `git commit -- <explicit paths>` and push. Main only.
-9. **Tell Mac.**
+11. **Tell Mac.**
    - Something changed: two or three short bullets.
    - Nothing changed: one line.
 
