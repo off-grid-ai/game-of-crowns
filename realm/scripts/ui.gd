@@ -988,13 +988,15 @@ var _rank_order: Array = []
 
 
 func _rank_houses(players: Array, fallen: Array = []) -> void:
-	var great := players.filter(func(p): return not p["house"].get("wild", false) and not p["house"].get("crown", false) and int(p.get("cities", 0)) > 0)
+	# A house with no town but a host in the field still fights: it stays on the ladder.
+	var great := players.filter(func(p): return not p["house"].get("wild", false) and not p["house"].get("crown", false) and (int(p.get("cities", 0)) > 0 or int(p.get("units", 0)) > 0))
 	var power := func(p): return int(p.get("cities", 0)) * 2 + int(p.get("units", 0))
 	great.sort_custom(func(a, b): return power.call(a) > power.call(b))
 	great = great.slice(0, 7)  # the seven great houses, never more on the strip
 	var order := great.map(func(p): return int(p["id"]))
 	var most := maxf(1.0, float(power.call(great[0]))) if not great.is_empty() else 1.0
-	var slot := MINIMAP_SIZE.x / maxf(1.0, float(order.size()))
+	# The strip's width shared by every chip it shows, the fallen included.
+	var slot := MINIMAP_SIZE.x / maxf(1.0, float(mini(7, order.size() + fallen.size())))
 	for id in _rank_chips.keys():
 		if not order.has(id):
 			_rank_chips[id].queue_free()
@@ -1186,21 +1188,38 @@ func _process(delta: float) -> void:
 			_toast_box.offset_top = gap.x
 			_toast_box.add_theme_stylebox_override("panel", _toast_style)
 		elif _toast_result:
-			# Never over the card he is reading: under the cards, at the screen's foot,
-			# if that's clear; only with no room anywhere does it sit up top.
-			var low := get_viewport().get_visible_rect().size.y - h - 24.0
-			var clear := true
-			for c in _cards + [_town_panel]:
-				if c and is_instance_valid(c) and c.visible and c.get_global_rect().end.y > low:
-					clear = false
-			_toast_box.offset_top = low if clear else _toast_top
+			# Never over the card he is reading: just under the cards in its column,
+			# or at the screen's foot; only with no room anywhere does it sit up top.
+			var x := _toast_box.get_global_rect()
+			var reading: Array[Rect2] = []
+			for c in _cards + [_town_panel, _epilogue_card]:
+				if c and is_instance_valid(c) and (c as Control).visible:
+					var r := (c as Control).get_global_rect()
+					if r.position.x < x.end.x and r.end.x > x.position.x:
+						reading.append(r)
+			var foot := get_viewport().get_visible_rect().size.y - h - 24.0
+			var tries: Array[float] = [foot]
+			for r in reading:
+				tries.append(r.end.y + 12.0)
+			var at := _toast_top
+			for y in tries:
+				var spot := Rect2(x.position.x, y, x.size.x, h)
+				if y <= foot and not reading.any(func(r): return r.intersects(spot)):
+					at = y
+					break
+			_toast_box.offset_top = at
+			_toast_at_foot = at > _toast_top
 			_toast_box.add_theme_stylebox_override("panel", _toast_solid)
 		else:
 			_toast_time = 0.0  # a caption with nowhere to sit is let go
-		# An offer to watch the order carried out sits under the result, never on it.
+		# An offer to watch the order carried out sits by the result, never on it:
+		# under it, or above it when the result is down at the screen's foot.
 		if _offer and _offer.visible and _toast_box.modulate.a > 0.05:
-			_offer.offset_top = _toast_box.get_global_rect().end.y + 10.0
-	if _offer and _offer.visible:
+			if _toast_at_foot:
+				_offer.offset_top = _toast_box.get_global_rect().position.y - _offer.get_combined_minimum_size().y - 10.0
+			else:
+				_offer.offset_top = _toast_box.get_global_rect().end.y + 10.0
+	if _offer and _offer.visible and not (_toast_time > 0 and _toast_at_foot):
 		var below := _offer.offset_top if _toast_time > 0 else maxf(_offer.offset_top, gap.x)
 		_offer.offset_top = below
 		if below < gap.x - 1.0 or below + _offer.get_combined_minimum_size().y > gap.y:
@@ -1822,6 +1841,7 @@ func caption(text: String) -> void:
 	_toast_result = false
 
 
+var _toast_at_foot := false  # the result card sits at the screen's foot, off the cards
 var _toast_result := false  # the card shows an order's result, not a camera caption
 
 

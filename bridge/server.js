@@ -566,7 +566,8 @@ function arcCtx() {
     storyTags: meta.options?.storyTags ?? [],
     endReign: (why, outcome = "deposed") => endReign(why, outcome),
     // The throne's own war: a story's pretender marches on Kingsmere (stakes.js runs the march).
-    declare: (pid, size) => stakes?.declare(pid, world, { send: (l) => send(`lua cmd ${l}`) }, size),
+    // A story's march waits on the house's ultimatum, as any rising does (turnHouses).
+    declare: (pid, size) => storyMarch(pid, size),
     usurperStage: () => stakes?.s.usurper.stage ?? "none",
     refresh: () => new Promise((r) => { snapshot(); setTimeout(r, 900); }),
   };
@@ -965,8 +966,15 @@ function turnHouses(turn) {
     if (favourOf(p.id) < 25) t.seasons = Math.min(TURNING, t.seasons + 1);
     else {
       t.seasons = Math.max(0, t.seasons - 1);
-      if (t.seasons === 0 && t.state !== "refused") t.state = null;
+      if (t.seasons === 0 && t.state !== "refused" && t.march == null) t.state = null;  // a story's march keeps its ultimatum standing
     }
+    // A story's march, held for its ultimatum: it goes once the King refused, or let it lie.
+    if (t.march != null && mayRise(p.id)) {
+      stakes?.declare(p.id, world, { send: (l) => send(`lua cmd ${l}`) }, t.march);
+      t.march = null;
+    }
+    // An ultimatum met (favour shown, anger drained) calls the story's march off.
+    if (t.march != null && !t.state) t.march = null;
     if (t.seasons >= TURNING && !t.state) {
       t.state = "sent";
       t.at = turn;
@@ -974,6 +982,22 @@ function turnHouses(turn) {
     }
   }
 }
+// A story that would march a house on Kingsmere: if its ultimatum has been
+// refused (or gone two seasons unanswered) the host marches now; otherwise
+// the ultimatum goes to court first, and the march waits for its answer.
+function storyMarch(pid, size) {
+  if (mayRise(pid)) return stakes?.declare(pid, world, { send: (l) => send(`lua cmd ${l}`) }, size);
+  const t = ((meta.turning ??= {})[pid] ??= { seasons: TURNING, state: null });
+  if (!t.state) {
+    t.state = "sent";
+    t.at = world?.turn ?? 0;
+    const p = world?.players?.find((x) => x.id === pid);
+    if (p) record({ turn: t.at, kind: "unrest", text: `${houseFor(p).name} sends a rider to Kingsmere with an ultimatum for the King.` });
+  }
+  t.march = size ?? 10;
+  chron.saveMeta(meta);
+}
+
 // Whether a lord may raise his banners against the crown: only after his ultimatum.
 // Refused, or two seasons gone since it came with no favour shown: then the rising.
 const mayRise = (pid) => { const t = meta.turning?.[pid]; return t?.state === "refused" || (t?.state === "sent" && (world?.turn ?? 0) - t.at >= 2); };
@@ -1679,7 +1703,7 @@ http.createServer(async (req, res) => {
       // The King's side is his whole host: the garrisons defend Kingsmere too.
       ended: u?.ended && !u.ended.settled && (world?.turn ?? 0) - u.ended.turn <= 8 ? u.ended.house : null,
       theirs: u?.house != null ? fighting(u.house) : 0, ours: crownId != null ? (world?.units ?? []).filter((x) => x.owner === crownId && !CIVILIAN.has(x.type)).length : 0 };
-    return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), story: storyNow(), date: calendar(world.turn), threat, counsel: (counselNow = counsel(players, cities, threat)), sitting: meta.court?.sitting ?? null, fallen: Object.values(HOUSES).filter((h) => !h.crown && !h.wild && !world.players.some((p) => houseFor(p).key === h.key && world.cities.some((c) => c.owner === p.id))).map((h) => ({ ...h, name: names.shown(h.name) })), effects: effects.slice(-10), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000) });
+    return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), story: storyNow(), date: calendar(world.turn), threat, counsel: (counselNow = counsel(players, cities, threat)), sitting: meta.court?.sitting ?? null, fallen: Object.values(HOUSES).filter((h) => !h.crown && !h.wild && !world.players.some((p) => houseFor(p).key === h.key && (world.cities.some((c) => c.owner === p.id) || (world.units ?? []).some((u) => u.owner === p.id)))).map((h) => ({ ...h, name: names.shown(h.name) })), effects: effects.slice(-10), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000) });
   }
   if (url.pathname === "/map") {
     const map = chron.readJson(path.join(P.state, "map.json"));

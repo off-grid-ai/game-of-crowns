@@ -24,6 +24,15 @@ var main: Node
 var out := ""
 var _steps: PackedStringArray = []
 var _log: FileAccess
+var _worst := 0.0  # the longest frame (s) since the last reading, by the clock (Godot smooths delta)
+var _last_us := 0
+
+
+func _process(_delta: float) -> void:
+	var now := Time.get_ticks_usec()
+	if _last_us > 0:
+		_worst = maxf(_worst, (now - _last_us) / 1000000.0)
+	_last_us = now
 
 
 ## Live hand play (GOC_HAND=1): steps written to <dir>/cmd.txt are played as
@@ -251,9 +260,11 @@ func _observe() -> Dictionary:
 	o["cpu_ms"] = snappedf(Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, 0.1)
 	o["drawn"] = int(Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME))
 	o["nodes"] = int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
+	o["worst_ms"] = snappedf(_worst * 1000.0, 1.0)  # the longest frame since the last reading
+	_worst = 0.0
 	o["phys_ms"] = snappedf(Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0, 0.1)
 	o["nav_ms"] = snappedf(Performance.get_monitor(Performance.TIME_NAVIGATION_PROCESS) * 1000.0, 0.1)
-	o["agents"] = int(Performance.get_monitor(Performance.NAVIGATION_AGENT_COUNT)) if Performance.has_method("get_monitor") else 0
+	o["agents"] = int(Performance.get_monitor(Performance.NAVIGATION_AGENT_COUNT))
 	var c: Node = main.control
 	o["walking"] = c != null and c.active
 	if c and c.active:
