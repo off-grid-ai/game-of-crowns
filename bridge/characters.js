@@ -21,6 +21,15 @@ function loadDeck() {
 
 const NO_MOOD = { aggression: 0, loyalty: 0, ambition: 0, caution: 0, cunning: 0, piety: 0, greed: 0 };
 
+// First names for the realm's people (data/first-names.json): no two living
+// people share one, so "Cecily" is always the one Cecily. M and F are the old
+// short lists, kept for anything that still reads them.
+const NAMES_FILE = new URL("./data/first-names.json", import.meta.url);
+let firstNames = null;
+function namePool(gender) {
+  if (!firstNames) { try { firstNames = JSON.parse(fs.readFileSync(NAMES_FILE, "utf8")); } catch { firstNames = { male: M, female: F }; } }
+  return gender === "male" ? firstNames.male : firstNames.female;
+}
 const M = ["Aldric", "Bran", "Cedric", "Dunstan", "Edric", "Godwin", "Harold", "Jory", "Osric", "Rowan", "Tobin", "Hugh", "Garth", "Alaric", "Ewan", "Roderick", "Leofric", "Merrick", "Corwin", "Tristan", "Benedict", "Gareth", "Lucan", "Willem"];
 const F = ["Agnes", "Bryony", "Cecily", "Edith", "Elsbeth", "Gwen", "Hilda", "Isolde", "Joan", "Maud", "Rosalind", "Wynne", "Alys", "Mira", "Tamsin", "Ysolde", "Rhiannon", "Elaine", "Beatrix", "Constance", "Genevieve", "Odette"];
 export const TRAITS = ["ambitious", "honourable", "greedy", "vengeful", "pious", "cunning", "craven", "brave", "content", "paranoid", "generous", "proud", "patient", "wrathful", "just"];
@@ -189,12 +198,24 @@ export class Court {
 
   // --- population ----------------------------------------------------------
 
+  // A first name nobody alive in the realm has, so no two people share one
+  // (`prefer` first, if any of those is free). With every name taken, the
+  // one fewest share.
+  firstName(gender, r = Math.random, prefer = []) {
+    const used = new Map();
+    for (const x of this.alive()) { const f = String(x.name).split(" ")[0]; used.set(f, (used.get(f) ?? 0) + 1); }
+    const freePrefer = prefer.filter((n) => !used.has(n));
+    if (freePrefer.length) return pick(freePrefer, r);
+    const pool = namePool(gender);
+    const free = pool.filter((n) => !used.has(n));
+    if (free.length) return pick(free, r);
+    return [...pool].sort((a, b) => (used.get(a) ?? 0) - (used.get(b) ?? 0))[0];
+  }
+
   newPerson(fields, r) {
     const gender = fields.gender ?? (r() < 0.5 ? "male" : "female");
-    // Nobody alive shares a full name, so the chronicle can always tell people apart.
-    const taken = new Set(this.alive().map((x) => x.name));
-    let name = `${pick(gender === "male" ? M : F, r)} ${fields.surname}`;
-    for (let i = 0; i < 12 && taken.has(name); i++) name = `${pick(gender === "male" ? M : F, r)} ${fields.surname}`;
+    // Nobody alive shares a first name, so the chronicle can always tell people apart.
+    const name = `${this.firstName(gender, r)} ${fields.surname}`;
     while (this.people[`c${this.seq}`]) this.seq++;
     const c = {
       id: `c${this.seq++}`,

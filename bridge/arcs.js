@@ -605,9 +605,10 @@ export class Arcs {
     const like = roles[spec.like] ?? Object.values(roles).find((x) => !x.town);
     const r = Math.random;
     const gender = spec.gender ?? (r() < 0.5 ? "male" : "female");
-    const first = (gender === "male" ? ["Jon", "Wat", "Hob", "Ned", "Piers", "Col", "Dickon", "Alun", "Rafe", "Tam"] : ["Meg", "Bess", "Nan", "Elin", "Kat", "Moll", "Jenet", "Sybil"])[Math.floor(r() * 8)];
+    // A plain name, as common folk have, but never one someone living already bears.
+    const first = this.court.firstName(gender, r, gender === "male" ? ["Jon", "Wat", "Hob", "Ned", "Piers", "Col", "Dickon", "Alun", "Rafe", "Tam"] : ["Meg", "Bess", "Nan", "Elin", "Kat", "Moll", "Jenet", "Sybil"]);
     const pickOne = (v) => (Array.isArray(v) ? v[Math.floor(r() * v.length)] : v);
-    const surname = this.fillRoles(pickOne(spec.surname ?? "Hill"), roles);
+    const surname = this.fillRoles(pickOne(spec.surname ?? ["Hill", "Brook", "Cooper", "Fletcher", "Marsh", "Shepherd", "Thatcher", "Wood", "Ford", "Mason", "Carter", "Miller"]), roles);
     const name = spec.name ? this.fillRoles(pickOne(spec.name), roles).replace("{first}", first) : `${first} ${surname}`;
     const c = {
       id: `c${this.court.seq++}`, name, surname, gender,
