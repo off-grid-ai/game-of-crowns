@@ -330,7 +330,7 @@ func show_new() -> void:
 		card.pressed.connect(_use_preset.bind(String(name)))
 	# How long a sitting: whatever the story, every player chooses it, so it
 	# stands up here rather than among the customised choices.
-	_choices(pages[0], "Length of the reign", [["Endless", 0], ["15 minutes", 15], ["30 minutes", 30], ["An hour", 60]], _minutes, func(v): _minutes = v)
+	_choices(pages[0], "Length of the reign", [["15 minutes", 15], ["30 minutes", 30], ["An hour", 60]], _minutes, func(v): _minutes = v)
 	# What comes for the throne: the reign's story, or the realm's own choice.
 	pages[1].add_child(_label("What comes for the throne", 15, MUTED))
 	# The cards scroll within a band of the page: there are a score of stories,
@@ -531,7 +531,6 @@ func show_new() -> void:
 	_choices(left, "Where", [["Aldmere, nine years in", "aldmere"], ["Aldmere, year one", "aldmere_fresh"], ["A random realm", "random"]], _scenario, func(v):
 		_scenario = v
 		_houses_enabled(house_row))
-	# Endless first: a reign is a life's work; a clock is a challenge you choose.
 	_section(left, "The crown")
 	_choices(left, "The royal treasury", [["Poor · 15k", "poor"], ["Comfortable · 50k", "comfortable"], ["Rich · 150k", "rich"]], _wealth, func(v): _wealth = v)
 	_choices(left, "The royal host at the start", [["A few loyal men", "small"], ["A garrison", "standard"], ["A great host", "strong"]], _opt["host"], func(v): _opt["host"] = v)
@@ -902,7 +901,10 @@ func _step_back() -> bool:
 
 func _use_scenario(sc: Dictionary) -> void:
 	_scenario = String(sc.get("scenario", "aldmere"))
-	_minutes = int(sc.get("minutes", 0))
+	# Every reign has a clock (Mac, 2026-11-09): a story saved as endless starts at 15 minutes.
+	_minutes = int(sc.get("minutes", 15))
+	if _minutes <= 0:
+		_minutes = 15
 	_wealth = String(sc.get("wealth", "comfortable"))
 	_opt = _default_opt()
 	_opt.merge(sc.get("options", {}), true)
