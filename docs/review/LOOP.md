@@ -123,3 +123,14 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - The petitions setting is half dead.
 - **Pacing, by the code's arithmetic:** about 1.7 decisions a minute and 77% quiet. The quiet passes; "≤1 a minute" fails, because a court every 40 s season can't pass it.
 - **Course correction:** all of it sent back before commit. Pacing fix within approval: 40 s seasons and "one rising to three" kept, plus a budget so the court sits only when it has something worth hearing (about every other season early, every season at the climax), targeting ≤1 a minute and ≥60% quiet. Flagged on the brief for Mac.
+
+## 2026-11-09, 14:55 (autopilot)
+
+- **What's going on:**
+  - Court v2's run #3 is recording.
+  - The pre-commit fixes (deadlocks, the crisis push-in, the pacing budget) are queued behind it.
+  - The Steam review data landed in the brief: bugs (13.2% of negative reviews, 3.4×), repetition (3.9×) and shallow outcomes (9.3×) are the top negative drivers.
+  - Unique names were moved up, to come straight after Court v2; play-feedback has planned them.
+- **Where we're heading:** Court v2 fixed, measured and committed, then unique names.
+- **Right way?** Yes. The review data confirms the order: stability, then pacing, then repetition.
+- **Verdict:** on course. Watch item: Court v2 has gone 3 runs without a commit. If run #4 (with the fixes) doesn't pass, split the batch: commit the colour, ladder and label fixes on their own, keep the court separate.
