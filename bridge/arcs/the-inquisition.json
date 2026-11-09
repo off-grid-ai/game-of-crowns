@@ -102,7 +102,7 @@
       "text": "From the steps of the great sept, {inquisitor} declares the King accursed, and every oath sworn to him void in the sight of the gods. {patron} sends no word to Kingsmere at all.",
       "court": {
         "from": "patron",
-        "text": "{patron}: \"The Faith has spoken, Your Grace. I would hear the King speak back, and choose his words with care.\"",
+        "text": "{patron}: \"The Faith has spoken, Your Grace. I would hear the King speak back, and choose his words with care. If he says nothing, the realm will take his silence for guilt.\"",
         "options": [
           { "id": "penance", "label": "Walk barefoot to the sept and do penance (500 gold)", "hint": "{patron.houseName} +25 · {accused.houseName} −20 · the Faith wins", "cost": 500, "favour": { "patron": 25, "accused": -20 }, "do": { "threat": -40 }, "result": "The King walks barefoot through the snow to the great sept and kneels at {inquisitor}'s feet. The ban is lifted, and the friar's power has no ceiling now." },
           { "id": "seize", "label": "Arrest {inquisitor} for treason", "hint": "{patron.houseName} −30 · the Faith has a martyr or a prisoner", "favour": { "patron": -30, "accused": 15 }, "do": { "threat": 10 }, "result": "Royal guards drag {inquisitor} from the sept steps in front of the crowd. {patron} rides home without a word." }

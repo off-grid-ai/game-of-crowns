@@ -120,14 +120,39 @@
       },
       "after": [2, 3],
       "next": [
-        { "if": { "all": [{ "ruled": "stay" }, { "chance": 0.3 }] }, "to": "the-king-falls-sick" },
+        { "if": { "all": [{ "ruled": "stay" }, { "chance": 0.3 }] }, "to": "the-king-sickens" },
         { "if": { "ruled": "stay" }, "to": "burning-out" },
         { "if": { "ruled": "flee" }, "to": "guest-of-refuge" },
         { "if": { "ruled": "keep" }, "to": "burning-out" },
-        { "if": { "chance": 0.5 }, "to": "the-king-falls-sick" },
+        { "if": { "chance": 0.5 }, "to": "the-king-sickens" },
         { "to": "burning-out" }
       ],
       "patience": 4,
+      "otherwise": "the-king-sickens"
+    },
+    {
+      "id": "the-king-sickens",
+      "stage": "crisis",
+      "threat": 85,
+      "speaker": "warden",
+      "at": "refuge",
+      "text": "The King's hands are cold at council. By evening his cupbearer whispers that they have gone the colour of tallow.",
+      "court": {
+        "from": "warden",
+        "text": "{warden}, low, at the King's bedside: \"It has you, Your Grace. It can be fought, if we fight it tonight. If we wait, it will not wait for us.\"",
+        "options": [
+          { "id": "physicians", "label": "Send for every physician in the realm (600 gold)", "hint": "the costliest night of the reign · the fever may yet break", "cost": 600, "favour": { "warden": 10 }, "do": { "threat": -25 }, "result": "Physicians ride in from every house through the night. By dawn the King's fever breaks, and the treasury is lighter by a small war." },
+          { "id": "hedge", "label": "Let {warden}'s hedge-woman bleed the fever out", "hint": "{warden.houseName} +15 · the old ways, and the King in their debt", "favour": { "warden": 15, "rival": -10 }, "do": { "threat": -10 }, "result": "An old woman from {warden}'s lands bleeds the King and burns bitter herbs. He lives, and {warden} never lets the court forget whose hands saved him." },
+          { "id": "hide", "label": "Hide it and hold court as if nothing were wrong", "hint": "nothing spent · the fever is not fooled", "favour": { "rival": 5 }, "result": "The King sits the throne in gloves and furs and speaks of harvests. Nobody dares look at his hands." }
+        ]
+      },
+      "after": [1, 2],
+      "next": [
+        { "if": { "ruled": "physicians" }, "to": "burning-out" },
+        { "if": { "ruled": "hedge" }, "to": "burning-out" },
+        { "to": "the-king-falls-sick" }
+      ],
+      "patience": 3,
       "otherwise": "the-king-falls-sick"
     },
     {

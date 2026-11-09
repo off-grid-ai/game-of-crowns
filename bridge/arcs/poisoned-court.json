@@ -355,7 +355,7 @@
       "stage": "crisis",
       "speaker": "poisoner",
       "at": "hall",
-      "text": "The King drinks.",
+      "text": "The King lifts the cup. Down the table, {mourner} goes still.",
       "after": [
         1,
         1
@@ -363,14 +363,42 @@
       "next": [
         {
           "if": {
-            "chance": 0.5
+            "ruled": "setdown"
           },
-          "to": "the-throne-poisoned"
+          "to": "unmasked"
         },
         {
-          "to": "unmasked"
+          "to": "the-throne-poisoned"
         }
-      ]
+      ],
+      "court": {
+        "from": "mourner",
+        "text": "{mourner}, across the board, barely moving {mourner.his} lips: \"Your Grace. Not that cup.\"",
+        "options": [
+          {
+            "id": "setdown",
+            "label": "Set the cup down and call the taster (100 gold)",
+            "hint": "the feast is shamed · {poisoner} is watched from now on",
+            "cost": 100,
+            "favour": {
+              "poisoner": -10,
+              "mourner": 10
+            },
+            "result": "The King sets the cup down untouched. The taster drinks, and does not rise from the bench. Every eye at the table turns to {poisoner}."
+          },
+          {
+            "id": "drink",
+            "label": "Drink, and shame the whisperers",
+            "hint": "the court sees a fearless King · if {mourner} is right, it is the last thing it sees",
+            "favour": {
+              "poisoner": 10
+            },
+            "result": "The King drains the cup to the dregs and turns it over on the board."
+          }
+        ]
+      },
+      "patience": 2,
+      "otherwise": "the-throne-poisoned"
     },
     {
       "id": "the-throne-poisoned",
