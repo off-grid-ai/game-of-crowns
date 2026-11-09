@@ -28,7 +28,7 @@
         "text": "{guest} of {guest.house}: \"{host} offers peace and a wedding, Your Grace. I mean to accept. Will the crown honour the feast with its presence?\"",
         "options": [
           { "id": "attend", "label": "The King will attend the wedding", "hint": "both +5 · the King under {host}'s roof", "favour": { "host": 5, "guest": 5 }, "do": { "threat": 5 }, "result": "The King accepts. {host} sends word that the best rooms in {hall} are being made ready." },
-          { "id": "decline", "label": "Send gifts, but stay at Kingsmere", "hint": "nothing now", "do": { "threat": 0 }, "result": "The crown sends silver and its regrets. The wedding goes ahead without the King." }
+          { "id": "decline", "label": "Send gifts, but stay at Kingsmere", "hint": "{host.houseName} −5 · the King's chair sits empty", "favour": { "host": -5 }, "do": { "threat": 0 }, "result": "The crown sends silver and its regrets. The wedding goes ahead without the King." }
         ]
       },
       "after": [1, 2],
@@ -46,7 +46,7 @@
         "text": "A servant girl kneels, shaking: \"Your Grace, my lord {host} means to murder them all at the feast. When the music turns, the doors close.\"",
         "options": [
           { "id": "warn", "label": "Warn {guest} in secret", "hint": "{guest.houseName} +20 · {host} learns the crown knew", "favour": { "guest": 20, "host": -15 }, "do": { "threat": -20 }, "result": "A royal rider reaches {guest} on the road to {hall}. {guest.house} turns back." },
-          { "id": "confront", "label": "Ride to {hall} with the royal guard and sit at the high table", "hint": "{host} won't dare · or will", "do": { "threat": -10 }, "result": "The King arrives at {hall} with a hundred guards. {host} smiles, and tells the musicians to play something else." },
+          { "id": "confront", "label": "Ride to {hall} with the royal guard and sit at the high table (200 gold)", "hint": "{host.houseName} −10 · {host} won't dare · or will", "cost": 200, "favour": { "host": -10 }, "do": { "threat": -10 }, "result": "The King arrives at {hall} with a hundred guards. {host} smiles, and tells the musicians to play something else." },
           { "id": "let-it-be", "label": "Say nothing: let them settle their own feud", "hint": "nothing now · the music plays", "do": { "threat": 20 }, "result": "The King says nothing. The girl is sent back to {hall}." }
         ]
       },

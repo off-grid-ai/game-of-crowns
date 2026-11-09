@@ -193,6 +193,8 @@ export class Arcs {
   // ctx: { world, favour(pid), shift({pid: d}), send(lua), atWar(a, b), town(id), recent(), refresh(), minds? }
   async season(ctx, { start = true } = {}) {
     this.clock++;
+    // How far through its clock the reign is (0-1), or null when it has none.
+    this.reignAt = ctx.reignAt ?? null;
     this.touched = new Set();
     const files = templates();
     const all = files.filter((t) => !t.problems.length);
@@ -866,8 +868,11 @@ export class Arcs {
     this.save();
   }
 
-  // Its acts: each beat that brought a matter to the King, or turned the story to crisis, is an act.
+  // Its acts: on a timed reign, the quarter of the clock (1-4), so every act
+  // lands when the reign is that far through; without a clock, each beat that
+  // brought a matter to the King, or turned the story to crisis, is an act.
   actOf(a) {
+    if (this.reignAt != null) return Math.min(4, 1 + Math.floor(this.reignAt * 4));
     const t = templates().find((x) => x.id === a.template);
     const big = (id) => { const b = t?.beats?.find((x) => x.id === id); return Boolean(b?.court || b?.stage === "crisis"); };
     return Math.max(1, a.beats.filter((b) => big(b.beat)).length);
