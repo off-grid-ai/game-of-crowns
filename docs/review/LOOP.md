@@ -99,3 +99,13 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - "Failure feels fair": from risings with no warning to an ultimatum every time.
   - "Room to breathe" is still unmeasured (Mac's reign: 3.6 decisions a minute).
 - **Verdict:** on course. Next turn: check Court v2's edits are moving and its run is queued.
+
+## 2026-11-09, 14:25 (autopilot)
+
+- **What's going on:**
+  - The Court v2 batch is built, with every review mark folded in.
+  - Run #1 found two bugs, both fixed: a settled matter could hold the court and the realm shut, and the edge signs had zero size.
+  - Run #3 is recording now. Nothing is committed since d76ecc9.
+- **Where we're heading:** commit Court v2 with "Room to breathe" measured.
+- **Right way?** Yes on content and order. Three runs means fixes are converging, not looping; each run found a new real bug. Watch item: the director didn't tour in run #1, and a probe is checking why.
+- **Verdict:** on course. Supervisor this turn: a fresh agent reviewing the uncommitted Court v2 diff for lost behaviour, deadlocks and the pacing arithmetic, before commit.
