@@ -73,3 +73,15 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Where we're heading:** land steps 3 and 4 on the review page, then Court v2 and the director start after court (top moves 1 and 2).
 - **Right way?** The order is right, but the work is stalled: a big uncommitted batch and an idle builder. No new fun-bar numbers yet.
 - **Verdict:** off course on cadence. **Correction:** play-feedback told to land the batch this turn, with review-page versions, then go straight to Court v2. Next turn: check the commit landed.
+
+## 2026-11-09, 13:45 (autopilot)
+
+- **What's going on:**
+  - Step 3 landed (6747ff8): house colours on the land at every zoom, the minimap wash and seven ranked sigils.
+  - It's on the review page with Claude notes and two marks: contradictory transfer lines over the church, and a map label under the treasury bar.
+  - Step 4's film is about halfway; movie capture runs at about a quarter of real time.
+- **Where we're heading:** Court v2 (a paused seasonal court, 40 s seasons) and the director touring after court: top moves 1 and 2.
+- **Right way?**
+  - Fun bar, "I can read the board": ownership now shows at 3 of 3 zooms, up from 0 (play-feedback's count from shots).
+  - Off on order: the top-leverage Court v2 was queued behind a standalone flood clip, and code edits were held for every film.
+- **Verdict:** off course on sequencing. **Correction:** Court v2 starts the moment step 4 loads. The flood clip and both mark fixes fold into Court v2's single test run (build in batches, test together), and that run is measured for decisions a minute and quiet share. Supervisor this turn: a fresh agent reviewing 6747ff8 and its shots.
