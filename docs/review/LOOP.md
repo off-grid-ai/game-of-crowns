@@ -157,3 +157,10 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **On the review page:** 4 marks resolved, 2 still open (the ladder shows 6 houses not 7; the heading is still small), 2 new (a ruling's result covers the next card; the ground looks grey and noisy in the after-court shot).
 - **Next:** the season-turn stutter (3–6 fps for 10–15 s, predates this work; performance is the #1 negative-review driver), then unique names.
 - **Verdict:** on course; bet 1's core is shipped.
+
+## 2026-11-09, 15:35 (autopilot)
+
+- **What's going on:** play-feedback is on the season-turn stutter and folding in the open review marks.
+- **Where we're heading:** steady frames at season turns, then unique names.
+- **Right way?** Yes. Performance is the #1 negative-review driver, and the stutter covers 19–26% of play time.
+- **Verdict:** on course. Supervisor this turn: a read-only search for the stutter's cause, with file:line and the proven Godot fix for each. The findings go to play-feedback to speed it up.
