@@ -1,0 +1,98 @@
+# Autopilot: how the game gets better while Mac is away
+
+The plan the recurring loop follows, one turn every 20 minutes. Read it at the start of every turn.
+
+## Who we are
+
+System integrators with design taste (CLAUDE.md, VISION.md "Decided"). We build a good consumer
+experience: a ruler game that is fun, readable and beautiful. Every layer comes from a proven block, and
+our code is glue. Every change is judged as a demanding player would judge it, against **the fun bar** in
+GAME_DESIGN.md, and measured from a real reign rather than guessed.
+
+## What we're building
+
+Mac approved all six bets in the fun brief (https://claude.ai/artifact/5T4M33vrEY2KABfzs3ypQZ,
+collections `decisions`, `picks`, `notes`). In leverage order:
+
+1. **Room to breathe:** a paused court once a season, 40 s seasons, one matter rising to three, the camera
+   tours the realm between courts.
+2. **Read the realm:** house colours at every zoom, a ranked ladder of houses, the name you're earning
+   shown live, peace, wealth and strength arrows, blood and soot at the screen edges.
+3. **A shape and an ending:** acts by the clock, a named final threat at three-quarters, ultimatums before
+   any rising, an epilogue flight, no Endless reigns.
+4. **Lords worth caring about:** a face on every Court card, one want per lord, unique names, choices that
+   change what's asked, no repeats.
+5. **Every answer weighs:** who an answer helps and hurts is shown before choosing, and the result glows
+   on the card.
+6. **Stories and the player's own beats to the same bar:** no early or coin-flip endings, an ultimatum
+   before every march, beats that bring matters to court and react to rulings.
+
+## Who does what
+
+- **play-feedback** (`local_7b94615c-d78a-4d19-a778-5a4a84645ee7`) builds bets 1–6. It owns `ui.gd`,
+  the court and story files in `bridge/`, and `title.gd`'s beat form.
+- **finish-the-phantom-camer** (`local_7048d4d5-6025-4ad4-b02f-924b673cab3a`) finishes the Phantom
+  Camera move. It owns `camera_rig.gd`, `director.gd`, `main.gd`, `cinematics.gd` and `project.godot`
+  until it commits.
+- **This session (the loop)** directs, supervises, measures, keeps the review page and the brief, and
+  builds only approved items that sit in nobody else's files.
+
+## One turn
+
+0. **Skills.** Load `goc-cpto`, `goc-voice`, `goc-ux`, `goc-engineering`, `goc-tests`, `goc-run` and
+   `goc-release` if they aren't loaded this session. Load `screen-review` and `review-loop` before
+   touching the review page.
+1. **Status.**
+   - `git log` since the last LOOP.md entry.
+   - The linked sessions' state and notes, and any messages waiting.
+   - The brief's `decisions`, `picks` and `notes`.
+   - The review page's open comments.
+2. **Steer.**
+   - Answer blocked sessions.
+   - Read every new commit's diff: no lost behaviour, no line of the fun bar dropping, UI.md kept.
+   - Send corrections to the session that owns the files. Free files the moment a session commits.
+3. **Supervise, every other turn.** Spawn a fresh agent, not my own review. It judges the newest shots and
+   clips plus the last commits against GAME_DESIGN.md's fun bar, UI.md and goc-ux's look bar, as a
+   demanding strategy player, and returns the 3 biggest gaps. Route each gap in scope to the owning
+   session. Log the rest in LOOP.md.
+4. **Measure.**
+   - When a pacing, court or story change lands and no Godot is running, play one 15-minute reign on its
+     own chronicle.
+   - Count the fun bar from that chronicle: decisions a minute, quiet share, repeats, names, time to
+     feedback.
+   - Put the numbers in the brief's measured table, next to the last run's.
+5. **Review page.**
+   - When shots or clips are committed in `docs/review/screens.json`, publish or refresh the review page
+     from this session, following screen-review sections 3 and 5.
+   - Its URL is in `docs/review/ARTIFACT_URL`. The old page belongs to another claude.ai account, so the
+     first publish makes a new one.
+   - Every changed screen gets its before and after and a Claude note: what changed, why, and its
+     fun-bar numbers.
+   - Promoting a change is Mac's call. Read his comments with `review-loop` and act on them.
+6. **Research.** Fold any pending research (the Steam review dataset) into the brief, tagged measured,
+   sourced or estimated.
+7. **Own work.** If nothing needs steering, take the next approved item in nobody else's files: build it,
+   film it (3-8 s, read as frame strips), fix, prove it, commit.
+8. **Log and ship.**
+   - Add a dated entry to `docs/review/LOOP.md`: what changed, the numbers, what's open.
+   - Commit with `git commit -- <explicit paths>` and push. Main only.
+9. **Tell Mac.**
+   - Something changed: two or three short bullets.
+   - Nothing changed: one line.
+
+## Rules
+
+- `arch -arm64 godot`, one copy only, renders through `realm/tools/render.sh`.
+- Long runs go in the background. Never wait on a render: do the next thing meanwhile.
+- If Mac is playing, never take the game.
+- Never lose existing behaviour. Look for a proven block before building anything.
+- Only approved work: the six bets, the fun bar and Mac's notes. Anything new goes in the brief as a
+  proposal for Mac.
+- Decide without asking Mac. Stop only for outward-facing or irreversible steps: releases, posts,
+  deleting data.
+- Short sentences and small bullets to Mac. Player words, never mechanics.
+
+## Done
+
+Every approved change is on the review page with its before and after, and its fun-bar numbers are at
+target, or the gap is named with the next step.
