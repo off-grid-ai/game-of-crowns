@@ -159,8 +159,7 @@ func _step_back() -> bool:
 				_ledger_btn.set_pressed_no_signal(false)
 			return true
 	if _town_panel and _town_panel.visible:
-		_town_panel.visible = false
-		town_closed.emit()
+		_put_town_away()
 		return true
 	if _offer and _offer.visible:
 		_offer.visible = false
@@ -202,6 +201,15 @@ func _put_away_all_but(p: PanelContainer) -> void:
 			c.visible = false
 			if c == _ledger_panel and _ledger_btn:
 				_ledger_btn.set_pressed_no_signal(false)
+
+
+## The town card put away for good: the realm's next update refreshes nothing,
+## so it never comes back over whatever the King opened instead.
+func _put_town_away() -> void:
+	_town_id = -1
+	if _town_panel and _town_panel.visible:
+		_town_panel.visible = false
+		town_closed.emit()
 
 
 func _glass_panel() -> PanelContainer:
@@ -1249,7 +1257,7 @@ func show_folk(d: Dictionary) -> void:
 		return
 	var p: Dictionary = d["person"]
 	var v := _folk_shell()
-	_town_panel.visible = false
+	_put_town_away()
 	var head := HBoxContainer.new()
 	v.add_child(head)
 	var names := VBoxContainer.new()
@@ -1858,10 +1866,11 @@ func busy() -> bool:
 	return now - _touched < 6000 or now - _moved < 2500 or get_viewport().gui_get_hovered_control() != null
 
 
-## One of the game's own cards is up (the Hand, a petitioner, the away report):
-## a different one waits its turn instead of coming up beside or over it.
+## A card is up (the Hand, a petitioner, the away report, or one the King
+## opened himself: a town, a house, a person, the ledger): a card the game
+## brings waits its turn instead of coming up beside or over it.
 func _card_up(but: Control = null) -> bool:
-	for p in [_counsel, _court_panel, _digest_panel, _end_panel, _town_panel]:
+	for p in [_counsel, _court_panel, _digest_panel, _end_panel, _town_panel, _house_panel, _folk_panel, _form_panel, _ledger_panel]:
 		if p and is_instance_valid(p) and p.visible and p != but:
 			return true
 	return false
@@ -1899,9 +1908,7 @@ func _toggle_counsel() -> void:
 	if _court_panel.visible:
 		_court_hidden = true
 		_court_panel.visible = false
-	if _town_panel.visible:
-		_town_panel.visible = false
-		town_closed.emit()  # put away for good, or the next update brings the town back over the Hand
+	_put_town_away()  # for good, or the next update brings the town back over the Hand
 	if _ledger_panel and _ledger_panel.visible:
 		_ledger_panel.visible = false
 		if _ledger_btn:
@@ -2567,18 +2574,25 @@ func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 
 
 var _town_player := {}  # the house holding the town on the card, as the realm reports it
+var _town_id := -1  # the town on the card; -1 once it is put away
 
 
 func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 	_town_player = _player
 	if c.is_empty():
+		_town_id = -1
 		_town_panel.visible = false
 		_ticker.visible = _counsel == null  # the Hand's counsel holds that corner
 		return
+	# The realm's update for a town whose card is already down refreshes its
+	# words only: it never brings the card back over what the King opened since.
+	var fresh := int(c["id"]) != _town_id
+	_town_id = int(c["id"])
 	# While the King watches a scene the card waits, and returns with the panels.
 	if _cinema_on:
-		_cinema_was["_town_panel"] = true
-	else:
+		if fresh:
+			_cinema_was["_town_panel"] = true
+	elif fresh or _town_panel.visible:
 		_town_panel.visible = true
 		# The King opened a town: a petitioner on screen steps back and waits on
 		# the court's badge, and comes back in when the town's card is put away.
@@ -2744,7 +2758,7 @@ func _show_audience() -> void:
 		_folk_panel.visible = false
 	_court_waiting = false
 	_court_panel.visible = true
-	_town_panel.visible = false
+	_put_town_away()  # for good: the realm's next update must not bring it back over the court
 	var p: Dictionary = _petitions[0]
 	# Scrolls when the audience is taller than the screen, so the answers stay reachable.
 	var scroll := ScrollContainer.new()

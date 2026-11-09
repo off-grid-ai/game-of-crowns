@@ -796,5 +796,51 @@
         "file": "screens/reign-end.jpg"
       }
     ]
+  },
+  {
+    "id": "court-over-town",
+    "name": "Court over a town",
+    "group": "Play",
+    "what": "Kingsmere open, then Court pressed: 12 s later the town card is back and the petitioner is gone.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before: the town card wins",
+        "at": "2026-11-09T06:40:15Z",
+        "file": "screens/v/court-over-town-1.jpg",
+        "what": "Kingsmere open, then Court pressed: 12 s later the town card is back and the petitioner is gone."
+      },
+      {
+        "v": 2,
+        "label": "After: what you opened stays",
+        "at": "2026-11-09T06:40:16Z",
+        "file": "screens/v/court-over-town-2.jpg",
+        "what": "Kingsmere open, then Court pressed: 12 s of realm updates later the petitioner is still there."
+      }
+    ],
+    "file": "screens/v/court-over-town-2.jpg"
+  },
+  {
+    "id": "hand-over-town",
+    "name": "The Hand over a town",
+    "group": "Play",
+    "what": "Kingsmere open, then the Hand pressed: a petitioner comes up instead.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before: the Hand lost to the court",
+        "at": "2026-11-09T06:40:16Z",
+        "file": "screens/v/hand-over-town-1.jpg",
+        "what": "Kingsmere open, then the Hand pressed: a petitioner comes up instead."
+      },
+      {
+        "v": 2,
+        "label": "After: the Hand stays",
+        "at": "2026-11-09T06:40:16Z",
+        "file": "screens/v/hand-over-town-2.jpg",
+        "what": "Kingsmere open, then the Hand pressed: 12 s later his counsel is still up."
+      }
+    ],
+    "file": "screens/v/hand-over-town-2.jpg"
   }
 ]
