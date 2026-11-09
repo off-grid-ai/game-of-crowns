@@ -232,3 +232,12 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - The fresh review's fixes are in: the interlude no longer vanishes after a frame, it's keyed by reign, it closes on the King's click and holds the court back, and the ambitions are real.
 - **Off course, briefly:** the batch film opened on the title menu and never entered the realm. **Correction:** the film now presses Continue first, and it reruns as soon as this run ends.
 - **Next:** judge the film, commit bets 3–6, put them on the review page, then the smaller items.
+
+## 2026-11-09, night (autopilot)
+
+- **Landed:** bets 3–6 (7da38d2). Proven by two test reigns, the interlude on film, and a petition's figure, want and voice on a copy of the save. On the review page with notes and one mark: the camera pad during the telling, already fixed.
+- **Built, under film now (the smaller items):**
+  - carters and pedlars between neighbouring towns near the view, three at most at a time;
+  - clicking a house on the ladder follows its host, or goes to its seat;
+  - the great council at two fifths and two thirds of the reign over a war between houses, with each house's stand; commanding peace sends both hosts home.
+- **Verdict:** on course. Every approved item is now built; what's left is proof on film and the review page.
