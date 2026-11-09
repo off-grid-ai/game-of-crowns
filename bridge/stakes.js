@@ -168,20 +168,39 @@ export class Stakes {
 }
 
 // How a reign is remembered: an epithet earned from how the King ruled.
+// The names history gives a reign, in the order they are tested: each with how
+// near its test is to met (0 or more: met). epithet() takes the first met; the
+// running reading shows it and the nearest other, from the same thresholds.
+const NAMES = [
+  ["the Golden", (m) => Math.min((m.peace - 0.8) / 0.2, (m.grew - 1.3) / 0.3)],
+  ["the Peacemaker", (m) => (m.peace - 0.75) / 0.25],
+  ["the Bloody", (m) => (0.3 - m.peace) / 0.3],
+  ["the Builder", (m) => (m.grew - 1.5) / 0.5],
+  ["the Hoarder", (m) => (m.purse - 3000) / 3000],
+  ["the Meddler", (m) => (m.decrees - 40) / 40],
+  ["the Idle", (m) => (3 - m.decrees) / 3],
+];
+function measures(history, decreesIssued) {
+  const peace = history.reduce((s, r) => s + r.peace, 0) / history.length;
+  const grew = history[history.length - 1].pop / Math.max(1, history[0].pop);
+  return { peace, grew, purse: history[history.length - 1].treasury, decrees: decreesIssued };
+}
+
 export function epithet(history, outcome, decreesIssued) {
   if (outcome === "deposed") return "the Deposed";
   if (outcome === "fallen") return "the Last";
   if (!history.length) return "the Brief";
-  const peace = history.reduce((s, r) => s + r.peace, 0) / history.length;
-  const first = history[0];
-  const last = history[history.length - 1];
-  const grew = last.pop / Math.max(1, first.pop);
-  if (peace > 0.8 && grew > 1.3) return "the Golden";
-  if (peace > 0.75) return "the Peacemaker";
-  if (peace < 0.3) return "the Bloody";
-  if (grew > 1.5) return "the Builder";
-  if (last.treasury > 3000) return "the Hoarder";
-  if (decreesIssued > 40) return "the Meddler";
-  if (decreesIssued < 3) return "the Idle";
-  return "the Steadfast";
+  const m = measures(history, decreesIssued);
+  // Strictly past each line, as the old tests were (peace > 0.8, not >=).
+  return NAMES.find(([, near]) => near(m) > 0)?.[0] ?? "the Steadfast";
+}
+
+// The name the reign is earning and the one nearest after it.
+export function epithetNear(history, decreesIssued) {
+  const name = epithet(history, null, decreesIssued);
+  if (!history.length) return { name, next: null };
+  const m = measures(history, decreesIssued);
+  const near = NAMES.filter(([n]) => n !== name).map(([n, f]) => [n, f(m)]).sort((a, b) => b[1] - a[1]);
+  const next = near[0] && near[0][1] > -0.6 ? near[0][0] : name !== "the Steadfast" ? "the Steadfast" : near[0]?.[0] ?? null;
+  return { name, next };
 }

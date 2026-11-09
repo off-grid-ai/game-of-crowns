@@ -39,6 +39,7 @@ const T := preload("res://scripts/theme.gd")
 const Keys := preload("res://scripts/keys.gd")
 
 var _root: Control
+var _omens: ColorRect  # omens.gd: blood and soot, the colour draining, at the screen's edge
 var _reign: Label
 var _year: Label
 var _gold: Label
@@ -106,6 +107,9 @@ func _ready() -> void:
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.theme = T.get_theme()
 	add_child(_root)
+	# The signs of a bad reign at the screen's edge: first, so every card is drawn over them.
+	_omens = preload("res://scripts/omens.gd").new()
+	_root.add_child(_omens)
 	_build_top_bar()
 	_build_houses()
 	_build_chronicle()
@@ -198,6 +202,16 @@ func _put_away_all_but(p: PanelContainer) -> void:
 			c.visible = false
 			if c == _ledger_panel and _ledger_btn:
 				_ledger_btn.set_pressed_no_signal(false)
+
+
+## Where the interface covers the screen (its bars, cards and the minimap), so
+## the map's own words (town names) can keep clear of it.
+func covered() -> Array[Rect2]:
+	var out: Array[Rect2] = []
+	for c in _root.get_children():
+		if c is PanelContainer and (c as Control).is_visible_in_tree():
+			out.append((c as Control).get_global_rect())
+	return out
 
 
 ## The town card put away for good: the realm's next update refreshes nothing,
@@ -512,6 +526,39 @@ func _build_top_bar() -> void:
 	_threat_bar.visible = false
 	_threat_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	who.add_child(_threat_bar)
+	# Where the reign is heading: peace, wealth and strength, each rising or
+	# falling against a year ago, and the name it is earning.
+	_heading = HBoxContainer.new()
+	_heading.add_theme_constant_override("separation", 6)
+	_heading.mouse_filter = Control.MOUSE_FILTER_PASS
+	_heading.visible = false
+	for k in [["peace", "scales"], ["wealth", "coins"], ["strength", "shield"]]:
+		var icon := TextureRect.new()
+		icon.texture = _icon(k[1])
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.custom_minimum_size = Vector2(11, 11)
+		icon.modulate = T.TEXT_3
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_heading.add_child(icon)
+		var way := Label.new()
+		way.add_theme_font_override("font", T.mono)
+		way.add_theme_font_size_override("font_size", 9)
+		way.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_heading.add_child(way)
+		_ways[k[0]] = way
+	_earning = Label.new()
+	_earning.add_theme_font_size_override("font_size", 11)
+	_earning.add_theme_color_override("font_color", T.TEXT_2)
+	_earning.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_heading.add_child(_earning)
+	who.add_child(_heading)
+	_last_act = Label.new()
+	_last_act.add_theme_font_override("font", T.mono)
+	_last_act.add_theme_font_size_override("font_size", 9)
+	_last_act.add_theme_color_override("font_color", T.ACCENT)  # gold: what needs him; red is only for loss
+	_last_act.visible = false
+	who.add_child(_last_act)
 	when.add_child(who)
 	# Click the date and the story's line for the story so far.
 	var date_pill := when.get_parent() as Control
@@ -1960,9 +2007,48 @@ func _set_tithe(rate: float) -> void:
 	toast("The royal tithe is now %d%%. %s" % [int(_tithe * 100), "The houses grumble." if _tithe >= 0.2 else "The houses breathe easier."])
 
 
+var _heading: HBoxContainer  # the three readings and the name being earned, under the date
+var _ways := {}  # reading -> its arrow
+var _earning: Label
+var _last_act: Label  # the last act's threat, named at three quarters of the reign
+var _last_act_told := ""
+
+
+## The reign's readings, as the realm reports them: an arrow each (gold rising,
+## red falling, grey holding) and the name history would give, then the next.
+func _show_heading(r: Dictionary) -> void:
+	var rd = r.get("readings")
+	_heading.visible = rd is Dictionary and String(r.get("status", "")) == "running"
+	if not _heading.visible:
+		return
+	var says := {"peace": ["Peace", "the houses at war or not"], "wealth": ["Wealth", "souls and the royal treasury"], "strength": ["Strength", "the great houses who would answer your banners"]}
+	var tip := PackedStringArray()
+	for k in _ways:
+		var w := int((rd.get(k, {}) as Dictionary).get("way", 0))
+		var l: Label = _ways[k]
+		l.text = "▲" if w > 0 else ("▼" if w < 0 else "–")
+		l.add_theme_color_override("font_color", T.ACCENT if w > 0 else (T.DANGER if w < 0 else T.TEXT_3))
+		tip.append("%s %s against a year ago (%s)." % [says[k][0], "rising" if w > 0 else ("falling" if w < 0 else "holding"), says[k][1]])
+	var name := String(rd.get("name", ""))
+	var next := String(rd.get("next", "")) if rd.get("next") != null else ""
+	_earning.text = name + ("  ·  then %s" % next if next != "" else "")
+	tip.append("If the reign ended today, history would name you %s%s." % [name, ("; close behind, %s" % next) if next != "" else ""])
+	_heading.tooltip_text = "\n".join(tip)
+	# The last act, named at three quarters of the reign, once.
+	var la = r.get("lastAct")
+	_last_act.visible = la is Dictionary
+	if la is Dictionary:
+		_last_act.text = ("The last act: %s" % String(la.get("threat", ""))).to_upper()
+		if _last_act_told != String(la.get("threat", "")):
+			if _last_act_told == "" and _court_met:
+				toast("The last act of the reign begins. What comes for the throne now: %s." % String(la.get("threat", "")))
+			_last_act_told = String(la.get("threat", ""))
+
+
 func set_reign(r: Dictionary) -> void:
 	if r.is_empty():
 		return
+	_show_heading(r)
 	var clock := "endless reign"
 	if r.get("remainingMs") != null:
 		var secs := int(float(r["remainingMs"]) / 1000.0)
@@ -1975,9 +2061,112 @@ func set_reign(r: Dictionary) -> void:
 	_reign.text = ("%s  ·  %s" % [r.get("name", ""), clock]).to_upper()
 	if r.get("status", "") == "ended":
 		_reign_end(r)
-	elif _end_panel:
-		_end_panel.get_parent().queue_free()
-		_end_panel = null
+	else:
+		_epilogue_stop()  # a new reign, or he rules on: a telling under way ends
+		if _end_panel:
+			_end_panel.get_parent().queue_free()
+			_end_panel = null
+			cinema(false)  # he rules on: the realm's panels come back
+
+
+## The reign's last flight: each defining choice where it happened (the camera
+## goes to its town), with what came of it, then one line of fate per house.
+var _epilogue_run := 0  # which telling is current: a new reign or ruling on ends the one under way
+var _epilogue_skip := false
+var _epilogue_card: Control = null
+
+
+## Holds a stop of the telling for its seconds; a click moves on at once. False
+## when the telling was ended under it.
+func _epilogue_hold(seconds: float, run: int) -> bool:
+	var t := 0.0
+	while t < seconds:
+		await get_tree().process_frame
+		if run != _epilogue_run:
+			return false
+		if _epilogue_skip:
+			_epilogue_skip = false
+			return true
+		t += get_process_delta_time()
+	return true
+
+
+## Ends a telling under way: its card goes, the camera stops jumping, the panels come back.
+func _epilogue_stop() -> void:
+	_epilogue_run += 1
+	if _epilogue_card and is_instance_valid(_epilogue_card):
+		_epilogue_card.queue_free()
+		_epilogue_card = null
+		cinema(false)
+
+
+func _epilogue(ep: Dictionary) -> void:
+	_epilogue_run += 1
+	var run := _epilogue_run
+	cinema(true)
+	var card := _glass_panel()
+	_epilogue_card = card
+	# A click anywhere moves the telling on.
+	card.mouse_filter = Control.MOUSE_FILTER_STOP
+	card.gui_input.connect(func(e: InputEvent):
+		if e is InputEventMouseButton and e.pressed:
+			_epilogue_skip = true)
+	card.tooltip_text = "Click to move on"
+
+	card.anchor_left = 0.5
+	card.anchor_right = 0.5
+	card.anchor_top = 1.0
+	card.anchor_bottom = 1.0
+	card.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	card.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	card.offset_bottom = -48
+	card.custom_minimum_size = Vector2(620, 0)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 8)
+	card.add_child(v)
+	var head := T.label("The reign, as it will be told")
+	v.add_child(head)
+	var said := Label.new()
+	said.autowrap_mode = TextServer.AUTOWRAP_WORD
+	said.add_theme_font_override("font", T.speech)
+	said.add_theme_font_size_override("font_size", 22)
+	said.add_theme_color_override("font_color", Color(0.94, 0.9, 0.82))
+	v.add_child(said)
+	var after := Label.new()
+	after.autowrap_mode = TextServer.AUTOWRAP_WORD
+	after.add_theme_color_override("font_color", T.TEXT_2)
+	v.add_child(after)
+	for c in ep.get("choices", []):
+		focus_city.emit(int(c.get("city", -1)))
+		said.text = String(c.get("text", ""))
+		after.text = String(c.get("after", ""))
+		card.modulate.a = 0.0
+		create_tween().tween_property(card, "modulate:a", 1.0, 0.6)
+		if not await _epilogue_hold(5.5, run):
+			return
+	# What became of every great house, one line each.
+	for n in [said, after]:
+		n.queue_free()
+	head.text = "What became of the great houses"
+	for f in ep.get("fates", []):
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		row.add_child(_sigil_icon(_house_by_name.get(String(f.get("house", "")), {"color": f.get("color", "#888")}), 22))
+		var line := Label.new()
+		line.text = "%s %s" % [String(f.get("house", "")), String(f.get("line", ""))]
+		line.autowrap_mode = TextServer.AUTOWRAP_WORD
+		line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(line)
+		v.add_child(row)
+	if not await _epilogue_hold(8.0, run):
+		return
+	card.queue_free()
+	_epilogue_card = null
+	# The towns it flew to leave no card behind.
+	_cinema_was.erase("_town_panel")
+	_put_town_away()
+	_town_id = -1
+	town_closed.emit()
 
 
 var _end_panel: Control = null
@@ -1993,6 +2182,15 @@ func _reign_end(r: Dictionary) -> void:
 	if key == _end_seen:
 		return
 	_end_seen = key
+	# Before the name, the reign told back: the camera goes where the King's
+	# weightiest choices were made, a line at each, then what became of every
+	# great house. A report, not a judgement.
+	var ep = r.get("epilogue")
+	if ep is Dictionary and not (ep.get("choices", []) as Array).is_empty():
+		var run := _epilogue_run + 1
+		await _epilogue(ep)
+		if _end_seen != key or run != _epilogue_run:
+			return
 	if _end_panel:
 		_end_panel.get_parent().queue_free()
 	var layer := CanvasLayer.new()
@@ -2174,6 +2372,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 			else "%d of %d great houses would answer your banners. Win all of them and the realm is yours in truth." % [with_me, great.size()]
 	_purse = int(world.get("crown", {}).get("treasury", 0))  # the court's orders check the purse
 	_rank_houses(world.get("players", []))
+	_omens.read(float(world.get("peace", 1.0)), float((world.get("crown", {}) as Dictionary).get("treasury", -1)) if world.has("crown") else -1.0)
 	for pid in houses:
 		_house_by_name[String(houses[pid].get("name", ""))] = houses[pid]
 	set_reign(world.get("reign", {}))

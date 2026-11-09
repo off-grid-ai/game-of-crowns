@@ -39,7 +39,7 @@ import { Minds, route as mindsRoute } from "./minds.js";
 import { Arcs, templates as arcTemplates, check, ownStories, storiesChanged } from "./arcs.js";
 import { Chatter } from "./chatter.js";
 import { bible, FAMILIES, LESSER } from "./lore.js";
-import { Stakes, calendar, epithet } from "./stakes.js";
+import { Stakes, calendar, epithet, epithetNear } from "./stakes.js";
 import { watched, usageToday, moodFrom, isWatched, arcFromWords, beatIdea, premiseIdea, writeFor } from "./claude.js";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -492,7 +492,7 @@ async function runSeason() {
   if (!world || seasonRunning || !court) return;
   seasonRunning = true;
   try {
-    await court.season(world, { favour: favourOf, cause: causeOf, warded: (pid) => (stakes?.s.wards?.[pid] ?? -1) > (world?.turn ?? 0) || sworn(pid), send: (l) => send(`lua cmd ${l}`), shift: shiftFavour, watched: isWatched(), options: meta.options ?? {}, ...heardCtx() });
+    await court.season(world, { favour: favourOf, cause: causeOf, warded: (pid) => (stakes?.s.wards?.[pid] ?? -1) > (world?.turn ?? 0) || sworn(pid), send: (l) => send(`lua cmd ${l}`), shift: shiftFavour, watched: isWatched(), options: meta.options ?? {}, ...heardCtx(), mayRise, rose });
   } catch (err) {
     console.error("season:", err);
   } finally {
@@ -658,6 +658,19 @@ function counsel(players, cities, threat) {
       acts: [seatOf(rose.id) ? { label: "Pardon them with a feast", action: "feast", city: seatOf(rose.id).id } : null,
         seatOf(rose.id) ? { label: `Take their heir as your ward (${name} −5; they cannot rise for five years)`, action: "ward", city: seatOf(rose.id).id } : null,
         towns[0] && loyal ? { label: `Give ${towns[0].title ?? "a town"} to ${loyal.house.name.replace(/^House /, "")} (${name} −30, ${loyal.house.name.replace(/^House /, "")} +20)`, action: "grant", city: towns[0].id, to: loyal.id } : null].filter(Boolean) });
+  }
+  // A house that has turned: its lord's ultimatum, before any banners are raised.
+  for (const p of great) {
+    const t = meta.turning?.[p.id];
+    if (t?.state !== "sent" || !seatOf(p.id)) continue;
+    const lord = court?.lordOfHouse(p.id);
+    const short = p.house.name.replace(/^House /, "");
+    const drain = (favourWhy[p.id] ?? []).filter((r) => r.d < 0).sort((a, b) => a.d - b.d)[0];
+    out.push({ urgency: 100, kind: "ultimatum", occur: t.at, text: `${p.house.name} sends the crown an ultimatum`,
+      why: `${lord ? lord.name : `The lord of ${short}`}: "Set right what the crown has done to us${drain ? ` (${drain.why})` : ""}, or ${short} raises its banners." Answer with a favour they can see; silence is a refusal.`,
+      acts: [{ label: "A feast in their honour", action: "feast", city: seatOf(p.id).id }, { label: "Gift crowns", action: "gift", city: seatOf(p.id).id },
+        { label: `Take their heir as your ward (they cannot rise for five years)`, action: "ward", city: seatOf(p.id).id }] });
+    for (let i = out.length - 2; i >= 0; i--) if (out[i].text.startsWith(`${p.house.name} grows cold`)) out.splice(i, 1);
   }
   // The pretender's own coldness is the usurper's story: one matter, not two.
   for (const who of [threat.usurper !== "none" ? pretender : null, rose].filter(Boolean)) {
@@ -867,8 +880,14 @@ async function courtYear(turn) {
     if (!o) { delete c.hand[key]; continue; }
     if (watched && turn > m.seen) m.ticks += turn - m.seen;
     m.seen = turn;
-    if (m.ticks >= FUSE) { lapse({ key: matterKey(o), text: o.text, lapse: lapseOf(o) }, turn); delete c.hand[key]; }
+    if (m.ticks >= FUSE) {
+      lapse({ key: matterKey(o), text: o.text, lapse: lapseOf(o) }, turn);
+      delete c.hand[key];
+      // An ultimatum left unanswered is refused: now the lord may rise.
+      if (o.kind === "ultimatum") for (const t of Object.values(meta.turning ?? {})) if (t.state === "sent" && t.at === o.occur) t.state = "refused";
+    }
   }
+  turnHouses(turn);  // watched or not: a house turns, and warns, either way
   closeIfDone(turn);
   if (watched && (turn - 1) % 4 === 0 && c.sitting !== turn) {
     // Spring: the doors open. Two or three matters (rare: two, often: three).
@@ -886,12 +905,44 @@ async function courtYear(turn) {
   // Between sittings, the Hand calls the King only for a crisis, one at a time.
   const crisis = counselNow.find((o) => isCrisis(o) && o.acts?.length && c.heard[o.key] == null && !c.hand[o.key]);
   const calling = Object.values(c.hand).some((m) => m.crisis);
-  if (crisis && watched && !calling && (c.sitting != null || Date.now() - c.lastCall >= CALL_GAP)) {
+  // An ultimatum is never held back: the two seasons it gives the King are all he gets.
+  if (crisis && watched && !calling && (c.sitting != null || crisis.kind === "ultimatum" || Date.now() - c.lastCall >= CALL_GAP)) {
     callMatter(crisis, turn, true);
     c.lastCall = Date.now();
   }
   closeIfDone(turn);
   chron.saveMeta(meta);
+}
+
+// A house turning against the King: each season it stays under 25 its anger
+// fills; after TURNING seasons its lord sends the crown an ultimatum (a crisis
+// at court). Only an ultimatum refused, or left to burn down, lets him raise
+// his banners; won back above 25, the anger drains away.
+const TURNING = 2;
+function turnHouses(turn) {
+  const turning = (meta.turning ??= {});
+  for (const p of world?.players ?? []) {
+    if (houseFor(p).wild || houseFor(p).crown || !world.cities.some((c) => c.owner === p.id)) continue;
+    // A realm from before ultimatums: a house already under 25 is one season from sending its own.
+    const t = (turning[p.id] ??= { seasons: favourOf(p.id) < 25 ? TURNING - 1 : 0, state: null });
+    if (favourOf(p.id) < 25) t.seasons = Math.min(TURNING, t.seasons + 1);
+    else {
+      t.seasons = Math.max(0, t.seasons - 1);
+      if (t.seasons === 0 && t.state !== "refused") t.state = null;
+    }
+    if (t.seasons >= TURNING && !t.state) {
+      t.state = "sent";
+      t.at = turn;
+      record({ turn, kind: "unrest", text: `${houseFor(p).name} sends a rider to Kingsmere with an ultimatum for the King.` });
+    }
+  }
+}
+// Whether a lord may raise his banners against the crown: only after his ultimatum.
+// Refused, or two seasons gone since it came with no favour shown: then the rising.
+const mayRise = (pid) => { const t = meta.turning?.[pid]; return t?.state === "refused" || (t?.state === "sent" && (world?.turn ?? 0) - t.at >= 2); };
+function rose(pid) {
+  const t = meta.turning?.[pid];
+  if (t) { t.state = null; t.seasons = 0; }
 }
 
 // Every matter of the sitting answered (or gone home unheard): the doors close.
@@ -1034,6 +1085,12 @@ function causeOf(id) {
 function noteFavour(id, d, why) {
   if (!d || !why) return;
   if (Math.abs(d) >= 8 && why !== "the royal tithe") recordDeed(id, d, why, world?.turn);
+  // The King's weightiest acts, for the reign's ending to stop at.
+  if (Math.abs(d) >= 8 && DEED_WORDS[why]?.[d > 0 ? 0 : 1] && world) {
+    const seat = world.cities.find((c) => c.owner === Number(id) && c.capital) ?? world.cities.find((c) => c.owner === Number(id));
+    (meta.choices ??= []).push({ turn: world.turn, pid: Number(id), d, what: DEED_WORDS[why][d > 0 ? 0 : 1], city: seat?.id ?? null });
+    if (meta.choices.length > 80) meta.choices = meta.choices.sort((a, b) => Math.abs(b.d) - Math.abs(a.d)).slice(0, 60).sort((a, b) => a.turn - b.turn);
+  }
   const list = (favourWhy[id] ??= []);
   const same = list.find((x) => x.why === why);
   if (same) same.d += d;  // the same cause again adds up, not repeats
@@ -1328,6 +1385,76 @@ function ledger() {
   fs.appendFileSync(path.join(P.state, "history.jsonl"), JSON.stringify(row) + "\n");
 }
 
+// Where the reign is heading: peace, wealth and strength, each against a year
+// ago, and the name history would give the King if it ended today, with the
+// one close behind it. A report, not a judgement: the numbers say which way.
+function readings() {
+  if (!history.length || !world) return null;
+  const last = history[history.length - 1];
+  const ago = history.find((r) => r.turn >= last.turn - 4) ?? history[0];
+  const great = world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown && world.cities.some((c) => c.owner === p.id));
+  const loyalShare = (fav) => great.length ? great.filter((p) => (fav(p.id) ?? 50) >= 35).length / great.length : 0;
+  const was = favourPast[ago.turn] ?? favourPast[last.turn - 4];
+  const way = (d, eps) => d > eps ? 1 : d < -eps ? -1 : 0;
+  const wealth = (r) => r.pop + r.treasury / 50;
+  return {
+    peace: { now: last.peace, way: way(last.peace - ago.peace, 0.03) },
+    wealth: { now: last.pop, treasury: last.treasury, way: way(wealth(last) - wealth(ago), Math.max(2, wealth(ago) * 0.02)) },
+    strength: { now: loyalShare(favourOf), way: was ? way(loyalShare(favourOf) - loyalShare((id) => was[id]), 0.01) : 0 },
+    ...epithetNear(history, decreesIssued),
+  };
+}
+
+// At three quarters of the reign the last act begins, and is named: the
+// gravest thing coming for the throne, so the ending is seen coming.
+function lastAct() {
+  if (!meta.minutes || meta.lastAct || meta.elapsedMs < meta.minutes * 60000 * 0.75) return;
+  const u = stakes?.s.usurper;
+  const story = arcs?.reignView();
+  const pretender = u && u.stage !== "none" ? world?.players?.find((p) => p.id === u.house) : null;
+  const threat = pretender ? `${houseFor(pretender).name}'s claim to the throne`
+    : story && story.status === "running" ? story.title
+    : (stakes?.s.north?.waves ?? 0) > 0 ? "the dead from the North" : "the houses' own ambitions";
+  meta.lastAct = { threat, turn: world?.turn ?? 0 };
+  chron.saveMeta(meta);
+  record({ turn: world?.turn ?? 0, kind: "act", text: `The last act of the reign begins. What comes for the throne now: ${threat}.` });
+}
+
+// How the reign ends, shown before its name: the King's weightiest choices,
+// three or four, each where it happened, and what became of every great house.
+function epilogue() {
+  if (!world?.players || !world?.cities) return { choices: [], fates: [] };
+  const great = (world?.players ?? []).filter((p) => !houseFor(p).wild && !houseFor(p).crown && (meta.turning?.[p.id] || favour[p.id] != null));
+  const picked = [];
+  for (const c of [...(meta.choices ?? [])].sort((a, b) => Math.abs(b.d) - Math.abs(a.d))) {
+    if (picked.length >= 4) break;
+    if (c.city == null || picked.some((x) => x.pid === c.pid || x.what === c.what)) continue;
+    picked.push(c);
+  }
+  const choices = picked.sort((a, b) => a.turn - b.turn).map((c) => {
+    const p = world.players.find((x) => x.id === c.pid);
+    const when = calendar(c.turn);
+    const f = Math.round(favourOf(c.pid));
+    return { city: c.city, text: `${when.season[0].toUpperCase()}${when.season.slice(1)} of ${when.year}, ${p ? houseFor(p).name : "a great house"}: you ${theirs(c.what)}.`,
+      after: f >= 60 ? "They stood by you to the end." : f < 25 ? "They never forgave it." : c.d > 0 ? "They remembered it." : "They bent the knee, and kept the grudge." };
+  });
+  const power = (p) => world.cities.filter((c) => c.owner === p.id).length * 2 + (p.units ?? 0);
+  const mightiest = [...great].sort((a, b) => power(b) - power(a))[0];
+  const fates = great.map((p) => {
+    const f = Math.round(favourOf(p.id));
+    const towns = world.cities.filter((c) => c.owner === p.id).length;
+    const line = !towns ? "fell, and its halls stand empty."
+      : meta.turning?.[p.id]?.state === "refused" ? "rose against the crown, and will again."
+      : f >= 60 ? "stood by the crown to the end."
+      : f < 25 ? "never forgave the King."
+      : p === mightiest ? "ends the reign the mightiest house in the realm."
+      : f >= 35 ? "kept its oath, and its counsel."
+      : "bent the knee, and kept its grudges.";
+    return { house: houseFor(p).name, color: houseFor(p).color, line };
+  });
+  return { choices, fates };
+}
+
 function score() {
   if (!history.length) return { score: 0, peace: 0, pop: 0, verdict: "A reign too short to judge." };
   const peace = history.reduce((s, r) => s + r.peace, 0) / history.length;
@@ -1348,6 +1475,7 @@ function endReign(why, outcome = "completed") {
   if (outcome === "won") { s.score = Math.round(s.score * 1.5); s.verdict = "The crown held. The tale that came for it is told, and the King is still in his seat."; }
   if (outcome === "fallen") { s.score = Math.round(s.score * 0.3); s.verdict = "The realm fell to the dead. No one is left to remember."; }
   s.title = `The King ${epithet(history, outcome, decreesIssued)}`;
+  meta.epilogue = epilogue();
   s.outcome = outcome;
   meta.status = "ended";
   meta.score = s.score;
@@ -1367,7 +1495,10 @@ setInterval(() => {
   if (!meta || paused || meta.status !== "running" || !fc) return;
   meta.elapsedMs += 5000;
   if (meta.minutes > 0 && meta.elapsedMs >= meta.minutes * 60000) endReign("The appointed time has passed. The reign ends.");
-  else if (meta.elapsedMs % 30000 === 0) chron.saveMeta(meta);
+  else {
+    lastAct();
+    if (meta.elapsedMs % 30000 === 0) chron.saveMeta(meta);
+  }
 }, 5000);
 
 function shutdown() {
@@ -1408,6 +1539,7 @@ function reignInfo() {
     id: meta.id, name: meta.name, scenario: meta.scenario, status: meta.status, paused, minutes: meta.minutes,
     elapsedMs: meta.elapsedMs, remainingMs: meta.minutes > 0 ? Math.max(0, meta.minutes * 60000 - meta.elapsedMs) : null,
     score: meta.score, verdict: meta.verdict, title: meta.title, outcome: meta.outcome, ended: meta.endedAt,
+    epilogue: meta.epilogue ?? null, lastAct: meta.lastAct ?? null, readings: meta.status === "running" ? readings() : null,
     souls: world?.cities?.reduce((t, c) => t + soulsOf(c.size), 0) ?? 0,
   };
 }
@@ -1471,6 +1603,8 @@ http.createServer(async (req, res) => {
       // How far favour has moved in the last year (four seasons), shown beside it.
       const yearAgo = favourPast[(world?.turn ?? 0) - 4];
       p.favourTrend = p.favour == null || !yearAgo || yearAgo[p.id] == null ? 0 : Math.round(p.favour - yearAgo[p.id]);
+      // How far the house has turned against the King (0-1): full, its ultimatum comes.
+      p.turning = Math.min(1, (meta.turning?.[p.id]?.seasons ?? 0) / TURNING);
     }
     // Each house's measures as the ledger keeps them (one reckoning, recordTurn).
     // The Crown's own row reads like the houses' (the ledger keeps only theirs).
@@ -1601,6 +1735,8 @@ http.createServer(async (req, res) => {
       // A matter at court is keyed by the matter itself; it rests as its kind does.
       const o = counselNow.find((x) => x.key === String(key));
       (meta.mattersRest ??= {})[o ? matterKey(o) : String(key)] = world?.turn ?? 0;
+      // An ultimatum answered: the house's anger starts over (it may turn again).
+      if (o?.kind === "ultimatum") for (const t of Object.values(meta.turning ?? {})) if (t.state === "sent" && t.at === o.occur) { t.state = null; t.seasons = 0; }
       delete courtYearOf().hand[String(key)];
       closeIfDone(world?.turn ?? 0);
       chron.saveMeta(meta);

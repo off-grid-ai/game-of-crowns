@@ -942,5 +942,69 @@
       }
     ],
     "file": "screens/v/house-colours-close-1.jpg"
+  },
+  {
+    "id": "reign-heading",
+    "name": "Where the reign is heading",
+    "group": "Play",
+    "what": "Under the date: peace, wealth and strength each rising, falling or holding against a year ago, and the name history would give if the reign ended now, with the one close behind. Fun bar, It says who I am: before, the name only at the end (0% of play); after, on screen always.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "After: three readings and the name you're earning",
+        "at": "2026-11-09T07:54:30Z",
+        "file": "screens/v/reign-heading-1.jpg",
+        "what": "Under the date: peace, wealth and strength each rising, falling or holding against a year ago, and the name history would give if the reign ended now, with the one close behind. Fun bar, It says who I am: before, the name only at the end (0% of play); after, on screen always."
+      }
+    ],
+    "file": "screens/v/reign-heading-1.jpg"
+  },
+  {
+    "id": "ultimatum",
+    "name": "A house's ultimatum",
+    "group": "Play",
+    "what": "A house under 25 for two seasons sends an ultimatum to court; only refused or ignored for two seasons may it rise. Fun bar, Failure feels fair: before, risings with no warning; after, an ultimatum always came first.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "After: an ultimatum before any rising",
+        "at": "2026-11-09T07:54:30Z",
+        "file": "screens/v/ultimatum-1.jpg",
+        "what": "A house under 25 for two seasons sends an ultimatum to court; only refused or ignored for two seasons may it rise. Fun bar, Failure feels fair: before, risings with no warning; after, an ultimatum always came first."
+      }
+    ],
+    "file": "screens/v/ultimatum-1.jpg"
+  },
+  {
+    "id": "reign-end-flight",
+    "name": "The reign, as it will be told",
+    "group": "Reign",
+    "what": "Before the name: the camera goes to where the King's weightiest choices fell, one line each and what came of it, then a line of fate per house. A click moves it on.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "After: the ending flies to your choices",
+        "at": "2026-11-09T07:54:30Z",
+        "file": "screens/v/reign-end-flight-1.jpg",
+        "what": "Before the name: the camera goes to where the King's weightiest choices fell, one line each and what came of it, then a line of fate per house. A click moves it on."
+      }
+    ],
+    "file": "screens/v/reign-end-flight-1.jpg"
+  },
+  {
+    "id": "ranked-houses",
+    "name": "The houses, ranked",
+    "group": "Play",
+    "what": "Above the minimap: the great houses by power; a red bar fills under a house turning against the crown.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "After: seven sigils by power, turning ones barred red",
+        "at": "2026-11-09T07:54:31Z",
+        "file": "screens/v/ranked-houses-1.jpg",
+        "what": "Above the minimap: the great houses by power; a red bar fills under a house turning against the crown."
+      }
+    ],
+    "file": "screens/v/ranked-houses-1.jpg"
   }
 ]

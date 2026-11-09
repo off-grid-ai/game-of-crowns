@@ -438,7 +438,8 @@ export class Court {
       }
       const favour = ctx.favour(c.playerId);
       opts.push({ kind: "petition", score: 20 + (goal.kind === "court" || goal.kind === "peace" ? 20 : 0) + (favour > 60 ? 10 : 0) });
-      if (favour < 25 && !ctx.warded?.(c.playerId)) opts.push({ kind: "rebel", score: 40 + (25 - favour) * 2 + (goal.kind === "crown" ? 40 : 0) + (has("ambitious") ? 15 : 0) - (has("craven") ? 30 : 0) - (c.hostage && this.people[c.hostage]?.alive ? 60 : 0) });
+      // Only after the house's ultimatum to the crown was refused (server.js turnHouses).
+      if (favour < 25 && !ctx.warded?.(c.playerId) && (ctx.mayRise?.(c.playerId) ?? true)) opts.push({ kind: "rebel", score: 40 + (25 - favour) * 2 + (goal.kind === "crown" ? 40 : 0) + (has("ambitious") ? 15 : 0) - (has("craven") ? 30 : 0) - (c.hostage && this.people[c.hostage]?.alive ? 60 : 0) });
     }
     if (!opts.length) return null;
     // The realm's mood, set by the King in words, tilts everyone at once.
@@ -552,6 +553,7 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
         if (seat) ctx.send(`local c = find.city(nil, ${seat.id}); if c then for i = 1, 3 do edit.create_unit(c.owner, c.tile, find.unit_type("Knights") or find.unit_type("Horsemen"), 1, c, -1) end end`);
         const why = ctx.cause?.(c.playerId);
         this.record({ turn, kind: "rebellion", text: `${c.name} raises the banners of ${c.house} against the crown!${why ? ` ${c.house} has not forgotten ${why}.` : ""}${d?.line ? ` "${d.line}"` : ""}`, city: c.seat ?? undefined });
+        ctx.rose?.(c.playerId);
         return;
       }
     }
