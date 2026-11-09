@@ -220,3 +220,15 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - A 1-minute test reign is running on the game server.
 - **Where we're heading:** commit bets 3–5 once the test and a fresh pre-commit review pass, then one batch film for the review page, then player beats bringing matters to court, then the smaller items.
 - **Verdict:** on course, and throughput is up with one builder working continuously.
+
+## 2026-11-09, evening (autopilot)
+
+- **What's going on:**
+  - Bets 3–6 are built in the tree:
+    - acts by the clock, interludes, ambitions;
+    - faces, wants, voices, remembered answers;
+    - help and hurt chips, the camera to rulings, no free answers;
+    - player beats that bring matters to court.
+  - The fresh review's fixes are in: the interlude no longer vanishes after a frame, it's keyed by reign, it closes on the King's click and holds the court back, and the ambitions are real.
+- **Off course, briefly:** the batch film opened on the title menu and never entered the realm. **Correction:** the film now presses Continue first, and it reruns as soon as this run ends.
+- **Next:** judge the film, commit bets 3–6, put them on the review page, then the smaller items.
