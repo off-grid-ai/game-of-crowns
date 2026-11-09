@@ -887,5 +887,60 @@
       }
     ],
     "file": "screens/v/court-closed-1.jpg"
+  },
+  {
+    "id": "house-colours",
+    "name": "House colours on the land",
+    "group": "Play",
+    "what": "From across the realm the land showed no house at all; only the minimap washed faintly.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before: no colours on the land",
+        "at": "2026-11-09T07:49:27Z",
+        "file": "screens/v/house-colours-1.jpg",
+        "what": "From across the realm the land showed no house at all; only the minimap washed faintly."
+      },
+      {
+        "v": 2,
+        "label": "After: each house's land in its colour",
+        "at": "2026-11-09T07:49:27Z",
+        "file": "screens/v/house-colours-2.jpg",
+        "what": "Each house's land washed in its colour with a fine border; the minimap washes stronger, with borders; the seven houses ranked by power above it, the turning ones barred red. Fun bar, I can read the board: before, no ownership on the land (0 of 3 zooms); after, 3 of 3."
+      }
+    ],
+    "file": "screens/v/house-colours-2.jpg"
+  },
+  {
+    "id": "house-colours-far",
+    "name": "House colours, whole realm",
+    "group": "Play",
+    "what": "Pulled right back: every house's territory and its borders, the realm read at a glance.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "After: the realm by house",
+        "at": "2026-11-09T07:49:28Z",
+        "file": "screens/v/house-colours-far-1.jpg",
+        "what": "Pulled right back: every house's territory and its borders, the realm read at a glance."
+      }
+    ],
+    "file": "screens/v/house-colours-far-1.jpg"
+  },
+  {
+    "id": "house-colours-close",
+    "name": "House colours, up close",
+    "group": "Play",
+    "what": "Up close the wash gives way so streets stay clean; the borders remain.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "After: borders only among the streets",
+        "at": "2026-11-09T07:49:28Z",
+        "file": "screens/v/house-colours-close-1.jpg",
+        "what": "Up close the wash gives way so streets stay clean; the borders remain."
+      }
+    ],
+    "file": "screens/v/house-colours-close-1.jpg"
   }
 ]

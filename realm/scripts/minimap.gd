@@ -10,7 +10,63 @@ var terrain: Node3D
 var rig: Node3D
 var _tex: ImageTexture
 var _base: Texture2D
-var _tint: ImageTexture
+var _tint: ImageTexture  # each house's land in its colour (a = owner id / 64), one pixel a tile
+var _tint_was: ImageTexture  # as it was before the last change, for the flood to cross
+var _ids: Array = []  # the owner of every tile, as last shown
+var _base_rect: TextureRect  # the painted map, under everything
+var _wash: TextureRect  # the houses' colours over it, drawn by WASH
+var _flood_t := -1.0
+var _flood_reach := 0.0
+const FLOOD_S := 1.5
+## Each house's land washed in its colour, softly, with a fine line where two
+## houses meet; when land changes hands the new colour floods out over it from
+## where it changed.
+const WASH := """
+shader_type canvas_item;
+uniform sampler2D realm_tex : filter_nearest, repeat_disable;
+uniform sampler2D realm_prev : filter_nearest, repeat_disable;
+uniform vec2 realm_size = vec2(1.0);
+uniform vec2 flood_at[4];
+uniform int flood_n = 0;
+uniform float flood_r = 100000.0;
+float flood_d(vec2 t) {
+	float d = 100000.0;
+	for (int i = 0; i < flood_n; i++) d = min(d, distance(t, flood_at[i]));
+	return flood_n > 0 ? d : 0.0;
+}
+vec4 owner(ivec2 c) {
+	c = clamp(c, ivec2(0), ivec2(realm_size) - 1);
+	vec4 now = texelFetch(realm_tex, c, 0);
+	return flood_d(vec2(c) + 0.5) <= flood_r ? now : texelFetch(realm_prev, c, 0);
+}
+vec4 held(ivec2 c) {
+	vec4 o = owner(c);
+	return o.a > 0.0 ? vec4(o.rgb, 1.0) : vec4(0.0);
+}
+void fragment() {
+	vec2 t = UV * realm_size;
+	ivec2 c = ivec2(floor(t));
+	vec4 own = owner(c);
+	// The wash is smoothed between tiles; the borders are drawn sharp.
+	vec2 g = t - 0.5;
+	ivec2 b = ivec2(floor(g));
+	vec2 w = fract(g);
+	vec4 soft = mix(mix(held(b), held(b + ivec2(1, 0)), w.x), mix(held(b + ivec2(0, 1)), held(b + ivec2(1, 1)), w.x), w.y);
+	vec2 f = fract(t);
+	vec2 px = fwidth(t);
+	float edge = 0.0;
+	ivec2 dirs[4] = {ivec2(-1, 0), ivec2(1, 0), ivec2(0, -1), ivec2(0, 1)};
+	float near[4] = {f.x / px.x, (1.0 - f.x) / px.x, f.y / px.y, (1.0 - f.y) / px.y};
+	for (int i = 0; i < 4; i++) {
+		if (abs(owner(c + dirs[i]).a - own.a) > 0.001 && near[i] < 0.8) edge = 1.0;
+	}
+	vec4 col = soft.a > 0.001 ? vec4(soft.rgb / soft.a, soft.a * 0.5) : vec4(0.0);
+	float front = flood_r < 10000.0 ? exp(-abs(flood_d(t) - flood_r) * 1.5) : 0.0;
+	col = mix(col, vec4(mix(own.rgb, vec3(1.0, 0.95, 0.8), 0.3), 0.9), front * (own.a > 0.0 ? 1.0 : 0.0));
+	if (edge > 0.5 && own.a > 0.0) col = vec4(own.rgb * 0.5, 0.85);
+	COLOR = col;
+}
+"""
 var _sig := ""
 var _seats: Array = []  # [tile position, colour, is seat, name, sigil]
 var _pings: Array = []  # [tile position, colour, label]: what's happening where
@@ -24,6 +80,20 @@ const PING := {"battle": WAR, "siege": WAR, "sack": WAR, "razed": WAR, "famine":
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	# The map and the wash sit behind the minimap's own drawing (seats, rings, the view).
+	_base_rect = TextureRect.new()
+	_wash = TextureRect.new()
+	for r in [_base_rect, _wash]:
+		r.show_behind_parent = true
+		r.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		r.stretch_mode = TextureRect.STRETCH_SCALE
+		r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		r.set_anchors_preset(Control.PRESET_FULL_RECT)
+		add_child(r)
+	var sh := Shader.new()
+	sh.code = WASH
+	_wash.material = ShaderMaterial.new()
+	_wash.material.shader = sh
 
 
 func refresh(world: Dictionary, houses: Dictionary) -> void:
@@ -44,16 +114,35 @@ func refresh(world: Dictionary, houses: Dictionary) -> void:
 		if terrain.land and ResourceLoader.exists(base_path):
 			_base = load(base_path)
 	var tint := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	var ids := []
 	for y in mini(owners.size(), h):
 		var row := String(owners[y]).split(",")
+		var cells := []
 		for x in mini(row.size(), w):
-			if row[x] != "-" and row[x] != "":
-				var o := int(row[x])
-				if houses.has(o) and not houses[o].get("wild", false):
-					var hc := Color.from_string(String(houses[o].get("color", "#888")), Color.GRAY)
-					tint.set_pixel(x, y, Color(hc.r, hc.g, hc.b, 0.42))
-	tint.resize(w * 8, h * 8, Image.INTERPOLATE_CUBIC)
+			var o := -1 if row[x] == "-" or row[x] == "" else int(row[x])
+			cells.append(o)
+			if o >= 0 and houses.has(o) and not houses[o].get("wild", false):
+				var hc := Color.from_string(String(houses[o].get("color", "#888")), Color.GRAY)
+				tint.set_pixel(x, y, Color(hc.r, hc.g, hc.b, (o + 1) / 64.0))
+		ids.append(cells)
+	var flood: Dictionary = terrain._flood_of(_ids, ids)
+	_ids = ids
+	_tint_was = _tint
 	_tint = ImageTexture.create_from_image(tint)
+	_base_rect.texture = _base
+	_wash.texture = _tint
+	var m: ShaderMaterial = _wash.material
+	m.set_shader_parameter("realm_tex", _tint)
+	m.set_shader_parameter("realm_prev", _tint_was if _tint_was and not flood.is_empty() else _tint)
+	m.set_shader_parameter("realm_size", Vector2(w, h))
+	if flood.is_empty():
+		m.set_shader_parameter("flood_r", 100000.0)
+		_flood_t = -1.0
+	else:
+		m.set_shader_parameter("flood_at", flood["at"])
+		m.set_shader_parameter("flood_n", (flood["at"] as PackedVector2Array).size())
+		_flood_reach = float(flood["reach"]) + 2.0
+		_flood_t = 0.0
 	var img := Image.create(1, 1, false, Image.FORMAT_RGBA8)
 	_tex = ImageTexture.create_from_image(img)
 	_seats.clear()
@@ -79,8 +168,14 @@ func _activity(world: Dictionary) -> void:
 			_pings.append([at, TROUBLE, "hunger"])
 
 
-func _process(_d: float) -> void:
+func _process(delta: float) -> void:
 	queue_redraw()  # the view marker follows the camera
+	if _flood_t >= 0.0:
+		_flood_t += delta
+		var k := clampf(_flood_t / FLOOD_S, 0.0, 1.0)
+		(_wash.material as ShaderMaterial).set_shader_parameter("flood_r", 100000.0 if k >= 1.0 else _flood_reach * (1.0 - pow(1.0 - k, 2.0)))
+		if k >= 1.0:
+			_flood_t = -1.0
 
 
 func _scale() -> Vector2:
@@ -90,10 +185,6 @@ func _scale() -> Vector2:
 func _draw() -> void:
 	if _base == null and _tint == null:
 		return
-	if _base:
-		draw_texture_rect(_base, Rect2(Vector2.ZERO, size), false)
-	if _tint:
-		draw_texture_rect(_tint, Rect2(Vector2.ZERO, size), false)
 	var k := _scale()
 	# Activity first, under the sigils: a ring that swells and fades, over and over.
 	var t := Time.get_ticks_msec() / 1000.0

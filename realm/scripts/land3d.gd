@@ -194,15 +194,132 @@ func _drape_atlas(mat: Terrain3DMaterial, terrain: Node3D) -> void:
 	if sh == null or not sh.code.contains("varying vec3 v_vertex;"):
 		mat.shader_override_enabled = false
 		return
-	var code := sh.code.replace("varying vec3 v_vertex;", "varying vec3 v_vertex;\nuniform sampler2D atlas_tex : source_color, filter_linear_mipmap_anisotropic, repeat_disable;\nuniform vec2 atlas_size = vec2(1.0);\nuniform float atlas_mix = 0.0;")
+	var code := sh.code.replace("varying vec3 v_vertex;", "varying vec3 v_vertex;\nuniform sampler2D atlas_tex : source_color, filter_linear_mipmap_anisotropic, repeat_disable;\nuniform vec2 atlas_size = vec2(1.0);\nuniform float atlas_mix = 0.0;\n" + REALM_UNIFORMS)
 	var at := code.find("ALBEDO = ")
 	var end := code.find("\n", at)
-	code = code.insert(end, "\n\tALBEDO = mix(ALBEDO, texture(atlas_tex, v_vertex.xz / atlas_size).rgb, atlas_mix);")
+	code = code.insert(end, "\n\tALBEDO = mix(ALBEDO, texture(atlas_tex, v_vertex.xz / atlas_size).rgb, atlas_mix);" + REALM_WASH)
 	var drape := Shader.new()
 	drape.code = code
 	mat.shader_override = drape
 	mat.set_shader_param("atlas_tex", atlas)
 	mat.set_shader_param("atlas_size", Vector2(terrain.width * terrain.TILE, terrain.height * terrain.TILE))
+	mat.set_shader_param("realm_size", Vector2(terrain.width, terrain.height))
+	mat.set_shader_param("realm_tile", float(terrain.TILE))
+
+
+# --- the houses' land: each house's colour washed over what it holds ----------
+
+## Freeciv's owner layer on the ground, in the same shader: each house's land
+## faintly in its colour (stronger as the camera pulls back), a fine line where
+## two houses meet, red where they are at war. When land changes hands the new
+## colour floods out across it from where it changed (flood_at, in tiles),
+## over the old (realm_prev). realm_tex: rgb = colour, a = owner id / 64.
+const REALM_UNIFORMS := """
+uniform sampler2D realm_tex : filter_nearest, repeat_disable;
+uniform sampler2D realm_prev : filter_nearest, repeat_disable;
+uniform sampler2D war_tex : filter_nearest, repeat_disable;
+uniform vec2 realm_size = vec2(1.0);
+uniform float realm_tile = 4.0;
+uniform float realm_mix = 0.0;
+uniform vec2 flood_at[4];
+uniform int flood_n = 0;
+uniform float flood_r = 100000.0;
+uniform float realm_on = 0.0;
+float flood_d(vec2 t) {
+	float d = 100000.0;
+	for (int i = 0; i < flood_n; i++) d = min(d, distance(t, flood_at[i]));
+	return flood_n > 0 ? d : 0.0;
+}
+vec4 realm_owner(ivec2 c) {
+	c = clamp(c, ivec2(0), ivec2(realm_size) - 1);
+	vec4 now = texelFetch(realm_tex, c, 0);
+	return flood_d(vec2(c) + 0.5) <= flood_r ? now : texelFetch(realm_prev, c, 0);
+}
+vec4 realm_held(ivec2 c) {
+	vec4 o = realm_owner(c);
+	return o.a > 0.0 ? vec4(o.rgb, 1.0) : vec4(0.0);
+}
+"""
+const REALM_WASH := """
+	if (realm_on > 0.5) {
+		vec2 rt = v_vertex.xz / realm_tile;
+		ivec2 rc = ivec2(floor(rt));
+		vec4 own = realm_owner(rc);
+		vec2 rf = fract(rt);
+		float edge = 0.0;
+		float war = 0.0;
+		ivec2 dirs[4] = {ivec2(-1, 0), ivec2(1, 0), ivec2(0, -1), ivec2(0, 1)};
+		float near[4] = {rf.x, 1.0 - rf.x, rf.y, 1.0 - rf.y};
+		for (int i = 0; i < 4; i++) {
+			vec4 other = realm_owner(rc + dirs[i]);
+			if (abs(other.a - own.a) > 0.001) {
+				bool at_war = texelFetch(war_tex, clamp(rc, ivec2(0), ivec2(realm_size) - 1), 0).r > 0.5 && texelFetch(war_tex, clamp(rc + dirs[i], ivec2(0), ivec2(realm_size) - 1), 0).r > 0.5 && other.a > 0.0 && own.a > 0.0;
+				if (near[i] < (at_war ? 0.14 : 0.07)) {
+					edge = 1.0;
+					war = max(war, at_war ? 1.0 : 0.0);
+				}
+			}
+		}
+		// Faint from a little way off, plain from across the realm; never down among the streets.
+		float far_off = smoothstep(14.0, 40.0, length(VERTEX));
+		float wash = far_off * mix(0.32, 0.5, realm_mix);
+		// The front of a flood glows as it crosses the land.
+		float front = flood_r < 10000.0 ? exp(-abs(flood_d(rt) - flood_r) * 2.0) : 0.0;
+		// The wash is smoothed between tiles (no blocky squares); the borders stay sharp.
+		vec2 rg = rt - 0.5;
+		ivec2 rb = ivec2(floor(rg));
+		vec2 rw = fract(rg);
+		vec4 soft = mix(mix(realm_held(rb), realm_held(rb + ivec2(1, 0)), rw.x), mix(realm_held(rb + ivec2(0, 1)), realm_held(rb + ivec2(1, 1)), rw.x), rw.y);
+		if (soft.a > 0.001) {
+			ALBEDO = mix(ALBEDO, soft.rgb / soft.a, (wash + front * 0.35 * far_off) * soft.a);
+		}
+		vec3 line = war > 0.5 ? vec3(0.85, 0.12, 0.1) : (own.a > 0.0 ? own.rgb * 0.45 : vec3(0.1));
+		// The borders stay down among the streets, where the wash gives way.
+		ALBEDO = mix(ALBEDO, line, edge * mix(0.55, 1.0, far_off) * mix(0.7, 0.95, realm_mix));
+	}
+"""
+var _flood_t := -1.0  # seconds into a flood; -1: none running
+var _flood_reach := 0.0  # tiles from where it began to the farthest land that changed
+
+
+## The houses' land as the realm reports it (terrain.gd builds the textures).
+## flood: {at: Vector2 tiles, reach: tiles} to flood it out from there, or {} to show it at once.
+func set_realm(realm: Texture2D, prev: Texture2D, war: Texture2D, flood: Dictionary) -> void:
+	if land == null:
+		return
+	var mat: Terrain3DMaterial = land.material
+	mat.set_shader_param("realm_tex", realm)
+	mat.set_shader_param("realm_prev", prev if not flood.is_empty() else realm)
+	mat.set_shader_param("war_tex", war)
+	mat.set_shader_param("realm_on", 1.0)
+	if flood.is_empty():
+		mat.set_shader_param("flood_r", 100000.0)
+		_flood_t = -1.0
+	else:
+		mat.set_shader_param("flood_at", flood["at"])
+		mat.set_shader_param("flood_n", (flood["at"] as PackedVector2Array).size())
+		_flood_reach = float(flood["reach"]) + 2.0
+		_flood_t = 0.0
+
+
+var _realm_mix := -1.0
+func set_realm_mix(v: float) -> void:
+	if land and absf(v - _realm_mix) > 0.002:
+		_realm_mix = v
+		land.material.set_shader_param("realm_mix", v)
+
+
+const FLOOD_S := 1.5  # how long new land takes to fill with its new colour
+
+
+func _process(delta: float) -> void:
+	if _flood_t < 0.0 or land == null:
+		return
+	_flood_t += delta
+	var k := clampf(_flood_t / FLOOD_S, 0.0, 1.0)
+	land.material.set_shader_param("flood_r", 100000.0 if k >= 1.0 else _flood_reach * (1.0 - pow(1.0 - k, 2.0)))
+	if k >= 1.0:
+		_flood_t = -1.0
 
 
 var _atlas_mix := -1.0

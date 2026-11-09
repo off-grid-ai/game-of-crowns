@@ -916,12 +916,91 @@ func _build_minimap() -> void:
 	frame.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	frame.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	frame.add_theme_stylebox_override("panel", T._box(T.SURFACE_SOLID, T.HAIRLINE, 8, 4))
+	var stack := VBoxContainer.new()
+	stack.add_theme_constant_override("separation", 4)
+	frame.add_child(stack)
+	_ranks = Control.new()
+	_ranks.custom_minimum_size = Vector2(MINIMAP_SIZE.x, 30)
+	_ranks.mouse_filter = Control.MOUSE_FILTER_PASS
+	stack.add_child(_ranks)
 	minimap = preload("res://scripts/minimap.gd").new()
 	minimap.custom_minimum_size = MINIMAP_SIZE
 	minimap.clip_contents = true  # the view's outline stays inside the map
 	minimap.tooltip_text = "The realm. Click or drag to go there.  (%s hides it)" % Keys.label("minimap").get_slice(" / ", 0)
-	frame.add_child(minimap)
+	stack.add_child(minimap)
 
+
+## The great houses by power (towns, then men-at-arms), strongest on the left,
+## over the map their colours wash. When the order changes the houses slide to
+## their new places: the one that rose glows gold, the one that fell dims.
+var _ranks: Control
+var _rank_chips := {}  # house id -> its sigil
+var _rank_order: Array = []
+
+
+func _rank_houses(players: Array) -> void:
+	var great := players.filter(func(p): return p.get("favour") != null and int(p.get("cities", 0)) > 0)
+	var power := func(p): return int(p.get("cities", 0)) * 2 + int(p.get("units", 0))
+	great.sort_custom(func(a, b): return power.call(a) > power.call(b))
+	great = great.slice(0, 7)  # the seven great houses, never more on the strip
+	var order := great.map(func(p): return int(p["id"]))
+	var slot := MINIMAP_SIZE.x / maxf(1.0, float(order.size()))
+	for id in _rank_chips.keys():
+		if not order.has(id):
+			_rank_chips[id].queue_free()
+			_rank_chips.erase(id)
+	for i in order.size():
+		var p: Dictionary = great[i]
+		var id: int = order[i]
+		var chip: Control = _rank_chips.get(id)
+		var fresh := chip == null
+		if fresh:
+			chip = Control.new()
+			chip.size = Vector2(slot, 30)
+			chip.mouse_filter = Control.MOUSE_FILTER_STOP
+			var icon := _sigil_icon(p["house"], 24)
+			icon.position = Vector2((slot - 24.0) * 0.5, 3)
+			icon.size = Vector2(24, 24)
+			icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			icon.name = "Sigil"
+			chip.add_child(icon)
+			# How far the house has turned against the King: red, filling over seasons.
+			var turn := ProgressBar.new()
+			turn.name = "Turning"
+			turn.show_percentage = false
+			turn.max_value = 1.0
+			turn.position = Vector2((slot - 22.0) * 0.5, 27)
+			turn.size = Vector2(22, 3)
+			turn.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			var track := StyleBoxFlat.new()
+			track.bg_color = Color(1, 1, 1, 0.08)
+			turn.add_theme_stylebox_override("background", track)
+			var fill := StyleBoxFlat.new()
+			fill.bg_color = T.DANGER
+			turn.add_theme_stylebox_override("fill", fill)
+			chip.add_child(turn)
+			_ranks.add_child(chip)
+			_rank_chips[id] = chip
+		# The slots widen or narrow as houses fall or rise.
+		chip.size = Vector2(slot, 30)
+		(chip.get_node("Sigil") as Control).position.x = (slot - 24.0) * 0.5
+		var turning := float(p.get("turning", 0.0))
+		var bar := chip.get_node("Turning") as ProgressBar
+		bar.position.x = (slot - 22.0) * 0.5
+		bar.value = turning
+		bar.visible = turning > 0.0
+		chip.tooltip_text = "%d. %s\n%d towns  ·  %s men-at-arms  ·  favour %d" % [i + 1, String(p["house"].get("name", "")), int(p.get("cities", 0)), _heads(int(p.get("units", 0)) * 200), int(p.get("favour", 0))]
+		if turning > 0.0:
+			chip.tooltip_text += "\n" + ("Turned against you: their ultimatum is on its way." if turning >= 1.0 else "Turning against you. Left under 25, they send an ultimatum before they rise.")
+		var was := _rank_order.find(id)
+		if fresh or was < 0 or was == i:
+			chip.position.x = i * slot
+			continue
+		var tw := create_tween().set_parallel()
+		tw.tween_property(chip, "position:x", i * slot, 0.2).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		chip.modulate = Color(1.9, 1.6, 0.9) if i < was else Color(0.45, 0.45, 0.45)
+		tw.tween_property(chip, "modulate", Color.WHITE, 1.4).set_delay(0.2)
+	_rank_order = order
 
 
 func _build_court() -> void:
@@ -2094,6 +2173,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		_standing.text = ("All %d great houses would answer your banners. The realm is yours in truth." % great.size() + next_aim) if all_in \
 			else "%d of %d great houses would answer your banners. Win all of them and the realm is yours in truth." % [with_me, great.size()]
 	_purse = int(world.get("crown", {}).get("treasury", 0))  # the court's orders check the purse
+	_rank_houses(world.get("players", []))
 	for pid in houses:
 		_house_by_name[String(houses[pid].get("name", ""))] = houses[pid]
 	set_reign(world.get("reign", {}))

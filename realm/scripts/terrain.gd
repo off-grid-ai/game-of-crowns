@@ -807,8 +807,8 @@ var _realm_sig := ""
 ## Repaints territory from Freeciv's owner layer (one "-,0,3,…" row per map
 ## line) and the houses' wars. players: world players with house and atWarWith.
 func set_realm(owners: Array, players: Array) -> void:
-	if _land_mat == null or owners.size() != height:
-		return
+	if _land_mat == null or owners.size() != height or (USE_TERRAIN3D and (land3d == null or land3d.land == null)):
+		return  # (the 3D land is still being raised: the next reading paints it)
 	var wars := {}
 	var colour := {}
 	for p in players:
@@ -825,6 +825,8 @@ func set_realm(owners: Array, players: Array) -> void:
 		for v in String(row).split(","):
 			cells.append(-1 if v == "-" or v == "" else int(v))
 		ids.append(cells)
+	var flood := _flood_of(_realm_ids, ids)
+	_realm_ids = ids
 	var realm := Image.create(width, height, false, Image.FORMAT_RGBA8)
 	var war := Image.create(width, height, false, Image.FORMAT_R8)
 	for y in height:
@@ -841,8 +843,67 @@ func set_realm(owners: Array, players: Array) -> void:
 				var n: int = ids[ny][nx]
 				if n >= 0 and n != o and n in wars.get(o, []):
 					war.set_pixel(x, y, Color(1, 0, 0))
-	_land_mat.set_shader_parameter("realm_tex", ImageTexture.create_from_image(realm))
-	_land_mat.set_shader_parameter("war_tex", ImageTexture.create_from_image(war))
+	var realm_tex := ImageTexture.create_from_image(realm)
+	var war_tex := ImageTexture.create_from_image(war)
+	_land_mat.set_shader_parameter("realm_tex", realm_tex)
+	_land_mat.set_shader_parameter("war_tex", war_tex)
+	if land3d:
+		land3d.set_realm(realm_tex, _realm_was if _realm_was else realm_tex, war_tex, flood)
+	_realm_was = realm_tex
+
+
+var _realm_ids := []  # the owner of every tile, as last shown
+var _realm_was: Texture2D  # the house colours as last shown, for a flood to cross
+
+
+## Where land changed hands since the last reading, for its new colour to flood
+## out from: each patch of changed land (a town's fields, usually) floods from
+## its own middle, up to FLOODS of them, as far as the farthest tile changed.
+## Nothing (shown at once) on the first reading or when much of the realm changed.
+const FLOODS := 4
+static func _flood_of(was: Array, now: Array) -> Dictionary:
+	if was.size() != now.size() or was.is_empty():
+		return {}
+	var changed := {}
+	for y in now.size():
+		var a: Array = was[y]
+		var b: Array = now[y]
+		for x in mini(a.size(), b.size()):
+			if a[x] != b[x]:
+				changed[Vector2i(x, y)] = true
+	if changed.is_empty() or changed.size() > 400:
+		return {}
+	# Patches: changed tiles that touch, corners included.
+	var patches: Array = []
+	var seen := {}
+	for start in changed:
+		if seen.has(start):
+			continue
+		var patch: Array[Vector2i] = []
+		var todo: Array[Vector2i] = [start]
+		seen[start] = true
+		while not todo.is_empty():
+			var t: Vector2i = todo.pop_back()
+			patch.append(t)
+			for dy in [-1, 0, 1]:
+				for dx in [-1, 0, 1]:
+					var n := t + Vector2i(dx, dy)
+					if changed.has(n) and not seen.has(n):
+						seen[n] = true
+						todo.append(n)
+		patches.append(patch)
+	patches.sort_custom(func(p, q): return p.size() > q.size())
+	var at := PackedVector2Array()
+	var reach := 0.0
+	for patch in patches.slice(0, FLOODS):
+		var mid := Vector2.ZERO
+		for t in patch:
+			mid += Vector2(t) + Vector2(0.5, 0.5)
+		mid /= patch.size()
+		at.append(mid)
+		for t in patch:
+			reach = maxf(reach, (Vector2(t) + Vector2(0.5, 0.5)).distance_to(mid))
+	return {"at": at, "reach": reach}
 
 
 ## 0 down among the streets, 1 looking at the whole realm.
@@ -853,6 +914,8 @@ func set_realm_mix(v: float) -> void:
 	_realm_mix = v
 	if _land_mat:
 		_land_mat.set_shader_parameter("realm_mix", v)
+	if land3d:
+		land3d.set_realm_mix(v)
 
 
 ## How much of the atlas shows over the 3D ground (0 up close, most of it far out).
