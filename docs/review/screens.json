@@ -1,5 +1,37 @@
 [
  {
+  "id": "petition-card",
+  "name": "A lord at court",
+  "group": "Play",
+  "what": "A lord's petition: their painted figure, what they want of the reign, and who each answer helps and hurts.",
+  "file": "screens/v/petition-card-1.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "Face, want, and who each answer moves",
+    "at": "2026-11-09T18:10:00Z",
+    "file": "screens/v/petition-card-1.jpg",
+    "what": "Cecily Stormhold, painted; 'Wants to wed their heir into a great house'; every answer marked with Stormhold's sigil, red minus or gold plus."
+   }
+  ]
+ },
+ {
+  "id": "follow-house",
+  "name": "Following a house",
+  "group": "Play",
+  "what": "Click a house on the ladder: the camera goes with its host in the field.",
+  "file": "screens/v/follow-house-1.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "With a house's host in the field",
+    "at": "2026-11-09T18:10:00Z",
+    "file": "screens/v/follow-house-1.jpg",
+    "what": "A house followed from the ladder: the camera rides with its host into a skirmish."
+   }
+  ]
+ },
+ {
   "id": "interlude",
   "name": "An act ends",
   "group": "Play",
