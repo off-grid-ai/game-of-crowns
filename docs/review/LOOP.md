@@ -43,3 +43,10 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Where we're heading:** bet 1, the paused court once a season with 40 s seasons, after play-feedback finishes and commits its steps 3 and 4 (house colours, name and arrows, edges). Then the camera commit, which frees director.gd so the director can start after court.
 - **Right way?** On the approved order, yes. No fun-bar numbers have been measured since Mac's reign (2.3 petitions a minute, 3.6 decisions a minute). The court is still yearly, so the "room to breathe" line can't move yet.
 - **Verdict:** on course, but stalled by the outage. **Correction:** both sessions told to resume where they stopped; the review dataset research resumed. Check next turn that both are working.
+
+## 2026-11-09, 13:05 (autopilot)
+
+- **What's going on:** The GPU is the bottleneck. One render runs at a time, and both sessions are queued behind it. Phantom Camera is not committed: in battles the lens looked level at the castle across the water instead of down at the clash, a regression the camera session caught. It is timeboxed to 13:25: fixed and filmed by then, or backed out to free director.gd and main.gd. play-feedback holds steps 3 and 4 uncommitted, waiting for its film.
+- **Where we're heading:** commit steps 3 and 4 (read the realm), then Court v2 (bet 1).
+- **Right way?** The order is right. Risk: a large uncommitted batch, and a low-leverage camera move blocking top move 2. No new fun-bar numbers yet.
+- **Verdict:** on course, with one correction already in force (the camera timebox). This turn's supervisor is reviewing play-feedback's uncommitted batch for lost behaviour and UI.md breaches before it lands.
