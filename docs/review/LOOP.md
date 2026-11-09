@@ -196,3 +196,14 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Where we're heading:** names, then the three fixes, filmed together, then performance with a benchmark.
 - **Right way?** Yes, on the review data's order (stability and repetition).
 - **Verdict:** on course.
+
+## 2026-11-09, 16:55 (autopilot, own work)
+
+- **Direction:** one builder, with bets 3–6 queued behind performance, is the throughput risk. The story files are in no one's hands, so this session took bet 6's first item.
+- **Done (this session):** no coin-flip deaths.
+  - Pale Fever and the Poisoned Court now bring the King's death to court as a warning he can answer. Only his choice or his silence ends the reign.
+  - The Inquisition's ban says that silence is taken for guilt.
+  - Checked: the story checker passes, and every fall in the three stories is reached only through a court matter.
+  - Fun bar, Failure feels fair: 3 random falls → 0.
+- **Next own work, in the story files only:** the remaining free answers, then story marches through the ultimatum. The march needs server.js, which play-feedback holds, so that one gets coordinated.
+- **Verdict:** on course; throughput up.
