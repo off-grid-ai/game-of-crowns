@@ -175,3 +175,12 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   4. units.sync builds figures and routes all at once.
   5. Synchronous first-use loads.
 - **Sent to play-feedback** with the proven Godot fixes: per-frame time budgets with await, async navigation bakes, WorkerThreadPool, pooling, threaded loads. Target: no frame over 50 ms at a season turn, a median of at least 30 fps, every behaviour kept.
+
+## 2026-11-09, 16:15 (autopilot)
+
+- **What's going on:**
+  - 2447859: the three review-mark fixes (results at the foot of the screen, seven houses with the fallen dimmed, a bigger heading). Shots still to come.
+  - a14d76f: stutter, first pass. The dips are physics time (30–55 ms per tick at a new scene, snowballing over 8 catch-up steps). Physics now catches up at most 2 steps a frame, and battles too far off to see drop avoidance. Worst frames improved from 2–3 fps to 7.
+  - Not solved: physics spikes from the villagers' avoidance, and a baseline of 70–100 ms process time at distance 60 (15–20 fps).
+- **Decision:** unique names now (small; repetition is the #2 negative-review driver), then back to performance with a reliable benchmark first: a fixed seed and camera path, 3 runs each, the median of medians. Single runs swing 12–20 fps at load 4–7.
+- **Verdict:** on course. Performance needs several passes, and the benchmark makes each pass measurable.
