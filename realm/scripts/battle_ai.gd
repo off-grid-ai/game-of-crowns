@@ -170,6 +170,7 @@ func _knight(k: Dictionary) -> void:
 
 func _process(dt: float) -> void:
 	clock += dt
+	_mind_the_crowd()
 	# The field afterwards: the fallen stay a minute, then the battle is gone.
 	if routed and clock - routed_at > 65.0:
 		root.queue_free()
@@ -698,7 +699,7 @@ func _steer(m: Dictionary, goal: Vector3, speed: float, dt: float, look := Vecto
 	# The crowd is the engine's: Godot's avoidance (NavigationAgent3D, RVO)
 	# turns where he wants to go into a way through the men around him, friend,
 	# foe and the fallen, so nobody walks into or through another.
-	if m.has("agent"):
+	if m.has("agent") and _crowd_on:
 		NavigationServer3D.agent_set_position(m["agent"], n.global_position)
 		NavigationServer3D.agent_set_velocity(m["agent"], want)
 		var safe: Vector3 = m.get("safe", want)
@@ -718,6 +719,35 @@ func _steer(m: Dictionary, goal: Vector3, speed: float, dt: float, look := Vecto
 	face.y = 0
 	if face.length() > 0.001:
 		n.rotation.y = lerp_angle(n.rotation.y, atan2(face.x, face.z), minf(1.0, dt * 5.0))
+
+
+## A battle too far off to make out its men (past people.gd's SEEN_TO, where
+## they aren't drawn) needs no avoidance: its map stops, and each man walks his
+## own way until the camera comes near again. Its every agent answering every
+## physics tick was what froze the frame when a battle began across the realm.
+const CROWD_SEEN := 24.0  # world units, a little past where men are drawn
+var _crowd_on := true
+var _crowd_check := 0.0
+
+
+func _mind_the_crowd() -> void:
+	var cam := get_viewport().get_camera_3d()
+	if cam == null or not _crowd.is_valid() or men.is_empty():
+		return
+	_crowd_check -= get_process_delta_time()
+	if _crowd_check > 0.0:
+		return
+	_crowd_check = 0.5
+	# Where the fight is: the middle of its men (the scene's root sits at the world's origin).
+	var mid := Vector3.ZERO
+	for m in men:
+		mid += (m["node"] as Node3D).global_position
+	mid /= men.size()
+	var d: float = cam.global_position.distance_to(mid)
+	var on := d < (CROWD_SEEN if not _crowd_on else CROWD_SEEN + 4.0)
+	if on != _crowd_on:
+		_crowd_on = on
+		NavigationServer3D.map_set_active(_crowd, on)
 
 
 ## A fighter's place in the crowd, as Godot's avoidance (NavigationServer3D,

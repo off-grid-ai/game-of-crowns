@@ -1136,13 +1136,6 @@ func _tell_effects(list: Array) -> void:
 
 
 func _process(delta: float) -> void:
-	var _probe_t := Time.get_ticks_usec()  # DEBUG-PROBE
-	_process_probed(delta)  # DEBUG-PROBE
-	var _probe_dt := Time.get_ticks_usec() - _probe_t  # DEBUG-PROBE
-	if _probe_dt > 20000: print("DEBUG-PROBE slow ui.gd ms=", _probe_dt / 1000)  # DEBUG-PROBE
-
-
-func _process_probed(delta: float) -> void:  # DEBUG-PROBE
 	_reveal_pad(delta)
 	# The reign's end is the only card while it stands.
 	if _end_panel and _end_panel.visible:

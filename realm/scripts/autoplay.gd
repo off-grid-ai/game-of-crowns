@@ -247,6 +247,13 @@ func _frame_city(title: String, dist: float) -> void:
 ## What a player could tell from the screen right now.
 func _observe() -> Dictionary:
 	var o := {"fps": Engine.get_frames_per_second(), "cam_dist": snappedf(main.rig.distance, 0.1)}
+	# What the frame costs: the scripts' share, what is drawn, how much exists.
+	o["cpu_ms"] = snappedf(Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, 0.1)
+	o["drawn"] = int(Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME))
+	o["nodes"] = int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
+	o["phys_ms"] = snappedf(Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0, 0.1)
+	o["nav_ms"] = snappedf(Performance.get_monitor(Performance.TIME_NAVIGATION_PROCESS) * 1000.0, 0.1)
+	o["agents"] = int(Performance.get_monitor(Performance.NAVIGATION_AGENT_COUNT)) if Performance.has_method("get_monitor") else 0
 	var c: Node = main.control
 	o["walking"] = c != null and c.active
 	if c and c.active:
