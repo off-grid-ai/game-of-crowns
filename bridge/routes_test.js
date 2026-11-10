@@ -82,12 +82,12 @@ export async function stage(ctx, req, res, url) {
     ctx.counselStale = true;
     return json(res, d.threat ? 200 : 400, d.threat ?? { error: `no ${b.threat} can rise now` });
   }
-  // {weather: clear|showers|rain|storm|snow}: the season's weather now (weather.js holds it until the next season's roll).
+  // {weather: clear|showers|rain|storm|snow}: the weather now, held through the seasons until staged again (weather.js).
   if (b.weather) {
     const kinds = ["clear", "showers", "rain", "storm", "snow"];
     if (!kinds.includes(String(b.weather))) return json(res, 400, { error: `weather: ${kinds.join(", ")}` });
     const prev = ctx.meta.weather;
-    ctx.meta.weather = { turn: ctx.world?.turn ?? 0, season: prev?.season ?? "summer", kind: String(b.weather), wet: ["showers", "rain", "storm"].includes(String(b.weather)) ? Math.max(1, (prev?.wet ?? 0)) : 0 };
+    ctx.meta.weather = { turn: ctx.world?.turn ?? 0, season: prev?.season ?? "summer", kind: String(b.weather), wet: ["showers", "rain", "storm"].includes(String(b.weather)) ? Math.max(1, (prev?.wet ?? 0)) : 0, held: true };
     return json(res, 200, { ok: true, weather: ctx.meta.weather });
   }
   if (b.soldiers) {

@@ -30,6 +30,9 @@ export function roll(seed, turn, season) {
 export function advance(meta, turn, season) {
   const w = meta.weather;
   if (w && w.turn === turn) return w;
+  // Weather a test staged holds until staged again (routes_test.js), so a film can
+  // shoot it from every height; a real reign never stages it.
+  if (w?.held) return (meta.weather = { ...w, turn, season });
   const kind = roll(meta.seed ?? 1066, turn, season);
   meta.weather = { turn, season, kind, wet: WET.has(kind) ? (w?.wet ?? 0) + 1 : 0 };
   return meta.weather;
