@@ -1,4 +1,5 @@
 extends Node3D
+const Particles := preload("res://scripts/particles.gd")  # smoke and fire on the GPU
 ## The scene director: turns what just happened in Freeciv into something you
 ## can watch where it happened. Battles clash and leave the fallen; sacked
 ## towns burn while their people flee; famine sends families onto the roads;
@@ -915,10 +916,11 @@ func dust(root: Node3D, p: Vector3, along: Vector3, width: float) -> void:
 	d.position = p
 	d.rotation.y = atan2(along.x, along.z) - PI / 2
 	d.emitting = true
-	root.add_child(d)
-	var tw := d.create_tween()
+	var gd := Particles.to_gpu(d)
+	root.add_child(gd)
+	var tw := gd.create_tween()
 	tw.tween_interval(10.0)
-	tw.tween_callback(func(): d.emitting = false)
+	tw.tween_callback(func(): gd.emitting = false)
 
 
 # --- sieges ------------------------------------------------------------------------------
@@ -1199,8 +1201,9 @@ func _volley(root: Node3D, from: Vector3, at: Vector3, spread: float, r: RandomN
 			d.one_shot = true
 			d.explosiveness = 0.9
 			d.position = land + Vector3(0, 0.05, 0)
-			root.add_child(d)
-			d.emitting = true)
+			var gd := Particles.to_gpu(d)
+			root.add_child(gd)
+			gd.emitting = true)
 	var t := Timer.new()
 	t.wait_time = every
 	t.autostart = true
@@ -1378,10 +1381,10 @@ func _burn(at: Vector3, seconds: float, scale := 1.0) -> void:
 		fire.initial_velocity_min = 0.15
 		fire.initial_velocity_max = 0.35
 		fire.position = p + Vector3(0, 0.2, 0)
-		root.add_child(fire)
+		root.add_child(Particles.to_gpu(fire))
 		var smoke := _puffs(Color(0.12, 0.11, 0.1, 0.75), 30, 6.0, 0.3, 0.8)
 		smoke.position = p + Vector3(0, 0.6, 0)
-		root.add_child(smoke)
+		root.add_child(Particles.to_gpu(smoke))
 		var light := OmniLight3D.new()
 		light.light_color = Color(1.0, 0.5, 0.2)
 		light.light_energy = 0.6
@@ -1674,7 +1677,7 @@ func _feast(at: Vector3, house: Dictionary) -> void:
 	var flame := _puffs(Color(0.5, 0.48, 0.46, 0.22), 10, 3.5, 0.04, 0.09)
 	flame.gravity = Vector3(0.12, 0.06, 0.05)
 	flame.position = centre + Vector3(0, 0.08, 0)
-	root.add_child(flame)
+	root.add_child(Particles.to_gpu(flame))
 	for i in 3:
 		var cask: Node3D = Realistic.make("ph/wine_barrel_01")
 		if cask:

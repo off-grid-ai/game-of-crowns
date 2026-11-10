@@ -1,4 +1,5 @@
 extends RefCounted
+const Particles := preload("res://scripts/particles.gd")  # smoke and fire on the GPU
 ## The life director: turns what Freeciv says a town is doing into something you
 ## can see. Construction rises with its real progress; recruits drill on the
 ## square while troops train; hunger browns the fields and queues people at the
@@ -491,7 +492,7 @@ func _crowd(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 		smoke.mesh = q
 		var fp := camp - dir * 0.12
 		smoke.position = Vector3(fp.x, _y(center, fp) + 0.03, fp.z)
-		life.add_child(smoke)
+		life.add_child(Particles.to_gpu(smoke))
 
 
 ## A turned rectangle, town-local XZ, the way towns.gd records footprints.
@@ -531,7 +532,8 @@ func _bonfire(life: Node3D, center: Vector3) -> void:
 	q.material = m
 	p.mesh = q
 	p.position = Vector3(0, _y(center, Vector3.ZERO) + 0.05, 0)
-	life.add_child(p)
+	var fire_at := p.position
+	life.add_child(Particles.to_gpu(p))
 	var ring: Node3D = Real.make("ph/stone_fire_pit")  # the stones it burns in
 	if ring:
 		ring.position = Vector3(0, _y(center, Vector3.ZERO) - 0.005, 0)
@@ -542,7 +544,7 @@ func _bonfire(life: Node3D, center: Vector3) -> void:
 	light.light_color = Color(1.0, 0.6, 0.3)
 	light.light_energy = 0.9
 	light.omni_range = 1.1
-	light.position = p.position + Vector3(0, 0.2, 0)
+	light.position = fire_at + Vector3(0, 0.2, 0)
 	life.add_child(light)
 
 
@@ -609,7 +611,7 @@ func _unrest(life: Node3D, center: Vector3, rng: RandomNumberGenerator) -> void:
 		q.material = preload("res://scripts/towns.gd").smoke_material(true)
 		p.mesh = q
 		p.position = off + Vector3(0, _y(center, off) + 0.6, 0)
-		life.add_child(p)
+		life.add_child(Particles.to_gpu(p))
 
 
 ## The town's life is street-level detail: drawn only within a short walk of the camera.
