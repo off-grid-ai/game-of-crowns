@@ -5,6 +5,24 @@ description: How code is changed, checked and committed in Game of Crowns (realm
 
 # Engineering
 
+## Before any change: who already solved this? (Mac, 2026-11-10)
+
+Every change, even a one-line fix, passes this gate first. A fix that places, times or decides something by
+hand is a sign we're rebuilding a solved problem.
+
+1. **Name the problem in general terms**: "a horse pulling a cart along a road", "people choosing what to do",
+   "UI that fits any window", "show the player where an event is". Not "the horse is 0.16 off".
+2. **Find how it's solved**, in this order:
+   - Godot itself: nodes and servers (PathFollow3D, AnimationTree, NavigationServer, Containers and anchors,
+     content scaling, Tween, AudioStreamRandomizer, Jolt).
+   - The add-ons we already have (LimboAI for anything that decides or behaves, Sky3D, the water shaders).
+   - Mature free add-ons and asset kits (MIT, CC0): stars, last release, Godot 4.7 fit.
+   - How shipped games do it (Civ, RollerCoaster Tycoon, Warcraft II, CK3, RimWorld, Manor Lords).
+3. **Use that.** Our code only configures and connects it.
+4. **None exists?** Say so in the commit and LOOP.md, and keep the hand-written part small. For anything big,
+   Mac decides first.
+5. **Patching a hand-built part again?** Stop and replace it with the block instead.
+
 1. **Write like the code around it.** GDScript doc comments (`##`) say what a thing is in the game's own words; same naming, density and idiom. Bridge stays plain Node with no npm dependencies.
 2. **Additive.** No unrelated refactors. Ask Mac before a new abstraction, a change to the saved realm's format (`bridge/chronicles/*/state`, `meta.json`) or a migration: old chronicles must still open.
 3. **Glue, not engines.** Our code connects Freeciv, Godot add-ons and assets. A new system needs a reason no existing block covers it.
