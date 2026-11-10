@@ -132,6 +132,14 @@ function load(id) {
   Object.assign(favourWhy, chron.readJson(path.join(P.state, "favour-why.json"), {}));
   deeds = chron.readJson(path.join(P.state, "deeds.json"), {});
   for (const [k, list] of Object.entries(deeds)) if (Array.isArray(list)) for (const x of list) x.d = Math.max(-60, Math.min(60, x.d));
+  // What belongs to this realm only: the scenes playing in it start empty, and its
+  // recent favour changes (with their numbering, so the view's "already shown" holds)
+  // come from its own file, never from the realm open before it.
+  scenes = [];
+  arrivals.clear();
+  effects.length = 0;
+  effects.push(...chron.readJson(path.join(P.state, "effects.json"), []));
+  effectSeq = effects.reduce((m, e) => Math.max(m, Number(e.seq) || 0), 0);
   // The last two years of favour and the season's income, so trends survive a restart.
   const past = chron.readJson(path.join(P.state, "favour-past.json"), {});
   for (const k of Object.keys(favourPast)) delete favourPast[k];
@@ -1594,7 +1602,11 @@ function shiftFavour(changes, why = "", told = false) {
   saveFavour();
   // Every change is seen (UI rule 13): the game shows what moved and why.
   // A decree's own result card already says it ("told"), so the game doesn't repeat it.
-  if (moves.length && why) { effects.push({ seq: ++effectSeq, why, told, moves }); while (effects.length > 20) effects.shift(); }
+  if (moves.length && why) {
+    effects.push({ seq: ++effectSeq, why, told, moves });
+    while (effects.length > 20) effects.shift();
+    if (P) fs.writeFileSync(path.join(P.state, "effects.json"), JSON.stringify(effects));
+  }
 }
 
 // Each house's own history with the crown (the world bible), within the reign's mood.
