@@ -172,11 +172,14 @@ func _control(weights: Array) -> float:
 ## The season's colour for grass and open ground; in winter, snow settles
 ## over the land (SNOW_COVER, in Terrain3D's shader) in the first quarter of
 ## the winter and holds; it melts in the first quarter of the spring.
-func set_grass(tint: Color, snow := false) -> void:
+func set_grass(tint: Color, snow := false, settle := SNOW_SETTLE) -> void:
 	var ta: Terrain3DTextureAsset = land.assets.get_texture_asset(0)
 	if ta == null:
 		return
-	ta.albedo_color = tint
+	if _snow_laid:
+		create_tween().tween_property(ta, "albedo_color", tint, settle)
+	else:
+		ta.albedo_color = tint
 	var goal := 1.0 if snow else 0.0
 	if _snow_laid and is_equal_approx(goal, _snow_to):
 		return
@@ -188,10 +191,10 @@ func set_grass(tint: Color, snow := false) -> void:
 	if _snow_tween:
 		_snow_tween.kill()
 	_snow_tween = create_tween()
-	_snow_tween.tween_method(_set_snow, _snow_now, goal, SNOW_SETTLE)
+	_snow_tween.tween_method(_set_snow, _snow_now, goal, settle)
 
 
-const SNOW_SETTLE := 10.0  # seconds: a quarter of a season (the bridge's turnSeconds, 40)
+const SNOW_SETTLE := 10.0  # seconds, when no settle is given: a quarter of a 40 s season (main.gd passes the realm's own)
 var _snow_now := 0.0
 var _snow_to := 0.0
 var _snow_laid := false

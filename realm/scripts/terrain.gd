@@ -120,7 +120,7 @@ var _snow_fade: Tween
 const OVERLAY_SNOW := false
 
 
-func set_season(name: String, towns: Array = []) -> void:
+func set_season(name: String, towns: Array = [], settle := 10.0) -> void:
 	if not SEASONS.has(name):
 		return
 	if not OVERLAY_SNOW:
@@ -160,11 +160,12 @@ func set_season(name: String, towns: Array = []) -> void:
 				continue
 			if not _leaf_mats.has(mat):
 				_leaf_mats[mat] = mat.albedo_color
-			mat.albedo_color = _leaf_mats[mat] * s[key]
+			# Leaves turn and grass dulls over the settle, never in a frame.
+			create_tween().tween_property(mat, "albedo_color", _leaf_mats[mat] * s[key], settle)
 		if s["snow"] > 0.0 and OVERLAY_SNOW:
 			mmi.material_overlay = _snow  # left on as it melts; the fade takes it to nothing
 	if land3d:
-		land3d.set_grass(s["ground"], s["snow"] > 0.0)
+		land3d.set_grass(s["ground"], s["snow"] > 0.0, settle)
 
 
 ## A town raised after the season was set: give it the season's snow too.

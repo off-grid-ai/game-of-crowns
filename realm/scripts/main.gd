@@ -64,24 +64,19 @@ var _reign_id := ""
 var _first_batch: Array = []
 var _digest_done := false
 var _world_turn := 0
-## The season the land shows: the realm's own, but changed at most once every
-## two minutes. A realm season passes in seconds, too fast for snow to settle or
-## leaves to turn, so the land takes up whatever season it is when its two
-## minutes are up, and holds it.
-const LOOK_SEASON_SECONDS := 120.0
-var _look_season := ""
-var _look_since := 0
-
-
+## The season the land shows: the realm's own (the mirror's), the same one the
+## date and the court speak of. Each change settles over a quarter of a season
+## (SEASON_SETTLE), then holds, so the land turns without flickering.
 func look_season(world: Dictionary) -> String:
 	if _shot.has("season"):
 		return String(_shot["season"])
-	var now := Time.get_ticks_msec()
-	var real := String(world.get("date", {}).get("season", "summer"))
-	if _look_season == "" or (real != _look_season and now - _look_since >= int(LOOK_SEASON_SECONDS * 1000.0)):
-		_look_season = real
-		_look_since = now
-	return _look_season
+	var mirror := String(awareness.realm.get_var(&"season", "", false)) if awareness else ""
+	return mirror if mirror != "" else String(world.get("date", {}).get("season", "summer"))
+
+
+## How long the land takes to settle into a new season: a quarter of the realm's season.
+func season_settle(world: Dictionary) -> float:
+	return maxf(2.0, float(world.get("turnSeconds", 40)) / 4.0)
 
 
 var _snowed := -1  # town count when the season was last laid on them
@@ -764,7 +759,7 @@ func _on_world(world: Dictionary) -> void:
 	var season := look_season(world)
 	if season != terrain.season or towns.towns.size() != _snowed:
 		_snowed = towns.towns.size()
-		terrain.set_season(season, towns.towns.values().map(func(t): return t["node"]))
+		terrain.set_season(season, towns.towns.values().map(func(t): return t["node"]), season_settle(world))
 	# Roads and the countryside each in a frame of their own, so laying them
 	# out never holds the window for seconds at once.
 	if not _laying:
@@ -785,7 +780,7 @@ func _on_world(world: Dictionary) -> void:
 			print("LANES %d trees, %d ms" % [n, Time.get_ticks_msec() - t0])
 			await get_tree().process_frame
 		Engine.set_meta("stage", "countryside")
-		countryside.SEASON_SECONDS = LOOK_SEASON_SECONDS
+		countryside.SEASON_SECONDS = float(world.get("turnSeconds", 40))  # crops ripen over the realm's own season
 		countryside.build(world.get("cities", []))
 		if Time.get_ticks_msec() - tt > 500:
 			print_verbose("BUILD roads+countryside %d ms" % (Time.get_ticks_msec() - tt))
