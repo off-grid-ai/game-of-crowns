@@ -98,15 +98,15 @@ func _process_timed(delta: float) -> void:
 		_others_at = 0.25
 		_avoid_others()
 	var t := Time.get_ticks_msec() * 0.001
-	# Those near the camera move every frame; the rest, too far off to be seen
-	# clearly or not drawn at all, one frame in AnimLOD.STRIDE with the time they're owed.
+	# A body moves on the frames its legs step (anim_lod.gd decides, one rule):
+	# every frame near the camera, further off one in AnimLOD.STRIDE with the
+	# time they're owed. Moved on a phase of its own, it stood still two frames
+	# and jumped on the third while its stride played every frame.
 	_frame += 1
-	var cam := get_viewport().get_camera_3d()
-	var eye := cam.global_position if cam else Vector3.INF
 	for id in crowds:
 		for a in crowds[id]:
 			var owed: float = a.get("owed", 0.0) + delta
-			if eye != Vector3.INF and (a["node"] as Node3D).global_position.distance_squared_to(eye) > AnimLOD.NEAR * AnimLOD.NEAR and (_frame + int(a["i"])) % AnimLOD.STRIDE != 0:
+			if not AnimLOD.moves_now(a["node"]):
 				a["owed"] = owed
 				continue
 			a["owed"] = 0.0

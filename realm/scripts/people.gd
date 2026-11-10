@@ -63,7 +63,11 @@ const BODIES := {
 ## Never cast, whatever a list elsewhere says (asset-audit.md's never-use
 ## list, plain medieval: Mac, 2026-11-10): modern dress, fantasy armour and
 ## faces, bare chests. Bodies and outfits alike; the one place it's kept.
-const NEVER := ["erika", "erika_bow", "arissa", "eve", "akai", "ganfaul", "uriel", "dreyar", "brute", "fuse_woman_1", "Female_Ranger"]
+## Paladin and paladin_prop (dark fantasy plate) and heraklios (a gas-mask
+## look) failed the judge's body sheet (v11): soldiers and knights wear the
+## knight's mail and surcoat, or the Ranger's hood and leather.
+const NEVER := ["erika", "erika_bow", "arissa", "eve", "akai", "ganfaul", "uriel", "dreyar", "brute", "fuse_woman_1", "Female_Ranger",
+	"paladin", "paladin_prop", "heraklios"]
 ## How many people made just before are "beside" the next: the scenes, knots
 ## and rows that set people down make them one after another, so the last few
 ## made are the ones they'll stand next to.
