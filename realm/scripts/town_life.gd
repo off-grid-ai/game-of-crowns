@@ -131,6 +131,21 @@ func _y(center: Vector3, off: Vector3) -> float:
 
 
 const ROOM := 0.11  # world units between two people standing (about 0.9 m): shoulders never meet
+const LANE := 0.06  # past a road's verge, ground the travellers on it keep: nobody stands there
+const HEART := 0.2  # about 1.7 m round a town's heart, where every road's travellers come through and wait
+
+
+## Whether `world` is on a road's lane through the town (roads.gd: a road or
+## track, and LANE past its verge) or at the town's heart, where travellers
+## from every road meet: no one claims, steps or stands there to be walked through.
+static func on_lane(root: Node3D, world: Vector3) -> bool:
+	if root == null or not root.is_inside_tree():
+		return false
+	if Vector2(world.x - root.global_position.x, world.z - root.global_position.z).length() < HEART:
+		return true
+	var holder := root.get_parent().get_parent() if root.get_parent() else null  # the towns' owner (main.gd), which keeps the roads
+	var roads = holder.get("roads") if holder else null
+	return roads != null and roads.has_method("on_path") and roads.on_path(world, LANE)
 ## The way a camera faces as it comes down into a town (camera_rig.frame_town
 ## stands it at yaw 35 degrees, looking back at the heart): the half of the
 ## square it sees first. Dressing that tells the town's news goes there.
@@ -166,14 +181,14 @@ func _open(center: Vector3, p: Vector3, walls: Array, taken: PackedVector2Array)
 
 ## The nearest open spot to `want` (town-local), searching outward in rings;
 ## NAN in x when there is none within reach, and that person isn't placed.
-func _spot(center: Vector3, want: Vector3, walls: Array, taken: PackedVector2Array, reach := 0.4) -> Vector3:
+func _spot(center: Vector3, want: Vector3, walls: Array, taken: PackedVector2Array, reach := 0.4, lanes: Node3D = null) -> Vector3:
 	var r := 0.0
 	while r <= reach:
 		var n := 1 if r == 0.0 else int(TAU * r / 0.05)
 		for i in n:
 			var a := TAU * i / n
 			var p := want + Vector3(cos(a), 0, sin(a)) * r
-			if _open(center, p, walls, taken):
+			if _open(center, p, walls, taken) and (lanes == null or not on_lane(lanes, center + p)):
 				p.y = _y(center, p)
 				return p
 		r += 0.05
@@ -184,7 +199,7 @@ func _spot(center: Vector3, want: Vector3, walls: Array, taken: PackedVector2Arr
 ## the life's list of who stands where; null when there's no room.
 func _stand(root: Node3D, life: Node3D, center: Vector3, want: Vector3, role: String, anim: String, seed: int, tint := Color.WHITE, reach := 0.4) -> Node3D:
 	var taken: PackedVector2Array = life.get_meta("standing")
-	var p := _spot(center, want, _blocked(root, life), taken, reach)
+	var p := _spot(center, want, _blocked(root, life), taken, reach, root)  # a person: never on a road's lane
 	if is_nan(p.x):
 		return null
 	taken.append(Vector2(p.x, p.z))

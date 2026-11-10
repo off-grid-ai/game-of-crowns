@@ -44,7 +44,10 @@ const TOOLS := {
 	"axe": KINDS["axe"],
 	# Asked for, not yet on disk: a move that needs one is never picked until it lands (can_play).
 	"lute": {"path": "res://assets/props/tools/lute/lute.gltf", "length": 0.8, "tip": Vector3(0, 1, 0), "edge": Vector3(1, 0, 0), "grip": 0.7},
-	"barrow": {"path": "res://assets/props/tools/barrow/barrow.gltf", "length": 1.4, "tip": Vector3(0, 0, -1), "edge": Vector3(1, 0, 0), "grip": 0.05},
+	# The market pack's handcart (Sketchfab, CC-BY), pushed as a barrow: it lies tilted in the pack,
+	# handles to wheel along `tip`, axle along `edge`; held running forward from the fingers ("ahead").
+	"barrow": {"path": "res://assets/realistic/medieval_market_asset_pack/scene.gltf", "keep": ["Handcart_Handcart_Wood_0", "Handcart_Handcart_Metal_0"],
+		"length": 1.5, "tip": Vector3(0.48, 0.24, 0.84), "edge": Vector3(0.87, 0, -0.49), "grip": 0.03, "hold": "ahead"},
 }
 ## One row per move that needs something in hand: the tool, and the hand.
 ## The tool is in the hand exactly while the move plays (motion.gd asks).
@@ -131,7 +134,11 @@ static func hold_for(person: Node3D, clip: String) -> void:
 	var left: bool = row[1] == "Left"
 	if held(person) != "" and not left:
 		left = true  # the sword stays in the right hand
-	_hold(skel, row[0], ("Left" if left else "Right") + "Hand", _hand_frame(left), "Tool")
+	var socket := _hand_frame(left)
+	if String(TOOLS[row[0]].get("hold", "")) == "ahead":
+		# Out along the fingers, not across the palm: a barrow's handles run forward from the hands.
+		socket = Transform3D(_frame(Vector3(0, 1, 0), Vector3(-1 if left else 1, 0, 0)), Vector3(0, 0.075, 0.03))
+	_hold(skel, row[0], ("Left" if left else "Right") + "Hand", socket, "Tool")
 	person.set_meta("tool", String(row[0]))
 
 

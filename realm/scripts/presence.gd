@@ -106,7 +106,9 @@ func _look_round() -> void:
 		var look: LookAtModifier3D = n.find_child("Glance", true, false)
 		var st: Dictionary = _looks.get(n.get_instance_id(), {})
 		var who = st.get("who", null)
-		var keep: bool = not busy and who is Node3D and is_instance_valid(who) and now < float(st.get("until", 0.0)) \
+		if not is_instance_valid(who):
+			who = null  # gone (despawned, or the town rebuilt): checked before anything else asks what it is
+		var keep: bool = not busy and who is Node3D and now < float(st.get("until", 0.0)) \
 			and _flat(n, who).length() < NOTICE * 1.6
 		if not keep:
 			who = null

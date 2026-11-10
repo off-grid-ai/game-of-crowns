@@ -755,6 +755,8 @@ func _claim(a: Dictionary, key: String, clear: float) -> Vector3:
 				continue  # under a stall or a wall
 			if town_node and not nav.inside(town_node, Vector3(c.x + q.x, 0, c.z + q.y)).is_empty():
 				continue  # in a fire, a cart or a table the walk map doesn't know of yet
+			if town_node and TownLife.on_lane(town_node, Vector3(c.x + q.x, 0, c.z + q.y)):
+				continue  # on a road's lane: travellers would walk through them
 			var clear_here := true
 			for gp: Vector2 in goals:
 				if gp.distance_to(q) < clear:
@@ -820,7 +822,7 @@ func _square_count() -> void:
 ## CHECK line every five seconds, with the worst seen so far.
 var _crowd_probe := OS.get_cmdline_user_args().has("--crowdprobe")
 const PERSONAL := 0.06  # world units: half a metre at town scale (a person is ~0.22 tall)
-var _crowd := {"min": INF, "worst": INF, "under": 0, "pairs": {}, "frames": 0, "who": "", "in_fire": 0, "fire_who": {}, "fires": 0, "in_building": 0, "building_who": {}}
+var _crowd := {"min": INF, "worst": INF, "under": 0, "pairs": {}, "frames": 0, "who": "", "in_fire": 0, "fire_who": {}, "fires": 0, "in_building": 0, "building_who": {}, "traveller": 0, "traveller_who": {}}
 
 
 func _crowd_check() -> void:
@@ -863,6 +865,10 @@ func _crowd_check() -> void:
 					_crowd["who"] += " [%s | %s]" % [folk[i].get_path(), folk[j].get_path()]  # on one spot: which nodes, in full
 			_crowd["min"] = minf(float(_crowd["min"]), d)
 			if d < PERSONAL:
+				if _travelling(folk[i]) or _travelling(folk[j]):
+					_crowd["traveller"] = int(_crowd.get("traveller", 0)) + 1
+					var tk := "%s + %s" % [_who(folk[i]), _who(folk[j])]
+					_crowd["traveller_who"][tk] = int(_crowd["traveller_who"].get(tk, 0)) + 1
 				var key := "%s + %s" % [_who(folk[i]), _who(folk[j])]
 				_crowd["pairs"][key] = int(_crowd["pairs"].get(key, 0)) + 1
 				_crowd["under"] = int(_crowd["under"]) + 1
@@ -890,6 +896,9 @@ func _crowd_report() -> void:
 		print("CHECK news dressing: %s" % dress)
 	print("CHECK people in a fire: %d person-frames inside the reach of %d lit fires; %s" % [int(_crowd["in_fire"]), int(_crowd["fires"]), (_crowd["fire_who"] as Dictionary).keys().slice(0, 4)])
 	print("CHECK people in a building or stall: %d person-frames; %s" % [int(_crowd["in_building"]), (_crowd["building_who"] as Dictionary).keys().slice(0, 4)])
+	print("CHECK travellers through people: %d pair-frames under 0.5 m; %s" % [int(_crowd["traveller"]), (_crowd["traveller_who"] as Dictionary).keys().slice(0, 3)])
+	_crowd["traveller"] = 0
+	_crowd["traveller_who"] = {}
 	_crowd["in_fire"] = 0
 	_crowd["fire_who"] = {}
 	_crowd["in_building"] = 0
@@ -898,6 +907,16 @@ func _crowd_report() -> void:
 	_crowd["under"] = 0
 	_crowd["pairs"] = {}
 	_crowd["frames"] = 0
+
+
+## A road traveller (scenes.gd's carters and walkers on a PathFollow3D).
+static func _travelling(n: Node) -> bool:
+	var p := n.get_parent()
+	while p:
+		if p is PathFollow3D:
+			return true
+		p = p.get_parent()
+	return false
 
 
 ## In a castle's open bailey (towns.gd "yards"): inside its footprint, but open ground.
@@ -1116,7 +1135,7 @@ func route_to(a: Dictionary, target: Vector3) -> void:
 	# free spot on rings widening out from it, each on open ground as asked (a
 	# point the walk map would push back onto its edge is no spot: that's how
 	# a row of people ends up on one line).
-	if _spoken_for(a, goal):
+	if _spoken_for(a, goal) or _on_lane(a, goal):
 		var start := rng.randf() * TAU
 		var found := false
 		for ring in range(1, 9):
@@ -1125,7 +1144,7 @@ func route_to(a: Dictionary, target: Vector3) -> void:
 			for i in slots:
 				var want := goal + Vector2.from_angle(start + TAU * i / slots) * r
 				var q := nav.closest(map, want)
-				if q.distance_to(want) > 0.03 or _spoken_for(a, q):
+				if q.distance_to(want) > 0.03 or _spoken_for(a, q) or _on_lane(a, q):
 					continue
 				goal = q
 				found = true
@@ -1946,6 +1965,13 @@ func _talk_audit() -> void:
 static func _able(moves: Array, rng: RandomNumberGenerator) -> String:
 	var ok := moves.filter(func(m): return Weapons.can_play(m))
 	return ok[rng.randi() % ok.size()] if not ok.is_empty() else "Idle"
+
+
+## True when `p` (town-local) is on a road's lane or the town's heart (town_life.on_lane).
+func _on_lane(a: Dictionary, p: Vector2) -> bool:
+	var town_node: Node3D = towns.towns.get(a["town"], {}).get("node")
+	var c: Vector3 = a["center"]
+	return is_instance_valid(town_node) and TownLife.on_lane(town_node, Vector3(c.x + p.x, 0, c.z + p.y))
 
 
 ## True when another villager of the town stands on `p` (town-local) now.

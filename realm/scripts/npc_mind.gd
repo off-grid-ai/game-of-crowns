@@ -150,7 +150,7 @@ class Step extends BTAction:
 	static func in_the_way(agent: Node, bb: Blackboard, at: Vector3) -> bool:
 		var life := agent.get_parent()
 		if life and life.name == "Life" and life.get_parent() is Node3D:
-			return not TownNav.inside(life.get_parent(), at).is_empty()
+			return not TownNav.inside(life.get_parent(), at).is_empty() or load("res://scripts/town_life.gd").on_lane(life.get_parent(), at)
 		var v = bb.get_var(&"vill", null, false)
 		if v != null and "towns" in v and v.towns != null:
 			return not TownNav.clear(v.towns, at)
