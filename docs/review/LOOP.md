@@ -632,3 +632,20 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - cinematics read the rig's ground-view rule instead of a drifted copy.
 - **Weather:** the mirror reads /world's weather when the bridge sends it. Rain empties the square (c6a3845).
 - **Verdict:** on course. Round 3 checks that the camera and dressing took.
+
+## 2026-11-10, autopilot (street camera landed; round 3 filming the fixes)
+
+- **Landed:**
+  - **2a6ce93:** the street-level camera, seen working in round 2. Faces, poses and talk read, and there's snow underfoot in winter.
+  - **C2:** villagers (59dfd99) and scenes (3d550e9) have public surfaces.
+  - **d52f30b:** the tile harness step.
+- **Round 2:**
+  - king Good and Cruel, wounded and fortified soldiers, grow and evening filmed;
+  - the truce target failed (no court in 80 s) and cut scars and turn, so they're refilmed in round 4;
+  - Eve fails her eye check (modern clothes) and keeps no roles.
+- **The judge's four fixes** (written and compiling, in round 3 now):
+  - crowding: scene folk's spots count as taken, and the room limits are down;
+  - captions: 13 px serif, soft backing, about 4 s;
+  - clothes: dyes on both Fuse civilians and Svend, and tinted materials shared per colour, which also cuts per-person material copies;
+  - framing on the soldiers.
+- **Verdict:** on course. What a player sees is improving every round, measured on film.
