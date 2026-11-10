@@ -806,16 +806,27 @@ var _realm_sig := ""
 
 
 ## Repaints territory from Freeciv's owner layer (one "-,0,3,…" row per map
-## line) and the houses' wars. players: world players with house and atWarWith.
+## line) and the houses' wars. players: world players with house and wars (the
+## bridge's one reading of who is at war: a truce the King commanded, or a loyal
+## house's old diplomacy with the crown, isn't one; Freeciv's raw atWarWith is).
 func set_realm(owners: Array, players: Array) -> void:
 	if _land_mat == null or owners.size() != height or (USE_TERRAIN3D and (land3d == null or land3d.land == null)):
 		return  # (the 3D land is still being raised: the next reading paints it)
 	var wars := {}
 	var colour := {}
 	for p in players:
-		wars[int(p["id"])] = p.get("atWarWith", [])
+		wars[int(p["id"])] = []
 		var h: Dictionary = p.get("house", {})
 		colour[int(p["id"])] = Color(0, 0, 0, 0) if h.get("wild", false) else Color.from_string(String(h.get("color", "#888")), Color.GRAY)
+	# The bridge names the foes ("Wolfholt", "the Crown"); the map wants their ids.
+	var by_name := {}
+	for p in players:
+		var h: Dictionary = p.get("house", {})
+		by_name["the Crown" if h.get("crown", false) else String(h.get("name", "")).trim_prefix("House ")] = int(p["id"])
+	for p in players:
+		for foe in p.get("wars", []):
+			if by_name.has(String(foe)):
+				wars[int(p["id"])].append(by_name[String(foe)])
 	var sig := str(hash(owners)) + str(hash(wars))
 	if sig == _realm_sig:
 		return
