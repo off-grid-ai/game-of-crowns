@@ -150,18 +150,36 @@ function breaks(ctx, d, turn) {
   d.rest = DIRECTOR.breather;
 }
 
-// A decree given (routes_decree.js): if it answers the threat at its place, the threat passes.
+// A decree given (routes_decree.js), weighed against the threat (data answers):
+// one that ends it ends it; a cheap gesture only buys a season or two, which the
+// lord remembers; grain eases a famine, and ends it only if enough arrives in time.
 export function answered(meta, cmd, world, record) {
   const th = meta?.director?.threat;
   if (!th) return false;
   const spec = DIRECTOR.threats[th.kind];
+  const ans = spec.answers[cmd.action];
+  if (!ans) return false;
   const city = world?.cities?.find((c) => c.id === Number(cmd.city));
-  const here = city && (city.id === th.city || (th.kind !== "famine" && city.owner === th.house));
-  if (!here || !(cmd.action in spec.answers)) return false;
-  record({ turn: world?.turn ?? 0, kind: "court", text: `${fill(spec.passed, th)}.`, city: th.city });
-  meta.director.last = th.kind;
-  meta.director.threat = null;
-  meta.director.rest = DIRECTOR.breather;
+  const here = ans.anywhere || (ans.toHouse && Number(cmd.to) === th.house) || (city && (city.id === th.city || (th.kind !== "famine" && city.owner === th.house)));
+  if (!here) return false;
+  const turn = world?.turn ?? 0;
+  const pass = () => {
+    record({ turn, kind: "court", text: `${fill(spec.passed, th)}.`, city: th.city });
+    meta.director.last = th.kind;
+    meta.director.threat = null;
+    meta.director.rest = DIRECTOR.breather;
+  };
+  if (ans.ends) pass();
+  else if (ans.ease) {
+    th.level = Math.max(0, th.level - ans.ease);
+    if (th.level <= 0.01) pass();
+    else record({ turn, kind: "court", text: `The King's grain reaches ${th.townName}; the hunger eases, but it is not over.`, city: th.city });
+  } else if (ans.delay) {
+    const seasons = th.n >= 6 && ans.bigDelay ? ans.bigDelay : ans.delay;
+    th.level = Math.max(0, th.level - spec.grow * seasons);
+    th.bought = (th.bought ?? 0) + 1;
+    record({ turn, kind: "court", text: `${th.houseName} takes the King's gift and waits at ${th.townName}${th.bought > 1 ? ", and asks for more" : ""}. The host is not sent home.`, city: th.city });
+  }
   chron.saveMeta(meta);
   return true;
 }
@@ -176,7 +194,8 @@ export function matter(meta) {
     urgency: Math.round(70 + th.level * 30), occur: th.since, kind: `threat:${th.kind}`,
     text: fill(spec.says[stage], th), why: fill(spec.why, th),
     place: { city: th.city, x: th.x, y: th.y, name: th.townName },
-    acts: Object.entries(spec.answers).map(([action, label]) => ({ label, action, city: th.city })),
+    // The Hand offers what one order can do; a grant or a match (which need the King's own town, or a second house) he gives from a town's card.
+    acts: Object.entries(spec.answers).filter(([action, a]) => !a.toHouse && action !== "marriage").map(([action, a]) => ({ label: a.label, action, ...(a.anywhere ? {} : { city: th.city }) })),
   };
 }
 

@@ -1,5 +1,5 @@
 {
-  "_": "The storyteller's pace (director.js; Left 4 Dead's director, CK3's pushback). tension: 0 calm to 1 the realm on fire (wars between the houses, towns rioting or starving, a usurper, the threat itself). After quietSeasons seasons under quietBelow, one threat rises at a place and grows by its grow each season until the King answers it there (an order in answers, at one of its towns) or it breaks at 1. After it passes or breaks, breather seasons of rest. says: what the realm reports as it grows (by level), {house} {town} {n}; answers: the orders that answer it, with the Hand's words for each. pushback: a King too comfortable (peace, purse in gold, the houses' mean favour all at or over these) draws envy every few seasons: the strongest other house cools by envy and a threat comes sooner.",
+  "_": "The storyteller's pace (director.js; Left 4 Dead's director, CK3's pushback). tension: 0 calm to 1 the realm on fire (wars between the houses, towns rioting or starving, a usurper, the threat itself). After quietSeasons seasons under quietBelow, one threat rises at a place and grows by its grow each season until the King answers it there (an order in answers, at one of its towns) or it breaks at 1. After it passes or breaks, breather seasons of rest. says: what the realm reports as it grows (by level), {house} {town} {n}; answers: the orders that answer it at its place, each in proportion (no cheap gesture dissolves a threat): ends ends it; delay buys that many seasons (bigDelay against a host of 6 companies or more), and the lord remembers it; ease takes that much off it, and it ends only if that brings it to nothing before it lands; anywhere: given at Kingsmere (the banners, the levy), not at the place; toHouse: given to the threat's house (a grant), wherever the town. pushback: a King too comfortable (peace, purse in gold, the houses' mean favour all at or over these) draws envy every few seasons: the strongest other house cools by envy and a threat comes sooner.",
   "quietBelow": 0.3,
   "quietSeasons": 3,
   "breather": 2,
@@ -11,7 +11,15 @@
       "broke": "{house}'s host marches out of {town}, against the crown's towns",
       "passed": "{house}'s host at {town} goes home",
       "why": "An army does not gather for nothing. Answer it now, at {town}, or it marches.",
-      "answers": { "gift": "Buy them off with crowns", "feast": "Feast them back to the crown", "alliance": "Bind them by oath", "march": "Break the host before it marches" }
+      "answers": {
+        "gift": { "label": "Buy a season with crowns", "delay": 2, "bigDelay": 1 },
+        "feast": { "label": "Feast them, and buy a season", "delay": 2, "bigDelay": 1 },
+        "alliance": { "label": "Bind them by oath", "ends": true },
+        "marriage": { "label": "Bind them by marriage", "ends": true },
+        "banners": { "label": "Call the banners to match their host", "ends": true, "anywhere": true },
+        "levy": { "label": "Raise the royal levy to match their host", "ends": true, "anywhere": true },
+        "march": { "label": "Break the host before it marches", "ends": true }
+      }
     },
     "famine": {
       "weight": 3,
@@ -20,7 +28,9 @@
       "broke": "Famine spreads from {town} through {house}'s lands",
       "passed": "The King's grain reaches {town}, and the hunger eases",
       "why": "A hungry town shrinks, riots and blames its King. Grain now costs less than a rising later.",
-      "answers": { "relief": "Send grain from the royal stores" }
+      "answers": {
+        "relief": { "label": "Send grain from the royal stores", "ease": 0.45 }
+      }
     },
     "pretender": {
       "weight": 2,
@@ -29,7 +39,12 @@
       "broke": "{house} proclaims a pretender at {town}; every house is asked to choose",
       "passed": "The pretender's banners at {town} come down",
       "why": "A claim left unanswered gathers friends. Bind {house} to the crown, or shame them.",
-      "answers": { "ward": "Take a ward from them", "alliance": "Bind them by oath", "feast": "Honour them at a feast" }
+      "answers": {
+        "grant": { "label": "Grant them land to quiet the claim", "ends": true, "toHouse": true },
+        "marriage": { "label": "Wed the claim into the crown's line", "ends": true },
+        "ward": { "label": "Take their heir as a royal ward", "ends": true },
+        "march": { "label": "Put down the claim by force", "ends": true }
+      }
     }
   },
   "pushback": { "peace": 0.8, "purse": 600, "favour": 55, "every": 6, "envy": 6 }
