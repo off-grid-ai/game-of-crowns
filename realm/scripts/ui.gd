@@ -571,6 +571,29 @@ func _build_top_bar() -> void:
 	_aim.mouse_filter = Control.MOUSE_FILTER_PASS
 	_aim.visible = false
 	who.add_child(_aim)
+	# How far along: a thin gold fill and the count in the realm's words ("7 of 12 companies").
+	_aim_how = HBoxContainer.new()
+	_aim_how.add_theme_constant_override("separation", 8)
+	_aim_how.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_aim_how.visible = false
+	var aim_track := ColorRect.new()
+	aim_track.color = Color(T.ACCENT, 0.22)
+	aim_track.custom_minimum_size = Vector2(120, 4)
+	aim_track.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	aim_track.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_aim_fill = ColorRect.new()
+	_aim_fill.color = T.ACCENT
+	_aim_fill.size = Vector2(0, 4)
+	_aim_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	aim_track.add_child(_aim_fill)
+	_aim_how.add_child(aim_track)
+	_aim_count = Label.new()
+	_aim_count.add_theme_font_override("font", T.mono)
+	_aim_count.add_theme_font_size_override("font_size", 11)
+	_aim_count.add_theme_color_override("font_color", Color(T.ACCENT, 0.85))
+	_aim_count.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_aim_how.add_child(_aim_count)
+	who.add_child(_aim_how)
 	when.add_child(who)
 	# Click the date and the story's line for the story so far.
 	var date_pill := when.get_parent() as Control
@@ -2061,6 +2084,10 @@ var _ways := {}  # reading -> its arrow
 var _earning: Label
 var _last_act: Label  # the last act's threat, named at three quarters of the reign
 var _aim: Label  # the royal ladder's current aim
+var _aim_how: HBoxContainer  # how far along the aim is: a fill and a count
+var _aim_fill: ColorRect
+var _aim_count: Label
+var _aim_frac := -1.0  # the fill shown, eased toward the real one
 var _aim_told := ""  # the last aim met, toasted once
 var _last_act_told := ""
 
@@ -2101,6 +2128,16 @@ func _show_heading(r: Dictionary) -> void:
 	if aim is Dictionary:
 		_aim.text = "◆ %s" % String(aim.get("text", ""))
 		_aim.tooltip_text = String(aim.get("how", "")) + ("\nAim %d of %d" % [int(aim.get("n", 0)), int(aim["of"])] if aim.get("of") != null else "")
+	var prog = aim.get("progress") if aim is Dictionary else null
+	_aim_how.visible = prog is Dictionary
+	if prog is Dictionary:
+		_aim_count.text = String(prog.get("text", ""))
+		var f := clampf(float(prog.get("frac", 0.0)), 0.0, 1.0)
+		# The fill grows to its new mark rather than jumping, so a step forward is seen.
+		if not is_equal_approx(f, _aim_frac):
+			var tw := create_tween()
+			tw.tween_property(_aim_fill, "size:x", 120.0 * f, 0.6 if _aim_frac >= 0.0 else 0.0).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+			_aim_frac = f
 	var done = r.get("aimDone")
 	if done != null and String(done) != _aim_told:
 		_aim_told = String(done)

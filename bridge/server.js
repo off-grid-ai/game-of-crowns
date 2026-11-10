@@ -729,7 +729,7 @@ function counsel(players, cities, threat) {
       cold
         ? (keeper ? { label: `Send ${keeper.house.name.replace(/^House /, "")} to keep the peace`, action: "settle", city: seatOf(war.id)?.id, to: foe.id } : null)
         : { label: "Command peace", action: "peace", city: seatOf(war.id)?.id, to: foe.id },
-      { label: `Back ${weak.house.name.replace(/^House /, "")}, the weaker`, action: "back", city: seatOf(weak.id)?.id, to: strong.id },
+      { label: `Back ${weak.house.name.replace(/^House /, "")}, the weaker (${((weak.units ?? 0) * 200).toLocaleString("en-US")} men to ${((strong.units ?? 0) * 200).toLocaleString("en-US")})`, action: "back", city: seatOf(weak.id)?.id, to: strong.id },
       { label: "Sit it out", ui: "sitout", war: `${war.id}:${foe.id}` },
       { label: "Wed them to each other", action: "marriage", city: seatOf(war.id)?.id, to: foe.id },
     ].filter((a) => a && (a.ui || a.city !== undefined));
@@ -1080,7 +1080,7 @@ function docket() {
     const owner = ownerOf(o);
     const lord = owner ? court.lordOfHouse(owner.id) : null;
     return { id: `hand:${key}`, hand: true, key, crisis: m.crisis, sitting: m.sitting, text: o.text, why: o.why, acts: o.acts,
-      name: lord?.name ?? "The Hand of the King", house: lord ? houseFor(owner).name : "", from: lord?.id ?? null, due: null };
+      name: lord?.name ?? "The Hand of the King", house: lord ? houseFor(owner).name : "", from: lord?.id ?? null, who: lord ? court.sitter(lord.id) : null, due: null };
   }).filter(Boolean).sort((a, b) => Number(b.crisis) - Number(a.crisis));
   // No fuse at court: the realm holds while it sits, so no timer would tell true.
   const pets = court.open().filter((p) => p.called != null).map((p) => ({ ...p, due: null, sitting: p.called, counsel: handLine(p), push: !!c.push }));
@@ -1664,6 +1664,40 @@ function nextAim() {
 const aimMet = (a) => a.met ? a.met() : a.pid != null ? favourOf(a.pid) >= a.to : a.city != null ? (world.cities.find((x) => x.id === a.city)?.buildings ?? []).includes(a.building) : false;
 const aimNow = () => meta.ladder ? (LADDER[meta.ladder.i] ?? meta.ladder.dyn ?? null) : null;
 
+// How far along the King is toward his aim, in the realm's words with a fill:
+// "7 of 12 companies", "Highfell at 55 of 70", "rising · 57%". Null when the aim
+// is all-or-nothing and nothing is under way.
+function aimProgress(a) {
+  const crown = crownOf();
+  if (!a || !crown || !world) return null;
+  const works = (pred) => Object.entries(meta.works ?? {}).find(([id, w]) => pred(Number(id), w.building));
+  const rising = (found) => {
+    if (!found) return { text: "not begun", frac: 0 };
+    const [, w] = found;
+    const f = Math.min(0.99, (w.seasons - w.left + Math.min(1, (Date.now() - w.since) / (turnSeconds * 1000))) / w.seasons);
+    return { text: `rising · ${w.left} season${w.left === 1 ? "" : "s"} left`, frac: f };
+  };
+  const seat = world.cities.find((x) => x.owner === crown.id && x.capital);
+  const favourTo = (pid, to) => { const f = Math.round(favourOf(pid)); return { text: `${houseFor(world.players.find((p) => p.id === pid)).name} at ${f} of ${to}`, frac: Math.max(0, Math.min(1, f / to)) }; };
+  switch (a.key) {
+    case "host": { const n = (world.units ?? []).filter((u) => u.owner === crown.id && SOLDIER(u)).length; return { text: `${Math.min(n, 12)} of 12 companies`, frac: Math.min(1, n / 12) }; }
+    case "friend": {
+      const best = world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown).sort((x, y) => favourOf(y.id) - favourOf(x.id))[0];
+      return best ? favourTo(best.id, 70) : null;
+    }
+    case "granary": return rising(works((id, b) => id === seat?.id && b === "Granary"));
+    case "walls": return rising(works((id, b) => id === seat?.id && b === "City Walls"));
+    case "market": return rising(works((_, b) => b === "Marketplace"));
+    case "town": {
+      const s = (meta.campaigns ?? [])[0];
+      return s ? { text: `the host before ${cityName(s.city)}`, frac: Math.min(0.9, ((world.turn ?? s.turn) - s.turn + 0.5) / (2 + (s.extra ?? 0))) } : null;
+    }
+  }
+  if (a.pid != null) return favourTo(a.pid, a.to);
+  if (a.city != null) return rising(works((id, b) => id === a.city && b === a.building));
+  return null;
+}
+
 function ladder() {
   if (meta.status !== "running" || !world || !crownOf()) return;
   // Aims already true when the reign begins are passed over: the King is never asked for what he has.
@@ -1896,13 +1930,14 @@ function endReign(why, outcome = "completed") {
 setInterval(() => {
   // The court holds the realm while the King watches; left alone, the realm lives on.
   if (meta?.court?.sitting != null || (meta?.status === "running" && meta?.interlude && !meta.interlude.seen)) hold(true);
+  // An aim met is met at once, held clock or not: the King never reads "21 of 12".
+  if (meta?.status === "running" && fc) ladder();
   if (!meta || paused || sitting || meta.status !== "running" || !fc) return;  // the court sitting holds the clock too
   meta.elapsedMs += 5000;
   if (meta.minutes > 0 && meta.elapsedMs >= meta.minutes * 60000) endReign("The appointed time has passed. The reign ends.");
   else {
     lastAct();
     ambitions();
-    ladder();
     council();
     interlude();
     if (meta.elapsedMs % 30000 === 0) chron.saveMeta(meta);
@@ -1947,7 +1982,7 @@ function reignInfo() {
     id: meta.id, name: meta.name, scenario: meta.scenario, status: meta.status, paused, minutes: meta.minutes,
     elapsedMs: meta.elapsedMs, remainingMs: meta.minutes > 0 ? Math.max(0, meta.minutes * 60000 - meta.elapsedMs) : null,
     score: meta.score, verdict: meta.verdict, title: meta.title, outcome: meta.outcome, ended: meta.endedAt,
-    epilogue: meta.epilogue ?? null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, aim: aimNow() ? { n: Math.min(meta.ladder.i, LADDER.length) + (meta.ladder.n ?? 0) + 1, of: meta.ladder.i < LADDER.length ? LADDER.length : null, text: aimNow().text, how: aimNow().how } : null, aimDone: meta.ladder?.just && Date.now() - meta.ladder.just.at < 8000 ? meta.ladder.just.text : null, readings: meta.status === "running" ? readings() : null,
+    epilogue: meta.epilogue ?? null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, aim: aimNow() ? { n: Math.min(meta.ladder.i, LADDER.length) + (meta.ladder.n ?? 0) + 1, of: meta.ladder.i < LADDER.length ? LADDER.length : null, text: aimNow().text, how: aimNow().how, progress: aimProgress(aimNow()) } : null, aimDone: meta.ladder?.just && Date.now() - meta.ladder.just.at < 8000 ? meta.ladder.just.text : null, readings: meta.status === "running" ? readings() : null,
     souls: world?.cities?.reduce((t, c) => t + soulsOf(c.size), 0) ?? 0,
   };
 }

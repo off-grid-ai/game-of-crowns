@@ -804,6 +804,16 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
 
   // A matter a story brings to the King (arcs.js toCourt): it comes whatever
   // else is waiting, and his answer goes back to the story.
+  // Who stands before the King on a card: enough to paint them and say what
+  // they want of the reign. A lord's aim is in their own words ("see my
+  // daughter wed"); the card says it of them.
+  sitter(cid) {
+    const c = cid != null ? this.people[cid] : null;
+    if (!c) return null;
+    const theirWords = (t) => t.replace(/\bmy\b/g, "their").replace(/\bme\b/g, "them").replace(/\bI am\b/g, "they are").replace(/\bI\b/g, "they");
+    return { id: c.id, name: c.name, age: c.age, gender: c.gender, role: c.role ?? null, rank: c.rank ?? null, want: c.goals?.[0]?.text ? theirWords(c.goals[0].text) : null };
+  }
+
   arcPetition({ arc, beat, thread, from, text, options }, world) {
     if (this.petitions.some((p) => !p.answered && p.arc === arc && p.beat === beat)) return;
     const p = { id: `p${Date.now().toString(36)}${Math.floor(Math.random() * 999)}`, turn: world?.turn ?? 0, from: from.id, name: from.name, house: from.house, answered: false, kind: "arc", arc, beat, thread, text, options };
@@ -1144,9 +1154,7 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
       "House Highfell": "On our oath to the crown, Your Grace.",
     };
     // And the one thing they want of this reign, shown on their card.
-    const who = (cid) => { const c = this.people[cid]; return c ? { id: c.id, name: c.name, age: c.age, gender: c.gender, role: c.role ?? null, rank: c.rank ?? null, want: c.goals?.[0]?.text ? theirWords(c.goals[0].text) : null } : null; };
-    // A lord's aim is in their own words ("see my daughter wed"); the card says it of them.
-    function theirWords(t) { return t.replace(/\bmy\b/g, "their").replace(/\bme\b/g, "them").replace(/\bI am\b/g, "they are").replace(/\bI\b/g, "they"); }
+    const who = (cid) => this.sitter(cid);
     return this.petitions.filter((p) => !p.answered).map(({ id, text, voice, facts, options, house, name, from, arc, beat, thread, called, kind }) => ({ id, text, voice, facts, options, house, name, from, who: who(from), address: ADDRESS[house] ?? null, kind, called: called ?? null, ...(arc ? { arc, beat, thread } : {}), due: null }));
   }
 }

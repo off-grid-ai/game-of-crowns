@@ -316,3 +316,13 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **The siege fixes** are syntax-checked; prove them on the live bridge next turn (court sits for the herald, a stale ruling refused, the tribute taken from the house).
 - **CEO report** (https://claude.ai/artifact/L7x9ySuXriGXhCAsapAm4k) through both reviewers and republished: a near tie (715 against 710), the quick three, then Mac plays.
 - **Mac, mid-turn:** asked for mini goals like "a royal army of 10,000". The ladder already does this; what it lacks is progress ("7 of 12 companies"). Offered, not built.
+
+## 2026-11-10, 12:30 (Mac playing)
+
+- **Mac, playing The Grain Lords:** "almost nothing is making sense". What he hit, and why:
+  - "21 of 12 companies" with the aim not met: aims were only checked while the clock ran, and the court or a pause holds it. Now checked every five seconds whatever the clock.
+  - "Back Stormhold, the weaker" read wrong against the ledger, where favour sat beside strength. The answer now says it: "(800 men to 2,200)".
+  - No face on the Hand's card: only lords' own petitions carried one. The Hand's matters now bring the lord's face.
+  - **My film harness was driving the same game window while Mac watched it:** it closed courts, moved the camera and toggled panels. Stopped the moment I saw his reign was the active one. Rule kept from now on: no harness while a game window is open that I didn't open in the same run, and a film run checks the active realm before every step.
+- None of this is live until the bridge and game restart; Mac's game is left as it is.
+- **Verdict:** off course on trust. The pieces work alone but the whole doesn't read. Next: stop adding, and play one full reign as a person would, listing everything that doesn't make sense.
