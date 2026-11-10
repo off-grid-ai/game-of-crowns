@@ -97,6 +97,8 @@ const STINGS := {
 	"sack": [["sfx/war_horn.ogg|sfx/war_horn_near.ogg", -3.0, 0.0], ["sfx/toll_bell.ogg", -8.0, 3.0]],
 	"handover": [["sfx/fanfare.ogg", -14.0, 0.0]],
 	"vigil": [["sfx/war_drums.ogg", -12.0, 0.0]],  # a slow drum while the town gathers in silence (a hanging, never shown)
+	"rider": [["sfx/gallop.ogg", -8.0, 0.0]],  # the King's rider sets out
+	"muster": [["sfx/march.ogg", -6.0, 0.0], ["sfx/charge_yell.ogg", -14.0, 1.5]],  # men gather and march out
 }
 const ALIASES := {"succession": "crown", "coronation": "crown", "reign_end": "death", "civil_war": "rebellion",
 	"raid": "rebellion", "city_destroyed": "sack", "razed": "sack", "city_transferred": "handover"}
@@ -162,7 +164,21 @@ func set_view(zoom_distance: float, near_town: Dictionary, season: String, night
 
 
 func set_interior(room: String) -> void:
+	# The door, as he goes in or comes out: the one place the room changes.
+	if room != _interior:
+		var s: AudioStream = _load("sfx/door_open.wav" if room != "" else "sfx/door_close.wav")
+		if s:
+			_one_shot(s, "SFX", -8.0, Vector3.INF, _rng.randf_range(0.95, 1.05))
 	_interior = room
+
+
+## A scene the bridge staged (scenes.gd), heard where it happens: the kinds
+## that have a sound of their own (a rider's gallop, a muster's march, a vigil's
+## drum). War and the chronicle's news sound through event() as before.
+const STAGED := ["vigil", "rider", "muster"]
+func staged(kind: String, at := Vector3.INF) -> void:
+	if kind in STAGED:
+		event(kind, at)
 
 
 func event(kind: String, at := Vector3.INF) -> void:
