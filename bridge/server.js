@@ -116,7 +116,7 @@ function load(id) {
   court.deedsOf = (pid) => (deeds[pid] ??= []);
   arcs = new Arcs(P.base, court, record);
   arcsRunning = false;  // a new realm's stories start free of the last one's
-  court.onArcRuling = (arc, beat, option) => arc === "council" ? councilRuled(beat, option) : arcs.rule(arc, beat, option);
+  court.onArcRuling = (arc, beat, option) => arc === "council" ? councilRuled(beat, option) : arc === "siege" ? siegeRuled(beat, option) : arcs.rule(arc, beat, option);
   chatter?.stop();
   chatter = new Chatter(P.state, { world: () => world, turn: () => world?.turn ?? 0, minds: () => minds });
   stakes = new Stakes(P.state, record, endReign);
@@ -1281,17 +1281,53 @@ function marchOdds(house, allies = [], { extra = 0, turn = world?.turn ?? 0 } = 
   return (ours * winter) / Math.max(1, ours * winter + theirs);
 }
 
+// The siege's middle: a season in, the besieged lord's herald brings terms, and
+// the King chooses: press the assault (gold, and better odds), take tribute and
+// go home, or starve them out (a season longer, better odds again).
+function siegeTerms(c, turn) {
+  if (c.asked || !court) return;
+  c.asked = true;
+  const foe = world.players.find((p) => p.id === c.house);
+  const lord = court.lordOfHouse(c.house);
+  if (!foe || !lord) return;
+  const town = cityName(c.city);
+  const odds = Math.round(marchOdds(c.house, c.allies ?? [], { turn: turn + 1 }) * 100);
+  court.arcPetition({ arc: "siege", beat: `siege-${c.city}-${c.turn}`, thread: `the siege of ${town}`, from: lord,
+    text: `${lord.name}'s herald comes out of ${town} under a white flag: "My ${lord.gender === "female" ? "lady" : "lord"} will pay the Crown 150 gold to see your host gone by morning." The captains put the King's chances at ${odds} in a hundred.`,
+    options: [
+      { id: "press", label: "Press the assault (200 gold)", hint: `${houseFor(foe).name} −10 · ladders and fire: better odds, more dead`, cost: 200, favour: { [c.house]: -10 }, result: `The King orders the assault. Ladders go up against the walls of ${town} at dawn.` },
+      { id: "starve", label: "Starve them out", hint: `a season longer · better odds · ${houseFor(foe).name} −5`, favour: { [c.house]: -5 }, result: `The royal host digs in around ${town}. No cart goes in or out.` },
+      { id: "tribute", label: "Take their gold and withdraw", hint: `+150 gold · ${houseFor(foe).name} +10 · the realm sees a King who can be bought`, favour: { [c.house]: 10 }, result: `The King takes ${lord.name}'s gold and the host turns for home. ${town} rings its bells.` },
+    ] }, world);
+  chron.saveMeta(meta);
+}
+
+function siegeRuled(beat, option) {
+  const c = (meta.campaigns ?? []).find((x) => `siege-${x.city}-${x.turn}` === beat);
+  if (!c) return;
+  const crown = crownOf();
+  if (option === "press") c.press = true;
+  if (option === "starve") { c.starve = true; c.extra = 1; }
+  if (option === "tribute") {
+    meta.campaigns = meta.campaigns.filter((x) => x !== c);
+    if (crown) send(`lua cmd for p in players_iterate() do if p.id == ${crown.id} then edit.change_gold(p, 150) end end`);
+  }
+  chron.saveMeta(meta);
+}
+
 // Each season: a host that has stood two seasons before a town takes it or breaks.
 function resolveCampaigns(turn) {
   for (const c of [...(meta.campaigns ?? [])]) {
-    if (turn - c.turn < 2) continue;
+    if (turn - c.turn === 1) siegeTerms(c, turn);
+    if (turn - c.turn < 2 + (c.extra ?? 0)) continue;
     meta.campaigns = meta.campaigns.filter((x) => x !== c);
     const town = world.cities.find((x) => x.id === c.city);
     const crown = world.players.find((p) => houseFor(p).crown);
     const foe = world.players.find((p) => p.id === c.house);
     if (!town || !crown || !foe) continue;
     if (town.owner !== c.house) { record({ turn, kind: "decree", text: `The royal host stands down before ${cityName(c.city)}: it is no longer ${houseFor(foe).name}'s to take.`, city: c.city }); continue; }
-    const odds = marchOdds(c.house, c.allies ?? []);
+    // Pressing the assault or starving them out tips the odds the King's way.
+    const odds = Math.min(0.95, marchOdds(c.house, c.allies ?? []) * (c.press ? 1.25 : c.starve ? 1.2 : 1));
     // Why it went as it did, in one line: our companies against theirs, and the season.
     const why = `${(world.units ?? []).filter((u) => u.owner === crown.id && SOLDIER(u)).length} royal companies against ${houseFor(foe).name}'s ${(world.units ?? []).filter((u) => u.owner === foe.id && SOLDIER(u)).length}${calendar(turn).season === "winter" ? ", in the cold of winter" : ""}.`;
     if (Math.random() < odds) {
