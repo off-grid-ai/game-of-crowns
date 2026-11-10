@@ -37,8 +37,18 @@ const LIMBO_TOWNS: Array[int] = []
 var _town_on := false  # this town's scenes run the job machine
 
 
+## Towns switched on for a film: --limbo=246,250 on the command line.
+static func _limbo_args() -> Array[int]:
+	var out: Array[int] = []
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--limbo="):
+			for t in a.substr(8).split(","):
+				out.append(int(t))
+	return out
+
+
 func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
-	_town_on = LIMBO_TOWNS.has(int(c.get("id", -1)))
+	_town_on = LIMBO_TOWNS.has(int(c.get("id", -1))) or _limbo_args().has(int(c.get("id", -1)))
 	# Freeciv's own word that the town starved this season. An empty food store
 	# alone isn't hunger: a town that just grew, or holds steady, sits at zero.
 	var hungry: bool = c.get("famine", false)
