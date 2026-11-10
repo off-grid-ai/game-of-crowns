@@ -201,6 +201,16 @@ var _snow_laid := false
 var _snow_tween: Tween
 
 
+## How wet the ground is (0 dry, 1 soaked), settling over `settle` seconds.
+var _wet_now := 0.0
+func set_wet(v: float, settle := SNOW_SETTLE) -> void:
+	if land == null:
+		return
+	create_tween().tween_method(func(x: float):
+		_wet_now = x
+		land.material.set_shader_param("rain_wet", x), _wet_now, clampf(v, 0.0, 1.0), settle)
+
+
 func _set_snow(v: float) -> void:
 	_snow_now = v
 	land.material.set_shader_param("snow_cover", v)
@@ -214,6 +224,7 @@ func _set_snow(v: float) -> void:
 ## as in Manor Lords, filling the ground's hollows first as it settles
 ## (the texture's height), and soft and matte where it lies.
 const SNOW_UNIFORMS := """
+uniform float rain_wet = 0.0;
 uniform float snow_cover = 0.0;
 uniform vec3 snow_col : source_color = vec3(0.86, 0.88, 0.92);
 """
@@ -263,6 +274,15 @@ const SCAR_ALBEDO := """
 		}
 	}
 """
+## Rain on the ground (weather_fx.gd, the weather's wetness): the earth sheens, a
+## touch darker, where no snow lies over it.
+const WET_GROUND := """
+	if (rain_wet > 0.0) {
+		float wet_k = rain_wet * (1.0 - snow_k);
+		roughness = mix(roughness, 0.28, wet_k);
+		specular = mix(specular, 0.55, wet_k);
+	}
+"""
 const SNOW_ALBEDO := "\n\tALBEDO = mix(ALBEDO, snow_col * (0.94 + 0.06 * mat.albedo_height.a), snow_k);"
 
 
@@ -282,7 +302,7 @@ func _drape_atlas(mat: Terrain3DMaterial, terrain: Node3D) -> void:
 		return
 	var code := sh.code.replace("varying vec3 v_vertex;", "varying vec3 v_vertex;\nuniform sampler2D atlas_tex : source_color, filter_linear_mipmap_anisotropic, repeat_disable;\nuniform vec2 atlas_size = vec2(1.0);\nuniform float atlas_mix = 0.0;\n" + SNOW_UNIFORMS + REALM_UNIFORMS + SCAR_UNIFORMS)
 	# The snow, worked out where Terrain3D sets its roughness and specular, before it applies them.
-	code = code.replace("\t// Apply PBR", SNOW_COVER + "\n\t// Apply PBR")
+	code = code.replace("\t// Apply PBR", SNOW_COVER + WET_GROUND + "\n\t// Apply PBR")
 	var at := code.find("ALBEDO = ")
 	var end := code.find("\n", at)
 	code = code.insert(end, SCAR_ALBEDO + SNOW_ALBEDO + "\n\tALBEDO = mix(ALBEDO, texture(atlas_tex, v_vertex.xz / atlas_size).rgb, atlas_mix);" + REALM_WASH)

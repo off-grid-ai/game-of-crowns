@@ -512,6 +512,7 @@ func apply_graphics() -> void:
 ## Sky3D (TokisanGames) owns the sky, sun, moon, clouds and day/night cycle;
 ## we layer our colour grade on its environment.
 var sky3d: Node
+var weather_fx: Node3D  # weather_fx.gd: the sky, the rain and snowfall, the wet ground
 var _night_fill: DirectionalLight3D
 
 
@@ -772,6 +773,14 @@ func _on_world(world: Dictionary) -> void:
 	pt = Time.get_ticks_usec()
 	ruins.show_marks(realm_bb.get_var(&"marks", []), int(realm_bb.get_var(&"turn", 0)))
 	PerfTools.add("ruins", Time.get_ticks_usec() - pt)
+	# The weather, shown (weather_fx.gd): the bridge rolls it, the mirror carries it.
+	if weather_fx == null and sky3d:
+		weather_fx = preload("res://scripts/weather_fx.gd").new()
+		weather_fx.sky3d = sky3d
+		weather_fx.land3d = terrain.land3d
+		add_child(weather_fx)
+	if weather_fx and awareness:
+		weather_fx.show_weather(String(awareness.realm.get_var(&"weather", "clear", false)), season_settle(world))
 	var season := look_season(world)
 	if season != terrain.season or towns.towns.size() != _snowed:
 		_snowed = towns.towns.size()
