@@ -76,6 +76,7 @@ func _log_perf(delta: float) -> void:
 		for k in tally:
 			jobs.append("%s:%.1fms/%d" % [k, tally[k][0] / 1000.0, tally[k][1]])
 		f.store_line("    jobs (10 s) " + ", ".join(jobs))
+		f.store_line("    engine " + _engine_counts())
 		tally.clear()
 
 
@@ -197,3 +198,28 @@ func _test_hides() -> void:
 	if _no_trees and main.terrain.land3d and main.terrain.land3d.land:
 		for m in main.terrain.land3d.land.find_children("*", "MultiMeshInstance3D", true, false):
 			m.visible = false
+
+
+## What the engine runs each frame outside any script's _process (the probe's
+## other half): physics time and the per-frame things by kind. A walk of the
+## tree every ten seconds, while probing only.
+func _engine_counts() -> String:
+	var n := {"bt_players": 0, "bt_active": 0, "mixers_self": 0, "particles": 0, "labels3d": 0, "nav_agents": 0, "lights": 0}
+	for node in main.get_tree().root.find_children("*", "", true, false):
+		if node is BTPlayer:
+			n["bt_players"] += 1
+			if (node as BTPlayer).active:
+				n["bt_active"] += 1
+		elif node is AnimationMixer:
+			if (node as AnimationMixer).active and (node as AnimationMixer).callback_mode_process != AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL:
+				n["mixers_self"] += 1  # advancing itself every frame, not through anim_lod
+		elif node is CPUParticles3D or node is GPUParticles3D:
+			n["particles"] += 1
+		elif node is Label3D:
+			n["labels3d"] += 1
+		elif node is NavigationAgent3D:
+			n["nav_agents"] += 1
+		elif node is Light3D and (node as Light3D).visible:
+			n["lights"] += 1
+	return "physics=%.1fms nav=%d %s" % [Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
+		int(Performance.get_monitor(Performance.NAVIGATION_ACTIVE_MAPS)), " ".join(n.keys().map(func(k): return "%s=%d" % [k, n[k]]))]
