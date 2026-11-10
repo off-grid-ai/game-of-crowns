@@ -1108,14 +1108,6 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       this.onArcRuling?.(p.arc, p.beat, option);
     } else if (p.deck) {
       this.play(p, option, world, out, gold);
-    } else if (p.kind === "informer") {
-      const informer = this.people[p.informer];
-      const suspect = this.people[p.suspect];
-      const heir = this.people[p.heir];
-      if (option === "hostage") { out.favour[suspect.playerId] = -20; suspect.hostage = heir.id; heir.rank = heir.rank === "heir" ? "heir" : heir.rank; heir.ward = true; this.remember(suspect.id, `The King took my child ${heir.name} to Kingsmere on a bannerman's word.`); this.save(heir); out.text = `${heir.name} rides to Kingsmere as a royal ward. ${suspect.name} will not rise while the King holds his child, and will not forget.`; }
-      if (option === "reward") { informer.loyalty = Math.min(100, informer.loyalty + 20); this.shift(suspect.id, informer.id, -40, `${informer.name} sold tales of me to the King.`); this.shift(informer.id, suspect.id, -10); out.text = `${informer.name} leaves court with a heavier purse. Within the month, ${suspect.name} knows who talked.`; }
-      if (option === "dismiss") { out.favour[suspect.playerId] = 5; this.remember(informer.id, "The King called me a liar before the court."); informer.loyalty = Math.max(0, informer.loyalty - 10); out.text = `The King dismisses the accusation. ${informer.name} leaves court red-faced.`; }
-      this.save(informer); this.save(suspect);
     } else if (p.kind === "regency") {
       const regent = this.people[p.regent];
       if (option === "regent") { regent.loyalty = 100; regent.goals = [{ kind: "favour", text: "repay the King who raised me" }]; out.favour[c.playerId] = -10; this.remember(regent.id, "The King named me to govern my house. I owe him everything."); out.text = `${regent.name} is named to govern ${c.house} by the King's word. ${c.house}'s kin bow, and whisper.`; }

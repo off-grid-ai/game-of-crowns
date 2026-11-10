@@ -127,4 +127,13 @@ export const ANSWERS = {
     if (option === "pardon") { out.favour[c.playerId] = -15; const crown = world.players.find((x) => houseFor(x).crown); const seat = crown && world.cities.find((x) => x.owner === crown.id); if (seat) out.lua.push(`local c = find.city(nil, ${seat.id}); if c then for i = 1, 2 do edit.create_unit(c.owner, c.tile, find.unit_type("Archers") or find.unit_type("Warriors"), 0, c, -1) end end`); this.remember(c.id, `The King pardoned the outlaws who hanged my men outside ${town}, and put them in royal colours.`); out.text = `The outlaws of ${town} kneel and are pardoned. They march to Kingsmere in the King's colours. ${c.house} does not forgive it.`; }
     if (option === "theirs") { out.favour[c.playerId] = -5; gold(c.playerId, -60); out.text = `The King tells ${c.name} to keep his own roads. The outlaws keep the road, and the taxes of ${town} keep going into the forest.`; }
   },
+  informer({ p, c, opt, option, out, gold, world }) {
+    const informer = this.people[p.informer];
+    const suspect = this.people[p.suspect];
+    const heir = this.people[p.heir];
+    if (option === "hostage") { out.favour[suspect.playerId] = -20; suspect.hostage = heir.id; heir.rank = heir.rank === "heir" ? "heir" : heir.rank; heir.ward = true; this.remember(suspect.id, `The King took my child ${heir.name} to Kingsmere on a bannerman's word.`); this.save(heir); out.text = `${heir.name} rides to Kingsmere as a royal ward. ${suspect.name} will not rise while the King holds his child, and will not forget.`; }
+    if (option === "reward") { informer.loyalty = Math.min(100, informer.loyalty + 20); this.shift(suspect.id, informer.id, -40, `${informer.name} sold tales of me to the King.`); this.shift(informer.id, suspect.id, -10); out.text = `${informer.name} leaves court with a heavier purse. Within the month, ${suspect.name} knows who talked.`; }
+    if (option === "dismiss") { out.favour[suspect.playerId] = 5; this.remember(informer.id, "The King called me a liar before the court."); informer.loyalty = Math.max(0, informer.loyalty - 10); out.text = `The King dismisses the accusation. ${informer.name} leaves court red-faced.`; }
+    this.save(informer); this.save(suspect);
+  },
 };
