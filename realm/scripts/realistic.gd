@@ -132,7 +132,7 @@ static func _template(name: String) -> Dictionary:
 	# One mesh, one surface per material: a model authored in hundreds of
 	# pieces (the longhall is 352) costs a draw call for every piece, and on
 	# Metal those calls, not triangles, were what held the frame.
-	var merged := _merge(parts, FLOOR_CUT.get(name, -INF))
+	var merged := _merge(parts, FLOOR_CUT.get(name, -INF), BUDGET.get(KIT[name][0], 0))
 	if merged:
 		parts = [[merged, Transform3D.IDENTITY]]
 		var whole := Node3D.new()
@@ -201,7 +201,13 @@ static func _no_glow(root: Node, stone := false) -> void:
 ## The parts' surfaces gathered by material into one mesh, each vertex moved by
 ## its part's place in the model. Null if a part can't be merged (skinned or
 ## morphing meshes keep their pieces).
-static func _merge(parts: Array, floor_cut := -INF) -> ArrayMesh:
+# The most triangles a kind may stand at, near or far: a prop is not a hero. Godot's
+# own generated detail levels are the source: the first one under the budget becomes
+# the mesh placed (and gets its own lighter levels in turn).
+const BUDGET := {"stump": 3000, "ruin": 10000}
+
+
+static func _merge(parts: Array, floor_cut := -INF, budget := 0) -> ArrayMesh:
 	var by_mat := {}  # material -> [arrays list]
 	for part in parts:
 		var mesh: Mesh = part[0]
@@ -288,7 +294,41 @@ static func _merge(parts: Array, floor_cut := -INF) -> ArrayMesh:
 		arr[Mesh.ARRAY_INDEX] = idx
 		im.add_surface(Mesh.PRIMITIVE_TRIANGLES, arr, [], {}, mat)
 	im.generate_lods(25.0, 60.0, [])
+	if budget > 0:
+		im = _within(im, budget)
 	return im.get_mesh()
+
+
+## The first of Godot's generated detail levels whose triangles fit the budget, as
+## a mesh of its own (with its own lighter levels); the mesh as it is if none fits.
+static func _within(im: ImporterMesh, budget: int) -> ImporterMesh:
+	var tris := func(level: int) -> int:
+		var n := 0
+		for s in im.get_surface_count():
+			if level < 0:
+				n += (im.get_surface_arrays(s)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
+			elif level < im.get_surface_lod_count(s):
+				n += im.get_surface_lod_indices(s, level).size() / 3
+			else:
+				n += (im.get_surface_arrays(s)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3
+		return n
+	if tris.call(-1) <= budget:
+		return im
+	var most := 0
+	for s in im.get_surface_count():
+		most = maxi(most, im.get_surface_lod_count(s))
+	for level in most:
+		if tris.call(level) > budget and level < most - 1:
+			continue
+		var out := ImporterMesh.new()
+		for s in im.get_surface_count():
+			var arr: Array = im.get_surface_arrays(s)
+			if level < im.get_surface_lod_count(s):
+				arr[Mesh.ARRAY_INDEX] = im.get_surface_lod_indices(s, level)
+			out.add_surface(Mesh.PRIMITIVE_TRIANGLES, arr, [], {}, im.get_surface_material(s))
+		out.generate_lods(25.0, 60.0, [])
+		return out
+	return im
 
 
 static func parts(name: String) -> Array:

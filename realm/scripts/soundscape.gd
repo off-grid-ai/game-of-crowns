@@ -260,7 +260,7 @@ func _process(delta: float) -> void:
 	_tick_duck(delta)
 	var pt := Time.get_ticks_usec()
 	_tick_clips(delta)
-	preload("res://scripts/perf_tools.gd").add("clip_sounds %d" % _clips.size(), Time.get_ticks_usec() - pt)
+	preload("res://scripts/perf_tools.gd").add("clip_sounds %d/%d" % [_near_clips.size(), _clips.size()], Time.get_ticks_usec() - pt)
 
 
 func _tick_lifts(delta: float) -> void:
@@ -390,40 +390,54 @@ const CLIP_SOUNDS := {
 	"Axe_Down": ["sfx/chop.wav|sfx/chop_1.ogg|sfx/chop_2.ogg|sfx/chop_3.ogg|sfx/chop_4.ogg|sfx/chop_5.ogg", [0.5]],
 }
 const HEARD_WITHIN := 14.0  # game units from the camera: further, a move makes no sound
-var _clips := {}  # person -> [clip, period, t, looping, fired (hits this cycle)]
+var _clips := {}  # person -> [clip, period, start (s), looping, hits fired, cycle]
+var _near_clips: Array = []  # the people with a sounding move near the camera, renewed twice a second
+var _near_in := 0.0
 
 
 func _on_clip(person: Node3D, clip: String, period: float, looping: bool) -> void:
 	if CLIP_SOUNDS.has(clip) and period > 0.05:
-		_clips[person] = [clip, period, 0.0, looping, 0]
+		_clips[person] = [clip, period, Time.get_ticks_msec() / 1000.0, looping, 0, 0]
 	else:
 		_clips.erase(person)  # a new move ends the old one's sounds
 
 
+## The moves' sounds, timed from when each move began: far people cost nothing
+## per frame. Only those near the camera (renewed twice a second) are walked.
 func _tick_clips(delta: float) -> void:
 	if _clips.is_empty() or not is_inside_tree():
 		return
 	var cam := get_viewport().get_camera_3d()
-	for person in _clips.keys():
-		if not is_instance_valid(person):
-			_clips.erase(person)
+	if cam == null:
+		return
+	_near_in -= delta
+	if _near_in <= 0.0:
+		_near_in = 0.5
+		_near_clips.clear()
+		for person in _clips.keys():
+			if not is_instance_valid(person):
+				_clips.erase(person)
+			elif cam.global_position.distance_to((person as Node3D).global_position) <= HEARD_WITHIN:
+				_near_clips.append(person)
+	var now := Time.get_ticks_msec() / 1000.0
+	for person in _near_clips:
+		if not is_instance_valid(person) or not _clips.has(person):
 			continue
 		var c: Array = _clips[person]
 		var sound: Array = CLIP_SOUNDS[c[0]]
-		var t: float = c[2] + delta
-		if t >= c[1]:
-			if not c[3]:
-				_clips.erase(person)
-				continue
-			t -= c[1]
+		var t: float = now - float(c[2])
+		var cycle := int(t / float(c[1]))
+		if not c[3] and cycle > 0:
+			_clips.erase(person)  # a move played once is over
+			continue
+		if cycle != int(c[5]):
+			c[5] = cycle
 			c[4] = 0
-		c[2] = t
+		var f: float = (t - cycle * float(c[1])) / float(c[1])
 		var hits: Array = sound[1]
-		while c[4] < hits.size() and t >= float(hits[c[4]]) * c[1]:
-			c[4] += 1
+		while int(c[4]) < hits.size() and f >= float(hits[c[4]]):
+			c[4] = int(c[4]) + 1
 			var at: Vector3 = (person as Node3D).global_position
-			if cam and cam.global_position.distance_to(at) > HEARD_WITHIN:
-				continue
 			if sound[0] == "step":
 				footstep(("stone" if _interior in ["chapel", "great_hall"] else "wood") if _interior != "" else ("snow" if _view["season"] == "winter" else "grass"), at)
 			else:
