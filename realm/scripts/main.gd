@@ -10,6 +10,7 @@ const DAY_SECONDS := 240.0
 var bridge: Node
 var terrain: Node3D
 var towns: Node3D
+var ruins: Node3D  # ruins.gd
 var units: Node3D
 var rig: Node3D
 var ui: CanvasLayer
@@ -115,6 +116,9 @@ func _ready() -> void:
 	if _shot.has("realistic"):
 		towns.realistic_towns.append(String(_shot["realistic"]))
 	add_child(towns)
+	ruins = preload("res://scripts/ruins.gd").new()  # what war leaves on the land
+	ruins.terrain = terrain
+	add_child(ruins)
 	roads = preload("res://scripts/roads.gd").new()
 	roads.terrain = terrain
 	add_child(roads)
@@ -1160,6 +1164,8 @@ func _on_world(world: Dictionary) -> void:
 	if Time.get_ticks_msec() - tt > 500:
 		print_verbose("BUILD towns %d ms" % (Time.get_ticks_msec() - tt))
 	terrain.set_realm(world.get("owners", []), world.get("players", []))
+	terrain.set_marks(world.get("marks", []), int(world.get("turn", 0)))
+	ruins.show_marks(world.get("marks", []), int(world.get("turn", 0)))
 	var season := look_season(world)
 	if season != terrain.season or towns.towns.size() != _snowed:
 		_snowed = towns.towns.size()

@@ -229,6 +229,37 @@ const SNOW_COVER := """
 		mat.normal_map_depth *= 1.0 - 0.55 * snow_k;
 	}
 """ % [MUD, FIELD, MUD, FIELD]
+## The land's scars (terrain.set_marks) in the same shader: burnt earth where
+## men died or a town burned, ash grey-brown and charred darker at its frayed
+## edge, broken up by the ground's own texture (its height), fading with the
+## scar's age. Snow, laid after, covers it.
+const SCAR_UNIFORMS := """
+uniform sampler2D scar_tex : filter_nearest, repeat_disable;
+uniform float scar_turn = 0.0;
+uniform float scar_on = 0.0;
+float scar_left(ivec2 c) {
+	c = clamp(c, ivec2(0), ivec2(realm_size) - 1);
+	vec4 m = texelFetch(scar_tex, c, 0);
+	return m.b > 0.0 ? m.r * clamp(1.0 - (scar_turn - m.g) / m.b, 0.0, 1.0) : 0.0;
+}
+"""
+const SCAR_ALBEDO := """
+	if (scar_on > 0.5) {
+		vec2 sg = v_vertex.xz / realm_tile - 0.5;
+		ivec2 sb = ivec2(floor(sg));
+		vec2 sf = smoothstep(0.0, 1.0, fract(sg));
+		float sc = mix(mix(scar_left(sb), scar_left(sb + ivec2(1, 0)), sf.x), mix(scar_left(sb + ivec2(0, 1)), scar_left(sb + ivec2(1, 1)), sf.x), sf.y);
+		if (sc > 0.0) {
+			float sv = sc + (mat.albedo_height.a - 0.5) * 0.55 + (sin(v_vertex.x * 2.3 + sin(v_vertex.z * 1.7)) * 0.5) * 0.12;
+			float burnt = smoothstep(0.22, 0.42, sv);
+			float charred = burnt * (1.0 - smoothstep(0.42, 0.7, sv));
+			float lum = dot(ALBEDO, vec3(0.299, 0.587, 0.114));
+			vec3 ash = vec3(0.36, 0.33, 0.30) * (0.55 + 1.1 * lum);
+			ALBEDO = mix(ALBEDO, ash, burnt * 0.9);
+			ALBEDO = mix(ALBEDO, vec3(0.07, 0.06, 0.05) * (0.6 + lum), charred * 0.75);
+		}
+	}
+"""
 const SNOW_ALBEDO := "\n\tALBEDO = mix(ALBEDO, snow_col * (0.94 + 0.06 * mat.albedo_height.a), snow_k);"
 
 
@@ -246,12 +277,12 @@ func _drape_atlas(mat: Terrain3DMaterial, terrain: Node3D) -> void:
 	if sh == null or not sh.code.contains("varying vec3 v_vertex;"):
 		mat.shader_override_enabled = false
 		return
-	var code := sh.code.replace("varying vec3 v_vertex;", "varying vec3 v_vertex;\nuniform sampler2D atlas_tex : source_color, filter_linear_mipmap_anisotropic, repeat_disable;\nuniform vec2 atlas_size = vec2(1.0);\nuniform float atlas_mix = 0.0;\n" + SNOW_UNIFORMS + REALM_UNIFORMS)
+	var code := sh.code.replace("varying vec3 v_vertex;", "varying vec3 v_vertex;\nuniform sampler2D atlas_tex : source_color, filter_linear_mipmap_anisotropic, repeat_disable;\nuniform vec2 atlas_size = vec2(1.0);\nuniform float atlas_mix = 0.0;\n" + SNOW_UNIFORMS + REALM_UNIFORMS + SCAR_UNIFORMS)
 	# The snow, worked out where Terrain3D sets its roughness and specular, before it applies them.
 	code = code.replace("\t// Apply PBR", SNOW_COVER + "\n\t// Apply PBR")
 	var at := code.find("ALBEDO = ")
 	var end := code.find("\n", at)
-	code = code.insert(end, SNOW_ALBEDO + "\n\tALBEDO = mix(ALBEDO, texture(atlas_tex, v_vertex.xz / atlas_size).rgb, atlas_mix);" + REALM_WASH)
+	code = code.insert(end, SCAR_ALBEDO + SNOW_ALBEDO + "\n\tALBEDO = mix(ALBEDO, texture(atlas_tex, v_vertex.xz / atlas_size).rgb, atlas_mix);" + REALM_WASH)
 	var drape := Shader.new()
 	drape.code = code
 	mat.shader_override = drape
@@ -375,6 +406,16 @@ func _show_realm(realm: Texture2D, prev: Texture2D, war: Texture2D, flood: Dicti
 		mat.set_shader_param("flood_r", 0.0)
 		_flood_reach = float(flood["reach"]) + 2.0
 		_flood_t = 0.0
+
+
+## The scars as terrain.set_marks drew them, and the season it is now.
+func set_scars(tex: Texture2D, turn: int) -> void:
+	if land == null:
+		return
+	var mat: Terrain3DMaterial = land.material
+	mat.set_shader_param("scar_tex", tex)
+	mat.set_shader_param("scar_turn", float(turn))
+	mat.set_shader_param("scar_on", 1.0)
 
 
 var _realm_mix := -1.0
