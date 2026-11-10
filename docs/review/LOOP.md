@@ -762,3 +762,22 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   The place step is done. Travelling consequences and rulings coming back are next (mine).
 - **Right way?** No reign measured this turn, so the fun-bar lines are unchanged. The work matches the order. Risk: v2 can't go live in Kingsmere until feet stop sliding (Walk 32%).
 - **Verdict:** on course.
+
+## 2026-11-10 22:45, rulings come back; schemes on the map
+
+- **Landed (mine):** ae96804.
+  - **Rulings come back.** Every ruling is owed to the lord who asked, by name, due two seasons on. At the next full sitting that lord comes back ahead of the Hand's matters.
+    - Proof: ruled on Blanche Sunspire at turn 38. At turn 40 she came back: "In the summer of 309, you heard our plea at court and ruled: let them march."
+    - The first run failed (a Hand matter took the only seat), and the fix gives the returning lord a seat of their own.
+  - **Schemes on the map.** world.intrigue holds the lords' real pacts, marriages and gold envoys, from seat to seat, with a hover line. Proof: Wolfholt → Goldcrest.
+  - Earlier this turn: 51554f0, matters carry a place and a petitioner.
+  - Main couldn't load the bridge between 3bf4888 and ae96804 (a swept import). Fixed, and Builder 2 is told.
+- **Others:**
+  - 17458fc (Townsfolk look): one Rest Fixer retarget across 237 imports; bans in one list; no twin neighbours; tools in hands. Empty hand: Drinking 2122 → 14, Carrying 1246 → 74, Digging 480 → 0.
+  - 3bf4888 (Builder 2): the director's threats build each act.
+  - 9206aea: schemes drawn on the map.
+  - 9d8a83b: faces on the map.
+  - NPC perf: no freeze headless. Real stalls are the forest's clear_where (about 1 s) and the walk-map rebake; VAT rejected. NPC perf now takes units.gd's speed fixes, the forest stall and an async nav bake.
+- **Fun bar:** no reign measured this turn. The order is followed: rulings come back (1), the map (3) and schemes (4) have landed. The capital going live (2) waits on foot skate.
+- **For Mac (downloads need his yes):** a lute, a wheelbarrow, a plain gentleman's body, and a Mixamo sweeping move. Until then, moves without their tool aren't chosen.
+- **Verdict:** on course.
