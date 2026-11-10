@@ -875,7 +875,7 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 			for i in 3:
 				_prop(life, center, ["FarmCrate_Apple", "FarmCrate_Carrot", "Barrel_Apples"][i], extra + Vector3(-extra.z, 0, extra.x).normalized() * (i - 1) * 0.06 - extra.normalized() * 0.08, atan2(-extra.x, -extra.z))
 		# A lute at the well and children at play.
-		var lute := _stand(root, life, center, well + side * 0.18, "townsfolk", "Lute_Playing", rng.randi(), Color.WHITE, 0.15)
+		var lute := _stand(root, life, center, well + side * 0.18, "townsfolk", "Lute_Playing" if preload("res://scripts/weapons.gd").can_play("Lute_Playing") else "Clapping", rng.randi(), Color.WHITE, 0.15)  # a lute only once there's a lute
 		if lute:
 			_mind(lute, "revel", center)
 	if c.get("grasping", false):

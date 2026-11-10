@@ -14,6 +14,7 @@ const People := preload("res://scripts/people.gd")
 const SceneKinds := preload("res://scripts/scene_kinds.gd")
 const Motion := preload("res://scripts/motion.gd")
 const TownNav := preload("res://scripts/town_nav.gd")  # what stands in a town's way
+const Weapons := preload("res://scripts/weapons.gd")  # what a move needs in hand (can_play)
 const AnimLOD := preload("res://scripts/anim_lod.gd")  # minds think by distance from the camera
 
 # Breakers between runs (section 2's shared pools).
@@ -56,7 +57,7 @@ class PlayRun extends BTAction:
 
 	func _has(clip: String) -> bool:
 		var ap: AnimationPlayer = agent.get_node_or_null("Anim")
-		return ap != null and ap.has_animation(clip)
+		return ap != null and ap.has_animation(clip) and Weapons.can_play(clip)
 
 	func _length(clip: String) -> float:
 		var ap: AnimationPlayer = agent.get_node_or_null("Anim")
@@ -72,7 +73,7 @@ class Breaker extends BTAction:
 		var last: String = blackboard.get_var(&"last_breaker", "", false)
 		var last_clip: String = blackboard.get_var(&"last_clip", "", false)  # never the move just played, either side
 		var ap: AnimationPlayer = agent.get_node_or_null("Anim")
-		var choices := pool.filter(func(c): return c != last and c != last_clip and ap != null and ap.has_animation(c))
+		var choices := pool.filter(func(c): return c != last and c != last_clip and ap != null and ap.has_animation(c) and Weapons.can_play(c))
 		if choices.is_empty():
 			choices = ["Idle"]
 		var clip: String = choices[randi() % choices.size()]
@@ -375,7 +376,7 @@ class React extends BTAction:
 			return
 		var pool := reaction(kind, String(blackboard.get_var(&"king_name", "", false)))
 		var ap: AnimationPlayer = agent.get_node_or_null("Anim")
-		pool = pool.filter(func(c): return ap != null and ap.has_animation(c))
+		pool = pool.filter(func(c): return ap != null and ap.has_animation(c) and Weapons.can_play(c))
 		if pool.is_empty():
 			return
 		var last: String = blackboard.get_var(&"last_clip", "", false)
@@ -435,8 +436,17 @@ class Weigh extends BTAction:
 			var act := sel.get_child(i)
 			var begin = act.get_child(0) if act.get_child_count() > 0 else null
 			var name_: String = begin.name_ if begin != null and "name_" in begin else ""
-			sel.set_weight(i, weight(name_, blackboard))
+			sel.set_weight(i, weight(name_, blackboard) if _playable(act) else 0.0)
 		return SUCCESS
+
+	## An activity with a run of moves none of which can be played (each
+	## needs a tool with no model yet: a lute) is never picked.
+	static func _playable(act: BTTask) -> bool:
+		for i in act.get_child_count():
+			var t := act.get_child(i)
+			if t is PlayRun and not (t as PlayRun).pool.is_empty() and not (t as PlayRun).pool.any(func(c): return Weapons.can_play(c)):
+				return false
+		return true
 
 	## How likely an activity is now, from the town's and the realm's state.
 	static func weight(act: String, bb: Blackboard) -> float:

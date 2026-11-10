@@ -42,12 +42,16 @@ const TOOLS := {
 	"mattock": {"path": "res://assets/props/Pickaxe_Bronze.gltf", "length": 0.85, "tip": Vector3(0, 1, 0), "edge": Vector3(1, 0, 0), "grip": 0.25},
 	"torch": {"path": "res://assets/props/Torch_Metal.gltf", "length": 0.5, "tip": Vector3(0, 1, 0), "edge": Vector3(1, 0, 0), "grip": 0.3},
 	"axe": KINDS["axe"],
+	# Asked for, not yet on disk: a move that needs one is never picked until it lands (can_play).
+	"lute": {"path": "res://assets/props/tools/lute/lute.gltf", "length": 0.8, "tip": Vector3(0, 1, 0), "edge": Vector3(1, 0, 0), "grip": 0.7},
+	"barrow": {"path": "res://assets/props/tools/barrow/barrow.gltf", "length": 1.4, "tip": Vector3(0, 0, -1), "edge": Vector3(1, 0, 0), "grip": 0.05},
 }
 ## One row per move that needs something in hand: the tool, and the hand.
 ## The tool is in the hand exactly while the move plays (motion.gd asks).
-## Moves with no row here hold nothing. Still without a model: a lute, a
-## barrow, a stone to throw, a rod (Lute_Playing, Wheelbarrow, Throw_Object,
-## Fishing_*), and no move yet for the broom (a sweep).
+## Moves with no row here hold nothing. A row whose tool has no model yet
+## (the lute, the barrow) keeps its move off: no prop, no activity (can_play).
+## Still without a row: a stone to throw, a rod (Throw_Object, Fishing_*);
+## and no move yet for the broom (a sweep).
 const CLIP_TOOLS := {
 	"Drinking": ["bowl", "Right"], "Sitting_Drinking": ["bowl", "Right"],
 	"Hammer_Swing": ["hammer", "Right"],
@@ -55,7 +59,24 @@ const CLIP_TOOLS := {
 	"Carrying": ["basket", "Left"], "Box_Walk": ["basket", "Left"], "Pick_Fruit": ["basket", "Left"],
 	"Digging": ["mattock", "Right"], "Dig_And_Plant": ["mattock", "Right"],
 	"Idle_Torch_Loop": ["torch", "Right"],
+	"Lute_Playing": ["lute", "Left"],
+	"Wheelbarrow": ["barrow", "Right"],
 }
+static var _on_disk := {}  # tool -> whether its model is there
+
+
+## Whether a move can be played as it should be: it needs nothing in hand, or
+## what it needs is there. A move that can't is never picked (the minds'
+## activities, the villagers' chores), and comes back once its model lands.
+static func can_play(clip: String) -> bool:
+	var row: Array = CLIP_TOOLS.get(clip, [])
+	if row.is_empty():
+		return true
+	var tool: String = row[0]
+	if not _on_disk.has(tool):
+		var spec: Dictionary = TOOLS.get(tool, {})
+		_on_disk[tool] = ResourceLoader.exists(String(spec.get("path", DIR + String(spec.get("file", "")) + "/scene.gltf")))
+	return _on_disk[tool]
 
 static var _cache := {}  # kind -> [PackedScene, Transform3D fitting it to its grip]
 
@@ -85,7 +106,7 @@ static func disarm(person: Node3D) -> void:
 	if skel == null:
 		return
 	for c in skel.get_children():
-		if c is BoneAttachment3D and c.has_meta("weapon"):
+		if c is BoneAttachment3D and c.has_meta("weapon") and c.get_meta("weapon") != "Tool":  # a tool is the move's, not the arms' (hold_for)
 			skel.remove_child(c)
 			c.queue_free()
 	person.remove_meta("weapon")
@@ -105,7 +126,7 @@ static func hold_for(person: Node3D, clip: String) -> void:
 			skel.remove_child(c)
 			c.queue_free()
 	person.remove_meta("tool")
-	if row.is_empty() or not ResourceLoader.exists(String(TOOLS[row[0]].get("path", DIR + String(TOOLS[row[0]].get("file", "")) + "/scene.gltf"))):
+	if row.is_empty() or not can_play(clip):
 		return
 	var left: bool = row[1] == "Left"
 	if held(person) != "" and not left:
@@ -130,8 +151,11 @@ static func tip(person: Node3D) -> Vector3:
 	return person.global_position
 
 
+## The person's humanoid skeleton: where the outfits keep it, or wherever a
+## body nests it (the noble lady's sits deeper; she held nothing before).
 static func _skeleton(person: Node3D) -> Skeleton3D:
-	return person.get_node_or_null("Armature/GeneralSkeleton") as Skeleton3D
+	var sk := person.get_node_or_null("Armature/GeneralSkeleton") as Skeleton3D
+	return sk if sk else person.find_child("GeneralSkeleton", true, false) as Skeleton3D
 
 
 ## The fist in a hand bone's space: the grip runs across the palm toward the

@@ -621,6 +621,7 @@ static func repeat(person: Node3D, anim_name: String, speed := 1.0) -> void:
 		if not person.has_meta("tempo"):
 			person.set_meta("tempo", randf_range(0.85, 1.15))
 		mo.play(anim_name, speed * float(person.get_meta("tempo")), false, -1.0, true)
+		mo.sync_held()
 		_started(person, anim_name, speed * float(person.get_meta("tempo")), true)
 
 
@@ -675,4 +676,5 @@ static func play(person: Node3D, anim_name: String, speed := 1.0, phase := -1.0)
 	if not person.has_meta("tempo"):
 		person.set_meta("tempo", randf_range(0.85, 1.15))
 	mo.play(anim_name, speed * float(person.get_meta("tempo")), false, phase)
+	mo.sync_held()  # the move's tool in hand from its first frame
 	_started(person, anim_name, speed * float(person.get_meta("tempo")), not preload("res://scripts/motion.gd").is_once(anim_name))

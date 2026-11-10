@@ -25,6 +25,7 @@ var _skin := StandardMaterial3D.new()
 var _check := 0.0
 var people = preload("res://scripts/people.gd").new()
 const TownLife := preload("res://scripts/town_life.gd")
+const Weapons := preload("res://scripts/weapons.gd")  # what a move needs in hand (can_play)
 const TownNav := preload("res://scripts/town_nav.gd")
 var nav = preload("res://scripts/town_nav.gd").new()
 const WALK_SPEED := 0.17  # world units per second: an unhurried 1.4 m/s at town scale
@@ -622,7 +623,7 @@ func field_work(rng: RandomNumberGenerator) -> String:
 		"spring":
 			return ["Planting", "Planting", "Watering", "Fixing_Kneeling"][rng.randi() % 4]
 		"autumn":
-			return ["Pick_Fruit", "Pick_Fruit", "Carrying", "Wheelbarrow"][rng.randi() % 4]  # cut, gathered and carted home
+			return _able(["Pick_Fruit", "Pick_Fruit", "Carrying", "Wheelbarrow"], rng)  # cut, gathered and carted home
 		"winter":
 			return ""
 	return ["Watering", "Pick_Fruit", "Fixing_Kneeling", "Planting"][rng.randi() % 4]
@@ -945,7 +946,7 @@ func _choose_next(a: Dictionary) -> void:
 				a["work"] = "Carrying"  # water from the well
 			else:
 				target = a["bench"]
-				a["work"] = ["Carrying", "Wheelbarrow", "Idle"][rng.randi() % 3]  # the day's first chores
+				a["work"] = _able(["Carrying", "Wheelbarrow", "Idle"], rng)  # the day's first chores
 		"meal":
 			target = place(a, "tavern") if role == "tavern" or roll < 0.2 else a["home"]
 			a["work"] = "Idle_Talking" if roll < 0.5 else "Idle"
@@ -970,13 +971,13 @@ func _choose_next(a: Dictionary) -> void:
 					if tend == "" or roll >= 0.85:
 						# Winter, or a break: wood and water fetched, the yard put to rights.
 						target = a["bench"] if roll < 0.6 or tend == "" else place(a, "well")
-						a["work"] = ["Carrying", "Wheelbarrow", "Fixing_Kneeling", "Interact"][rng.randi() % 4]
+						a["work"] = _able(["Carrying", "Wheelbarrow", "Fixing_Kneeling", "Interact"], rng)
 					else:
 						target = nearby(a["field"], rng, 0.25)
 						a["work"] = tend
 				"crafter":
 					target = a["bench"] if roll < 0.8 else place(a, "market")
-					a["work"] = ["Fixing_Kneeling", "Interact", "PickUp_Table", "Carrying", "Wheelbarrow"][rng.randi() % 5] if roll < 0.8 else ["Idle_Talking", "Arguing"][rng.randi() % 2]  # at the trade before the door, or haggling over it
+					a["work"] = _able(["Fixing_Kneeling", "Interact", "PickUp_Table", "Carrying", "Wheelbarrow"], rng) if roll < 0.8 else ["Idle_Talking", "Arguing"][rng.randi() % 2]  # at the trade before the door, or haggling over it
 				"tavern":
 					target = place(a, "tavern")
 					a["work"] = ["Carrying", "Drinking", "Idle_Talking"][rng.randi() % 3]
@@ -1818,6 +1819,13 @@ func _talk_audit() -> void:
 						todo.append(k)
 			cluster = maxi(cluster, size)
 		print("PLACES %s market=%d well=%d tavern=%d sept=%d gathering_max=%d cluster_max=%d" % [towns.towns[id]["data"]["name"], at.get("market", 0), at.get("well", 0), at.get("tavern", 0), at.get("sept", 0), biggest, cluster])
+
+
+## One of `moves` at random, of those that can be played as they should be
+## (weapons.gd can_play: a barrow is pushed only once there's a barrow).
+static func _able(moves: Array, rng: RandomNumberGenerator) -> String:
+	var ok := moves.filter(func(m): return Weapons.can_play(m))
+	return ok[rng.randi() % ok.size()] if not ok.is_empty() else "Idle"
 
 
 ## True when another villager of the town stands at, or is bound for, `p`

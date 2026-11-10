@@ -245,10 +245,17 @@ func track(delta: float) -> void:
 			speed = maxf(STEP_FLOOR, _pace / WALK_PACE)
 	# What's in hand goes with the move (weapons.gd CLIP_TOOLS): a bowl while
 	# drinking, a basket while carrying, nothing once the move is over.
+	sync_held()
+
+
+## The tool in hand matches the move now (weapons.gd CLIP_TOOLS). Called each
+## frame, and the moment a move is asked for (people.gd), so a hand is never
+## empty while the move that needs it plays.
+func sync_held() -> void:
 	var moving := held_clip()
-	if moving != _held_for:
+	if moving != _held_for and get_parent() is Node3D:
 		_held_for = moving
-		Weapons.hold_for(body, moving)
+		Weapons.hold_for(get_parent(), moving)
 
 
 ## The move whose hands count: a load carried over walking legs, or the move now playing.
