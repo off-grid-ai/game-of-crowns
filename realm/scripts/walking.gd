@@ -107,7 +107,7 @@ func _take_control(p: Dictionary, h: Dictionary) -> void:
 		elif town < 0 and int(c["owner"]) == owner and c.get("capital", false):
 			town = int(c["id"])
 	if town >= 0:
-		main.towns.ensure(town)  # still being raised? raise it now
+		await main.towns.ensure(town)  # still being raised? raised next, and waited for
 	if town < 0 or not main.towns.towns.has(town):
 		main.ui.toast("%s is nowhere you can reach." % String(p.get("name", "They")))
 		return

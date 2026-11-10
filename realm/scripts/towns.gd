@@ -79,7 +79,7 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 
 var _queue := {}  # city id -> {c, house, sig}: towns waiting to be (re)built
 var _life_queue := {}  # city id -> house: towns whose life wants refreshing
-const BUILD_BUDGET_MS := 12  # per frame; at least one town is always built
+const BUILD_BUDGET_MS := 12  # per frame: a town's raise waits a frame when it is spent (_pace)
 var _graded_at := 0
 var _raising_since := 0
 var _raised := 0
@@ -134,25 +134,19 @@ func _grow(was: Dictionary, node: Node3D, c: Dictionary) -> void:
 		sites += 1
 
 
-## Raise a queued town right now, for someone who needs it this instant.
+## Raise a queued town next, for someone who needs it now; await it to have it standing.
 func ensure(id: int) -> void:
 	if not _queue.has(id):
 		return
-	var job: Dictionary = _queue[id]
-	_queue.erase(id)
-	var node := _build_town(job["c"], job["house"])
-	add_child(node)
-	if towns.has(id):
-		towns[id]["node"].queue_free()
-	towns[id] = {"node": node, "signature": job["sig"], "data": job["c"]}
-	life.update(node, job["c"], job["house"])
-	terrain.season_on(node)
-	terrain.commit_grading()
+	_first = id  # raised next, ahead of nearer ones (it is wanted now)
+	# Await it to have it standing: it is raised over the next few frames.
+	while _queue.has(id) or (_raising and not towns.has(id)):
+		await get_tree().process_frame
 
 
 ## True while towns are still being raised.
 func building() -> bool:
-	return not _queue.is_empty()
+	return not _queue.is_empty() or _raising
 
 
 ## Each frame, timed for the frame-cost probe (perf_tools.gd, GOC_PERF_PROBE=1; off in play).
@@ -165,7 +159,12 @@ func _process(_delta: float) -> void:
 	preload("res://scripts/perf_tools.gd").add("towns", Time.get_ticks_usec() - pt)
 
 
+var _first := -1  # a town wanted at once (ensure): raised next
+
+
 func _process_timed(_delta: float) -> void:
+	if _raising:
+		return  # a town is being raised over frames (_raise)
 	if _queue.is_empty():
 		_refresh_life(Time.get_ticks_msec())
 		return
@@ -174,36 +173,43 @@ func _process_timed(_delta: float) -> void:
 	if _raising_since == 0:
 		_raising_since = start
 		_raised = 0
-	terrain.hold_grading = true
 	var cam := get_viewport().get_camera_3d()
 	var eye: Vector3 = cam.global_position if cam else Vector3.ZERO
-	while not _queue.is_empty():
-		# Nearest the camera first: the view you're looking at fills in first.
-		var best := -1
-		var best_d := INF
+	# Nearest the camera first: the view you're looking at fills in first (one wanted at once before all).
+	var best := _first if _queue.has(_first) else -1
+	_first = -1
+	var best_d := INF
+	if best < 0:
 		for id in _queue:
 			var c: Dictionary = _queue[id]["c"]
 			var d: float = terrain.world_pos(float(c["x"]), float(c["y"])).distance_squared_to(eye)
 			if d < best_d:
 				best_d = d
 				best = id
-		var job: Dictionary = _queue[best]
-		_queue.erase(best)
-		var node := _build_town(job["c"], job["house"])
-		add_child(node)
-		if towns.has(best):
-			var pt := Time.get_ticks_usec()
-			_grow(towns[best], node, job["c"])
-			preload("res://scripts/perf_tools.gd").add("town_sites", Time.get_ticks_usec() - pt)
-			towns[best]["node"].queue_free()
-		towns[best] = {"node": node, "signature": job["sig"], "data": job["c"]}
-		life.update(node, job["c"], job["house"])
-		# Each new town takes the season as it stands (snow on its roofs in winter).
-		terrain.season_on(node)
-		_raised += 1
-		if Time.get_ticks_msec() - start > BUILD_BUDGET_MS:
-			break
+	var job: Dictionary = _queue[best]
+	_queue.erase(best)
+	_raise(best, job)
+
+
+## One town raised over frames (_pace), then shown whole in place of the old.
+func _raise(best: int, job: Dictionary) -> void:
+	_raising = true
+	_slice = Time.get_ticks_msec()
+	terrain.hold_grading = true
+	var node: Node3D = await _build_town(job["c"], job["house"])
+	add_child(node)
+	if towns.has(best):
+		var pt := Time.get_ticks_usec()
+		_grow(towns[best], node, job["c"])
+		preload("res://scripts/perf_tools.gd").add("town_sites", Time.get_ticks_usec() - pt)
+		towns[best]["node"].queue_free()
+	towns[best] = {"node": node, "signature": job["sig"], "data": job["c"]}
+	life.update(node, job["c"], job["house"])
+	# Each new town takes the season as it stands (snow on its roofs in winter).
+	terrain.season_on(node)
+	_raised += 1
 	terrain.hold_grading = false
+	_raising = false
 	# Reshaping the ground is costly: do it now and then while building, and once at the end.
 	var now := Time.get_ticks_msec()
 	if _queue.is_empty() or now - _graded_at > 750:
@@ -321,6 +327,7 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 	root.set_meta("square_r", square_r)
 	var lots: Array = [[Vector3.ZERO, square_r * 0.9]]
 	_plaza(root, center, square_r, size, seat, lots, rng)
+	await _pace()
 	var want := clampi(14 + size * 3, 16, 40) + (8 if seat else 0)
 	var placed := 0
 	# A seat's castle: stone walls, towers and gatehouse, on its own ground at
@@ -379,6 +386,7 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 			if lm == "medieval_tavern":
 				_tether(root, center, p, f)
 		gap_ang += PI * 0.62
+		await _pace()
 	root.set_meta("places", places)
 	# The ring of townhouses framing the square, shoulder to shoulder; then the
 	# roads out, lined with houses doors-to-the-road the way a medieval street
@@ -387,7 +395,7 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 	var edge := ring + 4 * 0.95 - 0.4  # the palisade
 	for r in 4:
 		if r == 1:
-			placed += _street_fronts(root, center, square_r, edge, streets, kinds, lots, rng, want - placed)
+			placed += await _street_fronts(root, center, square_r, edge, streets, kinds, lots, rng, want - placed)
 		# Each ring draws from its own sequence, so a bigger town carries on
 		# along the same ring instead of shifting every house after it.
 		var rr := RandomNumberGenerator.new()
@@ -411,6 +419,7 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 				placed += 1
 				if r > 0 and rr.randf() < 0.4:
 					_croft(root, center, p, face, f, lots, rr)
+			await _pace()
 		ring += 0.95
 	_palisade(root, center, edge, streets, seat)
 
@@ -443,6 +452,7 @@ func _street_fronts(root: Node3D, center: Vector3, square_r: float, edge: float,
 					placed += 1
 					if rr.randf() < 0.55:
 						_croft(root, center, p, face, f, lots, rr)
+				await _pace()
 	return placed
 
 
@@ -809,6 +819,19 @@ func _single(parent: Node3D, mesh: Mesh, pos: Vector3, rot := 0.0, scale := S) -
 
 # --- the town --------------------------------------------------------------------
 
+## A town is raised over as many frames as it takes, never more than the budget
+## in any one (a big seat once held a frame for over two seconds): the loops that
+## place its pieces call this, which waits a frame when the budget is spent. The
+## town is built off the tree and shown whole when done; one is raised at a time
+## (_raising), as the build keeps its town in members (_center, _house).
+var _slice := 0
+var _raising := false
+func _pace() -> void:
+	if Time.get_ticks_msec() - _slice > BUILD_BUDGET_MS:
+		await get_tree().process_frame
+		_slice = Time.get_ticks_msec()
+
+
 func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	var root := Node3D.new()
 	root.set_meta("owner", int(c["owner"]))  # whose favour its banners show
@@ -921,10 +944,11 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 				per_variant[v].append(Transform3D(basis, hp + Vector3(0, _ground_y(center, hp) - 0.02, 0)))
 				_footprint(root, _houses[v], per_variant[v][-1])
 				placed += 1
+				await _pace()
 	for v in per_variant:
 		_instances(root, _houses[v], per_variant[v])
 	if real and not real_houses.is_empty():
-		_real_lots(root, center, square_r, size, real_houses, rng, streets, bool(c.get("capital", false)))
+		await _real_lots(root, center, square_r, size, real_houses, rng, streets, bool(c.get("capital", false)))
 
 	# Keep or castle beside the square.
 	var keep_off := Vector3(cos(base_ang + PI / street_count), 0, sin(base_ang + PI / street_count)) * (square_r + 0.55)
@@ -1002,9 +1026,11 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 		outer += 0.4
 	terrain.commit_grading()
 	terrain.clear_around(center, outer + 0.6)
+	await _pace()
 	_fields(root, center, outer, size, rng)
 	_smoke(root, keep_off + Vector3(0.2, _ground_y(center, keep_off) + 1.2, 0.1))
 
+	await _pace()
 	_flush(root)
 	# Its name on the map is drawn in screen space by map_labels.gd.
 	return root
