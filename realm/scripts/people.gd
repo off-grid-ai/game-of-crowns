@@ -72,6 +72,7 @@ const MIXAMO_SHARE := {"peasant": 0.5, "townsfolk": 0.6, "soldier": 0.5, "archer
 const HEAD_ONLY := preload("res://scripts/head_only.gdshader")
 
 const ANIMS := "res://assets/anims/mixamo/"
+const HERO_ANIMS := "res://assets/hero/anims/"
 const Motion := preload("res://scripts/motion.gd")
 # Ways a soldier stands ready (all on the shared skeleton), one per man.
 const GUARDS := ["Sword_Idle", "Sword_Idle", "SS_Idle_2", "SS_Block_Idle"]
@@ -102,6 +103,29 @@ func _init() -> void:
 				var a: Animation = player.get_animation(n)
 				if a.length > 0.1:
 					_lib.add_animation(f.get_basename(), _in_place(a.duplicate(true)))
+					break
+		src.free()
+	# The close-up's own gestures too (Shake No, Dismiss, Relieved Sigh, Talking
+	# Hands...), retargeted the same way, named with underscores; a move the
+	# crowd already has keeps the crowd's take.
+	var hero_dir := DirAccess.open(HERO_ANIMS)
+	for f in hero_dir.get_files() if hero_dir else []:
+		if not f.ends_with(".fbx"):
+			continue
+		var name: String = String(f).get_basename().replace(" ", "_")
+		if _lib.has_animation(name):
+			continue
+		var packed := load(HERO_ANIMS + f) as PackedScene
+		if packed == null:
+			continue
+		var src: Node = packed.instantiate()
+		var players: Array = src.find_children("*", "AnimationPlayer", true, false)
+		if not players.is_empty():
+			var player: AnimationPlayer = players[0]
+			for n in player.get_animation_list():
+				var a: Animation = player.get_animation(n)
+				if a.length > 0.1:
+					_lib.add_animation(name, _in_place(a.duplicate(true)))
 					break
 		src.free()
 
