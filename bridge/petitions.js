@@ -136,4 +136,11 @@ export const ANSWERS = {
     if (option === "dismiss") { out.favour[suspect.playerId] = 5; this.remember(informer.id, "The King called me a liar before the court."); informer.loyalty = Math.max(0, informer.loyalty - 10); out.text = `The King dismisses the accusation. ${informer.name} leaves court red-faced.`; }
     this.save(informer); this.save(suspect);
   },
+  regency({ p, c, opt, option, out, gold, world }) {
+    const regent = this.people[p.regent];
+    if (option === "regent") { regent.loyalty = 100; regent.goals = [{ kind: "favour", text: "repay the King who raised me" }]; out.favour[c.playerId] = -10; this.remember(regent.id, "The King named me to govern my house. I owe him everything."); out.text = `${regent.name} is named to govern ${c.house} by the King's word. ${c.house}'s kin bow, and whisper.`; }
+    if (option === "crown") { const me = world.players.find((x) => x.id === c.playerId); const take = Math.floor((me?.gold ?? 0) / 4); gold(c.playerId, -take); const crown = world.players.find((x) => houseFor(x).crown); if (crown) gold(crown.id, take); out.favour[c.playerId] = -15; out.text = `The crown governs ${c.house} until the matter is settled, and its stewards take ${take} gold for the trouble.`; }
+    if (option === "leave") { regent.goals.unshift({ kind: "crown", text: `take ${c.house} for myself` }); regent.loyalty = Math.max(0, regent.loyalty - 25); out.text = `The King leaves ${c.house} to settle its own succession. ${regent.name} smiles.`; }
+    this.save(regent);
+  },
 };

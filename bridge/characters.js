@@ -1108,12 +1108,6 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       this.onArcRuling?.(p.arc, p.beat, option);
     } else if (p.deck) {
       this.play(p, option, world, out, gold);
-    } else if (p.kind === "regency") {
-      const regent = this.people[p.regent];
-      if (option === "regent") { regent.loyalty = 100; regent.goals = [{ kind: "favour", text: "repay the King who raised me" }]; out.favour[c.playerId] = -10; this.remember(regent.id, "The King named me to govern my house. I owe him everything."); out.text = `${regent.name} is named to govern ${c.house} by the King's word. ${c.house}'s kin bow, and whisper.`; }
-      if (option === "crown") { const me = world.players.find((x) => x.id === c.playerId); const take = Math.floor((me?.gold ?? 0) / 4); gold(c.playerId, -take); const crown = world.players.find((x) => houseFor(x).crown); if (crown) gold(crown.id, take); out.favour[c.playerId] = -15; out.text = `The crown governs ${c.house} until the matter is settled, and its stewards take ${take} gold for the trouble.`; }
-      if (option === "leave") { regent.goals.unshift({ kind: "crown", text: `take ${c.house} for myself` }); regent.loyalty = Math.max(0, regent.loyalty - 25); out.text = `The King leaves ${c.house} to settle its own succession. ${regent.name} smiles.`; }
-      this.save(regent);
     } else if (p.kind === "faith") {
       const houses = world.players.filter((o) => !houseFor(o).crown && !houseFor(o).wild);
       if (option === "endow") { for (const o of houses) out.favour[o.id] = 4; out.text = "The crown endows the Faith. In every sept, the King's name is blessed."; }
