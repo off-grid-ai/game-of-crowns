@@ -99,7 +99,12 @@ export class Stakes {
       if (angry.length < Math.max(2, Math.ceil(houses.length / 3)) - 1) {
         u.stage = "none";
         this.record({ turn, kind: "decree", text: "The whispers fade. The great houses have been won back, for now." });
+      } else if (turn - u.since >= 8 && this.s.seat && ctx.mayRise && !ctx.mayRise(u.house)) {
+        // Every rising passes the ultimatum: the pretender's claim goes to court first,
+        // and the host marches only once it is refused or left unanswered.
+        ctx.ultimatum?.(u.house);
       } else if (turn - u.since >= 8 && this.s.seat) {
+        ctx.rose?.(u.house);
         u.stage = "march";
         u.since = turn;
         const name = houseFor(world.players.find((p) => p.id === u.house) ?? {}).name ?? "A pretender";

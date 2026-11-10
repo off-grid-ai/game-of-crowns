@@ -610,7 +610,7 @@ function onEvent(line) {
   if (ev.kind === "turn") {
     healScars(Number(ev.turn));
     collectTithe(Number(ev.turn));
-    setTimeout(() => stakes?.tick(Number(ev.turn), world, { favour: favourOf, sworn, shift: shiftFavour, send: (l) => send(`lua cmd ${l}`), watched: isWatched(), options: meta.options ?? {} }), 2000);
+    setTimeout(() => stakes?.tick(Number(ev.turn), world, { favour: favourOf, sworn, shift: shiftFavour, send: (l) => send(`lua cmd ${l}`), watched: isWatched(), options: meta.options ?? {}, mayRise, ultimatum: askUltimatum, rose }), 2000);
     if (Number(ev.turn) % 4 === 0) setTimeout(runSeason, 2500);
     setTimeout(() => runArcs(1), 4000);
     // Let the AI finish its start-of-turn moves before dumping the world.
@@ -1197,15 +1197,23 @@ function turnHouses(turn) {
 // the ultimatum goes to court first, and the march waits for its answer.
 function storyMarch(pid, size) {
   if (mayRise(pid)) return stakes?.declare(pid, world, { send: (l) => send(`lua cmd ${l}`) }, size);
+  askUltimatum(pid).march = size ?? 10;
+  chron.saveMeta(meta);
+}
+
+// A house about to rise sends the crown its ultimatum first (one rule for every
+// rising: a story's march, the pretender's claim, a turned house). Sent once; its
+// answer decides (mayRise).
+function askUltimatum(pid) {
   const t = ((meta.turning ??= {})[pid] ??= { seasons: TURNING, state: null });
   if (!t.state) {
     t.state = "sent";
     t.at = world?.turn ?? 0;
     const p = world?.players?.find((x) => x.id === pid);
     if (p) record({ turn: t.at, kind: "unrest", text: `${houseFor(p).name} sends a rider to Kingsmere with an ultimatum for the King.` });
+    chron.saveMeta(meta);
   }
-  t.march = size ?? 10;
-  chron.saveMeta(meta);
+  return t;
 }
 
 // Whether a lord may raise his banners against the crown: only after his ultimatum.
