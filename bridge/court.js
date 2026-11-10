@@ -140,7 +140,8 @@ function pace(ctx) {
 }
 export const HAND_YEAR = 4;  // seasons: the Hand calls the King in for a crisis at most once a year
 
-export async function courtSeason(ctx, turn) {
+// force (a test reign's /test/court): sit now, watched or not, due or not, even with no one waiting.
+export async function courtSeason(ctx, turn, force = false) {
   // world and counselNow are read again after each await: a snapshot may replace them meanwhile.
   let { world, meta, court, counselNow } = ctx;
   const { record, ceasefire, turnHouses } = ctx;
@@ -149,7 +150,7 @@ export async function courtSeason(ctx, turn) {
   // A matter the realm settled on its own (the famine ended, the war is over) goes quietly.
   if (counselNow.length) for (const key of Object.keys(c.hand)) if (!counselNow.some((x) => x.key === key)) delete c.hand[key];
   turnHouses(turn);  // watched or not: a house turns, and warns, either way
-  if (!isWatched() || c.sitting != null) { chron.saveMeta(meta); return; }
+  if ((!isWatched() && !force) || c.sitting != null) { chron.saveMeta(meta); return; }
   const { every, want: wanted } = pace(ctx);
   const crises = counselNow.filter((o) => isCrisis(o) && o.acts?.length && c.heard[o.key] == null && !c.hand[o.key]);
   // A herald's terms under a siege can't wait for the next sitting: the court sits for them.
@@ -157,7 +158,7 @@ export async function courtSeason(ctx, turn) {
   // Back from away with a matter waiting: the court sits at once.
   const back = c.sitOnReturn && court.petitions.some((p) => !p.answered && p.called == null);
   c.sitOnReturn = false;
-  const due = c.lastSat == null || turn - c.lastSat >= every || herald || back;
+  const due = force || c.lastSat == null || turn - c.lastSat >= every || herald || back;
   // Between sittings the Hand calls the King in only for a real crisis, at most once a year.
   const push = !due && crises.length > 0 && (c.lastPush == null || turn - c.lastPush >= HAND_YEAR);
   if (!due && !push) { chron.saveMeta(meta); return; }
@@ -183,8 +184,9 @@ export async function courtSeason(ctx, turn) {
   // Only now, with the matters called, does the court sit (a reading taken
   // meanwhile must not find an empty court and close it under them).
   const n = Object.keys(c.hand).length + court.petitions.filter((p) => !p.answered && p.called != null).length;
-  if (n) {
+  if (n || force) {
     c.sitting = turn;
+    c.forced = force;  // a test's sitting stays open until it is closed (/court/close)
     c.push = push;
     if (push) c.lastPush = turn;
     else c.lastSat = turn;
@@ -230,8 +232,9 @@ export function closeIfDone(ctx, turn, closing = false) {
   // famine eased) is off the docket: it must not hold the doors, and the realm, shut.
   if (counselNow.length) for (const key of Object.keys(c.hand)) if (!counselNow.some((x) => x.key === key)) delete c.hand[key];
   const open = Object.keys(c.hand).length || court?.petitions.some((p) => !p.answered && p.called != null);
-  if (open && !closing) return;
+  if ((open || c.forced) && !closing) return;
   c.sitting = null;
+  c.forced = false;
   c.lastCall = Date.now();
   hold(ctx, false);
   record({ turn, kind: "court", text: "The doors of the court close, and the realm moves again." });

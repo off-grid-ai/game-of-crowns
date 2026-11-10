@@ -724,7 +724,7 @@ const timeoutNow = () => (paused || sitting || away ? 0 : turnSeconds);
 const courtYearOf = () => Sittings.courtYearOf(sittingCtx());
 const heardCtx = () => Sittings.heardCtx(sittingCtx());
 function hold(on) { return Sittings.hold(sittingCtx(), on); }
-function courtSeason(turn) { return Sittings.courtSeason(sittingCtx(), turn); }
+function courtSeason(turn, force = false) { return Sittings.courtSeason(sittingCtx(), turn, force); }
 // The King closes the court; every matter answered, the doors close (court.js).
 function closeCourt(turn) { return Sittings.closeCourt(sittingCtx(), turn); }
 function closeIfDone(turn, closing = false) { return Sittings.closeIfDone(sittingCtx(), turn, closing); }
@@ -1298,6 +1298,15 @@ const ROUTES = {
   },
   // Test hook (films only): stage what a town is making (a building site, a
   // unit in training), so a film is certain to find a site or a drill there.
+  // Test hook (films only): the court sits now ({sit: true}), as a season's sitting does,
+  // so a film can stage what happens behind the court's card (a truce's reload).
+  "POST /test/court": async (req, res, url) => {
+    if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
+    const b = await body(req);
+    if (!b.sit) return json(res, 400, { error: "{sit: true}" });
+    await courtSeason(world?.turn ?? 0, true);
+    return json(res, 200, { ok: true, sitting: meta.court?.sitting ?? null });
+  },
   "POST /test/stage": async (req, res, url) => {
     if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
     const b = await body(req);
