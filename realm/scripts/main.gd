@@ -8,6 +8,7 @@ extends Node3D
 const DAY_SECONDS := 240.0
 
 var awareness: Node  # awareness.gd: the realm and town scopes, and the news bus
+const SceneKinds := preload("res://scripts/scene_kinds.gd")  # the one table of scene kinds
 var bridge: Node
 var terrain: Node3D
 var towns: Node3D
@@ -1555,7 +1556,9 @@ func _on_staged(s: Dictionary, follow: Node3D) -> void:
 		# like news): the horn only for what's hostile, the bell for a death, a cheer for
 		# a feast, a letter on the road in silence. Rate-limited with the offers.
 		if s.get("lord", false) and Time.get_ticks_msec() - _horn_at > 20000:
-			var cue: String = {"handover": "horn", "sack": "horn", "razed": "horn", "feast": "feast"}.get(kind, "")
+			# Which cue, from the one scene table (scene_kinds.gd): hostile a horn, joy a cheer,
+			# grief a bell. A battle or siege already sounds through the chronicle's own stinger.
+			var cue: String = {SceneKinds.HOSTILE: "horn", SceneKinds.JOY: "feast", SceneKinds.GRIEF: "death"}.get(SceneKinds.tone(kind), "") if kind not in WAR or kind in ["sack", "razed"] else ""
 			if kind == "rider" and String(s.get("label", "")).begins_with("Word of a death"):
 				cue = "death"
 			if cue != "":
