@@ -89,7 +89,8 @@ func sync(world: Dictionary) -> void:
 		var favour: float = float(owner.get("favour", 100.0)) if owner.get("favour") != null else 100.0
 		var mood := String(c.get("mood", ""))  # the bridge's one definition
 		bb.set_var(&"mood", mood)
-		bb.set_var(&"at_war", not (owner.get("wars", []) as Array).is_empty())
+		# The bridge's one reading of the town's state (server.js townStates), where it sends one.
+		bb.set_var(&"at_war", bool(c.get("atWar", not (owner.get("wars", []) as Array).is_empty())))
 		bb.set_var(&"grasping", bool(c.get("grasping", false)))
 		bb.set_var(&"favour", favour)
 		bb.set_var(&"crown_town", int(c.get("owner", -1)) == crown_id)
@@ -100,9 +101,10 @@ func sync(world: Dictionary) -> void:
 			# A town grieves after a death or a vigil, want or sickness, or being put to the sword.
 			if int(s.get("city", -1)) == id and (SceneKinds.tone(k) in [SceneKinds.GRIEF, SceneKinds.TROUBLE] or k in ["sack", "razed"]):
 				grieving = true
+		grieving = bool(c.get("grief", grieving))
 		bb.set_var(&"grief", grieving)
 		var prosperous := mood == "" and not grieving and (favour >= 60.0 if int(c.get("owner", -1)) != crown_id else int(crown.get("treasury", 0)) >= 1500)
-		bb.set_var(&"prosperity", prosperous)
+		bb.set_var(&"prosperity", bool(c.get("prosperity", prosperous)))
 	realm.set_var(&"towns", ids)
 	# The land's own facts, for what the view draws on it (terrain, ruins): who
 	# holds each tile, each house's standing (wars, truces, sworn), and the scars.
