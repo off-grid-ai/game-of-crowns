@@ -36,6 +36,8 @@ const CLOTH := [Color(1, 1, 1), Color(0.85, 0.75, 0.62), Color(0.7, 0.8, 0.7), C
 ## meshes are clothing that takes a house's colour. "crowd" bodies are light
 ## enough to fill a square; the rest stand alone (the court, the close-up).
 const BODIES := {
+	# Eve: no roles until her eye check passes (tools/clip_strip.gd --body=eve), so nothing picks her yet.
+	"eve": {"sex": "f", "roles": [], "cloth": [], "crowd": false},
 	"arissa": {"sex": "f", "roles": ["archer", "townsfolk"], "cloth": ["arissa_Cloak_Geo"], "crowd": true},
 	"erika": {"sex": "f", "roles": ["archer"], "cloth": [], "crowd": true},
 	"erika_bow": {"sex": "f", "roles": ["archer"], "cloth": [], "crowd": true},

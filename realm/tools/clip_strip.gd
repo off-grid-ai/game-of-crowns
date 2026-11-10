@@ -9,16 +9,19 @@ var _people = preload("res://scripts/people.gd").new()
 func _init() -> void:
 	var clips := PackedStringArray()
 	var out := "/tmp/clip_strip"
+	var body := ""
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--clips="):
 			clips = a.substr(8).split(",")
 		elif a.begins_with("--out="):
 			out = a.substr(6)
+		elif a.begins_with("--body="):
+			body = a.substr(7)  # one body by name (people.gd BODIES), for its eye check
 	DirAccess.make_dir_recursive_absolute(out)
-	_run.call_deferred(clips, out)
+	_run.call_deferred(clips, out, body)
 
 
-func _run(clips: PackedStringArray, out: String) -> void:
+func _run(clips: PackedStringArray, out: String, body := "") -> void:
 	var world := Node3D.new()
 	root.add_child(world)
 	var env := WorldEnvironment.new()
@@ -41,7 +44,7 @@ func _run(clips: PackedStringArray, out: String) -> void:
 	cam.look_at_from_position(Vector3(0.9, 0.55, 1.3), Vector3(0, 0.13, 0), Vector3.UP)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
-	var p: Node3D = _people.make(rng, "townsfolk", Color.WHITE, "adult")
+	var p: Node3D = _people.make_body(rng, body, Color.WHITE, "adult", "average", "townsfolk") if body != "" else _people.make(rng, "townsfolk", Color.WHITE, "adult")
 	world.add_child(p)
 	# In the game anim_lod.gd ticks each person's machine; here it runs itself.
 	for t in p.find_children("*", "AnimationTree", true, false):
