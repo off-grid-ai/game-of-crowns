@@ -269,23 +269,13 @@ func _icon(name: String) -> Texture2D:
 
 ## A toolbar key with its name under the icon, so a newcomer reads the bar.
 func _named(b: Button, word: String) -> Button:
-	b.text = word
-	b.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
-	b.custom_minimum_size = Vector2(62, 52)
-	b.add_theme_font_size_override("font_size", 10)
-	b.add_theme_color_override("font_color", T.TEXT_3)
-	b.add_theme_color_override("font_hover_color", T.TEXT)
-	b.add_theme_color_override("font_pressed_color", T.ACCENT)
-	b.add_theme_color_override("font_hover_pressed_color", T.ACCENT)
+	# An icon at rest; its name and key in the tooltip (UI.md 3: words appear on hover).
+	b.text = ""
+	if b.tooltip_text == "":
+		b.tooltip_text = word
+	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	b.add_theme_constant_override("icon_max_width", 20)
-	# Room above the icon and below the name, so neither sits on the key's edge.
-	b.custom_minimum_size = Vector2(62, 58)
-	for look in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
-		if b.has_theme_stylebox_override(look):
-			var sb: StyleBox = b.get_theme_stylebox(look).duplicate()
-			sb.content_margin_top = 10
-			sb.content_margin_bottom = 7
-			b.add_theme_stylebox_override(look, sb)
+	b.custom_minimum_size = Vector2(40, 40)
 	return b
 
 
@@ -1003,7 +993,7 @@ func _reveal_pad(delta: float) -> void:
 
 ## The realm in the bottom-right corner, left of the camera pad and as tall:
 ## territory, seats, and where you're looking (the realm's own shape, 224 × 352).
-const MINIMAP_SIZE := Vector2(254, 400)
+const MINIMAP_SIZE := Vector2(180, 284)  # the realm's own shape; small at rest (UI.md 1: under a tenth of the screen)
 const PAD_WIDTH := 104  # the camera pad: two 44-point buttons and its padding
 
 
@@ -1025,6 +1015,12 @@ func _build_minimap() -> void:
 	_ranks.custom_minimum_size = Vector2(MINIMAP_SIZE.x, 40)
 	_ranks.mouse_filter = Control.MOUSE_FILTER_PASS
 	stack.add_child(_ranks)
+	# The houses' ladder shows on hover over the map: at rest the banners and the land carry it.
+	_ranks.visible = false
+	frame.mouse_entered.connect(func(): _ranks.visible = true)
+	frame.mouse_exited.connect(func():
+		if not frame.get_global_rect().has_point(frame.get_global_mouse_position()):
+			_ranks.visible = false)
 	minimap = preload("res://scripts/minimap.gd").new()
 	minimap.custom_minimum_size = MINIMAP_SIZE
 	minimap.clip_contents = true  # the view's outline stays inside the map
@@ -1199,8 +1195,22 @@ func _tell_effects(list: Array) -> void:
 		toast("\n".join(lines.slice(-2)))
 
 
+var _drawers_away := []  # the side drawers (houses, chronicle) set aside while the court or a digest has the screen
 func _process(delta: float) -> void:
 	_reveal_pad(delta)
+	# One card at a time: the side drawers step aside while the court or the digest
+	# is up, and come back where they were once it closes.
+	var holding := (_court_panel and _court_panel.visible) or (_digest_panel and _digest_panel.visible)
+	if holding:
+		for d in [_houses_panel, _chron_panel]:
+			if d and d.visible:
+				d.visible = false
+				_drawers_away.append(d)
+	elif not _drawers_away.is_empty():
+		for d in _drawers_away:
+			if is_instance_valid(d):
+				d.visible = true
+		_drawers_away = []
 	# The reign's end is the only card while it stands.
 	if _end_panel and _end_panel.visible:
 		for p in [_court_panel, _digest_panel, _offer]:
@@ -1868,9 +1878,15 @@ func _fit_centre(panel: Control, widest: float) -> void:
 
 ## Something worth seeing has begun (your convoy on the road, a battle, a
 ## story's turn): a line under the top bar with a Watch button, for a while.
+var _held_offer := []  # [text, go, ms]: the latest Watch that came while he was busy, offered once he's done
 func offer_watch(text: String, go: Callable) -> void:
-	if _cinema_on or busy():
-		return  # one scene at a time, and nothing new while he's using a card
+	if _cinema_on:
+		return  # one scene at a time
+	if busy() or _card_up():
+		# Nothing new while he's using a card: it waits (the latest one) and is offered once he's done.
+		_held_offer = [text, go, Time.get_ticks_msec()]
+		return
+	_held_offer = []
 	if _offer:
 		_offer.queue_free()
 	_offer = _glass_panel()
@@ -2134,6 +2150,12 @@ func _card_up(but: Control = null) -> bool:
 func _catch_up() -> void:
 	if busy():
 		return
+	# A deed of his that played while a card was up: offered now, if it's still fresh (a minute).
+	if not _held_offer.is_empty() and not _card_up() and not _cinema_on:
+		var held := _held_offer
+		_held_offer = []
+		if Time.get_ticks_msec() - int(held[2]) < 60000:
+			offer_watch(held[0], held[1])
 	if _held_court and not _card_up(_court_panel) and not _court_hidden:
 		_held_court = false
 		_court_hidden = false
@@ -2209,23 +2231,23 @@ func _show_heading(r: Dictionary) -> void:
 	var name := String(rd.get("name", ""))
 	var next := String(rd.get("next", "")) if rd.get("next") != null else ""
 	# One line in words: what people call you, what's moving, and your promises.
-	var moving := PackedStringArray()
-	for k in [["peace", "Peace"], ["wealth", "Wealth"], ["strength", "Support"]]:
-		var w := int((rd.get(k[0], {}) as Dictionary).get("way", 0))
-		if w != 0:
-			moving.append("%s %s" % [k[1], "rising" if w > 0 else "falling"])
-	_earning.text = "People call you %s" % name + ("  ·  " + ", ".join(moving) if not moving.is_empty() else "")
+	# (What's rising or falling already shows in the arrows beside it: the line keeps to the name and a promise.)
+	_earning.text = "People call you %s" % name
 	tip.append("If the reign ended today, the realm would remember you as %s%s." % [name, ("; a few would say %s" % next) if next != "" else ""])
 	# The King's three ambitions: a diamond each, filled when met.
 	var am = r.get("ambitions")
 	if am is Array and not (am as Array).is_empty():
 		var kept := 0
+		var next_promise := ""
 		tip.append("Your three promises:")
 		for a in am:
 			var done: bool = (a as Dictionary).get("met") != null
 			kept += 1 if done else 0
+			if not done and next_promise == "":
+				next_promise = String((a as Dictionary).get("text", ""))
 			tip.append("  %s %s" % ["kept:" if done else "not yet:", String((a as Dictionary).get("text", ""))])
-		_earning.text += "  ·  Promises kept: %d of %d" % [kept, (am as Array).size()]
+		# At rest, the promise still to keep, so he sees what he swore without opening anything.
+		_earning.text += ("  ·  %s  %d/%d" % [next_promise, kept, (am as Array).size()]) if next_promise != "" else "  ·  Every promise kept"
 	_heading.tooltip_text = "\n".join(tip)
 	# The royal ladder: the aim before him, and a cheer when one is met.
 	var aim = r.get("aim")

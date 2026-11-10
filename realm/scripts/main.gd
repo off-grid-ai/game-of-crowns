@@ -1521,6 +1521,8 @@ var _horn_at := -100000  # when a lord's news last sounded
 
 func _on_staged(s: Dictionary, follow: Node3D) -> void:
 	var kind := String(s.get("kind", ""))
+	if kind == "vigil":
+		sound.event("vigil", terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0))))
 	if kind in KINGS_OWN or kind in WAR:
 		# Whose news: the house of the town it happened in (the house it went to, for a handover).
 		var owner := int(s.get("to", -1))

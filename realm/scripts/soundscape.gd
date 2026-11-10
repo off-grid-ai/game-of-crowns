@@ -96,6 +96,7 @@ const STINGS := {
 	"rebellion": [["sfx/war_horn.ogg|sfx/war_horn_near.ogg", -4.0, 0.0]],
 	"sack": [["sfx/war_horn.ogg|sfx/war_horn_near.ogg", -3.0, 0.0], ["sfx/toll_bell.ogg", -8.0, 3.0]],
 	"handover": [["sfx/fanfare.ogg", -14.0, 0.0]],
+	"vigil": [["sfx/war_drums.ogg", -12.0, 0.0]],  # a slow drum while the town gathers in silence (a hanging, never shown)
 }
 const ALIASES := {"succession": "crown", "coronation": "crown", "reign_end": "death", "civil_war": "rebellion",
 	"raid": "rebellion", "city_destroyed": "sack", "razed": "sack", "city_transferred": "handover"}

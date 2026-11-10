@@ -538,6 +538,28 @@ function sieges() {
   }
 }
 
+// Every decree is seen in the world, with the scenes the realm already plays
+// (scenes.gd); the townsfolk's awareness hears each one (world.scenes).
+function decreeScenes(cmd, result, seat, target) {
+  if (!seat) return;
+  const seatOf = (pid) => world.cities.find((c) => c.owner === Number(pid) && c.capital) ?? world.cities.find((c) => c.owner === Number(pid));
+  const ride = (to, label) => to && to.id !== seat.id && scene("rider", { x: seat.x, y: seat.y, tx: to.x, ty: to.y, city: to.id, label });
+  switch (cmd.action) {
+    case "marriage":  // a feast at both houses' seats
+      for (const pid of result.pact ?? []) { const s = seatOf(pid); if (s) scene("feast", { x: s.x, y: s.y, city: s.id, owner: s.owner, strength: 0.8 }); }
+      break;
+    case "peace": case "settle":  // the King's word rides to both houses
+      for (const pid of result.truce ?? []) ride(seatOf(pid), "The King's peace");
+      break;
+    case "alliance": ride(target, "The King's oath"); break;
+    case "buyoff": ride(target, "The crown's gold for the pretender"); break;
+    case "ward": if (target && target.id !== seat.id) scene("ward", { x: target.x, y: target.y, tx: seat.x, ty: seat.y, city: seat.id }); break;
+    case "banners": case "sellswords": case "back":  // men gather at Kingsmere and march out
+      scene("muster", { x: seat.x, y: seat.y, tx: target ? target.x : seat.x + 3, ty: target ? target.y : seat.y + 2, city: seat.id });
+      break;
+  }
+}
+
 // A ruling at court made visible: what the King gives goes out from
 // Kingsmere by wagon, a ward comes to Kingsmere, and any other word is
 // carried by a royal rider to the petitioner's seat.
@@ -547,8 +569,20 @@ function rulingScene(id, option, out) {
   const seat = who && (world.cities.find((c) => c.id === who.seat) ?? world.cities.find((c) => c.owner === who.playerId && c.capital) ?? world.cities.find((c) => c.owner === who.playerId));
   const crown = world.players.find((x) => houseFor(x).crown);
   const king = world.cities.find((c) => c.owner === crown?.id && c.capital) ?? world.cities.find((c) => c.title === "Kingsmere");
-  if (!seat || !king || seat.id === king.id) return;
   const words = `${option} ${out.text}`.toLowerCase();
+  // A hanging or a burning is never shown: the town gathers in silence, then goes home (awareness.gd).
+  if (/^(hang|burn)$/.test(option) || /\bhang|\bburn(ed|s|ing)? (the|her|him|them)/.test(words)) {
+    const at = seat ?? king;
+    if (at) scene("vigil", { x: at.x, y: at.y, city: at.id, strength: 0.9 });
+    return;
+  }
+  if (seat && king && seat.id === king.id) {
+    // No journey from Kingsmere to itself: a gift is a feast in its square, a call to arms a muster.
+    if (out.cost > 0 || /grant|gift|feast|bless|endow|forgive/.test(words)) scene("feast", { x: king.x, y: king.y, city: king.id, owner: king.owner });
+    else if (/levy|march|strike|war|arms/.test(words)) scene("muster", { x: king.x, y: king.y, tx: king.x + 3, ty: king.y + 2, city: king.id });
+    return;
+  }
+  if (!seat || !king) return;
   const go = (kind, from, to) => scene(kind, { x: from.x, y: from.y, tx: to.x, ty: to.y, city: to.id, label: out.text.split(/[.!]/)[0].slice(0, 60) });
   if (p.kind === "match" && /bless|wed|consent|approve/.test(words) && !/refuse|forbid|deny/.test(words)) scene("feast", { x: seat.x, y: seat.y, city: seat.id, owner: seat.owner });
   if (/ward|hostage/.test(words)) go("ward", seat, king);
@@ -1635,6 +1669,14 @@ function collectTithe(turn) {
   for (const t of Object.keys(favourPast)) if (Number(t) < turn - 8) delete favourPast[t];
   // War between the houses chokes the roads: the less peace, the less tithe reaches Kingsmere.
   const peaceNow = history[history.length - 1]?.peace ?? 1;
+  // The tithe, seen: at the year's turn wagons roll to Kingsmere from the realm's
+  // biggest towns, more of them the higher the tithe.
+  if (turn % 4 === 0 && meta.tithe > 0) {
+    const crownId = world.players.find((p) => houseFor(p).crown)?.id;
+    const king = world.cities.find((c) => c.owner === crownId && c.capital);
+    const from = world.cities.filter((c) => c.owner !== crownId && !houseFor(world.players.find((p) => p.id === c.owner) ?? {}).wild).sort((x, y) => y.size - x.size).slice(0, Math.max(1, Math.round(meta.tithe * 20)));
+    if (king) for (const c of from) scene("tribute", { x: c.x, y: c.y, tx: king.x, ty: king.y, city: king.id, tithe: true });
+  }
   if (turn % 4 === 0 && (meta.tithe >= 0.19 || meta.tithe <= 0.05)) deed(kingDeeds.tagsFor("realm", meta.tithe >= 0.19 ? "tithe_high" : "tithe_low"), { act: false });
   const t = titheLua(world, meta.tithe * (0.4 + 0.6 * peaceNow));
   tally.total += t.total;
@@ -2486,7 +2528,8 @@ http.createServer(async (req, res) => {
     if (away && (cmd.action === "relief" || cmd.action === "gift")) scene(cmd.action === "relief" ? "grain" : "tribute", { x: seat.x, y: seat.y, tx: target.x, ty: target.y, city: target.id });
     // Every decree is seen where it lands: a feast at the seat, a town changing
     // hands, the King's rider carrying the crown's purse for a building.
-    if (seat && cmd.action === "feast") scene("feast", { x: seat.x, y: seat.y, city: seat.id, owner: crownNow.id });
+    // A feast is held at court, as the decree says; the honoured house's colours fly over it.
+    if (seat && cmd.action === "feast") scene("feast", { x: seat.x, y: seat.y, city: seat.id, owner: target?.owner ?? crownNow.id });
     if (target && cmd.action === "grant") scene("handover", { x: target.x, y: target.y, city: target.id, from: target.owner, to: Number(cmd.to) });
     if (away && cmd.action === "build") scene("rider", { x: seat.x, y: seat.y, tx: target.x, ty: target.y, city: target.id, label: "The crown's purse for a new building" });
     if (seat && cmd.action === "levy") {
@@ -2518,6 +2561,7 @@ http.createServer(async (req, res) => {
         court.saveCourt?.();
       }
     }
+    decreeScenes(cmd, result, seat, target);
     record({ turn: world?.turn ?? 0, kind: "decree", text: result.text, city: cmd.city });
     setTimeout(snapshot, 600);
     return json(res, 200, { ok: true, text: crowns(result.text) + (effects ? `\n${effects}` : "") });
