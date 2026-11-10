@@ -9,14 +9,21 @@ extends Node3D
 ## (land3d.gd's cover). A clear winter day shows lying snow and no flakes. Keep
 ## the two apart.
 
-# Per weather: cumulus and cirrus cover, fog density, wind (m/s), rain, snow, wet ground.
+# Per weather: cumulus and cirrus cover, fog density, wind (m/s), rain, snow, wet ground,
+# the light (sun and sky, a share of the clear day's), shade (the sun's shadow, a share)
+# and clouds (their brightness, a share): rain is seen first in the light, not the streaks.
 const LOOKS := {
-	"clear": {"cumulus": 0.35, "cirrus": 0.3, "fog": 0.0007, "wind": 1.0, "rain": 0.0, "snow": 0.0, "wet": 0.0},
-	"showers": {"cumulus": 0.7, "cirrus": 0.5, "fog": 0.0012, "wind": 2.5, "rain": 0.4, "snow": 0.0, "wet": 0.6},
-	"rain": {"cumulus": 0.85, "cirrus": 0.6, "fog": 0.0018, "wind": 3.5, "rain": 0.8, "snow": 0.0, "wet": 1.0},
-	"storm": {"cumulus": 1.0, "cirrus": 0.8, "fog": 0.0025, "wind": 9.0, "rain": 1.0, "snow": 0.0, "wet": 1.0},
-	"snow": {"cumulus": 0.8, "cirrus": 0.6, "fog": 0.0016, "wind": 2.0, "rain": 0.0, "snow": 1.0, "wet": 0.0},
+	"clear": {"cumulus": 0.35, "cirrus": 0.3, "fog": 0.0007, "wind": 1.0, "rain": 0.0, "snow": 0.0, "wet": 0.0, "light": 1.0, "shade": 1.0, "clouds": 1.0},
+	"showers": {"cumulus": 0.7, "cirrus": 0.5, "fog": 0.0012, "wind": 2.5, "rain": 0.4, "snow": 0.0, "wet": 0.6, "light": 0.75, "shade": 0.55, "clouds": 0.6},
+	"rain": {"cumulus": 0.9, "cirrus": 0.7, "fog": 0.0022, "wind": 3.5, "rain": 0.8, "snow": 0.0, "wet": 1.0, "light": 0.55, "shade": 0.3, "clouds": 0.4},
+	"storm": {"cumulus": 1.0, "cirrus": 0.85, "fog": 0.003, "wind": 9.0, "rain": 1.0, "snow": 0.0, "wet": 1.0, "light": 0.4, "shade": 0.2, "clouds": 0.25},
+	"snow": {"cumulus": 0.85, "cirrus": 0.6, "fog": 0.0018, "wind": 2.0, "rain": 0.0, "snow": 1.0, "wet": 0.0, "light": 0.75, "shade": 0.45, "clouds": 0.75},
 }
+# Streaks and flakes only near the street, as in Manor Lords: from town height up
+# the weather is the light, the cloud, the mist and the wet ground. Camera distance
+# (camera_rig.gd: 0.5 street, about 10-16 a town) where the fall is full and where it is gone.
+const RAIN_NEAR := Vector2(1.5, 4.0)
+const SNOW_NEAR := Vector2(3.0, 8.0)
 const RAIN_DROPS := 12000  # at full rain: dense, fine and close (Manor Lords), never a few long sticks
 const SNOW_FLAKES := 1600
 
@@ -25,6 +32,8 @@ var land3d: Node3D  # land3d.gd: the ground's wet sheen (set_wet)
 var _now := "clear"
 var _rain: GPUParticles3D
 var _snow: GPUParticles3D
+var _level := {"rain": 0.0, "snow": 0.0}  # the weather's own fall, before the camera's height
+var _base := {}  # the clear day's light, as look.gd left it: weather scales it, never replaces it
 
 
 func _ready() -> void:
@@ -42,13 +51,20 @@ func show_weather(kind: String, settle: float) -> void:
 	var tw := create_tween().set_parallel(true)
 	if sky3d and sky3d.get("sky"):
 		var dome: Object = sky3d.sky
+		if _base.is_empty():
+			_base = {"sun": float(sky3d.sun_energy), "ambient": float(sky3d.ambient_energy), "shade": float(sky3d.sun_shadow_opacity), "clouds": float(sky3d.cloud_intensity)}
 		tw.tween_property(dome, "cumulus_coverage", float(l["cumulus"]), settle)
 		tw.tween_property(dome, "cirrus_coverage", float(l["cirrus"]), settle)
 		tw.tween_property(dome, "fog_density", float(l["fog"]), settle)
+		# Overcast: the sun dims and its shadows soften, the sky's light dims less, the clouds go grey.
+		tw.tween_property(sky3d, "sun_energy", _base["sun"] * float(l["light"]), settle)
+		tw.tween_property(sky3d, "ambient_energy", _base["ambient"] * lerpf(1.0, float(l["light"]), 0.6), settle)
+		tw.tween_property(sky3d, "sun_shadow_opacity", _base["shade"] * float(l["shade"]), settle)
+		tw.tween_property(sky3d, "cloud_intensity", _base["clouds"] * float(l["clouds"]), settle)
 	if sky3d:
 		tw.tween_property(sky3d, "wind_speed", float(l["wind"]), settle)
-	tw.tween_method(func(v: float): _amount(_rain, RAIN_DROPS, v), _rain.amount_ratio, float(l["rain"]), settle)
-	tw.tween_method(func(v: float): _amount(_snow, SNOW_FLAKES, v), _snow.amount_ratio, float(l["snow"]), settle)
+	tw.tween_method(func(v: float): _level["rain"] = v, _level["rain"], float(l["rain"]), settle)
+	tw.tween_method(func(v: float): _level["snow"] = v, _level["snow"], float(l["snow"]), settle)
 	if land3d and land3d.has_method("set_wet"):
 		land3d.set_wet(float(l["wet"]), settle)
 
@@ -66,13 +82,21 @@ func _process(_delta: float) -> void:
 func _process_timed(_delta: float) -> void:
 	# The fall stays about the camera, wherever it looks.
 	var cam := get_viewport().get_camera_3d()
-	if cam:
-		global_position = cam.global_position
+	if cam == null:
+		return
+	global_position = cam.global_position
+	# How near the street the eye is (camera_rig's distance; a camera without one counts as near).
+	var rig := cam.get_parent()
+	var d: float = float(rig.get("distance")) if rig and rig.get("distance") != null else 0.0
+	_amount(_rain, _level["rain"] * (1.0 - smoothstep(RAIN_NEAR.x, RAIN_NEAR.y, d)))
+	_amount(_snow, _level["snow"] * (1.0 - smoothstep(SNOW_NEAR.x, SNOW_NEAR.y, d)))
 
 
-func _amount(p: GPUParticles3D, _most: int, v: float) -> void:
+func _amount(p: GPUParticles3D, v: float) -> void:
 	p.amount_ratio = clampf(v, 0.0, 1.0)
-	p.emitting = v > 0.01
+	var on := v > 0.01
+	if p.emitting != on:
+		p.emitting = on
 
 
 ## A curtain of falling streaks (rain) or flakes (snow) in a box about the camera,
