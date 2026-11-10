@@ -350,7 +350,10 @@ export function answerMatter(ctx, key) {
     const o = counselNow.find((x) => x.key === String(key));
     (meta.mattersRest ??= {})[o ? matterKey(o) : String(key)] = world?.turn ?? 0;
     // An ultimatum answered: the house's anger starts over (it may turn again).
-    if (o?.kind === "ultimatum") for (const t of Object.values(meta.turning ?? {})) if (t.state === "sent" && t.at === o.occur) { t.state = null; t.seasons = 0; }
+    // Met only if the answer won the house back above cooling; otherwise it stands refused, and the house rises (season.js).
+    if (o?.kind === "ultimatum") for (const [pid, t] of Object.entries(meta.turning ?? {})) if (t.state === "sent" && t.at === o.occur) {
+      if ((ctx.favourOf?.(Number(pid)) ?? 50) >= BANDS.cooling) { t.state = null; t.seasons = 0; } else t.state = "refused";
+    }
     delete courtYearOf(ctx).hand[String(key)];
     closeIfDone(ctx, world?.turn ?? 0);
     chron.saveMeta(meta);

@@ -74,6 +74,7 @@ export async function runSeason(ctx) {
 // at court). Only an ultimatum refused, or left to burn down, lets him raise
 // his banners; won back above 25, the anger drains away.
 export const TURNING = 2;
+export const RISE_IN = 2;  // seasons from a refused ultimatum to the host marching
 export function turnHouses(ctx, turn) {
   const { world, meta, stakes, send, record, favourOf } = ctx;
   const turning = (meta.turning ??= {});
@@ -85,11 +86,28 @@ export function turnHouses(ctx, turn) {
     else {
       t.seasons = Math.max(0, t.seasons - 1);
       if (t.seasons === 0 && t.state !== "refused" && t.march == null) t.state = null;  // a story's march keeps its ultimatum standing
+      // Won back while its host gathered: the banners come down, the march is off.
+      if (t.riseAt != null) {
+        Object.assign(t, { state: null, march: null, riseAt: null, seasons: 0 });
+        record({ turn, kind: "decree", text: `${houseFor(p).name} lowers its banners. The King has won them back, for now.` });
+      }
     }
-    // A story's march, held for its ultimatum: it goes once the King refused, or let it lie.
-    if (t.march != null && mayRise(ctx, p.id)) {
+    // An ultimatum refused (or met with nothing that won the house back) becomes the
+    // rising itself, not a fresh ultimatum: the banners gather at the house's seat,
+    // seen on the map, and the host marches in two seasons unless the King wins
+    // the house back first (the judge: a threat you can ignore for free is no threat).
+    if (t.state === "refused" && t.march == null && favourOf(p.id) < BANDS.cooling) {
+      t.march = 8;
+      t.riseAt = turn + RISE_IN;
+      const seat = world.cities.find((c) => c.owner === p.id && c.capital) ?? world.cities.find((c) => c.owner === p.id);
+      if (seat) ctx.scene?.("muster", { x: seat.x, y: seat.y, city: seat.id, owner: p.id, strength: 0.8 });
+      record({ turn, kind: "unrest", text: `${houseFor(p).name}'s banners gather${seat ? ` at ${cityName(seat.id)}` : ""}. The King's answer did not satisfy them: in ${RISE_IN} seasons their host marches on Kingsmere.`, city: seat?.id });
+    }
+    // A story's march, held for its ultimatum: it goes once the King refused, or let it lie (and a gathering host, once its seasons are out).
+    if (t.march != null && mayRise(ctx, p.id) && (t.riseAt == null || turn >= t.riseAt)) {
       stakes?.declare(p.id, world, { send: (l) => send(`lua cmd ${l}`) }, t.march);
       t.march = null;
+      t.riseAt = null;
     }
     // An ultimatum met (favour shown, anger drained) calls the story's march off.
     if (t.march != null && !t.state) t.march = null;
