@@ -6,6 +6,12 @@ The one place where decisions live. New ideas get added here. They don't replace
 A living medieval-fantasy world that runs on its own on your laptop. You are its King: you watch it, rule it, and live with what your rulings set in motion.
 
 ## Decided
+- **The King plays with his own hands (2026-11-10, Mac):** playing still wasn't fun; RollerCoaster Tycoon, Civilization and Warcraft II are, because you build and command toward small goals. On top of the court and the houses, the King gets three loops of his own, in this order:
+  - **C, a ladder of royal goals:** always one on screen, each with a reward you can see, each leading to the next.
+  - **A, the Crown's own lands to build:** chosen from the town card and sited by the game, rising over seasons and producing gold, grain and men.
+  - **B, the royal host to command:** one order a season (where to march), then the battle is watched; taking a town turns it to the Crown.
+  
+  Every change is judged by the engagement model in GAME_DESIGN.md as well as the fun bar.
 - **Setting:** Game of Thrones *era and feel* (medieval, great houses, castles), with mythical touches (the dead beyond the wall, wildlings). No dragons: dropped 2026-11-03. It doesn't need to be Westeros or use GoT names.
 - **One age.** Medieval throughout. Tech grows within it (wooden forts become stone castles), but there's no march to industrial or sci-fi.
 - **Self-running.** Villages grow into towns and kingdoms at their own pace. It keeps going while you're away (it catches up when reopened).
