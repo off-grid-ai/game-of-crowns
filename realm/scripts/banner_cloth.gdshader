@@ -31,7 +31,18 @@ void vertex() {
 	MODELVIEW_NORMAL_MATRIX = mat3(MODELVIEW_MATRIX);
 }
 
+// Like the trees (realistic.gd fade_near): a banner right in front of the lens
+// dissolves (dithered), so it never fills the view; world units from the camera.
+uniform float near_gone = 0.6;  // a banner is read from afar (its favour), so it gives way sooner than a tree
+uniform float near_solid = 1.6;
+
 void fragment() {
+	float fade = smoothstep(near_gone, near_solid, length(VERTEX));
+	if (fade < 1.0) {
+		ivec2 px = ivec2(FRAGCOORD.xy) % 4;
+		float bayer[16] = float[16](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);
+		if (fade < (bayer[px.y * 4 + px.x] + 0.5) / 16.0) discard;
+	}
 	vec4 c = use_tex ? texture(cloth_tex, UV) : cloth_color;
 	ALBEDO = c.rgb;
 	ROUGHNESS = 1.0;

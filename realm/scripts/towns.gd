@@ -346,7 +346,8 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 					# the corners, and a crown's reach (about 0.8) beyond.
 					terrain.clear_around(center + cp, cf.length() * 0.5 + 0.8)
 					lots.append([cp, maxf(cf.x, cf.y) * 0.55])
-					_banner(root, cp + Vector3(0, cy + 1.6, 0), _house_colour, _house, 1.2)
+					# The castle's standard, to the castle's scale: over the keep, not taller than its towers.
+					_banner(root, cp + Vector3(0, cy + 0.9, 0), _house_colour, _house, 0.6)
 					_door(root, cp, cf, "great_hall", "great hall")
 					_bailey(root, cp, cy, castle.rotation.y, rng)
 					break
