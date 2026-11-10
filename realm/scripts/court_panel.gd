@@ -138,6 +138,25 @@ func _mark(petitions: Array) -> void:
 		var m := ui.btn("!", func(): open_matter(String(id)))
 		m.custom_minimum_size = Vector2(30, 30)
 		m.add_theme_color_override("font_color", T.DANGER if p.get("crisis", false) else T.ACCENT)
+		# A petitioner's own face at the place (Reigns' faces on the map), framed in
+		# their house's colour; the Hand's matters keep the plain mark.
+		var sitter = p.get("who")
+		var house: Dictionary = ui.house_by_name.get(String(p.get("house", "")), {})
+		if p.get("petitioner") != null and sitter is Dictionary and ui.portrait.is_valid():
+			m.custom_minimum_size = Vector2(36, 50)
+			m.expand_icon = true
+			m.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			var frame := StyleBoxFlat.new()
+			frame.bg_color = Color(0, 0, 0, 0.35)
+			frame.border_color = preload("res://scripts/heraldry.gd").colour(house, T.ACCENT)
+			frame.set_border_width_all(2)
+			frame.set_corner_radius_all(6)
+			for st in ["normal", "hover", "pressed", "focus"]:
+				m.add_theme_stylebox_override(st, frame)
+			ui.portrait.call(sitter, house, func(tex):
+				if is_instance_valid(m) and tex:
+					m.text = ""
+					m.icon = tex)
 		m.tooltip_text = "%s%s" % [String(p.get("name", "The Hand of the King")), (" of " + String(p["house"])) if String(p.get("house", "")) != "" else ""]
 		ui.root.add_child(m)
 		ui.anchor.pin(m, at + Vector3(0, 0.6, 0), false)
