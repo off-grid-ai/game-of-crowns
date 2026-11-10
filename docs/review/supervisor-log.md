@@ -26,3 +26,4 @@ design call from the casebook and Mac's rules. This log is the report for Mac wh
   - Asset audit, state catalogue, state-architecture and principles audits, and the consolidation plan
     (0eecd77).
 - **15:45.** Now: the NPC builder is on A2 (one definition per realm state, proof running). Builder 2 is on traffic.gd.
+- **15:50 check.** Landed: A1+A2 (f3316ec), A4/B3/B4 (2a026d8), B2 helpers (b46f16e), B5 decrees as data and handlers (3dcbd0b, 7195c83), the land reading the mirror (36695f2), towns growing as sites (36be65a, d568bff), traffic with one decider (b34937f, 841bab8), A3 (de69dc6), A5 (ebadce5), and more sound takes (fc53f7d). Ruled: urgent matters (famine, siege) jump the court rotation. Drift fixed: Builder 2 edited awareness.gd (the NPC builder's file) and swept lines; it must now request mirror fields instead. Both builders are busy; films not yet run.
