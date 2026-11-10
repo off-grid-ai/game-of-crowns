@@ -167,6 +167,15 @@ func _play(quit_after: bool) -> void:
 					if String(c.get("title", c.get("name", ""))) == w[1]:
 						main._focus_city(int(c["id"]))
 				await get_tree().create_timer(1.0).timeout
+			"unit":
+				# unit ID [dist]: frames the figure standing for a company (a wounded or dug-in soldier).
+				var fig: Node3D = main.units.figure_of(int(w[1]))
+				if fig:
+					main.rig.snap(fig.global_position, float(w[2]) if w.size() > 2 else 0.9, 0.6)
+					if main.rig.is_processing_input() == false:
+						main.rig.apply()
+				_note("  unit %s: %s" % [w[1], "framed" if fig else "no figure"])
+				await get_tree().create_timer(2.0).timeout
 			"tile":
 				# tile X Y [dist]: frames a map tile (a company in the field, a site's plot).
 				var at: Vector3 = main.terrain.world_pos(float(w[1]), float(w[2]))

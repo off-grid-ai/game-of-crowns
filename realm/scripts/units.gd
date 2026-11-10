@@ -158,6 +158,11 @@ const WOUNDED_HP := 4.0
 const FORTIFIED := [4, 10]
 
 
+## The figure standing for a company on the map (its id from /world), or null.
+func figure_of(id: int) -> Node3D:
+	return _figures.get(id, {}).get("node") as Node3D
+
+
 ## How a soldier stands when not marching: wounded, behind the shield when
 ## fortified, or at the ready with bow or blade.
 static func stance(f: Dictionary) -> String:
