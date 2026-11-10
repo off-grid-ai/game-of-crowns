@@ -57,6 +57,13 @@ const ARMS := ["LeftShoulder", "LeftUpperArm", "LeftLowerArm", "LeftHand", "Righ
 ## turning at a person's rate instead of snapping.
 static var v2: bool = OS.get_cmdline_user_args().has("--motion=v2")
 const ADULT := 0.118  # an adult's body scale (people.gd: height * k * S, measured): the size WALK_PACE was set for
+## v2: the ground each way of going covers a second at speed 1, at an adult's
+## size, measured from the clips themselves (Mixamo moves are In Place: how fast
+## a planted foot travels back under the hips; realm/tools/stride_probe.gd). The
+## legs' walk and run points sit at their clip's own pace, so a foot on the
+## ground stays put at any pace between them.
+const STRIDE := {"Walk": 0.218, "Running": 0.661, "Sprint": 0.500, "Sneak": 0.229, "Injured_Walk": 0.061,
+	"SS_Walk": 0.164, "GS_Walk": 0.121, "Axe_Walk": 0.114}
 const TURN_RATE := deg_to_rad(300.0)  # how fast a person turns on the spot or mid-stride (about a full turn in 1.2 s)
 const STEP_FLOOR := 0.35  # the slowest cadence a moving walk plays at, of its own speed
 
@@ -94,7 +101,7 @@ func setup(player: AnimationPlayer, stance: String) -> void:
 	# beyond; the blend between them follows the ground covered.
 	_feet = AnimationNodeBlendSpace1D.new()
 	_feet.min_space = 0.0
-	_feet.max_space = RUN_PACE * 1.2
+	_feet.max_space = (STRIDE["Running"] if v2 else RUN_PACE) * 1.2
 	if v2:
 		# Walk and run kept in step: their cycles time-scaled to one (Godot 4.7).
 		_feet.sync_mode = AnimationNodeBlendSpace1D.SYNC_MODE_CYCLIC_MUTABLE
@@ -177,9 +184,14 @@ func play(clip: String, rate := 1.0, hold := false, phase := -1.0, repeat := fal
 			_go.travel("rest")
 		_clip = String(_legs["stand"].animation)
 		return length
-	# A repeating standing move asked on the move waits until they stop.
-	if not (hold or (is_once(clip) and not repeat)) and _pace > MOVING and _now() == "rest" and not _mounted():
+	# A repeating standing move asked on the move waits until they stop. In v2
+	# that holds whatever stands now: a body still carried along (avoidance
+	# pushing, arriving) walks, it never glides in a standing pose.
+	var on_move := _pace > MOVING and not _mounted()
+	if not (hold or (is_once(clip) and not repeat)) and on_move and (_now() == "rest" or (v2 and _now().begins_with("loop"))):
 		_wish = clip
+		if _now() != "rest":
+			_go.travel("rest")
 		return length
 	# `repeat` loops a move that is one-off by nature: a drill, a cut practised
 	# over and over.
@@ -209,26 +221,36 @@ func track(delta: float) -> void:
 	if body == null or delta <= 0.0 or dead():
 		return
 	var at := body.global_position
+	var now_pace := 0.0  # v2: the ground covered this very frame, uneased
 	if _last != Vector3.INF and not _mounted():
 		var flat := Vector2(at.x - _last.x, at.z - _last.z).length() / delta
 		if v2:
 			flat *= ADULT / maxf(0.01, body.scale.x)  # a child's short legs step quicker over the same ground
-		_pace = lerpf(_pace, flat, minf(1.0, delta * 8.0))
+			now_pace = flat
+		# v2 eases quicker: a walk starting is in the legs within a few frames, not a third of a second.
+		_pace = lerpf(_pace, flat, minf(1.0, delta * (20.0 if v2 else 8.0)))
 	_last = at
 	if v2:
 		_face(body, delta)
 	# v2: once moving, below walking pace the walk plays whole at a slower cadence
 	# (never half stance, half walk at full cadence: short quick sliding steps).
-	var slow := v2 and _pace > WALK_PACE * 0.12 and _pace < WALK_PACE
-	set("parameters/rest/feet/blend_position", WALK_PACE if slow else _pace)
+	var walk := _leg_pace("walk")
+	var slow := v2 and _pace > walk * 0.12 and _pace < walk
+	set("parameters/rest/feet/blend_position", walk if slow else _pace)
 	var now := _now()
-	var going := _pace > MOVING
+	var going := _pace > MOVING or now_pace > MOVING
 	if going and now.begins_with("loop"):
 		_for += delta
-		if _for > SETTLE:
+		# v2: a body covering ground walks at once; a standing move never glides along.
+		if _for > SETTLE or v2:
 			_wish = _clip
 			_for = 0.0
 			_go.travel("rest")
+			if v2 and _wish in CARRIES:
+				# The load stays in the arms over the walking legs.
+				if String(_carry.animation) != _wish:
+					_assign(_carry, _wish, Animation.LOOP_LINEAR, randf())
+				set("parameters/rest/mix/blend_amount", 1.0)
 	elif not going and now == "rest" and _wish != "":
 		_for += delta
 		if _for > SETTLE:
@@ -240,9 +262,9 @@ func track(delta: float) -> void:
 		_for = 0.0
 	# Past a run's pace the legs go quicker to keep up.
 	if now == "rest":
-		speed = maxf(1.0, _pace / RUN_PACE)
+		speed = maxf(1.0, _pace / _leg_pace("run"))
 		if slow:
-			speed = maxf(STEP_FLOOR, _pace / WALK_PACE)
+			speed = maxf(STEP_FLOOR, _pace / walk)
 	# What's in hand goes with the move (weapons.gd CLIP_TOOLS): a bowl while
 	# drinking, a basket while carrying, nothing once the move is over.
 	sync_held()
@@ -310,7 +332,7 @@ func dead() -> bool:
 func current() -> String:
 	if _now() == "rest":
 		if _pace > MOVING:
-			return String(_legs["run" if _pace > (WALK_PACE + RUN_PACE) * 0.5 else "walk"].animation)
+			return String(_legs["run" if _pace > (_leg_pace("walk") + _leg_pace("run")) * 0.5 else "walk"].animation)
 		return String(_legs["stand"].animation)
 	return _clip
 
@@ -336,6 +358,9 @@ func add_moves(lib_name: String, lib: AnimationLibrary) -> void:
 
 func _assign(n: AnimationNodeAnimation, clip: String, loop: int, phase: float) -> void:
 	n.animation = clip
+	if v2 and _feet and (n == _legs.get("walk") or n == _legs.get("run")):
+		# The legs' point for this way of going moves to its own pace (STRIDE).
+		_feet.set_blend_point_position(1 if n == _legs["walk"] else 2, _leg_pace("walk" if n == _legs["walk"] else "run"))
 	if not has_animation(clip):
 		return
 	var a := get_animation(clip)
@@ -346,3 +371,11 @@ func _assign(n: AnimationNodeAnimation, clip: String, loop: int, phase: float) -
 	# Each person joins a repeating move at their own point in it, so no two
 	# move in step; a one-off move starts from its start.
 	n.start_offset = clampf(phase, 0.0, 1.0) * a.length * 0.999
+
+
+## The pace the legs' walk or run plays at speed 1: its clip's own (STRIDE) in
+## v2, the old guesses otherwise.
+func _leg_pace(leg: String) -> float:
+	if not v2:
+		return WALK_PACE if leg == "walk" else RUN_PACE
+	return float(STRIDE.get(String(_legs[leg].animation), STRIDE["Walk"] if leg == "walk" else STRIDE["Running"]))
