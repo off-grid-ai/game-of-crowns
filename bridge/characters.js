@@ -34,6 +34,7 @@ const M = ["Aldric", "Bran", "Cedric", "Dunstan", "Edric", "Godwin", "Harold", "
 const F = ["Agnes", "Bryony", "Cecily", "Edith", "Elsbeth", "Gwen", "Hilda", "Isolde", "Joan", "Maud", "Rosalind", "Wynne", "Alys", "Mira", "Tamsin", "Ysolde", "Rhiannon", "Elaine", "Beatrix", "Constance", "Genevieve", "Odette"];
 export const TRAITS = ["ambitious", "honourable", "greedy", "vengeful", "pious", "cunning", "craven", "brave", "content", "paranoid", "generous", "proud", "patient", "wrathful", "just"];
 export const SEASONS_PER_YEAR = 4;  // the one year length the court and the bridge count by
+const NORTH_Y = 30;  // towns north of this row are the North (the hill clans' and the dead's country)  // the one year length the court and the bridge count by
 
 // Roles a player can give a character: a title, and the leanings that come with it.
 export const ROLES = {
@@ -903,8 +904,25 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     if (w.favourAbove !== undefined && ctx.favour(c.playerId) <= w.favourAbove) return null;
     if (w.age && (c.age < w.age[0] || c.age > w.age[1])) return null;
     if (w.chance !== undefined && Math.random() > w.chance) return null;
+    // The realm's own state (the bridge's one definitions on each town; Freeciv's wars):
+    // a card is dealt only where the realm makes it true.
+    const hot = towns.filter((x) => x.disorder);
+    const thriving = towns.filter((x) => x.prosperity);
+    const isWild = (pid) => houseFor(world.players.find((p) => p.id === pid) ?? {}).wild;
+    // Raiders are men (barbarians, sea raiders), not the wild beasts.
+    const raider = (pid) => { const p = world.players.find((x) => x.id === pid); return !!p && /raiders/.test(houseFor(p).name ?? ""); };
+    const raided = towns.filter((x) => (world.units ?? []).some((u) => raider(u.owner) && Math.max(Math.abs(u.x - x.x), Math.abs(u.y - x.y)) <= 3));
+    const north = towns.filter((x) => x.y < NORTH_Y);
+    const warring = world.players.some((p) => p.id !== c.playerId && !isWild(p.id) && ctx.atWar?.(c.playerId, p.id));
+    if (w.atWar && !warring) return null;
+    if (w.disorder && !hot.length) return null;
+    if (w.prosperity && !thriving.length) return null;
+    if (w.raiders && !raided.length) return null;
+    if (w.north && !north.length) return null;
     const lords = this.alive().filter((o) => o.rank === "lord" && o.id !== c.id && o.house !== c.house);
-    const byOpinion = [...lords].sort((a, b) => this.opinion(c.id, a.id) - this.opinion(c.id, b.id));
+    // A war card's rival is a lord his house is at war with; otherwise the one he likes least.
+    const foes = lords.filter((l) => ctx.atWar?.(c.playerId, l.playerId));
+    const byOpinion = [...(w.rivalWar && foes.length ? foes : w.rivalPeace ? lords.filter((l) => !foes.includes(l)) : lords)].sort((a, b) => this.opinion(c.id, a.id) - this.opinion(c.id, b.id));
     const kids = c.children.map((id) => this.people[id]).filter((k) => k?.alive).sort((a, b) => b.age - a.age);
     const bms = this.alive().filter((x) => x.rank === "bannerman" && x.playerId === c.playerId);
     const anyOf = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -923,6 +941,13 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     if (roles.friend === roles.rival) roles.friend = undefined;
     for (const need of card.needs ?? []) if (!roles[need]) return null;
     if (w.feud && !(roles.rival && this.opinion(c.id, roles.rival.id) < -15)) return null;
+    if (w.rivalWar && !(roles.rival && ctx.atWar?.(c.playerId, roles.rival.playerId))) return null;
+    if (w.rivalPeace && roles.rival && ctx.atWar?.(c.playerId, roles.rival.playerId)) return null;
+    // The town the card is about is the one the realm's state is in.
+    if (w.disorder) roles.town = anyOf(hot);
+    else if (w.raiders) roles.town = anyOf(raided);
+    else if (w.prosperity) roles.town = anyOf(thriving);
+    else if (w.north) roles.town = anyOf(north);
     return roles;
   }
 

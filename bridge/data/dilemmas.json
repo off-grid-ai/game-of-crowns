@@ -1,6 +1,6 @@
 [
   {
-    "id": "abduction", "weight": 4, "needs": ["daughter", "rival", "suitor"],
+    "id": "abduction", "weight": 4, "needs": ["daughter", "rival", "suitor"], "when": { "feud": true },
     "text": "{me} of {me.house} storms into the hall: \"{suitor} of {rival.house} took my daughter {daughter} off the road at night. Forty riders, no banners. I want her back, and I want his head.\"",
     "options": [
       { "id": "return", "label": "Order her sent back, and punish {suitor}", "hint": "{me.house} +15 · {rival.house} −20 · {rival} will call it the crown meddling in a love match",
@@ -15,7 +15,7 @@
     ]
   },
   {
-    "id": "elopement", "weight": 3, "needs": ["heir", "rival"], "when": { "chance": 0.6 },
+    "id": "elopement", "weight": 3, "needs": ["heir", "rival"], "when": { "rivalPeace": true },
     "text": "{heir}, heir of {me.house}, has run off with a girl of {rival.house}. {me} wants the King's men to bring the young fool home. {rival} says {rival.his} house has been shamed, and wants blood.",
     "options": [
       { "id": "home", "label": "Bring {heir} home in chains", "hint": "{rival.house} +10 · {heir} never forgives {heir.his} {me.father} or the crown",
@@ -30,7 +30,7 @@
     ]
   },
   {
-    "id": "seen_with_enemy", "weight": 4, "needs": ["bannerman", "rival"],
+    "id": "seen_with_enemy", "weight": 4, "needs": ["bannerman", "rival"], "when": { "rivalWar": true },
     "text": "Your spymaster says {bannerman}, sworn to {me.house}, was seen at a border inn with men in {rival.house}'s colours. Money changed hands. {me} doesn't know yet.",
     "options": [
       { "id": "tell", "label": "Tell {me}", "hint": "{me.house} +10 · {bannerman}'s fate is in {bannerman.his} liege's hands",
@@ -90,7 +90,7 @@
     ]
   },
   {
-    "id": "poisoned_cup", "weight": 2, "needs": ["heir", "rival"],
+    "id": "poisoned_cup", "weight": 2, "needs": ["heir", "rival"], "when": { "feud": true },
     "text": "{heir}, heir of {me.house}, fell ill at a feast held by {rival.house}. The physician says it was poison. {me} wants {rival} tried for murder. {rival} swears on the old gods it was bad fish.",
     "options": [
       { "id": "trial", "label": "Put {rival} on trial", "hint": "{rival.house} −30 · {me.house} +15 · if innocent, the realm sees a tyrant",
@@ -147,7 +147,7 @@
     ]
   },
   {
-    "id": "sellsword", "weight": 2, "when": { "chance": 0.5 },
+    "id": "sellsword", "weight": 2, "when": { "atWar": true },
     "text": "A sellsword captain called the Golden Wolf offers five hundred men to whoever pays first. {me} of {me.house} is already bidding.",
     "options": [
       { "id": "hire", "label": "Outbid {me} (250 gold)", "cost": 250, "hint": "The crown gains a company · {me.house} −10",
@@ -189,7 +189,7 @@
     ]
   },
   {
-    "id": "defector_knight", "weight": 2, "needs": ["rival"],
+    "id": "defector_knight", "weight": 2, "needs": ["rival"], "when": { "rivalWar": true },
     "text": "A knight of {rival.house} has fled to {me.house} with his whole household, saying {rival} meant to hang him. {rival} wants him back for trial.",
     "options": [
       { "id": "protect", "label": "Let {me.house} keep him", "hint": "{me.house} gains men · {rival.house} −20",
@@ -204,7 +204,7 @@
     ]
   },
   {
-    "id": "dowry_dispute", "weight": 2, "needs": ["rival"],
+    "id": "dowry_dispute", "weight": 2, "needs": ["rival"], "when": { "feud": true, "poor": true },
     "text": "{me} of {me.house} says {rival.house} never paid the dowry it promised for a marriage ten years ago. With interest, {rival.house} owes 200 gold.",
     "options": [
       { "id": "pay", "label": "Order {rival.house} to pay", "hint": "{rival.house} pays {me.house} 200 · {rival.house} −15",
@@ -219,7 +219,7 @@
     ]
   },
   {
-    "id": "hunting_accident", "weight": 2, "needs": ["bannerman", "rival"],
+    "id": "hunting_accident", "weight": 2, "needs": ["bannerman", "rival"], "when": { "feud": true },
     "text": "{bannerman} of {me.house} was killed on a hunt in {rival.house}'s woods, by an arrow in the back. {rival}'s men say it was a stray. {me} says it was murder.",
     "options": [
       { "id": "blood", "label": "Make {rival.house} pay a blood price", "hint": "{rival.house} pays 120 · {rival.house} −10",
@@ -249,7 +249,7 @@
     ]
   },
   {
-    "id": "bannerman_slight", "weight": 3, "needs": ["bannerman"],
+    "id": "bannerman_slight", "weight": 3, "needs": ["bannerman"], "when": { "disorder": true },
     "text": "{bannerman}, sworn to {me.house}, goes over {bannerman.his} lord's head to the King: \"{me} took my best fields for {me.his} own child. I served thirty years. Is this my reward?\"",
     "options": [
       { "id": "bannerman", "label": "Rule for {bannerman}", "hint": "{bannerman} turns to the crown · {me.house} −15",
@@ -273,7 +273,7 @@
     ]
   },
   {
-    "id": "wildlings", "weight": 2, "when": { "chance": 0.5 },
+    "id": "wildlings", "weight": 2, "when": { "north": true, "raiders": true },
     "text": "Hill clans have crossed into {me.house}'s lands near {town}. Thousands of them, starving, with children. They say something worse is coming behind them.",
     "options": [
       { "id": "settle", "label": "Let them settle the empty land", "hint": "{town} grows · {me.house} −10, furious",
@@ -303,7 +303,7 @@
     ]
   },
   {
-    "id": "dragon_egg", "weight": 1, "when": { "chance": 0.25 },
+    "id": "dragon_egg", "weight": 1, "when": { "prosperity": true, "chance": 0.25 },
     "text": "Fishermen in {me.house}'s lands have pulled a stone egg out of the sea, and it's warm to the touch. {me} offers it to the King, or to whoever pays most.",
     "options": [
       { "id": "buy", "label": "Buy it (200 gold)", "cost": 200, "hint": "{me.house} +15 · the realm talks of dragons",
@@ -318,7 +318,7 @@
     ]
   },
   {
-    "id": "envoy_insult", "weight": 2, "needs": ["rival"],
+    "id": "envoy_insult", "weight": 2, "needs": ["rival"], "when": { "feud": true },
     "text": "{rival.house}'s envoy mocked {me}'s dead {me.wife} at a feast in your hall. {me} has demanded satisfaction, and both are reaching for their swords.",
     "options": [
       { "id": "duel", "label": "Let them fight it out", "hint": "One may die · the winner's house +10",
@@ -333,7 +333,7 @@
     ]
   },
   {
-    "id": "mines", "weight": 2, "when": { "towns": 2, "chance": 0.6 },
+    "id": "mines", "weight": 2, "when": { "towns": 2, "prosperity": true },
     "text": "Silver has been found in the hills near {town}. {me} of {me.house} asks for the mining rights, which by old law belong to the crown.",
     "options": [
       { "id": "grant", "label": "Give them the rights", "hint": "{me.house} grows rich · {me.house} +15",
@@ -348,7 +348,7 @@
     ]
   },
   {
-    "id": "deserters", "weight": 2, "needs": ["town"],
+    "id": "deserters", "weight": 2, "needs": ["town"], "when": { "atWar": true },
     "text": "Forty men ran away from the King's levy and are hiding in {town}. {me} of {me.house} won't hand them over: \"They're my men first.\"",
     "options": [
       { "id": "hang", "label": "Demand them, and hang them", "hint": "{me.house} −15 · every levy hears of it",
@@ -405,7 +405,7 @@
     ]
   },
   {
-    "id": "spy_caught", "weight": 2, "needs": ["rival"],
+    "id": "spy_caught", "weight": 2, "needs": ["rival"], "when": { "rivalWar": true },
     "text": "A man of {rival.house} was caught copying letters in {me}'s private rooms. Under questioning he says {rival} sent him to find proof that {me} is plotting against the crown.",
     "options": [
       { "id": "believe", "label": "Investigate {me}", "hint": "{me.house} −20 · {rival.house} +10",
@@ -420,7 +420,7 @@
     ]
   },
   {
-    "id": "great_fire", "weight": 2, "needs": ["town"], "when": { "chance": 0.5 },
+    "id": "great_fire", "weight": 2, "needs": ["town"], "when": { "disorder": true },
     "text": "Fire has burned out the lower town of {town}. {me} of {me.house} asks for help to rebuild before winter.",
     "options": [
       { "id": "rebuild", "label": "Rebuild it (180 gold)", "cost": 180, "hint": "{me.house} +15 · {town} rises again",
@@ -447,7 +447,7 @@
     ]
   },
   {
-    "id": "pirates", "weight": 2, "when": { "chance": 0.5 },
+    "id": "pirates", "weight": 2, "when": { "raiders": true },
     "text": "Island raiders are hitting {me.house}'s coast near {town}. {me} wants the royal fleet, and also wants to know why the crown keeps a fleet at all.",
     "options": [
       { "id": "fleet", "label": "Send the fleet (150 gold)", "cost": 150, "hint": "{me.house} +15 · the reavers go elsewhere",
