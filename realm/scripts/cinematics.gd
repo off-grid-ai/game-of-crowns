@@ -154,7 +154,7 @@ func _stage() -> void:
 		"battle":
 			var field: Vector3 = main.terrain.world_pos(float(city["x"]) + 1.5, float(city["y"]))
 			# The battle moves itself to open ground near there: film where it stands.
-			_at = main.scenes._battlefield(field)
+			_at = main.scenes.battlefield(field)
 			main.scenes._battle(field, main._houses.get(int(city["owner"]), {}))
 		"siege":
 			var foe := {}

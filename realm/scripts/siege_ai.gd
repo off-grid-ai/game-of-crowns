@@ -52,7 +52,7 @@ func _man(m: Dictionary) -> void:
 	if m.has("node") and is_instance_valid(m["node"]) and m["node"].has_meta("dead"):
 		m["node"].remove_from_group("people")  # the fallen stay where they fell
 	var f: Node3D = scenes._people.make(r, "soldier", col, "adult")
-	f.position = scenes._stand(m["home"])
+	f.position = scenes.stand(m["home"])
 	var face: Vector3 = (m["foot"] - m["home"]).normalized()
 	f.rotation.y = atan2(face.x, face.z)
 	root.add_child(f)
@@ -94,7 +94,7 @@ func _man(m: Dictionary) -> void:
 		m["alive"] = false
 		m["out"] = false
 		if not f.has_meta("dead"):  # an arrow from the walls may have felled him already
-			scenes._die(f, scenes.DEATHS[r.randi() % scenes.DEATHS.size()], r))
+			scenes.die(f, scenes.DEATHS[r.randi() % scenes.DEATHS.size()], r))
 	dead.set_guard(func() -> bool: return not m.get("down", false))
 	hsm.add_transition(camp, advance, &"go")
 	hsm.add_transition(advance, rush, &"rush")
@@ -124,7 +124,7 @@ func _send(p: int) -> void:
 		foot /= men.size()
 		home /= men.size()
 		var back: Vector3 = home - foot
-		scenes.framing.emit(scenes._ground(foot.lerp(home, 0.3)), 2.0, atan2(back.x, back.z))
+		scenes.framing.emit(scenes.ground(foot.lerp(home, 0.3)), 2.0, atan2(back.x, back.z))
 	for m in parties[p]:
 		if not m["alive"]:
 			_man(m)
@@ -152,7 +152,7 @@ func _go(m: Dictionary, to: Vector3, speed: float, dt: float, then: StringName) 
 	if d.length() < 0.02:
 		m["hsm"].dispatch(then)
 		return
-	n.position = scenes._stand(n.position + d.normalized() * minf(speed * dt, d.length()))
+	n.position = scenes.stand(n.position + d.normalized() * minf(speed * dt, d.length()))
 	n.rotation.y = lerp_angle(n.rotation.y, atan2(d.x, d.z), minf(1.0, dt * 6.0))
 
 

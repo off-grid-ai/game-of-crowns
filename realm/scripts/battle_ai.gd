@@ -99,7 +99,7 @@ func _soldier(m: Dictionary) -> void:
 		m["out"] = true
 		m["alive"] = false
 		if not m["node"].has_meta("dead"):  # an arrow may have felled him already
-			scenes._die(m["node"], m.get("fall", "Death_Front"), r))
+			scenes.die(m["node"], m.get("fall", "Death_Front"), r))
 	yielded.call_on_enter(func():
 		m["out"] = true
 		_play(m, "Defeated"))
@@ -396,7 +396,7 @@ func _land(m: Dictionary, e: Dictionary, move: String) -> void:
 	if move == Combat.KITS["sword"]["kick"]:
 		# Kicked: doubled over or dazed, guard broken for a moment.
 		e["busy"] = clock + _play(e, Combat.REELS["kick"][r.randi() % 3], 1.0) * 0.9
-		n.create_tween().tween_property(n, "position", scenes._stand(n.position + back * 0.06), 0.4).set_trans(Tween.TRANS_SINE)
+		n.create_tween().tween_property(n, "position", scenes.stand(n.position + back * 0.06), 0.4).set_trans(Tween.TRANS_SINE)
 		return
 	e["hp"] -= 1
 	if e["hp"] <= 0:
@@ -409,7 +409,7 @@ func _land(m: Dictionary, e: Dictionary, move: String) -> void:
 	e["guarding"] = false
 	e["busy"] = clock + _play(e, reels[r.randi() % reels.size()], 1.0) * 0.85
 	e["cool"] = maxf(e["cool"], 0.6)
-	n.create_tween().tween_property(n, "position", scenes._stand(n.position + back * 0.05), 0.35).set_trans(Tween.TRANS_SINE)
+	n.create_tween().tween_property(n, "position", scenes.stand(n.position + back * 0.05), 0.35).set_trans(Tween.TRANS_SINE)
 
 
 func _kill(m: Dictionary, back := true) -> void:
@@ -427,7 +427,7 @@ func _run(m: Dictionary, dt: float) -> void:
 		# Away from the victors: the beaten stand on the +dir side.
 		m["away"] = (dir + side * r.randf_range(-0.7, 0.7)).normalized()
 		m["gone"] = r.randf_range(5.0, 7.0)
-	n.position = scenes._stand(n.position + m["away"] * RUN * 1.1 * dt)
+	n.position = scenes.stand(n.position + m["away"] * RUN * 1.1 * dt)
 	n.rotation.y = lerp_angle(n.rotation.y, atan2(m["away"].x, m["away"].z), minf(1.0, dt * 8.0))
 	m["gone"] -= dt
 	if m["gone"] <= 0.0:
@@ -446,7 +446,7 @@ func _cheer(m: Dictionary, dt: float) -> void:
 	if m["chase"] > 0.0:
 		m["chase"] -= dt
 		var n: Node3D = m["node"]
-		n.position = scenes._stand(n.position + dir * RUN * 0.6 * dt)
+		n.position = scenes.stand(n.position + dir * RUN * 0.6 * dt)
 		if m["chase"] <= 0.0:
 			_play(m, ["Cheering", "Battlecry", "Yelling"][r.randi() % 3])
 	elif m["cool"] <= 0.0 and m["cool"] > -1.0:
@@ -481,7 +481,7 @@ func _knight_wait(k: Dictionary, dt: float) -> void:
 	to.y = 0
 	if to.length() > 0.02:
 		var step := minf(to.length(), 0.18 * dt)
-		h.position = scenes._stand(h.position + to.normalized() * step, scenes.HORSE_BODY)
+		h.position = scenes.stand(h.position + to.normalized() * step, scenes.HORSE_BODY)
 		h.rotation.y = lerp_angle(h.rotation.y, atan2(to.x, to.z), minf(1.0, dt * 3.0))
 	if clash >= 0.0 and clock > clash + 0.6 + k["i"] * 0.15:
 		if k["i"] == 0 and not k.get("reared", false):
@@ -545,7 +545,7 @@ func _knight_ride(k: Dictionary, dt: float, pace: float, charging: bool) -> void
 	k["along"] = minf(k["along"] + speed * dt, length)
 	var p := c.sample_baked(k["along"])
 	var q := c.sample_baked(minf(k["along"] + 0.04, length))
-	h.position = scenes._stand(p, scenes.HORSE_BODY)
+	h.position = scenes.stand(p, scenes.HORSE_BODY)
 	if q.distance_to(p) > 0.0001:
 		h.rotation.y = lerp_angle(h.rotation.y, atan2(q.x - p.x, q.z - p.z), minf(1.0, dt * 6.0))
 	if charging:
@@ -577,8 +577,8 @@ func _unhorse(k: Dictionary) -> void:
 	var thrown: Node3D = h.dismount()
 	if thrown:
 		var fwd := Vector3(sin(h.rotation.y), 0, cos(h.rotation.y))
-		thrown.global_position = scenes._stand(h.global_position + fwd * 0.25)
-		scenes._die(thrown, "Death_Front", r)
+		thrown.global_position = scenes.stand(h.global_position + fwd * 0.25)
+		scenes.die(thrown, "Death_Front", r)
 
 
 func _knight_rein(k: Dictionary, dt: float) -> void:
@@ -595,15 +595,15 @@ func _knight_rein(k: Dictionary, dt: float) -> void:
 		var to: Vector3 = k["chase"]
 		h.rotation.y = lerp_angle(h.rotation.y, atan2(to.x, to.z), minf(1.0, dt * 2.5))
 		var fwd := Vector3(sin(h.rotation.y), 0, cos(h.rotation.y))
-		h.position = scenes._stand(h.position + fwd * 0.6 * clampf(k["rein"] / 3.0, 0.15, 1.0) * dt, scenes.HORSE_BODY)
+		h.position = scenes.stand(h.position + fwd * 0.6 * clampf(k["rein"] / 3.0, 0.15, 1.0) * dt, scenes.HORSE_BODY)
 
 
 # ---- the whole field --------------------------------------------------------
 
 func _clash() -> void:
 	clash = clock
-	scenes._dust(root, scenes._ground(at) + Vector3(0, 0.01, 0), side, 9 * 0.2)
-	scenes.framing.emit(scenes._ground(at), 2.8, view_yaw)
+	scenes.dust(root, scenes.ground(at) + Vector3(0, 0.01, 0), side, 9 * 0.2)
+	scenes.framing.emit(scenes.ground(at), 2.8, view_yaw)
 
 
 ## The beaten side breaks when too few are left or the fight has gone on too
@@ -618,7 +618,7 @@ func _morale() -> void:
 	routed = true
 	routed_at = clock
 	if bearers.size() > 0 and is_instance_valid(bearers[0]["node"]):
-		scenes._die(bearers[0]["node"], "Death_Back", r)
+		scenes.die(bearers[0]["node"], "Death_Back", r)
 		scenes._drop_banner(bearers[0]["flag"], bearers[0]["face"])
 	for m in men:
 		if not m["alive"]:
@@ -630,7 +630,7 @@ func _morale() -> void:
 		_send(m, &"break" if m["team"] == 0 else &"won")
 	for k in knights:
 		_send(k, &"won")
-	scenes.framing.emit(scenes._ground(at + dir * 0.3), 3.4, view_yaw)
+	scenes.framing.emit(scenes.ground(at + dir * 0.3), 3.4, view_yaw)
 
 
 ## Standards stay with their line: each bearer walks a little behind his side's
@@ -654,10 +654,10 @@ func _bearers(dt: float) -> void:
 		var moving := to.length() > 0.05
 		if moving:
 			var step := to.normalized() * minf(to.length(), WALK * 0.9 * dt)
-			n.position = scenes._stand(n.position + step)
+			n.position = scenes.stand(n.position + step)
 			var flag: Node3D = b["flag"]
 			if flag:
-				flag.position = scenes._ground(flag.position + step)
+				flag.position = scenes.ground(flag.position + step)
 		if moving != b.get("moving", false):
 			b["moving"] = moving
 			scenes._people.play(n, "Walk" if moving else "Sword_Idle", 0.95)
@@ -682,7 +682,7 @@ func _frame(dt: float) -> void:
 		# In close on the blows, then back out on the whole melee, by turns:
 		# one distance the whole fight reads as a blob of small men.
 		_close = not _close
-		scenes.framing.emit(scenes._ground(mid / n), 1.6 if _close else 2.8, view_yaw + (0.35 if _close else 0.0))
+		scenes.framing.emit(scenes.ground(mid / n), 1.6 if _close else 2.8, view_yaw + (0.35 if _close else 0.0))
 
 
 # ---- helpers ----------------------------------------------------------------
@@ -714,7 +714,7 @@ func _steer(m: Dictionary, goal: Vector3, speed: float, dt: float, look := Vecto
 		else:
 			want = safe
 	m["vel"] = m["vel"].lerp(want, minf(1.0, dt * 6.0))
-	n.position = scenes._stand(n.position + m["vel"] * dt)
+	n.position = scenes.stand(n.position + m["vel"] * dt)
 	var face: Vector3 = look if look.length() > 0.001 else m["vel"]
 	face.y = 0
 	if face.length() > 0.001:

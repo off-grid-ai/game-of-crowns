@@ -377,14 +377,14 @@ func _stage_test_battle(world: Dictionary, best: Dictionary) -> void:
 		main.get_tree().create_timer(0.5).timeout.connect(_stage_test_battle.bind(world, best))
 		return
 	var field: Vector3 = main.terrain.world_pos(float(best["x"]) + 1.5, float(best["y"]))
-	if main.scenes._battlefield(field) == Vector3.INF:
+	if main.scenes.battlefield(field) == Vector3.INF:
 		for c in world.get("cities", []):
 			var f: Vector3 = main.terrain.world_pos(float(c["x"]) + 1.5, float(c["y"]))
-			if main.scenes._battlefield(f) != Vector3.INF:
+			if main.scenes.battlefield(f) != Vector3.INF:
 				field = f
 				best = c
 				break
-	var ground: Vector3 = main.scenes._battlefield(field)
+	var ground: Vector3 = main.scenes.battlefield(field)
 	print("SHOT battle town=%s ground=%s" % [best.get("title", "?"), ground])
 	if ground == Vector3.INF:
 		return
