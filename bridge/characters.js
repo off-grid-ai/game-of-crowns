@@ -1108,12 +1108,6 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       this.onArcRuling?.(p.arc, p.beat, option);
     } else if (p.deck) {
       this.play(p, option, world, out, gold);
-    } else if (p.kind === "raise") {
-      const man = this.people[p.man];
-      if (option === "raise") { man.liege = null; man.loyalty = 100; man.goals = [{ kind: "favour", text: "prove the King right to raise me" }]; out.favour[c.playerId] = -15; this.remember(c.id, `The King took ${man.name} from my service and made him a lord.`); out.text = `${man.name} rises a lord, sworn to the crown alone. ${c.name} has lost a sword and gained a rival.`; }
-      if (option === "honour") { man.loyalty = Math.min(100, man.loyalty + 10); this.shift(man.id, c.id, 15); out.favour[c.playerId] = 5; out.text = `The King gives ${man.name} a sword from the royal armoury and sends him home to his liege, honoured.`; }
-      if (option === "refuse") { out.favour[c.playerId] = 10; this.remember(man.id, "I knelt before the King and he sent me home with nothing."); man.loyalty = Math.max(0, man.loyalty - 10); out.text = `The King sends ${man.name} back to ${c.house}. ${c.name} is pleased. ${man.name} is not.`; }
-      this.save(man);
     }
     this.saveCourt();
     this.save(c);

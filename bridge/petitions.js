@@ -149,4 +149,11 @@ export const ANSWERS = {
     if (option === "silence") { out.favour[c.playerId] = c.traits.includes("pious") ? -20 : -5; this.remember(c.id, "The King had a holy man silenced in my lands."); out.text = "The friar is taken in the night. The preaching stops. The poor do not forget his face."; }
     if (option === "ignore") { for (const o of houses) out.favour[o.id] = -3; out.text = "The King ignores the friar. His sermon spreads from village to village."; }
   },
+  raise({ p, c, opt, option, out, gold, world }) {
+    const man = this.people[p.man];
+    if (option === "raise") { man.liege = null; man.loyalty = 100; man.goals = [{ kind: "favour", text: "prove the King right to raise me" }]; out.favour[c.playerId] = -15; this.remember(c.id, `The King took ${man.name} from my service and made him a lord.`); out.text = `${man.name} rises a lord, sworn to the crown alone. ${c.name} has lost a sword and gained a rival.`; }
+    if (option === "honour") { man.loyalty = Math.min(100, man.loyalty + 10); this.shift(man.id, c.id, 15); out.favour[c.playerId] = 5; out.text = `The King gives ${man.name} a sword from the royal armoury and sends him home to his liege, honoured.`; }
+    if (option === "refuse") { out.favour[c.playerId] = 10; this.remember(man.id, "I knelt before the King and he sent me home with nothing."); man.loyalty = Math.max(0, man.loyalty - 10); out.text = `The King sends ${man.name} back to ${c.house}. ${c.name} is pleased. ${man.name} is not.`; }
+    this.save(man);
+  },
 };
