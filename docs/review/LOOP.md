@@ -391,3 +391,14 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - Story titles name each person's own family ("Stormhold and Dale").
   - The favour drift reads "54 ▼13".
 - **Verdict:** on course: friction first, each fix seen in a game.
+
+## 2026-11-10, 13:36 (autopilot)
+
+- **What's going on:** a test reign is filming the lords' deeds as scenes. Since last turn:
+  - all story and court text rewritten in plain speech (27 stories, 34 cards, checked field by field);
+  - lords' deeds play existing scenes;
+  - minimap pings, an edge arrow and Space for the latest news;
+  - the screen opens on the world; moods are words.
+- **Checked a research claim:** "seasons forced to 20 s" is not true now. The live bridge reports 40 s seasons (server.js sets 40 on load; the 20 is only a default before a realm loads).
+- **Direction:** Mac's rules hold. The camera never moves by itself, only what the world can show gets told, and proven patterns are used (RTS news, modal court, quest-log aim).
+- **Verdict:** on course. Next: proof frames from the running reign, then the townsfolk on LimboAI.
