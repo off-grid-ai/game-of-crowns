@@ -268,7 +268,7 @@ func _cam(target: Vector3, dist: float, yaw: float, pitch: float) -> void:
 	# The rig's own pitch for this distance (camera_rig._apply), solved for the tilt.
 	var t := clampf((rig.distance - rig.min_distance) / (rig.max_distance - rig.min_distance), 0.0, 1.0)
 	var base := lerpf(30.0, 55.0, pow(t, 0.7))
-	var g := smoothstep(2.5, 0.45, rig.distance)
+	var g: float = rig.ground_view_at(rig.distance)  # the rig's own rule
 	var tilt := (pitch - (1.0 - g) * base - 3.0 * g) / ((1.0 - g) + 0.6 * g)
 	rig.tilt = tilt
 	rig._goal_tilt = tilt

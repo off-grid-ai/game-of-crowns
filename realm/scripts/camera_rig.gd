@@ -18,7 +18,7 @@ var terrain: Node3D
 var target := Vector3.ZERO
 var distance := 120.0
 var yaw := 0.0
-var min_distance := 1.3  # about 10 m: a few houses fill the view, the camera still above the crowd
+var min_distance := 0.5  # street level (about 4 m): a person at the well fills a good part of the view
 const EYE := 0.2  # eye height, about 1.7 m
 var max_distance := 260.0
 
@@ -42,9 +42,23 @@ func _ready() -> void:
 	cam.near = 0.02
 	cam.far = 2000
 	add_child(cam)
+	# The lens never passes through a roof or a wall: Godot's ShapeCast3D sweeps a
+	# small ball from what the camera looks at back toward the lens, against the
+	# towns' buildings (on a layer of their own), updated the moment it's asked
+	# (no stale physics frame), and the lens stops short of the first building.
+	_cast = ShapeCast3D.new()
+	_cast.top_level = true
+	_cast.enabled = false  # cast on demand only
+	_cast.collision_mask = LENS_LAYER
+	_cast.margin = 0.03
+	var ball := SphereShape3D.new()
+	ball.radius = 0.04
+	_cast.shape = ball
+	add_child(_cast)
 
 
 func focus(pos: Vector3, dist := -1.0) -> void:
+	_hit = -1.0  # a jump starts clear: no ease carried over from the last place
 	_goal_target = pos
 	if dist > 0:
 		_goal_distance = dist
@@ -104,9 +118,7 @@ func _blocked(a: Vector3, b: Vector3) -> bool:
 		var fps: Array = root.get_meta("footprints", [])
 		for i in fps.size():
 			var fp: PackedVector2Array = fps[i]
-			var top: float = tops[i] if i < tops.size() else -1.0
-			if top < 0.0:  # height unknown: a big footprint stands tall (as _roofline guesses)
-				top = 2.4 if absf((fp[1] - fp[0]).cross(fp[3] - fp[0])) > 3.0 else 0.95
+			var top := height_of(fp, tops, i)
 			if top < 1.2:
 				continue
 			for t in 10:
@@ -116,6 +128,7 @@ func _blocked(a: Vector3, b: Vector3) -> bool:
 
 
 func snap(pos: Vector3, dist: float, y := 0.0) -> void:
+	_hit = -1.0
 	target = pos
 	_goal_target = pos
 	distance = dist
@@ -237,46 +250,98 @@ func _ground_under(screen: Vector2) -> Vector3:
 var towns: Node3D
 ## The camera never goes inside a building, a wall or a stockade: near one
 ## (or over it) it stays above its roof, with room to spare for the lens.
-func _roofline(p: Vector3) -> float:
+## How far down toward the street the eye has come at a distance (0 far out,
+## 0.85 at street level): it flattens toward eye level, never level. The one rule,
+## for the rig and the cinematics.
+static func ground_view_at(dist: float) -> float:
+	return smoothstep(4.0, 0.5, dist) * 0.85
+
+
+## How tall a town's building stands over its footprint (towns.gd records the
+## height beside each footprint; -1 when unknown, and then a big footprint is a
+## tall house and a small one a shed). The one guess, for the lens and the views.
+static func height_of(fp: PackedVector2Array, tops: Array, i: int) -> float:
+	var top: float = tops[i] if i < tops.size() else -1.0
+	if top < 0.0:
+		top = 2.4 if absf((fp[1] - fp[0]).cross(fp[3] - fp[0])) > 3.0 else 0.95
+	return top
+
+
+## The towns' buildings and walls as the lens sees them: one static body per
+## town, a prism over each footprint up to its roof, on a layer only the camera's
+## spring arm looks at. Rebuilt when a town's footprints change.
+const LENS_LAYER := 1 << 19
+var _cast: ShapeCast3D
+var _bodies := {}  # town id -> [holder Node3D, signature]
+var _bodies_check := 0.0
+var _hit := -1.0  # the spring's length, eased back out after a roof is passed
+
+
+func _lens_bodies() -> void:
 	if towns == null:
-		return -INF
-	const SPARE := 0.45  # how near the lens may come to a wall's face
-	var high := -INF
+		return
 	for id in towns.towns:
 		var root: Node3D = towns.towns[id]["node"]
-		var local := Vector2(p.x - root.position.x, p.z - root.position.z)
-		if local.length() > float(root.get_meta("reach", 6.0)) + 1.0:
+		if not is_instance_valid(root):
 			continue
-		var tops: Array = root.get_meta("tops", [])
 		var fps: Array = root.get_meta("footprints", [])
-		# In a castle's open yard, its own footprint doesn't lift the lens: only
-		# its walls do, as the eye nears them.
-		var open_yard := -1
-		for y in root.get_meta("yards", []):
-			if Geometry2D.is_point_in_polygon(local, y[0]):
-				open_yard = int(y[1])
+		var walls: Array = root.get_meta("walls", [])
+		var tops: Array = root.get_meta("tops", [])
+		var sig := hash([fps, tops, walls])  # a site growing changes its height, not its count
+		if _bodies.has(id) and _bodies[id][1] == sig and is_instance_valid(_bodies[id][0]):
+			continue
+		if _bodies.has(id) and is_instance_valid(_bodies[id][0]):
+			_bodies[id][0].queue_free()
+		var holder := Node3D.new()
+		holder.name = "LensBodies"
 		for i in fps.size():
-			if i == open_yard:
-				continue
-			var fp: PackedVector2Array = fps[i]
-			if not (Geometry2D.is_point_in_polygon(local, fp) or _near_edge(local, fp, SPARE)):
-				continue
-			var top: float = tops[i] if i < tops.size() else -1.0
-			if top < 0.0:
-				var area := absf((fp[1] - fp[0]).cross(fp[3] - fp[0]))
-				top = 2.4 if area > 3.0 else 0.95
-			high = maxf(high, root.position.y + top + 0.3)
-		for w in root.get_meta("walls", []):
-			if Geometry2D.is_point_in_polygon(local, w[0]) or _near_edge(local, w[0], SPARE):
-				high = maxf(high, root.position.y + float(w[1]) + 0.3)
-	return high
+			_prism(holder, fps[i], height_of(fps[i], tops, i) + 0.12)
+		for w in walls:
+			_prism(holder, w[0], float(w[1]) + 0.12)
+		root.add_child(holder)
+		_bodies[id] = [holder, sig]
 
 
-func _near_edge(p: Vector2, fp: PackedVector2Array, r: float) -> bool:
-	for i in fp.size():
-		if p.distance_to(Geometry2D.get_closest_point_to_segment(p, fp[i], fp[(i + 1) % fp.size()])) < r:
-			return true
-	return false
+## One building as the lens sees it: a body of its own (so the one the eye
+## stands in, a castle's yard, can be set aside), a prism up to its roof.
+func _prism(holder: Node3D, fp: PackedVector2Array, h: float) -> void:
+	if fp.size() < 3:
+		return
+	var pts := PackedVector3Array()
+	for q in fp:
+		pts.append(Vector3(q.x, -0.4, q.y))
+		pts.append(Vector3(q.x, h, q.y))
+	var shape := ConvexPolygonShape3D.new()
+	shape.points = pts
+	var body := StaticBody3D.new()
+	body.collision_layer = LENS_LAYER
+	body.collision_mask = 0
+	var cs := CollisionShape3D.new()
+	cs.shape = shape
+	body.add_child(cs)
+	holder.add_child(body)
+
+
+## Where the lens can stand on its line to `look`: short of the first building
+## in the way (snapping in, so it never clips; easing back out). A building the
+## eye itself stands in (a castle's yard, a doorway) doesn't count.
+func _clear(look: Vector3, pos: Vector3) -> Vector3:
+	var arm := pos - look
+	var full := arm.length()
+	if full < 0.01 or not is_inside_tree():
+		return pos
+	_cast.clear_exceptions()
+	var params := PhysicsPointQueryParameters3D.new()
+	params.position = look
+	params.collision_mask = LENS_LAYER
+	for hit in get_world_3d().direct_space_state.intersect_point(params, 8):
+		_cast.add_exception_rid(hit["rid"])
+	_cast.global_position = look
+	_cast.target_position = arm
+	_cast.force_shapecast_update()
+	var free := full * _cast.get_closest_collision_safe_fraction() if _cast.is_colliding() else full
+	_hit = free if _hit < 0.0 or free < _hit else lerpf(_hit, free, 0.15)
+	return look + arm / full * minf(_hit, full)
 
 
 func _floor_at(p: Vector3) -> float:
@@ -362,7 +427,7 @@ func _apply() -> void:
 	var above := clampf(lerpf(30.0, 55.0, pow(t, 0.7)) + tilt, 8.0, 89.0)
 	# Zoomed right in, the camera comes down to a person's eye and looks across
 	# the land rather than down at it; tilt then looks up or down from there.
-	var ground_view := smoothstep(4.0, 1.2, distance) * 0.55  # comes down toward the street, never to eye level
+	var ground_view := ground_view_at(distance)
 	var level := clampf(3.0 + tilt * 0.6, -25.0, 40.0)
 	var pitch := deg_to_rad(lerpf(above, level, ground_view))
 	var ground := _floor_at(target)
@@ -373,8 +438,12 @@ func _apply() -> void:
 	var offset := Vector3(sin(yaw) * cos(pitch), sin(pitch), cos(yaw) * cos(pitch)) * distance
 	var pos := look + offset
 	if terrain and terrain.width > 0:
-		pos.y = maxf(pos.y, maxf(terrain.height_at(pos.x, pos.z), 0.0) + lerpf(1.5, EYE, ground_view))
-	pos.y = maxf(pos.y, _roofline(pos))
+		# Never below the ground: far out a good way above it, at the street just under eye height.
+		pos.y = maxf(pos.y, maxf(terrain.height_at(pos.x, pos.z), 0.0) + lerpf(1.5, EYE * 0.6, ground_view / 0.85))
+	_bodies_check -= get_process_delta_time()
+	if _bodies_check <= 0.0:
+		_bodies_check = 1.0
+		_lens_bodies()
 	# Lifted over a roof or a castle wall, the view must stay oblique: past
 	# about 42 degrees down, the camera steps back along its line instead of
 	# climbing higher, and clears the roofs from there.
@@ -386,7 +455,6 @@ func _apply() -> void:
 			break
 		var back := flat.normalized() * (rise / most)
 		var to := Vector3(look.x + back.x, look.y + rise * 0.9, look.z + back.y)
-		to.y = maxf(to.y, _roofline(to))
 		pos = to
 	# Following something through a wood (a convoy on a forest road, a rider):
 	# with tree crowns between the lens and what it shows, the camera rises over
@@ -399,6 +467,10 @@ func _apply() -> void:
 			if woods.blocking(pos, look) == 0:
 				break
 			pos.y += 0.3
+	if distance <= 4.0:  # street to town: the lens kept out of the buildings
+		pos = _clear(look, pos)
+	else:
+		_hit = -1.0
 	cam.fov = lerpf(45.0, 62.0, ground_view)  # wider on the ground, as a person sees
 	cam.global_position = pos
 	cam.look_at(look + Vector3(0, distance * 0.02 * (1.0 - ground_view), 0), Vector3.UP)
