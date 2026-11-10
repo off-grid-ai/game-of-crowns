@@ -73,6 +73,11 @@ const HEAD_ONLY := preload("res://scripts/head_only.gdshader")
 
 const ANIMS := "res://assets/anims/mixamo/"
 const HERO_ANIMS := "res://assets/hero/anims/"
+## The Universal Animation Library (Quaternius, CC0), retargeted at import
+## (assets/retarget/ual_map.tres): sitting, a torch idle, a formal walk, crouch,
+## jog. Guns, spells, swimming and root-motion copies stay out: no place here.
+const UAL := "res://assets/anims/AnimationLibrary_Godot_Standard.gltf"
+const UAL_SKIP := ["A_TPose", "Pistol", "Spell", "Swim", "_RM", "Roll"]
 const Motion := preload("res://scripts/motion.gd")
 # Ways a soldier stands ready (all on the shared skeleton), one per man.
 const GUARDS := ["Sword_Idle", "Sword_Idle", "SS_Idle_2", "SS_Block_Idle"]
@@ -105,6 +110,18 @@ func _init() -> void:
 					_lib.add_animation(f.get_basename(), _in_place(a.duplicate(true)))
 					break
 		src.free()
+	# The UAL set, each clip under its own name unless the crowd has one already.
+	if ResourceLoader.exists(UAL):
+		var ual: Node = (load(UAL) as PackedScene).instantiate()
+		for ap in ual.find_children("*", "AnimationPlayer", true, false):
+			for n in (ap as AnimationPlayer).get_animation_list():
+				var nm := String(n)
+				if _lib.has_animation(nm) or UAL_SKIP.any(func(k): return nm.contains(k)):
+					continue
+				var a: Animation = (ap as AnimationPlayer).get_animation(n)
+				if a.length > 0.1:
+					_lib.add_animation(nm, _in_place(a.duplicate(true)))
+		ual.free()
 	# The close-up's own gestures too (Shake No, Dismiss, Relieved Sigh, Talking
 	# Hands...), retargeted the same way, named with underscores; a move the
 	# crowd already has keeps the crowd's take.
