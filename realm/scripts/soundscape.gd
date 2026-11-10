@@ -175,6 +175,7 @@ func _ready() -> void:
 		add_child(p)
 		_music.append(p)
 	_music[0].finished.connect(_on_track_done.bind(0))
+	_start_recording()
 	_music[1].finished.connect(_on_track_done.bind(1))
 
 
@@ -271,6 +272,8 @@ func volume(bus: String) -> float:
 
 ## Each frame, timed for the frame-cost probe (perf_tools.gd, GOC_PERF_PROBE=1; off in play).
 func _process(delta: float) -> void:
+	if not _taps.is_empty():
+		_log_levels(delta)
 	if not preload("res://scripts/perf_tools.gd").probing:
 		_process_timed(delta)
 		return
@@ -663,3 +666,56 @@ func _one_shot(s: AudioStream, bus: String, db: float, at: Vector3, pitch: float
 func _done(p: Node) -> void:
 	_stingers = maxi(0, _stingers - 1)
 	p.queue_free()
+
+
+# --- Test recording (films only) ---------------------------------------------
+
+## --record-audio=<abs path.wav> (films and sound proofs only; no machine
+## loopback needed): Godot's own AudioEffectRecord on Master and on the buses
+## worth comparing, saved when the game quits as <path>.wav, <path>-weather.wav,
+## <path>-sfx.wav, <path>-voice.wav, <path>-ambience.wav. Each bus's peak is
+## also printed once a second ("AUDIO t=… Master=… Weather=…", dB).
+const TAPS := ["Master", "Weather", "SFX", "Voice", "Ambience"]
+var _taps := {}  # bus -> its AudioEffectRecord
+var _record_to := ""
+var _level_t := 0.0
+
+
+func _start_recording() -> void:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--record-audio="):
+			_record_to = a.substr(15)
+	if _record_to == "":
+		return
+	for bus in TAPS:
+		var i := AudioServer.get_bus_index(bus)
+		if i < 0:
+			continue
+		var r := AudioEffectRecord.new()
+		AudioServer.add_bus_effect(i, r)
+		r.set_recording_active(true)
+		_taps[bus] = r
+
+
+func _log_levels(delta: float) -> void:
+	_level_t += delta
+	if _level_t < 1.0:
+		return
+	_level_t = 0.0
+	var parts := PackedStringArray()
+	for bus in _taps:
+		var i := AudioServer.get_bus_index(bus)
+		parts.append("%s=%.1f" % [bus, maxf(AudioServer.get_bus_peak_volume_left_db(i, 0), AudioServer.get_bus_peak_volume_right_db(i, 0))])
+	print("AUDIO t=%d %s" % [Time.get_ticks_msec() / 1000, " ".join(parts)])
+
+
+func _exit_tree() -> void:
+	for bus in _taps:
+		var r: AudioEffectRecord = _taps[bus]
+		var clip := r.get_recording()
+		r.set_recording_active(false)
+		if clip:
+			var path := _record_to if bus == "Master" else _record_to.get_basename() + "-" + String(bus).to_lower() + ".wav"
+			clip.save_to_wav(path)
+			print("AUDIO saved ", path)
+
