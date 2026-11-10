@@ -2073,12 +2073,12 @@ func _show_heading(r: Dictionary) -> void:
 	var name := String(rd.get("name", ""))
 	var next := String(rd.get("next", "")) if rd.get("next") != null else ""
 	_earning.text = name + ("  ·  then %s" % next if next != "" else "")
-	tip.append("If the reign ended today, history would name you %s%s." % [name, ("; close behind, %s" % next) if next != "" else ""])
+	tip.append("If the reign ended today, the realm would remember you as %s%s." % [name, ("; a few would say %s" % next) if next != "" else ""])
 	# The King's three ambitions: a diamond each, filled when met.
 	var am = r.get("ambitions")
 	if am is Array and not (am as Array).is_empty():
 		var marks := ""
-		tip.append("Your ambitions:")
+		tip.append("The three things you swore to do:")
 		for a in am:
 			var done: bool = (a as Dictionary).get("met") != null
 			marks += "◆" if done else "◇"

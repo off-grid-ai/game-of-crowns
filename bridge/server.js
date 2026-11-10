@@ -1628,9 +1628,13 @@ function interlude() {
       after: f >= 60 ? "They stand by you for it." : f < 25 ? "They have not forgiven it." : c.d > 0 ? "They remember it." : "They bent the knee, and kept the grudge." };
   });
   const acts = ["first", "second", "third"];
+  // What the realm is calling him, said by the realm (a different mouth each act),
+  // and how his sworn ambitions stand, in words.
   const met = (meta.ambitions ?? []).filter((a) => a.met != null).length;
-  const ambit = meta.ambitions?.length ? ` Your ambitions: ${met} of ${meta.ambitions.length} fulfilled.` : "";
-  choices.push({ city: -1, text: `So far, history would name you ${named.name}.`, after: (named.next ? `Close behind: ${named.next}.` : "") + ambit });
+  const done = ["none is done yet", "you have done one", "you have done two", "you have done all three"][Math.min(3, met)];
+  const ambit = meta.ambitions?.length ? `Of the three things you swore to do, ${done}.` : "";
+  const said = [`In the taverns they call you ${named.name}.`, `At court they whisper that you are ${named.name}.`, `The chroniclers have begun to write of you as ${named.name}.`][q - 1];
+  choices.push({ city: -1, text: said, after: [named.next ? `A few still say ${named.next}.` : "", ambit].filter(Boolean).join(" ") });
   meta.interlude = { q, title: `The ${acts[q - 1]} act ends`, turn: world?.turn ?? 0, choices, fates: [], seen: false };
   chron.saveMeta(meta);
   record({ turn: world?.turn ?? 0, kind: "act", text: `The ${acts[q - 1]} act of the reign ends.` });
@@ -1657,7 +1661,7 @@ function epilogue() {
   if (meta.ambitions?.length) {
     const met = meta.ambitions.filter((a) => a.met != null);
     choices.push({ city: -1, text: met.length ? `You set out to ${met.map((a) => a.text.charAt(0).toLowerCase() + a.text.slice(1)).join(", and to ")}, and you did.` : "You set out with three ambitions, and met none of them.",
-      after: `${met.length} of ${meta.ambitions.length} ambitions fulfilled.` });
+      after: `Of the three things you swore to do, ${["you did none", "you did one", "you did two", "you did all three"][Math.min(3, met.length)]}.` });
   }
   const power = (p) => world.cities.filter((c) => c.owner === p.id).length * 2 + (p.units ?? 0);
   const mightiest = [...great].sort((a, b) => power(b) - power(a))[0];
