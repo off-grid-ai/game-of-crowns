@@ -851,7 +851,7 @@ func _build_ticker() -> void:
 	_ticker.alignment = BoxContainer.ALIGNMENT_END
 	_ticker.add_theme_constant_override("separation", 5)
 	_ticker.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ticker.visible = false  # the chronicle down the right carries the news; this corner stays clear for the world
+	_ticker.visible = true  # what just happened (UI.md 2): the chronicle starts closed, so the news lives here
 	_root.add_child(_ticker)
 
 
@@ -1895,46 +1895,68 @@ func offer_watch(text: String, go: Callable) -> void:
 ## when it arrives, then steady. Click it, or press Space, to go there.
 var _edge: PanelContainer
 var _edge_label: Label
+var _edge_icon: TextureRect
 
 
-func edge_arrow(at, angle: float, text: String, _color: Color, fresh: bool) -> void:
+func edge_arrow(at, angle: float, text: String, tone: String, fresh: bool) -> void:
 	if _edge == null:
-		# The house's own glass, at caption size: it speaks like every other card
-		# (UI.md: one accent, corners), and is noticed by its fade, the minimap
-		# rings and the sound, not by its size.
+		# A chip like the ticker's: smoked glass, one hairline, a small caret and
+		# caption-sized text (UI.md 4, 5). It's noticed by sliding in, the minimap
+		# rings and the sound, never by its size.
 		_edge = PanelContainer.new()
-		T.glass(_edge)
+		var chip := T._box(T.SURFACE_SOLID, T.HAIRLINE, 7, 10)
+		chip.content_margin_top = 6
+		chip.content_margin_bottom = 6
+		_edge.add_theme_stylebox_override("panel", chip)
+		_edge.custom_minimum_size = Vector2(0, 32)
 		_edge.mouse_filter = Control.MOUSE_FILTER_STOP
 		_edge.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		_edge.gui_input.connect(func(e: InputEvent):
 			if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 				last_event.emit())
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 7)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_edge.add_child(row)
+		_edge_icon = TextureRect.new()
+		_edge_icon.texture = _icon("caret-right")
+		_edge_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_edge_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		_edge_icon.custom_minimum_size = Vector2(14, 14)
+		_edge_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		_edge_icon.pivot_offset = Vector2(7, 7)
+		_edge_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_edge_label = Label.new()
-		_edge_label.add_theme_font_size_override("font_size", 15)
+		_edge_label.add_theme_font_size_override("font_size", 13)
 		_edge_label.add_theme_color_override("font_color", T.TEXT)
-		_edge.add_child(_edge_label)
+		_edge_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(_edge_icon)
+		row.add_child(_edge_label)
 		_root.add_child(_edge)
-	var show: bool = at != null and not _cinema_on
+	# One voice at a time: while a card or panel is open the news is only the
+	# minimap rings and the ticker line; the chip comes once it closes.
+	var show: bool = at != null and not _cinema_on and not _card_up()
 	if show:
-		var arrows := ["→", "↘", "↓", "↙", "←", "↖", "↑", "↗"]
-		var i := posmod(roundi(angle / (PI / 4.0)), 8)
-		_edge_label.text = "%s  %s" % [arrows[i], text] if i in [3, 4, 5, 6] else "%s  %s" % [text, arrows[i]]
+		_edge_label.text = text
+		var c: Color = T.DANGER if tone == "loss" else (T.ACCENT if tone == "crown" else T.TEXT_2)
+		_edge_icon.modulate = c
+		if tone == "loss":
+			_edge_label.add_theme_color_override("font_color", T.DANGER)
+		else:
+			_edge_label.add_theme_color_override("font_color", T.TEXT)
+		_edge_icon.rotation = angle
 		_edge.tooltip_text = "Go there (Space)"
 		var sz := _edge.get_combined_minimum_size()
 		var view := get_viewport().get_visible_rect().size
 		var p: Vector2 = at
-		var r := Rect2(Vector2(clampf(p.x - sz.x * 0.5, 12, view.x - sz.x - 12), clampf(p.y - sz.y * 0.5, 120, view.y - sz.y - 12)).round(), sz)
-		# One voice at a time: never over an open card; the minimap rings and the sound carry it meanwhile.
-		for c in covered():
-			if c != _edge.get_global_rect() and c.grow(6).intersects(r) and not (_edge.visible and c == Rect2(_edge.position, _edge.size)):
-				show = false
-				break
-		if show:
-			_edge.position = r.position
-			_edge.size = sz
-	if show and (fresh or not _edge.visible):
-		_edge.modulate.a = 0.0
-		_edge.create_tween().tween_property(_edge, "modulate:a", 1.0, 0.5)
+		var goal := Vector2(clampf(p.x - sz.x * 0.5, 12, view.x - sz.x - 12), clampf(p.y - sz.y * 0.5, 120, view.y - sz.y - 12)).round()
+		_edge.size = sz
+		if fresh or not _edge.visible:
+			# Slides in from its edge, 160 ms, then holds still (UI.md 8).
+			_edge.position = goal + Vector2.from_angle(angle) * 24.0
+			_edge.create_tween().tween_property(_edge, "position", goal, 0.16).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+		elif _edge.position.distance_to(goal) > 2.0:
+			_edge.position = goal
 	_edge.visible = show
 
 

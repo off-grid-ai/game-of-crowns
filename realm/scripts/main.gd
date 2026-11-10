@@ -1523,7 +1523,9 @@ func _on_staged(s: Dictionary, follow: Node3D) -> void:
 				if int(c["id"]) == int(s.get("city", -1)):
 					owner = int(c["owner"])
 		var col := Color.from_string(String(_houses.get(owner, {}).get("color", "#c9a95a")), Color(0.79, 0.66, 0.35))
-		_news = {"s": s, "follow": follow, "at": terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0))), "caption": director.caption(s), "ms": Time.get_ticks_msec(), "color": col, "new": true}
+		_news = {"s": s, "follow": follow, "at": terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0))), "caption": director.caption(s), "ms": Time.get_ticks_msec(), "color": col, "new": true,
+			# Its tone on the chip: red for what's hostile (loss), gold for the King's own, plain for the rest.
+			"tone": "loss" if kind in ["sack", "razed", "battle", "siege"] or (kind == "handover" and s.get("lord", false)) else ("crown" if kind in KINGS_OWN and not s.get("lord", false) else "")}
 		# A lord's deed sounds once, each kind its own (StarCraft: an attack never sounds
 		# like news): the horn only for what's hostile, the bell for a death, a cheer for
 		# a feast, a letter on the road in silence. Rate-limited with the offers.
@@ -1940,14 +1942,14 @@ func _edge_tick(delta: float) -> void:
 	_edge_left = 0.15
 	var cam := get_viewport().get_camera_3d()
 	if _news.is_empty() or cam == null or Time.get_ticks_msec() - int(_news["ms"]) > 40000 or not _before_news.is_empty():
-		ui.edge_arrow(null, 0.0, "", Color.WHITE, false)
+		ui.edge_arrow(null, 0.0, "", "", false)
 		return
 	var at: Vector3 = _news["at"]
 	var view := get_viewport().get_visible_rect().size
 	var p := cam.unproject_position(at)
 	var behind := cam.is_position_behind(at)
 	if not behind and Rect2(Vector2.ZERO, view).grow(-40).has_point(p):
-		ui.edge_arrow(null, 0.0, "", Color.WHITE, false)  # it's on screen: no arrow
+		ui.edge_arrow(null, 0.0, "", "", false)  # it's on screen: no arrow
 		return
 	var mid := view * 0.5
 	var dir := (p - mid) * (-1.0 if behind else 1.0)
@@ -1955,5 +1957,5 @@ func _edge_tick(delta: float) -> void:
 		dir = Vector2.UP
 	# Where the line from the centre toward it leaves the screen.
 	var k := minf((mid.x - 30) / maxf(absf(dir.x), 0.001), (mid.y - 30) / maxf(absf(dir.y), 0.001))
-	ui.edge_arrow(mid + dir * k, dir.angle(), String(_news["caption"]), _news.get("color", Color.WHITE), _news.get("new", false))
+	ui.edge_arrow(mid + dir * k, dir.angle(), String(_news["caption"]), String(_news.get("tone", "")), _news.get("new", false))
 	_news["new"] = false
