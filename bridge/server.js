@@ -8,6 +8,7 @@
 import { spawn, execFileSync } from "node:child_process";
 import fs from "node:fs";
 import zlib from "node:zlib";
+import net from "node:net";
 import crypto from "node:crypto";
 import http from "node:http";
 import path from "node:path";
@@ -167,6 +168,7 @@ const savesSeen = { dir: null, mtime: 0, list: [] };
 async function ceasefire(a, b, turns = 16) {
   if (!fc || switching) return false;
   switching = true;
+  const t0 = Date.now();
   try {
     await stopFreeciv();
     const save = newestSave();
@@ -179,6 +181,12 @@ async function ceasefire(a, b, turns = 16) {
   } finally {
     startFreeciv();
     switching = false;
+    // The hitch: how long the realm was without Freeciv while the truce went in.
+    const probe = () => {
+      const c = net.connect(FC_PORT, "127.0.0.1", () => { c.destroy(); console.log(`ceasefire reload: ${Date.now() - t0} ms`); });
+      c.on("error", () => (Date.now() - t0 < 120000 ? setTimeout(probe, 100) : console.log("ceasefire reload: no answer in 120 s")));
+    };
+    probe();
   }
 }
 
@@ -474,7 +482,7 @@ function rule(id, option) {
   const out = court.answer(id, option, world);
   if (out.error) return out;
   if (petition) {
-    const tag = petition.deck ? kingDeeds.tagsFor("deck", petition.kind, option) : petition.kind === "arc" ? (kingDeeds.tagsFor("arc", petition.arc, option) ?? kingDeeds.tagsFor("arc", petition.beat, option)) : kingDeeds.tagsFor("court", petition.kind, option);
+    const tag = petition.deck ? kingDeeds.tagsFor("deck", petition.kind, option) : petition.kind === "arc" ? (kingDeeds.tagsFor("arc", `${petition.arc}:${petition.beat}`, option) ?? kingDeeds.tagsFor("arc", petition.arc, option) ?? kingDeeds.tagsFor("arc", "story", option)) : kingDeeds.tagsFor("court", petition.kind, option);
     const pc = petition.city != null ? world.cities.find((x) => x.id === Number(petition.city)) : null;
     deed(tag ?? { axes: {} }, { favour: out.favour, place: pc ? cityName(pc.id) : (court.people?.[petition.from]?.house ?? "") });
   }
@@ -2083,6 +2091,7 @@ function endReign(why, outcome = "completed") {
   meta.score = s.score;
   meta.verdict = s.verdict;
   meta.title = s.title;
+  meta.why = s.why;  // the deeds the name was earned by (ledger.js), shown under it
   meta.outcome = outcome;
   meta.endedAt = { turn: world?.turn ?? 0, peace: s.peace, pop: s.pop, houses: world?.players?.filter((p) => !houseFor(p).wild && !houseFor(p).crown && world.cities.some((c) => c.owner === p.id)).length ?? 0 };
   chron.saveMeta(meta);
@@ -2159,7 +2168,7 @@ function reignInfo() {
   return {
     id: meta.id, name: meta.name, scenario: meta.scenario, status: meta.status, paused, minutes: meta.minutes,
     elapsedMs: meta.elapsedMs, remainingMs: meta.minutes > 0 ? Math.max(0, meta.minutes * 60000 - meta.elapsedMs) : null,
-    score: meta.score, verdict: meta.verdict, title: meta.title, outcome: meta.outcome, ended: meta.endedAt,
+    score: meta.score, verdict: meta.verdict, title: meta.title, why: meta.why ?? null, outcome: meta.outcome, ended: meta.endedAt,
     epilogue: meta.epilogue ?? null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, aim: aimNow() ? { n: Math.min(meta.ladder.i, LADDER.length) + (meta.ladder.n ?? 0) + 1, of: meta.ladder.i < LADDER.length ? LADDER.length : null, text: aimNow().text, how: aimNow().how, progress: aimProgress(aimNow()), at: aimPlace(aimNow()) } : null, aimDone: meta.ladder?.just && Date.now() - meta.ladder.just.at < 8000 ? meta.ladder.just.text : null, readings: meta.status === "running" ? readings() : null,
     souls: world?.cities?.reduce((t, c) => t + soulsOf(c.size), 0) ?? 0,
   };
@@ -2493,6 +2502,15 @@ http.createServer(async (req, res) => {
   }
   // Test hook (films only): a lord's deed on demand, so its alert can be filmed.
   // Answers only for a reign named as a test, and only with the X-Test header.
+  if (url.pathname === "/test/deed" && req.method === "POST") {
+    // A proof's deed, test reigns only: {kind: decree|court|deck|arc|realm, key, option, place}, as a ruling or decree would note it.
+    if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
+    const b = await body(req);
+    const tag = kingDeeds.tagsFor(String(b.kind), String(b.key), b.option === undefined ? undefined : String(b.option));
+    if (!tag) return json(res, 400, { error: "no such deed in data/ledger.json" });
+    deed(tag, { place: String(b.place ?? ""), act: b.kind !== "realm" });
+    return json(res, 200, { ok: true, ledger: meta.ledger, name: kingName() });
+  }
   if (url.pathname === "/test/mark" && req.method === "POST") {
     // A film's scar, test reigns only: {kind: battle|sack|razed, x, y, age: seasons ago}.
     if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
