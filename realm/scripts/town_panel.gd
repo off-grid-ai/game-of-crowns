@@ -253,12 +253,13 @@ func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 	_town_family.visible = not family.is_empty()
 	if _town_family.visible:
 		ui.set_arms(_town_family.get_child(0), family)
-		(_town_family.get_child(1) as Label).text = "Held by the %s family, sworn to %s" % [c["family"], String(house.get("name", "")).replace("House ", "")]
+		(_town_family.get_child(1) as Label).text = "Held by the %s family, sworn to %s" % [c["family"], str(house.get("name", "")).replace("House ", "")]
 	var b: Array = c.get("buildings", [])
 	var parts := []
 	# What has befallen the town, first (the bridge's situation.js: stormed, rebuilding, starving…).
-	if String(c.get("situation", "")) != "":
-		parts.append(String(c["situation"]))
+	var befallen = c.get("situation")  # null when nothing has befallen it
+	if befallen is String and befallen != "":
+		parts.append(befallen)
 	if c.get("capital", false):
 		parts.append("Seat of the house")
 	if (_town_player.get("besieged", []) as Array).has(int(c["id"])):
