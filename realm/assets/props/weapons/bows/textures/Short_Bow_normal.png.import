@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/Short_Bow_normal.png-85bd183a565fe59e87dab782
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/knife_baseColor.png-4b41beadd8eba70fe853aadd0
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

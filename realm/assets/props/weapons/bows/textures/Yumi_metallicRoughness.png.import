@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/Yumi_metallicRoughness.png-ce66d267ff259c880c
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

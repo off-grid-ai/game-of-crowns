@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/Metal_baseColor.jpeg-390a13c9b14287386fee6a2f
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

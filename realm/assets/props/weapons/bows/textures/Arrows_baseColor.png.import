@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/Arrows_baseColor.png-0693a43cfe7e4a8ad29fdbc8
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

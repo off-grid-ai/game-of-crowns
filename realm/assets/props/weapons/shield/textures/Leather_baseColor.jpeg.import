@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/Leather_baseColor.jpeg-dd450748f7bf6661e3db5e
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

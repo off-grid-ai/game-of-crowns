@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/Horn_Bow_normal.png-0dff16b5a69bc91069aba7acb
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

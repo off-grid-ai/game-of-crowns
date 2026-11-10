@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/Metal_normal.png-843569e7d4598ccc9717e6e76f05
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/Short_Bow_metallicRoughness.png-4cc90f4f4b43a
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

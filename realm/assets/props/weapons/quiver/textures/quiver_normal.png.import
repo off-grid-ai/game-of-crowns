@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/quiver_normal.png-d8959eecaf1e0e7627833338134
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

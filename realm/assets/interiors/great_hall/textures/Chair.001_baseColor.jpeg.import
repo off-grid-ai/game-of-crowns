@@ -3,19 +3,21 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cvqjqv1qkdd4d"
-path="res://.godot/imported/Chair.001_baseColor.jpeg-15b2d2df82d98558a420b48d02fc4d9d.ctex"
+path.s3tc="res://.godot/imported/Chair.001_baseColor.jpeg-15b2d2df82d98558a420b48d02fc4d9d.s3tc.ctex"
+path.etc2="res://.godot/imported/Chair.001_baseColor.jpeg-15b2d2df82d98558a420b48d02fc4d9d.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/great_hall/textures/Chair.001_baseColor.jpeg"
-dest_files=["res://.godot/imported/Chair.001_baseColor.jpeg-15b2d2df82d98558a420b48d02fc4d9d.ctex"]
+dest_files=["res://.godot/imported/Chair.001_baseColor.jpeg-15b2d2df82d98558a420b48d02fc4d9d.s3tc.ctex", "res://.godot/imported/Chair.001_baseColor.jpeg-15b2d2df82d98558a420b48d02fc4d9d.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -36,5 +38,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=4096
 detect_3d/compress_to=1

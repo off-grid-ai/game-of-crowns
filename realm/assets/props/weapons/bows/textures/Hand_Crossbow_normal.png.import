@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/Hand_Crossbow_normal.png-0c3c970166b1897563af
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
