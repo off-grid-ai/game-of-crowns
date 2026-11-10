@@ -796,3 +796,14 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Own work in progress:** the walk pace from the clip's own stride. The first headless measurement read 0, because the clip didn't pose the skeleton through AnimationPlayer. Next try: drive it through the person's Motion tree.
 - **Fun bar:** no reign measured. Judging by the judge's frames, the decision moment is the weakest line.
 - **Verdict:** on course on structure; off course on the decision's feel. Course correction: the court's choices become two-sided dilemmas before more systems are added. I take it next.
+
+## 2026-11-10 23:30, autopilot (the course correction took)
+
+- **Correction check:** last turn's correction was "the court's choices become two-sided dilemmas". It took.
+  - 9a2db70: every Hand order is weighed before choosing (cost, whom it warms, whom it cools). It runs the same decree and the same tempering as the real order, dry.
+  - Proof, the Thornvale–Stormhold war: Command peace +2 each. Back Stormhold: Stormhold +12, Thornvale −12. Wed them: Thornvale +8, Stormhold +5, where the written label claimed "+8 each".
+  - Builder 2 shows it on the anchored card.
+  - Petitions' own options are next.
+- **Others:** Townsfolk look is running talk and war/riot checks. NPC perf is measuring the units, forest and nav-bake fixes. Film round 5 is on the full review capture (about 45 min).
+- **Fun bar:** no reign measured. Bet 5's "helps and hurts shown" is now true for the Hand's orders, data-side.
+- **Verdict:** on course.
