@@ -365,3 +365,16 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Friction run, frame 25:** the first act's telling sat on screen for four frames (over a minute) with the clock held: no visible way to go on ("click to continue" is nowhere). The harness's click missed it too. Closed by hand to keep the run going; logged as friction.
 - **Pace:** 14 minutes of wall time covered only 3 seasons of the reign; held clocks (court, telling) dominate.
 - **Verdict:** on the corrected course; collecting the list.
+
+## 2026-11-10, 13:20 (friction pass)
+
+- **Review of the 50-frame run (fresh agent as a demanding player), top frictions and what's done:**
+  1. The act's telling held the game six minutes with no way on → Continue button, any key, closes itself after 15 s.
+  2. Panels piled on the court card → the court is modal; ledger and chronicle step aside.
+  3. Text contradicting the state ("at peace" amid wars) → fixed for the ledger line. Still open: a truce shown while besieging, and a quote denying the treachery it heads.
+  4. The goal not linked to its means → click the aim and its town's card opens.
+  5. Two units for soldiers → men everywhere.
+  6. Cut-off names at the screen edge → whole or hidden.
+  7. "Later" against "Close the court" → each says what it does.
+- **Still open, in order:** card template slips ("Stormhold and Stormhold"), unlabelled numbers ("▼ 13"), leftover floating text, big events weighted like small ones, and dead air between courts (the core-loop question for Mac).
+- **Proof:** a check reign is running with these live; frames next turn.
