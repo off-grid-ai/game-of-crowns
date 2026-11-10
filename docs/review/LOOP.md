@@ -892,3 +892,20 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   4. Skate, then Kingsmere live.
 - **Fun bar:** from Builder 2's three reigns, returns, ultimatums and costed answers are all within target. A clean measured reign with the fixed script is still owed. It waits for a free bridge slot.
 - **Verdict:** on course. The freeze is the top risk.
+
+## 2026-11-11 09:50, measured reign on head (clean)
+
+| Line | Now | Before (00:45) | Target |
+|---|---|---|---|
+| Decisions a minute | 1.27 | 1.47 | ≤ 1 (the judge: about one matter a sitting is right for a seasonal court) |
+| Quiet share | 89% | 89% | ≥ 60% |
+| Hand matters | 8 of 19 | 13 of 22 | no loops |
+| Lords returning | 3 of 19 (16%) | 9% / 37% | ≤ 25% |
+| Repeated kinds | 4 (grain ×4: a famine that lasted) | 2 | 0 for non-crises |
+| Distinct petitioners | 8 | 7 | name three lords |
+| Placed on the map | 19 of 19 | 22 of 22 | all |
+| Plea answers weighed | 10 of 11 | 6 of 9 | all |
+| Schemes seen | 5 | 4 | every season |
+
+- **Reading:** the ultimatum loop is gone (Hand matters 13 → 8). Returns are in band. Answers are now weighed almost everywhere. Decisions are down to 1.27 a minute, which the judge accepts for a sitting-paced court. Grain repeats are a famine lasting several seasons, which is the same crisis and not a repetition bug.
+- **Verdict:** on course. The court's numbers hold. The top risks are now the freezes (NPC perf) and a probe that passes what the film fails (Townsfolk look).
