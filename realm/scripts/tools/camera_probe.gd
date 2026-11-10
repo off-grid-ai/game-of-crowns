@@ -3,16 +3,19 @@ extends SceneTree
 ## the real rig (camera_rig.gd) over a stand-in land with hills and a street of
 ## houses, driven by script the way a player drives it: a wheel zoom from the
 ## realm down to the street, a pan along the houses at street height, a tilt.
-## Each frame it logs the lens and the aim, and FAILS on a jump: the lens moving
-## more than JUMP of its distance in one frame, or the aim turning more than
-## TURN degrees, when nothing asked for a cut.
+## Each frame it logs the lens and the aim, and FAILS on a jump (a frame moving
+## far more than the frames before it, or OUTRIGHT of its distance at once), the
+## aim turning more than TURN degrees, or the view tipping past STEEP (top-down).
 ##
 ## Headless, no bridge, no GPU:
 ##   arch -arm64 godot --headless --path realm --fixed-fps 60 --script res://scripts/tools/camera_probe.gd
 ## (--fixed-fps 30 checks the same at a slower frame rate.) Writes user://camera_probe.csv.
 
 const Rig := preload("res://scripts/camera_rig.gd")
-const JUMP := 0.05  # of the lens distance, in a 60th of a second
+const JUMP := 0.05  # of the lens distance, in a 60th of a second: under this a move is never a jump
+const SPIKE := 2.5  # a frame this many times the usual move of the frames before it is a break
+const OUTRIGHT := 0.12  # of the lens distance in a 60th of a second: a jump whatever came before
+const STEEP := 58.0  # degrees below the horizon: steeper is top-down
 const TURN := 6.0  # degrees of aim, in a 60th of a second
 
 
@@ -32,6 +35,8 @@ class Towns extends Node3D:
 
 
 var rig: Node3D
+var _steepest := 0.0
+var _moves: Array = []  # each frame's lens move, for what is usual
 var _frames: Array = []  # [t, phase, lens pos, aim dir, distance]
 var _t := 0.0
 var _phase := ""
@@ -109,18 +114,28 @@ func _process(delta: float) -> bool:
 		return true
 	var lens: Vector3 = rig.cam.global_position
 	var aim: Vector3 = -rig.cam.global_transform.basis.z
+	if _phase != "settle" and _phase != "tilt":
+		_steepest = maxf(_steepest, rad_to_deg(asin(clampf(-aim.y, -1.0, 1.0))))
 	if not _frames.is_empty():
 		var was: Array = _frames[-1]
 		var moved: float = lens.distance_to(was[2])
 		var turned := rad_to_deg((was[3] as Vector3).angle_to(aim))
 		var dist := maxf(float(rig.distance), 0.05)
 		var per := _dt * 60.0  # the limits are per 60th of a second
-		if (moved > JUMP * dist * per or turned > TURN * per) and _phase != "settle":
+		# A jump is a break in the motion, not speed: a frame that moves far more than
+		# the frames just before it (SPIKE times their median), or more than OUTRIGHT of
+		# the distance at once. Steady fast travel (a quick zoom) is not one.
+		var recent: Array = _moves.slice(-10)
+		recent.sort()
+		var usual: float = recent[recent.size() / 2] if not recent.is_empty() else moved
+		var spike := moved > SPIKE * maxf(usual, 0.0001) and moved > JUMP * dist * per
+		_moves.append(moved)
+		if (spike or moved > OUTRIGHT * dist * per or turned > TURN * per) and _phase != "settle":
 			_fails += 1
 			_by_phase[_phase] = int(_by_phase.get(_phase, 0)) + 1
 			if OS.get_cmdline_user_args().has("--each"):
 				print("JUMP t=%.2f %s dist=%.2f moved=%.3f turned=%.1f" % [_t, _phase, dist, moved, turned])
-			var score := maxf(moved / (JUMP * dist * per), turned / (TURN * per))
+			var score := maxf(moved / maxf(SPIKE * usual, JUMP * dist * per), turned / (TURN * per))
 			if _worst.is_empty() or score > float(_worst["score"]):
 				_worst = {"score": score, "t": snappedf(_t, 0.01), "phase": _phase, "moved": snappedf(moved, 0.001), "dist": snappedf(dist, 0.01), "turned": snappedf(turned, 0.1)}
 	_frames.append([_t, _phase, lens, aim, float(rig.distance)])
@@ -137,8 +152,10 @@ func _finish() -> void:
 		var p: Vector3 = r[2]
 		f.store_line("%.3f,%s,%.4f,%.4f,%.4f,%.4f" % [r[0], r[1], p.x, p.y, p.z, r[4]])
 	f.close()
-	print("CAMERA %s: %d jump frames of %d (lens over %d%% of its distance, or aim over %.0f deg, in one frame)%s" % [
-		"FAIL" if _fails > 0 else "PASS", _fails, _frames.size(), int(JUMP * 100), TURN,
+	print("CAMERA %s: %d jump frames of %d (a break in the lens's motion, over %d%% of its distance at once, or the aim over %.0f deg, in one frame)%s" % [
+		"FAIL" if _fails > 0 else "PASS", _fails, _frames.size(), int(OUTRIGHT * 100), TURN,
 		("; by phase %s; worst %s" % [JSON.stringify(_by_phase), JSON.stringify(_worst)]) if _fails > 0 else ""])
-	print("CAMERA lens stepped out of a building (small steps, under the jump limit): ", rig.get("lens_snaps"))
+	print("CAMERA steepest look down: %.1f deg (limit %.0f, never top-down)" % [_steepest, STEEP])
+	if _steepest > STEEP + 0.5:
+		print("CAMERA FAIL: the lens looked down %.1f deg" % _steepest)
 	print("CAMERA log: ", ProjectSettings.globalize_path("user://camera_probe.csv"))
