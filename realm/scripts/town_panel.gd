@@ -245,7 +245,8 @@ func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 	if at != Vector3.INF:
 		_town_panel.custom_minimum_size = Vector2(PINNED_WIDTH, 0)
 		_town_panel.size = Vector2(PINNED_WIDTH, 0)
-		ui.anchor.pin(_town_panel, at)
+		# Clear of the town itself; closed once the town has left the screen.
+		ui.anchor.pin(_town_panel, at, true, 0.9 + float(c.get("size", 4)) * 0.08, _put_town_away)
 	_name_decrees(c, house)
 	ui.set_sigil(_town_sigil, house)
 	# A town held by a bannerman flies his family's arms.

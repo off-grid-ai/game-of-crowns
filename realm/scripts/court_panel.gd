@@ -213,7 +213,10 @@ func _show_audience() -> void:
 	# itself (a sitting, a crisis), it stands where the court always does.
 	var here: Vector3 = ui.place_of.call(p)
 	if _opened_at != Vector3.INF and here == _opened_at:
-		ui.anchor.pin(_court_panel, here)
+		# Once its place leaves the screen, the card goes back where the court always stands.
+		ui.anchor.pin(_court_panel, here, true, 0.8, func():
+			_opened_at = Vector3.INF
+			_unpin_court())
 	else:
 		_opened_at = Vector3.INF
 		_unpin_court()
