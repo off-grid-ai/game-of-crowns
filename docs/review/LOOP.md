@@ -336,3 +336,10 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - Every new reign's cast gets distinct first names, the lords keeping theirs; court, stories and records follow (tested on a copy of the baseline: 0 shared names among 101 living, files still parse).
   - Portraits stand on the card with no box behind them (Mac).
 - **Not yet proven live:** the court spread and the clear portraits need a new test reign; Mac is playing.
+
+## 2026-11-10, 13:20 (Mac playing: "functional, not playable or fun")
+
+- **Camera:** the director took the camera after every court and after 90 s idle, mid-move. It now never moves by itself; what's worth seeing is offered (Watch) and goes only on a click. Mac: "overriding user behaviour with system behaviour is amateur".
+- **A match offered that couldn't happen:** "Wed them" showed with no one to wed, then was refused. Every match offer now checks for a real pair first.
+- **Ultimatum cause:** named "the realm's mood at your crowning". It now names what the King did and when ("You marched the royal host on our walls, in the autumn of 309"), or says the crown has done nothing for them.
+- **Verdict:** off course. Mac's whole-game read: functional, not playable, not fun. Features keep landing on a game that doesn't yet hold together moment to moment. Stop features; fix playability first, from a person's play, then rethink the minute-to-minute loop with Mac.

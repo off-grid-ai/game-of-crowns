@@ -1,9 +1,8 @@
 extends Node
-## The director: when you leave the camera alone for a while, it goes looking
-## for whatever is happening in the realm (a siege, a battle, a town burning or
-## starving, the King's grain on the road) and lingers on it, then moves on.
-## With nothing happening, it drifts slowly between towns. Any click, key or
-## scroll hands the camera straight back to you.
+## The director: when the King clicks Watch on something happening in the realm
+## (a siege, a battle, a town burning or starving, the King's grain on the
+## road), it takes him there and lingers on it, then moves on. It never takes
+## the camera by itself. Any click, key or scroll hands it straight back.
 
 const IDLE_SECONDS := 90.0  # truly left alone: never while the King reads or moves the mouse
 const SHOT_SECONDS := 18.0
@@ -73,19 +72,11 @@ func soon() -> void:
 func _process(delta: float) -> void:
 	if world.is_empty() or rig == null:
 		return
-	if not active and _soon >= 0.0:
-		_soon -= delta
-		if _soon < 0.0 and not (ui and ui.has_method("reading") and ui.reading()):
-			start()
-		return
+	# The camera is the King's. The director never takes it on its own: what's
+	# worth seeing is offered (Watch, on the screen's edge) and it goes only when
+	# he clicks. (Mac: "overriding the player with the system is amateur".)
 	if not active:
-		# Reading a card (the court, a town, the ledger) is not being idle.
-		if ui and ui.has_method("reading") and ui.reading():
-			_idle = 0.0
-			return
-		_idle += delta
-		if _idle >= IDLE_SECONDS:
-			start()
+		_soon = -1.0
 		return
 	# A slow turn around whatever we're watching, so even a quiet shot moves.
 	rig._goal_yaw += delta * 0.04

@@ -633,7 +633,7 @@ function counsel(players, cities, threat) {
     const cause = drain ? ` What cools them most: ${drain.why} (${Math.round(drain.d)}).` : "";
     // A royal match binds the cold house to the most loyal one: both warm, and a long truce holds.
     const friend = great.filter((p) => p.id !== cold.id && !stilled(cold.id, p.id)).sort((a, b) => favourOf(b.id) - favourOf(a.id))[0];
-    const match = friend ? [{ label: `Wed them to ${friend.house.name.replace(/^House /, "")}`, action: "marriage", city: seatOf(cold.id).id, to: friend.id }] : [];
+    const match = friend && matchFor(cold.id, friend.id) ? [{ label: `Wed them to ${friend.house.name.replace(/^House /, "")}`, action: "marriage", city: seatOf(cold.id).id, to: friend.id }] : [];
     // A taken town is answered by giving it back, if the other house still holds it.
     const took = meta.taken?.[cold.id];
     const back = drain?.why === "a town granted or taken" && took && cities.some((c) => c.id === took.city && c.owner === took.to)
@@ -679,9 +679,13 @@ function counsel(players, cities, threat) {
     if (t?.state !== "sent" || !seatOf(p.id)) continue;
     const lord = court?.lordOfHouse(p.id);
     const short = p.house.name.replace(/^House /, "");
-    const drain = (favourWhy[p.id] ?? []).filter((r) => r.d < 0).sort((a, b) => a.d - b.d)[0];
+    // The grievance is something the King did, by name and season ("You marched the
+    // royal host on our walls, in the autumn of 309"); without one, the plain truth.
+    const worst = (deeds[p.id] ?? []).filter((x) => x.d <= -8).sort((a, b) => a.d - b.d)[0];
+    const when = worst ? calendar(worst.turn) : null;
+    const grievance = worst ? `You ${worst.what}, in the ${when.season} of ${when.year}. Set that right` : `The crown has done nothing for ${short} since you were crowned. Set that right`;
     out.push({ urgency: 100, kind: "ultimatum", occur: t.at, text: `${p.house.name} sends the crown an ultimatum`,
-      why: `${lord ? lord.name : `The lord of ${short}`}: "Set right what the crown has done to us${drain ? ` (${drain.why})` : ""}, or ${short} raises its banners." Answer with a favour they can see; silence is a refusal.`,
+      why: `${lord ? lord.name : `The lord of ${short}`}: "${grievance}, or ${short} raises its banners." Answer with a favour they can see; silence is a refusal.`,
       acts: [{ label: "A feast in their honour", action: "feast", city: seatOf(p.id).id }, { label: "Gift crowns", action: "gift", city: seatOf(p.id).id },
         { label: `Take their heir as your ward (they cannot rise for five years)`, action: "ward", city: seatOf(p.id).id }] });
     for (let i = out.length - 2; i >= 0; i--) if (out[i].text.startsWith(`${p.house.name} grows cold`)) out.splice(i, 1);
@@ -731,7 +735,7 @@ function counsel(players, cities, threat) {
         : { label: "Command peace", action: "peace", city: seatOf(war.id)?.id, to: foe.id },
       { label: `Back ${weak.house.name.replace(/^House /, "")}, the weaker (${((weak.units ?? 0) * 200).toLocaleString("en-US")} men to ${((strong.units ?? 0) * 200).toLocaleString("en-US")})`, action: "back", city: seatOf(weak.id)?.id, to: strong.id },
       { label: "Sit it out", ui: "sitout", war: `${war.id}:${foe.id}` },
-      { label: "Wed them to each other", action: "marriage", city: seatOf(war.id)?.id, to: foe.id },
+      matchFor(war.id, foe.id) ? { label: "Wed them to each other", action: "marriage", city: seatOf(war.id)?.id, to: foe.id } : null,
     ].filter((a) => a && (a.ui || a.city !== undefined));
     const why = cold
       ? `${cold.house.name} is too cold to obey a royal peace (favour ${Math.round(favourOf(cold.id))}, it needs 40). Warm them first, or bind the two by marriage.`
@@ -793,7 +797,7 @@ function counsel(players, cities, threat) {
       if (heir && match && seatOf(h.id)) {
         const [other] = match;
         occasions.push({ kind: "match", urgency: 35, text: `${heir.name} of ${h.house.name} is of age to wed`, why: `A royal match with ${other.house.name} would bind both houses to the crown and to each other: no war between them while it holds.`,
-          acts: [{ label: `Wed them to ${short(other)}`, action: "marriage", city: seatOf(h.id).id, to: other.id }, { label: "A feast for the betrothal talk", action: "feast", city: seatOf(h.id).id }] });
+          acts: [matchFor(h.id, other.id) ? { label: `Wed them to ${short(other)}`, action: "marriage", city: seatOf(h.id).id, to: other.id } : null, { label: "A feast for the betrothal talk", action: "feast", city: seatOf(h.id).id }].filter(Boolean) });
         break;
       }
     }
@@ -1146,6 +1150,17 @@ const DEED_WORDS = {
   "an oath to the crown": ["took our oath and stood by it", "broke the oath we swore to the crown"],
   "the royal host": ["marched for us", "marched the royal host on our walls"],
 };
+
+// A royal match needs an unwed son or daughter of age from each house, one of
+// each. The Hand offers a match only when this finds one.
+function matchFor(pa, pb) {
+  if (!court) return null;
+  const [la, lb] = [pa, pb].map((pid) => court.lordOfHouse(pid));
+  if (!la || !lb) return null;
+  const unwed = (lord) => court.alive().filter((k) => k.parents?.includes(lord.id) && !k.spouse && k.age >= 15);
+  for (const ka of unwed(la)) { const kb = unwed(lb).find((k) => k.gender !== ka.gender); if (kb) return [la, lb, ka, kb]; }
+  return null;
+}
 
 // A deed the house will not forget. The same deed again adds to the old one;
 // a house keeps its eight weightiest, so a great grudge never slips away.
@@ -2201,6 +2216,7 @@ http.createServer(async (req, res) => {
     // one of each, chosen before a crown is spent. Nobody is wed twice.
     let pair = null;
     if (cmd.action === "marriage" && court) {
+      // (matchFor below finds the same pair the Hand checks before offering a match.)
       const city = world.cities.find((c) => c.id === Number(cmd.city));
       const [la, lb] = [city?.owner, Number(cmd.to)].map((pid) => court.lordOfHouse(pid));
       const unwed = (lord) => court.alive().filter((k) => k.parents?.includes(lord.id) && !k.spouse && k.age >= 15);
