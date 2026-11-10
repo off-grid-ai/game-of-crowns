@@ -235,6 +235,11 @@ func _ready() -> void:
 	ui.town_point = func(c: Dictionary) -> Vector3:
 		return terrain.world_pos(float(c["x"]), float(c["y"])) if c.has("x") and terrain.width > 0 else Vector3.INF
 	ui.place_of = _place_of
+	ui.town_of = func(id: int) -> Dictionary:
+		for c in bridge.world.get("cities", []):
+			if int(c["id"]) == id:
+				return c
+		return {}
 	ui.matter_opened.connect(func(at: Vector3): rig.frame_town(at, 4))
 	director = preload("res://scripts/director.gd").new()
 	director.rig = rig

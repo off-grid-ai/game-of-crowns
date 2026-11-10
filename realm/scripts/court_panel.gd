@@ -16,6 +16,7 @@ var _court_hidden := true
 var _court_met := false  # the court has opened once this sitting
 var _held_court := false  # a new petitioner arrived while he was busy
 var _markers := {}  # matter id -> its marker on the map, at its place
+const PINNED_WIDTH := 440.0  # the court card standing by its place
 var _opened_at := Vector3.INF  # the place of the matter the King opened from its marker: the card stands by it
 var _FAVOUR_RE := RegEx.create_from_string("((?:House|The) [A-Z][a-z]+)\\s*([+−-]\\d+)")  # "House Thornvale +15" in an answer's hint
 
@@ -41,6 +42,7 @@ func _unpin_court() -> void:
 	if not ui.anchor.pinned(_court_panel):
 		return
 	ui.anchor.unpin(_court_panel)
+	_court_panel.custom_minimum_size = Vector2.ZERO
 	_court_panel.anchor_left = 0.5
 	_court_panel.anchor_right = 0.5
 	_court_panel.anchor_top = 0.0
@@ -167,6 +169,16 @@ func _mark(petitions: Array) -> void:
 					m.text = ""
 					m.icon = tex)
 		m.tooltip_text = "%s%s" % [String(p.get("name", "The Hand of the King")), (" of " + String(p["house"])) if String(p.get("house", "")) != "" else ""]
+		# What is wrong at the place, in a word under the face: the town's own state.
+		var pl = p.get("place")
+		var town: Dictionary = ui.town_of.call(int(pl.get("city", -1))) if pl is Dictionary and pl.get("city") != null else {}
+		var trouble := "starving" if town.get("famine", false) else ("rioting" if town.get("disorder", false) else ("besieged" if town.get("besieged", false) or town.get("siege", false) else ""))
+		if trouble != "":
+			var word := T.label(trouble.to_upper(), T.DANGER)
+			word.position = Vector2(-8, m.custom_minimum_size.y + 2)
+			word.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			m.add_child(word)
+			m.tooltip_text += "  ·  %s is %s" % [String(pl.get("name", "the town")), trouble]
 		ui.root.add_child(m)
 		ui.anchor.pin(m, at + Vector3(0, 0.6, 0), false)
 		_markers[id] = m
@@ -213,6 +225,9 @@ func _show_audience() -> void:
 	# itself (a sitting, a crisis), it stands where the court always does.
 	var here: Vector3 = ui.place_of.call(p)
 	if _opened_at != Vector3.INF and here == _opened_at:
+		# By its place the card is narrow (as a town's card is) and as tall as its words.
+		_court_panel.custom_minimum_size = Vector2(PINNED_WIDTH, 0)
+		_court_panel.size = Vector2(PINNED_WIDTH, 0)
 		# Once its place leaves the screen, the card goes back where the court always stands.
 		ui.anchor.pin(_court_panel, here, true, 0.8, func():
 			_opened_at = Vector3.INF

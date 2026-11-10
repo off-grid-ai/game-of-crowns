@@ -77,6 +77,7 @@ var anchor: Node  # world_anchor.gd: pins a card or marker to its place in the w
 ## Vector3.INF when it has no place): the cards and markers stand by it.
 var town_point := func(_c: Dictionary) -> Vector3: return Vector3.INF
 var place_of := func(_item: Dictionary) -> Vector3: return Vector3.INF
+var town_of := func(_id: int) -> Dictionary: return {}  # a town as /world has it (main.gd sets it)
 var town_card := TownPanel.new(self)  # the town card (town_panel.gd): its state lives there
 # The town card's state, read and set here by the cards it shares the screen with.
 var _town_panel: PanelContainer:
@@ -711,6 +712,11 @@ func show_digest(entries: Array, turns: int) -> void:
 func fit_centre(panel: Control, widest: float) -> void:
 	if panel == null or not panel.visible:
 		return
+	# A card standing by its place (world_anchor.gd) keeps its own width and place;
+	# only its height is fitted to what it says.
+	if anchor and anchor.pinned(panel):
+		_fit_height(panel)
+		return
 	var screen := get_viewport().get_visible_rect().size.x
 	var left := 12.0
 	var right := screen - 12.0
@@ -734,10 +740,20 @@ func fit_centre(panel: Control, widest: float) -> void:
 	panel.anchor_right = 0.0
 	panel.offset_left = x
 	panel.offset_right = x + w
+	_fit_height(panel)
+
+
+## A card as tall as what it says, up to the screen: its words measured at the
+## card's own width (wrapped text is tall when measured narrow), then the card
+## shrinks to them; it scrolls only past the screen.
+func _fit_height(panel: Control) -> void:
 	var scroll: ScrollContainer = panel.get_node_or_null("Scroll")
 	if scroll and scroll.get_child_count() > 0:
-		var room := get_viewport().get_visible_rect().size.y - panel.offset_top - 24.0
-		scroll.custom_minimum_size.y = minf(scroll.get_child(0).get_combined_minimum_size().y, room)
+		var body := scroll.get_child(0) as Control
+		var room := get_viewport().get_visible_rect().size.y - maxf(panel.position.y, 64.0) - 24.0
+		body.size.x = scroll.size.x if scroll.size.x > 0.0 else panel.size.x - 32.0
+		scroll.custom_minimum_size.y = minf(body.get_combined_minimum_size().y, room)
+		panel.reset_size()
 
 
 ## The notices live in news_chips.gd; these forward to it, so main.gd and the
