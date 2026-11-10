@@ -919,3 +919,11 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - Working: every answer costs; 10 of 11 pleas weighed; no ultimatum loop; returns 16%; faces open the matter at its place.
 - **Course correction (gap 3), taken now:** at a sitting the lords' own petitions take their seats first. The Hand brings his routine matter only to a seat they left empty (crises still come first). A measured reign is playing to check that Hand matters fall and petitioners rise.
 - **Not a bug:** the siege plea's 400 was the scripted King picking an answer the treasury couldn't pay. The card already greys it and says why.
+
+## 2026-11-11 11:10, lords first measured (the correction took)
+
+- **Lords-first reign (0c40aca):** 1.0 decisions a minute (target ≤ 1, met; was 1.27); 90% quiet. The Hand brings 6 of 15 matters (40%; was 8 of 19, 42%) and the lords' kinds are more varied: deserters, siege, informer, an old lord's dotage, a secret alliance, grain, one return. 7 petitioners; 15 of 15 placed; 6 schemes seen.
+- **Reading:** decisions are on the line for the first time. The Hand's share fell only a little, because crises (siege ×3) still come through him. That's expected: a crisis comes first.
+- **Also:** I opened the Off Grid app, so the local model is up (Omni 2B on 7878, and a line generated). Film round 5 films overheard talk with it.
+- **Next:** dead time on HEAD (reign playing now; target no gap over 90 s and under 10% dead), then skate and Kingsmere live.
+- **Verdict:** on course.
