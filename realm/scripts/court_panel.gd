@@ -474,14 +474,32 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 	v.add_child(head)
 	v.add_child(_hand_says(String(it.get("why", ""))))
 	v.add_child(HSeparator.new())
-	var acts := HFlowContainer.new()
-	acts.add_theme_constant_override("h_separation", 6)
-	acts.add_theme_constant_override("v_separation", 6)
+	var flow := HFlowContainer.new()
+	flow.add_theme_constant_override("h_separation", 6)
+	flow.add_theme_constant_override("v_separation", 6)
+	var acts: Container = flow
 	v.add_child(acts)
 	var answers: Array[Button] = []  # its answers: choosing one settles it
+	# Weighed by the bridge (the same order run dry): each answer on a row of its own,
+	# who it helps and hurts under it, so the choice is a dilemma, not a menu.
+	var weighed: bool = (it.get("acts", []) as Array).any(func(x): return x is Dictionary and x.get("weighs") is Dictionary)
+	if weighed:
+		var rows := VBoxContainer.new()
+		rows.add_theme_constant_override("separation", 6)
+		v.remove_child(acts)
+		acts.queue_free()
+		acts = rows
+		v.add_child(rows)
 	for a in it.get("acts", []):
 		var act: Dictionary = a
-		var b := ui.btn(String(act.get("label", "")), func(): pass)
+		var w = act.get("weighs")
+		var name := String(act.get("label", ""))
+		if w is Dictionary:
+			# The order's name and its true price; the hand-written effect words give way to the weighed numbers.
+			name = name.get_slice("  ", 0).get_slice(" · ", 0)
+			if int(w.get("cost", 0)) > 0:
+				name += "  ·  %s crowns" % ui.heads(int(w["cost"]) * 100)
+		var b := ui.btn(name, func(): pass)
 		answers.append(b)
 		b.pressed.connect(func():
 			# One answer to a matter: the one given says so, the others go quiet,
@@ -512,8 +530,43 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 			for look in ["normal", "hover", "pressed"]:
 				b.add_theme_stylebox_override(look, frame)
 			b.tooltip_text = "The Hand's advice"
-		acts.add_child(b)
+		if w is Dictionary:
+			var row := VBoxContainer.new()
+			row.add_theme_constant_override("separation", 2)
+			b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			row.add_child(b)
+			row.add_child(_weighs_chips(w))
+			acts.add_child(row)
+		else:
+			acts.add_child(b)
 	_court_later(v, "It waits while you look at the realm; the realm holds still while the court sits.")
+
+
+## Who an answer helps and hurts, weighed by the bridge: each house's sigil and its
+## change, gold up and red down (Reigns' preview), under the answer.
+func _weighs_chips(w: Dictionary) -> Control:
+	var moves := HBoxContainer.new()
+	moves.add_theme_constant_override("separation", 10)
+	var pad := MarginContainer.new()
+	pad.add_theme_constant_override("margin_left", 12)
+	pad.add_child(moves)
+	for side in ["helps", "hurts"]:
+		for m in w.get(side, []):
+			var who := str(m.get("house", ""))
+			var house: Dictionary = ui.house_by_name.get(who, ui.house_by_name.get("House " + who, {}))
+			var d := int(m.get("d", 0))
+			var chip := HBoxContainer.new()
+			chip.add_theme_constant_override("separation", 3)
+			chip.add_child(ui.sigil_icon(house, 16))
+			var n := Label.new()
+			n.text = "%s %s%d" % [who.trim_prefix("House ").trim_prefix("The "), "+" if d > 0 else "−", absi(d)]
+			n.add_theme_color_override("font_color", T.ACCENT if d > 0 else T.DANGER)
+			n.add_theme_font_size_override("font_size", T.SIZE_DESC)
+			chip.add_child(n)
+			moves.add_child(chip)
+	if moves.get_child_count() == 0:
+		moves.add_child(T.label("no house moved"))
+	return pad
 
 
 ## A matter settled at court: a moment to see the order taken, then the next,
