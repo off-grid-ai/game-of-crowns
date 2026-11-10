@@ -64,6 +64,12 @@ false or fighting the player (the camera, offers that are refused, odd causes, r
 props), proven in the game. The order after that waits on Mac's call: a played-and-filmed friction pass,
 a rethink of what the player does each minute, or both.
 
+## Now (the judge's order, 2026-11-10)
+1. Drill and siege proof strips (rerun under way).
+2. NPC activities: the clip inventory and each role's activities as steps (file to the judge), then every NPC on LimboAI behaviour trees, one town first, behind a switch.
+3. Winter ground on Terrain3D's own snow blending (height and slope) in place of the grass-texture swap. Manor Lords is the model: an even cover, with paths and fields showing through. Proof: a winter frame of Kingsmere, before and after.
+4. AudioStreamRandomizer for alert and ambient takes.
+
 ## Queued after the friction pass and the townsfolk swap
 - **Houses with a past** (Mac approved, via the research thread; brief: ~/Library/Application Support/Claude-3/side-session-notes/local_e8367eb4-4daa-4dee-8757-6ee011aaff31/houses-with-a-past.md).
   Rule: **tell only what the world can show.** Each beat names a picture we already render, and the camera
