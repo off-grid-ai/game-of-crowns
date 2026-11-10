@@ -189,6 +189,22 @@ func _settle() -> void:
 			f["t"] = 0.0
 
 
+## Where a marcher through a town stands clear of its buildings. The town's walk
+## check is costly (most of this script's frame), and a marcher covers a hair's
+## breadth a frame, so the step aside it found holds until he has gone STAND_AGAIN
+## further, then is looked for afresh.
+const STAND_AGAIN := 0.02
+func _stood(f: Dictionary, at: Vector3) -> Vector3:
+	var was: Vector3 = f.get("stood_at", Vector3.INF)
+	if was == Vector3.INF or Vector2(at.x - was.x, at.z - was.z).length() > STAND_AGAIN:
+		var q := _nav.stand(towns, at, 0.17 if f.get("horse", false) else 0.0)
+		f["stood_at"] = at
+		f["stood_by"] = q - at
+		return q
+	var by: Vector3 = f["stood_by"]
+	return Vector3(at.x + by.x, terrain.height_at(at.x + by.x, at.z + by.z), at.z + by.z)
+
+
 ## A company's standard: the house's banner on a pole.
 func _banner(soldier: Node3D, color: Color, house: Dictionary) -> void:
 	Scenes.carried_standard(soldier, house, color)
@@ -244,7 +260,7 @@ func _process_timed(delta: float) -> void:
 			# Through a town with no walk map the way is a straight line: keep
 			# off its buildings as it goes.
 			if not TownNav.towns_at(towns, p).is_empty():
-				n.position = _nav.stand(towns, n.position, 0.17 if f.get("horse", false) else 0.0)
+				n.position = _stood(f, n.position)
 			if not f.get("horse", false):
 				f["playing"] = ""  # marching: the stance is told afresh when he stops
 				_people.play(n, "Injured_Walk" if f.get("hurt", false) else "Walk", clampf(float(f.get("pace", MARCH_SPEED)) / _people.WALK_PACE, 0.6, 1.5))  # the stride matches the ground covered

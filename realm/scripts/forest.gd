@@ -311,19 +311,31 @@ func clear(center: Vector3, radius: float) -> void:
 
 ## Fells every tree for which `standing_on(origin)` is true: the lanes the
 ## roads cut through the woods, so what travels them is seen from above.
-func clear_where(standing_on: Callable) -> int:
+## A realm's woods are tens of thousands of trees, so the work is spread over
+## frames, `budget_usec` of it in each (it took a second in one frame): await it.
+func clear_where(standing_on: Callable, budget_usec := 4000) -> int:
 	var felled := 0
-	for c in _sight:
-		_sight[c] = _sight[c].filter(func(t: Vector4): return not standing_on.call(Vector3(t.x, t.z, t.y)))
+	var t0 := Time.get_ticks_usec()
+	for c in _sight.keys():
+		if _sight.has(c):
+			_sight[c] = _sight[c].filter(func(t: Vector4): return not standing_on.call(Vector3(t.x, t.z, t.y)))
+		if Time.get_ticks_usec() - t0 > budget_usec:
+			await get_tree().process_frame
+			t0 = Time.get_ticks_usec()
 	for mmi in get_children():
 		if not (mmi is MultiMeshInstance3D):
 			continue
 		var mm: MultiMesh = mmi.multimesh
-		for i in mm.instance_count:
+		var i := 0
+		while is_instance_valid(mmi) and mm != null and i < mm.instance_count:
 			var t := mm.get_instance_transform(i)
 			if t.basis.x != Vector3.ZERO and standing_on.call(t.origin):
 				mm.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3.ZERO), t.origin))
 				felled += 1
+			i += 1
+			if i % 16 == 0 and Time.get_ticks_usec() - t0 > budget_usec:
+				await get_tree().process_frame
+				t0 = Time.get_ticks_usec()
 	return felled
 
 
