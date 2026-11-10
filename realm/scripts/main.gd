@@ -441,6 +441,7 @@ func _ready() -> void:
 	if _shot.has("lore"):
 		get_tree().create_timer(float(_shot.get("wait", 8.0)) - 4.0).timeout.connect(func():
 			lore.open(int(_shot["lore"])))
+	bridge.paid.connect(func(_cost): sound.ui("coins"))
 	bridge.command_done.connect(func(ok, text):
 		if not ok and text == "no such petition":
 			# The court moved on (answered, or gone with an old session): show who

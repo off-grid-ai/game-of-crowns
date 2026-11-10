@@ -8,6 +8,7 @@ signal chronicle_added(entries: Array)
 signal command_done(ok: bool, text: String)
 signal realm_changed
 signal decrees_changed(list: Array)
+signal paid(cost: float)  # a decree went through and the treasury paid for it
 
 var _reign_id := ""
 
@@ -63,6 +64,8 @@ func decree(action: String, city_id: int, building := "", to := -1) -> void:
 	if to >= 0:
 		body["to"] = to
 	_post("/decree", body, func(code, data):
+		if code == 200 and float(data.get("cost", 0)) > 0:
+			paid.emit(float(data["cost"]))
 		command_done.emit(code == 200, data.get("text", data.get("error", ""))))
 
 

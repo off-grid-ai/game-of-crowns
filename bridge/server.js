@@ -2564,7 +2564,7 @@ http.createServer(async (req, res) => {
     decreeScenes(cmd, result, seat, target);
     record({ turn: world?.turn ?? 0, kind: "decree", text: result.text, city: cmd.city });
     setTimeout(snapshot, 600);
-    return json(res, 200, { ok: true, text: crowns(result.text) + (effects ? `\n${effects}` : "") });
+    return json(res, 200, { ok: true, text: crowns(result.text) + (effects ? `\n${effects}` : ""), cost: result.cost ?? 0 });
   }
   // Test hook (films only): stage what a town is making (a building site, a
   // unit in training), so a film is certain to find a site or a drill there.
