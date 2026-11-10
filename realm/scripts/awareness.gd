@@ -105,6 +105,7 @@ func sync(world: Dictionary) -> void:
 	realm.set_var(&"houses", world.get("players", []))
 	realm.set_var(&"marks", world.get("marks", []))
 	realm.set_var(&"intrigue", world.get("intrigue", []))  # the houses' schemes, seat to seat (bridge intrigue.js)
+	realm.set_var(&"threat", _dict(world.get("crown")).get("threat"))  # the director's live threat, or null (bridge director.js)
 	# The weather, as the bridge reads it (/world's weather: clear, showers, rain,
 	# storm or snow falling). Until the bridge sends it, falling snow in winter.
 	var weather: Dictionary = _dict(world.get("weather"))
