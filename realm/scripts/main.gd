@@ -1528,7 +1528,7 @@ func _on_staged(s: Dictionary, follow: Node3D) -> void:
 		# like news): the horn only for what's hostile, the bell for a death, a cheer for
 		# a feast, a letter on the road in silence. Rate-limited with the offers.
 		if s.get("lord", false) and Time.get_ticks_msec() - _horn_at > 20000:
-			var cue := {"handover": "horn", "sack": "horn", "razed": "horn", "feast": "feast"}.get(kind, "")
+			var cue: String = {"handover": "horn", "sack": "horn", "razed": "horn", "feast": "feast"}.get(kind, "")
 			if kind == "rider" and String(s.get("label", "")).begins_with("Word of a death"):
 				cue = "death"
 			if cue != "":
