@@ -5,10 +5,8 @@
 //   times and scores reigns.
 // - Exposes a small HTTP API on 127.0.0.1:8787 for the view.
 
-import { spawn, execFileSync } from "node:child_process";
 import fs from "node:fs";
 import zlib from "node:zlib";
-import net from "node:net";
 import crypto from "node:crypto";
 import http from "node:http";
 import path from "node:path";
@@ -46,17 +44,16 @@ import { Stakes, calendar } from "./stakes.js";
 import * as kingDeeds from "./ledger.js";
 import * as Realm from "./realm.js";
 import { BANDS } from "./favour.js";
+import * as Freeciv from "./freeciv.js";
 import { watched, usageToday, moodFrom, isWatched, arcFromWords, beatIdea, premiseIdea, writeFor } from "./claude.js";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8787);
-const FC_PORT = Number(process.env.FC_PORT || 5556);
 
 // --- the active chronicle ----------------------------------------------------
 
 let meta = null; // chronicles.js meta for the running realm
 let P = null; // its paths
-let fc = null; // the Freeciv process
 let chronicle = [];
 let world = null;
 let scars = [];
@@ -174,16 +171,13 @@ function load(id) {
   minds.catchUp(chronicle);
 }
 
-// The game asks every second; a reign keeps hundreds of saves. Each file's time is
-// read once, and the folder is only listed again when Freeciv has written to it.
-const savesSeen = { dir: null, mtime: 0, list: [] };
 // A ceasefire between two houses in Freeciv itself. Its Lua and its server
 // commands can't change diplomacy, but its save holds it: save, set both
 // players' diplstate rows to "Cease-fire" with `turns` left, and resume from
 // that save. Freeciv then keeps it and ends it by itself.
 // pairs: [[houseA, houseB, seasons], ...], all written in one reload.
 async function ceasefire(pairs) {
-  if (!fc || switching || !pairs.length) return false;
+  if (!Freeciv.proc() || switching || !pairs.length) return false;
   switching = true;
   const t0 = Date.now();
   try {
@@ -199,11 +193,7 @@ async function ceasefire(pairs) {
     startFreeciv();
     switching = false;
     // The hitch: how long the realm was without Freeciv while the truce went in.
-    const probe = () => {
-      const c = net.connect(FC_PORT, "127.0.0.1", () => { c.destroy(); console.log(`ceasefire reload: ${Date.now() - t0} ms`); });
-      c.on("error", () => (Date.now() - t0 < 120000 ? setTimeout(probe, 100) : console.log("ceasefire reload: no answer in 120 s")));
-    };
-    probe();
+    Freeciv.timeReload(t0);
   }
 }
 
@@ -228,18 +218,9 @@ function setDipl(text, p, q, turns) {
   });
 }
 
+// The active realm's newest save (freeciv.js keeps the folder listing).
 function newestSave(kind = "") {
-  const mtime = fs.statSync(P.saves).mtimeMs;
-  if (savesSeen.dir !== P.saves || savesSeen.mtime !== mtime) {
-    savesSeen.list = fs.readdirSync(P.saves).filter((f) => f.startsWith("realm") && f.includes(".sav"))
-      .map((f) => ({ f, t: fs.statSync(path.join(P.saves, f)).mtimeMs })).sort((a, b) => b.t - a.t);
-    savesSeen.dir = P.saves;
-    savesSeen.mtime = mtime;
-  }
-  // An autosave, or the King's truce save written in its place (the newer of
-  // the two is the realm as Freeciv now holds it, wars and all).
-  const hit = savesSeen.list.find((x) => x.f.includes(kind) || (kind === "auto" && x.f.includes("ceasefire")));
-  return hit ? path.join(P.saves, hit.f) : null;
+  return Freeciv.newestSave(P.saves, kind);
 }
 
 // Details only the save file holds (food stores, construction, orders, wars),
@@ -304,50 +285,17 @@ function writeRecord(entry) {
   }
 }
 
-// --- Freeciv process ---------------------------------------------------------
+// --- Freeciv process (the process and its line protocol live in freeciv.js) ---
 
 function send(line) {
-  if (fc && !fc.killed) fc.stdin.write(line + "\n");
+  Freeciv.send(line);
 }
 
 function startFreeciv() {
-  // A Freeciv left behind by an earlier bridge (restarts kill Node, not its
-  // child) would hold the port and stop this one starting: clear it first.
-  // It may be busy saving and ignore a polite request, so it's killed outright.
-  try {
-    execFileSync("pkill", ["-KILL", "-f", `freeciv-server -p ${FC_PORT} `]);
-  } catch { /* none running */ }
-  const save = newestSave();
-  const resume = path.join(P.base, "resume.serv");
-  fs.writeFileSync(resume, `lua file ${path.join(DIR, "lua", "events.lua")}\nstart\n`);
-  const args = ["-p", String(FC_PORT), "-s", P.saves, "-d", "n", "-b", "127.0.0.1"];
-  if (save) args.push("-f", save, "-r", resume);
-  else args.push("-r", P.serv);
-  console.log(`${meta.name}: ${save ? `resuming from ${path.basename(save)}` : "creating a new realm"}`);
-  // This realm's temperaments, then our medieval ruleset, then Freeciv's own data.
-  // The app brings its own Freeciv (bridge/app.js sets FREECIV_SERVER and FREECIV_SHARE).
-  const share = process.env.FREECIV_SHARE || "/opt/homebrew/share/freeciv";
-  const env = { ...process.env, FREECIV_DATA_PATH: `${P.data}:${path.join(DIR, "data")}:${share}` };
-  const proc = spawn(process.env.FREECIV_SERVER || "freeciv-server", args, { cwd: DIR, env });
-  fc = proc;
-  const log = fs.createWriteStream(path.join(P.state, "freeciv.log"), { flags: "a" });
-  let pending = "";
-  const onLine = (line) => (line.includes("EVENT {") ? onEvent(line) : log.write(line + "\n"));
-  proc.stdout.on("data", (d) => {
-    pending += d;
-    const lines = pending.split("\n");
-    pending = lines.pop();
-    lines.forEach(onLine);
-  });
-  proc.stderr.on("data", (d) => String(d).split("\n").forEach(onLine));
-  proc.on("exit", (code) => {
-    console.log(`freeciv-server exited (${code})`);
-    log.end();
-    if (fc === proc) {
-      fc = null;
-      // An unexpected exit takes the bridge down so launchd restarts it cleanly.
-      if (!switching) process.exit(code ?? 1);
-    }
+  const save = Freeciv.start({
+    name: meta.name, P, dir: DIR, onEvent,
+    // An unexpected exit takes the bridge down so launchd restarts it cleanly.
+    onExit: (code) => { if (!switching) process.exit(code ?? 1); },
   });
   // The Crown's soldiers are commanded by Freeciv's AI (the King rules by decree,
   // the AI marshals the host). Older realms saved the Crown as human; hand it over.
@@ -370,16 +318,7 @@ function startFreeciv() {
 
 let switching = false;
 
-function stopFreeciv() {
-  return new Promise((resolve) => {
-    if (!fc) return resolve();
-    const proc = fc;
-    proc.once("exit", () => resolve());
-    send("save");
-    setTimeout(() => send("quit"), 800);
-    setTimeout(() => proc.kill("SIGKILL"), 6000);
-  });
-}
+const stopFreeciv = Freeciv.stop;
 
 async function switchTo(id) {
   switching = true;
@@ -2396,8 +2335,8 @@ setInterval(() => {
   // The court holds the realm while the King watches.
   if (meta?.court?.sitting != null || (meta?.status === "running" && meta?.interlude && !meta.interlude.seen)) hold(true);
   // An aim met is met at once, held clock or not: the King never reads "21 of 12".
-  if (meta?.status === "running" && fc) ladder();
-  if (!meta || paused || sitting || meta.status !== "running" || !fc) return;  // the court sitting holds the clock too
+  if (meta?.status === "running" && Freeciv.proc()) ladder();
+  if (!meta || paused || sitting || meta.status !== "running" || !Freeciv.proc()) return;  // the court sitting holds the clock too
   meta.elapsedMs += 5000;
   if (meta.minutes > 0 && meta.elapsedMs >= meta.minutes * 60000) endReign("The appointed time has passed. The reign ends.");
   else {
