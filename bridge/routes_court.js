@@ -16,6 +16,7 @@ import * as chron from "./chronicles.js";
 import * as names from "./names.js";
 import { speech, transcribe, voiceFor } from "./claude.js";
 import { body, bytes, json } from "./http_util.js";
+import { weigh } from "./routes_decree.js";
 
 export async function counselAnswer(ctx, req, res, url) {
   const { sittingCtx } = ctx;
@@ -26,7 +27,9 @@ export async function counselAnswer(ctx, req, res, url) {
 
 export async function court(ctx, req, res, url) {
   const { inCrowns, docket } = ctx;
-  return json(res, 200, inCrowns(docket()));
+  // The Hand's orders each weighed before choosing: what it costs, whom it warms, whom it cools.
+  const items = docket().map((x) => (x.hand && x.acts ? { ...x, acts: x.acts.map((a) => ({ ...a, weighs: weigh(ctx, a) })) } : x));
+  return json(res, 200, inCrowns(items));
 }
 
 export async function hear(ctx, req, res, url) {

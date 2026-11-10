@@ -697,7 +697,7 @@ function recordDeed(id, d, why, turn) { return Book.recordDeed(favourCtx(), id, 
 function causeOf(id) { return Book.causeOf(favourCtx(), id); }
 function noteFavour(id, d, why) { return Book.noteFavour(favourCtx(), id, d, why); }
 // Kindness wears thin (favourbook.js).
-function temper(action, house, changes) { return Book.temper(favourCtx(), action, house, changes); }
+function temper(action, house, changes, dry = false) { return Book.temper(favourCtx(), action, house, changes, dry); }
 // Shifts favour, and says what it did for the result card (favourbook.js).
 function shiftAndTell(changes, why, cost = 0) { return Book.shiftAndTell(favourCtx(), changes, why, cost); }
 function shiftFavour(changes, why = "", told = false) { return Book.shiftFavour(favourCtx(), changes, why, told); }

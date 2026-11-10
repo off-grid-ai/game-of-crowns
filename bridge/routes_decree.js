@@ -186,3 +186,22 @@ export async function tithe(ctx, req, res, url) {
   return json(res, 200, { tithe: ctx.meta.tithe });
 }
 
+
+
+// What an order would do, weighed before it's given (bet 5: who an answer helps
+// and hurts is shown before choosing): the same decree and the same tempering
+// as the real one, run dry. {cost, helps: [{house, d}], hurts: [{house, d}]},
+// or null when it can't be weighed (an unknown order, or one with no favour).
+const UNWEIGHED = new Set(["banners"]);  // its answer depends on the houses' mood on the day, and running it counts the call
+export function weigh(ctx, act) {
+  const { priceOf, favourOf, causeOf, sworn, temper } = ctx;
+  if (!act?.action || UNWEIGHED.has(act.action) || !ctx.world) return null;
+  const price = priceOf(act.action);
+  const plan = decree({ ...act, works: ctx.meta.works ?? {}, price, favourOf, causeOf, sworn, marching: (city) => (ctx.meta.campaigns ?? []).some((x) => x.city === city), usurper: ctx.stakes?.s.usurper, seat: ctx.stakes?.s.seat }, { ...ctx.world, players: ctx.world.players.map((p) => houseFor(p).crown ? { ...p, gold: Math.max(p.gold ?? 0, price) } : p) });
+  if (!plan || plan.error) return null;
+  const warmed = ctx.world.cities.find((c) => c.id === Number(act.city))?.owner ?? (act.house != null ? Number(act.house) : null);
+  const favour = temper(act.action, warmed, plan.favour ?? {}, true);
+  const name = (pid) => houseFor(ctx.world.players.find((p) => p.id === Number(pid)) ?? {}).name;
+  const rows = Object.entries(favour).filter(([, d]) => d).map(([pid, d]) => ({ house: name(pid), d })).filter((r) => r.house);
+  return { cost: price, helps: rows.filter((r) => r.d > 0).sort((a, b) => b.d - a.d), hurts: rows.filter((r) => r.d < 0).sort((a, b) => a.d - b.d) };
+}

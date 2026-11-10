@@ -111,14 +111,14 @@ export function noteFavour(ctx, id, d, why) {
 // Kindness wears thin: the same house warmed again within a year is warmed
 // less (a half, then a fifth), and the houses at war with it grow colder.
 const KIND = new Set(["gift", "feast", "relief", "marriage"]);
-export function temper(ctx, action, house, changes) {
+export function temper(ctx, action, house, changes, dry = false) {
   const { world, meta, favour, detail } = ctx;
   if (!KIND.has(action) || house == null || !(changes?.[house] > 0)) return changes;
   const turn = world?.turn ?? 0;
   const seen = (meta.kindness ??= {});
   seen[house] = (seen[house] ?? []).filter((t) => t > turn - 4);
   const again = seen[house].length;
-  seen[house].push(turn);
+  if (!dry) seen[house].push(turn);  // a preview (dry) weighs it without counting it
   const out = { ...changes, [house]: Math.max(1, Math.round(changes[house] * [1, 0.5, 0.2][Math.min(again, 2)])) };
   const foes = detail()?.players?.[house]?.atWarWith ?? [];
   for (const f of foes) if (f !== house && favour[f] != null) out[f] = (out[f] ?? 0) - Math.max(1, Math.round(out[house] * 0.4));
