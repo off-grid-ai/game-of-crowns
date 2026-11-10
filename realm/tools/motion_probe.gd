@@ -189,8 +189,9 @@ func _process(delta: float) -> void:
 			if int(d["in"]) == 3:
 				_inside[clip] = _inside.get(clip, 0) + 1
 		# Empty hand.
-		if HELD.has(clip) and sk.find_children("*", "BoneAttachment3D", true, false).filter(func(x): return String(x.bone_name).contains("Hand")).is_empty():
-			_empty[clip] = _empty.get(clip, 0) + 1
+		var on_screen := String(p.get_node("Motion").held_clip()) if p.get_node_or_null("Motion") else clip  # what the body shows, not what was asked
+		if HELD.has(on_screen) and sk.find_children("*", "BoneAttachment3D", true, false).filter(func(x): return String(x.bone_name).contains("Hand")).is_empty():
+			_empty[on_screen] = _empty.get(on_screen, 0) + 1
 	# Two in one.
 	var seen := {}
 	for i in near.size():
@@ -252,7 +253,7 @@ func _presence(near: Array[Node3D]) -> void:
 				_station[1] += 1
 				_station[0] += 1 if m["yielded"] else 0
 	for p in near:
-		var parent = p.get_meta("parent", null)
+		var parent = p.get_meta("parent") if p.has_meta("parent") else null
 		if p.get_meta("age", "") == "child" and parent is Node3D and is_instance_valid(parent):
 			_kin[1] += 1
 			var q: Vector3 = (parent as Node3D).global_position
