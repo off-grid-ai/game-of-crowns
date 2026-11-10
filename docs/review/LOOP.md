@@ -822,3 +822,26 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - Film round 5 is on the full capture, then the gossip, war and riot refilm.
 - **Fun bar:** no reign measured. The decision line ("every answer costs, and you see the cost") is now true in data.
 - **Verdict:** on course.
+
+## 2026-11-11 00:20, autopilot (first measured reign since Court v2)
+
+- **Measured reign, scripted King, private bridge, code before 363180e** (realm/tools/reign_measure.py): 15 min, reign clock 13.6 min.
+  | Line | Now | Target | Before |
+  |---|---|---|---|
+  | Decisions a minute | 1.27 | ≤ 1 | 1.08 (Court v2) |
+  | Quiet share | 90% | ≥ 60% | 86% |
+  | Repeated kinds | 3 | 0 | not measured |
+  | Distinct petitioners | 6 | name three lords | not measured |
+  | Lords returning | 7 of 19 (37%) | ≤ 25% | not measured |
+  | Matters with a place | 19 of 19 | all | n/a |
+  | Plea answers weighed | 3 | all | n/a |
+  | Schemes on the map | 6 (4 at once) | every season | n/a |
+- **Reading:**
+  - Too many returns (37%, one lord back three times in 80 s), and it pushed decisions over 1 a minute. 363180e (a cap, once a year, varied returns) answers exactly this, and a reign on the new code is playing now.
+  - Places: 100%. Schemes visible: yes.
+  - Weighed pleas: 3 of 14. Most pleas came from cards whose answers are worked out in code (grain, informer), and those aren't weighed yet.
+- **Earlier this turn:**
+  - 363180e: returns capped and varied, the oath costed. The judge accepted it.
+  - 544aad8: road travellers give way.
+- **Go-live gate:** NPC perf owns the motion probe run in a quiet window. Film pauses for it. Skate is the last blocker.
+- **Verdict:** on course. The measured numbers led directly to the returns fix. Next turn, check that the fix took with the new reign's numbers (returns ≤ 25%, decisions ≤ 1 a minute).
