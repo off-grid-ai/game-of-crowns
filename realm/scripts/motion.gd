@@ -46,6 +46,7 @@ const STATES := ["loop_a", "loop_b", "once_a", "once_b", "hold_a", "hold_b", "re
 ## A load carried on the move: the arms from these clips over the legs' walk
 ## (Godot's Blend2 with a bone filter), so a sack or a crate shows while they walk.
 const CARRIES := ["Carrying", "Box_Idle", "Carry_Walk"]
+const XFADE_STAND := 0.45  # v2: between two standing moves, slow enough that feet planted apart don't skid across
 const ARMS := ["LeftShoulder", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightShoulder", "RightUpperArm", "RightLowerArm", "RightHand",
 	"LeftThumbMetacarpal", "LeftThumbProximal", "LeftThumbDistal", "LeftIndexProximal", "LeftIndexIntermediate", "LeftIndexDistal",
 	"LeftMiddleProximal", "LeftMiddleIntermediate", "LeftMiddleDistal", "LeftRingProximal", "LeftRingIntermediate", "LeftRingDistal",
@@ -142,6 +143,8 @@ func setup(player: AnimationPlayer, stance: String) -> void:
 				t.advance_mode = AnimationNodeStateMachineTransition.ADVANCE_MODE_AUTO
 			elif b.begins_with("once") or b.begins_with("hold"):
 				t.xfade_time = XFADE_HIT
+			elif v2 and b.begins_with("loop") and (a.begins_with("loop") or a == "rest"):
+				t.xfade_time = XFADE_STAND
 			_sm.add_transition(a, b, t)
 		# Anything can end in death; nothing comes back from it.
 		var die := AnimationNodeStateMachineTransition.new()
@@ -195,7 +198,7 @@ func play(clip: String, rate := 1.0, hold := false, phase := -1.0, repeat := fal
 	# A way of going (a walk, a run): it becomes the legs' walk or run, and the
 	# legs take over; how fast they go is how fast the person moves.
 	# A load on the move: the arms carry it over the walking legs.
-	if clip in CARRIES and _pace > MOVING and not _mounted():
+	if _carried(clip) and _pace > MOVING and not _mounted():
 		if String(_carry.animation) != clip:
 			_assign(_carry, clip, Animation.LOOP_LINEAR, randf())
 		set(_at + "rest/mix/blend_amount", 1.0)
@@ -278,7 +281,7 @@ func track(delta: float) -> void:
 			_wish = _clip
 			_for = 0.0
 			_go.travel("rest")
-			if v2 and _wish in CARRIES:
+			if v2 and _carried(_wish):
 				# The load stays in the arms over the walking legs.
 				if String(_carry.animation) != _wish:
 					_assign(_carry, _wish, Animation.LOOP_LINEAR, randf())
@@ -313,6 +316,11 @@ func sync_held() -> void:
 
 
 ## The move whose hands count: a load carried over walking legs, or the move now playing.
+## A load carried over walking legs: CARRIES, and in v2 the barrow pushed too.
+func _carried(clip: String) -> bool:
+	return clip in CARRIES or (v2 and clip == "Wheelbarrow")
+
+
 func held_clip() -> String:
 	if _now() == "rest" and float(get(_at + "rest/mix/blend_amount")) > 0.5:
 		return String(_carry.animation)
