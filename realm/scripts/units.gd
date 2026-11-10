@@ -142,10 +142,29 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 			_figures[id]["path"] = _nav.route(towns, _figures[id]["node"].position, target)
 			_figures[id]["t"] = 0.0
 		_figures[id]["target"] = target
+		# How the company stands, from Freeciv's own word on it (the save's hp and orders).
+		_figures[id]["hurt"] = u.get("hp") != null and float(u["hp"]) <= WOUNDED_HP
+		_figures[id]["fort"] = u.get("activity") != null and int(u["activity"]) in FORTIFIED
 	for id in _figures.keys():
 		if not seen.has(id):
 			_figures[id]["node"].queue_free()
 			_figures.erase(id)
+
+
+## Hit points at or under which a company looks wounded (most units have 10 or 20).
+const WOUNDED_HP := 4.0
+## Freeciv's unit activities for a company dug in: fortified (4) and fortifying (10).
+const FORTIFIED := [4, 10]
+
+
+## How a soldier stands when not marching: wounded, behind the shield when
+## fortified, or at the ready with bow or blade.
+static func stance(f: Dictionary) -> String:
+	if f.get("hurt", false):
+		return "Injured_Idle"
+	if f.get("bow", false):
+		return "Bow_Idle"
+	return "SS_Block_Idle" if f.get("fort", false) else "Sword_Idle"
 
 
 func _settle() -> void:
@@ -212,8 +231,8 @@ func _process(delta: float) -> void:
 			if not TownNav.towns_at(towns, p).is_empty():
 				n.position = _nav.stand(towns, n.position, 0.17 if f.get("horse", false) else 0.0)
 			if not f.get("horse", false):
-				_people.play(n, "Walk", clampf(float(f.get("pace", MARCH_SPEED)) / _people.WALK_PACE, 0.6, 1.5))  # the stride matches the ground covered
+				_people.play(n, "Injured_Walk" if f.get("hurt", false) else "Walk", clampf(float(f.get("pace", MARCH_SPEED)) / _people.WALK_PACE, 0.6, 1.5))  # the stride matches the ground covered
 		elif f.get("horse", false):
 			pass  # the horse stands; its gait follows how it is moved
 		else:
-			_people.play(n, "Bow_Idle" if f.get("bow", false) else "Sword_Idle")
+			_people.play(n, stance(f))
