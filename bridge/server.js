@@ -2071,6 +2071,8 @@ http.createServer(async (req, res) => {
         // The King's own works under way show as the town's building site, rising season by season.
         ...(meta.works?.[c.id] && houseFor(world.players.find((p) => p.id === c.owner)).crown ? { building: meta.works[c.id].building, buildingKind: "Building", royal: true,
           progress: Math.min(0.99, (meta.works[c.id].seasons - meta.works[c.id].left + Math.min(1, (Date.now() - meta.works[c.id].since) / (turnSeconds * 1000))) / meta.works[c.id].seasons), worksLeft: meta.works[c.id].left } : {}),
+        // A film's staged work (test reigns only, /test/stage).
+        ...(meta.stage?.[c.id] ?? {}),
         // The royal host before this town: seasons until it falls or holds.
         ...((() => { const s = (meta.campaigns ?? []).find((k) => k.city === c.id); return s ? { siegeLeft: Math.max(1, 2 + (s.extra ?? 0) - ((world?.turn ?? s.turn) - s.turn)) } : {}; })()),
       };
@@ -2349,10 +2351,18 @@ http.createServer(async (req, res) => {
     setTimeout(snapshot, 600);
     return json(res, 200, { ok: true, text: crowns(result.text) + (effects ? `\n${effects}` : "") });
   }
+  // Test hook (films only): stage what a town is making (a building site, a
+  // unit in training), so a film is certain to find a site or a drill there.
+  if (url.pathname === "/test/stage" && req.method === "POST") {
+    if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
+    const b = await body(req);
+    (meta.stage ??= {})[Number(b.city)] = { building: String(b.building ?? "Pikemen"), buildingKind: String(b.kind ?? "UnitType"), progress: Number(b.progress ?? 0.5) };
+    return json(res, 200, { ok: true });
+  }
   // Test hook (films only): a lord's deed on demand, so its alert can be filmed.
   // Answers only for a reign named as a test, and only with the X-Test header.
   if (url.pathname === "/test/news" && req.method === "POST") {
-    if (req.headers["x-test"] !== "1" || !/test|film|check/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
+    if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
     const b = await body(req);
     const e = { turn: world?.turn ?? 0, kind: String(b.kind ?? "betrayal"), text: String(b.text ?? "A test of the realm's news."), city: Number(b.city), to: b.to != null ? Number(b.to) : undefined, from: b.from != null ? Number(b.from) : undefined, with: b.with != null ? Number(b.with) : undefined };
     record(e);
