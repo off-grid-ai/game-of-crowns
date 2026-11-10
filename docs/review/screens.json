@@ -135,8 +135,8 @@
     "name": "A battle",
     "group": "Play",
     "what": "Battles fought by the men in them: each man closes, fights, reels, falls or breaks; knights charge, ride through and come round again.",
-    "file": "screens/v/battle-5.jpg",
-    "clip": "screens/v/battle-5.mp4",
+    "file": "screens/v/battle-6.jpg",
+    "clip": "screens/v/battle-6.mp4",
     "versions": [
       {
         "v": 1,
@@ -177,6 +177,13 @@
         "file": "screens/v/battle-5.jpg",
         "clip": "screens/v/battle-5.mp4",
         "what": "The camera takes the fight in turns: close on the blows, where each man, shield and fall reads, then back out on the whole melee. At one distance it read as a blob of small men."
+      },
+      {
+        "v": 6,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:54:18Z",
+        "file": "screens/v/battle-6.jpg",
+        "clip": "screens/v/battle-6.mp4"
       }
     ]
   },
@@ -327,8 +334,8 @@
     "name": "A feast",
     "group": "Play",
     "what": "A town feasting round a fire in its square.",
-    "file": "screens/v/feast-2.jpg",
-    "clip": "screens/v/feast-2.mp4",
+    "file": "screens/v/feast-3.jpg",
+    "clip": "screens/v/feast-3.mp4",
     "versions": [
       {
         "v": 1,
@@ -344,6 +351,14 @@
         "file": "screens/v/feast-2.jpg",
         "clip": "screens/v/feast-2.mp4",
         "what": "Thin, see-through smoke that drifts off on the air; the ring round the fire reads, most dancing and some clapping, laughing and waving them on."
+      },
+      {
+        "v": 3,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:54:18Z",
+        "file": "screens/v/feast-3.jpg",
+        "what": "A winter feast at street level, motion v2",
+        "clip": "screens/v/feast-3.mp4"
       }
     ]
   },
@@ -851,10 +866,18 @@
         "at": "2026-11-10T16:16:41Z",
         "file": "screens/v/camera-zoom-1.jpg",
         "clip": "screens/v/camera-zoom-1.mp4"
+      },
+      {
+        "v": 2,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:54:18Z",
+        "file": "screens/v/camera-zoom-2.jpg",
+        "what": "Stays oblique all the way down (c70c280)",
+        "clip": "screens/v/camera-zoom-2.mp4"
       }
     ],
-    "file": "screens/v/camera-zoom-1.jpg",
-    "clip": "screens/v/camera-zoom-1.mp4"
+    "file": "screens/v/camera-zoom-2.jpg",
+    "clip": "screens/v/camera-zoom-2.mp4"
   },
   {
     "id": "counsel",
@@ -1052,6 +1075,21 @@
     "clip": "screens/v/street-3.mp4"
   },
   {
+    "id": "bodies",
+    "name": "Every body and outfit",
+    "group": "Play",
+    "what": "Each townsperson's body, front on, by name",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:54:18Z",
+        "file": "screens/v/bodies-1.jpg"
+      }
+    ],
+    "file": "screens/v/bodies-1.jpg"
+  },
+  {
     "id": "hover-folk",
     "name": "Hover a townsperson",
     "group": "Play",
@@ -1078,10 +1116,18 @@
         "at": "2026-11-10T16:16:41Z",
         "file": "screens/v/rain-street-1.jpg",
         "clip": "screens/v/rain-street-1.mp4"
+      },
+      {
+        "v": 2,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:54:18Z",
+        "file": "screens/v/rain-street-2.jpg",
+        "what": "Staged rain held (7d078c6): grey sky, streaks only at the street",
+        "clip": "screens/v/rain-street-2.mp4"
       }
     ],
-    "file": "screens/v/rain-street-1.jpg",
-    "clip": "screens/v/rain-street-1.mp4"
+    "file": "screens/v/rain-street-2.jpg",
+    "clip": "screens/v/rain-street-2.mp4"
   },
   {
     "id": "snow",
@@ -1156,6 +1202,40 @@
       }
     ],
     "file": "screens/v/faces-at-court-1.jpg"
+  },
+  {
+    "id": "threat-on-map",
+    "name": "Threat on the map",
+    "group": "Play",
+    "what": "A host gathering at a border town, watched over a few seasons",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:54:18Z",
+        "file": "screens/v/threat-on-map-1.jpg",
+        "clip": "screens/v/threat-on-map-1.mp4"
+      }
+    ],
+    "file": "screens/v/threat-on-map-1.jpg",
+    "clip": "screens/v/threat-on-map-1.mp4"
+  },
+  {
+    "id": "houses-scheming",
+    "name": "Houses scheming",
+    "group": "Play",
+    "what": "An envoy riding seat to seat, and the line when you hover the way",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:54:18Z",
+        "file": "screens/v/houses-scheming-1.jpg",
+        "clip": "screens/v/houses-scheming-1.mp4"
+      }
+    ],
+    "file": "screens/v/houses-scheming-1.jpg",
+    "clip": "screens/v/houses-scheming-1.mp4"
   },
   {
     "id": "thin-treasury",
