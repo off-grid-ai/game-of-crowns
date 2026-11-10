@@ -708,10 +708,11 @@ func _woodland(meshes: Dictionary, placed: Dictionary, rng: RandomNumberGenerato
 				# great forests and the cold north; oak in the lowland woods.
 				# Size varies a little, as trees do.
 				var ps := rng.randf_range(0.7, 1.25)
-				var kind := rng.randi() % 8
+				var fringe := chance < 0.5
+				var kind := Forest.pine_kind(rng, fringe)
 				var north := wz / (height * TILE)  # 0 at the top of the map
 				if broad and name != "Forest" and y < 2.2 and rng.randf() > 0.15 + (0.6 if north < 0.3 else 0.0):
-					kind = Forest.OAK_FIRST + rng.randi() % Forest.OAK_KINDS
+					kind = Forest.oak_kind(rng, fringe)
 					ps *= 0.85
 				_pines.append([kind, Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(ps, ps * rng.randf_range(0.9, 1.15), ps)), Vector3(wx, y - 0.03, wz))])
 			else:
@@ -724,7 +725,7 @@ func _woodland(meshes: Dictionary, placed: Dictionary, rng: RandomNumberGenerato
 			if broad and rng.randf() < (0.3 if chance > 0.5 else 0.6):
 				var bu := Vector3(wx + rng.randf_range(-0.3, 0.3), 0, wz + rng.randf_range(-0.3, 0.3))
 				var bsz := rng.randf_range(0.6, 1.1)
-				_pines.append([Forest.BUSH_FIRST + rng.randi() % Forest.BUSH_KINDS, Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * bsz), Vector3(bu.x, height_at(bu.x, bu.z) - 0.02, bu.z))])
+				_pines.append([Forest.bush_kind(rng), Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * bsz), Vector3(bu.x, height_at(bu.x, bu.z) - 0.02, bu.z))])
 			elif chance > 0.5 and rng.randf() < 0.5:
 				var u := Vector3(wx + rng.randf_range(-0.3, 0.3), 0, wz + rng.randf_range(-0.3, 0.3))
 				var bs := VEG_SCALE * rng.randf_range(0.6, 1.1)

@@ -13,11 +13,21 @@ const BUSHES := "res://assets/realistic/bush_models_pack/scene.gltf"
 const MORE := [
 	[OAKS, ["Big_oak_tree__001", "Big_oak_tree__002", "Big_oak_tree__003", "Medium_oak_tree__001", "Medium_oak_tree__002", "Medium_oak_tree__003", "Large_oak_tree_004"], "_LOD2", "_Billboard"],
 	[BUSHES, ["Bush_big_001", "Bush_big_002", "Bush_big_003", "Bush_medium_001", "Bush_medium_003", "Bush_medium_005"], "_LOD1", "_Billboard"],
+	# The rest of each pack, so no two woods grow from the same few shapes (Manor
+	# Lords' forests read as real because they're mixed): young pines and
+	# saplings, smaller and younger oaks, low bushes. After the first kinds, so
+	# their indices stay put.
+	[PACK, ["Pine_medium_3", "Pine_small_1", "Pine_small_2", "Pine_small_3", "Pine_sapling_1", "Pine_sapling_2", "Pine_sapling_3"], "_LOD1", "_Billboard_LOD3", "_LOD2"],
+	[OAKS, ["Big_oak_tree__004", "Large_oak_tree_001", "Large_oak_tree_002", "Large_oak_tree_003", "Small_oak_tree__001", "Small_oak_tree__002", "Small_oak_tree__003", "Sapling_oak_tree_001", "Sapling_oak_tree_002", "Sapling_oak_tree_003"], "_LOD2", "_Billboard"],
+	[BUSHES, ["Bush_big_004", "Bush_big_005", "Bush_medium_002", "Bush_medium_004", "Bush_small_001", "Bush_small_002", "Bush_small_003", "Bush_small_004", "Bush_small_005"], "_LOD1", "_Billboard"],
 ]
 const OAK_FIRST := 8
 const OAK_KINDS := 7
 const BUSH_FIRST := 15
 const BUSH_KINDS := 6
+const MORE_PINES := 21  # Pine_medium_3, three small pines, then three saplings (from 25)
+const MORE_OAKS := 28  # a big and three large oaks, three small, then three saplings (from 35)
+const MORE_BUSHES := 38  # nine more bushes
 const CHUNK := 20.0  # game units per side
 const NEAR := 6.0  # within this distance of the camera, trees are drawn in full, with shadows (a block of woods switches as one: further, and the blocks under a town view drew thousands of full trees twice)
 const MID := 24.0  # out to this distance, the pack's lighter detail level, without shadows; its painted cards beyond
@@ -35,6 +45,27 @@ var _felled := {}  # kinds to replant at the end of this frame
 # which way it can look at a rider without a crown in the way.
 const SIGHT_CELL := 2.0
 var _sight := {}  # Vector2i -> Array of Vector4(x, z, ground y, height)
+
+
+## A pine for a wood: any of the grown ones, a young one now and then, and at
+## a wood's fringe (where seed falls on open ground) sometimes a sapling.
+static func pine_kind(rng: RandomNumberGenerator, fringe: bool) -> int:
+	if fringe and rng.randf() < 0.25:
+		return MORE_PINES + 4 + rng.randi() % 3
+	return rng.randi() % 8 if rng.randf() < 0.75 else MORE_PINES + rng.randi() % 4
+
+
+## An oak for the lowland woods, the same way: grown, younger, saplings at the edge.
+static func oak_kind(rng: RandomNumberGenerator, fringe: bool) -> int:
+	if fringe and rng.randf() < 0.25:
+		return MORE_OAKS + 7 + rng.randi() % 3
+	return OAK_FIRST + rng.randi() % OAK_KINDS if rng.randf() < 0.6 else MORE_OAKS + rng.randi() % 7
+
+
+## A bush of any of the pack's fifteen.
+static func bush_kind(rng: RandomNumberGenerator) -> int:
+	var n := rng.randi() % (BUSH_KINDS + 9)
+	return BUSH_FIRST + n if n < BUSH_KINDS else MORE_BUSHES + n - BUSH_KINDS
 
 
 ## True when the pine pack is in the project.
@@ -138,7 +169,7 @@ func _load() -> void:
 	_load_pack(PACK, KINDS, "_LOD1", "_LOD2", "_Billboard_LOD3")
 	for pack in MORE:
 		if ResourceLoader.exists(pack[0]):
-			_load_pack(pack[0], pack[1], pack[2], pack[2], pack[3])
+			_load_pack(pack[0], pack[1], pack[2], pack[4] if pack.size() > 4 else pack[2], pack[3])
 
 
 func _load_pack(path: String, kinds: Array, full_suffix: String, mid_suffix: String, card_suffix: String) -> void:
