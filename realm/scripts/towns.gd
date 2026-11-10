@@ -155,7 +155,17 @@ func building() -> bool:
 	return not _queue.is_empty()
 
 
+## Each frame, timed for the frame-cost probe (perf_tools.gd, GOC_PERF_PROBE=1; off in play).
 func _process(_delta: float) -> void:
+	if not preload("res://scripts/perf_tools.gd").probing:
+		_process_timed(_delta)
+		return
+	var pt := Time.get_ticks_usec()
+	_process_timed(_delta)
+	preload("res://scripts/perf_tools.gd").add("towns", Time.get_ticks_usec() - pt)
+
+
+func _process_timed(_delta: float) -> void:
 	if _queue.is_empty():
 		_refresh_life(Time.get_ticks_msec())
 		return

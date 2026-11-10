@@ -438,7 +438,17 @@ func set_realm_mix(v: float) -> void:
 const FLOOD_S := 1.5  # how long new land takes to fill with its new colour
 
 
+## Each frame, timed for the frame-cost probe (perf_tools.gd, GOC_PERF_PROBE=1; off in play).
 func _process(delta: float) -> void:
+	if not preload("res://scripts/perf_tools.gd").probing:
+		_process_timed(delta)
+		return
+	var pt := Time.get_ticks_usec()
+	_process_timed(delta)
+	preload("res://scripts/perf_tools.gd").add("land3d", Time.get_ticks_usec() - pt)
+
+
+func _process_timed(delta: float) -> void:
 	if _flood_t < 0.0 or land == null:
 		return
 	_flood_t += delta

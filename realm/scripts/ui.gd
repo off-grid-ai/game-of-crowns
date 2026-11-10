@@ -583,7 +583,17 @@ func _tell_effects(list: Array) -> void:
 
 
 var _drawers_away := []  # the side drawers (houses, chronicle) set aside while the court or a digest has the screen
+## Each frame, timed for the frame-cost probe (perf_tools.gd, GOC_PERF_PROBE=1; off in play).
 func _process(delta: float) -> void:
+	if not preload("res://scripts/perf_tools.gd").probing:
+		_process_timed(delta)
+		return
+	var pt := Time.get_ticks_usec()
+	_process_timed(delta)
+	preload("res://scripts/perf_tools.gd").add("ui", Time.get_ticks_usec() - pt)
+
+
+func _process_timed(delta: float) -> void:
 	_reveal_pad(delta)
 	# One card at a time: the side drawers step aside while the court or the digest
 	# is up, and come back where they were once it closes.

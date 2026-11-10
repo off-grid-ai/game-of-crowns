@@ -252,7 +252,17 @@ func volume(bus: String) -> float:
 
 # --- Every frame -------------------------------------------------------------
 
+## Each frame, timed for the frame-cost probe (perf_tools.gd, GOC_PERF_PROBE=1; off in play).
 func _process(delta: float) -> void:
+	if not preload("res://scripts/perf_tools.gd").probing:
+		_process_timed(delta)
+		return
+	var pt := Time.get_ticks_usec()
+	_process_timed(delta)
+	preload("res://scripts/perf_tools.gd").add("soundscape", Time.get_ticks_usec() - pt)
+
+
+func _process_timed(delta: float) -> void:
 	_tick_lifts(delta)
 	_mix_beds(delta)
 	_tick_bells(delta)
