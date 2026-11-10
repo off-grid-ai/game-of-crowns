@@ -51,6 +51,15 @@ const ARMS := ["LeftShoulder", "LeftUpperArm", "LeftLowerArm", "LeftHand", "Righ
 	"RightIndexProximal", "RightIndexIntermediate", "RightIndexDistal", "RightMiddleProximal", "RightMiddleIntermediate", "RightMiddleDistal",
 	"RightRingProximal", "RightRingIntermediate", "RightRingDistal", "RightLittleProximal", "RightLittleIntermediate", "RightLittleDistal"]
 
+## The second motion pipeline (docs/review/animation-pipeline.md, steps 2-3), on
+## for `--motion=v2` until the motion probe passes: the legs' blend space synced,
+## pace read in the person's own size, slow steps at a slow cadence, and the body
+## turning at a person's rate instead of snapping.
+static var v2: bool = OS.get_cmdline_user_args().has("--motion=v2")
+const ADULT := 0.118  # an adult's body scale (people.gd: height * k * S, measured): the size WALK_PACE was set for
+const TURN_RATE := deg_to_rad(300.0)  # how fast a person turns on the spot or mid-stride (about a full turn in 1.2 s)
+const STEP_FLOOR := 0.35  # the slowest cadence a moving walk plays at, of its own speed
+
 var speed := 1.0  # how fast the current move plays (anim_lod.gd advances by delta * speed)
 var _clip := ""  # the move now playing
 var _turn := {"loop": false, "once": false, "hold": false}  # which slot of each kind is next
@@ -64,6 +73,8 @@ var _last := Vector3.INF
 var _for := 0.0  # how long the person has been moving (or still)
 var _wish := ""  # a repeating move asked while on the move, for when they stop
 var _carry: AnimationNodeAnimation  # the arms' load over the legs, when carrying
+var _yaw := INF  # v2: the way the body faces now
+var _yaw_wish := 0.0  # v2: the way its mover wants it to face
 
 
 ## A person's moves, read from their AnimationPlayer's library; `ready` is
@@ -82,6 +93,9 @@ func setup(player: AnimationPlayer, stance: String) -> void:
 	_feet = AnimationNodeBlendSpace1D.new()
 	_feet.min_space = 0.0
 	_feet.max_space = RUN_PACE * 1.2
+	if v2:
+		# Walk and run kept in step: their cycles time-scaled to one (Godot 4.7).
+		_feet.sync_mode = AnimationNodeBlendSpace1D.SYNC_MODE_CYCLIC_MUTABLE
 	for leg in [["stand", 0.0], ["walk", WALK_PACE], ["run", RUN_PACE]]:
 		var n := AnimationNodeAnimation.new()
 		_legs[leg[0]] = n
@@ -195,9 +209,16 @@ func track(delta: float) -> void:
 	var at := body.global_position
 	if _last != Vector3.INF and not _mounted():
 		var flat := Vector2(at.x - _last.x, at.z - _last.z).length() / delta
+		if v2:
+			flat *= ADULT / maxf(0.01, body.scale.x)  # a child's short legs step quicker over the same ground
 		_pace = lerpf(_pace, flat, minf(1.0, delta * 8.0))
 	_last = at
-	set("parameters/rest/feet/blend_position", _pace)
+	if v2:
+		_face(body, delta)
+	# v2: once moving, below walking pace the walk plays whole at a slower cadence
+	# (never half stance, half walk at full cadence: short quick sliding steps).
+	var slow := v2 and _pace > WALK_PACE * 0.12 and _pace < WALK_PACE
+	set("parameters/rest/feet/blend_position", WALK_PACE if slow else _pace)
 	var now := _now()
 	var going := _pace > MOVING
 	if going and now.begins_with("loop"):
@@ -218,6 +239,22 @@ func track(delta: float) -> void:
 	# Past a run's pace the legs go quicker to keep up.
 	if now == "rest":
 		speed = maxf(1.0, _pace / RUN_PACE)
+		if slow:
+			speed = maxf(STEP_FLOOR, _pace / WALK_PACE)
+
+
+## v2: the body turns toward where its mover set it facing, at a person's rate.
+## Movers keep setting rotation.y as they always have; that's the wish.
+func _face(body: Node3D, delta: float) -> void:
+	var y := body.rotation.y
+	if _yaw == INF:
+		_yaw = y
+		_yaw_wish = y
+		return
+	if not is_equal_approx(y, _yaw):
+		_yaw_wish = y  # the mover asked for a new facing since last frame
+	_yaw = rotate_toward(_yaw, _yaw_wish, TURN_RATE * delta)
+	body.rotation.y = _yaw
 
 
 func _mounted() -> bool:

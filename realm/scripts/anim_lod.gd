@@ -56,6 +56,7 @@ var _mind_owed := {}  # mind instance id -> time it hasn't been given yet
 
 
 func _enter_tree() -> void:
+	process_priority = 100  # after the movers: a body is turned and its legs read the ground once it has moved this frame
 	ticking = true
 
 

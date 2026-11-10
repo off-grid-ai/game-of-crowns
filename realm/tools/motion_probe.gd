@@ -42,6 +42,8 @@ var _two_in_one := {}  # "a:b" -> longest seconds together
 var _snaps := {}  # clip -> turn snaps seen while it played
 var _empty := {}  # clip -> frames played empty-handed
 var _inside := {}  # clip -> frames a hand was inside the body for 3+ frames
+var _skates := {}  # clip -> planted frames that slid while it played
+var _planted := {}  # clip -> planted frames while it played
 
 
 func _ready() -> void:
@@ -49,6 +51,7 @@ func _ready() -> void:
 		if a.begins_with("--motion-probe="):
 			_secs = float(a.substr(15))
 	AnimLOD.flat = true  # everyone every frame: the probe judges the motion, not the stride
+	process_priority = 1000  # last in the frame: after the movers and after anim_lod has turned and posed every body
 	People.listen(func(p: Node3D, clip: String, _period: float, _loops: bool): _clip[p] = clip)
 	print("MOTION probe: %d s at %s once %d people stand near the camera" % [_secs, _focus_name(), CROWD])
 
@@ -141,8 +144,10 @@ func _process(delta: float) -> void:
 			var last = d["last"][k]
 			if last != null and local_y < float(d["min"][k]) + PLANTED:
 				d["planted"] += 1
+				_planted[clip] = _planted.get(clip, 0) + 1
 				if Vector2(w.x - last.x, w.z - last.z).length() / s > SKATE:
 					d["skate"] += 1
+					_skates[clip] = _skates.get(clip, 0) + 1
 			d["last"][k] = w
 		# Hand in body.
 		if d["hips"] >= 0 and d["neck"] >= 0 and not TOUCHING.has(clip):
@@ -187,8 +192,14 @@ func _report() -> void:
 			if r > SKATE_FAIL:
 				bad += 1
 	var verdict := func(ok: bool) -> String: return "PASS" if ok else "FAIL"
+	print("MOTION pipeline: %s" % ("v2 (--motion=v2)" if preload("res://scripts/motion.gd").v2 else "today's"))
 	print("MOTION people measured: %d near the camera over %d s" % [people, _secs])
 	print("MOTION foot skate: %s  %d people over %d%% of planted frames sliding (worst %.0f%%)" % [verdict.call(bad == 0), bad, int(SKATE_FAIL * 100), worst * 100])
+	var share := {}
+	for k in _skates:
+		if int(_planted.get(k, 0)) >= 60:
+			share[k] = int(round(100.0 * _skates[k] / _planted[k]))
+	print("MOTION skate by move (%% of planted frames): %s" % _top(share))
 	print("MOTION hand in body: %s  %s" % [verdict.call(_inside.is_empty()), _top(_inside)])
 	print("MOTION empty hand: %s  %s" % [verdict.call(_empty.is_empty()), _top(_empty)])
 	var snaps := 0
