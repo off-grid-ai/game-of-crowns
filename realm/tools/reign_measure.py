@@ -73,8 +73,16 @@ while time.time() - start < MIN * 60:
             opts = x.get("options") or []
             if not opts:
                 continue
-            o = opts[len(opts) // 2]
-            r = post("/court/answer", {"id": x["id"], "option": o["id"]})
+            # A middling answer; one the crown can't give (refused) gives way to the next, none counted twice.
+            r = {"error": "none"}
+            for o in [opts[len(opts) // 2]] + [o for o in opts if o is not opts[len(opts) // 2]]:
+                r = post("/court/answer", {"id": x["id"], "option": o["id"]})
+                if not r.get("error"):
+                    break
+            if r.get("error"):
+                seen[x["id"]] = now + 10 ** 9  # unanswerable by this King: leave it, count it once
+                log.write(f"{now-start:.0f} could not answer {x.get('kind')}: {r}\n")
+                continue
             kind = x.get("kind")
             if any(op.get("weighs") for op in opts):
                 weighed += 1

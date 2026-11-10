@@ -856,3 +856,17 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - If ultimatums still repeat, the fix is in the ultimatum flow: an ignored ultimatum should lead to the rising, not a fresh ultimatum.
 - **Also:** 9d1d303 weighs the grain plea's answers.
 - **Verdict:** on course for returns. Watching the Hand's pace: decisions are over the line.
+
+## 2026-11-11 01:20, autopilot (supervisor turn: ultimatums land)
+
+- **Fresh judge:**
+  - The pace (about one matter a sitting) is right for a court that sits each season, and the "≤1 a minute" line fits a free-running clock better than a sitting-paced one.
+  - The fault is what fills it: ultimatums looped. Highest leverage: an ignored ultimatum becomes the rising.
+  - The other gaps: the court card reads as a menu that covers the map (Builder 2's); the quiet stretches aren't worth watching (bodies overlapping, empty hands, no talk heard), which is Townsfolk look's and NPC perf's.
+- **Correction, taken this turn:** 0ea0e31. An ultimatum ignored, or answered without winning the house back, now gathers the house's host (a muster scene and a chronicle line), and the host marches in 2 seasons. Won back in time, the banners come down. Proof comes from Builder 2's answering-King reigns B and C on head (ultimatum count, risings), then my next measured reign.
+- **Machine rule (the judge):** at most one Godot and two private bridges across all sessions, booked through Film's hold file. Passed to everyone.
+- **Also:**
+  - 6e46e77, a4c8431: the mirror carries the threat and intrigue.
+  - The measuring King now gives the Hand's first affordable order, and skips a card it can't answer (a siege plea gave 400 on repeat).
+- **Gate:** skate still fails (19 people). NPC perf is tracing Sword_Attack, Carrying and the standing drift. Glance is at 35%, with Townsfolk look.
+- **Verdict:** on course after the correction. Check it next turn: ultimatums no longer repeat.
