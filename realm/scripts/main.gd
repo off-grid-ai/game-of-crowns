@@ -1179,9 +1179,11 @@ func _on_world(world: Dictionary) -> void:
 	towns.sync(world, _houses)
 	if Time.get_ticks_msec() - tt > 500:
 		print_verbose("BUILD towns %d ms" % (Time.get_ticks_msec() - tt))
-	terrain.set_realm(world.get("owners", []), world.get("players", []))
-	terrain.set_marks(world.get("marks", []), int(world.get("turn", 0)))
-	ruins.show_marks(world.get("marks", []), int(world.get("turn", 0)))
+	# The land's borders, scars and ruins, from the mirror (awareness.gd), not from /world.
+	var realm_bb: Blackboard = awareness.realm
+	terrain.set_realm(realm_bb.get_var(&"owners", []), realm_bb.get_var(&"houses", []))
+	terrain.set_marks(realm_bb.get_var(&"marks", []), int(realm_bb.get_var(&"turn", 0)))
+	ruins.show_marks(realm_bb.get_var(&"marks", []), int(realm_bb.get_var(&"turn", 0)))
 	var season := look_season(world)
 	if season != terrain.season or towns.towns.size() != _snowed:
 		_snowed = towns.towns.size()

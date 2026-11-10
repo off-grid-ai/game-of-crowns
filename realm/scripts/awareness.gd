@@ -108,15 +108,22 @@ func sync(world: Dictionary) -> void:
 		bb.set_var(&"house", String((owner.get("house", {}) as Dictionary).get("name", "")))
 		var grieving := false
 		for s in now_scenes:
-			if int(s.get("city", -1)) == id and String(s.get("kind", "")) in GRIEF:
+			var k := String(s.get("kind", ""))
+			# A town grieves after a death or a vigil, want or sickness, or being put to the sword.
+			if int(s.get("city", -1)) == id and (SceneKinds.tone(k) in [SceneKinds.GRIEF, SceneKinds.TROUBLE] or k in ["sack", "razed"]):
 				grieving = true
 		bb.set_var(&"grief", grieving)
 		var prosperous := mood == "" and not grieving and (favour >= 60.0 if int(c.get("owner", -1)) != crown_id else int(crown.get("treasury", 0)) >= 1500)
 		bb.set_var(&"prosperity", prosperous)
 	realm.set_var(&"towns", ids)
+	# The land's own facts, for what the view draws on it (terrain, ruins): who
+	# holds each tile, each house's standing (wars, truces, sworn), and the scars.
+	realm.set_var(&"owners", world.get("owners", []))
+	realm.set_var(&"houses", world.get("players", []))
+	realm.set_var(&"marks", world.get("marks", []))
 	# Each scene is news once: the bus carries it to whoever is near.
 	for s in now_scenes:
-		var key := "%s:%d:%d:%d:%d" % [s.get("kind", ""), int(s.get("x", 0)), int(s.get("y", 0)), int(s.get("turn", 0)), int(s.get("city", -1))]
+		var key := String(s.get("id", "%s:%d:%d:%d:%d" % [s.get("kind", ""), int(s.get("x", 0)), int(s.get("y", 0)), int(s.get("turn", 0)), int(s.get("city", -1))]))
 		if _seen.has(key):
 			continue
 		_seen[key] = true
