@@ -380,7 +380,7 @@ func _tick_bells(delta: float) -> void:
 const CLIP_SOUNDS := {
 	"Walk": ["step", [0.0, 0.5]], "Walking": ["step", [0.0, 0.5]], "Carry_Walk": ["step", [0.0, 0.5]],
 	"Injured_Walk": ["step", [0.0, 0.5]], "SS_Walk": ["step", [0.0, 0.5]], "GS_Walk": ["step", [0.0, 0.5]],
-	"Axe_Walk": ["step", [0.0, 0.5]], "Running": ["step", [0.0, 0.5]],
+	"Axe_Walk": ["step", [0.0, 0.5]], "Running": ["step", [0.0, 0.5]], "Carrying": ["step", [0.0, 0.5]],
 	"Hammer_Swing": ["sfx/hammer.wav", [0.45]],
 	"Axe_Down": ["sfx/chop.wav", [0.5]],
 }
