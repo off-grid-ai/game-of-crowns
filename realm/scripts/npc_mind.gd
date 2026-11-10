@@ -333,7 +333,11 @@ class React extends BTAction:
 		pool = pool.filter(func(c): return ap != null and ap.has_animation(c))
 		if pool.is_empty():
 			return
+		var last: String = blackboard.get_var(&"last_clip", "", false)
+		if pool.size() > 1:
+			pool = pool.filter(func(c): return c != last)
 		var clip: String = pool[randi() % pool.size()]
+		blackboard.set_var(&"last_clip", clip)  # what comes next won't play it again
 		var Mo := preload("res://scripts/motion.gd")
 		if Mo.is_once(clip):
 			People.repeat(agent, clip)
@@ -428,7 +432,7 @@ class Weigh extends BTAction:
 static func state_activities() -> Array:
 	return [
 		seq("road", [go("home"), once("Looking_Around"), run(["Pointing_Forward", "Looking_Around", "Thinking"], 1, 2), brk(["Weight_Shift"])]),
-		seq("mutter", [go("well"), run(["Whispering", "Arguing", "Telling_Secret"], 2, 3), once("Shove_Reaction"), brk(LOOK)]),
+		seq("mutter", [FindPartner.new(), go("meet"), Talk.new(["Whispering", "Arguing", "Telling_Secret"]), once("Shove_Reaction"), brk(LOOK)]),
 	]
 
 
@@ -459,6 +463,7 @@ class GoTo extends BTAction:
 			"field": to = v._near(a["field"], rng, 0.25)
 			"bench": to = a["bench"]
 			"home": to = a["home"]
+			"meet": to = blackboard.get_var(&"meet", a["home"], false)  # where a talk was arranged
 			_: to = v._at(a, where)
 		a["gait"] = gait
 		v._route_to(a, to)
@@ -497,6 +502,104 @@ class FieldRun extends PlayRun:
 
 	func _tick(delta: float) -> Status:
 		return FAILURE if pool.is_empty() else super._tick(delta)
+
+
+## Talk takes two: finds someone of the same town nearby who's free (no news
+## to react to, no danger, not already talking), and calls them to a spot
+## between the two of them, near where they stand. Fails with nobody free, so
+## the selector picks something done alone.
+class FindPartner extends BTAction:
+	const NEAR := 2.5
+
+	func _tick(_delta: float) -> Status:
+		var me := agent.get_node_or_null("Mind") as BTPlayer
+		if me == null or not me.has_meta("town"):
+			return FAILURE
+		var best: BTPlayer = null
+		var best_d := NEAR
+		for m in agent.get_tree().get_nodes_in_group("minds"):
+			var other := m as BTPlayer
+			if other == me or other.get_meta("town", -2) != me.get_meta("town") or not other.blackboard.has_var(&"va"):
+				continue
+			var bb := other.blackboard
+			if bb.get_var(&"called", false, false) or bb.get_var(&"alert", false, false) or bb.get_var(&"danger", false, false):
+				continue
+			var d: float = (other.get_parent() as Node3D).global_position.distance_to((agent as Node3D).global_position)
+			if d < best_d:
+				best_d = d
+				best = other
+		if best == null:
+			return FAILURE
+		var them := best.get_parent() as Node3D
+		var mine: Vector3 = (agent as Node3D).global_position
+		var meet: Vector3 = (mine + them.global_position) * 0.5
+		var off: Vector3 = (mine - them.global_position).normalized() * 0.09  # a pace apart, face to face
+		blackboard.set_var(&"meet", (agent as Node3D).position + (meet + off - mine))
+		blackboard.set_var(&"partner", them)
+		best.blackboard.set_var(&"meet", them.position + (meet - off - them.global_position))
+		best.blackboard.set_var(&"partner", agent)
+		best.blackboard.set_var(&"called", true)
+		# The topic: what the one who starts it saw last, passed on as their own news.
+		var memory: Array = blackboard.get_var(&"memory", [], false)
+		if not memory.is_empty():
+			var heard: Dictionary = (memory[0] as Dictionary).duplicate()
+			heard["near"] = 1.0  # heard of, not seen
+			var theirs: Array = best.blackboard.get_var(&"memory", [], false)
+			theirs = theirs.filter(func(x): return x.get("kind") != heard.get("kind"))
+			theirs.push_front(heard)
+			best.blackboard.set_var(&"memory", theirs.slice(0, 3))
+			blackboard.set_var(&"topic", String(heard.get("kind", "")))
+			best.blackboard.set_var(&"topic", String(heard.get("kind", "")))
+			if OS.get_cmdline_user_args().has("--probe"):
+				print("TALK %s tells %s of %s" % [agent.name, them.name, heard.get("kind", "")])
+		else:
+			blackboard.set_var(&"topic", "")
+			best.blackboard.set_var(&"topic", "")
+		return SUCCESS
+
+
+## Two talking: face each other and talk, and whatever the topic is shows in a
+## gesture a player reads without words (Kingdom Two Crowns): a raid gets a
+## finger pointed down the road and a shake of the head, a feast a laugh, a
+## death tears, the King a nod. Then the talk ends for both.
+class Talk extends PlayRun:
+	func _init(talk: Array = ["Idle_Talking", "Talking", "Talking_2", "Telling_Secret", "Whispering"]) -> void:
+		pool = talk
+		lo = 2
+		hi = 3
+
+	func _enter() -> void:
+		var them = blackboard.get_var(&"partner", null, false)
+		if them is Node3D and is_instance_valid(them):
+			var here: Vector3 = (agent as Node3D).global_position
+			var there: Vector3 = (them as Node3D).global_position
+			var flat := Vector2(there.x - here.x, there.z - here.z)
+			if flat.length() > 0.001:
+				agent.rotation.y = atan2(flat.x, flat.y)
+		var topic := String(blackboard.get_var(&"topic", "", false))
+		var gesture: Array = TOPIC_GESTURE.get(SceneKinds.tone(topic), []) if topic != "" else []
+		pool = (gesture + pool) if randf() < 0.6 else (pool + gesture)
+		super._enter()
+
+	func _exit() -> void:
+		blackboard.set_var(&"called", false)
+		blackboard.set_var(&"partner", null)
+
+
+## The gesture that shows what a talk is about, by the news's tone.
+const TOPIC_GESTURE := {
+	"hostile": ["Pointing_Forward", "Disappointed", "Pointing_Arm_Bent"],
+	"trouble": ["Disappointed", "Defeated"],
+	"grief": ["Crying", "Disappointed"],
+	"joy": ["Laughing", "Clapping", "Cheering"],
+	"crown": ["Nodding", "Pointing_Forward"],
+}
+
+
+## Answering a call to talk (FindPartner set `called`): go to the spot, face
+## them, talk. Comes before anything they were doing but after danger and news.
+static func answer() -> BTTask:
+	return plain([flag(&"called"), go("meet"), Talk.new(), brk(LOOK)])
 
 
 static func go(where: String, gait := "Walk") -> BTTask:
@@ -552,7 +655,7 @@ static func villager_activities(role: String) -> Array:
 				seq("browse", [go("market"), once("Looking_Around"), once("PickUp_Table"), run(["Thinking", "Doubtful"], 1, 1), brk(LOOK)]),
 				seq("haggle", [go("market"), run(["Idle_Talking", "Arguing"], 2, 4), run(["Nod_Yes", "Shake_No"], 1, 1), brk(["Pleased", "Looking_Around"])]),
 				seq("carry", [go("market"), once("PickUp_Table"), go("home", "Carrying"), once("PickUp_Table"), brk(REST)]),
-				seq("gossip", [go("well"), run(["Whispering", "Telling_Secret", "Laughing"], 2, 4), brk(LOOK)]),
+				seq("gossip", [FindPartner.new(), go("meet"), Talk.new(), brk(LOOK)]),
 			]
 		"pious":  # the priest and the devout
 			return [
@@ -597,7 +700,7 @@ static func villager_activities(role: String) -> Array:
 			]
 		"idler":
 			return [
-				seq("chat", [go("well"), run(["Idle_Talking", "Talking", "Laughing", "Whispering"], 2, 4), brk(LOOK)]),
+				seq("chat", [FindPartner.new(), go("meet"), Talk.new(), brk(LOOK)]),
 				seq("lounge", [go("bench"), run(["Sitting_Ground", "Sitting_Idle", "Sitting_Cross_Legged"], 1, 2), brk(["Arm_Stretching", "Bored"])]),
 				seq("watch", [go("market"), run(["Looking_Around", "Bored", "Thinking"], 1, 2), brk(REST)]),
 				seq("nap", [go("home"), run(["Sleeping_Idle"], 1, 1), brk(["Arm_Stretching"])]),
@@ -685,6 +788,7 @@ static func give_villager(person: Node3D, a: Dictionary, vill: Node) -> bool:
 	var life := BTDynamicSelector.new()
 	life.add_child(villager_danger())
 	life.add_child(react())
+	life.add_child(answer())
 	for m in villager_moods():
 		life.add_child(m)
 	var night := BTSequence.new()
@@ -732,6 +836,8 @@ static func give_villager(person: Node3D, a: Dictionary, vill: Node) -> bool:
 		player.blackboard.set_var(v, "")
 	player.blackboard.set_var(&"alert", false)
 	player.blackboard.set_var(&"at_post", true)
+	player.blackboard.set_var(&"called", false)
+	player.blackboard.set_var(&"topic", "")
 	player.blackboard.set_var(&"choices", acts.size())
 	player.blackboard.set_var(&"danger", false)
 	person.add_child(player)

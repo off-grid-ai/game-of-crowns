@@ -60,6 +60,9 @@ func _run(secs: float, mood: String) -> void:
 	var vill := FakeVillage.new()
 	vill.mood = mood
 	world.add_child(vill)
+	# The mirror, so villagers join a town's scope and find each other to talk to.
+	var aw: Node = preload("res://scripts/awareness.gd").new()
+	world.add_child(aw)
 	People.listen(func(p: Node3D, clip: String, _period: float, _loops: bool): if _log.has(p): _log[p].append([_t, clip]))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
@@ -78,16 +81,21 @@ func _run(secs: float, mood: String) -> void:
 			var p: Node3D = _people.make(rng, "townsfolk", Color.WHITE, "adult")
 			p.position = Vector3(n * 2.0, 0, 5)
 			world.add_child(p)
-			var a := {"i": 4 if calling == "keeper" else k + 1, "node": p, "rng": rng, "home": p.position, "town": -1, "route": PackedVector2Array(),
+			var a := {"i": 4 if calling == "keeper" else k + 1, "node": p, "rng": rng, "home": p.position, "town": 1, "route": PackedVector2Array(),
 				"role": "tavern" if calling == "keeper" else calling, "field": p.position + Vector3(0.5, 0, 0), "bench": p.position + Vector3(0.2, 0, 0), "block": "work"}
 			_log[p] = []
 			_who[p] = "calling:" + calling
 			Mind.give_villager(p, a, vill)
 			n += 1
 	Engine.time_scale = 10.0
+	var news := false
 	while _t < secs:
 		await process_frame
 		_t += get_root().get_process_delta_time()  # already scaled by time_scale
+		if not news and _t > 5.0:
+			# A raid at the villagers' far end: those near see it, the rest should hear of it.
+			news = true
+			aw.emit("raid", Vector3(n * 2.0, 0, 5))
 		for p in _log:
 			var m := p.get_node_or_null("Mind") as BTPlayer
 			if m == null:
@@ -112,6 +120,7 @@ func _report(secs: float) -> void:
 		var min_acts := 99
 		var bad_repeats := 0
 		var longest := 0.0
+		var longest_clip := ""
 		var clips := {}
 		for p in groups[g]:
 			var acts: Array = _acts.get(p, [])
@@ -131,11 +140,12 @@ func _report(secs: float) -> void:
 				else:
 					run = 1
 				var until: float = log[i + 1][0] if i + 1 < log.size() else secs
-				if not clip in RESTFUL:
-					longest = maxf(longest, until - float(log[i][0]))
+				if not clip in RESTFUL and until - float(log[i][0]) > longest:
+					longest = until - float(log[i][0])
+					longest_clip = clip
 		var real := clips.keys().filter(func(c): return not c in ["Idle", "Walk"]).size()
 		var ok := min_acts >= 2 and bad_repeats == 0 and longest < 12.0 and real > 0
 		if not ok:
 			fails += 1
-		print("%s %-16s activities(min)=%d  repeats>5=%d  longest_hold=%.1fs  clips=%d (beyond Idle/Walk: %d)" % ["PASS" if ok else "FAIL", g, min_acts, bad_repeats, longest, clips.size(), real])
+		print("%s %-16s activities(min)=%d  repeats>5=%d  longest_hold=%.1fs (%s)  clips=%d (beyond Idle/Walk: %d)" % ["PASS" if ok else "FAIL", g, min_acts, bad_repeats, longest, longest_clip, clips.size(), real])
 	print("PROBE VERDICT: %s (%d of %d groups failing)" % ["PASS" if fails == 0 else "FAIL", fails, groups.size()])
