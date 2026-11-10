@@ -35,6 +35,14 @@ const BUSES := {"Music": -6.0, "Ambience": -4.0, "SFX": -2.0, "Voice": 0.0, "UI"
 const DUCK_MUSIC_DB := -9.0  # extra dip while someone speaks
 const DUCK_AMB_DB := -5.0
 const FADE := 0.6  # seconds for an ambience layer to move halfway to its target
+# The weather is mood under the world, never over it (Manor Lords, Journey): its
+# beds play on their own bus under Ambience, mixed well below footsteps and
+# voices, and ducked by anything played on SFX or Voice (Godot's sidechain
+# compressor), so a horn, a cheer or talk always cuts through.
+const WEATHER_BEDS := ["rain", "storm", "rain_roof", "snow_wind"]
+const WEATHER_DB := -18.0  # the Weather bus, under Ambience
+var weather_settle := 30.0  # seconds a change of weather takes to come in or go (main: a quarter season, as the sky)
+var _weather := {"rain": 0.0, "storm": 0.0, "snow": 0.0}  # the weather's own strength, eased over weather_settle
 
 # Ambience layers: file and loudness (dB) at full presence.
 const BEDS := {
@@ -140,6 +148,15 @@ func _ready() -> void:
 	preload("res://scripts/people.gd").listen(_on_clip)
 	for bus in BUSES:
 		_bus(bus, BUSES[bus])
+	_bus("Weather", WEATHER_DB, "Ambience")
+	for side in ["SFX", "Voice"]:
+		var w := AudioEffectCompressor.new()
+		w.sidechain = side
+		w.threshold = -36.0
+		w.ratio = 8.0
+		w.attack_us = 10000.0
+		w.release_ms = 600.0
+		AudioServer.add_bus_effect(AudioServer.get_bus_index("Weather"), w)
 	for bus in ["Music", "Ambience"]:
 		var c := AudioEffectCompressor.new()
 		c.sidechain = "Voice"
@@ -299,25 +316,36 @@ func _targets() -> Dictionary:
 	var size := clampf(float(town.get("size", 3)) / 8.0, 0.25, 1.0)
 	var green: float = {"spring": 1.0, "summer": 1.0, "autumn": 0.5, "winter": 0.0}.get(season, 1.0)
 	var winter := 1.0 if season == "winter" else 0.0
-	var wet := 1.0 if weather in ["rain", "storm"] else 0.0
-	var snowing := 1.0 if weather == "snow" else 0.0
+	# The weather's own strength, coming in and going over weather_settle (as the sky does).
+	var kw := 1.0 - exp(-get_process_delta_time() * 3.0 / maxf(weather_settle, 1.0))
+	_weather["rain"] = lerpf(_weather["rain"], 1.0 if weather in ["rain", "storm"] else 0.0, kw)
+	_weather["storm"] = lerpf(_weather["storm"], 1.0 if weather == "storm" else 0.0, kw)
+	_weather["snow"] = lerpf(_weather["snow"], 1.0 if weather == "snow" else 0.0, kw)
+	var wet: float = _weather["rain"]
+	var snowing: float = _weather["snow"]
+	# Fuller at the street, quiet and distant from the realm view.
+	var street := 1.0 - smoothstep(2.0, 40.0, d)
+	var hear_weather := lerpf(0.2, 1.0, street)
 	var siege := 1.0 if town.get("siege", false) else 0.0
 	var t := {}
 	t["realm_wind"] = maxf(far * (1.0 - 0.6 * winter), 0.25 * country)
 	t["realm_sea"] = far * 0.7 + near * (1.0 if town.get("coastal", false) else 0.0) * 0.6
 	t["shore_gulls"] = near * day * (1.0 if town.get("coastal", false) else 0.0)
 	t["town_day"] = near * day * (1.0 - 0.5 * winter) * (1.0 - siege)
-	t["town_bustle"] = near * day * size * (1.0 - 0.6 * wet) * (1.0 - siege)
-	t["market"] = close * day * (1.0 if town.get("market", int(town.get("size", 0)) >= 4) else 0.0) * (1.0 - 0.7 * wet) * (1.0 - siege)
+	# Rain thins the crowd a little; it never empties the street of its sound.
+	t["town_bustle"] = near * day * size * (1.0 - 0.25 * wet) * (1.0 - siege)
+	t["market"] = close * day * (1.0 if town.get("market", int(town.get("size", 0)) >= 4) else 0.0) * (1.0 - 0.35 * wet) * (1.0 - siege)
 	t["forge"] = close * day * (1.0 if town.get("forge", int(town.get("size", 0)) >= 3) else 0.0)
 	t["tavern"] = close * (1.0 if town.get("tavern", int(town.get("size", 0)) >= 3) else 0.0) * (0.9 if night else 0.3)
 	t["birds_day"] = (country + near * 0.4) * day * green * (1.0 - wet)
 	t["forest"] = country * 0.6 * day * green
 	t["night"] = (country + near) * (1.0 - far) * (1.0 - day) * green * (1.0 - wet)
 	t["crows"] = (country + near * 0.5) * (1.0 - green) * day * 0.7 + siege * 0.5
-	t["rain"] = wet * (1.0 - 0.5 * far)
-	t["storm"] = (1.0 if weather == "storm" else 0.0) * (1.0 - 0.5 * far)
-	t["snow_wind"] = maxf(winter * (0.35 + 0.65 * far), snowing)
+	t["rain"] = wet * hear_weather
+	t["storm"] = float(_weather["storm"]) * hear_weather
+	# Snowfall is hushed: a breath of wind while it falls, a little more over the
+	# whole winter realm; only a storm brings real wind.
+	t["snow_wind"] = maxf(winter * 0.12 * far, snowing * 0.15 * hear_weather)
 	t["river"] = near * (1.0 if town.get("river", false) else 0.0) * 0.8
 	t["dead_north"] = (1.0 if town.get("north", false) and _base_mood == "dead" else 0.0) * maxf(near, far)
 	t["battle"] = 0.0
@@ -356,7 +384,7 @@ func _mix_beds(delta: float) -> void:
 			if s == null:
 				continue
 			var p := AudioStreamPlayer.new()
-			p.bus = "Ambience"
+			p.bus = "Weather" if name in WEATHER_BEDS else "Ambience"
 			p.stream = s
 			p.volume_db = -80.0
 			add_child(p)
@@ -539,13 +567,13 @@ func _tick_duck(delta: float) -> void:
 
 # --- Helpers -----------------------------------------------------------------
 
-func _bus(name: String, db: float) -> void:
+func _bus(name: String, db: float, send := "Master") -> void:
 	var i := AudioServer.get_bus_index(name)
 	if i < 0:
 		i = AudioServer.bus_count
 		AudioServer.add_bus(i)
 		AudioServer.set_bus_name(i, name)
-		AudioServer.set_bus_send(i, "Master")
+		AudioServer.set_bus_send(i, send)
 	AudioServer.set_bus_volume_db(i, db)
 
 
