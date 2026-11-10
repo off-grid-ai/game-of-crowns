@@ -285,3 +285,15 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - a film of the three loops for the review page;
   - then the plan's items 5 (things the King started, marked on the map), 7 (a seal, sound and reaction on each click) and 8 (named stakes).
 - **Verdict:** on course.
+
+## 2026-11-10, later (autopilot)
+
+- **Landed:**
+  - b5038b6, the review's fixes: no paying twice, the Hand's emergency builds stay instant, a forecast that matches the outcome, lost towns refunded.
+  - e4ecaa4: the ladder goes on past six with aims from the realm, by name; a bigger aim line.
+- **Filmed:** the aim under the date, "The King's marketplace rising · 57%", and "March on Lionreach · they'd break before us", then Lionreach taken 14 companies to 4. All on the review page with notes; one mark (the aim was too small), now fixed in the tree.
+- **Next, from the review's gaps:**
+  - the building site visible in the town itself (not only on the card);
+  - a siege to watch: a camp, and a press-or-withdraw choice mid-siege;
+  - then juice and named stakes.
+- **Verdict:** on course.
