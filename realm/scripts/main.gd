@@ -417,6 +417,8 @@ func _ready() -> void:
 		labels.visible = false
 	# Launch-video takes: scripted camera moves (cinematics.gd reads --clip itself).
 	if Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--clip=")): add_child(load("res://scripts/cinematics.gd").new())
+	# The motion probe (tools/motion_probe.gd): test runs only, headless on a private bridge.
+	if Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--motion-probe=")): add_child(load("res://tools/motion_probe.gd").new())
 
 
 ## The Dock and window icon: crown and raven on dark stone, in the macOS
@@ -778,6 +780,8 @@ func _on_world(world: Dictionary) -> void:
 		add_child(weather_fx)
 	if weather_fx and awareness:
 		weather_fx.show_weather(String(awareness.realm.get_var(&"weather", "clear", false)), season_settle(world))
+	if sound:
+		sound.weather_settle = season_settle(world)  # the weather's sound comes and goes with its sky
 	var season := look_season(world)
 	if season != terrain.season or towns.towns.size() != _snowed:
 		_snowed = towns.towns.size()
