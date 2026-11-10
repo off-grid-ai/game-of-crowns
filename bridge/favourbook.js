@@ -65,6 +65,21 @@ export function recordDeed(ctx, id, d, why, turn) {
   if (list.length > 8) deeds[id] = list.sort((a, b) => Math.abs(b.d) - Math.abs(a.d)).slice(0, 8).sort((a, b) => a.turn - b.turn);
 }
 
+// A ruling at court the lord who asked will bring back (Mac: "rulings come
+// back"): owed to that lord by name, due two seasons on. Not merged with
+// other deeds: each ruling is its own. A house keeps its weightiest eight, but
+// never drops a ruling still owed.
+export const RULING_DUE = 2;  // seasons until the lord comes back about it
+export function recordRuling(list, { d, what, by, turn }) {
+  if (!d || !what || by == null) return;
+  list.push({ turn, last: turn, d, what, by, due: turn + RULING_DUE, ruling: true });
+  if (list.length > 8) {
+    const keep = list.filter((x) => x.due != null && !x.raised);
+    const rest = list.filter((x) => !keep.includes(x)).sort((a, b) => Math.abs(b.d) - Math.abs(a.d)).slice(0, Math.max(0, 8 - keep.length));
+    list.splice(0, list.length, ...[...keep, ...rest].sort((a, b) => a.turn - b.turn));
+  }
+}
+
 // "the winter of 352, when the King took a town that was theirs": the
 // house's sharpest grievance, for the chronicle to name as the cause.
 export const theirs = (t) => t.replace(/\bours\b/g, "theirs").replace(/\bour\b/g, "their").replace(/\bus\b/g, "them");

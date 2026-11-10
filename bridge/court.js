@@ -18,6 +18,7 @@ import { matterKey } from "./counsel.js";
 import { isWatched, ruleFrom, reactTo } from "./claude.js";
 import * as chron from "./chronicles.js";
 import * as kingDeeds from "./ledger.js";
+import { recordRuling } from "./favourbook.js";
 
 // A ruling on a petition, by option: the treasury pays, the realm changes,
 // favour shifts, the chronicle and the world show it. Shared by a chosen
@@ -58,6 +59,14 @@ export function rule(ctx, id, option) {
   // A ruling that sends the royal host (the siege plea's "relieve"): the same march as the decree.
   if (out.march != null) marchOn(Number(out.march));
   const effects = shiftAndTell(out.favour, "your ruling at court", out.cost);
+  // The lord who asked will be back about it, by name, in two seasons: to repay a favour or demand amends.
+  const asker = petition && court.people?.[petition.from];
+  if (asker && asked && court.deedsOf) {
+    const d = Number(out.favour?.[asker.playerId] ?? 0);
+    const matter = petition.thread ?? null;
+    const what = `heard ${matter ? `us on ${matter}` : "our plea"} at court and ruled: ${String(asked.label ?? asked.id).replace(/ \(.*\)$/, "").toLowerCase()}`;
+    recordRuling(court.deedsOf(asker.playerId), { d, what, by: asker.id, turn: world.turn ?? 0 });
+  }
   // Every ruling is told, even one whose answer has no words of its own written for it.
   if (!String(out.text ?? "").trim()) out.text = `The King gives his answer${petition ? ` to ${petition.name}` : ""}: ${String(asked?.label ?? option).replace(/ \(.*\)$/, "").toLowerCase()}.`;
   record({ turn: world.turn, kind: "decree", text: out.text });
@@ -177,6 +186,13 @@ export async function courtSeason(ctx, turn, force = false) {
   ({ world, meta, court, counselNow } = ctx);
   want -= pleas.length;
   const pleading = new Set(pleas.map((p) => court.people[p.from]?.playerId));
+  // A lord the King ruled on two seasons ago comes back by name: a seat of their
+  // own at a full sitting, ahead of the Hand's matters (a promise kept, not a draw).
+  if (due) {
+    const returns = await court.callReturns(world, turn, 1, courtCtx(ctx));
+    ({ world, meta, court, counselNow } = ctx);
+    want -= returns.length;
+  }
   const ownerOf = (o) => world.cities.find((x) => x.id === o.acts?.[0]?.city)?.owner;
   // The crises head the sitting, two at most (a realm in crisis is pressed, not
   // flooded); the gravest first, the rest wait for the next sitting.

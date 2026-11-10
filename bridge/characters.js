@@ -99,6 +99,7 @@ export class Court {
     this.claims = saved.claims ?? [];
     this.truces = saved.truces ?? {};
     this.debts = saved.debts ?? [];
+    this.intrigue = saved.intrigue ?? [];  // the houses' schemes the map shows (scheme(), intrigue.js)
     this.moodFile = path.join(dir, "mood.json");
     const savedMoods = fs.existsSync(this.moodFile) ? JSON.parse(fs.readFileSync(this.moodFile, "utf8")) : [];
     this.decrees = Array.isArray(savedMoods) ? savedMoods : [];
@@ -167,7 +168,26 @@ export class Court {
   }
 
   saveCourt() {
-    fs.writeFileSync(this.courtFile, JSON.stringify({ petitions: this.petitions, claims: this.claims ?? [], truces: this.truces ?? {}, debts: this.debts ?? [] }, null, 1));
+    fs.writeFileSync(this.courtFile, JSON.stringify({ petitions: this.petitions, claims: this.claims ?? [], truces: this.truces ?? {}, debts: this.debts ?? [], intrigue: this.intrigue ?? [] }, null, 1));
+  }
+
+  // A scheme between two houses, for the map (intrigue.js reads it out): an
+  // envoy, a pact or a match. The same scheme between the same houses is
+  // updated, not repeated. kind: "envoy" | "pact" | "marriage".
+  scheme({ kind, from, to, line, secret = false, turn }) {
+    if (from == null || to == null || Number(from) === Number(to)) return;
+    const list = (this.intrigue ??= []);
+    const id = `${kind}:${Math.min(from, to)}:${Math.max(from, to)}`;
+    const same = list.find((s) => s.id === id);
+    if (same) Object.assign(same, { from: Number(from), to: Number(to), line, secret, last: turn });
+    else list.push({ id, kind, from: Number(from), to: Number(to), line, secret, since: turn, last: turn });
+    if (list.length > 16) list.splice(0, list.length - 16);
+  }
+
+  // A scheme that ended (a match refused, gates opened): off the map.
+  unscheme(kind, a, b) {
+    const id = `${kind}:${Math.min(a, b)}:${Math.max(a, b)}`;
+    this.intrigue = (this.intrigue ?? []).filter((s) => s.id !== id);
   }
 
   // Everyone living, rebuilt at most a few times a second: the game asks for a
@@ -518,24 +538,30 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
           this.shift(c.id, father.id, 30, `${father.name} took my daughter into ${father.house}.`);
           this.shift(father.id, c.id, 15);
           this.record({ turn, kind: "marriage", text: `${m.daughter.name} of ${cityName(c.seat)} weds ${m.target.name}, heir of ${father.house}. A minor house rises.${line}`, city: c.seat });
+          this.scheme({ kind: "marriage", from: c.playerId, to: father.playerId, turn, line: `${m.daughter.name} of ${c.house} weds ${m.target.name}, heir of ${father.house}: two houses bound by blood.` });
         } else {
           this.shift(c.id, father.id, -25, `${father.name} spurned my daughter.`);
           this.record({ turn, kind: "scheme", text: `${father.name} refuses ${c.name}'s offer of his daughter's hand. The insult is remembered.${line}`, city: c.seat });
+          this.unscheme("marriage", c.playerId, father.playerId);
         }
         return;
       }
       case "defect": {
         const town = world.cities.find((x) => x.id === c.seat);
         if (!town || town.capital) return;
+        // Gold-laden envoys ride from the tempting house to this lord's liege's lands: secret until it's settled.
+        this.scheme({ kind: "envoy", from: m.to.id, to: c.playerId, turn, secret: true, line: `${houseFor(m.to).name}'s envoys ride to ${cityName(c.seat)} with gold: a lord of ${c.house} is being bought?` });
         const d = await this.ask(c, `Your liege's house is ${c.house}. ${houseFor(m.to).name} sends envoys with gold, offering you their protection if you open your gates to them.`, ["defect", "stay loyal"]);
         const go = d ? d.choice === "defect" : true;
         const line = d?.line ? ` "${d.line}"` : "";
         if (!go) {
           c.loyalty = Math.min(100, c.loyalty + 15);
+          this.scheme({ kind: "envoy", from: m.to.id, to: c.playerId, turn, line: `${c.name} of ${cityName(c.seat)} sent ${houseFor(m.to).name}'s envoys home empty-handed.` });
           this.record({ turn, kind: "scheme", text: `${c.name} of ${cityName(c.seat)} sends ${houseFor(m.to).name}'s envoys home empty-handed.${line}`, city: c.seat, with: world.cities.find((x) => x.owner === m.to.id && x.capital)?.id });
           return;
         }
         ctx.send(`local c = find.city(nil, ${town.id}); local to; for p in players_iterate() do if p.id == ${m.to.id} then to = p end end; if c and to then edit.transfer_city(c, to) end`);
+        this.unscheme("envoy", m.to.id, c.playerId);  // the gold did its work: the gates are open
         this.claims ??= [];
         this.claims.push({ city: town.id, from: c.playerId, to: m.to.id, turn });
         const oldLiege = c.liege;
@@ -552,6 +578,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
         this.shift(c.id, m.target.id, 15, `I sought friendship with ${m.target.name}.`);
         this.shift(m.target.id, c.id, 12);
         this.record({ turn, kind: "alliance", text: `Ravens fly between ${c.house} and ${m.target.house}. ${c.name} and ${m.target.name} speak of friendship.`, city: c.seat ?? undefined, with: m.target.seat ?? undefined });
+        this.scheme({ kind: "pact", from: c.playerId, to: m.target.playerId, turn, line: `Ravens fly between ${c.house} and ${m.target.house}: a pact in the making.` });
         return;
       }
       case "plot": {
@@ -625,6 +652,24 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
   // sitting, once a year for the same crisis. The rotation is for ordinary
   // matters. Returns the pleas made (the bridge calls this before the Hand's
   // own matters, and drops the Hand's for a house whose lord already pleads).
+  // A ruling owed back (favourbook.recordRuling): the lord the King ruled on,
+  // two seasons later, by name, to repay a favour or demand amends. Ahead of
+  // the rotation, after any crisis. Returns the petitions made.
+  async callReturns(world, turn, want, ctx) {
+    const made = [];
+    for (const c of this.alive()) {
+      if (want <= 0) break;
+      if (this.petitions.some((p) => !p.answered && p.from === c.id)) continue;
+      const owed = (this.deedsOf?.(c.playerId) ?? []).filter((x) => x.by === c.id && x.due != null && x.due <= turn && !x.raised).sort((a, b) => a.due - b.due)[0];
+      if (!owed) continue;
+      this.turnNow = turn;
+      const p = await this.petition(c, world, turn, ctx, true, { urgent: true, prefer: "remembers", deed: owed });
+      if (p) { p.called = turn; made.push(p); want--; }
+    }
+    if (made.length) this.saveCourt();
+    return made;
+  }
+
   async callCrises(world, turn, want, ctx) {
     const made = [];
     const crisisOf = (c) => {
@@ -802,15 +847,17 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     const fav = ctx.favour?.(c.playerId) ?? 50;
     const grudge = owed.filter((x) => x.d < 0).sort((a, b) => a.d - b.d)[0];
     const kindness = owed.filter((x) => x.d > 0).sort((a, b) => b.d - a.d)[0];
-    const deed = fav < 55 ? (grudge ?? kindness) : (kindness ?? grudge);
+    const deed = opts.deed ?? (fav < 55 ? (grudge ?? kindness) : (kindness ?? grudge));
     if (deed) candidates.push({ kind: "remembers", deed: deed.what, weight: deed.d < 0 ? 7 : 4, make: () => {
       deed.raised = turn;
       const when = calendar(deed.turn);
       // Once: "Two years ago, in the winter of 352, you took a town that was ours."
       // Year on year: "Since the winter of 352 you have bled us with the tithe, year after year."
       const ago = Math.max(1, Math.floor((turn - deed.turn) / 4));
+      // A ruling a season or two old: "In the spring of 312, you heard our plea at court and ruled: ...".
       const said = deed.last - deed.turn >= 4
         ? `Since the ${when.season} of ${when.year}, you ${deed.what}, year after year`
+        : turn - deed.turn < 4 ? `In the ${when.season} of ${when.year}, you ${deed.what}`
         : `${ago === 1 ? "A year" : ago === 2 ? "Two years" : ago === 3 ? "Three years" : `${ago} years`} ago, in the ${when.season} of ${when.year}, you ${deed.what}`;
       if (deed.d < 0) {
         const threat = fav < 35 ? " Do not look for our banners until it is set right." : " I would hear the crown set it right.";
