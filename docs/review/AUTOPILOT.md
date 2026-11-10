@@ -64,6 +64,12 @@ false or fighting the player (the camera, offers that are refused, odd causes, r
 props), proven in the game. The order after that waits on Mac's call: a played-and-filmed friction pass,
 a rethink of what the player does each minute, or both.
 
+## Queued after the friction pass and the townsfolk swap
+- **Houses with a past** (Mac approved, via the research thread; brief: shared notes, houses-with-a-past.md).
+  Rule: **tell only what the world can show.** Each beat names a picture we already render, and the camera
+  can go there. The house words go under the banner, and the old wrong is marked on the land where it
+  happened (look in the asset kits for a ruin first). No more chronicle text, no lore page.
+
 ## Then (Mac, 2026-11-10: "fix these as well", the designers' top 10)
 In this order, each measured on a real reign before and after:
 1. **Repetition (guard hardest):** count repeated situations in a real reign; draw every matter from the realm's state; none returns.
