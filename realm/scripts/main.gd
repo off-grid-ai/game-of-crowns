@@ -1524,10 +1524,16 @@ func _on_staged(s: Dictionary, follow: Node3D) -> void:
 					owner = int(c["owner"])
 		var col := Color.from_string(String(_houses.get(owner, {}).get("color", "#c9a95a")), Color(0.79, 0.66, 0.35))
 		_news = {"s": s, "follow": follow, "at": terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0))), "caption": director.caption(s), "ms": Time.get_ticks_msec(), "color": col, "new": true}
-		# A lord's deed sounds once, as an RTS alert does (rate-limited with the offers).
+		# A lord's deed sounds once, each kind its own (StarCraft: an attack never sounds
+		# like news): the horn only for what's hostile, the bell for a death, a cheer for
+		# a feast, a letter on the road in silence. Rate-limited with the offers.
 		if s.get("lord", false) and Time.get_ticks_msec() - _horn_at > 20000:
-			_horn_at = Time.get_ticks_msec()
-			sound.event("horn")
+			var cue := {"handover": "horn", "sack": "horn", "razed": "horn", "feast": "feast"}.get(kind, "")
+			if kind == "rider" and String(s.get("label", "")).begins_with("Word of a death"):
+				cue = "death"
+			if cue != "":
+				_horn_at = Time.get_ticks_msec()
+				sound.event(cue)
 		# One channel for one piece of news: off screen, the edge arrow carries it, so no Watch card as well.
 		var cam := get_viewport().get_camera_3d()
 		if cam and (cam.is_position_behind(_news["at"]) or not get_viewport().get_visible_rect().grow(-40).has_point(cam.unproject_position(_news["at"]))):
