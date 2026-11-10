@@ -43,12 +43,17 @@ func _run(clips: PackedStringArray, out: String) -> void:
 	rng.seed = 7
 	var p: Node3D = _people.make(rng, "townsfolk", Color.WHITE, "adult")
 	world.add_child(p)
+	# In the game anim_lod.gd ticks each person's machine; here it runs itself.
+	for t in p.find_children("*", "AnimationTree", true, false):
+		(t as AnimationTree).callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE
 	for clip in clips:
 		_people.play(p, clip)
 		var t := 0.0
 		for at in [0.4, 1.0, 1.8]:
-			await create_timer(at - t).timeout
+			var until := Time.get_ticks_msec() + int((at - t) * 1000.0)
+			while Time.get_ticks_msec() < until:
+				await process_frame
 			t = at
-			await RenderingServer.frame_post_draw
+			await process_frame
 			root.get_texture().get_image().save_jpg("%s/%s-%.1f.jpg" % [out, clip, at], 0.85)
 	quit()
