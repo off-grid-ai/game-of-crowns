@@ -682,3 +682,15 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Right way?** No new reign measured since the last entry, so the fun-bar lines are unchanged. The work follows Mac's own notes. Nobody is stuck, looping or building something unapproved. File ownership is split with no overlaps.
 - **Verdict:** on course. The proof is Film round 5's CHECK pair counts and its street-level frames.
 - **Open:** props at work benches, so kneeling and hammering clips have something to work on (Townsfolk look's list); Mixamo heads fading; the heraldry.colour swaps.
+
+## 2026-11-10 20:50, autopilot (Mac's feast shots; god leftovers)
+
+- **What's going on:**
+  - Mac's notes since 20:35: the commoner card waits forever (the model is down); "I play as the king" (the god premise is cut); the winter feast "is someone burning here?"; five feast shots, "lot of issues" (lumps of people, two men fused, fantasy and modern bodies).
+  - Landed: b4ef3bf cuts the view's god() call, its wiring and test-god.sh; docs/review/god-leftovers.md lists 13 cuts and 6 reframes; Builder 2 has its list (god.js, /god, the Fate box, folk_card, scars → blight.js). b7c624e (Builder 2): rain at street height, overcast light.
+  - Working, uncommitted: Townsfolk look (people, chatter, town_life, villagers, npc_mind), NPC perf (anim_lod, npc_mind setup). Film round 5 holds the GPU on a private bridge.
+  - Checked: particles.gd's to_gpu keeps the emitter's transform (headless). The feast "glow on a person" is most likely the fire light on someone standing in the pit.
+- **Where we're heading:** "First: playable". Everything routed this turn is Mac's own friction. Townsfolk look's top item is hard personal space on Godot avoidance, ring slots for gatherings, a probe that fails under 0.5 m, and the body audit.
+- **Right way?** No reign measured since the last entry, so the fun-bar lines are unchanged. The approved order holds, and nothing unapproved is being built. Risk: the probe passed while Mac saw lumps. It was blind to group activities, and it's being fixed so it can't pass that way again.
+- **Verdict:** on course, with the course set by Mac's shots. Next turn's check: Townsfolk look's push, then the CHECK pair counts and the round 5 feast, gossip and market frames.
+- **Supervisor:** a fresh judge was started this turn; its gaps go in the next entry.
