@@ -30,19 +30,10 @@ func _init() -> void:
 	_wood.roughness = 0.9
 
 
-## The towns whose people in its scenes (builders, stall folk, beggars,
-## revellers, a riot) run a small LimboAI job machine, the pattern battle_ai.gd
-## uses: work at a move that fits the post, pause, take a step about the post,
-## work again, never the same move twice running, each on their own time.
-## Empty: off, and everyone behaves exactly as before. (Town ids.)
+## The towns whose scene folk (builders, stall keepers and buyers, recruits)
+## have a mind on LimboAI (npc_mind.gd): activities made of steps, never one
+## move held. Empty: off, and everyone behaves exactly as before. (Town ids.)
 const LIMBO_TOWNS: Array[int] = []
-const JOBS := {
-	"build": ["Fixing_Kneeling", "PickUp_Table", "Interact", "Carrying"],
-	"trade": ["Idle_Talking", "Arguing", "Nodding", "Interact", "Whispering"],
-	"beg": ["Crying", "Kneeling", "Praying", "Defeated"],
-	"feast": ["Dance", "Cheering", "Drinking"],
-	"riot": ["Yelling", "Arguing"],
-}
 var _town_on := false  # this town's scenes run the job machine
 
 
@@ -239,12 +230,41 @@ func _townsperson(parent: Node3D, pos: Vector3, role: String, anim: String, seed
 		_people.repeat(p, anim)
 	else:
 		_people.play(p, anim)
-	if _town_on and role != "soldier" and not anim.begins_with("Fist_Fight"):
-		for job in JOBS:
-			if (JOBS[job] as Array).has(anim):
-				_job(p, JOBS[job], seed)
-				break
 	return p
+
+
+## Gives a scene's townsperson a mind (npc_mind.gd, LimboAI) when this town is
+## on the switch: activities of their post instead of one move held. Returns
+## false (and changes nothing) when the town is off.
+func _mind(p: Node3D, post: String, center: Vector3) -> bool:
+	if not _town_on or p == null:
+		return false
+	return preload("res://scripts/npc_mind.gd").give(p, post, func(q: Vector3) -> float: return _y(center, q), int(p.get_instance_id()))
+
+
+func _townsperson(parent: Node3D, pos: Vector3, role: String, anim: String, seed: int, tint := Color.WHITE) -> Node3D:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed
+	var p: Node3D = _people.make(rng, role, tint, "adult" if role == "soldier" else "")
+	p.set_meta("role", role)  # who they are in the scene (a film can find a drill's soldiers)
+	p.position = pos
+	parent.add_child(p)
+	# A drill is practised over and over: a one-off move (a cut, a draw of the
+	# bow) repeats rather than playing once and standing down.
+	if preload("res://scripts/motion.gd").is_once(anim):
+		_people.repeat(p, anim)
+	else:
+		_people.play(p, anim)
+	return p
+
+
+## Gives a scene's townsperson a mind (npc_mind.gd, LimboAI) when this town is
+## on the switch: activities of their post instead of one move held. Returns
+## false (and changes nothing) when the town is off.
+func _mind(p: Node3D, post: String, center: Vector3) -> bool:
+	if not _town_on or p == null:
+		return false
+	return preload("res://scripts/npc_mind.gd").give(p, post, func(q: Vector3) -> float: return _y(center, q), int(p.get_instance_id()))
 
 
 ## A scene's townsperson at their post, on LimboAI: Work (a move that fits the
@@ -440,6 +460,7 @@ func _construction(root: Node3D, life: Node3D, center: Vector3, building: String
 		var b := _stand(root, life, center, bp, "peasant", ["Fixing_Kneeling", "PickUp_Table", "Interact"][i], rng.randi())
 		if b:
 			b.rotation.y = atan2(base.x - b.position.x, base.z - b.position.z)  # facing the work
+			_mind(b, "build", center)
 	# What's being raised shows under the town's name on the map (map_labels.gd).
 	life.set_meta("doing", doing_line("Building", building, progress))
 
@@ -471,7 +492,8 @@ func _drill(root: Node3D, life: Node3D, center: Vector3, progress: float, color:
 			p.y = _y(center, p)
 			var s := _townsperson(life, p, "soldier", "Idle", hash(unit) + i, color.lerp(Color.WHITE, 0.35))
 			s.rotation.y = atan2(face.x, face.z)
-			_drill_routine(s, bow, hash(unit) + i)
+			if not _mind(s, "bows" if bow else "drill", center):
+				_drill_routine(s, bow, hash(unit) + i)
 			taken.append(Vector2(p.x, p.z))
 		life.set_meta("standing", taken)
 		# The rank is one block to walk round, not a lane to thread.
@@ -647,6 +669,7 @@ func _trade(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 		at.y = _y(center, at)
 		var keeper := _townsperson(life, at, "townsfolk", ["Idle_Talking", "Interact", "Nodding"][rng.randi() % 3], rng.randi())
 		keeper.rotation.y = atan2(-out.x, -out.z)
+		_mind(keeper, "trade", center)
 		var taken: PackedVector2Array = life.get_meta("standing")
 		taken.append(Vector2(at.x, at.z))
 		life.set_meta("standing", taken)
@@ -656,6 +679,7 @@ func _trade(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 			if buyer:
 				var to := m - buyer.position
 				buyer.rotation.y = atan2(to.x, to.z)
+				_mind(buyer, "buy", center)
 
 
 func _unrest(life: Node3D, center: Vector3, rng: RandomNumberGenerator) -> void:
