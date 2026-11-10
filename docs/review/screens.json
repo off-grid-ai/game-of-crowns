@@ -710,13 +710,19 @@
     "name": "Lore: the realm",
     "group": "Lore of Aldmere",
     "what": "The book of the realm, opened from the menu",
-    "file": "screens/lore-realm.jpg",
+    "file": "screens/v/lore-realm-2.jpg",
     "versions": [
       {
         "v": 1,
         "label": "",
         "at": "2026-11-06T07:36:09.577111+00:00",
         "file": "screens/lore-realm.jpg"
+      },
+      {
+        "v": 2,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T19:22:26Z",
+        "file": "screens/v/lore-realm-2.jpg"
       }
     ]
   },
@@ -748,7 +754,7 @@
     "name": "Lore: a great house",
     "group": "Lore of Aldmere",
     "what": "House Goldcrest: its painting, words, people; Edit beside its name",
-    "file": "screens/lore-house.jpg",
+    "file": "screens/v/lore-house-3.jpg",
     "before": "screens/before/lore-house.jpg",
     "versions": [
       {
@@ -762,6 +768,12 @@
         "label": "After",
         "at": "2026-11-06T09:58:01.039947+00:00",
         "file": "screens/lore-house.jpg"
+      },
+      {
+        "v": 3,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T19:22:26Z",
+        "file": "screens/v/lore-house-3.jpg"
       }
     ]
   },
@@ -785,7 +797,7 @@
     "name": "Character close-up",
     "group": "Lore of Aldmere",
     "what": "Meet: a lord in front of their house's backdrop",
-    "file": "screens/lore-person.jpg",
+    "file": "screens/v/lore-person-3.jpg",
     "before": "screens/before/lore-person.jpg",
     "versions": [
       {
@@ -799,6 +811,12 @@
         "label": "After",
         "at": "2026-11-06T09:58:01.230680+00:00",
         "file": "screens/lore-person.jpg"
+      },
+      {
+        "v": 3,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T19:22:26Z",
+        "file": "screens/v/lore-person-3.jpg"
       }
     ]
   },
@@ -1023,9 +1041,18 @@
         "label": "Today's round: map decisions, gold, motion v2, weather",
         "at": "2026-11-10T16:16:41Z",
         "file": "screens/v/choices-at-town-1.jpg"
+      },
+      {
+        "v": 2,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T19:22:26Z",
+        "file": "screens/v/choices-at-town-2.jpg",
+        "what": "The card beside the town; it closes once the town leaves the view",
+        "clip": "screens/v/choices-at-town-2.mp4"
       }
     ],
-    "file": "screens/v/choices-at-town-1.jpg"
+    "file": "screens/v/choices-at-town-2.jpg",
+    "clip": "screens/v/choices-at-town-2.mp4"
   },
   {
     "id": "starving-grain",
@@ -1085,9 +1112,16 @@
         "label": "Today's round: map decisions, gold, motion v2, weather",
         "at": "2026-11-10T16:54:18Z",
         "file": "screens/v/bodies-1.jpg"
+      },
+      {
+        "v": 2,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T19:22:26Z",
+        "file": "screens/v/bodies-2.jpg",
+        "what": "The cast by role: peasant, townsfolk, soldier, noble, clergy, knight (12 each)"
       }
     ],
-    "file": "screens/v/bodies-1.jpg"
+    "file": "screens/v/bodies-2.jpg"
   },
   {
     "id": "hover-folk",
@@ -1100,9 +1134,16 @@
         "label": "Today's round: map decisions, gold, motion v2, weather",
         "at": "2026-11-10T16:16:41Z",
         "file": "screens/v/hover-folk-1.jpg"
+      },
+      {
+        "v": 2,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T19:22:26Z",
+        "file": "screens/v/hover-folk-2.jpg",
+        "what": "The whole figure is the pick now: trade and mind by the cursor"
       }
     ],
-    "file": "screens/v/hover-folk-1.jpg"
+    "file": "screens/v/hover-folk-2.jpg"
   },
   {
     "id": "rain-street",
@@ -1199,9 +1240,18 @@
         "label": "Today's round: map decisions, gold, motion v2, weather",
         "at": "2026-11-10T16:16:41Z",
         "file": "screens/v/faces-at-court-1.jpg"
+      },
+      {
+        "v": 2,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T19:22:26Z",
+        "file": "screens/v/faces-at-court-2.jpg",
+        "what": "A face pressed: the camera frames the starving town and the Hand's card stands beside it, the answers marked with sigils",
+        "clip": "screens/v/faces-at-court-2.mp4"
       }
     ],
-    "file": "screens/v/faces-at-court-1.jpg"
+    "file": "screens/v/faces-at-court-2.jpg",
+    "clip": "screens/v/faces-at-court-2.mp4"
   },
   {
     "id": "threat-on-map",
@@ -1257,7 +1307,7 @@
     "name": "Ledger",
     "group": "Play",
     "what": "The ledger of the realm",
-    "file": "screens/ledger.jpg",
+    "file": "screens/v/ledger-3.jpg",
     "before": "screens/before/ledger.jpg",
     "versions": [
       {
@@ -1271,6 +1321,12 @@
         "label": "After",
         "at": "2026-11-06T07:36:08.216643+00:00",
         "file": "screens/ledger.jpg"
+      },
+      {
+        "v": 3,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T19:22:26Z",
+        "file": "screens/v/ledger-3.jpg"
       }
     ]
   },
@@ -1557,9 +1613,15 @@
         "at": "2026-11-09T08:40:28Z",
         "file": "screens/v/ranked-houses-2.jpg",
         "what": "All seven great houses, numbered by power, each with a bar in its own colour (the colour of its land); a red ember marks a house turning against you."
+      },
+      {
+        "v": 3,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T19:22:26Z",
+        "file": "screens/v/ranked-houses-3.jpg"
       }
     ],
-    "file": "screens/v/ranked-houses-2.jpg"
+    "file": "screens/v/ranked-houses-3.jpg"
   },
   {
     "id": "director-after-court",

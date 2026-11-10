@@ -53,3 +53,12 @@ The review page has the screens: https://claude.ai/artifact/4PkjM4Z31UEeDdoGHrHc
 - **The petition's answers: not filmed.** The harness's answer step found "nothing to answer".
 - **The game stopped answering again** at the start of the talk sweep (a plain 6 s wait). Talk, war and riot on d3fe54c, the market's hands and the hover reshoot never ran.
 - Schemes, road, Stormwatch at night, the interlude and the reign's end, and the six role sheets were filmed. They aren't on the review page yet (v12 not published).
+
+## Reshoots (11 Nov, 5a8990e and d522d77)
+
+- **Truce: pass.** The court sat on one matter (the same id throughout) while the peace was commanded. The ceasefire reload ran (1.0 s) and the matter was still waiting after it. The realm held still while the court sat, so no season turned behind it.
+- **Hover a townsperson: pass.** The trade and mind show by the cursor ("Miller: Good straw this year. Thatch before the rain.").
+- **A town's choices: pass.** Saltkeep's card opens beside the town and is gone once the camera pans away.
+- **Faces at court: pass.** Pressing the first face frames Saltkeep and stands the Hand's card beside it. The answers show sigils with ▲/▼ and the price in crowns.
+- **Long rain sticks: still seen.** One stick crosses the lens in a street frame on 5a8990e.
+- **The cast by role** (review page, bodies v2): peasant and townsfolk are the same twelve bodies in the same order. Soldier and knight look alike. Half the clergy aren't robed, and the nobles are knights, nuns and rangers.
