@@ -26,6 +26,8 @@ const RAIN_NEAR := Vector2(1.5, 4.0)
 const SNOW_NEAR := Vector2(3.0, 8.0)
 const RAIN_DROPS := 12000  # at full rain: dense, fine and close (Manor Lords), never a few long sticks
 const SNOW_FLAKES := 1600
+const NEAR_GONE := 0.5  # game units (about 4 m): a drop or flake this near the lens is not drawn
+const NEAR_FULL := 1.5  # about 12 m: from here out it is drawn whole
 const CLEAR_OF_LENS := 0.25  # no drop or flake falls within this of the camera (game units, about 2 m)
 
 var sky3d: Node  # Sky3D
@@ -135,10 +137,12 @@ func _fall(count: int, size: Vector2, colour: Color, speed: float, life: float, 
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y if speed > 3.0 else BaseMaterial3D.BILLBOARD_ENABLED
 	mat.albedo_color = colour
-	# Faint near the lens and gone with distance: a curtain, not sticks (Godot's own distance fade).
+	# Gone right at the lens, so no drop is ever drawn as a long stick across the frame
+	# (review v12): Godot's own distance fade, transparent within NEAR_GONE of the camera
+	# and whole from NEAR_FULL out. The far drops are small and fine of themselves.
 	mat.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_ALPHA
-	mat.distance_fade_min_distance = reach * 1.2
-	mat.distance_fade_max_distance = 0.15
+	mat.distance_fade_min_distance = NEAR_GONE
+	mat.distance_fade_max_distance = NEAR_FULL
 	mat.no_depth_test = false
 	q.material = mat
 	p.draw_pass_1 = q
