@@ -1,0 +1,245 @@
+// The season and the turn: what happens each time Freeciv turns (turn: the
+// land heals, the tithe and the season's reckoning, then, staggered so the AI
+// can finish its moves, the stakes, the people's yearly moves, the weather,
+// the story arcs, the world's snapshot and the minds); the season's sequence
+// itself (collectTithe: the court sits, the King's works, the campaigns,
+// favour fading and drifting, the tithe, the goal); the people's yearly moves
+// (runSeason); a house turning against the crown and the one rule for every
+// rising (turnHouses, storyMarch, askUltimatum, mayRise, rose); the one truce
+// writer (houseTruce, keepTruce, councilRuled); and the land's scars healing
+// (healScars). Nothing here reads server.js: the realm's state and the
+// bridge's own helpers come in as one context argument, built fresh by
+// server.js on each call (getters for what it reassigns, read live inside the
+// turn's timers; setScars for the scars), and server.js keeps wrappers of the
+// same names where its own code still calls them.
+
+import fs from "node:fs";
+import path from "node:path";
+import { houseFor, cityName } from "./narrator.js";
+import { healLua } from "./god.js";
+import { decree, clampFavour } from "./crown.js";
+import { BANDS } from "./favour.js";
+import { calendar } from "./stakes.js";
+import { isWatched } from "./claude.js";
+import * as Weather from "./weather.js";
+import * as Treasury from "./treasury.js";
+import * as chron from "./chronicles.js";
+
+// --- the turn (onEvent's "turn" branch) ------------------------------------------
+
+export function turn(ctx, ev) {
+  const { send } = ctx;
+  healScars(ctx, Number(ev.turn));
+  collectTithe(ctx, Number(ev.turn));
+  setTimeout(() => ctx.stakes?.tick(Number(ev.turn), ctx.world, { favour: ctx.favourOf, sworn: ctx.sworn, shift: ctx.shiftFavour, send: (l) => send(`lua cmd ${l}`), watched: isWatched(), options: ctx.meta.options ?? {}, mayRise: (pid) => mayRise(ctx, pid), ultimatum: (pid) => askUltimatum(ctx, pid), rose: (pid) => rose(ctx, pid) }), 2000);
+  if (Number(ev.turn) % 4 === 0) setTimeout(() => runSeason(ctx), 2500);
+  // The season's weather, rolled once as the season turns (weather.js, from the reign's seed).
+  Weather.advance(ctx.meta, Number(ev.turn), calendar(Number(ev.turn)).season);
+  setTimeout(() => ctx.runArcs(1), 4000);
+  // Let the AI finish its start-of-turn moves before dumping the world.
+  setTimeout(ctx.snapshot, 1500);
+  setTimeout(() => ctx.minds?.tick(Number(ev.turn)), 3000);
+  if ((Number(ev.turn) - 1) % 4 === 0) ctx.record({ turn: Number(ev.turn), kind: "year", text: `The year ${calendar(ev.turn).year} AC begins.` });
+}
+
+// Every four turns (a year of seasons), the people of the realm make their moves.
+// (One run at a time, across realms, as the bridge's own flag was.)
+let seasonRunning = false;
+export async function runSeason(ctx) {
+  const { world, meta, court, stakes, send } = ctx;
+  if (!world || seasonRunning || !court) return;
+  seasonRunning = true;
+  try {
+    await court.season(world, { wetHarvest: () => Weather.wetHarvest(meta.weather), favour: ctx.favourOf, cause: ctx.causeOf, warded: (pid) => (stakes?.s.wards?.[pid] ?? -1) > (ctx.world?.turn ?? 0) || ctx.sworn(pid), send: (l) => send(`lua cmd ${l}`), shift: ctx.shiftFavour, watched: isWatched(), options: meta.options ?? {}, ...ctx.heardCtx(), mayRise: (pid) => mayRise(ctx, pid), rose: (pid) => rose(ctx, pid) });
+  } catch (err) {
+    console.error("season:", err);
+  } finally {
+    seasonRunning = false;
+  }
+}
+
+// --- a house turning, and the rising gate ------------------------------------------
+
+// A house turning against the King: each season it stays under 25 its anger
+// fills; after TURNING seasons its lord sends the crown an ultimatum (a crisis
+// at court). Only an ultimatum refused, or left to burn down, lets him raise
+// his banners; won back above 25, the anger drains away.
+export const TURNING = 2;
+export function turnHouses(ctx, turn) {
+  const { world, meta, stakes, send, record, favourOf } = ctx;
+  const turning = (meta.turning ??= {});
+  for (const p of world?.players ?? []) {
+    if (houseFor(p).wild || houseFor(p).crown || !world.cities.some((c) => c.owner === p.id)) continue;
+    // A realm from before ultimatums: a house already under 25 is one season from sending its own.
+    const t = (turning[p.id] ??= { seasons: favourOf(p.id) < BANDS.cooling ? TURNING - 1 : 0, state: null });
+    if (favourOf(p.id) < BANDS.cooling) t.seasons = Math.min(TURNING, t.seasons + 1);
+    else {
+      t.seasons = Math.max(0, t.seasons - 1);
+      if (t.seasons === 0 && t.state !== "refused" && t.march == null) t.state = null;  // a story's march keeps its ultimatum standing
+    }
+    // A story's march, held for its ultimatum: it goes once the King refused, or let it lie.
+    if (t.march != null && mayRise(ctx, p.id)) {
+      stakes?.declare(p.id, world, { send: (l) => send(`lua cmd ${l}`) }, t.march);
+      t.march = null;
+    }
+    // An ultimatum met (favour shown, anger drained) calls the story's march off.
+    if (t.march != null && !t.state) t.march = null;
+    if (t.seasons >= TURNING && !t.state) {
+      t.state = "sent";
+      t.at = turn;
+      record({ turn, kind: "unrest", text: `${houseFor(p).name} sends a rider to Kingsmere with an ultimatum for the King.` });
+    }
+  }
+}
+// A story that would march a house on Kingsmere: if its ultimatum has been
+// refused (or gone two seasons unanswered) the host marches now; otherwise
+// the ultimatum goes to court first, and the march waits for its answer.
+export function storyMarch(ctx, pid, size) {
+  const { world, meta, stakes, send } = ctx;
+  if (mayRise(ctx, pid)) return stakes?.declare(pid, world, { send: (l) => send(`lua cmd ${l}`) }, size);
+  askUltimatum(ctx, pid).march = size ?? 10;
+  chron.saveMeta(meta);
+}
+
+// A house about to rise sends the crown its ultimatum first (one rule for every
+// rising: a story's march, the pretender's claim, a turned house). Sent once; its
+// answer decides (mayRise).
+export function askUltimatum(ctx, pid) {
+  const { world, meta, record } = ctx;
+  const t = ((meta.turning ??= {})[pid] ??= { seasons: TURNING, state: null });
+  if (!t.state) {
+    t.state = "sent";
+    t.at = world?.turn ?? 0;
+    const p = world?.players?.find((x) => x.id === pid);
+    if (p) record({ turn: t.at, kind: "unrest", text: `${houseFor(p).name} sends a rider to Kingsmere with an ultimatum for the King.` });
+    chron.saveMeta(meta);
+  }
+  return t;
+}
+
+// Whether a lord may raise his banners against the crown: only after his ultimatum.
+// Refused, or two seasons gone since it came with no favour shown: then the rising.
+export const mayRise = (ctx, pid) => { const { world, meta } = ctx; const t = meta.turning?.[pid]; return t?.state === "refused" || (t?.state === "sent" && (world?.turn ?? 0) - t.at >= 2); };
+export function rose(ctx, pid) {
+  const t = ctx.meta.turning?.[pid];
+  if (t) { t.state = null; t.seasons = 0; }
+}
+
+// --- the season's sequence ---------------------------------------------------------
+
+// Each turn the crown takes its tithe; a heavy tithe wears favour down.
+// (The tally, lastSeason and favourPast objects stay in server.js: the view,
+// the treasury and the favour book read them.)
+export function collectTithe(ctx, turn) {
+  const { world, meta, favour, favourWhy, favourPast, deeds, record, favourOf } = ctx;
+  ctx.flushHeld();  // last season's grouped lines
+  // The court sits each season (courtSeason).
+  ctx.courtSeason(turn).catch((err) => console.error("court season:", err));
+  if (!world) return;
+  ctx.royalWorks(turn);
+  favourPast[turn] = { ...favour };
+  ctx.resolveCampaigns(turn);
+  // Old grievances and kindnesses fade (about half in five years), so the cause
+  // the Hand names is what moves a house now, not a lifetime's sum.
+  for (const id of Object.keys(favourWhy)) {
+    favourWhy[id] = (favourWhy[id] ?? []).map((r) => ({ ...r, d: r.d * 0.97 })).filter((r) => Math.abs(r.d) >= 1);
+  }
+  for (const t of Object.keys(favourPast)) if (Number(t) < turn - 8) delete favourPast[t];
+  // The season's tithe, its wagons and its deed (treasury.js).
+  Treasury.tithe(ctx.treasuryCtx(), turn);
+  const wear = isWatched() ? meta.tithe * 4 : 0;  // 10% wears 0.4 a season; the drift to 55 outweighs it
+  for (const p of world.players) {
+    if (houseFor(p).wild || houseFor(p).crown) continue;
+    const before = favourOf(p.id);
+    // Favour drifts back toward the house's own temper, minus the tithe's wear.
+    // Gratitude fades: a house well above its own temper cools faster than one near it.
+    const rest = ctx.restingFavour(p);
+    favour[p.id] = clampFavour(before + (rest - before) * (before - rest > 15 ? 0.08 : 0.03) - wear);
+    if (wear) ctx.noteFavour(p.id, -wear, "the royal tithe");
+    // A heavy tithe, year on year, becomes a deed of its own: what a house paid
+    // in a year it remembers at the year's end.
+    const pain = (deeds._tithe ??= {});
+    pain[p.id] = (pain[p.id] ?? 0) + wear;
+    if (turn % 4 === 0) { if (pain[p.id] >= 3) ctx.recordDeed(p.id, -pain[p.id], "the royal tithe", turn - 1); pain[p.id] = 0; }
+    if (before >= 20 && favour[p.id] < 20) {
+      const why = ctx.causeOf(p.id);
+      record({ turn, kind: "unrest", text: `${houseFor(p).name} speaks openly against the crown. Their loyalty hangs by a thread.${why ? ` They have not forgotten ${why}.` : ""}` });
+    }
+  }
+  ctx.saveFavour();
+  // The reign's goal: every great house firmly the King's (GOAL_FAVOUR and up)
+  // and no war between them. Marked once in the chronicle when won; lost again
+  // when a house falls away or two take up arms.
+  const united = ctx.goalNow().won;
+  if (united && !meta.united) {
+    meta.united = true;
+    chron.saveMeta(meta);
+    record({ turn, kind: "decree", text: `All ${ctx.goalNow().of} great houses stand behind the King, and none is at war with another. For the first time in a generation the realm answers to one crown, in truth and not in name.` });
+  } else if (!united && meta.united) {
+    meta.united = false;
+    chron.saveMeta(meta);
+  }
+  Treasury.reckoning(ctx.treasuryCtx(), turn);
+}
+
+// The land's scars heal when their time comes (the scars themselves are kept by server.js's onEvent).
+export function healScars(ctx, turn) {
+  const { world, P, send, record } = ctx;
+  const due = ctx.scars.filter((s) => s.heal <= turn);
+  if (!due.length) return;
+  ctx.setScars(ctx.scars.filter((s) => s.heal > turn));
+  fs.writeFileSync(path.join(P.state, "scars.json"), JSON.stringify(ctx.scars));
+  for (const s of due) {
+    healLua(s.tiles).forEach((l) => send(`lua cmd ${l}`));
+    if (world?.cities?.some((c) => c.id === s.city)) {
+      record({ turn, kind: "heal", text: `The land around ${cityName(s.city)} slowly recovers.`, city: s.city });
+    }
+  }
+}
+
+// --- truces ----------------------------------------------------------------------
+
+// A commanded peace: the two lords' houses keep a truce (no raids, no plots).
+// The one truce writer (SSOT): every truce between two houses, from a decree,
+// a court ruling, a story or a royal match, comes here. Freeciv's own ceasefire,
+// so its AI stops fighting too (it ends by itself after `seasons`); its reload
+// runs only behind a sitting court, where the realm is already held and the
+// card covers the screen, otherwise it waits for one. The houses' truce is
+// keyed to them, whoever leads them; the goal and the panels read Freeciv's.
+export function houseTruce(ctx, pair, seasons = 16) {
+  const { world, meta, court, ceasefire } = ctx;
+  if (!court || pair[0] === pair[1]) return;
+  if (meta?.court?.sitting != null) ceasefire([[pair[0], pair[1], seasons]]).catch((e) => console.log("ceasefire:", e.message));
+  else (meta.pendingCease ??= []).push([pair[0], pair[1], seasons]);
+  court.truces ??= {};
+  const key = `h:${Math.min(...pair)}:${Math.max(...pair)}`;
+  court.truces[key] = Math.max(court.truces[key] ?? 0, (world?.turn ?? 0) + seasons);
+}
+
+export function keepTruce(ctx, pair) {
+  const { world, court } = ctx;
+  if (!court) return;
+  houseTruce(ctx, pair, 16);
+  const [a, b] = pair.map((pid) => court.lordOfHouse(pid));
+  if (!a || !b) { court.saveCourt?.(); return; }
+  court.truces[[a.id, b.id].sort().join(":")] = (world?.turn ?? 0) + 16;
+  court.remember(a.id, `The King commanded peace with ${b.house}, and I bowed to it.`);
+  court.remember(b.id, `The King commanded peace with ${a.house}, and I bowed to it.`);
+  court.saveCourt?.();
+}
+
+// The King commanded peace at the council: both hosts are turned home, as the
+// peace decree does (crown.js), the blood-price already paid at court.
+export function councilRuled(ctx, beat, option) {
+  const { world, meta, send, causeOf } = ctx;
+  const pair = meta.councilWar?.[beat];
+  if (option !== "peace" || !pair || !world) return;
+  const [a, b] = world.cities.some((x) => x.owner === pair[0]) ? pair : [pair[1], pair[0]];
+  const c = world.cities.find((x) => x.owner === a);
+  if (!c) return;
+  // The court took the blood-price already: the decree's own fee is waived (its first line pays it).
+  const r = decree({ action: "peace", city: c.id, to: b, price: 0, favourOf: () => 60, causeOf }, { ...world, players: world.players.map((p) => houseFor(p).crown ? { ...p, gold: 1e9 } : p) });
+  if (r.error) { console.error("council peace:", r.error); return; }
+  (r.lua ?? []).slice(1).forEach((l) => send(`lua cmd ${l}`));
+  if (r.truce) keepTruce(ctx, r.truce);
+}
