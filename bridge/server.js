@@ -2349,6 +2349,16 @@ http.createServer(async (req, res) => {
     setTimeout(snapshot, 600);
     return json(res, 200, { ok: true, text: crowns(result.text) + (effects ? `\n${effects}` : "") });
   }
+  // Test hook (films only): a lord's deed on demand, so its alert can be filmed.
+  // Answers only for a reign named as a test, and only with the X-Test header.
+  if (url.pathname === "/test/news" && req.method === "POST") {
+    if (req.headers["x-test"] !== "1" || !/test|film|check/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
+    const b = await body(req);
+    const e = { turn: world?.turn ?? 0, kind: String(b.kind ?? "betrayal"), text: String(b.text ?? "A test of the realm's news."), city: Number(b.city), to: b.to != null ? Number(b.to) : undefined, from: b.from != null ? Number(b.from) : undefined, with: b.with != null ? Number(b.with) : undefined };
+    record(e);
+    picture(e);
+    return json(res, 200, { ok: true });
+  }
   if (url.pathname === "/scene/arrived" && req.method === "POST") {
     // The King's grain, gold or word reached the town it was sent to: the realm
     // sees it, the chronicle says so in his name, and the town remembers.
