@@ -7,31 +7,25 @@
 
 import fs from "node:fs";
 import zlib from "node:zlib";
-import crypto from "node:crypto";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { houseFor, cityName, nameIn, describe, rememberNames, HOUSES } from "./narrator.js";
-import { godCommand, healLua } from "./god.js";
+import { houseFor, cityName, describe, rememberNames } from "./narrator.js";
+import { healLua } from "./god.js";
 import { readSave, extractDetail } from "./savefile.js";
-import { townsfolk } from "./townsfolk.js";
-import { ROLES, GOALS, TRAITS, setReignSeed } from "./characters.js";
+import { setReignSeed } from "./characters.js";
 import { editRow, rng as rngFor } from "./fresh.js";
-import { folkTale, folkPlain, moodRules, speak, speech, voiceFor, transcribe, aiStatus } from "./claude.js";
+import { moodRules, speak } from "./claude.js";
 import * as chron from "./chronicles.js";
-import * as names from "./names.js";
-import * as rewrites from "./written.js";
 import { decree, titheLua, clampFavour, DECREES, bannersReady, TITHE_HIGH } from "./crown.js";
 // Stories the player generates or writes, kept with their realms.
 const OWN_STORIES = path.join(chron.HOME, "stories");
 ownStories(OWN_STORIES);
 import { Court } from "./characters.js";
 import { Minds, route as mindsRoute } from "./minds.js";
-import { Arcs, templates as arcTemplates, check, ownStories, storiesChanged } from "./arcs.js";
+import { Arcs, ownStories } from "./arcs.js";
 import { Chatter } from "./chatter.js";
-import { bible, FAMILIES, LESSER } from "./lore.js";
 import { Stakes, calendar } from "./stakes.js";
-import * as kingDeeds from "./ledger.js";
 import * as Weather from "./weather.js";
 import * as Realm from "./realm.js";
 import { BANDS } from "./favour.js";
@@ -41,13 +35,20 @@ import * as Camp from "./campaigns.js";
 import { CIVILIAN } from "./campaigns.js";
 import * as Counsel from "./counsel.js";
 import * as Treasury from "./treasury.js";
-import { FAVOUR, WORK_SEASONS } from "./treasury.js";
+import { FAVOUR } from "./treasury.js";
 import * as Reign from "./reign.js";
 import { GOAL_FAVOUR } from "./reign.js";
 import * as Sittings from "./court.js";
+import { json, body } from "./http_util.js";
+import * as RealmRoutes from "./routes_realm.js";
+import * as CourtRoutes from "./routes_court.js";
+import * as DecreeRoutes from "./routes_decree.js";
+import * as TestRoutes from "./routes_test.js";
+import * as PeopleRoutes from "./routes_people.js";
+import * as StoryRoutes from "./routes_stories.js";
 import * as Book from "./favourbook.js";
 import { LEAN, theirs } from "./favourbook.js";
-import { watched, usageToday, moodFrom, isWatched, arcFromWords, beatIdea, premiseIdea, writeFor } from "./claude.js";
+import { moodFrom, isWatched } from "./claude.js";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8787);
@@ -1046,876 +1047,105 @@ process.on("SIGTERM", shutdown);
 
 // --- HTTP API --------------------------------------------------------------------
 
-function json(res, code, body) {
-  res.writeHead(code, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
-  res.end(JSON.stringify(names.showAll(body)));  // in the player's names (names.js)
-}
-
-function body(req) {
-  return new Promise((resolve) => {
-    let b = "";
-    req.on("data", (d) => (b += d));
-    req.on("end", () => { try { resolve(names.innerAll(JSON.parse(b || "{}"))); } catch { resolve({}); } });  // the player's names, turned back
-  });
-}
-
-function bytes(req) {
-  return new Promise((resolve) => {
-    const parts = [];
-    req.on("data", (d) => parts.push(d));
-    req.on("end", () => resolve(Buffer.concat(parts)));
-  });
-}
+// json, body and bytes: http_util.js.
 
 function reignInfo() { return Reign.reignInfo(reignCtx()); }
+
+// The routes' context (routes_*.js), built fresh for each request: the realm's
+// state through getters (read when a handler uses it, so a snapshot or a switch
+// of chronicle during an await is seen), setters for what a route changes, and
+// the bridge's own helpers.
+const routeCtx = () => ({
+  get world() { return world; },
+  get counselStale() { return counselStale; }, set counselStale(v) { counselStale = v; },
+  get P() { return P; },
+  get meta() { return meta; },
+  get chronicle() { return chronicle; },
+  get history() { return history; },
+  get turnSeconds() { return turnSeconds; }, set turnSeconds(v) { turnSeconds = v; },
+  get paused() { return paused; }, set paused(v) { paused = v; },
+  get court() { return court; },
+  get decreesIssued() { return decreesIssued; }, set decreesIssued(v) { decreesIssued = v; },
+  get stakes() { return stakes; },
+  get minds() { return minds; },
+  get arcs() { return arcs; },
+  get arcsRunning() { return arcsRunning; }, set arcsRunning(v) { arcsRunning = v; },
+  townStates, reignInfo, refreshCounsel, worldView, inCrowns, switchTo, endReign, send, timeoutNow, record,
+  DIR, favourOf, runSeason, sittingCtx, docket, hold, closeCourt, rule, closeIfDone, yearlyKey, seasonsLeft,
+  priceOf, causeOf, sworn, deed, startCampaign, temper, shiftAndTell, scene, keepTruce, decreeScenes, snapshot,
+  crowns, arrivals, courtSeason, kingName, marksNow, marks, picture, detail, talkToNamed, isKing, KING, arcCtx,
+  runArcs, OWN_STORIES, ownStory, storyForForm, rolesOf, BEAT_WHEN, BEAT_DOES
+});
 
 // The bridge's routes, "METHOD /path" -> handler(req, res, url). "* /path" answers
 // any method; an exact method's entry is looked up first, so "POST /person" wins
 // over "* /person" as it did when the routes were a chain of ifs.
 const ROUTES = {
-  "* /world": async (req, res, url) => {
-    townStates();
-    if (url.searchParams.get("peek") !== "1") watched(); // the game window polls this every second while open (a test's peek doesn't count)
-    if (!world) return json(res, 503, { error: "realm still forming", reign: reignInfo() });
-    if (counselStale) refreshCounsel();
-    return json(res, 200, worldView());
-  },
-  "* /map": async (req, res, url) => {
-    const map = chron.readJson(path.join(P.state, "map.json"));
-    return map ? json(res, 200, { ...map, land: meta?.land ?? null }) : json(res, 503, { error: "map not ready" });
-  },
-  "* /chronicle": async (req, res, url) => {
-    const since = Number(url.searchParams.get("since") || 0);
-    return json(res, 200, inCrowns(chronicle.filter((e) => e.seq > since).slice(-200)));
-  },
-  "* /ledger": async (req, res, url) => { return json(res, 200, history.slice(-400).map((r) => r.souls !== undefined ? r : { ...r, souls: r.pop * 600, houses: Object.fromEntries(Object.entries(r.houses).map(([k, h]) => [k, { ...h, souls: h.pop * 600 }])) })); },
-  "* /records": async (req, res, url) => { return json(res, 200, chron.records().sort((a, b) => b.score - a.score)); },
-  "* /scenarios": async (req, res, url) => {
-    // Saved starting choices, to begin the same kind of realm again.
-    const file = path.join(chron.HOME, "scenarios.json");
-    const all = chron.readJson(file, []);
-    if (req.method !== "POST") return json(res, 200, all);
-    const b = await body(req);
-    const name = String(b.name || "").trim().slice(0, 40);
-    if (!name) return json(res, 400, { error: "a scenario needs a name" });
-    const entry = { name, scenario: b.scenario, minutes: Number(b.minutes) || 0, wealth: b.wealth, mood: String(b.mood || "").slice(0, 300), options: chron.cleanOptions(b.options) };
-    fs.writeFileSync(file, JSON.stringify([...all.filter((x) => x.name !== name), entry], null, 1));
-    return json(res, 200, entry);
-  },
-  "* /chronicles/options": async (req, res, url) => { return json(res, 200, { defaults: chron.OPTION_DEFAULTS, houses: Object.keys(chron.HOUSE_NATIONS) }); },
-  "GET /chronicles": async (req, res, url) => {
-    return json(res, 200, { active: meta.id, list: chron.list() });
-  },
-  "POST /chronicles": async (req, res, url) => {
-    const b = await body(req);
-    const scenario = ["random", "aldmere", "aldmere_fresh"].includes(b.scenario) ? b.scenario : "aldmere";
-    const m = chron.create({ name: String(b.name || "A New Realm").slice(0, 40), scenario, minutes: b.minutes, pace: b.options?.pace ?? turnSeconds, fate: b.fate, wealth: b.wealth, mood: b.mood, options: b.options });
-    rewrites.applyTo(path.join(chron.paths(m.id).base, "characters"));  // the starting cast as the player rewrote it
-    try { rewrites.distinctNames(chron.paths(m.id).base, JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "data", "first-names.json"), "utf8"))); } catch (e) { console.log("names:", e.message); }  // no two living share a first name
-    switchTo(m.id);
-    return json(res, 200, m);
-  },
-  "POST /chronicles/open": async (req, res, url) => {
-    const { id } = await body(req);
-    if (!chron.list().some((c) => c.id === id)) return json(res, 404, { error: "no such chronicle" });
-    switchTo(id);
-    return json(res, 200, { ok: true });
-  },
-  "POST /reign/end": async (req, res, url) => {
-    endReign("The King lays down the crown.");
-    return json(res, 200, reignInfo());
-  },
-  "POST /reign/continue": async (req, res, url) => {
-    // A timed reign has ended and been scored; the King rules on, with no clock,
-    // in the same realm. The score stands in the records as it was.
-    if (meta.status !== "ended") return json(res, 400, { error: "this reign has not ended" });
-    meta.status = "running";
-    meta.minutes = 0;
-    paused = false;
-    chron.saveMeta(meta);
-    send(`set timeout ${timeoutNow()}`);
-    record({ turn: world?.turn ?? 0, kind: "decree", text: "The King rules on." });
-    return json(res, 200, reignInfo());
-  },
-  "POST /pause": async (req, res, url) => {
-    if (meta.status !== "running") return json(res, 400, { error: "this reign has ended" });
-    paused = url.pathname === "/pause";
-    send(`set timeout ${timeoutNow()}`);
-    return json(res, 200, reignInfo());
-  },
+  "* /world": (req, res, url) => RealmRoutes.world(routeCtx(), req, res, url),
+  "* /map": (req, res, url) => RealmRoutes.realmMap(routeCtx(), req, res, url),
+  "* /chronicle": (req, res, url) => RealmRoutes.chronicle(routeCtx(), req, res, url),
+  "* /ledger": (req, res, url) => RealmRoutes.ledger(routeCtx(), req, res, url),
+  "* /records": (req, res, url) => RealmRoutes.records(routeCtx(), req, res, url),
+  "* /scenarios": (req, res, url) => RealmRoutes.scenarios(routeCtx(), req, res, url),
+  "* /chronicles/options": (req, res, url) => RealmRoutes.chronicleOptions(routeCtx(), req, res, url),
+  "GET /chronicles": (req, res, url) => RealmRoutes.listChronicles(routeCtx(), req, res, url),
+  "POST /chronicles": (req, res, url) => RealmRoutes.createChronicle(routeCtx(), req, res, url),
+  "POST /chronicles/open": (req, res, url) => RealmRoutes.openChronicle(routeCtx(), req, res, url),
+  "POST /reign/end": (req, res, url) => RealmRoutes.end(routeCtx(), req, res, url),
+  "POST /reign/continue": (req, res, url) => RealmRoutes.continueReign(routeCtx(), req, res, url),
+  "POST /pause": (req, res, url) => RealmRoutes.pause(routeCtx(), req, res, url),
   "POST /resume": (req, res, url) => ROUTES["POST /pause"](req, res, url),
-  "* /reign/options": async (req, res, url) => {
-    // The running reign's choices: read them, or change the ones that can
-    // change mid-reign. Start-only choices (the world, which houses, their
-    // temper, wealth and trust, the starting host) stay as they were.
-    const LIVE = ["pace", "disasters", "raiders", "dead", "usurper", "petitions", "intrigue", "language"];
-    const now = { ...chron.cleanOptions(meta.options ?? {}), pace: meta.pace ?? 12 };
-    if (req.method !== "POST") return json(res, 200, { options: now, live: LIVE });
-    const b = await body(req);
-    const next = chron.cleanOptions({ ...now, ...Object.fromEntries(Object.entries(b).filter(([k]) => LIVE.includes(k))) });
-    meta.options = { ...now, ...Object.fromEntries(LIVE.map((k) => [k, next[k]])) };
-    // The season's length is also set by the speed buttons; only change it when asked.
-    if ("pace" in b) {
-      meta.pace = meta.options.pace;
-      turnSeconds = meta.pace;
-      send(`set timeout ${timeoutNow()}`);
-    }
-    meta.options.pace = meta.pace ?? meta.options.pace;
-    chron.saveMeta(meta);
-    // Freeciv's own dials, applied now.
-    send(`set disasters ${{ none: 0, gentle: 5, normal: 25, cruel: 70 }[meta.options.disasters]}`);
-    send(`set barbarians ${{ none: "disabled", normal: "normal", hordes: "hordes" }[meta.options.raiders]}`);
-    return json(res, 200, { options: meta.options, live: LIVE });
-  },
-  "* /ai": async (req, res, url) => {
-    // What the local model can do right now, for the settings page.
-    return json(res, 200, await aiStatus());
-  },
-  "POST /speed": async (req, res, url) => {
-    const { seconds } = await body(req);
-    turnSeconds = Math.max(1, Math.min(600, Number(seconds) || 90));
-    meta.pace = turnSeconds;
-    chron.saveMeta(meta);
-    send(`set timeout ${timeoutNow()}`);
-    return json(res, 200, { turnSeconds });
-  },
-  "POST /counsel/answer": async (req, res, url) => {
-    // The King answered the Hand's matter: it rests a year, and the next one comes up (court.js).
-    const { key } = await body(req);
-    return json(res, 200, Sittings.answerMatter(sittingCtx(), key));
-  },
-  "POST /decree": async (req, res, url) => {
-    counselStale = true;
-    decreesIssued++;
-    const cmd = await body(req);
-    if (meta.status !== "running") return json(res, 400, { error: "this reign has ended" });
-    // A royal match needs a pair: an unwed son or daughter of age from each house,
-    // one of each, chosen before a crown is spent. Nobody is wed twice.
-    let pair = null;
-    if (cmd.action === "marriage" && court) {
-      // (matchFor below finds the same pair the Hand checks before offering a match.)
-      const city = world.cities.find((c) => c.id === Number(cmd.city));
-      const [la, lb] = [city?.owner, Number(cmd.to)].map((pid) => court.lordOfHouse(pid));
-      const unwed = (lord) => court.alive().filter((k) => k.parents?.includes(lord.id) && !k.spouse && k.age >= 15);
-      if (la && lb) {
-        const kids = unwed(la);
-        for (const ka of kids) {
-          const kb = unwed(lb).find((k) => k.gender !== ka.gender);
-          if (kb) { pair = [la, lb, ka, kb]; break; }
-        }
-        if (!pair) {
-          const none = !kids.length ? la : lb;
-          return json(res, 400, { error: `${none.house} has no unwed son or daughter of age to wed to the other house` });
-        }
-      }
-    }
-    const yearly = yearlyKey(cmd);
-    if (yearly && seasonsLeft(yearly) > 0) {
-      const n = seasonsLeft(yearly);
-      return json(res, 400, { error: `once a year: again in ${n} season${n === 1 ? "" : "s"}` });
-    }
-    const result = decree({ ...cmd, works: meta.works ?? {}, price: priceOf(cmd.action), favourOf, causeOf, sworn, marching: (city) => (meta.campaigns ?? []).some((x) => x.city === city), usurper: stakes?.s.usurper, seat: stakes?.s.seat }, world);
-    if (result.error) return json(res, 400, result);
-    {
-      const dc = world.cities.find((x) => x.id === Number(cmd.city));
-      const dp = dc ? world.players.find((p) => p.id === dc.owner) : world.players.find((p) => p.id === Number(cmd.house ?? cmd.to));
-      const taking = cmd.action === "grant" && Object.values(result.favour ?? {}).some((n) => n < 0);
-      const place = /\{house\}/.test(kingDeeds.tagsFor("decree", cmd.action)?.says ?? "") ? (dp ? houseFor(dp).name : "") : (dc ? cityName(dc.id) : "");
-      deed(kingDeeds.tagsFor("decree", taking ? "grant_take" : cmd.action), { favour: result.favour, place });
-      // Marching on a house inside the King's own truce breaks his word.
-      if (cmd.action === "march" && dp && court && Object.entries(court.truces ?? {}).some(([k, until]) => k.startsWith("h:") && k.split(":").slice(1).map(Number).includes(dp.id) && until > (world.turn ?? 0)))
-        deed(kingDeeds.tagsFor("realm", "truce_march"), { act: false, place: houseFor(dp).name });
-    }
-    if (result.endUsurper && stakes) { stakes.s.usurper.stage = "none"; stakes.save(); }
-    if (result.relieved != null) { (meta.relieved ??= {})[result.relieved] = world.turn ?? 0; chron.saveMeta(meta); }
-    if (result.alliance != null) { (meta.alliances ??= {})[result.alliance] = (world.turn ?? 0) + 16; chron.saveMeta(meta); }
-    if (result.march) startCampaign(result.march);
-    if (yearly) { (meta.decreeAt ??= {})[yearly] = world.turn ?? 0; chron.saveMeta(meta); }
-    if (cmd.city != null) { (meta.answeredAt ??= {})[Number(cmd.city)] = world.turn ?? 0; chron.saveMeta(meta); }
-    const warmed = world.cities.find((c) => c.id === Number(cmd.city))?.owner ?? (cmd.house != null ? Number(cmd.house) : null);
-    result.favour = temper(cmd.action, warmed, result.favour);
-    // A ward holds the house for five years.
-    if (result.ward != null && stakes) { (stakes.s.wards ??= {})[result.ward] = (world.turn ?? 0) + 20; stakes.save(); }
-    // A town taken from a house is remembered, so the Hand can offer it back.
-    if (cmd.action === "grant" && cmd.to != null) {
-      const town = world.cities.find((c) => c.id === Number(cmd.city));
-      if (town && town.owner !== Number(cmd.to)) { (meta.taken ??= {})[town.owner] = { city: town.id, to: Number(cmd.to) }; chron.saveMeta(meta); }
-    }
-    // Feasting or stripping the house that rose settles what becomes of them.
-    const endedU = stakes?.s.usurper.ended;
-    if (endedU && !endedU.settled && ["feast", "grant", "ward"].includes(cmd.action) && world.cities.some((c) => c.id === Number(cmd.city) && c.owner === endedU.house)) { endedU.settled = true; stakes.save(); }
-    result.lua.forEach((l) => send(`lua cmd ${l}`));
-    if (result.work) (meta.works ??= {})[result.work.city] = { building: result.work.building, seasons: WORK_SEASONS, left: WORK_SEASONS, since: Date.now(), paid: result.cost ?? 0 };
-    // Spend now, so a second decree before the next snapshot can't overdraw the treasury.
-    const crownNow = world.players.find((p) => houseFor(p).crown);
-    if (crownNow) crownNow.gold -= result.cost;
-    // The result card says what the order cost and whose favour moved, so the
-    // King learns the price of his word.
-    const effects = shiftAndTell(result.favour, { gift: "a gift of crowns", feast: "a feast in their honour", relief: "grain from the crown", build: "a building paid by the crown", grant: "a town granted or taken", banners: "the King's banners: answered or refused", marriage: "a royal match", peace: "the King's peace", back: "the King took a side", settle: "the King's peace, kept by another house", buyoff: "the King bought off the pretender", ward: "their heir taken as the King's ward", alliance: "an oath to the crown", march: "the royal host" }[cmd.action] ?? "a royal decree", result.cost);
-    const seat = world.cities.find((c) => c.owner === crownNow?.id && c.capital);
-    const target = world.cities.find((c) => c.id === Number(cmd.city));
-    // No journey to where the King already is: an order for his own seat simply takes effect there.
-    const away = seat && target && target.id !== seat.id;
-    if (away && (cmd.action === "relief" || cmd.action === "gift")) scene(cmd.action === "relief" ? "grain" : "tribute", { x: seat.x, y: seat.y, tx: target.x, ty: target.y, city: target.id });
-    // Every decree is seen where it lands: a feast at the seat, a town changing
-    // hands, the King's rider carrying the crown's purse for a building.
-    // A feast is held at court, as the decree says; the honoured house's colours fly over it.
-    if (seat && cmd.action === "feast") scene("feast", { x: seat.x, y: seat.y, city: seat.id, owner: target?.owner ?? crownNow.id });
-    if (target && cmd.action === "grant") scene("handover", { x: target.x, y: target.y, city: target.id, from: target.owner, to: Number(cmd.to) });
-    if (away && cmd.action === "build") scene("rider", { x: seat.x, y: seat.y, tx: target.x, ty: target.y, city: target.id, label: "The crown's purse for a new building" });
-    if (seat && cmd.action === "levy") {
-      // The host marches for the town the levy was raised for, else toward the
-      // nearest foreign army inside the crown's lands, else down the road a way.
-      const foes = world.units.filter((u) => u.owner !== crownNow.id && !["Workers", "Settlers", "Migrants", "Explorer", "Caravan", "Diplomat"].includes(u.type));
-      const near = foes.sort((a, b) => Math.hypot(a.x - seat.x, a.y - seat.y) - Math.hypot(b.x - seat.x, b.y - seat.y))[0];
-      const goal = target && target.id !== seat.id ? target : near && Math.hypot(near.x - seat.x, near.y - seat.y) < 12 ? near : { x: seat.x + 3, y: seat.y + 2 };
-      scene("muster", { x: seat.x, y: seat.y, tx: goal.x, ty: goal.y, city: seat.id });
-    }
-    // A commanded peace: the two lords' houses keep a truce (no raids, no plots).
-    if (result.truce) keepTruce(result.truce);
-    // A royal match: the two lords' heirs (or kin) are named, they warm to each
-    // other, and a long truce holds their houses from raids and plots.
-    if (result.pact && court && pair) {
-      const [a, b, ka, kb] = pair;
-      {
-        ka.spouse = kb.id;
-        kb.spouse = ka.id;
-        court.save?.(ka);
-        court.save?.(kb);
-        court.shift(a.id, b.id, 25, `The King bound my house to ${b.house} by marriage.`);
-        court.shift(b.id, a.id, 25, `The King bound my house to ${a.house} by marriage.`);
-        court.makeTruce(a, b, 24, world);
-        court.remember(a.id, `By the King's word, ${ka.name} is to wed ${kb.name} of ${b.house}.`);
-        court.remember(b.id, `By the King's word, ${kb.name} is to wed ${ka.name} of ${a.house}.`);
-        result.text = `By the King's word, ${ka.name} of ${a.house} will wed ${kb.name} of ${b.house}. The two houses are bound by blood; while the bond holds, neither will raise a hand against the other.`;
-        court.saveCourt?.();
-      }
-    }
-    decreeScenes(cmd, result, seat, target);
-    record({ turn: world?.turn ?? 0, kind: "decree", text: result.text, city: cmd.city });
-    setTimeout(snapshot, 600);
-    return json(res, 200, { ok: true, text: crowns(result.text) + (effects ? `\n${effects}` : ""), cost: result.cost ?? 0 });
-  },
-  // Test hook (films only): stage what a town is making (a building site, a
-  // unit in training), so a film is certain to find a site or a drill there.
-  // Test hook (films only): the court sits now ({sit: true}), as a season's sitting does,
-  // so a film can stage what happens behind the court's card (a truce's reload).
-  "POST /test/court": async (req, res, url) => {
-    if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
-    const b = await body(req);
-    if (!b.sit) return json(res, 400, { error: "{sit: true}" });
-    await courtSeason(world?.turn ?? 0, true);
-    return json(res, 200, { ok: true, sitting: meta.court?.sitting ?? null });
-  },
-  "POST /test/stage": async (req, res, url) => {
-    if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
-    const b = await body(req);
-    // {city, building, kind, progress} stages its work; {city, mood} its mood:
-    // riot, feast, hunger, war, peace, prosperity, grief, grasping, calm; {city, mood: "king"} sends the King's banner through it.
-    const moods = { riot: { disorder: true }, feast: { celebrating: true }, hunger: { famine: true }, war: { atWar: true }, peace: { atWar: false },
-      prosperity: { prosperity: true }, grief: { grief: true }, grasping: { grasping: true },
-      calm: { disorder: false, celebrating: false, famine: false, atWar: false, grief: false, grasping: false, prosperity: false } };
-    const at = (meta.stage ??= {});
-    // {soldiers: wounded|fortified|calm, city}: the crown's three companies nearest the town stand so.
-    if (b.soldiers) {
-      const c = world.cities.find((x) => x.id === Number(b.city));
-      const crownId = Realm.crownOf(world)?.id;
-      const near = c ? world.units.filter((u) => u.owner === crownId && !CIVILIAN.has(u.type)).sort((u, v) => Math.hypot(u.x - c.x, u.y - c.y) - Math.hypot(v.x - c.x, v.y - c.y)).slice(0, 3) : [];
-      meta.stageUnits ??= {};
-      for (const u of near) meta.stageUnits[u.id] = { wounded: { hp: 3 }, fortified: { activity: 4 } }[b.soldiers] ?? {};
-      return json(res, 200, { ok: true, units: near.map((u) => u.id) });
-    }
-    if (b.mood === "king") {
-      // {epithet}: the name the King has earned, for this test reign (the Good, the Cruel...).
-      if (b.epithet) meta.testEpithet = String(b.epithet).slice(0, 24);
-      const c = world.cities.find((x) => x.id === Number(b.city));
-      const crownId = Realm.crownOf(world)?.id;
-      if (c) scene("rider", { x: c.x - 2, y: c.y, tx: c.x + 2, ty: c.y, city: c.id, owner: crownId, label: "The King's banner" });
-      return json(res, 200, { ok: true });
-    }
-    if (b.mood) at[Number(b.city)] = { ...(at[Number(b.city)] ?? {}), ...moods.calm, ...(moods[b.mood] ?? {}) };
-    else at[Number(b.city)] = { ...(at[Number(b.city)] ?? {}), building: String(b.building ?? "Pikemen"), buildingKind: String(b.kind ?? "UnitType"), progress: Number(b.progress ?? 0.5) };
-    return json(res, 200, { ok: true });
-  },
-  // Test hook (films only): a town gains a building now ({city, building}), so the site rising can be filmed.
-  "POST /test/grow": async (req, res, url) => {
-    if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
-    const b = await body(req);
-    const name = String(b.building ?? "Granary").replace(/[^A-Za-z ]/g, "");
-    send(`lua cmd local c = find.city(nil, ${Number(b.city)}); local t = find.building_type("${name}"); if c and t and not c:has_building(t) then edit.create_building(c, t) end`);
-    return json(res, 200, { ok: true });
-  },
-  // Test hook (films only): a lord's deed on demand, so its alert can be filmed.
-  // Answers only for a reign named as a test, and only with the X-Test header.
-  "POST /test/deed": async (req, res, url) => {
-    // A proof's deed, test reigns only: {kind: decree|court|deck|arc|realm, key, option, place}, as a ruling or decree would note it.
-    if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
-    const b = await body(req);
-    const tag = kingDeeds.tagsFor(String(b.kind), String(b.key), b.option === undefined ? undefined : String(b.option));
-    if (!tag) return json(res, 400, { error: "no such deed in data/ledger.json" });
-    deed(tag, { place: String(b.place ?? ""), act: b.kind !== "realm" });
-    return json(res, 200, { ok: true, ledger: meta.ledger, name: kingName() });
-  },
-  "POST /test/mark": async (req, res, url) => {
-    // A film's scar, test reigns only: {kind: battle|sack|razed, x, y, age: seasons ago}.
-    if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
-    const b = await body(req);
-    if (!["battle", "sack", "razed"].includes(b.kind)) return json(res, 400, { error: "kind: battle, sack or razed" });
-    const list = marksNow().filter((m) => !(m.kind === b.kind && m.x === Number(b.x) && m.y === Number(b.y)));
-    list.push({ kind: b.kind, x: Number(b.x), y: Number(b.y), turn: Number(world?.turn ?? 0) - Number(b.age ?? 0) });
-    fs.writeFileSync(path.join(P.state, "marks.json"), JSON.stringify((marks.list = list)));
-    return json(res, 200, { ok: true, marks: marksNow() });
-  },
-  "POST /test/news": async (req, res, url) => {
-    if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
-    const b = await body(req);
-    const e = { turn: world?.turn ?? 0, kind: String(b.kind ?? "betrayal"), text: String(b.text ?? "A test of the realm's news."), city: Number(b.city), to: b.to != null ? Number(b.to) : undefined, from: b.from != null ? Number(b.from) : undefined, with: b.with != null ? Number(b.with) : undefined };
-    record(e);
-    picture(e);
-    return json(res, 200, { ok: true });
-  },
-  "POST /scene/arrived": async (req, res, url) => {
-    // The King's grain, gold or word reached the town it was sent to: the realm
-    // sees it, the chronicle says so in his name, and the town remembers.
-    const b = await body(req);
-    const town = world?.cities.find((c) => c.id === Number(b.city));
-    const what = { grain: "The King's grain reaches", tribute: "The King's gold reaches", ward: "The ward reaches", rider: "The King's rider reaches" }[String(b.kind)];
-    if (!town || !what) return json(res, 400, { error: "nothing arrived" });
-    const key = `${b.kind}:${town.id}:${b.sent ?? 0}`;
-    if (!arrivals.has(key)) {
-      arrivals.add(key);
-      record({ turn: world.turn, kind: "crown", city: town.id, text: `${what} ${cityName(town.id)}${b.label ? `: ${String(b.label).slice(0, 80)}` : ""}.` });
-    }
-    return json(res, 200, { ok: true });
-  },
-  "* /usage": async (req, res, url) => { return json(res, 200, usageToday()); },
-  "GET /mood": async (req, res, url) => { return json(res, 200, court.decrees); },
-  "POST /mood/revoke": async (req, res, url) => {
-    const { id } = await body(req);
-    court.revoke(id);
-    return json(res, 200, court.decrees);
-  },
-  "POST /mood": async (req, res, url) => {
-    const { text } = await body(req);
-    if (!text || !String(text).trim()) {
-      court.setMood(null);
-      return json(res, 200, { cleared: true });
-    }
-    const houses = (world?.players ?? []).map((p) => houseFor(p)).filter((h) => !h.wild && !h.crown).map((h) => h.name);
-    const names = court.alive().filter((c) => c.rank === "lord" || c.rank === "bannerman" || c.rank === "heir").map((c) => c.name);
-    const mood = (await moodFrom(String(text).slice(0, 300), houses, names)) ?? moodRules(String(text).slice(0, 300), houses, names);
-    const touched = court.setMood(mood);
-    mood.summary = `${mood.summary} (${touched} ${touched === 1 ? "person" : "people"})`;
-    record({ turn: world?.turn ?? 0, kind: "decree", text: `By the King's word: ${mood.summary}` });
-    return json(res, 200, mood);
-  },
-  "GET /court": async (req, res, url) => { return json(res, 200, inCrowns(docket())); },
-  "POST /hear": async (req, res, url) => {
-    // What the King said into the microphone (a WAV), as words, by Off Grid's Whisper.
-    const wav = await bytes(req);
-    if (wav.length < 1000) return json(res, 400, { error: "nothing was heard" });
-    const text = await transcribe(wav, meta.options?.language);
-    return text ? json(res, 200, { text }) : json(res, 503, { error: "Your words were lost. (The local speech model isn't running.)" });
-  },
-  "POST /voice": async (req, res, url) => {
-    // Someone's words, spoken aloud by Off Grid's Kokoro: a voice of their own,
-    // in the realm's language. WAV bytes; cached, so a line is only made once.
-    const { text, who } = await body(req);
-    const line = names.shown(String(text ?? "").trim().slice(0, 600));  // spoken in the player's names
-    if (!line) return json(res, 400, { error: "nothing to say" });
-    const voice = voiceFor(who ?? {}, meta.options?.language);
-    const dir = path.join(P.state, "voices");
-    const file = path.join(dir, crypto.createHash("sha1").update(voice + "|" + line).digest("hex") + ".wav");
-    if (!fs.existsSync(file)) {
-      const wav = await speech(line, voice);
-      if (!wav) return json(res, 503, { error: "no voice (the local speech model isn't running)" });
-      fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(file, wav);
-    }
-    res.writeHead(200, { "content-type": "audio/wav" });
-    return res.end(fs.readFileSync(file));
-  },
-  "POST /interlude/close": async (req, res, url) => {
-    if (meta.interlude) meta.interlude.seen = true;
-    chron.saveMeta(meta);
-    if (meta.court?.sitting == null) hold(false);
-    return json(res, 200, { ok: true });
-  },
-  "POST /court/close": async (req, res, url) => {
-    closeCourt(world?.turn ?? 0);
-    return json(res, 200, inCrowns(docket()));
-  },
-  "POST /court/answer": async (req, res, url) => {
-    counselStale = true;
-    const { id, option } = await body(req);
-    const out = rule(id, option);
-    closeIfDone(world?.turn ?? 0);
-    return json(res, out.error ? 400 : 200, out);
-  },
-  "POST /court/say": async (req, res, url) => {
-    // The King answers a petition in his own words; nothing happens until he confirms it (court.js).
-    const [code, out] = await Sittings.say(sittingCtx(), await body(req));
-    return json(res, code, out);
-  },
-  "* /house": async (req, res, url) => {
-    // One great house: its numbers over time, its lord, bannermen, wars and allies.
-    const pid = Number(url.searchParams.get("id"));
-    const p = world?.players.find((x) => x.id === pid);
-    if (!p) return json(res, 404, { error: "no such house" });
-    const h = houseFor(p);
-    const d = detail()?.players[pid];
-    const nameOf = (id) => houseFor(world.players.find((x) => x.id === id) ?? {}).name;
-    const great = (id) => world.players.some((x) => x.id === id && !houseFor(x).wild);
-    const lord = court.lordOfHouse(pid);
-    const person = (c) => c && { id: c.id, gender: c.gender, name: c.name, age: c.age, traits: c.traits, goal: c.goals?.[0]?.text, loyalty: c.loyalty, seat: c.seat != null ? cityName(c.seat) : null, role: c.role ? ROLES[c.role]?.title : null, created: !!c.created };
-    return json(res, 200, {
-      id: pid, name: h.name, words: h.words, seat: h.seat, color: h.color,
-      favour: h.wild || h.crown ? null : favourOf(pid),
-      history: history.slice(-40).map((r) => ({ turn: r.turn, souls: (r.houses[h.name]?.pop ?? 0) * 600, ...(r.houses[h.name] ?? {}) })).filter((r) => r.towns !== undefined),
-      lord: person(lord),
-      bannermen: court.alive().filter((c) => c.rank === "bannerman" && c.playerId === pid).map(person),
-      // The same truth as the houses table: wars the King has stilled are truces,
-      // and a loyal house's engine war with the crown isn't a war.
-      ...(() => {
-        const me = court.lordOfHouse(pid);
-        const stilled = (q) => { const o = court.lordOfHouse(q); return !!(me && o && court.truce(me.id, o.id)); };
-        const crownId = world.players.find((x) => houseFor(x).crown)?.id;
-        const loyal = (id) => id !== crownId && favourOf(id) >= BANDS.steady;
-        const foes = (d?.atWarWith ?? []).filter(great).filter((q) => !((q === crownId && loyal(pid)) || (pid === crownId && loyal(q))));
-        return { wars: foes.filter((q) => !stilled(q)).map(nameOf), truces: foes.filter(stilled).map(nameOf) };
-      })(),
-      allies: (d?.allies ?? []).filter((id) => id !== pid && great(id)).map(nameOf),
-    });
-  },
-  // Aldmere as every new chronicle finds it (the baseline, nine years in): its
-  // towns on the map, each with its house, for the Lore's map. Never the reign
-  // being played.
-  // The player's names for houses and people: GET them, or POST {from, to} to
-  // rename one (an empty `to` gives the word its own name back).
-  "POST /lore/written/person": async (req, res, url) => {
-    // Someone of the starting cast rewritten from the menu's Lore: every chronicle begun after this has them so.
-    const b = await body(req);
-    const out = rewrites.set(String(b.id ?? ""), b);
-    return json(res, out.error ? 400 : 200, out);
-  },
-  "* /names": async (req, res, url) => {
-    if (req.method === "POST") {
-      const raw = await new Promise((r) => { let b = ""; req.on("data", (d) => (b += d)); req.on("end", () => { try { r(JSON.parse(b || "{}")); } catch { r({}); } }); });
-      const done = names.rename(raw.from, raw.to);
-      res.writeHead(done.error ? 400 : 200, { "Content-Type": "application/json" });
-      return res.end(JSON.stringify(done));
-    }
-    res.writeHead(200, { "Content-Type": "application/json" });
-    return res.end(JSON.stringify({ names: names.all() }));
-  },
-  "* /lore/map": async (req, res, url) => {
-    let w = {};
-    try { w = JSON.parse(fs.readFileSync(path.join(chron.BASELINE, "state", "world.json"), "utf8")); } catch { /* no baseline */ }
-    const players = new Map((w.players ?? []).map((p) => [p.id, p]));
-    const towns = (w.cities ?? []).map((c) => {
-      const h = players.get(c.owner) ? houseFor(players.get(c.owner)) : null;
-      return { title: nameIn(c.id, c.name), x: c.x, y: c.y, size: c.size, capital: !!c.capital, house: h?.name ?? "", key: h?.name ?? "", color: h?.color ?? "#888", sigil: h?.sigil ?? "" };
-    });
-    let land = [];
-    try {
-      const m = JSON.parse(fs.readFileSync(path.join(chron.BASELINE, "state", "map.json"), "utf8"));
-      land = (m.tiles ?? []).filter((t) => !/Ocean|Lake/.test(String(t[2]))).map((t) => [t[0], t[1]]);
-    } catch { /* no map */ }
-    if (url.searchParams.get("live") !== "1" || !world?.cities) return json(res, 200, { tiles: [56, 88], towns, land, roads: w.roads ?? [] });
-    // The realm as it stands in this reign: each town under whoever holds it now,
-    // the hosts in the field (a house's companies within a day's march of each
-    // other, as one), and the towns under siege.
-    const now = world.cities.map((c) => {
-      const h = houseFor(world.players.find((p) => p.id === c.owner) ?? {});
-      return { title: cityName(c.id), x: c.x, y: c.y, size: c.size, capital: !!c.capital, house: h?.name ?? "", key: h?.name ?? "", color: h?.color ?? "#888", sigil: h?.sigil ?? "", besieged: Boolean(c.besieged) };
-    });
-    const hosts = [];
-    for (const u of (world.units ?? []).filter((x) => !CIVILIAN.has(x.type) && !/Trireme|Caravel|Galleon|Frigate|Transport/.test(x.type))) {
-      if (world.cities.some((c) => c.x === u.x && c.y === u.y)) continue;  // a garrison, not a host
-      const near = hosts.find((g) => g.owner === u.owner && Math.max(Math.abs(g.x - u.x), Math.abs(g.y - u.y)) <= 2);
-      if (near) { near.x = (near.x * near.companies + u.x) / (near.companies + 1); near.y = (near.y * near.companies + u.y) / (near.companies + 1); near.companies++; }
-      else hosts.push({ owner: u.owner, x: u.x, y: u.y, companies: 1 });
-    }
-    const armies = hosts.filter((g) => g.companies >= 2).map((g) => {
-      const h = houseFor(world.players.find((p) => p.id === g.owner) ?? {});
-      return { x: g.x, y: g.y, companies: g.companies, house: h?.name ?? "", key: h?.name ?? "", color: h?.color ?? "#888", sigil: h?.sigil ?? "", crown: !!h?.crown };
-    });
-    return json(res, 200, { tiles: [56, 88], towns: now, land, roads: world.roads ?? w.roads ?? [], armies });
-  },
-  "* /lore": async (req, res, url) => {
-    // The book of the realm: its story from the world bible, and each great
-    // house as it stands now, with the people who matter in it.
-    const b = bible(path.join(DIR, "..", "WORLD.md"));
-    const RANK = { lord: 0, spouse: 1, heir: 2, bannerman: 3, child: 4 };
-    // A house born of civil war has no page in the bible; its arms and
-    // character come from the lesser houses' lore.
-    const rebel = (name) => {
-      const f = FAMILIES[name.replace("House ", "")];
-      return f ? { region: "Born of civil war", arms: f.arms, character: f.character } : null;
-    };
-    // As written (the Lore from the menu): the cast as every chronicle begins,
-    // read from the baseline realm, never the reign being played.
-    const written = url.searchParams.get("as") === "written";
-    let cast = null;
-    if (written) {
-      cast = [];
-      const dir = path.join(chron.BASELINE, "characters");
-      try { for (const f of fs.readdirSync(dir)) if (f.endsWith(".json")) cast.push(rewrites.apply(JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")))); } catch { /* none */ }
-      cast = cast.filter((c) => c.alive !== false);
-    }
-    let baseCities = [];
-    if (written) try { baseCities = JSON.parse(fs.readFileSync(path.join(chron.BASELINE, "state", "world.json"), "utf8")).cities ?? []; } catch { /* none */ }
-    const seatName = (id) => {
-      if (!written) return cityName(id);
-      const c = baseCities.find((x) => x.id === Number(id));
-      return c ? nameIn(c.id, c.name) : null;
-    };
-    const houses = (world?.players ?? []).filter((p) => p.alive !== false && !houseFor(p).wild).map((p) => {
-      const h = houseFor(p);
-      const seat = world.cities.find((c) => c.owner === p.id && c.capital);
-      const people = (written ? cast.filter((c) => c.house === h.name) : court.alive().filter((c) => c.playerId === p.id)).filter((c) => c.rank in RANK)
-        .sort((a, c) => RANK[a.rank] - RANK[c.rank] || (c.created ? 1 : 0) - (a.created ? 1 : 0) || c.age - a.age);
-      // The lord, the lord's spouse and heir, then the leading bannermen.
-      const lord = people.find((c) => c.rank === "lord");
-      const family = lord ? people.filter((c) => c.id === lord.spouse || (c.rank === "heir" && c.parents?.includes(lord.id))) : [];
-      const notables = [...(lord ? [lord] : []), ...family, ...people.filter((c) => c.rank === "bannerman").slice(0, 4)];
-      return {
-        id: p.id, name: h.name, key: h.name, words: h.words, color: h.color, sigil: h.sigil, crown: !!h.crown,
-        seat: seat ? cityName(seat.id) : null, towns: world.cities.filter((c) => c.owner === p.id).length,
-        favour: h.crown ? null : favourOf(p.id), lore: b.houses[h.name] ?? rebel(h.name),
-        notables: notables.map((c) => ({
-          id: c.id, name: c.name, key: c.name, surname: c.surname ?? null, gender: c.gender, age: c.age, rank: c.rank, traits: c.traits,
-          goal: c.goals?.[0]?.text ?? null, role: c.role ? ROLES[c.role]?.title : null,
-          seat: c.seat != null ? seatName(c.seat) : null, loyalty: c.loyalty, written,
-          memories: [...new Set(c.memories ?? [])].slice(-6), backstory: c.backstory ?? null,
-          // In their own words: their latest memory told as theirs, never a
-          // story's beat about other people that they heard.
-          story: c.backstory ?? [...new Set(c.memories ?? [])].filter((m) => /\b(I|my|me)\b/.test(m) && !/^[^:]{3,60}: /.test(m)).slice(-1)[0] ?? null,
-        })),
-      };
-    }).sort((a, c) => (c.crown ? 1 : 0) - (a.crown ? 1 : 0) || (c.lore ? 1 : 0) - (a.lore ? 1 : 0));
-    // A great house that has lost every town is not forgotten: it stays in the
-    // book, marked fallen, so the realm's seven are always seven.
-    let n = 0;
-    for (const h of Object.values(HOUSES)) {
-      if (h.wild || h.crown || houses.some((x) => x.name === h.name)) continue;
-      houses.push({ id: -100 - n++, name: h.name, key: h.name, words: h.words, color: h.color, sigil: h.sigil, crown: false, fallen: true,
-        seat: null, towns: 0, favour: null, lore: b.houses[h.name] ?? null, notables: [] });
-    }
-    // The lesser families sworn to the great houses: one entry each, with
-    // every town a branch of it holds, under which liege, and who heads it.
-    const lesser = {};
-    // As written, the branches as every chronicle begins (the baseline cast and towns).
-    const held = (c) => c.seat != null && (written ? baseCities : world?.cities ?? []).some((t) => t.id === Number(c.seat) && t.owner === c.playerId);
-    for (const c of (written ? cast : court.alive()).filter((x) => x.rank === "bannerman" && FAMILIES[x.surname])) {
-      const p = world?.players.find((x) => x.id === c.playerId);
-      if (!p || p.alive === false) continue;
-      const h = houseFor(p);
-      const f = (lesser[c.surname] ??= { surname: c.surname, ...FAMILIES[c.surname], branches: [] });
-      f.branches.push({
-        house: h.name, house_id: p.id, color: h.color, sigil: h.sigil, crown: !!h.crown,
-        // A seat lost to another house (or razed) is told as lost, not held.
-        seat: held(c) ? seatName(c.seat) : null, lost: c.seat != null && !held(c) ? seatName(c.seat) : null,
-        head: { id: c.id, name: c.name, gender: c.gender, age: c.age, loyalty: c.loyalty, traits: c.traits, role: c.role ? ROLES[c.role]?.title : null },
-      });
-    }
-    const families = Object.values(lesser).sort((a, c) => c.branches.length - a.branches.length || a.surname.localeCompare(c.surname));
-    return json(res, 200, { intro: b.intro, crown: b.crown, faults: b.faults, fate: b.fate, tone: b.tone, houses, lesser: LESSER, families });
-  },
-  "* /person": async (req, res, url) => {
-    // One person up close, for the character view: who they are and what they remember.
-    const c = court.people[url.searchParams.get("id")] ?? court.alive().find((x) => x.name === url.searchParams.get("name"));
-    if (!c) return json(res, 404, { error: "no such person" });
-    return json(res, 200, {
-      id: c.id, name: c.name, gender: c.gender, age: c.age, alive: c.alive, rank: c.rank, house: c.house,
-      traits: c.traits, goals: (c.goals ?? []).map((g) => g.text), goal: c.goals?.[0]?.kind ?? null, role_key: c.role ?? null, loyalty: c.loyalty,
-      seat: c.seat != null ? cityName(c.seat) : null, role: c.role ? ROLES[c.role]?.title : null,
-      memories: [...new Set(c.memories ?? [])].slice(-6), backstory: c.backstory ?? null,
-    });
-  },
-  "* /characters/options": async (req, res, url) => { return json(res, 200, { roles: Object.fromEntries(Object.entries(ROLES).map(([k, v]) => [k, v.title])), goals: GOALS, traits: TRAITS }); },
-  "POST /person/fall": async (req, res, url) => {
-    // Someone the King walked as fell in a fight: a real death, and their heir inherits.
-    const { id, how } = await body(req);
-    const c = court.people[String(id)];
-    if (!c || !c.alive || !world) return json(res, 400, { error: "no such person" });
-    if (how) court.remember(c.id, String(how).slice(0, 200));
-    court.die(c, world.turn, world);
-    return json(res, 200, { ok: true });
-  },
-  "POST /person": async (req, res, url) => {
-    const spec = await body(req);
-    const out = court.edit(String(spec.id), spec, world);
-    return json(res, out.error ? 400 : 200, out);
-  },
-  "POST /characters": async (req, res, url) => {
-    if (!world) return json(res, 503, { error: "the realm is still forming" });
-    const out = court.create(await body(req), world);
-    return json(res, out.error ? 400 : 200, out);
-  },
-  "* /townsfolk": async (req, res, url) => {
-    // The folk of a town, and, asked for one person, their story in full.
-    const city = world?.cities.find((c) => c.id === Number(url.searchParams.get("city")));
-    if (!city) return json(res, 404, { error: "no such town" });
-    const folk = townsfolk(city);
-    const i = url.searchParams.get("i");
-    if (i === null) return json(res, 200, { town: cityName(city.id), folk });
-    const person = folk[Number(i)];
-    if (!person) return json(res, 404, { error: "no such person" });
-    const file = path.join(P.state, "folk-tales.json");
-    const tales = chron.readJson(file) ?? {};
-    const key = `v2:${city.id}:${person.i}:${person.name}`;  // v2: tales about the person, not the realm
-    if (!tales[key]) {
-      const owner = world.players.find((p) => p.id === city.owner);
-      // Only what happened in their own town touches a commoner's tale.
-      const near = chronicle.filter((e) => e.city === city.id && e.kind !== "tithe").slice(-1).map((e) => e.text);
-      const tale = await folkTale(person, cityName(city.id), houseFor(owner).name, near);
-      // No local model: their life told plainly, and not kept, so the model can tell it later.
-      if (!tale) return json(res, 200, { town: cityName(city.id), person, ...folkPlain(person, cityName(city.id)) });
-      tales[key] = tale;
-      fs.writeFileSync(file, JSON.stringify(tales, null, 1));
-    }
-    return json(res, 200, { town: cityName(city.id), person, ...tales[key] });
-  },
-  "* /town/people": async (req, res, url) => {
-    // The named people of a town, for someone walking it: its lord or lady, and
-    // the bannermen and heirs seated there.
-    // At a house's seat its whole household gathers: the heir and the bannermen too.
-    const id = Number(url.searchParams.get("city"));
-    const town = world?.cities.find((c) => c.id === id);
-    const here = court.alive().filter((c) => ["lord", "heir", "bannerman"].includes(c.rank)
-      && (c.seat === id || (town?.capital && c.playerId === town.owner && c.rank !== "lord")));
-    return json(res, 200, here.slice(0, 6).map((c) => ({ id: c.id, name: c.name, gender: c.gender, rank: c.rank, house: c.house })));
-  },
-  "POST /talk": async (req, res, url) => {
-    // You speak to someone in the street; they answer in their own voice and remember it.
-    const b = await body(req);
-    const city = world?.cities.find((c) => c.id === Number(b.city));
-    if (!city) return json(res, 404, { error: "no such town" });
-    if (b.person) return talkToNamed(res, city, String(b.person), b);
-    const person = townsfolk(city)[Number(b.i)];
-    // b.greet: they've only just walked up, and the townsperson speaks first.
-    const greet = !!b.greet;
-    const said = greet ? "(They walk up to you and stop, and say nothing yet: you speak first, as you would to them, by what you know of them and what they have done.)" : String(b.said ?? "").trim().slice(0, 400);
-    if (!person || !said) return json(res, 400, { error: "nobody to hear it" });
-    const key = `v2:${city.id}:${person.i}:${person.name}`;
-    const tales = chron.readJson(path.join(P.state, "folk-tales.json"), {});
-    const file = path.join(P.state, "talks.json");
-    const talks = chron.readJson(file, {});
-    const past = (talks[key] ?? []).slice(-10);
-    const owner = world.players.find((p) => p.id === city.owner);
-    const speaker = b.you?.id ? court.people[String(b.you.id)] : null;
-    const you = isKing(b) ? { ...KING } : {
-      name: speaker?.name ?? String(b.you?.name ?? "a stranger"),
-      house: speaker?.house ?? String(b.you?.house ?? ""),
-      title: speaker ? (speaker.rank === "lord" ? (speaker.gender === "female" ? "Lady" : "Lord") : speaker.rank) : "",
-      lord: speaker ? speaker.playerId === city.owner && speaker.rank === "lord" : false,
-    };
-    // How a commoner names them to their face.
-    if (!isKing(b)) you.address = !speaker ? "stranger" : speaker.rank === "lord" || speaker.rank === "heir" ? (speaker.gender === "female" ? "my lady" : "my lord") : speaker.gender === "female" ? "my lady" : "ser";
-    const near = chronicle.filter((e) => e.city === city.id || (e.text ?? "").includes(cityName(city.id))).slice(-5).map((e) => e.text);
-    const mindId = `folk:${city.id}:${person.i}`;
-    const out = await speak(person, cityName(city.id), houseFor(owner).name, you, near, tales[key]?.story ?? "", past, said, meta.options?.language ?? "en", minds.forTalk(mindId, { id: isKing(b) ? "king" : speaker?.id, name: you.name }));
-    if (!out) return json(res, 503, { error: `${person.name} only stares at you. (The local model isn't running.)` });
-    talks[key] = [...past, ...(greet ? [] : [{ who: you.name, text: said }]), { who: person.name, text: out.reply }].slice(-16);
-    fs.writeFileSync(file, JSON.stringify(talks, null, 1));
-    if (!greet) minds.talked(mindId, { id: isKing(b) ? "king" : speaker?.id, name: you.name }, said, out.reply);
-    // A lord remembers being spoken to by their own people, briefly.
-    if (speaker) court.remember(speaker.id, `In ${cityName(city.id)} I spoke with ${person.name}, the ${person.trade}.`);
-    return json(res, 200, { name: person.name, trade: person.trade, gender: person.woman ? "female" : "male", ...out });
-  },
-  "GET /arcs": async (req, res, url) => { return json(res, 200, inCrowns(arcs.view(arcCtx()))); },
-  "* /arcs/templates": async (req, res, url) => { return json(res, 200, arcTemplates().map((t) => ({ id: t.id, file: t.file, name: t.name, title: t.title, about: t.about, reign: Boolean(t.reign), own: Boolean(t.own), tags: t.tags ?? [], roles: Object.keys(t.roles ?? {}), beats: (t.beats ?? []).length, problems: t.problems }))); },
-  // Fast-forward: n seasons of the realm's stories, against the live realm.
-  "POST /arcs/tick": async (req, res, url) => {
-    const b = await body(req);
-    const ran = await runArcs(Math.max(1, Math.min(60, Number(b.n) || 1)), b.start !== false);
-    return json(res, ran ? 200 : 409, ran ? inCrowns(arcs.view(arcCtx())) : { error: "the stories are already moving" });
-  },
-  // Begin one kind of story now, if the realm has the people for it.
-  "POST /arcs/start": async (req, res, url) => {
-    const b = await body(req);
-    if (arcsRunning) return json(res, 409, { error: "the stories are already moving" });
-    arcsRunning = true;
-    try {
-      const all = arcTemplates().filter((t) => !t.problems.length);
-      const arc = await arcs.begin(all, arcCtx(), String(b.template ?? ""));
-      arcs.save();
-      return arc ? json(res, 200, inCrowns(arcs.view(arcCtx()).active.find((a) => a.id === arc.id))) : json(res, 404, { error: "nobody in the realm fits that story now" });
-    } finally {
-      arcsRunning = false;
-    }
-  },
-  // The King's own story: an arc file dropped in as JSON, or told in words
-  // and shaped by the model from the closest existing arc.
-  // A reign story of the player's own: from tags, a few lines of premise, or
-  // both. It is built on the tested story that fits best (so every beat holds),
-  // carries the player's tags (the dials) and their words, and is named by the
-  // local model when it's there, by the tags when it isn't.
-  "POST /stories/generate": async (req, res, url) => {
-    const b = await body(req);
-    const words = String(b.words ?? "").trim().slice(0, 600);
-    let tags = (Array.isArray(b.tags) ? b.tags : []).map(String).filter((t) => /^[a-z-]{1,24}$/.test(t)).slice(0, 8);
-    if (!words && !tags.length) return json(res, 400, { error: "give it some tags, a few lines, or both" });
-    const shapes = arcTemplates().filter((t) => t.reign && !t.problems.length && !t.told);
-    if (!shapes.length) return json(res, 503, { error: "no reign stories to build on" });
-    // Words with no tags: the words suggest the tags.
-    const WORDS = { usurper: /claim|throne|usurp|pretender|crown/, war: /war|feud|battle|siege|raid/, intrigue: /poison|plot|spy|secret|murder|assassin/, "the-dead": /dead|wall|winter|north|undead/, famine: /famine|hunger|starv|grain|harvest/, plague: /plague|fever|sick|pestilence|pox/, money: /debt|bank|gold|coin|loan/, rebellion: /rising|peasant|riot|rebel|revolt|poor/, violent: /blood|slaughter|massacre|burn|kill/, "fast-paced": /sudden|swift|quick|fast/, "slow-burn": /slow|years|generation|creeping/, cunning: /cunning|clever|scheme|deceit|betray/, tragic: /tragic|grief|mourning|loss|doomed/ };
-    const asked = tags.length > 0;  // the player chose tags (rather than the words suggesting them)
-    if (words && !tags.length) tags = Object.entries(WORDS).filter(([, r]) => r.test(words.toLowerCase())).map(([t]) => t);
-    // The tested story that shares most with what was asked.
-    const THREATS = /^(usurper|war|intrigue|the-dead|famine|plague|money|rebellion|faith|succession|invasion)$/;
-    const score = (t) => (t.tags ?? []).filter((g) => tags.includes(g)).reduce((n, g) => n + (THREATS.test(g) ? 6 : 1), 0) + (words ? (t.about ?? "").toLowerCase().split(/\W+/).filter((w) => w.length > 4 && words.toLowerCase().includes(w)).length : 0);
-    let base = shapes.slice().sort((a, b2) => score(b2) - score(a) || Math.random() - 0.5)[0];
-    let name = null;
-    if (words) {
-      const out = await Promise.race([arcFromWords(words, shapes.map((t) => ({ id: t.id, name: t.name, about: t.about }))), new Promise((r) => setTimeout(() => r(null), 20000))]);
-      if (out?.shape && !asked) base = shapes.find((t) => t.id === out.shape) ?? base;
-      name = out?.name ?? null;
-    }
-    if (!name) {
-      const ADJ = { violent: "Red", gritty: "Grim", cunning: "Silent", "fast-paced": "Swift", tragic: "Bitter", political: "Gilded", mysterious: "Hidden", epic: "Great", aggressive: "Iron", "slow-burn": "Long" };
-      const NOUN = { usurper: "Claim", war: "Feud", intrigue: "Cup", "the-dead": "Winter", famine: "Hunger", plague: "Fever", money: "Debt", rebellion: "Rising", faith: "Faith", succession: "Heir", invasion: "Tide" };
-      const adj = tags.map((t) => ADJ[t]).find(Boolean) ?? ["Broken", "Last", "Hollow", "Thorned"][Math.floor(Math.random() * 4)];
-      const noun = tags.map((t) => NOUN[t]).find(Boolean) ?? (base.kind === "usurper" ? "Claim" : "Reckoning");
-      name = `The ${adj} ${noun}`;
-    }
-    const slug = (x) => String(x).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
-    const arc = structuredClone(base);
-    delete arc.own;
-    delete arc.file; delete arc.problems;
-    arc.id = `told-${slug(name)}-${Date.now().toString(36).slice(-4)}`;
-    arc.name = name;
-    arc.title = name;
-    arc.about = words || base.about;
-    arc.tags = [...new Set([...tags, ...(base.tags ?? []).filter((g) => /^(usurper|war|intrigue|the-dead|famine|plague|money|rebellion|faith|succession|invasion|great-house|the-court|the-people|foreign)$/.test(g))])];
-    arc.told = { from: base.id, words, tags };
-    const problems = check(arc);
-    if (problems.length) return json(res, 400, { error: "that story doesn't hold together", problems });
-    fs.writeFileSync(path.join(OWN_STORIES, `${arc.id}.json`), JSON.stringify(arc, null, 2));
-    storiesChanged();
-    return json(res, 200, { ok: true, id: arc.id, name: arc.name, about: arc.about, tags: arc.tags, from: base.name });
-  },
-  // A story of the player's own, for the beat form: who is in it (its roles, in
-  // words) and the beats they have added so far.
-  "GET /stories/own": async (req, res, url) => {
-    const t = ownStory(url.searchParams.get("id"));
-    if (!t) return json(res, 404, { error: "that isn't a story of your own" });
-    return json(res, 200, storyForForm(t));
-  },
-  // One beat of the player's own, added to (or taken out of) their story: what
-  // happens, who is in it, when it happens, and what it does, from short menus.
-  // It happens once, when its moment comes, and the story goes on from there.
-  // Off Grid AI fills (or carries on) any free-text box: {kind, context, draft}.
-  "POST /write": async (req, res, url) => {
-    const b = await body(req);
-    const text = await Promise.race([writeFor(String(b.kind ?? ""), String(b.context ?? "").slice(0, 1200), String(b.draft ?? "").trim().slice(0, 300)).catch(() => null), new Promise((r) => setTimeout(() => r(null), 45000))]);
-    if (!text) return json(res, 503, { error: "Off Grid AI is busy and didn't answer in time. Try again in a moment." });
-    return json(res, 200, { text });
-  },
-
-  // Off Grid AI writes a story's premise from its tags, or carries on the one begun.
-  "POST /stories/premise/idea": async (req, res, url) => {
-    const b = await body(req);
-    const tags = (Array.isArray(b.tags) ? b.tags : []).map(String).slice(0, 8);
-    const draft = String(b.draft ?? "").trim().slice(0, 300);
-    const text = await Promise.race([premiseIdea({ tags, draft }).catch(() => null), new Promise((r) => setTimeout(() => r(null), 45000))]);
-    if (!text) return json(res, 503, { error: "Off Grid AI is busy and didn't answer in time. Try again in a moment, or write it yourself." });
-    return json(res, 200, { text });
-  },
-
-  // Off Grid AI writes a beat for the player's own story, or carries on the one begun.
-  "POST /stories/beat/idea": async (req, res, url) => {
-    const b = await body(req);
-    const t = ownStory(b.story);
-    if (!t) return json(res, 404, { error: "shape a story of your own first" });
-    const roles = rolesOf(t).filter((r) => !r.town);
-    const beats = [...(t.beats ?? []), ...(t.asides ?? [])].map((x) => x.text).filter(Boolean);
-    const draft = String(b.draft ?? "").trim().slice(0, 300);
-    const text = await Promise.race([beatIdea({ name: t.name, about: t.about ?? "", roles, beats, draft }).catch(() => null), new Promise((r) => setTimeout(() => r(null), 45000))]);
-    if (!text) return json(res, 503, { error: "Off Grid AI is busy and didn't answer in time. Try again in a moment, or write the beat yourself." });
-    return json(res, 200, { text });
-  },
-
-  "POST /stories/beat": async (req, res, url) => {
-    const b = await body(req);
-    const t = ownStory(b.story);
-    if (!t) return json(res, 404, { error: "add beats to a story of your own: shape one first" });
-    delete t.own; delete t.file; delete t.problems;
-    t.asides ??= [];
-    if (b.remove) {
-      t.asides = t.asides.filter((x) => x.id !== String(b.remove));
-    } else {
-      const text = String(b.text ?? "").trim().replace(/\s+/g, " ").slice(0, 300);
-      if (text.length < 8) return json(res, 400, { error: "say what happens, in a line or two" });
-      const people = rolesOf(t).filter((r) => !r.town).map((r) => r.id);
-      const who = String(b.who ?? "");
-      if (!people.includes(who)) return json(res, 400, { error: "choose who is in it" });
-      const when = BEAT_WHEN[b.when];
-      if (!when) return json(res, 400, { error: "choose when it happens" });
-      const does = BEAT_DOES[b.does ?? "nothing"];
-      if (!does) return json(res, 400, { error: "choose what it does" });
-      const n = Math.max(0, ...t.asides.map((x) => Number(String(x.id).replace(/\D/g, "")) || 0)) + 1;
-      t.asides.push({ id: `yours-${n}`, text, speaker: who, stage: does.stage ?? "rising", when: when.if, do: does.do(who, text), ...(does.court ? { court: does.court(who, text) } : {}), form: { who, when: b.when, does: b.does ?? "nothing" } });
-    }
-    const problems = check(t);
-    if (problems.length) return json(res, 400, { error: "that beat doesn't hold together", problems });
-    fs.writeFileSync(path.join(OWN_STORIES, `${t.id}.json`), JSON.stringify(t, null, 2));
-    storiesChanged();
-    return json(res, 200, storyForForm({ ...t, own: true }));
-  },
-  "POST /arcs/write": async (req, res, url) => {
-    const b = await body(req);
-    const dir = path.join(DIR, "arcs");
-    const slug = (x) => String(x).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
-    let arc;
-    if (b.arc) {
-      arc = typeof b.arc === "string" ? JSON.parse(b.arc) : b.arc;
-    } else {
-      const words = String(b.words ?? "").trim().slice(0, 600);
-      if (!words) return json(res, 400, { error: "say what the story is" });
-      const shapes = arcTemplates().filter((t) => !t.problems.length && !t.told);
-      const given = shapes.filter((t) => t.id === b.shape);
-      const out = await arcFromWords(words, (given.length ? given : shapes).map((t) => ({ id: t.id, name: t.name, about: t.about })));
-      const base = given[0] ?? shapes.find((t) => t.id === out?.shape);
-      if (!base) return json(res, 503, { error: "the local model isn't there to shape it; drop an arc file in bridge/arcs instead" });
-      const name = out?.name || words.split(/[.,;]/)[0].slice(0, 40);
-      arc = structuredClone(base);
-      delete arc.file; delete arc.problems;
-      arc.id = `told-${slug(name)}`;
-      arc.name = name;
-      arc.about = words;
-      arc.told = { from: base.id, words };
-      const anchor = Object.keys(base.roles)[0];
-      arc.title = /^the /i.test(name) ? `${name} of {${anchor}.seat}` : `The ${name} of {${anchor}.seat}`;
-    }
-    const problems = check(arc);
-    if (problems.length) return json(res, 400, { error: "that arc doesn't hold together", problems });
-    const file = path.join(dir, `${slug(arc.id)}.json`);
-    fs.writeFileSync(file, JSON.stringify(arc, null, 2));
-    storiesChanged();
-    return json(res, 200, { ok: true, file: path.relative(DIR, file), arc });
-  },
-  "* /lord": async (req, res, url) => { return json(res, 200, court.summary(Number(url.searchParams.get("city"))) ?? {}); },
-  "POST /season": async (req, res, url) => {
-    await runSeason();
-    return json(res, 200, { ok: true });
-  },
-  "POST /tithe": async (req, res, url) => {
-    const { rate } = await body(req);
-    meta.tithe = Math.max(0, Math.min(0.4, Number(rate) || 0));
-    chron.saveMeta(meta);
-    return json(res, 200, { tithe: meta.tithe });
-  },
-  "POST /god": async (req, res, url) => {
-    const cmd = await body(req);
-    const result = godCommand(cmd, world);
-    if (result.error) return json(res, 400, result);
-    result.lua.forEach((l) => send(`lua cmd ${l}`));
-    record({ turn: world?.turn ?? 0, kind: "god", text: result.text, city: cmd.city });
-    setTimeout(snapshot, 600);
-    return json(res, 200, { ok: true, text: crowns(result.text) });
-  },
+  "* /reign/options": (req, res, url) => RealmRoutes.reignOptions(routeCtx(), req, res, url),
+  "* /ai": (req, res, url) => RealmRoutes.ai(routeCtx(), req, res, url),
+  "POST /speed": (req, res, url) => RealmRoutes.speed(routeCtx(), req, res, url),
+  "POST /counsel/answer": (req, res, url) => CourtRoutes.counselAnswer(routeCtx(), req, res, url),
+  "POST /decree": (req, res, url) => DecreeRoutes.issueDecree(routeCtx(), req, res, url),
+  "POST /test/court": (req, res, url) => TestRoutes.sit(routeCtx(), req, res, url),
+  "POST /test/stage": (req, res, url) => TestRoutes.stage(routeCtx(), req, res, url),
+  "POST /test/grow": (req, res, url) => TestRoutes.grow(routeCtx(), req, res, url),
+  "POST /test/deed": (req, res, url) => TestRoutes.noteDeed(routeCtx(), req, res, url),
+  "POST /test/mark": (req, res, url) => TestRoutes.mark(routeCtx(), req, res, url),
+  "POST /test/news": (req, res, url) => TestRoutes.news(routeCtx(), req, res, url),
+  "POST /scene/arrived": (req, res, url) => DecreeRoutes.arrived(routeCtx(), req, res, url),
+  "* /usage": (req, res, url) => RealmRoutes.usage(routeCtx(), req, res, url),
+  "GET /mood": (req, res, url) => DecreeRoutes.moods(routeCtx(), req, res, url),
+  "POST /mood/revoke": (req, res, url) => DecreeRoutes.revokeMood(routeCtx(), req, res, url),
+  "POST /mood": (req, res, url) => DecreeRoutes.setMood(routeCtx(), req, res, url),
+  "GET /court": (req, res, url) => CourtRoutes.court(routeCtx(), req, res, url),
+  "POST /hear": (req, res, url) => CourtRoutes.hear(routeCtx(), req, res, url),
+  "POST /voice": (req, res, url) => CourtRoutes.sayAloud(routeCtx(), req, res, url),
+  "POST /interlude/close": (req, res, url) => CourtRoutes.closeInterlude(routeCtx(), req, res, url),
+  "POST /court/close": (req, res, url) => CourtRoutes.close(routeCtx(), req, res, url),
+  "POST /court/answer": (req, res, url) => CourtRoutes.answer(routeCtx(), req, res, url),
+  "POST /court/say": (req, res, url) => CourtRoutes.say(routeCtx(), req, res, url),
+  "* /house": (req, res, url) => PeopleRoutes.house(routeCtx(), req, res, url),
+  "POST /lore/written/person": (req, res, url) => RealmRoutes.writePerson(routeCtx(), req, res, url),
+  "* /names": (req, res, url) => RealmRoutes.playerNames(routeCtx(), req, res, url),
+  "* /lore/map": (req, res, url) => RealmRoutes.loreMap(routeCtx(), req, res, url),
+  "* /lore": (req, res, url) => RealmRoutes.lore(routeCtx(), req, res, url),
+  "* /person": (req, res, url) => PeopleRoutes.person(routeCtx(), req, res, url),
+  "* /characters/options": (req, res, url) => PeopleRoutes.characterOptions(routeCtx(), req, res, url),
+  "POST /person/fall": (req, res, url) => PeopleRoutes.fall(routeCtx(), req, res, url),
+  "POST /person": (req, res, url) => PeopleRoutes.editPerson(routeCtx(), req, res, url),
+  "POST /characters": (req, res, url) => PeopleRoutes.createCharacter(routeCtx(), req, res, url),
+  "* /townsfolk": (req, res, url) => PeopleRoutes.folkOf(routeCtx(), req, res, url),
+  "* /town/people": (req, res, url) => PeopleRoutes.townPeople(routeCtx(), req, res, url),
+  "POST /talk": (req, res, url) => PeopleRoutes.talk(routeCtx(), req, res, url),
+  "GET /arcs": (req, res, url) => StoryRoutes.arcs(routeCtx(), req, res, url),
+  "* /arcs/templates": (req, res, url) => StoryRoutes.templates(routeCtx(), req, res, url),
+  "POST /arcs/tick": (req, res, url) => StoryRoutes.tick(routeCtx(), req, res, url),
+  "POST /arcs/start": (req, res, url) => StoryRoutes.start(routeCtx(), req, res, url),
+  "POST /stories/generate": (req, res, url) => StoryRoutes.generate(routeCtx(), req, res, url),
+  "GET /stories/own": (req, res, url) => StoryRoutes.own(routeCtx(), req, res, url),
+  "POST /write": (req, res, url) => StoryRoutes.write(routeCtx(), req, res, url),
+  "POST /stories/premise/idea": (req, res, url) => StoryRoutes.suggestPremise(routeCtx(), req, res, url),
+  "POST /stories/beat/idea": (req, res, url) => StoryRoutes.suggestBeat(routeCtx(), req, res, url),
+  "POST /stories/beat": (req, res, url) => StoryRoutes.beat(routeCtx(), req, res, url),
+  "POST /arcs/write": (req, res, url) => StoryRoutes.writeArc(routeCtx(), req, res, url),
+  "* /lord": (req, res, url) => PeopleRoutes.lord(routeCtx(), req, res, url),
+  "POST /season": (req, res, url) => RealmRoutes.season(routeCtx(), req, res, url),
+  "POST /tithe": (req, res, url) => DecreeRoutes.tithe(routeCtx(), req, res, url),
+  "POST /god": (req, res, url) => DecreeRoutes.god(routeCtx(), req, res, url),
 };
 
 http.createServer(async (req, res) => {
