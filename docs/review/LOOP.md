@@ -870,3 +870,11 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - The measuring King now gives the Hand's first affordable order, and skips a card it can't answer (a siege plea gave 400 on repeat).
 - **Gate:** skate still fails (19 people). NPC perf is tracing Sword_Attack, Carrying and the standing drift. Glance is at 35%, with Townsfolk look.
 - **Verdict:** on course after the correction. Check it next turn: ultimatums no longer repeat.
+
+## 2026-11-11 01:40, measured reign invalid; handover
+
+- The acting-King reign is invalid as a measure. It ran on the measuring script from before the skip fix, so one siege plea the crown couldn't answer (HTTP 400) was retried 203 times. Discarded. The fixed script (realm/tools/reign_measure.py) skips such a card.
+- Open for the next turn:
+  - Builder 2's answering-King reigns B and C on 8866 (ultimatum count and risings, to prove 0ea0e31), then one measured reign with the fixed script.
+  - The siege plea's answer gives 400 when the crown can't pay. It should be greyed with why, not offered.
+  - The gate: skate (11 people), glance 35%, children 52%. NPC perf and Townsfolk look are on these.
