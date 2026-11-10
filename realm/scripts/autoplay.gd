@@ -198,6 +198,12 @@ func _play(quit_after: bool) -> void:
 				if main.rig.is_processing_input() == false:
 					main.rig.apply()
 				await get_tree().create_timer(3.0).timeout
+			"road":
+				# road Name [dist]: the road from Name to its nearest neighbouring town, framed at its middle (traffic.gd's travellers use it).
+				_frame_road(w[1], float(w[2]) if w.size() > 2 else 5.0)
+				if main.rig.is_processing_input() == false:
+					main.rig.apply()
+				await get_tree().create_timer(3.0).timeout
 			"director":
 				# director: the camera director runs as in play (shots turn it off).
 				main._shot["director"] = true
@@ -277,6 +283,34 @@ func _frame_city(title: String, dist: float) -> void:
 		if String(c.get("title", c.get("name", ""))) == title:
 			main.rig.snap(main.terrain.world_pos(float(c["x"]), float(c["y"])), dist, 0.6)
 			return
+
+
+## Frames the middle of the road from a town to its nearest neighbour (roads.route,
+## the way travellers take): the place to watch the realm's traffic.
+func _frame_road(title: String, dist: float) -> void:
+	var cities: Array = main.bridge.world.get("cities", [])
+	var from: Dictionary = {}
+	for c in cities:
+		if String(c.get("title", c.get("name", ""))) == title:
+			from = c
+	if from.is_empty():
+		_note("  road %s: no such town" % title)
+		return
+	var a: Vector3 = main.terrain.world_pos(float(from["x"]), float(from["y"]))
+	var best: Vector3 = a
+	var near := INF
+	for c in cities:
+		if c == from:
+			continue
+		var b: Vector3 = main.terrain.world_pos(float(c["x"]), float(c["y"]))
+		var d := a.distance_to(b)
+		if d < near and d <= 18.0:
+			near = d
+			best = b
+	var way: PackedVector3Array = main.roads.route(a, best) if main.roads else PackedVector3Array()
+	var mid: Vector3 = way[way.size() / 2] if way.size() > 2 else (a + best) * 0.5
+	main.rig.snap(mid, dist, 0.6)
+	_note("  road %s: framed at %.1f from the next town" % [title, near])
 
 
 ## Frames where a town's scene folk stand (town_life's Life node): the middle
