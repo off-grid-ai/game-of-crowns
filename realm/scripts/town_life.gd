@@ -30,7 +30,24 @@ func _init() -> void:
 	_wood.roughness = 0.9
 
 
+## The towns whose people in its scenes (builders, stall folk, beggars,
+## revellers, a riot) run a small LimboAI job machine, the pattern battle_ai.gd
+## uses: work at a move that fits the post, pause, take a step about the post,
+## work again, never the same move twice running, each on their own time.
+## Empty: off, and everyone behaves exactly as before. (Town ids.)
+const LIMBO_TOWNS: Array[int] = []
+const JOBS := {
+	"build": ["Fixing_Kneeling", "PickUp_Table", "Interact", "Carrying"],
+	"trade": ["Idle_Talking", "Arguing", "Nodding", "Interact", "Whispering"],
+	"beg": ["Crying", "Kneeling", "Praying", "Defeated"],
+	"feast": ["Dance", "Cheering", "Drinking"],
+	"riot": ["Yelling", "Arguing"],
+}
+var _town_on := false  # this town's scenes run the job machine
+
+
 func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
+	_town_on = LIMBO_TOWNS.has(int(c.get("id", -1)))
 	# Freeciv's own word that the town starved this season. An empty food store
 	# alone isn't hunger: a town that just grew, or holds steady, sits at zero.
 	var hungry: bool = c.get("famine", false)
@@ -221,7 +238,70 @@ func _townsperson(parent: Node3D, pos: Vector3, role: String, anim: String, seed
 		_people.repeat(p, anim)
 	else:
 		_people.play(p, anim)
+	if _town_on and role != "soldier" and not anim.begins_with("Fist_Fight"):
+		for job in JOBS:
+			if (JOBS[job] as Array).has(anim):
+				_job(p, JOBS[job], seed)
+				break
 	return p
+
+
+## A scene's townsperson at their post, on LimboAI: Work (a move that fits the
+## post, 6-12 s) -> Pause (idle or a look round, 2-5 s) -> Shift (a step within
+## reach of the post) -> Work, never the same move twice running.
+func _job(p: Node3D, moves: Array, seed: int) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed
+	var post := p.position
+	var last := [""]
+	var t := [0.0, 0.0]  # elapsed, length
+	var hsm := LimboHSM.new()
+	var work := LimboState.new()
+	var pause := LimboState.new()
+	var shift := LimboState.new()
+	for st in [work, pause, shift]:
+		hsm.add_child(st)
+	work.call_on_enter(func():
+		var pick: String = moves[rng.randi() % moves.size()]
+		if pick == last[0] and moves.size() > 1:
+			pick = moves[(moves.find(pick) + 1 + rng.randi() % (moves.size() - 1)) % moves.size()]
+		last[0] = pick
+		if preload("res://scripts/motion.gd").is_once(pick):
+			_people.repeat(p, pick)
+		else:
+			_people.play(p, pick)
+		t[0] = 0.0
+		t[1] = rng.randf_range(6.0, 12.0))
+	pause.call_on_enter(func():
+		_people.play(p, ["Idle", "Looking_Around"][rng.randi() % 2])
+		t[0] = 0.0
+		t[1] = rng.randf_range(2.0, 5.0))
+	shift.call_on_enter(func():
+		# A step about the post, never off it: within about two or three metres.
+		var to := post + Vector3(rng.randf_range(-0.25, 0.25), 0.0, rng.randf_range(-0.25, 0.25))
+		var center: Vector3 = p.get_parent().get_parent().position if p.get_parent() and p.get_parent().get_parent() else Vector3.ZERO
+		to.y = _y(center, to)
+		var flat := Vector2(to.x - p.position.x, to.z - p.position.z)
+		if flat.length() > 0.01:
+			p.rotation.y = atan2(flat.x, flat.y)
+		_people.play(p, "Walk")
+		t[0] = 0.0
+		t[1] = maxf(0.4, flat.length() / 0.17)
+		p.create_tween().tween_property(p, "position", to, t[1]))
+	for st in [work, pause, shift]:
+		st.call_on_update(func(dt: float):
+			t[0] += dt
+			if t[0] >= t[1]:
+				hsm.dispatch(&"next"))
+	hsm.add_transition(work, pause, &"next")
+	hsm.add_transition(pause, shift, &"next")
+	hsm.add_transition(shift, work, &"next")
+	# Each on their own time: the first pause is a random length, so no crowd changes moves as one.
+	hsm.initial_state = pause
+	p.add_child(hsm)
+	hsm.initialize(p)
+	hsm.set_active(true)
+	t[1] = rng.randf_range(0.5, 6.0)
 
 
 func _figure(parent: Node3D, pos: Vector3, mat: Material) -> Node3D:
