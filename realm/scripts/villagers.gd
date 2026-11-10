@@ -225,9 +225,9 @@ func _spawn(id: int) -> void:
 		a["placed"] = false
 		person.visible = false
 		list.append(a)
-		# A town on the LimboAI switch: farmers and market folk get a mind
-		# (npc_mind.gd) that picks their activities; the walking stays here.
-		if (TownLife.LIMBO_TOWNS.has(id) or TownLife._limbo_args().has(id)) and calling in ["farmer", "market"] and a["role"] != "child":
+		# A town on the LimboAI switch: everyone gets a mind (npc_mind.gd) that
+		# picks their activities by calling and the town's mood; the walking stays here.
+		if TownLife.LIMBO_TOWNS.has(id) or TownLife._limbo_args().has(id):
 			preload("res://scripts/npc_mind.gd").give_villager(person, a, self)
 	_crowds[id] = list
 

@@ -190,6 +190,43 @@ static func post_activities(post: String) -> Array:
 			return [
 				seq("loose", [once("Bow_Draw"), once("Bow_Aim"), once("Bow_Shoot"), once("Bow_Draw"), once("Bow_Aim"), once("Bow_Shoot"), brk(["Bow_Idle", "Weight_Shift"])]),
 			]
+		"guard":  # the watch at a door the crowd presses on
+			return [
+				seq("hold", [run(["Sword_Idle", "SS_Idle_2", "SS_Block_Idle"], 2, 3), brk(["Weight_Shift", "Looking_Around"])]),
+				seq("warn", [once("Spear_Thrust"), run(["Yelling"], 1, 2), once("Pointing_Forward"), brk(["Sword_Idle"])]),
+				seq("watch", [once("Looking_Around"), step(0.12), run(["Sword_Idle"], 1, 2), brk(["Bored", "Weight_Shift"])]),
+			]
+		"riot":  # a rioter at the door
+			return [
+				seq("shout", [run(["Yelling", "Arguing"], 2, 4), once("Pointing_Forward"), brk(["Looking_Around", "Weight_Shift"])]),
+				seq("press", [step(0.15), run(["Pushing"], 1, 2), once("Shove_Reaction"), step(0.0, 0.15), brk(["Arguing"])]),
+				seq("throw", [once("Throw_Object"), run(["Yelling"], 1, 2), brk(["Looking_Around"])]),
+			]
+		"beg":  # the hungry at the town's edge
+			return [
+				seq("plead", [run(["Kneeling", "Praying"], 2, 3), brk(["Defeated", "Looking_Around"])]),
+				seq("slump", [run(["Sitting_Ground", "Defeated"], 1, 2), brk(["Looking_Around"]), step(0.12)]),
+				seq("ask", [step(0.15), once("Pointing_Arm_Bent"), run(["Defeated"], 1, 1), step(0.0)]),
+			]
+		"mourn":
+			return [
+				seq("weep", [run(["Crying"], 2, 3), brk(["Defeated"])]),
+				seq("vigil", [run(["Kneeling", "Praying"], 2, 3), brk(["Crying", "Looking_Around"])]),
+				seq("sit", [run(["Sitting_Ground"], 1, 2), brk(["Defeated"])]),
+			]
+		"refugee":
+			return [
+				seq("huddle", [run(["Sitting_Cross_Legged", "Sitting_Ground"], 1, 2), brk(["Looking_Around"])]),
+				seq("rest", [run(["Sleeping_Idle"], 1, 1), once("Getting_Up"), brk(["Arm_Stretching", "Weight_Shift"])]),
+				seq("wait", [run(["Defeated", "Looking_Around", "Thinking"], 1, 2), step(0.15), brk(["Crying", "Bored"])]),
+			]
+		"revel":  # round the feast's bonfire
+			return [
+				seq("dance", [run(["Dance"], 2, 4), brk(["Laughing", "Cheering"])]),
+				seq("toast", [run(["Drinking"], 2, 3), run(["Cheering", "Laughing"], 1, 2), brk(["Weight_Shift"])]),
+				seq("clap", [run(["Clapping", "Cheering"], 2, 3), step(0.15), brk(["Laughing"])]),
+				seq("song", [run(["Lute_Playing"], 2, 3), brk(["Laughing"])]),
+			]
 	return []
 
 
@@ -197,7 +234,7 @@ static func post_activities(post: String) -> Array:
 ## the post's activities at random (never the same twice running), with Danger
 ## first: struck or threatened, they react and get clear, then go back to work.
 ## `ground(p)` gives the ground height at a point. Returns false for an unknown post.
-static func give(person: Node3D, post: String, ground: Callable, seed: int) -> bool:
+static func give(person: Node3D, post: String, ground: Callable, seed: int, opening: Array = []) -> bool:
 	var acts := post_activities(post)
 	if acts.is_empty():
 		return false
@@ -227,7 +264,9 @@ static func give(person: Node3D, post: String, ground: Callable, seed: int) -> b
 		work.add_child(a)
 	life.add_child(work)
 	var root := BTSequence.new()
-	var first := BTRandomWait.new()  # each on their own clock
+	for t in opening:  # once, at once, before the post's own life (a riot pair's scuffle, in step)
+		root.add_child(t)
+	var first := BTRandomWait.new()  # then each on their own clock
 	first.min_duration = 0.5
 	first.max_duration = 6.0
 	root.add_child(first)
@@ -361,21 +400,136 @@ static func villager_activities(role: String) -> Array:
 				seq("browse", [go("market"), once("Looking_Around"), once("PickUp_Table"), run(["Thinking", "Doubtful"], 1, 1), brk(LOOK)]),
 				seq("haggle", [go("market"), run(["Idle_Talking", "Arguing"], 2, 4), run(["Nod_Yes", "Shake_No"], 1, 1), brk(["Pleased", "Looking_Around"])]),
 				seq("carry", [go("market"), once("PickUp_Table"), go("home", "Carrying"), once("PickUp_Table"), brk(REST)]),
-				seq("gossip", [go("well"), run(["Whispering", "Telling_A_Secret", "Laughing"], 2, 4), brk(LOOK)]),
+				seq("gossip", [go("well"), run(["Whispering", "Telling_Secret", "Laughing"], 2, 4), brk(LOOK)]),
+			]
+		"pious":  # the priest and the devout
+			return [
+				seq("pray", [go("sept"), run(["Praying", "Kneeling"], 2, 3), brk(LOOK)]),
+				seq("preach", [go("well"), run(["Talking", "Idle_Talking"], 2, 3), once("Bow"), brk(["Weight_Shift"])]),
+				seq("alms", [go("bench"), once("PickUp_Table"), go("sept", "Carrying"), once("PickUp_Table"), brk(REST)]),
+				seq("tend", [go("sept"), run(["Interact", "Fixing_Kneeling"]), brk(REST)]),
+			]
+		"tavern":  # a drinker
+			return [
+				seq("drink", [go("tavern"), run(["Drinking"], 2, 3), run(["Laughing", "Telling_Secret", "Idle_Talking"], 2, 3), brk(["Drunk_Idle", "Weight_Shift"])]),
+				seq("sit", [go("tavern"), step(0.3), run(["Sitting_Drinking"], 2, 3), brk(["Laughing"])]),
+				seq("song", [go("tavern"), run(["Clapping", "Cheering"], 2, 3), run(["Dance"], 1, 2), brk(["Laughing"])]),
+				seq("home", [go("tavern"), run(["Drinking"], 1, 2), go("home", "Injured_Walk"), brk(["Drunk_Idle", "Weight_Shift"])]),
+			]
+		"keeper":  # the tavern keeper
+			return [
+				seq("serve", [go("tavern"), once("PickUp_Table"), step(0.3), once("PickUp_Table"), run(["Idle_Talking", "Nodding"], 1, 2), brk(REST)]),
+				seq("counter", [go("tavern"), run(["Interact"]), brk(["Wiping_Sweat", "Weight_Shift"])]),
+				seq("barrels", [go("bench"), once("PickUp_Table"), go("tavern", "Carrying"), once("PickUp_Table"), brk(REST)]),
+				seq("lute", [go("tavern"), run(["Lute_Playing"], 2, 3), brk(["Bored"])]),
+			]
+		"gentry":
+			return [
+				seq("promenade", [go("market"), once("Looking_Around"), run(["Nodding", "Idle_Talking", "Whispering"], 1, 2), brk(["Weight_Shift"])]),
+				seq("prayers", [go("sept"), run(["Praying"], 2, 3), brk(LOOK)]),
+				seq("greet", [go("well"), once("Bow"), run(["Talking", "Telling_Secret", "Laughing"], 2, 3), once("Waving")]),
+			]
+		"child":
+			return [
+				seq("play", [go("home"), run(["Dance", "Waving", "Laughing"], 2, 3), brk(["Looking_Around"])]),
+				seq("tag", [go("well", "Running"), run(["Dodge_Left", "Dodge_Right"], 2, 3), go("home", "Running"), brk(["Laughing"])]),
+				seq("hide", [go("bench", "Sneak"), run(["Looking_Around"], 1, 1), go("well", "Running"), brk(["Laughing"])]),
+				seq("sit", [go("well"), run(["Sitting_Cross_Legged", "Sitting_Ground"], 1, 2), brk(["Waving"])]),
+				seq("errand", [go("market"), once("PickUp_Table"), go("home", "Carrying"), once("PickUp_Table")]),
+			]
+		"crafter":
+			return [
+				seq("craft", [go("bench"), run(["Hammer_Swing", "Interact", "Fixing_Kneeling"]), once("Wiping_Sweat"), brk(REST)]),
+				seq("fetch", [go("well"), once("PickUp_Table"), go("bench", "Carrying"), once("PickUp_Table"), brk(REST)]),
+				seq("sell", [go("market"), run(["Idle_Talking", "Arguing"], 2, 3), run(["Nodding"], 1, 1), brk(LOOK)]),
+			]
+		"idler":
+			return [
+				seq("chat", [go("well"), run(["Idle_Talking", "Talking", "Laughing", "Whispering"], 2, 4), brk(LOOK)]),
+				seq("lounge", [go("bench"), run(["Sitting_Ground", "Sitting_Idle", "Sitting_Cross_Legged"], 1, 2), brk(["Arm_Stretching", "Bored"])]),
+				seq("watch", [go("market"), run(["Looking_Around", "Bored", "Thinking"], 1, 2), brk(REST)]),
+				seq("nap", [go("home"), run(["Sleeping_Idle"], 1, 1), brk(["Arm_Stretching"])]),
 			]
 	return []
+
+
+## Succeeds while the villager's town is in `mood` (villagers._town_mood:
+## feast, riot, hunger).
+class MoodIs extends BTCondition:
+	var mood := ""
+
+	func _tick(_delta: float) -> Status:
+		var a: Dictionary = blackboard.get_var(&"va")
+		var v: Node = blackboard.get_var(&"vill")
+		return SUCCESS if v._town_mood(a) == mood else FAILURE
+
+
+static func plain(steps: Array) -> BTTask:
+	var s := BTSequence.new()
+	for t in steps:
+		s.add_child(t)
+	return s
+
+
+static func mood_is(mood: String) -> BTTask:
+	var t := MoodIs.new()
+	t.mood = mood
+	return t
+
+
+static func flag(name: StringName) -> BTTask:
+	var check := BTCheckVar.new()
+	check.variable = name
+	check.check_type = LimboUtility.CHECK_EQUAL
+	var yes := BBVariant.new()
+	yes.saved_value = true
+	check.value = yes
+	return check
+
+
+const DAY := ["work", "work2", "meal", "evening"]
+
+
+## What the town's mood does to a villager's day, ahead of their calling: a
+## feast pulls everyone to the bonfire; in a riot the angry ones shout in the
+## square and the rest bar their doors and watch; hunger slumps the frail at
+## their doors and the empty stalls.
+static func villager_moods() -> Array:
+	var feast := plain([mood_is("feast"), block_is(DAY), go("well"), run(["Dance", "Cheering", "Clapping", "Drinking"], 2, 3), brk(["Laughing"])])
+	var angry := BTSelector.new()
+	angry.add_child(plain([flag(&"moody"), go("well"), run(["Yelling", "Arguing"], 2, 4), once("Pointing_Forward"), brk(LOOK)]))
+	angry.add_child(plain([go("home"), run(["Looking_Around", "Terrified"], 1, 2)]))
+	var riot := plain([mood_is("riot"), block_is(DAY), angry])
+	var hunger := plain([mood_is("hunger"), block_is(DAY), flag(&"moody"), go("home"), run(["Defeated", "Praying", "Looking_Around"], 1, 2), brk(["Crying", "Defeated"])])
+	return [feast, riot, hunger]
 
 
 ## A villager's mind: at night and dawn they go home and rest; through the day
 ## their role's activities, one at a time and never the same twice running.
 static func give_villager(person: Node3D, a: Dictionary, vill: Node) -> bool:
-	var acts := villager_activities(String(a.get("role", "")))
+	var role := String(a.get("role", ""))
+	var rng: RandomNumberGenerator = a["rng"]
+	if role == "tavern" and int(a["i"]) % 4 == 0:
+		role = "keeper"  # one in four of the tavern's folk keeps it
+	var acts := villager_activities(role)
 	if acts.is_empty():
 		return false
 	var life := BTDynamicSelector.new()
 	life.add_child(villager_danger())
+	for m in villager_moods():
+		life.add_child(m)
 	var night := BTSequence.new()
-	night.add_child(block_is(["night", "dawn"]))
+	if role in ["tavern", "keeper"]:
+		# The tavern keeps late: its folk are there till the night's end, home at dawn.
+		night.add_child(block_is(["night"]))
+		night.add_child(go("tavern"))
+		night.add_child(run(["Drinking", "Idle_Talking", "Laughing"] if role == "tavern" else ["Interact", "Idle_Talking"], 1, 2))
+		night.add_child(brk(["Drunk_Idle", "Weight_Shift"] if role == "tavern" else REST))
+		life.add_child(night)
+		night = BTSequence.new()
+		night.add_child(block_is(["dawn"]))
+	else:
+		night.add_child(block_is(["night", "dawn"]))
 	night.add_child(go("home"))
 	night.add_child(brk(["Idle", "Breathing_Idle"]))
 	life.add_child(night)
@@ -397,6 +551,8 @@ static func give_villager(person: Node3D, a: Dictionary, vill: Node) -> bool:
 	var player := BTPlayer.new()
 	player.name = "Mind"
 	player.behavior_tree = bt
+	# One in three is quick to anger or slow to cope: they shout in a riot and slump in a famine.
+	player.blackboard.set_var(&"moody", role != "child" and rng.randf() < 0.35)
 	player.blackboard.set_var(&"va", a)
 	player.blackboard.set_var(&"ground", func(q: Vector3) -> float: return vill.terrain.height_at(q.x, q.z))
 	player.blackboard.set_var(&"vill", vill)

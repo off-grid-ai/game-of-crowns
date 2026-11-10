@@ -252,6 +252,19 @@ func _mind(p: Node3D, post: String, center: Vector3) -> bool:
 	return preload("res://scripts/npc_mind.gd").give(p, post, func(q: Vector3) -> float: return _y(center, q), int(p.get_instance_id()))
 
 
+## A brawling pair on the switch: both scuffle for the same count of blows
+## (Fist_Fight_A against Fist_Fight_B), then each riots with the rest.
+func _mind_pair(a: Node3D, b: Node3D, center: Vector3) -> bool:
+	if not _town_on:
+		return false
+	var Mind := preload("res://scripts/npc_mind.gd")
+	var blows := randi_range(4, 5)
+	var ground := func(q: Vector3) -> float: return _y(center, q)
+	Mind.give(a, "riot", ground, int(a.get_instance_id()), [Mind.run(["Fist_Fight_A"], blows, blows)])
+	Mind.give(b, "riot", ground, int(b.get_instance_id()), [Mind.run(["Fist_Fight_B"], blows, blows)])
+	return true
+
+
 func _figure(parent: Node3D, pos: Vector3, mat: Material) -> Node3D:
 	var n := Node3D.new()
 	n.position = pos
@@ -454,12 +467,15 @@ func _crowd(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 			continue  # no room left at the door: the crowd is what fits
 		var look := -f.position + Vector3(rng.randf_range(-0.3, 0.3), 0, rng.randf_range(-0.3, 0.3))
 		f.rotation.y = atan2(look.x, look.z) if angry or i % 2 == 0 else rng.randf() * TAU
+		# Rioters; and at the edge, beggars, mourners and refugees in turn.
+		_mind(f, "riot" if angry else ["beg", "mourn", "refugee"][i % 3], center)
 	if angry:
 		# The watch holds the door against them, and here and there it comes to blows.
 		for i in 3:
 			var g := _stand(root, life, center, dir * 0.32 + side * (i - 1) * 0.14, "soldier", "Sword_Idle", rng.randi(), Color(0.55, 0.5, 0.45), 0.2)
 			if g:
 				g.rotation.y = atan2(dir.x, dir.z)  # facing the crowd
+				_mind(g, "guard", center)
 		for k in 2:
 			var at := dir * rng.randf_range(0.8, 1.1) + side * (0.5 if k == 0 else -0.5)
 			var a := _stand(root, life, center, at, "peasant", "Fist_Fight_A", rng.randi(), Color(0.7, 0.66, 0.6), 0.25)
@@ -470,6 +486,9 @@ func _crowd(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 				continue
 			a.rotation.y = atan2(b.position.x - a.position.x, b.position.z - a.position.z)
 			b.rotation.y = a.rotation.y + PI
+			# On the switch: the pair scuffle for the same while, then riot with the rest.
+			if _mind_pair(a, b, center):
+				continue
 			# A scuffle, not a fight without end: about 8 s, then they're back to shouting.
 			for f in [a, b]:
 				var stop := Timer.new()
@@ -581,6 +600,7 @@ func _revels(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGener
 		var f := _stand(root, life, center, want, "townsfolk" if i % 3 else "peasant", move, rng.randi(), Color.WHITE, 0.2)
 		if f:
 			f.rotation.y = atan2(-f.position.x, -f.position.z)
+			_mind(f, "revel", center)
 
 
 ## Trade at the market: a keeper behind each stall facing the square, and a

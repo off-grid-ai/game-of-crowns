@@ -2497,7 +2497,11 @@ http.createServer(async (req, res) => {
   if (url.pathname === "/test/stage" && req.method === "POST") {
     if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
     const b = await body(req);
-    (meta.stage ??= {})[Number(b.city)] = { building: String(b.building ?? "Pikemen"), buildingKind: String(b.kind ?? "UnitType"), progress: Number(b.progress ?? 0.5) };
+    // {city, building, kind, progress} stages its work; {city, mood: riot|feast|hunger|calm} its mood.
+    const moods = { riot: { disorder: true }, feast: { celebrating: true }, hunger: { famine: true }, calm: { disorder: false, celebrating: false, famine: false } };
+    const at = (meta.stage ??= {});
+    if (b.mood) at[Number(b.city)] = { ...(at[Number(b.city)] ?? {}), ...moods.calm, ...(moods[b.mood] ?? {}) };
+    else at[Number(b.city)] = { ...(at[Number(b.city)] ?? {}), building: String(b.building ?? "Pikemen"), buildingKind: String(b.kind ?? "UnitType"), progress: Number(b.progress ?? 0.5) };
     return json(res, 200, { ok: true });
   }
   // Test hook (films only): a lord's deed on demand, so its alert can be filmed.
