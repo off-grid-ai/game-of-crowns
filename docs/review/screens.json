@@ -1,5 +1,37 @@
 [
  {
+  "id": "royal-works",
+  "name": "The King's own works, and his aim",
+  "group": "Play",
+  "what": "Kingsmere's card while the King's market rises over two seasons; the aim before him under the date.",
+  "file": "screens/v/royal-works-1.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "A market rising; the aim in gold",
+    "at": "2026-11-10T08:30:00Z",
+    "file": "screens/v/royal-works-1.jpg",
+    "what": "'The King's marketplace rising · 57%' on Kingsmere's card; under the date, the aim: 'Muster a royal host of twelve companies'."
+   }
+  ]
+ },
+ {
+  "id": "march-odds",
+  "name": "Marching on a town, with the odds",
+  "group": "Play",
+  "what": "A house's town card: the royal host's chances before the King orders the march.",
+  "file": "screens/v/march-odds-1.jpg",
+  "versions": [
+   {
+    "v": 1,
+    "label": "The forecast on the card",
+    "at": "2026-11-10T08:30:00Z",
+    "file": "screens/v/march-odds-1.jpg",
+    "what": "'March on Lionreach 25k cr · they'd break before us'. Two seasons later: 'Lionreach falls to the royal host: 14 royal companies against House Wolfholt's 4.'"
+   }
+  ]
+ },
+ {
   "id": "petition-card",
   "name": "A lord at court",
   "group": "Play",
