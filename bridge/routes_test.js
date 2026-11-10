@@ -38,6 +38,14 @@ export async function stage(ctx, req, res, url) {
     calm: { disorder: false, celebrating: false, famine: false, atWar: false, grief: false, grasping: false, prosperity: false } };
   const at = (ctx.meta.stage ??= {});
   // {soldiers: wounded|fortified|calm, city}: the crown's three companies nearest the town stand so.
+  // {weather: clear|showers|rain|storm|snow}: the season's weather now (weather.js holds it until the next season's roll).
+  if (b.weather) {
+    const kinds = ["clear", "showers", "rain", "storm", "snow"];
+    if (!kinds.includes(String(b.weather))) return json(res, 400, { error: `weather: ${kinds.join(", ")}` });
+    const prev = ctx.meta.weather;
+    ctx.meta.weather = { turn: ctx.world?.turn ?? 0, season: prev?.season ?? "summer", kind: String(b.weather), wet: ["showers", "rain", "storm"].includes(String(b.weather)) ? Math.max(1, (prev?.wet ?? 0)) : 0 };
+    return json(res, 200, { ok: true, weather: ctx.meta.weather });
+  }
   if (b.soldiers) {
     const c = ctx.world.cities.find((x) => x.id === Number(b.city));
     const crownId = Realm.crownOf(ctx.world)?.id;
