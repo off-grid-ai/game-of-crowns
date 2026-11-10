@@ -272,6 +272,10 @@ static func height_of(fp: PackedVector2Array, tops: Array, i: int) -> float:
 ## town, a prism over each footprint up to its roof, on a layer only the camera's
 ## spring arm looks at. Rebuilt when a town's footprints change.
 const LENS_LAYER := 1 << 19
+## Street things (stalls, carts, barrels) the lens rises over rather than going
+## through; on a layer of their own, so the roof sweep never pulls the lens in for them.
+const PROP_LAYER := 1 << 18
+const PROP_TOP := 0.32  # a stall's or cart's height, and a little over (game units)
 var _cast: ShapeCast3D
 var _bodies := {}  # town id -> [holder Node3D, signature]
 var _bodies_check := 0.0
@@ -296,7 +300,10 @@ func _lens_bodies() -> void:
 		var fps: Array = root.get_meta("footprints", [])
 		var walls: Array = root.get_meta("walls", [])
 		var tops: Array = root.get_meta("tops", [])
-		var sig := hash([fps, tops, walls])  # a site growing changes its height, not its count
+		# The town's street things (stalls, carts, barrels, the fire's ring: town_life.gd's Life).
+		var life: Node = root.get_node_or_null("Life")
+		var props: Array = life.get_meta("footprints", []) if life else []
+		var sig := hash([fps, tops, walls, props])  # a site growing changes its height, not its count
 		if _bodies.has(id) and _bodies[id][1] == sig and is_instance_valid(_bodies[id][0]):
 			continue
 		if _bodies.has(id) and is_instance_valid(_bodies[id][0]):
@@ -307,23 +314,27 @@ func _lens_bodies() -> void:
 			_prism(holder, fps[i], height_of(fps[i], tops, i) + 0.12)
 		for w in walls:
 			_prism(holder, w[0], float(w[1]) + 0.12)
+		var at_y: float = (life as Node3D).position.y if life is Node3D else 0.0
+		for fp in props:
+			_prism(holder, fp, PROP_TOP, PROP_LAYER, at_y)
 		root.add_child(holder)
 		_bodies[id] = [holder, sig]
 
 
 ## One building as the lens sees it: a body of its own (so the one the eye
 ## stands in, a castle's yard, can be set aside), a prism up to its roof.
-func _prism(holder: Node3D, fp: PackedVector2Array, h: float) -> void:
+func _prism(holder: Node3D, fp: PackedVector2Array, h: float, layer := LENS_LAYER, y0 := 0.0) -> void:
 	if fp.size() < 3:
 		return
 	var pts := PackedVector3Array()
 	for q in fp:
-		pts.append(Vector3(q.x, -0.4, q.y))
-		pts.append(Vector3(q.x, h, q.y))
+		pts.append(Vector3(q.x, y0 - 0.4, q.y))
+		pts.append(Vector3(q.x, y0 + h, q.y))
 	var shape := ConvexPolygonShape3D.new()
 	shape.points = pts
 	var body := StaticBody3D.new()
-	body.collision_layer = LENS_LAYER
+	body.collision_layer = layer
+	body.set_meta("top", y0 + h)
 	body.collision_mask = 0
 	var cs := CollisionShape3D.new()
 	cs.shape = shape
@@ -355,6 +366,25 @@ func _clear(look: Vector3, pos: Vector3) -> Vector3:
 	# Never right up against what it looks at: there the smallest move swings the
 	# view; what still stands in the way dissolves at the lens instead (fade_near).
 	return look + arm / full * maxf(free, full * NEAREST)
+
+
+## The top of the street thing the lens would stand in (within a small ball of it), or -INF.
+var _prop_ball := SphereShape3D.new()
+func _prop_top(p: Vector3) -> float:
+	if not is_inside_tree():
+		return -INF
+	_prop_ball.radius = 0.08
+	var q := PhysicsShapeQueryParameters3D.new()
+	q.shape = _prop_ball
+	q.transform = Transform3D(Basis(), p)
+	q.collision_mask = PROP_LAYER
+	var top := -INF
+	for hit in get_world_3d().direct_space_state.intersect_shape(q, 4):
+		var body: Object = hit.get("collider")
+		if body and body.has_meta("top"):
+			var b := body as Node3D
+			top = maxf(top, b.global_position.y + float(body.get_meta("top")))
+	return top
 
 
 func _floor_at(p: Vector3) -> float:
@@ -489,6 +519,10 @@ func apply() -> void:
 			if woods.blocking(pos + need, look) == 0:
 				break
 			need.y += 0.3
+	# Over a stall, a cart or a barrel, the lens rides just above it (eased like the rest).
+	var over := _prop_top(pos + need)
+	if over > -INF:
+		need.y = maxf(need.y, over + 0.05 - pos.y)
 	if distance <= GUARD:
 		# Faded in over the last unit before GUARD, so it never starts or stops at a line.
 		var guard := 1.0 - smoothstep(GUARD - 1.0, GUARD, distance)
