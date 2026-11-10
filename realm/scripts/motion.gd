@@ -41,6 +41,15 @@ const RUN_PACE := 0.45  # and Running (people.gd RUN_PACE)
 const MOVING := WALK_PACE * 0.5  # steadier than this is going somewhere
 const SETTLE := 0.3  # seconds moving, or still, before a standing move gives way or comes back
 const STATES := ["loop_a", "loop_b", "once_a", "once_b", "hold_a", "hold_b", "rest"]
+## A load carried on the move: the arms from these clips over the legs' walk
+## (Godot's Blend2 with a bone filter), so a sack or a crate shows while they walk.
+const CARRIES := ["Carrying", "Box_Idle", "Carry_Walk"]
+const ARMS := ["LeftShoulder", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightShoulder", "RightUpperArm", "RightLowerArm", "RightHand",
+	"LeftThumbMetacarpal", "LeftThumbProximal", "LeftThumbDistal", "LeftIndexProximal", "LeftIndexIntermediate", "LeftIndexDistal",
+	"LeftMiddleProximal", "LeftMiddleIntermediate", "LeftMiddleDistal", "LeftRingProximal", "LeftRingIntermediate", "LeftRingDistal",
+	"LeftLittleProximal", "LeftLittleIntermediate", "LeftLittleDistal", "RightThumbMetacarpal", "RightThumbProximal", "RightThumbDistal",
+	"RightIndexProximal", "RightIndexIntermediate", "RightIndexDistal", "RightMiddleProximal", "RightMiddleIntermediate", "RightMiddleDistal",
+	"RightRingProximal", "RightRingIntermediate", "RightRingDistal", "RightLittleProximal", "RightLittleIntermediate", "RightLittleDistal"]
 
 var speed := 1.0  # how fast the current move plays (anim_lod.gd advances by delta * speed)
 var _clip := ""  # the move now playing
@@ -54,6 +63,7 @@ var _pace := 0.0  # ground covered, world units a second, eased
 var _last := Vector3.INF
 var _for := 0.0  # how long the person has been moving (or still)
 var _wish := ""  # a repeating move asked while on the move, for when they stop
+var _carry: AnimationNodeAnimation  # the arms' load over the legs, when carrying
 
 
 ## A person's moves, read from their AnimationPlayer's library; `ready` is
@@ -77,7 +87,20 @@ func setup(player: AnimationPlayer, stance: String) -> void:
 		_legs[leg[0]] = n
 		_feet.add_blend_point(n, leg[1], -1, StringName(leg[0]))
 	_nodes["rest"] = _legs["stand"]
-	_sm.add_node("rest", _feet)
+	# The legs, with a load in the arms over them when there is one.
+	var rest := AnimationNodeBlendTree.new()
+	rest.add_node("feet", _feet)
+	_carry = AnimationNodeAnimation.new()
+	rest.add_node("carry", _carry)
+	var mix := AnimationNodeBlend2.new()
+	mix.filter_enabled = true
+	for b in ARMS:
+		mix.set_filter_path(NodePath("%GeneralSkeleton:" + b), true)
+	rest.add_node("mix", mix)
+	rest.connect_node("mix", 0, "feet")
+	rest.connect_node("mix", 1, "carry")
+	rest.connect_node("output", 0, "mix")
+	_sm.add_node("rest", rest)
 	for a in STATES:
 		for b in STATES:
 			if a == b:
@@ -119,6 +142,16 @@ func play(clip: String, rate := 1.0, hold := false, phase := -1.0, repeat := fal
 	var length := get_animation(clip).length / maxf(rate, 0.01)
 	# A way of going (a walk, a run): it becomes the legs' walk or run, and the
 	# legs take over; how fast they go is how fast the person moves.
+	# A load on the move: the arms carry it over the walking legs.
+	if clip in CARRIES and _pace > MOVING and not _mounted():
+		if String(_carry.animation) != clip:
+			_assign(_carry, clip, Animation.LOOP_LINEAR, randf())
+		set("parameters/rest/mix/blend_amount", 1.0)
+		_wish = ""
+		if _now() != "rest":
+			_go.travel("rest")
+		return length
+	set("parameters/rest/mix/blend_amount", 0.0)  # anything else: empty arms swing again
 	if clip in WALKS or clip in RUNS:
 		var leg: AnimationNodeAnimation = _legs["run" if clip in RUNS else "walk"]
 		if String(leg.animation) != clip:
@@ -164,7 +197,7 @@ func track(delta: float) -> void:
 		var flat := Vector2(at.x - _last.x, at.z - _last.z).length() / delta
 		_pace = lerpf(_pace, flat, minf(1.0, delta * 8.0))
 	_last = at
-	set("parameters/rest/blend_position", _pace)
+	set("parameters/rest/feet/blend_position", _pace)
 	var now := _now()
 	var going := _pace > MOVING
 	if going and now.begins_with("loop"):
