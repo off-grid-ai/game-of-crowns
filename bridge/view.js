@@ -1,0 +1,163 @@
+// What the bridge shows the game: the /world response (worldView), and the
+// towns' states (townStates) and their uproar news (uproar), set at each
+// snapshot. Nothing here reads server.js: the realm's state and the bridge's
+// own helpers come in as one context argument, built fresh by server.js on
+// each call (server.js keeps wrappers of the same names).
+
+import { houseFor, cityName, HOUSES } from "./narrator.js";
+import { BUILD_COST, granarySize } from "./rules.js";
+import { DECREES } from "./crown.js";
+import { BANDS } from "./favour.js";
+import { calendar } from "./stakes.js";
+import * as names from "./names.js";
+
+// Lords whose first names were borrowed from A Song of Ice and Fire, renamed
+// in realm.serv; realms begun before then still carry the old names in their
+// saved game, so they are shown by the new ones.
+const RENAMED = {
+  "Lady Olenna Thornvale": "Lady Isolde Thornvale",
+  "Lord Robb Stormhold": "Lord Rhys Stormhold",
+  "Princess Arianne Sunspire": "Princess Ximena Sunspire",
+  "Lord Jon Highfell": "Lord Declan Highfell",
+};
+
+// The realm as the view sees it (GET /world): the bridge's world with each
+// house, town and unit filled in from the save, the crown, the threat and the
+// rest. counsel() reads the same, once a season and after the King acts
+// (refreshCounsel), never on every poll.
+export function worldView(ctx) {
+  const { world, meta, history, court, stakes, turnSeconds, counselNow, scenes, effects, favourWhy, favourPast, lastSeason, detail, favourOf, marchOdds, greatHouses, sworn, priceOf, seasonsLeft, crownOf, crownSeat, reignInfo, storyNow, marksNow, goalNow, CIVILIAN, TURNING, GOAL_FAVOUR, soulsOf } = ctx;
+  const d = detail();
+  const players = world.players.map((p) => ({ ...p, name: RENAMED[p.name] ?? p.name, house: houseFor(p), atWarWith: d?.players[p.id]?.atWarWith ?? [] }));
+  const cities = world.cities.map((c) => {
+    const x = d?.cities[c.id];
+    // The lesser family seated here (a bannerman), whose banner the town flies.
+    const holder = court?.lordOfTown(c.id);
+    const family = holder?.rank === "bannerman" ? holder.surname ?? null : null;
+    if (!x) return { ...c, title: cityName(c.id), family };
+    const cost = BUILD_COST[x.building] ?? 0;
+    return {
+      ...c, title: cityName(c.id), family,
+      building: x.building, buildingKind: x.buildingKind,
+      progress: cost ? Math.min(1, x.shieldStock / cost) : 0,
+      ...(!houseFor(world.players.find((p) => p.id === c.owner)).crown && !houseFor(world.players.find((p) => p.id === c.owner)).wild && world.players.some((p) => p.id === c.owner) ? { odds: Math.round(marchOdds(c.owner, greatHouses().filter((p) => p.id !== c.owner && sworn(p.id)).map((p) => p.id), { extra: 8, turn: (world?.turn ?? 0) + 2 }) * 100) / 100 } : {}),
+      // The King's own works under way show as the town's building site, rising season by season.
+      ...(meta.works?.[c.id] && houseFor(world.players.find((p) => p.id === c.owner)).crown ? { building: meta.works[c.id].building, buildingKind: "Building", royal: true,
+        progress: Math.min(0.99, (meta.works[c.id].seasons - meta.works[c.id].left + Math.min(1, (Date.now() - meta.works[c.id].since) / (turnSeconds * 1000))) / meta.works[c.id].seasons), worksLeft: meta.works[c.id].left } : {}),
+      // A film's staged work (test reigns only, /test/stage).
+      ...(meta.stage?.[c.id] ?? {}),
+      // The royal host before this town: seasons until it falls or holds.
+      ...((() => { const s = (meta.campaigns ?? []).find((k) => k.city === c.id); return s ? { siegeLeft: Math.max(1, 2 + (s.extra ?? 0) - ((world?.turn ?? s.turn) - s.turn)) } : {}; })()),
+    };
+  });
+  const units = world.units.map((u) => {
+    const x = d?.units[u.id];
+    return x ? { ...u, hp: x.hp, activity: x.activity, goto: x.goto, home: x.home } : u;
+  });
+  const last = history[history.length - 1];
+  const crownP = players.find((p) => p.house.crown);
+  const crown = { treasury: crownP?.gold ?? 0, tithe: meta.tithe, decrees: Object.fromEntries(Object.entries(DECREES).map(([k, v]) => [k, { ...v, cost: priceOf(k), wait: seasonsLeft(k === "feast" ? "feast:court" : k) }])), favourWait: Object.fromEntries(world.players.map((p) => [p.id, seasonsLeft(`favour:${p.id}`)]).filter(([, n]) => n > 0)), perSeason: lastSeason.net };
+  for (const p of players) {
+    p.favour = p.house.wild || p.house.crown ? null : favourOf(p.id);
+    p.favourWhy = favourWhy[p.id] ?? [];
+    p.sworn = sworn(p.id) ? meta.alliances[p.id] : null;  // until what turn the house is sworn to the crown
+    p.besieged = (meta.campaigns ?? []).filter((x) => x.house === p.id).map((x) => x.city);
+    // Whom the house is at odds with, by name: wars, and wars the King has
+    // stilled (a commanded peace or a royal match) as truces.
+    const lordOf = (pid) => court?.lordOfHouse(pid);
+    const stilledWith = (q) => { const a = lordOf(p.id), b = lordOf(q.id); return !!(a && b && court.truce(a.id, b.id)); };
+    const rivals = (p.atWarWith ?? []).map((id) => players.find((q) => q.id === id)).filter((q) => q && !q.house.wild);
+    // A loyal house (35 and up) isn't waging war on the King: the engine's state
+    // between them is old diplomacy, not a cause, so it isn't shown as one.
+    const loyalToCrown = (q) => !q.house.crown && (favourOf(q.id) ?? 0) >= BANDS.steady;
+    p.wars = rivals.filter((q) => !stilledWith(q) && !(q.house.crown && loyalToCrown(p)) && !(p.house.crown && loyalToCrown(q)))
+      .map((q) => q.house.crown ? "the Crown" : q.house.name.replace(/^House /, ""));
+    // A pretender on the march is at war with the crown, whatever the engine's treaties say.
+    const u = stakes?.s.usurper;
+    if (u?.stage === "march") {
+      const claimant = players.find((q) => q.id === u.house);
+      if (p.id === u.house && !p.wars.includes("the Crown")) p.wars.unshift("the Crown");
+      if (p.house.crown && claimant && !p.wars.includes(claimant.house.name.replace(/^House /, ""))) p.wars.unshift(claimant.house.name.replace(/^House /, ""));
+    }
+    p.truces = rivals.filter(stilledWith).map((q) => q.house.name.replace(/^House /, ""));
+    // How far favour has moved in the last year (four seasons), shown beside it.
+    const yearAgo = favourPast[(world?.turn ?? 0) - 4];
+    p.favourTrend = p.favour == null || !yearAgo || yearAgo[p.id] == null ? 0 : Math.round(p.favour - yearAgo[p.id]);
+    // How far the house has turned against the King (0-1): full, its ultimatum comes.
+    p.turning = Math.min(1, (meta.turning?.[p.id]?.seasons ?? 0) / TURNING);
+    // Where the house stands with the King, in one word (the goal's bar and the banners' 35).
+    p.band = p.favour == null ? null : p.favour >= GOAL_FAVOUR ? "firm" : p.favour >= 35 ? "wavering" : "cold";
+  }
+  // Each house's measures as the ledger keeps them (one reckoning, recordTurn).
+  // The Crown's own row reads like the houses' (the ledger keeps only theirs).
+  const own = (p) => {
+    const mine = world.cities.filter((c) => c.owner === p.id);
+    return { towns: mine.length, pop: mine.reduce((t, c) => t + c.size, 0), souls: mine.reduce((t, c) => t + soulsOf(c.size), 0), gold: p.gold, armies: p.units, grain: mine.reduce((t, c) => t + (d?.cities[c.id]?.foodStock ?? 0), 0) };
+  };
+  for (const p of players) p.measures = last?.houses?.[p.house.name] ?? (p.house.crown ? own(p) : null);
+  const usurper = stakes?.s.usurper.stage ?? "none";
+  const u = stakes?.s.usurper;
+  // The odds at Kingsmere: fighting companies of the pretender and of the crown
+  // within a few leagues of the walls (200 men to a company, as the table counts).
+  const seatNow = stakes?.s.seat;
+  const fighting = (pid) => seatNow ? (world?.units ?? []).filter((x) => x.owner === pid && !CIVILIAN.has(x.type) && Math.hypot(x.x - seatNow.x, x.y - seatNow.y) <= 6).length : 0;
+  const crownId = players.find((p) => p.house.crown)?.id;
+  // The dead: which northern town they strike, how many came, and when the next comes.
+  const nn = stakes?.s.north ?? {};
+  const northTown = (world?.cities ?? []).filter((c) => c.y < 30).sort((a, b) => a.y - b.y)[0];
+  const dead = { town: northTown ? cityName(northTown.id) : null, owner: northTown?.owner ?? null,
+    last: (3 + (nn.waves ?? 0) * 2) * 200, next: (3 + ((nn.waves ?? 0) + 1) * 2) * 200, in: nn.nextAt ? Math.max(0, nn.nextAt - (world?.turn ?? 0)) : null };
+  const threat = { usurper, north: (stakes?.s.north.waves ?? 0), dead, pretender: u?.house ?? null, since: u?.since ?? 0, turn: world?.turn ?? 0,
+    // The King's side is his whole host: the garrisons defend Kingsmere too.
+    ended: u?.ended && !u.ended.settled && (world?.turn ?? 0) - u.ended.turn <= 8 ? u.ended.house : null,
+    theirs: u?.house != null ? fighting(u.house) : 0, ours: crownId != null ? (world?.units ?? []).filter((x) => x.owner === crownId && !CIVILIAN.has(x.type)).length : 0 };
+return { ...world, players, cities, units, turnSeconds, crownId: crownOf()?.id ?? null, seatId: crownSeat()?.id ?? null, reign: reignInfo(), story: storyNow(), date: calendar(world.turn), threat, counsel: counselNow, sitting: meta.court?.sitting ?? null, fallen: Object.values(HOUSES).filter((h) => !h.crown && !h.wild && !world.players.some((p) => houseFor(p).key === h.key && (world.cities.some((c) => c.owner === p.id) || (world.units ?? []).some((u) => u.owner === p.id)))).map((h) => ({ ...h, name: names.shown(h.name) })), effects: effects.slice(-10), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000), marks: marksNow(), goal: goalNow() };
+}
+
+// The realm's states, one definition each (SSOT, Mac 2026-11-10): set on each
+// town in the bridge's world from Freeciv's own fields, at load, each reckoning
+// and on every /world. The court, the deck, the arcs, counsel, the minds and
+// the view all read these fields; none works them out again.
+const PLAGUE_SEASONS = 4;  // a town is still sick this many seasons after plague strikes
+export function townStates(ctx) {
+  const { world, meta, scenes, detail, besiegers } = ctx;
+  if (!world?.cities) return;
+  const d = detail();
+  const turn = world.turn ?? 0;
+  for (const c of world.cities) {
+    const x = d?.cities?.[c.id];
+    const food = x?.foodStock ?? null;
+    const store = granarySize(c.size);
+    Object.assign(c, {
+      food, granary: store,
+      famine: Boolean(x?.hadFamine),  // Freeciv's word: the town starved this season
+      granaryLow: food != null && store > 0 && food / store < 0.25,
+      plagueTurn: x?.plagueTurn ?? null,
+      plague: x?.plagueTurn != null && x.plagueTurn >= 0 && turn - x.plagueTurn <= PLAGUE_SEASONS,
+      disorder: Boolean(x?.disorder),
+      // Freeciv's rapture, or a feast the King gave there this season or last.
+      celebrating: Boolean(c.rapture ?? x?.celebrating) || scenes.some((s) => s.kind === "feast" && s.city === c.id && s.turn >= turn - 1),
+      // The royal host before its walls, or an enemy host at them.
+      besieged: (meta?.campaigns ?? []).some((k) => k.city === c.id) || besiegers(c).length >= 3,
+    });
+    // A test reign's staged mood (/test/stage), so the court sees what the film shows.
+    const st = meta?.stage?.[c.id];
+    if (st) for (const k of ["famine", "celebrating", "disorder"]) if (k in st) c[k] = st[k];
+    // The town's mood, one word everyone reads: a riot outweighs hunger, hunger a feast.
+    c.mood = c.disorder ? "riot" : c.famine ? "hunger" : c.celebrating ? "feast" : "";
+  }
+}
+
+// A town falling into disorder is news: told once as it starts, so the minds
+// and the townsfolk's talk hear of it (the state itself is townStates').
+let inUproar = null;  // town ids in disorder at the last reckoning
+export function uproar(ctx) {
+  const { world, record } = ctx;
+  const now = new Set((world?.cities ?? []).filter((c) => c.disorder).map((c) => c.id));
+  if (inUproar) for (const id of now) if (!inUproar.has(id)) {
+    const c = world.cities.find((x) => x.id === id);
+    const h = houseFor(world.players.find((p) => p.id === c.owner) ?? {});
+    record({ turn: world.turn, kind: "unrest", text: `${cityName(id)} is in uproar: the people take to the streets against ${h.crown ? "the crown" : h.name}.`, city: id });
+  }
+  inUproar = now;
+}
