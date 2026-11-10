@@ -928,3 +928,16 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Next:** dead time on HEAD (reign playing now; target no gap over 90 s and under 10% dead), then skate and Kingsmere live.
 - **Verdict:** on course.
 - **Dead time on HEAD (39affc1):** longest stretch with nothing happening was 74 s (target ≤ 90 s, met), and 8% of the reign was in stretches over 60 s (target < 10%, met). The same reign: 1.33 decisions a minute, 89% quiet, the Hand 10 of 20, 9 petitioners, 20 of 20 placed, 9 pleas weighed. Decisions a minute move between 1.0 and 1.33 from reign to reign.
+
+## 2026-11-11 03:05, go-live gate (v2, Kingsmere, 60 s, 39 people)
+
+- **Pass:** hand in body; turn snap 0; kneel at nothing; greet 65%; station 88%.
+- **Fail:**
+  - skate, 11 people (worst 22%; SS_Slash_5 62%, Standing_Idle_2 21%, Walk 14%, Carrying 14%);
+  - empty hand (Carrying 9 frames, Drinking 2: nearly there);
+  - two in one, 11 pairs under 0.5 m for 0.2 s or more (longest 0.6 s; walkers crossing, and a road traveller);
+  - pop, 6 (standing moves);
+  - glance 40% (need 60%);
+  - children near a parent 47% (need 90%). The probe lists them as children at play while the parent browses, drinks or haggles: the parent's errand moves faster than the child's pull-back.
+- **Kingsmere stays on the old rules** until these pass.
+- **Blocked:** the app's session messaging isn't responding (PreToolUse hook timeouts), so I can't hand these to Townsfolk look, NPC perf or Film. They're written here for the next wake.
