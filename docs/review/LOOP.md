@@ -649,3 +649,24 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - clothes: dyes on both Fuse civilians and Svend, and tinted materials shared per colour, which also cuts per-person material copies;
   - framing on the soldiers.
 - **Verdict:** on course. What a player sees is improving every round, measured on film.
+
+## 2026-11-10, autopilot (round 3 judged; perf split; round 4 running)
+
+- **Round 3, read by eye:**
+  - Works: zoom (realm, town, street) and grief; grasping's tax table; prosperity's stalls; a calmer square; varied clothes.
+  - Fails: riot (too close), war (barricade out of frame), soldiers (framed on the garrison tile, the square), hud-rest (the castle standard; builder 2 says it's castle-scaled now). No captions were caught.
+- **Committed after film:**
+  - c6a22f6: crowding, dyes with shared materials, dressing, captions, Eve removed, C5 strides;
+  - e749361: C2 public surfaces;
+  - 80c849a: round 2 and 3 sheets.
+- **Perf, per system** (wrapped _process):
+  - units about 4–5 ms a frame (a stance replayed every frame; fixed, filming);
+  - anim_lod about 1.9 ms, villagers 0.7–1.8 ms, labels 0.5 ms.
+  - All scripts together come to about 10 ms a frame against 40–150 ms of process time. Most of the cost is engine-side; the probe now counts it (7367d4e).
+- **Round 4 (running):**
+  - the truce on builder 2's /test/court;
+  - talk captions;
+  - war and riot wider;
+  - soldiers on their own figures (units.figure_of and a unit step, 080e265);
+  - scars, the season turn, perf with engine counts.
+- **Verdict:** on course. Each round fixes what the last one showed. Perf is the open risk.
