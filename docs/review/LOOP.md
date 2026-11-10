@@ -743,3 +743,22 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - Film: the after-clips once the capital is live; the night-feast freeze log to NPC perf.
   - Builder 2: the anchored-choice API.
 - **Verdict:** on course for the motion plan, measured. Off course on fun, by Mac's own word. The judge's order puts rulings that come back and the map first, and that order is taken.
+
+## 2026-11-10 22:05, autopilot (messages flowing again; matters on the map)
+
+- **What's going on:**
+  - Mine: 51554f0, every court matter carries `place` {city, x, y, name} and `petitioner`. Proof on a private bridge: a Hand matter about the Thornvale–Stormhold war sits at Rosehall (11,60), petitioner c20.
+  - Others: f232e33 (Townsfolk look): one feast ring and fire, people on spots of their own, three more bodies out, chatter.mind_line. 6e48c46 (Builder 2): god.js and /god are gone; blight.js holds blightLua and regrowLua; I reviewed it and nothing lost (the scars became blights, behaviour kept). ef6b05a: the view anchors a matter at item.place.
+  - Routed now that messages flow:
+    - Townsfolk look: motion step 1, banned bodies enforced in code, the neighbour variety rule, then step 4.
+    - NPC perf: the 300 baseline, VAT, and the night-feast freeze.
+    - Film: Stormwatch's orange balls and the v2 after-clips.
+    - Builder 2: the place API, the situation line on the card, and the usurper hook through a Stakes function.
+- **Where we're heading:** the judge's order from Mac's "not fun" and "disconnected from the map":
+  1. Rulings come back by name.
+  2. The capital live on minds plus v2.
+  3. Matters placed and acted on on the map, with consequences travelling there.
+  4. Houses scheming visibly.
+  The place step is done. Travelling consequences and rulings coming back are next (mine).
+- **Right way?** No reign measured this turn, so the fun-bar lines are unchanged. The work matches the order. Risk: v2 can't go live in Kingsmere until feet stop sliding (Walk 32%).
+- **Verdict:** on course.
