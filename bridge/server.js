@@ -510,7 +510,9 @@ function onEvent(line) {
   if (ev.kind === "city_destroyed" && town) scene("razed", { x: town.x, y: town.y, city: town.id });
   if (ev.kind === "city_shrank" && town && (ev.reason === "famine" || ev.reason === "plague")) scene(ev.reason, { x: town.x, y: town.y, city: town.id });
   const text = describe(ev, world);
-  if (text) record({ turn: Number(ev.turn), kind: ev.kind, text, city: ev.city ? Number(ev.city) : undefined });
+  // A town changing hands keeps why, and from which house to which (scenes and sound tell a conquest from a handover).
+  const hands = ev.kind === "city_transferred" ? { reason: ev.reason, from: Number(ev.from), to: Number(ev.to) } : {};
+  if (text) record({ turn: Number(ev.turn), kind: ev.kind, text, city: ev.city ? Number(ev.city) : undefined, ...hands });
 }
 
 // Every four turns (a year of seasons), the people of the realm make their moves.

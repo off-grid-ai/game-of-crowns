@@ -809,7 +809,7 @@ func _listen() -> void:
 ## The chronicle, heard: each kind of event its own stinger.
 func _sound_events(entries: Array) -> void:
 	const KINDS := {"death": "death", "succession": "crown", "crown": "crown", "marriage": "marriage", "alliance": "alliance",
-		"rebellion": "rebellion", "civil_war": "rebellion", "raid": "rebellion", "city_destroyed": "sack", "city_transferred": "handover",
+		"rebellion": "rebellion", "civil_war": "rebellion", "raid": "rebellion", "city_destroyed": "sack", "city_transferred": "",  # a town changing hands sounds with its scene (_on_staged), which knows a conquest from a handover
 		"battle": "battle", "unit_killed": "unit_killed"}
 	for e in entries.slice(-3):
 		var kind := String(e.get("kind", ""))
@@ -1536,6 +1536,8 @@ func _on_staged(s: Dictionary, follow: Node3D) -> void:
 			if cue != "":
 				_horn_at = Time.get_ticks_msec()
 				sound.event(cue)
+		elif kind == "handover" and not s.get("lord", false):
+			sound.event("handover")  # the King's own town given in peace: a quiet fanfare, never the horn
 		# One channel for one piece of news: off screen, the edge arrow carries it, so no Watch card as well.
 		var cam := get_viewport().get_camera_3d()
 		if cam and (cam.is_position_behind(_news["at"]) or not get_viewport().get_visible_rect().grow(-40).has_point(cam.unproject_position(_news["at"]))):

@@ -74,13 +74,17 @@ const MUSIC := {
 const MUSIC_DB := {"calm": -4.0, "court": -5.0, "feast": -3.0, "tension": -3.0, "dead": -2.0, "battle": -1.0}
 const CALM_GAP := Vector2(25.0, 70.0)  # seconds of silence between calm pieces
 
-# Stingers: kind -> list of [file, dB, delay s]; beds lifted: kind -> [bed, seconds].
+# Stingers: kind -> list of [takes, dB, delay s]; beds lifted: kind -> [bed, seconds].
+# Takes split by "|" play as one AudioStreamRandomizer: never the same take twice
+# running. The war horn sounds only for what's hostile (war, raids, rebellion,
+# sacks, a lord's treachery: main.gd sends "horn"); a town handed over in peace
+# gets a quiet fanfare.
 const STINGS := {
-	"battle": [["sfx/war_horn.ogg", -2.0, 0.0], ["sfx/charge_yell.ogg", -4.0, 2.5]],
+	"battle": [["sfx/war_horn.ogg|sfx/war_horn_near.ogg", -2.0, 0.0], ["sfx/charge_yell.ogg", -4.0, 2.5]],
 	"clash": [["sfx/sword_clash_1.wav|sfx/sword_clash_2.wav|sfx/sword_clash_3.wav", -6.0, 0.0]],
-	"unit_killed": [["sfx/sword_clash_1.wav|sfx/sword_clash_2.wav|sfx/sword_clash_3.wav", -8.0, 0.0]],
-	"horn": [["sfx/war_horn_near.ogg", -3.0, 0.0]],
-	"siege": [["sfx/war_horn.ogg", -3.0, 0.0], ["sfx/catapult.ogg", -4.0, 4.0]],
+	"unit_killed": [["sfx/sword_clash_1.wav|sfx/sword_clash_2.wav|sfx/sword_clash_3.wav|sfx/hit_metal_0.wav|sfx/hit_metal_1.wav|sfx/hit_metal_2.wav|sfx/hit_plate_0.wav|sfx/hit_plate_1.wav|sfx/hit_plate_2.wav", -8.0, 0.0]],
+	"horn": [["sfx/war_horn.ogg|sfx/war_horn_near.ogg", -3.0, 0.0]],
+	"siege": [["sfx/war_horn.ogg|sfx/war_horn_near.ogg", -3.0, 0.0], ["sfx/catapult.ogg", -4.0, 4.0]],
 	"feast": [["sfx/cheer.ogg", -6.0, 0.0]],
 	"death": [["sfx/funeral_bell.ogg", -3.0, 0.0]],
 	"crown": [["sfx/fanfare.ogg", -3.0, 0.0], ["sfx/cheer.ogg", -8.0, 3.0], ["ambience/church_bells.ogg", -8.0, 5.0]],
@@ -89,9 +93,9 @@ const STINGS := {
 	"dead": [["sfx/dead_horde.ogg", -2.0, 0.0], ["sfx/wolf_howl.ogg", -6.0, 6.0]],
 	"famine": [["sfx/famine_drone.ogg", -6.0, 0.0], ["sfx/toll_bell.ogg", -8.0, 2.0]],
 	"plague": [["sfx/toll_bell.ogg", -5.0, 0.0]],
-	"rebellion": [["sfx/war_horn.ogg", -4.0, 0.0]],
-	"sack": [["sfx/war_horn_near.ogg", -3.0, 0.0], ["sfx/toll_bell.ogg", -8.0, 3.0]],
-	"handover": [["sfx/war_horn.ogg", -8.0, 0.0]],
+	"rebellion": [["sfx/war_horn.ogg|sfx/war_horn_near.ogg", -4.0, 0.0]],
+	"sack": [["sfx/war_horn.ogg|sfx/war_horn_near.ogg", -3.0, 0.0], ["sfx/toll_bell.ogg", -8.0, 3.0]],
+	"handover": [["sfx/fanfare.ogg", -14.0, 0.0]],
 }
 const ALIASES := {"succession": "crown", "coronation": "crown", "reign_end": "death", "civil_war": "rebellion",
 	"raid": "rebellion", "city_destroyed": "sack", "razed": "sack", "city_transferred": "handover"}
@@ -193,9 +197,12 @@ func ui(kind: String) -> void:
 
 
 func footstep(surface: String, at: Vector3) -> void:
-	var s: AudioStream = _load("sfx/step_%s_%d.wav" % [surface, _rng.randi_range(0, 4)])
+	var takes := PackedStringArray()
+	for i in 5:
+		takes.append("sfx/step_%s_%d.wav" % [surface, i])
+	var s: AudioStream = takes_of("|".join(takes), 1.08)
 	if s:
-		_one_shot(s, "SFX", -14.0, at, _rng.randf_range(0.92, 1.08))
+		_one_shot(s, "SFX", -14.0, at, 1.0)
 
 
 func voice_started() -> void:
@@ -456,16 +463,35 @@ func _load(rel: String, loop := false) -> AudioStream:
 	return s
 
 
-## A stinger: `files` may hold variants split by "|"; one is picked.
+## The takes of one sound ("a|b|c") as Godot's AudioStreamRandomizer: each
+## play picks a take, never the one before, at a slightly different pitch.
+## One randomizer per set, kept, so it remembers what it played last.
+func takes_of(files: String, pitch := 1.03) -> AudioStream:
+	var key := "takes:" + files
+	if _cache.has(key):
+		return _cache[key]
+	var r := AudioStreamRandomizer.new()
+	r.playback_mode = AudioStreamRandomizer.PLAYBACK_RANDOM_NO_REPEATS
+	r.random_pitch = pitch
+	for f in files.split("|"):
+		var s: AudioStream = _load(f)
+		if s:
+			r.add_stream(-1, s)
+	var out: AudioStream = r if r.streams_count > 1 else (r.get_stream(0) if r.streams_count == 1 else null)
+	_cache[key] = out
+	return out
+
+
+## A stinger: `files` may hold takes split by "|" (see takes_of).
 func _sting(files: String, db: float, delay: float, at: Vector3) -> void:
-	var pick: String = Array(files.split("|"))[_rng.randi() % files.split("|").size()]
-	var s: AudioStream = _load(pick)
+	var s: AudioStream = takes_of(files)
 	if s == null:
 		return
+	var pitch := 1.0 if s is AudioStreamRandomizer else _rng.randf_range(0.97, 1.03)  # a single take still varies
 	if delay > 0.0:
-		get_tree().create_timer(delay).timeout.connect(_one_shot.bind(s, "SFX", db, at, _rng.randf_range(0.97, 1.03)))
+		get_tree().create_timer(delay).timeout.connect(_one_shot.bind(s, "SFX", db, at, pitch))
 	else:
-		_one_shot(s, "SFX", db, at, _rng.randf_range(0.97, 1.03))
+		_one_shot(s, "SFX", db, at, pitch)
 
 
 func _one_shot(s: AudioStream, bus: String, db: float, at: Vector3, pitch: float) -> void:
