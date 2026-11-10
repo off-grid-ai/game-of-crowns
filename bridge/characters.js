@@ -893,7 +893,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
         const threat = fav < 35 ? " Do not look for our banners until it is set right." : " I would hear the crown set it right.";
         return { kind: "remembers", deed: deed.what, grudge: true, text: `${c.name} of ${c.house}: "${said}. ${c.house} has not forgotten it, Your Grace.${threat}"`, facts: facts(c.playerId), options: [
           { id: "amend", label: "Make amends (120 gold)", hint: `${c.house} +15 · the grudge is laid to rest`, cost: 120, favour: { [c.playerId]: 15 } },
-          { id: "hear", label: "Hear him out, promise nothing", hint: `${c.house} +3 · the grudge stands`, favour: { [c.playerId]: 3 } },
+          { id: "hear", label: "Hear him out, promise nothing", hint: `${c.house} +3 now · the grudge deepens, and they'll be back within the year`, favour: { [c.playerId]: 3 } },
           { id: "firm", label: "The crown did what it must", hint: `${c.house} −8 · ${c.name} adds this to the account`, favour: { [c.playerId]: -8 } },
         ] };
       }

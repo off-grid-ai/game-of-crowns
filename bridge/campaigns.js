@@ -113,7 +113,7 @@ export function siegeTerms(ctx, c, turn) {
     options: [
       { id: "press", label: "Press the assault (200 gold)", hint: `${pressOdds} in 100 · ${houseFor(foe).name} −10 · ladders and fire, more dead`, cost: 200, favour: { [c.house]: -10 }, result: `The King orders the assault. Ladders go up against the walls of ${town} at dawn.` },
       { id: "starve", label: "Starve them out", hint: `${starveOdds} in 100, a season longer${starveWinter ? ", in winter" : ""} · ${houseFor(foe).name} −5`, favour: { [c.house]: -5 }, result: `The royal host digs in around ${town}. No cart goes in or out.` },
-      ...(tribute >= 50 ? [{ id: "tribute", label: "Take their gold and withdraw", hint: `+${tribute} gold · ${houseFor(foe).name} +10 · the realm sees a King who can be bought`, favour: { [c.house]: 10 }, result: `The King takes ${lord.name}'s gold and the host turns for home. ${town} rings its bells.` }] : []),
+      ...(tribute >= 50 ? [{ id: "tribute", label: "Take their gold and withdraw", hint: `+${tribute} gold · ${houseFor(foe).name} +10 · every other great house −3: a King who can be bought`, favour: { [c.house]: 10, ...Object.fromEntries((world?.players ?? []).filter((p) => p.id !== Number(c.house) && !houseFor(p).crown && !houseFor(p).wild && (world.cities ?? []).some((x) => x.owner === p.id)).map((p) => [p.id, -3])) }, result: `The King takes ${lord.name}'s gold and the host turns for home. ${town} rings its bells.` }] : []),
     ] }, world);
   c.tribute = tribute;
   chron.saveMeta(meta);

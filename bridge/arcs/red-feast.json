@@ -71,7 +71,7 @@
         "from": "host",
         "text": "{host} kneels with blood still under {host.his} nails: \"It's done, Your Grace. {guest.house} was a threat to your peace. All I ask is your pardon, and {guesthall}.\"",
         "options": [
-          { "id": "pardon", "label": "Pardon {host}", "hint": "{host.houseName} +15 · every house learns what you'll let them get away with", "favour": { "host": 15 }, "do": { "threat": 5 }, "result": "The King pardons {host}. From now on, no great lord will go to a wedding without a hundred swords." },
+          { "id": "pardon", "label": "Pardon {host}", "hint": "{host.houseName} +15 · {guest.houseName} −20, their dead unavenged · every house learns what you'll let them get away with", "favour": { "host": 15, "guest": -20 }, "do": { "threat": 5 }, "result": "The King pardons {host}. From now on, no great lord will go to a wedding without a hundred swords." },
           { "id": "outlaw", "label": "Declare {host} a murderer and an outlaw", "hint": "{host.houseName} −40 · {host} has an army and nothing to lose", "favour": { "host": -40 }, "do": { "threat": 15 }, "result": "Heralds shout {host}'s crime in every town. In {hall}, {host} sharpens the swords that did it." }
         ]
       },
