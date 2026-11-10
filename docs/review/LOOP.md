@@ -455,3 +455,38 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Found:** Mac's Broken Oath reign ended on its clock: 15 minutes, turn 63, "the Golden". Most of that clock ran while no window was watching, before the drought fix. It's the bug the fix addresses, and his reign was spent by it.
 - **Clip eye check:** close-up gestures and UAL crouch, push, torch and sit all pose on our townsperson with no twisted limbs. Foot sliding needs a closer sheet.
 - **Verdict:** on course. **Limiting factor:** proof time, now queued instead of waited on.
+
+## 2026-11-10, 16:10 (autopilot)
+
+- **What's going on:**
+  - **This session:**
+    - the King's truce works (983 ms reload; Thornvale at peace 4 seasons on);
+    - every real reign opens differently (fresh dice, tensions and grudges from its seed);
+    - the reign's goal is earned (all houses at 50 and up, and no war between them);
+    - slice 2 trees;
+    - awareness part 1 (the mirror, the news bus, React, state weights);
+    - the clip-sound hook for builder 2.
+  - **Builder 2:** snow, sound, ruins, the King's ledger, decree scenes.
+  - **The judge:** rules every piece.
+- **Two bugs that meant no NPC tree ever ran:**
+  - LimboAI's clone() drops non-exported settings, so every clip list was empty (c47965a).
+  - A BTPlayer made at runtime never started without set_scene_root_hint (38be489).
+  - The slice-1 film the supervisor judged (frozen extras, "ON doesn't touch them") was therefore the broken build. The new headless probe found both bugs.
+- **Measured (state, no GPU):**
+  - Goal: in 3 real reigns, 3–4 of 6 houses are firm at the start, with 4–6 houses fighting. Never won at the start or by turn 40; before the fix it was won at turn 39 in every reign.
+  - Probe: 20 of 20 groups pass when calm, with 2–4 activities and 7–15 clips each and a longest hold of 8 s. Riot replaces callings by design, so the probe's activity count doesn't apply to it.
+- **Supervisor (fresh agent, slice-1 frames):**
+  - people overlap (a body inside the brown-cloaked man);
+  - frozen extras (explained above);
+  - film shots near top-down, with site and drill out of frame. This is film.sh's life step; it's fixed in the batch session.
+- **Slips:**
+  - My 42c01a9 swept in builder 2's uncommitted server.js lines.
+  - Builder 2's 1ba113d swept in mine.
+  - Both repaired. Both of us now stage by hunk.
+- **Direction:** NPCs were Mac's top complaint, and the minds now actually run. The court is blind to hunger (note A in the state catalogue). The judge ruled one bridge definition per realm state next, ahead of more awareness work.
+- **Verdict:** on course, corrected this turn. The NPC work was off course without anyone knowing (no tree ever ran). The probe is now a standing check on every tree change.
+- **Open:**
+  - the bridge's one definitions (hunger, war, siege, feast) and the court reading them;
+  - gossip with a partner and a topic shown by gesture;
+  - grasping in the city state;
+  - the batch film session (slice 1+2, riot, feast, hunger, the states).
