@@ -559,7 +559,7 @@ func _strip(node: Node3D, center: Vector3, rng: RandomNumberGenerator) -> Vector
 
 ## The work a field asks for at this time of year: sowing in spring, watering
 ## and weeding in summer, the harvest in autumn; nothing grows in winter.
-func _field_work(rng: RandomNumberGenerator) -> String:
+func field_work(rng: RandomNumberGenerator) -> String:
 	match String(terrain.season):
 		"spring":
 			return ["Planting", "Planting", "Watering", "Fixing_Kneeling"][rng.randi() % 4]
@@ -571,7 +571,7 @@ func _field_work(rng: RandomNumberGenerator) -> String:
 
 
 ## What the town is going through, as its people feel it: "feast", "riot", "hunger" or "".
-func _town_mood(a: Dictionary) -> String:
+func town_mood(a: Dictionary) -> String:
 	var c: Dictionary = towns.towns.get(a["town"], {}).get("data", {})
 	return String(c.get("mood", ""))  # the bridge's one definition (server.js townStates)
 
@@ -590,14 +590,14 @@ const KNOT := 0.26  # a gathering keeps this clear round its middle: knots of tw
 ## A free spot at a shared place (world), spread over its ground on the walk
 ## map and clear of where everyone else stands or is bound; a full place sends
 ## them on to the next that fits, and failing all, home.
-func _at(a: Dictionary, key: String, knot := false) -> Vector3:
+func place(a: Dictionary, key: String, knot := false) -> Vector3:
 	for k in [key] + Array(OVERFLOW.get(key, [])):
 		var p := _claim(a, k, KNOT if knot else SHOULDER * 2.6)  # alone, a couple of strides from the next: a lively square, not a crowd
 		if not is_nan(p.x):
 			a["place_key"] = k
 			return p
 	a["place_key"] = ""
-	return _near(a["home"], a["rng"], 0.25)
+	return nearby(a["home"], a["rng"], 0.25)
 
 
 func _claim(a: Dictionary, key: String, clear: float) -> Vector3:
@@ -690,7 +690,7 @@ func _square_count() -> void:
 
 
 ## A spot near a place, spread so a gathering is a loose knot, never a pile.
-func _near(p: Vector3, rng: RandomNumberGenerator, r: float) -> Vector3:
+func nearby(p: Vector3, rng: RandomNumberGenerator, r: float) -> Vector3:
 	var ang := rng.randf() * TAU
 	var d := rng.randf_range(r * 0.35, r)
 	return p + Vector3(cos(ang) * d, 0, sin(ang) * d)
@@ -726,24 +726,24 @@ func _choose_next(a: Dictionary) -> void:
 		return
 	var role: String = a["role"]
 	var block := String(a["block"])
-	var mood := _town_mood(a) if block != "night" and block != "dawn" else ""
+	var mood := town_mood(a) if block != "night" and block != "dawn" else ""
 	var day := block in ["work", "work2", "meal", "evening"]
 	if mood == "feast" and day and roll < (0.6 if block == "evening" else 0.3):
 		# A feast: the square fills round the bonfire, dancing, toasting, drinking.
-		target = _at(a, "well")
+		target = place(a, "well")
 		a["work"] = ["Dance", "Cheering", "Drinking", "Dance", "Idle_Talking"][rng.randi() % 5]
 		block = "feasting"
 	elif mood == "riot" and day:
 		if roll < 0.35 and role != "child":
-			target = _at(a, "well")  # to the square, to shout with the rest
+			target = place(a, "well")  # to the square, to shout with the rest
 			a["work"] = ["Yelling", "Arguing", "Yelling"][rng.randi() % 3]
 		else:
-			target = _near(a["home"], rng, 0.15)  # doors barred, watching from the step
+			target = nearby(a["home"], rng, 0.15)  # doors barred, watching from the step
 			a["work"] = ["Looking_Around", "Terrified", "Idle"][rng.randi() % 3]
 		block = "rioting"
 	elif mood == "hunger" and day and roll < 0.35:
 		# Hunger: standing idle at the empty stalls, or slumped at the door.
-		target = _at(a, "market") if roll < 0.15 else _near(a["home"], rng, 0.2)
+		target = place(a, "market") if roll < 0.15 else nearby(a["home"], rng, 0.2)
 		a["work"] = ["Defeated", "Looking_Around", "Defeated", "Praying"][rng.randi() % 4]
 		block = "hungry"
 	match block:
@@ -751,67 +751,67 @@ func _choose_next(a: Dictionary) -> void:
 			pass  # chosen above
 		"night":
 			if role == "tavern" and roll < 0.5:
-				target = _at(a, "tavern")
+				target = place(a, "tavern")
 				a["work"] = "Idle_Talking"
 		"dawn":
 			# Water from the well, a prayer at the sept, or the day's first chores.
 			if role in ["pious", "gentry"]:
-				target = _at(a, "sept")
+				target = place(a, "sept")
 			elif roll < 0.4 and role != "child":
-				target = _at(a, "well")
+				target = place(a, "well")
 				a["work"] = "Carrying"  # water from the well
 			else:
 				target = a["bench"]
 				a["work"] = ["Carrying", "Wheelbarrow", "Idle"][rng.randi() % 3]  # the day's first chores
 		"meal":
-			target = _at(a, "tavern") if role == "tavern" or roll < 0.2 else a["home"]
+			target = place(a, "tavern") if role == "tavern" or roll < 0.2 else a["home"]
 			a["work"] = "Idle_Talking" if roll < 0.5 else "Idle"
 		"evening":
 			if role == "child":
-				target = _near(a["home"], rng, 0.4)
+				target = nearby(a["home"], rng, 0.4)
 				a["work"] = "Dance" if roll < 0.4 else ("Waving" if roll < 0.55 else "Idle")
 			elif role in ["pious", "gentry"] or roll < 0.12:
-				target = _at(a, "sept")
+				target = place(a, "sept")
 				a["work"] = "Praying"
 			elif role == "tavern" or roll < 0.45:
-				target = _at(a, "tavern")
+				target = place(a, "tavern")
 				a["work"] = ["Idle_Talking", "Drinking", "Cheering", "Dance", "Whispering"][rng.randi() % 5]
 			elif roll < 0.65:
-				target = _at(a, "well" if roll < 0.55 else "market")
+				target = place(a, "well" if roll < 0.55 else "market")
 				a["work"] = ["Idle_Talking", "Whispering", "Arguing", "Nodding"][rng.randi() % 4]
 		_:
 			# The working day, by calling.
 			match role:
 				"farmer":
-					var tend := _field_work(rng)
+					var tend := field_work(rng)
 					if tend == "" or roll >= 0.85:
 						# Winter, or a break: wood and water fetched, the yard put to rights.
-						target = a["bench"] if roll < 0.6 or tend == "" else _at(a, "well")
+						target = a["bench"] if roll < 0.6 or tend == "" else place(a, "well")
 						a["work"] = ["Carrying", "Wheelbarrow", "Fixing_Kneeling", "Interact"][rng.randi() % 4]
 					else:
-						target = _near(a["field"], rng, 0.25)
+						target = nearby(a["field"], rng, 0.25)
 						a["work"] = tend
 				"crafter":
-					target = a["bench"] if roll < 0.8 else _at(a, "market")
+					target = a["bench"] if roll < 0.8 else place(a, "market")
 					a["work"] = ["Fixing_Kneeling", "Interact", "PickUp_Table", "Carrying", "Wheelbarrow"][rng.randi() % 5] if roll < 0.8 else ["Idle_Talking", "Arguing"][rng.randi() % 2]  # at the trade before the door, or haggling over it
 				"tavern":
-					target = _at(a, "tavern")
+					target = place(a, "tavern")
 					a["work"] = ["Carrying", "Drinking", "Idle_Talking"][rng.randi() % 3]
 				"pious":
-					target = _at(a, "sept") if roll < 0.4 else a["bench"]
+					target = place(a, "sept") if roll < 0.4 else a["bench"]
 					a["work"] = ("Praying" if rng.randf() < 0.5 else "Kneeling") if roll < 0.4 else "Carrying"
 				"market":
-					target = _at(a, "market")
+					target = place(a, "market")
 					a["work"] = ["Idle_Talking", "Arguing", "Carrying", "Nodding", "Whispering", "Yelling"][rng.randi() % 6]  # haggling at the stalls
 				"gentry":
 					# A lady's day: the stalls, never the haggling, and her prayers.
-					target = _at(a, "market") if roll < 0.65 else _at(a, "sept")
+					target = place(a, "market") if roll < 0.65 else place(a, "sept")
 					a["work"] = ["Idle_Talking", "Nodding", "Whispering", "Looking_Around"][rng.randi() % 4] if roll < 0.65 else "Praying"
 				"child":
-					target = _near(a["home"], rng, 0.7) if roll < 0.6 else _at(a, "well")
+					target = nearby(a["home"], rng, 0.7) if roll < 0.6 else place(a, "well")
 					a["work"] = "Dance" if roll < 0.25 else "Idle"
 				_:
-					target = _at(a, "market" if roll < 0.5 else "well")
+					target = place(a, "market" if roll < 0.5 else "well")
 					a["work"] = "Idle_Talking" if roll < 0.5 else "Idle"
 	if GAITS.has(a["work"]):
 		a["load"] = a["work"]  # picked up here, carried on the next walk
@@ -820,7 +820,7 @@ func _choose_next(a: Dictionary) -> void:
 	# along; with nobody to hand, do something on your own instead.
 	if a["work"] in SOCIAL:
 		if String(a.get("place_key", "")) != "":
-			target = _at(a, a["place_key"], true)  # room round them for a knot
+			target = place(a, a["place_key"], true)  # room round them for a knot
 		if _gather(a, target, places):
 			return
 		a["work"] = _solo(a, target, places)
@@ -828,13 +828,13 @@ func _choose_next(a: Dictionary) -> void:
 		a["work"] = _mood_idle(a)
 	# Some linger, some don't: no two keep the same rhythm.
 	a["wait"] = rng.randf_range(3.0, 20.0)
-	_route_to(a, target)
+	route_to(a, target)
 
 
 ## Sets `a` walking to `target` (world) on the town's walk map, never to the
 ## very spot someone else is bound for. Shared by the day's choices and by a
 ## mind's GoTo (npc_mind.gd).
-func _route_to(a: Dictionary, target: Vector3) -> void:
+func route_to(a: Dictionary, target: Vector3) -> void:
 	var n: Node3D = a["node"]
 	var rng: RandomNumberGenerator = a["rng"]
 	var town: Dictionary = towns.towns.get(a["town"], {})
@@ -1113,12 +1113,12 @@ func _plan_place(a: Dictionary, where: String, places: Dictionary) -> Vector3:
 	for key in [["tavern", "tavern"], ["inn", "tavern"], ["ale", "tavern"], ["sept", "sept"], ["temple", "sept"], ["church", "sept"], ["chapel", "sept"],
 			["market", "market"], ["stall", "market"], ["well", "well"], ["square", "well"]]:
 		if w.contains(key[0]):
-			return _at(a, key[1])
+			return place(a, key[1])
 	if w.contains("field") or w.contains("farm") or w.contains("plough"):
-		return _near(a["field"], rng, 0.4)
+		return nearby(a["field"], rng, 0.4)
 	if w.contains("work") or w.contains("shop") or w.contains("forge") or w.contains("bench"):
 		return a["bench"]
-	return _near(a["home"], rng, 0.25)  # home, or somewhere this town can't show
+	return nearby(a["home"], rng, 0.25)  # home, or somewhere this town can't show
 
 
 ## The move for what a plan says they're doing, by its words.
@@ -1155,7 +1155,7 @@ func _follow(a: Dictionary, plan: Dictionary, places: Dictionary) -> bool:
 			move = "Idle_Talking"  # with someone, whatever the errand: they talk
 		a["work"] = move
 		if String(a.get("place_key", "")) != "":
-			target = _at(a, a["place_key"], true)  # room round them for a knot
+			target = place(a, a["place_key"], true)  # room round them for a knot
 		if _meet(a, partners, target, places):
 			return true
 		a["work"] = _solo(a, target, places)  # none of them can come: alone after all
@@ -1212,7 +1212,7 @@ func _room_in_square(a: Dictionary, goal: Vector2, map: RID) -> Vector2:
 	if there < SQUARE_HOLDS:
 		return goal
 	var c: Vector3 = a["center"]
-	var near := _near(a["home"], a["rng"], 0.2)
+	var near := nearby(a["home"], a["rng"], 0.2)
 	return _nav.closest(map, Vector2(near.x - c.x, near.z - c.z))
 
 

@@ -465,13 +465,13 @@ class GoTo extends BTAction:
 		var rng: RandomNumberGenerator = a["rng"]
 		var to: Vector3 = a["home"]
 		match where:
-			"field": to = v._near(a["field"], rng, 0.25)
+			"field": to = v.nearby(a["field"], rng, 0.25)
 			"bench": to = a["bench"]
 			"home": to = a["home"]
 			"meet": to = blackboard.get_var(&"meet", a["home"], false)  # where a talk was arranged
-			_: to = v._at(a, where)
+			_: to = v.place(a, where)
 		a["gait"] = gait
-		v._route_to(a, to)
+		v.route_to(a, to)
 		_started = true
 
 	func _tick(_delta: float) -> Status:
@@ -495,13 +495,13 @@ class BlockIs extends BTCondition:
 		return SUCCESS if String(a.get("block", "")) in blocks else FAILURE
 
 
-## A field task for the season (villagers._field_work): planting, watering,
+## A field task for the season (villagers.field_work): planting, watering,
 ## picking; nothing to do in winter (fails, so another activity is picked).
 class FieldRun extends PlayRun:
 	func _enter() -> void:
 		var a: Dictionary = blackboard.get_var(&"va")
 		var v: Node = blackboard.get_var(&"vill")
-		var tend: String = v._field_work(a["rng"])
+		var tend: String = v.field_work(a["rng"])
 		pool = [tend] if tend != "" else []
 		super._enter()
 
@@ -769,7 +769,7 @@ static func villager_activities(role: String) -> Array:
 	return []
 
 
-## Succeeds while the villager's town is in `mood` (villagers._town_mood:
+## Succeeds while the villager's town is in `mood` (villagers.town_mood:
 ## feast, riot, hunger).
 class MoodIs extends BTCondition:
 	@export var mood := ""
@@ -779,7 +779,7 @@ class MoodIs extends BTCondition:
 			return SUCCESS if String(blackboard.get_var(&"mood", "", false)) == mood else FAILURE
 		var a: Dictionary = blackboard.get_var(&"va")
 		var v: Node = blackboard.get_var(&"vill")
-		return SUCCESS if v._town_mood(a) == mood else FAILURE
+		return SUCCESS if v.town_mood(a) == mood else FAILURE
 
 
 static func plain(steps: Array) -> BTTask:

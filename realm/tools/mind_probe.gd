@@ -30,16 +30,16 @@ class FakeVillage extends Node:
 	var hour := 12.0
 	var terrain := FakeGround.new()
 	var mood := ""
-	func _route_to(a: Dictionary, to: Vector3) -> void:
+	func route_to(a: Dictionary, to: Vector3) -> void:
 		a["node"].position = to
 		a["route"] = PackedVector2Array()
-	func _at(a: Dictionary, _key: String, _knot := false) -> Vector3:
+	func place(a: Dictionary, _key: String, _knot := false) -> Vector3:
 		return a["home"] + Vector3(randf_range(-0.5, 0.5), 0, randf_range(-0.5, 0.5))
-	func _near(p: Vector3, _rng: RandomNumberGenerator, r: float) -> Vector3:
+	func nearby(p: Vector3, _rng: RandomNumberGenerator, r: float) -> Vector3:
 		return p + Vector3(randf_range(-r, r), 0, randf_range(-r, r))
-	func _field_work(_rng: RandomNumberGenerator) -> String:
+	func field_work(_rng: RandomNumberGenerator) -> String:
 		return "Planting"
-	func _town_mood(_a: Dictionary) -> String:
+	func town_mood(_a: Dictionary) -> String:
 		return mood
 
 
