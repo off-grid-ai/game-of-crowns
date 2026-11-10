@@ -1583,6 +1583,28 @@ const LADDER = [
     met: () => crownHas("City Walls", true), reward: "knights", says: "Stone walls ring Kingsmere. Let them come." },
 ];
 
+// Past the six, the ladder keeps going from the realm itself: win back the
+// coldest great house (its lord by name), or raise what a royal town lacks.
+function nextAim() {
+  const crown = crownOf();
+  const cold = world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown && world.cities.some((c) => c.owner === p.id))
+    .sort((a, b) => favourOf(a.id) - favourOf(b.id))[0];
+  const want = (meta.ladder.n ?? 0) % 2 === 0;
+  if (cold && favourOf(cold.id) < 45 && want) {
+    const lord = court?.lordOfHouse(cold.id);
+    const to = Math.min(70, Math.round(favourOf(cold.id)) + 20);
+    return { key: `win-${cold.id}-${to}`, text: `Win back ${lord ? lord.name : houseFor(cold).name} of ${houseFor(cold).name}`, how: `Bring ${houseFor(cold).name} to ${to} favour: a gift, a feast, a match, or a ruling in their favour.`,
+      pid: cold.id, to, reward: "gold", says: `${lord ? lord.name : houseFor(cold).name} rides to Kingsmere and kneels before the whole court.` };
+  }
+  for (const c of world.cities.filter((x) => x.owner === crown.id)) {
+    const lacks = [["Granary", "a granary"], ["Marketplace", "a market"], ["City Walls", "walls"], ["Barracks", "a barracks"]].find(([b]) => !(c.buildings ?? []).includes(b) && !meta.works?.[c.id]);
+    if (lacks) return { key: `build-${c.id}-${lacks[0]}`, text: `Raise ${lacks[1]} in ${cityName(c.id)}`, how: `Open ${cityName(c.id)}'s card and fund ${lacks[1]}.`, city: c.id, building: lacks[0], reward: "feast", says: `${cityName(c.id)} has its ${lacks[1].replace(/^an? /, "")}. The townsfolk drink to the King.` };
+  }
+  return null;
+}
+const aimMet = (a) => a.met ? a.met() : a.pid != null ? favourOf(a.pid) >= a.to : a.city != null ? (world.cities.find((x) => x.id === a.city)?.buildings ?? []).includes(a.building) : false;
+const aimNow = () => meta.ladder ? (LADDER[meta.ladder.i] ?? meta.ladder.dyn ?? null) : null;
+
 function ladder() {
   if (meta.status !== "running" || !world || !crownOf()) return;
   // Aims already true when the reign begins are passed over: the King is never asked for what he has.
@@ -1590,8 +1612,10 @@ function ladder() {
   const l = meta.ladder;
   l.held ??= world.cities.filter((x) => x.owner === crownOf().id).map((x) => x.id);  // a save from before
   while (l.i < LADDER.length && (l.skip ?? []).includes(LADDER[l.i].key)) l.i++;
-  const aim = LADDER[l.i];
-  if (!aim || !aim.met()) return;
+  // Past the fixed six, an aim drawn from the realm (one at a time).
+  if (l.i >= LADDER.length && !l.dyn) { l.dyn = nextAim(); if (l.dyn) chron.saveMeta(meta); }
+  const aim = aimNow();
+  if (!aim || !aimMet(aim)) return;
   const seat = crownSeat();
   if (aim.reward === "feast" && seat) scene("feast", { x: seat.x, y: seat.y, city: seat.id, owner: seat.owner });
   if (aim.reward === "knights" && seat) {
@@ -1600,7 +1624,8 @@ function ladder() {
   }
   if (aim.reward === "gold") send(`lua cmd for p in players_iterate() do if p.id == ${crownOf().id} then edit.change_gold(p, 250) end end`);
   record({ turn: world.turn, kind: "aim", text: aim.says });
-  l.i++;
+  if (l.i < LADDER.length) l.i++;
+  else { l.dyn = null; l.n = (l.n ?? 0) + 1; }
   if (aim.key === "town") l.held = world.cities.filter((x) => x.owner === crownOf().id).map((x) => x.id);
   l.just = { text: aim.text, at: Date.now() };
   chron.saveMeta(meta);
@@ -1863,7 +1888,7 @@ function reignInfo() {
     id: meta.id, name: meta.name, scenario: meta.scenario, status: meta.status, paused, minutes: meta.minutes,
     elapsedMs: meta.elapsedMs, remainingMs: meta.minutes > 0 ? Math.max(0, meta.minutes * 60000 - meta.elapsedMs) : null,
     score: meta.score, verdict: meta.verdict, title: meta.title, outcome: meta.outcome, ended: meta.endedAt,
-    epilogue: meta.epilogue ?? null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, aim: meta.ladder && LADDER[meta.ladder.i] ? { n: meta.ladder.i + 1, of: LADDER.length, text: LADDER[meta.ladder.i].text, how: LADDER[meta.ladder.i].how } : null, aimDone: meta.ladder?.just && Date.now() - meta.ladder.just.at < 8000 ? meta.ladder.just.text : null, readings: meta.status === "running" ? readings() : null,
+    epilogue: meta.epilogue ?? null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, aim: aimNow() ? { n: Math.min(meta.ladder.i, LADDER.length) + (meta.ladder.n ?? 0) + 1, of: meta.ladder.i < LADDER.length ? LADDER.length : null, text: aimNow().text, how: aimNow().how } : null, aimDone: meta.ladder?.just && Date.now() - meta.ladder.just.at < 8000 ? meta.ladder.just.text : null, readings: meta.status === "running" ? readings() : null,
     souls: world?.cities?.reduce((t, c) => t + soulsOf(c.size), 0) ?? 0,
   };
 }

@@ -565,7 +565,8 @@ func _build_top_bar() -> void:
 	who.add_child(_last_act)
 	# The King's own aim, always before him: what to do next, in gold.
 	_aim = Label.new()
-	_aim.add_theme_font_size_override("font_size", 14)
+	_aim.add_theme_font_size_override("font_size", 18)  # the one line that says what to do next: read at a glance
+	_aim.add_theme_font_override("font", T.sans)
 	_aim.add_theme_color_override("font_color", T.ACCENT)
 	_aim.mouse_filter = Control.MOUSE_FILTER_PASS
 	_aim.visible = false
@@ -2099,7 +2100,7 @@ func _show_heading(r: Dictionary) -> void:
 	_aim.visible = aim is Dictionary
 	if aim is Dictionary:
 		_aim.text = "◆ %s" % String(aim.get("text", ""))
-		_aim.tooltip_text = "%s\nAim %d of %d" % [String(aim.get("how", "")), int(aim.get("n", 0)), int(aim.get("of", 0))]
+		_aim.tooltip_text = String(aim.get("how", "")) + ("\nAim %d of %d" % [int(aim.get("n", 0)), int(aim["of"])] if aim.get("of") != null else "")
 	var done = r.get("aimDone")
 	if done != null and String(done) != _aim_told:
 		_aim_told = String(done)
