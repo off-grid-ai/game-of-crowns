@@ -40,6 +40,12 @@ In order, each judged by GAME_DESIGN.md's engagement model and fun bar:
 9. **Rhythm across the acts:** build, then army, then the threat, then the battle you prepared for; the interlude asks what you'll do next act.
 10. **Houses react to your project:** lords petition about your walls and your host.
 
+## First: playable (Mac, 2026-11-10: "functional, not playable or fun")
+No new features until this is settled. Every turn: fix what a person's play shows is confusing, repeated,
+false or fighting the player (the camera, offers that are refused, odd causes, repeated faces, broken
+props), proven in the game. The order after that waits on Mac's call: a played-and-filmed friction pass,
+a rethink of what the player does each minute, or both.
+
 ## Then (Mac, 2026-11-10: "fix these as well", the designers' top 10)
 In this order, each measured on a real reign before and after:
 1. **Repetition (guard hardest):** count repeated situations in a real reign; draw every matter from the realm's state; none returns.

@@ -343,3 +343,10 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **A match offered that couldn't happen:** "Wed them" showed with no one to wed, then was refused. Every match offer now checks for a real pair first.
 - **Ultimatum cause:** named "the realm's mood at your crowning". It now names what the King did and when ("You marched the royal host on our walls, in the autumn of 309"), or says the crown has done nothing for them.
 - **Verdict:** off course. Mac's whole-game read: functional, not playable, not fun. Features keep landing on a game that doesn't yet hold together moment to moment. Stop features; fix playability first, from a person's play, then rethink the minute-to-minute loop with Mac.
+
+## 2026-11-10, 13:40 (autopilot)
+
+- **What's going on:** Mac is playing (game window open); nothing to take or restart. Seven playability fixes from his notes are pushed, none yet seen live.
+- **Where we're heading:** playability first; AUTOPILOT now says no new features until Mac picks how (a friction pass, a core-loop rethink, or both).
+- **Right way?** Course corrected: the designers' list (grudges, tension waves, act questions) is parked behind playability.
+- **Verdict:** on the corrected course; waiting on Mac's call and his game.
