@@ -165,6 +165,10 @@ func _ready() -> void:
 		add_child(checks)
 	ui = preload("res://scripts/ui.gd").new()
 	add_child(ui)
+	# The houses' schemes, marked on the way between their seats (scheme_marks.gd).
+	var schemes := preload("res://scripts/scheme_marks.gd").new()
+	schemes.main = self
+	add_child(schemes)
 	# A person in the street, on hover: their trade and what's on their mind (folk_tip.gd).
 	var tip := preload("res://scripts/folk_tip.gd").new()
 	tip.main = self

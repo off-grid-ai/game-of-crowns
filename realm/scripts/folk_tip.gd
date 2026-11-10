@@ -40,7 +40,9 @@ func _ready() -> void:
 	_mind.custom_minimum_size = Vector2(200, 0)
 	_mind.visible = false
 	v.add_child(_mind)
-	_scar = T.datum("", T.SIZE_DESC + 1, T.TEXT_2)
+	_scar = Label.new()  # in the realm's words: Geist, not the mono of labels (UI.md §5)
+	_scar.add_theme_font_size_override("font_size", T.SIZE_DESC + 1)
+	_scar.add_theme_color_override("font_color", T.TEXT)
 	_scar.visible = false
 	v.add_child(_scar)
 	visible = false
@@ -95,16 +97,6 @@ func _scar_under_cursor() -> String:
 	if p == Vector3.INF:
 		return ""
 	var tile := Vector2(p.x, p.z) / float(main.terrain.TILE)
-	# A house's envoy on the road, a revealed pact, a marriage: its line, along the way between the two seats.
-	var aw: Object = Engine.get_meta("awareness") if Engine.has_meta("awareness") else null
-	if aw:
-		for it in aw.realm.get_var(&"intrigue", [], false):
-			if it.get("x") == null or it.get("tx") == null or (String(it.get("kind", "")) == "pact" and it.get("secret", false)):
-				continue
-			var a := Vector2(float(it["x"]), float(it["y"])) + Vector2(0.5, 0.5)
-			var b := Vector2(float(it["tx"]), float(it["ty"])) + Vector2(0.5, 0.5)
-			if tile.distance_to(Geometry2D.get_closest_point_to_segment(tile, a, b)) <= 0.8 and String(it.get("line", "")) != "":
-				return String(it["line"])
 	for m in main.bridge.world.get("marks", []):
 		var reach := 0.7 if String(m.get("kind", "")) == "battle" else 1.6  # a town's burn rings it
 		if tile.distance_to(Vector2(float(m.get("x", -99)) + 0.5, float(m.get("y", -99)) + 0.5)) <= reach and String(m.get("line", "")) != "":
