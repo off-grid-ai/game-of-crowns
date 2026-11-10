@@ -17,6 +17,7 @@ import { decree } from "./crown.js";
 import * as kingDeeds from "./ledger.js";
 import { moodFrom, moodRules } from "./claude.js";
 import { body, json } from "./http_util.js";
+import * as names from "./names.js";
 
 export async function issueDecree(ctx, req, res, url) {
   const { yearlyKey, seasonsLeft, priceOf, favourOf, causeOf, sworn, deed, startCampaign, temper, send, shiftAndTell, scene, keepTruce, decreeScenes, record, snapshot, crowns } = ctx;
@@ -201,7 +202,7 @@ export function weigh(ctx, act) {
   if (!plan || plan.error) return null;
   const warmed = ctx.world.cities.find((c) => c.id === Number(act.city))?.owner ?? (act.house != null ? Number(act.house) : null);
   const favour = temper(act.action, warmed, plan.favour ?? {}, true);
-  const name = (pid) => houseFor(ctx.world.players.find((p) => p.id === Number(pid)) ?? {}).name;
+  const name = (pid) => names.shown(houseFor(ctx.world.players.find((p) => p.id === Number(pid)) ?? {}).name);
   const rows = Object.entries(favour).filter(([, d]) => d).map(([pid, d]) => ({ house: name(pid), d })).filter((r) => r.house);
   return { cost: price, helps: rows.filter((r) => r.d > 0).sort((a, b) => b.d - a.d), hurts: rows.filter((r) => r.d < 0).sort((a, b) => a.d - b.d) };
 }

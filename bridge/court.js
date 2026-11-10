@@ -331,12 +331,12 @@ export function docket(ctx) {
     const cost = Treasury.worn(ctx.meta, `court:${p.kind}:${o.id}`, o.cost, world?.turn ?? 0);
     const short = Treasury.shortOf(purse, cost);
     return { ...o, cost, label: String(o.label ?? "").replace(/\(\d[\d,]* gold\)/, `(${cost} gold)`), ...(short ? { short } : {}) };
-  });
+  }).map((o) => ({ ...o, weighs: court.weighOption?.(court.petitions.find((x) => x.id === p.id) ?? p, o, world) ?? null }));  // whom each answer warms and cools, shown before choosing
   const pets = court.open().filter((p) => p.called != null).map((p) => ({ ...p, options: priced(p), due: null, sitting: p.called, counsel: handLine(ctx, p), push: !!c.push }));
   // A court with nothing left to show the King is no court: the doors close, the realm moves.
   if (c.sitting != null && !hand.length && !pets.length) { c.hand = {}; closeIfDone(ctx, world?.turn ?? 0, true); }
   // Every matter carries its place, and its petitioner's id for their face (null for the Hand himself).
-  return [...hand.map((x) => ({ ...x, push: !!c.push })), ...pets].map((x) => ({ ...x, place: placeOf(ctx, x), petitioner: x.from ?? null }));
+  return [...hand.map((x) => ({ ...x, push: !!c.push })), ...pets].map((x) => ({ ...x, place: placeOf(ctx, x.hand ? x : { ...(court.petitions.find((y) => y.id === x.id) ?? {}), ...x }), petitioner: x.from ?? null }));
 }
 
 // --- the court's routes ----------------------------------------------------------

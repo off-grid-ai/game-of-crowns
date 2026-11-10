@@ -13,6 +13,7 @@ import { decide } from "./claude.js";
 
 import { calendar } from "./stakes.js";
 import { ANSWERS } from "./petitions.js";
+import * as names from "./names.js";
 
 // The court's deck of dilemmas: data, so new ones are written, not coded.
 const DECK_FILE = new URL("./data/dilemmas.json", import.meta.url);
@@ -993,6 +994,9 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     roles.rivalTown = roles.rival && anyOf(world.cities.filter((x) => x.owner === roles.rival.playerId && !x.capital));
     if (roles.friend === roles.rival) roles.friend = undefined;
     for (const need of card.needs ?? []) if (!roles[need]) return null;
+    // A role the card names in its words is needed too, listed or not: no "{rivalTown}" left in the hall.
+    for (const named of new Set((JSON.stringify([card.text, card.options]).match(/\{(\w+)(?:\.\w+)?\}/g) ?? []).map((m) => m.slice(1, -1).split(".")[0])))
+      if (named !== "me" && !roles[named]) return null;
     if (w.feud && !(roles.rival && this.opinion(c.id, roles.rival.id) < -15)) return null;
     if (w.rivalWar && !(roles.rival && ctx.atWar?.(c.playerId, roles.rival.playerId))) return null;
     if (w.rivalPeace && roles.rival && ctx.atWar?.(c.playerId, roles.rival.playerId)) return null;
@@ -1030,6 +1034,31 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
   }
 
   // Applies a deck answer's effects. Each effect names roles; "all" is every great house.
+  // What an answer would do to the houses' favour, before it's given (bet 5),
+  // read from the card's own effects (a deck card) or the option's favour (a
+  // story's): {cost, helps: [{house, d}], hurts: [{house, d}]}, or null for a
+  // plea whose answer is worked out in code (petitions.js).
+  weighOption(p, o, world) {
+    let map = null;
+    if (p.deck) {
+      const card = loadDeck().find((x) => x.id === p.kind);
+      const e = card?.options.find((x) => x.id === o.id)?.effects;
+      if (!e) return null;
+      const houses = world.players.filter((x) => !houseFor(x).crown && !houseFor(x).wild);
+      const crown = world.players.find((x) => houseFor(x).crown);
+      const pidOf = (role) => role === "crown" ? crown?.id : (role === "town" || role === "rivalTown" ? world.cities.find((x) => x.id === p.roles?.[role])?.owner : this.people[p.roles?.[role]]?.playerId);
+      map = {};
+      for (const [role, v] of Object.entries(e.favour ?? {})) {
+        if (role === "all") houses.forEach((h) => { map[h.id] = (map[h.id] ?? 0) + v; });
+        else { const pid = pidOf(role); if (pid != null) map[pid] = (map[pid] ?? 0) + v; }
+      }
+    } else if (p.kind === "arc") map = o.favour ?? {};
+    if (!map) return null;
+    const name = (pid) => names.shown(houseFor(world.players.find((x) => x.id === Number(pid)) ?? {}).name);
+    const rows = Object.entries(map).filter(([, d]) => d).map(([pid, d]) => ({ house: name(pid), d })).filter((r) => r.house);
+    return { cost: o.cost ?? 0, helps: rows.filter((r) => r.d > 0).sort((a, b) => b.d - a.d), hurts: rows.filter((r) => r.d < 0).sort((a, b) => a.d - b.d) };
+  }
+
   play(p, option, world, out, gold) {
     const card = loadDeck().find((x) => x.id === p.kind);
     const o = card?.options.find((x) => x.id === option);
