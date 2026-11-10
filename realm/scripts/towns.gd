@@ -95,6 +95,45 @@ func _refresh_life(start: int) -> void:
 			life.update(towns[id]["node"], towns[id]["data"], house)
 
 
+## A town that grew is seen growing: each building its new plan has that the old
+## one didn't rises as a building site (town_life.raise_site: scaffold, builders,
+## a season a step) where it will stand, instead of popping in. A town that
+## changed hands or shrank is simply rebuilt. Only the realistic kit's buildings
+## (one node each); the old stylised houses still appear at once.
+const GROW_SITES := 3  # at most this many sites at once in one town; the rest stand at once
+func _grow(was: Dictionary, node: Node3D, c: Dictionary) -> void:
+	var old: Dictionary = was.get("data", {})
+	if old.is_empty() or int(old.get("owner", -1)) != int(c.get("owner", -2)) or int(c.get("size", 0)) < int(old.get("size", 0)):
+		return
+	if not life.has_method("raise_site"):
+		return
+	var before: Array = []
+	for ch in (was["node"] as Node3D).get_children():
+		if ch is Node3D and Real.KIT.has(String(ch.name).rstrip("0123456789")):
+			before.append((ch as Node3D).position)
+	# What it gained that's a building (a temple, barracks, a granary): the first new site is that one.
+	var gained: Array = (c.get("buildings", []) as Array).filter(func(b): return not (old.get("buildings", []) as Array).has(b))
+	var sites := 0
+	for ch in node.get_children():
+		if sites >= GROW_SITES or not (ch is Node3D):
+			continue
+		var kind := String(ch.name).rstrip("0123456789")
+		if not Real.KIT.has(kind) or not Real.KIT[kind][0] in ["house", "hall", "barn", "mill", "church"]:
+			continue
+		var at: Vector3 = (ch as Node3D).position
+		if before.any(func(p: Vector3): return Vector2(p.x - at.x, p.z - at.z).length() < 0.3):
+			continue
+		var building: String = String(gained.pop_front()) if not gained.is_empty() else ""
+		var home := ch as Node3D
+		home.visible = false
+		var plot := Transform3D(Basis(Vector3.UP, home.rotation.y + PI), at)
+		if life.raise_site(node, plot, building, 2, func():
+			if is_instance_valid(home):
+				home.visible = true) == null:
+			home.visible = true  # no kit for the site: it simply stands
+		sites += 1
+
+
 ## Raise a queued town right now, for someone who needs it this instant.
 func ensure(id: int) -> void:
 	if not _queue.has(id):
@@ -143,6 +182,7 @@ func _process(_delta: float) -> void:
 		var node := _build_town(job["c"], job["house"])
 		add_child(node)
 		if towns.has(best):
+			_grow(towns[best], node, job["c"])
 			towns[best]["node"].queue_free()
 		towns[best] = {"node": node, "signature": job["sig"], "data": job["c"]}
 		life.update(node, job["c"], job["house"])
