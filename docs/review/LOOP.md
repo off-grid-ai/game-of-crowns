@@ -807,3 +807,18 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Others:** Townsfolk look is running talk and war/riot checks. NPC perf is measuring the units, forest and nav-bake fixes. Film round 5 is on the full review capture (about 45 min).
 - **Fun bar:** no reign measured. Bet 5's "helps and hurts shown" is now true for the Hand's orders, data-side.
 - **Verdict:** on course.
+
+## 2026-11-10 23:55, autopilot (dilemmas: every answer weighed)
+
+- **Landed (mine):** e75b29c.
+  - Every lord's plea answer carries `weighs` from the card's own effects, and each plea stands at its own town. Before this it fell back to the lord's seat, because court.open() dropped the card's roles.
+  - House names are the ones the player sees.
+  - No card is dealt with a role missing (border_war had shown "{rivalTown}").
+  - Proof, six cards: "Let them march" gives Sunspire +15, Blackbrook −25. "Warn Wolfholt" gives Wolfholt +15. Pleas were placed at Redsands, Burgos, Lille and Lyon.
+  - With 9a2db70, every choice at court now shows who it helps and hurts before choosing (bet 5, data side). Builder 2 shows it on the card.
+- **Others:**
+  - d3fe54c and feb2173 (Townsfolk look): talk is heard (stale knots cleared); war has a barricade and standards; riot has an overturned cart; the watch is armed; lute and barrow are gated.
+  - 217d541 and 47f32e1 (NPC perf): the forest clear is spread over frames (1.1 s → 8 ms slices); units 7.8 → 2 ms; walk-map rebake 211 → 0.7 ms. It's now on foot skate, with a fix in motion.gd behind v2.
+  - Film round 5 is on the full capture, then the gossip, war and riot refilm.
+- **Fun bar:** no reign measured. The decision line ("every answer costs, and you see the cost") is now true in data.
+- **Verdict:** on course.
