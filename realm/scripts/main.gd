@@ -31,7 +31,6 @@ var intro: CanvasLayer  # the storybook at the start of a reign
 var lore: CanvasLayer  # the book of the realm's houses and people
 var sound: Node  # soundscape.gd
 var _heard_at := 0.0
-var _intro_due := false
 var control: Node3D  # walking as a character
 var mic: Node  # speaking instead of typing
 var interior: CanvasLayer  # inside a building
@@ -46,6 +45,14 @@ var _shot: Dictionary:  # the command-line flags, read here wherever a test shot
 		shots._shot = v
 const News := preload("res://scripts/news.gd")
 var news := News.new(self)  # the player's news (news.gd): the chip, the Watch offer, the edge arrow, Space
+const Overview := preload("res://scripts/overview.gd")
+var over := Overview.new(self)  # the realm's painted map, the far view (overview.gd)
+const PerfTools := preload("res://scripts/perf_tools.gd")
+var perf := PerfTools.new(self)  # the dev measuring aids (perf_tools.gd): perf.log, --profile, GOC_LOOK
+const IntroStory := preload("res://scripts/intro_story.gd")
+var story := IntroStory.new(self)  # the intro story (intro_story.gd): when it is due, and telling it
+const Walking := preload("res://scripts/walking.gd")
+var walking := Walking.new(self)  # walking as a character (walking.gd): control, mic, interiors, the King
 var _framed := false
 var _court_turn := -1
 # "While you were away": the last chronicle entry you saw, per reign, kept
@@ -198,7 +205,7 @@ func _ready() -> void:
 				return
 		ui.toast("%s is no more." % title))
 	add_child(lore)
-	_intro_due = _shot.has("intro")
+	story._intro_due = _shot.has("intro")
 	labels = preload("res://scripts/map_labels.gd").new()
 	labels.towns = towns
 	labels.rig = rig
@@ -213,64 +220,11 @@ func _ready() -> void:
 	hero.edit_requested.connect(func(p, h):
 		hero.close()
 		bridge.character_options(func(opts): ui.show_character_form(int(h.get("id", -1)), String(h.get("name", "")), opts if opts is Dictionary else {}, p)))
-	# Taking control: the close-up gives way to the person, in their own town.
-	mic = preload("res://scripts/mic.gd").new()
-	add_child(mic)
-	ui.mic = mic
-	control = preload("res://scripts/control.gd").new()
-	ui.walker = control  # Esc steps you out of walking, not just closes panels
-	control.mic = mic
-	control.terrain = terrain
-	control.towns = towns
-	control.villagers = villagers
-	control.rig = rig
-	add_child(control)
-	interior = preload("res://scripts/interior.gd").new()
-	interior.people = villagers._people
-	add_child(interior)
-	ui.walk_as_king.connect(_walk_as_king)
+	walking._setup()  # walking as a character (walking.gd): the body, the mic, the interiors
 	ui.story_opened.connect(_follow_story)
 	scenes.staged.connect(_on_staged)
 	scenes.arrived.connect(func(s): bridge.scene_arrived(s))
-	hero.control_requested.connect(func(p, h):
-		hero.close()
-		_take_control(p, h))
-	control.want_people.connect(func(town): bridge.town_people(town, func(d): control.meet(d if d is Array else [])))
-	control.said.connect(func(town, i, text, person):
-		var p: Dictionary = control._person
-		bridge.talk(town, i, {"id": str(p.get("id", "")), "name": String(p.get("name", "")), "house": String(_houses.get(int(p.get("house_id", -1)), {}).get("name", ""))}, text, func(code, d):
-			var aloud: bool = d is Dictionary and d.has("reply") and Settings.get_value("voices")
-			control.heard(d if d is Dictionary else {"error": "They say nothing."}, aloud)
-			if aloud:
-				_say_aloud(String(d["reply"]), {"name": d.get("name", ""), "gender": d.get("gender", "")}, control.done_speaking), person))
-	control.approached.connect(func(town, i, person):
-		var p: Dictionary = control._person
-		bridge.talk(town, i, {"id": str(p.get("id", "")), "name": String(p.get("name", "")), "house": String(_houses.get(int(p.get("house_id", -1)), {}).get("name", ""))}, "", func(code, d):
-			var aloud: bool = d is Dictionary and d.has("reply") and Settings.get_value("voices")
-			control.heard(d if d is Dictionary else {"error": "They say nothing."}, aloud)
-			if aloud:
-				_say_aloud(String(d["reply"]), {"name": d.get("name", ""), "gender": d.get("gender", "")}, control.done_speaking), person, true))
-	control.spoke.connect(func(wav): bridge.hear(wav, control.understood))
 	ui.petition_voiced.connect(func(id, wav): bridge.hear(wav, func(d): ui.heard_ruling(id, d)))
-	control.talk_to.connect(func(town, i):
-		ui.show_folk_waiting()
-		bridge.folk(town, i, func(d): ui.show_folk(d if d is Dictionary else {})))
-	control.enter.connect(func(room, town, p):
-		var name := ""
-		for c in bridge.world.get("cities", []):
-			if int(c["id"]) == town:
-				name = String(c.get("title", c["name"]))
-		if interior.open(room, p, _houses.get(int(p.get("house_id", -1)), {}), name):
-			control.set_process(false)  # one body at a time: the one indoors
-			control.set_process_unhandled_input(false)
-		else:
-			ui.toast("Its doors are shut to you, for now."))
-	control.fell.connect(func(p):
-		bridge.person_fell(str(p.get("id", "")), "I fell to outlaws in the streets of %s." % String(p.get("seat", "my own town")), func(code, _d):
-			ui.toast(("%s is dead. Their heir takes up the seat." % String(p.get("name", ""))) if code == 200 else "They fell, but the realm did not hear of it.")))
-	interior.closed.connect(func():
-		control.set_process(true)
-		control.set_process_unhandled_input(true))
 	ui.character_edited.connect(func(spec):
 		bridge.edit_character(spec, func(code, d):
 			ui.toast(("%s is changed." % spec["name"]) if code == 200 else String(d.get("error", "That failed.")))
@@ -313,7 +267,7 @@ func _ready() -> void:
 	add_child(bridge)
 	bridge.map_loaded.connect(_on_map)
 	bridge.world_updated.connect(_on_world)
-	_overview_setup()
+	over._overview_setup()
 	bridge.chronicle_added.connect(ui.add_chronicle)
 	# The realm's sound: ambience from the camera, stingers from the chronicle.
 	sound = preload("res://scripts/soundscape.gd").new()
@@ -398,7 +352,7 @@ func _ready() -> void:
 	ui.portrait = figures.request  # the petitioner, painted on the court's card
 	hero.name_changed.connect(lore.refresh)
 	add_child(title)
-	title.began.connect(func(): _intro_due = true)
+	title.began.connect(func(): story._intro_due = true)
 	# The launch screens play over the menu (in renders only with --splash).
 	var Splash := preload("res://scripts/splash.gd")
 	if (not _shot.has("path") or _shot.has("splash")) and Splash.any():
@@ -416,23 +370,23 @@ func _ready() -> void:
 	# Choosing a chronicle starts the intro at once, as the loading screen,
 	# and wakes the realm to build behind it.
 	title.closed.connect(func():
-		_opened_in_intro = true
+		story._opened_in_intro = true
 		if not bridge.active:
 			bridge.wake()
 			if bridge.world.is_empty():
-				_intro_due = true
+				story._intro_due = true
 			else:
-				_tell_the_story())
+				story._tell_the_story())
 	# From the menu, the introduction and the lore come back to the menu after.
 	title.watch_intro.connect(func():
-		_back_to_menu = true
+		story._back_to_menu = true
 		# The realm stays asleep: its houses and seats come from the world report
 		# the bridge sends every second anyway. Waking it here built the whole
 		# realm (land, rivers, woods, towns) behind the story: the lag.
 		if bridge.world.is_empty():
-			_intro_due = true
+			story._intro_due = true
 		else:
-			_tell_the_story())
+			story._tell_the_story())
 	title.read_lore.connect(func(): lore.open(-2, true))  # from the menu: the world as written
 	if _shot.has("path") and not _shot.has("title"):
 		title.visible = false
@@ -628,35 +582,12 @@ func _setup_environment() -> void:
 	# Two shadow bands, not four: every band draws all its casters again, and
 	# the view never reaches far enough to need the outer two.
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
-	_try_look(OS.get_environment("GOC_LOOK"))
+	perf._try_look(OS.get_environment("GOC_LOOK"))
 	# The grade and atmosphere (look.gd, the look pass), once the scene is up.
 	if ResourceLoader.exists("res://scripts/look.gd"):
 		load("res://scripts/look.gd").apply.call_deferred(self)
 	# Then the player's graphics choice, over the top of it.
 	get_tree().create_timer(0.5).timeout.connect(apply_graphics)
-
-
-## Trying a look from the shell, for side-by-side renders: GOC_LOOK=filmic,aces,nogi,nossao,nofog.
-func _try_look(look: String) -> void:
-	for k in look.split(",", false):
-		if k.begins_with("sat="):
-			env.adjustment_saturation = float(k.substr(4))
-		match k:
-			"filmic": env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-			"aces": env.tonemap_mode = Environment.TONE_MAPPER_ACES
-			"nogi": env.sdfgi_enabled = false
-			"nossao": env.ssao_enabled = false
-			"nofog": env.fog_enabled = false
-			"noshadow": sun.shadow_enabled = false
-			"noforest": _no_forest = true
-			"notrees": _no_trees = true
-			"nosea": _no_sea = true
-			"noinstancer": _no_instancer = true
-			"profile": _shot["profile"] = true
-			"cycle": _cycle = []  # starts once the towns are built; see _cycle_step
-			"cyclevis":  # the same, hiding each system rather than pausing it: what each one draws
-				_cycle = []
-				_cycle_vis = true
 
 
 ## A fixed bright day (on), or the day and night cycle (off).
@@ -695,30 +626,6 @@ func _sound_events(entries: Array) -> void:
 		sound.event(String(KINDS.get(kind, kind)))
 
 
-## Every ten seconds, how hard the frame is working, to user://perf.log (read
-## from outside the game to find what makes it lag).
-var _perf_at := 10.0
-## Any frame that held the window for over half a second, and what was last
-## under way: the spinning cursor's culprits, in the verbose log.
-func _log_perf(delta: float) -> void:
-	if delta > 0.5:
-		print_verbose("STALL %.2f s after: %s" % [delta, Engine.get_meta("stage", "")])
-	_perf_at -= delta
-	if _perf_at > 0.0:
-		return
-	_perf_at = 10.0
-	var f := FileAccess.open("user://perf.log", FileAccess.READ_WRITE if FileAccess.file_exists("user://perf.log") else FileAccess.WRITE)
-	if f == null:
-		return
-	f.seek_end()
-	f.store_line("%s fps=%d frame=%.1fms process=%.1fms draws=%d objects=%d prims=%dk nodes=%d dist=%.0f towns_building=%s" % [
-		Time.get_time_string_from_system(), Engine.get_frames_per_second(),
-		1000.0 / maxf(Engine.get_frames_per_second(), 1.0), Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
-		Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME),
-		int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000.0), Performance.get_monitor(Performance.OBJECT_NODE_COUNT),
-		rig.distance if rig else 0.0, towns.building() if towns and towns.has_method("building") else "?"])
-
-
 ## The ground was levelled under `area` (a town built or grew): everyone
 ## standing there goes back on it, whoever placed them and whether they're
 ## walking or still. The one place this is done, so nobody is ever left at
@@ -739,110 +646,6 @@ func _stands_on_ground(p: Node) -> bool:
 	return p is Node3D and p.is_inside_tree() and not (p.has_meta("lift") or p.has_meta("aloft") or p.has_meta("mounted"))
 
 
-## Once the towns have finished building: triangles and draws by system, as
-## the most they could cost (instances × their mesh, ignoring culling), with
-## how far each is drawn, so the frame's cost can be pinned on something.
-var _profiled := false
-func _profile_once() -> void:
-	# A count of every triangle in the realm: seconds of work, so only when asked (--profile).
-	if not _shot.has("profile"):
-		return
-	if _profiled or towns == null or towns.building() or terrain.width == 0:
-		return
-	_profiled = true
-	var f := FileAccess.open("user://perf.log", FileAccess.READ_WRITE if FileAccess.file_exists("user://perf.log") else FileAccess.WRITE)
-	if f == null:
-		return
-	f.seek_end()
-	for sys in [towns, countryside, roads, terrain, villagers]:
-		if sys == null:
-			continue
-		var tris := 0
-		var draws := 0
-		var by_end := {}
-		for g in sys.find_children("*", "GeometryInstance3D", true, false):
-			var mesh: Mesh = null
-			var count := 1
-			if g is MultiMeshInstance3D and g.multimesh:
-				mesh = g.multimesh.mesh
-				count = g.multimesh.visible_instance_count if g.multimesh.visible_instance_count >= 0 else g.multimesh.instance_count
-			elif g is MeshInstance3D:
-				mesh = g.mesh
-			if mesh == null:
-				continue
-			var t := 0
-			for si in mesh.get_surface_count():
-				var arr := mesh.surface_get_arrays(si)
-				var idx = arr[Mesh.ARRAY_INDEX]
-				t += (idx.size() if idx != null else arr[Mesh.ARRAY_VERTEX].size()) / 3
-			tris += t * count
-			draws += mesh.get_surface_count()
-			var e := "%d" % int(g.visibility_range_end)
-			by_end[e] = by_end.get(e, 0) + t * count
-		f.store_line("PROFILE %s: %dk tris, %d draws, tris by draw distance %s" % [sys.name, tris / 1000, draws, str(by_end)])
-
-
-var _no_instancer := false  # test: Terrain3D's instancer switched off
-var _no_sea := false  # test: hide the sea
-var _no_trees := false  # test: hide what Terrain3D's instancer draws
-var _no_forest := false  # GOC_LOOK=noforest: the woods hidden, to measure what they cost
-## GOC_LOOK=cycle: once the realm is built, each system in turn stops processing
-## for a few seconds while script time and frame rate are averaged, so the
-## frame's cost can be pinned on the system that carries it.
-var _cycle = null
-var _cycle_vis := false
-var _cycle_prims := 0.0
-var _cycle_began := false
-var _cycle_i := -1
-var _cycle_t := 0.0
-var _cycle_sum := 0.0
-var _cycle_fps := 0.0
-var _cycle_n := 0
-func _cycle_step(delta: float) -> void:
-	if _cycle == null or towns == null or terrain.width == 0 or (towns.building() and not _cycle_began):
-		return
-	_cycle_began = true
-	if _cycle.is_empty():
-		_cycle = [["nothing", null], ["villagers", villagers], ["units", units], ["scenes", scenes], ["towns", towns], ["labels", labels], ["director", director], ["ui", ui], ["sound", sound], ["countryside", countryside], ["roads", roads], ["terrain", terrain], ["bridge", bridge], ["anim", get_node_or_null("AnimLOD")], ["chatter", get_node_or_null("Chatter")], ["control", control]]
-		if _cycle_vis:
-			_cycle = [["nothing", null], ["villagers", villagers], ["units", units], ["scenes", scenes], ["towns", towns], ["countryside", countryside], ["roads", roads], ["forest", terrain.forest], ["ground", terrain.land3d], ["rivers", terrain.get_node_or_null("Rivers")], ["terrain", terrain]]
-		_cycle_i = 0
-		_cycle_t = 0.0
-	_cycle_t += delta
-	if _cycle_t > 2.0:  # let it settle before measuring
-		_cycle_sum += Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
-		_cycle_fps += Engine.get_frames_per_second()
-		_cycle_prims += Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)
-		_cycle_n += 1
-	if _cycle_t < 8.0:
-		return
-	var f := FileAccess.open("user://perf.log", FileAccess.READ_WRITE)
-	if f:
-		f.seek_end()
-		f.store_line("CYCLE %s=%s process=%.1fms fps=%.1f prims=%dk" % ["hidden" if _cycle_vis else "off", _cycle[_cycle_i][0], _cycle_sum / maxf(_cycle_n, 1), _cycle_fps / maxf(_cycle_n, 1), int(_cycle_prims / maxf(_cycle_n, 1) / 1000.0)])
-	var was: Node = _cycle[_cycle_i][1]
-	if was:
-		if _cycle_vis:
-			was.visible = true
-		else:
-			was.process_mode = Node.PROCESS_MODE_INHERIT
-	_cycle_i += 1
-	_cycle_t = 0.0
-	_cycle_sum = 0.0
-	_cycle_fps = 0.0
-	_cycle_n = 0
-	_cycle_prims = 0.0
-	if _cycle_i >= _cycle.size():
-		_cycle = null
-		return
-	var next: Node = _cycle[_cycle_i][1]
-	if next:
-		if _cycle_vis:
-			next.visible = false
-		else:
-			next.process_mode = Node.PROCESS_MODE_DISABLED
-
-
 var _settled := false  # the scatter has been seated on the graded ground
 var _folk_held := {}  # the villager whose card is open: they stand still for it
 
@@ -852,30 +655,20 @@ func _process(_delta: float) -> void:
 		news._edge_tick(_delta)
 	_game_ms += _delta * 1000.0
 	# The game took the camera down to the land (a town framed, a battle): the map steps aside.
-	if _over_open and rig._goal_distance < rig.OVERVIEW * 0.9:
-		_overview_close()
-	_log_perf(_delta)
+	if over._over_open and rig._goal_distance < rig.OVERVIEW * 0.9:
+		over._overview_close()
+	perf._log_perf(_delta)
 	if not _settled and terrain.built and towns and not towns.towns.is_empty() and not towns.building():
 		_settled = true
 		terrain.settle_scatter()
-	_cycle_step(_delta)
+	perf._cycle_step(_delta)
 	if not _folk_held.is_empty():
 		if ui._folk_panel and ui._folk_panel.visible:
 			villagers.hold(_folk_held["town"], _folk_held["i"], rig.get_viewport().get_camera_3d().global_position)
 		else:
 			_folk_held = {}
-	if _no_forest and terrain.forest:
-		terrain.forest.visible = false
-	if _no_instancer and terrain.land3d and terrain.land3d.land and terrain.land3d.land.instancer_mode != 0:
-		terrain.land3d.land.instancer_mode = 0
-	if _no_sea:
-		for n in terrain.get_children():
-			if n.name.to_lower().contains("ocean") or n.name.to_lower().contains("sea"):
-				n.visible = false
-	if _no_trees and terrain.land3d and terrain.land3d.land:
-		for m in terrain.land3d.land.find_children("*", "MultiMeshInstance3D", true, false):
-			m.visible = false
-	_profile_once()
+	perf._test_hides()
+	perf._profile_once()
 	_heard_at -= _delta
 	if _heard_at <= 0.0:
 		_heard_at = 0.25
@@ -930,82 +723,7 @@ func _on_map(map: Dictionary) -> void:
 	var c := Vector3(terrain.width * terrain.TILE / 2.0, 0, terrain.height * terrain.TILE / 2.0)
 	rig.snap(c, terrain.width * terrain.TILE * 1.05)
 	if _shot.is_empty():
-		_overview_open(true)  # the whole realm, painted, until the reign frames a town
-
-
-# --- the realm's painted map, past where the land can be read ----------------------
-
-var overview: CanvasLayer
-var _over_map: Control
-var _over_open := false
-
-
-func _overview_setup() -> void:
-	overview = CanvasLayer.new()
-	overview.layer = 0  # under the interface; the towns' name tags give way to it
-	overview.visible = false
-	add_child(overview)
-	_over_map = preload("res://scripts/realm_map.gd").new()
-	_over_map.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	# The painting holds up to about four times the whole realm; closer than
-	# that the land itself is the better view.
-	_over_map.max_zoom = 4.0
-	_over_map.modulate.a = 0.0
-	overview.add_child(_over_map)
-	rig.overview.connect(_overview_open)
-	_over_map.zoomed_past.connect(func(c: Vector2): _overview_close(c))
-	_over_map.town_pressed.connect(func(t: Dictionary): _overview_close(Vector2(float(t["x"]), float(t["y"])), int(t.get("size", 4))))
-	bridge.world_updated.connect(func(_w):
-		if _over_open:
-			bridge.realm_map(func(d): _over_map.data = d))
-
-
-## Draws back from the land to the painted map, centred where you were looking
-## (or on the whole realm).
-func _overview_open(whole := false) -> void:
-	if _over_open:
-		return
-	_over_open = true
-	if whole:
-		_over_map.fit()
-	else:
-		_over_map.zoom = _over_map.max_zoom
-		_over_map.center = Vector2(rig.target.x, rig.target.z) / terrain.TILE - Vector2(0.5, 0.5)
-	overview.visible = true
-	labels.visible = false
-	bridge.realm_map(func(d): _over_map.data = d)
-	var tw := create_tween().set_parallel(true)
-	tw.tween_property(_over_map, "modulate:a", 1.0, 0.0 if whole else 0.35)
-	if not whole:  # still drawing back as the painting comes up
-		tw.tween_property(_over_map, "zoom", maxf(2.6, _over_map.min_zoom()), 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-		tw.tween_method(func(_v): _over_map.queue_redraw(), 0.0, 1.0, 0.5)
-	tw = tw.chain()
-	tw.tween_callback(func():
-		if _over_open:
-			get_viewport().disable_3d = true)  # nothing of the land shows under it: spare the drawing
-
-
-## Back down to the land at `tile`: a town framed (size >= 0), or the country
-## around it as the map last showed it. With no tile, the game has taken the
-## camera somewhere itself: just step aside.
-func _overview_close(tile := Vector2.INF, size := -1) -> void:
-	if not _over_open:
-		return
-	_over_open = false
-	get_viewport().disable_3d = false
-	if tile != Vector2.INF:
-		var p: Vector3 = terrain.world_pos(tile.x, tile.y)
-		rig.snap(p, rig.OVERVIEW, 0.0)
-		if size >= 0:
-			rig.frame_town(p, size)
-		else:
-			rig.focus(p, rig.OVERVIEW * 0.8)
-	labels.visible = true
-	var tw := create_tween()
-	tw.tween_property(_over_map, "modulate:a", 0.0, 0.35)
-	tw.tween_callback(func():
-		if not _over_open:
-			overview.visible = false)
+		over._overview_open(true)  # the whole realm, painted, until the reign frames a town
 
 
 var _lanes_cut := -1  # the great roads the woods were last cut back for
@@ -1014,9 +732,9 @@ var _laying := false  # roads and countryside are being laid out, a frame at a t
 func _on_world(world: Dictionary) -> void:
 	# The story needs only the houses and seats, not the land: it can begin
 	# before the map has come.
-	if _intro_due and not world.is_empty():
-		_intro_due = false
-		_tell_the_story.call_deferred()
+	if story._intro_due and not world.is_empty():
+		story._intro_due = false
+		story._tell_the_story.call_deferred()
 	if terrain.width == 0:
 		return
 	if awareness:
@@ -1279,58 +997,9 @@ func _on_god_action(action: String, building: String) -> void:
 const Settings := preload("res://scripts/settings.gd")
 
 
-## The realm's story as it stands: each house with its seat, told over stills,
-## then a flight over the seats themselves.
-func _tell_the_story() -> void:
-	var w: Dictionary = bridge.world
-	var houses: Array = []
-	var seats := {}
-	for p in w.get("players", []):
-		houses.append(p["house"])
-	for c in w.get("cities", []):
-		if c.get("capital", false):
-			for p in w.get("players", []):
-				if int(p["id"]) == int(c["owner"]):
-					seats[String(p["house"].get("name", ""))] = [String(c.get("title", c["name"])), Vector2(float(c["x"]), float(c["y"]))]
-	Settings.set_value("seen_intro", true)
-	# The intro has the screen to itself: the menu, the interface and the map's
-	# names step aside while it plays (it may fly over the live realm), and come
-	# back as they were when it ends.
-	var was := [title.visible]
-	_opened_in_intro = false
-	title.visible = false
-	ui.visible = false
-	labels.visible = false
-	# What the intro hides needn't run under it: the people, soldiers and their
-	# animation, chatter, the camera's director and the map's names stop while it
-	# covers the screen (they cost 50-150 ms a frame and made the story stutter
-	# at 12-30 fps); the land, towns, fields and the bridge go on building.
-	var held := []
-	for n in [villagers, units, scenes, labels, director, get_node_or_null("AnimLOD"), get_node_or_null("Chatter")]:
-		if n and n.process_mode != Node.PROCESS_MODE_DISABLED:
-			held.append([n, n.process_mode])
-			n.process_mode = Node.PROCESS_MODE_DISABLED
-	intro.finished.connect(func():
-		for h in held:
-			if is_instance_valid(h[0]):
-				h[0].process_mode = h[1]
-	, CONNECT_ONE_SHOT)
-	intro.finished.connect(func():
-		# The menu comes back only if no chronicle was opened meanwhile; the
-		# interface follows the one rule (shown whenever the menu isn't), not
-		# what was on screen when the intro began (a new realm began from the
-		# menu, which left the interface hidden after the intro).
-		title.visible = (was[0] or _back_to_menu) and not _opened_in_intro
-		_back_to_menu = false
-		ui.visible = not title.visible and not _shot.has("clean")
-		labels.visible = ui.visible, CONNECT_ONE_SHOT)
-	intro.watching = _back_to_menu
-	intro.play(houses, seats)
 var _framed_at := Vector3.ZERO  # where the scene the camera is showing is
 var _framed_until := 0  # game msec: until then, other scenes don't take the camera
 var _game_ms := 0.0  # milliseconds of game time since the view began
-var _opened_in_intro := false  # a chronicle was opened while the intro played: no menu after it
-var _back_to_menu := false  # the intro was asked for from the menu: the menu comes back after it
 var _voice: AudioStreamPlayer
 
 
@@ -1363,48 +1032,9 @@ func _say_aloud(text: String, who: Dictionary, done := Callable()) -> void:
 		_voice.play())
 
 
-## The King is you, not one of the court's characters: he has a body of his
-## own ("king", which the bridge knows to address as Your Grace), at his seat.
-func _walk_as_king() -> void:
-	# Pressed while walking: back to the realm from above.
-	if control.active:
-		control.stop()
-		return
-	for p in bridge.world.get("players", []):
-		var h: Dictionary = p.get("house", {})
-		if h.get("crown", false):
-			var house: Dictionary = _houses.get(int(p["id"]), h)
-			house["id"] = int(p["id"])
-			# The King goes where you are looking: the town nearest the camera,
-			# else his own seat.
-			var near: Dictionary = towns.nearest(rig.target, 12.0)
-			var at := String(near.get("title", near.get("name", ""))) if not near.is_empty() else String(h.get("seat", "Kingsmere"))
-			var king := {"id": "king", "name": "The King", "gender": "male", "rank": "king", "role": "King", "seat": at, "traits": []}
-			_take_control(king, house)
-			return
-	ui.toast("The throne is empty.")
-
-
-## Step into someone: they appear at their seat (or their house's chief town)
-## and the camera drops low behind them. Esc gives the realm back.
+## Steps into someone (walking.gd); the film harness and cinematics.gd call it here.
 func _take_control(p: Dictionary, h: Dictionary) -> void:
-	# Walking the realm is version 2; test renders still reach it to build it.
-	if not preload("res://scripts/features.gd").WALKING and not _shot.has("path"):
-		return
-	var town := -1
-	var owner := int(h.get("id", -1))
-	for c in bridge.world.get("cities", []):
-		if p.get("seat") and String(c.get("title", c["name"])) == String(p["seat"]):
-			town = int(c["id"])
-		elif town < 0 and int(c["owner"]) == owner and c.get("capital", false):
-			town = int(c["id"])
-	if town >= 0:
-		towns.ensure(town)  # still being raised? raise it now
-	if town < 0 or not towns.towns.has(town):
-		ui.toast("%s is nowhere you can reach." % String(p.get("name", "They")))
-		return
-	p["house_id"] = owner
-	control.start(p, h, town)
+	walking._take_control(p, h)
 
 
 func _open_person(id: String, house: Dictionary, from := "the realm") -> void:

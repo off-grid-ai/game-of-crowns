@@ -48,6 +48,8 @@ func _parse_args() -> void:
 			_shot["cam"] = a.substr(6).split(",")
 		elif a.begins_with("--time="):
 			main._time_of_day = float(a.substr(7))
+		elif a.begins_with("--hour="):
+			main._time_of_day = clampf(float(a.substr(7)), 0.0, 24.0) / 24.0  # the hour the sky and the villagers start at (--hour=19: a winter evening)
 			_shot["night_ok"] = true
 		elif a == "--castle":
 			_shot["town"] = true
