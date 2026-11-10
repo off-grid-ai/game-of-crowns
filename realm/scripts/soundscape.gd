@@ -235,13 +235,31 @@ func ui(kind: String) -> void:
 		_one_shot(s, "UI", UI_SOUNDS[kind][1], Vector3.INF, 1.0)
 
 
+## A crowd's steps are a texture, never a drumbeat (Mac: a thud near the feast's fire,
+## where the town gathers): heard only near the lens, a handful a second at most,
+## each falling away within a few paces.
+const STEP_REACH := 3.0  # game units from the camera (about 25 m)
+const STEPS_A_SECOND := 6
+const STEP_DB := -18.0
+var _step_times: Array = []  # when the last steps sounded (ms)
+
+
 func footstep(surface: String, at: Vector3) -> void:
+	var cam := get_viewport().get_camera_3d() if is_inside_tree() else null
+	if cam and cam.global_position.distance_to(at) > STEP_REACH:
+		return
+	var now := Time.get_ticks_msec()
+	while not _step_times.is_empty() and now - int(_step_times[0]) > 1000:
+		_step_times.pop_front()
+	if _step_times.size() >= STEPS_A_SECOND:
+		return
+	_step_times.append(now)
 	var takes := PackedStringArray()
 	for i in 5:
 		takes.append("sfx/step_%s_%d.%s" % [surface, i, "ogg" if surface == "stone" else "wav"])
 	var s: AudioStream = takes_of("|".join(takes), 1.08)
 	if s:
-		_one_shot(s, "SFX", -14.0, at, 1.0)
+		_one_shot(s, "SFX", STEP_DB, at, 1.0, true)
 
 
 func voice_started() -> void:
@@ -613,6 +631,8 @@ func takes_of(files: String, pitch := 1.03) -> AudioStream:
 		if s:
 			r.add_stream(-1, s)
 	var out: AudioStream = r if r.streams_count > 1 else (r.get_stream(0) if r.streams_count == 1 else null)
+	if out and _log_sounds:
+		out.set_meta("takes", files.get_slice("|", 0))
 	_cache[key] = out
 	return out
 
@@ -629,9 +649,14 @@ func _sting(files: String, db: float, delay: float, at: Vector3) -> void:
 		_one_shot(s, "SFX", db, at, pitch)
 
 
-func _one_shot(s: AudioStream, bus: String, db: float, at: Vector3, pitch: float) -> void:
+## near: a small sound (a step), heard full only close by and gone within a few paces.
+func _one_shot(s: AudioStream, bus: String, db: float, at: Vector3, pitch: float, near := false) -> void:
 	if _stingers >= MAX_STINGERS:
 		return
+	if _log_sounds:
+		var cam := get_viewport().get_camera_3d() if is_inside_tree() else null
+		print("SOUND t=%.2f %s bus=%s db=%.0f dist=%s" % [Time.get_ticks_msec() / 1000.0, String(s.get_meta("takes", s.resource_path)), bus, db,
+			"flat" if at == Vector3.INF or cam == null else "%.1f" % cam.global_position.distance_to(at)])
 	_stingers += 1
 	var p: Node
 	if at == Vector3.INF or not is_inside_tree() or get_viewport().get_camera_3d() == null:
@@ -652,8 +677,8 @@ func _one_shot(s: AudioStream, bus: String, db: float, at: Vector3, pitch: float
 		pos.bus = bus
 		pos.volume_db = db
 		pos.pitch_scale = pitch
-		pos.unit_size = maxf(6.0, float(_view["d"]) * 0.8)
-		pos.max_distance = maxf(60.0, float(_view["d"]) * 5.0)
+		pos.unit_size = 0.5 if near else maxf(6.0, float(_view["d"]) * 0.8)
+		pos.max_distance = STEP_REACH + 1.0 if near else maxf(60.0, float(_view["d"]) * 5.0)
 		pos.attenuation_filter_cutoff_hz = 9000.0
 		pos.top_level = true
 		add_child(pos)
@@ -677,6 +702,8 @@ func _done(p: Node) -> void:
 ## also printed once a second ("AUDIO t=… Master=… Weather=…", dB).
 const TAPS := ["Master", "Weather", "SFX", "Voice", "Ambience"]
 var _taps := {}  # bus -> its AudioEffectRecord
+## --log-sounds (probes only): every one-shot printed with its distance from the lens ("SOUND t=…").
+var _log_sounds := OS.get_cmdline_user_args().has("--log-sounds")
 var _record_to := ""
 var _level_t := 0.0
 
