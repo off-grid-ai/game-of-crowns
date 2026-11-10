@@ -204,6 +204,18 @@ func _play(quit_after: bool) -> void:
 				if main.rig.is_processing_input() == false:
 					main.rig.apply()
 				await get_tree().create_timer(3.0).timeout
+			"face":
+				# face [n]: open the n-th matter (from 0) by its face on the map, as a click on it
+				# does (the camera frames its place, its card stands beside it). Logs "face none" when none shows.
+				var faces: Dictionary = main.ui.court_markers()
+				var n := int(w[1]) if w.size() > 1 else 0
+				if faces.size() > n:
+					var id: String = faces.keys()[n]
+					print("AUTOPLAY face %s at %s" % [id, faces[id]])
+					main.ui.open_matter(id)
+				else:
+					print("AUTOPLAY face none (%d on the map)" % faces.size())
+				await get_tree().create_timer(2.0).timeout
 			"director":
 				# director: the camera director runs as in play (shots turn it off).
 				main._shot["director"] = true
@@ -344,6 +356,7 @@ func _frame_life(title: String, kind: String, dist: float) -> void:
 ## What a player could tell from the screen right now.
 func _observe() -> Dictionary:
 	var o := {"fps": Engine.get_frames_per_second(), "cam_dist": snappedf(main.rig.distance, 0.1)}
+	o["faces"] = main.ui.court_markers().size() if main.ui.has_method("court_markers") else 0  # the court's faces on the map
 	# What the frame costs: the scripts' share, what is drawn, how much exists.
 	o["cpu_ms"] = snappedf(Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, 0.1)
 	o["drawn"] = int(Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME))
