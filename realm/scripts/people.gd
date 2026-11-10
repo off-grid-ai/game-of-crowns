@@ -551,6 +551,11 @@ static func listen(on_clip: Callable) -> void:
 static func _started(person: Node3D, anim_name: String, rate: float, looping: bool) -> void:
 	if _listeners.is_empty():
 		return
+	# A loop asked for again (a walker's gait is asked every frame) is still the
+	# same loop: told once, when it starts. A one-off is told every time.
+	if looping and person.get_meta("heard", "") == anim_name:
+		return
+	person.set_meta("heard", anim_name if looping else "")
 	var ap: AnimationPlayer = person.get_node_or_null("Anim")
 	var period := ap.get_animation(anim_name).length / maxf(rate, 0.01) if ap and ap.has_animation(anim_name) else 0.0
 	for c in _listeners:
