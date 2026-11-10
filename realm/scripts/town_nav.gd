@@ -14,6 +14,9 @@ static var _maps := {}  # town id -> RID
 static var _regions := {}  # town id -> its map's region, freed with it
 static var _live := {}  # RID -> true for every map not yet freed: a freed one is never handed to the server
 static var _built_from := {}  # town id -> what its map was baked from: the town node and its life
+static var _baking := {}  # map RID -> its regions' bakes still out on worker threads
+static var _baked_at := {}  # map RID -> the map's iteration when its last bake landed: ready once it has synced past it
+static var _shore := {}  # [town place, reach] -> its water outlines: the shore never moves, so traced once
 
 
 func map_for(id: int, root: Node3D) -> RID:
@@ -69,32 +72,51 @@ const OPEN_COST := 6.0  # open ground: six times a street, so people keep to the
 
 
 ## One walkable region of the town's map: `walk` outlines, less `blocks` and water.
+## Baked on a worker thread (Godot's async bake; in one frame it held the window
+## 60-210 ms): the map isn't ready() until every region's bake has landed.
 func _region(map: RID, root: Node3D, reach: float, walk: Array, blocks: Array, cost: float, cut := []) -> RID:
-	var poly := _bake(root, reach, walk, blocks + cut)
-	if poly.get_polygon_count() == 0 and not cut.is_empty():
-		# Streets crossing each other can't all be cut out of the open ground
-		# in one bake: bake it with only the buildings cut out. The streets
-		# overlap it but stay far cheaper, so people still keep to them.
-		poly = _bake(root, reach, walk, blocks)
 	var region := NavigationServer2D.region_create()
 	NavigationServer2D.region_set_map(region, map)
-	NavigationServer2D.region_set_navigation_polygon(region, poly)
 	NavigationServer2D.region_set_travel_cost(region, cost)
+	_bake_into(region, map, root, reach, walk, blocks, cut)
 	return region
 
 
-func _bake(root: Node3D, reach: float, walk: Array, blocks: Array) -> NavigationPolygon:
+func _bake_into(region: RID, map: RID, root: Node3D, reach: float, walk: Array, blocks: Array, cut: Array) -> void:
 	var poly := NavigationPolygon.new()
 	poly.agent_radius = 0.035
 	poly.cell_size = CELL
 	var src := NavigationMeshSourceGeometryData2D.new()
 	for o in walk:
 		src.add_traversable_outline(o)
-	for b in blocks:
+	for b in blocks + cut:
 		src.add_obstruction_outline(b)
-	_cut_water(src, root.position, reach)
-	NavigationServer2D.bake_from_source_geometry_data(poly, src)
-	return poly
+	for w in _water(root.position, reach):
+		src.add_obstruction_outline(w)
+	_baking[map] = int(_baking.get(map, 0)) + 1
+	NavigationServer2D.bake_from_source_geometry_data_async(poly, src, func() -> void:
+		_landed.call_deferred(region, map, poly, root, reach, walk, blocks, cut))
+
+
+## A region's bake is back (on the main thread): it goes on the map, unless the
+## map was freed meanwhile (the town rebuilt again).
+func _landed(region: RID, map: RID, poly: NavigationPolygon, root: Node3D, reach: float, walk: Array, blocks: Array, cut: Array) -> void:
+	if not _live.has(map):
+		_baking.erase(map)
+		return
+	if poly.get_polygon_count() == 0 and not cut.is_empty() and is_instance_valid(root):
+		# Streets crossing each other can't all be cut out of the open ground
+		# in one bake: bake it with only the buildings cut out. The streets
+		# overlap it but stay far cheaper, so people still keep to them.
+		_bake_into(region, map, root, reach, walk, blocks, [])
+	else:
+		NavigationServer2D.region_set_navigation_polygon(region, poly)
+	var left := int(_baking.get(map, 1)) - 1
+	if left > 0:
+		_baking[map] = left
+	else:
+		_baking.erase(map)
+		_baked_at[map] = NavigationServer2D.map_get_iteration_id(map)
 
 
 ## The town's streets, footpaths and square, as outlines in town-local XZ.
@@ -166,9 +188,13 @@ static func _ways(root: Node3D) -> Array:
 
 ## The sea and lakes within reach, as one obstruction per run of water along
 ## each row, so the baked map stops at the shore.
-func _cut_water(src: NavigationMeshSourceGeometryData2D, at: Vector3, reach: float) -> void:
+func _water(at: Vector3, reach: float) -> Array:
+	var key := [at, reach]
+	if _shore.has(key):
+		return _shore[key]
+	var out := []
 	if terrain == null:
-		return
+		return out
 	var n := int(ceil(reach / WATER_STEP))
 	for row in range(-n, n + 1):
 		var z := row * WATER_STEP
@@ -180,8 +206,10 @@ func _cut_water(src: NavigationMeshSourceGeometryData2D, at: Vector3, reach: flo
 				start = x
 			elif not wet and start != INF:
 				var h := WATER_STEP * 0.5
-				src.add_obstruction_outline(PackedVector2Array([Vector2(start - h, z - h), Vector2(x - h, z - h), Vector2(x - h, z + h), Vector2(start - h, z + h)]))
+				out.append(PackedVector2Array([Vector2(start - h, z - h), Vector2(x - h, z - h), Vector2(x - h, z + h), Vector2(start - h, z + h)]))
 				start = INF
+	_shore[key] = out
+	return out
 
 
 ## A path in town-local XZ, as Vector2s; empty if none yet (the map syncs next frame).
@@ -197,9 +225,10 @@ static func live(map: RID) -> bool:
 	return map.is_valid() and _live.has(map)
 
 
-## True once the map has synced and can answer for paths and places.
+## True once the map's bakes have landed and it has synced since: it can
+## answer for paths and places.
 func ready(map: RID) -> bool:
-	return live(map) and NavigationServer2D.map_get_iteration_id(map) != 0
+	return live(map) and not _baking.has(map) and _baked_at.has(map) and NavigationServer2D.map_get_iteration_id(map) > int(_baked_at[map])
 
 
 func closest(map: RID, p: Vector2) -> Vector2:
@@ -435,6 +464,7 @@ static func _out_of(root: Node3D, fp: PackedVector2Array, p: Vector3) -> Vector3
 func forget(id: int) -> void:
 	if _maps.has(id):
 		_live.erase(_maps[id])
+		_baked_at.erase(_maps[id])  # a bake still out finds the map gone and is dropped (_landed)
 		for r in _regions[id]:
 			NavigationServer2D.free_rid(r)
 		NavigationServer2D.free_rid(_maps[id])

@@ -312,7 +312,7 @@ func _walkable(p: Vector3) -> Vector3:
 	var node: Node3D = towns.towns[id]["node"]
 	var c := node.global_position
 	var map: RID = villagers.nav.map_for(id, node)
-	if NavigationServer2D.map_get_iteration_id(map) == 0:
+	if not villagers.nav.ready(map):
 		return p
 	var q := NavigationServer2D.map_get_closest_point(map, Vector2(p.x - c.x, p.z - c.z))
 	return Vector3(c.x + q.x, p.y, c.z + q.y)
