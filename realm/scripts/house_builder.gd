@@ -45,7 +45,13 @@ func _bake(parts: Array) -> ArrayMesh:
 	for key in tools:
 		var st: SurfaceTool = tools[key]["st"]
 		st.commit(mesh)
-		mesh.surface_set_material(mesh.get_surface_count() - 1, tools[key]["mat"])
+		# Whatever comes right up to the lens (a wagon on the road, a bush, a cart at
+		# the street) dissolves, dithered, as the realistic kit's models and the
+		# people do: the camera never sits inside a prop (realistic.gd fade_near).
+		var mat = tools[key]["mat"]
+		if mat is BaseMaterial3D:
+			preload("res://scripts/realistic.gd").fade_near(mat)
+		mesh.surface_set_material(mesh.get_surface_count() - 1, mat)
 	return mesh
 
 
