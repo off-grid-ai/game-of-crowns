@@ -1108,11 +1108,6 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       this.onArcRuling?.(p.arc, p.beat, option);
     } else if (p.deck) {
       this.play(p, option, world, out, gold);
-    } else if (p.kind === "faith") {
-      const houses = world.players.filter((o) => !houseFor(o).crown && !houseFor(o).wild);
-      if (option === "endow") { for (const o of houses) out.favour[o.id] = 4; out.text = "The crown endows the Faith. In every sept, the King's name is blessed."; }
-      if (option === "silence") { out.favour[c.playerId] = c.traits.includes("pious") ? -20 : -5; this.remember(c.id, "The King had a holy man silenced in my lands."); out.text = "The friar is taken in the night. The preaching stops. The poor do not forget his face."; }
-      if (option === "ignore") { for (const o of houses) out.favour[o.id] = -3; out.text = "The King ignores the friar. His sermon spreads from village to village."; }
     } else if (p.kind === "raise") {
       const man = this.people[p.man];
       if (option === "raise") { man.liege = null; man.loyalty = 100; man.goals = [{ kind: "favour", text: "prove the King right to raise me" }]; out.favour[c.playerId] = -15; this.remember(c.id, `The King took ${man.name} from my service and made him a lord.`); out.text = `${man.name} rises a lord, sworn to the crown alone. ${c.name} has lost a sword and gained a rival.`; }

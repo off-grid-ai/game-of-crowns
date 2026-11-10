@@ -143,4 +143,10 @@ export const ANSWERS = {
     if (option === "leave") { regent.goals.unshift({ kind: "crown", text: `take ${c.house} for myself` }); regent.loyalty = Math.max(0, regent.loyalty - 25); out.text = `The King leaves ${c.house} to settle its own succession. ${regent.name} smiles.`; }
     this.save(regent);
   },
+  faith({ p, c, opt, option, out, gold, world }) {
+    const houses = world.players.filter((o) => !houseFor(o).crown && !houseFor(o).wild);
+    if (option === "endow") { for (const o of houses) out.favour[o.id] = 4; out.text = "The crown endows the Faith. In every sept, the King's name is blessed."; }
+    if (option === "silence") { out.favour[c.playerId] = c.traits.includes("pious") ? -20 : -5; this.remember(c.id, "The King had a holy man silenced in my lands."); out.text = "The friar is taken in the night. The preaching stops. The poor do not forget his face."; }
+    if (option === "ignore") { for (const o of houses) out.favour[o.id] = -3; out.text = "The King ignores the friar. His sermon spreads from village to village."; }
+  },
 };
