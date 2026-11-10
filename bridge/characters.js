@@ -487,7 +487,7 @@ Traits: ${c.traits.join(", ")}. Goal: ${c.goals[0]?.text}. Loyalty to liege: ${c
 Memories: ${c.memories.slice(-6).join(" | ") || "none yet"}.
 Situation: ${situation}${moodLine}
 Choices: ${choices.join(" / ")}
-Return {"choice": one of the choices exactly, "line": what they say or think, one or two sentences in their voice}.`;
+Return {"choice": one of the choices exactly, "line": what they say, one short sentence the way a person would say it out loud: plain everyday words, no flourishes, no "Let the King hear" or "sworn blood"}.`;
     return decide(system, prompt);
   }
 
