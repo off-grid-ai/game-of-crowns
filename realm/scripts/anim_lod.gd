@@ -74,16 +74,19 @@ func _process(delta: float) -> void:
 	_frame += 1
 	var vp := get_viewport()
 	var cam := vp.get_camera_3d()
+	# Minds first, then bodies: whatever a mind sets this frame (a facing, a
+	# step) is turned and posed by the body's motion in the same frame, never
+	# shown raw for a frame (a turn snap).
 	if not PerfTools.probing:
-		_animate(delta, vp, cam)
 		_think(delta, vp, cam)
+		_animate(delta, vp, cam)
 		return
 	var t0 := Time.get_ticks_usec()
-	_animate(delta, vp, cam)
-	var t1 := Time.get_ticks_usec()
 	_think(delta, vp, cam)
-	PerfTools.add("anim_lod", t1 - t0)  # its shares of the frame (GOC_PERF_PROBE)
-	PerfTools.add("minds", Time.get_ticks_usec() - t1)
+	var t1 := Time.get_ticks_usec()
+	_animate(delta, vp, cam)
+	PerfTools.add("minds", t1 - t0)  # its shares of the frame (GOC_PERF_PROBE)
+	PerfTools.add("anim_lod", Time.get_ticks_usec() - t1)
 
 
 ## How often a person at this distance is seen to: 1 every frame, n one frame in

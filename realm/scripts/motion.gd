@@ -40,6 +40,8 @@ const WALK_PACE := 0.17  # world units a second the Walk clip covers (people.gd 
 const RUN_PACE := 0.45  # and Running (people.gd RUN_PACE)
 const MOVING := WALK_PACE * 0.5  # steadier than this is going somewhere
 const SETTLE := 0.3  # seconds moving, or still, before a standing move gives way or comes back
+## The body above the hips, for a gesture over the legs (with ARMS).
+const UPPER := ["Spine", "Chest", "UpperChest", "Neck", "Head"]
 const STATES := ["loop_a", "loop_b", "once_a", "once_b", "hold_a", "hold_b", "rest"]
 ## A load carried on the move: the arms from these clips over the legs' walk
 ## (Godot's Blend2 with a bone filter), so a sack or a crate shows while they walk.
@@ -82,8 +84,11 @@ var _wish := ""  # a repeating move asked while on the move, for when they stop
 var _carry: AnimationNodeAnimation  # the arms' load over the legs, when carrying
 var _held_for := ""  # the move whose tool is in hand now (weapons.gd)
 const Weapons := preload("res://scripts/weapons.gd")
-var _yaw := INF  # v2: the way the body faces now
-var _yaw_wish := 0.0  # v2: the way its mover wants it to face
+var _at := "parameters/"  # where the state machine's parameters live (under "sm/" in v2)
+var _gesture: AnimationNodeAnimation  # v2: the upper body's one-shot move
+var _yaw := INF  # v2: the way the body faces now, in the world
+var _yaw_set := 0.0  # v2: the body's own rotation as _face last left it
+var _yaw_wish := 0.0  # v2: the way its mover wants it to face, in its holder's frame
 
 
 ## A person's moves, read from their AnimationPlayer's library; `ready` is
@@ -141,7 +146,30 @@ func setup(player: AnimationPlayer, stance: String) -> void:
 		var die := AnimationNodeStateMachineTransition.new()
 		die.xfade_time = XFADE_HIT
 		_sm.add_transition(a, "dead", die)
-	tree_root = _sm
+	if v2:
+		# v2: a gesture (a nod, a wave) over whatever the body is doing: Godot's
+		# OneShot, filtered to the spine, neck, head and arms, on top of the
+		# state machine, so the legs keep their own clip under it.
+		var top := AnimationNodeBlendTree.new()
+		top.add_node("sm", _sm)
+		_gesture = AnimationNodeAnimation.new()
+		top.add_node("gesture", _gesture)
+		top.add_node("gscale", AnimationNodeTimeScale.new())
+		top.connect_node("gscale", 0, "gesture")
+		var shot := AnimationNodeOneShot.new()
+		shot.fadein_time = 0.15
+		shot.fadeout_time = 0.2
+		shot.filter_enabled = true
+		for b in UPPER + ARMS:
+			shot.set_filter_path(NodePath("%GeneralSkeleton:" + b), true)
+		top.add_node("shot", shot)
+		top.connect_node("shot", 0, "sm")
+		top.connect_node("shot", 1, "gscale")
+		top.connect_node("output", 0, "shot")
+		tree_root = top
+		_at = "parameters/sm/"
+	else:
+		tree_root = _sm
 	# The moves themselves: the same shared libraries the player holds.
 	for lib in player.get_animation_library_list():
 		add_animation_library(lib, player.get_animation_library(lib))
@@ -152,7 +180,7 @@ func setup(player: AnimationPlayer, stance: String) -> void:
 	_assign(_legs["run"], "Running", Animation.LOOP_LINEAR, phase)
 	_clip = stance
 	active = true
-	_go = get("parameters/playback")
+	_go = get(_at + "playback")
 	_go.start("rest")
 
 
@@ -169,12 +197,12 @@ func play(clip: String, rate := 1.0, hold := false, phase := -1.0, repeat := fal
 	if clip in CARRIES and _pace > MOVING and not _mounted():
 		if String(_carry.animation) != clip:
 			_assign(_carry, clip, Animation.LOOP_LINEAR, randf())
-		set("parameters/rest/mix/blend_amount", 1.0)
+		set(_at + "rest/mix/blend_amount", 1.0)
 		_wish = ""
 		if _now() != "rest":
 			_go.travel("rest")
 		return length
-	set("parameters/rest/mix/blend_amount", 0.0)  # anything else: empty arms swing again
+	set(_at + "rest/mix/blend_amount", 0.0)  # anything else: empty arms swing again
 	if clip in WALKS or clip in RUNS:
 		var leg: AnimationNodeAnimation = _legs["run" if clip in RUNS else "walk"]
 		if String(leg.animation) != clip:
@@ -231,12 +259,15 @@ func track(delta: float) -> void:
 		_pace = lerpf(_pace, flat, minf(1.0, delta * (20.0 if v2 else 8.0)))
 	_last = at
 	if v2:
-		_face(body, delta)
+		if _mounted():
+			_yaw = INF  # a rider faces as the horse does; picked up afresh on foot
+		else:
+			_face(body, delta)
 	# v2: once moving, below walking pace the walk plays whole at a slower cadence
 	# (never half stance, half walk at full cadence: short quick sliding steps).
 	var walk := _leg_pace("walk")
 	var slow := v2 and _pace > walk * 0.12 and _pace < walk
-	set("parameters/rest/feet/blend_position", walk if slow else _pace)
+	set(_at + "rest/feet/blend_position", walk if slow else _pace)
 	var now := _now()
 	var going := _pace > MOVING or now_pace > MOVING
 	if going and now.begins_with("loop"):
@@ -250,7 +281,7 @@ func track(delta: float) -> void:
 				# The load stays in the arms over the walking legs.
 				if String(_carry.animation) != _wish:
 					_assign(_carry, _wish, Animation.LOOP_LINEAR, randf())
-				set("parameters/rest/mix/blend_amount", 1.0)
+				set(_at + "rest/mix/blend_amount", 1.0)
 	elif not going and now == "rest" and _wish != "":
 		_for += delta
 		if _for > SETTLE:
@@ -282,23 +313,29 @@ func sync_held() -> void:
 
 ## The move whose hands count: a load carried over walking legs, or the move now playing.
 func held_clip() -> String:
-	if _now() == "rest" and float(get("parameters/rest/mix/blend_amount")) > 0.5:
+	if _now() == "rest" and float(get(_at + "rest/mix/blend_amount")) > 0.5:
 		return String(_carry.animation)
 	return current()
 
 
 ## v2: the body turns toward where its mover set it facing, at a person's rate.
 ## Movers keep setting rotation.y as they always have; that's the wish.
+## Facing is kept in the world, so whatever turns the body (its mover, or what
+## carries it: a traveller's path round a bend) it turns at that rate.
 func _face(body: Node3D, delta: float) -> void:
+	var holder := body.get_parent() as Node3D
+	var carried := holder.global_rotation.y if holder else 0.0
 	var y := body.rotation.y
 	if _yaw == INF:
-		_yaw = y
+		_yaw = carried + y
 		_yaw_wish = y
+		_yaw_set = y
 		return
-	if not is_equal_approx(y, _yaw):
-		_yaw_wish = y  # the mover asked for a new facing since last frame
-	_yaw = rotate_toward(_yaw, _yaw_wish, TURN_RATE * delta)
-	body.rotation.y = _yaw
+	if not is_equal_approx(y, _yaw_set):
+		_yaw_wish = y  # the mover asked for a new facing since last frame (in its holder's frame)
+	_yaw = rotate_toward(_yaw, carried + _yaw_wish, TURN_RATE * delta)
+	_yaw_set = _yaw - carried
+	body.rotation.y = _yaw_set
 
 
 func _mounted() -> bool:
@@ -379,3 +416,24 @@ func _leg_pace(leg: String) -> float:
 	if not v2:
 		return WALK_PACE if leg == "walk" else RUN_PACE
 	return float(STRIDE.get(String(_legs[leg].animation), STRIDE["Walk"] if leg == "walk" else STRIDE["Running"]))
+
+
+## v2: a gesture (a nod, a wave, a bow of the head) over whatever the legs are
+## doing, the upper body only, once. Returns its length at `rate`, or 0.0 when
+## it doesn't play: v1, an unknown clip, the dead or a rider, or while a blow,
+## a held pose or a fall owns the whole body. A newer gesture replaces one
+## still playing.
+func gesture(clip: String, rate := 1.0) -> float:
+	if not v2 or _gesture == null or not has_animation(clip) or dead() or _mounted() or body_busy():
+		return 0.0
+	_assign(_gesture, clip, Animation.LOOP_NONE, 0.0)
+	set("parameters/gscale/scale", rate)
+	set("parameters/shot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	return get_animation(clip).length / maxf(rate, 0.01)
+
+
+## True while a one-off, a held pose or death plays: the whole body is taken
+## (presence.gd turns the head's look-at off meanwhile).
+func body_busy() -> bool:
+	var now := _now()
+	return now.begins_with("once") or now.begins_with("hold") or now == "dead"

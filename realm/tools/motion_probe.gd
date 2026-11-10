@@ -27,6 +27,9 @@ const NEAR := 0.06
 const TOUCHING := ["Clapping", "Praying", "Crying", "Wiping_Sweat", "Thinking", "Drinking", "Sitting_Drinking",
 	"Relieved_Sigh", "Arm_Stretching", "Defeated", "Sitting_Ground", "Sitting_Idle", "Sitting_Cross_Legged",
 	"Sleeping_Idle", "Kneeling", "Injured", "Injured_Walk", "Rubbing_Arm", "Shove_Reaction", "Crossed_Arms"]
+## Clips whose feet step and lunge while the body stands (a cut, a slash): the
+## stepping is the clip's own, so their feet are left out of the skate check.
+const IN_PLACE := ["Sword_Attack", "SS_Slash", "SS_Attack"]
 ## Clips that need something in hand.
 const HELD := ["Drinking", "Sitting_Drinking", "Hammer_Swing", "Digging", "Dig_And_Plant", "Watering", "Lute_Playing",
 	"Wheelbarrow", "Throw_Object", "Carrying", "Push_Heavy", "Pick_Fruit"]
@@ -44,6 +47,19 @@ var _empty := {}  # clip -> frames played empty-handed
 var _inside := {}  # clip -> frames a hand was inside the body for 3+ frames
 var _skates := {}  # clip -> planted frames that slid while it played
 var _planted := {}  # clip -> planted frames while it played
+# Presence (docs/review/animation-pipeline.md): whether people notice each other.
+const M := 0.122  # world units in a metre (a 1.8 m person is about 0.22 units)
+const GLANCE_R := 1.5 * M  # a meeting: two people this close
+const GREET_R := 1.2 * M  # a pass close enough to greet, or to yield to one's betters
+const KIN_R := 3.0 * M  # a child this near a parent is with them
+const GLANCE_TURN := deg_to_rad(15.0)  # a head turned this far toward the other
+const BETTERS := ["gentry", "clergy", "soldier"]  # whom a commoner yields to (person meta "station")
+const GREETS := ["Nodding", "Waving", "Bow", "Salute"]  # clips that greet, played whole
+var _meets := {}  # "a:b" -> the meeting so far
+var _glance := [0, 0]  # [noticed, meetings in each other's front arc]
+var _greet := [0, 0]  # [greeted, close passes]
+var _station := [0, 0]  # [yielded, commoner meets betters]
+var _kin := [0, 0]  # [child-frames near their parent, child-frames]
 
 
 func _ready() -> void:
@@ -134,6 +150,7 @@ func _process(delta: float) -> void:
 			continue
 		var s := maxf(0.0001, p.global_transform.basis.get_scale().x)
 		var riding := clip.begins_with("ride/") or p.has_meta("mounted")  # a rider's feet go with the horse
+		riding = riding or IN_PLACE.any(func(c: String): return clip.begins_with(c))  # and a lunge steps in its own clip
 		# Foot skate: planted feet, in the clip's own metres.
 		for k in 2:
 			var b: int = d["feet"][k]
@@ -180,6 +197,101 @@ func _process(delta: float) -> void:
 	for key in _pairs.keys():
 		if not seen.has(key):
 			_pairs.erase(key)
+	_presence(near)
+
+
+## Meetings within GLANCE_R, each followed until the two part, then counted:
+## a glance (one turns their head 15 deg toward the other within 1 s), a
+## greeting on a close pass (a nod, a wave, a bow), a commoner yielding to their
+## betters (a greeting, or stopping for them); and children kept near a parent.
+func _presence(near: Array[Node3D]) -> void:
+	var now := {}
+	for i in near.size():
+		for j in range(i + 1, near.size()):
+			var a := near[i]
+			var b := near[j]
+			var dist := Vector2(b.global_position.x - a.global_position.x, b.global_position.z - a.global_position.z).length()
+			if dist > GLANCE_R:
+				continue
+			var key := "%d:%d" % [a.get_instance_id(), b.get_instance_id()]
+			now[key] = true
+			if not _meets.has(key):
+				var lower: Variant = _commoner_of(a, b)
+				_meets[key] = {"t0": _t, "a": a, "b": b, "front": _in_front(a, b) and _in_front(b, a), "head0": [_head_toward(a, b), _head_toward(b, a)],
+					"glanced": false, "close": false, "greeted": false, "lower": lower, "yielded": false}
+			var m: Dictionary = _meets[key]
+			if _t - float(m["t0"]) <= 1.0 and (_head_toward(a, b) - float(m["head0"][0]) >= GLANCE_TURN or _head_toward(b, a) - float(m["head0"][1]) >= GLANCE_TURN):
+				m["glanced"] = true
+			if dist <= GREET_R:
+				m["close"] = true
+				if _greeting(a) or _greeting(b):
+					m["greeted"] = true
+				var lower = m["lower"]
+				if lower != null and is_instance_valid(lower) and (_greeting(lower) or float((lower as Node).get_node("Motion").get("_pace")) < 0.085):
+					m["yielded"] = true
+	for key in _meets.keys():
+		if now.has(key):
+			continue
+		var m: Dictionary = _meets[key]
+		_meets.erase(key)
+		if m["front"]:
+			_glance[1] += 1
+			_glance[0] += 1 if m["glanced"] else 0
+		if m["close"]:
+			_greet[1] += 1
+			_greet[0] += 1 if m["greeted"] else 0
+			if m["lower"] != null:
+				_station[1] += 1
+				_station[0] += 1 if m["yielded"] else 0
+	for p in near:
+		var parent = p.get_meta("parent", null)
+		if p.get_meta("age", "") == "child" and parent is Node3D and is_instance_valid(parent):
+			_kin[1] += 1
+			var q: Vector3 = (parent as Node3D).global_position
+			if Vector2(q.x - p.global_position.x, q.z - p.global_position.z).length() <= KIN_R:
+				_kin[0] += 1
+
+
+## Whether `b` stands in `a`'s front half (a person faces their +Z).
+func _in_front(a: Node3D, b: Node3D) -> bool:
+	var f := a.global_transform.basis.z
+	return Vector2(f.x, f.z).dot(Vector2(b.global_position.x - a.global_position.x, b.global_position.z - a.global_position.z)) > 0.0
+
+
+## How far `a`'s head is turned toward `b`, against their body (radians): the
+## head's facing off the body's, signed toward the side `b` is on.
+func _head_toward(a: Node3D, b: Node3D) -> float:
+	var d: Dictionary = _p.get(a, {})
+	var sk: Skeleton3D = d.get("sk")
+	var head := sk.find_bone("Head") if sk else -1
+	if head < 0:
+		return 0.0
+	var body := Vector2(a.global_transform.basis.z.x, a.global_transform.basis.z.z)
+	var hz := (sk.global_transform.basis * sk.get_bone_global_pose(head).basis).z
+	var to := Vector2(b.global_position.x - a.global_position.x, b.global_position.z - a.global_position.z)
+	var turned := body.angle_to(Vector2(hz.x, hz.z))
+	return turned * signf(body.angle_to(to))
+
+
+## A greeting now: a gesture over the body (motion.gd v2's OneShot), or a
+## greeting clip played whole.
+func _greeting(p: Node3D) -> bool:
+	var mo := p.get_node_or_null("Motion")
+	if mo and mo.get("parameters/shot/active") == true:
+		return true
+	return GREETS.has(String(_clip.get(p, "")))
+
+
+## In a meeting of a commoner and their better (person meta "station", set by
+## presence.gd), the commoner; null for any other pair.
+func _commoner_of(a: Node3D, b: Node3D) -> Variant:
+	var sa := String(a.get_meta("station", ""))
+	var sb := String(b.get_meta("station", ""))
+	if sa == "commoner" and BETTERS.has(sb):
+		return a
+	if sb == "commoner" and BETTERS.has(sa):
+		return b
+	return null
 
 
 func _report() -> void:
@@ -210,6 +322,16 @@ func _report() -> void:
 	var long := _two_in_one.values().filter(func(v): return v >= 1.0)
 	print("MOTION two in one: %s  %d pairs together 1 s or more (longest %.1f s)" % [verdict.call(long.is_empty()), long.size(), _two_in_one.values().max() if not _two_in_one.is_empty() else 0.0])
 	print("MOTION camera jump: not measured here (Builder 2's half)")
+	var share_of := func(name: String, n: Array, need: float, none: String) -> void:
+		if int(n[1]) == 0:
+			print("MOTION presence %s: not measured (%s)" % [name, none])
+		else:
+			var r := float(n[0]) / float(n[1])
+			print("MOTION presence %s: %s  %d%% of %d (need %d%%)" % [name, verdict.call(r >= need), int(round(r * 100)), n[1], int(need * 100)])
+	share_of.call("glance", _glance, 0.6, "no meetings in each other's front arc")
+	share_of.call("greet", _greet, 0.3, "no close passes")
+	share_of.call("station", _station, 0.7, "no commoner met their betters: people carry no station yet")
+	share_of.call("children", _kin, 0.9, "no child near the camera has a parent set")
 
 
 ## The clips with the most hits, for the log: "Drinking 120, Talk 40".
