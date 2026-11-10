@@ -6,23 +6,10 @@ extends Node
 
 const IDLE_SECONDS := 90.0  # truly left alone: never while the King reads or moves the mouse
 const SHOT_SECONDS := 18.0
-# Scene kind -> [interest, camera distance, caption]. Anything that moves along a
-# road is filmed from well above the trees (9), never from inside a forest canopy.
-const SCENES := {
-	"siege": [10, 7.0, "The siege of %s"],
-	"battle": [9, 8.0, "Battle near %s"],
-	"sack": [9, 8.0, "%s is sacked"],
-	"razed": [9, 9.0, "%s burns"],
-	"famine": [5, 6.0, "Famine in %s"],
-	"plague": [5, 6.0, "Plague in %s"],
-	"grain": [4, 9.0, "The King's grain on the road to %s"],
-	"tribute": [3, 9.0, "The King's gold on the road to %s"],
-	"handover": [3, 8.0, "%s changes hands"],
-	"muster": [4, 6.0, "The King's levy musters at %s"],
-	"feast": [3, 6.0, "A feast at %s"],
-	"rider": [3, 9.0, "The King's rider, bound for %s"],
-	"ward": [2, 9.0, "A ward on the road to %s"],
-}
+# Each scene kind's interest, camera distance and caption: scene_kinds.gd. Anything
+# that moves along a road is filmed from well above the trees (9), never from
+# inside a forest canopy.
+const SceneKinds := preload("res://scripts/scene_kinds.gd")
 
 # What the King's rulings and decrees set moving: shown first when the court closes.
 const ROYAL := ["grain", "tribute", "rider", "feast", "ward", "muster", "handover"]
@@ -100,13 +87,13 @@ func _next_shot() -> void:
 	var turn := int(world.get("turn", 0))
 	for s in world.get("scenes", []):
 		var kind := String(s.get("kind", ""))
-		if not SCENES.has(kind):
+		if not SceneKinds.KINDS.has(kind) or int(SceneKinds.of(kind)["interest"]) <= 0:
 			continue
 		var age := turn - int(s.get("turn", 0))
 		if age > 2:
 			continue
 		var key := "%s:%d:%d:%d" % [kind, int(s.get("x", 0)), int(s.get("y", 0)), int(s.get("turn", 0))]
-		var score: float = SCENES[kind][0] - age * 3.0 - (8.0 if key == _last_key else 0.0)
+		var score: float = float(SceneKinds.of(kind)["interest"]) - age * 3.0 - (8.0 if key == _last_key else 0.0)
 		# Just after the court: first, what the King's own rulings set going.
 		if _after_court and kind in ROYAL and age <= 1:
 			score += 10.0
@@ -202,13 +189,14 @@ func caption(s: Dictionary) -> String:
 	# A battle names who bleeds: "House Sunspire loses men near Crowbarrow".
 	if str(s.get("kind", "")) == "battle" and str(s.get("house", "")) != "":
 		return "%s loses men near %s" % [str(s["house"]), _town_near(s, at)]
-	return str(SCENES.get(str(s.get("kind", "")), [0, 0.0, "%s"])[2]) % _town_near(s, at)
+	return String(SceneKinds.of(str(s.get("kind", "")))["caption"]) % _town_near(s, at)
 
 
 func _frame(s: Dictionary, follow: Node3D) -> void:
 	var kind := String(s.get("kind", ""))
 	var at: Vector3 = terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0)))
-	var how: Array = SCENES.get(kind, [0, 6.0, "%s"])
+	var row := SceneKinds.of(kind)
+	var how: Array = [row["interest"], row["dist"], row["caption"]]
 	_follow = follow
 	rig.focus(follow.global_position if is_instance_valid(follow) else at, how[1])
 	rig._goal_tilt = 0.0  # a battle's framing lowers the view; each new shot starts level

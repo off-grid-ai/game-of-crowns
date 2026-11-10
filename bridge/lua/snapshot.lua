@@ -31,9 +31,9 @@ for p in players_iterate() do
       if c:has_building(pair[2]) then bl[#bl + 1] = q(pair[1]) end
     end
     cities[#cities + 1] = string.format(
-      '{"id":%s,"name":%s,"owner":%s,"x":%s,"y":%s,"size":%s,"capital":%s,"buildings":[%s]}',
+      '{"id":%s,"name":%s,"owner":%s,"x":%s,"y":%s,"size":%s,"capital":%s,"rapture":%s,"buildings":[%s]}',
       n(c.id), q(c.name), n(p.id), n(c.tile.x), n(c.tile.y), n(c.size),
-      tostring(c:is_capital()), table.concat(bl, ","))
+      tostring(c:is_capital()), tostring(c:is_celebrating()), table.concat(bl, ","))
   end
   local nunits = 0
   for u in p:units_iterate() do

@@ -11,6 +11,7 @@ extends RefCounted
 ## - each person on their own clock (a random first wait), so no crowd moves as one.
 
 const People := preload("res://scripts/people.gd")
+const SceneKinds := preload("res://scripts/scene_kinds.gd")
 const Motion := preload("res://scripts/motion.gd")
 
 # Breakers between runs (section 2's shared pools).
@@ -30,14 +31,15 @@ class PlayRun extends BTAction:
 	func _enter() -> void:
 		var last: String = blackboard.get_var(&"last_clip", "", false)
 		var choices := pool.filter(func(c): return c != last and _has(c))
-		if choices.is_empty():
+		var again := choices.is_empty()  # the only move there is was just played: once more, briefly
+		if again:
 			choices = pool.filter(func(c): return _has(c))
 		if choices.is_empty():
 			_left = 0.0
 			return
 		var clip: String = choices[randi() % choices.size()]
 		blackboard.set_var(&"last_clip", clip)
-		var n := randi_range(lo, hi)
+		var n := 1 if again else randi_range(lo, hi)
 		if Motion.is_once(clip):
 			People.repeat(agent, clip)
 		else:
@@ -66,12 +68,14 @@ class Breaker extends BTAction:
 
 	func _enter() -> void:
 		var last: String = blackboard.get_var(&"last_breaker", "", false)
+		var last_clip: String = blackboard.get_var(&"last_clip", "", false)  # never the move just played, either side
 		var ap: AnimationPlayer = agent.get_node_or_null("Anim")
-		var choices := pool.filter(func(c): return c != last and ap != null and ap.has_animation(c))
+		var choices := pool.filter(func(c): return c != last and c != last_clip and ap != null and ap.has_animation(c))
 		if choices.is_empty():
 			choices = ["Idle"]
 		var clip: String = choices[randi() % choices.size()]
 		blackboard.set_var(&"last_breaker", clip)
+		blackboard.set_var(&"last_clip", clip)
 		People.play(agent, clip)
 		_left = randf_range(2.0, 5.0)
 
@@ -321,7 +325,7 @@ class React extends BTAction:
 		if blackboard.has_var(&"va"):
 			var a: Dictionary = blackboard.get_var(&"va")
 			a["route"] = PackedVector2Array()  # they stop where they are
-		if kind in ["sack", "razed", "battle", "raid", "struck"] and float(seen.get("near", 1.0)) < 0.5:
+		if SceneKinds.tone(kind) == SceneKinds.HOSTILE and float(seen.get("near", 1.0)) < 0.5:
 			blackboard.set_var(&"danger", true)
 			return
 		var pool := reaction(kind, String(blackboard.get_var(&"king_name", "", false)))
@@ -347,11 +351,12 @@ class React extends BTAction:
 	## The moves a piece of news calls for. The King's name decides how his
 	## banner is met: cheered, bowed to in fear, or barely looked at.
 	static func reaction(kind: String, king: String) -> Array:
-		if kind in ["sack", "razed", "battle", "raid", "struck"]:
+		var tone := SceneKinds.tone(kind)
+		if tone == SceneKinds.HOSTILE:
 			return ["Terrified", "Looking_Around", "Pointing_Forward"]
-		if kind in ["vigil", "death", "famine"]:
+		if tone in [SceneKinds.GRIEF, SceneKinds.TROUBLE]:
 			return ["Crying", "Kneeling", "Praying", "Defeated"]
-		if kind in ["feast"]:
+		if tone == SceneKinds.JOY:
 			return ["Cheering", "Clapping", "Laughing"]
 		if kind == "king":
 			var k := king.to_lower()

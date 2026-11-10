@@ -111,8 +111,12 @@ function picture(e) {
   }
 }
 
+// Each scene has its own id (the view's seen-set keys on it) and says whether
+// it's the crown's own doing (its owner is the crown).
+let sceneSeq = 0;
 function scene(kind, fields) {
-  scenes.push({ kind, turn: world?.turn ?? 0, at: Date.now(), ...fields });
+  const crownId = world?.players?.find((p) => houseFor(p).crown)?.id;
+  scenes.push({ id: `${meta?.id ?? ""}:${++sceneSeq}:${Date.now()}`, kind, turn: world?.turn ?? 0, at: Date.now(), ...fields, royal: fields?.owner != null && fields.owner === crownId });
   if (scenes.length > 120) scenes = scenes.slice(-120);
 }
 
@@ -232,12 +236,16 @@ function newestSave(kind = "") {
     savesSeen.dir = P.saves;
     savesSeen.mtime = mtime;
   }
-  const hit = savesSeen.list.find((x) => x.f.includes(kind));
+  // An autosave, or the King's truce save written in its place (the newer of
+  // the two is the realm as Freeciv now holds it, wars and all).
+  const hit = savesSeen.list.find((x) => x.f.includes(kind) || (kind === "auto" && x.f.includes("ceasefire")));
   return hit ? path.join(P.saves, hit.f) : null;
 }
 
 // Details only the save file holds (food stores, construction, orders, wars),
-// re-read whenever Freeciv writes a newer autosave.
+// re-read whenever Freeciv writes a newer autosave. Freeciv 3.2's Lua gives
+// none of these live (checked: no food stock, unit hp or activity, or
+// diplomacy), so the save is their one source; rapture comes live (snapshot.lua).
 function detail() {
   try {
     const newest = newestSave("auto");
@@ -468,7 +476,7 @@ function townStates() {
       plague: x?.plagueTurn != null && x.plagueTurn >= 0 && turn - x.plagueTurn <= PLAGUE_SEASONS,
       disorder: Boolean(x?.disorder),
       // Freeciv's rapture, or a feast the King gave there this season or last.
-      celebrating: Boolean(x?.celebrating) || scenes.some((s) => s.kind === "feast" && s.city === c.id && s.turn >= turn - 1),
+      celebrating: Boolean(c.rapture ?? x?.celebrating) || scenes.some((s) => s.kind === "feast" && s.city === c.id && s.turn >= turn - 1),
       // The royal host before its walls, or an enemy host at them.
       besieged: (meta?.campaigns ?? []).some((k) => k.city === c.id) || besiegers(c).length >= 3,
     });
@@ -2390,6 +2398,8 @@ http.createServer(async (req, res) => {
       p.favourTrend = p.favour == null || !yearAgo || yearAgo[p.id] == null ? 0 : Math.round(p.favour - yearAgo[p.id]);
       // How far the house has turned against the King (0-1): full, its ultimatum comes.
       p.turning = Math.min(1, (meta.turning?.[p.id]?.seasons ?? 0) / TURNING);
+      // Where the house stands with the King, in one word (the goal's bar and the banners' 35).
+      p.band = p.favour == null ? null : p.favour >= GOAL_FAVOUR ? "firm" : p.favour >= 35 ? "wavering" : "cold";
     }
     // Each house's measures as the ledger keeps them (one reckoning, recordTurn).
     // The Crown's own row reads like the houses' (the ledger keeps only theirs).
@@ -2414,7 +2424,7 @@ http.createServer(async (req, res) => {
       // The King's side is his whole host: the garrisons defend Kingsmere too.
       ended: u?.ended && !u.ended.settled && (world?.turn ?? 0) - u.ended.turn <= 8 ? u.ended.house : null,
       theirs: u?.house != null ? fighting(u.house) : 0, ours: crownId != null ? (world?.units ?? []).filter((x) => x.owner === crownId && !CIVILIAN.has(x.type)).length : 0 };
-    return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), story: storyNow(), date: calendar(world.turn), threat, counsel: (counselNow = counsel(players, cities, threat)), sitting: meta.court?.sitting ?? null, fallen: Object.values(HOUSES).filter((h) => !h.crown && !h.wild && !world.players.some((p) => houseFor(p).key === h.key && (world.cities.some((c) => c.owner === p.id) || (world.units ?? []).some((u) => u.owner === p.id)))).map((h) => ({ ...h, name: names.shown(h.name) })), effects: effects.slice(-10), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000), marks: marksNow(), goal: goalNow() });
+    return json(res, 200, { ...world, players, cities, units, turnSeconds, crownId: crownOf()?.id ?? null, seatId: crownSeat()?.id ?? null, reign: reignInfo(), story: storyNow(), date: calendar(world.turn), threat, counsel: (counselNow = counsel(players, cities, threat)), sitting: meta.court?.sitting ?? null, fallen: Object.values(HOUSES).filter((h) => !h.crown && !h.wild && !world.players.some((p) => houseFor(p).key === h.key && (world.cities.some((c) => c.owner === p.id) || (world.units ?? []).some((u) => u.owner === p.id)))).map((h) => ({ ...h, name: names.shown(h.name) })), effects: effects.slice(-10), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000), marks: marksNow(), goal: goalNow() });
   }
   if (url.pathname === "/map") {
     const map = chron.readJson(path.join(P.state, "map.json"));

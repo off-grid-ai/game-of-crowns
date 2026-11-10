@@ -76,12 +76,11 @@ var _primed := false
 var _seen_ms := {}  # a scene's key -> when it first showed: a new one bursts loud for 3 s
 var _bursts: Array = []  # [tile position, colour, first seen ms]
 const Heraldry = preload("res://scripts/heraldry.gd")
-const WAR := Color(0.95, 0.25, 0.2)
-const TROUBLE := Color(1.0, 0.7, 0.2)
-const CROWN := Color(1.0, 0.85, 0.45)
+const SceneKinds := preload("res://scripts/scene_kinds.gd")  # each kind's tone and ping colour
+const WAR: Color = SceneKinds.PING[SceneKinds.HOSTILE]
+const TROUBLE: Color = SceneKinds.PING[SceneKinds.TROUBLE]
+const CROWN: Color = SceneKinds.PING[SceneKinds.CROWN]
 const LORDS := Color(0.85, 0.82, 0.95)  # what the lords do: treachery, raids, letters, a death
-const PING := {"battle": WAR, "siege": WAR, "sack": WAR, "razed": WAR, "famine": TROUBLE, "plague": TROUBLE,
-	"muster": CROWN, "rider": CROWN, "grain": CROWN, "tribute": CROWN, "ward": CROWN, "feast": CROWN, "handover": WAR}
 
 
 func _ready() -> void:
@@ -159,8 +158,8 @@ func _activity(world: Dictionary) -> void:
 	_pings.clear()
 	for sc in world.get("scenes", []):
 		var kind := String(sc.get("kind", ""))
-		if PING.has(kind):
-			var col: Color = LORDS if sc.get("lord", false) and kind != "sack" and kind != "handover" else PING[kind]
+		if SceneKinds.ping(kind).a > 0.0:
+			var col: Color = LORDS if sc.get("lord", false) and kind != "sack" and kind != "handover" else SceneKinds.ping(kind)
 			var at := Vector2(float(sc.get("x", 0)) + 0.5, float(sc.get("y", 0)) + 0.5)
 			_pings.append([at, col, kind])
 			# New news bursts in its house's colour, loud for three pulses (an RTS alert).
