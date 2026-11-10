@@ -154,54 +154,58 @@ func _traveller(from: Vector3, to: Vector3) -> void:
 	var way := _route(from, to)
 	if way.size() <= 2:
 		return
-	var root := Node3D.new()
-	root.name = "Traveller"
-	add_child(root)
+	# The road is a Path3D and the traveller rides it on Godot's PathFollow3D,
+	# which keeps them on the curve and facing along it: nothing placed by hand.
+	var path := Path3D.new()
+	path.name = "Traveller"
+	path.curve = terrain.smooth_road(way)
+	add_child(path)
 	_travellers += 1
-	# A carter with his horse and cart, or someone on foot: each their own clothes and age.
+	var follow := PathFollow3D.new()
+	follow.rotation_mode = PathFollow3D.ROTATION_Y
+	follow.loop = false
+	path.add_child(follow)
 	var carter := r.randf() < 0.5
-	var cart: MeshInstance3D = null
-	var horse: Node3D = null
-	if carter:
-		cart = MeshInstance3D.new()
-		cart.mesh = _wagon
-		cart.scale = Vector3.ONE * 0.1
-		root.add_child(cart)
-		horse = Horse.new(r.randi() % Horse.COATS.size())
-		root.add_child(horse)
 	var cloth: Color = [Color(0.55, 0.47, 0.36), Color(0.42, 0.45, 0.38), Color(0.5, 0.36, 0.3), Color(0.38, 0.4, 0.47), Color(0.6, 0.55, 0.45)][r.randi() % 5]
 	var who: Node3D = _people.make(r, ["townsfolk", "peasant", "peasant", "townsfolk"][r.randi() % 4], cloth, ["adult", "adult", "elder"][r.randi() % 3])
-	root.add_child(who)
+	if carter:
+		follow.add_child(_cart_rig(r, who))
+	else:
+		who.rotation.y = PI  # people face +z; the follower carries -z forward
+		follow.add_child(who)
 	_people.play(who, "Walk", r.randf_range(0.9, 1.1))
-	var road: Curve3D = terrain.smooth_road(way)
-	var length: float = maxf(road.get_baked_length(), 0.01)
+	var length: float = maxf(path.curve.get_baked_length(), 0.01)
 	var seconds := clampf(length / (0.22 if carter else 0.26), 15.0, 90.0)
-	var heading := [INF]
 	var tw := create_tween()
-	tw.tween_method(func(t: float):
-		var d := t * length
-		var g := road.sample_baked(d)
-		var ahead := road.sample_baked(minf(length, d + 0.25))
-		var flat := Vector3(ahead.x - g.x, 0, ahead.z - g.z)
-		var dir := flat.normalized() if flat.length() > 0.001 else Vector3.FORWARD
-		var want := atan2(dir.x, dir.z)
-		heading[0] = want if heading[0] == INF else lerp_angle(heading[0], want, 0.12)
-		dir = Vector3(sin(heading[0]), 0, cos(heading[0]))
-		if cart:
-			# The wagon's shafts are its +z end, at its origin: they point the way it
-			# goes, and the horse stands between them, the box behind (Mac: "the
-			# horse is inside the cart").
-			cart.position = _stand(g)
-			cart.rotation.y = heading[0]
-			horse.position = _stand(road.sample_baked(minf(length, d + 0.12)), HORSE_BODY)
-			horse.rotation.y = heading[0]
-			who.position = _stand(road.sample_baked(minf(length, d + 0.1))) + Vector3(-dir.z, 0, dir.x) * 0.09  # at the horse's head
-		else:
-			who.position = _stand(g)
-		who.rotation.y = heading[0], 0.0, 1.0, seconds)
+	tw.tween_property(follow, "progress", length, seconds).from(0.0)
 	tw.tween_callback(func():
 		_travellers -= 1
-		root.queue_free())
+		path.queue_free())
+
+
+## One horse and cart, built as a single piece so its parts can never come
+## apart: the wagon, a hitch where its shafts end, the horse between the shafts
+## facing the way they point, and the carter at the horse's head. Its forward is
+## -z, the way PathFollow3D carries it.
+func _cart_rig(r: RandomNumberGenerator, carter: Node3D) -> Node3D:
+	var rig := Node3D.new()
+	rig.name = "Cart"
+	var wagon := MeshInstance3D.new()
+	wagon.mesh = _wagon
+	wagon.scale = Vector3.ONE * 0.1
+	wagon.rotation.y = PI  # the wagon's shafts are its +z end: turned to point forward
+	rig.add_child(wagon)
+	var hitch := Marker3D.new()
+	hitch.name = "Hitch"
+	hitch.position = Vector3(0, 0, -0.08)  # between the shafts, just ahead of the box
+	rig.add_child(hitch)
+	var horse: Node3D = Horse.new(r.randi() % Horse.COATS.size())
+	horse.rotation.y = PI  # horses face +z
+	hitch.add_child(horse)
+	carter.position = Vector3(0.09, 0, -0.16)  # walking at the horse's head
+	carter.rotation.y = PI
+	rig.add_child(carter)
+	return rig
 
 
 func _rng(at: Vector3) -> RandomNumberGenerator:

@@ -451,32 +451,32 @@ func _apply_icon() -> void:
 		DisplayServer.set_icon(Image.load_from_file(path))
 
 
-## Cmd+ / Cmd- / Cmd0 scale the whole interface, remembered between sessions.
-const UI_SCALE_FILE := "user://ui_scale.txt"
-var ui_scale := 1.3
-
-
-## The least room the interface is laid out for: a smaller window shrinks the
-## interface to fit rather than letting panels run over each other.
-const UI_MIN_ROOM := Vector2(1280, 720)
+## The interface scales with the window, like a web page sized in vw and vh:
+## laid out for a 1600 × 900 view, it grows and shrinks in step with the window
+## (the smaller of its width and height ratios), never below MIN or above MAX.
+## Cmd+ / Cmd- / Cmd0 adjust that on top, remembered between sessions.
+const UI_SCALE_FILE := "user://ui_size.txt"  # your adjustment, 1.0 = in step with the window
+const UI_BASE := Vector2(1600, 900)
+const UI_MIN := 0.75  # never smaller than this, however small the window
+const UI_MAX := 2.2   # never larger, however big the screen
+var ui_scale := 1.0
 
 
 func _load_ui_scale() -> void:
 	if FileAccess.file_exists(UI_SCALE_FILE):
-		ui_scale = clampf(float(FileAccess.get_file_as_string(UI_SCALE_FILE)), 0.7, 2.5)
+		ui_scale = clampf(float(FileAccess.get_file_as_string(UI_SCALE_FILE)), 0.6, 1.8)
 	_apply_ui_scale()
 	get_tree().root.size_changed.connect(_apply_ui_scale)
 
 
-## Your chosen size, or less when the window is too small to hold it.
 func _apply_ui_scale() -> void:
 	var win := Vector2(DisplayServer.window_get_size())
-	var fit := minf(win.x / UI_MIN_ROOM.x, win.y / UI_MIN_ROOM.y)
-	get_tree().root.content_scale_factor = clampf(minf(ui_scale, fit), 0.5, 2.5)
+	var fit := minf(win.x / UI_BASE.x, win.y / UI_BASE.y)
+	get_tree().root.content_scale_factor = clampf(fit * ui_scale, UI_MIN, UI_MAX)
 
 
 func _set_ui_scale(v: float) -> void:
-	ui_scale = clampf(snappedf(v, 0.05), 0.7, 2.5)
+	ui_scale = clampf(snappedf(v, 0.05), 0.6, 1.8)
 	_apply_ui_scale()
 	var f := FileAccess.open(UI_SCALE_FILE, FileAccess.WRITE)
 	if f:
@@ -495,7 +495,7 @@ func _input(event: InputEvent) -> void:
 				_set_ui_scale(ui_scale - 0.1)
 				get_viewport().set_input_as_handled()
 			KEY_0:
-				_set_ui_scale(1.3)
+				_set_ui_scale(1.0)
 				get_viewport().set_input_as_handled()
 			KEY_F:
 				if event.meta_pressed and event.ctrl_pressed:
