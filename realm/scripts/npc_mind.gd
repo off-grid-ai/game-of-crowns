@@ -13,6 +13,8 @@ extends RefCounted
 const People := preload("res://scripts/people.gd")
 const SceneKinds := preload("res://scripts/scene_kinds.gd")
 const Motion := preload("res://scripts/motion.gd")
+const TownNav := preload("res://scripts/town_nav.gd")  # what stands in a town's way
+const AnimLOD := preload("res://scripts/anim_lod.gd")  # minds think by distance from the camera
 
 # Breakers between runs (section 2's shared pools).
 const REST := ["Weight_Shift", "Breathing_Idle", "Bored", "Relieved_Sigh", "Looking_Around"]
@@ -118,9 +120,13 @@ class Step extends BTAction:
 		_left = maxf(0.3, flat.length() / 0.17)
 		agent.create_tween().tween_property(agent, "position", _to, _left)
 
-	## Nobody else on the ground within a shoulder's width (0.11, about 0.9 m) of `to`.
+	## Nobody else on the ground within a shoulder's width (0.11, about 0.9 m)
+	## of `to`, and no fire, stall, cart or table there (any footprint of the
+	## town's, its life's included: a bonfire's ring is one).
 	func _room_at(to: Vector3) -> bool:
 		var at := (agent.get_parent() as Node3D).to_global(to) if agent.get_parent() is Node3D else to
+		if in_the_way(agent, blackboard, at):
+			return false
 		for p in agent.get_tree().get_nodes_in_group("people"):
 			var n := p as Node3D
 			if n != agent and n.is_visible_in_tree() and Vector2(n.global_position.x - at.x, n.global_position.z - at.z).length() < 0.11:
@@ -164,6 +170,19 @@ static func brk(pool: Array) -> BTTask:
 	var t := Breaker.new()
 	t.pool = pool
 	return t
+
+
+## Whether `at` (world) is inside something standing in a town: a building,
+## or its life's fire, stall, cart or table (town_nav footprints). A scene's
+## person finds the town as the Life they stand in; a villager through villagers.gd.
+static func in_the_way(agent: Node, bb: Blackboard, at: Vector3) -> bool:
+	var life := agent.get_parent()
+	if life and life.name == "Life" and life.get_parent() is Node3D:
+		return not TownNav.inside(life.get_parent(), at).is_empty()
+	var v = bb.get_var(&"vill", null, false)
+	if v != null and "towns" in v and v.towns != null:
+		return not TownNav.clear(v.towns, at)
+	return false
 
 
 static func step(reach := 0.25, back := 0.0) -> BTTask:
@@ -310,6 +329,7 @@ static func give(person: Node3D, post: String, ground: Callable, seed: int, open
 	player.blackboard.set_var(&"at_post", true)
 	player.blackboard.set_var(&"choices", acts.size())
 	person.add_child(player)
+	AnimLOD.add_mind(player)
 	_attach(player, town)
 	return true
 
@@ -1012,6 +1032,7 @@ static func give_villager(person: Node3D, a: Dictionary, vill: Node) -> bool:
 	player.blackboard.set_var(&"choices", acts.size())
 	player.blackboard.set_var(&"danger", false)
 	person.add_child(player)
+	AnimLOD.add_mind(player)
 	a["mind"] = player
 	_attach(player, int(a.get("town", -1)))
 	return true

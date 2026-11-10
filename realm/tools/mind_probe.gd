@@ -5,6 +5,9 @@ extends SceneTree
 ## through People's clip hook. Prints, per post and calling, the four numbers
 ## the judge checks, then a verdict.
 ##   arch -arm64 godot --headless --path realm --script res://tools/mind_probe.gd [-- --secs=60 --mood=riot]
+## Frame cost by distance: `--lod --per=15` stands 300 people in a grid before a
+## camera with the realm's AnimLOD running, and prints its two shares (bodies
+## animated, minds ticked) a frame; `--flat` makes that every person every frame.
 
 const Mind := preload("res://scripts/npc_mind.gd")
 const People := preload("res://scripts/people.gd")
@@ -12,6 +15,8 @@ const POSTS := ["build", "trade", "buy", "drill", "bows", "guard", "riot", "beg"
 const CALLINGS := ["farmer", "market", "pious", "tavern", "keeper", "gentry", "child", "crafter", "idler"]
 const RESTFUL := ["Sitting_Ground", "Sitting_Idle", "Sitting_Cross_Legged", "Sitting_Drinking", "Sleeping_Idle", "Kneeling", "Praying", "Idle", "Breathing_Idle"]
 const MOVING := ["Walk", "Running", "Sneak", "Injured_Walk", "Carrying"]
+const AnimLOD := preload("res://scripts/anim_lod.gd")
+const PerfTools := preload("res://scripts/perf_tools.gd")
 
 var _people = People.new()
 var _log := {}  # person -> [[t, clip], ...]
@@ -47,19 +52,42 @@ func _init() -> void:
 	var secs := 60.0
 	var mood := ""
 	var no_minds := false
+	var opts := {"per": 3, "lod": false}
 	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--per="):
+			opts["per"] = int(a.substr(6))
+		elif a == "--lod":
+			opts["lod"] = true
+		elif a == "--flat":
+			AnimLOD.flat = true
 		if a.begins_with("--secs="):
 			secs = float(a.substr(7))
 		elif a.begins_with("--mood="):
 			mood = a.substr(7)
 		elif a == "--no-minds":
 			no_minds = true  # the same people standing, for the frame-cost baseline
-	_run.call_deferred(secs, mood, no_minds)
+	_run.call_deferred(secs, mood, no_minds, opts)
 
 
-func _run(secs: float, mood: String, no_minds := false) -> void:
+## Where the n-th person stands: a row along x, or under --lod a town-sized grid
+## (10 across, 1.5 apart) running away from the camera.
+func _spot(n: int, row: float, lod: bool) -> Vector3:
+	return Vector3((n % 10) * 1.5, 0, (n / 10) * 1.5) if lod else Vector3(n * 2.0, 0, row)
+
+
+func _run(secs: float, mood: String, no_minds := false, opts := {}) -> void:
+	var lod: bool = opts.get("lod", false)
+	var per: int = opts.get("per", 3)
 	var world := Node3D.new()
 	root.add_child(world)
+	if lod:
+		var cam := Camera3D.new()
+		world.add_child(cam)
+		cam.position = Vector3(6.75, 3.0, -4.0)
+		cam.look_at(Vector3(6.75, 0, 12.0))
+		cam.current = true
+		world.add_child(AnimLOD.new())  # before anyone is made, so minds are ticked by it
+		PerfTools.probing = true
 	var vill := FakeVillage.new()
 	vill.mood = mood
 	world.add_child(vill)
@@ -71,9 +99,9 @@ func _run(secs: float, mood: String, no_minds := false) -> void:
 	rng.seed = 11
 	var n := 0
 	for post in POSTS:
-		for k in 3:
+		for k in per:
 			var p: Node3D = _people.make(rng, "townsfolk", Color.WHITE, "adult")
-			p.position = Vector3(n * 2.0, 0, 0)
+			p.position = _spot(n, 0, lod)
 			world.add_child(p)
 			_log[p] = []
 			_who[p] = "post:" + post
@@ -81,11 +109,11 @@ func _run(secs: float, mood: String, no_minds := false) -> void:
 				Mind.give(p, post, func(_q: Vector3) -> float: return 0.0, n)
 			n += 1
 	for calling in CALLINGS:
-		for k in 3:
+		for k in per:
 			var p: Node3D = _people.make(rng, "townsfolk", Color.WHITE, "adult")
-			p.position = Vector3(n * 2.0, 0, 5)
+			p.position = _spot(n, 5, lod)
 			world.add_child(p)
-			var a := {"i": 4 if calling == "keeper" else k + 1, "node": p, "rng": rng, "home": p.position, "town": 1, "route": PackedVector2Array(),
+			var a := {"i": 4 if calling == "keeper" else k % 3 + 1, "node": p, "rng": rng, "home": p.position, "town": 1, "route": PackedVector2Array(),
 				"role": "tavern" if calling == "keeper" else calling, "field": p.position + Vector3(0.5, 0, 0), "bench": p.position + Vector3(0.2, 0, 0), "block": "work"}
 			_log[p] = []
 			_who[p] = "calling:" + calling
@@ -104,7 +132,7 @@ func _run(secs: float, mood: String, no_minds := false) -> void:
 		if not news and _t > 5.0:
 			# A raid at the villagers' far end: those near see it, the rest should hear of it.
 			news = true
-			aw.emit("raid", Vector3(n * 2.0, 0, 5))
+			aw.emit("raid", _spot(n, 5, lod))
 		for p in _log:
 			var m := p.get_node_or_null("Mind") as BTPlayer
 			if m == null:
@@ -115,6 +143,10 @@ func _run(secs: float, mood: String, no_minds := false) -> void:
 				seq.append(act)
 				_acts[p] = seq
 	Engine.time_scale = 1.0
+	if lod:
+		var share := func(job: String) -> float: return float(PerfTools.tally.get(job, [0, 0])[0]) / 1000.0 / maxf(1, frames)
+		print("PROBE LOD %.3f ms animating bodies + %.3f ms ticking minds a frame, %d people%s" % [share.call("anim_lod"), share.call("minds"), _log.size(), " (flat: all every frame)" if AnimLOD.flat else ""])
+		print("PROBE WORK %.1f bodies moved, %.1f minds ticked a frame" % [AnimLOD.moved / float(maxi(1, frames)), AnimLOD.thought / float(maxi(1, frames))])
 	print("PROBE FRAME %.3f ms of process work a frame over %d frames, %d people, minds %s" % [busy_us / 1000.0 / maxf(1, frames), frames, _log.size(), "off" if no_minds else "on"])
 	_report(secs)
 	quit()
