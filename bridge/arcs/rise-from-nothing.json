@@ -1,7 +1,7 @@
 {
   "id": "rise-from-nothing",
   "name": "A rise from nothing",
-  "about": "A young commoner, a swineherd or a potboy, catches a lord's eye, fights, is knighted, and wins land of their own, or is cut down by a jealous bannerman or the first battle.",
+  "about": "A young commoner, a swineherd or a potboy, catches a lord's eye, fights, gets knighted and wins land of their own. Or a jealous bannerman or the first battle cuts them down.",
   "kind": "rise",
   "weight": 2,
   "cooldown": 14,
@@ -62,7 +62,7 @@
         "memory": "I was born in the stables at {patron.seat}, and I mean to die in a hall.",
         "goal": {
           "kind": "land",
-          "text": "hold land of my own, though I was born with none"
+          "text": "hold land of my own, even though I was born with none"
         },
         "born": "stable hand"
       }
@@ -95,15 +95,15 @@
     "upstart": "fallen",
     "patron": "patron-dies"
   },
-  "fade": "{upstart} serves on, a good sword in a crowded hall, and nobody sings of {upstart.him}.",
+  "fade": "{upstart} keeps serving, a good sword in a crowded hall, and nobody sings about {upstart.him}.",
   "beats": [
     {
       "id": "noticed",
       "stage": "rising",
       "speaker": "upstart",
-      "text": "At the spring muster at {patron.seat}, a {upstart.born} called {upstart} unhorses a knight with a borrowed lance. {patron} asks the {upstart.man}'s name.",
+      "text": "At the spring muster at {patron.seat}, a {upstart.born} called {upstart} knocks a knight off his horse with a borrowed lance. {patron} asks the {upstart.man}'s name.",
       "memory": {
-        "patron": "A {upstart.born} called {upstart} unhorsed a knight at my muster."
+        "patron": "A {upstart.born} called {upstart} knocked a knight off his horse at my muster."
       },
       "do": {
         "opinion": [
@@ -148,9 +148,9 @@
       "stage": "resolution",
       "end": "failed",
       "speaker": "upstart",
-      "text": "{patron} laughs and tosses the {upstart.man} a coin for the show. {upstart} keeps the coin, and leaves {patron.seat} on foot before dawn.",
+      "text": "{patron} laughs and tosses the {upstart.man} a coin for the show. {upstart} keeps the coin, but leaves {patron.seat} on foot before dawn.",
       "memory": {
-        "upstart": "{patron} threw me a coin like a juggler. I left {patron.seat} on foot."
+        "upstart": "{patron} threw me a coin like I was a juggler. I left {patron.seat} on foot."
       },
       "do": {
         "rank": {
@@ -169,7 +169,7 @@
       "id": "squire",
       "stage": "rising",
       "speaker": "upstart",
-      "text": "{patron} takes {upstart} into {patron.his} household as a squire. The other squires put dung in {upstart.his} boots, once.",
+      "text": "{patron} takes {upstart} into {patron.his} household as a squire. The other squires put dung in {upstart.his} boots, but only once.",
       "after": [
         2,
         3
@@ -200,15 +200,15 @@
       "id": "battle",
       "stage": "crisis",
       "speaker": "upstart",
-      "text": "Raiders come over the hills near {patron.seat}. {upstart} holds a ford with six men until {patron}'s horse comes up.",
+      "text": "Raiders come over the hills near {patron.seat}. {upstart} holds a ford with six men until {patron}'s riders arrive.",
       "memory": {
-        "patron": "{upstart} held the ford when grown knights ran. I owe the {upstart.man} my lands."
+        "patron": "{upstart} held the ford when grown knights ran. I owe that {upstart.man} my lands."
       },
       "do": {
         "die": {
           "who": "upstart",
           "chance": 0.2,
-          "how": "I fell holding the ford for {patron}."
+          "how": "I died holding the ford for {patron}."
         },
         "opinion": [
           [
@@ -237,7 +237,7 @@
       "id": "tourney",
       "stage": "rising",
       "speaker": "upstart",
-      "text": "{upstart} rides in the lists at {patron.seat} in borrowed armour and is not unhorsed all day.",
+      "text": "{upstart} rides in the tournament at {patron.seat} in borrowed armour and stays in the saddle all day.",
       "after": [
         1,
         1
@@ -258,19 +258,19 @@
       "stage": "resolution",
       "end": "failed",
       "speaker": "upstart",
-      "text": "{upstart} is unhorsed in the last pass and laughed out of the lists. {upstart.He} goes back to the stables, and the horses do not laugh.",
+      "text": "{upstart} is knocked off in the last run and laughed out of the tournament. {upstart.He} goes back to the stables, and the horses don't laugh.",
       "memory": {
-        "upstart": "They laughed me out of the lists at {patron.seat}. I went back to the horses."
+        "upstart": "They laughed me out of the tournament at {patron.seat}. I went back to the horses."
       }
     },
     {
       "id": "knighted",
       "stage": "crisis",
       "speaker": "patron",
-      "text": "{patron} dubs {upstart} knight in the hall at {patron.seat}. {upstart.He} kneels a {upstart.born} and rises {upstart.Sir} {upstart.first}.",
+      "text": "{patron} knights {upstart} in the hall at {patron.seat}. {upstart.He} kneels a {upstart.born} and gets up as {upstart.Sir} {upstart.first}.",
       "memory": {
-        "upstart": "{patron} knighted me in the hall at {patron.seat}. I knelt in straw and rose a knight.",
-        "rival": "{patron} knighted a {upstart.born}. What is a knighthood worth now?"
+        "upstart": "{patron} knighted me in the hall at {patron.seat}. I knelt in straw and got up a knight.",
+        "rival": "{patron} knighted a {upstart.born}. What's a knighthood worth now?"
       },
       "do": {
         "traits": {
@@ -329,10 +329,10 @@
       "id": "envy",
       "stage": "crisis",
       "speaker": "rival",
-      "text": "{rival} says at table that a {upstart.born} in a knight's cloak still smells of the byre. {upstart} answers with a fist.",
+      "text": "At dinner {rival} says a {upstart.born} in a knight's cloak still smells of the cowshed. {upstart} answers with a fist.",
       "memory": {
-        "rival": "{upstart} struck me at {patron}'s table, before everyone. A {upstart.born} struck me.",
-        "upstart": "{rival} humiliated me at table. I hit {rival.him}, and would again."
+        "rival": "{upstart} hit me at {patron}'s table, in front of everyone. A {upstart.born} hit me.",
+        "upstart": "{rival} humiliated me at dinner. I hit {rival.him}, and I'd do it again."
       },
       "do": {
         "opinion": [
@@ -374,7 +374,7 @@
         "die": {
           "who": "upstart",
           "chance": 0.5,
-          "how": "I drank from a cup at {patron}'s feast and never rose."
+          "how": "I drank from a cup at {patron}'s feast and never got up."
         }
       },
       "after": [
@@ -396,7 +396,7 @@
       "id": "survives",
       "stage": "crisis",
       "speaker": "upstart",
-      "text": "{upstart} lives, thinner and quieter. {patron} sends {rival} back to {rival.seat} and does not invite {rival.him} again.",
+      "text": "{upstart} lives, but thinner and quieter. {patron} sends {rival} home to {rival.seat} and doesn't invite {rival.him} again.",
       "do": {
         "opinion": [
           [
@@ -435,13 +435,13 @@
       "id": "duel",
       "stage": "crisis",
       "speaker": "upstart",
-      "text": "{rival} demands satisfaction, and they fight on the green below {patron.seat} at dawn.",
+      "text": "{rival} demands a duel, and they fight at dawn on the green below {patron.seat}.",
       "do": {
         "die": [
           {
             "who": "rival",
             "chance": 0.45,
-            "how": "I died on the green at {patron.seat} at a {upstart.born}'s hand."
+            "how": "A {upstart.born} killed me on the green at {patron.seat}."
           }
         ]
       },
@@ -470,7 +470,7 @@
       "id": "duel-won",
       "stage": "crisis",
       "speaker": "upstart",
-      "text": "{upstart} walks off the green with {rival}'s blood on {upstart.his} sword and the whole of {patron.seat} watching.",
+      "text": "{upstart} walks off the green with {rival}'s blood on {upstart.his} sword, and all of {patron.seat} saw it.",
       "after": [
         1,
         1
@@ -493,7 +493,7 @@
       "id": "duel-lost",
       "stage": "resolution",
       "end": "failed",
-      "text": "{rival} runs {upstart} through on the green below {patron.seat}. The {upstart.born}'s knighthood lasted a single summer.",
+      "text": "{rival} runs {upstart} through on the green below {patron.seat}. The {upstart.born}'s knighthood lasted one summer.",
       "do": {
         "die": {
           "who": "upstart",
@@ -507,9 +507,9 @@
       "end": "resolved",
       "speaker": "upstart",
       "at": "grant",
-      "text": "{patron} grants {upstart} the lordship of {grant}. A {upstart.man} born in straw now sits a hall under {upstart.his} own banner.",
+      "text": "{patron} makes {upstart} lord of {grant}. A {upstart.man} born in straw now has a hall under {upstart.his} own banner.",
       "memory": {
-        "upstart": "I hold {grant}. Born in the stables at {patron.seat}, and now I hold {grant}.",
+        "upstart": "I hold {grant}. I was born in the stables at {patron.seat}, and now I hold {grant}.",
         "patron": "I gave {grant} to {upstart}, who was born in my stables."
       },
       "do": {
@@ -523,7 +523,7 @@
         "goal": {
           "upstart": {
             "kind": "favour",
-            "text": "repay {patron}, who raised me from the straw"
+            "text": "repay {patron}, who raised me up from the straw"
           }
         }
       }
@@ -533,7 +533,7 @@
       "stage": "resolution",
       "end": "resolved",
       "speaker": "upstart",
-      "text": "There is no land to give, but {upstart} rides at {patron}'s right hand now, and men who once kicked {upstart.him} call {upstart.him} {upstart.sir}.",
+      "text": "There's no land to give, but {upstart} rides at {patron}'s right hand now, and men who used to kick {upstart.him} call {upstart.him} {upstart.sir}.",
       "do": {
         "loyalty": {
           "upstart": 10
@@ -544,7 +544,7 @@
       "id": "fallen",
       "stage": "resolution",
       "end": "failed",
-      "text": "{upstart} is buried at {patron.seat}, under a stone {patron} pays for. The stable hands go to the grave on their own.",
+      "text": "{upstart} is buried at {patron.seat}, under a stone {patron} pays for. The stable hands visit the grave without being told to.",
       "memory": {
         "patron": "I buried {upstart}, who was born in my stables and died my knight."
       }
@@ -554,7 +554,7 @@
       "stage": "resolution",
       "end": "failed",
       "speaker": "upstart",
-      "text": "{patron} dies, and with {patron.him} every promise made to {upstart}. The new lord of {patron.seat} has squires of {patron.his} own.",
+      "text": "{patron} dies, and every promise made to {upstart} dies with {patron.him}. The new lord of {patron.seat} has squires of {patron.his} own.",
       "do": {
         "rank": {
           "upstart": "exile"

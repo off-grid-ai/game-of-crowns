@@ -2,7 +2,7 @@
   "id": "usurpers-claim",
   "reign": true,
   "name": "The Usurper's Claim",
-  "about": "A great lord finds a better claim to the throne than yours, wins another house to it in secret, and marches on Kingsmere. Each act comes to your court; gold buys time, not an end.",
+  "about": "A great lord finds a claim to the throne that's better than yours, secretly wins another house to it, and marches on Kingsmere. Each step comes to your court. Gold buys time, but it doesn't end it.",
   "tags": [
     "usurper",
     "great-house",
@@ -70,7 +70,7 @@
   "onDeath": {
     "pretender": "claim-dies"
   },
-  "fade": "{thread} is spoken of less each season, and then not at all.",
+  "fade": "{thread} is talked about less every season, and then not at all.",
   "beats": [
     {
       "id": "whispers",
@@ -79,30 +79,30 @@
       "speaker": "witness",
       "at": "seat",
       "text": [
-        "In {seat}, {pretender} has found letters in the old archive: the Conqueror's line ran through {pretender.house}, not yours. The whispers reach Kingsmere before the snow.",
-        "A boy in {seat} is said to be the last son of the old kings, raised in secret, and {pretender} keeps him close. The whispers reach Kingsmere before the snow.",
-        "{pretender} tells any lord who will listen that the crown was given to the wrong brother three generations ago, and that {pretender.he} means to set it right."
+        "In {seat}, {pretender} has found letters in the old archive saying the Conqueror's line ran through {pretender.house}, not yours. The rumours reach Kingsmere before the snow.",
+        "People in {seat} say a boy there is the last son of the old kings, raised in secret, and {pretender} keeps him close. The rumours reach Kingsmere before the snow.",
+        "{pretender} tells any lord who'll listen that the crown went to the wrong brother three generations ago, and {pretender.he} means to put it right."
       ],
       "court": {
         "from": "witness",
-        "text": "{witness} of {witness.house}: \"Your Grace, {pretender} speaks of a better claim to your throne, and some lords are listening. What would you have me tell them?\"",
+        "text": "{witness} of {witness.house}: \"Your Grace, {pretender} is talking about a better claim to your throne, and some lords are listening. What should I tell them?\"",
         "options": [
           {
             "id": "summon",
             "label": "Summon {pretender} to Kingsmere to answer for it",
-            "hint": "{pretender.houseName} −10 · the whispers pause",
+            "hint": "{pretender.houseName} −10 · the rumours stop for now",
             "favour": {
               "pretender": -10
             },
             "do": {
               "threat": -5
             },
-            "result": "{pretender} is summoned to Kingsmere. {pretender.He} comes, bows low, and says nothing of claims. The whispers pause."
+            "result": "{pretender} is summoned to Kingsmere. {pretender.He} comes, bows low, and says nothing about claims. The rumours stop for now."
           },
           {
             "id": "silence",
             "label": "Buy {pretender}'s silence (200 gold)",
-            "hint": "{pretender.houseName} +10 · it buys time, not an end",
+            "hint": "{pretender.houseName} +10 · it buys time but doesn't end it",
             "cost": 200,
             "favour": {
               "pretender": 10
@@ -110,7 +110,7 @@
             "do": {
               "threat": -10
             },
-            "result": "Gold goes north to {seat}. For a season, {pretender} speaks only of the harvest."
+            "result": "Gold goes north to {seat}. For a season, {pretender} talks only about the harvest."
           },
           {
             "id": "watch",
@@ -119,7 +119,7 @@
             "do": {
               "threat": 5
             },
-            "result": "The King lets the rumour run. In every hall, someone is counting who nods."
+            "result": "The King lets the rumour spread. In every hall, someone is counting who agrees."
           }
         ]
       },
@@ -165,8 +165,8 @@
       "speaker": "pretender",
       "at": "seat",
       "text": [
-        "A rider with {pretender.house}'s seal is taken on the road to {backer.seat}. The letter he carries promises {backer.house} a duchy when {pretender} is crowned.",
-        "{pretender} and {backer} meet at a hunting lodge between their lands. By morning, they have sworn to each other on the old claim."
+        "A rider carrying {pretender.house}'s seal is caught on the road to {backer.seat}. His letter promises {backer.house} a duchy when {pretender} is crowned.",
+        "{pretender} and {backer} meet at a hunting lodge between their lands. By morning they've sworn to back the old claim together."
       ],
       "do": {
         "opinion": [
@@ -192,7 +192,7 @@
             "do": {
               "threat": -10
             },
-            "result": "The letters are read aloud in the great hall. {backer} goes white; {pretender} goes home and sharpens swords."
+            "result": "The letters are read aloud in the great hall. {backer} goes white. {pretender} goes home and sharpens swords."
           },
           {
             "id": "win-backer",
@@ -216,12 +216,12 @@
           },
           {
             "id": "ignore",
-            "label": "Let them plot; the throne is not won with letters",
+            "label": "Let them plot, because letters don't win thrones",
             "hint": "nothing now · the pact holds",
             "do": {
               "threat": 10
             },
-            "result": "The King lets them plot. In {seat} the smiths work through the night."
+            "result": "The King lets them plot. In {seat} the smiths work all night."
           }
         ]
       },
@@ -260,7 +260,7 @@
       "end": "resolved",
       "speaker": "pretender",
       "at": "seat",
-      "text": "Alone, and still warm to the crown, {pretender} burns the old letters in the hall at {seat}. The claim is never spoken of again.",
+      "text": "Left alone, and still friendly to the crown, {pretender} burns the old letters in the hall at {seat}. Nobody speaks of the claim again.",
       "memory": {
         "pretender": "I had a claim to the throne, and I let it go."
       }
@@ -271,7 +271,7 @@
       "threat": 70,
       "speaker": "pretender",
       "at": "seat",
-      "text": "{pretender} declares for the throne in the square at {seat}. The banners of {pretender.house} are raised, and every house must choose.",
+      "text": "{pretender} claims the throne in the square at {seat}. The banners of {pretender.house} go up, and every house has to pick a side.",
       "do": {
         "units": {
           "pretender": {
@@ -282,24 +282,24 @@
       },
       "court": {
         "from": "witness",
-        "text": "{witness}: \"It is open war, Your Grace. {pretender} has declared. How does the crown answer?\"",
+        "text": "{witness}: \"It's open war, Your Grace. {pretender} has claimed the throne. How does the crown answer?\"",
         "options": [
           {
             "id": "outlaw",
-            "label": "Name {pretender} a traitor and an outlaw",
-            "hint": "{pretender.houseName} −40 · the realm must choose · call the banners after",
+            "label": "Declare {pretender} a traitor and an outlaw",
+            "hint": "{pretender.houseName} −40 · the realm has to pick a side · call the banners after",
             "favour": {
               "pretender": -40
             },
             "do": {
               "threat": 5
             },
-            "result": "Heralds ride to every town: {pretender} is outlawed, and whoever shelters {pretender.him} is a traitor too."
+            "result": "Heralds ride to every town: {pretender} is an outlaw, and anyone who shelters {pretender.him} is a traitor too."
           },
           {
             "id": "parley",
             "label": "Offer {pretender} a seat on the council (500 gold)",
-            "hint": "{pretender.houseName} +25 · a chance at peace, a sign of weakness",
+            "hint": "{pretender.houseName} +25 · a chance at peace, but it looks weak",
             "cost": 500,
             "favour": {
               "pretender": 25
@@ -349,7 +349,7 @@
       "end": "resolved",
       "speaker": "pretender",
       "at": "seat",
-      "text": "{pretender} rides to Kingsmere under a white banner and kneels. The claim is set aside; the seat on the council is not.",
+      "text": "{pretender} rides to Kingsmere under a white banner and kneels. {pretender} drops the claim, but keeps the council seat.",
       "memory": {
         "pretender": "I knelt to the King, and he gave me a seat at his side."
       }
@@ -360,7 +360,7 @@
       "threat": 90,
       "speaker": "pretender",
       "at": "seat",
-      "text": "{pretender}'s host marches on Kingsmere. If the walls fall, so does the crown.",
+      "text": "{pretender}'s army marches on Kingsmere. If the walls fall, the crown falls with them.",
       "do": {
         "usurper": "pretender",
         "host": 10
@@ -386,7 +386,7 @@
       "end": "resolved",
       "speaker": "witness",
       "at": "seat",
-      "text": "{pretender}'s host is broken before Kingsmere. The claim dies in the mud, and the houses that stood by the crown remember that they did.",
+      "text": "{pretender}'s army is broken outside Kingsmere. The claim dies in the mud, and the houses that stood by the crown won't forget it.",
       "do": {
         "favour": {
           "pretender": -20
@@ -401,7 +401,7 @@
       "stage": "resolution",
       "end": "resolved",
       "at": "seat",
-      "text": "With {pretender} in the grave, the claim has no one to carry it. {thread} is buried with {pretender.him}."
+      "text": "With {pretender} dead, nobody is left to carry the claim. {thread} is buried with {pretender.him}."
     }
   ]
 }

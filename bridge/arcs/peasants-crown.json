@@ -2,7 +2,7 @@
   "id": "peasants-crown",
   "reign": true,
   "name": "The Peasants' Crown",
-  "about": "Bread riots in a great lord's town become a rising of the poor under a hedge-priest who wears a crown of straw. Feed them, break them, or bargain, and watch which lords decide the poor are a weapon.",
+  "about": "Bread riots in a great lord's town turn into a rising of the poor, led by a hedge-priest in a crown of straw. Feed them, crush them or make a deal, and see which lords start using the poor as a weapon.",
   "tags": ["rebellion", "the-people", "grim", "violent", "fast-paced", "short"],
   "kind": "rising",
   "weight": 1,
@@ -20,14 +20,14 @@
       "threat": 20,
       "speaker": "lord",
       "at": "town",
-      "text": "The price of bread in {town} doubles in a month. A crowd breaks the doors of {lord}'s grain store, and {lord}'s men break the crowd.",
+      "text": "The price of bread in {town} doubles in a month. A crowd breaks down the doors of {lord}'s grain store, and {lord}'s men break up the crowd.",
       "court": {
         "from": "lord",
-        "text": "{lord} of {lord.house}: \"The rabble of {town} attacked my stores, Your Grace. I want the crown's leave to hang every one of them.\"",
+        "text": "{lord} of {lord.house}: \"The mob in {town} attacked my stores, Your Grace. I want your leave to hang every one of them.\"",
         "options": [
-          { "id": "feed", "label": "Open the royal granaries to {town} (200 gold)", "hint": "{lord.houseName} −5 · the hungry are fed", "cost": 200, "favour": { "lord": -5 }, "do": { "threat": -15 }, "result": "Royal grain reaches {town}. The crowd that broke the stores queues quietly for bread." },
-          { "id": "hang", "label": "Give {lord} leave to hang the ringleaders", "hint": "{lord.houseName} +10 · the poor remember the gallows", "favour": { "lord": 10 }, "do": { "threat": 15 }, "result": "Seven are hanged in {town}'s square. That night, someone paints a crown on the gallows." },
-          { "id": "price", "label": "Fix the price of bread by royal decree", "hint": "{lord.houseName} −15 · the merchants grumble", "favour": { "lord": -15 }, "do": { "threat": -5 }, "result": "The King fixes the price of bread in {town}. The merchants hide their flour." }
+          { "id": "feed", "label": "Open the royal granaries to {town} (200 gold)", "hint": "{lord.houseName} −5 · the hungry get fed", "cost": 200, "favour": { "lord": -5 }, "do": { "threat": -15 }, "result": "The King's grain reaches {town}. The same crowd that broke into the stores now queues quietly for bread." },
+          { "id": "hang", "label": "Let {lord} hang the ringleaders", "hint": "{lord.houseName} +10 · the poor won't forget the gallows", "favour": { "lord": 10 }, "do": { "threat": 15 }, "result": "Seven are hanged in the square at {town}. That night, someone paints a crown on the gallows." },
+          { "id": "price", "label": "Set the price of bread by royal order", "hint": "{lord.houseName} −15 · the merchants complain", "favour": { "lord": -15 }, "do": { "threat": -5 }, "result": "The King sets the price of bread in {town}. The merchants hide their flour." }
         ]
       },
       "after": [2, 3],
@@ -44,14 +44,14 @@
       "threat": 50,
       "speaker": "lord",
       "at": "town",
-      "text": "A hedge-priest crowned with straw preaches in the fields outside {town}: no lords, no tithes, every man his own bread. Thousands come to hear him, and they bring their scythes.",
+      "text": "A hedge-priest wearing a crown of straw preaches in the fields outside {town}. No lords, no tithes, and every man keeps his own bread. Thousands come to hear him, and they bring their scythes.",
       "do": { "favour": { "lord": -10 } },
       "court": {
         "from": "opportunist",
-        "text": "{opportunist} of {opportunist.house}: \"The poor of {town} have a king of their own now, Your Grace. Someone will use them, if the crown doesn't settle it.\"",
+        "text": "{opportunist} of {opportunist.house}: \"The poor of {town} have their own king now, Your Grace. If you don't deal with it, someone will use them.\"",
         "options": [
-          { "id": "parley", "label": "Hear the straw king's grievances at Kingsmere (300 gold)", "hint": "a lower tithe for the poor · {lord.houseName} −20", "cost": 300, "favour": { "lord": -20 }, "do": { "threat": -25 }, "result": "The straw king comes to Kingsmere under the King's safe-conduct, and goes home with a charter for {town}." },
-          { "id": "crush", "label": "Send knights to scatter them", "hint": "{lord.houseName} +10 · blood in the fields", "favour": { "lord": 10 }, "do": { "units": { "lord": { "type": "Knights", "count": 2 } }, "threat": 5 }, "result": "Knights ride into the crowd outside {town}. They scatter it, and fill a ditch." }
+          { "id": "parley", "label": "Hear the straw king out at Kingsmere (300 gold)", "hint": "the poor pay a lower tithe · {lord.houseName} −20", "cost": 300, "favour": { "lord": -20 }, "do": { "threat": -25 }, "result": "The straw king comes to Kingsmere under the King's protection, and goes home with a charter for {town}." },
+          { "id": "crush", "label": "Send knights to break them up", "hint": "{lord.houseName} +10 · people die in the fields", "favour": { "lord": 10 }, "do": { "units": { "lord": { "type": "Knights", "count": 2 } }, "threat": 5 }, "result": "Knights ride into the crowd outside {town}. They break it up and fill a ditch with the dead." }
         ]
       },
       "after": [2, 3],
@@ -69,7 +69,7 @@
       "threat": 85,
       "speaker": "opportunist",
       "at": "town",
-      "text": "{opportunist} takes up the straw king's cause, and the poor of the realm march behind {opportunist.house}'s banner on Kingsmere, promised bread and no tithes.",
+      "text": "{opportunist} backs the straw king, so the poor of the realm march on Kingsmere under {opportunist.house}'s banner. They've been promised bread and no tithes.",
       "do": { "usurper": "opportunist", "host": 12 },
       "after": [3, 3],
       "next": [{ "if": { "usurper": "none" }, "to": "scattered" }],
@@ -82,7 +82,7 @@
       "end": "resolved",
       "speaker": "lord",
       "at": "town",
-      "text": "Fed, {town} goes back to work. The straw crown is never woven."
+      "text": "With food in their bellies, the people of {town} go back to work. Nobody ever weaves the straw crown."
     },
     {
       "id": "charter",
@@ -90,7 +90,7 @@
       "end": "resolved",
       "speaker": "lord",
       "at": "town",
-      "text": "The charter of {town} is read in every square in the realm. The poor go home with something in writing, and the straw king hangs his crown above a sept door."
+      "text": "The charter of {town} is read out in every square in the realm. The poor go home with their rights in writing, and the straw king hangs his crown over a sept door."
     },
     {
       "id": "scattered",
@@ -98,7 +98,7 @@
       "end": "resolved",
       "speaker": "lord",
       "at": "town",
-      "text": "The rising is broken. The poor go back to the fields, and the songs about the straw king go underground, where songs last longest."
+      "text": "The rising is crushed. The poor go back to the fields, but they keep singing about the straw king in secret, and those songs last longest."
     }
   ]
 }

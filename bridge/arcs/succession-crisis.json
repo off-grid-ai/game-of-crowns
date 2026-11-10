@@ -1,7 +1,7 @@
 {
   "id": "succession-crisis",
   "name": "A succession crisis",
-  "about": "An old lord sickens with a weak or young heir, and an ambitious bannerman circles; the heir is confirmed, governed, imprisoned or exiled, as the house's men and the crown's regard decide.",
+  "about": "An old lord falls sick, and his heir is weak or young. An ambitious bannerman circles. The heir is confirmed, ruled for, locked up or driven out, depending on the house's men and how the crown treats them.",
   "kind": "succession",
   "weight": 2,
   "cooldown": 16,
@@ -83,14 +83,14 @@
     "heir": "heir-dies",
     "claimant": "claimant-dies"
   },
-  "fade": "The talk of who rules {old.houseName} dies down. {thread} becomes a matter for scholars.",
+  "fade": "The talk about who rules {old.houseName} dies down. {thread} becomes something for scholars to argue over.",
   "beats": [
     {
       "id": "sickens",
       "stage": "rising",
       "speaker": "old",
       "at": "hall",
-      "text": "{old} of {old.house} takes to {old.his} bed with a fever that will not break. In {hall}, men count the days, and look at {heir}, and then at each other.",
+      "text": "{old} of {old.house} takes to {old.his} bed with a fever that won't break. In {hall}, men count the days and look at {heir}, then at each other.",
       "memory": {
         "heir": "My {old.father} is sick, and the bannermen look at me as if I were already a problem.",
         "claimant": "{old} is dying, and {heir} is no {old.lord}."
@@ -110,7 +110,7 @@
       "stage": "rising",
       "speaker": "claimant",
       "at": "hall",
-      "text": "{claimant} rides to {hall} with more men than courtesy needs, and asks after {old}'s health in a loud voice.",
+      "text": "{claimant} rides to {hall} with more men than a visit needs, and asks loudly how {old} is doing.",
       "do": {
         "goal": {
           "claimant": {
@@ -149,7 +149,7 @@
       "stage": "crisis",
       "speaker": "heir",
       "at": "hall",
-      "text": "{old} dies in {hall} with {heir}'s hand in {old.his}. The household holds its breath.",
+      "text": "{old} dies in {hall} with {heir}'s hand in {old.his}. The whole household waits.",
       "memory": {
         "heir": "My {old.father} died holding my hand. Now everyone watches what I do."
       },
@@ -203,7 +203,7 @@
       "stage": "crisis",
       "speaker": "heir",
       "at": "hall",
-      "text": "{old} is dead, and the seat at {hall} passes to {heir}. Nobody looks at {heir}; everyone looks at {claimant}.",
+      "text": "{old} is dead, and the seat at {hall} passes to {heir}. Nobody looks at {heir}. Everyone looks at {claimant}.",
       "after": [
         1,
         1
@@ -238,7 +238,7 @@
       "stage": "crisis",
       "speaker": "claimant",
       "at": "hall",
-      "text": "{claimant} offers to govern {old.house} until {heir} is grown. The household knights study their boots.",
+      "text": "{claimant} offers to rule {old.house} until {heir} is grown. The household knights stare at their boots.",
       "after": [
         1,
         2
@@ -278,7 +278,7 @@
       "stage": "crisis",
       "speaker": "claimant",
       "at": "hall",
-      "text": "{claimant} takes the keys of {hall} by night. {heir} is kept safe, as {claimant} puts it, in the north tower.",
+      "text": "{claimant} takes the keys of {hall} at night. {heir} is kept \"safe\" in the north tower, as {claimant} puts it.",
       "memory": {
         "heir": "{claimant} stole the keys of {hall} and locked me in the tower.",
         "claimant": "I took {hall}. Someone had to."
@@ -339,7 +339,7 @@
       "id": "escape",
       "stage": "crisis",
       "speaker": "heir",
-      "text": "{heir} goes over the wall of {hall} on a rope of bedsheets and rides for Kingsmere to beg the crown's justice.",
+      "text": "{heir} climbs down the wall of {hall} on a rope of bedsheets and rides to Kingsmere to ask the crown for justice.",
       "after": [
         1,
         2
@@ -371,7 +371,7 @@
       "end": "resolved",
       "speaker": "heir",
       "at": "hall",
-      "text": "The crown's riders come to {hall} with {heir} at their head. {claimant} hands back the keys and is sent from {old.house}'s lands with only {claimant.his} horse.",
+      "text": "The crown's riders come to {hall} with {heir} leading them. {claimant} hands back the keys and is thrown out of {old.house}'s lands with nothing but {claimant.his} horse.",
       "memory": {
         "claimant": "I held {hall} for a season and lost it to a child and the King's riders.",
         "heir": "The King gave me back {hall}. I will not forget who took it."
@@ -401,7 +401,7 @@
       "stage": "resolution",
       "end": "failed",
       "speaker": "heir",
-      "text": "The King will not hear {heir}. {claimant} rules {old.house} from {hall}, and {heir} is a rightful {heir.lord} with no roof.",
+      "text": "The King won't hear {heir}. {claimant} rules {old.house} from {hall}, and {heir} is the rightful {heir.lord} but has no home.",
       "memory": {
         "heir": "{claimant} stole my father's seat, and the King did nothing."
       },
@@ -423,7 +423,7 @@
       "end": "resolved",
       "speaker": "claimant",
       "at": "hall",
-      "text": "{claimant} rules {old.house} from {hall}. The bannermen bend the knee one by one, and {heir} is not seen outside the tower.",
+      "text": "{claimant} rules {old.house} from {hall}. One by one the bannermen kneel, and {heir} is never seen outside the tower.",
       "do": {
         "loyalty": {
           "claimant": 20
@@ -435,7 +435,7 @@
       "stage": "resolution",
       "end": "resolved",
       "at": "hall",
-      "text": "The bannermen of {old.house} meet in {hall} and swear for {heir}, with {claimant} to advise until {heir.he} is grown. {claimant} signs last.",
+      "text": "The bannermen of {old.house} meet in {hall} and swear loyalty to {heir}, with {claimant} to advise until {heir.he} is grown. {claimant} signs last.",
       "memory": {
         "claimant": "The bannermen swore for {heir}. I signed last, and they all saw it."
       },
@@ -451,7 +451,7 @@
       "end": "resolved",
       "speaker": "claimant",
       "at": "hall",
-      "text": "{claimant} kneels before {heir} in {hall} and swears. Whatever {claimant.he} wanted, {claimant.he} wants a clean name more.",
+      "text": "{claimant} kneels before {heir} in {hall} and swears loyalty. Whatever {claimant.he} wanted, {claimant.he} wants a clean name more.",
       "do": {
         "loyalty": {
           "claimant": 15
@@ -470,7 +470,7 @@
       "stage": "resolution",
       "end": "resolved",
       "speaker": "claimant",
-      "text": "{heir} is dead, and {claimant} is the strongest {claimant.man} left in {old.house}. Nobody asks how the {heir.son} died; nobody dares.",
+      "text": "{heir} is dead, and {claimant} is the strongest {claimant.man} left in {old.house}. Nobody asks how the {heir.son} died, because nobody dares.",
       "do": {
         "goal": {
           "claimant": {
@@ -484,7 +484,7 @@
       "id": "claimant-dies",
       "stage": "resolution",
       "end": "resolved",
-      "text": "{claimant} is dead, and {thread} with {claimant.him}. {heir} keeps the seat at {hall}, if not easily."
+      "text": "{claimant} is dead, and {thread} dies with {claimant.him}. {heir} keeps the seat at {hall}, but it isn't easy."
     }
   ]
 }

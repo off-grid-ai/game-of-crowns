@@ -1,7 +1,7 @@
 {
   "id": "plague-scapegoat",
   "name": "A plague and a scapegoat",
-  "about": "Sickness or famine strikes a real town; its people blame one of their own, often a hedge witch, a midwife or a beggar of that town, and its lord burns them, protects them, or loses the town's love, while the sickness decides whether the fire did any good.",
+  "about": "Sickness or famine hits a real town. Its people blame one of their own, often a hedge witch, a midwife or a beggar. The lord burns them, protects them or loses the town's love, and the sickness shows whether the fire did any good.",
   "kind": "plague",
   "weight": 3,
   "cooldown": 12,
@@ -78,7 +78,7 @@
           "patient",
           "pious"
         ],
-        "memory": "I have healed the sick of {town} with herbs for thirty years. They used to thank me."
+        "memory": "I've healed the sick of {town} with herbs for thirty years. They used to thank me."
       }
     }
   },
@@ -89,7 +89,7 @@
     "scapegoat": "mob-killed",
     "lord": "lord-taken"
   },
-  "fade": "The sickness lingers in {town} and then is only one sorrow among many.",
+  "fade": "The sickness hangs on in {town} for a while, and then it's just one more grief among many.",
   "beats": [
     {
       "id": "sickness",
@@ -97,11 +97,11 @@
       "at": "town",
       "speaker": "lord",
       "text": [
-        "Sickness comes to {town}: first the tanners' street, then the market. The death-carts go out at night.",
+        "Sickness comes to {town}. It starts in the tanners' street, then reaches the market. The death carts go out at night.",
         "In {town} the bread runs out and the coughing starts. The sept bell rings for the dead three times before noon."
       ],
       "memory": {
-        "lord": "The sickness came to {town}, and the people look to me.",
+        "lord": "The sickness came to {town}, and the people are looking to me.",
         "scapegoat": false
       },
       "after": [
@@ -119,9 +119,9 @@
       "stage": "rising",
       "at": "town",
       "speaker": "scapegoat",
-      "text": "In the alehouses of {town} they say the sickness came with {scapegoat}. Someone has chalked a mark on {scapegoat.his} door.",
+      "text": "In the alehouses of {town} they say {scapegoat} brought the sickness. Someone has chalked a mark on {scapegoat.his} door.",
       "memory": {
-        "scapegoat": "They chalked a mark on my door in {town} and say I brought the sickness."
+        "scapegoat": "They chalked a mark on my door in {town}. They say I brought the sickness."
       },
       "after": [
         1,
@@ -161,9 +161,9 @@
       "stage": "crisis",
       "at": "town",
       "speaker": "lord",
-      "text": "{lord} has {scapegoat} brought before the people of {town} in chains, to answer for the dying.",
+      "text": "{lord} has {scapegoat} dragged in chains before the people of {town} to answer for the dead.",
       "memory": {
-        "scapegoat": "{lord} put me in chains before the people of {town}."
+        "scapegoat": "{lord} put me in chains in front of the people of {town}."
       },
       "do": {
         "opinion": [
@@ -206,14 +206,14 @@
       "id": "burned",
       "stage": "crisis",
       "at": "town",
-      "text": "{scapegoat} burns in the square of {town}. The crowd that bayed for it goes home quiet.",
+      "text": "{scapegoat} is burned in the square at {town}. The crowd that screamed for it goes home quiet.",
       "memory": {
-        "lord": "I burned {scapegoat} in the square at {town} to quiet the people."
+        "lord": "I burned {scapegoat} in the square at {town} to calm the people."
       },
       "do": {
         "die": {
           "who": "scapegoat",
-          "how": "I was burned in {town} for a sickness I did not bring."
+          "how": "They burned me in {town} for a sickness I didn't bring."
         }
       },
       "after": [
@@ -244,9 +244,9 @@
       "end": "failed",
       "at": "town",
       "speaker": "lord",
-      "text": "The fire did nothing. The dying goes on in {town}, and now they whisper that {lord} burned the wrong {scapegoat.man}.",
+      "text": "The burning changed nothing. People in {town} keep dying, and now they whisper that {lord} burned the wrong {scapegoat.man}.",
       "memory": {
-        "lord": "I burned {scapegoat} and the dying did not stop. The people of {town} look at me differently."
+        "lord": "I burned {scapegoat}, but people kept dying. The people of {town} look at me differently now."
       },
       "do": {
         "favour": {
@@ -270,16 +270,16 @@
       "end": "resolved",
       "at": "town",
       "speaker": "lord",
-      "text": "The sickness lifts from {town} at last. {lord} has the ashes thrown in the river and calls it justice; nobody contradicts {lord.him}."
+      "text": "The sickness finally leaves {town}. {lord} has the ashes thrown in the river and calls it justice, and nobody argues with {lord.him}."
     },
     {
       "id": "protects",
       "stage": "crisis",
       "at": "town",
       "speaker": "lord",
-      "text": "{lord} stands at {scapegoat}'s door with a drawn sword and says the first man to touch it hangs.",
+      "text": "{lord} stands at {scapegoat}'s door with a drawn sword and says the first man to touch it will hang.",
       "memory": {
-        "scapegoat": "{lord} stood at my door with a sword when all {town} wanted me dead.",
+        "scapegoat": "{lord} stood at my door with a sword when all of {town} wanted me dead.",
         "lord": "I stood between the people of {town} and {scapegoat}."
       },
       "do": {
@@ -325,7 +325,7 @@
       "stage": "crisis",
       "at": "town",
       "speaker": "lord",
-      "text": "{lord} finds no proof against {scapegoat} and lets {scapegoat.him} go. The crowd outside does not agree.",
+      "text": "{lord} finds no proof against {scapegoat} and lets {scapegoat.him} go. The crowd outside doesn't agree.",
       "after": [
         1,
         1
@@ -345,9 +345,9 @@
       "id": "riot",
       "stage": "crisis",
       "at": "town",
-      "text": "The hungry of {town} riot. They break open {lord}'s granary and come for {scapegoat} with torches.",
+      "text": "The hungry of {town} riot. They break into {lord}'s granary and come for {scapegoat} with torches.",
       "memory": {
-        "lord": "The people of {town} broke my granary and hunted {scapegoat} through the streets."
+        "lord": "The people of {town} broke into my granary and hunted {scapegoat} through the streets."
       },
       "do": {
         "gold": {
@@ -356,7 +356,7 @@
         "die": {
           "who": "scapegoat",
           "chance": 0.5,
-          "how": "The mob of {town} dragged me from my house."
+          "how": "The mob in {town} dragged me out of my house."
         }
       },
       "after": [
@@ -379,7 +379,7 @@
       "stage": "resolution",
       "end": "resolved",
       "at": "town",
-      "text": "{scapegoat} is gone from {town} by morning, over the wall with what {scapegoat.he} could carry. The sickness stays a while longer, and then it too is gone.",
+      "text": "By morning {scapegoat} has fled {town} over the wall with whatever {scapegoat.he} could carry. The sickness stays a while longer, and then it goes too.",
       "do": {
         "rank": {
           "scapegoat": "exile"
@@ -392,9 +392,9 @@
       "end": "failed",
       "at": "town",
       "speaker": "lord",
-      "text": "{scapegoat} is dead, killed by the people {scapegoat.he} lived among in {town}. {lord} hangs two of them, and it changes nothing.",
+      "text": "{scapegoat} is dead, killed by the people {scapegoat.he} lived among in {town}. {lord} hangs two of them, but it changes nothing.",
       "memory": {
-        "lord": "The people of {town} murdered {scapegoat} and I could not stop them."
+        "lord": "The people of {town} murdered {scapegoat} and I couldn't stop them."
       }
     },
     {
@@ -402,7 +402,7 @@
       "stage": "resolution",
       "end": "resolved",
       "at": "town",
-      "text": "The sickness burns itself out. Nobody in {town} speaks of {scapegoat} again, and {lord}'s name is blessed in the septs.",
+      "text": "The sickness burns itself out. Nobody in {town} mentions {scapegoat} again, and people bless {lord}'s name in the septs.",
       "do": {
         "favour": {
           "lord": 3
@@ -417,7 +417,7 @@
       "stage": "resolution",
       "end": "failed",
       "at": "town",
-      "text": "The sickness takes {lord} {lord.himself}. In {town} they say it is judgment, and do not say for what."
+      "text": "The sickness takes {lord} {lord.himself}. In {town} they say it's a judgment, but they don't say for what."
     }
   ]
 }

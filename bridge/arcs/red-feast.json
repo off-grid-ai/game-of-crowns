@@ -2,7 +2,7 @@
   "id": "red-feast",
   "reign": true,
   "name": "The Red Feast",
-  "about": "A great lord invites a rival house to a wedding feast to end their feud, and you are invited too. A servant whispers that the music is a signal. Go, warn them, or stay away and let it happen.",
+  "about": "A great lord invites a rival house to a wedding feast to end their feud, and you're invited too. A servant whispers that the music is a signal. Go, warn them, or stay away and let it happen.",
   "tags": ["intrigue", "great-house", "violent", "fast-paced", "tragic", "short"],
   "kind": "betrayal",
   "weight": 1,
@@ -25,10 +25,10 @@
       "text": "{host} invites {guest} and all of {guest.house} to a wedding at {hall} to end the feud between them. The King is invited too.",
       "court": {
         "from": "guest",
-        "text": "{guest} of {guest.house}: \"{host} offers peace and a wedding, Your Grace. I mean to accept. Will the crown honour the feast with its presence?\"",
+        "text": "{guest} of {guest.house}: \"{host} is offering peace and a wedding, Your Grace, and I'm going to accept. Will you come to the feast?\"",
         "options": [
-          { "id": "attend", "label": "The King will attend the wedding", "hint": "both +5 · the King under {host}'s roof", "favour": { "host": 5, "guest": 5 }, "do": { "threat": 5 }, "result": "The King accepts. {host} sends word that the best rooms in {hall} are being made ready." },
-          { "id": "decline", "label": "Send gifts, but stay at Kingsmere", "hint": "{host.houseName} −5 · the King's chair sits empty", "favour": { "host": -5 }, "do": { "threat": 0 }, "result": "The crown sends silver and its regrets. The wedding goes ahead without the King." }
+          { "id": "attend", "label": "Go to the wedding", "hint": "both +5 · you'll be under {host}'s roof", "favour": { "host": 5, "guest": 5 }, "do": { "threat": 5 }, "result": "The King accepts. {host} sends word that the best rooms in {hall} are being made ready." },
+          { "id": "decline", "label": "Send gifts but stay at Kingsmere", "hint": "{host.houseName} −5 · your chair sits empty", "favour": { "host": -5 }, "do": { "threat": 0 }, "result": "The crown sends silver and its apologies. The wedding goes ahead without the King." }
         ]
       },
       "after": [1, 2],
@@ -40,14 +40,14 @@
       "threat": 55,
       "speaker": "host",
       "at": "hall",
-      "text": "A kitchen girl from {hall} reaches Kingsmere half-dead from riding: when the musicians play the old wedding song, {host}'s men will bar the doors.",
+      "text": "A kitchen girl from {hall} reaches Kingsmere half dead from riding. She says that when the musicians play the old wedding song, {host}'s men will bar the doors.",
       "court": {
         "from": "guest",
-        "text": "A servant girl kneels, shaking: \"Your Grace, my lord {host} means to murder them all at the feast. When the music turns, the doors close.\"",
+        "text": "A servant girl kneels, shaking: \"Your Grace, my lord {host} is going to murder them all at the feast. When the music changes, the doors close.\"",
         "options": [
-          { "id": "warn", "label": "Warn {guest} in secret", "hint": "{guest.houseName} +20 · {host} learns the crown knew", "favour": { "guest": 20, "host": -15 }, "do": { "threat": -20 }, "result": "A royal rider reaches {guest} on the road to {hall}. {guest.house} turns back." },
-          { "id": "confront", "label": "Ride to {hall} with the royal guard and sit at the high table (200 gold)", "hint": "{host.houseName} −10 · {host} won't dare · or will", "cost": 200, "favour": { "host": -10 }, "do": { "threat": -10 }, "result": "The King arrives at {hall} with a hundred guards. {host} smiles, and tells the musicians to play something else." },
-          { "id": "let-it-be", "label": "Say nothing: let them settle their own feud", "hint": "nothing now · the music plays", "do": { "threat": 20 }, "result": "The King says nothing. The girl is sent back to {hall}." }
+          { "id": "warn", "label": "Warn {guest} in secret", "hint": "{guest.houseName} +20 · {host} finds out you knew", "favour": { "guest": 20, "host": -15 }, "do": { "threat": -20 }, "result": "A royal rider catches {guest} on the road to {hall}. {guest.house} turns back." },
+          { "id": "confront", "label": "Ride to {hall} with your guard and sit at the high table (200 gold)", "hint": "{host.houseName} −10 · {host} probably won't dare · but might", "cost": 200, "favour": { "host": -10 }, "do": { "threat": -10 }, "result": "The King arrives at {hall} with a hundred guards. {host} smiles and tells the musicians to play something else." },
+          { "id": "let-it-be", "label": "Stay out of it and let them settle their feud", "hint": "costs nothing now · the music plays", "do": { "threat": 20 }, "result": "The King says nothing. The girl is sent back to {hall}." }
         ]
       },
       "after": [1, 1],
@@ -65,14 +65,14 @@
       "threat": 75,
       "speaker": "host",
       "at": "hall",
-      "text": "The musicians play the old wedding song. The doors of {hall} close, and {guest.house}'s lords die at the table. The realm will call it the Red Feast for a hundred years.",
+      "text": "The musicians play the old wedding song. The doors of {hall} close, and the lords of {guest.house} die at the table. People will call it the Red Feast for a hundred years.",
       "do": { "die": { "who": "guest", "chance": 0.9, "how": "murdered at the Red Feast in {hall}" }, "transfer": ["guesthall", "host"] },
       "court": {
         "from": "host",
-        "text": "{host} kneels with blood still under {host.his} nails: \"It is done, Your Grace. {guest.house} was a danger to your peace. I ask only the crown's pardon, and {guesthall}.\"",
+        "text": "{host} kneels with blood still under {host.his} nails: \"It's done, Your Grace. {guest.house} was a threat to your peace. All I ask is your pardon, and {guesthall}.\"",
         "options": [
-          { "id": "pardon", "label": "Pardon {host}", "hint": "{host.houseName} +15 · every house learns what the crown permits", "favour": { "host": 15 }, "do": { "threat": 5 }, "result": "The King pardons {host}. No great lord will ever again accept a wedding invitation without a hundred swords." },
-          { "id": "outlaw", "label": "Name {host} a murderer and an outlaw", "hint": "{host.houseName} −40 · {host} has an army and nothing to lose", "favour": { "host": -40 }, "do": { "threat": 15 }, "result": "Heralds cry {host}'s crime in every town. In {hall}, {host} sharpens the swords that did it." }
+          { "id": "pardon", "label": "Pardon {host}", "hint": "{host.houseName} +15 · every house learns what you'll let them get away with", "favour": { "host": 15 }, "do": { "threat": 5 }, "result": "The King pardons {host}. From now on, no great lord will go to a wedding without a hundred swords." },
+          { "id": "outlaw", "label": "Declare {host} a murderer and an outlaw", "hint": "{host.houseName} −40 · {host} has an army and nothing to lose", "favour": { "host": -40 }, "do": { "threat": 15 }, "result": "Heralds shout {host}'s crime in every town. In {hall}, {host} sharpens the swords that did it." }
         ]
       },
       "after": [2, 2],
@@ -89,7 +89,7 @@
       "threat": 90,
       "speaker": "host",
       "at": "hall",
-      "text": "Outlawed, {host} has nothing left to lose, and marches on Kingsmere with the swords that did the Red Feast.",
+      "text": "Now that {host} is an outlaw with nothing left to lose, {host} marches on Kingsmere with the swords from the Red Feast.",
       "do": { "usurper": "host", "host": 10 },
       "after": [3, 3],
       "next": [{ "if": { "usurper": "none" }, "to": "avenged" }],
@@ -102,7 +102,7 @@
       "end": "resolved",
       "speaker": "guest",
       "at": "guesthall",
-      "text": "There is no Red Feast. {guest.house} lives, owes the crown its life, and never sits at {host}'s table again."
+      "text": "There's no Red Feast. {guest.house} survives, owes the crown its life, and never sits at {host}'s table again."
     },
     {
       "id": "pardoned",
@@ -110,14 +110,14 @@
       "end": "resolved",
       "speaker": "host",
       "at": "hall",
-      "text": "{host} keeps {guesthall} and the King's pardon. The realm keeps the memory, and the crown keeps a lord who knows its price."
+      "text": "{host} keeps {guesthall} and the King's pardon. The realm doesn't forget, and the crown is stuck with a lord who knows it can be bought."
     },
     {
       "id": "avenged",
       "stage": "resolution",
       "end": "resolved",
       "at": "hall",
-      "text": "The murderer of the Red Feast is broken before Kingsmere. The dead of {guest.house} are answered."
+      "text": "The army of the Red Feast's murderer breaks at Kingsmere. The dead of {guest.house} get their justice."
     }
   ]
 }

@@ -2,7 +2,7 @@
   "id": "spymasters-ledger",
   "reign": true,
   "name": "The Spymaster's Ledger",
-  "about": "The old spymaster dies and his ledger of every lord's secrets goes missing. Whoever holds it can bend the great houses. Find it first, burn it, or use it, and live with what the lords learn you know.",
+  "about": "The old spymaster dies, and his book of every lord's secrets goes missing. Whoever has it can push the great houses around. Find it first, then burn it or use it, and live with what the lords think you know.",
   "tags": ["intrigue", "the-court", "mysterious", "cunning", "political", "a-reign"],
   "kind": "intrigue",
   "weight": 1,
@@ -20,14 +20,14 @@
       "threat": 20,
       "speaker": "named",
       "at": "hall",
-      "text": "The crown's old spymaster dies in his sleep, and his ledger, every secret of every great house, is gone from his locked chest.",
+      "text": "The crown's old spymaster dies in his sleep, and his ledger is gone from his locked chest. It held every secret of every great house.",
       "court": {
         "from": "named",
-        "text": "{named} of {named.house}, too careful: \"They say the old man kept a book, Your Grace. I trust the crown has it safe?\"",
+        "text": "{named} of {named.house}, a little too carefully: \"They say the old man kept a book, Your Grace. I hope the crown has it safe?\"",
         "options": [
-          { "id": "hunt", "label": "Turn the court inside out to find it (200 gold)", "hint": "the hunt begins · every lord nervous", "cost": 200, "do": { "threat": -10 }, "result": "The King's men search every chamber and saddlebag in Kingsmere. The great lords leave early." },
+          { "id": "hunt", "label": "Search the whole court for it (200 gold)", "hint": "the search begins · every lord gets nervous", "cost": 200, "do": { "threat": -10 }, "result": "The King's men search every chamber and saddlebag in Kingsmere. The great lords leave early." },
           { "id": "lie", "label": "Tell {named} the crown has it, and smile", "hint": "{named.houseName} −10 · they'll behave, for now", "favour": { "named": -10 }, "do": { "threat": -5 }, "result": "The King says the ledger is safe. {named} goes very pale, and very polite." },
-          { "id": "nothing", "label": "There is no ledger: an old man's boast", "hint": "nothing now · whoever has it is free to use it", "do": { "threat": 10 }, "result": "The King laughs off the ledger. Somewhere, someone turns a page." }
+          { "id": "nothing", "label": "Say there's no ledger, just an old man's boast", "hint": "nothing now · whoever has it can use it freely", "do": { "threat": 10 }, "result": "The King laughs off the ledger. Somewhere, someone is reading it." }
         ]
       },
       "after": [2, 3],
@@ -44,15 +44,15 @@
       "threat": 50,
       "speaker": "thief",
       "at": "hall",
-      "text": "Lords begin to vote, marry and buy as {thief} wishes. {named} sells {thief} a town for a song, and will not say why.",
+      "text": "Lords start voting, marrying and buying the way {thief} wants. {named} sells {thief} a town for almost nothing, and won't say why.",
       "do": { "opinion": [["named", "thief", -30]], "gold": { "named": -40, "thief": 40 } },
       "court": {
         "from": "named",
-        "text": "{named}, alone and low: \"{thief} has the ledger, Your Grace. {thief.He} has my secrets, and half the realm's. Take it from {thief.him}, and I am yours.\"",
+        "text": "{named}, alone and quiet: \"{thief} has the ledger, Your Grace. {thief.He} has my secrets, and half the realm's. Take it from {thief.him}, and I'm yours.\"",
         "options": [
-          { "id": "raid", "label": "Send the King's men to search {hall}", "hint": "{thief.houseName} −30 · if it isn't there, you look a tyrant", "favour": { "thief": -30, "named": 10 }, "do": { "threat": -10 }, "result": "The King's men tear {hall} apart by torchlight." },
-          { "id": "buy", "label": "Buy the ledger from {thief} (500 gold)", "hint": "{thief.houseName} +10 · the crown holds the realm's secrets", "cost": 500, "favour": { "thief": 10 }, "do": { "threat": -20 }, "result": "The ledger changes hands in a sept at midnight. {thief} keeps the copy, of course." },
-          { "id": "wait", "label": "Let {thief} overreach", "hint": "nothing now · the lords bend to {thief}", "do": { "threat": 15 }, "result": "The King waits. {thief}'s friends at court grow in number every week." }
+          { "id": "raid", "label": "Send the King's men to search {hall}", "hint": "{thief.houseName} −30 · if it isn't there, you look like a tyrant", "favour": { "thief": -30, "named": 10 }, "do": { "threat": -10 }, "result": "The King's men tear {hall} apart by torchlight." },
+          { "id": "buy", "label": "Buy the ledger from {thief} (500 gold)", "hint": "{thief.houseName} +10 · the crown holds the realm's secrets", "cost": 500, "favour": { "thief": 10 }, "do": { "threat": -20 }, "result": "The ledger changes hands in a sept at midnight. Of course {thief} keeps a copy." },
+          { "id": "wait", "label": "Wait for {thief} to go too far", "hint": "nothing now · the lords give way to {thief}", "do": { "threat": 15 }, "result": "The King waits. Every week {thief} has more friends at court." }
         ]
       },
       "after": [2, 3],
@@ -70,7 +70,7 @@
       "threat": 80,
       "speaker": "thief",
       "at": "hall",
-      "text": "With half the realm's secrets in {thief.his} hand, {thief} calls the great lords to {hall}, and they come. {thief} asks why a King who knew nothing of them should rule them.",
+      "text": "With half the realm's secrets in {thief.his} hand, {thief} calls the great lords to {hall}, and they come. {thief} asks them why a King who knows nothing about them should rule them.",
       "do": { "usurper": "thief", "host": 10 },
       "after": [3, 3],
       "next": [{ "if": { "usurper": "none" }, "to": "found" }],
@@ -83,13 +83,13 @@
       "threat": 25,
       "speaker": "named",
       "at": "hall",
-      "text": "The crown holds the old spymaster's ledger now. Every great lord knows it, and every great lord is suddenly very loyal, and very afraid.",
+      "text": "The crown has the old spymaster's ledger now. Every great lord knows it, so every great lord is suddenly very loyal, and very afraid.",
       "court": {
         "from": "named",
         "text": "{named}: \"The ledger is yours, Your Grace. Will you use it, or burn it?\"",
         "options": [
-          { "id": "burn", "label": "Burn it before the court", "hint": "{named.houseName} +15 · {thief.houseName} −10, robbed of the price of it · the crown gives up a weapon", "favour": { "named": 15, "thief": -10 }, "do": { "threat": -20 }, "result": "The ledger burns in the great hall's hearth. The lords breathe again, and some of them cheer." },
-          { "id": "keep", "label": "Keep it, and let them wonder", "hint": "quiet obedience · a grudge in every house", "favour": { "named": -10, "thief": -10 }, "do": { "threat": -10 }, "result": "The ledger goes into the King's own chest. The court has never been so courteous." }
+          { "id": "burn", "label": "Burn it in front of the court", "hint": "{named.houseName} +15 · {thief.houseName} −10, cheated of the sale · the crown gives up a weapon", "favour": { "named": 15, "thief": -10 }, "do": { "threat": -20 }, "result": "The ledger burns in the great hall's fireplace. The lords breathe again, and some of them cheer." },
+          { "id": "keep", "label": "Keep it, and let them wonder", "hint": "the lords obey quietly · every house holds a grudge", "favour": { "named": -10, "thief": -10 }, "do": { "threat": -10 }, "result": "The ledger goes into the King's own chest. The court has never been so polite." }
         ]
       },
       "after": [2, 3],
@@ -103,7 +103,7 @@
       "end": "resolved",
       "speaker": "named",
       "at": "hall",
-      "text": "The ledger's pages are ash or in the crown's keeping, and its secrets with them. The great houses go back to plotting the old way: in the open."
+      "text": "The ledger is ash, or locked in the crown's chest, and its secrets with it. The great houses go back to plotting the old way, out in the open."
     }
   ]
 }

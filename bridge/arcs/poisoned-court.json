@@ -2,7 +2,7 @@
   "id": "poisoned-court",
   "reign": true,
   "name": "The Poisoned Court",
-  "about": "Heirs are dying at feasts across the realm, and the cups all passed through one great lord's hands. Find the poisoner, or be the next one buried.",
+  "about": "Heirs are dying at feasts all over the realm, and every cup went through one great lord's hands. Find the poisoner, or you'll be the next one buried.",
   "tags": [
     "intrigue",
     "the-court",
@@ -88,7 +88,7 @@
       "threat": 20,
       "speaker": "mourner",
       "at": "hall",
-      "text": "{first} falls at the feast in {hall}, clutching {first.his} throat. The physicians say a fever. The servants say otherwise.",
+      "text": "{first} collapses at the feast in {hall}, clutching {first.his} throat. The physicians say it was a fever. The servants say it wasn't.",
       "memory": {
         "mourner": "I saw {first} die at the table in {hall}. It was no fever."
       },
@@ -101,12 +101,12 @@
       },
       "court": {
         "from": "mourner",
-        "text": "{mourner} of {mourner.house}: \"{first} was poisoned, Your Grace, I would stake my house on it. Someone at that table wanted {first.him} dead.\"",
+        "text": "{mourner} of {mourner.house}: \"{first} was poisoned, Your Grace. I'd stake my house on it. Someone at that table wanted {first.him} dead.\"",
         "options": [
           {
             "id": "inquire",
-            "label": "Send the King's own men to question every servant (100 gold)",
-            "hint": "the truth, slowly · {mourner.houseName} +5",
+            "label": "Have your own men question every servant (100 gold)",
+            "hint": "you get the truth, slowly · {mourner.houseName} +5",
             "cost": 100,
             "favour": {
               "mourner": 5
@@ -119,24 +119,24 @@
           {
             "id": "tasters",
             "label": "Double the tasters at every royal table (150 gold)",
-            "hint": "safer cups · no answers",
+            "hint": "your cups are safer · you get no answers",
             "cost": 150,
             "do": {
               "threat": -5
             },
-            "result": "Every cup at court passes two tongues before it reaches the King's."
+            "result": "Every cup at court now goes past two tasters before it reaches the King."
           },
           {
             "id": "fever",
-            "label": "Accept the physicians' word: a fever",
-            "hint": "nothing now · the poisoner grows bold",
+            "label": "Take the physicians' word that it was a fever",
+            "hint": "costs nothing now · the poisoner gets bolder",
             "favour": {
               "mourner": -10
             },
             "do": {
               "threat": 10
             },
-            "result": "The crown accepts it was a fever. {mourner} does not."
+            "result": "The crown accepts it was a fever. {mourner} doesn't."
           }
         ]
       },
@@ -159,46 +159,46 @@
       "speaker": "mourner",
       "at": "hall",
       "text": [
-        "{second} dies after a wedding cup, and {mourner} rides to Kingsmere without stopping to bury {second.him}.",
-        "Another cup, another grave: {second}, of {mourner.house}. The realm's great families begin to eat only what their own cooks make."
+        "{second} dies after drinking from a wedding cup, and {mourner} rides to Kingsmere without stopping to bury {second.him}.",
+        "Another cup, another grave. This time it's {second}, of {mourner.house}. The great families of the realm start eating only what their own cooks make."
       ],
       "do": {
         "die": {
           "who": "second",
           "chance": 1,
-          "how": "poisoned at a wedding cup"
+          "how": "poisoned by a wedding cup"
         }
       },
       "court": {
         "from": "mourner",
-        "text": "{mourner}: \"Two of the realm's heirs are dead, Your Grace, and both cups came from {poisoner}'s cellars. Will you name {poisoner.him}, or wait for a third?\"",
+        "text": "{mourner}: \"Two heirs are dead, Your Grace, and both cups came from {poisoner}'s cellars. Will you name {poisoner.him}, or wait for a third?\"",
         "options": [
           {
             "id": "accuse",
-            "label": "Accuse {poisoner} before the whole court",
-            "hint": "{poisoner.houseName} −30 · right or wrong, there's no going back",
+            "label": "Accuse {poisoner} in front of the whole court",
+            "hint": "{poisoner.houseName} −30 · right or wrong, you can't take it back",
             "favour": {
               "poisoner": -30
             },
             "do": {
               "threat": -10
             },
-            "result": "The King names {poisoner} before the court. The hall goes silent, and {poisoner} smiles."
+            "result": "The King names {poisoner} in front of the court. The hall goes silent, and {poisoner} smiles."
           },
           {
             "id": "spy",
-            "label": "Plant a man in {poisoner}'s household (200 gold)",
-            "hint": "proof, in time · or the spy is found",
+            "label": "Plant a spy in {poisoner}'s household (200 gold)",
+            "hint": "you get proof in time · or the spy gets caught",
             "cost": 200,
             "do": {
               "threat": -5
             },
-            "result": "A new steward enters {poisoner}'s service at {hall}, recommended by no one."
+            "result": "A new steward joins {poisoner}'s household at {hall}. Nobody recommended him."
           },
           {
             "id": "wait",
-            "label": "Say nothing until there is proof",
-            "hint": "nothing now · the poisoner chooses the next cup",
+            "label": "Say nothing until you have proof",
+            "hint": "costs nothing now · the poisoner picks the next cup",
             "do": {
               "threat": 15
             },
@@ -266,7 +266,7 @@
       "threat": 70,
       "speaker": "poisoner",
       "at": "hall",
-      "text": "With no proof behind it, the King's accusation turns the realm against the crown, not {poisoner}. {poisoner.house} calls it tyranny, and others listen.",
+      "text": "The King had no proof, so the realm turns against the crown instead of {poisoner}. {poisoner.house} calls it tyranny, and people listen.",
       "do": {
         "favour": {
           "mourner": -10
@@ -288,15 +288,15 @@
       "threat": 90,
       "speaker": "poisoner",
       "at": "hall",
-      "text": "The King's taster is found dead in the royal kitchens at dawn. The cup was meant for the throne.",
+      "text": "The King's taster is found dead in the royal kitchens at dawn. The cup was meant for the King.",
       "court": {
         "from": "mourner",
-        "text": "{mourner}, white-faced: \"Your Grace, your taster is dead. The next cup is yours. Leave Kingsmere, or end this tonight.\"",
+        "text": "{mourner}, white in the face: \"Your Grace, your taster is dead. The next cup is yours. Leave Kingsmere, or end this tonight.\"",
         "options": [
           {
             "id": "flee",
-            "label": "Leave Kingsmere in secret for a season (300 gold)",
-            "hint": "the court is purged while you're gone · the realm sees you run",
+            "label": "Slip out of Kingsmere for a season (300 gold)",
+            "hint": "the court is cleaned out while you're gone · the realm sees you run",
             "cost": 300,
             "do": {
               "threat": -30
@@ -305,19 +305,19 @@
           },
           {
             "id": "seize",
-            "label": "Seize {poisoner} tonight, proof or none",
-            "hint": "{poisoner.houseName} −40 · you may be right",
+            "label": "Arrest {poisoner} tonight, proof or no proof",
+            "hint": "{poisoner.houseName} −40 · you might be right",
             "favour": {
               "poisoner": -40
             },
             "do": {
               "threat": -10
             },
-            "result": "The King's guard takes {poisoner} from {poisoner.his} bed. The cellars at {hall} are opened."
+            "result": "The King's guards drag {poisoner} out of {poisoner.his} bed. The cellars at {hall} are opened."
           },
           {
             "id": "feast",
-            "label": "Hold the feast as planned: a King is not afraid",
+            "label": "Hold the feast anyway, because a King isn't afraid",
             "hint": "the cup is poured",
             "do": {
               "threat": 5
@@ -355,7 +355,7 @@
       "stage": "crisis",
       "speaker": "poisoner",
       "at": "hall",
-      "text": "The King lifts the cup. Down the table, {mourner} goes still.",
+      "text": "The King lifts the cup. Down the table, {mourner} freezes.",
       "after": [
         1,
         1
@@ -373,27 +373,27 @@
       ],
       "court": {
         "from": "mourner",
-        "text": "{mourner}, across the board, barely moving {mourner.his} lips: \"Your Grace. Not that cup.\"",
+        "text": "{mourner}, across the table, barely moving {mourner.his} lips: \"Your Grace. Don't drink that.\"",
         "options": [
           {
             "id": "setdown",
-            "label": "Set the cup down and call the taster (100 gold)",
-            "hint": "the feast is shamed · {poisoner} is watched from now on",
+            "label": "Put the cup down and call the taster (100 gold)",
+            "hint": "the feast is ruined · {poisoner} is watched from now on",
             "cost": 100,
             "favour": {
               "poisoner": -10,
               "mourner": 10
             },
-            "result": "The King sets the cup down untouched. The taster drinks, and does not rise from the bench. Every eye at the table turns to {poisoner}."
+            "result": "The King puts the cup down untouched. The taster drinks and doesn't get up from the bench. Everyone at the table turns to look at {poisoner}."
           },
           {
             "id": "drink",
-            "label": "Drink, and shame the whisperers",
-            "hint": "the court sees a fearless King · if {mourner} is right, it is the last thing it sees",
+            "label": "Drink it and shame the gossips",
+            "hint": "the court sees a fearless King · if {mourner} is right, you die",
             "favour": {
               "poisoner": 10
             },
-            "result": "The King drains the cup to the dregs and turns it over on the board."
+            "result": "The King drains the cup and turns it upside down on the table."
           }
         ]
       },
@@ -405,7 +405,7 @@
       "stage": "resolution",
       "end": "failed",
       "at": "hall",
-      "text": "The King dies at his own table, as the heirs did. {poisoner} weeps loudest at the funeral.",
+      "text": "The King dies at his own table, just like the heirs. {poisoner} cries the loudest at the funeral.",
       "do": {
         "fall": "The King dies at his own table, poisoned like the heirs before him. {poisoner} weeps loudest at the funeral, and the crown passes to whoever {poisoner.he} chooses."
       }
@@ -416,7 +416,7 @@
       "end": "resolved",
       "speaker": "mourner",
       "at": "hall",
-      "text": "The poison is found in {poisoner}'s cellars at {hall}, in the steward's own hand. {poisoner} is taken in chains, and the realm's cups are safe again.",
+      "text": "The poison turns up in {poisoner}'s cellars at {hall}, with the steward's own hand on it. {poisoner} is taken away in chains, and the realm's cups are safe again.",
       "do": {
         "favour": {
           "poisoner": -30,
@@ -425,11 +425,11 @@
         "die": {
           "who": "poisoner",
           "chance": 0.6,
-          "how": "the headsman, for the poisoned court"
+          "how": "the headsman, for poisoning the court"
         }
       },
       "memory": {
-        "mourner": "The King found who poisoned the heirs, and the dead are answered."
+        "mourner": "The King found out who poisoned the heirs, and the dead have their justice."
       }
     },
     {
@@ -437,7 +437,7 @@
       "stage": "resolution",
       "end": "resolved",
       "at": "hall",
-      "text": "{poisoner} dies, and the poisonings stop. Nobody at court says why aloud."
+      "text": "{poisoner} dies, and the poisonings stop. Nobody at court says out loud why."
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "id": "holy-movement",
   "name": "A holy man's movement",
-  "about": "A barefoot friar preaches to the hungry that the great are sinful; a lord embraces or hunts him, rivals cry heresy, and the friar becomes an order, an exile or a martyr.",
+  "about": "A barefoot friar tells the hungry that the great are sinners. A lord takes him in or hunts him, rivals call it heresy, and the friar ends up with an order, in exile or dead as a martyr.",
   "kind": "faith",
   "weight": 2,
   "cooldown": 14,
@@ -62,10 +62,10 @@
           "generous",
           "proud"
         ],
-        "memory": "The gods spoke to me in a ditch outside {lord.seat}. I have walked barefoot since.",
+        "memory": "The gods spoke to me in a ditch outside {lord.seat}. I've walked barefoot ever since.",
         "goal": {
           "kind": "faith",
-          "text": "bring the great of {lord.house} to their knees before the gods"
+          "text": "make the great of {lord.house} kneel to the gods"
         },
         "station": "friar"
       }
@@ -86,15 +86,15 @@
     "friar": "saint",
     "lord": "lord-dies"
   },
-  "fade": "The crowds thin as the harvest comes in. {friar} walks on to other villages, and {thread} is forgotten.",
+  "fade": "The crowds thin out once the harvest comes in. {friar} moves on to other villages, and people forget {thread}.",
   "beats": [
     {
       "id": "comes",
       "stage": "rising",
       "speaker": "friar",
-      "text": "A barefoot {friar.station} called {friar} goes out to the villages around {lord.seat}, preaching that the great are sinful and the poor will inherit the land.",
+      "text": "A barefoot {friar.station} called {friar} is going round the villages near {lord.seat}, preaching that the great are sinners and the poor will get the land.",
       "memory": {
-        "lord": "A friar called {friar} preaches in my villages that lords are sinners."
+        "lord": "A friar called {friar} is telling my villages that lords are sinners."
       },
       "after": [
         1,
@@ -131,7 +131,7 @@
       "id": "crowds",
       "stage": "rising",
       "speaker": "friar",
-      "text": "Hundreds follow {friar} from field to field. The tithe barns of {lord.house} stand half empty; the people give to the friar instead.",
+      "text": "Hundreds follow {friar} from field to field. The people give to the friar now, so the tithe barns of {lord.house} sit half empty.",
       "do": {
         "gold": {
           "lord": -20
@@ -168,10 +168,10 @@
       "id": "patron",
       "stage": "crisis",
       "speaker": "lord",
-      "text": "{lord} kneels in the mud before {friar} and is blessed. The faithful of {lord.seat} take up pikes and march behind the friar's crowds.",
+      "text": "{lord} kneels in the mud and {friar} blesses {lord}. The faithful of {lord.seat} pick up pikes and march with the friar's crowds.",
       "memory": {
-        "lord": "I knelt in the mud to {friar} and was blessed.",
-        "friar": "{lord} of {lord.house} knelt to me. The gods are working."
+        "lord": "I knelt in the mud and {friar} blessed me.",
+        "friar": "{lord} of {lord.house} knelt to me. The gods are at work."
       },
       "do": {
         "units": {
@@ -221,9 +221,9 @@
       "id": "heresy",
       "stage": "crisis",
       "speaker": "rival",
-      "text": "{rival} of {rival.house} writes to the King that {lord} harbours a heretic and arms a rabble against honest lords.",
+      "text": "{rival} of {rival.house} writes to the King. {rival} says {lord} is hiding a heretic and arming a mob against honest lords.",
       "memory": {
-        "lord": "{rival} called me a heretic's dog before the King.",
+        "lord": "{rival} called me a heretic's dog in front of the King.",
         "rival": "I warned the King about {lord} and the friar."
       },
       "do": {
@@ -271,7 +271,7 @@
       "stage": "resolution",
       "end": "resolved",
       "speaker": "friar",
-      "text": "No one dares come for {friar} while {lord}'s pikes stand round {friar.him}. The preaching goes on, and spreads.",
+      "text": "Nobody dares touch {friar} because {lord}'s pikemen stand round {friar.him}. So the preaching goes on, and it spreads.",
       "do": {
         "goal": {
           "lord": {
@@ -285,7 +285,7 @@
       "id": "crackdown",
       "stage": "crisis",
       "speaker": "lord",
-      "text": "{lord} sends riders to take {friar}. They find {friar.him} preaching on a hillside to a thousand people, and the riders do not dare.",
+      "text": "{lord} sends riders to arrest {friar}. They find {friar.him} preaching on a hillside to a thousand people, and they don't dare.",
       "memory": {
         "friar": "{lord} sent riders to take me. The people stood in their way."
       },
@@ -326,14 +326,14 @@
       "id": "martyr",
       "stage": "crisis",
       "speaker": "lord",
-      "text": "{friar} is hanged from the bridge at {lord.seat}. By morning the rope is gone, cut into relics.",
+      "text": "{friar} is hanged from the bridge at {lord.seat}. By morning the rope is gone, cut up and kept as relics.",
       "memory": {
-        "lord": "I hanged {friar} from the bridge at {lord.seat}. The people took the rope for relics."
+        "lord": "I hanged {friar} from the bridge at {lord.seat}. The people took the rope as relics."
       },
       "do": {
         "die": {
           "who": "friar",
-          "how": "I was hanged from the bridge at {lord.seat} for speaking the truth."
+          "how": "They hanged me from the bridge at {lord.seat} for telling the truth."
         },
         "favour": {
           "lord": -10
@@ -373,9 +373,9 @@
       "stage": "resolution",
       "end": "failed",
       "speaker": "lord",
-      "text": "The hungry rise in {friar}'s name. They burn the tithe barns of {lord.house} and stone {lord}'s stewards in the road.",
+      "text": "The hungry rise up in {friar}'s name. They burn the tithe barns of {lord.house} and stone {lord}'s stewards in the road.",
       "memory": {
-        "lord": "The poor rose in the hanged friar's name and burned my barns."
+        "lord": "The poor rose up in the hanged friar's name and burned my barns."
       },
       "do": {
         "gold": {
@@ -390,14 +390,14 @@
       "id": "forgotten",
       "stage": "resolution",
       "end": "resolved",
-      "text": "The relics are sold and resold at fairs. In a few years the bridge at {lord.seat} is only a bridge."
+      "text": "The relics get sold and sold again at fairs. A few years on, the bridge at {lord.seat} is just a bridge again."
     },
     {
       "id": "taken",
       "stage": "resolution",
       "end": "failed",
       "speaker": "friar",
-      "text": "{friar} is taken in the night and put on a ship across the sea in chains. The preaching stops; the poor do not forget the face.",
+      "text": "{friar} is taken in the night and shipped across the sea in chains. The preaching stops, but the poor don't forget the friar.",
       "do": {
         "rank": {
           "friar": "exile"
@@ -409,7 +409,7 @@
       "stage": "resolution",
       "end": "resolved",
       "speaker": "friar",
-      "text": "{friar}'s followers build a house of prayer outside {lord.seat}, with {lord}'s stone and the poor's labour. They call themselves the Barefoot Brothers.",
+      "text": "{friar}'s followers build a house of prayer outside {lord.seat}. {lord} gives the stone and the poor do the work. They call themselves the Barefoot Brothers.",
       "do": {
         "favour": {
           "lord": 4
@@ -420,15 +420,15 @@
       "id": "ignored",
       "stage": "resolution",
       "end": "faded",
-      "text": "Nobody much comes to hear {friar}. {friar.He} walks on to other lands, preaching to the crows."
+      "text": "Hardly anyone comes to hear {friar}. {friar.He} moves on to other lands and preaches to the crows."
     },
     {
       "id": "saint",
       "stage": "resolution",
       "end": "resolved",
-      "text": "{friar} dies in a hovel outside {lord.seat}, and within a season the poor are praying to {friar.him}.",
+      "text": "{friar} dies in a hovel outside {lord.seat}. Within a season the poor are praying to {friar.him}.",
       "memory": {
-        "lord": "{friar} is dead, and the poor pray to {friar.him} now."
+        "lord": "{friar} is dead, and now the poor pray to {friar.him}."
       }
     },
     {
@@ -436,7 +436,7 @@
       "stage": "resolution",
       "end": "resolved",
       "speaker": "friar",
-      "text": "{lord} dies, and {friar} preaches that it was the gods' judgment. The new lord of {lord.seat} listens carefully."
+      "text": "{lord} dies, and {friar} preaches that the gods did it. The new lord of {lord.seat} listens closely."
     }
   ]
 }

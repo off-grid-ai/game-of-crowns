@@ -2,7 +2,7 @@
   "id": "lost-brother",
   "reign": true,
   "name": "The Lost Brother",
-  "about": "A stranger at a great lord's table says he is the King's younger brother, drowned twenty years ago. He knows things only the brother could know. Test him, embrace him or hang him, and whether he is true or false, someone will use him.",
+  "about": "A stranger at a great lord's table says he's the King's younger brother, who drowned twenty years ago. He knows things only the brother could know. You can test him, welcome him or hang him, and true or false, someone will use him.",
   "tags": ["succession", "mysterious", "cunning", "the-court", "intrigue", "a-reign"],
   "kind": "pretender",
   "weight": 1,
@@ -22,14 +22,14 @@
       "threat": 15,
       "speaker": "stranger",
       "at": "hall",
-      "text": "At {hall}, a man in a fisherman's coat stands up at {sponsor}'s table and names himself: the King's brother, swept off the ferry at Kingsmere twenty years ago. He has the old King's chin, and a scar on his palm from a boyhood dare.",
+      "text": "At {hall}, a man in a fisherman's coat stands up at {sponsor}'s table and says he's the King's brother, the one swept off the ferry at Kingsmere twenty years ago. He has the old King's chin, and a scar on his palm from a boyhood dare.",
       "court": {
         "from": "sponsor",
-        "text": "{sponsor} of {sponsor.house}: \"He knows the name of your first pony, Your Grace, and the words carved under the nursery window. I thought you would want to see him yourself.\"",
+        "text": "{sponsor} of {sponsor.house}: \"He knows the name of your first pony, Your Grace, and the words carved under the nursery window. I thought you'd want to see him yourself.\"",
         "options": [
-          { "id": "receive", "label": "Receive him at court and hear him out", "hint": "the court will watch your face", "do": { "threat": 5 }, "result": "{stranger} kneels in the King's hall. Every eye in the room goes from his face to the King's, and back." },
-          { "id": "arrest", "label": "Arrest him as an impostor", "hint": "{sponsor.houseName} −20 · the realm wonders what you fear", "favour": { "sponsor": -20 }, "do": { "threat": 15 }, "result": "The King's guard takes {stranger} from {sponsor}'s table in chains. In the taverns they ask why a true King would fear a fisherman." },
-          { "id": "ignore", "label": "Pay it no mind", "hint": "nothing now · the tale grows on its own", "do": { "threat": 10 }, "result": "The King does not answer. {stranger} tells his tale in every hall {sponsor} takes him to." }
+          { "id": "receive", "label": "Bring him to court and hear him out", "hint": "the whole court watches how you take it", "do": { "threat": 5 }, "result": "{stranger} kneels in the King's hall. Everyone in the room looks from his face to the King's, and back." },
+          { "id": "arrest", "label": "Arrest him as a fake", "hint": "{sponsor.houseName} −20 · people wonder what you're afraid of", "favour": { "sponsor": -20 }, "do": { "threat": 15 }, "result": "The King's guards drag {stranger} from {sponsor}'s table in chains. In the taverns they ask why a real King would be afraid of a fisherman." },
+          { "id": "ignore", "label": "Ignore him", "hint": "costs nothing now · the story spreads anyway", "do": { "threat": 10 }, "result": "The King says nothing. {stranger} tells his story in every hall {sponsor} takes him to." }
         ]
       },
       "after": [2, 3],
@@ -46,14 +46,14 @@
       "stage": "rising",
       "threat": 25,
       "speaker": "elder",
-      "text": "{elder}, who served the old King's household when both princes were boys, asks {stranger} questions for three days. He answers most. Some he answers too well.",
+      "text": "{elder} served the old King's household when both princes were boys. {elder} questions {stranger} for three days. He answers most of it, and some of it he answers too well.",
       "court": {
         "from": "elder",
-        "text": "{elder} of {elder.house}: \"He knows what a prince would know, Your Grace. He also knows what a clever servant would have overheard. There is a nurse alive in the hills who bathed you both. She would know.\"",
+        "text": "{elder} of {elder.house}: \"He knows what a prince would know, Your Grace. He also knows what a clever servant could have overheard. There's a nurse still alive in the hills who bathed you both. She'd know.\"",
         "options": [
-          { "id": "nurse", "label": "Send for the old nurse (100 gold)", "hint": "the truth, whatever it is", "cost": 100, "do": { "threat": 0 }, "result": "Riders go into the hills for an old woman who has not seen a court in twenty years." },
-          { "id": "embrace", "label": "Embrace him as your brother", "hint": "{sponsor.houseName} +20 · a brother at court, and whoever stands behind him", "favour": { "sponsor": 20, "elder": -10 }, "do": { "threat": -10, "opinion": [["stranger", "sponsor", 15]] }, "result": "The King embraces {stranger} before the court. {sponsor} weeps the loudest." },
-          { "id": "dismiss", "label": "Send him away with a purse", "hint": "{sponsor.houseName} −10 · he may not stay away", "favour": { "sponsor": -10 }, "do": { "threat": 10 }, "result": "{stranger} takes the purse, and bows, and goes no further than {hall}." }
+          { "id": "nurse", "label": "Send for the old nurse (100 gold)", "hint": "you learn the truth, whatever it is", "cost": 100, "do": { "threat": 0 }, "result": "Riders go into the hills for an old woman who hasn't seen a court in twenty years." },
+          { "id": "embrace", "label": "Welcome him as your brother", "hint": "{sponsor.houseName} +20 · a brother at court, and whoever's behind him", "favour": { "sponsor": 20, "elder": -10 }, "do": { "threat": -10, "opinion": [["stranger", "sponsor", 15]] }, "result": "The King embraces {stranger} in front of the court. {sponsor} cries the loudest." },
+          { "id": "dismiss", "label": "Pay him to go away", "hint": "{sponsor.houseName} −10 · he might not stay away", "favour": { "sponsor": -10 }, "do": { "threat": 10 }, "result": "{stranger} takes the purse and bows, then goes no further than {hall}." }
         ]
       },
       "after": [2, 3],
@@ -71,13 +71,13 @@
       "stage": "crisis",
       "threat": 35,
       "speaker": "elder",
-      "text": "The nurse looks at {stranger} for a long time, then laughs. He is a mummer's son from the river towns who played the drowned prince in a pageant, and kept playing him.",
+      "text": "The nurse looks at {stranger} for a long time, then laughs. He's a mummer's son from the river towns. He once played the drowned prince in a pageant and never stopped.",
       "court": {
         "from": "elder",
-        "text": "{elder}: \"An impostor, Your Grace, and {sponsor} fed him, dressed him, and walked him through every hall in the realm. Was {sponsor.he} fooled, or was {sponsor.he} the playwright?\"",
+        "text": "{elder}: \"He's a fake, Your Grace, and {sponsor} fed him, dressed him and paraded him through every hall in the realm. Was {sponsor.he} fooled, or did {sponsor.he} set the whole thing up?\"",
         "options": [
-          { "id": "hang", "label": "Hang the mummer, and fine {sponsor}", "hint": "{sponsor.houseName} −20 · the tale ends on a rope", "favour": { "sponsor": -20, "elder": 10 }, "do": { "pay": [["sponsor", "elder", 80]], "die": { "who": "stranger", "how": "They hanged me at Kingsmere for playing a prince too well." } }, "result": "{stranger} hangs at Kingsmere's gate in his fisherman's coat. {sponsor} pays the fine without a word." },
-          { "id": "pardon", "label": "Pardon him: let him play the fool at court", "hint": "the realm laughs · {sponsor.houseName} is shamed", "favour": { "sponsor": -10 }, "do": { "threat": -10, "traits": { "stranger": { "add": ["humble"] } } }, "result": "{stranger} plays the drowned prince every feast-day now, for the King's amusement. The court laughs, and {sponsor} does not." }
+          { "id": "hang", "label": "Hang the mummer and fine {sponsor}", "hint": "{sponsor.houseName} −20 · the story ends on a rope", "favour": { "sponsor": -20, "elder": 10 }, "do": { "pay": [["sponsor", "elder", 80]], "die": { "who": "stranger", "how": "They hanged me at Kingsmere for playing a prince too well." } }, "result": "{stranger} hangs at Kingsmere's gate in his fisherman's coat. {sponsor} pays the fine without a word." },
+          { "id": "pardon", "label": "Pardon him and keep him as the court fool", "hint": "the realm laughs · {sponsor.houseName} is shamed", "favour": { "sponsor": -10 }, "do": { "threat": -10, "traits": { "stranger": { "add": ["humble"] } } }, "result": "Now {stranger} plays the drowned prince every feast day to amuse the King. The court laughs, but {sponsor} doesn't." }
         ]
       },
       "after": [1, 2],
@@ -90,13 +90,13 @@
       "stage": "crisis",
       "threat": 45,
       "speaker": "elder",
-      "text": "The nurse falls to her knees and kisses {stranger}'s scarred hand. The drowned prince is alive, and the realm has two sons of the old King.",
+      "text": "The nurse drops to her knees and kisses {stranger}'s scarred hand. The drowned prince is alive, so now the realm has two sons of the old King.",
       "court": {
         "from": "elder",
-        "text": "{elder}, quietly: \"He is your brother, Your Grace. The law says nothing about a prince who comes back from the dead. You must say it instead.\"",
+        "text": "{elder}, quietly: \"He is your brother, Your Grace. The law says nothing about a prince who comes back from the dead, so you'll have to decide.\"",
         "options": [
-          { "id": "council", "label": "Give your brother a seat on the council, and an oath (300 gold)", "hint": "{sponsor.houseName} +15 · a brother sworn, and kept", "cost": 300, "favour": { "sponsor": 15, "elder": 10 }, "do": { "threat": -15, "opinion": [["stranger", "sponsor", -10]] }, "result": "{stranger} swears fealty to his brother on the old King's sword, and takes a seat at the council table, away from {sponsor}." },
-          { "id": "exile", "label": "Exile him across the sea with an income", "hint": "{sponsor.houseName} −20 · a prince abroad", "favour": { "sponsor": -20 }, "do": { "threat": 15, "leave": "stranger" }, "result": "The King's own brother boards a ship at the river mouth. {sponsor} rides beside the carriage to the dock." }
+          { "id": "council", "label": "Give your brother a council seat for his oath (300 gold)", "hint": "{sponsor.houseName} +15 · your brother is sworn to you and kept close", "cost": 300, "favour": { "sponsor": 15, "elder": 10 }, "do": { "threat": -15, "opinion": [["stranger", "sponsor", -10]] }, "result": "{stranger} swears loyalty to his brother on the old King's sword and takes a seat at the council table, away from {sponsor}." },
+          { "id": "exile", "label": "Exile him across the sea with an income", "hint": "{sponsor.houseName} −20 · a prince living abroad", "favour": { "sponsor": -20 }, "do": { "threat": 15, "leave": "stranger" }, "result": "The King's own brother boards a ship at the river mouth. {sponsor} rides beside the carriage all the way to the dock." }
         ]
       },
       "after": [2, 3],
@@ -113,13 +113,13 @@
       "threat": 40,
       "speaker": "sponsor",
       "at": "hall",
-      "text": "{stranger} sits in the King's cells and says nothing at all. Outside, {sponsor}'s men chalk the drowned prince's sign on the doors of Kingsmere.",
+      "text": "{stranger} sits in the King's cells and says nothing at all. Outside, {sponsor}'s men chalk the drowned prince's sign on doors all over Kingsmere.",
       "court": {
         "from": "sponsor",
-        "text": "{sponsor}: \"A man in your cells for the crime of having your brother's face, Your Grace. The realm is asking what else he knows.\"",
+        "text": "{sponsor}: \"You've got a man in your cells whose only crime is having your brother's face, Your Grace. People are asking what else he knows.\"",
         "options": [
-          { "id": "trial", "label": "Try him openly before the lords (150 gold)", "hint": "{sponsor.houseName} −5 · the truth comes out, either way", "cost": 150, "favour": { "sponsor": -5 }, "do": { "threat": -5 }, "result": "The King's justice will be seen: {stranger} goes before the lords in the great hall." },
-          { "id": "quietly", "label": "Let him die quietly in his cell", "hint": "{sponsor.houseName} −30 · a martyr", "favour": { "sponsor": -30 }, "do": { "threat": 25, "die": { "who": "stranger", "how": "They strangled me in the dark under Kingsmere, and never asked my name." } }, "result": "{stranger} is found dead in his cell. The guards say it was a fever. The realm says it was a brother." }
+          { "id": "trial", "label": "Try him in front of the lords (150 gold)", "hint": "{sponsor.houseName} −5 · the truth comes out either way", "cost": 150, "favour": { "sponsor": -5 }, "do": { "threat": -5 }, "result": "Everyone will see the King's justice. {stranger} stands before the lords in the great hall." },
+          { "id": "quietly", "label": "Let him die quietly in his cell", "hint": "{sponsor.houseName} −30 · he becomes a martyr", "favour": { "sponsor": -30 }, "do": { "threat": 25, "die": { "who": "stranger", "how": "They strangled me in the dark under Kingsmere and never asked my name." } }, "result": "{stranger} is found dead in his cell. The guards say it was a fever. The realm says it was his brother." }
         ]
       },
       "after": [2, 2],
@@ -135,7 +135,7 @@
       "stage": "rising",
       "threat": 30,
       "speaker": "stranger",
-      "text": "{stranger} rides with the King to the hunt and sits at his left hand at feasts. {sponsor} visits him often, and they talk with their heads close.",
+      "text": "{stranger} rides to the hunt with the King and sits at his left hand at feasts. {sponsor} visits him often, and they talk with their heads close together.",
       "after": [3, 4],
       "next": [
         { "if": { "favour": ["sponsor", "<", 35] }, "to": "the-gathering" },
@@ -151,14 +151,14 @@
       "threat": 65,
       "speaker": "sponsor",
       "at": "hall",
-      "text": "At {hall}, {sponsor} raises the drowned prince's banner: the old King's arms with a blue wave across them. Lords who never loved the crown send men to stand under it.",
+      "text": "At {hall}, {sponsor} raises the drowned prince's banner, the old King's arms with a blue wave across them. Lords who never loved the crown send men to stand under it.",
       "do": { "units": { "sponsor": { "type": "Pikemen", "count": 2 } } },
       "court": {
         "from": "elder",
-        "text": "{elder}: \"They call him the true King now, Your Grace, as if there could be a truer one than you. Buy {sponsor} off, or meet them in the field.\"",
+        "text": "{elder}: \"They're calling him the true King now, Your Grace, as if anyone could be truer than you. Buy {sponsor} off, or meet them on the battlefield.\"",
         "options": [
-          { "id": "buy", "label": "Buy {sponsor}'s loyalty back (400 gold)", "hint": "{sponsor.houseName} +30 · the banner comes down", "cost": 400, "favour": { "sponsor": 30 }, "do": { "threat": -30 }, "result": "{sponsor} takes the King's gold and the wave banner comes down. {stranger} wakes alone at {hall}." },
-          { "id": "field", "label": "Let them come", "hint": "a war for the crown", "do": { "threat": 15 }, "result": "The King sends no gold, only a herald with a date and a field." }
+          { "id": "buy", "label": "Buy {sponsor}'s loyalty back (400 gold)", "hint": "{sponsor.houseName} +30 · the banner comes down", "cost": 400, "favour": { "sponsor": 30 }, "do": { "threat": -30 }, "result": "{sponsor} takes the King's gold and the wave banner comes down. {stranger} wakes up alone at {hall}." },
+          { "id": "field", "label": "Let them come", "hint": "a war for the crown", "do": { "threat": 15 }, "result": "The King sends no gold, just a herald with a date and a battlefield." }
         ]
       },
       "after": [2, 3],
@@ -175,7 +175,7 @@
       "threat": 95,
       "speaker": "stranger",
       "at": "hall",
-      "text": "The host of the drowned prince marches on Kingsmere under the blue wave, with {sponsor} at its head and {stranger} beside {sponsor.him}, crowned in river reeds.",
+      "text": "The drowned prince's army marches on Kingsmere under the blue wave. {sponsor} leads it, with {stranger} beside {sponsor.him} wearing a crown of river reeds.",
       "do": { "usurper": "sponsor", "host": 12 },
       "after": [3, 3],
       "next": [{ "if": { "usurper": "none" }, "to": "the-claim-dies" }],
@@ -187,14 +187,14 @@
       "stage": "resolution",
       "end": "resolved",
       "speaker": "stranger",
-      "text": "Two sons of the old King ride together through Kingsmere at the midsummer fair. {stranger} sends {sponsor} home with thanks, and the realm stops counting crowns."
+      "text": "Two sons of the old King ride through Kingsmere together at the midsummer fair. {stranger} sends {sponsor} home with thanks, and the realm stops worrying about who wears the crown."
     },
     {
       "id": "the-claim-dies",
       "stage": "resolution",
       "end": "resolved",
       "speaker": "elder",
-      "text": "The drowned prince's tale ends as it began, in the river's silence. In ten years nobody under thirty believes it ever happened."
+      "text": "The drowned prince's story ends the way it started, quietly, by the river. Ten years on, nobody under thirty believes it ever happened."
     }
   ]
 }

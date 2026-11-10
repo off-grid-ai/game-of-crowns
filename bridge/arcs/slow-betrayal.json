@@ -1,7 +1,7 @@
 {
   "id": "slow-betrayal",
   "name": "A slow betrayal",
-  "about": "A bannerman with a grievance is courted by another house, letter by letter and cask by cask; the liege grows suspicious, and the town either changes hands or its lord loses his head.",
+  "about": "Another house courts a bannerman who holds a grudge, with letter after letter and cask after cask of gold. His liege grows suspicious. In the end the town changes hands, or its lord loses his head.",
   "kind": "betrayal",
   "weight": 3,
   "cooldown": 10,
@@ -78,7 +78,7 @@
       "stage": "rising",
       "speaker": "turncoat",
       "at": "town",
-      "text": "A merchant who is no merchant comes to {town} with letters from {tempter} of {tempter.house}, and leaves without them.",
+      "text": "A man posing as a merchant comes to {town} with letters from {tempter} of {tempter.house}, and leaves without them.",
       "memory": {
         "turncoat": "{tempter} wrote to me as an equal. My own liege never has.",
         "liege": false
@@ -125,7 +125,7 @@
       "stage": "rising",
       "speaker": "turncoat",
       "at": "town",
-      "text": "Gold from {tempter.house} comes to {town} in wine casks. {turncoat} buys horses and says they are for the tourney.",
+      "text": "{tempter.house} sends gold to {town} hidden in wine casks. {turncoat} buys horses and says they're for the tourney.",
       "memory": {
         "turncoat": "I took {tempter}'s gold. There is no unknowing it."
       },
@@ -176,7 +176,7 @@
       "id": "suspicion",
       "stage": "crisis",
       "speaker": "liege",
-      "text": "{liege} hears of the horses, and the casks, and asks {turncoat} to winter at {liege.seat}. {turncoat} pleads a fever.",
+      "text": "{liege} hears about the horses and the casks, and invites {turncoat} to spend the winter at {liege.seat}. {turncoat} claims to have a fever.",
       "memory": {
         "liege": "{turncoat} will not come to {liege.seat}. A loyal man comes when called.",
         "turncoat": "{liege} called me to {liege.seat} for the winter. I said I had a fever. I do not."
@@ -223,7 +223,7 @@
       "stage": "crisis",
       "speaker": "turncoat",
       "at": "town",
-      "text": "{turncoat} rides to {liege.seat} at last, between two files of {liege.house}'s spearmen.",
+      "text": "{turncoat} finally rides to {liege.seat}, between two lines of {liege.house}'s spearmen.",
       "after": [
         1,
         1
@@ -253,14 +253,14 @@
       "stage": "resolution",
       "end": "resolved",
       "speaker": "liege",
-      "text": "{liege} has {turncoat} beheaded in the yard at {liege.seat}, after the letters from {tempter} are read aloud.",
+      "text": "The letters from {tempter} are read aloud, and then {liege} has {turncoat} beheaded in the yard at {liege.seat}.",
       "memory": {
         "liege": "{tempter} bought my bannerman {turncoat} with gold. I took the traitor's head and I will have more."
       },
       "do": {
         "die": {
           "who": "turncoat",
-          "how": "I was beheaded at {liege.seat} for {tempter}'s gold."
+          "how": "I was beheaded at {liege.seat} for taking {tempter}'s gold."
         },
         "opinion": [
           [
@@ -282,7 +282,7 @@
       "stage": "resolution",
       "end": "resolved",
       "speaker": "liege",
-      "text": "{liege} forgives {turncoat} before the hall, and keeps {turncoat}'s eldest at {liege.seat} as a ward. Everyone understands.",
+      "text": "{liege} forgives {turncoat} in front of the hall, but keeps {turncoat}'s eldest at {liege.seat} as a ward. Everyone knows why.",
       "memory": {
         "turncoat": "{liege} forgave me and took my child as surety. I will be watched until I die."
       },
@@ -304,7 +304,7 @@
       "stage": "crisis",
       "speaker": "turncoat",
       "at": "town",
-      "text": "On a moonless night {turncoat} opens the gates of {town} to {tempter.house}. By dawn the banners on the walls have changed.",
+      "text": "On a moonless night {turncoat} opens the gates of {town} to {tempter.house}. By dawn there are new banners on the walls.",
       "memory": {
         "liege": "{turncoat} betrayed me and gave {town} to {tempter.house}.",
         "tempter": "{turncoat} gave me {town} for the price of a few casks.",
@@ -365,7 +365,7 @@
       "stage": "crisis",
       "speaker": "liege",
       "at": "town",
-      "text": "{liege} will not suffer it. The host of {liege.house} marches on {town} to take it back from {tempter}.",
+      "text": "{liege} won't stand for it. The army of {liege.house} marches on {town} to take it back from {tempter}.",
       "do": {
         "war": [
           "liege",
@@ -413,7 +413,7 @@
       "end": "resolved",
       "speaker": "turncoat",
       "at": "town",
-      "text": "{turncoat} sits safe in {town} under {tempter.house}'s banners. Bannermen across the realm take note of what treason pays.",
+      "text": "{turncoat} sits safe in {town} under {tempter.house}'s banners. Bannermen across the realm see that treason pays.",
       "do": {
         "loyalty": {
           "liege": -5
@@ -425,7 +425,7 @@
       "stage": "resolution",
       "end": "failed",
       "speaker": "turncoat",
-      "text": "{turncoat} burns {tempter}'s letters unread, and sends the ashes to {liege} in a box.",
+      "text": "{turncoat} burns {tempter}'s letters without reading them, and sends the ashes to {liege} in a box.",
       "memory": {
         "liege": "{turncoat} sent me the ashes of {tempter}'s letters. A loyal man.",
         "tempter": "{turncoat} burned my letters and sent the ashes to {liege}. Spurned like a peddler."
@@ -452,7 +452,7 @@
       "id": "tempter-gone",
       "stage": "resolution",
       "end": "faded",
-      "text": "{tempter} dies, and the gold stops coming to {town}. {turncoat} never speaks of the letters, and burns them one night in the kitchen fire."
+      "text": "{tempter} dies, and the gold stops coming to {town}. {turncoat} never mentions the letters, and one night burns them in the kitchen fire."
     }
   ]
 }
