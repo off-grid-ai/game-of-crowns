@@ -133,6 +133,7 @@ func _process(delta: float) -> void:
 		if sk == null or not d.has("feet"):
 			continue
 		var s := maxf(0.0001, p.global_transform.basis.get_scale().x)
+		var riding := clip.begins_with("ride/") or p.has_meta("mounted")  # a rider's feet go with the horse
 		# Foot skate: planted feet, in the clip's own metres.
 		for k in 2:
 			var b: int = d["feet"][k]
@@ -142,7 +143,7 @@ func _process(delta: float) -> void:
 			var local_y := p.to_local(w).y
 			d["min"][k] = minf(d["min"][k], local_y)
 			var last = d["last"][k]
-			if last != null and local_y < float(d["min"][k]) + PLANTED:
+			if last != null and not riding and local_y < float(d["min"][k]) + PLANTED:
 				d["planted"] += 1
 				_planted[clip] = _planted.get(clip, 0) + 1
 				if Vector2(w.x - last.x, w.z - last.z).length() / s > SKATE:
