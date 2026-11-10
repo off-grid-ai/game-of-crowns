@@ -60,6 +60,15 @@ const BODIES := {
 	# Light enough (19k triangles) for the few gentlewomen about a town's market and sept.
 	"noble_lady": {"sex": "f", "roles": ["noble"], "cloth": [], "crowd": true},
 }
+## Never cast, whatever a list elsewhere says (asset-audit.md's never-use
+## list, plain medieval: Mac, 2026-11-10): modern dress, fantasy armour and
+## faces, bare chests. Bodies and outfits alike; the one place it's kept.
+const NEVER := ["erika", "erika_bow", "arissa", "eve", "akai", "ganfaul", "uriel", "dreyar", "brute", "fuse_woman_1", "Female_Ranger"]
+## How many people made just before are "beside" the next: the scenes, knots
+## and rows that set people down make them one after another, so the last few
+## made are the ones they'll stand next to.
+const NEIGHBOURS := 4
+
 ## How often a crowd figure is a Mixamo character rather than a Quaternius
 ## outfit, by station. The plain Fuse townsfolk, Svend and the jerkined
 ## peasant stand in for peasants and townsfolk; most clergy wear the friar's habit; most archers wear a soldier's outfit;
@@ -84,6 +93,7 @@ var _lib: AnimationLibrary
 var _scenes := {}
 var _heights := {}  # Mixamo body -> scale that stands it as tall as an outfit
 var _ok := {}  # Mixamo body -> whether it loads with the shared skeleton
+var _recent: Array[String] = []  # the looks of the last NEIGHBOURS people made: body, or outfit and cloth
 
 
 func _init() -> void:
@@ -194,18 +204,34 @@ func make(rng: RandomNumberGenerator, role := "peasant", tint := Color.WHITE, ag
 		# A crowd's sex is rolled first, so the mix of bodies on hand doesn't decide it.
 		var want := sex if sex != "" or look != "" else ("male" if rng.randf() < 0.5 else "female")
 		var pool := _bodies(role, want, tint != Color.WHITE and look == "", look == "")
+		if look == "":
+			# Never the twin of whoever they'll stand beside: another body when there is one.
+			var fresh := pool.filter(func(b): return not ("body:" + String(b)) in _recent)
+			if not fresh.is_empty():
+				pool = fresh
+			elif not _recent.is_empty() and pool.size() == 1 and ("body:" + String(pool[0])) == _recent[-1]:
+				pool = []  # the only body there is would stand beside itself: they wear an outfit this once
 		if not pool.is_empty():
 			var body: String = pool[(abs(hash(look)) if look != "" else rng.randi()) % pool.size()]
+			if look == "":
+				_seen("body:" + body)
 			return make_body(rng, body, tint, age, build, role)
 	# A lady in a crowd, or too young or old for the gowned body, wears the dress in her house's colour.
 	var outfit_role := "soldier" if role in ["soldier", "archer", "knight"] or (role == "noble" and sex.left(1) != "f") else "peasant"
-	var outfits: Array = OUTFITS[outfit_role].filter(func(o): return sex == "" or o[1] == sex.left(1))
+	var outfits: Array = OUTFITS[outfit_role].filter(func(o): return (sex == "" or o[1] == sex.left(1)) and not o[0] in NEVER)
 	if outfits.is_empty():
-		outfits = OUTFITS[outfit_role]
+		outfits = OUTFITS[outfit_role].filter(func(o): return not o[0] in NEVER)
 	var pick: Array = outfits[rng.randi() % outfits.size()]
 	var person: Node3D = _scene("res://assets/people/%s.gltf" % pick[0]).instantiate()
 	var skeleton: Skeleton3D = person.get_node("Armature/GeneralSkeleton")
 	var cloth: Color = tint if tint != Color.WHITE else CLOTH[rng.randi() % CLOTH.size()]
+	if tint == Color.WHITE:
+		# The same outfit in the same cloth beside them would be a twin: another cloth.
+		for tries in CLOTH.size():
+			if not ("%s:%s" % [pick[0], cloth.to_html()]) in _recent:
+				break
+			cloth = CLOTH[(CLOTH.find(cloth) + 1) % CLOTH.size()]
+	_seen("%s:%s" % [pick[0], cloth.to_html()])
 	var livery := tint != Color.WHITE and outfit_role == "soldier"
 	for child in skeleton.get_children():
 		if child is MeshInstance3D:
@@ -223,6 +249,12 @@ func make(rng: RandomNumberGenerator, role := "peasant", tint := Color.WHITE, ag
 	if pick[1] == "m" and age != "child" and rng.randf() < (0.7 if age == "elder" else 0.4):
 		_attach(skeleton, "Hair_Beard", hair_colour)
 	return _finish(person, skeleton, rng, role, age, build, "male" if pick[1] == "m" else "female")
+
+
+func _seen(look: String) -> void:
+	_recent.append(look)
+	if _recent.size() > NEIGHBOURS:
+		_recent.pop_front()
 
 
 ## The station a named person (a bridge /person record) is dressed for: by
@@ -248,7 +280,7 @@ static func station(person: Dictionary) -> String:
 ## any are, able to wear a house's colour if one is asked, and light enough
 ## for a crowd unless they stand alone.
 func _bodies(role: String, sex: String, coloured: bool, crowd: bool) -> Array:
-	var pool := BODIES.keys().filter(func(b): return role in BODIES[b]["roles"] and (not crowd or BODIES[b]["crowd"]) and (not coloured or not BODIES[b]["cloth"].is_empty()) and _usable(b))
+	var pool := BODIES.keys().filter(func(b): return not b in NEVER and role in BODIES[b]["roles"] and (not crowd or BODIES[b]["crowd"]) and (not coloured or not BODIES[b]["cloth"].is_empty()) and _usable(b))
 	# Never the other sex: with no body of theirs, they wear an outfit instead.
 	return pool.filter(func(b): return sex == "" or BODIES[b]["sex"] == sex.left(1))
 
@@ -432,16 +464,10 @@ func _finish(person: Node3D, skeleton: Skeleton3D, rng: RandomNumberGenerator, r
 
 
 ## Body shape by bone scale: the same models read as stout or thin, child or elder.
-func _shape(skeleton: Skeleton3D, build: String, age: String) -> void:
-	var girth: float = {"thin": 0.94, "average": 1.0, "stout": 1.08}[build]
-	for bone in ["Hips", "Spine", "Chest"]:
-		var i := skeleton.find_bone(bone)
-		if i >= 0:
-			skeleton.set_bone_pose_scale(i, Vector3(girth, 1.0, girth * (1.05 if build == "stout" else 1.0)))
-	for bone in ["LeftUpperLeg", "RightUpperLeg"]:
-		var i := skeleton.find_bone(bone)
-		if i >= 0:
-			skeleton.set_bone_pose_scale(i, Vector3(lerpf(1.0, girth, 0.5), 1.0, lerpf(1.0, girth, 0.5)))
+## The trunk is never widened (animation-pipeline.md, section 3): the moves
+## were made on a slim body, and a stout man's swinging hand went through his
+## own belly. Build shows in who they are (outfit, body), not in scaled bones.
+func _shape(skeleton: Skeleton3D, _build: String, age: String) -> void:
 	if age == "child":
 		var head := skeleton.find_bone("Head")
 		if head >= 0:

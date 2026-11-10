@@ -30,6 +30,33 @@ const KINDS := {
 # What fills each hand for a kind, and whether a shield can go with it.
 const TWO_HANDED := ["greatsword", "spear", "bow"]
 
+## Tools in the hand, held the same way as arms (the one hand-held module,
+## animation-pipeline.md section 4). path: the model; the rest as KINDS. Up
+## is +Y in these glTFs: a handle's butt below its head, a pail's handle at its top.
+const TOOLS := {
+	"bowl": {"path": "res://assets/props/tools/wooden_bowl_01/wooden_bowl_01_1k.gltf", "length": 0.14, "tip": Vector3(1, 0, 0), "edge": Vector3(0, 1, 0), "grip": 0.5},  # a mazer, the commoner's cup
+	"hammer": {"path": "res://assets/props/tools/wooden_hammer_01/wooden_hammer_01_1k.gltf", "length": 0.3, "tip": Vector3(0, 1, 0), "edge": Vector3(1, 0, 0), "grip": 0.15},
+	"broom": {"path": "res://assets/props/tools/wooden_broom/wooden_broom_1k.gltf", "length": 1.4, "tip": Vector3(0, -1, 0), "edge": Vector3(1, 0, 0), "grip": 0.3},
+	"pail": {"path": "res://assets/realistic/ph/wooden_bucket_01/wooden_bucket_01_1k.gltf", "length": 0.32, "tip": Vector3(0, -1, 0), "edge": Vector3(1, 0, 0), "grip": 0.02},
+	"basket": {"path": "res://assets/realistic/ph/wicker_basket_01/wicker_basket_01_1k.gltf", "length": 0.34, "tip": Vector3(0, -1, 0), "edge": Vector3(1, 0, 0), "grip": 0.02},
+	"mattock": {"path": "res://assets/props/Pickaxe_Bronze.gltf", "length": 0.85, "tip": Vector3(0, 1, 0), "edge": Vector3(1, 0, 0), "grip": 0.25},
+	"torch": {"path": "res://assets/props/Torch_Metal.gltf", "length": 0.5, "tip": Vector3(0, 1, 0), "edge": Vector3(1, 0, 0), "grip": 0.3},
+	"axe": KINDS["axe"],
+}
+## One row per move that needs something in hand: the tool, and the hand.
+## The tool is in the hand exactly while the move plays (motion.gd asks).
+## Moves with no row here hold nothing. Still without a model: a lute, a
+## barrow, a stone to throw, a rod (Lute_Playing, Wheelbarrow, Throw_Object,
+## Fishing_*), and no move yet for the broom (a sweep).
+const CLIP_TOOLS := {
+	"Drinking": ["bowl", "Right"], "Sitting_Drinking": ["bowl", "Right"],
+	"Hammer_Swing": ["hammer", "Right"],
+	"Watering": ["pail", "Right"],
+	"Carrying": ["basket", "Left"], "Box_Walk": ["basket", "Left"], "Pick_Fruit": ["basket", "Left"],
+	"Digging": ["mattock", "Right"], "Dig_And_Plant": ["mattock", "Right"],
+	"Idle_Torch_Loop": ["torch", "Right"],
+}
+
 static var _cache := {}  # kind -> [PackedScene, Transform3D fitting it to its grip]
 
 
@@ -62,6 +89,29 @@ static func disarm(person: Node3D) -> void:
 			skel.remove_child(c)
 			c.queue_free()
 	person.remove_meta("weapon")
+
+
+## The tool a move needs, in hand while it plays and gone after (CLIP_TOOLS);
+## a soldier's weapon hand keeps its weapon, and the tool goes in the other.
+static func hold_for(person: Node3D, clip: String) -> void:
+	var skel := _skeleton(person)
+	if skel == null:
+		return
+	var row: Array = CLIP_TOOLS.get(clip, [])
+	if String(person.get_meta("tool", "")) == (String(row[0]) if not row.is_empty() else ""):
+		return
+	for c in skel.get_children():
+		if c is BoneAttachment3D and c.get_meta("weapon", "") == "Tool":
+			skel.remove_child(c)
+			c.queue_free()
+	person.remove_meta("tool")
+	if row.is_empty() or not ResourceLoader.exists(String(TOOLS[row[0]].get("path", DIR + String(TOOLS[row[0]].get("file", "")) + "/scene.gltf"))):
+		return
+	var left: bool = row[1] == "Left"
+	if held(person) != "" and not left:
+		left = true  # the sword stays in the right hand
+	_hold(skel, row[0], ("Left" if left else "Right") + "Hand", _hand_frame(left), "Tool")
+	person.set_meta("tool", String(row[0]))
 
 
 ## What a person holds ("" for nothing).
@@ -104,7 +154,7 @@ static func _hold(skel: Skeleton3D, kind: String, bone: String, socket: Transfor
 		return null
 	var fit := _fitted(kind)
 	var model: Node3D = (fit[0] as PackedScene).instantiate()
-	_keep(model, KINDS[kind].get("keep", []))
+	_keep(model, _spec(kind).get("keep", []))
 	model.transform = socket * (fit[1] as Transform3D)
 	model.set_meta("tip_at", fit[2])
 	var at := BoneAttachment3D.new()
@@ -118,11 +168,16 @@ static func _hold(skel: Skeleton3D, kind: String, bone: String, socket: Transfor
 
 ## The model loaded once per kind, with the transform that scales it to its
 ## real length and puts its grip at the origin, tip along +X, edge along +Y.
+## A weapon's or a tool's row.
+static func _spec(kind: String) -> Dictionary:
+	return KINDS[kind] if KINDS.has(kind) else TOOLS.get(kind, {})
+
+
 static func _fitted(kind: String) -> Array:
 	if _cache.has(kind):
 		return _cache[kind]
-	var k: Dictionary = KINDS[kind]
-	var scene: PackedScene = load(DIR + String(k["file"]) + "/scene.gltf")
+	var k: Dictionary = _spec(kind)
+	var scene: PackedScene = load(String(k.get("path", DIR + String(k.get("file", "")) + "/scene.gltf")))
 	var probe: Node3D = scene.instantiate()
 	var tip_dir: Vector3 = (k["tip"] as Vector3).normalized()
 	var edge_dir: Vector3 = k["edge"]

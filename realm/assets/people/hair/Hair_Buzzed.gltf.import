@@ -42,7 +42,10 @@ materials/extract_path=""
 _subresources={
 "nodes": {
 "PATH:Armature/Skeleton3D": {
-"retarget/bone_map": Resource("res://assets/retarget/ue_map.tres")
+"retarget/bone_map": Resource("res://assets/retarget/ue_map.tres"),
+"retarget/rest_fixer/fix_silhouette/enable": true,
+"retarget/rest_fixer/normalize_position_tracks": true,
+"retarget/rest_fixer/overwrite_axis": true
 }
 }
 }

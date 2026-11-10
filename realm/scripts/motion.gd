@@ -73,6 +73,8 @@ var _last := Vector3.INF
 var _for := 0.0  # how long the person has been moving (or still)
 var _wish := ""  # a repeating move asked while on the move, for when they stop
 var _carry: AnimationNodeAnimation  # the arms' load over the legs, when carrying
+var _held_for := ""  # the move whose tool is in hand now (weapons.gd)
+const Weapons := preload("res://scripts/weapons.gd")
 var _yaw := INF  # v2: the way the body faces now
 var _yaw_wish := 0.0  # v2: the way its mover wants it to face
 
@@ -241,6 +243,19 @@ func track(delta: float) -> void:
 		speed = maxf(1.0, _pace / RUN_PACE)
 		if slow:
 			speed = maxf(STEP_FLOOR, _pace / WALK_PACE)
+	# What's in hand goes with the move (weapons.gd CLIP_TOOLS): a bowl while
+	# drinking, a basket while carrying, nothing once the move is over.
+	var moving := held_clip()
+	if moving != _held_for:
+		_held_for = moving
+		Weapons.hold_for(body, moving)
+
+
+## The move whose hands count: a load carried over walking legs, or the move now playing.
+func held_clip() -> String:
+	if _now() == "rest" and float(get("parameters/rest/mix/blend_amount")) > 0.5:
+		return String(_carry.animation)
+	return current()
 
 
 ## v2: the body turns toward where its mover set it facing, at a person's rate.
