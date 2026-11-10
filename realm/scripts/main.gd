@@ -424,6 +424,8 @@ func _ready() -> void:
 	if Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--clip=")): add_child(load("res://scripts/cinematics.gd").new())
 	# The motion probe (tools/motion_probe.gd): test runs only, headless on a private bridge.
 	if Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--motion-probe=")): add_child(load("res://tools/motion_probe.gd").new())
+	# How much of the screen the interface covers at rest (tools/ui_coverage.gd): test runs only.
+	if Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--ui-coverage=")): add_child(load("res://tools/ui_coverage.gd").new())
 
 
 ## The Dock and window icon: crown and raven on dark stone, in the macOS

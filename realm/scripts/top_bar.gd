@@ -90,6 +90,27 @@ func _pill(anchor_x: float, grow: int) -> HBoxContainer:
 	return h
 
 
+var _heading_more: VBoxContainer  # under the date: shown while the pointer is on the heading
+var _state_more: HBoxContainer  # beside the treasury: peace, souls, the tithe, on hover
+var _heading_pill: Control
+var _state_pill: Control
+
+
+## What rests folded opens while the pointer is on its pill, and folds again after.
+func _hover_check() -> void:
+	if _heading_pill == null or not is_instance_valid(_heading_pill):
+		return
+	var m := ui.get_viewport().get_mouse_position()
+	var on_heading := _heading_pill.is_visible_in_tree() and _heading_pill.get_global_rect().grow(6).has_point(m)
+	var on_state := _state_pill.is_visible_in_tree() and _state_pill.get_global_rect().grow(6).has_point(m)
+	if _heading_more.visible != on_heading:
+		_heading_more.visible = on_heading
+		_heading_pill.reset_size()
+	if _state_more.visible != on_state:
+		_state_more.visible = on_state
+		_state_pill.reset_size()
+
+
 var _threat_bar: ProgressBar  # how near the reign's story is to the throne
 var _threat_fill: StyleBoxFlat
 var _date_pill: Control  # the date card, top-left: the houses table keeps below it
@@ -287,6 +308,22 @@ func _build_top_bar() -> void:
 	_aim_how.add_child(_aim_count)
 	who.add_child(_aim_how)
 	when.add_child(who)
+	# At rest the heading is one line, the date and the aim (UI.md §1: the world is
+	# the content); the story, the name being earned, the last act and the aim's
+	# progress open beneath it while the pointer is on it.
+	var line := HBoxContainer.new()
+	line.add_theme_constant_override("separation", 12)
+	who.add_child(line)
+	who.move_child(line, 0)
+	_year.reparent(line)
+	_aim.reparent(line)
+	_aim.add_theme_font_size_override("font_size", 15)
+	_heading_more = VBoxContainer.new()
+	_heading_more.add_theme_constant_override("separation", 3)
+	_heading_more.visible = false
+	who.add_child(_heading_more)
+	for n in [_reign, _threat_bar, _heading, _last_act, _aim_how]:
+		n.reparent(_heading_more)
 	# Click the date and the story's line for the story so far.
 	var date_pill := when.get_parent() as Control
 	_date_pill = date_pill
@@ -301,8 +338,13 @@ func _build_top_bar() -> void:
 	var state := _pill(0.5, Control.GROW_DIRECTION_BOTH)
 	_top = [when.get_parent(), state.get_parent()]
 	_gold = ui.gauge(state, "coins", "Royal treasury, in crowns. The figure after it is what the tithe brings each season, less the court and the castles.", "Treasury")
-	_peace = ui.gauge(state, "scales", "Peace: how much of the realm is free of war between the great houses. A host marching on the throne halves it.", "Peace")
-	_souls = ui.gauge(state, "users-three", "Souls in the realm", "Souls")
+	# At rest one pill, the treasury; peace, souls and the tithe open beside it on hover.
+	_state_more = HBoxContainer.new()
+	_state_more.add_theme_constant_override("separation", 14)
+	_state_more.visible = false
+	state.add_child(_state_more)
+	_peace = ui.gauge(_state_more, "scales", "Peace: how much of the realm is free of war between the great houses. A host marching on the throne halves it.", "Peace")
+	_souls = ui.gauge(_state_more, "users-three", "Souls in the realm", "Souls")
 	var tithe := HBoxContainer.new()
 	tithe.add_theme_constant_override("separation", 2)
 	_tithe_l = ui.gauge(tithe, "percent", "Royal tithe on every house's treasury. Higher is richer and more resented.", "Tithe")
@@ -317,7 +359,11 @@ func _build_top_bar() -> void:
 	more.custom_minimum_size = Vector2(24, 24)
 	more.add_theme_constant_override("icon_max_width", 11)
 	tithe.add_child(more)
-	state.add_child(tithe)
+	_state_more.add_child(tithe)
+	# Opened while the pointer is on the pill (polled: its children take the pointer).
+	_heading_pill = when.get_parent()
+	_state_pill = state.get_parent()
+	ui.get_tree().process_frame.connect(_hover_check)
 	# Top-right: what you can do.
 	var act := _pill(1.0, Control.GROW_DIRECTION_BEGIN)
 	_bar_pill = act.get_parent()

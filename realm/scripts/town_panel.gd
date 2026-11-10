@@ -66,16 +66,16 @@ func _build_town_panel() -> void:
 		_decree_btns[act] = ui.btn("", func():
 			if act == "banners":
 				ui.guide_mark(2)
-			ui.decree.emit(act, "", -1))
+			_order(act, "", -1))
 		row.add_child(_decree_btns[act])
 	_grant_menu = MenuButton.new()
-	_grant_menu.get_popup().id_pressed.connect(func(i): ui.decree.emit("grant", "", int(_house_ids[i])))
+	_grant_menu.get_popup().id_pressed.connect(func(i): _order("grant", "", int(_house_ids[i])))
 	row.add_child(_grant_menu)
 	# A royal match: bind this house to another by marriage.
 	_marriage_menu = MenuButton.new()
 	_marriage_menu.text = "Arrange a marriage with…"  # its price is set with the town's other decrees
 	_marriage_menu.tooltip_text = "Bind this house to another by blood: both warm to the crown, and neither raids or plots against the other while the bond holds."
-	_marriage_menu.get_popup().id_pressed.connect(func(i): ui.decree.emit("marriage", "", int(_marry_ids[i])))
+	_marriage_menu.get_popup().id_pressed.connect(func(i): _order("marriage", "", int(_marry_ids[i])))
 	row.add_child(_marriage_menu)
 	var build := HFlowContainer.new()
 	v.add_child(build)
@@ -83,8 +83,15 @@ func _build_town_panel() -> void:
 	build.add_child(_fund_label)
 	for pair in [["Sept", "temple"], ["Granary", "granary"], ["Walls", "walls"], ["Market", "market"], ["Barracks", "barracks"], ["Aqueduct", "aqueduct"]]:
 		var bld: String = pair[1]
-		_build_btns[bld] = ui.btn(pair[0], func(): ui.decree.emit("build", bld, -1))
+		_build_btns[bld] = ui.btn(pair[0], func(): _order("build", bld, -1))
 		build.add_child(_build_btns[bld])
+
+
+## An order given from the card: it goes, and the card closes on its own (the
+## toast says what the order did); nothing stays open the King didn't ask for.
+func _order(action: String, building: String, to: int) -> void:
+	ui.decree.emit(action, building, to)
+	_put_town_away()
 
 
 ## The town card put away for good: the realm's next update refreshes nothing,

@@ -83,6 +83,7 @@ var _court_seen := {}  # matters already put before him, by id
 func set_court(petitions: Array) -> void:
 	var sig := str(petitions.map(func(p): return [p["id"], p.get("due")]))
 	if sig == _court_sig:
+		_mark(petitions)  # a marker the land wasn't laid for yet comes now
 		return
 	_court_sig = sig
 	var had := _petitions.size()
@@ -110,6 +111,14 @@ func set_court(petitions: Array) -> void:
 		return
 	if ui.busy() or ui.card_up(_court_panel):
 		_held_court = true  # he's using a card, or another is up: it waits its turn on the badge
+		return
+	# Its matters stand on the map at their places (faces, markers): the court
+	# doesn't take the screen by itself; one line says it sits, and the King opens
+	# a matter where it is. Matters with no place open the court as before.
+	if fresh and petitions.any(func(p): return p.get("place") is Dictionary):
+		_court_met = true
+		_court_hidden = true
+		ui.toast("The court sits: %d wait for you. Their faces are on the map; the crown at the top right opens them all." % petitions.size())
 		return
 	_court_met = true
 	_court_hidden = false
