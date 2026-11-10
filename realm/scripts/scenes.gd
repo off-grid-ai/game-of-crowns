@@ -188,11 +188,14 @@ func _traveller(from: Vector3, to: Vector3) -> void:
 		heading[0] = want if heading[0] == INF else lerp_angle(heading[0], want, 0.12)
 		dir = Vector3(sin(heading[0]), 0, cos(heading[0]))
 		if cart:
+			# The wagon's shafts are its +z end, at its origin: they point the way it
+			# goes, and the horse stands between them, the box behind (Mac: "the
+			# horse is inside the cart").
 			cart.position = _stand(g)
-			cart.rotation.y = heading[0] + PI
-			horse.position = _stand(road.sample_baked(minf(length, d + 0.16)), HORSE_BODY)
+			cart.rotation.y = heading[0]
+			horse.position = _stand(road.sample_baked(minf(length, d + 0.12)), HORSE_BODY)
 			horse.rotation.y = heading[0]
-			who.position = _stand(road.sample_baked(maxf(0.0, d - 0.12))) + Vector3(-dir.z, 0, dir.x) * 0.05
+			who.position = _stand(road.sample_baked(minf(length, d + 0.1))) + Vector3(-dir.z, 0, dir.x) * 0.09  # at the horse's head
 		else:
 			who.position = _stand(g)
 		who.rotation.y = heading[0], 0.0, 1.0, seconds)
