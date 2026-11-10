@@ -350,3 +350,12 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Where we're heading:** playability first; AUTOPILOT now says no new features until Mac picks how (a friction pass, a core-loop rethink, or both).
 - **Right way?** Course corrected: the designers' list (grudges, tension waves, act questions) is parked behind playability.
 - **Verdict:** on the corrected course; waiting on Mac's call and his game.
+
+## 2026-11-10, 12:46 (autopilot)
+
+- **What's going on:** the friction run is playing (frame 16 of ~80). Mac approved: friction fixes first, then two swaps onto proven blocks (townsfolk on LimboAI, one cart scene; the cart is done). The engineering rules now gate every change on "who already solved this?".
+- **Already seen at frame 12, before the full review:**
+  - The ledger and chronicle open by default and box in half the world.
+  - The ledger's footer says "the realm is at peace with itself" while four houses show WAR.
+  - The aim counts companies, the ledger counts men (5 companies = "1,000 men").
+- **Verdict:** on the corrected course: playability first, proven blocks only.
