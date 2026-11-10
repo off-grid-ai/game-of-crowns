@@ -1,0 +1,11 @@
+Model Information:
+* title:	Abbey Wall Ruins
+* source:	https://sketchfab.com/3d-models/abbey-wall-ruins-37936ba6a1674f15be60075315469a43
+* author:	tonyflanagan (https://sketchfab.com/tonyflanagan)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Abbey Wall Ruins" (https://sketchfab.com/3d-models/abbey-wall-ruins-37936ba6a1674f15be60075315469a43) by tonyflanagan (https://sketchfab.com/tonyflanagan) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

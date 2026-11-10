@@ -33,6 +33,11 @@ const KIT := {
 	"ph/stone_fire_pit": ["well", 1.6],
 	"ph/tree_stump_01": ["stump", 0.9],  # charred where war burned the land (ruins.gd)
 	"ph/tree_stump_02": ["stump", 1.1],
+	# What's left of a razed town (ruins.gd): tonyflanagan's abbey walls and
+	# Meerschaum Digital's rubble (Sketchfab, CC BY 4.0, credited from their license.txt).
+	"abbey_wall_ruins": ["ruin", 16.0],
+	"abbey_ruins": ["ruin", 20.0],
+	"rubble_pile": ["ruin", 6.0],
 }
 
 # Parts a kit brings that our land supplies itself: the castle comes on its own
@@ -149,7 +154,7 @@ static func _template(name: String) -> Dictionary:
 ## Kits whose walls are stone but whose file never says how metallic it is, so
 ## glTF's default (fully metal) made the castle near black, its tops glaring
 ## with the sky.
-const STONE := ["medieval_castle"]
+const STONE := ["medieval_castle", "abbey_wall_ruins", "abbey_ruins", "rubble_pile"]
 
 
 ## A building is lit by the sun and the moon, never by itself: some kits come

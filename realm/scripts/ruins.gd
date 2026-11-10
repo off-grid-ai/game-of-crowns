@@ -33,7 +33,7 @@ func show_marks(marks: Array, turn: int) -> void:
 		want[key] = true
 		if not _shown.has(key):
 			_shown[key] = _place(kind, int(m["x"]), int(m["y"]), age < life * 0.85)
-			_shown[key].set_meta("turn", int(m.get("turn", turn)))
+		_shown[key].set_meta("turn", int(m.get("turn", turn)))
 	for key in _shown.keys():
 		if not want.has(key):
 			if is_instance_valid(_shown[key]):

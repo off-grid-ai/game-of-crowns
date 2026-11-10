@@ -1,0 +1,11 @@
+Model Information:
+* title:	Abbey Ruins
+* source:	https://sketchfab.com/3d-models/abbey-ruins-c8e9b2bffdd64aa38043e55e0c3de808
+* author:	tonyflanagan (https://sketchfab.com/tonyflanagan)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Abbey Ruins" (https://sketchfab.com/3d-models/abbey-ruins-c8e9b2bffdd64aa38043e55e0c3de808) by tonyflanagan (https://sketchfab.com/tonyflanagan) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
