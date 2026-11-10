@@ -28,7 +28,7 @@ const XFADE_HIT := 0.1  # into a blow, a reel or a fall: fast, it's a shock
 # Moves that are one-off by nature. Everything else loops.
 const ONCE := ["Sword_Attack", "SS_Slash", "SS_Attack", "SS_Kick", "SS_Block_1", "SS_Block_2", "SS_Impact",
 	"GS_Attack", "GS_Slash", "GS_Kick", "GS_Block_1", "GS_Impact", "GS_Spin",
-	"Axe_Down", "Axe_Horizontal", "Axe_Backhand", "Axe_Spin", "Axe_Kick", "Axe_Block_React",
+	"Axe_Down", "Axe_Horizontal", "Axe_Backhand", "Axe_Spin", "Axe_Kick", "Axe_Block_React", "Axe_Combo",
 	"Punch_", "Kick_Front", "Shield_Block", "Spear_Thrust", "Bow_Shoot", "Bow_Draw", "Hit",
 	"React_", "Head_Light", "Head_Big", "Body_Light", "Body_Big", "Side_", "Kidney_", "Groin_", "Legs_",
 	"Stunned", "Dodge_", "Battlecry", "Salute", "Getting_Up", "Knocked_Down", "Back_Hit", "Back_Head"]
@@ -224,6 +224,8 @@ func current() -> String:
 
 
 static func is_once(clip: String) -> bool:
+	if clip == "Bow":
+		return true  # the courtly bow, once (not Bow_Aim or Bow_Idle, which hold)
 	for p in ONCE + DEATHS:
 		if clip.begins_with(p):
 			return true
