@@ -30,6 +30,25 @@ hand is a sign we're rebuilding a solved problem.
    Mac decides first.
 5. **Patching a hand-built part again?** Stop and replace it with the block instead.
 
+## Architecture: SSOT, SRP, DRY, SOLID (Mac, 2026-11-10)
+
+Every change follows these. A plan that breaks one isn't approved.
+
+- **SSOT, one owner per fact.**
+  - Freeciv owns the simulation: units, cities, diplomacy, terrain.
+  - The bridge owns the realm state: court, deeds and ledger, marks, minds, chronicle, reign. Each fact sits in one place there.
+  - The view keeps one mirror: `awareness.gd`'s realm and town blackboard scopes, filled only from `/world`. No other script parses `/world` or caches its own copy; they read the mirror.
+  - Every plan names the owner of each new piece of state, and says nothing else holds a copy.
+- **SRP, one decider per behaviour.**
+  - Every agent's "what next" (townsfolk, soldiers, battles) runs on LimboAI trees. Movement code only moves.
+  - A file or function doing two jobs gets split by job, not grown.
+- **DRY: one place per rule.** A threshold, colour, time block, mood rule, clip pool or event shape is defined once and imported. Two copies of a rule is a bug waiting to drift.
+- **SOLID.**
+  - New behaviour arrives as a new tree, task, handler or data row, not as another branch in a growing `match` on kind strings.
+  - Depend on the mirror's interface and on signals, not on another script's internals or on raw bridge JSON shapes.
+- **Consolidating is allowed.** Rewrites toward these principles are welcome (Mac). Do them behind a switch, one module at a time, with nothing lost. They're exempt from "additive" below, but only once the consolidation plan names them.
+- **Proof includes behaviour.** Compiling isn't working. Every NPC or tree change passes the headless behaviour probe (distinct activities, no repeats outside runs, no over-long holds, pools non-empty after clone) before it's committed.
+
 1. **Write like the code around it.** GDScript doc comments (`##`) say what a thing is in the game's own words; same naming, density and idiom. Bridge stays plain Node with no npm dependencies.
 2. **Additive.** No unrelated refactors. Ask Mac before a new abstraction, a change to the saved realm's format (`bridge/chronicles/*/state`, `meta.json`) or a migration: old chronicles must still open.
 3. **Glue, not engines.** Our code connects Freeciv, Godot add-ons and assets. A new system needs a reason no existing block covers it.
