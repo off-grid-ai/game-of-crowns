@@ -20,7 +20,7 @@ const SEEN_TO := 18.0  # world units: beyond this a person isn't drawn or animat
 
 const OUTFITS := {
 	"peasant": [["Male_Peasant", "m"], ["Female_Peasant", "f"]],
-	"soldier": [["Male_Ranger", "m"], ["Female_Ranger", "f"]],
+	"soldier": [["Male_Ranger", "m"]],  # a man of the watch in hood and leather; no women in the watch (Female_Ranger is out: plain medieval, Mac 2026-11-10)
 }
 const HAIR := {"m": ["Hair_SimpleParted", "Hair_Buzzed", "Hair_Long", ""], "f": ["Hair_Long", "Hair_Buns", "Hair_BuzzedFemale"]}
 const HAIR_COLOURS := [Color(0.18, 0.12, 0.08), Color(0.35, 0.22, 0.12), Color(0.08, 0.07, 0.06), Color(0.55, 0.4, 0.22), Color(0.5, 0.25, 0.12), Color(0.55, 0.53, 0.5)]
@@ -39,17 +39,17 @@ const BODIES := {
 	# Erika, Arissa and Eve are out: modern black leather and fitted suits read as a joke in a medieval town (Mac, 2026-11-10).
 	# Akai (face paint, buckled leather, goggles), Ganfaul (half a demon's face, a horned arm) and Uriel (wings) are out too:
 	# fantasy, not a medieval town. Archers wear a soldier's outfit; soldiers and nobles keep the armoured bodies above.
+	# Dreyar (glowing red gems, spiked anime hair), Brute (bare-chested, tribal tattoos) and the Fuse woman (a short
+	# tunic over bare legs, which reads as a short dress once dyed dark) are out with them (Mac's feast shots, 20:20).
+	# Women in the street wear the peasant's dress (OUTFITS); gentlewomen the noble lady's gown.
 	"knight": {"sex": "m", "roles": ["soldier", "noble", "knight"], "cloth": ["Lower_Armor"], "crowd": true},
-	"paladin": {"sex": "m", "roles": ["soldier", "noble", "knight"], "cloth": [], "crowd": true},
+	"paladin": {"sex": "m", "roles": ["knight"], "cloth": [], "crowd": false},  # ornate plate and great pauldrons: a knight at court, never a face in the street
 	"paladin_prop": {"sex": "m", "roles": ["noble", "knight"], "cloth": [], "crowd": false},
 	"heraklios": {"sex": "m", "roles": ["soldier"], "cloth": [], "crowd": true},
-	"dreyar": {"sex": "m", "roles": ["noble", "soldier", "knight"], "cloth": [], "crowd": true},
-	"brute": {"sex": "m", "roles": ["peasant", "soldier"], "cloth": ["MaleBruteA_Bottoms"], "crowd": false},
 	# Plain townsfolk in tunics and hose (Leonardo Carvalho's Fuse civilians, CC BY, by way of Sketchfab).
 	# Their tunic ("material") and breeches ("Bottom") take a homespun dye each, so no two dress alike.
 	"fuse_civilian_1": {"sex": "m", "roles": ["townsfolk", "peasant"], "cloth": [], "crowd": true, "dyed": ["Object_12", "Object_13"]},
 	"fuse_civilian_2": {"sex": "m", "roles": ["townsfolk", "peasant"], "cloth": [], "crowd": true, "dyed": ["Object_78", "Object_74"]},
-	"fuse_woman_1": {"sex": "f", "roles": ["townsfolk"], "cloth": [], "crowd": true, "dyed": ["Object_7"]},  # her linen top, near her skin's colour undyed
 	# A townsman in a wool tunic (ChamberSu's Svend, CC BY), his Unreal bones renamed to Mixamo's (tools/ue_to_mixamo.py).
 	"svend": {"sex": "m", "roles": ["townsfolk", "peasant"], "cloth": [], "crowd": true, "dyed": ["SvendWoolTunicLOD1"]},
 	# A peasant in a belted jerkin and boots (EmanuelP's Medieval Man, CC BY), rigged by Mixamo.

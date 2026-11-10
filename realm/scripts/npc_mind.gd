@@ -963,7 +963,8 @@ const DAY := ["work", "work2", "meal", "evening"]
 ## square and the rest bar their doors and watch; hunger slumps the frail at
 ## their doors and the empty stalls.
 static func villager_moods() -> Array:
-	var feast := plain([mood_is("feast"), block_is(DAY), go("well"), run(["Dance", "Cheering", "Clapping", "Drinking"], 2, 3), brk(["Laughing"])])
+	# Round the feast's fire, on a place of their own in its ring (villagers "feast"; the square if it's full).
+	var feast := plain([mood_is("feast"), block_is(DAY), go("feast"), run(["Dance", "Cheering", "Clapping", "Drinking"], 2, 3), brk(["Laughing"])])
 	var angry := BTSelector.new()
 	angry.add_child(plain([flag(&"moody"), go("well"), run(["Yelling", "Arguing"], 2, 4), once("Pointing_Forward"), brk(LOOK)]))
 	angry.add_child(plain([go("home"), run(["Looking_Around", "Terrified"], 1, 2)]))

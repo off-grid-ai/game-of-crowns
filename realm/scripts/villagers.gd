@@ -25,6 +25,7 @@ var _skin := StandardMaterial3D.new()
 var _check := 0.0
 var people = preload("res://scripts/people.gd").new()
 const TownLife := preload("res://scripts/town_life.gd")
+const TownNav := preload("res://scripts/town_nav.gd")
 var nav = preload("res://scripts/town_nav.gd").new()
 const WALK_SPEED := 0.17  # world units per second: an unhurried 1.4 m/s at town scale
 ## Moves that are walks (a load carried, a barrow pushed): played on the way,
@@ -81,6 +82,8 @@ func _process_timed(delta: float) -> void:
 		_check = 1.0
 		_refresh()
 		_square_count()
+	if _crowd_probe:
+		_crowd_check()
 	_others_at -= delta
 	if _others_at <= 0.0:
 		_others_at = 0.25
@@ -403,8 +406,19 @@ func _set_down(a: Dictionary) -> bool:
 	a["bench"] = c + Vector3(bench.x, 0, bench.y)
 	a["goal"] = snap
 	if _spoken_for(a, snap):
-		# Two homes on one spot: the later one starts a pace along.
-		snap = nav.closest(map, snap + Vector2.from_angle(a["rng"].randf() * TAU) * 0.12)
+		# Two homes on one spot: the later one starts a pace along, or further
+		# till the spot is their own. A walk map with nowhere free on it yet
+		# (still baking, or all but empty) sets nobody down: they wait unseen
+		# rather than stand inside each other.
+		var free := false
+		for k in 8:
+			var q := nav.closest(map, snap + Vector2.from_angle(a["rng"].randf() * TAU) * (0.12 + 0.06 * k))
+			if not _spoken_for(a, q):
+				snap = q
+				free = true
+				break
+		if not free:
+			return false
 		n.position = Vector3(c.x + snap.x, terrain.height_at(c.x + snap.x, c.z + snap.y), c.z + snap.y)
 		a["home"] = n.position
 		a["goal"] = snap
@@ -625,9 +639,12 @@ func town_mood(a: Dictionary) -> String:
 ## A square looks busy at 15-25 people with room between them, never shoulder
 ## to shoulder (the judge, from Manor Lords): what each place holds.
 const ROOM := {"market": {"near": 0.3, "far": 1.0, "room": 6}, "well": {"near": 0.15, "far": 0.65, "room": 4},
-	"tavern": {"near": 0.15, "far": 0.6, "room": 7}, "sept": {"near": 0.15, "far": 0.55, "room": 5}}
+	"tavern": {"near": 0.15, "far": 0.6, "room": 7}, "sept": {"near": 0.15, "far": 0.55, "room": 5},
+	# Round the town's feast fire, out from its reach (town_life.fire_reach) and
+	# past the revellers' own ring: a second ring of faces, a shoulder apart.
+	"feast": {"near": 0.3, "far": 0.6, "room": 12, "fire": true}}
 ## Where those who find a place full go instead.
-const OVERFLOW := {"market": ["well", "tavern"], "well": ["market", "sept"], "tavern": ["market", "well"], "sept": ["well", "market"]}
+const OVERFLOW := {"market": ["well", "tavern"], "well": ["market", "sept"], "tavern": ["market", "well"], "sept": ["well", "market"], "feast": ["market", "tavern"]}
 const SHOULDER := 0.11  # two people standing: a shoulder's width apart
 const SQUARE_HOLDS := 10  # at most this many bound for the square at once (talkers included)
 const KNOT := 0.26  # a gathering keeps this clear round its middle: knots of two or three, never one blob
@@ -638,7 +655,8 @@ const KNOT := 0.26  # a gathering keeps this clear round its middle: knots of tw
 ## them on to the next that fits, and failing all, home.
 func place(a: Dictionary, key: String, knot := false) -> Vector3:
 	for k in [key] + Array(OVERFLOW.get(key, [])):
-		var p := _claim(a, k, KNOT if knot else SHOULDER * 2.6)  # alone, a couple of strides from the next: a lively square, not a crowd
+		var clear := KNOT if knot else (SHOULDER * 1.2 if k == "feast" else SHOULDER * 2.6)  # alone, a couple of strides from the next: a lively square, not a crowd; round a fire, a shoulder apart
+		var p := _claim(a, k, clear)
 		if not is_nan(p.x):
 			a["place_key"] = k
 			return p
@@ -648,9 +666,19 @@ func place(a: Dictionary, key: String, knot := false) -> Vector3:
 
 func _claim(a: Dictionary, key: String, clear: float) -> Vector3:
 	var c: Vector3 = a["center"]
-	var heart: Vector3 = _places(a["town"], c)[key]
-	var h := Vector2(heart.x - c.x, heart.z - c.z)
 	var room: Dictionary = ROOM[key]
+	var h: Vector2
+	if room.get("fire", false):
+		# The feast's ring is round the town's lit fire: none lit, no feast ring.
+		var fire := fire_of(a["town"])
+		if fire.is_empty():
+			return Vector3(NAN, 0, 0)
+		h = fire[0]
+		var reach := float(fire[1])
+		room = {"near": reach + float(room["near"]), "far": reach + float(room["far"]), "room": room["room"]}
+	else:
+		var heart: Vector3 = _places(a["town"], c)[key]
+		h = Vector2(heart.x - c.x, heart.z - c.z)
 	var goals := []
 	var there := 0
 	for b in crowds.get(a["town"], []):
@@ -689,6 +717,8 @@ func _claim(a: Dictionary, key: String, clear: float) -> Vector3:
 			var q := nav.closest(map, want)
 			if q.distance_to(want) > 0.05:
 				continue  # under a stall or a wall
+			if town_node and not nav.inside(town_node, Vector3(c.x + q.x, 0, c.z + q.y)).is_empty():
+				continue  # in a fire, a cart or a table the walk map doesn't know of yet
 			var clear_here := true
 			for gp: Vector2 in goals:
 				if gp.distance_to(q) < clear:
@@ -705,24 +735,14 @@ var _square_t := 0.0
 
 
 func _square_count() -> void:
-	if not " ".join(OS.get_cmdline_user_args()).contains("--shot") and not PerfTools.probing:
+	if not " ".join(OS.get_cmdline_user_args()).contains("--shot") and not PerfTools.probing and not _crowd_probe:
 		return
 	_square_t += 1.0
 	if fmod(_square_t, 5.0) > 0.5:
 		return
-	# Bodies inside bodies: every pair of people on the ground closer than 0.06
-	# (about half a metre between their middles), logged as a CHECK line.
-	var folk: Array[Vector3] = []
-	for p in get_tree().get_nodes_in_group("people"):
-		var n := p as Node3D
-		if n and n.is_visible_in_tree():
-			folk.append(n.global_position)
-	var inside := 0
-	for i in folk.size():
-		for j in range(i + 1, folk.size()):
-			if absf(folk[i].y - folk[j].y) < 0.1 and Vector2(folk[i].x - folk[j].x, folk[i].z - folk[j].z).length() < 0.06:
-				inside += 1
-	print("CHECK people inside each other: %d pairs of %d people" % [inside, folk.size()])
+	if not _crowd_probe:
+		_crowd_check()
+	_crowd_report()
 	for id in crowds:
 		if not towns.towns.has(id):
 			continue
@@ -755,6 +775,101 @@ func _square_count() -> void:
 					var k := "%s/%s" % [pn.get_parent().name, pn.get_parent().get_parent().name if pn.get_parent().get_parent() else ""]
 					by[k] = by.get(k, 0) + 1
 			print("SQUARE town=%s standing=%d walking=%d doing=%s all=%s" % [id, standing, walking, doing, by])
+
+
+## Test aid (--shot runs, or --crowdprobe): bodies inside bodies. Every
+## frame under --crowdprobe (else once a second), the closest two people on
+## the ground anywhere near a town, and every pair closer than PERSONAL (half a
+## metre between their middles), each named by what they're doing; logged as a
+## CHECK line every five seconds, with the worst seen so far.
+var _crowd_probe := OS.get_cmdline_user_args().has("--crowdprobe")
+const PERSONAL := 0.06  # world units: half a metre at town scale (a person is ~0.22 tall)
+var _crowd := {"min": INF, "worst": INF, "under": 0, "pairs": {}, "frames": 0, "who": "", "in_fire": 0, "fire_who": {}, "fires": 0, "in_building": 0, "building_who": {}}
+
+
+func _crowd_check() -> void:
+	var folk: Array[Node3D] = []
+	for p in get_tree().get_nodes_in_group("people"):
+		var n := p as Node3D
+		if n and n.is_visible_in_tree():
+			folk.append(n)
+	_crowd["frames"] = int(_crowd["frames"]) + 1
+	# Nobody inside a lit fire's reach (town_life.gd's "fires": its stones and the heat past them).
+	var fires := []
+	for id in towns.towns:
+		var node: Node3D = towns.towns[id]["node"]
+		var life: Node3D = node.get_node_or_null("Life") if is_instance_valid(node) else null
+		if life:
+			for f in life.get_meta("fires", []):
+				fires.append([node.global_position + Vector3(Vector2(f[0]).x, 0, Vector2(f[0]).y), float(f[1])])
+	_crowd["fires"] = fires.size()
+	for n in folk:
+		# Nobody inside a house, wall, fence or stall (town_nav's building footprints).
+		if nav.in_building(towns, n.global_position) and not _in_yard(n.global_position):
+			_crowd["in_building"] = int(_crowd.get("in_building", 0)) + 1
+			_crowd["building_who"][_who(n)] = true
+		for f in fires:
+			var fp: Vector3 = f[0]
+			if Vector2(n.global_position.x - fp.x, n.global_position.z - fp.z).length() < float(f[1]):
+				_crowd["in_fire"] = int(_crowd["in_fire"]) + 1
+				_crowd["fire_who"][_who(n)] = true
+	for i in folk.size():
+		var a := folk[i].global_position
+		for j in range(i + 1, folk.size()):
+			var b := folk[j].global_position
+			if absf(a.y - b.y) > 0.1:
+				continue
+			var d := Vector2(a.x - b.x, a.z - b.z).length()
+			if d < float(_crowd["worst"]):
+				_crowd["worst"] = d
+				_crowd["who"] = "%s + %s" % [_who(folk[i]), _who(folk[j])]
+			_crowd["min"] = minf(float(_crowd["min"]), d)
+			if d < PERSONAL:
+				var key := "%s + %s" % [_who(folk[i]), _who(folk[j])]
+				_crowd["pairs"][key] = int(_crowd["pairs"].get(key, 0)) + 1
+				_crowd["under"] = int(_crowd["under"]) + 1
+
+
+func _crowd_report() -> void:
+	var pairs: Dictionary = _crowd["pairs"]
+	var keys := pairs.keys()
+	keys.sort_custom(func(x, y): return int(pairs[x]) > int(pairs[y]))
+	print("CHECK people inside each other: closest %.2f m (worst so far %.2f m: %s), %d pair-frames under 0.5 m over %d frames; most: %s" % [
+		float(_crowd["min"]) / 0.12, float(_crowd["worst"]) / 0.12, _crowd["who"], int(_crowd["under"]), int(_crowd["frames"]), keys.slice(0, 4).map(func(k): return "%s x%d" % [k, pairs[k]])])
+	print("CHECK people in a fire: %d person-frames inside the reach of %d lit fires; %s" % [int(_crowd["in_fire"]), int(_crowd["fires"]), (_crowd["fire_who"] as Dictionary).keys().slice(0, 4)])
+	print("CHECK people in a building or stall: %d person-frames; %s" % [int(_crowd["in_building"]), (_crowd["building_who"] as Dictionary).keys().slice(0, 4)])
+	_crowd["in_fire"] = 0
+	_crowd["fire_who"] = {}
+	_crowd["in_building"] = 0
+	_crowd["building_who"] = {}
+	_crowd["min"] = INF
+	_crowd["under"] = 0
+	_crowd["pairs"] = {}
+	_crowd["frames"] = 0
+
+
+## In a castle's open bailey (towns.gd "yards"): inside its footprint, but open ground.
+func _in_yard(p: Vector3) -> bool:
+	for t in TownNav.towns_at(towns, p):
+		var root: Node3D = t[1]
+		var q := Vector2(p.x - root.global_position.x, p.z - root.global_position.z)
+		for y in root.get_meta("yards", []):
+			if Geometry2D.is_point_in_polygon(q, y[0]):
+				return true
+	return false
+
+
+## Who a person is, for the check: a villager's index and what they're about,
+## or a scene post's person (who placed them) and their move now.
+func _who(n: Node3D) -> String:
+	var mind := n.get_node_or_null("Mind")
+	var act := String(mind.blackboard.get_var(&"last_activity", "", false)) if mind else ""
+	var at := "(%.2f,%.2f)" % [n.global_position.x, n.global_position.z]
+	var v := who_is(n)
+	if not v.is_empty():
+		var a: Dictionary = crowds[v["town"]].filter(func(b): return b["node"] == n)[0]
+		at += "{%s goal=%s route=%d place=%s}" % [v["role"], a.get("goal", "-"), PackedVector2Array(a["route"]).size(), a.get("place_key", "")]
+	return "%s:%s:%s:%s%s" % [n.get_parent().name if n.get_parent() else "?", n.name, act, people.clip(n), at]
 
 
 ## A spot near a place, spread so a gathering is a loose knot, never a pile.
@@ -915,11 +1030,26 @@ func route_to(a: Dictionary, target: Vector3) -> void:
 	var from := nav.closest(map, Vector2(n.position.x - center.x, n.position.z - center.z))
 	var goal := nav.closest(map, Vector2(target.x - center.x, target.z - center.z))
 	goal = _room_in_square(a, goal, map)
-	# Never the very spot someone else is bound for: a step along until it's free.
-	for tries in 6:
-		if not _spoken_for(a, goal):
-			break
-		goal = nav.closest(map, goal + Vector2.from_angle(rng.randf() * TAU) * 0.12)
+	# Never the very spot someone else is bound for or stands on: the nearest
+	# free spot on rings widening out from it, each on open ground as asked (a
+	# point the walk map would push back onto its edge is no spot: that's how
+	# a row of people ends up on one line).
+	if _spoken_for(a, goal):
+		var start := rng.randf() * TAU
+		var found := false
+		for ring in range(1, 9):
+			var r := 0.06 + ring * 0.06
+			var slots := 8 + ring * 2
+			for i in slots:
+				var want := goal + Vector2.from_angle(start + TAU * i / slots) * r
+				var q := nav.closest(map, want)
+				if q.distance_to(want) > 0.03 or _spoken_for(a, q):
+					continue
+				goal = q
+				found = true
+				break
+			if found:
+				break
 	a["goal"] = goal
 	a["route"] = nav.path(map, from, goal)
 
@@ -1556,6 +1686,26 @@ func room_to_talk(a: Dictionary, at: Vector3, partner: Dictionary) -> bool:
 	return true
 
 
+## The town's lit feast fire: [where (town-local), how far its reach goes],
+## or empty. One fire per feast: town_life's bonfire, or a wedding feast's
+## (scenes.gd), each recorded on the town's Life as "fires".
+func fire_of(town: int) -> Array:
+	var node: Node3D = towns.towns.get(town, {}).get("node")
+	var life: Node = node.get_node_or_null("Life") if is_instance_valid(node) else null
+	var fires: Array = life.get_meta("fires", []) if life else []
+	return fires[0] if not fires.is_empty() else []
+
+
+## Who a person on the ground is, for a word about them (chatter.mind_line):
+## a villager's town, index and calling, or empty for anyone else.
+func who_is(n: Node) -> Dictionary:
+	for id in crowds:
+		for a in crowds[id]:
+			if a["node"] == n:
+				return {"town": int(id), "i": int(a["i"]), "role": String(a["role"])}
+	return {}
+
+
 ## The minds' talk `key` is over (either of the two ends it).
 func close_talk(town: int, key: int) -> void:
 	var list: Array = _talks.get(town, [])
@@ -1670,9 +1820,16 @@ func _talk_audit() -> void:
 		print("PLACES %s market=%d well=%d tavern=%d sept=%d gathering_max=%d cluster_max=%d" % [towns.towns[id]["data"]["name"], at.get("market", 0), at.get("well", 0), at.get("tavern", 0), at.get("sept", 0), biggest, cluster])
 
 
-## True when another villager of the town stands at, or is bound for, `p`.
+## True when another villager of the town stands at, or is bound for, `p`
+## (town-local), or one of the town's scene folk stands there.
 func _spoken_for(a: Dictionary, p: Vector2) -> bool:
 	for b in crowds.get(a["town"], []):
-		if not is_same(b, a) and Vector2(b.get("goal", Vector2(INF, INF))).distance_to(p) < 0.1:
+		if not is_same(b, a) and Vector2(b.get("goal", Vector2(INF, INF))).distance_to(p) < SHOULDER:
 			return true
+	var town_node: Node3D = towns.towns.get(a["town"], {}).get("node")
+	var life: Node = town_node.get_node_or_null("Life") if is_instance_valid(town_node) else null
+	if life:
+		for sp: Vector2 in life.get_meta("standing", PackedVector2Array()):
+			if sp.distance_to(p) < SHOULDER:
+				return true
 	return false

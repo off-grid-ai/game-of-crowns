@@ -545,9 +545,13 @@ func _bonfire(life: Node3D, center: Vector3) -> void:
 	var ring: Node3D = Real.make("ph/stone_fire_pit")  # the stones it burns in
 	if ring:
 		ring.position = Vector3(0, _y(center, Vector3.ZERO) - 0.005, 0)
-		ring.scale = Vector3.ONE * 1.4
+		ring.scale = Vector3.ONE * RING_SCALE
 		life.add_child(ring)
-	life.set_meta("footprints", life.get_meta("footprints") + [_rect(Vector3.ZERO, Vector2(0.34, 0.34), 0.0)])
+	# Nobody stands in the fire: the ring as wide as it really stands, and a
+	# step of heat past its stones, is ground nobody claims, steps on or walks.
+	var keep := fire_reach()
+	life.set_meta("footprints", life.get_meta("footprints") + [_rect(Vector3.ZERO, Vector2(keep, keep) * 2.0, 0.0)])
+	life.set_meta("fires", [[Vector2.ZERO, keep]])
 	var light := OmniLight3D.new()
 	light.light_color = Color(1.0, 0.6, 0.3)
 	light.light_energy = 0.9
@@ -556,15 +560,28 @@ func _bonfire(life: Node3D, center: Vector3) -> void:
 	life.add_child(light)
 
 
+const RING_SCALE := 1.4  # the fire pit's stones, a little larger than the model's own
+const HEAT := 0.06  # past the stones, a step nobody takes: half a metre
+
+
+## How far from a bonfire's middle the ground is the fire's: its ring of
+## stones as wide as it stands (the model's real footprint, scaled), and HEAT.
+static func fire_reach() -> float:
+	var foot := Real.footprint("ph/stone_fire_pit")
+	return maxf(foot.x, foot.y) * RING_SCALE * 0.5 + HEAT if foot != Vector2.ZERO else 0.23
+
+
 ## A feast: the town in a ring round the bonfire, dancing, cheering and
-## drinking, everyone turned to the fire.
+## drinking, everyone turned to the fire: a ring of faces in its light, a
+## shoulder apart, each on their own place on it and none inside it.
 func _revels(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenerator, count: int) -> void:
 	var spin := rng.randf() * TAU
+	var inner := fire_reach() + 0.08  # the near edge of the ring: past the heat, and a step (the revel's own steps) more
 	for i in count:
-		var a := spin + TAU * i / count + rng.randf_range(-0.15, 0.15)
-		var want := Vector3(cos(a), 0, sin(a)) * rng.randf_range(0.34, 0.5)
+		var a := spin + TAU * i / count + rng.randf_range(-0.1, 0.1)
+		var want := Vector3(cos(a), 0, sin(a)) * rng.randf_range(inner, inner + 0.12)
 		var move: String = ["Dance", "Cheering", "Dance", "Drinking", "Cheering", "Dance"][i % 6]
-		var f := _stand(root, life, center, want, "townsfolk" if i % 3 else "peasant", move, rng.randi(), Color.WHITE, 0.2)
+		var f := _stand(root, life, center, want, "townsfolk" if i % 3 else "peasant", move, rng.randi(), Color.WHITE, 0.06)
 		if f:
 			f.rotation.y = atan2(-f.position.x, -f.position.z)
 			_mind(f, "revel", center)
@@ -579,12 +596,26 @@ func _trade(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 		# The keeper stands at the counter's end, by the goods, facing the square:
 		# behind it the ground rises off the square and the counter hides him.
 		var along := Vector3(-out.z, 0, out.x) * (1.0 if rng.randf() < 0.5 else -1.0)
-		var at := m + along * (float(st[2]) * 0.5 + 0.05) - out * float(st[1]) * 0.25
+		var taken: PackedVector2Array = life.get_meta("standing")
+		# Either end of the counter, whichever nobody stands at: two stalls side
+		# by side would otherwise put their keepers in one body.
+		var at := Vector3(NAN, 0, 0)
+		for end in [1.0, -1.0]:
+			var try: Vector3 = m + along * end * (float(st[2]) * 0.5 + 0.05) - out * float(st[1]) * 0.25
+			var free := true
+			for q: Vector2 in taken:
+				if q.distance_to(Vector2(try.x, try.z)) < ROOM:
+					free = false
+					break
+			if free:
+				at = try
+				break
+		if is_nan(at.x):
+			continue  # this stall's keeper is the next one's: one keeps both
 		at.y = _y(center, at)
 		var keeper := _townsperson(life, at, "townsfolk", ["Idle_Talking", "Interact", "Nodding"][rng.randi() % 3], rng.randi())
 		keeper.rotation.y = atan2(-out.x, -out.z)
 		_mind(keeper, "trade", center)
-		var taken: PackedVector2Array = life.get_meta("standing")
 		taken.append(Vector2(at.x, at.z))
 		life.set_meta("standing", taken)
 		for i in rng.randi_range(1, 2):

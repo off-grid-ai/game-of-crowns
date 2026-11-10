@@ -131,6 +131,203 @@ func _in_view(g: Dictionary, cam: Camera3D) -> bool:
 	return true
 
 
+# --- what's on a person's mind (the hover over someone in the street) ---------
+
+## A thought of their own, by what the town is going through (topic) and who
+## they are (group): plain words, never addressed to anyone. {king} is the
+## King's name where the realm knows it.
+const MIND_LINES := {
+	"war": {
+		"common": ["Three lads went with the levy. Not a word from any of them.", "If the war comes up this road, the barn goes first.", "Salt pork and nails dearer every week. That's the war."],
+		"soldier": ["Two nights on the wall, and the third coming.", "Every man on this watch counts the road, not the hours.", "The captain says they'll not come this far. Captains say that."],
+		"clergy": ["Prayers for the levy at every bell.", "War fills the sept and empties the plate."],
+		"gentry": ["The levy takes the best hands just when the fields want them.", "A war is a bill, and it comes due in the spring."],
+		"child": ["Wat says he saw a knight with a red horse.", "We play at sieges now. I'm always the wall."],
+	},
+	"riot": {
+		"common": ["They'll hang someone for this. Pray it's not a neighbour.", "Bread first, then shouting. That's how it always goes.", "Keep the shutters closed till it's over."],
+		"soldier": ["Hold the door, keep the blade sheathed. Easier said.", "Half that crowd bought me ale last month."],
+		"clergy": ["Anger does the devil's work for him.", "Someone must speak for them, before the watch does."],
+		"gentry": ["The steward pushed too hard. Now everyone pays.", "Mobs forget fast. Ledgers don't."],
+		"child": ["Mam says stay in. Everyone's shouting in the square."],
+	},
+	"hunger": {
+		"common": ["One loaf, cut thin, to last till market.", "The granary keys hang at the steward's belt, and he eats.", "Nettle soup again."],
+		"soldier": ["Short rations for the watch too. Nobody's fooled."],
+		"clergy": ["The alms box is empty, and the line is longer.", "Feed them first. Sermons after."],
+		"gentry": ["Grain's dear in every town this side of the river.", "Open the stores, or they'll open them for us."],
+		"child": ["My belly sounds like a dog."],
+	},
+	"grief": {
+		"common": ["Buried him on Tuesday. Still set his bowl out by habit.", "Too many black ribbons on the doors this year.", "Light a candle, say a name, get back to work."],
+		"soldier": ["Good man. Should have been me on that post."],
+		"clergy": ["Another name for the bell.", "The dead are easy. It's the widows who need the sept."],
+		"gentry": ["The family will need help with the land now.", "A town feels a death in its markets for a season."],
+		"child": ["Everyone's quiet at supper now."],
+	},
+	"feast": {
+		"common": ["Ale on the crown's coin. Drink before they change their minds.", "First fat goose this year, and the whole street smelt it.", "Somebody fetch the piper, he's asleep under the cart."],
+		"soldier": ["One cup. On watch after.", "Feasts are when the fights start. Keep an eye out."],
+		"clergy": ["A good feast. Tomorrow the confessions.", "Joy is a kind of prayer too."],
+		"gentry": ["A feast keeps a town sweet for a season.", "Someone counted the barrels. I hope it wasn't the steward."],
+		"child": ["There's honey cakes! Real ones!"],
+	},
+	"king": {
+		"common": ["{king} rode through once. Didn't stop.", "They say {king} keeps a fair court. They would say that.", "Tithe's up again, and {king}'s banner on every wagon."],
+		"soldier": ["Sworn to {king}, paid by the steward, fed by nobody."],
+		"clergy": ["God keep {king}, and keep {king} honest."],
+		"gentry": ["{king}'s favour moves like weather. Best keep a cloak.", "Letters from {king}'s court want more than they say."],
+		"child": ["Is {king} very tall? I bet he is."],
+	},
+	"winter": {
+		"common": ["Woodpile's half what it should be.", "Ice on the well again. Took the axe to it.", "Cold enough to crack the ale."],
+		"soldier": ["Frost on the spear by dawn."],
+		"clergy": ["The cold takes the old ones first. Visit them."],
+		"gentry": ["A long winter empties every cellar."],
+		"child": ["The pond's frozen right across!"],
+	},
+	"harvest": {
+		"common": ["Barley's in. Three wet days and it would have rotted.", "Every back in town aches this week.", "Good straw this year. Thatch before the rain."],
+		"soldier": ["Harvest. Half the watch is in the fields."],
+		"clergy": ["Tithe sheaves at the sept door by sundown."],
+		"gentry": ["A fair yield, if the price holds.", "Count the carts twice."],
+		"child": ["I found a nest in the barley."],
+	},
+	"everyday": {
+		"common": ["The cart wheel needs a new rim before market.", "Rain by evening, by the look of it.", "Somebody's goat was in the cabbages again.", "Two pennies for a bad knife. Never again."],
+		"soldier": ["Quiet day. Quiet days make a man nervous.", "Boots need mending, and the cobbler's drunk."],
+		"clergy": ["The roof of the sept leaks over the third bench.", "Fewer at prayers when the sun's out."],
+		"gentry": ["Rents are due at Michaelmas, and half of them are late.", "The mill needs a new stone."],
+		"child": ["I can throw a stone over the well.", "Wat owes me a marble."],
+	},
+}
+## Who reads which lines: the callings and stations a person can have, by group.
+const MIND_GROUPS := {"pious": "clergy", "clergy": "clergy", "soldier": "soldier", "knight": "soldier", "archer": "soldier",
+	"gentry": "gentry", "noble": "gentry", "child": "child"}
+## What a person is called on the hover when the realm has no trade for them yet.
+const CALLINGS := {"farmer": "farmer", "market": "market trader", "pious": "lay sister", "tavern": "tavern hand", "keeper": "shopkeeper",
+	"gentry": "gentleman", "child": "child", "crafter": "craftsman", "idler": "idler", "soldier": "man of the watch", "knight": "knight",
+	"archer": "archer", "noble": "noble", "clergy": "friar", "townsfolk": "townsman", "peasant": "peasant"}
+## How long a line they spoke in a talk (the minds' own words) stays on their mind.
+const SAID_FRESH_MS := 300000
+const NEWS_FRESH_MS := 90000  # as FindPartner: news older than this isn't on their mind
+
+var _trades := {}  # town id -> {villager index: trade}, from the bridge's /townsfolk
+var _trades_asked := {}  # town id -> true once asked
+var _said_by := {}  # person instance id -> {text, ms}: the last thing the minds had them say
+var _better := {}  # person instance id -> Callable: who wants their own words when they come
+
+
+## What's on someone's mind, for the hover over them: {trade, line}, at once.
+## The line is the minds' own words when they've lately spoken (overheard
+## talk), else a plain line from MIND_LINES by what the town is going through
+## and who they are. `better`, if given, is called with a new {trade, line}
+## when the minds put words in their mouth later.
+func mind_line(person: Node3D, better := Callable()) -> Dictionary:
+	if person == null or not is_instance_valid(person):
+		return {}
+	var who: Dictionary = villagers.who_is(person) if villagers and villagers.has_method("who_is") else {}
+	var role := String(who.get("role", person.get_meta("role", "")))
+	var town := int(who.get("town", _town_of(person)))
+	var trade := String(CALLINGS.get(role, "townsman"))
+	if who.has("i"):
+		trade = String(_trades.get(town, {}).get(int(who["i"]), trade))
+		_ask_trades(town)
+	var pid := person.get_instance_id()
+	if better.is_valid():
+		_better[pid] = better
+	var said: Dictionary = _said_by.get(pid, {})
+	if not said.is_empty() and Time.get_ticks_msec() - int(said["ms"]) < SAID_FRESH_MS:
+		return {"trade": trade, "line": said["text"], "own": true}
+	var topic := _topic_of(person, town)
+	var group := String(MIND_GROUPS.get(role, "common"))
+	var lines: Array = MIND_LINES[topic].get(group, MIND_LINES[topic]["common"])
+	var line: String = lines[hash(pid) % lines.size()]  # the same person keeps the same thought
+	return {"trade": trade, "line": line.replace("{king}", _king_of(person)), "own": false, "topic": topic}
+
+
+## What the person is thinking about: news they saw or heard (their mind's
+## memory), else what their town is going through, else the season.
+func _topic_of(person: Node3D, town: int) -> String:
+	var mind := person.get_node_or_null("Mind")
+	if mind and "blackboard" in mind:
+		for m in mind.blackboard.get_var(&"memory", [], false):
+			if Time.get_ticks_msec() - int(m.get("ms", 0)) < NEWS_FRESH_MS:
+				var by_tone := {"hostile": "war", "trouble": "hunger", "grief": "grief", "joy": "feast", "crown": "king"}
+				var t := String(by_tone.get(SceneKinds.tone(String(m.get("kind", ""))), ""))
+				if t != "":
+					return t
+	var c: Dictionary = towns.towns.get(town, {}).get("data", {}) if towns else {}
+	if c.get("disorder", false):
+		return "riot"
+	if c.get("famine", false):
+		return "hunger"
+	if c.get("atWar", false):
+		return "war"
+	if c.get("grief", false):
+		return "grief"
+	if c.get("celebrating", false):
+		return "feast"
+	if c.get("grasping", false):
+		return "king"
+	var season := String(villagers.terrain.season) if villagers and "terrain" in villagers and villagers.terrain else ""
+	if season == "winter":
+		return "winter"
+	if season == "autumn":
+		return "harvest"
+	return "everyday"
+
+
+func _king_of(person: Node3D) -> String:
+	var mind := person.get_node_or_null("Mind")
+	var k := String(mind.blackboard.get_var(&"king_name", "", false)) if mind and "blackboard" in mind else ""
+	return k if k != "" else "the King"
+
+
+## The town a person stands in: theirs as a villager, or the one whose Life holds them.
+func _town_of(person: Node3D) -> int:
+	if towns == null:
+		return -1
+	for id in towns.towns:
+		var node: Node3D = towns.towns[id].get("node")
+		if is_instance_valid(node) and node.is_ancestor_of(person):
+			return int(id)
+	return -1
+
+
+## Each townsperson's trade, asked of the bridge once per town.
+func _ask_trades(town: int) -> void:
+	if town < 0 or _trades_asked.has(town) or bridge == null:
+		return
+	_trades_asked[town] = true
+	var req := HTTPRequest.new()
+	req.timeout = 10.0
+	add_child(req)
+	_waiting.append(req)
+	req.request_completed.connect(func(_r, code, _h, bytes):
+		_waiting.erase(req)
+		req.queue_free()
+		var data = JSON.parse_string(bytes.get_string_from_utf8()) if code == 200 else null
+		if not data is Dictionary:
+			_trades_asked.erase(town)  # ask again next time
+			return
+		var out := {}
+		for f in data.get("folk", []):
+			out[int(f.get("i", -1))] = String(f.get("trade", ""))
+		_trades[town] = out)
+	req.request(bridge.BASE + "/townsfolk?city=%d" % town)
+
+
+## The minds had `speaker` say `text` (a talk the model wrote): on their mind now.
+func _heard(speaker: Node3D, text: String) -> void:
+	var pid := speaker.get_instance_id()
+	_said_by[pid] = {"text": text, "ms": Time.get_ticks_msec()}
+	var cb: Callable = _better.get(pid, Callable())
+	if cb.is_valid():
+		_better.erase(pid)
+		cb.call(mind_line(speaker))
+
+
 ## Nothing left hanging on the bridge when the game closes.
 func _exit_tree() -> void:
 	for req in _waiting:
@@ -222,6 +419,8 @@ func _play(town: int, g: Dictionary, key: String, talk: Dictionary) -> void:
 			break
 		var speaker: Node3D = g["nodes"][at]
 		var text := String(line.get("text", ""))
+		if talk.has("id") and text.length() >= 20:
+			_heard(speaker, text)  # the minds' own words: what's on their mind now
 		var secs := clampf(1.2 + text.length() * 0.05, 2.5, 4.5)  # a few seconds each: overheard, not a subtitle
 		if villagers.has_method("give_floor"):
 			villagers.give_floor(town, int(g["key"]), i, secs + 0.6)
