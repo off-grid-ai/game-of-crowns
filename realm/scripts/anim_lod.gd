@@ -122,7 +122,7 @@ func _animate(delta: float, vp: Viewport, cam: Camera3D) -> void:
 			_owed.erase(id)
 			continue
 		var owed: float = _owed.get(id, 0.0) + delta
-		if n == 1 or (_frame + id) % n == 0:
+		if n == 1 or (Engine.get_process_frames() + id) % n == 0:  # the same frames moves_now gives the body's mover
 			_move(p, owed)
 			_owed.erase(id)
 		else:
@@ -156,6 +156,25 @@ func _think(delta: float, vp: Viewport, cam: Camera3D) -> void:
 		else:
 			_mind_owed[id] = owed
 	_minds = keep
+
+
+## Whether a person's body is moved this frame: their mover (villagers.gd) moves
+## them on the same frames as their legs, so a stride never plays while the body
+## waits for its turn (feet sliding). Bodies with no motion of their own: always.
+static func moves_now(body: Node3D) -> bool:
+	if flat or body == null:
+		return true
+	var mo := body.get_node_or_null("Motion")
+	if mo == null or not mo is AnimationMixer:
+		return true
+	var vp := body.get_viewport()
+	var cam := vp.get_camera_3d() if vp else null
+	if cam == null:
+		return true
+	var n := every(cam, body)
+	if n == 0:
+		n = STRIDE  # out of sight: no legs to keep in step, moved now and then with the time owed
+	return n == 1 or (Engine.get_process_frames() + mo.get_instance_id()) % n == 0
 
 
 ## A body moves by the time it's owed: legs read the ground covered (motion.gd),
