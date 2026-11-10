@@ -130,6 +130,10 @@ func _ready() -> void:
 	scenes = preload("res://scripts/scenes.gd").new()
 	scenes.terrain = terrain
 	add_child(scenes)
+	var traffic := preload("res://scripts/traffic.gd").new()  # who is on the roads, from the realm's state
+	traffic.terrain = terrain
+	traffic.scenes = scenes
+	add_child(traffic)
 	units = preload("res://scripts/units.gd").new()
 	units.terrain = terrain
 	add_child(units)
