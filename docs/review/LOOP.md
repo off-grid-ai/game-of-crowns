@@ -378,3 +378,16 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   7. "Later" against "Close the court" → each says what it does.
 - **Still open, in order:** card template slips ("Stormhold and Stormhold"), unlabelled numbers ("▼ 13"), leftover floating text, big events weighted like small ones, and dead air between courts (the core-loop question for Mac).
 - **Proof:** a check reign is running with these live; frames next turn.
+
+## 2026-11-10, 13:30 (autopilot)
+
+- **Seen live in the check reign:**
+  - "Continue" on the act's telling; the reign moved on a frame later (it had held six minutes before).
+  - "1,000 of 2,400 men" under the aim.
+  - "The King's granary · 1 season" over Kingsmere.
+  - The UI at 1600 x 920 now fits: the treasury bar shows (it was hidden before).
+- **Caught live and fixed:** the court hid the ledger and chronicle and didn't bring them back. Now the court card is simply drawn on top (the modal pattern).
+- **Also fixed:**
+  - Story titles name each person's own family ("Stormhold and Dale").
+  - The favour drift reads "54 ▼13".
+- **Verdict:** on course: friction first, each fix seen in a game.
