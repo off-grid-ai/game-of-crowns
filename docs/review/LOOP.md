@@ -583,3 +583,14 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - deck gates done;
   - films now.
 - **Verdict:** on course.
+
+## 2026-11-10, autopilot (C1 prep, B6 started, round 2 queued)
+
+- **Landed:**
+  - **d6bfd47:** TownLife.minds_on() is the one rule for which towns have minds, with --limbo=all for C1.
+  - **b45a0ee:** B6 has begun. bridge/petitions.js holds one handler per petition kind. Siege and grain moved first, with identical results for every option, tested.
+- **Measured:** the round-1 film run logs 16–35 fps and 45–72 ms of process time a frame at Kingsmere with minds in one town. C1 waits on perf_check.sh (minds off, in one town, everywhere, same shot), which runs after round 2.
+- **Steer:**
+  - Builder 2 merged the round-2 hooks (epithet, staged soldiers, /test/grow) and --hour, fixed winter-without-snow, and asked for an autumn-to-winter strip (added as target "turn").
+  - Round 2 runs straight after round 1's sheets: King Good and Cruel, wounded and fortified soldiers, a town growing, the court card over the truce reload, the land turning, a winter evening, Eve, and the perf check.
+- **Verdict:** on course. Films are the gate now; C1 waits on their frame-cost numbers.
