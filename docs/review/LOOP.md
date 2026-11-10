@@ -297,3 +297,22 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - a siege to watch: a camp, and a press-or-withdraw choice mid-siege;
   - then juice and named stakes.
 - **Verdict:** on course.
+
+## 2026-11-10, noon (autopilot)
+
+- **What's going on:** Mac asked for a CEO report on the game; it's drafted and through two reviewers. No game open, no comments from Mac on the review page.
+- **Where we're heading:** AUTOPILOT items 5, 7 and 8 (projects on the map with seasons left, a reaction to every click, named stakes). These are also the report's "quick three".
+- **Right way?**
+  - Fun-bar numbers unchanged since the last measured run (0.65 decisions a minute).
+  - Work follows the approved order: item 5 started this turn.
+- **Supervisor (fresh agent) on 5e6613f, the siege terms — three gaps, all fixed this turn:**
+  - The herald could arrive with no court to hear him, so the siege was decided first and a late "press" still cost 200 gold. Now the court sits for a herald; the siege waits up to two seasons for the King's word; a ruling on a siege already over is refused with nothing charged.
+  - Pressing bought nothing over starving (both capped at 95). Now the bonuses add to the odds (press +20, starve +10, a season later), and each answer shows its own odds, with a warning when starving runs into winter.
+  - The tribute came from nowhere. Now it's what the house can pay (up to 150), taken from its own chest, and no tribute is offered if it has under 50.
+- **Built:** the King's open matters under the town's name on the map ("The King's marketplace · 2 seasons", "The King's siege · 1 season"), readable from as far as a seat.
+- **Verdict:** on course.
+- **Film:** the bridge side is proven (Kingsmere's marketplace 2 seasons left; the siege of Lionreach 2 seasons left). The shots don't show the marks: the camera was too close (names fade in under 10) and the Houses panel was open. Refilm next turn, pulled back, panels shut.
+- **Incident:** the film script had a syntax error after the shots, so it never put Mac's realm back. Caught at once; The Broken Oath reopened and paused by hand, the test reign moved out.
+- **The siege fixes** are syntax-checked; prove them on the live bridge next turn (court sits for the herald, a stale ruling refused, the tribute taken from the house).
+- **CEO report** (https://claude.ai/artifact/L7x9ySuXriGXhCAsapAm4k) through both reviewers and republished: a near tie (715 against 710), the quick three, then Mac plays.
+- **Mac, mid-turn:** asked for mini goals like "a royal army of 10,000". The ladder already does this; what it lacks is progress ("7 of 12 companies"). Offered, not built.

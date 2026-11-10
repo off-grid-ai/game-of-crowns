@@ -67,16 +67,20 @@ func _process(_delta: float) -> void:
 		var data: Dictionary = towns.towns[id]["data"]
 		var cap: bool = data.get("capital", false)
 		# Seats read from across the realm; a small town only once you're near.
-		var far := 400.0 if cap else 26.0 + int(data.get("size", 1)) * 2.5
+		# What the King started here (his works, his siege) reads from as far as a seat.
+		var mine := _mine(data)
+		var far := 400.0 if cap or mine != "" else 26.0 + int(data.get("size", 1)) * 2.5
 		var a := smoothstep(far, far * 0.8, d) * smoothstep(7.0, 10.0, d)
 		var at: Vector3 = towns.towns[id]["node"].global_position + Vector3(0, 0.35, 0)
 		if a <= 0.01 or cam.is_position_behind(at):
 			box.visible = false
 			continue
 		_refresh(tag, data)
-		# What a town is building or raising is on its card, in words; the map
-		# carries names only, never the engine's progress ("Choosing envoys · 50%").
-		tag["doing"].visible = false
+		# The map carries names only, never the engine's progress ("Choosing
+		# envoys · 50%"): only what the King himself started shows under a name,
+		# with how long it has left, so his open matters are always in sight.
+		tag["doing"].text = mine
+		tag["doing"].visible = mine != ""
 		var p := cam.unproject_position(at)
 		var size := box.get_combined_minimum_size()
 		var rect := Rect2(p - Vector2(size.x * 0.5, size.y), size)
@@ -90,9 +94,25 @@ func _process(_delta: float) -> void:
 		box.modulate.a = a
 
 
+## What the King started in this town, with the seasons it has left: his own
+## works rising, or his host before the walls. Empty when nothing of his is here.
+static func _mine(data: Dictionary) -> String:
+	var n := int(data.get("siegeLeft", 0))
+	if n > 0:
+		return "The King's siege · %s" % _seasons(n)
+	if data.get("royal", false):
+		var what := String(data.get("building", "works")).to_lower()
+		return "The King's %s · %s" % [what, _seasons(maxi(1, int(data.get("worksLeft", 1))))]
+	return ""
+
+
+static func _seasons(n: int) -> String:
+	return "1 season" if n == 1 else "%d seasons" % n
+
+
 func _rank(id: int) -> float:
 	var data: Dictionary = towns.towns[id]["data"]
-	return (1000.0 if data.get("capital", false) else 0.0) + float(data.get("size", 1))
+	return (1000.0 if data.get("capital", false) else 0.0) + (500.0 if _mine(data) != "" else 0.0) + float(data.get("size", 1))
 
 
 func _make(_id: int) -> Dictionary:
