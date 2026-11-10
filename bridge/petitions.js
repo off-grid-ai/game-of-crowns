@@ -47,4 +47,40 @@ export const ANSWERS = {
     if (option === "confirm") { out.favour[k.to] = 15; out.favour[k.from] = -30; for (const b of this.alive().filter((x) => x.rank === "bannerman")) b.loyalty = Math.max(0, b.loyalty - 5); out.text = `The King confirms ${town} to its new masters. Bannermen across the realm take note.`; }
     if (option === "seize") { const crown = world.players.find((x) => houseFor(x).crown); if (crown) move(crown.id); out.favour[k.from] = -20; out.favour[k.to] = -20; out.text = `The King takes ${town} for the crown. Neither house is pleased.`; }
   },
+  justice({ p, c, opt, option, out, gold, world }) {
+    const enemy = this.people[p.enemy];
+    if (option === "side" || option === "other") {
+      const winner = option === "side" ? c : enemy;
+      const loser = option === "side" ? enemy : c;
+      out.favour[winner.playerId] = 15;
+      out.favour[loser.playerId] = -25;
+      this.remember(winner.id, `The King took my side against ${loser.name}.`);
+      this.remember(loser.id, `The King humiliated me before ${winner.name}.`);
+      this.shift(loser.id, winner.id, -20);
+      if (this.warlike(loser)) loser.goals.unshift({ kind: "revenge", text: `make ${winner.house} pay for what the King allowed` });
+      out.text = `The King rules for ${winner.house}. ${loser.name} leaves the hall white with fury.`;
+    } else if (option === "peace") {
+      this.makeTruce(c, enemy, 8, world);
+      out.favour[c.playerId] = -5;
+      out.favour[enemy.playerId] = -5;
+      out.text = `The King's peace is proclaimed between ${c.house} and ${enemy.house}. The crown pays for the burned barns. Neither lord smiles.`;
+    } else if (option === "combat") {
+      const cWins = Math.random() < 0.5 + (this.warlike(c) ? 0.1 : 0) - (this.warlike(enemy) ? 0.1 : 0);
+      const winner = cWins ? c : enemy;
+      const loser = cWins ? enemy : c;
+      const lp = world.players.find((x) => x.id === loser.playerId);
+      gold(loser.playerId, -Math.floor((lp?.gold ?? 0) / 3));
+      gold(winner.playerId, Math.floor((lp?.gold ?? 0) / 3));
+      out.favour[winner.playerId] = 10;
+      out.favour[loser.playerId] = -10;
+      const son = loser.children.map((id) => this.people[id]).find((k) => k?.alive && k.gender === "male" && k.age >= 16);
+      if (son && Math.random() < 0.5) {
+        son.alive = false;
+        this.remember(loser.id, `My son ${son.name} died in the trial by combat the King allowed.`);
+        out.text = `Trial by combat at Kingsmere. ${winner.house}'s champion stands over ${son.name}, son of ${loser.name}. The gods have spoken.`;
+      } else {
+        out.text = `Trial by combat at Kingsmere. ${winner.house}'s champion wins; ${loser.house} pays a third of its treasury.`;
+      }
+    }
+  },
 };
