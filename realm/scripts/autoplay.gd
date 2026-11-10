@@ -167,6 +167,13 @@ func _play(quit_after: bool) -> void:
 					if String(c.get("title", c.get("name", ""))) == w[1]:
 						main._focus_city(int(c["id"]))
 				await get_tree().create_timer(1.0).timeout
+			"tile":
+				# tile X Y [dist]: frames a map tile (a company in the field, a site's plot).
+				var at: Vector3 = main.terrain.world_pos(float(w[1]), float(w[2]))
+				main.rig.snap(at, float(w[3]) if w.size() > 3 else 1.6, 0.6)
+				if main.rig.is_processing_input() == false:
+					main.rig._apply()
+				await get_tree().create_timer(2.0).timeout
 			"life":
 				# life Town [kind] [dist]: frames the town's scene folk (kind: soldier for a drill, else everyone).
 				_frame_life(w[1], w[2] if w.size() > 2 else "", float(w[3]) if w.size() > 3 else 1.6)
