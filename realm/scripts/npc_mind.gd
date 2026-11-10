@@ -321,6 +321,29 @@ static func block_is(blocks: Array) -> BTTask:
 	return t
 
 
+## Danger first: struck, or someone struck beside them. A flinch, a run for
+## home, a look round, then calm and back to the day.
+static func villager_danger() -> BTTask:
+	var danger := BTSequence.new()
+	var check := BTCheckVar.new()
+	check.variable = &"danger"
+	check.check_type = LimboUtility.CHECK_EQUAL
+	var yes := BBVariant.new()
+	yes.saved_value = true
+	check.value = yes
+	danger.add_child(check)
+	danger.add_child(once("React_Front"))
+	danger.add_child(go("home", "Running"))
+	danger.add_child(run(["Terrified", "Looking_Around"], 1, 1))
+	var calm := BTSetVar.new()
+	calm.variable = &"danger"
+	var no := BBVariant.new()
+	no.saved_value = false
+	calm.value = no
+	danger.add_child(calm)
+	return danger
+
+
 static func villager_activities(role: String) -> Array:
 	match role:
 		"farmer":
@@ -350,6 +373,7 @@ static func give_villager(person: Node3D, a: Dictionary, vill: Node) -> bool:
 	if acts.is_empty():
 		return false
 	var life := BTDynamicSelector.new()
+	life.add_child(villager_danger())
 	var night := BTSequence.new()
 	night.add_child(block_is(["night", "dawn"]))
 	night.add_child(go("home"))
@@ -379,6 +403,7 @@ static func give_villager(person: Node3D, a: Dictionary, vill: Node) -> bool:
 	player.blackboard.set_var(&"post", person.position)
 	player.blackboard.set_var(&"face", person.rotation.y)
 	player.blackboard.set_var(&"choices", acts.size())
+	player.blackboard.set_var(&"danger", false)
 	person.add_child(player)
 	a["mind"] = player
 	return true

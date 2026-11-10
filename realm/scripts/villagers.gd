@@ -1334,6 +1334,10 @@ func struck(town: int, i: int, by: Vector3, who_struck: String) -> void:
 
 ## Away from `from`, at a run, home: what anyone does when steel is drawn on them.
 func _flee(a: Dictionary, from: Vector3) -> void:
+	if a.has("mind"):
+		# Their mind takes it from here: Danger cuts in ahead of whatever they're doing.
+		(a["mind"] as BTPlayer).blackboard.set_var(&"danger", true)
+		return
 	var town: Dictionary = towns.towns.get(a["town"], {})
 	if town.is_empty():
 		return
