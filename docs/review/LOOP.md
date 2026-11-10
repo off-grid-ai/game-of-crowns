@@ -781,3 +781,18 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Fun bar:** no reign measured this turn. The order is followed: rulings come back (1), the map (3) and schemes (4) have landed. The capital going live (2) waits on foot skate.
 - **For Mac (downloads need his yes):** a lute, a wheelbarrow, a plain gentleman's body, and a Mixamo sweeping move. Until then, moves without their tool aren't chosen.
 - **Verdict:** on course.
+
+## 2026-11-10 23:10, autopilot (supervisor turn)
+
+- **Landed (mine):**
+  - a4c8431: the mirror carries intrigue.
+  - e6d3e3b: Stakes.raisePretender.
+  - 6af53bd: /test/clock. Proven: act_end brings "End of the first act".
+- **Fresh judge (supervisor turn), 3 gaps:**
+  1. The faces and the scheme lines aren't in film yet. Before the mirror line went in, the view saw no intrigue. Film is asked to shoot them.
+  2. The decision is a menu, not a dilemma. The court card fills half the screen with one priced option. A starving town doesn't look starving. The card and the look go to Builder 2. The choices are mine: who each answer helps and hurts, with no lone option.
+  3. The town still clips: carts merged with each other and with people, war reads as a cheering crowd, a crowd stands in rows. Carts go to Builder 2 (traffic); war, talk and rows go to Townsfolk look.
+  - Working: stormwatch-6.jpg shows the ping, the treachery ticker and the scar line in one oblique frame. The land remembers.
+- **Own work in progress:** the walk pace from the clip's own stride. The first headless measurement read 0, because the clip didn't pose the skeleton through AnimationPlayer. Next try: drive it through the person's Motion tree.
+- **Fun bar:** no reign measured. Judging by the judge's frames, the decision moment is the weakest line.
+- **Verdict:** on course on structure; off course on the decision's feel. Course correction: the court's choices become two-sided dilemmas before more systems are added. I take it next.
