@@ -163,7 +163,31 @@ func traveller(from: Vector3, to: Vector3, kind := "walker", on_done := Callable
 		path.queue_free()
 		if on_done.is_valid():
 			on_done.call())
+	# Giving way: someone standing just ahead on the road, and the traveller waits
+	# (the tween held) until they've passed, never walking or driving through them.
+	# Held no longer than WAIT_MAX at a time, so a crowd that never parts can't stop the road.
+	var look := Timer.new()
+	look.wait_time = 0.15
+	path.add_child(look)
+	var held := [0.0]
+	look.timeout.connect(func():
+		if not is_instance_valid(follow) or not tw.is_valid():
+			return
+		var ahead := path.to_global(path.curve.sample_baked(minf(length, follow.progress + (0.16 if carter else 0.1))))
+		var blocked := false
+		for n in get_tree().get_nodes_in_group("people"):
+			var p3 := n as Node3D
+			if p3 and p3.is_visible_in_tree() and not follow.is_ancestor_of(p3) and Vector2(p3.global_position.x - ahead.x, p3.global_position.z - ahead.z).length() < 0.07:
+				blocked = true
+				break
+		held[0] = held[0] + look.wait_time if blocked else 0.0
+		tw.set_speed_scale(0.0 if blocked and held[0] < WAIT_MAX else 1.0))
+	look.start()
 	return true
+
+
+## How long a traveller waits at a time for someone in the road to pass.
+const WAIT_MAX := 4.0
 
 
 ## One horse and cart, built as a single piece so its parts can never come
