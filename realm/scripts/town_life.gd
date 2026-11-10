@@ -230,6 +230,7 @@ func _townsperson(parent: Node3D, pos: Vector3, role: String, anim: String, seed
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
 	var p: Node3D = _people.make(rng, role, tint, "adult" if role == "soldier" else "")
+	p.set_meta("role", role)  # who they are in the scene (a film can find a drill's soldiers)
 	p.position = pos
 	parent.add_child(p)
 	# A drill is practised over and over: a one-off move (a cut, a draw of the

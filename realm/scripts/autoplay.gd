@@ -167,6 +167,12 @@ func _play(quit_after: bool) -> void:
 					if String(c.get("title", c.get("name", ""))) == w[1]:
 						main._focus_city(int(c["id"]))
 				await get_tree().create_timer(1.0).timeout
+			"life":
+				# life Town [kind] [dist]: frames the town's scene folk (kind: soldier for a drill, else everyone).
+				_frame_life(w[1], w[2] if w.size() > 2 else "", float(w[3]) if w.size() > 3 else 1.6)
+				if main.rig.is_processing_input() == false:
+					main.rig._apply()
+				await get_tree().create_timer(3.0).timeout
 			"city":
 				_frame_city(w[1], float(w[2]) if w.size() > 2 else 6.0)
 				if main.rig.is_processing_input() == false:
@@ -251,6 +257,34 @@ func _frame_city(title: String, dist: float) -> void:
 		if String(c.get("title", c.get("name", ""))) == title:
 			main.rig.snap(main.terrain.world_pos(float(c["x"]), float(c["y"])), dist, 0.6)
 			return
+
+
+## Frames where a town's scene folk stand (town_life's Life node): the middle
+## of its soldiers for a drill, or of everyone in the scene.
+func _frame_life(title: String, kind: String, dist: float) -> void:
+	for c in main.bridge.world.get("cities", []):
+		if String(c.get("title", c.get("name", ""))) != title:
+			continue
+		var t: Dictionary = main.towns.towns.get(int(c["id"]), {})
+		var life: Node3D = t["node"].get_node_or_null("Life") if not t.is_empty() else null
+		if life == null:
+			_note("  life %s: no scene" % title)
+			return
+		var sum := Vector3.ZERO
+		var n := 0
+		for p in life.get_children():
+			if p is Node3D and p.get_node_or_null("Anim") and (kind == "" or String(p.get_meta("role", "")) == kind or (kind == "soldier" and p.get_meta("tint_soldier", false))):
+				sum += (p as Node3D).global_position
+				n += 1
+		if n == 0:
+			for p in life.get_children():
+				if p is Node3D and p.get_node_or_null("Anim"):
+					sum += (p as Node3D).global_position
+					n += 1
+		_note("  life %s: %d people" % [title, n])
+		if n > 0:
+			main.rig.snap(sum / n, dist, 0.6)
+		return
 
 
 ## What a player could tell from the screen right now.
