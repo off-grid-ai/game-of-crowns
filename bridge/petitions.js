@@ -121,4 +121,10 @@ export const ANSWERS = {
     if (option === "lend") { gold(c.playerId, 250); out.favour[c.playerId] = 5; (this.debts ??= []).push({ pid: c.playerId, amount: 325, due: (world.turn ?? 0) + 8 }); out.text = `The crown lends ${c.house} 250 gold. The debt is written in the King's ledger: 325, due in two years.`; }
     if (option === "refuse") { out.favour[c.playerId] = c.traits.includes("proud") ? -18 : -10; this.remember(c.id, "I begged the King for relief and was told to pay like everyone else."); out.text = `The King refuses. ${c.house} pays its share, and its lord counts every coin.`; }
   },
+  outlaws({ p, c, opt, option, out, gold, world }) {
+    const town = cityName(p.city);
+    if (option === "hunt") { out.favour[c.playerId] = 15; out.lua.push(`local c = find.city(nil, ${p.city}); if c then local t = find.unit_type("Knights") or find.unit_type("Horsemen"); for i = 1, 3 do edit.create_unit(c.owner, c.tile, t, 1, c, -1) end end`); out.text = `The King's riders clear the forest road outside ${town}. The oaks bear different fruit now.`; }
+    if (option === "pardon") { out.favour[c.playerId] = -15; const crown = world.players.find((x) => houseFor(x).crown); const seat = crown && world.cities.find((x) => x.owner === crown.id); if (seat) out.lua.push(`local c = find.city(nil, ${seat.id}); if c then for i = 1, 2 do edit.create_unit(c.owner, c.tile, find.unit_type("Archers") or find.unit_type("Warriors"), 0, c, -1) end end`); this.remember(c.id, `The King pardoned the outlaws who hanged my men outside ${town}, and put them in royal colours.`); out.text = `The outlaws of ${town} kneel and are pardoned. They march to Kingsmere in the King's colours. ${c.house} does not forgive it.`; }
+    if (option === "theirs") { out.favour[c.playerId] = -5; gold(c.playerId, -60); out.text = `The King tells ${c.name} to keep his own roads. The outlaws keep the road, and the taxes of ${town} keep going into the forest.`; }
+  },
 };
