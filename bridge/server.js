@@ -21,7 +21,7 @@ import { folkTale, folkPlain, moodRules, speak, ruleFrom, reactTo, speech, voice
 import * as chron from "./chronicles.js";
 import * as names from "./names.js";
 import * as rewrites from "./written.js";
-import { decree, titheLua, clampFavour, DECREES, bannersReady } from "./crown.js";
+import { decree, titheLua, clampFavour, DECREES, bannersReady, TITHE_HIGH } from "./crown.js";
 // Stories the player generates or writes, kept with their realms.
 const OWN_STORIES = path.join(chron.HOME, "stories");
 ownStories(OWN_STORIES);
@@ -403,7 +403,7 @@ function refreshCounsel() {
 
 // The realm's states, set on each town (view.js).
 function townStates() {
-  View.townStates({ world, meta, scenes, detail, besiegers });
+  View.townStates({ world, meta, scenes, detail, besiegers, favourOf });
 }
 
 // A town falling into disorder is news, told once as it starts (view.js).
@@ -491,6 +491,8 @@ function rule(id, option) {
     crownNow.gold -= out.cost;
   }
   out.lua.forEach((l) => send(`lua cmd ${l}`));
+  // A ruling that sends the royal host (the siege plea's "relieve"): the same march as the decree.
+  if (out.march != null) marchOn(Number(out.march));
   const effects = shiftAndTell(out.favour, "your ruling at court", out.cost);
   // Every ruling is told, even one whose answer has no words of its own written for it.
   if (!String(out.text ?? "").trim()) out.text = `The King gives his answer${petition ? ` to ${petition.name}` : ""}: ${String(asked?.label ?? option).replace(/ \(.*\)$/, "").toLowerCase()}.`;
@@ -1682,7 +1684,7 @@ function collectTithe(turn) {
     const from = world.cities.filter((c) => c.owner !== crownId && !houseFor(world.players.find((p) => p.id === c.owner) ?? {}).wild).sort((x, y) => y.size - x.size).slice(0, Math.max(1, Math.round(meta.tithe * 20)));
     if (king) for (const c of from) scene("tribute", { x: c.x, y: c.y, tx: king.x, ty: king.y, city: king.id, tithe: true });
   }
-  if (turn % 4 === 0 && (meta.tithe >= 0.19 || meta.tithe <= 0.05)) deed(kingDeeds.tagsFor("realm", meta.tithe >= 0.19 ? "tithe_high" : "tithe_low"), { act: false });
+  if (turn % 4 === 0 && (meta.tithe >= TITHE_HIGH || meta.tithe <= 0.05)) deed(kingDeeds.tagsFor("realm", meta.tithe >= TITHE_HIGH ? "tithe_high" : "tithe_low"), { act: false });
   const t = titheLua(world, meta.tithe * (0.4 + 0.6 * peaceNow));
   tally.total += t.total;
   tally.upkeep += t.upkeep;
@@ -2059,6 +2061,17 @@ function keepTruce(pair) {
   court.remember(a.id, `The King commanded peace with ${b.house}, and I bowed to it.`);
   court.remember(b.id, `The King commanded peace with ${a.house}, and I bowed to it.`);
   court.saveCourt?.();
+}
+
+// The royal host marches on a town for a ruling the court already paid for: the
+// decree's own march (crown.js), its fee waived, and the same campaign.
+function marchOn(cityId) {
+  if (!world) return;
+  const r = decree({ action: "march", city: cityId, price: 0, favourOf, causeOf, marching: (city) => (meta.campaigns ?? []).some((x) => x.city === city) }, { ...world, players: world.players.map((p) => houseFor(p).crown ? { ...p, gold: 1e9 } : p) });
+  if (r.error) { console.error("march:", r.error); return; }
+  (r.lua ?? []).slice(1).forEach((l) => send(`lua cmd ${l}`));
+  shiftFavour(r.favour, "the royal host");
+  if (r.march) startCampaign(r.march);
 }
 
 // The King commanded peace at the council: both hosts are turned home, as the
@@ -2503,9 +2516,18 @@ const ROUTES = {
   "POST /test/stage": async (req, res, url) => {
     if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
     const b = await body(req);
-    // {city, building, kind, progress} stages its work; {city, mood: riot|feast|hunger|calm} its mood.
-    const moods = { riot: { disorder: true }, feast: { celebrating: true }, hunger: { famine: true }, calm: { disorder: false, celebrating: false, famine: false } };
+    // {city, building, kind, progress} stages its work; {city, mood} its mood:
+    // riot, feast, hunger, war, peace, prosperity, grief, grasping, calm; {city, mood: "king"} sends the King's banner through it.
+    const moods = { riot: { disorder: true }, feast: { celebrating: true }, hunger: { famine: true }, war: { atWar: true }, peace: { atWar: false },
+      prosperity: { prosperity: true }, grief: { grief: true }, grasping: { grasping: true },
+      calm: { disorder: false, celebrating: false, famine: false, atWar: false, grief: false, grasping: false, prosperity: false } };
     const at = (meta.stage ??= {});
+    if (b.mood === "king") {
+      const c = world.cities.find((x) => x.id === Number(b.city));
+      const crownId = Realm.crownOf(world)?.id;
+      if (c) scene("rider", { x: c.x - 2, y: c.y, tx: c.x + 2, ty: c.y, city: c.id, owner: crownId, label: "The King's banner" });
+      return json(res, 200, { ok: true });
+    }
     if (b.mood) at[Number(b.city)] = { ...(at[Number(b.city)] ?? {}), ...moods.calm, ...(moods[b.mood] ?? {}) };
     else at[Number(b.city)] = { ...(at[Number(b.city)] ?? {}), building: String(b.building ?? "Pikemen"), buildingKind: String(b.kind ?? "UnitType"), progress: Number(b.progress ?? 0.5) };
     return json(res, 200, { ok: true });

@@ -6,7 +6,7 @@
 
 import { houseFor, cityName, HOUSES } from "./narrator.js";
 import { BUILD_COST, granarySize } from "./rules.js";
-import { DECREES } from "./crown.js";
+import { DECREES, TITHE_HIGH } from "./crown.js";
 import { BANDS } from "./favour.js";
 import { calendar } from "./stakes.js";
 import * as names from "./names.js";
@@ -120,7 +120,7 @@ return { ...world, players, cities, units, turnSeconds, crownId: crownOf()?.id ?
 // the view all read these fields; none works them out again.
 const PLAGUE_SEASONS = 4;  // a town is still sick this many seasons after plague strikes
 export function townStates(ctx) {
-  const { world, meta, scenes, detail, besiegers } = ctx;
+  const { world, meta, scenes, detail, besiegers, favourOf } = ctx;
   if (!world?.cities) return;
   const d = detail();
   const turn = world.turn ?? 0;
@@ -140,9 +140,20 @@ export function townStates(ctx) {
       // The royal host before its walls, or an enemy host at them.
       besieged: (meta?.campaigns ?? []).some((k) => k.city === c.id) || besiegers(c).length >= 3,
     });
+    // The town's house at war with another great house or the crown (Freeciv's diplomacy, wild raiders aside).
+    const owner = world.players.find((p) => p.id === c.owner);
+    const great = (id) => { const q = world.players.find((p) => p.id === id); return q && !houseFor(q).wild; };
+    c.atWar = (d?.players?.[c.owner]?.atWarWith ?? []).some(great);
+    // The crown grasps: a heavy tithe weighs on every town but the King's own.
+    c.grasping = (meta?.tithe ?? 0) >= TITHE_HIGH && !houseFor(owner ?? {}).crown;
+    // Grief: put to the sword, burnt, a death mourned, want or sickness, these last two seasons.
+    c.grief = scenes.some((s) => s.city === c.id && ["sack", "razed", "vigil", "death", "famine", "plague"].includes(s.kind) && s.turn >= turn - 2);
+    // Good times: a house that loves the crown (the crown's own: a full treasury), no want, no riot, no grief.
+    const fond = houseFor(owner ?? {}).crown ? (owner?.gold ?? 0) >= 1500 : favourOf(c.owner) >= BANDS.loyal;
+    c.prosperity = fond && !c.famine && !c.disorder && !c.grief;
     // A test reign's staged mood (/test/stage), so the court sees what the film shows.
     const st = meta?.stage?.[c.id];
-    if (st) for (const k of ["famine", "celebrating", "disorder"]) if (k in st) c[k] = st[k];
+    if (st) for (const k of ["famine", "celebrating", "disorder", "atWar", "grasping", "grief", "prosperity"]) if (k in st) c[k] = st[k];
     // The town's mood, one word everyone reads: a riot outweighs hunger, hunger a feast.
     c.mood = c.disorder ? "riot" : c.famine ? "hunger" : c.celebrating ? "feast" : "";
   }

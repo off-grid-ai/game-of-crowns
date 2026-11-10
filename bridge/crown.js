@@ -43,6 +43,9 @@ export function crownUpkeep(crown) {
   return 2 + (crown.cities ?? 0) * 2 + Math.floor(Math.max(0, crown.gold) * 0.01);
 }
 
+// A tithe this heavy grasps: the ledger's tithe_high, and the towns mutter (view.js townStates).
+export const TITHE_HIGH = 0.19;
+
 export function titheLua(world, rate) {
   const crown = crownOf(world);
   if (!crown) return { lua: [], total: 0, takes: {}, upkeep: 0 };
