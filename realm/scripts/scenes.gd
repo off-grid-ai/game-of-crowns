@@ -1804,10 +1804,24 @@ func _caption(root: Node3D, text: String, at: Vector3) -> Label3D:
 	tag.render_priority = 10
 	tag.modulate = Color(0.95, 0.85, 0.6)
 	root.add_child(tag)
+	# One caption to a place: an older one nearby fades as this one comes.
+	for o in _tags.duplicate():
+		if is_instance_valid(o) and o.visible and Vector2(o.position.x - at.x, o.position.z - at.z).length() < NEAR:
+			_fade_tag(o, 0.4)
 	_tags.append(tag)
 	tag.tree_exiting.connect(func(): _tags.erase(tag))
 	_place_tag(tag, at)
+	# Every caption has a lifetime, like combat text: read, then gone.
+	get_tree().create_timer(9.0).timeout.connect(func(): _fade_tag(tag, 1.0))
 	return tag
+
+
+func _fade_tag(tag: Label3D, seconds: float) -> void:
+	if not is_instance_valid(tag) or not tag.visible:
+		return
+	var tw := tag.create_tween()
+	tw.tween_property(tag, "modulate:a", 0.0, seconds)
+	tw.tween_callback(func(): tag.visible = false)
 
 
 ## Sets a caption at `at`, lifted a line for each older caption in the same place.
