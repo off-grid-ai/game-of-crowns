@@ -694,3 +694,20 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Right way?** No reign measured since the last entry, so the fun-bar lines are unchanged. The approved order holds, and nothing unapproved is being built. Risk: the probe passed while Mac saw lumps. It was blind to group activities, and it's being fixed so it can't pass that way again.
 - **Verdict:** on course, with the course set by Mac's shots. Next turn's check: Townsfolk look's push, then the CHECK pair counts and the round 5 feast, gossip and market frames.
 - **Supervisor:** a fresh judge was started this turn; its gaps go in the next entry.
+
+## 2026-11-10 21:10, autopilot (Stormwatch's cause; messages paused)
+
+- **What's going on:**
+  - c620f1d (mine): each town's `situation` line in /world (bridge/situation.js). Example: "Stormed by House Thornvale from House Stormhold in summer 313 · rebuilding". It also covers besieged by whom, since when and with how many companies; starving; sickness; riot. `scarLine(mark)` is ready for hover. It answers Mac's "i can't understand why Stormwatch is in the situation they are in". The history: a Stormhold–Thornvale blood feud, a siege of 5 companies on turn 53, stormed on turn 54, the palace destroyed.
+  - 6bceb30 (Builder 2): the commoner card is cut; a hover tooltip by the cursor shows the person's trade; the view-side god leftovers are gone; a court answer the treasury can't pay is greyed, with why.
+  - 2a37434 (NPC perf): minds are ticked by distance through anim_lod. 129–179 minds a frame instead of 299; probe PASS. The far-body stride is held for the animation report. It also took Townsfolk look's npc_mind footprint check (in_the_way). That compiles, so it's a commit slip, not a loss.
+  - 4c2e634 (Builder 2): season.js moved out of server.js, with the behaviour unchanged.
+  - Townsfolk look is still uncommitted (people, town_life, villagers, npc_mind). Film round 5 holds the GPU.
+- **Where we're heading:** "First: playable": Mac's crowd, feast and cause notes. The siege scene already pitches a camp of standards and companies at a besieged town's walls, so a siege shows its cause in the world. A sacked town now says its cause in words.
+- **Right way?** No new reign measured, so the fun-bar lines are unchanged. Every commit since the last entry answers one of Mac's notes. Nobody is building outside that.
+- **Verdict:** on course.
+- **Blocked:** the app has paused my messages to other sessions (13 since Mac last typed). Undelivered:
+  - to Builder 2: put c.situation as the town card's first line, and scarLine on scar hover;
+  - to the judge: the Stormwatch answer;
+  - to Film round 5: a close frame and a 3 s clip of Stormwatch's four orange balls (fire glow or light halos? to_gpu keeps size and position, checked headless).
+  These go out after Mac's next message.
