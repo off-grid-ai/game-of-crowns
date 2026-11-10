@@ -63,7 +63,14 @@ function pick(arr, r) {
   return arr[Math.floor(r() * arr.length)];
 }
 
+// The reign's own seed, mixed into every roll (0 for the baseline's dice).
+let REIGN = 0;
+export function setReignSeed(seed) {
+  REIGN = seed && seed !== 1066 ? seed >>> 0 : 0;
+}
+
 function rng(seed) {
+  seed = (seed ^ REIGN) >>> 0;
   let s = seed >>> 0 || 1;
   return () => {
     s = (Math.imul(s ^ (s >>> 15), 2246822507) + 0x9e3779b9) >>> 0;

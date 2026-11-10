@@ -16,7 +16,8 @@ import { houseFor, cityName, nameIn, describe, rememberNames, HOUSES } from "./n
 import { godCommand, healLua } from "./god.js";
 import { readSave, extractDetail } from "./savefile.js";
 import { townsfolk } from "./townsfolk.js";
-import { ROLES, GOALS, TRAITS } from "./characters.js";
+import { ROLES, GOALS, TRAITS, setReignSeed } from "./characters.js";
+import { editRow } from "./fresh.js";
 import { folkTale, folkPlain, moodRules, speak, ruleFrom, reactTo, speech, voiceFor, transcribe, aiStatus } from "./claude.js";
 import { BUILD_COST, granarySize } from "./rules.js";
 import * as chron from "./chronicles.js";
@@ -40,7 +41,8 @@ import { Minds, route as mindsRoute } from "./minds.js";
 import { Arcs, templates as arcTemplates, check, ownStories, storiesChanged } from "./arcs.js";
 import { Chatter } from "./chatter.js";
 import { bible, FAMILIES, LESSER } from "./lore.js";
-import { Stakes, calendar, epithet, epithetNear } from "./stakes.js";
+import { Stakes, calendar } from "./stakes.js";
+import * as kingDeeds from "./ledger.js";
 import { watched, usageToday, moodFrom, isWatched, arcFromWords, beatIdea, premiseIdea, writeFor } from "./claude.js";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -113,6 +115,7 @@ function scene(kind, fields) {
 
 function load(id) {
   meta = chron.readJson(chron.paths(id).meta);
+  setReignSeed(meta?.seed);
   P = chron.paths(id);
   const lines = (f) => (fs.existsSync(f) ? fs.readFileSync(f, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l)) : []);
   chronicle = lines(path.join(P.state, "chronicle.jsonl"));
@@ -179,46 +182,25 @@ async function ceasefire(a, b, turns = 16) {
   }
 }
 
-// Player p's diplstate row toward player q, set to a ceasefire.
+// Player p's diplstate toward player q, set to a ceasefire. Freeciv's AI keeps
+// its own war plan per rival (the "ai" table: love, spam, countdown,
+// war_reason, ...); left alone it declares war again on its first turn, so the
+// King's truce also drops the plan: no countdown, no reason (DAI_WR_NONE = 5).
+// The grudge stays, cooled a tenth: a truce stops the swords, not the hatred,
+// and war may come back when it ends.
 function setDipl(text, p, q, turns) {
-  const at = text.indexOf(`\n[player${p}]\n`);
-  if (at < 0) return text;
-  const head = text.indexOf("\ndiplstate={", at);
-  const next = text.indexOf("\n[player", at + 2);
-  if (head < 0 || (next > 0 && head > next)) return text;
-  let line = text.indexOf("\n", head + 1);  // the header row ends here
-  for (let i = 0; i < q; i++) line = text.indexOf("\n", line + 1);
-  const end = text.indexOf("\n", line + 1);
-  const cells = text.slice(line + 1, end).split(",");
-  if (cells.length < 5) return text;
-  cells[0] = '"Cease-fire"';
-  cells[1] = '"Cease-fire"';
-  cells[3] = String(turns);
-  cells[4] = "0";
-  text = text.slice(0, line + 1) + cells.join(",") + text.slice(end);
-  return calmAi(text, p, q);
-}
-
-// Freeciv's AI keeps its own war plan per rival (the "ai" table: love, spam,
-// countdown, war_reason, ...). Left alone it declares war again on its first
-// turn, so the King's truce also drops the plan: no countdown, no reason
-// (DAI_WR_NONE = 5). The grudge stays, cooled a tenth: a truce stops the
-// swords, not the hatred, and war may come back when it ends.
-function calmAi(text, p, q) {
-  const at = text.indexOf(`\n[player${p}]\n`);
-  const head = text.indexOf("\nai={", at);
-  const next = text.indexOf("\n[player", at + 2);
-  if (at < 0 || head < 0 || (next > 0 && head > next)) return text;
-  let line = text.indexOf("\n", head + 1);
-  for (let i = 0; i < q; i++) line = text.indexOf("\n", line + 1);
-  const end = text.indexOf("\n", line + 1);
-  const cells = text.slice(line + 1, end).split(",");
-  if (cells.length < 4) return text;
-  const love = Number(cells[0]) || 0;
-  cells[0] = String(love < 0 ? Math.round(love * 0.9) : love);
-  cells[2] = "-1";
-  cells[3] = "5";
-  return text.slice(0, line + 1) + cells.join(",") + text.slice(end);
+  text = editRow(text, p, "diplstate", q, (c) => {
+    c[0] = '"Cease-fire"';
+    c[1] = '"Cease-fire"';
+    c[3] = String(turns);
+    c[4] = "0";
+  });
+  return editRow(text, p, "ai", q, (c) => {
+    const love = Number(c[0]) || 0;
+    c[0] = String(love < 0 ? Math.round(love * 0.9) : love);
+    c[2] = "-1";
+    c[3] = "5";
+  });
 }
 
 function newestSave(kind = "") {
@@ -491,6 +473,11 @@ function rule(id, option) {
   }
   const out = court.answer(id, option, world);
   if (out.error) return out;
+  if (petition) {
+    const tag = petition.deck ? kingDeeds.tagsFor("deck", petition.kind, option) : petition.kind === "arc" ? (kingDeeds.tagsFor("arc", petition.arc, option) ?? kingDeeds.tagsFor("arc", petition.beat, option)) : kingDeeds.tagsFor("court", petition.kind, option);
+    const pc = petition.city != null ? world.cities.find((x) => x.id === Number(petition.city)) : null;
+    deed(tag ?? { axes: {} }, { favour: out.favour, place: pc ? cityName(pc.id) : (court.people?.[petition.from]?.house ?? "") });
+  }
   // The one who asked remembers what the King answered, in their own words.
   if (petition && asked) court.remember(petition.from, `I went before the King, and he ruled: ${String(asked.label ?? asked.id).toLowerCase()}.`);
   const crownNow = world.players.find((p) => houseFor(p).crown);
@@ -587,6 +574,25 @@ function onEvent(line) {
   // A town changing hands keeps why, and from which house to which (scenes and sound tell a conquest from a handover).
   const hands = ev.kind === "city_transferred" ? { reason: ev.reason, from: Number(ev.from), to: Number(ev.to) } : {};
   if (text) record({ turn: Number(ev.turn), kind: ev.kind, text, city: ev.city ? Number(ev.city) : undefined, ...hands });
+}
+
+// The King's ledger (ledger.js): each deed he does goes in, and when it changes
+// the name the realm gives him, the ticker says which deed tipped it.
+function kingName(outcome = null) {
+  const realm = history.length ? { peace: history.reduce((t, r) => t + r.peace, 0) / history.length, grew: history[history.length - 1].pop / Math.max(1, history[0].pop) } : {};
+  return kingDeeds.epithetOf(meta, outcome, realm, (pid) => { const p = world?.players?.find((x) => x.id === Number(pid)); return p ? houseFor(p).name : null; });
+}
+function deed(tag, opts = {}) {
+  if (!meta || (!tag && opts.act === false)) return;
+  const turn = world?.turn ?? 0;
+  const before = meta.ledger?.name ?? null;
+  kingDeeds.note(meta, tag, { turn, ...opts });
+  const now = kingName().name;
+  meta.ledger.name = now;
+  chron.saveMeta(meta);
+  const axis = kingDeeds.axisOf(now);
+  const why = (axis && kingDeeds.tipping(meta, ...axis)) || null;
+  if (before && now !== before && why) record({ turn, kind: "name", text: `After ${why}, people call you ${now}.` });
 }
 
 // The realm's scars, as long as they show: a battle's ground heals in 12 seasons, a stormed
@@ -1083,7 +1089,7 @@ function closeCourt(turn) {
     }
     delete c.hand[key];
   }
-  for (const p of court.petitions.filter((x) => !x.answered && x.called != null)) court.unheard(p, turn, shiftFavour);
+  for (const p of court.petitions.filter((x) => !x.answered && x.called != null)) { court.unheard(p, turn, shiftFavour); kingDeeds.unheard(meta); }
   court.saveCourt?.();
   closeIfDone(turn, true);
 }
@@ -1391,6 +1397,7 @@ function startCampaign({ city, house }) {
   const at = world.cities.find((c) => c.id === city);
   if (!at) return;
   if (sworn(house)) {
+    deed(kingDeeds.tagsFor("realm", "sworn_march"), { act: false, place: houseFor(world.players.find((p) => p.id === house) ?? {}).name ?? "" });
     delete meta.alliances[house];
     shiftFavour(Object.fromEntries(greatHouses().filter((p) => p.id !== house).map((p) => [p.id, -5])), "an oath to the crown");
     record({ turn, kind: "betrayal", text: `The King marches on a house sworn to him. Every lord who ever knelt to the crown takes note.`, city });
@@ -1488,6 +1495,7 @@ function resolveCampaigns(turn) {
       send(`lua cmd local t = find.city(nil, ${c.city}); local to; for p in players_iterate() do if p.id == ${crown.id} then to = p end end; if t and to then edit.transfer_city(t, to) end`);
       shiftFavour({ [c.house]: -20 }, "the royal host");
       shiftFavour(Object.fromEntries((c.allies ?? []).map((id) => [id, 6])), "the royal host");
+      deed(kingDeeds.tagsFor("realm", "sack"), { act: false, place: cityName(c.city) });
       record({ turn, kind: "sack", text: `${cityName(c.city)} falls to the royal host: ${why} ${houseFor(foe).name} has learned what the crown's anger costs.`, city: c.city });
     } else {
       send(`lua cmd local n = 0; for p in players_iterate() do if p.id == ${crown.id} then for u in p:units_iterate() do if n < 5 and u.utype:rule_name() ~= "Workers" then edit.unit_kill(u, "killed", nil); n = n + 1 end end end end`);
@@ -1589,6 +1597,7 @@ function collectTithe(turn) {
   for (const t of Object.keys(favourPast)) if (Number(t) < turn - 8) delete favourPast[t];
   // War between the houses chokes the roads: the less peace, the less tithe reaches Kingsmere.
   const peaceNow = history[history.length - 1]?.peace ?? 1;
+  if (turn % 4 === 0 && (meta.tithe >= 0.19 || meta.tithe <= 0.05)) deed(kingDeeds.tagsFor("realm", meta.tithe >= 0.19 ? "tithe_high" : "tithe_low"), { act: false });
   const t = titheLua(world, meta.tithe * (0.4 + 0.6 * peaceNow));
   tally.total += t.total;
   tally.upkeep += t.upkeep;
@@ -1720,7 +1729,7 @@ function readings() {
     peace: { now: last.peace, way: way(last.peace - ago.peace, 0.03) },
     wealth: { now: last.pop, treasury: last.treasury, way: way(wealth(last) - wealth(ago), Math.max(2, wealth(ago) * 0.02)) },
     strength: { now: loyalShare(favourOf), way: was ? way(loyalShare(favourOf) - loyalShare((id) => was[id]), 0.01) : 0 },
-    ...epithetNear(history, decreesIssued),
+    ...(() => { const k = kingName(); return { name: k.name, why: k.why, next: kingDeeds.nextName(meta, k.name) }; })(),
   };
 }
 
@@ -1988,7 +1997,7 @@ function interlude() {
     if (c.city == null || picked.some((x) => x.pid === c.pid)) continue;
     picked.push(c);
   }
-  const named = epithetNear(history, decreesIssued);
+  const named = (() => { const k = kingName(); return { name: k.name, next: kingDeeds.nextName(meta, k.name) }; })();
   const choices = picked.sort((a, b) => a.turn - b.turn).map((c) => {
     const p = world?.players?.find((x) => x.id === c.pid);
     const when = calendar(c.turn);
@@ -2067,7 +2076,7 @@ function endReign(why, outcome = "completed") {
   if (outcome === "deposed") { s.score = Math.round(s.score * 0.4); s.verdict = "Deposed. The crown passed to another while you watched."; }
   if (outcome === "won") { s.score = Math.round(s.score * 1.5); s.verdict = "The crown held. The tale that came for it is told, and the King is still in his seat."; }
   if (outcome === "fallen") { s.score = Math.round(s.score * 0.3); s.verdict = "The realm fell to the dead. No one is left to remember."; }
-  s.title = `The King ${epithet(history, outcome, decreesIssued)}`;
+  { const k = kingName(outcome); s.title = `The King ${k.name}`; s.why = k.why; }
   meta.epilogue = epilogue();
   s.outcome = outcome;
   meta.status = "ended";
@@ -2395,6 +2404,16 @@ http.createServer(async (req, res) => {
     }
     const result = decree({ ...cmd, works: meta.works ?? {}, price: priceOf(cmd.action), favourOf, causeOf, sworn, marching: (city) => (meta.campaigns ?? []).some((x) => x.city === city), usurper: stakes?.s.usurper, seat: stakes?.s.seat }, world);
     if (result.error) return json(res, 400, result);
+    {
+      const dc = world.cities.find((x) => x.id === Number(cmd.city));
+      const dp = dc ? world.players.find((p) => p.id === dc.owner) : world.players.find((p) => p.id === Number(cmd.house ?? cmd.to));
+      const taking = cmd.action === "grant" && Object.values(result.favour ?? {}).some((n) => n < 0);
+      const place = /\{house\}/.test(kingDeeds.tagsFor("decree", cmd.action)?.says ?? "") ? (dp ? houseFor(dp).name : "") : (dc ? cityName(dc.id) : "");
+      deed(kingDeeds.tagsFor("decree", taking ? "grant_take" : cmd.action), { favour: result.favour, place });
+      // Marching on a house inside the King's own truce breaks his word.
+      if (cmd.action === "march" && dp && court && Object.entries(court.truces ?? {}).some(([k, until]) => k.startsWith("h:") && k.split(":").slice(1).map(Number).includes(dp.id) && until > (world.turn ?? 0)))
+        deed(kingDeeds.tagsFor("realm", "truce_march"), { act: false, place: houseFor(dp).name });
+    }
     if (result.endUsurper && stakes) { stakes.s.usurper.stage = "none"; stakes.save(); }
     if (result.relieved != null) { (meta.relieved ??= {})[result.relieved] = world.turn ?? 0; chron.saveMeta(meta); }
     if (result.alliance != null) { (meta.alliances ??= {})[result.alliance] = (world.turn ?? 0) + 16; chron.saveMeta(meta); }

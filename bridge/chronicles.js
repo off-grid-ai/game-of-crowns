@@ -13,6 +13,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { freshStart } from "./fresh.js";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 // Where realms are kept: beside the bridge when run from the repo, in
@@ -175,8 +176,13 @@ export function create({ name, scenario = "aldmere", minutes = 0, pace, fate = "
     // The baseline's history is shared; the hardships ahead are the player's choice.
     if (fs.existsSync(p.serv)) fs.writeFileSync(p.serv, servFor(fs.readFileSync(p.serv, "utf8"), opt));
     writeNations(path.join(p.data, "nation"), false, opt.temper);
+    // Test, film and check reigns keep the baseline exactly, so proofs repeat;
+    // every real reign is dealt its own dice, tensions and grudges.
+    const test = /test|film|check|proof/i.test(name);
+    const seed = test ? 1066 : 1 + Math.floor(Math.random() * 2147483646);
+    const opening = test ? null : freshStart(p.base, seed);
     const meta = {
-      id, name, scenario, seed: 1066, land: base.land ?? null, minutes: Number(minutes) || 0, pace, created: Date.now(), fate, wealth, options: opt,
+      id, name, scenario, seed, opening, land: base.land ?? null, minutes: Number(minutes) || 0, pace, created: Date.now(), fate, wealth, options: opt,
       openingMood: String(mood || "").slice(0, 300), elapsedMs: 0, status: "running", score: null, verdict: null, fromBaseline: base.turn ?? true,
     };
     saveMeta(meta);
