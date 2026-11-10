@@ -165,7 +165,6 @@ func _ready() -> void:
 		add_child(checks)
 	ui = preload("res://scripts/ui.gd").new()
 	add_child(ui)
-	ui.god_action.connect(_on_god_action)
 	ui.focus_house.connect(_focus_house)
 	ui.home_view.connect(func(): _home_view(bridge.world))
 	ui.camera_nudge.connect(rig.nudge)
@@ -1003,13 +1002,6 @@ func _on_decree(action: String, building: String, to: int) -> void:
 		ui.toast("First choose a town: click one on the map.")
 		return
 	bridge.decree(action, _selected, building, to)
-
-
-func _on_god_action(action: String, building: String) -> void:
-	if _selected < 0:
-		ui.toast("First choose a town: click one on the map.")
-		return
-	bridge.god(action, _selected, building)
 
 
 ## The character view on one person; the house record is swapped for the

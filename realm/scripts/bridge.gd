@@ -1,6 +1,6 @@
 extends Node
 ## Talks to the bridge (bridge/server.js): polls the world and the chronicle,
-## and sends god commands and speed changes.
+## and sends the King's decrees and speed changes.
 
 signal map_loaded(map: Dictionary)
 signal world_updated(world: Dictionary)
@@ -56,14 +56,6 @@ func _poll() -> void:
 	_http_get("/world", _on_world)
 	if active:
 		_http_get("/chronicle?since=%d" % _last_seq, _on_chronicle)
-
-
-func god(action: String, city_id: int, building := "") -> void:
-	var body := {"action": action, "city": city_id}
-	if building != "":
-		body["building"] = building
-	_post("/god", body, func(code, data):
-		command_done.emit(code == 200, data.get("text", data.get("error", ""))))
 
 
 func decree(action: String, city_id: int, building := "", to := -1) -> void:
