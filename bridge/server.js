@@ -1686,7 +1686,7 @@ function readings() {
     peace: { now: last.peace, way: way(last.peace - ago.peace, 0.03) },
     wealth: { now: last.pop, treasury: last.treasury, way: way(wealth(last) - wealth(ago), Math.max(2, wealth(ago) * 0.02)) },
     strength: { now: loyalShare(favourOf), way: was ? way(loyalShare(favourOf) - loyalShare((id) => was[id]), 0.01) : 0 },
-    ...(() => { const k = kingName(); return { name: k.name, why: k.why, next: kingDeeds.nextName(meta, k.name) }; })(),
+    ...(() => { const k = kingName(); const name = meta.testEpithet ? `the ${meta.testEpithet}` : k.name; return { name, why: k.why, next: kingDeeds.nextName(meta, name) }; })(),
   };
 }
 
@@ -2383,7 +2383,18 @@ const ROUTES = {
       prosperity: { prosperity: true }, grief: { grief: true }, grasping: { grasping: true },
       calm: { disorder: false, celebrating: false, famine: false, atWar: false, grief: false, grasping: false, prosperity: false } };
     const at = (meta.stage ??= {});
+    // {soldiers: wounded|fortified|calm, city}: the crown's three companies nearest the town stand so.
+    if (b.soldiers) {
+      const c = world.cities.find((x) => x.id === Number(b.city));
+      const crownId = Realm.crownOf(world)?.id;
+      const near = c ? world.units.filter((u) => u.owner === crownId && !CIVILIAN.has(u.type)).sort((u, v) => Math.hypot(u.x - c.x, u.y - c.y) - Math.hypot(v.x - c.x, v.y - c.y)).slice(0, 3) : [];
+      meta.stageUnits ??= {};
+      for (const u of near) meta.stageUnits[u.id] = { wounded: { hp: 3 }, fortified: { activity: 4 } }[b.soldiers] ?? {};
+      return json(res, 200, { ok: true, units: near.map((u) => u.id) });
+    }
     if (b.mood === "king") {
+      // {epithet}: the name the King has earned, for this test reign (the Good, the Cruel...).
+      if (b.epithet) meta.testEpithet = String(b.epithet).slice(0, 24);
       const c = world.cities.find((x) => x.id === Number(b.city));
       const crownId = Realm.crownOf(world)?.id;
       if (c) scene("rider", { x: c.x - 2, y: c.y, tx: c.x + 2, ty: c.y, city: c.id, owner: crownId, label: "The King's banner" });
@@ -2391,6 +2402,14 @@ const ROUTES = {
     }
     if (b.mood) at[Number(b.city)] = { ...(at[Number(b.city)] ?? {}), ...moods.calm, ...(moods[b.mood] ?? {}) };
     else at[Number(b.city)] = { ...(at[Number(b.city)] ?? {}), building: String(b.building ?? "Pikemen"), buildingKind: String(b.kind ?? "UnitType"), progress: Number(b.progress ?? 0.5) };
+    return json(res, 200, { ok: true });
+  },
+  // Test hook (films only): a town gains a building now ({city, building}), so the site rising can be filmed.
+  "POST /test/grow": async (req, res, url) => {
+    if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
+    const b = await body(req);
+    const name = String(b.building ?? "Granary").replace(/[^A-Za-z ]/g, "");
+    send(`lua cmd local c = find.city(nil, ${Number(b.city)}); local t = find.building_type("${name}"); if c and t and not c:has_building(t) then edit.create_building(c, t) end`);
     return json(res, 200, { ok: true });
   },
   // Test hook (films only): a lord's deed on demand, so its alert can be filmed.

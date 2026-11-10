@@ -52,7 +52,8 @@ export function worldView(ctx) {
   });
   const units = world.units.map((u) => {
     const x = d?.units[u.id];
-    return x ? { ...u, hp: x.hp, activity: x.activity, goto: x.goto, home: x.home } : u;
+    // A test reign's staged soldiers (/test/stage soldiers) over the save's own.
+    return x ? { ...u, hp: x.hp, activity: x.activity, goto: x.goto, home: x.home, ...(meta?.stageUnits?.[u.id] ?? {}) } : u;
   });
   const last = history[history.length - 1];
   const crownP = players.find((p) => p.house.crown);
