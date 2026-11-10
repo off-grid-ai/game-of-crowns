@@ -195,6 +195,27 @@ function setDipl(text, p, q, turns) {
   cells[1] = '"Cease-fire"';
   cells[3] = String(turns);
   cells[4] = "0";
+  text = text.slice(0, line + 1) + cells.join(",") + text.slice(end);
+  return calmAi(text, p, q);
+}
+
+// Freeciv's AI keeps its own war plan per rival (the "ai" table: love, spam,
+// countdown, war_reason, ...). Left alone it declares war again on its first
+// turn, so the King's truce also drops the plan: no countdown, no reason
+// (DAI_WR_NONE = 5), and its hatred cooled to indifference.
+function calmAi(text, p, q) {
+  const at = text.indexOf(`\n[player${p}]\n`);
+  const head = text.indexOf("\nai={", at);
+  const next = text.indexOf("\n[player", at + 2);
+  if (at < 0 || head < 0 || (next > 0 && head > next)) return text;
+  let line = text.indexOf("\n", head + 1);
+  for (let i = 0; i < q; i++) line = text.indexOf("\n", line + 1);
+  const end = text.indexOf("\n", line + 1);
+  const cells = text.slice(line + 1, end).split(",");
+  if (cells.length < 4) return text;
+  cells[0] = String(Math.max(0, Number(cells[0]) || 0));
+  cells[2] = "-1";
+  cells[3] = "5";
   return text.slice(0, line + 1) + cells.join(",") + text.slice(end);
 }
 
