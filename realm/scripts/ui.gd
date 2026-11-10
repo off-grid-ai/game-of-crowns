@@ -545,11 +545,13 @@ func _build_top_bar() -> void:
 		icon.custom_minimum_size = Vector2(17, 17)
 		icon.modulate = T.TEXT
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon.visible = false  # said in words on the line instead (Mac: "very difficult to understand")
 		_heading.add_child(icon)
 		var way := Label.new()
 		way.add_theme_font_override("font", T.mono)
 		way.add_theme_font_size_override("font_size", 15)
 		way.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		way.visible = false
 		_heading.add_child(way)
 		_ways[k[0]] = way
 	_earning = Label.new()
@@ -2151,18 +2153,24 @@ func _show_heading(r: Dictionary) -> void:
 		tip.append("%s %s against a year ago (%s)." % [says[k][0], "rising" if w > 0 else ("falling" if w < 0 else "holding"), says[k][1]])
 	var name := String(rd.get("name", ""))
 	var next := String(rd.get("next", "")) if rd.get("next") != null else ""
-	_earning.text = name + ("  ·  then %s" % next if next != "" else "")
+	# One line in words: what people call you, what's moving, and your promises.
+	var moving := PackedStringArray()
+	for k in [["peace", "Peace"], ["wealth", "Wealth"], ["strength", "Support"]]:
+		var w := int((rd.get(k[0], {}) as Dictionary).get("way", 0))
+		if w != 0:
+			moving.append("%s %s" % [k[1], "rising" if w > 0 else "falling"])
+	_earning.text = "People call you %s" % name + ("  ·  " + ", ".join(moving) if not moving.is_empty() else "")
 	tip.append("If the reign ended today, the realm would remember you as %s%s." % [name, ("; a few would say %s" % next) if next != "" else ""])
 	# The King's three ambitions: a diamond each, filled when met.
 	var am = r.get("ambitions")
 	if am is Array and not (am as Array).is_empty():
-		var marks := ""
-		tip.append("The three things you swore to do:")
+		var kept := 0
+		tip.append("Your three promises:")
 		for a in am:
 			var done: bool = (a as Dictionary).get("met") != null
-			marks += "◆" if done else "◇"
-			tip.append("  %s %s" % ["◆" if done else "◇", String((a as Dictionary).get("text", ""))])
-		_earning.text += "   " + marks
+			kept += 1 if done else 0
+			tip.append("  %s %s" % ["kept:" if done else "not yet:", String((a as Dictionary).get("text", ""))])
+		_earning.text += "  ·  Promises kept: %d of %d" % [kept, (am as Array).size()]
 	_heading.tooltip_text = "\n".join(tip)
 	# The royal ladder: the aim before him, and a cheer when one is met.
 	var aim = r.get("aim")
