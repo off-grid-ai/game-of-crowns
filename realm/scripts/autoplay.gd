@@ -365,7 +365,7 @@ func _observe() -> Dictionary:
 	o["lore"] = main.lore.visible
 	o["hero"] = main.hero.visible if main.hero else false
 	var panels := []
-	for n in ["_houses_panel", "_chron_panel", "_court_panel", "_house_panel", "_town_panel", "_folk_panel", "_ledger_panel", "_digest_panel"]:
+	for n in ["_houses_panel", "_chron_panel", "_court_panel", "_house_panel", "_town_panel", "_ledger_panel", "_digest_panel"]:
 		var p = main.ui.get(n)
 		if p and p.visible:
 			panels.append(n.trim_prefix("_").trim_suffix("_panel"))

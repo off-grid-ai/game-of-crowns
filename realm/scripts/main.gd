@@ -165,6 +165,10 @@ func _ready() -> void:
 		add_child(checks)
 	ui = preload("res://scripts/ui.gd").new()
 	add_child(ui)
+	# A person in the street, on hover: their trade and what's on their mind (folk_tip.gd).
+	var tip := preload("res://scripts/folk_tip.gd").new()
+	tip.main = self
+	ui.add_child(tip)
 	ui.focus_house.connect(_focus_house)
 	ui.home_view.connect(func(): _home_view(bridge.world))
 	ui.camera_nudge.connect(rig.nudge)
@@ -643,7 +647,6 @@ func _stands_on_ground(p: Node) -> bool:
 
 
 var _settled := false  # the scatter has been seated on the graded ground
-var _folk_held := {}  # the villager whose card is open: they stand still for it
 
 
 func _process(_delta: float) -> void:
@@ -667,11 +670,6 @@ func _process_timed(_delta: float) -> void:
 		_settled = true
 		terrain.settle_scatter()
 	perf._cycle_step(_delta)
-	if not _folk_held.is_empty():
-		if ui._folk_panel and ui._folk_panel.visible:
-			villagers.hold(_folk_held["town"], _folk_held["i"], rig.get_viewport().get_camera_3d().global_position)
-		else:
-			_folk_held = {}
 	perf._test_hides()
 	perf._profile_once()
 	_heard_at -= _delta
@@ -930,14 +928,7 @@ func _follow_story(e: Dictionary) -> void:
 
 
 func _on_ground_clicked(p: Vector3) -> void:
-	# Close enough to see faces: a click on a villager is a hello.
-	if rig.distance < 12.0:
-		var who: Dictionary = villagers.who_on_screen(get_viewport().get_camera_3d(), get_viewport().get_mouse_position())
-		if not who.is_empty():
-			_folk_held = who
-			ui.show_folk_waiting()
-			bridge.folk(who["town"], who["i"], func(d): ui.show_folk(d if d is Dictionary else {}))
-			return
+	# (A villager is looked at on hover, folk_tip.gd; a click on the ground picks a town.)
 	var c: Dictionary = towns.nearest(p)
 	_selected = int(c["id"]) if not c.is_empty() else -1
 	_show_selected(bridge.world)

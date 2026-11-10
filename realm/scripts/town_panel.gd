@@ -19,7 +19,6 @@ var _grant_menu: MenuButton
 var _marriage_menu: MenuButton  # wed this town's house to another
 var _marry_ids: Array = []  # the houses it can be wed to, by menu item
 var _house_ids: Array = []
-var _fate_box: HBoxContainer
 var _decree_btns := {}  # decree -> its button on the town card, named for whose town it is
 
 
@@ -86,11 +85,6 @@ func _build_town_panel() -> void:
 		var bld: String = pair[1]
 		_build_btns[bld] = ui.btn(pair[0], func(): ui.decree.emit("build", bld, -1))
 		build.add_child(_build_btns[bld])
-	# A king can't call down drought or plague: the god's powers (Fate) are
-	# gone from the King's game. The box stays, empty and hidden, for v2's god mode.
-	_fate_box = HBoxContainer.new()
-	_fate_box.visible = false
-	v.add_child(_fate_box)
 
 
 ## The town card put away for good: the realm's next update refreshes nothing,
@@ -190,8 +184,11 @@ func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 			wait = int(_favour_wait.get(str(int(c.get("owner", -1))), 0))
 		if wait > 0 and names[a] != "":
 			_decree_btns[a].text = "%s  ·  again in %d season%s" % [names[a].get_slice("  ", 0), wait, "" if wait == 1 else "s"]
+		elif short and names[a] != "":
+			# Can't be paid: the order says so on its face, not only on hover.
+			_decree_btns[a].text = "%s  ·  the treasury can't pay" % names[a].get_slice("  ", 0)
 		_decree_btns[a].disabled = short or wait > 0
-		_decree_btns[a].tooltip_text = ("Once a year. Again in %d season%s." % [wait, "" if wait == 1 else "s"]) if wait > 0 else (("The treasury holds %s crowns. Raise the tithe (the %% in the top bar) to fill it." % ui.heads(ui.purse * 100)) if short else "")
+		_decree_btns[a].tooltip_text = ("Once a year. Again in %d season%s." % [wait, "" if wait == 1 else "s"]) if wait > 0 else (("%s. Raise the tithe (the %% in the top bar) to fill it." % String(_decrees.get(a, {}).get("short", "The treasury holds %s crowns" % ui.heads(ui.purse * 100)))) if short else "")
 	_grant_menu.visible = not c.get("capital", false)  # a house's seat is never granted away
 	_marriage_menu.visible = not mine  # a match is made between two great houses
 	# The other great houses, not this one: the names as the houses table has them.

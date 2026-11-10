@@ -4,7 +4,6 @@ extends CanvasLayer
 ## you open when you want them; the latest events whisper along the bottom; the
 ## court is a notification until you answer it.
 
-signal god_action(action: String, building: String)
 signal focus_house(owner: int)
 signal house_opened(owner: int)
 signal ledger_opened
@@ -52,7 +51,6 @@ const CameraPad := preload("res://scripts/camera_pad.gd")
 const ChroniclePanel := preload("res://scripts/chronicle_panel.gd")
 const HouseCard := preload("res://scripts/house_card.gd")
 const TopBar := preload("res://scripts/top_bar.gd")
-const FolkCard := preload("res://scripts/folk_card.gd")
 const CharacterForm := preload("res://scripts/character_form.gd")
 const NewsChips := preload("res://scripts/news_chips.gd")
 
@@ -169,10 +167,6 @@ var _bar_pill: Control:  # the buttons, top-right: the cards under the top bar k
 var _story_panel: PanelContainer:
 	get:
 		return top_bar._story_panel
-var folk_card := FolkCard.new(self)  # the commoner's card (folk_card.gd): its state lives there
-var _folk_panel: PanelContainer:
-	get:
-		return folk_card._folk_panel
 var form_card := CharacterForm.new(self)  # the character form (character_form.gd): its state lives there
 var _form_panel: PanelContainer:
 	get:
@@ -626,7 +620,7 @@ func _process_timed(delta: float) -> void:
 		# The realm's numbers too, wherever the bar put them (beside the date on a narrow screen).
 		if _top.size() > 1 and (_top[1] as Control).visible:
 			below = maxf(below, (_top[1] as Control).get_global_rect().end.y + 10.0)
-		for c in [_court_panel, _house_panel, _folk_panel, _form_panel, _ledger_panel, _digest_panel]:
+		for c in [_court_panel, _house_panel, _form_panel, _ledger_panel, _digest_panel]:
 			if c and is_instance_valid(c):
 				c.offset_top = maxf(70.0, below)
 		if _chron_panel:
@@ -635,7 +629,6 @@ func _process_timed(delta: float) -> void:
 	fit_centre(_digest_panel, 620.0)
 	fit_centre(_house_panel, 640.0)
 	fit_centre(_ledger_panel, 820.0)
-	fit_centre(_folk_panel, 560.0)
 	fit_centre(_form_panel, 600.0)
 	fit_centre(_court_panel, 680.0)
 	fit_centre(_town_panel, 600.0)
@@ -660,20 +653,8 @@ func show_house(d: Dictionary) -> void:
 	house_card.show_house(d)
 
 
-## The commoner's card (folk_card.gd) and the character form (character_form.gd);
-## these forward to them, so main.gd calls the interface as before.
-func show_folk_waiting() -> void:
-	folk_card.show_folk_waiting()
-
-
-func close_folk() -> void:
-	folk_card.close_folk()
-
-
-func show_folk(d: Dictionary) -> void:
-	folk_card.show_folk(d)
-
-
+## The character form (character_form.gd); this forwards to it, so main.gd calls
+## the interface as before.
 func show_character_form(house_id: int, house_name: String, opts: Dictionary, person := {}) -> void:
 	form_card.show_character_form(house_id, house_name, opts, person)
 
@@ -904,7 +885,7 @@ func busy() -> bool:
 ## opened himself: a town, a house, a person, the ledger): a card the game
 ## brings waits its turn instead of coming up beside or over it.
 func card_up(but: Control = null) -> bool:
-	for p in [_court_panel, _digest_panel, _end_panel, _town_panel, _house_panel, _folk_panel, _form_panel, _ledger_panel]:
+	for p in [_court_panel, _digest_panel, _end_panel, _town_panel, _house_panel, _form_panel, _ledger_panel]:
 		if p and is_instance_valid(p) and p.visible and p != but:
 			return true
 	return false
@@ -925,7 +906,7 @@ func _catch_up() -> void:
 
 ## A card is open that the King is reading (the director waits for him).
 func reading() -> bool:
-	for p in [_court_panel, _town_panel, _ledger_panel, _digest_panel, _house_panel, _folk_panel]:
+	for p in [_court_panel, _town_panel, _ledger_panel, _digest_panel, _house_panel]:
 		if p and is_instance_valid(p) and p.visible:
 			return true
 	return false

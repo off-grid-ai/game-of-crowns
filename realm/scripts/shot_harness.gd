@@ -75,8 +75,6 @@ func _parse_args() -> void:
 		elif a == "--new":
 			_shot["title"] = true
 			_shot["new"] = true
-		elif a.begins_with("--folk="):
-			_shot["folk"] = int(a.substr(7))
 		elif a.begins_with("--realistic="):
 			_shot["realistic"] = a.substr(12)
 		elif a.begins_with("--form="):
@@ -177,11 +175,6 @@ func _frame_for_shot(world: Dictionary) -> void:
 		return
 	if _shot.has("house"):
 		main.ui.house_opened.emit(int(_shot["house"]))
-	if _shot.has("folk"):
-		main.get_tree().create_timer(3.0).timeout.connect(func():
-			for c in world.get("cities", []):
-				if String(c.get("title", "")) == String(_shot.get("city", "")):
-					main.bridge.folk(int(c["id"]), int(_shot["folk"]), func(d): main.ui.show_folk(d if d is Dictionary else {})))
 	if _shot.has("form"):
 		main.ui.character_form.emit(int(_shot["form"]))
 	if _shot.get("ledger", false):
@@ -420,7 +413,7 @@ func _tour(world: Dictionary) -> void:
 		main.get_viewport().get_texture().get_image().save_png("%s/%s.png" % [dir, name])
 		print("TOUR ", name)
 	var calm := func() -> void:
-		for p in [main.ui._houses_panel, main.ui._chron_panel, main.ui._house_panel, main.ui._ledger_panel, main.ui._folk_panel, main.ui._digest_panel]:
+		for p in [main.ui._houses_panel, main.ui._chron_panel, main.ui._house_panel, main.ui._ledger_panel, main.ui._digest_panel]:
 			if p:
 				p.visible = false
 		main.ui._houses_btn.button_pressed = false
@@ -451,10 +444,6 @@ func _tour(world: Dictionary) -> void:
 		main.rig.snap(main.terrain.world_pos(float(kingsmere["x"]), float(kingsmere["y"])), 5.0, 0.6)
 		await main.get_tree().create_timer(6.0).timeout
 		await snap.call("town")
-		main.bridge.folk(int(kingsmere["id"]), 0, func(d): main.ui.show_folk(d if d is Dictionary else {}))
-		await main.get_tree().create_timer(5.0).timeout
-		await snap.call("folk")
-		calm.call()
 	main.bridge.house(3, func(d):
 		if d is Dictionary and d.get("lord") is Dictionary:
 			main._open_person(str(d["lord"].get("id", "")), d))

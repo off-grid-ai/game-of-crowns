@@ -116,9 +116,6 @@ func _show_audience() -> void:
 		_court_panel.visible = false
 		_court_waiting = true
 		return
-	# One card at a time in that place: the court comes up, a commoner's card goes.
-	if ui._folk_panel:
-		ui._folk_panel.visible = false
 	_court_waiting = false
 	_court_panel.visible = true
 	ui._put_town_away()  # for good: the realm's next update must not bring it back over the court
@@ -229,6 +226,11 @@ func _show_audience() -> void:
 		b.add_theme_color_override("font_color", T.TEXT)
 		b.pressed.connect(_answer.bind(String(p["id"]), String(o["id"])))
 		row.add_child(b)
+		# An answer the treasury can't pay: greyed, and why, in one line under it.
+		if String(o.get("short", "")) != "":
+			b.disabled = true
+			b.add_theme_color_override("font_disabled_color", T.TEXT_3)
+			row.add_child(_short_line(String(o["short"])))
 		# Who this answer helps and hurts, before he chooses: each house the hint names
 		# with its sigil and its change, gold up and red down (Reigns' preview, our way).
 		var rest := String(o.get("hint", ""))
@@ -327,6 +329,15 @@ func _close_court() -> void:
 
 
 ## The Hand's word, at the King's shoulder: his voice, set apart from the petitioner's.
+## Why an answer can't be given: the treasury's line, quiet, under the greyed answer.
+func _short_line(words: String) -> Label:
+	var l := Label.new()
+	l.text = "   " + words
+	l.add_theme_color_override("font_color", T.DANGER)
+	l.add_theme_font_size_override("font_size", T.SIZE_DESC)
+	return l
+
+
 func _hand_says(words: String) -> Control:
 	var l := RichTextLabel.new()
 	l.bbcode_enabled = true
@@ -370,7 +381,7 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 		b.add_theme_color_override("font_color", T.ACCENT)
 		if act.has("cost") and int(act["cost"]) > ui.purse:
 			b.disabled = true
-			b.tooltip_text = "The treasury holds too little for this."
+			b.tooltip_text = String(act.get("short", "The treasury holds too little for this."))
 			b.add_theme_color_override("font_disabled_color", T.TEXT_3)
 		if act.get("pick", false):
 			# The Hand's own advice: framed in gold, and said so on hover.

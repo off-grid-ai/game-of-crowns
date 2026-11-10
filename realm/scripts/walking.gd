@@ -53,9 +53,6 @@ func _setup() -> void:
 			if aloud:
 				main._say_aloud(String(d["reply"]), {"name": d.get("name", ""), "gender": d.get("gender", "")}, main.control.done_speaking), person, true))
 	main.control.spoke.connect(func(wav): main.bridge.hear(wav, main.control.understood))
-	main.control.talk_to.connect(func(town, i):
-		main.ui.show_folk_waiting()
-		main.bridge.folk(town, i, func(d): main.ui.show_folk(d if d is Dictionary else {})))
 	main.control.enter.connect(func(room, town, p):
 		var name := ""
 		for c in main.bridge.world.get("cities", []):

@@ -42,8 +42,7 @@ func _build_houses() -> void:
 	v.add_child(_standing)
 	# (No key to decode: each house's mood is a word, below.)
 	v.add_child(HSeparator.new())
-	# (No "Proclaim your word": shaping minds in a sentence was a god's power, not a
-	# King's. Proclamations already made in a reign are listed below to be lifted.)
+	# Proclamations made in an older reign are listed below to be lifted.
 	_decree_box = VBoxContainer.new()
 	_decree_box.add_theme_constant_override("separation", 2)
 	v.add_child(_decree_box)
