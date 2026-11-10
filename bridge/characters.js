@@ -523,7 +523,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
         const line = d?.line ? ` "${d.line}"` : "";
         if (!go) {
           c.loyalty = Math.min(100, c.loyalty + 15);
-          this.record({ turn, kind: "scheme", text: `${c.name} of ${cityName(c.seat)} sends ${houseFor(m.to).name}'s envoys home empty-handed.${line}`, city: c.seat });
+          this.record({ turn, kind: "scheme", text: `${c.name} of ${cityName(c.seat)} sends ${houseFor(m.to).name}'s envoys home empty-handed.${line}`, city: c.seat, with: world.cities.find((x) => x.owner === m.to.id && x.capital)?.id });
           return;
         }
         ctx.send(`local c = find.city(nil, ${town.id}); local to; for p in players_iterate() do if p.id == ${m.to.id} then to = p end end; if c and to then edit.transfer_city(c, to) end`);
@@ -536,13 +536,13 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
         c.loyalty = 55;
         c.goals = [this.goalFor(c, Math.random)];
         if (oldLiege) this.shift(oldLiege, c.id, -60, `${c.name} betrayed me and gave ${cityName(c.seat)} to ${c.house}.`);
-        this.record({ turn, kind: "betrayal", text: `Treachery! ${c.name} opens the gates of ${cityName(c.seat)} to ${c.house}.${line}`, city: c.seat });
+        this.record({ turn, kind: "betrayal", text: `Treachery! ${c.name} opens the gates of ${cityName(c.seat)} to ${c.house}.${line}`, city: c.seat, from: town.owner, to: m.to.id });
         return;
       }
       case "alliance": {
         this.shift(c.id, m.target.id, 15, `I sought friendship with ${m.target.name}.`);
         this.shift(m.target.id, c.id, 12);
-        this.record({ turn, kind: "alliance", text: `Ravens fly between ${c.house} and ${m.target.house}. ${c.name} and ${m.target.name} speak of friendship.` });
+        this.record({ turn, kind: "alliance", text: `Ravens fly between ${c.house} and ${m.target.house}. ${c.name} and ${m.target.name} speak of friendship.`, city: c.seat ?? undefined, with: m.target.seat ?? undefined });
         return;
       }
       case "plot": {

@@ -84,6 +84,26 @@ const arrivals = new Set();  // scenes already credited on arrival
 const KING = { name: "the King", house: "The Crown", title: "King", lord: true, address: "Your Grace" };
 const isKing = (b) => String(b?.you?.id ?? "") === "king";
 
+// Tell only what the world can show: each lord's deed plays a scene the realm
+// already has, where it happened (Mac, 2026-11-10). Offered to the King to
+// watch; the camera never goes by itself.
+function picture(e) {
+  if (!world?.cities) return;
+  const at = world.cities.find((x) => x.id === e.city);
+  const other = e.with != null ? world.cities.find((x) => x.id === e.with) : null;
+  const seat = crownSeat();
+  if (!at) return;
+  const here = { x: at.x, y: at.y, city: at.id, lord: true };
+  switch (e.kind) {
+    case "betrayal": if (e.to != null) scene("handover", { ...here, from: e.from ?? at.owner, to: e.to }); break;
+    case "raid": scene("sack", here); break;
+    case "succession": scene("feast", { ...here, owner: at.owner }); break;
+    case "death": if (seat && seat.id !== at.id) scene("rider", { ...here, tx: seat.x, ty: seat.y, label: `Word of a death rides from ${cityName(at.id)}` }); break;
+    case "alliance": if (other) scene("rider", { ...here, tx: other.x, ty: other.y, label: `A rider carries a letter to ${cityName(other.id)}` }); break;
+    case "scheme": if (other) scene("rider", { ...here, tx: other.x, ty: other.y, label: `Envoys ride home to ${cityName(other.id)}, empty-handed` }); break;
+  }
+}
+
 function scene(kind, fields) {
   scenes.push({ kind, turn: world?.turn ?? 0, at: Date.now(), ...fields });
   if (scenes.length > 120) scenes = scenes.slice(-120);
@@ -112,7 +132,7 @@ function load(id) {
   Object.assign(favourPast, past.byTurn ?? {});
   lastSeason.net = past.net ?? 0;
   meta.tithe ??= 0.1;
-  court = new Court(P.base, record);
+  court = new Court(P.base, (e) => { record(e); picture(e); });  // what the lords do is told, and shown
   court.deedsOf = (pid) => (deeds[pid] ??= []);
   arcs = new Arcs(P.base, court, record);
   arcsRunning = false;  // a new realm's stories start free of the last one's

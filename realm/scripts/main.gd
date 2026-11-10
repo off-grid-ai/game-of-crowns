@@ -1506,7 +1506,8 @@ func _stage_test_battle(world: Dictionary, best: Dictionary) -> void:
 func _on_staged(s: Dictionary, follow: Node3D) -> void:
 	var kind := String(s.get("kind", ""))
 	if kind in KINGS_OWN or kind in WAR:
-		_offer(director.caption(s), director.watch.bind(s, follow), kind in KINGS_OWN)
+		# The King's own deeds are always offered; what the lords do, at most every 20 s.
+		_offer(director.caption(s), director.watch.bind(s, follow), kind in KINGS_OWN and not s.get("lord", false))
 
 
 ## One Watch offer at a time; the realm's own news no more than every 20 s,

@@ -196,6 +196,8 @@ func _eye(at: Vector3, yaw: float, tilt: float, dist: float) -> Vector3:
 
 ## What a scene is called on screen: "The King's grain on the road to Oldburg".
 func caption(s: Dictionary) -> String:
+	if str(s.get("label", "")) != "":
+		return str(s["label"])
 	var at: Vector3 = terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0)))
 	# A battle names who bleeds: "House Sunspire loses men near Crowbarrow".
 	if str(s.get("kind", "")) == "battle" and str(s.get("house", "")) != "":
