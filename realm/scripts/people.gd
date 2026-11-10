@@ -460,6 +460,7 @@ func _finish(person: Node3D, skeleton: Skeleton3D, rng: RandomNumberGenerator, r
 		"years": {"child": rng.randi_range(6, 13), "young": rng.randi_range(15, 22), "adult": rng.randi_range(23, 50), "elder": rng.randi_range(55, 78)}[age],
 		"build": build, "role": role,
 	})
+	preload("res://scripts/presence.gd").fit(person)  # a glance for whoever comes near (presence.gd)
 	return person
 
 

@@ -55,7 +55,15 @@ var _audit := OS.get_cmdline_user_args().has("--talkprobe")
 var _audit_at := 0.0
 
 
+const CHILD_REACH := 0.36  # about 3 m: how far a child strays from their parent
+var _presence: Node  # presence.gd: glances, greetings, who makes way for whom
+
+
 func _ready() -> void:
+	_presence = preload("res://scripts/presence.gd").new()
+	_presence.name = "Presence"
+	_presence.villagers = self
+	add_child(_presence)
 	_body.radius = 0.055
 	_body.height = 0.2
 	_head.radius = 0.045
@@ -235,6 +243,18 @@ func _spawn(id: int) -> void:
 		if TownLife.minds_on(id):
 			preload("res://scripts/npc_mind.gd").give_villager(person, a, self)
 	crowds[id] = list
+	# Every child has a parent: the grown-up of the town whose door is nearest theirs.
+	for a in list:
+		if a["role"] != "child":
+			continue
+		var best = null
+		var best_d := INF
+		for b in list:
+			if b["role"] != "child" and b["home"].distance_to(a["home"]) < best_d:
+				best_d = b["home"].distance_to(a["home"])
+				best = b
+		if best != null:
+			a["parent"] = best
 
 
 ## The villager nearest a point on the ground, within reach of a click:
@@ -518,7 +538,8 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 	var vel: Vector2 = want
 	if a.has("agent"):
 		NavigationServer2D.agent_set_velocity(a["agent"], want)
-		NavigationServer2D.agent_set_avoidance_priority(a["agent"], 0.5)
+		# Making way: a commoner steps round their betters, never the other way about (presence.gd STATION).
+		NavigationServer2D.agent_set_avoidance_priority(a["agent"], 0.3 + 0.2 * _presence.station(n) if _presence else 0.5)
 		vel = a["safe"]  # trust the avoidance, even when it says wait
 	var step := vel * delta
 	if step.length() > to.length():
@@ -1072,6 +1093,12 @@ func route_to(a: Dictionary, target: Vector3) -> void:
 	if town.is_empty():
 		return
 	var center: Vector3 = a["center"]
+	# A child keeps near their parent (about 3 m): wherever they're off to, it's within call.
+	var parent = a.get("parent", null)
+	if parent is Dictionary and (parent["node"] as Node3D).visible:
+		var pp: Vector3 = parent["node"].position
+		if Vector2(target.x - pp.x, target.z - pp.z).length() > CHILD_REACH:
+			target = pp + (target - pp).normalized() * CHILD_REACH * 0.8
 	var map: RID = nav.map_for(a["town"], town["node"])
 	if a.get("map", RID()) != map:
 		_keep_up(a["town"])  # baked afresh: the whole town walks its new streets
