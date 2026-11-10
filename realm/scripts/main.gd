@@ -136,6 +136,7 @@ func _ready() -> void:
 	scenes.terrain = terrain
 	add_child(scenes)
 	var traffic := preload("res://scripts/traffic.gd").new()  # who is on the roads, from the realm's state
+	traffic.name = "Traffic"
 	traffic.terrain = terrain
 	traffic.scenes = scenes
 	add_child(traffic)
