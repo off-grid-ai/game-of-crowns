@@ -8,7 +8,6 @@ extends Node3D
 const DAY_SECONDS := 240.0
 
 var awareness: Node  # awareness.gd: the realm and town scopes, and the news bus
-const SceneKinds := preload("res://scripts/scene_kinds.gd")  # the one table of scene kinds
 var bridge: Node
 var terrain: Node3D
 var towns: Node3D
@@ -38,7 +37,15 @@ var mic: Node  # speaking instead of typing
 var interior: CanvasLayer  # inside a building
 var _selected := -1
 var _time_of_day := 0.36
-var _shot := {}
+const ShotHarness := preload("res://scripts/shot_harness.gd")
+var shots := ShotHarness.new(self)  # the test-and-film harness (shot_harness.gd): the flags and the shots
+var _shot: Dictionary:  # the command-line flags, read here wherever a test shot differs from play
+	get:
+		return shots._shot
+	set(v):
+		shots._shot = v
+const News := preload("res://scripts/news.gd")
+var news := News.new(self)  # the player's news (news.gd): the chip, the Watch offer, the edge arrow, Space
 var _framed := false
 var _court_turn := -1
 # "While you were away": the last chronicle entry you saw, per reign, kept
@@ -74,9 +81,9 @@ var _snowed := -1  # town count when the season was last laid on them
 
 
 func _ready() -> void:
-	_parse_args()
+	shots._parse_args()
 	if _shot.has("path") or _shot.has("hq"):
-		_capture_quality()
+		shots._capture_quality()
 		# A render is not the game: say so on its window, so a still being drawn
 		# without the interface is never mistaken for the game losing its panels.
 		DisplayServer.window_set_title("Game of Crowns: rendering a still (not the game)")
@@ -99,12 +106,7 @@ func _ready() -> void:
 		DisplayServer.window_set_position(screen.end - Vector2i(24, 24))
 	_apply_icon()
 	preload("res://scripts/keys.gd").apply()  # every key as an Input Map action, with your changes
-	# A test aid for playing by hand from outside (GOC_HAND=<dir>): off in play.
-	if OS.get_environment("GOC_HAND") != "":
-		var hand: Node = preload("res://scripts/autoplay.gd").new()
-		hand.main = self
-		add_child(hand)
-		hand.serve.call_deferred(OS.get_environment("GOC_HAND"))
+	shots._hand()  # a test aid for playing by hand from outside (GOC_HAND=<dir>): off in play
 	_load_ui_scale()
 	_setup_environment()
 	terrain = preload("res://scripts/terrain.gd").new()
@@ -343,8 +345,8 @@ func _ready() -> void:
 	ui.open_menu.connect(func(): title.open())
 	ui.counsel_answered.connect(func(key): bridge.counsel_answered(key))
 	ui.court_closed.connect(func(): director.soon())  # the doors shut: the camera goes to look
-	ui.last_event.connect(_to_news)
-	ui.event_back.connect(_back_from_news)
+	ui.last_event.connect(news._to_news)
+	ui.event_back.connect(news._back_from_news)
 	ui.house_followed.connect(_follow_house)  # a house's sigil clicked: go with its host
 	ui.interlude_closed.connect(func(): bridge.close_interlude())  # the act told back: the realm goes on
 	ui.reign_continued.connect(func(): bridge.continue_reign(func(_c, d): if d is Dictionary: ui.set_reign(d)))
@@ -548,157 +550,13 @@ func apply_graphics() -> void:
 	# Both draw the 3D at the project's scale and the upscaler sharpens it. Half
 	# size was tried for Smooth and smeared people and ground; the effects it
 	# drops buy nearly all its frame rate. (Stills and films draw at full size in
-	# _capture_quality, which sets its own.)
+	# _capture_quality (shot_harness.gd), which sets its own.)
 	if not (_shot.has("path") or _shot.has("hq")):
 		get_viewport().scaling_3d_scale = float(ProjectSettings.get_setting("rendering/scaling_3d/scale", 0.67))
 	sun.directional_shadow_max_distance = minf(_rich["shadow"], 40.0) if graphics_smooth else _rich["shadow"]
 	# The woods: their leafy middle detail runs out sooner, and painted cards take over.
 	if terrain and terrain.forest and terrain.forest.has_method("set_reach"):
 		terrain.forest.set_reach(14.0 if graphics_smooth else -1.0)
-
-
-## A still or a film is made once and looked at closely: drawn at full
-## resolution (no upscaler), with antialiasing and the finest shadows. Play keeps
-## the faster settings.
-func _capture_quality() -> void:
-	var vp := get_viewport()
-	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
-	vp.scaling_3d_scale = 1.0
-	vp.msaa_3d = Viewport.MSAA_4X
-	vp.use_taa = true
-	vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
-	vp.mesh_lod_threshold = 1.0  # every mesh at full detail (play simplifies at 4 px)
-	RenderingServer.directional_shadow_atlas_set_size(8192, true)
-	RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_HIGH)
-
-
-func _parse_args() -> void:
-	for a in OS.get_cmdline_user_args():
-		if a.begins_with("--shot="):
-			_shot["path"] = a.substr(7)
-		elif a.begins_with("--wait="):
-			_shot["wait"] = a.substr(7)
-		elif a.begins_with("--cam="):
-			_shot["cam"] = a.substr(6).split(",")
-		elif a.begins_with("--time="):
-			_time_of_day = float(a.substr(7))
-			_shot["night_ok"] = true
-		elif a == "--castle":
-			_shot["town"] = true
-			_shot["castle"] = true  # frame the seat's castle and its courtyard, once the town is up
-		elif a == "--town":
-			_shot["town"] = true
-		elif a.begins_with("--city="):
-			_shot["city"] = a.substr(7)
-			_shot["town"] = true
-		elif a.begins_with("--dist="):
-			_shot["dist"] = float(a.substr(7))
-		elif a.begins_with("--scene="):
-			_shot["scene"] = a.substr(8)
-		elif a == "--battle":
-			_shot["battle"] = true
-		elif a == "--panels":
-			_shot["panels"] = true
-		elif a == "--title":
-			_shot["title"] = true
-		elif a == "--splash":
-			_shot["title"] = true
-			_shot["splash"] = true  # the launch screens over the menu; --wait=3 the first, 7.5 the second
-		elif a == "--new":
-			_shot["title"] = true
-			_shot["new"] = true
-		elif a.begins_with("--folk="):
-			_shot["folk"] = int(a.substr(7))
-		elif a.begins_with("--realistic="):
-			_shot["realistic"] = a.substr(12)
-		elif a.begins_with("--form="):
-			_shot["form"] = int(a.substr(7))
-		elif a == "--ledger":
-			_shot["ledger"] = true
-		elif a.begins_with("--hero="):
-			_shot["hero"] = int(a.substr(7))
-		elif a.begins_with("--control="):
-			_shot["control"] = int(a.substr(10))
-		elif a == "--hq":
-			_shot["hq"] = true  # full-quality drawing for a film take (stills get it already)
-		elif a == "--clean":
-			_shot["clean"] = true  # no interface: stills for the intro and the launch video
-		elif a == "--settings":
-			_shot["title"] = true
-			_shot["settings"] = true
-		elif a == "--credits":
-			_shot["title"] = true
-			_shot["credits"] = true
-		elif a.begins_with("--lore"):
-			_shot["lore"] = int(a.substr(7)) if a.begins_with("--lore=") else -1  # a house id, or the realm
-		elif a == "--intro":
-			_shot["intro"] = true  # plays the intro once the realm is up; --wait picks the page
-		elif a == "--duel":
-			_shot["duel"] = true
-		elif a.begins_with("--ride="):
-			_shot["ride"] = a.substr(7)  # with --control: mount your horse and "stand", "walk", "gallop" or "all" (three frames)
-		elif a.begins_with("--after="):
-			_shot["after"] = a.substr(8)  # with --duel: seconds from the strike to the shot; a list ("0.6,2,5") saves a frame at each
-		elif a.begins_with("--interior="):
-			_shot["interior"] = a.substr(11)
-		elif a.begins_with("--move="):
-			_shot["move"] = a.substr(7)
-		elif a == "--feast" or a == "--handover":
-			_shot["stage"] = a.substr(2)
-		elif a == "--rider":
-			_shot["rider"] = true
-		elif a == "--convoy":
-			_shot["rider"] = true
-			_shot["convoy"] = true  # the King's grain on the road, the camera riding along
-		elif a == "--muster":
-			_shot["rider"] = true
-			_shot["muster"] = true
-		elif a.begins_with("--lead="):
-			_shot["lead"] = float(a.substr(7))
-		elif a.begins_with("--season="):
-			_shot["season"] = a.substr(9)
-		elif a.begins_with("--house="):
-			_shot["house"] = int(a.substr(8))
-		elif a == "--director":
-			_shot["director"] = true
-			_framed = true
-		elif a.begins_with("--digest="):
-			_shot["digest"] = int(a.substr(9))
-		elif a == "--siege":
-			_shot["siege"] = true
-			_shot["town"] = true
-		elif a.begins_with("--play="):
-			_shot["play"] = a.substr(7)  # a scenario of player inputs (autoplay.gd); frames and a log go to --out
-			_shot["wait"] = "9999"
-		elif a.begins_with("--out="):
-			_shot["out"] = a.substr(6)
-		elif a.begins_with("--tour="):
-			_shot["tour"] = a.substr(7)  # a folder: one frame of every screen, in one run
-			_shot["wait"] = "9999"
-
-
-## --ride=all: one run, three frames: <shot>_stand, _walk and _gallop.
-func _ride_frames() -> void:
-	var base := String(_shot["path"]).get_basename()
-	var save := func(tag: String): get_viewport().get_texture().get_image().save_png("%s_%s.png" % [base, tag])
-	await get_tree().create_timer(2.0).timeout
-	control.mount()
-	await get_tree().create_timer(2.5).timeout
-	save.call("stand")
-	control.drive = Vector2(0, -1)
-	await get_tree().create_timer(3.0).timeout
-	save.call("walk")
-	control.drive_fast = true
-	await get_tree().create_timer(3.0).timeout
-	save.call("gallop")
-	_take_shot()
-
-
-func _take_shot() -> void:
-	var img := get_viewport().get_texture().get_image()
-	img.save_png(_shot["path"])
-	print("Saved screenshot to ", _shot["path"])
-	get_tree().quit()
 
 
 ## Sky3D (TokisanGames) owns the sky, sun, moon, clouds and day/night cycle;
@@ -820,7 +678,7 @@ func _listen() -> void:
 			"church": b.contains("Temple") or b.contains("Cathedral"), "forge": b.contains("Barracks") or b.contains("Blacksmith"),
 			"tavern": int(c.get("size", 1)) >= 3, "siege": c.get("besieged", false), "north": float(c.get("y", 999)) < 25.0}
 	var season := look_season(bridge.world)
-	sound.set_view(rig.distance, near, season, sky3d != null and sky3d.is_night(), String(awareness.realm.get_var(&"weather", "clear")) if awareness else "clear")
+	sound.set_view(rig.distance, near, season, sky3d != null and sky3d.is_night(), String(awareness.realm.get_var(&"weather", "clear", false)) if awareness else "clear")
 	var th: Dictionary = bridge.world.get("threat", {})
 	sound.mood("dead" if int(th.get("north", 0)) > 0 and rig.distance > 60.0 else ("tension" if String(th.get("usurper", "none")) != "none" else "calm"))
 
@@ -991,7 +849,7 @@ var _folk_held := {}  # the villager whose card is open: they stand still for it
 
 func _process(_delta: float) -> void:
 	if ui and rig and terrain:
-		_edge_tick(_delta)
+		news._edge_tick(_delta)
 	_game_ms += _delta * 1000.0
 	# The game took the camera down to the land (a town framed, a battle): the map steps aside.
 	if _over_open and rig._goal_distance < rig.OVERVIEW * 0.9:
@@ -1236,7 +1094,7 @@ func _on_world(world: Dictionary) -> void:
 		apply_graphics.call_deferred()  # the woods are planted by now: they take the graphics choice too
 		if not _shot.has("path"):
 			_home_view(world)
-		_frame_for_shot(world)
+		shots._frame_for_shot(world)
 		# The realm opens with the houses and the chronicle in view; a test shot
 		# stays clear of them unless it asks (--panels).
 		ui.side_panels(_shot.get("panels", false))  # closed: the world first, the ledger and chronicle a click away
@@ -1288,206 +1146,6 @@ func _home_view(world: Dictionary) -> void:
 			return
 
 
-func _frame_for_shot(world: Dictionary) -> void:
-	if _shot.has("play"):
-		_autoplay()
-	if _shot.has("tour"):
-		_tour(world)
-		return
-	if _shot.has("house"):
-		ui.house_opened.emit(int(_shot["house"]))
-	if _shot.has("folk"):
-		get_tree().create_timer(3.0).timeout.connect(func():
-			for c in world.get("cities", []):
-				if String(c.get("title", "")) == String(_shot.get("city", "")):
-					bridge.folk(int(c["id"]), int(_shot["folk"]), func(d): ui.show_folk(d if d is Dictionary else {})))
-	if _shot.has("form"):
-		ui.character_form.emit(int(_shot["form"]))
-	if _shot.get("ledger", false):
-		ui._ledger_btn.button_pressed = true
-		ui.ledger_opened.emit()
-	if _shot.has("control"):
-		# Step into a house's lord in their seat; with --interior, then go inside.
-		bridge.house(int(_shot["control"]), func(d):
-			if not (d is Dictionary and d.get("lord") is Dictionary):
-				return
-			var h: Dictionary = _houses.get(int(d.get("id", _shot["control"])), d)
-			bridge.person(str(d["lord"].get("id", "")), func(p):
-				if not p is Dictionary:
-					return
-				_take_control(p, h)
-				if _shot.has("duel"):
-					# Outlaws come; draw and swing, timed so the shot catches the clash.
-					get_tree().create_timer(2.0).timeout.connect(func():
-						control.spawn_foes(2)
-						control._me.draw(true))
-					get_tree().create_timer(float(_shot.get("lead", 6.0))).timeout.connect(func():
-						control._me.strike()
-						# Keep fighting: another swing whenever the last one is done.
-						var swing := Timer.new()
-						swing.wait_time = 0.3
-						swing.timeout.connect(func():
-							if control._me.state == "ready":
-								control._me.strike())
-						add_child(swing)
-						swing.start()
-						var times: Array = Array(String(_shot.get("after", "0.4")).split(",")).map(func(t): return float(t))
-						for i in times.size():
-							get_tree().create_timer(times[i]).timeout.connect(func():
-								if i == times.size() - 1 and times.size() == 1:
-									_take_shot()
-									return
-								var path: String = String(_shot["path"]).get_basename() + "_%d.png" % (i + 1)
-								get_viewport().get_texture().get_image().save_png(path)
-								print("Saved screenshot to ", path)
-								if i == times.size() - 1:
-									get_tree().quit()))
-				if _shot.has("ride"):
-					# Into the saddle, then away from the camera at the asked pace.
-					if _shot["ride"] == "all":
-						_ride_frames()
-						return
-					get_tree().create_timer(2.0).timeout.connect(func():
-						control.mount()
-						if _shot["ride"] != "stand":
-							control.drive = Vector2(0, -1)
-							control.drive_fast = _shot["ride"] == "gallop"
-						get_tree().create_timer(float(_shot.get("lead", 3.0))).timeout.connect(_take_shot))
-					return
-				if _shot.has("interior"):
-					get_tree().create_timer(2.0).timeout.connect(func():
-						interior.open(String(_shot["interior"]), p, h, String(p.get("seat", "")))
-						get_tree().create_timer(float(_shot.get("wait", 3.0))).timeout.connect(_take_shot))
-				elif not _shot.has("duel"):
-					get_tree().create_timer(3.0).timeout.connect(_take_shot)))
-		return
-	if _shot.has("hero"):
-		bridge.house(int(_shot["hero"]), func(d):
-			if d is Dictionary and d.get("lord") is Dictionary:
-				_open_person(str(d["lord"].get("id", "")), d))
-		if _shot.has("move"):
-			# Catch the gesture mid-flow: the shot is timed from the move, not the start.
-			get_tree().create_timer(4.0).timeout.connect(func():
-				hero.play(String(_shot["move"]))
-				get_tree().create_timer(float(_shot.get("lead", 1.2))).timeout.connect(_take_shot))
-		return
-	if _shot.has("stage"):
-		# Stage a feast or a handover in the named town, timed for the shot.
-		for c in world.get("cities", []):
-			if String(c.get("title", c["name"])) == String(_shot.get("city", "Kingsmere")) or String(c["name"]) == String(_shot.get("city", "")):
-				var at: Vector3 = terrain.world_pos(float(c["x"]), float(c["y"]))
-				var owner: Dictionary = _houses.get(int(c["owner"]), {})
-				var other: Dictionary = {}
-				for id in _houses:
-					if int(id) != int(c["owner"]) and not _houses[id].get("wild", false):
-						other = _houses[id]
-				get_tree().create_timer(maxf(1.0, float(_shot.get("wait", 8.0)) - float(_shot.get("lead", 6.0)))).timeout.connect(func():
-					if _shot["stage"] == "feast":
-						scenes._feast(at, owner)
-					else:
-						scenes._handover(at, owner, other, String(c.get("title", c["name"])))
-					rig.snap(at, float(_shot.get("dist", 3.0)), rig.clear_yaw(at, float(_shot.get("dist", 3.0)), 0.6))
-					# The scene under test holds the camera, as test battles do.
-					_framed_at = at
-					_framed_until = int(_game_ms) + 600000)
-				break
-		return
-	if _shot.has("rider"):
-		# Stage a royal rider leaving the capital, timed to be on the road for the shot.
-		var cities: Array = world.get("cities", [])
-		var king: Dictionary = {}
-		for c in cities:
-			if String(c.get("title", "")) == "Kingsmere":
-				king = c
-		if not king.is_empty():
-			var from: Vector3 = terrain.world_pos(float(king["x"]), float(king["y"]))
-			var near: Dictionary = {}
-			for c in cities:
-				if c != king and (near.is_empty() or Vector2(c["x"] - king["x"], c["y"] - king["y"]).length() < Vector2(near["x"] - king["x"], near["y"] - king["y"]).length()):
-					near = c
-			var to: Vector3 = terrain.world_pos(float(near["x"]), float(near["y"]))
-			get_tree().create_timer(maxf(1.0, float(_shot.get("wait", 8.0)) - float(_shot.get("lead", 4.0)))).timeout.connect(func():
-				if _shot.get("convoy", false):
-					var cart: Node3D = scenes._convoy(from, to, true)
-					_framed_until = int(_game_ms) + 600000
-					var ride := Timer.new()
-					ride.wait_time = 0.1
-					ride.autostart = true
-					add_child(ride)
-					director._follow = cart
-					var looked := [0]
-					ride.timeout.connect(func():
-						if is_instance_valid(cart):
-							_framed_at = cart.global_position
-							rig.focus(cart.global_position, float(_shot.get("dist", 2.0)))
-							# Each second, the side with no tree crowns in the way,
-							# as the director picks it in play.
-							looked[0] += 1
-							if looked[0] % 10 == 0:
-								director._clear_sight())
-					return
-				if _shot.get("muster", false):
-					scenes._muster(from, to)
-				else:
-					scenes._rider(from, to, "The King rules for House Thornvale")
-				var spot: Vector3 = from + (to - from).normalized() * 1.6
-				rig.snap(spot, float(_shot.get("dist", 4.0)), rig.clear_yaw(spot, float(_shot.get("dist", 4.0)), 0.6))
-				# The scene under test holds the camera, as test battles do.
-				_framed_at = from + (to - from).normalized() * 1.6
-				_framed_until = int(_game_ms) + 600000)
-		return
-	if _shot.has("scene"):
-		for sc in world.get("scenes", []):
-			if String(sc["kind"]) == _shot["scene"]:
-				rig.snap(terrain.world_pos(float(sc.get("x", 0)), float(sc.get("y", 0))), float(_shot.get("dist", 5.0)), 0.6)
-				return
-	if _shot.has("cam"):
-		var p: PackedStringArray = _shot["cam"]
-		rig.snap(Vector3(float(p[0]), 0, float(p[1])), float(p[2]), float(p[3]) if p.size() > 3 else 0.0)
-	elif _shot.get("town", false):
-		var best: Dictionary = {}
-		for c in world.get("cities", []):
-			if _shot.has("city"):
-				if String(c.get("title", c["name"])) == _shot["city"]:
-					best = c
-			elif best.is_empty() or int(c["size"]) > int(best["size"]):
-				best = c
-		if not best.is_empty():
-			_selected = int(best["id"])
-			_show_selected(world)
-			rig.snap(terrain.world_pos(float(best["x"]), float(best["y"])), float(_shot.get("dist", 16.0)), 0.6)
-			if _shot.get("castle", false):
-				# The castle goes up with the town: frame its courtyard once it stands.
-				var tid := int(best["id"])
-				for wait in range(3, 40, 3):  # until the castle stands (a big town takes a while)
-					get_tree().create_timer(float(wait)).timeout.connect(func():
-						if _shot.get("castle_framed", false):
-							return
-						var castle: Node3D = null
-						for id in [tid] + towns.towns.keys():  # this town's castle, else any seat's
-							var t: Dictionary = towns.towns.get(id, {})
-							if not t.is_empty() and is_instance_valid(t.get("node")) and t["node"].get_node_or_null("Castle"):
-								castle = t["node"].get_node("Castle")
-								break
-						if castle:
-							_shot["castle_framed"] = true
-							rig.snap(castle.global_position, float(_shot.get("dist", 1.8)), castle.rotation.y))  # from the square side, over the gate
-			if _shot.get("battle", false):
-				_stage_test_battle(world, best)
-			if _shot.get("siege", false):
-				# Stage a siege of the town by another house, for testing.
-				var center: Vector3 = terrain.world_pos(float(best["x"]), float(best["y"]))
-				var foe := {}
-				for pid in _houses:
-					if int(pid) != int(best["owner"]) and not _houses[pid].get("wild", false):
-						foe = _houses[pid]
-				scenes._siege(int(best["id"]), center, terrain.world_pos(float(best["x"]) + 1.0, float(best["y"]) + 0.4), int(best["size"]), 2, foe, _houses.get(int(best["owner"]), {}), 600.0)
-				rig.snap(scenes._sieges[int(best["id"])]["front"], float(_shot.get("dist", 6.0)), 0.6)
-				# The siege under test holds the camera, as a test battle does.
-				_framed_at = scenes._sieges[int(best["id"])]["front"]
-				_framed_until = int(_game_ms) + 600000
-
-
 func _on_chronicle(entries: Array) -> void:
 	if not _digest_done and _first_batch.is_empty():
 		_first_batch = entries
@@ -1497,93 +1155,17 @@ func _on_chronicle(entries: Array) -> void:
 		# A story turns: offer to go and see the people it happens to.
 		for e in entries:
 			if e.get("thread") and String(e.get("stage", "")) in ["crisis", "resolution", "rising"]:
-				_offer(String(e["thread"]), _follow_story.bind(e), true)
+				news._offer(String(e["thread"]), _follow_story.bind(e), true)
 
 
-## The moments the King should never miss: his own grain, gold, riders, levies,
-## feasts and grants always; war and fire, now and then.
-const KINGS_OWN := ["grain", "tribute", "rider", "ward", "muster", "feast", "handover"]
-const WAR := ["battle", "siege", "sack", "razed"]
-var _offered_at := -100000
-
-
-## For testing: a battle on open ground beside a town, staged once the towns
-## stand (their fields and gardens decide what ground is open), at the first
-## town that has a field, with the camera held on it.
-func _stage_test_battle(world: Dictionary, best: Dictionary) -> void:
-	if not scenes._towns_up():
-		get_tree().create_timer(0.5).timeout.connect(_stage_test_battle.bind(world, best))
-		return
-	var field: Vector3 = terrain.world_pos(float(best["x"]) + 1.5, float(best["y"]))
-	if scenes._battlefield(field) == Vector3.INF:
-		for c in world.get("cities", []):
-			var f: Vector3 = terrain.world_pos(float(c["x"]) + 1.5, float(c["y"]))
-			if scenes._battlefield(f) != Vector3.INF:
-				field = f
-				best = c
-				break
-	var ground: Vector3 = scenes._battlefield(field)
-	print("SHOT battle town=%s ground=%s" % [best.get("title", "?"), ground])
-	if ground == Vector3.INF:
-		return
-	rig.snap(ground, float(_shot.get("dist", 4.0)), 0.6)
-	_framed_at = ground
-	_framed_until = int(_game_ms) + 600000
-	scenes._battle(field, _houses.get(int(best["owner"]), {}))
-
-
-## The latest news the King might want to see, for Space and the edge arrow.
-var _news := {}  # {s, follow, at: Vector3, caption, ms}
-var _before_news := {}  # where the camera was before Space took it to the news
-var _horn_at := -100000  # when a lord's news last sounded
-
-
+## The scenes' staged signal: the news decides what the King hears and sees (news.gd).
 func _on_staged(s: Dictionary, follow: Node3D) -> void:
-	var kind := String(s.get("kind", ""))
-	sound.staged(kind, terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0))))
-	if kind in KINGS_OWN or kind in WAR:
-		# Whose news: the house of the town it happened in (the house it went to, for a handover).
-		var owner := int(s.get("to", -1))
-		if owner < 0:
-			for c in bridge.world.get("cities", []):
-				if int(c["id"]) == int(s.get("city", -1)):
-					owner = int(c["owner"])
-		var col := Color.from_string(String(_houses.get(owner, {}).get("color", "#c9a95a")), Color(0.79, 0.66, 0.35))
-		_news = {"s": s, "follow": follow, "at": terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0))), "caption": director.caption(s), "ms": Time.get_ticks_msec(), "color": col, "new": true,
-			# Its tone on the chip: red for what's hostile (loss), gold for the King's own, plain for the rest.
-			"tone": "loss" if kind in ["sack", "razed", "battle", "siege"] or (kind == "handover" and s.get("lord", false)) else ("crown" if kind in KINGS_OWN and not s.get("lord", false) else "")}
-		# A lord's deed sounds once, each kind its own (StarCraft: an attack never sounds
-		# like news): the horn only for what's hostile, the bell for a death, a cheer for
-		# a feast, a letter on the road in silence. Rate-limited with the offers.
-		if s.get("lord", false) and Time.get_ticks_msec() - _horn_at > 20000:
-			# Which cue, from the one scene table (scene_kinds.gd): hostile a horn, joy a cheer,
-			# grief a bell. A battle or siege already sounds through the chronicle's own stinger.
-			var cue: String = {SceneKinds.HOSTILE: "horn", SceneKinds.JOY: "feast", SceneKinds.GRIEF: "death"}.get(SceneKinds.tone(kind), "") if kind not in WAR or kind in ["sack", "razed"] else ""
-			if kind == "rider" and String(s.get("label", "")).begins_with("Word of a death"):
-				cue = "death"
-			if cue != "":
-				_horn_at = Time.get_ticks_msec()
-				sound.event(cue)
-		elif kind == "handover" and not s.get("lord", false):
-			sound.event("handover")  # the King's own town given in peace: a quiet fanfare, never the horn
-		# One channel for one piece of news: off screen, the edge arrow carries it, so no Watch card as well.
-		var cam := get_viewport().get_camera_3d()
-		if cam and (cam.is_position_behind(_news["at"]) or not get_viewport().get_visible_rect().grow(-40).has_point(cam.unproject_position(_news["at"]))):
-			return
-	if kind in KINGS_OWN or kind in WAR:
-		# The King's own deeds are always offered; what the lords do, at most every 20 s.
-		_offer(director.caption(s), director.watch.bind(s, follow), kind in KINGS_OWN and not s.get("lord", false))
+	news._on_staged(s, follow)
 
 
-## One Watch offer at a time; the realm's own news no more than every 20 s,
-## the King's own deeds and a story's turns always.
-func _offer(text: String, go: Callable, always: bool) -> void:
-	if control.active or _shot.has("path"):
-		return
-	if not always and Time.get_ticks_msec() - _offered_at < 20000:
-		return
-	_offered_at = Time.get_ticks_msec()
-	ui.offer_watch(text, go)
+## A test shot saved and the game closed (shot_harness.gd); chatter.gd calls it too.
+func _take_shot() -> void:
+	shots._take_shot()
 
 
 ## A story's people: the commoner in it if they're walking their town (the
@@ -1831,161 +1413,3 @@ func _open_person(id: String, house: Dictionary, from := "the realm") -> void:
 		if d is Dictionary and d.has("name"):
 			hero.open(d, h, from))
 
-
-
-## A test aid for playing as a player would (--play=<scenario> --out=<dir>):
-## once the realm has built, autoplay.gd feeds real input and logs what happens.
-func _autoplay() -> void:
-	while towns.building() or terrain.width == 0:
-		await get_tree().create_timer(1.0).timeout
-	await get_tree().create_timer(3.0).timeout
-	var a: Node = preload("res://scripts/autoplay.gd").new()
-	a.main = self
-	add_child(a)
-	a.start(String(_shot["play"]), String(_shot.get("out", "user://play")))
-
-
-## A test aid for checking every screen (--tour=<folder>): waits for the realm
-## to build, then opens each screen in turn and saves a frame of it, so one run
-## replaces a render per screen. Off in play.
-func _tour(world: Dictionary) -> void:
-	var dir := String(_shot["tour"])
-	var kingsmere: Dictionary = {}
-	for c in world.get("cities", []):
-		if String(c.get("title", "")) == "Kingsmere":
-			kingsmere = c
-	var snap := func(name: String) -> void:
-		await RenderingServer.frame_post_draw
-		get_viewport().get_texture().get_image().save_png("%s/%s.png" % [dir, name])
-		print("TOUR ", name)
-	var calm := func() -> void:
-		for p in [ui._houses_panel, ui._chron_panel, ui._house_panel, ui._ledger_panel, ui._folk_panel, ui._digest_panel]:
-			if p:
-				p.visible = false
-		ui._houses_btn.button_pressed = false
-		ui._chron_btn.button_pressed = false
-		ui._ledger_btn.button_pressed = false
-	await get_tree().create_timer(float(_shot.get("lead", 70.0))).timeout
-	await snap.call("realm")  # the opening view, with the away digest if any
-	calm.call()
-	ui.visible = true
-	ui._houses_btn.button_pressed = true
-	ui._houses_panel.visible = true
-	ui._chron_btn.button_pressed = true
-	ui._chron_panel.visible = true
-	await get_tree().create_timer(2.0).timeout
-	await snap.call("panels")
-	calm.call()
-	ui.house_opened.emit(3)
-	await get_tree().create_timer(4.0).timeout
-	await snap.call("house")
-	calm.call()
-	ui._ledger_btn.button_pressed = true
-	ui.ledger_opened.emit()
-	await get_tree().create_timer(4.0).timeout
-	await snap.call("ledger")
-	calm.call()
-	if not kingsmere.is_empty():
-		_focus_city(int(kingsmere["id"]))
-		rig.snap(terrain.world_pos(float(kingsmere["x"]), float(kingsmere["y"])), 5.0, 0.6)
-		await get_tree().create_timer(6.0).timeout
-		await snap.call("town")
-		bridge.folk(int(kingsmere["id"]), 0, func(d): ui.show_folk(d if d is Dictionary else {}))
-		await get_tree().create_timer(5.0).timeout
-		await snap.call("folk")
-		calm.call()
-	bridge.house(3, func(d):
-		if d is Dictionary and d.get("lord") is Dictionary:
-			_open_person(str(d["lord"].get("id", "")), d))
-	await get_tree().create_timer(7.0).timeout
-	await snap.call("hero")
-	hero.close()
-	lore.open(-1)
-	await get_tree().create_timer(3.0).timeout
-	await snap.call("lore")
-	lore.open(3)
-	await get_tree().create_timer(3.0).timeout
-	await snap.call("lore_house")
-	lore.close()
-	title.open_settings()
-	await get_tree().create_timer(3.0).timeout
-	await snap.call("settings")
-	title.open()
-	await get_tree().create_timer(2.0).timeout
-	await snap.call("title")
-	title.show_new()
-	await get_tree().create_timer(3.0).timeout
-	await snap.call("new")
-	title.visible = false
-	ui.visible = true
-	# Step into a lord's boots, then into their hall.
-	var lord := {}
-	bridge.house(0, func(d):
-		if d is Dictionary and d.get("lord") is Dictionary:
-			var h: Dictionary = _houses.get(int(d.get("id", 0)), d)
-			bridge.person(str(d["lord"].get("id", "")), func(p):
-				if p is Dictionary:
-					lord["p"] = p
-					lord["h"] = h
-					_take_control(p, h)))
-	await get_tree().create_timer(8.0).timeout
-	await snap.call("control")
-	if lord.has("p"):
-		interior.open("great_hall", lord["p"], lord["h"], String(lord["p"].get("seat", "")))
-		await get_tree().create_timer(5.0).timeout
-		await snap.call("interior")
-	get_tree().quit()
-
-
-## Space, as in Warcraft and StarCraft: to the latest news, and pressed again,
-## back to where the King was. Home also goes back.
-func _to_news() -> void:
-	if not _before_news.is_empty():
-		_back_from_news()
-		return
-	if _news.is_empty():
-		return
-	_before_news = {"target": rig._goal_target, "distance": rig._goal_distance, "yaw": rig._goal_yaw, "tilt": rig._goal_tilt}
-	var f = _news.get("follow")
-	director.watch(_news["s"], f if is_instance_valid(f) else null)
-
-
-func _back_from_news() -> void:
-	if _before_news.is_empty():
-		return
-	director.active = false
-	rig._goal_target = _before_news["target"]
-	rig._goal_distance = _before_news["distance"]
-	rig._goal_yaw = _before_news["yaw"]
-	rig._goal_tilt = _before_news["tilt"]
-	_before_news = {}
-
-
-## The edge arrow: the latest news, for 40 s, when it's off screen.
-var _edge_left := 0.0
-
-
-func _edge_tick(delta: float) -> void:
-	_edge_left -= delta
-	if _edge_left > 0.0:
-		return
-	_edge_left = 0.15
-	var cam := get_viewport().get_camera_3d()
-	if _news.is_empty() or cam == null or Time.get_ticks_msec() - int(_news["ms"]) > 40000 or not _before_news.is_empty():
-		ui.edge_arrow(null, 0.0, "", "", false)
-		return
-	var at: Vector3 = _news["at"]
-	var view := get_viewport().get_visible_rect().size
-	var p := cam.unproject_position(at)
-	var behind := cam.is_position_behind(at)
-	if not behind and Rect2(Vector2.ZERO, view).grow(-40).has_point(p):
-		ui.edge_arrow(null, 0.0, "", "", false)  # it's on screen: no arrow
-		return
-	var mid := view * 0.5
-	var dir := (p - mid) * (-1.0 if behind else 1.0)
-	if dir.length() < 1.0:
-		dir = Vector2.UP
-	# Where the line from the centre toward it leaves the screen.
-	var k := minf((mid.x - 30) / maxf(absf(dir.x), 0.001), (mid.y - 30) / maxf(absf(dir.y), 0.001))
-	ui.edge_arrow(mid + dir * k, dir.angle(), String(_news["caption"]), String(_news.get("tone", "")), _news.get("new", false))
-	_news["new"] = false
