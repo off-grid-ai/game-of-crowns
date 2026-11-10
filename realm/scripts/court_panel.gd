@@ -116,9 +116,9 @@ func set_court(petitions: Array) -> void:
 	_show_audience()
 
 
-## A marker on the map at each matter's place (the town it's about, or the
-## petitioner's seat): the King sees where his realm wants him, and opens a
-## matter there. Gone when the matter is answered or the court closes.
+## A marker on the map at each matter's place (the bridge's item.place; a matter
+## without one has no marker): the King sees where his realm wants him, and
+## opens a matter there. Gone when the matter is answered or the court closes.
 func _mark(petitions: Array) -> void:
 	var now := {}
 	for p in petitions:

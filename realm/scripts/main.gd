@@ -1057,30 +1057,10 @@ func _open_person(id: String, house: Dictionary, from := "the realm") -> void:
 
 
 ## Where a matter at court belongs in the world: the bridge's own place for it
-## when it gives one, else the town its orders name, else the petitioner's
-## house seat, else Kingsmere. Vector3.INF before the land is laid.
+## (item.place, one owner), or nowhere: then its card stands where the court's
+## always does. Vector3.INF before the land is laid.
 func _place_of(item: Dictionary) -> Vector3:
-	if terrain == null or terrain.width == 0:
-		return Vector3.INF
 	var pl = item.get("place")
-	if pl is Dictionary and pl.has("x") and pl.has("y"):
-		return terrain.world_pos(float(pl["x"]), float(pl["y"]))
-	var cities: Array = bridge.world.get("cities", [])
-	var city := -1
-	for a in item.get("acts", []):
-		if a is Dictionary and a.get("city") != null:
-			city = int(a["city"])
-			break
-	if city < 0 and item.get("city") != null:
-		city = int(item["city"])
-	if city < 0 and String(item.get("house", "")) != "":
-		for pid in _houses:
-			if String(_houses[pid].get("name", "")) == String(item["house"]):
-				for c in cities:
-					if int(c["owner"]) == int(pid) and c.get("capital", false):
-						city = int(c["id"])
-	for c in cities:
-		if (city >= 0 and int(c["id"]) == city) or (city < 0 and c.get("capital", false) and _houses.get(int(c["owner"]), {}).get("crown", false)):
-			return terrain.world_pos(float(c["x"]), float(c["y"]))
-	return Vector3.INF
-
+	if terrain == null or terrain.width == 0 or not (pl is Dictionary and pl.has("x") and pl.has("y")):
+		return Vector3.INF
+	return terrain.world_pos(float(pl["x"]), float(pl["y"]))
