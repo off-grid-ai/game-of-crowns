@@ -561,3 +561,25 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - Open debt (judge): the mirror's own reading of war, grief and prosperity is deleted when the patch lands.
 - **Slip:** a grep with an unmatched file pattern made the crisis call look lost. It wasn't, and nothing was sent on that false alarm.
 - **Verdict:** on course. The blind court is now fixed end to end for hunger, and sieges have a voice.
+
+## 2026-11-10, autopilot (deck gates; film session running)
+
+- **Landed:**
+  - **72efebc:** the court's cards come from the realm. Every card has a gate and none is dealt on dice alone. New gates: rivalWar and rivalPeace, atWar, disorder, prosperity, raiders and north. War cards deal only to lords at war, and unrest, raider and prosperity cards deal only once their state is staged.
+  - **526aae4:** Eve is ready for her eye check.
+  - **3256d06:** the --bridge flag, and the mirror survives null readings.
+- **Film session (round 1):** running on a private bridge (8850) from a snapshot. The town launch is past war.
+- **Early look:**
+  - the camera is still too steep (above the low oblique view);
+  - "Winter of 309" shows green ground in the square (to builder 2);
+  - the riot reads as a dense crowd with smoke.
+- **Round 2 is ready (film2.sh):**
+  - targets: King Good and Cruel, wounded and fortified soldiers, a town growing, the court card over the truce reload, a winter evening (--hour=19 is in);
+  - Eve via clip_strip --body=eve;
+  - waiting on builder 2 to merge the hooks patch.
+- **Direction:** the judge's order:
+  - A, B3 and B4 are done;
+  - awareness: people, states and gossip;
+  - deck gates done;
+  - films now.
+- **Verdict:** on course.
