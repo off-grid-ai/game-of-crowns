@@ -113,14 +113,46 @@ func _process_timed(delta: float) -> void:
 		var node: Node3D = towns.towns[id]["node"]
 		if not is_instance_valid(node) or node.global_position.distance_to(cam.global_position) > TOWN_NEAR:
 			continue
+		if _probe and villagers.has_method("talk_counts"):
+			var tc: Dictionary = villagers.talk_counts(int(id))
+			for k in tc:
+				_counts[k] = int(_counts.get(k, 0)) + int(tc[k])
 		for g in villagers.gatherings(int(id)):
+			_count("talking")
 			var key := "%d:%d" % [int(id), int(g["key"])]
 			if _playing.has(key) or Time.get_ticks_msec() - int(_asked.get(key, -60000)) < 45000:
 				continue
-			if _distance(g, cam) > HEAR or not _in_view(g, cam):
+			if _distance(g, cam) > HEAR:
+				_count("too far")
 				continue
+			if not _in_view(g, cam):
+				_count("out of view")
+				continue
+			_count("asked")
 			_asked[key] = Time.get_ticks_msec()
 			_ask(int(id), g, key)
+	_report()
+
+
+## Test aid (--crowdprobe): where overheard talk goes, every five seconds:
+## gatherings talking near the camera, too far to hear, out of view, asked
+## for words, and lines shown (the minds' own, or plain words).
+var _probe := OS.get_cmdline_user_args().has("--crowdprobe")
+var _counts := {}
+var _counts_at := 0
+
+
+func _count(what: String) -> void:
+	if _probe:
+		_counts[what] = int(_counts.get(what, 0)) + 1
+
+
+func _report() -> void:
+	_counts_at += 1
+	if not _probe or _counts_at % 5 != 0:
+		return
+	print("CHECK talk heard: %s" % _counts)
+	_counts = {}
 
 
 ## Every one of them on screen: nobody talks from behind a wall or the camera.
@@ -421,6 +453,7 @@ func _play(town: int, g: Dictionary, key: String, talk: Dictionary) -> void:
 		var text := String(line.get("text", ""))
 		if talk.has("id") and text.length() >= 20:
 			_heard(speaker, text)  # the minds' own words: what's on their mind now
+		_count("lines (minds)" if talk.has("id") else "lines (plain)")
 		var secs := clampf(1.2 + text.length() * 0.05, 2.5, 4.5)  # a few seconds each: overheard, not a subtitle
 		if villagers.has_method("give_floor"):
 			villagers.give_floor(town, int(g["key"]), i, secs + 0.6)

@@ -112,9 +112,18 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 		_revels(root, life, center, rng, 6 + mini(int(c.get("size", 1)), 8))
 	if c.get("disorder", false):
 		_unrest(life, center, rng)
-	_dress(root, life, center, c, rng)
+	_dress(root, life, center, c, rng, house)
 	_near_only(life)
 	_pin(life, center)
+
+
+const Heraldry := preload("res://scripts/heraldry.gd")
+const STANDARD_TALL := 0.45  # a planted standard, about 3.7 m: over every head in the street (scenes.gd PLANTED)
+
+
+## The watch stand guard with sword and shield in hand (weapons.gd), never empty-handed.
+func _watch(g: Node3D) -> void:
+	preload("res://scripts/weapons.gd").arm(g, "sword", true)
 
 
 func _y(center: Vector3, off: Vector3) -> float:
@@ -412,7 +421,7 @@ func _crowd(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 	if angry:
 		# A riot is the town's news: on the side of the square the camera looks
 		# across as it comes down, give or take, never behind the lens.
-		dir = SEEN.rotated(Vector3.UP, rng.randf_range(-0.6, 0.6))
+		dir = SEEN.rotated(Vector3.UP, rng.randf_range(-0.25, 0.25))
 	var side := Vector3(-dir.z, 0, dir.x)
 	var knots := maxi(1, ceili(count / 3.0))
 	for i in count:
@@ -441,7 +450,26 @@ func _crowd(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 			var g := _stand(root, life, center, dir * 0.32 + side * (i - 1) * 0.14, "soldier", "Sword_Idle", rng.randi(), Color(0.55, 0.5, 0.45), 0.2)
 			if g:
 				g.rotation.y = atan2(dir.x, dir.z)  # facing the crowd
+				_watch(g)
 				_mind(g, "guard", center)
+		# What the crowd has done to the square: a cart turned on its side, crates
+		# and a cask knocked over and rolled, in the press where a street camera sees it.
+		var tipped: Node3D = Real.make("medieval_wooden_cart")
+		var tip_at := _spot(center, dir * 0.8, _blocked(root, life), life.get_meta("standing"), 0.35)
+		if tipped and not is_nan(tip_at.x):
+			tipped.position = Vector3(tip_at.x, _y(center, tip_at) + 0.05, tip_at.z)
+			tipped.rotation = Vector3(0, atan2(side.x, side.z), PI * 0.5)  # over on its side
+			tipped.set_meta("dress", "overturned cart")
+			life.add_child(tipped)
+			life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(tip_at, Real.footprint("medieval_wooden_cart"), atan2(side.x, side.z))])
+		elif tipped:
+			tipped.free()
+		for k in 4:
+			var spill := dir * rng.randf_range(0.5, 0.8) + side * rng.randf_range(-0.2, 0.2)
+			var thing := _prop(life, center, ["Crate_Wooden", "Barrel", "FarmCrate_Empty", "FarmCrate_Apple"][k], spill, rng.randf() * TAU, 1.0, 0.0, 0.07)
+			if thing:
+				thing.rotation.x = PI * 0.5 if k == 1 else rng.randf_range(-0.6, 0.6)  # the cask on its side, the crates askew
+				thing.set_meta("dress", "wreckage")
 		for k in 2:
 			var at := dir * rng.randf_range(0.6, 0.8) + side * (0.4 if k == 0 else -0.4)  # in the press, not off at its rim
 			var a := _stand(root, life, center, at, "peasant", "Fist_Fight_A", rng.randi(), Color(0.7, 0.66, 0.6), 0.25)
@@ -816,7 +844,7 @@ func _prop(life: Node3D, center: Vector3, name: String, at: Vector3, yaw := 0.0,
 	return n
 
 
-func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: RandomNumberGenerator) -> void:
+func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: RandomNumberGenerator, house := {}) -> void:
 	var stalls: Array = root.get_meta("stalls", [])
 	var places: Dictionary = root.get_meta("places", {})
 	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
@@ -842,20 +870,36 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 	if c.get("atWar", false):
 		# A barricade cart across the road in, weapons stacked, and more of the watch.
 		var cart: Node3D = Real.make("medieval_wooden_cart")
-		var cart_at := edge * 1.2
-		if cart and _open(center, cart_at, _blocked(root, life), life.get_meta("standing")):
+		var cart_at := _spot(center, edge * 1.2, _blocked(root, life), life.get_meta("standing"), 0.3)  # the nearest open ground to the way in
+		if cart and not is_nan(cart_at.x):
 			cart.position = Vector3(cart_at.x, _y(center, cart_at), cart_at.z)
 			cart.rotation.y = atan2(side.x, side.z) + 0.35  # slewed across the way, not parked
+			cart.set_meta("dress", "barricade")
 			life.add_child(cart)
 			life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(cart_at, Real.footprint("medieval_wooden_cart"), atan2(side.x, side.z) + 0.35)])
 		elif cart:
 			cart.free()  # no room on that road: no cart across it
+		# Crates and casks heaped against it: a barricade, not a cart parked.
+		for k in 4:
+			var heap := edge * (1.2 + (0.06 if k % 2 else -0.06)) + side * (0.24 + k * 0.07) * (1.0 if k < 2 else -1.0)
+			_prop(life, center, ["Crate_Wooden", "Barrel", "FarmCrate_Empty", "Crate_Wooden"][k], heap, rng.randf() * TAU, 1.0, 0.0, 0.07)
+		# The lord's standard planted either side of the way, high over the heads: seen from any street.
+		var col := Color.from_string(String(house.get("color", "#8a2a1e")), Color(0.55, 0.16, 0.12))
+		for k in [-1.0, 1.0]:
+			var at: Vector3 = edge * 1.1 + side * 0.28 * k  # close enough together that a street camera has both
+			var flag := Heraldry.standard(house, col, STANDARD_TALL)
+			flag.position = Vector3(at.x, _y(center, at), at.z)
+			flag.rotation.y = atan2(-edge.x, -edge.z)
+			flag.set_meta("dress", "standard")
+			life.add_child(flag)
+			life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(at, Vector2(0.05, 0.05), 0.0)])
 		_prop(life, center, "WeaponStand", edge * 1.05 + side * 0.2, atan2(-edge.x, -edge.z), 1.0, 0.0, 0.1)
 		_prop(life, center, "Shield_Wooden", edge * 1.05 - side * 0.2, atan2(-edge.x, -edge.z))
 		for i in 3:
 			var g := _stand(root, life, center, edge * 0.95 + side * (i - 1) * 0.22, "soldier", "Sword_Idle", rng.randi(), Color.WHITE, 0.2)
 			if g:
 				g.rotation.y = atan2(edge.x, edge.z)  # facing the road out
+				_watch(g)
 				_mind(g, "guard", center)
 	if c.get("grief", false):
 		# Mourners gathered at the well, candles set down.
@@ -892,6 +936,7 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 			_mind(collector, "trade", center)
 		var guard := _stand(root, life, center, at + side * 0.18, "soldier", "Sword_Idle", rng.randi(), Color.WHITE, 0.1)
 		if guard:
+			_watch(guard)
 			_mind(guard, "guard", center)
 		for i in 3:
 			var q := _stand(root, life, center, at - edge.normalized() * (0.18 + i * 0.1), "peasant", "Arguing", rng.randi(), Color(0.6, 0.55, 0.5), 0.08)

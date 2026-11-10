@@ -133,6 +133,7 @@ func _refresh() -> void:
 			_tell_attention(id)
 	for id in crowds:
 		_witness(id)
+		_prune_talks(id)
 	if _audit:
 		_talk_audit()
 	for id in crowds.keys():
@@ -837,6 +838,20 @@ func _crowd_report() -> void:
 	keys.sort_custom(func(x, y): return int(pairs[x]) > int(pairs[y]))
 	print("CHECK people inside each other: closest %.2f m (worst so far %.2f m: %s), %d pair-frames under 0.5 m over %d frames; most: %s" % [
 		float(_crowd["min"]) / 0.12, float(_crowd["worst"]) / 0.12, _crowd["who"], int(_crowd["under"]), int(_crowd["frames"]), keys.slice(0, 4).map(func(k): return "%s x%d" % [k, pairs[k]])])
+	# The town's news dressing (town_life.gd, meta "dress"): how much the camera has in view.
+	var cam := get_viewport().get_camera_3d()
+	var dress := {}
+	for id in towns.towns:
+		var node: Node3D = towns.towns[id]["node"]
+		var life: Node3D = node.get_node_or_null("Life") if is_instance_valid(node) else null
+		if life == null or cam == null or node.global_position.distance_to(cam.global_position) > 9.0:
+			continue
+		for d in life.get_children():
+			if d is Node3D and d.has_meta("dress"):
+				var k := "%s %s" % [d.get_meta("dress"), "in view" if cam.is_position_in_frustum((d as Node3D).global_position + Vector3(0, 0.1, 0)) else "out of view"]
+				dress[k] = int(dress.get(k, 0)) + 1
+	if not dress.is_empty():
+		print("CHECK news dressing: %s" % dress)
 	print("CHECK people in a fire: %d person-frames inside the reach of %d lit fires; %s" % [int(_crowd["in_fire"]), int(_crowd["fires"]), (_crowd["fire_who"] as Dictionary).keys().slice(0, 4)])
 	print("CHECK people in a building or stall: %d person-frames; %s" % [int(_crowd["in_building"]), (_crowd["building_who"] as Dictionary).keys().slice(0, 4)])
 	_crowd["in_fire"] = 0
@@ -1003,10 +1018,13 @@ func _choose_next(a: Dictionary) -> void:
 	# Talk takes two: join a knot already gathering there, or bring someone
 	# along; with nobody to hand, do something on your own instead.
 	if a["work"] in SOCIAL:
-		if String(a.get("place_key", "")) != "":
-			target = place(a, a["place_key"], true)  # room round them for a knot
-		if _gather(a, target, places):
-			return
+		# Someone with a mind talks only when their mind arranges it (npc_mind
+		# FindPartner): an old-rules knot would never be kept up or closed.
+		if not a.has("mind"):
+			if String(a.get("place_key", "")) != "":
+				target = place(a, a["place_key"], true)  # room round them for a knot
+			if _gather(a, target, places):
+				return
 		a["work"] = _solo(a, target, places)
 	if a["work"] == "Idle":
 		a["work"] = _mood_idle(a)
@@ -1349,7 +1367,7 @@ func _follow(a: Dictionary, plan: Dictionary, places: Dictionary) -> bool:
 		var j := int(str(w).get_slice(":", 2)) if str(w).begins_with("folk:") else int(w)  # an index, or a mind's id
 		if int(j) >= 0 and int(j) < town.size() and int(j) != int(a["i"]):
 			partners.append(town[int(j)])
-	if not partners.is_empty():
+	if not partners.is_empty() and not a.has("mind"):  # with a mind, they talk when their mind arranges it (FindPartner)
 		if not move in SOCIAL:
 			move = "Idle_Talking"  # with someone, whatever the errand: they talk
 		a["work"] = move
@@ -1705,6 +1723,45 @@ func who_is(n: Node) -> Dictionary:
 			if a["node"] == n:
 				return {"town": int(id), "i": int(a["i"]), "role": String(a["role"])}
 	return {}
+
+
+## Test aid (chatter.gd's talk count): talks open in a town, by the minds or the
+## old rules, and how many have everyone in place.
+func talk_counts(town: int) -> Dictionary:
+	var out := {"open (minds)": 0, "open (rules)": 0, "in place": 0}
+	for g in _talks.get(town, []):
+		out["open (minds)" if g.get("mind", false) else "open (rules)"] += 1
+		if g["members"].size() >= 2 and g["members"].all(func(b): return _in_talk(b, g)):
+			out["in place"] += 1
+		elif g.get("mind", false) and g["members"].size() == 2:
+			# Why not: how far apart, who's still walking, how far each is turned from the other.
+			var a: Dictionary = g["members"][0]
+			var b: Dictionary = g["members"][1]
+			var na: Node3D = a["node"]
+			var nb: Node3D = b["node"]
+			var to := Vector2(nb.position.x - na.position.x, nb.position.z - na.position.z)
+			var why := "d=%.2f walking=%d/%d turned=%.1f" % [to.length(), PackedVector2Array(a["route"]).size(), PackedVector2Array(b["route"]).size(),
+				absf(angle_difference(na.rotation.y, atan2(to.x, to.y)))]
+			out[why] = int(out.get(why, 0)) + 1
+	return out
+
+
+## Talks long over that nobody closed: a knot of people with minds (the old
+## rules never keep those up), or a minds' talk both left. Gone, and their
+## people free again, so a lapsed knot never blocks a new talk.
+func _prune_talks(id: int) -> void:
+	var now := Time.get_ticks_msec() * 0.001
+	var list: Array = _talks.get(id, [])
+	for k in range(list.size() - 1, -1, -1):
+		var g: Dictionary = list[k]
+		if now < float(g["until"]) + 5.0:
+			continue
+		if not g.get("mind", false) and not g["members"].all(func(b): return b.has("mind")):
+			continue  # the old rules close their own (_converse)
+		for b in g["members"]:
+			if is_same(b.get("talk", {}), g):
+				b["talk"] = {}
+		list.remove_at(k)  # by place, never by value: a gathering and its people point at each other
 
 
 ## The minds' talk `key` is over (either of the two ends it).
