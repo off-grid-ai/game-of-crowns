@@ -627,14 +627,16 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     const made = [];
     const crisisOf = (c) => {
       const mine = world.cities.filter((x) => x.owner === c.playerId);
-      // Only a crisis with a plea of its own: a starving town's lord asks for
-      // grain. A siege has none yet, so the Hand keeps bringing it.
-      return mine.some((x) => x.famine) ? "grain" : null;
+      // A crisis with a plea of its own: a starving town's lord asks for grain,
+      // a besieged one for the siege to be broken.
+      return mine.some((x) => x.famine) ? "grain" : mine.some((x) => x.besieged) ? "siege" : null;
     };
     for (const c of this.alive().filter((x) => x.rank === "lord")) {
       if (want <= 0) break;
       const crisis = crisisOf(c);
-      if (!crisis || this.petitions.some((p) => !p.answered && p.from === c.id)) continue;
+      if (!crisis || this.petitions.some((p) => !p.answered && p.from === c.id && p.called != null)) continue;
+      // What they were waiting in the hall to ask can wait: the crisis comes first.
+      this.petitions = this.petitions.filter((p) => p.answered || p.from !== c.id || p.called != null || p.kind === "arc");
       if (this.petitions.some((p) => p.from === c.id && p.crisis === crisis && (p.turn ?? 0) > turn - SEASONS_PER_YEAR)) continue;
       this.turnNow = turn;
       const p = await this.petition(c, world, turn, ctx, true, { urgent: true, prefer: crisis });
@@ -699,6 +701,23 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
         { id: "other", label: `Rule for ${enemy.house}`, hint: `${enemy.house} +15 · ${c.house} −25, and stops trusting the crown's justice` },
         { id: "peace", label: "Impose the King's peace (200 gold)", hint: "You pay reparations · both −5 · no raids between them for 2 years", cost: 200 },
         { id: "combat", label: "Trial by combat", hint: "The gods decide · the loser pays a third of their gold, and may lose a son" },
+      ] };
+    } });
+
+    // A town under siege by another house: its lord begs the King to break it.
+    // (A siege by the King's own host is the herald's to bring, not his.)
+    const crownPid = world.players.find((x) => houseFor(x).crown)?.id;
+    const ringed = myTowns.find((x) => x.besieged);
+    const foe = ringed ? Object.entries((world.units ?? []).filter((u) => u.owner !== c.playerId && Math.max(Math.abs(u.x - ringed.x), Math.abs(u.y - ringed.y)) === 1)
+      .reduce((n, u) => ({ ...n, [u.owner]: (n[u.owner] ?? 0) + 1 }), {})).sort((a, b) => b[1] - a[1])[0] : null;
+    const besieger = foe ? world.players.find((x) => x.id === Number(foe[0])) : null;
+    if (ringed && besieger && besieger.id !== crownPid && !houseFor(besieger).wild) candidates.push({ kind: "siege", weight: 6, make: () => {
+      const town = cityName(ringed.id);
+      const them = houseFor(besieger).name;
+      return { kind: "siege", city: ringed.id, besieger: besieger.id, text: `${c.name} of ${c.house}: "${them} has ${town} ringed with spears. My people eat their boots behind the walls. Send the royal host, Your Grace, or ${town} falls."`, facts: facts(c.playerId, besieger.id), options: [
+        { id: "relieve", label: `March the royal host to ${town}`, hint: `${c.house} +15 · ${them} −20 · the host leaves Kingsmere` },
+        { id: "pay", label: `Pay ${them} to lift the siege (200 gold)`, hint: `${c.house} +5 · ${them} +5 · a truce between them`, cost: 200 },
+        { id: "abandon", label: `Let ${town} hold or fall`, hint: `${c.house} −20 · their bannermen remember` },
       ] };
     } });
 
@@ -1111,6 +1130,27 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       if (option === "oath") { out.favour[c.playerId] = 6; c.loyalty = Math.min(100, c.loyalty + 10); out.text = `${c.name} kneels and swears ${c.house} to the crown before the whole court.`; }
       if (option === "purse") { out.favour[c.playerId] = -4; gold(c.playerId, -60); const crown = world.players.find((x) => houseFor(x).crown); if (crown) gold(crown.id, 60); out.text = `${c.house} sends 60 gold to Kingsmere. ${c.name} had hoped for thanks, not a bill.`; }
       this.save(c);
+    } else if (p.kind === "siege") {
+      const town = cityName(p.city);
+      const them = houseFor(world.players.find((x) => x.id === p.besieger) ?? {}).name;
+      if (option === "relieve") {
+        out.favour[c.playerId] = 15; out.favour[p.besieger] = -20;
+        out.march = p.city;  // the bridge sends the royal host (its own march decree)
+        out.text = `The royal host marches to break the siege of ${town}.`;
+      }
+      if (option === "pay") {
+        out.favour[c.playerId] = 5; out.favour[p.besieger] = 5; out.cost = 200;
+        gold(p.besieger, 200);
+        const foeLord = this.lordOfHouse(p.besieger);
+        if (foeLord) this.makeTruce(c, foeLord, 8, world);  // Freeciv's ceasefire: their host goes home
+        out.text = `The crown's gold buys ${them} off. Their host leaves ${town}'s walls.`;
+      }
+      if (option === "abandon") {
+        out.favour[c.playerId] = -20;
+        for (const b of this.alive().filter((x) => x.rank === "bannerman" && x.playerId === c.playerId)) b.loyalty = Math.max(0, b.loyalty - 10);
+        out.text = `The King sends no one. ${town} is left to hold, or to fall.`;
+      }
+      this.remember(c.id, option === "abandon" ? `The King left ${town} to ${them}.` : `The King came to ${town}'s aid against ${them}.`);
     } else if (p.kind === "grain") {
       if (option === "grant") { out.favour[c.playerId] = 15; gold(c.playerId, 150); out.text = `The crown sends grain to ${c.house}.`; }
       if (option === "order") { out.favour[p.donor] = -20; out.favour[c.playerId] = 10; gold(p.donor, -150); gold(c.playerId, 150); out.text = `By royal command, ${houseFor(world.players.find((x) => x.id === p.donor)).name} feeds the starving of ${c.house}, and resents every sack.`; }

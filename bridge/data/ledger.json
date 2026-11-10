@@ -916,6 +916,27 @@
     "axes": {},
     "says": "the loyal bannerman sent home"
    }
+  },
+  "siege": {
+   "relieve": {
+    "axes": {
+     "word": 1
+    },
+    "says": "the host sent to break a siege"
+   },
+   "pay": {
+    "axes": {
+     "give": -1,
+     "peace": 1
+    },
+    "says": "the gold paid to lift a siege"
+   },
+   "abandon": {
+    "axes": {
+     "word": -2
+    },
+    "says": "the town left to its besiegers"
+   }
   }
  },
  "arc": {
