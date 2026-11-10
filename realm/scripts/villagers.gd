@@ -23,6 +23,7 @@ var _skin := StandardMaterial3D.new()
 var _check := 0.0
 var _cull := 0.0
 var _people = preload("res://scripts/people.gd").new()
+const TownLife := preload("res://scripts/town_life.gd")
 var _nav = preload("res://scripts/town_nav.gd").new()
 const WALK_SPEED := 0.17  # world units per second: an unhurried 1.4 m/s at town scale
 ## Moves that are walks (a load carried, a barrow pushed): played on the way,
@@ -224,6 +225,10 @@ func _spawn(id: int) -> void:
 		a["placed"] = false
 		person.visible = false
 		list.append(a)
+		# A town on the LimboAI switch: farmers and market folk get a mind
+		# (npc_mind.gd) that picks their activities; the walking stays here.
+		if (TownLife.LIMBO_TOWNS.has(id) or TownLife._limbo_args().has(id)) and calling in ["farmer", "market"] and a["role"] != "child":
+			preload("res://scripts/npc_mind.gd").give_villager(person, a, self)
 	_crowds[id] = list
 
 
@@ -393,7 +398,7 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 	if block != a["block"]:
 		a["block"] = block
 		a["wait"] = minf(a["wait"], a["rng"].randf_range(0.0, 3.0))
-		if not a.get("talk", {}).is_empty():
+		if not a.get("talk", {}).is_empty() and not a.has("mind"):
 			_choose_next(a)  # the talk breaks up: home for the night, back to work
 			_set_off(a)
 			return
@@ -407,6 +412,8 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 		if a.has("agent"):
 			NavigationServer2D.agent_set_velocity(a["agent"], Vector2.ZERO)
 			NavigationServer2D.agent_set_avoidance_priority(a["agent"], 1.0)  # walkers go round those standing still
+		if a.has("mind"):
+			return  # their mind plays the moves and picks what's next
 		if not a.get("talk", {}).is_empty():
 			_converse(a, delta)
 			return
@@ -817,6 +824,15 @@ func _choose_next(a: Dictionary) -> void:
 		a["work"] = _mood_idle(a)
 	# Some linger, some don't: no two keep the same rhythm.
 	a["wait"] = rng.randf_range(3.0, 20.0)
+	_route_to(a, target)
+
+
+## Sets `a` walking to `target` (world) on the town's walk map, never to the
+## very spot someone else is bound for. Shared by the day's choices and by a
+## mind's GoTo (npc_mind.gd).
+func _route_to(a: Dictionary, target: Vector3) -> void:
+	var n: Node3D = a["node"]
+	var rng: RandomNumberGenerator = a["rng"]
 	var town: Dictionary = towns.towns.get(a["town"], {})
 	if town.is_empty():
 		return

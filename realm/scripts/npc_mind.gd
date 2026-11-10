@@ -247,3 +247,138 @@ static func give(person: Node3D, post: String, ground: Callable, seed: int) -> b
 	player.blackboard.set_var(&"choices", acts.size())
 	person.add_child(player)
 	return true
+
+
+# --- villagers: farmers and market folk (slice 1) ------------------------------
+
+## Walk to a place of the villager's day through villagers.gd's own routing
+## (nav map, crowd avoidance, room in the square), with `gait` (Walk, or
+## Carrying for a load: the carry blend), and succeed on arrival.
+class GoTo extends BTAction:
+	var where := "market"
+	var gait := "Walk"
+	var _started := false
+
+	func _enter() -> void:
+		var a: Dictionary = blackboard.get_var(&"va")
+		var v: Node = blackboard.get_var(&"vill")
+		var rng: RandomNumberGenerator = a["rng"]
+		var to: Vector3 = a["home"]
+		match where:
+			"field": to = v._near(a["field"], rng, 0.25)
+			"bench": to = a["bench"]
+			"home": to = a["home"]
+			_: to = v._at(a, where)
+		a["gait"] = gait
+		v._route_to(a, to)
+		_started = true
+
+	func _tick(_delta: float) -> Status:
+		var a: Dictionary = blackboard.get_var(&"va")
+		if not (a["route"] as PackedVector2Array).is_empty():
+			return RUNNING
+		# Arrived: this is now their post, and they face the way they came in.
+		blackboard.set_var(&"post", agent.position)
+		blackboard.set_var(&"face", agent.rotation.y)
+		blackboard.set_var(&"at_post", true)
+		a["gait"] = "Walk"
+		return SUCCESS
+
+
+## Succeeds while the villager's part of the day is one of `blocks`.
+class BlockIs extends BTCondition:
+	var blocks: Array = []
+
+	func _tick(_delta: float) -> Status:
+		var a: Dictionary = blackboard.get_var(&"va")
+		return SUCCESS if String(a.get("block", "")) in blocks else FAILURE
+
+
+## A field task for the season (villagers._field_work): planting, watering,
+## picking; nothing to do in winter (fails, so another activity is picked).
+class FieldRun extends PlayRun:
+	func _enter() -> void:
+		var a: Dictionary = blackboard.get_var(&"va")
+		var v: Node = blackboard.get_var(&"vill")
+		var tend: String = v._field_work(a["rng"])
+		pool = [tend] if tend != "" else []
+		super._enter()
+
+	func _tick(delta: float) -> Status:
+		return FAILURE if pool.is_empty() else super._tick(delta)
+
+
+static func go(where: String, gait := "Walk") -> BTTask:
+	var t := GoTo.new()
+	t.where = where
+	t.gait = gait
+	return t
+
+
+static func block_is(blocks: Array) -> BTTask:
+	var t := BlockIs.new()
+	t.blocks = blocks
+	return t
+
+
+static func villager_activities(role: String) -> Array:
+	match role:
+		"farmer":
+			var tend := FieldRun.new()
+			tend.lo = 3
+			tend.hi = 5
+			return [
+				seq("tend", [go("field"), tend, brk(REST + SWIG), step(0.2), run(["Pick_Fruit", "Planting", "Watering"], 3, 5), brk(LOOK)]),
+				seq("dig", [go("field"), run(["Digging", "Dig_And_Plant"]), once("Wiping_Sweat"), brk(REST)]),
+				seq("weed", [go("field"), run(["Fixing_Kneeling"]), brk(["Relieved_Sigh", "Arm_Stretching", "Weight_Shift"]), step(0.2), run(["Fixing_Kneeling"])]),
+				seq("chores", [go("bench"), once("PickUp_Table"), run(["Fixing_Kneeling", "Interact"]), run(["Push_Heavy"], 1, 2), brk(REST)]),
+			]
+		"market":
+			return [
+				seq("browse", [go("market"), once("Looking_Around"), once("PickUp_Table"), run(["Thinking", "Doubtful"], 1, 1), brk(LOOK)]),
+				seq("haggle", [go("market"), run(["Idle_Talking", "Arguing"], 2, 4), run(["Nod_Yes", "Shake_No"], 1, 1), brk(["Pleased", "Looking_Around"])]),
+				seq("carry", [go("market"), once("PickUp_Table"), go("home", "Carrying"), once("PickUp_Table"), brk(REST)]),
+				seq("gossip", [go("well"), run(["Whispering", "Telling_A_Secret", "Laughing"], 2, 4), brk(LOOK)]),
+			]
+	return []
+
+
+## A villager's mind: at night and dawn they go home and rest; through the day
+## their role's activities, one at a time and never the same twice running.
+static func give_villager(person: Node3D, a: Dictionary, vill: Node) -> bool:
+	var acts := villager_activities(String(a.get("role", "")))
+	if acts.is_empty():
+		return false
+	var life := BTDynamicSelector.new()
+	var night := BTSequence.new()
+	night.add_child(block_is(["night", "dawn"]))
+	night.add_child(go("home"))
+	night.add_child(brk(["Idle", "Breathing_Idle"]))
+	life.add_child(night)
+	var work := BTRandomSelector.new()
+	for x in acts:
+		work.add_child(x)
+	life.add_child(work)
+	var root := BTSequence.new()
+	var first := BTRandomWait.new()
+	first.min_duration = 0.5
+	first.max_duration = 6.0
+	root.add_child(first)
+	var forever := BTRepeat.new()
+	forever.forever = true
+	forever.add_child(life)
+	root.add_child(forever)
+	var bt := BehaviorTree.new()
+	bt.root_task = root
+	var player := BTPlayer.new()
+	player.name = "Mind"
+	player.behavior_tree = bt
+	player.blackboard.set_var(&"va", a)
+	player.blackboard.set_var(&"ground", func(q: Vector3) -> float: return vill.terrain.height_at(q.x, q.z))
+	player.blackboard.set_var(&"vill", vill)
+	player.blackboard.set_var(&"post", person.position)
+	player.blackboard.set_var(&"face", person.rotation.y)
+	player.blackboard.set_var(&"choices", acts.size())
+	person.add_child(player)
+	a["mind"] = player
+	return true
