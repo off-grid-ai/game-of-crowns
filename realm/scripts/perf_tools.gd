@@ -43,6 +43,17 @@ func _try_look(look: String) -> void:
 var _perf_at := 10.0
 ## Any frame that held the window for over half a second, and what was last
 ## under way: the spinning cursor's culprits, in the verbose log.
+## A test aid (GOC_PERF_PROBE=1, off in play): microseconds spent per named job
+## since the last perf line, written on it as "jobs=name:ms/calls,...".
+static var probing := OS.get_environment("GOC_PERF_PROBE") != ""
+static var tally := {}  # name -> [microseconds, calls]
+static func add(name: String, usec: int) -> void:
+	if not probing:
+		return
+	var t: Array = tally.get(name, [0, 0])
+	tally[name] = [t[0] + usec, t[1] + 1]
+
+
 func _log_perf(delta: float) -> void:
 	if delta > 0.5:
 		print_verbose("STALL %.2f s after: %s" % [delta, Engine.get_meta("stage", "")])
@@ -60,6 +71,12 @@ func _log_perf(delta: float) -> void:
 		Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME),
 		int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000.0), Performance.get_monitor(Performance.OBJECT_NODE_COUNT),
 		main.rig.distance if main.rig else 0.0, main.towns.building() if main.towns and main.towns.has_method("building") else "?"])
+	if probing and not tally.is_empty():
+		var jobs := PackedStringArray()
+		for k in tally:
+			jobs.append("%s:%.1fms/%d" % [k, tally[k][0] / 1000.0, tally[k][1]])
+		f.store_line("    jobs (10 s) " + ", ".join(jobs))
+		tally.clear()
 
 
 ## Once the towns have finished building: triangles and draws by system, as

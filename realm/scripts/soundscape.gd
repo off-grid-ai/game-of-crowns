@@ -258,7 +258,9 @@ func _process(delta: float) -> void:
 	_tick_bells(delta)
 	_tick_music(delta)
 	_tick_duck(delta)
+	var pt := Time.get_ticks_usec()
 	_tick_clips(delta)
+	preload("res://scripts/perf_tools.gd").add("clip_sounds %d" % _clips.size(), Time.get_ticks_usec() - pt)
 
 
 func _tick_lifts(delta: float) -> void:

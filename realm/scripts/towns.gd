@@ -182,7 +182,9 @@ func _process(_delta: float) -> void:
 		var node := _build_town(job["c"], job["house"])
 		add_child(node)
 		if towns.has(best):
+			var pt := Time.get_ticks_usec()
 			_grow(towns[best], node, job["c"])
+			preload("res://scripts/perf_tools.gd").add("town_sites", Time.get_ticks_usec() - pt)
 			towns[best]["node"].queue_free()
 		towns[best] = {"node": node, "signature": job["sig"], "data": job["c"]}
 		life.update(node, job["c"], job["house"])

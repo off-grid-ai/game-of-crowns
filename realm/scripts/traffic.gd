@@ -22,7 +22,16 @@ func _ready() -> void:
 	_rng.randomize()
 
 
+const PerfTools := preload("res://scripts/perf_tools.gd")
+
+
 func _process(delta: float) -> void:
+	var pt := Time.get_ticks_usec()
+	_decide(delta)
+	PerfTools.add("traffic", Time.get_ticks_usec() - pt)
+
+
+func _decide(delta: float) -> void:
 	_left -= delta
 	if _left > 0.0:
 		return
