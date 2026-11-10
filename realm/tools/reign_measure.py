@@ -35,6 +35,10 @@ intrigue_ids = set()
 places = 0
 weighed = 0
 log = open(OUT + ".log", "w")
+# Dead time (the judge): stretches with no decision, no visible event at a place
+# (a scene, a scheme, a threat's change) and no news in the chronicle.
+events = [0.0]
+scene_ids, scheme_sig, threat_sig, news_seq = set(), None, None, 0
 while time.time() - start < MIN * 60:
     now = time.time()
     try:
@@ -54,6 +58,23 @@ while time.time() - start < MIN * 60:
     if court or (inter and not inter.get("seen")):
         up_time += now - last
     last = now
+    t_now = now - start
+    new = [x.get("id") for x in (w.get("scenes") or []) if x.get("id") not in scene_ids]
+    if new:
+        scene_ids.update(new); events.append(t_now)
+    sig = json.dumps(sorted((x["id"], x.get("line")) for x in (w.get("intrigue") or [])))
+    if sig != scheme_sig:
+        scheme_sig = sig; events.append(t_now)
+    tsig = json.dumps((w.get("crown") or {}).get("threat"), sort_keys=True)
+    if tsig != threat_sig:
+        threat_sig = tsig; events.append(t_now)
+    try:
+        ch = get(f"/chronicle?since={news_seq}")
+        evs = ch.get("events", ch) if isinstance(ch, dict) else ch
+        if evs:
+            news_seq = max(int(e.get("seq", news_seq)) for e in evs); events.append(t_now)
+    except Exception:
+        pass
     for s in w.get("intrigue") or []:
         intrigue_ids.add(s["id"])
     intrigue_max = max(intrigue_max, len(w.get("intrigue") or []))
@@ -92,12 +113,16 @@ while time.time() - start < MIN * 60:
             returns += 1
         kinds[kind] += 1
         names.add(x.get("name"))
+        events.append(now - start)
         decisions.append((round(now - start), kind, x.get("name"), (x.get("place") or {}).get("name")))
         log.write(f"{now-start:.0f} answered {kind} {x.get('name')} @ {(x.get('place') or {}).get('name')} -> {str(r)[:120]}\n")
         log.flush()
     time.sleep(1.5)
 
 mins = (time.time() - start) / 60
+events = sorted(events + [mins * 60])
+gaps = [b - a for a, b in zip(events, events[1:])]
+dead = [g for g in gaps if g > 60]
 rep = sum(n - 1 for k, n in kinds.items() if k not in ("hand", "remembers") and n > 1)
 res = {
     "minutes": round(mins, 1),
@@ -111,6 +136,8 @@ res = {
     "with_place": places,
     "plea_answers_weighed": weighed,
     "schemes_seen": len(intrigue_ids),
+    "longest_dead_s": round(max(gaps) if gaps else 0),
+    "dead_share": round(sum(dead) / (mins * 60), 2),
     "schemes_at_once_max": intrigue_max,
     "reign_clock_minutes": round(((w.get("reign") or {}).get("elapsedMs") or 0) / 60000, 1),
 }
