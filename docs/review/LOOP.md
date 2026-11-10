@@ -402,3 +402,13 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Checked a research claim:** "seasons forced to 20 s" is not true now. The live bridge reports 40 s seasons (server.js sets 40 on load; the 20 is only a default before a realm loads).
 - **Direction:** Mac's rules hold. The camera never moves by itself, only what the world can show gets told, and proven patterns are used (RTS news, modal court, quest-log aim).
 - **Verdict:** on course. Next: proof frames from the running reign, then the townsfolk on LimboAI.
+
+## 2026-11-10, 13:50 (autopilot)
+
+- **Incident (mine):**
+  - The lord-pictures test pressed Escape to leave a watched scene. That opened the menu, and the run drifted to the title screen.
+  - Stopping the run didn't run its restore.
+  - Mac's realm was put back by hand, paused.
+  - Fixed: tests leave a scene with Space (the new back key), and a stop now restores the realm.
+- **Seen in the frames:** in-world captions piled into an unreadable stack and never left. Now they fade after 9 s, one per place.
+- **Rerun** under way with Space to the news and back.
