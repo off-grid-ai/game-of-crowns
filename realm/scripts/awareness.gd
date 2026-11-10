@@ -82,9 +82,14 @@ func sync(world: Dictionary) -> void:
 		if (players[pid].get("house", {}) as Dictionary).get("crown", false):
 			crown_id = pid
 	var now_scenes: Array = world.get("scenes", [])
+	var ids: Array[int] = []
 	for c in world.get("cities", []):
 		var id := int(c["id"])
+		ids.append(id)
 		var bb := town(id)
+		bb.set_var(&"tile", Vector2i(int(c.get("x", 0)), int(c.get("y", 0))))
+		bb.set_var(&"owner", int(c.get("owner", -1)))
+		bb.set_var(&"besieged", bool(c.get("besieged", false)))
 		var owner: Dictionary = players.get(int(c.get("owner", -1)), {})
 		var favour: float = float(owner.get("favour", 100.0)) if owner.get("favour") != null else 100.0
 		var mood := "riot" if c.get("disorder", false) else ("hunger" if c.get("famine", false) else ("feast" if c.get("celebrating", false) else ""))
@@ -101,6 +106,7 @@ func sync(world: Dictionary) -> void:
 		bb.set_var(&"grief", grieving)
 		var prosperous := mood == "" and not grieving and (favour >= 60.0 if int(c.get("owner", -1)) != crown_id else int(crown.get("treasury", 0)) >= 1500)
 		bb.set_var(&"prosperity", prosperous)
+	realm.set_var(&"towns", ids)
 	# Each scene is news once: the bus carries it to whoever is near.
 	for s in now_scenes:
 		var key := "%s:%d:%d:%d:%d" % [s.get("kind", ""), int(s.get("x", 0)), int(s.get("y", 0)), int(s.get("turn", 0)), int(s.get("city", -1))]
