@@ -129,6 +129,7 @@ func _blocked(a: Vector3, b: Vector3) -> bool:
 
 func snap(pos: Vector3, dist: float, y := 0.0) -> void:
 	_hit = -1.0
+	_look_y = _floor_at(pos)  # a cut: the aim starts where it is, not eased in from the last place
 	target = pos
 	goal_target = pos
 	distance = dist
@@ -274,7 +275,14 @@ const LENS_LAYER := 1 << 19
 var _cast: ShapeCast3D
 var _bodies := {}  # town id -> [holder Node3D, signature]
 var _bodies_check := 0.0
-var _hit := -1.0  # the spring's length, eased back out after a roof is passed
+var _hit := -1.0  # set by a cut (snap, focus): the lens's corrections start afresh, not eased in
+var _lag := 0.0  # how far the lens's correction still has to go (the zoom waits on it)
+var _fix := Vector3.ZERO  # the lens's own correction (roofs, crowns), eased toward what is needed
+var lens_snaps := 0  # times the lens had to snap clear of a building (the camera probe counts them)
+const GUARD := 4.5  # camera distance under which the lens looks out for buildings
+const LENS_SPEED := 1.5  # the most the lens's correction moves, in camera distances a second
+const LENS_REACH := 0.05  # the lens's sweep, as a share of its arm: how early a roof is felt
+const LENS_EASE := 10.0  # how quickly the lens's own corrections (roofs, crowns, the ground's rise) settle, per second
 
 
 func _lens_bodies() -> void:
@@ -323,8 +331,8 @@ func _prism(holder: Node3D, fp: PackedVector2Array, h: float) -> void:
 
 
 ## Where the lens can stand on its line to `look`: short of the first building
-## in the way (snapping in, so it never clips; easing back out). A building the
-## eye itself stands in (a castle's yard, a doorway) doesn't count.
+## in the way (apply() eases the lens there). A building the eye itself stands
+## in (a castle's yard, a doorway) doesn't count.
 func _clear(look: Vector3, pos: Vector3) -> Vector3:
 	var arm := pos - look
 	var full := arm.length()
@@ -338,10 +346,29 @@ func _clear(look: Vector3, pos: Vector3) -> Vector3:
 		_cast.add_exception_rid(hit["rid"])
 	_cast.global_position = look
 	_cast.target_position = arm
+	# A wider ball further out: a roof is felt a little before the line touches it,
+	# so the lens starts in early and gently, not all at once once it's on top of it.
+	(_cast.shape as SphereShape3D).radius = clampf(full * LENS_REACH, 0.04, 0.5)
 	_cast.force_shapecast_update()
 	var free := full * _cast.get_closest_collision_safe_fraction() if _cast.is_colliding() else full
-	_hit = free if _hit < 0.0 or free < _hit else lerpf(_hit, free, 0.15)
-	return look + arm / full * minf(_hit, full)
+	return look + arm / full * free
+
+
+## Whether a building stands between two points (the lens's own buildings only).
+func _walled(a: Vector3, b: Vector3) -> bool:
+	if a.distance_to(b) < 0.01:
+		return false
+	var q := PhysicsRayQueryParameters3D.create(a, b, LENS_LAYER)
+	q.hit_from_inside = false
+	return not get_world_3d().direct_space_state.intersect_ray(q).is_empty()
+
+
+## Whether a point stands inside one of the lens's buildings.
+func _inside(p: Vector3) -> bool:
+	var params := PhysicsPointQueryParameters3D.new()
+	params.position = p
+	params.collision_mask = LENS_LAYER
+	return not get_world_3d().direct_space_state.intersect_point(params, 1).is_empty()
 
 
 func _floor_at(p: Vector3) -> float:
@@ -386,7 +413,10 @@ func _process(delta: float) -> void:
 	# zoom feels the same at street level as across the realm.
 	var k := 1.0 - exp(-delta * EASE)
 	target = target.lerp(goal_target, k)
-	distance = exp(lerpf(log(distance), log(goal_distance), k))
+	# Zooming in, the eye comes down no faster than the lens can clear the roofs:
+	# while it is still catching up on one, the zoom waits for it.
+	var kd := k * (clampf(1.0 - _lag / (distance * 0.3), 0.15, 1.0) if goal_distance < distance else 1.0)
+	distance = exp(lerpf(log(distance), log(goal_distance), kd))
 	yaw = lerp_angle(yaw, goal_yaw, k)
 	tilt = lerpf(tilt, goal_tilt, k)
 	apply()
@@ -433,7 +463,8 @@ func apply() -> void:
 	var ground := _floor_at(target)
 	# Close in, the eye follows the ground exactly; further out it glides over
 	# the hills instead of bobbing with each one.
-	_look_y = ground if ground_view > 0.5 or absf(_look_y - ground) > distance else lerpf(_look_y, ground, 0.12)
+	# Eased at every distance, faster close in, at the same rate whatever the frame rate.
+	_look_y = lerpf(_look_y, ground, 1.0 - exp(-get_process_delta_time() * lerpf(4.0, 14.0, ground_view / 0.85)))
 	var look := Vector3(target.x, _look_y + EYE * ground_view, target.z)
 	var offset := Vector3(sin(yaw) * cos(pitch), sin(pitch), cos(yaw) * cos(pitch)) * distance
 	var pos := look + offset
@@ -461,16 +492,55 @@ func apply() -> void:
 	# the canopy rather than sitting in the leaves (forest.gd's sight lines).
 	# Last, so it wins over the oblique limit above: leaves are worse than a
 	# steeper view.
+	# What the lens needs: the height clear of the leaves, then (street to town)
+	# short of the first building in the way. The lens eases to it, the one ease
+	# on the lens, at the same rate whatever the frame rate; it snaps only if
+	# easing would leave it standing inside a building.
 	var woods = terrain.get("forest") if terrain else null
+	var need := Vector3.ZERO
 	if woods and woods.has_method("blocking"):
 		for k in 12:
-			if woods.blocking(pos, look) == 0:
+			if woods.blocking(pos + need, look) == 0:
 				break
-			pos.y += 0.3
-	if distance <= 4.0:  # street to town: the lens kept out of the buildings
-		pos = _clear(look, pos)
+			need.y += 0.3
+	if distance <= GUARD:
+		need = _clear(look, pos + need) - pos
+		# A clear spot on the far side of a building is reached over its roof,
+		# never through it: first up until the way across is open.
+		var from := pos + _fix
+		if _hit >= 0.0 and _walled(from, pos + need):
+			var up := 0.1
+			while up < 3.0 and _walled(from + Vector3(0, up, 0), pos + need + Vector3(0, up, 0)):
+				up += 0.1
+			need = _fix + Vector3(0, up, 0)
+	if _hit < 0.0:
+		_fix = need
+		_hit = 0.0
 	else:
-		_hit = -1.0
+		var step := (need - _fix) * (1.0 - exp(-get_process_delta_time() * LENS_EASE))
+		# And never faster than the view can follow: a long way to clear is taken
+		# over several frames, at most LENS_SPEED camera-distances a second.
+		_fix += step.limit_length(distance * LENS_SPEED * get_process_delta_time())
+		# Never left inside a building: then it steps out the shortest way, up over
+		# the roof or toward the clear spot only as far as it must, never all at once.
+		if distance <= GUARD and _inside(pos + _fix):
+			lens_snaps += 1
+			var lo := 0.0
+			var hi := 1.0
+			for i in 6:
+				var mid := (lo + hi) * 0.5
+				if _inside(pos + _fix.lerp(need, mid)):
+					lo = mid
+				else:
+					hi = mid
+			var toward := _fix.lerp(need, hi)
+			# Or up over the roof, if that's the shorter way out.
+			var up := 0.0
+			while up < 2.0 and _inside(pos + _fix + Vector3(0, up, 0)):
+				up += 0.04
+			_fix = _fix + Vector3(0, up, 0) if up < 2.0 and up < (toward - _fix).length() else toward
+	_lag = (need - _fix).length()
+	pos += _fix
 	cam.fov = lerpf(45.0, 62.0, ground_view)  # wider on the ground, as a person sees
 	cam.global_position = pos
 	cam.look_at(look + Vector3(0, distance * 0.02 * (1.0 - ground_view), 0), Vector3.UP)
