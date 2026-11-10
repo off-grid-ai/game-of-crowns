@@ -1149,20 +1149,9 @@ func _rank_houses(players: Array, fallen: Array = []) -> void:
 
 func _build_court() -> void:
 	_court_panel = _card(_glass_panel())
-	# The court is the one thing on screen while it sits (a modal, as in CK3 and
-	# Civ): the ledger and chronicle step aside and come back when it closes.
-	_court_panel.visibility_changed.connect(func():
-		if _court_panel.visible:
-			_court_hid = []
-			for pnl in [_houses_panel, _chron_panel]:
-				if pnl and (pnl as CanvasItem).visible:
-					(pnl as CanvasItem).visible = false
-					_court_hid.append(pnl)
-		else:
-			for pnl in _court_hid:
-				if is_instance_valid(pnl) and not _cinema_on:
-					(pnl as CanvasItem).visible = true
-			_court_hid = [])
+	# The court is the one thing that matters while it sits (a modal, as in CK3
+	# and Civ): drawn above every panel and the minimap, which stay where they are.
+	_court_panel.z_index = 20
 	_court_panel.anchor_left = 0.5
 	_court_panel.anchor_right = 0.5
 	_court_panel.offset_left = -330
@@ -2265,7 +2254,6 @@ func _epilogue_stop() -> void:
 var _epilogue_hid: Array = []  # the bars, minimap and pad put away for the flight
 
 
-var _court_hid: Array = []  # panels the sitting court set aside, to bring back
 var _epilogue_keys := false  # while a telling is up, any key moves it on
 
 
