@@ -514,7 +514,8 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 	if drop.call("ph/stone_fire_pit", well, rng.randf() * TAU):
 		places["well"] = well
 	var stall := Real.footprint("medieval_market_asset_pack")
-	var stalls := 1 + (1 if size >= 6 else 0) + (1 if seat or size >= 10 else 0)
+	# A market the King built fills the square with two more stalls.
+	var stalls := 1 + (1 if size >= 6 else 0) + (1 if seat or size >= 10 else 0) + (2 if "Marketplace" in root.get_meta("buildings", []) else 0)
 	var arc := square_r * 0.8
 	var step := (stall.x * 1.08) / arc
 	var clutter: Array = Real.names_of("clutter").filter(func(n): return n != "ph/stone_fire_pit" and n != "ph/wooden_ladder")
@@ -763,6 +764,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	root.position = center
 	var size := int(c["size"])
 	var buildings: Array = c["buildings"]
+	root.set_meta("buildings", buildings)  # what the square shows of them (a market's extra stalls)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(c["id"]) * 7919
 	var color := Color.from_string(String(house.get("color", "#888888")), Color.GRAY)

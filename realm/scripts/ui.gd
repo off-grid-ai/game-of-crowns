@@ -563,6 +563,13 @@ func _build_top_bar() -> void:
 	_last_act.add_theme_color_override("font_color", T.ACCENT)  # gold: what needs him; red is only for loss
 	_last_act.visible = false
 	who.add_child(_last_act)
+	# The King's own aim, always before him: what to do next, in gold.
+	_aim = Label.new()
+	_aim.add_theme_font_size_override("font_size", 14)
+	_aim.add_theme_color_override("font_color", T.ACCENT)
+	_aim.mouse_filter = Control.MOUSE_FILTER_PASS
+	_aim.visible = false
+	who.add_child(_aim)
 	when.add_child(who)
 	# Click the date and the story's line for the story so far.
 	var date_pill := when.get_parent() as Control
@@ -863,7 +870,7 @@ func _build_town_panel() -> void:
 	v.add_child(build)
 	_fund_label = T.label("Fund  18k cr")
 	build.add_child(_fund_label)
-	for pair in [["Sept", "temple"], ["Granary", "granary"], ["Walls", "walls"], ["Market", "market"], ["Aqueduct", "aqueduct"]]:
+	for pair in [["Sept", "temple"], ["Granary", "granary"], ["Walls", "walls"], ["Market", "market"], ["Barracks", "barracks"], ["Aqueduct", "aqueduct"]]:
 		var bld: String = pair[1]
 		_build_btns[bld] = _btn(pair[0], func(): decree.emit("build", bld, -1))
 		build.add_child(_build_btns[bld])
@@ -2052,6 +2059,8 @@ var _heading: HBoxContainer  # the three readings and the name being earned, und
 var _ways := {}  # reading -> its arrow
 var _earning: Label
 var _last_act: Label  # the last act's threat, named at three quarters of the reign
+var _aim: Label  # the royal ladder's current aim
+var _aim_told := ""  # the last aim met, toasted once
 var _last_act_told := ""
 
 
@@ -2085,6 +2094,16 @@ func _show_heading(r: Dictionary) -> void:
 			tip.append("  %s %s" % ["◆" if done else "◇", String((a as Dictionary).get("text", ""))])
 		_earning.text += "   " + marks
 	_heading.tooltip_text = "\n".join(tip)
+	# The royal ladder: the aim before him, and a cheer when one is met.
+	var aim = r.get("aim")
+	_aim.visible = aim is Dictionary
+	if aim is Dictionary:
+		_aim.text = "◆ %s" % String(aim.get("text", ""))
+		_aim.tooltip_text = "%s\nAim %d of %d" % [String(aim.get("how", "")), int(aim.get("n", 0)), int(aim.get("of", 0))]
+	var done = r.get("aimDone")
+	if done != null and String(done) != _aim_told:
+		_aim_told = String(done)
+		toast("Done: %s." % String(done))
 	# The act just gone, told back at each quarter of the reign: the realm waits for him.
 	var il = r.get("interlude")
 	var il_key := "%s:%d" % [String(r.get("id", "")), int(il.get("q", 0))] if il is Dictionary else ""
@@ -2707,7 +2726,20 @@ func _price(action: String, fallback: int) -> String:
 var _build_btns := {}  # build key -> its button on the town card
 var _fund_label: Label
 # The engine's name for each building the King can fund (an aqueduct may be "Aqueduct, Lake").
-const BUILT_AS := {"temple": "Temple", "granary": "Granary", "walls": "City Walls", "market": "Marketplace", "aqueduct": "Aqueduct"}
+const BUILT_AS := {"temple": "Temple", "granary": "Granary", "walls": "City Walls", "market": "Marketplace", "aqueduct": "Aqueduct", "barracks": "Barracks"}
+
+
+## The royal host's chances against a town, as a captain would put them.
+func _forecast(odds: float) -> String:
+	if odds >= 0.75:
+		return "they'd break before us"
+	if odds >= 0.58:
+		return "we'd likely take it"
+	if odds >= 0.42:
+		return "about even"
+	if odds >= 0.25:
+		return "they'd likely hold"
+	return "we'd be thrown back"
 
 
 func _name_decrees(c: Dictionary, house: Dictionary) -> void:
@@ -2720,6 +2752,14 @@ func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 		any_left = any_left or _build_btns[k].visible
 	if _fund_label:
 		_fund_label.visible = any_left
+		_fund_label.text = "Fund  %s" % _price("build", 18000)
+	# The King's own works under way: the site rising, nothing else funded here till it stands.
+	if c.get("royal", false):
+		for k in _build_btns:
+			_build_btns[k].visible = false
+		if _fund_label:
+			_fund_label.visible = true
+			_fund_label.text = "The King's %s rising  ·  %d%%" % [String(c.get("building", "work")).to_lower(), int(float(c.get("progress", 0)) * 100)]
 	var town := String(c.get("title", c["name"]))
 	var lord := String(house.get("name", "")).replace("House ", "")
 	var mine: bool = house.get("crown", false)
@@ -2733,7 +2773,7 @@ func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 		"banners": ("Call the banners  " + _price("banners", 5000) + "  ·  loyal houses send men") if seat else "",
 		# Politics with teeth: an oath that binds a house to the crown's wars, and the royal host.
 		"alliance": "" if mine or _town_player.get("sworn") != null else "Swear an alliance with %s  %s" % [lord, _price("alliance", 20000)],
-		"march": "" if mine or (_town_player.get("besieged", []) as Array).has(int(c["id"])) else "March on %s  %s" % [town, _price("march", 25000)],
+		"march": "" if mine or (_town_player.get("besieged", []) as Array).has(int(c["id"])) else "March on %s  %s  ·  %s" % [town, _price("march", 25000), _forecast(float(c.get("odds", 0.5)))],
 	}
 	_marriage_menu.text = "Arrange a marriage with…  " + _price("marriage", 40000)
 	# A decree the purse can't pay is greyed, and says why and what to do.

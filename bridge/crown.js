@@ -28,7 +28,7 @@ let bannersCalled = -99;
 // Whether the houses would answer the banners now (once a year).
 export const bannersReady = (turn) => turn - bannersCalled >= 4;
 
-const BUILDABLE = { temple: "Temple", granary: "Granary", walls: "City Walls", market: "Marketplace", aqueduct: "Aqueduct" };
+const BUILDABLE = { temple: "Temple", granary: "Granary", walls: "City Walls", market: "Marketplace", aqueduct: "Aqueduct", barracks: "Barracks" };
 
 function crownOf(world) {
   return world?.players?.find((p) => houseFor(p).crown);
@@ -187,6 +187,13 @@ export function decree(cmd, world) {
       const thing = what.endsWith("s") ? `new ${what}` : `${/^[aeiou]/.test(what) ? "an" : "a"} ${what}`;
       // In the King's own town the crown builds for itself: nobody to thank.
       const own = houseFor(owner).crown;
+      // The King's own works rise over two seasons on the town's site (server.js royal works);
+      // a house's town builds the gift at once.
+      if (own) return {
+        cost, favour: {},
+        text: `The King's masons break ground on ${thing} in ${town}. It will stand in two seasons.`,
+        lua: [pay], work: { city: c.id, building: b },
+      };
       return {
         cost, favour: own ? {} : { [owner.id]: 8 },
         text: own ? `The King raises ${thing} in ${town} at the crown's cost.` : `The crown pays for ${thing} in ${town}. ${lord} is grateful.`,

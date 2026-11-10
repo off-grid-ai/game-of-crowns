@@ -1266,30 +1266,43 @@ function startCampaign({ city, house }) {
   scene("siege", { x: at.x, y: at.y, city, owner: world.players.find((p) => houseFor(p).crown)?.id, defender: house });
 }
 
-// Each season: a host that has stood three seasons before a town takes it or breaks.
+// The royal host's chance against a house's town, the same reckoning the
+// forecast shows and the outcome uses: our companies (and sworn allies') against
+// what the house can bring to one town; winter favours whoever holds the walls.
+function marchOdds(house, allies = []) {
+  const crown = world?.players?.find((p) => houseFor(p).crown);
+  const foe = world?.players?.find((p) => p.id === house);
+  if (!crown || !foe) return 0;
+  const allyMen = allies.reduce((t, id) => t + (world.players.find((p) => p.id === id)?.units ?? 0) * 0.25, 0);
+  const ours = (crown.units ?? 0) + allyMen;
+  const theirs = (foe.units ?? 0) * 0.6;  // a house can't bring every company to one town
+  const winter = calendar(world.turn).season === "winter" ? 0.8 : 1;
+  return (ours * winter) / Math.max(1, ours * winter + theirs);
+}
+
+// Each season: a host that has stood two seasons before a town takes it or breaks.
 function resolveCampaigns(turn) {
   for (const c of [...(meta.campaigns ?? [])]) {
-    if (turn - c.turn < 3) continue;
+    if (turn - c.turn < 2) continue;
     meta.campaigns = meta.campaigns.filter((x) => x !== c);
     const town = world.cities.find((x) => x.id === c.city);
     const crown = world.players.find((p) => houseFor(p).crown);
     const foe = world.players.find((p) => p.id === c.house);
     if (!town || !crown || !foe) continue;
     if (town.owner !== c.house) { record({ turn, kind: "decree", text: `The royal host stands down before ${cityName(c.city)}: it is no longer ${houseFor(foe).name}'s to take.`, city: c.city }); continue; }
-    const allyMen = (c.allies ?? []).reduce((t, id) => t + (world.players.find((p) => p.id === id)?.units ?? 0) * 0.25, 0);
-    const ours = (crown.units ?? 0) + allyMen;
-    const theirs = (foe.units ?? 0) * 0.6;  // a house can't bring every company to one town
-    const odds = ours / Math.max(1, ours + theirs);
+    const odds = marchOdds(c.house, c.allies ?? []);
+    // Why it went as it did, in one line: our companies against theirs, and the season.
+    const why = `${crown.units ?? 0} royal companies against ${houseFor(foe).name}'s ${foe.units ?? 0}${calendar(turn).season === "winter" ? ", in the cold of winter" : ""}.`;
     if (Math.random() < odds) {
       send(`lua cmd local t = find.city(nil, ${c.city}); local to; for p in players_iterate() do if p.id == ${crown.id} then to = p end end; if t and to then edit.transfer_city(t, to) end`);
       shiftFavour({ [c.house]: -20 }, "the royal host");
       shiftFavour(Object.fromEntries((c.allies ?? []).map((id) => [id, 6])), "the royal host");
-      record({ turn, kind: "sack", text: `${cityName(c.city)} falls to the royal host. ${houseFor(foe).name} has learned what the crown's anger costs.`, city: c.city });
+      record({ turn, kind: "sack", text: `${cityName(c.city)} falls to the royal host: ${why} ${houseFor(foe).name} has learned what the crown's anger costs.`, city: c.city });
     } else {
       send(`lua cmd local n = 0; for p in players_iterate() do if p.id == ${crown.id} then for u in p:units_iterate() do if n < 5 and u.utype:rule_name() ~= "Workers" then edit.unit_kill(u, "killed", nil); n = n + 1 end end end end`);
       shiftFavour(Object.fromEntries(greatHouses().filter((p) => p.id !== c.house).map((p) => [p.id, -3])), "the royal host");
       shiftFavour({ [c.house]: -10 }, "the royal host");
-      record({ turn, kind: "battle", text: `The royal host breaks against the walls of ${cityName(c.city)}. ${houseFor(foe).name} holds, and the realm sees a King who can be refused.`, city: c.city });
+      record({ turn, kind: "battle", text: `The royal host breaks against the walls of ${cityName(c.city)}: ${why} ${houseFor(foe).name} holds, and the realm sees a King who can be refused.`, city: c.city });
     }
   }
   chron.saveMeta(meta);
@@ -1337,11 +1350,40 @@ function restingFavour(p) {
 const tally = { total: 0, upkeep: 0 };  // the tithe since the last reckoning
 const lastSeason = { net: 0 };  // the tithe less upkeep, this season, for the top bar
 const favourPast = {};  // turn -> {house id: favour}, the last two years
+// The King's own works: what he funds in a royal town rises over two seasons
+// (shown as a building site), then stands and works for him: a market brings
+// coin each season, a barracks a company each year, a granary feeds the town.
+const WORK_SEASONS = 2;
+function royalWorks(turn) {
+  const crown = crownOf();
+  if (!crown) return;
+  for (const [cid, w] of Object.entries(meta.works ?? {})) {
+    w.left -= 1;
+    w.since = Date.now();
+    if (w.left > 0) continue;
+    const c = world.cities.find((x) => x.id === Number(cid));
+    delete meta.works[cid];
+    if (!c || c.owner !== crown.id) continue;
+    send(`lua cmd local c = find.city(nil, ${c.id}); local b = find.building_type("${w.building}"); if c and b and not c:has_building(b) then edit.create_building(c, b) end`);
+    record({ turn, kind: "works", text: `The King's ${w.building.toLowerCase()} stands finished in ${cityName(c.id)}.`, city: c.id });
+    scene("feast", { x: c.x, y: c.y, city: c.id, owner: c.owner });
+  }
+  // What his finished works bring in.
+  const mine = world.cities.filter((x) => x.owner === crown.id);
+  const markets = mine.filter((x) => (x.buildings ?? []).includes("Marketplace")).length;
+  if (markets) send(`lua cmd for p in players_iterate() do if p.id == ${crown.id} then edit.change_gold(p, ${markets * 40}) end end`);
+  if (turn % 4 === 0) for (const x of mine.filter((y) => (y.buildings ?? []).includes("Barracks"))) {
+    send(`lua cmd local c = find.city(nil, ${x.id}); if c then edit.create_unit(c.owner, c.tile, find.unit_type("Pikemen"), 1, c, -1) end`);
+  }
+  chron.saveMeta(meta);
+}
+
 function collectTithe(turn) {
   flushHeld();  // last season's grouped lines
   // The court sits each season (courtSeason).
   courtSeason(turn).catch((err) => console.error("court season:", err));
   if (!world) return;
+  royalWorks(turn);
   favourPast[turn] = { ...favour };
   resolveCampaigns(turn);
   // Old grievances and kindnesses fade (about half in five years), so the cause
@@ -1512,6 +1554,51 @@ const AMBITIONS = [
   { key: "grow", text: "Grow the realm by a fifth", met: () => meta.ambitionsFrom?.pop > 0 && (history.at(-1)?.pop ?? 0) >= meta.ambitionsFrom.pop * 1.2 },
   { key: "decrees", text: "Rule with a firm hand: twenty decrees in the King's name", met: () => chronicle.filter((e) => e.kind === "decree" && e.turn >= (meta.ambitionsFrom?.turn ?? 0)).length >= 20 },
 ];
+
+// The royal ladder: one aim always before the King, each with a reward he can
+// see in the realm, each leading to the next (build, then muster, then win a
+// house, then trade, then take land, then hold it). Checked every few seconds;
+// met, the reward lands at once and the next aim is named.
+const crownOf = () => world?.players?.find((p) => houseFor(p).crown);
+const crownSeat = () => { const c = crownOf(); return c ? world.cities.find((x) => x.owner === c.id && x.capital) ?? world.cities.find((x) => x.owner === c.id) : null; };
+const crownHas = (b, seatOnly = false) => { const c = crownOf(); return !!c && world.cities.some((x) => x.owner === c.id && (!seatOnly || x.capital) && (x.buildings ?? []).includes(b)); };
+const SOLDIER = (u) => !CIVILIAN.has(u.type);
+const LADDER = [
+  { key: "granary", text: "Raise a granary in Kingsmere", how: "Open Kingsmere's card and fund a granary.",
+    met: () => crownHas("Granary", true), reward: "feast", says: "Kingsmere's granary stands full. The town holds a harvest feast in the King's name." },
+  { key: "host", text: "Muster a royal host of twelve companies", how: "Raise the levy, or call the banners.",
+    met: () => (world.units ?? []).filter((u) => u.owner === crownOf()?.id && SOLDIER(u)).length >= 12, reward: "knights", says: "Twelve companies stand under the royal banner. Two knights ride in to join them, unasked." },
+  { key: "friend", text: "Win a great house to the Crown", how: "Favour a house until it stands at 70.",
+    met: () => world.players.some((p) => !houseFor(p).wild && !houseFor(p).crown && favourOf(p.id) >= 70), reward: "gold", says: "A great house swears itself to the Crown, and sends a chest of silver to prove it." },
+  { key: "market", text: "Raise a market in a royal town", how: "Fund a market in any town of the Crown.",
+    met: () => crownHas("Marketplace"), reward: "gold", says: "The royal market opens. Merchants come from three houses' lands to trade under the King's peace." },
+  { key: "town", text: "Bring a new town under the Crown", how: "March the royal host on a town, or win one by grant.",
+    met: () => { const c = crownOf(); return !!c && world.cities.filter((x) => x.owner === c.id).length > (meta.ladder?.towns ?? 99); }, reward: "feast", says: "A new town flies the royal banner. Its people line the road to see the King's men ride in." },
+  { key: "walls", text: "Wall Kingsmere against what comes", how: "Fund walls in Kingsmere.",
+    met: () => crownHas("City Walls", true), reward: "knights", says: "Stone walls ring Kingsmere. Let them come." },
+];
+
+function ladder() {
+  if (meta.status !== "running" || !world || !crownOf()) return;
+  // Aims already true when the reign begins are passed over: the King is never asked for what he has.
+  meta.ladder ??= { i: 0, towns: world.cities.filter((x) => x.owner === crownOf().id).length, skip: LADDER.filter((a) => a.key !== "town" && a.met()).map((a) => a.key) };
+  const l = meta.ladder;
+  while (l.i < LADDER.length && (l.skip ?? []).includes(LADDER[l.i].key)) l.i++;
+  const aim = LADDER[l.i];
+  if (!aim || !aim.met()) return;
+  const seat = crownSeat();
+  if (aim.reward === "feast" && seat) scene("feast", { x: seat.x, y: seat.y, city: seat.id, owner: seat.owner });
+  if (aim.reward === "knights" && seat) {
+    send(`lua cmd local c = find.city(nil, ${seat.id}); if c then for i = 1, 2 do edit.create_unit(c.owner, c.tile, find.unit_type("Knights"), 1, c, -1) end end`);
+    scene("muster", { x: seat.x, y: seat.y, tx: seat.x + 2, ty: seat.y + 1, city: seat.id });
+  }
+  if (aim.reward === "gold") send(`lua cmd for p in players_iterate() do if p.id == ${crownOf().id} then edit.change_gold(p, 250) end end`);
+  record({ turn: world.turn, kind: "aim", text: aim.says });
+  l.i++;
+  l.towns = world.cities.filter((x) => x.owner === crownOf().id).length;
+  l.just = { text: aim.text, at: Date.now() };
+  chron.saveMeta(meta);
+}
 
 function ambitions() {
   if (!meta.minutes || meta.status !== "running" || !world) return;
@@ -1725,6 +1812,7 @@ setInterval(() => {
   else {
     lastAct();
     ambitions();
+    ladder();
     council();
     interlude();
     if (meta.elapsedMs % 30000 === 0) chron.saveMeta(meta);
@@ -1769,7 +1857,7 @@ function reignInfo() {
     id: meta.id, name: meta.name, scenario: meta.scenario, status: meta.status, paused, minutes: meta.minutes,
     elapsedMs: meta.elapsedMs, remainingMs: meta.minutes > 0 ? Math.max(0, meta.minutes * 60000 - meta.elapsedMs) : null,
     score: meta.score, verdict: meta.verdict, title: meta.title, outcome: meta.outcome, ended: meta.endedAt,
-    epilogue: meta.epilogue ?? null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, readings: meta.status === "running" ? readings() : null,
+    epilogue: meta.epilogue ?? null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, aim: meta.ladder && LADDER[meta.ladder.i] ? { n: meta.ladder.i + 1, of: LADDER.length, text: LADDER[meta.ladder.i].text, how: LADDER[meta.ladder.i].how } : null, aimDone: meta.ladder?.just && Date.now() - meta.ladder.just.at < 8000 ? meta.ladder.just.text : null, readings: meta.status === "running" ? readings() : null,
     souls: world?.cities?.reduce((t, c) => t + soulsOf(c.size), 0) ?? 0,
   };
 }
@@ -1798,6 +1886,10 @@ http.createServer(async (req, res) => {
         plagueTurn: x.plagueTurn, celebrating: x.celebrating, disorder: x.disorder,
         building: x.building, buildingKind: x.buildingKind,
         progress: cost ? Math.min(1, x.shieldStock / cost) : 0,
+        ...(!houseFor(world.players.find((p) => p.id === c.owner)).crown ? { odds: Math.round(marchOdds(c.owner, greatHouses().filter((p) => p.id !== c.owner && sworn(p.id)).map((p) => p.id)) * 100) / 100 } : {}),
+        // The King's own works under way show as the town's building site, rising season by season.
+        ...(meta.works?.[c.id] ? { building: meta.works[c.id].building, buildingKind: "Building", royal: true,
+          progress: Math.min(0.99, (meta.works[c.id].seasons - meta.works[c.id].left + Math.min(1, (Date.now() - meta.works[c.id].since) / (turnSeconds * 1000))) / meta.works[c.id].seasons) } : {}),
       };
     });
     const units = world.units.map((u) => {
@@ -2022,6 +2114,7 @@ http.createServer(async (req, res) => {
     const endedU = stakes?.s.usurper.ended;
     if (endedU && !endedU.settled && ["feast", "grant", "ward"].includes(cmd.action) && world.cities.some((c) => c.id === Number(cmd.city) && c.owner === endedU.house)) { endedU.settled = true; stakes.save(); }
     result.lua.forEach((l) => send(`lua cmd ${l}`));
+    if (result.work) (meta.works ??= {})[result.work.city] = { building: result.work.building, seasons: WORK_SEASONS, left: WORK_SEASONS, since: Date.now() };
     // Spend now, so a second decree before the next snapshot can't overdraw the treasury.
     const crownNow = world.players.find((p) => houseFor(p).crown);
     if (crownNow) crownNow.gold -= result.cost;
