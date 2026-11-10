@@ -927,3 +927,4 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Also:** I opened the Off Grid app, so the local model is up (Omni 2B on 7878, and a line generated). Film round 5 films overheard talk with it.
 - **Next:** dead time on HEAD (reign playing now; target no gap over 90 s and under 10% dead), then skate and Kingsmere live.
 - **Verdict:** on course.
+- **Dead time on HEAD (39affc1):** longest stretch with nothing happening was 74 s (target ≤ 90 s, met), and 8% of the reign was in stretches over 60 s (target < 10%, met). The same reign: 1.33 decisions a minute, 89% quiet, the Hand 10 of 20, 9 petitioners, 20 of 20 placed, 9 pleas weighed. Decisions a minute move between 1.0 and 1.33 from reign to reign.
