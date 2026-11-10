@@ -12,6 +12,7 @@ import { cityName, houseFor } from "./narrator.js";
 import { decide } from "./claude.js";
 
 import { calendar } from "./stakes.js";
+import { ANSWERS } from "./petitions.js";
 
 // The court's deck of dilemmas: data, so new ones are written, not coded.
 const DECK_FILE = new URL("./data/dilemmas.json", import.meta.url);
@@ -1096,7 +1097,10 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     p.answered = option;
     const out = { cost: opt.cost ?? 0, favour: {}, lua: [], text: "" };
     const gold = (pid2, amount) => out.lua.push(`for p in players_iterate() do if p.id == ${pid2} then edit.change_gold(p, ${amount}) end end`);
-    if (p.kind === "arc") {
+    const handler = ANSWERS[p.kind];
+    if (handler) {
+      handler.call(this, { p, c, option, out, gold, world });
+    } else if (p.kind === "arc") {
       for (const [pid, n] of Object.entries(opt.favour ?? {})) out.favour[pid] = n;
       out.text = opt.result || `The King gives his answer: ${String(opt.label).toLowerCase()}.`;
       // The petitioner keeps the King's answer: it comes back in what they ask later.
@@ -1155,36 +1159,6 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       if (option === "oath") { out.favour[c.playerId] = 6; c.loyalty = Math.min(100, c.loyalty + 10); out.text = `${c.name} kneels and swears ${c.house} to the crown before the whole court.`; }
       if (option === "purse") { out.favour[c.playerId] = -4; gold(c.playerId, -60); const crown = world.players.find((x) => houseFor(x).crown); if (crown) gold(crown.id, 60); out.text = `${c.house} sends 60 gold to Kingsmere. ${c.name} had hoped for thanks, not a bill.`; }
       this.save(c);
-    } else if (p.kind === "siege") {
-      const town = cityName(p.city);
-      const them = houseFor(world.players.find((x) => x.id === p.besieger) ?? {}).name;
-      if (option === "relieve") {
-        out.favour[c.playerId] = 15; out.favour[p.besieger] = -20;
-        out.march = p.city;  // the bridge sends the royal host (its own march decree)
-        out.text = `The royal host marches to break the siege of ${town}.`;
-      }
-      if (option === "pay") {
-        out.favour[c.playerId] = 5; out.favour[p.besieger] = 5; out.cost = 200;
-        gold(p.besieger, 200);
-        const foeLord = this.lordOfHouse(p.besieger);
-        if (foeLord) this.makeTruce(c, foeLord, 8, world);  // Freeciv's ceasefire: their host goes home
-        out.text = `The crown's gold buys ${them} off. Their host leaves ${town}'s walls.`;
-      }
-      if (option === "abandon") {
-        out.favour[c.playerId] = -20;
-        for (const b of this.alive().filter((x) => x.rank === "bannerman" && x.playerId === c.playerId)) b.loyalty = Math.max(0, b.loyalty - 10);
-        out.text = `The King sends no one. ${town} is left to hold, or to fall.`;
-      }
-      this.remember(c.id, option === "abandon" ? `The King left ${town} to ${them}.` : `The King came to ${town}'s aid against ${them}.`);
-    } else if (p.kind === "grain") {
-      if (option === "grant") { out.favour[c.playerId] = 15; gold(c.playerId, 150); out.text = `The crown sends grain to ${c.house}.`; }
-      if (option === "order") { out.favour[p.donor] = -20; out.favour[c.playerId] = 10; gold(p.donor, -150); gold(c.playerId, 150); out.text = `By royal command, ${houseFor(world.players.find((x) => x.id === p.donor)).name} feeds the starving of ${c.house}, and resents every sack.`; }
-      if (option === "refuse") {
-        out.favour[c.playerId] = -15;
-        for (const b of this.alive().filter((x) => x.rank === "bannerman" && x.playerId === c.playerId)) b.loyalty = Math.max(0, b.loyalty - 15);
-        out.text = `The King refuses grain. In ${c.house}'s lands, the bannermen begin to talk.`;
-      }
-      this.remember(c.id, option === "refuse" ? "The King let my people starve." : "The King fed my people when they starved.");
     } else if (p.kind === "match") {
       const bride = this.people[p.bride];
       const groom = this.people[p.groom];
