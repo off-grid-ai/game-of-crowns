@@ -12,7 +12,16 @@ signal paid(cost: float)  # a decree went through and the treasury paid for it
 
 var _reign_id := ""
 
-const BASE := "http://127.0.0.1:8787"
+## The bridge's address: 8787, or another (--bridge=http://127.0.0.1:8850) for a
+## film or a check run against a bridge of its own.
+static var BASE: String = _base()
+
+
+static func _base() -> String:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--bridge="):
+			return a.substr(9)
+	return "http://127.0.0.1:8787"
 
 var world: Dictionary = {}
 var _last_seq := 0

@@ -61,12 +61,13 @@ func sync(world: Dictionary) -> void:
 		realm.set_var(&"turn", turn)
 		season_turned.emit(turn)
 	realm.set_var(&"turn", turn)
-	var date: Dictionary = world.get("date", {})
+	var date: Dictionary = _dict(world.get("date"))
 	realm.set_var(&"season", String(date.get("season", "")))
 	realm.set_var(&"hour", float(villagers.hour) if villagers else 12.0)
-	var readings: Dictionary = (world.get("reign", {}) as Dictionary).get("readings", {}) if world.get("reign") is Dictionary else {}
+	# /world sends readings: null outside a running reign, so each step checks its type.
+	var readings: Dictionary = _dict(_dict(world.get("reign")).get("readings"))
 	realm.set_var(&"king_name", String(readings.get("name", "")))
-	var crown: Dictionary = world.get("crown", {})
+	var crown: Dictionary = _dict(world.get("crown"))
 	realm.set_var(&"treasury", int(crown.get("treasury", 0)))
 	realm.set_var(&"tithe", float(crown.get("tithe", 0)) if crown.get("tithe") != null else 0.0)
 	var players := {}
@@ -118,6 +119,12 @@ func sync(world: Dictionary) -> void:
 		if kind == "rider" and int(s.get("owner", -2)) == crown_id:
 			kind = "king"  # the King's own rider: his banner passing
 		emit(kind, terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0))), house, float(s.get("strength", -1.0)))
+
+
+## A value from /world that should be a record: an empty one when it's missing or null
+## (outside a running reign the bridge sends nulls).
+static func _dict(v) -> Dictionary:
+	return v if v is Dictionary else {}
 
 
 ## One stimulus on the bus: every mind within its reach perceives it.

@@ -38,7 +38,7 @@ var _talks := {}  # town id -> Array of gatherings: {centre, members, move, kind
 var _talk_keys := 0  # each gathering's key, for chatter.gd to name it by
 # Minds (docs/MINDS.md): the bridge plans each commoner's day; the rules here
 # are the fallback until it has a plan for them.
-const BRIDGE: String = preload("res://scripts/bridge.gd").BASE
+var BRIDGE: String = preload("res://scripts/bridge.gd").BASE
 var _plans := {}  # town id -> {villager index: plan}
 var _asking := {}  # bridge path -> true while a request is out
 var _minds_at := 0.0
