@@ -546,3 +546,18 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Process slip:** two state proofs ran on one port. Rerun once, cleanly.
 - **Direction:** consolidation in the judge's order. C3 (builder 2 splitting server.js) blocks the state hooks and the film session.
 - **Verdict:** on course. The supervisor caught real bugs in a "done" feature, and they were fixed the same turn.
+
+## 2026-11-10, autopilot (the court's crisis pleas work; siege relief)
+
+- **Found and fixed:** the starving lord's grain plea never reached court. He already had a matter waiting uncalled in the hall, and the crisis loop skipped any lord with a matter waiting. The crisis now takes that matter's place. Proven directly against the baseline's court: the plea comes at the next sitting, once, and not again the season after.
+- **Built (the judge's ruling):** the siege-relief plea, with three answers:
+  - march the royal host;
+  - pay the besiegers 200 gold, which makes a truce through the one writer, so Freeciv's host goes home;
+  - let the town hold or fall.
+  - The answers are tagged in the ledger. All three were proven directly (2674fe2).
+- **Steer:**
+  - server.js stays frozen for builder 2's C3.
+  - My server changes went to builder 2 as a patch with its own proof script: per-town atWar, grasping, grief and prosperity in townStates; the new stage moods and the King's banner; the siege march from a ruling.
+  - Open debt (judge): the mirror's own reading of war, grief and prosperity is deleted when the patch lands.
+- **Slip:** a grep with an unmatched file pattern made the crisis call look lost. It wasn't, and nothing was sent on that false alarm.
+- **Verdict:** on course. The blind court is now fixed end to end for hunger, and sieges have a voice.
