@@ -594,3 +594,23 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - Builder 2 merged the round-2 hooks (epithet, staged soldiers, /test/grow) and --hour, fixed winter-without-snow, and asked for an autumn-to-winter strip (added as target "turn").
   - Round 2 runs straight after round 1's sheets: King Good and Cruel, wounded and fortified soldiers, a town growing, the court card over the truce reload, the land turning, a winter evening, Eve, and the perf check.
 - **Verdict:** on course. Films are the gate now; C1 waits on their frame-cost numbers.
+
+## 2026-11-10, autopilot (films judged; camera and dressing; perf hunt)
+
+- **Round 1 judged** (by the judge and by me):
+  - Only the feast and the stall read.
+  - The camera was high and steep because the rig never let a player closer than about 10 m, held the lens up to 1.5 above the ground and lifted it over roofs.
+  - The mood signatures were too subtle.
+  - The site was out of frame.
+- **Course correction** (the judge's ruling c):
+  - The player's camera gets a street-level zoom (min 0.5). It flattens toward eye level, staying oblique.
+  - Roofs are kept off the lens by Godot's SpringArm3D, against colliders built from each town's own footprints, replacing the hand-written lift.
+  - Each state gets scene dressing from the props kit: war (barricade, weapons, guards), hunger and grief (empty or shut stalls, mourners and candles), prosperity (full stalls, a lute), grasping (a tax table, collector, guard, queue).
+  - Both are written and compile, but are uncommitted until round 3 films them.
+- **B6 done:** all 12 petition kinds are in petitions.js, one commit each.
+- **Perf:**
+  - Minds off, no ruins: 41–42 fps, 31–35 ms process, spiking to 74.
+  - With ruins: 75–85 ms.
+  - Two minds-on runs are suspect (a stray Escape opened the menu), so they're re-run in round 3.
+  - The cycle breakdown is noisy (6 s per system); its first lead is scenes, at about 40 ms.
+- **Verdict:** off course on what a player sees (camera and readability). Corrected this turn; round 3 checks that it took.
