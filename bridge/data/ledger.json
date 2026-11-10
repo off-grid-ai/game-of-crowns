@@ -711,6 +711,25 @@
     "axes": {},
     "says": "the plot kept quiet and watched"
    }
+  },
+  "wet_harvest": {
+   "granaries": {
+    "axes": {
+     "mercy": 1,
+     "give": 1
+    },
+    "says": "the royal granaries opened in the wet year"
+   },
+   "abroad": {
+    "axes": {},
+    "says": "the grain bought from across the sea"
+   },
+   "tithe": {
+    "axes": {
+     "give": -1
+    },
+    "says": "the tithe taken from a drowned harvest"
+   }
   }
  },
  "court": {

@@ -487,5 +487,20 @@
         "effects": { "favour": { "me": 5 } },
         "text": "The King thanks {me} and burns the letter. The court never hears of it." }
     ]
+  },
+  {
+    "id": "wet_harvest", "weight": 4, "when": { "wetHarvest": true },
+    "text": "{me} of {me.house} comes in a wet cloak: \"The rain has not stopped since the sowing, Your Grace. The wheat at {town} rotted in the sheaves. My people will be hungry before the spring.\"",
+    "options": [
+      { "id": "granaries", "label": "Open the royal granaries to {me.house} (150 gold)", "cost": 150, "hint": "{me.house} +12 · every house +2 · the crown's stores grow thin",
+        "effects": { "favour": { "me": 12, "all": 2 }, "memory": { "me": "In the drowned year the King opened his granaries to my people." } },
+        "text": "Royal wagons carry grain to {town}. {me.house} will not forget who fed them in the wet year." },
+      { "id": "abroad", "label": "Let them buy grain from across the sea", "hint": "{me.house} pays 100 gold · {me.house} +3",
+        "effects": { "gold": { "me": -100 }, "favour": { "me": 3 } },
+        "text": "Ships bring grain to {town} at a merchant's price. {me.house} pays, and grumbles, and eats." },
+      { "id": "tithe", "label": "The tithe stands, harvest or no", "hint": "{me.house} −10 · they remember the wet year",
+        "effects": { "favour": { "me": -10 }, "memory": { "me": "The crown took its tithe from a drowned harvest." } },
+        "text": "The King's tax-men go to {town} as in any year. {me} watches them load the carts in silence." }
+    ]
   }
 ]

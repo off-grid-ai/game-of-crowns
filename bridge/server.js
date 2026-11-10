@@ -32,6 +32,7 @@ import { Chatter } from "./chatter.js";
 import { bible, FAMILIES, LESSER } from "./lore.js";
 import { Stakes, calendar } from "./stakes.js";
 import * as kingDeeds from "./ledger.js";
+import * as Weather from "./weather.js";
 import * as Realm from "./realm.js";
 import { BANDS } from "./favour.js";
 import * as Freeciv from "./freeciv.js";
@@ -139,6 +140,7 @@ function load(id) {
   // come from its own file, never from the realm open before it.
   scenes = [];
   arrivals.clear();
+  if (world) Weather.advance(meta, Number(world.turn ?? 0), calendar(Number(world.turn ?? 0)).season);  // its sky at once
   effects.length = 0;
   effects.push(...chron.readJson(path.join(P.state, "effects.json"), []));
   effectSeq = effects.reduce((m, e) => Math.max(m, Number(e.seq) || 0), 0);
@@ -582,6 +584,8 @@ function onEvent(line) {
     collectTithe(Number(ev.turn));
     setTimeout(() => stakes?.tick(Number(ev.turn), world, { favour: favourOf, sworn, shift: shiftFavour, send: (l) => send(`lua cmd ${l}`), watched: isWatched(), options: meta.options ?? {}, mayRise, ultimatum: askUltimatum, rose }), 2000);
     if (Number(ev.turn) % 4 === 0) setTimeout(runSeason, 2500);
+    // The season's weather, rolled once as the season turns (weather.js, from the reign's seed).
+    Weather.advance(meta, Number(ev.turn), calendar(Number(ev.turn)).season);
     setTimeout(() => runArcs(1), 4000);
     // Let the AI finish its start-of-turn moves before dumping the world.
     setTimeout(snapshot, 1500);
@@ -638,7 +642,7 @@ async function runSeason() {
   if (!world || seasonRunning || !court) return;
   seasonRunning = true;
   try {
-    await court.season(world, { favour: favourOf, cause: causeOf, warded: (pid) => (stakes?.s.wards?.[pid] ?? -1) > (world?.turn ?? 0) || sworn(pid), send: (l) => send(`lua cmd ${l}`), shift: shiftFavour, watched: isWatched(), options: meta.options ?? {}, ...heardCtx(), mayRise, rose });
+    await court.season(world, { wetHarvest: () => Weather.wetHarvest(meta.weather), favour: favourOf, cause: causeOf, warded: (pid) => (stakes?.s.wards?.[pid] ?? -1) > (world?.turn ?? 0) || sworn(pid), send: (l) => send(`lua cmd ${l}`), shift: shiftFavour, watched: isWatched(), options: meta.options ?? {}, ...heardCtx(), mayRise, rose });
   } catch (err) {
     console.error("season:", err);
   } finally {

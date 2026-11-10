@@ -903,6 +903,8 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     if (w.trait && !w.trait.some((t) => c.traits.includes(t))) return null;
     if (w.favourBelow !== undefined && ctx.favour(c.playerId) >= w.favourBelow) return null;
     if (w.favourAbove !== undefined && ctx.favour(c.playerId) <= w.favourAbove) return null;
+    // A wet harvest (bridge weather.js): only after two wet seasons running, or a storm at harvest.
+    if (w.wetHarvest && !ctx.wetHarvest?.()) return null;
     if (w.age && (c.age < w.age[0] || c.age > w.age[1])) return null;
     if (w.chance !== undefined && Math.random() > w.chance) return null;
     // The realm's own state (the bridge's one definitions on each town; Freeciv's wars):
