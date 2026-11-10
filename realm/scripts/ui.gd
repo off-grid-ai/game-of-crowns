@@ -2757,8 +2757,9 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 			# Which way they're going: "37 ▼10" over the last year, so a drift shows
 			# before it becomes a rising.
 			var trend := int(p.get("favourTrend", 0))
-			var lead := ("%s %d  " % ["▲" if trend > 0 else "▼", absi(trend)]) if absi(trend) >= 3 else ""
-			fav.text = lead + "%d" % f
+			# The drift follows the number it belongs to ("54 ▼13"), so it never reads as a column of its own.
+			var lead := ("  %s%d" % ["▲" if trend > 0 else "▼", absi(trend)]) if absi(trend) >= 3 else ""
+			fav.text = "%d" % f + lead
 			grid.add_child(fav)
 			# Every decision is seen (UI rule 13): a favour that moved counts to its
 			# new value and glows gold if it rose, red if it fell.
@@ -2767,7 +2768,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 			_fav_seen[pid] = f
 			if was != f:
 				var tw := fav.create_tween()
-				tw.tween_method(func(v: float): fav.text = lead + "%d" % roundi(v), float(was), float(f), 1.2)
+				tw.tween_method(func(v: float): fav.text = "%d" % roundi(v) + lead, float(was), float(f), 1.2)
 				fav.modulate = Color(1.9, 1.5, 0.6) if f > was else Color(2.0, 0.6, 0.55)
 				fav.create_tween().tween_property(fav, "modulate", Color.WHITE, 3.0).set_delay(0.6)
 		else:
