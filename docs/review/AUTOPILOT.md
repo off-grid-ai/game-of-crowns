@@ -65,7 +65,7 @@ props), proven in the game. The order after that waits on Mac's call: a played-a
 a rethink of what the player does each minute, or both.
 
 ## Queued after the friction pass and the townsfolk swap
-- **Houses with a past** (Mac approved, via the research thread; brief: shared notes, houses-with-a-past.md).
+- **Houses with a past** (Mac approved, via the research thread; brief: ~/Library/Application Support/Claude-3/side-session-notes/local_e8367eb4-4daa-4dee-8757-6ee011aaff31/houses-with-a-past.md).
   Rule: **tell only what the world can show.** Each beat names a picture we already render, and the camera
   can go there. The house words go under the banner, and the old wrong is marked on the land where it
   happened (look in the asset kits for a ruin first). No more chronicle text, no lore page.
