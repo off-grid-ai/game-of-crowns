@@ -166,6 +166,37 @@ func _reground(life: Node3D, center: Vector3) -> void:
 var _people = preload("res://scripts/people.gd").new()
 
 
+## A drill is a routine, not one move on a loop: each recruit works through
+## cuts, blocks and thrusts (or draw, aim and loose) at his own pace, standing
+## easy between, so no two in the ranks move alike and none repeats for long.
+const DRILL_SWORD := ["SS_Slash_1", "SS_Block_Idle", "SS_Slash_4", "Spear_Thrust", "SS_Attack_3", "Sword_Idle"]
+const DRILL_BOW := ["Bow_Draw", "Bow_Aim", "Bow_Shoot", "Sword_Idle"]
+
+func _drill_routine(s: Node3D, bow: bool, seed: int) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed
+	var moves: Array = DRILL_BOW if bow else DRILL_SWORD
+	var t := Timer.new()
+	t.one_shot = true
+	s.add_child(t)
+	var i := [rng.randi() % moves.size()]
+	var once := preload("res://scripts/motion.gd")
+	var next := func() -> void:
+		if not is_instance_valid(s):
+			return
+		# Archers keep the bow's order (draw, aim, loose); swordsmen vary, and
+		# every few moves stand easy for a breath.
+		i[0] = (i[0] + 1) % moves.size() if bow else rng.randi() % moves.size()
+		var move: String = moves[i[0]]
+		if once.is_once(move):
+			_people.repeat(s, move)
+		else:
+			_people.play(s, move)
+		t.start(rng.randf_range(2.2, 4.5) if move != "Sword_Idle" else rng.randf_range(1.5, 3.0))
+	t.timeout.connect(next)
+	t.start(rng.randf_range(0.5, 4.0))
+
+
 func _townsperson(parent: Node3D, pos: Vector3, role: String, anim: String, seed: int, tint := Color.WHITE) -> Node3D:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
@@ -349,6 +380,7 @@ func _drill(root: Node3D, life: Node3D, center: Vector3, progress: float, color:
 			var drill: String = (["Bow_Draw", "Bow_Aim", "Bow_Shoot"][i % 3]) if unit.contains("Archer") or unit.contains("bow") else (["Sword_Idle", "SS_Slash_1", "SS_Block_Idle", "SS_Slash_4", "Spear_Thrust", "SS_Attack_3"][(i + hash(unit)) % 6])
 			var s := _townsperson(life, p, "soldier", drill, hash(unit) + i, color.lerp(Color.WHITE, 0.35))
 			s.rotation.y = atan2(face.x, face.z)
+			_drill_routine(s, unit.contains("Archer") or unit.contains("bow"), hash(unit) + i)
 			taken.append(Vector2(p.x, p.z))
 		life.set_meta("standing", taken)
 		# The ranks are one block to walk round, not a lane to thread.
