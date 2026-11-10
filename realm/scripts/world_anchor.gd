@@ -82,6 +82,11 @@ func _place(card: Control) -> void:
 	if float(_pins[card][2]) > 0.0:
 		var side := cam.unproject_position(at + cam.global_transform.basis.x * float(_pins[card][2]))
 		half = absf(side.x - p.x)
-	var x := p.x + half + GAP if p.x + half + GAP + size.x <= screen.x - EDGE else p.x - half - GAP - size.x
+	# On the side with more room, so the card stands over open ground, never over its place.
+	var right_room := screen.x - EDGE - (p.x + half + GAP)
+	var left_room := p.x - half - GAP - EDGE
+	var x := p.x + half + GAP if right_room >= size.x and right_room >= left_room else p.x - half - GAP - size.x
+	if x < EDGE and right_room >= size.x:
+		x = p.x + half + GAP
 	var y := p.y - size.y * 0.5
 	card.position = Vector2(clampf(x, EDGE, screen.x - size.x - EDGE), clampf(y, 64.0, screen.y - size.y - EDGE))

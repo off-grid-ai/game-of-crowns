@@ -1167,6 +1167,16 @@ func _show_audience() -> void:
 	court._show_audience()
 
 
+## A matter opened by its face on the map (court_panel.gd): also the harness's call.
+func open_matter(id: String) -> void:
+	court.open_matter(id)
+
+
+## The faces on the map now: matter id -> screen point (for a film's harness to click).
+func court_markers() -> Dictionary:
+	return court.markers()
+
+
 func set_decrees(list: Array) -> void:
 	houses_drawer.set_decrees(list)
 

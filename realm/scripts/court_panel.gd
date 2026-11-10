@@ -155,14 +155,14 @@ func _mark(petitions: Array) -> void:
 		if at == Vector3.INF:
 			continue
 		var m := ui.btn("!", func(): open_matter(String(id)))
-		m.custom_minimum_size = Vector2(30, 30)
+		m.custom_minimum_size = Vector2(36, 36)
 		m.add_theme_color_override("font_color", T.DANGER if p.get("crisis", false) else T.ACCENT)
 		# A petitioner's own face at the place (Reigns' faces on the map), framed in
 		# their house's colour; the Hand's matters keep the plain mark.
 		var sitter = p.get("who")
 		var house: Dictionary = ui.house_by_name.get(String(p.get("house", "")), {})
 		if p.get("petitioner") != null and sitter is Dictionary and ui.portrait.is_valid():
-			m.custom_minimum_size = Vector2(36, 50)
+			m.custom_minimum_size = Vector2(44, 60)  # a face to press, not a pin
 			m.expand_icon = true
 			m.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			var frame := StyleBoxFlat.new()
@@ -190,6 +190,16 @@ func _mark(petitions: Array) -> void:
 		ui.root.add_child(m)
 		ui.anchor.pin(m, at + Vector3(0, 0.6, 0), false)
 		_markers[id] = m
+
+
+## The faces on the map, for a film's harness: matter id -> where its marker stands on screen.
+func markers() -> Dictionary:
+	var out := {}
+	for id in _markers:
+		var m: Control = _markers[id]
+		if is_instance_valid(m) and m.is_visible_in_tree() and m.modulate.a > 0.0:
+			out[id] = m.get_global_rect().get_center()
+	return out
 
 
 ## A matter opened from its marker: the King looks at its place (his own click,
