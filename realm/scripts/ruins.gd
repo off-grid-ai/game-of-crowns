@@ -9,6 +9,11 @@ const STUMPS := ["ph/tree_stump_01", "ph/tree_stump_02"]
 const CHAR := Color(0.22, 0.19, 0.17)  # the stump's own wood, blackened
 const RUINS := ["abbey_wall_ruins", "abbey_ruins"]  # the razed town's walls, when the kit holds them
 const RUBBLE := "rubble_pile"
+# How soon each takes the lighter versions Godot built for it (realistic.gd's
+# generate_lods): a stump a metre tall, of 40-60k triangles, needs its full detail
+# only right under the lens; the ruins a little later. Lower is coarser sooner.
+const STUMP_LOD_BIAS := 0.15
+const RUIN_LOD_BIAS := 0.4
 
 var terrain: Node3D
 var _shown := {}  # mark key -> Node3D
@@ -85,11 +90,13 @@ func _place(kind: String, tx: int, ty: int, burning: bool) -> Node3D:
 			terrain.clear_around(p, 1.2)
 			r.position = Vector3(p.x, terrain.height_at(p.x, p.z) - 0.05, p.z)
 			r.rotation.y = rng.randf() * TAU
+			_coarse(r, RUIN_LOD_BIAS)
 			node.add_child(r)
 		var rubble: Node3D = kit.make(RUBBLE) if kit.KIT.has(RUBBLE) else null
 		if rubble:
 			rubble.position = Vector3(at.x, terrain.height_at(at.x, at.z) - 0.03, at.z)
 			rubble.rotation.y = rng.randf() * TAU
+			_coarse(rubble, RUIN_LOD_BIAS)
 			node.add_child(rubble)
 	return node
 
@@ -102,6 +109,7 @@ func _stump(name: String) -> Node3D:
 		return null
 	for mi in s.find_children("*", "MeshInstance3D", true, false):
 		var m: MeshInstance3D = mi
+		m.lod_bias = STUMP_LOD_BIAS
 		for i in m.mesh.get_surface_count():
 			var key := "%s:%d:%s" % [name, i, m.name]
 			if not _charred.has(key):
@@ -112,3 +120,8 @@ func _stump(name: String) -> Node3D:
 				_charred[key] = c
 			m.set_surface_override_material(i, _charred[key])
 	return s
+
+
+func _coarse(n: Node, bias: float) -> void:
+	for g in n.find_children("*", "GeometryInstance3D", true, false):
+		(g as GeometryInstance3D).lod_bias = bias
