@@ -354,8 +354,14 @@ func _show_audience() -> void:
 			b.disabled = true
 			b.add_theme_color_override("font_disabled_color", T.TEXT_3)
 			row.add_child(_short_line(String(o["short"])))
-		# Who this answer helps and hurts, before he chooses: each house the hint names
-		# with its sigil and its change, gold up and red down (Reigns' preview, our way).
+		# Who this answer helps and hurts, weighed by the bridge (the same ruling run
+		# dry): shown in place of the hint, which can be wrong.
+		if o.get("weighs") is Dictionary:
+			row.add_child(_weighs_chips(o["weighs"]))
+			v.add_child(row)
+			continue
+		# Unweighed: each house the hint names with its sigil and its change, gold up
+		# and red down (Reigns' preview, our way).
 		var rest := String(o.get("hint", ""))
 		var moves := HBoxContainer.new()
 		moves.add_theme_constant_override("separation", 10)
@@ -572,6 +578,12 @@ func _weighs_chips(w: Dictionary) -> Control:
 			n.add_theme_font_size_override("font_size", T.SIZE_DESC)
 			chip.add_child(n)
 			moves.add_child(chip)
+	if int(w.get("cost", 0)) > 0:
+		var price := Label.new()
+		price.text = "%s crowns" % ui.heads(int(w["cost"]) * 100)
+		price.add_theme_color_override("font_color", T.TEXT_2)
+		price.add_theme_font_size_override("font_size", T.SIZE_DESC)
+		moves.add_child(price)
 	if moves.get_child_count() == 0:
 		moves.add_child(T.label("no house moved"))
 	return pad
