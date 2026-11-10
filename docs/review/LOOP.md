@@ -435,3 +435,11 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - under the cool winter tint (terrain.gd:107), the ground turns into patches of snow and bare earth instead of an even cover.
   - The proven way is Terrain3D's own height and slope blending for a snow layer, not a texture swap. Not fixed; it's on the discovery list.
 - **Chip: PASS** (the judge). Drill and siege strips are being refilmed with the soldiers framed and the court closed.
+
+## 2026-11-10, 14:50 (autopilot)
+
+- **Direction:** the judge's order holds. The NPC foundation is in: three clip libraries, play-once fixes, the carry blend, the LimboAI mind wired behind a switch, and a --limbo film flag. Snow and sound went to builder 2. Discovery is answered (docs/review/discovery-answers.md). The decision drought and the failed peace are being diagnosed in a helper.
+- **Drill proof, third try: still inconclusive.** The towns the AI was training in had no drill spawned near the frame. The life step found only 2 or 3 market folk. Fix: /test/stage forces a drill, and the helper's film.sh uses it.
+- **Slips:** two commits that didn't parse, each fixed within minutes. Commits now go through a gate: check-only empty, or no commit.
+- **Seen in passing:** the bottom-left ticker carries the news (three chips: a ruling, a court closing, barracks rising).
+- **Verdict:** on course. **Limiting factor:** proof filming. The film tool lands after the current queue.
