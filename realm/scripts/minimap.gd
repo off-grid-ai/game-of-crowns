@@ -30,6 +30,8 @@ uniform vec2 realm_size = vec2(1.0);
 uniform vec2 flood_at[8];
 uniform int flood_n = 0;
 uniform float flood_r = 100000.0;
+uniform sampler2D war_tex : filter_nearest, repeat_disable;  // terrain.standing_tex: r war, g truce, b sworn
+uniform bool has_war = false;
 float flood_d(vec2 t) {
 	float d = 100000.0;
 	for (int i = 0; i < flood_n; i++) d = min(d, distance(t, flood_at[i]));
@@ -56,15 +58,29 @@ void fragment() {
 	vec2 f = fract(t);
 	vec2 px = fwidth(t);
 	float edge = 0.0;
+	float war = 0.0;
+	float truce = 0.0;
 	ivec2 dirs[4] = {ivec2(-1, 0), ivec2(1, 0), ivec2(0, -1), ivec2(0, 1)};
 	float near[4] = {f.x / px.x, (1.0 - f.x) / px.x, f.y / px.y, (1.0 - f.y) / px.y};
+	vec4 sa = has_war ? texelFetch(war_tex, clamp(c, ivec2(0), ivec2(realm_size) - 1), 0) : vec4(0.0);
 	for (int i = 0; i < 4; i++) {
-		if (abs(owner(c + dirs[i]).a - own.a) > 0.001 && near[i] < 0.8) edge = 1.0;
+		ivec2 nc = c + dirs[i];
+		if (abs(owner(nc).a - own.a) > 0.001 && near[i] < (sa.r > 0.5 ? 1.4 : 0.8)) {
+			edge = 1.0;
+			vec4 sb = has_war ? texelFetch(war_tex, clamp(nc, ivec2(0), ivec2(realm_size) - 1), 0) : vec4(0.0);
+			war = max(war, sa.r > 0.5 && sb.r > 0.5 ? 1.0 : 0.0);
+			truce = max(truce, sa.g > 0.5 && sb.g > 0.5 ? 1.0 : 0.0);
+		}
 	}
 	vec4 col = soft.a > 0.001 ? vec4(soft.rgb / soft.a, soft.a * 0.5) : vec4(0.0);
 	float front = flood_n > 0 ? exp(-abs(flood_d(t) - flood_r) * 1.5) : 0.0;
 	col = mix(col, vec4(mix(own.rgb, vec3(1.0, 0.95, 0.8), 0.3), 0.9), front * (own.a > 0.0 ? 1.0 : 0.0));
-	if (edge > 0.5 && own.a > 0.0) col = vec4(own.rgb * 0.5, 0.85);
+	// The same seams as the ground's (land3d): war red, a truce dashed muted gold, sworn edged in gold.
+	if (edge > 0.5 && own.a > 0.0) {
+		vec3 seam = war > 0.5 ? vec3(0.85, 0.12, 0.1) : truce > 0.5 ? vec3(0.62, 0.52, 0.3) : sa.b > 0.5 ? vec3(0.79, 0.66, 0.35) : own.rgb * 0.5;
+		float dash = (truce > 0.5 && war < 0.5) ? step(0.45, fract((t.x + t.y) * 1.5)) : 1.0;
+		col = mix(col, vec4(seam, 0.9), dash);
+	}
 	COLOR = col;
 }
 """
@@ -102,6 +118,10 @@ func _ready() -> void:
 
 
 func refresh(world: Dictionary, houses: Dictionary) -> void:
+	# The houses' standing (war, truce, sworn) as the ground last drew it: the same seams here.
+	if _wash and terrain and terrain.get("standing_tex") != null:
+		(_wash.material as ShaderMaterial).set_shader_parameter("war_tex", terrain.standing_tex)
+		(_wash.material as ShaderMaterial).set_shader_parameter("has_war", true)
 	if terrain == null or terrain.width == 0:
 		return
 	var owners: Array = world.get("owners", [])

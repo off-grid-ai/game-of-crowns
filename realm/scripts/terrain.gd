@@ -870,6 +870,7 @@ func set_realm(owners: Array, players: Array) -> void:
 			war.set_pixel(x, y, st)
 	var realm_tex := ImageTexture.create_from_image(realm)
 	var war_tex := ImageTexture.create_from_image(war)
+	standing_tex = war_tex  # the minimap draws the same seams from this one texture
 	_land_mat.set_shader_parameter("realm_tex", realm_tex)
 	_land_mat.set_shader_parameter("war_tex", war_tex)
 	if land3d:
@@ -923,6 +924,9 @@ func set_marks(marks: Array, turn: int) -> void:
 
 
 var _realm_ids := []  # the owner of every tile, as last shown
+## The houses' standing per tile (r war, g truce, b sworn), as set_realm last drew it:
+## the ground and the minimap both draw their border seams from it.
+var standing_tex: Texture2D
 var _realm_img: Image  # the house colours as last shown, for a flood to cross
 
 
