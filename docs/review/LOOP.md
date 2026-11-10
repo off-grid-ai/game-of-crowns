@@ -490,3 +490,28 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - gossip with a partner and a topic shown by gesture;
   - grasping in the city state;
   - the batch film session (slice 1+2, riot, feast, hunger, the states).
+
+## 2026-11-10, autopilot (consolidation A1, A2, A4, B3, B4)
+
+- **What's going on:**
+  - **This session (the judge's consolidation order):**
+    - **A2:** one definition per realm state. townStates() sets famine, granaryLow, plague, disorder, celebrating, besieged and mood on each town. The court, deck, arcs, counsel, minds, minimap, villagers and the mirror all read it.
+    - **A1:** one truce writer. Rulings, stories and matches now reach Freeciv's ceasefire, and queued ceasefires go in one reload.
+    - **A4:** Freeciv's Lua gives only rapture live, so the save stays the source for the rest. The truce save counts as newest, so a war ends on /world at once.
+    - **B3:** richer /world.
+    - **B4:** scene_kinds.gd.
+    - The traffic handover to builder 2, and raise_site for its towns.
+  - **Builder 2:** the ledger, decree scenes, sounds on the clip hook, traffic.gd, A3 and A5.
+- **Measured (private bridges and the headless probe):**
+  - A starved house's 9 towns show famine 9 of 9. The Hand brought "Sunfell is starving" to the first court, where before the court never saw a hungry town.
+  - The truce reload took 1023 ms, and the war was gone at the next reading (it used to take a season).
+  - Behaviour probe: 20 of 20, four runs in a row, after two fixes (a breaker repeated the last clip; a single-clip run looped).
+- **Where we're heading:** the judge's plan:
+  - next, B3's counsel out of GET;
+  - then the rest of the awareness work (gossip with a partner, danger near sack and battle, disorder's chronicle line, soldiers' hp and activity);
+  - then B6 and C1.
+  - The grouped film session comes when A and B are done.
+- **Verdict:** on course. The work follows the judge's order. No fun-bar reign was measured this turn because the GPU is held for the grouped film session; the state proofs stand in.
+- **Open:**
+  - the lord's grain petition hasn't been called yet in the rerun (lords take turns at court);
+  - the batch film list now holds slice 1+2, riot, feast, hunger, the awareness states, Eve and the court card over the reload.
