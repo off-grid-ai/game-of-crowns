@@ -1,7 +1,7 @@
 {
   "id": "blood-feud",
   "name": "A blood feud",
-  "about": "Someone who remembers a wrong swears to repay whoever did it; raids, war, a blood price or a broken house follow, as the two houses' strength decides.",
+  "about": "Someone who remembers a wrong swears to pay back whoever did it. Raids, war, a blood price or a broken house follow, depending on which house is stronger.",
   "kind": "revenge",
   "weight": 3,
   "cooldown": 10,
@@ -69,7 +69,7 @@
       "optional": true
     }
   },
-  "fade": "Seasons pass, and {thread} is a grudge told by old men at the fire, no more.",
+  "fade": "Years pass, and {thread} is just a grudge old men talk about by the fire.",
   "onDeath": {
     "wronged": "oath-unpaid",
     "foe": "foe-dies"
@@ -81,11 +81,11 @@
       "speaker": "wronged",
       "at": "home",
       "text": [
-        "{wronged} of {wronged.house} swears before the gods that {foe} will pay for what was done. Old wrongs are spoken aloud in the hall at {home}.",
-        "In the hall at {home}, {wronged} cuts {wronged.his} palm over the hearth and names {foe} of {foe.house} as {wronged.his} enemy until death."
+        "{wronged} of {wronged.house} swears before the gods that {foe} will pay for what was done. In the hall at {home}, people say the old wrongs out loud.",
+        "In the hall at {home}, {wronged} cuts {wronged.his} palm over the fire and swears {foe} of {foe.house} is {wronged.his} enemy until death."
       ],
       "memory": {
-        "wronged": "I swore an oath against {foe}. I will not die with it unpaid.",
+        "wronged": "I swore an oath against {foe}. I won't die with it unpaid.",
         "foe": "Word came that {wronged} of {home} has sworn an oath against me."
       },
       "do": {
@@ -147,7 +147,7 @@
       "id": "insults",
       "stage": "rising",
       "speaker": "foe",
-      "text": "Insults ride the roads between {home} and {prey}. A herald of {foe.house} is sent home from {home} with his beard cut off.",
+      "text": "Insults travel the roads between {home} and {prey}. A herald of {foe.house} is sent home from {home} with his beard cut off.",
       "do": {
         "opinion": [
           [
@@ -192,12 +192,12 @@
       "speaker": "wronged",
       "at": "prey",
       "text": [
-        "{wronged.house}'s riders burn the barns outside {prey} by night. {foe} counts the dead at dawn.",
-        "Men in no colours fall on {prey} at harvest, burn the stooks and drive off the cattle. Everyone knows they rode out from {home}."
+        "{wronged.house}'s riders burn the barns outside {prey} at night. {foe} counts the dead at dawn.",
+        "Men with no colours attack {prey} at harvest, burn the crops and drive off the cattle. Everyone knows they came from {home}."
       ],
       "memory": {
         "foe": "{wronged}'s men raided {prey} and burned the barns.",
-        "wronged": "My riders burned {prey}. It is a beginning."
+        "wronged": "My riders burned {prey}. It's a start."
       },
       "do": {
         "raid": [
@@ -254,7 +254,7 @@
       "id": "blood-price",
       "stage": "crisis",
       "speaker": "foe",
-      "text": "{foe} sends a chest of silver to {home} as a blood price, with a letter that does not quite apologise.",
+      "text": "{foe} sends a chest of silver to {home} as a blood price, with a letter that doesn't quite say sorry.",
       "after": [
         1,
         1
@@ -286,7 +286,7 @@
       "id": "price-refused",
       "stage": "crisis",
       "speaker": "wronged",
-      "text": "{wronged} sends the chest back to {foe} filled with ash and a dead crow.",
+      "text": "{wronged} sends the chest back to {foe} full of ash and a dead crow.",
       "do": {
         "opinion": [
           [
@@ -319,9 +319,9 @@
       "id": "price-taken",
       "stage": "resolution",
       "end": "resolved",
-      "text": "{wronged} takes {foe}'s silver. Priests witness the blood price paid between {wronged.house} and {foe.house}, and the feud is ended, if not forgotten.",
+      "text": "{wronged} takes {foe}'s silver. Priests watch the blood price change hands between {wronged.house} and {foe.house}. The feud is over, but nobody forgets it.",
       "memory": {
-        "wronged": "I took {foe}'s blood price. The feud is ended, though I do not forget.",
+        "wronged": "I took {foe}'s blood price. The feud is over, but I don't forget.",
         "foe": "I paid {wronged} a blood price to end the feud."
       },
       "do": {
@@ -363,12 +363,12 @@
       "speaker": "foe",
       "at": "home",
       "text": [
-        "{foe} answers fire with fire: {foe.house} marches on {home}.",
-        "The banners of {foe.house} come over the hills towards {home}. {foe} has had enough of night riders."
+        "{foe} hits back: {foe.house} marches on {home}.",
+        "The banners of {foe.house} come over the hills toward {home}. {foe} has had enough of night raids."
       ],
       "memory": {
         "wronged": "{foe} brought war to my gates at {home}.",
-        "foe": "I marched on {home} to end {wronged}'s raiding."
+        "foe": "I marched on {home} to stop {wronged}'s raiding."
       },
       "do": {
         "war": [
@@ -425,7 +425,7 @@
       "id": "kin-falls",
       "stage": "crisis",
       "speaker": "wronged",
-      "text": "{kin}, {kin.son} of {wronged}, is carried home to {home} on a shield from the fighting with {foe.house}.",
+      "text": "{kin}, {kin.son} of {wronged}, is carried home to {home} on a shield after the fighting with {foe.house}.",
       "memory": {
         "wronged": "My {kin.son} {kin} died in the war with {foe}. I will have {foe.his} heart for it."
       },
@@ -476,7 +476,7 @@
       "id": "turned-back",
       "stage": "crisis",
       "speaker": "wronged",
-      "text": "{foe.house}'s host breaks against the walls of {home}. {wronged} rides out over their dead.",
+      "text": "{foe.house}'s army breaks against the walls of {home}. {wronged} rides out over their dead.",
       "after": [
         1,
         2
@@ -501,7 +501,7 @@
       "stage": "crisis",
       "speaker": "wronged",
       "at": "prey",
-      "text": "Now {wronged} carries the war to {foe}: the host of {wronged.house} sits down before {prey}.",
+      "text": "Now {wronged} takes the war to {foe}: the army of {wronged.house} lays siege to {prey}.",
       "do": {
         "war": [
           "wronged",
@@ -545,10 +545,10 @@
       "end": "resolved",
       "speaker": "foe",
       "at": "prey",
-      "text": "{prey} falls to {wronged.house}. {foe} kneels in the mud before {wronged} and the feud is paid in land.",
+      "text": "{prey} falls to {wronged.house}. {foe} kneels in the mud before {wronged}, and the feud is paid for in land.",
       "memory": {
-        "foe": "{wronged} took {prey} from me and made me kneel. My children will hear of it.",
-        "wronged": "I took {prey} from {foe}. The oath is kept."
+        "foe": "{wronged} took {prey} from me and made me kneel. My children will hear about it.",
+        "wronged": "I took {prey} from {foe}. I kept my oath."
       },
       "do": {
         "goal": {
@@ -569,7 +569,7 @@
       "end": "failed",
       "speaker": "wronged",
       "at": "home",
-      "text": "{home} falls to {foe.house}. The feud ends as feuds end: with one house broken and the other no wiser.",
+      "text": "{home} falls to {foe.house}. So the feud ends with one house broken and the other no wiser.",
       "memory": {
         "wronged": "I lost {home} to {foe}. My oath cost me everything."
       }
@@ -577,7 +577,7 @@
     {
       "id": "uneasy",
       "stage": "rising",
-      "text": "An uneasy quiet falls between {wronged.house} and {foe.house}. Both lords sleep with swords by their beds.",
+      "text": "An uneasy quiet settles between {wronged.house} and {foe.house}. Both lords sleep with swords by their beds.",
       "after": [
         2,
         3
@@ -597,7 +597,7 @@
       "id": "weary",
       "stage": "resolution",
       "end": "resolved",
-      "text": "Neither house can bear more burying. Priests carry the King's peace between {home} and {prey}, and {wronged} and {foe} put their marks to it.",
+      "text": "Neither house can stand to bury anyone else. Priests carry the King's peace between {home} and {prey}, and {wronged} and {foe} both sign it.",
       "memory": {
         "wronged": "I made peace with {foe} because there was no one left to bury.",
         "foe": "{wronged} and I made a peace neither of us wanted."
@@ -626,7 +626,7 @@
       "id": "oath-unpaid",
       "stage": "resolution",
       "end": "failed",
-      "text": "{wronged} dies with the oath against {foe} unpaid. In {home} they say the oath passes to whoever sits the seat now.",
+      "text": "{wronged} dies with the oath against {foe} still unpaid. In {home} they say the oath passes to whoever holds the seat now.",
       "memory": false
     },
     {
@@ -634,9 +634,9 @@
       "stage": "resolution",
       "end": "resolved",
       "speaker": "wronged",
-      "text": "{foe} is dead before {wronged}'s vengeance can find {foe.him}. {wronged} drinks to it, and finds it tastes of nothing.",
+      "text": "{foe} dies before {wronged} can take revenge on {foe.him}. {wronged} drinks to it, but it tastes of nothing.",
       "memory": {
-        "wronged": "{foe} died before I could repay {foe.him}. The gods took my vengeance from me."
+        "wronged": "{foe} died before I could repay {foe.him}. The gods took my revenge from me."
       }
     },
     {
@@ -644,9 +644,9 @@
       "stage": "resolution",
       "end": "resolved",
       "speaker": "wronged",
-      "text": "{wronged} and {foe} now kneel to the same house. Whatever the oath said, {wronged.house} will not have its own bannermen at each other's throats, and {thread} is ended by command.",
+      "text": "{wronged} and {foe} now serve the same house. Whatever the oath said, {wronged.house} won't let its own bannermen fight each other, so {thread} is over by order.",
       "memory": {
-        "wronged": "I serve the same house as {foe} now. My oath against {foe.him} was put away by command, not forgotten."
+        "wronged": "I serve the same house as {foe} now. My oath against {foe.him} was put away by order, not forgotten."
       },
       "do": {
         "truce": [

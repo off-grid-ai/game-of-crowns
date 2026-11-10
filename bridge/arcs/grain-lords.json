@@ -2,7 +2,7 @@
   "id": "grain-lords",
   "reign": true,
   "name": "The Grain Lords",
-  "about": "The harvest fails, and one rich house's barns are full. It sells its grain at a ransom while another lord's towns starve. Buy at its price, fix the price by decree, or seize the barns, and face either a hunger march or the hoarder's sellswords.",
+  "about": "The harvest fails, but one rich house's barns are full. It sells its grain for far more than it's worth while another lord's towns starve. Pay its price, set the price by decree, or seize the barns, and face either a hunger march or the hoarder's sellswords.",
   "tags": ["famine", "money", "the-people", "gritty", "cunning", "short"],
   "kind": "famine",
   "weight": 1,
@@ -21,14 +21,14 @@
       "threat": 20,
       "speaker": "hungry",
       "at": "market",
-      "text": "Rain rots the harvest in the fields. In {market} a loaf costs a day's wage, then two. In {barns}, {hoarder}'s granaries are full to the rafters and the doors are locked.",
+      "text": "Rain rots the harvest in the fields. In {market} a loaf costs a day's wages, then two. In {barns}, {hoarder}'s granaries are full to the roof and the doors are locked.",
       "court": {
         "from": "hungry",
-        "text": "{hungry} of {hungry.house}: \"My people eat bark, Your Grace, and {hoarder} sells grain at ten times its price to whoever has silver. I have none left.\"",
+        "text": "{hungry} of {hungry.house}: \"My people are eating bark, Your Grace, and {hoarder} sells grain at ten times its price to anyone with silver. I have none left.\"",
         "options": [
-          { "id": "buy", "label": "Buy {hoarder}'s grain at his price (350 gold)", "hint": "{market} eats · {hoarder.houseName} grows rich, and bolder", "cost": 350, "favour": { "hungry": 15 }, "do": { "threat": -10, "gold": { "hoarder": 120 } }, "result": "The crown pays {hoarder}'s price. Carts of grain roll to {market}, and {hoarder} buys a second fleet of barges." },
-          { "id": "fix", "label": "Fix the price of bread by royal decree", "hint": "{hoarder.houseName} −20 · {hungry.houseName} +10 · will {hoarder.he} obey?", "favour": { "hoarder": -20, "hungry": 10 }, "do": { "threat": 5 }, "result": "Criers read the King's price in every market. {hoarder} reads it, and smiles." },
-          { "id": "granary", "label": "Open the royal granaries (250 gold)", "hint": "{hungry.houseName} +10 · the crown's stores run low", "cost": 250, "favour": { "hungry": 10 }, "do": { "threat": -15 }, "result": "The royal granaries at Kingsmere open. They feed {market} for a season, and then they are empty." }
+          { "id": "buy", "label": "Buy {hoarder}'s grain at his price (350 gold)", "hint": "{market} eats, but {hoarder.houseName} gets richer and bolder", "cost": 350, "favour": { "hungry": 15 }, "do": { "threat": -10, "gold": { "hoarder": 120 } }, "result": "The crown pays {hoarder}'s price. Carts of grain roll into {market}, and {hoarder} buys a second fleet of barges." },
+          { "id": "fix", "label": "Set the price of bread by royal decree", "hint": "{hoarder.houseName} −20 · {hungry.houseName} +10 · will {hoarder.he} obey?", "favour": { "hoarder": -20, "hungry": 10 }, "do": { "threat": 5 }, "result": "Criers read out the King's price in every market. {hoarder} reads it, and smiles." },
+          { "id": "granary", "label": "Open the royal granaries (250 gold)", "hint": "{hungry.houseName} +10 · the crown's stores run low", "cost": 250, "favour": { "hungry": 10 }, "do": { "threat": -15 }, "result": "The royal granaries at Kingsmere open. They feed {market} for a season, and then they're empty." }
         ]
       },
       "after": [2, 3],
@@ -47,14 +47,14 @@
       "threat": 35,
       "speaker": "hoarder",
       "at": "barns",
-      "text": "{hoarder} has learned what the crown will pay. The next barges from {barns} come with a new price, and a note: the King's custom is valued.",
+      "text": "{hoarder} has learned what the crown will pay. The next barges from {barns} come with a new price and a note saying the King's custom is valued.",
       "do": { "gold": { "hoarder": 60 } },
       "court": {
         "from": "hungry",
-        "text": "{hungry}: \"He doubled it, Your Grace. He'll double it again. Every coin you pay him is a coin he spends on swords.\"",
+        "text": "{hungry}: \"He doubled it, Your Grace. He'll double it again. Every coin you pay him, he spends on swords.\"",
         "options": [
-          { "id": "pay", "label": "Pay again (450 gold)", "hint": "{market} eats · {hoarder} is the richest lord in the realm", "cost": 450, "do": { "threat": -5, "gold": { "hoarder": 150 } }, "result": "The crown pays. {hoarder}'s steward weighs the gold twice." },
-          { "id": "fix", "label": "Enough: fix the price by decree", "hint": "{hoarder.houseName} −25", "favour": { "hoarder": -25, "hungry": 10 }, "do": { "threat": 5 }, "result": "The King fixes the price. {hoarder} closes {barns}' gates." }
+          { "id": "pay", "label": "Pay again (450 gold)", "hint": "{market} eats, but {hoarder} becomes the richest lord in the realm", "cost": 450, "do": { "threat": -5, "gold": { "hoarder": 150 } }, "result": "The crown pays. {hoarder}'s steward weighs the gold twice." },
+          { "id": "fix", "label": "Enough: set the price by decree", "hint": "{hoarder.houseName} −25", "favour": { "hoarder": -25, "hungry": 10 }, "do": { "threat": 5 }, "result": "The King sets the price. {hoarder} shuts the gates of {barns}." }
         ]
       },
       "after": [2, 3],
@@ -71,15 +71,15 @@
       "threat": 50,
       "speaker": "hoarder",
       "at": "barns",
-      "text": "Rather than sell at the King's price, {hoarder} burns a barn of wheat in {barns}' square, and lets the smoke drift toward {market}.",
+      "text": "Rather than sell at the King's price, {hoarder} burns a barn full of wheat in the square at {barns}, and lets the smoke drift toward {market}.",
       "feel": { "hungry": { "anger": 0.4 } },
       "court": {
         "from": "hungry",
         "text": "{hungry}, shaking: \"He burns bread while children die, Your Grace. Take his barns, or I will.\"",
         "options": [
-          { "id": "seize", "label": "Seize {hoarder}'s barns by royal writ", "hint": "{hoarder.houseName} −40 · grain to {market} · {hoarder} may rise", "favour": { "hoarder": -40, "hungry": 20 }, "do": { "pay": [["hoarder", "hungry", 150]], "threat": 10 }, "result": "Royal men break the locks at {barns}. The grain goes to {market} under guard; {hoarder} watches from {hoarder.his} tower." },
-          { "id": "fine", "label": "Fine {hoarder} and let it lie", "hint": "{hoarder.houseName} −10 · {hungry.houseName} −10", "favour": { "hoarder": -10, "hungry": -10 }, "do": { "pay": [["hoarder", "hungry", 60]], "threat": -5 }, "result": "{hoarder} pays the fine in full and on time, which tells everyone how little it hurt." },
-          { "id": "yield", "label": "Withdraw the decree", "hint": "{hungry.houseName} −25 · {market} riots", "favour": { "hungry": -25, "hoarder": 10 }, "do": { "threat": 15 }, "result": "The King's price is quietly forgotten. In {market}, so is the King." }
+          { "id": "seize", "label": "Seize {hoarder}'s barns by royal order", "hint": "{hoarder.houseName} −40 · grain to {market} · {hoarder} may rise", "favour": { "hoarder": -40, "hungry": 20 }, "do": { "pay": [["hoarder", "hungry", 150]], "threat": 10 }, "result": "Royal men break the locks at {barns}. The grain goes to {market} under guard, and {hoarder} watches from {hoarder.his} tower." },
+          { "id": "fine", "label": "Fine {hoarder} and leave it there", "hint": "{hoarder.houseName} −10 · {hungry.houseName} −10", "favour": { "hoarder": -10, "hungry": -10 }, "do": { "pay": [["hoarder", "hungry", 60]], "threat": -5 }, "result": "{hoarder} pays the fine in full and on time, which shows everyone how little it hurt." },
+          { "id": "yield", "label": "Take back the decree", "hint": "{hungry.houseName} −25 · {market} riots", "favour": { "hungry": -25, "hoarder": 10 }, "do": { "threat": 15 }, "result": "The King's price is quietly forgotten. In {market}, so is the King." }
         ]
       },
       "after": [2, 3],
@@ -98,14 +98,14 @@
       "threat": 60,
       "speaker": "hungry",
       "at": "market",
-      "text": "The bakers' shops of {market} are stripped to the ovens. A mob drags a grain factor out of his house and hangs him from the market cross with a loaf in his mouth.",
+      "text": "The bakers' shops in {market} are stripped bare. A mob drags a grain merchant out of his house and hangs him from the market cross with a loaf in his mouth.",
       "do": { "gold": { "hungry": -50 } },
       "court": {
         "from": "hungry",
-        "text": "{hungry}: \"I can't hold {market}, Your Grace. They want bread or they want blood, and they no longer care whose.\"",
+        "text": "{hungry}: \"I can't hold {market}, Your Grace. They want bread or they want blood, and they don't care whose anymore.\"",
         "options": [
-          { "id": "feed", "label": "Feed them from the treasury (400 gold)", "hint": "the riots end · the crown is poorer", "cost": 400, "favour": { "hungry": 15 }, "do": { "threat": -20 }, "result": "Bread carts roll into {market} under the King's banner. The mob cheers the banner, and eats." },
-          { "id": "hang", "label": "Hang the ringleaders", "hint": "{hungry.houseName} −10 · quiet, for now", "favour": { "hungry": -10 }, "do": { "threat": 10 }, "result": "Twelve hang beside the grain factor. {market} is quiet, and hungrier." },
+          { "id": "feed", "label": "Feed them from the treasury (400 gold)", "hint": "The riots end, but the crown is poorer", "cost": 400, "favour": { "hungry": 15 }, "do": { "threat": -20 }, "result": "Bread carts roll into {market} under the King's banner. The mob cheers the banner, and eats." },
+          { "id": "hang", "label": "Hang the ringleaders", "hint": "{hungry.houseName} −10 · quiet, for now", "favour": { "hungry": -10 }, "do": { "threat": 10 }, "result": "Twelve hang beside the grain merchant. {market} is quiet, and hungrier." },
           { "id": "barns", "label": "Tell the mob where {hoarder}'s barns are", "hint": "{hoarder.houseName} −40 · the mob feeds itself", "favour": { "hoarder": -40, "hungry": 10 }, "do": { "raid": ["hungry", "hoarder", "barns"], "threat": 5 }, "result": "A royal herald reads out the road to {barns}. The mob is on it before he finishes." }
         ]
       },
@@ -124,7 +124,7 @@
       "threat": 25,
       "speaker": "hungry",
       "at": "market",
-      "text": "A lean winter. Nobody in {market} is fat, but nobody is buried for want of bread. Everyone watches the sky for the spring rains.",
+      "text": "A lean winter. Nobody in {market} is fat, but nobody is buried for lack of bread. Everyone watches the sky for the spring rains.",
       "after": [3, 4],
       "next": [
         { "if": { "realmHungry": 5 }, "to": "bread-riots" },
@@ -139,7 +139,7 @@
       "threat": 90,
       "speaker": "hungry",
       "at": "market",
-      "text": "Ten thousand starving walk out of {market} behind {hungry}'s banner, toward Kingsmere and the royal granaries, singing hymns, carrying scythes.",
+      "text": "Ten thousand starving people walk out of {market} behind {hungry}'s banner toward Kingsmere and the royal granaries, singing hymns and carrying scythes.",
       "do": { "usurper": "hungry", "host": 9 },
       "after": [3, 3],
       "next": [{ "if": { "usurper": "none" }, "to": "good-harvest" }],
@@ -152,7 +152,7 @@
       "threat": 90,
       "speaker": "hoarder",
       "at": "barns",
-      "text": "{hoarder} spends a famine's profits on two companies of sellswords and marches on Kingsmere, promising bread to every town that opens its gates.",
+      "text": "{hoarder} spends the money made from the famine on two companies of sellswords and marches on Kingsmere, promising bread to every town that opens its gates.",
       "do": { "usurper": "hoarder", "host": 12, "units": { "hoarder": { "type": "Knights", "count": 2 } } },
       "after": [3, 3],
       "next": [{ "if": { "usurper": "none" }, "to": "barns-broken" }],
@@ -165,7 +165,7 @@
       "end": "resolved",
       "speaker": "hungry",
       "at": "market",
-      "text": "The spring rains come, and then the sun. By midsummer bread in {market} costs a penny again, and the people remember which lords fed them."
+      "text": "The spring rains come, and then the sun. By midsummer bread in {market} costs a penny again, and people remember which lords fed them."
     },
     {
       "id": "barns-broken",
@@ -173,7 +173,7 @@
       "end": "resolved",
       "speaker": "hungry",
       "at": "barns",
-      "text": "{hoarder}'s sellswords are paid off and gone home. The barns of {barns} are thrown open to the realm, and the grain inside feeds three towns through the spring."
+      "text": "{hoarder}'s sellswords are paid off and go home. The barns of {barns} are opened to the realm, and the grain inside feeds three towns through the spring."
     }
   ]
 }

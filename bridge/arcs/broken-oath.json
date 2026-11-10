@@ -2,7 +2,7 @@
   "id": "broken-oath",
   "reign": true,
   "name": "The Broken Oath",
-  "about": "Two houses bound to each other by a royal marriage turn on each other when the bride dies. Every house must choose a side, and whoever wins may not stop at the other's walls.",
+  "about": "Two houses tied together by a royal marriage turn on each other when the bride dies. Every house has to pick a side, and whoever wins may not stop at the other's walls.",
   "tags": ["war", "great-house", "political", "aggressive", "violent", "a-reign"],
   "kind": "feud",
   "weight": 1,
@@ -24,18 +24,18 @@
       "speaker": "kin",
       "at": "hall",
       "text": [
-        "The bride {kin} sent to {hall} to seal the peace with {groom.house} is found dead at the foot of the tower stair. {kin} does not believe it was a fall.",
-        "{kin}'s daughter, wed to {groom.house} by the King's own blessing, dies in childbed at {hall}. {kin.house} says the midwives were {groom}'s creatures."
+        "The bride {kin} sent to {hall} to seal the peace with {groom.house} is found dead at the bottom of the tower stairs. {kin} doesn't believe she fell.",
+        "{kin}'s daughter, married into {groom.house} with the King's own blessing, dies giving birth at {hall}. {kin.house} says the midwives were {groom}'s people."
       ],
       "memory": { "kin": "My child died at {hall}, in {groom}'s keeping.", "groom": "{kin} calls my house murderers over my own wife's grave." },
       "do": { "opinion": [["kin", "groom", -50]] },
       "court": {
         "from": "kin",
-        "text": "{kin} of {kin.house} stands before the throne in mourning black: \"The crown married my blood to {groom.house}, Your Grace. Now my blood is in the ground. What will the crown do?\"",
+        "text": "{kin} of {kin.house} stands before the throne in mourning black: \"The crown married my child to {groom.house}, Your Grace. Now my child is dead. What will the crown do?\"",
         "options": [
-          { "id": "inquiry", "label": "Send the King's justice to {hall} to learn the truth", "hint": "{groom.houseName} −5 · {kin.houseName} +5 · time to cool", "favour": { "groom": -5, "kin": 5 }, "do": { "threat": -5 }, "result": "The King's justiciar rides to {hall}. Both houses wait for his word, and for now they only wait." },
-          { "id": "blame", "label": "Hold {groom} to blame", "hint": "{groom.houseName} −20 · {kin.houseName} +15 · {groom} will not forget", "favour": { "groom": -20, "kin": 15 }, "do": { "threat": 5 }, "result": "The King names {groom} responsible. In {hall}, {groom} breaks a cup against the wall." },
-          { "id": "hush", "label": "Pay for prayers and say no more of it (150 gold)", "hint": "{groom.houseName} +5 · {kin.houseName} −15 · the wound stays open", "cost": 150, "favour": { "groom": 5, "kin": -15 }, "do": { "threat": 10 }, "result": "Prayers are sung for the dead bride in every sept. {kin} hears them, and is not consoled." }
+          { "id": "inquiry", "label": "Send the King's justice to {hall} to find the truth", "hint": "{groom.houseName} −5 · {kin.houseName} +5 · time to cool", "favour": { "groom": -5, "kin": 5 }, "do": { "threat": -5 }, "result": "The King's justice rides to {hall}. Both houses wait to hear what he finds, and for now they only wait." },
+          { "id": "blame", "label": "Blame {groom}", "hint": "{groom.houseName} −20 · {kin.houseName} +15 · {groom} will not forget", "favour": { "groom": -20, "kin": 15 }, "do": { "threat": 5 }, "result": "The King names {groom} as the one to blame. In {hall}, {groom} smashes a cup against the wall." },
+          { "id": "hush", "label": "Pay for prayers and drop the matter (150 gold)", "hint": "{groom.houseName} +5 · {kin.houseName} −15 · the wound stays open", "cost": 150, "favour": { "groom": 5, "kin": -15 }, "do": { "threat": 10 }, "result": "Prayers are sung for the dead bride in every church. {kin} hears them, but it doesn't help." }
         ]
       },
       "after": [2, 3],
@@ -56,11 +56,11 @@
       "do": { "raid": ["kin", "groom", "hall"] },
       "court": {
         "from": "envoy",
-        "text": "{envoy} of {envoy.house}: \"{kin.house} raids {groom.house}'s lands, Your Grace, and {groom} is calling his banners. Stop it now, or choose.\"",
+        "text": "{envoy} of {envoy.house}: \"{kin.house} is raiding {groom.house}'s lands, Your Grace, and {groom} is calling up his banners. Stop it now, or pick a side.\"",
         "options": [
-          { "id": "truce", "label": "Command a truce between them (150 gold)", "hint": "both −5 · two years of peace, if they keep it", "cost": 150, "favour": { "groom": -5, "kin": -5 }, "do": { "truce": ["groom", "kin", 2], "threat": -15 }, "result": "The King's peace is proclaimed between {groom.house} and {kin.house}. Neither lord smiles." },
-          { "id": "side-groom", "label": "Stand with {groom.house}", "hint": "{groom.houseName} +15 · {kin.houseName} −25", "favour": { "groom": 15, "kin": -25 }, "do": { "threat": 5 }, "result": "The crown stands with {groom.house}. In {home}, {kin} swears the crown will learn what that costs." },
-          { "id": "side-kin", "label": "Stand with {kin.house}", "hint": "{kin.houseName} +15 · {groom.houseName} −25", "favour": { "kin": 15, "groom": -25 }, "do": { "threat": 5 }, "result": "The crown stands with {kin.house}. {groom} stops sending ravens to Kingsmere." }
+          { "id": "truce", "label": "Order a truce between them (150 gold)", "hint": "both −5 · two years of peace, if they keep it", "cost": 150, "favour": { "groom": -5, "kin": -5 }, "do": { "truce": ["groom", "kin", 2], "threat": -15 }, "result": "The King proclaims peace between {groom.house} and {kin.house}. Neither lord smiles." },
+          { "id": "side-groom", "label": "Side with {groom.house}", "hint": "{groom.houseName} +15 · {kin.houseName} −25", "favour": { "groom": 15, "kin": -25 }, "do": { "threat": 5 }, "result": "The crown sides with {groom.house}. In {home}, {kin} swears the crown will learn what that costs." },
+          { "id": "side-kin", "label": "Side with {kin.house}", "hint": "{kin.houseName} +15 · {groom.houseName} −25", "favour": { "kin": 15, "groom": -25 }, "do": { "threat": 5 }, "result": "The crown sides with {kin.house}. {groom} stops sending ravens to Kingsmere." }
         ]
       },
       "after": [2, 3],
@@ -77,7 +77,7 @@
       "threat": 60,
       "speaker": "groom",
       "at": "home",
-      "text": "{groom.house} and {kin.house} are at open war. Their hosts meet in the fields below {home}, and the realm counts the dead.",
+      "text": "{groom.house} and {kin.house} are at open war. Their armies meet in the fields below {home}, and the realm counts the dead.",
       "do": { "war": ["groom", "kin", "home"], "warSize": 6 },
       "after": [3, 4],
       "next": [
@@ -93,12 +93,12 @@
       "threat": 75,
       "speaker": "groom",
       "at": "home",
-      "text": "{groom.house} wins the field. {groom} looks from the smoke of {home} toward Kingsmere, and asks why a crown that could not keep the peace should keep the throne.",
+      "text": "{groom.house} wins the battle. {groom} looks from the smoke of {home} toward Kingsmere, and asks why a crown that couldn't keep the peace should keep the throne.",
       "court": {
         "from": "envoy",
-        "text": "{envoy}: \"{groom} has won, Your Grace, and the war has given him a taste for it. Bind him to you now, or face him.\"",
+        "text": "{envoy}: \"{groom} has won, Your Grace, and now he likes winning. Tie him to you now, or fight him.\"",
         "options": [
-          { "id": "reward", "label": "Grant {groom} lands and honours (400 gold)", "hint": "{groom.houseName} +30 · {kin.houseName} −20", "cost": 400, "favour": { "groom": 30, "kin": -20 }, "do": { "threat": -30 }, "result": "{groom} is made Warden of the realm's marches. {groom.He} kneels, and keeps kneeling." },
+          { "id": "reward", "label": "Give {groom} land and titles (400 gold)", "hint": "{groom.houseName} +30 · {kin.houseName} −20", "cost": 400, "favour": { "groom": 30, "kin": -20 }, "do": { "threat": -30 }, "result": "{groom} is made Warden of the borderlands. {groom.He} kneels, and stays loyal." },
           { "id": "warn", "label": "Remind {groom} who is King", "hint": "{groom.houseName} −15 · he may test you", "favour": { "groom": -15 }, "do": { "threat": 10 }, "result": "The King's letter to {groom} is short. {groom.His} answer is shorter." }
         ]
       },
@@ -116,13 +116,13 @@
       "threat": 75,
       "speaker": "kin",
       "at": "hall",
-      "text": "{kin.house} takes the field, and {kin} rides into {hall} over its broken gate. Grief has become an army, and armies want more.",
+      "text": "{kin.house} takes the field, and {kin} rides into {hall} through its broken gate. Grief has turned into an army, and armies want more.",
       "court": {
         "from": "envoy",
-        "text": "{envoy}: \"{kin} has avenged the bride, Your Grace, and is not done. Satisfy {kin.him}, or face {kin.him}.\"",
+        "text": "{envoy}: \"{kin} has avenged the bride, Your Grace, but isn't finished. Pay {kin.him} off, or fight {kin.him}.\"",
         "options": [
-          { "id": "reward", "label": "Grant {kin} {hall} by royal decree (400 gold)", "hint": "{kin.houseName} +30 · {groom.houseName} −30", "cost": 400, "favour": { "kin": 30, "groom": -30 }, "do": { "transfer": ["hall", "kin"], "threat": -30 }, "result": "By the King's word, {hall} is {kin.house}'s. {kin} kneels in the ruins of {groom}'s hall." },
-          { "id": "warn", "label": "Order {kin} home", "hint": "{kin.houseName} −15 · {kin.he} may not go", "favour": { "kin": -15 }, "do": { "threat": 10 }, "result": "The King orders {kin} home. {kin} reads the order aloud to {kin.his} captains, and they laugh." }
+          { "id": "reward", "label": "Give {kin} {hall} by royal decree (400 gold)", "hint": "{kin.houseName} +30 · {groom.houseName} −30", "cost": 400, "favour": { "kin": 30, "groom": -30 }, "do": { "transfer": ["hall", "kin"], "threat": -30 }, "result": "By the King's word, {hall} belongs to {kin.house}. {kin} kneels in the ruins of {groom}'s hall." },
+          { "id": "warn", "label": "Order {kin} home", "hint": "{kin.houseName} −15 · {kin.he} may not go", "favour": { "kin": -15 }, "do": { "threat": 10 }, "result": "The King orders {kin} home. {kin} reads the order out to {kin.his} captains, and they laugh." }
         ]
       },
       "after": [2, 3],
@@ -139,7 +139,7 @@
       "threat": 90,
       "speaker": "groom",
       "at": "hall",
-      "text": "{groom} turns the victorious host toward Kingsmere. A crown that would not choose a side has made itself the next one.",
+      "text": "{groom} turns the winning army toward Kingsmere. The crown wouldn't pick a side, so now it's the next target.",
       "do": { "usurper": "groom", "host": 10 },
       "after": [3, 3],
       "next": [{ "if": { "usurper": "none" }, "to": "broken" }],
@@ -152,7 +152,7 @@
       "threat": 90,
       "speaker": "kin",
       "at": "home",
-      "text": "{kin} marches on Kingsmere, saying the crown that married away {kin.his} child owes {kin.him} a reckoning.",
+      "text": "{kin} marches on Kingsmere, saying the crown that married off {kin.his} child owes {kin.him} for it.",
       "do": { "usurper": "kin", "host": 10 },
       "after": [3, 3],
       "next": [{ "if": { "usurper": "none" }, "to": "broken" }],
@@ -165,7 +165,7 @@
       "end": "resolved",
       "speaker": "envoy",
       "at": "hall",
-      "text": "{groom} and {kin} meet at the bride's grave with the King's justiciar between them. Nobody forgives, but nobody draws."
+      "text": "{groom} and {kin} meet at the bride's grave with the King's justice between them. Nobody forgives, but nobody draws a sword."
     },
     {
       "id": "warden",
@@ -173,7 +173,7 @@
       "end": "resolved",
       "speaker": "envoy",
       "at": "home",
-      "text": "Bought with honours, the victor keeps the peace the crown could not. {thread} ends with the realm one great house heavier."
+      "text": "Bought off with titles, the winner keeps the peace the crown couldn't. {thread} ends with one great house stronger than before."
     },
     {
       "id": "broken",
@@ -181,14 +181,14 @@
       "end": "resolved",
       "speaker": "envoy",
       "at": "hall",
-      "text": "The host that came for Kingsmere is broken before its walls. {thread} ends where it began: in a grave, and a grudge."
+      "text": "The army that came for Kingsmere is broken at its walls. {thread} ends where it started: with a grave and a grudge."
     },
     {
       "id": "one-left",
       "stage": "resolution",
       "end": "resolved",
       "at": "hall",
-      "text": "With one of the two lords in the ground, {thread} has no one left to carry it."
+      "text": "With one of the two lords dead, nobody is left to carry on {thread}."
     }
   ]
 }
