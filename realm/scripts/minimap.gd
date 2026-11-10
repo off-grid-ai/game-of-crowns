@@ -274,6 +274,18 @@ func _draw() -> void:
 		var col: Color = p[1]
 		draw_circle(p[0] * k, 3.0, col)
 		draw_arc(p[0] * k, 3.0 + phase * 7.0, 0.0, TAU, 24, Color(col.r, col.g, col.b, 1.0 - phase), 1.5, true)
+	# The houses' schemes among themselves (the mirror's intrigue): an envoy's road
+	# dashed in silver, a marriage in the two houses' colours, a pact the spies have
+	# revealed faint and dark; a secret one is not drawn.
+	var aw: Object = Engine.get_meta("awareness") if Engine.has_meta("awareness") else null
+	if aw:
+		for it in aw.realm.get_var(&"intrigue", [], false):
+			if it.get("x") == null or it.get("tx") == null or (String(it.get("kind", "")) == "pact" and it.get("secret", false)):
+				continue
+			var a := (Vector2(float(it["x"]), float(it["y"])) + Vector2(0.5, 0.5)) * k
+			var b := (Vector2(float(it["tx"]), float(it["ty"])) + Vector2(0.5, 0.5)) * k
+			var col: Color = {"envoy": Color(0.86, 0.86, 0.9, 0.9), "marriage": Color(0.79, 0.66, 0.35, 0.9), "pact": Color(0.3, 0.18, 0.4, 0.7)}.get(String(it.get("kind", "")), Color(1, 1, 1, 0.5))
+			draw_dashed_line(a, b, col, 1.5, 4.0, true)
 	var font := get_theme_default_font()
 	for s in _seats:
 		var big: bool = s[2]

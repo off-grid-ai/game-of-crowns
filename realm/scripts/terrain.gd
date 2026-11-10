@@ -810,7 +810,11 @@ var _realm_sig := ""
 ## line) and the houses' wars. players: world players with house and wars (the
 ## bridge's one reading of who is at war: a truce the King commanded, or a loyal
 ## house's old diplomacy with the crown, isn't one; Freeciv's raw atWarWith is).
-func set_realm(owners: Array, players: Array) -> void:
+## intrigue: the houses' schemes among themselves (the mirror's intrigue): an
+## envoy, a pact the King's spies have revealed, a marriage, drawn on the seam
+## between the two houses (a = 0.75 envoy, 0.5 pact, 0.25 marriage; 1 none).
+const SCHEME := {"envoy": 0.75, "pact": 0.5, "marriage": 0.25}
+func set_realm(owners: Array, players: Array, intrigue: Array = []) -> void:
 	if _land_mat == null or owners.size() != height or (USE_TERRAIN3D and (land3d == null or land3d.land == null)):
 		return  # (the 3D land is still being raised: the next reading paints it)
 	var wars := {}
@@ -835,7 +839,15 @@ func set_realm(owners: Array, players: Array) -> void:
 		for held in p.get("truces", []):
 			if by_name.has(String(held)):
 				truces[int(p["id"])].append(by_name[String(held)])
-	var sig := str(hash(owners)) + str(hash(wars)) + str(hash(truces)) + str(hash(sworn))
+	var schemes := {}  # "a:b" (lower id first) -> its seam's code
+	for it in intrigue:
+		var k := String(it.get("kind", ""))
+		if not SCHEME.has(k) or (k == "pact" and it.get("secret", false)):
+			continue  # a pact the spies haven't found is not drawn
+		var a := int(it.get("from", -1))
+		var b := int(it.get("to", -1))
+		schemes["%d:%d" % [mini(a, b), maxi(a, b)]] = SCHEME[k]
+	var sig := str(hash(owners)) + str(hash(wars)) + str(hash(truces)) + str(hash(sworn)) + str(hash(schemes))
 	if sig == _realm_sig:
 		return
 	_realm_sig = sig
@@ -849,7 +861,8 @@ func set_realm(owners: Array, players: Array) -> void:
 	_realm_ids = ids
 	var realm := Image.create(width, height, false, Image.FORMAT_RGBA8)
 	# The houses' standing, per tile: r = at war with a neighbour across the border,
-	# g = under a truce with one, b = the owner is sworn to the crown.
+	# g = under a truce with one, b = the owner is sworn to the crown, a = a scheme
+	# with that neighbour (SCHEME; 1 for none).
 	var war := Image.create(width, height, false, Image.FORMAT_RGBA8)
 	for y in height:
 		for x in width:
@@ -868,6 +881,8 @@ func set_realm(owners: Array, players: Array) -> void:
 					st.r = 1.0
 				elif n >= 0 and n != o and n in truces.get(o, []):
 					st.g = 1.0
+				if n >= 0 and n != o and schemes.has("%d:%d" % [mini(o, n), maxi(o, n)]):
+					st.a = schemes["%d:%d" % [mini(o, n), maxi(o, n)]]
 			war.set_pixel(x, y, st)
 	var realm_tex := ImageTexture.create_from_image(realm)
 	var war_tex := ImageTexture.create_from_image(war)

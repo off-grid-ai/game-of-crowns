@@ -382,6 +382,12 @@ const REALM_WASH := """
 		bool at_war = both && sa.r > 0.5 && sb.r > 0.5;
 		bool truce = both && !at_war && sa.g > 0.5 && sb.g > 0.5;
 		bool sworn = other >= 0 && own.a > 0.0 && sa.b > 0.5;
+		// The houses' schemes on the same seam (terrain.set_realm SCHEME, in alpha): an
+		// envoy's road (a silver dash moving along it), a revealed pact (a faint dark
+		// line), a marriage (the two houses' colours in turn).
+		bool envoy = both && !at_war && abs(sa.a - 0.75) < 0.1 && abs(sb.a - 0.75) < 0.1;
+		bool pact = both && !at_war && abs(sa.a - 0.5) < 0.1 && abs(sb.a - 0.5) < 0.1;
+		bool wed = both && !at_war && abs(sa.a - 0.25) < 0.1 && abs(sb.a - 0.25) < 0.1;
 		float front = flood_n > 0 ? exp(-abs(flood_d(rt) - flood_r) * 2.0) : 0.0;
 		if (own.a > 0.0) {
 			// The house's own colour at the land's brightness: a hue, the ground still showing.
@@ -396,7 +402,11 @@ const REALM_WASH := """
 		// a fine crown-gold edge. Otherwise the house's own colour, darkened.
 		vec3 line = at_war ? vec3(0.85, 0.12, 0.1) : truce ? vec3(0.62, 0.52, 0.3) : sworn ? vec3(0.79, 0.66, 0.35) : (own.a > 0.0 ? own.rgb * 0.4 : vec3(0.1));
 		float dash = truce ? step(0.45, fract((rt.x + rt.y) * 2.5)) : 1.0;
-		ALBEDO = mix(ALBEDO, line, edge * 0.9 * dash);
+		float strength = 0.9;
+		if (envoy) { line = vec3(0.86, 0.86, 0.9); dash = step(0.5, fract((rt.x + rt.y) * 2.0 - TIME * 0.6)); }
+		else if (pact) { line = vec3(0.22, 0.12, 0.3); strength = 0.5; }
+		else if (wed) { line = step(0.5, fract((rt.x + rt.y) * 1.5)) > 0.5 ? own.rgb : o[other].rgb; }
+		ALBEDO = mix(ALBEDO, line, edge * strength * dash);
 	}
 """
 var _flood_t := -1.0  # seconds into a flood; -1: none running

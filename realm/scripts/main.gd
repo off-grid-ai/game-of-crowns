@@ -771,7 +771,7 @@ func _on_world(world: Dictionary) -> void:
 	# The land's borders, scars and ruins, from the mirror (awareness.gd), not from /world.
 	var realm_bb: Blackboard = awareness.realm
 	var pt := Time.get_ticks_usec()
-	terrain.set_realm(realm_bb.get_var(&"owners", []), realm_bb.get_var(&"houses", []))
+	terrain.set_realm(realm_bb.get_var(&"owners", []), realm_bb.get_var(&"houses", []), realm_bb.get_var(&"intrigue", [], false))
 	PerfTools.add("borders", Time.get_ticks_usec() - pt)
 	pt = Time.get_ticks_usec()
 	terrain.set_marks(realm_bb.get_var(&"marks", []), int(realm_bb.get_var(&"turn", 0)))
@@ -809,7 +809,7 @@ func _on_world(world: Dictionary) -> void:
 		if terrain.forest and terrain.forest.has_method("clear_where") and roads.trunk_sig() != _lanes_cut:
 			_lanes_cut = roads.trunk_sig()
 			var t0 := Time.get_ticks_msec()
-			var n: int = terrain.forest.clear_where(func(o: Vector3): return roads.near_road(o, LANE_MARGIN))
+			var n: int = await terrain.forest.clear_where(func(o: Vector3): return roads.near_road(o, LANE_MARGIN))  # over frames
 			print("LANES %d trees, %d ms" % [n, Time.get_ticks_msec() - t0])
 			await get_tree().process_frame
 		Engine.set_meta("stage", "countryside")
