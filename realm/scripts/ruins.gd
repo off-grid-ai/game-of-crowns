@@ -23,22 +23,25 @@ var _stumps_due: Array = []  # [parent, kind, at, yaw, size]: stood a few a fram
 const STUMPS_A_FRAME := 3
 
 
+var _ring := {}  # stump kind -> transforms, for the ring being stood
+
+
 func _process(_delta: float) -> void:
 	var n := 0
 	while not _stumps_due.is_empty() and n < STUMPS_A_FRAME:
 		var d: Array = _stumps_due.pop_front()
 		n += 1
 		if not is_instance_valid(d[0]):
+			_ring.clear()
 			continue
-		var s := _stump(d[1])
-		if s == null:
+		if String(d[1]) == "":
+			_stand_ring(d[0])
 			continue
 		var p: Vector3 = d[2]
 		terrain.clear_around(p, 0.55)  # the tree that stood here burned
-		s.position = Vector3(p.x, terrain.height_at(p.x, p.z) - 0.02, p.z)
-		s.rotation.y = d[3]
-		s.scale = Vector3.ONE * float(d[4])
-		(d[0] as Node3D).add_child(s)
+		if not _ring.has(d[1]):
+			_ring[d[1]] = []
+		_ring[d[1]].append(Transform3D(Basis(Vector3.UP, float(d[3])).scaled(Vector3.ONE * float(d[4])), Vector3(p.x, terrain.height_at(p.x, p.z) - 0.02, p.z)))
 	if _waiting.is_empty():
 		return
 	var key: String = _waiting.keys()[0]
@@ -108,6 +111,7 @@ func _place(kind: String, tx: int, ty: int, burning: bool) -> Node3D:
 					var p := Vector3((tx + dx + rng.randf_range(0.1, 0.9)) * terrain.TILE, 0, (ty + dy + rng.randf_range(0.1, 0.9)) * terrain.TILE)
 					# Each stump stands in its own turn (_process), a few a frame.
 					_stumps_due.append([stumps, STUMPS[rng.randi() % STUMPS.size()], p, rng.randf() * TAU, rng.randf_range(0.8, 1.3)])
+		_stumps_due.append([stumps, "", Vector3.ZERO, 0.0, 0.0])  # the ring's end: its stumps drawn as one batch per kind
 	if kind == "razed":
 		# Where the town stood: its broken walls and the rubble of its hall.
 		var kit := preload("res://scripts/realistic.gd")
@@ -130,6 +134,45 @@ func _place(kind: String, tx: int, ty: int, burning: bool) -> Node3D:
 			_coarse(rubble, RUIN_LOD_BIAS)
 			node.add_child(rubble)
 	return node
+
+
+## A ring of burnt stumps drawn as one MultiMesh per kind (Godot's own batching):
+## one draw for every stump of a kind, a charred mesh shared by all, no shadows.
+func _stand_ring(parent: Node3D) -> void:
+	for kind in _ring:
+		var mesh := _charred_mesh(kind)
+		if mesh == null:
+			continue
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = mesh
+		mm.instance_count = (_ring[kind] as Array).size()
+		for i in mm.instance_count:
+			mm.set_instance_transform(i, _ring[kind][i])
+		var mmi := MultiMeshInstance3D.new()
+		mmi.multimesh = mm
+		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mmi.lod_bias = STUMP_LOD_BIAS
+		parent.add_child(mmi)
+	_ring.clear()
+
+
+var _charred_meshes := {}  # stump kind -> its mesh with charred materials
+func _charred_mesh(name: String) -> Mesh:
+	if _charred_meshes.has(name):
+		return _charred_meshes[name]
+	var parts: Array = preload("res://scripts/realistic.gd").parts(name)
+	if parts.is_empty():
+		return null
+	var mesh: Mesh = (parts[0][0] as Mesh).duplicate()
+	for i in mesh.get_surface_count():
+		var mat := mesh.surface_get_material(i)
+		var c: Material = mat.duplicate() if mat else StandardMaterial3D.new()
+		if c is BaseMaterial3D:
+			c.albedo_color = c.albedo_color * CHAR
+		mesh.surface_set_material(i, c)
+	_charred_meshes[name] = mesh
+	return mesh
 
 
 ## A Poly Haven stump, its wood charred: one blackened copy of its materials, shared.
