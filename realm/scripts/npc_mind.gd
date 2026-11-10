@@ -22,9 +22,9 @@ const SWIG := ["Drinking"]
 ## Plays a working move from `pool` for a run of lo..hi times (never the clip
 ## played last), then succeeds.
 class PlayRun extends BTAction:
-	var pool: Array = []
-	var lo := 3
-	var hi := 5
+	@export var pool: Array = []
+	@export var lo := 3
+	@export var hi := 5
 	var _left := 0.0
 
 	func _enter() -> void:
@@ -59,7 +59,7 @@ class PlayRun extends BTAction:
 
 ## A breaker: one move from `pool` (not the one used last time) for 2-5 s.
 class Breaker extends BTAction:
-	var pool: Array = []
+	@export var pool: Array = []
 	var _left := 0.0
 
 	func _enter() -> void:
@@ -81,8 +81,8 @@ class Breaker extends BTAction:
 ## A step about the post: walk to a spot within `reach` of it (or `back`
 ## paces straight back from the work), then succeed. Never off the post.
 class Step extends BTAction:
-	var reach := 0.25
-	var back := 0.0
+	@export var reach := 0.25
+	@export var back := 0.0
 	var _to := Vector3.ZERO
 	var _left := 0.0
 
@@ -118,7 +118,7 @@ class Step extends BTAction:
 ## The activity's name goes on the blackboard; fails if it was the last one,
 ## so the selector tries another (never the same activity twice running).
 class Begin extends BTAction:
-	var name_ := ""
+	@export var name_ := ""
 
 	func _tick(_delta: float) -> Status:
 		if blackboard.get_var(&"last_activity", "") == name_ and blackboard.get_var(&"choices", 2) > 1:
@@ -294,8 +294,8 @@ static func give(person: Node3D, post: String, ground: Callable, seed: int, open
 ## (nav map, crowd avoidance, room in the square), with `gait` (Walk, or
 ## Carrying for a load: the carry blend), and succeed on arrival.
 class GoTo extends BTAction:
-	var where := "market"
-	var gait := "Walk"
+	@export var where := "market"
+	@export var gait := "Walk"
 	var _started := false
 
 	func _enter() -> void:
@@ -326,7 +326,7 @@ class GoTo extends BTAction:
 
 ## Succeeds while the villager's part of the day is one of `blocks`.
 class BlockIs extends BTCondition:
-	var blocks: Array = []
+	@export var blocks: Array = []
 
 	func _tick(_delta: float) -> Status:
 		var a: Dictionary = blackboard.get_var(&"va")
@@ -456,7 +456,7 @@ static func villager_activities(role: String) -> Array:
 ## Succeeds while the villager's town is in `mood` (villagers._town_mood:
 ## feast, riot, hunger).
 class MoodIs extends BTCondition:
-	var mood := ""
+	@export var mood := ""
 
 	func _tick(_delta: float) -> Status:
 		var a: Dictionary = blackboard.get_var(&"va")
