@@ -2452,30 +2452,28 @@ function reignInfo() {
   };
 }
 
-http.createServer(async (req, res) => {
-  const url = new URL(req.url, "http://x");
-  if (req.method === "OPTIONS") return json(res, 204, {});
-  if (!meta) return json(res, 503, { error: "no chronicle" });
-  if (await mindsRoute(minds, url, req, body, json, res)) return;
-
-  if (url.pathname === "/world") {
+// The bridge's routes, "METHOD /path" -> handler(req, res, url). "* /path" answers
+// any method; an exact method's entry is looked up first, so "POST /person" wins
+// over "* /person" as it did when the routes were a chain of ifs.
+const ROUTES = {
+  "* /world": async (req, res, url) => {
     townStates();
     if (url.searchParams.get("peek") !== "1") watched(); // the game window polls this every second while open (a test's peek doesn't count)
     if (!world) return json(res, 503, { error: "realm still forming", reign: reignInfo() });
     if (counselStale) refreshCounsel();
     return json(res, 200, worldView());
-  }
-  if (url.pathname === "/map") {
+  },
+  "* /map": async (req, res, url) => {
     const map = chron.readJson(path.join(P.state, "map.json"));
     return map ? json(res, 200, { ...map, land: meta?.land ?? null }) : json(res, 503, { error: "map not ready" });
-  }
-  if (url.pathname === "/chronicle") {
+  },
+  "* /chronicle": async (req, res, url) => {
     const since = Number(url.searchParams.get("since") || 0);
     return json(res, 200, inCrowns(chronicle.filter((e) => e.seq > since).slice(-200)));
-  }
-  if (url.pathname === "/ledger") return json(res, 200, history.slice(-400).map((r) => r.souls !== undefined ? r : { ...r, souls: r.pop * 600, houses: Object.fromEntries(Object.entries(r.houses).map(([k, h]) => [k, { ...h, souls: h.pop * 600 }])) }));
-  if (url.pathname === "/records") return json(res, 200, chron.records().sort((a, b) => b.score - a.score));
-  if (url.pathname === "/scenarios") {
+  },
+  "* /ledger": async (req, res, url) => { return json(res, 200, history.slice(-400).map((r) => r.souls !== undefined ? r : { ...r, souls: r.pop * 600, houses: Object.fromEntries(Object.entries(r.houses).map(([k, h]) => [k, { ...h, souls: h.pop * 600 }])) })); },
+  "* /records": async (req, res, url) => { return json(res, 200, chron.records().sort((a, b) => b.score - a.score)); },
+  "* /scenarios": async (req, res, url) => {
     // Saved starting choices, to begin the same kind of realm again.
     const file = path.join(chron.HOME, "scenarios.json");
     const all = chron.readJson(file, []);
@@ -2486,12 +2484,12 @@ http.createServer(async (req, res) => {
     const entry = { name, scenario: b.scenario, minutes: Number(b.minutes) || 0, wealth: b.wealth, mood: String(b.mood || "").slice(0, 300), options: chron.cleanOptions(b.options) };
     fs.writeFileSync(file, JSON.stringify([...all.filter((x) => x.name !== name), entry], null, 1));
     return json(res, 200, entry);
-  }
-  if (url.pathname === "/chronicles/options") return json(res, 200, { defaults: chron.OPTION_DEFAULTS, houses: Object.keys(chron.HOUSE_NATIONS) });
-  if (url.pathname === "/chronicles" && req.method === "GET") {
+  },
+  "* /chronicles/options": async (req, res, url) => { return json(res, 200, { defaults: chron.OPTION_DEFAULTS, houses: Object.keys(chron.HOUSE_NATIONS) }); },
+  "GET /chronicles": async (req, res, url) => {
     return json(res, 200, { active: meta.id, list: chron.list() });
-  }
-  if (url.pathname === "/chronicles" && req.method === "POST") {
+  },
+  "POST /chronicles": async (req, res, url) => {
     const b = await body(req);
     const scenario = ["random", "aldmere", "aldmere_fresh"].includes(b.scenario) ? b.scenario : "aldmere";
     const m = chron.create({ name: String(b.name || "A New Realm").slice(0, 40), scenario, minutes: b.minutes, pace: b.options?.pace ?? turnSeconds, fate: b.fate, wealth: b.wealth, mood: b.mood, options: b.options });
@@ -2499,18 +2497,18 @@ http.createServer(async (req, res) => {
     try { rewrites.distinctNames(chron.paths(m.id).base, JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "data", "first-names.json"), "utf8"))); } catch (e) { console.log("names:", e.message); }  // no two living share a first name
     switchTo(m.id);
     return json(res, 200, m);
-  }
-  if (url.pathname === "/chronicles/open" && req.method === "POST") {
+  },
+  "POST /chronicles/open": async (req, res, url) => {
     const { id } = await body(req);
     if (!chron.list().some((c) => c.id === id)) return json(res, 404, { error: "no such chronicle" });
     switchTo(id);
     return json(res, 200, { ok: true });
-  }
-  if (url.pathname === "/reign/end" && req.method === "POST") {
+  },
+  "POST /reign/end": async (req, res, url) => {
     endReign("The King lays down the crown.");
     return json(res, 200, reignInfo());
-  }
-  if (url.pathname === "/reign/continue" && req.method === "POST") {
+  },
+  "POST /reign/continue": async (req, res, url) => {
     // A timed reign has ended and been scored; the King rules on, with no clock,
     // in the same realm. The score stands in the records as it was.
     if (meta.status !== "ended") return json(res, 400, { error: "this reign has not ended" });
@@ -2521,14 +2519,15 @@ http.createServer(async (req, res) => {
     send(`set timeout ${timeoutNow()}`);
     record({ turn: world?.turn ?? 0, kind: "decree", text: "The King rules on." });
     return json(res, 200, reignInfo());
-  }
-  if ((url.pathname === "/pause" || url.pathname === "/resume") && req.method === "POST") {
+  },
+  "POST /pause": async (req, res, url) => {
     if (meta.status !== "running") return json(res, 400, { error: "this reign has ended" });
     paused = url.pathname === "/pause";
     send(`set timeout ${timeoutNow()}`);
     return json(res, 200, reignInfo());
-  }
-  if (url.pathname === "/reign/options") {
+  },
+  "POST /resume": (req, res, url) => ROUTES["POST /pause"](req, res, url),
+  "* /reign/options": async (req, res, url) => {
     // The running reign's choices: read them, or change the ones that can
     // change mid-reign. Start-only choices (the world, which houses, their
     // temper, wealth and trust, the starting host) stay as they were.
@@ -2550,20 +2549,20 @@ http.createServer(async (req, res) => {
     send(`set disasters ${{ none: 0, gentle: 5, normal: 25, cruel: 70 }[meta.options.disasters]}`);
     send(`set barbarians ${{ none: "disabled", normal: "normal", hordes: "hordes" }[meta.options.raiders]}`);
     return json(res, 200, { options: meta.options, live: LIVE });
-  }
-  if (url.pathname === "/ai") {
+  },
+  "* /ai": async (req, res, url) => {
     // What the local model can do right now, for the settings page.
     return json(res, 200, await aiStatus());
-  }
-  if (url.pathname === "/speed" && req.method === "POST") {
+  },
+  "POST /speed": async (req, res, url) => {
     const { seconds } = await body(req);
     turnSeconds = Math.max(1, Math.min(600, Number(seconds) || 90));
     meta.pace = turnSeconds;
     chron.saveMeta(meta);
     send(`set timeout ${timeoutNow()}`);
     return json(res, 200, { turnSeconds });
-  }
-  if (url.pathname === "/counsel/answer" && req.method === "POST") {
+  },
+  "POST /counsel/answer": async (req, res, url) => {
     // The King answered the Hand's matter: it rests a year, and the next one comes up.
     const { key } = await body(req);
     if (key) {
@@ -2577,8 +2576,8 @@ http.createServer(async (req, res) => {
       chron.saveMeta(meta);
     }
     return json(res, 200, { ok: true });
-  }
-  if (url.pathname === "/decree" && req.method === "POST") {
+  },
+  "POST /decree": async (req, res, url) => {
     counselStale = true;
     decreesIssued++;
     const cmd = await body(req);
@@ -2689,10 +2688,10 @@ http.createServer(async (req, res) => {
     record({ turn: world?.turn ?? 0, kind: "decree", text: result.text, city: cmd.city });
     setTimeout(snapshot, 600);
     return json(res, 200, { ok: true, text: crowns(result.text) + (effects ? `\n${effects}` : ""), cost: result.cost ?? 0 });
-  }
+  },
   // Test hook (films only): stage what a town is making (a building site, a
   // unit in training), so a film is certain to find a site or a drill there.
-  if (url.pathname === "/test/stage" && req.method === "POST") {
+  "POST /test/stage": async (req, res, url) => {
     if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
     const b = await body(req);
     // {city, building, kind, progress} stages its work; {city, mood: riot|feast|hunger|calm} its mood.
@@ -2701,10 +2700,10 @@ http.createServer(async (req, res) => {
     if (b.mood) at[Number(b.city)] = { ...(at[Number(b.city)] ?? {}), ...moods.calm, ...(moods[b.mood] ?? {}) };
     else at[Number(b.city)] = { ...(at[Number(b.city)] ?? {}), building: String(b.building ?? "Pikemen"), buildingKind: String(b.kind ?? "UnitType"), progress: Number(b.progress ?? 0.5) };
     return json(res, 200, { ok: true });
-  }
+  },
   // Test hook (films only): a lord's deed on demand, so its alert can be filmed.
   // Answers only for a reign named as a test, and only with the X-Test header.
-  if (url.pathname === "/test/deed" && req.method === "POST") {
+  "POST /test/deed": async (req, res, url) => {
     // A proof's deed, test reigns only: {kind: decree|court|deck|arc|realm, key, option, place}, as a ruling or decree would note it.
     if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
     const b = await body(req);
@@ -2712,8 +2711,8 @@ http.createServer(async (req, res) => {
     if (!tag) return json(res, 400, { error: "no such deed in data/ledger.json" });
     deed(tag, { place: String(b.place ?? ""), act: b.kind !== "realm" });
     return json(res, 200, { ok: true, ledger: meta.ledger, name: kingName() });
-  }
-  if (url.pathname === "/test/mark" && req.method === "POST") {
+  },
+  "POST /test/mark": async (req, res, url) => {
     // A film's scar, test reigns only: {kind: battle|sack|razed, x, y, age: seasons ago}.
     if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
     const b = await body(req);
@@ -2722,16 +2721,16 @@ http.createServer(async (req, res) => {
     list.push({ kind: b.kind, x: Number(b.x), y: Number(b.y), turn: Number(world?.turn ?? 0) - Number(b.age ?? 0) });
     fs.writeFileSync(path.join(P.state, "marks.json"), JSON.stringify((marks.list = list)));
     return json(res, 200, { ok: true, marks: marksNow() });
-  }
-  if (url.pathname === "/test/news" && req.method === "POST") {
+  },
+  "POST /test/news": async (req, res, url) => {
     if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
     const b = await body(req);
     const e = { turn: world?.turn ?? 0, kind: String(b.kind ?? "betrayal"), text: String(b.text ?? "A test of the realm's news."), city: Number(b.city), to: b.to != null ? Number(b.to) : undefined, from: b.from != null ? Number(b.from) : undefined, with: b.with != null ? Number(b.with) : undefined };
     record(e);
     picture(e);
     return json(res, 200, { ok: true });
-  }
-  if (url.pathname === "/scene/arrived" && req.method === "POST") {
+  },
+  "POST /scene/arrived": async (req, res, url) => {
     // The King's grain, gold or word reached the town it was sent to: the realm
     // sees it, the chronicle says so in his name, and the town remembers.
     const b = await body(req);
@@ -2744,15 +2743,15 @@ http.createServer(async (req, res) => {
       record({ turn: world.turn, kind: "crown", city: town.id, text: `${what} ${cityName(town.id)}${b.label ? `: ${String(b.label).slice(0, 80)}` : ""}.` });
     }
     return json(res, 200, { ok: true });
-  }
-  if (url.pathname === "/usage") return json(res, 200, usageToday());
-  if (url.pathname === "/mood" && req.method === "GET") return json(res, 200, court.decrees);
-  if (url.pathname === "/mood/revoke" && req.method === "POST") {
+  },
+  "* /usage": async (req, res, url) => { return json(res, 200, usageToday()); },
+  "GET /mood": async (req, res, url) => { return json(res, 200, court.decrees); },
+  "POST /mood/revoke": async (req, res, url) => {
     const { id } = await body(req);
     court.revoke(id);
     return json(res, 200, court.decrees);
-  }
-  if (url.pathname === "/mood" && req.method === "POST") {
+  },
+  "POST /mood": async (req, res, url) => {
     const { text } = await body(req);
     if (!text || !String(text).trim()) {
       court.setMood(null);
@@ -2765,16 +2764,16 @@ http.createServer(async (req, res) => {
     mood.summary = `${mood.summary} (${touched} ${touched === 1 ? "person" : "people"})`;
     record({ turn: world?.turn ?? 0, kind: "decree", text: `By the King's word: ${mood.summary}` });
     return json(res, 200, mood);
-  }
-  if (url.pathname === "/court" && req.method === "GET") return json(res, 200, inCrowns(docket()));
-  if (url.pathname === "/hear" && req.method === "POST") {
+  },
+  "GET /court": async (req, res, url) => { return json(res, 200, inCrowns(docket())); },
+  "POST /hear": async (req, res, url) => {
     // What the King said into the microphone (a WAV), as words, by Off Grid's Whisper.
     const wav = await bytes(req);
     if (wav.length < 1000) return json(res, 400, { error: "nothing was heard" });
     const text = await transcribe(wav, meta.options?.language);
     return text ? json(res, 200, { text }) : json(res, 503, { error: "Your words were lost. (The local speech model isn't running.)" });
-  }
-  if (url.pathname === "/voice" && req.method === "POST") {
+  },
+  "POST /voice": async (req, res, url) => {
     // Someone's words, spoken aloud by Off Grid's Kokoro: a voice of their own,
     // in the realm's language. WAV bytes; cached, so a line is only made once.
     const { text, who } = await body(req);
@@ -2791,25 +2790,25 @@ http.createServer(async (req, res) => {
     }
     res.writeHead(200, { "content-type": "audio/wav" });
     return res.end(fs.readFileSync(file));
-  }
-  if (url.pathname === "/interlude/close" && req.method === "POST") {
+  },
+  "POST /interlude/close": async (req, res, url) => {
     if (meta.interlude) meta.interlude.seen = true;
     chron.saveMeta(meta);
     if (meta.court?.sitting == null) hold(false);
     return json(res, 200, { ok: true });
-  }
-  if (url.pathname === "/court/close" && req.method === "POST") {
+  },
+  "POST /court/close": async (req, res, url) => {
     closeCourt(world?.turn ?? 0);
     return json(res, 200, inCrowns(docket()));
-  }
-  if (url.pathname === "/court/answer" && req.method === "POST") {
+  },
+  "POST /court/answer": async (req, res, url) => {
     counselStale = true;
     const { id, option } = await body(req);
     const out = rule(id, option);
     closeIfDone(world?.turn ?? 0);
     return json(res, out.error ? 400 : 200, out);
-  }
-  if (url.pathname === "/court/say" && req.method === "POST") {
+  },
+  "POST /court/say": async (req, res, url) => {
     // The King answers a petition in his own words. The local model proposes
     // which ruling he means; nothing happens until he confirms it (confirm:
     // the option id), so a misreading can never act on its own.
@@ -2830,8 +2829,8 @@ http.createServer(async (req, res) => {
     record({ turn: world.turn, kind: "decree", text: `The King to ${who?.name ?? "the petitioner"}: "${said}"` });
     if (who) court.remember(who.id, `The King told me: "${said.slice(0, 160)}"`);
     return json(res, 200, { ...out, option: String(confirm), reaction, name: who?.name ?? "", gender: who?.gender ?? "male" });
-  }
-  if (url.pathname === "/house") {
+  },
+  "* /house": async (req, res, url) => {
     // One great house: its numbers over time, its lord, bannermen, wars and allies.
     const pid = Number(url.searchParams.get("id"));
     const p = world?.players.find((x) => x.id === pid);
@@ -2860,19 +2859,19 @@ http.createServer(async (req, res) => {
       })(),
       allies: (d?.allies ?? []).filter((id) => id !== pid && great(id)).map(nameOf),
     });
-  }
+  },
   // Aldmere as every new chronicle finds it (the baseline, nine years in): its
   // towns on the map, each with its house, for the Lore's map. Never the reign
   // being played.
   // The player's names for houses and people: GET them, or POST {from, to} to
   // rename one (an empty `to` gives the word its own name back).
-  if (url.pathname === "/lore/written/person" && req.method === "POST") {
+  "POST /lore/written/person": async (req, res, url) => {
     // Someone of the starting cast rewritten from the menu's Lore: every chronicle begun after this has them so.
     const b = await body(req);
     const out = rewrites.set(String(b.id ?? ""), b);
     return json(res, out.error ? 400 : 200, out);
-  }
-  if (url.pathname === "/names") {
+  },
+  "* /names": async (req, res, url) => {
     if (req.method === "POST") {
       const raw = await new Promise((r) => { let b = ""; req.on("data", (d) => (b += d)); req.on("end", () => { try { r(JSON.parse(b || "{}")); } catch { r({}); } }); });
       const done = names.rename(raw.from, raw.to);
@@ -2881,8 +2880,8 @@ http.createServer(async (req, res) => {
     }
     res.writeHead(200, { "Content-Type": "application/json" });
     return res.end(JSON.stringify({ names: names.all() }));
-  }
-  if (url.pathname === "/lore/map") {
+  },
+  "* /lore/map": async (req, res, url) => {
     let w = {};
     try { w = JSON.parse(fs.readFileSync(path.join(chron.BASELINE, "state", "world.json"), "utf8")); } catch { /* no baseline */ }
     const players = new Map((w.players ?? []).map((p) => [p.id, p]));
@@ -2915,8 +2914,8 @@ http.createServer(async (req, res) => {
       return { x: g.x, y: g.y, companies: g.companies, house: h?.name ?? "", key: h?.name ?? "", color: h?.color ?? "#888", sigil: h?.sigil ?? "", crown: !!h?.crown };
     });
     return json(res, 200, { tiles: [56, 88], towns: now, land, roads: world.roads ?? w.roads ?? [], armies });
-  }
-  if (url.pathname === "/lore") {
+  },
+  "* /lore": async (req, res, url) => {
     // The book of the realm: its story from the world bible, and each great
     // house as it stands now, with the people who matter in it.
     const b = bible(path.join(DIR, "..", "WORLD.md"));
@@ -2995,8 +2994,8 @@ http.createServer(async (req, res) => {
     }
     const families = Object.values(lesser).sort((a, c) => c.branches.length - a.branches.length || a.surname.localeCompare(c.surname));
     return json(res, 200, { intro: b.intro, crown: b.crown, faults: b.faults, fate: b.fate, tone: b.tone, houses, lesser: LESSER, families });
-  }
-  if (url.pathname === "/person" && req.method !== "POST") {
+  },
+  "* /person": async (req, res, url) => {
     // One person up close, for the character view: who they are and what they remember.
     const c = court.people[url.searchParams.get("id")] ?? court.alive().find((x) => x.name === url.searchParams.get("name"));
     if (!c) return json(res, 404, { error: "no such person" });
@@ -3006,9 +3005,9 @@ http.createServer(async (req, res) => {
       seat: c.seat != null ? cityName(c.seat) : null, role: c.role ? ROLES[c.role]?.title : null,
       memories: [...new Set(c.memories ?? [])].slice(-6), backstory: c.backstory ?? null,
     });
-  }
-  if (url.pathname === "/characters/options") return json(res, 200, { roles: Object.fromEntries(Object.entries(ROLES).map(([k, v]) => [k, v.title])), goals: GOALS, traits: TRAITS });
-  if (url.pathname === "/person/fall" && req.method === "POST") {
+  },
+  "* /characters/options": async (req, res, url) => { return json(res, 200, { roles: Object.fromEntries(Object.entries(ROLES).map(([k, v]) => [k, v.title])), goals: GOALS, traits: TRAITS }); },
+  "POST /person/fall": async (req, res, url) => {
     // Someone the King walked as fell in a fight: a real death, and their heir inherits.
     const { id, how } = await body(req);
     const c = court.people[String(id)];
@@ -3016,22 +3015,18 @@ http.createServer(async (req, res) => {
     if (how) court.remember(c.id, String(how).slice(0, 200));
     court.die(c, world.turn, world);
     return json(res, 200, { ok: true });
-  }
-  if (url.pathname === "/person" && req.method === "POST") {
+  },
+  "POST /person": async (req, res, url) => {
     const spec = await body(req);
     const out = court.edit(String(spec.id), spec, world);
     return json(res, out.error ? 400 : 200, out);
-  }
-  if (url.pathname === "/characters" && req.method === "POST") {
+  },
+  "POST /characters": async (req, res, url) => {
     if (!world) return json(res, 503, { error: "the realm is still forming" });
     const out = court.create(await body(req), world);
     return json(res, out.error ? 400 : 200, out);
-  }
-  if (url.pathname.startsWith("/minds/") && chatter) {
-    const out = await chatter.route(url, req, body);
-    if (out) return json(res, ...out);
-  }
-  if (url.pathname === "/townsfolk") {
+  },
+  "* /townsfolk": async (req, res, url) => {
     // The folk of a town, and, asked for one person, their story in full.
     const city = world?.cities.find((c) => c.id === Number(url.searchParams.get("city")));
     if (!city) return json(res, 404, { error: "no such town" });
@@ -3054,8 +3049,8 @@ http.createServer(async (req, res) => {
       fs.writeFileSync(file, JSON.stringify(tales, null, 1));
     }
     return json(res, 200, { town: cityName(city.id), person, ...tales[key] });
-  }
-  if (url.pathname === "/town/people") {
+  },
+  "* /town/people": async (req, res, url) => {
     // The named people of a town, for someone walking it: its lord or lady, and
     // the bannermen and heirs seated there.
     // At a house's seat its whole household gathers: the heir and the bannermen too.
@@ -3064,8 +3059,8 @@ http.createServer(async (req, res) => {
     const here = court.alive().filter((c) => ["lord", "heir", "bannerman"].includes(c.rank)
       && (c.seat === id || (town?.capital && c.playerId === town.owner && c.rank !== "lord")));
     return json(res, 200, here.slice(0, 6).map((c) => ({ id: c.id, name: c.name, gender: c.gender, rank: c.rank, house: c.house })));
-  }
-  if (url.pathname === "/talk" && req.method === "POST") {
+  },
+  "POST /talk": async (req, res, url) => {
     // You speak to someone in the street; they answer in their own voice and remember it.
     const b = await body(req);
     const city = world?.cities.find((c) => c.id === Number(b.city));
@@ -3101,17 +3096,17 @@ http.createServer(async (req, res) => {
     // A lord remembers being spoken to by their own people, briefly.
     if (speaker) court.remember(speaker.id, `In ${cityName(city.id)} I spoke with ${person.name}, the ${person.trade}.`);
     return json(res, 200, { name: person.name, trade: person.trade, gender: person.woman ? "female" : "male", ...out });
-  }
-  if (url.pathname === "/arcs" && req.method === "GET") return json(res, 200, inCrowns(arcs.view(arcCtx())));
-  if (url.pathname === "/arcs/templates") return json(res, 200, arcTemplates().map((t) => ({ id: t.id, file: t.file, name: t.name, title: t.title, about: t.about, reign: Boolean(t.reign), own: Boolean(t.own), tags: t.tags ?? [], roles: Object.keys(t.roles ?? {}), beats: (t.beats ?? []).length, problems: t.problems })));
+  },
+  "GET /arcs": async (req, res, url) => { return json(res, 200, inCrowns(arcs.view(arcCtx()))); },
+  "* /arcs/templates": async (req, res, url) => { return json(res, 200, arcTemplates().map((t) => ({ id: t.id, file: t.file, name: t.name, title: t.title, about: t.about, reign: Boolean(t.reign), own: Boolean(t.own), tags: t.tags ?? [], roles: Object.keys(t.roles ?? {}), beats: (t.beats ?? []).length, problems: t.problems }))); },
   // Fast-forward: n seasons of the realm's stories, against the live realm.
-  if (url.pathname === "/arcs/tick" && req.method === "POST") {
+  "POST /arcs/tick": async (req, res, url) => {
     const b = await body(req);
     const ran = await runArcs(Math.max(1, Math.min(60, Number(b.n) || 1)), b.start !== false);
     return json(res, ran ? 200 : 409, ran ? inCrowns(arcs.view(arcCtx())) : { error: "the stories are already moving" });
-  }
+  },
   // Begin one kind of story now, if the realm has the people for it.
-  if (url.pathname === "/arcs/start" && req.method === "POST") {
+  "POST /arcs/start": async (req, res, url) => {
     const b = await body(req);
     if (arcsRunning) return json(res, 409, { error: "the stories are already moving" });
     arcsRunning = true;
@@ -3123,14 +3118,14 @@ http.createServer(async (req, res) => {
     } finally {
       arcsRunning = false;
     }
-  }
+  },
   // The King's own story: an arc file dropped in as JSON, or told in words
   // and shaped by the model from the closest existing arc.
   // A reign story of the player's own: from tags, a few lines of premise, or
   // both. It is built on the tested story that fits best (so every beat holds),
   // carries the player's tags (the dials) and their words, and is named by the
   // local model when it's there, by the tags when it isn't.
-  if (url.pathname === "/stories/generate" && req.method === "POST") {
+  "POST /stories/generate": async (req, res, url) => {
     const b = await body(req);
     const words = String(b.words ?? "").trim().slice(0, 600);
     let tags = (Array.isArray(b.tags) ? b.tags : []).map(String).filter((t) => /^[a-z-]{1,24}$/.test(t)).slice(0, 8);
@@ -3173,37 +3168,37 @@ http.createServer(async (req, res) => {
     fs.writeFileSync(path.join(OWN_STORIES, `${arc.id}.json`), JSON.stringify(arc, null, 2));
     storiesChanged();
     return json(res, 200, { ok: true, id: arc.id, name: arc.name, about: arc.about, tags: arc.tags, from: base.name });
-  }
+  },
   // A story of the player's own, for the beat form: who is in it (its roles, in
   // words) and the beats they have added so far.
-  if (url.pathname === "/stories/own" && req.method === "GET") {
+  "GET /stories/own": async (req, res, url) => {
     const t = ownStory(url.searchParams.get("id"));
     if (!t) return json(res, 404, { error: "that isn't a story of your own" });
     return json(res, 200, storyForForm(t));
-  }
+  },
   // One beat of the player's own, added to (or taken out of) their story: what
   // happens, who is in it, when it happens, and what it does, from short menus.
   // It happens once, when its moment comes, and the story goes on from there.
   // Off Grid AI fills (or carries on) any free-text box: {kind, context, draft}.
-  if (url.pathname === "/write" && req.method === "POST") {
+  "POST /write": async (req, res, url) => {
     const b = await body(req);
     const text = await Promise.race([writeFor(String(b.kind ?? ""), String(b.context ?? "").slice(0, 1200), String(b.draft ?? "").trim().slice(0, 300)).catch(() => null), new Promise((r) => setTimeout(() => r(null), 45000))]);
     if (!text) return json(res, 503, { error: "Off Grid AI is busy and didn't answer in time. Try again in a moment." });
     return json(res, 200, { text });
-  }
+  },
 
   // Off Grid AI writes a story's premise from its tags, or carries on the one begun.
-  if (url.pathname === "/stories/premise/idea" && req.method === "POST") {
+  "POST /stories/premise/idea": async (req, res, url) => {
     const b = await body(req);
     const tags = (Array.isArray(b.tags) ? b.tags : []).map(String).slice(0, 8);
     const draft = String(b.draft ?? "").trim().slice(0, 300);
     const text = await Promise.race([premiseIdea({ tags, draft }).catch(() => null), new Promise((r) => setTimeout(() => r(null), 45000))]);
     if (!text) return json(res, 503, { error: "Off Grid AI is busy and didn't answer in time. Try again in a moment, or write it yourself." });
     return json(res, 200, { text });
-  }
+  },
 
   // Off Grid AI writes a beat for the player's own story, or carries on the one begun.
-  if (url.pathname === "/stories/beat/idea" && req.method === "POST") {
+  "POST /stories/beat/idea": async (req, res, url) => {
     const b = await body(req);
     const t = ownStory(b.story);
     if (!t) return json(res, 404, { error: "shape a story of your own first" });
@@ -3213,9 +3208,9 @@ http.createServer(async (req, res) => {
     const text = await Promise.race([beatIdea({ name: t.name, about: t.about ?? "", roles, beats, draft }).catch(() => null), new Promise((r) => setTimeout(() => r(null), 45000))]);
     if (!text) return json(res, 503, { error: "Off Grid AI is busy and didn't answer in time. Try again in a moment, or write the beat yourself." });
     return json(res, 200, { text });
-  }
+  },
 
-  if (url.pathname === "/stories/beat" && req.method === "POST") {
+  "POST /stories/beat": async (req, res, url) => {
     const b = await body(req);
     const t = ownStory(b.story);
     if (!t) return json(res, 404, { error: "add beats to a story of your own: shape one first" });
@@ -3241,8 +3236,8 @@ http.createServer(async (req, res) => {
     fs.writeFileSync(path.join(OWN_STORIES, `${t.id}.json`), JSON.stringify(t, null, 2));
     storiesChanged();
     return json(res, 200, storyForForm({ ...t, own: true }));
-  }
-  if (url.pathname === "/arcs/write" && req.method === "POST") {
+  },
+  "POST /arcs/write": async (req, res, url) => {
     const b = await body(req);
     const dir = path.join(DIR, "arcs");
     const slug = (x) => String(x).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
@@ -3273,19 +3268,19 @@ http.createServer(async (req, res) => {
     fs.writeFileSync(file, JSON.stringify(arc, null, 2));
     storiesChanged();
     return json(res, 200, { ok: true, file: path.relative(DIR, file), arc });
-  }
-  if (url.pathname === "/lord") return json(res, 200, court.summary(Number(url.searchParams.get("city"))) ?? {});
-  if (url.pathname === "/season" && req.method === "POST") {
+  },
+  "* /lord": async (req, res, url) => { return json(res, 200, court.summary(Number(url.searchParams.get("city"))) ?? {}); },
+  "POST /season": async (req, res, url) => {
     await runSeason();
     return json(res, 200, { ok: true });
-  }
-  if (url.pathname === "/tithe" && req.method === "POST") {
+  },
+  "POST /tithe": async (req, res, url) => {
     const { rate } = await body(req);
     meta.tithe = Math.max(0, Math.min(0.4, Number(rate) || 0));
     chron.saveMeta(meta);
     return json(res, 200, { tithe: meta.tithe });
-  }
-  if (url.pathname === "/god" && req.method === "POST") {
+  },
+  "POST /god": async (req, res, url) => {
     const cmd = await body(req);
     const result = godCommand(cmd, world);
     if (result.error) return json(res, 400, result);
@@ -3293,6 +3288,21 @@ http.createServer(async (req, res) => {
     record({ turn: world?.turn ?? 0, kind: "god", text: result.text, city: cmd.city });
     setTimeout(snapshot, 600);
     return json(res, 200, { ok: true, text: crowns(result.text) });
+  },
+};
+
+http.createServer(async (req, res) => {
+  const url = new URL(req.url, "http://x");
+  if (req.method === "OPTIONS") return json(res, 204, {});
+  if (!meta) return json(res, 503, { error: "no chronicle" });
+  if (await mindsRoute(minds, url, req, body, json, res)) return;
+
+  const route = ROUTES[`${req.method} ${url.pathname}`] ?? ROUTES[`* ${url.pathname}`];
+  if (route) return route(req, res, url);
+  // Routes matched by prefix, in order, after the table (no table path starts with one).
+  if (url.pathname.startsWith("/minds/") && chatter) {
+    const out = await chatter.route(url, req, body);
+    if (out) return json(res, ...out);
   }
   json(res, 404, { error: "not found" });
 }).listen(PORT, "127.0.0.1", () => console.log(`Bridge listening on http://localhost:${PORT}`));
