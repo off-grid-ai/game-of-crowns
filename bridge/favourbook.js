@@ -71,7 +71,7 @@ export function recordDeed(ctx, id, d, why, turn) {
 // never drops a ruling still owed.
 export const RULING_DUE = 2;  // seasons until the lord comes back about it
 export function recordRuling(list, { d, what, by, turn }) {
-  if (!d || !what || by == null) return;
+  if (Math.abs(d) < 5 || !what || by == null) return;  // a small ruling fades; a weighty one comes back
   list.push({ turn, last: turn, d, what, by, due: turn + RULING_DUE, ruling: true });
   if (list.length > 8) {
     const keep = list.filter((x) => x.due != null && !x.raised);

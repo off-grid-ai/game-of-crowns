@@ -658,12 +658,34 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
   // the rotation, after any crisis. Returns the petitions made.
   async callReturns(world, turn, want, ctx) {
     const made = [];
+    // Returns are at most about one in four of the King's matters lately.
+    const lately = this.petitions.filter((p) => (p.turn ?? 0) > turn - 2 * SEASONS_PER_YEAR);
+    if (lately.length >= 3 && lately.filter((p) => p.kind === "remembers").length / lately.length >= 0.25) return made;
     for (const c of this.alive()) {
       if (want <= 0) break;
-      if (this.petitions.some((p) => !p.answered && p.from === c.id)) continue;
+      if (this.petitions.some((p) => !p.answered && p.from === c.id && p.called != null)) continue;  // already before the King
+      if (this.petitions.some((p) => p.from === c.id && p.kind === "remembers" && (p.turn ?? 0) > turn - SEASONS_PER_YEAR)) continue;  // once a year
       const owed = (this.deedsOf?.(c.playerId) ?? []).filter((x) => x.by === c.id && x.due != null && x.due <= turn && !x.raised).sort((a, b) => a.due - b.due)[0];
       if (!owed) continue;
+      // Not always a plea (the judge: vary the return by what the ruling did). A
+      // lord who was favoured may simply repay; one who was slighted may scheme;
+      // one gravely wronged comes to court to demand amends.
+      if (owed.d > 0 && Math.random() < 0.5) {
+        owed.raised = turn;
+        ctx.send?.(`for p in players_iterate() do if p.id == ${world.players.find((x) => houseFor(x).crown)?.id ?? -1} then edit.change_gold(p, 40) end end`);
+        this.record({ turn, kind: "loyalty", text: `${c.name} of ${c.house} has not forgotten the King's ruling: a chest of 40 gold comes to Kingsmere, "for the crown's kindness".`, city: c.seat ?? undefined });
+        continue;
+      }
+      if (owed.d < 0 && owed.d > -15 && Math.random() < 0.5) {
+        owed.raised = turn;
+        const cold = world.players.filter((x) => x.id !== c.playerId && !houseFor(x).crown && !houseFor(x).wild).sort((a, b) => (ctx.favour?.(a.id) ?? 50) - (ctx.favour?.(b.id) ?? 50))[0];
+        if (cold) this.scheme({ kind: "envoy", from: c.playerId, to: cold.id, turn, secret: true, line: `${c.house}'s envoys ride to ${houseFor(cold).name}: the King's ruling at court is not forgotten.` });
+        this.record({ turn, kind: "scheme", text: `${c.name} of ${c.house} says nothing of the King's ruling at court. Riders leave ${cityName(c.seat)} by night.`, city: c.seat ?? undefined });
+        continue;
+      }
       this.turnNow = turn;
+      // What they were waiting in the hall to ask can wait: the ruling owed comes first (as a crisis does).
+      this.petitions = this.petitions.filter((p) => p.answered || p.from !== c.id || p.called != null || p.kind === "arc");
       const p = await this.petition(c, world, turn, ctx, true, { urgent: true, prefer: "remembers", deed: owed });
       if (p) { p.called = turn; made.push(p); want--; }
     }
@@ -844,11 +866,17 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
 
     // A lord who remembers: a deed of the King's, a year old or more, brought
     // back to his face. The simulation picks the deed; the model only voices it.
-    const owed = (this.deedsOf?.(c.playerId) ?? []).filter((x) => Math.abs(x.d) >= 8 && x.turn <= turn - 4 && (!x.raised || x.raised <= turn - 12));
+    // A lord comes back about the past at most once a year (Builder 2's check: one lord returned 7 times in a reign).
+    const backLately = this.petitions.some((x) => x.from === c.id && x.kind === "remembers" && (x.turn ?? 0) > turn - SEASONS_PER_YEAR);
+    const lately = this.petitions.filter((x) => (x.turn ?? 0) > turn - 2 * SEASONS_PER_YEAR);
+    const tooMany = lately.length >= 3 && lately.filter((x) => x.kind === "remembers").length / lately.length >= 0.25;
+    const owed = backLately || tooMany ? [] : (this.deedsOf?.(c.playerId) ?? []).filter((x) => Math.abs(x.d) >= 8 && x.turn <= turn - 4 && (!x.raised || x.raised <= turn - 12));
     const fav = ctx.favour?.(c.playerId) ?? 50;
     const grudge = owed.filter((x) => x.d < 0).sort((a, b) => a.d - b.d)[0];
     const kindness = owed.filter((x) => x.d > 0).sort((a, b) => b.d - a.d)[0];
     const deed = opts.deed ?? (fav < 55 ? (grudge ?? kindness) : (kindness ?? grudge));
+    // The lord this one hates most (sworn enemy): an oath to the crown sets their house against the crown too.
+    const sworn = this.alive().filter((x) => x.rank === "lord" && x.playerId !== c.playerId).sort((a, b) => this.opinion(c.id, a.id) - this.opinion(c.id, b.id))[0];
     if (deed) candidates.push({ kind: "remembers", deed: deed.what, weight: deed.d < 0 ? 7 : 4, make: () => {
       deed.raised = turn;
       const when = calendar(deed.turn);
@@ -863,14 +891,15 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       if (deed.d < 0) {
         const threat = fav < 35 ? " Do not look for our banners until it is set right." : " I would hear the crown set it right.";
         return { kind: "remembers", deed: deed.what, grudge: true, text: `${c.name} of ${c.house}: "${said}. ${c.house} has not forgotten it, Your Grace.${threat}"`, facts: facts(c.playerId), options: [
-          { id: "amend", label: "Make amends (120 gold)", hint: `${c.house} +15 · the grudge is laid to rest`, cost: 120 },
-          { id: "hear", label: "Hear him out, promise nothing", hint: `${c.house} +3 · the grudge stands` },
-          { id: "firm", label: "The crown did what it must", hint: `${c.house} −8 · ${c.name} adds this to the account` },
+          { id: "amend", label: "Make amends (120 gold)", hint: `${c.house} +15 · the grudge is laid to rest`, cost: 120, favour: { [c.playerId]: 15 } },
+          { id: "hear", label: "Hear him out, promise nothing", hint: `${c.house} +3 · the grudge stands`, favour: { [c.playerId]: 3 } },
+          { id: "firm", label: "The crown did what it must", hint: `${c.house} −8 · ${c.name} adds this to the account`, favour: { [c.playerId]: -8 } },
         ] };
       }
       return { kind: "remembers", deed: deed.what, grudge: false, text: `${c.name} of ${c.house}: "${said}. ${c.house} remembers its friends, Your Grace. Our swords are yours when you call."`, facts: facts(c.playerId), options: [
-        { id: "oath", label: "Take their oath", hint: `${c.house} +6 · ${c.name} is bound to the crown` },
-        { id: "purse", label: "Ask for gold toward the realm", hint: `The crown gains 60 gold · ${c.house} −4` },
+        // Neither answer is free: an oath binds them, and sets their sworn enemy against the crown; gold is gold, and costs thanks.
+        { id: "oath", label: "Take their oath", hint: `${c.house} +6 · ${c.name} is bound to the crown${sworn ? ` · ${sworn.house} −6, wary of the crown's new sword` : ""}`, favour: { [c.playerId]: 6, ...(sworn ? { [sworn.playerId]: -6 } : {}) } },
+        { id: "purse", label: "Ask for gold toward the realm", hint: `The crown gains 60 gold · ${c.house} −4`, favour: { [c.playerId]: -4 } },
       ] };
     } });
 
@@ -1052,7 +1081,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
         if (role === "all") houses.forEach((h) => { map[h.id] = (map[h.id] ?? 0) + v; });
         else { const pid = pidOf(role); if (pid != null) map[pid] = (map[pid] ?? 0) + v; }
       }
-    } else if (p.kind === "arc") map = o.favour ?? {};
+    } else if (p.kind === "arc" || o.favour) map = o.favour ?? {};  // a story's, or a plea that carries its favour with its options
     if (!map) return null;
     const name = (pid) => names.shown(houseFor(world.players.find((x) => x.id === Number(pid)) ?? {}).name);
     const rows = Object.entries(map).filter(([, d]) => d).map(([pid, d]) => ({ house: name(pid), d })).filter((r) => r.house);
