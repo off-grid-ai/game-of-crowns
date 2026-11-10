@@ -532,3 +532,17 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - the state test hooks (war, prosperity, grief, grasping, winter, the King passing) and grasping in the city state;
   - then the grouped film session.
 - **Verdict:** on course.
+
+## 2026-11-10, autopilot (supervisor turn)
+
+- **Supervisor** (a fresh agent, my last six commits). Three problems, all fixed in 1f249db:
+  - talks fell apart, so one villager ended up talking to the air;
+  - a besieged lord jumped the court queue with an unrelated plea, and the Hand's siege report was dropped;
+  - "a year" was defined three times.
+  - Noted, not fixed: bridge year constants (frozen for C3).
+- **Measured:**
+  - Behaviour probe: 20 of 20, three runs, with news passed on in talks.
+  - Minds' process cost: about 0.1 ms a frame for 60 minds (headless, within noise).
+- **Process slip:** two state proofs ran on one port. Rerun once, cleanly.
+- **Direction:** consolidation in the judge's order. C3 (builder 2 splitting server.js) blocks the state hooks and the film session.
+- **Verdict:** on course. The supervisor caught real bugs in a "done" feature, and they were fixed the same turn.
