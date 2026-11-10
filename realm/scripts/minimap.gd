@@ -71,6 +71,10 @@ void fragment() {
 var _sig := ""
 var _seats: Array = []  # [tile position, colour, is seat, name, sigil]
 var _pings: Array = []  # [tile position, colour, label]: what's happening where
+var _houses_now := {}
+var _primed := false
+var _seen_ms := {}  # a scene's key -> when it first showed: a new one bursts loud for 3 s
+var _bursts: Array = []  # [tile position, colour, first seen ms]
 const Heraldry = preload("res://scripts/heraldry.gd")
 const WAR := Color(0.95, 0.25, 0.2)
 const TROUBLE := Color(1.0, 0.7, 0.2)
@@ -102,7 +106,9 @@ func refresh(world: Dictionary, houses: Dictionary) -> void:
 	if terrain == null or terrain.width == 0:
 		return
 	var owners: Array = world.get("owners", [])
+	_houses_now = houses
 	_activity(world)
+	_primed = true
 	var sig := str(terrain.width) + str(hash(owners)) + str(world.get("cities", []).size())
 	if sig == _sig:
 		return
@@ -155,7 +161,21 @@ func _activity(world: Dictionary) -> void:
 		var kind := String(sc.get("kind", ""))
 		if PING.has(kind):
 			var col: Color = LORDS if sc.get("lord", false) and kind != "sack" and kind != "handover" else PING[kind]
-			_pings.append([Vector2(float(sc.get("x", 0)) + 0.5, float(sc.get("y", 0)) + 0.5), col, kind])
+			var at := Vector2(float(sc.get("x", 0)) + 0.5, float(sc.get("y", 0)) + 0.5)
+			_pings.append([at, col, kind])
+			# New news bursts in its house's colour, loud for three pulses (an RTS alert).
+			var key := "%s:%d:%d:%d" % [kind, int(sc.get("x", 0)), int(sc.get("y", 0)), int(sc.get("turn", 0))]
+			if not _seen_ms.has(key):
+				_seen_ms[key] = Time.get_ticks_msec()
+				if not _primed:
+					continue  # what was already happening when the game opened doesn't burst
+				var owner := int(sc.get("to", -1))
+				if owner < 0:
+					for c in world.get("cities", []):
+						if int(c["id"]) == int(sc.get("city", -1)):
+							owner = int(c["owner"])
+				var hc := Color.from_string(String(_houses_now.get(owner, {}).get("color", "")), col)
+				_bursts.append([at, hc, Time.get_ticks_msec()])
 	for c in world.get("cities", []):
 		var at := Vector2(float(c["x"]) + 0.5, float(c["y"]) + 0.5)
 		if c.get("disorder", false):
@@ -211,6 +231,15 @@ func _draw() -> void:
 	var k := _scale()
 	# Activity first, under the sigils: a ring that swells and fades, over and over.
 	var t := Time.get_ticks_msec() / 1000.0
+	# The loud part: new news, three big rings in its house's colour, then gone.
+	var now_ms := Time.get_ticks_msec()
+	_bursts = _bursts.filter(func(b): return now_ms - int(b[2]) < 3000)
+	for b in _bursts:
+		var age := float(now_ms - int(b[2])) / 1000.0
+		var ph := fmod(age, 1.0)
+		var bc: Color = b[1]
+		draw_circle(b[0] * k, 5.0, bc)
+		draw_arc(b[0] * k, 6.0 + ph * 26.0, 0.0, TAU, 32, Color(bc.r, bc.g, bc.b, 1.0 - ph), 3.0, true)
 	for p in _pings:
 		var phase := fmod(t * 0.8 + p[0].x * 0.37, 1.0)
 		var col: Color = p[1]

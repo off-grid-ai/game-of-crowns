@@ -92,6 +92,7 @@ var _court_sig := ""
 var _petitions: Array = []
 var _court_waiting := false  # the court panel, set aside for a commoner's card
 var _court_hidden := true
+var _toast_waiting := ""  # a toast held while another voice speaks
 var _court_met := false  # the court has opened once this sitting
 
 var _toast: Label
@@ -1238,6 +1239,11 @@ func _process(delta: float) -> void:
 		_offer.modulate.a = clampf(_offer_left, 0.0, 1.0)
 		if _offer_left <= 0.0:
 			_offer.visible = false
+	# A toast that waited for the other voice speaks once it's clear.
+	if _toast_waiting != "" and not (_offer and is_instance_valid(_offer) and _offer.visible and _offer_left > 0.5) and not (_edge and _edge.visible):
+		var w := _toast_waiting
+		_toast_waiting = ""
+		toast(w)
 	# Notices know where the cards are. They sit in the gap between the card
 	# under the top bar and the town card below; when there is no gap, a passing
 	# notice (a scene's caption, an offer to watch) waits rather than writing over
@@ -1885,33 +1891,62 @@ func offer_watch(text: String, go: Callable) -> void:
 
 
 ## An arrow at the screen's edge pointing to the latest news when it's off
-## screen (the RTS way): click it, or press Space, to go there.
-var _edge: Button
+## screen (the RTS way): a solid pill in the house's colour, loud for a moment
+## when it arrives, then steady. Click it, or press Space, to go there.
+var _edge: PanelContainer
+var _edge_label: Label
 
 
-func edge_arrow(at, angle: float, text: String) -> void:
+func edge_arrow(at, angle: float, text: String, color: Color, fresh: bool) -> void:
 	if _edge == null:
-		_edge = _btn("", func(): last_event.emit())
-		_edge.add_theme_color_override("font_color", T.ACCENT)
-		_edge.add_theme_font_size_override("font_size", 13)
+		_edge = PanelContainer.new()
+		_edge.mouse_filter = Control.MOUSE_FILTER_STOP
+		_edge.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		_edge.gui_input.connect(func(e: InputEvent):
+			if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+				last_event.emit())
+		_edge_label = Label.new()
+		_edge_label.add_theme_font_size_override("font_size", 24)
+		_edge_label.add_theme_color_override("font_color", Color(0.98, 0.96, 0.9))
+		_edge.add_child(_edge_label)
 		_root.add_child(_edge)
 	_edge.visible = at != null and not _cinema_on
 	if not _edge.visible:
 		return
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0.07, 0.06, 0.05, 0.9)
+	box.border_color = color
+	box.set_border_width_all(3)
+	box.set_corner_radius_all(10)
+	box.content_margin_left = 16
+	box.content_margin_right = 16
+	box.content_margin_top = 8
+	box.content_margin_bottom = 8
+	_edge.add_theme_stylebox_override("panel", box)
 	var arrows := ["→", "↘", "↓", "↙", "←", "↖", "↑", "↗"]
 	var i := posmod(roundi(angle / (PI / 4.0)), 8)
-	_edge.text = "%s  %s" % [arrows[i], text] if i in [4, 5, 6, 3] else "%s  %s" % [text, arrows[i]]
+	_edge_label.text = "%s  %s" % [arrows[i], text] if i in [3, 4, 5, 6] else "%s  %s" % [text, arrows[i]]
 	_edge.tooltip_text = "Go there (Space)"
 	var sz := _edge.get_combined_minimum_size()
 	var view := get_viewport().get_visible_rect().size
 	var p: Vector2 = at
 	_edge.position = Vector2(clampf(p.x - sz.x * 0.5, 12, view.x - sz.x - 12), clampf(p.y - sz.y * 0.5, 120, view.y - sz.y - 12)).round()
 	_edge.size = sz
+	_edge.pivot_offset = sz * 0.5
+	if fresh:
+		# Loud for a moment, then it settles (StarCraft, Age of Empires II).
+		_edge.scale = Vector2(1.35, 1.35)
+		var tw := _edge.create_tween()
+		tw.tween_property(_edge, "scale", Vector2.ONE, 0.6).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func toast(text: String) -> void:
 	if text.strip_edges() == "":
 		return  # nothing to say: no empty card
+	# One voice at a time: while a Watch card or a news arrow is speaking, this waits its turn.
+	if (_offer and is_instance_valid(_offer) and _offer.visible and _offer_left > 0.5) or (_edge and _edge.visible):
+		_toast_waiting = text
+		return
 	_toast.text = text
 	_toast_time = 7.0  # long enough to read a sentence or two
 	_toast_result = true

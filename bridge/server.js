@@ -95,8 +95,9 @@ function picture(e) {
   if (!at) return;
   const here = { x: at.x, y: at.y, city: at.id, lord: true };
   switch (e.kind) {
-    case "betrayal": if (e.to != null) scene("handover", { ...here, from: e.from ?? at.owner, to: e.to }); break;
-    case "raid": scene("sack", here); break;
+    // The caption says who did what to which town, in the chronicle's own words.
+    case "betrayal": if (e.to != null) scene("handover", { ...here, from: e.from ?? at.owner, to: e.to, label: `Treachery: ${cityName(at.id)} opens its gates to ${houseFor(world.players.find((p) => p.id === e.to)).name}` }); break;
+    case "raid": scene("sack", { ...here, label: `Raiders burn the farms of ${cityName(at.id)}` }); break;
     case "succession": scene("feast", { ...here, owner: at.owner }); break;
     case "death": if (seat && seat.id !== at.id) scene("rider", { ...here, tx: seat.x, ty: seat.y, label: `Word of a death rides from ${cityName(at.id)}` }); break;
     case "alliance": if (other) scene("rider", { ...here, tx: other.x, ty: other.y, label: `A rider carries a letter to ${cityName(other.id)}` }); break;

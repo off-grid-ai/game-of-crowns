@@ -282,7 +282,33 @@ func _observe() -> Dictionary:
 		if p and p.visible:
 			panels.append(n.trim_prefix("_").trim_suffix("_panel"))
 	o["panels"] = panels
+	o["ui_cover"] = _ui_cover()
 	return o
+
+
+## Share of the screen the interface covers (0-1), sampled on a 48 x 27 grid:
+## every visible panel, card and bar counts.
+func _ui_cover() -> float:
+	var rects: Array[Rect2] = []
+	for n in main.ui.find_children("*", "PanelContainer", true, false):
+		var c := n as Control
+		if c.is_visible_in_tree() and c.modulate.a > 0.1:
+			rects.append(c.get_global_rect())
+	for n in main.find_children("*", "Control", true, false):
+		if n.name == "Minimap" or (n.get_script() and String(n.get_script().resource_path).ends_with("minimap.gd")):
+			var c := n as Control
+			if c.is_visible_in_tree():
+				rects.append(c.get_global_rect())
+	var view := get_viewport().get_visible_rect().size
+	var hit := 0
+	for gy in 27:
+		for gx in 48:
+			var pt := Vector2((gx + 0.5) * view.x / 48.0, (gy + 0.5) * view.y / 27.0)
+			for r in rects:
+				if r.has_point(pt):
+					hit += 1
+					break
+	return snappedf(float(hit) / (48.0 * 27.0), 0.01)
 
 
 func _note(s: String) -> void:
