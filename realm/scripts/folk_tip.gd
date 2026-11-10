@@ -11,6 +11,7 @@ const TRADES := {"farmer": "Farmer", "crafter": "Artisan", "tavern": "Tavern kee
 	"market": "Market trader", "gentry": "Gentry", "idler": "Idler", "child": "Child"}
 const NEAR := 12.0  # camera distance (camera_rig.gd) where faces can be seen
 const EVERY := 0.12  # seconds between looks under the cursor
+const FIGURE := 0.21  # a person's height in game units (about 1.75 m)
 
 var main: Node
 var _trade: Label
@@ -139,9 +140,29 @@ func _under_cursor() -> Dictionary:
 	var cam := get_viewport().get_camera_3d()
 	if cam == null:
 		return {}
-	var who: Dictionary = main.villagers.who_on_screen(cam, get_viewport().get_mouse_position())
-	if who.is_empty():
-		return {}
-	var list: Array = main.villagers.crowds.get(int(who["town"]), [])
-	var i := int(who["i"])
-	return {"a": list[i]} if i < list.size() else {}
+	# The whole figure on screen, feet to head, not a small ring at the waist: at
+	# street level a person stands hundreds of pixels tall (screen review v10: no
+	# tooltip with the cursor on people mid-street). The nearest one whose figure
+	# holds the cursor.
+	var at := get_viewport().get_mouse_position()
+	var best := {}
+	var best_d := INF
+	for id in main.villagers.crowds:
+		for a in main.villagers.crowds[id]:
+			var n: Node3D = a.get("node")
+			if n == null or not n.is_visible_in_tree():
+				continue
+			var feet := n.global_position
+			var head := feet + Vector3(0, FIGURE, 0)
+			if cam.is_position_behind(feet) or cam.is_position_behind(head):
+				continue
+			var f := cam.unproject_position(feet)
+			var h := cam.unproject_position(head)
+			var half_w := maxf(10.0, (f.y - h.y) * 0.22)
+			if at.y < h.y - 4.0 or at.y > f.y + 4.0 or absf(at.x - lerpf(h.x, f.x, 0.5)) > half_w:
+				continue
+			var d := cam.global_position.distance_to(feet)
+			if d < best_d:
+				best_d = d
+				best = a
+	return {"a": best} if not best.is_empty() else {}
