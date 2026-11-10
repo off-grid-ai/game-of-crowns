@@ -670,3 +670,15 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - soldiers on their own figures (units.figure_of and a unit step, 080e265);
   - scars, the season turn, perf with engine counts.
 - **Verdict:** on course. Each round fixes what the last one showed. Perf is the open risk.
+
+## 2026-11-10 20:35, autopilot (Mac's "looks like a joke" shots; three side sessions)
+
+- **What's going on:**
+  - Mac's 19:50 shots: modern black-leather women, people standing inside each other, kneeling at bare ground.
+  - 124bf5e (pushed): Erika and Arissa out; non-walkers (scene folk, soldiers, riders) are RVO obstacles for walkers; a mind's paces go only to empty ground; no kneeling or shoving at a bare door; a "CHECK people inside each other" line in probe runs. Probe PASS 20/20. Not filmed yet.
+  - Mac started three side sessions at about 20:30 (his words, relayed by the judge): NPC perf (anim_lod, BTPlayer setup), Townsfolk look (people, chatter, town_life, villagers, npc_mind talk and activities), Film round 5 (the only Godot window). Nothing has landed from them yet.
+  - Builder 2: server.js and an untracked season.js (C3 in progress). I stay off both.
+- **Where we're heading:** "First: playable". Mac's shots are exactly that friction, and all three sessions are aimed at it (bodies, personal space, captions, perf, then film).
+- **Right way?** No new reign measured since the last entry, so the fun-bar lines are unchanged. The work follows Mac's own notes. Nobody is stuck, looping or building something unapproved. File ownership is split with no overlaps.
+- **Verdict:** on course. The proof is Film round 5's CHECK pair counts and its street-level frames.
+- **Open:** props at work benches, so kneeling and hammering clips have something to work on (Townsfolk look's list); Mixamo heads fading; the heraldry.colour swaps.
