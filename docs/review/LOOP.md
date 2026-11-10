@@ -614,3 +614,21 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - Two minds-on runs are suspect (a stray Escape opened the menu), so they're re-run in round 3.
   - The cycle breakdown is noisy (6 s per system); its first lead is scenes, at about 40 ms.
 - **Verdict:** off course on what a player sees (camera and readability). Corrected this turn; round 3 checks that it took.
+
+## 2026-11-10, autopilot (perf found; camera reviewed)
+
+- **Perf (round 2's profile):**
+  - The stutter is the ruins build: 1254 ms over the first 10 s after marks, then 0.2 ms.
+  - Ruins also bring a steady +45–55 ms of process time outside every timed job (nodes +2.4k).
+  - Both are with builder 2. Minds aren't the cost.
+  - The cycle profile is too noisy to rank (readings fall 158 → 20 ms through a run), so every system's _process now reports its own ms under the probe (b275783, and builder 2's).
+- **Supervisor** (fresh agent, my uncommitted camera and dressing): 8 problems, all fixed before round 3:
+  - SpringArm3D's stale frame, replaced by ShapeCast3D updated on demand;
+  - one body per building, with the eye's own building excluded (castles covered);
+  - the rebuild hashes heights;
+  - the 42° cap kept at every distance;
+  - focus and snap start fresh;
+  - props block the walk map and sit on the table;
+  - cinematics read the rig's ground-view rule instead of a drifted copy.
+- **Weather:** the mirror reads /world's weather when the bridge sends it. Rain empties the square (c6a3845).
+- **Verdict:** on course. Round 3 checks that the camera and dressing took.
