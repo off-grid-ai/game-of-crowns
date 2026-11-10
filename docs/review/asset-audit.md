@@ -39,7 +39,7 @@ Snapshot: 10 Nov 2026, read-only. Method: every model, clip, sound and image was
 
 Close runners-up: market-stall goods split out as carry items (sacks, melons, apples, handcart in `medieval_market_asset_pack`), Poly Haven castle door, iron gate and wildflowers (`~/Downloads/Aldmere/polyhaven/models`), a draft horse for carts, and roof and plaster texture sets for house variety.
 
-**Never use:** the Kenney castle and town kits and the Quaternius `q/` kit (toy low-poly look), `modular_castle_wall_kit` (CC-BY-NC), Mixamo's modern characters and Egunoff's modern "LOD" people, the ActionVFX blood pack (licence not cleared), the Meshy AI legionnaire (Roman, licence unknown), the 15 `.crdownload` partial files.
+**Never use:** the Kenney castle and town kits and the Quaternius `q/` kit (toy low-poly look), `modular_castle_wall_kit` (CC-BY-NC), Mixamo's modern characters (Eve among them: her eye check failed on 2026-11-10, a modern fitted suit) and Egunoff's modern "LOD" people, the ActionVFX blood pack (licence not cleared), the Meshy AI legionnaire (Roman, licence unknown), the 15 `.crdownload` partial files.
 
 ---
 
