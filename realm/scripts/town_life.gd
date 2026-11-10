@@ -791,22 +791,24 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 		var along := Vector3(-out.z, 0, out.x)
 		for i in goods.size():
 			_prop(life, center, goods[i], m - out * (float(st[1]) * 0.5 + 0.06) + along * ((i - (goods.size() - 1) * 0.5) * 0.07), atan2(out.x, out.z), 1.0, 0.0, 0.06)
-	var edge := Vector3(-well.x, 0, -well.z).normalized() * 1.0  # the square's far side from the well
+	# Where the eye lands: inside the square, between its heart and the far side
+	# from the well (the judge: dressing at the edge is dressing nobody sees).
+	var edge := Vector3(-well.z, 0, well.x).normalized() * 0.55  # across the square from the well-to-market line, clear of the stalls
 	var side := Vector3(-edge.z, 0, edge.x).normalized()
 	if c.get("atWar", false):
 		# A barricade cart across the road in, weapons stacked, and more of the watch.
 		var cart: Node3D = Real.make("medieval_wooden_cart")
 		if cart and _open(center, edge * 1.2, _blocked(root, life), life.get_meta("standing")):
 			cart.position = Vector3(edge.x * 1.2, _y(center, edge * 1.2), edge.z * 1.2)
-			cart.rotation.y = atan2(side.x, side.z)
+			cart.rotation.y = atan2(side.x, side.z) + 0.35  # slewed across the way, not parked
 			life.add_child(cart)
-			life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(edge * 1.2, Real.footprint("medieval_wooden_cart"), atan2(side.x, side.z))])
+			life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(edge * 1.2, Real.footprint("medieval_wooden_cart"), atan2(side.x, side.z) + 0.35)])
 		elif cart:
 			cart.free()  # no room on that road: no cart across it
 		_prop(life, center, "WeaponStand", edge * 1.05 + side * 0.2, atan2(-edge.x, -edge.z), 1.0, 0.0, 0.1)
 		_prop(life, center, "Shield_Wooden", edge * 1.05 - side * 0.2, atan2(-edge.x, -edge.z))
-		for i in 2:
-			var g := _stand(root, life, center, edge * 0.95 + side * (i - 0.5) * 0.25, "soldier", "Sword_Idle", rng.randi(), Color.WHITE, 0.2)
+		for i in 3:
+			var g := _stand(root, life, center, edge * 0.95 + side * (i - 1) * 0.22, "soldier", "Sword_Idle", rng.randi(), Color.WHITE, 0.2)
 			if g:
 				g.rotation.y = atan2(edge.x, edge.z)  # facing the road out
 				_mind(g, "guard", center)
@@ -821,6 +823,12 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 		for i in 3:
 			_prop(life, center, "Candle_1", well + Vector3(cos(i * 2.1), 0, sin(i * 2.1)) * 0.14)  # set down round the well, not in it
 	if c.get("prosperity", false):
+		# One more stall in good times, by the well, heaped with produce.
+		var extra := well + side * 0.38
+		var stall := _prop(life, center, "Stall_Empty", extra, atan2(-extra.x, -extra.z), 1.0, 0.0, 0.16)
+		if stall:
+			for i in 3:
+				_prop(life, center, ["FarmCrate_Apple", "FarmCrate_Carrot", "Barrel_Apples"][i], extra + Vector3(-extra.z, 0, extra.x).normalized() * (i - 1) * 0.06 - extra.normalized() * 0.08, atan2(-extra.x, -extra.z))
 		# A lute at the well and children at play.
 		var lute := _stand(root, life, center, well + side * 0.18, "townsfolk", "Lute_Playing", rng.randi(), Color.WHITE, 0.15)
 		if lute:

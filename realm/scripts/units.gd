@@ -246,8 +246,14 @@ func _process_timed(delta: float) -> void:
 			if not TownNav.towns_at(towns, p).is_empty():
 				n.position = _nav.stand(towns, n.position, 0.17 if f.get("horse", false) else 0.0)
 			if not f.get("horse", false):
+				f["playing"] = ""  # marching: the stance is told afresh when he stops
 				_people.play(n, "Injured_Walk" if f.get("hurt", false) else "Walk", clampf(float(f.get("pace", MARCH_SPEED)) / _people.WALK_PACE, 0.6, 1.5))  # the stride matches the ground covered
 		elif f.get("horse", false):
 			pass  # the horse stands; its gait follows how it is moved
 		else:
-			_people.play(n, stance(f))
+			# A soldier at rest is told his stance once, when it changes (wounded, dug in,
+			# at the ready), not every frame.
+			var want := stance(f)
+			if f.get("playing", "") != want:
+				_people.play(n, want)
+				f["playing"] = want

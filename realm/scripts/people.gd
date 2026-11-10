@@ -380,6 +380,17 @@ static func _head_y(skeleton: Skeleton3D) -> float:
 
 
 func _finish(person: Node3D, skeleton: Skeleton3D, rng: RandomNumberGenerator, role: String, age: String, build: String, gender: String, k := 1.0) -> Node3D:
+	# Anyone at the lens fades out, dithered, as the trees do (realistic.fade_near):
+	# a street-level camera standing beside someone never shows a wall of cloth.
+	# The materials are shared, so each is set once for everyone wearing it.
+	for mi in person.find_children("*", "MeshInstance3D", true, false):
+		var m := mi as MeshInstance3D
+		if m.mesh == null:
+			continue
+		for i in m.mesh.get_surface_count():
+			var mat := m.get_active_material(i) as BaseMaterial3D
+			if mat and mat.distance_fade_mode != BaseMaterial3D.DISTANCE_FADE_PIXEL_DITHER:
+				Realistic.fade_near(mat, NEAR_GONE, NEAR_SOLID)
 	person.add_to_group("people")  # everyone who stands on the ground, for the ground check
 	var anim := AnimationPlayer.new()
 	anim.name = "Anim"
@@ -440,6 +451,10 @@ func _shape(skeleton: Skeleton3D, build: String, age: String) -> void:
 			skeleton.set_bone_pose_scale(head, Vector3.ONE * 1.1)
 
 
+## Within this of the lens a person is gone, beyond the next fully there: about 0.7 m and 1.5 m.
+const NEAR_GONE := 0.08
+const NEAR_SOLID := 0.18
+const Realistic := preload("res://scripts/realistic.gd")
 static var _tinted := {}  # [material, colour, livery] -> the shared tinted copy
 
 
