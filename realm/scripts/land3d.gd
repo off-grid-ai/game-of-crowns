@@ -169,15 +169,67 @@ func _control(weights: Array) -> float:
 	return Terrain3DUtil.as_float(bits)
 
 
-## The season's colour for grass and open ground; in winter, snow lies on it instead.
+## The season's colour for grass and open ground; in winter, snow settles
+## over the land (SNOW_COVER, in Terrain3D's shader) in the first quarter of
+## the winter and holds; it melts in the first quarter of the spring.
 func set_grass(tint: Color, snow := false) -> void:
 	var ta: Terrain3DTextureAsset = land.assets.get_texture_asset(0)
 	if ta == null:
 		return
-	var layer := "snow" if snow else "grass"
-	ta.albedo_texture = load("res://assets/ground/packed/%s-albedo-height.png" % layer)
-	ta.normal_texture = load("res://assets/ground/packed/%s-normal-rough.png" % layer)
 	ta.albedo_color = tint
+	var goal := 1.0 if snow else 0.0
+	if _snow_laid and is_equal_approx(goal, _snow_to):
+		return
+	_snow_to = goal
+	if not _snow_laid:  # the realm opens in its season: the snow already lies, or doesn't
+		_snow_laid = true
+		_set_snow(goal)
+		return
+	if _snow_tween:
+		_snow_tween.kill()
+	_snow_tween = create_tween()
+	_snow_tween.tween_method(_set_snow, _snow_now, goal, SNOW_SETTLE)
+
+
+const SNOW_SETTLE := 10.0  # seconds: a quarter of a season (the bridge's turnSeconds, 40)
+var _snow_now := 0.0
+var _snow_to := 0.0
+var _snow_laid := false
+var _snow_tween: Tween
+
+
+func _set_snow(v: float) -> void:
+	_snow_now = v
+	land.material.set_shader_param("snow_cover", v)
+
+
+## Winter's snow in Terrain3D's own shader (Terrain3D has no snow layer; its
+## docs and its maintainer say to build on the shader). One even cover over
+## all ground that faces up, from Terrain3D's own values: none on cliffs
+## (w_normal), thinner on the town's trodden earth and ploughed fields (their
+## ids in the control map, MUD and FIELD) so the ruts and furrows show through
+## as in Manor Lords, filling the ground's hollows first as it settles
+## (the texture's height), and soft and matte where it lies.
+const SNOW_UNIFORMS := """
+uniform float snow_cover = 0.0;
+uniform vec3 snow_col : source_color = vec3(0.86, 0.88, 0.92);
+"""
+const SNOW_COVER := """
+	float snow_k = 0.0;
+	if (snow_cover > 0.0) {
+		float snow_up = smoothstep(0.62, 0.86, w_normal.y);
+		ivec2 sid = texture_ids[3];
+		vec2 sw = t_weights[3];
+		float trod = (sid.x == %d || sid.x == %d ? sw.x : 0.0) + (sid.y == %d || sid.y == %d ? sw.y : 0.0);
+		float depth = snow_cover * snow_up * (1.0 - 0.6 * clamp(trod, 0.0, 1.0));
+		float bump = mat.albedo_height.a;
+		snow_k = smoothstep(bump * 0.6, bump * 0.6 + 0.3, depth);
+		roughness = mix(roughness, 0.82, snow_k);
+		specular = mix(specular, 0.3, snow_k);
+		mat.normal_map_depth *= 1.0 - 0.55 * snow_k;
+	}
+""" % [MUD, FIELD, MUD, FIELD]
+const SNOW_ALBEDO := "\n\tALBEDO = mix(ALBEDO, snow_col * (0.94 + 0.06 * mat.albedo_height.a), snow_k);"
 
 
 ## The realm's atlas (assets/maps/atlas.png, Azgaar's map drawn from its own
@@ -194,10 +246,12 @@ func _drape_atlas(mat: Terrain3DMaterial, terrain: Node3D) -> void:
 	if sh == null or not sh.code.contains("varying vec3 v_vertex;"):
 		mat.shader_override_enabled = false
 		return
-	var code := sh.code.replace("varying vec3 v_vertex;", "varying vec3 v_vertex;\nuniform sampler2D atlas_tex : source_color, filter_linear_mipmap_anisotropic, repeat_disable;\nuniform vec2 atlas_size = vec2(1.0);\nuniform float atlas_mix = 0.0;\n" + REALM_UNIFORMS)
+	var code := sh.code.replace("varying vec3 v_vertex;", "varying vec3 v_vertex;\nuniform sampler2D atlas_tex : source_color, filter_linear_mipmap_anisotropic, repeat_disable;\nuniform vec2 atlas_size = vec2(1.0);\nuniform float atlas_mix = 0.0;\n" + SNOW_UNIFORMS + REALM_UNIFORMS)
+	# The snow, worked out where Terrain3D sets its roughness and specular, before it applies them.
+	code = code.replace("\t// Apply PBR", SNOW_COVER + "\n\t// Apply PBR")
 	var at := code.find("ALBEDO = ")
 	var end := code.find("\n", at)
-	code = code.insert(end, "\n\tALBEDO = mix(ALBEDO, texture(atlas_tex, v_vertex.xz / atlas_size).rgb, atlas_mix);" + REALM_WASH)
+	code = code.insert(end, SNOW_ALBEDO + "\n\tALBEDO = mix(ALBEDO, texture(atlas_tex, v_vertex.xz / atlas_size).rgb, atlas_mix);" + REALM_WASH)
 	var drape := Shader.new()
 	drape.code = code
 	mat.shader_override = drape
