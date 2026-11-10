@@ -275,6 +275,7 @@ const LENS_LAYER := 1 << 19
 ## Street things (stalls, carts, barrels) the lens rises over rather than going
 ## through; on a layer of their own, so the roof sweep never pulls the lens in for them.
 const PROP_LAYER := 1 << 18
+const LOW_THING := 0.4  # under this above its ground, a thing the lens rides over, not a building
 const PROP_TOP := 0.32  # a stall's or cart's height, and a little over (game units)
 var _cast: ShapeCast3D
 var _bodies := {}  # town id -> [holder Node3D, signature]
@@ -311,7 +312,17 @@ func _lens_bodies() -> void:
 		var holder := Node3D.new()
 		holder.name = "LensBodies"
 		for i in fps.size():
-			_prism(holder, fps[i], height_of(fps[i], tops, i) + 0.12)
+			# Something low (a cart, a barrel, a crate set down by the house) the lens
+			# rides over, as it does the street's stalls; a building it keeps out of.
+			var top := height_of(fps[i], tops, i)
+			var mid := Vector2.ZERO
+			for q in fps[i]:
+				mid += q / float(fps[i].size())
+			var ground := _floor_at(root.to_global(Vector3(mid.x, 0, mid.y))) - root.global_position.y
+			if i < tops.size() and float(tops[i]) >= 0.0 and top - ground < LOW_THING:
+				_prism(holder, fps[i], top - ground + 0.04, PROP_LAYER, ground)
+			else:
+				_prism(holder, fps[i], top + 0.12)
 		for w in walls:
 			_prism(holder, w[0], float(w[1]) + 0.12)
 		# Each stands on the ground under it (the town's root sits at its own height, not
