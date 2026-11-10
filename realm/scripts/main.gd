@@ -1210,7 +1210,7 @@ func _on_world(world: Dictionary) -> void:
 		_frame_for_shot(world)
 		# The realm opens with the houses and the chronicle in view; a test shot
 		# stays clear of them unless it asks (--panels).
-		ui.side_panels(not _shot.has("path") or _shot.get("panels", false))
+		ui.side_panels(_shot.get("panels", false))  # closed: the world first, the ledger and chronicle a click away
 		if _shot.get("panels", false):
 			ui._court_hidden = false
 

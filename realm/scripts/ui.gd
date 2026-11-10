@@ -767,8 +767,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 
-## The great houses down the left and the chronicle down the right: open by
-## default, so who is rising and what is happening are always in view.
+## The great houses down the left and the chronicle down the right, a click
+## away: the screen opens on the world, with the ranked sigils for who's rising.
 func side_panels(on: bool) -> void:
 	_houses_btn.button_pressed = on
 	_houses_panel.visible = on
@@ -794,10 +794,7 @@ func _build_houses() -> void:
 	_standing = T.title("", 14, T.TEXT)
 	_standing.autowrap_mode = TextServer.AUTOWRAP_WORD
 	v.add_child(_standing)
-	var bands := T.label("Favour: red, under 25, may rise against you · gold, under 35, won't answer your banners · 35 and up answer them · 60 and up are loyal")
-	bands.add_theme_font_size_override("font_size", 10)
-	bands.autowrap_mode = TextServer.AUTOWRAP_WORD
-	v.add_child(bands)
+	# (No key to decode: each house's mood is a word, below.)
 	v.add_child(HSeparator.new())
 	# (No "Proclaim your word": shaping minds in a sentence was a god's power, not a
 	# King's. Proclamations already made in a reign are listed below to be lifted.)
@@ -2535,6 +2532,11 @@ func _arms_pair(row: HBoxContainer, name: String, house: Dictionary, px: int) ->
 	row.add_child(_sigil_icon(house, int(px * 0.55)))
 
 
+## A house's mood toward the King, as anyone would say it.
+static func _mood(f: int) -> String:
+	return "Loyal" if f >= 60 else ("Content" if f >= 35 else ("Cold" if f >= 25 else "Angry"))
+
+
 func _set_sigil(icon: TextureRect, house: Dictionary) -> void:
 	icon.texture = Heraldry.sigil(house) if not house.is_empty() else null
 	icon.visible = icon.texture != null
@@ -2665,7 +2667,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		head.tooltip_text = String(col[2])
 		head.mouse_filter = Control.MOUSE_FILTER_PASS
 		grid.add_child(head)
-	var fav_head := T.label("Favour", T.TEXT_3)
+	var fav_head := T.label("Mood", T.TEXT_3)
 	fav_head.tooltip_text = "How each house feels toward the crown. Below 25 they may rise against you; gifts, feasts and fair rulings raise it."
 	fav_head.mouse_filter = Control.MOUSE_FILTER_PASS
 	grid.add_child(fav_head)
@@ -2758,8 +2760,9 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 			# before it becomes a rising.
 			var trend := int(p.get("favourTrend", 0))
 			# The drift follows the number it belongs to ("54 ▼13"), so it never reads as a column of its own.
-			var lead := ("  %s%d" % ["▲" if trend > 0 else "▼", absi(trend)]) if absi(trend) >= 3 else ""
-			fav.text = "%d" % f + lead
+			# Mood in a word a person would use, the number in the tooltip; an arrow if it's moving.
+			var lead := (" ▲" if trend > 0 else " ▼") if absi(trend) >= 3 else ""
+			fav.text = _mood(f) + lead
 			grid.add_child(fav)
 			# Every decision is seen (UI rule 13): a favour that moved counts to its
 			# new value and glows gold if it rose, red if it fell.
@@ -2768,7 +2771,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 			_fav_seen[pid] = f
 			if was != f:
 				var tw := fav.create_tween()
-				tw.tween_method(func(v: float): fav.text = "%d" % roundi(v) + lead, float(was), float(f), 1.2)
+				tw.tween_method(func(v: float): fav.text = _mood(roundi(v)) + lead, float(was), float(f), 1.2)
 				fav.modulate = Color(1.9, 1.5, 0.6) if f > was else Color(2.0, 0.6, 0.55)
 				fav.create_tween().tween_property(fav, "modulate", Color.WHITE, 3.0).set_delay(0.6)
 		else:
