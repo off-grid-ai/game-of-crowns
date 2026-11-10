@@ -158,7 +158,9 @@ class Step extends BTAction:
 
 	func _tick(delta: float) -> Status:
 		_left -= delta
-		if _left > 0.0:
+		# Done once the body is there, not when the clock says: the next move
+		# begun while the step's tween still carries them is a standing pose sliding.
+		if _left > 0.0 or (agent.position.distance_to(_to) > 0.002 and _left > -0.5):
 			return RUNNING
 		agent.remove_meta("step_to")
 		var face: float = blackboard.get_var(&"face", agent.rotation.y, false)

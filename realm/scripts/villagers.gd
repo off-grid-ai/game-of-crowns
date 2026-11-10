@@ -482,6 +482,8 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 		if a.has("agent"):
 			NavigationServer2D.agent_set_velocity(a["agent"], Vector2.ZERO)
 			NavigationServer2D.agent_set_avoidance_priority(a["agent"], 1.0)  # walkers go round those standing still
+		if a.has("arrive"):
+			_settle(a, delta)
 		if a.has("mind"):
 			return  # their mind plays the moves and picks what's next
 		if not a.get("talk", {}).is_empty():
@@ -494,7 +496,8 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 			a["checked_company"] = true
 			if not _company(a, n.position, 0.8):
 				a["work"] = ["Idle", "Looking_Around", "Bored"][a["rng"].randi() % 3]
-		people.play(n, a.get("work", "Idle"))
+		if not a.has("arrive"):
+			people.play(n, a.get("work", "Idle"))
 		if a["wait"] <= 0.0:
 			a["checked_company"] = false
 			_choose_next(a)
@@ -562,9 +565,14 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 			var across := Vector2(-to.y, to.x).normalized() * (0.14 if a["rng"].randf() < 0.5 else -0.14)
 			route.insert(0, nav.closest(a["map"], here + across + to.normalized() * 0.05))
 			a["route"] = route
-		people.play(n, "Idle", 1.0)
+		if not a.get("held_up", false):
+			a["held_up"] = true
+			people.play(n, "Idle", 1.0)  # once, as they stop: asked every frame it never lets the legs take over again
 		return
 	a["stuck"] = 0.0
+	if a.get("held_up", false):
+		a["held_up"] = false
+		people.play(n, a.get("gait", "Walk"))  # on the move again: the legs, not a standing pose sliding
 	if not terrain.is_land(n.position.x + step.x, n.position.z + step.y):
 		people.play(n, "Idle", 1.0)  # the shore: never a step into the water
 		a["route"] = PackedVector2Array()
@@ -898,12 +906,33 @@ func nearby(p: Vector3, rng: RandomNumberGenerator, r: float) -> Vector3:
 ## The body follows the moment the mind does: someone sent on their way
 ## walks from this frame, not still finishing a sentence to whoever they left.
 func _set_off(a: Dictionary) -> void:
+	a["held_up"] = false
 	if not PackedVector2Array(a["route"]).is_empty():
+		a.erase("arrive")
 		people.play(a["node"], a.get("gait", "Walk"))
 	elif a.get("talk", {}).is_empty():
-		people.play(a["node"], a.get("work", "Idle"))
+		_arrive(a, a.get("work", "Idle"))
 	else:
-		people.play(a["node"], "Idle")  # in place for a talk: the talk starts when the others are there
+		_arrive(a, "Idle")  # in place for a talk: the talk starts when the others are there
+
+
+## What they do on arriving starts once the body has stopped: begun while the
+## crowd's avoidance still carries them, a standing pose slides over the ground.
+func _arrive(a: Dictionary, clip: String) -> void:
+	a["arrive"] = clip
+	a["was"] = (a["node"] as Node3D).position
+	a["still"] = 0.0
+
+
+## Each frame on arrival: the move starts after a tenth of a second without moving.
+func _settle(a: Dictionary, delta: float) -> void:
+	var n: Node3D = a["node"]
+	var moved := Vector2(n.position.x - a["was"].x, n.position.z - a["was"].z).length()
+	a["was"] = n.position
+	a["still"] = float(a["still"]) + delta if moved < delta * WALK_SPEED * 0.05 else 0.0
+	if float(a["still"]) >= 0.1:
+		people.play(n, String(a["arrive"]))
+		a.erase("arrive")
 
 
 func _choose_next(a: Dictionary) -> void:
