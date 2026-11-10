@@ -62,3 +62,5 @@ The review page has the screens: https://claude.ai/artifact/4PkjM4Z31UEeDdoGHrHc
 - **Faces at court: pass.** Pressing the first face frames Saltkeep and stands the Hand's card beside it. The answers show sigils with ▲/▼ and the price in crowns.
 - **Long rain sticks: still seen.** One stick crosses the lens in a street frame on 5a8990e.
 - **The cast by role** (review page, bodies v2): peasant and townsfolk are the same twelve bodies in the same order. Soldier and knight look alike. Half the clergy aren't robed, and the nobles are knights, nuns and rangers.
+
+- **Rain with the camera moving: pass** (b9f6f02). No white streaks in 28 frames. Separate problem: the street camera passes through market stalls, barrels and a passer-by, which turn see-through as it goes.

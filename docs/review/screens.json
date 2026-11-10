@@ -1165,10 +1165,18 @@
         "file": "screens/v/rain-street-2.jpg",
         "what": "Staged rain held (7d078c6): grey sky, streaks only at the street",
         "clip": "screens/v/rain-street-2.mp4"
+      },
+      {
+        "v": 3,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T19:28:14Z",
+        "file": "screens/v/rain-street-3.jpg",
+        "what": "Rain at the street with the camera drifting: drops fade near the lens, no white streaks",
+        "clip": "screens/v/rain-street-3.mp4"
       }
     ],
-    "file": "screens/v/rain-street-2.jpg",
-    "clip": "screens/v/rain-street-2.mp4"
+    "file": "screens/v/rain-street-3.jpg",
+    "clip": "screens/v/rain-street-3.mp4"
   },
   {
     "id": "snow",
