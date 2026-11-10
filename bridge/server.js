@@ -1871,18 +1871,17 @@ function interlude() {
     const p = world?.players?.find((x) => x.id === c.pid);
     const when = calendar(c.turn);
     const f = Math.round(favourOf(c.pid));
-    return { city: c.city, text: `${when.season[0].toUpperCase()}${when.season.slice(1)} of ${when.year}, ${p ? houseFor(p).name : "a great house"}: you ${theirs(c.what)}.`,
-      after: f >= 60 ? "They stand by you for it." : f < 25 ? "They have not forgiven it." : c.d > 0 ? "They remember it." : "They bent the knee, and kept the grudge." };
+    return { city: c.city, text: `In the ${when.season} of ${when.year} you ${theirs(c.what)}, and ${p ? houseFor(p).name : "a great house"} hasn't forgotten.`,
+      after: f >= 60 ? "They're with you because of it." : f < 25 ? "They still haven't forgiven you." : c.d > 0 ? "They liked that." : "They gave in, but they're still angry." };
   });
   const acts = ["first", "second", "third"];
   // What the realm is calling him, said by the realm (a different mouth each act),
   // and how his sworn ambitions stand, in words.
   const met = (meta.ambitions ?? []).filter((a) => a.met != null).length;
-  const done = ["none is done yet", "you have done one", "you have done two", "you have done all three"][Math.min(3, met)];
-  const ambit = meta.ambitions?.length ? `Of the three things you swore to do, ${done}.` : "";
-  const said = [`In the taverns they call you ${named.name}.`, `At court they whisper that you are ${named.name}.`, `The chroniclers have begun to write of you as ${named.name}.`][q - 1];
-  choices.push({ city: -1, text: said, after: [named.next ? `A few still say ${named.next}.` : "", ambit].filter(Boolean).join(" ") });
-  meta.interlude = { q, title: `The ${acts[q - 1]} act ends`, turn: world?.turn ?? 0, choices, fates: [], seen: false };
+  const ambit = meta.ambitions?.length ? ["You haven't kept any of your three promises yet.", "You've kept one of your three promises.", "You've kept two of your three promises.", "You've kept all three of your promises."][Math.min(3, met)] : "";
+  const said = [`People in the taverns are calling you ${named.name}.`, `At court they've started calling you ${named.name}.`, `The chroniclers are writing you down as ${named.name}.`][q - 1];
+  choices.push({ city: -1, text: said, after: [named.next ? `Some still say ${named.next}.` : "", ambit].filter(Boolean).join(" ") });
+  meta.interlude = { q, title: `End of the ${acts[q - 1]} act`, turn: world?.turn ?? 0, choices, fates: [], seen: false };
   chron.saveMeta(meta);
   record({ turn: world?.turn ?? 0, kind: "act", text: `The ${acts[q - 1]} act of the reign ends.` });
 }
@@ -1902,13 +1901,13 @@ function epilogue() {
     const p = world.players.find((x) => x.id === c.pid);
     const when = calendar(c.turn);
     const f = Math.round(favourOf(c.pid));
-    return { city: c.city, text: `${when.season[0].toUpperCase()}${when.season.slice(1)} of ${when.year}, ${p ? houseFor(p).name : "a great house"}: you ${theirs(c.what)}.`,
-      after: f >= 60 ? "They stood by you to the end." : f < 25 ? "They never forgave it." : c.d > 0 ? "They remembered it." : "They bent the knee, and kept the grudge." };
+    return { city: c.city, text: `In the ${when.season} of ${when.year} you ${theirs(c.what)}, and ${p ? houseFor(p).name : "a great house"} never forgot.`,
+      after: f >= 60 ? "They stuck by you to the end." : f < 25 ? "They never forgave you." : c.d > 0 ? "They thought well of you for it." : "They gave in, but they never let it go." };
   });
   if (meta.ambitions?.length) {
     const met = meta.ambitions.filter((a) => a.met != null);
-    choices.push({ city: -1, text: met.length ? `You set out to ${met.map((a) => a.text.charAt(0).toLowerCase() + a.text.slice(1)).join(", and to ")}, and you did.` : "You set out with three ambitions, and met none of them.",
-      after: `Of the three things you swore to do, ${["you did none", "you did one", "you did two", "you did all three"][Math.min(3, met.length)]}.` });
+    choices.push({ city: -1, text: met.length ? `You promised to ${met.map((a) => a.text.charAt(0).toLowerCase() + a.text.slice(1)).join(" and to ")}, and you did.` : "You made three promises and kept none of them.",
+      after: ["You kept none of your three promises.", "You kept one of your three promises.", "You kept two of your three promises.", "You kept all three of your promises."][Math.min(3, met.length)] });
   }
   const power = (p) => world.cities.filter((c) => c.owner === p.id).length * 2 + (p.units ?? 0);
   const mightiest = [...great].sort((a, b) => power(b) - power(a))[0];
