@@ -202,7 +202,8 @@ function setDipl(text, p, q, turns) {
 // Freeciv's AI keeps its own war plan per rival (the "ai" table: love, spam,
 // countdown, war_reason, ...). Left alone it declares war again on its first
 // turn, so the King's truce also drops the plan: no countdown, no reason
-// (DAI_WR_NONE = 5), and its hatred cooled to indifference.
+// (DAI_WR_NONE = 5). The grudge stays, cooled a tenth: a truce stops the
+// swords, not the hatred, and war may come back when it ends.
 function calmAi(text, p, q) {
   const at = text.indexOf(`\n[player${p}]\n`);
   const head = text.indexOf("\nai={", at);
@@ -213,7 +214,8 @@ function calmAi(text, p, q) {
   const end = text.indexOf("\n", line + 1);
   const cells = text.slice(line + 1, end).split(",");
   if (cells.length < 4) return text;
-  cells[0] = String(Math.max(0, Number(cells[0]) || 0));
+  const love = Number(cells[0]) || 0;
+  cells[0] = String(love < 0 ? Math.round(love * 0.9) : love);
   cells[2] = "-1";
   cells[3] = "5";
   return text.slice(0, line + 1) + cells.join(",") + text.slice(end);
