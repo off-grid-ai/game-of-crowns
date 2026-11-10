@@ -67,6 +67,7 @@ const ADULT := 0.118  # an adult's body scale (people.gd: height * k * S, measur
 const STRIDE := {"Walk": 0.218, "Running": 0.661, "Sprint": 0.500, "Sneak": 0.229, "Injured_Walk": 0.061,
 	"SS_Walk": 0.164, "GS_Walk": 0.121, "Axe_Walk": 0.114}
 const TURN_RATE := deg_to_rad(300.0)  # how fast a person turns on the spot or mid-stride (about a full turn in 1.2 s)
+const TURN_EASE := 6.0  # how quickly a turn settles (per second): a small one eases, a big one hits TURN_RATE
 const STEP_FLOOR := 0.35  # the slowest cadence a moving walk plays at, of its own speed
 
 var speed := 1.0  # how fast the current move plays (anim_lod.gd advances by delta * speed)
@@ -253,7 +254,7 @@ func track(delta: float) -> void:
 	if _last != Vector3.INF and not _mounted():
 		var flat := Vector2(at.x - _last.x, at.z - _last.z).length() / delta
 		if v2:
-			flat *= ADULT / maxf(0.01, body.scale.x)  # a child's short legs step quicker over the same ground
+			flat *= ADULT / maxf(0.01, body.global_transform.basis.get_scale().x)  # a child's short legs step quicker over the same ground (size in the world: a holder may be scaled)
 			now_pace = flat
 		# v2 eases quicker: a walk starting is in the legs within a few frames, not a third of a second.
 		_pace = lerpf(_pace, flat, minf(1.0, delta * (20.0 if v2 else 8.0)))
@@ -333,7 +334,11 @@ func _face(body: Node3D, delta: float) -> void:
 		return
 	if not is_equal_approx(y, _yaw_set):
 		_yaw_wish = y  # the mover asked for a new facing since last frame (in its holder's frame)
-	_yaw = rotate_toward(_yaw, carried + _yaw_wish, TURN_RATE * delta)
+	# Eased toward the wish, never faster than TURN_RATE: a big turn is made at a
+	# person's pace, a mover's small jitter (avoidance re-aiming every frame) is
+	# settled gently instead of chased at full rate, which twists planted feet.
+	var off := angle_difference(_yaw, carried + _yaw_wish)
+	_yaw += clampf(off * (1.0 - exp(-TURN_EASE * delta)), -TURN_RATE * delta, TURN_RATE * delta)
 	_yaw_set = _yaw - carried
 	body.rotation.y = _yaw_set
 

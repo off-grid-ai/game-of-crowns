@@ -34,7 +34,10 @@ func _run() -> void:
 	var feet := [sk.find_bone("LeftFoot"), sk.find_bone("RightFoot")]
 	var s := p.global_transform.basis.get_scale().x
 	print("STRIDE person scale %.4f, player %s, feet %s" % [s, anim != null, feet])
-	for clip in CLIPS:
+	# --all: every move in the library, for each clip's own floor (the motion
+	# probe leaves out clips whose feet slide in the clip itself).
+	var clips: Array = Array(anim.get_animation_list()) if OS.get_cmdline_user_args().has("--all") else CLIPS
+	for clip in clips:
 		if not anim.has_animation(clip):
 			print("STRIDE %-14s missing" % clip)
 			continue
@@ -64,6 +67,29 @@ func _run() -> void:
 				continue
 			var v := Vector2(l.x - prev.x, l.z - prev.z) / DT
 			speeds.append(v.length())
+		# The motion probe's own measure on a perfect walk (the body carried at
+		# exactly this pace, 60 frames a second): what its skate check reads when
+		# nothing slides. It calibrates the probe's planted band.
+		var ideal := speeds.duplicate()
+		ideal.sort()
+		var v: float = ideal[ideal.size() / 2] if not ideal.is_empty() else 0.0
+		var planted60 := 0
+		var slid60 := 0
+		var lastw := [null, null]
+		var step := int(round((1.0 / 60.0) / DT))
+		for smp in samples:
+			var i: int = smp[0]
+			if i % step != 0:
+				continue
+			var k: int = smp[1]
+			var l: Vector3 = smp[2]
+			var wpos := l + Vector3(0, 0, i * DT * v)
+			if lastw[k] != null and l.y < lows[k] + 0.02:
+				planted60 += 1
+				if Vector2(wpos.x - lastw[k].x, wpos.z - lastw[k].z).length() > 0.025:
+					slid60 += 1
+			lastw[k] = wpos
+		print("IDEAL %-14s a perfect walk reads %d%% of %d planted frames sliding (2 cm band)" % [clip, int(100.0 * slid60 / maxf(1, planted60)), planted60])
 		speeds.sort()
 		var med: float = speeds[speeds.size() / 2] if not speeds.is_empty() else 0.0
 		print("STRIDE %-14s %.2f s, %d planted samples: foot %.3f clip units/s -> %.3f a second at an adult's size" % [clip, a.length, speeds.size(), med, med * Motion.ADULT])

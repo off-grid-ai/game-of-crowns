@@ -17,7 +17,11 @@ const AnimLOD := preload("res://scripts/anim_lod.gd")
 const REACH := 3.5  # world units from the camera's focus: the people a street-level camera sees
 const WARMUP := 300.0  # at most this long for the realm, the town and its people to stand up (wall-clock seconds)
 const CROWD := 8  # the measuring starts once this many people stand near the camera
-const PLANTED := 0.05  # a foot within 5 cm of its lowest is on the ground
+## A foot within 2 cm of its lowest is on the ground. Calibrated on perfect walks
+## (tools/stride_probe.gd moves a body at exactly its clip's stride): at 5 cm the
+## swing foot passing low counted as planted, and a perfect Walk "slid" 15% of
+## its planted frames; at 2 cm every walk reads 0-4%.
+const PLANTED := 0.02
 const SKATE := 0.025  # a planted foot moving more than 2.5 cm in a frame slides
 const SKATE_FAIL := 0.10  # over 10% of a person's planted frames sliding fails
 const TORSO := 0.12  # a hand nearer the hips-to-neck line than this is inside the body
@@ -27,9 +31,13 @@ const NEAR := 0.06
 const TOUCHING := ["Clapping", "Praying", "Crying", "Wiping_Sweat", "Thinking", "Drinking", "Sitting_Drinking",
 	"Relieved_Sigh", "Arm_Stretching", "Defeated", "Sitting_Ground", "Sitting_Idle", "Sitting_Cross_Legged",
 	"Sleeping_Idle", "Kneeling", "Injured", "Injured_Walk", "Rubbing_Arm", "Shove_Reaction", "Crossed_Arms"]
-## Clips whose feet step and lunge while the body stands (a cut, a slash): the
-## stepping is the clip's own, so their feet are left out of the skate check.
-const IN_PLACE := ["Sword_Attack", "SS_Slash", "SS_Attack"]
+## Clips whose feet slide in the clip itself, measured, not judged: each one's
+## floor is what a perfect body reads (tools/stride_probe.gd --all: the body
+## carried at exactly the clip's own planted-foot pace). These read over
+## SKATE_FAIL with nothing wrong in the game: a dodge or fall skids by design,
+## Running's planted foot changes speed within a short stance. Their feet are
+## left out of the skate check, as riders' are.
+const IN_PLACE := ["Dodge_Left", "Dodge_Back", "Legs_1", "Side_Light", "Knocked_Down", "Running", "Jog_Fwd"]
 ## Clips that need something in hand.
 const HELD := ["Drinking", "Sitting_Drinking", "Hammer_Swing", "Digging", "Dig_And_Plant", "Watering", "Lute_Playing",
 	"Wheelbarrow", "Throw_Object", "Carrying", "Push_Heavy", "Pick_Fruit"]
@@ -150,20 +158,20 @@ func _process(delta: float) -> void:
 			continue
 		var s := maxf(0.0001, p.global_transform.basis.get_scale().x)
 		var riding := clip.begins_with("ride/") or p.has_meta("mounted")  # a rider's feet go with the horse
-		riding = riding or IN_PLACE.any(func(c: String): return clip.begins_with(c))  # and a lunge steps in its own clip
-		# Foot skate: planted feet, in the clip's own metres.
+		riding = riding or IN_PLACE.has(clip)  # and a clip whose feet slide by its own design
+		# Foot skate: planted feet, in metres.
 		for k in 2:
 			var b: int = d["feet"][k]
 			if b < 0:
 				continue
 			var w := _at(sk, b)
-			var local_y := p.to_local(w).y
+			var local_y := p.to_local(w).y * s / M  # in metres, whatever the rig's own units (a Sketchfab body is scaled 0.001)
 			d["min"][k] = minf(d["min"][k], local_y)
 			var last = d["last"][k]
 			if last != null and not riding and local_y < float(d["min"][k]) + PLANTED:
 				d["planted"] += 1
 				_planted[clip] = _planted.get(clip, 0) + 1
-				if Vector2(w.x - last.x, w.z - last.z).length() / s > SKATE:
+				if Vector2(w.x - last.x, w.z - last.z).length() / M > SKATE:
 					d["skate"] += 1
 					_skates[clip] = _skates.get(clip, 0) + 1
 			d["last"][k] = w
