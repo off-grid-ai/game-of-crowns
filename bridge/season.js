@@ -6,17 +6,17 @@
 // favour fading and drifting, the tithe, the goal); the people's yearly moves
 // (runSeason); a house turning against the crown and the one rule for every
 // rising (turnHouses, storyMarch, askUltimatum, mayRise, rose); the one truce
-// writer (houseTruce, keepTruce, councilRuled); and the land's scars healing
-// (healScars). Nothing here reads server.js: the realm's state and the
+// writer (houseTruce, keepTruce, councilRuled); and blighted land growing back
+// (healBlights). Nothing here reads server.js: the realm's state and the
 // bridge's own helpers come in as one context argument, built fresh by
 // server.js on each call (getters for what it reassigns, read live inside the
-// turn's timers; setScars for the scars), and server.js keeps wrappers of the
+// turn's timers; setBlights for the blights), and server.js keeps wrappers of the
 // same names where its own code still calls them.
 
 import fs from "node:fs";
 import path from "node:path";
 import { houseFor, cityName } from "./narrator.js";
-import { healLua } from "./god.js";
+import { regrowLua } from "./blight.js";
 import { decree, clampFavour } from "./crown.js";
 import { BANDS } from "./favour.js";
 import { calendar } from "./stakes.js";
@@ -29,7 +29,7 @@ import * as chron from "./chronicles.js";
 
 export function turn(ctx, ev) {
   const { send } = ctx;
-  healScars(ctx, Number(ev.turn));
+  healBlights(ctx, Number(ev.turn));
   collectTithe(ctx, Number(ev.turn));
   setTimeout(() => ctx.stakes?.tick(Number(ev.turn), ctx.world, { favour: ctx.favourOf, sworn: ctx.sworn, shift: ctx.shiftFavour, send: (l) => send(`lua cmd ${l}`), watched: isWatched(), options: ctx.meta.options ?? {}, mayRise: (pid) => mayRise(ctx, pid), ultimatum: (pid) => askUltimatum(ctx, pid), rose: (pid) => rose(ctx, pid) }), 2000);
   if (Number(ev.turn) % 4 === 0) setTimeout(() => runSeason(ctx), 2500);
@@ -182,15 +182,15 @@ export function collectTithe(ctx, turn) {
   Treasury.reckoning(ctx.treasuryCtx(), turn);
 }
 
-// The land's scars heal when their time comes (the scars themselves are kept by server.js's onEvent).
-export function healScars(ctx, turn) {
+// Blighted land grows back when its time comes (the blights themselves are kept by server.js's onEvent).
+export function healBlights(ctx, turn) {
   const { world, P, send, record } = ctx;
-  const due = ctx.scars.filter((s) => s.heal <= turn);
+  const due = ctx.blights.filter((s) => s.heal <= turn);
   if (!due.length) return;
-  ctx.setScars(ctx.scars.filter((s) => s.heal > turn));
-  fs.writeFileSync(path.join(P.state, "scars.json"), JSON.stringify(ctx.scars));
+  ctx.setBlights(ctx.blights.filter((s) => s.heal > turn));
+  fs.writeFileSync(path.join(P.state, "blights.json"), JSON.stringify(ctx.blights));
   for (const s of due) {
-    healLua(s.tiles).forEach((l) => send(`lua cmd ${l}`));
+    regrowLua(s.tiles).forEach((l) => send(`lua cmd ${l}`));
     if (world?.cities?.some((c) => c.id === s.city)) {
       record({ turn, kind: "heal", text: `The land around ${cityName(s.city)} slowly recovers.`, city: s.city });
     }

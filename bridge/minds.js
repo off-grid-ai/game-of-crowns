@@ -327,7 +327,7 @@ export class Minds {
     const world = this.realm.world();
     if (!world) return;
     const kind = /plague/i.test(entry.text) ? "plague" : /famine|drought|starv/i.test(entry.text) ? "famine" : /tithe/i.test(entry.text) && entry.kind !== "crown" ? "tithe"
-      : entry.kind === "god" && /bless|rain/i.test(entry.text) ? "bounty" : entry.kind === "city_transferred" ? "sack" : entry.kind === "city_destroyed" ? "razed" : entry.kind;
+      : entry.kind === "city_transferred" ? "sack" : entry.kind === "city_destroyed" ? "razed" : entry.kind;
     const base = WEIGHT[kind] ?? 0.25;
     // Where it happened: the entry's town, or a town named in it.
     const at = entry.city ?? world.cities.find((c) => entry.text.includes(cityName(c.id) ?? "\u0000"))?.id;

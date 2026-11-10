@@ -59,7 +59,7 @@ let meta = null; // chronicles.js meta for the running realm
 let P = null; // its paths
 let chronicle = [];
 let world = null;
-let scars = [];
+let blights = [];  // blighted land waiting to grow back (blight.js)
 let history = [];
 let detailCache = { file: null, mtime: 0, data: null };
 let turnSeconds = 20;
@@ -128,7 +128,7 @@ function load(id) {
   history = lines(path.join(P.state, "history.jsonl"));
   world = chron.readJson(path.join(P.state, "world.json"));
   queueMicrotask(townStates);  // the towns' states, once the realm is loaded
-  scars = chron.readJson(path.join(P.state, "scars.json"), []);
+  blights = chron.readJson(path.join(P.state, "blights.json"), null) ?? chron.readJson(path.join(P.state, "scars.json"), []);  // scars.json: before the rename
   detailCache = { file: null, mtime: 0, data: null };
   turnSeconds = 40;  // one pace for every realm: a season in forty seconds, with a court at each (GAME_DESIGN)
   sitting = meta.court?.sitting != null;  // a realm reopened mid-sitting still holds
@@ -516,9 +516,9 @@ function decreeScenes(cmd, result, seat, target) {
 function onEvent(line) {
   let ev;
   try { ev = JSON.parse(line.slice(line.indexOf("EVENT {") + 6)); } catch { return; }
-  if (ev.kind === "scar") {
-    scars.push({ city: Number(ev.city), tiles: ev.tiles, heal: Number(ev.heal) });
-    fs.writeFileSync(path.join(P.state, "scars.json"), JSON.stringify(scars));
+  if (ev.kind === "blight") {
+    blights.push({ city: Number(ev.city), tiles: ev.tiles, heal: Number(ev.heal) });
+    fs.writeFileSync(path.join(P.state, "blights.json"), JSON.stringify(blights));
     return;
   }
   if (ev.kind === "turn") return Season.turn(seasonCtx(), ev);  // the turn's sequence (season.js)
@@ -568,10 +568,10 @@ function marksNow() {
 
 // The season and the turn (season.js): the turn's sequence, the season's tithe and
 // reckoning, the people's yearly moves, the rising gate, the one truce writer and
-// the land's scars. Its context, read fresh on every call (getters for what the
-// bridge reassigns, read live in the turn's timers; setScars for the scars).
+// blighted land growing back. Its context, read fresh on every call (getters for what the
+// bridge reassigns, read live in the turn's timers; setBlights for the blights).
 const seasonCtx = () => ({ get world() { return world; }, get meta() { return meta; }, get court() { return court; }, get stakes() { return stakes; }, get minds() { return minds; },
-  get P() { return P; }, get favour() { return favour; }, get deeds() { return deeds; }, get scars() { return scars; }, setScars: (v) => { scars = v; },
+  get P() { return P; }, get favour() { return favour; }, get deeds() { return deeds; }, get blights() { return blights; }, setBlights: (v) => { blights = v; },
   favourWhy, favourPast, treasuryCtx, send, record, flushHeld, courtSeason, royalWorks, resolveCampaigns, favourOf, restingFavour, noteFavour, recordDeed,
   causeOf, saveFavour, goalNow, sworn, shiftFavour, heardCtx, ceasefire, snapshot, runArcs });
 function runSeason() { return Season.runSeason(seasonCtx()); }
@@ -965,7 +965,6 @@ const ROUTES = {
   "* /lord": (req, res, url) => PeopleRoutes.lord(routeCtx(), req, res, url),
   "POST /season": (req, res, url) => RealmRoutes.season(routeCtx(), req, res, url),
   "POST /tithe": (req, res, url) => DecreeRoutes.tithe(routeCtx(), req, res, url),
-  "POST /god": (req, res, url) => DecreeRoutes.god(routeCtx(), req, res, url),
 };
 
 http.createServer(async (req, res) => {

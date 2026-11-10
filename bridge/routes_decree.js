@@ -1,6 +1,6 @@
 // The crown's orders: a decree and all it sets moving, the King's mood for the court
-// (set, revoked, read), the tithe, the god commands, and the crown's carts and
-// riders arriving where they were sent.
+// (set, revoked, read), the tithe, and the crown's carts and riders arriving
+// where they were sent.
 // Moved verbatim from server.js's ROUTES table (consolidation C3, step 8): each
 // handler is (ctx, req, res, url). Nothing here reads server.js: the bridge's
 // state and helpers come in as one context argument (routeCtx), built fresh by
@@ -12,7 +12,6 @@ import { WORK_SEASONS } from "./treasury.js";
 import * as chron from "./chronicles.js";
 import { cityName, houseFor } from "./narrator.js";
 import { decree } from "./crown.js";
-import { godCommand } from "./god.js";
 import * as kingDeeds from "./ledger.js";
 import { moodFrom, moodRules } from "./claude.js";
 import { body, json } from "./http_util.js";
@@ -180,13 +179,3 @@ export async function tithe(ctx, req, res, url) {
   return json(res, 200, { tithe: ctx.meta.tithe });
 }
 
-export async function god(ctx, req, res, url) {
-  const { send, record, snapshot, crowns } = ctx;
-  const cmd = await body(req);
-  const result = godCommand(cmd, ctx.world);
-  if (result.error) return json(res, 400, result);
-  result.lua.forEach((l) => send(`lua cmd ${l}`));
-  record({ turn: ctx.world?.turn ?? 0, kind: "god", text: result.text, city: cmd.city });
-  setTimeout(snapshot, 600);
-  return json(res, 200, { ok: true, text: crowns(result.text) });
-}
