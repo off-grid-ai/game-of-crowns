@@ -46,15 +46,18 @@ class FakeVillage extends Node:
 func _init() -> void:
 	var secs := 60.0
 	var mood := ""
+	var no_minds := false
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--secs="):
 			secs = float(a.substr(7))
 		elif a.begins_with("--mood="):
 			mood = a.substr(7)
-	_run.call_deferred(secs, mood)
+		elif a == "--no-minds":
+			no_minds = true  # the same people standing, for the frame-cost baseline
+	_run.call_deferred(secs, mood, no_minds)
 
 
-func _run(secs: float, mood: String) -> void:
+func _run(secs: float, mood: String, no_minds := false) -> void:
 	var world := Node3D.new()
 	root.add_child(world)
 	var vill := FakeVillage.new()
@@ -74,7 +77,8 @@ func _run(secs: float, mood: String) -> void:
 			world.add_child(p)
 			_log[p] = []
 			_who[p] = "post:" + post
-			Mind.give(p, post, func(_q: Vector3) -> float: return 0.0, n)
+			if not no_minds:
+				Mind.give(p, post, func(_q: Vector3) -> float: return 0.0, n)
 			n += 1
 	for calling in CALLINGS:
 		for k in 3:
@@ -85,12 +89,17 @@ func _run(secs: float, mood: String) -> void:
 				"role": "tavern" if calling == "keeper" else calling, "field": p.position + Vector3(0.5, 0, 0), "bench": p.position + Vector3(0.2, 0, 0), "block": "work"}
 			_log[p] = []
 			_who[p] = "calling:" + calling
-			Mind.give_villager(p, a, vill)
+			if not no_minds:
+				Mind.give_villager(p, a, vill)
 			n += 1
 	Engine.time_scale = 10.0
 	var news := false
+	var frames := 0
+	var busy_us := 0
 	while _t < secs:
 		await process_frame
+		busy_us += int(Performance.get_monitor(Performance.TIME_PROCESS) * 1000000.0)  # the frame's own process work
+		frames += 1
 		_t += get_root().get_process_delta_time()  # already scaled by time_scale
 		if not news and _t > 5.0:
 			# A raid at the villagers' far end: those near see it, the rest should hear of it.
@@ -106,6 +115,7 @@ func _run(secs: float, mood: String) -> void:
 				seq.append(act)
 				_acts[p] = seq
 	Engine.time_scale = 1.0
+	print("PROBE FRAME %.3f ms of process work a frame over %d frames, %d people, minds %s" % [busy_us / 1000.0 / maxf(1, frames), frames, _log.size(), "off" if no_minds else "on"])
 	_report(secs)
 	quit()
 

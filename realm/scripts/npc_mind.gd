@@ -432,7 +432,7 @@ class Weigh extends BTAction:
 static func state_activities() -> Array:
 	return [
 		seq("road", [go("home"), once("Looking_Around"), run(["Pointing_Forward", "Looking_Around", "Thinking"], 1, 2), brk(["Weight_Shift"])]),
-		seq("mutter", [FindPartner.new(), go("meet"), Talk.new(["Whispering", "Arguing", "Telling_Secret"]), once("Shove_Reaction"), brk(LOOK)]),
+		seq("mutter", [partner(["Whispering", "Arguing", "Telling_Secret"]), go("meet"), Talk.new(), once("Shove_Reaction"), brk(LOOK)]),
 	]
 
 
@@ -510,6 +510,14 @@ class FieldRun extends PlayRun:
 ## the selector picks something done alone.
 class FindPartner extends BTAction:
 	const NEAR := 2.5
+	const FRESH_MS := 90000  # news older than this isn't worth telling
+	@export var talk: Array = []  # the moves both use (a muttering knot argues); empty: everyday talk
+	const BOOKED_MS := 20000  # a talk arranged this long ago and not begun or ended is off
+
+	## Spoken for: called or talking, lately (an interrupted arrangement lapses).
+	static func booked(bb: Blackboard) -> bool:
+		var on: bool = bb.get_var(&"called", false, false) or bb.get_var(&"talking", false, false)
+		return on and Time.get_ticks_msec() - int(bb.get_var(&"called_at", 0, false)) < BOOKED_MS
 
 	func _tick(_delta: float) -> Status:
 		var me := agent.get_node_or_null("Mind") as BTPlayer
@@ -522,7 +530,7 @@ class FindPartner extends BTAction:
 			if other == me or other.get_meta("town", -2) != me.get_meta("town") or not other.blackboard.has_var(&"va"):
 				continue
 			var bb := other.blackboard
-			if bb.get_var(&"called", false, false) or bb.get_var(&"alert", false, false) or bb.get_var(&"danger", false, false):
+			if booked(bb) or bb.get_var(&"alert", false, false) or bb.get_var(&"danger", false, false):
 				continue
 			var d: float = (other.get_parent() as Node3D).global_position.distance_to((agent as Node3D).global_position)
 			if d < best_d:
@@ -539,8 +547,15 @@ class FindPartner extends BTAction:
 		best.blackboard.set_var(&"meet", them.position + (meet - off - them.global_position))
 		best.blackboard.set_var(&"partner", agent)
 		best.blackboard.set_var(&"called", true)
+		best.blackboard.set_var(&"called_at", Time.get_ticks_msec())
+		blackboard.set_var(&"called_at", Time.get_ticks_msec())
+		# Both are spoken for until the talk ends: nobody else calls either away.
+		blackboard.set_var(&"talking", true)
+		best.blackboard.set_var(&"talking", true)
+		blackboard.set_var(&"talk_pool", talk)
+		best.blackboard.set_var(&"talk_pool", talk)
 		# The topic: what the one who starts it saw last, passed on as their own news.
-		var memory: Array = blackboard.get_var(&"memory", [], false)
+		var memory: Array = (blackboard.get_var(&"memory", [], false) as Array).filter(func(x): return Time.get_ticks_msec() - int(x.get("ms", 0)) < FRESH_MS)
 		if not memory.is_empty():
 			var heard: Dictionary = (memory[0] as Dictionary).duplicate()
 			heard["near"] = 1.0  # heard of, not seen
@@ -563,12 +578,34 @@ class FindPartner extends BTAction:
 ## finger pointed down the road and a shake of the head, a feast a laugh, a
 ## death tears, the King a nod. Then the talk ends for both.
 class Talk extends PlayRun:
-	func _init(talk: Array = ["Idle_Talking", "Talking", "Talking_2", "Telling_Secret", "Whispering"]) -> void:
-		pool = talk
+	const EVERYDAY := ["Idle_Talking", "Talking", "Talking_2", "Telling_Secret", "Whispering", "Laughing"]
+
+	func _init() -> void:
+		pool = EVERYDAY
 		lo = 2
 		hi = 3
 
 	func _enter() -> void:
+		_face()
+		var chosen: Array = blackboard.get_var(&"talk_pool", [], false)
+		pool = chosen if not chosen.is_empty() else EVERYDAY
+		var topic := String(blackboard.get_var(&"topic", "", false))
+		var gesture: Array = TOPIC_GESTURE.get(SceneKinds.tone(topic), []) if topic != "" else []
+		pool = (gesture + pool) if randf() < 0.6 else (pool + gesture)
+		super._enter()
+
+	## The talk goes on only while the other is still here and still talking to them.
+	func _tick(delta: float) -> Status:
+		var them = blackboard.get_var(&"partner", null, false)
+		if not (them is Node3D and is_instance_valid(them)):
+			return SUCCESS
+		var their_mind := (them as Node3D).get_node_or_null("Mind") as BTPlayer
+		if their_mind == null or their_mind.blackboard.get_var(&"partner", null, false) != agent:
+			return SUCCESS
+		_face()
+		return super._tick(delta)
+
+	func _face() -> void:
 		var them = blackboard.get_var(&"partner", null, false)
 		if them is Node3D and is_instance_valid(them):
 			var here: Vector3 = (agent as Node3D).global_position
@@ -576,13 +613,10 @@ class Talk extends PlayRun:
 			var flat := Vector2(there.x - here.x, there.z - here.z)
 			if flat.length() > 0.001:
 				agent.rotation.y = atan2(flat.x, flat.y)
-		var topic := String(blackboard.get_var(&"topic", "", false))
-		var gesture: Array = TOPIC_GESTURE.get(SceneKinds.tone(topic), []) if topic != "" else []
-		pool = (gesture + pool) if randf() < 0.6 else (pool + gesture)
-		super._enter()
 
 	func _exit() -> void:
 		blackboard.set_var(&"called", false)
+		blackboard.set_var(&"talking", false)
 		blackboard.set_var(&"partner", null)
 
 
@@ -599,7 +633,29 @@ const TOPIC_GESTURE := {
 ## Answering a call to talk (FindPartner set `called`): go to the spot, face
 ## them, talk. Comes before anything they were doing but after danger and news.
 static func answer() -> BTTask:
-	return plain([flag(&"called"), go("meet"), Talk.new(), brk(LOOK)])
+	return plain([FreshCall.new(), go("meet"), Talk.new(), brk(LOOK)])
+
+
+## Someone called them to talk a moment ago. A call left unanswered (danger or
+## news came first) goes stale, and they're free again: nobody walks to a spot
+## their caller left long since.
+class FreshCall extends BTCondition:
+	func _tick(_delta: float) -> Status:
+		if not blackboard.get_var(&"called", false, false):
+			return FAILURE
+		var them = blackboard.get_var(&"partner", null, false)
+		if not (them is Node3D and is_instance_valid(them)) or not FindPartner.booked(blackboard):
+			blackboard.set_var(&"called", false)
+			blackboard.set_var(&"talking", false)
+			blackboard.set_var(&"partner", null)
+			return FAILURE
+		return SUCCESS
+
+
+static func partner(talk: Array = []) -> BTTask:
+	var t := FindPartner.new()
+	t.talk = talk
+	return t
 
 
 static func go(where: String, gait := "Walk") -> BTTask:
@@ -655,7 +711,7 @@ static func villager_activities(role: String) -> Array:
 				seq("browse", [go("market"), once("Looking_Around"), once("PickUp_Table"), run(["Thinking", "Doubtful"], 1, 1), brk(LOOK)]),
 				seq("haggle", [go("market"), run(["Idle_Talking", "Arguing"], 2, 4), run(["Nod_Yes", "Shake_No"], 1, 1), brk(["Pleased", "Looking_Around"])]),
 				seq("carry", [go("market"), once("PickUp_Table"), go("home", "Carrying"), once("PickUp_Table"), brk(REST)]),
-				seq("gossip", [FindPartner.new(), go("meet"), Talk.new(), brk(LOOK)]),
+				seq("gossip", [partner(), go("meet"), Talk.new(), brk(LOOK)]),
 			]
 		"pious":  # the priest and the devout
 			return [
@@ -700,7 +756,7 @@ static func villager_activities(role: String) -> Array:
 			]
 		"idler":
 			return [
-				seq("chat", [FindPartner.new(), go("meet"), Talk.new(), brk(LOOK)]),
+				seq("chat", [partner(), go("meet"), Talk.new(), brk(LOOK)]),
 				seq("lounge", [go("bench"), run(["Sitting_Ground", "Sitting_Idle", "Sitting_Cross_Legged"], 1, 2), brk(["Arm_Stretching", "Bored"])]),
 				seq("watch", [go("market"), run(["Looking_Around", "Bored", "Thinking"], 1, 2), brk(REST)]),
 				seq("nap", [go("home"), run(["Sleeping_Idle"], 1, 1), brk(["Arm_Stretching"])]),
@@ -837,6 +893,10 @@ static func give_villager(person: Node3D, a: Dictionary, vill: Node) -> bool:
 	player.blackboard.set_var(&"alert", false)
 	player.blackboard.set_var(&"at_post", true)
 	player.blackboard.set_var(&"called", false)
+	player.blackboard.set_var(&"called_at", 0)
+	player.blackboard.set_var(&"talking", false)
+	player.blackboard.set_var(&"talk_pool", [])
+	player.blackboard.set_var(&"partner", null)
 	player.blackboard.set_var(&"topic", "")
 	player.blackboard.set_var(&"choices", acts.size())
 	player.blackboard.set_var(&"danger", false)

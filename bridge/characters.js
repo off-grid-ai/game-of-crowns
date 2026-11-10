@@ -33,7 +33,7 @@ function namePool(gender) {
 const M = ["Aldric", "Bran", "Cedric", "Dunstan", "Edric", "Godwin", "Harold", "Jory", "Osric", "Rowan", "Tobin", "Hugh", "Garth", "Alaric", "Ewan", "Roderick", "Leofric", "Merrick", "Corwin", "Tristan", "Benedict", "Gareth", "Lucan", "Willem"];
 const F = ["Agnes", "Bryony", "Cecily", "Edith", "Elsbeth", "Gwen", "Hilda", "Isolde", "Joan", "Maud", "Rosalind", "Wynne", "Alys", "Mira", "Tamsin", "Ysolde", "Rhiannon", "Elaine", "Beatrix", "Constance", "Genevieve", "Odette"];
 export const TRAITS = ["ambitious", "honourable", "greedy", "vengeful", "pious", "cunning", "craven", "brave", "content", "paranoid", "generous", "proud", "patient", "wrathful", "just"];
-const SEASONS_PER_YEAR = 4;
+export const SEASONS_PER_YEAR = 4;  // the one year length the court and the bridge count by
 
 // Roles a player can give a character: a title, and the leanings that come with it.
 export const ROLES = {
@@ -627,15 +627,17 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     const made = [];
     const crisisOf = (c) => {
       const mine = world.cities.filter((x) => x.owner === c.playerId);
-      return mine.some((x) => x.famine) ? "grain" : mine.some((x) => x.besieged) ? "besieged" : null;
+      // Only a crisis with a plea of its own: a starving town's lord asks for
+      // grain. A siege has none yet, so the Hand keeps bringing it.
+      return mine.some((x) => x.famine) ? "grain" : null;
     };
     for (const c of this.alive().filter((x) => x.rank === "lord")) {
       if (want <= 0) break;
       const crisis = crisisOf(c);
       if (!crisis || this.petitions.some((p) => !p.answered && p.from === c.id)) continue;
-      if (this.petitions.some((p) => p.from === c.id && p.crisis === crisis && (p.turn ?? 0) > turn - 4)) continue;
+      if (this.petitions.some((p) => p.from === c.id && p.crisis === crisis && (p.turn ?? 0) > turn - SEASONS_PER_YEAR)) continue;
       this.turnNow = turn;
-      const p = await this.petition(c, world, turn, ctx, true, { urgent: true, prefer: crisis === "grain" ? "grain" : null });
+      const p = await this.petition(c, world, turn, ctx, true, { urgent: true, prefer: crisis });
       if (p) { p.called = turn; p.crisis = crisis; made.push(p); want--; }
     }
     if (made.length) this.saveCourt();
@@ -824,6 +826,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     const pool = candidates.filter((x) => !open.has(x.kind) && !ctx.heard?.(heard(x))).map((x) => ({ ...x, w: x.weight / (1 + 2 * recent.filter((k) => k === x.kind).length) }));
     // A crisis brings its own plea (a starving town's lord asks for grain), whatever was heard lately.
     const forced = opts.prefer ? candidates.find((x) => x.kind === opts.prefer) : null;
+    if (opts.prefer && !forced) return;  // a crisis plea is that plea or nothing
     if (!pool.length && !forced) return;
     let roll = Math.random() * pool.reduce((t, x) => t + x.w, 0);
     const chosen = forced ?? pool.find((x) => (roll -= x.w) < 0) ?? pool[pool.length - 1];
