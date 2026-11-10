@@ -359,3 +359,9 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - The ledger's footer says "the realm is at peace with itself" while four houses show WAR.
   - The aim counts companies, the ledger counts men (5 companies = "1,000 men").
 - **Verdict:** on the corrected course: playability first, proven blocks only.
+
+## 2026-11-10, 12:55 (autopilot)
+
+- **Friction run, frame 25:** the first act's telling sat on screen for four frames (over a minute) with the clock held: no visible way to go on ("click to continue" is nowhere). The harness's click missed it too. Closed by hand to keep the run going; logged as friction.
+- **Pace:** 14 minutes of wall time covered only 3 seasons of the reign; held clocks (court, telling) dominate.
+- **Verdict:** on the corrected course; collecting the list.

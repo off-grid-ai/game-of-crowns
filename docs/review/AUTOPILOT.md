@@ -9,6 +9,22 @@ experience: a ruler game that is fun, readable and beautiful. Every layer comes 
 our code is glue. Every change is judged as a demanding player would judge it, against **the fun bar** in
 GAME_DESIGN.md, and measured from a real reign rather than guessed.
 
+## Governing principles (Mac, 2026-11-10)
+
+Every turn, every change, before anything else:
+
+1. **Who already solved this?** Name the problem in general terms, then use the proven way: Godot itself,
+   our add-ons (LimboAI), free battle-tested blocks (MIT, CC0), or how shipped games do it. Our code only
+   connects them. The gate is in goc-engineering.
+2. **No hand-placing, hand-timing or hand-deciding.** An offset, a timer or a dice roll standing in for a
+   system is a hack. A second patch to a hand-built part means replacing it with a block.
+3. **Design sense decides what, blocks decide how.** We choose what the player feels and sees, judged as a
+   demanding player against the fun bar. The blocks do the work.
+4. **The player owns the game.** The system never overrides the player (the camera, the clock, the cards);
+   it offers, and the player chooses.
+5. **Play it before claiming it.** A change is done when it's seen working in a real game, not when it
+   compiles.
+
 ## What we're building
 
 Mac approved all six bets in the fun brief (https://claude.ai/artifact/5T4M33vrEY2KABfzs3ypQZ,
