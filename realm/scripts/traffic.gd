@@ -54,8 +54,9 @@ func _process(delta: float) -> void:
 	var kind := _who(a["bb"], b["bb"], String(aw.realm.get_var(&"season", "")))
 	if kind == "" or _out >= _most(a["bb"]):
 		return
-	_out += 1
-	scenes.traveller(a["at"], b["at"], kind, func(): _out -= 1)
+	# traveller() is false when no road joins the two: then nobody set out.
+	if scenes.traveller(a["at"], b["at"], kind, func(): _out -= 1):
+		_out += 1
 
 
 ## Who sets out from town a toward town b, from what the mirror says of both
