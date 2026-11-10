@@ -116,4 +116,9 @@ export const ANSWERS = {
     }
     this.save(bride); this.save(groom); this.save(father);
   },
+  debt({ p, c, opt, option, out, gold, world }) {
+    if (option === "forgive") { gold(c.playerId, 100); out.favour[c.playerId] = 15; for (const o of world.players) if (o.id !== c.playerId && !houseFor(o).crown && !houseFor(o).wild) out.favour[o.id] = -3; out.text = `The crown returns ${c.house}'s tithe. The other houses grumble that they were not asked.`; }
+    if (option === "lend") { gold(c.playerId, 250); out.favour[c.playerId] = 5; (this.debts ??= []).push({ pid: c.playerId, amount: 325, due: (world.turn ?? 0) + 8 }); out.text = `The crown lends ${c.house} 250 gold. The debt is written in the King's ledger: 325, due in two years.`; }
+    if (option === "refuse") { out.favour[c.playerId] = c.traits.includes("proud") ? -18 : -10; this.remember(c.id, "I begged the King for relief and was told to pay like everyone else."); out.text = `The King refuses. ${c.house} pays its share, and its lord counts every coin.`; }
+  },
 };
