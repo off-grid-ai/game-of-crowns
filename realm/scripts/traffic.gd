@@ -80,9 +80,29 @@ func _decide(delta: float) -> void:
 	var kind := _who(a["bb"], b["bb"], String(aw.realm.get_var(&"season", "")))
 	if kind == "" or _out >= _most(a["bb"]):
 		return
+	# One cart on a road at a time, either way: two never meet and run into each other
+	# (judge, round 5). Walkers and riders share a road as they please.
+	var road := _road_key(a["at"], b["at"])
+	var wheeled := kind in ["cart", "wagon"]
+	if wheeled and _carting.has(road):
+		return
 	# traveller() is false when no road joins the two: then nobody set out.
-	if scenes.traveller(a["at"], b["at"], kind, func(): _out -= 1):
+	if scenes.traveller(a["at"], b["at"], kind, func():
+			_out -= 1
+			if wheeled:
+				_carting.erase(road)):
 		_out += 1
+		if wheeled:
+			_carting[road] = true
+
+
+var _carting := {}  # road (its two ends, either way) -> a cart is on it
+
+
+func _road_key(a: Vector3, b: Vector3) -> String:
+	var p := [Vector2i(roundi(a.x * 10), roundi(a.z * 10)), Vector2i(roundi(b.x * 10), roundi(b.z * 10))]
+	p.sort()
+	return str(p)
 
 
 ## Who sets out from town a toward town b, from what the mirror says of both
