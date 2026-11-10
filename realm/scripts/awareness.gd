@@ -104,9 +104,10 @@ func sync(world: Dictionary) -> void:
 	realm.set_var(&"owners", world.get("owners", []))
 	realm.set_var(&"houses", world.get("players", []))
 	realm.set_var(&"marks", world.get("marks", []))
-	# The weather, owned here and nowhere else: snow in winter, else clear (nothing in
-	# the realm brings rain or storm yet; when something does, it is set here).
-	realm.set_var(&"weather", "snow" if String(date.get("season", "")) == "winter" else "clear")
+	# The weather, as the bridge reads it (/world's weather: clear, showers, rain,
+	# storm or snow falling). Until the bridge sends it, falling snow in winter.
+	var weather: Dictionary = _dict(world.get("weather"))
+	realm.set_var(&"weather", String(weather.get("kind", "snow" if String(date.get("season", "")) == "winter" else "clear")))
 	# Each scene is news once: the bus carries it to whoever is near.
 	for s in now_scenes:
 		var key := String(s.get("id", "%s:%d:%d:%d:%d" % [s.get("kind", ""), int(s.get("x", 0)), int(s.get("y", 0)), int(s.get("turn", 0)), int(s.get("city", -1))]))

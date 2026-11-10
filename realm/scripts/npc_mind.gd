@@ -402,6 +402,7 @@ class Weigh extends BTAction:
 		var rich: bool = bb.get_var(&"prosperity", false, false)
 		var sour: bool = bb.get_var(&"grasping", false, false) or float(bb.get_var(&"favour", 100.0, false)) < 35.0
 		var winter := String(bb.get_var(&"season", "", false)) == "winter"
+		var wet := String(bb.get_var(&"weather", "clear", false)) in ["rain", "storm"]
 		var merry := act in ["dance", "song", "toast", "clap", "lute"]
 		var play := act in ["play", "tag", "hide", "sit"]
 		# States that have activities of their own, unlikely otherwise.
@@ -423,6 +424,10 @@ class Weigh extends BTAction:
 			w *= 0.3  # a cold shoulder for the crown's own
 		if winter and act in ["lounge", "nap", "sit", "tag", "hide", "dig", "weed", "tend"]:
 			w *= 0.3
+		# Rain empties the square: folk keep to doors, the tavern and the sept; the stalls carry on.
+		if wet:
+			w *= {"lounge": 0.1, "nap": 0.2, "sit": 0.1, "tag": 0.1, "hide": 0.2, "chat": 0.4, "gossip": 0.4, "promenade": 0.2, "browse": 0.4,
+				"drink": 2.0, "song": 1.5, "pray": 1.5, "craft": 1.5, "counter": 1.5}.get(act, 1.0)
 		return w
 
 
