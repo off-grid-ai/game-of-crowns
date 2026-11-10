@@ -13,6 +13,8 @@ extends Node
 ## Casebook: RimWorld's thoughts, The Sims' advertised objects.
 
 signal stimulus(kind: String, pos: Vector3, radius: float, house: String, strength: float)
+## A new season in the realm (a Freeciv turn): sites rise a step, and so on.
+signal season_turned(turn: int)
 
 var terrain: Node3D
 var towns: Node3D
@@ -66,6 +68,11 @@ func attach(player: BTPlayer, town_id: int) -> void:
 ## The mirror, refreshed from the bridge's /world (main.gd calls this on
 ## every world_updated). Nothing else in the view parses these facts.
 func sync(world: Dictionary) -> void:
+	var turn := int(world.get("turn", 0))
+	if turn != int(realm.get_var(&"turn", turn, false)):
+		realm.set_var(&"turn", turn)
+		season_turned.emit(turn)
+	realm.set_var(&"turn", turn)
 	var date: Dictionary = world.get("date", {})
 	realm.set_var(&"season", String(date.get("season", "")))
 	realm.set_var(&"hour", float(villagers.hour) if villagers else 12.0)

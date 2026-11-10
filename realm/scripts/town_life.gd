@@ -319,17 +319,7 @@ func _fields(root: Node3D, hungry: bool) -> void:
 ## A building site: the structure rises with real progress under scaffolding,
 ## with timber stacked beside it and builders at work.
 func _construction(root: Node3D, life: Node3D, center: Vector3, building: String, progress: float, rng: RandomNumberGenerator, size: int) -> void:
-	# What rises is the kit's own building for it.
-	var kit := "thatched_rural_houses"
-	match building:
-		"Temple", "Cathedral", "Amphitheater", "Colosseum", "Courthouse", "Library", "University":
-			kit = "medieval_church"
-		"Barracks", "Barracks II", "Palace":
-			kit = "medieval_viking_house"
-		"Granary", "Marketplace", "Harbor":
-			kit = "old_wooden_barn"
-		"City Walls", "Great Wall":
-			kit = "wooden_fence_game_ready_asset"
+	var kit := site_kit(building)
 	# Sites go up at the edge of town, on the first flat ground found that no
 	# house, wall or fence already stands on (with room round it for the builders).
 	var f: Vector2 = Real.footprint(kit)
@@ -358,51 +348,7 @@ func _construction(root: Node3D, life: Node3D, center: Vector3, building: String
 	if not found:
 		return  # nowhere to build in sight: the work goes on unseen
 	var off := Vector3((plot[0].x + plot[2].x) / 2.0, 0, (plot[0].y + plot[2].y) / 2.0)
-	var base := off + Vector3(0, _y(center, off), 0)
-	var grow := clampf(progress, 0.08, 1.0)
-	var site: Node3D = Real.make(kit)
-	if site == null:
-		return
-	# The site, its scaffold and its timber stand in the way: walk round them.
-	life.set_meta("footprints", [plot, _rect(base + Vector3(f.x * 0.55 + 0.2, 0, 0).rotated(Vector3.UP, ang), Vector2(0.42, 0.36), ang),
-		_rect(base + Vector3(f.x * 0.55 + 0.25, 0, f.y * 0.55 + 0.35).rotated(Vector3.UP, ang), Vector2(0.4, 0.3), ang + 0.4)])
-	site.scale.y = grow
-	site.name = "Site"
-	site.position = base
-	site.rotation.y = ang + PI
-	life.add_child(site)
-	var hx := f.x * 0.55
-	var hz := f.y * 0.55
-	var full := maxf(f.x, f.y) * 0.6
-	_pole.height = full * 1.05
-	for p in [Vector3(hx, 0, hz), Vector3(-hx, 0, hz), Vector3(hx, 0, -hz), Vector3(-hx, 0, -hz), Vector3(0, 0, hz), Vector3(0, 0, -hz)]:
-		var pole := MeshInstance3D.new()
-		pole.mesh = _pole
-		pole.material_override = _wood
-		pole.position = base + p.rotated(Vector3.UP, ang) + Vector3(0, full * 0.52, 0)
-		life.add_child(pole)
-	# Timber stacked beside it, a cart that brought it, a ladder up the side.
-	var props := [["wood_pile_pack", Vector3(hx + 0.2, 0, 0), ang], ["medieval_wooden_cart", Vector3(hx + 0.25, 0, hz + 0.35), ang + 0.4],
-		["ph/wooden_ladder", Vector3(-hx - 0.04, 0, 0), ang + PI / 2]]
-	for pr in props:
-		var prop: Node3D = Real.make(pr[0])
-		if prop == null:
-			continue
-		var at: Vector3 = base + Vector3(pr[1]).rotated(Vector3.UP, ang)
-		if not terrain.is_land(center.x + at.x, center.z + at.z):
-			prop.free()
-			continue
-		prop.position = Vector3(at.x, _y(center, at), at.z)
-		prop.rotation.y = pr[2]
-		life.add_child(prop)
-	# Builders at work along its front, each at a task done standing or
-	# kneeling where they are (carrying and barrowing are walks: not on the spot).
-	for i in 3:
-		var bp := base + Vector3(rng.randf_range(-hx, hx), 0, hz + 0.16).rotated(Vector3.UP, ang)
-		var b := _stand(root, life, center, bp, "peasant", ["Fixing_Kneeling", "PickUp_Table", "Interact"][i], rng.randi())
-		if b:
-			b.rotation.y = atan2(base.x - b.position.x, base.z - b.position.z)  # facing the work
-			_mind(b, "build", center)
+	_site(root, life, center, off + Vector3(0, _y(center, off), 0), ang, kit, f, plot, clampf(progress, 0.08, 1.0), rng)
 	# What's being raised shows under the town's name on the map (map_labels.gd).
 	life.set_meta("doing", doing_line("Building", building, progress))
 
@@ -678,3 +624,117 @@ static func doing_line(kind: String, name: String, progress: float) -> String:
 		var low := name.to_lower()
 		what = String(BUILDINGS.get(name, "Building %s %s" % ["an" if "aeiou".contains(low.left(1)) else "a", low]))
 	return "%s · %d%%" % [what, int(progress * 100)]
+
+
+## What rises for a building: the kit's own building for it.
+static func site_kit(building: String) -> String:
+	match building:
+		"Temple", "Cathedral", "Amphitheater", "Colosseum", "Courthouse", "Library", "University":
+			return "medieval_church"
+		"Barracks", "Barracks II", "Palace":
+			return "medieval_viking_house"
+		"Granary", "Marketplace", "Harbor":
+			return "old_wooden_barn"
+		"City Walls", "Great Wall":
+			return "wooden_fence_game_ready_asset"
+	return "thatched_rural_houses"
+
+
+## A building site (the royal works and any new building use the same): the
+## building rising to `grow` of its height, scaffold poles, timber, a cart, a
+## ladder, and three builders at work with minds. Returns the rising building.
+func _site(root: Node3D, life: Node3D, center: Vector3, base: Vector3, ang: float, kit: String, f: Vector2, plot: PackedVector2Array, grow: float, rng: RandomNumberGenerator) -> Node3D:
+	var site: Node3D = Real.make(kit)
+	if site == null:
+		return null
+	# The site, its scaffold and its timber stand in the way: walk round them.
+	life.set_meta("footprints", life.get_meta("footprints", []) + [plot, _rect(base + Vector3(f.x * 0.55 + 0.2, 0, 0).rotated(Vector3.UP, ang), Vector2(0.42, 0.36), ang),
+		_rect(base + Vector3(f.x * 0.55 + 0.25, 0, f.y * 0.55 + 0.35).rotated(Vector3.UP, ang), Vector2(0.4, 0.3), ang + 0.4)])
+	site.scale.y = grow
+	site.name = "Site"
+	site.position = base
+	site.rotation.y = ang + PI
+	life.add_child(site)
+	var hx := f.x * 0.55
+	var hz := f.y * 0.55
+	var full := maxf(f.x, f.y) * 0.6
+	_pole.height = full * 1.05
+	for p in [Vector3(hx, 0, hz), Vector3(-hx, 0, hz), Vector3(hx, 0, -hz), Vector3(-hx, 0, -hz), Vector3(0, 0, hz), Vector3(0, 0, -hz)]:
+		var pole := MeshInstance3D.new()
+		pole.mesh = _pole
+		pole.material_override = _wood
+		pole.position = base + p.rotated(Vector3.UP, ang) + Vector3(0, full * 0.52, 0)
+		life.add_child(pole)
+	# Timber stacked beside it, a cart that brought it, a ladder up the side.
+	var props := [["wood_pile_pack", Vector3(hx + 0.2, 0, 0), ang], ["medieval_wooden_cart", Vector3(hx + 0.25, 0, hz + 0.35), ang + 0.4],
+		["ph/wooden_ladder", Vector3(-hx - 0.04, 0, 0), ang + PI / 2]]
+	for pr in props:
+		var prop: Node3D = Real.make(pr[0])
+		if prop == null:
+			continue
+		var at: Vector3 = base + Vector3(pr[1]).rotated(Vector3.UP, ang)
+		if not terrain.is_land(center.x + at.x, center.z + at.z):
+			prop.free()
+			continue
+		prop.position = Vector3(at.x, _y(center, at), at.z)
+		prop.rotation.y = pr[2]
+		life.add_child(prop)
+	# Builders at work along its front, each at a task done standing or
+	# kneeling where they are (carrying and barrowing are walks: not on the spot).
+	for i in 3:
+		var bp := base + Vector3(rng.randf_range(-hx, hx), 0, hz + 0.16).rotated(Vector3.UP, ang)
+		var b := _stand(root, life, center, bp, "peasant", ["Fixing_Kneeling", "PickUp_Table", "Interact"][i], rng.randi())
+		if b:
+			b.rotation.y = atan2(base.x - b.position.x, base.z - b.position.z)  # facing the work
+			_mind(b, "build", center)
+	return site
+
+
+## A new building rising in a town, for towns.gd (builder 2): the same site as
+## the royal works, at `plot` (town-local), one step higher each season of the
+## realm (awareness.gd's season_turned, so it waits while the realm waits), and
+## gone when done, `on_done` called so the finished building can stand.
+func raise_site(town_node: Node3D, plot: Transform3D, building: String, seasons: int, on_done := Callable()) -> Node3D:
+	var life: Node3D = town_node.get_node_or_null("Life")
+	if life == null:
+		life = Node3D.new()
+		life.name = "Life"
+		life.set_meta("footprints", [])
+		life.set_meta("standing", PackedVector2Array())
+		town_node.add_child(life)
+	var kit := site_kit(building)
+	var f: Vector2 = Real.footprint(kit)
+	var ang := plot.basis.get_euler().y - PI
+	var base := plot.origin
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(building) + int(base.x * 100.0)
+	var holder := Node3D.new()  # the whole site, freed at once when it's done
+	holder.name = "Raising"
+	life.add_child(holder)
+	# Its builders keep their set moves: _mind would join them to whichever town was dressed last.
+	var was_on := _town_on
+	_town_on = false
+	var site := _site(town_node, holder, town_node.position, base, ang, kit, f, _rect(base, f * 1.1, ang + PI), 0.08, rng)
+	_town_on = was_on
+	if site == null:
+		holder.free()
+		return null
+	var left := [maxi(1, seasons)]
+	var step := 0.92 / float(left[0])
+	var aw = Engine.get_meta("awareness") if Engine.has_meta("awareness") else null
+	if aw == null:
+		return site
+	var grow_on := func(_turn: int) -> void:
+		if not is_instance_valid(site):
+			return
+		left[0] -= 1
+		site.create_tween().tween_property(site, "scale:y", minf(1.0, site.scale.y + step), 1.5)
+		if left[0] <= 0:
+			holder.queue_free()
+			if on_done.is_valid():
+				on_done.call()
+	aw.season_turned.connect(grow_on)
+	holder.tree_exiting.connect(func():
+		if aw.season_turned.is_connected(grow_on):
+			aw.season_turned.disconnect(grow_on))
+	return site
