@@ -16,6 +16,8 @@ var main: Node
 var _trade: Label
 var _mind: Label
 var _wait := 0.0
+var _who: Node3D  # the person shown now
+var _said := {}  # their trade and line, from chatter.mind_line (asked once per person)
 
 
 func _ready() -> void:
@@ -48,8 +50,15 @@ func _process(delta: float) -> void:
 		visible = false
 		return
 	var a: Dictionary = who["a"]
-	_trade.text = String(TRADES.get(String(a.get("role", "")), "Townsfolk")).to_upper()
-	var mind := String(a.get("mind", ""))
+	var node: Node3D = a.get("node")
+	if node != _who:
+		_who = node
+		_said = _ask(node)
+	var trade := String(_said.get("trade", ""))
+	if trade == "":
+		trade = String(TRADES.get(String(a.get("role", "")), "Townsfolk"))
+	_trade.text = trade.to_upper()
+	var mind := String(_said.get("line", ""))
 	_mind.text = mind
 	_mind.visible = mind != ""
 	reset_size()
@@ -57,6 +66,17 @@ func _process(delta: float) -> void:
 	var room := get_viewport().get_visible_rect().size - size - Vector2(8, 8)
 	position = Vector2(minf(at.x, room.x), minf(at.y, room.y))
 	visible = true
+
+
+## What the person does and has on their mind, from the townsfolk's talk
+## (chatter.gd's mind_line); fresher words, when the minds give them, replace it.
+func _ask(node: Node3D) -> Dictionary:
+	var chatter: Node = main.get_node_or_null("Chatter") if main else null
+	if node == null or chatter == null or not chatter.has_method("mind_line"):
+		return {}
+	return chatter.mind_line(node, func(d: Dictionary):
+		if _who == node and d is Dictionary:
+			_said = d)
 
 
 ## Who stands under the cursor, if the lens is near enough and nothing of the interface is in the way.
