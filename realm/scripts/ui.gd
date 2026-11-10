@@ -2521,6 +2521,13 @@ func _reign_end(r: Dictionary) -> void:
 	var name_l := T.title(String(r.get("title", "The King")), 56)
 	name_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(name_l)
+	# Why the realm calls him so: the deeds it remembers (bridge ledger.js).
+	if String(r.get("why", "")) != "":
+		var why := T.datum(String(r["why"]), T.SIZE_BODY, T.TEXT_2)
+		why.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		why.autowrap_mode = TextServer.AUTOWRAP_WORD
+		why.custom_minimum_size.x = 760
+		col.add_child(why)
 	var verdict := Label.new()
 	verdict.text = String(r.get("verdict", ""))
 	verdict.autowrap_mode = TextServer.AUTOWRAP_WORD

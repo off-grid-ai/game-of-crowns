@@ -1,0 +1,2019 @@
+{
+ "_": "Which of the King's deeds move which axis (ledger.js): word, mercy, give, peace; ±1 a deed, ±2 a grave one; {} for none. says: the deed in the realm's words, for 'After <says>, people call you <name>.'",
+ "decree": {
+  "banners": {
+   "axes": {
+    "peace": -1
+   },
+   "says": "the summoning of the banners"
+  },
+  "relief": {
+   "axes": {
+    "mercy": 1,
+    "give": 1
+   },
+   "says": "the grain sent to {town}"
+  },
+  "gift": {
+   "axes": {
+    "give": 1
+   },
+   "says": "the gold sent to {house}"
+  },
+  "sellswords": {
+   "axes": {
+    "peace": -1
+   },
+   "says": "the hiring of sellswords"
+  },
+  "levy": {
+   "axes": {
+    "peace": -1
+   },
+   "says": "the levy raised at {town}"
+  },
+  "build": {
+   "axes": {
+    "give": 1
+   },
+   "says": "the building paid for at {town}"
+  },
+  "feast": {
+   "axes": {
+    "give": 1
+   },
+   "says": "the feast at {town}"
+  },
+  "ward": {
+   "axes": {},
+   "says": ""
+  },
+  "buyoff": {
+   "axes": {
+    "peace": 1
+   },
+   "says": "the pretender bought off"
+  },
+  "back": {
+   "axes": {
+    "peace": -1
+   },
+   "says": "the King's sword drawn in {house}'s war"
+  },
+  "settle": {
+   "axes": {
+    "peace": 1
+   },
+   "says": "the peace kept at {town}"
+  },
+  "peace": {
+   "axes": {
+    "peace": 2
+   },
+   "says": "the peace commanded between the houses"
+  },
+  "marriage": {
+   "axes": {
+    "peace": 2
+   },
+   "says": "the royal match"
+  },
+  "grant": {
+   "axes": {
+    "give": 1
+   },
+   "says": "the gift of {town}"
+  },
+  "grant_take": {
+   "axes": {
+    "give": -1
+   },
+   "says": "the taking of {town}"
+  },
+  "alliance": {
+   "axes": {
+    "word": 1
+   },
+   "says": "the oath sworn with {house}"
+  },
+  "march": {
+   "axes": {
+    "peace": -1
+   },
+   "says": "the march on {town}"
+  }
+ },
+ "realm": {
+  "sack": {
+   "axes": {
+    "mercy": -2,
+    "peace": -1
+   },
+   "says": "the sack of {town}"
+  },
+  "sworn_march": {
+   "axes": {
+    "word": -2
+   },
+   "says": "the march on his own sworn house, {house}"
+  },
+  "truce_march": {
+   "axes": {
+    "word": -2
+   },
+   "says": "the King's own truce broken against {house}"
+  },
+  "tithe_high": {
+   "axes": {
+    "give": -1
+   },
+   "says": "the heavy tithe"
+  },
+  "tithe_low": {
+   "axes": {
+    "give": 1
+   },
+   "says": "the light tithe"
+  }
+ },
+ "deck": {
+  "abduction": {
+   "return": {
+    "axes": {},
+    "says": "the stolen daughter sent home"
+   },
+   "wed": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the stolen bride made a lawful wife"
+   },
+   "war": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the leave given to fetch her back by the sword"
+   }
+  },
+  "elopement": {
+   "home": {
+    "axes": {
+     "mercy": -1,
+     "word": 1
+    },
+    "says": "the heir dragged home in chains"
+   },
+   "bless": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the blessing of the runaway lovers"
+   },
+   "pay": {
+    "axes": {
+     "give": 1,
+     "peace": 1
+    },
+    "says": "the blood-price paid for the runaway heir"
+   }
+  },
+  "seen_with_enemy": {
+   "tell": {
+    "axes": {},
+    "says": "the turncoat named to his lord"
+   },
+   "turn": {
+    "axes": {},
+    "says": "the turncoat bought for the crown"
+   },
+   "nothing": {
+    "axes": {},
+    "says": "the turncoat watched and let be"
+   }
+  },
+  "secret_alliance": {
+   "bless": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the pact of two houses blessed"
+   },
+   "break": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the pact of two houses broken"
+   },
+   "rival": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the secret pact told to their rivals"
+   }
+  },
+  "border_war": {
+   "leave": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the leave given to march to war"
+   },
+   "forbid": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the march forbidden on pain of treason"
+   },
+   "peace": {
+    "axes": {
+     "peace": 2,
+     "give": 1
+    },
+    "says": "the truce bought between two warring houses"
+   }
+  },
+  "raid_reprisal": {
+   "look_away": {
+    "axes": {
+     "mercy": -1,
+     "peace": -1
+    },
+    "says": "the burning raid the crown looked away from"
+   },
+   "recall": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the raiders called home"
+   },
+   "fine": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the fine laid on the raiders' house"
+   }
+  },
+  "poisoned_cup": {
+   "trial": {
+    "axes": {},
+    "says": "the poisoning trial"
+   },
+   "maester": {
+    "axes": {
+     "mercy": 1,
+     "give": 1
+    },
+    "says": "the royal physician sent to the poisoned heir"
+   },
+   "nothing": {
+    "axes": {
+     "mercy": -1
+    },
+    "says": "the poisoned heir left to the fever"
+   }
+  },
+  "bastard": {
+   "legitimise": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the bastard boy given his father's name"
+   },
+   "refuse": {
+    "axes": {},
+    "says": "the bastard boy sent away nameless"
+   },
+   "kingsguard": {
+    "axes": {},
+    "says": "the bastard boy taken into the King's service"
+   }
+  },
+  "hostage_swap": {
+   "accept": {
+    "axes": {},
+    "says": "the heir taken as a ward at court"
+   },
+   "refuse": {
+    "axes": {},
+    "says": "the ward refused"
+   }
+  },
+  "tourney": {
+   "fund": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the great tourney paid for by the crown"
+   },
+   "half": {
+    "axes": {
+     "give": -1
+    },
+    "says": "the tourney the crown would not pay for"
+   },
+   "refuse": {
+    "axes": {},
+    "says": "the tourney refused"
+   }
+  },
+  "sellsword": {
+   "hire": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the Golden Wolf's company hired"
+   },
+   "let": {
+    "axes": {},
+    "says": "the sellswords left to another house"
+   },
+   "banish": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the sellswords sent out of the realm"
+   }
+  },
+  "plague_town": {
+   "close": {
+    "axes": {
+     "mercy": -1
+    },
+    "says": "the gates of {town} shut on the sick"
+   },
+   "healers": {
+    "axes": {
+     "mercy": 1,
+     "give": 1
+    },
+    "says": "the healers and grain sent to {town}"
+   },
+   "burn": {
+    "axes": {
+     "mercy": -2
+    },
+    "says": "the burning of the sick quarter of {town}"
+   }
+  },
+  "heretic_lord": {
+   "condemn": {
+    "axes": {
+     "mercy": -1
+    },
+    "says": "the lord branded a heretic"
+   },
+   "tolerate": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the old gods let be"
+   }
+  },
+  "defector_knight": {
+   "protect": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the shelter given to the fleeing knight"
+   },
+   "return": {
+    "axes": {
+     "mercy": -2,
+     "word": 1
+    },
+    "says": "the fleeing knight sent back to the rope"
+   },
+   "crown": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the fleeing knight taken into the King's service"
+   }
+  },
+  "dowry_dispute": {
+   "pay": {
+    "axes": {},
+    "says": "the old dowry made to be paid"
+   },
+   "half": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the dowry quarrel split down the middle"
+   },
+   "dismiss": {
+    "axes": {},
+    "says": "the old dowry claim thrown out"
+   }
+  },
+  "hunting_accident": {
+   "blood": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the blood-price for the slain huntsman"
+   },
+   "accident": {
+    "axes": {},
+    "says": "the arrow in the back called an accident"
+   },
+   "inquiry": {
+    "axes": {},
+    "says": "the King's inquiry into the hunting death"
+   }
+  },
+  "harvest_glut": {
+   "buy": {
+    "axes": {},
+    "says": "the great harvest bought for the royal granaries"
+   },
+   "tax": {
+    "axes": {
+     "give": -1
+    },
+    "says": "the tax laid on a good harvest"
+   },
+   "free": {
+    "axes": {},
+    "says": "the great harvest sold abroad"
+   }
+  },
+  "bannerman_slight": {
+   "bannerman": {
+    "axes": {},
+    "says": "the fields given back to the old bannerman"
+   },
+   "liege": {
+    "axes": {},
+    "says": "the old bannerman's fields left with his lord"
+   }
+  },
+  "old_lord_dotage": {
+   "heir": {
+    "axes": {},
+    "says": "the old lord set aside for his heir"
+   },
+   "wait": {
+    "axes": {},
+    "says": "the old lord left to rule till death"
+   }
+  },
+  "wildlings": {
+   "settle": {
+    "axes": {
+     "mercy": 1,
+     "give": 1
+    },
+    "says": "the hill clans given land near {town}"
+   },
+   "drive": {
+    "axes": {
+     "mercy": -1
+    },
+    "says": "the starving hill clans driven back"
+   },
+   "levy": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the hill clans' fighters taken for the King's army"
+   }
+  },
+  "bridge_toll": {
+   "abolish": {
+    "axes": {},
+    "says": "the bridge toll scrapped"
+   },
+   "share": {
+    "axes": {
+     "give": -1
+    },
+    "says": "the crown's half of the bridge toll"
+   },
+   "keep": {
+    "axes": {},
+    "says": "the bridge toll left standing"
+   }
+  },
+  "dragon_egg": {
+   "buy": {
+    "axes": {},
+    "says": "the dragon egg bought for the crown"
+   },
+   "claim": {
+    "axes": {
+     "give": -1
+    },
+    "says": "the dragon egg taken by right"
+   },
+   "keep": {
+    "axes": {},
+    "says": "the dragon egg left with its finders"
+   }
+  },
+  "envoy_insult": {
+   "duel": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the duel in the King's hall"
+   },
+   "expel": {
+    "axes": {},
+    "says": "the insolent envoy thrown out"
+   },
+   "apology": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the apologies made in the King's hall"
+   }
+  },
+  "mines": {
+   "grant": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the silver of {town} granted away"
+   },
+   "keep": {
+    "axes": {
+     "give": -1
+    },
+    "says": "the silver of {town} kept for the crown"
+   },
+   "split": {
+    "axes": {},
+    "says": "the silver of {town} shared"
+   }
+  },
+  "deserters": {
+   "hang": {
+    "axes": {
+     "mercy": -2,
+     "word": 1
+    },
+    "says": "the hanging of the deserters"
+   },
+   "pardon": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the pardon of the deserters"
+   },
+   "let": {
+    "axes": {},
+    "says": "the deserters left in {town}"
+   }
+  },
+  "faithless_wife": {
+   "annul": {
+    "axes": {},
+    "says": "the marriage ended on a husband's word"
+   },
+   "deny": {
+    "axes": {},
+    "says": "the annulment refused for want of proof"
+   },
+   "septon": {
+    "axes": {},
+    "says": "the marriage quarrel sent to the Archbishop"
+   }
+  },
+  "royal_match": {
+   "accept": {
+    "axes": {
+     "peace": 2
+    },
+    "says": "the royal match"
+   },
+   "decline": {
+    "axes": {},
+    "says": "the royal match declined"
+   }
+  },
+  "levy_refused": {
+   "force": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the levies fetched by royal troops"
+   },
+   "accept": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the levies left home for the harvest"
+   },
+   "gold": {
+    "axes": {
+     "give": -1
+    },
+    "says": "the gold taken in place of the levies"
+   }
+  },
+  "spy_caught": {
+   "believe": {
+    "axes": {},
+    "says": "the inquiry into the accused lord"
+   },
+   "hang": {
+    "axes": {
+     "mercy": -2
+    },
+    "says": "the hanging of the spy"
+   },
+   "use": {
+    "axes": {},
+    "says": "the spy sent home with false letters"
+   }
+  },
+  "great_fire": {
+   "rebuild": {
+    "axes": {
+     "give": 1,
+     "mercy": 1
+    },
+    "says": "the rebuilding of {town}"
+   },
+   "loan": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the houses made to rebuild {town}"
+   },
+   "refuse": {
+    "axes": {
+     "mercy": -1,
+     "give": -1
+    },
+    "says": "the burnt town of {town} left in ashes"
+   }
+  },
+  "challenge_heir": {
+   "allow": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the duel of honour allowed"
+   },
+   "forbid": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the duel of honour forbidden"
+   }
+  },
+  "pirates": {
+   "fleet": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the royal fleet sent to guard {town}"
+   },
+   "own": {
+    "axes": {},
+    "says": "the lords left to build their own ships"
+   },
+   "pay": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the raiders paid to leave"
+   }
+  },
+  "lord_sick": {
+   "swear": {
+    "axes": {
+     "word": 1
+    },
+    "says": "the oath sworn at a dying lord's bed"
+   },
+   "words": {
+    "axes": {},
+    "says": "the oath not sworn at a dying lord's bed"
+   }
+  },
+  "usurper_letter": {
+   "reward": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the reward for the loyal lord"
+   },
+   "strike": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the first strike against the plotters"
+   },
+   "quiet": {
+    "axes": {},
+    "says": "the plot kept quiet and watched"
+   }
+  }
+ },
+ "court": {
+  "claim": {
+   "return": {
+    "axes": {},
+    "says": "the stolen town given back"
+   },
+   "confirm": {
+    "axes": {},
+    "says": "the traitor's prize confirmed"
+   },
+   "seize": {
+    "axes": {
+     "give": -1
+    },
+    "says": "the stolen town taken for the crown"
+   }
+  },
+  "justice": {
+   "side": {
+    "axes": {},
+    "says": "the judgement for the wronged lord"
+   },
+   "other": {
+    "axes": {},
+    "says": "the judgement against the wronged lord"
+   },
+   "peace": {
+    "axes": {
+     "peace": 1,
+     "give": 1
+    },
+    "says": "the King's peace paid for between two feuding lords"
+   },
+   "combat": {
+    "axes": {
+     "mercy": -1
+    },
+    "says": "the trial by combat"
+   }
+  },
+  "grain": {
+   "grant": {
+    "axes": {
+     "mercy": 1,
+     "give": 1
+    },
+    "says": "the grain sent to the starving"
+   },
+   "order": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the grain ordered from a richer house"
+   },
+   "refuse": {
+    "axes": {
+     "mercy": -1,
+     "give": -1
+    },
+    "says": "the starving left without grain"
+   }
+  },
+  "match": {
+   "bless": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the blessing of the bannerman's match"
+   },
+   "forbid": {
+    "axes": {},
+    "says": "the bannerman's match forbidden"
+   },
+   "ward": {
+    "axes": {},
+    "says": "the bride taken as a royal ward"
+   }
+  },
+  "debt": {
+   "forgive": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the tithe given back to a ruined house"
+   },
+   "lend": {
+    "axes": {},
+    "says": "the loan to a ruined house"
+   },
+   "refuse": {
+    "axes": {
+     "give": -1
+    },
+    "says": "the tithe taken from a ruined house"
+   }
+  },
+  "outlaws": {
+   "hunt": {
+    "axes": {},
+    "says": "the King's riders sent after the outlaws"
+   },
+   "pardon": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the pardon of the outlaws"
+   },
+   "theirs": {
+    "axes": {},
+    "says": "the outlaws left to their lord"
+   }
+  },
+  "informer": {
+   "hostage": {
+    "axes": {},
+    "says": "the child taken as a royal ward"
+   },
+   "reward": {
+    "axes": {},
+    "says": "the informer's purse"
+   },
+   "dismiss": {
+    "axes": {},
+    "says": "the informer called a liar"
+   }
+  },
+  "regency": {
+   "regent": {
+    "axes": {},
+    "says": "the bannerman named to govern"
+   },
+   "crown": {
+    "axes": {
+     "give": -1
+    },
+    "says": "the crown's hand on a leaderless house"
+   },
+   "leave": {
+    "axes": {},
+    "says": "the succession left to the house"
+   }
+  },
+  "faith": {
+   "endow": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the gift to the Faith"
+   },
+   "silence": {
+    "axes": {
+     "mercy": -1
+    },
+    "says": "the silencing of the friar"
+   },
+   "ignore": {
+    "axes": {},
+    "says": "the friar let preach"
+   }
+  },
+  "remembers": {
+   "amend": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the amends for an old wrong"
+   },
+   "hear": {
+    "axes": {},
+    "says": "the old grudge heard out"
+   },
+   "firm": {
+    "axes": {},
+    "says": "the old wrong never mended"
+   },
+   "oath": {
+    "axes": {
+     "word": 1
+    },
+    "says": "the oath of an old friend"
+   },
+   "purse": {
+    "axes": {
+     "give": -1
+    },
+    "says": "the gold asked of an old friend"
+   }
+  },
+  "raise": {
+   "raise": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the bannerman raised to a lord"
+   },
+   "honour": {
+    "axes": {},
+    "says": "the sword given to a loyal bannerman"
+   },
+   "refuse": {
+    "axes": {},
+    "says": "the loyal bannerman sent home"
+   }
+  }
+ },
+ "arc": {
+  "broken-oath:the-bride-dies": {
+   "inquiry": {
+    "axes": {},
+    "says": "the inquiry into the dead bride"
+   },
+   "blame": {
+    "axes": {},
+    "says": "the blame laid on the widower"
+   },
+   "hush": {
+    "axes": {},
+    "says": "the prayers paid for the dead bride"
+   }
+  },
+  "broken-oath:raids": {
+   "truce": {
+    "axes": {
+     "peace": 2,
+     "give": 1
+    },
+    "says": "the truce between two warring houses"
+   },
+   "side-groom": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the crown's side taken in the feud"
+   },
+   "side-kin": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the crown's side taken in the feud"
+   }
+  },
+  "broken-oath:groom-wins": {
+   "reward": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the land and titles given to the victor"
+   },
+   "warn": {
+    "axes": {},
+    "says": "the warning to the victor"
+   }
+  },
+  "broken-oath:kin-wins": {
+   "reward": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the hall given to the avenger"
+   },
+   "warn": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the avenger ordered home"
+   }
+  },
+  "burghers-charter:the-petition": {
+   "grant": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the charter of {town}"
+   },
+   "refuse": {
+    "axes": {},
+    "says": "the charter of {town} refused"
+   },
+   "lord": {
+    "axes": {},
+    "says": "the burghers of {town} left to their lord"
+   }
+  },
+  "burghers-charter:the-lords-due": {
+   "compensate": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the lord paid for his lost tolls"
+   },
+   "uphold": {
+    "axes": {
+     "word": 1,
+     "peace": 1
+    },
+    "says": "the charter upheld"
+   }
+  },
+  "burghers-charter:the-looms-stop": {
+   "grant": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the charter of {town} granted at last"
+   },
+   "soldiers": {
+    "axes": {
+     "mercy": -1
+    },
+    "says": "the soldiers sent into the weavers' shops"
+   },
+   "buy": {
+    "axes": {},
+    "says": "the guild masters bought off"
+   }
+  },
+  "burghers-charter:the-commune": {
+   "recognise": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the free town taken under the crown"
+   },
+   "storm": {
+    "axes": {
+     "mercy": -1,
+     "peace": -1
+    },
+    "says": "the storming of {town}"
+   },
+   "protector": {
+    "axes": {},
+    "says": "the free town given to a lord"
+   }
+  },
+  "crowns-debt:the-note": {
+   "pay": {
+    "axes": {
+     "word": 1
+    },
+    "says": "the crown's old debt paid"
+   },
+   "squeeze": {
+    "axes": {
+     "give": -1
+    },
+    "says": "the special tax on the great houses"
+   },
+   "refuse": {
+    "axes": {
+     "word": -1
+    },
+    "says": "the crown's old debt refused"
+   }
+  },
+  "crowns-debt:second-note": {
+   "pay": {
+    "axes": {
+     "word": 1
+    },
+    "says": "the crown's old debt paid in full"
+   },
+   "squeeze": {
+    "axes": {
+     "give": -1
+    },
+    "says": "the second tax on the great houses"
+   },
+   "refuse": {
+    "axes": {
+     "word": -1
+    },
+    "says": "the crown's old debt refused"
+   }
+  },
+  "crowns-debt:sellswords": {
+   "outbid": {
+    "axes": {},
+    "says": "the bankers' sellswords bought away"
+   },
+   "seize-bank": {
+    "axes": {
+     "give": -1
+    },
+    "says": "the bankers' town seized"
+   }
+  },
+  "faith-militant:the-preacher": {
+   "endow": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the temple paid for by the crown"
+   },
+   "silence": {
+    "axes": {
+     "mercy": -1
+    },
+    "says": "the silencing of the holy man"
+   },
+   "ignore": {
+    "axes": {},
+    "says": "the holy man let preach"
+   }
+  },
+  "faith-militant:the-swords": {
+   "concord": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the Faith's own courts"
+   },
+   "disarm": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the order to disarm the zealots"
+   }
+  },
+  "grain-lords:empty-markets": {
+   "buy": {
+    "axes": {
+     "mercy": 1,
+     "give": 1
+    },
+    "says": "the hoarder's grain bought for the hungry"
+   },
+   "fix": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the price of bread set by decree"
+   },
+   "granary": {
+    "axes": {
+     "mercy": 1,
+     "give": 1
+    },
+    "says": "the royal granaries opened"
+   }
+  },
+  "grain-lords:the-price-rises": {
+   "pay": {
+    "axes": {
+     "mercy": 1,
+     "give": 1
+    },
+    "says": "the hoarder's grain bought again for the hungry"
+   },
+   "fix": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the price of bread set by decree"
+   }
+  },
+  "grain-lords:the-burning-barn": {
+   "seize": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the hoarder's barns seized"
+   },
+   "fine": {
+    "axes": {},
+    "says": "the fine on the grain hoarder"
+   },
+   "yield": {
+    "axes": {
+     "mercy": -1,
+     "word": -1
+    },
+    "says": "the bread decree taken back"
+   }
+  },
+  "grain-lords:bread-riots": {
+   "feed": {
+    "axes": {
+     "mercy": 1,
+     "give": 1
+    },
+    "says": "the rioters fed from the treasury"
+   },
+   "hang": {
+    "axes": {
+     "mercy": -2
+    },
+    "says": "the hanging of the bread rioters"
+   },
+   "barns": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the mob sent to the hoarder's barns"
+   }
+  },
+  "hostage-heir:the-letter": {
+   "release": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the ward sent home with honours"
+   },
+   "keep": {
+    "axes": {},
+    "says": "the ward kept at court"
+   },
+   "betroth": {
+    "axes": {},
+    "says": "the ward married off by the crown"
+   }
+  },
+  "hostage-heir:the-escape": {
+   "forgive": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the pardon of the ward's rescuers"
+   },
+   "hang": {
+    "axes": {
+     "mercy": -2,
+     "word": 1
+    },
+    "says": "the hanging at the river gate"
+   },
+   "return": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the ward let go home"
+   }
+  },
+  "hostage-heir:the-dagger": {
+   "justice": {
+    "axes": {},
+    "says": "the fine for the knife sent at a ward"
+   },
+   "doubt": {
+    "axes": {},
+    "says": "the knife at a ward called unproven"
+   }
+  },
+  "long-winter:early-snow": {
+   "royal-grain": {
+    "axes": {
+     "mercy": 1,
+     "give": 1
+    },
+    "says": "the royal grain sent north"
+   },
+   "levy-south": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the southern grain ordered north"
+   },
+   "fend": {
+    "axes": {
+     "mercy": -1,
+     "give": -1
+    },
+    "says": "the north left to starve"
+   }
+  },
+  "long-winter:hunger": {
+   "seize": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the southern granaries seized for the north"
+   },
+   "buy": {
+    "axes": {
+     "mercy": 1,
+     "give": 1
+    },
+    "says": "the grain bought across the sea"
+   },
+   "pray": {
+    "axes": {
+     "mercy": -1
+    },
+    "says": "the prayers sent north in place of bread"
+   }
+  },
+  "long-winter:the-wall": {
+   "host": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the royal army sent north"
+   },
+   "abandon": {
+    "axes": {
+     "mercy": -1
+    },
+    "says": "the north left alone at the wall"
+   }
+  },
+  "lost-brother:the-stranger": {
+   "receive": {
+    "axes": {},
+    "says": "the stranger heard at court"
+   },
+   "arrest": {
+    "axes": {
+     "mercy": -1
+    },
+    "says": "the arrest of the stranger"
+   },
+   "ignore": {
+    "axes": {},
+    "says": "the stranger ignored"
+   }
+  },
+  "lost-brother:the-testing": {
+   "nurse": {
+    "axes": {},
+    "says": "the old nurse sent for"
+   },
+   "embrace": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the lost brother welcomed home"
+   },
+   "dismiss": {
+    "axes": {},
+    "says": "the stranger paid to go away"
+   }
+  },
+  "lost-brother:the-mummers-son": {
+   "hang": {
+    "axes": {
+     "mercy": -2
+    },
+    "says": "the hanging of the false prince"
+   },
+   "pardon": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the pardon of the false prince"
+   }
+  },
+  "lost-brother:true-blood": {
+   "council": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the council seat given to the lost brother"
+   },
+   "exile": {
+    "axes": {},
+    "says": "the exile of the lost brother"
+   }
+  },
+  "lost-brother:the-prisoner": {
+   "trial": {
+    "axes": {},
+    "says": "the trial of the man with the King's face"
+   },
+   "quietly": {
+    "axes": {
+     "mercy": -2
+    },
+    "says": "the quiet death in the cells"
+   }
+  },
+  "lost-brother:the-gathering": {
+   "buy": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the turncoat lord bought back"
+   },
+   "field": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the war for the crown"
+   }
+  },
+  "pale-fever:first-sick": {
+   "gates": {
+    "axes": {
+     "mercy": -1
+    },
+    "says": "the gates shut on the fever town"
+   },
+   "physicians": {
+    "axes": {
+     "mercy": 1,
+     "give": 1
+    },
+    "says": "the royal physicians sent to the fever town"
+   },
+   "trade": {
+    "axes": {},
+    "says": "the roads kept open in the fever"
+   }
+  },
+  "pale-fever:behind-the-gates": {
+   "bread": {
+    "axes": {
+     "mercy": 1,
+     "give": 1
+    },
+    "says": "the grain sent over the walls"
+   },
+   "hold": {
+    "axes": {
+     "mercy": -1,
+     "word": 1
+    },
+    "says": "the gates kept shut on a starving town"
+   }
+  },
+  "pale-fever:the-hedge-woman": {
+   "trust": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the hedge-woman taken under the King's protection"
+   },
+   "burn": {
+    "axes": {
+     "mercy": -2
+    },
+    "says": "the burning of the hedge-woman"
+   }
+  },
+  "pale-fever:fever-at-court": {
+   "stay": {
+    "axes": {},
+    "says": "the King staying with his people in the fever"
+   },
+   "keep": {
+    "axes": {},
+    "says": "the King walled up in the inner keep"
+   },
+   "flee": {
+    "axes": {},
+    "says": "the King's ride from the fever"
+   }
+  },
+  "pale-fever:the-king-sickens": {
+   "physicians": {
+    "axes": {},
+    "says": "the King's fever fought by every physician"
+   },
+   "hedge": {
+    "axes": {},
+    "says": "the King's fever bled by a hedge-woman"
+   },
+   "hide": {
+    "axes": {},
+    "says": "the King's fever hidden"
+   }
+  },
+  "peasants-crown:bread": {
+   "feed": {
+    "axes": {
+     "mercy": 1,
+     "give": 1
+    },
+    "says": "the royal granaries opened to {town}"
+   },
+   "hang": {
+    "axes": {
+     "mercy": -2
+    },
+    "says": "the hanging of the ringleaders of {town}"
+   },
+   "price": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the price of bread set by royal order"
+   }
+  },
+  "peasants-crown:straw-crown": {
+   "parley": {
+    "axes": {
+     "peace": 1,
+     "mercy": 1
+    },
+    "says": "the straw king heard at court"
+   },
+   "crush": {
+    "axes": {
+     "mercy": -1,
+     "peace": -1
+    },
+    "says": "the knights sent against the poor of {town}"
+   }
+  },
+  "poisoned-court:first-cup": {
+   "inquire": {
+    "axes": {},
+    "says": "the questioning of the servants"
+   },
+   "tasters": {
+    "axes": {},
+    "says": "the doubled tasters"
+   },
+   "fever": {
+    "axes": {},
+    "says": "the poisoning called a fever"
+   }
+  },
+  "poisoned-court:second-cup": {
+   "accuse": {
+    "axes": {},
+    "says": "the poisoner named before the court"
+   },
+   "spy": {
+    "axes": {},
+    "says": "the spy in the poisoner's house"
+   },
+   "wait": {
+    "axes": {},
+    "says": "the silence over the poisoned cups"
+   }
+  },
+  "poisoned-court:the-kings-cup": {
+   "flee": {
+    "axes": {},
+    "says": "the King's flight from Kingsmere"
+   },
+   "seize": {
+    "axes": {},
+    "says": "the arrest of the poisoner without proof"
+   },
+   "feast": {
+    "axes": {},
+    "says": "the feast held in spite of the poisoner"
+   }
+  },
+  "poisoned-court:the-last-feast": {
+   "setdown": {
+    "axes": {},
+    "says": "the cup set down untasted"
+   },
+   "drink": {
+    "axes": {},
+    "says": "the poisoned cup drunk"
+   }
+  },
+  "red-feast:the-invitation": {
+   "attend": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the King at the peace wedding"
+   },
+   "decline": {
+    "axes": {},
+    "says": "the gifts sent to the wedding"
+   }
+  },
+  "red-feast:the-whisper": {
+   "warn": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the warning to the wedding guests"
+   },
+   "confront": {
+    "axes": {
+     "mercy": 1,
+     "peace": 1
+    },
+    "says": "the King at the high table"
+   },
+   "let-it-be": {
+    "axes": {
+     "mercy": -1
+    },
+    "says": "the murder at the wedding let be"
+   }
+  },
+  "red-feast:the-feast": {
+   "pardon": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the pardon of the wedding murderer"
+   },
+   "outlaw": {
+    "axes": {},
+    "says": "the wedding murderer declared outlaw"
+   }
+  },
+  "royal-match:the-council-asks": {
+   "first": {
+    "axes": {
+     "peace": 2
+    },
+    "says": "the royal wedding"
+   },
+   "second": {
+    "axes": {
+     "peace": 2
+    },
+    "says": "the royal wedding"
+   },
+   "neither": {
+    "axes": {},
+    "says": "the royal wedding put off"
+   }
+  },
+  "royal-match:second-shamed": {
+   "amends": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the amends to the house passed over"
+   },
+   "refuse": {
+    "axes": {},
+    "says": "the amends refused"
+   }
+  },
+  "royal-match:first-shamed": {
+   "amends": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the amends to the house passed over"
+   },
+   "refuse": {
+    "axes": {},
+    "says": "the amends refused"
+   }
+  },
+  "royal-match:spurned-war": {
+   "kin": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the royal host sent for the Queen's kin"
+   },
+   "peace": {
+    "axes": {
+     "peace": 2,
+     "give": 1
+    },
+    "says": "the peace between the Queen's kin and the spurned house"
+   }
+  },
+  "royal-match:spurned-war-by-first": {
+   "kin": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the royal host sent for the Queen's kin"
+   },
+   "peace": {
+    "axes": {
+     "peace": 2,
+     "give": 1
+    },
+    "says": "the peace between the Queen's kin and the spurned house"
+   }
+  },
+  "royal-match:an-empty-cradle": {
+   "first": {
+    "axes": {
+     "peace": 2
+    },
+    "says": "the royal wedding"
+   },
+   "second": {
+    "axes": {
+     "peace": 2
+    },
+    "says": "the royal wedding"
+   },
+   "never": {
+    "axes": {},
+    "says": "the royal wedding refused"
+   }
+  },
+  "royal-match:the-cold-bed": {
+   "ward": {
+    "axes": {},
+    "says": "the heir given to the Queen's family"
+   },
+   "keep": {
+    "axes": {},
+    "says": "the heir kept at Kingsmere"
+   }
+  },
+  "royal-match:the-cold-bed-second": {
+   "ward": {
+    "axes": {},
+    "says": "the heir given to the Queen's family"
+   },
+   "keep": {
+    "axes": {},
+    "says": "the heir kept at Kingsmere"
+   }
+  },
+  "sea-raiders:sails": {
+   "ships": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the war galleys paid for the coast"
+   },
+   "neighbour": {
+    "axes": {},
+    "says": "the neighbours ordered to the coast"
+   },
+   "own": {
+    "axes": {},
+    "says": "each lord left to guard his own shore"
+   }
+  },
+  "sea-raiders:the-second-fleet": {
+   "tribute": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the gold paid to the sea king"
+   },
+   "drive-out": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the royal host sent against the sea king"
+   },
+   "leave": {
+    "axes": {},
+    "says": "the sea king left to the coast lord"
+   }
+  },
+  "spymasters-ledger:the-death": {
+   "hunt": {
+    "axes": {},
+    "says": "the search for the spymaster's book"
+   },
+   "lie": {
+    "axes": {
+     "word": -1
+    },
+    "says": "the lie about the spymaster's book"
+   },
+   "nothing": {
+    "axes": {},
+    "says": "the spymaster's book called a boast"
+   }
+  },
+  "spymasters-ledger:the-blackmail": {
+   "raid": {
+    "axes": {},
+    "says": "the search of a lord's hall"
+   },
+   "buy": {
+    "axes": {},
+    "says": "the spymaster's book bought back"
+   },
+   "wait": {
+    "axes": {},
+    "says": "the blackmailer let be"
+   }
+  },
+  "spymasters-ledger:the-crowns-book": {
+   "burn": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the burning of the spymaster's book"
+   },
+   "keep": {
+    "axes": {},
+    "says": "the spymaster's book kept"
+   }
+  },
+  "the-inquisition:the-first-pyre": {
+   "leash": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the ban on the friar's trials"
+   },
+   "justices": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the royal judges sent after the friar"
+   },
+   "allow": {
+    "axes": {
+     "mercy": -1
+    },
+    "says": "the friar's pyres let burn"
+   }
+  },
+  "the-inquisition:the-trial": {
+   "acquit": {
+    "axes": {
+     "mercy": 1
+    },
+    "says": "the confession thrown out"
+   },
+   "condemn": {
+    "axes": {
+     "mercy": -1
+    },
+    "says": "the lord handed to the Faith"
+   },
+   "away": {
+    "axes": {},
+    "says": "the friar sent overseas"
+   }
+  },
+  "the-inquisition:the-ban": {
+   "penance": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the King's barefoot penance"
+   },
+   "seize": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the arrest of the friar"
+   }
+  },
+  "the-long-siege:the-banners": {
+   "march": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the march to break the siege"
+   },
+   "walls": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the gold and grain smuggled to the besieged"
+   },
+   "parley": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the talks with the besieger"
+   }
+  },
+  "the-long-siege:the-hungry-walls": {
+   "march": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the march to break the siege"
+   },
+   "yield": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the keep given up on terms"
+   }
+  },
+  "the-long-siege:the-terms": {
+   "give": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the keep given to the besieger"
+   },
+   "gold": {
+    "axes": {
+     "peace": 1,
+     "give": 1
+    },
+    "says": "the siege lifted with royal gold"
+   },
+   "refuse": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the march against the besieger"
+   }
+  },
+  "the-long-siege:the-walls-break": {
+   "recognise": {
+    "axes": {
+     "peace": 1
+    },
+    "says": "the conquest made lawful"
+   },
+   "defy": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the conquered keep demanded back"
+   }
+  },
+  "usurpers-claim:whispers": {
+   "summon": {
+    "axes": {},
+    "says": "the pretender summoned to court"
+   },
+   "silence": {
+    "axes": {},
+    "says": "the pretender's silence bought"
+   },
+   "watch": {
+    "axes": {},
+    "says": "the pretender's talk let run"
+   }
+  },
+  "usurpers-claim:pact": {
+   "arrest": {
+    "axes": {},
+    "says": "the pretender's letters read to the court"
+   },
+   "win-backer": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the pretender's backer won back"
+   },
+   "ignore": {
+    "axes": {},
+    "says": "the pretender's pact let be"
+   }
+  },
+  "usurpers-claim:declared": {
+   "outlaw": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the pretender declared an outlaw"
+   },
+   "parley": {
+    "axes": {
+     "peace": 1,
+     "give": 1
+    },
+    "says": "the council seat offered to the pretender"
+   }
+  },
+  "siege": {
+   "press": {
+    "axes": {
+     "mercy": -1,
+     "peace": -1
+    },
+    "says": "the assault on the walls"
+   },
+   "starve": {
+    "axes": {
+     "mercy": -1
+    },
+    "says": "the starving of a besieged town"
+   },
+   "tribute": {
+    "axes": {
+     "peace": 1,
+     "give": -1
+    },
+    "says": "the tribute taken to lift a siege"
+   }
+  },
+  "council": {
+   "a": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the crown's side taken in the great war"
+   },
+   "b": {
+    "axes": {
+     "peace": -1
+    },
+    "says": "the crown's side taken in the great war"
+   },
+   "peace": {
+    "axes": {
+     "peace": 2,
+     "give": 1
+    },
+    "says": "the peace commanded at the great council"
+   }
+  },
+  "story": {
+   "grant": {
+    "axes": {
+     "give": 1
+    },
+    "says": "the boon granted at court"
+   },
+   "refuse": {
+    "axes": {},
+    "says": "the petitioner sent away"
+   }
+  }
+ }
+}

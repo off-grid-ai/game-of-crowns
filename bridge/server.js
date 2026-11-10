@@ -599,7 +599,9 @@ function deed(tag, opts = {}) {
   meta.ledger.name = now;
   chron.saveMeta(meta);
   const axis = kingDeeds.axisOf(now);
-  const why = (axis && kingDeeds.tipping(meta, ...axis)) || null;
+  // The deed that tipped it: the weightiest on the name's side, or (for a name of two sides) this one.
+  const said = tag?.says ? String(tag.says).replace("{town}", opts.place || "a town").replace("{house}", opts.place || "a house") : null;
+  const why = (axis && kingDeeds.tipping(meta, ...axis)) || said;
   if (before && now !== before && why) record({ turn, kind: "name", text: `After ${why}, people call you ${now}.` });
 }
 
