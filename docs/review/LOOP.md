@@ -845,3 +845,14 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - 544aad8: road travellers give way.
 - **Go-live gate:** NPC perf owns the motion probe run in a quiet window. Film pauses for it. Skate is the last blocker.
 - **Verdict:** on course. The measured numbers led directly to the returns fix. Next turn, check that the fix took with the new reign's numbers (returns ≤ 25%, decisions ≤ 1 a minute).
+
+## 2026-11-11 00:45, autopilot (did the returns fix take? yes)
+
+- **Correction check:** 363180e took. A reign on the new code: returns 2 of 22 matters (9%, target ≤ 25%; was 37%).
+- **New reign (new code), 15 min:** 1.47 decisions a minute (target ≤ 1); 89% quiet; 2 repeats; 7 petitioners; 22 of 22 placed; 6 pleas weighed; 4 schemes.
+- **New problem:** 13 of 22 were the Hand's matters, mostly ultimatums coming back (Sunspire at turns 38, 42 and 47; Thornvale at 47 and 53).
+  - Partly the scripted King: answering the Hand with silence counts as answered, which resets the house's anger.
+  - The script now acts as a player would (the Hand's first affordable order, then answered). A reign is playing again to tell the script's share from the game's.
+  - If ultimatums still repeat, the fix is in the ultimatum flow: an ignored ultimatum should lead to the rising, not a fresh ultimatum.
+- **Also:** 9d1d303 weighs the grain plea's answers.
+- **Verdict:** on course for returns. Watching the Hand's pace: decisions are over the line.

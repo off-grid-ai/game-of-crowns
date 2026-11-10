@@ -62,7 +62,12 @@ while time.time() - start < MIN * 60:
         if now - seen[x["id"]] < 4:
             continue
         if x.get("hand"):
-            r = post("/court/close", {}) if not x.get("acts") else post("/counsel/answer", {"key": x["key"]})
+            # A King acts on the Hand's matter: its first order he can pay for, then the matter is answered.
+            acts = [a for a in (x.get("acts") or []) if a.get("action") and not (a.get("weighs") or {}).get("short")]
+            if acts:
+                a0 = acts[0]
+                r = post("/decree", {k: a0[k] for k in ("action", "city", "building", "to", "house") if a0.get(k) is not None})
+            r = post("/counsel/answer", {"key": x["key"]}) if x.get("acts") else post("/court/close", {})
             kind = "hand"
         else:
             opts = x.get("options") or []
