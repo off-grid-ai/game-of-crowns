@@ -2068,7 +2068,7 @@ http.createServer(async (req, res) => {
   if (await mindsRoute(minds, url, req, body, json, res)) return;
 
   if (url.pathname === "/world") {
-    watched(); // the game window polls this every second while open
+    if (url.searchParams.get("peek") !== "1") watched(); // the game window polls this every second while open (a test's peek doesn't count)
     if (!world) return json(res, 503, { error: "realm still forming", reign: reignInfo() });
     const d = detail();
     const players = world.players.map((p) => ({ ...p, name: RENAMED[p.name] ?? p.name, house: houseFor(p), atWarWith: d?.players[p.id]?.atWarWith ?? [] }));
