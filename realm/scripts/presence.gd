@@ -50,7 +50,9 @@ static func fit(person: Node3D) -> void:
 	person.add_child(at)
 	var look := LookAtModifier3D.new()
 	look.name = "Glance"
+	sk.add_child(look)  # on the skeleton first: a bone's name is only found once it's there
 	look.bone_name = "Head"
+	look.bone = sk.find_bone("Head")
 	look.forward_axis = SkeletonModifier3D.BONE_AXIS_PLUS_Z
 	look.primary_rotation_axis = Vector3.AXIS_Y
 	look.use_angle_limitation = true
@@ -61,7 +63,6 @@ static func fit(person: Node3D) -> void:
 	look.transition_type = Tween.TRANS_SINE
 	look.ease_type = Tween.EASE_IN_OUT
 	look.influence = 0.0
-	sk.add_child(look)
 	# Up from the head's modifier to the person, then down to the marker.
 	var up := ""
 	var n: Node = sk

@@ -7,12 +7,15 @@ extends Node
 ##   hand in body  a hand inside the torso outside clips that touch the body
 ##   empty hand    a clip that needs something in hand, with nothing there
 ##   turn snap     a body turning more than 15 degrees in one frame
-##   two in one    two people closer than 0.06 (about half a metre) for 1 s or more
+##   two in one    two people closer than 0.06 (about half a metre) for 0.2 s or more, anyone at all
+##   kneel at nothing  a kneeling or field move away from any building, stall, site, garden or field
+##   pop           hips rising faster than anyone gets up (kneeling to standing between two frames)
 ## Run (fixed 60 fps, so a frame is 1/60 s however fast it runs):
 ##   arch -arm64 godot --headless --fixed-fps 60 --path realm -- --bridge=http://127.0.0.1:8788 --shot=/tmp/x.png --wait=900 \
 ##     --city=Kingsmere --dist=3 --limbo=all --motion-probe=60
 const People := preload("res://scripts/people.gd")
 const AnimLOD := preload("res://scripts/anim_lod.gd")
+const TownNav := preload("res://scripts/town_nav.gd")  # what stands in a town (kneel at nothing)
 
 const REACH := 3.5  # world units from the camera's focus: the people a street-level camera sees
 const WARMUP := 300.0  # at most this long for the realm, the town and its people to stand up (wall-clock seconds)
@@ -60,7 +63,14 @@ const M := 0.122  # world units in a metre (a 1.8 m person is about 0.22 units)
 const GLANCE_R := 1.5 * M  # a meeting: two people this close
 const GREET_R := 1.2 * M  # a pass close enough to greet, or to yield to one's betters
 const KIN_R := 3.0 * M  # a child this near a parent is with them
-const GLANCE_TURN := deg_to_rad(15.0)  # a head turned this far toward the other
+const GLANCE_TURN := deg_to_rad(15.0)  # (the old glance: a head turned this far toward the other)
+const GLANCE_AIM := deg_to_rad(10.0)  # a glance: the head aimed within this of the other (Builder 1, 2026-11-11)
+const TOGETHER := 0.2  # seconds two people may brush closer than NEAR (a pass), no longer
+## Moves done to something: at nothing (no building, stall, site, garden or field near) they're a man on all fours in the street.
+const KNEEL_AT := ["Fixing_Kneeling", "Planting", "Dig_And_Plant", "Digging", "Pick_Fruit", "Watering", "Hammer_Swing"]
+const AT_REACH := 0.15  # world units: near enough to be working on it
+const POP_RISE := 0.35  # metres of hip rise ...
+const POP_WINDOW := 0.3  # ... within this many seconds: faster than anyone gets up
 const BETTERS := ["gentry", "clergy", "soldier"]  # whom a commoner yields to (person meta "station")
 const GREETS := ["Nodding", "Waving", "Bow", "Salute"]  # clips that greet, played whole
 var _meets := {}  # "a:b" -> the meeting so far
@@ -68,6 +78,9 @@ var _glance := [0, 0]  # [noticed, meetings in each other's front arc]
 var _greet := [0, 0]  # [greeted, close passes]
 var _station := [0, 0]  # [yielded, commoner meets betters]
 var _kin := [0, 0]  # [child-frames near their parent, child-frames]
+var _names := {}  # "a:b" -> who the two were, for the report
+var _kneel := {}  # "clip at where" -> frames knelt at nothing
+var _pops := {}  # clip -> pops seen while it played
 
 
 func _ready() -> void:
@@ -190,8 +203,29 @@ func _process(delta: float) -> void:
 				_inside[clip] = _inside.get(clip, 0) + 1
 		# Empty hand.
 		var on_screen := String(p.get_node("Motion").held_clip()) if p.get_node_or_null("Motion") else clip  # what the body shows, not what was asked
-		if HELD.has(on_screen) and sk.find_children("*", "BoneAttachment3D", true, false).filter(func(x): return String(x.bone_name).contains("Hand")).is_empty():
+		# Something drawn in the hand, not only a place for it.
+		if HELD.has(on_screen) and not sk.find_children("*", "BoneAttachment3D", true, false).filter(func(x): return String(x.bone_name).contains("Hand")).any(func(x): return _drawn(x)):
 			_empty[on_screen] = _empty.get(on_screen, 0) + 1
+		# Kneeling at nothing.
+		if KNEEL_AT.has(on_screen) and not _at_something(p.global_position):
+			var where := "%s %s" % [on_screen, p.get_parent().name]
+			_kneel[where] = _kneel.get(where, 0) + 1
+		# A pop: the hips rising faster than anyone gets up.
+		if d["hips"] >= 0:
+			var hy := p.to_local(_at(sk, d["hips"])).y * s / M
+			var hist: Array = d.get("hist", [])
+			hist.append([_t, hy])
+			while not hist.is_empty() and _t - float(hist[0][0]) > POP_WINDOW:
+				hist.pop_front()
+			d["hist"] = hist
+			var low := INF
+			for h in hist:
+				low = minf(low, float(h[1]))
+			if hy - low > POP_RISE and not d.get("popped", false):
+				_pops[on_screen] = _pops.get(on_screen, 0) + 1
+				d["popped"] = true
+			elif hy - low < POP_RISE * 0.5:
+				d["popped"] = false
 	# Two in one.
 	var seen := {}
 	for i in near.size():
@@ -203,6 +237,8 @@ func _process(delta: float) -> void:
 				seen[key] = true
 				_pairs[key] = float(_pairs.get(key, 0.0)) + delta
 				_two_in_one[key] = maxf(float(_two_in_one.get(key, 0.0)), _pairs[key])
+				if not _names.has(key):
+					_names[key] = "%s + %s" % [_name(near[i]), _name(near[j])]
 	for key in _pairs.keys():
 		if not seen.has(key):
 			_pairs.erase(key)
@@ -229,7 +265,7 @@ func _presence(near: Array[Node3D]) -> void:
 				_meets[key] = {"t0": _t, "a": a, "b": b, "front": _in_front(a, b) and _in_front(b, a), "head0": [_head_toward(a, b), _head_toward(b, a)],
 					"glanced": false, "close": false, "greeted": false, "lower": lower, "yielded": false}
 			var m: Dictionary = _meets[key]
-			if _t - float(m["t0"]) <= 1.0 and (_head_toward(a, b) - float(m["head0"][0]) >= GLANCE_TURN or _head_toward(b, a) - float(m["head0"][1]) >= GLANCE_TURN):
+			if _t - float(m["t0"]) <= 1.0 and (_aimed(a, b) or _aimed(b, a)):
 				m["glanced"] = true
 			if dist <= GREET_R:
 				m["close"] = true
@@ -282,6 +318,66 @@ func _head_toward(a: Node3D, b: Node3D) -> float:
 	return turned * signf(body.angle_to(to))
 
 
+## Whether `a`'s head is aimed at `b`, within GLANCE_AIM (on the ground plane).
+func _aimed(a: Node3D, b: Node3D) -> bool:
+	var d: Dictionary = _p.get(a, {})
+	var sk: Skeleton3D = d.get("sk")
+	var head := sk.find_bone("Head") if sk else -1
+	if head < 0:
+		return false
+	var hz := (sk.global_transform.basis * sk.get_bone_global_pose(head).basis).z
+	var to := Vector2(b.global_position.x - a.global_position.x, b.global_position.z - a.global_position.z)
+	return to.length() > 0.001 and absf(Vector2(hz.x, hz.z).angle_to(to)) < GLANCE_AIM
+
+
+## Who someone is, for the report: what placed them, and their move.
+func _name(p: Node3D) -> String:
+	var up := p.get_parent()
+	var by := String(up.name) if up else "?"
+	if up and up.get_parent() and by.begins_with("@"):
+		by = String(up.get_parent().name)
+	return "%s/%s(%s)" % [by, p.name, _clip.get(p, "")]
+
+
+## Something drawn under a hand's attachment: a tool you can see, not an empty socket.
+func _drawn(at: Node) -> bool:
+	for mi in at.find_children("*", "MeshInstance3D", true, false):
+		var m := mi as MeshInstance3D
+		if m.is_visible_in_tree() and m.mesh != null and m.get_aabb().size.length() > 0.0:
+			return true
+	return false
+
+
+## Whether `p` (world) is at something to work on or kneel at: near a building,
+## stall or site's footprint, in a field, or by a garden; or out in the country.
+func _at_something(p: Vector3) -> bool:
+	var towns = get_parent().get("towns")
+	if towns == null:
+		return true
+	var inside := TownNav.towns_at(towns, p)
+	if inside.is_empty():
+		return true  # out in the country: the fields there are the farmers' own
+	for t in inside:
+		var root: Node3D = t[1]
+		var q := Vector2(p.x - root.global_position.x, p.z - root.global_position.z)
+		for fp: PackedVector2Array in TownNav.footprints(root):
+			if Geometry2D.is_point_in_polygon(q, fp):
+				return true
+			for i in fp.size():
+				if q.distance_to(Geometry2D.get_closest_point_to_segment(q, fp[i], fp[(i + 1) % fp.size()])) < AT_REACH:
+					return true
+		for f in root.get_meta("fields", []):
+			var c: Vector3 = f[0]
+			var local := (q - Vector2(c.x, c.z)).rotated(-float(f[2]))
+			var size: Vector2 = f[1]
+			if absf(local.x) <= size.x * 0.5 + AT_REACH and absf(local.y) <= size.y * 0.5 + AT_REACH:
+				return true
+		for g in root.get_meta("gardens", []):
+			if Vector2(Vector3(g).x, Vector3(g).z).distance_to(q) < 0.25:
+				return true
+	return false
+
+
 ## A greeting now: a gesture over the body (motion.gd v2's OneShot), or a
 ## greeting clip played whole.
 func _greeting(p: Node3D) -> bool:
@@ -328,8 +424,12 @@ func _report() -> void:
 	for k in _snaps:
 		snaps += int(_snaps[k])
 	print("MOTION turn snap: %s  %d snaps over 15 deg in a frame  %s" % [verdict.call(snaps == 0), snaps, _top(_snaps)])
-	var long := _two_in_one.values().filter(func(v): return v >= 1.0)
-	print("MOTION two in one: %s  %d pairs together 1 s or more (longest %.1f s)" % [verdict.call(long.is_empty()), long.size(), _two_in_one.values().max() if not _two_in_one.is_empty() else 0.0])
+	var long := _two_in_one.keys().filter(func(k): return float(_two_in_one[k]) >= TOGETHER)
+	long.sort_custom(func(x, y): return float(_two_in_one[x]) > float(_two_in_one[y]))
+	print("MOTION two in one: %s  %d pairs closer than half a metre for %.1f s or more (longest %.1f s)  %s" % [verdict.call(long.is_empty()), long.size(), TOGETHER,
+		_two_in_one.values().max() if not _two_in_one.is_empty() else 0.0, long.slice(0, 4).map(func(k): return "%s %.1fs" % [_names.get(k, k), _two_in_one[k]])])
+	print("MOTION kneel at nothing: %s  %s" % [verdict.call(_kneel.is_empty()), _top(_kneel)])
+	print("MOTION pop: %s  %s" % [verdict.call(_pops.is_empty()), _top(_pops)])
 	print("MOTION camera jump: not measured here (Builder 2's half)")
 	var share_of := func(name: String, n: Array, need: float, none: String) -> void:
 		if int(n[1]) == 0:
