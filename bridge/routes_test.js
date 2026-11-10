@@ -155,3 +155,21 @@ export async function news(ctx, req, res, url) {
   picture(e);
   return json(res, 200, { ok: true });
 }
+
+// Test hook (test reigns only): set the reign's clock, so a film can stage what
+// the clock brings (an act's interlude at 0.25/0.5/0.75 of the reign, the final
+// threat, the reign's end at 1). {at: 0..1}, the share of the reign gone, or
+// {to: "act_end" | "reign_end"}; the
+// next tick of the clock (reign.js, every 5 s while the realm runs) plays it.
+export async function clock(ctx, req, res, url) {
+  if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(ctx.meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
+  const b = await body(req);
+  if (!(ctx.meta.minutes > 0)) return json(res, 400, { error: "this reign has no clock (endless)" });
+  // {to: "act_end"}: just past the next quarter (that act's interlude); {to: "reign_end"}: its last tick.
+  const gone = ctx.meta.elapsedMs / (ctx.meta.minutes * 60000);
+  const at = b.to === "act_end" ? Math.min(0.76, (Math.floor(gone * 4) + 1) / 4 + 0.01) : b.to === "reign_end" ? 1 : Number(b.at);
+  if (!(at >= 0 && at <= 1)) return json(res, 400, { error: "{at: 0..1}" });
+  ctx.meta.elapsedMs = Math.min(ctx.meta.minutes * 60000 - 5000, Math.floor((at * ctx.meta.minutes * 60000) / 5000) * 5000);
+  chron.saveMeta(ctx.meta);
+  return json(res, 200, { ok: true, elapsedMs: ctx.meta.elapsedMs, minutes: ctx.meta.minutes });
+}
