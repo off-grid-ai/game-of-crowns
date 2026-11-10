@@ -10,6 +10,7 @@ import { DECREES, TITHE_HIGH } from "./crown.js";
 import { BANDS } from "./favour.js";
 import { calendar } from "./stakes.js";
 import * as names from "./names.js";
+import { situation } from "./situation.js";
 
 // Lords whose first names were borrowed from A Song of Ice and Fire, renamed
 // in realm.serv; realms begun before then still carry the old names in their
@@ -121,7 +122,7 @@ return { ...world, players, cities, units, turnSeconds, crownId: crownOf()?.id ?
 // the view all read these fields; none works them out again.
 const PLAGUE_SEASONS = 4;  // a town is still sick this many seasons after plague strikes
 export function townStates(ctx) {
-  const { world, meta, scenes, detail, besiegers, favourOf } = ctx;
+  const { world, meta, scenes, detail, besiegers, favourOf } = ctx;  // and marksNow, for the situation line
   if (!world?.cities) return;
   const d = detail();
   const turn = world.turn ?? 0;
@@ -157,6 +158,8 @@ export function townStates(ctx) {
     if (st) for (const k of ["famine", "celebrating", "disorder", "atWar", "grasping", "grief", "prosperity"]) if (k in st) c[k] = st[k];
     // The town's mood, one word everyone reads: a riot outweighs hunger, hunger a feast.
     c.mood = c.disorder ? "riot" : c.famine ? "hunger" : c.celebrating ? "feast" : "";
+    // Why the town looks as it does, in one line (situation.js): the card's first line.
+    c.situation = situation({ world, scenes, marks: ctx.marksNow?.() ?? [], besiegers }, c);
   }
 }
 

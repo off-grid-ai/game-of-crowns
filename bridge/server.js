@@ -415,7 +415,7 @@ function refreshCounsel() {
 
 // The realm's states, set on each town (view.js).
 function townStates() {
-  View.townStates({ world, meta, scenes, detail, besiegers, favourOf });
+  View.townStates({ world, meta, scenes, detail, besiegers, favourOf, marksNow });
 }
 
 // A town falling into disorder is news, told once as it starts (view.js).
