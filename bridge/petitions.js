@@ -28,11 +28,11 @@ export const ANSWERS = {
     }
     this.remember(c.id, option === "abandon" ? `The King left ${town} to ${them}.` : `The King came to ${town}'s aid against ${them}.`);
   },
-  grain({ p, c, option, out, gold, world }) {
-    if (option === "grant") { out.favour[c.playerId] = 15; gold(c.playerId, 150); out.text = `The crown sends grain to ${c.house}.`; }
-    if (option === "order") { out.favour[p.donor] = -20; out.favour[c.playerId] = 10; gold(p.donor, -150); gold(c.playerId, 150); out.text = `By royal command, ${houseFor(world.players.find((x) => x.id === p.donor)).name} feeds the starving of ${c.house}, and resents every sack.`; }
+  grain({ p, c, opt, option, out, gold, world }) {
+    if (option === "grant") { Object.assign(out.favour, opt?.favour ?? { [c.playerId]: 15 }); gold(c.playerId, 150); out.text = `The crown sends grain to ${c.house}.`; }
+    if (option === "order") { Object.assign(out.favour, opt?.favour ?? { [p.donor]: -20, [c.playerId]: 10 }); gold(p.donor, -150); gold(c.playerId, 150); out.text = `By royal command, ${houseFor(world.players.find((x) => x.id === p.donor)).name} feeds the starving of ${c.house}, and resents every sack.`; }
     if (option === "refuse") {
-      out.favour[c.playerId] = -15;
+      Object.assign(out.favour, opt?.favour ?? { [c.playerId]: -15 });
       for (const b of this.alive().filter((x) => x.rank === "bannerman" && x.playerId === c.playerId)) b.loyalty = Math.max(0, b.loyalty - 15);
       out.text = `The King refuses grain. In ${c.house}'s lands, the bannermen begin to talk.`;
     }

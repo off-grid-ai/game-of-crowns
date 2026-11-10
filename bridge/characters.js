@@ -796,9 +796,10 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     if (hungry) candidates.push({ kind: "grain", weight: 3 + hungry, make: () => {
       const donor = world.players.filter((x) => !houseFor(x).wild && !houseFor(x).crown && x.id !== c.playerId).sort((a, b) => b.gold - a.gold)[0];
       const donorHouse = donor ? houseFor(donor).name : "";
-      const options = [{ id: "grant", label: "The crown pays (150 gold)", hint: `${c.house} +15`, cost: 150 }];
-      if (donor) options.push({ id: "order", label: `Order ${donorHouse} to feed them`, hint: `Costs you nothing · ${donorHouse} −20 · ${c.house} +10` });
-      options.push({ id: "refuse", label: "Let them starve", hint: `${c.house} −15 · their bannermen's loyalty wavers` });
+      // Each answer carries its favour as data: the hint, the weighs and the ruling (petitions.js) read the same numbers.
+      const options = [{ id: "grant", label: "The crown pays (150 gold)", hint: `${c.house} +15`, cost: 150, favour: { [c.playerId]: 15 } }];
+      if (donor) options.push({ id: "order", label: `Order ${donorHouse} to feed them`, hint: `Costs you nothing · ${donorHouse} −20 · ${c.house} +10`, favour: { [donor.id]: -20, [c.playerId]: 10 } });
+      options.push({ id: "refuse", label: "Let them starve", hint: `${c.house} −15 · their bannermen's loyalty wavers`, favour: { [c.playerId]: -15 } });
       return { kind: "grain", donor: donor?.id, text: `${c.name} of ${c.house}: "${hungry} of my towns have empty granaries. Children are dying in the streets of my lands. I beg the crown for grain."`, facts: facts(c.playerId, donor?.id), options };
     } });
 
