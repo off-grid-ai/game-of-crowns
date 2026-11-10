@@ -37,6 +37,10 @@ const SOCIAL := ["Idle_Talking", "Talking", "Talking_2", "Laughing", "Happy_Gest
 const LISTEN := ["Nodding", "Idle", "Nodding", "Looking_Around", "Thinking", "Laughing"]
 var _talks := {}  # town id -> Array of gatherings: {centre, members, move, kind, until, speaker, turn_at, spin}
 var _talk_keys := 0  # each gathering's key, for chatter.gd to name it by
+var _others := {}  # town id -> obstacle RIDs: everyone else standing in the town, for the walkers to step round
+var _others_at := 0.0
+## How far from a town's heart its scene folk, soldiers and riders count as in its streets.
+const OTHERS_REACH := 3.0
 # Minds (docs/MINDS.md): the bridge plans each commoner's day; the rules here
 # are the fallback until it has a plan for them.
 var BRIDGE: String = preload("res://scripts/bridge.gd").BASE
@@ -77,6 +81,10 @@ func _process_timed(delta: float) -> void:
 		_check = 1.0
 		_refresh()
 		_square_count()
+	_others_at -= delta
+	if _others_at <= 0.0:
+		_others_at = 0.25
+		_avoid_others()
 	var t := Time.get_ticks_msec() * 0.001
 	# Those near the camera move every frame; the rest, too far off to be seen
 	# clearly or not drawn at all, one frame in AnimLOD.STRIDE with the time they're owed.
@@ -107,6 +115,7 @@ func _refresh() -> void:
 				if a.has("agent"):
 					NavigationServer2D.free_rid(a["agent"])
 			crowds.erase(id)
+			_forget_others(id)
 			_talks.erase(id)
 			nav.forget(id)
 	for id in crowds.keys():
@@ -129,6 +138,7 @@ func _refresh() -> void:
 				if a.has("agent"):
 					NavigationServer2D.free_rid(a["agent"])
 			crowds.erase(id)
+			_forget_others(id)
 			_talks.erase(id)
 			nav.forget(id)
 
@@ -294,6 +304,60 @@ func _exit_tree() -> void:
 			if a.has("agent"):
 				NavigationServer2D.free_rid(a["agent"])
 	crowds.clear()
+	for id in _others.keys():
+		_forget_others(id)
+
+
+## Everyone on the ground in a town who isn't one of its walkers (the scene's
+## stall folk, beggars and rioters, soldiers, riders) goes into the walkers'
+## crowd avoidance as an obstacle (Godot's own RVO), moved to where each one
+## stands now: a walker steps round them, never through them.
+func _avoid_others() -> void:
+	if crowds.is_empty():
+		return
+	var walkers := {}
+	for id in crowds:
+		for a in crowds[id]:
+			walkers[a["node"]] = true
+	var found := {}  # town id -> positions on its walk map
+	for p in get_tree().get_nodes_in_group("people"):
+		var n := p as Node3D
+		if n == null or walkers.has(n) or not n.is_visible_in_tree():
+			continue
+		var g := to_local(n.global_position)
+		for id in crowds:
+			if crowds[id].is_empty():
+				continue
+			var c: Vector3 = crowds[id][0]["center"]
+			var d := Vector2(g.x - c.x, g.z - c.z)
+			if d.length() < OTHERS_REACH:
+				if not found.has(id):
+					found[id] = []
+				found[id].append(d)
+				break
+	for id in crowds:
+		if crowds[id].is_empty():
+			continue
+		var map: RID = crowds[id][0]["map"]
+		var pool: Array = _others.get(id, [])
+		var here: Array = found.get(id, [])
+		for i in here.size():
+			if i >= pool.size():
+				var o := NavigationServer2D.obstacle_create()
+				NavigationServer2D.obstacle_set_map(o, map)
+				NavigationServer2D.obstacle_set_radius(o, 0.05)  # a body's width, as a walker's own
+				NavigationServer2D.obstacle_set_avoidance_enabled(o, true)
+				pool.append(o)
+			NavigationServer2D.obstacle_set_position(pool[i], here[i])
+		for i in range(here.size(), pool.size()):
+			NavigationServer2D.obstacle_set_position(pool[i], Vector2(1e5, 1e5))  # nobody there now: out of the way
+		_others[id] = pool
+
+
+func _forget_others(id: int) -> void:
+	for o in _others.get(id, []):
+		NavigationServer2D.free_rid(o)
+	_others.erase(id)
 
 
 func _random_spot(center: Vector3, rng: RandomNumberGenerator, rmin: float, rmax: float) -> Vector3:
@@ -641,11 +705,24 @@ var _square_t := 0.0
 
 
 func _square_count() -> void:
-	if not " ".join(OS.get_cmdline_user_args()).contains("--shot"):
+	if not " ".join(OS.get_cmdline_user_args()).contains("--shot") and not PerfTools.probing:
 		return
 	_square_t += 1.0
 	if fmod(_square_t, 5.0) > 0.5:
 		return
+	# Bodies inside bodies: every pair of people on the ground closer than 0.06
+	# (about half a metre between their middles), logged as a CHECK line.
+	var folk: Array[Vector3] = []
+	for p in get_tree().get_nodes_in_group("people"):
+		var n := p as Node3D
+		if n and n.is_visible_in_tree():
+			folk.append(n.global_position)
+	var inside := 0
+	for i in folk.size():
+		for j in range(i + 1, folk.size()):
+			if absf(folk[i].y - folk[j].y) < 0.1 and Vector2(folk[i].x - folk[j].x, folk[i].z - folk[j].z).length() < 0.06:
+				inside += 1
+	print("CHECK people inside each other: %d pairs of %d people" % [inside, folk.size()])
 	for id in crowds:
 		if not towns.towns.has(id):
 			continue

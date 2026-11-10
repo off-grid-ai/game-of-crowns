@@ -36,9 +36,7 @@ const CLOTH := [Color(1, 1, 1), Color(0.85, 0.75, 0.62), Color(0.7, 0.8, 0.7), C
 ## meshes are clothing that takes a house's colour. "crowd" bodies are light
 ## enough to fill a square; the rest stand alone (the court, the close-up).
 const BODIES := {
-	"arissa": {"sex": "f", "roles": ["archer", "townsfolk"], "cloth": ["arissa_Cloak_Geo"], "crowd": true},
-	"erika": {"sex": "f", "roles": ["archer"], "cloth": [], "crowd": true},
-	"erika_bow": {"sex": "f", "roles": ["archer"], "cloth": [], "crowd": true},
+	# Erika, Arissa and Eve are out: modern black leather and fitted suits read as a joke in a medieval town (Mac, 2026-11-10).
 	"knight": {"sex": "m", "roles": ["soldier", "noble", "knight"], "cloth": ["Lower_Armor"], "crowd": true},
 	"paladin": {"sex": "m", "roles": ["soldier", "noble", "knight"], "cloth": [], "crowd": true},
 	"paladin_prop": {"sex": "m", "roles": ["noble", "knight"], "cloth": [], "crowd": false},
@@ -65,10 +63,10 @@ const BODIES := {
 }
 ## How often a crowd figure is a Mixamo character rather than a Quaternius
 ## outfit, by station. The plain Fuse townsfolk, Svend and the jerkined
-## peasant stand in for peasants and townsfolk; most clergy wear the friar's habit; archers and
+## peasant stand in for peasants and townsfolk; most clergy wear the friar's habit; most archers wear a soldier's outfit;
 ## nobles are all Mixamo. (A Mixamo body is the cheaper of the two: 1-4 draws
 ## against an outfit's ~9.)
-const MIXAMO_SHARE := {"peasant": 0.5, "townsfolk": 0.6, "soldier": 0.5, "archer": 1.0, "noble": 1.0, "knight": 1.0, "clergy": 0.8}
+const MIXAMO_SHARE := {"peasant": 0.5, "townsfolk": 0.6, "soldier": 0.5, "archer": 0.4, "noble": 1.0, "knight": 1.0, "clergy": 0.8}
 
 const HEAD_ONLY := preload("res://scripts/head_only.gdshader")
 

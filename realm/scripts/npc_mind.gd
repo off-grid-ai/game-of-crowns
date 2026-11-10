@@ -98,7 +98,13 @@ class Step extends BTAction:
 			var fwd := Vector3(sin(agent.rotation.y), 0, cos(agent.rotation.y))
 			_to = agent.position - fwd * back
 		elif blackboard.get_var(&"at_post", true, false):
-			_to = post + Vector3(randf_range(-reach, reach), 0.0, randf_range(-reach, reach))
+			# A few paces somewhere nobody already stands; no room anywhere, they keep their place.
+			_to = post
+			for i in 6:
+				var to := post + Vector3(randf_range(-reach, reach), 0.0, randf_range(-reach, reach))
+				if _room_at(to):
+					_to = to
+					break
 		else:
 			_to = post
 		blackboard.set_var(&"at_post", _to.distance_to(post) < 0.05)
@@ -111,6 +117,15 @@ class Step extends BTAction:
 		People.play(agent, "Walk")
 		_left = maxf(0.3, flat.length() / 0.17)
 		agent.create_tween().tween_property(agent, "position", _to, _left)
+
+	## Nobody else on the ground within a shoulder's width (0.11, about 0.9 m) of `to`.
+	func _room_at(to: Vector3) -> bool:
+		var at := (agent.get_parent() as Node3D).to_global(to) if agent.get_parent() is Node3D else to
+		for p in agent.get_tree().get_nodes_in_group("people"):
+			var n := p as Node3D
+			if n != agent and n.is_visible_in_tree() and Vector2(n.global_position.x - at.x, n.global_position.z - at.z).length() < 0.11:
+				return false
+		return true
 
 	func _tick(delta: float) -> Status:
 		_left -= delta
@@ -709,7 +724,7 @@ static func villager_activities(role: String) -> Array:
 				seq("tend", [go("field"), tend, brk(REST + SWIG), step(0.2), run(["Pick_Fruit", "Planting", "Watering"], 3, 5), brk(LOOK)]),
 				seq("dig", [go("field"), run(["Digging", "Dig_And_Plant"]), once("Wiping_Sweat"), brk(REST)]),
 				seq("weed", [go("field"), run(["Fixing_Kneeling"]), brk(["Relieved_Sigh", "Arm_Stretching", "Weight_Shift"]), step(0.2), run(["Fixing_Kneeling"])]),
-				seq("chores", [go("bench"), once("PickUp_Table"), run(["Fixing_Kneeling", "Interact"]), run(["Push_Heavy"], 1, 2), brk(REST)]),
+				seq("chores", [go("bench"), once("PickUp_Table"), run(["Interact", "Thinking"]), brk(REST)]),  # at the door nothing lies on the ground: no kneeling or shoving at air
 			]
 		"market":
 			return [
@@ -723,7 +738,7 @@ static func villager_activities(role: String) -> Array:
 				seq("pray", [go("sept"), run(["Praying", "Kneeling"], 2, 3), brk(LOOK)]),
 				seq("preach", [go("well"), run(["Talking", "Idle_Talking"], 2, 3), once("Bow"), brk(["Weight_Shift"])]),
 				seq("alms", [go("bench"), once("PickUp_Table"), go("sept", "Carrying"), once("PickUp_Table"), brk(REST)]),
-				seq("tend", [go("sept"), run(["Interact", "Fixing_Kneeling"]), brk(REST)]),
+				seq("tend", [go("sept"), run(["Interact", "Praying"]), brk(REST)]),
 			]
 		"tavern":  # a drinker
 			return [
@@ -755,7 +770,7 @@ static func villager_activities(role: String) -> Array:
 			]
 		"crafter":
 			return [
-				seq("craft", [go("bench"), run(["Hammer_Swing", "Interact", "Fixing_Kneeling"]), once("Wiping_Sweat"), brk(REST)]),
+				seq("craft", [go("bench"), run(["Interact", "Thinking"]), once("Wiping_Sweat"), brk(REST)]),
 				seq("fetch", [go("well"), once("PickUp_Table"), go("bench", "Carrying"), once("PickUp_Table"), brk(REST)]),
 				seq("sell", [go("market"), run(["Idle_Talking", "Arguing"], 2, 3), run(["Nodding"], 1, 1), brk(LOOK)]),
 			]
