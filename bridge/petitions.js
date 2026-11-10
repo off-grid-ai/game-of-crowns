@@ -83,4 +83,13 @@ export const ANSWERS = {
       }
     }
   },
+  remembers({ p, c, opt, option, out, gold, world }) {
+    const deed = (this.deedsOf?.(c.playerId) ?? []).find((x) => x.what === p.deed);
+    if (option === "amend") { out.favour[c.playerId] = 15; gold(c.playerId, 120); if (deed) { deed.d = Math.round(deed.d * 0.3); deed.mended = world.turn; } this.remember(c.id, "The King made amends for what was done to my house. It is settled, for now."); out.text = `The King makes amends to ${c.house}. ${c.name} takes the gold and, for now, lets the old wound close.`; }
+    if (option === "hear") { out.favour[c.playerId] = 3; out.text = `The King hears ${c.name} out and promises nothing. ${c.house} goes home with its grudge.`; }
+    if (option === "firm") { out.favour[c.playerId] = -8; this.remember(c.id, "I reminded the King what he did to my house. He said the crown did what it must."); if (this.warlike(c)) c.goals.unshift({ kind: "revenge", text: "make the crown answer for what it did to my house" }); out.text = `"The crown did what it must." ${c.name} bows, and adds it to the account.`; }
+    if (option === "oath") { out.favour[c.playerId] = 6; c.loyalty = Math.min(100, c.loyalty + 10); out.text = `${c.name} kneels and swears ${c.house} to the crown before the whole court.`; }
+    if (option === "purse") { out.favour[c.playerId] = -4; gold(c.playerId, -60); const crown = world.players.find((x) => houseFor(x).crown); if (crown) gold(crown.id, 60); out.text = `${c.house} sends 60 gold to Kingsmere. ${c.name} had hoped for thanks, not a bill.`; }
+    this.save(c);
+  },
 };
