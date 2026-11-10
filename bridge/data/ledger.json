@@ -134,6 +134,12 @@
     "give": 1
    },
    "says": "the light tithe"
+  },
+  "loan_unpaid": {
+   "axes": {
+    "word": -2
+   },
+   "says": "the crown's debt to {house} left unpaid"
   }
  },
  "deck": {
@@ -729,6 +735,25 @@
      "give": -1
     },
     "says": "the tithe taken from a drowned harvest"
+   }
+  },
+  "thin_treasury": {
+   "borrow": {
+    "axes": {},
+    "says": "the loan begged of {house}"
+   },
+   "sell": {
+    "axes": {
+     "give": -1,
+     "word": -1
+    },
+    "says": "the council seat sold to {house}"
+   },
+   "tithe": {
+    "axes": {
+     "give": -1
+    },
+    "says": "the tithe raised to fill an empty treasury"
    }
   }
  },

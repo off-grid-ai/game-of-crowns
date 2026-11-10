@@ -16,10 +16,29 @@ import { body, json } from "./http_util.js";
 
 // Test hook (films only): the court sits now ({sit: true}), as a season's sitting does,
 // so a film can stage what happens behind the court's card (a truce's reload).
+// Test hook (films and proofs only): the court sits now ({sit: true}), or a card is dealt ({card}).
 export async function sit(ctx, req, res, url) {
   const { courtSeason } = ctx;
   if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(ctx.meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
   const b = await body(req);
+  // {card: "<id>"} deals that card of the deck (data/dilemmas.json) now, from the
+  // first lord its gates allow (its treasury gate counted as met), and the court sits for it.
+  if (b.card) {
+    const world = ctx.world;
+    const court = ctx.court;
+    const lords = court.alive().filter((c) => c.rank === "lord" && (world.players.find((p) => p.id === c.playerId)?.cities ?? 0) > 0)
+      .sort((x, y) => (world.players.find((p) => p.id === y.playerId)?.gold ?? 0) - (world.players.find((p) => p.id === x.playerId)?.gold ?? 0));
+    let dealt = null;
+    for (const lord of lords) {
+      dealt = await court.petition(lord, world, world.turn ?? 0, { favour: ctx.favourOf, thinTreasury: () => true, wetHarvest: () => true }, true, { prefer: String(b.card), urgent: true });
+      if (dealt) break;
+    }
+    if (!dealt) return json(res, 400, { error: `no lord can be dealt ${b.card} now` });
+    dealt.called = ctx.world.turn ?? 0;
+    court.saveCourt();
+    await courtSeason(ctx.world?.turn ?? 0, true);
+    return json(res, 200, { ok: true, id: dealt.id, from: dealt.name, options: dealt.options.map((o) => o.id) });
+  }
   if (!b.sit) return json(res, 400, { error: "{sit: true}" });
   await courtSeason(ctx.world?.turn ?? 0, true);
   return json(res, 200, { ok: true, sitting: ctx.meta.court?.sitting ?? null });

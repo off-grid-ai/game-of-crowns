@@ -76,6 +76,8 @@ export async function answer(ctx, req, res, url) {
   const { id, option } = await body(req);
   const out = rule(id, option);
   closeIfDone(ctx.world?.turn ?? 0);
+  // What the ruling paid or brought in shows now (the treasury, a house's purse), as a decree's does.
+  if (!out.error) setTimeout(ctx.snapshot, 600);
   return json(res, out.error ? 400 : 200, out);
 }
 

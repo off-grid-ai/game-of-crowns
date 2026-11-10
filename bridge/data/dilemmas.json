@@ -502,5 +502,20 @@
         "effects": { "favour": { "me": -10 }, "memory": { "me": "The crown took its tithe from a drowned harvest." } },
         "text": "The King's tax-men go to {town} as in any year. {me} watches them load the carts in silence." }
     ]
+  },
+  {
+    "id": "thin_treasury", "weight": 5, "when": { "thinTreasury": true, "goldAbove": 120 },
+    "text": "{me} of {me.house} waits until the hall has emptied: \"Your Grace, the talk in Kingsmere is that the royal chests ring hollow. {me.house} could help. For a price, or a promise.\"",
+    "options": [
+      { "id": "borrow", "label": "Borrow 120 gold from {me.house}, repaid in two years", "hint": "The crown owes {me.house} 160 gold in two years · {me.house} +5 · if it isn't paid, your word is broken",
+        "effects": { "gold": { "crown": 120, "me": -120 }, "favour": { "me": 5 }, "loan": { "amount": 160, "seasons": 8 }, "memory": { "me": "When the King's chests were empty, my house lent him gold." } },
+        "text": "{me.house}'s silver goes into the royal chests. The debt is written down: 160 gold, due in two years." },
+      { "id": "sell", "label": "Sell {me.house} a seat on the King's council", "hint": "The crown gains 100 gold · {me.house} +10 · every house −3: offices are for sale now",
+        "effects": { "gold": { "crown": 100, "me": -100 }, "favour": { "me": 10, "all": -3 }, "memory": { "me": "I bought my seat on the King's council, and everyone knows it." } },
+        "text": "{me} takes a council seat that was not earned. By evening every house in Kingsmere knows what it cost." },
+      { "id": "tithe", "label": "Refuse, and raise the tithe to a fifth", "hint": "The tithe rises to 20% · the purse fills faster · every house's favour wears faster each season",
+        "effects": { "tithe": 0.2, "favour": { "me": -3 } },
+        "text": "The King wants no house's charity. The tithe rises to a fifth, and the tax-men ride out again." }
+    ]
   }
 ]

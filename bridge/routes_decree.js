@@ -8,6 +8,7 @@
 // ctx.meta...) at the moment it is used, as the handlers read it before, so a
 // snapshot or a switch of chronicle during an await is seen.
 
+import * as Treasury from "./treasury.js";
 import { WORK_SEASONS } from "./treasury.js";
 import * as chron from "./chronicles.js";
 import { cityName, houseFor } from "./narrator.js";
@@ -47,7 +48,8 @@ export async function issueDecree(ctx, req, res, url) {
     const n = seasonsLeft(yearly);
     return json(res, 400, { error: `once a year: again in ${n} season${n === 1 ? "" : "s"}` });
   }
-  const result = decree({ ...cmd, works: ctx.meta.works ?? {}, price: priceOf(cmd.action), favourOf, causeOf, sworn, marching: (city) => (ctx.meta.campaigns ?? []).some((x) => x.city === city), usurper: ctx.stakes?.s.usurper, seat: ctx.stakes?.s.seat }, ctx.world);
+  const price = priceOf(cmd.action);
+  const result = decree({ ...cmd, works: ctx.meta.works ?? {}, price, favourOf, causeOf, sworn, marching: (city) => (ctx.meta.campaigns ?? []).some((x) => x.city === city), usurper: ctx.stakes?.s.usurper, seat: ctx.stakes?.s.seat }, ctx.world);
   if (result.error) return json(res, 400, result);
   {
     const dc = ctx.world.cities.find((x) => x.id === Number(cmd.city));
@@ -64,6 +66,8 @@ export async function issueDecree(ctx, req, res, url) {
   if (result.alliance != null) { (ctx.meta.alliances ??= {})[result.alliance] = (ctx.world.turn ?? 0) + 16; chron.saveMeta(ctx.meta); }
   if (result.march) startCampaign(result.march);
   if (yearly) { (ctx.meta.decreeAt ??= {})[yearly] = ctx.world.turn ?? 0; chron.saveMeta(ctx.meta); }
+  // Bought: the same decree again within the year costs more (treasury.js wear).
+  Treasury.spend(ctx.meta, `decree:${cmd.action}`, price, ctx.world.turn ?? 0); chron.saveMeta(ctx.meta);
   if (cmd.city != null) { (ctx.meta.answeredAt ??= {})[Number(cmd.city)] = ctx.world.turn ?? 0; chron.saveMeta(ctx.meta); }
   const warmed = ctx.world.cities.find((c) => c.id === Number(cmd.city))?.owner ?? (cmd.house != null ? Number(cmd.house) : null);
   result.favour = temper(cmd.action, warmed, result.favour);

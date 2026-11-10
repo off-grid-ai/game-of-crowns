@@ -12,6 +12,7 @@ import { DECREES, bannersReady } from "./crown.js";
 import { BANDS } from "./favour.js";
 import { calendar } from "./stakes.js";
 import * as chron from "./chronicles.js";
+import { shortOf } from "./treasury.js";
 
 // The Hand of the King advises: the two or three most pressing matters in the
 // realm, worst first, each with why it matters in one line and the decrees that
@@ -243,6 +244,8 @@ export function counsel(ctx, players, cities, threat) {
     // The price the crown will really pay (a share of a full treasury), never the base.
     if (DECREES[a.action]?.cost) {
       a.cost = priceOf(a.action);
+      const short = shortOf(world?.players?.find((p) => houseFor(p).crown)?.gold ?? 0, a.cost);
+      if (short) a.short = short;
       a.label += `  ${a.cost >= 10000 ? `${Math.round(a.cost / 1000) / 10}m` : `${Math.round(a.cost / 10)}k`} cr`;  // gold ×100 crowns
     }
     const does = DOES[a.action ?? a.ui];

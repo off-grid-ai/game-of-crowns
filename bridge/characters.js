@@ -905,6 +905,9 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     if (w.favourAbove !== undefined && ctx.favour(c.playerId) <= w.favourAbove) return null;
     // A wet harvest (bridge weather.js): only after two wet seasons running, or a storm at harvest.
     if (w.wetHarvest && !ctx.wetHarvest?.()) return null;
+    // The crown's purse below one big thing's worth (economy.json thin); a lender with the gold to lend.
+    if (w.thinTreasury && !ctx.thinTreasury?.()) return null;
+    if (w.goldAbove !== undefined && (me.gold ?? 0) < w.goldAbove) return null;
     if (w.age && (c.age < w.age[0] || c.age > w.age[1])) return null;
     if (w.chance !== undefined && Math.random() > w.chance) return null;
     // The realm's own state (the bridge's one definitions on each town; Freeciv's wars):
@@ -1001,6 +1004,10 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       if (seat) out.lua.push(`local c = find.city(nil, ${seat.id}); if c then local t = find.unit_type("${v.type ?? "Pikemen"}") or find.unit_type("Warriors"); for i = 1, ${Number(v.count ?? v) || 1} do edit.create_unit(c.owner, c.tile, t, 1, c, -1) end end`);
     });
     for (const [a, b, d] of e.opinion ?? []) if (roles[a] && roles[b]) { this.shift(roles[a].id, roles[b].id, d); this.save(roles[a]); }
+    // The crown borrows: repaid with interest in loan.seasons, or the King's word is broken (collect).
+    if (e.loan && roles.me) (this.debts ??= []).push({ pid: roles.me.playerId, amount: Number(e.loan.amount), due: (world.turn ?? 0) + Number(e.loan.seasons ?? 8), owed: true });
+    // The tithe raised to the card's rate (never lowered by it): the court applies it (court.js rule).
+    if (e.tithe != null) out.tithe = Number(e.tithe);
     if (e.truce && roles.me && roles.rival) this.makeTruce(roles.me, roles.rival, 8 * e.truce, world);
     if (e.dies && roles[e.dies.who] && Math.random() < (e.dies.chance ?? 1)) {
       const who = roles[e.dies.who];
@@ -1037,6 +1044,20 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       debt.settled = true;
       const p = world.players.find((x) => x.id === debt.pid);
       const lord = this.lordOfHouse(debt.pid);
+      // What the crown owes a house: paid back if the treasury can, else the King's word is broken.
+      if (debt.owed) {
+        const crown = world.players.find((x) => houseFor(x).crown);
+        if (p && crown && crown.gold >= debt.amount) {
+          ctx.send(`for p in players_iterate() do if p.id == ${crown.id} then edit.change_gold(p, -${debt.amount}) elseif p.id == ${debt.pid} then edit.change_gold(p, ${debt.amount}) end end`);
+          this.record({ turn, kind: "court", text: `The crown repays ${houseFor(p).name} the ${debt.amount} gold it borrowed, with interest.` });
+        } else if (p) {
+          ctx.shift({ [debt.pid]: -15 }, "the crown's unpaid debt");
+          if (lord) { this.remember(lord.id, "I lent the King gold when his treasury was empty. He never paid it back."); this.save(lord); }
+          ctx.deed?.("loan_unpaid", debt.pid);
+          this.record({ turn, kind: "unrest", text: `The crown cannot repay the ${debt.amount} gold it owes ${houseFor(p).name}. They say the King's word is worth less than his coin.` });
+        }
+        continue;
+      }
       if (p && p.gold >= debt.amount) {
         ctx.send(`for p in players_iterate() do if p.id == ${debt.pid} then edit.change_gold(p, -${debt.amount}) elseif p.id == ${world.players.find((x) => houseFor(x).crown)?.id ?? -1} then edit.change_gold(p, ${debt.amount}) end end`);
         this.record({ turn, kind: "court", text: `${houseFor(p).name} repays the crown ${debt.amount} gold, with interest.` });

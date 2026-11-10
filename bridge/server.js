@@ -387,6 +387,10 @@ function applyStartOptions() {
   }
   saveFavour();
   const crown = world.players.find((x) => houseFor(x).crown);
+  // The King's purse at his crowning (economy.json start, by the reign's wealth): the
+  // shared Aldmere baseline's heap would carry him through a whole reign unfelt.
+  const purse = Treasury.ECONOMY.start[meta.wealth] ?? Treasury.ECONOMY.start.comfortable;
+  if (crown && crown.gold !== purse) { lua.push(`${who(crown.id)} edit.change_gold(q, ${purse - crown.gold}) end end`); crown.gold = purse; }
   if (crown && o.host === "strong") {
     lua.push(`local k = find.city(nil, ${world.cities.find((c) => c.owner === crown.id && c.capital)?.id ?? -1}); if k then for _, n in ipairs({"Knights", "Knights", "Knights", "Pikemen", "Pikemen", "Pikemen", "Pikemen", "Archers", "Archers", "Catapult"}) do edit.create_unit(k.owner, k.tile, find.unit_type(n), 1, k, -1) end end`);
   } else if (crown && o.host === "small") {

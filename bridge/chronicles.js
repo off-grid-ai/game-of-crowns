@@ -9,6 +9,7 @@
 //   chronicles/<id>/data/nation/     this realm's house temperaments
 //   chronicles/<id>/realm.serv       the Freeciv start script
 
+import { ECONOMY } from "./crown.js";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -205,7 +206,7 @@ export function create({ name, scenario = "aldmere", minutes = 0, pace, fate = "
   const [, mapW, mapH] = fs.readFileSync(p.setup, "utf8").match(/local W, H = (\d+), (\d+)/);
   writeNations(path.join(p.data, "nation"), random, opt.temper);
   // The crown's starting treasury.
-  const gold = { poor: 150, comfortable: 500, rich: 1500 }[wealth] ?? 500;
+  const gold = ECONOMY.start[wealth] ?? ECONOMY.start.comfortable;
   fs.writeFileSync(p.setup, fs.readFileSync(p.setup, "utf8").replace("edit.change_gold(p, 500)", `edit.change_gold(p, ${gold})`));
   let serv = fs.readFileSync(path.join(DIR, "realm.serv"), "utf8")
     .replace("lua file lua/world_setup.lua", `lua file ${p.setup}`)

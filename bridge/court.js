@@ -10,6 +10,7 @@
 // reassigns, which the sitting reads again after each await; setSitting for the
 // hold); server.js keeps wrappers of the same names.
 
+import * as Treasury from "./treasury.js";
 import { houseFor, cityName } from "./narrator.js";
 import { BANDS } from "./favour.js";
 import { calendar } from "./stakes.js";
@@ -24,15 +25,21 @@ import * as kingDeeds from "./ledger.js";
 export function rule(ctx, id, option) {
   const { world, meta, court, crowns, deed, send, marchOn, shiftAndTell, record } = ctx;
   const asked = court.petitions.find((x) => x.id === id && !x.answered)?.options?.find((o) => o.id === option);
-  const purse = world.players.find((p) => houseFor(p).crown)?.gold ?? 0;
-  if (asked?.cost && purse < asked.cost) return { error: crowns(`the treasury holds ${purse} gold`) };
   const petition = court.petitions.find((x) => x.id === id);
+  // The price as the docket showed it: worn with use (treasury.js), like a decree's.
+  const wearKey = petition ? `court:${petition.kind}:${option}` : null;
+  const price = asked?.cost ? Treasury.worn(meta, wearKey, asked.cost, world.turn ?? 0) : 0;
+  const purse = world.players.find((p) => houseFor(p).crown)?.gold ?? 0;
+  if (price && purse < price) return { error: crowns(`the treasury holds ${purse} gold`) };
   if (petition?.arc === "siege" && !(meta.campaigns ?? []).some((k) => `siege-${k.city}-${k.turn}` === petition.beat)) {
     petition.answered = true;
     return { error: "The siege is already over; the herald's terms no longer stand." };
   }
   const out = court.answer(id, option, world);
   if (out.error) return out;
+  if (out.cost && price) out.cost = price;
+  // A ruling that raises the tithe (the thin treasury's answer): never lowers it.
+  if (out.tithe != null) { meta.tithe = Math.max(meta.tithe ?? 0, out.tithe); chron.saveMeta(meta); }
   if (petition) {
     const tag = petition.deck ? kingDeeds.tagsFor("deck", petition.kind, option) : petition.kind === "arc" ? (kingDeeds.tagsFor("arc", `${petition.arc}:${petition.beat}`, option) ?? kingDeeds.tagsFor("arc", petition.arc, option) ?? kingDeeds.tagsFor("arc", "story", option)) : kingDeeds.tagsFor("court", petition.kind, option);
     const pc = petition.city != null ? world.cities.find((x) => x.id === Number(petition.city)) : null;
@@ -45,6 +52,7 @@ export function rule(ctx, id, option) {
   if (out.cost) {
     send(`lua cmd for p in players_iterate() do if p.id == ${crownNow.id} then edit.change_gold(p, -${out.cost}) end end`);
     crownNow.gold -= out.cost;
+    Treasury.spend(meta, wearKey, out.cost, world.turn ?? 0);
   }
   out.lua.forEach((l) => send(`lua cmd ${l}`));
   // A ruling that sends the royal host (the siege plea's "relieve"): the same march as the decree.
@@ -285,7 +293,15 @@ export function docket(ctx) {
       name: lord?.name ?? "The Hand of the King", house: lord ? houseFor(owner).name : "", from: lord?.id ?? null, who: lord ? court.sitter(lord.id) : null, due: null };
   }).filter(Boolean).sort((a, b) => Number(b.crisis) - Number(a.crisis));
   // No fuse at court: the realm holds while it sits, so no timer would tell true.
-  const pets = court.open().filter((p) => p.called != null).map((p) => ({ ...p, due: null, sitting: p.called, counsel: handLine(ctx, p), push: !!c.push }));
+  // Each option's price as it stands (worn with use), and one line of why when the treasury can't pay it.
+  const purse = world?.players?.find((p) => houseFor(p).crown)?.gold ?? 0;
+  const priced = (p) => (p.options ?? []).map((o) => {
+    if (!o.cost) return o;
+    const cost = Treasury.worn(ctx.meta, `court:${p.kind}:${o.id}`, o.cost, world?.turn ?? 0);
+    const short = Treasury.shortOf(purse, cost);
+    return { ...o, cost, label: String(o.label ?? "").replace(/\(\d[\d,]* gold\)/, `(${cost} gold)`), ...(short ? { short } : {}) };
+  });
+  const pets = court.open().filter((p) => p.called != null).map((p) => ({ ...p, options: priced(p), due: null, sitting: p.called, counsel: handLine(ctx, p), push: !!c.push }));
   // A court with nothing left to show the King is no court: the doors close, the realm moves.
   if (c.sitting != null && !hand.length && !pets.length) { c.hand = {}; closeIfDone(ctx, world?.turn ?? 0, true); }
   return [...hand.map((x) => ({ ...x, push: !!c.push })), ...pets];

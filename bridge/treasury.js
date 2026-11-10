@@ -7,9 +7,32 @@
 // wrappers of the same names, and the tally and lastSeason objects).
 
 import { houseFor, cityName } from "./narrator.js";
-import { DECREES, titheLua, TITHE_HIGH } from "./crown.js";
+import { DECREES, titheLua, TITHE_HIGH, ECONOMY } from "./crown.js";
 import * as chron from "./chronicles.js";
 import * as kingDeeds from "./ledger.js";
+export { ECONOMY };
+
+// The same thing bought again within the year costs more: each purchase of a key
+// (decree:gift, court:<kind>:<option>) in the last wear.seasons raises its price
+// by wear.step of the base. A King who answers everything with gold runs short.
+export function usesOf(meta, key, turn) {
+  return (meta?.spent ?? []).filter((x) => x.key === key && turn - x.turn < ECONOMY.wear.seasons).length;
+}
+export function worn(meta, key, base, turn) {
+  return Math.round(base * (1 + ECONOMY.wear.step * usesOf(meta, key, turn)));
+}
+// A purchase made: counted for wear, and for the season's true income (the top bar).
+export function spend(meta, key, cost, turn) {
+  meta.spent = (meta.spent ?? []).filter((x) => turn - x.turn < ECONOMY.wear.seasons);
+  meta.spent.push({ key, turn });
+  (meta.econ ??= {}).spentSince = (meta.econ.spentSince ?? 0) + (cost ?? 0);
+}
+// One line of why the King can't pay, said at the moment of choice; null when he
+// can. In crowns, as the King reads money (a hundred to each gold).
+const inCr = (g) => `${(g * 100).toLocaleString("en-GB")} crowns`;
+export function shortOf(purse, cost) {
+  return cost > 0 && purse < cost ? `The treasury holds ${inCr(purse)}; this needs ${inCr(cost)}` : null;
+}
 
 // A decree's price grows with the treasury: a rich King's gift must be a real
 // share of what he holds, or it means nothing to the house that gets it.
@@ -44,10 +67,10 @@ export function seasonsLeft(ctx, key) {
 }
 
 export function priceOf(ctx, action) {
-  const { world } = ctx;
+  const { world, meta } = ctx;
   const base = DECREES[action]?.cost ?? 0;
   const purse = world?.players?.find((p) => houseFor(p).crown)?.gold ?? 0;
-  return Math.max(base, Math.round(purse * (SHARE[action] ?? 0)));
+  return worn(meta, `decree:${action}`, Math.max(base, Math.round(purse * (SHARE[action] ?? 0))), world?.turn ?? 0);
 }
 
 // The King's own works: what he funds in a royal town rises over two seasons
@@ -102,7 +125,15 @@ export function tithe(ctx, turn) {
   const t = titheLua(world, meta.tithe * (0.4 + 0.6 * peaceNow));
   tally.total += t.total;
   tally.upkeep += t.upkeep;
-  lastSeason.net = t.total - t.upkeep;
+  // The season's true income, as the top bar shows it: what came in besides the
+  // tithe (the crown's own towns, its markets) is the purse's rise since last
+  // season plus what the King spent, and the tithe less the upkeep on top.
+  const gold = world.players.find((p) => houseFor(p).crown)?.gold ?? 0;
+  const econ = (meta.econ ??= {});
+  const besides = econ.base == null ? 0 : gold - econ.base + (econ.spentSince ?? 0);
+  lastSeason.net = besides + t.total - t.upkeep;
+  econ.base = gold + t.total - t.upkeep;
+  econ.spentSince = 0;
   t.lua.forEach((l) => send(`lua cmd ${l}`));
 }
 

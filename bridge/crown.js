@@ -6,10 +6,12 @@ import { cityName, houseFor } from "./narrator.js";
 import { greatHouses } from "./realm.js";
 import { BANDS } from "./favour.js";
 import * as Lua from "./lua.js";
+import fs from "node:fs";
+// The crown's money in one place (the purse, the tithe's yield, wear, thin): data/economy.json.
+export const ECONOMY = JSON.parse(fs.readFileSync(new URL("./data/economy.json", import.meta.url), "utf8"));
 
 // The decrees, their prices and words: data/decrees.json (one place for both the
 // bridge and the town card).
-import fs from "node:fs";
 export const DECREES = Object.fromEntries(Object.entries(JSON.parse(fs.readFileSync(new URL("./data/decrees.json", import.meta.url), "utf8"))).filter(([k]) => k !== "_"));
 
 // When the banners were last called: the houses won't answer twice in a year.
@@ -40,7 +42,7 @@ export function clampFavour(v) {
 // stewards. Not the soldiers: the engine already charges a town for its units,
 // and charging again left the crown at 0 crowns for good, unable to decree.
 export function crownUpkeep(crown) {
-  return 2 + (crown.cities ?? 0) * 2 + Math.floor(Math.max(0, crown.gold) * 0.01);
+  return 2 + (crown.cities ?? 0) * 2 + Math.floor(Math.max(0, crown.gold) * ECONOMY.upkeepShare);
 }
 
 // A tithe this heavy grasps: the ledger's tithe_high, and the towns mutter (view.js townStates).
@@ -52,17 +54,21 @@ export function titheLua(world, rate) {
   const takes = {};
   let total = 0;
   const lua = [];
+  const { perSize, housePays } = ECONOMY.tithe;
   for (const p of world.players) {
     const h = houseFor(p);
     if (h.wild || h.crown) continue;
-    // The tithe is a share of each house's treasury: the rate a year, a quarter
-    // of it each season. (A share of their gains came to nothing: the houses
-    // spend as fast as they earn, so the crown starved while favour still wore.)
-    const take = rate > 0 && p.gold > 0 ? Math.floor((p.gold * rate) / 4) : 0;
+    // The tithe is the rate of what a house's towns yield (their size), a quarter
+    // each season: a share of the houses' own small purses brought the crown next
+    // to nothing. A house hands over what it can spare from its purse; the rest is
+    // taken at its town gates.
+    const size = (world.cities ?? []).filter((c) => c.owner === p.id).reduce((n, c) => n + (c.size ?? 0), 0);
+    const take = rate > 0 ? Math.floor((size * perSize * rate) / 4) : 0;
     if (take <= 0) continue;
     takes[p.id] = take;
     total += take;
-    lua.push(Lua.gold(p.id, -take));
+    const paid = Math.min(take, Math.floor(Math.max(0, p.gold ?? 0) * housePays));
+    if (paid > 0) lua.push(Lua.gold(p.id, -paid));
   }
   const upkeep = Math.min(crownUpkeep(crown), Math.max(0, crown.gold + total));
   const net = total - upkeep;
