@@ -82,7 +82,7 @@ const CALM_GAP := Vector2(25.0, 70.0)  # seconds of silence between calm pieces
 const STINGS := {
 	"battle": [["sfx/war_horn.ogg|sfx/war_horn_near.ogg", -2.0, 0.0], ["sfx/charge_yell.ogg", -4.0, 2.5]],
 	"clash": [["sfx/sword_clash_1.wav|sfx/sword_clash_2.wav|sfx/sword_clash_3.wav", -6.0, 0.0]],
-	"unit_killed": [["sfx/sword_clash_1.wav|sfx/sword_clash_2.wav|sfx/sword_clash_3.wav|sfx/hit_metal_0.wav|sfx/hit_metal_1.wav|sfx/hit_metal_2.wav|sfx/hit_plate_0.wav|sfx/hit_plate_1.wav|sfx/hit_plate_2.wav", -8.0, 0.0]],
+	"unit_killed": [["sfx/sword_clash_1.wav|sfx/sword_clash_2.wav|sfx/sword_clash_3.wav|sfx/hit_metal_0.wav|sfx/hit_metal_1.wav|sfx/hit_metal_2.wav|sfx/hit_plate_0.wav|sfx/hit_plate_1.wav|sfx/hit_plate_2.wav|sfx/hit_metal_3.ogg|sfx/hit_metal_4.ogg|sfx/hit_plate_3.ogg|sfx/hit_plate_4.ogg", -8.0, 0.0]],
 	"horn": [["sfx/war_horn.ogg|sfx/war_horn_near.ogg", -3.0, 0.0]],
 	"siege": [["sfx/war_horn.ogg|sfx/war_horn_near.ogg", -3.0, 0.0], ["sfx/catapult.ogg", -4.0, 4.0]],
 	"feast": [["sfx/cheer.ogg", -6.0, 0.0]],
@@ -108,7 +108,7 @@ const LIFT_MOOD := {"battle": ["battle", 60.0], "siege": ["battle", 60.0], "feas
 const UI_SOUNDS := {"click": ["ui/click.wav", -6.0], "open": ["ui/open.wav", -4.0], "close": ["ui/close.wav", -6.0],
 	"page": ["ui/page.wav", -6.0], "seal": ["ui/seal.wav", 0.0], "decree": ["ui/seal.wav", 0.0],
 	"parchment": ["ui/parchment.wav", -3.0], "quill": ["ui/quill.wav", -4.0], "error": ["ui/error.wav", -8.0],
-	"coins": ["sfx/coins.wav", -6.0]}  # the treasury pays for a decree
+	"coins": ["sfx/coins.wav|sfx/coins_1.ogg|sfx/coins_2.ogg", -6.0]}  # the treasury pays for a decree
 const MAX_STINGERS := 12
 
 var _beds := {}  # name -> {player, level (0..1), target}
@@ -169,7 +169,7 @@ func set_view(zoom_distance: float, near_town: Dictionary, season: String, night
 func set_interior(room: String) -> void:
 	# The door, as he goes in or comes out: the one place the room changes.
 	if room != _interior:
-		var s: AudioStream = _load("sfx/door_open.wav" if room != "" else "sfx/door_close.wav")
+		var s: AudioStream = takes_of("sfx/door_open.wav|sfx/door_open_1.ogg" if room != "" else "sfx/door_close.wav|sfx/door_close_1.ogg|sfx/door_close_2.ogg|sfx/door_close_3.ogg")
 		if s:
 			_one_shot(s, "SFX", -8.0, Vector3.INF, _rng.randf_range(0.95, 1.05))
 	_interior = room
@@ -211,7 +211,7 @@ func ui(kind: String) -> void:
 	if now - int(_ui_last.get(kind, 0)) < 80:  # a double fire is one sound
 		return
 	_ui_last[kind] = now
-	var s: AudioStream = _load(UI_SOUNDS[kind][0])
+	var s: AudioStream = takes_of(UI_SOUNDS[kind][0], 1.02)
 	if s:
 		_one_shot(s, "UI", UI_SOUNDS[kind][1], Vector3.INF, 1.0)
 
@@ -219,7 +219,7 @@ func ui(kind: String) -> void:
 func footstep(surface: String, at: Vector3) -> void:
 	var takes := PackedStringArray()
 	for i in 5:
-		takes.append("sfx/step_%s_%d.wav" % [surface, i])
+		takes.append("sfx/step_%s_%d.%s" % [surface, i, "ogg" if surface == "stone" else "wav"])
 	var s: AudioStream = takes_of("|".join(takes), 1.08)
 	if s:
 		_one_shot(s, "SFX", -14.0, at, 1.0)
@@ -382,8 +382,8 @@ const CLIP_SOUNDS := {
 	"Walk": ["step", [0.0, 0.5]], "Walking": ["step", [0.0, 0.5]], "Carry_Walk": ["step", [0.0, 0.5]],
 	"Injured_Walk": ["step", [0.0, 0.5]], "SS_Walk": ["step", [0.0, 0.5]], "GS_Walk": ["step", [0.0, 0.5]],
 	"Axe_Walk": ["step", [0.0, 0.5]], "Running": ["step", [0.0, 0.5]], "Carrying": ["step", [0.0, 0.5]],
-	"Hammer_Swing": ["sfx/hammer.wav", [0.45]],
-	"Axe_Down": ["sfx/chop.wav", [0.5]],
+	"Hammer_Swing": ["sfx/hammer.wav|sfx/hammer_1.wav|sfx/hammer_2.wav|sfx/hammer_3.wav|sfx/hammer_4.wav", [0.45]],
+	"Axe_Down": ["sfx/chop.wav|sfx/chop_1.ogg|sfx/chop_2.ogg|sfx/chop_3.ogg|sfx/chop_4.ogg|sfx/chop_5.ogg", [0.5]],
 }
 const HEARD_WITHIN := 14.0  # game units from the camera: further, a move makes no sound
 var _clips := {}  # person -> [clip, period, t, looping, fired (hits this cycle)]
@@ -421,7 +421,7 @@ func _tick_clips(delta: float) -> void:
 			if cam and cam.global_position.distance_to(at) > HEARD_WITHIN:
 				continue
 			if sound[0] == "step":
-				footstep("wood" if _interior != "" else ("snow" if _view["season"] == "winter" else "grass"), at)
+				footstep(("stone" if _interior in ["chapel", "great_hall"] else "wood") if _interior != "" else ("snow" if _view["season"] == "winter" else "grass"), at)
 			else:
 				var s: AudioStream = takes_of(sound[0], 1.08)
 				if s:

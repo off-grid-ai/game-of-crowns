@@ -110,6 +110,30 @@ Licences: [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) ·
 | `war_horn.ogg` | 19 s | Distant War Horn.wav | DeVern | CC0 1.0 | [link](https://freesound.org/s/512490/) |
 | `war_horn_near.ogg` | 4 s | war horn.wav | adharca | CC0 1.0 | [link](https://freesound.org/s/539956/) |
 | `wolf_howl.ogg` | 18 s | Cooper Creek solitary wolf howl very clear | betchkal | CC0 1.0 | [link](https://freesound.org/s/500646/) |
+| `coins_1.ogg` | 0 s | RPG Audio | Kenney | CC0 1.0 | [link](https://kenney.nl/assets/rpg-audio) |
+| `coins_2.ogg` | 0 s | RPG Audio | Kenney | CC0 1.0 | [link](https://kenney.nl/assets/rpg-audio) |
+| `hammer_1.wav` | 0 s | Black Smith Sounds | ItsEddie | CC-BY 3.0 | [link](https://opengameart.org/content/black-smith-sounds) |
+| `hammer_2.wav` | 0 s | Black Smith Sounds | ItsEddie | CC-BY 3.0 | [link](https://opengameart.org/content/black-smith-sounds) |
+| `hammer_3.wav` | 0 s | Black Smith Sounds | ItsEddie | CC-BY 3.0 | [link](https://opengameart.org/content/black-smith-sounds) |
+| `hammer_4.wav` | 0 s | Black Smith Sounds | ItsEddie | CC-BY 3.0 | [link](https://opengameart.org/content/black-smith-sounds) |
+| `chop_1.ogg` | 0 s | Impact Sounds | Kenney | CC0 1.0 | [link](https://kenney.nl/assets/impact-sounds) |
+| `chop_2.ogg` | 0 s | Impact Sounds | Kenney | CC0 1.0 | [link](https://kenney.nl/assets/impact-sounds) |
+| `chop_3.ogg` | 0 s | Impact Sounds | Kenney | CC0 1.0 | [link](https://kenney.nl/assets/impact-sounds) |
+| `chop_4.ogg` | 0 s | Impact Sounds | Kenney | CC0 1.0 | [link](https://kenney.nl/assets/impact-sounds) |
+| `chop_5.ogg` | 0 s | Impact Sounds | Kenney | CC0 1.0 | [link](https://kenney.nl/assets/impact-sounds) |
+| `step_stone_0.ogg` | 0 s | Impact Sounds | Kenney | CC0 1.0 | [link](https://kenney.nl/assets/impact-sounds) |
+| `step_stone_1.ogg` | 0 s | Impact Sounds | Kenney | CC0 1.0 | [link](https://kenney.nl/assets/impact-sounds) |
+| `step_stone_2.ogg` | 0 s | Impact Sounds | Kenney | CC0 1.0 | [link](https://kenney.nl/assets/impact-sounds) |
+| `step_stone_3.ogg` | 0 s | Impact Sounds | Kenney | CC0 1.0 | [link](https://kenney.nl/assets/impact-sounds) |
+| `step_stone_4.ogg` | 0 s | Impact Sounds | Kenney | CC0 1.0 | [link](https://kenney.nl/assets/impact-sounds) |
+| `door_open_1.ogg` | 0 s | RPG Audio | Kenney | CC0 1.0 | [link](https://kenney.nl/assets/rpg-audio) |
+| `door_close_1.ogg` | 0 s | RPG Audio | Kenney | CC0 1.0 | [link](https://kenney.nl/assets/rpg-audio) |
+| `door_close_2.ogg` | 0 s | RPG Audio | Kenney | CC0 1.0 | [link](https://kenney.nl/assets/rpg-audio) |
+| `door_close_3.ogg` | 0 s | RPG Audio | Kenney | CC0 1.0 | [link](https://kenney.nl/assets/rpg-audio) |
+| `hit_metal_3.ogg` | 0 s | Impact Sounds | Kenney | CC0 1.0 | [link](https://kenney.nl/assets/impact-sounds) |
+| `hit_metal_4.ogg` | 0 s | Impact Sounds | Kenney | CC0 1.0 | [link](https://kenney.nl/assets/impact-sounds) |
+| `hit_plate_3.ogg` | 0 s | Impact Sounds | Kenney | CC0 1.0 | [link](https://kenney.nl/assets/impact-sounds) |
+| `hit_plate_4.ogg` | 0 s | Impact Sounds | Kenney | CC0 1.0 | [link](https://kenney.nl/assets/impact-sounds) |
 
 ## Interface
 
