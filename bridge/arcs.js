@@ -835,7 +835,9 @@ export class Arcs {
       if (!field) return r.name;
       if (field in pron) return pron[field];
       if (field === "first") return r.name.split(" ")[0];
-      if (field === "houseName") return String(r.house ?? "").replace(/^House /, "");
+      // A person's family is their own name ("Dale"), not their liege's house:
+      // two families of one house never read "Stormhold and Stormhold".
+      if (field === "houseName") return r.surname ? String(r.surname) : String(r.house ?? "").replace(/^House /, "");
       if (field === "seat") return (r.seat ?? r.home) != null ? cityName(r.seat ?? r.home) : String(r.house ?? "").replace(/^House /, "");
       if (field === "station" || field === "born") return String(r[field] ?? r.station ?? r.rank ?? "");
       return String(r[field] ?? "");
