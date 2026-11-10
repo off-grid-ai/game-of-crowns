@@ -538,6 +538,26 @@ static func once(person: Node3D, anim_name: String, speed := 1.0, hold := true) 
 	return mo.play(anim_name, rate, hold, 0.0) * rate
 
 
+## Whoever wants to know when a clip starts (soundscape.gd: footsteps, hammer
+## and axe falls timed to the move): one hook for every clip anyone plays.
+static var _listeners: Array[Callable] = []
+
+static func listen(on_clip: Callable) -> void:
+	_listeners.append(on_clip)
+
+
+## Tells the listeners: who, which clip, its period in seconds as played, and
+## whether it loops (a walk, a drill repeated) or plays once.
+static func _started(person: Node3D, anim_name: String, rate: float, looping: bool) -> void:
+	if _listeners.is_empty():
+		return
+	var ap: AnimationPlayer = person.get_node_or_null("Anim")
+	var period := ap.get_animation(anim_name).length / maxf(rate, 0.01) if ap and ap.has_animation(anim_name) else 0.0
+	for c in _listeners:
+		if c.is_valid():
+			c.call(person, anim_name, period, looping)
+
+
 ## A one-off move practised over and over (a drill): loops instead of returning to rest.
 static func repeat(person: Node3D, anim_name: String, speed := 1.0) -> void:
 	var mo := motion(person)
@@ -545,6 +565,7 @@ static func repeat(person: Node3D, anim_name: String, speed := 1.0) -> void:
 		if not person.has_meta("tempo"):
 			person.set_meta("tempo", randf_range(0.85, 1.15))
 		mo.play(anim_name, speed * float(person.get_meta("tempo")), false, -1.0, true)
+		_started(person, anim_name, speed * float(person.get_meta("tempo")), true)
 
 
 ## A person dies: the machine goes to Dead, which nothing leaves.
@@ -598,3 +619,4 @@ static func play(person: Node3D, anim_name: String, speed := 1.0, phase := -1.0)
 	if not person.has_meta("tempo"):
 		person.set_meta("tempo", randf_range(0.85, 1.15))
 	mo.play(anim_name, speed * float(person.get_meta("tempo")), false, phase)
+	_started(person, anim_name, speed * float(person.get_meta("tempo")), not preload("res://scripts/motion.gd").is_once(anim_name))
