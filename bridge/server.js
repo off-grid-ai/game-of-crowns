@@ -1018,6 +1018,9 @@ async function courtSeason(turn) {
     else c.lastSat = turn;
     c.lastCall = Date.now();
     hold(true);
+    // Ceasefires the King ordered away from court reload now, behind the card.
+    for (const pr of meta.pendingCease ?? []) ceasefire(pr[0], pr[1]).catch((e) => console.log("ceasefire:", e.message));
+    meta.pendingCease = [];
     record({ turn, kind: "court", text: push ? `The Hand calls the King to court: ${crises[0].text}.` : `The court sits for the ${calendar(turn).season} of ${calendar(turn).year}: ${n} ${n === 1 ? "matter waits" : "matters wait"} for the King.` });
   } else if (due) c.lastSat = turn;
   chron.saveMeta(meta);
@@ -1895,8 +1898,11 @@ function council() {
 // A commanded peace: the two lords' houses keep a truce (no raids, no plots).
 function keepTruce(pair) {
   if (!court) return;
-  // Freeciv's own ceasefire, so its AI stops fighting too (it ends by itself in 16 turns).
-  ceasefire(pair[0], pair[1]).catch((e) => console.log("ceasefire:", e.message));
+  // Freeciv's own ceasefire, so its AI stops fighting too (it ends by itself in
+  // 16 turns). Its reload runs only behind a sitting court, where the realm is
+  // already held and the card covers the screen; otherwise it waits for one.
+  if (meta?.court?.sitting != null) ceasefire(pair[0], pair[1]).catch((e) => console.log("ceasefire:", e.message));
+  else (meta.pendingCease ??= []).push(pair);
   court.truces ??= {};
   court.truces[`h:${Math.min(...pair)}:${Math.max(...pair)}`] = (world?.turn ?? 0) + 16;  // the houses, whoever leads them
   const [a, b] = pair.map((pid) => court.lordOfHouse(pid));
