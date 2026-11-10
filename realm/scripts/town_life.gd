@@ -35,6 +35,7 @@ func _init() -> void:
 ## move held. Empty: off, and everyone behaves exactly as before. (Town ids.)
 const LIMBO_TOWNS: Array[int] = []
 var _town_on := false  # this town's scenes run the job machine
+var _town_id := -1  # the town being dressed: its people join its scope (awareness.gd)
 
 
 ## Towns switched on for a film: --limbo=246,250 on the command line.
@@ -49,6 +50,7 @@ static func _limbo_args() -> Array[int]:
 
 func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	_town_on = LIMBO_TOWNS.has(int(c.get("id", -1))) or _limbo_args().has(int(c.get("id", -1)))
+	_town_id = int(c.get("id", -1))
 	# Freeciv's own word that the town starved this season. An empty food store
 	# alone isn't hunger: a town that just grew, or holds steady, sits at zero.
 	var hungry: bool = c.get("famine", false)
@@ -249,7 +251,7 @@ func _townsperson(parent: Node3D, pos: Vector3, role: String, anim: String, seed
 func _mind(p: Node3D, post: String, center: Vector3) -> bool:
 	if not _town_on or p == null:
 		return false
-	return preload("res://scripts/npc_mind.gd").give(p, post, func(q: Vector3) -> float: return _y(center, q), int(p.get_instance_id()))
+	return preload("res://scripts/npc_mind.gd").give(p, post, func(q: Vector3) -> float: return _y(center, q), int(p.get_instance_id()), [], _town_id)
 
 
 ## A brawling pair on the switch: both scuffle for the same count of blows
@@ -260,8 +262,8 @@ func _mind_pair(a: Node3D, b: Node3D, center: Vector3) -> bool:
 	var Mind := preload("res://scripts/npc_mind.gd")
 	var blows := randi_range(4, 5)
 	var ground := func(q: Vector3) -> float: return _y(center, q)
-	Mind.give(a, "riot", ground, int(a.get_instance_id()), [Mind.run(["Fist_Fight_A"], blows, blows)])
-	Mind.give(b, "riot", ground, int(b.get_instance_id()), [Mind.run(["Fist_Fight_B"], blows, blows)])
+	Mind.give(a, "riot", ground, int(a.get_instance_id()), [Mind.run(["Fist_Fight_A"], blows, blows)], _town_id)
+	Mind.give(b, "riot", ground, int(b.get_instance_id()), [Mind.run(["Fist_Fight_B"], blows, blows)], _town_id)
 	return true
 
 

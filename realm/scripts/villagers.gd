@@ -1330,6 +1330,9 @@ func struck(town: int, i: int, by: Vector3, who_struck: String) -> void:
 			_flee(b, by)
 			saw.append("folk:%d:%d" % [town, int(b["i"])])
 	_bridge("POST", "/minds/witness", {"city": town, "kind": "struck", "text": "%s struck one of us down in the street, unprovoked." % who_struck, "who": saw, "at": hour}, Callable())
+	# On the bus too: minds near it (in towns on the switch) see it and react.
+	if Engine.has_meta("awareness"):
+		Engine.get_meta("awareness").emit("struck", a["node"].global_position)
 
 
 ## Away from `from`, at a run, home: what anyone does when steel is drawn on them.

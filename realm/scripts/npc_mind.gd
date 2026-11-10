@@ -28,7 +28,7 @@ class PlayRun extends BTAction:
 	var _left := 0.0
 
 	func _enter() -> void:
-		var last: String = blackboard.get_var(&"last_clip", "")
+		var last: String = blackboard.get_var(&"last_clip", "", false)
 		var choices := pool.filter(func(c): return c != last and _has(c))
 		if choices.is_empty():
 			choices = pool.filter(func(c): return _has(c))
@@ -42,7 +42,9 @@ class PlayRun extends BTAction:
 			People.repeat(agent, clip)
 		else:
 			People.play(agent, clip)
-		_left = _length(clip) * n
+		# A run is a few goes of a short move, never one long loop held: capped at
+		# about 8 s, so a long clip (a dance) plays once or twice, then something else.
+		_left = minf(_length(clip) * n, maxf(_length(clip), 8.0) if _length(clip) <= 8.0 else 8.0)
 
 	func _tick(delta: float) -> Status:
 		_left -= delta
@@ -63,7 +65,7 @@ class Breaker extends BTAction:
 	var _left := 0.0
 
 	func _enter() -> void:
-		var last: String = blackboard.get_var(&"last_breaker", "")
+		var last: String = blackboard.get_var(&"last_breaker", "", false)
 		var ap: AnimationPlayer = agent.get_node_or_null("Anim")
 		var choices := pool.filter(func(c): return c != last and ap != null and ap.has_animation(c))
 		if choices.is_empty():
@@ -87,16 +89,16 @@ class Step extends BTAction:
 	var _left := 0.0
 
 	func _enter() -> void:
-		var post: Vector3 = blackboard.get_var(&"post", agent.position)
+		var post: Vector3 = blackboard.get_var(&"post", agent.position, false)
 		if back > 0.0:
 			var fwd := Vector3(sin(agent.rotation.y), 0, cos(agent.rotation.y))
 			_to = agent.position - fwd * back
-		elif blackboard.get_var(&"at_post", true):
+		elif blackboard.get_var(&"at_post", true, false):
 			_to = post + Vector3(randf_range(-reach, reach), 0.0, randf_range(-reach, reach))
 		else:
 			_to = post
 		blackboard.set_var(&"at_post", _to.distance_to(post) < 0.05)
-		var ground: Callable = blackboard.get_var(&"ground", Callable())
+		var ground: Callable = blackboard.get_var(&"ground", Callable(), false)
 		if ground.is_valid():
 			_to.y = ground.call(_to)
 		var flat := Vector2(_to.x - agent.position.x, _to.z - agent.position.z)
@@ -110,7 +112,7 @@ class Step extends BTAction:
 		_left -= delta
 		if _left > 0.0:
 			return RUNNING
-		var face: float = blackboard.get_var(&"face", agent.rotation.y)
+		var face: float = blackboard.get_var(&"face", agent.rotation.y, false)
 		agent.rotation.y = face  # back to facing the work
 		return SUCCESS
 
@@ -121,7 +123,7 @@ class Begin extends BTAction:
 	@export var name_ := ""
 
 	func _tick(_delta: float) -> Status:
-		if blackboard.get_var(&"last_activity", "") == name_ and blackboard.get_var(&"choices", 2) > 1:
+		if blackboard.get_var(&"last_activity", "", false) == name_ and blackboard.get_var(&"choices", 2, false) > 1:
 			return FAILURE
 		blackboard.set_var(&"last_activity", name_)
 		return SUCCESS
@@ -189,6 +191,7 @@ static func post_activities(post: String) -> Array:
 		"bows":
 			return [
 				seq("loose", [once("Bow_Draw"), once("Bow_Aim"), once("Bow_Shoot"), once("Bow_Draw"), once("Bow_Aim"), once("Bow_Shoot"), brk(["Bow_Idle", "Weight_Shift"])]),
+				seq("fetch", [step(0.5), once("PickUp_Table"), step(0.0), brk(["Bow_Idle", "Looking_Around"])]),  # out to the butts for the arrows, and back
 			]
 		"guard":  # the watch at a door the crowd presses on
 			return [
@@ -234,7 +237,7 @@ static func post_activities(post: String) -> Array:
 ## the post's activities at random (never the same twice running), with Danger
 ## first: struck or threatened, they react and get clear, then go back to work.
 ## `ground(p)` gives the ground height at a point. Returns false for an unknown post.
-static func give(person: Node3D, post: String, ground: Callable, seed: int, opening: Array = []) -> bool:
+static func give(person: Node3D, post: String, ground: Callable, seed: int, opening: Array = [], town := -1) -> bool:
 	var acts := post_activities(post)
 	if acts.is_empty():
 		return false
@@ -258,11 +261,9 @@ static func give(person: Node3D, post: String, ground: Callable, seed: int, open
 	calm.value = no
 	danger.add_child(calm)
 	life.add_child(danger)
-	# Posted: the post's activities, one at a time, at random.
-	var work := BTRandomSelector.new()
-	for a in acts:
-		work.add_child(a)
-	life.add_child(work)
+	life.add_child(react())
+	# Posted: the post's activities, one at a time, weighed by the town's state.
+	life.add_child(weighed(acts))
 	var root := BTSequence.new()
 	for t in opening:  # once, at once, before the post's own life (a riot pair's scuffle, in step)
 		root.add_child(t)
@@ -278,14 +279,160 @@ static func give(person: Node3D, post: String, ground: Callable, seed: int, open
 	bt.root_task = root
 	var player := BTPlayer.new()
 	player.name = "Mind"
+	player.set_scene_root_hint(person)  # made at runtime, with no owner: LimboAI needs to be told its scene
 	player.behavior_tree = bt
 	player.blackboard.set_var(&"post", person.position)
 	player.blackboard.set_var(&"face", person.rotation.y)
 	player.blackboard.set_var(&"ground", ground)
 	player.blackboard.set_var(&"danger", false)
+	for v in [&"last_activity", &"last_clip", &"last_breaker"]:
+		player.blackboard.set_var(v, "")
+	player.blackboard.set_var(&"alert", false)
+	player.blackboard.set_var(&"at_post", true)
 	player.blackboard.set_var(&"choices", acts.size())
 	person.add_child(player)
+	_attach(player, town)
 	return true
+
+
+## Joins the town's scope (awareness.gd), when the realm has one.
+static func _attach(player: BTPlayer, town: int) -> void:
+	if town >= 0 and Engine.has_meta("awareness"):
+		Engine.get_meta("awareness").attach(player, town)
+
+
+# --- awareness: news, and the town's state (awareness.gd) ---------------------
+
+## News just seen (awareness.perceive set `seen` and `alert`): turn to it, then
+## react as the news is to them. Steel close by → Danger takes over (they run);
+## further off they watch, point and keep clear. A feast draws cheers, grief
+## tears, the King's banner what his name has earned. Then alert is cleared.
+class React extends BTAction:
+	var _left := 0.0
+
+	func _enter() -> void:
+		_left = 0.0
+		var seen: Dictionary = blackboard.get_var(&"seen", {}, false)
+		var kind := String(seen.get("kind", ""))
+		var at: Vector3 = seen.get("at", agent.position)
+		var flat := Vector2(at.x - agent.position.x, at.z - agent.position.z)
+		if flat.length() > 0.01:
+			agent.rotation.y = atan2(flat.x, flat.y)
+		if blackboard.has_var(&"va"):
+			var a: Dictionary = blackboard.get_var(&"va")
+			a["route"] = PackedVector2Array()  # they stop where they are
+		if kind in ["sack", "razed", "battle", "raid", "struck"] and float(seen.get("near", 1.0)) < 0.5:
+			blackboard.set_var(&"danger", true)
+			return
+		var pool := reaction(kind, String(blackboard.get_var(&"king_name", "", false)))
+		var ap: AnimationPlayer = agent.get_node_or_null("Anim")
+		pool = pool.filter(func(c): return ap != null and ap.has_animation(c))
+		if pool.is_empty():
+			return
+		var clip: String = pool[randi() % pool.size()]
+		var Mo := preload("res://scripts/motion.gd")
+		if Mo.is_once(clip):
+			People.repeat(agent, clip)
+		else:
+			People.play(agent, clip)
+		_left = clampf(ap.get_animation(clip).length * randi_range(2, 3), 2.0, 7.0)
+
+	func _tick(delta: float) -> Status:
+		_left -= delta
+		if _left > 0.0:
+			return RUNNING
+		blackboard.set_var(&"alert", false)
+		return SUCCESS
+
+	## The moves a piece of news calls for. The King's name decides how his
+	## banner is met: cheered, bowed to in fear, or barely looked at.
+	static func reaction(kind: String, king: String) -> Array:
+		if kind in ["sack", "razed", "battle", "raid", "struck"]:
+			return ["Terrified", "Looking_Around", "Pointing_Forward"]
+		if kind in ["vigil", "death", "famine"]:
+			return ["Crying", "Kneeling", "Praying", "Defeated"]
+		if kind in ["feast"]:
+			return ["Cheering", "Clapping", "Laughing"]
+		if kind == "king":
+			var k := king.to_lower()
+			if k.contains("good") or k.contains("merciful") or k.contains("just") or k.contains("generous") or k.contains("golden"):
+				return ["Cheering", "Waving", "Clapping"]
+			if k.contains("cruel") or k.contains("conqueror") or k.contains("tyrant") or k.contains("terrible") or k.contains("bloody"):
+				return ["Bow", "Terrified", "Defeated"]
+			if k.contains("idle") or k.contains("absent") or k.contains("weak"):
+				return ["Looking_Around", "Bored"]
+			return ["Waving", "Bow", "Looking_Around"]
+		return ["Looking_Around", "Pointing_Forward", "Nodding"]
+
+
+static func react() -> BTTask:
+	return plain([flag(&"alert"), React.new()])
+
+
+## Sets the next activity's odds from the town's state, read up the scopes
+## (awareness.gd): the selector after it picks by these weights. The state
+## shifts what people already do; it never adds a second system.
+class Weigh extends BTAction:
+	func _tick(_delta: float) -> Status:
+		var sel := get_parent().get_child(get_index() + 1) as BTProbabilitySelector
+		if sel == null:
+			return SUCCESS
+		for i in sel.get_child_count():
+			var act := sel.get_child(i)
+			var begin = act.get_child(0) if act.get_child_count() > 0 else null
+			var name_: String = begin.name_ if begin != null and "name_" in begin else ""
+			sel.set_weight(i, weight(name_, blackboard))
+		return SUCCESS
+
+	## How likely an activity is now, from the town's and the realm's state.
+	static func weight(act: String, bb: Blackboard) -> float:
+		var w := 1.0
+		var war: bool = bb.get_var(&"at_war", false, false)
+		var mood := String(bb.get_var(&"mood", "", false))
+		var grief: bool = bb.get_var(&"grief", false, false)
+		var rich: bool = bb.get_var(&"prosperity", false, false)
+		var sour: bool = bb.get_var(&"grasping", false, false) or float(bb.get_var(&"favour", 100.0, false)) < 35.0
+		var winter := String(bb.get_var(&"season", "", false)) == "winter"
+		var merry := act in ["dance", "song", "toast", "clap", "lute"]
+		var play := act in ["play", "tag", "hide", "sit"]
+		# States that have activities of their own, unlikely otherwise.
+		if act == "road":
+			return 4.0 if war else 0.0
+		if act == "mutter":
+			return 3.0 if sour else 0.0
+		if war:
+			w *= {"hold": 3.0, "watch": 3.0, "warn": 2.0, "browse": 0.5, "haggle": 0.5, "gossip": 1.5, "chat": 1.5}.get(act, 1.0)
+			if play:
+				w *= 0.2
+		if mood == "hunger" and merry:
+			w *= 0.1
+		if grief:
+			w *= 0.05 if merry or play else ({"pray": 3.0, "vigil": 3.0, "weep": 3.0, "prayers": 3.0}.get(act, 1.0))
+		if rich:
+			w *= {"browse": 2.0, "haggle": 2.0, "carry": 2.0, "lute": 3.0, "song": 2.0, "promenade": 2.0, "sell": 2.0}.get(act, 1.0)
+		if sour and act in ["greet", "preach", "song"]:
+			w *= 0.3  # a cold shoulder for the crown's own
+		if winter and act in ["lounge", "nap", "sit", "tag", "hide", "dig", "weed", "tend"]:
+			w *= 0.3
+		return w
+
+
+## Activities a state brings out, offered to every calling (weight 0 unless
+## the state holds): watching the road in wartime, muttering knots when the
+## crown grasps or is hated.
+static func state_activities() -> Array:
+	return [
+		seq("road", [go("home"), once("Looking_Around"), run(["Pointing_Forward", "Looking_Around", "Thinking"], 1, 2), brk(["Weight_Shift"])]),
+		seq("mutter", [go("well"), run(["Whispering", "Arguing", "Telling_Secret"], 2, 3), once("Shove_Reaction"), brk(LOOK)]),
+	]
+
+
+## The pick among a list of activities: Weigh, then a weighted pick.
+static func weighed(acts: Array) -> BTTask:
+	var sel := BTProbabilitySelector.new()
+	for a in acts:
+		sel.add_child(a)
+	return plain([Weigh.new(), sel])
 
 
 # --- villagers: farmers and market folk (slice 1) ------------------------------
@@ -459,6 +606,8 @@ class MoodIs extends BTCondition:
 	@export var mood := ""
 
 	func _tick(_delta: float) -> Status:
+		if blackboard.get_parent() != null:  # the town's scope (awareness.gd): the one mirror
+			return SUCCESS if String(blackboard.get_var(&"mood", "", false)) == mood else FAILURE
 		var a: Dictionary = blackboard.get_var(&"va")
 		var v: Node = blackboard.get_var(&"vill")
 		return SUCCESS if v._town_mood(a) == mood else FAILURE
@@ -469,6 +618,20 @@ static func plain(steps: Array) -> BTTask:
 	for t in steps:
 		s.add_child(t)
 	return s
+
+
+## Succeeds in `season` (the realm scope's season).
+class SeasonIs extends BTCondition:
+	@export var season := ""
+
+	func _tick(_delta: float) -> Status:
+		return SUCCESS if String(blackboard.get_var(&"season", "", false)) == season else FAILURE
+
+
+static func season_is(season: String) -> BTTask:
+	var t := SeasonIs.new()
+	t.season = season
+	return t
 
 
 static func mood_is(mood: String) -> BTTask:
@@ -516,6 +679,7 @@ static func give_villager(person: Node3D, a: Dictionary, vill: Node) -> bool:
 		return false
 	var life := BTDynamicSelector.new()
 	life.add_child(villager_danger())
+	life.add_child(react())
 	for m in villager_moods():
 		life.add_child(m)
 	var night := BTSequence.new()
@@ -533,10 +697,10 @@ static func give_villager(person: Node3D, a: Dictionary, vill: Node) -> bool:
 	night.add_child(go("home"))
 	night.add_child(brk(["Idle", "Breathing_Idle"]))
 	life.add_child(night)
-	var work := BTRandomSelector.new()
-	for x in acts:
-		work.add_child(x)
-	life.add_child(work)
+	if not role in ["tavern", "keeper"]:
+		# Winter evenings are spent indoors: home early, the square left to the few.
+		life.add_child(plain([season_is("winter"), block_is(["evening"]), go("home"), brk(["Idle", "Breathing_Idle"])]))
+	life.add_child(weighed(acts + state_activities()))
 	var root := BTSequence.new()
 	var first := BTRandomWait.new()
 	first.min_duration = 0.5
@@ -550,6 +714,7 @@ static func give_villager(person: Node3D, a: Dictionary, vill: Node) -> bool:
 	bt.root_task = root
 	var player := BTPlayer.new()
 	player.name = "Mind"
+	player.set_scene_root_hint(person)  # made at runtime, with no owner: LimboAI needs to be told its scene
 	player.behavior_tree = bt
 	# One in three is quick to anger or slow to cope: they shout in a riot and slump in a famine.
 	player.blackboard.set_var(&"moody", role != "child" and rng.randf() < 0.35)
@@ -558,8 +723,13 @@ static func give_villager(person: Node3D, a: Dictionary, vill: Node) -> bool:
 	player.blackboard.set_var(&"vill", vill)
 	player.blackboard.set_var(&"post", person.position)
 	player.blackboard.set_var(&"face", person.rotation.y)
+	for v in [&"last_activity", &"last_clip", &"last_breaker"]:
+		player.blackboard.set_var(v, "")
+	player.blackboard.set_var(&"alert", false)
+	player.blackboard.set_var(&"at_post", true)
 	player.blackboard.set_var(&"choices", acts.size())
 	player.blackboard.set_var(&"danger", false)
 	person.add_child(player)
 	a["mind"] = player
+	_attach(player, int(a.get("town", -1)))
 	return true

@@ -7,6 +7,7 @@ extends Node3D
 
 const DAY_SECONDS := 240.0
 
+var awareness: Node  # awareness.gd: the realm and town scopes, and the news bus
 var bridge: Node
 var terrain: Node3D
 var towns: Node3D
@@ -310,6 +311,14 @@ func _ready() -> void:
 	# The realm's sound: ambience from the camera, stingers from the chronicle.
 	sound = preload("res://scripts/soundscape.gd").new()
 	add_child(sound)
+	# What the townsfolk know (awareness.gd): the realm and town scopes their
+	# minds read, and the one bus that carries news to them.
+	awareness = preload("res://scripts/awareness.gd").new()
+	awareness.name = "Awareness"
+	awareness.terrain = terrain
+	awareness.towns = towns
+	awareness.villagers = villagers
+	add_child(awareness)
 	# The townsfolk's talk with each other, overheard up close (chatter.gd).
 	var chatter := preload("res://scripts/chatter.gd").new()
 	chatter.name = "Chatter"
@@ -1146,6 +1155,8 @@ func _on_world(world: Dictionary) -> void:
 		_tell_the_story.call_deferred()
 	if terrain.width == 0:
 		return
+	if awareness:
+		awareness.sync(world)  # the view's one mirror of the realm, before anyone reads it
 	director.world = world
 	director.set_process(not _shot.has("path") or _shot.get("director", false))
 	if _shot.get("director", false) and not director.active:
