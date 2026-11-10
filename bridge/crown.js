@@ -7,24 +7,10 @@ import { greatHouses } from "./realm.js";
 import { BANDS } from "./favour.js";
 import * as Lua from "./lua.js";
 
-export const DECREES = {
-  relief: { cost: 120, label: "Send grain to a starving town" },
-  gift: { cost: 150, label: "Gift gold to a house" },
-  levy: { cost: 200, label: "Raise a royal levy" },
-  build: { cost: 180, label: "Raise a building" },
-  grant: { cost: 0, label: "Grant this castle to another house" },
-  feast: { cost: 100, label: "Hold a feast in the lord's honour" },
-  banners: { cost: 50, label: "Call the banners" },
-  marriage: { cost: 400, label: "Arrange a marriage between two houses" },
-  peace: { cost: 150, label: "Command peace between two warring houses" },
-  buyoff: { cost: 300, label: "Buy off the pretender" },
-  ward: { cost: 20, label: "Take a house's heir as a royal ward" },
-  sellswords: { cost: 300, label: "Hire sellswords" },
-  back: { cost: 150, label: "Back one side of a war" },
-  settle: { cost: 100, label: "Tell another house to settle a war" },
-  alliance: { cost: 200, label: "Swear an alliance with a house" },
-  march: { cost: 250, label: "March the royal host on a house's town" },
-};
+// The decrees, their prices and words: data/decrees.json (one place for both the
+// bridge and the town card).
+import fs from "node:fs";
+export const DECREES = Object.fromEntries(Object.entries(JSON.parse(fs.readFileSync(new URL("./data/decrees.json", import.meta.url), "utf8"))).filter(([k]) => k !== "_"));
 
 // When the banners were last called: the houses won't answer twice in a year.
 let bannersCalled = -99;

@@ -2964,13 +2964,18 @@ func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 	var lord := String(house.get("name", "")).replace("House ", "")
 	var mine: bool = house.get("crown", false)
 	var seat: bool = mine and c.get("capital", false)
+	# What each decree does, in a few words: the bridge's decrees.json (via /world), never written here.
+	var says := func(a: String, at_court: bool) -> String:
+		var d: Dictionary = _decrees.get(a, {})
+		var w := String(d.get("courtEffect" if at_court else "effect", ""))
+		return ("  ·  " + w) if w != "" else ""
 	var names := {
 		"relief": "" if seat else (("Grain from the royal stores  " if mine else "Send grain to %s  " % town) + _price("relief", 12000)),
 		"gift": "" if mine else "Gift crowns to %s  %s" % [lord, _price("gift", 15000)],
 		# On the King's own seat these are the realm's decrees: each says what it does.
-		"feast": ("Hold a feast at court  " + _price("feast", 10000) + "  ·  every house +5") if seat else ("" if mine else "Feast in %s's honour  %s  ·  +15" % [lord, _price("feast", 10000)]),
-		"levy": ("Raise the royal levy  " + _price("levy", 20000) + "  ·  600 men of your own") if seat else "",
-		"banners": ("Call the banners  " + _price("banners", 5000) + "  ·  loyal houses send men") if seat else "",
+		"feast": ("Hold a feast at court  " + _price("feast", 10000) + says.call("feast", true)) if seat else ("" if mine else "Feast in %s's honour  %s%s" % [lord, _price("feast", 10000), says.call("feast", false)]),
+		"levy": ("Raise the royal levy  " + _price("levy", 20000) + says.call("levy", true)) if seat else "",
+		"banners": ("Call the banners  " + _price("banners", 5000) + says.call("banners", true)) if seat else "",
 		# Politics with teeth: an oath that binds a house to the crown's wars, and the royal host.
 		"alliance": "" if mine or _town_player.get("sworn") != null else "Swear an alliance with %s  %s" % [lord, _price("alliance", 20000)],
 		"march": "" if mine or (_town_player.get("besieged", []) as Array).has(int(c["id"])) else ("March on %s  %s  ·  %s" % [town, _price("march", 25000), _forecast(float(c["odds"]))] if c.get("odds") != null else "March on %s  %s" % [town, _price("march", 25000)]),
