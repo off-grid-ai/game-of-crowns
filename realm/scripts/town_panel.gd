@@ -203,6 +203,7 @@ func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 	_grant_menu.text = "Grant this town to…" if mine else "Take it and grant it to…"
 
 
+const PINNED_WIDTH := 400.0  # the town card standing by its town: narrow, its orders wrapping
 var _town_player := {}  # the house holding the town on the card, as the realm reports it
 var _town_id := -1  # the town on the card; -1 once it is put away
 
@@ -231,6 +232,13 @@ func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 			ui._held_court = true
 	ui._ticker.visible = false
 	_town_title.text = "%s  ·  %s" % [c.get("title", c["name"]), house.get("name", "")]
+	# The town's orders stand by the town itself, following it as the camera moves
+	# (Civilization's unit actions), not in a strip at the bottom of the screen.
+	var at: Vector3 = ui.town_point.call(c)
+	if at != Vector3.INF:
+		_town_panel.custom_minimum_size = Vector2(PINNED_WIDTH, 0)
+		_town_panel.size = Vector2(PINNED_WIDTH, 0)
+		ui.anchor.pin(_town_panel, at)
 	_name_decrees(c, house)
 	ui.set_sigil(_town_sigil, house)
 	# A town held by a bannerman flies his family's arms.

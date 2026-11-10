@@ -36,6 +36,7 @@ signal interlude_closed  # the King has read the act just gone: the realm goes o
 signal last_event  # Space: go to the latest news, or back again
 signal event_back  # Home: back to where the King was
 signal house_followed(player_id: int)  # a sigil on the ladder clicked: the camera goes with that house's host
+signal matter_opened(at: Vector3)  # a matter's marker clicked: the King looks at its place (his own click)
 signal counsel_answered(key: String)  # the King answered the Hand's matter  # a story's name clicked in the chronicle
 
 const Features := preload("res://scripts/features.gd")
@@ -71,6 +72,11 @@ var _ticker: VBoxContainer:  # the latest events along the bottom; the cards hid
 	get:
 		return chronicle._ticker
 
+var anchor: Node  # world_anchor.gd: pins a card or marker to its place in the world
+## Where a town, or a matter at court, stands in the world (main.gd sets these;
+## Vector3.INF when it has no place): the cards and markers stand by it.
+var town_point := func(_c: Dictionary) -> Vector3: return Vector3.INF
+var place_of := func(_item: Dictionary) -> Vector3: return Vector3.INF
 var town_card := TownPanel.new(self)  # the town card (town_panel.gd): its state lives there
 # The town card's state, read and set here by the cards it shares the screen with.
 var _town_panel: PanelContainer:
@@ -201,6 +207,10 @@ func _ready() -> void:
 	_build_houses()
 	_build_chronicle()
 	_build_ticker()
+	# Cards and markers that belong to a place stand by it on screen (world_anchor.gd).
+	anchor = preload("res://scripts/world_anchor.gd").new()
+	anchor.name = "WorldAnchor"
+	add_child(anchor)
 	_build_town_panel()
 	_build_court()
 	_build_minimap()

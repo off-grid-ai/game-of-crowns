@@ -15,6 +15,8 @@ var _court_waiting := false  # the court panel, set aside for a commoner's card
 var _court_hidden := true
 var _court_met := false  # the court has opened once this sitting
 var _held_court := false  # a new petitioner arrived while he was busy
+var _markers := {}  # matter id -> its marker on the map, at its place
+var _opened_at := Vector3.INF  # the place of the matter the King opened from its marker: the card stands by it
 var _FAVOUR_RE := RegEx.create_from_string("((?:House|The) [A-Z][a-z]+)\\s*([+−-]\\d+)")  # "House Thornvale +15" in an answer's hint
 
 
@@ -32,6 +34,20 @@ func _toggle_court() -> void:
 	else:
 		_court_hidden = false
 		_show_audience()
+
+
+## The court card back where it always stands, top centre, not by a place.
+func _unpin_court() -> void:
+	if not ui.anchor.pinned(_court_panel):
+		return
+	ui.anchor.unpin(_court_panel)
+	_court_panel.anchor_left = 0.5
+	_court_panel.anchor_right = 0.5
+	_court_panel.anchor_top = 0.0
+	_court_panel.anchor_bottom = 0.0
+	_court_panel.offset_left = -330
+	_court_panel.offset_right = 330
+	_court_panel.offset_top = 70
 
 
 func _build_court() -> void:
@@ -71,6 +87,7 @@ func set_court(petitions: Array) -> void:
 	_court_sig = sig
 	var had := _petitions.size()
 	_petitions = petitions
+	_mark(petitions)
 	ui._court_badge.text = str(petitions.size())
 	ui._court_waiting_shown(petitions.size())
 	var fresh := false
@@ -99,6 +116,50 @@ func set_court(petitions: Array) -> void:
 	_show_audience()
 
 
+## A marker on the map at each matter's place (the town it's about, or the
+## petitioner's seat): the King sees where his realm wants him, and opens a
+## matter there. Gone when the matter is answered or the court closes.
+func _mark(petitions: Array) -> void:
+	var now := {}
+	for p in petitions:
+		now[String(p["id"])] = p
+	for id in _markers.keys():
+		if not now.has(id):
+			ui.anchor.unpin(_markers[id])
+			_markers[id].queue_free()
+			_markers.erase(id)
+	for id in now:
+		if _markers.has(id):
+			continue
+		var p: Dictionary = now[id]
+		var at: Vector3 = ui.place_of.call(p)
+		if at == Vector3.INF:
+			continue
+		var m := ui.btn("!", func(): open_matter(String(id)))
+		m.custom_minimum_size = Vector2(30, 30)
+		m.add_theme_color_override("font_color", T.DANGER if p.get("crisis", false) else T.ACCENT)
+		m.tooltip_text = "%s%s" % [String(p.get("name", "The Hand of the King")), (" of " + String(p["house"])) if String(p.get("house", "")) != "" else ""]
+		ui.root.add_child(m)
+		ui.anchor.pin(m, at + Vector3(0, 0.6, 0), false)
+		_markers[id] = m
+
+
+## A matter opened from its marker: the King looks at its place (his own click,
+## so the camera may go), and its card stands there, by the place.
+func open_matter(id: String) -> void:
+	var i := _petitions.find_custom(func(p): return String(p["id"]) == id)
+	if i < 0:
+		return
+	var p: Dictionary = _petitions[i]
+	_petitions.remove_at(i)
+	_petitions.push_front(p)
+	_opened_at = ui.place_of.call(p)
+	if _opened_at != Vector3.INF:
+		ui.matter_opened.emit(_opened_at)
+	_court_hidden = false
+	_show_audience()
+
+
 func _show_audience() -> void:
 	for c in _court_panel.get_children():
 		_court_panel.remove_child(c)  # gone at once: the new "Scroll" keeps its name, so the card is measured by it, not left an empty bar
@@ -120,6 +181,14 @@ func _show_audience() -> void:
 	_court_panel.visible = true
 	ui._put_town_away()  # for good: the realm's next update must not bring it back over the court
 	var p: Dictionary = _petitions[0]
+	# Opened from its marker: the card stands by the matter's place. Come up by
+	# itself (a sitting, a crisis), it stands where the court always does.
+	var here: Vector3 = ui.place_of.call(p)
+	if _opened_at != Vector3.INF and here == _opened_at:
+		ui.anchor.pin(_court_panel, here)
+	else:
+		_opened_at = Vector3.INF
+		_unpin_court()
 	# Scrolls when the audience is taller than the screen, so the answers stay reachable.
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
