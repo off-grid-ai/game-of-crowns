@@ -92,4 +92,28 @@ export const ANSWERS = {
     if (option === "purse") { out.favour[c.playerId] = -4; gold(c.playerId, -60); const crown = world.players.find((x) => houseFor(x).crown); if (crown) gold(crown.id, 60); out.text = `${c.house} sends 60 gold to Kingsmere. ${c.name} had hoped for thanks, not a bill.`; }
     this.save(c);
   },
+  match({ p, c, opt, option, out, gold, world }) {
+    const bride = this.people[p.bride];
+    const groom = this.people[p.groom];
+    const father = this.people[bride.parents[0]];
+    const groomLord = this.lordOfHouse(this.people[groom.parents?.[0]]?.playerId ?? -1);
+    if (option === "bless") {
+      bride.spouse = groom.id; groom.spouse = bride.id; bride.house = groom.house;
+      father.loyalty = Math.max(0, father.loyalty - 20);
+      if (groomLord) { out.favour[groomLord.playerId] = 10; this.shift(father.id, groomLord.id, 30); }
+      out.favour[c.playerId] = -10;
+      out.text = `${bride.name} weds ${groom.name} with the King's blessing. ${c.name} smiles thinly.`;
+    } else if (option === "forbid") {
+      out.favour[c.playerId] = 10;
+      if (groomLord) out.favour[groomLord.playerId] = -10;
+      this.remember(father.id, "The King forbade my daughter's match.");
+      out.text = `The King forbids the match. ${father.name} bows, and does not forget.`;
+    } else {
+      bride.rank = "ward";
+      this.remember(father.id, "The King took my daughter as a royal ward. My house owes the crown.");
+      father.loyalty = Math.min(100, father.loyalty + 10);
+      out.text = `${bride.name} goes to Kingsmere as a royal ward.`;
+    }
+    this.save(bride); this.save(groom); this.save(father);
+  },
 };

@@ -1108,29 +1108,6 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       this.onArcRuling?.(p.arc, p.beat, option);
     } else if (p.deck) {
       this.play(p, option, world, out, gold);
-    } else if (p.kind === "match") {
-      const bride = this.people[p.bride];
-      const groom = this.people[p.groom];
-      const father = this.people[bride.parents[0]];
-      const groomLord = this.lordOfHouse(this.people[groom.parents?.[0]]?.playerId ?? -1);
-      if (option === "bless") {
-        bride.spouse = groom.id; groom.spouse = bride.id; bride.house = groom.house;
-        father.loyalty = Math.max(0, father.loyalty - 20);
-        if (groomLord) { out.favour[groomLord.playerId] = 10; this.shift(father.id, groomLord.id, 30); }
-        out.favour[c.playerId] = -10;
-        out.text = `${bride.name} weds ${groom.name} with the King's blessing. ${c.name} smiles thinly.`;
-      } else if (option === "forbid") {
-        out.favour[c.playerId] = 10;
-        if (groomLord) out.favour[groomLord.playerId] = -10;
-        this.remember(father.id, "The King forbade my daughter's match.");
-        out.text = `The King forbids the match. ${father.name} bows, and does not forget.`;
-      } else {
-        bride.rank = "ward";
-        this.remember(father.id, "The King took my daughter as a royal ward. My house owes the crown.");
-        father.loyalty = Math.min(100, father.loyalty + 10);
-        out.text = `${bride.name} goes to Kingsmere as a royal ward.`;
-      }
-      this.save(bride); this.save(groom); this.save(father);
     } else if (p.kind === "debt") {
       if (option === "forgive") { gold(c.playerId, 100); out.favour[c.playerId] = 15; for (const o of world.players) if (o.id !== c.playerId && !houseFor(o).crown && !houseFor(o).wild) out.favour[o.id] = -3; out.text = `The crown returns ${c.house}'s tithe. The other houses grumble that they were not asked.`; }
       if (option === "lend") { gold(c.playerId, 250); out.favour[c.playerId] = 5; (this.debts ??= []).push({ pid: c.playerId, amount: 325, due: (world.turn ?? 0) + 8 }); out.text = `The crown lends ${c.house} 250 gold. The debt is written in the King's ledger: 325, due in two years.`; }
