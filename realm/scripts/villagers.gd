@@ -451,11 +451,16 @@ func _set_down(a: Dictionary) -> bool:
 	_choose_next(a)
 	var route := PackedVector2Array(a["route"])
 	if not route.is_empty():
+		# Part-way along a leg of the way, never on its corner: the walk map's
+		# corners are shared by many ways, and two set down on one corner stand
+		# inside each other for good (the avoidance can't part two on one point).
 		var k: int = a["rng"].randi() % (route.size() + 1)
 		if k > 0:
-			var p: Vector2 = route[k - 1]
-			n.position = Vector3(c.x + p.x, terrain.height_at(c.x + p.x, c.z + p.y), c.z + p.y)
-			a["route"] = route.slice(k)
+			var from: Vector2 = Vector2(n.position.x - c.x, n.position.z - c.z) if k == 1 else route[k - 2]
+			var p: Vector2 = from.lerp(route[k - 1], a["rng"].randf_range(0.2, 0.8))
+			if not _body_at(a, p):
+				n.position = Vector3(c.x + p.x, terrain.height_at(c.x + p.x, c.z + p.y), c.z + p.y)
+				a["route"] = route.slice(k - 1)
 	_set_off(a)
 	return true
 
@@ -854,6 +859,8 @@ func _crowd_check() -> void:
 			if d < float(_crowd["worst"]):
 				_crowd["worst"] = d
 				_crowd["who"] = "%s + %s" % [_who(folk[i]), _who(folk[j])]
+				if d < 0.005:
+					_crowd["who"] += " [%s | %s]" % [folk[i].get_path(), folk[j].get_path()]  # on one spot: which nodes, in full
 			_crowd["min"] = minf(float(_crowd["min"]), d)
 			if d < PERSONAL:
 				var key := "%s + %s" % [_who(folk[i]), _who(folk[j])]
@@ -1939,6 +1946,15 @@ func _talk_audit() -> void:
 static func _able(moves: Array, rng: RandomNumberGenerator) -> String:
 	var ok := moves.filter(func(m): return Weapons.can_play(m))
 	return ok[rng.randi() % ok.size()] if not ok.is_empty() else "Idle"
+
+
+## True when another villager of the town stands on `p` (town-local) now.
+func _body_at(a: Dictionary, p: Vector2) -> bool:
+	var c: Vector3 = a["center"]
+	for b in crowds.get(a["town"], []):
+		if not is_same(b, a) and b["placed"] and Vector2(b["node"].position.x - c.x, b["node"].position.z - c.z).distance_to(p) < SHOULDER:
+			return true
+	return false
 
 
 ## True when another villager of the town stands at, or is bound for, `p`
