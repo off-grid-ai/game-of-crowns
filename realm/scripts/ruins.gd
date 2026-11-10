@@ -18,6 +18,36 @@ const RUIN_LOD_BIAS := 0.4
 var terrain: Node3D
 var _shown := {}  # mark key -> Node3D
 var _charred := {}  # stump name -> its charred template
+var _waiting := {}  # mark key -> [kind, x, y, burning, turn]: placed one a frame
+var _stumps_due: Array = []  # [parent, kind, at, yaw, size]: stood a few a frame
+const STUMPS_A_FRAME := 3
+
+
+func _process(_delta: float) -> void:
+	var n := 0
+	while not _stumps_due.is_empty() and n < STUMPS_A_FRAME:
+		var d: Array = _stumps_due.pop_front()
+		n += 1
+		if not is_instance_valid(d[0]):
+			continue
+		var s := _stump(d[1])
+		if s == null:
+			continue
+		var p: Vector3 = d[2]
+		terrain.clear_around(p, 0.55)  # the tree that stood here burned
+		s.position = Vector3(p.x, terrain.height_at(p.x, p.z) - 0.02, p.z)
+		s.rotation.y = d[3]
+		s.scale = Vector3.ONE * float(d[4])
+		(d[0] as Node3D).add_child(s)
+	if _waiting.is_empty():
+		return
+	var key: String = _waiting.keys()[0]
+	var w: Array = _waiting[key]
+	_waiting.erase(key)
+	var pt := Time.get_ticks_usec()
+	_shown[key] = _place(w[0], w[1], w[2], w[3])
+	_shown[key].set_meta("turn", w[4])
+	preload("res://scripts/perf_tools.gd").add("ruin_place", Time.get_ticks_usec() - pt)
 
 
 ## The marks as the world reports them: places what they leave, takes away
@@ -37,8 +67,15 @@ func show_marks(marks: Array, turn: int) -> void:
 			continue  # the burn has all but healed: the stumps are gone with it
 		want[key] = true
 		if not _shown.has(key):
-			_shown[key] = _place(kind, int(m["x"]), int(m["y"]), age < life * 0.85)
+			# Raised one a frame (_process), never all at once: a burnt ring is a few dozen
+			# stumps and a fell of the woods, too much for one frame.
+			if not _waiting.has(key):
+				_waiting[key] = [kind, int(m["x"]), int(m["y"]), age < life * 0.85, int(m.get("turn", turn))]
+			continue
 		_shown[key].set_meta("turn", int(m.get("turn", turn)))
+	for key in _waiting.keys():
+		if not want.has(key):
+			_waiting.erase(key)
 	for key in _shown.keys():
 		if not want.has(key):
 			if is_instance_valid(_shown[key]):
@@ -69,14 +106,8 @@ func _place(kind: String, tx: int, ty: int, burning: bool) -> Node3D:
 				var n := 3 if terrain.tile_at(tx + dx, ty + dy) == "Forest" else 1
 				for i in n:
 					var p := Vector3((tx + dx + rng.randf_range(0.1, 0.9)) * terrain.TILE, 0, (ty + dy + rng.randf_range(0.1, 0.9)) * terrain.TILE)
-					var s := _stump(STUMPS[rng.randi() % STUMPS.size()])
-					if s == null:
-						continue
-					terrain.clear_around(p, 0.55)  # the tree that stood here burned
-					s.position = Vector3(p.x, terrain.height_at(p.x, p.z) - 0.02, p.z)
-					s.rotation.y = rng.randf() * TAU
-					s.scale = Vector3.ONE * rng.randf_range(0.8, 1.3)
-					stumps.add_child(s)
+					# Each stump stands in its own turn (_process), a few a frame.
+					_stumps_due.append([stumps, STUMPS[rng.randi() % STUMPS.size()], p, rng.randf() * TAU, rng.randf_range(0.8, 1.3)])
 	if kind == "razed":
 		# Where the town stood: its broken walls and the rubble of its hall.
 		var kit := preload("res://scripts/realistic.gd")
