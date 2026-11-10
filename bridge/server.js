@@ -896,7 +896,8 @@ const heardKey = (o) => `${o.text.replace(/[\d.,]+/g, "#").replace(/:.*$/, "")}$
 // the head of the next sitting. No matter is put to him twice in a reign.
 let counselNow = [];  // the realm's matters, as the last reading of the world found them
 let sitting = false;  // a sitting holds the realm until the court closes
-const timeoutNow = () => (paused || sitting ? 0 : turnSeconds);
+let away = false;  // no window is watching: the realm waits for the King (every strategy game pauses when the player isn't there)
+const timeoutNow = () => (paused || sitting || away ? 0 : turnSeconds);
 const isCrisis = (o) => o.urgency >= 75 || /are at war$/.test(o.text);
 const courtYearOf = () => (meta.court ??= { sitting: null, hand: {}, heard: {}, lastCall: 0 });
 const heardCtx = () => ({ heard: (k) => courtYearOf().heard[k] != null, hear: (k) => { courtYearOf().heard[k] = world?.turn ?? 0; } });
@@ -947,7 +948,10 @@ async function courtSeason(turn) {
   const crises = counselNow.filter((o) => isCrisis(o) && o.acts?.length && c.heard[o.key] == null && !c.hand[o.key]);
   // A herald's terms under a siege can't wait for the next sitting: the court sits for them.
   const herald = court.petitions.some((p) => !p.answered && p.called == null && p.arc === "siege");
-  const due = c.lastSat == null || turn - c.lastSat >= every || herald;
+  // Back from away with a matter waiting: the court sits at once.
+  const back = c.sitOnReturn && court.petitions.some((p) => !p.answered && p.called == null);
+  c.sitOnReturn = false;
+  const due = c.lastSat == null || turn - c.lastSat >= every || herald || back;
   // Between sittings the Hand calls the King in only for a real crisis, at most once a year.
   const push = !due && crises.length > 0 && (c.lastPush == null || turn - c.lastPush >= HAND_YEAR);
   if (!due && !push) { chron.saveMeta(meta); return; }
@@ -1986,7 +1990,19 @@ function endReign(why, outcome = "completed") {
 
 // The reign's clock only runs while the realm does.
 setInterval(() => {
-  // The court holds the realm while the King watches; left alone, the realm lives on.
+  // No window watching for 15 s: the realm waits, clock and all, so nothing is
+  // decided behind the King's back; when he's back, a waiting matter is heard at once.
+  const gone = meta?.status === "running" && !isWatched();
+  if (gone !== away) {
+    away = gone;
+    send(`set timeout ${timeoutNow()}`);
+    if (!away && world && meta?.court) {
+      courtYearOf().sitOnReturn = true;
+      courtSeason(world.turn);
+    }
+  }
+  if (away) return;
+  // The court holds the realm while the King watches.
   if (meta?.court?.sitting != null || (meta?.status === "running" && meta?.interlude && !meta.interlude.seen)) hold(true);
   // An aim met is met at once, held clock or not: the King never reads "21 of 12".
   if (meta?.status === "running" && fc) ladder();

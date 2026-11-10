@@ -255,7 +255,7 @@ export function decree(cmd, world) {
       const home = (x, y) => `for p in players_iterate() do if p.id == ${x} then for u in p:units_iterate() do local r = u.utype:rule_name(); if r ~= "Workers" and r ~= "Settlers" then for q in players_iterate() do if q.id == ${y} then for c in q:cities_iterate() do if u.tile:sq_distance(c.tile) <= 9 then edit.unit_kill(u, "killed", nil); break end end end end end end end end`;
       const k = houseFor(keeper).name;
       return { cost, favour: { [keeper.id]: 6, [owner.id]: -3, [to.id]: -3 }, lua: [pay, home(owner.id, to.id), home(to.id, owner.id)], truce: [owner.id, to.id],
-        text: `At the King's word, ${k} rides between ${houseFor(owner).name} and ${houseFor(to).name}. Their hosts are turned home, and ${k} keeps the peace in the King's name.` };
+        text: `At the King's word, ${k} rides between ${houseFor(owner).name} and ${houseFor(to).name}. ${k}'s men turn back the hosts near their towns, but the two houses are still at war.` };
     }
     case "peace": {
       // The King commands two warring houses to lay down arms. Each obeys by its
@@ -273,7 +273,7 @@ export function decree(cmd, world) {
         return { cost, favour: Object.fromEntries(cold.map((p) => [p.id, -5])), lua: [pay], text: `The King commands peace between ${a} and ${b}. ${who} ${cold.length > 1 ? "refuse" : "refuses"} the King's peace, and the war goes on.` };
       }
       const home = (x, y) => `for p in players_iterate() do if p.id == ${x} then for u in p:units_iterate() do local r = u.utype:rule_name(); if r ~= "Workers" and r ~= "Settlers" then for q in players_iterate() do if q.id == ${y} then for c in q:cities_iterate() do if u.tile:sq_distance(c.tile) <= 9 then edit.unit_kill(u, "killed", nil); break end end end end end end end end`;
-      return { cost, favour: { [owner.id]: 2, [to.id]: 2 }, lua: [pay, home(owner.id, to.id), home(to.id, owner.id)], text: `The King commands peace between ${a} and ${b}. Both bow to the crown; their hosts break camp and turn for home.`, truce: [owner.id, to.id] };
+      return { cost, favour: { [owner.id]: 2, [to.id]: 2 }, lua: [pay, home(owner.id, to.id), home(to.id, owner.id)], text: `The King commands peace between ${a} and ${b}. Both bow to the crown and pull their hosts back from each other's towns, but they are still at war.`, truce: [owner.id, to.id] };
     }
     case "marriage": {
       // A royal match binds two great houses by blood: both thank the crown,
