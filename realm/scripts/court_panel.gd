@@ -556,8 +556,10 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 	_court_later(v, "It waits while you look at the realm; the realm holds still while the court sits.")
 
 
-## Who an answer helps and hurts, weighed by the bridge: each house's sigil and its
-## change, gold up and red down (Reigns' preview), under the answer.
+## Who an answer helps and hurts, weighed by the bridge: each house's sigil, a
+## direction (gold up, red down) and a size (one mark small, two large), under the
+## answer; its price in crowns exact, the purse being a fact the King knows.
+const BIG_MOVE := 10  # favour points: a move this size or more shows two marks
 func _weighs_chips(w: Dictionary) -> Control:
 	var moves := HBoxContainer.new()
 	moves.add_theme_constant_override("separation", 10)
@@ -573,7 +575,10 @@ func _weighs_chips(w: Dictionary) -> Control:
 			chip.add_theme_constant_override("separation", 3)
 			chip.add_child(ui.sigil_icon(house, 16))
 			var n := Label.new()
-			n.text = "%s %s%d" % [who.trim_prefix("House ").trim_prefix("The "), "+" if d > 0 else "−", absi(d)]
+			# A direction and a size, never the number (Reigns: which bars move, and
+			# roughly how much): the King weighs, he doesn't add up. The ledger keeps the sums.
+			var marks := ("▲" if d > 0 else "▼").repeat(2 if absi(d) >= BIG_MOVE else 1)
+			n.text = "%s %s" % [who.trim_prefix("House ").trim_prefix("The "), marks]
 			n.add_theme_color_override("font_color", T.ACCENT if d > 0 else T.DANGER)
 			n.add_theme_font_size_override("font_size", T.SIZE_DESC)
 			chip.add_child(n)
