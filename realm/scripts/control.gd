@@ -1,4 +1,5 @@
 extends Node3D
+const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
 ## Taking control of a character: you step into a lord, heir or knight and walk
 ## them through their own town, low behind their shoulder. WASD walks (Shift
 ## runs), right-drag or Q/R turns the view, the wheel brings it closer, E talks
@@ -232,6 +233,15 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	if not PerfTools.probing:
+		_process_timed(delta)
+		return
+	var t0 := Time.get_ticks_usec()
+	_process_timed(delta)
+	PerfTools.add("control", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _process_timed(delta: float) -> void:
 	if not active or not is_instance_valid(_body):
 		return
 	if _chat and _chat.visible:

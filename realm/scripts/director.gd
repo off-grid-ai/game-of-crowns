@@ -1,4 +1,5 @@
 extends Node
+const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
 ## The director: when the King clicks Watch on something happening in the realm
 ## (a siege, a battle, a town burning or starving, the King's grain on the
 ## road), it takes him there and lingers on it, then moves on. It never takes
@@ -57,6 +58,15 @@ func soon() -> void:
 
 
 func _process(delta: float) -> void:
+	if not PerfTools.probing:
+		_process_timed(delta)
+		return
+	var t0 := Time.get_ticks_usec()
+	_process_timed(delta)
+	PerfTools.add("director", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _process_timed(delta: float) -> void:
 	if world.is_empty() or rig == null:
 		return
 	# The camera is the King's. The director never takes it on its own: what's

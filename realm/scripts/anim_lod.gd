@@ -1,4 +1,5 @@
 extends Node
+const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
 ## Animation level of detail for every person in the realm (people.gd registers
 ## each one's player). Godot animates every skeleton every frame unless told
 ## otherwise, seen or not: here a person near the camera moves every frame, one
@@ -25,6 +26,15 @@ var _owed := {}  # player instance id -> time it hasn't been given yet
 
 
 func _process(delta: float) -> void:
+	if not PerfTools.probing:
+		_process_timed(delta)
+		return
+	var t0 := Time.get_ticks_usec()
+	_process_timed(delta)
+	PerfTools.add("anim_lod", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _process_timed(delta: float) -> void:
 	_frame += 1
 	var vp := get_viewport()
 	var cam := vp.get_camera_3d()

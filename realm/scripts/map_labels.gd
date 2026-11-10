@@ -1,4 +1,5 @@
 extends CanvasLayer
+const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
 ## Town names on the map, the way a good strategy map draws them: flat on the
 ## screen over each town (never cut by a hill or a roof), in the interface's
 ## own Geist type with a soft shadow, and decluttered: seats first, then the
@@ -29,6 +30,15 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
+	if not PerfTools.probing:
+		_process_timed(_delta)
+		return
+	var t0 := Time.get_ticks_usec()
+	_process_timed(_delta)
+	PerfTools.add("map_labels", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _process_timed(_delta: float) -> void:
 	var cam := get_viewport().get_camera_3d()
 	if cam == null or towns == null or rig == null:
 		return

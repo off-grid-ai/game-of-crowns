@@ -1,4 +1,5 @@
 extends Control
+const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
 ## The minimap: the whole realm in the corner, land and water, each house's
 ## territory in its colour, its seat under its sigil, pulsing rings wherever
 ## something is happening, and the patch of land the camera is looking at.
@@ -224,6 +225,15 @@ func _wash_show(now: Texture2D, before: Texture2D, flood: Dictionary) -> void:
 
 
 func _process(delta: float) -> void:
+	if not PerfTools.probing:
+		_process_timed(delta)
+		return
+	var t0 := Time.get_ticks_usec()
+	_process_timed(delta)
+	PerfTools.add("minimap", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _process_timed(delta: float) -> void:
 	queue_redraw()  # the view marker follows the camera
 	if _flood_t >= 0.0:
 		_flood_t += delta

@@ -647,6 +647,15 @@ var _folk_held := {}  # the villager whose card is open: they stand still for it
 
 
 func _process(_delta: float) -> void:
+	if not PerfTools.probing:
+		_process_timed(_delta)
+		return
+	var t0 := Time.get_ticks_usec()
+	_process_timed(_delta)
+	PerfTools.add("main", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _process_timed(_delta: float) -> void:
 	if ui and rig and terrain:
 		news._edge_tick(_delta)
 	_game_ms += _delta * 1000.0

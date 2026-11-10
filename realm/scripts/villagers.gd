@@ -1,4 +1,5 @@
 extends Node3D
+const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
 ## Villagers for the towns near the camera: they walk between home, the square
 ## and the fields, stop to work, and go indoors at night. Purely visual: the
 ## simulation of how many people there are belongs to Freeciv (town size).
@@ -62,6 +63,15 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if not PerfTools.probing:
+		_process_timed(delta)
+		return
+	var t0 := Time.get_ticks_usec()
+	_process_timed(delta)
+	PerfTools.add("villagers", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _process_timed(delta: float) -> void:
 	_check -= delta
 	if _check <= 0.0:
 		_check = 1.0

@@ -1,4 +1,5 @@
 extends Node3D
+const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
 ## Armies, settlers and wild beasts: one small figure per unit, coloured by house,
 ## gliding between tiles as Freeciv moves them.
 
@@ -192,6 +193,15 @@ var _settle_at := 2.0
 
 
 func _process(delta: float) -> void:
+	if not PerfTools.probing:
+		_process_timed(delta)
+		return
+	var t0 := Time.get_ticks_usec()
+	_process_timed(delta)
+	PerfTools.add("units", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _process_timed(delta: float) -> void:
 	# Towns go up after their garrisons are first placed, and grow: every two
 	# seconds, anyone at rest who now stands in a building steps out of it.
 	_settle_at -= delta

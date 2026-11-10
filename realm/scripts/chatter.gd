@@ -1,4 +1,5 @@
 extends Node3D
+const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
 ## What the townsfolk say to each other, overheard. When the camera comes
 ## close to a gathering in the street, the bridge's minds write their talk
 ## (bridge/chatter.js) and it plays here: each line a short caption over the
@@ -32,6 +33,15 @@ var _shot_on_talk := OS.get_cmdline_user_args().has("--chatter")
 
 
 func _process(delta: float) -> void:
+	if not PerfTools.probing:
+		_process_timed(delta)
+		return
+	var t0 := Time.get_ticks_usec()
+	_process_timed(delta)
+	PerfTools.add("chatter", Time.get_ticks_usec() - t0)  # its share of the frame (GOC_PERF_PROBE)
+
+
+func _process_timed(delta: float) -> void:
 	_follow()
 	_check -= delta
 	if _check > 0.0:
