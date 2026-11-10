@@ -42,14 +42,22 @@ var _town_id := -1  # the town being dressed: its people join its scope (awarene
 static func _limbo_args() -> Array[int]:
 	var out: Array[int] = []
 	for a in OS.get_cmdline_user_args():
-		if a.begins_with("--limbo="):
+		if a.begins_with("--limbo=") and a != "--limbo=all":
 			for t in a.substr(8).split(","):
 				out.append(int(t))
 	return out
 
 
+## Whether a town's people have minds (LimboAI): the one rule, for the town's
+## scenes and its villagers alike. LIMBO_ALL turns every town on (consolidation
+## C1); --limbo=all or --limbo=<ids> does it for one run.
+const LIMBO_ALL := false
+static func minds_on(town: int) -> bool:
+	return LIMBO_ALL or OS.get_cmdline_user_args().has("--limbo=all") or LIMBO_TOWNS.has(town) or _limbo_args().has(town)
+
+
 func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
-	_town_on = LIMBO_TOWNS.has(int(c.get("id", -1))) or _limbo_args().has(int(c.get("id", -1)))
+	_town_on = minds_on(int(c.get("id", -1)))
 	_town_id = int(c.get("id", -1))
 	# Freeciv's own word that the town starved this season. An empty food store
 	# alone isn't hunger: a town that just grew, or holds steady, sits at zero.
