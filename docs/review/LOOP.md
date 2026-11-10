@@ -275,3 +275,13 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Direction:** every approved item is built and pushed; the review page carries all but the council.
 - **Left:** a film of the council in the game window (proven on the server already). The coast ground "grey static" mark is a look item for Mac's call, not approved work.
 - **Verdict:** on course; nothing approved left to build. Waiting on Mac's review.
+
+## 2026-11-10 (autopilot)
+
+- **Direction (Mac: "it isn't fun; research what makes it fun, then build"):** the engagement model is in GAME_DESIGN.md, and the ten changes are ordered in AUTOPILOT.md.
+- **Landed (8e6f8a2):** C, the ladder; A, the Crown's own works; B, marching with odds. Proven on the live bridge: the market rose over two seasons, stood and paid (+40 gold a season); the muster aim was met and rewarded; Lionreach was taken at "about even", with its cause line.
+- **Next:**
+  - a fresh review of 8e6f8a2;
+  - a film of the three loops for the review page;
+  - then the plan's items 5 (things the King started, marked on the map), 7 (a seal, sound and reaction on each click) and 8 (named stakes).
+- **Verdict:** on course.
