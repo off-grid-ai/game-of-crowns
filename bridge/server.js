@@ -49,6 +49,7 @@ import { LEAN, theirs } from "./favourbook.js";
 import { moodFrom, isWatched } from "./claude.js";
 import * as Season from "./season.js";
 import { TURNING } from "./season.js";
+import { intrigueNow } from "./intrigue.js";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8787);
@@ -420,6 +421,7 @@ function refreshCounsel() {
 // The realm's states, set on each town (view.js).
 function townStates() {
   View.townStates({ world, meta, scenes, detail, besiegers, favourOf, marksNow });
+  world.intrigue = intrigueNow({ world, court });  // the houses' schemes, for the map (intrigue.js)
 }
 
 // A town falling into disorder is news, told once as it starts (view.js).
@@ -536,12 +538,7 @@ function onEvent(line) {
   // The land keeps its scars (state/marks.json): where men died, a town was stormed, a town was razed.
   // The view burns the ground there, fading with the mark's age, and a razed town leaves a ruin.
   const scar = ev.kind === "unit_killed" ? ["battle", Number(ev.x), Number(ev.y)] : ev.kind === "city_transferred" && ev.reason === "conquest" && town ? ["sack", town.x, town.y] : ev.kind === "city_destroyed" && town ? ["razed", town.x, town.y] : null;
-  if (scar) {
-    const [kind, x, y] = scar;
-    const list = marksNow().filter((m) => !(m.kind === kind && m.x === x && m.y === y));
-    list.push({ kind, x, y, turn: Number(ev.turn) });
-    fs.writeFileSync(path.join(P.state, "marks.json"), JSON.stringify((marks.list = list.slice(-400))));
-  }
+  if (scar) addMark(scar[0], scar[1], scar[2], Number(ev.turn));
   if (ev.kind === "city_shrank" && town && (ev.reason === "famine" || ev.reason === "plague")) scene(ev.reason, { x: town.x, y: town.y, city: town.id });
   const text = describe(ev, world);
   // A town changing hands keeps why, and from which house to which (scenes and sound tell a conquest from a handover).
@@ -562,6 +559,13 @@ function deed(tag, opts = {}) { return Reign.deed(reignCtx(), tag, opts); }
 // town's in 16; a razed town's ruin stands until a town is founded on the spot again.
 const MARK_SEASONS = { battle: 12, sack: 16 };
 const marks = { file: null, list: [] };
+// A scar on the land (state/marks.json), one owner for writing them: the realm's own events, and the director's threats that land.
+function addMark(kind, x, y, turn) {
+  const list = marksNow().filter((m) => !(m.kind === kind && m.x === x && m.y === y));
+  list.push({ kind, x, y, turn });
+  fs.writeFileSync(path.join(P.state, "marks.json"), JSON.stringify((marks.list = list.slice(-400))));
+}
+
 function marksNow() {
   const f = P && path.join(P.state, "marks.json");
   if (f !== marks.file) { marks.file = f; marks.list = f ? chron.readJson(f, []) : []; }
@@ -577,7 +581,7 @@ function marksNow() {
 const seasonCtx = () => ({ get world() { return world; }, get meta() { return meta; }, get court() { return court; }, get stakes() { return stakes; }, get minds() { return minds; },
   get P() { return P; }, get favour() { return favour; }, get deeds() { return deeds; }, get blights() { return blights; }, setBlights: (v) => { blights = v; },
   favourWhy, favourPast, treasuryCtx, send, record, flushHeld, courtSeason, royalWorks, resolveCampaigns, favourOf, restingFavour, noteFavour, recordDeed,
-  causeOf, saveFavour, goalNow, sworn, shiftFavour, heardCtx, ceasefire, snapshot, runArcs });
+  causeOf, saveFavour, goalNow, sworn, shiftFavour, heardCtx, ceasefire, snapshot, runArcs, addMark });
 function runSeason() { return Season.runSeason(seasonCtx()); }
 function turnHouses(turn) { return Season.turnHouses(seasonCtx(), turn); }
 function storyMarch(pid, size) { return Season.storyMarch(seasonCtx(), pid, size); }

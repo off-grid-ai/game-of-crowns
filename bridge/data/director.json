@@ -1,0 +1,36 @@
+{
+  "_": "The storyteller's pace (director.js; Left 4 Dead's director, CK3's pushback). tension: 0 calm to 1 the realm on fire (wars between the houses, towns rioting or starving, a usurper, the threat itself). After quietSeasons seasons under quietBelow, one threat rises at a place and grows by its grow each season until the King answers it there (an order in answers, at one of its towns) or it breaks at 1. After it passes or breaks, breather seasons of rest. says: what the realm reports as it grows (by level), {house} {town} {n}; answers: the orders that answer it, with the Hand's words for each. pushback: a King too comfortable (peace, purse in gold, the houses' mean favour all at or over these) draws envy every few seasons: the strongest other house cools by envy and a threat comes sooner.",
+  "quietBelow": 0.3,
+  "quietSeasons": 3,
+  "breather": 2,
+  "threats": {
+    "host": {
+      "weight": 3,
+      "grow": 0.25,
+      "says": ["{house} gathers men at {town}", "{house}'s host at {town} grows: {n} companies under arms", "{house}'s host at {town} is ready to march"],
+      "broke": "{house}'s host marches out of {town}, against the crown's towns",
+      "passed": "{house}'s host at {town} goes home",
+      "why": "An army does not gather for nothing. Answer it now, at {town}, or it marches.",
+      "answers": { "gift": "Buy them off with crowns", "feast": "Feast them back to the crown", "alliance": "Bind them by oath", "march": "Break the host before it marches" }
+    },
+    "famine": {
+      "weight": 3,
+      "grow": 0.34,
+      "says": ["The fields round {town} are failing", "Hunger spreads at {town}", "{town} is starving, and the hunger reaches its neighbours"],
+      "broke": "Famine spreads from {town} through {house}'s lands",
+      "passed": "The King's grain reaches {town}, and the hunger eases",
+      "why": "A hungry town shrinks, riots and blames its King. Grain now costs less than a rising later.",
+      "answers": { "relief": "Send grain from the royal stores" }
+    },
+    "pretender": {
+      "weight": 2,
+      "grow": 0.25,
+      "says": ["Banners that are not the King's are seen at {town}", "At {town}, {house} speaks of a better claim to the throne", "{house} raises a pretender's banners at {town}"],
+      "broke": "{house} proclaims a pretender at {town}; every house is asked to choose",
+      "passed": "The pretender's banners at {town} come down",
+      "why": "A claim left unanswered gathers friends. Bind {house} to the crown, or shame them.",
+      "answers": { "ward": "Take a ward from them", "alliance": "Bind them by oath", "feast": "Honour them at a feast" }
+    }
+  },
+  "pushback": { "peace": 0.8, "purse": 600, "favour": 55, "every": 6, "envy": 6 }
+}

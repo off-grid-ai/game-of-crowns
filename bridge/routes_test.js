@@ -7,6 +7,9 @@
 // ctx.meta...) at the moment it is used, as the handlers read it before, so a
 // snapshot or a switch of chronicle during an await is seen.
 
+import * as Director from "./director.js";
+import { houseFor } from "./narrator.js";
+import * as chron from "./chronicles.js";
 import fs from "node:fs";
 import path from "node:path";
 import { CIVILIAN } from "./campaigns.js";
@@ -57,6 +60,28 @@ export async function stage(ctx, req, res, url) {
     calm: { disorder: false, celebrating: false, famine: false, atWar: false, grief: false, grasping: false, prosperity: false } };
   const at = (ctx.meta.stage ??= {});
   // {soldiers: wounded|fortified|calm, city}: the crown's three companies nearest the town stand so.
+  // {intrigue: [{kind: envoy|pact|marriage, from, to (house ids), secret?, line?}]}: houses' schemes as the map
+  // shows them, until builder 1's own intrigue lands (it merges these in); [] clears them.
+  if (Array.isArray(b.intrigue)) {
+    const seat = (pid) => ctx.world.cities.find((c) => c.owner === Number(pid) && c.capital) ?? ctx.world.cities.find((c) => c.owner === Number(pid));
+    const name = (pid) => houseFor(ctx.world.players.find((p) => p.id === Number(pid)) ?? {}).name ?? "A house";
+    (ctx.meta.stage ??= {}).intrigue = b.intrigue.map((x, i) => {
+      const a = seat(x.from), z = seat(x.to);
+      const says = { envoy: `${name(x.from)}'s envoy rides to ${name(x.to)}: a pact against the crown?`, pact: `${name(x.from)} and ${name(x.to)} have sworn something in secret`, marriage: `${name(x.from)} and ${name(x.to)} are joined by marriage` };
+      return { id: `stage-${i}-${x.kind}`, kind: x.kind, from: Number(x.from), to: Number(x.to), x: a?.x, y: a?.y, tx: z?.x, ty: z?.y, since: ctx.world.turn ?? 0, secret: !!x.secret, line: x.line ?? says[x.kind] ?? "", matter: null };
+    });
+    chron.saveMeta(ctx.meta);
+    return json(res, 200, { ok: true, intrigue: ctx.meta.stage.intrigue });
+  }
+  // {threat: host|famine|pretender}: the director raises that threat now, at its place (director.js).
+  if (b.threat) {
+    const d = (ctx.meta.director ??= { calm: 0, rest: 0, threat: null, pushedAt: -99, curve: [] });
+    d.threat = null;
+    Director.raise({ world: ctx.world, meta: ctx.meta, send: ctx.send, record: ctx.record, scene: ctx.scene, favourOf: ctx.favourOf, shiftFavour: (c, why) => ctx.shiftAndTell(c, why), usurper: ctx.stakes?.s?.usurper?.stage ?? "none" }, d, ctx.world?.turn ?? 0, String(b.threat));
+    chron.saveMeta(ctx.meta);
+    ctx.counselStale = true;
+    return json(res, d.threat ? 200 : 400, d.threat ?? { error: `no ${b.threat} can rise now` });
+  }
   // {weather: clear|showers|rain|storm|snow}: the season's weather now (weather.js holds it until the next season's roll).
   if (b.weather) {
     const kinds = ["clear", "showers", "rain", "storm", "snow"];

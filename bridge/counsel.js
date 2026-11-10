@@ -13,6 +13,7 @@ import { BANDS } from "./favour.js";
 import { calendar } from "./stakes.js";
 import * as chron from "./chronicles.js";
 import { shortOf } from "./treasury.js";
+import * as Director from "./director.js";
 
 // The Hand of the King advises: the two or three most pressing matters in the
 // realm, worst first, each with why it matters in one line and the decrees that
@@ -223,6 +224,9 @@ export function counsel(ctx, players, cities, threat) {
   // An order that can't be given now isn't offered: the banners answer once a year.
   // Once a year means once a year here too: the banners and the levy aren't
   // offered again until their year is out (the decree would refuse them anyway).
+  // The threat the storyteller raised (director.js): a matter at its place, more urgent as it grows.
+  const raised = Director.matter(meta);
+  if (raised) out.push(raised);
   for (const o of out) o.acts = o.acts.filter((a) => !(a.action === "banners" && (!bannersReady(world?.turn ?? 0) || seasonsLeft("banners") > 0)) && !(a.action === "levy" && seasonsLeft("levy") > 0) && !(FAVOUR.has(a.action) && a.city != null && seasonsLeft(yearlyKey(a) ?? "") > 0));
   // An order offered once is not offered again under another matter (the
   // banners answer the usurper and the dead alike): the first matter keeps it.

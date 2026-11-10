@@ -13,6 +13,7 @@
 // turn's timers; setBlights for the blights), and server.js keeps wrappers of the
 // same names where its own code still calls them.
 
+import * as Director from "./director.js";
 import fs from "node:fs";
 import path from "node:path";
 import { houseFor, cityName } from "./narrator.js";
@@ -32,6 +33,9 @@ export function turn(ctx, ev) {
   const { send } = ctx;
   healBlights(ctx, Number(ev.turn));
   collectTithe(ctx, Number(ev.turn));
+  // The storyteller's pace: a threat rises after a quiet stretch and grows until answered (director.js).
+  const tc = ctx.treasuryCtx();
+  Director.season({ world: ctx.world, meta: ctx.meta, history: tc.history, usurper: ctx.stakes?.s?.usurper?.stage ?? "none", send: ctx.send, record: ctx.record, scene: tc.scene, favourOf: ctx.favourOf, shiftFavour: ctx.shiftFavour, addMark: ctx.addMark }, Number(ev.turn));
   setTimeout(() => ctx.stakes?.tick(Number(ev.turn), ctx.world, { favour: ctx.favourOf, sworn: ctx.sworn, shift: ctx.shiftFavour, send: (l) => send(`lua cmd ${l}`), watched: isWatched(), options: ctx.meta.options ?? {}, mayRise: (pid) => mayRise(ctx, pid), ultimatum: (pid) => askUltimatum(ctx, pid), rose: (pid) => rose(ctx, pid) }), 2000);
   if (Number(ev.turn) % 4 === 0) setTimeout(() => runSeason(ctx), 2500);
   // The season's weather, rolled once as the season turns (weather.js, from the reign's seed).

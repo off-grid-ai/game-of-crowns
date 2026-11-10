@@ -11,7 +11,7 @@ import { shortOf } from "./treasury.js";
 import { BANDS } from "./favour.js";
 import { calendar } from "./stakes.js";
 import * as names from "./names.js";
-import { situation } from "./situation.js";
+import { situation, scarLine } from "./situation.js";
 
 // Lords whose first names were borrowed from A Song of Ice and Fire, renamed
 // in realm.serv; realms begun before then still carry the old names in their
@@ -59,7 +59,7 @@ export function worldView(ctx) {
   });
   const last = history[history.length - 1];
   const crownP = players.find((p) => p.house.crown);
-  const crown = { treasury: crownP?.gold ?? 0, tithe: meta.tithe, decrees: Object.fromEntries(Object.entries(DECREES).map(([k, v]) => { const cost = priceOf(k); const short = shortOf(crownP?.gold ?? 0, cost); return [k, { ...v, cost, wait: seasonsLeft(k === "feast" ? "feast:court" : k), ...(short ? { short } : {}) }]; })), favourWait: Object.fromEntries(world.players.map((p) => [p.id, seasonsLeft(`favour:${p.id}`)]).filter(([, n]) => n > 0)), perSeason: lastSeason.net };
+  const crown = { treasury: crownP?.gold ?? 0, tithe: meta.tithe, decrees: Object.fromEntries(Object.entries(DECREES).map(([k, v]) => { const cost = priceOf(k); const short = shortOf(crownP?.gold ?? 0, cost); return [k, { ...v, cost, wait: seasonsLeft(k === "feast" ? "feast:court" : k), ...(short ? { short } : {}) }]; })), favourWait: Object.fromEntries(world.players.map((p) => [p.id, seasonsLeft(`favour:${p.id}`)]).filter(([, n]) => n > 0)), perSeason: lastSeason.net, threat: meta.director?.threat ?? null };
   for (const p of players) {
     p.favour = p.house.wild || p.house.crown ? null : favourOf(p.id);
     p.favourWhy = favourWhy[p.id] ?? [];
@@ -114,7 +114,7 @@ export function worldView(ctx) {
     // The King's side is his whole host: the garrisons defend Kingsmere too.
     ended: u?.ended && !u.ended.settled && (world?.turn ?? 0) - u.ended.turn <= 8 ? u.ended.house : null,
     theirs: u?.house != null ? fighting(u.house) : 0, ours: crownId != null ? (world?.units ?? []).filter((x) => x.owner === crownId && !CIVILIAN.has(x.type)).length : 0 };
-return { ...world, players, cities, units, turnSeconds, crownId: crownOf()?.id ?? null, seatId: crownSeat()?.id ?? null, reign: reignInfo(), story: storyNow(), date: calendar(world.turn), threat, counsel: counselNow, sitting: meta.court?.sitting ?? null, fallen: Object.values(HOUSES).filter((h) => !h.crown && !h.wild && !world.players.some((p) => houseFor(p).key === h.key && (world.cities.some((c) => c.owner === p.id) || (world.units ?? []).some((u) => u.owner === p.id)))).map((h) => ({ ...h, name: names.shown(h.name) })), effects: effects.slice(-10), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000), marks: marksNow(), goal: goalNow(), weather: meta.weather ?? null };
+return { ...world, players, cities, units, turnSeconds, crownId: crownOf()?.id ?? null, seatId: crownSeat()?.id ?? null, reign: reignInfo(), story: storyNow(), date: calendar(world.turn), threat, counsel: counselNow, sitting: meta.court?.sitting ?? null, fallen: Object.values(HOUSES).filter((h) => !h.crown && !h.wild && !world.players.some((p) => houseFor(p).key === h.key && (world.cities.some((c) => c.owner === p.id) || (world.units ?? []).some((u) => u.owner === p.id)))).map((h) => ({ ...h, name: names.shown(h.name) })), effects: effects.slice(-10), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000), marks: marksNow().map((m) => ({ ...m, line: scarLine({ world }, m) })), goal: goalNow(), weather: meta.weather ?? null, intrigue: [...(world.intrigue ?? []), ...(meta.stage?.intrigue ?? [])] };
 }
 
 // The realm's states, one definition each (SSOT, Mac 2026-11-10): set on each

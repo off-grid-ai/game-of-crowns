@@ -8,6 +8,7 @@
 // ctx.meta...) at the moment it is used, as the handlers read it before, so a
 // snapshot or a switch of chronicle during an await is seen.
 
+import * as Director from "./director.js";
 import * as Treasury from "./treasury.js";
 import { WORK_SEASONS } from "./treasury.js";
 import * as chron from "./chronicles.js";
@@ -66,6 +67,8 @@ export async function issueDecree(ctx, req, res, url) {
   if (result.alliance != null) { (ctx.meta.alliances ??= {})[result.alliance] = (ctx.world.turn ?? 0) + 16; chron.saveMeta(ctx.meta); }
   if (result.march) startCampaign(result.march);
   if (yearly) { (ctx.meta.decreeAt ??= {})[yearly] = ctx.world.turn ?? 0; chron.saveMeta(ctx.meta); }
+  // An order given at the threat's place, of a kind that answers it: the threat passes (director.js).
+  Director.answered(ctx.meta, cmd, ctx.world, ctx.record);
   // Bought: the same decree again within the year costs more (treasury.js wear).
   Treasury.spend(ctx.meta, `decree:${cmd.action}`, price, ctx.world.turn ?? 0); chron.saveMeta(ctx.meta);
   if (cmd.city != null) { (ctx.meta.answeredAt ??= {})[Number(cmd.city)] = ctx.world.turn ?? 0; chron.saveMeta(ctx.meta); }
