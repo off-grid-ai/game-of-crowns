@@ -198,10 +198,14 @@ export async function courtSeason(ctx, turn, force = false) {
   // flooded); the gravest first, the rest wait for the next sitting.
   for (const o of crises.filter((o) => !pleading.has(ownerOf(o))).slice(0, Math.max(0, 2 - pleas.length))) { callMatter(ctx, o, turn, true); want--; }
   if (!push) {
-    const own = counselNow.find((o) => !isCrisis(o) && o.acts?.length && c.heard[o.key] == null && !c.hand[o.key]);
-    if (own && want > 0 && (want > 1 || Math.random() < 0.4)) { callMatter(ctx, own, turn, false); want--; }
+    // The lords come first (the judge: a court of people, not an advisor's list);
+    // the Hand brings his own routine matter only to a seat they left empty.
+    const before = court.petitions.filter((p) => !p.answered && p.called === turn).length;
     if (want > 0) await court.callSitting(world, turn, want, courtCtx(ctx));
     ({ world, meta, court, counselNow } = ctx);
+    want -= court.petitions.filter((p) => !p.answered && p.called === turn).length - before;
+    const own = counselNow.find((o) => !isCrisis(o) && o.acts?.length && c.heard[o.key] == null && !c.hand[o.key]);
+    if (own && want > 0) { callMatter(ctx, own, turn, false); want--; }
     // A story's matter waiting in the hall is heard now, whatever the count.
     for (const p of court.petitions) if (!p.answered && p.called == null && p.kind === "arc") p.called = turn;
   }

@@ -909,3 +909,13 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 
 - **Reading:** the ultimatum loop is gone (Hand matters 13 → 8). Returns are in band. Answers are now weighed almost everywhere. Decisions are down to 1.27 a minute, which the judge accepts for a sitting-paced court. Grain repeats are a famine lasting several seasons, which is the same crisis and not a repetition bug.
 - **Verdict:** on course. The court's numbers hold. The top risks are now the freezes (NPC perf) and a probe that passes what the film fails (Townsfolk look).
+
+## 2026-11-11 10:30, autopilot (supervisor turn)
+
+- **Fresh judge, 3 gaps:**
+  1. Street-level freezes. NPC perf finds Metal GPU fence stalls under heavy load. A controlled run at load 25 is coming, then lighter street-level drawing either way, and the 1 s border stalls spread over frames.
+  2. Townsfolk read as broken dolls (a kneeler at bare ground, 0.00 m crowds, empty hands, war that reads as a crowd). Townsfolk look is on the probe that lies, then fixes.
+  3. The court leans on the Hand (8 of 19 matters, only 8 petitioners). Mine.
+  - Working: every answer costs; 10 of 11 pleas weighed; no ultimatum loop; returns 16%; faces open the matter at its place.
+- **Course correction (gap 3), taken now:** at a sitting the lords' own petitions take their seats first. The Hand brings his routine matter only to a seat they left empty (crises still come first). A measured reign is playing to check that Hand matters fall and petitioners rise.
+- **Not a bug:** the siege plea's 400 was the scripted King picking an answer the treasury couldn't pay. The card already greys it and says why.
