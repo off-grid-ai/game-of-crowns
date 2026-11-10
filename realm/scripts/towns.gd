@@ -1248,22 +1248,28 @@ static func smoke_material(unshaded := false) -> StandardMaterial3D:
 ## A yard fire burning low in its pit: small flames, a warm light on the
 ## stones round it, and a thread of smoke.
 func _hearth(root: Node3D, pos: Vector3) -> void:
-	# Built like the town bonfire (town_life._bonfire), smaller: on the CPU,
-	# since the GPU conversion drops the tiny per-flame scale.
-	var p := CPUParticles3D.new()
-	p.amount = 12
-	p.lifetime = 0.5
-	p.direction = Vector3.UP
-	p.spread = 12
-	p.initial_velocity_min = 0.15
-	p.initial_velocity_max = 0.3
-	p.gravity = Vector3.ZERO
-	p.scale_amount_min = 0.4
-	p.scale_amount_max = 0.8
+	# Built like the town bonfire (town_life._bonfire), smaller, and simulated on
+	# the GPU with its own process material (so each flame keeps its small size,
+	# which converting from CPU particles lost): a town has many hearths, and CPU
+	# particles cost every frame, seen or not. Gone past 30 units.
+	var pm := ParticleProcessMaterial.new()
+	pm.direction = Vector3.UP
+	pm.spread = 12
+	pm.initial_velocity_min = 0.15
+	pm.initial_velocity_max = 0.3
+	pm.gravity = Vector3.ZERO
+	pm.scale_min = 0.4
+	pm.scale_max = 0.8
 	var grad := Gradient.new()
 	grad.set_color(0, Color(1.0, 0.6, 0.2, 0.8))
 	grad.set_color(1, Color(0.8, 0.2, 0.05, 0.0))
-	p.color_ramp = grad
+	var ramp := GradientTexture1D.new()
+	ramp.gradient = grad
+	pm.color_ramp = ramp
+	var p := GPUParticles3D.new()
+	p.amount = 12
+	p.lifetime = 0.5
+	p.process_material = pm
 	var q := QuadMesh.new()
 	q.size = Vector2(0.08, 0.08)
 	var m := StandardMaterial3D.new()
@@ -1274,8 +1280,9 @@ func _hearth(root: Node3D, pos: Vector3) -> void:
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	q.material = m
-	p.mesh = q
+	p.draw_pass_1 = q
 	p.visibility_range_end = 30.0
+	p.visibility_aabb = AABB(Vector3(-0.3, -0.1, -0.3), Vector3(0.6, 0.8, 0.6))
 	p.position = pos + Vector3(0, 0.02, 0)
 	root.add_child(p)
 	var light := OmniLight3D.new()
@@ -1313,11 +1320,8 @@ func _smoke(root: Node3D, pos: Vector3) -> void:
 	q.size = Vector2(0.6, 0.6)
 	q.material = smoke_material()
 	p.mesh = q
-	# Simulated on the GPU (Godot converts the settings): a town has a dozen
-	# hearths, and particles on the CPU cost every frame, seen or not.
-	var gpu := GPUParticles3D.new()
-	gpu.convert_from_particles(p)
-	p.free()
-	gpu.visibility_range_end = 45.0
+	# Simulated on the GPU (particles.gd, Godot's own conversion): a town has a
+	# dozen hearths, and particles on the CPU cost every frame, seen or not.
+	var gpu: GPUParticles3D = preload("res://scripts/particles.gd").to_gpu(p, 45.0)
 	gpu.position = pos
 	root.add_child(gpu)
