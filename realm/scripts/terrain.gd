@@ -856,6 +856,47 @@ func set_realm(owners: Array, players: Array) -> void:
 	_realm_img = realm
 
 
+## The land's scars (the bridge's marks: where men died, a town was stormed
+## or razed) as one texel per tile for Terrain3D's shader (land3d.set_scars):
+## r = how hard it burned, g = the season it happened, b = the seasons it
+## takes to heal. The shader fades each by its age, so nothing is repainted
+## as they heal. A battle burns its own tile; a town its tile and the ring
+## round it, fainter out.
+const SCAR := {"battle": [0.75, 0, 12.0], "sack": [1.0, 1, 16.0], "razed": [1.0, 1, 16.0]}
+var _scar_sig := ""
+
+
+func set_marks(marks: Array, turn: int) -> void:
+	if land3d == null or land3d.land == null or width == 0:
+		return
+	var sig := str(hash(marks)) + str(turn)
+	if sig == _scar_sig:
+		return
+	_scar_sig = sig
+	var img := Image.create(width, height, false, Image.FORMAT_RGBAF)
+	var left := func(c: Color) -> float:  # what still shows of a scar
+		return c.r * clampf(1.0 - (turn - c.g) / maxf(c.b, 1.0), 0.0, 1.0) if c.b > 0.0 else 0.0
+	for m in marks:
+		var kind := String(m.get("kind", ""))
+		if not SCAR.has(kind):
+			continue
+		var sc: Array = SCAR[kind]
+		var x0 := int(m.get("x", -1))
+		var y0 := int(m.get("y", -1))
+		var reach: int = sc[1]
+		for dy in range(-reach, reach + 1):
+			for dx in range(-reach, reach + 1):
+				var x := x0 + dx
+				var y := y0 + dy
+				if x < 0 or y < 0 or x >= width or y >= height:
+					continue
+				var k := 1.0 if dx == 0 and dy == 0 else 0.55
+				var c := Color(float(sc[0]) * k, float(m.get("turn", turn)), float(sc[2]), 1.0)
+				if left.call(c) > left.call(img.get_pixel(x, y)):
+					img.set_pixel(x, y, c)
+	land3d.set_scars(ImageTexture.create_from_image(img), turn)
+
+
 var _realm_ids := []  # the owner of every tile, as last shown
 var _realm_img: Image  # the house colours as last shown, for a flood to cross
 

@@ -550,11 +550,32 @@ function onEvent(line) {
   }
   if (ev.kind === "city_transferred" && town) scene(ev.reason === "conquest" ? "sack" : "handover", { x: town.x, y: town.y, city: town.id, from: Number(ev.from), to: Number(ev.to) });
   if (ev.kind === "city_destroyed" && town) scene("razed", { x: town.x, y: town.y, city: town.id });
+  // The land keeps its scars (state/marks.json): where men died, a town was stormed, a town was razed.
+  // The view burns the ground there, fading with the mark's age, and a razed town leaves a ruin.
+  const scar = ev.kind === "unit_killed" ? ["battle", Number(ev.x), Number(ev.y)] : ev.kind === "city_transferred" && ev.reason === "conquest" && town ? ["sack", town.x, town.y] : ev.kind === "city_destroyed" && town ? ["razed", town.x, town.y] : null;
+  if (scar) {
+    const [kind, x, y] = scar;
+    const list = marksNow().filter((m) => !(m.kind === kind && m.x === x && m.y === y));
+    list.push({ kind, x, y, turn: Number(ev.turn) });
+    fs.writeFileSync(path.join(P.state, "marks.json"), JSON.stringify((marks.list = list.slice(-400))));
+  }
   if (ev.kind === "city_shrank" && town && (ev.reason === "famine" || ev.reason === "plague")) scene(ev.reason, { x: town.x, y: town.y, city: town.id });
   const text = describe(ev, world);
   // A town changing hands keeps why, and from which house to which (scenes and sound tell a conquest from a handover).
   const hands = ev.kind === "city_transferred" ? { reason: ev.reason, from: Number(ev.from), to: Number(ev.to) } : {};
   if (text) record({ turn: Number(ev.turn), kind: ev.kind, text, city: ev.city ? Number(ev.city) : undefined, ...hands });
+}
+
+// The realm's scars, as long as they show: a battle's ground heals in 12 seasons, a stormed
+// town's in 16; a razed town's ruin stands until a town is founded on the spot again.
+const MARK_SEASONS = { battle: 12, sack: 16 };
+const marks = { file: null, list: [] };
+function marksNow() {
+  const f = P && path.join(P.state, "marks.json");
+  if (f !== marks.file) { marks.file = f; marks.list = f ? chron.readJson(f, []) : []; }
+  const turn = Number(world?.turn ?? 0);
+  marks.list = marks.list.filter((m) => (m.kind === "razed" ? turn - m.turn < 2 || !world?.cities?.some((c) => c.x === m.x && c.y === m.y) : turn - m.turn < (MARK_SEASONS[m.kind] ?? 12)));
+  return marks.list;
 }
 
 // Every four turns (a year of seasons), the people of the realm make their moves.
@@ -2205,7 +2226,7 @@ http.createServer(async (req, res) => {
       // The King's side is his whole host: the garrisons defend Kingsmere too.
       ended: u?.ended && !u.ended.settled && (world?.turn ?? 0) - u.ended.turn <= 8 ? u.ended.house : null,
       theirs: u?.house != null ? fighting(u.house) : 0, ours: crownId != null ? (world?.units ?? []).filter((x) => x.owner === crownId && !CIVILIAN.has(x.type)).length : 0 };
-    return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), story: storyNow(), date: calendar(world.turn), threat, counsel: (counselNow = counsel(players, cities, threat)), sitting: meta.court?.sitting ?? null, fallen: Object.values(HOUSES).filter((h) => !h.crown && !h.wild && !world.players.some((p) => houseFor(p).key === h.key && (world.cities.some((c) => c.owner === p.id) || (world.units ?? []).some((u) => u.owner === p.id)))).map((h) => ({ ...h, name: names.shown(h.name) })), effects: effects.slice(-10), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000) });
+    return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), story: storyNow(), date: calendar(world.turn), threat, counsel: (counselNow = counsel(players, cities, threat)), sitting: meta.court?.sitting ?? null, fallen: Object.values(HOUSES).filter((h) => !h.crown && !h.wild && !world.players.some((p) => houseFor(p).key === h.key && (world.cities.some((c) => c.owner === p.id) || (world.units ?? []).some((u) => u.owner === p.id)))).map((h) => ({ ...h, name: names.shown(h.name) })), effects: effects.slice(-10), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000), marks: marksNow() });
   }
   if (url.pathname === "/map") {
     const map = chron.readJson(path.join(P.state, "map.json"));
@@ -2430,6 +2451,16 @@ http.createServer(async (req, res) => {
   }
   // Test hook (films only): a lord's deed on demand, so its alert can be filmed.
   // Answers only for a reign named as a test, and only with the X-Test header.
+  if (url.pathname === "/test/mark" && req.method === "POST") {
+    // A film's scar, test reigns only: {kind: battle|sack|razed, x, y, age: seasons ago}.
+    if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
+    const b = await body(req);
+    if (!["battle", "sack", "razed"].includes(b.kind)) return json(res, 400, { error: "kind: battle, sack or razed" });
+    const list = marksNow().filter((m) => !(m.kind === b.kind && m.x === Number(b.x) && m.y === Number(b.y)));
+    list.push({ kind: b.kind, x: Number(b.x), y: Number(b.y), turn: Number(world?.turn ?? 0) - Number(b.age ?? 0) });
+    fs.writeFileSync(path.join(P.state, "marks.json"), JSON.stringify((marks.list = list)));
+    return json(res, 200, { ok: true, marks: marksNow() });
+  }
   if (url.pathname === "/test/news" && req.method === "POST") {
     if (req.headers["x-test"] !== "1" || !/test|film|check|proof/i.test(String(meta?.name ?? ""))) return json(res, 403, { error: "test reigns only" });
     const b = await body(req);

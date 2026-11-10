@@ -31,6 +31,8 @@ const KIT := {
 	"ph/wooden_ladder": ["clutter", 3.0],
 	"ph/wooden_lantern_01": ["clutter", 0.35],
 	"ph/stone_fire_pit": ["well", 1.6],
+	"ph/tree_stump_01": ["stump", 0.9],  # charred where war burned the land (ruins.gd)
+	"ph/tree_stump_02": ["stump", 1.1],
 }
 
 # Parts a kit brings that our land supplies itself: the castle comes on its own
