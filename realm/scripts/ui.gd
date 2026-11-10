@@ -2655,20 +2655,24 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 	_season_s = float(world.get("turnSeconds", _season_s))
 	_tell_effects(world.get("effects", []))
 	if _standing:
-		var great := (world.get("players", []) as Array).filter(func(p): return p.get("favour") != null)
-		var with_me := great.filter(func(p): return float(p["favour"]) >= 35.0).size()
-		var all_in := with_me == great.size() and great.size() > 0
+		# The reign's goal, as the bridge reckons it: every great house firmly
+		# the King's (50 and up) and none at war with another.
+		var goal: Dictionary = world.get("goal", {})
+		var of := int(goal.get("of", 0))
+		var firm := int(goal.get("firm", 0))
+		var fighting := int(goal.get("fighting", 0))
+		var all_in: bool = goal.get("won", false)
 		# The moment it's won: a card that says so and what to hold next.
 		if all_in and _was_united == 0:
-			toast("The realm is yours in truth: all %d great houses would answer your banners.\nNow hold them, and meet whatever comes from the North." % great.size())
+			toast("The realm is yours in truth: all %d great houses stand with you, and none is at war.\nNow hold them, and meet whatever comes from the North." % of)
 		_was_united = 1 if all_in else 0
-		# Once won, the next aim: end the wars between the houses (Peace above half).
-		var peace_now := int(float(world.get("peace", 1)) * 100)
-		var warring := great.filter(func(g): return not (g.get("atWarWith", []) as Array).is_empty()).size()
-		var next_aim := (" Next: end the wars between them, Peace %d%% of 50%%." % peace_now) if peace_now < 50 \
-			else (" But %d of them are at war with each other." % warring) if warring > 0 else " The realm is at peace with itself."
-		_standing.text = ("All %d great houses would answer your banners. The realm is yours in truth." % great.size() + next_aim) if all_in \
-			else "%d of %d great houses would answer your banners. Win all of them and the realm is yours in truth." % [with_me, great.size()]
+		var left := ""
+		if firm < of:
+			left = "%d of %d great houses stand firmly with you." % [firm, of]
+		if fighting > 0:
+			left += (" " if left != "" else "") + ("%d of them are at war with each other." % fighting if firm < of else "All %d stand with you, but %d are at war with each other." % [of, fighting])
+		_standing.text = ("All %d great houses stand with you, and none is at war. The realm is yours in truth." % of) if all_in \
+			else left + " Win them all and end their wars, and the realm is yours in truth."
 	_purse = int(world.get("crown", {}).get("treasury", 0))  # the court's orders check the purse
 	_rank_houses(world.get("players", []), world.get("fallen", []))
 	_omens.read(float(world.get("peace", 1.0)), float((world.get("crown", {}) as Dictionary).get("treasury", -1)) if world.has("crown") else -1.0)

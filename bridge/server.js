@@ -18,7 +18,7 @@ import { godCommand, healLua } from "./god.js";
 import { readSave, extractDetail } from "./savefile.js";
 import { townsfolk } from "./townsfolk.js";
 import { ROLES, GOALS, TRAITS, setReignSeed } from "./characters.js";
-import { editRow } from "./fresh.js";
+import { editRow, rng as rngFor } from "./fresh.js";
 import { folkTale, folkPlain, moodRules, speak, ruleFrom, reactTo, speech, voiceFor, transcribe, aiStatus } from "./claude.js";
 import { BUILD_COST, granarySize } from "./rules.js";
 import * as chron from "./chronicles.js";
@@ -405,6 +405,22 @@ function applyStartOptions() {
     deeds[p.id] = [];
     noteFavour(p.id, ({ loyal: 19, wary: 0, resentful: -21 }[o.trust] ?? 0), "the realm's mood at your crowning");
     noteFavour(p.id, lean, lean > 0 ? "their old loyalty to the crown" : "their old grievances against the crown");
+  }
+  // A real reign deals the houses' old feelings from its seed: two or three
+  // begin cold to the crown (below the banners' 35), the rest a little warmer
+  // or cooler than their history alone. Test reigns keep the history as it is.
+  if (meta.seed && meta.seed !== 1066) {
+    const r = rngFor(meta.seed ^ 0x5bd1e995);
+    const great = world.players.filter((x) => !houseFor(x).wild && !houseFor(x).crown).map((x) => x.id).sort((a, b) => a - b);
+    for (let i = great.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [great[i], great[j]] = [great[j], great[i]]; }
+    const cold = 2 + (r() < 0.5 ? 1 : 0);
+    great.forEach((id, i) => {
+      const want = i < cold ? 18 + Math.floor(r() * 15) : favourOf(id) + Math.floor(r() * 21) - 10;
+      const d = clampFavour(want) - favourOf(id);
+      if (!d) return;
+      favour[id] = favourOf(id) + d;  // their history, not the King's deed: no deed is recorded
+      (favourWhy[id] ??= []).push({ d, why: d < 0 ? "an old quarrel with the crown" : "an old kindness from the crown" });
+    });
   }
   saveFavour();
   const crown = world.players.find((x) => houseFor(x).crown);
@@ -1551,6 +1567,18 @@ function shiftFavour(changes, why = "", told = false) {
 const LEAN = { "House Stormhold": 12, "House Goldcrest": 8, "House Wolfholt": 4, "House Highfell": 2, "House Thornvale": -2, "House Ironreach": -10, "House Sunspire": -14 };
 // Where a house's favour settles when the King leaves it be: its own temper with
 // the crown, so the table keeps friends and doubters rather than one number.
+// The reign's goal, as the top bar shows it: how many great houses stand
+// firmly with the King, of how many, and how many are at war with another.
+const GOAL_FAVOUR = 50;
+function goalNow() {
+  const great = (world?.players ?? []).filter((p) => !houseFor(p).wild && !houseFor(p).crown && p.cities > 0);
+  const ids = new Set(great.map((p) => p.id));
+  const d = detail();
+  const fighting = great.filter((p) => (d?.players?.[p.id]?.atWarWith ?? []).some((q) => ids.has(q))).length;
+  const firm = great.filter((p) => favourOf(p.id) >= GOAL_FAVOUR).length;
+  return { bar: GOAL_FAVOUR, firm, of: great.length, fighting, won: great.length > 0 && firm === great.length && fighting === 0 };
+}
+
 function restingFavour(p) {
   return clampFavour(({ loyal: 74, wary: 55, resentful: 34 }[meta.options?.trust] ?? 55) + (LEAN[houseFor(p).name] ?? 0));
 }
@@ -1633,14 +1661,14 @@ function collectTithe(turn) {
     }
   }
   saveFavour();
-  // The reign's goal: every great house would answer the banners (35 and up).
-  // Marked once in the chronicle when won; lost again when a house falls away.
-  const great = world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown && p.cities > 0);
-  const united = great.length > 0 && great.every((p) => favourOf(p.id) >= 35);
+  // The reign's goal: every great house firmly the King's (GOAL_FAVOUR and up)
+  // and no war between them. Marked once in the chronicle when won; lost again
+  // when a house falls away or two take up arms.
+  const united = goalNow().won;
   if (united && !meta.united) {
     meta.united = true;
     chron.saveMeta(meta);
-    record({ turn, kind: "decree", text: `All ${great.length} great houses stand behind the King. For the first time in a generation the realm answers to one crown, in truth and not in name.` });
+    record({ turn, kind: "decree", text: `All ${goalNow().of} great houses stand behind the King, and none is at war with another. For the first time in a generation the realm answers to one crown, in truth and not in name.` });
   } else if (!united && meta.united) {
     meta.united = false;
     chron.saveMeta(meta);
@@ -2269,7 +2297,7 @@ http.createServer(async (req, res) => {
       // The King's side is his whole host: the garrisons defend Kingsmere too.
       ended: u?.ended && !u.ended.settled && (world?.turn ?? 0) - u.ended.turn <= 8 ? u.ended.house : null,
       theirs: u?.house != null ? fighting(u.house) : 0, ours: crownId != null ? (world?.units ?? []).filter((x) => x.owner === crownId && !CIVILIAN.has(x.type)).length : 0 };
-    return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), story: storyNow(), date: calendar(world.turn), threat, counsel: (counselNow = counsel(players, cities, threat)), sitting: meta.court?.sitting ?? null, fallen: Object.values(HOUSES).filter((h) => !h.crown && !h.wild && !world.players.some((p) => houseFor(p).key === h.key && (world.cities.some((c) => c.owner === p.id) || (world.units ?? []).some((u) => u.owner === p.id)))).map((h) => ({ ...h, name: names.shown(h.name) })), effects: effects.slice(-10), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000), marks: marksNow() });
+    return json(res, 200, { ...world, players, cities, units, turnSeconds, reign: reignInfo(), story: storyNow(), date: calendar(world.turn), threat, counsel: (counselNow = counsel(players, cities, threat)), sitting: meta.court?.sitting ?? null, fallen: Object.values(HOUSES).filter((h) => !h.crown && !h.wild && !world.players.some((p) => houseFor(p).key === h.key && (world.cities.some((c) => c.owner === p.id) || (world.units ?? []).some((u) => u.owner === p.id)))).map((h) => ({ ...h, name: names.shown(h.name) })), effects: effects.slice(-10), peace: last?.peace ?? 1, prosperity: last?.pop ?? 0, souls: world.cities.reduce((t, c) => t + soulsOf(c.size), 0), crown, owners: d?.owners ?? [], scenes: scenes.filter((x) => Date.now() - x.at < 90000), marks: marksNow(), goal: goalNow() });
   }
   if (url.pathname === "/map") {
     const map = chron.readJson(path.join(P.state, "map.json"));
