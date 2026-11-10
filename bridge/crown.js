@@ -188,8 +188,10 @@ export function decree(cmd, world) {
       // In the King's own town the crown builds for itself: nobody to thank.
       const own = houseFor(owner).crown;
       // The King's own works rise over two seasons on the town's site (server.js royal works);
-      // a house's town builds the gift at once.
-      if (own) return {
+      // a house's town builds the gift at once, and so do the sept and aqueduct the Hand calls
+      // for against plague and unrest (they were always at once, and a crisis can't wait).
+      if (own && (cmd.works ?? {})[c.id]) return { error: `the King's masons are already at work in ${town}` };
+      if (own && !["Temple", "Aqueduct"].includes(b)) return {
         cost, favour: {},
         text: `The King's masons break ground on ${thing} in ${town}. It will stand in two seasons.`,
         lua: [pay], work: { city: c.id, building: b },
@@ -313,7 +315,7 @@ export function decree(cmd, world) {
     }
     case "march": {
       // The royal host marches on a town. The King's sworn houses send men with
-      // it; in three seasons the town falls to the crown, or the host breaks.
+      // it; in two seasons the town falls to the crown, or the host breaks.
       if (!c || !owner || houseFor(owner).crown || houseFor(owner).wild) return { error: "choose a great house's town to march on" };
       if ((cmd.marching ?? (() => false))(c.id)) return { error: `the royal host is already before ${town}` };
       const others = world.players.filter((p) => p.id !== owner.id && !houseFor(p).crown && !houseFor(p).wild && world.cities.some((x) => x.owner === p.id));

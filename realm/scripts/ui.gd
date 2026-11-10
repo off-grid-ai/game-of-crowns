@@ -2773,7 +2773,7 @@ func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 		"banners": ("Call the banners  " + _price("banners", 5000) + "  ·  loyal houses send men") if seat else "",
 		# Politics with teeth: an oath that binds a house to the crown's wars, and the royal host.
 		"alliance": "" if mine or _town_player.get("sworn") != null else "Swear an alliance with %s  %s" % [lord, _price("alliance", 20000)],
-		"march": "" if mine or (_town_player.get("besieged", []) as Array).has(int(c["id"])) else "March on %s  %s  ·  %s" % [town, _price("march", 25000), _forecast(float(c.get("odds", 0.5)))],
+		"march": "" if mine or (_town_player.get("besieged", []) as Array).has(int(c["id"])) else ("March on %s  %s  ·  %s" % [town, _price("march", 25000), _forecast(float(c["odds"]))] if c.get("odds") != null else "March on %s  %s" % [town, _price("march", 25000)]),
 	}
 	_marriage_menu.text = "Arrange a marriage with…  " + _price("marriage", 40000)
 	# A decree the purse can't pay is greyed, and says why and what to do.
