@@ -804,6 +804,12 @@ func _veg_cells_of(mmi: MultiMeshInstance3D) -> Dictionary:
 
 var _land_mat: ShaderMaterial
 var _realm_sig := ""
+var _realm_rows: Array = []  # the owners' rows as last read: a row is parsed again only when its text changes
+var _war_img: Image  # the standing per tile, kept and repainted where it changed
+var _war_live: ImageTexture  # standing_tex, updated in place
+var _borders := {}  # tiles on a border between two houses (what a change of standing repaints)
+var _look_sig := ""  # the houses' colours and oaths: a change repaints everything
+var _rel_sig := ""  # wars, truces, schemes: a change repaints the borders
 
 
 ## Repaints territory from Freeciv's owner layer (one "-,0,3,…" row per map
@@ -851,41 +857,91 @@ func set_realm(owners: Array, players: Array, intrigue: Array = []) -> void:
 	if sig == _realm_sig:
 		return
 	_realm_sig = sig
-	var ids := []
-	for row in owners:
+	var pt := Time.get_ticks_usec()
+	# Only what changed is read and repainted (npc-perf: the whole map redrawn on
+	# every change held a frame over a second): a row of the owners is parsed again
+	# only if its text changed; a tile is repainted only if its owner changed, it
+	# borders one that did, or (when the houses' standing changed) it lies on a border.
+	# A change of a house's colour or oath repaints the whole map, as before.
+	var look_sig := str(hash(sworn)) + str(hash(colour))
+	var rel_sig := str(hash(wars)) + str(hash(truces)) + str(hash(schemes))
+	var full := _realm_img == null or _war_img == null or _realm_ids.size() != height or look_sig != _look_sig
+	var ids: Array = [] if full else _realm_ids.duplicate()
+	if full:
+		ids.resize(height)
+	var moved: Array[Vector2i] = []
+	for y in height:
+		var row := String(owners[y])
+		if not full and y < _realm_rows.size() and _realm_rows[y] == row:
+			continue
 		var cells := []
-		for v in String(row).split(","):
+		for v in row.split(","):
 			cells.append(-1 if v == "-" or v == "" else int(v))
-		ids.append(cells)
+		if not full:
+			var old: Array = ids[y]
+			for x in maxi(old.size(), cells.size()):
+				if (old[x] if x < old.size() else -1) != (cells[x] if x < cells.size() else -1):
+					moved.append(Vector2i(x, y))
+		ids[y] = cells
+	_realm_rows = owners.duplicate()
 	var was_ids := _realm_ids
 	_realm_ids = ids
-	var realm := Image.create(width, height, false, Image.FORMAT_RGBA8)
+	var owner_at := func(x: int, y: int) -> int:
+		return ids[y][x] if y >= 0 and y < height and x >= 0 and x < (ids[y] as Array).size() else -1
 	# The houses' standing, per tile: r = at war with a neighbour across the border,
 	# g = under a truce with one, b = the owner is sworn to the crown, a = a scheme
 	# with that neighbour (SCHEME; 1 for none).
-	var war := Image.create(width, height, false, Image.FORMAT_RGBA8)
-	for y in height:
-		for x in width:
-			var o: int = ids[y][x] if x < ids[y].size() else -1
-			var col: Color = colour.get(o, Color(0, 0, 0, 0))
-			if o >= 0 and col.a > 0.0:
-				realm.set_pixel(x, y, Color(col.r, col.g, col.b, (o + 1) / 64.0))
-			var st := Color(0, 0, 1.0 if o >= 0 and sworn.get(o, false) else 0.0, 1)
-			for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-				var nx: int = x + d.x
-				var ny: int = y + d.y
-				if o < 0 or nx < 0 or ny < 0 or nx >= width or ny >= height or nx >= ids[ny].size():
-					continue
-				var n: int = ids[ny][nx]
-				if n >= 0 and n != o and n in wars.get(o, []):
-					st.r = 1.0
-				elif n >= 0 and n != o and n in truces.get(o, []):
-					st.g = 1.0
-				if n >= 0 and n != o and schemes.has("%d:%d" % [mini(o, n), maxi(o, n)]):
-					st.a = schemes["%d:%d" % [mini(o, n), maxi(o, n)]]
-			war.set_pixel(x, y, st)
+	var paint := func(realm: Image, war: Image, x: int, y: int) -> void:
+		var o: int = owner_at.call(x, y)
+		var col: Color = colour.get(o, Color(0, 0, 0, 0))
+		realm.set_pixel(x, y, Color(col.r, col.g, col.b, (o + 1) / 64.0) if o >= 0 and col.a > 0.0 else Color(0, 0, 0, 0))
+		var st := Color(0, 0, 1.0 if o >= 0 and sworn.get(o, false) else 0.0, 1)
+		var edge := false
+		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var n: int = owner_at.call(x + d.x, y + d.y)
+			if o < 0 or n < 0 or n == o:
+				continue
+			edge = true
+			if n in wars.get(o, []):
+				st.r = 1.0
+			elif n in truces.get(o, []):
+				st.g = 1.0
+			if schemes.has("%d:%d" % [mini(o, n), maxi(o, n)]):
+				st.a = schemes["%d:%d" % [mini(o, n), maxi(o, n)]]
+		war.set_pixel(x, y, st)
+		if edge:
+			_borders[Vector2i(x, y)] = true
+		else:
+			_borders.erase(Vector2i(x, y))
+	var realm: Image
+	if full:
+		realm = Image.create(width, height, false, Image.FORMAT_RGBA8)
+		_war_img = Image.create(width, height, false, Image.FORMAT_RGBA8)
+		_borders = {}
+		for y in height:
+			for x in width:
+				paint.call(realm, _war_img, x, y)
+	else:
+		realm = _realm_img.duplicate() as Image  # the flood below needs the one before
+		var todo := {}
+		for t in moved:
+			for d in [Vector2i.ZERO, Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+				var q: Vector2i = t + d
+				if q.x >= 0 and q.y >= 0 and q.x < width and q.y < height:
+					todo[q] = true
+		if rel_sig != _rel_sig:
+			for t in _borders.keys():
+				todo[t] = true
+		for t in todo:
+			paint.call(realm, _war_img, t.x, t.y)
+	_look_sig = look_sig
+	_rel_sig = rel_sig
 	var realm_tex := ImageTexture.create_from_image(realm)
-	var war_tex := ImageTexture.create_from_image(war)
+	if full or _war_live == null:
+		_war_live = ImageTexture.create_from_image(_war_img)
+	else:
+		_war_live.update(_war_img)
+	var war_tex := _war_live
 	standing_tex = war_tex  # the minimap draws the same seams from this one texture
 	_land_mat.set_shader_parameter("realm_tex", realm_tex)
 	_land_mat.set_shader_parameter("war_tex", war_tex)
@@ -896,6 +952,7 @@ func set_realm(owners: Array, players: Array, intrigue: Array = []) -> void:
 		for st in stages:
 			land3d.set_realm(st[0], st[1], war_tex, st[2])
 	_realm_img = realm
+	preload("res://scripts/perf_tools.gd").add("borders", Time.get_ticks_usec() - pt)
 
 
 ## The land's scars (the bridge's marks: where men died, a town was stormed
