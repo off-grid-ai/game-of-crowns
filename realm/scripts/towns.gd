@@ -820,7 +820,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	root.set_meta("buildings", buildings)  # what the square shows of them (a market's extra stalls)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(c["id"]) * 7919
-	var color := Color.from_string(String(house.get("color", "#888888")), Color.GRAY)
+	var color := preload("res://scripts/heraldry.gd").colour(house, Color.GRAY, "#888888")
 	_house = house
 	_house_colour = color
 

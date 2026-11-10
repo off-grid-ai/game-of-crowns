@@ -79,7 +79,7 @@ func start(person: Dictionary, house: Dictionary, town_id: int) -> void:
 	var center: Vector3 = towns.towns[town_id]["node"].global_position
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(str(person.get("id", "")))
-	var tint := Color.from_string(String(house.get("color", "#888888")), Color.GRAY).lerp(Color.WHITE, 0.45)
+	var tint := preload("res://scripts/heraldry.gd").colour(house, Color.GRAY, "#888888").lerp(Color.WHITE, 0.45)
 	_body = villagers.people.make(rng, villagers.people.station(person), tint, "adult", "", str(person.get("gender", "")), str(person.get("id", "")))
 	add_child(_body)
 	# A lord steps out of their own hall; anyone else from the edge of the square.

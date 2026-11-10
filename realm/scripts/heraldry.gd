@@ -37,6 +37,12 @@ static func cloth(house: Dictionary, fallback: Color) -> Material:
 	return m
 
 
+## A house's own colour, worked out in one place (consolidation C5): its "color"
+## from the bridge, else `default` (as the hex the house would have), else `fallback`.
+static func colour(house: Dictionary, fallback := Color.GRAY, default := "#888888") -> Color:
+	return Color.from_string(String(house.get("color", default)), fallback)
+
+
 const CLOTH := preload("res://scripts/banner_cloth.gdshader")
 static var _wind := 1.0
 

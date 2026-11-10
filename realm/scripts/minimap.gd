@@ -169,7 +169,7 @@ func refresh(world: Dictionary, houses: Dictionary) -> void:
 	_seats.clear()
 	for c in world.get("cities", []):
 		var house: Dictionary = houses.get(int(c["owner"]), {})
-		_seats.append([Vector2(float(c["x"]) + 0.5, float(c["y"]) + 0.5), Color.from_string(String(house.get("color", "#ddd")), Color.WHITE), c.get("capital", false), String(c.get("title", c["name"])), Heraldry.sigil(house) if c.get("capital", false) else null])
+		_seats.append([Vector2(float(c["x"]) + 0.5, float(c["y"]) + 0.5), preload("res://scripts/heraldry.gd").colour(house, Color.WHITE, "#ddd"), c.get("capital", false), String(c.get("title", c["name"])), Heraldry.sigil(house) if c.get("capital", false) else null])
 	queue_redraw()
 
 

@@ -161,7 +161,7 @@ func _chapter(text: String, id: int, house: Dictionary) -> void:
 		b.icon = Heraldry.sigil(house)
 		b.expand_icon = false
 		b.add_theme_constant_override("icon_max_width", 24)
-		b.add_theme_color_override("icon_normal_color", Color.from_string(String(house.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.35))
+		b.add_theme_color_override("icon_normal_color", preload("res://scripts/heraldry.gd").colour(house, Color.GRAY, "#888").lerp(Color.WHITE, 0.35))
 	b.pressed.connect(func(): _go(id))
 	_chapters.add_child(b)
 
@@ -397,7 +397,7 @@ func _house(h: Dictionary) -> void:
 	sigil.custom_minimum_size = Vector2(72, 72)
 	sigil.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	sigil.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	sigil.modulate = Color.from_string(String(h.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.35)
+	sigil.modulate = preload("res://scripts/heraldry.gd").colour(h, Color.GRAY, "#888").lerp(Color.WHITE, 0.35)
 	head.add_child(sigil)
 	var names := VBoxContainer.new()
 	names.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -694,7 +694,7 @@ static func _sigil(house: Dictionary, tint: Color, px: int) -> TextureRect:
 
 
 static func _tint(house: Dictionary) -> Color:
-	return Color.from_string(String(house.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.35)
+	return preload("res://scripts/heraldry.gd").colour(house, Color.GRAY, "#888").lerp(Color.WHITE, 0.35)
 
 
 # --- type -----------------------------------------------------------------------

@@ -1090,7 +1090,7 @@ static func mood(f: int) -> String:
 func set_sigil(rect: TextureRect, house: Dictionary) -> void:
 	rect.texture = Heraldry.sigil(house) if not house.is_empty() else null
 	rect.visible = rect.texture != null
-	rect.modulate = Color.from_string(String(house.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.25)
+	rect.modulate = preload("res://scripts/heraldry.gd").colour(house, Color.GRAY, "#888").lerp(Color.WHITE, 0.25)
 
 
 var _season_s := 20.0  # seconds a season lasts, from the bridge

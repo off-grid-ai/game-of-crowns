@@ -266,7 +266,7 @@ func _next() -> void:
 	_sigil.texture = preload("res://scripts/heraldry.gd").sigil(house) if not house.is_empty() else null
 	_sigil.visible = _sigil.texture != null
 	if not house.is_empty():
-		_sigil.modulate = Color.from_string(String(house.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.35)
+		_sigil.modulate = preload("res://scripts/heraldry.gd").colour(house, Color.GRAY, "#888").lerp(Color.WHITE, 0.35)
 	# The page turns on the clock, not on its drift: building the realm behind
 	# the story stalls frames, and a stalled tween held the first page for 18 s.
 	var hold := _hold(String(p[2]))

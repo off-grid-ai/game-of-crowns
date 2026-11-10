@@ -121,7 +121,7 @@ func _paint(person: Dictionary, house: Dictionary) -> Texture2D:
 	rng.seed = hash(key)
 	var years := int(person.get("age", 30))
 	var age := "child" if years < 14 else ("elder" if years > 60 else "adult")
-	var tint := Color.from_string(String(house.get("color", "#888888")), Color.GRAY).lerp(Color.WHITE, 0.45)
+	var tint := preload("res://scripts/heraldry.gd").colour(house, Color.GRAY, "#888888").lerp(Color.WHITE, 0.45)
 	var model: Node3D = _people.make(rng, People.station(person), tint, age, "", str(person.get("gender", "")), key)
 	if model == null:
 		return null

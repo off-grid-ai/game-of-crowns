@@ -218,7 +218,7 @@ func _dress_stage(house: Dictionary, family: Dictionary) -> void:
 	for n in _stage.get_children():
 		if n.is_in_group("hero_dressing"):
 			n.queue_free()
-	var col := Color.from_string(String(house.get("color", "#8a6d3b")), Color(0.55, 0.42, 0.25))
+	var col := preload("res://scripts/heraldry.gd").colour(house, Color(0.55, 0.42, 0.25), "#8a6d3b")
 	# Their own land around them: its ground, sky, trees and, far off, a castle.
 	var who := "crown" if house.get("crown", false) else String(house.get("key", house.get("name", ""))).trim_prefix("House ").to_lower()
 	var land: Dictionary = LANDS.get(who, LANDS["thornvale"])
@@ -325,7 +325,7 @@ func _cast(person: Dictionary, house: Dictionary) -> void:
 	rng.seed = hash(key)
 	var years := int(person.get("age", 30))
 	var age := "child" if years < 14 else ("elder" if years > 60 else "adult")
-	var tint := Color.from_string(String(house.get("color", "#888888")), Color.GRAY).lerp(Color.WHITE, 0.45)
+	var tint := preload("res://scripts/heraldry.gd").colour(house, Color.GRAY, "#888888").lerp(Color.WHITE, 0.45)
 	var model: Node3D = _people.make(rng, People.station(person), tint, age, "", str(person.get("gender", "")), key)
 	model.scale /= People.S  # the stage is in metres, the realm at town scale
 	_body = Node3D.new()
@@ -461,7 +461,7 @@ func _fill_panel(p: Dictionary, house: Dictionary, editing := false) -> void:
 	v.add_child(head)
 	if not family.is_empty():
 		head.add_child(_arms(family, Color.WHITE, 40))
-	var liege := _arms(house, Color.from_string(String(house.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.25), 40 if family.is_empty() else 22)
+	var liege := _arms(house, preload("res://scripts/heraldry.gd").colour(house, Color.GRAY, "#888").lerp(Color.WHITE, 0.25), 40 if family.is_empty() else 22)
 	if liege.texture:
 		head.add_child(liege)
 	var names := VBoxContainer.new()

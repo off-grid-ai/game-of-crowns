@@ -87,7 +87,7 @@ func show_ledger(rows: Array, houses: Dictionary) -> void:
 		var top := maxf(1.0, ranked[0]["now"] if not ranked.is_empty() else 1.0)
 		for e in ranked:
 			var h: Dictionary = houses[e["name"]]
-			var col := Color.from_string(String(h.get("color", "#888")), Color.GRAY)
+			var col := preload("res://scripts/heraldry.gd").colour(h, Color.GRAY, "#888")
 			var row := HBoxContainer.new()
 			row.add_theme_constant_override("separation", 12)
 			var who := T.datum(String(e["name"]).replace("House ", ""), T.SIZE_DESC, T.TEXT)

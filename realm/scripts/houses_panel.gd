@@ -120,7 +120,7 @@ func _fill_houses(world: Dictionary) -> void:
 			slot.add_child(ui.sigil_icon(h, 20))
 		else:
 			var mark := ColorRect.new()
-			mark.color = Color.from_string(String(h.get("color", "#888")), Color.GRAY)
+			mark.color = preload("res://scripts/heraldry.gd").colour(h, Color.GRAY, "#888")
 			mark.custom_minimum_size = Vector2(3, 16)
 			slot.add_child(mark)
 		grid.add_child(slot)

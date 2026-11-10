@@ -822,7 +822,7 @@ func set_realm(owners: Array, players: Array) -> void:
 		truces[int(p["id"])] = []
 		sworn[int(p["id"])] = p.get("sworn") != null
 		var h: Dictionary = p.get("house", {})
-		colour[int(p["id"])] = Color(0, 0, 0, 0) if h.get("wild", false) else Color.from_string(String(h.get("color", "#888")), Color.GRAY)
+		colour[int(p["id"])] = Color(0, 0, 0, 0) if h.get("wild", false) else preload("res://scripts/heraldry.gd").colour(h, Color.GRAY, "#888")
 	# The bridge names the foes ("Wolfholt", "the Crown"); the map wants their ids.
 	var by_name := {}
 	for p in players:

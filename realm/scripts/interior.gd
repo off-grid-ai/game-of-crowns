@@ -112,7 +112,7 @@ func open(room: String, person: Dictionary, house: Dictionary, town_name: String
 	_yaw = deg_to_rad(float(fit.get("face", 0.0)))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(str(person.get("id", "")))
-	var tint := Color.from_string(String(house.get("color", "#888888")), Color.GRAY).lerp(Color.WHITE, 0.45)
+	var tint := preload("res://scripts/heraldry.gd").colour(house, Color.GRAY, "#888888").lerp(Color.WHITE, 0.45)
 	# The same named person, the same body, as in the hero view and the streets.
 	_figure = people.make(rng, People.station(person), tint, "adult", "", str(person.get("gender", "")), str(person.get("id", "")))
 	_figure.scale /= S
