@@ -27,6 +27,19 @@ collections `decisions`, `picks`, `notes`). In leverage order:
 6. **Stories and the player's own beats to the same bar:** no early or coin-flip endings, an ultimatum
    before every march, beats that bring matters to court and react to rulings.
 
+## Now building (Mac, 2026-11-10: "it isn't fun; research what makes it fun, then build it")
+In order, each judged by GAME_DESIGN.md's engagement model and fun bar:
+1. **C, the royal ladder:** one aim always on screen, a reward in the world, the next aim named. (built)
+2. **A, the Crown's lands to build:** pick one build a season; it rises over seasons and produces; finished ones unlock the next.
+3. **B, the royal host:** one order a season, a battle with a forecast ("about 60% to hold"), the camera cuts to it, and a town taken turns to the Crown.
+4. **A verb between courts:** a few royal acts a season (send the host, rush a building, spend favour), one meter that refills each season.
+5. **Pending outcomes:** some answers start things that land in 1–2 seasons, marked on the map with a countdown.
+6. **Readable rules:** the Hand names a rule of the realm once, and later matters reward knowing it.
+7. **Juice:** every answer and order gets a seal, a sound, a reaction in the world, and a camera move in under 2 s.
+8. **Near-misses and named stakes:** "Varn: 2 favour from rebellion"; how close you are to the next name.
+9. **Rhythm across the acts:** build, then army, then the threat, then the battle you prepared for; the interlude asks what you'll do next act.
+10. **Houses react to your project:** lords petition about your walls and your host.
+
 ## Who does what
 
 - **This session builds everything,** one step after another (goc-cpto; Mac, 2026-11-09: no parallel builders). Read-only agents may review, research or find causes; they never edit.

@@ -62,6 +62,9 @@ names the test that decides it. A change that lowers any line is a regression.
 | I see what I did, fast | Time from your answer to a change where you're looking | Under 2 s, then in the world |
 | My choices come back | Later matters that name an earlier ruling and ask differently because of it | Several a reign |
 | Fresh every reign | Repeated matters or names within a reign; new things on the third reign | None; yes |
+| I'm building something | Can the player point at the map and say "I made that, and I don't want to lose it"? | Yes, by minute 10 |
+| Something of mine is pending | At any pause, how many things the player started are still unresolved? | At least two, one of them near |
+| I learned a rule | At minute 10, one rule of the realm they didn't know at minute 2, and used | Yes |
 
 Stories and beats pass it too, the player's own included: every beat names a person and what they want,
 lands in an act, costs something whichever way it goes, can remember an earlier ruling, and never ends the
@@ -70,6 +73,25 @@ reign on its own. The beat form guides the author to all of that.
 **Measure, don't guess.** Count from the chronicle of a real reign before and after a change (decisions
 per minute, quiet share, repeats, time to feedback). Tag any figure that is an estimate. Borrow from what
 players of these games reward and punish, by frequency, not from one review.
+
+## The engagement model
+The fun bar keeps the player from being overwhelmed; this keeps them wanting to go on. Quiet time with
+nothing of theirs at stake is dead air, not breathing room. From Koster, Hopson, Csikszentmihalyi and
+Schell, Meier, self-determination theory, Swink, Costikyan and the IKEA effect:
+
+1. **Fun is a pattern still being learned.** The realm has a few consistent rules the player can read and use.
+2. **Nested loops, each closing with something felt.** At any moment the player can say what they're doing and what they're waiting for.
+3. **Tension in waves.** It rises, releases and peaks; never flat.
+4. **Interesting decisions.** No option is always right; the situation changes the answer.
+5. **Competence, autonomy, relatedness.** He gets better, chooses what to do (not only how to answer), and cares about someone.
+6. **Every input answered within a fifth of a second:** sound, motion, a change in the world.
+7. **Uncertainty with stakes.** Something of his rides on an outcome he can partly read.
+8. **Ownership.** What he built, he values; give him a place on the map that is his.
+9. **Open loops.** Things he started and wants to see finish pull him to the next minute.
+10. **The player is the hero.** The best moments happen because of him and are told that way.
+
+Never: passive watching sold as a living world; choices with a fixed best answer or no visible result;
+dark-pattern loops (streaks, login rewards, nags). A reign has a clock and a real ending.
 
 ## Feedback ladder
 - **This second:** the answer marks who it helps and hurts; your ruling's result glows on the card.
