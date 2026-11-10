@@ -52,9 +52,65 @@ static func add(name: String, usec: int) -> void:
 		return
 	var t: Array = tally.get(name, [0, 0])
 	tally[name] = [t[0] + usec, t[1] + 1]
+	_mark(name)
+
+
+## The freeze watch (GOC_PERF_PROBE only): a thread that wakes four times a
+## second, and when nothing on the main thread has finished for over a second,
+## logs the last job that did, the stage, and the job that came after it in the
+## frame before: the one most likely stuck. The official build is stripped, so
+## a native sample can't name GDScript; this can.
+static var _last_job := ""
+static var _last_at := 0
+static var _order := PackedStringArray()  # the jobs finished this frame, in order
+static var _prev_order := PackedStringArray()  # and in the frame before
+static var _watch: Thread
+static var _mutex := Mutex.new()
+
+
+static func _mark(name: String) -> void:
+	_mutex.lock()
+	_last_job = name
+	_last_at = Time.get_ticks_usec()
+	_order.append(name)
+	_mutex.unlock()
+	if _watch == null:
+		_watch = Thread.new()
+		_watch.start(_watching)
+
+
+## A new frame: the job order so far becomes the frame before's (main.gd calls
+## _log_perf every frame).
+static func _frame() -> void:
+	_mutex.lock()
+	_prev_order = _order
+	_order = PackedStringArray()
+	_last_at = Time.get_ticks_usec()
+	_last_job = "(frame start)"
+	_mutex.unlock()
+
+
+static func _watching() -> void:
+	var told := 0
+	while true:
+		OS.delay_msec(250)
+		_mutex.lock()
+		var at := _last_at
+		var job := _last_job
+		var before := _prev_order.duplicate()
+		var now := _order.duplicate()
+		_mutex.unlock()
+		var quiet := Time.get_ticks_usec() - at
+		if quiet > 1000000 and at != told:
+			told = at
+			var i := before.find(job)
+			var next := before[i + 1] if i >= 0 and i + 1 < before.size() else "(after the last wrapped job: an unwrapped node, physics, navigation or rendering)"
+			printerr("FREEZE-WATCH %.1f s with nothing finished: last done %s, next in the frame before %s; done this frame %s" % [quiet / 1000000.0, job, next, ",".join(now)])
 
 
 func _log_perf(delta: float) -> void:
+	if probing:
+		_frame()
 	if delta > 0.5:
 		print_verbose("STALL %.2f s after: %s" % [delta, Engine.get_meta("stage", "")])
 	_perf_at -= delta
