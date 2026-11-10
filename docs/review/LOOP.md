@@ -426,3 +426,12 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Slip:** 45f4e13 didn't parse (an untyped Variant); fixed a minute later in 2dd5aff. Rule kept: check-only before every commit, never after.
 - **Queued:** the judge's discovery questions (first 10 minutes, decisions, story shown, pace, repeats, ending, stability, UI cover), then LimboAI for one town.
 - **Verdict:** on course. Proof film of the alert is running.
+
+## 2026-11-10, 14:30 (discovery list)
+
+- **Winter ground blotchy grey and blue** (the judge, from the proof frames). Likely cause, from reading the code, not yet confirmed on film:
+  - winter swaps Terrain3D's whole grass texture to snow (land3d.gd:171 set_grass);
+  - the dirt, mud and field layers stay bare;
+  - under the cool winter tint (terrain.gd:107), the ground turns into patches of snow and bare earth instead of an even cover.
+  - The proven way is Terrain3D's own height and slope blending for a snow layer, not a texture swap. Not fixed; it's on the discovery list.
+- **Chip: PASS** (the judge). Drill and siege strips are being refilmed with the soldiers framed and the court closed.
