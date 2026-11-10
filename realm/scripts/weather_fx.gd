@@ -26,6 +26,7 @@ const RAIN_NEAR := Vector2(1.5, 4.0)
 const SNOW_NEAR := Vector2(3.0, 8.0)
 const RAIN_DROPS := 12000  # at full rain: dense, fine and close (Manor Lords), never a few long sticks
 const SNOW_FLAKES := 1600
+const CLEAR_OF_LENS := 0.25  # no drop or flake falls within this of the camera (game units, about 2 m)
 
 var sky3d: Node  # Sky3D
 var land3d: Node3D  # land3d.gd: the ground's wet sheen (set_wet)
@@ -110,8 +111,14 @@ func _fall(count: int, size: Vector2, colour: Color, speed: float, life: float, 
 	p.local_coords = false
 	p.visibility_aabb = AABB(Vector3(-12, -12, -12), Vector3(24, 24, 24))
 	var m := ParticleProcessMaterial.new()
-	m.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	m.emission_box_extents = Vector3(reach, 0.5, reach)
+	# A ring about the camera with a hollow middle (Godot's own ring emitter): no drop
+	# falls through the lens itself, where one would be a long white stick across the
+	# whole frame (film round 5, street level).
+	m.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_RING
+	m.emission_ring_axis = Vector3.UP
+	m.emission_ring_radius = reach
+	m.emission_ring_inner_radius = CLEAR_OF_LENS
+	m.emission_ring_height = 1.0
 	m.direction = Vector3(0.08, -1, 0.04)
 	m.spread = 4.0
 	m.initial_velocity_min = speed * 0.85
