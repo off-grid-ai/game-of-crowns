@@ -278,6 +278,21 @@ function handLine(ctx, p) {
 
 // What stands before the King now: a crisis first, then the sitting's own
 // matters (the realm's, then the petitioners). Empty between sittings.
+// Where a matter lives on the map: the town it's about (a deck card's town, a
+// story's or the Hand's acts, a threat's own place), else its petitioner's seat,
+// else the King's own. {city, x, y, name} in tile coords; the view anchors the
+// matter's marker and its choices there (builder 2's anchored card).
+export function placeOf(ctx, item) {
+  const { world, court } = ctx;
+  if (item.place?.x != null) return item.place;
+  const town = (id) => (id == null ? null : world?.cities?.find((x) => x.id === Number(id)));
+  const seat = (cid) => town(court.people?.[cid]?.seat);
+  const crown = world?.players?.find((p) => houseFor(p).crown);
+  const c = town(item.city) ?? town(item.roles?.town?.id ?? item.roles?.town) ?? town((item.acts ?? []).find((a) => a.city != null)?.city)
+    ?? seat(item.from) ?? world?.cities?.find((x) => crown && x.owner === crown.id && x.capital);
+  return c ? { city: c.id, x: c.x, y: c.y, name: c.title ?? c.name } : null;
+}
+
 export function docket(ctx) {
   const { world, court, counselNow } = ctx;
   const c = courtYearOf(ctx);
@@ -289,7 +304,7 @@ export function docket(ctx) {
     // Brought by the lord of the house it touches; a matter of the whole realm, by the Hand himself.
     const owner = ownerOf(o);
     const lord = owner ? court.lordOfHouse(owner.id) : null;
-    return { id: `hand:${key}`, hand: true, key, crisis: m.crisis, sitting: m.sitting, text: o.text, why: o.why, acts: o.acts,
+    return { id: `hand:${key}`, hand: true, key, crisis: m.crisis, sitting: m.sitting, text: o.text, why: o.why, acts: o.acts, place: o.place ?? null,
       name: lord?.name ?? "The Hand of the King", house: lord ? houseFor(owner).name : "", from: lord?.id ?? null, who: lord ? court.sitter(lord.id) : null, due: null };
   }).filter(Boolean).sort((a, b) => Number(b.crisis) - Number(a.crisis));
   // No fuse at court: the realm holds while it sits, so no timer would tell true.
@@ -304,7 +319,8 @@ export function docket(ctx) {
   const pets = court.open().filter((p) => p.called != null).map((p) => ({ ...p, options: priced(p), due: null, sitting: p.called, counsel: handLine(ctx, p), push: !!c.push }));
   // A court with nothing left to show the King is no court: the doors close, the realm moves.
   if (c.sitting != null && !hand.length && !pets.length) { c.hand = {}; closeIfDone(ctx, world?.turn ?? 0, true); }
-  return [...hand.map((x) => ({ ...x, push: !!c.push })), ...pets];
+  // Every matter carries its place, and its petitioner's id for their face (null for the Hand himself).
+  return [...hand.map((x) => ({ ...x, push: !!c.push })), ...pets].map((x) => ({ ...x, place: placeOf(ctx, x), petitioner: x.from ?? null }));
 }
 
 // --- the court's routes ----------------------------------------------------------
