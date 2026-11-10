@@ -49,6 +49,8 @@ const LedgerPanel := preload("res://scripts/ledger_panel.gd")
 const ReignCards := preload("res://scripts/reign_cards.gd")
 const RankStrip := preload("res://scripts/rank_strip.gd")
 const CameraPad := preload("res://scripts/camera_pad.gd")
+const ChroniclePanel := preload("res://scripts/chronicle_panel.gd")
+const HouseCard := preload("res://scripts/house_card.gd")
 
 var _root: Control
 var _omens: ColorRect  # omens.gd: blood and soot, the colour draining, at the screen's edge
@@ -70,10 +72,13 @@ var houses_drawer := HousesPanel.new(self)  # the great houses drawer (houses_pa
 var _houses_panel: PanelContainer:
 	get:
 		return houses_drawer._houses_panel
-var _chron_panel: PanelContainer
-var _chronicle: RichTextLabel
-var _lines: Array[String] = []
-var _ticker: VBoxContainer
+var chronicle := ChroniclePanel.new(self)  # the chronicle drawer and the ticker (chronicle_panel.gd): their state lives there
+var _chron_panel: PanelContainer:
+	get:
+		return chronicle._chron_panel
+var _ticker: VBoxContainer:  # the latest events along the bottom; the cards hide it while they have the screen
+	get:
+		return chronicle._ticker
 
 var town_card := TownPanel.new(self)  # the town card (town_panel.gd): its state lives there
 # The town card's state, read and set here by the cards it shares the screen with.
@@ -126,7 +131,10 @@ var reign_cards := ReignCards.new(self)  # the digest, the tellings and the reig
 var _digest_panel: PanelContainer:
 	get:
 		return reign_cards._digest_panel
-var _house_panel: PanelContainer
+var house_card := HouseCard.new(self)  # the house card (house_card.gd): its state lives there
+var _house_panel: PanelContainer:
+	get:
+		return house_card._house_panel
 var camera_pad := CameraPad.new(self)  # the camera pad by the minimap (camera_pad.gd): its state lives there
 var rank_strip := RankStrip.new(self)  # the houses' ladder over the minimap (rank_strip.gd): its state lives there
 var ledger := LedgerPanel.new(self)  # the ledger card (ledger_panel.gd): its state lives there
@@ -143,7 +151,6 @@ var _toast: Label
 var _toast_box: PanelContainer  # the card the notice sits on
 var _toast_style: StyleBox  # its usual glass
 var _toast_solid: StyleBox  # fully opaque, for when it must sit over a card
-var _stories := {}  # chronicle seq -> a story beat's entry, for its link
 var _offer: PanelContainer  # "Watch": the latest moment worth seeing, for a few seconds
 var _offer_left := 0.0
 var _toast_top := 78.0  # just under the top bar
@@ -811,46 +818,11 @@ func _build_houses() -> void:
 
 
 func _build_chronicle() -> void:
-	_chron_panel = _glass_panel()
-	_chron_panel.anchor_left = 1.0
-	_chron_panel.anchor_right = 1.0
-	_chron_panel.anchor_bottom = 1.0
-	_chron_panel.offset_left = -340
-	_chron_panel.offset_right = -10
-	_chron_panel.offset_top = 84  # under the named toolbar keys
-	_chron_panel.offset_bottom = -(12 + MINIMAP_SIZE.y + 8 + 10)  # above the minimap and camera pad
-	_chron_panel.visible = false
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 10)
-	_chron_panel.add_child(v)
-	v.add_child(T.label("Chronicle of the realm"))
-	_chronicle = RichTextLabel.new()
-	_chronicle.bbcode_enabled = true
-	_chronicle.scroll_active = true
-	_chronicle.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_chronicle.meta_underlined = false
-	_chronicle.meta_clicked.connect(func(meta):
-		var m := str(meta)
-		if m.begins_with("story:"):
-			story_opened.emit(_stories.get(int(m.substr(6)), {}))
-		else:
-			focus_city.emit(int(m)))
-	v.add_child(_chronicle)
+	chronicle._build_chronicle()
 
 
-## The three latest events, quietly along the bottom; click one to go there.
 func _build_ticker() -> void:
-	_ticker = VBoxContainer.new()
-	_ticker.anchor_top = 1.0
-	_ticker.anchor_bottom = 1.0
-	_ticker.offset_left = 16
-	_ticker.offset_top = -130
-	_ticker.offset_bottom = -16
-	_ticker.alignment = BoxContainer.ALIGNMENT_END
-	_ticker.add_theme_constant_override("separation", 5)
-	_ticker.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ticker.visible = true  # what just happened (UI.md 2): the chronicle starts closed, so the news lives here
-	_root.add_child(_ticker)
+	chronicle._build_ticker()
 
 
 func _build_town_panel() -> void:
@@ -1075,8 +1047,6 @@ func _process(delta: float) -> void:
 	_toast_box.visible = _toast_box.modulate.a > 0.01
 
 
-## A great house in full: its standing now and how it has moved, its lord,
-## its bannermen and their loyalty, its wars and its friends.
 ## A small "see" button that opens the character view on a person.
 func _see_btn(person: Dictionary, house: Dictionary) -> Button:
 	var b := Button.new()
@@ -1089,103 +1059,10 @@ func _see_btn(person: Dictionary, house: Dictionary) -> Button:
 	return b
 
 
+## A great house in full (house_card.gd); this forwards to it, so main.gd and
+## the rest call the interface as before.
 func show_house(d: Dictionary) -> void:
-	if _house_panel:
-		_house_panel.queue_free()
-	if d.is_empty() or d.has("error"):
-		return
-	_house_panel = _card(_glass_panel())
-	_house_panel.offset_top = 70
-	# Scrolls when a house has more bannermen than the screen holds.
-	var scroll := ScrollContainer.new()
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.name = "Scroll"
-	_house_panel.add_child(scroll)
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 10)
-	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(v)
-	var head := HBoxContainer.new()
-	head.add_theme_constant_override("separation", 14)
-	v.add_child(head)
-	head.add_child(_sigil_icon(d, 40))
-	var names := VBoxContainer.new()
-	names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	head.add_child(names)
-	names.add_child(T.title(String(d.get("name", "")), 22))
-	if String(d.get("words", "")) != "":
-		names.add_child(T.label("“%s”  ·  %s" % [d["words"], d.get("seat", "")], T.TEXT_2))
-	head.add_child(_btn("Lore", func(): lore_opened.emit(int(d.get("id", -1)))))
-	head.add_child(_btn("Add a character", func(): character_form.emit(int(d.get("id", -1)))))
-	head.add_child(_btn("Close", func(): _house_panel.visible = false))
-	# The numbers, each with how far it has moved over the last years.
-	var hist: Array = d.get("history", [])
-	var now: Dictionary = hist[-1] if hist.size() > 0 else {}
-	var then: Dictionary = hist[0] if hist.size() > 0 else {}
-	var grid := GridContainer.new()
-	grid.columns = 3
-	grid.add_theme_constant_override("h_separation", 26)
-	grid.add_theme_constant_override("v_separation", 8)
-	v.add_child(grid)
-	for pair in [["Treasury", "gold"], ["Souls", "souls"], ["Men-at-arms", "armies"], ["Grain", "grain"], ["Towns", "towns"]]:
-		var key: String = pair[1]
-		var cell := VBoxContainer.new()
-		cell.add_child(T.label(pair[0]))
-		var val := int(now.get(key, 0))
-		var diff := val - int(then.get(key, val))
-		var row := HBoxContainer.new()
-		row.add_child(T.datum(_real(key, val), 20))
-		if diff != 0:
-			row.add_child(T.datum(("  ▲ %s" if diff > 0 else "  ▼ %s") % _real(key, absi(diff)), T.SIZE_DESC, Color("#7fb069") if diff > 0 else Color("#e86b5c")))
-		cell.add_child(row)
-		cell.add_child(_spark(hist.map(func(r): return float(r.get(key, 0)))))
-		grid.add_child(cell)
-	if d.get("favour") != null:
-		var cell := VBoxContainer.new()
-		cell.add_child(T.label("Favour to the crown (of 100)"))
-		cell.add_child(T.datum("%d" % int(d["favour"]), 20))
-		grid.add_child(cell)
-	var lord: Dictionary = d.get("lord", {}) if d.get("lord") is Dictionary else {}
-	if not lord.is_empty():
-		v.add_child(HSeparator.new())
-		v.add_child(T.label("The lord"))
-		var lr := HBoxContainer.new()
-		var ln := T.datum("%s, %d" % [lord.get("name", ""), int(lord.get("age", 0))], 16)
-		ln.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		lr.add_child(ln)
-		lr.add_child(_see_btn(lord, d))
-		v.add_child(lr)
-		v.add_child(_wrapped(T.label("%s  ·  wants to %s" % [", ".join(lord.get("traits", [])), lord.get("goal", "endure")], T.TEXT_2)))
-	var men: Array = d.get("bannermen", [])
-	if men.size() > 0:
-		v.add_child(T.label("Bannermen"))
-		for m in men:
-			var r := HBoxContainer.new()
-			r.add_theme_constant_override("separation", 8)
-			var arms := _sigil_icon({}, 18)
-			_set_arms(arms, family_of(String(m.get("name", "")), d))
-			if not arms.visible:
-				arms.visible = true  # holds the column, so the names line up
-			r.add_child(arms)
-			var n := T.datum("%s%s%s%s" % [m.get("name", ""), ("  ·  " + String(m["role"])) if m.get("role") else "", ("  ·  " + String(m["seat"])) if m.get("seat") else "", "  ✦" if m.get("created", false) else ""], T.SIZE_DESC, T.ACCENT if m.get("created", false) else T.TEXT)
-			n.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			r.add_child(n)
-			var loyal := int(m.get("loyalty", 50))
-			r.add_child(T.datum("loyalty %d" % loyal, T.SIZE_DESC, Color("#e86b5c") if loyal < 35 else T.TEXT_2))
-			r.add_child(_see_btn(m, d))
-			v.add_child(r)
-	var wars: Array = d.get("wars", [])
-	var truces: Array = d.get("truces", [])
-	var allies: Array = d.get("allies", [])
-	if wars.size() > 0 or truces.size() > 0 or allies.size() > 0:
-		v.add_child(HSeparator.new())
-		if wars.size() > 0:
-			v.add_child(_wrapped(T.datum("At war with " + ", ".join(wars), T.SIZE_DESC, Color("#e86b5c"))))
-		if truces.size() > 0:
-			v.add_child(_wrapped(T.datum("Under the King's truce with " + ", ".join(truces), T.SIZE_DESC, T.ACCENT)))
-		if allies.size() > 0:
-			v.add_child(_wrapped(T.datum("Allied with " + ", ".join(allies), T.SIZE_DESC, T.TEXT_2)))
-	_court_panel.visible = false
+	house_card.show_house(d)
 
 
 func _folk_shell() -> VBoxContainer:
@@ -1407,23 +1284,6 @@ func _toggle_ledger() -> void:
 ## main.gd and the rest call the interface as before.
 func show_ledger(rows: Array, houses: Dictionary) -> void:
 	ledger.show_ledger(rows, houses)
-
-
-## A small trend line of a house's history.
-func _spark(values: Array) -> Control:
-	var c := Control.new()
-	c.custom_minimum_size = Vector2(110, 22)
-	c.draw.connect(func():
-		if values.size() < 2:
-			return
-		var lo: float = values.min()
-		var hi: float = values.max()
-		var span := maxf(hi - lo, 1.0)
-		var pts := PackedVector2Array()
-		for i in values.size():
-			pts.append(Vector2(c.size.x * i / (values.size() - 1), c.size.y - 2.0 - (values[i] - lo) / span * (c.size.y - 4.0)))
-		c.draw_polyline(pts, T.TEXT_2, 1.5, true))
-	return c
 
 
 ## "While you were away" (reign_cards.gd).
@@ -2090,82 +1950,14 @@ func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 	town_card.show_town(c, house, _player)
 
 
+## The chronicle and the ticker live in chronicle_panel.gd; these forward to it,
+## so main.gd and the rest call the interface as before.
 func add_chronicle(entries: Array) -> void:
-	for e in entries:
-		var kind := String(e.get("kind", ""))
-		# Red only for the King's own losses (a rising, a betrayal, or anything that
-		# touches the crown); another house's plague or death reads plain, so red means something.
-		var said := String(e.get("text", ""))
-		var touches_crown := said.contains("The Crown") or said.contains("Kingsmere") or said.contains("the King's") or said.contains("the crown")
-		var loss: bool = kind in ["civil_war", "betrayal", "rebellion"] or (touches_crown and kind in ["city_shrank", "disaster", "city_destroyed", "building_lost", "city_transferred", "raid", "death", "unrest"])
-		var tone := "#e86b5c" if loss else ("#9a9a96" if kind == "year" else "#ecece8")
-		var text := "[color=%s]%s[/color]" % [tone, e.get("text", "")]
-		# A beat of a story arc is told under the story's own name, and the name
-		# takes you to its people; any other line with a town, to the town.
-		if e.get("thread"):
-			_stories[int(e.get("seq", 0))] = e
-			text = "[url=story:%d][color=#c9a45c]%s[/color][/url]   %s" % [int(e.get("seq", 0)), e["thread"], text]
-		elif e.has("city") and e["city"] != null:
-			text = "[url=%d]%s[/url]" % [int(e["city"]), text]
-		_lines.push_front("[font_size=11][color=#6f6f6c]%s[/color][/font_size]   %s" % [_season_of(int(e.get("turn", 0))), text])
-		if kind != "year":
-			_tick(e, loss)
-	if _lines.size() > 300:
-		_lines.resize(300)
-	_chronicle.text = "\n\n".join(_lines)
-
-
-func _tick(e: Dictionary, loss: bool) -> void:
-	# A quiet chip of smoked glass; the dot carries the tone (red for loss), not the text.
-	var l := Button.new()
-	l.text = String(e.get("text", "")).left(120)
-	l.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	l.focus_mode = Control.FOCUS_NONE
-	l.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	l.icon = _dot()
-	l.add_theme_color_override("icon_normal_color", T.DANGER if loss else T.ACCENT)
-	l.add_theme_color_override("icon_hover_color", T.DANGER if loss else T.ACCENT)
-	l.add_theme_constant_override("h_separation", 8)
-	l.add_theme_color_override("font_color", T.TEXT)
-	l.add_theme_color_override("font_hover_color", T.TEXT)
-	l.add_theme_font_size_override("font_size", T.SIZE_DESC + 1)
-	var chip := T._box(T.SURFACE_SOLID, T.HAIRLINE, 7, 10)
-	chip.content_margin_top = 5
-	chip.content_margin_bottom = 5
-	l.add_theme_stylebox_override("normal", chip)
-	l.add_theme_stylebox_override("hover", T._box(Color(T.SURFACE_SOLID.r + 0.05, T.SURFACE_SOLID.g + 0.05, T.SURFACE_SOLID.b + 0.05, 0.9), T.HAIRLINE, 7, 10))
-	l.add_theme_stylebox_override("pressed", chip)
-	if e.has("city") and e["city"] != null:
-		var id := int(e["city"])
-		l.pressed.connect(func(): focus_city.emit(id))
-	_ticker.add_child(l)
-	while _ticker.get_child_count() > 3:
-		_ticker.get_child(0).free()
-	var tw := l.create_tween()
-	tw.tween_interval(14.0)
-	tw.tween_property(l, "modulate:a", 0.0, 1.5)
-
-
-static var _dot_tex: Texture2D
-
-
-## A small round marker, made once.
-static func _dot() -> Texture2D:
-	if _dot_tex == null:
-		var img := Image.create(10, 10, false, Image.FORMAT_RGBA8)
-		for y in 10:
-			for x in 10:
-				var d := Vector2(x - 4.5, y - 4.5).length()
-				img.set_pixel(x, y, Color(1, 1, 1, clampf(4.2 - d, 0.0, 1.0)))
-		_dot_tex = ImageTexture.create_from_image(img)
-	return _dot_tex
+	chronicle.add_chronicle(entries)
 
 
 func clear_chronicle() -> void:
-	_lines.clear()
-	_chronicle.text = ""
-	for c in _ticker.get_children():
-		c.queue_free()
+	chronicle.clear_chronicle()
 
 
 # --- the court --------------------------------------------------------------------------
