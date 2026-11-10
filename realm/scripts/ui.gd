@@ -34,6 +34,8 @@ signal story_opened(entry: Dictionary)
 signal reign_continued  # the reign was scored, and the King rules on
 signal court_closed  # the doors shut: the realm moves, and the camera may go and look
 signal interlude_closed  # the King has read the act just gone: the realm goes on
+signal last_event  # Space: go to the latest news, or back again
+signal event_back  # Home: back to where the King was
 signal house_followed(player_id: int)  # a sigil on the ladder clicked: the camera goes with that house's host
 signal counsel_answered(key: String)  # the King answered the Hand's matter  # a story's name clicked in the chronicle
 
@@ -743,6 +745,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		_chron_panel.visible = _chron_btn.button_pressed
 	elif event.is_action_pressed(&"home"):
 		home_view.emit()
+	elif event.is_action_pressed(&"last_event"):
+		last_event.emit()
+	elif event.is_action_pressed(&"event_back"):
+		event_back.emit()
 	elif event.is_action_pressed(&"minimap"):
 		minimap.get_parent().visible = not minimap.get_parent().visible
 	elif event.is_action_pressed(&"ledger"):
@@ -1874,6 +1880,31 @@ func offer_watch(text: String, go: Callable) -> void:
 	b.add_theme_color_override("font_color", T.ACCENT)
 	row.add_child(b)
 	_offer_left = 12.0
+
+
+## An arrow at the screen's edge pointing to the latest news when it's off
+## screen (the RTS way): click it, or press Space, to go there.
+var _edge: Button
+
+
+func edge_arrow(at, angle: float, text: String) -> void:
+	if _edge == null:
+		_edge = _btn("", func(): last_event.emit())
+		_edge.add_theme_color_override("font_color", T.ACCENT)
+		_edge.add_theme_font_size_override("font_size", 13)
+		_root.add_child(_edge)
+	_edge.visible = at != null and not _cinema_on
+	if not _edge.visible:
+		return
+	var arrows := ["→", "↘", "↓", "↙", "←", "↖", "↑", "↗"]
+	var i := posmod(roundi(angle / (PI / 4.0)), 8)
+	_edge.text = "%s  %s" % [arrows[i], text] if i in [4, 5, 6, 3] else "%s  %s" % [text, arrows[i]]
+	_edge.tooltip_text = "Go there (Space)"
+	var sz := _edge.get_combined_minimum_size()
+	var view := get_viewport().get_visible_rect().size
+	var p: Vector2 = at
+	_edge.position = Vector2(clampf(p.x - sz.x * 0.5, 12, view.x - sz.x - 12), clampf(p.y - sz.y * 0.5, 120, view.y - sz.y - 12)).round()
+	_edge.size = sz
 
 
 func toast(text: String) -> void:

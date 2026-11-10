@@ -325,6 +325,8 @@ func _ready() -> void:
 	ui.open_menu.connect(func(): title.open())
 	ui.counsel_answered.connect(func(key): bridge.counsel_answered(key))
 	ui.court_closed.connect(func(): director.soon())  # the doors shut: the camera goes to look
+	ui.last_event.connect(_to_news)
+	ui.event_back.connect(_back_from_news)
 	ui.house_followed.connect(_follow_house)  # a house's sigil clicked: go with its host
 	ui.interlude_closed.connect(func(): bridge.close_interlude())  # the act told back: the realm goes on
 	ui.reign_continued.connect(func(): bridge.continue_reign(func(_c, d): if d is Dictionary: ui.set_reign(d)))
@@ -969,6 +971,8 @@ var _folk_held := {}  # the villager whose card is open: they stand still for it
 
 
 func _process(_delta: float) -> void:
+	if ui and rig and terrain:
+		_edge_tick(_delta)
 	_game_ms += _delta * 1000.0
 	# The game took the camera down to the land (a town framed, a battle): the map steps aside.
 	if _over_open and rig._goal_distance < rig.OVERVIEW * 0.9:
@@ -1503,8 +1507,15 @@ func _stage_test_battle(world: Dictionary, best: Dictionary) -> void:
 	scenes._battle(field, _houses.get(int(best["owner"]), {}))
 
 
+## The latest news the King might want to see, for Space and the edge arrow.
+var _news := {}  # {s, follow, at: Vector3, caption, ms}
+var _before_news := {}  # where the camera was before Space took it to the news
+
+
 func _on_staged(s: Dictionary, follow: Node3D) -> void:
 	var kind := String(s.get("kind", ""))
+	if kind in KINGS_OWN or kind in WAR:
+		_news = {"s": s, "follow": follow, "at": terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0))), "caption": director.caption(s), "ms": Time.get_ticks_msec()}
 	if kind in KINGS_OWN or kind in WAR:
 		# The King's own deeds are always offered; what the lords do, at most every 20 s.
 		_offer(director.caption(s), director.watch.bind(s, follow), kind in KINGS_OWN and not s.get("lord", false))
@@ -1870,3 +1881,56 @@ func _tour(world: Dictionary) -> void:
 		await get_tree().create_timer(5.0).timeout
 		await snap.call("interior")
 	get_tree().quit()
+
+
+## Space, as in Warcraft and StarCraft: to the latest news, and pressed again,
+## back to where the King was. Home also goes back.
+func _to_news() -> void:
+	if not _before_news.is_empty():
+		_back_from_news()
+		return
+	if _news.is_empty():
+		return
+	_before_news = {"target": rig._goal_target, "distance": rig._goal_distance, "yaw": rig._goal_yaw, "tilt": rig._goal_tilt}
+	var f = _news.get("follow")
+	director.watch(_news["s"], f if is_instance_valid(f) else null)
+
+
+func _back_from_news() -> void:
+	if _before_news.is_empty():
+		return
+	director.active = false
+	rig._goal_target = _before_news["target"]
+	rig._goal_distance = _before_news["distance"]
+	rig._goal_yaw = _before_news["yaw"]
+	rig._goal_tilt = _before_news["tilt"]
+	_before_news = {}
+
+
+## The edge arrow: the latest news, for 40 s, when it's off screen.
+var _edge_left := 0.0
+
+
+func _edge_tick(delta: float) -> void:
+	_edge_left -= delta
+	if _edge_left > 0.0:
+		return
+	_edge_left = 0.15
+	var cam := get_viewport().get_camera_3d()
+	if _news.is_empty() or cam == null or Time.get_ticks_msec() - int(_news["ms"]) > 40000 or not _before_news.is_empty():
+		ui.edge_arrow(null, 0.0, "")
+		return
+	var at: Vector3 = _news["at"]
+	var view := get_viewport().get_visible_rect().size
+	var p := cam.unproject_position(at)
+	var behind := cam.is_position_behind(at)
+	if not behind and Rect2(Vector2.ZERO, view).grow(-40).has_point(p):
+		ui.edge_arrow(null, 0.0, "")  # it's on screen: no arrow
+		return
+	var mid := view * 0.5
+	var dir := (p - mid) * (-1.0 if behind else 1.0)
+	if dir.length() < 1.0:
+		dir = Vector2.UP
+	# Where the line from the centre toward it leaves the screen.
+	var k := minf((mid.x - 30) / maxf(absf(dir.x), 0.001), (mid.y - 30) / maxf(absf(dir.y), 0.001))
+	ui.edge_arrow(mid + dir * k, dir.angle(), String(_news["caption"]))

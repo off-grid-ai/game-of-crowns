@@ -75,8 +75,9 @@ const Heraldry = preload("res://scripts/heraldry.gd")
 const WAR := Color(0.95, 0.25, 0.2)
 const TROUBLE := Color(1.0, 0.7, 0.2)
 const CROWN := Color(1.0, 0.85, 0.45)
+const LORDS := Color(0.85, 0.82, 0.95)  # what the lords do: treachery, raids, letters, a death
 const PING := {"battle": WAR, "siege": WAR, "sack": WAR, "razed": WAR, "famine": TROUBLE, "plague": TROUBLE,
-	"muster": CROWN, "rider": CROWN, "grain": CROWN, "tribute": CROWN, "ward": CROWN}
+	"muster": CROWN, "rider": CROWN, "grain": CROWN, "tribute": CROWN, "ward": CROWN, "feast": CROWN, "handover": WAR}
 
 
 func _ready() -> void:
@@ -153,7 +154,8 @@ func _activity(world: Dictionary) -> void:
 	for sc in world.get("scenes", []):
 		var kind := String(sc.get("kind", ""))
 		if PING.has(kind):
-			_pings.append([Vector2(float(sc.get("x", 0)) + 0.5, float(sc.get("y", 0)) + 0.5), PING[kind], kind])
+			var col: Color = LORDS if sc.get("lord", false) and kind != "sack" and kind != "handover" else PING[kind]
+			_pings.append([Vector2(float(sc.get("x", 0)) + 0.5, float(sc.get("y", 0)) + 0.5), col, kind])
 	for c in world.get("cities", []):
 		var at := Vector2(float(c["x"]) + 0.5, float(c["y"]) + 0.5)
 		if c.get("disorder", false):
