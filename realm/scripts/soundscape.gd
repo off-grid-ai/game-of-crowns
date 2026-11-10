@@ -134,6 +134,8 @@ var _rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
 	_rng.randomize()
+	# Every clip anyone plays (people.gd): the work and the walking are heard in time with the move.
+	preload("res://scripts/people.gd").listen(_on_clip)
 	for bus in BUSES:
 		_bus(bus, BUSES[bus])
 	for bus in ["Music", "Ambience"]:
@@ -254,6 +256,7 @@ func _process(delta: float) -> void:
 	_tick_bells(delta)
 	_tick_music(delta)
 	_tick_duck(delta)
+	_tick_clips(delta)
 
 
 func _tick_lifts(delta: float) -> void:
@@ -367,6 +370,61 @@ func _tick_bells(delta: float) -> void:
 	var near := 1.0 - smoothstep(10.0, 60.0, float(_view["d"]))
 	if near > 0.1:
 		_sting("ambience/church_bells.ogg", -10.0 + linear_to_db(near), 0.0, Vector3.INF)
+
+
+# --- Moves, heard ----------------------------------------------------------------
+
+## The sounds a move makes, at fractions of its cycle: a walk's two footfalls,
+## a hammer's blow, an axe's bite. Keyed by the clip as it plays (people.gd's
+## hook), never a timer of its own guessing; only for people near the camera.
+const CLIP_SOUNDS := {
+	"Walk": ["step", [0.0, 0.5]], "Walking": ["step", [0.0, 0.5]], "Carry_Walk": ["step", [0.0, 0.5]],
+	"Injured_Walk": ["step", [0.0, 0.5]], "SS_Walk": ["step", [0.0, 0.5]], "GS_Walk": ["step", [0.0, 0.5]],
+	"Axe_Walk": ["step", [0.0, 0.5]], "Running": ["step", [0.0, 0.5]],
+	"Hammer_Swing": ["sfx/hammer.wav", [0.45]],
+	"Axe_Down": ["sfx/chop.wav", [0.5]],
+}
+const HEARD_WITHIN := 14.0  # game units from the camera: further, a move makes no sound
+var _clips := {}  # person -> [clip, period, t, looping, fired (hits this cycle)]
+
+
+func _on_clip(person: Node3D, clip: String, period: float, looping: bool) -> void:
+	if CLIP_SOUNDS.has(clip) and period > 0.05:
+		_clips[person] = [clip, period, 0.0, looping, 0]
+	else:
+		_clips.erase(person)  # a new move ends the old one's sounds
+
+
+func _tick_clips(delta: float) -> void:
+	if _clips.is_empty() or not is_inside_tree():
+		return
+	var cam := get_viewport().get_camera_3d()
+	for person in _clips.keys():
+		if not is_instance_valid(person):
+			_clips.erase(person)
+			continue
+		var c: Array = _clips[person]
+		var sound: Array = CLIP_SOUNDS[c[0]]
+		var t: float = c[2] + delta
+		if t >= c[1]:
+			if not c[3]:
+				_clips.erase(person)
+				continue
+			t -= c[1]
+			c[4] = 0
+		c[2] = t
+		var hits: Array = sound[1]
+		while c[4] < hits.size() and t >= float(hits[c[4]]) * c[1]:
+			c[4] += 1
+			var at: Vector3 = (person as Node3D).global_position
+			if cam and cam.global_position.distance_to(at) > HEARD_WITHIN:
+				continue
+			if sound[0] == "step":
+				footstep("wood" if _interior != "" else ("snow" if _view["season"] == "winter" else "grass"), at)
+			else:
+				var s: AudioStream = takes_of(sound[0], 1.08)
+				if s:
+					_one_shot(s, "SFX", -12.0, at, 1.0)
 
 
 # --- Music -------------------------------------------------------------------
