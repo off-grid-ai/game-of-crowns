@@ -17,7 +17,7 @@ import { readSave, extractDetail } from "./savefile.js";
 import { townsfolk } from "./townsfolk.js";
 import { ROLES, GOALS, TRAITS, setReignSeed } from "./characters.js";
 import { editRow, rng as rngFor } from "./fresh.js";
-import { folkTale, folkPlain, moodRules, speak, ruleFrom, reactTo, speech, voiceFor, transcribe, aiStatus } from "./claude.js";
+import { folkTale, folkPlain, moodRules, speak, speech, voiceFor, transcribe, aiStatus } from "./claude.js";
 import * as chron from "./chronicles.js";
 import * as names from "./names.js";
 import * as rewrites from "./written.js";
@@ -44,6 +44,9 @@ import * as Treasury from "./treasury.js";
 import { FAVOUR, WORK_SEASONS } from "./treasury.js";
 import * as Reign from "./reign.js";
 import { GOAL_FAVOUR } from "./reign.js";
+import * as Sittings from "./court.js";
+import * as Book from "./favourbook.js";
+import { LEAN, theirs } from "./favourbook.js";
 import { watched, usageToday, moodFrom, isWatched, arcFromWords, beatIdea, premiseIdea, writeFor } from "./claude.js";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -472,43 +475,13 @@ async function talkToNamed(res, city, id, b) {
   return json(res, 200, { name: c.name, gender: c.gender, ...out });
 }
 
-// A ruling on a petition, by option: the treasury pays, the realm changes,
-// favour shifts, the chronicle and the world show it. Shared by a chosen
-// option and a ruling in the King's own words.
-function rule(id, option) {
-  const asked = court.petitions.find((x) => x.id === id && !x.answered)?.options?.find((o) => o.id === option);
-  const purse = world.players.find((p) => houseFor(p).crown)?.gold ?? 0;
-  if (asked?.cost && purse < asked.cost) return { error: crowns(`the treasury holds ${purse} gold`) };
-  const petition = court.petitions.find((x) => x.id === id);
-  if (petition?.arc === "siege" && !(meta.campaigns ?? []).some((k) => `siege-${k.city}-${k.turn}` === petition.beat)) {
-    petition.answered = true;
-    return { error: "The siege is already over; the herald's terms no longer stand." };
-  }
-  const out = court.answer(id, option, world);
-  if (out.error) return out;
-  if (petition) {
-    const tag = petition.deck ? kingDeeds.tagsFor("deck", petition.kind, option) : petition.kind === "arc" ? (kingDeeds.tagsFor("arc", `${petition.arc}:${petition.beat}`, option) ?? kingDeeds.tagsFor("arc", petition.arc, option) ?? kingDeeds.tagsFor("arc", "story", option)) : kingDeeds.tagsFor("court", petition.kind, option);
-    const pc = petition.city != null ? world.cities.find((x) => x.id === Number(petition.city)) : null;
-    deed(tag ?? { axes: {} }, { favour: out.favour, place: pc ? cityName(pc.id) : (court.people?.[petition.from]?.house ?? "") });
-  }
-  // The one who asked remembers what the King answered, in their own words.
-  if (petition && asked) court.remember(petition.from, `I went before the King, and he ruled: ${String(asked.label ?? asked.id).toLowerCase()}.`);
-  const crownNow = world.players.find((p) => houseFor(p).crown);
-  if (out.cost && (crownNow?.gold ?? 0) < out.cost) return { error: crowns(`the treasury holds ${crownNow?.gold ?? 0} gold`) };
-  if (out.cost) {
-    send(`lua cmd for p in players_iterate() do if p.id == ${crownNow.id} then edit.change_gold(p, -${out.cost}) end end`);
-    crownNow.gold -= out.cost;
-  }
-  out.lua.forEach((l) => send(`lua cmd ${l}`));
-  // A ruling that sends the royal host (the siege plea's "relieve"): the same march as the decree.
-  if (out.march != null) marchOn(Number(out.march));
-  const effects = shiftAndTell(out.favour, "your ruling at court", out.cost);
-  // Every ruling is told, even one whose answer has no words of its own written for it.
-  if (!String(out.text ?? "").trim()) out.text = `The King gives his answer${petition ? ` to ${petition.name}` : ""}: ${String(asked?.label ?? option).replace(/ \(.*\)$/, "").toLowerCase()}.`;
-  record({ turn: world.turn, kind: "decree", text: out.text });
-  rulingScene(id, option, out);
-  return { ok: true, text: crowns(out.text) + (effects ? `\n${effects}` : "") };
-}
+// The court's sitting and its rulings (court.js). Its context, read fresh on
+// every call: getters for what the bridge reassigns (the sitting reads them
+// again after each await), setSitting for the hold.
+const sittingCtx = () => ({ get world() { return world; }, get meta() { return meta; }, get court() { return court; }, get counselNow() { return counselNow; },
+  get sitting() { return sitting; }, setSitting: (v) => { sitting = v; }, timeoutNow, send, record, scene, deed, crowns, marchOn, shiftAndTell, shiftFavour, favourOf, ceasefire, turnHouses, lapse, lapseOf });
+// A ruling on a petition, by option, and how the realm sees it (court.js).
+function rule(id, option) { return Sittings.rule(sittingCtx(), id, option); }
 
 // A town besieged, the royal host and its sieges: campaigns.js. Its context,
 // read fresh on every call; scenes is read live, as scene() may replace it.
@@ -538,37 +511,6 @@ function decreeScenes(cmd, result, seat, target) {
       scene("muster", { x: seat.x, y: seat.y, tx: target ? target.x : seat.x + 3, ty: target ? target.y : seat.y + 2, city: seat.id });
       break;
   }
-}
-
-// A ruling at court made visible: what the King gives goes out from
-// Kingsmere by wagon, a ward comes to Kingsmere, and any other word is
-// carried by a royal rider to the petitioner's seat.
-function rulingScene(id, option, out) {
-  const p = court.petitions.find((x) => x.id === id);
-  const who = p && court.people[p.from];
-  const seat = who && (world.cities.find((c) => c.id === who.seat) ?? world.cities.find((c) => c.owner === who.playerId && c.capital) ?? world.cities.find((c) => c.owner === who.playerId));
-  const crown = world.players.find((x) => houseFor(x).crown);
-  const king = world.cities.find((c) => c.owner === crown?.id && c.capital) ?? world.cities.find((c) => c.title === "Kingsmere");
-  const words = `${option} ${out.text}`.toLowerCase();
-  // A hanging or a burning is never shown: the town gathers in silence, then goes home (awareness.gd).
-  if (/^(hang|burn)$/.test(option) || /\bhang|\bburn(ed|s|ing)? (the|her|him|them)/.test(words)) {
-    const at = seat ?? king;
-    if (at) scene("vigil", { x: at.x, y: at.y, city: at.id, strength: 0.9 });
-    return;
-  }
-  if (seat && king && seat.id === king.id) {
-    // No journey from Kingsmere to itself: a gift is a feast in its square, a call to arms a muster.
-    if (out.cost > 0 || /grant|gift|feast|bless|endow|forgive/.test(words)) scene("feast", { x: king.x, y: king.y, city: king.id, owner: king.owner });
-    else if (/levy|march|strike|war|arms/.test(words)) scene("muster", { x: king.x, y: king.y, tx: king.x + 3, ty: king.y + 2, city: king.id });
-    return;
-  }
-  if (!seat || !king) return;
-  const go = (kind, from, to) => scene(kind, { x: from.x, y: from.y, tx: to.x, ty: to.y, city: to.id, label: out.text.split(/[.!]/)[0].slice(0, 60) });
-  if (p.kind === "match" && /bless|wed|consent|approve/.test(words) && !/refuse|forbid|deny/.test(words)) scene("feast", { x: seat.x, y: seat.y, city: seat.id, owner: seat.owner });
-  if (/ward|hostage/.test(words)) go("ward", seat, king);
-  else if (/grain|feed|harvest/.test(words)) go("grain", king, seat);
-  else if (out.cost > 0) go("tribute", king, seat);
-  else go("rider", king, seat);
 }
 
 function onEvent(line) {
@@ -747,147 +689,47 @@ async function runArcs(n = 1, start = true) {
   return true;
 }
 
-function saveFavour() {
-  fs.writeFileSync(path.join(P.state, "favour.json"), JSON.stringify(favour));
-  fs.writeFileSync(path.join(P.state, "favour-why.json"), JSON.stringify(favourWhy));
-  fs.writeFileSync(path.join(P.state, "deeds.json"), JSON.stringify(deeds));
-  fs.writeFileSync(path.join(P.state, "favour-past.json"), JSON.stringify({ byTurn: favourPast, net: lastSeason.net }));
-}
-
-function favourOf(id) {
-  return favour[id] ?? 60;
-}
+// The crown's favour book (favourbook.js): each house's favour and why, the
+// deeds it will not forget, kindness wearing thin, and where favour settles.
+// Its context, read fresh on every call; nextEffect numbers the effects.
+const favourCtx = () => ({ world, meta, P, favour, deeds, favourWhy, favourPast, lastSeason, effects, nextEffect: () => ++effectSeq, detail });
+function saveFavour() { return Book.saveFavour(favourCtx()); }
+function favourOf(id) { return Book.favourOf(favourCtx(), id); }
+// A deed the house will not forget, and the grievance named as the cause (favourbook.js).
+function recordDeed(id, d, why, turn) { return Book.recordDeed(favourCtx(), id, d, why, turn); }
+function causeOf(id) { return Book.causeOf(favourCtx(), id); }
+function noteFavour(id, d, why) { return Book.noteFavour(favourCtx(), id, d, why); }
+// Kindness wears thin (favourbook.js).
+function temper(action, house, changes) { return Book.temper(favourCtx(), action, house, changes); }
+// Shifts favour, and says what it did for the result card (favourbook.js).
+function shiftAndTell(changes, why, cost = 0) { return Book.shiftAndTell(favourCtx(), changes, why, cost); }
+function shiftFavour(changes, why = "", told = false) { return Book.shiftFavour(favourCtx(), changes, why, told); }
+// Where a house's favour settles when the King leaves it be (favourbook.js).
+function restingFavour(p) { return Book.restingFavour(favourCtx(), p); }
 
 // The Hand of the King advises: the realm's matters, worst first, with the
 // orders that answer them (counsel.js). Its context, read fresh on every call.
 const counselCtx = () => ({ world, meta, court, stakes, deeds, favourWhy, lastSeason, favourOf, seasonsLeft, priceOf, yearlyKey, FAVOUR, shiftFavour, record });
 function counsel(players, cities, threat) { return Counsel.counsel(counselCtx(), players, cities, threat); }
 
-// What a matter is, for resting it after it is answered (counsel.js).
-const matterKey = Counsel.matterKey;
-
-// --- the court's season -------------------------------------------------------
-// Once a season the court sits and the realm holds still: Freeciv's turn timer
-// stops, and the reign's clock with it. Petitioners bring their matters, and the
-// realm's own matters come with the lord of the house they touch; the Hand
-// speaks a line on each. The King answers, or closes the court and lets his
-// silence answer. Then the doors shut and the realm moves until next season.
-// One matter early in the reign, rising to three at the climax; a crisis takes
-// the head of the next sitting. No matter is put to him twice in a reign.
+// --- the court's season (court.js) ------------------------------------------------
+// Once a season the court sits and the realm holds still: its sitting, pace,
+// docket and rulings live in court.js. What the bridge's clock and routes read
+// stays here: the realm's matters, whether the court holds the realm, and
+// whether the King is away.
 let counselNow = [];  // the realm's matters, as the last reading of the world found them
 let sitting = false;  // a sitting holds the realm until the court closes
 let away = false;  // no window is watching: the realm waits for the King (every strategy game pauses when the player isn't there)
 const timeoutNow = () => (paused || sitting || away ? 0 : turnSeconds);
-const isCrisis = (o) => o.urgency >= 75 || /are at war$/.test(o.text);
-const courtYearOf = () => (meta.court ??= { sitting: null, hand: {}, heard: {}, lastCall: 0 });
-const heardCtx = () => ({ heard: (k) => courtYearOf().heard[k] != null, hear: (k) => { courtYearOf().heard[k] = world?.turn ?? 0; } });
-const courtCtx = () => ({ favour: favourOf, shift: shiftFavour, send: (l) => send(`lua cmd ${l}`), watched: isWatched(), options: meta.options ?? {}, ...heardCtx() });
-
-function hold(on) {
-  // An act told back holds the realm until the King has read it, whatever else lets go.
-  on = on || (meta?.status === "running" && meta?.interlude != null && !meta.interlude.seen);
-  // Only while the King watches: a realm left alone lives on, court or no court.
-  on = on && isWatched();
-  if (sitting === on) return;
-  sitting = on;
-  send(`set timeout ${timeoutNow()}`);
-}
-
-function callMatter(o, turn, crisis) {
-  const c = courtYearOf();
-  c.hand[o.key] = { crisis, sitting: turn };
-  c.heard[o.key] = turn;
-}
-
-// The court's pace: it sits only when it has something worth hearing. Through
-// the first half of the reign that is one matter every third season; in the
-// third quarter one or two every other season; at the climax every season, one
-// to three (about two); with no clock, one every other season. The petitions
-// setting thins or thickens it. Over a 15-minute reign: about 18 matters in 18
-// minutes of play, so one decision a minute, the board the King's about 80%
-// of the time (at ten seconds a decision).
-function pace() {
-  const k = meta.minutes ? meta.elapsedMs / (meta.minutes * 60000) : null;
-  const r = Math.random();
-  let [every, want] = k == null ? [2, 1] : k < 0.5 ? [3, 1] : k < 0.75 ? [2, r < 0.5 ? 1 : 2] : [1, r < 0.4 ? 1 : r < 0.8 ? 2 : 3];
-  const how = meta.options?.petitions;
-  if (how === "rare") { every += 1; want = Math.max(1, want - 1); }
-  if (how === "often") { every = Math.max(1, every - 1); want = Math.min(3, want + 1); }
-  return { every, want };
-}
-const HAND_YEAR = 4;  // seasons: the Hand calls the King in for a crisis at most once a year
-
-async function courtSeason(turn) {
-  if (!court || !world) return;
-  const c = courtYearOf();
-  // A matter the realm settled on its own (the famine ended, the war is over) goes quietly.
-  if (counselNow.length) for (const key of Object.keys(c.hand)) if (!counselNow.some((x) => x.key === key)) delete c.hand[key];
-  turnHouses(turn);  // watched or not: a house turns, and warns, either way
-  if (!isWatched() || c.sitting != null) { chron.saveMeta(meta); return; }
-  const { every, want: wanted } = pace();
-  const crises = counselNow.filter((o) => isCrisis(o) && o.acts?.length && c.heard[o.key] == null && !c.hand[o.key]);
-  // A herald's terms under a siege can't wait for the next sitting: the court sits for them.
-  const herald = court.petitions.some((p) => !p.answered && p.called == null && p.arc === "siege");
-  // Back from away with a matter waiting: the court sits at once.
-  const back = c.sitOnReturn && court.petitions.some((p) => !p.answered && p.called == null);
-  c.sitOnReturn = false;
-  const due = c.lastSat == null || turn - c.lastSat >= every || herald || back;
-  // Between sittings the Hand calls the King in only for a real crisis, at most once a year.
-  const push = !due && crises.length > 0 && (c.lastPush == null || turn - c.lastPush >= HAND_YEAR);
-  if (!due && !push) { chron.saveMeta(meta); return; }
-  let want = wanted;
-  // A lord whose town starves or is besieged speaks for it first, ahead of the
-  // Hand (the judge: urgency beats the rotation, and a face beats a report).
-  const pleas = await court.callCrises(world, turn, Math.min(2, want), courtCtx());
-  want -= pleas.length;
-  const pleading = new Set(pleas.map((p) => court.people[p.from]?.playerId));
-  const ownerOf = (o) => world.cities.find((x) => x.id === o.acts?.[0]?.city)?.owner;
-  // The crises head the sitting, two at most (a realm in crisis is pressed, not
-  // flooded); the gravest first, the rest wait for the next sitting.
-  for (const o of crises.filter((o) => !pleading.has(ownerOf(o))).slice(0, Math.max(0, 2 - pleas.length))) { callMatter(o, turn, true); want--; }
-  if (!push) {
-    const own = counselNow.find((o) => !isCrisis(o) && o.acts?.length && c.heard[o.key] == null && !c.hand[o.key]);
-    if (own && want > 0 && (want > 1 || Math.random() < 0.4)) { callMatter(own, turn, false); want--; }
-    if (want > 0) await court.callSitting(world, turn, want, courtCtx());
-    // A story's matter waiting in the hall is heard now, whatever the count.
-    for (const p of court.petitions) if (!p.answered && p.called == null && p.kind === "arc") p.called = turn;
-  }
-  // Only now, with the matters called, does the court sit (a reading taken
-  // meanwhile must not find an empty court and close it under them).
-  const n = Object.keys(c.hand).length + court.petitions.filter((p) => !p.answered && p.called != null).length;
-  if (n) {
-    c.sitting = turn;
-    c.push = push;
-    if (push) c.lastPush = turn;
-    else c.lastSat = turn;
-    c.lastCall = Date.now();
-    hold(true);
-    // Ceasefires the King ordered away from court reload now, behind the card.
-    const pending = meta.pendingCease ?? [];
-    meta.pendingCease = [];
-    ceasefire(pending).catch((e) => console.log("ceasefire:", e.message));  // all of them, one reload
-    record({ turn, kind: "court", text: push ? `The Hand calls the King to court: ${crises[0].text}.` : `The court sits for the ${calendar(turn).season} of ${calendar(turn).year}: ${n} ${n === 1 ? "matter waits" : "matters wait"} for the King.` });
-  } else if (due) c.lastSat = turn;
-  chron.saveMeta(meta);
-}
-
-// The King closes the court: whatever he left settles itself. Each house takes
-// his silence as an answer, the chronicle says so, and the realm moves again.
-function closeCourt(turn) {
-  const c = courtYearOf();
-  for (const key of Object.keys(c.hand)) {
-    const o = counselNow.find((x) => x.key === key);
-    if (o) {
-      lapse({ key: matterKey(o), text: o.text, lapse: lapseOf(o) }, turn);
-      // An ultimatum met with silence is refused: now the lord may rise.
-      if (o.kind === "ultimatum") for (const t of Object.values(meta.turning ?? {})) if (t.state === "sent" && t.at === o.occur) t.state = "refused";
-    }
-    delete c.hand[key];
-  }
-  for (const p of court.petitions.filter((x) => !x.answered && x.called != null)) { court.unheard(p, turn, shiftFavour); kingDeeds.unheard(meta); }
-  court.saveCourt?.();
-  closeIfDone(turn, true);
-}
+const courtYearOf = () => Sittings.courtYearOf(sittingCtx());
+const heardCtx = () => Sittings.heardCtx(sittingCtx());
+function hold(on) { return Sittings.hold(sittingCtx(), on); }
+function courtSeason(turn) { return Sittings.courtSeason(sittingCtx(), turn); }
+// The King closes the court; every matter answered, the doors close (court.js).
+function closeCourt(turn) { return Sittings.closeCourt(sittingCtx(), turn); }
+function closeIfDone(turn, closing = false) { return Sittings.closeIfDone(sittingCtx(), turn, closing); }
+// What stands before the King now (court.js).
+function docket() { return Sittings.docket(sittingCtx()); }
 
 // A house turning against the King: each season it stays under 25 its anger
 // fills; after TURNING seasons its lord sends the crown an ultimatum (a crisis
@@ -951,142 +793,12 @@ function rose(pid) {
   if (t) { t.state = null; t.seasons = 0; }
 }
 
-// Every matter of the sitting answered (or gone home unheard): the doors close.
-function closeIfDone(turn, closing = false) {
-  const c = courtYearOf();
-  if (c.sitting == null) {
-    hold(false);  // never held with no court sitting
-    return;
-  }
-  // A matter the realm settled on its own while the court sat (the war ended, the
-  // famine eased) is off the docket: it must not hold the doors, and the realm, shut.
-  if (counselNow.length) for (const key of Object.keys(c.hand)) if (!counselNow.some((x) => x.key === key)) delete c.hand[key];
-  const open = Object.keys(c.hand).length || court?.petitions.some((p) => !p.answered && p.called != null);
-  if (open && !closing) return;
-  c.sitting = null;
-  c.lastCall = Date.now();
-  hold(false);
-  record({ turn, kind: "court", text: "The doors of the court close, and the realm moves again." });
-  chron.saveMeta(meta);
-}
-
-// The Hand's word on a petition, one line, from where the house stands with
-// the crown: what the King's answer will cost him with them.
-const HAND_ON = {
-  remembers: (h) => `${h} has waited a long time to say that, Sire.`,
-  informer: () => "Informers are paid by both sides, Sire.",
-  justice: (h) => `Rule for ${h} and you make an enemy of the other, Sire.`,
-  claim: () => "Whatever you rule, every bannerman is watching, Sire.",
-  debt: (h) => `${h} cannot pay, Sire. The question is what it costs you.`,
-  grain: () => "Hungry towns remember who fed them, Sire.",
-  arc: () => "This is part of a larger tale, Sire. What you rule here, it carries on.",
-};
-function handLine(p) {
-  const lord = court?.people?.[p.from];
-  const h = String(p.house ?? "").replace(/^House /, "");
-  if (!lord || !h) return "";
-  const f = Math.round(favourOf(lord.playerId));
-  const purse = world?.players?.find((x) => houseFor(x).crown)?.gold ?? 0;
-  const paid = (p.options ?? []).filter((o) => o.cost);
-  if (f < BANDS.cooling) return `${h} is near rising against you, Sire. Send them home empty and they may march.`;
-  if (f < 35) return `${h} will remember this, Sire. They are cold to you already.`;
-  if (paid.length && paid.every((o) => o.cost > purse)) return "The treasury cannot pay for what they ask, Sire.";
-  if (HAND_ON[p.kind]) return HAND_ON[p.kind](h);
-  if (f >= 75) return `${h} has served you well, Sire. They will bear a hard answer.`;
-  return `${h} will remember this, Sire.`;
-}
-
-// What stands before the King now: a crisis first, then the sitting's own
-// matters (the realm's, then the petitioners). Empty between sittings.
-function docket() {
-  const c = courtYearOf();
-  closeIfDone(world?.turn ?? 0);
-  const ownerOf = (o) => (o.acts ?? []).map((a) => world?.cities?.find((x) => x.id === Number(a.city))).map((x) => x && world.players.find((p) => p.id === x.owner)).find((p) => p && !houseFor(p).crown && !houseFor(p).wild);
-  const hand = Object.entries(c.hand).map(([key, m]) => {
-    const o = counselNow.find((x) => x.key === key);
-    if (!o) return null;
-    // Brought by the lord of the house it touches; a matter of the whole realm, by the Hand himself.
-    const owner = ownerOf(o);
-    const lord = owner ? court.lordOfHouse(owner.id) : null;
-    return { id: `hand:${key}`, hand: true, key, crisis: m.crisis, sitting: m.sitting, text: o.text, why: o.why, acts: o.acts,
-      name: lord?.name ?? "The Hand of the King", house: lord ? houseFor(owner).name : "", from: lord?.id ?? null, who: lord ? court.sitter(lord.id) : null, due: null };
-  }).filter(Boolean).sort((a, b) => Number(b.crisis) - Number(a.crisis));
-  // No fuse at court: the realm holds while it sits, so no timer would tell true.
-  const pets = court.open().filter((p) => p.called != null).map((p) => ({ ...p, due: null, sitting: p.called, counsel: handLine(p), push: !!c.push }));
-  // A court with nothing left to show the King is no court: the doors close, the realm moves.
-  if (c.sitting != null && !hand.length && !pets.length) { c.hand = {}; closeIfDone(world?.turn ?? 0, true); }
-  return [...hand.map((x) => ({ ...x, push: !!c.push })), ...pets];
-}
-
 // What the King's silence costs, matter by matter (counsel.js).
 function lapseOf(o) { return Counsel.lapseOf(counselCtx(), o); }
 function lapse(m, turn) { return Counsel.lapse(counselCtx(), m, turn); }
 
-// Why each house feels as it does: the last few things that moved its favour,
-// shown to the King like a ledger of grievances and kindnesses.
-
-// What a cause means as a deed the lord would name, said to the King's face:
-// [when it warmed them, when it cooled them]. Only the King's own acts count.
-const DEED_WORDS = {
-  "a gift of crowns": ["sent us a chest of gold", null],
-  "a feast in their honour": ["feasted us before the whole court", null],
-  "grain from the crown": ["fed our people when they starved", null],
-  "a building paid by the crown": ["paid for stone in our town", null],
-  "a town granted or taken": ["granted us a town", "took a town that was ours"],
-  "a royal match": ["wed our blood into a great house", "married off our blood against our wishes"],
-  "the King's peace": ["kept the peace for us", "forced a peace on us"],
-  "the King took a side": ["took our side in war", "took our enemy's side in war"],
-  "the King's peace, kept by another house": ["sent a house to keep our peace", "set another house over our quarrel"],
-  "their heir taken as the King's ward": ["raised our heir at court", "took our heir from us"],
-  "your ruling at court": ["ruled for us at court", "ruled against us at court"],
-  "shamed over the crown's loan": [null, "shamed us over the crown's loan"],
-  "left unheard at court": [null, "left us waiting at court and never answered"],
-  "the royal tithe": [null, "bled us with the tithe"],
-  "an oath to the crown": ["took our oath and stood by it", "broke the oath we swore to the crown"],
-  "the royal host": ["marched for us", "marched the royal host on our walls"],
-};
-
 // A royal match needs an unwed son or daughter of age from each house (counsel.js).
 function matchFor(pa, pb) { return Counsel.matchFor(counselCtx(), pa, pb); }
-
-// A deed the house will not forget. The same deed again adds to the old one;
-// a house keeps its eight weightiest, so a great grudge never slips away.
-function recordDeed(id, d, why, turn) {
-  const what = DEED_WORDS[why]?.[d > 0 ? 0 : 1];
-  if (!what || !turn) return;
-  const list = (deeds[id] ??= []);
-  const same = list.find((x) => x.what === what);
-  // Done again, it weighs more, up to a point: a lifetime of tithes is one great grudge, not a number without end.
-  if (same) { same.d = Math.max(-60, Math.min(60, same.d + d)); same.last = turn; }
-  else list.push({ turn, last: turn, d, what });
-  if (list.length > 8) deeds[id] = list.sort((a, b) => Math.abs(b.d) - Math.abs(a.d)).slice(0, 8).sort((a, b) => a.turn - b.turn);
-}
-
-// "the winter of 352, when the King took a town that was theirs": the
-// house's sharpest grievance, for the chronicle to name as the cause.
-const theirs = (t) => t.replace(/\bours\b/g, "theirs").replace(/\bour\b/g, "their").replace(/\bus\b/g, "them");
-function causeOf(id) {
-  const worst = (deeds[id] ?? []).filter((x) => x.d <= -8).sort((a, b) => a.d - b.d)[0];
-  if (!worst) return "";
-  const when = calendar(worst.turn);
-  return `the ${when.season} of ${when.year}, when the King ${theirs(worst.what)}`;
-}
-
-function noteFavour(id, d, why) {
-  if (!d || !why) return;
-  if (Math.abs(d) >= 8 && why !== "the royal tithe") recordDeed(id, d, why, world?.turn);
-  // The King's weightiest acts, for the reign's ending to stop at.
-  if (Math.abs(d) >= 8 && DEED_WORDS[why]?.[d > 0 ? 0 : 1] && world) {
-    const seat = world.cities.find((c) => c.owner === Number(id) && c.capital) ?? world.cities.find((c) => c.owner === Number(id));
-    (meta.choices ??= []).push({ turn: world.turn, pid: Number(id), d, what: DEED_WORDS[why][d > 0 ? 0 : 1], city: seat?.id ?? null });
-    if (meta.choices.length > 80) meta.choices = meta.choices.sort((a, b) => Math.abs(b.d) - Math.abs(a.d)).slice(0, 60).sort((a, b) => a.turn - b.turn);
-  }
-  const list = (favourWhy[id] ??= []);
-  const same = list.find((x) => x.why === why);
-  if (same) same.d += d;  // the same cause again adds up, not repeats
-  else list.push({ d, why });
-  while (list.length > 6) list.shift();
-}
 
 // --- What the crown's favour costs -------------------------------------------------
 
@@ -1104,22 +816,6 @@ function yearlyKey(cmd) { return Treasury.yearlyKey(treasuryCtx(), cmd); }
 function seasonsLeft(key) { return Treasury.seasonsLeft(treasuryCtx(), key); }
 function priceOf(action) { return Treasury.priceOf(treasuryCtx(), action); }
 
-// Kindness wears thin: the same house warmed again within a year is warmed
-// less (a half, then a fifth), and the houses at war with it grow colder.
-const KIND = new Set(["gift", "feast", "relief", "marriage"]);
-function temper(action, house, changes) {
-  if (!KIND.has(action) || house == null || !(changes?.[house] > 0)) return changes;
-  const turn = world?.turn ?? 0;
-  const seen = (meta.kindness ??= {});
-  seen[house] = (seen[house] ?? []).filter((t) => t > turn - 4);
-  const again = seen[house].length;
-  seen[house].push(turn);
-  const out = { ...changes, [house]: Math.max(1, Math.round(changes[house] * [1, 0.5, 0.2][Math.min(again, 2)])) };
-  const foes = detail()?.players?.[house]?.atWarWith ?? [];
-  for (const f of foes) if (f !== house && favour[f] != null) out[f] = (out[f] ?? 0) - Math.max(1, Math.round(out[house] * 0.4));
-  return out;
-}
-
 // --- Oaths and the royal host (campaigns.js) ---------------------------------------
 
 function sworn(pid) { return Camp.sworn(campCtx(), pid); }
@@ -1128,50 +824,8 @@ function marchOdds(house, allies, opts) { return Camp.marchOdds(campCtx(), house
 function siegeRuled(beat, option) { return Camp.siegeRuled(campCtx(), beat, option); }
 function resolveCampaigns(turn) { return Camp.resolveCampaigns(campCtx(), turn); }
 
-// Shifts favour and says what it did, for the result card: "6,000 crowns · Thornvale 34 → 29".
-function shiftAndTell(changes, why, cost = 0) {
-  const was = Object.fromEntries(Object.keys(changes ?? {}).map((id) => [id, Math.round(favourOf(Number(id)))]));
-  shiftFavour(changes ?? {}, why, true);
-  const moved = Object.keys(was).map((id) => {
-    const p = world?.players.find((x) => x.id === Number(id));
-    const now = Math.round(favourOf(Number(id)));
-    return p && now !== was[id] ? `${houseFor(p).name.replace(/^House /, "")} ${was[id]} → ${now}` : null;
-  }).filter(Boolean);
-  const price = cost ? [`${(cost * 100).toLocaleString("en-US")} crowns`] : [];
-  const shown = moved.length > 7 ? [...moved.slice(0, 6), `and ${moved.length - 6} more`] : moved;
-  return [...price, ...shown].join("  ·  ");
-}
-
-function shiftFavour(changes, why = "", told = false) {
-  const moves = [];
-  for (const [id, delta] of Object.entries(changes)) {
-    const was = Math.round(favourOf(Number(id)));
-    favour[id] = clampFavour(favourOf(Number(id)) + delta);
-    noteFavour(id, delta, why);
-    const now = Math.round(favourOf(Number(id)));
-    const p = world?.players?.find((x) => x.id === Number(id));
-    if (p && now !== was) moves.push({ id: Number(id), house: houseFor(p).name.replace(/^House /, ""), from: was, to: now });
-  }
-  saveFavour();
-  // Every change is seen (UI rule 13): the game shows what moved and why.
-  // A decree's own result card already says it ("told"), so the game doesn't repeat it.
-  if (moves.length && why) {
-    effects.push({ seq: ++effectSeq, why, told, moves });
-    while (effects.length > 20) effects.shift();
-    if (P) fs.writeFileSync(path.join(P.state, "effects.json"), JSON.stringify(effects));
-  }
-}
-
-// Each house's own history with the crown (the world bible), within the reign's mood.
-const LEAN = { "House Stormhold": 12, "House Goldcrest": 8, "House Wolfholt": 4, "House Highfell": 2, "House Thornvale": -2, "House Ironreach": -10, "House Sunspire": -14 };
 // The reign's goal, as the top bar shows it (reign.js; GOAL_FAVOUR comes from there).
 function goalNow() { return Reign.goalNow(reignCtx()); }
-
-// Where a house's favour settles when the King leaves it be: its own temper with
-// the crown, so the table keeps friends and doubters rather than one number.
-function restingFavour(p) {
-  return clampFavour(({ loyal: 74, wary: 55, resentful: 34 }[meta.options?.trust] ?? 55) + (LEAN[houseFor(p).name] ?? 0));
-}
 
 // Each turn the crown takes its tithe; a heavy tithe wears favour down.
 const tally = { total: 0, upkeep: 0 };  // the tithe since the last reckoning
@@ -1526,19 +1180,9 @@ const ROUTES = {
     return json(res, 200, { turnSeconds });
   },
   "POST /counsel/answer": async (req, res, url) => {
-    // The King answered the Hand's matter: it rests a year, and the next one comes up.
+    // The King answered the Hand's matter: it rests a year, and the next one comes up (court.js).
     const { key } = await body(req);
-    if (key) {
-      // A matter at court is keyed by the matter itself; it rests as its kind does.
-      const o = counselNow.find((x) => x.key === String(key));
-      (meta.mattersRest ??= {})[o ? matterKey(o) : String(key)] = world?.turn ?? 0;
-      // An ultimatum answered: the house's anger starts over (it may turn again).
-      if (o?.kind === "ultimatum") for (const t of Object.values(meta.turning ?? {})) if (t.state === "sent" && t.at === o.occur) { t.state = null; t.seasons = 0; }
-      delete courtYearOf().hand[String(key)];
-      closeIfDone(world?.turn ?? 0);
-      chron.saveMeta(meta);
-    }
-    return json(res, 200, { ok: true });
+    return json(res, 200, Sittings.answerMatter(sittingCtx(), key));
   },
   "POST /decree": async (req, res, url) => {
     counselStale = true;
@@ -1800,26 +1444,9 @@ const ROUTES = {
     return json(res, out.error ? 400 : 200, out);
   },
   "POST /court/say": async (req, res, url) => {
-    // The King answers a petition in his own words. The local model proposes
-    // which ruling he means; nothing happens until he confirms it (confirm:
-    // the option id), so a misreading can never act on its own.
-    const { id, words, confirm } = await body(req);
-    const pet = court.petitions.find((x) => x.id === id && !x.answered);
-    const said = String(words ?? "").trim().slice(0, 500);
-    if (!pet || !said) return json(res, 400, { error: "there's no one waiting on that" });
-    const who = court.people[pet.from];
-    if (!confirm) {
-      const read = await ruleFrom(pet, who, said);
-      if (!read) return json(res, 503, { error: "Your words hang in the hall unread. (The local model isn't running; choose a ruling instead.)" });
-      const o = pet.options.find((x) => x.id === read.option);
-      return json(res, 200, { proposed: read.option, label: crowns(o?.label ?? read.option), name: who?.name ?? "" });
-    }
-    const reaction = await reactTo(pet, who, said, String(confirm), meta.options?.language ?? "en");
-    const out = rule(id, String(confirm));
-    if (out.error) return json(res, 400, out);
-    record({ turn: world.turn, kind: "decree", text: `The King to ${who?.name ?? "the petitioner"}: "${said}"` });
-    if (who) court.remember(who.id, `The King told me: "${said.slice(0, 160)}"`);
-    return json(res, 200, { ...out, option: String(confirm), reaction, name: who?.name ?? "", gender: who?.gender ?? "male" });
+    // The King answers a petition in his own words; nothing happens until he confirms it (court.js).
+    const [code, out] = await Sittings.say(sittingCtx(), await body(req));
+    return json(res, code, out);
   },
   "* /house": async (req, res, url) => {
     // One great house: its numbers over time, its lord, bannermen, wars and allies.
