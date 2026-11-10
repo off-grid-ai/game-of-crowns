@@ -40,6 +40,14 @@ In order, each judged by GAME_DESIGN.md's engagement model and fun bar:
 9. **Rhythm across the acts:** build, then army, then the threat, then the battle you prepared for; the interlude asks what you'll do next act.
 10. **Houses react to your project:** lords petition about your walls and your host.
 
+## Then (Mac, 2026-11-10: "fix these as well", the designers' top 10)
+In this order, each measured on a real reign before and after:
+1. **Repetition (guard hardest):** count repeated situations in a real reign; draw every matter from the realm's state; none returns.
+2. **Grudges and debts for named acts:** a house remembers what the King did by name, brings it up at court, and acts on it.
+3. **Tension in waves:** after a crisis, a quiet season; the build-up to the final threat; the ending given the most care.
+4. **New questions each act:** act 1 order and building, act 2 alliances and war, act 3 claimants and rebellion, act 4 the threat.
+5. **Test with real players:** Mac's play notes come first; take the problem, not the fix; tune in big steps.
+
 ## Who does what
 
 - **This session builds everything,** one step after another (goc-cpto; Mac, 2026-11-09: no parallel builders). Read-only agents may review, research or find causes; they never edit.

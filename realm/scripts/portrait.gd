@@ -1,12 +1,12 @@
 extends Node
 ## A person standing, head to foot, for the cards: their own body (the same one
 ## Meet shows), at rest in a breathing stance, lit warm. Painted once and kept in
-## user://portraits, so each figure is only drawn the first time it's asked for.
+## user://portraits-clear, so each figure is only drawn the first time it's asked for.
 ## One at a time, off screen, while the window carries on.
 
 const People := preload("res://scripts/people.gd")
 const SIZE := Vector2i(150, 240)
-const DIR := "user://portraits"
+const DIR := "user://portraits-clear"  # figures on a clear ground, so they stand straight on the card
 const IDLE := "res://assets/hero/anims/Breathing Idle.fbx"
 
 var _people = People.new()
@@ -26,11 +26,11 @@ func _ready() -> void:
 	_vp.own_world_3d = true
 	_vp.msaa_3d = Viewport.MSAA_4X
 	_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	_vp.transparent_bg = true  # no box behind them: the figure stands on the card itself
 	add_child(_vp)
 	var env := WorldEnvironment.new()
 	env.environment = Environment.new()
-	env.environment.background_mode = Environment.BG_COLOR
-	env.environment.background_color = Color(0.17, 0.14, 0.11)  # the cards' warm dark
+	env.environment.background_mode = Environment.BG_CLEAR_COLOR
 	env.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.environment.ambient_light_color = Color(0.78, 0.7, 0.62)
 	env.environment.ambient_light_energy = 0.6

@@ -619,8 +619,11 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
     }
     for (let tries = 0; want > 0 && tries < 8; tries++) {
       const waiting = new Set(this.petitions.filter((p) => !p.answered).map((p) => p.from));
-      const lords = this.alive().filter((c) => c.rank === "lord" && !waiting.has(c.id) && (world.players.find((p) => p.id === c.playerId)?.cities ?? 0) > 0);
-      if (!lords.length) break;
+      const all = this.alive().filter((c) => c.rank === "lord" && !waiting.has(c.id) && (world.players.find((p) => p.id === c.playerId)?.cities ?? 0) > 0);
+      if (!all.length) break;
+      // The lords heard longest ago come first.
+      const lastHeard = (id) => Math.max(-1, ...this.petitions.filter((p) => p.from === id).map((p) => p.turn ?? 0));
+      const lords = all.sort((a, b) => lastHeard(a.id) - lastHeard(b.id)).slice(0, 3);
       this.turnNow = turn;
       const made = await this.petition(lords[Math.floor(Math.random() * lords.length)], world, turn, ctx, true);
       if (made) { made.called = turn; want--; }
@@ -631,6 +634,9 @@ Return {"choice": one of the choices exactly, "line": what they say or think, on
   async petition(c, world, turn, ctx, sitting = false) {
     // Outside a sitting, at most three wait in the hall for the next one.
     if (!sitting && this.petitions.filter((p) => !p.answered).length >= 3) return;
+    // Many voices at court: a lord who brought one of the last few matters waits
+    // their turn, so no one face fills the reign (a story's matter comes regardless).
+    if (this.petitions.filter((p) => p.kind !== "arc").slice(-3).some((p) => p.from === c.id)) return;
     const base = { id: `p${Date.now().toString(36)}${Math.floor(Math.random() * 999)}`, turn, from: c.id, name: c.name, house: c.house, answered: false };
     const me = world.players.find((x) => x.id === c.playerId);
     const facts = (...pids) => pids.filter((x) => x !== undefined && x !== null && x >= 0).map((x) => this.houseFacts(x, world, ctx)).filter(Boolean);

@@ -90,6 +90,17 @@ Schell, Meier, self-determination theory, Swink, Costikyan and the IKEA effect:
 9. **Open loops.** Things he started and wants to see finish pull him to the next minute.
 10. **The player is the hero.** The best moments happen because of him and are told that way.
 
+What the best designers add (docs/review/designer-top10.md, Mac 2026-11-10: "fix these as well"):
+
+11. **Repetition kills.** A reign has 15 to 60 decisions; each one comes from the realm's state, never a pool,
+    and no situation returns within a reign.
+12. **The middle and late game change.** Each act asks new questions, not bigger numbers.
+13. **Tension rises and falls, and the ending gets the most care.** Quiet after a crisis; the peak and the end
+    are what players remember.
+14. **People remember what you did, not a number.** A house holds a grudge, or a debt, for a named act ("the
+    broken oath at Kingsmere"), says so, and acts on it.
+15. **Change big, test with real players, cut.** Take the problem from players, never their fix.
+
 Never: passive watching sold as a living world; choices with a fixed best answer or no visible result;
 dark-pattern loops (streaks, login rewards, nags). A reign has a clock and a real ending.
 

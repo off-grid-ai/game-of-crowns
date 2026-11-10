@@ -48,3 +48,38 @@ export function applyTo(dir) {
     try { fs.writeFileSync(f, JSON.stringify(apply(JSON.parse(fs.readFileSync(f, "utf8"))), null, 2)); } catch { /* not in this cast */ }
   }
 }
+
+// A new chronicle's cast never has two living people sharing a first name (the
+// baseline was cast before that rule): each repeat after the first, lords kept
+// first, takes a free name of their gender, and the copied court, stories and
+// records say the new name too.
+export function distinctNames(base, pool) {
+  const dir = path.join(base, "characters");
+  let cast;
+  try { cast = fs.readdirSync(dir).filter((f) => f.endsWith(".json")).map((f) => ({ f: path.join(dir, f), c: JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")) })); } catch { return; }
+  const living = cast.filter((x) => x.c.alive !== false);
+  const rank = { lord: 0, heir: 1, bannerman: 2 };
+  living.sort((a, b) => (rank[a.c.rank] ?? 3) - (rank[b.c.rank] ?? 3));
+  const first = (n) => String(n).split(" ")[0];
+  const used = new Set(), renames = [];
+  const taken = new Set(living.map((x) => first(x.c.name)));  // never rename someone into a name another already has
+  for (const x of living) {
+    const f = first(x.c.name);
+    if (!used.has(f)) { used.add(f); continue; }
+    const free = (pool[x.c.gender === "male" ? "male" : "female"] ?? []).filter((n) => !used.has(n) && !taken.has(n));
+    if (!free.length) continue;
+    const to = free[Math.floor(Math.random() * free.length)];
+    used.add(to);
+    const was = x.c.name;
+    x.c.name = `${to}${String(was).slice(f.length)}`;
+    renames.push([was, x.c.name]);
+  }
+  if (!renames.length) return;
+  const swap = (t) => renames.reduce((s, [a, b]) => s.split(a).join(b), t);
+  // Others' memories and stories follow the new names; each person keeps exactly
+  // the name settled above (two can share a full name, so never by swapping).
+  for (const x of cast) { const named = x.c.name; const o = JSON.parse(swap(JSON.stringify(x.c))); o.name = named; fs.writeFileSync(x.f, JSON.stringify(o, null, 2)); }
+  const files = ["court.json", "arcs.json", "meta.json"].map((f) => path.join(base, f));
+  try { for (const f of fs.readdirSync(path.join(base, "state"))) if (/\.(json|jsonl)$/.test(f)) files.push(path.join(base, "state", f)); } catch { /* none */ }
+  for (const f of files) { try { fs.writeFileSync(f, swap(fs.readFileSync(f, "utf8"))); } catch { /* not there */ } }
+}

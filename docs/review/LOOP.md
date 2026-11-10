@@ -326,3 +326,13 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - **My film harness was driving the same game window while Mac watched it:** it closed courts, moved the camera and toggled panels. Stopped the moment I saw his reign was the active one. Rule kept from now on: no harness while a game window is open that I didn't open in the same run, and a film run checks the active realm before every step.
 - None of this is live until the bridge and game restart; Mac's game is left as it is.
 - **Verdict:** off course on trust. The pieces work alone but the whole doesn't read. Next: stop adding, and play one full reign as a person would, listing everything that doesn't make sense.
+
+## 2026-11-10, 13:00 (Mac: "fix these as well", the designers' top 10)
+
+- **Plan:** the five gaps are now in GAME_DESIGN.md (engagement model 11–15) and in AUTOPILOT's order: repetition, grudges for named acts, tension in waves, new questions each act, test with real players.
+- **Repetition, measured on Mac's reign (The Grain Lords, 12 matters):** no kind of matter repeated, but **Ysolde Thornvale brought 6 of 12, five sittings running**, because the strongest lord won the yearly turn every year. And two Cecilys and two Ysoldes again: the starting cast was written before the unique-names rule (the baseline has 29 shared first names).
+- **Fixed:**
+  - A lord who brought one of the last three matters waits their turn; a sitting calls the lords heard longest ago first.
+  - Every new reign's cast gets distinct first names, the lords keeping theirs; court, stories and records follow (tested on a copy of the baseline: 0 shared names among 101 living, files still parse).
+  - Portraits stand on the card with no box behind them (Mac).
+- **Not yet proven live:** the court spread and the clear portraits need a new test reign; Mac is playing.
