@@ -878,3 +878,17 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - Builder 2's answering-King reigns B and C on 8866 (ultimatum count and risings, to prove 0ea0e31), then one measured reign with the fixed script.
   - The siege plea's answer gives 400 when the crown can't pay. It should be greyed with why, not offered.
   - The gate: skate (11 people), glance 35%, children 52%. NPC perf and Townsfolk look are on these.
+
+## 2026-11-11 09:10, autopilot (after the usage reset)
+
+- **Did 0ea0e31 take?** Yes. Builder 2's answering-King rerun on head: ultimatums 1 and 2 per reign (they had looped 5+); risings 3 and 2. Returns are 15% of matters (target ≤ 25%). Oath is 57% within remembers (target ≤ 60%). 97% of matters have two or more costly answers.
+- **This turn:**
+  - a3f7fc3 removes the last free answers. The Red Feast pardon costs the guest's house −20. Siege tribute costs every other great house −3. "Hear, promise nothing" deepens the grudge and brings it back within the year.
+  - 7ca735f commits NPC perf's motion v2 hunks (barrow over walking legs, 0.45 s standing cross-fades) after mind_probe passed 20/20.
+- **The judge's order after round 5's results (130566d):**
+  1. The freeze (a night feast at street level froze 150 s). NPC perf has it: reproduce, sample, add a watchdog thread, fix.
+  2. The probe disagrees with the film (0.00 m overlaps and empty hands in the film; the probe passes). Townsfolk look now owns motion_probe.gd and makes it measure the film's scenes until it fails where the film fails. The glance metric changes to "head aimed within 10°".
+  3. Free answers: done (a3f7fc3).
+  4. Skate, then Kingsmere live.
+- **Fun bar:** from Builder 2's three reigns, returns, ultimatums and costed answers are all within target. A clean measured reign with the fixed script is still owed. It waits for a free bridge slot.
+- **Verdict:** on course. The freeze is the top risk.
