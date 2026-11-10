@@ -393,6 +393,26 @@ func near_road(p: Vector3, margin: float) -> bool:
 
 
 ## Changes when the great roads or the King's road are laid anew (not farm tracks).
+## The great roads' stretches the woods have not yet been cut back for, as one
+## box (world x/z, grown by margin), and marks them cut: empty when nothing new
+## has been laid since, so the forest isn't searched for nothing. One owner of
+## what has been cut: this.
+var _cut := {}  # a stretch's key -> cut back for
+func uncut_bounds(margin: float) -> Rect2:
+	var box := Rect2()
+	for owner in ["roads", "kings"]:
+		for st in _paths.get(owner, []):
+			var key := "%s|%s" % [st[0], st[1]]
+			if _cut.has(key):
+				continue
+			_cut[key] = true
+			var lo: Vector2 = (st[0] as Vector2).min(st[1]) - Vector2.ONE * (float(st[2]) + margin)
+			var hi: Vector2 = (st[0] as Vector2).max(st[1]) + Vector2.ONE * (float(st[2]) + margin)
+			var r := Rect2(lo, hi - lo)
+			box = r if not box.has_area() else box.merge(r)
+	return box
+
+
 func trunk_sig() -> int:
 	return _paths.get("roads", []).size() * 100003 + _paths.get("kings", []).size()
 

@@ -313,12 +313,14 @@ func clear(center: Vector3, radius: float) -> void:
 ## roads cut through the woods, so what travels them is seen from above.
 ## A realm's woods are tens of thousands of trees, so the work is spread over
 ## frames, `budget_usec` of it in each (it took a second in one frame): await it.
-func clear_where(standing_on: Callable, budget_usec := 4000) -> int:
+## within: only trees in this box (world x/z) are asked about; outside it none can stand on the new road.
+func clear_where(standing_on: Callable, budget_usec := 4000, within := Rect2()) -> int:
 	var felled := 0
 	var t0 := Time.get_ticks_usec()
+	var all := not within.has_area()
 	for c in _sight.keys():
 		if _sight.has(c):
-			_sight[c] = _sight[c].filter(func(t: Vector4): return not standing_on.call(Vector3(t.x, t.z, t.y)))
+			_sight[c] = _sight[c].filter(func(t: Vector4): return not ((all or within.has_point(Vector2(t.x, t.y))) and standing_on.call(Vector3(t.x, t.z, t.y))))
 		if Time.get_ticks_usec() - t0 > budget_usec:
 			await get_tree().process_frame
 			t0 = Time.get_ticks_usec()
@@ -329,7 +331,7 @@ func clear_where(standing_on: Callable, budget_usec := 4000) -> int:
 		var i := 0
 		while is_instance_valid(mmi) and mm != null and i < mm.instance_count:
 			var t := mm.get_instance_transform(i)
-			if t.basis.x != Vector3.ZERO and standing_on.call(t.origin):
+			if t.basis.x != Vector3.ZERO and (all or within.has_point(Vector2(t.origin.x, t.origin.z))) and standing_on.call(t.origin):
 				mm.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3.ZERO), t.origin))
 				felled += 1
 			i += 1

@@ -743,7 +743,6 @@ func _on_map(map: Dictionary) -> void:
 		over._overview_open(true)  # the whole realm, painted, until the reign frames a town
 
 
-var _lanes_cut := -1  # the great roads the woods were last cut back for
 const LANE_MARGIN := 0.8  # a pine's crown reaches about this far from its trunk
 var _laying := false  # roads and countryside are being laid out, a frame at a time
 func _on_world(world: Dictionary) -> void:
@@ -811,10 +810,11 @@ func _on_world(world: Dictionary) -> void:
 		await get_tree().process_frame
 		# A road through the woods runs down a lane cut through them, wide enough
 		# that no crown closes over it: what travels it can be watched from above.
-		if terrain.forest and terrain.forest.has_method("clear_where") and roads.trunk_sig() != _lanes_cut:
-			_lanes_cut = roads.trunk_sig()
+		# Only for stretches laid since the last cut (roads.uncut_bounds): nothing new, no search of the woods.
+		var fresh: Rect2 = roads.uncut_bounds(LANE_MARGIN) if terrain.forest and terrain.forest.has_method("clear_where") else Rect2()
+		if fresh.has_area():
 			var t0 := Time.get_ticks_msec()
-			var n: int = await terrain.forest.clear_where(func(o: Vector3): return roads.near_road(o, LANE_MARGIN))  # over frames
+			var n: int = await terrain.forest.clear_where(func(o: Vector3): return roads.near_road(o, LANE_MARGIN), 4000, fresh)  # over frames
 			print("LANES %d trees, %d ms" % [n, Time.get_ticks_msec() - t0])
 			await get_tree().process_frame
 		Engine.set_meta("stage", "countryside")
