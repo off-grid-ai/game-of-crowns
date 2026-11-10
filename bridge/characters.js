@@ -618,6 +618,30 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
   // The court sits once a year (server.js): those already waiting in the hall
   // are called first, then lords with cause come, until `want` stand before
   // the King. Only called petitioners wait on a fuse.
+  // A crisis comes first (the judge, from CK3 and Reigns): the lord of a
+  // starving or besieged town jumps the rotation and speaks for it at this
+  // sitting, once a year for the same crisis. The rotation is for ordinary
+  // matters. Returns the pleas made (the bridge calls this before the Hand's
+  // own matters, and drops the Hand's for a house whose lord already pleads).
+  async callCrises(world, turn, want, ctx) {
+    const made = [];
+    const crisisOf = (c) => {
+      const mine = world.cities.filter((x) => x.owner === c.playerId);
+      return mine.some((x) => x.famine) ? "grain" : mine.some((x) => x.besieged) ? "besieged" : null;
+    };
+    for (const c of this.alive().filter((x) => x.rank === "lord")) {
+      if (want <= 0) break;
+      const crisis = crisisOf(c);
+      if (!crisis || this.petitions.some((p) => !p.answered && p.from === c.id)) continue;
+      if (this.petitions.some((p) => p.from === c.id && p.crisis === crisis && (p.turn ?? 0) > turn - 4)) continue;
+      this.turnNow = turn;
+      const p = await this.petition(c, world, turn, ctx, true, { urgent: true, prefer: crisis === "grain" ? "grain" : null });
+      if (p) { p.called = turn; p.crisis = crisis; made.push(p); want--; }
+    }
+    if (made.length) this.saveCourt();
+    return made;
+  }
+
   async callSitting(world, turn, want, ctx) {
     for (const p of this.petitions.filter((x) => !x.answered && !x.called)) {
       if (want <= 0) break;
@@ -638,12 +662,12 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     this.saveCourt();
   }
 
-  async petition(c, world, turn, ctx, sitting = false) {
+  async petition(c, world, turn, ctx, sitting = false, opts = {}) {
     // Outside a sitting, at most three wait in the hall for the next one.
     if (!sitting && this.petitions.filter((p) => !p.answered).length >= 3) return;
     // Many voices at court: a lord who brought one of the last few matters waits
     // their turn, so no one face fills the reign (a story's matter comes regardless).
-    if (this.petitions.filter((p) => p.kind !== "arc").slice(-3).some((p) => p.from === c.id)) return;
+    if (!opts.urgent && this.petitions.filter((p) => p.kind !== "arc").slice(-3).some((p) => p.from === c.id)) return;
     const base = { id: `p${Date.now().toString(36)}${Math.floor(Math.random() * 999)}`, turn, from: c.id, name: c.name, house: c.house, answered: false };
     const me = world.players.find((x) => x.id === c.playerId);
     const facts = (...pids) => pids.filter((x) => x !== undefined && x !== null && x >= 0).map((x) => this.houseFacts(x, world, ctx)).filter(Boolean);
@@ -798,9 +822,11 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     // lord's own kind of plea once per house, a remembered deed once.
     const heard = (x) => x.deck ? `card:${x.kind}` : x.deed ? `remembers:${c.house}:${x.deed}` : `${x.kind}:${c.house}`;
     const pool = candidates.filter((x) => !open.has(x.kind) && !ctx.heard?.(heard(x))).map((x) => ({ ...x, w: x.weight / (1 + 2 * recent.filter((k) => k === x.kind).length) }));
-    if (!pool.length) return;
+    // A crisis brings its own plea (a starving town's lord asks for grain), whatever was heard lately.
+    const forced = opts.prefer ? candidates.find((x) => x.kind === opts.prefer) : null;
+    if (!pool.length && !forced) return;
     let roll = Math.random() * pool.reduce((t, x) => t + x.w, 0);
-    const chosen = pool.find((x) => (roll -= x.w) < 0) ?? pool[pool.length - 1];
+    const chosen = forced ?? pool.find((x) => (roll -= x.w) < 0) ?? pool[pool.length - 1];
     const p = { ...base, ...chosen.make(), heard: heard(chosen) };
     ctx.hear?.(p.heard);
     // They come to court now; their own words follow when the local model has
