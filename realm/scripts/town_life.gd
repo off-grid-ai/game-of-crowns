@@ -166,11 +166,12 @@ func _reground(life: Node3D, center: Vector3) -> void:
 var _people = preload("res://scripts/people.gd").new()
 
 
-## A drill is a routine, not one move on a loop: each recruit works through
-## cuts, blocks and thrusts (or draw, aim and loose) at his own pace, standing
-## easy between, so no two in the ranks move alike and none repeats for long.
-const DRILL_SWORD := ["SS_Slash_1", "SS_Block_Idle", "SS_Slash_4", "Spear_Thrust", "SS_Attack_3", "Sword_Idle"]
-const DRILL_BOW := ["Bow_Draw", "Bow_Aim", "Bow_Shoot", "Sword_Idle"]
+## A drill is a short set, not a loop: each recruit does three or four moves
+## (cuts and thrusts, or draw, aim and loose), then stands easy for good, and
+## after a season the rank falls out. Nobody blocks (a crouch reads as a fight).
+const DRILL_SWORD := ["SS_Slash_1", "SS_Slash_4", "Spear_Thrust", "SS_Attack_3"]
+const DRILL_BOW := ["Bow_Draw", "Bow_Aim", "Bow_Shoot"]
+const DRILL_SEASON := 40.0  # seconds: one season, then the recruits fall out
 
 func _drill_routine(s: Node3D, bow: bool, seed: int) -> void:
 	var rng := RandomNumberGenerator.new()
@@ -179,22 +180,33 @@ func _drill_routine(s: Node3D, bow: bool, seed: int) -> void:
 	var t := Timer.new()
 	t.one_shot = true
 	s.add_child(t)
+	var left := [3 + rng.randi() % 2]
 	var i := [rng.randi() % moves.size()]
 	var once := preload("res://scripts/motion.gd")
 	var next := func() -> void:
 		if not is_instance_valid(s):
 			return
-		# Archers keep the bow's order (draw, aim, loose); swordsmen vary, and
-		# every few moves stand easy for a breath.
+		if left[0] <= 0:
+			_people.play(s, "Idle")  # stand easy, for good
+			return
+		left[0] -= 1
 		i[0] = (i[0] + 1) % moves.size() if bow else rng.randi() % moves.size()
 		var move: String = moves[i[0]]
 		if once.is_once(move):
 			_people.repeat(s, move)
 		else:
 			_people.play(s, move)
-		t.start(rng.randf_range(2.2, 4.5) if move != "Sword_Idle" else rng.randf_range(1.5, 3.0))
+		t.start(rng.randf_range(2.2, 3.6))
 	t.timeout.connect(next)
-	t.start(rng.randf_range(0.5, 4.0))
+	t.start(rng.randf_range(0.5, 3.0))
+	# After a season the rank falls out.
+	var out := Timer.new()
+	out.one_shot = true
+	s.add_child(out)
+	out.timeout.connect(func():
+		if is_instance_valid(s):
+			s.queue_free())
+	out.start(DRILL_SEASON + rng.randf_range(0.0, 4.0))
 
 
 func _townsperson(parent: Node3D, pos: Vector3, role: String, anim: String, seed: int, tint := Color.WHITE) -> Node3D:
@@ -353,13 +365,12 @@ func _construction(root: Node3D, life: Node3D, center: Vector3, building: String
 
 ## Recruits drilling in ranks on the square while a unit trains.
 func _drill(root: Node3D, life: Node3D, center: Vector3, progress: float, color: Color, unit: String) -> void:
-	# Ranks a sword's swing apart (about 2 m), on open ground beside the square:
-	# the first stretch round the square with room for every rank, the ranks
-	# facing the square's heart.
-	var count := 3 + int(progress * 9)
-	var rows := (count + 3) / 4
+	# One rank, side by side a pace and a half apart (0.45), on open ground beside
+	# the square and facing its heart: nobody stands at another's back.
+	var count := clampi(3 + int(progress * 4), 3, 6)
 	var walls: Array = _blocked(root, life)
 	var none := PackedVector2Array()
+	var bow := unit.contains("Archer") or unit.contains("bow")
 	for tries in 32:
 		var a := TAU * (tries % 16) / 16.0
 		var dist := 0.55 + (tries / 16) * 0.35
@@ -367,7 +378,7 @@ func _drill(root: Node3D, life: Node3D, center: Vector3, progress: float, color:
 		var side := Vector3(-face.z, 0, face.x)
 		var spots: Array[Vector3] = []
 		for i in count:
-			var p := -face * (dist + (i / 4) * 0.26) + side * (-0.36 + (i % 4) * 0.24)
+			var p := -face * dist + side * ((i - (count - 1) * 0.5) * 0.45)
 			if not _open(center, p, walls, none):
 				break
 			spots.append(p)
@@ -377,15 +388,14 @@ func _drill(root: Node3D, life: Node3D, center: Vector3, progress: float, color:
 		for i in count:
 			var p := spots[i]
 			p.y = _y(center, p)
-			var drill: String = (["Bow_Draw", "Bow_Aim", "Bow_Shoot"][i % 3]) if unit.contains("Archer") or unit.contains("bow") else (["Sword_Idle", "SS_Slash_1", "SS_Block_Idle", "SS_Slash_4", "Spear_Thrust", "SS_Attack_3"][(i + hash(unit)) % 6])
-			var s := _townsperson(life, p, "soldier", drill, hash(unit) + i, color.lerp(Color.WHITE, 0.35))
+			var s := _townsperson(life, p, "soldier", "Idle", hash(unit) + i, color.lerp(Color.WHITE, 0.35))
 			s.rotation.y = atan2(face.x, face.z)
-			_drill_routine(s, unit.contains("Archer") or unit.contains("bow"), hash(unit) + i)
+			_drill_routine(s, bow, hash(unit) + i)
 			taken.append(Vector2(p.x, p.z))
 		life.set_meta("standing", taken)
-		# The ranks are one block to walk round, not a lane to thread.
-		var mid := -face * (dist + (rows - 1) * 0.13)
-		life.set_meta("footprints", life.get_meta("footprints") + [_rect(mid, Vector2(0.84, rows * 0.26 + 0.1), atan2(face.x, face.z))])
+		# The rank is one block to walk round, not a lane to thread.
+		var mid := -face * dist
+		life.set_meta("footprints", life.get_meta("footprints") + [_rect(mid, Vector2(count * 0.45 + 0.1, 0.36), atan2(face.x, face.z))])
 		break
 	life.set_meta("doing", doing_line("UnitType", unit, progress))
 
@@ -425,11 +435,20 @@ func _crowd(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 			var a := _stand(root, life, center, at, "peasant", "Fist_Fight_A", rng.randi(), Color(0.7, 0.66, 0.6), 0.25)
 			if a == null:
 				continue
-			var b := _stand(root, life, center, a.position + side * 0.12, "peasant", "Fist_Fight_B", rng.randi(), Color(0.7, 0.66, 0.6), 0.1)
+			var b := _stand(root, life, center, a.position + side * 0.2, "peasant", "Fist_Fight_B", rng.randi(), Color(0.7, 0.66, 0.6), 0.1)
 			if b == null:
 				continue
 			a.rotation.y = atan2(b.position.x - a.position.x, b.position.z - a.position.z)
 			b.rotation.y = a.rotation.y + PI
+			# A scuffle, not a fight without end: about 8 s, then they're back to shouting.
+			for f in [a, b]:
+				var stop := Timer.new()
+				stop.one_shot = true
+				f.add_child(stop)
+				stop.timeout.connect(func():
+					if is_instance_valid(f):
+						_people.play(f, "Arguing"))
+				stop.start(rng.randf_range(7.0, 9.0))
 	if not angry:
 		# Where they lie at night: dark bedrolls in a row against the wall, and a
 		# cooking fire that's a few embers and a thread of smoke, not a beacon.

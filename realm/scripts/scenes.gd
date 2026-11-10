@@ -958,8 +958,22 @@ func _siege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, fo
 		return
 	var root := Node3D.new()
 	root.name = "Siege"
+	root.set_meta("fallen", [])  # the dead lie clear of each other, never in a heap
 	add_child(root)
 	_sieges[id] = {"root": root, "until": Time.get_ticks_msec() / 1000.0 + turn_secs * 1.5}
+	# The siege's dead are carried off after a minute, so the living never fight on them.
+	var sweep := Timer.new()
+	sweep.wait_time = 10.0
+	root.add_child(sweep)
+	sweep.timeout.connect(func():
+		var now := Time.get_ticks_msec()
+		for n in root.get_children():
+			if n is Node3D and n.has_meta("dead"):
+				if not n.has_meta("dead_ms"):
+					n.set_meta("dead_ms", now)
+				elif now - int(n.get_meta("dead_ms")) > 60000:
+					n.queue_free())
+	sweep.start()
 	var r := _rng(at)
 	var foe_col := Color.from_string(String(foe.get("color", "#7a2222")), Color.DARK_RED).lerp(Color.WHITE, 0.2)
 	var held_col := Color.from_string(String(held.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.3)
