@@ -568,7 +568,12 @@ func _build_top_bar() -> void:
 	_aim.add_theme_font_size_override("font_size", 18)  # the one line that says what to do next: read at a glance
 	_aim.add_theme_font_override("font", T.sans)
 	_aim.add_theme_color_override("font_color", T.ACCENT)
-	_aim.mouse_filter = Control.MOUSE_FILTER_PASS
+	_aim.mouse_filter = Control.MOUSE_FILTER_STOP
+	_aim.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	# Click the aim and go where it's done: that town's card opens (a quest log's marker).
+	_aim.gui_input.connect(func(e: InputEvent):
+		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT and _aim_at >= 0:
+			focus_city.emit(_aim_at))
 	_aim.visible = false
 	who.add_child(_aim)
 	# How far along: a thin gold fill and the count in the realm's words ("7 of 12 companies").
@@ -2103,6 +2108,7 @@ var _ways := {}  # reading -> its arrow
 var _earning: Label
 var _last_act: Label  # the last act's threat, named at three quarters of the reign
 var _aim: Label  # the royal ladder's current aim
+var _aim_at := -1  # the town where the aim is acted on, opened by a click
 var _aim_how: HBoxContainer  # how far along the aim is: a fill and a count
 var _aim_fill: ColorRect
 var _aim_count: Label
@@ -2147,6 +2153,9 @@ func _show_heading(r: Dictionary) -> void:
 	if aim is Dictionary:
 		_aim.text = "◆ %s" % String(aim.get("text", ""))
 		_aim.tooltip_text = String(aim.get("how", "")) + ("\nAim %d of %d" % [int(aim.get("n", 0)), int(aim["of"])] if aim.get("of") != null else "")
+		_aim_at = int(aim["at"]) if aim.get("at") != null else -1
+		if _aim_at >= 0:
+			_aim.tooltip_text += "\nClick to go there"
 	var prog = aim.get("progress") if aim is Dictionary else null
 	_aim_how.visible = prog is Dictionary
 	if prog is Dictionary:
@@ -3275,10 +3284,11 @@ func _court_later(v: VBoxContainer, tip: String) -> void:
 	row.add_theme_constant_override("separation", 8)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_child(row)
-	var later := _btn("Later", func(): _court_hidden = true; _court_panel.visible = false)
+	# Two exits, each saying what it does (CK3 states the cost of a choice on the button).
+	var later := _btn("Look at the realm first", func(): _court_hidden = true; _court_panel.visible = false)
 	later.tooltip_text = tip
 	row.add_child(later)
-	var shut := _btn("Close the court", _close_court)
+	var shut := _btn("Say nothing, close the court", _close_court)
 	shut.tooltip_text = "What you leave settles itself: each house takes your silence as an answer, and the realm moves again."
 	row.add_child(shut)
 

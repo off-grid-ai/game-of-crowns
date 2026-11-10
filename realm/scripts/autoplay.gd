@@ -181,7 +181,7 @@ func _play(quit_after: bool) -> void:
 				var given := ""
 				for b in main.ui._court_panel.find_children("*", "Button", true, false):
 					var btn := b as Button
-					if btn.is_visible_in_tree() and not btn.disabled and btn.text not in ["Later", "See"]:
+					if btn.is_visible_in_tree() and not btn.disabled and btn.text not in ["Look at the realm first", "Say nothing, close the court", "See", "Continue"]:
 						given = btn.text
 						btn.pressed.emit()
 						break

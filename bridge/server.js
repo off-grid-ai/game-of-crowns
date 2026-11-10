@@ -1679,6 +1679,27 @@ function nextAim() {
 const aimMet = (a) => a.met ? a.met() : a.pid != null ? favourOf(a.pid) >= a.to : a.city != null ? (world.cities.find((x) => x.id === a.city)?.buildings ?? []).includes(a.building) : false;
 const aimNow = () => meta.ladder ? (LADDER[meta.ladder.i] ?? meta.ladder.dyn ?? null) : null;
 
+// Where the King acts on his aim: the town whose card holds the means (a quest
+// log's marker). Kingsmere for its works and the levy, a royal town without a
+// market, the warmest house's seat to win, a town he could take.
+function aimPlace(a) {
+  const crown = crownOf();
+  if (!a || !crown || !world) return null;
+  const seat = world.cities.find((x) => x.owner === crown.id && x.capital);
+  const royal = world.cities.filter((x) => x.owner === crown.id);
+  switch (a.key) {
+    case "granary": case "walls": case "host": return seat?.id ?? null;
+    case "market": return (royal.find((x) => !(x.buildings ?? []).includes("Marketplace")) ?? seat)?.id ?? null;
+    case "friend": {
+      const best = world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown).sort((x, y) => favourOf(y.id) - favourOf(x.id))[0];
+      return best ? (world.cities.find((x) => x.owner === best.id && x.capital)?.id ?? null) : null;
+    }
+    case "town": return (meta.campaigns ?? [])[0]?.city ?? null;
+  }
+  if (a.pid != null) return world.cities.find((x) => x.owner === a.pid && x.capital)?.id ?? null;
+  return a.city ?? null;
+}
+
 // How far along the King is toward his aim, in the realm's words with a fill:
 // "7 of 12 companies", "Highfell at 55 of 70", "rising · 57%". Null when the aim
 // is all-or-nothing and nothing is under way.
@@ -1997,7 +2018,7 @@ function reignInfo() {
     id: meta.id, name: meta.name, scenario: meta.scenario, status: meta.status, paused, minutes: meta.minutes,
     elapsedMs: meta.elapsedMs, remainingMs: meta.minutes > 0 ? Math.max(0, meta.minutes * 60000 - meta.elapsedMs) : null,
     score: meta.score, verdict: meta.verdict, title: meta.title, outcome: meta.outcome, ended: meta.endedAt,
-    epilogue: meta.epilogue ?? null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, aim: aimNow() ? { n: Math.min(meta.ladder.i, LADDER.length) + (meta.ladder.n ?? 0) + 1, of: meta.ladder.i < LADDER.length ? LADDER.length : null, text: aimNow().text, how: aimNow().how, progress: aimProgress(aimNow()) } : null, aimDone: meta.ladder?.just && Date.now() - meta.ladder.just.at < 8000 ? meta.ladder.just.text : null, readings: meta.status === "running" ? readings() : null,
+    epilogue: meta.epilogue ?? null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, aim: aimNow() ? { n: Math.min(meta.ladder.i, LADDER.length) + (meta.ladder.n ?? 0) + 1, of: meta.ladder.i < LADDER.length ? LADDER.length : null, text: aimNow().text, how: aimNow().how, progress: aimProgress(aimNow()), at: aimPlace(aimNow()) } : null, aimDone: meta.ladder?.just && Date.now() - meta.ladder.just.at < 8000 ? meta.ladder.just.text : null, readings: meta.status === "running" ? readings() : null,
     souls: world?.cities?.reduce((t, c) => t + soulsOf(c.size), 0) ?? 0,
   };
 }
