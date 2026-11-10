@@ -515,3 +515,20 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Open:**
   - the lord's grain petition hasn't been called yet in the rerun (lords take turns at court);
   - the batch film list now holds slice 1+2, riot, feast, hunger, the awareness states, Eve and the court card over the reload.
+
+## 2026-11-10, autopilot (crisis first, counsel per season, soldiers, gossip)
+
+- **Landed:**
+  - **a82db5c:** a starving or besieged lord speaks first at the next court, out of the rotation (the judge's ruling). B3's counsel is read each season and after the King acts, not on every poll. A town in uproar is a chronicle line.
+  - **f837de0:** soldiers stand by Freeciv's hp and orders: wounded companies limp, fortified ones stand behind the shield.
+  - **8fe04b6:** talk takes two, with a topic. A raid seen by 2 villagers was told on in 2 talks in the probe, and the topic shows as a gesture.
+- **Probe:** 20 of 20, five runs in a row, after fixing React leaving its move to be played again.
+- **Steer:**
+  - server.js is frozen for builder 2's split (C3). My hunks were committed before it began, and the routes table landed in 1351802.
+  - Builder 2 took over traffic (traveller() and the mirror's tile, owner and towns) and has scene_kinds.gd for its readers.
+- **Found:** a private bridge started on the working tree mid-split came up empty. Proofs must start after a builder's commit, not during one.
+- **Direction:** the consolidation plan, in the judge's order. A, B3, B4 and the people half of the awareness work are done.
+- **Waiting on C3:**
+  - the state test hooks (war, prosperity, grief, grasping, winter, the King passing) and grasping in the city state;
+  - then the grouped film session.
+- **Verdict:** on course.
