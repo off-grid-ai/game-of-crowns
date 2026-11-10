@@ -84,7 +84,8 @@ func _process(_delta: float) -> void:
 		var p := cam.unproject_position(at)
 		var size := box.get_combined_minimum_size()
 		var rect := Rect2(p - Vector2(size.x * 0.5, size.y), size)
-		if not view.grow(40).intersects(rect) or placed.any(func(r): return r.grow(GAP).intersects(rect)):
+		# A name shows whole or not at all: never a fragment cut by the screen's edge.
+		if not view.grow(-4).encloses(rect) or placed.any(func(r): return r.grow(GAP).intersects(rect)):
 			box.visible = false
 			continue
 		placed.append(rect)

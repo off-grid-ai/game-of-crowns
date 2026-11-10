@@ -1645,8 +1645,8 @@ const SOLDIER = (u) => !CIVILIAN.has(u.type);
 const LADDER = [
   { key: "granary", text: "Raise a granary in Kingsmere", how: "Open Kingsmere's card and fund a granary.",
     met: () => crownHas("Granary", true), reward: "feast", says: "Kingsmere's granary stands full. The town holds a harvest feast in the King's name." },
-  { key: "host", text: "Muster a royal host of twelve companies", how: "Raise the levy, or call the banners.",
-    met: () => (world.units ?? []).filter((u) => u.owner === crownOf()?.id && SOLDIER(u)).length >= 12, reward: "knights", says: "Twelve companies stand under the royal banner. Two knights ride in to join them, unasked." },
+  { key: "host", text: "Muster a royal host of 2,400 men", how: "Raise the levy, or call the banners.",
+    met: () => (world.units ?? []).filter((u) => u.owner === crownOf()?.id && SOLDIER(u)).length >= 12, reward: "knights", says: "Two thousand four hundred men stand under the royal banner. Two knights ride in to join them, unasked." },
   { key: "friend", text: "Win a great house to the Crown", how: "Favour a house until it stands at 70.",
     met: () => world.players.some((p) => !houseFor(p).wild && !houseFor(p).crown && favourOf(p.id) >= 70), reward: "gold", says: "A great house swears itself to the Crown, and sends a chest of silver to prove it." },
   { key: "market", text: "Raise a market in a royal town", how: "Fund a market in any town of the Crown.",
@@ -1695,7 +1695,7 @@ function aimProgress(a) {
   const seat = world.cities.find((x) => x.owner === crown.id && x.capital);
   const favourTo = (pid, to) => { const f = Math.round(favourOf(pid)); return { text: `${houseFor(world.players.find((p) => p.id === pid)).name} at ${f} of ${to}`, frac: Math.max(0, Math.min(1, f / to)) }; };
   switch (a.key) {
-    case "host": { const n = (world.units ?? []).filter((u) => u.owner === crown.id && SOLDIER(u)).length; return { text: `${Math.min(n, 12)} of 12 companies`, frac: Math.min(1, n / 12) }; }
+    case "host": { const n = (world.units ?? []).filter((u) => u.owner === crown.id && SOLDIER(u)).length; return { text: `${(Math.min(n, 12) * 200).toLocaleString("en-US")} of 2,400 men`, frac: Math.min(1, n / 12) }; }  // in men, as the ledger counts them
     case "friend": {
       const best = world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown).sort((x, y) => favourOf(y.id) - favourOf(x.id))[0];
       return best ? favourTo(best.id, 70) : null;

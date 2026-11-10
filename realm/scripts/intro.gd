@@ -35,7 +35,7 @@ const CHARACTER := {
 
 ## Tips shown again while the realm is still forming, after the story.
 const TIPS := [
-	["clock", "Its own clock", "The realm runs on its own clock: a season every twenty seconds, a year in under a minute and a half. Pause it whenever you need to think.", "{pause}  pause"],
+	["clock", "Its own clock", "The realm runs on its own clock: a season every forty seconds, and it holds still while the court sits. Pause it whenever you need to think.", "{pause}  pause"],
 	["petitions", "Petitions remember", "Every ruling is remembered by the one who asked, and by their house. Favour rises and falls with what you decide.", "{court}  court"],
 	["chronicle", "The chronicle", "Everything that happens is written down: births, deaths, marriages, battles and your rulings.", "{chronicle}  chronicle    {ledger}  ledger"],
 	["meet", "Meet anyone", "Click a lord, a lady or a bannerman to see them face to face, hear what they want, and what they remember of you.", "{houses}  houses, then See"],

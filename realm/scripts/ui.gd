@@ -718,6 +718,11 @@ func _toggle_court() -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not (event is InputEventKey) or not event.pressed or event.echo or event.meta_pressed or event.ctrl_pressed:
 		return
+	# While a telling is up, any key moves it on.
+	if _epilogue_keys and _epilogue_card:
+		_epilogue_skip = true
+		get_viewport().set_input_as_handled()
+		return
 	# Every key is an Input Map action (keys.gd), so Settings → Controls can change it.
 	if event.is_action_pressed(&"pause"):
 		_toggle_pause()
@@ -1139,6 +1144,20 @@ func _rank_houses(players: Array, fallen: Array = []) -> void:
 
 func _build_court() -> void:
 	_court_panel = _card(_glass_panel())
+	# The court is the one thing on screen while it sits (a modal, as in CK3 and
+	# Civ): the ledger and chronicle step aside and come back when it closes.
+	_court_panel.visibility_changed.connect(func():
+		if _court_panel.visible:
+			_court_hid = []
+			for pnl in [_houses_panel, _chron_panel]:
+				if pnl and (pnl as CanvasItem).visible:
+					(pnl as CanvasItem).visible = false
+					_court_hid.append(pnl)
+		else:
+			for pnl in _court_hid:
+				if is_instance_valid(pnl) and not _cinema_on:
+					(pnl as CanvasItem).visible = true
+			_court_hid = [])
 	_court_panel.anchor_left = 0.5
 	_court_panel.anchor_right = 0.5
 	_court_panel.offset_left = -330
@@ -2237,6 +2256,10 @@ func _epilogue_stop() -> void:
 var _epilogue_hid: Array = []  # the bars, minimap and pad put away for the flight
 
 
+var _court_hid: Array = []  # panels the sitting court set aside, to bring back
+var _epilogue_keys := false  # while a telling is up, any key moves it on
+
+
 func _epilogue(ep: Dictionary, title := "The reign, as it will be told", wait_click := false) -> void:
 	_epilogue_run += 1
 	var run := _epilogue_run
@@ -2261,6 +2284,7 @@ func _epilogue(ep: Dictionary, title := "The reign, as it will be told", wait_cl
 		if e is InputEventMouseButton and e.pressed:
 			_epilogue_skip = true)
 	card.tooltip_text = "Click to move on"
+	_epilogue_keys = true
 
 	card.anchor_left = 0.5
 	card.anchor_right = 0.5
@@ -2297,9 +2321,17 @@ func _epilogue(ep: Dictionary, title := "The reign, as it will be told", wait_cl
 	# An act's interlude ends here, on his click: the realm and its panels come back.
 	if (ep.get("fates", []) as Array).is_empty():
 		if wait_click:
-			card.tooltip_text = "Click to go on"
-			while run == _epilogue_run and not _epilogue_skip:
+			# A summary screen always says how to go on (Civ's and CK3's "Continue"):
+			# the button, any key or click, or on its own after a while.
+			var go := _btn("Continue", func(): _epilogue_skip = true)
+			go.add_theme_color_override("font_color", T.ACCENT)
+			go.size_flags_horizontal = Control.SIZE_SHRINK_END
+			v.add_child(go)
+			go.grab_focus()
+			var waited := 0.0
+			while run == _epilogue_run and not _epilogue_skip and waited < 15.0:
 				await get_tree().process_frame
+				waited += get_process_delta_time()
 			_epilogue_skip = false
 		card.queue_free()
 		_epilogue_card = null
@@ -2532,7 +2564,9 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 		_was_united = 1 if all_in else 0
 		# Once won, the next aim: end the wars between the houses (Peace above half).
 		var peace_now := int(float(world.get("peace", 1)) * 100)
-		var next_aim := (" Next: end the wars between them, Peace %d%% of 50%%." % peace_now) if peace_now < 50 else " The realm is at peace with itself."
+		var warring := great.filter(func(g): return not (g.get("atWarWith", []) as Array).is_empty()).size()
+		var next_aim := (" Next: end the wars between them, Peace %d%% of 50%%." % peace_now) if peace_now < 50 \
+			else (" But %d of them are at war with each other." % warring) if warring > 0 else " The realm is at peace with itself."
 		_standing.text = ("All %d great houses would answer your banners. The realm is yours in truth." % great.size() + next_aim) if all_in \
 			else "%d of %d great houses would answer your banners. Win all of them and the realm is yours in truth." % [with_me, great.size()]
 	_purse = int(world.get("crown", {}).get("treasury", 0))  # the court's orders check the purse
