@@ -1897,47 +1897,45 @@ var _edge: PanelContainer
 var _edge_label: Label
 
 
-func edge_arrow(at, angle: float, text: String, color: Color, fresh: bool) -> void:
+func edge_arrow(at, angle: float, text: String, _color: Color, fresh: bool) -> void:
 	if _edge == null:
+		# The house's own glass, at caption size: it speaks like every other card
+		# (UI.md: one accent, corners), and is noticed by its fade, the minimap
+		# rings and the sound, not by its size.
 		_edge = PanelContainer.new()
+		T.glass(_edge)
 		_edge.mouse_filter = Control.MOUSE_FILTER_STOP
 		_edge.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		_edge.gui_input.connect(func(e: InputEvent):
 			if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 				last_event.emit())
 		_edge_label = Label.new()
-		_edge_label.add_theme_font_size_override("font_size", 24)
-		_edge_label.add_theme_color_override("font_color", Color(0.98, 0.96, 0.9))
+		_edge_label.add_theme_font_size_override("font_size", 15)
+		_edge_label.add_theme_color_override("font_color", T.TEXT)
 		_edge.add_child(_edge_label)
 		_root.add_child(_edge)
-	_edge.visible = at != null and not _cinema_on
-	if not _edge.visible:
-		return
-	var box := StyleBoxFlat.new()
-	box.bg_color = Color(0.07, 0.06, 0.05, 0.9)
-	box.border_color = color
-	box.set_border_width_all(3)
-	box.set_corner_radius_all(10)
-	box.content_margin_left = 16
-	box.content_margin_right = 16
-	box.content_margin_top = 8
-	box.content_margin_bottom = 8
-	_edge.add_theme_stylebox_override("panel", box)
-	var arrows := ["→", "↘", "↓", "↙", "←", "↖", "↑", "↗"]
-	var i := posmod(roundi(angle / (PI / 4.0)), 8)
-	_edge_label.text = "%s  %s" % [arrows[i], text] if i in [3, 4, 5, 6] else "%s  %s" % [text, arrows[i]]
-	_edge.tooltip_text = "Go there (Space)"
-	var sz := _edge.get_combined_minimum_size()
-	var view := get_viewport().get_visible_rect().size
-	var p: Vector2 = at
-	_edge.position = Vector2(clampf(p.x - sz.x * 0.5, 12, view.x - sz.x - 12), clampf(p.y - sz.y * 0.5, 120, view.y - sz.y - 12)).round()
-	_edge.size = sz
-	_edge.pivot_offset = sz * 0.5
-	if fresh:
-		# Loud for a moment, then it settles (StarCraft, Age of Empires II).
-		_edge.scale = Vector2(1.35, 1.35)
-		var tw := _edge.create_tween()
-		tw.tween_property(_edge, "scale", Vector2.ONE, 0.6).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	var show: bool = at != null and not _cinema_on
+	if show:
+		var arrows := ["→", "↘", "↓", "↙", "←", "↖", "↑", "↗"]
+		var i := posmod(roundi(angle / (PI / 4.0)), 8)
+		_edge_label.text = "%s  %s" % [arrows[i], text] if i in [3, 4, 5, 6] else "%s  %s" % [text, arrows[i]]
+		_edge.tooltip_text = "Go there (Space)"
+		var sz := _edge.get_combined_minimum_size()
+		var view := get_viewport().get_visible_rect().size
+		var p: Vector2 = at
+		var r := Rect2(Vector2(clampf(p.x - sz.x * 0.5, 12, view.x - sz.x - 12), clampf(p.y - sz.y * 0.5, 120, view.y - sz.y - 12)).round(), sz)
+		# One voice at a time: never over an open card; the minimap rings and the sound carry it meanwhile.
+		for c in covered():
+			if c != _edge.get_global_rect() and c.grow(6).intersects(r) and not (_edge.visible and c == Rect2(_edge.position, _edge.size)):
+				show = false
+				break
+		if show:
+			_edge.position = r.position
+			_edge.size = sz
+	if show and (fresh or not _edge.visible):
+		_edge.modulate.a = 0.0
+		_edge.create_tween().tween_property(_edge, "modulate:a", 1.0, 0.5)
+	_edge.visible = show
 
 
 func toast(text: String) -> void:
