@@ -60,7 +60,7 @@ func start(s: Node, battle: Node3D, rng: RandomNumberGenerator, centre: Vector3,
 			m["node"].remove_meta("in_step")
 			m["agent"] = _agent(m)
 			if m["kit"] == "bow":
-				scenes._people.motion(m["node"]).set_ready("Bow_Idle")  # an archer rests with his bow
+				scenes.people.motion(m["node"]).set_ready("Bow_Idle")  # an archer rests with his bow
 			m["team"] = t
 			m["hp"] = HP
 			m["target"] = null
@@ -660,7 +660,7 @@ func _bearers(dt: float) -> void:
 				flag.position = scenes.ground(flag.position + step)
 		if moving != b.get("moving", false):
 			b["moving"] = moving
-			scenes._people.play(n, "Walk" if moving else "Sword_Idle", 0.95)
+			scenes.people.play(n, "Walk" if moving else "Sword_Idle", 0.95)
 
 
 ## The camera stays on the thick of it: wherever most men are fighting.
@@ -826,9 +826,9 @@ func _gap(a: Node3D, b: Node3D) -> float:
 ## Plays a move and says how long it runs, in seconds.
 func _play(m: Dictionary, anim: String, speed := -1.0) -> float:
 	var pace := speed if speed > 0.0 else r.randf_range(0.9, 1.1)
-	scenes._people.play(m["node"], anim, pace)
+	scenes.people.play(m["node"], anim, pace)
 	# How long it really runs: each man plays at his own tempo too.
-	var mo: AnimationTree = scenes._people.motion(m["node"])
+	var mo: AnimationTree = scenes.people.motion(m["node"])
 	if mo and mo.has_animation(anim):
 		return mo.get_animation(anim).length / (pace * float(m["node"].get_meta("tempo", 1.0)))
 	return 1.0

@@ -22,11 +22,11 @@ var min_distance := 0.5  # street level (about 4 m): a person at the well fills 
 const EYE := 0.2  # eye height, about 1.7 m
 var max_distance := 260.0
 
-var _goal_target := Vector3.ZERO
-var _goal_distance := 120.0
-var _goal_yaw := 0.0
+var goal_target := Vector3.ZERO
+var goal_distance := 120.0
+var goal_yaw := 0.0
 var tilt := 0.0  # added to the automatic pitch, in degrees
-var _goal_tilt := 0.0
+var goal_tilt := 0.0
 var _dragging := 0
 var _drag_moved := 0.0
 var _grab := Vector3.INF  # the ground point held under the cursor while dragging
@@ -59,37 +59,37 @@ func _ready() -> void:
 
 func focus(pos: Vector3, dist := -1.0) -> void:
 	_hit = -1.0  # a jump starts clear: no ease carried over from the last place
-	_goal_target = pos
+	goal_target = pos
 	if dist > 0:
-		_goal_distance = dist
+		goal_distance = dist
 
 
 ## One step of the on-screen controls (repeated while a button is held).
 func nudge(action: String) -> void:
 	match action:
-		"in": _goal_distance = maxf(min_distance, _goal_distance * 0.93)
+		"in": goal_distance = maxf(min_distance, goal_distance * 0.93)
 		"out":
-			if _goal_distance >= OVERVIEW * 0.999:
+			if goal_distance >= OVERVIEW * 0.999:
 				overview.emit()
-			_goal_distance = minf(minf(max_distance, OVERVIEW), _goal_distance * 1.07)
-		"up": _pan(Vector2(0, -1) * _goal_distance * 0.04)
-		"down": _pan(Vector2(0, 1) * _goal_distance * 0.04)
-		"left": _pan(Vector2(-1, 0) * _goal_distance * 0.04)
-		"right": _pan(Vector2(1, 0) * _goal_distance * 0.04)
-		"turn_left": _goal_yaw += 0.05
-		"turn_right": _goal_yaw -= 0.05
-		"tilt_up": _goal_tilt = clampf(_goal_tilt - 1.5, -40.0, 30.0)
-		"tilt_down": _goal_tilt = clampf(_goal_tilt + 1.5, -40.0, 30.0)
+			goal_distance = minf(minf(max_distance, OVERVIEW), goal_distance * 1.07)
+		"up": _pan(Vector2(0, -1) * goal_distance * 0.04)
+		"down": _pan(Vector2(0, 1) * goal_distance * 0.04)
+		"left": _pan(Vector2(-1, 0) * goal_distance * 0.04)
+		"right": _pan(Vector2(1, 0) * goal_distance * 0.04)
+		"turn_left": goal_yaw += 0.05
+		"turn_right": goal_yaw -= 0.05
+		"tilt_up": goal_tilt = clampf(goal_tilt - 1.5, -40.0, 30.0)
+		"tilt_down": goal_tilt = clampf(goal_tilt + 1.5, -40.0, 30.0)
 
 
 ## Glides to a town and frames it: the whole town in view with a margin of
 ## country around it, looked at across the land (not from above), turned so
 ## the sun is behind you. size: the town's Freeciv size.
 func frame_town(pos: Vector3, size: int) -> void:
-	_goal_target = pos
-	_goal_distance = clampf(8.5 + size * 0.9, 10.0, 16.0)  # the town fills most of the view
-	_goal_tilt = 0.0
-	_goal_yaw = deg_to_rad(35.0)
+	goal_target = pos
+	goal_distance = clampf(8.5 + size * 0.9, 10.0, 16.0)  # the town fills most of the view
+	goal_tilt = 0.0
+	goal_yaw = deg_to_rad(35.0)
 
 
 ## A side to look at `pos` from with nothing tall in the way: starting at
@@ -130,12 +130,12 @@ func _blocked(a: Vector3, b: Vector3) -> bool:
 func snap(pos: Vector3, dist: float, y := 0.0) -> void:
 	_hit = -1.0
 	target = pos
-	_goal_target = pos
+	goal_target = pos
 	distance = dist
-	_goal_distance = dist
+	goal_distance = dist
 	yaw = y
-	_goal_yaw = y
-	_apply()
+	goal_yaw = y
+	apply()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -145,7 +145,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if event.alt_pressed and event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
 			# Option + scroll tilts the view, to look up at the hills or down at your feet.
-			_goal_tilt = clampf(_goal_tilt + (3.0 if event.button_index == MOUSE_BUTTON_WHEEL_UP else -3.0), -40.0, 30.0)
+			goal_tilt = clampf(goal_tilt + (3.0 if event.button_index == MOUSE_BUTTON_WHEEL_UP else -3.0), -40.0, 30.0)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
 			_zoom_at(event.position, 0.86 if event.factor == 0.0 else pow(0.86, event.factor))
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
@@ -164,8 +164,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion and _dragging != 0:
 		_drag_moved += event.relative.length()
 		if _dragging == MOUSE_BUTTON_RIGHT or event.alt_pressed:
-			_goal_yaw -= event.relative.x * 0.006
-			_goal_tilt = clampf(_goal_tilt + event.relative.y * 0.25, -40.0, 30.0)
+			goal_yaw -= event.relative.x * 0.006
+			goal_tilt = clampf(goal_tilt + event.relative.y * 0.25, -40.0, 30.0)
 		elif _grab != Vector3.INF:
 			_drag_to(event.position, event.relative, event.velocity)
 		else:
@@ -174,8 +174,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_zoom_at(event.position, 1.0 / event.factor)
 	elif event is InputEventPanGesture:
 		if event.shift_pressed or event.alt_pressed:
-			_goal_yaw -= event.delta.x * 0.05
-			_goal_tilt = clampf(_goal_tilt + event.delta.y * 1.5, -40.0, 30.0)
+			goal_yaw -= event.delta.x * 0.05
+			goal_tilt = clampf(goal_tilt + event.delta.y * 1.5, -40.0, 30.0)
 		else:
 			_pan(event.delta * _ground_per_pixel() * 6.0)
 
@@ -183,17 +183,17 @@ func _unhandled_input(event: InputEvent) -> void:
 ## Zooms by `f` (below 1 is in) toward the ground under `screen`: the spot
 ## you're pointing at stays where it is while everything else comes closer.
 func _zoom_at(screen: Vector2, f: float) -> void:
-	var before := _goal_distance
-	if f > 1.0 and _goal_distance >= OVERVIEW * 0.999:
+	var before := goal_distance
+	if f > 1.0 and goal_distance >= OVERVIEW * 0.999:
 		overview.emit()
 		return
-	_goal_distance = clampf(_goal_distance * f, min_distance, minf(max_distance, OVERVIEW))
+	goal_distance = clampf(goal_distance * f, min_distance, minf(max_distance, OVERVIEW))
 	var p := _ground_under(screen)
 	if p == Vector3.INF:
 		return
-	var moved := 1.0 - _goal_distance / before
-	_goal_target.x += (p.x - _goal_target.x) * moved
-	_goal_target.z += (p.z - _goal_target.z) * moved
+	var moved := 1.0 - goal_distance / before
+	goal_target.x += (p.x - goal_target.x) * moved
+	goal_target.z += (p.z - goal_target.z) * moved
 
 
 ## Grab-and-drag: the ground point taken at the press stays under the cursor.
@@ -207,14 +207,14 @@ func _drag_to(screen: Vector2, rel: Vector2, vel: Vector2) -> void:
 		return
 	var hit := from + dir * ((_grab.y - from.y) / dir.y)
 	var d := Vector3(_grab.x - hit.x, 0, _grab.z - hit.z)
-	if d.length() > _goal_distance:  # a ray grazing the horizon: a plain pan instead
+	if d.length() > goal_distance:  # a ray grazing the horizon: a plain pan instead
 		_pan(-rel * _ground_per_pixel())
 		return
-	_goal_target += d
+	goal_target += d
 	target += d
-	_apply()
+	apply()
 	var v := -vel * _ground_per_pixel()
-	_fling = Vector3(cos(_goal_yaw), 0, -sin(_goal_yaw)) * v.x + Vector3(sin(_goal_yaw), 0, cos(_goal_yaw)) * v.y
+	_fling = Vector3(cos(goal_yaw), 0, -sin(goal_yaw)) * v.x + Vector3(sin(goal_yaw), 0, cos(goal_yaw)) * v.y
 
 
 ## Ground units per screen pixel at the point looked at.
@@ -349,9 +349,9 @@ func _floor_at(p: Vector3) -> float:
 
 
 func _pan(d: Vector2) -> void:
-	var right := Vector3(cos(_goal_yaw), 0, -sin(_goal_yaw))
-	var fwd := Vector3(sin(_goal_yaw), 0, cos(_goal_yaw))
-	_goal_target += right * d.x + fwd * d.y
+	var right := Vector3(cos(goal_yaw), 0, -sin(goal_yaw))
+	var fwd := Vector3(sin(goal_yaw), 0, cos(goal_yaw))
+	goal_target += right * d.x + fwd * d.y
 
 
 func _click(screen: Vector2) -> void:
@@ -365,31 +365,31 @@ func _process(delta: float) -> void:
 		Input.get_axis(&"cam_left", &"cam_right"),
 		Input.get_axis(&"cam_up", &"cam_down"))
 	# Keys ease in and out rather than jolting; Shift runs.
-	var want := keys.normalized() * _goal_distance * (1.8 if Input.is_action_pressed(&"cam_fast") else 0.8)
+	var want := keys.normalized() * goal_distance * (1.8 if Input.is_action_pressed(&"cam_fast") else 0.8)
 	_keys_v = _keys_v.lerp(want, 1.0 - exp(-delta * 8.0))
-	if _keys_v.length() > _goal_distance * 0.001:
+	if _keys_v.length() > goal_distance * 0.001:
 		_pan(_keys_v * delta)
 	# A flick glides on and slows to a stop.
-	if _dragging == 0 and _fling.length() > _goal_distance * 0.002:
-		_goal_target += _fling * delta
+	if _dragging == 0 and _fling.length() > goal_distance * 0.002:
+		goal_target += _fling * delta
 		_fling *= exp(-delta * 4.0)
 	if Input.is_action_pressed(&"cam_turn_left"):
-		_goal_yaw += 1.2 * delta
+		goal_yaw += 1.2 * delta
 	if Input.is_action_pressed(&"cam_turn_right"):
-		_goal_yaw -= 1.2 * delta
+		goal_yaw -= 1.2 * delta
 	if Input.is_action_pressed(&"cam_tilt_up"):
-		_goal_tilt = clampf(_goal_tilt + 40.0 * delta, -40.0, 30.0)
+		goal_tilt = clampf(goal_tilt + 40.0 * delta, -40.0, 30.0)
 	if Input.is_action_pressed(&"cam_tilt_down"):
-		_goal_tilt = clampf(_goal_tilt - 40.0 * delta, -40.0, 30.0)
+		goal_tilt = clampf(goal_tilt - 40.0 * delta, -40.0, 30.0)
 	_keep_inside()
 	# The same easing whatever the frame rate; distance eases in log space so a
 	# zoom feels the same at street level as across the realm.
 	var k := 1.0 - exp(-delta * EASE)
-	target = target.lerp(_goal_target, k)
-	distance = exp(lerpf(log(distance), log(_goal_distance), k))
-	yaw = lerp_angle(yaw, _goal_yaw, k)
-	tilt = lerpf(tilt, _goal_tilt, k)
-	_apply()
+	target = target.lerp(goal_target, k)
+	distance = exp(lerpf(log(distance), log(goal_distance), k))
+	yaw = lerp_angle(yaw, goal_yaw, k)
+	tilt = lerpf(tilt, goal_tilt, k)
+	apply()
 
 
 ## The world fills the screen and never more: you can't zoom out past its
@@ -401,8 +401,8 @@ func _keep_inside() -> void:
 	var world: Vector2 = Vector2(terrain.width, terrain.height) * terrain.TILE
 	var tan_v := tan(deg_to_rad(cam.fov / 2.0))
 	var aspect := get_viewport().get_visible_rect().size.aspect()
-	var c := absf(cos(_goal_yaw))
-	var sn := absf(sin(_goal_yaw))
+	var c := absf(cos(goal_yaw))
+	var sn := absf(sin(goal_yaw))
 	# Half the ground seen across (screen x) and up-down (screen y), per unit of distance.
 	# The camera is tilted, so the top of the view reaches further than a
 	# straight-down view would; pad for it.
@@ -411,15 +411,15 @@ func _keep_inside() -> void:
 	var half_x := across * c + updown * sn
 	var half_z := across * sn + updown * c
 	var widest := minf(world.x / (2.0 * half_x), world.y / (2.0 * half_z))
-	_goal_distance = minf(_goal_distance, widest)
+	goal_distance = minf(goal_distance, widest)
 	max_distance = widest
-	var hx := minf(half_x * _goal_distance, world.x / 2.0)
-	var hz := minf(half_z * _goal_distance, world.y / 2.0)
-	_goal_target.x = clampf(_goal_target.x, hx, world.x - hx)
-	_goal_target.z = clampf(_goal_target.z, hz, world.y - hz)
+	var hx := minf(half_x * goal_distance, world.x / 2.0)
+	var hz := minf(half_z * goal_distance, world.y / 2.0)
+	goal_target.x = clampf(goal_target.x, hx, world.x - hx)
+	goal_target.z = clampf(goal_target.z, hz, world.y - hz)
 
 
-func _apply() -> void:
+func apply() -> void:
 	var t := clampf((distance - min_distance) / (max_distance - min_distance), 0.0, 1.0)
 	# An oblique view at every zoom (about 30° close in to 55° for the whole
 	# realm): looking across the land shows its hills, roads and towns; looking

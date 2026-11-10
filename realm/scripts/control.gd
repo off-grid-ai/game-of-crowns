@@ -80,7 +80,7 @@ func start(person: Dictionary, house: Dictionary, town_id: int) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(str(person.get("id", "")))
 	var tint := Color.from_string(String(house.get("color", "#888888")), Color.GRAY).lerp(Color.WHITE, 0.45)
-	_body = villagers._people.make(rng, villagers._people.station(person), tint, "adult", "", str(person.get("gender", "")), str(person.get("id", "")))
+	_body = villagers.people.make(rng, villagers.people.station(person), tint, "adult", "", str(person.get("gender", "")), str(person.get("id", "")))
 	add_child(_body)
 	# A lord steps out of their own hall; anyone else from the edge of the square.
 	var door := Vector3(0.9, 0, 0.9)
@@ -96,7 +96,7 @@ func start(person: Dictionary, house: Dictionary, town_id: int) -> void:
 	_yaw = atan2(center.x - _body.position.x, center.z - _body.position.z)
 	_body.rotation.y = _yaw + PI
 	_body.set_meta("driven", true)  # your moves are your own: the walking rule (anim_lod.gd) leaves you be
-	_me = Combat.new(_body, villagers._people)
+	_me = Combat.new(_body, villagers.people)
 	_me.on_land = _land
 	# Your horse waits saddled a horse's length off to your side, facing the
 	# way you do, its whole body clear of you and of anything standing there
@@ -104,7 +104,7 @@ func start(person: Dictionary, house: Dictionary, town_id: int) -> void:
 	_horse = Horse.new()
 	add_child(_horse)
 	var by := _walkable(_body.position + Vector3(cos(_yaw), 0, -sin(_yaw)) * (HORSE_BODY * 2.2))
-	by = villagers._nav.stand(towns, by, HORSE_BODY)
+	by = villagers.nav.stand(towns, by, HORSE_BODY)
 	_horse.position = Vector3(by.x, terrain.height_at(by.x, by.z), by.z)
 	_horse.rotation.y = _body.rotation.y
 	_cam = Camera3D.new()
@@ -276,9 +276,9 @@ func _process_timed(delta: float) -> void:
 		if terrain.is_land(next.x, next.z):
 			_body.position = Vector3(next.x, terrain.height_at(next.x, next.z), next.z)
 		_body.rotation.y = lerp_angle(_body.rotation.y, atan2(dir.x, dir.z), minf(1.0, delta * 10.0))
-		villagers._people.play(_body, _me.walk_clip(running), 1.0)
+		villagers.people.play(_body, _me.walk_clip(running), 1.0)
 	elif _me.alive() and _me.state == "ready":
-		villagers._people.play(_body, _me.idle_clip(), 1.0)
+		villagers.people.play(_body, _me.idle_clip(), 1.0)
 	_square_up(delta, want == Vector2.ZERO)
 	_fight(delta)
 	# The townsfolk gather wherever you are.
@@ -311,7 +311,7 @@ func _walkable(p: Vector3) -> Vector3:
 		return p
 	var node: Node3D = towns.towns[id]["node"]
 	var c := node.global_position
-	var map: RID = villagers._nav.map_for(id, node)
+	var map: RID = villagers.nav.map_for(id, node)
 	if NavigationServer2D.map_get_iteration_id(map) == 0:
 		return p
 	var q := NavigationServer2D.map_get_closest_point(map, Vector2(p.x - c.x, p.z - c.z))
@@ -416,7 +416,7 @@ func dismount() -> void:
 	_riding = false
 	_pace = 0.0
 	_horse.dismount()
-	villagers._people.play(_body, _me.idle_clip(), 1.0)
+	villagers.people.play(_body, _me.idle_clip(), 1.0)
 
 
 ## WASD steers the horse as it would your feet: it walks, or gallops with Shift,
@@ -475,7 +475,7 @@ func _land(attacker) -> void:
 ## street scatters, and the town will remember who did it.
 func _strike_townsfolk() -> void:
 	var town := _town_at(_body.position)
-	var crowd: Array = villagers._crowds.get(town, [])
+	var crowd: Array = villagers.crowds.get(town, [])
 	var face: Vector3 = _me.facing()
 	for i in crowd.size():
 		var n: Node3D = crowd[i]["node"]
@@ -545,11 +545,11 @@ func _fight(delta: float) -> void:
 			var step: Vector3 = to.normalized() * WALK * 1.3 * delta
 			var next := _walkable(f.node.position + step)
 			f.node.position = Vector3(next.x, terrain.height_at(next.x, next.z), next.z)
-			villagers._people.play(f.node, f.walk_clip(), 1.1)
+			villagers.people.play(f.node, f.walk_clip(), 1.1)
 		elif f.state == "ready" and randf() < delta * 0.9:
 			f.strike()
 		else:
-			villagers._people.play(f.node, f.idle_clip(), 1.0)
+			villagers.people.play(f.node, f.idle_clip(), 1.0)
 
 
 ## Outlaws, armed with whatever they could get (an axe, a greatsword, a
@@ -560,11 +560,11 @@ func spawn_foes(count: int) -> void:
 	for i in count:
 		var ang := rng.randf() * TAU
 		var at := _walkable(_body.position + Vector3(cos(ang), 0, sin(ang)) * rng.randf_range(0.7, 1.1))
-		var n: Node3D = villagers._people.make(rng, "soldier", Color(0.42, 0.38, 0.34), "adult")
+		var n: Node3D = villagers.people.make(rng, "soldier", Color(0.42, 0.38, 0.34), "adult")
 		add_child(n)
 		n.position = Vector3(at.x, terrain.height_at(at.x, at.z), at.z)
 		n.set_meta("driven", true)  # a fighter's moves are chosen as it goes
-		var f = Combat.new(n, villagers._people, ["axe", "greatsword", "sword", "dagger"][(i + rng.randi() % 4) % 4])
+		var f = Combat.new(n, villagers.people, ["axe", "greatsword", "sword", "dagger"][(i + rng.randi() % 4) % 4])
 		f.health = 60.0
 		f.on_land = _land
 		f.draw(true)
@@ -661,7 +661,7 @@ func _open_chat(town: int, i: int, person := "", person_name := "") -> void:
 	_draw_chat()
 	_chat.visible = true
 	_apply_mode()
-	villagers._people.play(_body, "Idle_Talking", 1.0)
+	villagers.people.play(_body, "Idle_Talking", 1.0)
 	_hold_listener()
 
 
@@ -718,7 +718,7 @@ func _close_chat() -> void:
 	if String(_chat_with.get("person", "")) != "":
 		for n in _notables:
 			if n["id"] == _chat_with["person"] and is_instance_valid(n["node"]):
-				villagers._people.play(n["node"], "Idle", 1.0)
+				villagers.people.play(n["node"], "Idle", 1.0)
 	_chat.visible = false
 	_chat_line.release_focus()
 	mic.stop()
@@ -735,9 +735,9 @@ func _hold_listener() -> void:
 				var to_them: Vector3 = n["node"].position - _body.position
 				_body.rotation.y = atan2(to_them.x, to_them.z)
 				n["node"].rotation.y = atan2(-to_them.x, -to_them.z)
-				villagers._people.play(n["node"], "Idle_Talking", 1.0)
+				villagers.people.play(n["node"], "Idle_Talking", 1.0)
 		return
-	var crowd: Array = villagers._crowds.get(_chat_with["town"], [])
+	var crowd: Array = villagers.crowds.get(_chat_with["town"], [])
 	if int(_chat_with["i"]) < crowd.size():
 		var a: Dictionary = crowd[int(_chat_with["i"])]
 		a["hold_until"] = Time.get_ticks_msec() + 1500
@@ -812,12 +812,12 @@ func meet(people: Array) -> void:
 		var p: Dictionary = people[i]
 		if str(p.get("id", "")) == str(_person.get("id", "")):
 			continue  # that's you
-		var n: Node3D = villagers._people.make(rng, villagers._people.station(p), Color(0.95, 0.88, 0.7), "adult", "", str(p.get("gender", "")), str(p.get("id", "")))
+		var n: Node3D = villagers.people.make(rng, villagers.people.station(p), Color(0.95, 0.88, 0.7), "adult", "", str(p.get("gender", "")), str(p.get("id", "")))
 		add_child(n)
 		var at := _walkable(center + door + Vector3(cos(i * 1.3), 0, sin(i * 1.3)) * 0.35)
 		n.position = Vector3(at.x, terrain.height_at(at.x, at.z), at.z)
 		n.rotation.y = rng.randf() * TAU
-		villagers._people.play(n, "Idle", 1.0)
+		villagers.people.play(n, "Idle", 1.0)
 		_notables.append({"node": n, "id": str(p.get("id", "")), "name": String(p.get("name", "")), "gender": str(p.get("gender", "")), "rank": str(p.get("rank", "")), "tag": _name_tag(String(p.get("name", "")), T_GOLD)})
 
 

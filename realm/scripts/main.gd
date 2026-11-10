@@ -254,8 +254,8 @@ func _ready() -> void:
 			for k in 6:
 				terrain.clear_around(p + toward * (1.0 + k * 1.2) * maxf(1.0, d / 4.0), 1.2 + k * 0.35)
 			rig.focus(p, d)
-			rig._goal_yaw = y
-			rig._goal_tilt = -12.0)  # lower than the rig's own pitch: Ali's low oblique view
+			rig.goal_yaw = y
+			rig.goal_tilt = -12.0)  # lower than the rig's own pitch: Ali's low oblique view
 	bridge = preload("res://scripts/bridge.gd").new()
 	# The realm stays unloaded behind the title menu; it wakes when a chronicle
 	# is continued or begun (renders without the menu load it at once).
@@ -661,7 +661,7 @@ func _process_timed(_delta: float) -> void:
 		news._edge_tick(_delta)
 	_game_ms += _delta * 1000.0
 	# The game took the camera down to the land (a town framed, a battle): the map steps aside.
-	if over._over_open and rig._goal_distance < rig.OVERVIEW * 0.9:
+	if over._over_open and rig.goal_distance < rig.OVERVIEW * 0.9:
 		over._overview_close()
 	perf._log_perf(_delta)
 	if not _settled and terrain.built and towns and not towns.towns.is_empty() and not towns.building():
@@ -915,7 +915,7 @@ func _follow_story(e: Dictionary) -> void:
 	for id in e.get("cast", []):
 		var parts := String(id).split(":")
 		if parts.size() == 3 and parts[0] == "folk":
-			var crowd: Array = villagers._crowds.get(int(parts[1]), [])
+			var crowd: Array = villagers.crowds.get(int(parts[1]), [])
 			var i := int(parts[2])
 			if i < crowd.size() and is_instance_valid(crowd[i]["node"]):
 				var n: Node3D = crowd[i]["node"]

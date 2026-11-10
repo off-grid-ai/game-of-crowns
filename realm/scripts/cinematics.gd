@@ -258,21 +258,21 @@ func _move(u: float, e: float) -> void:
 ## degrees down at what it looks at.
 func _cam(target: Vector3, dist: float, yaw: float, pitch: float) -> void:
 	var rig: Node3D = main.rig
-	rig._goal_target = target
-	rig._goal_distance = dist
+	rig.goal_target = target
+	rig.goal_distance = dist
 	rig._keep_inside()  # never past the realm's edges
-	rig.target = rig._goal_target
-	rig.distance = rig._goal_distance
+	rig.target = rig.goal_target
+	rig.distance = rig.goal_distance
 	rig.yaw = yaw
-	rig._goal_yaw = yaw
-	# The rig's own pitch for this distance (camera_rig._apply), solved for the tilt.
+	rig.goal_yaw = yaw
+	# The rig's own pitch for this distance (camera_rig.apply), solved for the tilt.
 	var t := clampf((rig.distance - rig.min_distance) / (rig.max_distance - rig.min_distance), 0.0, 1.0)
 	var base := lerpf(30.0, 55.0, pow(t, 0.7))
 	var g: float = rig.ground_view_at(rig.distance)  # the rig's own rule
 	var tilt := (pitch - (1.0 - g) * base - 3.0 * g) / ((1.0 - g) + 0.6 * g)
 	rig.tilt = tilt
-	rig._goal_tilt = tilt
-	rig._apply()
+	rig.goal_tilt = tilt
+	rig.apply()
 
 
 ## The film looks through whichever camera is showing: a room's, a portrait's,

@@ -83,7 +83,7 @@ func _to_news() -> void:
 		return
 	if _news.is_empty():
 		return
-	_before_news = {"target": main.rig._goal_target, "distance": main.rig._goal_distance, "yaw": main.rig._goal_yaw, "tilt": main.rig._goal_tilt}
+	_before_news = {"target": main.rig.goal_target, "distance": main.rig.goal_distance, "yaw": main.rig.goal_yaw, "tilt": main.rig.goal_tilt}
 	var f = _news.get("follow")
 	main.director.watch(_news["s"], f if is_instance_valid(f) else null)
 
@@ -92,10 +92,10 @@ func _back_from_news() -> void:
 	if _before_news.is_empty():
 		return
 	main.director.active = false
-	main.rig._goal_target = _before_news["target"]
-	main.rig._goal_distance = _before_news["distance"]
-	main.rig._goal_yaw = _before_news["yaw"]
-	main.rig._goal_tilt = _before_news["tilt"]
+	main.rig.goal_target = _before_news["target"]
+	main.rig.goal_distance = _before_news["distance"]
+	main.rig.goal_yaw = _before_news["yaw"]
+	main.rig.goal_tilt = _before_news["tilt"]
 	_before_news = {}
 
 

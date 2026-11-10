@@ -31,7 +31,7 @@ func _setup() -> void:
 	main.control.rig = main.rig
 	main.add_child(main.control)
 	main.interior = preload("res://scripts/interior.gd").new()
-	main.interior.people = main.villagers._people
+	main.interior.people = main.villagers.people
 	main.add_child(main.interior)
 	main.ui.walk_as_king.connect(_walk_as_king)
 	main.hero.control_requested.connect(func(p, h):

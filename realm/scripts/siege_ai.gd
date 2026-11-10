@@ -51,7 +51,7 @@ func start(s: Node, siege: Node3D, rng: RandomNumberGenerator, colour: Color, gr
 func _man(m: Dictionary) -> void:
 	if m.has("node") and is_instance_valid(m["node"]) and m["node"].has_meta("dead"):
 		m["node"].remove_from_group("people")  # the fallen stay where they fell
-	var f: Node3D = scenes._people.make(r, "soldier", col, "adult")
+	var f: Node3D = scenes.people.make(r, "soldier", col, "adult")
 	f.position = scenes.stand(m["home"])
 	var face: Vector3 = (m["foot"] - m["home"]).normalized()
 	f.rotation.y = atan2(face.x, face.z)
@@ -74,19 +74,19 @@ func _man(m: Dictionary) -> void:
 	camp.call_on_enter(func():
 		m["out"] = false
 		f.rotation.y = atan2(face.x, face.z)
-		scenes._people.play(f, "Sword_Idle"))
+		scenes.people.play(f, "Sword_Idle"))
 	advance.call_on_enter(func():
 		m["out"] = true
 		m["half"] = m["home"].lerp(m["foot"], 0.55)
-		scenes._people.play(f, "SS_Walk"))  # on behind raised shields
+		scenes.people.play(f, "SS_Walk"))  # on behind raised shields
 	advance.call_on_update(func(dt: float): _go(m, m["half"], WALK, dt, &"rush"))
-	rush.call_on_enter(func(): scenes._people.play(f, "Sprint"))
+	rush.call_on_enter(func(): scenes.people.play(f, "Sprint"))
 	rush.call_on_update(func(dt: float): _go(m, m["foot"], RUN, dt, &"fight"))
 	fight.call_on_enter(func():
 		m["until"] = clock + r.randf_range(AT_WALL[0], AT_WALL[1])
 		m["cool"] = 0.0)
 	fight.call_on_update(func(dt: float): _fight(m, dt))
-	back.call_on_enter(func(): scenes._people.play(f, "Walk"))
+	back.call_on_enter(func(): scenes.people.play(f, "Walk"))
 	back.call_on_update(func(dt: float): _go(m, m["home"], WALK, dt, &"camp"))
 	# Cut down: he stays down. Nothing leads out of it.
 	dead.call_on_enter(func():
@@ -170,9 +170,9 @@ func _fight(m: Dictionary, dt: float) -> void:
 		return
 	var move: String = scenes.cut(r, m["last"]) if r.randf() < 0.6 else scenes.guard(r)
 	m["last"] = move
-	var mo: AnimationTree = scenes._people.motion(n)
+	var mo: AnimationTree = scenes.people.motion(n)
 	var length: float = mo.get_animation(move).length if mo and mo.has_animation(move) else 1.0
-	scenes._people.play(n, move, r.randf_range(0.95, 1.15))
+	scenes.people.play(n, move, r.randf_range(0.95, 1.15))
 	m["cool"] = length + r.randf_range(0.2, 0.6)
 	if r.randf() < FALL:
 		var t := get_tree().create_timer(length * 0.5)

@@ -41,8 +41,8 @@ func _input(event: InputEvent) -> void:
 			active = false
 			_follow = null
 			# The King takes the view back: lift it clear of any treetops it was following through.
-			if rig._goal_distance < 6.0:
-				rig._goal_distance = 6.0
+			if rig.goal_distance < 6.0:
+				rig.goal_distance = 6.0
 
 
 func start() -> void:
@@ -76,10 +76,10 @@ func _process_timed(delta: float) -> void:
 		_soon = -1.0
 		return
 	# A slow turn around whatever we're watching, so even a quiet shot moves.
-	rig._goal_yaw += delta * 0.04
+	rig.goal_yaw += delta * 0.04
 	if is_instance_valid(_follow) and _follow.is_inside_tree():
 		# Follow calmly: drift toward the rider rather than snapping to every bump in the road.
-		rig._goal_target = rig._goal_target.lerp(_follow.global_position, clampf(delta * 1.5, 0.0, 1.0))
+		rig.goal_target = rig.goal_target.lerp(_follow.global_position, clampf(delta * 1.5, 0.0, 1.0))
 	_sight_left -= delta
 	if _sight_left <= 0.0:
 		_sight_left = 1.0
@@ -148,7 +148,7 @@ func watch_at(at: Vector3, dist: float, caption: String, follow: Node3D = null) 
 	_shot_left = SHOT_SECONDS * 2.0
 	_follow = follow
 	rig.focus(at, dist)
-	rig._goal_tilt = 0.0
+	rig.goal_tilt = 0.0
 	_clear_sight()
 	ui.caption(caption)
 
@@ -164,24 +164,24 @@ func _clear_sight() -> void:
 	var woods = terrain.get("forest") if terrain else null
 	if woods == null or not woods.has_method("blocking"):
 		return
-	var at: Vector3 = _follow.global_position if is_instance_valid(_follow) else rig._goal_target
+	var at: Vector3 = _follow.global_position if is_instance_valid(_follow) else rig.goal_target
 	at.y = terrain.height_at(at.x, at.z) + 0.15
-	var dist: float = rig._goal_distance
-	if woods.blocking(_eye(at, rig._goal_yaw, rig._goal_tilt, dist), at) == 0:
+	var dist: float = rig.goal_distance
+	if woods.blocking(_eye(at, rig.goal_yaw, rig.goal_tilt, dist), at) == 0:
 		return
-	var best := [INF, rig._goal_yaw, rig._goal_tilt]
+	var best := [INF, rig.goal_yaw, rig.goal_tilt]
 	for tilt in SIGHT_TILTS:
 		for k in [0, 1, -1, 2, -2, 3, -3, 4]:
-			var yaw: float = rig._goal_yaw + k * PI / 4.0
+			var yaw: float = rig.goal_yaw + k * PI / 4.0
 			var n: int = woods.blocking(_eye(at, yaw, tilt, dist), at)
 			if n < best[0]:
 				best = [n, yaw, tilt]
 			if n == 0:
-				rig._goal_yaw = yaw
-				rig._goal_tilt = tilt
+				rig.goal_yaw = yaw
+				rig.goal_tilt = tilt
 				return
-	rig._goal_yaw = best[1]
-	rig._goal_tilt = best[2]
+	rig.goal_yaw = best[1]
+	rig.goal_tilt = best[2]
 
 
 ## Where the camera's eye would be, looking at `at` from `yaw`, as the rig places it.
@@ -209,7 +209,7 @@ func _frame(s: Dictionary, follow: Node3D) -> void:
 	var how: Array = [row["interest"], row["dist"], row["caption"]]
 	_follow = follow
 	rig.focus(follow.global_position if is_instance_valid(follow) else at, how[1])
-	rig._goal_tilt = 0.0  # a battle's framing lowers the view; each new shot starts level
+	rig.goal_tilt = 0.0  # a battle's framing lowers the view; each new shot starts level
 	_clear_sight()
 	ui.caption(caption(s))
 

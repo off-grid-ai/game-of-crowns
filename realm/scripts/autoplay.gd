@@ -172,22 +172,22 @@ func _play(quit_after: bool) -> void:
 				var at: Vector3 = main.terrain.world_pos(float(w[1]), float(w[2]))
 				main.rig.snap(at, float(w[3]) if w.size() > 3 else 1.6, 0.6)
 				if main.rig.is_processing_input() == false:
-					main.rig._apply()
+					main.rig.apply()
 				await get_tree().create_timer(2.0).timeout
 			"life":
 				# life Town [kind] [dist]: frames the town's scene folk (kind: soldier for a drill, else everyone).
 				_frame_life(w[1], w[2] if w.size() > 2 else "", float(w[3]) if w.size() > 3 else 1.6)
 				if main.rig.is_processing_input() == false:
-					main.rig._apply()
+					main.rig.apply()
 				await get_tree().create_timer(3.0).timeout
 			"city":
 				_frame_city(w[1], float(w[2]) if w.size() > 2 else 6.0)
 				# city Name dist tilt: a tilt below 0 looks further out (the low oblique view).
 				if w.size() > 3:
 					main.rig.tilt = clampf(float(w[3]), -40.0, 30.0)
-					main.rig._goal_tilt = main.rig.tilt
+					main.rig.goal_tilt = main.rig.tilt
 				if main.rig.is_processing_input() == false:
-					main.rig._apply()
+					main.rig.apply()
 				await get_tree().create_timer(3.0).timeout
 			"director":
 				# director: the camera director runs as in play (shots turn it off).
