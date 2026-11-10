@@ -17,7 +17,7 @@ const LOOKS := {
 	"storm": {"cumulus": 1.0, "cirrus": 0.8, "fog": 0.0025, "wind": 9.0, "rain": 1.0, "snow": 0.0, "wet": 1.0},
 	"snow": {"cumulus": 0.8, "cirrus": 0.6, "fog": 0.0016, "wind": 2.0, "rain": 0.0, "snow": 1.0, "wet": 0.0},
 }
-const RAIN_DROPS := 3000  # at full rain, about the camera
+const RAIN_DROPS := 12000  # at full rain: dense, fine and close (Manor Lords), never a few long sticks
 const SNOW_FLAKES := 1600
 
 var sky3d: Node  # Sky3D
@@ -28,8 +28,9 @@ var _snow: GPUParticles3D
 
 
 func _ready() -> void:
-	_rain = _fall(RAIN_DROPS, Vector2(0.008, 0.35), Color(0.75, 0.8, 0.88, 0.45), 9.0, 0.9)
-	_snow = _fall(SNOW_FLAKES, Vector2(0.035, 0.035), Color(0.96, 0.97, 1.0, 0.85), 1.1, 6.0)
+	# Rain: short, fine, faint streaks in a small box about the lens, fading out with distance.
+	_rain = _fall(RAIN_DROPS, Vector2(0.0025, 0.07), Color(0.82, 0.86, 0.92, 0.22), 14.0, 0.45, 4.0)
+	_snow = _fall(SNOW_FLAKES, Vector2(0.035, 0.035), Color(0.96, 0.97, 1.0, 0.85), 1.1, 6.0, 9.0)
 
 
 ## The weather as the mirror holds it now; settle: seconds to change over.
@@ -76,7 +77,7 @@ func _amount(p: GPUParticles3D, _most: int, v: float) -> void:
 
 ## A curtain of falling streaks (rain) or flakes (snow) in a box about the camera,
 ## from Godot's own particle system: a stock quad, a stock unshaded material.
-func _fall(count: int, size: Vector2, colour: Color, speed: float, life: float) -> GPUParticles3D:
+func _fall(count: int, size: Vector2, colour: Color, speed: float, life: float, reach: float) -> GPUParticles3D:
 	var p := GPUParticles3D.new()
 	p.amount = count
 	p.amount_ratio = 0.0
@@ -86,7 +87,7 @@ func _fall(count: int, size: Vector2, colour: Color, speed: float, life: float) 
 	p.visibility_aabb = AABB(Vector3(-12, -12, -12), Vector3(24, 24, 24))
 	var m := ParticleProcessMaterial.new()
 	m.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	m.emission_box_extents = Vector3(9, 0.5, 9)
+	m.emission_box_extents = Vector3(reach, 0.5, reach)
 	m.direction = Vector3(0.08, -1, 0.04)
 	m.spread = 4.0
 	m.initial_velocity_min = speed * 0.85
@@ -103,6 +104,10 @@ func _fall(count: int, size: Vector2, colour: Color, speed: float, life: float) 
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y if speed > 3.0 else BaseMaterial3D.BILLBOARD_ENABLED
 	mat.albedo_color = colour
+	# Faint near the lens and gone with distance: a curtain, not sticks (Godot's own distance fade).
+	mat.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_ALPHA
+	mat.distance_fade_min_distance = reach * 1.2
+	mat.distance_fade_max_distance = 0.15
 	mat.no_depth_test = false
 	q.material = mat
 	p.draw_pass_1 = q
