@@ -1078,12 +1078,14 @@ func _banner(root: Node3D, pos: Vector3, color: Color, house: Dictionary, height
 		root.set_meta("banners", all)
 		flag.set_meta("top", flag.position.y)
 		_hoist(flag, _banner_at.get(int(root.get_meta("owner", -1)), 1.0), false)
+		_fringe(flag, _sworn.get(int(root.get_meta("owner", -1)), false))
 
 
 ## Every decision is seen (GAME_DESIGN pillar 3): a house's banners stand as
 ## high as its favour toward the crown. Full height when loyal, half-mast when
 ## cooling, near the ground when it may rise; the cloth slides when it changes.
 var _banner_at := {}  # house id -> 0..1 of the pole
+var _sworn := {}  # house id -> true while sworn to the crown (its banners' gold fringe)
 
 
 static func banner_height(favour) -> float:
@@ -1107,17 +1109,28 @@ func _hoist(flag: Node3D, frac: float, slide := true) -> void:
 
 func _raise_banners(world: Dictionary) -> void:
 	var by_owner := {}
+	var sworn := {}
 	for p in world.get("players", []):
 		by_owner[int(p.get("id", -1))] = banner_height(p.get("favour"))
+		sworn[int(p.get("id", -1))] = p.get("sworn") != null
 	_banner_at = by_owner
+	_sworn = sworn
 	for id in towns:
 		var root: Node3D = towns[id]["node"]
 		if not is_instance_valid(root):
 			continue
 		var frac: float = by_owner.get(int(root.get_meta("owner", -1)), 1.0)
+		var oath: bool = sworn.get(int(root.get_meta("owner", -1)), false)
 		for flag in root.get_meta("banners", []):
 			if is_instance_valid(flag):
 				_hoist(flag, frac)
+				_fringe(flag, oath)
+
+
+## A sworn house's banners carry a gold fringe (banner_cloth.gdshader).
+func _fringe(flag: Node, on: bool) -> void:
+	for g in ([flag] if flag is GeometryInstance3D else flag.find_children("*", "GeometryInstance3D", true, false)):
+		(g as GeometryInstance3D).set_instance_shader_parameter("fringe", 1.0 if on else 0.0)
 
 
 static var _dot: Texture2D

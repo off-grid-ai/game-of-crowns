@@ -12,6 +12,7 @@ uniform bool use_tex = false;
 uniform float wind = 1.0;  // the sky's wind (Sky3D), 0 still .. 2 strong
 instance uniform float span = 0.2;  // the cloth's width in world units
 instance uniform float phase = 0.0;  // this flag's place in the wind
+instance uniform float fringe = 0.0;  // 1: the house is sworn to the crown, and its banners carry a gold fringe
 
 void vertex() {
 	float t = UV.x;  // 0 at the pole, 1 at the free edge
@@ -34,6 +35,8 @@ void fragment() {
 	vec4 c = use_tex ? texture(cloth_tex, UV) : cloth_color;
 	ALBEDO = c.rgb;
 	ROUGHNESS = 1.0;
+	// A sworn house's banner: a band of crown gold along its free edge.
+	ALBEDO = mix(ALBEDO, vec3(0.79, 0.66, 0.35), fringe * step(0.86, UV.x));
 	if (use_tex) {
 		ALPHA = c.a;
 		ALPHA_SCISSOR_THRESHOLD = 0.5;

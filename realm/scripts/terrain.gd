@@ -813,9 +813,13 @@ func set_realm(owners: Array, players: Array) -> void:
 	if _land_mat == null or owners.size() != height or (USE_TERRAIN3D and (land3d == null or land3d.land == null)):
 		return  # (the 3D land is still being raised: the next reading paints it)
 	var wars := {}
+	var truces := {}
+	var sworn := {}
 	var colour := {}
 	for p in players:
 		wars[int(p["id"])] = []
+		truces[int(p["id"])] = []
+		sworn[int(p["id"])] = p.get("sworn") != null
 		var h: Dictionary = p.get("house", {})
 		colour[int(p["id"])] = Color(0, 0, 0, 0) if h.get("wild", false) else Color.from_string(String(h.get("color", "#888")), Color.GRAY)
 	# The bridge names the foes ("Wolfholt", "the Crown"); the map wants their ids.
@@ -827,7 +831,10 @@ func set_realm(owners: Array, players: Array) -> void:
 		for foe in p.get("wars", []):
 			if by_name.has(String(foe)):
 				wars[int(p["id"])].append(by_name[String(foe)])
-	var sig := str(hash(owners)) + str(hash(wars))
+		for held in p.get("truces", []):
+			if by_name.has(String(held)):
+				truces[int(p["id"])].append(by_name[String(held)])
+	var sig := str(hash(owners)) + str(hash(wars)) + str(hash(truces)) + str(hash(sworn))
 	if sig == _realm_sig:
 		return
 	_realm_sig = sig
@@ -840,13 +847,16 @@ func set_realm(owners: Array, players: Array) -> void:
 	var was_ids := _realm_ids
 	_realm_ids = ids
 	var realm := Image.create(width, height, false, Image.FORMAT_RGBA8)
-	var war := Image.create(width, height, false, Image.FORMAT_R8)
+	# The houses' standing, per tile: r = at war with a neighbour across the border,
+	# g = under a truce with one, b = the owner is sworn to the crown.
+	var war := Image.create(width, height, false, Image.FORMAT_RGBA8)
 	for y in height:
 		for x in width:
 			var o: int = ids[y][x] if x < ids[y].size() else -1
 			var col: Color = colour.get(o, Color(0, 0, 0, 0))
 			if o >= 0 and col.a > 0.0:
 				realm.set_pixel(x, y, Color(col.r, col.g, col.b, (o + 1) / 64.0))
+			var st := Color(0, 0, 1.0 if o >= 0 and sworn.get(o, false) else 0.0, 1)
 			for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
 				var nx: int = x + d.x
 				var ny: int = y + d.y
@@ -854,7 +864,10 @@ func set_realm(owners: Array, players: Array) -> void:
 					continue
 				var n: int = ids[ny][nx]
 				if n >= 0 and n != o and n in wars.get(o, []):
-					war.set_pixel(x, y, Color(1, 0, 0))
+					st.r = 1.0
+				elif n >= 0 and n != o and n in truces.get(o, []):
+					st.g = 1.0
+			war.set_pixel(x, y, st)
 	var realm_tex := ImageTexture.create_from_image(realm)
 	var war_tex := ImageTexture.create_from_image(war)
 	_land_mat.set_shader_parameter("realm_tex", realm_tex)

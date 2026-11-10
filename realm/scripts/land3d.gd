@@ -352,9 +352,13 @@ const REALM_WASH := """
 		float edge = other >= 0 ? 1.0 - smoothstep(px * 1.2, px * 2.6 + 0.01, gap) : 0.0;
 		// A band of stronger colour just inside it, as a map would draw a realm's edge.
 		float band = other >= 0 ? 1.0 - smoothstep(0.0, 0.4, gap) : 0.0;
-		bool at_war = other >= 0 && own.a > 0.0 && o[other].a > 0.0
-			&& texelFetch(war_tex, clamp(cs[best], ivec2(0), ivec2(realm_size) - 1), 0).r > 0.5
-			&& texelFetch(war_tex, clamp(cs[other], ivec2(0), ivec2(realm_size) - 1), 0).r > 0.5;
+		// The two houses' standing across this border (terrain.set_realm): r war, g truce, b sworn.
+		vec4 sa = texelFetch(war_tex, clamp(cs[best], ivec2(0), ivec2(realm_size) - 1), 0);
+		vec4 sb = other >= 0 ? texelFetch(war_tex, clamp(cs[other], ivec2(0), ivec2(realm_size) - 1), 0) : vec4(0.0);
+		bool both = other >= 0 && own.a > 0.0 && o[other].a > 0.0;
+		bool at_war = both && sa.r > 0.5 && sb.r > 0.5;
+		bool truce = both && !at_war && sa.g > 0.5 && sb.g > 0.5;
+		bool sworn = other >= 0 && own.a > 0.0 && sa.b > 0.5;
 		float front = flood_n > 0 ? exp(-abs(flood_d(rt) - flood_r) * 2.0) : 0.0;
 		if (own.a > 0.0) {
 			// The house's own colour at the land's brightness: a hue, the ground still showing.
@@ -365,8 +369,11 @@ const REALM_WASH := """
 			float k = far_off * mix(0.45, 0.7, realm_mix) + band * mix(0.35, 0.55, far_off) + front * 0.4 * far_off;
 			ALBEDO = mix(ALBEDO, tinted, clamp(k, 0.0, 0.85));
 		}
-		vec3 line = at_war ? vec3(0.85, 0.12, 0.1) : (own.a > 0.0 ? own.rgb * 0.4 : vec3(0.1));
-		ALBEDO = mix(ALBEDO, line, edge * 0.9);
+		// War: red. A truce: muted gold, dashed (held, not settled). Sworn to the crown:
+		// a fine crown-gold edge. Otherwise the house's own colour, darkened.
+		vec3 line = at_war ? vec3(0.85, 0.12, 0.1) : truce ? vec3(0.62, 0.52, 0.3) : sworn ? vec3(0.79, 0.66, 0.35) : (own.a > 0.0 ? own.rgb * 0.4 : vec3(0.1));
+		float dash = truce ? step(0.45, fract((rt.x + rt.y) * 2.5)) : 1.0;
+		ALBEDO = mix(ALBEDO, line, edge * 0.9 * dash);
 	}
 """
 var _flood_t := -1.0  # seconds into a flood; -1: none running
