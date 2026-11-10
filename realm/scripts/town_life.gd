@@ -122,6 +122,10 @@ func _y(center: Vector3, off: Vector3) -> float:
 
 
 const ROOM := 0.11  # world units between two people standing (about 0.9 m): shoulders never meet
+## The way a camera faces as it comes down into a town (camera_rig.frame_town
+## stands it at yaw 35 degrees, looking back at the heart): the half of the
+## square it sees first. Dressing that tells the town's news goes there.
+const SEEN := Vector3(-0.5736, 0, -0.8192)
 const CLEAR := 0.05  # how far a person keeps off a wall or a fence
 
 
@@ -405,6 +409,10 @@ func _drill(root: Node3D, life: Node3D, center: Vector3, progress: float, color:
 ## disorder, a crowd presses at the door with its grievances.
 func _crowd(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenerator, count: int, angry: bool) -> void:
 	var dir := Vector3(cos(rng.randf() * TAU), 0, sin(rng.randf() * TAU))
+	if angry:
+		# A riot is the town's news: on the side of the square the camera looks
+		# across as it comes down, give or take, never behind the lens.
+		dir = SEEN.rotated(Vector3.UP, rng.randf_range(-0.6, 0.6))
 	var side := Vector3(-dir.z, 0, dir.x)
 	var knots := maxi(1, ceili(count / 3.0))
 	for i in count:
@@ -435,7 +443,7 @@ func _crowd(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 				g.rotation.y = atan2(dir.x, dir.z)  # facing the crowd
 				_mind(g, "guard", center)
 		for k in 2:
-			var at := dir * rng.randf_range(0.8, 1.1) + side * (0.5 if k == 0 else -0.5)
+			var at := dir * rng.randf_range(0.6, 0.8) + side * (0.4 if k == 0 else -0.4)  # in the press, not off at its rim
 			var a := _stand(root, life, center, at, "peasant", "Fist_Fight_A", rng.randi(), Color(0.7, 0.66, 0.6), 0.25)
 			if a == null:
 				continue
@@ -794,17 +802,21 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 		for i in goods.size():
 			_prop(life, center, goods[i], m - out * (float(st[1]) * 0.5 + 0.06) + along * ((i - (goods.size() - 1) * 0.5) * 0.07), atan2(out.x, out.z), 1.0, 0.0, 0.06)
 	# Where the eye lands: inside the square, between its heart and the far side
-	# from the well (the judge: dressing at the edge is dressing nobody sees).
+	# from the well (the judge: dressing at the edge is dressing nobody sees),
+	# on the half of the square a camera coming down into the town looks across.
 	var edge := Vector3(-well.z, 0, well.x).normalized() * 0.55  # across the square from the well-to-market line, clear of the stalls
+	if edge.dot(SEEN) < 0.0:
+		edge = -edge
 	var side := Vector3(-edge.z, 0, edge.x).normalized()
 	if c.get("atWar", false):
 		# A barricade cart across the road in, weapons stacked, and more of the watch.
 		var cart: Node3D = Real.make("medieval_wooden_cart")
-		if cart and _open(center, edge * 1.2, _blocked(root, life), life.get_meta("standing")):
-			cart.position = Vector3(edge.x * 1.2, _y(center, edge * 1.2), edge.z * 1.2)
+		var cart_at := edge * 1.2
+		if cart and _open(center, cart_at, _blocked(root, life), life.get_meta("standing")):
+			cart.position = Vector3(cart_at.x, _y(center, cart_at), cart_at.z)
 			cart.rotation.y = atan2(side.x, side.z) + 0.35  # slewed across the way, not parked
 			life.add_child(cart)
-			life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(edge * 1.2, Real.footprint("medieval_wooden_cart"), atan2(side.x, side.z) + 0.35)])
+			life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(cart_at, Real.footprint("medieval_wooden_cart"), atan2(side.x, side.z) + 0.35)])
 		elif cart:
 			cart.free()  # no room on that road: no cart across it
 		_prop(life, center, "WeaponStand", edge * 1.05 + side * 0.2, atan2(-edge.x, -edge.z), 1.0, 0.0, 0.1)

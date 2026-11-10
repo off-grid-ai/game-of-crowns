@@ -934,7 +934,7 @@ func _gather(a: Dictionary, target: Vector3, places: Dictionary) -> bool:
 	var now := Time.get_ticks_msec() * 0.001
 	var list: Array = _talks.get(a["town"], [])
 	for g in list:
-		if g["members"].size() < 3 and Vector2(g["centre"]).distance_to(want) < 0.6 and float(g["until"]) > now + 6.0:
+		if not g.get("mind", false) and g["members"].size() < 3 and Vector2(g["centre"]).distance_to(want) < 0.6 and float(g["until"]) > now + 6.0:
 			_join(a, g)
 			return true
 	# Someone near, standing about or wandering, not already in company, kept
@@ -1487,11 +1487,93 @@ func gatherings(town: int) -> Array:
 	var out := []
 	for g in _talks.get(town, []):
 		var members: Array = g["members"]
-		if members.size() < 2 or not members.all(func(b): return _present(b, g)):
+		if members.size() < 2 or not members.all(func(b): return _in_talk(b, g)):
 			continue
 		out.append({"who": members.map(func(b): return int(b["i"])), "nodes": members.map(func(b): return b["node"]),
-			"kind": g["kind"], "key": int(g["key"])})
+			"kind": g["kind"], "key": int(g["key"]), "topic": String(g.get("topic", ""))})
 	return out
+
+
+## In place for the talk: the old rules' ring spot, or, for two whose minds
+## arranged it, both arrived, standing, face to face within talking distance.
+func _in_talk(b: Dictionary, g: Dictionary) -> bool:
+	if not g.get("mind", false):
+		return _present(b, g)
+	var nb: Node3D = b["node"]
+	if not nb.visible or not PackedVector2Array(b["route"]).is_empty():
+		return false
+	for o in g["members"]:
+		if is_same(o, b):
+			continue
+		var no: Node3D = o["node"]
+		var to := Vector2(no.position.x - nb.position.x, no.position.z - nb.position.z)
+		if to.length() > TALK_REACH or (to.length() > 0.005 and absf(angle_difference(nb.rotation.y, atan2(to.x, to.y))) > 0.6):
+			return false
+	return true
+
+
+## Two talking stand no further apart than this (about 2.5 m): further, and
+## it's calling across the street, not a talk anyone overhears.
+const TALK_REACH := 0.3
+## A minds' talk nobody closed (both called away before it began) lapses after this.
+const MIND_TALK_SECS := 40.0
+
+
+## Two whose minds (npc_mind.gd FindPartner) arranged a talk: recorded as a
+## gathering so chatter.gd puts words over them. Their minds move and play
+## them; the old rules' upkeep leaves them be ("mind"). Returns its key.
+func open_talk(a: Dictionary, b: Dictionary, kind := "talk", topic := "") -> int:
+	var town: int = a["town"]
+	var now := Time.get_ticks_msec() * 0.001
+	var list: Array = _talks.get(town, []).filter(func(g): return not g.get("mind", false) or (float(g["until"]) > now and not (_index(g["members"], a) >= 0 or _index(g["members"], b) >= 0)))
+	_talk_keys += 1
+	var c: Vector3 = a["center"]
+	var mid: Vector3 = (a["node"].position + b["node"].position) * 0.5
+	list.append({"key": _talk_keys, "centre": Vector2(mid.x - c.x, mid.z - c.z), "members": [a, b], "move": "Idle_Talking", "kind": kind,
+		"topic": topic, "until": now + MIND_TALK_SECS, "speaker": 0, "turn_at": now, "spin": 0.0, "mind": true})
+	_talks[town] = list
+	return _talk_keys
+
+
+## Room for two more to talk at `at` (world): fewer than two knots talking
+## there already (a third makes them one crowd), and nobody else standing on
+## the spot. Asked by a mind before it arranges a talk.
+func room_to_talk(a: Dictionary, at: Vector3, partner: Dictionary) -> bool:
+	var c: Vector3 = a["center"]
+	var here := Vector2(at.x - c.x, at.z - c.z)
+	var knots := 0
+	for g in _talks.get(a["town"], []):
+		if Vector2(g["centre"]).distance_to(here) < 0.6:
+			knots += 1
+	if knots >= 2:
+		return false
+	for b in crowds.get(a["town"], []):
+		if is_same(b, a) or is_same(b, partner) or not b["node"].visible:
+			continue
+		var nb: Node3D = b["node"]
+		if Vector2(nb.position.x - at.x, nb.position.z - at.z).length() < TownLife.ROOM * 1.5:
+			return false
+	return true
+
+
+## The minds' talk `key` is over (either of the two ends it).
+func close_talk(town: int, key: int) -> void:
+	var list: Array = _talks.get(town, [])
+	for k in list.size():
+		if int(list[k]["key"]) == key:
+			list.remove_at(k)
+			return
+
+
+## Who has the floor in talk `key` now (chatter.gd is showing their line):
+## their villager index, or -1 between lines or when the talk is gone.
+func floor_of(town: int, key: int) -> int:
+	var now := Time.get_ticks_msec() * 0.001
+	for g in _talks.get(town, []):
+		if int(g["key"]) == key:
+			var f: Dictionary = g.get("floor", {})
+			return int(f["i"]) if not f.is_empty() and now < float(g["turn_at"]) else -1
+	return -1
 
 
 ## Villager `i` has the floor in gathering `key` for `secs`: their turn to

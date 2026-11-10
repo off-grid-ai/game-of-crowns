@@ -452,7 +452,7 @@ class Weigh extends BTAction:
 static func state_activities() -> Array:
 	return [
 		seq("road", [go("home"), once("Looking_Around"), run(["Pointing_Forward", "Looking_Around", "Thinking"], 1, 2), brk(["Weight_Shift"])]),
-		seq("mutter", [partner(["Whispering", "Arguing", "Telling_Secret"]), go("meet"), Talk.new(), once("Shove_Reaction"), brk(LOOK)]),
+		seq("mutter", [partner(["Whispering", "Arguing", "Telling_Secret"]), go("meet"), Talk.new(), once("Disappointed"), brk(LOOK)]),
 	]
 
 
@@ -530,6 +530,7 @@ class FieldRun extends PlayRun:
 ## the selector picks something done alone.
 class FindPartner extends BTAction:
 	const NEAR := 2.5
+	const TALK_GAP := 0.14  # two talking stand this far apart (about 1.1 m), as villagers.gd's pairs do
 	const FRESH_MS := 90000  # news older than this isn't worth telling
 	@export var talk: Array = []  # the moves both use (a muttering knot argues); empty: everyday talk
 	const BOOKED_MS := 20000  # a talk arranged this long ago and not begun or ended is off
@@ -561,7 +562,11 @@ class FindPartner extends BTAction:
 		var them := best.get_parent() as Node3D
 		var mine: Vector3 = (agent as Node3D).global_position
 		var meet: Vector3 = (mine + them.global_position) * 0.5
-		var off: Vector3 = (mine - them.global_position).normalized() * 0.09  # a pace apart, face to face
+		# Never a third knot on a spot, nor a talk on top of someone standing there.
+		var v0: Node = blackboard.get_var(&"vill", null, false)
+		if v0 != null and v0.has_method("room_to_talk") and not v0.room_to_talk(blackboard.get_var(&"va"), (agent as Node3D).position + (meet - mine), bb_va(best)):
+			return FAILURE
+		var off: Vector3 = (mine - them.global_position).normalized() * TALK_GAP * 0.5  # face to face, a pace apart
 		blackboard.set_var(&"meet", (agent as Node3D).position + (meet + off - mine))
 		blackboard.set_var(&"partner", them)
 		best.blackboard.set_var(&"meet", them.position + (meet - off - them.global_position))
@@ -590,7 +595,16 @@ class FindPartner extends BTAction:
 		else:
 			blackboard.set_var(&"topic", "")
 			best.blackboard.set_var(&"topic", "")
+		# Overheard: the two are a gathering chatter.gd puts words over (villagers.open_talk).
+		var v: Node = blackboard.get_var(&"vill", null, false)
+		if v != null and v.has_method("open_talk"):
+			var key: int = v.open_talk(blackboard.get_var(&"va"), bb_va(best), "talk" if talk.is_empty() else "mutter", String(blackboard.get_var(&"topic", "", false)))
+			blackboard.set_var(&"talk_key", key)
+			best.blackboard.set_var(&"talk_key", key)
 		return SUCCESS
+
+	static func bb_va(p: BTPlayer) -> Dictionary:
+		return p.blackboard.get_var(&"va", {}, false)
 
 
 ## Two talking: face each other and talk, and whatever the topic is shows in a
@@ -599,6 +613,16 @@ class FindPartner extends BTAction:
 ## death tears, the King a nod. Then the talk ends for both.
 class Talk extends PlayRun:
 	const EVERYDAY := ["Idle_Talking", "Talking", "Talking_2", "Telling_Secret", "Whispering", "Laughing"]
+
+	## Listening while the other has the floor (a caption over their head).
+	const LISTEN := ["Nodding", "Thinking", "Idle", "Nodding"]
+	const WAIT_SECS := 8.0  # the other not here by then: they aren't coming
+	const LINE_CAP := 25.0  # a talk held past its moves for lines still being read, at most this
+	var _talking := []  # the talking moves chosen for this talk
+	var _waited := 0.0
+	var _held := 0.0
+	var _started := false
+	var _floor := -2  # who had the floor at the last look
 
 	func _init() -> void:
 		pool = EVERYDAY
@@ -612,9 +636,35 @@ class Talk extends PlayRun:
 		var topic := String(blackboard.get_var(&"topic", "", false))
 		var gesture: Array = TOPIC_GESTURE.get(SceneKinds.tone(topic), []) if topic != "" else []
 		pool = (gesture + pool) if randf() < 0.6 else (pool + gesture)
+		_talking = pool
+		_waited = 0.0
+		_held = 0.0
+		_floor = -2
+		_started = false
+		# Nobody talks to the air: until the other stands face to face with
+		# them, they wait at the spot and look for them.
+		if _near():
+			_begin()
+		else:
+			People.play(agent, "Idle")
+
+	func _begin() -> void:
+		_started = true
 		super._enter()
 
-	## The talk goes on only while the other is still here and still talking to them.
+	## The other has arrived and stopped, within talking distance.
+	func _near() -> bool:
+		var them = blackboard.get_var(&"partner", null, false)
+		if not (them is Node3D and is_instance_valid(them)):
+			return false
+		var d := Vector2((them as Node3D).global_position.x - (agent as Node3D).global_position.x, (them as Node3D).global_position.z - (agent as Node3D).global_position.z).length()
+		var theirs: Dictionary = FindPartner.bb_va((them as Node3D).get_node_or_null("Mind") as BTPlayer) if (them as Node3D).get_node_or_null("Mind") else {}
+		var walking: bool = not theirs.is_empty() and not (theirs.get("route", PackedVector2Array()) as PackedVector2Array).is_empty()
+		return d < 0.3 and not walking
+
+	## The talk goes on only while the other is still here and still talking
+	## to them; while a line of theirs is being read they listen, and the talk
+	## isn't cut off mid-line.
 	func _tick(delta: float) -> Status:
 		var them = blackboard.get_var(&"partner", null, false)
 		if not (them is Node3D and is_instance_valid(them)):
@@ -623,7 +673,36 @@ class Talk extends PlayRun:
 		if their_mind == null or their_mind.blackboard.get_var(&"partner", null, false) != agent:
 			return SUCCESS
 		_face()
-		return super._tick(delta)
+		if not _started:
+			_waited += delta
+			if _waited > WAIT_SECS:
+				return SUCCESS
+			if _waited > 2.0:
+				People.play(agent, "Looking_Around")
+			if _near():
+				_begin()
+			return RUNNING
+		var f := _floor_now()
+		if f != _floor:
+			_floor = f
+			var me: Dictionary = blackboard.get_var(&"va", {}, false)
+			if f >= 0 and f != int(me.get("i", -1)):
+				People.play(agent, LISTEN[randi() % LISTEN.size()])
+			elif f >= 0:
+				People.play(agent, _talking[randi() % _talking.size()])
+		var done := super._tick(delta)
+		if done == SUCCESS and f >= 0 and _held < LINE_CAP:
+			_held += delta
+			return RUNNING
+		return done
+
+	## Villager index with the floor in this talk (villagers.floor_of), or -1.
+	func _floor_now() -> int:
+		var v: Node = blackboard.get_var(&"vill", null, false)
+		var me: Dictionary = blackboard.get_var(&"va", {}, false)
+		if v == null or me.is_empty() or not blackboard.has_var(&"talk_key") or not v.has_method("floor_of"):
+			return -1
+		return v.floor_of(int(me["town"]), int(blackboard.get_var(&"talk_key")))
 
 	func _face() -> void:
 		var them = blackboard.get_var(&"partner", null, false)
@@ -638,6 +717,17 @@ class Talk extends PlayRun:
 		blackboard.set_var(&"called", false)
 		blackboard.set_var(&"talking", false)
 		blackboard.set_var(&"partner", null)
+		close(blackboard)
+
+	## The talk is off the town's gatherings: nothing more is said over them.
+	static func close(bb: Blackboard) -> void:
+		if not bb.has_var(&"talk_key"):
+			return
+		var v: Node = bb.get_var(&"vill", null, false)
+		var a: Dictionary = bb.get_var(&"va", {}, false)
+		if v != null and not a.is_empty() and v.has_method("close_talk"):
+			v.close_talk(int(a["town"]), int(bb.get_var(&"talk_key")))
+		bb.erase_var(&"talk_key")
 
 
 ## The gesture that shows what a talk is about, by the news's tone.
@@ -668,6 +758,7 @@ class FreshCall extends BTCondition:
 			blackboard.set_var(&"called", false)
 			blackboard.set_var(&"talking", false)
 			blackboard.set_var(&"partner", null)
+			Talk.close(blackboard)
 			return FAILURE
 		return SUCCESS
 

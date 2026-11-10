@@ -37,15 +37,14 @@ const CLOTH := [Color(1, 1, 1), Color(0.85, 0.75, 0.62), Color(0.7, 0.8, 0.7), C
 ## enough to fill a square; the rest stand alone (the court, the close-up).
 const BODIES := {
 	# Erika, Arissa and Eve are out: modern black leather and fitted suits read as a joke in a medieval town (Mac, 2026-11-10).
+	# Akai (face paint, buckled leather, goggles), Ganfaul (half a demon's face, a horned arm) and Uriel (wings) are out too:
+	# fantasy, not a medieval town. Archers wear a soldier's outfit; soldiers and nobles keep the armoured bodies above.
 	"knight": {"sex": "m", "roles": ["soldier", "noble", "knight"], "cloth": ["Lower_Armor"], "crowd": true},
 	"paladin": {"sex": "m", "roles": ["soldier", "noble", "knight"], "cloth": [], "crowd": true},
 	"paladin_prop": {"sex": "m", "roles": ["noble", "knight"], "cloth": [], "crowd": false},
 	"heraklios": {"sex": "m", "roles": ["soldier"], "cloth": [], "crowd": true},
 	"dreyar": {"sex": "m", "roles": ["noble", "soldier", "knight"], "cloth": [], "crowd": true},
-	"ganfaul": {"sex": "m", "roles": ["soldier"], "cloth": [], "crowd": true},
-	"akai": {"sex": "m", "roles": ["archer"], "cloth": [], "crowd": true},
 	"brute": {"sex": "m", "roles": ["peasant", "soldier"], "cloth": ["MaleBruteA_Bottoms"], "crowd": false},
-	"uriel": {"sex": "m", "roles": ["noble", "knight"], "cloth": [], "crowd": false},
 	# Plain townsfolk in tunics and hose (Leonardo Carvalho's Fuse civilians, CC BY, by way of Sketchfab).
 	# Their tunic ("material") and breeches ("Bottom") take a homespun dye each, so no two dress alike.
 	"fuse_civilian_1": {"sex": "m", "roles": ["townsfolk", "peasant"], "cloth": [], "crowd": true, "dyed": ["Object_12", "Object_13"]},

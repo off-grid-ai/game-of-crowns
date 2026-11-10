@@ -31,6 +31,64 @@ var _tags: Array[Label3D] = []
 var _check := 0.0
 var _waiting: Array[HTTPRequest] = []  # talks asked for and not yet written
 var _shot_on_talk := OS.get_cmdline_user_args().has("--chatter")
+var _said := {}  # line set -> how many of it have been used: each set's lines in turn, never the same twice running
+
+const SceneKinds := preload("res://scripts/scene_kinds.gd")
+## How long a talk in view waits for the minds' words before plain words of
+## its own are said instead: talk is never silent while the model warms up.
+const OWN_WORDS_SECS := 5.0
+## Plain words for when the minds have none: by the news the talk is about
+## (its tone), or else by the gathering's kind. Each a short exchange, the
+## speakers taking turns.
+const OWN_WORDS := {
+	"hostile": [
+		["Riders on the east road at first light.", "Then bar the door tonight and keep the children in."],
+		["They say the lord's men fell back.", "Fell back, or ran? Either way they're coming here.", "God keep us."],
+		["Smoke over the hill since noon.", "That's a farm burning, not a field."],
+	],
+	"trouble": [
+		["Bread's gone up again.", "Gone up? There's none to buy by midday."],
+		["Two more sick on the lane.", "Keep your well bucket to yourself, then."],
+		["The barrow's empty, same as last week.", "Same as the week before. Someone's eating well."],
+	],
+	"grief": [
+		["They buried him this morning.", "He was a good man. Never owed a penny."],
+		["Light a candle for her at the sept.", "I have. Twice."],
+		["His wife won't come out of the house.", "Leave bread at the door. She'll take it in the night."],
+	],
+	"joy": [
+		["There's ale at the square tonight!", "Then I'm not working past noon."],
+		["Did you hear the piper?", "Heard him? I danced with his sister.", "Poor girl."],
+		["A good year, this.", "Don't say it aloud. You'll wake the tax man."],
+	],
+	"crown": [
+		["The King's banner went by.", "Did he look at us?", "He looked at the road."],
+		["Wagons for the crown again.", "Our grain, their wagons."],
+		["A rider from the King, bound north.", "Good news rides slower than that."],
+	],
+	"drink": [
+		["Another one, and put it on the miller's slate.", "The miller will have your hide."],
+		["To the harvest!", "To the harvest. And to it being over."],
+		["This ale's half water.", "Then drink twice as much."],
+	],
+	"haggle": [
+		["Three pennies for that? It's half rotten.", "Two, then, and you carry it yourself."],
+		["Fresh this morning, I swear it.", "Which morning?"],
+		["I'll give you a penny and my thanks.", "Your thanks won't feed my mule."],
+	],
+	"mutter": [
+		["The steward took a third this year.", "A third? He took half from the Coopers."],
+		["Keep your voice down.", "Why? They can't take more than all of it."],
+		["Who sits on that throne, I ask you.", "Not one of us, that's who."],
+	],
+	"talk": [
+		["Rain by evening, you'll see.", "My knee says the same."],
+		["Your boy was at my apples again.", "Then your apples should taste worse."],
+		["The well rope's fraying.", "Then don't be the one at the bottom of it."],
+		["Have you seen the smith's new apprentice?", "I've heard him. All morning.", "He'll learn."],
+		["Off to market?", "If my legs get me there."],
+	],
+}
 
 
 func _process(delta: float) -> void:
@@ -100,15 +158,48 @@ func _ask(town: int, g: Dictionary, key: String) -> void:
 	req.request_completed.connect(func(_r, code, _h, bytes):
 		_waiting.erase(req)
 		req.queue_free()
+		if _playing.has(key):
+			return  # plain words already said: these keep for the next time they meet
 		var data = JSON.parse_string(bytes.get_string_from_utf8()) if code == 200 else null
-		if not data is Array:
-			return
-		for talk in data:
-			if talk is Dictionary and not _played.has(talk.get("id", "")) and _same(talk.get("who", []), g["who"]):
-				_played[talk["id"]] = true
-				_play(town, g, key, talk)
-				return)
-	req.request(bridge.BASE + "/minds/chatter?city=%d&who=%s&wait=1" % [town, ",".join(who)])
+		if data is Array:
+			for talk in data:
+				if talk is Dictionary and not _played.has(talk.get("id", "")) and _same(talk.get("who", []), g["who"]):
+					_played[talk["id"]] = true
+					_play(town, g, key, talk)
+					return
+		_own_words(town, g, key))
+	if req.request(bridge.BASE + "/minds/chatter?city=%d&who=%s&wait=1" % [town, ",".join(who)]) != OK:
+		_own_words(town, g, key)
+		return
+	# The minds may take a while (the model's first call loads it): not this talk's silence.
+	get_tree().create_timer(OWN_WORDS_SECS).timeout.connect(func(): _own_words(town, g, key))
+
+
+## Plain words of their own (OWN_WORDS), when the minds have none for them yet
+## and the two are still talking where the camera can hear.
+func _own_words(town: int, g: Dictionary, key: String) -> void:
+	if not is_inside_tree() or _playing.has(key) or not _talking(town, int(g["key"])):
+		return
+	var topic := String(g.get("topic", ""))
+	var set_name := SceneKinds.tone(topic) if topic != "" else ""
+	if not OWN_WORDS.has(set_name):
+		set_name = String(g.get("kind", "talk")) if OWN_WORDS.has(String(g.get("kind", ""))) else "talk"
+	var sets: Array = OWN_WORDS[set_name]
+	var n := int(_said.get(set_name, randi() % sets.size()))
+	_said[set_name] = n + 1
+	var who: Array = g["who"]
+	var lines := []
+	for k in (sets[n % sets.size()] as Array).size():
+		lines.append({"who": int(who[k % who.size()]), "text": sets[n % sets.size()][k]})
+	_play(town, g, key, {"lines": lines})
+
+
+## Gathering `key` of the town is still going, everyone in it in place.
+func _talking(town: int, key: int) -> bool:
+	for g in villagers.gatherings(town):
+		if int(g["key"]) == key:
+			return true
+	return false
 
 
 func _same(a: Array, b: Array) -> bool:
@@ -127,7 +218,7 @@ func _play(town: int, g: Dictionary, key: String, talk: Dictionary) -> void:
 	for line in talk.get("lines", []):
 		var i := int(line.get("who", -1))
 		var at: int = Array(g["who"]).map(func(v): return int(v)).find(i)
-		if at < 0 or not is_instance_valid(g["nodes"][at]) or not (g["nodes"][at] as Node3D).visible:
+		if at < 0 or not is_instance_valid(g["nodes"][at]) or not (g["nodes"][at] as Node3D).visible or not _talking(town, int(g["key"])):
 			break
 		var speaker: Node3D = g["nodes"][at]
 		var text := String(line.get("text", ""))
