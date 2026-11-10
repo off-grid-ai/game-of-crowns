@@ -19,8 +19,19 @@ export function calendar(turn) {
   return { season: SEASONS[t % 4], year: CONQUEST_YEAR + Math.floor(t / 4), text: `${SEASONS[t % 4][0].toUpperCase()}${SEASONS[t % 4].slice(1)} of ${CONQUEST_YEAR + Math.floor(t / 4)} AC` };
 }
 
+// The reign's stakes now being kept (one reign at a time), for raisePretender.
+let current = null;
+
+// A pretender proclaimed elsewhere (the director's ignored claim, director.js):
+// the usurper's path starts at its rumour, so the claim still goes through the
+// ultimatum at court before any host marches. One writer: stakes.js.
+export function raisePretender(houseId) {
+  current?.raise(houseId);
+}
+
 export class Stakes {
   constructor(stateDir, record, endReign) {
+    current = this;
     this.file = path.join(stateDir, "stakes.json");
     this.record = record;
     this.endReign = endReign;
@@ -33,6 +44,15 @@ export class Stakes {
 
   save() {
     fs.writeFileSync(this.file, JSON.stringify(this.s, null, 1));
+  }
+
+  // The usurper's rumour, started by a house's proclaimed claim (raisePretender).
+  // A path already under way is left as it is.
+  raise(houseId) {
+    const u = this.s.usurper;
+    if (houseId == null || u.stage !== "none") return;
+    Object.assign(u, { stage: "rumour", house: Number(houseId), since: this.turnNow ?? 0 });
+    this.save();
   }
 
   // Raises a host through realm_host() in lua/events.lua; Freeciv's AI then
@@ -65,6 +85,7 @@ export class Stakes {
   }
 
   tick(turn, world, ctx) {
+    this.turnNow = turn;
     if (!world) return;
     // The crown's fate only advances while the King is present; the realm lives on regardless.
     if (!ctx.watched) {
