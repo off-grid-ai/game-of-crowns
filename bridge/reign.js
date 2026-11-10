@@ -324,7 +324,18 @@ export function interlude(ctx) {
   const ambit = meta.ambitions?.length ? ["You haven't kept any of your three promises yet.", "You've kept one of your three promises.", "You've kept two of your three promises.", "You've kept all three of your promises."][Math.min(3, met)] : "";
   const said = [`People in the taverns are calling you ${named.name}.`, `At court they've started calling you ${named.name}.`, `The chroniclers are writing you down as ${named.name}.`][q - 1];
   choices.push({ city: -1, text: said, after: [named.next ? `Some still say ${named.next}.` : "", ambit].filter(Boolean).join(" ") });
-  meta.interlude = { q, title: `End of the ${acts[q - 1]} act`, turn: world?.turn ?? 0, choices, fates: [], seen: false };
+  // The act's one deed to name at its turning (bells, one line at its place): the
+  // ledger's weightiest deed since the act began, where it was done.
+  const deeds = (meta.ledger?.deeds ?? []).filter((d) => d.turn > from && String(d.says ?? "") !== "");
+  const top = deeds.sort((a, b) => Object.values(b.axes ?? {}).reduce((s, n) => s + Math.abs(n), 0) - Object.values(a.axes ?? {}).reduce((s, n) => s + Math.abs(n), 0) || b.turn - a.turn)[0];
+  let deed = null;
+  if (top) {
+    const named = (world?.cities ?? []).find((c) => String(top.says).includes(c.name) || String(top.says).includes(cityName(c.id) ?? "\u0000"));
+    const at = named ?? (picked[0] ? world?.cities?.find((c) => c.id === picked[0].city) : null) ?? world?.cities?.find((c) => houseFor(world.players.find((p) => p.id === c.owner) ?? {}).crown && c.capital);
+    const line = String(top.says);
+    deed = { line: line.charAt(0).toUpperCase() + line.slice(1), city: at?.id ?? null, x: at?.x ?? null, y: at?.y ?? null };
+  }
+  meta.interlude = { q, title: `End of the ${acts[q - 1]} act`, turn: world?.turn ?? 0, choices, fates: [], seen: false, deed };
   chron.saveMeta(meta);
   record({ turn: world?.turn ?? 0, kind: "act", text: `The ${acts[q - 1]} act of the reign ends.` });
 }

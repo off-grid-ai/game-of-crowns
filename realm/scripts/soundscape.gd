@@ -21,7 +21,7 @@ extends Node
 ##       death, crown (succession, coronation), marriage, alliance, dead
 ##       (the dead beyond the wall), famine, plague, rebellion (civil_war,
 ##       raid), sack (city_destroyed, razed), handover (city_transferred),
-##       unit_killed. Unknown kinds do nothing. `at` places it in the world.
+##       unit_killed, act (an act of the reign turns: bells). Unknown kinds do nothing. `at` places it in the world.
 ##   mood(kind: String)   calm|court|feast|tension|dead|battle. The realm's
 ##       standing mood; battle/feast/dead events lift it for a while on their own.
 ##   ui(kind: String)     click|open|close|page|seal|decree|parchment|quill|error.
@@ -98,6 +98,7 @@ const STINGS := {
 	"death": [["sfx/funeral_bell.ogg", -3.0, 0.0]],
 	"crown": [["sfx/fanfare.ogg", -3.0, 0.0], ["sfx/cheer.ogg", -8.0, 3.0], ["ambience/church_bells.ogg", -8.0, 5.0]],
 	"marriage": [["ambience/church_bells.ogg", -5.0, 0.0], ["sfx/cheer.ogg", -10.0, 4.0]],
+	"act": [["ambience/church_bells.ogg", -6.0, 0.0]],  # an act of the reign turns: the bells over Kingsmere
 	"alliance": [["sfx/fanfare.ogg", -8.0, 0.0]],
 	"dead": [["sfx/dead_horde.ogg", -2.0, 0.0], ["sfx/wolf_howl.ogg", -6.0, 6.0]],
 	"famine": [["sfx/famine_drone.ogg", -6.0, 0.0], ["sfx/toll_bell.ogg", -8.0, 2.0]],

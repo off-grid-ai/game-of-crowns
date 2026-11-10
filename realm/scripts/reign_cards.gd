@@ -72,11 +72,57 @@ var _interlude_on := false  # an act is being told back: the court waits behind 
 
 func _tell_interlude(il: Dictionary) -> void:
 	_interlude_on = true
-	await _epilogue(il, String(il.get("title", "The act ends")), true)
+	var deed = il.get("deed")
+	if deed is Dictionary and String(deed.get("line", "")) != "":
+		await _act_moment(il, deed)
+	else:
+		await _epilogue(il, String(il.get("title", "The act ends")), true)  # nothing to name: the act told as before
 	_interlude_on = false
 	ui.interlude_closed.emit()
 	if not ui._petitions.is_empty():
 		ui._show_audience()  # the court that waited behind the telling
+
+
+## An act of the reign turns: a moment, not a card (Frostpunk's ending shows what
+## you did where you did it). The bells over Kingsmere, and one line naming the
+## King's weightiest deed of the act, standing at its place on the map if it is in
+## view (else at the top), for a few seconds; the realm plays on under it. The
+## camera stays where he put it; the full flight is the reign's end.
+const ACT_SECONDS := 5.0
+func _act_moment(il: Dictionary, deed: Dictionary) -> void:
+	var main: Node = ui.get_parent()
+	var sound: Node = main.get("sound") if main else null
+	var at := Vector3.INF
+	if deed.get("x") != null and main and main.get("terrain"):
+		at = main.terrain.world_pos(float(deed["x"]), float(deed["y"]))
+	if sound and sound.has_method("event"):
+		sound.event("act")
+	var card := ui.glass_panel()
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 2)
+	card.add_child(v)
+	v.add_child(T.label(String(il.get("title", "The act ends")).to_upper()))
+	v.add_child(T.title(String(deed["line"]), 20))
+	ui.root.add_child(card)
+	var cam := ui.get_viewport().get_camera_3d()
+	var seen := at != Vector3.INF and cam and not cam.is_position_behind(at) and ui.get_viewport().get_visible_rect().has_point(cam.unproject_position(at))
+	if seen:
+		ui.anchor.pin(card, at, true, 0.8)
+	else:
+		card.set_anchors_preset(Control.PRESET_CENTER_TOP)
+		card.offset_top = 70
+		card.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	card.modulate.a = 0.0
+	var tw := ui.create_tween()
+	tw.tween_property(card, "modulate:a", 1.0, 0.6)
+	await ui.get_tree().create_timer(ACT_SECONDS).timeout
+	if is_instance_valid(card):
+		var out := ui.create_tween()
+		out.tween_property(card, "modulate:a", 0.0, 0.8)
+		await out.finished
+		ui.anchor.unpin(card)
+		card.queue_free()
 
 
 ## The reign's last flight: each defining choice where it happened (the camera
