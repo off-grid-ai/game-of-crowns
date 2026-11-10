@@ -820,7 +820,7 @@ func _listen() -> void:
 			"church": b.contains("Temple") or b.contains("Cathedral"), "forge": b.contains("Barracks") or b.contains("Blacksmith"),
 			"tavern": int(c.get("size", 1)) >= 3, "siege": c.get("besieged", false), "north": float(c.get("y", 999)) < 25.0}
 	var season := look_season(bridge.world)
-	sound.set_view(rig.distance, near, season, sky3d != null and sky3d.is_night(), "snow" if season == "winter" else "clear")
+	sound.set_view(rig.distance, near, season, sky3d != null and sky3d.is_night(), String(awareness.realm.get_var(&"weather", "clear")) if awareness else "clear")
 	var th: Dictionary = bridge.world.get("threat", {})
 	sound.mood("dead" if int(th.get("north", 0)) > 0 and rig.distance > 60.0 else ("tension" if String(th.get("usurper", "none")) != "none" else "calm"))
 

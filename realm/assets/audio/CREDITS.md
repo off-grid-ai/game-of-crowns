@@ -1,13 +1,12 @@
 # Audio credits
 
 Every sound and piece of music in `realm/assets/audio/`, where it came from and its licence.
-Personal, non-commercial use. CC-BY and CC-BY-SA works need this attribution kept wherever the game is shown;
-CC-BY-SA files (marked) stay under CC-BY-SA as edited (trimmed, loop-seamed, loudness-matched).
+Personal, non-commercial use. CC-BY works need this attribution kept wherever the game is shown. Only CC0 and CC-BY sounds are used
+(no CC-BY-SA, NC or unclear licences).
 Freesound files are the site's public HQ previews of the originals; the ID is the Freesound sound number.
 
 Licences: [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) ·
-[CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/) · [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/) ·
-[CC-BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) · [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+[CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/) · [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 
 ## Music
 
@@ -47,7 +46,8 @@ Licences: [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) ·
 | `market.ogg` | 10 s | Crowded street at medieval market | bolkmar | CC0 1.0 | [link](https://freesound.org/s/424790/) |
 | `night.ogg` | 90 s | Crickets and Tawny Owl | raoul_slayer | CC0 1.0 | [link](https://freesound.org/s/203598/) |
 | `rain.ogg` | 60 s | Rain heavy 2 (rural) | jmbphilmes | CC0 1.0 | [link](https://freesound.org/s/200272/) |
-| `rain_roof.ogg` | 23 s | Rain - falling on a wooden roof | Gregor Quendel | CC-BY-SA 4.0 | [link](https://opengameart.org/content/free-general-ambience-sounds) |
+| `rain_roof.ogg` | 89 s | Ambient Rain Loop 1 | Kresiek The Furry | CC0 1.0 | [link](https://opengameart.org/content/amb-rain-loop-1) |
+| `storm.wav` | 26 s | Rain and Thunder Loop | DoKashiteru | CC-BY 3.0 | [link](https://opengameart.org/content/rain-and-thunder-loop) |
 | `realm_sea.ogg` | 90 s | Ocean waves crushing on the chilean shore | felix.blume | CC0 1.0 | [link](https://freesound.org/s/155641/) |
 | `realm_wind.ogg` | 90 s | mountain wind heavy strong gusts Swiss Alps | kyles | CC0 1.0 | [link](https://freesound.org/s/454092/) |
 | `river.ogg` | 90 s | park_ambience_river | Thimras | CC0 1.0 | [link](https://opengameart.org/content/park-ambiences) |

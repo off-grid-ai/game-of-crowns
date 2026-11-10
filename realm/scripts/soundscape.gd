@@ -51,6 +51,7 @@ const BEDS := {
 	"night": ["ambience/night.ogg", -5.0],
 	"crows": ["ambience/crows.ogg", -12.0],
 	"rain": ["ambience/rain.ogg", -3.0],
+	"storm": ["ambience/storm.wav", -4.0],  # rain and thunder (DoKashiteru, CC-BY 3.0)
 	"rain_roof": ["ambience/rain_roof.ogg", -4.0],
 	"snow_wind": ["ambience/snow_wind.ogg", -5.0],
 	"campfire": ["ambience/campfire.ogg", -6.0],
@@ -303,6 +304,7 @@ func _targets() -> Dictionary:
 	t["night"] = (country + near) * (1.0 - far) * (1.0 - day) * green * (1.0 - wet)
 	t["crows"] = (country + near * 0.5) * (1.0 - green) * day * 0.7 + siege * 0.5
 	t["rain"] = wet * (1.0 - 0.5 * far)
+	t["storm"] = (1.0 if weather == "storm" else 0.0) * (1.0 - 0.5 * far)
 	t["snow_wind"] = maxf(winter * (0.35 + 0.65 * far), snowing)
 	t["river"] = near * (1.0 if town.get("river", false) else 0.0) * 0.8
 	t["dead_north"] = (1.0 if town.get("north", false) and _base_mood == "dead" else 0.0) * maxf(near, far)
