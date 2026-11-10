@@ -64,3 +64,4 @@ The review page has the screens: https://claude.ai/artifact/4PkjM4Z31UEeDdoGHrHc
 - **The cast by role** (review page, bodies v2): peasant and townsfolk are the same twelve bodies in the same order. Soldier and knight look alike. Half the clergy aren't robed, and the nobles are knights, nuns and rangers.
 
 - **Rain with the camera moving: pass** (b9f6f02). No white streaks in 28 frames. Separate problem: the street camera passes through market stalls, barrels and a passer-by, which turn see-through as it goes.
+- **The lens riding over the street's things: fail** (a382156). In the same street drift, a cart and a market stall still turn see-through as the camera passes (frames 4–7 and 22–26 of 28). The view doesn't lift over them. One earlier take stalled on a Metal fence timeout (a GPU stall); the rerun was clean.
