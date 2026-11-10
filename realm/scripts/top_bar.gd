@@ -72,7 +72,7 @@ func _arrange_top() -> void:
 
 
 func _pill(anchor_x: float, grow: int) -> HBoxContainer:
-	var p := ui._glass_panel()
+	var p := ui.glass_panel()
 	p.anchor_left = anchor_x
 	p.anchor_right = anchor_x
 	p.grow_horizontal = grow
@@ -109,7 +109,7 @@ func _toggle_story(pill: Control) -> void:
 		ui.toast("No story has come for the throne yet. It shows here when one does.")
 		return
 	if _story_panel == null:
-		_story_panel = ui._glass_panel()
+		_story_panel = ui.glass_panel()
 		_story_panel.z_index = 20  # over the houses table while it's open
 		_story_panel.custom_minimum_size = Vector2(440, 0)
 	_story_panel.offset_left = pill.get_global_rect().position.x
@@ -222,7 +222,7 @@ func _build_top_bar() -> void:
 	_heading.visible = false
 	for k in [["peace", "scales"], ["wealth", "coins"], ["strength", "shield"]]:
 		var icon := TextureRect.new()
-		icon.texture = ui._icon(k[1])
+		icon.texture = ui.icon(k[1])
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon.custom_minimum_size = Vector2(17, 17)
@@ -300,20 +300,20 @@ func _build_top_bar() -> void:
 	# too narrow for both it and the actions; see _arrange_top).
 	var state := _pill(0.5, Control.GROW_DIRECTION_BOTH)
 	_top = [when.get_parent(), state.get_parent()]
-	_gold = ui._gauge(state, "coins", "Royal treasury, in crowns. The figure after it is what the tithe brings each season, less the court and the castles.", "Treasury")
-	_peace = ui._gauge(state, "scales", "Peace: how much of the realm is free of war between the great houses. A host marching on the throne halves it.", "Peace")
-	_souls = ui._gauge(state, "users-three", "Souls in the realm", "Souls")
+	_gold = ui.gauge(state, "coins", "Royal treasury, in crowns. The figure after it is what the tithe brings each season, less the court and the castles.", "Treasury")
+	_peace = ui.gauge(state, "scales", "Peace: how much of the realm is free of war between the great houses. A host marching on the throne halves it.", "Peace")
+	_souls = ui.gauge(state, "users-three", "Souls in the realm", "Souls")
 	var tithe := HBoxContainer.new()
 	tithe.add_theme_constant_override("separation", 2)
-	_tithe_l = ui._gauge(tithe, "percent", "Royal tithe on every house's treasury. Higher is richer and more resented.", "Tithe")
+	_tithe_l = ui.gauge(tithe, "percent", "Royal tithe on every house's treasury. Higher is richer and more resented.", "Tithe")
 	var gap := Control.new()  # the figure and its buttons apart
 	gap.custom_minimum_size = Vector2(8, 0)
 	tithe.add_child(gap)
-	var less := ui._icon_btn("minus", "Lower the tithe", func(): ui._set_tithe(ui._tithe - 0.05))
+	var less := ui.icon_btn("minus", "Lower the tithe", func(): ui.set_tithe(ui.tithe - 0.05))
 	less.custom_minimum_size = Vector2(24, 24)
 	less.add_theme_constant_override("icon_max_width", 11)
 	tithe.add_child(less)
-	var more := ui._icon_btn("plus", "Raise the tithe", func(): ui._set_tithe(ui._tithe + 0.05))
+	var more := ui.icon_btn("plus", "Raise the tithe", func(): ui.set_tithe(ui.tithe + 0.05))
 	more.custom_minimum_size = Vector2(24, 24)
 	more.add_theme_constant_override("icon_max_width", 11)
 	tithe.add_child(more)
@@ -326,7 +326,7 @@ func _build_top_bar() -> void:
 	ui.get_viewport().size_changed.connect(_arrange_top)
 	_arrange_top.call_deferred()
 	act.add_theme_constant_override("separation", 6)  # each key stands on its own
-	_court_btn = ui._icon_btn("crown", ui._with_key("The court: what waits for the King", "court"), ui._toggle_court)
+	_court_btn = ui.icon_btn("crown", ui.with_key("The court: what waits for the King", "court"), ui._toggle_court)
 	_court_btn.modulate.a = 0.45  # an empty court until someone comes
 	# Petitioners waiting: the crown in gold, and how many on a round badge on
 	# its corner, the way an app shows unread messages, never over the crown.
@@ -352,36 +352,36 @@ func _build_top_bar() -> void:
 	_court_badge.offset_top = -5
 	_court_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_court_btn.add_child(_court_badge)
-	act.add_child(ui._named(_court_btn, "Court"))
+	act.add_child(ui.named(_court_btn, "Court"))
 	# You are the King: one press to walk among your people as him.
 	if Features.WALKING:
-		var walk := ui._btn("Walk as the King", func(): ui.walk_as_king.emit())
-		walk.tooltip_text = ui._with_key("Walk the realm as the King, talk to anyone, draw your sword", "walk_king")
+		var walk := ui.btn("Walk as the King", func(): ui.walk_as_king.emit())
+		walk.tooltip_text = ui.with_key("Walk the realm as the King, talk to anyone, draw your sword", "walk_king")
 		walk.add_theme_color_override("font_color", T.ACCENT)
 		act.add_child(walk)
-	_houses_btn = ui._icon_btn("shield", ui._with_key("The great houses: their strength, their wars and their favour", "houses"), func(): ui._houses_panel.visible = _houses_btn.button_pressed)
+	_houses_btn = ui.icon_btn("shield", ui.with_key("The great houses: their strength, their wars and their favour", "houses"), func(): ui._houses_panel.visible = _houses_btn.button_pressed)
 	_houses_btn.toggle_mode = true
-	act.add_child(ui._named(_houses_btn, "Houses"))
-	_chron_btn = ui._icon_btn("scroll", ui._with_key("Chronicle of the realm", "chronicle"), func(): ui._chron_panel.visible = _chron_btn.button_pressed)
+	act.add_child(ui.named(_houses_btn, "Houses"))
+	_chron_btn = ui.icon_btn("scroll", ui.with_key("Chronicle of the realm", "chronicle"), func(): ui._chron_panel.visible = _chron_btn.button_pressed)
 	_chron_btn.toggle_mode = true
-	act.add_child(ui._named(_chron_btn, "Chronicle"))
-	act.add_child(ui._named(ui._icon_btn("book-open-text", ui._with_key("The Lore of Aldmere: its houses and people", "lore"), func(): ui.lore_opened.emit(-1)), "Lore"))
-	_ledger_btn = ui._icon_btn("chart-line", ui._with_key("The ledger: the realm over time", "ledger"), ui._toggle_ledger)
+	act.add_child(ui.named(_chron_btn, "Chronicle"))
+	act.add_child(ui.named(ui.icon_btn("book-open-text", ui.with_key("The Lore of Aldmere: its houses and people", "lore"), func(): ui.lore_opened.emit(-1)), "Lore"))
+	_ledger_btn = ui.icon_btn("chart-line", ui.with_key("The ledger: the realm over time", "ledger"), ui._toggle_ledger)
 	_ledger_btn.toggle_mode = true
-	act.add_child(ui._named(_ledger_btn, "Ledger"))
-	ui._divider(act)
-	_pause_btn = ui._icon_btn("pause", ui._with_key("Pause", "pause"), _toggle_pause)
+	act.add_child(ui.named(_ledger_btn, "Ledger"))
+	ui.divider(act)
+	_pause_btn = ui.icon_btn("pause", ui.with_key("Pause", "pause"), _toggle_pause)
 	_pause_btn.toggle_mode = true
-	act.add_child(ui._named(_pause_btn, "Pause"))
-	ui._divider(act)
-	act.add_child(ui._named(ui._icon_btn("gear-six", "Settings: this reign, voices, the local model", func(): ui.open_settings.emit()), "Settings"))
-	act.add_child(ui._named(ui._icon_btn("list", "Chronicles, new realms, records", func(): ui.open_menu.emit()), "Menu"))
+	act.add_child(ui.named(_pause_btn, "Pause"))
+	ui.divider(act)
+	act.add_child(ui.named(ui.icon_btn("gear-six", "Settings: this reign, voices, the local model", func(): ui.open_settings.emit()), "Settings"))
+	act.add_child(ui.named(ui.icon_btn("list", "Chronicles, new realms, records", func(): ui.open_menu.emit()), "Menu"))
 
 
 func _toggle_pause() -> void:
-	ui._paused = not ui._paused
-	_pause_btn.button_pressed = ui._paused
-	ui.pause_toggled.emit(ui._paused)
+	ui.paused = not ui.paused
+	_pause_btn.button_pressed = ui.paused
+	ui.pause_toggled.emit(ui.paused)
 
 
 ## The court is always in the bar: full when petitioners wait (the badge counts
@@ -389,7 +389,7 @@ func _toggle_pause() -> void:
 func _court_waiting_shown(n: int) -> void:
 	_court_btn.modulate.a = 1.0 if n > 0 else 0.45
 	_court_badge.visible = n > 0
-	_court_btn.tooltip_text = ui._with_key(("The court: %d matter%s wait%s for you" % [n, "" if n == 1 else "s", "s" if n == 1 else ""]) if n > 0 else "The court sits when it has matters for you; the Hand calls you sooner only for a crisis.", "court")
+	_court_btn.tooltip_text = ui.with_key(("The court: %d matter%s wait%s for you" % [n, "" if n == 1 else "s", "s" if n == 1 else ""]) if n > 0 else "The court sits when it has matters for you; the Hand calls you sooner only for a crisis.", "court")
 
 
 var _heading: HBoxContainer  # the three readings and the name being earned, under the date
@@ -485,11 +485,11 @@ func _show_heading(r: Dictionary) -> void:
 ## The realm's numbers in the bar and the reign's line under the date, from the
 ## world as the realm reports it (ui.set_world hands over the crown's report).
 func _show_world(world: Dictionary, c: Dictionary) -> void:
-	_gold.text = ui._heads(int(c.get("treasury", 0)) * UI.CROWNS)
+	_gold.text = ui.heads(int(c.get("treasury", 0)) * UI.CROWNS)
 	# What the crown takes in each season, net of the court and castles: where money comes from.
 	var net := int(c.get("perSeason", 0)) * UI.CROWNS
 	if net != 0:
-		_gold.text += "  %s%s a season" % ["▲" if net > 0 else "▼", ui._heads(absi(net))]
+		_gold.text += "  %s%s a season" % ["▲" if net > 0 else "▼", ui.heads(absi(net))]
 	_peace.text = "%d%%" % int(float(world.get("peace", 1)) * 100)
 	# Why the peace is what it is, and what raises it.
 	var feuds := PackedStringArray()
@@ -501,8 +501,8 @@ func _show_world(world: Dictionary, c: Dictionary) -> void:
 				feuds.append(pair)
 	_peace.get_parent().tooltip_text = "Peace: how much of the realm is free of war between the great houses. A host marching on the throne halves it.\n\n" + \
 		(("At war: " + ", ".join(feuds) + ".\nCommand peace, or wed two warring houses, to raise it.") if not feuds.is_empty() else "No great houses are at war.")
-	_souls.text = ui._heads(int(world.get("souls", 0)))
-	_tithe_l.text = "%d%%" % int(ui._tithe * 100)
+	_souls.text = ui.heads(int(world.get("souls", 0)))
+	_tithe_l.text = "%d%%" % int(ui.tithe * 100)
 	_year.text = String(world.get("date", {}).get("text", "The realm is forming"))
 	# Danger to the crown shows in the reign line, in red, only while it lasts.
 	var th: Dictionary = world.get("threat", {})

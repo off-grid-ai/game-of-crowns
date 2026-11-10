@@ -21,7 +21,7 @@ func _init(owner: UI) -> void:
 
 
 func _build_chronicle() -> void:
-	_chron_panel = ui._glass_panel()
+	_chron_panel = ui.glass_panel()
 	_chron_panel.anchor_left = 1.0
 	_chron_panel.anchor_right = 1.0
 	_chron_panel.anchor_bottom = 1.0
@@ -60,7 +60,7 @@ func _build_ticker() -> void:
 	_ticker.add_theme_constant_override("separation", 5)
 	_ticker.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ticker.visible = true  # what just happened (UI.md 2): the chronicle starts closed, so the news lives here
-	ui._root.add_child(_ticker)
+	ui.root.add_child(_ticker)
 
 
 func add_chronicle(entries: Array) -> void:
@@ -80,7 +80,7 @@ func add_chronicle(entries: Array) -> void:
 			text = "[url=story:%d][color=#c9a45c]%s[/color][/url]   %s" % [int(e.get("seq", 0)), e["thread"], text]
 		elif e.has("city") and e["city"] != null:
 			text = "[url=%d]%s[/url]" % [int(e["city"]), text]
-		_lines.push_front("[font_size=11][color=#6f6f6c]%s[/color][/font_size]   %s" % [ui._season_of(int(e.get("turn", 0))), text])
+		_lines.push_front("[font_size=11][color=#6f6f6c]%s[/color][/font_size]   %s" % [ui.season_of(int(e.get("turn", 0))), text])
 		if kind != "year":
 			_tick(e, loss)
 	if _lines.size() > 300:

@@ -23,7 +23,7 @@ func _init(owner: UI) -> void:
 
 
 func _build_houses() -> void:
-	_houses_panel = ui._glass_panel()
+	_houses_panel = ui.glass_panel()
 	_houses_panel.offset_left = 10
 	_houses_panel.offset_top = 62
 	_houses_panel.custom_minimum_size = Vector2(280, 0)
@@ -117,14 +117,14 @@ func _fill_houses(world: Dictionary) -> void:
 		var slot := CenterContainer.new()
 		slot.custom_minimum_size = Vector2(22, 22)
 		if Heraldry.sigil(h):
-			slot.add_child(ui._sigil_icon(h, 20))
+			slot.add_child(ui.sigil_icon(h, 20))
 		else:
 			var mark := ColorRect.new()
 			mark.color = Color.from_string(String(h.get("color", "#888")), Color.GRAY)
 			mark.custom_minimum_size = Vector2(3, 16)
 			slot.add_child(mark)
 		grid.add_child(slot)
-		var name := ui._btn(String(h.get("name", p["name"])).replace("House ", ""))
+		var name := ui.btn(String(h.get("name", p["name"])).replace("House ", ""))
 		name.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var owner := int(p["id"])
@@ -172,7 +172,7 @@ func _fill_houses(world: Dictionary) -> void:
 		var m: Dictionary = p.get("measures") if p.get("measures") is Dictionary else {"towns": int(p["cities"])}
 		for col in HOUSE_COLUMNS:
 			var key: String = col[0]
-			var cell := T.datum(ui._heads(int(m.get(key, 0)) * int(ui.SCALE.get(key, 1))) if m.has(key) else "·", T.SIZE_DESC, T.TEXT_2)
+			var cell := T.datum(ui.heads(int(m.get(key, 0)) * int(ui.SCALE.get(key, 1))) if m.has(key) else "·", T.SIZE_DESC, T.TEXT_2)
 			cell.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 			grid.add_child(cell)
 		if p.get("favour") != null:
@@ -196,7 +196,7 @@ func _fill_houses(world: Dictionary) -> void:
 			# The drift follows the number it belongs to ("54 ▼13"), so it never reads as a column of its own.
 			# Mood in a word a person would use, the number in the tooltip; an arrow if it's moving.
 			var lead := (" ▲" if trend > 0 else " ▼") if absi(trend) >= 3 else ""
-			fav.text = ui._mood(f) + lead
+			fav.text = ui.mood(f) + lead
 			grid.add_child(fav)
 			# Every decision is seen (UI rule 13): a favour that moved counts to its
 			# new value and glows gold if it rose, red if it fell.
@@ -205,7 +205,7 @@ func _fill_houses(world: Dictionary) -> void:
 			_fav_seen[pid] = f
 			if was != f:
 				var tw := fav.create_tween()
-				tw.tween_method(func(v: float): fav.text = ui._mood(roundi(v)) + lead, float(was), float(f), 1.2)
+				tw.tween_method(func(v: float): fav.text = ui.mood(roundi(v)) + lead, float(was), float(f), 1.2)
 				fav.modulate = Color(1.9, 1.5, 0.6) if f > was else Color(2.0, 0.6, 0.55)
 				fav.create_tween().tween_property(fav, "modulate", Color.WHITE, 3.0).set_delay(0.6)
 		else:
@@ -229,7 +229,7 @@ func set_decrees(list: Array) -> void:
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD
 		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(l)
-		var x := ui._btn("Revoke")
+		var x := ui.btn("Revoke")
 		x.tooltip_text = "Lift this order. The people it touched go back to their own nature."
 		x.add_theme_font_size_override("font_size", T.SIZE_DESC)
 		x.pressed.connect(ui.decree_revoked.emit.bind(String(d["id"])))

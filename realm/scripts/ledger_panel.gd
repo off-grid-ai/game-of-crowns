@@ -28,7 +28,7 @@ func _toggle_ledger() -> void:
 func show_ledger(rows: Array, houses: Dictionary) -> void:
 	if _ledger_panel:
 		_ledger_panel.queue_free()
-	_ledger_panel = ui._card(ui._glass_panel())
+	_ledger_panel = ui.card(ui.glass_panel())
 	_ledger_panel.offset_top = 70
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 12)
@@ -38,7 +38,7 @@ func show_ledger(rows: Array, houses: Dictionary) -> void:
 	var t := T.title("The ledger", 22)
 	t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(t)
-	head.add_child(ui._btn("Close", func():
+	head.add_child(ui.btn("Close", func():
 		ui._ledger_btn.button_pressed = false
 		_ledger_panel.visible = false))
 	if rows.size() < 2:
@@ -46,7 +46,7 @@ func show_ledger(rows: Array, houses: Dictionary) -> void:
 		return
 	var first := int(rows[0].get("turn", 0))
 	var last := int(rows[-1].get("turn", 0))
-	v.add_child(T.label("%s to %s  ·  %d years" % [ui._season_of(first), ui._season_of(last), floori((last - first) / 4.0)], T.TEXT_3))
+	v.add_child(T.label("%s to %s  ·  %d years" % [ui.season_of(first), ui.season_of(last), floori((last - first) / 4.0)], T.TEXT_3))
 	var grid := GridContainer.new()
 	grid.columns = 4
 	grid.add_theme_constant_override("h_separation", 22)
@@ -56,7 +56,7 @@ func show_ledger(rows: Array, houses: Dictionary) -> void:
 		var vals := rows.map(func(r): return float(r.get(key, 0)) * spec[2])
 		var cell := VBoxContainer.new()
 		cell.add_child(T.label(spec[0]))
-		cell.add_child(T.datum(ui._real(key, int(vals[-1])) if spec[3] == "" else spec[3] % int(vals[-1]), 20))
+		cell.add_child(T.datum(ui.real(key, int(vals[-1])) if spec[3] == "" else spec[3] % int(vals[-1]), 20))
 		cell.add_child(_chart([{"values": vals, "color": T.ACCENT}], Vector2(180, 48)))
 		grid.add_child(cell)
 	v.add_child(HSeparator.new())
@@ -101,7 +101,7 @@ func show_ledger(rows: Array, houses: Dictionary) -> void:
 				bar.draw_rect(Rect2(Vector2.ZERO, bar.size), Color(1, 1, 1, 0.06))
 				bar.draw_rect(Rect2(Vector2.ZERO, Vector2(bar.size.x * share, bar.size.y)), col))
 			row.add_child(bar)
-			var fig := T.datum(ui._real(key, int(e["now"])), T.SIZE_DESC, T.TEXT)
+			var fig := T.datum(ui.real(key, int(e["now"])), T.SIZE_DESC, T.TEXT)
 			fig.custom_minimum_size.x = 80
 			fig.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 			row.add_child(fig)
@@ -119,7 +119,7 @@ func show_ledger(rows: Array, houses: Dictionary) -> void:
 			board.add_child(row)
 	for spec in [["gold", "Treasury"], ["souls", "Souls"], ["armies", "Men-at-arms"], ["towns", "Towns"], ["grain", "Grain"]]:
 		var key: String = spec[0]
-		var b := ui._btn(spec[1], func(): draw_houses.call(key))
+		var b := ui.btn(spec[1], func(): draw_houses.call(key))
 		buttons[key] = b
 		pick.add_child(b)
 	v.add_child(board)

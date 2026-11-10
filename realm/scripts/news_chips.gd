@@ -45,7 +45,7 @@ func _build_toast() -> void:
 	_toast_box.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_toast_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_toast_box.modulate.a = 0.0
-	ui._root.add_child(_toast_box)
+	ui.root.add_child(_toast_box)
 	_toast = T.title("", 16, T.TEXT)
 	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART  # a long notice wraps in the middle, never runs off to one side
@@ -56,7 +56,7 @@ func _build_toast() -> void:
 ## card at the bottom (x: its top, y: its bottom), where notices may sit.
 func _notice_gap() -> Vector2:
 	var top := _toast_top
-	for c in ui._cards:
+	for c in ui.cards:
 		if is_instance_valid(c) and c.visible:
 			top = maxf(top, c.get_global_rect().end.y + 12.0)
 	var bottom := ui.get_viewport().get_visible_rect().size.y - 16.0
@@ -68,7 +68,7 @@ func _notice_gap() -> Vector2:
 ## Where the notices sit and how they fade, each frame (from ui._process).
 func _place_notices(delta: float) -> void:
 	if _toast_time > 0:
-		ui._fit_centre(_toast_box, 500.0)  # a result card never covers the houses table
+		ui.fit_centre(_toast_box, 500.0)  # a result card never covers the houses table
 	if _offer and _offer.visible:
 		_offer_left -= delta
 		_offer.modulate.a = clampf(_offer_left, 0.0, 1.0)
@@ -94,7 +94,7 @@ func _place_notices(delta: float) -> void:
 			# or at the screen's foot; only with no room anywhere does it sit up top.
 			var x := _toast_box.get_global_rect()
 			var reading: Array[Rect2] = []
-			for c in ui._cards + [ui._town_panel, ui._epilogue_card]:
+			for c in ui.cards + [ui._town_panel, ui._epilogue_card]:
 				if c and is_instance_valid(c) and (c as Control).visible:
 					var r := (c as Control).get_global_rect()
 					if r.position.x < x.end.x and r.end.x > x.position.x:
@@ -128,7 +128,7 @@ func _place_notices(delta: float) -> void:
 			_offer.visible = false  # no room among the cards: the moment passes
 	# The offer, like every notice, sits between the side panels, never over the table.
 	if _offer and _offer.visible:
-		ui._fit_centre(_offer, _offer.get_combined_minimum_size().x)  # as wide as its words, centred in the gap
+		ui.fit_centre(_offer, _offer.get_combined_minimum_size().x)  # as wide as its words, centred in the gap
 	# The notice fades on its own clock, offer or not (it sat inside the offer's
 	# block and stayed up for good), and a card with no words is never shown.
 	_toast_time = maxf(0.0, _toast_time - delta)
@@ -142,16 +142,16 @@ func _place_notices(delta: float) -> void:
 ## story's turn): a line under the top bar with a Watch button, for a while.
 var _held_offer := []  # [text, go, ms]: the latest Watch that came while he was busy, offered once he's done
 func offer_watch(text: String, go: Callable) -> void:
-	if ui._cinema_on:
+	if ui.cinema_on:
 		return  # one scene at a time
-	if ui.busy() or ui._card_up():
+	if ui.busy() or ui.card_up():
 		# Nothing new while he's using a card: it waits (the latest one) and is offered once he's done.
 		_held_offer = [text, go, Time.get_ticks_msec()]
 		return
 	_held_offer = []
 	if _offer:
 		_offer.queue_free()
-	_offer = ui._glass_panel()
+	_offer = ui.glass_panel()
 	_offer.anchor_left = 0.5
 	_offer.anchor_right = 0.5
 	_offer.grow_horizontal = Control.GROW_DIRECTION_BOTH
@@ -160,7 +160,7 @@ func offer_watch(text: String, go: Callable) -> void:
 	row.add_theme_constant_override("separation", 14)
 	_offer.add_child(row)
 	row.add_child(T.title(text, 15, T.TEXT))
-	var b := ui._btn("Watch", func():
+	var b := ui.btn("Watch", func():
 		_offer.visible = false  # used: gone before the clear view notes what to bring back
 		go.call())
 	b.add_theme_color_override("font_color", T.ACCENT)
@@ -197,7 +197,7 @@ func edge_arrow(at, angle: float, text: String, tone: String, fresh: bool) -> vo
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_edge.add_child(row)
 		_edge_icon = TextureRect.new()
-		_edge_icon.texture = ui._icon("caret-right")
+		_edge_icon.texture = ui.icon("caret-right")
 		_edge_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		_edge_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		_edge_icon.custom_minimum_size = Vector2(14, 14)
@@ -210,10 +210,10 @@ func edge_arrow(at, angle: float, text: String, tone: String, fresh: bool) -> vo
 		_edge_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(_edge_icon)
 		row.add_child(_edge_label)
-		ui._root.add_child(_edge)
+		ui.root.add_child(_edge)
 	# One voice at a time: while a card or panel is open the news is only the
 	# minimap rings and the ticker line; the chip comes once it closes.
-	var show: bool = at != null and not ui._cinema_on and not ui._card_up()
+	var show: bool = at != null and not ui.cinema_on and not ui.card_up()
 	if show:
 		_edge_label.text = text
 		var c: Color = T.DANGER if tone == "loss" else (T.ACCENT if tone == "crown" else T.TEXT_2)

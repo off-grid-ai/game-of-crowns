@@ -21,7 +21,7 @@ func _init(owner: UI) -> void:
 func _build_camera_controls() -> void:
 	# Bottom right, beside the minimap and the same height: everything for
 	# finding your way sits together.
-	var frame := ui._glass_panel()
+	var frame := ui.glass_panel()
 	frame.anchor_left = 1.0
 	frame.anchor_right = 1.0
 	frame.anchor_top = 1.0
@@ -38,7 +38,7 @@ func _build_camera_controls() -> void:
 	v.add_theme_constant_override("separation", 2)
 	frame.add_child(v)
 	var add := func(parent: Control, icon: String, tip: String, action: String) -> void:
-		var b := ui._icon_btn(icon, tip)
+		var b := ui.icon_btn(icon, tip)
 		var hold := Timer.new()
 		hold.wait_time = 0.06
 		b.add_child(hold)
@@ -71,7 +71,7 @@ func _build_camera_controls() -> void:
 	add.call(tilt, "caret-up", "Look further out (tilt)", "tilt_up")
 	add.call(tilt, "caret-down", "Look down (tilt)", "tilt_down")
 	v.add_child(HSeparator.new())
-	var home := ui._icon_btn("house-home", ui._with_key("Back to Kingsmere", "home"), func(): ui.home_view.emit())
+	var home := ui.icon_btn("house-home", ui.with_key("Back to Kingsmere", "home"), func(): ui.home_view.emit())
 	home.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	v.add_child(home)
 

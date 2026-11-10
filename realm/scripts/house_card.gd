@@ -21,7 +21,7 @@ func show_house(d: Dictionary) -> void:
 		_house_panel.queue_free()
 	if d.is_empty() or d.has("error"):
 		return
-	_house_panel = ui._card(ui._glass_panel())
+	_house_panel = ui.card(ui.glass_panel())
 	_house_panel.offset_top = 70
 	# Scrolls when a house has more bannermen than the screen holds.
 	var scroll := ScrollContainer.new()
@@ -35,16 +35,16 @@ func show_house(d: Dictionary) -> void:
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 14)
 	v.add_child(head)
-	head.add_child(ui._sigil_icon(d, 40))
+	head.add_child(ui.sigil_icon(d, 40))
 	var names := VBoxContainer.new()
 	names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(names)
 	names.add_child(T.title(String(d.get("name", "")), 22))
 	if String(d.get("words", "")) != "":
 		names.add_child(T.label("“%s”  ·  %s" % [d["words"], d.get("seat", "")], T.TEXT_2))
-	head.add_child(ui._btn("Lore", func(): ui.lore_opened.emit(int(d.get("id", -1)))))
-	head.add_child(ui._btn("Add a character", func(): ui.character_form.emit(int(d.get("id", -1)))))
-	head.add_child(ui._btn("Close", func(): _house_panel.visible = false))
+	head.add_child(ui.btn("Lore", func(): ui.lore_opened.emit(int(d.get("id", -1)))))
+	head.add_child(ui.btn("Add a character", func(): ui.character_form.emit(int(d.get("id", -1)))))
+	head.add_child(ui.btn("Close", func(): _house_panel.visible = false))
 	# The numbers, each with how far it has moved over the last years.
 	var hist: Array = d.get("history", [])
 	var now: Dictionary = hist[-1] if hist.size() > 0 else {}
@@ -61,9 +61,9 @@ func show_house(d: Dictionary) -> void:
 		var val := int(now.get(key, 0))
 		var diff := val - int(then.get(key, val))
 		var row := HBoxContainer.new()
-		row.add_child(T.datum(ui._real(key, val), 20))
+		row.add_child(T.datum(ui.real(key, val), 20))
 		if diff != 0:
-			row.add_child(T.datum(("  ▲ %s" if diff > 0 else "  ▼ %s") % ui._real(key, absi(diff)), T.SIZE_DESC, Color("#7fb069") if diff > 0 else Color("#e86b5c")))
+			row.add_child(T.datum(("  ▲ %s" if diff > 0 else "  ▼ %s") % ui.real(key, absi(diff)), T.SIZE_DESC, Color("#7fb069") if diff > 0 else Color("#e86b5c")))
 		cell.add_child(row)
 		cell.add_child(_spark(hist.map(func(r): return float(r.get(key, 0)))))
 		grid.add_child(cell)
@@ -80,17 +80,17 @@ func show_house(d: Dictionary) -> void:
 		var ln := T.datum("%s, %d" % [lord.get("name", ""), int(lord.get("age", 0))], 16)
 		ln.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		lr.add_child(ln)
-		lr.add_child(ui._see_btn(lord, d))
+		lr.add_child(ui.see_btn(lord, d))
 		v.add_child(lr)
-		v.add_child(ui._wrapped(T.label("%s  ·  wants to %s" % [", ".join(lord.get("traits", [])), lord.get("goal", "endure")], T.TEXT_2)))
+		v.add_child(ui.wrapped(T.label("%s  ·  wants to %s" % [", ".join(lord.get("traits", [])), lord.get("goal", "endure")], T.TEXT_2)))
 	var men: Array = d.get("bannermen", [])
 	if men.size() > 0:
 		v.add_child(T.label("Bannermen"))
 		for m in men:
 			var r := HBoxContainer.new()
 			r.add_theme_constant_override("separation", 8)
-			var arms := ui._sigil_icon({}, 18)
-			ui._set_arms(arms, ui.family_of(String(m.get("name", "")), d))
+			var arms := ui.sigil_icon({}, 18)
+			ui.set_arms(arms, ui.family_of(String(m.get("name", "")), d))
 			if not arms.visible:
 				arms.visible = true  # holds the column, so the names line up
 			r.add_child(arms)
@@ -99,7 +99,7 @@ func show_house(d: Dictionary) -> void:
 			r.add_child(n)
 			var loyal := int(m.get("loyalty", 50))
 			r.add_child(T.datum("loyalty %d" % loyal, T.SIZE_DESC, Color("#e86b5c") if loyal < 35 else T.TEXT_2))
-			r.add_child(ui._see_btn(m, d))
+			r.add_child(ui.see_btn(m, d))
 			v.add_child(r)
 	var wars: Array = d.get("wars", [])
 	var truces: Array = d.get("truces", [])
@@ -107,11 +107,11 @@ func show_house(d: Dictionary) -> void:
 	if wars.size() > 0 or truces.size() > 0 or allies.size() > 0:
 		v.add_child(HSeparator.new())
 		if wars.size() > 0:
-			v.add_child(ui._wrapped(T.datum("At war with " + ", ".join(wars), T.SIZE_DESC, Color("#e86b5c"))))
+			v.add_child(ui.wrapped(T.datum("At war with " + ", ".join(wars), T.SIZE_DESC, Color("#e86b5c"))))
 		if truces.size() > 0:
-			v.add_child(ui._wrapped(T.datum("Under the King's truce with " + ", ".join(truces), T.SIZE_DESC, T.ACCENT)))
+			v.add_child(ui.wrapped(T.datum("Under the King's truce with " + ", ".join(truces), T.SIZE_DESC, T.ACCENT)))
 		if allies.size() > 0:
-			v.add_child(ui._wrapped(T.datum("Allied with " + ", ".join(allies), T.SIZE_DESC, T.TEXT_2)))
+			v.add_child(ui.wrapped(T.datum("Allied with " + ", ".join(allies), T.SIZE_DESC, T.TEXT_2)))
 	ui._court_panel.visible = false
 
 

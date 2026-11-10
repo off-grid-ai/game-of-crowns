@@ -28,7 +28,7 @@ func _init(owner: UI) -> void:
 
 
 func _build_town_panel() -> void:
-	_town_panel = ui._glass_panel()
+	_town_panel = ui.glass_panel()
 	_town_panel.anchor_left = 0.5
 	_town_panel.anchor_right = 0.5
 	_town_panel.anchor_top = 1.0
@@ -44,13 +44,13 @@ func _build_town_panel() -> void:
 	var title_row := HBoxContainer.new()
 	title_row.add_theme_constant_override("separation", 10)
 	v.add_child(title_row)
-	_town_sigil = ui._sigil_icon({}, 24)
+	_town_sigil = ui.sigil_icon({}, 24)
 	title_row.add_child(_town_sigil)
 	_town_title = T.title("", 16)
 	title_row.add_child(_town_title)
 	_town_family = HBoxContainer.new()
 	_town_family.add_theme_constant_override("separation", 10)
-	_town_family.add_child(ui._sigil_icon({}, 22))
+	_town_family.add_child(ui.sigil_icon({}, 22))
 	_town_family.add_child(T.datum("", T.SIZE_DESC + 1, T.TEXT_2))
 	v.add_child(_town_family)
 	_town_info = Label.new()
@@ -64,9 +64,9 @@ func _build_town_panel() -> void:
 	v.add_child(row)
 	for a in ["relief", "gift", "feast", "levy", "banners", "alliance", "march"]:
 		var act: String = a
-		_decree_btns[act] = ui._btn("", func():
+		_decree_btns[act] = ui.btn("", func():
 			if act == "banners":
-				ui._guide_mark(2)
+				ui.guide_mark(2)
 			ui.decree.emit(act, "", -1))
 		row.add_child(_decree_btns[act])
 	_grant_menu = MenuButton.new()
@@ -84,7 +84,7 @@ func _build_town_panel() -> void:
 	build.add_child(_fund_label)
 	for pair in [["Sept", "temple"], ["Granary", "granary"], ["Walls", "walls"], ["Market", "market"], ["Barracks", "barracks"], ["Aqueduct", "aqueduct"]]:
 		var bld: String = pair[1]
-		_build_btns[bld] = ui._btn(pair[0], func(): ui.decree.emit("build", bld, -1))
+		_build_btns[bld] = ui.btn(pair[0], func(): ui.decree.emit("build", bld, -1))
 		build.add_child(_build_btns[bld])
 	# A king can't call down drought or plague: the god's powers (Fate) are
 	# gone from the King's game. The box stays, empty and hidden, for v2's god mode.
@@ -181,7 +181,7 @@ func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 	for a in names:
 		_decree_btns[a].text = names[a]
 		_decree_btns[a].visible = names[a] != ""
-		var short: bool = ui._purse * 100 < int(COST.get(a, 0))
+		var short: bool = ui.purse * 100 < int(COST.get(a, 0))
 		# The crown's great occasions come once a year: the levy, the banners, a
 		# feast at court (a feast in a lord's honour is another matter).
 		var wait := int(_decrees.get(a, {}).get("wait", 0)) if (seat or a in ["levy", "banners"]) else 0
@@ -191,7 +191,7 @@ func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 		if wait > 0 and names[a] != "":
 			_decree_btns[a].text = "%s  ·  again in %d season%s" % [names[a].get_slice("  ", 0), wait, "" if wait == 1 else "s"]
 		_decree_btns[a].disabled = short or wait > 0
-		_decree_btns[a].tooltip_text = ("Once a year. Again in %d season%s." % [wait, "" if wait == 1 else "s"]) if wait > 0 else (("The treasury holds %s crowns. Raise the tithe (the %% in the top bar) to fill it." % ui._heads(ui._purse * 100)) if short else "")
+		_decree_btns[a].tooltip_text = ("Once a year. Again in %d season%s." % [wait, "" if wait == 1 else "s"]) if wait > 0 else (("The treasury holds %s crowns. Raise the tithe (the %% in the top bar) to fill it." % ui.heads(ui.purse * 100)) if short else "")
 	_grant_menu.visible = not c.get("capital", false)  # a house's seat is never granted away
 	_marriage_menu.visible = not mine  # a match is made between two great houses
 	# The other great houses, not this one: the names as the houses table has them.
@@ -222,9 +222,9 @@ func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 	var fresh := int(c["id"]) != _town_id
 	_town_id = int(c["id"])
 	# While the King watches a scene the card waits, and returns with the panels.
-	if ui._cinema_on:
+	if ui.cinema_on:
 		if fresh:
-			ui._cinema_was["_town_panel"] = true
+			ui.cinema_was["_town_panel"] = true
 	elif fresh or _town_panel.visible:
 		_town_panel.visible = true
 		# The King opened a town: a petitioner on screen steps back and waits on
@@ -235,12 +235,12 @@ func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 	ui._ticker.visible = false
 	_town_title.text = "%s  ·  %s" % [c.get("title", c["name"]), house.get("name", "")]
 	_name_decrees(c, house)
-	ui._set_sigil(_town_sigil, house)
+	ui.set_sigil(_town_sigil, house)
 	# A town held by a bannerman flies his family's arms.
 	var family := Heraldry.family(String(c["family"])) if c.get("family") is String else {}
 	_town_family.visible = not family.is_empty()
 	if _town_family.visible:
-		ui._set_arms(_town_family.get_child(0), family)
+		ui.set_arms(_town_family.get_child(0), family)
 		(_town_family.get_child(1) as Label).text = "Held by the %s family, sworn to %s" % [c["family"], String(house.get("name", "")).replace("House ", "")]
 	var b: Array = c.get("buildings", [])
 	var parts := []
@@ -250,7 +250,7 @@ func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 		parts.append("the royal host at its walls")
 	if _town_player.get("sworn") != null:
 		parts.append("sworn to the crown")
-	parts.append("%s souls" % ui._heads(250 * int(c["size"]) * (int(c["size"]) + 1)))
+	parts.append("%s souls" % ui.heads(250 * int(c["size"]) * (int(c["size"]) + 1)))
 	if String(c.get("building", "")) == "Coinage":
 		parts.append("filling the coffers")
 	elif c.get("building"):

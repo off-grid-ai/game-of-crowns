@@ -35,7 +35,7 @@ func _toggle_court() -> void:
 
 
 func _build_court() -> void:
-	_court_panel = ui._card(ui._glass_panel())
+	_court_panel = ui.card(ui.glass_panel())
 	# The court is the one thing that matters while it sits (a modal, as in CK3
 	# and Civ): drawn above every panel and the minimap, which stay where they are.
 	_court_panel.z_index = 20
@@ -49,7 +49,7 @@ func _build_court() -> void:
 
 ## What waited while he was busy, put on screen once he's done: the court's part.
 func _catch_up() -> void:
-	if _held_court and not ui._card_up(_court_panel) and not _court_hidden:
+	if _held_court and not ui.card_up(_court_panel) and not _court_hidden:
 		_held_court = false
 		_court_hidden = false
 		_court_met = true
@@ -87,11 +87,11 @@ func set_court(petitions: Array) -> void:
 		return
 	if fresh:
 		_court_hidden = false  # a new sitting, or a crisis: the court comes to him once
-	if ui._cinema_on:
+	if ui.cinema_on:
 		return  # the court waits while the King watches a scene
 	if _court_hidden and not _court_panel.visible:
 		return
-	if ui.busy() or ui._card_up(_court_panel):
+	if ui.busy() or ui.card_up(_court_panel):
 		_held_court = true  # he's using a card, or another is up: it waits its turn on the badge
 		return
 	_court_met = true
@@ -132,10 +132,10 @@ func _show_audience() -> void:
 	v.add_theme_constant_override("separation", 10)
 	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(v)
-	if not ui._guide_loaded:
-		ui._load_guide()
-	if ui._guide_on:
-		v.add_child(ui._guide_block())
+	if not ui.guide_loaded:
+		ui.load_guide()
+	if ui.guide_on:
+		v.add_child(ui.guide_block())
 		v.add_child(HSeparator.new())
 	var head := HBoxContainer.new()
 	head.add_theme_constant_override("separation", 16)
@@ -159,10 +159,10 @@ func _show_audience() -> void:
 		figure.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		figure.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		named.add_child(figure)
-		ui.portrait.call(sitter, ui._house_by_name.get(String(p.get("house", "")), {}), func(tex):
+		ui.portrait.call(sitter, ui.house_by_name.get(String(p.get("house", "")), {}), func(tex):
 			if is_instance_valid(figure):
 				figure.texture = tex)
-	ui._arms_pair(named, String(p.get("name", "")), ui._house_by_name.get(String(p.get("house", "")), {}), 40)
+	ui.arms_pair(named, String(p.get("name", "")), ui.house_by_name.get(String(p.get("house", "")), {}), 40)
 	var pname := T.title(String(p.get("name", "")), 22)
 	pname.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	# What this lord wants of the reign, under their name: the thing to grant or deny them.
@@ -182,7 +182,7 @@ func _show_audience() -> void:
 	else:
 		named.add_child(pname)
 	if p.get("from") != null:
-		named.add_child(ui._see_btn({"id": p["from"]}, ui._house_by_name.get(String(p.get("house", "")), {})))
+		named.add_child(ui.see_btn({"id": p["from"]}, ui.house_by_name.get(String(p.get("house", "")), {})))
 	# A matter of the realm (a famine, a war, a house growing cold) is answered
 	# with the King's own orders, and the Hand says why it matters.
 	if p.get("hand", false):
@@ -208,7 +208,7 @@ func _show_audience() -> void:
 		v.add_child(_hand_says(String(p["counsel"])))
 	# Without Off Grid AI the lords speak in the court's set lines. The first time
 	# that happens, one quiet line says how they get their own words; never again.
-	if spoken == "" and not ui.ai_words and not ui._offgrid_told():
+	if spoken == "" and not ui.ai_words and not ui.offgrid_told():
 		var tip := LinkButton.new()
 		tip.text = "Give the lords their own words: run Off Grid AI"
 		tip.uri = ui.OFFGRID_URL
@@ -216,14 +216,14 @@ func _show_audience() -> void:
 		tip.add_theme_font_size_override("font_size", 13)
 		tip.add_theme_color_override("font_color", T.MUTED)
 		v.add_child(tip)
-		ui._offgrid_tell()
+		ui.offgrid_tell()
 	# The petition's facts are what the speaker knew when they came (the model's
 	# brief); shown later they contradict the live houses table, so they stay unsaid.
 	v.add_child(HSeparator.new())
 	for o in p["options"]:
 		var row := VBoxContainer.new()
 		row.add_theme_constant_override("separation", 0)
-		var b := ui._btn(String(o["label"]))
+		var b := ui.btn(String(o["label"]))
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.autowrap_mode = TextServer.AUTOWRAP_WORD
 		b.add_theme_color_override("font_color", T.TEXT)
@@ -237,7 +237,7 @@ func _show_audience() -> void:
 		for m in _FAVOUR_RE.search_all(rest):
 			var chip := HBoxContainer.new()
 			chip.add_theme_constant_override("separation", 3)
-			chip.add_child(ui._sigil_icon(ui._house_by_name.get(m.get_string(1), {}), 16))
+			chip.add_child(ui.sigil_icon(ui.house_by_name.get(m.get_string(1), {}), 16))
 			var n := Label.new()
 			var up := not m.get_string(2).begins_with("−") and not m.get_string(2).begins_with("-")
 			n.text = "%s %s" % [m.get_string(1).trim_prefix("House ").trim_prefix("The "), m.get_string(2)]
@@ -310,10 +310,10 @@ func _court_later(v: VBoxContainer, tip: String) -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_child(row)
 	# Two exits, each saying what it does (CK3 states the cost of a choice on the button).
-	var later := ui._btn("Look at the realm first", func(): _court_hidden = true; _court_panel.visible = false)
+	var later := ui.btn("Look at the realm first", func(): _court_hidden = true; _court_panel.visible = false)
 	later.tooltip_text = tip
 	row.add_child(later)
-	var shut := ui._btn("Say nothing, close the court", _close_court)
+	var shut := ui.btn("Say nothing, close the court", _close_court)
 	shut.tooltip_text = "What you leave settles itself: each house takes your silence as an answer, and the realm moves again."
 	row.add_child(shut)
 
@@ -355,7 +355,7 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 	var answers: Array[Button] = []  # its answers: choosing one settles it
 	for a in it.get("acts", []):
 		var act: Dictionary = a
-		var b := ui._btn(String(act.get("label", "")), func(): pass)
+		var b := ui.btn(String(act.get("label", "")), func(): pass)
 		answers.append(b)
 		b.pressed.connect(func():
 			# One answer to a matter: the one given says so, the others go quiet,
@@ -365,10 +365,10 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 			b.text = String(act.get("label", "")).get_slice("  ", 0) + "  ·  ordered"
 			b.add_theme_color_override("font_disabled_color", T.ACCENT)
 			ui.counsel_answered.emit(String(it.get("key", "")))
-			ui._counsel_act(act)
+			ui.counsel_act(act)
 			_settled(it))
 		b.add_theme_color_override("font_color", T.ACCENT)
-		if act.has("cost") and int(act["cost"]) > ui._purse:
+		if act.has("cost") and int(act["cost"]) > ui.purse:
 			b.disabled = true
 			b.tooltip_text = "The treasury holds too little for this."
 			b.add_theme_color_override("font_disabled_color", T.TEXT_3)
@@ -448,11 +448,11 @@ func ruled_in_words(id: String, d: Dictionary) -> void:
 		row.add_child(meant)
 		var go := HBoxContainer.new()
 		go.add_theme_constant_override("separation", 8)
-		go.add_child(ui._btn("Rule so", func():
+		go.add_child(ui.btn("Rule so", func():
 			row.queue_free()
 			_own_line.text = "Your ruling is carried out…"
 			ui.petition_spoken.emit(id, _spoken, String(d["proposed"]))))
-		go.add_child(ui._btn("Not that: I'll choose", func(): _show_audience()))
+		go.add_child(ui.btn("Not that: I'll choose", func(): _show_audience()))
 		row.add_child(go)
 		_own_line.get_parent().add_child(row)
 		_own_line.get_parent().move_child(row, _own_line.get_index() + 1)
@@ -468,7 +468,7 @@ func ruled_in_words(id: String, d: Dictionary) -> void:
 
 func _answer(id: String, option: String) -> void:
 	ui.petition_answered.emit(id, option)
-	ui._guide_mark(0)
+	ui.guide_mark(0)
 	_petitions = _petitions.filter(func(x): return String(x["id"]) != id)
 	ui._court_badge.text = str(_petitions.size())
 	ui._court_waiting_shown(_petitions.size())

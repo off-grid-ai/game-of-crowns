@@ -22,7 +22,7 @@ func _folk_shell() -> VBoxContainer:
 	if ui._court_panel.visible:
 		ui._court_panel.visible = false
 		ui._court_waiting = true
-	_folk_panel = ui._card(ui._glass_panel())
+	_folk_panel = ui.card(ui.glass_panel())
 	_folk_panel.offset_top = 70
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
@@ -34,7 +34,7 @@ func show_folk_waiting() -> void:
 	var v := _folk_shell()
 	v.add_child(T.label("One of the common folk", T.TEXT_3))
 	v.add_child(T.datum("They stop, and look up at you…", 16, T.TEXT_2))
-	v.add_child(ui._btn("Close", close_folk))
+	v.add_child(ui.btn("Close", close_folk))
 
 
 func close_folk() -> void:
@@ -64,7 +64,7 @@ func show_folk(d: Dictionary) -> void:
 	names.add_child(T.label("%s, %d  ·  %s  ·  %s" % [String(p.get("trade", "")).capitalize(), int(p.get("age", 0)), p.get("family", ""), d.get("town", "")], T.TEXT_2))
 	if String(p.get("nature", "")) != "":
 		names.add_child(T.label("Known to be %s" % p["nature"], T.ACCENT))
-	head.add_child(ui._btn("Close", close_folk))
+	head.add_child(ui.btn("Close", close_folk))
 	var story := RichTextLabel.new()
 	story.bbcode_enabled = true
 	story.fit_content = true

@@ -56,10 +56,10 @@ const FolkCard := preload("res://scripts/folk_card.gd")
 const CharacterForm := preload("res://scripts/character_form.gd")
 const NewsChips := preload("res://scripts/news_chips.gd")
 
-var _root: Control
-var _omens: ColorRect  # omens.gd: blood and soot, the colour draining, at the screen's edge
-var _tithe := 0.1
-var _paused := false
+var root: Control
+var omens: ColorRect  # omens.gd: blood and soot, the colour draining, at the screen's edge
+var tithe := 0.1
+var paused := false
 
 var houses_drawer := HousesPanel.new(self)  # the great houses drawer (houses_panel.gd): its state lives there
 var _houses_panel: PanelContainer:
@@ -89,7 +89,7 @@ var _town_id: int:  # the town on the card; -1 once it is put away
 		return town_card._town_id
 	set(v):
 		town_card._town_id = v
-var _house_by_name := {}  # "House Goldcrest" -> house, for petitions that name their house
+var house_by_name := {}  # "House Goldcrest" -> house, for petitions that name their house
 const Heraldry = preload("res://scripts/heraldry.gd")
 
 var court := CourtPanel.new(self)  # the court card (court_panel.gd): its state lives there
@@ -195,14 +195,14 @@ var _held_offer: Array:  # [text, go, ms]: the latest Watch that came while he w
 
 
 func _ready() -> void:
-	_root = Control.new()
-	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.theme = T.get_theme()
-	add_child(_root)
+	root = Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.theme = T.get_theme()
+	add_child(root)
 	# The signs of a bad reign at the screen's edge: first, so every card is drawn over them.
-	_omens = preload("res://scripts/omens.gd").new()
-	_root.add_child(_omens)
+	omens = preload("res://scripts/omens.gd").new()
+	root.add_child(omens)
 	top_bar._build_top_bar()
 	_build_houses()
 	_build_chronicle()
@@ -218,7 +218,7 @@ func _ready() -> void:
 
 ## The cards that come up under the top bar share one place, and only the
 ## latest is ever on screen: one coming up puts away whichever was there.
-var _cards: Array = []
+var cards: Array = []
 
 
 ## Closes the topmost thing the King has open; false when nothing was.
@@ -226,7 +226,7 @@ func _step_back() -> bool:
 	if _story_panel and _story_panel.visible:
 		_story_panel.visible = false
 		return true
-	for c in _cards:
+	for c in cards:
 		if is_instance_valid(c) and c.visible:
 			c.visible = false
 			if c == _court_panel:
@@ -243,9 +243,9 @@ func _step_back() -> bool:
 	return false
 
 
-func _card(p: PanelContainer) -> PanelContainer:
-	_cards = _cards.filter(func(c): return is_instance_valid(c))
-	_cards.append(p)
+func card(p: PanelContainer) -> PanelContainer:
+	cards = cards.filter(func(c): return is_instance_valid(c))
+	cards.append(p)
 	p.visibility_changed.connect(func():
 		if p.visible:
 			_put_away_all_but(p))
@@ -256,7 +256,7 @@ func _card(p: PanelContainer) -> PanelContainer:
 func _put_away_all_but(p: PanelContainer) -> void:
 	if not is_instance_valid(p) or not p.visible:
 		return
-	for c in _cards:
+	for c in cards:
 		if c != p and is_instance_valid(c) and c.visible:
 			c.visible = false
 			if c == _ledger_panel and _ledger_btn:
@@ -267,7 +267,7 @@ func _put_away_all_but(p: PanelContainer) -> void:
 ## the map's own words (town names) can keep clear of it.
 func covered() -> Array[Rect2]:
 	var out: Array[Rect2] = []
-	for c in _root.get_children():
+	for c in root.get_children():
 		if c is PanelContainer and (c as Control).is_visible_in_tree():
 			out.append((c as Control).get_global_rect())
 	return out
@@ -278,14 +278,14 @@ func _put_town_away() -> void:
 	town_card._put_town_away()
 
 
-func _glass_panel() -> PanelContainer:
+func glass_panel() -> PanelContainer:
 	var p := PanelContainer.new()
 	T.glass(p)
-	_root.add_child(p)
+	root.add_child(p)
 	return p
 
 
-func _btn(text: String, cb: Callable = Callable()) -> Button:
+func btn(text: String, cb: Callable = Callable()) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.focus_mode = Control.FOCUS_NONE
@@ -304,7 +304,7 @@ func _stat(parent: Control, name: String) -> Label:
 	return d
 
 
-func _divider(parent: Control) -> void:
+func divider(parent: Control) -> void:
 	var r := ColorRect.new()
 	r.color = T.HAIRLINE
 	r.custom_minimum_size = Vector2(1, 28)
@@ -312,12 +312,12 @@ func _divider(parent: Control) -> void:
 	parent.add_child(r)
 
 
-func _icon(name: String) -> Texture2D:
+func icon(name: String) -> Texture2D:
 	return load("res://assets/icons/%s.svg" % name)
 
 
 ## A toolbar key with its name under the icon, so a newcomer reads the bar.
-func _named(b: Button, word: String) -> Button:
+func named(b: Button, word: String) -> Button:
 	# An icon at rest; its name and key in the tooltip (UI.md 3: words appear on hover).
 	b.text = ""
 	if b.tooltip_text == "":
@@ -328,9 +328,9 @@ func _named(b: Button, word: String) -> Button:
 	return b
 
 
-func _icon_btn(icon: String, tip: String, cb: Callable = Callable()) -> Button:
+func icon_btn(icon_name: String, tip: String, cb: Callable = Callable()) -> Button:
 	var b := Button.new()
-	b.icon = _icon(icon)
+	b.icon = icon(icon_name)
 	b.tooltip_text = tip
 	b.expand_icon = false
 	b.custom_minimum_size = Vector2(44, 44)
@@ -360,13 +360,13 @@ func _icon_btn(icon: String, tip: String, cb: Callable = Callable()) -> Button:
 
 
 ## A glance: icon and number, explained on hover.
-func _gauge(parent: Control, icon: String, tip: String, word := "") -> Label:
+func gauge(parent: Control, icon_name: String, tip: String, word := "") -> Label:
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 6)
 	h.tooltip_text = tip
 	h.mouse_filter = Control.MOUSE_FILTER_STOP
 	var i := TextureRect.new()
-	i.texture = _icon(icon)
+	i.texture = icon(icon_name)
 	i.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	i.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	i.custom_minimum_size = Vector2(15, 15)
@@ -504,7 +504,7 @@ const PAD_WIDTH := CameraPad.PAD_WIDTH  # the camera pad's width (camera_pad.gd)
 
 
 func _build_minimap() -> void:
-	var frame := _glass_panel()
+	var frame := glass_panel()
 	frame.anchor_left = 1.0
 	frame.anchor_right = 1.0
 	frame.anchor_top = 1.0
@@ -632,18 +632,18 @@ func _process_timed(delta: float) -> void:
 		if _chron_panel:
 			_chron_panel.offset_top = maxf(84.0, _bar_pill.get_global_rect().end.y + 10.0)
 	_arrange_top()  # the date line grows (a usurper marches…), so keep the bar from overlapping
-	_fit_centre(_digest_panel, 620.0)
-	_fit_centre(_house_panel, 640.0)
-	_fit_centre(_ledger_panel, 820.0)
-	_fit_centre(_folk_panel, 560.0)
-	_fit_centre(_form_panel, 600.0)
-	_fit_centre(_court_panel, 680.0)
-	_fit_centre(_town_panel, 600.0)
+	fit_centre(_digest_panel, 620.0)
+	fit_centre(_house_panel, 640.0)
+	fit_centre(_ledger_panel, 820.0)
+	fit_centre(_folk_panel, 560.0)
+	fit_centre(_form_panel, 600.0)
+	fit_centre(_court_panel, 680.0)
+	fit_centre(_town_panel, 600.0)
 	news._place_notices(delta)  # the notices know where the cards are (news_chips.gd)
 
 
 ## A small "see" button that opens the character view on a person.
-func _see_btn(person: Dictionary, house: Dictionary) -> Button:
+func see_btn(person: Dictionary, house: Dictionary) -> Button:
 	var b := Button.new()
 	b.text = "See"
 	b.flat = true
@@ -685,12 +685,12 @@ const UNIT := {"grain": " t", "food": " t", "gold": " cr", "treasury": " cr"}
 const CROWNS := 100  # crowns to one Freeciv gold
 
 
-static func _real(key: String, v: int) -> String:
-	return _heads(v * int(SCALE.get(key, 1))) + String(UNIT.get(key, ""))
+static func real(key: String, v: int) -> String:
+	return heads(v * int(SCALE.get(key, 1))) + String(UNIT.get(key, ""))
 
 
 ## A headcount for people to read: 7,500 / 48k / 1.2m.
-static func _heads(n: int) -> String:
+static func heads(n: int) -> String:
 	if n >= 1000000:
 		return "%.1fm" % (n / 1000000.0)
 	if n >= 10000:
@@ -717,7 +717,7 @@ func show_digest(entries: Array, turns: int) -> void:
 
 ## Fits a centre panel into the gap between whichever side panels are open,
 ## up to `widest`, so the court and the town never slide under them.
-func _fit_centre(panel: Control, widest: float) -> void:
+func fit_centre(panel: Control, widest: float) -> void:
 	if panel == null or not panel.visible:
 		return
 	var screen := get_viewport().get_visible_rect().size.x
@@ -769,14 +769,14 @@ func caption(text: String) -> void:
 
 var _tithe_asked := -1.0  # a tithe the King set that the realm hasn't reported back yet
 var _tithe_asked_at := 0  # when; after half a minute the realm's word stands
-var _purse := 0  # the royal treasury, in the bridge's gold (×100 crowns)
+var purse := 0  # the royal treasury, in the bridge's gold (×100 crowns)
 # --- the first reign's guide ---------------------------------------------------------
 # Three steps the Hand teaches inside his own card, each ticked when the King does
 # it; kept once per player in settings.cfg, never shown again once done or skipped.
 const GUIDE := ["Answer a petitioner at court", "Follow the Hand's counsel at court", "Call the banners"]
 var _guide := [false, false, false]
-var _guide_on := false
-var _guide_loaded := false
+var guide_on := false
+var guide_loaded := false
 
 
 ## Whether Off Grid AI is giving people their own words (main.gd asks the bridge).
@@ -784,24 +784,24 @@ var ai_words := true
 const OFFGRID_URL := "https://getoffgridai.co/desktop"
 
 
-func _offgrid_told() -> bool:
+func offgrid_told() -> bool:
 	var cfg := ConfigFile.new()
 	cfg.load("user://settings.cfg")
 	return bool(cfg.get_value("offgrid", "told", false))
 
 
-func _offgrid_tell() -> void:
+func offgrid_tell() -> void:
 	var cfg := ConfigFile.new()
 	cfg.load("user://settings.cfg")
 	cfg.set_value("offgrid", "told", true)
 	cfg.save("user://settings.cfg")
 
 
-func _load_guide() -> void:
-	_guide_loaded = true
+func load_guide() -> void:
+	guide_loaded = true
 	var cfg := ConfigFile.new()
 	cfg.load("user://settings.cfg")
-	_guide_on = not bool(cfg.get_value("guide", "done", false))
+	guide_on = not bool(cfg.get_value("guide", "done", false))
 	for i in GUIDE.size():
 		_guide[i] = bool(cfg.get_value("guide", "step%d" % i, false))
 
@@ -815,22 +815,22 @@ func _save_guide(done: bool) -> void:
 	cfg.save("user://settings.cfg")
 
 
-func _guide_mark(i: int) -> void:
-	if not _guide_loaded:
-		_load_guide()
-	if not _guide_on or _guide[i]:
+func guide_mark(i: int) -> void:
+	if not guide_loaded:
+		load_guide()
+	if not guide_on or _guide[i]:
 		return
 	_guide[i] = true
 	var all_done: bool = not _guide.has(false)
 	_save_guide(all_done)
 	if all_done:
-		_guide_on = false
+		guide_on = false
 		toast("You have the measure of the throne. The Hand will keep counsel; the choices are yours.")
 	if _court_panel.visible and not busy():
 		_show_audience.call_deferred()  # the court redraws with the step ticked
 
 
-func _guide_block() -> Control:
+func guide_block() -> Control:
 	var g := VBoxContainer.new()
 	g.add_theme_constant_override("separation", 2)
 	var head := HBoxContainer.new()
@@ -838,8 +838,8 @@ func _guide_block() -> Control:
 	t.add_theme_color_override("font_color", T.ACCENT)
 	t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(t)
-	var skip := _btn("Skip", func():
-		_guide_on = false
+	var skip := btn("Skip", func():
+		guide_on = false
 		_save_guide(true)
 		_show_audience.call_deferred())
 	skip.add_theme_font_size_override("font_size", T.SIZE_DESC)
@@ -857,26 +857,26 @@ func _guide_block() -> Control:
 # --- the clear view while the King watches a scene --------------------------------------
 # A scene he chose to Watch gets the whole screen: the panels step aside and the
 # court waits; all come back as they were when he moves or the scene ends.
-var _cinema_on := false
-var _cinema_was := {}
+var cinema_on := false
+var cinema_was := {}
 const CINEMA_HIDES := ["_houses_panel", "_chron_panel", "_town_panel", "_court_panel", "_house_panel", "_offer"]
 
 
 func cinema(on: bool) -> void:
-	if on == _cinema_on:
+	if on == cinema_on:
 		return
-	_cinema_on = on
+	cinema_on = on
 	for n in CINEMA_HIDES:
 		var p = get(n)
 		if p == null or not is_instance_valid(p):
 			continue
 		if on:
-			_cinema_was[n] = p.visible
+			cinema_was[n] = p.visible
 			p.visible = false
-		elif _cinema_was.get(n, false):
+		elif cinema_was.get(n, false):
 			p.visible = true
 	if not on:
-		_cinema_was.clear()
+		cinema_was.clear()
 
 
 
@@ -903,7 +903,7 @@ func busy() -> bool:
 ## A card is up (the Hand, a petitioner, the away report, or one the King
 ## opened himself: a town, a house, a person, the ledger): a card the game
 ## brings waits its turn instead of coming up beside or over it.
-func _card_up(but: Control = null) -> bool:
+func card_up(but: Control = null) -> bool:
 	for p in [_court_panel, _digest_panel, _end_panel, _town_panel, _house_panel, _folk_panel, _form_panel, _ledger_panel]:
 		if p and is_instance_valid(p) and p.visible and p != but:
 			return true
@@ -915,7 +915,7 @@ func _catch_up() -> void:
 	if busy():
 		return
 	# A deed of his that played while a card was up: offered now, if it's still fresh (a minute).
-	if not _held_offer.is_empty() and not _card_up() and not _cinema_on:
+	if not _held_offer.is_empty() and not card_up() and not cinema_on:
 		var held := _held_offer
 		_held_offer = []
 		if Time.get_ticks_msec() - int(held[2]) < 60000:
@@ -931,18 +931,18 @@ func reading() -> bool:
 	return false
 
 
-func _counsel_act(act: Dictionary) -> void:
+func counsel_act(act: Dictionary) -> void:
 	var on := String(act.get("ui", ""))
 	if on != "court":
-		_guide_mark(1)
+		guide_mark(1)
 	if String(act.get("action", "")) == "banners":
-		_guide_mark(2)
+		guide_mark(2)
 	if on == "court":
 		_toggle_court()
 	elif on == "tithe_up":
-		_set_tithe(_tithe + 0.05)
+		set_tithe(tithe + 0.05)
 	elif on == "tithe_down":
-		_set_tithe(_tithe - 0.05)
+		set_tithe(tithe - 0.05)
 	elif on == "sitout":
 		# The King lets them fight it out: answered, the court never brings this war again.
 		toast("The King stays out of it. Let them bleed; the war is theirs.")
@@ -950,13 +950,13 @@ func _counsel_act(act: Dictionary) -> void:
 		decree_at.emit(String(act.get("action", "")), int(act.get("city", -1)), int(act.get("to", -1)), String(act.get("building", "")))
 
 
-func _set_tithe(rate: float) -> void:
-	_tithe = clampf(snappedf(rate, 0.05), 0.0, 0.4)
-	_tithe_asked = _tithe
+func set_tithe(rate: float) -> void:
+	tithe = clampf(snappedf(rate, 0.05), 0.0, 0.4)
+	_tithe_asked = tithe
 	_tithe_asked_at = Time.get_ticks_msec()
-	tithe_changed.emit(_tithe)
-	_tithe_l.text = "%d%%" % int(_tithe * 100)
-	toast("The royal tithe is now %d%%. %s" % [int(_tithe * 100), "The houses grumble." if _tithe >= 0.2 else "The houses breathe easier."])
+	tithe_changed.emit(tithe)
+	_tithe_l.text = "%d%%" % int(tithe * 100)
+	toast("The royal tithe is now %d%%. %s" % [int(tithe * 100), "The houses grumble." if tithe >= 0.2 else "The houses breathe easier."])
 
 
 ## Where the reign is heading, under the date (top_bar.gd).
@@ -990,8 +990,8 @@ func set_reign(r: Dictionary) -> void:
 		clock = "%d:%02d left" % [secs / 60, secs % 60]
 	if r.get("status", "") == "ended":
 		clock = "%s · score %d" % [String(r.get("title", "reign ended")), int(r.get("score", 0))]
-	_paused = bool(r.get("paused", false))
-	_pause_btn.button_pressed = _paused
+	paused = bool(r.get("paused", false))
+	_pause_btn.button_pressed = paused
 	_pause_btn.disabled = r.get("status", "") == "ended"
 	_reign.text = ("%s  ·  %s" % [r.get("name", ""), clock]).to_upper()
 	if r.get("status", "") == "ended":
@@ -1043,21 +1043,21 @@ func _reign_end(r: Dictionary) -> void:
 
 ## A house's sigil in its colour, `px` square; blank (but holding its space)
 ## when the house has no sigil yet.
-func _sigil_icon(house: Dictionary, px: int) -> TextureRect:
-	var icon := TextureRect.new()
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.custom_minimum_size = Vector2(px, px)
-	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_set_sigil(icon, house)
-	return icon
+func sigil_icon(house: Dictionary, px: int) -> TextureRect:
+	var rect := TextureRect.new()
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	rect.custom_minimum_size = Vector2(px, px)
+	rect.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	set_sigil(rect, house)
+	return rect
 
 
 ## A lesser family's arms, in their own cream beside their liege's colour.
-func _set_arms(icon: TextureRect, family: Dictionary) -> void:
-	icon.texture = Heraldry.sigil(family)
-	icon.visible = icon.texture != null
-	icon.modulate = Color.WHITE
+func set_arms(rect: TextureRect, family: Dictionary) -> void:
+	rect.texture = Heraldry.sigil(family)
+	rect.visible = rect.texture != null
+	rect.modulate = Color.WHITE
 
 
 ## The arms of the lesser family a person of `house` belongs to ("Ysolde Pell"
@@ -1071,26 +1071,26 @@ static func family_of(name: String, house: Dictionary) -> Dictionary:
 
 ## A person's name under their family's arms (when a lesser family's), with
 ## their liege's arms beside them, smaller: for the court's panels.
-func _arms_pair(row: HBoxContainer, name: String, house: Dictionary, px: int) -> void:
+func arms_pair(row: HBoxContainer, name: String, house: Dictionary, px: int) -> void:
 	var family := family_of(name, house)
 	if family.is_empty():
-		row.add_child(_sigil_icon(house, px))
+		row.add_child(sigil_icon(house, px))
 		return
-	var mine := _sigil_icon({}, px)
-	_set_arms(mine, family)
+	var mine := sigil_icon({}, px)
+	set_arms(mine, family)
 	row.add_child(mine)
-	row.add_child(_sigil_icon(house, int(px * 0.55)))
+	row.add_child(sigil_icon(house, int(px * 0.55)))
 
 
 ## A house's mood toward the King, as anyone would say it.
-static func _mood(f: int) -> String:
+static func mood(f: int) -> String:
 	return "Loyal" if f >= 60 else ("Content" if f >= 35 else ("Cold" if f >= 25 else "Angry"))
 
 
-func _set_sigil(icon: TextureRect, house: Dictionary) -> void:
-	icon.texture = Heraldry.sigil(house) if not house.is_empty() else null
-	icon.visible = icon.texture != null
-	icon.modulate = Color.from_string(String(house.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.25)
+func set_sigil(rect: TextureRect, house: Dictionary) -> void:
+	rect.texture = Heraldry.sigil(house) if not house.is_empty() else null
+	rect.visible = rect.texture != null
+	rect.modulate = Color.from_string(String(house.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.25)
 
 
 var _season_s := 20.0  # seconds a season lasts, from the bridge
@@ -1100,19 +1100,19 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 	_season_s = float(world.get("turnSeconds", _season_s))
 	_tell_effects(world.get("effects", []))
 	houses_drawer._read_standing(world)
-	_purse = int(world.get("crown", {}).get("treasury", 0))  # the court's orders check the purse
+	purse = int(world.get("crown", {}).get("treasury", 0))  # the court's orders check the purse
 	_rank_houses(world.get("players", []), world.get("fallen", []))
-	_omens.read(float(world.get("peace", 1.0)), float((world.get("crown", {}) as Dictionary).get("treasury", -1)) if world.has("crown") else -1.0)
+	omens.read(float(world.get("peace", 1.0)), float((world.get("crown", {}) as Dictionary).get("treasury", -1)) if world.has("crown") else -1.0)
 	for pid in houses:
-		_house_by_name[String(houses[pid].get("name", ""))] = houses[pid]
+		house_by_name[String(houses[pid].get("name", ""))] = houses[pid]
 	set_reign(world.get("reign", {}))
 	var c: Dictionary = world.get("crown", {})
-	_purse = int(c.get("treasury", 0))
+	purse = int(c.get("treasury", 0))
 	# The realm's report can be older than the King's last word: until it
 	# carries the tithe just set, the screen keeps showing that one.
-	var reported := float(c.get("tithe", _tithe))
+	var reported := float(c.get("tithe", tithe))
 	if _tithe_asked < 0.0 or absf(reported - _tithe_asked) < 0.001 or Time.get_ticks_msec() - _tithe_asked_at > 30000:
-		_tithe = reported
+		tithe = reported
 		_tithe_asked = -1.0
 	town_card._decrees = c.get("decrees", {})
 	town_card._favour_wait = c.get("favourWait", {})
@@ -1165,20 +1165,20 @@ func set_decrees(list: Array) -> void:
 
 
 ## A tooltip with the key that does the same, as set in Settings → Controls.
-func _with_key(text: String, action: String) -> String:
+func with_key(text: String, action: String) -> String:
 	var key := Keys.label(action).get_slice(" / ", 0)
 	return text if key == "" else "%s  (%s)" % [text, key]
 
 
 ## A turn as the realm counts it, "Autumn 866": four seasons a year, from 300
 ## years after the Conquest (the bridge's calendar in stakes.js).
-static func _season_of(turn: int) -> String:
+static func season_of(turn: int) -> String:
 	var t := maxi(1, turn) - 1
 	return "%s %d" % [["Spring", "Summer", "Autumn", "Winter"][t % 4], 300 + floori(t / 4.0)]
 
 
 ## A line that wraps to its panel instead of widening it.
-static func _wrapped(l: Label) -> Label:
+static func wrapped(l: Label) -> Label:
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD
 	l.custom_minimum_size.x = 200
 	return l

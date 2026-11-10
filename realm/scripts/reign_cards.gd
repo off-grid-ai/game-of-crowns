@@ -22,7 +22,7 @@ func _init(owner: UI) -> void:
 func show_digest(entries: Array, turns: int) -> void:
 	if _digest_panel:
 		_digest_panel.queue_free()
-	_digest_panel = ui._card(ui._glass_panel())
+	_digest_panel = ui.card(ui.glass_panel())
 	_digest_panel.offset_top = 70
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
@@ -57,7 +57,7 @@ func show_digest(entries: Array, turns: int) -> void:
 		v.add_child(T.label("and %d more in the chronicle" % (entries.size() - shown.size()), T.TEXT_3))
 	if ui._petitions.size() > 0:
 		v.add_child(T.label("%d wait at court" % ui._petitions.size(), T.TEXT_2))
-	var go := ui._btn("To the realm", func():
+	var go := ui.btn("To the realm", func():
 		_digest_panel.visible = false
 		ui._show_audience())
 	go.size_flags_horizontal = Control.SIZE_SHRINK_END
@@ -126,8 +126,8 @@ func _epilogue(ep: Dictionary, title := "The reign, as it will be told", wait_cl
 	ui.cinema(true)
 	# The whole interface steps aside for the flight: only the realm and the telling.
 	_epilogue_hid.clear()
-	for c in ui._root.get_children():
-		if c != ui._omens and (c as CanvasItem).visible:
+	for c in ui.root.get_children():
+		if c != ui.omens and (c as CanvasItem).visible:
 			(c as CanvasItem).visible = false
 			_epilogue_hid.append(c)
 	# The side panels and cards too, whether or not the camera was already filming.
@@ -136,7 +136,7 @@ func _epilogue(ep: Dictionary, title := "The reign, as it will be told", wait_cl
 		if pnl is CanvasItem and is_instance_valid(pnl) and (pnl as CanvasItem).visible:
 			(pnl as CanvasItem).visible = false
 			_epilogue_hid.append(pnl)
-	var card := ui._glass_panel()
+	var card := ui.glass_panel()
 	_epilogue_card = card
 	# A click anywhere moves the telling on.
 	card.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -183,7 +183,7 @@ func _epilogue(ep: Dictionary, title := "The reign, as it will be told", wait_cl
 		if wait_click:
 			# A summary screen always says how to go on (Civ's and CK3's "Continue"):
 			# the button, any key or click, or on its own after a while.
-			var go := ui._btn("Continue", func(): _epilogue_skip = true)
+			var go := ui.btn("Continue", func(): _epilogue_skip = true)
 			go.add_theme_color_override("font_color", T.ACCENT)
 			go.size_flags_horizontal = Control.SIZE_SHRINK_END
 			v.add_child(go)
@@ -208,7 +208,7 @@ func _epilogue(ep: Dictionary, title := "The reign, as it will be told", wait_cl
 	for f in ep.get("fates", []):
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 10)
-		row.add_child(ui._sigil_icon(ui._house_by_name.get(String(f.get("house", "")), {"color": f.get("color", "#888")}), 22))
+		row.add_child(ui.sigil_icon(ui.house_by_name.get(String(f.get("house", "")), {"color": f.get("color", "#888")}), 22))
 		var line := Label.new()
 		line.text = "%s %s" % [String(f.get("house", "")), String(f.get("line", ""))]
 		line.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -220,7 +220,7 @@ func _epilogue(ep: Dictionary, title := "The reign, as it will be told", wait_cl
 	card.queue_free()
 	_epilogue_card = null
 	# The towns it flew to leave no card behind.
-	ui._cinema_was.erase("_town_panel")
+	ui.cinema_was.erase("_town_panel")
 	ui._put_town_away()
 	ui._town_id = -1
 	ui.town_closed.emit()
@@ -313,10 +313,10 @@ func _reign_end(r: Dictionary) -> void:
 	var e: Dictionary = r.get("ended", {}) if r.get("ended") is Dictionary else {}
 	var turns := int(e.get("turn", 0))
 	var years := turns / 4
-	var facts := [["Score", ui._heads(int(r.get("score", 0)))],
+	var facts := [["Score", ui.heads(int(r.get("score", 0)))],
 		["Reigned", ("%d years" % years) if years != 1 else "a year"],
 		["Peace", "%d%%" % roundi(float(e.get("peace", 0.0)) * 100.0)],
-		["Souls", ui._heads(int(r.get("souls", 0)))],
+		["Souls", ui.heads(int(r.get("souls", 0)))],
 		["Great houses standing", str(int(e.get("houses", 0)))]]
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -339,7 +339,7 @@ func _reign_end(r: Dictionary) -> void:
 	go.alignment = BoxContainer.ALIGNMENT_CENTER
 	go.add_theme_constant_override("separation", 16)
 	col.add_child(go)
-	var on := ui._btn("Rule on", func():
+	var on := ui.btn("Rule on", func():
 		var tw := root.create_tween()
 		tw.tween_property(root, "modulate:a", 0.0, 0.8)
 		tw.tween_callback(layer.queue_free)
@@ -352,7 +352,7 @@ func _reign_end(r: Dictionary) -> void:
 	on.add_theme_color_override("font_color", Color(1, 0.93, 0.78))
 	on.tooltip_text = "The same realm, with no clock. This score stays in the Hall of Records."
 	go.add_child(on)
-	var menu := ui._btn("Back to the menu", func():
+	var menu := ui.btn("Back to the menu", func():
 		layer.queue_free()
 		_end_panel = null
 		ui.open_menu.emit())

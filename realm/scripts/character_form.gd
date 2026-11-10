@@ -22,7 +22,7 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 	var editing := not person.is_empty()
 	if _form_panel:
 		_form_panel.queue_free()
-	_form_panel = ui._card(ui._glass_panel())
+	_form_panel = ui.card(ui.glass_panel())
 	_form_panel.offset_top = 70
 	if ui._house_panel:
 		ui._house_panel.visible = false
@@ -125,8 +125,8 @@ func show_character_form(house_id: int, house_name: String, opts: Dictionary, pe
 	var go := HBoxContainer.new()
 	go.alignment = BoxContainer.ALIGNMENT_END
 	v.add_child(go)
-	go.add_child(ui._btn("Cancel", func(): _form_panel.visible = false))
-	go.add_child(ui._btn("Make it so" if editing else "Bring them into the realm", func():
+	go.add_child(ui.btn("Cancel", func(): _form_panel.visible = false))
+	go.add_child(ui.btn("Make it so" if editing else "Bring them into the realm", func():
 		if name.text.strip_edges() == "":
 			ui.toast("Give them a name first.")
 			return
