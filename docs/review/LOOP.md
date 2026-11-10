@@ -711,3 +711,35 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - to the judge: the Stormwatch answer;
   - to Film round 5: a close frame and a 3 s clip of Stormwatch's four orange balls (fire glow or light halos? to_gpu keeps size and position, checked headless).
   These go out after Mac's next message.
+
+## 2026-11-10 21:45, motion steps 0-3 (probe, turn rate, locomotion)
+
+- **Landed (mine):**
+  - 6f4d112, motion probe: the real game, headless, on a private bridge, Kingsmere at street level, 60 s. It fails today's code on glide, empty hands and turn snaps.
+  - ebabc0e, motion v2 behind `--motion=v2`: a turn rate of 300 deg/s, a synced blend space, pace read in the person's own size, and slow steps at a slow cadence. anim_lod runs after the movers.
+  - ba76cf3: skate is counted by move, with riders left out.
+- **Numbers (Kingsmere, about 35 people, 60 s, measured last in the frame):**
+  - Turn snaps: 803 today, 20 with v2.
+  - Foot skate still fails (19 people over 10%). By move: Walk 32%, Carrying 30%, Sword_Attack 51%. Next: set the walk pace from the clip's own stride.
+  - Empty hand: Drinking, Digging, Carrying and Wheelbarrow, which is step 4, the props.
+  - Two in one: 0 to 1 pair.
+- **Mac's notes since 21:10, via the judge:**
+  - Minds were never on in his game (LIMBO_TOWNS empty), so he played the fallback: no awareness, random wandering, instant switches.
+  - People ignore each other; there's no ambient presence.
+  - Decisions are disconnected from the map.
+  - The game isn't fun.
+  - The judge's order: rulings come back (lords return by name); the capital live on minds plus v2 by default; matters placed on the map, with consequences travelling there; then 3b–3e (look-at, interaction slots, hand IK, social and presence rules).
+- **Townsfolk look:** 9556b93 fixed npc_mind not parsing from 20:20 (NPC perf's commit swept in a half-done hunk). chatter.mind_line is wired to Builder 2's tooltip.
+- **Film round 5 before:**
+  - The fire sits in the pit.
+  - One dancer is in the ring, and half the revellers face away.
+  - The lens goes inside a body.
+  - Two identical runners stand on one spot (gap 0.00 m).
+  - A freeze at the night feast: 4.9–7.4 s stalls, then no answer.
+  - Street: 26 fps, physics 19–22 ms.
+- **Blocked:** my messages to other sessions are paused until Mac types, so none of the new orders have been routed. The pause went on at 21:10. To route once it lifts:
+  - Townsfolk look: step 1 (the retarget, banned bodies enforced in people.gd, the neighbour variety rule, the broom prop), then step 4.
+  - NPC perf: the 300-person baseline and the read-only VAT evaluation.
+  - Film: the after-clips once the capital is live; the night-feast freeze log to NPC perf.
+  - Builder 2: the anchored-choice API.
+- **Verdict:** on course for the motion plan, measured. Off course on fun, by Mac's own word. The judge's order puts rulings that come back and the map first, and that order is taken.
