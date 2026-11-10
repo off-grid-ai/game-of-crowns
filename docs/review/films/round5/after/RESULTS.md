@@ -65,3 +65,4 @@ The review page has the screens: https://claude.ai/artifact/4PkjM4Z31UEeDdoGHrHc
 
 - **Rain with the camera moving: pass** (b9f6f02). No white streaks in 28 frames. Separate problem: the street camera passes through market stalls, barrels and a passer-by, which turn see-through as it goes.
 - **The lens riding over the street's things: fail** (a382156). In the same street drift, a cart and a market stall still turn see-through as the camera passes (frames 4–7 and 22–26 of 28). The view doesn't lift over them. One earlier take stalled on a Metal fence timeout (a GPU stall); the rerun was clean.
+- **Street things stay solid as the camera passes: mostly pass** (ff2f154). In 26 of 28 frames, carts, stalls and barrels stay solid. In two frames the lens is inside a thing, so it dissolves: a cart wheel (frame 8) and a barrel (frame 24). The camera still passes through them instead of lifting over.
