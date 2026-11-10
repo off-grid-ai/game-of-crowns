@@ -11,12 +11,13 @@ extends Node
 
 const PerfTools := preload("res://scripts/perf_tools.gd")
 
-const CADENCE := 0.2  # seconds between looks round (Builder 1: near the camera only, at this cadence)
+const CADENCE := 0.1  # seconds between looks round, near the camera only: a newcomer is noticed within the moment
 const NEAR_CAM := 4.0  # world units from the camera: further off, nobody's face is seen
 const NOTICE := 0.18  # about 1.5 m: someone this close is noticed
 const FRONT := -0.17  # within about 100 degrees of where they face
-const HOLD := Vector2(1.5, 3.0)  # seconds a glance is held
-const RESTED := 4.0  # seconds before the same person looks round again
+const HOLD := Vector2(1.0, 2.0)  # seconds a glance is held
+const RESTED := 1.0  # seconds before the same person looks round again
+const SWITCH := 0.6  # a glance held this long gives way to someone new stepping up in front
 const GREET := 0.15  # about 1.2 m: close enough to greet
 const GREET_AGAIN := 30.0  # the same two greet once in this long
 const LIMIT := 60.0  # degrees a head turns from the body, at most
@@ -25,6 +26,7 @@ const LIMIT := 60.0  # degrees a head turns from the body, at most
 ## callings): commoners make way and bow to those above them.
 const STATION := {"child": 0, "peasant": 1, "townsfolk": 1, "farmer": 1, "market": 1, "tavern": 1, "keeper": 1, "crafter": 1,
 	"idler": 1, "clergy": 2, "pious": 2, "soldier": 2, "archer": 2, "knight": 3, "noble": 3, "gentry": 3}
+const SOLDIERLY := ["soldier", "archer", "knight"]
 ## What the one passing does, by how they stand to the other.
 const TO_BETTER := ["Bow", "Nodding"]
 const TO_EQUAL := ["Nodding", "Waving", "Nodding"]
@@ -110,16 +112,27 @@ func _look_round() -> void:
 			who = null  # gone (despawned, or the town rebuilt): checked before anything else asks what it is
 		var keep: bool = not busy and who is Node3D and now < float(st.get("until", 0.0)) \
 			and _flat(n, who).length() < NOTICE * 1.6
+		if keep and now - float(st.get("since", now)) > SWITCH:
+			# Someone new stepping up in front takes the glance from one long looked at.
+			var fresh := _noticed(n, near)
+			if fresh and fresh != who and not _met(n, fresh):
+				st = {"who": fresh, "until": now + randf_range(HOLD.x, HOLD.y), "rested": 0.0, "since": now}
+				_looks[n.get_instance_id()] = st
+				who = fresh
 		if not keep:
 			who = null
-			if not busy and now > float(st.get("rested", 0.0)):
-				who = _noticed(n, near)
+			if not busy:
+				who = _noticed(n, near)  # someone new is noticed at once; only the same face waits (_met)
 				if who:
-					st = {"who": who, "until": now + randf_range(HOLD.x, HOLD.y), "rested": 0.0}
+					st = {"who": who, "until": now + randf_range(HOLD.x, HOLD.y), "rested": 0.0, "since": now}
 			if who == null and st.has("who"):
 				st = {"rested": now + RESTED}  # looked away: a while before they look round again
 			_looks[n.get_instance_id()] = st
 		_ease(look, 1.0 if who else 0.0)
+		if who:
+			_seen_pair(n, who as Node3D, now)
+		if not n.has_meta("station"):
+			n.set_meta("station", station_name(n))  # where they stand, for anyone reading (the motion probe)
 		if who:
 			_stats["looking"] += 1
 		if who:
@@ -133,7 +146,7 @@ func _noticed(n: Node3D, near: Array[Node3D]) -> Node3D:
 	var best: Node3D = null
 	var best_d := NOTICE
 	for o in near:
-		if o == n:
+		if o == n or _met(n, o):
 			continue
 		var to := _flat(n, o)
 		var d := to.length()
@@ -169,14 +182,40 @@ func _greet(n: Node3D, who: Node3D, now: float) -> void:
 			_stats["bows"] += 1
 
 
-## Where someone stands: their villager calling, else the role they were made for.
-func station(n: Node) -> int:
+var _met_at := {}  # "a:b" -> when a last looked at b
+
+
+func _seen_pair(a: Node3D, b: Node3D, now: float) -> void:
+	_met_at["%d:%d" % [a.get_instance_id(), b.get_instance_id()]] = now
+
+
+## Whether `a` looked at `b` lately (so a switch goes to someone new, not back).
+func _met(a: Node3D, b: Node3D) -> bool:
+	return Time.get_ticks_msec() * 0.001 - float(_met_at.get("%d:%d" % [a.get_instance_id(), b.get_instance_id()], -INF)) < 8.0
+
+
+## The name of where someone stands: commoner, clergy, soldier or gentry.
+func station_name(n: Node) -> String:
+	var role := _role(n)
+	if role in ["clergy", "pious"]:
+		return "clergy"
+	if role in SOLDIERLY:
+		return "soldier"
+	return "gentry" if station(n) >= 3 else "commoner"
+
+
+func _role(n: Node) -> String:
 	var role := String(n.get_meta("role", ""))
 	if villagers and villagers.has_method("who_is"):
 		var v: Dictionary = villagers.who_is(n)
 		if not v.is_empty():
 			role = String(v["role"])
-	return int(STATION.get(role, 1))
+	return role
+
+
+## Where someone stands: their villager calling, else the role they were made for.
+func station(n: Node) -> int:
+	return int(STATION.get(_role(n), 1))
 
 
 static func _flat(a: Node3D, b: Node3D) -> Vector2:

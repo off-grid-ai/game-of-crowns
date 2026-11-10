@@ -142,6 +142,7 @@ func _refresh() -> void:
 	for id in crowds:
 		_witness(id)
 		_prune_talks(id)
+		_follow_parents(id)
 	if _audit:
 		_talk_audit()
 	for id in crowds.keys():
@@ -237,6 +238,7 @@ func _spawn(id: int) -> void:
 		# later): never first glimpsed standing inside a house.
 		a["placed"] = false
 		person.visible = false
+		person.set_meta("folk", {"town": int(id), "i": int(a["i"]), "role": String(a["role"])})  # who they are (who_is)
 		list.append(a)
 		# A town on the LimboAI switch: everyone gets a mind (npc_mind.gd) that
 		# picks their activities by calling and the town's mood; the walking stays here.
@@ -255,6 +257,7 @@ func _spawn(id: int) -> void:
 				best = b
 		if best != null:
 			a["parent"] = best
+			a["node"].set_meta("parent", best["node"])  # who the child keeps near, for anyone reading (the motion probe)
 
 
 ## The villager nearest a point on the ground, within reach of a click:
@@ -822,7 +825,7 @@ func _square_count() -> void:
 ## CHECK line every five seconds, with the worst seen so far.
 var _crowd_probe := OS.get_cmdline_user_args().has("--crowdprobe")
 const PERSONAL := 0.06  # world units: half a metre at town scale (a person is ~0.22 tall)
-var _crowd := {"min": INF, "worst": INF, "under": 0, "pairs": {}, "frames": 0, "who": "", "in_fire": 0, "fire_who": {}, "fires": 0, "in_building": 0, "building_who": {}, "traveller": 0, "traveller_who": {}}
+var _crowd := {"min": INF, "worst": INF, "under": 0, "pairs": {}, "frames": 0, "who": "", "in_fire": 0, "fire_who": {}, "fires": 0, "in_building": 0, "building_who": {}, "traveller": 0, "traveller_who": {}, "empty_who": {}}
 
 
 func _crowd_check() -> void:
@@ -842,6 +845,16 @@ func _crowd_check() -> void:
 				fires.append([node.global_position + Vector3(Vector2(f[0]).x, 0, Vector2(f[0]).y), float(f[1])])
 	_crowd["fires"] = fires.size()
 	for n in folk:
+		# A move that needs something in hand, played with nothing there: who, and why.
+		var mo := n.get_node_or_null("Motion")
+		if mo and mo.has_method("held_clip"):
+			var clip: String = mo.held_clip()
+			if Weapons.CLIP_TOOLS.has(clip):
+				var sk := n.find_child("GeneralSkeleton", true, false)
+				var held := sk != null and sk.find_children("*", "BoneAttachment3D", true, false).any(func(x): return String(x.bone_name).contains("Hand"))
+				if not held:
+					var why := "%s tool=%s held_for=%s can=%s from=%s" % [clip, n.get_meta("tool", "-"), mo.get("_held_for"), Weapons.can_play(clip), n.get_parent().name]
+					_crowd["empty_who"][why] = int(_crowd["empty_who"].get(why, 0)) + 1
 		# Nobody inside a house, wall, fence or stall (town_nav's building footprints).
 		if nav.in_building(towns, n.global_position) and not _in_yard(n.global_position):
 			_crowd["in_building"] = int(_crowd.get("in_building", 0)) + 1
@@ -897,6 +910,9 @@ func _crowd_report() -> void:
 	print("CHECK people in a fire: %d person-frames inside the reach of %d lit fires; %s" % [int(_crowd["in_fire"]), int(_crowd["fires"]), (_crowd["fire_who"] as Dictionary).keys().slice(0, 4)])
 	print("CHECK people in a building or stall: %d person-frames; %s" % [int(_crowd["in_building"]), (_crowd["building_who"] as Dictionary).keys().slice(0, 4)])
 	print("CHECK travellers through people: %d pair-frames under 0.5 m; %s" % [int(_crowd["traveller"]), (_crowd["traveller_who"] as Dictionary).keys().slice(0, 3)])
+	if not (_crowd["empty_who"] as Dictionary).is_empty():
+		print("CHECK empty hands: %s" % _crowd["empty_who"])
+	_crowd["empty_who"] = {}
 	_crowd["traveller"] = 0
 	_crowd["traveller_who"] = {}
 	_crowd["in_fire"] = 0
@@ -1800,11 +1816,7 @@ func fire_of(town: int) -> Array:
 ## Who a person on the ground is, for a word about them (chatter.mind_line):
 ## a villager's town, index and calling, or empty for anyone else.
 func who_is(n: Node) -> Dictionary:
-	for id in crowds:
-		for a in crowds[id]:
-			if a["node"] == n:
-				return {"town": int(id), "i": int(a["i"]), "role": String(a["role"])}
-	return {}
+	return n.get_meta("folk", {}) if n else {}  # set at spawn: asked every look-round, never a search of every town
 
 
 ## Test aid (chatter.gd's talk count): talks open in a town, by the minds or the
@@ -1826,6 +1838,26 @@ func talk_counts(town: int) -> Dictionary:
 				absf(angle_difference(na.rotation.y, atan2(to.x, to.y)))]
 			out[why] = int(out.get(why, 0)) + 1
 	return out
+
+
+## Once a second: a child further than CHILD_REACH from their parent goes back
+## to them, a step or two from their side, wherever the parent's errand took
+## them. The child's own play goes on round the parent, never across the town.
+func _follow_parents(id: int) -> void:
+	for a in crowds.get(id, []):
+		var parent = a.get("parent", null)
+		if not (parent is Dictionary) or not a["placed"] or not (parent["node"] as Node3D).visible:
+			continue
+		var pp: Vector3 = parent["node"].position
+		var cp: Vector3 = a["node"].position
+		var bound := Vector2(a.get("goal", Vector2(INF, INF)))
+		var c: Vector3 = a["center"]
+		var goal_world := Vector3(c.x + bound.x, 0, c.z + bound.y)
+		var far := Vector2(cp.x - pp.x, cp.z - pp.z).length() > CHILD_REACH
+		var bound_far := Vector2(goal_world.x - pp.x, goal_world.z - pp.z).length() > CHILD_REACH
+		if far and bound_far:
+			var side := Vector3(cos(float(a["i"])), 0, sin(float(a["i"]))) * 0.12  # their own side of the parent
+			route_to(a, pp + side)
 
 
 ## Talks long over that nobody closed: a knot of people with minds (the old
