@@ -563,13 +563,7 @@ func _field_work(rng: RandomNumberGenerator) -> String:
 ## What the town is going through, as its people feel it: "feast", "riot", "hunger" or "".
 func _town_mood(a: Dictionary) -> String:
 	var c: Dictionary = towns.towns.get(a["town"], {}).get("data", {})
-	if c.get("disorder", false):
-		return "riot"
-	if c.get("famine", false):
-		return "hunger"
-	if c.get("celebrating", false):
-		return "feast"
-	return ""
+	return String(c.get("mood", ""))  # the bridge's one definition (server.js townStates)
 
 
 ## How much room each shared place has: people stand from `near` to `far`

@@ -99,7 +99,7 @@ func sync(world: Dictionary) -> void:
 		bb.set_var(&"besieged", bool(c.get("besieged", false)))
 		var owner: Dictionary = players.get(int(c.get("owner", -1)), {})
 		var favour: float = float(owner.get("favour", 100.0)) if owner.get("favour") != null else 100.0
-		var mood := "riot" if c.get("disorder", false) else ("hunger" if c.get("famine", false) else ("feast" if c.get("celebrating", false) else ""))
+		var mood := String(c.get("mood", ""))  # the bridge's one definition
 		bb.set_var(&"mood", mood)
 		bb.set_var(&"at_war", not (owner.get("wars", []) as Array).is_empty())
 		bb.set_var(&"grasping", bool(c.get("grasping", false)))

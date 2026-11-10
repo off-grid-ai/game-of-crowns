@@ -277,6 +277,10 @@ export class Minds {
     for (const k of FEELINGS) m.mood[k] += (m.base[k] - m.mood[k]) * 0.15;
     if (place?.famine) m.mood.hunger = clamp(Math.max(m.mood.hunger, 0.7));
     if (place?.plague) m.mood.fear = clamp(Math.max(m.mood.fear, 0.6));
+    // The town's mood and danger (the bridge's one definitions) weigh on everyone in it.
+    if (place?.mood === "riot") m.mood.anger = clamp(Math.max(m.mood.anger, 0.6));
+    if (place?.mood === "feast") m.mood.joy = clamp(Math.max(m.mood.joy, 0.7));
+    if (place?.besieged) m.mood.fear = clamp(Math.max(m.mood.fear, 0.6));
     // New wants rise from what they've lived through lately.
     const recent = m.memories.filter((x) => this.now() - x.turn <= 8 && x.weight >= 0.4);
     const need = recent.some((x) => x.kind === "plague") ? { text: "to keep the sickness from my door", why: "I saw the carts go by" }

@@ -595,7 +595,7 @@ export class Arcs {
   }
 
   isHungry(t) {
-    return (t.food !== undefined && t.food < 3) || Boolean(t.famine) || Boolean(t.plague);
+    return Boolean(t.famine);  // the bridge's one definition (server.js townStates); sickness is "afflicted"
   }
 
   hungryTowns(pid, ctx) {
@@ -753,7 +753,7 @@ export class Arcs {
         if (court.truces) delete court.truces[[atk.id, def.id].sort().join(":")];
       }
     }
-    if (d.truce && R(d.truce[0]) && R(d.truce[1])) { court.truces ??= {}; court.truces[[R(d.truce[0]).id, R(d.truce[1]).id].sort().join(":")] = (ctx.world.turn ?? 0) + 4 * (d.truce[2] ?? 2); court.saveCourt(); }
+    if (d.truce && R(d.truce[0]) && R(d.truce[1])) { court.makeTruce(R(d.truce[0]), R(d.truce[1]), 4 * (d.truce[2] ?? 2), ctx.world); court.saveCourt(); }
     // A town changes hands; whoever holds it as a seat goes with it.
     if (d.transfer && R(d.transfer[0])?.town && R(d.transfer[1])) {
       const [town, to] = [R(d.transfer[0]), R(d.transfer[1])];

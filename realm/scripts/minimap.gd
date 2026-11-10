@@ -180,7 +180,7 @@ func _activity(world: Dictionary) -> void:
 		var at := Vector2(float(c["x"]) + 0.5, float(c["y"]) + 0.5)
 		if c.get("disorder", false):
 			_pings.append([at, WAR, "disorder"])
-		elif c.get("famine", false) or (float(c.get("granary", 0)) > 0 and float(c.get("food", 0)) < float(c["granary"]) * 0.1):
+		elif c.get("famine", false) or c.get("granaryLow", false):  # the bridge's one definition
 			_pings.append([at, TROUBLE, "hunger"])
 
 

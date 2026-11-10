@@ -677,7 +677,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     } });
 
     // Hunger.
-    const hungry = myTowns.filter((x) => x.food !== undefined && x.food < 3).length;
+    const hungry = myTowns.filter((x) => x.famine).length;  // the bridge's one definition (server.js townStates)
     if (hungry) candidates.push({ kind: "grain", weight: 3 + hungry, make: () => {
       const donor = world.players.filter((x) => !houseFor(x).wild && !houseFor(x).crown && x.id !== c.playerId).sort((a, b) => b.gold - a.gold)[0];
       const donorHouse = donor ? houseFor(donor).name : "";
@@ -742,7 +742,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     } });
 
     // The Faith: a preacher blames the King for the realm's troubles.
-    const troubled = world.cities.filter((x) => x.food !== undefined && x.food < 3).length;
+    const troubled = world.cities.filter((x) => x.famine).length;
     if (has("pious") || troubled >= 3) candidates.push({ kind: "faith", weight: 1 + Math.min(4, troubled), make: () => ({ kind: "faith", text: `A barefoot friar has come to ${c.house}'s lands with ${troubled ? `${troubled} hungry towns` : "the poor"} at his back. He preaches that the gods have turned from a sinful King. ${c.name}${has("pious") ? ", a pious man," : ""} asks what the crown will do.`, facts: facts(c.playerId), options: [
       { id: "endow", label: "Endow the Faith (150 gold)", hint: "Every house +4 · the Faith blesses your name", cost: 150 },
       { id: "silence", label: "Have him silenced", hint: `The preaching stops · ${has("pious") ? `${c.house} −20, ${c.name} is appalled` : `${c.house} −5`} · the poor remember` },
@@ -844,7 +844,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     const me = world.players.find((x) => x.id === c.playerId);
     if (!me) return null;
     const towns = world.cities.filter((x) => x.owner === c.playerId);
-    const hungry = towns.filter((x) => x.food !== undefined && x.food < 3).length;
+    const hungry = towns.filter((x) => x.famine).length;
     if (w.poor && me.gold >= 80) return null;
     if (w.rich && me.gold < 250) return null;
     if (w.hungry && !hungry) return null;
@@ -925,7 +925,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       if (seat) out.lua.push(`local c = find.city(nil, ${seat.id}); if c then local t = find.unit_type("${v.type ?? "Pikemen"}") or find.unit_type("Warriors"); for i = 1, ${Number(v.count ?? v) || 1} do edit.create_unit(c.owner, c.tile, t, 1, c, -1) end end`);
     });
     for (const [a, b, d] of e.opinion ?? []) if (roles[a] && roles[b]) { this.shift(roles[a].id, roles[b].id, d); this.save(roles[a]); }
-    if (e.truce && roles.me && roles.rival) { this.truces ??= {}; this.truces[[roles.me.id, roles.rival.id].sort().join(":")] = (world.turn ?? 0) + 8 * e.truce; }
+    if (e.truce && roles.me && roles.rival) this.makeTruce(roles.me, roles.rival, 8 * e.truce, world);
     if (e.dies && roles[e.dies.who] && Math.random() < (e.dies.chance ?? 1)) {
       const who = roles[e.dies.who];
       who.alive = false;
@@ -995,6 +995,16 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     }
   }
 
+  // A truce between two lords, by whatever cause (a ruling, a story, a match):
+  // their own key, and through onTruce (the bridge's houseTruce) the houses'
+  // truce and Freeciv's ceasefire. The one way a truce is made.
+  makeTruce(a, b, seasons, world) {
+    if (!a || !b) return;
+    this.truces ??= {};
+    this.truces[[a.id, b.id].sort().join(":")] = (world?.turn ?? 0) + seasons;
+    if (a.playerId != null && b.playerId != null && a.playerId !== b.playerId) this.onTruce?.([a.playerId, b.playerId], seasons);
+  }
+
   truce(a, b) {
     const k = [a, b].sort().join(":");
     if ((this.truces ?? {})[k] > (this.turnNow ?? 0)) return true;
@@ -1042,8 +1052,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
         if (this.warlike(loser)) loser.goals.unshift({ kind: "revenge", text: `make ${winner.house} pay for what the King allowed` });
         out.text = `The King rules for ${winner.house}. ${loser.name} leaves the hall white with fury.`;
       } else if (option === "peace") {
-        this.truces ??= {};
-        this.truces[[c.id, enemy.id].sort().join(":")] = (world.turn ?? 0) + 8;
+        this.makeTruce(c, enemy, 8, world);
         out.favour[c.playerId] = -5;
         out.favour[enemy.playerId] = -5;
         out.text = `The King's peace is proclaimed between ${c.house} and ${enemy.house}. The crown pays for the burned barns. Neither lord smiles.`;

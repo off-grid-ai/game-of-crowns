@@ -122,6 +122,7 @@ function load(id) {
   chronicle = lines(path.join(P.state, "chronicle.jsonl"));
   history = lines(path.join(P.state, "history.jsonl"));
   world = chron.readJson(path.join(P.state, "world.json"));
+  queueMicrotask(townStates);  // the towns' states, once the realm is loaded
   scars = chron.readJson(path.join(P.state, "scars.json"), []);
   detailCache = { file: null, mtime: 0, data: null };
   turnSeconds = 40;  // one pace for every realm: a season in forty seconds, with a court at each (GAME_DESIGN)
@@ -147,6 +148,7 @@ function load(id) {
   lastSeason.net = past.net ?? 0;
   meta.tithe ??= 0.1;
   court = new Court(P.base, (e) => { record(e); picture(e); });  // what the lords do is told, and shown
+  court.onTruce = (pair, seasons) => houseTruce(pair, seasons);  // every truce reaches Freeciv (the one writer)
   court.deedsOf = (pid) => (deeds[pid] ??= []);
   arcs = new Arcs(P.base, court, record);
   arcsRunning = false;  // a new realm's stories start free of the last one's
@@ -159,8 +161,8 @@ function load(id) {
   minds = new Minds(P.state, {
     world: () => world, court: () => court, tithe: () => meta.tithe,
     town: (id) => {
-      const x = detail()?.cities?.[id];
-      return x ? { famine: x.hadFamine, plague: x.plagueTurn >= 0 && (world?.turn ?? 0) - x.plagueTurn <= 4 } : {};
+      const c = world?.cities?.find((t) => t.id === id);
+      return c ? { famine: c.famine, plague: c.plague, mood: c.mood, besieged: c.besieged } : {};
     },
   });
   minds.catchUp(chronicle);
@@ -173,8 +175,9 @@ const savesSeen = { dir: null, mtime: 0, list: [] };
 // commands can't change diplomacy, but its save holds it: save, set both
 // players' diplstate rows to "Cease-fire" with `turns` left, and resume from
 // that save. Freeciv then keeps it and ends it by itself.
-async function ceasefire(a, b, turns = 16) {
-  if (!fc || switching) return false;
+// pairs: [[houseA, houseB, seasons], ...], all written in one reload.
+async function ceasefire(pairs) {
+  if (!fc || switching || !pairs.length) return false;
   switching = true;
   const t0 = Date.now();
   try {
@@ -182,7 +185,7 @@ async function ceasefire(a, b, turns = 16) {
     const save = newestSave();
     if (!save) return false;
     let text = zlib.zstdDecompressSync(fs.readFileSync(save)).toString();
-    text = setDipl(setDipl(text, a, b, turns), b, a, turns);
+    for (const [a, b, turns = 16] of pairs) text = setDipl(setDipl(text, a, b, turns), b, a, turns);
     const out = path.join(P.saves, `realm-T${String(world?.turn ?? 0).padStart(4, "0")}-ceasefire-${Date.now()}.sav.zst`);
     fs.writeFileSync(out, zlib.zstdCompressSync(Buffer.from(text)));
     return true;
@@ -442,6 +445,39 @@ function applyStartOptions() {
   record({ turn: world.turn, kind: "decree", text: `The realm as the King found it: the great houses ${{ loyal: "loyal to the crown", wary: "wary of the crown", resentful: "resentful of the crown" }[o.trust]}, ${{ peaceful: "slow to war", mixed: "of mixed temper", warlike: "spoiling for war" }[o.temper]}.` });
 }
 
+// The realm's states, one definition each (SSOT, Mac 2026-11-10): set on each
+// town in the bridge's world from Freeciv's own fields, at load, each reckoning
+// and on every /world. The court, the deck, the arcs, counsel, the minds and
+// the view all read these fields; none works them out again.
+const PLAGUE_SEASONS = 4;  // a town is still sick this many seasons after plague strikes
+function townStates() {
+  if (!world?.cities) return;
+  const d = detail();
+  const turn = world.turn ?? 0;
+  for (const c of world.cities) {
+    const x = d?.cities?.[c.id];
+    const food = x?.foodStock ?? null;
+    const store = granarySize(c.size);
+    Object.assign(c, {
+      food, granary: store,
+      famine: Boolean(x?.hadFamine),  // Freeciv's word: the town starved this season
+      granaryLow: food != null && store > 0 && food / store < 0.25,
+      plagueTurn: x?.plagueTurn ?? null,
+      plague: x?.plagueTurn != null && x.plagueTurn >= 0 && turn - x.plagueTurn <= PLAGUE_SEASONS,
+      disorder: Boolean(x?.disorder),
+      // Freeciv's rapture, or a feast the King gave there this season or last.
+      celebrating: Boolean(x?.celebrating) || scenes.some((s) => s.kind === "feast" && s.city === c.id && s.turn >= turn - 1),
+      // The royal host before its walls, or an enemy host at them.
+      besieged: (meta?.campaigns ?? []).some((k) => k.city === c.id) || besiegers(c).length >= 3,
+    });
+    // A test reign's staged mood (/test/stage), so the court sees what the film shows.
+    const st = meta?.stage?.[c.id];
+    if (st) for (const k of ["famine", "celebrating", "disorder"]) if (k in st) c[k] = st[k];
+    // The town's mood, one word everyone reads: a riot outweighs hunger, hunger a feast.
+    c.mood = c.disorder ? "riot" : c.famine ? "hunger" : c.celebrating ? "feast" : "";
+  }
+}
+
 function snapshot() {
   send(`lua unsafe-file ${path.join(DIR, "lua", "snapshot.lua")}`);
   setTimeout(() => {
@@ -449,6 +485,7 @@ function snapshot() {
     rememberNames(world);
     ledger();
     sieges();
+    townStates();
     applyStartOptions();
     applyOpeningMood();
   }, 500);
@@ -530,10 +567,16 @@ function rule(id, option) {
 // A town is besieged while an enemy host stands at its walls: three or more
 // fighting units of another house on the tiles around it. One scene per turn.
 const CIVILIAN = new Set(["Settlers", "Workers", "Migrants", "Engineers", "Explorer", "Caravan", "Freight", "Diplomat", "Spy", "Leader"]);
+// The fighting companies of other houses on the tiles around a town: three or
+// more is a siege (the one rule, read by sieges() and townStates()).
+function besiegers(c) {
+  return (world?.units ?? []).filter((u) => u.owner !== c.owner && !CIVILIAN.has(u.type) && Math.max(Math.abs(u.x - c.x), Math.abs(u.y - c.y)) === 1);
+}
+
 function sieges() {
   if (!world?.units || !world?.cities) return;
   for (const c of world.cities) {
-    const near = world.units.filter((u) => u.owner !== c.owner && !CIVILIAN.has(u.type) && Math.max(Math.abs(u.x - c.x), Math.abs(u.y - c.y)) === 1);
+    const near = besiegers(c);
     if (near.length < 3) continue;
     const counts = {};
     for (const u of near) counts[u.owner] = (counts[u.owner] ?? 0) + 1;
@@ -750,8 +793,8 @@ function arcCtx() {
     world, minds, favour: favourOf, shift: shiftFavour, send: (l) => send(`lua cmd ${l}`),
     atWar: (a, b) => (d?.players?.[a]?.atWarWith ?? []).includes(b),
     town: (id) => {
-      const x = d?.cities?.[id];
-      return x ? { food: x.foodStock, famine: x.hadFamine, plague: x.plagueTurn >= 0 && world.turn - x.plagueTurn <= 16 } : {};
+      const c = world.cities.find((t) => t.id === id);
+      return c ? { food: c.food, famine: c.famine, plague: c.plague, granaryLow: c.granaryLow, besieged: c.besieged, mood: c.mood } : {};
     },
     recent: (turns = 16) => chronicle.filter((e) => e.turn >= world.turn - turns),
     // The reign's story, chosen when the chronicle began, and how it ends the reign.
@@ -939,7 +982,7 @@ function counsel(players, cities, threat) {
   const ofHouse = (c) => great.find((p) => p.id === c.owner);
   const lacks = (c, b) => !(c.buildings ?? []).some((x) => String(x).startsWith(b)) && !meta.works?.[c.id];
   const occasions = [];
-  const sick = cities.find((c) => c.plagueTurn != null && turn - c.plagueTurn <= 2 && !c.famine);
+  const sick = cities.find((c) => c.plague && !c.famine);
   if (sick) occasions.push({ kind: "plague", urgency: 55, text: `Plague in ${sick.title}`, why: "The death-carts go out at night. Clean water slows it; a sept tends the dying and keeps the people from blaming the crown.",
     acts: [lacks(sick, "Aqueduct") ? { label: `Pay for an aqueduct in ${sick.title}`, action: "build", building: "aqueduct", city: sick.id } : null,
       lacks(sick, "Temple") ? { label: `Pay for a sept in ${sick.title}`, action: "build", building: "temple", city: sick.id } : null,
@@ -948,7 +991,7 @@ function counsel(players, cities, threat) {
   if (riot) { const h = ofHouse(riot); occasions.push({ kind: "unrest", urgency: 55, text: `${riot.title} is in uproar`, why: "The people have stopped working and started shouting. Bread quiets a crowd; a sept or a market gives it something to lose.",
     acts: [{ label: "Send grain", action: "relief", city: riot.id }, lacks(riot, "Temple") ? { label: "Pay for a sept", action: "build", building: "temple", city: riot.id } : null,
       lacks(riot, "Marketplace") ? { label: "Pay for a market", action: "build", building: "market", city: riot.id } : null, h ? { label: `A feast for ${short(h)}`, action: "feast", city: riot.id } : null].filter(Boolean) }); }
-  const lean = cities.filter((c) => !c.famine && c.granary != null && c.granary < 0.25 && (c.size ?? 0) >= 5 && lacks(c, "Granary")).sort((a, b) => (b.size ?? 0) - (a.size ?? 0))[0];
+  const lean = cities.filter((c) => !c.famine && c.granaryLow && (c.size ?? 0) >= 5 && lacks(c, "Granary")).sort((a, b) => (b.size ?? 0) - (a.size ?? 0))[0];
   if (lean) occasions.push({ kind: "granary", urgency: 40, text: `${lean.title}'s granary runs low`, why: `${lean.title} eats what it grows and keeps nothing back. One bad harvest and it starves; a granary carries it through.`,
     acts: [{ label: `Pay for a granary in ${lean.title}`, action: "build", building: "granary", city: lean.id }, { label: "Send grain now", action: "relief", city: lean.id }] });
   const fighting = great.filter((p) => (p.atWarWith ?? []).length);
@@ -1137,8 +1180,9 @@ async function courtSeason(turn) {
     c.lastCall = Date.now();
     hold(true);
     // Ceasefires the King ordered away from court reload now, behind the card.
-    for (const pr of meta.pendingCease ?? []) ceasefire(pr[0], pr[1]).catch((e) => console.log("ceasefire:", e.message));
+    const pending = meta.pendingCease ?? [];
     meta.pendingCease = [];
+    ceasefire(pending).catch((e) => console.log("ceasefire:", e.message));  // all of them, one reload
     record({ turn, kind: "court", text: push ? `The Hand calls the King to court: ${crises[0].text}.` : `The court sits for the ${calendar(turn).season} of ${calendar(turn).year}: ${n} ${n === 1 ? "matter waits" : "matters wait"} for the King.` });
   } else if (due) c.lastSat = turn;
   chron.saveMeta(meta);
@@ -2049,15 +2093,24 @@ function council() {
 }
 
 // A commanded peace: the two lords' houses keep a truce (no raids, no plots).
+// The one truce writer (SSOT): every truce between two houses, from a decree,
+// a court ruling, a story or a royal match, comes here. Freeciv's own ceasefire,
+// so its AI stops fighting too (it ends by itself after `seasons`); its reload
+// runs only behind a sitting court, where the realm is already held and the
+// card covers the screen, otherwise it waits for one. The houses' truce is
+// keyed to them, whoever leads them; the goal and the panels read Freeciv's.
+function houseTruce(pair, seasons = 16) {
+  if (!court || pair[0] === pair[1]) return;
+  if (meta?.court?.sitting != null) ceasefire([[pair[0], pair[1], seasons]]).catch((e) => console.log("ceasefire:", e.message));
+  else (meta.pendingCease ??= []).push([pair[0], pair[1], seasons]);
+  court.truces ??= {};
+  const key = `h:${Math.min(...pair)}:${Math.max(...pair)}`;
+  court.truces[key] = Math.max(court.truces[key] ?? 0, (world?.turn ?? 0) + seasons);
+}
+
 function keepTruce(pair) {
   if (!court) return;
-  // Freeciv's own ceasefire, so its AI stops fighting too (it ends by itself in
-  // 16 turns). Its reload runs only behind a sitting court, where the realm is
-  // already held and the card covers the screen; otherwise it waits for one.
-  if (meta?.court?.sitting != null) ceasefire(pair[0], pair[1]).catch((e) => console.log("ceasefire:", e.message));
-  else (meta.pendingCease ??= []).push(pair);
-  court.truces ??= {};
-  court.truces[`h:${Math.min(...pair)}:${Math.max(...pair)}`] = (world?.turn ?? 0) + 16;  // the houses, whoever leads them
+  houseTruce(pair, 16);
   const [a, b] = pair.map((pid) => court.lordOfHouse(pid));
   if (!a || !b) { court.saveCourt?.(); return; }
   court.truces[[a.id, b.id].sort().join(":")] = (world?.turn ?? 0) + 16;
@@ -2273,6 +2326,7 @@ http.createServer(async (req, res) => {
   if (await mindsRoute(minds, url, req, body, json, res)) return;
 
   if (url.pathname === "/world") {
+    townStates();
     if (url.searchParams.get("peek") !== "1") watched(); // the game window polls this every second while open (a test's peek doesn't count)
     if (!world) return json(res, 503, { error: "realm still forming", reign: reignInfo() });
     const d = detail();
@@ -2286,8 +2340,6 @@ http.createServer(async (req, res) => {
       const cost = BUILD_COST[x.building] ?? 0;
       return {
         ...c, title: cityName(c.id), family,
-        food: x.foodStock, granary: granarySize(c.size), famine: x.hadFamine,
-        plagueTurn: x.plagueTurn, celebrating: x.celebrating, disorder: x.disorder,
         building: x.building, buildingKind: x.buildingKind,
         progress: cost ? Math.min(1, x.shieldStock / cost) : 0,
         ...(!houseFor(world.players.find((p) => p.id === c.owner)).crown && !houseFor(world.players.find((p) => p.id === c.owner)).wild && world.players.some((p) => p.id === c.owner) ? { odds: Math.round(marchOdds(c.owner, greatHouses().filter((p) => p.id !== c.owner && sworn(p.id)).map((p) => p.id), { extra: 8, turn: (world?.turn ?? 0) + 2 }) * 100) / 100 } : {}),
@@ -2573,8 +2625,7 @@ http.createServer(async (req, res) => {
         court.save?.(kb);
         court.shift(a.id, b.id, 25, `The King bound my house to ${b.house} by marriage.`);
         court.shift(b.id, a.id, 25, `The King bound my house to ${a.house} by marriage.`);
-        court.truces ??= {};
-        court.truces[[a.id, b.id].sort().join(":")] = (world?.turn ?? 0) + 24;
+        court.makeTruce(a, b, 24, world);
         court.remember(a.id, `By the King's word, ${ka.name} is to wed ${kb.name} of ${b.house}.`);
         court.remember(b.id, `By the King's word, ${kb.name} is to wed ${ka.name} of ${a.house}.`);
         result.text = `By the King's word, ${ka.name} of ${a.house} will wed ${kb.name} of ${b.house}. The two houses are bound by blood; while the bond holds, neither will raise a hand against the other.`;
@@ -2796,8 +2847,7 @@ http.createServer(async (req, res) => {
     // other, as one), and the towns under siege.
     const now = world.cities.map((c) => {
       const h = houseFor(world.players.find((p) => p.id === c.owner) ?? {});
-      const foes = world.units.filter((u) => u.owner !== c.owner && !CIVILIAN.has(u.type) && Math.max(Math.abs(u.x - c.x), Math.abs(u.y - c.y)) === 1);
-      return { title: cityName(c.id), x: c.x, y: c.y, size: c.size, capital: !!c.capital, house: h?.name ?? "", key: h?.name ?? "", color: h?.color ?? "#888", sigil: h?.sigil ?? "", besieged: foes.length >= 3 };
+      return { title: cityName(c.id), x: c.x, y: c.y, size: c.size, capital: !!c.capital, house: h?.name ?? "", key: h?.name ?? "", color: h?.color ?? "#888", sigil: h?.sigil ?? "", besieged: Boolean(c.besieged) };
     });
     const hosts = [];
     for (const u of (world.units ?? []).filter((x) => !CIVILIAN.has(x.type) && !/Trireme|Caravel|Galleon|Frigate|Transport/.test(x.type))) {
