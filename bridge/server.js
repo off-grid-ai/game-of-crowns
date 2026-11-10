@@ -44,6 +44,8 @@ import { Chatter } from "./chatter.js";
 import { bible, FAMILIES, LESSER } from "./lore.js";
 import { Stakes, calendar } from "./stakes.js";
 import * as kingDeeds from "./ledger.js";
+import * as Realm from "./realm.js";
+import { BANDS } from "./favour.js";
 import { watched, usageToday, moodFrom, isWatched, arcFromWords, beatIdea, premiseIdea, writeFor } from "./claude.js";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -851,7 +853,7 @@ function counsel(players, cities, threat) {
   const stilled = (x, y) => { const a = court?.lordOfHouse(x), b = court?.lordOfHouse(y); return !!(a && b && court.truce(a.id, b.id)); };
   // A house sliding toward rebellion.
   // Cold is below the banners' line (35): a house that would still answer isn't the Hand's worry.
-  const cold = great.filter((p) => favourOf(p.id) < 35).sort((a, b) => favourOf(a.id) - favourOf(b.id))[0];
+  const cold = great.filter((p) => favourOf(p.id) < BANDS.steady).sort((a, b) => favourOf(a.id) - favourOf(b.id))[0];
   if (cold && seatOf(cold.id)) {
     const f = favourOf(cold.id);
     // The Hand names what is cooling them most, from the house's ledger of causes.
@@ -867,11 +869,11 @@ function counsel(players, cities, threat) {
     const lighter = drain?.why === "the royal tithe" && meta.tithe > 0 ? [{ label: `Lower the tithe to ${Math.round(meta.tithe * 100) - 5}%`, ui: "tithe_down" }] : [];
     // The two rules, plainly: under 25 the lord may rise any season; two houses
     // under 25 and one of them claims the throne.
-    const angryNow = great.filter((p) => favourOf(p.id) < 25).length;
-    const rule = f < 25
+    const angryNow = great.filter((p) => favourOf(p.id) < BANDS.cooling).length;
+    const rule = f < BANDS.cooling
       ? `Under 25, their lord may raise his banners any season, likelier the colder he grows.${angryNow >= 2 ? "" : " One more house under 25 and a pretender will claim the throne."}`
       : "Under 25, a lord may raise his banners against you; two such houses and one claims the throne.";
-    out.push({ urgency: f < 25 ? 100 : 70, text: `${cold.house.name} grows cold to the crown: favour ${f}`,
+    out.push({ urgency: f < BANDS.cooling ? 100 : 70, text: `${cold.house.name} grows cold to the crown: favour ${f}`,
       why: rule + cause,
       acts: [...back, ...lighter, { label: "Gift crowns", action: "gift", city: seatOf(cold.id).id }, { label: "A feast in their honour", action: "feast", city: seatOf(cold.id).id }, ...match] });
   }
@@ -881,7 +883,7 @@ function counsel(players, cities, threat) {
   const claimant = pretender ? pretender.house.name : "A pretender";
   if (threat.usurper === "rumour") {
     const left = Math.max(1, 8 - (threat.turn - threat.since));
-    const angry = great.filter((p) => favourOf(p.id) < 25).map((p) => p.house.name.replace(/^House /, ""));
+    const angry = great.filter((p) => favourOf(p.id) < BANDS.cooling).map((p) => p.house.name.replace(/^House /, ""));
     out.push({ urgency: 95, occur: threat.since, text: `${claimant} whispers of a better claim to the throne`,
       why: `In ${left} season${left === 1 ? "" : "s"} they march on Kingsmere, unless the angry houses are won back above 25: ${angry.join(", ") || "none now"}.`,
       acts: [pretender && seatOf(pretender.id) ? { label: `Gift crowns to ${claimant.replace(/^House /, "")}`, action: "gift", city: seatOf(pretender.id).id } : null, { label: "Buy off their claim", action: "buyoff" }, { label: "Call the banners", action: "banners" }].filter(Boolean) });
@@ -923,7 +925,7 @@ function counsel(players, cities, threat) {
   }
   // (Lowering the tithe sits on the cold house's matter when the tithe is its top cause.)
   // What the banners would bring today: two companies from the loyal (60+), one from the willing (35+).
-  const bannerMen = !bannersReady(world?.turn ?? 0) ? 0 : great.reduce((n, p) => { const f = favourOf(p.id); const sh = f >= 60 ? 0.25 : f >= 35 ? 0.125 : 0; return n + (sh ? Math.max(1, Math.round((p.units ?? 0) * sh)) : 0); }, 0) * 200;
+  const bannerMen = !bannersReady(world?.turn ?? 0) ? 0 : great.reduce((n, p) => { const f = favourOf(p.id); const sh = f >= BANDS.loyal ? 0.25 : f >= BANDS.steady ? 0.125 : 0; return n + (sh ? Math.max(1, Math.round((p.units ?? 0) * sh)) : 0); }, 0) * 200;
   if (threat.north > 0) {
     const d = threat.dead ?? {};
     const gap = (d.next ?? 0) - threat.ours * 200 - bannerMen;
@@ -997,7 +999,7 @@ function counsel(players, cities, threat) {
   const fighting = great.filter((p) => (p.atWarWith ?? []).length);
   const bare = cities.filter((c) => fighting.some((p) => p.id === c.owner) && lacks(c, "City Walls") && (c.size ?? 0) >= 4).sort((a, b) => (b.size ?? 0) - (a.size ?? 0))[0];
   if (bare) { const h = ofHouse(bare); occasions.push({ kind: "walls", urgency: 45, text: `${bare.title} has no walls, and war is near`, why: `${h ? h.house.name : "Its house"} is at war, and ${bare.title} would fall to the first host that reaches it. Walls paid by the crown are remembered.`,
-    acts: [{ label: `Pay for walls at ${bare.title}`, action: "build", building: "walls", city: bare.id }, h && favourOf(h.id) >= 50 ? { label: `Swear an alliance with ${short(h)}`, action: "alliance", city: bare.id } : null].filter(Boolean) }); }
+    acts: [{ label: `Pay for walls at ${bare.title}`, action: "build", building: "walls", city: bare.id }, h && favourOf(h.id) >= BANDS.sworn ? { label: `Swear an alliance with ${short(h)}`, action: "alliance", city: bare.id } : null].filter(Boolean) }); }
   const mighty = [...great].sort((a, b) => (b.cities?.length ?? 0) * 2 + (b.units ?? 0) - (a.cities?.length ?? 0) * 2 - (a.units ?? 0))[0];
   const avgTowns = great.reduce((n, p) => n + (p.cities?.length ?? 0), 0) / Math.max(1, great.length);
   if (mighty && (mighty.cities?.length ?? 0) >= avgTowns * 1.5 && seatOf(mighty.id) && !(stakes?.s.wards?.[mighty.id] > turn)) {
@@ -1216,8 +1218,8 @@ function turnHouses(turn) {
   for (const p of world?.players ?? []) {
     if (houseFor(p).wild || houseFor(p).crown || !world.cities.some((c) => c.owner === p.id)) continue;
     // A realm from before ultimatums: a house already under 25 is one season from sending its own.
-    const t = (turning[p.id] ??= { seasons: favourOf(p.id) < 25 ? TURNING - 1 : 0, state: null });
-    if (favourOf(p.id) < 25) t.seasons = Math.min(TURNING, t.seasons + 1);
+    const t = (turning[p.id] ??= { seasons: favourOf(p.id) < BANDS.cooling ? TURNING - 1 : 0, state: null });
+    if (favourOf(p.id) < BANDS.cooling) t.seasons = Math.min(TURNING, t.seasons + 1);
     else {
       t.seasons = Math.max(0, t.seasons - 1);
       if (t.seasons === 0 && t.state !== "refused" && t.march == null) t.state = null;  // a story's march keeps its ultimatum standing
@@ -1305,7 +1307,7 @@ function handLine(p) {
   const f = Math.round(favourOf(lord.playerId));
   const purse = world?.players?.find((x) => houseFor(x).crown)?.gold ?? 0;
   const paid = (p.options ?? []).filter((o) => o.cost);
-  if (f < 25) return `${h} is near rising against you, Sire. Send them home empty and they may march.`;
+  if (f < BANDS.cooling) return `${h} is near rising against you, Sire. Send them home empty and they may march.`;
   if (f < 35) return `${h} will remember this, Sire. They are cold to you already.`;
   if (paid.length && paid.every((o) => o.cost > purse)) return "The treasury cannot pay for what they ask, Sire.";
   if (HAND_ON[p.kind]) return HAND_ON[p.kind](h);
@@ -1342,7 +1344,7 @@ function lapseOf(o) {
   const city = (o.acts ?? []).map((a) => world?.cities?.find((c) => c.id === Number(a.city))).find((c) => c && ownerOf(c) && !houseFor(ownerOf(c)).crown);
   const owner = city ? world.players.find((p) => p.id === city.owner) : null;
   const house = owner ? houseFor(owner).name : null;
-  const loyal = (world?.players ?? []).filter((p) => !houseFor(p).wild && !houseFor(p).crown && favourOf(p.id) >= 35);
+  const loyal = (world?.players ?? []).filter((p) => !houseFor(p).wild && !houseFor(p).crown && favourOf(p.id) >= BANDS.steady);
   const t = o.text;
   const said = (rest) => `The King said nothing ${rest}`;
   if (/grows cold/.test(t) && owner) return { shift: { [owner.id]: -6 }, text: said(`to ${house}. They take it as an answer.`) };
@@ -1807,8 +1809,9 @@ function yearText(y) {
 
 // --- ledger, timing and scoring ------------------------------------------------
 
+// The great houses (realm.js: not wild, not the crown, and holding a town).
 function greatHouses() {
-  return (world?.players ?? []).filter((p) => !houseFor(p).wild && !houseFor(p).crown);
+  return Realm.greatHouses(world);
 }
 
 // One line per turn: each house's towns, people, gold, armies and grain; plus
@@ -1865,7 +1868,7 @@ function readings() {
   const last = history[history.length - 1];
   const ago = history.find((r) => r.turn >= last.turn - 4) ?? history[0];
   const great = world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown && world.cities.some((c) => c.owner === p.id));
-  const loyalShare = (fav) => great.length ? great.filter((p) => (fav(p.id) ?? 50) >= 35).length / great.length : 0;
+  const loyalShare = (fav) => great.length ? great.filter((p) => (fav(p.id) ?? 50) >= BANDS.steady).length / great.length : 0;
   const was = favourPast[ago.turn] ?? favourPast[last.turn - 4];
   const way = (d, eps) => d > eps ? 1 : d < -eps ? -1 : 0;
   const wealth = (r) => r.pop + r.treasury / 50;
@@ -2156,7 +2159,7 @@ function interlude() {
     const when = calendar(c.turn);
     const f = Math.round(favourOf(c.pid));
     return { city: c.city, text: `In the ${when.season} of ${when.year} you ${theirs(c.what)}, and ${p ? houseFor(p).name : "a great house"} hasn't forgotten.`,
-      after: f >= 60 ? "They're with you because of it." : f < 25 ? "They still haven't forgiven you." : c.d > 0 ? "They liked that." : "They gave in, but they're still angry." };
+      after: f >= BANDS.loyal ? "They're with you because of it." : f < BANDS.cooling ? "They still haven't forgiven you." : c.d > 0 ? "They liked that." : "They gave in, but they're still angry." };
   });
   const acts = ["first", "second", "third"];
   // What the realm is calling him, said by the realm (a different mouth each act),
@@ -2186,7 +2189,7 @@ function epilogue() {
     const when = calendar(c.turn);
     const f = Math.round(favourOf(c.pid));
     return { city: c.city, text: `In the ${when.season} of ${when.year} you ${theirs(c.what)}, and ${p ? houseFor(p).name : "a great house"} never forgot.`,
-      after: f >= 60 ? "They stuck by you to the end." : f < 25 ? "They never forgave you." : c.d > 0 ? "They thought well of you for it." : "They gave in, but they never let it go." };
+      after: f >= BANDS.loyal ? "They stuck by you to the end." : f < BANDS.cooling ? "They never forgave you." : c.d > 0 ? "They thought well of you for it." : "They gave in, but they never let it go." };
   });
   if (meta.ambitions?.length) {
     const met = meta.ambitions.filter((a) => a.met != null);
@@ -2200,10 +2203,10 @@ function epilogue() {
     const towns = world.cities.filter((c) => c.owner === p.id).length;
     const line = !towns ? "fell, and its halls stand empty."
       : meta.turning?.[p.id]?.state === "refused" ? "rose against the crown, and will again."
-      : f >= 60 ? "stood by the crown to the end."
-      : f < 25 ? "never forgave the King."
+      : f >= BANDS.loyal ? "stood by the crown to the end."
+      : f < BANDS.cooling ? "never forgave the King."
       : p === mightiest ? "ends the reign the mightiest house in the realm."
-      : f >= 35 ? "kept its oath, and its counsel."
+      : f >= BANDS.steady ? "kept its oath, and its counsel."
       : "bent the knee, and kept its grudges.";
     return { house: houseFor(p).name, color: houseFor(p).color, line };
   });
@@ -2371,7 +2374,7 @@ http.createServer(async (req, res) => {
       const rivals = (p.atWarWith ?? []).map((id) => players.find((q) => q.id === id)).filter((q) => q && !q.house.wild);
       // A loyal house (35 and up) isn't waging war on the King: the engine's state
       // between them is old diplomacy, not a cause, so it isn't shown as one.
-      const loyalToCrown = (q) => !q.house.crown && (favourOf(q.id) ?? 0) >= 35;
+      const loyalToCrown = (q) => !q.house.crown && (favourOf(q.id) ?? 0) >= BANDS.steady;
       p.wars = rivals.filter((q) => !stilledWith(q) && !(q.house.crown && loyalToCrown(p)) && !(p.house.crown && loyalToCrown(q)))
         .map((q) => q.house.crown ? "the Crown" : q.house.name.replace(/^House /, ""));
       // A pretender on the march is at war with the crown, whatever the engine's treaties say.
@@ -2800,7 +2803,7 @@ http.createServer(async (req, res) => {
         const me = court.lordOfHouse(pid);
         const stilled = (q) => { const o = court.lordOfHouse(q); return !!(me && o && court.truce(me.id, o.id)); };
         const crownId = world.players.find((x) => houseFor(x).crown)?.id;
-        const loyal = (id) => id !== crownId && favourOf(id) >= 35;
+        const loyal = (id) => id !== crownId && favourOf(id) >= BANDS.steady;
         const foes = (d?.atWarWith ?? []).filter(great).filter((q) => !((q === crownId && loyal(pid)) || (pid === crownId && loyal(q))));
         return { wars: foes.filter((q) => !stilled(q)).map(nameOf), truces: foes.filter(stilled).map(nameOf) };
       })(),

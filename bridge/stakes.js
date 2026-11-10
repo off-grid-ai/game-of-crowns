@@ -8,6 +8,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { houseFor, cityName } from "./narrator.js";
+import { greatHouses } from "./realm.js";
+import { BANDS } from "./favour.js";
 
 const SEASONS = ["spring", "summer", "autumn", "winter"];
 const CONQUEST_YEAR = 300; // the realm's calendar starts 300 years after the Conquest
@@ -83,11 +85,11 @@ export class Stakes {
     }
 
     // --- The usurper -----------------------------------------------------------
-    const houses = world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown && p.cities > 0);
+    const houses = greatHouses(world);
     // A house whose heir is the King's ward does not rise while the ward lives at court.
     const held = (this.s.wards ?? {});
     // Nor does a house sworn to the crown while its oath holds.
-    const angry = houses.filter((p) => ctx.favour(p.id) < 25 && !((held[p.id] ?? -1) > turn) && !ctx.sworn?.(p.id));
+    const angry = houses.filter((p) => ctx.favour(p.id) < BANDS.cooling && !((held[p.id] ?? -1) > turn) && !ctx.sworn?.(p.id));
     const u = this.s.usurper;
     if (u.stage === "none" && ctx.options?.usurper !== false && houses.length && angry.length >= Math.max(2, Math.ceil(houses.length / 3))) {
       const pretender = angry.sort((a, b) => b.cities - a.cities)[0];
@@ -123,7 +125,7 @@ export class Stakes {
         u.stage = "none";
         this.record({ turn, kind: "decree", text: `${name}'s host is broken before the walls of Kingsmere. The crown endures, and the houses that stood by it take heart.` });
         u.ended = { house: u.house, turn };  // the King decides what becomes of them
-        const loyal = houses.filter((p) => p.id !== u.house && ctx.favour(p.id) >= 35);
+        const loyal = houses.filter((p) => p.id !== u.house && ctx.favour(p.id) >= BANDS.steady);
         if (loyal.length) ctx.shift?.(Object.fromEntries(loyal.map((p) => [p.id, 5])), "the crown stood firm against the pretender");
       } else if (turn - u.since >= 16) {
         u.stage = "none";
