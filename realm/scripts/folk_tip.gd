@@ -1,5 +1,5 @@
 extends PanelContainer
-## A person in the street, on hover (UI.md §3): their trade, small, by the
+## A person in the street, or a scar of war on the land, on hover (UI.md §3): a person's trade, small, by the
 ## cursor, and, once chatter carries it, what is on their mind in their own
 ## voice. Only close enough to see faces; never over the interface. Nothing to
 ## click: the King looks, he doesn't take people aside (the commoner's card was
@@ -16,6 +16,8 @@ var main: Node
 var _trade: Label
 var _mind: Label
 var _wait := 0.0
+var _scar: Label  # what war left on the ground under the cursor (the bridge's mark line)
+const MARKS_NEAR := 60.0  # camera distance under which the land's scars are read on hover
 var _who: Node3D  # the person shown now
 var _said := {}  # their trade and line, from chatter.mind_line (asked once per person)
 
@@ -37,6 +39,9 @@ func _ready() -> void:
 	_mind.custom_minimum_size = Vector2(200, 0)
 	_mind.visible = false
 	v.add_child(_mind)
+	_scar = T.datum("", T.SIZE_DESC + 1, T.TEXT_2)
+	_scar.visible = false
+	v.add_child(_scar)
 	visible = false
 
 
@@ -47,8 +52,10 @@ func _process(delta: float) -> void:
 	_wait = EVERY
 	var who := _under_cursor()
 	if who.is_empty():
-		visible = false
+		_show_scar()
 		return
+	_scar.visible = false
+	_trade.visible = true
 	var a: Dictionary = who["a"]
 	var node: Node3D = a.get("node")
 	if node != _who:
@@ -61,6 +68,40 @@ func _process(delta: float) -> void:
 	var mind := String(_said.get("line", ""))
 	_mind.text = mind
 	_mind.visible = mind != ""
+	_place_by_cursor()
+
+
+## No one under the cursor: a scar of war on the ground there (a battle's ground,
+## a stormed or razed town's burnt ring), told in the bridge's own line.
+func _show_scar() -> void:
+	var line := _scar_under_cursor()
+	if line == "":
+		visible = false
+		return
+	_trade.visible = false
+	_mind.visible = false
+	_scar.text = line
+	_scar.visible = true
+	_place_by_cursor()
+
+
+func _scar_under_cursor() -> String:
+	if main == null or main.rig == null or main.terrain == null or main.rig.distance >= MARKS_NEAR:
+		return ""
+	if get_viewport().gui_get_hovered_control() != null:
+		return ""
+	var p: Vector3 = main.rig._ground_under(get_viewport().get_mouse_position())
+	if p == Vector3.INF:
+		return ""
+	var tile := Vector2(p.x, p.z) / float(main.terrain.TILE)
+	for m in main.bridge.world.get("marks", []):
+		var reach := 0.7 if String(m.get("kind", "")) == "battle" else 1.6  # a town's burn rings it
+		if tile.distance_to(Vector2(float(m.get("x", -99)) + 0.5, float(m.get("y", -99)) + 0.5)) <= reach and String(m.get("line", "")) != "":
+			return String(m["line"])
+	return ""
+
+
+func _place_by_cursor() -> void:
 	reset_size()
 	var at := get_viewport().get_mouse_position() + Vector2(16, 18)
 	var room := get_viewport().get_visible_rect().size - size - Vector2(8, 8)
