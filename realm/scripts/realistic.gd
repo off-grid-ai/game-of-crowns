@@ -164,8 +164,8 @@ const STONE := ["medieval_castle", "abbey_wall_ruins", "abbey_ruins", "rubble_pi
 ## What stands right in front of the lens (a roof, a wall, a tree's crown)
 ## dissolves so the view sees past it: Godot's own distance fade, dithered, on
 ## the material. Distances in game units from the camera.
-const NEAR_GONE := 0.2
-const NEAR_SOLID := 0.6
+const NEAR_GONE := 0.08  # gone only right at the lens (the lens itself keeps off roofs and street things now)
+const NEAR_SOLID := 0.25  # whole from about 2 m: at street level the nearest stall stays solid
 
 
 static func fade_near(mat: BaseMaterial3D, gone := NEAR_GONE, solid := NEAR_SOLID) -> void:

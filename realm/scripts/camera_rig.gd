@@ -314,9 +314,14 @@ func _lens_bodies() -> void:
 			_prism(holder, fps[i], height_of(fps[i], tops, i) + 0.12)
 		for w in walls:
 			_prism(holder, w[0], float(w[1]) + 0.12)
-		var at_y: float = (life as Node3D).position.y if life is Node3D else 0.0
+		# Each stands on the ground under it (the town's root sits at its own height, not
+		# the street's: measured from the land, as the buildings' tops are).
 		for fp in props:
-			_prism(holder, fp, PROP_TOP, PROP_LAYER, at_y)
+			var mid := Vector2.ZERO
+			for q in fp:
+				mid += q / float(fp.size())
+			var world: Vector3 = root.to_global(Vector3(mid.x, 0, mid.y))
+			_prism(holder, fp, PROP_TOP, PROP_LAYER, _floor_at(world) - root.global_position.y)
 		root.add_child(holder)
 		_bodies[id] = [holder, sig]
 
