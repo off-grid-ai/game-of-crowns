@@ -990,7 +990,10 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
 
   truce(a, b) {
     const k = [a, b].sort().join(":");
-    return (this.truces ?? {})[k] > (this.turnNow ?? 0);
+    if ((this.truces ?? {})[k] > (this.turnNow ?? 0)) return true;
+    // A peace the King commanded binds the houses, whoever leads them now.
+    const [pa, pb] = [a, b].map((id) => this.people[id]?.playerId);
+    return pa != null && pb != null && (this.truces ?? {})[`h:${Math.min(pa, pb)}:${Math.max(pa, pb)}`] > (this.turnNow ?? 0);
   }
 
   // The King's answer. Returns {text, cost, favour: {pid: delta}, lua: []}.

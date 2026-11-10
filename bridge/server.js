@@ -7,6 +7,7 @@
 
 import { spawn, execFileSync } from "node:child_process";
 import fs from "node:fs";
+import zlib from "node:zlib";
 import crypto from "node:crypto";
 import http from "node:http";
 import path from "node:path";
@@ -156,6 +157,47 @@ function load(id) {
 // The game asks every second; a reign keeps hundreds of saves. Each file's time is
 // read once, and the folder is only listed again when Freeciv has written to it.
 const savesSeen = { dir: null, mtime: 0, list: [] };
+// A ceasefire between two houses in Freeciv itself. Its Lua and its server
+// commands can't change diplomacy, but its save holds it: save, set both
+// players' diplstate rows to "Cease-fire" with `turns` left, and resume from
+// that save. Freeciv then keeps it and ends it by itself.
+async function ceasefire(a, b, turns = 16) {
+  if (!fc || switching) return false;
+  switching = true;
+  try {
+    await stopFreeciv();
+    const save = newestSave();
+    if (!save) return false;
+    let text = zlib.zstdDecompressSync(fs.readFileSync(save)).toString();
+    text = setDipl(setDipl(text, a, b, turns), b, a, turns);
+    const out = path.join(P.saves, `realm-T${String(world?.turn ?? 0).padStart(4, "0")}-ceasefire-${Date.now()}.sav.zst`);
+    fs.writeFileSync(out, zlib.zstdCompressSync(Buffer.from(text)));
+    return true;
+  } finally {
+    startFreeciv();
+    switching = false;
+  }
+}
+
+// Player p's diplstate row toward player q, set to a ceasefire.
+function setDipl(text, p, q, turns) {
+  const at = text.indexOf(`\n[player${p}]\n`);
+  if (at < 0) return text;
+  const head = text.indexOf("\ndiplstate={", at);
+  const next = text.indexOf("\n[player", at + 2);
+  if (head < 0 || (next > 0 && head > next)) return text;
+  let line = text.indexOf("\n", head + 1);  // the header row ends here
+  for (let i = 0; i < q; i++) line = text.indexOf("\n", line + 1);
+  const end = text.indexOf("\n", line + 1);
+  const cells = text.slice(line + 1, end).split(",");
+  if (cells.length < 5) return text;
+  cells[0] = '"Cease-fire"';
+  cells[1] = '"Cease-fire"';
+  cells[3] = String(turns);
+  cells[4] = "0";
+  return text.slice(0, line + 1) + cells.join(",") + text.slice(end);
+}
+
 function newestSave(kind = "") {
   const mtime = fs.statSync(P.saves).mtimeMs;
   if (savesSeen.dir !== P.saves || savesSeen.mtime !== mtime) {
@@ -1853,9 +1895,12 @@ function council() {
 // A commanded peace: the two lords' houses keep a truce (no raids, no plots).
 function keepTruce(pair) {
   if (!court) return;
-  const [a, b] = pair.map((pid) => court.lordOfHouse(pid));
-  if (!a || !b) return;
+  // Freeciv's own ceasefire, so its AI stops fighting too (it ends by itself in 16 turns).
+  ceasefire(pair[0], pair[1]).catch((e) => console.log("ceasefire:", e.message));
   court.truces ??= {};
+  court.truces[`h:${Math.min(...pair)}:${Math.max(...pair)}`] = (world?.turn ?? 0) + 16;  // the houses, whoever leads them
+  const [a, b] = pair.map((pid) => court.lordOfHouse(pid));
+  if (!a || !b) { court.saveCourt?.(); return; }
   court.truces[[a.id, b.id].sort().join(":")] = (world?.turn ?? 0) + 16;
   court.remember(a.id, `The King commanded peace with ${b.house}, and I bowed to it.`);
   court.remember(b.id, `The King commanded peace with ${a.house}, and I bowed to it.`);
