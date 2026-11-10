@@ -249,6 +249,9 @@ func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 		(_town_family.get_child(1) as Label).text = "Held by the %s family, sworn to %s" % [c["family"], String(house.get("name", "")).replace("House ", "")]
 	var b: Array = c.get("buildings", [])
 	var parts := []
+	# What has befallen the town, first (the bridge's situation.js: stormed, rebuilding, starving…).
+	if String(c.get("situation", "")) != "":
+		parts.append(String(c["situation"]))
 	if c.get("capital", false):
 		parts.append("Seat of the house")
 	if (_town_player.get("besieged", []) as Array).has(int(c["id"])):
