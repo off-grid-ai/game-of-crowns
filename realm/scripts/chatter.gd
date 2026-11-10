@@ -20,7 +20,8 @@ const SPOKEN := false
 const HEAR := 2.6
 ## A talking town: its centre within this of the camera.
 const TOWN_NEAR := 9.0
-const LINE := 0.036  # one row of caption text, in world units
+const CAPTION_PX := 13  # spoken words on screen, as UI.md sets small type
+const SPEECH := preload("res://assets/fonts/EBGaramond-Italic.ttf")
 const HEAD := 0.25  # a caption's height over the speaker's feet
 
 var _asked := {}  # gathering key -> when its talk was asked for (msec)
@@ -130,7 +131,7 @@ func _play(town: int, g: Dictionary, key: String, talk: Dictionary) -> void:
 			break
 		var speaker: Node3D = g["nodes"][at]
 		var text := String(line.get("text", ""))
-		var secs := clampf(1.2 + text.length() * 0.055, 2.5, 7.0)
+		var secs := clampf(1.2 + text.length() * 0.05, 2.5, 4.5)  # a few seconds each: overheard, not a subtitle
 		if villagers.has_method("give_floor"):
 			villagers.give_floor(town, int(g["key"]), i, secs + 0.6)
 		if prev:
@@ -186,15 +187,20 @@ func _speak(speaker: Node3D, text: String, line: Dictionary) -> float:
 func _caption(speaker: Node3D, text: String) -> Label3D:
 	var tag := Label3D.new()
 	tag.text = text
-	tag.font_size = 24
-	tag.pixel_size = 0.0011
-	tag.outline_size = 8
-	tag.width = 520.0
+	# A whisper you notice (UI.md: 13 px; the world is the interface): the same
+	# small size on screen at every zoom, the serif of spoken words, on a soft
+	# dark backing so it reads over snow or shadow.
+	tag.font = SPEECH
+	tag.fixed_size = true
+	tag.font_size = CAPTION_PX * 2  # drawn at twice the size, shown at CAPTION_PX: crisp
+	tag.pixel_size = 0.5 / _px_per_unit()
+	tag.outline_size = 14
+	tag.width = 300.0
 	tag.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	tag.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	tag.modulate = Color(0.98, 0.94, 0.84, 0.0)
-	tag.outline_modulate = Color(0.08, 0.06, 0.04, 0.0)
+	tag.outline_modulate = Color(0.06, 0.05, 0.04, 0.0)
 	tag.set_meta("speaker", speaker)
 	add_child(tag)
 	_tags.append(tag)
@@ -202,7 +208,7 @@ func _caption(speaker: Node3D, text: String) -> Label3D:
 	_follow()
 	var tw := tag.create_tween().set_parallel()
 	tw.tween_property(tag, "modulate:a", 1.0, 0.25)
-	tw.tween_property(tag, "outline_modulate:a", 0.85, 0.25)
+	tw.tween_property(tag, "outline_modulate:a", 0.55, 0.25)
 	return tag
 
 
@@ -234,8 +240,10 @@ func _follow() -> void:
 		# How many pixels a world unit spans at the speaker's depth.
 		var base := cam.unproject_position(at)
 		var px := absf(cam.unproject_position(at + Vector3(0, 1, 0)).y - base.y)
-		var w := tag.width * tag.pixel_size * px
-		var h := LINE * _rows(tag) * px
+		# The caption's size on screen is fixed (fixed_size): its box in pixels.
+		var on := tag.pixel_size * _px_per_unit()
+		var w := tag.width * on
+		var h := tag.font_size * 1.25 * on * _rows(tag)
 		var box := Rect2(base.x - w * 0.5, base.y - h, w, h)
 		var moved := true
 		while moved:
@@ -246,6 +254,13 @@ func _follow() -> void:
 					moved = true
 		placed.append(box)
 		tag.global_position = at + Vector3(0, (base.y - box.end.y) / maxf(px, 0.001), 0)
+
+
+## Screen pixels per world unit at one unit's distance (what fixed_size labels are drawn at).
+func _px_per_unit() -> float:
+	var cam := get_viewport().get_camera_3d()
+	var fov := cam.fov if cam else 50.0
+	return get_viewport().get_visible_rect().size.y / (2.0 * tan(deg_to_rad(fov) * 0.5))
 
 
 func _rows(tag: Label3D) -> int:

@@ -36,8 +36,6 @@ const CLOTH := [Color(1, 1, 1), Color(0.85, 0.75, 0.62), Color(0.7, 0.8, 0.7), C
 ## meshes are clothing that takes a house's colour. "crowd" bodies are light
 ## enough to fill a square; the rest stand alone (the court, the close-up).
 const BODIES := {
-	# Eve: no roles until her eye check passes (tools/clip_strip.gd --body=eve), so nothing picks her yet.
-	"eve": {"sex": "f", "roles": [], "cloth": [], "crowd": false},
 	"arissa": {"sex": "f", "roles": ["archer", "townsfolk"], "cloth": ["arissa_Cloak_Geo"], "crowd": true},
 	"erika": {"sex": "f", "roles": ["archer"], "cloth": [], "crowd": true},
 	"erika_bow": {"sex": "f", "roles": ["archer"], "cloth": [], "crowd": true},
@@ -51,11 +49,12 @@ const BODIES := {
 	"brute": {"sex": "m", "roles": ["peasant", "soldier"], "cloth": ["MaleBruteA_Bottoms"], "crowd": false},
 	"uriel": {"sex": "m", "roles": ["noble", "knight"], "cloth": [], "crowd": false},
 	# Plain townsfolk in tunics and hose (Leonardo Carvalho's Fuse civilians, CC BY, by way of Sketchfab).
-	"fuse_civilian_1": {"sex": "m", "roles": ["townsfolk", "peasant"], "cloth": [], "crowd": true},
-	"fuse_civilian_2": {"sex": "m", "roles": ["townsfolk", "peasant"], "cloth": [], "crowd": true},
+	# Their tunic ("material") and breeches ("Bottom") take a homespun dye each, so no two dress alike.
+	"fuse_civilian_1": {"sex": "m", "roles": ["townsfolk", "peasant"], "cloth": [], "crowd": true, "dyed": ["Object_12", "Object_13"]},
+	"fuse_civilian_2": {"sex": "m", "roles": ["townsfolk", "peasant"], "cloth": [], "crowd": true, "dyed": ["Object_78", "Object_74"]},
 	"fuse_woman_1": {"sex": "f", "roles": ["townsfolk"], "cloth": [], "crowd": true, "dyed": ["Object_7"]},  # her linen top, near her skin's colour undyed
 	# A townsman in a wool tunic (ChamberSu's Svend, CC BY), his Unreal bones renamed to Mixamo's (tools/ue_to_mixamo.py).
-	"svend": {"sex": "m", "roles": ["townsfolk", "peasant"], "cloth": [], "crowd": true},
+	"svend": {"sex": "m", "roles": ["townsfolk", "peasant"], "cloth": [], "crowd": true, "dyed": ["SvendWoolTunicLOD1"]},
 	# A peasant in a belted jerkin and boots (EmanuelP's Medieval Man, CC BY), rigged by Mixamo.
 	"medieval_man": {"sex": "m", "roles": ["peasant", "townsfolk"], "cloth": [], "crowd": true},
 	# A mendicant friar in a hooded habit (Götz von Berlichingen's monk, CC BY), rigged by Mixamo.
@@ -325,7 +324,9 @@ func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, ag
 
 
 ## Homespun colours for clothes that come undyed.
-const DYES := [Color(0.62, 0.5, 0.38), Color(0.5, 0.56, 0.44), Color(0.66, 0.42, 0.34), Color(0.46, 0.48, 0.6), Color(0.58, 0.55, 0.42)]
+## Undyed linen, ochre, madder, woad, walnut, moss, slate and rust: what a town's dyer has.
+const DYES := [Color(0.9, 0.86, 0.76), Color(0.72, 0.58, 0.34), Color(0.66, 0.42, 0.34), Color(0.46, 0.48, 0.6),
+	Color(0.5, 0.4, 0.32), Color(0.5, 0.56, 0.44), Color(0.55, 0.56, 0.58), Color(0.62, 0.45, 0.3)]
 static var _solid_of := {}  # a body's material -> the copy it is drawn with
 
 
@@ -439,10 +440,19 @@ func _shape(skeleton: Skeleton3D, build: String, age: String) -> void:
 			skeleton.set_bone_pose_scale(head, Vector3.ONE * 1.1)
 
 
+static var _tinted := {}  # [material, colour, livery] -> the shared tinted copy
+
+
 func _tint(mi: MeshInstance3D, colour: Color, livery := false) -> void:
 	for s in mi.mesh.get_surface_count():
 		var m: Material = mi.get_active_material(s)
 		if m is StandardMaterial3D:
+			# One copy per material and colour, shared by everyone wearing it: the
+			# crowd still draws in batches, however many dyes it wears.
+			var key := [m, colour, livery]
+			if _tinted.has(key):
+				mi.set_surface_override_material(s, _tinted[key])
+				continue
 			var copy: StandardMaterial3D = m.duplicate()
 			copy.albedo_color = m.albedo_color * colour
 			# A house's livery reads in its own colour: the cloth's weave kept,
@@ -451,6 +461,7 @@ func _tint(mi: MeshInstance3D, colour: Color, livery := false) -> void:
 			if livery and copy.albedo_texture:
 				copy.albedo_texture = _undyed(copy.albedo_texture)
 				copy.albedo_color = colour * 1.15
+			_tinted[key] = copy
 			mi.set_surface_override_material(s, copy)
 
 

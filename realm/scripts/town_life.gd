@@ -65,7 +65,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	var kind := String(c.get("buildingKind", ""))
 	var building := String(c.get("building", ""))
 	var progress := float(c.get("progress", 0.0))
-	var sig := "%s|%s|%s|%s|%s" % [kind, building, hungry, c.get("celebrating", false), c.get("disorder", false)]
+	var sig := "%s|%s|%s|%s|%s|%s|%s|%s|%s" % [kind, building, hungry, c.get("celebrating", false), c.get("disorder", false), c.get("atWar", false), c.get("grief", false), c.get("prosperity", false), c.get("grasping", false)]
 	var life: Node3D = root.get_node_or_null("Life")
 	if life and life.get_meta("sig", "") == sig:
 		# Only the work moved on: the site grows where it stands, and the
@@ -111,6 +111,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 		_revels(root, life, center, rng, 6 + mini(int(c.get("size", 1)), 8))
 	if c.get("disorder", false):
 		_unrest(life, center, rng)
+	_dress(root, life, center, c, rng)
 	_near_only(life)
 	_pin(life, center)
 
@@ -746,3 +747,101 @@ func raise_site(town_node: Node3D, plot: Transform3D, building: String, seasons:
 		if aw.season_turned.is_connected(grow_on):
 			aw.season_turned.disconnect(grow_on))
 	return site
+
+
+## The town's state, read from the place even if nobody moved (the judge, from
+## Frostpunk and Banished): what stands in the square, from the props the kits
+## already hold. The state comes from the bridge (townStates); the people's
+## behaviour is their minds' (npc_mind.gd); this is only what's set out.
+const PROPS := "res://assets/props/%s.gltf"
+const PROP_SCALE := 0.12  # the props kit is in metres; a person here stands about 0.2
+static var _prop_cache := {}
+
+
+func _prop(life: Node3D, center: Vector3, name: String, at: Vector3, yaw := 0.0, scale := 1.0, lift := 0.0, size := 0.0) -> Node3D:
+	if not _prop_cache.has(name):
+		_prop_cache[name] = load(PROPS % name) if ResourceLoader.exists(PROPS % name) else null
+	var scene: PackedScene = _prop_cache[name]
+	if scene == null:
+		return null
+	var n: Node3D = scene.instantiate()
+	n.scale = Vector3.ONE * PROP_SCALE * scale
+	n.position = Vector3(at.x, _y(center, at) + lift, at.z)
+	n.rotation.y = yaw
+	life.add_child(n)
+	# Something to walk round (a table, a stand, a crate), as every group in the square is.
+	if size > 0.0:
+		life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(at, Vector2(size, size * 0.6), yaw)])
+	return n
+
+
+func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: RandomNumberGenerator) -> void:
+	var stalls: Array = root.get_meta("stalls", [])
+	var places: Dictionary = root.get_meta("places", {})
+	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
+	# At every stall's front: what it has to sell, or that it has nothing.
+	var goods: Array = []
+	if c.get("prosperity", false):
+		goods = ["FarmCrate_Apple", "FarmCrate_Carrot", "Barrel_Apples", "Coin_Pile"]
+	elif c.get("famine", false) or c.get("atWar", false) or c.get("grief", false):
+		goods = ["FarmCrate_Empty", "Crate_Wooden"]  # shut or sold out
+	for st in stalls:
+		var m: Vector3 = st[0]
+		var out := Vector3(m.x, 0, m.z).normalized()
+		var along := Vector3(-out.z, 0, out.x)
+		for i in goods.size():
+			_prop(life, center, goods[i], m - out * (float(st[1]) * 0.5 + 0.06) + along * ((i - (goods.size() - 1) * 0.5) * 0.07), atan2(out.x, out.z), 1.0, 0.0, 0.06)
+	var edge := Vector3(-well.x, 0, -well.z).normalized() * 1.0  # the square's far side from the well
+	var side := Vector3(-edge.z, 0, edge.x).normalized()
+	if c.get("atWar", false):
+		# A barricade cart across the road in, weapons stacked, and more of the watch.
+		var cart: Node3D = Real.make("medieval_wooden_cart")
+		if cart and _open(center, edge * 1.2, _blocked(root, life), life.get_meta("standing")):
+			cart.position = Vector3(edge.x * 1.2, _y(center, edge * 1.2), edge.z * 1.2)
+			cart.rotation.y = atan2(side.x, side.z)
+			life.add_child(cart)
+			life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(edge * 1.2, Real.footprint("medieval_wooden_cart"), atan2(side.x, side.z))])
+		elif cart:
+			cart.free()  # no room on that road: no cart across it
+		_prop(life, center, "WeaponStand", edge * 1.05 + side * 0.2, atan2(-edge.x, -edge.z), 1.0, 0.0, 0.1)
+		_prop(life, center, "Shield_Wooden", edge * 1.05 - side * 0.2, atan2(-edge.x, -edge.z))
+		for i in 2:
+			var g := _stand(root, life, center, edge * 0.95 + side * (i - 0.5) * 0.25, "soldier", "Sword_Idle", rng.randi(), Color.WHITE, 0.2)
+			if g:
+				g.rotation.y = atan2(edge.x, edge.z)  # facing the road out
+				_mind(g, "guard", center)
+	if c.get("grief", false):
+		# Mourners gathered at the well, candles set down.
+		for i in 3:
+			var a := TAU * i / 3.0
+			var f := _stand(root, life, center, well + Vector3(cos(a), 0, sin(a)) * 0.16, "peasant", "Kneeling", rng.randi(), Color(0.35, 0.33, 0.32), 0.1)
+			if f:
+				f.rotation.y = atan2(well.x - f.position.x, well.z - f.position.z)
+				_mind(f, "mourn", center)
+		for i in 3:
+			_prop(life, center, "Candle_1", well + Vector3(cos(i * 2.1), 0, sin(i * 2.1)) * 0.14)  # set down round the well, not in it
+	if c.get("prosperity", false):
+		# A lute at the well and children at play.
+		var lute := _stand(root, life, center, well + side * 0.18, "townsfolk", "Lute_Playing", rng.randi(), Color.WHITE, 0.15)
+		if lute:
+			_mind(lute, "revel", center)
+	if c.get("grasping", false):
+		# The tax collector's table in the square, coin and ledger on it, a guard by him, a queue muttering.
+		var at := edge * 0.6
+		_prop(life, center, "Table_Large", at, atan2(side.x, side.z), 1.0, 0.0, 0.16)
+		const TABLE_TOP := 0.09  # the table's height at PROP_SCALE: coin and ledger lie on it
+		_prop(life, center, "Coin_Pile", at + side * 0.04, 0.0, 1.0, TABLE_TOP)
+		_prop(life, center, "Scroll_1", at - side * 0.04, 0.0, 1.0, TABLE_TOP)
+		_prop(life, center, "Chest_Wood", at + edge.normalized() * 0.2, atan2(side.x, side.z), 1.0, 0.0, 0.07)
+		var collector := _stand(root, life, center, at + edge.normalized() * 0.13, "townsfolk", "Interact", rng.randi(), Color(0.45, 0.4, 0.3), 0.1)
+		if collector:
+			collector.rotation.y = atan2(-edge.x, -edge.z)
+			_mind(collector, "trade", center)
+		var guard := _stand(root, life, center, at + side * 0.18, "soldier", "Sword_Idle", rng.randi(), Color.WHITE, 0.1)
+		if guard:
+			_mind(guard, "guard", center)
+		for i in 3:
+			var q := _stand(root, life, center, at - edge.normalized() * (0.18 + i * 0.1), "peasant", "Arguing", rng.randi(), Color(0.6, 0.55, 0.5), 0.08)
+			if q:
+				q.rotation.y = atan2(edge.x, edge.z)
+				_mind(q, "riot", center)
