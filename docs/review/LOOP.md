@@ -443,3 +443,15 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Slips:** two commits that didn't parse, each fixed within minutes. Commits now go through a gate: check-only empty, or no commit.
 - **Seen in passing:** the bottom-left ticker carries the news (three chips: a ruling, a court closing, barracks rising).
 - **Verdict:** on course. **Limiting factor:** proof filming. The film tool lands after the current queue.
+
+## 2026-11-10, 15:00 (autopilot)
+
+- **Built since the last entry (judge's order):**
+  - **Drought fix (9457446):** the realm holds when no window watches, and the court sits on return.
+  - **Honest peace text, then a real ceasefire (9dcc7bc, 295eba7):** Freeciv's own diplomacy, set in the save and reloaded only behind a sitting court. Truces are keyed to houses.
+  - **21 Mixamo clips** (Mac approved), with imports retargeted.
+  - **The film tool and queue** (film.sh, filmq.sh; helper-built, test passed). The harness's city step takes a tilt, so films use the low oblique view.
+- **Proofs running in the queue:** the drought check, then the peace check (which measures the reload hitch behind the card).
+- **Found:** Mac's Broken Oath reign ended on its clock: 15 minutes, turn 63, "the Golden". Most of that clock ran while no window was watching, before the drought fix. It's the bug the fix addresses, and his reign was spent by it.
+- **Clip eye check:** close-up gestures and UAL crouch, push, torch and sit all pose on our townsperson with no twisted limbs. Foot sliding needs a closer sheet.
+- **Verdict:** on course. **Limiting factor:** proof time, now queued instead of waited on.
