@@ -412,3 +412,17 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - Fixed: tests leave a scene with Space (the new back key), and a stop now restores the realm.
 - **Seen in the frames:** in-world captions piled into an unreadable stack and never left. Now they fade after 9 s, one per place.
 - **Rerun** under way with Space to the news and back.
+
+## 2026-11-10, 14:05 (autopilot)
+
+- **New working arrangement (Mac):** the "game wiring gaps" session judges as an outside, demanding player against shipped games. This session builds. A plan goes to it before each piece and proof after; it answers go, change or stop.
+- **Proven live (lordpics2):** a lord's scene where it happened, with its caption; the edge arrow; Space to the news and back; the camera never moving by itself.
+- **The judge's change, built (cd59231, 2dd5aff):**
+  - the alert in the house's colour, twice the size, pulsing once;
+  - minimap bursts;
+  - a sound for each kind of news (the horn only for hostile news);
+  - captions that say who did what;
+  - one channel per piece of news, with toasts waiting their turn.
+- **Slip:** 45f4e13 didn't parse (an untyped Variant); fixed a minute later in 2dd5aff. Rule kept: check-only before every commit, never after.
+- **Queued:** the judge's discovery questions (first 10 minutes, decisions, story shown, pace, repeats, ending, stability, UI cover), then LimboAI for one town.
+- **Verdict:** on course. Proof film of the alert is running.
