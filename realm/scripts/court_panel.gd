@@ -65,9 +65,14 @@ func _build_court() -> void:
 	_court_panel.visible = false
 
 
+## Whether the court's matters carry their places (they then wait on the map as faces).
+func _placed(petitions: Array) -> bool:
+	return petitions.any(func(p): return p.get("place") is Dictionary)
+
+
 ## What waited while he was busy, put on screen once he's done: the court's part.
 func _catch_up() -> void:
-	if _held_court and not ui.card_up(_court_panel) and not _court_hidden:
+	if _held_court and not ui.card_up(_court_panel) and not _court_hidden and not _placed(_petitions):
 		_held_court = false
 		_court_hidden = false
 		_court_met = true
@@ -111,16 +116,19 @@ func set_court(petitions: Array) -> void:
 		return  # the court waits while the King watches a scene
 	if _court_hidden and not _court_panel.visible:
 		return
+	# Its matters stand on the map at their places (faces, markers): the court
+	# doesn't take the screen by itself, now or once he's done with a card; one
+	# line says it sits, and the King opens a matter where it is. Matters with no
+	# place open the court as before.
+	if _placed(petitions):
+		if fresh:
+			_court_met = true
+			_court_hidden = true
+			_held_court = false
+			ui.toast("The court sits: %d wait for you. Their faces are on the map; the crown at the top right opens them all." % petitions.size())
+		return
 	if ui.busy() or ui.card_up(_court_panel):
 		_held_court = true  # he's using a card, or another is up: it waits its turn on the badge
-		return
-	# Its matters stand on the map at their places (faces, markers): the court
-	# doesn't take the screen by itself; one line says it sits, and the King opens
-	# a matter where it is. Matters with no place open the court as before.
-	if fresh and petitions.any(func(p): return p.get("place") is Dictionary):
-		_court_met = true
-		_court_hidden = true
-		ui.toast("The court sits: %d wait for you. Their faces are on the map; the crown at the top right opens them all." % petitions.size())
 		return
 	_court_met = true
 	_court_hidden = false
