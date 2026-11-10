@@ -13,9 +13,11 @@ GAME_DESIGN.md, and measured from a real reign rather than guessed.
 
 Every turn, every change, before anything else:
 
-1. **Who already solved this?** Name the problem in general terms, then use the proven way: Godot itself,
-   our add-ons (LimboAI), free battle-tested blocks (MIT, CC0), or how shipped games do it. Our code only
-   connects them. The gate is in goc-engineering.
+1. **Who already solved this? Look wide.** Name the problem in general terms, then search the whole world
+   for the proven way: engines and their ecosystems (Godot, Unity, Unreal, Bevy), open-source games (0 A.D.,
+   OpenRA, OpenRCT2, Wesnoth), game-AI and design craft (GDC, Game AI Pro), asset commons, and fields beyond
+   games (film, animation, theme parks, theatre, board games, interface design, research). Our code only
+   connects what we find. The gate, with the list, is in goc-engineering.
 2. **No hand-placing, hand-timing or hand-deciding.** An offset, a timer or a dice roll standing in for a
    system is a hack. A second patch to a hand-built part means replacing it with a block.
 3. **Design sense decides what, blocks decide how.** We choose what the player feels and sees, judged as a

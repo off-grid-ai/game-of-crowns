@@ -12,12 +12,19 @@ hand is a sign we're rebuilding a solved problem.
 
 1. **Name the problem in general terms**: "a horse pulling a cart along a road", "people choosing what to do",
    "UI that fits any window", "show the player where an event is". Not "the horse is 0.16 off".
-2. **Find how it's solved**, in this order:
-   - Godot itself: nodes and servers (PathFollow3D, AnimationTree, NavigationServer, Containers and anchors,
-     content scaling, Tween, AudioStreamRandomizer, Jolt).
-   - The add-ons we already have (LimboAI for anything that decides or behaves, Sky3D, the water shaders).
-   - Mature free add-ons and asset kits (MIT, CC0): stars, last release, Godot 4.7 fit.
-   - How shipped games do it (Civ, RollerCoaster Tycoon, Warcraft II, CK3, RimWorld, Manor Lords).
+2. **Find how it's solved, and look wide.** The world is big; we are rarely the first.
+   - **Engines and their ecosystems:** Godot's own nodes and servers, the Godot Asset Library, and what Unity,
+     Unreal and Bevy users reach for (free content, open-source ports, techniques we can bring over).
+   - **Open-source games and sims:** 0 A.D., OpenRA, Widelands, Freeciv itself, Mindustry, OpenTTD,
+     OpenRCT2, Battle for Wesnoth, Dwarf Fortress-likes. Read how their code solves it.
+   - **Game AI and design craft:** GDC talks and postmortems, *Game AI Pro* (free online), utility AI,
+     GOAP, behaviour trees, Celia Hodent's game UX, the Game Accessibility Guidelines.
+   - **Asset commons:** Mixamo, Quaternius, KayKit, Kenney, Poly Haven, ambientCG, OpenGameArt, Freesound.
+   - **Outside games:** film and animation craft (Disney's twelve principles, cinematography), theme-park
+     and crowd design, theatre staging, board-game design, interface guidelines (Apple, Material), and
+     research papers.
+   - **Shipped games' answers:** Civ, RollerCoaster Tycoon, Warcraft II, CK3, RimWorld, Manor Lords,
+     Frostpunk, Reigns, and what their players and modders say worked.
 3. **Use that.** Our code only configures and connects it.
 4. **None exists?** Say so in the commit and LOOP.md, and keep the hand-written part small. For anything big,
    Mac decides first.
