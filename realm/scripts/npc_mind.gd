@@ -109,6 +109,10 @@ class Step extends BTAction:
 					break
 		else:
 			_to = post
+		if _to.distance_to(agent.position) > 0.01 and not _room_at(_to):
+			_to = agent.position  # someone there now (behind them, or on their post): they stay put
+		# Spoken for while they step there: nobody else steps onto it meanwhile.
+		agent.set_meta("step_to", (agent.get_parent() as Node3D).to_global(_to) if agent.get_parent() is Node3D else _to)
 		blackboard.set_var(&"at_post", _to.distance_to(post) < 0.05)
 		var ground: Callable = blackboard.get_var(&"ground", Callable(), false)
 		if ground.is_valid():
@@ -129,14 +133,33 @@ class Step extends BTAction:
 			return false
 		for p in agent.get_tree().get_nodes_in_group("people"):
 			var n := p as Node3D
-			if n != agent and n.is_visible_in_tree() and Vector2(n.global_position.x - at.x, n.global_position.z - at.z).length() < 0.11:
+			if n == agent or not n.is_visible_in_tree():
+				continue
+			if Vector2(n.global_position.x - at.x, n.global_position.z - at.z).length() < 0.11:
 				return false
+			if n.has_meta("step_to"):  # where they're stepping to is theirs too
+				var s: Vector3 = n.get_meta("step_to")
+				if Vector2(s.x - at.x, s.z - at.z).length() < 0.11:
+					return false
 		return true
+
+	## Whether `at` (world) is inside something standing in a town: a building,
+	## or its life's fire, stall, cart or table (town_nav footprints). A scene's
+	## person finds the town as the Life they stand in; a villager through villagers.gd.
+	static func in_the_way(agent: Node, bb: Blackboard, at: Vector3) -> bool:
+		var life := agent.get_parent()
+		if life and life.name == "Life" and life.get_parent() is Node3D:
+			return not TownNav.inside(life.get_parent(), at).is_empty()
+		var v = bb.get_var(&"vill", null, false)
+		if v != null and "towns" in v and v.towns != null:
+			return not TownNav.clear(v.towns, at)
+		return false
 
 	func _tick(delta: float) -> Status:
 		_left -= delta
 		if _left > 0.0:
 			return RUNNING
+		agent.remove_meta("step_to")
 		var face: float = blackboard.get_var(&"face", agent.rotation.y, false)
 		agent.rotation.y = face  # back to facing the work
 		return SUCCESS
@@ -170,19 +193,6 @@ static func brk(pool: Array) -> BTTask:
 	var t := Breaker.new()
 	t.pool = pool
 	return t
-
-
-## Whether `at` (world) is inside something standing in a town: a building,
-## or its life's fire, stall, cart or table (town_nav footprints). A scene's
-## person finds the town as the Life they stand in; a villager through villagers.gd.
-static func in_the_way(agent: Node, bb: Blackboard, at: Vector3) -> bool:
-	var life := agent.get_parent()
-	if life and life.name == "Life" and life.get_parent() is Node3D:
-		return not TownNav.inside(life.get_parent(), at).is_empty()
-	var v = bb.get_var(&"vill", null, false)
-	if v != null and "towns" in v and v.towns != null:
-		return not TownNav.clear(v.towns, at)
-	return false
 
 
 static func step(reach := 0.25, back := 0.0) -> BTTask:
