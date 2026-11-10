@@ -1,1166 +1,1506 @@
 [
- {
-  "id": "royal-works",
-  "name": "The King's own works, and his aim",
-  "group": "Play",
-  "what": "Kingsmere's card while the King's market rises over two seasons; the aim before him under the date.",
-  "file": "screens/v/royal-works-1.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "A market rising; the aim in gold",
-    "at": "2026-11-10T08:30:00Z",
-    "file": "screens/v/royal-works-1.jpg",
-    "what": "'The King's marketplace rising · 57%' on Kingsmere's card; under the date, the aim: 'Muster a royal host of twelve companies'."
-   }
-  ]
- },
- {
-  "id": "march-odds",
-  "name": "Marching on a town, with the odds",
-  "group": "Play",
-  "what": "A house's town card: the royal host's chances before the King orders the march.",
-  "file": "screens/v/march-odds-1.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "The forecast on the card",
-    "at": "2026-11-10T08:30:00Z",
-    "file": "screens/v/march-odds-1.jpg",
-    "what": "'March on Lionreach 25k cr · they'd break before us'. Two seasons later: 'Lionreach falls to the royal host: 14 royal companies against House Wolfholt's 4.'"
-   }
-  ]
- },
- {
-  "id": "petition-card",
-  "name": "A lord at court",
-  "group": "Play",
-  "what": "A lord's petition: their painted figure, what they want of the reign, and who each answer helps and hurts.",
-  "file": "screens/v/petition-card-1.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Face, want, and who each answer moves",
-    "at": "2026-11-09T18:10:00Z",
+  {
+    "id": "royal-works",
+    "name": "The King's own works, and his aim",
+    "group": "Play",
+    "what": "Kingsmere's card while the King's market rises over two seasons; the aim before him under the date.",
+    "file": "screens/v/royal-works-2.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "A market rising; the aim in gold",
+        "at": "2026-11-10T08:30:00Z",
+        "file": "screens/v/royal-works-1.jpg",
+        "what": "'The King's marketplace rising · 57%' on Kingsmere's card; under the date, the aim: 'Muster a royal host of twelve companies'."
+      },
+      {
+        "v": 2,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/royal-works-2.jpg"
+      }
+    ]
+  },
+  {
+    "id": "march-odds",
+    "name": "Marching on a town, with the odds",
+    "group": "Play",
+    "what": "A house's town card: the royal host's chances before the King orders the march.",
+    "file": "screens/v/march-odds-2.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "The forecast on the card",
+        "at": "2026-11-10T08:30:00Z",
+        "file": "screens/v/march-odds-1.jpg",
+        "what": "'March on Lionreach 25k cr · they'd break before us'. Two seasons later: 'Lionreach falls to the royal host: 14 royal companies against House Wolfholt's 4.'"
+      },
+      {
+        "v": 2,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/march-odds-2.jpg"
+      }
+    ]
+  },
+  {
+    "id": "petition-card",
+    "name": "A lord at court",
+    "group": "Play",
+    "what": "A lord's petition: their painted figure, what they want of the reign, and who each answer helps and hurts.",
     "file": "screens/v/petition-card-1.jpg",
-    "what": "Cecily Stormhold, painted; 'Wants to wed their heir into a great house'; every answer marked with Stormhold's sigil, red minus or gold plus."
-   }
-  ]
- },
- {
-  "id": "follow-house",
-  "name": "Following a house",
-  "group": "Play",
-  "what": "Click a house on the ladder: the camera goes with its host in the field.",
-  "file": "screens/v/follow-house-1.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "With a house's host in the field",
-    "at": "2026-11-09T18:10:00Z",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Face, want, and who each answer moves",
+        "at": "2026-11-09T18:10:00Z",
+        "file": "screens/v/petition-card-1.jpg",
+        "what": "Cecily Stormhold, painted; 'Wants to wed their heir into a great house'; every answer marked with Stormhold's sigil, red minus or gold plus."
+      }
+    ]
+  },
+  {
+    "id": "follow-house",
+    "name": "Following a house",
+    "group": "Play",
+    "what": "Click a house on the ladder: the camera goes with its host in the field.",
     "file": "screens/v/follow-house-1.jpg",
-    "what": "A house followed from the ladder: the camera rides with its host into a skirmish."
-   }
-  ]
- },
- {
-  "id": "interlude",
-  "name": "An act ends",
-  "group": "Play",
-  "what": "At each quarter of the reign the act just gone is told back: your weightiest choices where they happened, then the name you're earning and how your ambitions stand. The realm waits until you click on.",
-  "file": "screens/v/interlude-2.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "New: the act told back",
-    "at": "2026-11-09T15:40:00Z",
-    "file": "screens/v/interlude-1.jpg",
-    "what": "The first act ends: 'So far, history would name you the Golden. Close behind: the Builder. Your ambitions: 0 of 3 fulfilled.' Fun bar, The reign has a shape: from no acts to four, each closing on this."
-   },
-   {
-    "v": 2,
-    "label": "A real choice told back, panels away",
-    "at": "2026-11-09T17:30:00Z",
+    "versions": [
+      {
+        "v": 1,
+        "label": "With a house's host in the field",
+        "at": "2026-11-09T18:10:00Z",
+        "file": "screens/v/follow-house-1.jpg",
+        "what": "A house followed from the ladder: the camera rides with its host into a skirmish."
+      }
+    ]
+  },
+  {
+    "id": "interlude",
+    "name": "An act ends",
+    "group": "Play",
+    "what": "At each quarter of the reign the act just gone is told back: your weightiest choices where they happened, then the name you're earning and how your ambitions stand. The realm waits until you click on.",
     "file": "screens/v/interlude-2.jpg",
-    "what": "The first act ends on a choice the King made: 'Autumn of 309, House Thornvale: you wed their blood into a great house. They stand by you for it.' The side panels, minimap and camera pad step away for the telling."
-   }
-  ]
- },
- {
-  "id": "court-ultimatum",
-  "name": "The court, a house's ultimatum",
-  "group": "Play",
-  "what": "A house under 25 favour brings its ultimatum to the court; the realm holds still while the court sits.",
-  "file": "screens/v/court-ultimatum-1.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "The court sits, the realm holds",
-    "at": "2026-11-09T15:40:00Z",
+    "versions": [
+      {
+        "v": 1,
+        "label": "New: the act told back",
+        "at": "2026-11-09T15:40:00Z",
+        "file": "screens/v/interlude-1.jpg",
+        "what": "The first act ends: 'So far, history would name you the Golden. Close behind: the Builder. Your ambitions: 0 of 3 fulfilled.' Fun bar, The reign has a shape: from no acts to four, each closing on this."
+      },
+      {
+        "v": 2,
+        "label": "A real choice told back, panels away",
+        "at": "2026-11-09T17:30:00Z",
+        "file": "screens/v/interlude-2.jpg",
+        "what": "The first act ends on a choice the King made: 'Autumn of 309, House Thornvale: you wed their blood into a great house. They stand by you for it.' The side panels, minimap and camera pad step away for the telling."
+      }
+    ]
+  },
+  {
+    "id": "court-ultimatum",
+    "name": "The court, a house's ultimatum",
+    "group": "Play",
+    "what": "A house under 25 favour brings its ultimatum to the court; the realm holds still while the court sits.",
     "file": "screens/v/court-ultimatum-1.jpg",
-    "what": "The court sits and the realm holds still. Under the date, the name being earned and three ambitions (◇◇◇)."
-   }
-  ]
- },
- {
-  "id": "after-ruling",
-  "name": "After a ruling",
-  "group": "Play",
-  "what": "The court closes, the realm moves, and what the King's ruling set going is offered to watch.",
-  "file": "screens/v/after-ruling-1.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "The doors close, the feast is on",
-    "at": "2026-11-09T15:40:00Z",
+    "versions": [
+      {
+        "v": 1,
+        "label": "The court sits, the realm holds",
+        "at": "2026-11-09T15:40:00Z",
+        "file": "screens/v/court-ultimatum-1.jpg",
+        "what": "The court sits and the realm holds still. Under the date, the name being earned and three ambitions (◇◇◇)."
+      }
+    ]
+  },
+  {
+    "id": "after-ruling",
+    "name": "After a ruling",
+    "group": "Play",
+    "what": "The court closes, the realm moves, and what the King's ruling set going is offered to watch.",
     "file": "screens/v/after-ruling-1.jpg",
-    "what": "Answered with a feast: Thornvale's favour 53 → 68 in the houses table, 'A feast at Kingsmere · Watch', and the wedding feast in the town."
-   }
-  ]
- },
- {
-  "id": "battle",
-  "name": "A battle",
-  "group": "Play",
-  "what": "Battles fought by the men in them: each man closes, fights, reels, falls or breaks; knights charge, ride through and come round again.",
-  "file": "screens/v/battle-5.jpg",
-  "clip": "screens/v/battle-5.mp4",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Men fight on their own, two attack clips",
-    "at": "2026-11-07T06:29:00+00:00",
-    "file": "screens/v/battle-1.jpg",
-    "clip": "screens/v/battle-1.mp4",
-    "what": "First cut on the new battle mind: the fight works, but every man repeats the same two attacks (the jumping slash). Your note."
-   },
-   {
-    "v": 2,
-    "label": "Every fight move, with answers",
-    "at": "2026-11-07T06:56:00+00:00",
-    "file": "screens/v/battle-2.jpg",
-    "clip": "screens/v/battle-2.mp4",
-    "what": "Each man varies his cuts (five slashes, two thrusts, a kick); the other parries, dodges or reels on the same frame; men fall the way the blow drives them; the beaten break sooner and some wounded yield. Part of the run; the full film follows."
-   },
-   {
-    "v": 3,
-    "label": "Dead stay down, sides in colour",
-    "at": "2026-11-07T07:42:00+00:00",
-    "file": "screens/v/battle-3.jpg",
-    "clip": "screens/v/battle-3.mp4",
-    "what": "Every man now moves through Godot's animation state machine, whose Dead state nothing leaves: the fallen stay down. Each army wears its house's colour (green against tan), knights ride through and come round, the beaten break and their standard falls, the victors cheer."
-   },
-   {
-    "v": 4,
-    "label": "Every man in the fight, legs on the ground",
-    "at": "2026-11-07T13:12:00+00:00",
-    "file": "screens/v/battle-4.jpg",
-    "clip": "screens/v/battle-4.mp4",
-    "what": "The ranks behind push in on their own count instead of standing for the whole fight; legs follow how fast each man really moves (no running on the spot, no gliding); the crowd moves through Godot's avoidance so nobody walks through anyone; the camera stays on the fight."
-   },
-   {
-    "v": 5,
-    "label": "In close on the blows",
-    "at": "2026-11-08T04:30:00+00:00",
+    "versions": [
+      {
+        "v": 1,
+        "label": "The doors close, the feast is on",
+        "at": "2026-11-09T15:40:00Z",
+        "file": "screens/v/after-ruling-1.jpg",
+        "what": "Answered with a feast: Thornvale's favour 53 → 68 in the houses table, 'A feast at Kingsmere · Watch', and the wedding feast in the town."
+      }
+    ]
+  },
+  {
+    "id": "battle",
+    "name": "A battle",
+    "group": "Play",
+    "what": "Battles fought by the men in them: each man closes, fights, reels, falls or breaks; knights charge, ride through and come round again.",
     "file": "screens/v/battle-5.jpg",
     "clip": "screens/v/battle-5.mp4",
-    "what": "The camera takes the fight in turns: close on the blows, where each man, shield and fall reads, then back out on the whole melee. At one distance it read as a blob of small men."
-   }
-  ]
- },
- {
-  "id": "siege",
-  "name": "A siege",
-  "group": "Play",
-  "what": "Kingsmere under siege: engines, the besiegers' camp, assault parties going to the wall and back.",
-  "file": "screens/v/siege-2.jpg",
-  "clip": "screens/v/siege-2.mp4",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Assault parties on LimboAI",
-    "at": "2026-11-07T13:30:00+00:00",
-    "file": "screens/v/siege-1.jpg",
-    "clip": "screens/v/siege-1.mp4",
-    "what": "Each attacker has his own state machine: waits in camp, goes forward behind his shield, runs the last stretch, fights at the foot of the wall with varied cuts and guards, falls back, or is cut down and stays down while the camp sends a fresh man."
-   },
-   {
-    "v": 2,
-    "label": "The camera goes in on each rush",
-    "at": "2026-11-07T13:45:00+00:00",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Men fight on their own, two attack clips",
+        "at": "2026-11-07T06:29:00+00:00",
+        "file": "screens/v/battle-1.jpg",
+        "clip": "screens/v/battle-1.mp4",
+        "what": "First cut on the new battle mind: the fight works, but every man repeats the same two attacks (the jumping slash). Your note."
+      },
+      {
+        "v": 2,
+        "label": "Every fight move, with answers",
+        "at": "2026-11-07T06:56:00+00:00",
+        "file": "screens/v/battle-2.jpg",
+        "clip": "screens/v/battle-2.mp4",
+        "what": "Each man varies his cuts (five slashes, two thrusts, a kick); the other parries, dodges or reels on the same frame; men fall the way the blow drives them; the beaten break sooner and some wounded yield. Part of the run; the full film follows."
+      },
+      {
+        "v": 3,
+        "label": "Dead stay down, sides in colour",
+        "at": "2026-11-07T07:42:00+00:00",
+        "file": "screens/v/battle-3.jpg",
+        "clip": "screens/v/battle-3.mp4",
+        "what": "Every man now moves through Godot's animation state machine, whose Dead state nothing leaves: the fallen stay down. Each army wears its house's colour (green against tan), knights ride through and come round, the beaten break and their standard falls, the victors cheer."
+      },
+      {
+        "v": 4,
+        "label": "Every man in the fight, legs on the ground",
+        "at": "2026-11-07T13:12:00+00:00",
+        "file": "screens/v/battle-4.jpg",
+        "clip": "screens/v/battle-4.mp4",
+        "what": "The ranks behind push in on their own count instead of standing for the whole fight; legs follow how fast each man really moves (no running on the spot, no gliding); the crowd moves through Godot's avoidance so nobody walks through anyone; the camera stays on the fight."
+      },
+      {
+        "v": 5,
+        "label": "In close on the blows",
+        "at": "2026-11-08T04:30:00+00:00",
+        "file": "screens/v/battle-5.jpg",
+        "clip": "screens/v/battle-5.mp4",
+        "what": "The camera takes the fight in turns: close on the blows, where each man, shield and fall reads, then back out on the whole melee. At one distance it read as a blob of small men."
+      }
+    ]
+  },
+  {
+    "id": "siege",
+    "name": "A siege",
+    "group": "Play",
+    "what": "Kingsmere under siege: engines, the besiegers' camp, assault parties going to the wall and back.",
     "file": "screens/v/siege-2.jpg",
     "clip": "screens/v/siege-2.mp4",
-    "what": "When a party is sent at the wall, the camera comes in low from the camp side on that stretch, so the fight at the foot of the wall reads."
-   }
-  ]
- },
- {
-  "id": "castle",
-  "name": "A castle's courtyard",
-  "group": "Play",
-  "what": "Kingsmere's bailey: the yard inside the castle walls.",
-  "file": "screens/v/castle-4.jpg",
-  "clip": "screens/v/castle-4.mp4",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Furnished, seen from above",
-    "at": "2026-11-07T13:01:00+00:00",
-    "file": "screens/v/castle-1.jpg",
-    "what": "Barn, carts, hay, a fire pit and a log pile in the yard, but nobody there, the house blocking the gate, and the camera only able to look down from over the walls."
-   },
-   {
-    "v": 2,
-    "label": "Lived in, and the camera can come into the yard",
-    "at": "2026-11-07T13:55:00+00:00",
-    "file": "screens/v/castle-2.jpg",
-    "clip": "screens/v/castle-2.mp4",
-    "what": "The garrison drills under a sergeant, a groom warms at the fire, a servant carries; the house moved off the gate; the yard is open air to the camera, so it comes down inside."
-   },
-   {
-    "v": 3,
-    "label": "The drill out in the open",
-    "at": "2026-11-07T14:10:00+00:00",
-    "file": "screens/v/castle-3.jpg",
-    "clip": "screens/v/castle-3.mp4",
-    "what": "The garrison drills in the open half of the yard, clear of the keep's shadow, each at his own move, the sergeant facing them from the gate side."
-   },
-   {
-    "v": 4,
-    "label": "The fire is lit, the garrison in red",
-    "at": "2026-11-07T23:40:00+00:00",
-    "file": "screens/v/castle-4.jpg",
-    "clip": "screens/v/castle-4.mp4",
-    "what": "A low fire burns in the pit with a warm glow on the grass and a thread of smoke, and the soldiers in the yard wear their lord's colour."
-   }
-  ]
- },
- {
-  "id": "midtown",
-  "name": "A town at mid zoom",
-  "group": "Play",
-  "what": "Goldrock seen at a mid zoom: its square, streets and houses.",
-  "file": "screens/v/midtown-2.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "The square packed",
-    "at": "2026-11-07T14:25:00+00:00",
-    "file": "screens/v/midtown-1.jpg",
-    "what": "About 35 people bunched in the middle of the square."
-   },
-   {
-    "v": 2,
-    "label": "Busy, never a press",
-    "at": "2026-11-07T14:37:00+00:00",
-    "file": "screens/v/midtown-2.jpg",
-    "what": "The square holds at most 14 bound for it at once; anyone else keeps to their own door. People read one by one."
-   }
-  ]
- },
- {
-  "id": "closeview",
-  "name": "A town up close",
-  "group": "Play",
-  "what": "Goldrock's square with the camera close in.",
-  "file": "screens/v/closeview-3.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Looking down from above",
-    "at": "2026-11-07T15:05:00+00:00",
-    "file": "screens/v/closeview-1.jpg",
-    "what": "Clearing the roofs, the camera climbed until it looked about 55 degrees down: roofs, not the town."
-   },
-   {
-    "v": 2,
-    "label": "Low and oblique",
-    "at": "2026-11-07T15:15:00+00:00",
-    "file": "screens/v/closeview-2.jpg",
-    "what": "Past 42 degrees the camera steps back along its line instead of climbing: walls, stalls and people read."
-   },
-   {
-    "v": 3,
-    "label": "Mourning in small knots",
-    "at": "2026-11-08T05:30:00+00:00",
-    "file": "screens/v/closeview-3.jpg",
-    "clip": "screens/v/closeview-3.mp4",
-    "what": "Your call: a grieving town mourns in knots of two or three at their own doors, never one crowd in the square. The hungry keep in small knots round the town's edge too. The square is busy again, not a press."
-   }
-  ],
-  "clip": "screens/v/closeview-3.mp4"
- },
- {
-  "id": "feast",
-  "name": "A feast",
-  "group": "Play",
-  "what": "A town feasting round a fire in its square.",
-  "file": "screens/v/feast-2.jpg",
-  "clip": "screens/v/feast-2.mp4",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Smoke over everyone",
-    "at": "2026-11-07T15:30:00+00:00",
-    "file": "screens/v/feast-1.jpg",
-    "what": "The fire's smoke sat over the dancers as a dense white ball."
-   },
-   {
-    "v": 2,
-    "label": "A thin drifting haze",
-    "at": "2026-11-07T15:40:00+00:00",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Assault parties on LimboAI",
+        "at": "2026-11-07T13:30:00+00:00",
+        "file": "screens/v/siege-1.jpg",
+        "clip": "screens/v/siege-1.mp4",
+        "what": "Each attacker has his own state machine: waits in camp, goes forward behind his shield, runs the last stretch, fights at the foot of the wall with varied cuts and guards, falls back, or is cut down and stays down while the camp sends a fresh man."
+      },
+      {
+        "v": 2,
+        "label": "The camera goes in on each rush",
+        "at": "2026-11-07T13:45:00+00:00",
+        "file": "screens/v/siege-2.jpg",
+        "clip": "screens/v/siege-2.mp4",
+        "what": "When a party is sent at the wall, the camera comes in low from the camp side on that stretch, so the fight at the foot of the wall reads."
+      }
+    ]
+  },
+  {
+    "id": "castle",
+    "name": "A castle's courtyard",
+    "group": "Play",
+    "what": "Kingsmere's bailey: the yard inside the castle walls.",
+    "file": "screens/v/castle-5.jpg",
+    "clip": "screens/v/castle-5.mp4",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Furnished, seen from above",
+        "at": "2026-11-07T13:01:00+00:00",
+        "file": "screens/v/castle-1.jpg",
+        "what": "Barn, carts, hay, a fire pit and a log pile in the yard, but nobody there, the house blocking the gate, and the camera only able to look down from over the walls."
+      },
+      {
+        "v": 2,
+        "label": "Lived in, and the camera can come into the yard",
+        "at": "2026-11-07T13:55:00+00:00",
+        "file": "screens/v/castle-2.jpg",
+        "clip": "screens/v/castle-2.mp4",
+        "what": "The garrison drills under a sergeant, a groom warms at the fire, a servant carries; the house moved off the gate; the yard is open air to the camera, so it comes down inside."
+      },
+      {
+        "v": 3,
+        "label": "The drill out in the open",
+        "at": "2026-11-07T14:10:00+00:00",
+        "file": "screens/v/castle-3.jpg",
+        "clip": "screens/v/castle-3.mp4",
+        "what": "The garrison drills in the open half of the yard, clear of the keep's shadow, each at his own move, the sergeant facing them from the gate side."
+      },
+      {
+        "v": 4,
+        "label": "The fire is lit, the garrison in red",
+        "at": "2026-11-07T23:40:00+00:00",
+        "file": "screens/v/castle-4.jpg",
+        "clip": "screens/v/castle-4.mp4",
+        "what": "A low fire burns in the pit with a warm glow on the grass and a thread of smoke, and the soldiers in the yard wear their lord's colour."
+      },
+      {
+        "v": 5,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/castle-5.jpg",
+        "clip": "screens/v/castle-5.mp4"
+      }
+    ]
+  },
+  {
+    "id": "midtown",
+    "name": "A town at mid zoom",
+    "group": "Play",
+    "what": "Goldrock seen at a mid zoom: its square, streets and houses.",
+    "file": "screens/v/midtown-3.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "The square packed",
+        "at": "2026-11-07T14:25:00+00:00",
+        "file": "screens/v/midtown-1.jpg",
+        "what": "About 35 people bunched in the middle of the square."
+      },
+      {
+        "v": 2,
+        "label": "Busy, never a press",
+        "at": "2026-11-07T14:37:00+00:00",
+        "file": "screens/v/midtown-2.jpg",
+        "what": "The square holds at most 14 bound for it at once; anyone else keeps to their own door. People read one by one."
+      },
+      {
+        "v": 3,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/midtown-3.jpg"
+      }
+    ]
+  },
+  {
+    "id": "closeview",
+    "name": "A town up close",
+    "group": "Play",
+    "what": "Goldrock's square with the camera close in.",
+    "file": "screens/v/closeview-4.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Looking down from above",
+        "at": "2026-11-07T15:05:00+00:00",
+        "file": "screens/v/closeview-1.jpg",
+        "what": "Clearing the roofs, the camera climbed until it looked about 55 degrees down: roofs, not the town."
+      },
+      {
+        "v": 2,
+        "label": "Low and oblique",
+        "at": "2026-11-07T15:15:00+00:00",
+        "file": "screens/v/closeview-2.jpg",
+        "what": "Past 42 degrees the camera steps back along its line instead of climbing: walls, stalls and people read."
+      },
+      {
+        "v": 3,
+        "label": "Mourning in small knots",
+        "at": "2026-11-08T05:30:00+00:00",
+        "file": "screens/v/closeview-3.jpg",
+        "clip": "screens/v/closeview-3.mp4",
+        "what": "Your call: a grieving town mourns in knots of two or three at their own doors, never one crowd in the square. The hungry keep in small knots round the town's edge too. The square is busy again, not a press."
+      },
+      {
+        "v": 4,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/closeview-4.jpg",
+        "clip": "screens/v/closeview-4.mp4"
+      }
+    ],
+    "clip": "screens/v/closeview-4.mp4"
+  },
+  {
+    "id": "feast",
+    "name": "A feast",
+    "group": "Play",
+    "what": "A town feasting round a fire in its square.",
     "file": "screens/v/feast-2.jpg",
     "clip": "screens/v/feast-2.mp4",
-    "what": "Thin, see-through smoke that drifts off on the air; the ring round the fire reads, most dancing and some clapping, laughing and waving them on."
-   }
-  ]
- },
- {
-  "id": "handover",
-  "name": "A town changes hands",
-  "group": "Play",
-  "what": "The old lord's banner falls, the new lord's men march in, his banner rises.",
-  "file": "screens/v/handover-2.jpg",
-  "clip": "screens/v/handover-2.mp4",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Hidden behind the church",
-    "at": "2026-11-07T15:55:00+00:00",
-    "file": "screens/v/handover-1.jpg",
-    "what": "The camera looked across the town's tall church; the scene in the square was a blur behind it."
-   },
-   {
-    "v": 2,
-    "label": "From a clear side",
-    "at": "2026-11-07T16:10:00+00:00",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Smoke over everyone",
+        "at": "2026-11-07T15:30:00+00:00",
+        "file": "screens/v/feast-1.jpg",
+        "what": "The fire's smoke sat over the dancers as a dense white ball."
+      },
+      {
+        "v": 2,
+        "label": "A thin drifting haze",
+        "at": "2026-11-07T15:40:00+00:00",
+        "file": "screens/v/feast-2.jpg",
+        "clip": "screens/v/feast-2.mp4",
+        "what": "Thin, see-through smoke that drifts off on the air; the ring round the fire reads, most dancing and some clapping, laughing and waving them on."
+      }
+    ]
+  },
+  {
+    "id": "handover",
+    "name": "A town changes hands",
+    "group": "Play",
+    "what": "The old lord's banner falls, the new lord's men march in, his banner rises.",
     "file": "screens/v/handover-2.jpg",
     "clip": "screens/v/handover-2.mp4",
-    "what": "Before framing any scene the camera picks a side with no tall building in the way (and fells trees on that side). The new lord's men march in, his banner rises, they salute and cheer."
-   }
-  ]
- },
- {
-  "id": "muster",
-  "name": "A muster",
-  "group": "Play",
-  "what": "A lord's men form up under his banners and march out.",
-  "file": "screens/v/muster-2.jpg",
-  "clip": "screens/v/muster-2.mp4",
-  "versions": [
-   {
-    "v": 1,
-    "label": "A tower in the way",
-    "at": "2026-11-07T16:20:00+00:00",
-    "file": "screens/v/muster-1.jpg",
-    "what": "A castle tower filled the front of the shot: the clear-view check didn't count buildings of unknown height or the stretch nearest the lens."
-   },
-   {
-    "v": 2,
-    "label": "In clear view",
-    "at": "2026-11-07T16:27:00+00:00",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Hidden behind the church",
+        "at": "2026-11-07T15:55:00+00:00",
+        "file": "screens/v/handover-1.jpg",
+        "what": "The camera looked across the town's tall church; the scene in the square was a blur behind it."
+      },
+      {
+        "v": 2,
+        "label": "From a clear side",
+        "at": "2026-11-07T16:10:00+00:00",
+        "file": "screens/v/handover-2.jpg",
+        "clip": "screens/v/handover-2.mp4",
+        "what": "Before framing any scene the camera picks a side with no tall building in the way (and fells trees on that side). The new lord's men march in, his banner rises, they salute and cheer."
+      }
+    ]
+  },
+  {
+    "id": "muster",
+    "name": "A muster",
+    "group": "Play",
+    "what": "A lord's men form up under his banners and march out.",
     "file": "screens/v/muster-2.jpg",
     "clip": "screens/v/muster-2.mp4",
-    "what": "The camera finds a side with no tall building anywhere along its line of sight; the ranks form in the square and march out in a column."
-   }
-  ]
- },
- {
-  "id": "convoy",
-  "name": "The King's grain on the road",
-  "group": "Play",
-  "what": "A grain convoy from Kingsmere to the nearest town, the camera riding along.",
-  "file": "screens/v/convoy-4.jpg",
-  "clip": "screens/v/convoy-4.mp4",
-  "versions": [
-   {
-    "v": 1,
-    "label": "In the leaves",
-    "at": "2026-11-07T16:40:00+00:00",
-    "file": "screens/v/convoy-1.jpg",
-    "what": "Following the cart along a forest road, the camera sat inside the tree canopy for about 15 seconds."
-   },
-   {
-    "v": 2,
-    "label": "Above the canopy",
-    "at": "2026-11-07T16:55:00+00:00",
-    "file": "screens/v/convoy-2.jpg",
-    "clip": "screens/v/convoy-2.mp4",
-    "what": "Whenever tree crowns stand between the lens and what it follows, the camera rises over the canopy (forest.gd's sight lines). The escort hails the town on arrival."
-   },
-   {
-    "v": 3,
-    "label": "A cart track through the wood",
-    "at": "2026-11-07T23:40:00+00:00",
-    "file": "screens/v/convoy-3.jpg",
-    "clip": "screens/v/convoy-3.mp4",
-    "what": "A convoy over land with no road cuts a track through any wood it crosses, so the cart runs over open ground. Still open: near the coast town the camera looks down through one tree crown by the river."
-   },
-   {
-    "v": 4,
-    "label": "Low and clear of the leaves",
-    "at": "2026-11-08T07:00:00+00:00",
+    "versions": [
+      {
+        "v": 1,
+        "label": "A tower in the way",
+        "at": "2026-11-07T16:20:00+00:00",
+        "file": "screens/v/muster-1.jpg",
+        "what": "A castle tower filled the front of the shot: the clear-view check didn't count buildings of unknown height or the stretch nearest the lens."
+      },
+      {
+        "v": 2,
+        "label": "In clear view",
+        "at": "2026-11-07T16:27:00+00:00",
+        "file": "screens/v/muster-2.jpg",
+        "clip": "screens/v/muster-2.mp4",
+        "what": "The camera finds a side with no tall building anywhere along its line of sight; the ranks form in the square and march out in a column."
+      }
+    ]
+  },
+  {
+    "id": "convoy",
+    "name": "The King's grain on the road",
+    "group": "Play",
+    "what": "A grain convoy from Kingsmere to the nearest town, the camera riding along.",
     "file": "screens/v/convoy-4.jpg",
     "clip": "screens/v/convoy-4.mp4",
-    "what": "Following the cart, the camera turns each second to a side with no tree crowns in the way (the director's own choice in play), so it stays low and oblique with the cart and its track in view, instead of steep over a wood with leaves filling the frame. Still open: at the coast town a house can stand between the camera and the cart."
-   }
-  ]
- },
- {
-  "id": "title",
-  "name": "Main menu",
-  "group": "Title",
-  "what": "The first thing a player sees",
-  "file": "screens/title.jpg",
-  "before": "screens/before/title.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before",
-    "at": "2026-11-06T07:35:28.412356+00:00",
-    "file": "screens/before/title.jpg"
-   },
-   {
-    "v": 2,
-    "label": "After",
-    "at": "2026-11-06T07:36:12.650771+00:00",
-    "file": "screens/title.jpg"
-   }
-  ]
- },
- {
-  "id": "new-1",
-  "name": "New chronicle: the reign",
-  "group": "Title",
-  "what": "Page 1: how hard a reign, and how long",
-  "file": "screens/new-1.jpg",
-  "before": "screens/before/new-1.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before",
-    "at": "2026-11-06T07:35:28.432595+00:00",
-    "file": "screens/before/new-1.jpg"
-   },
-   {
-    "v": 2,
-    "label": "After",
-    "at": "2026-11-06T07:36:10.155286+00:00",
-    "file": "screens/new-1.jpg"
-   }
-  ]
- },
- {
-  "id": "new-2",
-  "name": "New chronicle: its story",
-  "group": "Title",
-  "what": "Page 2: what comes for the throne, and the chronicle's name",
-  "file": "screens/new-2.jpg",
-  "before": "screens/before/new-2.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before",
-    "at": "2026-11-06T07:35:28.452584+00:00",
-    "file": "screens/before/new-2.jpg"
-   },
-   {
-    "v": 2,
-    "label": "After",
-    "at": "2026-11-06T07:36:10.472989+00:00",
-    "file": "screens/new-2.jpg"
-   }
-  ]
- },
- {
-  "id": "new-3",
-  "name": "New chronicle: your realm",
-  "group": "Title",
-  "what": "Page 3 (optional): the realm's options",
-  "file": "screens/new-3.jpg",
-  "before": "screens/before/new-3.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before",
-    "at": "2026-11-06T07:35:28.475774+00:00",
-    "file": "screens/before/new-3.jpg"
-   },
-   {
-    "v": 2,
-    "label": "After",
-    "at": "2026-11-06T07:36:10.748119+00:00",
-    "file": "screens/new-3.jpg"
-   }
-  ]
- },
- {
-  "id": "settings-1",
-  "name": "Settings",
-  "group": "Title",
-  "what": "Settings, top",
-  "file": "screens/settings-1.jpg",
-  "before": "screens/before/settings-1.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before",
-    "at": "2026-11-06T09:58:00.098907+00:00",
-    "file": "screens/before/settings-1.jpg"
-   },
-   {
-    "v": 2,
-    "label": "After",
-    "at": "2026-11-06T09:58:00.332885+00:00",
-    "file": "screens/settings-1.jpg"
-   }
-  ]
- },
- {
-  "id": "settings-2",
-  "name": "Settings: further down",
-  "group": "Title",
-  "what": "Settings, scrolled",
-  "file": "screens/settings-2.jpg",
-  "before": "screens/before/settings-2.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before",
-    "at": "2026-11-06T09:58:00.353433+00:00",
-    "file": "screens/before/settings-2.jpg"
-   },
-   {
-    "v": 2,
-    "label": "After",
-    "at": "2026-11-06T09:58:00.606756+00:00",
-    "file": "screens/settings-2.jpg"
-   }
-  ]
- },
- {
-  "id": "chronicles",
-  "name": "Chronicles",
-  "group": "Title",
-  "what": "Your saved reigns",
-  "file": "screens/chronicles.jpg",
-  "before": "screens/before/chronicles.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before",
-    "at": "2026-11-06T09:57:59.500399+00:00",
-    "file": "screens/before/chronicles.jpg"
-   },
-   {
-    "v": 2,
-    "label": "After",
-    "at": "2026-11-06T09:57:59.676884+00:00",
-    "file": "screens/chronicles.jpg"
-   }
-  ]
- },
- {
-  "id": "records",
-  "name": "Hall of Records",
-  "group": "Title",
-  "what": "Your best reigns",
-  "file": "screens/records.jpg",
-  "before": "screens/before/records.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before",
-    "at": "2026-11-06T09:57:59.694551+00:00",
-    "file": "screens/before/records.jpg"
-   },
-   {
-    "v": 2,
-    "label": "After",
-    "at": "2026-11-06T09:57:59.850121+00:00",
-    "file": "screens/records.jpg"
-   }
-  ]
- },
- {
-  "id": "credits",
-  "name": "Credits",
-  "group": "Title",
-  "what": "Credits",
-  "file": "screens/credits.jpg",
-  "before": "screens/before/credits.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before",
-    "at": "2026-11-06T09:57:59.878326+00:00",
-    "file": "screens/before/credits.jpg"
-   },
-   {
-    "v": 2,
-    "label": "After",
-    "at": "2026-11-06T09:58:00.069687+00:00",
-    "file": "screens/credits.jpg"
-   }
-  ]
- },
- {
-  "id": "lore-realm",
-  "name": "Lore: the realm",
-  "group": "Lore of Aldmere",
-  "what": "The book of the realm, opened from the menu",
-  "file": "screens/lore-realm.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "",
-    "at": "2026-11-06T07:36:09.577111+00:00",
-    "file": "screens/lore-realm.jpg"
-   }
-  ]
- },
- {
-  "id": "lore-map",
-  "name": "Lore: the map",
-  "group": "Lore of Aldmere",
-  "what": "The painted map: hover a town, click a seat",
-  "file": "screens/v/lore-map-2.jpg",
-  "before": "screens/before/lore-map.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Black around the map",
-    "at": "2026-11-06T09:58:00.838632+00:00",
-    "file": "screens/v/lore-map-1.jpg"
-   },
-   {
-    "v": 2,
-    "label": "Map fills the frame",
-    "at": "2026-11-07T07:25:00+00:00",
+    "versions": [
+      {
+        "v": 1,
+        "label": "In the leaves",
+        "at": "2026-11-07T16:40:00+00:00",
+        "file": "screens/v/convoy-1.jpg",
+        "what": "Following the cart along a forest road, the camera sat inside the tree canopy for about 15 seconds."
+      },
+      {
+        "v": 2,
+        "label": "Above the canopy",
+        "at": "2026-11-07T16:55:00+00:00",
+        "file": "screens/v/convoy-2.jpg",
+        "clip": "screens/v/convoy-2.mp4",
+        "what": "Whenever tree crowns stand between the lens and what it follows, the camera rises over the canopy (forest.gd's sight lines). The escort hails the town on arrival."
+      },
+      {
+        "v": 3,
+        "label": "A cart track through the wood",
+        "at": "2026-11-07T23:40:00+00:00",
+        "file": "screens/v/convoy-3.jpg",
+        "clip": "screens/v/convoy-3.mp4",
+        "what": "A convoy over land with no road cuts a track through any wood it crosses, so the cart runs over open ground. Still open: near the coast town the camera looks down through one tree crown by the river."
+      },
+      {
+        "v": 4,
+        "label": "Low and clear of the leaves",
+        "at": "2026-11-08T07:00:00+00:00",
+        "file": "screens/v/convoy-4.jpg",
+        "clip": "screens/v/convoy-4.mp4",
+        "what": "Following the cart, the camera turns each second to a side with no tree crowns in the way (the director's own choice in play), so it stays low and oblique with the cart and its track in view, instead of steep over a wood with leaves filling the frame. Still open: at the coast town a house can stand between the camera and the cart."
+      }
+    ]
+  },
+  {
+    "id": "title",
+    "name": "Main menu",
+    "group": "Title",
+    "what": "The first thing a player sees",
+    "file": "screens/v/title-3.jpg",
+    "before": "screens/before/title.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before",
+        "at": "2026-11-06T07:35:28.412356+00:00",
+        "file": "screens/before/title.jpg"
+      },
+      {
+        "v": 2,
+        "label": "After",
+        "at": "2026-11-06T07:36:12.650771+00:00",
+        "file": "screens/title.jpg"
+      },
+      {
+        "v": 3,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/title-3.jpg"
+      }
+    ]
+  },
+  {
+    "id": "new-1",
+    "name": "New chronicle: the reign",
+    "group": "Title",
+    "what": "Page 1: how hard a reign, and how long",
+    "file": "screens/v/new-1-3.jpg",
+    "before": "screens/before/new-1.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before",
+        "at": "2026-11-06T07:35:28.432595+00:00",
+        "file": "screens/before/new-1.jpg"
+      },
+      {
+        "v": 2,
+        "label": "After",
+        "at": "2026-11-06T07:36:10.155286+00:00",
+        "file": "screens/new-1.jpg"
+      },
+      {
+        "v": 3,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/new-1-3.jpg"
+      }
+    ]
+  },
+  {
+    "id": "new-2",
+    "name": "New chronicle: its story",
+    "group": "Title",
+    "what": "Page 2: what comes for the throne, and the chronicle's name",
+    "file": "screens/v/new-2-3.jpg",
+    "before": "screens/before/new-2.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before",
+        "at": "2026-11-06T07:35:28.452584+00:00",
+        "file": "screens/before/new-2.jpg"
+      },
+      {
+        "v": 2,
+        "label": "After",
+        "at": "2026-11-06T07:36:10.472989+00:00",
+        "file": "screens/new-2.jpg"
+      },
+      {
+        "v": 3,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/new-2-3.jpg"
+      }
+    ]
+  },
+  {
+    "id": "new-3",
+    "name": "New chronicle: your realm",
+    "group": "Title",
+    "what": "Page 3 (optional): the realm's options",
+    "file": "screens/v/new-3-3.jpg",
+    "before": "screens/before/new-3.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before",
+        "at": "2026-11-06T07:35:28.475774+00:00",
+        "file": "screens/before/new-3.jpg"
+      },
+      {
+        "v": 2,
+        "label": "After",
+        "at": "2026-11-06T07:36:10.748119+00:00",
+        "file": "screens/new-3.jpg"
+      },
+      {
+        "v": 3,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/new-3-3.jpg"
+      }
+    ]
+  },
+  {
+    "id": "settings-1",
+    "name": "Settings",
+    "group": "Title",
+    "what": "Settings, top",
+    "file": "screens/v/settings-1-3.jpg",
+    "before": "screens/before/settings-1.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before",
+        "at": "2026-11-06T09:58:00.098907+00:00",
+        "file": "screens/before/settings-1.jpg"
+      },
+      {
+        "v": 2,
+        "label": "After",
+        "at": "2026-11-06T09:58:00.332885+00:00",
+        "file": "screens/settings-1.jpg"
+      },
+      {
+        "v": 3,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/settings-1-3.jpg"
+      }
+    ]
+  },
+  {
+    "id": "settings-2",
+    "name": "Settings: further down",
+    "group": "Title",
+    "what": "Settings, scrolled",
+    "file": "screens/v/settings-2-3.jpg",
+    "before": "screens/before/settings-2.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before",
+        "at": "2026-11-06T09:58:00.353433+00:00",
+        "file": "screens/before/settings-2.jpg"
+      },
+      {
+        "v": 2,
+        "label": "After",
+        "at": "2026-11-06T09:58:00.606756+00:00",
+        "file": "screens/settings-2.jpg"
+      },
+      {
+        "v": 3,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/settings-2-3.jpg"
+      }
+    ]
+  },
+  {
+    "id": "chronicles",
+    "name": "Chronicles",
+    "group": "Title",
+    "what": "Your saved reigns",
+    "file": "screens/v/chronicles-3.jpg",
+    "before": "screens/before/chronicles.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before",
+        "at": "2026-11-06T09:57:59.500399+00:00",
+        "file": "screens/before/chronicles.jpg"
+      },
+      {
+        "v": 2,
+        "label": "After",
+        "at": "2026-11-06T09:57:59.676884+00:00",
+        "file": "screens/chronicles.jpg"
+      },
+      {
+        "v": 3,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/chronicles-3.jpg"
+      }
+    ]
+  },
+  {
+    "id": "records",
+    "name": "Hall of Records",
+    "group": "Title",
+    "what": "Your best reigns",
+    "file": "screens/v/records-3.jpg",
+    "before": "screens/before/records.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before",
+        "at": "2026-11-06T09:57:59.694551+00:00",
+        "file": "screens/before/records.jpg"
+      },
+      {
+        "v": 2,
+        "label": "After",
+        "at": "2026-11-06T09:57:59.850121+00:00",
+        "file": "screens/records.jpg"
+      },
+      {
+        "v": 3,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/records-3.jpg"
+      }
+    ]
+  },
+  {
+    "id": "credits",
+    "name": "Credits",
+    "group": "Title",
+    "what": "Credits",
+    "file": "screens/v/credits-3.jpg",
+    "before": "screens/before/credits.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before",
+        "at": "2026-11-06T09:57:59.878326+00:00",
+        "file": "screens/before/credits.jpg"
+      },
+      {
+        "v": 2,
+        "label": "After",
+        "at": "2026-11-06T09:58:00.069687+00:00",
+        "file": "screens/credits.jpg"
+      },
+      {
+        "v": 3,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/credits-3.jpg"
+      }
+    ]
+  },
+  {
+    "id": "lore-realm",
+    "name": "Lore: the realm",
+    "group": "Lore of Aldmere",
+    "what": "The book of the realm, opened from the menu",
+    "file": "screens/lore-realm.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "",
+        "at": "2026-11-06T07:36:09.577111+00:00",
+        "file": "screens/lore-realm.jpg"
+      }
+    ]
+  },
+  {
+    "id": "lore-map",
+    "name": "Lore: the map",
+    "group": "Lore of Aldmere",
+    "what": "The painted map: hover a town, click a seat",
     "file": "screens/v/lore-map-2.jpg",
-    "what": "The map fills its frame edge to edge and never zooms out past that; drag to see the rest. + and − zoom, The whole realm goes back to full."
-   }
-  ]
- },
- {
-  "id": "lore-house",
-  "name": "Lore: a great house",
-  "group": "Lore of Aldmere",
-  "what": "House Goldcrest: its painting, words, people; Edit beside its name",
-  "file": "screens/lore-house.jpg",
-  "before": "screens/before/lore-house.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before",
-    "at": "2026-11-06T09:58:00.867792+00:00",
-    "file": "screens/before/lore-house.jpg"
-   },
-   {
-    "v": 2,
-    "label": "After",
-    "at": "2026-11-06T09:58:01.039947+00:00",
-    "file": "screens/lore-house.jpg"
-   }
-  ]
- },
- {
-  "id": "lore-lesser",
-  "name": "Lore: lesser houses",
-  "group": "Lore of Aldmere",
-  "what": "The bannermen families and whom each branch kneels to",
-  "file": "screens/lore-lesser.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "",
-    "at": "2026-11-06T07:36:08.760186+00:00",
-    "file": "screens/lore-lesser.jpg"
-   }
-  ]
- },
- {
-  "id": "lore-person",
-  "name": "Character close-up",
-  "group": "Lore of Aldmere",
-  "what": "Meet: a lord in front of their house's backdrop",
-  "file": "screens/lore-person.jpg",
-  "before": "screens/before/lore-person.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before",
-    "at": "2026-11-06T09:58:01.063287+00:00",
-    "file": "screens/before/lore-person.jpg"
-   },
-   {
-    "v": 2,
-    "label": "After",
-    "at": "2026-11-06T09:58:01.230680+00:00",
-    "file": "screens/lore-person.jpg"
-   }
-  ]
- },
- {
-  "id": "intro",
-  "name": "Introduction",
-  "group": "Opening",
-  "what": "The storybook before a reign",
-  "file": "screens/intro.jpg",
-  "before": "screens/before/intro.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before",
-    "at": "2026-11-06T07:35:28.600935+00:00",
-    "file": "screens/before/intro.jpg"
-   },
-   {
-    "v": 2,
-    "label": "After",
-    "at": "2026-11-06T07:36:07.881814+00:00",
-    "file": "screens/intro.jpg"
-   }
-  ]
- },
- {
-  "id": "realm",
-  "name": "The realm",
-  "group": "Play",
-  "what": "The realm in play, with the houses and the chronicle",
-  "file": "screens/realm.jpg",
-  "before": "screens/before/realm.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before",
-    "at": "2026-11-06T07:35:28.620463+00:00",
-    "file": "screens/before/realm.jpg"
-   },
-   {
-    "v": 2,
-    "label": "After",
-    "at": "2026-11-06T07:36:11.033141+00:00",
-    "file": "screens/realm.jpg"
-   }
-  ]
- },
- {
-  "id": "counsel",
-  "name": "The Hand's counsel",
-  "group": "Play",
-  "what": "0.6: one matter at a time; the bar drains, and when it runs out the realm answers for you. The clip shows a matter burning down and its cost.",
-  "file": "screens/v/counsel-3.jpg",
-  "before": "screens/before/counsel.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before",
-    "at": "2026-11-07T11:09:54+05:30",
-    "file": "screens/before/counsel.jpg"
-   },
-   {
-    "v": 2,
-    "label": "After",
-    "at": "2026-11-07T11:09:54+05:30",
-    "file": "screens/counsel.jpg",
-    "clip": "screens/counsel.mp4"
-   },
-   {
-    "v": 3,
-    "label": "The Hand calls you to court for a crisis",
-    "at": "2026-11-09T07:00:41Z",
+    "before": "screens/before/lore-map.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Black around the map",
+        "at": "2026-11-06T09:58:00.838632+00:00",
+        "file": "screens/v/lore-map-1.jpg"
+      },
+      {
+        "v": 2,
+        "label": "Map fills the frame",
+        "at": "2026-11-07T07:25:00+00:00",
+        "file": "screens/v/lore-map-2.jpg",
+        "what": "The map fills its frame edge to edge and never zooms out past that; drag to see the rest. + and − zoom, The whole realm goes back to full."
+      }
+    ]
+  },
+  {
+    "id": "lore-house",
+    "name": "Lore: a great house",
+    "group": "Lore of Aldmere",
+    "what": "House Goldcrest: its painting, words, people; Edit beside its name",
+    "file": "screens/lore-house.jpg",
+    "before": "screens/before/lore-house.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before",
+        "at": "2026-11-06T09:58:00.867792+00:00",
+        "file": "screens/before/lore-house.jpg"
+      },
+      {
+        "v": 2,
+        "label": "After",
+        "at": "2026-11-06T09:58:01.039947+00:00",
+        "file": "screens/lore-house.jpg"
+      }
+    ]
+  },
+  {
+    "id": "lore-lesser",
+    "name": "Lore: lesser houses",
+    "group": "Lore of Aldmere",
+    "what": "The bannermen families and whom each branch kneels to",
+    "file": "screens/lore-lesser.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "",
+        "at": "2026-11-06T07:36:08.760186+00:00",
+        "file": "screens/lore-lesser.jpg"
+      }
+    ]
+  },
+  {
+    "id": "lore-person",
+    "name": "Character close-up",
+    "group": "Lore of Aldmere",
+    "what": "Meet: a lord in front of their house's backdrop",
+    "file": "screens/lore-person.jpg",
+    "before": "screens/before/lore-person.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before",
+        "at": "2026-11-06T09:58:01.063287+00:00",
+        "file": "screens/before/lore-person.jpg"
+      },
+      {
+        "v": 2,
+        "label": "After",
+        "at": "2026-11-06T09:58:01.230680+00:00",
+        "file": "screens/lore-person.jpg"
+      }
+    ]
+  },
+  {
+    "id": "intro",
+    "name": "Introduction",
+    "group": "Opening",
+    "what": "The storybook before a reign",
+    "file": "screens/intro.jpg",
+    "before": "screens/before/intro.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before",
+        "at": "2026-11-06T07:35:28.600935+00:00",
+        "file": "screens/before/intro.jpg"
+      },
+      {
+        "v": 2,
+        "label": "After",
+        "at": "2026-11-06T07:36:07.881814+00:00",
+        "file": "screens/intro.jpg"
+      }
+    ]
+  },
+  {
+    "id": "realm",
+    "name": "The realm",
+    "group": "Play",
+    "what": "The realm in play, with the houses and the chronicle",
+    "file": "screens/v/realm-3.jpg",
+    "before": "screens/before/realm.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before",
+        "at": "2026-11-06T07:35:28.620463+00:00",
+        "file": "screens/before/realm.jpg"
+      },
+      {
+        "v": 2,
+        "label": "After",
+        "at": "2026-11-06T07:36:11.033141+00:00",
+        "file": "screens/realm.jpg"
+      },
+      {
+        "v": 3,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/realm-3.jpg",
+        "clip": "screens/v/realm-3.mp4"
+      }
+    ],
+    "clip": "screens/v/realm-3.mp4"
+  },
+  {
+    "id": "camera-zoom",
+    "name": "The camera, realm to street",
+    "group": "Play",
+    "what": "The wheel from realm height down to the street",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/camera-zoom-1.jpg",
+        "clip": "screens/v/camera-zoom-1.mp4"
+      }
+    ],
+    "file": "screens/v/camera-zoom-1.jpg",
+    "clip": "screens/v/camera-zoom-1.mp4"
+  },
+  {
+    "id": "counsel",
+    "name": "The Hand's counsel",
+    "group": "Play",
+    "what": "0.6: one matter at a time; the bar drains, and when it runs out the realm answers for you. The clip shows a matter burning down and its cost.",
     "file": "screens/v/counsel-3.jpg",
-    "what": "No separate card or button: between sittings the Hand calls the King to court only for a crisis, with every order he used to offer."
-   }
-  ]
- },
- {
-  "id": "region",
-  "name": "Whole realm",
-  "group": "Play",
-  "what": "Drawn back past where the land reads: the painted map takes over",
-  "file": "screens/region.jpg",
-  "before": "screens/before/region.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before",
-    "at": "2026-11-06T07:35:28.639500+00:00",
-    "file": "screens/before/region.jpg"
-   },
-   {
-    "v": 2,
-    "label": "After",
-    "at": "2026-11-06T07:36:11.546344+00:00",
-    "file": "screens/region.jpg"
-   }
-  ]
- },
- {
-  "id": "town",
-  "name": "Kingsmere",
-  "group": "Play",
-  "what": "Your seat, its castle in daylight",
-  "file": "screens/town.jpg",
-  "before": "screens/before/town.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before",
-    "at": "2026-11-06T07:35:28.661015+00:00",
-    "file": "screens/before/town.jpg"
-   },
-   {
-    "v": 2,
-    "label": "After",
-    "at": "2026-11-06T08:06:26.533106+00:00",
-    "file": "screens/town.jpg"
-   }
-  ]
- },
- {
-  "id": "street",
-  "name": "Street level",
-  "group": "Play",
-  "what": "Down among the people",
-  "file": "screens/street.jpg",
-  "before": "screens/before/street.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before",
-    "at": "2026-11-06T07:35:28.683614+00:00",
-    "file": "screens/before/street.jpg"
-   },
-   {
-    "v": 2,
-    "label": "After",
-    "at": "2026-11-06T07:36:12.369941+00:00",
-    "file": "screens/street.jpg"
-   }
-  ]
- },
- {
-  "id": "court",
-  "name": "Court",
-  "group": "Play",
-  "what": "0.6: the petitioner in front of you waits three seasons; the bar under the card drains.",
-  "file": "screens/v/court-4.jpg",
-  "before": "screens/before/court.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before",
-    "at": "2026-11-07T11:09:54+05:30",
-    "file": "screens/before/court.jpg"
-   },
-   {
-    "v": 2,
-    "label": "After",
-    "at": "2026-11-07T11:09:54+05:30",
-    "file": "screens/court.jpg"
-   },
-   {
-    "v": 3,
-    "label": "One court, a sitting each spring",
-    "at": "2026-11-09T07:00:41Z",
-    "file": "screens/v/court-3.jpg",
-    "what": "The court sits once a year, in spring, with two or three matters. The Hand speaks on each petitioner's card in one line."
-   },
-   {
-    "v": 4,
-    "label": "A paused court, when it has matters",
-    "at": "2026-11-09T08:40:28Z",
-    "file": "screens/v/court-4.jpg",
-    "what": "The court sits when it has something worth hearing (one matter early, up to three at the climax); the realm and the reign's clock hold still while it sits; Later sets the card aside, Close the court lets silence settle the rest. Fun bar, Room to breathe (timed 15-minute reign, 6.5 min measured): before 3.6 decisions a minute, the Hand's card always up (≈0% quiet); after 1.08 a minute, 86% quiet."
-   }
-  ]
- },
- {
-  "id": "ledger",
-  "name": "Ledger",
-  "group": "Play",
-  "what": "The ledger of the realm",
-  "file": "screens/ledger.jpg",
-  "before": "screens/before/ledger.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before",
-    "at": "2026-11-06T07:35:28.750803+00:00",
-    "file": "screens/before/ledger.jpg"
-   },
-   {
-    "v": 2,
-    "label": "After",
-    "at": "2026-11-06T07:36:08.216643+00:00",
-    "file": "screens/ledger.jpg"
-   }
-  ]
- },
- {
-  "id": "lore",
-  "name": "Lore in play",
-  "group": "Play",
-  "what": "The Lore opened during a reign",
-  "file": "screens/lore.jpg",
-  "before": "screens/before/lore.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before",
-    "at": "2026-11-06T07:35:28.729886+00:00",
-    "file": "screens/before/lore.jpg"
-   },
-   {
-    "v": 2,
-    "label": "After",
-    "at": "2026-11-06T07:36:09.846883+00:00",
-    "file": "screens/lore.jpg"
-   }
-  ]
- },
- {
-  "id": "reign-end",
-  "name": "The reign ends",
-  "group": "Reign",
-  "what": "0.5.1: history names you, with the reign in numbers.",
-  "file": "screens/reign-end.jpg",
-  "versions": [
-   {
-    "v": 1,
-    "label": "",
-    "at": "2026-11-07T11:09:54+05:30",
-    "file": "screens/reign-end.jpg"
-   }
-  ]
- },
- {
-  "id": "court-over-town",
-  "name": "Court over a town",
-  "group": "Play",
-  "what": "Kingsmere open, then Court pressed: 12 s later the town card is back and the petitioner is gone.",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before: the town card wins",
-    "at": "2026-11-09T06:40:15Z",
-    "file": "screens/v/court-over-town-1.jpg",
-    "what": "Kingsmere open, then Court pressed: 12 s later the town card is back and the petitioner is gone."
-   },
-   {
-    "v": 2,
-    "label": "After: what you opened stays",
-    "at": "2026-11-09T06:40:16Z",
-    "file": "screens/v/court-over-town-2.jpg",
-    "what": "Kingsmere open, then Court pressed: 12 s of realm updates later the petitioner is still there."
-   }
-  ],
-  "file": "screens/v/court-over-town-2.jpg"
- },
- {
-  "id": "hand-over-town",
-  "name": "The Hand over a town",
-  "group": "Play",
-  "what": "Kingsmere open, then the Hand pressed: a petitioner comes up instead.",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before: the Hand lost to the court",
-    "at": "2026-11-09T06:40:16Z",
-    "file": "screens/v/hand-over-town-1.jpg",
-    "what": "Kingsmere open, then the Hand pressed: a petitioner comes up instead."
-   },
-   {
-    "v": 2,
-    "label": "After: the Hand stays",
-    "at": "2026-11-09T06:40:16Z",
-    "file": "screens/v/hand-over-town-2.jpg",
-    "what": "Kingsmere open, then the Hand pressed: 12 s later his counsel is still up."
-   }
-  ],
-  "file": "screens/v/hand-over-town-2.jpg"
- },
- {
-  "id": "court-realm-matter",
-  "name": "A realm matter at court",
-  "group": "Play",
-  "what": "The realm's own matters (walls, plague, a house growing strong) come to court with the lord of the house they touch, the Hand's reasons and his orders.",
-  "versions": [
-   {
-    "v": 1,
-    "label": "A realm matter, brought by its lord",
-    "at": "2026-11-09T07:00:41Z",
-    "file": "screens/v/court-realm-matter-1.jpg",
-    "what": "The realm's own matters (walls, plague, a house growing strong) come to court with the lord of the house they touch, the Hand's reasons and his orders."
-   }
-  ],
-  "file": "screens/v/court-realm-matter-1.jpg"
- },
- {
-  "id": "court-closed",
-  "name": "After the court",
-  "group": "Play",
-  "what": "Every matter answered: the result shows, the court closes and dims until spring.",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Answered: the board is yours",
-    "at": "2026-11-09T07:00:42Z",
-    "file": "screens/v/court-closed-1.jpg",
-    "what": "Every matter answered: the result shows, the court closes and dims until spring."
-   }
-  ],
-  "file": "screens/v/court-closed-1.jpg"
- },
- {
-  "id": "house-colours",
-  "name": "House colours on the land",
-  "group": "Play",
-  "what": "From across the realm the land showed no house at all; only the minimap washed faintly.",
-  "versions": [
-   {
-    "v": 1,
-    "label": "Before: no colours on the land",
-    "at": "2026-11-09T07:49:27Z",
-    "file": "screens/v/house-colours-1.jpg",
-    "what": "From across the realm the land showed no house at all; only the minimap washed faintly."
-   },
-   {
-    "v": 2,
-    "label": "After: each house's land in its colour",
-    "at": "2026-11-09T07:49:27Z",
-    "file": "screens/v/house-colours-2.jpg",
-    "what": "Each house's land washed in its colour with a fine border; the minimap washes stronger, with borders; the seven houses ranked by power above it, the turning ones barred red. Fun bar, I can read the board: before, no ownership on the land (0 of 3 zooms); after, 3 of 3."
-   },
-   {
-    "v": 3,
-    "label": "True house colours, smooth borders",
-    "at": "2026-11-09T08:40:28Z",
-    "file": "screens/v/house-colours-3.jpg",
-    "what": "The land takes each house's own colour at its own brightness (the minimap's colour), strongest in a band along the border, with a fine line at every zoom on a smooth contour, not tile steps."
-   }
-  ],
-  "file": "screens/v/house-colours-3.jpg"
- },
- {
-  "id": "house-colours-far",
-  "name": "House colours, whole realm",
-  "group": "Play",
-  "what": "Pulled right back: every house's territory and its borders, the realm read at a glance.",
-  "versions": [
-   {
-    "v": 1,
-    "label": "After: the realm by house",
-    "at": "2026-11-09T07:49:28Z",
-    "file": "screens/v/house-colours-far-1.jpg",
-    "what": "Pulled right back: every house's territory and its borders, the realm read at a glance."
-   }
-  ],
-  "file": "screens/v/house-colours-far-1.jpg"
- },
- {
-  "id": "house-colours-close",
-  "name": "House colours, up close",
-  "group": "Play",
-  "what": "Up close the wash gives way so streets stay clean; the borders remain.",
-  "versions": [
-   {
-    "v": 1,
-    "label": "After: borders only among the streets",
-    "at": "2026-11-09T07:49:28Z",
-    "file": "screens/v/house-colours-close-1.jpg",
-    "what": "Up close the wash gives way so streets stay clean; the borders remain."
-   }
-  ],
-  "file": "screens/v/house-colours-close-1.jpg"
- },
- {
-  "id": "reign-heading",
-  "name": "Where the reign is heading",
-  "group": "Play",
-  "what": "Under the date: peace, wealth and strength each rising, falling or holding against a year ago, and the name history would give if the reign ended now, with the one close behind. Fun bar, It says who I am: before, the name only at the end (0% of play); after, on screen always.",
-  "versions": [
-   {
-    "v": 1,
-    "label": "After: three readings and the name you're earning",
-    "at": "2026-11-09T07:54:30Z",
-    "file": "screens/v/reign-heading-1.jpg",
-    "what": "Under the date: peace, wealth and strength each rising, falling or holding against a year ago, and the name history would give if the reign ended now, with the one close behind. Fun bar, It says who I am: before, the name only at the end (0% of play); after, on screen always."
-   }
-  ],
-  "file": "screens/v/reign-heading-1.jpg"
- },
- {
-  "id": "ultimatum",
-  "name": "A house's ultimatum",
-  "group": "Play",
-  "what": "A house under 25 for two seasons sends an ultimatum to court; only refused or ignored for two seasons may it rise. Fun bar, Failure feels fair: before, risings with no warning; after, an ultimatum always came first.",
-  "versions": [
-   {
-    "v": 1,
-    "label": "After: an ultimatum before any rising",
-    "at": "2026-11-09T07:54:30Z",
-    "file": "screens/v/ultimatum-1.jpg",
-    "what": "A house under 25 for two seasons sends an ultimatum to court; only refused or ignored for two seasons may it rise. Fun bar, Failure feels fair: before, risings with no warning; after, an ultimatum always came first."
-   }
-  ],
-  "file": "screens/v/ultimatum-1.jpg"
- },
- {
-  "id": "reign-end-flight",
-  "name": "The reign, as it will be told",
-  "group": "Reign",
-  "what": "Before the name: the camera goes to where the King's weightiest choices fell, one line each and what came of it, then a line of fate per house. A click moves it on.",
-  "versions": [
-   {
-    "v": 1,
-    "label": "After: the ending flies to your choices",
-    "at": "2026-11-09T07:54:30Z",
-    "file": "screens/v/reign-end-flight-1.jpg",
-    "what": "Before the name: the camera goes to where the King's weightiest choices fell, one line each and what came of it, then a line of fate per house. A click moves it on."
-   }
-  ],
-  "file": "screens/v/reign-end-flight-1.jpg"
- },
- {
-  "id": "ranked-houses",
-  "name": "The houses, ranked",
-  "group": "Play",
-  "what": "Above the minimap: the great houses by power; a red bar fills under a house turning against the crown.",
-  "versions": [
-   {
-    "v": 1,
-    "label": "After: seven sigils by power, turning ones barred red",
-    "at": "2026-11-09T07:54:31Z",
-    "file": "screens/v/ranked-houses-1.jpg",
-    "what": "Above the minimap: the great houses by power; a red bar fills under a house turning against the crown."
-   },
-   {
-    "v": 2,
-    "label": "Seven houses, numbered, with power bars",
-    "at": "2026-11-09T08:40:28Z",
-    "file": "screens/v/ranked-houses-2.jpg",
-    "what": "All seven great houses, numbered by power, each with a bar in its own colour (the colour of its land); a red ember marks a house turning against you."
-   }
-  ],
-  "file": "screens/v/ranked-houses-2.jpg"
- },
- {
-  "id": "director-after-court",
-  "name": "After the court closes",
-  "group": "Play",
-  "what": "Five seconds after the doors close the camera goes to what is happening in the realm (here a battle), until the King takes it back.",
-  "versions": [
-   {
-    "v": 1,
-    "label": "The camera goes to look",
-    "at": "2026-11-09T08:40:29Z",
-    "file": "screens/v/director-after-court-1.jpg",
-    "what": "Five seconds after the doors close the camera goes to what is happening in the realm (here a battle), until the King takes it back."
-   }
-  ],
-  "file": "screens/v/director-after-court-1.jpg"
- }
+    "before": "screens/before/counsel.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before",
+        "at": "2026-11-07T11:09:54+05:30",
+        "file": "screens/before/counsel.jpg"
+      },
+      {
+        "v": 2,
+        "label": "After",
+        "at": "2026-11-07T11:09:54+05:30",
+        "file": "screens/counsel.jpg",
+        "clip": "screens/counsel.mp4"
+      },
+      {
+        "v": 3,
+        "label": "The Hand calls you to court for a crisis",
+        "at": "2026-11-09T07:00:41Z",
+        "file": "screens/v/counsel-3.jpg",
+        "what": "No separate card or button: between sittings the Hand calls the King to court only for a crisis, with every order he used to offer."
+      }
+    ]
+  },
+  {
+    "id": "region",
+    "name": "Whole realm",
+    "group": "Play",
+    "what": "Drawn back past where the land reads: the painted map takes over",
+    "file": "screens/v/region-3.jpg",
+    "before": "screens/before/region.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before",
+        "at": "2026-11-06T07:35:28.639500+00:00",
+        "file": "screens/before/region.jpg"
+      },
+      {
+        "v": 2,
+        "label": "After",
+        "at": "2026-11-06T07:36:11.546344+00:00",
+        "file": "screens/region.jpg"
+      },
+      {
+        "v": 3,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/region-3.jpg"
+      }
+    ]
+  },
+  {
+    "id": "scar-hover",
+    "name": "Scar hover",
+    "group": "Play",
+    "what": "Hovering a scar on the land tells what happened there",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/scar-hover-1.jpg"
+      }
+    ],
+    "file": "screens/v/scar-hover-1.jpg"
+  },
+  {
+    "id": "town",
+    "name": "Kingsmere",
+    "group": "Play",
+    "what": "Your seat, its castle in daylight",
+    "file": "screens/v/town-3.jpg",
+    "before": "screens/before/town.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before",
+        "at": "2026-11-06T07:35:28.661015+00:00",
+        "file": "screens/before/town.jpg"
+      },
+      {
+        "v": 2,
+        "label": "After",
+        "at": "2026-11-06T08:06:26.533106+00:00",
+        "file": "screens/town.jpg"
+      },
+      {
+        "v": 3,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/town-3.jpg",
+        "clip": "screens/v/town-3.mp4"
+      }
+    ],
+    "clip": "screens/v/town-3.mp4"
+  },
+  {
+    "id": "ui-rest",
+    "name": "The interface at rest",
+    "group": "Play",
+    "what": "The town view with nothing opened: the heading and the treasury",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/ui-rest-1.jpg"
+      }
+    ],
+    "file": "screens/v/ui-rest-1.jpg"
+  },
+  {
+    "id": "town-situation",
+    "name": "Town situation line",
+    "group": "Play",
+    "what": "A town's card says first what has befallen it",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/town-situation-1.jpg"
+      }
+    ],
+    "file": "screens/v/town-situation-1.jpg"
+  },
+  {
+    "id": "choices-at-town",
+    "name": "Choices at the town",
+    "group": "Play",
+    "what": "A starving town's orders open beside the town itself",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/choices-at-town-1.jpg"
+      }
+    ],
+    "file": "screens/v/choices-at-town-1.jpg"
+  },
+  {
+    "id": "starving-grain",
+    "name": "Starving town and grain",
+    "group": "Play",
+    "what": "The King sends grain: wagons leave Kingsmere for the starving town",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/starving-grain-1.jpg",
+        "clip": "screens/v/starving-grain-1.mp4"
+      }
+    ],
+    "file": "screens/v/starving-grain-1.jpg",
+    "clip": "screens/v/starving-grain-1.mp4"
+  },
+  {
+    "id": "street",
+    "name": "Street level",
+    "group": "Play",
+    "what": "Down among the people",
+    "file": "screens/v/street-3.jpg",
+    "before": "screens/before/street.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before",
+        "at": "2026-11-06T07:35:28.683614+00:00",
+        "file": "screens/before/street.jpg"
+      },
+      {
+        "v": 2,
+        "label": "After",
+        "at": "2026-11-06T07:36:12.369941+00:00",
+        "file": "screens/street.jpg"
+      },
+      {
+        "v": 3,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/street-3.jpg",
+        "clip": "screens/v/street-3.mp4"
+      }
+    ],
+    "clip": "screens/v/street-3.mp4"
+  },
+  {
+    "id": "hover-folk",
+    "name": "Hover a townsperson",
+    "group": "Play",
+    "what": "Hovering someone in the street: their trade and what's on their mind",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/hover-folk-1.jpg"
+      }
+    ],
+    "file": "screens/v/hover-folk-1.jpg"
+  },
+  {
+    "id": "rain-street",
+    "name": "Rain at street level",
+    "group": "Play",
+    "what": "Rain over a feast in the square, from the street",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/rain-street-1.jpg",
+        "clip": "screens/v/rain-street-1.mp4"
+      }
+    ],
+    "file": "screens/v/rain-street-1.jpg",
+    "clip": "screens/v/rain-street-1.mp4"
+  },
+  {
+    "id": "snow",
+    "name": "Snow",
+    "group": "Play",
+    "what": "Winter in Kingsmere: snow on the ground, from the street",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/snow-1.jpg",
+        "clip": "screens/v/snow-1.mp4"
+      }
+    ],
+    "file": "screens/v/snow-1.jpg",
+    "clip": "screens/v/snow-1.mp4"
+  },
+  {
+    "id": "court",
+    "name": "Court",
+    "group": "Play",
+    "what": "0.6: the petitioner in front of you waits three seasons; the bar under the card drains.",
+    "file": "screens/v/court-5.jpg",
+    "before": "screens/before/court.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before",
+        "at": "2026-11-07T11:09:54+05:30",
+        "file": "screens/before/court.jpg"
+      },
+      {
+        "v": 2,
+        "label": "After",
+        "at": "2026-11-07T11:09:54+05:30",
+        "file": "screens/court.jpg"
+      },
+      {
+        "v": 3,
+        "label": "One court, a sitting each spring",
+        "at": "2026-11-09T07:00:41Z",
+        "file": "screens/v/court-3.jpg",
+        "what": "The court sits once a year, in spring, with two or three matters. The Hand speaks on each petitioner's card in one line."
+      },
+      {
+        "v": 4,
+        "label": "A paused court, when it has matters",
+        "at": "2026-11-09T08:40:28Z",
+        "file": "screens/v/court-4.jpg",
+        "what": "The court sits when it has something worth hearing (one matter early, up to three at the climax); the realm and the reign's clock hold still while it sits; Later sets the card aside, Close the court lets silence settle the rest. Fun bar, Room to breathe (timed 15-minute reign, 6.5 min measured): before 3.6 decisions a minute, the Hand's card always up (≈0% quiet); after 1.08 a minute, 86% quiet."
+      },
+      {
+        "v": 5,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/court-5.jpg"
+      }
+    ]
+  },
+  {
+    "id": "faces-at-court",
+    "name": "Faces at court",
+    "group": "Play",
+    "what": "While the court sits, each matter waits on the map at its place",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/faces-at-court-1.jpg"
+      }
+    ],
+    "file": "screens/v/faces-at-court-1.jpg"
+  },
+  {
+    "id": "thin-treasury",
+    "name": "Thin treasury",
+    "group": "Play",
+    "what": "A matter the treasury can barely pay for",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/thin-treasury-1.jpg"
+      }
+    ],
+    "file": "screens/v/thin-treasury-1.jpg"
+  },
+  {
+    "id": "ledger",
+    "name": "Ledger",
+    "group": "Play",
+    "what": "The ledger of the realm",
+    "file": "screens/ledger.jpg",
+    "before": "screens/before/ledger.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before",
+        "at": "2026-11-06T07:35:28.750803+00:00",
+        "file": "screens/before/ledger.jpg"
+      },
+      {
+        "v": 2,
+        "label": "After",
+        "at": "2026-11-06T07:36:08.216643+00:00",
+        "file": "screens/ledger.jpg"
+      }
+    ]
+  },
+  {
+    "id": "lore",
+    "name": "Lore in play",
+    "group": "Play",
+    "what": "The Lore opened during a reign",
+    "file": "screens/lore.jpg",
+    "before": "screens/before/lore.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before",
+        "at": "2026-11-06T07:35:28.729886+00:00",
+        "file": "screens/before/lore.jpg"
+      },
+      {
+        "v": 2,
+        "label": "After",
+        "at": "2026-11-06T07:36:09.846883+00:00",
+        "file": "screens/lore.jpg"
+      }
+    ]
+  },
+  {
+    "id": "reign-end",
+    "name": "The reign ends",
+    "group": "Reign",
+    "what": "0.5.1: history names you, with the reign in numbers.",
+    "file": "screens/reign-end.jpg",
+    "versions": [
+      {
+        "v": 1,
+        "label": "",
+        "at": "2026-11-07T11:09:54+05:30",
+        "file": "screens/reign-end.jpg"
+      }
+    ]
+  },
+  {
+    "id": "court-over-town",
+    "name": "Court over a town",
+    "group": "Play",
+    "what": "Kingsmere open, then Court pressed: 12 s later the town card is back and the petitioner is gone.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before: the town card wins",
+        "at": "2026-11-09T06:40:15Z",
+        "file": "screens/v/court-over-town-1.jpg",
+        "what": "Kingsmere open, then Court pressed: 12 s later the town card is back and the petitioner is gone."
+      },
+      {
+        "v": 2,
+        "label": "After: what you opened stays",
+        "at": "2026-11-09T06:40:16Z",
+        "file": "screens/v/court-over-town-2.jpg",
+        "what": "Kingsmere open, then Court pressed: 12 s of realm updates later the petitioner is still there."
+      }
+    ],
+    "file": "screens/v/court-over-town-2.jpg"
+  },
+  {
+    "id": "hand-over-town",
+    "name": "The Hand over a town",
+    "group": "Play",
+    "what": "Kingsmere open, then the Hand pressed: a petitioner comes up instead.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before: the Hand lost to the court",
+        "at": "2026-11-09T06:40:16Z",
+        "file": "screens/v/hand-over-town-1.jpg",
+        "what": "Kingsmere open, then the Hand pressed: a petitioner comes up instead."
+      },
+      {
+        "v": 2,
+        "label": "After: the Hand stays",
+        "at": "2026-11-09T06:40:16Z",
+        "file": "screens/v/hand-over-town-2.jpg",
+        "what": "Kingsmere open, then the Hand pressed: 12 s later his counsel is still up."
+      }
+    ],
+    "file": "screens/v/hand-over-town-2.jpg"
+  },
+  {
+    "id": "court-realm-matter",
+    "name": "A realm matter at court",
+    "group": "Play",
+    "what": "The realm's own matters (walls, plague, a house growing strong) come to court with the lord of the house they touch, the Hand's reasons and his orders.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "A realm matter, brought by its lord",
+        "at": "2026-11-09T07:00:41Z",
+        "file": "screens/v/court-realm-matter-1.jpg",
+        "what": "The realm's own matters (walls, plague, a house growing strong) come to court with the lord of the house they touch, the Hand's reasons and his orders."
+      }
+    ],
+    "file": "screens/v/court-realm-matter-1.jpg"
+  },
+  {
+    "id": "court-closed",
+    "name": "After the court",
+    "group": "Play",
+    "what": "Every matter answered: the result shows, the court closes and dims until spring.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Answered: the board is yours",
+        "at": "2026-11-09T07:00:42Z",
+        "file": "screens/v/court-closed-1.jpg",
+        "what": "Every matter answered: the result shows, the court closes and dims until spring."
+      },
+      {
+        "v": 2,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/court-closed-2.jpg"
+      }
+    ],
+    "file": "screens/v/court-closed-2.jpg"
+  },
+  {
+    "id": "house-colours",
+    "name": "House colours on the land",
+    "group": "Play",
+    "what": "From across the realm the land showed no house at all; only the minimap washed faintly.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Before: no colours on the land",
+        "at": "2026-11-09T07:49:27Z",
+        "file": "screens/v/house-colours-1.jpg",
+        "what": "From across the realm the land showed no house at all; only the minimap washed faintly."
+      },
+      {
+        "v": 2,
+        "label": "After: each house's land in its colour",
+        "at": "2026-11-09T07:49:27Z",
+        "file": "screens/v/house-colours-2.jpg",
+        "what": "Each house's land washed in its colour with a fine border; the minimap washes stronger, with borders; the seven houses ranked by power above it, the turning ones barred red. Fun bar, I can read the board: before, no ownership on the land (0 of 3 zooms); after, 3 of 3."
+      },
+      {
+        "v": 3,
+        "label": "True house colours, smooth borders",
+        "at": "2026-11-09T08:40:28Z",
+        "file": "screens/v/house-colours-3.jpg",
+        "what": "The land takes each house's own colour at its own brightness (the minimap's colour), strongest in a band along the border, with a fine line at every zoom on a smooth contour, not tile steps."
+      },
+      {
+        "v": 4,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/house-colours-4.jpg"
+      }
+    ],
+    "file": "screens/v/house-colours-4.jpg"
+  },
+  {
+    "id": "house-colours-far",
+    "name": "House colours, whole realm",
+    "group": "Play",
+    "what": "Pulled right back: every house's territory and its borders, the realm read at a glance.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "After: the realm by house",
+        "at": "2026-11-09T07:49:28Z",
+        "file": "screens/v/house-colours-far-1.jpg",
+        "what": "Pulled right back: every house's territory and its borders, the realm read at a glance."
+      },
+      {
+        "v": 2,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/house-colours-far-2.jpg"
+      }
+    ],
+    "file": "screens/v/house-colours-far-2.jpg"
+  },
+  {
+    "id": "borders",
+    "name": "Borders at war and truce",
+    "group": "Play",
+    "what": "The houses' borders from high up: war, truce and sworn houses each drawn on the land",
+    "versions": [
+      {
+        "v": 1,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/borders-1.jpg"
+      }
+    ],
+    "file": "screens/v/borders-1.jpg"
+  },
+  {
+    "id": "house-colours-close",
+    "name": "House colours, up close",
+    "group": "Play",
+    "what": "Up close the wash gives way so streets stay clean; the borders remain.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "After: borders only among the streets",
+        "at": "2026-11-09T07:49:28Z",
+        "file": "screens/v/house-colours-close-1.jpg",
+        "what": "Up close the wash gives way so streets stay clean; the borders remain."
+      },
+      {
+        "v": 2,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/house-colours-close-2.jpg"
+      }
+    ],
+    "file": "screens/v/house-colours-close-2.jpg"
+  },
+  {
+    "id": "reign-heading",
+    "name": "Where the reign is heading",
+    "group": "Play",
+    "what": "Under the date: peace, wealth and strength each rising, falling or holding against a year ago, and the name history would give if the reign ended now, with the one close behind. Fun bar, It says who I am: before, the name only at the end (0% of play); after, on screen always.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "After: three readings and the name you're earning",
+        "at": "2026-11-09T07:54:30Z",
+        "file": "screens/v/reign-heading-1.jpg",
+        "what": "Under the date: peace, wealth and strength each rising, falling or holding against a year ago, and the name history would give if the reign ended now, with the one close behind. Fun bar, It says who I am: before, the name only at the end (0% of play); after, on screen always."
+      }
+    ],
+    "file": "screens/v/reign-heading-1.jpg"
+  },
+  {
+    "id": "ultimatum",
+    "name": "A house's ultimatum",
+    "group": "Play",
+    "what": "A house under 25 for two seasons sends an ultimatum to court; only refused or ignored for two seasons may it rise. Fun bar, Failure feels fair: before, risings with no warning; after, an ultimatum always came first.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "After: an ultimatum before any rising",
+        "at": "2026-11-09T07:54:30Z",
+        "file": "screens/v/ultimatum-1.jpg",
+        "what": "A house under 25 for two seasons sends an ultimatum to court; only refused or ignored for two seasons may it rise. Fun bar, Failure feels fair: before, risings with no warning; after, an ultimatum always came first."
+      }
+    ],
+    "file": "screens/v/ultimatum-1.jpg"
+  },
+  {
+    "id": "reign-end-flight",
+    "name": "The reign, as it will be told",
+    "group": "Reign",
+    "what": "Before the name: the camera goes to where the King's weightiest choices fell, one line each and what came of it, then a line of fate per house. A click moves it on.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "After: the ending flies to your choices",
+        "at": "2026-11-09T07:54:30Z",
+        "file": "screens/v/reign-end-flight-1.jpg",
+        "what": "Before the name: the camera goes to where the King's weightiest choices fell, one line each and what came of it, then a line of fate per house. A click moves it on."
+      }
+    ],
+    "file": "screens/v/reign-end-flight-1.jpg"
+  },
+  {
+    "id": "ranked-houses",
+    "name": "The houses, ranked",
+    "group": "Play",
+    "what": "Above the minimap: the great houses by power; a red bar fills under a house turning against the crown.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "After: seven sigils by power, turning ones barred red",
+        "at": "2026-11-09T07:54:31Z",
+        "file": "screens/v/ranked-houses-1.jpg",
+        "what": "Above the minimap: the great houses by power; a red bar fills under a house turning against the crown."
+      },
+      {
+        "v": 2,
+        "label": "Seven houses, numbered, with power bars",
+        "at": "2026-11-09T08:40:28Z",
+        "file": "screens/v/ranked-houses-2.jpg",
+        "what": "All seven great houses, numbered by power, each with a bar in its own colour (the colour of its land); a red ember marks a house turning against you."
+      }
+    ],
+    "file": "screens/v/ranked-houses-2.jpg"
+  },
+  {
+    "id": "director-after-court",
+    "name": "After the court closes",
+    "group": "Play",
+    "what": "Five seconds after the doors close the camera goes to what is happening in the realm (here a battle), until the King takes it back.",
+    "versions": [
+      {
+        "v": 1,
+        "label": "The camera goes to look",
+        "at": "2026-11-09T08:40:29Z",
+        "file": "screens/v/director-after-court-1.jpg",
+        "what": "Five seconds after the doors close the camera goes to what is happening in the realm (here a battle), until the King takes it back."
+      },
+      {
+        "v": 2,
+        "label": "Today's round: map decisions, gold, motion v2, weather",
+        "at": "2026-11-10T16:16:41Z",
+        "file": "screens/v/director-after-court-2.jpg"
+      }
+    ],
+    "file": "screens/v/director-after-court-2.jpg"
+  }
 ]
