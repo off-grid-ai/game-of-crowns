@@ -1,5 +1,5 @@
 {
-  "_": "The King's decrees as data (consolidation B5): what each costs (in hundreds of crowns), its name, and what it does in a few words for the town card (effect; courtEffect when ordered at his own seat). crown.js decides what happens; the view shows these words, never its own. courtOnly: given only as an answer to a matter at court (cmd.matter), never from a town card. oncePerHouse: a house has it of the King once a reign. promise: the free answer to a crisis the purse can't pay (gameplay review #1): the house gains favour, the King's most favoured house (rival) loses it. cede: the free answer to a march on Kingsmere: a royal town for their claim (their host goes home).",
+  "_": "The King's decrees as data (consolidation B5): what each costs (in hundreds of crowns), its name, and what it does in a few words for the town card (effect; courtEffect when ordered at his own seat). crown.js decides what happens; the view shows these words, never its own. courtOnly: given only as an answer to a matter at court (cmd.matter), never from a town card. oncePerHouse: a house has it of the King once a reign. promise: the free answer to a crisis the purse can't pay (gameplay review #1): the house gains favour, the King's most favoured house (rival) loses it. cede: the free answer to a march on Kingsmere: a royal town for their claim (their host goes home). ward: favour is what the house thinks of its heir taken; seasons, how long it cannot rise (gameplay review #2: 20 crowns-hundreds and -5 made it a repeatable free win).",
   "relief": { "cost": 120, "label": "Send grain to a starving town" },
   "gift": { "cost": 150, "label": "Gift gold to a house" },
   "levy": { "cost": 200, "label": "Raise a royal levy", "courtEffect": "600 men of your own" },
@@ -10,7 +10,7 @@
   "marriage": { "cost": 400, "label": "Arrange a marriage between two houses" },
   "peace": { "cost": 150, "label": "Command peace between two warring houses" },
   "buyoff": { "cost": 300, "label": "Buy off the pretender" },
-  "ward": { "cost": 20, "label": "Take a house's heir as a royal ward" },
+  "ward": { "cost": 150, "label": "Take a house's heir as a royal ward", "favour": -15, "seasons": 12, "courtOnly": true, "oncePerHouse": true },
   "sellswords": { "cost": 300, "label": "Hire sellswords" },
   "back": { "cost": 150, "label": "Back one side of a war" },
   "settle": { "cost": 100, "label": "Tell another house to settle a war" },

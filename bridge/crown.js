@@ -216,8 +216,9 @@ const HANDLERS = {
     // The heir lives at court: the house cannot rise while the King holds them.
     const owner = c ? world.players.find((p) => p.id === c.owner) : null;
     if (!owner || houseFor(owner).crown) return { error: "choose a great house's town" };
-    return { cost, favour: { [owner.id]: -5 }, lua: [pay], ward: owner.id,
-      text: `${houseFor(owner).name}'s heir rides to Kingsmere as the King's ward. While the child lives at court, the house will not rise.` };
+    if ((cmd.warded ?? (() => false))(owner.id)) return { error: `${houseFor(owner).name}'s heir is already at court` };
+    return { cost, favour: { [owner.id]: DECREES.ward.favour ?? -15 }, lua: [pay], ward: owner.id,
+      text: `${houseFor(owner).name}'s heir rides to Kingsmere as the King's ward. While the child lives at court, the house will not rise, and it will not forget who took them.` };
   },
   buyoff(x) {
     const { cmd, world, cost, pay } = x;

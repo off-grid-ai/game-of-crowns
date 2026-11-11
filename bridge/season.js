@@ -92,6 +92,9 @@ export function turnHouses(ctx, turn) {
   const turning = (meta.turning ??= {});
   for (const p of world?.players ?? []) {
     if (houseFor(p).wild || houseFor(p).crown || !world.cities.some((c) => c.owner === p.id)) continue;
+    // A house whose heir is the King's ward neither threatens nor rises while the ward lives at court
+    // (the ward's promise, kept: gameplay review #2); its anger waits for the child to go home.
+    if (warded(ctx, p.id)) continue;
     // A realm from before ultimatums: a house already under 25 is one season from sending its own.
     const t = (turning[p.id] ??= { seasons: favourOf(p.id) < BANDS.cooling ? TURNING - 1 : 0, state: null });
     if (favourOf(p.id) < BANDS.cooling) t.seasons = Math.min(TURNING, t.seasons + 1);
@@ -163,7 +166,8 @@ export function askUltimatum(ctx, pid) {
 // Whether a lord may raise his banners against the crown: only after his ultimatum.
 // Refused, or two seasons gone since it came with no favour shown: then the rising.
 // After a crisis the realm gets its breather first (director.js resting): the rising waits, it isn't lost.
-export const mayRise = (ctx, pid) => { const { world, meta } = ctx; const t = meta.turning?.[pid]; return !Director.resting(meta) && (t?.state === "refused" || (t?.state === "sent" && (world?.turn ?? 0) - t.at >= 2)); };
+export const warded = (ctx, pid) => (ctx.stakes?.s?.wards?.[pid] ?? -1) > (ctx.world?.turn ?? 0);
+export const mayRise = (ctx, pid) => { const { world, meta } = ctx; const t = meta.turning?.[pid]; return !warded(ctx, pid) && !Director.resting(meta) && (t?.state === "refused" || (t?.state === "sent" && (world?.turn ?? 0) - t.at >= 2)); };
 export function rose(ctx, pid) {
   const t = ctx.meta.turning?.[pid];
   if (t) { t.state = null; t.seasons = 0; }

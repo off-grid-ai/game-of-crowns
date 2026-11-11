@@ -70,7 +70,7 @@ export async function issueDecree(ctx, req, res, url) {
     return json(res, 400, { error: `once a year: again in ${n} season${n === 1 ? "" : "s"}` });
   }
   const price = priceOf(cmd.action);
-  const result = decree({ ...cmd, works: ctx.meta.works ?? {}, price, favourOf, causeOf, sworn, marching: (city) => (ctx.meta.campaigns ?? []).some((x) => x.city === city), usurper: ctx.stakes?.s.usurper, seat: ctx.stakes?.s.seat }, ctx.world);
+  const result = decree({ ...cmd, works: ctx.meta.works ?? {}, price, favourOf, causeOf, sworn, warded: (pid) => (ctx.stakes?.s.wards?.[pid] ?? -1) > (ctx.world.turn ?? 0), marching: (city) => (ctx.meta.campaigns ?? []).some((x) => x.city === city), usurper: ctx.stakes?.s.usurper, seat: ctx.stakes?.s.seat }, ctx.world);
   if (result.error) return json(res, 400, result);
   {
     const dc = ctx.world.cities.find((x) => x.id === Number(cmd.city));
@@ -95,8 +95,8 @@ export async function issueDecree(ctx, req, res, url) {
   if (cmd.city != null) { (ctx.meta.answeredAt ??= {})[Number(cmd.city)] = ctx.world.turn ?? 0; chron.saveMeta(ctx.meta); }
   const warmed = ctx.world.cities.find((c) => c.id === Number(cmd.city))?.owner ?? (cmd.house != null ? Number(cmd.house) : null);
   result.favour = temper(cmd.action, warmed, result.favour);
-  // A ward holds the house for five years.
-  if (result.ward != null && ctx.stakes) { (ctx.stakes.s.wards ??= {})[result.ward] = (ctx.world.turn ?? 0) + 20; ctx.stakes.save(); }
+  // A ward holds the house for its seasons (data/decrees.json ward.seasons).
+  if (result.ward != null && ctx.stakes) { (ctx.stakes.s.wards ??= {})[result.ward] = (ctx.world.turn ?? 0) + (DECREES.ward.seasons ?? 12); ctx.stakes.save(); }
   // A town taken from a house is remembered, so the Hand can offer it back.
   if (cmd.action === "grant" && cmd.to != null) {
     const town = ctx.world.cities.find((c) => c.id === Number(cmd.city));

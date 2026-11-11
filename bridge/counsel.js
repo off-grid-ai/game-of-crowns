@@ -24,6 +24,11 @@ export function counsel(ctx, players, cities, threat) {
   const great = players.filter((p) => !p.house.wild && !p.house.crown && p.cities?.length !== 0);
   const seatOf = (pid) => cities.find((c) => c.owner === pid && c.capital) ?? cities.find((c) => c.owner === pid);
   const purse = players.find((p) => p.house.crown)?.gold ?? 0;
+  // A ward is had of a house once a reign, and holds it for its seasons (data/decrees.json ward).
+  const wardTaken = (pid) => (meta.oncePerHouse?.ward ?? {})[pid] != null || (stakes?.s.wards?.[pid] ?? -1) > (world?.turn ?? 0);
+  const wardHurt = String(DECREES.ward.favour ?? -15).replace("-", "−");
+  const wardYears = Math.round((DECREES.ward.seasons ?? 12) / 4);
+  const wardFor = `they cannot rise for ${wardYears === 1 ? "a year" : `${["", "one", "two", "three", "four", "five", "six"][wardYears] ?? wardYears} years`}`;
   // A war or bond the King has stilled (his peace, or a royal match).
   const stilled = (x, y) => { const a = court?.lordOfHouse(x), b = court?.lordOfHouse(y); return !!(a && b && court.truce(a.id, b.id)); };
   // A house sliding toward rebellion.
@@ -75,7 +80,7 @@ export function counsel(ctx, players, cities, threat) {
     out.push({ urgency: 90, subject: rose.id, occur: threat.since, text: `The march is over. What of House ${name}?`,
       why: `They rose against the throne and went home (favour ${Math.round(favourOf(rose.id))}). Pardon them with a feast to win them back, hold their heir at court so they cannot rise, or take a town and give it to ${loyal ? loyal.house.name : "a loyal house"} so the realm sees the price of treason; a house driven below 25 may rise again.`,
       acts: [seatOf(rose.id) ? { label: "Pardon them with a feast", action: "feast", city: seatOf(rose.id).id } : null,
-        seatOf(rose.id) ? { label: `Take their heir as your ward (${name} −5; they cannot rise for five years)`, action: "ward", city: seatOf(rose.id).id } : null,
+        seatOf(rose.id) && !wardTaken(rose.id) ? { label: `Take their heir as your ward (${name} ${wardHurt}; ${wardFor})`, action: "ward", city: seatOf(rose.id).id } : null,
         towns[0] && loyal ? { label: `Give ${towns[0].title ?? "a town"} to ${loyal.house.name.replace(/^House /, "")} (${name} −30, ${loyal.house.name.replace(/^House /, "")} +20)`, action: "grant", city: towns[0].id, to: loyal.id } : null].filter(Boolean) });
   }
   // A house that has turned: its lord's ultimatum, before any banners are raised.
@@ -92,7 +97,7 @@ export function counsel(ctx, players, cities, threat) {
     out.push({ urgency: 100, kind: "ultimatum", subject: p.id, occur: t.at, text: `${p.house.name} sends the crown an ultimatum`,
       why: `${lord ? lord.name : `The lord of ${short}`}: "${grievance}, or ${short} raises its banners." Answer with a favour they can see; silence is a refusal.`,
       acts: [{ label: "A feast in their honour", action: "feast", city: seatOf(p.id).id }, { label: "Gift crowns", action: "gift", city: seatOf(p.id).id },
-        { label: `Take their heir as your ward (they cannot rise for five years)`, action: "ward", city: seatOf(p.id).id }] });
+        !wardTaken(p.id) ? { label: `Take their heir as your ward (${short} ${wardHurt}; ${wardFor})`, action: "ward", city: seatOf(p.id).id } : null].filter(Boolean) });
     for (let i = out.length - 2; i >= 0; i--) if (out[i].text.startsWith(`${p.house.name} grows cold`)) out.splice(i, 1);
   }
   // The pretender's own coldness is the usurper's story: one matter, not two.
@@ -239,8 +244,9 @@ export function counsel(ctx, players, cities, threat) {
     given.add(k);
     return true;
   });
-  // The Hand's own pick on each matter: the order that does most for its cost.
-  const PREFER = ["court", "ward", "feast", "relief", "tithe_down", "banners", "peace", "settle", "buyoff", "marriage", "gift", "grant", "levy", "promise", "cede", "tithe_up"];
+  // The Hand's own pick on each matter: the order that does most for its cost. Never the ward: an
+  // heir taken hostage is the King's own hard choice, not the Hand's advice (gameplay review #2).
+  const PREFER = ["court", "feast", "relief", "tithe_down", "banners", "peace", "settle", "buyoff", "marriage", "gift", "grant", "levy", "ward", "promise", "cede", "tithe_up"];
   for (const o of out) {
     const rank = (a) => { const i = PREFER.indexOf(a.action ?? a.ui); return i < 0 ? 99 : i; };
     const best = [...o.acts].sort((a, b) => rank(a) - rank(b))[0];
