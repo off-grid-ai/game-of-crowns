@@ -204,7 +204,10 @@ func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: A
 	var face := Vector3(sin(yaw), 0, cos(yaw))
 	var side := Vector3(face.z, 0, -face.x)
 	var yard: Array = [[at, 0.55]]  # [where, how far round it]: the house and what stands by it
-	var houses: Array = Real.names_of("house").filter(func(n): return not n in Real.variants("tavern"))
+	# A farmstead is a cottage or a hovel (towns.json tiers.ladder's two poorest), never a town's merchant house.
+	var houses: Array = (Real.variants("house_hovel") + Real.variants("house_poor")).filter(func(n): return Real.footprint(String(n)) != Vector2.ZERO)
+	if houses.is_empty():
+		houses = Real.names_of("house").filter(func(n): return not n in Real.variants("tavern"))
 	if not houses.is_empty():
 		_place(houses[rng.randi() % houses.size()], at, yaw)
 	if rng.randf() < 0.6 and not Real.names_of("barn").is_empty():

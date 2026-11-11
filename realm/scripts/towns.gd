@@ -246,6 +246,10 @@ func nearest(pos: Vector3, max_dist := 6.0) -> Dictionary:
 
 const Fire := preload("res://scripts/fire.gd")  # fire v2: shaped flames (data/fire.json)
 const Real = preload("res://scripts/realistic.gd")
+const TownTiers := preload("res://scripts/town_tiers.gd")  # which house on which plot (towns.json tiers)
+const TownTrades := preload("res://scripts/town_trades.gd")  # which working buildings, and where (towns.json trades)
+var _tiers: RefCounted = null  # the town being built's house decider (town_tiers.gd)
+var _trades: Array = []  # the town being built's trades (town_trades.gd plan), each marked once it stands
 const Fields = preload("res://scripts/countryside.gd")  # crops, and fields that line up with their soil
 const TownPlots = preload("res://scripts/town_plots.gd")  # roads, burgage plots and lanes (--towns=plots)
 ## `--towns=plots`: a town laid out along its roads, in burgage plots, the way
@@ -453,10 +457,21 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 		gap_ang += PI * 0.6
 	# The landmarks, on the square's edge, facing in.
 	# By component (data/assets.json), so a kit set (--houses=kit, --castles=kit) stands in their place.
-	var rooms := {"tavern": ["tavern", "tavern", "tavern"], "hall": ["great_hall", "longhall", "hall"], "church": ["chapel", "church", "sept"]}
+	var rooms := {"tavern": ["tavern", "tavern", "tavern"], "hall": ["great_hall", "longhall", "hall"], "church": ["chapel", "church", "sept"], "guild_hall": ["guild", "guild hall", "guild"]}
 	var places: Dictionary = root.get_meta("places", {})
-	for comp in ["tavern", "hall", "church"]:
+	# The town's house decider and its trades (towns.json tiers, trades): the land goes to the
+	# landmarks and the trades first, then the big and middle houses; the small fill what is left.
+	_tiers = TownTiers.new(size, seat)
+	_trades = TownTrades.plan(size, root.get_meta("buildings", []), seat, rng.seed + 53)
+	var landmarks: Array = ["tavern", "hall", "church"]
+	for tr in _trades:
+		if String(tr["where"]) == "square":
+			landmarks.append(String(tr["component"]))
+	for comp in landmarks:
 		var lm := Real.one(comp)
+		var square_trade := _trade_of(comp)
+		if not square_trade.is_empty():
+			lm = String(square_trade["model"])
 		var f: Vector2 = Real.footprint(lm)
 		if f == Vector2.ZERO:
 			continue
@@ -474,9 +489,17 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 			places[rooms[comp][2]] = p - p.normalized() * (f.y * 0.5 + 0.35)
 			if comp == "tavern":
 				_tether(root, center, p, f)
+				_trade_record(root, center, {"component": "tavern", "model": lm}, p, -p.normalized(), f)
+			if not square_trade.is_empty():
+				_trade_record(root, center, square_trade, p, -p.normalized(), f)
 		gap_ang += PI * 0.62
 		await _pace()
 	root.set_meta("places", places)
+	# The trades that need a particular ground take it before any house: the armoury by the castle,
+	# the watermill on the water.
+	for tr in _trades:
+		if String(tr["where"]) in ["castle", "water"]:
+			await _trade_off_plot(root, center, tr, square_r, square_r + 3.6, ways, lots, rng)
 	if not ways.is_empty():
 		# --towns=plots: the square enclosed by a ring of houses between the roads in, then the
 		# lanes (laid now, round the castle and the landmarks), then burgage plots along the
@@ -488,6 +511,7 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 			root.set_meta("ring_houses", ring_n)
 		ways = ways + _lay_lanes(root, center, ways, clampi(int((size - 2) * float(pk.get("lanes_per_size", 0.5))), 0, int(pk.get("lanes_most", 6))), square_r, rng)
 		await _plot_lots(root, center, square_r, ways, kinds, lots, rng, want - placed, seat)
+		await _trades_beyond(root, center, square_r, float(root.get_meta("edge_r", square_r + 3.6)), ways, lots, rng)
 		return
 	# The ring of townhouses framing the square, shoulder to shoulder; then the
 	# roads out, lined with houses doors-to-the-road the way a medieval street
@@ -505,7 +529,8 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 		var ang := rr.randf() * TAU
 		var walked := 0.0
 		while walked < circ and placed < want:
-			var kind: String = kinds[rr.randi() % kinds.size()]
+			# Wealth falls ring by ring from the square (towns.json tiers.wealth).
+			var kind: String = _tier_pick(rr, kinds, ["square", "main", "lane", "lane"][r], [0.0, 0.3, 0.6, 1.0][r], "ring%d" % r)
 			var f: Vector2 = Real.footprint(kind)
 			var span := maxf(f.x, f.y)
 			var p := Vector3(cos(ang), 0, sin(ang)) * ring
@@ -523,6 +548,7 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 			await _pace()
 		ring += 0.95
 	_palisade(root, center, edge, streets, seat)
+	await _trades_beyond(root, center, square_r, edge, [], lots, rng)
 
 
 ## --towns=plots: the square enclosed (art target 01-town): a ring of houses on its edge
@@ -540,17 +566,27 @@ func _square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, k
 	var half_prev := 0.0
 	var placed := 0
 	while walked < TAU * ring and placed < budget:
-		var kind: String = fronts[rr.randi() % fronts.size()]
+		var kind: String = _tier_pick(rr, fronts, "square", 0.0, "square")  # the square's fronts: the town's richest
 		var f: Vector2 = Real.footprint(kind)
 		var step := (half_prev + f.x * 0.52 + rr.randf_range(0.0, 0.03)) / ring  # fronts nearly touching
 		half_prev = f.x * 0.52
 		ang += step
 		walked += step * ring
-		var p := Vector3(cos(ang), 0, sin(ang)) * (ring + f.y * 0.5)
-		if TownPlots.near_ways(Vector2(p.x, p.z), ways, TownPlots.ROAD_HALF + maxf(f.x, f.y) * 0.5):
-			continue  # the roads into the square stay open
-		if _put(root, center, kind, p, f, lots, rr, true, -p.normalized(), true):
-			placed += 1
+		# A rich house that will not fit between the roads in gives way to a smaller one on the same
+		# frontage (a townhouse or a cottage), as a real square's fronts mix.
+		for attempt in 2:
+			if attempt == 1:
+				var smaller := _tier_pick(rr, fronts, "lane", 0.0, "square")
+				if Real.footprint(smaller).x > f.x or smaller == kind:
+					break
+				kind = smaller
+				f = Real.footprint(kind)
+			var p := Vector3(cos(ang), 0, sin(ang)) * (ring + f.y * 0.5)
+			if TownPlots.near_ways(Vector2(p.x, p.z), ways, TownPlots.ROAD_HALF + maxf(f.x, f.y) * 0.5):
+				continue  # the roads into the square stay open
+			if _put(root, center, kind, p, f, lots, rr, true, -p.normalized(), true):
+				placed += 1
+				break
 		await _pace()
 	return placed
 
@@ -571,7 +607,7 @@ func _street_fronts(root: Node3D, center: Vector3, square_r: float, edge: float,
 			rr.seed = rng.seed + 101 * (si + 1) + s  # its own, so growth only adds at the far end
 			var t := square_r + 1.45
 			while placed < budget:
-				var kind: String = kinds[rr.randi() % kinds.size()]
+				var kind: String = _tier_pick(rr, kinds, "main", clampf((t - square_r) / maxf(edge - square_r, 0.1), 0.0, 1.0), "street%d%d" % [si, s])
 				if Real.KIT.get(kind, [""])[0] == "barn":
 					kind = kinds[0]  # barns stand back in the yards, not on the street
 				var f: Vector2 = Real.footprint(kind)
@@ -704,16 +740,34 @@ func _plot_lots(root: Node3D, center: Vector3, square_r: float, ways: Array, kin
 	var fronts: Array = kinds.filter(func(k): return Real.KIT.get(k, [""])[0] != "barn")  # barns stand in yards, not on the street
 	if fronts.is_empty():
 		fronts = kinds
-	var widths := func(r: RandomNumberGenerator) -> Array:
-		var kind: String = fronts[r.randi() % fronts.size()]
+	# Each plot's house by where it falls (town_tiers.gd): the square's end of a main street rich, a lane
+	# poorer, the edge poorest, a corner a rung up; a street trade takes the first plot in its window.
+	var main_n: int = (root.get_meta("ways_main", []) as Array).size()
+	var edge_r := float(root.get_meta("plot_edge", square_r + 3.6))
+	var claimed := {}  # a street trade -> the plot handed to it
+	var widths := func(r: RandomNumberGenerator, ctx: Dictionary) -> Array:
+		var at: Vector2 = ctx.get("at", Vector2.ZERO)
+		var t := clampf((at.length() - square_r) / maxf(edge_r - square_r, 0.1), 0.0, 1.0)
+		var main := int(ctx.get("way", 0)) < main_n
+		for tr in _trades:
+			var where := String(tr["where"])
+			if claimed.has(tr) or not ((where in ["main", "gate"] and main) or (where == "lane" and not main)):
+				continue
+			var win: Array = tr.get("t", [0.0, 1.0])
+			if t >= float(win[0]) and t <= float(win[1]):
+				claimed[tr] = true
+				var tf: Vector2 = Real.footprint(String(tr["model"]))
+				return [tf.x, tf.y, String(tr["model"])]
+		var kind: String = _tier_pick(r, fronts, "main" if main else "lane", t, "%d%s" % [int(ctx.get("way", 0)), "+" if float(ctx.get("side", 1.0)) > 0.0 else "-"], bool(ctx.get("first", false)))
 		var f: Vector2 = Real.footprint(kind)
 		return [f.x, f.y, kind]
 	var all: Array = TownPlots.plots(ways, square_r, float(root.get_meta("plot_edge", square_r + 3.6)), widths, rng.seed + 29)
 	# A plot whose house would stand on another street (a corner, a bend) or against a house
 	# already standing takes a shallower one on the same frontage before it is given up, as a
 	# corner plot in a real town holds a cottage.
+	# Every house model, biggest first, so a plot gives way to the next size down, not straight to a hovel.
 	var shallow: Array = fronts.duplicate()
-	shallow.sort_custom(func(a, b): return Real.footprint(a).y < Real.footprint(b).y)
+	shallow.sort_custom(func(a, b): return Real.footprint(a).x * Real.footprint(a).y > Real.footprint(b).x * Real.footprint(b).y)
 	var taken: Array = []
 	var bodies: Array = []  # each standing plot house's outline (town-local)
 	var why := {"another street": 0, "another house": 0, "the realm's road": 0, "crowded": 0, "water or a cliff": 0, "alone": 0}
@@ -769,7 +823,9 @@ func _plot_one(root: Node3D, center: Vector3, pl0: Array, ways: Array, shallow: 
 	var fd: Vector2 = Real.footprint(String(pl[6]))
 	var front: Vector2 = Vector2(pl[0]) + face2 * fd.y * 0.5  # the house front's line
 	var own := int(String(pl[7]).trim_suffix("+").trim_suffix("-"))
-	var tries: Array = [String(pl[6])] + shallow.filter(func(k): return Real.footprint(k).x <= float(pl[2]) + 0.01 and Real.footprint(k).y < fd.y - 0.05)
+	# Then a smaller house on the same frontage: shallower, or narrower (a rich house that will not fit
+	# gives way to a townhouse or a cottage, as a real street mixes).
+	var tries: Array = [String(pl[6])] + shallow.filter(func(k): return Real.footprint(k).x <= float(pl[2]) + 0.01 and (Real.footprint(k).y < fd.y - 0.05 or Real.footprint(k).x < fd.x - 0.05))
 	var last := ""
 	for kind: String in tries:
 		var f: Vector2 = Real.footprint(kind)
@@ -795,9 +851,12 @@ func _plot_one(root: Node3D, center: Vector3, pl0: Array, ways: Array, shallow: 
 		if _crowded(lots, p, f.x * 0.45):
 			last = "crowded"  # the castle, the square's landmarks and stalls, the houses round the square
 			continue
-		if not _put(root, center, kind, p, f, lots, rng, true, Vector3(face2.x, 0, face2.y), true):
+		var trade := _trade_by_model(kind)
+		if not _put(root, center, kind, p, f, lots, rng, trade.is_empty(), Vector3(face2.x, 0, face2.y), true):
 			last = "water or a cliff"
 			continue
+		if not trade.is_empty():
+			_trade_record(root, center, trade, p, Vector3(face2.x, 0, face2.y), f)
 		if back > 0.0 or kind != String(pl[6]):
 			pl = pl.duplicate()
 			pl[0] = house
@@ -846,6 +905,41 @@ func _yard(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vector3, 
 	root.set_meta("plot_yards", yards + 1)
 	if rng.randf() < 0.65:
 		_croft(root, center, p, face, f, lots, rng, own_lot)
+	_yard_thing(root, center, pl, face, lots, rng)
+
+
+## One of a yard's working things in its back corner (towns.json plots.yard_things: a woodshed, a pen,
+## a washing line, each by its chance): Manor Lords' backyard extensions, Foundation's garden props.
+func _yard_thing(root: Node3D, center: Vector3, pl: Array, face: Vector3, lots: Array, rng: RandomNumberGenerator) -> void:
+	var things: Dictionary = _plot_knobs(false).get("yard_things", {})
+	var total := 0.0
+	for k in things:
+		total += float(things[k])
+	if things.is_empty() or rng.randf() > minf(total, 1.0):
+		return
+	var r := rng.randf() * total
+	var comp := ""
+	for k in things:
+		r -= float(things[k])
+		if r <= 0.0:
+			comp = String(k)
+			break
+	var kind := Real.one(comp)
+	var f: Vector2 = Real.footprint(kind)
+	if kind == "" or f == Vector2.ZERO:
+		return
+	var corners: PackedVector2Array = pl[4]
+	var side := 0.22 if rng.randf() < 0.5 else 0.78
+	var q2: Vector2 = corners[3].lerp(corners[2], side) + Vector2(face.x, face.z) * (f.y * 0.5 + 0.04)
+	var q := Vector3(q2.x, 0, q2.y)
+	if not terrain.is_land(center.x + q.x, center.z + q.z) or _crowded(lots, q, maxf(f.x, f.y) * 0.4) or _on_road(q, 0.05) or not _flat_enough(center, q, 0.15):
+		return
+	var yaw := atan2(face.x, face.z)
+	_place(root, kind, q + Vector3(0, _ground_y(center, q) - 0.005, 0), yaw)
+	lots.append([q, maxf(f.x, f.y) * 0.4])
+	var all: Array = root.get_meta("yard_things", [])
+	all.append({"component": comp, "at": q})  # where the life at a yard goes (a pen's animals, the washing)
+	root.set_meta("yard_things", all)
 
 
 ## Fence panels from `a` to `b` (town-local), on the ground, walked round;
@@ -969,6 +1063,229 @@ func _layout_check(root: Node3D, taken: Array, ways: Array) -> void:
 		last[key] = face
 	var n := maxi(1, taken.size())
 	print("CHECK town layout (plots): %d houses, %d%% face a street, %d%% with a fenced yard, neighbours turn %.0f deg on average" % [taken.size(), roundi(100.0 * facing / n), roundi(100.0 * int(root.get_meta("plot_yards", 0)) / n), turn / maxi(1, pairs)])
+
+
+## A house for a plot from the town's decider (town_tiers.gd), or from `pool` when it has none.
+func _tier_pick(rng: RandomNumberGenerator, pool: Array, zone: String, t: float, key: String, corner := false) -> String:
+	if _tiers and _tiers.any():
+		var kind: String = _tiers.pick(rng, zone, t, key, corner)
+		if kind != "":
+			return kind
+	return String(pool[rng.randi() % pool.size()])
+
+
+## The town's planned trade by component ({} when it has none).
+func _trade_of(component: String) -> Dictionary:
+	for tr in _trades:
+		if String(tr["component"]) == component:
+			return tr
+	return {}
+
+
+## The planned trade a model draws, not yet standing ({} for a house).
+func _trade_by_model(kind: String) -> Dictionary:
+	for tr in _trades:
+		if String(tr["model"]) == kind and not tr.has("stood"):
+			return tr
+	return {}
+
+
+## A trade has stood at `p` (town-local) looking along `face`: marked, and listed on the town's root
+## for the life at it: meta `works` {trade: {at, yaw, spots, component}} (works.gd; its front, +z,
+## turned by yaw to the street), and `trades` (every one, the town's own list). A forge's hearth glows
+## through its open front, and its chimney smokes.
+func _trade_record(root: Node3D, center: Vector3, tr: Dictionary, p: Vector3, face: Vector3, f: Vector2) -> void:
+	tr["stood"] = p
+	var comp := String(tr["component"])
+	var spots: Dictionary = TownTrades.work_spots(comp, p, face, f)
+	var all: Array = root.get_meta("trades", [])
+	all.append({"component": comp, "model": String(tr["model"]), "at": p, "face": face})
+	root.set_meta("trades", all)
+	var trade := TownTrades.trade_of(comp)
+	if trade != "":
+		var works: Dictionary = root.get_meta("works", {})
+		if not works.has(trade):
+			works[trade] = {"at": p, "yaw": atan2(face.x, face.z), "spots": spots, "component": comp}
+			if comp == "town_stables" and spots.has("middle"):
+				works["paddock"] = {"at": spots["middle"], "yaw": atan2(face.x, face.z), "radius": 1.9 * Real.S, "component": comp}
+			root.set_meta("works", works)
+	var cfg: Dictionary = preload("res://scripts/data.gd").value("assets", "components", {}).get(comp, {})
+	var rotor := _rotor(root, center, cfg.get("rotor", {}), p, face, f)
+	if rotor and trade != "" and (root.get_meta("works", {}) as Dictionary).has(trade):
+		(root.get_meta("works") as Dictionary)[trade]["node"] = rotor  # the mill's turning part (works.gd, town_life._spinner)
+	if spots.has("hearth"):
+		var fire: Vector3 = spots["hearth"]
+		_hearth(root, Vector3(fire.x, _ground_y(center, fire), fire.z))
+	if bool(cfg.get("smoke", false)):
+		var top := Real.height(String(tr["model"]))
+		_smoke(root, p - face * f.y * 0.4 + Vector3(0, _ground_y(center, p) + top * 0.95, 0))
+	if comp == "alehouse":
+		_door(root, p, f, "tavern", "alehouse", face)  # the lane's own drinking house: a tavern to its regulars
+
+
+## A mill's turning part as its own node (assets.json components.<id>.rotor), so it can turn
+## (town_life.gd finds it by name under the returned holder and turns it about works.json mill.axis
+## for its kind: the spinning node's own z for a windmill's sails, its x for a water wheel). The
+## model's thin side is its axle; it is turned so that lies along `axis` in the building's frame.
+## Returns the holder, or null.
+func _rotor(root: Node3D, center: Vector3, r: Dictionary, p: Vector3, face: Vector3, f: Vector2) -> Node3D:
+	if r.is_empty() or not ResourceLoader.exists("res://assets/" + String(r.get("model", ""))):
+		return null
+	var path := "res://assets/" + String(r["model"])
+	var box: AABB = _builder.roof_box(path)
+	var thin := 0 if box.size.x <= box.size.z else 2  # the axle: the model's thinnest horizontal side
+	var k := float(r.get("size", 4.0)) * S / maxf(box.size.y, 0.01)
+	var holder := Node3D.new()
+	holder.name = "Rotor"
+	var along := Vector3(-face.z, 0, face.x)
+	var back := String(r.get("from", "front")) == "back"
+	var wall := (-1.0 if back else 1.0) * (f.y * 0.5 + float(r.get("out", 0.5)) * S)
+	var at: Vector3 = p + face * wall + along * float(r.get("across", 0.0)) * S
+	holder.position = Vector3(at.x, _ground_y(center, at) + float(r.get("up", 2.0)) * S, at.z)
+	holder.rotation.y = atan2(face.x, face.z)
+	var spin := Node3D.new()
+	spin.name = String(r.get("name", "rotor"))  # works.json mill.spin_names
+	# The spinning node turns about its own z for a windmill and its x for a wheel (works.json mill.axis):
+	# a sail's axle runs out of the front (z), a wheel's out of its wall too, so the wheel's node is
+	# turned a quarter for its x to lie along the front's z.
+	if String(r.get("axis", "z")) == "z" and String(r.get("name", "")) == "wheel":
+		spin.rotation.y = PI / 2
+	holder.add_child(spin)
+	var model: Node3D = (load(path) as PackedScene).instantiate()
+	# The model's axle onto the spinning node's turning axis (x for a wheel, z for sails).
+	var want_x := String(r.get("name", "")) == "wheel"
+	if (thin == 0) != want_x:
+		model.rotation.y = PI / 2
+	model.scale = Vector3.ONE * k
+	model.position = -(model.basis * box.get_center())
+	spin.add_child(model)
+	root.add_child(holder)
+	return holder
+
+
+## Stands a trade off the plots, on the ground its `where` asks for (towns.json trades): beside the
+## castle, on the shore, on the highest open ground past the edge, by a main road out past the edge,
+## downstream. Candidates are scored and the best that stands wins. Returns whether it stood.
+func _trade_off_plot(root: Node3D, center: Vector3, tr: Dictionary, square_r: float, edge: float, ways: Array, lots: Array, rng: RandomNumberGenerator) -> bool:
+	if tr.has("stood"):
+		return true
+	var kind := String(tr["model"])
+	var f: Vector2 = Real.footprint(kind)
+	if f == Vector2.ZERO:
+		return false
+	var where := String(tr["where"])
+	var span := maxf(f.x, f.y)
+	var cands: Array = []  # [score (lower wins), where, facing]
+	var water_near := func(q: Vector3, r: float) -> Vector3:
+		# The way to the nearest water within `r` (town-local), or zero.
+		var dir := Vector3.ZERO
+		for i in 12:
+			var d := Vector3(cos(TAU * i / 12.0), 0, sin(TAU * i / 12.0))
+			var w: Vector3 = center + q + d * r
+			if not terrain.is_land(w.x, w.z):
+				dir += d
+		return dir.normalized() if dir != Vector3.ZERO else Vector3.ZERO
+	match where:
+		"castle":
+			var cp: PackedVector2Array = root.get_meta("castle_poly", PackedVector2Array())
+			var mid := Vector3.ZERO
+			var r := square_r + span * 0.6 + 0.3
+			if cp.size() >= 3:
+				var c2 := Vector2.ZERO
+				for q in cp:
+					c2 += q
+				c2 /= cp.size()
+				mid = Vector3(c2.x, 0, c2.y)
+				var far := 0.0
+				for q in cp:
+					far = maxf(far, q.distance_to(c2))
+				r = far + span * 0.55 + 0.1
+			for i in 20:
+				var a := TAU * i / 20.0
+				var q := mid + Vector3(cos(a), 0, sin(a)) * r
+				cands.append([q.length(), q, (Vector3.ZERO - q).normalized() if mid == Vector3.ZERO else (Vector3(0, 0, 0) - q).normalized()])
+		"water", "downstream":
+			# A watermill keeps off the square's own streets (it takes the shore half way out or
+			# further); a tannery and a dyer go past the edge, downstream of everyone.
+			var lo := maxf(square_r + span * 0.6, (square_r + edge) * 0.5) if where == "water" else edge
+			for ring in 10:
+				var rr := lo + ring * 0.3
+				for i in 24:
+					var a := TAU * i / 24.0
+					var q := Vector3(cos(a), 0, sin(a)) * rr
+					if not terrain.is_land(center.x + q.x, center.z + q.z):
+						continue
+					var wd: Vector3 = water_near.call(q, span * 0.5 + 0.35)
+					if wd == Vector3.ZERO:
+						continue
+					var score := rr if where == "water" else float(terrain.height_at(center.x + q.x, center.z + q.z)) * 10.0 + rr * 0.1
+					cands.append([score, q, -wd])  # its back to the water (a mill's wheel, a tannery's outflow), its door to the land
+		"high":
+			for ring in 4:
+				var rr := edge + span * 0.5 + 0.3 + ring * 0.4
+				for i in 24:
+					var a := TAU * i / 24.0
+					var q := Vector3(cos(a), 0, sin(a)) * rr
+					cands.append([-float(terrain.height_at(center.x + q.x, center.z + q.z)) * 10.0 + ring * 0.05, q, -q.normalized()])
+		_:  # edge, and a street trade no plot took: by a main road out past the edge, facing it
+			var main: Array = root.get_meta("ways_main", [])
+			for way in main:
+				var total := TownPlots.length(way)
+				for k in 12:
+					var at := TownPlots.point_at(way, total * (0.35 + 0.65 * k / 11.0))
+					if at.is_empty():
+						continue
+					var on: Vector2 = at[0]
+					var n2: Vector2 = (at[1] as Vector2).orthogonal()
+					for sd in [1.0, -1.0]:
+						var q2: Vector2 = on + n2 * sd * (TownPlots.ROAD_HALF + f.y * 0.5 + 0.12)
+						var q := Vector3(q2.x, 0, q2.y)
+						cands.append([absf(q.length() - (edge + span * 0.5)), q, Vector3(-n2.x * sd, 0, -n2.y * sd)])
+			if cands.is_empty():
+				for i in 16:
+					var a := TAU * i / 16.0
+					var q := Vector3(cos(a), 0, sin(a)) * (edge + span * 0.6)
+					cands.append([float(i) * 0.01, q, -q.normalized()])
+	# Last, anywhere just past the edge, nearest first: a trade the town has stands somewhere.
+	if where != "castle":
+		for ring in 3:
+			for i in 24:
+				var a := TAU * i / 24.0
+				var q := Vector3(cos(a), 0, sin(a)) * (edge + span * 0.6 + ring * 0.35)
+				cands.append([100.0 + ring, q, -q.normalized()])
+	cands.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
+	var tried := 0
+	for cnd in cands:
+		var q: Vector3 = cnd[1]
+		# Clear of the streets by its depth when it fronts one (edge), else by its whole span.
+		var clear := f.y * 0.45 if where in ["edge", "main", "gate", "lane"] and float(cnd[0]) < 100.0 else span * 0.45
+		if not ways.is_empty() and TownPlots.near_ways(Vector2(q.x, q.z), ways, TownPlots.ROAD_HALF + clear):
+			continue  # never across one of the town's streets
+		if _on_road(q, span * 0.4) or _built_on(root, q):
+			continue
+		var face: Vector3 = cnd[2]
+		if face == Vector3.ZERO:
+			face = -q.normalized()
+		if _put(root, center, kind, q, f, lots, rng, false, face):
+			_trade_record(root, center, tr, q, face, f)
+			return true
+		tried += 1
+		if tried % 8 == 0:
+			await _pace()
+	return false
+
+
+## The trades the town's edge holds (windmill, granary, barn, tannery, dyer), and any street trade no
+## plot took, stood once the houses have their land: out past `edge` (town-local), each where it belongs.
+func _trades_beyond(root: Node3D, center: Vector3, square_r: float, edge: float, ways: Array, lots: Array, rng: RandomNumberGenerator) -> void:
+	for tr in _trades:
+		if tr.has("stood") or String(tr["where"]) == "square":
+			continue
+		var stood: bool = await _trade_off_plot(root, center, tr, square_r, edge, ways, lots, rng)
+		if not stood:
+			print("CHECK town trades: %s found no ground for its %s (%s)" % [String(root.get_meta("title", "")), String(tr["component"]), String(tr["where"])])
+	var names: Array = (root.get_meta("trades", []) as Array).map(func(t): return String(t["component"]))
+	print("CHECK town trades: %s (size %d): %s" % [String(root.get_meta("title", "")), int(root.get_meta("size", 0)), ", ".join(PackedStringArray(names))])
 
 
 ## A kitchen garden behind a house: a strip of turned earth with cabbages or
@@ -1579,7 +1896,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 		var bp2: Vector3 = spots[slot]
 		slot += 1
 		_single(root, _barracks, bp2 + Vector3(0, _ground_y(center, bp2), 0), atan2(-bp2.x, -bp2.z))
-	if "Granary" in buildings:
+	if "Granary" in buildings and not (real and _trade_of("granary").has("stood")):  # a granary trade stood: it is the store
 		var gp := Vector3(cos(base_ang - 0.5), 0, sin(base_ang - 0.5)) * (reach + 0.5)
 		var stored := false
 		if real:

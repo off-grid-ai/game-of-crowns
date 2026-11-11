@@ -103,7 +103,8 @@ static func lanes(main: Array, count: int, square_r: float, edge: float, g: ASta
 ## [house centre, facing (Vector2), the frontage width, the depth, the plot's
 ## four corners (front-left, front-right, back-right, back-left), how far
 ## from the square, what `widths` named the house, which way and side].
-## `widths` gives each next house as [frontage, depth, its kind] from a rng;
+## `widths` gives each next house as [frontage, depth, its kind] from a rng and where it
+## falls ({way, side, at: where along the street it starts, first: the side's corner plot});
 ## plots are cut until `edge`. Sorted nearest the square first, so a town that
 ## grows only adds at its ends.
 ##
@@ -126,9 +127,13 @@ static func plots(ways: Array, square_r: float, edge: float, widths: Callable, s
 			var s := 0.0
 			var total := length(way)
 			var pick: Array = []
+			var first := true  # no plot cut on this side yet: the next is its corner house
 			while s < total:
 				if pick.is_empty():
-					pick = widths.call(rng)
+					var at := point_at(way, s)
+					if at.is_empty():
+						break
+					pick = widths.call(rng, {"way": w, "side": side, "at": Vector2(at[0]), "first": first})
 				var fd := Vector2(float(pick[0]), float(pick[1]))  # x: frontage, y: depth
 				var a := point_at(way, s)
 				var b := point_at(way, s + fd.x)
@@ -156,6 +161,7 @@ static func plots(ways: Array, square_r: float, edge: float, widths: Callable, s
 				out.append([house, -n, fd.x, fd.y, PackedVector2Array([front - half, front + half, back + half, back - half]), p.length(), pick[2], "%d%s" % [w, "+" if side > 0.0 else "-"]])
 				s += fd.x + GAP
 				pick = []
+				first = false
 	out.sort_custom(func(a, b): return float(a[5]) < float(b[5]))
 	return out
 
