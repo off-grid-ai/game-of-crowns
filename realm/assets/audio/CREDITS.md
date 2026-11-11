@@ -153,3 +153,57 @@ Licences: [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) ·
 Kevin MacLeod pieces: "<Title>" Kevin MacLeod (incompetech.com), licensed under Creative Commons: By Attribution 4.0 License, http://creativecommons.org/licenses/by/4.0/
 
 "For the King" by Alexandr Zhelanov (https://soundcloud.com/alexandr-zhelanov), CC-BY 4.0, via OpenGameArt.
+
+## Sound effects, v2 (`sfx2/`, sounds.json)
+
+Freesound public HQ previews, each sound's own page checked for CC0 when fetched (`~/code/goc-kits/freesound-cc0`).
+
+| File | Length | Title | Author | Licence | Source |
+|---|---|---|---|---|---|
+| `dog_bark_1.ogg` | 2.0 s | LBS_FX DOG Small Alert Bark001.wav | LittleBigSounds | CC0 1.0 | [link](https://freesound.org/s/163459/) |
+| `dog_bark_2.ogg` | 2.6 s | Dog_Barking.wav | ken788 | CC0 1.0 | [link](https://freesound.org/s/386766/) |
+| `dog_bark_3.ogg` | 1.6 s | FX_Dog Barking.wav | davidmenke | CC0 1.0 | [link](https://freesound.org/s/231762/) |
+| `dog_bark_4.ogg` | 2.8 s | Dog bark2.wav | MisterTood | CC0 1.0 | [link](https://freesound.org/s/9032/) |
+| `rooster_1.ogg` | 3.0 s | Rooster chicken calls_2.wav | AGFX | CC0 1.0 | [link](https://freesound.org/s/43382/) |
+| `rooster_2.ogg` | 2.2 s | Rooster Crow 1 | BenjaminNelan | CC0 1.0 | [link](https://freesound.org/s/435508/) |
+| `cow_moo_1.ogg` | 1.7 s | z-moo01.wav | Zozzy | CC0 1.0 | [link](https://freesound.org/s/59245/) |
+| `cow_moo_2.ogg` | 1.7 s | Moo.wav | Bird_man | CC0 1.0 | [link](https://freesound.org/s/275154/) |
+| `cow_moo_3.ogg` | 2.6 s | Cow Moo 2 | invertedturtle | CC0 1.0 | [link](https://freesound.org/s/546479/) |
+| `sheep_bleat_1.ogg` | 0.8 s | sheep 3.mp3 | esperar | CC0 1.0 | [link](https://freesound.org/s/171149/) |
+| `sheep_bleat_2.ogg` | 1.1 s | sheep 2.mp3 | esperar | CC0 1.0 | [link](https://freesound.org/s/171151/) |
+| `sheep_bleat_3.ogg` | 0.6 s | sheep 1 | esperar | CC0 1.0 | [link](https://freesound.org/s/171152/) |
+| `pig_grunt_1.ogg` | 1.7 s | Pig - Multiple Snorts 2 (2 pigs) - 96kHz.wav | JarredGibb | CC0 1.0 | [link](https://freesound.org/s/233183/) |
+| `pig_grunt_2.ogg` | 1.5 s | Pig - Multiple Snorts 3 (2 pigs) - 96kHz.wav | JarredGibb | CC0 1.0 | [link](https://freesound.org/s/233182/) |
+| `pig_grunt_3.ogg` | 1.2 s | Pig - Grunt and Squeal 4 - 96kHz.wav | JarredGibb | CC0 1.0 | [link](https://freesound.org/s/233177/) |
+| `horse_snort_1.ogg` | 2.5 s | Horse(snort)_3.wav | o_ciz | CC0 1.0 | [link](https://freesound.org/s/475483/) |
+| `horse_snort_2.ogg` | 1.7 s | Small Dino Raspy Calls | CaveboyTup | CC0 1.0 | [link](https://freesound.org/s/529463/) |
+| `horse_whinny_1.ogg` | 1.5 s | horse neigh shortened.wav | shadoWisp | CC0 1.0 | [link](https://freesound.org/s/269571/) |
+| `horse_whinny_2.ogg` | 2.3 s | Horse | poodaddy69 | CC0 1.0 | [link](https://freesound.org/s/521246/) |
+| `mill_creak_1.ogg` | 16.2 s | doorloop__130bpm.wav | noisymichael | CC0 1.0 | [link](https://freesound.org/s/671323/) |
+| `water_wheel_1.ogg` | 8.5 s | Water Puddle Splash | cookies+policy | CC0 1.0 | [link](https://freesound.org/s/563021/) |
+| `water_wheel_2.ogg` | 35.2 s | water_wheel.wav | ondrosik | CC0 1.0 | [link](https://freesound.org/s/195324/) |
+| `cart_wheels_1.ogg` | 26.3 s | Shopping Cart 01.wav | Sonicorchestra | CC0 1.0 | [link](https://freesound.org/s/434885/) |
+| `cart_wheels_2.ogg` | 24.0 s | Shopping Cart 2.wav | danielad | CC0 1.0 | [link](https://freesound.org/s/529076/) |
+| `cart_wheels_3.ogg` | 4.8 s | Rolling suitcase 2 | Aurelon | CC0 1.0 | [link](https://freesound.org/s/423705/) |
+| `fire_big_1.ogg` | 20.1 s | Fire -massive no cracking.wav | Aegersum | CC0 1.0 | [link](https://freesound.org/s/387924/) |
+| `fire_big_2.ogg` | 19.4 s | Gas Torch Light | SyntaxSeed | CC0 1.0 | [link](https://freesound.org/s/244229/) |
+| `fire_crackle_1.ogg` | 21.0 s | Fire Crackle and Flames 002 | TheWoodlandNomad | CC0 1.0 | [link](https://freesound.org/s/363092/) |
+| `fire_crackle_2.ogg` | 18.1 s | Fire Auto - car on fire | florianreichelt | CC0 1.0 | [link](https://freesound.org/s/563765/) |
+| `impact_stone_1.ogg` | 0.9 s | Collision | qubodup | CC0 1.0 | [link](https://freesound.org/s/332058/) |
+| `impact_stone_2.ogg` | 1.9 s | Collision Reverb | qubodup | CC0 1.0 | [link](https://freesound.org/s/332059/) |
+| `impact_stone_3.ogg` | 1.5 s | Single Rock hit dirt 2.wav | worthahep88 | CC0 1.0 | [link](https://freesound.org/s/319229/) |
+| `impact_stone_4.ogg` | 2.0 s | Stone.ogg | egomassive | CC0 1.0 | [link](https://freesound.org/s/536803/) |
+| `wood_creak_1.ogg` | 0.9 s | Wooden Creak | Mafon2 | CC0 1.0 | [link](https://freesound.org/s/377552/) |
+| `wood_creak_2.ogg` | 2.7 s | Squeaky door opened quickly.wav | CastIronCarousel | CC0 1.0 | [link](https://freesound.org/s/216878/) |
+| `wood_creak_3.ogg` | 4.2 s | creaking floor OWI.wav | miekyj | CC0 1.0 | [link](https://freesound.org/s/326460/) |
+| `drum_march_1.ogg` | 10.4 s | Military Snaredrum | aUREa | CC0 1.0 | [link](https://freesound.org/s/475246/) |
+| `drum_march_2.ogg` | 26.4 s | FX comedy marching.wav | v0idation | CC0 1.0 | [link](https://freesound.org/s/115144/) |
+| `church_bell_1.ogg` | 4.4 s | Old Church Bell.wav | dsp9000 | CC0 1.0 | [link](https://freesound.org/s/76405/) |
+| `church_bell_2.ogg` | 4.5 s | BELL.wav | kgeshev | CC0 1.0 | [link](https://freesound.org/s/378799/) |
+| `church_bell_3.ogg` | 2.0 s | Ding_dong(Remix of 110165).wav | 2887679652 | CC0 1.0 | [link](https://freesound.org/s/171755/) |
+| `hens_1.ogg` | 25.1 s | Chicken Alarm Call full with Occasional bird sound | Rudmer_Rotteveel | CC0 1.0 | [link](https://freesound.org/s/316921/) |
+| `hens_2.ogg` | 17.4 s | Eating Juicy Meat.wav | ProductionNow | CC0 1.0 | [link](https://freesound.org/s/234237/) |
+| `sparrows_1.ogg` | 43.6 s | House sparrow.wav | straget | CC0 1.0 | [link](https://freesound.org/s/404663/) |
+| `sparrows_2.ogg` | 33.0 s | Chipping sparrow | JPBILLINGSLEYJR | CC0 1.0 | [link](https://freesound.org/s/465889/) |
+| `owl_1.ogg` | 4.4 s | Owl Hoot | Breviceps | CC0 1.0 | [link](https://freesound.org/s/465697/) |
+| `owl_2.ogg` | 4.0 s | owl.wav | Anthousai | CC0 1.0 | [link](https://freesound.org/s/398734/) |

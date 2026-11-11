@@ -1,0 +1,80 @@
+{
+  "_": "The realm's sound, v2 (sound_v2.gd over soundscape.gd; --sound=v2, or on here). Every action gets a sound where it happens, close detail and a far murmur (Anno 1800's town sound): the camera's zoom changes the mix by distance. sounds: each sound's takes (under realm/assets/audio/; never the same take twice running), db, pitch [lowest, highest] and gain (dB either way) at random each time, bus, reach [the distance it's full at, the farthest it's heard] in world units, loop (a bed on its source). clips: a move's sound at its strike, the fractions of its cycle (measured on the clip: the hammer's lowest point, the axe's bite, the spade in the ground). sources: what makes a sound of its own near the camera (the forge working, a mill turning (gain by its speed), the square's hubbub (full at full people in it), the inn (louder at night), a cart while it rolls, a house burning (by stage; small: the crackle of a catching or smouldering house), a bonfire, the levy's drum while a column marches out) and calls: a living thing's sound now and then (every [fewest, most] seconds, each on its own clock). ambient: birds and night things near the camera by season and hour (only when the camera is within ambient_within). events: soundscape's event kinds (and ui_<kind> for the court's UI) and the sounds they add, [sound, delay s]. every: seconds between looks round; hear: how far from the camera sources are kept. Sources' licences: realm/assets/audio/CREDITS.md.",
+  "on": false,
+  "every": 0.5,
+  "hear": 16.0,
+  "ambient_within": 30.0,
+  "sounds": {
+    "hammer": { "takes": ["sfx/hammer.wav", "sfx/hammer_1.wav", "sfx/hammer_2.wav", "sfx/hammer_3.wav", "sfx/hammer_4.wav"], "db": -10.0, "pitch": [0.92, 1.08], "gain": 2.0, "reach": [1.0, 14.0] },
+    "chop": { "takes": ["sfx/chop.wav", "sfx/chop_1.ogg", "sfx/chop_2.ogg", "sfx/chop_3.ogg", "sfx/chop_4.ogg", "sfx/chop_5.ogg"], "db": -10.0, "pitch": [0.93, 1.07], "gain": 2.0, "reach": [1.0, 14.0] },
+    "dig": { "takes": ["sfx/step_snow_0.wav", "sfx/step_snow_2.wav", "sfx/step_snow_4.wav"], "db": -16.0, "pitch": [0.8, 0.95], "gain": 2.0, "reach": [0.6, 6.0] },
+    "forge_loop": { "takes": ["ambience/forge.ogg"], "db": -8.0, "loop": true, "reach": [1.2, 14.0] },
+    "mill_creak": { "takes": ["sfx2/mill_creak_1.ogg"], "db": -12.0, "loop": true, "reach": [1.0, 12.0] },
+    "water_wheel": { "takes": ["sfx2/water_wheel_1.ogg"], "db": -10.0, "loop": true, "reach": [1.0, 12.0] },
+    "market_hubbub": { "takes": ["ambience/market.ogg"], "db": -6.0, "loop": true, "reach": [2.0, 22.0] },
+    "inn_loop": { "takes": ["ambience/tavern.ogg"], "db": -10.0, "loop": true, "reach": [1.0, 10.0] },
+    "cart_roll": { "takes": ["sfx2/cart_wheels_1.ogg"], "db": -10.0, "loop": true, "reach": [0.8, 10.0] },
+    "fire_roar": { "takes": ["sfx2/fire_big_1.ogg"], "db": -4.0, "loop": true, "reach": [2.0, 30.0] },
+    "fire_crackle": { "takes": ["sfx2/fire_crackle_1.ogg"], "db": -8.0, "loop": true, "reach": [0.8, 10.0] },
+    "bonfire": { "takes": ["ambience/campfire.ogg"], "db": -8.0, "loop": true, "reach": [1.0, 10.0] },
+    "levy_drum": { "takes": ["sfx2/drum_march_1.ogg"], "db": -6.0, "loop": true, "reach": [2.0, 24.0] },
+    "dog": { "takes": ["sfx2/dog_bark_1.ogg", "sfx2/dog_bark_2.ogg", "sfx2/dog_bark_3.ogg", "sfx2/dog_bark_4.ogg"], "db": -12.0, "pitch": [0.9, 1.15], "gain": 3.0, "reach": [0.8, 12.0] },
+    "cow": { "takes": ["sfx2/cow_moo_1.ogg", "sfx2/cow_moo_2.ogg", "sfx2/cow_moo_3.ogg"], "db": -14.0, "pitch": [0.9, 1.08], "gain": 3.0, "reach": [1.0, 14.0] },
+    "sheep": { "takes": ["sfx2/sheep_bleat_1.ogg", "sfx2/sheep_bleat_2.ogg", "sfx2/sheep_bleat_3.ogg"], "db": -15.0, "pitch": [0.88, 1.15], "gain": 3.0, "reach": [0.8, 12.0] },
+    "pig": { "takes": ["sfx2/pig_grunt_1.ogg", "sfx2/pig_grunt_2.ogg", "sfx2/pig_grunt_3.ogg"], "db": -15.0, "pitch": [0.9, 1.12], "gain": 3.0, "reach": [0.8, 10.0] },
+    "horse": { "takes": ["sfx2/horse_snort_1.ogg", "sfx2/horse_snort_2.ogg", "sfx2/horse_whinny_1.ogg", "sfx2/horse_whinny_2.ogg"], "db": -14.0, "pitch": [0.92, 1.08], "gain": 3.0, "reach": [0.8, 12.0] },
+    "rooster": { "takes": ["sfx2/rooster_1.ogg", "sfx2/rooster_2.ogg"], "db": -16.0, "pitch": [0.95, 1.05], "gain": 2.0, "reach": [2.0, 20.0] },
+    "hens": { "takes": ["sfx2/hens_1.ogg", "sfx2/hens_2.ogg"], "db": -18.0, "pitch": [0.95, 1.05], "gain": 2.0, "reach": [1.0, 10.0] },
+    "sparrows": { "takes": ["sfx2/sparrows_1.ogg", "sfx2/sparrows_2.ogg"], "db": -18.0, "pitch": [0.95, 1.08], "gain": 3.0, "reach": [1.5, 12.0] },
+    "owl": { "takes": ["sfx2/owl_1.ogg", "sfx2/owl_2.ogg"], "db": -16.0, "pitch": [0.95, 1.05], "gain": 2.0, "reach": [2.0, 20.0] },
+    "bell": { "takes": ["sfx2/church_bell_1.ogg", "sfx2/church_bell_2.ogg", "sfx2/church_bell_3.ogg"], "db": -8.0, "pitch": [0.97, 1.03], "gain": 1.0, "reach": [6.0, 80.0] },
+    "engine_creak": { "takes": ["sfx2/wood_creak_1.ogg", "sfx2/wood_creak_2.ogg", "sfx2/wood_creak_3.ogg"], "db": -6.0, "pitch": [0.85, 1.05], "gain": 2.0, "reach": [2.0, 30.0] },
+    "impact": { "takes": ["sfx2/impact_stone_1.ogg", "sfx2/impact_stone_2.ogg", "sfx2/impact_stone_3.ogg", "sfx2/impact_stone_4.ogg"], "db": -3.0, "pitch": [0.85, 1.1], "gain": 3.0, "reach": [3.0, 40.0] },
+    "march_feet": { "takes": ["sfx/march.ogg"], "db": -8.0, "pitch": [0.95, 1.05], "gain": 2.0, "reach": [2.0, 20.0] },
+    "cheer": { "takes": ["sfx/cheer.ogg", "sfx/feast_cheers.ogg"], "db": -8.0, "pitch": [0.95, 1.05], "gain": 2.0, "reach": [3.0, 40.0] },
+    "horn": { "takes": ["sfx/war_horn.ogg", "sfx/war_horn_near.ogg"], "db": -4.0, "pitch": [0.97, 1.03], "gain": 1.0, "reach": [6.0, 80.0] },
+    "clash": { "takes": ["sfx/sword_clash_1.wav", "sfx/sword_clash_2.wav", "sfx/sword_clash_3.wav", "sfx/hit_metal_0.wav", "sfx/hit_metal_1.wav", "sfx/hit_plate_0.wav", "sfx/hit_plate_1.wav"], "db": -8.0, "pitch": [0.9, 1.1], "gain": 3.0, "reach": [2.0, 30.0] }
+  },
+  "clips": {
+    "Hammer_Swing": { "sound": "hammer", "at": [0.17, 0.5, 0.98] },
+    "Axe_Down": { "sound": "chop", "at": [0.44] },
+    "Axe_Horizontal": { "sound": "chop", "at": [0.42] },
+    "Digging": { "sound": "dig", "at": [0.21] },
+    "Dig_And_Plant": { "sound": "dig", "at": [0.24, 0.62] }
+  },
+  "sources": {
+    "forge": { "sound": "forge_loop" },
+    "windmill": { "sound": "mill_creak" },
+    "watermill": { "sound": "water_wheel" },
+    "market": { "sound": "market_hubbub", "full": 30 },
+    "inn": { "sound": "inn_loop" },
+    "cart": { "sound": "cart_roll" },
+    "fire": { "sound": "fire_roar", "small": "fire_crackle", "stage": { "catch": 0.5, "burn": 1.0, "collapse": 1.2, "smoulder": 0.3 } },
+    "bonfire": { "sound": "bonfire" },
+    "levy": { "sound": "levy_drum" },
+    "calls": {
+      "dog": { "sound": "dog", "every": [7.0, 18.0] },
+      "cow": { "sound": "cow", "every": [12.0, 30.0] },
+      "sheep": { "sound": "sheep", "every": [8.0, 22.0] },
+      "pig": { "sound": "pig", "every": [9.0, 24.0] },
+      "horse": { "sound": "horse", "every": [14.0, 35.0] }
+    }
+  },
+  "ambient": [
+    { "sound": "rooster", "seasons": ["spring", "summer", "autumn", "winter"], "hours": [5.0, 7.5], "every": [12.0, 30.0] },
+    { "sound": "hens", "seasons": ["spring", "summer", "autumn"], "hours": [7.0, 18.0], "every": [20.0, 45.0] },
+    { "sound": "sparrows", "seasons": ["spring", "summer"], "hours": [6.0, 19.0], "every": [10.0, 25.0] },
+    { "sound": "owl", "seasons": ["spring", "summer", "autumn", "winter"], "hours": [21.0, 4.5], "every": [20.0, 50.0] }
+  ],
+  "events": {
+    "ui_decree": [["bell", 0.6]],
+    "ui_seal": [["bell", 0.6]],
+    "muster": [["levy_drum", 0.0], ["march_feet", 1.0]],
+    "siege": [["engine_creak", 3.0], ["impact", 5.2]],
+    "battle": [["clash", 4.0], ["clash", 5.1]],
+    "clash": [["clash", 0.0]],
+    "battle_end": [["cheer", 0.5]],
+    "feast": [["bell", 0.0]],
+    "crown": [["bell", 4.0]]
+  }
+}

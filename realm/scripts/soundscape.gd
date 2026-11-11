@@ -145,8 +145,24 @@ var _lowpass: AudioEffectLowPassFilter
 var _rng := RandomNumberGenerator.new()
 
 
+## The realm's sound, v2 (--sound=v2, or realm/data/sounds.json on): sound_v2.gd's positional sources,
+## calls, birds by season and hour and more event sounds over these beds; the moves' sounds from the
+## table too (clips: each tool's strike measured on its clip).
+static var v2: bool = OS.get_cmdline_user_args().has("--sound=v2") or (bool(preload("res://scripts/data.gd").value("sounds", "on", false)) and not OS.get_cmdline_user_args().has("--sound=v1"))
+var sounds_v2: Node  # sound_v2.gd, with v2 on
+var _clip_sounds := CLIP_SOUNDS.duplicate()  # a move's sounds: the table's (v2) over these
+
+
 func _ready() -> void:
 	_rng.randomize()
+	if v2:
+		sounds_v2 = load("res://scripts/sound_v2.gd").new()
+		sounds_v2.name = "SoundV2"
+		sounds_v2.scape = self
+		add_child(sounds_v2)
+		for clip in (preload("res://scripts/data.gd").value("sounds", "clips", {}) as Dictionary):
+			var row: Dictionary = preload("res://scripts/data.gd").value("sounds", "clips", {})[clip]
+			_clip_sounds[clip] = ["v2:" + String(row["sound"]), row.get("at", [0.5])]
 	# Every clip anyone plays (people.gd): the work and the walking are heard in time with the move.
 	preload("res://scripts/people.gd").listen(_on_clip)
 	for bus in BUSES:
@@ -215,6 +231,8 @@ func event(kind: String, at := Vector3.INF) -> void:
 		return
 	for s in STINGS.get(kind, []):
 		_sting(s[0], s[1], s[2], at)
+	if sounds_v2:
+		sounds_v2.event(kind, at)
 	if LIFT_BED.has(kind):
 		_lift_bed[LIFT_BED[kind][0]] = LIFT_BED[kind][1]
 	if LIFT_MOOD.has(kind):
@@ -236,6 +254,8 @@ func ui(kind: String) -> void:
 	var s: AudioStream = takes_of(UI_SOUNDS[kind][0], 1.02)
 	if s:
 		_one_shot(s, "UI", UI_SOUNDS[kind][1], Vector3.INF, 1.0)
+	if sounds_v2:
+		sounds_v2.event("ui_" + kind)  # a decree sealed rings the bell over the realm (sounds.json events)
 
 
 ## A crowd's steps are a texture, never a drumbeat (Mac: a thud near the feast's fire,
@@ -458,7 +478,7 @@ var _near_in := 0.0
 
 
 func _on_clip(person: Node3D, clip: String, period: float, looping: bool) -> void:
-	if CLIP_SOUNDS.has(clip) and period > 0.05:
+	if _clip_sounds.has(clip) and period > 0.05:
 		_clips[person] = [clip, period, Time.get_ticks_msec() / 1000.0, looping, 0, 0]
 	else:
 		_clips.erase(person)  # a new move ends the old one's sounds
@@ -488,7 +508,7 @@ func _tick_clips(delta: float) -> void:
 		if not is_instance_valid(person) or not _clips.has(person):
 			continue
 		var c: Array = _clips[person]
-		var sound: Array = CLIP_SOUNDS[c[0]]
+		var sound: Array = _clip_sounds[c[0]]
 		var t: float = now - float(c[2])
 		var cycle := int(t / float(c[1]))
 		if not c[3] and cycle > 0:
@@ -502,7 +522,9 @@ func _tick_clips(delta: float) -> void:
 		while int(c[4]) < hits.size() and f >= float(hits[c[4]]):
 			c[4] = int(c[4]) + 1
 			var at: Vector3 = (person as Node3D).global_position
-			if sound[0] == "step":
+			if String(sound[0]).begins_with("v2:"):
+				sounds_v2.play(String(sound[0]).trim_prefix("v2:"), at, "clip:" + String(c[0]))
+			elif sound[0] == "step":
 				footstep(("stone" if _interior in ["chapel", "great_hall"] else "wood") if _interior != "" else ("snow" if _view["season"] == "winter" else "grass"), at)
 			else:
 				var s: AudioStream = takes_of(sound[0], 1.08)
@@ -610,6 +632,8 @@ func _load(rel: String, loop := false) -> AudioStream:
 	var s: AudioStream = null
 	if ResourceLoader.exists(ROOT + rel):
 		s = load(ROOT + rel)
+	elif rel.ends_with(".ogg") and FileAccess.file_exists(ROOT + rel):
+		s = AudioStreamOggVorbis.load_from_file(ROOT + rel)  # a sound not imported yet (sounds.json's new ones): read as it is
 		if s and loop:
 			s = s.duplicate()  # the bed loops; the same file as a one-shot does not
 			if s is AudioStreamOggVorbis:
