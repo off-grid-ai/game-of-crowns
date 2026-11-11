@@ -30,7 +30,8 @@ func _town(world: Node3D) -> Node3D:
 	var root := Node3D.new()
 	root.position = Vector3(10, 0, 10)
 	holder.add_child(root)
-	root.set_meta("places", {"tavern": Vector3(0.0, 0, 1.0), "well": Vector3(0.3, 0, -0.3), "market": Vector3(-0.4, 0, 0.2)})
+	root.set_meta("places", {"tavern": Vector3(0.0, 0, 1.0), "well": Vector3(0.3, 0, -0.3), "market": Vector3(-0.4, 0, 0.2), "sept": Vector3(-1.2, 0, -1.0)})
+	root.set_meta("square_r", 1.2)
 	root.set_meta("works", {
 		"forge": {"at": Vector3(1.6, 0, 0.0)},
 		"armoury": {"at": Vector3(1.6, 0, 1.4)},
@@ -86,7 +87,7 @@ func _run() -> void:
 			print("FAIL %s: the forge or the paddock is empty" % name)
 			fails += 1
 		# The barn's yard: beasts living their idle life, as many as works.json says (when this build has their models).
-		var beasts := l.get_children().filter(func(n): return n.has_meta("beast"))
+		var beasts := l.get_children().filter(func(n): return n.has_meta("beast") and n.get_meta("beast") != "dog")
 		var living := beasts.filter(func(n): return not n.find_children("Life", "Timer", true, false).is_empty())
 		var want_beasts := Works.count("beasts", Works.states(c, 7), 6)
 		print("WORKS %-7s yard: %d beasts (%d living their idle life; works.json %d); inn soldiers %d" % [name, beasts.size(), living.size(), want_beasts,
@@ -128,6 +129,25 @@ func _run() -> void:
 			print("WORKS war     levy leaving: %d sent out along the road, %d of %d still mustered" % [go.gone, still, mustered])
 			if go.gone != 2 or still != mustered - 2:
 				print("FAIL war: the levy's men didn't walk out")
+				fails += 1
+		# The square's own life (crowd.json): crier, beggars at the step, a patrol, dogs, children chasing, gossip.
+		var kids: int = l.get_children().filter(func(n): return n.has_meta("chasing")).size()
+		var dogs: int = l.get_children().filter(func(n): return n.has_meta("town_dog")).size()
+		var patrol: int = l.get_children().filter(func(n): return n.has_meta("patrol")).size()
+		var gossip: int = l.get_children().filter(func(n): return n.has_meta("gossip")).size()
+		print("WORKS %-7s square: %d chasing, %d dogs, %d on patrol, %d gossiping" % [name, kids, dogs, patrol, gossip])
+		if name == "peace" and (kids == 0 or dogs == 0 or patrol == 0 or gossip == 0):
+			print("FAIL peace: the square's own life is missing")
+			fails += 1
+		if name == "peace":
+			var sq: Node = l.get_node_or_null("SquareLife")
+			var at: Array = l.get_children().filter(func(n): return n.has_meta("patrol") or n.has_meta("chasing")).map(func(n): return (n as Node3D).position)
+			for i in 100:
+				sq._process(0.1)
+			var moved: int = l.get_children().filter(func(n): return n.has_meta("patrol") or n.has_meta("chasing")).filter(func(n): return not (n as Node3D).position in at).size()
+			print("WORKS peace   square: %d of %d walkers moved in 10 s" % [moved, at.size()])
+			if moved < at.size() / 2:
+				print("FAIL peace: the patrol and the children stood still")
 				fails += 1
 		# A court ruling's answer in the town (bridge rulings.js; moods.json): the herald cries it, and its mark stands.
 		if name in ["relief", "justice", "grant", "build"]:

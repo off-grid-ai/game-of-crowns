@@ -130,6 +130,8 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	_dress(root, life, center, c, rng, house)
 	_works(root, life, center, c, rng)
 	_moods(root, life, center, c, rng, house)
+	if not c.get("disorder", false):
+		_square_life(root, life, center, c, rng)
 	_near_only(life)
 	_pin(life, center)
 
@@ -1784,3 +1786,206 @@ func _grant(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, house: D
 		life.add_child(flag)
 		life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(at, Vector2(0.05, 0.05), 0.0)])
 	_construction(root, life, center, String(g.get("site", "Palace")), float(g.get("progress", 0.15)), rng, int(c.get("size", 1)))
+
+
+# --- the square's own life (realm/data/crowd.json; art target town-b) -----------------------------
+
+## The square on any day in a market town: a crier at the well, beggars at the church step, a pair
+## of guards walking its ring, town dogs trotting after people, children chasing each other, knots of
+## neighbours gossiping (who turn to look at news: npc_mind React). Each is there for a reason: their
+## post's mind (npc_mind.gd) or their walk here (SquareLife). How many by the town's state: crowd.json.
+func _square_life(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: RandomNumberGenerator) -> void:
+	if not bool(Data.value("crowd", "on", true)) or OS.get_cmdline_user_args().has("--crowd=off"):
+		return
+	if int(c.get("size", 1)) < int(Data.num("crowd", "min_size", 6)) and not bool(root.get_meta("crown_seat", false)):
+		return
+	var active := Works.states(c, _town_id)
+	var n := func(what: String) -> int: return _crowd_count(what, active)
+	var places: Dictionary = root.get_meta("places", {})
+	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
+	var r := float(root.get_meta("square_r", 1.0))
+	var go := SquareLife.new()
+	go.name = "SquareLife"
+	go.ground = func(q: Vector3) -> float: return _y(center, q)
+	go.life = life
+	go.rng.seed = rng.randi()
+	life.add_child(go)
+	# The crier at the well (the news crier already stands there when there's news).
+	if not NEWS.any(func(st): return st in active) and n.call("crier") > 0:
+		var tick: Node = life.get_node_or_null("Works")
+		if tick:
+			_crier(root, life, center, tick, 3, rng)
+	# Beggars at the church step.
+	if places.has("sept"):
+		for i in n.call("beggars"):
+			var b := _stand(root, life, center, places["sept"] + Vector3(rng.randf_range(-0.15, 0.15), 0, rng.randf_range(-0.15, 0.15)), "peasant", "Sitting_Ground", rng.randi(), Color(0.45, 0.42, 0.38), 0.2)
+			if b:
+				_face(b, Vector3.ZERO)
+				_mind(b, "beg", center)
+	# Guards walking the square's ring in pairs.
+	var P: Dictionary = Data.value("crowd", "patrol", {})
+	for k in n.call("patrol"):
+		var ring: Array = []
+		var a0 := rng.randf() * TAU
+		for i in 8:
+			var a := a0 + TAU * i / 8.0 * (1.0 if k % 2 == 0 else -1.0)
+			ring.append(Vector3(cos(a), 0, sin(a)) * r * float(P.get("ring", 0.85)))
+		var pair: Array = []
+		for j in 2:
+			var g := _townsperson(life, Vector3(ring[0].x, _y(center, ring[0]), ring[0].z) + Vector3(0.07 * j, 0, 0), "soldier", "Sword_Idle", rng.randi())
+			_watch(g)
+			g.set_meta("patrol", true)
+			pair.append(g)
+		go.patrols.append({"men": pair, "ring": ring, "leg": 1, "rest": 0.0, "pace": float(P.get("pace", 0.14)), "pause": P.get("pause", [3.0, 7.0])})
+	# Town dogs.
+	var D: Dictionary = Data.value("crowd", "dogs", {})
+	var tints: Array = D.get("tint", [])
+	for i in n.call("dogs"):
+		var dog := preload("res://scripts/animals.gd").make("dog", rng)
+		if dog == null:
+			break
+		if not tints.is_empty():
+			var col := Works.colour(tints[i % tints.size()], Color.WHITE)
+			for mi in dog.find_children("*", "MeshInstance3D", true, false):
+				var m := (mi as MeshInstance3D).get_active_material(0)
+				if m is StandardMaterial3D:
+					var copy: StandardMaterial3D = m.duplicate()
+					copy.albedo_color = col
+					(mi as MeshInstance3D).material_override = copy
+		var at := well + Vector3(rng.randf_range(-r, r), 0, rng.randf_range(-r, r)) * 0.6
+		dog.position = Vector3(at.x, _y(center, at), at.z)
+		dog.rotation.y = rng.randf() * TAU
+		dog.set_meta("town_dog", true)
+		life.add_child(dog)
+		go.dogs.append({"dog": dog, "rest": rng.randf_range(2.0, 8.0), "after": null, "trot": float(D.get("trot", 0.2)), "follow": float(D.get("follow", 0.12))})
+	# Children chasing each other round the square.
+	var C: Dictionary = Data.value("crowd", "chase", {})
+	for k in n.call("chase"):
+		var kids: Array = []
+		for j in 2:
+			var at := well + Vector3(rng.randf_range(-r, r), 0, rng.randf_range(-r, r)) * 0.5
+			var kid := _townsperson(life, Vector3(at.x, _y(center, at), at.z), "peasant", "Laughing", rng.randi())
+			kid.set_meta("chasing", true)
+			_people.play(kid, "Running")  # their legs run while they're moved (motion.gd reads their pace)
+			kids.append(kid)
+		go.chases.append({"kids": kids, "goal": Vector3.INF, "r": r * 0.8, "pace": float(C.get("pace", 0.32)), "apart": float(C.get("apart", 0.35))})
+	# Knots of neighbours gossiping, on the seen half of the square.
+	var G: Dictionary = Data.value("crowd", "gossip", {})
+	var knot: Array = G.get("knot", [2, 4])
+	for k in n.call("gossip"):
+		var a := atan2(SEEN.x, SEEN.z) + rng.randf_range(-1.4, 1.4)
+		var mid := Vector3(sin(a), 0, cos(a)) * r * rng.randf_range(0.35, 0.75)
+		var m := rng.randi_range(int(knot[0]), int(knot[1]))
+		for j in m:
+			var b := TAU * j / m + rng.randf_range(-0.3, 0.3)
+			var p := _stand(root, life, center, mid + Vector3(cos(b), 0, sin(b)) * 0.085, "townsfolk" if rng.randf() < 0.6 else "peasant", "Idle_Talking", rng.randi(), Color.WHITE, 0.08)
+			if p:
+				p.set_meta("gossip", true)
+				_face(p, mid)
+				_mind(p, "gossip", center)
+
+
+## How many of `what` (crowd.json) stand in a town in these states: base, else the first state set.
+func _crowd_count(what: String, active: Array) -> int:
+	var row: Dictionary = Data.value("crowd", what, {})
+	for st in Data.value("works", "priority", []):
+		if st in active and row.has(st):
+			return int(row[st])
+	return int(row.get("base", 0))
+
+
+## The square's walkers, moved here (movement only; what they're for is said where they're placed):
+## guards walking its ring and stopping to look about, dogs trotting after someone then lying about,
+## children chasing each other.
+class SquareLife extends Node:
+	const People := preload("res://scripts/people.gd")
+	const Animals := preload("res://scripts/animals.gd")
+	var life: Node3D
+	var ground: Callable
+	var rng := RandomNumberGenerator.new()
+	var patrols: Array = []
+	var dogs: Array = []
+	var chases: Array = []
+
+	func _process(delta: float) -> void:
+		if not is_instance_valid(life):
+			return
+		for p in patrols:
+			_patrol(p, delta)
+		for d in dogs:
+			_dog(d, delta)
+		for c in chases:
+			_chase(c, delta)
+
+	## One step toward `to` at `pace`; false once there (within `near`).
+	func step(n: Node3D, to: Vector3, pace: float, delta: float, near := 0.02) -> bool:
+		var flat := Vector2(to.x - n.position.x, to.z - n.position.z)
+		if flat.length() <= near:
+			return false
+		var d := flat.normalized() * minf(pace * delta, flat.length() - near * 0.5)
+		n.position += Vector3(d.x, 0, d.y)
+		n.position.y = float(ground.call(n.position))
+		n.rotation.y = lerp_angle(n.rotation.y, atan2(d.x, d.y), minf(1.0, delta * 8.0))
+		return true
+
+	func _patrol(p: Dictionary, delta: float) -> void:
+		var men: Array = (p["men"] as Array).filter(func(m): return is_instance_valid(m))
+		if men.is_empty():
+			return
+		if float(p["rest"]) > 0.0:
+			p["rest"] = float(p["rest"]) - delta
+			return
+		var ring: Array = p["ring"]
+		var to: Vector3 = ring[int(p["leg"]) % ring.size()]
+		var moving := false
+		for i in men.size():
+			var side := Basis(Vector3.UP, (men[0] as Node3D).rotation.y) * Vector3(0.07 * (i - 0.5), 0, 0)
+			moving = step(men[i], to + side, float(p["pace"]), delta) or moving
+		if not moving:
+			p["leg"] = int(p["leg"]) + 1
+			if int(p["leg"]) % 2 == 0:  # every other corner they stop and look about
+				var span: Array = p["pause"]
+				p["rest"] = rng.randf_range(float(span[0]), float(span[1]))
+				for m in men:
+					People.play(m, ["Looking_Around", "Sword_Idle", "SS_Idle_2", "Weight_Shift"][rng.randi() % 4])
+
+	func _dog(d: Dictionary, delta: float) -> void:
+		var dog: Node3D = d["dog"]
+		if not is_instance_valid(dog):
+			return
+		var after: Variant = d["after"]
+		if after == null or not is_instance_valid(after):
+			d["rest"] = float(d["rest"]) - delta
+			Animals.walk(dog, false)
+			if float(d["rest"]) > 0.0:
+				return
+			# Off after someone near: a child at play by choice, else anyone about the square.
+			var folk := life.get_children().filter(func(n): return n is Node3D and n.has_node("Anim") and (n as Node3D).position.distance_to(dog.position) < 1.2)
+			var kids := folk.filter(func(n): return n.has_meta("chasing"))
+			var pool := kids if not kids.is_empty() and rng.randf() < 0.6 else folk
+			if pool.is_empty():
+				d["rest"] = rng.randf_range(3.0, 8.0)
+				return
+			d["after"] = pool[rng.randi() % pool.size()]
+			d["for"] = rng.randf_range(6.0, 14.0)
+			return
+		d["for"] = float(d["for"]) - delta
+		var who: Node3D = after
+		var near := float(d["follow"])
+		if float(d["for"]) <= 0.0:
+			d["after"] = null
+			d["rest"] = rng.randf_range(4.0, 12.0)  # it lies about, sniffs, scratches (its idle life)
+			return
+		Animals.walk(dog, step(dog, who.position, float(d["trot"]), delta, near))
+
+	func _chase(c: Dictionary, delta: float) -> void:
+		var kids: Array = c["kids"]
+		if kids.size() < 2 or not is_instance_valid(kids[0]) or not is_instance_valid(kids[1]):
+			return
+		var runner: Node3D = kids[0]
+		var chaser: Node3D = kids[1]
+		if c["goal"] == Vector3.INF or not step(runner, c["goal"], float(c["pace"]), delta):
+			var a := rng.randf() * TAU
+			c["goal"] = Vector3(cos(a), 0, sin(a)) * float(c["r"]) * rng.randf_range(0.3, 1.0)
+		if not step(chaser, runner.position, float(c["pace"]) * 0.97, delta, 0.06):
+			c["kids"] = [chaser, runner]  # caught: now the other one runs

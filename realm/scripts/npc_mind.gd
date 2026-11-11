@@ -392,6 +392,13 @@ static func post_activities(post: String) -> Array:
 				seq("call", [once("Waving"), once("Pointing_Forward"), step(0.3), brk(LOOK)]),
 				seq("sit", [run(["Sitting_Ground"], 1, 2), get_up(), brk(["Arm_Stretching", "Looking_Around"])]),
 			]
+		"gossip":  # a knot of neighbours in the square, talking over the day (turning to news: React)
+			return [
+				seq("talk", [run(["Idle_Talking", "Talking", "Talking_2", "Happy_Gesture"], 2, 3), once("Nodding"), brk(["Weight_Shift", "Laughing"])]),
+				seq("whisper", [run(["Whispering", "Telling_Secret", "Telling_A_Secret"], 1, 2), once("Sarcastic_Nod"), brk(LOOK)]),
+				seq("laugh", [run(["Laughing"], 1, 2), once("Slow_Nod"), brk(["Weight_Shift", "Bored"])]),
+				seq("point", [once("Pointing_Forward"), run(["Talking", "Arguing"], 1, 2), once("Dismiss"), brk(LOOK)]),
+			]
 		"yardhand":  # at the barn's beasts (town_life._yard)
 			return [
 				seq("milk", [run(["Milking"], 2, 3), get_up(), brk(REST)]),
