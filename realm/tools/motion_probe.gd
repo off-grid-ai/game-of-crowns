@@ -164,7 +164,7 @@ func _process(delta: float) -> void:
 		var clip := String(_clip.get(p, ""))
 		# Turn snap.
 		var yaw := p.global_rotation.y
-		if absf(angle_difference(float(d["yaw"]), yaw)) > SNAP:
+		if absf(angle_difference(float(d["yaw"]), yaw)) > SNAP and not p.has_meta("mounted"):  # a rider faces as the horse does
 			_snaps[clip] = _snaps.get(clip, 0) + 1
 		d["yaw"] = yaw
 		var sk: Skeleton3D = d["sk"]
@@ -172,7 +172,11 @@ func _process(delta: float) -> void:
 			continue
 		var s := maxf(0.0001, p.global_transform.basis.get_scale().x)
 		var riding := clip.begins_with("ride/") or p.has_meta("mounted")  # a rider's feet go with the horse
-		riding = riding or IN_PLACE.has(clip)  # and a clip whose feet slide by its own design
+		# The feet are the legs' clip: on the move, a load in the arms (Carrying,
+		# Wheelbarrow) rides over the walk, and the walk is what the feet play.
+		var mo := p.get_node_or_null("Motion")
+		var legs := String(mo.current()) if mo and mo.has_method("current") else clip
+		riding = riding or IN_PLACE.has(legs)  # and a clip whose feet slide by its own design
 		# Foot skate: planted feet, in metres.
 		for k in 2:
 			var b: int = d["feet"][k]
@@ -184,10 +188,10 @@ func _process(delta: float) -> void:
 			var last = d["last"][k]
 			if last != null and not riding and local_y < float(d["min"][k]) + PLANTED:
 				d["planted"] += 1
-				_planted[clip] = _planted.get(clip, 0) + 1
+				_planted[legs] = _planted.get(legs, 0) + 1
 				if Vector2(w.x - last.x, w.z - last.z).length() / M > SKATE:
 					d["skate"] += 1
-					_skates[clip] = _skates.get(clip, 0) + 1
+					_skates[legs] = _skates.get(legs, 0) + 1
 			d["last"][k] = w
 		# Hand in body.
 		if d["hips"] >= 0 and d["neck"] >= 0 and not TOUCHING.has(clip):
