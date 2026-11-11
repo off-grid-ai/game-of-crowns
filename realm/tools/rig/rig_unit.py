@@ -204,6 +204,77 @@ with active(unit):
     bpy.ops.object.vertex_group_normalize_all(group_select_mode="ALL", lock_active=False)
     bpy.ops.object.vertex_group_clean(group_select_mode="ALL", limit=0.0, keep_single=True)
 
+# Rigid gear: a sword, a spear or a shield must not bend with the arm. In the lower arm's share of the
+# mesh (forearm, hand, fingers), whatever stands further from the arm's own line (elbow, wrist,
+# fingertip) than flesh does is gear: each connected piece of it goes whole to one bone, the hand
+# when it sits by the wrist, the forearm otherwise (a strapped shield). rig.json units.<name>.rigid
+# can name boxes instead ([bone, [x0,y0,z0], [x1,y1,z1]] in shares of the mesh's bounds).
+def seg_dist(p, a, b):
+    ab = b - a
+    t = np.clip(((p - a) @ ab) / max(float(ab @ ab), 1e-9), 0.0, 1.0)
+    return np.linalg.norm(p - (a + np.outer(t, ab)), axis=1)
+
+
+def make_rigid(indices, bone):
+    g = unit.vertex_groups.get(bone)
+    if g is None:
+        return 0
+    idx = [int(i) for i in indices]
+    for other in unit.vertex_groups:
+        if other.index != g.index:
+            other.remove(idx)
+    g.add(idx, 1.0, "REPLACE")
+    return len(idx)
+
+
+rigid = {}
+if KIND == "man":
+    R = CFG.get("rigid", {})
+    co = np.array([unit.matrix_world @ v.co for v in unit.data.vertices])
+    height = REPORT["align"]["height"]
+    lo_b, hi_b = co.min(0), co.max(0)
+    for bone, b0, b1 in UNIT.get("rigid", []):
+        a0, a1 = lo_b + (hi_b - lo_b) * np.array(b0), lo_b + (hi_b - lo_b) * np.array(b1)
+        inside = np.where(((co >= a0) & (co <= a1)).all(1))[0]
+        rigid["box " + bone] = make_rigid(inside, bone)
+    if not UNIT.get("rigid") and R.get("auto", True):
+        gnames = [g.name for g in unit.vertex_groups]
+        top = np.array([max(v.groups, key=lambda ge: ge.weight).group if v.groups else -1 for v in unit.data.vertices])
+        near = {}
+        for e in unit.data.edges:
+            a, b = e.vertices
+            near.setdefault(a, []).append(b)
+            near.setdefault(b, []).append(a)
+        W = lambda n: np.array(arm.matrix_world @ arm.pose.bones[n].head) if n in arm.pose.bones else None
+        for side in ("Left", "Right"):
+            elbow, wrist = W("mixamorig:%sForeArm" % side), W("mixamorig:%sHand" % side)
+            if elbow is None or wrist is None:
+                continue
+            tips = [np.array(arm.matrix_world @ pb.tail) for pb in arm.pose.bones if pb.name.startswith("mixamorig:%sHand" % side)]
+            tip = max(tips, key=lambda t: float(np.linalg.norm(t - wrist)))
+            lower = {i for i, n in enumerate(gnames) if n.startswith("mixamorig:%sForeArm" % side) or n.startswith("mixamorig:%sHand" % side)}
+            mine = np.isin(top, list(lower))
+            off = np.minimum(seg_dist(co, elbow, wrist), seg_dist(co, wrist, tip))
+            gear = set(np.where(mine & (off > float(R.get("limb", 0.05)) * height))[0].tolist())
+            count = {"hand": 0, "forearm": 0}
+            while gear:
+                piece, todo = [], [gear.pop()]
+                while todo:
+                    v = todo.pop()
+                    piece.append(v)
+                    for n in near.get(v, []):
+                        if n in gear:
+                            gear.discard(n)
+                            todo.append(n)
+                if len(piece) < int(R.get("min", 12)):
+                    continue  # a cuff's edge, a stray fold: left as flesh
+                mid = co[piece].mean(0)
+                to_hand = np.linalg.norm(mid - wrist) <= np.linalg.norm(mid - elbow) * float(R.get("handBias", 1.0))
+                make_rigid(piece, "mixamorig:%s%s" % (side, "Hand" if to_hand else "ForeArm"))
+                count["hand" if to_hand else "forearm"] += len(piece)
+            rigid[side] = count
+REPORT["rigid"] = rigid
+
 # Un-pose: the mesh stands as the posed skeleton does; carried back to the rest pose through each
 # vertex's own blend of bone transforms (linear blend skinning, inverted), so the clips play true.
 names = [g.name for g in unit.vertex_groups]
@@ -307,6 +378,10 @@ def cloth_mask():
     if img is None or img.size[0] == 0:
         return None
     w, h = img.size
+    try:  # the unit's paint, beside its mask (the army's material reads both)
+        img.save(filepath=os.path.join(out, "albedo.png"), save_copy=True)
+    except Exception as e:
+        REPORT["albedo_error"] = str(e)[:200]
     px = np.array(img.pixels[:], dtype=np.float32).reshape(h, w, -1)[:, :, :3]
     hi, lo = px.max(2), px.min(2)
     sat = np.where(hi > 1e-4, (hi - lo) / np.maximum(hi, 1e-4), 0.0)
@@ -355,7 +430,7 @@ for o in bpy.data.objects:
 bpy.context.view_layer.objects.active = arm
 glb = os.path.join(out, NAME + ".glb")
 bpy.ops.export_scene.gltf(filepath=glb, use_selection=True, export_animations=True, export_animation_mode="NLA_TRACKS", export_skins=True, export_yup=True)
-json.dump({"meshes": [NAME], "clips": clips, "fps": 24}, open(os.path.join(out, "vat.json"), "w"), indent=1)
+json.dump({"meshes": [NAME], "clips": clips, "fps": 24, "weld": True}, open(os.path.join(out, "vat.json"), "w"), indent=1)
 REPORT["out"] = {"glb": glb, "bytes": os.path.getsize(glb)}
 
 if opts.get("bake"):

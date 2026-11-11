@@ -34,11 +34,13 @@ Sources: a man copies from `assets/hero/medieval_civilian_3` (Mixamo skeleton; c
 
 ## Known limits
 
-- A weapon or shield in the mesh takes the nearest limb's weights, so it bends with the arm. If that
-  reads badly: split the weapon off before the copy and weight it whole to the hand bone.
-- The bake has about 6k vertices (the knight has fewer) because TRELLIS's UV islands split vertices:
-  `offsets.exr` is 22 MB for 8 clips against the knight's 7.4 MB. Fewer clips, a lower `tris`, or a
-  re-unwrap bring it down.
+- Gear is rigid: in the lower arm's share of the mesh, whatever stands further from the arm's line than
+  flesh does (`rigid.limb`) goes whole to the hand (by the wrist) or the forearm (a strapped shield), a
+  joined piece at a time. Untested on a real soldier: a sword held against the body, or a shield over the
+  chest, may be missed or take some chest with it; then give the unit boxes (`units.<name>.rigid`).
+- The bake welds the vertices a glTF splits at UV islands (`"weld"` in vat.json; UVs stay on the faces'
+  corners): the keep bakes at 2,403 vertices, `offsets.exr` 8.6 MB for 8 clips (22 MB unwelded; the knight
+  is 7.4 MB).
 - Horse gaits are baked as authored (no in-place pass: its root bone differs from Mixamo's hips).
 
 ## The hook into the army (proposed; army_spike.gd is another agent's)

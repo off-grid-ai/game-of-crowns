@@ -51,6 +51,19 @@ for o in bpy.data.objects:
     if o.type == "MESH" and o not in keep:
         o.hide_render = True
         o.hide_set(True)
+# "weld" (the rig pipeline's units): a glTF splits a vertex wherever its UV islands meet, and the bake
+# stores a column a vertex; welded back (UVs live on the faces' corners, so they are kept), an
+# image-made mesh bakes at its true vertex count, about a third the texture.
+if cfg.get("weld"):
+    import bmesh
+    for o in keep:
+        before = len(o.data.vertices)
+        bm = bmesh.new()
+        bm.from_mesh(o.data)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+        bm.to_mesh(o.data)
+        bm.free()
+        print("WELD", o.name, before, "->", len(o.data.vertices))
 for o in keep:
     o.select_set(True)
 bpy.context.view_layer.objects.active = keep[0]
