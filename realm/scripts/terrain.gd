@@ -537,6 +537,14 @@ func _build_sea() -> void:
 	if wf.size() == 2:
 		mat.set_shader_parameter("vertex_wave_fade_min", float(wf[0]))
 		mat.set_shader_parameter("vertex_wave_fade_max", float(wf[1]))
+	# The water's colour reads the depth to the sea bed under it, and the bed is drawn in Terrain3D's
+	# rings, coarser away from the lens: where a ring's detail changes, the depth jumps and the water's
+	# shade with it, a straight seam across the sea (batch 5, km-d40). Past the near water the colour
+	# stops reading the bed (look.json sea.depth_fade), so no ring's edge shows; the shallows stay clear near.
+	var df: Array = preload("res://scripts/data.gd").value("look", "sea.depth_fade", [])
+	if df.size() == 2:
+		mat.set_shader_parameter("depth_fog_fade_min", float(df[0]))
+		mat.set_shader_parameter("depth_fog_fade_max", float(df[1]))
 	mat.set_shader_parameter("shore_fade_min", 12.0)  # surf at the shore only up close: no white outline round the map
 	mat.set_shader_parameter("shore_fade_max", 30.0)
 	if preload("res://scripts/land3d.gd").PAINTED and not bool(preload("res://scripts/data.gd").value("ground", "surf", true)):
