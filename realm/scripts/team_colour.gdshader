@@ -22,6 +22,10 @@ instance uniform float team_rank = 2.0;
 // stands, thatch, the tiles' own terracotta, darker tile, or the house's colour; the castle's and the
 // hall's always the house's. The weights are thatch, terracotta, dark, house (summing to 1).
 uniform bool is_roof = false;
+// A tiered kit house's own covering (house_tiers.gd names its roof material; data/assets.json house_kit):
+// 0 by the seed as below; 1 thatch, 2 the tiles' terracotta, 3 slate, 4 the house's colour, 5 wood shingle
+// (slate and shingle are the tiles in their material's own tint, house_kit.roof_tints).
+uniform int roof_kind = 0;
 uniform vec4 roof_cottage = vec4(0.55, 0.25, 0.1, 0.1);
 uniform vec4 roof_town = vec4(0.15, 0.4, 0.2, 0.25);
 uniform vec3 thatch : source_color = vec3(0.72, 0.53, 0.27);
@@ -73,16 +77,22 @@ void fragment() {
 	float amt = team_amount * team_color.a;
 	vec3 base = c.rgb;
 	bool straw = false;
-	if (is_roof && team_rank < 1.5) {
+	if (is_roof && (team_rank < 1.5 || roof_kind > 0)) {
 		vec4 w = team_rank < 0.5 ? roof_cottage : roof_town;
 		float s = v_seed;
-		if (s < w.x) {
+		// A named covering stands in for the seed's draw: thatch; terracotta, slate and shingle (the
+		// tiles in their own tint); the house's colour.
+		bool own_tint = roof_kind == 2 || roof_kind == 3 || roof_kind == 5;
+		if (roof_kind == 4) s = 2.0;
+		if ((roof_kind == 0 && s < w.x) || roof_kind == 1) {
 			// Thatch (art target 01-town): soft ochre straw in bundles laid down the slope, patchy,
 			// each roof its own age, the eave darker and ragged. The tiles' texture and their
 			// rows are left out: their columns read as yellow planks.
 			straw = true;
-			float across = v_mpos.z;
-			float down = abs(v_mpos.x);
+			// A roof whose ridge runs along x (a tiered house turned eaves to the street) falls along z.
+			bool turned = abs(v_mnormal.z) > abs(v_mnormal.x);
+			float across = turned ? v_mpos.x : v_mpos.z;
+			float down = turned ? abs(v_mpos.z) : abs(v_mpos.x);
 			float seed_s = fract(s * 7.31);
 			float bundle = vnoise(vec2(across * 55.0 + seed_s * 17.0, down * 7.0));
 			float fine = vnoise(vec2(across * 140.0, down * 16.0 + seed_s * 5.0));
@@ -97,7 +107,7 @@ void fragment() {
 			float eave = 1.0 - smoothstep(band * 0.4, band, up);
 			base = straw_col * shade * mix(1.0, thatch_eave_dark, eave);
 			amt = 0.0;
-		} else if (s < w.x + w.y) {
+		} else if (own_tint || s < w.x + w.y) {
 			amt = 0.0;  // the tiles' own fired terracotta
 		} else if (s < w.x + w.y + w.z) {
 			base = dark_tile * (0.5 + lum);
@@ -111,7 +121,7 @@ void fragment() {
 	if (straw) {
 		// Straw lies smooth over the roof's plane: the tiles' rounded rows are lit flat (their normal's
 		// sway across the slope taken out), so no tile ridges show through the thatch.
-		vec3 n = vec3(v_mnormal.x, v_mnormal.y, 0.0);
+		vec3 n = abs(v_mnormal.z) > abs(v_mnormal.x) ? vec3(0.0, v_mnormal.y, v_mnormal.z) : vec3(v_mnormal.x, v_mnormal.y, 0.0);
 		if (length(n) > 0.05) NORMAL = normalize((VIEW_MATRIX * MODEL_MATRIX * vec4(normalize(n), 0.0)).xyz);
 	} else if (has_normal) NORMAL_MAP = texture(normal_tex, UV).rgb;
 	// Dissolve right in front of the lens (Godot's pixel dither, as the other buildings do).

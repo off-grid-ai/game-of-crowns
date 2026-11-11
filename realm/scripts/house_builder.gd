@@ -32,31 +32,36 @@ static func _shutter(mat: Material) -> Material:
 	return _shutter_of[mat]
 
 
-## Adds every mesh surface under `node` into per-material SurfaceTools.
-func _collect(node: Node, xf: Transform3D, tools: Dictionary, shutter := false) -> void:
+## Adds every mesh surface under `node` into per-material SurfaceTools. `remap`: a kit material's
+## name -> the material this house wears in its place (its plaster's wash, its roof's covering).
+func _collect(node: Node, xf: Transform3D, tools: Dictionary, shutter := false, remap := {}) -> void:
 	var here := xf
 	if node is Node3D:
 		here = xf * node.transform
 	if node is MeshInstance3D and node.mesh:
 		for s in node.mesh.get_surface_count():
 			var mat: Material = node.get_active_material(s)
+			if mat and remap.has(mat.resource_name):
+				mat = remap[mat.resource_name]
 			if shutter:
 				mat = _shutter(mat)
-			var key := mat.get_instance_id() if mat else 0
+			# By the material's name: every kit file brings its own copy of MI_WoodTrim and the rest, and
+			# one surface per copy cost a draw call each (30-50 a house); one per look is ten or so.
+			var key: Variant = (mat.resource_name if mat.resource_name != "" else str(mat.get_instance_id())) if mat else "-"
 			if not tools.has(key):
 				var st := SurfaceTool.new()
 				st.begin(Mesh.PRIMITIVE_TRIANGLES)
 				tools[key] = {"st": st, "mat": mat}
 			tools[key]["st"].append_from(node.mesh, s, here)
 	for c in node.get_children():
-		_collect(c, here, tools, shutter)
+		_collect(c, here, tools, shutter, remap)
 
 
-func _bake(parts: Array) -> ArrayMesh:
+func _bake(parts: Array, remap := {}) -> ArrayMesh:
 	var tools := {}
 	for p in parts:
 		var n: Node3D = _piece(p[0])
-		_collect(n, p[1], tools, String(p[0]).begins_with("WindowShutters"))
+		_collect(n, p[1], tools, String(p[0]).begins_with("WindowShutters"), remap)
 		n.free()
 	var mesh := ArrayMesh.new()
 	for key in tools:
@@ -74,6 +79,10 @@ func _bake(parts: Array) -> ArrayMesh:
 
 ## spec: {w: cells across (2-4), d: cells deep (2-4), floors: 1-3, style: "plaster"|"timber"|"brick", seed}
 func build(spec: Dictionary) -> ArrayMesh:
+	if spec.has("tier"):
+		return preload("res://scripts/house_tiers.gd").new(self).build(spec)
+	if spec.has("pieces"):
+		return build_pieces(spec["pieces"])
 	var w: int = spec.get("w", 2)
 	var d: int = spec.get("d", 3)
 	var floors: int = spec.get("floors", 2)
@@ -119,7 +128,7 @@ func build(spec: Dictionary) -> ArrayMesh:
 					parts.append(["Window_Thin_Round1", Transform3D(basis, pos)])
 		for cx in [-hw, hw]:
 			for cz in [-hd, hd]:
-				parts.append(["Corner_Exterior_Wood" if not ground else "Corner_Exterior_Brick", Transform3D(Basis(), Vector3(cx, y, cz))])
+				parts.append(corner("Corner_Exterior_Wood" if not ground else "Corner_Exterior_Brick", cx, cz, y))
 		for ix in w:
 			for iz in d:
 				var fp := Vector3((ix - (w - 1) / 2.0) * CELL, y, (iz - (d - 1) / 2.0) * CELL)
@@ -131,12 +140,98 @@ func build(spec: Dictionary) -> ArrayMesh:
 	var roof := "Roof_RoundTiles_%dx%d" % [w * 2, d * 2]
 	if ResourceLoader.exists(DIR % roof):
 		parts.append([roof, Transform3D(Basis(), Vector3(0, top, 0))])
+		verges(parts, Transform3D(Basis(), Vector3(0, top, 0)), roof)
 	var gable := "Roof_Front_Brick%d" % (w * 2)
 	if ResourceLoader.exists(DIR % gable):
 		parts.append([gable, Transform3D(Basis(), Vector3(0, top, hd))])
 		parts.append([gable, Transform3D(Basis(Vector3.UP, PI), Vector3(0, top, -hd))])
 	if rng.randf() < float(spec.get("chimney", 0.7)):  # spec chimney: the chance of one (data/assets.json), always for a hall
-		parts.append(["Prop_Chimney", Transform3D(Basis(), Vector3(hw * 0.5, top - 0.5, -hd * 0.3))])
+		# Up through the ridge toward the back gable, its capped top a metre and more above the ridge
+		# (it stood mid-slope, a grey stub on the tiles: km-cap, gr-cap).
+		var ridge_y := roof_box(roof).end.y if ResourceLoader.exists(DIR % roof) else 3.0
+		parts.append(["Prop_Chimney", Transform3D(Basis(), Vector3(0, top + ridge_y - 1.8, -hd * 0.55))])
+	return _bake(parts)
+
+
+## A corner post or quoin at (x, z), turned so its two faces look out along the two walls it joins.
+## The kit's stone quoin is cut for one corner (it stood 0.2-0.4 m proud at the other three:
+## km-cap, gr-cap), so it is turned per corner and drawn in a little toward the walls' line.
+static func corner(piece: String, x: float, z: float, y: float) -> Array:
+	var yaw := 0.0
+	if x < 0.0 and z > 0.0:
+		yaw = -PI / 2
+	elif x < 0.0 and z < 0.0:
+		yaw = PI
+	elif x > 0.0 and z < 0.0:
+		yaw = PI / 2
+	var k := 0.7 if piece.contains("Brick") else 1.0
+	return [piece, Transform3D(Basis(Vector3.UP, yaw).scaled_local(Vector3(k, 1, k)), Vector3(x, y, z))]
+
+
+static var _roof_boxes := {}
+
+
+## A kit piece's bounds (metres), measured once.
+func roof_box(piece: String) -> AABB:
+	if _roof_boxes.has(piece):
+		return _roof_boxes[piece]
+	var n: Node3D = _piece(piece)
+	var box := [null]
+	_box_of(n, Transform3D(), box)
+	n.free()
+	_roof_boxes[piece] = box[0] if box[0] != null else AABB()
+	return _roof_boxes[piece]
+
+
+static func _box_of(n: Node, xf: Transform3D, box: Array) -> void:
+	var here := xf
+	if n is Node3D:
+		here = xf * (n as Node3D).transform
+	if n is MeshInstance3D and (n as MeshInstance3D).mesh:
+		var a: AABB = here * (n as MeshInstance3D).mesh.get_aabb()
+		box[0] = a if box[0] == null else (box[0] as AABB).merge(a)
+	for c in n.get_children():
+		_box_of(c, here, box)
+
+
+## Bargeboards: a plank down each rake of the roof's two ends, over the tile rows' stepped ends
+## (they read as a stair down every verge, thatch most of all: km-cap, gr-cap). `frame` is the
+## roof's own frame (local x down the slopes, z along the ridge); sx, pitch and sz its stretch.
+func verges(parts: Array, frame: Transform3D, roof: String, sx := 1.0, pitch := 1.0, sz := 1.0) -> void:
+	var box := roof_box(roof)
+	if box.size == Vector3.ZERO:
+		return
+	var run := box.size.x * 0.5 * sx
+	var ridge := box.end.y * pitch
+	var eave := box.position.y * pitch + 0.12
+	var h := 0.42  # the board's depth
+	for e in [1.0, -1.0]:
+		var z: float = (box.end.z if e > 0.0 else box.position.z) * sz - e * 0.03
+		for side in [1.0, -1.0]:
+			var a := Vector3(side * run, eave, z)
+			var b := Vector3(0, ridge + 0.04, z)
+			var length := a.distance_to(b)
+			var ang := atan2(b.y - a.y, b.x - a.x)
+			var basis := Basis(Vector3(0, 0, 1), ang) * Basis(Vector3(1, 0, 0), PI / 2 * e) * Basis.from_scale(Vector3(length / 2.0, 3.0, h / 2.0))
+			parts.append(["Floor_WoodDark", frame * Transform3D(basis, (a + b) * 0.5 - Vector3(0, h * 0.3, 0))])
+
+
+## A small thing of a yard (a woodshed, a pen, a washing line) laid from kit pieces and props
+## (data/assets.json components.yard_*): [piece, [x, y, z] metres, yaw, [sx, sy, sz] or a scale].
+func build_pieces(pieces: Array) -> ArrayMesh:
+	var parts := []
+	for p in pieces:
+		if not p is Array or (p as Array).size() < 2:
+			continue
+		var name := String(p[0])
+		if name.begins_with("res://") and not ResourceLoader.exists(name):
+			continue
+		var at: Array = p[1]
+		var yaw := float(p[2]) if (p as Array).size() > 2 else 0.0
+		var sc := Vector3.ONE
+		if (p as Array).size() > 3:
+			sc = Vector3(float(p[3][0]), float(p[3][1]), float(p[3][2])) if p[3] is Array else Vector3.ONE * float(p[3])
+		parts.append([name, Transform3D(Basis(Vector3.UP, yaw).scaled_local(sc), Vector3(float(at[0]), float(at[1]), float(at[2])))])
 	return _bake(parts)
 
 

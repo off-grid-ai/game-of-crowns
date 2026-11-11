@@ -69,6 +69,9 @@ func _team_mat(src: BaseMaterial3D, amount: float) -> ShaderMaterial:
 	# The roofs' mix and the colour's tone (data/look.json team.roofs, team.paint; art target 01-town).
 	var roofs: Dictionary = cfg().get("roofs", {})
 	m.set_shader_parameter("is_roof", (roofs.get("materials", ["MI_RoundTiles"]) as Array).any(func(k): return String(src.resource_name).begins_with(String(k))))
+	# A tiered kit house names its roof's covering (house_tiers.gd: MI_RoundTiles_thatch...): that, not the seed.
+	var cover := String(src.resource_name).get_slice("_", 2) if String(src.resource_name).begins_with("MI_RoundTiles_") else ""
+	m.set_shader_parameter("roof_kind", {"thatch": 1, "tile": 2, "slate": 3, "house": 4, "shingle": 5}.get(cover, 0))
 	m.set_shader_parameter("roof_cottage", _v4(roofs.get("cottage"), Vector4(0.55, 0.25, 0.1, 0.1)))
 	m.set_shader_parameter("roof_town", _v4(roofs.get("town"), Vector4(0.15, 0.4, 0.2, 0.25)))
 	m.set_shader_parameter("thatch", _rgb(roofs.get("thatch"), Color(0.8, 0.64, 0.34)))

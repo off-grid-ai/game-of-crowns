@@ -44,9 +44,14 @@ static func _from_catalogue() -> bool:
 		_component[id] = []
 		var i := 0
 		var vs: Array = c.get("variants", [])
-		if c.has("switch") and c.has("kit") and set_of(String(c["switch"])) == "kit":
-			vs = c["kit"]
-		for v: Dictionary in vs:
+		# The switch's set, when the component has one by that name ("kit": raised from the Quaternius kit;
+		# "ai": image-to-3D models), else its variants.
+		if c.has("switch"):
+			var set_name := set_of(String(c["switch"]))
+			if set_name != "variants" and c.get(set_name) is Array:
+				vs = c[set_name]
+		for v0: Dictionary in _expanded(vs):
+			var v: Dictionary = v0
 			# A kit model (it has a true length) is measured and scaled here; any other is a file its own placer loads.
 			var n := String(v.get("name", id if i == 0 else "%s#%d" % [id, i]))
 			i += 1
@@ -69,6 +74,25 @@ static func _from_catalogue() -> bool:
 				BY_HEIGHT[n] = float(v["height"])
 			_component[id].append(n)
 	return true
+
+
+## A builder variant with a count stands for that many: name_1..name_n, each its own seed (spec seed + i),
+## so a tier of houses is one line of data (assets.json house tiers).
+static func _expanded(vs: Array) -> Array:
+	var out: Array = []
+	for v: Dictionary in vs:
+		if not v.has("builder") or int(v.get("count", 1)) <= 1:
+			out.append(v)
+			continue
+		for i in int(v["count"]):
+			var one := v.duplicate(true)
+			one.erase("count")
+			one["name"] = "%s_%d" % [String(v.get("name", "kit")), i + 1]
+			var spec: Dictionary = one.get("spec", {})
+			spec["seed"] = int(spec.get("seed", 1)) + i
+			one["spec"] = spec
+			out.append(one)
+	return out
 
 
 ## A component's models (catalogue order), by the names make/footprint/parts take.

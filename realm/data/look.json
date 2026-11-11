@@ -113,9 +113,20 @@
   },
   "saturation": 1.0,
   "ranks": {
+   "house_hovel": 0,
    "house_poor": 0,
    "house_rich": 1,
-   "tavern": 1
+   "house_merchant": 1,
+   "house_burgher": 1,
+   "house_manor": 1,
+   "house_corner": 1,
+   "tavern": 1,
+   "alehouse": 1,
+   "forge": 1,
+   "town_stables": 1,
+   "granary": 1,
+   "tannery": 1,
+   "dyer": 1
   },
   "roofs": {
    "materials": [
