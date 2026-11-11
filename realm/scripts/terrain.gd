@@ -63,6 +63,12 @@ func build(map: Dictionary) -> void:
 	await get_tree().process_frame
 	var t2 := Time.get_ticks_msec()
 	_build_paths()
+	# Paths worn by real feet (wear.gd; realm/data/ground.json wear.on, or --wear=on).
+	if preload("res://scripts/wear.gd").ON and get_node_or_null("Wear") == null:
+		var w := preload("res://scripts/wear.gd").new()
+		w.name = "Wear"
+		w.terrain = self
+		add_child(w)
 	built = true
 	print_verbose("BUILD land %d ms, vegetation %d ms, paths %d ms" % [t1 - t0, t2 - t1, Time.get_ticks_msec() - t2])
 
