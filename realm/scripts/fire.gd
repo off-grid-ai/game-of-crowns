@@ -275,7 +275,9 @@ func _char(root: Node3D, key: String, h: Array) -> Dictionary:
 	scorch.size = Vector3(sz, 0.3, sz)
 	scorch.rotation.y = r.randf() * TAU
 	scorch.position = Vector3(box.get_center().x, box.position.y, box.get_center().z)
-	scorch.visibility_range_end = FAR
+	scorch.distance_fade_enabled = true  # a Decal has no visibility range; it fades by distance instead
+	scorch.distance_fade_begin = FAR * 0.8
+	scorch.distance_fade_length = FAR * 0.2
 	shell.add_child(scorch)
 	_burnt[key] = {"shell": shell, "hidden": hidden, "box": box}
 	return _burnt[key]
