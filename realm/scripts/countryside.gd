@@ -408,8 +408,13 @@ func _hedgerows(node: Node3D, fields: Array, seed: int) -> void:
 ## beans (its small leafy plant) knee-high, cabbages a third of a metre across,
 ## hay heaped two and a half metres long.
 static var CROP_MODELS := {"wheat": Real.path_of("crop_wheat"), "barley": Real.path_of("crop_barley"), "flax": Real.path_of("crop_flax"), "beans": Real.path_of("crop_beans"), "cabbage": Real.path_of("crop_cabbage"), "hay": Real.path_of("crop_hay")}  # by component (realm/data/assets.json)
-const CROP_SIZE := {"wheat": 0.13, "barley": 0.1, "flax": 0.09, "beans": 0.06, "cabbage": 0.04, "hay": 0.3}  # cereals and flax by height, the rest by their longest side
-const CROP_ROWS := {"wheat": [0.045, 0.04], "barley": [0.045, 0.035], "flax": [0.05, 0.04], "beans": [0.08, 0.06], "cabbage": [0.09, 0.08]}  # [between rows, along a row]
+const CROP_SIZE := {"wheat": 0.15, "barley": 0.12, "flax": 0.09, "beans": 0.06, "cabbage": 0.04, "hay": 0.3}  # cereals and flax by height, the rest by their longest side
+## Standing grain sown close (batch 8b look2: the wheat read as flat ochre squares from roof height: its
+## cards are 84% cut away, so a sparse field showed its painted ground), swaying in the one wind as the
+## grass does (plant_wind.gdshader; CROP_SWAY the bend), its cards cut a little fuller (CROP_CUT).
+const CROP_SWAY := 1.2  # the ears move about a fifth of their height in a fresh breeze (h² law in the shader)
+const CROP_CUT := 0.32
+const CROP_ROWS := {"wheat": [0.03, 0.028], "barley": [0.032, 0.026], "flax": [0.05, 0.04], "beans": [0.08, 0.06], "cabbage": [0.09, 0.08]}  # [between rows, along a row]
 const STANDING := ["wheat", "barley", "flax"]  # cut at harvest and left as stubble; the rest are lifted
 const CROP_REACH := 25.0  # crops are drawn this near the camera; the field's painted colour does beyond
 static var _crop_meshes := {}
@@ -454,6 +459,13 @@ static func crop_mesh(kind: String) -> Mesh:
 		if kind in ["cabbage", "hay"]:
 			im.generate_lods(25.0, 60.0, [])  # the scanned cabbage and hay are dense up close
 		mesh = im.get_mesh()
+		if kind in STANDING and mesh is ArrayMesh:
+			mesh = _windy(mesh)  # the stalks bend in the wind, the ears first
+			for i in mesh.get_surface_count():
+				var sm := mesh.surface_get_material(i) as ShaderMaterial
+				if sm:
+					sm.set_shader_parameter("sway", CROP_SWAY)
+					sm.set_shader_parameter("alpha_cut", CROP_CUT)
 	_crop_meshes[kind] = mesh
 	return mesh
 
@@ -603,7 +615,10 @@ static func _tint(kind: String, stage: String) -> Material:
 		var tint: Color = (FLAX_TINTS if kind == "flax" else TINTS)[stage]
 		if kind == "barley":
 			tint *= Color(1.05, 1.0, 0.92)  # paler, greyer than wheat
-		mat.albedo_color = tint
+		if mat is ShaderMaterial:
+			mat.set_shader_parameter("albedo_color", tint)  # the windy stalks keep their sway, take the stage's colour
+		else:
+			mat.albedo_color = tint
 		_tinted[key] = mat
 	return _tinted[key]
 
