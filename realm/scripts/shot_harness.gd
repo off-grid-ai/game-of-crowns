@@ -36,6 +36,11 @@ func _capture_quality() -> void:
 	vp.mesh_lod_threshold = 1.0  # every mesh at full detail (play simplifies at 4 px)
 	RenderingServer.directional_shadow_atlas_set_size(8192, true)
 	RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_HIGH)
+	# Game time keeps up with the clock: play lets physics catch up at most two ticks a frame
+	# (project.godot, against the season-turn stutter), and Godot cuts a frame's game time to
+	# match, so a still drawn at 3 fps lived a tenth of a second a second and its --wait ran
+	# past the render's LIMIT. Nobody plays a render: let it catch up as Godot does by default.
+	Engine.max_physics_steps_per_frame = 8
 
 
 func _parse_args() -> void:
@@ -166,7 +171,34 @@ func _ride_frames() -> void:
 	_take_shot()
 
 
+## The still's --wait (seconds of game time, the clock the staged scenes and their leads
+## run on), with a backstop on the wall clock: game time falls behind the clock whenever
+## frames are slow (Godot gives a frame at most max_physics_steps_per_frame ticks of game
+## time), and a far view of the whole realm or a wall coming down can draw at a few frames
+## a second, so 60 game seconds took longer than render.sh's LIMIT and nothing was saved.
+## The backstop takes the shot SHOT_MARGIN seconds before LIMIT (render.sh's, from the
+## environment; 300 if unset) and says so in the log. Not for a tour or a played scenario
+## (they end themselves) or a film take (its frames are fixed, not timed).
+const SHOT_MARGIN := 25.0
+
+func _arm_wait() -> void:
+	main.get_tree().create_timer(float(_shot.get("wait", 8.0))).timeout.connect(_take_shot)
+	if _shot.has("tour") or _shot.has("play") or OS.get_cmdline_args().has("--write-movie"):
+		return
+	var limit := float(OS.get_environment("LIMIT")) if OS.get_environment("LIMIT").is_valid_float() else 300.0
+	var deadline_ms := int(maxf(limit - SHOT_MARGIN, 10.0) * 1000.0)
+	main.get_tree().process_frame.connect(func():
+		if _shot.get("taken", false) or Time.get_ticks_msec() < deadline_ms:
+			return
+		print("SHOT backstop: saved at %.0f s on the clock, %.1f of %s game seconds in (frames too slow for the game clock)" % [
+			Time.get_ticks_msec() / 1000.0, main._game_ms / 1000.0, _shot.get("wait", 8.0)])
+		_take_shot())
+
+
 func _take_shot() -> void:
+	if _shot.get("taken", false):
+		return  # the --wait and its backstop: one still
+	_shot["taken"] = true
 	var img := main.get_viewport().get_texture().get_image()
 	img.save_png(_shot["path"])
 	print("Saved screenshot to ", _shot["path"])

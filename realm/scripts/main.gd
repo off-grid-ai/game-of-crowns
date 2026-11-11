@@ -474,7 +474,7 @@ func _ready() -> void:
 			return  # juice: an order's result is told at its town, one thing at a time
 		ui.toast(text if ok else "The crown cannot: " + text))
 	if _shot.has("path"):
-		get_tree().create_timer(float(_shot.get("wait", 8.0))).timeout.connect(_take_shot)
+		shots._arm_wait()
 	if _shot.has("clean"):
 		ui.visible = false
 		labels.visible = false
