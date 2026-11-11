@@ -249,7 +249,7 @@ func _load_kit() -> void:
 			if mesh:
 				for si in mesh.get_surface_count():
 					if mesh.surface_get_material(si):
-						mesh.surface_set_material(si, _cutout(mesh.surface_get_material(si)))  # leaves cut out; a crown at the lens dissolves
+						mesh.surface_set_material(si, _leaves(_cutout(mesh.surface_get_material(si)), path))  # leaves cut out; a crown at the lens dissolves
 			baked[path] = mesh
 		var mesh: Mesh = baked[path]
 		_full.append(mesh)
@@ -272,6 +272,31 @@ func _load_pack(path: String, kinds: Array, full_suffix: String, mid_suffix: Str
 		_card.append(card if full != null else null)
 		_height.append(full.get_aabb().size.y if full else 0.0)
 	scene.free()
+
+
+## A kit tree's leaves as its own (data/assets.json woods.kit; art target 01-town): a leaf texture swapped
+## by material name (leaf_texture: the twisted tree's are painted solid red, which read as red blobs), and
+## its own colour per season (seasons: by model file, a tint over its summer colour, which terrain.gd's
+## season pass takes instead of the land's), so a wood turns as a mix: mostly deep green, some ochre,
+## amber and rust. A tree with neither keeps the shared material.
+func _leaves(mat: Material, path: String) -> Material:
+	var m := mat as BaseMaterial3D
+	if m == null or not m.resource_name.begins_with("Leaves"):
+		return mat
+	var kit: Dictionary = Data.value("assets", "woods.kit", {})
+	var swap := String((kit.get("leaf_texture", {}) as Dictionary).get(m.resource_name, ""))
+	var tints: Dictionary = (kit.get("seasons", {}) as Dictionary).get(path.trim_prefix("res://assets/"), {})
+	if swap == "" and tints.is_empty():
+		return mat
+	var c: BaseMaterial3D = m.duplicate()
+	if swap != "" and ResourceLoader.exists("res://assets/" + swap):
+		c.albedo_texture = load("res://assets/" + swap)
+	var by := {}
+	for season in tints:
+		var t: Array = tints[season]
+		by[season] = Color(float(t[0]), float(t[1]), float(t[2]))
+	c.set_meta("seasons", by)
+	return c
 
 
 ## The pack's leaves and billboards are alpha-blended: every layer of every

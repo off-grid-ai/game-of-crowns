@@ -168,7 +168,9 @@ func set_season(name: String, towns: Array = [], settle := 10.0) -> void:
 			if not _leaf_mats.has(mat):
 				_leaf_mats[mat] = mat.albedo_color
 			# Leaves turn and grass dulls over the settle, never in a frame.
-			create_tween().tween_property(mat, "albedo_color", _leaf_mats[mat] * s[key], settle)
+			# A kit tree with its own turn (forest.gd _leaves, assets.json woods.kit.seasons) takes that instead.
+			var tint: Color = (mat.get_meta("seasons", {}) as Dictionary).get(name, s[key])
+			create_tween().tween_property(mat, "albedo_color", _leaf_mats[mat] * tint, settle)
 		if s["snow"] > 0.0 and OVERLAY_SNOW and mmi in _veg:  # (the kit woods' batches are tinted through one per mesh: no overlay there)
 			mmi.material_overlay = _snow  # left on as it melts; the fade takes it to nothing
 	if land3d:
