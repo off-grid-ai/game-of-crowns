@@ -1222,6 +1222,11 @@ func _volley(root: Node3D, from: Vector3, at: Vector3, spread: float, r: RandomN
 	root.add_child(stone)
 	var shoot := func():
 		var land := ground(at + Vector3(r.randf_range(-spread, spread), 0, r.randf_range(-spread, spread)))
+		# Stone walls (walls.gd, --walls=stone): a stone aimed at a wall's doomed stones strikes it.
+		var walls: Node = Engine.get_meta("stone_walls") if Engine.has_meta("stone_walls") else null
+		var on_wall: Vector3 = walls.aim(from) if walls else Vector3.INF
+		if on_wall != Vector3.INF:
+			land = on_wall
 		var top := maxf(from.y, land.y) + from.distance_to(land) * 0.45
 		stone.visible = true
 		var tw := stone.create_tween()
@@ -1231,6 +1236,9 @@ func _volley(root: Node3D, from: Vector3, at: Vector3, spread: float, r: RandomN
 			stone.position = p, 0.0, 1.0, 1.6)
 		tw.tween_callback(func():
 			stone.visible = false
+			if on_wall != Vector3.INF and is_instance_valid(walls):
+				walls.strike(land, (land - from).normalized())  # its own dust and falling stones
+				return
 			var d := _puffs(Color(0.5, 0.45, 0.38, 0.22), 6, 1.0, 0.04, 0.1)
 			d.one_shot = true
 			d.explosiveness = 0.9

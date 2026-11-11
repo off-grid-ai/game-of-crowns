@@ -113,6 +113,7 @@ func sync(world: Dictionary) -> void:
 		bb.set_var(&"favour", favour)
 		bb.set_var(&"crown_town", int(c.get("owner", -1)) == crown_id)
 		bb.set_var(&"house", String((owner.get("house", {}) as Dictionary).get("name", "")))
+		bb.set_var(&"damage", c.get("damage") if c.get("damage") is Dictionary else {})  # its walls' wear and burnt share (bridge damage.js): stone walls read it
 		bb.set_var(&"burnt", float(_dict(c.get("damage")).get("burnt", 0.0)))  # the share of its houses burnt (bridge damage.js)
 	realm.set_var(&"towns", ids)
 	# The land's own facts, for what the view draws on it (terrain, ruins): who

@@ -35,7 +35,7 @@ func map_for(id: int, root: Node3D) -> RID:
 	# town whose life changed (town_life.gd): a building site going up, recruits
 	# drilling, a crowd at the keep are in the way too.
 	var life: Node3D = root.get_node_or_null("Life")
-	var made := [root.get_instance_id(), life.get_instance_id() if life else 0]
+	var made := [root.get_instance_id(), life.get_instance_id() if life else 0, int(root.get_meta("stone_walls_rev", 0))]  # a stone wall breached (walls.gd): baked afresh
 	if _maps.has(id) and _built_from.get(id, []) == made:
 		return _maps[id]
 	forget(id)
@@ -52,7 +52,7 @@ func map_for(id: int, root: Node3D) -> RID:
 			var o := 0.045  # a person standing, about 0.4 m across
 			standing.append(PackedVector2Array([p + Vector2(-o, -o), p + Vector2(o, -o), p + Vector2(o, o), p + Vector2(-o, o)]))
 	var blocks: Array = []
-	for fp in root.get_meta("footprints", []) + standing:
+	for fp in root.get_meta("footprints", []) + standing + root.get_meta("stone_walls", []):  # stone walls' standing foot (walls.gd)
 		# Slightly enlarged so people pass alongside walls, not inside them.
 		var c: Vector2 = (fp[0] + fp[1] + fp[2] + fp[3]) / 4.0
 		var grown := PackedVector2Array()

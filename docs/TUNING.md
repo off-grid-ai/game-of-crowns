@@ -111,6 +111,7 @@ Switches (`--name`) go after `--` on the game's command line.
 
 ## Damage to towns: walls and burnt houses (Builder 1; the bridge owns it)
 - How fast besiegers batter a wall section, when it shows cracked and breached, how fast it's mended, how much a sack or razing burns and how fast it's rebuilt, how many sections: `bridge/data/damage.json`.
+- Stone walls that break stone by stone (on with `walls: "stone"` or `--walls=stone`): the stones' sizes, joints, tint and which painted blocks they show (`block`, `bricks`), the merlons, how stones fall (gravity, weight, friction, how much of a stone must stay carried before it slumps, how long they take to settle), how a section's wear opens the breach (`breach`: widths, how deep at what wear, the cracked band, what gap counts as a way through), a town ring's height and sections, the catapult blows that bring doomed stones down (`strike`: how often, how hard, how wide, how many before the rest gives way), how near the camera the fall is simulated (`sim_radius`, world units), the dust, and the test demo: `realm/data/walls.json`.
 
 ## Fire (lead; behind `--fire=v2`, `--fire=v1` for the old puffs)
 - On by default or not: `realm/data/fire.json`: `on`.
