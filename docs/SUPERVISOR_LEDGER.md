@@ -77,6 +77,9 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log of supervisor actions (newest first; details in review/supervisor-log.md)
+- 16:45 finesse catalogue routed into the slice: five shared facts first (wind, wetness, who's home, ground wear,
+  damage per segment), then flames, chimney smoke, lit windows, wall breaches, ruins, fire response, rain, fields.
+  A fidelity picker for Mac is being built by research. The text pass is done (GoT furniture out).
 - 16:30 the ledger started; the vertical slice set as the test.
 - 16:20 fire and siege breaches assigned to the lead; finesse catalogue agent started.
 - 16:15 the professional-feel audit (25 findings) routed; the three-style test asked of Film.
