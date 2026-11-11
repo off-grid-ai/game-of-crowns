@@ -94,3 +94,6 @@ build/
 # Your own names for houses and people (the Lore's Rename): yours, never pushed
 bridge/names.json
 bridge/written.json
+
+# Python caches from tools
+__pycache__/
