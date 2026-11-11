@@ -1,5 +1,5 @@
 {
-  "_": "How a field battle plays (battle_ai.gd, combat.gd read it through data.gd; docs/TUNING.md). hp: blows a soldier takes. hit.beaten, hit.victors: a blow's chance to land, by side. kickLands: a kick's chance to land. dodge: the chance a blow that misses is a dodge rather than a parry. kickOdds: how often a swordsman kicks instead of cutting. breakAt: the beaten side runs when this share of it is left. longest: seconds at blows before whatever is left runs. charge.passes: a knight's charges through the line. charge.ride: a knight's charge speed, units a second. floored: the chance a heavy blow that doesn't kill knocks a man down.",
+  "_": "How a field battle plays (battle_ai.gd, combat.gd read it through data.gd; docs/TUNING.md). hp: blows a soldier takes. hit.beaten, hit.victors: a blow's chance to land, by side. kickLands: a kick's chance to land. dodge: the chance a blow that misses is a dodge rather than a parry. kickOdds: how often a swordsman kicks instead of cutting. breakAt: the beaten side runs when this share of it is left. longest: seconds at blows before whatever is left runs. charge.passes: a knight's charges through the line. charge.ride: a knight's charge speed, units a second. floored: the chance a heavy blow that doesn't kill knocks a man down. field: the massed battle of two hosts (tools/field_battle.gd on the army spike's regiments): gap, the lines' middles apart when they deploy; start, seconds both lines stand before it begins; advance, the foot's pace to contact (units a second); contact, the gap between front ranks at blows; longest, seconds at blows before the beaten break whatever their strength. volley: seconds between an archer regiment's volleys (low, high), arrows in one, their flight (seconds) and arc (height over distance), men it fells (low, high), and how near the lines may come before archers stop (until). fight: men a regiment in contact loses a second (beaten, victors; the outcome is the realm's, Freeciv's), seconds between a front man's blows (low, high), the chance a front man reels instead, ranks that fight, how far the front surges, and how much harder a flanked regiment bleeds. cavalry: ride and charge pace, how far round the enemy's end it swings (wide) and how far behind its front it turns in (behind). waver: strength below which a beaten regiment's banner wavers; rout: below which it breaks; run: its pace in flight; scatter: how far each running man drifts a second; fade: seconds before the routed are gone. camera: the lens's quarter off the lines and how fast it follows.",
   "hp": 2,
   "hit": { "beaten": 0.22, "victors": 0.5 },
   "kickLands": 0.7,
@@ -8,5 +8,13 @@
   "breakAt": 0.55,
   "longest": 18.0,
   "charge": { "passes": 3, "ride": 0.85 },
-  "floored": 0.3
+  "floored": 0.3,
+  "field": {
+    "gap": 9.0, "start": 2.0, "advance": 0.16, "contact": 0.12, "longest": 45.0,
+    "volley": { "every": [2.5, 3.6], "arrows": 70, "flight": 1.7, "arc": 0.45, "kills": [1, 4], "until": 3.0 },
+    "fight": { "loss": { "beaten": 2.4, "victors": 0.9 }, "swing": [0.7, 1.8], "hitOdds": 0.2, "ranks": 2, "surge": 0.02, "flanked": 1.6 },
+    "cavalry": { "ride": 0.45, "charge": 0.55, "wide": 2.2, "behind": 1.0 },
+    "waver": 0.7, "rout": 0.45, "run": 0.42, "scatter": 0.05, "fade": 7.0,
+    "camera": { "quarter": 0.9, "follow": 1.2 }
+  }
 }

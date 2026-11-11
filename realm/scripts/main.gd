@@ -491,6 +491,8 @@ func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--army-spike="):
 			add_child(load("res://tools/army_spike.gd").new(self, int(a.substr(13))))
+		elif a.begins_with("--army-battle="):  # two hosts meet in the field (a test aid; tools/field_battle.gd)
+			add_child(load("res://tools/field_battle.gd").new(self, a.substr(14)))
 	# The opening's clock (a test aid, GOC_OPENING_CLOCK=<file>): the first ten minutes, timed.
 	if OS.get_environment("GOC_OPENING_CLOCK") != "":
 		add_child(load("res://tools/opening_clock.gd").new(self))
