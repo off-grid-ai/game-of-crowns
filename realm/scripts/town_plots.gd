@@ -20,11 +20,26 @@ extends RefCounted
 const CELL := 0.15  # world units per grid cell: about a metre and a quarter
 const SLOPE_COST := 40.0  # how much a rise of one unit per unit costs, against level ground
 const ROAD_HALF := 0.17  # half a street's width (town_nav reads a lane as 0.34 wide)
-const SET_BACK := 0.04  # between the street's edge and a house front
-const YARD := 0.55  # a yard's depth behind a house (about 4.5 m): room for its kitchen garden
-const GAP := 0.03  # between two plots' houses
-const LANE_EVERY := 2.4  # along a road, how far between branch lanes
-const LANE_LENGTH := 1.9  # how far a lane runs from its road
+# The plots' knobs (realm/data/towns.json plots, and plots.crown for the crown's seat; tune() sets
+# them per town before its layout is cut).
+static var SET_BACK := 0.04  # between the street's edge and a house front
+static var YARD := 0.55  # a yard's depth behind a house (about 4.5 m): room for its kitchen garden
+static var GAP := 0.03  # between two plots' houses
+static var LANE_EVERY := 2.4  # along a road, how far between branch lanes
+static var LANE_LENGTH := 1.9  # how far a lane runs from its road
+static var WANDER := 0.0  # how much a street wanders on level ground (a share of a cell's cost, from a gentle noise)
+
+
+## The knobs for the next town's layout: towns.json plots, with `over` (plots.crown) on top.
+static func tune(base: Dictionary, over: Dictionary = {}) -> void:
+	var k := base.duplicate()
+	k.merge(over, true)
+	SET_BACK = float(k.get("set_back", 0.04))
+	YARD = float(k.get("yard", 0.55))
+	GAP = float(k.get("gap", 0.03))
+	LANE_EVERY = float(k.get("lane_every", 2.4))
+	LANE_LENGTH = float(k.get("lane_length", 1.9))
+	WANDER = float(k.get("wander", 0.0))
 
 
 ## The town's main roads (town-local polylines), from the square's edge out
@@ -74,8 +89,8 @@ static func lanes(main: Array, count: int, square_r: float, edge: float, g: ASta
 				if q.distance_to(goal) < 0.5 and q.distance_to(p) > 0.8:
 					goal = q
 					break
-			if not bool(land.call(goal)):
-				continue  # it would run into water: no lane here
+			if not bool(land.call(goal)) or (g.is_in_boundsv(_cell(g, goal)) and g.is_point_solid(_cell(g, goal))):
+				continue  # it would run into water, or into a castle or a landmark: no lane here
 			var path := path_on(g, p, goal)
 			if path.size() >= 2:
 				out.append(path)
@@ -178,7 +193,7 @@ static func closest_on(way: PackedVector2Array, p: Vector2) -> Vector2:
 ## AStarGrid2D over the square of half-size `r` round the town's heart:
 ## water solid, each cell weighted by the slope under it. Built once per town,
 ## for its roads and its lanes.
-static func grid(r: float, height: Callable, land: Callable) -> AStarGrid2D:
+static func grid(r: float, height: Callable, land: Callable, seed := 0) -> AStarGrid2D:
 	var n := int(ceil(r * 2.0 / CELL)) + 1
 	var g := AStarGrid2D.new()
 	g.region = Rect2i(0, 0, n, n)
@@ -190,6 +205,7 @@ static func grid(r: float, height: Callable, land: Callable) -> AStarGrid2D:
 	g.update()
 	var hs := PackedFloat32Array()
 	hs.resize(n * n)
+	var noise := _noise(seed)
 	for y in n:
 		for x in n:
 			var p := Vector2(-r + x * CELL, -r + y * CELL)
@@ -204,8 +220,38 @@ static func grid(r: float, height: Callable, land: Callable) -> AStarGrid2D:
 				rise = maxf(rise, absf(hs[y * n + x + 1] - h))
 			if y + 1 < n:
 				rise = maxf(rise, absf(hs[(y + 1) * n + x] - h))
-			g.set_point_weight_scale(Vector2i(x, y), 1.0 + SLOPE_COST * rise / CELL)
+			# A street wanders a little even on level ground (art target 01-town: winding streets),
+			# round what a straight line would cut through: a gentle noise on the cost.
+			var wander := 0.0
+			if WANDER > 0.0:
+				wander = WANDER * (noise.get_noise_2d(x, y) * 0.5 + 0.5)
+			g.set_point_weight_scale(Vector2i(x, y), 1.0 + SLOPE_COST * rise / CELL + wander * 4.0)
 	return g
+
+
+static func _noise(seed: int) -> FastNoiseLite:
+	var n := FastNoiseLite.new()
+	n.seed = seed
+	n.frequency = 0.09  # in cells: a bend every few metres' worth of grid
+	return n
+
+
+## Marks every cell under `polys` (town-local outlines: a castle, a landmark, a stall) solid,
+## so lanes laid after them go round.
+static func block(g: AStarGrid2D, polys: Array) -> void:
+	for poly in polys:
+		if not poly is PackedVector2Array or (poly as PackedVector2Array).size() < 3:
+			continue
+		var box := Rect2(poly[0], Vector2.ZERO)
+		for q in poly:
+			box = box.expand(q)
+		var a := _cell(g, box.position)
+		var b := _cell(g, box.end)
+		for y in range(a.y, b.y + 1):
+			for x in range(a.x, b.x + 1):
+				var c := Vector2i(x, y)
+				if g.is_in_boundsv(c) and Geometry2D.is_point_in_polygon(g.offset + Vector2(c) * CELL, poly):
+					g.set_point_solid(c, true)
 
 
 ## The cheapest way from `a` to `b` on `g`, simplified and eased into curves.
