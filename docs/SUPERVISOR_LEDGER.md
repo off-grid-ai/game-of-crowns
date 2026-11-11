@@ -121,6 +121,10 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 00:50 (11-12) Mac asleep: "work autonomously and get this through… explicit go ahead to do whatever it takes."
+  No questions to Mac overnight; calls are taken and logged here. Mac had to click a ChatGPT download for the
+  concept agent: from now every worker runs headless only. Order of the night: batch 7 ends -> judge all shots
+  -> fix round -> batch 8 (town round 2, painted soldiers, knight_v2, battle in play) -> morning report with stills.
 - 00:35 (11-12) Round plan. Mac: no compromise on UI and finesse; use the kits properly. (1) GPU: batch 7 films
   alone (towns 171 frames, moods 83 done, fire running); when done the supervisor judges every shot at 100%
   against its target, lists defects, sends Mac the set; fixes go in one round, then batch 8 in one run.
