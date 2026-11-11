@@ -574,7 +574,9 @@ static func _rect(at: Vector3, size: Vector2, rot: float) -> PackedVector2Array:
 
 
 func _bonfire(life: Node3D, center: Vector3) -> void:
-	# A fire you'd gather round: flames, not a flare (additive sparks bloom fast).
+	# A fire you'd gather round: flames, not a flare (additive sparks bloom fast). Each flame drawn at its real
+	# size in the quad: the GPU copy (Particles.to_gpu) loses a CPU effect's scale, so 0.25-wide added quads
+	# stacked into a bright blob (the forge's white ball, batch 7, was the same fault).
 	var p := CPUParticles3D.new()
 	p.amount = 18
 	p.lifetime = 0.8
@@ -582,14 +584,12 @@ func _bonfire(life: Node3D, center: Vector3) -> void:
 	p.spread = 15
 	p.initial_velocity_min = 0.3
 	p.initial_velocity_max = 0.6
-	p.scale_amount_min = 0.04
-	p.scale_amount_max = 0.08
 	var grad := Gradient.new()
 	grad.set_color(0, Color(0.85, 0.45, 0.12, 0.7))
 	grad.set_color(1, Color(0.5, 0.12, 0.0, 0.0))
 	p.color_ramp = grad
 	var q := QuadMesh.new()
-	q.size = Vector2(0.25, 0.25)
+	q.size = Vector2(0.07, 0.07)  # a hand of flame each, as the yard hearths' (towns.gd)
 	var m := StandardMaterial3D.new()
 	m.albedo_texture = preload("res://scripts/towns.gd").soft_dot()
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
