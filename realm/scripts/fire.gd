@@ -155,6 +155,8 @@ func _queue_next(id: int) -> void:
 	wait = clampf(wait, float(gap[0]) * float(s["pace"]), float(gap[1]) * 2.0)
 	if _lines.has(id):
 		wait *= float((knobs().get("folk", {}) as Dictionary).get("slow", 1.6))
+	# A wet town burns slower (the one wetness, weather_fx.gd; data/weather.json fire.slow).
+	wait *= 1.0 + WeatherFx.wet * float(preload("res://scripts/data.gd").num("weather", "fire.slow", 1.2))
 	s["pick"] = pick
 	s["at"] = _clock + wait
 
