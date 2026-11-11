@@ -33,6 +33,12 @@ func _ready() -> void:
 	t.autostart = true
 	t.timeout.connect(_check_season)
 	add_child(t)
+	# The people at work in the fields near the camera, and the flocks on the fallow (field_work.gd).
+	if preload("res://scripts/field_work.gd").on():
+		var fw := preload("res://scripts/field_work.gd").new()
+		fw.name = "FieldWork"
+		fw.land = self
+		add_child(fw)
 
 
 ## Brings the countryside in line with the towns. A coroutine that gives the
@@ -147,6 +153,20 @@ func _near_town(cities: Array, tx: int, ty: int) -> bool:
 	return false
 
 
+## The fallow fields within `r` of `p` (world, flat): [middle, size, yaw] each, read-only (the
+## flocks graze them: field_work.gd).
+func fallow_near(p: Vector2, r: float) -> Array:
+	var out: Array = []
+	for key in _patches:
+		for stead in _patches[key]["steads"]:
+			if Vector2((stead["at"] as Vector3).x, (stead["at"] as Vector3).z).distance_to(p) > r + 4.0:
+				continue
+			for f in stead["fields"]:
+				if (f as Array).size() > 3 and String(f[3]) == "" and Vector2((f[0] as Vector3).x, (f[0] as Vector3).z).distance_to(p) < r:
+					out.append([f[0], f[1], f[2]])
+	return out
+
+
 ## Takes up a patch of farms: its buildings, fields, hedges and tracks.
 func _drop(key: String) -> void:
 	if not _patches.has(key):
@@ -238,8 +258,9 @@ func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: A
 			g = on_furrows(terrain, g, gsize)
 			if terrain.land3d and terrain.land3d.land:
 				plough(terrain, g, gsize, yaw)
-			sow(node, terrain, Vector3.ZERO, ["cabbage", "beans"][rng.randi() % 2], g, gsize, yaw, rng)
-			fields.append([g, gsize, yaw])
+			var veg: String = ["cabbage", "beans"][rng.randi() % 2]
+			sow(node, terrain, Vector3.ZERO, veg, g, gsize, yaw, rng)
+			fields.append([g, gsize, yaw, veg])
 	# An orchard in rows behind the house, its trees small and round.
 	if rng.randf() < 0.4 and not _fruit.is_empty():
 		var o := at - face * 0.6 - side * 1.5
@@ -281,9 +302,10 @@ func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: A
 		if terrain.land3d and terrain.land3d.land:
 			plough(terrain, c, size, fyaw)  # ploughed soil under the crop
 			crop.albedo_mix = 0.55
-		sow(node, terrain, Vector3.ZERO, crop_for(tex.get_file().get_basename(), rng), c, size, fyaw, rng)
+		var grows := crop_for(tex.get_file().get_basename(), rng)
+		sow(node, terrain, Vector3.ZERO, grows, c, size, fyaw, rng)
 		hedges.append([c, size, fyaw])
-		fields.append([c, size, fyaw])
+		fields.append([c, size, fyaw, grows])  # [middle, size, yaw, crop ("" lies fallow)]
 	return {"at": at, "fields": fields, "yard": yard}
 
 
@@ -508,6 +530,7 @@ static func sow(parent: Node3D, land: Node3D, origin: Vector3, kind: String, c: 
 	mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 	mmi.set_meta("kind", kind)
 	mmi.set_meta("lag", rng.randf())  # each field ripens and is reaped on a day of its own
+	mmi.set_meta("field", [c, size, yaw])  # where it lies, for the work in it (field_work.gd)
 	mmi.add_to_group("crops")
 	_ripen(mmi, _season_name if _season_name != "" else String(land.season), _through() if _season_name != "" else 0.0)
 	parent.add_child(mmi)

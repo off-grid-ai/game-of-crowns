@@ -352,6 +352,46 @@ static func post_activities(post: String) -> Array:
 				seq("talk", [run(["Idle_Talking", "Laughing", "Telling_Secret", "Whispering"], 2, 3), brk(["Sitting_Idle", "Weight_Shift"])]),
 				seq("yarn", [run(["Sitting_Talking"], 2, 3), run(["Sitting_Drinking"], 1, 1), brk(["Laughing", "Sitting_Idle"])]),  # a long tale on the bench
 			]
+		# --- the countryside's fields through the year (field_work.gd, fieldwork.json) ---
+		"sower":  # casting seed from the hip, a step on, again
+			return [
+				seq("cast", [step(0.2), run(["Throw_Object"], 2, 3), step(0.2), run(["Throw_Object"], 1, 2), brk(["Weight_Shift", "Looking_Around"])]),
+				seq("fill", [once("PickUp_Table"), step(0.15), run(["Planting"], 1, 2), get_up(), brk(REST)]),
+			]
+		"weeder":  # summer: weeds pulled, the rows hoed and watered
+			return [
+				seq("pull", [run(["Fixing_Kneeling"], 2, 3), get_up(), step(0.2), brk(["Wiping_Sweat", "Arm_Stretching"])]),
+				seq("hoe", [run(["Digging"], 2, 3), step(0.15), once("Wiping_Sweat"), brk(REST)]),
+				seq("water", [step(0.2), run(["Watering"], 1, 2), brk(["Weight_Shift", "Looking_Around"])]),
+			]
+		"reaper":  # the gold cut low with a sickle, stooping along the row, or swung through
+			return [
+				seq("sickle", [run(["Crouch_Fwd", "Crouch_Idle"], 2, 3), step(0.12), run(["Crouch_Fwd"], 1, 2), brk(["Wiping_Sweat", "Arm_Stretching"])]),
+				seq("swing", [run(["Axe_Horizontal"], 3, 4), step(0.12), run(["Axe_Horizontal"], 2, 3), brk(["Wiping_Sweat", "Weight_Shift"])]),
+				seq("drink", [once("Wiping_Sweat"), run(["Drinking"], 1, 1), brk(["Looking_Around", "Relieved_Sigh"])]),
+			]
+		"binder":  # the cut gathered into sheaves and stood in stooks
+			return [
+				seq("bind", [run(["Crouch_Idle"], 1, 2), once("PickUp_Table"), step(0.2), once("PickUp_Table"), brk(REST)]),
+				seq("carry", [run(["Carrying"], 1, 2), step(0.25), once("PickUp_Table"), brk(["Wiping_Sweat", "Weight_Shift"])]),
+			]
+		"gleaner":  # after the reapers, what they dropped picked from the stubble
+			return [
+				seq("glean", [run(["Pick_Fruit", "Crouch_Idle"], 2, 3), step(0.2), run(["Pick_Fruit"], 1, 2), brk(["Weight_Shift", "Wiping_Sweat"])]),
+				seq("call", [run(["Idle_Talking", "Laughing"], 1, 2), brk(["Looking_Around"])]),
+				seq("rest", [run(["Sitting_Ground"], 1, 1), get_up(), brk(["Arm_Stretching"])]),
+			]
+		"lifter":  # cabbages and beans lifted and carried off
+			return [
+				seq("lift", [run(["Dig_And_Plant"], 2, 3), once("PickUp_Table"), step(0.2), brk(REST)]),
+				seq("carry", [run(["Carrying"], 1, 2), step(0.25), once("PickUp_Table"), brk(["Wiping_Sweat"])]),
+			]
+		"shepherd":  # with his flock on the fallow
+			return [
+				seq("watch", [run(["Weight_Shift", "Looking_Around", "Bored"], 2, 3), brk(["Breathing_Idle", "Thinking"])]),
+				seq("call", [once("Waving"), once("Pointing_Forward"), step(0.3), brk(LOOK)]),
+				seq("sit", [run(["Sitting_Ground"], 1, 2), get_up(), brk(["Arm_Stretching", "Looking_Around"])]),
+			]
 		"yardhand":  # at the barn's beasts (town_life._yard)
 			return [
 				seq("milk", [run(["Milking"], 2, 3), get_up(), brk(REST)]),
