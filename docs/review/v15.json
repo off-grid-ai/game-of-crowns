@@ -297,6 +297,70 @@
    "needs": "host"
   },
   {
+   "id": "b7-field-plough",
+   "name": "Ploughing",
+   "what": "Spring: an ox team drawing the plough along the furrows, the ploughman behind",
+   "ref": "town-b",
+   "card": "W2",
+   "still": "fields/field-plough.png",
+   "clip": "fields/plough-clip.mp4",
+   "needs": "field"
+  },
+  {
+   "id": "b7-field-sow",
+   "name": "Sowing",
+   "what": "Spring: sowers casting seed from the hip across the turned field",
+   "ref": "town-b",
+   "card": "W2",
+   "still": "fields/field-sow.png",
+   "needs": "field"
+  },
+  {
+   "id": "b7-field-weed",
+   "name": "Weeding",
+   "what": "Summer: the green rows weeded, hoed and watered",
+   "ref": "town-b",
+   "card": "W2",
+   "still": "fields/field-weed.png",
+   "needs": "field"
+  },
+  {
+   "id": "b7-field-reap",
+   "name": "The harvest",
+   "what": "Autumn: reapers cutting the gold, binders standing the sheaves in stooks",
+   "ref": "town-b",
+   "card": "W2",
+   "still": "fields/field-reap.png",
+   "clip": "fields/reap-clip.mp4",
+   "needs": "field"
+  },
+  {
+   "id": "b7-field-glean",
+   "name": "Gleaning",
+   "what": "Late autumn: the stubble gleaned, the stooks carted off",
+   "ref": "town-b",
+   "card": "W2",
+   "still": "fields/field-glean.png",
+   "needs": "field"
+  },
+  {
+   "id": "b7-fields-wide",
+   "name": "The fields round the seat",
+   "what": "The seat's fields in summer from higher: work in several at once",
+   "ref": "02-realm",
+   "card": "W2",
+   "still": "fields/fields-wide.png"
+  },
+  {
+   "id": "b7-flock",
+   "name": "A flock on the fallow",
+   "what": "A shepherd with his sheep grazing a fallow field",
+   "ref": "town-b",
+   "card": "W2",
+   "still": "fields/flock.png",
+   "needs": "flock"
+  },
+  {
    "id": "b7-fire",
    "name": "A town burning",
    "what": "A sacked town about six seconds in: flames and dark smoke",
@@ -464,6 +528,14 @@
   {
    "step": "engine [n] [dist] [tilt]",
    "what": "Frames the n-th siege engine low and oblique (autoplay.gd; group siege_engines)."
+  },
+  {
+   "step": "field season t [n] [dist] [tilt]",
+   "what": "Holds the fields' year at a season and how far through it, and frames the n-th sown field from the crown's seat (autoplay.gd; works-life's countryside.gd hold_season)."
+  },
+  {
+   "step": "flock [n] [dist] [tilt]",
+   "what": "Frames the n-th fallow field, where a shepherd's flock grazes (autoplay.gd)."
   }
  ]
 }

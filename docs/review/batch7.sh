@@ -4,8 +4,8 @@
 # reference each is judged beside are listed in docs/review/v15.json; docs/review/v15_apply.py puts the
 # results on the review page.
 #
-#   docs/review/batch7.sh            # all of it, about 85 minutes [estimate: the launches' LIMITs and waits]
-#   ONLY="towns fire" docs/review/batch7.sh   # some launches only: towns moods rulings fire breach army hosts weather night
+#   docs/review/batch7.sh            # all of it, about 92 minutes [estimate: the launches' LIMITs and waits]
+#   ONLY="towns fire" docs/review/batch7.sh   # some launches only: towns moods rulings fields fire breach army hosts weather night
 #   OUT=/tmp/goc-batch7 (default)    # frames, logs and clips land here
 #
 # It runs on its own private bridge (8788, Freeciv 5557) with a fresh reign named "Film batch 7", so the
@@ -15,7 +15,7 @@ R=${0:A:h:h:h}
 OUT=${OUT:-/tmp/goc-batch7}
 PORT=${PORT:-8788}; FC=${FC:-5557}
 API=localhost:$PORT
-ONLY=${ONLY:-towns moods rulings fire breach army hosts weather night}
+ONLY=${ONLY:-towns moods rulings fields fire breach army hosts weather night}
 SW=(--look=one --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on)
 B=(--bridge=http://127.0.0.1:$PORT)
 FF=${FF:-/opt/homebrew/bin/ffmpeg}
@@ -140,6 +140,31 @@ if want moods; then
   play moods 720
   for c in war-clip feast-clip levy-clip; do clip $OUT/moods $c 5; done
   for c in $WARID $SEATID $HUNGERID; do stage "{\"city\":$c,\"mood\":\"calm\"}" > /dev/null; done
+fi
+
+# 3c. The fields through the year (works-life's 4144e005 field work, 65b89302 film hooks): each job held at its
+# season ('field season t': the crops ripen to it and the hands follow) and framed on a sown field near the seat:
+# the ox plough and the sowing in spring, weeding in summer, the reaping and the stooks then the gleaning in
+# autumn, and a shepherd's flock on the fallow. Clips for the plough and the reaping.
+if want fields; then
+  {
+    print "wait 25"
+    if has_step field; then
+      print "field spring 0.15 0 3 -22"; print "wait 8"; print "snap field-plough"; burst plough-clip 30 0.2
+      print "field spring 0.5 0 3 -22"; print "wait 8"; print "snap field-sow"
+      print "field summer 0.4 0 3 -22"; print "wait 8"; print "snap field-weed"
+      print "field autumn 0.3 0 3 -22"; print "wait 8"; print "snap field-reap"; burst reap-clip 30 0.2
+      print "field autumn 0.85 0 3 -22"; print "wait 8"; print "snap field-glean"
+      print "field summer 0.4 0 9 -20"; print "wait 6"; print "snap fields-wide"
+    else
+      print "city $SEAT 9 -20"; print "wait 8"; print "snap fields-wide"
+    fi
+    if has_step flock; then print "flock 0 3 -22"; print "wait 8"; print "snap flock"; fi
+    print "look fields-end"
+  } > $OUT/fields.play
+  has_step field || note "fields: no 'field' step in the harness; only the wide shot round the seat"
+  play fields 600
+  for c in plough-clip reap-clip; do clip $OUT/fields $c 5; done
 fi
 
 # 4. Fire: a town sacked while the camera watches (--fire=v2), then what's left.
