@@ -407,6 +407,8 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 				var scale: float = pass_[0]
 				var f: Vector2 = cf * scale
 				var cd := square_r + maxf(f.x, f.y) * (0.55 + 0.25 * int(pass_[1]))
+				if cd - f.y * 0.5 < square_r + 0.2:
+					continue  # hugging the square so close its walls would stand on it: the square stays the town's
 				for tries in int(pass_[2]):
 					var cp := Vector3(cos(gap_ang + tries * TAU / float(pass_[2])), 0, sin(gap_ang + tries * TAU / float(pass_[2]))) * cd
 					# Its wide plot eases back into the land over more ground, so
