@@ -28,7 +28,6 @@ const MALE_NAMES := ["Aldric", "Bran", "Cedric", "Dunstan", "Edric", "Godwin", "
 const FEMALE_NAMES := ["Agnes", "Bryony", "Cecily", "Edith", "Elsbeth", "Gwen", "Hilda", "Isolde", "Joan", "Maud", "Rosalind", "Wynne", "Alys", "Mira", "Tamsin", "Ysolde"]
 const BYNAMES := ["the Smith", "Miller", "of the Ford", "Thatcher", "the Tall", "Cooper", "Fletcher", "Brewer", "Greenhill", "Ashby", "the Younger", "Tanner", "Carter", "Weaver", "Hayward", "Shepherd"]
 const SKIN := [Color(1.0, 0.86, 0.74), Color(0.95, 0.78, 0.64), Color(0.82, 0.62, 0.48), Color(0.62, 0.45, 0.33), Color(0.45, 0.32, 0.24), Color(1.0, 0.9, 0.8)]
-const CLOTH := [Color(1, 1, 1), Color(0.85, 0.75, 0.62), Color(0.7, 0.8, 0.7), Color(0.75, 0.7, 0.85), Color(0.9, 0.7, 0.6), Color(0.65, 0.65, 0.65)]
 
 ## Mixamo characters, each in assets/people/mixamo/<name>/<name>.fbx and
 ## retargeted at import to the same humanoid skeleton as the moves. Each says
@@ -42,18 +41,18 @@ const BODIES := {
 	# Dreyar (glowing red gems, spiked anime hair), Brute (bare-chested, tribal tattoos) and the Fuse woman (a short
 	# tunic over bare legs, which reads as a short dress once dyed dark) are out with them (Mac's feast shots, 20:20).
 	# Women in the street wear the peasant's dress (OUTFITS); gentlewomen the noble lady's gown.
-	"knight": {"sex": "m", "roles": ["soldier", "noble", "knight"], "cloth": ["Lower_Armor"], "crowd": true},
+	"knight": {"sex": "m", "roles": ["noble", "knight"], "cloth": ["Lower_Armor"], "crowd": true},  # mail and a surcoat: knights and lords, never the common soldier
 	"paladin": {"sex": "m", "roles": ["knight"], "cloth": [], "crowd": false},  # ornate plate and great pauldrons: a knight at court, never a face in the street
 	"paladin_prop": {"sex": "m", "roles": ["noble", "knight"], "cloth": [], "crowd": false},
 	"heraklios": {"sex": "m", "roles": ["soldier"], "cloth": [], "crowd": true},
 	# Plain townsfolk in tunics and hose (Leonardo Carvalho's Fuse civilians, CC BY, by way of Sketchfab).
 	# Their tunic ("material") and breeches ("Bottom") take a homespun dye each, so no two dress alike.
-	"fuse_civilian_1": {"sex": "m", "roles": ["townsfolk", "peasant"], "cloth": [], "crowd": true, "dyed": ["Object_12", "Object_13"]},
-	"fuse_civilian_2": {"sex": "m", "roles": ["townsfolk", "peasant"], "cloth": [], "crowd": true, "dyed": ["Object_78", "Object_74"]},
+	"fuse_civilian_1": {"sex": "m", "roles": ["townsfolk"], "cloth": [], "crowd": true, "dyed": ["Object_12", "Object_13"]},
+	"fuse_civilian_2": {"sex": "m", "roles": ["townsfolk"], "cloth": [], "crowd": true, "dyed": ["Object_78", "Object_74"]},
 	# A townsman in a wool tunic (ChamberSu's Svend, CC BY), his Unreal bones renamed to Mixamo's (tools/ue_to_mixamo.py).
-	"svend": {"sex": "m", "roles": ["townsfolk", "peasant"], "cloth": [], "crowd": true, "dyed": ["SvendWoolTunicLOD1"]},
+	"svend": {"sex": "m", "roles": ["peasant"], "cloth": [], "crowd": true, "dyed": ["SvendWoolTunicLOD1"]},
 	# A peasant in a belted jerkin and boots (EmanuelP's Medieval Man, CC BY), rigged by Mixamo.
-	"medieval_man": {"sex": "m", "roles": ["peasant", "townsfolk"], "cloth": [], "crowd": true},
+	"medieval_man": {"sex": "m", "roles": ["peasant"], "cloth": [], "crowd": true},
 	# A mendicant friar in a hooded habit (Götz von Berlichingen's monk, CC BY), rigged by Mixamo.
 	"monk": {"sex": "m", "roles": ["clergy"], "cloth": [], "crowd": true},
 	# Gowned and veiled. Her gown shares a material with her hands and shoes, so it keeps its own colour.
@@ -78,7 +77,24 @@ const NEIGHBOURS := 4
 ## peasant stand in for peasants and townsfolk; most clergy wear the friar's habit; most archers wear a soldier's outfit;
 ## nobles are all Mixamo. (A Mixamo body is the cheaper of the two: 1-4 draws
 ## against an outfit's ~9.)
-const MIXAMO_SHARE := {"peasant": 0.5, "townsfolk": 0.6, "soldier": 0.5, "archer": 0.4, "noble": 1.0, "knight": 1.0, "clergy": 0.8}
+const MIXAMO_SHARE := {"peasant": 0.5, "townsfolk": 0.6, "soldier": 0.0, "archer": 0.0, "noble": 1.0, "knight": 1.0, "clergy": 1.0}
+## Each station reads at a glance (the judge's role sheets, review v12): the
+## clergy always in the friar's habit, knights in mail and surcoat against the
+## plain soldier's hood and leather, peasants in undyed homespun against the
+## townsfolk's dyed cloth.
+const HOMESPUN := [Color(0.62, 0.55, 0.45), Color(0.55, 0.5, 0.42), Color(0.5, 0.47, 0.42), Color(0.68, 0.62, 0.52), Color(0.45, 0.4, 0.33)]
+const DYED := [Color(0.45, 0.5, 0.7), Color(0.66, 0.36, 0.3), Color(0.5, 0.6, 0.4), Color(0.75, 0.62, 0.35), Color(0.86, 0.82, 0.72), Color(0.5, 0.42, 0.55)]
+
+
+## Stations whose one body is their dress (the friar's habit, the knight's
+## surcoat, the lord's or lady's): kept even beside another in it, never swapped
+## for an outfit that would make them read as someone else.
+const STATION_DRESS := ["clergy", "knight", "noble"]
+
+
+## The cloth a station wears: homespun for peasants, dyed for the rest.
+static func cloth_of(role: String) -> Array:
+	return HOMESPUN if role == "peasant" else DYED
 
 const HEAD_ONLY := preload("res://scripts/head_only.gdshader")
 
@@ -203,17 +219,17 @@ func make(rng: RandomNumberGenerator, role := "peasant", tint := Color.WHITE, ag
 	# Children and elders are outfits only: every Mixamo character is in their
 	# prime, so a lady of 74 would stand there looking 25. Built from parts,
 	# an elder gets grey hair and a slightly shorter frame.
-	if age not in ["child", "elder"] and (roll < MIXAMO_SHARE[role] or look != ""):
+	if (age not in ["child", "elder"] or (role in STATION_DRESS and age != "child")) and (roll < MIXAMO_SHARE[role] or look != ""):  # an old friar is still robed, an old knight in his surcoat
 		# A named person is known by their body, so only a crowd needs one that shows its colour.
 		# A crowd's sex is rolled first, so the mix of bodies on hand doesn't decide it.
-		var want := sex if sex != "" or look != "" else ("male" if rng.randf() < 0.5 else "female")
+		var want := sex if sex != "" or look != "" else ("male" if rng.randf() < 0.5 or role in ["clergy", "knight"] else "female")  # friars and knights (no nun's habit or woman's mail yet)
 		var pool := _bodies(role, want, tint != Color.WHITE and look == "", look == "")
 		if look == "":
 			# Never the twin of whoever they'll stand beside: another body when there is one.
 			var fresh := pool.filter(func(b): return not ("body:" + String(b)) in _recent)
 			if not fresh.is_empty():
 				pool = fresh
-			elif not _recent.is_empty() and pool.size() == 1 and ("body:" + String(pool[0])) == _recent[-1]:
+			elif not role in STATION_DRESS and not _recent.is_empty() and pool.size() == 1 and ("body:" + String(pool[0])) == _recent[-1]:
 				pool = []  # the only body there is would stand beside itself: they wear an outfit this once
 		if not pool.is_empty():
 			var body: String = pool[(abs(hash(look)) if look != "" else rng.randi()) % pool.size()]
@@ -228,13 +244,14 @@ func make(rng: RandomNumberGenerator, role := "peasant", tint := Color.WHITE, ag
 	var pick: Array = outfits[rng.randi() % outfits.size()]
 	var person: Node3D = _scene("res://assets/people/%s.gltf" % pick[0]).instantiate()
 	var skeleton: Skeleton3D = person.get_node("Armature/GeneralSkeleton")
-	var cloth: Color = tint if tint != Color.WHITE else CLOTH[rng.randi() % CLOTH.size()]
+	var palette := cloth_of(role)
+	var cloth: Color = tint if tint != Color.WHITE else palette[rng.randi() % palette.size()]
 	if tint == Color.WHITE:
 		# The same outfit in the same cloth beside them would be a twin: another cloth.
-		for tries in CLOTH.size():
+		for tries in palette.size():
 			if not ("%s:%s" % [pick[0], cloth.to_html()]) in _recent:
 				break
-			cloth = CLOTH[(CLOTH.find(cloth) + 1) % CLOTH.size()]
+			cloth = palette[(palette.find(cloth) + 1) % palette.size()]
 	_seen("%s:%s" % [pick[0], cloth.to_html()])
 	var livery := tint != Color.WHITE and outfit_role == "soldier"
 	for child in skeleton.get_children():
@@ -349,7 +366,8 @@ func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, ag
 			if tint != Color.WHITE and String(mi.name) in info["cloth"]:
 				_tint(mi, tint, role in ["soldier", "archer", "knight"])
 			elif String(mi.name) in info.get("dyed", []):
-				_tint(mi, DYES[rng.randi() % DYES.size()])
+				var dyes := cloth_of(role if role != "" else String(info["roles"][0]))
+				_tint(mi, dyes[rng.randi() % dyes.size()])
 	if role == "":
 		role = info["roles"][0]
 	person.set_meta("body", body)
@@ -358,8 +376,6 @@ func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, ag
 
 ## Homespun colours for clothes that come undyed.
 ## Undyed linen, ochre, madder, woad, walnut, moss, slate and rust: what a town's dyer has.
-const DYES := [Color(0.9, 0.86, 0.76), Color(0.72, 0.58, 0.34), Color(0.66, 0.42, 0.34), Color(0.46, 0.48, 0.6),
-	Color(0.5, 0.4, 0.32), Color(0.5, 0.56, 0.44), Color(0.55, 0.56, 0.58), Color(0.62, 0.45, 0.3)]
 static var _solid_of := {}  # a body's material -> the copy it is drawn with
 
 

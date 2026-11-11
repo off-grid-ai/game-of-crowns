@@ -188,6 +188,32 @@ static func run(pool: Array, lo := 3, hi := 5) -> BTTask:
 	return t
 
 
+## Up off the ground: Getting_Up, played only when the last move left them
+## kneeling or sitting on it (from a standing move it would dip and rise).
+## Straight from kneeling to a standing move, a body pops upright between frames.
+class GetUp extends BTAction:
+	const GROUND := ["Fixing_Kneeling", "Kneeling", "Praying", "Planting", "Dig_And_Plant", "Sitting_Ground", "Sitting_Cross_Legged",
+		"Sitting_Idle", "Sitting_Drinking", "Sleeping_Idle", "Defeated"]
+	var _left := 0.0
+
+	func _enter() -> void:
+		_left = 0.0
+		if String(blackboard.get_var(&"last_clip", "", false)) in GROUND:
+			var ap: AnimationPlayer = agent.get_node_or_null("Anim")
+			if ap and ap.has_animation("Getting_Up"):
+				People.play(agent, "Getting_Up")
+				blackboard.set_var(&"last_clip", "Getting_Up")
+				_left = ap.get_animation("Getting_Up").length
+
+	func _tick(delta: float) -> Status:
+		_left -= delta
+		return RUNNING if _left > 0.0 else SUCCESS
+
+
+static func get_up() -> BTTask:
+	return GetUp.new()
+
+
 static func once(clip: String) -> BTTask:
 	return run([clip], 1, 1)
 
@@ -258,19 +284,19 @@ static func post_activities(post: String) -> Array:
 			]
 		"beg":  # the hungry at the town's edge
 			return [
-				seq("plead", [run(["Kneeling", "Praying"], 2, 3), brk(["Defeated", "Looking_Around"])]),
-				seq("slump", [run(["Sitting_Ground", "Defeated"], 1, 2), brk(["Looking_Around"]), step(0.12)]),
+				seq("plead", [run(["Kneeling", "Praying"], 2, 3), get_up(), brk(["Defeated", "Looking_Around"])]),
+				seq("slump", [run(["Sitting_Ground", "Defeated"], 1, 2), get_up(), brk(["Looking_Around"]), step(0.12)]),
 				seq("ask", [step(0.15), once("Pointing_Arm_Bent"), run(["Defeated"], 1, 1), step(0.0)]),
 			]
 		"mourn":
 			return [
 				seq("weep", [run(["Crying"], 2, 3), brk(["Defeated"])]),
-				seq("vigil", [run(["Kneeling", "Praying"], 2, 3), brk(["Crying", "Looking_Around"])]),
-				seq("sit", [run(["Sitting_Ground"], 1, 2), brk(["Defeated"])]),
+				seq("vigil", [run(["Kneeling", "Praying"], 2, 3), get_up(), brk(["Crying", "Looking_Around"])]),
+				seq("sit", [run(["Sitting_Ground"], 1, 2), get_up(), brk(["Defeated"])]),
 			]
 		"refugee":
 			return [
-				seq("huddle", [run(["Sitting_Cross_Legged", "Sitting_Ground"], 1, 2), brk(["Looking_Around"])]),
+				seq("huddle", [run(["Sitting_Cross_Legged", "Sitting_Ground"], 1, 2), get_up(), brk(["Looking_Around"])]),
 				seq("rest", [run(["Sleeping_Idle"], 1, 1), once("Getting_Up"), brk(["Arm_Stretching", "Weight_Shift"])]),
 				seq("wait", [run(["Defeated", "Looking_Around", "Thinking"], 1, 2), step(0.15), brk(["Crying", "Bored"])]),
 			]
@@ -515,25 +541,58 @@ class GoTo extends BTAction:
 	@export var where := "market"
 	@export var gait := "Walk"
 	var _started := false
+	var _none := false  # nowhere to go (no field in reach): the activity is off
 
 	func _enter() -> void:
 		var a: Dictionary = blackboard.get_var(&"va")
 		var v: Node = blackboard.get_var(&"vill")
 		var rng: RandomNumberGenerator = a["rng"]
 		var to: Vector3 = a["home"]
+		_none = where == "field" and a.get("field", Vector3.INF) == Vector3.INF
+		if _none:
+			return
 		match where:
-			"field": to = v.nearby(a["field"], rng, 0.25)
+			"field": to = v.nearby(a["field"], rng, 0.15)  # at the crops, never out on bare ground
 			"bench": to = a["bench"]
 			"home": to = a["home"]
 			"meet": to = blackboard.get_var(&"meet", a["home"], false)  # where a talk was arranged
 			_: to = v.place(a, where)
 		a["gait"] = gait
 		v.route_to(a, to)
+		_to = to
+		_waited = 0.0
 		_started = true
 
-	func _tick(_delta: float) -> Status:
+	var _to := Vector3.ZERO
+	var _waited := 0.0
+
+	## Where a villager's route was to end (villagers.gd keeps the goal town-local).
+	static func _goal_world(a: Dictionary) -> Vector3:
+		var c: Vector3 = a["center"]
+		var g: Vector2 = a.get("goal", Vector2.ZERO)
+		return Vector3(c.x + g.x, 0, c.z + g.y)
+
+	const ARRIVED := 0.06  # about half a metre from where they were going: there
+	const GIVE_UP := 3.0  # seconds with no way there (the town's walk map not ready, or nowhere to stand): off
+
+	func _tick(delta: float) -> Status:
+		if _none:
+			return FAILURE  # no field to go to: something else to do instead
 		var a: Dictionary = blackboard.get_var(&"va")
 		if not (a["route"] as PackedVector2Array).is_empty():
+			return RUNNING
+		# No route left is "arrived" only when they're there. An empty route from
+		# a walk map not ready yet is no arrival: the work would start in the
+		# middle of the square (a man digging at the heart of the town).
+		var here := (agent as Node3D).position
+		var goal: Vector3 = _goal_world(a) if a.has("center") and a.has("goal") else here
+		if Vector2(here.x - goal.x, here.z - goal.z).length() > ARRIVED:
+			_waited += delta
+			if _waited > GIVE_UP:
+				return FAILURE
+			if fmod(_waited, 0.5) < delta:
+				var v: Node = blackboard.get_var(&"vill")
+				v.route_to(a, _to)  # ask again: the map may answer now
 			return RUNNING
 		# Arrived: this is now their post, and they face the way they came in.
 		blackboard.set_var(&"post", agent.position)
@@ -854,9 +913,9 @@ static func villager_activities(role: String) -> Array:
 			tend.lo = 3
 			tend.hi = 5
 			return [
-				seq("tend", [go("field"), tend, brk(REST + SWIG), step(0.2), run(["Pick_Fruit", "Planting", "Watering"], 3, 5), brk(LOOK)]),
+				seq("tend", [go("field"), tend, get_up(), brk(REST + SWIG), step(0.2), run(["Pick_Fruit", "Planting", "Watering"], 3, 5), get_up(), brk(LOOK)]),
 				seq("dig", [go("field"), run(["Digging", "Dig_And_Plant"]), once("Wiping_Sweat"), brk(REST)]),
-				seq("weed", [go("field"), run(["Fixing_Kneeling"]), brk(["Relieved_Sigh", "Arm_Stretching", "Weight_Shift"]), step(0.2), run(["Fixing_Kneeling"])]),
+				seq("weed", [go("field"), run(["Fixing_Kneeling"]), get_up(), brk(["Relieved_Sigh", "Arm_Stretching", "Weight_Shift"]), step(0.2), run(["Fixing_Kneeling"]), get_up()]),
 				seq("chores", [go("bench"), once("PickUp_Table"), run(["Interact", "Thinking"]), brk(REST)]),  # at the door nothing lies on the ground: no kneeling or shoving at air
 			]
 		"market":
@@ -868,7 +927,7 @@ static func villager_activities(role: String) -> Array:
 			]
 		"pious":  # the priest and the devout
 			return [
-				seq("pray", [go("sept"), run(["Praying", "Kneeling"], 2, 3), brk(LOOK)]),
+				seq("pray", [go("sept"), run(["Praying", "Kneeling"], 2, 3), get_up(), brk(LOOK)]),
 				seq("preach", [go("well"), run(["Talking", "Idle_Talking"], 2, 3), once("Bow"), brk(["Weight_Shift"])]),
 				seq("alms", [go("bench"), once("PickUp_Table"), go("sept", "Carrying"), once("PickUp_Table"), brk(REST)]),
 				seq("tend", [go("sept"), run(["Interact", "Praying"]), brk(REST)]),
@@ -890,7 +949,7 @@ static func villager_activities(role: String) -> Array:
 		"gentry":
 			return [
 				seq("promenade", [go("market"), once("Looking_Around"), run(["Nodding", "Idle_Talking", "Whispering"], 1, 2), brk(["Weight_Shift"])]),
-				seq("prayers", [go("sept"), run(["Praying"], 2, 3), brk(LOOK)]),
+				seq("prayers", [go("sept"), run(["Praying"], 2, 3), get_up(), brk(LOOK)]),
 				seq("greet", [go("well"), once("Bow"), run(["Talking", "Telling_Secret", "Laughing"], 2, 3), once("Waving")]),
 			]
 		"child":
@@ -898,7 +957,7 @@ static func villager_activities(role: String) -> Array:
 				seq("play", [go("home"), run(["Dance", "Waving", "Laughing"], 2, 3), brk(["Looking_Around"])]),
 				seq("tag", [go("well", "Running"), run(["Dodge_Left", "Dodge_Right"], 2, 3), go("home", "Running"), brk(["Laughing"])]),
 				seq("hide", [go("bench", "Sneak"), run(["Looking_Around"], 1, 1), go("well", "Running"), brk(["Laughing"])]),
-				seq("sit", [go("well"), run(["Sitting_Cross_Legged", "Sitting_Ground"], 1, 2), brk(["Waving"])]),
+				seq("sit", [go("well"), run(["Sitting_Cross_Legged", "Sitting_Ground"], 1, 2), get_up(), brk(["Waving"])]),
 				seq("errand", [go("market"), once("PickUp_Table"), go("home", "Carrying"), once("PickUp_Table")]),
 			]
 		"crafter":
@@ -910,7 +969,7 @@ static func villager_activities(role: String) -> Array:
 		"idler":
 			return [
 				seq("chat", [partner(), go("meet"), Talk.new(), brk(LOOK)]),
-				seq("lounge", [go("bench"), run(["Sitting_Ground", "Sitting_Idle", "Sitting_Cross_Legged"], 1, 2), brk(["Arm_Stretching", "Bored"])]),
+				seq("lounge", [go("bench"), run(["Sitting_Ground", "Sitting_Idle", "Sitting_Cross_Legged"], 1, 2), get_up(), brk(["Arm_Stretching", "Bored"])]),
 				seq("watch", [go("market"), run(["Looking_Around", "Bored", "Thinking"], 1, 2), brk(REST)]),
 				seq("nap", [go("home"), run(["Sleeping_Idle"], 1, 1), brk(["Arm_Stretching"])]),
 			]

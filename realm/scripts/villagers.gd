@@ -56,6 +56,7 @@ var _audit_at := 0.0
 
 
 const CHILD_REACH := 0.36  # about 3 m: how far a child strays from their parent
+const CHILD_SIDE := 0.12  # about a metre: where a child stands by their parent
 var _presence: Node  # presence.gd: glances, greetings, who makes way for whom
 
 
@@ -212,7 +213,7 @@ func _spawn(id: int) -> void:
 			"farmer": false, "wait": rng.randf() * 6.0, "phase": rng.randf() * TAU, "pace": rng.randf_range(0.8, 1.2)}
 		a["role"] = "child" if person.get_meta("age", "") == "child" else calling
 		a["farmer"] = a["role"] == "farmer"
-		a["field"] = _strip(town["node"], center, rng)
+		a["field"] = _strip(town["node"], center, rng, home)
 		var out: Vector3 = Vector3(door[1]) if not door.is_empty() else Vector3.ZERO
 		a["bench"] = home + out * rng.randf_range(0.1, 0.2) + out.rotated(Vector3.UP, PI / 2) * rng.randf_range(-0.2, 0.2) if not door.is_empty() \
 			else home + Vector3(rng.randf_range(-0.2, 0.2), 0, rng.randf_range(-0.2, 0.2))
@@ -225,10 +226,10 @@ func _spawn(id: int) -> void:
 		var agent := NavigationServer2D.agent_create()
 		NavigationServer2D.agent_set_map(agent, map)
 		a["map"] = map
-		NavigationServer2D.agent_set_radius(agent, 0.055)  # a shoulder's width, about 0.5 m: passers-by give way, never walk through
+		NavigationServer2D.agent_set_radius(agent, 0.065)  # two keep about 1.1 m between their middles: passers-by give way, never brush through
 		NavigationServer2D.agent_set_neighbor_distance(agent, 0.5)
-		NavigationServer2D.agent_set_max_neighbors(agent, 8)
-		NavigationServer2D.agent_set_time_horizon_agents(agent, 1.5)
+		NavigationServer2D.agent_set_max_neighbors(agent, 16)  # a busy square: everyone near is seen, not the first eight
+		NavigationServer2D.agent_set_time_horizon_agents(agent, 2.5)  # sees a passer-by coming soon enough to give way, not brush past
 		NavigationServer2D.agent_set_max_speed(agent, WALK_SPEED * 1.3)
 		NavigationServer2D.agent_set_avoidance_enabled(agent, true)
 		a["agent"] = agent
@@ -638,7 +639,7 @@ func _places(id: int, center: Vector3) -> Dictionary:
 
 ## A spot to work in one of the town's fields, or in a garden behind a house
 ## when it has no field in reach (world).
-func _strip(node: Node3D, center: Vector3, rng: RandomNumberGenerator) -> Vector3:
+func _strip(node: Node3D, center: Vector3, rng: RandomNumberGenerator, home := Vector3.INF) -> Vector3:
 	var reach := float(node.get_meta("reach", 6.0)) - 0.4
 	var fields: Array = node.get_meta("fields", []).filter(func(f): return Vector3(f[0]).length() < reach)
 	var gardens: Array = node.get_meta("gardens", [])
@@ -651,7 +652,10 @@ func _strip(node: Node3D, center: Vector3, rng: RandomNumberGenerator) -> Vector
 			return p
 	if not gardens.is_empty():
 		return center + Vector3(gardens[rng.randi() % gardens.size()]) + Vector3(rng.randf_range(-0.12, 0.12), 0, rng.randf_range(-0.08, 0.08))
-	return _random_spot(center, rng, 4.5, 7.5)
+	# No field or garden in reach: no field work (Vector3.INF). Never a spot
+	# of bare ground with nothing growing, nor a doorstep in the square: a man
+	# on his knees in the street, planting nothing.
+	return Vector3.INF
 
 
 ## The work a field asks for at this time of year: sowing in spring, watering
@@ -973,6 +977,8 @@ func _set_off(a: Dictionary) -> void:
 	if not PackedVector2Array(a["route"]).is_empty():
 		a.erase("arrive")
 		people.play(a["node"], a.get("gait", "Walk"))
+	elif a.has("mind"):
+		a.erase("arrive")  # arrived: their mind plays what comes next (never the old rules' chore: a man on his knees in the square)
 	elif a.get("talk", {}).is_empty():
 		_arrive(a, a.get("work", "Idle"))
 	else:
@@ -1074,7 +1080,7 @@ func _choose_next(a: Dictionary) -> void:
 			# The working day, by calling.
 			match role:
 				"farmer":
-					var tend := field_work(rng)
+					var tend := field_work(rng) if a["field"] != Vector3.INF else ""
 					if tend == "" or roll >= 0.85:
 						# Winter, or a break: wood and water fetched, the yard put to rights.
 						target = a["bench"] if roll < 0.6 or tend == "" else place(a, "well")
@@ -1135,12 +1141,11 @@ func route_to(a: Dictionary, target: Vector3) -> void:
 	if town.is_empty():
 		return
 	var center: Vector3 = a["center"]
-	# A child keeps near their parent (about 3 m): wherever they're off to, it's within call.
+	# A child keeps at their parent's side: whatever their play or errand,
+	# they do it there (about a metre off), and go where the parent goes.
 	var parent = a.get("parent", null)
 	if parent is Dictionary and (parent["node"] as Node3D).visible:
-		var pp: Vector3 = parent["node"].position
-		if Vector2(target.x - pp.x, target.z - pp.z).length() > CHILD_REACH:
-			target = pp + (target - pp).normalized() * CHILD_REACH * 0.8
+		target = parent["node"].position + Vector3(cos(float(a["i"])), 0, sin(float(a["i"]))) * CHILD_SIDE
 	var map: RID = nav.map_for(a["town"], town["node"])
 	if a.get("map", RID()) != map:
 		_keep_up(a["town"])  # baked afresh: the whole town walks its new streets
@@ -1167,6 +1172,8 @@ func route_to(a: Dictionary, target: Vector3) -> void:
 				break
 			if found:
 				break
+	if parent is Dictionary and Vector2(c_goal(a, goal).x - target.x, c_goal(a, goal).z - target.z).length() > CHILD_REACH:
+		goal = nav.closest(map, Vector2(target.x - center.x, target.z - center.z))  # whatever moved the spot, a child stays by their parent
 	a["goal"] = goal
 	a["route"] = nav.path(map, from, goal)
 
@@ -1429,7 +1436,7 @@ func _plan_place(a: Dictionary, where: String, places: Dictionary) -> Vector3:
 			["market", "market"], ["stall", "market"], ["well", "well"], ["square", "well"]]:
 		if w.contains(key[0]):
 			return place(a, key[1])
-	if w.contains("field") or w.contains("farm") or w.contains("plough"):
+	if (w.contains("field") or w.contains("farm") or w.contains("plough")) and a["field"] != Vector3.INF:
 		return nearby(a["field"], rng, 0.4)
 	if w.contains("work") or w.contains("shop") or w.contains("forge") or w.contains("bench"):
 		return a["bench"]
@@ -1853,11 +1860,9 @@ func _follow_parents(id: int) -> void:
 		var bound := Vector2(a.get("goal", Vector2(INF, INF)))
 		var c: Vector3 = a["center"]
 		var goal_world := Vector3(c.x + bound.x, 0, c.z + bound.y)
-		var far := Vector2(cp.x - pp.x, cp.z - pp.z).length() > CHILD_REACH
-		var bound_far := Vector2(goal_world.x - pp.x, goal_world.z - pp.z).length() > CHILD_REACH
-		if far and bound_far:
-			var side := Vector3(cos(float(a["i"])), 0, sin(float(a["i"]))) * 0.12  # their own side of the parent
-			route_to(a, pp + side)
+		# Strayed (about 1.5 m), or bound somewhere the parent isn't: back to their side.
+		if Vector2(cp.x - pp.x, cp.z - pp.z).length() > CHILD_REACH * 0.5 or Vector2(goal_world.x - pp.x, goal_world.z - pp.z).length() > CHILD_REACH * 0.5:
+			route_to(a, pp)
 
 
 ## Talks long over that nobody closed: a knot of people with minds (the old
@@ -1997,6 +2002,12 @@ func _talk_audit() -> void:
 static func _able(moves: Array, rng: RandomNumberGenerator) -> String:
 	var ok := moves.filter(func(m): return Weapons.can_play(m))
 	return ok[rng.randi() % ok.size()] if not ok.is_empty() else "Idle"
+
+
+## A town-local goal, in the world.
+static func c_goal(a: Dictionary, goal: Vector2) -> Vector3:
+	var c: Vector3 = a["center"]
+	return Vector3(c.x + goal.x, 0, c.z + goal.y)
 
 
 ## True when `p` (town-local) is on a road's lane or the town's heart (town_life.on_lane).

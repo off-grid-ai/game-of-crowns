@@ -81,6 +81,7 @@ var _kin := [0, 0]  # [child-frames near their parent, child-frames]
 var _names := {}  # "a:b" -> who the two were, for the report
 var _kneel := {}  # "clip at where" -> frames knelt at nothing
 var _pops := {}  # clip -> pops seen while it played
+var _kin_far := {}  # "child's activity, parent's activity" -> child-frames too far from them
 
 
 func _ready() -> void:
@@ -208,7 +209,9 @@ func _process(delta: float) -> void:
 			_empty[on_screen] = _empty.get(on_screen, 0) + 1
 		# Kneeling at nothing.
 		if KNEEL_AT.has(on_screen) and not _at_something(p.global_position):
-			var where := "%s %s" % [on_screen, p.get_parent().name]
+			var mind := p.get_node_or_null("Mind")
+			var act := String(mind.blackboard.get_var(&"last_activity", "", false)) if mind else ""
+			var where := "%s %s/%s at (%.1f,%.1f)" % [on_screen, p.get_parent().name, act, p.global_position.x, p.global_position.z]
 			_kneel[where] = _kneel.get(where, 0) + 1
 		# A pop: the hips rising faster than anyone gets up.
 		if d["hips"] >= 0:
@@ -221,7 +224,8 @@ func _process(delta: float) -> void:
 			var low := INF
 			for h in hist:
 				low = minf(low, float(h[1]))
-			if hy - low > POP_RISE and not d.get("popped", false):
+			var fighting := ["Sword_", "SS_", "GS_", "Axe_", "Spear_", "Punch", "Kick", "Bow_", "Dodge_", "Knocked_", "Fist_"].any(func(f): return on_screen.begins_with(f))
+			if hy - low > POP_RISE and not d.get("popped", false) and not fighting:  # a blow, a lunge, a dodge move the hips by design
 				_pops[on_screen] = _pops.get(on_screen, 0) + 1
 				d["popped"] = true
 			elif hy - low < POP_RISE * 0.5:
@@ -295,6 +299,12 @@ func _presence(near: Array[Node3D]) -> void:
 			var q: Vector3 = (parent as Node3D).global_position
 			if Vector2(q.x - p.global_position.x, q.z - p.global_position.z).length() <= KIN_R:
 				_kin[0] += 1
+			else:
+				var cm := p.get_node_or_null("Mind")
+				var pm := (parent as Node).get_node_or_null("Mind")
+				var why := "child %s, parent %s, %.1f m" % [String(cm.blackboard.get_var(&"last_activity", "", false)) if cm else "-",
+					String(pm.blackboard.get_var(&"last_activity", "", false)) if pm else "-", Vector2(q.x - p.global_position.x, q.z - p.global_position.z).length() / M]
+				_kin_far[why.get_slice(",", 0) + "," + why.get_slice(",", 1)] = _kin_far.get(why.get_slice(",", 0) + "," + why.get_slice(",", 1), 0) + 1
 
 
 ## Whether `b` stands in `a`'s front half (a person faces their +Z).
@@ -430,6 +440,7 @@ func _report() -> void:
 		_two_in_one.values().max() if not _two_in_one.is_empty() else 0.0, long.slice(0, 4).map(func(k): return "%s %.1fs" % [_names.get(k, k), _two_in_one[k]])])
 	print("MOTION kneel at nothing: %s  %s" % [verdict.call(_kneel.is_empty()), _top(_kneel)])
 	print("MOTION pop: %s  %s" % [verdict.call(_pops.is_empty()), _top(_pops)])
+	print("MOTION children too far, by what each was doing: %s" % _top(_kin_far))
 	print("MOTION camera jump: not measured here (Builder 2's half)")
 	var share_of := func(name: String, n: Array, need: float, none: String) -> void:
 		if int(n[1]) == 0:

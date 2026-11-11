@@ -20,7 +20,7 @@ const RESTED := 1.0  # seconds before the same person looks round again
 const SWITCH := 0.6  # a glance held this long gives way to someone new stepping up in front
 const GREET := 0.15  # about 1.2 m: close enough to greet
 const GREET_AGAIN := 30.0  # the same two greet once in this long
-const LIMIT := 60.0  # degrees a head turns from the body, at most
+const LIMIT := 80.0  # degrees a head turns from the body, at most (over the shoulder)
 
 ## Where a person stands, by their role or calling (people.gd roles, villagers'
 ## callings): commoners make way and bow to those above them.
@@ -59,7 +59,7 @@ static func fit(person: Node3D) -> void:
 	look.symmetry_limitation = true
 	look.primary_limit_angle = deg_to_rad(LIMIT)
 	look.secondary_limit_angle = deg_to_rad(25.0)
-	look.duration = 0.4
+	look.duration = 0.25
 	look.transition_type = Tween.TRANS_SINE
 	look.ease_type = Tween.EASE_IN_OUT
 	look.influence = 0.0
