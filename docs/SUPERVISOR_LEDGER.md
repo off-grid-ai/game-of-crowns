@@ -27,7 +27,9 @@ limit. Newest first. The plan is [PLAN.md](PLAN.md); the running log of checks i
   and decisions https://claude.ai/artifact/PQ1pTTcw55iJAKBjuffWmZ; review v14
   https://claude.ai/artifact/A6bCmbxRLwqpgy3XPgaveL (Mac pins notes there; read `comments`).
 - **The 10-minute check** is a session cron (CronCreate). Recreate it on takeover.
-- **Rules:** one Godot at a time through the lead's queue; commit by explicit paths, push only, and never
+- **Rules:** NO individual renders: builders and agents code, check headless, commit and report; the supervisor
+  renders everything together in one batch and sends the screenshots (Mac: "don't stall renders… render
+  everything together"); one Godot at a time through the lead's queue; commit by explicit paths, push only, and never
   stash, reset or rebase the shared tree; proven free blocks first (budget up to ~$200); everything behind a
   switch until judged; tunables in data plus docs/TUNING.md.
 
