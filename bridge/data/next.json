@@ -1,4 +1,36 @@
 {
-  "_": "The next thing (next.js): soon: a threat this many seasons from landing comes before anything else on the line.",
-  "soon": 2
+ "_": "The next thing (next.js): soon: a threat this many seasons from landing comes before anything else on the line. pool: what else is worth a seal: a house colder than coldBelow (a feast at its seat), walls for a royal town within wallsWithin tiles of a threat, the levy while a host or pretender gathers. voices: two advisers who each favour some orders (KoDP's council, CK3's councillors); each names the most urgent use he favours, and with two or more uses the line shows both, neither marked best.",
+ "soon": 2,
+ "pool": {
+  "coldBelow": 35,
+  "wallsWithin": 12
+ },
+ "voices": [
+  {
+   "key": "hand",
+   "name": "The Hand",
+   "likes": [
+    "relief",
+    "settle",
+    "peace",
+    "gift",
+    "feast",
+    "alliance",
+    "marriage",
+    "ward"
+   ]
+  },
+  {
+   "key": "marshal",
+   "name": "The Marshal",
+   "likes": [
+    "levy",
+    "banners",
+    "march",
+    "build",
+    "sellswords",
+    "back"
+   ]
+  }
+ ]
 }

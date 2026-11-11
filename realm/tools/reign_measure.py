@@ -56,6 +56,7 @@ SEAL_POLICY = os.environ.get("SEAL_POLICY", "random")
 crown_towns = lambda w: [c["id"] for c in w.get("cities", []) if any(p.get("id") == c.get("owner") and (p.get("house") or {}).get("crown") for p in w.get("players", []))]
 towns_at_start = None
 seal_refused_now = []  # refused since the last seal spent: tried again only once all have been
+ev_seen, ev_done, events_answered = {}, set(), 0  # event cards (bridge events.js) seen and answered
 while time.time() - start < MIN * 60:
     now = time.time()
     try:
@@ -87,6 +88,18 @@ while time.time() - start < MIN * 60:
             nx_text = nx.get("text")
         if (nx.get("options") or 0) >= 2:
             multi_time += now - nx_last
+    # An event card (bridge events.js): read for 3 s, then answered at random, as one more decision.
+    ev = ((w.get("reign") or {}).get("event") or {}).get("up")
+    if isinstance(ev, dict) and not court:
+        k = f"{ev.get('id')}@{ev.get('turn')}"
+        ev_seen.setdefault(k, now)
+        if now - ev_seen[k] >= 3 and k not in ev_done:
+            ev_done.add(k)
+            r = post("/event/answer", {"choice": random.randrange(len(ev.get("choices") or [1]))})
+            if r.get("ok"):
+                events_answered += 1
+                decisions.append((round(now - start), "event:" + str(ev.get("id")), None, None))
+                events.append(now - start)
     sl = (w.get("reign") or {}).get("seals")
     if isinstance(sl, dict) and sl.get("n", 0) >= 1 and not court and not (inter and not inter.get("seen")) and now - seal_last >= 6 \
             and isinstance(nx, dict) and nx.get("alts"):
@@ -197,6 +210,7 @@ res = {
     "crown_towns_lost": len(set(towns_at_start or []) - set(crown_towns(w))),
     "crown_towns_gained": len(set(crown_towns(w)) - set(towns_at_start or [])),
     "peace_end": round(((w.get("reign") or {}).get("readings") or {}).get("peace", {}).get("now", 0), 2),
+    "events_answered": events_answered,
     "seals_spent": sum(seal_acts.values()),
     "seals_refused": seal_fail,
     "seal_acts": dict(seal_acts),

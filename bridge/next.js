@@ -21,7 +21,8 @@ export const secondsToSeasonEnd = (turnSeconds) => Math.max(0, Math.round(turnSe
 
 import fs from "node:fs";
 // seasons: a threat this close comes before anything else (data/next.json; docs/TUNING.md)
-const SOON = JSON.parse(fs.readFileSync(new URL("./data/next.json", import.meta.url), "utf8")).soon ?? 2;
+const NEXT = JSON.parse(fs.readFileSync(new URL("./data/next.json", import.meta.url), "utf8"));
+const SOON = NEXT.soon ?? 2;
 
 // ctx: meta, world, court, turnSeconds, paused, crownOf. aim: the ladder's aim
 // with its place (city id) and progress (reign.js reignInfo).
@@ -73,21 +74,54 @@ export function nextThing(ctx, aim) {
     const city = a?.city ?? seat?.id ?? null;
     return a && city != null ? { kind: "counsel", text: `${o.text}. ${String(a.label).split("  ")[0]} at ${cityName(city)}`, city, act: { action: a.action, city, ...(a.to != null ? { to: a.to } : {}), ...(a.building ? { building: a.building } : {}) } } : null;
   }).filter(Boolean);
-  // In order: a threat about to land, a royal town going hungry, a threat further off, the aim's next step, the Hand's counsel.
+  // The wider pool (data/next.json pool): what the realm's state makes worth a seal beyond the above.
+  const great = world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown && world.cities.some((c) => c.owner === p.id));
+  const pool = [];
+  for (const p of great.filter((h) => (ctx.favourOf?.(h.id) ?? 50) < NEXT.pool.coldBelow)) {
+    const s = world.cities.find((c) => c.owner === p.id && c.capital);
+    if (s) pool.push({ kind: "house", text: `${houseFor(p).name} grows cold. Feast them at ${cityName(s.id)}`, city: s.id, act: { action: "feast", city: s.id } });
+  }
+  const th = meta.director?.threat;
+  if (th && ["host", "pretender"].includes(th.kind)) {
+    const near = world.cities.filter((c) => c.owner === crown?.id && !(c.buildings ?? []).includes("City Walls") && Math.hypot(c.x - th.x, c.y - th.y) <= NEXT.pool.wallsWithin)
+      .sort((a, b) => Math.hypot(a.x - th.x, a.y - th.y) - Math.hypot(b.x - th.x, b.y - th.y))[0];
+    if (near) pool.push({ kind: "walls", text: `${th.houseName} gathers. Wall ${cityName(near.id)}`, city: near.id, act: { action: "build", city: near.id, building: "walls" } });
+    if (seat) pool.push({ kind: "levy", text: `${th.houseName} gathers. Raise the levy at ${cityName(seat.id)}`, city: seat.id, act: { action: "levy", city: seat.id } });
+  }
+  // In order: a threat about to land, a royal town going hungry, a threat further off, the aim's next step, the Hand's counsel, the wider pool.
   // A goal is something he can do now: only what the realm would let him order (the decree's own once-a-year
   // and price rules, canDecree) is offered; the rest wait for the season they can be given in.
   const order = [...threats.filter((t) => t.seasons <= SOON).map((t) => [t, t.seasons <= 1 ? "loss" : "act"]),
     ...(feed ? [[feed, hungry.famine ? "loss" : "act"]] : []), ...threats.filter((t) => t.seasons > SOON).map((t) => [t, "act"]), ...(ladder ? [[ladder, "act"]] : []),
-    ...counsel.map((c) => [c, "act"])];
-  const doable = order.filter(([x]) => x.act && x.act.city != null && (!ctx.canDecree || ctx.canDecree(x.act)));
-  // How many things are worth a seal now: the choice is real only when there's more than one (reign_measure.py).
-  const options = doable.length;
+    ...counsel.map((c) => [c, "act"]), ...pool.map((c) => [c, "act"])];
+  const seen = new Set();
+  const doable = order.filter(([x]) => {
+    const k = x.act ? `${x.act.action}:${x.act.city}:${x.act.building ?? ""}` : "";
+    if (!x.act || x.act.city == null || seen.has(k) || (ctx.canDecree && !ctx.canDecree(x.act))) return false;
+    seen.add(k);
+    return true;
+  });
+  // How many things are worth a seal now (an event card waiting competes for him too): the choice is real
+  // only when there's more than one (reign_measure.py).
+  const options = doable.length + (meta.events?.up ? 1 : 0);
   const alts = doable.map(([x]) => x.act);
-  const line = (x, tone) => ({ kind: x.kind, text: x.text, city: x.city ?? null, seconds: x.seasons != null ? secs(x.seasons) : null,
-    count: x.count ?? null, frac: Math.max(0, Math.min(1, x.frac ?? 0)), tone, options, act: x.act ?? null, alts });
+  // Two voices, each with his own leaning (KoDP's council, CK3's councillors): each names the most urgent
+  // use he favours; neither is marked best. The Hand's is 'act' (what an always-the-Hand King takes).
+  const [V1, V2] = NEXT.voices;
+  const favours = (v, x) => v.likes.includes(x.act.action);
+  const first = doable.find(([x]) => favours(V1, x)) ?? doable[0];
+  const second = doable.find(([x]) => x !== first?.[0] && favours(V2, x)) ?? doable.find(([x]) => x !== first?.[0]);
+  const line = (x, tone, extra = {}) => ({ kind: x.kind, text: x.text, city: x.city ?? null, seconds: x.seasons != null ? secs(x.seasons) : null,
+    count: x.count ?? null, frac: Math.max(0, Math.min(1, x.frac ?? 0)), tone, options, act: x.act ?? null, alts, ...extra });
   // With the royal seal on and none in hand, nothing is his until the season brings one: the court's next sitting.
   const sealed = Seals.on(meta) && (meta.seals?.n ?? 1) < 1;
-  if (!sealed && doable[0]) return line(doable[0][0], doable[0][1]);
+  if (!sealed && first && second) {
+    const [a, b] = [first[0], second[0]];
+    const soonest = [a, b].filter((x) => x.seasons != null).sort((x, y) => x.seasons - y.seasons)[0];
+    return line({ kind: "choice", text: `${V1.name}: ${a.text}  ·  ${V2.name}: ${b.text}`, city: a.city, seasons: soonest?.seasons, act: a.act }, [first[1], second[1]].includes("loss") ? "loss" : "act",
+      { voices: [{ who: V1.name, text: a.text, act: a.act, city: a.city }, { who: V2.name, text: b.text, act: b.act, city: b.city }] });
+  }
+  if (!sealed && first) return line(first[0], first[1]);
   // Nothing of his: the court's next sitting.
   const c = meta.court ?? {};
   if (c.sitting != null) return null;  // it's sitting now: the board is up
