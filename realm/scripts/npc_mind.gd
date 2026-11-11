@@ -328,6 +328,7 @@ static func give(person: Node3D, post: String, ground: Callable, seed: int, open
 	yes.saved_value = true
 	check.value = yes
 	danger.add_child(check)
+	danger.add_child(get_up())
 	danger.add_child(once("React_Front"))
 	danger.add_child(step(0.6))
 	danger.add_child(run(["Terrified", "Looking_Around"], 1, 1))
@@ -449,7 +450,7 @@ class React extends BTAction:
 
 
 static func react() -> BTTask:
-	return plain([flag(&"alert"), React.new()])
+	return plain([flag(&"alert"), get_up(), React.new()])
 
 
 ## Sets the next activity's odds from the town's state, read up the scopes
@@ -844,7 +845,7 @@ const TOPIC_GESTURE := {
 ## Answering a call to talk (FindPartner set `called`): go to the spot, face
 ## them, talk. Comes before anything they were doing but after danger and news.
 static func answer() -> BTTask:
-	return plain([FreshCall.new(), go("meet"), Talk.new(), brk(LOOK)])
+	return plain([FreshCall.new(), get_up(), go("meet"), Talk.new(), brk(LOOK)])  # up off the ground first, if a call found them kneeling
 
 
 ## Someone called them to talk a moment ago. A call left unanswered (danger or
@@ -894,6 +895,7 @@ static func villager_danger() -> BTTask:
 	yes.saved_value = true
 	check.value = yes
 	danger.add_child(check)
+	danger.add_child(get_up())
 	danger.add_child(once("React_Front"))
 	danger.add_child(go("home", "Running"))
 	danger.add_child(run(["Terrified", "Looking_Around"], 1, 1))

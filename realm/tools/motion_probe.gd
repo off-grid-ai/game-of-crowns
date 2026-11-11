@@ -212,6 +212,12 @@ func _process(delta: float) -> void:
 			var mind := p.get_node_or_null("Mind")
 			var act := String(mind.blackboard.get_var(&"last_activity", "", false)) if mind else ""
 			var where := "%s %s/%s at (%.1f,%.1f)" % [on_screen, p.get_parent().name, act, p.global_position.x, p.global_position.z]
+			var f: Dictionary = p.get_meta("folk", {})
+			var vill = get_parent().get("villagers")
+			if not f.is_empty() and vill:
+				for va in vill.crowds.get(int(f["town"]), []):
+					if int(va["i"]) == int(f["i"]):
+						where += " field=%s goal=%s route=%d" % [va.get("field"), va.get("goal"), PackedVector2Array(va["route"]).size()]
 			_kneel[where] = _kneel.get(where, 0) + 1
 		# A pop: the hips rising faster than anyone gets up.
 		if d["hips"] >= 0:
@@ -304,7 +310,16 @@ func _presence(near: Array[Node3D]) -> void:
 				var pm := (parent as Node).get_node_or_null("Mind")
 				var why := "child %s, parent %s, %.1f m" % [String(cm.blackboard.get_var(&"last_activity", "", false)) if cm else "-",
 					String(pm.blackboard.get_var(&"last_activity", "", false)) if pm else "-", Vector2(q.x - p.global_position.x, q.z - p.global_position.z).length() / M]
-				_kin_far[why.get_slice(",", 0) + "," + why.get_slice(",", 1)] = _kin_far.get(why.get_slice(",", 0) + "," + why.get_slice(",", 1), 0) + 1
+				var key := why.get_slice(",", 0) + "," + why.get_slice(",", 1)
+				var vill = get_parent().get("villagers")
+				var f: Dictionary = p.get_meta("folk", {})
+				if vill and not f.is_empty():
+					for va in vill.crowds.get(int(f["town"]), []):
+						if int(va["i"]) == int(f["i"]):
+							var c: Vector3 = va["center"]
+							var g: Vector2 = va.get("goal", Vector2.ZERO)
+							key += " (route %d, goal %.1f m from the parent)" % [PackedVector2Array(va["route"]).size(), Vector2(c.x + g.x - q.x, c.z + g.y - q.z).length() / M]
+				_kin_far[key] = _kin_far.get(key, 0) + 1
 
 
 ## Whether `b` stands in `a`'s front half (a person faces their +Z).
