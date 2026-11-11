@@ -5,54 +5,46 @@ extends RefCounted
 
 const S := 0.12  # game units per metre, as in towns.gd
 
-# name -> [kind, longest horizontal side in metres]
-const KIT := {
-	"medieval_tavern": ["house", 10.0],
-	"romano-british_house_in_medieval_london": ["house", 8.5],
-	"thatched_rural_houses": ["house", 13.0],
-	"medieval_viking_house": ["hall", 22.0],
-	"old_wooden_barn": ["barn", 11.0],
-	"medieval_mill": ["mill", 12.0],
-	"medieval_castle": ["castle", 52.0],
-	"medieval_church": ["church", 30.0],
-	"medieval_wooden_cart": ["prop", 3.0],
-	"old_wooden_wagon": ["prop", 4.5],
-	"haystack_2": ["prop", 2.6],
-	"medieval_market_asset_pack": ["market", 9.0],
-	"wood_pile_pack": ["prop", 3.5],
-	"wooden_fence_game_ready_asset": ["fence", 3.4],
-	# Poly Haven props (assets/realistic/ph/<id>/<id>_1k.gltf)
-	"ph/wooden_barrels_01": ["clutter", 1.6],
-	"ph/wine_barrel_01": ["clutter", 0.9],
-	"ph/wooden_crate_01": ["clutter", 0.8],
-	"ph/wooden_crate_02": ["clutter", 0.8],
-	"ph/wooden_bucket_01": ["clutter", 0.4],
-	"ph/wicker_basket_01": ["clutter", 0.6],
-	"ph/wooden_ladder": ["clutter", 3.0],
-	"ph/wooden_lantern_01": ["clutter", 0.35],
-	"ph/stone_fire_pit": ["well", 1.6],
-	"ph/tree_stump_01": ["stump", 0.9],  # charred where war burned the land (ruins.gd)
-	"ph/tree_stump_02": ["stump", 1.1],
-	# What's left of a razed town (ruins.gd): tonyflanagan's abbey walls and
-	# Meerschaum Digital's rubble (Sketchfab, CC BY 4.0, credited from their license.txt).
-	"abbey_wall_ruins": ["ruin", 16.0],
-	"abbey_ruins": ["ruin", 20.0],
-	"rubble_pile": ["ruin", 6.0],
-}
-
-# Parts a kit brings that our land supplies itself: the castle comes on its own
-# raised earth platform with a moat and scenery, the longhall on a ground sheet
-# (which also set its size) with a backdrop, the townhouse on a patch of ground.
-const STRIP := {
-	"medieval_castle": ["Ground", "GroundWater", "Envoiremt_01", "FrontEnv."],
-	"medieval_viking_house": ["Plane001", "Plane002"],
-	"romano-british_house_in_medieval_london": ["Ground"],
-}
-
-# Kits merged into one mesh can't have their ground stripped by name: the
-# tavern's stone yard is part of the building. Its triangles at floor level
+## The kit comes from the catalogue (realm/data/assets.json, through data.gd): each
+## component's models, by the names placers have always used. The tables below keep
+## their old shapes while placers move from model names to component ids.
+const Data := preload("res://scripts/data.gd")
+# name -> [kind, longest horizontal side in metres], in the catalogue's order (the order placers pick in)
+static var KIT := {}
+# Parts a kit brings that our land supplies itself (a castle's raised platform and moat, a hall's ground sheet).
+static var STRIP := {}
+# Kits merged into one mesh can't have their ground stripped by name: their triangles at floor level
 # (below this height, game units) are dropped, so the house stands in our land.
-const FLOOR_CUT := {"medieval_tavern": 0.02}
+static var FLOOR_CUT := {}
+static var STONE: Array = []  # stone models: no glow
+static var _model := {}  # name -> its file
+static var _component := {}  # component id -> its model names, in order
+static var _read := _from_catalogue()
+
+
+static func _from_catalogue() -> bool:
+	var comps: Dictionary = Data.value("assets", "components", {})
+	for id in comps:
+		var c: Dictionary = comps[id]
+		_component[id] = []
+		for v: Dictionary in c.get("variants", []):
+			var n := String(v.get("name", v["model"]))
+			KIT[n] = [String(c.get("kind", "")), float(v.get("length", 1.0))]
+			var m := String(v["model"])
+			_model[n] = "res://assets/" + (m if m.ends_with(".gltf") or m.ends_with(".glb") else m + "/scene.gltf")
+			if v.has("strip"):
+				STRIP[n] = v["strip"]
+			if v.has("floorCut"):
+				FLOOR_CUT[n] = float(v["floorCut"])
+			if v.get("stone", false):
+				STONE.append(n)
+			_component[id].append(n)
+	return true
+
+
+## A component's models (catalogue order), by the names make/footprint/parts take.
+static func variants(component: String) -> Array:
+	return _component.get(component, [])
 
 static var _cache := {}
 
@@ -80,10 +72,7 @@ static func names_of(kind: String) -> Array:
 
 
 static func _path(name: String) -> String:
-	if name.begins_with("ph/"):
-		var id := name.substr(3)
-		return "res://assets/realistic/ph/%s/%s_1k.gltf" % [id, id]
-	return "res://assets/realistic/%s/scene.gltf" % name
+	return String(_model.get(name, ""))
 
 
 static func _template(name: String) -> Dictionary:
@@ -154,7 +143,6 @@ static func _template(name: String) -> Dictionary:
 ## Kits whose walls are stone but whose file never says how metallic it is, so
 ## glTF's default (fully metal) made the castle near black, its tops glaring
 ## with the sky.
-const STONE := ["medieval_castle", "abbey_wall_ruins", "abbey_ruins", "rubble_pile"]
 
 
 ## A building is lit by the sun and the moon, never by itself: some kits come

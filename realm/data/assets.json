@@ -1,0 +1,36 @@
+{
+  "_": "The world's components and the models that draw them, one place (realistic.gd reads it through data.gd; docs/TUNING.md). A placer asks for a component (fence, house_poor, keep...), never a file, so a new art family is an edit here. Shape: Paradox's entity files and RimWorld's ThingDef graphicData. Per component: kind (what the town rules ask for: house, hall, barn, prop, clutter...) and variants. Per variant: model (under res://assets; a folder means its scene.gltf), name (the name placers used before the catalogue, kept while they move over), length (its true longest side in metres: the scale), and optionally strip (parts the land supplies itself), floorCut (game units: triangles under it dropped), stone (no glow), weight (how often it's picked). Order matters: it is the order placers pick in.",
+  "components": {
+    "tavern": { "kind": "house", "variants": [ { "model": "realistic/medieval_tavern", "name": "medieval_tavern", "length": 10.0, "floorCut": 0.02 } ] },
+    "house_rich": { "kind": "house", "variants": [ { "model": "realistic/romano-british_house_in_medieval_london", "name": "romano-british_house_in_medieval_london", "length": 8.5, "strip": ["Ground"] } ] },
+    "house_poor": { "kind": "house", "variants": [ { "model": "realistic/thatched_rural_houses", "name": "thatched_rural_houses", "length": 13.0 } ] },
+    "hall": { "kind": "hall", "variants": [ { "model": "realistic/medieval_viking_house", "name": "medieval_viking_house", "length": 22.0, "strip": ["Plane001", "Plane002"] } ] },
+    "barn": { "kind": "barn", "variants": [ { "model": "realistic/old_wooden_barn", "name": "old_wooden_barn", "length": 11.0 } ] },
+    "mill": { "kind": "mill", "variants": [ { "model": "realistic/medieval_mill", "name": "medieval_mill", "length": 12.0 } ] },
+    "castle": { "kind": "castle", "variants": [ { "model": "realistic/medieval_castle", "name": "medieval_castle", "length": 52.0, "stone": true, "strip": ["Ground", "GroundWater", "Envoiremt_01", "FrontEnv."] } ] },
+    "church": { "kind": "church", "variants": [ { "model": "realistic/medieval_church", "name": "medieval_church", "length": 30.0 } ] },
+    "cart": { "kind": "prop", "variants": [ { "model": "realistic/medieval_wooden_cart", "name": "medieval_wooden_cart", "length": 3.0 } ] },
+    "wagon": { "kind": "prop", "variants": [ { "model": "realistic/old_wooden_wagon", "name": "old_wooden_wagon", "length": 4.5 } ] },
+    "haystack": { "kind": "prop", "variants": [ { "model": "realistic/haystack_2", "name": "haystack_2", "length": 2.6 } ] },
+    "market_stall": { "kind": "market", "variants": [ { "model": "realistic/medieval_market_asset_pack", "name": "medieval_market_asset_pack", "length": 9.0 } ] },
+    "woodpile": { "kind": "prop", "variants": [ { "model": "realistic/wood_pile_pack", "name": "wood_pile_pack", "length": 3.5 } ] },
+    "fence": { "kind": "fence", "variants": [ { "model": "realistic/wooden_fence_game_ready_asset", "name": "wooden_fence_game_ready_asset", "length": 3.4 } ] },
+    "barrel": { "kind": "clutter", "variants": [
+      { "model": "realistic/ph/wooden_barrels_01/wooden_barrels_01_1k.gltf", "name": "ph/wooden_barrels_01", "length": 1.6 },
+      { "model": "realistic/ph/wine_barrel_01/wine_barrel_01_1k.gltf", "name": "ph/wine_barrel_01", "length": 0.9 } ] },
+    "crate": { "kind": "clutter", "variants": [
+      { "model": "realistic/ph/wooden_crate_01/wooden_crate_01_1k.gltf", "name": "ph/wooden_crate_01", "length": 0.8 },
+      { "model": "realistic/ph/wooden_crate_02/wooden_crate_02_1k.gltf", "name": "ph/wooden_crate_02", "length": 0.8 } ] },
+    "bucket": { "kind": "clutter", "variants": [ { "model": "realistic/ph/wooden_bucket_01/wooden_bucket_01_1k.gltf", "name": "ph/wooden_bucket_01", "length": 0.4 } ] },
+    "basket": { "kind": "clutter", "variants": [ { "model": "realistic/ph/wicker_basket_01/wicker_basket_01_1k.gltf", "name": "ph/wicker_basket_01", "length": 0.6 } ] },
+    "ladder": { "kind": "clutter", "variants": [ { "model": "realistic/ph/wooden_ladder/wooden_ladder_1k.gltf", "name": "ph/wooden_ladder", "length": 3.0 } ] },
+    "lantern": { "kind": "clutter", "variants": [ { "model": "realistic/ph/wooden_lantern_01/wooden_lantern_01_1k.gltf", "name": "ph/wooden_lantern_01", "length": 0.35 } ] },
+    "fire_pit": { "kind": "well", "variants": [ { "model": "realistic/ph/stone_fire_pit/stone_fire_pit_1k.gltf", "name": "ph/stone_fire_pit", "length": 1.6 } ] },
+    "stump": { "kind": "stump", "variants": [
+      { "model": "realistic/ph/tree_stump_01/tree_stump_01_1k.gltf", "name": "ph/tree_stump_01", "length": 0.9 },
+      { "model": "realistic/ph/tree_stump_02/tree_stump_02_1k.gltf", "name": "ph/tree_stump_02", "length": 1.1 } ] },
+    "ruin_wall": { "kind": "ruin", "variants": [ { "model": "realistic/abbey_wall_ruins", "name": "abbey_wall_ruins", "length": 16.0, "stone": true } ] },
+    "ruin_abbey": { "kind": "ruin", "variants": [ { "model": "realistic/abbey_ruins", "name": "abbey_ruins", "length": 20.0, "stone": true } ] },
+    "rubble": { "kind": "ruin", "variants": [ { "model": "realistic/rubble_pile", "name": "rubble_pile", "length": 6.0, "stone": true } ] }
+  }
+}
