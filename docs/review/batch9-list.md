@@ -176,3 +176,12 @@ beside the frames. Reference: Anno 1800's town at street height (close detail, f
     the cheer at the end.
 47. **The court:** open, a decree sealed (the bell over the realm), gold spent.
 48. **Dawn and night** (`--hour=5.5` and `--hour=23` if the harness has it): the cock at dawn, the owl at night.
+
+## Batch 8b look2's horses, wheat and smoke (80e63489, d2cc3c1d, d1523951)
+
+49. **Horses' coats** (goldrock-stalls, goldrock-fountain: blotched white): the paddock and a cavalry still at
+    `--dist=4`. Judge: bay, chestnut, black, grey and dun coats with their own shading, no white patches.
+50. **Wheat** (mill-wheat: flat ochre squares): `field summer 0.8` and `field autumn 0.1`, `--dist=4` and 8, a 6 s
+    clip. Judge: a field of standing stalks swaying with the wind, gold in autumn, the painted ground barely showing.
+51. **Chimney smoke** (goldrock-rings: bright white blobs): `city Kingsmere 14 -22`, a 6 s clip. Judge: thin
+    grey-brown threads leaning one way with the wind, not white puffs.
