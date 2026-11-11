@@ -18,8 +18,16 @@ export function pick(key, list) {
   return list[i];
 }
 
-// The result's line: one of data/results.json's wordings for key (fallback when it has none), its {names} filled.
+// Wordings the local model added (reword.js), by key: drawn alongside the written ones.
+const ADDED = {};
+export const keys = () => Object.keys(RESULTS).filter((k) => k !== "_");
+export const written = (key) => RESULTS[key] ?? [];
+export const added = (key) => ADDED[key] ?? [];
+export function add(key, text) { (ADDED[key] ??= []).push(text); }
+
+// The result's line: one of data/results.json's wordings for key, or one the model added (fallback when
+// it has none), its {names} filled.
 export function say(key, vars, fallback) {
-  const t = pick(key, RESULTS[key] ?? [fallback]);
+  const t = pick(key, [...(RESULTS[key] ?? [fallback]), ...(ADDED[key] ?? [])]);
   return String(t).replace(/\{(\w+)\}/g, (m, k) => (vars[k] ?? m));
 }

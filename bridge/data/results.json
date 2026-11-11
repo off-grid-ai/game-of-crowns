@@ -1,5 +1,5 @@
 {
- "_": "Several wordings per court result (say.js; Reigns' fresh deck): the realm never says the same thing twice in a row. Keys are kind.option; {names} are filled by the court. Add a wording to any list to widen it; a key with none uses the court's own line.",
+ "_": "Several wordings per court result (say.js; Reigns' fresh deck): the realm never says the same thing twice in a row. Keys are kind.option; {names} are filled by the court. Add a wording to any list to widen it; a key with none uses the court's own line. reword: the local model (Omni, reword.js) adds a wording a season to the result with the fewest, kept beside the chronicles (on: the switch; most: added wordings kept per result).",
  "grain.order": [
   "By royal command, {donor} feeds the starving of {house}, and resents every sack.",
   "{donor}'s granaries open on the King's word. The carts roll to {house}, and {donor} counts each one.",
@@ -56,5 +56,9 @@
   "{winner} has the King's backing. {loser} hears it with a face like stone, and is gone before the wine.",
   "The council ends with {winner} smiling. {loser} slams the door hard enough to shake the tapestries.",
   "The King rules for {winner}. {loser} doesn't argue; it just stops coming to council."
- ]
+ ],
+ "reword": {
+  "on": false,
+  "most": 8
+ }
 }
