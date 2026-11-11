@@ -1,15 +1,19 @@
 extends Node
 ## The houses' schemes among themselves, marked on the map (the mirror's
 ## intrigue): each one the King can see (an envoy on the road, a revealed pact, a
-## marriage) has a marker standing on the way between the two seats, the two
-## houses' sigils with what binds them between, readable from town to realm
-## height. Hovered, it says its line, in the realm's own words, on a soft backing.
+## marriage) has a marker on what the world shows of it: an envoy's rides on
+## the envoy himself along the road and stands at the seat he rode to once he's
+## there; a pact or a match stands over the seat of the house that sought it.
+## The two houses' sigils with what binds them between, readable from town to realm
+## height (tell only what the world can show: never over empty land). Hovered, it says its line, in the realm's own words, on a soft backing.
 ## The director's threat is marked the same way, in red, where it grows.
 ## A secret pact has no marker. world_anchor.gd keeps each on its place.
 
 const T := preload("res://scripts/theme.gd")
 const KIND_WORD := {"envoy": "ENVOY", "pact": "PACT", "marriage": "WED"}
 const EVERY := 1.0  # seconds between readings of the mirror
+const RIDE_LIFT := 0.6  # world units above the envoy's horse
+const SEAT_LIFT := 1.2  # above a seat, clear of the town's own name
 
 var main: Node
 var _marks := {}  # intrigue id -> its marker
@@ -33,6 +37,7 @@ func _process(delta: float) -> void:
 		now[id] = true
 		if not _marks.has(id):
 			_marks[id] = _mark(it)
+		_stand(_marks[id], it)
 	# The director's threat (a host gathering, a famine, a pretender), marked where it
 	# grows for as long as it does, not only while the court has it before him.
 	var th = aw.realm.get_var(&"threat", null, false)
@@ -59,9 +64,9 @@ func _mark(it: Dictionary) -> Control:
 	row.add_theme_constant_override("separation", 6)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_child(row)
-	row.add_child(ui.sigil_icon(houses.get(int(it.get("from", -1)), {}), 18))
+	row.add_child(ui.sigil_icon(houses.get(int(it.get("from", -1)), {}), 24))
 	row.add_child(T.label(KIND_WORD[String(it["kind"])], T.ACCENT))
-	row.add_child(ui.sigil_icon(houses.get(int(it.get("to", -1)), {}), 18))
+	row.add_child(ui.sigil_icon(houses.get(int(it.get("to", -1)), {}), 24))
 	# Its line, in the realm's words (Geist, UI.md §5), shown while the pointer is on it.
 	var line := Label.new()
 	line.text = String(it.get("line", ""))
@@ -77,13 +82,26 @@ func _mark(it: Dictionary) -> Control:
 	card.mouse_exited.connect(func():
 		line.visible = false
 		card.reset_size())
-	# On the way between the two seats, a little toward the one it comes from.
-	var a: Vector3 = main.terrain.world_pos(float(it["x"]), float(it["y"]))
-	var b: Vector3 = main.terrain.world_pos(float(it["tx"]), float(it["ty"]))
-	var at := a.lerp(b, 0.45)
-	at.y = main.terrain.height_at(at.x, at.z) + 0.5
-	ui.anchor.pin(card, at, false)
 	return card
+
+
+## Where a scheme's marker stands now: on its envoy while he rides, else over the
+## seat it belongs to (the one he rode to; the house that sought the pact or match).
+func _stand(card: Control, it: Dictionary) -> void:
+	var envoy := String(it.get("kind", "")) == "envoy"
+	if envoy:
+		var traffic: Node = main.get_node_or_null("Traffic")
+		var horse: Node3D = traffic.envoy(String(it.get("id", ""))) if traffic and traffic.has_method("envoy") else null
+		if horse:
+			if card.get_meta("on", null) != horse:
+				card.set_meta("on", horse)
+				main.ui.anchor.pin_on(card, horse, RIDE_LIFT)
+			return
+	var seat: Vector3 = main.terrain.world_pos(float(it["tx"]), float(it["ty"])) if envoy else main.terrain.world_pos(float(it["x"]), float(it["y"]))
+	seat.y = main.terrain.height_at(seat.x, seat.z) + SEAT_LIFT
+	if card.get_meta("on", null) != seat:
+		card.set_meta("on", seat)
+		main.ui.anchor.pin(card, seat, false)
 
 
 const THREAT_WORD := {"host": "A HOST GATHERS", "famine": "FAMINE", "pretender": "A PRETENDER"}

@@ -33,7 +33,7 @@ func _process(delta: float) -> void:
 
 ## The houses' envoys (the mirror's intrigue, kind envoy): one rider each, seat
 ## to seat, setting out again once arrived, for as long as the scheme lasts.
-var _envoys := {}  # intrigue id -> true while its rider is on the road
+var _envoys := {}  # intrigue id -> its rider while he is on the road
 func _ride_envoys(aw: Object) -> void:
 	for it in aw.realm.get_var(&"intrigue", [], false):
 		var id := String(it.get("id", ""))
@@ -41,13 +41,20 @@ func _ride_envoys(aw: Object) -> void:
 			continue
 		var from: Vector3 = terrain.world_pos(float(it["x"]), float(it["y"]))
 		var to: Vector3 = terrain.world_pos(float(it["tx"]), float(it["ty"]))
-		if scenes.traveller(from, to, "rider", func(): _envoys.erase(id)):
-			_envoys[id] = true
+		var horse: Node3D = scenes.rider_on_road(from, to, func(): _envoys.erase(id))
+		if horse:
+			_envoys[id] = horse
+
+
+## The envoy of a scheme on the road now (scheme_marks.gd rides its plate on him), or null.
+func envoy(id: String) -> Node3D:
+	var h = _envoys.get(id)
+	return h if h is Node3D and is_instance_valid(h) else null
 
 
 func _decide(delta: float) -> void:
 	var envoy_aw: Object = Engine.get_meta("awareness") if Engine.has_meta("awareness") else null
-	if envoy_aw and scenes and scenes.has_method("traveller") and terrain:
+	if envoy_aw and scenes and scenes.has_method("rider_on_road") and terrain:
 		_ride_envoys(envoy_aw)
 	_left -= delta
 	if _left > 0.0:

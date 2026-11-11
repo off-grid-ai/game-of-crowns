@@ -9,12 +9,15 @@ extends Node
 ##        sits on it); radius: how wide the place is (world units), so the card
 ##        stands clear of it, not over it; on_gone: called once when the place
 ##        leaves the screen (a card for somewhere he no longer sees closes)
+##   pin_on(control, node, lift): a marker that rides on something moving (an
+##        envoy on the road), lift units above it, for as long as it lasts
 ##   unpin(control)
 
 const GAP := 26.0  # pixels between the place and its card
 const EDGE := 12.0  # pixels kept clear of the window's edges
 
 var _pins := {}  # Control -> [world point, beside, radius, on_gone, seen on screen yet]
+var _riding := {}  # Control -> [Node3D, lift]: a marker that moves with its node
 
 
 func pin(card: Control, at: Vector3, beside := true, radius := 0.0, on_gone := Callable()) -> void:
@@ -26,8 +29,14 @@ func pin(card: Control, at: Vector3, beside := true, radius := 0.0, on_gone := C
 	_place(card)
 
 
+func pin_on(card: Control, node: Node3D, lift := 3.0) -> void:
+	_riding[card] = [node, lift]
+	pin(card, node.global_position + Vector3.UP * lift, false)
+
+
 func unpin(card: Control) -> void:
 	_pins.erase(card)
+	_riding.erase(card)
 
 
 func pinned(card: Control) -> bool:
@@ -38,7 +47,14 @@ func _process(_delta: float) -> void:
 	for card in _pins.keys():
 		if not is_instance_valid(card):
 			_pins.erase(card)
+			_riding.erase(card)
 		elif card.visible:
+			if _riding.has(card):
+				var n = _riding[card][0]
+				if is_instance_valid(n) and (n as Node3D).is_inside_tree():
+					_pins[card][0] = (n as Node3D).global_position + Vector3.UP * float(_riding[card][1])
+				else:
+					_riding.erase(card)  # it's gone: the marker stays where it was seen last, for its owner to move
 			_place(card)
 
 

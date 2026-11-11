@@ -116,6 +116,15 @@ func _victor(world: Dictionary, s: Dictionary) -> int:
 
 
 
+## A rider on the road from one town to another, given back so what rides with
+## him (a house's envoy plate, scheme_marks.gd) can follow; null when none can go.
+func rider_on_road(from: Vector3, to: Vector3, on_done := Callable()) -> Node3D:
+	var horse := _rider(from, to, "")
+	if horse and on_done.is_valid():
+		horse.tree_exited.connect(on_done)
+	return horse
+
+
 ## Someone on the road from one town to another, of a kind: "walker", "cart",
 ## "wagon" (a trade convoy's cart), "rider", "soldier" or "refugee". Who goes,
 ## where and how often is traffic.gd's to decide (it reads the awareness
@@ -123,10 +132,7 @@ func _victor(world: Dictionary, s: Dictionary) -> int:
 ## called when they arrive and are gone. Returns false when no road joins the two.
 func traveller(from: Vector3, to: Vector3, kind := "walker", on_done := Callable()) -> bool:
 	if kind == "rider":
-		var horse := _rider(from, to, "")
-		if horse and on_done.is_valid():
-			horse.tree_exited.connect(on_done)
-		return horse != null
+		return rider_on_road(from, to, on_done) != null
 	var r := _rng(from + Vector3(randf(), 0, randf()))
 	# Only where there's a way: a straight line between two towns means no road
 	# and no land joins them (it would cross the water).

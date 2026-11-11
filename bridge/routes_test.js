@@ -8,6 +8,7 @@
 // snapshot or a switch of chronicle during an await is seen.
 
 import * as Director from "./director.js";
+import * as Lua from "./lua.js";
 import { houseFor } from "./narrator.js";
 import * as chron from "./chronicles.js";
 import fs from "node:fs";
@@ -72,6 +73,16 @@ export async function stage(ctx, req, res, url) {
     });
     chron.saveMeta(ctx.meta);
     return json(res, 200, { ok: true, intrigue: ctx.meta.stage.intrigue });
+  }
+  // {crown: <city id>}: that town passes to the crown through Freeciv (as a town is taken or
+  // granted in play), so a film can have two royal towns, one of them starving ({city, mood: "hunger"}).
+  if (b.crown != null) {
+    const town = ctx.world.cities.find((c) => c.id === Number(b.crown));
+    const crown = ctx.world.players.find((p) => houseFor(p).crown);
+    if (!town || !crown) return json(res, 400, { error: "{crown: <city id>} of a town that stands" });
+    ctx.send(`lua cmd ${Lua.transferCity(town.id, crown.id)}`);
+    setTimeout(ctx.snapshot ?? (() => {}), 1500);
+    return json(res, 200, { ok: true, city: town.id, to: crown.id });
   }
   // {threat: host|famine|pretender}: the director raises that threat now, at its place (director.js).
   if (b.threat) {
