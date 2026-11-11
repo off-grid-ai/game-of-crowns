@@ -34,5 +34,18 @@
    "gone": 1.5,
    "solid": 3.0
   }
+ },
+ "map": {
+  "_": "The mid and map zoom (art target 02-realm; Warcraft III's RTS camera, CK3's map switch). atlas_from / atlas_to: the camera distance over which the flat painted atlas comes in over the 3D land, and atlas_most how far it goes (the painted overview, realm_map.gd, takes over past camera_rig OVERVIEW, 60): below atlas_from the 3D land is all there is. reach: how far from the lens a town's kit models still draw (towns.gd _reach_for), by size: clutter (under 2 m), small (under 6 m), house (under 15 m), great (under 25 m: halls, churches), castle (anything larger, and a castle or landmark placed whole); Godot's own generated detail levels (realistic.gd _merge) lighten them with distance, so a town far off is its same houses, lighter, never nothing.",
+  "atlas_from": 54.0,
+  "atlas_to": 60.0,
+  "atlas_most": 0.3,
+  "reach": {
+   "clutter": 16.0,
+   "small": 30.0,
+   "house": 150.0,
+   "great": 170.0,
+   "castle": 220.0
+  }
  }
 }

@@ -802,6 +802,12 @@ func _process_timed(_delta: float) -> void:
 	_update_labels()
 
 
+## Where the flat atlas comes in over the 3D land, by camera distance (realm/data/camera.json map; docs/TUNING.md).
+static var ATLAS_FROM: float = preload("res://scripts/camera_rig.gd").knob("map.atlas_from", 54.0)
+static var ATLAS_TO: float = preload("res://scripts/camera_rig.gd").knob("map.atlas_to", 60.0)
+static var ATLAS_MOST: float = preload("res://scripts/camera_rig.gd").knob("map.atlas_most", 0.3)
+
+
 func _update_labels() -> void:
 	var d: float = rig.distance
 	terrain.set_realm_mix(smoothstep(60.0, 110.0, d))
@@ -814,11 +820,10 @@ func _update_labels() -> void:
 		var reach := snappedf(clampf(d * 2.2, 20.0, 90.0), 10.0)
 		if absf(reach - sun.directional_shadow_max_distance) >= 10.0:
 			sun.directional_shadow_max_distance = reach
-	# The atlas comes in as soon as the towns stop reading, and the kingdoms
-	# view is reached quickly: the in-between, where houses are specks and
-	# woods a carpet, is passed through in a few turns of the wheel rather than
-	# lingered in (the 3D light still shapes the atlas).
-	terrain.set_atlas_mix(lerpf(0.0, 0.35, smoothstep(25.0, 45.0, d)) + 0.45 * smoothstep(45.0, 90.0, d))
+	# The flat atlas only at the true map (CK3, Warcraft III): the painted 3D land holds
+	# through every playing height, and the atlas comes in just before the overview
+	# (camera_rig.OVERVIEW) takes over, so the hand-off has no jump (camera.json map).
+	terrain.set_atlas_mix(ATLAS_MOST * smoothstep(ATLAS_FROM, ATLAS_TO, d))
 	# Haze reads as air close up; looking down on the whole realm it would grey it out.
 	env.fog_density = lerpf(0.0012, 0.00015, smoothstep(45.0, 110.0, d))
 

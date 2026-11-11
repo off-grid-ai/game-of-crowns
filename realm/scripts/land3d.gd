@@ -416,7 +416,11 @@ const REALM_WASH := """
 		}
 		for (int i = 0; i < 4; i++) if (abs(o[i].a - o[best].a) > 0.001) other = i;
 		vec4 own = o[best];
-		float far_off = smoothstep(14.0, 40.0, length(VERTEX));
+		// How near the lens is to the map's height (pol_z: look.json politics map_from / map_to): the
+		// wide wash is a map's, never laid over the land at playing heights (Warcraft III: the ground
+		// stays ground; the house reads from its roofs, banners and border line).
+		float map_zoom = smoothstep(pol_z.x, pol_z.y, CAMERA_POSITION_WORLD.y - v_vertex.y);
+		float far_off = smoothstep(14.0, 40.0, length(VERTEX)) * map_zoom;
 		// The border: a few pixels wide at any zoom, where the leading house barely leads.
 		float px = max(fwidth(rt.x), fwidth(rt.y));
 		float gap = lead - 0.5;
@@ -461,7 +465,6 @@ const REALM_WASH := """
 				// By the camera's height, not each spot's distance: at roof and town height the land near and far
 				// stays natural (the house reads from banners and roofs); the wash, the band and the stripes come in
 				// only as the lens rises to the map. The border line stays at every height.
-				float map_zoom = smoothstep(pol_z.x, pol_z.y, CAMERA_POSITION_WORLD.y - v_vertex.y);
 				k = (mix(pol_k.x, pol_k.y, map_zoom) * hd + band * 0.35 + front * 0.5) * mix(0.15, 1.0, map_zoom);
 			}
 			ALBEDO = mix(ALBEDO, tinted, clamp(k, 0.0, politics > 0.5 ? 0.92 : 0.85));

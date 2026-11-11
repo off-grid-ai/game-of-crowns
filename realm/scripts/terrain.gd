@@ -530,6 +530,13 @@ func _build_sea() -> void:
 	for fade in ["foam", "vertex_wave", "depth_fog"]:
 		mat.set_shader_parameter(fade + "_fade_min", 40.0)  # waves and foam settle into a sheen from afar
 		mat.set_shader_parameter(fade + "_fade_max", 120.0)
+	# The waves' lighting is worked out per vertex, and the ocean's rings grow coarser
+	# away from the lens: past a few rings the swell aliases into even stripes across the
+	# sea (scanlines at mid zoom). They settle into the sheen sooner (look.json sea.waves_fade).
+	var wf: Array = preload("res://scripts/data.gd").value("look", "sea.waves_fade", [])
+	if wf.size() == 2:
+		mat.set_shader_parameter("vertex_wave_fade_min", float(wf[0]))
+		mat.set_shader_parameter("vertex_wave_fade_max", float(wf[1]))
 	mat.set_shader_parameter("shore_fade_min", 12.0)  # surf at the shore only up close: no white outline round the map
 	mat.set_shader_parameter("shore_fade_max", 30.0)
 	if preload("res://scripts/land3d.gd").PAINTED and not bool(preload("res://scripts/data.gd").value("ground", "surf", true)):

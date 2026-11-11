@@ -10,6 +10,8 @@ Switches (`--name`) go after `--` on the game's command line.
 - How many headings "go to" tries before settling for the least blocked: `realm/data/camera.json`: `sight_steps`.
 - How close a roof, wall or tree may come before it dissolves out of the view (gone nearer than, whole from): `realm/data/camera.json`: `near_fade.buildings`, `near_fade.trees`, `near_fade.castle` (a castle's walls, sooner).
 - How a still or film frames a town's square (`--city=`): from the side away from its castle, turned a little, the square set right of the town card: `realm/data/camera.json`: `town_shot.*`.
+- Where the flat atlas comes in over the 3D land (only just before the painted overview takes over at distance 60; below it the 3D land is all there is): `realm/data/camera.json`: `map.atlas_from`, `map.atlas_to`, `map.atlas_most`.
+- How far from the lens a town's houses, halls and castle still draw (so a town stays a town at mid zoom; Godot's detail levels lighten them): `realm/data/camera.json`: `map.reach.*` (clutter, small, house, great, castle).
 
 ## Castles (Builder 2)
 - Where a seat's castle may stand when the first search fails (headings, rings, sizes, water allowed at its edge): `realm/data/towns.json`: `castle.*`.
@@ -63,6 +65,8 @@ Switches (`--name`) go after `--` on the game's command line.
 
 ## The house colours and the target town (art target 01-town, 02-realm)
 - The political map's wash by zoom: `realm/data/look.json`: `politics.wash_near`, `wash_far`, and `map_from` / `map_to` (the camera's height over the ground where the wash, band and stripes come in; below it the land stays natural and only the border line shows); `--politics=on`.
+- The same `map_from` / `map_to` hold back the plain (politics off) far wash of a house's colour, so the land round a town stays painted ground at mid zoom.
+- How soon the sea's swell settles into a flat sheen away from the lens (further out it aliased into stripes): `realm/data/look.json`: `sea.waves_fade`.
 - Where a house's colour sits on its buildings: `realm/data/look.json`: `team.materials` (roof tiles, shutters `MI_Shutter`, timber `MI_WoodTrim`, banners), `team.ranks` (which components are ordinary houses), `team.paint.ordinary_share` (an ordinary house's share of the colour on its trims and shutters), `team.paint.saturation`, `team.paint.warm` (the colour toned to painted reds); `--team=on`.
 - Each house's roof (thatch, terracotta, dark tile or the house's colour), for cottages and townhouses: `realm/data/look.json`: `team.roofs.cottage`, `team.roofs.town` (shares, in that order), `team.roofs.thatch`, `team.roofs.dark_tile` (colours). The castle's and hall's roofs always wear the house's colour. How the thatch reads (straw bundles down the slope, each roof its own age, a ragged darker eave): `team.roofs.thatch_old` (the weathered colour) and `team.roofs.straw.*` (`fibre`, `clump`, `eave_dark`, `eave_band`, `storey`).
 - The woods in autumn, per kit tree: `realm/data/assets.json`: `woods.kit.seasons` (a tint per model file per season), `woods.kit.leaf_texture` (a leaf texture swapped by material name).
@@ -75,6 +79,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - Kit castles and kit houses: `realm/data/towns.json`: `castles` and `houses` (`pack`, the downloaded models, today; `kit`, raised from the Quaternius Medieval Village kit by `castle_builder.gd` and `house_builder.gd`); `--castles=kit` or `--houses=kit` for one run. Each castle's size by the seat's rank (bailey cells, wall, keep and tower storeys, side towers, banner size) and each kit house's cells, floors and style: `realm/data/assets.json`: `components.<castle|hall|house_rich|house_poor|tavern>.kit`. Kit banners take the holder's colour: `realm/data/look.json`: `team.materials.MI_Banner`.
 - Which trees the woods grow: `realm/data/assets.json`: `woods.set` (`pack`, the realistic packs, today; `kit`, Quaternius' painted trees); `--trees=kit` or `--trees=pack` for one run.
 - The kit's trees, their true heights and how tall young trees and saplings stand: `realm/data/assets.json`: `woods.kit.*`.
+- How tall the realistic pack's trees stand (a share of their true 13-31 m): `realm/data/assets.json`: `woods.pack_scale`. The grown kit trees' allowed heights (one to two houses; `tools/scale_check.gd` fails outside it): `woods.tree_range`.
 
 ## The ground (NPC perf; art direction fix 5)
 - Painted ground on or off: `realm/data/ground.json`: `painted` (or `--ground=painted` / `--ground=photo` for one run). Each layer's colour and how broad its pattern: `layers.<layer>.tint`, `.scale`; the grass's broad colour patches: `macro`.
