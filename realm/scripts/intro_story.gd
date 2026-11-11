@@ -64,7 +64,7 @@ func _tell_the_story() -> void:
 		main.ui.visible = not main.title.visible and not main._shot.has("clean")
 		main.labels.visible = main.ui.visible
 		# The v2 opening: the King is in his realm now; the first court may sit (Reigns' first card).
-		if main.ui.visible and OS.get_cmdline_user_args().has("--opening=v2"):
+		if main.ui.visible and preload("res://scripts/opening.gd").v2():
 			main.bridge.opening("realm")
 			if main.hand_prompts:
 				main.hand_prompts.landed(), CONNECT_ONE_SHOT)

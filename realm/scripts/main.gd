@@ -380,7 +380,7 @@ func _ready() -> void:
 	title.began.connect(func(): story._intro_due = true)
 	# The launch screens play over the menu (in renders only with --splash).
 	var Splash := preload("res://scripts/splash.gd")
-	if (not _shot.has("path") or _shot.has("splash")) and Splash.any() and not OS.get_cmdline_user_args().has("--opening=v2"):  # v2: no launch screens before play
+	if (not _shot.has("path") or _shot.has("splash")) and Splash.any() and not preload("res://scripts/opening.gd").v2():  # v2: no launch screens before play
 		add_child(Splash.new())
 	# The menu stands alone: the game's interface hides behind it until a
 	# chronicle is open (and again whenever the menu is brought back).
@@ -484,7 +484,7 @@ func _ready() -> void:
 	if OS.get_environment("GOC_OPENING_CLOCK") != "":
 		add_child(load("res://tools/opening_clock.gd").new(self))
 	# The v2 opening: the Hand's prompts in a first reign (hand_prompts.gd; texts and moments in data/opening.json).
-	if OS.get_cmdline_user_args().has("--opening=v2"):
+	if preload("res://scripts/opening.gd").v2():
 		hand_prompts = load("res://scripts/hand_prompts.gd").new(self)
 		add_child(hand_prompts)
 		# Item 3: a ruling is seen where it lands. Its result becomes the latest news at the

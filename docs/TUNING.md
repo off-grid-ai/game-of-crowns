@@ -71,7 +71,7 @@ Switches (`--name`) go after `--` on the game's command line.
 ## Not yet in data (to move)
 - Sound levels and the music's silences: literals in `realm/scripts/soundscape.gd` (`BEDS`, `STINGS`, `MUSIC_DB`, `CALM_GAP`).
 
-## The opening, first ten minutes (Builder 1; `--opening=v2`)
+## The opening, first ten minutes (Builder 1; the default; `--opening=v1` for the old one)
 - How long after the King lands in his realm the first court sits: `bridge/data/opening.json`: `firstCourtAfterLandingSec`.
 - When it sits anyway if no landing is heard (the intro skipped): `bridge/data/opening.json`: `firstCourtWithoutLandingSec`.
 
@@ -82,7 +82,7 @@ Switches (`--name`) go after `--` on the game's command line.
 ## Every click answers (Builder 1; `--barks`)
 - What a lord says when their sigil is clicked, by favour band; the annoyed lines; after how many clicks; the no-repeat window: `realm/data/barks.json`.
 
-## The Hand's prompts in a first reign (Builder 1; `--opening=v2`)
+## The Hand's prompts in a first reign (Builder 1; the opening v2, the default)
 - Each prompt's words, its moment and its delay: `realm/data/opening.json`: `prompts`.
 - Juice on or off (the seal at the click, the treasury counted down, results at the town, music by tension): `realm/data/juice.json`: `on` (or `--juice=on`).
 - How long the treasury counts to its new sum, how big the spent seal swells: `realm/data/juice.json`: `coins_seconds`, `seal_punch`.
