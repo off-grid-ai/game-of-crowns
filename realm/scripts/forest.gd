@@ -48,6 +48,9 @@ const CHUNK := 20.0  # game units per side
 const NEAR := 6.0  # within this distance of the camera, trees are drawn in full, with shadows (a block of woods switches as one: further, and the blocks under a town view drew thousands of full trees twice)
 const MID := 24.0  # out to this distance, the pack's lighter detail level, without shadows; its painted cards beyond
 const S := 0.12  # game units per metre
+## The realistic packs come at their true size (13-31 m), two to three houses tall: this share of it
+## (realm/data/assets.json woods.pack_scale; the kit's heights are its woods.kit data).
+static var PACK_SCALE: float = Data.num("assets", "woods.pack_scale", 1.0)
 const KINDS := ["Pine_big_1", "Pine_big_2", "Pine_big_3", "Pine_medium_1", "Pine_medium_2", "Pine_large_1", "Pine_large_2", "Pine_large_3"]
 
 var _full: Array = []  # Mesh or null
@@ -150,7 +153,7 @@ func plant(trees: Array) -> void:
 				continue
 			var xf: Transform3D = t[1]
 			# Meshes are in metres at the pack's own size.
-			xf.basis = xf.basis * Basis.from_scale(Vector3.ONE * S * (_kscale[k] if k < _kscale.size() else 1.0))  # true height, 13–31 m (a kit tree: scaled to its data height)
+			xf.basis = xf.basis * Basis.from_scale(Vector3.ONE * S * (_kscale[k] if k < _kscale.size() else PACK_SCALE))  # a pack tree: its true height (13–31 m) times pack_scale; a kit tree: scaled to its data height
 			var cell := Vector2i(floori(xf.origin.x / SIGHT_CELL), floori(xf.origin.z / SIGHT_CELL))
 			if not _sight.has(cell):
 				_sight[cell] = []
