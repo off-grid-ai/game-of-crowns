@@ -1,7 +1,7 @@
 {
- "_": "The King's hosts and their orders (hosts.js; Warcraft III's command card, Total War's campaign map: an army is one thing on the map, ordered as one). near: crown companies within this many tiles of each other (and under no separate order) are one host. speed: tiles a host moves each season on an order. men: men to a company, as the ledger counts them. splitMin: a host needs at least this many companies to split. ships: unit types that are never part of a host. ordersPerSeason: orders the King may give his hosts in one season, all hosts together (Total War's one move a turn; gameplay review #3: three hosts were sent in one second).",
+ "_": "The King's hosts and their orders (hosts.js; Warcraft III's command card, Total War's campaign map: an army is one thing on the map, ordered as one). near: crown companies within this many tiles of each other (and under no separate order) are one host. speed: tiles a host moves each season on an order. men: men to a company, as the ledger counts them. splitMin: a host needs at least this many companies to split. ships: unit types that are never part of a host. ordersPerSeason: orders the King may give his hosts in one season, all hosts together (Total War's one move a turn; gameplay review #3: three hosts were sent in one second). speed 8 (was 3: a far town was 19 seasons away in a 22-season reign; gameplay review #7). A march on a great house's town lays siege when the host reaches its walls (the decree's siege, campaigns.js): the house and the realm hear of it when the order is given (data/decrees.json march.favour, march.others).",
  "near": 1,
- "speed": 3,
+ "speed": 8,
  "men": 200,
  "splitMin": 2,
  "ships": [

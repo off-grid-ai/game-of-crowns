@@ -101,9 +101,14 @@ function give(ctx, b) {
       const road = roadTo(h, to);
       if (road < 0) return [400, { error: `there is no way over land to ${town ? cityName(town.id) : "that place"}` }];
       // Into a town only where the gates are open to the King's men; before another's walls otherwise.
-      save(meta, [...rest, { kind: "march", units: h.units, x: to.x, y: to.y, city: town?.id ?? null, since: world.turn }]);
+      // A great house's town not sworn to the crown is marched on: the host lays siege when it arrives,
+      // and the house hears of it now (declare: the route moves favour and names the deed).
+      const owner = town ? world.players.find((p) => p.id === town.owner) : null;
+      const foe = owner && !houseFor(owner).crown && !houseFor(owner).wild && !sworn?.(owner.id) ? owner : null;
+      save(meta, [...rest, { kind: "march", units: h.units, x: to.x, y: to.y, city: town?.id ?? null, since: world.turn, ...(foe ? { siege: true, house: foe.id } : {}) }]);
       const seasons = Math.max(1, Math.ceil(road / HOSTS.speed));
-      return [200, { ok: true, text: `${name} marches${town ? ` for ${cityName(town.id)}` : ""}: ${seasons === 1 ? "a season" : `${seasons} seasons`} on the road.` }];
+      return [200, { ok: true, text: `${name} marches${town ? ` ${foe ? "on" : "for"} ${cityName(town.id)}` : ""}: ${seasons === 1 ? "a season" : `${seasons} seasons`} on the road${foe ? ", and lays siege when it reaches the walls" : ""}.`,
+        ...(foe && !b.declared ? { declare: { city: town.id, house: foe.id } } : {}) }];
     }
     case "garrison": {
       if (!town) return [400, { error: "choose a town to garrison" }];
@@ -204,7 +209,7 @@ function wayOn(steps, from, n) {
 // Each season (season.js): every host under a marching order moves; one that has arrived stands
 // (a march becomes a hold; a garrison stays a garrison, in the town).
 export function season(ctx, turn) {
-  const { world, meta, send, record } = ctx;
+  const { world, meta, send, record, besiege } = ctx;
   if (!world || !(meta?.hostOrders ?? []).length) return;
   const crown = crownOf(world);
   const byId = new Map(soldiersOf(world, crown?.id).map((u) => [u.id, u]));
@@ -219,6 +224,13 @@ export function season(ctx, turn) {
     const reach0 = goal && goal.owner !== crown?.id && o.kind === "march" ? 1 : 0;
     const there = units.every((id) => cheb(byId.get(id), o) <= reach0);
     if (there) {
+      // At the walls of the house it marched on: the siege begins (campaigns.js), the host holds before them.
+      if (o.siege && goal && goal.owner === o.house && !(meta.campaigns ?? []).some((k) => k.city === goal.id)) {
+        record?.({ turn, kind: "decree", text: `The royal host reaches ${cityName(goal.id)} and lays siege.`, city: goal.id });
+        besiege?.({ city: goal.id, house: o.house });
+        next.push({ kind: "hold", units, since: turn });
+        continue;
+      }
       if (!o.arrived) record?.({ turn, kind: "decree", text: o.kind === "garrison" ? `The royal host ${o.home ? "is home at" : "garrisons"} ${cityName(o.city)}.` : `The royal host has reached ${o.city != null ? cityName(o.city) : "the place the King named"}.`, city: o.city ?? undefined });
       next.push(o.kind === "march" ? { kind: "hold", units, since: turn } : { ...o, units, arrived: true });
       continue;

@@ -112,11 +112,16 @@ export const AMBITIONS = [
 // met, the reward lands at once and the next aim is named.
 const crownHas = ({ world, crownOf }, b, seatOnly = false) => { const c = crownOf(); return !!c && world.cities.some((x) => x.owner === c.id && (!seatOnly || x.capital) && (x.buildings ?? []).includes(b)); };
 
+// The most companies the crown has had under its banner at once, wherever they stand (the muster
+// aim never goes backward when the King sends men out or loses some; gameplay review #7).
+const companies = ({ world, crownOf, SOLDIER }) => (world?.units ?? []).filter((u) => u.owner === crownOf()?.id && SOLDIER(u)).length;
+const mustered = (ctx) => Math.max(companies(ctx), ctx.meta?.ladder?.peak ?? 0);
+
 export const LADDER = [
   { key: "granary", do: "Fund a granary", text: "Raise a granary in Kingsmere", how: "Open Kingsmere's card and fund a granary.",
     met: (ctx) => crownHas(ctx, "Granary", true), reward: "feast", says: "Kingsmere's granary stands full. The town holds a harvest feast in the King's name." },
   { key: "host", do: "Raise the levy", text: "Muster a royal host of 2,400 men", how: "Raise the levy, or call the banners.",
-    met: ({ world, crownOf, SOLDIER }) => (world.units ?? []).filter((u) => u.owner === crownOf()?.id && SOLDIER(u)).length >= 12, reward: "knights", says: "Two thousand four hundred men stand under the royal banner. Two knights ride in to join them, unasked." },
+    met: (ctx) => mustered(ctx) >= 12, reward: "knights", says: "Two thousand four hundred men stand under the royal banner. Two knights ride in to join them, unasked." },
   { key: "friend", do: "Win over", text: "Win a great house to the Crown", how: "Favour a house until it stands at 70.",
     met: ({ world, favourOf }) => world.players.some((p) => !houseFor(p).wild && !houseFor(p).crown && favourOf(p.id) >= 70), reward: "gold", says: "A great house swears itself to the Crown, and sends a chest of silver to prove it." },
   { key: "market", do: "Fund a market", text: "Raise a market in a royal town", how: "Fund a market in any town of the Crown.",
@@ -189,7 +194,7 @@ export function aimProgress(ctx, a) {
   const seat = world.cities.find((x) => x.owner === crown.id && x.capital);
   const favourTo = (pid, to) => { const f = Math.round(favourOf(pid)); return { text: `${houseFor(world.players.find((p) => p.id === pid)).name} at ${f} of ${to}`, frac: Math.max(0, Math.min(1, f / to)) }; };
   switch (a.key) {
-    case "host": { const n = (world.units ?? []).filter((u) => u.owner === crown.id && SOLDIER(u)).length; return { text: `${(Math.min(n, 12) * 200).toLocaleString("en-US")} of 2,400 men`, frac: Math.min(1, n / 12) }; }  // in men, as the ledger counts them
+    case "host": { const n = mustered(ctx); return { text: `${(Math.min(n, 12) * 200).toLocaleString("en-US")} of 2,400 men`, frac: Math.min(1, n / 12) }; }  // in men, as the ledger counts them; the best muster so far
     case "friend": {
       const best = world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown).sort((x, y) => favourOf(y.id) - favourOf(x.id))[0];
       return best ? favourTo(best.id, 70) : null;
@@ -213,6 +218,7 @@ export function ladder(ctx) {
   // Aims already true when the reign begins are passed over: the King is never asked for what he has.
   meta.ladder ??= { i: 0, held: world.cities.filter((x) => x.owner === crownOf().id).map((x) => x.id), skip: LADDER.filter((a) => a.key !== "town" && a.met(ctx)).map((a) => a.key) };
   const l = meta.ladder;
+  l.peak = Math.max(l.peak ?? 0, companies(ctx));
   l.held ??= world.cities.filter((x) => x.owner === crownOf().id).map((x) => x.id);  // a save from before
   while (l.i < LADDER.length && (l.skip ?? []).includes(LADDER[l.i].key)) l.i++;
   // Past the fixed six, an aim drawn from the realm (one at a time).

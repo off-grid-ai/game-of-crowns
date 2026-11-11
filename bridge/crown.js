@@ -348,14 +348,21 @@ const HANDLERS = {
   },
   march(x) {
     const { cmd, world, crown, cost, pay, c, owner, lord, town } = x;
-    // The royal host marches on a town. The King's sworn houses send men with
-    // it; in two seasons the town falls to the crown, or the host breaks.
+    // The royal host marches on a town, and lays siege when it reaches the walls (hosts.js, then
+    // campaigns.js): one verb, one army (gameplay review #7). The King's sworn houses send men
+    // with it; two seasons before the walls the town falls to the crown, or the host breaks.
     if (!c || !owner || houseFor(owner).crown || houseFor(owner).wild) return { error: "choose a great house's town to march on" };
     if ((cmd.marching ?? (() => false))(c.id)) return { error: `the royal host is already before ${town}` };
+    const d = DECREES.march;
     const others = greatHouses(world).filter((p) => p.id !== owner.id);
-    return { cost, lua: [pay, `realm_host(realm_find_player(${crown.id}), ${c.x}, ${c.y}, {"Pikemen","Knights","Archers","Catapult"}, 8)`],
-      favour: { [owner.id]: -25, ...Object.fromEntries(others.map((p) => [p.id, -2])) }, march: { city: c.id, house: owner.id },
+    const favour = { [owner.id]: d.favour ?? -25, ...Object.fromEntries(others.map((p) => [p.id, d.others ?? -2])) };
+    // A ruling that sends the host (a siege plea answered) raises one at the town, as it always did.
+    if (cmd.spawn) return { cost, lua: [pay, `realm_host(realm_find_player(${crown.id}), ${c.x}, ${c.y}, {"Pikemen","Knights","Archers","Catapult"}, 8)`], favour, march: { city: c.id, house: owner.id },
       text: `The royal host marches on ${town}. ${lord} calls every man to its walls, and every house in the realm watches.` };
+    const h = cmd.host;
+    if (!h) return { error: "the crown has no host to march" };
+    return { cost, lua: [pay], favour, hostMarch: { host: h.id, city: c.id, house: owner.id },
+      text: `The royal host, ${h.men.toLocaleString("en-US")} men, marches on ${town}. ${lord} calls every man to its walls, and every house in the realm watches.` };
   },
 };
 

@@ -248,3 +248,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - How many orders the King's hosts take a season, all hosts together: `bridge/data/hosts.json`: `ordersPerSeason`.
 - How often the tithe may change: `bridge/data/economy.json`: `tithe.changeEvery` (seasons; the top bar says "again in N seasons").
 - A called court matter keeps its card until the King answers it or closes the court; one the realm makes worse for the same house replaces it in place, glowing (`worse`) for a few seconds: `bridge/court.js` (`follow`; the glow's length is the 6 s in `docket`).
+- How far the King's hosts march a season: `bridge/data/hosts.json`: `speed` (8: across the realm in about six seasons). A march on a great house's town lays siege on arrival; what the house and the realm think of it when it is ordered: `bridge/data/decrees.json`: `march.favour`, `march.others`; the town card's "March on" price (the host's provisions, no new men): `march.cost`.

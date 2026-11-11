@@ -175,7 +175,7 @@ export function resolveCampaigns(ctx, turn) {
 export function marchOn(ctx, cityId) {
   const { world, meta, send, shiftFavour, favourOf, causeOf } = ctx;
   if (!world) return;
-  const r = decree({ action: "march", city: cityId, price: 0, favourOf, causeOf, marching: (city) => (meta.campaigns ?? []).some((x) => x.city === city) }, { ...world, players: world.players.map((p) => houseFor(p).crown ? { ...p, gold: 1e9 } : p) });
+  const r = decree({ action: "march", spawn: true, city: cityId, price: 0, favourOf, causeOf, marching: (city) => (meta.campaigns ?? []).some((x) => x.city === city) }, { ...world, players: world.players.map((p) => houseFor(p).crown ? { ...p, gold: 1e9 } : p) });
   if (r.error) { console.error("march:", r.error); return; }
   (r.lua ?? []).slice(1).forEach((l) => send(`lua cmd ${l}`));
   shiftFavour(r.favour, "the royal host");

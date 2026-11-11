@@ -9,6 +9,7 @@
 // snapshot or a switch of chronicle during an await is seen.
 
 import * as Seals from "./seals.js";
+import * as Hosts from "./hosts.js";
 import * as Sittings from "./court.js";
 import * as Director from "./director.js";
 import * as Treasury from "./treasury.js";
@@ -69,8 +70,16 @@ export async function issueDecree(ctx, req, res, url) {
     const n = seasonsLeft(yearly);
     return json(res, 400, { error: `once a year: again in ${n} season${n === 1 ? "" : "s"}` });
   }
+  // March: the King's own biggest host goes (hosts.js), and it is the season's order to his hosts.
+  let host = null;
+  if (cmd.action === "march") {
+    const hctx = { world: ctx.world, meta: ctx.meta, sworn, crownSeat: ctx.crownSeat };
+    host = Hosts.list(hctx)[0] ?? null;
+    if (!host) return json(res, 400, { error: "The crown has no host to march" });
+    if (Hosts.ordersLeft(hctx) < 1) return json(res, 400, { error: "The King's captains have their orders for this season. The next order goes with the season's turn." });
+  }
   const price = priceOf(cmd.action);
-  const result = decree({ ...cmd, works: ctx.meta.works ?? {}, price, favourOf, causeOf, sworn, warded: (pid) => (ctx.stakes?.s.wards?.[pid] ?? -1) > (ctx.world.turn ?? 0), marching: (city) => (ctx.meta.campaigns ?? []).some((x) => x.city === city), usurper: ctx.stakes?.s.usurper, seat: ctx.stakes?.s.seat }, ctx.world);
+  const result = decree({ ...cmd, host, works: ctx.meta.works ?? {}, price, favourOf, causeOf, sworn, warded: (pid) => (ctx.stakes?.s.wards?.[pid] ?? -1) > (ctx.world.turn ?? 0), marching: (city) => (ctx.meta.campaigns ?? []).some((x) => x.city === city), usurper: ctx.stakes?.s.usurper, seat: ctx.stakes?.s.seat }, ctx.world);
   if (result.error) return json(res, 400, result);
   {
     const dc = ctx.world.cities.find((x) => x.id === Number(cmd.city));
@@ -86,6 +95,10 @@ export async function issueDecree(ctx, req, res, url) {
   if (result.relieved != null) { (ctx.meta.relieved ??= {})[result.relieved] = ctx.world.turn ?? 0; chron.saveMeta(ctx.meta); }
   if (result.alliance != null) { (ctx.meta.alliances ??= {})[result.alliance] = (ctx.world.turn ?? 0) + 16; chron.saveMeta(ctx.meta); }
   if (result.march) startCampaign(result.march);
+  if (result.hostMarch) {
+    const [code, out] = Hosts.order({ world: ctx.world, meta: ctx.meta, sworn, crownSeat: ctx.crownSeat }, { host: result.hostMarch.host, order: "march", city: result.hostMarch.city, declared: true });
+    if (code === 200) result.text = `${result.text} ${out.text.replace(/^.*?: /, "").replace(/^./, (c) => c.toUpperCase())}`;
+  }
   if (yearly) { (ctx.meta.decreeAt ??= {})[yearly] = ctx.world.turn ?? 0; chron.saveMeta(ctx.meta); }
   if (onceFor != null) { ((ctx.meta.oncePerHouse ??= {})[cmd.action] ??= {})[onceFor] = ctx.world.turn ?? 0; chron.saveMeta(ctx.meta); }
   // An order given at the threat's place, of a kind that answers it: the threat passes (director.js).

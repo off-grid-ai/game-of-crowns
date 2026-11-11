@@ -18,7 +18,8 @@ import { setReignSeed } from "./characters.js";
 import { editRow, rng as rngFor } from "./fresh.js";
 import { moodRules, speak } from "./claude.js";
 import * as chron from "./chronicles.js";
-import { clampFavour } from "./crown.js";
+import { clampFavour, DECREES } from "./crown.js";
+import * as kingDeeds from "./ledger.js";
 import { START } from "./favour.js";
 // Stories the player generates or writes, kept with their realms.
 const OWN_STORIES = path.join(chron.HOME, "stories");
@@ -611,7 +612,7 @@ function marksNow() {
 const seasonCtx = () => ({ get world() { return world; }, get meta() { return meta; }, get court() { return court; }, get stakes() { return stakes; }, get minds() { return minds; },
   get P() { return P; }, get favour() { return favour; }, get deeds() { return deeds; }, get blights() { return blights; }, setBlights: (v) => { blights = v; },
   favourWhy, favourPast, treasuryCtx, send, record, flushHeld, courtSeason, royalWorks, resolveCampaigns, favourOf, restingFavour, noteFavour, recordDeed,
-  causeOf, saveFavour, goalNow, sworn, shiftFavour, heardCtx, ceasefire, snapshot, runArcs, addMark, detail, marksNow, besiegers });
+  causeOf, saveFavour, goalNow, sworn, shiftFavour, heardCtx, ceasefire, snapshot, runArcs, addMark, detail, marksNow, besiegers, startCampaign });
 function runSeason() { return Season.runSeason(seasonCtx()); }
 function turnHouses(turn) { return Season.turnHouses(seasonCtx(), turn); }
 function storyMarch(pid, size) { return Season.storyMarch(seasonCtx(), pid, size); }
@@ -968,6 +969,15 @@ const ROUTES = {
   "POST /host/order": async (req, res, url) => {
     const [code, out] = Hosts.order({ world, meta, sworn, crownSeat }, await body(req));
     if (code === 200) record({ turn: world?.turn ?? 0, kind: "decree", text: out.text });
+    // A march on a great house's town is declared as it is ordered: the house and the realm hear of it.
+    if (code === 200 && out.declare) {
+      const d = DECREES.march;
+      const town = world.cities.find((c) => c.id === out.declare.city);
+      const fav = { [out.declare.house]: d.favour ?? -25, ...Object.fromEntries(greatHouses().filter((p) => p.id !== out.declare.house).map((p) => [p.id, d.others ?? -2])) };
+      shiftFavour(fav, "the royal host");
+      deed(kingDeeds.tagsFor("decree", "march"), { favour: fav, place: town ? cityName(town.id) : "" });
+      counselStale = true;
+    }
     return json(res, code, out);
   },
   "POST /decree": (req, res, url) => DecreeRoutes.issueDecree(routeCtx(), req, res, url),
