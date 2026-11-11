@@ -35,6 +35,9 @@ for name, loop in CLIPS:
     t = arm.animation_data.nla_tracks.new()
     t.name = name
     strip = t.strips.new(name, cursor, act)
+    # Each clip only on its own frames: a strip holds its pose before and after by default, and the
+    # top track (the last clip) then covered every clip under it (all baked as its first frame).
+    strip.extrapolation = "NOTHING"
     if hasattr(strip, "action_slot") and act.slots:
         strip.action_slot = act.slots[0]
     length = int(act.frame_range[1] - act.frame_range[0])
@@ -60,7 +63,13 @@ if cfg.get("weld"):
         before = len(o.data.vertices)
         bm = bmesh.new()
         bm.from_mesh(o.data)
-        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+        # Only twins with the same skin: rigid gear cut off the body (rig_unit.py) shares its edge's
+        # positions but not its bones, and stays cut.
+        dl = bm.verts.layers.deform.active
+        twins = bmesh.ops.find_doubles(bm, verts=bm.verts, dist=1e-5)["targetmap"]
+        if dl is not None:
+            twins = {a: b for a, b in twins.items() if {k: round(w, 4) for k, w in a[dl].items()} == {k: round(w, 4) for k, w in b[dl].items()}}
+        bmesh.ops.weld_verts(bm, targetmap=twins)
         bm.to_mesh(o.data)
         bm.free()
         print("WELD", o.name, before, "->", len(o.data.vertices))
