@@ -97,7 +97,7 @@ and there's no humour. Added to Phase 1, in this order:
 | Dense plot towns along growing streets | Townsfolk | ~20 houses at Kingsmere, ≥90% facing a street, beside the Manor Lords shot |
 | Fire, smoke, sack and razing that read as fire | Lead | a still beside the reference |
 | Light, grade, seasons and the map at three zooms, judged against the copy sheet | Builder 2 | side-by-side stills pass |
-| Play at ≥30 fps at roof height in the busiest town | NPC perf | --perf numbers at Goldrock and Kingsmere |
+| Play at ≥10 fps (Mac: anything above 10 is fine) in the busiest town and the biggest battle | NPC perf | --perf numbers at Goldrock, Kingsmere and the army spike |
 
 ### Phase 3: stories and people (immersion and the AI edge)
 House pages and a lord's sheet (CK3's character window, one house page, never the whole dynasty);
