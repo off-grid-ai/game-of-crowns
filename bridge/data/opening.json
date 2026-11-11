@@ -1,5 +1,5 @@
 {
-  "_": "The first ten minutes (--opening=v2; docs/review/first-ten-minutes-plan.md). Tune here, not in code. quietToWinter: no threat, no ultimatum until the first winter has passed (bridge opening.js). firstSetbackSeasons: the first ruling that slights the lord who asked comes back this many seasons later, as a plea for amends (about 5:00 in, from a first ruling at ~1:00 on a 40 s season). winterAim: the aim the top bar shows until the first winter has passed (text, how), with a seasons-to-winter count.",
+  "_": "The first ten minutes (--opening=v2; docs/review/first-ten-minutes-plan.md). Tune here, not in code. quietToWinter: no threat, no ultimatum until the first winter has passed (bridge opening.js). firstSetbackSeasons: the first ruling that slights the lord who asked comes back this many seasons later, as a plea for amends (about 5:00 in, from a first ruling at ~1:00 on a 40 s season). winterAim: the aim the top bar shows until the first winter has passed (text, how), with a seasons-to-winter count. calmShare: in every timed reign (v2 or not), the first share of the clock is the King's to learn the court: no threat rises and no house sends an ultimatum (0.2 = the first three minutes of fifteen; gameplay review #1). usurperFromAct: no pretender whispers of a better claim before this act (1 = the first quarter, 2 = from the second).",
   "firstCourtAfterLandingSec": 30,
   "firstCourtWithoutLandingSec": 180,
   "quietToWinter": true,
@@ -7,5 +7,7 @@
   "winterAim": {
     "text": "Hold the realm whole to the first winter",
     "how": "Keep every royal town and every great house with you until the snows have come and gone. Rule at court; the realm is quiet until then."
-  }
+  },
+  "calmShare": 0.2,
+  "usurperFromAct": 2
 }

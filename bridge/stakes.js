@@ -112,7 +112,7 @@ export class Stakes {
     // Nor does a house sworn to the crown while its oath holds.
     const angry = houses.filter((p) => ctx.favour(p.id) < BANDS.cooling && !((held[p.id] ?? -1) > turn) && !ctx.sworn?.(p.id));
     const u = this.s.usurper;
-    if (u.stage === "none" && ctx.options?.usurper !== false && houses.length && angry.length >= Math.max(2, Math.ceil(houses.length / 3))) {
+    if (u.stage === "none" && ctx.options?.usurper !== false && ctx.usurperMay !== false && houses.length && angry.length >= Math.max(2, Math.ceil(houses.length / 3))) {
       const pretender = angry.sort((a, b) => b.cities - a.cities)[0];
       u.stage = "rumour";
       u.house = pretender.id;

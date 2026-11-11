@@ -50,7 +50,7 @@ export function counsel(ctx, players, cities, threat) {
     const rule = f < BANDS.cooling
       ? `Under 25, their lord may raise his banners any season, likelier the colder he grows.${angryNow >= 2 ? "" : " One more house under 25 and a pretender will claim the throne."}`
       : "Under 25, a lord may raise his banners against you; two such houses and one claims the throne.";
-    out.push({ urgency: f < BANDS.cooling ? 100 : 70, text: `${cold.house.name} grows cold to the crown: favour ${f}`,
+    out.push({ urgency: f < BANDS.cooling ? 100 : 70, subject: cold.id, text: `${cold.house.name} grows cold to the crown: favour ${f}`,
       why: rule + cause,
       acts: [...back, ...lighter, { label: "Gift crowns", action: "gift", city: seatOf(cold.id).id }, { label: "A feast in their honour", action: "feast", city: seatOf(cold.id).id }, ...match] });
   }
@@ -61,10 +61,10 @@ export function counsel(ctx, players, cities, threat) {
   if (threat.usurper === "rumour") {
     const left = Math.max(1, 8 - (threat.turn - threat.since));
     const angry = great.filter((p) => favourOf(p.id) < BANDS.cooling).map((p) => p.house.name.replace(/^House /, ""));
-    out.push({ urgency: 95, occur: threat.since, text: `${claimant} whispers of a better claim to the throne`,
+    out.push({ urgency: 95, subject: pretender?.id ?? null, occur: threat.since, text: `${claimant} whispers of a better claim to the throne`,
       why: `In ${left} season${left === 1 ? "" : "s"} they march on Kingsmere, unless the angry houses are won back above 25: ${angry.join(", ") || "none now"}.`,
       acts: [pretender && seatOf(pretender.id) ? { label: `Gift crowns to ${claimant.replace(/^House /, "")}`, action: "gift", city: seatOf(pretender.id).id } : null, { label: "Buy off their claim", action: "buyoff" }, { label: "Call the banners", action: "banners" }].filter(Boolean) });
-  } else if (threat.usurper !== "none") out.push({ urgency: 100, occur: threat.since, text: `${claimant}'s host marches on Kingsmere`,
+  } else if (threat.usurper !== "none") out.push({ urgency: 100, kind: "march", subject: pretender?.id ?? null, occur: threat.since, text: `${claimant}'s host marches on Kingsmere`,
     why: `${(threat.theirs * 200).toLocaleString("en-US")} of their men about the walls against ${(threat.ours * 200).toLocaleString("en-US")} of yours: ${threat.theirs > threat.ours ? "as things stand, the walls would fall" : "for now, the walls would hold"}. If Kingsmere falls, the crown is lost. Loyal houses (favour 35 and up) send men to the banners; the royal levy is yours to pay for. Or buy them off: gold for their claim.`, acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }, { label: "Buy them off", action: "buyoff" }] });
   // After a march: the King decides what becomes of the house that rose.
   const rose = players.find((p) => p.id === threat.ended);
@@ -72,7 +72,7 @@ export function counsel(ctx, players, cities, threat) {
     const towns = cities.filter((c) => c.owner === rose.id && !c.capital).sort((a, b) => (a.size ?? 0) - (b.size ?? 0));
     const loyal = great.filter((p) => p.id !== rose.id).sort((a, b) => favourOf(b.id) - favourOf(a.id))[0];
     const name = rose.house.name.replace(/^House /, "");
-    out.push({ urgency: 90, occur: threat.since, text: `The march is over. What of House ${name}?`,
+    out.push({ urgency: 90, subject: rose.id, occur: threat.since, text: `The march is over. What of House ${name}?`,
       why: `They rose against the throne and went home (favour ${Math.round(favourOf(rose.id))}). Pardon them with a feast to win them back, hold their heir at court so they cannot rise, or take a town and give it to ${loyal ? loyal.house.name : "a loyal house"} so the realm sees the price of treason; a house driven below 25 may rise again.`,
       acts: [seatOf(rose.id) ? { label: "Pardon them with a feast", action: "feast", city: seatOf(rose.id).id } : null,
         seatOf(rose.id) ? { label: `Take their heir as your ward (${name} −5; they cannot rise for five years)`, action: "ward", city: seatOf(rose.id).id } : null,
@@ -89,7 +89,7 @@ export function counsel(ctx, players, cities, threat) {
     const worst = (deeds[p.id] ?? []).filter((x) => x.d <= -8).sort((a, b) => a.d - b.d)[0];
     const when = worst ? calendar(worst.turn) : null;
     const grievance = worst ? `You ${worst.what}, in the ${when.season} of ${when.year}. Set that right` : `The crown has done nothing for ${short} since you were crowned. Set that right`;
-    out.push({ urgency: 100, kind: "ultimatum", occur: t.at, text: `${p.house.name} sends the crown an ultimatum`,
+    out.push({ urgency: 100, kind: "ultimatum", subject: p.id, occur: t.at, text: `${p.house.name} sends the crown an ultimatum`,
       why: `${lord ? lord.name : `The lord of ${short}`}: "${grievance}, or ${short} raises its banners." Answer with a favour they can see; silence is a refusal.`,
       acts: [{ label: "A feast in their honour", action: "feast", city: seatOf(p.id).id }, { label: "Gift crowns", action: "gift", city: seatOf(p.id).id },
         { label: `Take their heir as your ward (they cannot rise for five years)`, action: "ward", city: seatOf(p.id).id }] });
@@ -240,7 +240,7 @@ export function counsel(ctx, players, cities, threat) {
     return true;
   });
   // The Hand's own pick on each matter: the order that does most for its cost.
-  const PREFER = ["court", "ward", "feast", "relief", "tithe_down", "banners", "peace", "settle", "buyoff", "marriage", "gift", "grant", "levy", "tithe_up"];
+  const PREFER = ["court", "ward", "feast", "relief", "tithe_down", "banners", "peace", "settle", "buyoff", "marriage", "gift", "grant", "levy", "promise", "cede", "tithe_up"];
   for (const o of out) {
     const rank = (a) => { const i = PREFER.indexOf(a.action ?? a.ui); return i < 0 ? 99 : i; };
     const best = [...o.acts].sort((a, b) => rank(a) - rank(b))[0];
@@ -256,6 +256,24 @@ export function counsel(ctx, players, cities, threat) {
     }
     const does = DOES[a.action ?? a.ui];
     if (does && !a.label.includes("(")) a.label += ` · ${does}`;
+  }
+  // Every crisis has at least one answer the King can give (gameplay review #1): when the purse can
+  // pay for none of its orders, the crown pays in something else. A march on Kingsmere is answered with
+  // a royal town for their claim; any other, with a seat at the council promised to the house, paid
+  // for in the favour of the house the King has favoured most (data/decrees.json promise, cede).
+  const crownP = players.find((p) => p.house.crown);
+  const payable = (a) => a.action && !a.short && DECREES[a.action] && !DECREES[a.action].off;
+  for (const o of out) {
+    if (!(o.urgency >= 75 || o.kind === "ultimatum") || o.acts.some(payable)) continue;
+    const who = players.find((p) => p.id === o.subject);
+    if (!who || who.house.crown || who.house.wild || !seatOf(who.id)) continue;
+    const name = who.house.name.replace(/^House /, "");
+    const spare = o.kind === "march" && crownP ? cities.filter((c) => c.owner === crownP.id && !c.capital).sort((a, b) => (a.size ?? 0) - (b.size ?? 0))[0] : null;
+    if (spare) { o.acts.push({ label: `Cede ${spare.title ?? cityName(spare.id)} to ${name} for their claim`, action: "cede", city: spare.id, to: who.id }); continue; }
+    if ((meta.oncePerHouse?.promise ?? {})[who.id] != null) continue;
+    const rival = great.filter((p) => p.id !== who.id).sort((a, b) => favourOf(b.id) - favourOf(a.id))[0];
+    const P = DECREES.promise;
+    o.acts.push({ label: `Promise ${name} a seat at council (${name} +${P.favour}${rival ? `, ${short(rival)} ${String(P.rival).replace("-", "−")}` : ""})`, action: "promise", city: seatOf(who.id).id, ...(rival ? { to: rival.id } : {}) });
   }
   // Every matter the realm has, worst first: the court (courtYear) chooses
   // which are put to the King, and when.

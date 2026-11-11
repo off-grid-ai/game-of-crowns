@@ -1,5 +1,5 @@
 {
-  "_": "The King's decrees as data (consolidation B5): what each costs (in hundreds of crowns), its name, and what it does in a few words for the town card (effect; courtEffect when ordered at his own seat). crown.js decides what happens; the view shows these words, never its own.",
+  "_": "The King's decrees as data (consolidation B5): what each costs (in hundreds of crowns), its name, and what it does in a few words for the town card (effect; courtEffect when ordered at his own seat). crown.js decides what happens; the view shows these words, never its own. courtOnly: given only as an answer to a matter at court (cmd.matter), never from a town card. oncePerHouse: a house has it of the King once a reign. promise: the free answer to a crisis the purse can't pay (gameplay review #1): the house gains favour, the King's most favoured house (rival) loses it. cede: the free answer to a march on Kingsmere: a royal town for their claim (their host goes home).",
   "relief": { "cost": 120, "label": "Send grain to a starving town" },
   "gift": { "cost": 150, "label": "Gift gold to a house" },
   "levy": { "cost": 200, "label": "Raise a royal levy", "courtEffect": "600 men of your own" },
@@ -15,5 +15,7 @@
   "back": { "cost": 150, "label": "Back one side of a war" },
   "settle": { "cost": 100, "label": "Tell another house to settle a war" },
   "alliance": { "cost": 200, "label": "Swear an alliance with a house" },
-  "march": { "cost": 250, "label": "March the royal host on a house's town" }
+  "march": { "cost": 250, "label": "March the royal host on a house's town" },
+  "promise": { "cost": 0, "label": "Promise a house a seat at the King's council", "favour": 10, "rival": -8, "courtOnly": true, "oncePerHouse": true },
+  "cede": { "cost": 0, "label": "Cede a royal town for their claim", "favour": 25, "others": -2, "courtOnly": true }
 }

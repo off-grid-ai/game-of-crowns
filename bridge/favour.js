@@ -4,6 +4,10 @@ import fs from "node:fs";
 // The numbers are data (data/favour.json: loyal, sworn, steady, cooling), read once here.
 const _bands = JSON.parse(fs.readFileSync(new URL("./data/favour.json", import.meta.url), "utf8"));
 export const BANDS = { loyal: _bands.loyal, sworn: _bands.sworn, steady: _bands.steady, cooling: _bands.cooling };
+// Where a new reign's houses may start (no house begins under the floor; a resentful realm's is lower),
+// and what an idle King costs (data/favour.json startFloor, startFloorResentful, idle).
+export const START = { floor: _bands.startFloor ?? 35, resentful: _bands.startFloorResentful ?? 26 };
+export const IDLE = { seasons: _bands.idle?.seasons ?? 3, cool: _bands.idle?.cool ?? 2 };
 
 // The band a favour falls in: "loyal", "sworn", "steady", "cooling" or "angry".
 export function band(f) {

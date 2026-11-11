@@ -318,6 +318,33 @@ const HANDLERS = {
     return { cost, lua: [pay], favour: { [owner.id]: 5 }, alliance: owner.id,
       text: `${lord} kneels and swears an oath to the crown: its swords are the King's for four years, and it will not rise against him while the oath holds.` };
   },
+  promise(x) {
+    const { cmd, world, owner, lord } = x;
+    // The answer a broke crown can always give (gameplay review #1): a seat at the King's council,
+    // paid for in the favour of the house he had favoured most (cmd.to), which thought it theirs.
+    const d = DECREES.promise;
+    const rival = world.players.find((p) => p.id === Number(cmd.to));
+    if (!owner || houseFor(owner).crown || houseFor(owner).wild) return { error: "choose a great house's town" };
+    const favour = { [owner.id]: d.favour ?? 10, ...(rival && rival.id !== owner.id ? { [rival.id]: d.rival ?? -8 } : {}) };
+    return { cost: 0, favour, lua: [],
+      text: `The King promises ${lord} a seat at his council.${rival && rival.id !== owner.id ? ` ${houseFor(rival).name} had thought that seat was theirs.` : ""}` };
+  },
+  cede(x) {
+    const { cmd, world, crown, c, town } = x;
+    // A royal town for the pretender's claim (gameplay review #1): their host goes home with
+    // something to show for it, and every house marks what rising against the crown bought.
+    const d = DECREES.cede;
+    const to = world.players.find((p) => p.id === Number(cmd.to));
+    if (!c || c.owner !== crown.id) return { error: "choose a town of the crown's" };
+    if (c.capital) return { error: "Kingsmere is the crown itself; it cannot be ceded" };
+    if (!to || houseFor(to).crown || houseFor(to).wild) return { error: "choose a great house to cede it to" };
+    const u = cmd.usurper;
+    const at = cmd.seat;
+    const home = u && u.stage !== "none" && u.house === to.id && at ? `for p in players_iterate() do if p.id == ${to.id} then for u in p:units_iterate() do local r = u.utype:rule_name(); if r ~= "Workers" and r ~= "Settlers" and math.sqrt(u.tile:sq_distance(find.tile(${at.x}, ${at.y}))) <= 6 then edit.unit_kill(u, "killed", nil) end end end end` : null;
+    const others = Object.fromEntries(greatHouses(world).filter((p) => p.id !== to.id).map((p) => [p.id, d.others ?? -2]));
+    return { cost: 0, favour: { [to.id]: d.favour ?? 25, ...others }, lua: [Lua.transferCity(c.id, to.id), home].filter(Boolean), endUsurper: !!home,
+      text: `The King cedes ${town} to ${houseFor(to).name} for their claim. ${home ? "Their host goes home with a town to show for it, and" : "And"} every house marks what rising against the crown can buy.` };
+  },
   march(x) {
     const { cmd, world, crown, cost, pay, c, owner, lord, town } = x;
     // The royal host marches on a town. The King's sworn houses send men with

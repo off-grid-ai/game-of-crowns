@@ -15,7 +15,7 @@ import * as Treasury from "./treasury.js";
 import { WORK_SEASONS } from "./treasury.js";
 import * as chron from "./chronicles.js";
 import { cityName, houseFor } from "./narrator.js";
-import { decree } from "./crown.js";
+import { decree, DECREES } from "./crown.js";
 import * as kingDeeds from "./ledger.js";
 import { moodFrom, moodRules } from "./claude.js";
 import { body, json } from "./http_util.js";
@@ -31,6 +31,16 @@ export async function issueDecree(ctx, req, res, url) {
   // free of the royal seal, and the matter is answered with it once the order has landed,
   // in this one request (an ultimatum is judged on the favour the order moved).
   const ruling = cmd.matter != null && String(cmd.matter) !== "";
+  // Some answers are given only at court, to a matter put to the King (data/decrees.json courtOnly),
+  // and some a house has of him once a reign (oncePerHouse: a ward, a promised council seat).
+  const spec = DECREES[cmd.action];
+  if (spec?.off) return json(res, 400, { error: "the King no longer gives that order" });
+  if (spec?.courtOnly && !ruling) return json(res, 400, { error: "that is given only as an answer at court" });
+  const onceFor = spec?.oncePerHouse ? (ctx.world.cities.find((c) => c.id === Number(cmd.city))?.owner ?? null) : null;
+  if (onceFor != null && ctx.meta.oncePerHouse?.[cmd.action]?.[onceFor] != null) {
+    const h = houseFor(ctx.world.players.find((p) => p.id === onceFor) ?? {}).name ?? "That house";
+    return json(res, 400, { error: `${h} has had that of the King once this reign` });
+  }
   // Between sittings each decree takes a royal seal (seals.js); at a sitting it's a ruling, and free.
   const noSeal = Seals.refuse(ctx.meta, ruling);
   if (noSeal) return json(res, 400, { error: noSeal });
@@ -77,6 +87,7 @@ export async function issueDecree(ctx, req, res, url) {
   if (result.alliance != null) { (ctx.meta.alliances ??= {})[result.alliance] = (ctx.world.turn ?? 0) + 16; chron.saveMeta(ctx.meta); }
   if (result.march) startCampaign(result.march);
   if (yearly) { (ctx.meta.decreeAt ??= {})[yearly] = ctx.world.turn ?? 0; chron.saveMeta(ctx.meta); }
+  if (onceFor != null) { ((ctx.meta.oncePerHouse ??= {})[cmd.action] ??= {})[onceFor] = ctx.world.turn ?? 0; chron.saveMeta(ctx.meta); }
   // An order given at the threat's place, of a kind that answers it: the threat passes (director.js).
   Director.answered(ctx.meta, cmd, ctx.world, ctx.record);
   // Bought: the same decree again within the year costs more (treasury.js wear).

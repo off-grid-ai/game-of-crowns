@@ -45,8 +45,10 @@
    "says": "the feast at {town}"
   },
   "ward": {
-   "axes": {},
-   "says": ""
+   "axes": {
+    "mercy": -1
+   },
+   "says": "the heir of {house} taken hostage"
   },
   "buyoff": {
    "axes": {
@@ -101,6 +103,17 @@
     "peace": -1
    },
    "says": "the march on {town}"
+  },
+  "promise": {
+   "axes": {},
+   "says": "the council seat promised to {house}"
+  },
+  "cede": {
+   "axes": {
+    "peace": 1,
+    "give": -1
+   },
+   "says": "{town} ceded to buy off a rising"
   }
  },
  "realm": {

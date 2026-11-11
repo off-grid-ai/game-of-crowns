@@ -19,6 +19,7 @@ import { editRow, rng as rngFor } from "./fresh.js";
 import { moodRules, speak } from "./claude.js";
 import * as chron from "./chronicles.js";
 import { clampFavour } from "./crown.js";
+import { START } from "./favour.js";
 // Stories the player generates or writes, kept with their realms.
 const OWN_STORIES = path.join(chron.HOME, "stories");
 ownStories(OWN_STORIES);
@@ -384,14 +385,19 @@ function applyStartOptions() {
     const great = world.players.filter((x) => !houseFor(x).wild && !houseFor(x).crown).map((x) => x.id).sort((a, b) => a - b);
     for (let i = great.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [great[i], great[j]] = [great[j], great[i]]; }
     const cold = 2 + (r() < 0.5 ? 1 : 0);
+    // The cold ones start at the banners' line, not at the rising line: the King learns the court
+    // before the first crisis (data/favour.json startFloor; gameplay review #1).
     great.forEach((id, i) => {
-      const want = i < cold ? 18 + Math.floor(r() * 15) : favourOf(id) + Math.floor(r() * 21) - 10;
+      const want = i < cold ? START.floor + Math.floor(r() * 8) : favourOf(id) + Math.floor(r() * 21) - 10;
       const d = clampFavour(want) - favourOf(id);
       if (!d) return;
       favour[id] = favourOf(id) + d;  // their history, not the King's deed: no deed is recorded
       (favourWhy[id] ??= []).push({ d, why: d < 0 ? "an old quarrel with the crown" : "an old kindness from the crown" });
     });
   }
+  // No great house begins under the floor (a resentful realm's floor is just above the rising line).
+  const floor = o.trust === "resentful" ? START.resentful : START.floor;
+  for (const p of world.players.filter((x) => !houseFor(x).wild && !houseFor(x).crown)) if (favourOf(p.id) < floor) favour[p.id] = floor;
   saveFavour();
   const crown = world.players.find((x) => houseFor(x).crown);
   // The King's purse at his crowning (economy.json start, by the reign's wealth): the
