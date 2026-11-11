@@ -174,10 +174,10 @@ Switches (`--name`) go after `--` on the game's command line.
 
 ## Life at the working buildings (on by default, `--works=off`)
 - Where each trade's work happens when the town agent lists a building with no spots of its own (the anvil, bellows, trough, the armoury's rack, the paddock's middle and gate, the mill's door and sacks, the granary's queue, the inn's benches, rail, yard and windows), other names for the trades, and which building stands in for a missing one (a granary bakes where there's no bakery): `realm/data/works.json`: `spots`, `aliases`, `fallback`. A model can carry its own spots: `realm/data/assets.json`: `components.<name>.work`.
-- How many work at each building in peace, war, a levy, a low granary, hunger, a feast and good times (smiths, horses, bench drinkers, revellers, travellers, the granary queue, the levy at the armoury, the crier's listeners, millers, tanners), and which state wins: `realm/data/works.json`: `counts`, `priority`.
+- How many work at each building in peace, war, a levy, a low granary, hunger, a feast and good times (smiths, horses, bench drinkers, revellers, travellers, the granary queue, the levy at the armoury, the crier's listeners, millers, tanners, the barn's beasts and their hands, soldiers on the inn's benches in war or a levy), and which state wins: `realm/data/works.json`: `counts`, `priority`.
 - Which townsfolk take a trade (apprentice, groom, carters) and how many: `realm/data/works.json`: `jobs`.
 - How a town's state shifts what they choose (the forge works double in war, the granary grumbles when low, the inn's yard drinks at a feast): `realm/data/works.json`: `weights`.
-- The forge's glow and sparks, the mills' turning parts and speed, the inn's lit windows, the working day's hours, the crier's place, the horses' grazing and leading, the stacks at the rack, mill and granary: `realm/data/works.json`: `forge`, `mill`, `inn`, `day`, `crier`, `paddock`, `stock`.
+- The forge's glow and sparks, the mills' turning parts and speed, the inn's lit windows, the working day's hours, the crier's place, the horses' grazing and leading, the stacks at the rack, mill and granary, the barn yard's beasts (which kinds, how far they spread, the room between them): `realm/data/works.json`: `forge`, `mill`, `inn`, `day`, `crier`, `paddock`, `stock`, `yard`.
 - The roadside's people (inns, hamlets, camps, shrines, tolls) now think on the same minds: each `life` row's `post` in `realm/data/roadside.json` (no post: the old clip timer). Check it all with `tools/mind_probe.gd` and `tools/works_probe.gd`.
 
 ## The town as art target town-b (the crown's seat dense, mixed roofs, warm walls, cobbles, green)
@@ -197,5 +197,5 @@ Switches (`--name`) go after `--` on the game's command line.
 - How long the King's company stands at a town he sent men to, how many men join its defence, which decrees send them: `bridge/data/garrison.json`.
 
 ## Animals and bodies at rest (NPC perf)
-- What each farm beast does standing about (a cow grazes, a pig roots, a chicken pecks), how often and how many times in a row; how far a head comes down and how it chews or pecks: `realm/data/animals.json`: `kinds.<kind>.life`, `.derive.*`; `realm/tools/animals_check.gd` checks every kind.
-- Kneeling and sitting on a body's own knees: `realm/data/people.json`: `feet.low` (switch), `feet.lowAlso` (more moves), `feet.lowExtra` (metres more for a body by name).
+- What each farm beast does standing about (a cow grazes, a pig roots, a chicken pecks), how often and how many times in a row; how far a head comes down and how it chews or pecks: `realm/data/animals.json`: `kinds.<kind>.life`, `.derive.*`; `realm/tools/animals_check.gd` checks every kind. How often a beast's next move is a different one, and how soon a horse that was walked or led takes up grazing again: `realm/data/animals.json`: `change`, `busyRetry`.
+- Kneeling and sitting on a body's own knees: `realm/data/people.json`: `feet.low` (switch), `feet.lowAlso` (more moves), `feet.lowExtra` (metres more for a body by name); standing moves (crouches, pushes) raised on a body's own legs: `feet.bodyMoves`.

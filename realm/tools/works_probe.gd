@@ -3,7 +3,9 @@ extends SceneTree
 ## a made-up town on flat ground with a forge, armoury, stables, windmill, granary, tannery and
 ## an inn, dressed in each of the realm's states. Prints, per state, who stands at each building,
 ## the horses, the stacks and the lights, then lets the horses graze a few seconds and checks they
-## moved and stayed in their paddock. Exit 1 on a failure.
+## moved and stayed in their paddock, the barn's yard holds its beasts each living its idle life
+## (animals.gd) with a hand at them, the horses graze between strolls (and stop grazing to walk),
+## and in war the crown's men sit on the inn's benches. Exit 1 on a failure.
 ##   arch -arm64 godot --headless --path realm --script res://tools/works_probe.gd
 
 const TownLife := preload("res://scripts/town_life.gd")
@@ -37,6 +39,7 @@ func _town(world: Node3D) -> Node3D:
 		"windmill": {"at": Vector3(-2.0, 0, -2.4)},
 		"granary": {"at": Vector3(0.0, 0, -2.2)},
 		"tannery": {"at": Vector3(2.4, 0, -1.6)},
+		"barn": {"at": Vector3(-0.6, 0, 2.6)},
 	})
 	return root
 
@@ -78,6 +81,21 @@ func _run() -> void:
 		if tick.smiths.is_empty() or horses.is_empty() or tick.glow == null:
 			print("FAIL %s: the forge or the paddock is empty" % name)
 			fails += 1
+		# The barn's yard: beasts living their idle life, as many as works.json says (when this build has their models).
+		var beasts := l.get_children().filter(func(n): return n.has_meta("beast"))
+		var living := beasts.filter(func(n): return not n.find_children("Life", "Timer", true, false).is_empty())
+		var want_beasts := Works.count("beasts", Works.states(c, 7), 6)
+		print("WORKS %-7s yard: %d beasts (%d living their idle life; works.json %d); inn soldiers %d" % [name, beasts.size(), living.size(), want_beasts,
+			l.get_children().filter(func(n): return n.has_meta("bench") and n.get_meta("role", "") == "soldier").size()])
+		if beasts.size() != want_beasts or living.size() != beasts.size():
+			print("FAIL %s: the yard has %d beasts (%d living), works.json says %d" % [name, beasts.size(), living.size(), want_beasts])
+			fails += 1
+		if horses.any(func(h): return (h as Node).find_children("Life", "Timer", true, false).is_empty()):
+			print("FAIL %s: a paddock horse has no idle life" % name)
+			fails += 1
+		if name == "war" and l.get_children().filter(func(n): return n.has_meta("bench") and n.get_meta("role", "") == "soldier").is_empty():
+			print("FAIL war: no soldier on the inn's benches")
+			fails += 1
 		var want_smiths := Works.count("smiths", Works.states(c, 7), 6)
 		if tick.smiths.size() != want_smiths:
 			print("FAIL %s: %d smiths, works.json says %d" % [name, tick.smiths.size(), want_smiths])
@@ -96,7 +114,11 @@ func _run() -> void:
 				if Vector2(h.position.x - paddock.x, h.position.z - paddock.z).length() > tick.roam + 0.05:
 					print("FAIL a horse left its paddock")
 					fails += 1
-			print("WORKS horses grazing: %d of %d moved in 20 s" % [moved, horses.size()])
+			var grazed := horses.filter(func(h): return (h.get("_idle_life") as Array).size() > 1).size()
+			print("WORKS horses grazing: %d of %d moved in 20 s; %d with a graze in their idle life" % [moved, horses.size(), grazed])
+			if grazed != horses.size():
+				fails += 1
+				print("FAIL a horse has no graze")
 			if moved == 0:
 				fails += 1
 				print("FAIL no horse moved")

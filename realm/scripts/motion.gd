@@ -52,7 +52,7 @@ const CARRIES := ["Carrying", "Box_Idle", "Carry_Walk"]
 ## a body lying on the cobbles (batch 6), so it is played only at ground work on a building site. From one of these to a
 ## standing move the body rises through Getting_Up, never a crossfade that pops.
 const LOW := ["Fixing_Kneeling", "Interact", "Kneeling", "Praying", "Planting", "Dig_And_Plant", "Sitting_Ground", "Sitting_Cross_Legged",
-	"Sitting_Idle", "Sitting_Drinking", "Sleeping_Idle", "Defeated"]
+	"Sitting_Idle", "Sitting_Drinking", "Sitting_Talking", "Sleeping_Idle", "Defeated", "Milking"]
 const XFADE_STAND := 0.45  # v2: between two standing moves, slow enough that feet planted apart don't skid across
 const ARMS := ["LeftShoulder", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightShoulder", "RightUpperArm", "RightLowerArm", "RightHand",
 	"LeftThumbMetacarpal", "LeftThumbProximal", "LeftThumbDistal", "LeftIndexProximal", "LeftIndexIntermediate", "LeftIndexDistal",

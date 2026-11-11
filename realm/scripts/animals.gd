@@ -3,8 +3,8 @@ extends RefCounted
 ## (realm/data/animals.json): a cow stands and grazes, a sheep grazes, a pig
 ## roots, a chicken pecks, a horse drops its head to the grass. Whoever places
 ## a beast calls Animals.live(model, kind, rng) once; the beast's own
-## AnimationPlayer then plays one move after another (the next is picked when
-## one ends: nothing runs per frame).
+## AnimationPlayer then plays one move after another (a Timer on the model picks
+## the next when one ends: nothing runs per frame).
 ##
 ## A kind's moves are its model's own clips where it has them (Quaternius'
 ## deer has Eating and Idle_Headlow). The Quaternius cow, sheep and pig and our
@@ -20,7 +20,12 @@ const Data := preload("res://scripts/data.gd")
 
 ## Sets a beast living its idle life. Returns the moves it will play ([] when the
 ## model has no player or the kind no life in data: it keeps whatever it played).
-static func live(model: Node3D, kind: String, rng: RandomNumberGenerator) -> Array:
+## `busy`, when given, says the beast is doing something else (a horse walking,
+## led or ridden): its life waits and tries again shortly, playing nothing over it.
+## A move plays for its picked number of passes, timed by a Timer on the model, so
+## no clip's loop mode is changed (the clips are shared with every copy of the model:
+## a cavalry horse's idle keeps looping).
+static func live(model: Node3D, kind: String, rng: RandomNumberGenerator, busy := Callable()) -> Array:
 	var spec: Dictionary = Data.value("animals", "kinds.%s" % kind, {})
 	var players := model.find_children("*", "AnimationPlayer", true, false)
 	if spec.is_empty() or players.is_empty():
@@ -32,31 +37,48 @@ static func live(model: Node3D, kind: String, rng: RandomNumberGenerator) -> Arr
 		if clip == "" and (spec.get("derive", {}) as Dictionary).has(String(m[0])):
 			clip = _derive(model, anim, String(m[0]), spec["derive"][String(m[0])])
 		if clip != "":
+			anim.get_animation(clip).loop_mode = Animation.LOOP_LINEAR  # an idle life loops; the Timer says when it ends
 			moves.append([clip, float(m[1]), m[2] if m.size() > 2 else [1, 1]])
 	if moves.is_empty():
 		return []
-	anim.playback_default_blend_time = Data.num("animals", "blend", 0.4)
+	var blend := Data.num("animals", "blend", 0.4)
 	var own := RandomNumberGenerator.new()
 	own.seed = rng.randi()
-	var state := {"left": 0, "clip": ""}
-	var next := func(_done: StringName = &"") -> void:
-		if int(state["left"]) <= 0:
-			var total := 0.0
-			for m in moves:
-				total += float(m[1])
-			var roll := own.randf() * total
-			for m in moves:
-				roll -= float(m[1])
-				if roll <= 0.0:
-					state["clip"] = m[0]
-					state["left"] = own.randi_range(int(m[2][0]), int(m[2][1]))
-					break
-		state["left"] = int(state["left"]) - 1
-		anim.get_animation(state["clip"]).loop_mode = Animation.LOOP_NONE
-		anim.play(state["clip"])
-	anim.animation_finished.connect(next)
-	next.call()
-	anim.seek(own.randf() * anim.current_animation_length * 0.8, true)  # a herd never moves as one
+	var clock := Timer.new()
+	clock.name = "Life"
+	clock.one_shot = true
+	clock.autostart = true
+	var state := {"clip": ""}
+	var pick := func() -> Array:  # [clip, passes], never the move just played when there's another
+		var pool := moves.filter(func(m): return m[0] != state["clip"]) if moves.size() > 1 and own.randf() < Data.num("animals", "change", 0.7) else moves
+		var total := 0.0
+		for m in pool:
+			total += float(m[1])
+		var roll := own.randf() * total
+		for m in pool:
+			roll -= float(m[1])
+			if roll <= 0.0:
+				return [m[0], own.randi_range(int(m[2][0]), int(m[2][1]))]
+		return [pool[-1][0], 1]
+	var next := func() -> void:
+		if not is_instance_valid(anim):
+			return
+		if busy.is_valid() and bool(busy.call()):
+			state["clip"] = ""
+			clock.start(Data.num("animals", "busyRetry", 2.0))
+			return
+		var m: Array = pick.call()
+		state["clip"] = m[0]
+		anim.play(String(m[0]), blend)
+		clock.start(maxf(anim.get_animation(String(m[0])).length * int(m[1]) - own.randf() * 0.3, 0.5))
+	clock.timeout.connect(next)
+	model.add_child(clock)
+	var first: Array = pick.call()
+	state["clip"] = first[0]
+	clock.wait_time = maxf(anim.get_animation(String(first[0])).length * int(first[1]) * own.randf_range(0.2, 1.0), 0.5)  # a herd never moves as one
+	if not (busy.is_valid() and bool(busy.call())):
+		anim.play(String(first[0]))
+		anim.seek(own.randf() * anim.current_animation_length * 0.8, true)
 	return moves.map(func(m): return m[0])
 
 
@@ -94,7 +116,7 @@ static func _derive(model: Node3D, anim: AnimationPlayer, name: String, spec: Di
 	var down: float = turn[1]
 	var src := anim.get_animation(base)
 	var clip: Animation = src.duplicate(true)
-	clip.loop_mode = Animation.LOOP_NONE
+	clip.loop_mode = Animation.LOOP_LINEAR  # eased in and out to the idle, so it loops on the idle's pose
 	var bob: Array = spec.get("bob", [3.0, 1.5])
 	var ease_s := float(spec.get("ease", 0.6))
 	# The track path of a bone: as the base clip writes its own bone tracks.

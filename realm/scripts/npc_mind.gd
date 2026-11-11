@@ -301,6 +301,7 @@ static func post_activities(post: String) -> Array:
 				seq("forge", [run(["Hammer_Swing"], 3, 5), brk(["Wiping_Sweat", "Weight_Shift"])]),
 				seq("turn", [once("PickUp_Table"), run(["Hammer_Swing"], 2, 3), once("Looking_Around"), brk(REST)]),
 				seq("quench", [once("PickUp_Table"), step(0.15), once("Watering"), step(0.0), run(["Hammer_Swing"], 1, 2), brk(["Wiping_Sweat", "Arm_Stretching"])]),  # the hot iron into the trough, back to the anvil
+				seq("judge", [once("PickUp_Table"), run(["Thinking"], 1, 1), once("Firm_Nod"), run(["Hammer_Swing"], 1, 2), brk(["Weight_Shift", "Slow_Nod"])]),  # the blade held up to the light, a nod, back to it
 			]
 		# --- at the working buildings (town_life._works, works.json) ---
 		"miller":  # at the mill's door: sacks in, flour out
@@ -308,6 +309,7 @@ static func post_activities(post: String) -> Array:
 				seq("grind", [once("PickUp_Table"), run(["Pushing"], 2, 3), once("Looking_Around"), brk(REST)]),
 				seq("stack", [once("PickUp_Table"), step(0.2), once("PickUp_Table"), step(0.0), brk(REST + SWIG)]),
 				seq("check", [once("Looking_Around"), run(["Thinking", "Pointing_Forward"], 1, 1), brk(["Wiping_Sweat", "Weight_Shift"])]),
+				seq("shift", [step(0.15), run(["Push_Heavy"], 1, 1), step(0.0), once("Slow_Nod"), brk(REST)]),  # a full sack shoved up to the door
 			]
 		"tanner":  # at the vats
 			return [
@@ -318,7 +320,8 @@ static func post_activities(post: String) -> Array:
 		"queue":  # a line at the granary's door when it runs low
 			return [
 				seq("wait", [run(["Weight_Shift", "Bored", "Looking_Around"], 1, 2), brk(["Thinking", "Breathing_Idle"])]),
-				seq("grumble", [run(["Arguing", "Talking"], 1, 2), once("Shake_No"), brk(LOOK)]),
+				seq("grumble", [run(["Arguing", "Talking", "Annoyed"], 1, 2), once("Shake_No"), brk(LOOK)]),
+				seq("scoff", [once("Dismiss"), run(["Annoyed", "Weight_Shift"], 1, 1), brk(["Bored", "Looking_Around"])]),
 				seq("shuffle", [step(0.06), brk(["Weight_Shift", "Bored", "Wiping_Sweat"])]),
 			]
 		"levy":  # men called up, at the armoury for their arms
@@ -327,6 +330,7 @@ static func post_activities(post: String) -> Array:
 				seq("arm", [stock("rack", -1), once("PickUp_Table"), once("Salute"), brk(["Weight_Shift", "Looking_Around"])]),
 				seq("talk", [run(["Talking", "Idle_Talking", "Arguing"], 1, 2), once("Nodding"), brk(LOOK)]),
 				seq("cry", [once("Battlecry"), brk(["Weight_Shift", "Looking_Around"])]),
+				seq("swagger", [run(["Cocky"], 1, 1), once("Sarcastic_Nod"), brk(["Weight_Shift", "Annoyed"])]),  # the bold and the unwilling
 			]
 		"crier":  # the crier in the square with the news
 			return [
@@ -336,16 +340,24 @@ static func post_activities(post: String) -> Array:
 			]
 		"listener":  # round the crier: what they make of the news shows (works.json weights)
 			return [
-				seq("listen", [run(["Nodding", "Thinking", "Looking_Around"], 1, 2), brk(["Weight_Shift", "Bored"])]),
-				seq("murmur", [run(["Whispering", "Telling_Secret", "Talking"], 1, 2), brk(LOOK)]),
+				seq("listen", [run(["Nodding", "Thinking", "Looking_Around", "Slow_Nod"], 1, 2), brk(["Weight_Shift", "Bored"])]),
+				seq("murmur", [run(["Whispering", "Telling_Secret", "Telling_A_Secret", "Talking"], 1, 2), once("Sarcastic_Nod"), brk(LOOK)]),
 				seq("cheer", [run(["Cheering", "Clapping"], 1, 2), once("Laughing"), brk(["Weight_Shift"])]),
 				seq("dismay", [run(["Arguing", "Shake_No", "Disappointed"], 1, 2), once("Defeated"), brk(LOOK)]),
 			]
 		"drinker":  # on the inn's bench by day
 			return [
-				seq("sit", [run(["Sitting_Drinking"], 2, 3), brk(["Laughing", "Idle_Talking"])]),
+				seq("sit", [run(["Sitting_Drinking", "Sitting_Talking"], 2, 3), brk(["Laughing", "Idle_Talking"])]),
 				seq("toast", [run(["Drinking"], 2, 3), run(["Laughing", "Telling_Secret", "Idle_Talking"], 1, 2), brk(["Drunk_Idle", "Weight_Shift"])]),
 				seq("talk", [run(["Idle_Talking", "Laughing", "Telling_Secret", "Whispering"], 2, 3), brk(["Sitting_Idle", "Weight_Shift"])]),
+				seq("yarn", [run(["Sitting_Talking"], 2, 3), run(["Sitting_Drinking"], 1, 1), brk(["Laughing", "Sitting_Idle"])]),  # a long tale on the bench
+			]
+		"yardhand":  # at the barn's beasts (town_life._yard)
+			return [
+				seq("milk", [run(["Milking"], 2, 3), get_up(), brk(REST)]),
+				seq("feed", [step(0.2), once("PickUp_Table"), run(["Crouch_Idle"], 1, 2), once("Crouch_And_Point"), step(0.0), brk(["Wiping_Sweat", "Weight_Shift"])]),  # down among the pigs with the swill
+				seq("trough", [step(0.25), run(["Watering"], 1, 2), step(0.0), brk(REST)]),
+				seq("muck", [step(0.15), run(["Push"], 1, 2), once("Wiping_Sweat"), step(0.0), brk(["Arm_Stretching", "Weight_Shift"])]),
 			]
 		# --- along the roads (roadside.gd): a coaching inn's yard is a work site like a town's ---
 		"yard":  # standing drinkers in an inn's yard (soldiers at their ale too)
@@ -1272,6 +1284,7 @@ static func villager_activities(role: String) -> Array:
 				seq("quench", [go("forge.trough"), face("forge.trough"), once("PickUp_Table"), run(["Watering"], 1, 2), brk(REST)]),
 				seq("coal", [go("forge.store"), once("PickUp_Table"), go("forge.hearth", "Carrying"), face("forge.hearth"), once("PickUp_Table"), brk(REST + SWIG)]),
 				seq("deliver", [go("forge.anvil"), once("PickUp_Table"), go("armoury.rack", "Carrying"), face("armoury.rack"), once("PickUp_Table"), stock("rack", 1), brk(REST)]),
+				seq("stoke", [go("forge.hearth"), face("forge.hearth"), run(["Crouch_Idle"], 1, 2), once("Crouch_And_Point"), brk(["Wiping_Sweat", "Weight_Shift"])]),  # down at the fire's mouth, raking it
 			]
 		"groom":  # the stables: a horse led to the inn's rail or the gate, fetched home, fed and mucked out
 			return [
@@ -1280,6 +1293,7 @@ static func villager_activities(role: String) -> Array:
 				seq("gate", [go("paddock.gate"), lead("take"), go("gate"), run(["Looking_Around", "Pointing_Forward", "Waving"], 1, 2), go("paddock.gate"), lead("free"), brk(REST)]),
 				seq("fodder", [go("barn.door"), once("PickUp_Table"), go("paddock.gate", "Carrying"), once("PickUp_Table"), brk(REST)]),
 				seq("muck", [go("stables.door"), once("PickUp_Table"), go("stables.heap", "Carrying"), once("PickUp_Table"), brk(["Wiping_Sweat", "Weight_Shift"])]),
+				seq("hoof", [go("inn.hitch"), lead("tied"), run(["Crouch_Idle"], 1, 2), once("Firm_Nod"), go("paddock.gate"), lead("free"), brk(REST)]),  # a hoof looked at on the way home
 			]
 		"carter":  # the grain chain: field to mill, flour to the granary, bread to the market
 			return [
@@ -1287,6 +1301,7 @@ static func villager_activities(role: String) -> Array:
 				seq("flour", [go("mill.door"), stock("mill", -1), once("PickUp_Table"), go("granary.sacks", "Carrying"), once("PickUp_Table"), brk(REST)]),
 				seq("bread", [go("bakery.door"), once("PickUp_Table"), go("market", "Carrying"), once("PickUp_Table"), brk(LOOK)]),
 				seq("rest", [go("mill.door"), run(["Idle_Talking", "Wiping_Sweat"], 1, 2), brk(REST)]),
+				seq("load", [go("granary.door"), run(["Push_Heavy"], 1, 1), once("PickUp_Table"), go("market", cart()), once("PickUp_Table"), brk(LOOK)]),  # the granary's grain out to the market stalls
 			]
 		"market":
 			return [

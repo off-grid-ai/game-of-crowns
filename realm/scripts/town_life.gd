@@ -1090,6 +1090,8 @@ func _works(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 	var pad := Works.find(root, "paddock")
 	if not pad.is_empty():
 		_paddock(root, life, center, pad, tick, n.call("horses"), rng)
+	if all.has("barn"):
+		_yard(root, life, center, all["barn"], n.call("beasts"), n.call("yardhands"), rng)
 	for kind in ["windmill", "watermill"]:
 		if all.has(kind):
 			_mill(root, life, center, all[kind], kind, tick, n.call("millers"), rng)
@@ -1221,10 +1223,91 @@ func _paddock(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: 
 		h.rotation.y = rng.randf() * TAU
 		h.set_meta("rest", rng.randf_range(0.0, 8.0))
 		life.add_child(h)
+		h.live_idle(rng)  # grazing between strolls (animals.gd)
 		list.append(h)
 	root.set_meta("horses", list)
 	tick.paddock = middle
 	tick.roam = roam
+
+
+## The barn's yard: the town's beasts in a loose pen before it (works.json yard:
+## which kinds and how many, by the town's state), each living its own idle life
+## (animals.gd: a cow grazes, a pig roots), and a hand at them: milking, feeding,
+## filling the trough, mucking out (npc_mind post yardhand).
+func _yard(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, beasts: int, hands: int, rng: RandomNumberGenerator) -> void:
+	var sp: Dictionary = b["spots"]
+	var pen: Vector3 = sp.get("yard", b["at"] + _front(b) * 0.4)
+	var roam := Data.num("works", "yard.roam", 2.2) * Works.S
+	var kinds: Array = Data.value("works", "yard.kinds", [["cow", 3], ["sheep", 4], ["pig", 2]])
+	var taken: PackedVector2Array = life.get_meta("standing")
+	var placed := 0
+	var tries := 0
+	var first_cow: Node3D = null
+	var gap := maxf(Data.num("works", "yard.gap", 1.3) * Works.S, ROOM)
+	while placed < beasts and tries < beasts * 12:
+		tries += 1
+		var kind := _weighed(kinds, rng)
+		var a := rng.randf() * TAU
+		var at := pen + Vector3(cos(a), 0, sin(a)) * sqrt(rng.randf()) * roam
+		if Array(taken).any(func(q: Vector2) -> bool: return q.distance_to(Vector2(at.x, at.z)) < gap):
+			continue
+		var beast := _beast(kind, rng)
+		if beast == null:
+			continue
+		beast.position = Vector3(at.x, _y(center, at), at.z)
+		beast.rotation.y = rng.randf() * TAU
+		life.add_child(beast)
+		taken.append(Vector2(at.x, at.z))
+		placed += 1
+		if kind == "cow" and first_cow == null:
+			first_cow = beast
+	life.set_meta("standing", taken)
+	for i in hands:
+		var near: Vector3 = first_cow.position + Basis(Vector3.UP, first_cow.rotation.y) * Vector3(0.09, 0, 0) if first_cow and i == 0 else sp.get("trough", pen)
+		var h := _stand(root, life, center, near, "peasant", "Milking" if first_cow and i == 0 else "PickUp_Table", rng.randi(), Color.WHITE, 0.15)
+		if h:
+			_face(h, first_cow.position if first_cow and i == 0 else pen)
+			_mind(h, "yardhand", center)
+
+
+## A name from [[name, weight], ...], picked by weight.
+static func _weighed(rows: Array, rng: RandomNumberGenerator) -> String:
+	var total := 0.0
+	for r in rows:
+		total += float(r[1])
+	var roll := rng.randf() * total
+	for r in rows:
+		roll -= float(r[1])
+		if roll <= 0.0:
+			return String(r[0])
+	return String(rows[-1][0]) if not rows.is_empty() else ""
+
+
+## A farm beast (the catalogue's cow, sheep, pig), fitted to its true length and
+## stood on the ground as the roadside's are (roadside.gd beast_fit), living its
+## idle life (animals.gd). null when this build has no model for the kind.
+static var _yard_fit := {}
+func _beast(kind: String, rng: RandomNumberGenerator) -> Node3D:
+	var path := Real.path_of(kind)
+	if kind == "" or path == "" or not ResourceLoader.exists(path):
+		return null
+	if not _yard_fit.has(kind):
+		_yard_fit[kind] = preload("res://scripts/roadside.gd").beast_fit(kind, Data.num("roadside", "animals.%s" % kind, 1.5))
+	var fit: Array = _yard_fit[kind]
+	if float(fit[0]) <= 0.0:
+		return null
+	var model: Node3D = (load(path) as PackedScene).instantiate()
+	var beast := Node3D.new()
+	beast.name = kind.capitalize()
+	beast.set_meta("beast", kind)
+	model.scale = Vector3.ONE * float(fit[0])
+	model.position.y = float(fit[1])
+	beast.add_child(model)
+	for g in model.find_children("*", "GeometryInstance3D", true, false):
+		(g as GeometryInstance3D).visibility_range_end = Data.num("roadside", "fade.small", 22.0)
+	if not preload("res://scripts/animals.gd").live(model, kind, rng).is_empty():
+		preload("res://scripts/anim_lod.gd").add(model.find_children("*", "AnimationPlayer", true, false)[0])
+	return beast
 
 
 func _mill(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, kind: String, tick: Works.Tick, millers: int, rng: RandomNumberGenerator) -> void:
@@ -1286,9 +1369,11 @@ func _inn(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: Work
 			_prop(life, center, "Bench", at, yaw, 1.0, 0.0, 0.0)
 		seats += [at - along * 0.04, at + along * 0.04]
 	var taken: PackedVector2Array = life.get_meta("standing")
-	for i in mini(int(n.call("drinkers")), seats.size()):
+	# In war or a levy the crown's men take the benches first (works.json counts.inn_soldiers).
+	var soldiers := mini(int(n.call("inn_soldiers")), seats.size())
+	for i in mini(int(n.call("drinkers")) + soldiers, seats.size()):
 		var at: Vector3 = seats[i]
-		var d := _townsperson(life, Vector3(at.x, _y(center, at), at.z), "townsfolk", "Sitting_Drinking", rng.randi())
+		var d := _townsperson(life, Vector3(at.x, _y(center, at), at.z), "soldier" if i < soldiers else "townsfolk", "Sitting_Drinking", rng.randi())
 		d.rotation.y = yaw  # facing out to the street
 		d.set_meta("bench", true)
 		taken.append(Vector2(at.x, at.z))
@@ -1310,6 +1395,7 @@ func _inn(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: Work
 		h.position = Vector3(hp.x, _y(center, hp), hp.z)
 		h.rotation.y = yaw + PI  # nose to the rail
 		life.add_child(h)
+		h.live_idle(rng)  # head down at the rail now and then (animals.gd)
 		var t := _stand(root, life, center, hp + _front(b) * 0.14, "townsfolk", "PickUp_Table", rng.randi(), Color.WHITE, 0.2)
 		if t:
 			_face(t, hp)

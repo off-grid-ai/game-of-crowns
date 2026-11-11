@@ -71,6 +71,7 @@ var _last := Vector3.INF
 var _couch := 0.0  # 0 the lance upright, 1 couched
 var _down := false
 var _rearing := false
+var _idle_life: Array = []  # standing about, the moves of its idle life (animals.gd): its own idle isn't forced over them
 
 
 func _init(coat := -1) -> void:
@@ -284,6 +285,13 @@ func _tilt(axis: Vector3, angle: float, pivot: Vector3) -> void:
 	_model.transform = Transform3D(b.scaled(Vector3.ONE * S * SIZE), p - b * p)
 
 
+## A horse standing about lives a small idle life of its own (animals.gd,
+## realm/data/animals.json kinds.horse: it drops its head to graze between spells
+## of standing); walked, led or ridden it keeps its gaits as before.
+func live_idle(rng: RandomNumberGenerator) -> void:
+	_idle_life = preload("res://scripts/animals.gd").live(_model, "horse", rng, func() -> bool: return gait != "idle" or rider != null or _down)
+
+
 func _play(clip: String, rate: float) -> void:
 	if _anim.current_animation != clip:
 		_anim.play(clip, 0.4)
@@ -304,6 +312,9 @@ func _process(delta: float) -> void:
 	# Each loop is played at the pace it was made for, a little faster or
 	# slower to keep the hooves on the ground between gaits.
 	var pace: float = GAITS[g][1]
+	if g == 0 and rider == null and String(_anim.current_animation) in _idle_life:
+		_anim.speed_scale = 1.0
+		return  # standing about: its idle life (animals.gd) plays its own moves
 	_play(gait, 1.0 if pace <= 0.0 else clampf(speed / pace, 0.75, 1.3))
 	if rider == null or not _seen():
 		return

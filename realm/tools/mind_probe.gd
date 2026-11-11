@@ -13,7 +13,7 @@ const Mind := preload("res://scripts/npc_mind.gd")
 const People := preload("res://scripts/people.gd")
 const POSTS := ["build", "trade", "buy", "drill", "bows", "guard", "riot", "beg", "mourn", "refugee", "revel",
 	"smith", "miller", "tanner", "queue", "levy", "crier", "listener", "drinker", "traveller",
-	"yard", "host", "minstrel", "stablehand", "fieldhand", "woodcutter", "pilgrim", "onlooker", "porter"]
+	"yard", "host", "minstrel", "stablehand", "fieldhand", "woodcutter", "pilgrim", "onlooker", "porter", "yardhand"]
 const CALLINGS := ["farmer", "market", "pious", "tavern", "keeper", "gentry", "child", "crafter", "idler", "apprentice", "groom", "carter"]
 const RESTFUL := ["Sitting_Ground", "Sitting_Idle", "Sitting_Cross_Legged", "Sitting_Drinking", "Sleeping_Idle", "Kneeling", "Praying", "Idle", "Breathing_Idle"]
 const MOVING := ["Walk", "Running", "Sneak", "Injured_Walk", "Carrying"]
