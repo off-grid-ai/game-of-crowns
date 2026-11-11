@@ -55,6 +55,7 @@ func _ready() -> void:
 func sync(world: Dictionary, houses: Dictionary) -> void:
 	_raise_banners(world)
 	_road_tiles.clear()
+	_cities = world.get("cities", [])
 	for r in world.get("roads", []):
 		_road_tiles[Vector2i(int(r[0]), int(r[1]))] = true
 	for c0 in world.get("cities", []):
@@ -270,6 +271,7 @@ func _plot_knobs(crown_town: bool) -> Dictionary:
 		out.merge(k.get("crown", {}), true)
 	return out
 var _road_tiles := {}  # Vector2i tile -> true: Freeciv's roads and towns, where a town's roads lead out
+var _cities: Array = []  # the realm's towns as last reported: where the King's road and the lords' roads run (roads.gd)
 var realistic_towns: Array = []
 var _house := {}  # the house of the town being built, for its castle banner
 var _house_colour := Color.GRAY  # town names drawn from the realistic kit; "*" for all
@@ -479,7 +481,9 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 		# roads and lanes, the edge where they stop.
 		var pk := _plot_knobs(crown_town)
 		if bool(pk.get("square_ring", true)):
-			placed += await _square_ring(root, center, square_r, ways, kinds, lots, rng, want - placed)
+			var ring_n: int = await _square_ring(root, center, square_r, ways, kinds, lots, rng, want - placed)
+			placed += ring_n
+			root.set_meta("ring_houses", ring_n)
 		ways = ways + _lay_lanes(root, center, ways, clampi(int((size - 2) * float(pk.get("lanes_per_size", 0.5))), 0, int(pk.get("lanes_most", 6))), square_r, rng)
 		await _plot_lots(root, center, square_r, ways, kinds, lots, rng, want - placed, seat)
 		return
@@ -597,6 +601,13 @@ func _lay_ways(root: Node3D, center: Vector3, c: Dictionary, size: int, square_r
 		if _road_tiles.has(tile + d):
 			var to: Vector3 = terrain.world_pos(float(tile.x + d.x), float(tile.y + d.y)) - center
 			headings.append(atan2(to.z, to.x))
+	# The King's road and the lords' roads (roads.gd kings_road) come in too: the town's streets
+	# run where they leave, so they come in along a street instead of cutting through the plots.
+	for t: Vector2i in _great_ways(c):
+		var to: Vector3 = terrain.world_pos(float(t.x), float(t.y)) - center
+		var ang := atan2(to.z, to.x)
+		if headings.all(func(h): return absf(angle_difference(float(h), ang)) > 0.35):
+			headings.append(ang)
 	for ang in streets:  # the town's own ways out (to its fields, its water), where the realm's are few
 		if headings.size() >= maxi(2, streets.size() - 1):
 			break
@@ -615,6 +626,37 @@ func _lay_ways(root: Node3D, center: Vector3, c: Dictionary, size: int, square_r
 	root.set_meta("ways_main", main)
 	_keep_ways(root, center, main)
 	return main
+
+
+## The tiles next to `c` that the realm's great roads leave it by, as roads.gd kings_road lays
+## them (terrain.land_path, the same call, so the same way): the King's road from Kingsmere to
+## every great house's seat, and the lords' roads from each town to its house's seat.
+func _great_ways(c: Dictionary) -> Array:
+	var hub: Dictionary = {}
+	for o in _cities:
+		if String(o.get("title", "")) == "Kingsmere":
+			hub = o
+	var out: Array = []
+	# Each road as roads.gd lays it (from, to): the tile it leaves `c` by is the second of its
+	# path when it starts here, the second last when it ends here.
+	var step := func(from: Dictionary, to: Dictionary) -> void:
+		var path: PackedVector3Array = terrain.land_path(terrain.world_pos(float(from["x"]), float(from["y"])), terrain.world_pos(float(to["x"]), float(to["y"])))
+		if path.size() >= 2:  # [from, the tiles between, to]: a road with no way over the land runs straight
+			out.append(terrain.tile_of(path[1] if int(from["id"]) == int(c["id"]) else path[path.size() - 2]))
+	var capital := bool(c.get("capital", false))
+	for o in _cities:
+		if int(o["id"]) == int(c["id"]):
+			continue
+		var o_capital := bool(o.get("capital", false))
+		if not hub.is_empty() and capital and o_capital and int(c["id"]) == int(hub["id"]):
+			step.call(c, o)  # the King's road out to a great house's seat
+		elif not hub.is_empty() and capital and o_capital and int(o["id"]) == int(hub["id"]):
+			step.call(o, c)  # the King's road in from Kingsmere
+		elif capital and not o_capital and int(o["owner"]) == int(c["owner"]):
+			step.call(o, c)  # a lord's road in from one of the house's towns
+		elif not capital and o_capital and int(o["owner"]) == int(c["owner"]):
+			step.call(c, o)  # this town's road to its lord's seat
+	return out
 
 
 ## --towns=plots: the lanes off the town's main roads, more as it grows, laid once the
@@ -665,39 +707,76 @@ func _plot_lots(root: Node3D, center: Vector3, square_r: float, ways: Array, kin
 		var f: Vector2 = Real.footprint(kind)
 		return [f.x, f.y, kind]
 	var all: Array = TownPlots.plots(ways, square_r, float(root.get_meta("plot_edge", square_r + 3.6)), widths, rng.seed + 29)
+	# A plot whose house would stand on another street (a corner, a bend) or against a house
+	# already standing takes a shallower one on the same frontage before it is given up, as a
+	# corner plot in a real town holds a cottage.
+	var shallow: Array = fronts.duplicate()
+	shallow.sort_custom(func(a, b): return Real.footprint(a).y < Real.footprint(b).y)
 	var taken: Array = []
 	var bodies: Array = []  # each standing plot house's outline (town-local)
+	var why := {"another street": 0, "another house": 0, "the realm's road": 0, "crowded": 0, "water or a cliff": 0}
+	var stood: Array = []  # [plot, house, face, footprint]: their yards are laid once every house stands
 	var placed := 0
-	for pl in all:
+	for pl0 in all:
 		if placed >= budget:
 			break
-		var kind: String = pl[6]
-		var f: Vector2 = Real.footprint(kind)
-		var house: Vector2 = pl[0]
+		var pl: Array = pl0
+		var face2: Vector2 = pl[1]  # toward the street
+		var tan := Vector2(-face2.y, face2.x)
+		var fd: Vector2 = Real.footprint(String(pl[6]))
+		var front: Vector2 = Vector2(pl[0]) + face2 * fd.y * 0.5  # the house front's line
 		var own := int(String(pl[7]).trim_suffix("+").trim_suffix("-"))
-		var clear := true
-		for wi in ways.size():
-			if wi != own and TownPlots.closest_on(ways[wi], house).distance_to(house) < maxf(f.x, f.y) * 0.5 + TownPlots.ROAD_HALF:
-				clear = false  # another street runs through this plot (a junction, a bend)
-				break
-		if not clear:
-			continue
-		# Shoulder to shoulder, never through each other: at a junction or a bend two
-		# streets' plots can meet, so the house's own outline is held against the rest.
-		var tan := Vector2(-pl[1].y, pl[1].x)
-		var body := PackedVector2Array()
-		for c in [Vector2(-0.48, -0.48), Vector2(0.48, -0.48), Vector2(0.48, 0.48), Vector2(-0.48, 0.48)]:
-			body.append(house + tan * c.x * f.x + Vector2(pl[1]) * c.y * f.y)
-		if bodies.any(func(b): return not Geometry2D.intersect_polygons(body, b).is_empty()):
-			continue
-		var face := Vector3(pl[1].x, 0, pl[1].y)
-		var p := Vector3(house.x, 0, house.y)
-		if _put(root, center, kind, p, f, lots, rng, true, face, true):
+		var tries: Array = [String(pl[6])] + shallow.filter(func(k): return Real.footprint(k).x <= float(pl[2]) + 0.01 and Real.footprint(k).y < fd.y - 0.05)
+		var last := ""
+		for kind: String in tries:
+			var f: Vector2 = Real.footprint(kind)
+			var house: Vector2 = front - face2 * f.y * 0.5
+			var body := _plot_body(house, tan, face2, f)
+			if TownPlots.on_other_way(body, ways, own, TownPlots.ROAD_HALF):
+				last = "another street"
+				continue
+			# The realm's roads (roads.gd) come in along the streets but bow off their line: a house
+			# on one steps back from the street, as a street widens where a great road comes in.
+			var back := 0.0
+			while back <= 0.42 and _body_on_road(body):
+				back += 0.06
+				body = _plot_body(house - face2 * back, tan, face2, f)
+			if back > 0.42:
+				last = "the realm's road"
+				continue
+			house -= face2 * back
+			if bodies.any(func(b): return not Geometry2D.intersect_polygons(body, b).is_empty()):
+				last = "another house"
+				continue
+			var p := Vector3(house.x, 0, house.y)
+			if _crowded(lots, p, f.x * 0.45):
+				last = "crowded"  # the castle, the square's landmarks and stalls, the houses round the square
+				continue
+			if not _put(root, center, kind, p, f, lots, rng, true, Vector3(face2.x, 0, face2.y), true):
+				last = "water or a cliff"
+				continue
+			if back > 0.0 or kind != String(pl[6]):
+				pl = pl.duplicate()
+				pl[0] = house
+				pl[3] = f.y
+				pl[6] = kind
+				var shift := -face2 * back
+				pl[4] = PackedVector2Array(Array(pl[4]).map(func(q): return q + shift))
 			placed += 1
 			taken.append(pl)
 			bodies.append(body)
-			_yard(root, center, pl, p, face, f, lots, rng)
+			stood.append([pl, p, Vector3(face2.x, 0, face2.y), f, lots.size() - 1])
+			last = ""
+			break
+		if last != "":
+			why[last] += 1
 		await _pace()
+	# The yards, once every house stands: their fences and kitchen gardens go round the houses,
+	# never take a house's ground.
+	for s in stood:
+		_yard(root, center, s[0], s[1], s[2], s[3], lots, rng, int(s[4]))
+	var size := int(root.get_meta("size", 0))
+	print("CHECK town plots: %s (size %d, edge %.1f): %d plots cut along %d ways, %d houses stood (and %d round the square), %d left in budget; turned away: %s" % [String(root.get_meta("title", "")), size, float(root.get_meta("plot_edge", 0.0)), all.size(), ways.size(), placed, int(root.get_meta("ring_houses", 0)), budget - placed, str(why)])
 	var edge := TownPlots.outline(taken, square_r)
 	var far := 0.0
 	for q in edge:
@@ -709,8 +788,27 @@ func _plot_lots(root: Node3D, center: Vector3, square_r: float, ways: Array, kin
 	return placed
 
 
+## A plot house's outline (town-local): `house` its middle, `face` toward the street.
+static func _plot_body(house: Vector2, tan: Vector2, face: Vector2, f: Vector2) -> PackedVector2Array:
+	var body := PackedVector2Array()
+	for c in [Vector2(-0.48, -0.48), Vector2(0.48, -0.48), Vector2(0.48, 0.48), Vector2(-0.48, 0.48)]:
+		body.append(house + tan * c.x * f.x + face * c.y * f.y)
+	return body
+
+
+## Whether any of a house's outline (its corners, the middles of its sides, its middle) is on one
+## of the realm's roads or tracks (roads.gd).
+func _body_on_road(body: PackedVector2Array) -> bool:
+	var mid := (body[0] + body[2]) * 0.5
+	var spots: Array = [mid]
+	for i in body.size():
+		spots.append(body[i])
+		spots.append((body[i] + body[(i + 1) % body.size()]) * 0.5)
+	return spots.any(func(q): return _on_road(Vector3(q.x, 0, q.y), 0.02))
+
+
 ## A house's yard: a fence along its back and one side, and its kitchen garden.
-func _yard(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vector3, f: Vector2, lots: Array, rng: RandomNumberGenerator) -> void:
+func _yard(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vector3, f: Vector2, lots: Array, rng: RandomNumberGenerator, own_lot := -1) -> void:
 	var corners: PackedVector2Array = pl[4]
 	var house_part := float(pl[3]) / (float(pl[3]) + TownPlots.YARD)
 	var side_from := corners[1].lerp(corners[2], house_part)
@@ -719,7 +817,7 @@ func _yard(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vector3, 
 	var yards: int = root.get_meta("plot_yards", 0)
 	root.set_meta("plot_yards", yards + 1)
 	if rng.randf() < 0.65:
-		_croft(root, center, p, face, f, lots, rng)
+		_croft(root, center, p, face, f, lots, rng, own_lot)
 
 
 ## Fence panels from `a` to `b` (town-local), on the ground, walked round;
@@ -836,10 +934,12 @@ func _layout_check(root: Node3D, taken: Array, ways: Array) -> void:
 
 ## A kitchen garden behind a house: a strip of turned earth with cabbages or
 ## beans in rows. Tended by whoever lives there (villagers.gd reads "gardens").
-func _croft(root: Node3D, center: Vector3, hp: Vector3, face: Vector3, f: Vector2, lots: Array, rng: RandomNumberGenerator) -> void:
+## own_lot: its house's entry in `lots` (the last one when not given), which it may stand against.
+func _croft(root: Node3D, center: Vector3, hp: Vector3, face: Vector3, f: Vector2, lots: Array, rng: RandomNumberGenerator, own_lot := -1) -> void:
 	var size := Vector2(clampf(f.x * 0.75, 0.4, 0.8), rng.randf_range(0.3, 0.42))
 	var back := hp - face * (f.y * 0.5 + size.y * 0.5 + 0.1)
-	if _crowded(lots.slice(0, lots.size() - 1), back, size.x * 0.4) or not _flat_enough(center, back, 0.18) or _built_on(root, back):
+	var others: Array = lots.slice(0, lots.size() - 1) if own_lot < 0 else lots.slice(0, own_lot) + lots.slice(own_lot + 1)
+	if _crowded(others, back, size.x * 0.4) or not _flat_enough(center, back, 0.18) or _built_on(root, back):
 		return
 	var yaw := atan2(face.x, face.z) + PI / 2
 	var plots := _plots(root)
@@ -1254,6 +1354,8 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	_center = center
 	root.position = center
 	var size := int(c["size"])
+	root.set_meta("title", String(c.get("title", c.get("name", ""))))  # for the CHECK lines
+	root.set_meta("size", size)
 	var buildings: Array = c["buildings"]
 	root.set_meta("buildings", buildings)  # what the square shows of them (a market's extra stalls)
 	var rng := RandomNumberGenerator.new()

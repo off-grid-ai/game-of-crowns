@@ -150,6 +150,21 @@ static func outline(taken: Array, square_r: float) -> PackedVector2Array:
 	return grown[0] if not grown.is_empty() else hull
 
 
+## Whether a house's outline (`body`, town-local) stands on any street of `ways` but its own
+## (index `own`): the street's band (half `half` either side of its line) runs into it. The
+## outline itself is held against the band, not a circle round the house, so a deep, narrow
+## house on a corner plot stands as long as its walls are clear (a junction keeps its corner houses).
+static func on_other_way(body: PackedVector2Array, ways: Array, own: int, half: float) -> bool:
+	var grown := Geometry2D.offset_polygon(body, half)
+	var band: PackedVector2Array = grown[0] if not grown.is_empty() else body
+	for wi in ways.size():
+		if wi == own:
+			continue
+		if not Geometry2D.intersect_polyline_with_polygon(ways[wi], band).is_empty():
+			return true
+	return false
+
+
 ## Whether `p` is within `d` of any of `ways` (a street, or a road's line).
 static func near_ways(p: Vector2, ways: Array, d: float) -> bool:
 	for way in ways:
