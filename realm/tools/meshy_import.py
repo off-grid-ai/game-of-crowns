@@ -257,7 +257,7 @@ def main():
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=src)
     obj = join_all()
-    obj.name = name
+    obj.name = name + "_body"  # never a name a placer looks for as a part (siege_camp.gd finds a catapult's arm by "catapult")
     k, size = place(obj, spec)
     before, after = decimate(obj, int(spec["tris"]))
     share = split_house(obj, spec["mask"])

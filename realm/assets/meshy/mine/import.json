@@ -1,0 +1,18 @@
+{
+ "name": "mine",
+ "source": "/Users/user/code/goc-kits/meshy/mine/Meshy_AI_Single_isometric_3_4__1111191748_texture.glb",
+ "tris_before": 4787,
+ "tris_after": 4787,
+ "scale": 11.000898260705211,
+ "size_m": [
+  10.54,
+  10.35,
+  6.0
+ ],
+ "house_share": 0.021,
+ "mask_png": true,
+ "materials": [
+  "Material_0",
+  "MI_RoundTiles_house"
+ ]
+}

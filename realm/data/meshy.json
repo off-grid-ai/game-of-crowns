@@ -5,7 +5,7 @@
   "pieces": {
     "forge": {"src": "forge", "replaces": "forge", "height_m": 7.5, "tris": 6000},
     "lumber_mill": {"src": "lumber_mill", "replaces": "town_watermill", "height_m": 8.0, "tris": 6000},
-    "market": {"src": "market", "replaces": "", "height_m": 4.0, "tris": 4000},
+    "market": {"src": "marketplace", "replaces": "", "height_m": 4.0, "tris": 4000},
     "mine": {"src": "mine", "replaces": "", "height_m": 6.0, "tris": 6000},
     "treasury": {"src": "treasury", "replaces": "guild_hall", "height_m": 11.0, "tris": 8000},
     "catapult": {"src": "catapult", "replaces": "catapult", "height_m": 5.0, "tris": 2000, "mask": {"hues": [], "sat_min": 1.1, "val_min": 1.1, "up_min": -1.0}},

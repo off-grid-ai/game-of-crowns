@@ -1,0 +1,18 @@
+{
+ "name": "guard_tower",
+ "source": "/Users/user/code/goc-kits/meshy/guard_tower/Meshy_AI__tower_building_2_Gua_1111192242_texture.glb",
+ "tris_before": 1996,
+ "tris_after": 1996,
+ "scale": 6.245894541529991,
+ "size_m": [
+  5.37,
+  5.38,
+  12.0
+ ],
+ "house_share": 0.08,
+ "mask_png": true,
+ "materials": [
+  "Material_0",
+  "MI_RoundTiles_house"
+ ]
+}
