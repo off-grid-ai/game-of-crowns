@@ -960,6 +960,8 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 	var stall := Real.footprint("medieval_market_asset_pack")
 	# A market the King built fills the square with two more stalls.
 	var stalls := 1 + (1 if size >= 6 else 0) + (1 if seat or size >= 10 else 0) + (2 if "Marketplace" in root.get_meta("buildings", []) else 0)
+	if seat and bool(_house.get("crown", false)):
+		stalls += int(preload("res://scripts/data.gd").value("towns", "market", {}).get("crown", {}).get("stalls_more", 0))  # the realm's busiest market
 	var arc := square_r * 0.8
 	var step := (stall.x * 1.08) / arc
 	var clutter: Array = Real.names_of("clutter").filter(func(n): return n != "ph/stone_fire_pit" and n != "ph/wooden_ladder")

@@ -117,6 +117,8 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 		_crowd(root, life, center, rng, 4 + mini(int(c.get("size", 1)) / 2, 8), false)
 	if not c.get("disorder", false):
 		_trade(root, life, center, rng, not hungry)  # a hungry town's stalls are kept, bare: no buyers
+		if not hungry and bool(root.get_meta("crown_seat", false)):
+			_market_day(root, life, center, rng)  # the crown's seat: the realm's busiest market
 	if c.get("celebrating", false):
 		_bonfire(life, center)
 		_revels(root, life, center, rng, 6 + mini(int(c.get("size", 1)), 8))
@@ -675,13 +677,75 @@ func _trade(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 		_mind(keeper, "trade", center)
 		taken.append(Vector2(at.x, at.z))
 		life.set_meta("standing", taken)
-		for i in rng.randi_range(1, 2) if buyers else 0:
+		var many: Array = _market_knobs(root).get("buyers", [1, 2])  # the crown's market draws more to each stall
+		for i in rng.randi_range(int(many[0]), int(many[1])) if buyers else 0:
 			var side := Vector3(-out.z, 0, out.x) * rng.randf_range(-0.12, 0.12)
 			var buyer := _stand(root, life, center, m - out * (float(st[1]) * 0.5 + 0.12) + side, "townsfolk" if rng.randf() < 0.7 else "peasant", ["Idle_Talking", "Arguing", "Nodding"][rng.randi() % 3], rng.randi(), Color.WHITE, 0.2)
 			if buyer:
 				var to := m - buyer.position
 				buyer.rotation.y = atan2(to.x, to.z)
 				_mind(buyer, "buy", center)
+
+
+## The crown's seat's market knobs (data/towns.json market.crown), {} elsewhere.
+func _market_knobs(root: Node3D) -> Dictionary:
+	if not bool(root.get_meta("crown_seat", false)):
+		return {}
+	return preload("res://scripts/data.gd").value("towns", "market", {}).get("crown", {})
+
+
+## The crown's market at midday (art target 01-town: some twenty at work round the square): a
+## smith at his anvil, a carter selling from his cart, porters at the stalls' ends, all on the
+## half of the square a camera coming in sees. Each stands where there's room, or not at all.
+func _market_day(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenerator) -> void:
+	var k := _market_knobs(root)
+	var stalls: Array = root.get_meta("stalls", [])
+	var square_r := float(root.get_meta("square_r", 1.0))
+	var market := Vector3.ZERO
+	for st in stalls:
+		market += st[0]
+	var toward := (market / maxf(1.0, stalls.size())).normalized() if not stalls.is_empty() else SEEN
+	var side := Vector3(-toward.z, 0, toward.x)
+	if side.dot(SEEN) < 0.0:
+		side = -side  # the seen half
+	# The smith: an anvil on the square's edge, hammering.
+	if bool(k.get("smith", true)) and preload("res://scripts/weapons.gd").can_play("Hammer_Swing"):
+		var at := side * square_r * 0.72
+		var anvil := _prop(life, center, "Anvil", at, atan2(-side.x, -side.z), 1.0, 0.0, 0.1)
+		if anvil:
+			_prop(life, center, "Bucket_Metal", at + Vector3(-side.z, 0, side.x) * 0.12, 0.0, 1.0, 0.0, 0.05)
+			var smith := _stand(root, life, center, at - side * 0.12, "townsfolk", "Hammer_Swing", rng.randi(), Color.WHITE, 0.2)
+			if smith:
+				smith.rotation.y = atan2(side.x, side.z)  # facing his anvil, his back to the houses
+				_mind(smith, "smith", center)
+	# The carter: a cart drawn up on the square across from the smith, selling from its bed.
+	for i in int(k.get("carts", 1)):
+		var cp := (-side * 0.62 + toward * (0.2 * i - 0.1)) * square_r
+		var cart := _prop(life, center, "Stall_Cart_Empty", cp, atan2(toward.x, toward.z), 1.0, 0.0, 0.18)
+		if cart:
+			for g in 2:
+				_prop(life, center, ["FarmCrate_Apple", "Barrel_Apples", "FarmCrate_Carrot"][(i + g) % 3], cp + toward * (0.05 - 0.1 * g), rng.randf() * TAU, 1.0, 0.0, 0.05)
+			var carter := _stand(root, life, center, cp + side * 0.16, "peasant", "Idle_Talking", rng.randi(), Color.WHITE, 0.2)
+			if carter:
+				carter.rotation.y = atan2(-side.x, -side.z)
+				_mind(carter, "trade", center)
+			var buyer := _stand(root, life, center, cp - side * 0.18, "townsfolk", "Arguing", rng.randi(), Color.WHITE, 0.2)
+			if buyer:
+				buyer.rotation.y = atan2(side.x, side.z)
+				_mind(buyer, "buy", center)
+	# Porters at the stalls' ends, a load in their arms.
+	var porters := int(k.get("porters", 3))
+	for i in porters:
+		if stalls.is_empty():
+			break
+		var st: Array = stalls[i % stalls.size()]
+		var m: Vector3 = st[0]
+		var out := Vector3(m.x, 0, m.z).normalized()
+		var along := Vector3(-out.z, 0, out.x) * (1.0 if i % 2 == 0 else -1.0)
+		var p := _stand(root, life, center, m + along * (float(st[2]) * 0.5 + 0.18) - out * 0.15, "peasant", "Carrying", rng.randi(), Color.WHITE, 0.25)
+		if p:
+			p.rotation.y = atan2(-out.x, -out.z) + rng.randf_range(-0.8, 0.8)
+			_mind(p, "porter", center)  # fetch, carry, set down
 
 
 func _unrest(life: Node3D, center: Vector3, rng: RandomNumberGenerator) -> void:

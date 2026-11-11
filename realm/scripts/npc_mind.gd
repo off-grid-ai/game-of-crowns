@@ -295,6 +295,16 @@ static func post_activities(post: String) -> Array:
 				seq("mind", [run(["Idle_Talking", "Nodding"], 1, 2), once("Looking_Around"), once("PickUp_Table"), run(["Pointing_Forward", "Idle_Talking"], 1, 2), brk(["Bored", "Weight_Shift", "Drinking", "Whispering"])]),
 				seq("cry", [run(["Yelling"], 1, 2), once("Talking_Hands"), once("Waving"), brk(REST)]),
 			]
+		"smith":  # the crown's market: a smith at his anvil on the square (towns.json market.crown.smith)
+			return [
+				seq("forge", [run(["Hammer_Swing"], 3, 5), brk(["Wiping_Sweat", "Weight_Shift"])]),
+				seq("turn", [once("PickUp_Table"), run(["Hammer_Swing"], 2, 3), once("Looking_Around"), brk(REST)]),
+			]
+		"porter":  # the crown's market: goods fetched to the stalls and set down (towns.json market.crown.porters)
+			return [
+				seq("fetch", [once("PickUp_Table"), step(0.3), once("PickUp_Table"), step(0.0), brk(REST + SWIG)]),
+				seq("hold", [run(["Carrying"], 1, 2), once("PickUp_Table"), brk(LOOK)]),
+			]
 		"buy":
 			return [
 				seq("browse", [once("Looking_Around"), once("PickUp_Table"), run(["Thinking", "Doubtful"], 1, 1), step(0.25), brk(LOOK)]),

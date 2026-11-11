@@ -286,7 +286,7 @@ func _spawn(id: int) -> void:
 	# By day about two out for every three houses (the rest at work indoors, in
 	# the fields beyond, on the road), never more than the town's size allows:
 	# Crowford (size 6, ~32 houses) had 30 out, enough to fill its one square.
-	var out_by_size := clampi(6 + size * 4, 8, MAX_PER_TOWN)
+	var out_by_size := clampi(6 + size * 4, 8, int(_crown_market(id).get("out_most", MAX_PER_TOWN)))
 	var count := clampi(homes.size() * 2 / 3, 8, out_by_size) if not homes.is_empty() else out_by_size
 	for i in count:
 		# Each has a calling that decides where their day goes, and what they wear:
@@ -295,6 +295,9 @@ func _spawn(id: int) -> void:
 		var roll := rng.randf()
 		# The market is where a town is seen: a good share of its people are there.
 		var calling := "farmer" if roll < 0.3 else ("crafter" if roll < 0.5 else ("tavern" if roll < 0.6 else ("pious" if roll < 0.66 else ("market" if roll < 0.85 else ("gentry" if roll < 0.88 else "idler")))))
+		var busy := _crown_market(id)
+		if calling == "farmer" and busy.has("farmers_to_market") and rng.randf() < float(busy["farmers_to_market"]):
+			calling = "market"  # the crown's seat is a city: fewer to the fields, more to the market
 		var station := "peasant" if calling == "farmer" else ("clergy" if calling == "pious" and rng.randf() < 0.6 else ("noble" if calling == "gentry" else "townsfolk"))
 		var person: Node3D = people.make(rng, station, Color.WHITE, "", "", "female" if calling == "gentry" else "")
 		add_child(person)
@@ -813,6 +816,10 @@ func place(a: Dictionary, key: String, knot := false) -> Vector3:
 func _claim(a: Dictionary, key: String, clear: float) -> Vector3:
 	var c: Vector3 = a["center"]
 	var room: Dictionary = ROOM[key]
+	var busy := _crown_market(a["town"])
+	if busy.has("rooms") and (busy["rooms"] as Dictionary).has(key):
+		room = room.duplicate()
+		room["room"] = int(busy["rooms"][key])  # the crown's market at midday: more at each place
 	var h: Vector2
 	if room.get("fire", false):
 		# The feast's ring is round the town's lit fire: none lit, no feast ring.
@@ -1661,7 +1668,19 @@ func _on_square(a: Dictionary, p: Vector2) -> bool:
 ## (size 6) had 30 villagers and four places' rooms on one square: a press.
 func _square_cap(a: Dictionary) -> int:
 	var size := int(towns.towns.get(a["town"], {}).get("data", {}).get("size", 1))
+	var busy := _crown_market(a["town"])
+	if busy.has("square_holds"):
+		return int(busy["square_holds"])  # the crown's seat: the realm's busiest market (data/towns.json market.crown)
 	return clampi(2 + size, 5, SQUARE_HOLDS)
+
+
+## The crown's seat's market knobs (data/towns.json market.crown), or {} for any other town:
+## its square holds more, each place there more, and more of its people are out.
+func _crown_market(id) -> Dictionary:
+	var node = towns.towns.get(id, {}).get("node")
+	if not is_instance_valid(node) or not bool(node.get_meta("crown_seat", false)):
+		return {}
+	return preload("res://scripts/data.gd").value("towns", "market", {}).get("crown", {})
 
 
 ## Whether the square (with its edge) already holds its fill: everyone bound
