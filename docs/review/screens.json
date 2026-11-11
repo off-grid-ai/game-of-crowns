@@ -334,8 +334,8 @@
     "name": "A feast",
     "group": "Play",
     "what": "A town feasting round a fire in its square.",
-    "file": "screens/v/feast-3.jpg",
-    "clip": "screens/v/feast-3.mp4",
+    "file": "screens/v/feast-4.jpg",
+    "clip": "screens/v/feast-4.mp4",
     "versions": [
       {
         "v": 1,
@@ -359,6 +359,14 @@
         "file": "screens/v/feast-3.jpg",
         "what": "A winter feast at street level, motion v2",
         "clip": "screens/v/feast-3.mp4"
+      },
+      {
+        "v": 4,
+        "label": "v14: camera fixes, streets, court flow",
+        "at": "2026-11-11T05:55:00Z",
+        "file": "screens/v/feast-4.jpg",
+        "clip": "screens/v/feast-4.mp4",
+        "what": "A feast at Kingsmere (asked for at night; night never fell in the run)"
       }
     ]
   },
@@ -975,7 +983,7 @@
     "name": "Kingsmere",
     "group": "Play",
     "what": "Your seat, its castle in daylight",
-    "file": "screens/v/town-3.jpg",
+    "file": "screens/v/town-5.jpg",
     "before": "screens/before/town.jpg",
     "versions": [
       {
@@ -996,9 +1004,95 @@
         "at": "2026-11-10T16:16:41Z",
         "file": "screens/v/town-3.jpg",
         "clip": "screens/v/town-3.mp4"
+      },
+      {
+        "v": 4,
+        "label": "v14: roof height, the game as it is",
+        "at": "2026-11-11T05:05:00Z",
+        "file": "screens/v/town-4.jpg",
+        "clip": "screens/v/town-4.mp4",
+        "what": "Kingsmere at roof height, the closest the camera now goes"
+      },
+      {
+        "v": 5,
+        "label": "v14: camera fixes, streets, court flow",
+        "at": "2026-11-11T05:55:00Z",
+        "file": "screens/v/town-5.jpg",
+        "what": "Kingsmere framed from its town card: the keep and the town around it"
+      }
+    ]
+  },
+  {
+    "id": "crowford",
+    "name": "Crowford",
+    "group": "Play",
+    "what": "Crowford at roof height: its square by the water",
+    "versions": [
+      {
+        "v": 1,
+        "label": "v14: roof height, the game as it is",
+        "at": "2026-11-11T05:05:00Z",
+        "file": "screens/v/crowford-1.jpg",
+        "clip": "screens/v/crowford-1.mp4",
+        "what": "Crowford at roof height: its square by the water"
+      },
+      {
+        "v": 2,
+        "label": "v14: camera fixes, streets, court flow",
+        "at": "2026-11-11T05:55:00Z",
+        "file": "screens/v/crowford-2.jpg",
+        "what": "Crowford at the floor (the closest the camera goes)"
       }
     ],
-    "clip": "screens/v/town-3.mp4"
+    "file": "screens/v/crowford-2.jpg"
+  },
+  {
+    "id": "map-near",
+    "name": "The map, near",
+    "group": "Play",
+    "what": "The map near: Kingsmere's walls and castle",
+    "versions": [
+      {
+        "v": 1,
+        "label": "v14: roof height, the game as it is",
+        "at": "2026-11-11T05:05:00Z",
+        "file": "screens/v/map-near-1.jpg",
+        "what": "The map near: Kingsmere's walls and castle"
+      }
+    ],
+    "file": "screens/v/map-near-1.jpg"
+  },
+  {
+    "id": "map-mid",
+    "name": "The map, mid",
+    "group": "Play",
+    "what": "The map at mid height: Kingsmere in its woods",
+    "versions": [
+      {
+        "v": 1,
+        "label": "v14: roof height, the game as it is",
+        "at": "2026-11-11T05:05:00Z",
+        "file": "screens/v/map-mid-1.jpg",
+        "what": "The map at mid height: Kingsmere in its woods"
+      }
+    ],
+    "file": "screens/v/map-mid-1.jpg"
+  },
+  {
+    "id": "map-far",
+    "name": "The map, far",
+    "group": "Play",
+    "what": "The map high up: Kingsmere's lands and the coast",
+    "versions": [
+      {
+        "v": 1,
+        "label": "v14: roof height, the game as it is",
+        "at": "2026-11-11T05:05:00Z",
+        "file": "screens/v/map-far-1.jpg",
+        "what": "The map high up: Kingsmere's lands and the coast"
+      }
+    ],
+    "file": "screens/v/map-far-1.jpg"
   },
   {
     "id": "ui-rest",
@@ -1049,10 +1143,80 @@
         "file": "screens/v/choices-at-town-2.jpg",
         "what": "The card beside the town; it closes once the town leaves the view",
         "clip": "screens/v/choices-at-town-2.mp4"
+      },
+      {
+        "v": 3,
+        "label": "v14: roof height, the game as it is",
+        "at": "2026-11-11T05:05:00Z",
+        "file": "screens/v/choices-at-town-3.jpg",
+        "what": "A decision at a town: Kingsmere's card and the royal decrees"
       }
     ],
-    "file": "screens/v/choices-at-town-2.jpg",
-    "clip": "screens/v/choices-at-town-2.mp4"
+    "file": "screens/v/choices-at-town-3.jpg"
+  },
+  {
+    "id": "castle-from-sigil",
+    "name": "A house's castle, from its sigil",
+    "group": "Play",
+    "what": "First click on a house's sigil: Rosehall's castle in winter, with its card",
+    "versions": [
+      {
+        "v": 1,
+        "label": "v14: roof height, the game as it is",
+        "at": "2026-11-11T05:05:00Z",
+        "file": "screens/v/castle-from-sigil-1.jpg",
+        "clip": "screens/v/castle-from-sigil-1.mp4",
+        "what": "First click on a house's sigil: Rosehall's castle in winter, with its card"
+      }
+    ],
+    "file": "screens/v/castle-from-sigil-1.jpg",
+    "clip": "screens/v/castle-from-sigil-1.mp4"
+  },
+  {
+    "id": "sigil-every-house",
+    "name": "Every house's sigil",
+    "group": "Play",
+    "what": "Each house's sigil clicked in turn (the 2nd to 6th on the ladder, then the 1st again)",
+    "versions": [
+      {
+        "v": 1,
+        "label": "v14: roof height, the game as it is",
+        "at": "2026-11-11T05:05:00Z",
+        "file": "screens/v/sigil-every-house-1.jpg",
+        "what": "Each house's sigil clicked in turn (the 2nd to 6th on the ladder, then the 1st again)"
+      },
+      {
+        "v": 2,
+        "label": "v14: camera fixes, streets, court flow",
+        "at": "2026-11-11T05:55:00Z",
+        "file": "screens/v/sigil-every-house-2.jpg",
+        "what": "Each house's sigil once (Rosehall, Sunspire, Stonefell, Stormwatch, Goldrock, Highfell), then the first again: its host from above the trees"
+      }
+    ],
+    "file": "screens/v/sigil-every-house-2.jpg"
+  },
+  {
+    "id": "stormwatch-stormed",
+    "name": "A town after a storming",
+    "group": "Play",
+    "what": "Stormwatch the season it was stormed, while the court sits",
+    "versions": [
+      {
+        "v": 1,
+        "label": "v14: roof height, the game as it is",
+        "at": "2026-11-11T05:05:00Z",
+        "file": "screens/v/stormwatch-stormed-1.jpg",
+        "what": "Stormwatch the season it was stormed, while the court sits"
+      },
+      {
+        "v": 2,
+        "label": "v14: camera fixes, streets, court flow",
+        "at": "2026-11-11T05:55:00Z",
+        "file": "screens/v/stormwatch-stormed-2.jpg",
+        "what": "Stormwatch about 10 s after it is stormed: the new fire"
+      }
+    ],
+    "file": "screens/v/stormwatch-stormed-2.jpg"
   },
   {
     "id": "starving-grain",
@@ -1076,7 +1240,7 @@
     "name": "Street level",
     "group": "Play",
     "what": "Down among the people",
-    "file": "screens/v/street-3.jpg",
+    "file": "screens/v/street-4.jpg",
     "before": "screens/before/street.jpg",
     "versions": [
       {
@@ -1097,9 +1261,51 @@
         "at": "2026-11-10T16:16:41Z",
         "file": "screens/v/street-3.jpg",
         "clip": "screens/v/street-3.mp4"
+      },
+      {
+        "v": 4,
+        "label": "v14: camera fixes, streets, court flow",
+        "at": "2026-11-11T05:55:00Z",
+        "file": "screens/v/street-4.jpg",
+        "clip": "screens/v/street-4.mp4",
+        "what": "Kingsmere's market, as close as the camera goes"
       }
     ],
-    "clip": "screens/v/street-3.mp4"
+    "clip": "screens/v/street-4.mp4"
+  },
+  {
+    "id": "gossip-knot",
+    "name": "A gossip knot",
+    "group": "Play",
+    "what": "A gossip knot in Kingsmere's square",
+    "versions": [
+      {
+        "v": 1,
+        "label": "v14: camera fixes, streets, court flow",
+        "at": "2026-11-11T05:55:00Z",
+        "file": "screens/v/gossip-knot-1.jpg",
+        "clip": "screens/v/gossip-knot-1.mp4",
+        "what": "A gossip knot in Kingsmere's square"
+      }
+    ],
+    "file": "screens/v/gossip-knot-1.jpg",
+    "clip": "screens/v/gossip-knot-1.mp4"
+  },
+  {
+    "id": "rider-street",
+    "name": "A rider in the street",
+    "group": "Play",
+    "what": "The King's banner rides through Kingsmere's street",
+    "versions": [
+      {
+        "v": 1,
+        "label": "v14: camera fixes, streets, court flow",
+        "at": "2026-11-11T05:55:00Z",
+        "file": "screens/v/rider-street-1.jpg",
+        "what": "The King's banner rides through Kingsmere's street"
+      }
+    ],
+    "file": "screens/v/rider-street-1.jpg"
   },
   {
     "id": "bodies",
@@ -1200,7 +1406,7 @@
     "name": "Court",
     "group": "Play",
     "what": "0.6: the petitioner in front of you waits three seasons; the bar under the card drains.",
-    "file": "screens/v/court-5.jpg",
+    "file": "screens/v/court-6.jpg",
     "before": "screens/before/court.jpg",
     "versions": [
       {
@@ -1234,8 +1440,31 @@
         "label": "Today's round: map decisions, gold, motion v2, weather",
         "at": "2026-11-10T16:16:41Z",
         "file": "screens/v/court-5.jpg"
+      },
+      {
+        "v": 6,
+        "label": "v14: camera fixes, streets, court flow",
+        "at": "2026-11-11T05:55:00Z",
+        "file": "screens/v/court-6.jpg",
+        "what": "One court flow (--court=one): an ultimatum and a petition at one sitting"
       }
     ]
+  },
+  {
+    "id": "court-ruled",
+    "name": "The King has ruled",
+    "group": "Play",
+    "what": "The King has ruled: the result stays on the card until Enter or Next matter",
+    "versions": [
+      {
+        "v": 1,
+        "label": "v14: camera fixes, streets, court flow",
+        "at": "2026-11-11T05:55:00Z",
+        "file": "screens/v/court-ruled-1.jpg",
+        "what": "The King has ruled: the result stays on the card until Enter or Next matter"
+      }
+    ],
+    "file": "screens/v/court-ruled-1.jpg"
   },
   {
     "id": "faces-at-court",

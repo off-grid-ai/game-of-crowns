@@ -1,0 +1,185 @@
+#!/bin/zsh
+# Batch 7: every view and change, rendered once, by the supervisor (CLAUDE.md: build everything, then
+# render everything once). One Godot at a time through realm/tools/render.sh's queue. The shots and the
+# reference each is judged beside are listed in docs/review/v15.json; docs/review/v15_apply.py puts the
+# results on the review page.
+#
+#   docs/review/batch7.sh            # all of it, about 40 minutes [estimate]
+#   ONLY="towns fire" docs/review/batch7.sh   # some launches only: towns moods fire breach army night
+#   OUT=/tmp/goc-batch7 (default)    # frames, logs and clips land here
+#
+# It runs on its own private bridge (8788, Freeciv 5557) with a fresh reign named "Film batch 7", so the
+# test hooks (a town's mood, a sack) answer and Mac's realm on 8787 is never touched. It stops that
+# bridge when it ends. Nothing here edits the repo; v15_apply.py (run at the end) writes under docs/review.
+R=${0:A:h:h:h}
+OUT=${OUT:-/tmp/goc-batch7}
+PORT=${PORT:-8788}; FC=${FC:-5557}
+API=localhost:$PORT
+ONLY=${ONLY:-towns moods fire breach army night}
+SW=(--look=one --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on)
+B=(--bridge=http://127.0.0.1:$PORT)
+FF=${FF:-/opt/homebrew/bin/ffmpeg}
+mkdir -p $OUT; LOG=$OUT/batch.log
+say() { echo "$(date +%T) $*" | tee -a $LOG; }
+want() { [[ " $ONLY " == *" $1 "* ]]; }
+# A harness step exists (autoplay.gd)? "site" and "work" don't yet: see "Still needed" in v15.json.
+has_step() { grep -q "^[[:space:]]*\"$1\":" $R/realm/scripts/autoplay.gd; }
+# burst <name> <frames> <gap s>: scenario lines for a clip's frames (name-01.png ...).
+burst() { local k; for k in {1..$2}; do print "snap $(printf '%s-%02d' $1 $k)"; print "wait $3"; done; }
+# play <launch> <limit s> [game flags...]: one launch playing $OUT/<launch>.play; frames in $OUT/<launch>/.
+play() {
+  local name=$1 limit=$2; shift 2
+  say "launch $name: $*"
+  curl -s -m 5 -o /dev/null -X POST $API/court/close
+  LIMIT=$limit $R/realm/tools/render.sh $OUT/$name.png $B $SW "$@" --play=$OUT/$name.play --out=$OUT/$name >> $OUT/render.out 2>&1
+  say "launch $name done: $(/bin/ls $OUT/$name 2>/dev/null | grep -c png) frames; script errors: $(grep -c 'SCRIPT ERROR\|SHADER ERROR' $OUT/$name.log 2>/dev/null)"
+}
+# clip <dir> <prefix> <fps>: the frames of a burst as a small looping mp4 beside them.
+clip() { /bin/ls $1/$2-01.png > /dev/null 2>&1 && $FF -loglevel error -y -framerate $3 -i $1/$2-%02d.png -vf "scale=1600:-2,fps=30" -c:v libx264 -pix_fmt yuv420p -an -movflags +faststart $1/$2.mp4; }
+
+say "batch 7 at $(git -C $R log --oneline -1 | cut -c1-70)"
+pgrep -f "godot --path" > /dev/null && say "note: a Godot is running; these renders queue behind it"
+
+# 1. The private bridge and its reign.
+n=$(pgrep -f "^node server.js" | wc -l)
+(( n >= 2 )) && { say "two private bridges are up already (the limit); stop one first"; exit 1; }
+lsof -iTCP:$PORT -sTCP:LISTEN > /dev/null 2>&1 && { say "port $PORT is taken; set PORT and FC"; exit 1; }
+H=$OUT/home; rm -rf $H; mkdir -p $H
+( cd $R/bridge && PORT=$PORT FC_PORT=$FC GOC_HOME=$H nice -n 5 node server.js > $OUT/bridge.log 2>&1 ) &
+cleanup() { P=$(lsof -tiTCP:$PORT -sTCP:LISTEN); [ -n "$P" ] && kill $P; sleep 2; pkill -f "freeciv-server -p $FC "; say "bridge stopped"; }
+trap cleanup EXIT
+trap "exit 1" TERM INT
+for i in {1..60}; do curl -s -m 3 -o /dev/null "$API/world?peek=1" && break; sleep 1; done
+r=$(curl -s -m 30 -X POST $API/chronicles -d '{"name":"Film batch 7","scenario":"aldmere","minutes":60,"wealth":"comfortable","options":{}}')
+NID=$(print -r -- "$r" | python3 -I -c "import json,sys; print(json.load(sys.stdin).get('id',''))")
+[ -n "$NID" ] || { say "the reign wasn't made: $(print -r -- $r | head -c 200)"; exit 1; }
+for i in {1..40}; do curl -s -m 5 $API/chronicles | grep -q "\"active\":\"$NID\"" && break; sleep 2; done
+for i in {1..60}; do curl -s -m 5 $API/world | python3 -I -c "import json,sys; sys.exit(0 if len(json.load(sys.stdin).get('cities',[]))>5 else 1)" 2>/dev/null && break; sleep 3; done
+say "reign $NID is up"
+# The towns the shots use: the crown's seat (the feast), its nearest neighbour (the war) and the next (the sack).
+read SEAT SEATID WAR WARID SACK SACKID MX MY MD <<< $(curl -s -m 8 $API/world | python3 -I -c "
+import json,sys
+w=json.load(sys.stdin); t=lambda c: c.get('title',c['name'])
+s=[c for c in w['cities'] if c['id']==w.get('seatId')] or [c for c in w['cities'] if t(c)=='Kingsmere']
+s=s[0]; d=lambda c:((c['x']-s['x'])**2+(c['y']-s['y'])**2)**.5
+o=sorted([c for c in w['cities'] if c['id']!=s['id'] and ' ' not in t(c)], key=d)
+a,b=o[0],o[1]
+print(t(s),s['id'],t(a),a['id'],t(b),b['id'],(s['x']+a['x'])//2,(s['y']+a['y'])//2,int(max(14,min(45,2.4*d(a)))))")
+say "seat $SEAT ($SEATID) feasts; $WAR ($WARID) is at war; $SACK ($SACKID) is sacked; between them: tile $MX $MY at $MD"
+stage() { curl -s -m 10 -X POST -H "X-Test: 1" $API/test/stage -d "$1" | head -c 160; }
+: > $OUT/notes.txt
+note() { print -r -- "$1" >> $OUT/notes.txt; say "note: $1"; }
+
+# 2. The towns: Kingsmere and Goldrock close, at d14 and at d40; the roadside; the working buildings.
+if want towns; then
+  {
+    print "wait 25"
+    for T in Kingsmere Goldrock; do
+      t=${T:l}
+      print "city $T 4.5 -25"; print "wait 10"; print "snap $t-d4"
+      print "city $T 6 -25"; print "wait 5"; print "snap $t-d6"
+      print "city $T 14 -22"; print "wait 6"; print "snap $t-d14"
+      print "city $T 40 -20"; print "wait 6"; print "snap $t-d40"
+    done
+    # The working buildings (works.gd): the forge, the stables and paddock, the mill.
+    if has_step work; then
+      print "work Kingsmere forge 4.5 -25"; print "wait 8"; print "snap forge"; burst forge-clip 24 0.2
+      print "work Kingsmere stables 5 -25"; print "wait 8"; print "snap stables"; burst stables-clip 24 0.2
+      print "work Goldrock mill 5 -25"; print "wait 8"; print "snap mill"; burst mill-clip 24 0.2
+    else
+      # No step frames a trade's building yet: the square, where the inn, stables, paddock and forge stand.
+      print "city Kingsmere 4.5 -25"; print "wait 8"; print "snap forge"; burst forge-clip 24 0.2
+      print "life Kingsmere groom 4.5"; print "wait 6"; print "snap stables"; burst stables-clip 24 0.2
+      print "city Goldrock 8 -25"; print "wait 8"; print "snap mill"; burst mill-clip 24 0.2
+    fi
+    # Life along the roads (roadside.gd): an inn, a hamlet, a bridge; carts and travellers on the road.
+    if has_step site; then
+      print "site inn 0 6 -25"; print "wait 8"; print "snap inn"; burst inn-clip 24 0.2
+      print "site hamlet 0 8 -25"; print "wait 8"; print "snap hamlet"
+      print "site bridge 0 6 -25"; print "wait 8"; print "snap bridge"
+    else
+      # No step frames a roadside site yet: the road out of each town, where the first inn stands 9 units on.
+      print "road Kingsmere 8"; print "wait 8"; print "snap inn"; burst inn-clip 24 0.2
+      print "road Goldrock 8"; print "wait 8"; print "snap hamlet"
+      print "road Kingsmere 16"; print "wait 8"; print "snap bridge"
+    fi
+    print "road Kingsmere 5"; print "wait 8"; print "snap carts"; burst carts-clip 28 0.2
+    print "look towns-end"
+  } > $OUT/towns.play
+  has_step work || note "forge, stables, mill: framed at the square (no 'work' step in the harness yet)"
+  has_step site || note "inn, hamlet, bridge: framed along the road out of town (no 'site' step in the harness yet); check what's in frame"
+  play towns 1200
+  for c in forge-clip stables-clip mill-clip inn-clip carts-clip; do clip $OUT/towns $c 5; done
+fi
+
+# 3. A war town next to a feast town.
+if want moods; then
+  say "war: $(stage "{\"city\":$WARID,\"mood\":\"war\"}")  feast: $(stage "{\"city\":$SEATID,\"mood\":\"feast\"}")"
+  {
+    print "wait 25"
+    print "city $WAR 6 -25"; print "wait 10"; print "snap war-town"; burst war-clip 24 0.2
+    print "city $SEAT 6 -25"; print "wait 10"; print "snap feast-town"; burst feast-clip 24 0.2
+    print "tile $MX $MY $MD"; print "wait 8"; print "snap war-feast-wide"
+    print "look moods-end"
+  } > $OUT/moods.play
+  play moods 600
+  clip $OUT/moods war-clip 5; clip $OUT/moods feast-clip 5
+  stage "{\"city\":$WARID,\"mood\":\"calm\"}" > /dev/null; stage "{\"city\":$SEATID,\"mood\":\"calm\"}" > /dev/null
+fi
+
+# 4. Fire: a town sacked while the camera watches (--fire=v2), then what's left.
+if want fire; then
+  {
+    print "wait 25"
+    print "city $SACK 6 -25"; print "wait 10"; print "snap fire-before"
+    print "look sack-now"; print "wait 6"
+    print "snap fire-06s"; burst fire-clip 28 0.2
+    print "wait 4"; print "snap fire-20s"
+    print "wait 40"; print "snap fire-ruin"
+    print "look fire-end"
+  } > $OUT/fire.play
+  rm -rf $OUT/fire
+  ( for i in {1..900}; do grep -q "sack-now" $OUT/fire/play.log 2>/dev/null && { curl -s -m 5 -o /dev/null -X POST $API/court/close; say "sack: $(stage "{\"sack\":$SACKID}")"; break; }; sleep 1; done ) &
+  play fire 600
+  clip $OUT/fire fire-clip 5
+fi
+
+# 5. The wall breach: stones thrown at a stone wall until it opens (--walls=stone --wall-demo with the staged siege).
+if want breach; then
+  say "launch breach still"
+  LIMIT=420 $R/realm/tools/render.sh $OUT/breach.png $B $SW --walls=stone --siege --wall-demo --wait=90 >> $OUT/render.out 2>&1
+  say "launch breach clip"
+  LIMIT=600 GODOT_ARGS="--fixed-fps 30" $R/realm/tools/render.sh $OUT/breach-clip-last.png $B $SW --walls=stone --wall-demo --wait=99999 --clip=siege --secs=6 --frames=$OUT/breach-clip >> $OUT/render.out 2>&1
+  /bin/ls $OUT/breach-clip/*.jpg > /dev/null 2>&1 && $FF -loglevel error -y -framerate 30 -pattern_type glob -i "$OUT/breach-clip/*.jpg" -vf "scale=1600:-2" -c:v libx264 -pix_fmt yuv420p -an -movflags +faststart $OUT/breach.mp4
+fi
+
+# 6. The army: 6,000 men at d8 and at d40, and marching (army_spike.gd frames the host itself).
+if want army; then
+  for d in 8 40; do
+    say "launch army d$d"
+    LIMIT=420 $R/realm/tools/render.sh $OUT/army-d$d.png $B $SW --dist=$d --wait=150 --army-spike=6000 >> $OUT/render.out 2>&1
+    grep "^ARMY" $OUT/army-d$d.log | tail -3 >> $LOG
+  done
+  # Marching: frames snapped by the harness while the spike holds the camera on the host.
+  { print "wait 150"; burst army-clip 28 0.2; print "look army-end"; } > $OUT/army.play
+  play army 600 --dist=40 --army-spike=6000
+  clip $OUT/army army-clip 5
+fi
+
+# 7. Night: the inn's windows lit (a test hour; the realm players get is always day in v1).
+if want night; then
+  {
+    print "wait 25"
+    if has_step work; then print "work Kingsmere inn 4.5 -25"; else print "city Kingsmere 4.5 -25"; fi
+    print "wait 10"; print "snap night-inn"
+    if has_step site; then print "site inn 0 6 -25"; print "wait 8"; print "snap night-road-inn"; fi
+    print "look night-end"
+  } > $OUT/night.play
+  play night 420 --hour=21
+fi
+
+# 8. What came out, and onto the review page's folder.
+say "frames:"
+python3 -I $R/docs/review/v15_apply.py $OUT --check | tee -a $LOG
+python3 -I $R/docs/review/v15_apply.py $OUT | tee -a $LOG
+say "batch 7 done. Stills, clips and logs: $OUT. Publish list: $R/docs/review/v15-publish.json"
