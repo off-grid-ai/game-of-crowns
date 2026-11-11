@@ -18,6 +18,14 @@ var _held_court := false  # a new petitioner arrived while he was busy
 var _markers := {}  # matter id -> its marker on the map, at its place
 const PINNED_WIDTH := 440.0  # the court card standing by its place
 var _opened_at := Vector3.INF  # the place of the matter the King opened from its marker: the card stands by it
+## One court flow (--court=one, the build plan's item: the supervisor's go, behind this
+## switch until filmed): every matter, a lord's or the Hand's, on one card in four steps,
+## in (the court sits) / decide (who asks, what they want, the Hand's view, the answers
+## with what each costs and whom it moves) / see it (the card turns over to what the
+## ruling did) / out (the next, or the doors close once).
+static var ONE: bool = OS.get_cmdline_user_args().has("--court=one")
+var _seeing: Dictionary = {}  # the matter just ruled, while the card shows what it did (ONE)
+var _doors_shut := false  # the doors-close word said once a sitting
 var _FAVOUR_RE := RegEx.create_from_string("((?:House|The) [A-Z][a-z]+)\\s*([+−-]\\d+)")  # "House Thornvale +15" in an answer's hint
 
 
@@ -103,12 +111,13 @@ func set_court(petitions: Array) -> void:
 		if not _court_seen.has(String(p["id"])):
 			_court_seen[String(p["id"])] = true
 			fresh = true
+	if not petitions.is_empty():
+		_doors_shut = false  # a sitting: its doors will close once
 	if petitions.is_empty():
 		_court_panel.visible = false
 		_held_court = false
 		if had > 0 and _court_met:
-			ui.toast("The doors of the court close, and the realm moves again.")
-			ui.court_closed.emit()
+			_close_doors()
 		return
 	if fresh:
 		_court_hidden = false  # a new sitting, or a crisis: the court comes to him once
@@ -271,7 +280,7 @@ func _show_audience() -> void:
 	head.add_theme_constant_override("separation", 16)
 	v.add_child(head)
 	# The court's own sitting, or the Hand calling the King in between for a crisis.
-	var where := ("The Hand calls you" if p.get("push", false) else "The court sits") + "  ·  the realm holds still"
+	var where := ("The Hand calls you" if p.get("push", false) and not ONE else "The court sits") + "  ·  the realm holds still"
 	var who := T.label(where + ("  ·  %s" % p["house"] if String(p.get("house", "")) != "" else ""))
 	who.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(who)
@@ -506,7 +515,7 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 	var answers: Array[Button] = []  # its answers: choosing one settles it
 	# Weighed by the bridge (the same order run dry): each answer on a row of its own,
 	# who it helps and hurts under it, so the choice is a dilemma, not a menu.
-	var weighed: bool = (it.get("acts", []) as Array).any(func(x): return x is Dictionary and x.get("weighs") is Dictionary)
+	var weighed: bool = ONE or (it.get("acts", []) as Array).any(func(x): return x is Dictionary and x.get("weighs") is Dictionary)
 	if weighed:
 		var rows := VBoxContainer.new()
 		rows.add_theme_constant_override("separation", 6)
@@ -617,11 +626,13 @@ func _settled(it: Dictionary) -> void:
 	_petitions = _petitions.filter(func(p): return String(p["id"]) != String(it["id"]))
 	ui._court_badge.text = str(_petitions.size())
 	ui._court_waiting_shown(_petitions.size())
+	if ONE:
+		_see_it(it)
+		return
 	await ui.get_tree().create_timer(0.8).timeout
 	if _petitions.is_empty():
 		_court_panel.visible = false
-		ui.toast("The doors of the court close, and the realm moves again.")
-		ui.court_closed.emit()
+		_close_doors()
 	elif _court_panel.visible:
 		_show_audience()
 
@@ -688,9 +699,83 @@ func ruled_in_words(id: String, d: Dictionary) -> void:
 
 
 func _answer(id: String, option: String) -> void:
+	var it: Dictionary = {}
+	for x in _petitions:
+		if String(x["id"]) == id:
+			it = x
 	ui.petition_answered.emit(id, option)
 	ui.guide_mark(0)
 	_petitions = _petitions.filter(func(x): return String(x["id"]) != id)
 	ui._court_badge.text = str(_petitions.size())
 	ui._court_waiting_shown(_petitions.size())
+	if ONE and not it.is_empty():
+		_see_it(it)
+		return
 	_show_audience()
+
+
+
+## The doors of the court close: said once a sitting, however the last matter went.
+func _close_doors() -> void:
+	if _doors_shut:
+		return
+	_doors_shut = true
+	ui.toast("The doors of the court close, and the realm moves again.")
+	ui.court_closed.emit()
+
+
+## See it (ONE): the card turns over to what the ruling did, in the realm's words as
+## the bridge tells it (result_here), with whose favour it moved; then the next matter,
+## or the doors close. He can go on at once; it goes on by itself after a few seconds.
+const SEE_FOR := 4.0
+func _see_it(it: Dictionary) -> void:
+	_seeing = it
+	for c in _court_panel.get_children():
+		_court_panel.remove_child(c)
+		c.queue_free()
+	_court_panel.visible = true
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	_court_panel.add_child(v)
+	v.add_child(T.label("The King has ruled"))
+	var what := Label.new()
+	what.text = String(it.get("text", it.get("name", "")))
+	what.autowrap_mode = TextServer.AUTOWRAP_WORD
+	what.custom_minimum_size = Vector2(320, 0)
+	what.add_theme_color_override("font_color", T.TEXT_2)
+	v.add_child(what)
+	var result := Label.new()
+	result.name = "Result"
+	result.text = "…"
+	result.autowrap_mode = TextServer.AUTOWRAP_WORD
+	result.custom_minimum_size = Vector2(320, 0)
+	result.add_theme_font_size_override("font_size", T.SIZE_BODY + 1)
+	v.add_child(result)
+	var on := ui.btn("Next  ·  %d waiting" % _petitions.size() if not _petitions.is_empty() else "Close the court", _after_seeing.bind(it))
+	v.add_child(on)
+	await ui.get_tree().create_timer(SEE_FOR).timeout
+	_after_seeing(it)
+
+
+## What the bridge said the ruling did, put on the card that's showing it (ONE).
+## True when the card took it, so it isn't also a toast.
+func result_here(ok: bool, text: String) -> bool:
+	if _seeing.is_empty() or not _court_panel.visible:
+		return false
+	var r := _court_panel.find_child("Result", true, false) as Label
+	if r == null:
+		return false
+	r.text = text if ok else "The crown cannot: " + text
+	r.add_theme_color_override("font_color", T.TEXT if ok else T.DANGER)
+	return true
+
+
+func _after_seeing(it: Dictionary) -> void:
+	if _seeing != it:
+		return  # already moved on
+	_seeing = {}
+	if _petitions.is_empty():
+		_court_panel.visible = false
+		_close_doors()
+	else:
+		_show_audience()

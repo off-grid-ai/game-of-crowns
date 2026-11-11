@@ -186,7 +186,10 @@ export async function courtSeason(ctx, turn, force = false) {
   c.sitOnReturn = false;
   const due = force || c.lastSat == null || turn - c.lastSat >= every || herald || back;
   // Between sittings the Hand calls the King in only for a real crisis, at most once a year.
-  const push = !due && crises.length > 0 && (c.lastPush == null || turn - c.lastPush >= HAND_YEAR);
+  // An ultimatum always reaches the King the season it's sent (one court flow): a house
+  // never rises on terms he didn't see, whatever the Hand's once-a-year rule says.
+  const ultimatum = crises.some((o) => o.kind === "ultimatum");
+  const push = !due && crises.length > 0 && (ultimatum || c.lastPush == null || turn - c.lastPush >= HAND_YEAR);
   if (!due && !push) { chron.saveMeta(meta); return; }
   let want = wanted;
   // A lord whose town starves or is besieged speaks for it first, ahead of the

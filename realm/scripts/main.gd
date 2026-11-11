@@ -424,6 +424,9 @@ func _ready() -> void:
 			bridge.court(ui.set_court)
 			ui.toast("That petitioner has already gone.")
 			return
+		# A ruling's result on the court card that shows it (one court flow), else a toast.
+		if ui.court.result_here(ok, text):
+			return
 		ui.toast(text if ok else "The crown cannot: " + text))
 	if _shot.has("path"):
 		get_tree().create_timer(float(_shot.get("wait", 8.0))).timeout.connect(_take_shot)
