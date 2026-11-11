@@ -21,6 +21,7 @@ const Heraldry = preload("res://scripts/heraldry.gd")
 const Realistic = preload("res://scripts/realistic.gd")
 const TownLife := preload("res://scripts/town_life.gd")  # a feast's fire, its reach, and footprints
 const TownNav := preload("res://scripts/town_nav.gd")
+const Data := preload("res://scripts/data.gd")
 var _seen := {}  # scene key -> true, so each event plays once
 var _wagon: Mesh
 var _sieges := {}  # city id -> {root, until}: one camp per besieged town, kept while the host stays
@@ -145,7 +146,7 @@ func traveller(from: Vector3, to: Vector3, kind := "walker", on_done := Callable
 	# which keeps them on the curve and facing along it: nothing placed by hand.
 	var path := Path3D.new()
 	path.name = "Traveller"
-	path.curve = terrain.smooth_road(way)
+	path.curve = _on_ground(terrain.smooth_road(way))
 	add_child(path)
 	var follow := PathFollow3D.new()
 	follow.rotation_mode = PathFollow3D.ROTATION_Y
@@ -255,6 +256,24 @@ func _route(from: Vector3, to: Vector3) -> PackedVector3Array:
 
 func ground(p: Vector3) -> Vector3:
 	return Vector3(p.x, terrain.height_at(p.x, p.z), p.z)
+
+
+## The road a traveller's PathFollow3D rides, with its height taken from the
+## ground every `travel.groundStep` units: a curve through waypoints tiles
+## apart lerps its height between them, and walkers on it sank knee-deep where
+## a town had levelled its square below the line (realm/data/people.json).
+func _on_ground(c: Curve3D) -> Curve3D:
+	var step := Data.num("people", "travel.groundStep", 0.08)
+	var length := c.get_baked_length()
+	var out := Curve3D.new()
+	out.bake_interval = c.bake_interval
+	var d := 0.0
+	while true:
+		out.add_point(ground(c.sample_baked(minf(d, length), true)))
+		if d >= length:
+			break
+		d += step
+	return out
 
 
 # --- arms ----------------------------------------------------------------------

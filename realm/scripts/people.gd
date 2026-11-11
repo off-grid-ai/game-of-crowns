@@ -110,6 +110,7 @@ const HERO_ANIMS := "res://assets/hero/anims/"
 const UAL := "res://assets/anims/AnimationLibrary_Godot_Standard.gltf"
 const UAL_SKIP := ["A_TPose", "Pistol", "Spell", "Swim", "_RM", "Roll"]
 const Motion := preload("res://scripts/motion.gd")
+const Data := preload("res://scripts/data.gd")
 # Ways a soldier stands ready (all on the shared skeleton), one per man.
 const GUARDS := ["Sword_Idle", "Sword_Idle", "SS_Idle_2", "SS_Block_Idle"]
 
@@ -177,6 +178,117 @@ func _init() -> void:
 					_lib.add_animation(name, _in_place(a.duplicate(true)))
 					break
 		src.free()
+	_plant(_lib)
+
+
+## Every move stands on its feet (Unity Mecanim's "root height based upon feet"):
+## the Mixamo legs, retargeted onto our skeletons, reach about 0.13 m lower than
+## the hips' keys allow for, so a whole crowd stood ankle-deep in the ground
+## (tools/feet_check.gd measures it). Each clip is posed on the reference
+## outfit's skeleton, and its hips raised by how far the lowest foot of its
+## standing frames falls below where the feet are at rest (soles on y = 0).
+## Frames down low don't count (sat or lying: hips under `seated` of their rest
+## height; on a knee: a knee under `kneeling` of its rest height); a clip that
+## never stands keeps its keys. Crouches and lunges count: their soles are down. Tunables:
+## realm/data/people.json feet.*; --feet=off for the old keys.
+const LEGS := ["Hips", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "LeftToes", "RightUpperLeg", "RightLowerLeg", "RightFoot", "RightToes"]
+static func _plant(lib: AnimationLibrary) -> void:
+	if not FEET_ON:
+		return
+	var ref: Node3D = (load(String(Data.value("people", "feet.reference", "res://assets/people/Male_Peasant.gltf"))) as PackedScene).instantiate()
+	var sk: Skeleton3D = ref.find_child("GeneralSkeleton", true, false)
+	var hips := sk.find_bone("Hips")
+	var ms := maxf(sk.motion_scale, 0.001)
+	var seats: Array = Data.value("people", "feet.seats", ["Sitting", "Driving", "Riding"])
+	for name in lib.get_animation_list():
+		if seats.any(func(k): return String(name).begins_with(String(k))):
+			continue  # on a bench, a cart's box or a saddle: the seat holds them, not their feet
+		var a := lib.get_animation(name)
+		var pt := a.find_track(NodePath("%GeneralSkeleton:Hips"), Animation.TYPE_POSITION_3D)
+		if pt < 0 or a.track_get_key_count(pt) == 0:
+			continue
+		var lift := maxf(_sole_drop(sk, a), 0.0)
+		if lift < 0.005 * ms:
+			continue
+		for k in a.track_get_key_count(pt):
+			a.track_set_key_value(pt, k, (a.track_get_key_value(pt, k) as Vector3) + Vector3(0, lift / ms, 0))
+	ref.free()
+
+static var FEET_ON: bool = bool(Data.value("people", "feet.on", true)) and not OS.get_cmdline_user_args().has("--feet=off")
+
+
+## How far (skeleton units) the lowest foot of a clip's standing frames falls
+## below the feet at rest on this skeleton; negative when it stays above. Posed
+## by hand down the leg chain (a skeleton outside the tree doesn't pose itself):
+## a bone's place is its parent's times its own pose, the clip's where it has a
+## key, its rest where not. Capped at feet.mostLift (metres on a 0.95 m hip).
+static func _sole_drop(sk: Skeleton3D, a: Animation) -> float:
+	var samples := int(Data.num("people", "feet.samples", 12))
+	var seated := Data.num("people", "feet.seated", 0.45)
+	var kneeling := Data.num("people", "feet.kneeling", 0.4)
+	var hips := sk.find_bone("Hips")
+	var bones := LEGS.map(func(n): return sk.find_bone(n))
+	var feet := ["LeftFoot", "LeftToes", "RightFoot", "RightToes"].map(func(n): return sk.find_bone(n)).filter(func(i): return i >= 0)
+	var knees := ["LeftLowerLeg", "RightLowerLeg"].map(func(n): return sk.find_bone(n)).filter(func(i): return i >= 0)
+	var ms := maxf(sk.motion_scale, 0.001)
+	var where := func(bone: int, pose: Dictionary) -> Transform3D:
+		var xf := Transform3D.IDENTITY
+		var b := bone
+		while b >= 0:
+			xf = (pose[b] if pose.has(b) else sk.get_bone_rest(b)) * xf
+			b = sk.get_bone_parent(b)
+		return xf
+	var low := func(pose: Dictionary) -> float:
+		var y := INF
+		for i in feet:
+			y = minf(y, (where.call(i, pose) as Transform3D).origin.y)
+		return y
+	var rest: float = low.call({})
+	var hips_rest: float = (where.call(hips, {}) as Transform3D).origin.y
+	var knee_rest: float = (where.call(knees[0], {}) as Transform3D).origin.y if not knees.is_empty() else 0.0
+	var path := "%GeneralSkeleton:"
+	var pt := a.find_track(NodePath(path + "Hips"), Animation.TYPE_POSITION_3D)
+	var rt := LEGS.map(func(n): return a.find_track(NodePath(path + n), Animation.TYPE_ROTATION_3D))
+	var lo := INF
+	for k in samples + 1:
+		var t := a.length * k / samples
+		var pose := {}
+		for j in bones.size():
+			if bones[j] < 0:
+				continue
+			var r: Transform3D = sk.get_bone_rest(bones[j])
+			var q: Quaternion = a.rotation_track_interpolate(rt[j], t) if rt[j] >= 0 else r.basis.get_rotation_quaternion()
+			var o: Vector3 = a.position_track_interpolate(pt, t) * ms if bones[j] == hips and pt >= 0 else r.origin
+			pose[bones[j]] = Transform3D(Basis(q), o)
+		var down: bool = (where.call(hips, pose) as Transform3D).origin.y < hips_rest * seated
+		for kn in knees:
+			down = down or (where.call(kn, pose) as Transform3D).origin.y < knee_rest * kneeling
+		if down:
+			continue  # sat, lying or on a knee: the seat or the knee is on the ground, not the soles
+		lo = minf(lo, low.call(pose))
+	if lo == INF:
+		return 0.0
+	var most := Data.num("people", "feet.mostLift", 0.25) * hips_rest / 0.95
+	return clampf(rest - lo, -most, most)
+
+
+## A body's own legs, after the clips are planted on the reference's: its
+## stride and stance measured on its skeleton (feet.bodyClips), and the whole
+## body raised by what its feet still fall short (Medieval Man's shorter shins
+## stood 5-8 cm deep), once per body.
+var _body_lift := {}
+func _stand_up(body: String, skeleton: Skeleton3D) -> void:
+	if not FEET_ON:
+		return
+	if not _body_lift.has(body):
+		var sum := 0.0
+		var n := 0
+		for c in Data.value("people", "feet.bodyClips", ["Idle", "Walk"]):
+			if _lib.has_animation(String(c)):
+				sum += _sole_drop(skeleton, _lib.get_animation(String(c)))
+				n += 1
+		_body_lift[body] = maxf(sum / maxi(n, 1), 0.0)
+	skeleton.position += skeleton.transform.basis * Vector3(0, float(_body_lift[body]), 0)
 
 
 ## Townsfolk are moved by the game, not the clip: keep the hips' sway and bob
@@ -360,6 +472,7 @@ func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, ag
 				n.free()  # the empty wrapping
 	else:
 		skeleton.reparent(armature, false)
+	_stand_up(body, skeleton)
 	# The moves find the skeleton by its unique name, which needs its owner back.
 	skeleton.owner = person
 	skeleton.unique_name_in_owner = true

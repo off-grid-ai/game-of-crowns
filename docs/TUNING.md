@@ -142,3 +142,7 @@ Switches (`--name`) go after `--` on the game's command line.
 
 ## The massed army (the army spike, `--army-spike=<men>`)
 - Men to a regiment, the frontages a regiment may stand in (lines and columns), a man's height, the spacing between men and between regiments, how loosely each man stands (off his mark, turned, taller or shorter), how much open ground the host needs and how far from the seat, the share still marching in (from how far, how fast), the share standing at the ready, the paint's brightness under the sun, and which palette cells take the house colour: `realm/data/army.json`.
+
+## Feet on the ground (on by default, `--feet=off` for the clips' own keys)
+- How each move is planted on its feet (the reference skeleton, poses measured per clip, the most a clip or body is raised, what counts as sat, lying or kneeling, the moves sat on a seat that are left alone, the moves a body's own legs are measured in): `realm/data/people.json`: `feet.*`. Check it with `arch -arm64 godot --headless --path realm -s res://tools/feet_check.gd`.
+- How often a road traveller's path takes its height from the ground: `realm/data/people.json`: `travel.groundStep`.

@@ -1,0 +1,77 @@
+extends SceneTree
+## Where everyone's feet are, in every move: each body and outfit the crowd is
+## dressed from, posed through each clip of the shared library, and the lowest
+## of its feet held against the ground its node stands on (y = 0). A body sunk
+## or floating in its rest pose, or a move whose hips are keyed for another
+## skeleton's legs, shows here without a render (an asset validation pass, like
+## scale_check.gd).
+##   arch -arm64 godot --headless --path realm -s res://tools/feet_check.gd [-- --all]
+## Prints one FEET line per body: its feet bones' rest height and the worst moves, how far
+## (metres) their lowest foot falls below or stays above that.
+
+const People := preload("res://scripts/people.gd")
+const S := 0.12
+const FEET := ["LeftToes", "RightToes", "LeftFoot", "RightFoot"]
+const SINK := -0.06  # metres: feet lower than at rest by this are in the ground
+const FLOAT := 0.12  # and higher by this (both feet) stand on air
+
+
+func _initialize() -> void:
+	var ppl = People.new()
+	var all := OS.get_cmdline_user_args().has("--all")
+	var rng := RandomNumberGenerator.new()
+	var who := []
+	for b in People.BODIES:
+		if not b in People.NEVER and ppl._usable(b):
+			who.append(["body:" + b, ppl.make_body(rng, b, Color.WHITE, "adult", "average")])
+	for sex in ["male", "female"]:
+		rng.seed = 7
+		who.append(["outfit:peasant/" + sex, ppl.make(rng, "peasant", Color.WHITE, "elder", "average", sex)])
+	who.append(["outfit:soldier", ppl.make(rng, "soldier", Color.WHITE, "adult", "average", "male")])
+	for w in who:
+		root.add_child(w[1])
+	await process_frame  # in the tree, so the players and skeletons pose
+	var bad := 0
+	for w in who:
+		var person: Node3D = w[1]
+		var mo: AnimationTree = person.get_node_or_null("Motion")
+		if mo:
+			mo.active = false
+		var anim: AnimationPlayer = person.get_node("Anim")
+		anim.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE
+		var sk: Skeleton3D = person.find_child("GeneralSkeleton", true, false)
+		var bones := FEET.map(func(n): return sk.find_bone(n)).filter(func(i): return i >= 0)
+		var sole := func() -> float:
+			sk.force_update_all_bone_transforms()
+			var lo := INF
+			for i in bones:
+				lo = minf(lo, (sk.global_transform * sk.get_bone_global_pose(i)).origin.y)
+			return lo / S
+		sk.reset_bone_poses()
+		# Against where the feet stand at rest on the ground: a Mixamo body raised
+		# whole (people.gd _stand_up) is measured from before it was raised.
+		var raised: float = (person.global_transform.basis * sk.transform.basis * Vector3(0, float(ppl._body_lift.get(String(w[0]).trim_prefix("body:"), 0.0)), 0)).y / S
+		var rest: float = sole.call() - raised
+		var worst := []
+		for clip in anim.get_animation_list():
+			var c := String(clip)
+			if c == "RESET":
+				continue
+			var a := anim.get_animation(clip)
+			anim.play(clip)
+			var lo := INF
+			var hi := -INF
+			for k in 6:
+				anim.seek(a.length * k / 6.0, true)
+				var y: float = sole.call() - rest  # against the feet at rest: soles on the ground
+				lo = minf(lo, y)
+				hi = maxf(hi, y)
+			if lo < SINK or (lo > FLOAT and not c.contains("Jump")) or all:
+				worst.append([lo, c])
+		worst.sort_custom(func(x, y): return x[0] < y[0])
+		var shown := worst if all else worst.slice(0, 6)
+		print("FEET %s rest=%.2f m (%d bones) %d bad: %s" % [w[0], rest, bones.size(), worst.size(), ", ".join(shown.map(func(x): return "%s %.2f" % [x[1], x[0]]))])
+		bad += 0 if all else worst.size()
+		person.queue_free()
+	print("FEET done: %d body-moves off the ground" % bad)
+	quit(1 if bad > 0 else 0)
