@@ -100,6 +100,13 @@ func _run() -> void:
 		if name == "war" and (mustered == 0 or fast == 0 or Works.stock(town, "rack") < 5):
 			print("FAIL war: no muster in the square, the smiths at their own pace, or the rack not filled")
 			fails += 1
+		var feasters: int = l.get_children().filter(func(n): return n.has_meta("feaster")).size()
+		var bunting: int = l.get_children().filter(func(n): return n.get_meta("dress", "") == "bunting").size()
+		if name == "feast":
+			print("WORKS feast   square: %d at the tables, bunting %s" % [feasters, bunting > 0])
+			if feasters == 0 or bunting == 0:
+				print("FAIL feast: no tables or no bunting in the square")
+				fails += 1
 		if name == "peace" and (mustered > 0 or fast > 0):
 			print("FAIL peace: a muster or a hurried forge in peacetime")
 			fails += 1

@@ -1485,6 +1485,8 @@ func _moods(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 		if Works.stock(root, "rack") < want:
 			Works.add_stock(root, "rack", want - Works.stock(root, "rack"))
 		_muster(root, life, center, Data.value("moods", "levy.muster" if "levy" in states else "war.muster", {}), rng)
+	if "feast" in states:
+		_feast(root, life, center, house, rng)
 
 
 ## The levy gathered in the square: rows of men facing a sergeant who calls
@@ -1517,3 +1519,121 @@ func _muster(root: Node3D, life: Node3D, center: Vector3, m: Dictionary, rng: Ra
 			p.set_meta("levy_man", true)
 			_face(p, sergeant.position)
 			_mind(p, "levy", center)
+
+
+## A feast in the square, round the bonfire and its dancers (_revels): bunting
+## strung from a pole by the well out to poles round the seen half of the
+## square, in the house's colour and the feast's, and long tables set with
+## mugs and plates, the town sat at them drinking and talking, a minstrel by them.
+func _feast(root: Node3D, life: Node3D, center: Vector3, house: Dictionary, rng: RandomNumberGenerator) -> void:
+	var f: Dictionary = Data.value("moods", "feast", {})
+	var places: Dictionary = root.get_meta("places", {})
+	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
+	var col := Color.from_string(String(house.get("color", "#8a2a1e")), Color(0.55, 0.16, 0.12))
+	var colours: Array = [col]
+	for k in f.get("colours", []):
+		colours.append(Works.colour(k, Color.WHITE))
+	_bunting(root, life, center, well, f.get("bunting", {}), colours, rng)
+	# Long tables on the seen half, across the line from the fire, benches either side.
+	var reach := fire_reach() + 0.28
+	var taken: PackedVector2Array = life.get_meta("standing")
+	var sat := []
+	for t in int(f.get("tables", 2)):
+		var a := atan2(SEEN.x, SEEN.z) + (t - (int(f.get("tables", 2)) - 1) * 0.5) * 0.9
+		var at := Vector3(sin(a), 0, cos(a)) * reach
+		var out := at.normalized()
+		var along := Vector3(-out.z, 0, out.x)
+		var yaw := atan2(along.x, along.z)
+		if _prop(life, center, "Table_Large", at, yaw, 1.0, 0.0, 0.18) == null:
+			continue
+		const TOP := 0.09  # the table's height at PROP_SCALE
+		var ware := ["Mug", "Table_Plate", "Chalice", "Mug", "Pot_1", "Table_Plate", "Mug"]
+		for i in 5:
+			_prop(life, center, ware[(t * 3 + i) % ware.size()], at + along * (i - 2) * 0.04 + out * rng.randf_range(-0.015, 0.015), rng.randf() * TAU, 1.0, TOP)
+		for sgn in [-1.0, 1.0]:
+			var bench: Vector3 = at + out * sgn * 0.1
+			_prop(life, center, "Bench", bench, yaw, 1.0, 0.0, 0.0)
+			for i in int(f.get("seats", 3)):
+				var seat: Vector3 = bench + along * (i - (int(f.get("seats", 3)) - 1) * 0.5) * 0.08
+				var p := _townsperson(life, Vector3(seat.x, _y(center, seat), seat.z), "townsfolk" if rng.randf() < 0.6 else "peasant", "Sitting_Drinking", rng.randi())
+				p.rotation.y = atan2(-out.x * sgn, -out.z * sgn)  # facing across the table
+				p.set_meta("feaster", true)
+				taken.append(Vector2(seat.x, seat.z))
+				sat.append(p)
+	life.set_meta("standing", taken)
+	for p in sat:
+		_mind(p, "drinker", center)
+	if not sat.is_empty() and preload("res://scripts/weapons.gd").can_play("Lute_Playing"):
+		var m := _stand(root, life, center, (sat[0] as Node3D).position + SEEN * 0.16, "townsfolk", "Lute_Playing", rng.randi(), Color.WHITE, 0.15)
+		if m:
+			_face(m, Vector3.ZERO)
+			_mind(m, "minstrel", center)
+
+
+## Lines of pennants from a tall pole by the well out to poles round the seen
+## half of the square (moods.json feast.bunting), each line sagging between its
+## poles, the flags in turn of `colours`. One mesh for every line.
+func _bunting(root: Node3D, life: Node3D, center: Vector3, well: Vector3, b: Dictionary, colours: Array, rng: RandomNumberGenerator) -> void:
+	var lines := int(b.get("lines", 5))
+	if lines <= 0:
+		return
+	var walls := _blocked(root, life)
+	var taken: PackedVector2Array = life.get_meta("standing")
+	var hub_at := _spot(center, well + (Vector3.ZERO - well).normalized() * 0.14, walls, taken, 0.2)
+	if is_nan(hub_at.x):
+		return
+	var top := float(b.get("height", 3.8)) * S
+	var low := float(b.get("edge_height", 2.8)) * S
+	var wood := StandardMaterial3D.new()
+	wood.albedo_color = Color(0.42, 0.3, 0.2)
+	var pole := func(at: Vector3, h: float) -> Vector3:
+		var m := MeshInstance3D.new()
+		var c := CylinderMesh.new()
+		c.top_radius = 0.005
+		c.bottom_radius = 0.007
+		c.height = h
+		c.material = wood
+		m.mesh = c
+		var y := _y(center, at)
+		m.position = Vector3(at.x, y + h * 0.5, at.z)
+		life.add_child(m)
+		life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(at, Vector2(0.03, 0.03), 0.0)])
+		return Vector3(at.x, y + h, at.z)
+	var hub: Vector3 = pole.call(hub_at, top)
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var flags := int(b.get("flags", 12))
+	var sag := float(b.get("sag", 0.45)) * S
+	var face := atan2(SEEN.x, SEEN.z)
+	var ring := float(b.get("ring", 0.62))
+	var n := 0
+	for i in lines:
+		var a := face + (i - (lines - 1) * 0.5) * (2.6 / maxf(lines - 1, 1))
+		var end_at := _spot(center, Vector3(sin(a), 0, cos(a)) * ring, walls, taken, 0.15)
+		if is_nan(end_at.x):
+			continue
+		var end: Vector3 = pole.call(end_at, low)
+		var dir := (end - hub)
+		var along := Vector3(dir.x, 0, dir.z).normalized()
+		var w := dir.length() / (flags * 2.2)
+		for k in flags:
+			var t := (k + 0.5) / flags
+			var at := hub.lerp(end, t) - Vector3.UP * sag * 4.0 * t * (1.0 - t)
+			st.set_color(colours[(k + i) % colours.size()])
+			st.add_vertex(at - along * w)
+			st.add_vertex(at + along * w)
+			st.add_vertex(at - Vector3.UP * w * 1.6)
+			n += 1
+	if n == 0:
+		return
+	st.generate_normals()
+	var mesh := MeshInstance3D.new()
+	mesh.mesh = st.commit()
+	mesh.name = "Bunting"
+	var cloth := StandardMaterial3D.new()
+	cloth.vertex_color_use_as_albedo = true
+	cloth.cull_mode = BaseMaterial3D.CULL_DISABLED
+	cloth.roughness = 0.9
+	mesh.material_override = cloth
+	mesh.set_meta("dress", "bunting")
+	life.add_child(mesh)
