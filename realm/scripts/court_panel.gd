@@ -759,6 +759,10 @@ func _see_it(it: Dictionary) -> void:
 	hint.add_theme_font_size_override("font_size", T.SIZE_DESC)
 	v.add_child(hint)
 	on.grab_focus.call_deferred()
+	# The card fits its words (CK3's event outcome), not the matter's full height before it.
+	_court_panel.custom_minimum_size.y = 0
+	_court_panel.size.y = 0
+	_court_panel.reset_size.call_deferred()
 
 
 ## What the bridge said the ruling did, put on the card that's showing it (ONE).

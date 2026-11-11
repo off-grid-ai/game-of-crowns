@@ -1001,10 +1001,14 @@ func _follow_house(pid: int) -> void:
 	for c in bridge.world.get("cities", []):
 		if int(c["owner"]) == pid and (c.get("capital", false) or seat < 0):
 			seat = int(c["id"])
-	if seat >= 0 and (_house_seen != pid or _selected != seat):
+	# The first click frames the castle and opens nothing over it (Anno 1800's notification
+	# jump: the camera goes to the thing; its panel waits for a click on it).
+	if seat >= 0 and _house_seen != pid:
 		_house_seen = pid
 		director.stop()  # a host followed before must not pull the view back off the seat
-		_focus_city(seat)
+		for c in bridge.world.get("cities", []):
+			if int(c["id"]) == seat:
+				rig.frame_town(terrain.world_pos(float(c["x"]), float(c["y"])), int(c.get("size", 4)))
 		_frame_castle(seat)
 		return
 	_house_seen = -1

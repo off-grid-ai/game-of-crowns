@@ -102,6 +102,8 @@ export async function stage(ctx, req, res, url) {
     const pid = Number(b.ultimatum);
     const t = ((ctx.meta.turning ??= {})[pid] ??= { seasons: 2, state: null });
     Object.assign(t, { state: "sent", at: ctx.world?.turn ?? 0 });
+    const hp = ctx.world?.players?.find((p) => p.id === pid);
+    if (hp) ctx.record({ turn: t.at, kind: "unrest", text: `${houseFor(hp).name} sends a rider to Kingsmere with an ultimatum for the King.` });  // as askUltimatum tells it
     chron.saveMeta(ctx.meta);
     ctx.counselStale = true;
     return json(res, 200, { ok: true, turning: t });
