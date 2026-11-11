@@ -21,8 +21,10 @@ var yaw := 0.0
 ## The closest the camera comes: a low oblique just over the roofs, Manor Lords'
 ## village view (Mac, 2026-11-11: no close-up realism; the town reads from above).
 ## Past the distance where the eye would drop toward the street (ground_view_at), so
-## every view stays oblique; street and eye-level views fold into this one.
-var min_distance := 4.5
+## every view stays oblique; street and eye-level views fold into this one. At 6 the
+## eye stands about 3 up at the closest pitch, just over a tall house's roof (about 2.4):
+## at 4.5 it stood under them, and the first ring of towers and barns filled the view (v14).
+var min_distance := 6.0
 const EYE := 0.2  # eye height, about 1.7 m
 var max_distance := 260.0
 

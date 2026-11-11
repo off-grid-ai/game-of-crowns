@@ -45,6 +45,13 @@ func _input(event: InputEvent) -> void:
 				rig.goal_distance = 6.0
 
 
+## The King took the camera somewhere himself (a sigil, a town): whatever was being
+## watched or followed stops, so nothing pulls the view back to it.
+func stop() -> void:
+	active = false
+	_follow = null
+
+
 func start() -> void:
 	active = true
 	_shot_left = 0.0

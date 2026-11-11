@@ -998,13 +998,14 @@ func _follow_house(pid: int) -> void:
 			seat = int(c["id"])
 	if seat >= 0 and (_house_seen != pid or _selected != seat):
 		_house_seen = pid
+		director.stop()  # a host followed before must not pull the view back off the seat
 		_focus_city(seat)
 		_frame_castle(seat)
 		return
 	_house_seen = -1
 	var host: Node3D = units.army_of(pid, bridge.world)
 	if host:
-		director.watch_at(host.global_position, 6.0, "%s's host" % name, host)
+		director.watch_at(host.global_position, 12.0, "%s's host" % name, host)  # from above the canopy, not through it
 		return
 	for c in bridge.world.get("cities", []):
 		if int(c["owner"]) == pid and c.get("capital", false):
