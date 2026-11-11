@@ -36,7 +36,7 @@ static func dress(root: Node3D, ground: Callable, land: Callable, seed: int) -> 
 	var rank := float((Data.value("dressing", "rank", {}) as Dictionary).get(String(root.get_meta("rank", "village")), 0.5))
 	var placed := {}  # "kit/model" -> [Transform3D...]
 	var taken: Array[Vector2] = []
-	var counts := {"trade": 0, "home": 0, "ground": 0, "refused": 0}
+	var counts := {"trade": 0, "home": 0, "ground": 0, "edge": 0, "refused": 0}
 	var put := func(model: String, at: Vector3, turn: float, scale: float, why: String) -> bool:
 		if not _fits(root, at, taken, why == "ground"):
 			counts["refused"] = int(counts["refused"]) + 1
@@ -116,6 +116,47 @@ static func dress(root: Node3D, ground: Callable, land: Callable, seed: int) -> 
 				break
 		var span: Array = row[2]
 		put.call(String(row[0]), at, rng.randf() * TAU, rng.randf_range(float(span[0]), float(span[1])), "ground")
+	# The square's rim (batch 8b goldrock-fountain: big empty cobbles between the stalls and the house fronts):
+	# benches facing the heart, barrels, crates, potted shrubs and flower tubs along the inside of the rim, off
+	# the stalls' fronts, the doors, the road mouths and the centrepiece's basin.
+	var E: Dictionary = Data.value("dressing", "square_edge", {})
+	var epick: Array = E.get("pick", [])
+	var sq := float(root.get_meta("square_r", 0.0))
+	if not epick.is_empty() and sq > 0.0:
+		var band: Array = E.get("ring", [0.75, 0.95])
+		var basin := preload("res://scripts/town_life.gd").centre_reach(root) + float(E.get("centre_clear", 0.15))
+		var etotal := 0.0
+		for p in epick:
+			etotal += float(p[1])
+		var front := float(E.get("stall_clear", 0.22))
+		for i in int(float(E.get("tries", 60)) * rank):
+			var a := rng.randf() * TAU
+			var d := sq * rng.randf_range(float(band[0]), float(band[1]))
+			if d < basin:
+				continue
+			var at := Vector3(cos(a) * d, 0, sin(a) * d)
+			if taken.any(func(q: Vector2) -> bool: return q.distance_to(Vector2(at.x, at.z)) < float(E.get("gap", 0.13))):
+				continue
+			var by_stall := false
+			for st in root.get_meta("stalls", []):
+				var m: Vector3 = st[0]
+				var out := Vector3(m.x, 0, m.z).normalized()
+				var fr: Vector3 = m - out * (float(st[1]) * 0.5 + 0.06)  # where its buyers stand
+				if Vector2(at.x - fr.x, at.z - fr.z).length() < front + float(st[2]) * 0.5:
+					by_stall = true
+					break
+			if by_stall:
+				continue
+			var roll := rng.randf() * etotal
+			var row: Array = epick[0]
+			for p in epick:
+				roll -= float(p[1])
+				if roll <= 0.0:
+					row = p
+					break
+			var span: Array = row[2]
+			var turn := atan2(-at.x, -at.z) if String(row[0]).ends_with("Bench") else rng.randf() * TAU  # a bench faces the heart
+			put.call(String(row[0]), at, turn, rng.randf_range(float(span[0]), float(span[1])), "edge")
 	# One batch per model.
 	var node := Node3D.new()
 	node.name = "Dressing"

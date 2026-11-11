@@ -19,7 +19,8 @@ func _init() -> void:
 func _town(rank: String) -> Node3D:
 	var root := Node3D.new()
 	root.set_meta("rank", rank)
-	root.set_meta("square_r", 1.0)
+	root.set_meta("square_r", 1.4)
+	root.set_meta("stalls", [[Vector3(1.1, 0, 0.3), 0.12, 0.2], [Vector3(-0.9, 0, 0.8), 0.12, 0.2], [Vector3(0.2, 0, -1.15), 0.12, 0.2]])
 	root.set_meta("trodden", 3.6)
 	root.set_meta("places", {"well": Vector3(0.3, 0, -0.2), "market": Vector3(-0.4, 0, 0.3), "tavern": Vector3(0.0, 0, 1.1), "sept": Vector3(-1.3, 0, -0.9)})
 	root.set_meta("ways_main", [PackedVector2Array([Vector2(0, 0), Vector2(2.0, 0.3), Vector2(4.0, 0.6)]), PackedVector2Array([Vector2(0, 0), Vector2(-2.2, -0.2), Vector2(-4.0, -0.4)])])
@@ -61,6 +62,8 @@ func _run() -> void:
 	for r in Data.value("dressing", "homes", []):
 		named.append(String(r[0]))
 	for r in Data.value("dressing", "ground.pick", []):
+		named.append(String(r[0]))
+	for r in Data.value("dressing", "square_edge.pick", []):
 		named.append(String(r[0]))
 	var missing := PackedStringArray()
 	for m in named:
@@ -107,9 +110,9 @@ func _run() -> void:
 					for s in (b["spots"] as Dictionary).values():
 						if q.distance_to(Vector2((s as Vector3).x, (s as Vector3).z)) < float(C.get("spot", 0.07)) - 0.001:
 							bad.append("%s on a work spot" % model)
-		print("DRESS %-7s %d pieces of %d models: %d at the trades, %d by house doors, %d on the ground between (%d refused as in the way)%s" % [rank, total, placed.size(), counts.get("trade", 0), counts.get("home", 0), counts.get("ground", 0), counts.get("refused", 0),
+		print("DRESS %-7s %d pieces of %d models: %d at the trades, %d by house doors, %d on the ground between, %d along the square's rim (%d refused as in the way)%s" % [rank, total, placed.size(), counts.get("trade", 0), counts.get("home", 0), counts.get("ground", 0), counts.get("edge", 0), counts.get("refused", 0),
 			("; FAIL " + "; ".join(bad.slice(0, 6))) if not bad.is_empty() else ""])
-		if not bad.is_empty() or total == 0 or int(counts.get("trade", 0)) == 0:
+		if not bad.is_empty() or total == 0 or int(counts.get("trade", 0)) == 0 or int(counts.get("edge", 0)) == 0:
 			fails += 1
 		root.queue_free()
 	print("DRESS VERDICT: %s" % ("PASS" if fails == 0 else "FAIL (%d)" % fails))
