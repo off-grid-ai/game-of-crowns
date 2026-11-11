@@ -287,6 +287,25 @@ func _play(quit_after: bool) -> void:
 				if main.rig.is_processing_input() == false:
 					main.rig.apply()
 				await get_tree().create_timer(3.0).timeout
+			"breach":
+				# breach [dist] [tilt]: frames the first open breach in a stone wall (walls.gd), low and oblique
+				# from inside the camp's side, where the storm is fought; the siege's front if none is open yet.
+				var at := Vector3.INF
+				var sieges: Dictionary = main.scenes.get("_sieges")
+				for id in sieges:
+					if sieges[id].get("front") is Vector3:
+						at = sieges[id]["front"]
+						break
+				if at != Vector3.INF and Engine.has_meta("stone_walls"):
+					var gaps: Array = Engine.get_meta("stone_walls").breaches_near(at, 6.0)
+					if not gaps.is_empty():
+						at = gaps[0]
+				if at != Vector3.INF:
+					_oblique(at, float(w[1]) if w.size() > 1 else 3.0, float(w[2]) if w.size() > 2 else -25.0)
+					if main.rig.is_processing_input() == false:
+						main.rig.apply()
+				_note("  breach: %s" % ("framed at %s" % at if at != Vector3.INF else "no siege staged (--siege)"))
+				await get_tree().create_timer(2.0).timeout
 			"burn":
 				# burn Town [seconds] [razed]: the town is put to the torch (fire.gd, --fire=v2): its houses
 				# catch one after another downwind, the townsfolk run or form a bucket line, the roofs fall in.
