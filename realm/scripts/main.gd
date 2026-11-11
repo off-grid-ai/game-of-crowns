@@ -750,6 +750,8 @@ func _on_map(map: Dictionary) -> void:
 const LANE_MARGIN := 0.8  # a pine's crown reaches about this far from its trunk
 var _laying := false  # roads and countryside are being laid out, a frame at a time
 func _on_world(world: Dictionary) -> void:
+	if world.get("seatId") != null:
+		Engine.set_meta("crown_seat", int(world["seatId"]))  # the King's seat: its townsfolk have minds (town_life.minds_on)
 	# The story needs only the houses and seats, not the land: it can begin
 	# before the map has come.
 	if story._intro_due and not world.is_empty():

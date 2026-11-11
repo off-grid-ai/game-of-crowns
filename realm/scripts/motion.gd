@@ -58,7 +58,7 @@ const ARMS := ["LeftShoulder", "LeftUpperArm", "LeftLowerArm", "LeftHand", "Righ
 ## for `--motion=v2` until the motion probe passes: the legs' blend space synced,
 ## pace read in the person's own size, slow steps at a slow cadence, and the body
 ## turning at a person's rate instead of snapping.
-static var v2: bool = OS.get_cmdline_user_args().has("--motion=v2")
+static var v2: bool = not OS.get_cmdline_user_args().has("--motion=v1")  # on by default since the go-live gate (2026-11-11); --motion=v1 for the old one
 const ADULT := 0.118  # an adult's body scale (people.gd: height * k * S, measured): the size WALK_PACE was set for
 ## v2: the ground each way of going covers a second at speed 1, at an adult's
 ## size, measured from the clips themselves (Mixamo moves are In Place: how fast

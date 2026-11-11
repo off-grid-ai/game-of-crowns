@@ -53,8 +53,11 @@ static func _limbo_args() -> Array[int]:
 ## scenes and its villagers alike. LIMBO_ALL turns every town on (consolidation
 ## C1); --limbo=all or --limbo=<ids> does it for one run.
 const LIMBO_ALL := false
+## The King's own seat (Kingsmere) has minds by default since the go-live gate
+## (2026-11-11): main.gd keeps Engine's "crown_seat" from /world's seatId; --limbo=none turns it off.
 static func minds_on(town: int) -> bool:
-	return LIMBO_ALL or OS.get_cmdline_user_args().has("--limbo=all") or LIMBO_TOWNS.has(town) or _limbo_args().has(town)
+	return LIMBO_ALL or OS.get_cmdline_user_args().has("--limbo=all") or LIMBO_TOWNS.has(town) or _limbo_args().has(town) \
+		or (town >= 0 and town == int(Engine.get_meta("crown_seat", -2)) and not OS.get_cmdline_user_args().has("--limbo=none"))
 
 
 func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
