@@ -3,7 +3,7 @@
 importer="3d_texture"
 type="CompressedTexture3D"
 uid="uid://bxxv4mwbimq1s"
-path="res://.godot/imported/storybook.png-f79cbb8e8fca3ffcaddaf05afe824b04.ctex3d"
+path="res://.godot/imported/bold.png-adebc2d3acc52fac511a423ef725c62e.ctex3d"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/grade/bold.png"
-dest_files=["res://.godot/imported/storybook.png-f79cbb8e8fca3ffcaddaf05afe824b04.ctex3d"]
+dest_files=["res://.godot/imported/bold.png-adebc2d3acc52fac511a423ef725c62e.ctex3d"]
 
 [params]
 
