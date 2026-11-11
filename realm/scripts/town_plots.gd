@@ -106,8 +106,18 @@ static func lanes(main: Array, count: int, square_r: float, edge: float, g: ASta
 ## `widths` gives each next house as [frontage, depth, its kind] from a rng;
 ## plots are cut until `edge`. Sorted nearest the square first, so a town that
 ## grows only adds at its ends.
+##
+## Each plot is squared to its own frontage (the chord from where it starts to
+## where it ends along the street), so neighbours on a bend share their party
+## wall's line instead of each turning to the curve under its middle. A plot
+## that would stand on the square, on another street (a lane's mouth, a
+## junction, a bend that comes back) or on a house already cut (the corner
+## house of the road a lane leaves) slides on along its own street, a step at
+## a time, until it is clear: the next house stands flush with the corner
+## instead of a whole plot left empty there.
 static func plots(ways: Array, square_r: float, edge: float, widths: Callable, seed: int) -> Array:
 	var out: Array = []
+	var bodies: Array = []  # every house cut so far: the main roads' first, so a lane's houses start behind the corner house
 	for w in ways.size():
 		var way: PackedVector2Array = ways[w]
 		for side: float in [-1.0, 1.0]:
@@ -115,25 +125,37 @@ static func plots(ways: Array, square_r: float, edge: float, widths: Callable, s
 			rng.seed = seed + 131 * (w + 1) + int(side)
 			var s := 0.0
 			var total := length(way)
+			var pick: Array = []
 			while s < total:
-				var pick: Array = widths.call(rng)
+				if pick.is_empty():
+					pick = widths.call(rng)
 				var fd := Vector2(float(pick[0]), float(pick[1]))  # x: frontage, y: depth
-				var mid := point_at(way, s + fd.x * 0.5)
-				if mid.is_empty():
+				var a := point_at(way, s)
+				var b := point_at(way, s + fd.x)
+				if a.is_empty() or b.is_empty():
 					break
-				var p: Vector2 = mid[0]
-				var tan: Vector2 = mid[1]
-				s += fd.x + GAP
-				if p.length() < square_r + 0.35:
-					continue  # the square's own ground
+				var p: Vector2 = (Vector2(a[0]) + Vector2(b[0])) * 0.5
+				var tan: Vector2 = (Vector2(b[0]) - Vector2(a[0])).normalized()
+				if tan == Vector2.ZERO:
+					tan = a[1]
 				if p.length() > edge:
 					break
 				var n: Vector2 = tan.orthogonal() * side  # out from the street
 				var front := p + n * (ROAD_HALF + SET_BACK)
-				var house := front + n * fd.y * 0.5
-				var back := front + n * (fd.y + YARD)
 				var half := tan * fd.x * 0.5
+				var house := front + n * fd.y * 0.5
+				# The house's walls as towns.gd _plot_body holds them against the other streets.
+				var body := PackedVector2Array()
+				for c in [Vector2(-0.48, -0.48), Vector2(0.48, -0.48), Vector2(0.48, 0.48), Vector2(-0.48, 0.48)]:
+					body.append(house + tan * c.x * fd.x + n * c.y * fd.y)
+				if p.length() < square_r + 0.35 or on_other_way(body, ways, w, ROAD_HALF) or bodies.any(func(o): return not Geometry2D.intersect_polygons(body, o).is_empty()):
+					s += CELL  # the square's own ground, another street or a house already cut there: on along this one
+					continue
+				bodies.append(body)
+				var back := front + n * (fd.y + YARD)
 				out.append([house, -n, fd.x, fd.y, PackedVector2Array([front - half, front + half, back + half, back - half]), p.length(), pick[2], "%d%s" % [w, "+" if side > 0.0 else "-"]])
+				s += fd.x + GAP
+				pick = []
 	out.sort_custom(func(a, b): return float(a[5]) < float(b[5]))
 	return out
 
