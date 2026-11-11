@@ -743,13 +743,22 @@ func _lay_lanes(root: Node3D, center: Vector3, main: Array, count: int, square_r
 	_keep_ways(root, center, rings)
 	root.set_meta("ways_ring", rings.size())
 	var lanes: Array = TownPlots.lanes(main, count, square_r, float(root.get_meta("plot_edge", square_r + 3.6)), _ways_grid, land, rng.seed + 17)
-	_keep_ways(root, center, lanes)
+	_keep_ways(root, center, lanes, false, true)
 	_ways_grid = null
 	return rings + lanes
 
 
-func _keep_ways(root: Node3D, center: Vector3, ways: Array, main := false) -> void:
+## `back`: back lanes (TownPlots.lanes), trodden earth worn soft into the ground (towns.json lanes; research
+## rule 16: dirt lanes 4-5 m with soft edges), not the streets' ruled strips; the main and ring streets keep theirs.
+func _keep_ways(root: Node3D, center: Vector3, ways: Array, main := false, back := false) -> void:
 	var kept: Array = root.get_meta("lanes", [])
+	if back:
+		for way in ways:
+			for i in range(1, way.size()):
+				kept.append([way[i - 1], way[i]])
+			_back_lane(root, center, way)
+		root.set_meta("lanes", kept)
+		return
 	# The main streets paved from the square out (towns.json paving.streets: the crown's seat furthest,
 	# a great house's seat some way, a market town not at all; art target town-b).
 	var pave: Dictionary = _paving()
@@ -769,6 +778,39 @@ func _keep_ways(root: Node3D, center: Vector3, ways: Array, main := false) -> vo
 				_paint_way(root, center, way[i - 1], b, TownPlots.ROAD_HALF * 2.0 * float(pave.get("width", 1.1)), "paved")
 			gone += seg
 	root.set_meta("lanes", kept)
+
+
+## A back lane (town-local polyline) as trodden earth (towns.json lanes): worn into the ground itself where the land
+## is Terrain3D's (land3d paint_mud stamped along it: the same mud as round the square, its edge blending into the
+## grass), else a decal of plain dirt with soft, frayed verges and no ruts ("sides").
+func _back_lane(root: Node3D, center: Vector3, way: PackedVector2Array) -> void:
+	var k: Dictionary = preload("res://scripts/data.gd").value("towns", "lanes", {})
+	var width := TownPlots.ROAD_HALF * 2.0 * float(k.get("width", 1.3))
+	if bool(k.get("ground", true)) and terrain.land3d and terrain.land3d.land:
+		var step := float(k.get("stamp", 0.12))
+		var total := TownPlots.length(way)
+		var s := 0.0
+		var n := 0
+		while s <= total:
+			var at := TownPlots.point_at(way, minf(s, total - 0.001))
+			if at.is_empty():
+				break
+			var q: Vector2 = at[0]
+			terrain.land3d.paint_mud(center + Vector3(q.x, 0, q.y), width * 0.5, n * 31 + way.size())
+			s += step
+			n += 1
+		return
+	var tex: String = terrain.art(String(k.get("texture", DIRT)), ROAD_TEX)
+	for i in range(1, way.size()):
+		var a: Vector2 = way[i - 1]
+		var b: Vector2 = way[i]
+		var length := a.distance_to(b)
+		if length < 0.02:
+			continue
+		var mid := (a + b) * 0.5
+		var lo := minf(_ground_y(center, Vector3(a.x, 0, a.y)), _ground_y(center, Vector3(b.x, 0, b.y)))
+		var hi := maxf(_ground_y(center, Vector3(a.x, 0, a.y)), _ground_y(center, Vector3(b.x, 0, b.y)))
+		terrain.paint(root, terrain.tiled(tex, 1, maxi(1, roundi((length + width) / width)), "sides"), Vector3(mid.x, (lo + hi) / 2.0, mid.y), Vector2(width, length + width), atan2(b.x - a.x, b.y - a.y), _rgb(k.get("tint"), ROAD_TINT), hi - lo + 1.0)
 
 
 ## The town's paving (towns.json paving).
