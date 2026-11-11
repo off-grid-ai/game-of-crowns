@@ -79,8 +79,10 @@ func _tell_interlude(il: Dictionary) -> void:
 		await _epilogue(il, String(il.get("title", "The act ends")), true)  # nothing to name: the act told as before
 	_interlude_on = false
 	ui.interlude_closed.emit()
-	if not ui._petitions.is_empty():
-		ui._show_audience()  # the court that waited behind the telling
+	# The court that waited behind the telling: a realm-wide matter comes up; matters
+	# with a place keep waiting on the map as faces, as they do at any other time.
+	if not ui._petitions.is_empty() and not ui.court._placed(ui._petitions):
+		ui._show_audience()
 
 
 ## An act of the reign turns: a moment, not a card (Frostpunk's ending shows what
