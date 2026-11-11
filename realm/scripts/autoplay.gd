@@ -78,15 +78,38 @@ func _play(quit_after: bool) -> void:
 			continue
 		var w := line.split(" ", false)
 		_note("> " + line)
+		# A burst (snap, short wait, snap...) holds the realm's time still between its frames; any other step lets it run.
+		if _burst and not (w[0] == "snap" or (w[0] == "wait" and w.size() > 1 and float(w[1]) <= BURST_GAP)):
+			_burst = false
+			Engine.time_scale = 1.0
 		await _step(w)
 		# A framing step: the next snap waits for the camera to settle (batch 7: frames taken mid-move), and the
 		# log says where it stood (the distance ladder, checkable from play.log).
 		if w[0] in FRAMING:
 			await _settle()
+	Engine.time_scale = 1.0
+	_burst = false
 	if quit_after:
 		_note("done")
 		_log.close()
 		get_tree().quit()
+
+
+## A burst of frames: time held still between snaps; a wait of at most BURST_GAP seconds advances exactly that much.
+const BURST_GAP := 1.0
+var _burst := false
+
+
+## Exactly `gap` seconds of the realm's time, in one frame: the time scale set from the real length of a frame
+## (measured while still), so the next frame's step is the gap, then still again.
+func _advance(gap: float) -> void:
+	await get_tree().process_frame
+	var t0 := Time.get_ticks_usec()
+	await get_tree().process_frame
+	var real := maxf((Time.get_ticks_usec() - t0) / 1000000.0, 0.001)
+	Engine.time_scale = gap / real
+	await get_tree().process_frame
+	Engine.time_scale = 0.0
 
 
 ## Steps that frame the camera (each waits for it to settle before the next step).
@@ -119,7 +142,10 @@ func _settle() -> void:
 func _step(w: PackedStringArray) -> void:
 		match w[0]:
 			"wait":
-				await get_tree().create_timer(float(w[1])).timeout
+				if _burst and float(w[1]) <= BURST_GAP:
+					await _advance(float(w[1]))
+				else:
+					await get_tree().create_timer(float(w[1])).timeout
 			"tap":
 				_action(w[1], true)
 				await get_tree().process_frame
@@ -190,6 +216,10 @@ func _step(w: PackedStringArray) -> void:
 				Input.parse_input_event(m)
 				await get_tree().create_timer(0.3).timeout
 			"snap":
+				# The realm's time stands still from here until the burst ends (batch 8b: frames came out ~1 s apart,
+				# because the frames a snap waits for ran at full game time at film quality's few frames a second).
+				_burst = true
+				Engine.time_scale = 0.0
 				# A film shot shows the world: any open card or drawer is put away first (a town card the
 				# harness opened framing a siege, the chronicle), unless the step asks for the interface
 				# ("snap name ui").
@@ -200,15 +230,12 @@ func _step(w: PackedStringArray) -> void:
 				# The realm's time stands still while the frame is saved (batch 7: a full-size PNG took most of a
 				# second of game time, so 'wait 0.2' between clip frames came out a second apart): the next wait
 				# is then the true gap between frames.
-				var was := Engine.time_scale
-				Engine.time_scale = 0.0
 				var img := get_viewport().get_texture().get_image()
 				var path: String = w[1] if w[1].begins_with("/") else "%s/%s.png" % [out, w[1]]
 				if path.ends_with(".jpg"):
 					img.save_jpg(path, 0.85)
 				else:
 					img.save_png(path)
-				Engine.time_scale = was
 			"look":
 				_note("  " + " ".join(w.slice(1)) + " :: " + JSON.stringify(_observe()))
 			"button":
