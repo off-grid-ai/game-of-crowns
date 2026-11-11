@@ -32,6 +32,9 @@ limit. Newest first. The plan is [PLAN.md](PLAN.md); the running log of checks i
   switch until judged; tunables in data plus docs/TUNING.md.
 
 ## What Mac said (2026-11-11), newest first
+- "The worlds need to be interactive… the walls need to be built of stones stacked together, then the stones break,
+  the stones fall." A build agent is making stone_wall.gd: masonry courses, MultiMesh while intact, Jolt rigid stones
+  on a hit, slump, rubble, a breach troops can path through, driven by the shared damage fact (--walls=stone).
 - "You are the only supervisor, so you control everything. There is nobody else running parallel." The supervisor
   builds through its own agents when the Desktop builders are idle, and keeps this ledger for takeover.
 - "We don't need to look at the fidelity anymore… the generated images match this." Fidelity is settled: docs/art/target.
