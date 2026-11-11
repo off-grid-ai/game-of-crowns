@@ -1,11 +1,9 @@
+import fs from "node:fs";
 // What a house's favour toward the crown means, defined once (consolidation-plan
 // B2). Every threshold the bridge (and, through /world, the view) uses is here.
-export const BANDS = {
-  loyal: 60,   // with the crown: full banners, answers the call gladly, a quarter of its men
-  sworn: 50,   // trusts the crown enough to swear an oath
-  steady: 35,  // keeps its oath and its counsel; a loyal house in the ladder
-  cooling: 25, // under this it may rise against the King
-};
+// The numbers are data (data/favour.json: loyal, sworn, steady, cooling), read once here.
+const _bands = JSON.parse(fs.readFileSync(new URL("./data/favour.json", import.meta.url), "utf8"));
+export const BANDS = { loyal: _bands.loyal, sworn: _bands.sworn, steady: _bands.steady, cooling: _bands.cooling };
 
 // The band a favour falls in: "loyal", "sworn", "steady", "cooling" or "angry".
 export function band(f) {

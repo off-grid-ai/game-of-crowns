@@ -13,6 +13,7 @@ import { houseFor, cityName } from "./narrator.js";
 import { blightLua } from "./blight.js";
 import * as chron from "./chronicles.js";
 import * as Lua from "./lua.js";
+import { BANDS } from "./favour.js";
 import * as Stakes from "./stakes.js";
 import * as kingDeeds from "./ledger.js";
 
@@ -116,7 +117,7 @@ export function raise(ctx, d, turn, want = null, isFinale = false) {
   const border = [...theirs].sort((a, b) => Math.min(...mine.map((m) => dist(a, m))) - Math.min(...mine.map((m) => dist(b, m))))[0];
   // The realm's biggest town not the crown's: where a famine bites hardest.
   const big = world.cities.filter((c) => houses.some((h) => h.id === c.owner)).sort((a, b) => b.size - a.size)[0];
-  const can = { host: !!border, famine: !!big, pretender: !!border && favourOf(coldest.id) < 50 && (ctx.usurper ?? "none") === "none" };
+  const can = { host: !!border, famine: !!big, pretender: !!border && favourOf(coldest.id) < BANDS.sworn && (ctx.usurper ?? "none") === "none" };
   if (envious) can.famine = false;  // an envious house schemes: it masses men or raises a claim
   const pool = Object.entries(DIRECTOR.threats).filter(([k]) => can[k] && k !== d.last && (!want || k === want));
   if (!pool.length) return;

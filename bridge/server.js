@@ -64,7 +64,7 @@ let world = null;
 let blights = [];  // blighted land waiting to grow back (blight.js)
 let history = [];
 let detailCache = { file: null, mtime: 0, data: null };
-let turnSeconds = 20;
+let turnSeconds = chron.PACE.season;  // data/pace.json
 let paused = false;
 // Each great house's regard for the crown (0-100), by Freeciv player id.
 let favour = {};
@@ -132,7 +132,7 @@ function load(id) {
   queueMicrotask(townStates);  // the towns' states, once the realm is loaded
   blights = chron.readJson(path.join(P.state, "blights.json"), null) ?? chron.readJson(path.join(P.state, "scars.json"), []);  // scars.json: before the rename
   detailCache = { file: null, mtime: 0, data: null };
-  turnSeconds = 40;  // one pace for every realm: a season in forty seconds, with a court at each (GAME_DESIGN)
+  turnSeconds = chron.PACE.season;  // one pace for every realm, with a court at each season (data/pace.json; GAME_DESIGN)
   sitting = meta.court?.sitting != null;  // a realm reopened mid-sitting still holds
   paused = meta.status !== "running";
   favour = chron.readJson(path.join(P.state, "favour.json"), {});
@@ -404,7 +404,7 @@ function applyStartOptions() {
 }
 
 // What view.js needs to build the /world answer, read fresh on every call.
-const viewCtx = () => ({ world, meta, history, court, stakes, turnSeconds, counselNow, scenes, effects, favourWhy, favourPast, lastSeason, detail, favourOf, marchOdds, greatHouses, sworn, priceOf, seasonsLeft, crownOf, crownSeat, reignInfo, storyNow, marksNow, goalNow, CIVILIAN, TURNING, GOAL_FAVOUR, soulsOf });
+const viewCtx = () => ({ markSeasons: MARK_SEASONS, world, meta, history, court, stakes, turnSeconds, counselNow, scenes, effects, favourWhy, favourPast, lastSeason, detail, favourOf, marchOdds, greatHouses, sworn, priceOf, seasonsLeft, crownOf, crownSeat, reignInfo, storyNow, marksNow, goalNow, CIVILIAN, TURNING, GOAL_FAVOUR, soulsOf });
 // The realm as the view sees it (GET /world): built in view.js.
 function worldView() {
   return View.worldView(viewCtx());

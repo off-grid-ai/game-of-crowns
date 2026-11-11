@@ -13,6 +13,7 @@ import { decide } from "./claude.js";
 
 import { calendar } from "./stakes.js";
 import { ANSWERS } from "./petitions.js";
+import { BANDS } from "./favour.js";
 import * as names from "./names.js";
 
 // The court's deck of dilemmas: data, so new ones are written, not coded.
@@ -487,9 +488,9 @@ export class Court {
         opts.push({ kind: "plot", score: 10 - this.opinion(c.id, foe.id) * 0.5 + (has("vengeful") || has("wrathful") ? 20 : 0) + (goal.kind === "revenge" ? 30 : 0) - (has("honourable") ? 20 : 0), target: foe });
       }
       const favour = ctx.favour(c.playerId);
-      opts.push({ kind: "petition", score: 20 + (goal.kind === "court" || goal.kind === "peace" ? 20 : 0) + (favour > 60 ? 10 : 0) });
+      opts.push({ kind: "petition", score: 20 + (goal.kind === "court" || goal.kind === "peace" ? 20 : 0) + (favour >= BANDS.loyal ? 10 : 0) });
       // Only after the house's ultimatum to the crown was refused (server.js turnHouses).
-      if (favour < 25 && !ctx.warded?.(c.playerId) && (ctx.mayRise?.(c.playerId) ?? true)) opts.push({ kind: "rebel", score: 40 + (25 - favour) * 2 + (goal.kind === "crown" ? 40 : 0) + (has("ambitious") ? 15 : 0) - (has("craven") ? 30 : 0) - (c.hostage && this.people[c.hostage]?.alive ? 60 : 0) });
+      if (favour < BANDS.cooling && !ctx.warded?.(c.playerId) && (ctx.mayRise?.(c.playerId) ?? true)) opts.push({ kind: "rebel", score: 40 + (BANDS.cooling - favour) * 2 + (goal.kind === "crown" ? 40 : 0) + (has("ambitious") ? 15 : 0) - (has("craven") ? 30 : 0) - (c.hostage && this.people[c.hostage]?.alive ? 60 : 0) });
     }
     if (!opts.length) return null;
     // The realm's mood, set by the King in words, tilts everyone at once.

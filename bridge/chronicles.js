@@ -10,6 +10,8 @@
 //   chronicles/<id>/realm.serv       the Freeciv start script
 
 import { ECONOMY } from "./crown.js";
+// How long a season lasts, one place (data/pace.json): every realm's pace, and the speed buttons' bounds.
+export const PACE = JSON.parse(fs.readFileSync(new URL("./data/pace.json", import.meta.url), "utf8"));
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -71,7 +73,7 @@ export function addRecord(entry) {
 // one drives the simulation: Freeciv's settings, the houses' AI traits, the
 // stakes, the court, or a one-time act when the realm first stirs.
 export const OPTION_DEFAULTS = {
-  pace: 40,              // seconds a season lasts, with a court at each: a year in under three minutes
+  pace: PACE.season,     // seconds a season lasts, with a court at each (data/pace.json)
   disasters: "normal",   // floods, fires, famine: none | gentle | normal | cruel
   raiders: "normal",     // barbarians from the wilds: none | normal | hordes
   dead: "normal",        // the dead beyond the wall: off | late | normal | soon
@@ -101,7 +103,7 @@ export function cleanOptions(o = {}, fate) {
   for (const [k, v] of Object.entries(o ?? {})) {
     if (k in CHOICES && CHOICES[k].includes(v)) out[k] = v;
   }
-  out.pace = 20;  // one pace for every realm
+  out.pace = PACE.season;  // one pace for every realm (data/pace.json)
   // The reign's story: an arc id, or "random" (from the tags, if any), or none.
   out.story = typeof o?.story === "string" && /^[a-z0-9-]{1,60}$/.test(o.story) ? o.story : null;
   out.storyTags = (Array.isArray(o?.storyTags) ? o.storyTags : []).filter((t) => typeof t === "string" && /^[a-z-]{1,24}$/.test(t)).slice(0, 6);
@@ -241,7 +243,7 @@ export function adoptLegacy() {
   fs.cpSync(path.join(DIR, "data", "nation"), path.join(p.data, "nation"), { recursive: true });
   fs.writeFileSync(p.serv, fs.readFileSync(path.join(DIR, "realm.serv"), "utf8"));
   const meta = {
-    id, name: "Aldmere I", scenario: "aldmere", seed: 1066, minutes: 0, pace: 40, created: Date.now(),
+    id, name: "Aldmere I", scenario: "aldmere", seed: 1066, minutes: 0, pace: PACE.season, created: Date.now(),
     elapsedMs: 0, status: "running", score: null, verdict: null,
   };
   saveMeta(meta);

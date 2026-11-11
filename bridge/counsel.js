@@ -8,7 +8,7 @@
 // server.js on each call (server.js keeps wrappers of the same names).
 
 import { houseFor, cityName } from "./narrator.js";
-import { DECREES, bannersReady } from "./crown.js";
+import { DECREES, bannersReady, ECONOMY } from "./crown.js";  // ECONOMY.thin: below it the treasury is thin (data/economy.json)
 import { BANDS } from "./favour.js";
 import { calendar } from "./stakes.js";
 import * as chron from "./chronicles.js";
@@ -145,7 +145,7 @@ export function counsel(ctx, players, cities, threat) {
       : "Every season of war burns fields and lowers the realm's peace. Both are warm enough to obey the King's peace.";
     out.push({ urgency: 50, text: `${war.house.name} and ${foe.house.name} are at war`, why, acts: acts.filter((a) => a.city !== undefined) });
   }
-  if (purse < 150) out.push({ urgency: 40, text: "The royal treasury is thin", why: "Every decree costs crowns; a higher tithe fills the purse but cools the houses.", acts: [{ label: "Raise the tithe", ui: "tithe_up" }] });
+  if (purse < ECONOMY.thin) out.push({ urgency: 40, text: "The royal treasury is thin", why: "Every decree costs crowns; a higher tithe fills the purse but cools the houses.", acts: [{ label: "Raise the tithe", ui: "tithe_up" }] });
   if (!out.length) out.push({ urgency: 0, text: "The realm is quiet", why: "A good season to win a house's love before you need it.", acts: [] });
   // Every order shows its price before the King gives it, as the town card does: "Command peace  6k cr".
   // And what it does, so the King weighs effect against price: "Gift crowns  15k cr · +10".

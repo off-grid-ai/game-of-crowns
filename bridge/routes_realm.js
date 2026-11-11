@@ -136,7 +136,7 @@ export async function reignOptions(ctx, req, res, url) {
   // change mid-reign. Start-only choices (the world, which houses, their
   // temper, wealth and trust, the starting host) stay as they were.
   const LIVE = ["pace", "disasters", "raiders", "dead", "usurper", "petitions", "intrigue", "language"];
-  const now = { ...chron.cleanOptions(ctx.meta.options ?? {}), pace: ctx.meta.pace ?? 12 };
+  const now = { ...chron.cleanOptions(ctx.meta.options ?? {}), pace: ctx.meta.pace ?? chron.PACE.season };
   if (req.method !== "POST") return json(res, 200, { options: now, live: LIVE });
   const b = await body(req);
   const next = chron.cleanOptions({ ...now, ...Object.fromEntries(Object.entries(b).filter(([k]) => LIVE.includes(k))) });
@@ -163,7 +163,7 @@ export async function ai(ctx, req, res, url) {
 export async function speed(ctx, req, res, url) {
   const { send, timeoutNow } = ctx;
   const { seconds } = await body(req);
-  ctx.turnSeconds = Math.max(1, Math.min(600, Number(seconds) || 90));
+  ctx.turnSeconds = Math.max(chron.PACE.fastest, Math.min(chron.PACE.slowest, Number(seconds) || chron.PACE.season));  // data/pace.json
   ctx.meta.pace = ctx.turnSeconds;
   chron.saveMeta(ctx.meta);
   send(`set timeout ${timeoutNow()}`);

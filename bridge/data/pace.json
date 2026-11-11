@@ -1,0 +1,6 @@
+{
+  "_": "How long a season lasts, one place (chronicles.js reads it; the view reads it from /world's turnSeconds). season: seconds a season lasts in every realm, with a court at each. fastest, slowest: the bounds the speed buttons (POST /speed) may set.",
+  "season": 40,
+  "fastest": 1,
+  "slowest": 600
+}

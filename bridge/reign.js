@@ -43,7 +43,7 @@ export function deed(ctx, tag, opts = {}) {
 
 // The reign's goal, as the top bar shows it: how many great houses stand
 // firmly with the King, of how many, and how many are at war with another.
-export const GOAL_FAVOUR = 50;
+export const GOAL_FAVOUR = BANDS.sworn;  // sworn and up counts as firmly the King's (data/favour.json)
 export function goalNow(ctx) {
   const { world, detail, favourOf } = ctx;
   const great = (world?.players ?? []).filter((p) => !houseFor(p).wild && !houseFor(p).crown && p.cities > 0);
@@ -99,7 +99,7 @@ export function lastAct(ctx) {
 export const AMBITIONS = [
   { key: "peace", text: "Keep the realm truly at peace for two whole years", met: ({ history }) => history.length >= 8 && history.slice(-8).every((r) => r.peace >= 0.85) },
   { key: "treasury", text: "Fill the royal treasury to 200,000 crowns", met: ({ history }) => (history.at(-1)?.treasury ?? 0) >= 2000 },  // history keeps gold; a crown is a hundredth of it
-  { key: "loyal", text: "Win four of the great houses to the crown", met: ({ world, favourOf }) => (world?.players ?? []).filter((p) => !houseFor(p).wild && !houseFor(p).crown && favourOf(p.id) >= 60).length >= 4 },
+  { key: "loyal", text: "Win four of the great houses to the crown", met: ({ world, favourOf }) => (world?.players ?? []).filter((p) => !houseFor(p).wild && !houseFor(p).crown && favourOf(p.id) >= BANDS.loyal).length >= 4 },
   { key: "grow", text: "Grow the realm by a fifth", met: ({ meta, history }) => meta.ambitionsFrom?.pop > 0 && (history.at(-1)?.pop ?? 0) >= meta.ambitionsFrom.pop * 1.2 },
   { key: "decrees", text: "Rule with a firm hand: twenty decrees in the King's name", met: ({ meta, chronicle }) => chronicle.filter((e) => e.kind === "decree" && e.turn >= (meta.ambitionsFrom?.turn ?? 0)).length >= 20 },
 ];
