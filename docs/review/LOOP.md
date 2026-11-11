@@ -941,3 +941,11 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   - children near a parent 47% (need 90%). The probe lists them as children at play while the parent browses, drinks or haggles: the parent's errand moves faster than the child's pull-back.
 - **Kingsmere stays on the old rules** until these pass.
 - **Blocked:** the app's session messaging isn't responding (PreToolUse hook timeouts), so I can't hand these to Townsfolk look, NPC perf or Film. They're written here for the next wake.
+
+## 2026-11-11 07:00, stalls traced (taken while Builder 2 is offline)
+
+- **towns.build/grade 1.7–2.0 s:** with each step named (d4c69ca) and timed directly, terrain grading takes 0 ms and the ground-changed handlers 0 ms. The long frame is the draw as the first towns appear (first use of their materials). It happens during the build the intro's loading screen waits on (`ready_check`: towns not building), and no frame over 200 ms came in the 60 s of play after (3 runs). I tried redrawing only the touched terrain regions; it changed nothing, so it's reverted.
+- **ui.set_world:** 237 ms at most in my 3 runs (NPC perf saw 2.5 s in its run, on the frame where /world lands). Watch item: if it comes back mid-play, the work in main._on_world from main.gd:834 gets spread over frames.
+- **Load stages** (land 2.3–2.8 s, sea 2.0–2.8 s, rivers and vegetation about 1 s) sit behind the loading screen.
+- **Messaging:** back. The gate failures went to Townsfolk look and NPC perf.
+- **Verdict:** on course. No mid-play stall found at normal load.
