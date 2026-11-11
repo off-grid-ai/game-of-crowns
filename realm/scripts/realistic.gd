@@ -252,6 +252,42 @@ static func height(name: String) -> float:
 ## team.materials, by name) leaves a dyed cloth its own colour:
 ## a market's awnings red, blue, ochre and green, not all the holder's (art target town-b).
 static func dyed(src: Material, rgb) -> Material:
+	# {"like": "<a village kit piece>", "triplanar": scale}: the material of another kit piece in its place, laid on
+	# in world-free triplanar so it needs none of this mesh's UVs (the Kenney fountain's basin pointed its UVs
+	# at a palette's cells: flat lavender plastic, batch 8 review; now the village kit's stone).
+	if rgb is Dictionary and (rgb as Dictionary).has("like"):
+		var key := "like:%s:%s" % [rgb["like"], rgb.get("triplanar", 0.5)]
+		if _cache.has(key):
+			return _cache[key]
+		var path := "res://assets/village/%s.gltf" % String(rgb["like"])
+		var n: Node = (load(path) as PackedScene).instantiate() if ResourceLoader.exists(path) else null
+		var got: BaseMaterial3D = null
+		for mi in (n.find_children("*", "MeshInstance3D", true, false) if n else []):
+			var m := (mi as MeshInstance3D).get_active_material(0)
+			if m is BaseMaterial3D:
+				got = (m as BaseMaterial3D).duplicate()
+				break
+		if n:
+			n.free()
+		if got == null:
+			return src
+		got.uv1_triplanar = true
+		got.uv1_scale = Vector3.ONE * float(rgb.get("triplanar", 0.5))
+		got.resource_name = "Like_%s" % got.resource_name
+		_cache[key] = got
+		return got
+	# {"water": {colour, alpha, roughness}}: still water that reads as water: dark and deep, a little see-through,
+	# glossy enough to catch the sky (it was a flat 60% sky-blue sheet).
+	if rgb is Dictionary and (rgb as Dictionary).get("water") is Dictionary:
+		var w: Dictionary = rgb["water"]
+		var c: Array = w.get("colour", [0.1, 0.2, 0.22])
+		var wm := StandardMaterial3D.new()
+		wm.albedo_color = Color(float(c[0]), float(c[1]), float(c[2]), float(w.get("alpha", 0.85)))
+		wm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		wm.roughness = float(w.get("roughness", 0.05))
+		wm.metallic_specular = 0.9
+		wm.resource_name = "Water_still"
+		return wm
 	# {"paint": [r, g, b]}: the cloth repainted in its own colour, its weave kept in the normal map. A multiply
 	# can't make linen of a red cloth (the yard washing was red banner cloth times 1.35: flat salmon, batch 7).
 	if src is BaseMaterial3D and rgb is Dictionary and (rgb as Dictionary).get("paint") is Array:
