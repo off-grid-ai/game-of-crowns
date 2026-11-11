@@ -32,6 +32,9 @@ limit. Newest first. The plan is [PLAN.md](PLAN.md); the running log of checks i
   switch until judged; tunables in data plus docs/TUNING.md.
 
 ## What Mac said (2026-11-11), newest first
+- "Beautiful does not mean hyper-realism… even at low or mid fidelity, if the interaction experience is
+  great, we'll win. That's what you need to focus on." The slice is judged first on interactions (every
+  action answered in the world, things reacting to each other), then on the look at our chosen abstraction.
 - "I don't see too much difference since I left it… the gameplay is quite poor… what I'm gunning for is a
   beautiful experience where the world makes sense. We need to figure out whether we can actually create a
   world like that. Maintain a ledger so other agents can take over."
