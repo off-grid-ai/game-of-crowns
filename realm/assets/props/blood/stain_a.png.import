@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dnka366bb8q7o"
-path="res://.godot/imported/stain_a.png-6701dd08b2770ba07ee66071d4a58b28.ctex"
+path.s3tc="res://.godot/imported/stain_a.png-6701dd08b2770ba07ee66071d4a58b28.s3tc.ctex"
+path.etc2="res://.godot/imported/stain_a.png-6701dd08b2770ba07ee66071d4a58b28.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/props/blood/stain_a.png"
-dest_files=["res://.godot/imported/stain_a.png-6701dd08b2770ba07ee66071d4a58b28.ctex"]
+dest_files=["res://.godot/imported/stain_a.png-6701dd08b2770ba07ee66071d4a58b28.s3tc.ctex", "res://.godot/imported/stain_a.png-6701dd08b2770ba07ee66071d4a58b28.etc2.ctex"]
 
 [params]
 

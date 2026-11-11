@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://biccgcw1uvey2"
-path="res://.godot/imported/Body_specularGlossiness.png-960f81414a63a7368ff5ba327abaf660.ctex"
+path.s3tc="res://.godot/imported/Body_specularGlossiness.png-960f81414a63a7368ff5ba327abaf660.s3tc.ctex"
+path.etc2="res://.godot/imported/Body_specularGlossiness.png-960f81414a63a7368ff5ba327abaf660.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/people/mixamo/fuse_woman_1/textures/Body_specularGlossiness.png"
-dest_files=["res://.godot/imported/Body_specularGlossiness.png-960f81414a63a7368ff5ba327abaf660.ctex"]
+dest_files=["res://.godot/imported/Body_specularGlossiness.png-960f81414a63a7368ff5ba327abaf660.s3tc.ctex", "res://.godot/imported/Body_specularGlossiness.png-960f81414a63a7368ff5ba327abaf660.etc2.ctex"]
 
 [params]
 

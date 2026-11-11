@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://7noogxf6158o"
-path="res://.godot/imported/Torch_01.001_metallicRoughness.png-5354d9566c0795d2b1d9de8552c5ee49.ctex"
+path.s3tc="res://.godot/imported/Torch_01.001_metallicRoughness.png-5354d9566c0795d2b1d9de8552c5ee49.s3tc.ctex"
+path.etc2="res://.godot/imported/Torch_01.001_metallicRoughness.png-5354d9566c0795d2b1d9de8552c5ee49.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/great_hall/textures/Torch_01.001_metallicRoughness.png"
-dest_files=["res://.godot/imported/Torch_01.001_metallicRoughness.png-5354d9566c0795d2b1d9de8552c5ee49.ctex"]
+dest_files=["res://.godot/imported/Torch_01.001_metallicRoughness.png-5354d9566c0795d2b1d9de8552c5ee49.s3tc.ctex", "res://.godot/imported/Torch_01.001_metallicRoughness.png-5354d9566c0795d2b1d9de8552c5ee49.etc2.ctex"]
 
 [params]
 

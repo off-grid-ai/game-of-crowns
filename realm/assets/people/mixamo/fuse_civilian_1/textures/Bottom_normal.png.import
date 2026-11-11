@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dgj6u6gksygm2"
-path="res://.godot/imported/Bottom_normal.png-f7d50f61eef2da6829bb6ceb0482a4ec.ctex"
+path.s3tc="res://.godot/imported/Bottom_normal.png-f7d50f61eef2da6829bb6ceb0482a4ec.s3tc.ctex"
+path.etc2="res://.godot/imported/Bottom_normal.png-f7d50f61eef2da6829bb6ceb0482a4ec.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/people/mixamo/fuse_civilian_1/textures/Bottom_normal.png"
-dest_files=["res://.godot/imported/Bottom_normal.png-f7d50f61eef2da6829bb6ceb0482a4ec.ctex"]
+dest_files=["res://.godot/imported/Bottom_normal.png-f7d50f61eef2da6829bb6ceb0482a4ec.s3tc.ctex", "res://.godot/imported/Bottom_normal.png-f7d50f61eef2da6829bb6ceb0482a4ec.etc2.ctex"]
 
 [params]
 

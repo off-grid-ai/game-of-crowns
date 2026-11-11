@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://4gx107qoct33"
-path="res://.godot/imported/sheath_baseColor.png-50365e5eb207ac14858ae41cf1803c67.ctex"
+path.s3tc="res://.godot/imported/sheath_baseColor.png-50365e5eb207ac14858ae41cf1803c67.s3tc.ctex"
+path.etc2="res://.godot/imported/sheath_baseColor.png-50365e5eb207ac14858ae41cf1803c67.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/props/weapons/dagger/textures/sheath_baseColor.png"
-dest_files=["res://.godot/imported/sheath_baseColor.png-50365e5eb207ac14858ae41cf1803c67.ctex"]
+dest_files=["res://.godot/imported/sheath_baseColor.png-50365e5eb207ac14858ae41cf1803c67.s3tc.ctex", "res://.godot/imported/sheath_baseColor.png-50365e5eb207ac14858ae41cf1803c67.etc2.ctex"]
 
 [params]
 

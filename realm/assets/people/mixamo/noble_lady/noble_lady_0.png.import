@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ckcc1swmek1v2"
-path="res://.godot/imported/noble_lady_0.png-875dd9953ebefa06f28b2224dc628126.ctex"
+path.s3tc="res://.godot/imported/noble_lady_0.png-875dd9953ebefa06f28b2224dc628126.s3tc.ctex"
+path.etc2="res://.godot/imported/noble_lady_0.png-875dd9953ebefa06f28b2224dc628126.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "f1783c3ed4ad29bca6a67419234adbc5"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/people/mixamo/noble_lady/noble_lady_0.png"
-dest_files=["res://.godot/imported/noble_lady_0.png-875dd9953ebefa06f28b2224dc628126.ctex"]
+dest_files=["res://.godot/imported/noble_lady_0.png-875dd9953ebefa06f28b2224dc628126.s3tc.ctex", "res://.godot/imported/noble_lady_0.png-875dd9953ebefa06f28b2224dc628126.etc2.ctex"]
 
 [params]
 

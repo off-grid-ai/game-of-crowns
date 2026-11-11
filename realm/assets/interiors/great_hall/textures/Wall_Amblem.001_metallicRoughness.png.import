@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://biu37y37nh5ik"
-path="res://.godot/imported/Wall_Amblem.001_metallicRoughness.png-6ba80fd280790a286be46795d3b1e15d.ctex"
+path.s3tc="res://.godot/imported/Wall_Amblem.001_metallicRoughness.png-6ba80fd280790a286be46795d3b1e15d.s3tc.ctex"
+path.etc2="res://.godot/imported/Wall_Amblem.001_metallicRoughness.png-6ba80fd280790a286be46795d3b1e15d.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/great_hall/textures/Wall_Amblem.001_metallicRoughness.png"
-dest_files=["res://.godot/imported/Wall_Amblem.001_metallicRoughness.png-6ba80fd280790a286be46795d3b1e15d.ctex"]
+dest_files=["res://.godot/imported/Wall_Amblem.001_metallicRoughness.png-6ba80fd280790a286be46795d3b1e15d.s3tc.ctex", "res://.godot/imported/Wall_Amblem.001_metallicRoughness.png-6ba80fd280790a286be46795d3b1e15d.etc2.ctex"]
 
 [params]
 

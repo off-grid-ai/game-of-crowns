@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dhnyuu1hnpxyc"
 path.s3tc="res://.godot/imported/MetalDoor_metallicRoughness.png-29f85ac0a079f846887e4881bae0d58f.s3tc.ctex"
+path.etc2="res://.godot/imported/MetalDoor_metallicRoughness.png-29f85ac0a079f846887e4881bae0d58f.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_castle/textures/MetalDoor_metallicRoughness.png"
-dest_files=["res://.godot/imported/MetalDoor_metallicRoughness.png-29f85ac0a079f846887e4881bae0d58f.s3tc.ctex"]
+dest_files=["res://.godot/imported/MetalDoor_metallicRoughness.png-29f85ac0a079f846887e4881bae0d58f.s3tc.ctex", "res://.godot/imported/MetalDoor_metallicRoughness.png-29f85ac0a079f846887e4881bae0d58f.etc2.ctex"]
 
 [params]
 

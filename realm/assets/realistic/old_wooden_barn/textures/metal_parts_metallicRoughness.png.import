@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://drhrjd4gbise6"
 path.s3tc="res://.godot/imported/metal_parts_metallicRoughness.png-04ff725878eca440fea61988876e198b.s3tc.ctex"
+path.etc2="res://.godot/imported/metal_parts_metallicRoughness.png-04ff725878eca440fea61988876e198b.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/old_wooden_barn/textures/metal_parts_metallicRoughness.png"
-dest_files=["res://.godot/imported/metal_parts_metallicRoughness.png-04ff725878eca440fea61988876e198b.s3tc.ctex"]
+dest_files=["res://.godot/imported/metal_parts_metallicRoughness.png-04ff725878eca440fea61988876e198b.s3tc.ctex", "res://.godot/imported/metal_parts_metallicRoughness.png-04ff725878eca440fea61988876e198b.etc2.ctex"]
 
 [params]
 

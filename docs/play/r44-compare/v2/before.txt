@@ -1,0 +1,24 @@
+Goldrock dist=120 fps: 17.0 15.0 
+   load: 5.72 7.90 9.33  memory free: 45%
+   busiest: Brave 79.9%, fseventsd 33.0%, godot 30.6%, Olympus 23.0%, WindowServer 17.9%, 
+Goldrock dist=40 fps: 16.0 18.0 
+   load: 5.03 7.64 9.22  memory free: 44%
+   busiest: node 123.7%, godot 93.7%, Off 21.2%, WindowServer 18.2%, ecosystemanalyticsd 15.9%, 
+Goldrock dist=14 fps: 8.0 9.0 
+   load: 6.10 7.73 9.21  memory free: 35%
+   busiest: Brave 117.5%, godot 84.4%, node 76.9%, node 70.7%, Brave 46.3%, 
+Goldrock dist=5 fps: 11.0 9.0 
+   load: 6.79 7.81 9.22  memory free: 31%
+   busiest: node 114.0%, node 79.1%, godot 56.9%, ecosystemd 24.9%, ecosystemanalyticsd 23.8%, 
+Kingsmere dist=120 fps: 15.0 11.0 
+   load: 6.92 7.79 9.18  memory free: 36%
+   busiest: node 97.7%, godot 72.6%, Off 22.5%, ecosystemanalyticsd 21.1%, ecosystemd 20.9%, 
+Kingsmere dist=40 fps: 12.0 16.0 
+   load: 6.93 7.75 9.14  memory free: 36%
+   busiest: godot 135.7%, Brave 92.7%, Brave 57.6%, Brave 38.0%, WindowServer 29.6%, 
+Kingsmere dist=14 fps: 10.0 9.0 
+   load: 6.23 7.56 9.05  memory free: 34%
+   busiest: node 98.0%, node 94.4%, godot 68.4%, Off 25.9%, Claude 19.5%, 
+Kingsmere dist=5 fps: 8.0 14.0 
+   load: 6.27 7.50 9.01  memory free: 34%
+   busiest: godot 108.9%, Off 83.5%, Brave 70.2%, node 65.3%, Brave 45.9%, 

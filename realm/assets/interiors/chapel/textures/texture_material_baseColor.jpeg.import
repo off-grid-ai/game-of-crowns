@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bw3d8mtb0vvbp"
-path="res://.godot/imported/texture_material_baseColor.jpeg-ba58d173034374659d057fb32a93eb51.ctex"
+path.s3tc="res://.godot/imported/texture_material_baseColor.jpeg-ba58d173034374659d057fb32a93eb51.s3tc.ctex"
+path.etc2="res://.godot/imported/texture_material_baseColor.jpeg-ba58d173034374659d057fb32a93eb51.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/chapel/textures/texture_material_baseColor.jpeg"
-dest_files=["res://.godot/imported/texture_material_baseColor.jpeg-ba58d173034374659d057fb32a93eb51.ctex"]
+dest_files=["res://.godot/imported/texture_material_baseColor.jpeg-ba58d173034374659d057fb32a93eb51.s3tc.ctex", "res://.godot/imported/texture_material_baseColor.jpeg-ba58d173034374659d057fb32a93eb51.etc2.ctex"]
 
 [params]
 

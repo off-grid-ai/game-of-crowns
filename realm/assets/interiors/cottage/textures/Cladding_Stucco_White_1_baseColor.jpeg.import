@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://djoip8blacdn1"
-path="res://.godot/imported/Cladding_Stucco_White_1_baseColor.jpeg-60faa1298802b3eccec0cfed3c15b5b0.ctex"
+path.s3tc="res://.godot/imported/Cladding_Stucco_White_1_baseColor.jpeg-60faa1298802b3eccec0cfed3c15b5b0.s3tc.ctex"
+path.etc2="res://.godot/imported/Cladding_Stucco_White_1_baseColor.jpeg-60faa1298802b3eccec0cfed3c15b5b0.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/cottage/textures/Cladding_Stucco_White_1_baseColor.jpeg"
-dest_files=["res://.godot/imported/Cladding_Stucco_White_1_baseColor.jpeg-60faa1298802b3eccec0cfed3c15b5b0.ctex"]
+dest_files=["res://.godot/imported/Cladding_Stucco_White_1_baseColor.jpeg-60faa1298802b3eccec0cfed3c15b5b0.s3tc.ctex", "res://.godot/imported/Cladding_Stucco_White_1_baseColor.jpeg-60faa1298802b3eccec0cfed3c15b5b0.etc2.ctex"]
 
 [params]
 

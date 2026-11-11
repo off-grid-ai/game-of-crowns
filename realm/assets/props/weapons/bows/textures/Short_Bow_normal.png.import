@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c7lb82e5vxojk"
-path="res://.godot/imported/Short_Bow_normal.png-85bd183a565fe59e87dab78202df8452.ctex"
+path.s3tc="res://.godot/imported/Short_Bow_normal.png-85bd183a565fe59e87dab78202df8452.s3tc.ctex"
+path.etc2="res://.godot/imported/Short_Bow_normal.png-85bd183a565fe59e87dab78202df8452.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/props/weapons/bows/textures/Short_Bow_normal.png"
-dest_files=["res://.godot/imported/Short_Bow_normal.png-85bd183a565fe59e87dab78202df8452.ctex"]
+dest_files=["res://.godot/imported/Short_Bow_normal.png-85bd183a565fe59e87dab78202df8452.s3tc.ctex", "res://.godot/imported/Short_Bow_normal.png-85bd183a565fe59e87dab78202df8452.etc2.ctex"]
 
 [params]
 

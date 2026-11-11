@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://pm0qcm2tn0jx"
 path.s3tc="res://.godot/imported/Wooden_Box_metallicRoughness.png-1a6b99d25731e216ef9dc35b667bf089.s3tc.ctex"
+path.etc2="res://.godot/imported/Wooden_Box_metallicRoughness.png-1a6b99d25731e216ef9dc35b667bf089.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Wooden_Box_metallicRoughness.png"
-dest_files=["res://.godot/imported/Wooden_Box_metallicRoughness.png-1a6b99d25731e216ef9dc35b667bf089.s3tc.ctex"]
+dest_files=["res://.godot/imported/Wooden_Box_metallicRoughness.png-1a6b99d25731e216ef9dc35b667bf089.s3tc.ctex", "res://.godot/imported/Wooden_Box_metallicRoughness.png-1a6b99d25731e216ef9dc35b667bf089.etc2.ctex"]
 
 [params]
 

@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://yfgeednj4n21"
-path="res://.godot/imported/Metal_Rough_4_baseColor.jpeg-1554af32abe960722494fc2b882b99f7.ctex"
+path.s3tc="res://.godot/imported/Metal_Rough_4_baseColor.jpeg-1554af32abe960722494fc2b882b99f7.s3tc.ctex"
+path.etc2="res://.godot/imported/Metal_Rough_4_baseColor.jpeg-1554af32abe960722494fc2b882b99f7.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/cottage/textures/Metal_Rough_4_baseColor.jpeg"
-dest_files=["res://.godot/imported/Metal_Rough_4_baseColor.jpeg-1554af32abe960722494fc2b882b99f7.ctex"]
+dest_files=["res://.godot/imported/Metal_Rough_4_baseColor.jpeg-1554af32abe960722494fc2b882b99f7.s3tc.ctex", "res://.godot/imported/Metal_Rough_4_baseColor.jpeg-1554af32abe960722494fc2b882b99f7.etc2.ctex"]
 
 [params]
 

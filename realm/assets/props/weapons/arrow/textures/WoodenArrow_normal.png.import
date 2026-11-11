@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://chgjtv7ot2v5k"
-path="res://.godot/imported/WoodenArrow_normal.png-a8dcf895d241490ef559bfee4cf9226e.ctex"
+path.s3tc="res://.godot/imported/WoodenArrow_normal.png-a8dcf895d241490ef559bfee4cf9226e.s3tc.ctex"
+path.etc2="res://.godot/imported/WoodenArrow_normal.png-a8dcf895d241490ef559bfee4cf9226e.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/props/weapons/arrow/textures/WoodenArrow_normal.png"
-dest_files=["res://.godot/imported/WoodenArrow_normal.png-a8dcf895d241490ef559bfee4cf9226e.ctex"]
+dest_files=["res://.godot/imported/WoodenArrow_normal.png-a8dcf895d241490ef559bfee4cf9226e.s3tc.ctex", "res://.godot/imported/WoodenArrow_normal.png-a8dcf895d241490ef559bfee4cf9226e.etc2.ctex"]
 
 [params]
 

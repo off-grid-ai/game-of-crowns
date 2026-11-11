@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cxm5muybdm32"
 path.s3tc="res://.godot/imported/ganfaul_0.png-d27595c031469c7b5b9c5b4c41434ea4.s3tc.ctex"
+path.etc2="res://.godot/imported/ganfaul_0.png-d27595c031469c7b5b9c5b4c41434ea4.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/people/mixamo/ganfaul/ganfaul_0.png"
-dest_files=["res://.godot/imported/ganfaul_0.png-d27595c031469c7b5b9c5b4c41434ea4.s3tc.ctex"]
+dest_files=["res://.godot/imported/ganfaul_0.png-d27595c031469c7b5b9c5b4c41434ea4.s3tc.ctex", "res://.godot/imported/ganfaul_0.png-d27595c031469c7b5b9c5b4c41434ea4.etc2.ctex"]
 
 [params]
 

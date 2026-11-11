@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bxj2h2dn3fgsf"
 path.s3tc="res://.godot/imported/Bush_medium_001_Billboard_Mat_metallicRoughness.png-fa45682151d70044412c464eddf21247.s3tc.ctex"
+path.etc2="res://.godot/imported/Bush_medium_001_Billboard_Mat_metallicRoughness.png-fa45682151d70044412c464eddf21247.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/bush_models_pack/textures/Bush_medium_001_Billboard_Mat_metallicRoughness.png"
-dest_files=["res://.godot/imported/Bush_medium_001_Billboard_Mat_metallicRoughness.png-fa45682151d70044412c464eddf21247.s3tc.ctex"]
+dest_files=["res://.godot/imported/Bush_medium_001_Billboard_Mat_metallicRoughness.png-fa45682151d70044412c464eddf21247.s3tc.ctex", "res://.godot/imported/Bush_medium_001_Billboard_Mat_metallicRoughness.png-fa45682151d70044412c464eddf21247.etc2.ctex"]
 
 [params]
 

@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cmgivh7usctyy"
-path="res://.godot/imported/Arrows_metallicRoughness.png-def11cbafe42db6cc5875e7b7c4516aa.ctex"
+path.s3tc="res://.godot/imported/Arrows_metallicRoughness.png-def11cbafe42db6cc5875e7b7c4516aa.s3tc.ctex"
+path.etc2="res://.godot/imported/Arrows_metallicRoughness.png-def11cbafe42db6cc5875e7b7c4516aa.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/props/weapons/bows/textures/Arrows_metallicRoughness.png"
-dest_files=["res://.godot/imported/Arrows_metallicRoughness.png-def11cbafe42db6cc5875e7b7c4516aa.ctex"]
+dest_files=["res://.godot/imported/Arrows_metallicRoughness.png-def11cbafe42db6cc5875e7b7c4516aa.s3tc.ctex", "res://.godot/imported/Arrows_metallicRoughness.png-def11cbafe42db6cc5875e7b7c4516aa.etc2.ctex"]
 
 [params]
 

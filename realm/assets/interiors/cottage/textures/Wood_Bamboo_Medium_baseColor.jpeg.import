@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://inqjqfokaxvj"
-path="res://.godot/imported/Wood_Bamboo_Medium_baseColor.jpeg-50145f124325070c1a0b1fe5e8fe2aae.ctex"
+path.s3tc="res://.godot/imported/Wood_Bamboo_Medium_baseColor.jpeg-50145f124325070c1a0b1fe5e8fe2aae.s3tc.ctex"
+path.etc2="res://.godot/imported/Wood_Bamboo_Medium_baseColor.jpeg-50145f124325070c1a0b1fe5e8fe2aae.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/cottage/textures/Wood_Bamboo_Medium_baseColor.jpeg"
-dest_files=["res://.godot/imported/Wood_Bamboo_Medium_baseColor.jpeg-50145f124325070c1a0b1fe5e8fe2aae.ctex"]
+dest_files=["res://.godot/imported/Wood_Bamboo_Medium_baseColor.jpeg-50145f124325070c1a0b1fe5e8fe2aae.s3tc.ctex", "res://.godot/imported/Wood_Bamboo_Medium_baseColor.jpeg-50145f124325070c1a0b1fe5e8fe2aae.etc2.ctex"]
 
 [params]
 

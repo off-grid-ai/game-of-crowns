@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bci44ek783q6p"
-path="res://.godot/imported/spatter_normal.png-b1907c745e5660fbde9d9f08ec58dfd4.ctex"
+path.s3tc="res://.godot/imported/spatter_normal.png-b1907c745e5660fbde9d9f08ec58dfd4.s3tc.ctex"
+path.etc2="res://.godot/imported/spatter_normal.png-b1907c745e5660fbde9d9f08ec58dfd4.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/props/blood/spatter_normal.png"
-dest_files=["res://.godot/imported/spatter_normal.png-b1907c745e5660fbde9d9f08ec58dfd4.ctex"]
+dest_files=["res://.godot/imported/spatter_normal.png-b1907c745e5660fbde9d9f08ec58dfd4.s3tc.ctex", "res://.godot/imported/spatter_normal.png-b1907c745e5660fbde9d9f08ec58dfd4.etc2.ctex"]
 
 [params]
 

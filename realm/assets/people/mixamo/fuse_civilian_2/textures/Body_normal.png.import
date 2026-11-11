@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dahk00rsuvus1"
-path="res://.godot/imported/Body_normal.png-dc209d9e40a00283a11867677b110f75.ctex"
+path.s3tc="res://.godot/imported/Body_normal.png-dc209d9e40a00283a11867677b110f75.s3tc.ctex"
+path.etc2="res://.godot/imported/Body_normal.png-dc209d9e40a00283a11867677b110f75.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/people/mixamo/fuse_civilian_2/textures/Body_normal.png"
-dest_files=["res://.godot/imported/Body_normal.png-dc209d9e40a00283a11867677b110f75.ctex"]
+dest_files=["res://.godot/imported/Body_normal.png-dc209d9e40a00283a11867677b110f75.s3tc.ctex", "res://.godot/imported/Body_normal.png-dc209d9e40a00283a11867677b110f75.etc2.ctex"]
 
 [params]
 

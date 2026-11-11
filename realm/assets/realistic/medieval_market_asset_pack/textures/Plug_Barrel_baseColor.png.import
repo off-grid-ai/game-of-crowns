@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://5sxa4m2srpcs"
 path.s3tc="res://.godot/imported/Plug_Barrel_baseColor.png-901757ba869b117da7d10b9fb23be34e.s3tc.ctex"
+path.etc2="res://.godot/imported/Plug_Barrel_baseColor.png-901757ba869b117da7d10b9fb23be34e.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Plug_Barrel_baseColor.png"
-dest_files=["res://.godot/imported/Plug_Barrel_baseColor.png-901757ba869b117da7d10b9fb23be34e.s3tc.ctex"]
+dest_files=["res://.godot/imported/Plug_Barrel_baseColor.png-901757ba869b117da7d10b9fb23be34e.s3tc.ctex", "res://.godot/imported/Plug_Barrel_baseColor.png-901757ba869b117da7d10b9fb23be34e.etc2.ctex"]
 
 [params]
 

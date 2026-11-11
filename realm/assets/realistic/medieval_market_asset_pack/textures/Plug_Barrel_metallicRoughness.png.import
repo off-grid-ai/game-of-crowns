@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cve8x3bq58dx3"
 path.s3tc="res://.godot/imported/Plug_Barrel_metallicRoughness.png-b0a69e43fe1074c7f31db1bfa55bc970.s3tc.ctex"
+path.etc2="res://.godot/imported/Plug_Barrel_metallicRoughness.png-b0a69e43fe1074c7f31db1bfa55bc970.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Plug_Barrel_metallicRoughness.png"
-dest_files=["res://.godot/imported/Plug_Barrel_metallicRoughness.png-b0a69e43fe1074c7f31db1bfa55bc970.s3tc.ctex"]
+dest_files=["res://.godot/imported/Plug_Barrel_metallicRoughness.png-b0a69e43fe1074c7f31db1bfa55bc970.s3tc.ctex", "res://.godot/imported/Plug_Barrel_metallicRoughness.png-b0a69e43fe1074c7f31db1bfa55bc970.etc2.ctex"]
 
 [params]
 

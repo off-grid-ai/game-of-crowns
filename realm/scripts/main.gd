@@ -320,7 +320,7 @@ func _ready() -> void:
 	ui.town_closed.connect(func(): _selected = -1)
 	ui.open_settings.connect(func(): title.open_settings())
 	ui.decree.connect(_on_decree)
-	ui.decree_at.connect(func(action, city, to, building): bridge.decree(action, city, building, to))
+	ui.decree_at.connect(func(action, city, to, building, matter): bridge.decree(action, city, building, to, matter))
 	ui.mood_decreed.connect(func(t): bridge.set_mood(t); ui.toast("The realm hears your will…"))
 	ui.decree_revoked.connect(func(id): bridge.revoke_decree(id, ui.set_decrees))
 	bridge.decrees_changed.connect(ui.set_decrees)

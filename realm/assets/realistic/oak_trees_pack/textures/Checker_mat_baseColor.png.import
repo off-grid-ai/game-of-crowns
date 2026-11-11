@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bduodbfbefq4v"
 path.s3tc="res://.godot/imported/Checker_mat_baseColor.png-b162f08f100d33a0b85c2d8d6e96a6a9.s3tc.ctex"
+path.etc2="res://.godot/imported/Checker_mat_baseColor.png-b162f08f100d33a0b85c2d8d6e96a6a9.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/oak_trees_pack/textures/Checker_mat_baseColor.png"
-dest_files=["res://.godot/imported/Checker_mat_baseColor.png-b162f08f100d33a0b85c2d8d6e96a6a9.s3tc.ctex"]
+dest_files=["res://.godot/imported/Checker_mat_baseColor.png-b162f08f100d33a0b85c2d8d6e96a6a9.s3tc.ctex", "res://.godot/imported/Checker_mat_baseColor.png-b162f08f100d33a0b85c2d8d6e96a6a9.etc2.ctex"]
 
 [params]
 

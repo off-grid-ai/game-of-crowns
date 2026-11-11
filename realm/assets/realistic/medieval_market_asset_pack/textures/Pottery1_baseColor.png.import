@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://ccbpy364tmx3r"
 path.s3tc="res://.godot/imported/Pottery1_baseColor.png-1d358dcd83cac319227580c990fe17fc.s3tc.ctex"
+path.etc2="res://.godot/imported/Pottery1_baseColor.png-1d358dcd83cac319227580c990fe17fc.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Pottery1_baseColor.png"
-dest_files=["res://.godot/imported/Pottery1_baseColor.png-1d358dcd83cac319227580c990fe17fc.s3tc.ctex"]
+dest_files=["res://.godot/imported/Pottery1_baseColor.png-1d358dcd83cac319227580c990fe17fc.s3tc.ctex", "res://.godot/imported/Pottery1_baseColor.png-1d358dcd83cac319227580c990fe17fc.etc2.ctex"]
 
 [params]
 

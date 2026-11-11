@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://2j5kxtkdj7um"
 path.s3tc="res://.godot/imported/BaseCastle_02_baseColor.jpeg-325a391b9f5dcb4ad587ae4134c8f310.s3tc.ctex"
+path.etc2="res://.godot/imported/BaseCastle_02_baseColor.jpeg-325a391b9f5dcb4ad587ae4134c8f310.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_castle/textures/BaseCastle_02_baseColor.jpeg"
-dest_files=["res://.godot/imported/BaseCastle_02_baseColor.jpeg-325a391b9f5dcb4ad587ae4134c8f310.s3tc.ctex"]
+dest_files=["res://.godot/imported/BaseCastle_02_baseColor.jpeg-325a391b9f5dcb4ad587ae4134c8f310.s3tc.ctex", "res://.godot/imported/BaseCastle_02_baseColor.jpeg-325a391b9f5dcb4ad587ae4134c8f310.etc2.ctex"]
 
 [params]
 

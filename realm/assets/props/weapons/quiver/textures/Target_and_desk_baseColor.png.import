@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bpghegjci8hfw"
-path="res://.godot/imported/Target_and_desk_baseColor.png-74d57fc58468723bc1fe5b98f6174c74.ctex"
+path.s3tc="res://.godot/imported/Target_and_desk_baseColor.png-74d57fc58468723bc1fe5b98f6174c74.s3tc.ctex"
+path.etc2="res://.godot/imported/Target_and_desk_baseColor.png-74d57fc58468723bc1fe5b98f6174c74.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/props/weapons/quiver/textures/Target_and_desk_baseColor.png"
-dest_files=["res://.godot/imported/Target_and_desk_baseColor.png-74d57fc58468723bc1fe5b98f6174c74.ctex"]
+dest_files=["res://.godot/imported/Target_and_desk_baseColor.png-74d57fc58468723bc1fe5b98f6174c74.s3tc.ctex", "res://.godot/imported/Target_and_desk_baseColor.png-74d57fc58468723bc1fe5b98f6174c74.etc2.ctex"]
 
 [params]
 

@@ -532,11 +532,18 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 				other.disabled = true
 			b.text = String(act.get("label", "")).get_slice("  ", 0) + "  ·  ordered"
 			b.add_theme_color_override("font_disabled_color", T.ACCENT)
-			ui.counsel_answered.emit(String(it.get("key", "")))
-			ui.counsel_act(act)
+			# An order answers its matter in the same request (the ultimatum judged after
+			# the order has moved the house's favour; no seal for a ruling); anything
+			# else the Hand offers (the tithe, staying out of it) answers it here.
+			var gives_order := String(act.get("ui", "")) == "" or not ["court", "tithe_up", "tithe_down", "sitout"].has(String(act.get("ui", "")))
+			if not gives_order:
+				ui.counsel_answered.emit(String(it.get("key", "")))
+			ui.counsel_act(act, String(it.get("key", "")) if gives_order else "")
 			_settled(it))
 		b.add_theme_color_override("font_color", T.ACCENT)
-		if act.has("cost") and int(act["cost"]) > ui.purse:
+		# Its price is where the bridge weighs it (weighs.cost), as the label above shows it.
+		var price := int(act.get("cost", (act.get("weighs", {}) as Dictionary).get("cost", 0) if act.get("weighs") is Dictionary else 0))
+		if price > ui.purse:
 			b.disabled = true
 			b.tooltip_text = String(act.get("short", "The treasury holds too little for this."))
 			b.add_theme_color_override("font_disabled_color", T.TEXT_3)

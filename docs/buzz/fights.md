@@ -15,14 +15,15 @@ Sources: Steam review themes from vaporlens.app (counts are review mentions), St
 | **Graphics** | Manor Lords' top love is its visuals (30); inZOI "stunning graphics" | **No.** Good-looking is enough. Never lead with screenshots of fidelity against Manor Lords. |
 | **"AI" as a label** | Steam reviews mark down games that disclose generative AI; most gamers are negative on it | **Not head-on.** Sell what the player gets ("an adviser who knows your realm", "they remember you"). Be open about the local model when asked; in r/LocalLLaMA, lead with it. |
 
-## The three fights we pick
+## The USP (Mac, 2026-11-05)
+**A whole reign in 5 minutes.** Years turn fast, a lot happens, and you only make the big calls, so it fits in the time you have. A 5-minute reign is a real setting today (a year is about 4 minutes at normal pace; reigns can be timed at 5, 10 or 60 minutes, or endless).
+
+Short-session strategy sells: Reigns (a king making quick calls) 500k–1M owners on Steam alone; Against the Storm, Bad North, Dorfromantik 0.5–2M each (SteamSpy). It also answers the deep games' complaints head-on: CK3's learning curve and 20–30 minute loads, WorldBox getting boring after a few hours (fine when a session is five minutes).
+
+## The fights we pick
+0. **Five minutes is enough.** The lead.
 1. **Never boring.** A world that runs itself and keeps putting real choices in front of you.
 2. **Depth without the manual.** The game's adviser knows your realm and explains it. On your machine.
 3. **Pay once. No DLC, no tokens, no internet needed.**
 
 Fight 2 is the one only we can make: a cloud AI game can't run free and offline, and a big studio's strategy game doesn't ship an adviser who reads the live state of your realm.
-
-## Mac's own story (true, and it matches the demand)
-Mac likes watching a world grow and setting off chain reactions, and doesn't have time to learn games like Crusader Kings. CK3's steep learning curve is a top complaint, and its Game of Thrones mod has 877k lifetime installs. So the honest pitch is:
-
-> I never had time to learn Crusader Kings, so I'm building a kingdom sim that runs itself and only asks you for the big calls.

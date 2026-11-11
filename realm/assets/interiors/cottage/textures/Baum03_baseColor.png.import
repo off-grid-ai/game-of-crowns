@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bfnjbeam0igaw"
-path="res://.godot/imported/Baum03_baseColor.png-df116c6a219ed95c95d10bfce79f85d3.ctex"
+path.s3tc="res://.godot/imported/Baum03_baseColor.png-df116c6a219ed95c95d10bfce79f85d3.s3tc.ctex"
+path.etc2="res://.godot/imported/Baum03_baseColor.png-df116c6a219ed95c95d10bfce79f85d3.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/cottage/textures/Baum03_baseColor.png"
-dest_files=["res://.godot/imported/Baum03_baseColor.png-df116c6a219ed95c95d10bfce79f85d3.ctex"]
+dest_files=["res://.godot/imported/Baum03_baseColor.png-df116c6a219ed95c95d10bfce79f85d3.s3tc.ctex", "res://.godot/imported/Baum03_baseColor.png-df116c6a219ed95c95d10bfce79f85d3.etc2.ctex"]
 
 [params]
 

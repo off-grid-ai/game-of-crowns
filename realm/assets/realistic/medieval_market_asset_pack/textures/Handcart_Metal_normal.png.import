@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dkbo4vamm6goh"
 path.s3tc="res://.godot/imported/Handcart_Metal_normal.png-68656f0b09c5ee1fbe5a2d0272491ee9.s3tc.ctex"
+path.etc2="res://.godot/imported/Handcart_Metal_normal.png-68656f0b09c5ee1fbe5a2d0272491ee9.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Handcart_Metal_normal.png"
-dest_files=["res://.godot/imported/Handcart_Metal_normal.png-68656f0b09c5ee1fbe5a2d0272491ee9.s3tc.ctex"]
+dest_files=["res://.godot/imported/Handcart_Metal_normal.png-68656f0b09c5ee1fbe5a2d0272491ee9.s3tc.ctex", "res://.godot/imported/Handcart_Metal_normal.png-68656f0b09c5ee1fbe5a2d0272491ee9.etc2.ctex"]
 
 [params]
 

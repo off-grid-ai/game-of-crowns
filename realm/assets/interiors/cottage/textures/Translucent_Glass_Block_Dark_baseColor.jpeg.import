@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ckixqy54rg65u"
-path="res://.godot/imported/Translucent_Glass_Block_Dark_baseColor.jpeg-43f0a15e1c60b61cfac7eefff119723e.ctex"
+path.s3tc="res://.godot/imported/Translucent_Glass_Block_Dark_baseColor.jpeg-43f0a15e1c60b61cfac7eefff119723e.s3tc.ctex"
+path.etc2="res://.godot/imported/Translucent_Glass_Block_Dark_baseColor.jpeg-43f0a15e1c60b61cfac7eefff119723e.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/cottage/textures/Translucent_Glass_Block_Dark_baseColor.jpeg"
-dest_files=["res://.godot/imported/Translucent_Glass_Block_Dark_baseColor.jpeg-43f0a15e1c60b61cfac7eefff119723e.ctex"]
+dest_files=["res://.godot/imported/Translucent_Glass_Block_Dark_baseColor.jpeg-43f0a15e1c60b61cfac7eefff119723e.s3tc.ctex", "res://.godot/imported/Translucent_Glass_Block_Dark_baseColor.jpeg-43f0a15e1c60b61cfac7eefff119723e.etc2.ctex"]
 
 [params]
 

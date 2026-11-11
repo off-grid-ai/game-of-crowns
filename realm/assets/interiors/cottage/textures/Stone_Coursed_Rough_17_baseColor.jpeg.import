@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bndjf1evvc10i"
-path="res://.godot/imported/Stone_Coursed_Rough_17_baseColor.jpeg-c7989f54b68860035f0c473bc34e8ee6.ctex"
+path.s3tc="res://.godot/imported/Stone_Coursed_Rough_17_baseColor.jpeg-c7989f54b68860035f0c473bc34e8ee6.s3tc.ctex"
+path.etc2="res://.godot/imported/Stone_Coursed_Rough_17_baseColor.jpeg-c7989f54b68860035f0c473bc34e8ee6.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/cottage/textures/Stone_Coursed_Rough_17_baseColor.jpeg"
-dest_files=["res://.godot/imported/Stone_Coursed_Rough_17_baseColor.jpeg-c7989f54b68860035f0c473bc34e8ee6.ctex"]
+dest_files=["res://.godot/imported/Stone_Coursed_Rough_17_baseColor.jpeg-c7989f54b68860035f0c473bc34e8ee6.s3tc.ctex", "res://.godot/imported/Stone_Coursed_Rough_17_baseColor.jpeg-c7989f54b68860035f0c473bc34e8ee6.etc2.ctex"]
 
 [params]
 

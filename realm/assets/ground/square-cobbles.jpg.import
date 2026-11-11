@@ -3,19 +3,21 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://caxmkoyyu3d3g"
-path="res://.godot/imported/square-cobbles.jpg-4aeafe60b7c814e082daf46e7a60fd5e.ctex"
+path.s3tc="res://.godot/imported/square-cobbles.jpg-4aeafe60b7c814e082daf46e7a60fd5e.s3tc.ctex"
+path.etc2="res://.godot/imported/square-cobbles.jpg-4aeafe60b7c814e082daf46e7a60fd5e.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/ground/square-cobbles.jpg"
-dest_files=["res://.godot/imported/square-cobbles.jpg-4aeafe60b7c814e082daf46e7a60fd5e.ctex"]
+dest_files=["res://.godot/imported/square-cobbles.jpg-4aeafe60b7c814e082daf46e7a60fd5e.s3tc.ctex", "res://.godot/imported/square-cobbles.jpg-4aeafe60b7c814e082daf46e7a60fd5e.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

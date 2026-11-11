@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://byyym7pf1pdo8"
-path="res://.godot/imported/Carpet_Pattern_LeafSquares_Tan_baseColor.jpeg-254ed3c0e1202d243535eef1cb125b25.ctex"
+path.s3tc="res://.godot/imported/Carpet_Pattern_LeafSquares_Tan_baseColor.jpeg-254ed3c0e1202d243535eef1cb125b25.s3tc.ctex"
+path.etc2="res://.godot/imported/Carpet_Pattern_LeafSquares_Tan_baseColor.jpeg-254ed3c0e1202d243535eef1cb125b25.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/cottage/textures/Carpet_Pattern_LeafSquares_Tan_baseColor.jpeg"
-dest_files=["res://.godot/imported/Carpet_Pattern_LeafSquares_Tan_baseColor.jpeg-254ed3c0e1202d243535eef1cb125b25.ctex"]
+dest_files=["res://.godot/imported/Carpet_Pattern_LeafSquares_Tan_baseColor.jpeg-254ed3c0e1202d243535eef1cb125b25.s3tc.ctex", "res://.godot/imported/Carpet_Pattern_LeafSquares_Tan_baseColor.jpeg-254ed3c0e1202d243535eef1cb125b25.etc2.ctex"]
 
 [params]
 

@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cqtbqvss4l8r4"
 path.s3tc="res://.godot/imported/CannonBall_baseColor.jpeg-45a3b05754e14bad96384f41fb0738b8.s3tc.ctex"
+path.etc2="res://.godot/imported/CannonBall_baseColor.jpeg-45a3b05754e14bad96384f41fb0738b8.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_castle/textures/CannonBall_baseColor.jpeg"
-dest_files=["res://.godot/imported/CannonBall_baseColor.jpeg-45a3b05754e14bad96384f41fb0738b8.s3tc.ctex"]
+dest_files=["res://.godot/imported/CannonBall_baseColor.jpeg-45a3b05754e14bad96384f41fb0738b8.s3tc.ctex", "res://.godot/imported/CannonBall_baseColor.jpeg-45a3b05754e14bad96384f41fb0738b8.etc2.ctex"]
 
 [params]
 

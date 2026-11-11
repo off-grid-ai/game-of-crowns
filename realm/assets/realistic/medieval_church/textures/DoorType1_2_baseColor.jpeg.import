@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bo3cuhr1g17ig"
 path.s3tc="res://.godot/imported/DoorType1_2_baseColor.jpeg-5a3357e39174a37f1a659925f826e22a.s3tc.ctex"
+path.etc2="res://.godot/imported/DoorType1_2_baseColor.jpeg-5a3357e39174a37f1a659925f826e22a.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_church/textures/DoorType1_2_baseColor.jpeg"
-dest_files=["res://.godot/imported/DoorType1_2_baseColor.jpeg-5a3357e39174a37f1a659925f826e22a.s3tc.ctex"]
+dest_files=["res://.godot/imported/DoorType1_2_baseColor.jpeg-5a3357e39174a37f1a659925f826e22a.s3tc.ctex", "res://.godot/imported/DoorType1_2_baseColor.jpeg-5a3357e39174a37f1a659925f826e22a.etc2.ctex"]
 
 [params]
 

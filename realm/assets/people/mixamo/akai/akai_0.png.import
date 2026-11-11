@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cooub1evvoj1n"
 path.s3tc="res://.godot/imported/akai_0.png-4cf3ac93fc2ce1e013ded49507cffbce.s3tc.ctex"
+path.etc2="res://.godot/imported/akai_0.png-4cf3ac93fc2ce1e013ded49507cffbce.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/people/mixamo/akai/akai_0.png"
-dest_files=["res://.godot/imported/akai_0.png-4cf3ac93fc2ce1e013ded49507cffbce.s3tc.ctex"]
+dest_files=["res://.godot/imported/akai_0.png-4cf3ac93fc2ce1e013ded49507cffbce.s3tc.ctex", "res://.godot/imported/akai_0.png-4cf3ac93fc2ce1e013ded49507cffbce.etc2.ctex"]
 
 [params]
 

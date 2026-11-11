@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cg7xa711841p7"
 path.s3tc="res://.godot/imported/Sack2_metallicRoughness.png-c01d9d23a6576d9a4417c4d03889b842.s3tc.ctex"
+path.etc2="res://.godot/imported/Sack2_metallicRoughness.png-c01d9d23a6576d9a4417c4d03889b842.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Sack2_metallicRoughness.png"
-dest_files=["res://.godot/imported/Sack2_metallicRoughness.png-c01d9d23a6576d9a4417c4d03889b842.s3tc.ctex"]
+dest_files=["res://.godot/imported/Sack2_metallicRoughness.png-c01d9d23a6576d9a4417c4d03889b842.s3tc.ctex", "res://.godot/imported/Sack2_metallicRoughness.png-c01d9d23a6576d9a4417c4d03889b842.etc2.ctex"]
 
 [params]
 

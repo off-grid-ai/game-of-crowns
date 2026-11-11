@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b64x6lk2sjlp0"
 path.s3tc="res://.godot/imported/BridgeControl_baseColor.jpeg-e2832a3b1ed520f6efa9ca5aac256552.s3tc.ctex"
+path.etc2="res://.godot/imported/BridgeControl_baseColor.jpeg-e2832a3b1ed520f6efa9ca5aac256552.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_castle/textures/BridgeControl_baseColor.jpeg"
-dest_files=["res://.godot/imported/BridgeControl_baseColor.jpeg-e2832a3b1ed520f6efa9ca5aac256552.s3tc.ctex"]
+dest_files=["res://.godot/imported/BridgeControl_baseColor.jpeg-e2832a3b1ed520f6efa9ca5aac256552.s3tc.ctex", "res://.godot/imported/BridgeControl_baseColor.jpeg-e2832a3b1ed520f6efa9ca5aac256552.etc2.ctex"]
 
 [params]
 

@@ -1,0 +1,24 @@
+Goldrock dist=120 fps: 40.0 38.0 
+   load: 4.85 5.49 7.10  memory free: 52%
+   busiest: node 138.7%, node 138.5%, node 110.2%, godot 78.0%, node 56.4%, 
+Goldrock dist=40 fps: 38.0 36.0 
+   load: 5.01 5.51 7.08  memory free: 46%
+   busiest: node 125.6%, node 124.2%, node 109.1%, godot 89.9%, ecosystemd 22.4%, 
+Goldrock dist=14 fps: 28.0 28.0 
+   load: 5.27 5.55 7.07  memory free: 46%
+   busiest: node 135.4%, node 122.1%, godot 82.3%, ecosystemanalyticsd 23.1%, ecosystemd 23.1%, 
+Goldrock dist=5 fps: 39.0 39.0 
+   load: 5.31 5.54 7.04  memory free: 46%
+   busiest: node 150.1%, godot 124.8%, node 118.8%, node 65.5%, ecosystemanalyticsd 20.0%, 
+Kingsmere dist=120 fps: 30.0 30.0 
+   load: 5.69 5.61 7.04  memory free: 49%
+   busiest: node 120.0%, node 117.8%, godot 59.7%, ecosystemanalyticsd 23.5%, ecosystemd 23.3%, 
+Kingsmere dist=40 fps: 37.0 36.0 
+   load: 6.23 5.74 7.06  memory free: 48%
+   busiest: node 136.2%, node 129.7%, node 122.3%, godot 108.1%, mds_stores 25.4%, 
+Kingsmere dist=14 fps: 24.0 24.0 
+   load: 6.45 5.80 7.06  memory free: 45%
+   busiest: node 124.9%, node 100.0%, godot 87.1%, Application 37.7%, Claude 24.4%, 
+Kingsmere dist=5 fps: 38.0 39.0 
+   load: 6.60 5.87 7.07  memory free: 46%
+   busiest: godot 126.3%, node 114.0%, node 104.6%, WindowServer 20.0%, ecosystemanalyticsd 15.7%, 

@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dgbxt7aajyfe3"
 path.s3tc="res://.godot/imported/knight_2.png-b61a9fdbd295c8d84f5070a0206a8d59.s3tc.ctex"
+path.etc2="res://.godot/imported/knight_2.png-b61a9fdbd295c8d84f5070a0206a8d59.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/people/mixamo/knight/knight_2.png"
-dest_files=["res://.godot/imported/knight_2.png-b61a9fdbd295c8d84f5070a0206a8d59.s3tc.ctex"]
+dest_files=["res://.godot/imported/knight_2.png-b61a9fdbd295c8d84f5070a0206a8d59.s3tc.ctex", "res://.godot/imported/knight_2.png-b61a9fdbd295c8d84f5070a0206a8d59.etc2.ctex"]
 
 [params]
 

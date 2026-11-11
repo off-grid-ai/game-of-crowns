@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://blr43xuuc2ixy"
 path.s3tc="res://.godot/imported/Cluster_Mat_Spring_EX_metallicRoughness.png-4ff2d6455eacd2d8120060d8fad65187.s3tc.ctex"
+path.etc2="res://.godot/imported/Cluster_Mat_Spring_EX_metallicRoughness.png-4ff2d6455eacd2d8120060d8fad65187.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/oak_trees_pack/textures/Cluster_Mat_Spring_EX_metallicRoughness.png"
-dest_files=["res://.godot/imported/Cluster_Mat_Spring_EX_metallicRoughness.png-4ff2d6455eacd2d8120060d8fad65187.s3tc.ctex"]
+dest_files=["res://.godot/imported/Cluster_Mat_Spring_EX_metallicRoughness.png-4ff2d6455eacd2d8120060d8fad65187.s3tc.ctex", "res://.godot/imported/Cluster_Mat_Spring_EX_metallicRoughness.png-4ff2d6455eacd2d8120060d8fad65187.etc2.ctex"]
 
 [params]
 

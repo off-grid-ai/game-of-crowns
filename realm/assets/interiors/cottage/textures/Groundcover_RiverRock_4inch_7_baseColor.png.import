@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c8su6ookcpelw"
-path="res://.godot/imported/Groundcover_RiverRock_4inch_7_baseColor.png-d5a9bfa274603fb34deeeeedd896465c.ctex"
+path.s3tc="res://.godot/imported/Groundcover_RiverRock_4inch_7_baseColor.png-d5a9bfa274603fb34deeeeedd896465c.s3tc.ctex"
+path.etc2="res://.godot/imported/Groundcover_RiverRock_4inch_7_baseColor.png-d5a9bfa274603fb34deeeeedd896465c.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/cottage/textures/Groundcover_RiverRock_4inch_7_baseColor.png"
-dest_files=["res://.godot/imported/Groundcover_RiverRock_4inch_7_baseColor.png-d5a9bfa274603fb34deeeeedd896465c.ctex"]
+dest_files=["res://.godot/imported/Groundcover_RiverRock_4inch_7_baseColor.png-d5a9bfa274603fb34deeeeedd896465c.s3tc.ctex", "res://.godot/imported/Groundcover_RiverRock_4inch_7_baseColor.png-d5a9bfa274603fb34deeeeedd896465c.etc2.ctex"]
 
 [params]
 

@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://4lhxc8cbrhsx"
 path.s3tc="res://.godot/imported/Fence2_metallicRoughness.png-91597c254f5c96d5202f59db781a8762.s3tc.ctex"
+path.etc2="res://.godot/imported/Fence2_metallicRoughness.png-91597c254f5c96d5202f59db781a8762.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/wooden_fence_game_ready_asset/textures/Fence2_metallicRoughness.png"
-dest_files=["res://.godot/imported/Fence2_metallicRoughness.png-91597c254f5c96d5202f59db781a8762.s3tc.ctex"]
+dest_files=["res://.godot/imported/Fence2_metallicRoughness.png-91597c254f5c96d5202f59db781a8762.s3tc.ctex", "res://.godot/imported/Fence2_metallicRoughness.png-91597c254f5c96d5202f59db781a8762.etc2.ctex"]
 
 [params]
 

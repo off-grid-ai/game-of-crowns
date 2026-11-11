@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cpa0lvgnx36kl"
 path.s3tc="res://.godot/imported/Material_tx_hr_cart03.dds.001_baseColor.jpeg-b9e72d70bcab86b2dde6e46bce891e13.s3tc.ctex"
+path.etc2="res://.godot/imported/Material_tx_hr_cart03.dds.001_baseColor.jpeg-b9e72d70bcab86b2dde6e46bce891e13.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/old_wooden_wagon/textures/Material_tx_hr_cart03.dds.001_baseColor.jpeg"
-dest_files=["res://.godot/imported/Material_tx_hr_cart03.dds.001_baseColor.jpeg-b9e72d70bcab86b2dde6e46bce891e13.s3tc.ctex"]
+dest_files=["res://.godot/imported/Material_tx_hr_cart03.dds.001_baseColor.jpeg-b9e72d70bcab86b2dde6e46bce891e13.s3tc.ctex", "res://.godot/imported/Material_tx_hr_cart03.dds.001_baseColor.jpeg-b9e72d70bcab86b2dde6e46bce891e13.etc2.ctex"]
 
 [params]
 

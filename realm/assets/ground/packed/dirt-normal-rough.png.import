@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dj2ixg0ks682f"
-path="res://.godot/imported/dirt-normal-rough.png-f0a0c69dd28d08aa1c62e5a478ad4fc6.ctex"
+path.bptc="res://.godot/imported/dirt-normal-rough.png-f0a0c69dd28d08aa1c62e5a478ad4fc6.bptc.ctex"
+path.astc="res://.godot/imported/dirt-normal-rough.png-f0a0c69dd28d08aa1c62e5a478ad4fc6.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/ground/packed/dirt-normal-rough.png"
-dest_files=["res://.godot/imported/dirt-normal-rough.png-f0a0c69dd28d08aa1c62e5a478ad4fc6.ctex"]
+dest_files=["res://.godot/imported/dirt-normal-rough.png-f0a0c69dd28d08aa1c62e5a478ad4fc6.bptc.ctex", "res://.godot/imported/dirt-normal-rough.png-f0a0c69dd28d08aa1c62e5a478ad4fc6.astc.ctex"]
 
 [params]
 

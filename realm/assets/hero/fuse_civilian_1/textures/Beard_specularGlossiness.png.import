@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dgg026hh3qu4j"
-path="res://.godot/imported/Beard_specularGlossiness.png-78d53c97f3cf3e4548480bb15402f631.ctex"
+path.s3tc="res://.godot/imported/Beard_specularGlossiness.png-78d53c97f3cf3e4548480bb15402f631.s3tc.ctex"
+path.etc2="res://.godot/imported/Beard_specularGlossiness.png-78d53c97f3cf3e4548480bb15402f631.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/hero/fuse_civilian_1/textures/Beard_specularGlossiness.png"
-dest_files=["res://.godot/imported/Beard_specularGlossiness.png-78d53c97f3cf3e4548480bb15402f631.ctex"]
+dest_files=["res://.godot/imported/Beard_specularGlossiness.png-78d53c97f3cf3e4548480bb15402f631.s3tc.ctex", "res://.godot/imported/Beard_specularGlossiness.png-78d53c97f3cf3e4548480bb15402f631.etc2.ctex"]
 
 [params]
 

@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://pnbgn7djy3fo"
-path="res://.godot/imported/Throne.001_specularf0.png-1c0d60ede2bcf4ca898c3fa996171f10.ctex"
+path.s3tc="res://.godot/imported/Throne.001_specularf0.png-1c0d60ede2bcf4ca898c3fa996171f10.s3tc.ctex"
+path.etc2="res://.godot/imported/Throne.001_specularf0.png-1c0d60ede2bcf4ca898c3fa996171f10.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/great_hall/textures/Throne.001_specularf0.png"
-dest_files=["res://.godot/imported/Throne.001_specularf0.png-1c0d60ede2bcf4ca898c3fa996171f10.ctex"]
+dest_files=["res://.godot/imported/Throne.001_specularf0.png-1c0d60ede2bcf4ca898c3fa996171f10.s3tc.ctex", "res://.godot/imported/Throne.001_specularf0.png-1c0d60ede2bcf4ca898c3fa996171f10.etc2.ctex"]
 
 [params]
 

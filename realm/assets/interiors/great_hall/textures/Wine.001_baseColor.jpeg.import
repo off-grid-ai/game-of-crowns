@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b0een0bjx181h"
-path="res://.godot/imported/Wine.001_baseColor.jpeg-c1ae169d38769b76c437e261c86aa7f3.ctex"
+path.s3tc="res://.godot/imported/Wine.001_baseColor.jpeg-c1ae169d38769b76c437e261c86aa7f3.s3tc.ctex"
+path.etc2="res://.godot/imported/Wine.001_baseColor.jpeg-c1ae169d38769b76c437e261c86aa7f3.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/great_hall/textures/Wine.001_baseColor.jpeg"
-dest_files=["res://.godot/imported/Wine.001_baseColor.jpeg-c1ae169d38769b76c437e261c86aa7f3.ctex"]
+dest_files=["res://.godot/imported/Wine.001_baseColor.jpeg-c1ae169d38769b76c437e261c86aa7f3.s3tc.ctex", "res://.godot/imported/Wine.001_baseColor.jpeg-c1ae169d38769b76c437e261c86aa7f3.etc2.ctex"]
 
 [params]
 

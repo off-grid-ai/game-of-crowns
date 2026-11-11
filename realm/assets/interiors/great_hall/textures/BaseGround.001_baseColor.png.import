@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://orixwngvvsnd"
-path="res://.godot/imported/BaseGround.001_baseColor.png-9978b70c1a558300389f534e84ec2617.ctex"
+path.s3tc="res://.godot/imported/BaseGround.001_baseColor.png-9978b70c1a558300389f534e84ec2617.s3tc.ctex"
+path.etc2="res://.godot/imported/BaseGround.001_baseColor.png-9978b70c1a558300389f534e84ec2617.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/great_hall/textures/BaseGround.001_baseColor.png"
-dest_files=["res://.godot/imported/BaseGround.001_baseColor.png-9978b70c1a558300389f534e84ec2617.ctex"]
+dest_files=["res://.godot/imported/BaseGround.001_baseColor.png-9978b70c1a558300389f534e84ec2617.s3tc.ctex", "res://.godot/imported/BaseGround.001_baseColor.png-9978b70c1a558300389f534e84ec2617.etc2.ctex"]
 
 [params]
 

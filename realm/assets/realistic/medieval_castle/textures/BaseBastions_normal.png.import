@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://ckw71aevirpei"
 path.s3tc="res://.godot/imported/BaseBastions_normal.png-f2b55a1d3284eff1b7ac9f028f22ab1c.s3tc.ctex"
+path.etc2="res://.godot/imported/BaseBastions_normal.png-f2b55a1d3284eff1b7ac9f028f22ab1c.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_castle/textures/BaseBastions_normal.png"
-dest_files=["res://.godot/imported/BaseBastions_normal.png-f2b55a1d3284eff1b7ac9f028f22ab1c.s3tc.ctex"]
+dest_files=["res://.godot/imported/BaseBastions_normal.png-f2b55a1d3284eff1b7ac9f028f22ab1c.s3tc.ctex", "res://.godot/imported/BaseBastions_normal.png-f2b55a1d3284eff1b7ac9f028f22ab1c.etc2.ctex"]
 
 [params]
 

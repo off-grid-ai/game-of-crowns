@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://h1ka7ivwck5q"
 path.s3tc="res://.godot/imported/M_Hay_Atlas_01_TwoSided_baseColor.png-ca2995f55b0c0d28f2e0b57154dda76e.s3tc.ctex"
+path.etc2="res://.godot/imported/M_Hay_Atlas_01_TwoSided_baseColor.png-ca2995f55b0c0d28f2e0b57154dda76e.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/haystack_2/textures/M_Hay_Atlas_01_TwoSided_baseColor.png"
-dest_files=["res://.godot/imported/M_Hay_Atlas_01_TwoSided_baseColor.png-ca2995f55b0c0d28f2e0b57154dda76e.s3tc.ctex"]
+dest_files=["res://.godot/imported/M_Hay_Atlas_01_TwoSided_baseColor.png-ca2995f55b0c0d28f2e0b57154dda76e.s3tc.ctex", "res://.godot/imported/M_Hay_Atlas_01_TwoSided_baseColor.png-ca2995f55b0c0d28f2e0b57154dda76e.etc2.ctex"]
 
 [params]
 

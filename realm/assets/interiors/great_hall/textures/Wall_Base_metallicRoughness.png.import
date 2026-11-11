@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dt8xaky4q82vx"
-path="res://.godot/imported/Wall_Base_metallicRoughness.png-9f64ffb403cb00cc39dc8474e4a29c42.ctex"
+path.s3tc="res://.godot/imported/Wall_Base_metallicRoughness.png-9f64ffb403cb00cc39dc8474e4a29c42.s3tc.ctex"
+path.etc2="res://.godot/imported/Wall_Base_metallicRoughness.png-9f64ffb403cb00cc39dc8474e4a29c42.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/great_hall/textures/Wall_Base_metallicRoughness.png"
-dest_files=["res://.godot/imported/Wall_Base_metallicRoughness.png-9f64ffb403cb00cc39dc8474e4a29c42.ctex"]
+dest_files=["res://.godot/imported/Wall_Base_metallicRoughness.png-9f64ffb403cb00cc39dc8474e4a29c42.s3tc.ctex", "res://.godot/imported/Wall_Base_metallicRoughness.png-9f64ffb403cb00cc39dc8474e4a29c42.etc2.ctex"]
 
 [params]
 

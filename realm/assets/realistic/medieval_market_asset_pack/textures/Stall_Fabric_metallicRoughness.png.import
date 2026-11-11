@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cqkg4mb5rt7pi"
 path.s3tc="res://.godot/imported/Stall_Fabric_metallicRoughness.png-a1fa17553b4c8f61441eb432a8e120b5.s3tc.ctex"
+path.etc2="res://.godot/imported/Stall_Fabric_metallicRoughness.png-a1fa17553b4c8f61441eb432a8e120b5.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Stall_Fabric_metallicRoughness.png"
-dest_files=["res://.godot/imported/Stall_Fabric_metallicRoughness.png-a1fa17553b4c8f61441eb432a8e120b5.s3tc.ctex"]
+dest_files=["res://.godot/imported/Stall_Fabric_metallicRoughness.png-a1fa17553b4c8f61441eb432a8e120b5.s3tc.ctex", "res://.godot/imported/Stall_Fabric_metallicRoughness.png-a1fa17553b4c8f61441eb432a8e120b5.etc2.ctex"]
 
 [params]
 

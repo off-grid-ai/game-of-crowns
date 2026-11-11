@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cbjn2sevuljp2"
-path="res://.godot/imported/material_specularGlossiness.png-dfc8a728fe8e29ac5d1d999b8a74c83a.ctex"
+path.s3tc="res://.godot/imported/material_specularGlossiness.png-dfc8a728fe8e29ac5d1d999b8a74c83a.s3tc.ctex"
+path.etc2="res://.godot/imported/material_specularGlossiness.png-dfc8a728fe8e29ac5d1d999b8a74c83a.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/hero/fuse_woman_1/textures/material_specularGlossiness.png"
-dest_files=["res://.godot/imported/material_specularGlossiness.png-dfc8a728fe8e29ac5d1d999b8a74c83a.ctex"]
+dest_files=["res://.godot/imported/material_specularGlossiness.png-dfc8a728fe8e29ac5d1d999b8a74c83a.s3tc.ctex", "res://.godot/imported/material_specularGlossiness.png-dfc8a728fe8e29ac5d1d999b8a74c83a.etc2.ctex"]
 
 [params]
 

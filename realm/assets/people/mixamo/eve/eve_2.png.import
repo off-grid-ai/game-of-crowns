@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dr2hnoh2agc8c"
 path.s3tc="res://.godot/imported/eve_2.png-2ede54b67c49dd2481c9164a6ffbe018.s3tc.ctex"
+path.etc2="res://.godot/imported/eve_2.png-2ede54b67c49dd2481c9164a6ffbe018.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/people/mixamo/eve/eve_2.png"
-dest_files=["res://.godot/imported/eve_2.png-2ede54b67c49dd2481c9164a6ffbe018.s3tc.ctex"]
+dest_files=["res://.godot/imported/eve_2.png-2ede54b67c49dd2481c9164a6ffbe018.s3tc.ctex", "res://.godot/imported/eve_2.png-2ede54b67c49dd2481c9164a6ffbe018.etc2.ctex"]
 
 [params]
 

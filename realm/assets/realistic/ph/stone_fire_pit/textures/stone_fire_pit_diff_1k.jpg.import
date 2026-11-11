@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bgasivnak0yr4"
 path.s3tc="res://.godot/imported/stone_fire_pit_diff_1k.jpg-1d9fca4771e7b84384b9ec2cfefc32bc.s3tc.ctex"
+path.etc2="res://.godot/imported/stone_fire_pit_diff_1k.jpg-1d9fca4771e7b84384b9ec2cfefc32bc.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/ph/stone_fire_pit/textures/stone_fire_pit_diff_1k.jpg"
-dest_files=["res://.godot/imported/stone_fire_pit_diff_1k.jpg-1d9fca4771e7b84384b9ec2cfefc32bc.s3tc.ctex"]
+dest_files=["res://.godot/imported/stone_fire_pit_diff_1k.jpg-1d9fca4771e7b84384b9ec2cfefc32bc.s3tc.ctex", "res://.godot/imported/stone_fire_pit_diff_1k.jpg-1d9fca4771e7b84384b9ec2cfefc32bc.etc2.ctex"]
 
 [params]
 

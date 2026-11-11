@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bkare3e31426b"
 path.s3tc="res://.godot/imported/heraklios_0.png-9c520b73e00819b8701f7cb0a1b71127.s3tc.ctex"
+path.etc2="res://.godot/imported/heraklios_0.png-9c520b73e00819b8701f7cb0a1b71127.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/people/mixamo/heraklios/heraklios_0.png"
-dest_files=["res://.godot/imported/heraklios_0.png-9c520b73e00819b8701f7cb0a1b71127.s3tc.ctex"]
+dest_files=["res://.godot/imported/heraklios_0.png-9c520b73e00819b8701f7cb0a1b71127.s3tc.ctex", "res://.godot/imported/heraklios_0.png-9c520b73e00819b8701f7cb0a1b71127.etc2.ctex"]
 
 [params]
 

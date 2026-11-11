@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dti31agt4hxu3"
 path.s3tc="res://.godot/imported/Balcony_normal.png-8b18825b778d39b3e34459c9cec9d83e.s3tc.ctex"
+path.etc2="res://.godot/imported/Balcony_normal.png-8b18825b778d39b3e34459c9cec9d83e.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/romano-british_house_in_medieval_london/textures/Balcony_normal.png"
-dest_files=["res://.godot/imported/Balcony_normal.png-8b18825b778d39b3e34459c9cec9d83e.s3tc.ctex"]
+dest_files=["res://.godot/imported/Balcony_normal.png-8b18825b778d39b3e34459c9cec9d83e.s3tc.ctex", "res://.godot/imported/Balcony_normal.png-8b18825b778d39b3e34459c9cec9d83e.etc2.ctex"]
 
 [params]
 

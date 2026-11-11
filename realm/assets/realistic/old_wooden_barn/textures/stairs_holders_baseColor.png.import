@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cyycppio1dqw4"
 path.s3tc="res://.godot/imported/stairs_holders_baseColor.png-dcc3b023a09d7cdc93eb555bedb093be.s3tc.ctex"
+path.etc2="res://.godot/imported/stairs_holders_baseColor.png-dcc3b023a09d7cdc93eb555bedb093be.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/old_wooden_barn/textures/stairs_holders_baseColor.png"
-dest_files=["res://.godot/imported/stairs_holders_baseColor.png-dcc3b023a09d7cdc93eb555bedb093be.s3tc.ctex"]
+dest_files=["res://.godot/imported/stairs_holders_baseColor.png-dcc3b023a09d7cdc93eb555bedb093be.s3tc.ctex", "res://.godot/imported/stairs_holders_baseColor.png-dcc3b023a09d7cdc93eb555bedb093be.etc2.ctex"]
 
 [params]
 

@@ -9,6 +9,7 @@
 // snapshot or a switch of chronicle during an await is seen.
 
 import * as Seals from "./seals.js";
+import * as Sittings from "./court.js";
 import * as Director from "./director.js";
 import * as Treasury from "./treasury.js";
 import { WORK_SEASONS } from "./treasury.js";
@@ -26,8 +27,12 @@ export async function issueDecree(ctx, req, res, url) {
   ctx.decreesIssued++;
   const cmd = await body(req);
   if (ctx.meta.status !== "running") return json(res, 400, { error: "this reign has ended" });
+  // An order that answers a matter put to him at court (cmd.matter: its key) is a ruling:
+  // free of the royal seal, and the matter is answered with it once the order has landed,
+  // in this one request (an ultimatum is judged on the favour the order moved).
+  const ruling = cmd.matter != null && String(cmd.matter) !== "";
   // Between sittings each decree takes a royal seal (seals.js); at a sitting it's a ruling, and free.
-  const noSeal = Seals.refuse(ctx.meta);
+  const noSeal = Seals.refuse(ctx.meta, ruling);
   if (noSeal) return json(res, 400, { error: noSeal });
   // A royal match needs a pair: an unwed son or daughter of age from each house,
   // one of each, chosen before a crown is spent. Nobody is wed twice.
@@ -139,7 +144,8 @@ export async function issueDecree(ctx, req, res, url) {
   decreeScenes(cmd, result, seat, target);
   record({ turn: ctx.world?.turn ?? 0, kind: "decree", text: result.text, city: cmd.city });
   setTimeout(snapshot, 600);
-  const sealed = Seals.spend(ctx.meta, cmd.action, ctx.world.turn ?? 0);
+  const sealed = Seals.spend(ctx.meta, cmd.action, ctx.world.turn ?? 0, ruling);
+  if (ruling && ctx.sittingCtx) Sittings.answerMatter(ctx.sittingCtx(), String(cmd.matter));
   return json(res, 200, { ok: true, text: crowns(result.text) + (effects ? `\n${effects}` : ""), cost: result.cost ?? 0, sealed });
 }
 

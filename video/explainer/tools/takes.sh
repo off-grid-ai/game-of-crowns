@@ -7,14 +7,16 @@ cd "$(dirname "$0")/../../.."
 OUT=${1:?out dir}; shift
 mkdir -p $OUT
 TAKES=(
-  "realm --clip=realm --secs=12"
-  "descent --clip=descent --secs=11"
-  "seat_Goldrock --clip=seat --city=Goldrock --secs=10"
-  "seat_Stonefell --clip=seat --city=Stonefell --secs=10"
-  "feast --clip=feast --city=Stonefell --secs=8"
-  "battle --clip=battle --city=Deepvale --secs=10"
-  "dawn --clip=dawn --city=Stonefell --secs=12"
-  "siege --clip=siege --city=Goldrock --secs=10"
+  "realm --clip=realm --secs=8 --season=summer"
+  "descent --clip=descent --secs=8 --season=summer"
+  "street_Stonefell --clip=street --city=Stonefell --secs=6 --season=summer"
+  "seat_Riverhall --clip=seat --city=Riverhall --secs=6 --season=summer"
+  "seat_Lionmoor --clip=seat --city=Lionmoor --secs=6 --season=summer"
+  "seat_Stonefell_spring --clip=seat --city=Stonefell --secs=3 --season=spring"
+  "seat_Stonefell_autumn --clip=seat --city=Stonefell --secs=3 --season=autumn"
+  "seat_Stonefell_winter --clip=seat --city=Stonefell --secs=3 --season=winter"
+  "battle --clip=battle --city=Deepvale --secs=8 --season=summer"
+  "siege --clip=siege --city=Kingsmere --secs=8 --season=summer"
 )
 for t in $TAKES; do
   args=(${=t}); name=$args[1]; args=($args[2,-1])

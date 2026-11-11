@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dm1o214wy0vrt"
 path.s3tc="res://.godot/imported/Bottle1_baseColor.png-1b7032813accdd655baa06e2310fd408.s3tc.ctex"
+path.etc2="res://.godot/imported/Bottle1_baseColor.png-1b7032813accdd655baa06e2310fd408.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Bottle1_baseColor.png"
-dest_files=["res://.godot/imported/Bottle1_baseColor.png-1b7032813accdd655baa06e2310fd408.s3tc.ctex"]
+dest_files=["res://.godot/imported/Bottle1_baseColor.png-1b7032813accdd655baa06e2310fd408.s3tc.ctex", "res://.godot/imported/Bottle1_baseColor.png-1b7032813accdd655baa06e2310fd408.etc2.ctex"]
 
 [params]
 

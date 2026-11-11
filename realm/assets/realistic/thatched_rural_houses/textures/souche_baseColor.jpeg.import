@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b1658aqt4b7m6"
 path.s3tc="res://.godot/imported/souche_baseColor.jpeg-13bf85e90a6f63733374ed4770bd2ba8.s3tc.ctex"
+path.etc2="res://.godot/imported/souche_baseColor.jpeg-13bf85e90a6f63733374ed4770bd2ba8.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/thatched_rural_houses/textures/souche_baseColor.jpeg"
-dest_files=["res://.godot/imported/souche_baseColor.jpeg-13bf85e90a6f63733374ed4770bd2ba8.s3tc.ctex"]
+dest_files=["res://.godot/imported/souche_baseColor.jpeg-13bf85e90a6f63733374ed4770bd2ba8.s3tc.ctex", "res://.godot/imported/souche_baseColor.jpeg-13bf85e90a6f63733374ed4770bd2ba8.etc2.ctex"]
 
 [params]
 

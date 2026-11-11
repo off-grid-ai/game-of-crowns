@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b2ylwtxpe4ci5"
 path.s3tc="res://.godot/imported/Wood_Bars_baseColor.png-edd3416e0f6b1f924b1a1096866e14df.s3tc.ctex"
+path.etc2="res://.godot/imported/Wood_Bars_baseColor.png-edd3416e0f6b1f924b1a1096866e14df.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Wood_Bars_baseColor.png"
-dest_files=["res://.godot/imported/Wood_Bars_baseColor.png-edd3416e0f6b1f924b1a1096866e14df.s3tc.ctex"]
+dest_files=["res://.godot/imported/Wood_Bars_baseColor.png-edd3416e0f6b1f924b1a1096866e14df.s3tc.ctex", "res://.godot/imported/Wood_Bars_baseColor.png-edd3416e0f6b1f924b1a1096866e14df.etc2.ctex"]
 
 [params]
 

@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dq55i6cdxliew"
 path.s3tc="res://.godot/imported/Tavern_28_baseColor.png-9e7826fed487a9cb621506fc117db510.s3tc.ctex"
+path.etc2="res://.godot/imported/Tavern_28_baseColor.png-9e7826fed487a9cb621506fc117db510.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_tavern/textures/Tavern_28_baseColor.png"
-dest_files=["res://.godot/imported/Tavern_28_baseColor.png-9e7826fed487a9cb621506fc117db510.s3tc.ctex"]
+dest_files=["res://.godot/imported/Tavern_28_baseColor.png-9e7826fed487a9cb621506fc117db510.s3tc.ctex", "res://.godot/imported/Tavern_28_baseColor.png-9e7826fed487a9cb621506fc117db510.etc2.ctex"]
 
 [params]
 

@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://te8pfmsjy77"
 path.s3tc="res://.godot/imported/Envoirement_02_baseColor.jpeg-504bdd559cb7015788ee595c1a0830c7.s3tc.ctex"
+path.etc2="res://.godot/imported/Envoirement_02_baseColor.jpeg-504bdd559cb7015788ee595c1a0830c7.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_castle/textures/Envoirement_02_baseColor.jpeg"
-dest_files=["res://.godot/imported/Envoirement_02_baseColor.jpeg-504bdd559cb7015788ee595c1a0830c7.s3tc.ctex"]
+dest_files=["res://.godot/imported/Envoirement_02_baseColor.jpeg-504bdd559cb7015788ee595c1a0830c7.s3tc.ctex", "res://.godot/imported/Envoirement_02_baseColor.jpeg-504bdd559cb7015788ee595c1a0830c7.etc2.ctex"]
 
 [params]
 

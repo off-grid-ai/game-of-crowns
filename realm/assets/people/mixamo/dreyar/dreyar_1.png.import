@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bsu8cfaard0h2"
 path.s3tc="res://.godot/imported/dreyar_1.png-387112cacb2043dd332ff8462869264f.s3tc.ctex"
+path.etc2="res://.godot/imported/dreyar_1.png-387112cacb2043dd332ff8462869264f.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/people/mixamo/dreyar/dreyar_1.png"
-dest_files=["res://.godot/imported/dreyar_1.png-387112cacb2043dd332ff8462869264f.s3tc.ctex"]
+dest_files=["res://.godot/imported/dreyar_1.png-387112cacb2043dd332ff8462869264f.s3tc.ctex", "res://.godot/imported/dreyar_1.png-387112cacb2043dd332ff8462869264f.etc2.ctex"]
 
 [params]
 

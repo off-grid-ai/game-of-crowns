@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://djbcqkecx150a"
 path.s3tc="res://.godot/imported/Clusters_Mat_baseColor.png-0bf6430d8390665571c900ccd7ac70ae.s3tc.ctex"
+path.etc2="res://.godot/imported/Clusters_Mat_baseColor.png-0bf6430d8390665571c900ccd7ac70ae.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/pines/textures/Clusters_Mat_baseColor.png"
-dest_files=["res://.godot/imported/Clusters_Mat_baseColor.png-0bf6430d8390665571c900ccd7ac70ae.s3tc.ctex"]
+dest_files=["res://.godot/imported/Clusters_Mat_baseColor.png-0bf6430d8390665571c900ccd7ac70ae.s3tc.ctex", "res://.godot/imported/Clusters_Mat_baseColor.png-0bf6430d8390665571c900ccd7ac70ae.etc2.ctex"]
 
 [params]
 

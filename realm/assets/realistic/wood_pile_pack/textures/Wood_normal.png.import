@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bwl8d4403ap1t"
 path.s3tc="res://.godot/imported/Wood_normal.png-f568e8632f477e27120c08ca20b2e844.s3tc.ctex"
+path.etc2="res://.godot/imported/Wood_normal.png-f568e8632f477e27120c08ca20b2e844.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/wood_pile_pack/textures/Wood_normal.png"
-dest_files=["res://.godot/imported/Wood_normal.png-f568e8632f477e27120c08ca20b2e844.s3tc.ctex"]
+dest_files=["res://.godot/imported/Wood_normal.png-f568e8632f477e27120c08ca20b2e844.s3tc.ctex", "res://.godot/imported/Wood_normal.png-f568e8632f477e27120c08ca20b2e844.etc2.ctex"]
 
 [params]
 

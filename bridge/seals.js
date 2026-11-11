@@ -23,15 +23,16 @@ export function season(meta, turn) {
   chron.saveMeta(meta);
 }
 
-// Whether a decree may be given now: a ruling at a sitting always may; otherwise it takes a seal.
-export function refuse(meta) {
-  if (!on(meta) || meta.court?.sitting != null) return null;
+// Whether a decree may be given now: a ruling at court (a sitting, or an order that
+// answers a matter put to him) always may; otherwise it takes a seal.
+export function refuse(meta, ruling = false) {
+  if (!on(meta) || ruling || meta.court?.sitting != null) return null;
   return state(meta).n >= 1 ? null : "No royal seal is left: the next comes with the season.";
 }
 
 // A decree given (routes_decree.js): its seal spent, unless the court sat for it.
-export function spend(meta, action, turn) {
-  if (!on(meta) || meta.court?.sitting != null) return false;
+export function spend(meta, action, turn, ruling = false) {
+  if (!on(meta) || ruling || meta.court?.sitting != null) return false;
   const s = state(meta);
   s.n = Math.max(0, s.n - 1);
   s.spent = [...(s.spent ?? []), { turn, action }].slice(-200);

@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b7tc2rpjnl85h"
 path.s3tc="res://.godot/imported/arissa_0.png-771358d77497f8a80d7c5a305590a220.s3tc.ctex"
+path.etc2="res://.godot/imported/arissa_0.png-771358d77497f8a80d7c5a305590a220.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/people/mixamo/arissa/arissa_0.png"
-dest_files=["res://.godot/imported/arissa_0.png-771358d77497f8a80d7c5a305590a220.s3tc.ctex"]
+dest_files=["res://.godot/imported/arissa_0.png-771358d77497f8a80d7c5a305590a220.s3tc.ctex", "res://.godot/imported/arissa_0.png-771358d77497f8a80d7c5a305590a220.etc2.ctex"]
 
 [params]
 

@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://n1e25ltel5j"
-path="res://.godot/imported/Candle.001_metallicRoughness.png-36c9f67ba9cb5a4e5763311eba82a1be.ctex"
+path.s3tc="res://.godot/imported/Candle.001_metallicRoughness.png-36c9f67ba9cb5a4e5763311eba82a1be.s3tc.ctex"
+path.etc2="res://.godot/imported/Candle.001_metallicRoughness.png-36c9f67ba9cb5a4e5763311eba82a1be.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/great_hall/textures/Candle.001_metallicRoughness.png"
-dest_files=["res://.godot/imported/Candle.001_metallicRoughness.png-36c9f67ba9cb5a4e5763311eba82a1be.ctex"]
+dest_files=["res://.godot/imported/Candle.001_metallicRoughness.png-36c9f67ba9cb5a4e5763311eba82a1be.s3tc.ctex", "res://.godot/imported/Candle.001_metallicRoughness.png-36c9f67ba9cb5a4e5763311eba82a1be.etc2.ctex"]
 
 [params]
 

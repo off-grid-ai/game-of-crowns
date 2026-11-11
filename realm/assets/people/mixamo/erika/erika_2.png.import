@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bjdvtd4q256va"
 path.s3tc="res://.godot/imported/erika_2.png-89a31fe605ddeaf27ce07737d77d38a5.s3tc.ctex"
+path.etc2="res://.godot/imported/erika_2.png-89a31fe605ddeaf27ce07737d77d38a5.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/people/mixamo/erika/erika_2.png"
-dest_files=["res://.godot/imported/erika_2.png-89a31fe605ddeaf27ce07737d77d38a5.s3tc.ctex"]
+dest_files=["res://.godot/imported/erika_2.png-89a31fe605ddeaf27ce07737d77d38a5.s3tc.ctex", "res://.godot/imported/erika_2.png-89a31fe605ddeaf27ce07737d77d38a5.etc2.ctex"]
 
 [params]
 

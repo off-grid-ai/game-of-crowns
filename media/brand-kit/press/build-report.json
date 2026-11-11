@@ -1,0 +1,20 @@
+{
+  "date": "2026-11-04",
+  "image_and_icon_files": 67,
+  "enlarged_exports": 3,
+  "checks": [
+    "export dimensions",
+    "PNG/JPEG decoding",
+    "real logo alpha",
+    "ICO frame count",
+    "ICNS container length",
+    "upload file limits"
+  ],
+  "visual_checks_required": [
+    "spelling",
+    "crop safety",
+    "small icon",
+    "circular avatar",
+    "YouTube safe area"
+  ]
+}

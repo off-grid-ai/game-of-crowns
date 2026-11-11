@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://xi7yqedlhyyj"
 path.s3tc="res://.godot/imported/stone_fire_pit_arm_1k.jpg-0d7d7e27ec64d23575061a322712b301.s3tc.ctex"
+path.etc2="res://.godot/imported/stone_fire_pit_arm_1k.jpg-0d7d7e27ec64d23575061a322712b301.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/ph/stone_fire_pit/textures/stone_fire_pit_arm_1k.jpg"
-dest_files=["res://.godot/imported/stone_fire_pit_arm_1k.jpg-0d7d7e27ec64d23575061a322712b301.s3tc.ctex"]
+dest_files=["res://.godot/imported/stone_fire_pit_arm_1k.jpg-0d7d7e27ec64d23575061a322712b301.s3tc.ctex", "res://.godot/imported/stone_fire_pit_arm_1k.jpg-0d7d7e27ec64d23575061a322712b301.etc2.ctex"]
 
 [params]
 

@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bpcrrgmmg3rny"
-path="res://.godot/imported/kuusiluminen-01_baseColor.jpeg-b230397f5cfffbbe7495c6fa0e0cf6e9.ctex"
+path.s3tc="res://.godot/imported/kuusiluminen-01_baseColor.jpeg-b230397f5cfffbbe7495c6fa0e0cf6e9.s3tc.ctex"
+path.etc2="res://.godot/imported/kuusiluminen-01_baseColor.jpeg-b230397f5cfffbbe7495c6fa0e0cf6e9.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/cottage/textures/kuusiluminen-01_baseColor.jpeg"
-dest_files=["res://.godot/imported/kuusiluminen-01_baseColor.jpeg-b230397f5cfffbbe7495c6fa0e0cf6e9.ctex"]
+dest_files=["res://.godot/imported/kuusiluminen-01_baseColor.jpeg-b230397f5cfffbbe7495c6fa0e0cf6e9.s3tc.ctex", "res://.godot/imported/kuusiluminen-01_baseColor.jpeg-b230397f5cfffbbe7495c6fa0e0cf6e9.etc2.ctex"]
 
 [params]
 

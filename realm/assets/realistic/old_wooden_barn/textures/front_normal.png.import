@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c0tyck3t5l2us"
 path.s3tc="res://.godot/imported/front_normal.png-468cfed4edfc4d1bbe8fc25cb196681d.s3tc.ctex"
+path.etc2="res://.godot/imported/front_normal.png-468cfed4edfc4d1bbe8fc25cb196681d.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/old_wooden_barn/textures/front_normal.png"
-dest_files=["res://.godot/imported/front_normal.png-468cfed4edfc4d1bbe8fc25cb196681d.s3tc.ctex"]
+dest_files=["res://.godot/imported/front_normal.png-468cfed4edfc4d1bbe8fc25cb196681d.s3tc.ctex", "res://.godot/imported/front_normal.png-468cfed4edfc4d1bbe8fc25cb196681d.etc2.ctex"]
 
 [params]
 

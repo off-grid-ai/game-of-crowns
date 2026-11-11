@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bdko41avvqmly"
 path.s3tc="res://.godot/imported/Rampart_metallicRoughness.png-b731a5e3e054c673cae2e4c5b9b58a5b.s3tc.ctex"
+path.etc2="res://.godot/imported/Rampart_metallicRoughness.png-b731a5e3e054c673cae2e4c5b9b58a5b.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_castle/textures/Rampart_metallicRoughness.png"
-dest_files=["res://.godot/imported/Rampart_metallicRoughness.png-b731a5e3e054c673cae2e4c5b9b58a5b.s3tc.ctex"]
+dest_files=["res://.godot/imported/Rampart_metallicRoughness.png-b731a5e3e054c673cae2e4c5b9b58a5b.s3tc.ctex", "res://.godot/imported/Rampart_metallicRoughness.png-b731a5e3e054c673cae2e4c5b9b58a5b.etc2.ctex"]
 
 [params]
 

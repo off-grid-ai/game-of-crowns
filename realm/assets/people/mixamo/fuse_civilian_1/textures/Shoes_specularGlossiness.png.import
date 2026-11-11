@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ldl3xelyyusd"
-path="res://.godot/imported/Shoes_specularGlossiness.png-f14a225c4de92d80cffc0f782082f486.ctex"
+path.s3tc="res://.godot/imported/Shoes_specularGlossiness.png-f14a225c4de92d80cffc0f782082f486.s3tc.ctex"
+path.etc2="res://.godot/imported/Shoes_specularGlossiness.png-f14a225c4de92d80cffc0f782082f486.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/people/mixamo/fuse_civilian_1/textures/Shoes_specularGlossiness.png"
-dest_files=["res://.godot/imported/Shoes_specularGlossiness.png-f14a225c4de92d80cffc0f782082f486.ctex"]
+dest_files=["res://.godot/imported/Shoes_specularGlossiness.png-f14a225c4de92d80cffc0f782082f486.s3tc.ctex", "res://.godot/imported/Shoes_specularGlossiness.png-f14a225c4de92d80cffc0f782082f486.etc2.ctex"]
 
 [params]
 

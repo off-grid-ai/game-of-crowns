@@ -1,0 +1,24 @@
+Goldrock dist=120 fps: 24.0 24.0 
+   load: 4.82 4.26 4.18  memory free: 33%
+   busiest: godot 45.5%, WindowServer 40.9%, Claude 37.2%, ecosystemd 36.1%, Claude 26.8%, 
+Goldrock dist=40 fps: 20.0 19.0 
+   load: 6.36 4.62 4.31  memory free: 27%
+   busiest: mobileassetd 90.8%, CoreDeviceService 89.5%, SWBBuildService 71.6%, godot 60.3%, Off 42.2%, 
+Goldrock dist=14 fps: 13.0 13.0 
+   load: 7.22 4.90 4.42  memory free: 26%
+   busiest: ModelCatalogAgent 79.2%, godot 64.2%, mobileassetd 46.1%, Claude 44.1%, WindowServer 41.9%, 
+Goldrock dist=5 fps: 16.0 16.0 
+   load: 11.29 5.92 4.79  memory free: 25%
+   busiest: node 112.2%, node 96.2%, node 83.2%, node 83.0%, godot 82.4%, 
+Kingsmere dist=120 fps: 18.0 17.0 
+   load: 18.35 7.76 5.46  memory free: 28%
+   busiest: node 78.6%, node 76.2%, node 66.4%, node 63.7%, node 63.2%, 
+Kingsmere dist=40 fps: 18.0 19.0 
+   load: 21.54 9.02 5.96  memory free: 26%
+   busiest: godot 89.8%, node 83.9%, Off 49.1%, Claude 45.7%, node 43.0%, 
+Kingsmere dist=14 fps: 12.0 12.0 
+   load: 18.62 8.98 6.00  memory free: 33%
+   busiest: node 118.3%, mediaanalysisd 100.3%, hermesc 95.7%, godot 63.1%, modelcatalogd 62.5%, 
+Kingsmere dist=5 fps: 16.0 16.0 
+   load: 15.58 8.79 5.98  memory free: 39%
+   busiest: godot 49.8%, Claude 23.8%, Claude 23.7%, usbmuxd 17.4%, WindowServer 17.0%, 

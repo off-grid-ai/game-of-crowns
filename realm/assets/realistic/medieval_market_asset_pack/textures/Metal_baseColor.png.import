@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://ieyqgkykxk36"
 path.s3tc="res://.godot/imported/Metal_baseColor.png-0290fe73a51031b3a8a9cd1f04ece8ed.s3tc.ctex"
+path.etc2="res://.godot/imported/Metal_baseColor.png-0290fe73a51031b3a8a9cd1f04ece8ed.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Metal_baseColor.png"
-dest_files=["res://.godot/imported/Metal_baseColor.png-0290fe73a51031b3a8a9cd1f04ece8ed.s3tc.ctex"]
+dest_files=["res://.godot/imported/Metal_baseColor.png-0290fe73a51031b3a8a9cd1f04ece8ed.s3tc.ctex", "res://.godot/imported/Metal_baseColor.png-0290fe73a51031b3a8a9cd1f04ece8ed.etc2.ctex"]
 
 [params]
 

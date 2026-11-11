@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bp7fog0q5irjn"
 path.s3tc="res://.godot/imported/Bark_material_metallicRoughness.png-a533eee200cfc8219356948ad013c4d7.s3tc.ctex"
+path.etc2="res://.godot/imported/Bark_material_metallicRoughness.png-a533eee200cfc8219356948ad013c4d7.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/bush_models_pack/textures/Bark_material_metallicRoughness.png"
-dest_files=["res://.godot/imported/Bark_material_metallicRoughness.png-a533eee200cfc8219356948ad013c4d7.s3tc.ctex"]
+dest_files=["res://.godot/imported/Bark_material_metallicRoughness.png-a533eee200cfc8219356948ad013c4d7.s3tc.ctex", "res://.godot/imported/Bark_material_metallicRoughness.png-a533eee200cfc8219356948ad013c4d7.etc2.ctex"]
 
 [params]
 

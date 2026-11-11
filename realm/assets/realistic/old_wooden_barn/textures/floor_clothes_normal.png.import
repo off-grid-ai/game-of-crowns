@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bgulog2hq056y"
 path.s3tc="res://.godot/imported/floor_clothes_normal.png-b6e350f7b4c0c54ff21dd7cbc95c6183.s3tc.ctex"
+path.etc2="res://.godot/imported/floor_clothes_normal.png-b6e350f7b4c0c54ff21dd7cbc95c6183.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/old_wooden_barn/textures/floor_clothes_normal.png"
-dest_files=["res://.godot/imported/floor_clothes_normal.png-b6e350f7b4c0c54ff21dd7cbc95c6183.s3tc.ctex"]
+dest_files=["res://.godot/imported/floor_clothes_normal.png-b6e350f7b4c0c54ff21dd7cbc95c6183.s3tc.ctex", "res://.godot/imported/floor_clothes_normal.png-b6e350f7b4c0c54ff21dd7cbc95c6183.etc2.ctex"]
 
 [params]
 

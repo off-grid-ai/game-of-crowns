@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://wjdbe6ir2pe0"
 path.s3tc="res://.godot/imported/Wood_Wheel_metallicRoughness.png-e2666c8984f2734206013bfdaf6d4f91.s3tc.ctex"
+path.etc2="res://.godot/imported/Wood_Wheel_metallicRoughness.png-e2666c8984f2734206013bfdaf6d4f91.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Wood_Wheel_metallicRoughness.png"
-dest_files=["res://.godot/imported/Wood_Wheel_metallicRoughness.png-e2666c8984f2734206013bfdaf6d4f91.s3tc.ctex"]
+dest_files=["res://.godot/imported/Wood_Wheel_metallicRoughness.png-e2666c8984f2734206013bfdaf6d4f91.s3tc.ctex", "res://.godot/imported/Wood_Wheel_metallicRoughness.png-e2666c8984f2734206013bfdaf6d4f91.etc2.ctex"]
 
 [params]
 

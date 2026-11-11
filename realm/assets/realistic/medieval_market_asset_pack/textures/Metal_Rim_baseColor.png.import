@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c2r2got1ud4qp"
 path.s3tc="res://.godot/imported/Metal_Rim_baseColor.png-44db54b19510357eb7994e4a41678ee2.s3tc.ctex"
+path.etc2="res://.godot/imported/Metal_Rim_baseColor.png-44db54b19510357eb7994e4a41678ee2.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Metal_Rim_baseColor.png"
-dest_files=["res://.godot/imported/Metal_Rim_baseColor.png-44db54b19510357eb7994e4a41678ee2.s3tc.ctex"]
+dest_files=["res://.godot/imported/Metal_Rim_baseColor.png-44db54b19510357eb7994e4a41678ee2.s3tc.ctex", "res://.godot/imported/Metal_Rim_baseColor.png-44db54b19510357eb7994e4a41678ee2.etc2.ctex"]
 
 [params]
 

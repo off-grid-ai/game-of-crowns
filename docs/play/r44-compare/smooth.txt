@@ -1,0 +1,24 @@
+Goldrock dist=120 fps: 34.0 33.0 
+   load: 6.69 7.62 5.91  memory free: 46%
+   busiest: node 100.9%, godot 64.5%, WindowServer 37.6%, com.apple.WebKit.WebContent 36.4%, Olympus 36.3%, 
+Goldrock dist=40 fps: 30.0 33.0 
+   load: 6.05 7.45 5.87  memory free: 45%
+   busiest: godot 93.7%, Claude 89.8%, ibtoold 76.8%, node 75.6%, ibtoold 73.1%, 
+Goldrock dist=14 fps: 23.0 22.0 
+   load: 10.49 8.33 6.21  memory free: 34%
+   busiest: godot 94.4%, Off 56.3%, Claude 41.4%, node 35.0%, node 34.8%, 
+Goldrock dist=5 fps: 31.0 29.0 
+   load: 26.21 11.87 7.50  memory free: 29%
+   busiest: godot 120.1%, Off 69.8%, node 55.2%, node 52.5%, node 50.9%, 
+Kingsmere dist=120 fps: 28.0 26.0 
+   load: 30.65 13.54 8.17  memory free: 29%
+   busiest: node 113.2%, godot 76.1%, WindowServer 42.1%, node 40.2%, Claude 37.8%, 
+Kingsmere dist=40 fps: 34.0 32.0 
+   load: 37.35 15.87 9.10  memory free: 27%
+   busiest: godot 94.1%, Application 74.6%, Claude 54.3%, node 49.9%, node 48.3%, 
+Kingsmere dist=14 fps: 20.0 19.0 
+   load: 33.57 15.77 9.14  memory free: 36%
+   busiest: godot 59.9%, Claude 24.8%, WindowServer 23.8%, ecosystemd 20.4%, ecosystemanalyticsd 17.8%, 
+Kingsmere dist=5 fps: 34.0 32.0 
+   load: 27.87 15.39 9.12  memory free: 39%
+   busiest: (node) 136.7%, godot 116.7%, usbmuxd 71.7%, spotlightknowledged.updater 38.8%, Claude 36.1%, 

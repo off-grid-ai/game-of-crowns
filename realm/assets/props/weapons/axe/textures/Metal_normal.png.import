@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cdhdhviet6pmn"
-path="res://.godot/imported/Metal_normal.png-843569e7d4598ccc9717e6e76f055c55.ctex"
+path.s3tc="res://.godot/imported/Metal_normal.png-843569e7d4598ccc9717e6e76f055c55.s3tc.ctex"
+path.etc2="res://.godot/imported/Metal_normal.png-843569e7d4598ccc9717e6e76f055c55.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/props/weapons/axe/textures/Metal_normal.png"
-dest_files=["res://.godot/imported/Metal_normal.png-843569e7d4598ccc9717e6e76f055c55.ctex"]
+dest_files=["res://.godot/imported/Metal_normal.png-843569e7d4598ccc9717e6e76f055c55.s3tc.ctex", "res://.godot/imported/Metal_normal.png-843569e7d4598ccc9717e6e76f055c55.etc2.ctex"]
 
 [params]
 

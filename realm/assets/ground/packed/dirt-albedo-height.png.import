@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d1ncqlprq6y8f"
-path="res://.godot/imported/dirt-albedo-height.png-8586b85a2f924878b61bb0b270e29f90.ctex"
+path.bptc="res://.godot/imported/dirt-albedo-height.png-8586b85a2f924878b61bb0b270e29f90.bptc.ctex"
+path.astc="res://.godot/imported/dirt-albedo-height.png-8586b85a2f924878b61bb0b270e29f90.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/ground/packed/dirt-albedo-height.png"
-dest_files=["res://.godot/imported/dirt-albedo-height.png-8586b85a2f924878b61bb0b270e29f90.ctex"]
+dest_files=["res://.godot/imported/dirt-albedo-height.png-8586b85a2f924878b61bb0b270e29f90.bptc.ctex", "res://.godot/imported/dirt-albedo-height.png-8586b85a2f924878b61bb0b270e29f90.astc.ctex"]
 
 [params]
 

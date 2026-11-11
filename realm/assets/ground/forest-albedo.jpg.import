@@ -3,19 +3,21 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ckn6strwhr2bx"
-path="res://.godot/imported/forest-albedo.jpg-7d3e47db1d1e48199959941eb1f97ee4.ctex"
+path.s3tc="res://.godot/imported/forest-albedo.jpg-7d3e47db1d1e48199959941eb1f97ee4.s3tc.ctex"
+path.etc2="res://.godot/imported/forest-albedo.jpg-7d3e47db1d1e48199959941eb1f97ee4.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/ground/forest-albedo.jpg"
-dest_files=["res://.godot/imported/forest-albedo.jpg-7d3e47db1d1e48199959941eb1f97ee4.ctex"]
+dest_files=["res://.godot/imported/forest-albedo.jpg-7d3e47db1d1e48199959941eb1f97ee4.s3tc.ctex", "res://.godot/imported/forest-albedo.jpg-7d3e47db1d1e48199959941eb1f97ee4.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

@@ -1,0 +1,65 @@
+[
+  {
+    "name": "app-icon",
+    "file": "masters/app-icon.png",
+    "prompt": "Use case: logo-brand.\nCreate a premium desktop APPLICATION ICON for the serious medieval political strategy game Game of Crowns. Square 1:1 canvas, 1024x1024 requested. The text reads EXACTLY \"GoC\": uppercase G, lowercase o, uppercase C. This exact mixed-case spelling is essential. Pronounced gee-oh-see.\nReference image is the APPROVED full game logo, for its refined tall Roman serif, pale antique bronze and understated tiny crown. Translate that brand faithfully into a strong compact GoC icon. Large elegant G and C with smaller lowercase o between, one baseline, perfectly readable at 32px. Fine sharp wedge serifs, refined architectural forms, balanced substantial stems, moderate stroke contrast. Muted pale aged champagne-bronze over near-black charcoal. Shallow engraved edges and slight metal grain only. No thick bevel or extruded type.\nOne TINY low broad three-point crown above centre, thin and restrained, no jewels; secondary to GoC. The monogram occupies central 68% of width. All design must fit within a centred 70%-diameter circle so a social avatar circle never crops it.\nBACKGROUND: full-bleed solid opaque charcoal-black #151719 with barely visible worn stone texture. Square corners on canvas; let operating systems apply masks, do not draw rounded container. No outside margin or fake app mockup. No glossy highlights. Restrained premium historical drama mood, grave and adult. No scenery, no bright gold, no toy, birds, shields, jewels, ribbons, fire, glow, watermark, additional text or border. Only the GoC letters and tiny crown on the dark square.",
+    "tool": "image_gen.imagegen",
+    "model": "Not reported by the built-in tool",
+    "date": "2026-11-04",
+    "source_filename": "exec-ea3e1f05-d9f3-4b0f-81ce-3782d3bed715.png"
+  },
+  {
+    "name": "goc-monogram",
+    "file": "masters/goc-monogram.png",
+    "prompt": "Use case: logo-brand. Edit target is the GoC app icon. Extract ONLY its \"GoC\" lettering and tiny crown with the two thin lines above it as a clean isolated brand mark on TRUE TRANSPARENT PNG with alpha. Preserve exact mixed-case GoC (capital G, lowercase o, capital C), the exact elegant letterforms and pale aged bronze finish, modest shallow engraved edge, small restrained crown, and the relative layout. Remove the entire opaque dark square background, stone texture and backing. Keep only metal lettering, crown and rules; all open counters and every space between shapes fully transparent. Centre the mark in a square 1:1 canvas, group inside central 70% width and central 58% height with generous empty transparent margins. This is a serious adult historical strategy brand, refined and restrained, no gloss, thick bevel, extra text, rectangle, badge, ribbon, background, glow, fire, smoke, shadow cloud or watermark.",
+    "tool": "image_gen.imagegen",
+    "model": "Not reported by the built-in tool",
+    "date": "2026-11-04",
+    "source_filename": "exec-bff44a07-2e84-4628-bb3f-137f67fa1379.png"
+  },
+  {
+    "name": "key-art-landscape",
+    "file": "masters/key-art-landscape.png",
+    "prompt": "Use case: ads-marketing.\nCreate finished premium promotional KEY ART for the original serious medieval strategy game \"GAME OF CROWNS\". Landscape 16:9, requested 2560x1440. Image 1 is the APPROVED wordmark; preserve its exact spelling and single-line style, thin elegant pale antique bronze Roman capitals, OF smaller between GAME and CROWNS, tiny crown between two fine horizontal lines above. Image 2 is the approved LANDSCAPE for lighting, setting and palette.\nSCENE: grounded painterly-realistic medieval Kingsmere beside a still river-lake, castle with square towers and subtle deep crimson heraldic banners on the RIGHT, pine forest and low sun from LEFT, far snowy mountains and amber-slate-blue evening sky. Adult historical political intrigue, quiet royal authority. Rich believable landscape painting, not plastic CGI or cartoon.\nLAYOUT: full bleed landscape art. Exact approved one-line wordmark \"GAME OF CROWNS\" large and clear in the upper-centre at x=50%, y=27%, occupying about 67% of width; tiny crown-and-rules detail above it. Pale aged bronze, quiet thin dark contour and subtle close shadow for readability over restrained shaded sky. Keep important castle inside right 85%, avoid crops. Lower half offers beautiful landscape, quiet lake and countryside. Keep all lettering and crown within middle 80% width and middle 65% height; margins at least 8%. No other text, no tagline, no release date, no platform logos or store badges. This is branded cinematic promotional illustration, no game UI, no people close-up, no dragons, birds, jewels, big crown, bright shiny gold, glow, fire, borders, signatures or watermark.",
+    "tool": "image_gen.imagegen",
+    "model": "Not reported by the built-in tool",
+    "date": "2026-11-04",
+    "source_filename": "exec-f7490287-3059-4a93-a156-5ffbeae6e3a2.png"
+  },
+  {
+    "name": "key-art-portrait",
+    "file": "masters/key-art-portrait.png",
+    "prompt": "Use case: ads-marketing. Create finished portrait promotional key art for GAME OF CROWNS. Canvas portrait 3:4, requested 1500x2000. Reference 1 is the approved serious elegant pale bronze game logo; reference 2 is the setting and painterly light.\nSCENE: fictional medieval Kingsmere in Aldmere at amber evening, a stone castle with square towers and small deep crimson banners on a hill on the RIGHT above a walled town beside a still lake. Pines and quiet field at left, far snowy mountains, restrained slate-blue and amber sky. Painterly-realistic premium historical political strategy, adult, grave, atmospheric but not grim black, grounded, no fantasy creatures.\nLAYOUT: make the castle landscape fill bottom two thirds, sky above. At x50%, y24%, place the exact words \"GAME OF\" small above \"CROWNS\" much larger, using the same tall refined Roman wedge-serif letterforms and pale matte tarnished bronze as reference. This is a vertical adaptation of the approved wordmark. A TINY crown with two short fine horizontal rules above GAME OF. NOT a large crown. Logo group is centrally contained within x23% to77% width, y14% to32% height, so this art also survives a narrow 9:16 centre crop. Keep full word spelling exact GAME OF CROWNS, no added words. Full bleed artwork, calm sky behind type, fine dark edge for contrast, no banner ribbon.\nAll important castle architecture inside central75% width and from y43% to78%, avoid anything important near bottom/top edges. Enough foreground lake and shoreline for good portrait depth. No characters close-up, no bird emblem, no shields, jewels, glossy gold, thick extruded logo, UI, dates, release claims, platform marks, badges, tagline, watermark or borders.",
+    "tool": "image_gen.imagegen",
+    "model": "Not reported by the built-in tool",
+    "date": "2026-11-04",
+    "source_filename": "exec-77f97b1c-37f0-4001-bad5-aaf7cd5852d5.png"
+  },
+  {
+    "name": "key-art-square",
+    "file": "masters/key-art-square.png",
+    "prompt": "Use case: ads-marketing. Create a finished SQUARE 1:1 social promotional image for the serious medieval strategy game \"GAME OF CROWNS\". Reference 1 is the approved title wordmark; reference 2 is the approved painterly castle-lake setting. Preserve this branding faithfully.\nA grounded cinematic painterly-realistic royal castle with square towers and dark red banners rises on the RIGHT beside a still river-lake; rolling dark green pine countryside at left; low warm sun breaks through from LEFT; far snow peaks and spacious amber-slate evening sky. Premium adult historical drama, elegant, intriguing.\nPlace the exact approved ONE-LINE wordmark GAME OF CROWNS across the upper quarter, from x12% to88%, centred y26%. Same tall precise classical serif, OF smaller, pale aged bronze, tiny simple crown between two fine rules above, subtle dark fine edge. Keep logo refined with restrained shallow engraving, NOT chunky or shiny. Lower portion focuses on the living town, quiet water and natural countryside. Title and castle clearly separated. Margin at least8% around important details. Background is full-bleed art, NO white borders. Exact wording G-A-M-E O-F C-R-O-W-N-S; NO other text, slogans, dates, release claims, social platform logos, UI, jewels, bird mascots, big crowns, toy aesthetic, watermark or signature.",
+    "tool": "image_gen.imagegen",
+    "model": "Not reported by the built-in tool",
+    "date": "2026-11-04",
+    "source_filename": "exec-de25845e-83bc-4534-bedc-93fabd7d143b.png"
+  },
+  {
+    "name": "channel-banner",
+    "file": "masters/channel-banner.png",
+    "prompt": "Use case: ads-marketing. Create a premium YouTube CHANNEL BANNER for Game of Crowns. Reference 1 is the approved exact full logo; reference 2 is the landscape. Full canvas 16:9, requested2560x1440.\nImportant: YouTube crops to a very shallow CENTRAL HORIZONTAL STRIP. ALL logo lettering, the tiny crown and rules must fit INSIDE x23% to77% of full width AND y40% to60% of full height. Centre the exact one-line text GAME OF CROWNS at x50%, y52%, spanning about50%width, with the tiny crown-and-fine-rules at y44%. This is the approved tall pale aged bronze Roman serif, OF smaller, refined and calm, not thick gold letters. Spelling exact G-A-M-E O-F C-R-O-W-N-S. The logo is the ONLY text.\nBACKGROUND: full bleed painterly-realistic medieval Kingsmere castle town at warm golden hour, still river-lake, green pines and low sun on LEFT, square-towered castle with crimson banners on RIGHT, far snow peaks and vast amber/slate-blue sky. Maintain the atmospheric natural palette and grounded adult seriousness of the reference. Calm slightly shaded central sky behind the logo, no dark rectangle or opaque titleplate. Keep castle on right so architecture does not compete with title. Lots of scenery extending above and below central logo strip for TV view, but all actual title content within the central safe area. No extra slogans, dates, icons, UI, characters close-up, fantasy creatures, jewels, bird emblem, glossy gold, fire, glow, borders or watermark.",
+    "tool": "image_gen.imagegen",
+    "model": "Not reported by the built-in tool",
+    "date": "2026-11-04",
+    "source_filename": "exec-823287b1-fdd8-424a-a2e0-1d215340e09d.png"
+  },
+  {
+    "name": "compact-title-card",
+    "file": "masters/compact-title-card.png",
+    "prompt": "Use case: ads-marketing. Create a very small-format TITLE CARD for the serious medieval strategy game GAME OF CROWNS. Wide aspect2.655:1 (462x174 target, render high detail at equivalent aspect).\nReference image is the APPROVED exact logo. Faithfully preserve the exact text GAME OF CROWNS in ONE horizontal line, OF smaller between words, tall precise elegant classical Roman serif, pale aged bronze with fine restrained wear. Above its centre preserve the ONE tiny simple crown between two thin fine rules.\nMake the TITLE LETTERING occupy about92%of canvas width, vertically centred slightly below centre. Include the tiny crown detail in upper centre but title dominates, the entire logo remains readable when shrunk to120x45. Keep letters separated with strong contrast. No chunky letters or thick bevel.\nBackground: opaque near-black charcoal #151719, very slight dark slate texture, no busy scenery. Clean atmospheric title-card feel, adult, grave, restrained. No extra text, slogans, dates, release badges, platform marks, jewels, ribbon, bird, shields, glow, fire, neon, cartoon, gloss, chrome, thick outline, border, watermark or signature. Exact spelling G-A-M-E O-F C-R-O-W-N-S.",
+    "tool": "image_gen.imagegen",
+    "model": "Not reported by the built-in tool",
+    "date": "2026-11-04",
+    "source_filename": "exec-7749c8e8-096b-44bf-9655-3363c8903818.png"
+  }
+]

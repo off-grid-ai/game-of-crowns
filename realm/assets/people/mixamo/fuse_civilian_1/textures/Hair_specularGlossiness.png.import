@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://gxqgav24pyxx"
-path="res://.godot/imported/Hair_specularGlossiness.png-a6278e25c2d1af7565eb0585b02d35f9.ctex"
+path.s3tc="res://.godot/imported/Hair_specularGlossiness.png-a6278e25c2d1af7565eb0585b02d35f9.s3tc.ctex"
+path.etc2="res://.godot/imported/Hair_specularGlossiness.png-a6278e25c2d1af7565eb0585b02d35f9.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/people/mixamo/fuse_civilian_1/textures/Hair_specularGlossiness.png"
-dest_files=["res://.godot/imported/Hair_specularGlossiness.png-a6278e25c2d1af7565eb0585b02d35f9.ctex"]
+dest_files=["res://.godot/imported/Hair_specularGlossiness.png-a6278e25c2d1af7565eb0585b02d35f9.s3tc.ctex", "res://.godot/imported/Hair_specularGlossiness.png-a6278e25c2d1af7565eb0585b02d35f9.etc2.ctex"]
 
 [params]
 

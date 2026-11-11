@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cl1doaq0qne2v"
-path="res://.godot/imported/Candle.001_baseColor.jpeg-be2246f9db60e3985e7de1a782e96fff.ctex"
+path.s3tc="res://.godot/imported/Candle.001_baseColor.jpeg-be2246f9db60e3985e7de1a782e96fff.s3tc.ctex"
+path.etc2="res://.godot/imported/Candle.001_baseColor.jpeg-be2246f9db60e3985e7de1a782e96fff.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/great_hall/textures/Candle.001_baseColor.jpeg"
-dest_files=["res://.godot/imported/Candle.001_baseColor.jpeg-be2246f9db60e3985e7de1a782e96fff.ctex"]
+dest_files=["res://.godot/imported/Candle.001_baseColor.jpeg-be2246f9db60e3985e7de1a782e96fff.s3tc.ctex", "res://.godot/imported/Candle.001_baseColor.jpeg-be2246f9db60e3985e7de1a782e96fff.etc2.ctex"]
 
 [params]
 

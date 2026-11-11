@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://gob3guexgspn"
-path="res://.godot/imported/Wood_normal.png-9ba506aa8d3a7836c89af245e4012509.ctex"
+path.s3tc="res://.godot/imported/Wood_normal.png-9ba506aa8d3a7836c89af245e4012509.s3tc.ctex"
+path.etc2="res://.godot/imported/Wood_normal.png-9ba506aa8d3a7836c89af245e4012509.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/props/weapons/axe/textures/Wood_normal.png"
-dest_files=["res://.godot/imported/Wood_normal.png-9ba506aa8d3a7836c89af245e4012509.ctex"]
+dest_files=["res://.godot/imported/Wood_normal.png-9ba506aa8d3a7836c89af245e4012509.s3tc.ctex", "res://.godot/imported/Wood_normal.png-9ba506aa8d3a7836c89af245e4012509.etc2.ctex"]
 
 [params]
 

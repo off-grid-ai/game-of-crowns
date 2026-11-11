@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://8xu1fkrujqlb"
-path="res://.godot/imported/Long_Bow_normal.png-4809006f82555391a0cf4cc17e4d7fc1.ctex"
+path.s3tc="res://.godot/imported/Long_Bow_normal.png-4809006f82555391a0cf4cc17e4d7fc1.s3tc.ctex"
+path.etc2="res://.godot/imported/Long_Bow_normal.png-4809006f82555391a0cf4cc17e4d7fc1.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/props/weapons/quiver/textures/Long_Bow_normal.png"
-dest_files=["res://.godot/imported/Long_Bow_normal.png-4809006f82555391a0cf4cc17e4d7fc1.ctex"]
+dest_files=["res://.godot/imported/Long_Bow_normal.png-4809006f82555391a0cf4cc17e4d7fc1.s3tc.ctex", "res://.godot/imported/Long_Bow_normal.png-4809006f82555391a0cf4cc17e4d7fc1.etc2.ctex"]
 
 [params]
 

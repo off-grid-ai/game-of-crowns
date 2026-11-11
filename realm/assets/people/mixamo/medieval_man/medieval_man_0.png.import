@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cbtkq4yjispha"
-path="res://.godot/imported/medieval_man_0.png-e3d99c84af19283b37a25a2fd329e03e.ctex"
+path.s3tc="res://.godot/imported/medieval_man_0.png-e3d99c84af19283b37a25a2fd329e03e.s3tc.ctex"
+path.etc2="res://.godot/imported/medieval_man_0.png-e3d99c84af19283b37a25a2fd329e03e.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "1f1d290339230b78c26b47815d6b7e3f"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/people/mixamo/medieval_man/medieval_man_0.png"
-dest_files=["res://.godot/imported/medieval_man_0.png-e3d99c84af19283b37a25a2fd329e03e.ctex"]
+dest_files=["res://.godot/imported/medieval_man_0.png-e3d99c84af19283b37a25a2fd329e03e.s3tc.ctex", "res://.godot/imported/medieval_man_0.png-e3d99c84af19283b37a25a2fd329e03e.etc2.ctex"]
 
 [params]
 

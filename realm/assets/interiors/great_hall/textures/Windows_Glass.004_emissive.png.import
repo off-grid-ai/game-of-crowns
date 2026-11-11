@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dld33ukckx7qm"
-path="res://.godot/imported/Windows_Glass.004_emissive.png-ca9527474e9a63915a65ae942e7cbb78.ctex"
+path.s3tc="res://.godot/imported/Windows_Glass.004_emissive.png-ca9527474e9a63915a65ae942e7cbb78.s3tc.ctex"
+path.etc2="res://.godot/imported/Windows_Glass.004_emissive.png-ca9527474e9a63915a65ae942e7cbb78.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/great_hall/textures/Windows_Glass.004_emissive.png"
-dest_files=["res://.godot/imported/Windows_Glass.004_emissive.png-ca9527474e9a63915a65ae942e7cbb78.ctex"]
+dest_files=["res://.godot/imported/Windows_Glass.004_emissive.png-ca9527474e9a63915a65ae942e7cbb78.s3tc.ctex", "res://.godot/imported/Windows_Glass.004_emissive.png-ca9527474e9a63915a65ae942e7cbb78.etc2.ctex"]
 
 [params]
 

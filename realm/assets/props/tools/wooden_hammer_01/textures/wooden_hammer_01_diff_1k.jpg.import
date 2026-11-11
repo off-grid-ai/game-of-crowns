@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bpndpebsxk3f7"
-path="res://.godot/imported/wooden_hammer_01_diff_1k.jpg-b52edc6fff1f353e54a487786d471ef8.ctex"
+path.s3tc="res://.godot/imported/wooden_hammer_01_diff_1k.jpg-b52edc6fff1f353e54a487786d471ef8.s3tc.ctex"
+path.etc2="res://.godot/imported/wooden_hammer_01_diff_1k.jpg-b52edc6fff1f353e54a487786d471ef8.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/props/tools/wooden_hammer_01/textures/wooden_hammer_01_diff_1k.jpg"
-dest_files=["res://.godot/imported/wooden_hammer_01_diff_1k.jpg-b52edc6fff1f353e54a487786d471ef8.ctex"]
+dest_files=["res://.godot/imported/wooden_hammer_01_diff_1k.jpg-b52edc6fff1f353e54a487786d471ef8.s3tc.ctex", "res://.godot/imported/wooden_hammer_01_diff_1k.jpg-b52edc6fff1f353e54a487786d471ef8.etc2.ctex"]
 
 [params]
 

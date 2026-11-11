@@ -1,0 +1,24 @@
+Goldrock dist=120 fps: 31.0 31.0 
+   load: 6.43 6.69 7.22  memory free: 49%
+   busiest: godot 51.0%, WindowServer 47.3%, ecosystemanalyticsd 23.5%, ecosystemd 23.2%, trustd 15.8%, 
+Goldrock dist=40 fps: 29.0 28.0 
+   load: 5.80 6.55 7.15  memory free: 47%
+   busiest: node 112.0%, godot 54.6%, WindowServer 50.5%, Off 28.1%, ecosystemd 27.4%, 
+Goldrock dist=14 fps: 22.0 24.0 
+   load: 5.30 6.41 7.10  memory free: 45%
+   busiest: godot 62.5%, WindowServer 42.7%, Off 19.3%, node 10.6%, Off 10.3%, 
+Goldrock dist=5 fps: 32.0 36.0 
+   load: 5.36 6.37 7.07  memory free: 45%
+   busiest: godot 91.5%, WindowServer 41.0%, ecosystemanalyticsd 16.3%, ecosystemd 16.0%, trustd 11.1%, 
+Kingsmere dist=120 fps: 25.0 25.0 
+   load: 4.76 6.19 6.99  memory free: 50%
+   busiest: WindowServer 56.3%, godot 44.1%, remotepairingd 25.3%, xcodebuild 24.7%, Off 21.3%, 
+Kingsmere dist=40 fps: 32.0 29.0 
+   load: 4.44 6.05 6.93  memory free: 47%
+   busiest: node 92.9%, godot 72.0%, WindowServer 34.4%, ecosystemd 32.5%, ecosystemanalyticsd 31.1%, 
+Kingsmere dist=14 fps: 16.0 17.0 
+   load: 4.45 6.00 6.90  memory free: 34%
+   busiest: node 288.7%, node 102.4%, godot 75.1%, WindowServer 24.4%, Olympus 18.1%, 
+Kingsmere dist=5 fps: 27.0 29.0 
+   load: 5.87 6.24 6.97  memory free: 32%
+   busiest: godot 116.9%, node 105.4%, node 81.1%, WindowServer 43.0%, Off 32.4%, 

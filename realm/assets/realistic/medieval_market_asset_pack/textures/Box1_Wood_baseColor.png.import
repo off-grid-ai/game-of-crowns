@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://qhe25mke4euw"
 path.s3tc="res://.godot/imported/Box1_Wood_baseColor.png-e507d5b60959a0a1e138c63326a7d668.s3tc.ctex"
+path.etc2="res://.godot/imported/Box1_Wood_baseColor.png-e507d5b60959a0a1e138c63326a7d668.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Box1_Wood_baseColor.png"
-dest_files=["res://.godot/imported/Box1_Wood_baseColor.png-e507d5b60959a0a1e138c63326a7d668.s3tc.ctex"]
+dest_files=["res://.godot/imported/Box1_Wood_baseColor.png-e507d5b60959a0a1e138c63326a7d668.s3tc.ctex", "res://.godot/imported/Box1_Wood_baseColor.png-e507d5b60959a0a1e138c63326a7d668.etc2.ctex"]
 
 [params]
 

@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dcmoole1q3xsm"
-path="res://.godot/imported/wooden_bowl_01_nor_gl_1k.jpg-baded460d8c563287279b8e63518eb74.ctex"
+path.s3tc="res://.godot/imported/wooden_bowl_01_nor_gl_1k.jpg-baded460d8c563287279b8e63518eb74.s3tc.ctex"
+path.etc2="res://.godot/imported/wooden_bowl_01_nor_gl_1k.jpg-baded460d8c563287279b8e63518eb74.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/props/tools/wooden_bowl_01/textures/wooden_bowl_01_nor_gl_1k.jpg"
-dest_files=["res://.godot/imported/wooden_bowl_01_nor_gl_1k.jpg-baded460d8c563287279b8e63518eb74.ctex"]
+dest_files=["res://.godot/imported/wooden_bowl_01_nor_gl_1k.jpg-baded460d8c563287279b8e63518eb74.s3tc.ctex", "res://.godot/imported/wooden_bowl_01_nor_gl_1k.jpg-baded460d8c563287279b8e63518eb74.etc2.ctex"]
 
 [params]
 

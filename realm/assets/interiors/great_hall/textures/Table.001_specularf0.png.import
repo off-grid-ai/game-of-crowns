@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bhxy18h1vvvaq"
-path="res://.godot/imported/Table.001_specularf0.png-44ebbc66372ccd6945929c221aaac06c.ctex"
+path.s3tc="res://.godot/imported/Table.001_specularf0.png-44ebbc66372ccd6945929c221aaac06c.s3tc.ctex"
+path.etc2="res://.godot/imported/Table.001_specularf0.png-44ebbc66372ccd6945929c221aaac06c.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/great_hall/textures/Table.001_specularf0.png"
-dest_files=["res://.godot/imported/Table.001_specularf0.png-44ebbc66372ccd6945929c221aaac06c.ctex"]
+dest_files=["res://.godot/imported/Table.001_specularf0.png-44ebbc66372ccd6945929c221aaac06c.s3tc.ctex", "res://.godot/imported/Table.001_specularf0.png-44ebbc66372ccd6945929c221aaac06c.etc2.ctex"]
 
 [params]
 

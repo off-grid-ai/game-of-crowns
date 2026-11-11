@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bqpoprsmmmo3"
 path.s3tc="res://.godot/imported/stairs_holders_metallicRoughness.png-ee0688addecb0615dc5a3bf5b598fd5d.s3tc.ctex"
+path.etc2="res://.godot/imported/stairs_holders_metallicRoughness.png-ee0688addecb0615dc5a3bf5b598fd5d.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/old_wooden_barn/textures/stairs_holders_metallicRoughness.png"
-dest_files=["res://.godot/imported/stairs_holders_metallicRoughness.png-ee0688addecb0615dc5a3bf5b598fd5d.s3tc.ctex"]
+dest_files=["res://.godot/imported/stairs_holders_metallicRoughness.png-ee0688addecb0615dc5a3bf5b598fd5d.s3tc.ctex", "res://.godot/imported/stairs_holders_metallicRoughness.png-ee0688addecb0615dc5a3bf5b598fd5d.etc2.ctex"]
 
 [params]
 

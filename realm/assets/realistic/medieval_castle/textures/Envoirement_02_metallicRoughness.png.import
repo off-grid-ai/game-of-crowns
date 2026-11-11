@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dq7uc786cvxt3"
 path.s3tc="res://.godot/imported/Envoirement_02_metallicRoughness.png-4424b027352d350c5a292c46886dc066.s3tc.ctex"
+path.etc2="res://.godot/imported/Envoirement_02_metallicRoughness.png-4424b027352d350c5a292c46886dc066.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_castle/textures/Envoirement_02_metallicRoughness.png"
-dest_files=["res://.godot/imported/Envoirement_02_metallicRoughness.png-4424b027352d350c5a292c46886dc066.s3tc.ctex"]
+dest_files=["res://.godot/imported/Envoirement_02_metallicRoughness.png-4424b027352d350c5a292c46886dc066.s3tc.ctex", "res://.godot/imported/Envoirement_02_metallicRoughness.png-4424b027352d350c5a292c46886dc066.etc2.ctex"]
 
 [params]
 

@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cj4avwgcdyjj2"
-path="res://.godot/imported/Groundcover_Brick_Crushed_1_baseColor.jpeg-19050b524c337d071c3f8eeaeddb9c27.ctex"
+path.s3tc="res://.godot/imported/Groundcover_Brick_Crushed_1_baseColor.jpeg-19050b524c337d071c3f8eeaeddb9c27.s3tc.ctex"
+path.etc2="res://.godot/imported/Groundcover_Brick_Crushed_1_baseColor.jpeg-19050b524c337d071c3f8eeaeddb9c27.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/cottage/textures/Groundcover_Brick_Crushed_1_baseColor.jpeg"
-dest_files=["res://.godot/imported/Groundcover_Brick_Crushed_1_baseColor.jpeg-19050b524c337d071c3f8eeaeddb9c27.ctex"]
+dest_files=["res://.godot/imported/Groundcover_Brick_Crushed_1_baseColor.jpeg-19050b524c337d071c3f8eeaeddb9c27.s3tc.ctex", "res://.godot/imported/Groundcover_Brick_Crushed_1_baseColor.jpeg-19050b524c337d071c3f8eeaeddb9c27.etc2.ctex"]
 
 [params]
 

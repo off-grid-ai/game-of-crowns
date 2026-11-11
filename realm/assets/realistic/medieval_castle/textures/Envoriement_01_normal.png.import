@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://chrkduvpwp6nk"
 path.s3tc="res://.godot/imported/Envoriement_01_normal.png-645c923d5dc9c5a9b8abca2f97fd5497.s3tc.ctex"
+path.etc2="res://.godot/imported/Envoriement_01_normal.png-645c923d5dc9c5a9b8abca2f97fd5497.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_castle/textures/Envoriement_01_normal.png"
-dest_files=["res://.godot/imported/Envoriement_01_normal.png-645c923d5dc9c5a9b8abca2f97fd5497.s3tc.ctex"]
+dest_files=["res://.godot/imported/Envoriement_01_normal.png-645c923d5dc9c5a9b8abca2f97fd5497.s3tc.ctex", "res://.godot/imported/Envoriement_01_normal.png-645c923d5dc9c5a9b8abca2f97fd5497.etc2.ctex"]
 
 [params]
 

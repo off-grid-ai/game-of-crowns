@@ -21,9 +21,10 @@ LETTERS = "asdfhgzxcv bqweryt123465=97-80]ou[ip lj'k;\\,/nm."
 def game_window():
     """The game's main window: the largest one Godot has on screen."""
     best = None
-    for w in Quartz.CGWindowListCopyWindowInfo(Quartz.kCGWindowListOptionOnScreenOnly, Quartz.kCGNullWindowID):
+    # All windows, not only those on screen: the game plays full screen in its own Space.
+    for w in Quartz.CGWindowListCopyWindowInfo(Quartz.kCGWindowListOptionAll, Quartz.kCGNullWindowID):
         owner = str(w.get("kCGWindowOwnerName", ""))
-        if owner.lower().startswith("godot") or owner == "Game of Crowns":
+        if (owner.lower().startswith("godot") or owner == "Game of Crowns") and w.get("kCGWindowLayer", 0) == 0:
             b = w["kCGWindowBounds"]
             if best is None or b["Width"] * b["Height"] > best[1]["Width"] * best[1]["Height"]:
                 best = (w["kCGWindowNumber"], b)
@@ -50,6 +51,8 @@ def mouse(kind, x, y, button=Quartz.kCGMouseButtonLeft):
 def main():
     cmd, args = sys.argv[1], sys.argv[2:]
     if cmd == "shot":
+        front()
+        time.sleep(0.8)  # a full-screen game sits in its own Space: let it come forward
         wid, _ = game_window()
         out = args[0]
         raw = out if out.endswith(".png") else out + ".tmp.png"

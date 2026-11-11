@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c1sxw6ikdyywm"
 path.s3tc="res://.godot/imported/Melon_baseColor.png-554027839d2e883edb1b24bf7596e223.s3tc.ctex"
+path.etc2="res://.godot/imported/Melon_baseColor.png-554027839d2e883edb1b24bf7596e223.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Melon_baseColor.png"
-dest_files=["res://.godot/imported/Melon_baseColor.png-554027839d2e883edb1b24bf7596e223.s3tc.ctex"]
+dest_files=["res://.godot/imported/Melon_baseColor.png-554027839d2e883edb1b24bf7596e223.s3tc.ctex", "res://.godot/imported/Melon_baseColor.png-554027839d2e883edb1b24bf7596e223.etc2.ctex"]
 
 [params]
 

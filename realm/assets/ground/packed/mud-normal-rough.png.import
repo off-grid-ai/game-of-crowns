@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bbpdao7wwkwrt"
-path="res://.godot/imported/mud-normal-rough.png-f85717568c117885beb213def3637c2c.ctex"
+path.bptc="res://.godot/imported/mud-normal-rough.png-f85717568c117885beb213def3637c2c.bptc.ctex"
+path.astc="res://.godot/imported/mud-normal-rough.png-f85717568c117885beb213def3637c2c.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/ground/packed/mud-normal-rough.png"
-dest_files=["res://.godot/imported/mud-normal-rough.png-f85717568c117885beb213def3637c2c.ctex"]
+dest_files=["res://.godot/imported/mud-normal-rough.png-f85717568c117885beb213def3637c2c.bptc.ctex", "res://.godot/imported/mud-normal-rough.png-f85717568c117885beb213def3637c2c.astc.ctex"]
 
 [params]
 

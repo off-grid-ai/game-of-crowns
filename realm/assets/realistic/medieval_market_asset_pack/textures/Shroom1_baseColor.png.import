@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dehr0ycfagoic"
 path.s3tc="res://.godot/imported/Shroom1_baseColor.png-a80f8eaea76cec2ce90b27d546de29d8.s3tc.ctex"
+path.etc2="res://.godot/imported/Shroom1_baseColor.png-a80f8eaea76cec2ce90b27d546de29d8.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Shroom1_baseColor.png"
-dest_files=["res://.godot/imported/Shroom1_baseColor.png-a80f8eaea76cec2ce90b27d546de29d8.s3tc.ctex"]
+dest_files=["res://.godot/imported/Shroom1_baseColor.png-a80f8eaea76cec2ce90b27d546de29d8.s3tc.ctex", "res://.godot/imported/Shroom1_baseColor.png-a80f8eaea76cec2ce90b27d546de29d8.etc2.ctex"]
 
 [params]
 

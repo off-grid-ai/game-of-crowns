@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b26f4kusgqqhm"
-path="res://.godot/imported/blinn1_baseColor.png-37e74ded232f1c6e7c47e2eaa7de321b.ctex"
+path.s3tc="res://.godot/imported/blinn1_baseColor.png-37e74ded232f1c6e7c47e2eaa7de321b.s3tc.ctex"
+path.etc2="res://.godot/imported/blinn1_baseColor.png-37e74ded232f1c6e7c47e2eaa7de321b.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/hero/knight/textures/blinn1_baseColor.png"
-dest_files=["res://.godot/imported/blinn1_baseColor.png-37e74ded232f1c6e7c47e2eaa7de321b.ctex"]
+dest_files=["res://.godot/imported/blinn1_baseColor.png-37e74ded232f1c6e7c47e2eaa7de321b.s3tc.ctex", "res://.godot/imported/blinn1_baseColor.png-37e74ded232f1c6e7c47e2eaa7de321b.etc2.ctex"]
 
 [params]
 

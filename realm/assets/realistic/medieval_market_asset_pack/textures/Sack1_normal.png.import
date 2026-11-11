@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://jfhvft5rxvqq"
 path.s3tc="res://.godot/imported/Sack1_normal.png-45ccee7f9dfc38eaf80aa7507d46a4b3.s3tc.ctex"
+path.etc2="res://.godot/imported/Sack1_normal.png-45ccee7f9dfc38eaf80aa7507d46a4b3.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Sack1_normal.png"
-dest_files=["res://.godot/imported/Sack1_normal.png-45ccee7f9dfc38eaf80aa7507d46a4b3.s3tc.ctex"]
+dest_files=["res://.godot/imported/Sack1_normal.png-45ccee7f9dfc38eaf80aa7507d46a4b3.s3tc.ctex", "res://.godot/imported/Sack1_normal.png-45ccee7f9dfc38eaf80aa7507d46a4b3.etc2.ctex"]
 
 [params]
 

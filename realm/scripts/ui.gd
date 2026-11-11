@@ -15,7 +15,7 @@ signal character_edited(spec: Dictionary)
 signal focus_city(city_id: int)
 signal pause_toggled(paused: bool)
 signal decree(action: String, building: String, to: int)
-signal decree_at(action: String, city: int, to: int, building: String)  # a decree straight from the Hand's counsel, at its town (and the other house, or what to build)
+signal decree_at(action: String, city: int, to: int, building: String, matter: String)  # a decree straight from the Hand's counsel, at its town (and the other house, or what to build)
 signal tithe_changed(rate: float)
 signal open_menu
 signal town_closed  # the King put the town card away (Esc): main stops refreshing it
@@ -938,7 +938,9 @@ func reading() -> bool:
 	return false
 
 
-func counsel_act(act: Dictionary) -> void:
+## matter: the key of the court matter this order answers ("" from anywhere else): the
+## bridge answers it with the order, in one request (no seal; the ultimatum judged after).
+func counsel_act(act: Dictionary, matter := "") -> void:
 	var on := String(act.get("ui", ""))
 	if on != "court":
 		guide_mark(1)
@@ -954,7 +956,7 @@ func counsel_act(act: Dictionary) -> void:
 		# The King lets them fight it out: answered, the court never brings this war again.
 		toast("The King stays out of it. Let them bleed; the war is theirs.")
 	else:
-		decree_at.emit(String(act.get("action", "")), int(act.get("city", -1)), int(act.get("to", -1)), String(act.get("building", "")))
+		decree_at.emit(String(act.get("action", "")), int(act.get("city", -1)), int(act.get("to", -1)), String(act.get("building", "")), matter)
 
 
 func set_tithe(rate: float) -> void:

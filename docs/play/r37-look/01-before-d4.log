@@ -1,0 +1,76 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M5 (Apple9)
+
+LANES 44091 trees, 1003 ms
+ERROR: NavigationPolygon polygon convex partition failed. Unable to create a valid navigation mesh polygon layout from provided source geometry.
+   at: generator_bake_from_source_geometry_data (modules/navigation_2d/2d/nav_mesh_generator_2d.cpp:487)
+   GDScript backtrace (most recent call first):
+       [0] map_for (res://scripts/town_nav.gd:53)
+       [1] _spawn (res://scripts/villagers.gd:192)
+       [2] _refresh (res://scripts/villagers.gd:98)
+       [3] _process (res://scripts/villagers.gd:64)
+ERROR: NavigationPolygon polygon convex partition failed. Unable to create a valid navigation mesh polygon layout from provided source geometry.
+   at: generator_bake_from_source_geometry_data (modules/navigation_2d/2d/nav_mesh_generator_2d.cpp:487)
+   GDScript backtrace (most recent call first):
+       [0] map_for (res://scripts/town_nav.gd:53)
+       [1] _spawn (res://scripts/villagers.gd:192)
+       [2] _refresh (res://scripts/villagers.gd:98)
+       [3] _process (res://scripts/villagers.gd:64)
+WARNING: Navigation region synchronization had 2 edge error(s).
+More than 2 edges tried to occupy the same map rasterization space.
+This causes a logical error in the navigation mesh geometry and is commonly caused by overlap or too densely placed edges.
+Consider baking with a higher 'cell_size', greater geometry margin, and less detailed bake objects to cause fewer edges.
+Consider lowering the 'navigation/2d/merge_rasterizer_cell_scale' in the project settings.
+This warning can be toggled under 'navigation/2d/warnings/navmesh_edge_merge_errors' in the project settings.
+     at: _build_step_find_edge_connection_pairs (modules/navigation_2d/2d/nav_region_builder_2d.cpp:218)
+WARNING: Navigation region synchronization had 2 edge error(s).
+More than 2 edges tried to occupy the same map rasterization space.
+This causes a logical error in the navigation mesh geometry and is commonly caused by overlap or too densely placed edges.
+Consider baking with a higher 'cell_size', greater geometry margin, and less detailed bake objects to cause fewer edges.
+Consider lowering the 'navigation/2d/merge_rasterizer_cell_scale' in the project settings.
+This warning can be toggled under 'navigation/2d/warnings/navmesh_edge_merge_errors' in the project settings.
+     at: _build_step_find_edge_connection_pairs (modules/navigation_2d/2d/nav_region_builder_2d.cpp:218)
+WARNING: Navigation region synchronization had 1 edge error(s).
+More than 2 edges tried to occupy the same map rasterization space.
+This causes a logical error in the navigation mesh geometry and is commonly caused by overlap or too densely placed edges.
+Consider baking with a higher 'cell_size', greater geometry margin, and less detailed bake objects to cause fewer edges.
+Consider lowering the 'navigation/2d/merge_rasterizer_cell_scale' in the project settings.
+This warning can be toggled under 'navigation/2d/warnings/navmesh_edge_merge_errors' in the project settings.
+     at: _build_step_find_edge_connection_pairs (modules/navigation_2d/2d/nav_region_builder_2d.cpp:218)
+WARNING: Navigation region synchronization had 1 edge error(s).
+More than 2 edges tried to occupy the same map rasterization space.
+This causes a logical error in the navigation mesh geometry and is commonly caused by overlap or too densely placed edges.
+Consider baking with a higher 'cell_size', greater geometry margin, and less detailed bake objects to cause fewer edges.
+Consider lowering the 'navigation/2d/merge_rasterizer_cell_scale' in the project settings.
+This warning can be toggled under 'navigation/2d/warnings/navmesh_edge_merge_errors' in the project settings.
+     at: _build_step_find_edge_connection_pairs (modules/navigation_2d/2d/nav_region_builder_2d.cpp:218)
+WARNING: Navigation region synchronization had 2 edge error(s).
+More than 2 edges tried to occupy the same map rasterization space.
+This causes a logical error in the navigation mesh geometry and is commonly caused by overlap or too densely placed edges.
+Consider baking with a higher 'cell_size', greater geometry margin, and less detailed bake objects to cause fewer edges.
+Consider lowering the 'navigation/2d/merge_rasterizer_cell_scale' in the project settings.
+This warning can be toggled under 'navigation/2d/warnings/navmesh_edge_merge_errors' in the project settings.
+     at: _build_step_find_edge_connection_pairs (modules/navigation_2d/2d/nav_region_builder_2d.cpp:218)
+WARNING: Navigation region synchronization had 2 edge error(s).
+More than 2 edges tried to occupy the same map rasterization space.
+This causes a logical error in the navigation mesh geometry and is commonly caused by overlap or too densely placed edges.
+Consider baking with a higher 'cell_size', greater geometry margin, and less detailed bake objects to cause fewer edges.
+Consider lowering the 'navigation/2d/merge_rasterizer_cell_scale' in the project settings.
+This warning can be toggled under 'navigation/2d/warnings/navmesh_edge_merge_errors' in the project settings.
+     at: _build_step_find_edge_connection_pairs (modules/navigation_2d/2d/nav_region_builder_2d.cpp:218)
+WARNING: Navigation region synchronization had 2 edge error(s).
+More than 2 edges tried to occupy the same map rasterization space.
+This causes a logical error in the navigation mesh geometry and is commonly caused by overlap or too densely placed edges.
+Consider baking with a higher 'cell_size', greater geometry margin, and less detailed bake objects to cause fewer edges.
+Consider lowering the 'navigation/2d/merge_rasterizer_cell_scale' in the project settings.
+This warning can be toggled under 'navigation/2d/warnings/navmesh_edge_merge_errors' in the project settings.
+     at: _build_step_find_edge_connection_pairs (modules/navigation_2d/2d/nav_region_builder_2d.cpp:218)
+WARNING: Navigation region synchronization had 1 edge error(s).
+More than 2 edges tried to occupy the same map rasterization space.
+This causes a logical error in the navigation mesh geometry and is commonly caused by overlap or too densely placed edges.
+Consider baking with a higher 'cell_size', greater geometry margin, and less detailed bake objects to cause fewer edges.
+Consider lowering the 'navigation/2d/merge_rasterizer_cell_scale' in the project settings.
+This warning can be toggled under 'navigation/2d/warnings/navmesh_edge_merge_errors' in the project settings.
+     at: _build_step_find_edge_connection_pairs (modules/navigation_2d/2d/nav_region_builder_2d.cpp:218)
+Saved screenshot to /Users/user/wednesday/civilization/docs/play/r37-look/01-before-d4.png
+libc++abi: terminating due to uncaught exception of type std::__1::system_error: recursive_mutex lock failed: Invalid argument

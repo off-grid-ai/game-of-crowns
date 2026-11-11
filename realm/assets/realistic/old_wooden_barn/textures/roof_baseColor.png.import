@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c2c34ue7wrrsx"
 path.s3tc="res://.godot/imported/roof_baseColor.png-9ce9f55737b905e66068a92132c32e1f.s3tc.ctex"
+path.etc2="res://.godot/imported/roof_baseColor.png-9ce9f55737b905e66068a92132c32e1f.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/old_wooden_barn/textures/roof_baseColor.png"
-dest_files=["res://.godot/imported/roof_baseColor.png-9ce9f55737b905e66068a92132c32e1f.s3tc.ctex"]
+dest_files=["res://.godot/imported/roof_baseColor.png-9ce9f55737b905e66068a92132c32e1f.s3tc.ctex", "res://.godot/imported/roof_baseColor.png-9ce9f55737b905e66068a92132c32e1f.etc2.ctex"]
 
 [params]
 

@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://ydjkg46j3h5g"
 path.s3tc="res://.godot/imported/Bark_Mat_baseColor.png-349f4e8b06f9c47ec7cdae978291e788.s3tc.ctex"
+path.etc2="res://.godot/imported/Bark_Mat_baseColor.png-349f4e8b06f9c47ec7cdae978291e788.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/oak_trees_pack/textures/Bark_Mat_baseColor.png"
-dest_files=["res://.godot/imported/Bark_Mat_baseColor.png-349f4e8b06f9c47ec7cdae978291e788.s3tc.ctex"]
+dest_files=["res://.godot/imported/Bark_Mat_baseColor.png-349f4e8b06f9c47ec7cdae978291e788.s3tc.ctex", "res://.godot/imported/Bark_Mat_baseColor.png-349f4e8b06f9c47ec7cdae978291e788.etc2.ctex"]
 
 [params]
 

@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bxfg5tgskhr6j"
-path="res://.godot/imported/Table.001_metallicRoughness.png-1093902ca9ba2589da3d9dd0c0219842.ctex"
+path.s3tc="res://.godot/imported/Table.001_metallicRoughness.png-1093902ca9ba2589da3d9dd0c0219842.s3tc.ctex"
+path.etc2="res://.godot/imported/Table.001_metallicRoughness.png-1093902ca9ba2589da3d9dd0c0219842.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/great_hall/textures/Table.001_metallicRoughness.png"
-dest_files=["res://.godot/imported/Table.001_metallicRoughness.png-1093902ca9ba2589da3d9dd0c0219842.ctex"]
+dest_files=["res://.godot/imported/Table.001_metallicRoughness.png-1093902ca9ba2589da3d9dd0c0219842.s3tc.ctex", "res://.godot/imported/Table.001_metallicRoughness.png-1093902ca9ba2589da3d9dd0c0219842.etc2.ctex"]
 
 [params]
 

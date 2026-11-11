@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cho5n02iv8vvx"
 path.s3tc="res://.godot/imported/Pine_medium_1_Billboard_Mat_baseColor.png-5bdc737ad39ebb64bb65532eac544699.s3tc.ctex"
+path.etc2="res://.godot/imported/Pine_medium_1_Billboard_Mat_baseColor.png-5bdc737ad39ebb64bb65532eac544699.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/pines/textures/Pine_medium_1_Billboard_Mat_baseColor.png"
-dest_files=["res://.godot/imported/Pine_medium_1_Billboard_Mat_baseColor.png-5bdc737ad39ebb64bb65532eac544699.s3tc.ctex"]
+dest_files=["res://.godot/imported/Pine_medium_1_Billboard_Mat_baseColor.png-5bdc737ad39ebb64bb65532eac544699.s3tc.ctex", "res://.godot/imported/Pine_medium_1_Billboard_Mat_baseColor.png-5bdc737ad39ebb64bb65532eac544699.etc2.ctex"]
 
 [params]
 

@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dyhdq6dl52b5y"
-path="res://.godot/imported/Horn_Bow_metallicRoughness.png-c54b2fdae25270099f604689ceb05f54.ctex"
+path.s3tc="res://.godot/imported/Horn_Bow_metallicRoughness.png-c54b2fdae25270099f604689ceb05f54.s3tc.ctex"
+path.etc2="res://.godot/imported/Horn_Bow_metallicRoughness.png-c54b2fdae25270099f604689ceb05f54.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/props/weapons/bows/textures/Horn_Bow_metallicRoughness.png"
-dest_files=["res://.godot/imported/Horn_Bow_metallicRoughness.png-c54b2fdae25270099f604689ceb05f54.ctex"]
+dest_files=["res://.godot/imported/Horn_Bow_metallicRoughness.png-c54b2fdae25270099f604689ceb05f54.s3tc.ctex", "res://.godot/imported/Horn_Bow_metallicRoughness.png-c54b2fdae25270099f604689ceb05f54.etc2.ctex"]
 
 [params]
 

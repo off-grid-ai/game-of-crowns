@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://et64ychopqhw"
 path.s3tc="res://.godot/imported/Cluster_Mat_Late_Autumn_EX_normal.png-a7a609b472fde6262bee4e674998c1f4.s3tc.ctex"
+path.etc2="res://.godot/imported/Cluster_Mat_Late_Autumn_EX_normal.png-a7a609b472fde6262bee4e674998c1f4.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/oak_trees_pack/textures/Cluster_Mat_Late_Autumn_EX_normal.png"
-dest_files=["res://.godot/imported/Cluster_Mat_Late_Autumn_EX_normal.png-a7a609b472fde6262bee4e674998c1f4.s3tc.ctex"]
+dest_files=["res://.godot/imported/Cluster_Mat_Late_Autumn_EX_normal.png-a7a609b472fde6262bee4e674998c1f4.s3tc.ctex", "res://.godot/imported/Cluster_Mat_Late_Autumn_EX_normal.png-a7a609b472fde6262bee4e674998c1f4.etc2.ctex"]
 
 [params]
 

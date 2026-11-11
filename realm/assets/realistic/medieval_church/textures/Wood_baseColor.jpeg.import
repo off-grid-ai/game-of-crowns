@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://csdukut2o14j1"
 path.s3tc="res://.godot/imported/Wood_baseColor.jpeg-7f71d1840d9021910e87d5d593a735b2.s3tc.ctex"
+path.etc2="res://.godot/imported/Wood_baseColor.jpeg-7f71d1840d9021910e87d5d593a735b2.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_church/textures/Wood_baseColor.jpeg"
-dest_files=["res://.godot/imported/Wood_baseColor.jpeg-7f71d1840d9021910e87d5d593a735b2.s3tc.ctex"]
+dest_files=["res://.godot/imported/Wood_baseColor.jpeg-7f71d1840d9021910e87d5d593a735b2.s3tc.ctex", "res://.godot/imported/Wood_baseColor.jpeg-7f71d1840d9021910e87d5d593a735b2.etc2.ctex"]
 
 [params]
 

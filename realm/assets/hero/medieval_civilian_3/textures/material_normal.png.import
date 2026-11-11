@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ckrigl5wfimpa"
-path="res://.godot/imported/material_normal.png-17ba608a348854e019054a7f35a2ba79.ctex"
+path.s3tc="res://.godot/imported/material_normal.png-17ba608a348854e019054a7f35a2ba79.s3tc.ctex"
+path.etc2="res://.godot/imported/material_normal.png-17ba608a348854e019054a7f35a2ba79.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/hero/medieval_civilian_3/textures/material_normal.png"
-dest_files=["res://.godot/imported/material_normal.png-17ba608a348854e019054a7f35a2ba79.ctex"]
+dest_files=["res://.godot/imported/material_normal.png-17ba608a348854e019054a7f35a2ba79.s3tc.ctex", "res://.godot/imported/material_normal.png-17ba608a348854e019054a7f35a2ba79.etc2.ctex"]
 
 [params]
 

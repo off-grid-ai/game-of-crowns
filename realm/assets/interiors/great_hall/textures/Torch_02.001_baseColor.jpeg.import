@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cha3mxjhifpjd"
-path="res://.godot/imported/Torch_02.001_baseColor.jpeg-e439558774878ea08bef7bef6c019f7a.ctex"
+path.s3tc="res://.godot/imported/Torch_02.001_baseColor.jpeg-e439558774878ea08bef7bef6c019f7a.s3tc.ctex"
+path.etc2="res://.godot/imported/Torch_02.001_baseColor.jpeg-e439558774878ea08bef7bef6c019f7a.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/great_hall/textures/Torch_02.001_baseColor.jpeg"
-dest_files=["res://.godot/imported/Torch_02.001_baseColor.jpeg-e439558774878ea08bef7bef6c019f7a.ctex"]
+dest_files=["res://.godot/imported/Torch_02.001_baseColor.jpeg-e439558774878ea08bef7bef6c019f7a.s3tc.ctex", "res://.godot/imported/Torch_02.001_baseColor.jpeg-e439558774878ea08bef7bef6c019f7a.etc2.ctex"]
 
 [params]
 

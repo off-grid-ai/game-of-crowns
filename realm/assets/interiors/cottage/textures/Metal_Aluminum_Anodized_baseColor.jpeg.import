@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://deoocx0lllpgm"
-path="res://.godot/imported/Metal_Aluminum_Anodized_baseColor.jpeg-acdb0e98b54f98d6cdcf34055fe16232.ctex"
+path.s3tc="res://.godot/imported/Metal_Aluminum_Anodized_baseColor.jpeg-acdb0e98b54f98d6cdcf34055fe16232.s3tc.ctex"
+path.etc2="res://.godot/imported/Metal_Aluminum_Anodized_baseColor.jpeg-acdb0e98b54f98d6cdcf34055fe16232.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/cottage/textures/Metal_Aluminum_Anodized_baseColor.jpeg"
-dest_files=["res://.godot/imported/Metal_Aluminum_Anodized_baseColor.jpeg-acdb0e98b54f98d6cdcf34055fe16232.ctex"]
+dest_files=["res://.godot/imported/Metal_Aluminum_Anodized_baseColor.jpeg-acdb0e98b54f98d6cdcf34055fe16232.s3tc.ctex", "res://.godot/imported/Metal_Aluminum_Anodized_baseColor.jpeg-acdb0e98b54f98d6cdcf34055fe16232.etc2.ctex"]
 
 [params]
 

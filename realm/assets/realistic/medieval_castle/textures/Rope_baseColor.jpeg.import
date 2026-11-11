@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://djm5rd3pin56p"
 path.s3tc="res://.godot/imported/Rope_baseColor.jpeg-146472ac82de06fe076174c7c9d873d7.s3tc.ctex"
+path.etc2="res://.godot/imported/Rope_baseColor.jpeg-146472ac82de06fe076174c7c9d873d7.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_castle/textures/Rope_baseColor.jpeg"
-dest_files=["res://.godot/imported/Rope_baseColor.jpeg-146472ac82de06fe076174c7c9d873d7.s3tc.ctex"]
+dest_files=["res://.godot/imported/Rope_baseColor.jpeg-146472ac82de06fe076174c7c9d873d7.s3tc.ctex", "res://.godot/imported/Rope_baseColor.jpeg-146472ac82de06fe076174c7c9d873d7.etc2.ctex"]
 
 [params]
 

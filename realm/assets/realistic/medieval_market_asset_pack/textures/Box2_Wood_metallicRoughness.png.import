@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cqabqh2tcwg33"
 path.s3tc="res://.godot/imported/Box2_Wood_metallicRoughness.png-fbf9d23ac871307f73fd32ae1cb46e1e.s3tc.ctex"
+path.etc2="res://.godot/imported/Box2_Wood_metallicRoughness.png-fbf9d23ac871307f73fd32ae1cb46e1e.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Box2_Wood_metallicRoughness.png"
-dest_files=["res://.godot/imported/Box2_Wood_metallicRoughness.png-fbf9d23ac871307f73fd32ae1cb46e1e.s3tc.ctex"]
+dest_files=["res://.godot/imported/Box2_Wood_metallicRoughness.png-fbf9d23ac871307f73fd32ae1cb46e1e.s3tc.ctex", "res://.godot/imported/Box2_Wood_metallicRoughness.png-fbf9d23ac871307f73fd32ae1cb46e1e.etc2.ctex"]
 
 [params]
 

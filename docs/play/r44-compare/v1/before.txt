@@ -1,0 +1,24 @@
+Goldrock dist=120 fps: 14.0 13.0 
+   load: 10.21 13.43 11.46  memory free: 44%
+   busiest: node 112.4%, node 94.0%, node 93.8%, node 74.9%, freeciv-server 74.5%, 
+Goldrock dist=40 fps: 13.0 14.0 
+   load: 11.57 13.55 11.53  memory free: 33%
+   busiest: godot 117.6%, node 75.2%, node 71.5%, node 67.4%, node 60.9%, 
+Goldrock dist=14 fps: 8.0 7.0 
+   load: 10.13 13.06 11.42  memory free: 33%
+   busiest: godot 141.8%, freeciv-server 91.0%, node 79.2%, Brave 17.4%, WindowServer 14.9%, 
+Goldrock dist=5 fps: 14.0 5.0 
+   load: 10.75 13.02 11.44  memory free: 24%
+   busiest: godot 133.4%, node 102.8%, node 94.2%, freeciv-server 69.4%, com.apple.WebKit.WebContent 23.4%, 
+Kingsmere dist=120 fps: 8.0 11.0 
+   load: 10.16 12.73 11.37  memory free: 31%
+   busiest: godot 124.7%, node 102.2%, freeciv-server 85.5%, Off 68.2%, Brave 36.9%, 
+Kingsmere dist=40 fps: 9.0 10.0 
+   load: 12.09 13.05 11.51  memory free: 34%
+   busiest: godot 113.9%, node 91.3%, freeciv-server 87.7%, Off 43.4%, deleted 27.9%, 
+Kingsmere dist=14 fps: 10.0 9.0 
+   load: 12.00 12.97 11.51  memory free: 32%
+   busiest: node 119.9%, godot 116.7%, node 65.9%, Off 32.1%, mdworker_shared 26.1%, 
+Kingsmere dist=5 fps: 11.0 9.0 
+   load: 12.00 12.92 11.52  memory free: 28%
+   busiest: godot 142.1%, node 125.1%, Brave 53.1%, node 44.6%, Brave 42.5%, 

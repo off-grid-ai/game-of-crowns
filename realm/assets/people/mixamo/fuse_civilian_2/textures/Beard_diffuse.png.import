@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dt5hghdhumuem"
-path="res://.godot/imported/Beard_diffuse.png-0ba1986acda95e40331024205f18d7ac.ctex"
+path.s3tc="res://.godot/imported/Beard_diffuse.png-0ba1986acda95e40331024205f18d7ac.s3tc.ctex"
+path.etc2="res://.godot/imported/Beard_diffuse.png-0ba1986acda95e40331024205f18d7ac.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/people/mixamo/fuse_civilian_2/textures/Beard_diffuse.png"
-dest_files=["res://.godot/imported/Beard_diffuse.png-0ba1986acda95e40331024205f18d7ac.ctex"]
+dest_files=["res://.godot/imported/Beard_diffuse.png-0ba1986acda95e40331024205f18d7ac.s3tc.ctex", "res://.godot/imported/Beard_diffuse.png-0ba1986acda95e40331024205f18d7ac.etc2.ctex"]
 
 [params]
 

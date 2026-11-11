@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bbl1fi6puxsc7"
-path="res://.godot/imported/auto_baseColor.jpeg-ddbffc29ebe5afdee4df60160b89e63e.ctex"
+path.s3tc="res://.godot/imported/auto_baseColor.jpeg-ddbffc29ebe5afdee4df60160b89e63e.s3tc.ctex"
+path.etc2="res://.godot/imported/auto_baseColor.jpeg-ddbffc29ebe5afdee4df60160b89e63e.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/cottage/textures/auto_baseColor.jpeg"
-dest_files=["res://.godot/imported/auto_baseColor.jpeg-ddbffc29ebe5afdee4df60160b89e63e.ctex"]
+dest_files=["res://.godot/imported/auto_baseColor.jpeg-ddbffc29ebe5afdee4df60160b89e63e.s3tc.ctex", "res://.godot/imported/auto_baseColor.jpeg-ddbffc29ebe5afdee4df60160b89e63e.etc2.ctex"]
 
 [params]
 

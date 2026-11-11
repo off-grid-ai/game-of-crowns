@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://diifvoh05t0x8"
-path="res://.godot/imported/Horn_Bow_normal.png-0dff16b5a69bc91069aba7acbb5071d5.ctex"
+path.s3tc="res://.godot/imported/Horn_Bow_normal.png-0dff16b5a69bc91069aba7acbb5071d5.s3tc.ctex"
+path.etc2="res://.godot/imported/Horn_Bow_normal.png-0dff16b5a69bc91069aba7acbb5071d5.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/props/weapons/bows/textures/Horn_Bow_normal.png"
-dest_files=["res://.godot/imported/Horn_Bow_normal.png-0dff16b5a69bc91069aba7acbb5071d5.ctex"]
+dest_files=["res://.godot/imported/Horn_Bow_normal.png-0dff16b5a69bc91069aba7acbb5071d5.s3tc.ctex", "res://.godot/imported/Horn_Bow_normal.png-0dff16b5a69bc91069aba7acbb5071d5.etc2.ctex"]
 
 [params]
 

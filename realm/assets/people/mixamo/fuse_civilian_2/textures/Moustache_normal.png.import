@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dqakmpbunpexw"
-path="res://.godot/imported/Moustache_normal.png-35f352a2365b8a91200d737cffb22527.ctex"
+path.s3tc="res://.godot/imported/Moustache_normal.png-35f352a2365b8a91200d737cffb22527.s3tc.ctex"
+path.etc2="res://.godot/imported/Moustache_normal.png-35f352a2365b8a91200d737cffb22527.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/people/mixamo/fuse_civilian_2/textures/Moustache_normal.png"
-dest_files=["res://.godot/imported/Moustache_normal.png-35f352a2365b8a91200d737cffb22527.ctex"]
+dest_files=["res://.godot/imported/Moustache_normal.png-35f352a2365b8a91200d737cffb22527.s3tc.ctex", "res://.godot/imported/Moustache_normal.png-35f352a2365b8a91200d737cffb22527.etc2.ctex"]
 
 [params]
 

@@ -182,7 +182,13 @@ def scene(sh):
         return end_scene(sh)
     sid = sh["id"]
     body, js = [], []
-    if sh.get("flip"):
+    if sh.get("vid"):
+        # a clean take from the game (tools/takes.sh): it moves on its own, so no camera
+        pos = sh.get("pos", "50% 50%")
+        body.append(f'<video id="{sid}v" class="clip" src="{sh["vid"]}" muted playsinline data-start="0" '
+                    f'data-duration="{sh["dur"]:.2f}" data-media-start="{sh.get("ms", 0)}" data-track-index="0" '
+                    f'style="position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;object-position:{pos}"></video>')
+    elif sh.get("flip"):
         body.append(f'<div class="cam" id="{sid}cam" style="width:{sh["iw"]}px;height:{sh["ih"]}px">')
         for i, f in enumerate(sh["flip"]):
             body.append(f'<img id="{sid}f{i}" src="assets/play/{f}.jpg" alt="" width="{sh["iw"]}" height="{sh["ih"]}" style="opacity:{1 if i == 0 else 0}">')

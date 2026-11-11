@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://g7wr7ec6rqia"
 path.s3tc="res://.godot/imported/Stall_normal.png-c46784719ab1d56708246e06e138cff2.s3tc.ctex"
+path.etc2="res://.godot/imported/Stall_normal.png-c46784719ab1d56708246e06e138cff2.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Stall_normal.png"
-dest_files=["res://.godot/imported/Stall_normal.png-c46784719ab1d56708246e06e138cff2.s3tc.ctex"]
+dest_files=["res://.godot/imported/Stall_normal.png-c46784719ab1d56708246e06e138cff2.s3tc.ctex", "res://.godot/imported/Stall_normal.png-c46784719ab1d56708246e06e138cff2.etc2.ctex"]
 
 [params]
 

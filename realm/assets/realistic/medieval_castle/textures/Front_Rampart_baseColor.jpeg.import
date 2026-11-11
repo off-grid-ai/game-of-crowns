@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dhokam4ojqfe2"
 path.s3tc="res://.godot/imported/Front_Rampart_baseColor.jpeg-9c973d93d03e787fb1a4bb160a199cf3.s3tc.ctex"
+path.etc2="res://.godot/imported/Front_Rampart_baseColor.jpeg-9c973d93d03e787fb1a4bb160a199cf3.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_castle/textures/Front_Rampart_baseColor.jpeg"
-dest_files=["res://.godot/imported/Front_Rampart_baseColor.jpeg-9c973d93d03e787fb1a4bb160a199cf3.s3tc.ctex"]
+dest_files=["res://.godot/imported/Front_Rampart_baseColor.jpeg-9c973d93d03e787fb1a4bb160a199cf3.s3tc.ctex", "res://.godot/imported/Front_Rampart_baseColor.jpeg-9c973d93d03e787fb1a4bb160a199cf3.etc2.ctex"]
 
 [params]
 

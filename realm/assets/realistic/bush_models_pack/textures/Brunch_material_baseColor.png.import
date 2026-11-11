@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b5nla7tvso7qd"
 path.s3tc="res://.godot/imported/Brunch_material_baseColor.png-122da7fc2e174197cedbb541244c0f21.s3tc.ctex"
+path.etc2="res://.godot/imported/Brunch_material_baseColor.png-122da7fc2e174197cedbb541244c0f21.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/bush_models_pack/textures/Brunch_material_baseColor.png"
-dest_files=["res://.godot/imported/Brunch_material_baseColor.png-122da7fc2e174197cedbb541244c0f21.s3tc.ctex"]
+dest_files=["res://.godot/imported/Brunch_material_baseColor.png-122da7fc2e174197cedbb541244c0f21.s3tc.ctex", "res://.godot/imported/Brunch_material_baseColor.png-122da7fc2e174197cedbb541244c0f21.etc2.ctex"]
 
 [params]
 

@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cvdn7ba430fxm"
 path.s3tc="res://.godot/imported/Material_100_baseColor.jpeg-16d79e0c8b623e580445d7cc1d4e4653.s3tc.ctex"
+path.etc2="res://.godot/imported/Material_100_baseColor.jpeg-16d79e0c8b623e580445d7cc1d4e4653.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_viking_house/textures/Material_100_baseColor.jpeg"
-dest_files=["res://.godot/imported/Material_100_baseColor.jpeg-16d79e0c8b623e580445d7cc1d4e4653.s3tc.ctex"]
+dest_files=["res://.godot/imported/Material_100_baseColor.jpeg-16d79e0c8b623e580445d7cc1d4e4653.s3tc.ctex", "res://.godot/imported/Material_100_baseColor.jpeg-16d79e0c8b623e580445d7cc1d4e4653.etc2.ctex"]
 
 [params]
 

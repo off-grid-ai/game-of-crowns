@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://spy87r8mcaxv"
 path.s3tc="res://.godot/imported/Fence2_normal.png-98c7e8be5afe540039dccddc3268423b.s3tc.ctex"
+path.etc2="res://.godot/imported/Fence2_normal.png-98c7e8be5afe540039dccddc3268423b.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/wooden_fence_game_ready_asset/textures/Fence2_normal.png"
-dest_files=["res://.godot/imported/Fence2_normal.png-98c7e8be5afe540039dccddc3268423b.s3tc.ctex"]
+dest_files=["res://.godot/imported/Fence2_normal.png-98c7e8be5afe540039dccddc3268423b.s3tc.ctex", "res://.godot/imported/Fence2_normal.png-98c7e8be5afe540039dccddc3268423b.etc2.ctex"]
 
 [params]
 

@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://crxxnxca5inbv"
 path.s3tc="res://.godot/imported/BridgeControl_metallicRoughness.png-46deca7f879263fc8b19184aa0b104b5.s3tc.ctex"
+path.etc2="res://.godot/imported/BridgeControl_metallicRoughness.png-46deca7f879263fc8b19184aa0b104b5.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_castle/textures/BridgeControl_metallicRoughness.png"
-dest_files=["res://.godot/imported/BridgeControl_metallicRoughness.png-46deca7f879263fc8b19184aa0b104b5.s3tc.ctex"]
+dest_files=["res://.godot/imported/BridgeControl_metallicRoughness.png-46deca7f879263fc8b19184aa0b104b5.s3tc.ctex", "res://.godot/imported/BridgeControl_metallicRoughness.png-46deca7f879263fc8b19184aa0b104b5.etc2.ctex"]
 
 [params]
 

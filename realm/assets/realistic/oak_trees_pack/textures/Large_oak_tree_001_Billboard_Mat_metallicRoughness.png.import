@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dgbac0xtwyxhv"
 path.s3tc="res://.godot/imported/Large_oak_tree_001_Billboard_Mat_metallicRoughness.png-1e8d57fcdf37491a72777a47807ecfd0.s3tc.ctex"
+path.etc2="res://.godot/imported/Large_oak_tree_001_Billboard_Mat_metallicRoughness.png-1e8d57fcdf37491a72777a47807ecfd0.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/oak_trees_pack/textures/Large_oak_tree_001_Billboard_Mat_metallicRoughness.png"
-dest_files=["res://.godot/imported/Large_oak_tree_001_Billboard_Mat_metallicRoughness.png-1e8d57fcdf37491a72777a47807ecfd0.s3tc.ctex"]
+dest_files=["res://.godot/imported/Large_oak_tree_001_Billboard_Mat_metallicRoughness.png-1e8d57fcdf37491a72777a47807ecfd0.s3tc.ctex", "res://.godot/imported/Large_oak_tree_001_Billboard_Mat_metallicRoughness.png-1e8d57fcdf37491a72777a47807ecfd0.etc2.ctex"]
 
 [params]
 

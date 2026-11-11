@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://by8ddtlo0be0q"
 path.s3tc="res://.godot/imported/House_01_baseColor.jpeg-11f5c2688879f8e7db5dea53e4363be7.s3tc.ctex"
+path.etc2="res://.godot/imported/House_01_baseColor.jpeg-11f5c2688879f8e7db5dea53e4363be7.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/romano-british_house_in_medieval_london/textures/House_01_baseColor.jpeg"
-dest_files=["res://.godot/imported/House_01_baseColor.jpeg-11f5c2688879f8e7db5dea53e4363be7.s3tc.ctex"]
+dest_files=["res://.godot/imported/House_01_baseColor.jpeg-11f5c2688879f8e7db5dea53e4363be7.s3tc.ctex", "res://.godot/imported/House_01_baseColor.jpeg-11f5c2688879f8e7db5dea53e4363be7.etc2.ctex"]
 
 [params]
 

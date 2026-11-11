@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://eu4wnmtdlfgd"
 path.bptc="res://.godot/imported/atlas.png-daf69e8c229f0245b9981b8fb844ba2e.bptc.ctex"
+path.astc="res://.godot/imported/atlas.png-daf69e8c229f0245b9981b8fb844ba2e.astc.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/maps/atlas.png"
-dest_files=["res://.godot/imported/atlas.png-daf69e8c229f0245b9981b8fb844ba2e.bptc.ctex"]
+dest_files=["res://.godot/imported/atlas.png-daf69e8c229f0245b9981b8fb844ba2e.bptc.ctex", "res://.godot/imported/atlas.png-daf69e8c229f0245b9981b8fb844ba2e.astc.ctex"]
 
 [params]
 

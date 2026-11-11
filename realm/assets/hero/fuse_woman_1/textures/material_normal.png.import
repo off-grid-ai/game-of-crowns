@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cwen2xbk5104j"
-path="res://.godot/imported/material_normal.png-065f2244f1e0d3400a8ef199d1de79f2.ctex"
+path.s3tc="res://.godot/imported/material_normal.png-065f2244f1e0d3400a8ef199d1de79f2.s3tc.ctex"
+path.etc2="res://.godot/imported/material_normal.png-065f2244f1e0d3400a8ef199d1de79f2.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/hero/fuse_woman_1/textures/material_normal.png"
-dest_files=["res://.godot/imported/material_normal.png-065f2244f1e0d3400a8ef199d1de79f2.ctex"]
+dest_files=["res://.godot/imported/material_normal.png-065f2244f1e0d3400a8ef199d1de79f2.s3tc.ctex", "res://.godot/imported/material_normal.png-065f2244f1e0d3400a8ef199d1de79f2.etc2.ctex"]
 
 [params]
 

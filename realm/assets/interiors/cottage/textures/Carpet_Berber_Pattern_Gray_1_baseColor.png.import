@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://s3urkppnujia"
-path="res://.godot/imported/Carpet_Berber_Pattern_Gray_1_baseColor.png-963ca796603c589599c934d08ef4c849.ctex"
+path.s3tc="res://.godot/imported/Carpet_Berber_Pattern_Gray_1_baseColor.png-963ca796603c589599c934d08ef4c849.s3tc.ctex"
+path.etc2="res://.godot/imported/Carpet_Berber_Pattern_Gray_1_baseColor.png-963ca796603c589599c934d08ef4c849.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/cottage/textures/Carpet_Berber_Pattern_Gray_1_baseColor.png"
-dest_files=["res://.godot/imported/Carpet_Berber_Pattern_Gray_1_baseColor.png-963ca796603c589599c934d08ef4c849.ctex"]
+dest_files=["res://.godot/imported/Carpet_Berber_Pattern_Gray_1_baseColor.png-963ca796603c589599c934d08ef4c849.s3tc.ctex", "res://.godot/imported/Carpet_Berber_Pattern_Gray_1_baseColor.png-963ca796603c589599c934d08ef4c849.etc2.ctex"]
 
 [params]
 

@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://wkwwr0w3myo8"
 path.s3tc="res://.godot/imported/paladin_1.png-8e37d173a755e9633860232d61e92d26.s3tc.ctex"
+path.etc2="res://.godot/imported/paladin_1.png-8e37d173a755e9633860232d61e92d26.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/people/mixamo/paladin/paladin_1.png"
-dest_files=["res://.godot/imported/paladin_1.png-8e37d173a755e9633860232d61e92d26.s3tc.ctex"]
+dest_files=["res://.godot/imported/paladin_1.png-8e37d173a755e9633860232d61e92d26.s3tc.ctex", "res://.godot/imported/paladin_1.png-8e37d173a755e9633860232d61e92d26.etc2.ctex"]
 
 [params]
 

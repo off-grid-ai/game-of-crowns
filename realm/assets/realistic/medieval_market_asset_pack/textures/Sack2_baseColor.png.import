@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cyg54c0q3t1b4"
 path.s3tc="res://.godot/imported/Sack2_baseColor.png-a83983ad5b17814a58e8d5b06ce3f49f.s3tc.ctex"
+path.etc2="res://.godot/imported/Sack2_baseColor.png-a83983ad5b17814a58e8d5b06ce3f49f.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Sack2_baseColor.png"
-dest_files=["res://.godot/imported/Sack2_baseColor.png-a83983ad5b17814a58e8d5b06ce3f49f.s3tc.ctex"]
+dest_files=["res://.godot/imported/Sack2_baseColor.png-a83983ad5b17814a58e8d5b06ce3f49f.s3tc.ctex", "res://.godot/imported/Sack2_baseColor.png-a83983ad5b17814a58e8d5b06ce3f49f.etc2.ctex"]
 
 [params]
 

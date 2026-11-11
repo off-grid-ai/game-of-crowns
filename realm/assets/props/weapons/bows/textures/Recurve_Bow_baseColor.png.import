@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://5rqtrv3vc6tp"
-path="res://.godot/imported/Recurve_Bow_baseColor.png-a8edac64f075a7e0b2d83532f3dcccf4.ctex"
+path.s3tc="res://.godot/imported/Recurve_Bow_baseColor.png-a8edac64f075a7e0b2d83532f3dcccf4.s3tc.ctex"
+path.etc2="res://.godot/imported/Recurve_Bow_baseColor.png-a8edac64f075a7e0b2d83532f3dcccf4.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/props/weapons/bows/textures/Recurve_Bow_baseColor.png"
-dest_files=["res://.godot/imported/Recurve_Bow_baseColor.png-a8edac64f075a7e0b2d83532f3dcccf4.ctex"]
+dest_files=["res://.godot/imported/Recurve_Bow_baseColor.png-a8edac64f075a7e0b2d83532f3dcccf4.s3tc.ctex", "res://.godot/imported/Recurve_Bow_baseColor.png-a8edac64f075a7e0b2d83532f3dcccf4.etc2.ctex"]
 
 [params]
 

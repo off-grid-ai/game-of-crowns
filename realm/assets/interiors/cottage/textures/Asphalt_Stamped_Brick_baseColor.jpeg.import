@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ja86qtcya7dn"
-path="res://.godot/imported/Asphalt_Stamped_Brick_baseColor.jpeg-aa2562f3b441274c0b86a3825b7a8ef9.ctex"
+path.s3tc="res://.godot/imported/Asphalt_Stamped_Brick_baseColor.jpeg-aa2562f3b441274c0b86a3825b7a8ef9.s3tc.ctex"
+path.etc2="res://.godot/imported/Asphalt_Stamped_Brick_baseColor.jpeg-aa2562f3b441274c0b86a3825b7a8ef9.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/cottage/textures/Asphalt_Stamped_Brick_baseColor.jpeg"
-dest_files=["res://.godot/imported/Asphalt_Stamped_Brick_baseColor.jpeg-aa2562f3b441274c0b86a3825b7a8ef9.ctex"]
+dest_files=["res://.godot/imported/Asphalt_Stamped_Brick_baseColor.jpeg-aa2562f3b441274c0b86a3825b7a8ef9.s3tc.ctex", "res://.godot/imported/Asphalt_Stamped_Brick_baseColor.jpeg-aa2562f3b441274c0b86a3825b7a8ef9.etc2.ctex"]
 
 [params]
 

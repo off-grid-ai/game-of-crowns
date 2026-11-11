@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bqpaundm5o0g2"
-path="res://.godot/imported/medieval_civilian_3_upload_2.png-67acbc0a8939580d8897369de24cadbc.ctex"
+path.s3tc="res://.godot/imported/medieval_civilian_3_upload_2.png-67acbc0a8939580d8897369de24cadbc.s3tc.ctex"
+path.etc2="res://.godot/imported/medieval_civilian_3_upload_2.png-67acbc0a8939580d8897369de24cadbc.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "5749d9297b01c5ae612dad40fe00c5cb"
@@ -14,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/hero/medieval_civilian_3/medieval_civilian_3_upload_2.png"
-dest_files=["res://.godot/imported/medieval_civilian_3_upload_2.png-67acbc0a8939580d8897369de24cadbc.ctex"]
+dest_files=["res://.godot/imported/medieval_civilian_3_upload_2.png-67acbc0a8939580d8897369de24cadbc.s3tc.ctex", "res://.godot/imported/medieval_civilian_3_upload_2.png-67acbc0a8939580d8897369de24cadbc.etc2.ctex"]
 
 [params]
 

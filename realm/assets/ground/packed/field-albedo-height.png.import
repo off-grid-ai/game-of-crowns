@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://2g2d74a1p1ck"
-path="res://.godot/imported/field-albedo-height.png-777db2abd48b69f530f5e1e028734189.ctex"
+path.bptc="res://.godot/imported/field-albedo-height.png-777db2abd48b69f530f5e1e028734189.bptc.ctex"
+path.astc="res://.godot/imported/field-albedo-height.png-777db2abd48b69f530f5e1e028734189.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/ground/packed/field-albedo-height.png"
-dest_files=["res://.godot/imported/field-albedo-height.png-777db2abd48b69f530f5e1e028734189.ctex"]
+dest_files=["res://.godot/imported/field-albedo-height.png-777db2abd48b69f530f5e1e028734189.bptc.ctex", "res://.godot/imported/field-albedo-height.png-777db2abd48b69f530f5e1e028734189.astc.ctex"]
 
 [params]
 

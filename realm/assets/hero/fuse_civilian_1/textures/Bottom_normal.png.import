@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cligf2ng5weeo"
-path="res://.godot/imported/Bottom_normal.png-ec9e05aa0bd5adeb13ab0040099a540e.ctex"
+path.s3tc="res://.godot/imported/Bottom_normal.png-ec9e05aa0bd5adeb13ab0040099a540e.s3tc.ctex"
+path.etc2="res://.godot/imported/Bottom_normal.png-ec9e05aa0bd5adeb13ab0040099a540e.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/hero/fuse_civilian_1/textures/Bottom_normal.png"
-dest_files=["res://.godot/imported/Bottom_normal.png-ec9e05aa0bd5adeb13ab0040099a540e.ctex"]
+dest_files=["res://.godot/imported/Bottom_normal.png-ec9e05aa0bd5adeb13ab0040099a540e.s3tc.ctex", "res://.godot/imported/Bottom_normal.png-ec9e05aa0bd5adeb13ab0040099a540e.etc2.ctex"]
 
 [params]
 

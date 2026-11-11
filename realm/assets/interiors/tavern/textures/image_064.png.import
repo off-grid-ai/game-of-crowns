@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://6eaw7otdhu06"
-path="res://.godot/imported/image_064.png-97d6de44e3fb03ea5e8db01c7684fcec.ctex"
+path.s3tc="res://.godot/imported/image_064.png-97d6de44e3fb03ea5e8db01c7684fcec.s3tc.ctex"
+path.etc2="res://.godot/imported/image_064.png-97d6de44e3fb03ea5e8db01c7684fcec.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/tavern/textures/image_064.png"
-dest_files=["res://.godot/imported/image_064.png-97d6de44e3fb03ea5e8db01c7684fcec.ctex"]
+dest_files=["res://.godot/imported/image_064.png-97d6de44e3fb03ea5e8db01c7684fcec.s3tc.ctex", "res://.godot/imported/image_064.png-97d6de44e3fb03ea5e8db01c7684fcec.etc2.ctex"]
 
 [params]
 

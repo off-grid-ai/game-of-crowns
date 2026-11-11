@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bcftt6q5ewlvh"
-path="res://.godot/imported/svendwooltunic_col.png-3d0e582f2e36f84e45af362c93028795.ctex"
+path.s3tc="res://.godot/imported/svendwooltunic_col.png-3d0e582f2e36f84e45af362c93028795.s3tc.ctex"
+path.etc2="res://.godot/imported/svendwooltunic_col.png-3d0e582f2e36f84e45af362c93028795.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/people/mixamo/svend/svendwooltunic_col.png"
-dest_files=["res://.godot/imported/svendwooltunic_col.png-3d0e582f2e36f84e45af362c93028795.ctex"]
+dest_files=["res://.godot/imported/svendwooltunic_col.png-3d0e582f2e36f84e45af362c93028795.s3tc.ctex", "res://.godot/imported/svendwooltunic_col.png-3d0e582f2e36f84e45af362c93028795.etc2.ctex"]
 
 [params]
 

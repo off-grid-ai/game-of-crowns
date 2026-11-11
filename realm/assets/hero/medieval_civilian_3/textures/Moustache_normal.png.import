@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b6hcgxypbpwwd"
-path="res://.godot/imported/Moustache_normal.png-5dea38d16176eb581fc8e8a47b10fe32.ctex"
+path.s3tc="res://.godot/imported/Moustache_normal.png-5dea38d16176eb581fc8e8a47b10fe32.s3tc.ctex"
+path.etc2="res://.godot/imported/Moustache_normal.png-5dea38d16176eb581fc8e8a47b10fe32.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/hero/medieval_civilian_3/textures/Moustache_normal.png"
-dest_files=["res://.godot/imported/Moustache_normal.png-5dea38d16176eb581fc8e8a47b10fe32.ctex"]
+dest_files=["res://.godot/imported/Moustache_normal.png-5dea38d16176eb581fc8e8a47b10fe32.s3tc.ctex", "res://.godot/imported/Moustache_normal.png-5dea38d16176eb581fc8e8a47b10fe32.etc2.ctex"]
 
 [params]
 

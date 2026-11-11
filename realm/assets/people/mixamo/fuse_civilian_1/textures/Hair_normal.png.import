@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d3r3wpqwyxmxj"
-path="res://.godot/imported/Hair_normal.png-77bbec2d8cd79604f85359804bec2405.ctex"
+path.s3tc="res://.godot/imported/Hair_normal.png-77bbec2d8cd79604f85359804bec2405.s3tc.ctex"
+path.etc2="res://.godot/imported/Hair_normal.png-77bbec2d8cd79604f85359804bec2405.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/people/mixamo/fuse_civilian_1/textures/Hair_normal.png"
-dest_files=["res://.godot/imported/Hair_normal.png-77bbec2d8cd79604f85359804bec2405.ctex"]
+dest_files=["res://.godot/imported/Hair_normal.png-77bbec2d8cd79604f85359804bec2405.s3tc.ctex", "res://.godot/imported/Hair_normal.png-77bbec2d8cd79604f85359804bec2405.etc2.ctex"]
 
 [params]
 

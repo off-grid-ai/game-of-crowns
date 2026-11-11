@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bn2y1b7ucmbm3"
 path.s3tc="res://.godot/imported/Bush_medium_003_Billboard_Mat_baseColor.png-464c31a86f44921dabd87ada12c7f0db.s3tc.ctex"
+path.etc2="res://.godot/imported/Bush_medium_003_Billboard_Mat_baseColor.png-464c31a86f44921dabd87ada12c7f0db.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/bush_models_pack/textures/Bush_medium_003_Billboard_Mat_baseColor.png"
-dest_files=["res://.godot/imported/Bush_medium_003_Billboard_Mat_baseColor.png-464c31a86f44921dabd87ada12c7f0db.s3tc.ctex"]
+dest_files=["res://.godot/imported/Bush_medium_003_Billboard_Mat_baseColor.png-464c31a86f44921dabd87ada12c7f0db.s3tc.ctex", "res://.godot/imported/Bush_medium_003_Billboard_Mat_baseColor.png-464c31a86f44921dabd87ada12c7f0db.etc2.ctex"]
 
 [params]
 

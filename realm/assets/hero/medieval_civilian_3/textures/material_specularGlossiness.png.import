@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://crjgboq02o2n0"
-path="res://.godot/imported/material_specularGlossiness.png-a535b8203d737694c683e38c7f2e4f6e.ctex"
+path.s3tc="res://.godot/imported/material_specularGlossiness.png-a535b8203d737694c683e38c7f2e4f6e.s3tc.ctex"
+path.etc2="res://.godot/imported/material_specularGlossiness.png-a535b8203d737694c683e38c7f2e4f6e.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/hero/medieval_civilian_3/textures/material_specularGlossiness.png"
-dest_files=["res://.godot/imported/material_specularGlossiness.png-a535b8203d737694c683e38c7f2e4f6e.ctex"]
+dest_files=["res://.godot/imported/material_specularGlossiness.png-a535b8203d737694c683e38c7f2e4f6e.s3tc.ctex", "res://.godot/imported/material_specularGlossiness.png-a535b8203d737694c683e38c7f2e4f6e.etc2.ctex"]
 
 [params]
 

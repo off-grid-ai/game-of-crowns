@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://deojw354e0xyg"
 path.s3tc="res://.godot/imported/Stairs_baseColor.jpeg-24c558221b9d20e8acdaed202bb532bf.s3tc.ctex"
+path.etc2="res://.godot/imported/Stairs_baseColor.jpeg-24c558221b9d20e8acdaed202bb532bf.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_castle/textures/Stairs_baseColor.jpeg"
-dest_files=["res://.godot/imported/Stairs_baseColor.jpeg-24c558221b9d20e8acdaed202bb532bf.s3tc.ctex"]
+dest_files=["res://.godot/imported/Stairs_baseColor.jpeg-24c558221b9d20e8acdaed202bb532bf.s3tc.ctex", "res://.godot/imported/Stairs_baseColor.jpeg-24c558221b9d20e8acdaed202bb532bf.etc2.ctex"]
 
 [params]
 

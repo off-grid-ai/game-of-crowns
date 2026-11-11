@@ -1,0 +1,15 @@
+{
+  "name": "Game of Crowns",
+  "short_name": "GoC",
+  "pronunciation": "gee-oh-see",
+  "date": "2026-11-04",
+  "colors": {
+    "charcoal": "#151719",
+    "deep_slate": "#252B32",
+    "aged_bronze": "#B7A17D",
+    "pale_bronze": "#D5C5A3",
+    "oxblood": "#602B2E",
+    "warm_stone": "#D9D0BF"
+  }
+}
+

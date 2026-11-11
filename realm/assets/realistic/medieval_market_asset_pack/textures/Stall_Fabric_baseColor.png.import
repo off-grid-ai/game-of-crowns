@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://iqe6m7xa1w7u"
 path.s3tc="res://.godot/imported/Stall_Fabric_baseColor.png-4df85c380b4f955d5c7649c78e94265b.s3tc.ctex"
+path.etc2="res://.godot/imported/Stall_Fabric_baseColor.png-4df85c380b4f955d5c7649c78e94265b.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Stall_Fabric_baseColor.png"
-dest_files=["res://.godot/imported/Stall_Fabric_baseColor.png-4df85c380b4f955d5c7649c78e94265b.s3tc.ctex"]
+dest_files=["res://.godot/imported/Stall_Fabric_baseColor.png-4df85c380b4f955d5c7649c78e94265b.s3tc.ctex", "res://.godot/imported/Stall_Fabric_baseColor.png-4df85c380b4f955d5c7649c78e94265b.etc2.ctex"]
 
 [params]
 

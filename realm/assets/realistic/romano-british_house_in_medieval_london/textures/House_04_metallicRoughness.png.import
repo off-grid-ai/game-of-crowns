@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dhh7njhoxqmv2"
 path.s3tc="res://.godot/imported/House_04_metallicRoughness.png-97aca35c6c0238e4fd3e68197a014739.s3tc.ctex"
+path.etc2="res://.godot/imported/House_04_metallicRoughness.png-97aca35c6c0238e4fd3e68197a014739.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/romano-british_house_in_medieval_london/textures/House_04_metallicRoughness.png"
-dest_files=["res://.godot/imported/House_04_metallicRoughness.png-97aca35c6c0238e4fd3e68197a014739.s3tc.ctex"]
+dest_files=["res://.godot/imported/House_04_metallicRoughness.png-97aca35c6c0238e4fd3e68197a014739.s3tc.ctex", "res://.godot/imported/House_04_metallicRoughness.png-97aca35c6c0238e4fd3e68197a014739.etc2.ctex"]
 
 [params]
 

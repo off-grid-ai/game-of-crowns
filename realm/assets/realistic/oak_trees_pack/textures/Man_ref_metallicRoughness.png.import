@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cn1bny3m5lt8o"
 path.s3tc="res://.godot/imported/Man_ref_metallicRoughness.png-b7d133b4a35c13211b05f481d8afdbc9.s3tc.ctex"
+path.etc2="res://.godot/imported/Man_ref_metallicRoughness.png-b7d133b4a35c13211b05f481d8afdbc9.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/oak_trees_pack/textures/Man_ref_metallicRoughness.png"
-dest_files=["res://.godot/imported/Man_ref_metallicRoughness.png-b7d133b4a35c13211b05f481d8afdbc9.s3tc.ctex"]
+dest_files=["res://.godot/imported/Man_ref_metallicRoughness.png-b7d133b4a35c13211b05f481d8afdbc9.s3tc.ctex", "res://.godot/imported/Man_ref_metallicRoughness.png-b7d133b4a35c13211b05f481d8afdbc9.etc2.ctex"]
 
 [params]
 

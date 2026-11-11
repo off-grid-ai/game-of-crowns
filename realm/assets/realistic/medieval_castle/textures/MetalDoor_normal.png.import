@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bvyrda1gc7j5s"
 path.s3tc="res://.godot/imported/MetalDoor_normal.png-302ae1469e59914abf0903b9687f5837.s3tc.ctex"
+path.etc2="res://.godot/imported/MetalDoor_normal.png-302ae1469e59914abf0903b9687f5837.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_castle/textures/MetalDoor_normal.png"
-dest_files=["res://.godot/imported/MetalDoor_normal.png-302ae1469e59914abf0903b9687f5837.s3tc.ctex"]
+dest_files=["res://.godot/imported/MetalDoor_normal.png-302ae1469e59914abf0903b9687f5837.s3tc.ctex", "res://.godot/imported/MetalDoor_normal.png-302ae1469e59914abf0903b9687f5837.etc2.ctex"]
 
 [params]
 

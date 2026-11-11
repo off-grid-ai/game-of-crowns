@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dgfxy20f26sp6"
-path="res://.godot/imported/English_Long_Bow_baseColor.png-82c25370584e01a5755835cb081cd361.ctex"
+path.s3tc="res://.godot/imported/English_Long_Bow_baseColor.png-82c25370584e01a5755835cb081cd361.s3tc.ctex"
+path.etc2="res://.godot/imported/English_Long_Bow_baseColor.png-82c25370584e01a5755835cb081cd361.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/props/weapons/bows/textures/English_Long_Bow_baseColor.png"
-dest_files=["res://.godot/imported/English_Long_Bow_baseColor.png-82c25370584e01a5755835cb081cd361.ctex"]
+dest_files=["res://.godot/imported/English_Long_Bow_baseColor.png-82c25370584e01a5755835cb081cd361.s3tc.ctex", "res://.godot/imported/English_Long_Bow_baseColor.png-82c25370584e01a5755835cb081cd361.etc2.ctex"]
 
 [params]
 

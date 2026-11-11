@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://knmahvpqn36q"
 path.s3tc="res://.godot/imported/wine_barrel_01_nor_gl_1k.jpg-24372a96dc48b3c374b33478e5b4cf8e.s3tc.ctex"
+path.etc2="res://.godot/imported/wine_barrel_01_nor_gl_1k.jpg-24372a96dc48b3c374b33478e5b4cf8e.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/ph/wine_barrel_01/textures/wine_barrel_01_nor_gl_1k.jpg"
-dest_files=["res://.godot/imported/wine_barrel_01_nor_gl_1k.jpg-24372a96dc48b3c374b33478e5b4cf8e.s3tc.ctex"]
+dest_files=["res://.godot/imported/wine_barrel_01_nor_gl_1k.jpg-24372a96dc48b3c374b33478e5b4cf8e.s3tc.ctex", "res://.godot/imported/wine_barrel_01_nor_gl_1k.jpg-24372a96dc48b3c374b33478e5b4cf8e.etc2.ctex"]
 
 [params]
 

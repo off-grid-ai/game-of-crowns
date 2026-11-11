@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c5opj7o8tjjad"
-path="res://.godot/imported/Steel_baseColor.jpeg-d5ff31cf42364c4e906fd4d2439ab40a.ctex"
+path.s3tc="res://.godot/imported/Steel_baseColor.jpeg-d5ff31cf42364c4e906fd4d2439ab40a.s3tc.ctex"
+path.etc2="res://.godot/imported/Steel_baseColor.jpeg-d5ff31cf42364c4e906fd4d2439ab40a.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/props/weapons/shield/textures/Steel_baseColor.jpeg"
-dest_files=["res://.godot/imported/Steel_baseColor.jpeg-d5ff31cf42364c4e906fd4d2439ab40a.ctex"]
+dest_files=["res://.godot/imported/Steel_baseColor.jpeg-d5ff31cf42364c4e906fd4d2439ab40a.s3tc.ctex", "res://.godot/imported/Steel_baseColor.jpeg-d5ff31cf42364c4e906fd4d2439ab40a.etc2.ctex"]
 
 [params]
 

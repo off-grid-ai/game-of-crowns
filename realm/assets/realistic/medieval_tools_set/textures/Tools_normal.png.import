@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://chcfn7glqt0os"
 path.s3tc="res://.godot/imported/Tools_normal.png-496ad3003584b5559b74adb02549b41f.s3tc.ctex"
+path.etc2="res://.godot/imported/Tools_normal.png-496ad3003584b5559b74adb02549b41f.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_tools_set/textures/Tools_normal.png"
-dest_files=["res://.godot/imported/Tools_normal.png-496ad3003584b5559b74adb02549b41f.s3tc.ctex"]
+dest_files=["res://.godot/imported/Tools_normal.png-496ad3003584b5559b74adb02549b41f.s3tc.ctex", "res://.godot/imported/Tools_normal.png-496ad3003584b5559b74adb02549b41f.etc2.ctex"]
 
 [params]
 

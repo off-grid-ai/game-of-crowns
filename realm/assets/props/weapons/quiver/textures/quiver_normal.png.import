@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cq80rog7tn7pn"
-path="res://.godot/imported/quiver_normal.png-d8959eecaf1e0e7627833338134d3b36.ctex"
+path.s3tc="res://.godot/imported/quiver_normal.png-d8959eecaf1e0e7627833338134d3b36.s3tc.ctex"
+path.etc2="res://.godot/imported/quiver_normal.png-d8959eecaf1e0e7627833338134d3b36.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/props/weapons/quiver/textures/quiver_normal.png"
-dest_files=["res://.godot/imported/quiver_normal.png-d8959eecaf1e0e7627833338134d3b36.ctex"]
+dest_files=["res://.godot/imported/quiver_normal.png-d8959eecaf1e0e7627833338134d3b36.s3tc.ctex", "res://.godot/imported/quiver_normal.png-d8959eecaf1e0e7627833338134d3b36.etc2.ctex"]
 
 [params]
 

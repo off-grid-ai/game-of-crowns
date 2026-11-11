@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://3s6g4bpp1e8"
-path="res://.godot/imported/T_Eye_Brown.png-d0b4e31e7e65aa03ffda1e057b918dcb.ctex"
+path.s3tc="res://.godot/imported/T_Eye_Brown.png-d0b4e31e7e65aa03ffda1e057b918dcb.s3tc.ctex"
+path.etc2="res://.godot/imported/T_Eye_Brown.png-d0b4e31e7e65aa03ffda1e057b918dcb.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/people/base/T_Eye_Brown.png"
-dest_files=["res://.godot/imported/T_Eye_Brown.png-d0b4e31e7e65aa03ffda1e057b918dcb.ctex"]
+dest_files=["res://.godot/imported/T_Eye_Brown.png-d0b4e31e7e65aa03ffda1e057b918dcb.s3tc.ctex", "res://.godot/imported/T_Eye_Brown.png-d0b4e31e7e65aa03ffda1e057b918dcb.etc2.ctex"]
 
 [params]
 

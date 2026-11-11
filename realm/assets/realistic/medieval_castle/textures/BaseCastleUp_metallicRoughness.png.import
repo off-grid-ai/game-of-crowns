@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c8hsrm1xxcc86"
 path.s3tc="res://.godot/imported/BaseCastleUp_metallicRoughness.png-6713a35fa10737fe86547288eef329d8.s3tc.ctex"
+path.etc2="res://.godot/imported/BaseCastleUp_metallicRoughness.png-6713a35fa10737fe86547288eef329d8.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_castle/textures/BaseCastleUp_metallicRoughness.png"
-dest_files=["res://.godot/imported/BaseCastleUp_metallicRoughness.png-6713a35fa10737fe86547288eef329d8.s3tc.ctex"]
+dest_files=["res://.godot/imported/BaseCastleUp_metallicRoughness.png-6713a35fa10737fe86547288eef329d8.s3tc.ctex", "res://.godot/imported/BaseCastleUp_metallicRoughness.png-6713a35fa10737fe86547288eef329d8.etc2.ctex"]
 
 [params]
 

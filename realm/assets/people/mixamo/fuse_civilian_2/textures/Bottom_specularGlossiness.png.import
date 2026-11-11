@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b4ofl0u7mvlrf"
-path="res://.godot/imported/Bottom_specularGlossiness.png-8e438fbb5c3c154b0bfba7e17135fea9.ctex"
+path.s3tc="res://.godot/imported/Bottom_specularGlossiness.png-8e438fbb5c3c154b0bfba7e17135fea9.s3tc.ctex"
+path.etc2="res://.godot/imported/Bottom_specularGlossiness.png-8e438fbb5c3c154b0bfba7e17135fea9.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/people/mixamo/fuse_civilian_2/textures/Bottom_specularGlossiness.png"
-dest_files=["res://.godot/imported/Bottom_specularGlossiness.png-8e438fbb5c3c154b0bfba7e17135fea9.ctex"]
+dest_files=["res://.godot/imported/Bottom_specularGlossiness.png-8e438fbb5c3c154b0bfba7e17135fea9.s3tc.ctex", "res://.godot/imported/Bottom_specularGlossiness.png-8e438fbb5c3c154b0bfba7e17135fea9.etc2.ctex"]
 
 [params]
 

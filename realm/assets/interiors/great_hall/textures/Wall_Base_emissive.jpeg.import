@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c4nsur3je53aj"
-path="res://.godot/imported/Wall_Base_emissive.jpeg-9365430a88a149092724df8fea9d48aa.ctex"
+path.s3tc="res://.godot/imported/Wall_Base_emissive.jpeg-9365430a88a149092724df8fea9d48aa.s3tc.ctex"
+path.etc2="res://.godot/imported/Wall_Base_emissive.jpeg-9365430a88a149092724df8fea9d48aa.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/great_hall/textures/Wall_Base_emissive.jpeg"
-dest_files=["res://.godot/imported/Wall_Base_emissive.jpeg-9365430a88a149092724df8fea9d48aa.ctex"]
+dest_files=["res://.godot/imported/Wall_Base_emissive.jpeg-9365430a88a149092724df8fea9d48aa.s3tc.ctex", "res://.godot/imported/Wall_Base_emissive.jpeg-9365430a88a149092724df8fea9d48aa.etc2.ctex"]
 
 [params]
 

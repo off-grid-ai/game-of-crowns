@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://degiy5lwyy4rd"
-path="res://.godot/imported/rock-normal-rough.png-89d8362eb7c4416f1cd11b301902f502.ctex"
+path.bptc="res://.godot/imported/rock-normal-rough.png-89d8362eb7c4416f1cd11b301902f502.bptc.ctex"
+path.astc="res://.godot/imported/rock-normal-rough.png-89d8362eb7c4416f1cd11b301902f502.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/ground/packed/rock-normal-rough.png"
-dest_files=["res://.godot/imported/rock-normal-rough.png-89d8362eb7c4416f1cd11b301902f502.ctex"]
+dest_files=["res://.godot/imported/rock-normal-rough.png-89d8362eb7c4416f1cd11b301902f502.bptc.ctex", "res://.godot/imported/rock-normal-rough.png-89d8362eb7c4416f1cd11b301902f502.astc.ctex"]
 
 [params]
 

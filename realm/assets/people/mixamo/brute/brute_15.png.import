@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cwpt7sc025xto"
 path.s3tc="res://.godot/imported/brute_15.png-795ef91d7a4e4a8ba68876fcc761d25e.s3tc.ctex"
+path.etc2="res://.godot/imported/brute_15.png-795ef91d7a4e4a8ba68876fcc761d25e.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/people/mixamo/brute/brute_15.png"
-dest_files=["res://.godot/imported/brute_15.png-795ef91d7a4e4a8ba68876fcc761d25e.s3tc.ctex"]
+dest_files=["res://.godot/imported/brute_15.png-795ef91d7a4e4a8ba68876fcc761d25e.s3tc.ctex", "res://.godot/imported/brute_15.png-795ef91d7a4e4a8ba68876fcc761d25e.etc2.ctex"]
 
 [params]
 

@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b3i0akvuhchuf"
-path="res://.godot/imported/Repeating_Crossbow_normal.png-c4aff70fedd56535c27b16e8db47279a.ctex"
+path.s3tc="res://.godot/imported/Repeating_Crossbow_normal.png-c4aff70fedd56535c27b16e8db47279a.s3tc.ctex"
+path.etc2="res://.godot/imported/Repeating_Crossbow_normal.png-c4aff70fedd56535c27b16e8db47279a.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/props/weapons/bows/textures/Repeating_Crossbow_normal.png"
-dest_files=["res://.godot/imported/Repeating_Crossbow_normal.png-c4aff70fedd56535c27b16e8db47279a.ctex"]
+dest_files=["res://.godot/imported/Repeating_Crossbow_normal.png-c4aff70fedd56535c27b16e8db47279a.s3tc.ctex", "res://.godot/imported/Repeating_Crossbow_normal.png-c4aff70fedd56535c27b16e8db47279a.etc2.ctex"]
 
 [params]
 

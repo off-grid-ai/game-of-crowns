@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://iols4hm3tlia"
 path.s3tc="res://.godot/imported/Pottery2_metallicRoughness.png-9f3d480924a953f9fb8fd68bd5f172dd.s3tc.ctex"
+path.etc2="res://.godot/imported/Pottery2_metallicRoughness.png-9f3d480924a953f9fb8fd68bd5f172dd.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Pottery2_metallicRoughness.png"
-dest_files=["res://.godot/imported/Pottery2_metallicRoughness.png-9f3d480924a953f9fb8fd68bd5f172dd.s3tc.ctex"]
+dest_files=["res://.godot/imported/Pottery2_metallicRoughness.png-9f3d480924a953f9fb8fd68bd5f172dd.s3tc.ctex", "res://.godot/imported/Pottery2_metallicRoughness.png-9f3d480924a953f9fb8fd68bd5f172dd.etc2.ctex"]
 
 [params]
 

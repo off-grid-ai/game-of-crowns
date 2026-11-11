@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://demttvdm3mi0f"
-path="res://.godot/imported/blinn2_metallicRoughness.png-168e84889247dd74ac4f995b165ead86.ctex"
+path.s3tc="res://.godot/imported/blinn2_metallicRoughness.png-168e84889247dd74ac4f995b165ead86.s3tc.ctex"
+path.etc2="res://.godot/imported/blinn2_metallicRoughness.png-168e84889247dd74ac4f995b165ead86.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/hero/knight/textures/blinn2_metallicRoughness.png"
-dest_files=["res://.godot/imported/blinn2_metallicRoughness.png-168e84889247dd74ac4f995b165ead86.ctex"]
+dest_files=["res://.godot/imported/blinn2_metallicRoughness.png-168e84889247dd74ac4f995b165ead86.s3tc.ctex", "res://.godot/imported/blinn2_metallicRoughness.png-168e84889247dd74ac4f995b165ead86.etc2.ctex"]
 
 [params]
 

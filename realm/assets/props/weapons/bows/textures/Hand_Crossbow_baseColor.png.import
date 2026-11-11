@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ryt7ym6jh5hc"
-path="res://.godot/imported/Hand_Crossbow_baseColor.png-3054f68a413102561f44e6119188d3ab.ctex"
+path.s3tc="res://.godot/imported/Hand_Crossbow_baseColor.png-3054f68a413102561f44e6119188d3ab.s3tc.ctex"
+path.etc2="res://.godot/imported/Hand_Crossbow_baseColor.png-3054f68a413102561f44e6119188d3ab.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/props/weapons/bows/textures/Hand_Crossbow_baseColor.png"
-dest_files=["res://.godot/imported/Hand_Crossbow_baseColor.png-3054f68a413102561f44e6119188d3ab.ctex"]
+dest_files=["res://.godot/imported/Hand_Crossbow_baseColor.png-3054f68a413102561f44e6119188d3ab.s3tc.ctex", "res://.godot/imported/Hand_Crossbow_baseColor.png-3054f68a413102561f44e6119188d3ab.etc2.ctex"]
 
 [params]
 

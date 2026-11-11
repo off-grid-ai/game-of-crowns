@@ -1,0 +1,616 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M5 (Apple9)
+
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] tiled (res://scripts/terrain.gd:757)
+       [1] _farmstead (res://scripts/countryside.gd:113)
+       [2] build (res://scripts/countryside.gd:55)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] tiled (res://scripts/terrain.gd:757)
+       [1] _farmstead (res://scripts/countryside.gd:113)
+       [2] build (res://scripts/countryside.gd:55)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] tiled (res://scripts/terrain.gd:757)
+       [1] _farmstead (res://scripts/countryside.gd:113)
+       [2] build (res://scripts/countryside.gd:55)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] tiled (res://scripts/terrain.gd:757)
+       [1] _farmstead (res://scripts/countryside.gd:113)
+       [2] build (res://scripts/countryside.gd:55)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] tiled (res://scripts/terrain.gd:757)
+       [1] _farmstead (res://scripts/countryside.gd:113)
+       [2] build (res://scripts/countryside.gd:55)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] tiled (res://scripts/terrain.gd:757)
+       [1] _farmstead (res://scripts/countryside.gd:113)
+       [2] build (res://scripts/countryside.gd:55)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] tiled (res://scripts/terrain.gd:757)
+       [1] _farmstead (res://scripts/countryside.gd:113)
+       [2] build (res://scripts/countryside.gd:55)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] tiled (res://scripts/terrain.gd:757)
+       [1] _segment (res://scripts/roads.gd:250)
+       [2] track (res://scripts/roads.gd:231)
+       [3] build (res://scripts/countryside.gd:67)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _piece (res://scripts/house_builder.gd:16)
+       [1] _bake (res://scripts/house_builder.gd:41)
+       [2] bake_path (res://scripts/house_builder.gd:127)
+       [3] _grass (res://scripts/countryside.gd:187)
+       [4] build (res://scripts/countryside.gd:76)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _collect (res://scripts/house_builder.gd:33)
+       [1] _collect (res://scripts/house_builder.gd:35)
+       [2] _bake (res://scripts/house_builder.gd:42)
+       [3] bake_path (res://scripts/house_builder.gd:127)
+       [4] _grass (res://scripts/countryside.gd:187)
+       [5] build (res://scripts/countryside.gd:76)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _collect (res://scripts/house_builder.gd:33)
+       [1] _collect (res://scripts/house_builder.gd:35)
+       [2] _bake (res://scripts/house_builder.gd:42)
+       [3] bake_path (res://scripts/house_builder.gd:127)
+       [4] _grass (res://scripts/countryside.gd:187)
+       [5] build (res://scripts/countryside.gd:76)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _collect (res://scripts/house_builder.gd:33)
+       [1] _collect (res://scripts/house_builder.gd:35)
+       [2] _bake (res://scripts/house_builder.gd:42)
+       [3] bake_path (res://scripts/house_builder.gd:127)
+       [4] _grass (res://scripts/countryside.gd:187)
+       [5] build (res://scripts/countryside.gd:76)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _collect (res://scripts/house_builder.gd:33)
+       [1] _collect (res://scripts/house_builder.gd:35)
+       [2] _bake (res://scripts/house_builder.gd:42)
+       [3] bake_path (res://scripts/house_builder.gd:127)
+       [4] _grass (res://scripts/countryside.gd:187)
+       [5] build (res://scripts/countryside.gd:76)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _collect (res://scripts/house_builder.gd:33)
+       [1] _collect (res://scripts/house_builder.gd:35)
+       [2] _bake (res://scripts/house_builder.gd:42)
+       [3] bake_path (res://scripts/house_builder.gd:127)
+       [4] _grass (res://scripts/countryside.gd:187)
+       [5] build (res://scripts/countryside.gd:76)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _bake (res://scripts/house_builder.gd:47)
+       [1] bake_path (res://scripts/house_builder.gd:127)
+       [2] _grass (res://scripts/countryside.gd:187)
+       [3] build (res://scripts/countryside.gd:76)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] tiled (res://scripts/terrain.gd:757)
+       [1] _build_town (res://scripts/towns.gd:574)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] tiled (res://scripts/terrain.gd:757)
+       [1] _build_town (res://scripts/towns.gd:574)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] tiled (res://scripts/terrain.gd:757)
+       [1] _build_town (res://scripts/towns.gd:574)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] tiled (res://scripts/terrain.gd:757)
+       [1] _build_town (res://scripts/towns.gd:574)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] tiled (res://scripts/terrain.gd:757)
+       [1] _build_town (res://scripts/towns.gd:574)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] tiled (res://scripts/terrain.gd:757)
+       [1] _build_town (res://scripts/towns.gd:574)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] tiled (res://scripts/terrain.gd:757)
+       [1] _build_town (res://scripts/towns.gd:574)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] tiled (res://scripts/terrain.gd:757)
+       [1] _build_town (res://scripts/towns.gd:574)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] tiled (res://scripts/terrain.gd:803)
+       [1] _build_town (res://scripts/towns.gd:574)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] tiled (res://scripts/terrain.gd:757)
+       [1] _build_town (res://scripts/towns.gd:574)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] tiled (res://scripts/terrain.gd:757)
+       [1] _build_town (res://scripts/towns.gd:574)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] tiled (res://scripts/terrain.gd:757)
+       [1] _build_town (res://scripts/towns.gd:574)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] tiled (res://scripts/terrain.gd:803)
+       [1] _build_town (res://scripts/towns.gd:574)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+ERROR: timeout waiting for fence
+   at: wait (drivers/metal/rendering_device_driver_metal3.cpp:54)
+   GDScript backtrace (most recent call first):
+       [0] _smoke (res://scripts/towns.gd:775)
+       [1] _build_town (res://scripts/towns.gd:670)
+       [2] _process (res://scripts/towns.gd:141)

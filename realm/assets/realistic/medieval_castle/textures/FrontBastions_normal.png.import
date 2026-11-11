@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://hlpbpplrmci5"
 path.s3tc="res://.godot/imported/FrontBastions_normal.png-07803846f6d358f2f89f9ebfa4631e9e.s3tc.ctex"
+path.etc2="res://.godot/imported/FrontBastions_normal.png-07803846f6d358f2f89f9ebfa4631e9e.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_castle/textures/FrontBastions_normal.png"
-dest_files=["res://.godot/imported/FrontBastions_normal.png-07803846f6d358f2f89f9ebfa4631e9e.s3tc.ctex"]
+dest_files=["res://.godot/imported/FrontBastions_normal.png-07803846f6d358f2f89f9ebfa4631e9e.s3tc.ctex", "res://.godot/imported/FrontBastions_normal.png-07803846f6d358f2f89f9ebfa4631e9e.etc2.ctex"]
 
 [params]
 

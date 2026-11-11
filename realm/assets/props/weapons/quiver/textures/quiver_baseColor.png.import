@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://0tjque4gwycm"
-path="res://.godot/imported/quiver_baseColor.png-cc8b6f43510c38dff2191f06640cd641.ctex"
+path.s3tc="res://.godot/imported/quiver_baseColor.png-cc8b6f43510c38dff2191f06640cd641.s3tc.ctex"
+path.etc2="res://.godot/imported/quiver_baseColor.png-cc8b6f43510c38dff2191f06640cd641.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/props/weapons/quiver/textures/quiver_baseColor.png"
-dest_files=["res://.godot/imported/quiver_baseColor.png-cc8b6f43510c38dff2191f06640cd641.ctex"]
+dest_files=["res://.godot/imported/quiver_baseColor.png-cc8b6f43510c38dff2191f06640cd641.s3tc.ctex", "res://.godot/imported/quiver_baseColor.png-cc8b6f43510c38dff2191f06640cd641.etc2.ctex"]
 
 [params]
 

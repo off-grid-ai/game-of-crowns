@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bwu6l88xr1c00"
 path.s3tc="res://.godot/imported/Apple2_baseColor.jpeg-058df8969cb65fba5e8908dc3ecc7508.s3tc.ctex"
+path.etc2="res://.godot/imported/Apple2_baseColor.jpeg-058df8969cb65fba5e8908dc3ecc7508.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Apple2_baseColor.jpeg"
-dest_files=["res://.godot/imported/Apple2_baseColor.jpeg-058df8969cb65fba5e8908dc3ecc7508.s3tc.ctex"]
+dest_files=["res://.godot/imported/Apple2_baseColor.jpeg-058df8969cb65fba5e8908dc3ecc7508.s3tc.ctex", "res://.godot/imported/Apple2_baseColor.jpeg-058df8969cb65fba5e8908dc3ecc7508.etc2.ctex"]
 
 [params]
 

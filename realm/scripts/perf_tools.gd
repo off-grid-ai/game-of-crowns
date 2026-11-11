@@ -145,8 +145,11 @@ func _log_perf(delta: float) -> void:
 		int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000.0), Performance.get_monitor(Performance.OBJECT_NODE_COUNT),
 		main.rig.distance if main.rig else 0.0, main.towns.building() if main.towns and main.towns.has_method("building") else "?"])
 	if probing:
-		print("PERF video=%.0fMB buffers=%.0fMB static=%.0fMB frames=%d over_200ms=%d" % [Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0,
-			Performance.get_monitor(Performance.RENDER_BUFFER_MEM_USED) / 1048576.0, Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0, _frames, _slow])
+		var folk := main.get_tree().get_nodes_in_group("people")
+		var minds := folk.filter(func(n): return n.get_node_or_null("Mind") != null).size()
+		print("PERF video=%.0fMB buffers=%.0fMB static=%.0fMB frames=%d over_200ms=%d fps=%d process=%.1fms people=%d minds=%d" % [Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0,
+			Performance.get_monitor(Performance.RENDER_BUFFER_MEM_USED) / 1048576.0, Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0, _frames, _slow,
+			Engine.get_frames_per_second(), Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, folk.size(), minds])
 	if probing and not tally.is_empty():
 		var jobs := PackedStringArray()
 		for k in tally:

@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b86oat5vf6uan"
 path.s3tc="res://.godot/imported/SideBastions_baseColor.jpeg-2705a08332f0f9e6aa46a06a257b5386.s3tc.ctex"
+path.etc2="res://.godot/imported/SideBastions_baseColor.jpeg-2705a08332f0f9e6aa46a06a257b5386.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_castle/textures/SideBastions_baseColor.jpeg"
-dest_files=["res://.godot/imported/SideBastions_baseColor.jpeg-2705a08332f0f9e6aa46a06a257b5386.s3tc.ctex"]
+dest_files=["res://.godot/imported/SideBastions_baseColor.jpeg-2705a08332f0f9e6aa46a06a257b5386.s3tc.ctex", "res://.godot/imported/SideBastions_baseColor.jpeg-2705a08332f0f9e6aa46a06a257b5386.etc2.ctex"]
 
 [params]
 

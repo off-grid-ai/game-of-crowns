@@ -59,8 +59,10 @@ func _poll() -> void:
 		_http_get("/chronicle?since=%d" % _last_seq, _on_chronicle)
 
 
-func decree(action: String, city_id: int, building := "", to := -1) -> void:
+func decree(action: String, city_id: int, building := "", to := -1, matter := "") -> void:
 	var body := {"action": action, "city": city_id}
+	if matter != "":
+		body["matter"] = matter  # the court matter it answers: one request, a ruling (bridge routes_decree.js)
 	if building != "":
 		body["building"] = building
 	if to >= 0:

@@ -1,0 +1,24 @@
+Goldrock dist=120 fps: 15.0 14.0 
+   load: 7.33 11.31 11.12  memory free: 47%
+   busiest: freeciv-server 97.1%, godot 54.3%, WindowServer 39.2%, ecosystemd 33.7%, ecosystemanalyticsd 30.3%, 
+Goldrock dist=40 fps: 15.0 16.0 
+   load: 6.96 11.04 11.02  memory free: 49%
+   busiest: freeciv-server 94.6%, mds_stores 83.5%, godot 52.8%, WindowServer 46.2%, Off 32.6%, 
+Goldrock dist=14 fps: 12.0 12.0 
+   load: 6.31 10.69 10.90  memory free: 47%
+   busiest: node 119.2%, godot 111.5%, freeciv-server 74.1%, ecosystemanalyticsd 25.0%, ecosystemd 24.4%, 
+Goldrock dist=5 fps: 7.0 6.0 
+   load: 5.55 10.24 10.73  memory free: 42%
+   busiest: godot 51.1%, Off 44.9%, ecosystemanalyticsd 16.8%, ecosystemd 16.8%, node 16.7%, 
+Kingsmere dist=120 fps: 9.0 15.0 
+   load: 5.23 9.93 10.61  memory free: 43%
+   busiest: freeciv-server 94.5%, godot 84.2%, node 81.3%, Application 28.4%, WindowServer 26.2%, 
+Kingsmere dist=40 fps: 13.0 4.0 
+   load: 5.80 9.82 10.56  memory free: 39%
+   busiest: node 118.9%, node 114.4%, freeciv-server 92.1%, godot 84.9%, Off 27.7%, 
+Kingsmere dist=14 fps: 7.0 12.0 
+   load: 6.56 9.80 10.54  memory free: 40%
+   busiest: node 119.3%, godot 108.1%, freeciv-server 91.6%, node 62.4%, ecosystemanalyticsd 18.7%, 
+Kingsmere dist=5 fps: 13.0 6.0 
+   load: 7.38 9.76 10.51  memory free: 39%
+   busiest: node 139.7%, godot 116.4%, freeciv-server 89.7%, node 78.8%, node 19.5%, 

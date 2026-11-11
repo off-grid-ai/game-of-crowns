@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cm414nkamhqk"
-path="res://.godot/imported/T_Regular_Female_Dark_BaseColor.png-18fddf9813f621101d89c7985da02fe0.ctex"
+path.s3tc="res://.godot/imported/T_Regular_Female_Dark_BaseColor.png-18fddf9813f621101d89c7985da02fe0.s3tc.ctex"
+path.etc2="res://.godot/imported/T_Regular_Female_Dark_BaseColor.png-18fddf9813f621101d89c7985da02fe0.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/people/T_Regular_Female_Dark_BaseColor.png"
-dest_files=["res://.godot/imported/T_Regular_Female_Dark_BaseColor.png-18fddf9813f621101d89c7985da02fe0.ctex"]
+dest_files=["res://.godot/imported/T_Regular_Female_Dark_BaseColor.png-18fddf9813f621101d89c7985da02fe0.s3tc.ctex", "res://.godot/imported/T_Regular_Female_Dark_BaseColor.png-18fddf9813f621101d89c7985da02fe0.etc2.ctex"]
 
 [params]
 

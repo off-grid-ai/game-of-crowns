@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c7vftg20wncxy"
 path.s3tc="res://.godot/imported/sides_normal.png-18c874813d89e2d5207dacaf6a87a069.s3tc.ctex"
+path.etc2="res://.godot/imported/sides_normal.png-18c874813d89e2d5207dacaf6a87a069.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/old_wooden_barn/textures/sides_normal.png"
-dest_files=["res://.godot/imported/sides_normal.png-18c874813d89e2d5207dacaf6a87a069.s3tc.ctex"]
+dest_files=["res://.godot/imported/sides_normal.png-18c874813d89e2d5207dacaf6a87a069.s3tc.ctex", "res://.godot/imported/sides_normal.png-18c874813d89e2d5207dacaf6a87a069.etc2.ctex"]
 
 [params]
 

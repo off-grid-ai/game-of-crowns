@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dsmfoco4y2g1k"
-path="res://.godot/imported/Torch_01.001_specularf0.png-e494f6e4849da7354004a23a1a08caa3.ctex"
+path.s3tc="res://.godot/imported/Torch_01.001_specularf0.png-e494f6e4849da7354004a23a1a08caa3.s3tc.ctex"
+path.etc2="res://.godot/imported/Torch_01.001_specularf0.png-e494f6e4849da7354004a23a1a08caa3.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/great_hall/textures/Torch_01.001_specularf0.png"
-dest_files=["res://.godot/imported/Torch_01.001_specularf0.png-e494f6e4849da7354004a23a1a08caa3.ctex"]
+dest_files=["res://.godot/imported/Torch_01.001_specularf0.png-e494f6e4849da7354004a23a1a08caa3.s3tc.ctex", "res://.godot/imported/Torch_01.001_specularf0.png-e494f6e4849da7354004a23a1a08caa3.etc2.ctex"]
 
 [params]
 

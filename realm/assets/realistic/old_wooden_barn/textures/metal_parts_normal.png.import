@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://t51nhrlsulyi"
 path.s3tc="res://.godot/imported/metal_parts_normal.png-1b2ea89eaa3d84aa88a518f44b8ffa1d.s3tc.ctex"
+path.etc2="res://.godot/imported/metal_parts_normal.png-1b2ea89eaa3d84aa88a518f44b8ffa1d.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/old_wooden_barn/textures/metal_parts_normal.png"
-dest_files=["res://.godot/imported/metal_parts_normal.png-1b2ea89eaa3d84aa88a518f44b8ffa1d.s3tc.ctex"]
+dest_files=["res://.godot/imported/metal_parts_normal.png-1b2ea89eaa3d84aa88a518f44b8ffa1d.s3tc.ctex", "res://.godot/imported/metal_parts_normal.png-1b2ea89eaa3d84aa88a518f44b8ffa1d.etc2.ctex"]
 
 [params]
 

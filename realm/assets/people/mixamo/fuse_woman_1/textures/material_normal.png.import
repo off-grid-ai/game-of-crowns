@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dxtbfxdfgf23t"
-path="res://.godot/imported/material_normal.png-6468f49a46f1396a9363d1901a238144.ctex"
+path.s3tc="res://.godot/imported/material_normal.png-6468f49a46f1396a9363d1901a238144.s3tc.ctex"
+path.etc2="res://.godot/imported/material_normal.png-6468f49a46f1396a9363d1901a238144.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/people/mixamo/fuse_woman_1/textures/material_normal.png"
-dest_files=["res://.godot/imported/material_normal.png-6468f49a46f1396a9363d1901a238144.ctex"]
+dest_files=["res://.godot/imported/material_normal.png-6468f49a46f1396a9363d1901a238144.s3tc.ctex", "res://.godot/imported/material_normal.png-6468f49a46f1396a9363d1901a238144.etc2.ctex"]
 
 [params]
 

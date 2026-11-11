@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://xay2o48vo4pc"
 path.s3tc="res://.godot/imported/Checker_1m_baseColor.png-1aad69d0b49fef5f39f4e546666c8c8a.s3tc.ctex"
+path.etc2="res://.godot/imported/Checker_1m_baseColor.png-1aad69d0b49fef5f39f4e546666c8c8a.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/pines/textures/Checker_1m_baseColor.png"
-dest_files=["res://.godot/imported/Checker_1m_baseColor.png-1aad69d0b49fef5f39f4e546666c8c8a.s3tc.ctex"]
+dest_files=["res://.godot/imported/Checker_1m_baseColor.png-1aad69d0b49fef5f39f4e546666c8c8a.s3tc.ctex", "res://.godot/imported/Checker_1m_baseColor.png-1aad69d0b49fef5f39f4e546666c8c8a.etc2.ctex"]
 
 [params]
 

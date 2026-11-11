@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bm1ddgjf8tyqx"
 path.s3tc="res://.godot/imported/paille_baseColor.png-38f8a88f8a8c96cd0d2b60e864093b64.s3tc.ctex"
+path.etc2="res://.godot/imported/paille_baseColor.png-38f8a88f8a8c96cd0d2b60e864093b64.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/thatched_rural_houses/textures/paille_baseColor.png"
-dest_files=["res://.godot/imported/paille_baseColor.png-38f8a88f8a8c96cd0d2b60e864093b64.s3tc.ctex"]
+dest_files=["res://.godot/imported/paille_baseColor.png-38f8a88f8a8c96cd0d2b60e864093b64.s3tc.ctex", "res://.godot/imported/paille_baseColor.png-38f8a88f8a8c96cd0d2b60e864093b64.etc2.ctex"]
 
 [params]
 

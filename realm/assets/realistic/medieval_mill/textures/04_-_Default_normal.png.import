@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dlgium3v56ei6"
 path.s3tc="res://.godot/imported/04_-_Default_normal.png-a31230e550dac653b5339d2d68e7a1f0.s3tc.ctex"
+path.etc2="res://.godot/imported/04_-_Default_normal.png-a31230e550dac653b5339d2d68e7a1f0.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_mill/textures/04_-_Default_normal.png"
-dest_files=["res://.godot/imported/04_-_Default_normal.png-a31230e550dac653b5339d2d68e7a1f0.s3tc.ctex"]
+dest_files=["res://.godot/imported/04_-_Default_normal.png-a31230e550dac653b5339d2d68e7a1f0.s3tc.ctex", "res://.godot/imported/04_-_Default_normal.png-a31230e550dac653b5339d2d68e7a1f0.etc2.ctex"]
 
 [params]
 

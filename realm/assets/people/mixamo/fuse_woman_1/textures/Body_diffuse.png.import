@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://byq31mtwudmfw"
-path="res://.godot/imported/Body_diffuse.png-71b0bcf3d56eb3de32b992b34b9e5b9d.ctex"
+path.s3tc="res://.godot/imported/Body_diffuse.png-71b0bcf3d56eb3de32b992b34b9e5b9d.s3tc.ctex"
+path.etc2="res://.godot/imported/Body_diffuse.png-71b0bcf3d56eb3de32b992b34b9e5b9d.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/people/mixamo/fuse_woman_1/textures/Body_diffuse.png"
-dest_files=["res://.godot/imported/Body_diffuse.png-71b0bcf3d56eb3de32b992b34b9e5b9d.ctex"]
+dest_files=["res://.godot/imported/Body_diffuse.png-71b0bcf3d56eb3de32b992b34b9e5b9d.s3tc.ctex", "res://.godot/imported/Body_diffuse.png-71b0bcf3d56eb3de32b992b34b9e5b9d.etc2.ctex"]
 
 [params]
 

@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cv0v518y7562d"
 path.s3tc="res://.godot/imported/Box1_Wood_Rim_normal.png-0c9b03c0ee6421ad9c57fdde05d8ea97.s3tc.ctex"
+path.etc2="res://.godot/imported/Box1_Wood_Rim_normal.png-0c9b03c0ee6421ad9c57fdde05d8ea97.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Box1_Wood_Rim_normal.png"
-dest_files=["res://.godot/imported/Box1_Wood_Rim_normal.png-0c9b03c0ee6421ad9c57fdde05d8ea97.s3tc.ctex"]
+dest_files=["res://.godot/imported/Box1_Wood_Rim_normal.png-0c9b03c0ee6421ad9c57fdde05d8ea97.s3tc.ctex", "res://.godot/imported/Box1_Wood_Rim_normal.png-0c9b03c0ee6421ad9c57fdde05d8ea97.etc2.ctex"]
 
 [params]
 

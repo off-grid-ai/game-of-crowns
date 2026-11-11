@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b5w2bhejrl64v"
 path.s3tc="res://.godot/imported/Sapling_oak_tree_002_Billboard_Mat_metallicRoughness.png-067d4bcc93963f7e10de3cbbc058a386.s3tc.ctex"
+path.etc2="res://.godot/imported/Sapling_oak_tree_002_Billboard_Mat_metallicRoughness.png-067d4bcc93963f7e10de3cbbc058a386.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/oak_trees_pack/textures/Sapling_oak_tree_002_Billboard_Mat_metallicRoughness.png"
-dest_files=["res://.godot/imported/Sapling_oak_tree_002_Billboard_Mat_metallicRoughness.png-067d4bcc93963f7e10de3cbbc058a386.s3tc.ctex"]
+dest_files=["res://.godot/imported/Sapling_oak_tree_002_Billboard_Mat_metallicRoughness.png-067d4bcc93963f7e10de3cbbc058a386.s3tc.ctex", "res://.godot/imported/Sapling_oak_tree_002_Billboard_Mat_metallicRoughness.png-067d4bcc93963f7e10de3cbbc058a386.etc2.ctex"]
 
 [params]
 

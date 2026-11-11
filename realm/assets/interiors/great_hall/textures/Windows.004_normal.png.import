@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cehxtqhjxdqjm"
-path="res://.godot/imported/Windows.004_normal.png-6981366fd2a452876bc045e0fd57cedf.ctex"
+path.s3tc="res://.godot/imported/Windows.004_normal.png-6981366fd2a452876bc045e0fd57cedf.s3tc.ctex"
+path.etc2="res://.godot/imported/Windows.004_normal.png-6981366fd2a452876bc045e0fd57cedf.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/interiors/great_hall/textures/Windows.004_normal.png"
-dest_files=["res://.godot/imported/Windows.004_normal.png-6981366fd2a452876bc045e0fd57cedf.ctex"]
+dest_files=["res://.godot/imported/Windows.004_normal.png-6981366fd2a452876bc045e0fd57cedf.s3tc.ctex", "res://.godot/imported/Windows.004_normal.png-6981366fd2a452876bc045e0fd57cedf.etc2.ctex"]
 
 [params]
 

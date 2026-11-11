@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dmpty623nerik"
-path="res://.godot/imported/Shoes_normal.png-dedbd90d46f155dcb6860a51bbb44daf.ctex"
+path.s3tc="res://.godot/imported/Shoes_normal.png-dedbd90d46f155dcb6860a51bbb44daf.s3tc.ctex"
+path.etc2="res://.godot/imported/Shoes_normal.png-dedbd90d46f155dcb6860a51bbb44daf.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/people/mixamo/fuse_civilian_1/textures/Shoes_normal.png"
-dest_files=["res://.godot/imported/Shoes_normal.png-dedbd90d46f155dcb6860a51bbb44daf.ctex"]
+dest_files=["res://.godot/imported/Shoes_normal.png-dedbd90d46f155dcb6860a51bbb44daf.s3tc.ctex", "res://.godot/imported/Shoes_normal.png-dedbd90d46f155dcb6860a51bbb44daf.etc2.ctex"]
 
 [params]
 

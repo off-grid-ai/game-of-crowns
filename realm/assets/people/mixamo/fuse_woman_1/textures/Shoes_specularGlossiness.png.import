@@ -3,15 +3,17 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://duwheqi868xti"
-path="res://.godot/imported/Shoes_specularGlossiness.png-3a36fc53ef7545e8653551aa2f845de3.ctex"
+path.s3tc="res://.godot/imported/Shoes_specularGlossiness.png-3a36fc53ef7545e8653551aa2f845de3.s3tc.ctex"
+path.etc2="res://.godot/imported/Shoes_specularGlossiness.png-3a36fc53ef7545e8653551aa2f845de3.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/people/mixamo/fuse_woman_1/textures/Shoes_specularGlossiness.png"
-dest_files=["res://.godot/imported/Shoes_specularGlossiness.png-3a36fc53ef7545e8653551aa2f845de3.ctex"]
+dest_files=["res://.godot/imported/Shoes_specularGlossiness.png-3a36fc53ef7545e8653551aa2f845de3.s3tc.ctex", "res://.godot/imported/Shoes_specularGlossiness.png-3a36fc53ef7545e8653551aa2f845de3.etc2.ctex"]
 
 [params]
 

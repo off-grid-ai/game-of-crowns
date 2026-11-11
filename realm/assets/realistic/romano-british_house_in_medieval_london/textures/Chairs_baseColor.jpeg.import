@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://6gj1m5de54ba"
 path.s3tc="res://.godot/imported/Chairs_baseColor.jpeg-d80cfdc0c2ade6c96e5e5860b894dee2.s3tc.ctex"
+path.etc2="res://.godot/imported/Chairs_baseColor.jpeg-d80cfdc0c2ade6c96e5e5860b894dee2.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/romano-british_house_in_medieval_london/textures/Chairs_baseColor.jpeg"
-dest_files=["res://.godot/imported/Chairs_baseColor.jpeg-d80cfdc0c2ade6c96e5e5860b894dee2.s3tc.ctex"]
+dest_files=["res://.godot/imported/Chairs_baseColor.jpeg-d80cfdc0c2ade6c96e5e5860b894dee2.s3tc.ctex", "res://.godot/imported/Chairs_baseColor.jpeg-d80cfdc0c2ade6c96e5e5860b894dee2.etc2.ctex"]
 
 [params]
 

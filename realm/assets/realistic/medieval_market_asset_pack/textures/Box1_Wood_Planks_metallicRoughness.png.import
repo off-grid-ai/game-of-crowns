@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://y6x80yi7i24e"
 path.s3tc="res://.godot/imported/Box1_Wood_Planks_metallicRoughness.png-dabe76a57d6cf6917f7fdc7e77d7adb1.s3tc.ctex"
+path.etc2="res://.godot/imported/Box1_Wood_Planks_metallicRoughness.png-dabe76a57d6cf6917f7fdc7e77d7adb1.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/realistic/medieval_market_asset_pack/textures/Box1_Wood_Planks_metallicRoughness.png"
-dest_files=["res://.godot/imported/Box1_Wood_Planks_metallicRoughness.png-dabe76a57d6cf6917f7fdc7e77d7adb1.s3tc.ctex"]
+dest_files=["res://.godot/imported/Box1_Wood_Planks_metallicRoughness.png-dabe76a57d6cf6917f7fdc7e77d7adb1.s3tc.ctex", "res://.godot/imported/Box1_Wood_Planks_metallicRoughness.png-dabe76a57d6cf6917f7fdc7e77d7adb1.etc2.ctex"]
 
 [params]
 
