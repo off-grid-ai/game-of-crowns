@@ -33,3 +33,47 @@ Rosehall because a court sitting took the camera (fixed, e87d2394).
 8. **Film shots without panels**: every breach/siege snap free of the town card, the court card and the chronicle
    (41fabfad), and no court sitting moving the camera mid-film (e87d2394). One `snap name ui` keeps them, to check.
 9. **Clarity before/after** (#1): batch 8's shots 8-12 (`--clarity=old` for the before).
+
+## A sack burns where it's seen (#2; 8441a7e8, fire-siege session)
+
+10. **The fire launch again** (`--fire=v2`): `city <sacked town> 6 -25`, stage `{"sack": id}`, then snaps at +6 s,
+    +20 s, +45 s and +90 s, and a 30-frame clip from +8 s. Judge: three houses torched at once, spaced apart, in the
+    middle of the frame (the burn picks the houses nearest the camera's look point); the fire then goes house to
+    house, downwind, one every 3-12 s; smoke columns leaning one way; roofs falling in with a burst of sparks; the
+    charred shells left. The run log has no `fire.gd` errors (the spread follows the town when towns.gd rebuilds it).
+11. **storm-fire in the breach launch**: after the gap is taken, the town alight in frame (same proof as 10).
+
+## Glow orbs and blob pads (#13; 35ed77ce, ba9f8f56, ae508125, 3a… wear)
+
+12. **The forge's anvil** (`work Kingsmere forge 4.5 -25`): no glowing ball at the smith's feet; sparks a short burst
+    off the anvil each stroke; the forge mouth warm, not blown out.
+13. **The bailey's campfire and drill** (`castle Kingsmere 4 -22` or `city Kingsmere 40` as batch 7 framed it): no
+    orb beside the fire; the drill's soldiers stand on grass, not brown square pads (`--wear=on`: only walked paths wear).
+14. **The feast's bonfire** (stage a feast): flames, not a bright blob.
+
+## The ground and the season (#14; 9d930ee0, 2ff5521d, b863c5ec, abcf6035, feb8da39)
+
+15. **Winter held** (`--season` not given, a winter reign; the fire launch's fire-before): the season the film starts
+    in stays for the whole run (no flip to spring mid-shot); the snow has drifts and the ground's texture faintly
+    through it, shading on slopes, not a flat white sheet.
+16. **The far mountains** (`city Kingsmere 30`): matte rock, no white specular blobs.
+17. **Field hedges** (`city Goldrock 16 -20`, `field summer 0.3`): green hedgerows with a few small flowers, no red rings.
+18. **A town's watermill** (`work <town> mill`): a watermill stands only on water; a dry town has none.
+
+## Meshy's pieces in place (3064606c, 748f3189; switch `--landmarks=meshy`, data `realm/data/meshy.json`)
+
+Before filming: `realm/tools/meshy_import.sh --godot-import` once (Blender re-imports every piece that has landed,
+then one headless Godot import so the game can load them; only while no other Godot runs), and
+`realm/tools/meshy_import.sh --r2` to copy the binaries to R2. Each shot twice: `--landmarks=kit` (before) and
+`--landmarks=meshy` (after), the same frame. A piece not imported yet shows the kit's building in both.
+
+19. **The forge** (landed: 4,862 tris, 8.5 x 8.6 x 7.5 m): `work Kingsmere forge 4.5 -25`, then `4.5 -12`. Judge: it
+    stands on the ground facing the street (else `yaw` in meshy.json), its size beside the townsfolk and houses, the
+    hand-painted look beside the kit's, its roof or banner in the holder's colour (6% of its faces; `mask` if the
+    wrong parts take it), the smith at the anvil where its anvil stands (the work spots are the kit forge's).
+20. **The lumber mill** (in the watermill's place): `work Goldrock mill 5 -25`; the wheel in the stream.
+21. **The treasury** (in the guild hall's place): `city Kingsmere 6 -25` and close.
+22. **The catapult in the siege** (`--walls=stone --siege --wall-demo`): `engine 1 2.5 -18`, a 6 s clip: the crew round
+    it, its stone leaving from its top (no arm of its own to swing: say if that reads wrong).
+23. **The guard tower in the siege band** (the parked siege tower's place): `camp 9 -20`.
+24. **The whole town**, `city Kingsmere 14`, kit then meshy: does the painted set sit with the kit's houses?
