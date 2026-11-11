@@ -757,7 +757,15 @@ func _market_day(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberG
 	# The carter: a cart drawn up on the square across from the smith, selling from its bed.
 	for i in int(k.get("carts", 1)):
 		var cp := (-side * 0.62 + toward * (0.2 * i - 0.1)) * square_r
-		var cart := _prop(life, center, "Stall_Cart_Empty", cp, atan2(toward.x, toward.z), 1.0, 0.0, 0.18)
+		# Meshy's merchant cart in its place when it's judged and in (--landmarks=meshy; data/meshy.json square_cart).
+		var cart: Node3D = Real.meshy_piece("square_cart")
+		if cart:
+			cart.position = Vector3(cp.x, _y(center, cp), cp.z)
+			cart.rotation.y = atan2(toward.x, toward.z)
+			life.add_child(cart)
+			life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(cp, Vector2(0.4, 0.3), cart.rotation.y)])
+		else:
+			cart = _prop(life, center, "Stall_Cart_Empty", cp, atan2(toward.x, toward.z), 1.0, 0.0, 0.18)
 		if cart:
 			for g in 2:
 				_prop(life, center, ["FarmCrate_Apple", "Barrel_Apples", "FarmCrate_Carrot"][(i + g) % 3], cp + toward * (0.05 - 0.1 * g), rng.randf() * TAU, 1.0, 0.0, 0.05)

@@ -171,6 +171,25 @@ static func landmarks() -> String:
 	return String(Data.value("meshy", "landmarks", "kit"))
 
 
+## A judged Meshy piece that stands in for something no catalogue component names (meshy.json replaces: say,
+## "square_cart"), made to our scale (its file is in metres, stood and centred by the import), when meshy
+## landmarks are on and it's imported; else null (the caller keeps its own).
+static func meshy_piece(role: String) -> Node3D:
+	if landmarks() != "meshy":
+		return null
+	var pieces: Dictionary = Data.value("meshy", "pieces", {})
+	for name in pieces:
+		if String((pieces[name] as Dictionary).get("replaces", "")) != role:
+			continue
+		var path := "res://assets/meshy/%s/%s.glb" % [name, name]
+		if not ResourceLoader.exists(path):
+			return null
+		var n: Node3D = (load(path) as PackedScene).instantiate()
+		n.scale = Vector3.ONE * S
+		return n
+	return null
+
+
 ## With meshy landmarks on, the variants of a Meshy piece that replaces `component`, once its file is
 ## imported (realm/tools/meshy_import.py -> assets/meshy/<name>/<name>.glb): stood by its true height.
 ## Else [] (the component as it was).
