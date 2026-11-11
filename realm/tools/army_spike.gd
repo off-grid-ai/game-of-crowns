@@ -317,10 +317,22 @@ func _unit_for(kind: String) -> String:
 	return String(Data.value("army", "fallbackUnit", "men_at_arms"))
 
 
+## The knight the army wears (data/army.json knight; --knight=v1 / --knight=v2): armies/knight_v2, its 27 clips
+## several to a role (docs/research/knight-clips.md), once it is baked and imported; else the first knight.
+static func knight() -> String:
+	var args := OS.get_cmdline_user_args()
+	var want := "v1" if args.has("--knight=v1") else ("v2" if args.has("--knight=v2") else String(Data.value("army", "knight", "v2")))
+	if want == "v2" and ResourceLoader.exists("res://assets/armies/knight_v2/soldier.glb"):
+		return "armies/knight_v2"
+	return KNIGHT
+
+
 ## A unit's row, with its mesh's fields under it (meshes.<asset>) and its own over them.
 func _unit(name: String) -> Dictionary:
 	var row: Dictionary = (Data.value("army", "units", {}) as Dictionary).get(name, {})
 	var asset := String(row.get("asset", KNIGHT))
+	if asset == KNIGHT:
+		asset = knight()  # the knight the army wears (v2 once baked)
 	var out: Dictionary = ((Data.value("army", "meshes", {}) as Dictionary).get(asset, {}) as Dictionary).duplicate(true)
 	for k in row:
 		if k == "tracks" and out.has("tracks"):
@@ -1194,10 +1206,10 @@ func _ground(p: Vector3, size: float) -> bool:
 ## and, for an image-made unit, mask.png), read once per folder: {asset, mesh, mat, tracks, index (clip name ->
 ## track), height, roles (its clips by role)}. A folder not baked yet falls back to the knight, so a unit row can name its mesh before it lands.
 func _asset(asset: String, row: Dictionary) -> Dictionary:
-	if not ResourceLoader.exists("res://assets/%s/soldier.glb" % asset) and asset != KNIGHT:
+	if not ResourceLoader.exists("res://assets/%s/soldier.glb" % asset) and asset != knight():
 		push_warning("ARMY %s is not baked yet; its regiments wear the knight" % asset)
-		asset = KNIGHT
-		row = _unit_row_for_mesh(KNIGHT, row)
+		asset = knight()
+		row = _unit_row_for_mesh(asset, row)
 	if _assets.has(asset):
 		return _assets[asset]
 	var dir := "res://assets/%s/" % asset
