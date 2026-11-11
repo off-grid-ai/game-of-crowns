@@ -1090,6 +1090,25 @@ func _colours() -> Array:
 var _worn: Array = []  # the houses whose colours _colours() gave, in its order ({} for the stock six)
 
 
+## The painted finish on a soldier's material (army_vat.gdshader's look; data/army.json look, meshes.<dir>.trim):
+## steel that reads as steel, the cloth's trim band, grounded feet, each man a little off his fellows. Behind its
+## switch: --army-look=painted (or look.on); --army-look=kit keeps the kit's own paint.
+func _finish(mat: ShaderMaterial, row: Dictionary, mesh: Mesh) -> void:
+	var args := OS.get_cmdline_user_args()
+	var on := args.has("--army-look=painted") or (bool(Data.value("army", "look.on", false)) and not args.has("--army-look=kit"))
+	mat.set_shader_parameter("look_painted", on)
+	if not on:
+		return
+	mat.set_shader_parameter("mesh_height", maxf(mesh.get_aabb().size.y, 0.01))
+	for pair in [["steel_sat", "steelSat", 0.14], ["steel_metal", "steelMetal", 0.65], ["steel_rough", "steelRough", 0.38], ["steel_lift", "steelLift", 1.12],
+			["steel_glow", "steelGlow", 0.05], ["rim", "rim", 0.35], ["rim_tint", "rimTint", 0.6], ["foot_dark", "footDark", 0.55], ["foot_height", "footHeight", 0.14],
+			["trim_dark", "trimDark", 0.62], ["vary_value", "varyValue", 0.08], ["vary_tint", "varyTint", 0.06]]:
+		mat.set_shader_parameter(pair[0], Data.num("army", "look." + String(pair[1]), float(pair[2])))
+	var bands: Array = row.get("trim", [])
+	for k in mini(bands.size(), 2):
+		mat.set_shader_parameter("trim_" + "ab"[k], Vector2(float(bands[k][0]), float(bands[k][1])))
+
+
 ## A regiment wears its house's arms on the shield's face and the tabard's front (army_vat.gdshader's
 ## emblem; data/army.json emblem and meshes.<dir>.emblem): the top of the house's banner, the picture its
 ## standard flies (heraldry.gd). A house with no banner drawn, or a mesh with no places for them, wears its
@@ -1209,6 +1228,7 @@ func _asset(asset: String, row: Dictionary) -> Dictionary:
 			mix[k] = float(q[4]) if q.size() > 4 else 1.0  # how much of the cell takes the colour
 		mat.set_shader_parameter("team_mix", mix)
 	mat.set_shader_parameter("team_shade", Data.num("army", "team.shade", 1.1))
+	_finish(mat, row, mesh)
 	# Where this soldier wears the arms (his rest pose; tools/emblem_probe.gd measures it): up to two places.
 	var places: Array = row.get("emblem", [])
 	for k in mini(places.size(), 2):
