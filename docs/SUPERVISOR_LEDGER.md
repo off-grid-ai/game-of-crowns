@@ -122,6 +122,8 @@ professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pa
 
 ## Log
 
+- 2026-11-11 20:10: rigging decision (Mac: no Mixamo login; we already have the animations). Infantry: in Blender headless, align each TRELLIS soldier to an existing Mixamo-skeleton character and copy the skin weights (Data Transfer), then retarget our 172 Mixamo clips and bake with vat_bake.py. Horse: copy weights from realm/assets/cavalry/horse. Elephant: last, no donor rig. 12 unit concepts are in bakeoff/concepts/units.jpg, queued right after farmhouse_barn and armoury in local_batch.sh. Close-up finesse pass started (sunk feet, flat well, orange road, props).
+
 - 2026-11-11 19:30: Mac: "much better… right direction, but still not Warcraft 3 quality, not the 8 codex images. Create the soldiers from images too, paint them the army's colour; good armour on soldiers, horses, elephants." Action: an agent is making unit concepts (white cloth for the house-colour mask: knight, man-at-arms, axe, hammer, spear, longbow, crossbow, barded cavalry, light horse, armoured elephant, cannon, mounted captain) and surveying auto-rig blocks (UniRig, Mixamo, AccuRIG, Rigify) for the VAT bake. The local TRELLIS run is blocked by the safety check: Mac must run local_batch.sh himself or add a permission rule. Fps is not a gate for now.
 
 - 2026-11-11 18:14: batch 4 running (/tmp/goc-batch4, scratchpad batch4.sh), with plots dbe3d94b, the church ee360bc1, sites 6126627a, autumn 29a0dcac and far shots b3d7ffbe. The bake-off catalogue is still being made. of supervisor actions (newest first; details in review/supervisor-log.md)
