@@ -86,6 +86,8 @@ func _say(id: String) -> void:
 		if String(p["id"]) == id:
 			main.ui.caption("%s: %s" % [_speaker, String(p["text"])])
 	_said[id] = true
+	if OS.get_environment("GOC_HAND") != "" or OS.get_environment("GOC_OPENING_CLOCK") != "":
+		return  # a test run drives the game: the player's own profile keeps its first-reign prompts
 	var cfg := ConfigFile.new()
 	cfg.load("user://settings.cfg")
 	cfg.set_value(SEEN, id, true)
