@@ -146,6 +146,43 @@
    "clip": "towns/carts-clip.mp4"
   },
   {
+   "id": "b7-castle",
+   "name": "The castle",
+   "what": "The seat's castle: keep, curtain walls and towers, the lord's banners on every tower, the gatehouse",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "castle/castle.png",
+   "needs": "castle"
+  },
+  {
+   "id": "b7-castle-walls",
+   "name": "Guards on the walls",
+   "what": "Guards in the lord's colours walking the wall walks, turning at the towers to look out",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "castle/castle-walls.png",
+   "clip": "castle/guards-clip.mp4",
+   "needs": "castle"
+  },
+  {
+   "id": "b7-castle-gate",
+   "name": "The castle gate",
+   "what": "The gatehouse: arch, portcullis half raised, leaves open, banners either side",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "castle/castle-gate.png",
+   "needs": "castle"
+  },
+  {
+   "id": "b7-castle-breached",
+   "name": "The castle breached",
+   "what": "The castle's stone curtains under the town's wall wear: cracked, crumbling, open to the ground with rubble",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "castle/castle-breached.png",
+   "needs": "castle"
+  },
+  {
    "id": "b7-war-town",
    "name": "A town at war",
    "what": "The seat's neighbour at war: the levy, the forge working double, the paddock emptied",
@@ -584,6 +621,15 @@
    "ref": "06-inn",
    "card": "W3",
    "still": "night/night-road.png"
+  },
+  {
+   "id": "b7-night-castle-gate",
+   "name": "The castle gate at night",
+   "what": "The gate's two torches lit, a warm light on the stone",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "night/night-castle-gate.png",
+   "needs": "castle"
   }
  ],
  "needed": [],
@@ -619,6 +665,10 @@
   {
    "step": "flock [n] [dist] [tilt]",
    "what": "Frames the n-th fallow field, where a shepherd's flock grazes (autoplay.gd)."
+  },
+  {
+   "step": "castle Town [dist] [tilt] [gate]",
+   "what": "Frames the town's castle low and oblique, or its gatehouse (autoplay.gd)."
   }
  ]
 }

@@ -4,8 +4,8 @@
 # reference each is judged beside are listed in docs/review/v15.json; docs/review/v15_apply.py puts the
 # results on the review page.
 #
-#   docs/review/batch7.sh            # all of it, about 108 minutes [estimate: the launches' LIMITs and waits]
-#   ONLY="towns fire" docs/review/batch7.sh   # some launches only: towns moods rulings fields fire breach army battle hosts weather night
+#   docs/review/batch7.sh            # all of it, about 116 minutes [estimate: the launches' LIMITs and waits]
+#   ONLY="towns fire" docs/review/batch7.sh   # some launches only: towns castle moods rulings fields fire breach army battle hosts weather night
 #   OUT=/tmp/goc-batch7 (default)    # frames, logs and clips land here
 #
 # It runs on its own private bridge (8788, Freeciv 5557) with a fresh reign named "Film batch 7", so the
@@ -15,7 +15,7 @@ R=${0:A:h:h:h}
 OUT=${OUT:-/tmp/goc-batch7}
 PORT=${PORT:-8788}; FC=${FC:-5557}
 API=localhost:$PORT
-ONLY=${ONLY:-towns moods rulings fields fire breach army battle hosts weather night}
+ONLY=${ONLY:-towns castle moods rulings fields fire breach army battle hosts weather night}
 SW=(--look=one --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on)
 B=(--bridge=http://127.0.0.1:$PORT)
 FF=${FF:-/opt/homebrew/bin/ffmpeg}
@@ -117,6 +117,38 @@ if want towns; then
   has_step site || note "inn, hamlet, bridge: framed along the road out of town (no 'site' step in the harness yet); check what's in frame"
   play towns 1200
   for c in forge-clip stables-clip mill-clip barnyard-clip inn-clip carts-clip; do clip $OUT/towns $c 5; done
+fi
+
+# 2b. The castle (89de30e6, 9228f28c, a0bd512b; --castle-life=on --walls=stone): the seat's kit castle with its
+# towers' banners, the guards on its walks, the bailey and its well; then its walls' wear staged on the test
+# reign ({damage: {city, section, wear}} for every section) so its stone curtains crack and breach.
+if want castle; then
+  {
+    print "wait 30"
+    if has_step castle; then
+      print "castle $SEAT 6 -22"; print "wait 8"; print "snap castle"
+      print "castle $SEAT 2.5 -18"; print "wait 6"; print "snap castle-walls"; burst guards-clip 30 0.25
+      print "castle $SEAT 3 -20 gate"; print "wait 4"; print "snap castle-gate"
+      print "look castle-breach"; print "wait 4"
+      print "castle $SEAT 4 -22"; print "wait 25"; print "snap castle-breached"
+    else
+      print "city $SEAT 6 -22"; print "wait 8"; print "snap castle"
+    fi
+    print "look castle-end"
+  } > $OUT/castle.play
+  rm -rf $OUT/castle
+  ( for i in {1..900}; do
+      if grep -q "look castle-breach$" $OUT/castle/play.log 2>/dev/null; then
+        for sec in 0 1 2 3 4 5 6 7; do stage "{\"damage\":{\"city\":$SEATID,\"section\":$sec,\"wear\":0.85}}" > /dev/null; done
+        say "castle: the seat's walls worn to a breach"; break
+      fi
+      grep -q "castle-end" $OUT/castle/play.log 2>/dev/null && break; sleep 1
+    done ) &
+  STAGER=$!
+  play castle 480 --castle-life=on --walls=stone
+  wait $STAGER  # the stager only: the bridge runs in the background too
+  clip $OUT/castle guards-clip 5
+  for sec in 0 1 2 3 4 5 6 7; do stage "{\"damage\":{\"city\":$SEATID,\"section\":$sec,\"wear\":0}}" > /dev/null; done
 fi
 
 # 3. A war town next to a feast town.
@@ -345,9 +377,10 @@ if want night; then
     print "wait 10"; print "snap night-inn"
     if has_step site; then print "site inn 0 6 -25"; print "wait 8"; print "snap night-road-inn"; fi
     print "road Kingsmere 8"; print "wait 10"; print "snap night-road"  # only a torchlit patrol or a messenger by night
+    if has_step castle; then print "castle Kingsmere 3 -20 gate"; print "wait 6"; print "snap night-castle-gate"; fi
     print "look night-end"
   } > $OUT/night.play
-  play night 420 --hour=21
+  play night 420 --hour=21 --castle-life=on
 fi
 
 # 8. What came out, and onto the review page's folder.
