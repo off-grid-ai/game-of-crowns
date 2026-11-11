@@ -74,6 +74,35 @@ def met_sources(limit=0):
     return out
 
 
+def nga_sources(objects_csv, images_csv, limit=0):
+    """The National Gallery of Art's open data (CC0; github.com/NationalGalleryOfArt/opendata):
+    paintings 1400-1650 titled as portraits, with their primary open-access image (IIIF)."""
+    import csv
+    csv.field_size_limit(10 ** 9)
+    keep = {}
+    with open(objects_csv, newline="", encoding="utf-8") as f:
+        for r in csv.DictReader(f):
+            title = r.get("title") or ""
+            try:
+                y = int(r.get("beginyear") or 0)
+            except ValueError:
+                continue
+            if r.get("classification") != "Painting" or not 1400 <= y <= 1650 or "portrait" not in title.lower() or NAMED.search(title):
+                continue
+            keep[r["objectid"]] = {"museum": "nga", "id": r["objectid"], "title": title, "artist": r.get("attribution"), "year": y,
+                                   "licence": "CC0 (National Gallery of Art open access)", "page": f"https://www.nga.gov/collection/art-object-page.{r['objectid']}.html"}
+    out = []
+    with open(images_csv, newline="", encoding="utf-8") as f:
+        for r in csv.DictReader(f):
+            o = keep.get(r.get("depictstmsobjectid"))
+            if o and r.get("viewtype") == "primary" and r.get("openaccess") == "1" and "url" not in o:
+                o["url"] = r["iiifurl"].rstrip("/") + "/full/!1200,1200/0/default.jpg"
+                out.append(o)
+                if limit and len(out) >= limit:
+                    break
+    return out
+
+
 def detector(model):
     return cv2.FaceDetectorYN.create(model, "", (320, 320), 0.8, 0.3, 5000)
 
@@ -116,12 +145,20 @@ def main():
     ap.add_argument("--model", required=True)
     ap.add_argument("--cache", required=True)
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--nga-objects", help="NGA open data objects.csv (adds the National Gallery of Art)")
+    ap.add_argument("--nga-images", help="NGA open data published_images.csv")
+    ap.add_argument("--only", choices=["met", "nga"], help="one museum only")
     a = ap.parse_args()
     os.makedirs(a.cache, exist_ok=True)
     os.makedirs(OUT, exist_ok=True)
     det = detector(a.model)
-    sources = met_sources(a.limit)
+    sources = [] if a.only == "nga" else met_sources(a.limit)
+    if a.nga_objects and a.nga_images and a.only != "met":
+        sources += nga_sources(a.nga_objects, a.nga_images, a.limit)
     kept, why = [], {}
+    # Dropped by eye (drop.txt): recognisable sitters, prints, frames and medallions.
+    drop = {l.split("#")[0].strip() for l in open(os.path.join(HERE, "drop.txt")) if l.strip() and not l.startswith("#")} if os.path.exists(os.path.join(HERE, "drop.txt")) else set()
+    sources = [s for s in sources if f"{s['museum']}-{s['id']}.jpg" not in drop]
     for s in sources:
         path = os.path.join(a.cache, f"{s['museum']}-{s['id']}.jpg")
         if not os.path.exists(path):

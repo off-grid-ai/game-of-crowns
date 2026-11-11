@@ -1,0 +1,19 @@
+# Portraits dropped by eye (build.py skips these): file, why. Recognisable sitters, prints and drawings, frames and medallions.
+met-435624.jpg  # oval frame
+met-435625.jpg  # oval frame
+met-435779.jpg  # recognisable (Elizabeth I likeness)
+met-435924.jpg  # engraving
+met-435925.jpg  # engraving
+met-435926.jpg  # engraving
+met-435957.jpg  # drawing
+met-435960.jpg  # drawing
+met-436306.jpg  # engraving
+met-436340.jpg  # grisaille
+met-436649.jpg  # miniature medallion
+met-436650.jpg  # miniature medallion
+met-436695.jpg  # oval frame
+met-436747.jpg  # print with inscription
+met-436749.jpg  # medallion
+met-437241.jpg  # grisaille
+nga-1186.jpg  # painted frame edge
+nga-46156.jpg  # recognisable (Dante)
