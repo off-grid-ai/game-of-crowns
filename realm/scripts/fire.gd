@@ -25,7 +25,8 @@ static var _cache := {}  # shared textures and materials, made once
 var main: Node  # main.gd: its towns and its mirror (awareness)
 var _burnt := {}  # "town:home" -> {shell, hidden: [[MultiMesh, index, transform]], box, root}
 var _burning := {}  # "town:home" -> its fire node, while it burns (meta stage: catch, burn, collapse, smoulder)
-var _spreads := {}  # town id -> {left: [homes still to catch], root, pace, pick, at}: a fire travelling
+var _spreads := {}  # town id -> {left: [homes still to catch], lit: [homes caught], root, pace, pick, at}: a fire travelling
+var _orders := {}  # town id -> the order its houses burn in, set by the sack that burnt them (nearest the eye first)
 var _lines := {}  # town id -> {key: the house it works at, folk: [their minds]}: the town's bucket line
 var _tick := 0.0
 var _clock := 0.0
@@ -100,6 +101,9 @@ func _ignite(at: Vector3, seconds: float, razed: bool) -> bool:
 	if homes.is_empty():
 		return false
 	var share := maxf(_burnt_share(best), float(d.get("share_razed" if razed else "share_sack", 0.4)))
+	# The houses that burn are the ones nearest what the King is looking at (a sack is a decision: its fire
+	# must be seen), and they stay the ones the realm's burnt share means for the rest of the reign's session.
+	_orders[best] = _nearest_first(root, homes)
 	var order := _order(best, homes.size())
 	var left := []
 	for i in mini(homes.size(), maxi(1, ceili(share * homes.size()))):
@@ -107,17 +111,53 @@ func _ignite(at: Vector3, seconds: float, razed: bool) -> bool:
 			left.append(order[i])
 	if left.is_empty():
 		return true
-	# One house catches first; the rest catch one at a time from the ones already burning (spread). A short
-	# scene (`seconds`) quickens the spread so every house the fact names has caught before it ends.
-	var gap: Array = (d.get("spread", {}) as Dictionary).get("gap_s", [3.0, 12.0])
+	# The raiders torch a few at once (fire.json spread.torched), never two neighbours; the rest catch one at a
+	# time from the ones already burning (spread). A short scene (`seconds`) quickens the spread so every house
+	# the fact names has caught before it ends.
+	var sp: Dictionary = d.get("spread", {})
+	var gap: Array = sp.get("gap_s", [3.0, 12.0])
 	var mean := (float(gap[0]) + float(gap[1])) * 0.5
 	var pace := clampf(seconds * 0.6 / maxf(1.0, (left.size() - 1) * mean), 0.25, 1.0) if seconds > 0.0 else 1.0
-	var first: int = left.pop_front()
-	_alight(root, "%d:%d" % [best, first], homes[first], best)
-	if not left.is_empty():
-		_spreads[best] = {"left": left, "root": root, "pace": pace}
+	var lit := []
+	for h in left.duplicate():
+		if lit.size() >= maxi(1, int(sp.get("torched", 3))):
+			break
+		var p := _home_at(homes[h])
+		if lit.any(func(o): return _home_at(homes[o]).distance_to(p) < float(sp.get("torch_apart", 0.5))):
+			continue
+		lit.append(h)
+		left.erase(h)
+		_alight(root, "%d:%d" % [best, h], homes[h], best)
+	_spreads[best] = {"left": left, "lit": lit, "root": root, "pace": pace}
+	if left.is_empty():
+		_spreads[best]["at"] = INF
+	else:
 		_queue_next(best)
 	return true
+
+
+## A town's houses, the nearest first to where the camera looks (its rig's target, when it's on this town),
+## else to the town's heart.
+func _nearest_first(root: Node3D, homes: Array) -> Array:
+	var eye := root.global_position
+	var rig = main.get("rig")
+	if rig != null and rig.get("target") is Vector3:
+		var t: Vector3 = rig.target
+		var reach := float(knobs().get("reach", 1.6)) * 4.0
+		if Vector2(t.x - eye.x, t.z - eye.z).length() < reach:
+			eye = t
+	var here := root.to_local(eye)
+	var idx := range(homes.size())
+	idx.sort_custom(func(a, b): return Vector2(_home_at(homes[a]).x - here.x, _home_at(homes[a]).z - here.z).length() < Vector2(_home_at(homes[b]).x - here.x, _home_at(homes[b]).z - here.z).length())
+	return idx
+
+
+## A town's root as it stands now (towns.gd builds a town anew, for one when it's sacked), or null.
+func _root_of(id: int) -> Node3D:
+	if main == null or main.towns == null or not main.towns.towns.has(id):
+		return null
+	var n = main.towns.towns[id].get("node")
+	return n if is_instance_valid(n) else null
 
 
 # --- spread (Stronghold, Manor Lords: the fire travels house to house, and the player watches it go) ------
@@ -127,7 +167,10 @@ func _ignite(at: Vector3, seconds: float, razed: bool) -> bool:
 ## and longer while a bucket line works.
 func _queue_next(id: int) -> void:
 	var s: Dictionary = _spreads[id]
-	var root: Node3D = s["root"]
+	var root := _root_of(id)
+	if root == null:
+		_spreads.erase(id)
+		return
 	var homes: Array = root.get_meta("homes", [])
 	var sp: Dictionary = knobs().get("spread", {})
 	var wind := _drift()
@@ -165,19 +208,31 @@ func _queue_next(id: int) -> void:
 func _spread_tick() -> void:
 	for id in _spreads.keys():
 		var s: Dictionary = _spreads[id]
-		if _clock < float(s["at"]):
-			continue
-		var root: Node3D = s["root"]
-		if not is_instance_valid(root):
+		# The town as it stands now: towns.gd builds a sacked town anew, freeing the root the fire began on
+		# (batch 7: 178 errors and a fire that stopped at its first house). The fire goes on in the new one:
+		# the houses already caught are set alight again there, the rest still to come.
+		var root := _root_of(id)
+		if root == null:
 			_spreads.erase(id)
 			continue
 		var homes: Array = root.get_meta("homes", [])
+		if root != s.get("root"):
+			s["root"] = root
+			for h in s["lit"]:
+				if int(h) < homes.size() and not _burning.has("%d:%d" % [id, int(h)]):
+					_alight(root, "%d:%d" % [id, int(h)], homes[int(h)], id)
+		if (s["left"] as Array).is_empty() and not _burning.keys().any(func(k): return String(k).begins_with("%d:" % id)):
+			_spreads.erase(id)  # every house caught and burnt out
+			continue
+		if _clock < float(s.get("at", INF)):
+			continue
 		var pick := int(s["pick"])
 		(s["left"] as Array).erase(pick)
 		if pick < homes.size() and not _burning.has("%d:%d" % [id, pick]):
 			_alight(root, "%d:%d" % [id, pick], homes[pick], id)
+			(s["lit"] as Array).append(pick)
 		if (s["left"] as Array).is_empty():
-			_spreads.erase(id)
+			s["at"] = INF  # all caught: kept while they burn, so a rebuild sets them alight again
 		else:
 			_queue_next(id)
 
@@ -299,6 +354,8 @@ func _burnt_share(id: int) -> float:
 ## The order a town's houses burn in: the same every time (by its id), so the fact's share always means the
 ## same houses, and a sack sets alight the ones that will stand burnt.
 func _order(id: int, count: int) -> Array:
+	if _orders.has(id) and (_orders[id] as Array).size() == count:
+		return _orders[id]  # the order the sack burnt them in, this session
 	var r := RandomNumberGenerator.new()
 	r.seed = hash(id)
 	var order := range(count)
