@@ -333,6 +333,9 @@ const stopFreeciv = Freeciv.stop;
 
 async function switchTo(id) {
   switching = true;
+  // The last realm's matters are not this one's: the Hand reads the new realm afresh (gameplay review #4).
+  counselNow = [];
+  counselStale = true;
   await stopFreeciv();
   if (meta) chron.saveMeta(meta);
   load(id);
@@ -450,9 +453,11 @@ function snapshot() {
     sieges();
     townStates();
     uproar();
-    refreshCounsel();
+    // The start options first (the houses' favour at the crowning), then the Hand reads the realm:
+    // a counsel read before them named the favour the baseline had (gameplay review #4: "favour 6").
     applyStartOptions();
     applyOpeningMood();
+    refreshCounsel();
   }, 500);
 }
 

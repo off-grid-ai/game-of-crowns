@@ -1,7 +1,6 @@
 // The Hand's counsel: the realm's matters, worst first, each with why it
 // matters and the orders that answer it (counsel), the lesser occasions he
-// raises in turn (plague, unrest, a thin granary, bare walls, a house too
-// strong, a loyal one unrewarded, a full treasury, an heir of age), what a
+// raises in turn (plague, unrest, a thin granary, bare walls, a loyal one unrewarded, a full treasury, an heir of age), what a
 // matter is for resting it (matterKey), and what the King's silence costs
 // (lapseOf, lapse). Nothing here reads server.js: the realm's state and the
 // bridge's own helpers come in as one context argument, built fresh by
@@ -21,7 +20,10 @@ import * as Director from "./director.js";
 export function counsel(ctx, players, cities, threat) {
   const { world, meta, court, stakes, deeds, favourWhy, lastSeason, favourOf, seasonsLeft, priceOf, yearlyKey, FAVOUR } = ctx;
   const out = [];
-  const great = players.filter((p) => !p.house.wild && !p.house.crown && p.cities?.length !== 0);
+  // A house's towns, counted from the towns themselves (/world carries a player's cities as a number,
+  // not a list: p.cities.length was undefined, so a fallen house counted as great; gameplay review #4).
+  const townsOf = (pid) => cities.filter((c) => c.owner === pid).length;
+  const great = players.filter((p) => !p.house.wild && !p.house.crown && townsOf(p.id) > 0);
   const seatOf = (pid) => cities.find((c) => c.owner === pid && c.capital) ?? cities.find((c) => c.owner === pid);
   const purse = players.find((p) => p.house.crown)?.gold ?? 0;
   // A ward is had of a house once a reign, and holds it for its seasons (data/decrees.json ward).
@@ -182,15 +184,8 @@ export function counsel(ctx, players, cities, threat) {
   const bare = cities.filter((c) => fighting.some((p) => p.id === c.owner) && lacks(c, "City Walls") && (c.size ?? 0) >= 4).sort((a, b) => (b.size ?? 0) - (a.size ?? 0))[0];
   if (bare) { const h = ofHouse(bare); occasions.push({ kind: "walls", urgency: 45, text: `${bare.title} has no walls, and war is near`, why: `${h ? h.house.name : "Its house"} is at war, and ${bare.title} would fall to the first host that reaches it. Walls paid by the crown are remembered.`,
     acts: [{ label: `Pay for walls at ${bare.title}`, action: "build", building: "walls", city: bare.id }, h && favourOf(h.id) >= BANDS.sworn ? { label: `Swear an alliance with ${short(h)}`, action: "alliance", city: bare.id } : null].filter(Boolean) }); }
-  const mighty = [...great].sort((a, b) => (b.cities?.length ?? 0) * 2 + (b.units ?? 0) - (a.cities?.length ?? 0) * 2 - (a.units ?? 0))[0];
-  const avgTowns = great.reduce((n, p) => n + (p.cities?.length ?? 0), 0) / Math.max(1, great.length);
-  if (mighty && (mighty.cities?.length ?? 0) >= avgTowns * 1.5 && seatOf(mighty.id) && !(stakes?.s.wards?.[mighty.id] > turn)) {
-    const f = favourOf(mighty.id);
-    occasions.push({ kind: "mighty", urgency: 45, text: `${mighty.house.name} grows too strong`, why: `${mighty.cities.length} towns, more than any other house. Today they kneel; a house that size could take the throne tomorrow. Bind them to you, or hold their heir at court.`,
-      acts: [f >= 50 ? { label: `Swear an alliance with ${short(mighty)}`, action: "alliance", city: seatOf(mighty.id).id } : null,
-        { label: `Take their heir as your ward`, action: "ward", city: seatOf(mighty.id).id },
-        { label: `A feast in their honour`, action: "feast", city: seatOf(mighty.id).id }].filter(Boolean) });
-  }
+  // (The Hand's "grows too strong" card is cut: it fired every reign on a miscount and its answer was
+  // the ward; gameplay review #4 and its cut list.)
   const loyal = great.filter((p) => favourOf(p.id) >= 75 && seatOf(p.id)).sort((a, b) => favourOf(b.id) - favourOf(a.id))[0];
   if (loyal) occasions.push({ kind: "loyal", urgency: 30, text: `${loyal.house.name} has served you well`, why: `Favour ${Math.round(favourOf(loyal.id))}: they answer every summons. Loyalty left unrewarded cools, and the other houses watch what it earns.`,
     acts: [{ label: `Swear an alliance with ${short(loyal)}`, action: "alliance", city: seatOf(loyal.id).id }, { label: "Gift crowns", action: "gift", city: seatOf(loyal.id).id },
@@ -283,7 +278,9 @@ export function counsel(ctx, players, cities, threat) {
   }
   // Every matter the realm has, worst first: the court (courtYear) chooses
   // which are put to the King, and when.
-  return out.sort((a, b) => b.urgency - a.urgency).filter((o) => !matterResting(ctx, o)).map((o) => ({ ...o, key: heardKey(o) }));
+  // Never a card that reads "undefined" or "NaN": a matter built from a missing number is dropped, not shown.
+  const broken = (o) => /\bundefined\b|\bNaN\b/.test(`${o.text} ${o.why ?? ""} ${(o.acts ?? []).map((a) => a.label).join(" ")}`);
+  return out.sort((a, b) => b.urgency - a.urgency).filter((o) => !matterResting(ctx, o) && !broken(o)).map((o) => ({ ...o, key: heardKey(o) }));
 }
 
 // What a matter is, for resting it after it is answered.
