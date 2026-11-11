@@ -39,3 +39,7 @@ only if it would clear its concept in `docs/art/target` at 100%. This file grows
 6. **Pinto horse blotches**: horse.gd COATS multiplies the bay texture past 1.0.
 7. **Square dressing collides**: a canopy over the fountain, and a man in the water. Owners: towns.json market and centre placement, town_life.gd paths.
 8. **villagers.gd:1106 `_who`** script errors (9).
+
+## Status
+
+The supervisor stopped batch 8 after look2 (00:49) because of the top-down camera. army-ui is fixing the sight check. The rerun goes to `/tmp/goc-batch8b` and will be judged here.
