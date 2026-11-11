@@ -1166,13 +1166,23 @@ func _forge(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: Wo
 	glow.light_color = Works.colour(g.get("color"), Color(1.0, 0.52, 0.22))
 	glow.light_energy = float(g.get("day", 1.1))
 	glow.omni_range = float(g.get("range", 0.9))
-	glow.position = Vector3(hearth.x, _y(center, hearth) + float(g.get("height", 0.12)), hearth.z)
+	# Inside the hearth, not out at its mouth: set back toward the building's middle (forge.glow.inset), so it
+	# lights the doorway warmly from within and never stands as a bright ball on the ground.
+	var inward: Vector3 = b["at"] - hearth
+	inward.y = 0.0
+	var inside: Vector3 = hearth + (inward.normalized() * float(g.get("inset", 0.12)) if inward.length() > 0.001 else Vector3.ZERO)
+	glow.position = Vector3(inside.x, _y(center, hearth) + float(g.get("height", 0.12)), inside.z)
+	glow.shadow_enabled = false
 	life.add_child(glow)
 	tick.glow = glow
-	# Sparks off the anvil while the hammer swings.
+	# Sparks off the anvil's face as the hammer strikes: a burst each stroke (works.Tick restarts it), never a
+	# steady stream. Drawn at their real size in the quad itself: the GPU copy (Particles.to_gpu) loses a CPU
+	# effect's scale, so 0.25-wide additive quads stacked into a white ball at the smith's feet (batch 7).
 	var k: Dictionary = Data.value("works", "forge.sparks", {})
 	var p := CPUParticles3D.new()
 	p.amount = maxi(1, int(float(k.get("amount", 14)) * (float(k.get("war", 2.0)) if tick.hot else 1.0)))
+	p.one_shot = true
+	p.explosiveness = 0.85
 	p.lifetime = float(k.get("life", 0.45))
 	p.direction = Vector3.UP
 	p.spread = 70
@@ -1181,14 +1191,12 @@ func _forge(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: Wo
 	p.initial_velocity_min = float(speed[0])
 	p.initial_velocity_max = float(speed[1])
 	var size: Array = k.get("size", [0.008, 0.016])
-	p.scale_amount_min = float(size[0]) / 0.25
-	p.scale_amount_max = float(size[1]) / 0.25
 	var grad := Gradient.new()
-	grad.set_color(0, Color(1.0, 0.85, 0.4, 1.0))
-	grad.set_color(1, Color(1.0, 0.3, 0.05, 0.0))
+	grad.set_color(0, Color(1.0, 0.68, 0.28, float(k.get("bright", 0.8))))  # orange, never white: added, it blooms
+	grad.set_color(1, Color(0.9, 0.25, 0.05, 0.0))
 	p.color_ramp = grad
 	var q := QuadMesh.new()
-	q.size = Vector2(0.25, 0.25)
+	q.size = Vector2.ONE * (float(size[0]) + float(size[1])) * 0.5
 	var m := StandardMaterial3D.new()
 	m.albedo_texture = preload("res://scripts/towns.gd").soft_dot()
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -1199,7 +1207,7 @@ func _forge(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: Wo
 	q.material = m
 	p.mesh = q
 	p.emitting = false
-	p.position = Vector3(anvil.x, _y(center, anvil) + 0.1, anvil.z)
+	p.position = Vector3(anvil.x, _y(center, anvil) + float(k.get("height", 0.1)), anvil.z)
 	var gpu := Particles.to_gpu(p, 25.0)
 	life.add_child(gpu)
 	tick.sparks = gpu

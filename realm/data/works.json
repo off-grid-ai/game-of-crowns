@@ -50,8 +50,8 @@
     "grant": { "cheer": 2.5, "murmur": 1.5, "toast": 1.5 },
     "build": { "cheer": 1.5, "listen": 1.5 }
   },
-  "_forge": "The forge's look: glow (its light's colour, energy by day at work, by night banked, and in war or a levy; range in world units), sparks off the anvil while the hammer swings (how many, how long each lives, how fast they fly; war multiplies the amount).",
-  "forge": { "glow": { "color": [1.0, 0.52, 0.22], "day": 1.1, "night": 0.35, "war": 1.7, "range": 0.9, "height": 0.12 }, "sparks": { "amount": 14, "war": 2.0, "life": 0.45, "speed": [0.25, 0.6], "size": [0.008, 0.016] } },
+  "_forge": "The forge's look: glow (its light's colour, energy by day at work, by night banked, and in war or a levy; range in world units; inset: how far inside the hearth it sits, from the hearth's mouth toward the building), sparks off the anvil, a burst each hammer stroke (how many, how long each lives, how fast they fly, their size in world units, how high over the anvil's foot, how bright at most: they're added, so 1 blooms; war multiplies the amount).",
+  "forge": { "glow": { "color": [1.0, 0.5, 0.2], "day": 0.6, "night": 0.2, "war": 0.9, "range": 0.5, "height": 0.1, "inset": 0.12 }, "sparks": { "amount": 14, "war": 2.0, "life": 0.45, "speed": [0.25, 0.6], "size": [0.008, 0.016], "height": 0.1, "bright": 0.8 } },
   "_mill": "Mills turn while they work (by day, and with grain in the town): spin_names (the parts of a mill model that turn, by name), axis per kind (the part's own axis), rpm at full work, and how fast it comes up to speed or runs down (a share a second).",
   "mill": { "spin_names": ["sail", "sails", "blade", "blades", "wheel", "rotor", "vane", "vanes", "fan"], "axis": { "windmill": [0, 0, 1], "watermill": [1, 0, 0] }, "rpm": { "windmill": 7.0, "watermill": 10.0 }, "ease": 0.25 },
   "_inn": "The inn at night: its windows lit (light colour, energy from dusk, range in world units); the bench drinkers go in at night.",

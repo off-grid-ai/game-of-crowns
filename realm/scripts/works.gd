@@ -370,8 +370,8 @@ class Tick extends Node:
 				var ap: AnimationPlayer = (s as Node).get_node_or_null("Anim")
 				if ap and ap.current_animation == "Hammer_Swing":
 					hammering = true
-		if sparks:
-			sparks.emitting = hammering
+		if sparks and hammering:
+			sparks.restart()  # a burst off the anvil for the stroke (one_shot: never a steady stream)
 		if glow:
 			glow.light_energy = Data.num("works", ("forge.glow.war" if hot else "forge.glow.day") if working else "forge.glow.night", 1.0)
 		var lit := Works.within(h, "lit")
