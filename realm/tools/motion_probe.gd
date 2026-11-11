@@ -788,7 +788,7 @@ func _report() -> void:
 	var stood := _statues.keys().filter(func(k): return float(_statues[k]) > STATUE)
 	stood.sort_custom(func(a, b): return _statues[a] > _statues[b])
 	print("MOTION roof statues: %s  %d people idle over %.0f s (longest %.1f s)  %s" % [verdict.call(stood.is_empty()), stood.size(), STATUE,
-		_statues.values().max() if not _statues.is_empty() else 0.0, ", ".join(stood.slice(0, 5).map(func(k): return "%s %.1fs at (%.1f,%.1f)" % [_name(k) if is_instance_valid(k) else "?", _statues[k], (k as Node3D).global_position.x if is_instance_valid(k) else 0.0, (k as Node3D).global_position.z if is_instance_valid(k) else 0.0]))])
+		_statues.values().max() if not _statues.is_empty() else 0.0, ", ".join(stood.slice(0, 5).map(func(k): return "%s %.1fs at (%.1f,%.1f) from %s" % [_name(k) if is_instance_valid(k) else "?", _statues[k], (k as Node3D).global_position.x if is_instance_valid(k) else 0.0, (k as Node3D).global_position.z if is_instance_valid(k) else 0.0, _owner_of(k)]))])
 	var vf: float = maxf(1, _variety[2])
 	print("MOTION roof variety: %s  one activity over %d%% of the crowd in %d%% of frames (%s); under %d kinds of work in %d%% of frames" % [
 		verdict.call(_variety[0] / vf <= ROOF_BREAK and _variety[1] / vf <= ROOF_BREAK), int(ONE_THING * 100), int(100 * _variety[0] / vf), _top(_crowded), KINDS, int(100 * _variety[1] / vf)])
@@ -804,3 +804,13 @@ func _top(counts: Dictionary) -> String:
 	var keys := counts.keys()
 	keys.sort_custom(func(a, b): return counts[a] > counts[b])
 	return ", ".join(keys.slice(0, 5).map(func(k): return "%s %d" % [k if k != "" else "?", counts[k]]))
+
+
+## Which script put a person there: the nearest ancestor with a script (a statue's owner, named).
+func _owner_of(k) -> String:
+	var n: Node = k if is_instance_valid(k) else null
+	while n != null:
+		n = n.get_parent()
+		if n != null and n.get_script() != null:
+			return String((n.get_script() as Script).resource_path.get_file())
+	return "?"
