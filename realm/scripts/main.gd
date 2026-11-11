@@ -486,6 +486,7 @@ func _ready() -> void:
 	# Chimney smoke only where someone's home (hearths.gd; knobs in data/hearths.json).
 	if not OS.get_cmdline_user_args().has("--hearths=off"):
 		add_child(load("res://scripts/hearths.gd").new(self))
+	if preload("res://scripts/roadside.gd").on(): add_child(load("res://scripts/roadside.gd").new(self))  # life along the roads (roadside.gd; --roadside=on, data/roadside.json)
 	# The army spike (a test aid, --army-spike=<men>; tools/army_spike.gd): regiments of VAT soldiers by Kingsmere.
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--army-spike="):
