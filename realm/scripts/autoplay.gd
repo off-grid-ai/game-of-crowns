@@ -323,6 +323,26 @@ func _play(quit_after: bool) -> void:
 						main.rig.apply()
 				_note("  breach: %s" % ("framed at %s" % at if at != Vector3.INF else "no siege staged (--siege)"))
 				await get_tree().create_timer(2.0).timeout
+			"castle":
+				# castle Town [dist] [tilt] [gate]: frames the town's castle low and oblique, from its gate side
+				# (gate: on the gatehouse itself), for its towers, banners, walks and bailey.
+				var at := Vector3.INF
+				var gate_side := Vector3.ZERO
+				for c in main.bridge.world.get("cities", []):
+					if String(c.get("title", c.get("name", ""))) == w[1] and main.towns.towns.has(int(c["id"])):
+						var root: Node3D = main.towns.towns[int(c["id"])].get("node")
+						var castle: Node3D = root.get_node_or_null("Castle") if root else null
+						if castle:
+							at = castle.global_position
+							gate_side = castle.global_transform.basis.z.normalized()
+				if at != Vector3.INF:
+					if w.size() > 4 and w[4] == "gate":
+						at += gate_side * 0.9
+					_oblique(at, float(w[2]) if w.size() > 2 else 5.0, float(w[3]) if w.size() > 3 else -22.0)
+					if main.rig.is_processing_input() == false:
+						main.rig.apply()
+				_note("  castle %s: %s" % [w[1], "framed" if at != Vector3.INF else "none stands"])
+				await get_tree().create_timer(2.0).timeout
 			"camp":
 				# camp [dist] [tilt]: frames the besiegers' camp (siege_camp.gd, --camp=on) from over its tents
 				# toward the town: tents, fires, palisade, the engines in the band, the wall beyond.
