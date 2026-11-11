@@ -117,8 +117,8 @@ event cards thin out in breathers first if load rises.
 ## The first test: would they play to the end? (Mac, 2026-11-11)
 How a reign is won (money, men, support) gets tuned later. First, a player must want to play to the end, so
 nothing may feel gimmicky and everything must feel professional: consistent type, spacing, timing and
-sound; eased transitions; no placeholder text, gags or arithmetic; no bugs on screen. Judged on a full
-15-minute reign filmed start to end at normal speed.
+sound; eased transitions; no placeholder text, gags or arithmetic; no bugs on screen. This is priority
+number one; gameplay depth follows once it's true. No filming beyond the stills needed to judge a change.
 
 ## The bar (Mac, 2026-11-11)
 The casebook games are the competition, and their finish is the bar; nothing below it ships. Every visual
