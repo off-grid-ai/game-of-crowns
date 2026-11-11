@@ -47,8 +47,9 @@ const STATES := ["loop_a", "loop_b", "once_a", "once_b", "hold_a", "hold_b", "re
 ## (Godot's Blend2 with a bone filter), so a sack or a crate shows while they walk.
 const CARRIES := ["Carrying", "Box_Idle", "Carry_Walk"]
 ## The body's posture (v3 stage 2, docs/review/first-principles-motion.md): moves
-## played low, on the knees, sat or lying. Interact is down on one knee all
-## through (hips 0.32-0.42 against 0.95 standing, measured). From one of these to a
+## played low, on the knees, sat or lying. Interact is down on hands and knees, head at the
+## ground, for most of its 7.6 s (hips 0.40-0.45 m, head 0.25-0.5 m, measured): from roof height it reads as
+## a body lying on the cobbles (batch 6), so it is played only at ground work on a building site. From one of these to a
 ## standing move the body rises through Getting_Up, never a crossfade that pops.
 const LOW := ["Fixing_Kneeling", "Interact", "Kneeling", "Praying", "Planting", "Dig_And_Plant", "Sitting_Ground", "Sitting_Cross_Legged",
 	"Sitting_Idle", "Sitting_Drinking", "Sleeping_Idle", "Defeated"]

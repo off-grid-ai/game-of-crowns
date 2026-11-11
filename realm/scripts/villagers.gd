@@ -32,7 +32,7 @@ var nav = preload("res://scripts/town_nav.gd").new()
 const WALK_SPEED := 0.17  # world units per second: an unhurried 1.4 m/s at town scale
 ## Moves that are walks (a load carried, a barrow pushed): played on the way,
 ## never on the spot. At the far end the load is set down instead.
-const GAITS := {"Carrying": "PickUp_Table", "Wheelbarrow": "Interact"}
+const GAITS := {"Carrying": "PickUp_Table", "Wheelbarrow": "PickUp_Table"}
 ## Moves that need someone there to do them with: talk, argue, haggle, toast.
 ## Chosen only together with a partner (a gathering); never played to the air.
 const SOCIAL := ["Idle_Talking", "Talking", "Talking_2", "Laughing", "Happy_Gesture", "Telling_Secret", "Arguing", "Whispering", "Nodding", "Yelling", "Cheering"]
@@ -1229,13 +1229,13 @@ func _choose_next(a: Dictionary) -> void:
 					if tend == "" or roll >= 0.85:
 						# Winter, or a break: wood and water fetched, the yard put to rights.
 						target = a["bench"] if roll < 0.6 or tend == "" else place(a, "well")
-						a["work"] = _able(["Carrying", "Wheelbarrow", "Fixing_Kneeling", "Interact"], rng)
+						a["work"] = _able(["Carrying", "Wheelbarrow", "Fixing_Kneeling", "PickUp_Table"], rng)
 					else:
 						target = nearby(a["field"], rng, 0.25)
 						a["work"] = tend
 				"crafter":
 					target = a["bench"] if roll < 0.8 else place(a, "market")
-					a["work"] = _able(["Fixing_Kneeling", "Interact", "PickUp_Table", "Carrying", "Wheelbarrow"], rng) if roll < 0.8 else ["Idle_Talking", "Arguing"][rng.randi() % 2]  # at the trade before the door, or haggling over it
+					a["work"] = _able(["Fixing_Kneeling", "PickUp_Table", "Carrying", "Wheelbarrow"], rng) if roll < 0.8 else ["Idle_Talking", "Arguing"][rng.randi() % 2]  # at the trade before the door, or haggling over it
 				"tavern":
 					target = place(a, "tavern")
 					a["work"] = ["Carrying", "Drinking", "Idle_Talking"][rng.randi() % 3]
@@ -1610,7 +1610,7 @@ func _plan_move(doing: String) -> String:
 			["shout", "Yelling"], ["talk", "Idle_Talking"], ["chat", "Idle_Talking"], ["meet", "Idle_Talking"], ["visit", "Idle_Talking"],
 			["weep", "Crying"], ["mourn", "Crying"], ["grie", "Defeated"], ["dance", "Dance"], ["carry", "Carrying"], ["fetch", "Carrying"],
 			["water", "Watering"], ["plant", "Planting"], ["sow", "Planting"], ["harvest", "Pick_Fruit"], ["milk", "Milking"],
-			["mend", "Fixing_Kneeling"], ["fix", "Fixing_Kneeling"], ["build", "Fixing_Kneeling"], ["work", "Interact"], ["trade", "PickUp_Table"],
+			["mend", "Fixing_Kneeling"], ["fix", "Fixing_Kneeling"], ["build", "Fixing_Kneeling"], ["work", "PickUp_Table"], ["trade", "PickUp_Table"],
 			["sell", "PickUp_Table"], ["wait", "Looking_Around"], ["watch", "Looking_Around"]]:
 		if d.contains(key[0]):
 			return key[1]

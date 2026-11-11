@@ -300,12 +300,12 @@ static func post_activities(post: String) -> Array:
 			return [
 				seq("forge", [run(["Hammer_Swing"], 3, 5), brk(["Wiping_Sweat", "Weight_Shift"])]),
 				seq("turn", [once("PickUp_Table"), run(["Hammer_Swing"], 2, 3), once("Looking_Around"), brk(REST)]),
-				seq("quench", [once("PickUp_Table"), step(0.15), once("Interact"), step(0.0), run(["Hammer_Swing"], 1, 2), brk(["Wiping_Sweat", "Arm_Stretching"])]),  # the hot iron into the trough, back to the anvil
+				seq("quench", [once("PickUp_Table"), step(0.15), once("Watering"), step(0.0), run(["Hammer_Swing"], 1, 2), brk(["Wiping_Sweat", "Arm_Stretching"])]),  # the hot iron into the trough, back to the anvil
 			]
 		# --- at the working buildings (town_life._works, works.json) ---
 		"miller":  # at the mill's door: sacks in, flour out
 			return [
-				seq("grind", [once("PickUp_Table"), run(["Interact"], 2, 3), once("Looking_Around"), brk(REST)]),
+				seq("grind", [once("PickUp_Table"), run(["Pushing"], 2, 3), once("Looking_Around"), brk(REST)]),
 				seq("stack", [once("PickUp_Table"), step(0.2), once("PickUp_Table"), step(0.0), brk(REST + SWIG)]),
 				seq("check", [once("Looking_Around"), run(["Thinking", "Pointing_Forward"], 1, 1), brk(["Wiping_Sweat", "Weight_Shift"])]),
 			]
@@ -313,7 +313,7 @@ static func post_activities(post: String) -> Array:
 			return [
 				seq("scrape", [run(["Fixing_Kneeling"]), get_up(), brk(REST)]),
 				seq("soak", [once("PickUp_Table"), step(0.2), run(["Pushing"], 1, 2), step(0.0), brk(["Wiping_Sweat", "Weight_Shift"])]),
-				seq("hang", [once("PickUp_Table"), run(["Interact"], 1, 2), brk(LOOK)]),
+				seq("hang", [once("PickUp_Table"), run(["Pick_Fruit"], 1, 2), brk(LOOK)]),
 			]
 		"queue":  # a line at the granary's door when it runs low
 			return [
@@ -370,7 +370,7 @@ static func post_activities(post: String) -> Array:
 		"stablehand":  # at an inn's or a mill's horses
 			return [
 				seq("fodder", [once("PickUp_Table"), step(0.3), once("PickUp_Table"), step(0.0), brk(REST)]),
-				seq("groom", [run(["Interact"], 2, 3), brk(["Wiping_Sweat", "Weight_Shift"])]),
+				seq("groom", [run(["PickUp_Table", "Pushing"], 2, 3), brk(["Wiping_Sweat", "Weight_Shift"])]),
 				seq("carry", [run(["Carrying"], 1, 1), once("PickUp_Table"), brk(LOOK)]),
 			]
 		"fieldhand":  # a hamlet's fields
@@ -1230,20 +1230,20 @@ static func villager_activities(role: String) -> Array:
 				seq("tend", [go("field"), tend, get_up(), brk(REST + SWIG), step(0.2), run(["Pick_Fruit", "Planting", "Watering"], 3, 5), get_up(), brk(LOOK)]),
 				seq("dig", [go("field"), run(["Digging", "Dig_And_Plant"]), once("Wiping_Sweat"), brk(REST)]),
 				seq("weed", [go("field"), run(["Fixing_Kneeling"]), get_up(), brk(["Relieved_Sigh", "Arm_Stretching", "Weight_Shift"]), step(0.2), run(["Fixing_Kneeling"]), get_up()]),
-				seq("chores", [go("bench"), once("PickUp_Table"), run(["Interact", "Thinking"]), brk(REST)]),  # at the door nothing lies on the ground: no kneeling or shoving at air
+				seq("chores", [go("bench"), once("PickUp_Table"), run(["Watering", "Thinking"]), brk(REST)]),  # at the door nothing lies on the ground: no kneeling or shoving at air
 				seq("barn", [go("field"), once("PickUp_Table"), go("barn.door", "Carrying"), once("PickUp_Table"), brk(REST)]),  # the cut crop to the barn (none: off)
 			]
 		# --- the working buildings' hands (works.json jobs) ---
 		"apprentice":  # the smith's lad: bellows, quench, coal, and the finished arms to the armoury
 			return [
 				seq("bellows", [go("forge.bellows"), face("forge.hearth"), run(["Pushing"], 3, 5), brk(["Wiping_Sweat", "Weight_Shift"])]),
-				seq("quench", [go("forge.trough"), face("forge.trough"), once("PickUp_Table"), run(["Interact"], 1, 2), brk(REST)]),
+				seq("quench", [go("forge.trough"), face("forge.trough"), once("PickUp_Table"), run(["Watering"], 1, 2), brk(REST)]),
 				seq("coal", [go("forge.store"), once("PickUp_Table"), go("forge.hearth", "Carrying"), face("forge.hearth"), once("PickUp_Table"), brk(REST + SWIG)]),
 				seq("deliver", [go("forge.anvil"), once("PickUp_Table"), go("armoury.rack", "Carrying"), face("armoury.rack"), once("PickUp_Table"), stock("rack", 1), brk(REST)]),
 			]
 		"groom":  # the stables: a horse led to the inn's rail or the gate, fetched home, fed and mucked out
 			return [
-				seq("lead", [go("paddock.gate"), lead("take"), go("inn.hitch"), lead("tie"), once("Interact"), brk(REST)]),
+				seq("lead", [go("paddock.gate"), lead("take"), go("inn.hitch"), lead("tie"), once("PickUp_Table"), brk(REST)]),
 				seq("fetch", [go("inn.hitch"), lead("tied"), go("paddock.gate"), lead("free"), brk(LOOK)]),
 				seq("gate", [go("paddock.gate"), lead("take"), go("gate"), run(["Looking_Around", "Pointing_Forward", "Waving"], 1, 2), go("paddock.gate"), lead("free"), brk(REST)]),
 				seq("fodder", [go("barn.door"), once("PickUp_Table"), go("paddock.gate", "Carrying"), once("PickUp_Table"), brk(REST)]),
@@ -1268,7 +1268,7 @@ static func villager_activities(role: String) -> Array:
 				seq("pray", [go("sept"), run(["Praying", "Kneeling"], 2, 3), get_up(), brk(LOOK)]),
 				seq("preach", [go("well"), run(["Talking", "Idle_Talking"], 2, 3), once("Bow"), brk(["Weight_Shift"])]),
 				seq("alms", [go("bench"), once("PickUp_Table"), go("sept", "Carrying"), once("PickUp_Table"), brk(REST)]),
-				seq("tend", [go("sept"), run(["Interact", "Praying"]), brk(REST)]),
+				seq("tend", [go("sept"), run(["Praying", "Kneeling"]), brk(REST)]),
 			]
 		"tavern":  # a drinker
 			return [
@@ -1280,7 +1280,7 @@ static func villager_activities(role: String) -> Array:
 		"keeper":  # the tavern keeper
 			return [
 				seq("serve", [go("tavern"), once("PickUp_Table"), step(0.3), once("PickUp_Table"), run(["Idle_Talking", "Nodding"], 1, 2), brk(REST)]),
-				seq("counter", [go("tavern"), run(["Interact"]), brk(["Wiping_Sweat", "Weight_Shift"])]),
+				seq("counter", [go("tavern"), run(["PickUp_Table"]), brk(["Wiping_Sweat", "Weight_Shift"])]),
 				seq("barrels", [go("bench"), once("PickUp_Table"), go("tavern", "Carrying"), once("PickUp_Table"), brk(REST)]),
 				seq("lute", [go("tavern"), run(["Lute_Playing"], 2, 3), brk(["Bored"])]),
 			]
@@ -1300,7 +1300,7 @@ static func villager_activities(role: String) -> Array:
 			]
 		"crafter":
 			return [
-				seq("craft", [go("bench"), run(["Interact", "Thinking"]), once("Wiping_Sweat"), brk(REST)]),
+				seq("craft", [go("bench"), run(["PickUp_Table", "Thinking"]), once("Wiping_Sweat"), brk(REST)]),
 				seq("fetch", [go("well"), once("PickUp_Table"), go("bench", "Carrying"), once("PickUp_Table"), brk(REST)]),
 				seq("sell", [go("market"), run(["Idle_Talking", "Arguing"], 2, 3), run(["Nodding"], 1, 1), brk(LOOK)]),
 			]
@@ -1403,7 +1403,7 @@ static func give_villager(person: Node3D, a: Dictionary, vill: Node) -> bool:
 		# The tavern keeps late: its folk are there till the night's end, home at dawn.
 		night.add_child(block_is(["night"]))
 		night.add_child(go("tavern"))
-		night.add_child(run(["Drinking", "Idle_Talking", "Laughing"] if role == "tavern" else ["Interact", "Idle_Talking"], 1, 2))
+		night.add_child(run(["Drinking", "Idle_Talking", "Laughing"] if role == "tavern" else ["PickUp_Table", "Idle_Talking"], 1, 2))
 		night.add_child(brk(["Drunk_Idle", "Weight_Shift"] if role == "tavern" else REST))
 		life.add_child(night)
 		night = BTSequence.new()

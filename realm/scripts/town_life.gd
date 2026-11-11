@@ -1035,7 +1035,7 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 		_prop(life, center, "Coin_Pile", at + side * 0.04, 0.0, 1.0, TABLE_TOP)
 		_prop(life, center, "Scroll_1", at - side * 0.04, 0.0, 1.0, TABLE_TOP)
 		_prop(life, center, "Chest_Wood", at + edge.normalized() * 0.2, atan2(side.x, side.z), 1.0, 0.0, 0.07)
-		var collector := _stand(root, life, center, at + edge.normalized() * 0.13, "townsfolk", "Interact", rng.randi(), Color(0.45, 0.4, 0.3), 0.1)
+		var collector := _stand(root, life, center, at + edge.normalized() * 0.13, "townsfolk", "PickUp_Table", rng.randi(), Color(0.45, 0.4, 0.3), 0.1)
 		if collector:
 			collector.rotation.y = atan2(-edge.x, -edge.z)
 			_mind(collector, "trade", center)
@@ -1231,7 +1231,7 @@ func _mill(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, kind: Str
 	var sp: Dictionary = b["spots"]
 	var door: Vector3 = sp.get("door", b["at"] + _front(b) * 0.25)
 	for i in millers:
-		var m := _stand(root, life, center, door, "peasant", "Interact", rng.randi(), Color.WHITE, 0.2)
+		var m := _stand(root, life, center, door, "peasant", "PickUp_Table", rng.randi(), Color.WHITE, 0.2)
 		if m:
 			_face(m, b["at"])
 			_mind(m, "miller", center)
