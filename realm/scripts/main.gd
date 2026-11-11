@@ -45,6 +45,7 @@ var _shot: Dictionary:  # the command-line flags, read here wherever a test shot
 	set(v):
 		shots._shot = v
 const News := preload("res://scripts/news.gd")
+const Juice := preload("res://scripts/juice.gd")  # the juice switch and numbers (data/juice.json)
 var news := News.new(self)  # the player's news (news.gd): the chip, the Watch offer, the edge arrow, Space
 const Overview := preload("res://scripts/overview.gd")
 var over := Overview.new(self)  # the realm's painted map, the far view (overview.gd)
@@ -52,6 +53,8 @@ const PerfTools := preload("res://scripts/perf_tools.gd")
 var perf := PerfTools.new(self)  # the dev measuring aids (perf_tools.gd): perf.log, --profile, GOC_LOOK
 const IntroStory := preload("res://scripts/intro_story.gd")
 var story := IntroStory.new(self)  # the intro story (intro_story.gd): when it is due, and telling it
+var _music_dark := false  # juice: the music turned dark by the realm's tension (with its lower mark to settle)
+var order_at := [Vector3.INF, -1]  # juice: where the King's own order lands, and the frame its result was told there
 var hand_prompts: Node = null  # the v2 opening's Hand prompts (hand_prompts.gd), when --opening=v2
 const Walking := preload("res://scripts/walking.gd")
 var walking := Walking.new(self)  # walking as a character (walking.gd): control, mic, interiors, the King
@@ -425,8 +428,27 @@ func _ready() -> void:
 			lore.open(int(_shot["lore"])))
 	bridge.paid.connect(func(_cost): sound.ui("coins"))
 	# Juice (juice.json): the seal is heard at the click, not when the realm answers; a refusal still sounds its error.
-	bridge.ordered.connect(func(): if Juice.on(): sound.ui("seal"))
-	bridge.command_done.connect(func(ok, _t): if Juice.on() and not ok: sound.ui("error"))
+	# An order of his own (not a court ruling, which its card answers): its result lands at the town as the
+	# latest news, edge arrow and Space to look and back (news.point_at; Frostpunk's consequence on the map).
+	bridge.ordered.connect(func(city_id, matter):
+		if not Juice.on():
+			return
+		sound.ui("seal")
+		order_at[0] = Vector3.INF
+		if matter == "" and terrain != null and terrain.width > 0:
+			for c in bridge.world.get("cities", []):
+				if int(c.get("id", -1)) == city_id:
+					order_at[0] = terrain.world_pos(float(c.get("x", 0)), float(c.get("y", 0)))
+	)
+	bridge.command_done.connect(func(ok, text):
+		if not Juice.on():
+			return
+		if not ok:
+			sound.ui("error")
+		elif order_at[0] != Vector3.INF and String(text) != "":
+			news.point_at(order_at[0], String(text), func(): pass)
+			order_at[1] = Engine.get_process_frames()  # told at the town: no toast as well
+		order_at[0] = Vector3.INF)
 	bridge.sealed.connect(func(): if not Juice.on(): sound.ui("seal"))  # the royal seal pressed into the wax
 	ui.event_chosen.connect(func(i):
 		if Juice.on():
@@ -447,6 +469,8 @@ func _ready() -> void:
 		# A ruling's result on the court card that shows it (one court flow), else a toast.
 		if ui.court.result_here(ok, text):
 			return
+		if ok and order_at[1] == Engine.get_process_frames():
+			return  # juice: an order's result is told at its town, one thing at a time
 		ui.toast(text if ok else "The crown cannot: " + text))
 	if _shot.has("path"):
 		get_tree().create_timer(float(_shot.get("wait", 8.0))).timeout.connect(_take_shot)
@@ -678,7 +702,15 @@ func _listen() -> void:
 	var season := look_season(bridge.world)
 	sound.set_view(rig.distance, near, season, sky3d != null and sky3d.is_night(), String(awareness.realm.get_var(&"weather", "clear", false)) if awareness else "clear")
 	var th: Dictionary = bridge.world.get("threat", {})
-	sound.mood("dead" if int(th.get("north", 0)) > 0 and rig.distance > 60.0 else ("tension" if String(th.get("usurper", "none")) != "none" else "calm"))
+	var dark := String(th.get("usurper", "none")) != "none"
+	# Juice (juice.json; Kingdom Two Crowns): the music follows the realm's tension, turning dark above one mark and
+	# settling below a lower one (no flicker between the two).
+	var rg = bridge.world.get("reign")
+	var t = rg.get("tension") if rg is Dictionary else null
+	if Juice.on() and t != null:
+		_music_dark = float(t) >= Juice.knob("music_tension_above", 0.55) or (_music_dark and float(t) > Juice.knob("music_calm_below", 0.35))
+		dark = dark or _music_dark
+	sound.mood("dead" if int(th.get("north", 0)) > 0 and rig.distance > 60.0 else ("tension" if dark else "calm"))
 
 
 ## The chronicle, heard: each kind of event its own stinger.

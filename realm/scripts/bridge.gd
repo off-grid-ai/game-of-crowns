@@ -10,6 +10,7 @@ signal realm_changed
 signal decrees_changed(list: Array)
 signal paid(cost: float)  # a decree went through and the treasury paid for it
 signal sealed  # a decree took one of the King's royal seals (bridge seals.js)
+signal ordered(city_id: int, matter: String)  # an order leaves the King's hand, before the realm answers (juice: the seal is heard at the click)
 
 var _reign_id := ""
 
@@ -60,6 +61,7 @@ func _poll() -> void:
 
 
 func decree(action: String, city_id: int, building := "", to := -1, matter := "") -> void:
+	ordered.emit(city_id, matter)
 	var body := {"action": action, "city": city_id}
 	if matter != "":
 		body["matter"] = matter  # the court matter it answers: one request, a ruling (bridge routes_decree.js)

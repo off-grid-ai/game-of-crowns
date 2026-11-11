@@ -456,6 +456,8 @@ export function reignInfo(ctx) {
     souls: world?.cities?.reduce((t, c) => t + soulsOf(c.size), 0) ?? 0,
     next,
     seals: Seals.view(meta),
+    // The realm's tension this season (director.js, 0 calm to 1 on fire): the music follows it (realm juice.json).
+    tension: meta.director?.curve?.at(-1)?.t ?? null,
     event: (() => { const e = Events.view(meta); return e?.up ? { ...e, seconds: Next.secondsToSeasonEnd(ctx.turnSeconds) } : e; })(),
   };
 }

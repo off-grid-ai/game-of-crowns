@@ -8,6 +8,7 @@ extends RefCounted
 const Features := preload("res://scripts/features.gd")
 const T := preload("res://scripts/theme.gd")
 const UI := preload("res://scripts/ui.gd")
+const Juice := preload("res://scripts/juice.gd")
 
 var ui: UI  # the interface that owns this bar: its signals, its building blocks, its other cards
 
@@ -505,6 +506,16 @@ var _aim_fill: ColorRect
 var _aim_count: Label
 var _aim_frac := -1.0  # the fill shown, eased toward the real one
 var _aim_told := ""  # the last aim met, toasted once
+var _gold_shown := -1  # the treasury as the bar shows it now (juice counts it to the new sum)
+var _gold_to := -1
+var _gold_net := 0
+var _gold_tw: Tween
+
+
+func _gold_line(sum: int, net: int) -> String:
+	return ui.heads(sum) + ("  %s%s a season" % ["▲" if net > 0 else "▼", ui.heads(absi(net))] if net != 0 else "")
+
+
 var _seals: Label  # the King's royal seals this season, as gold pips (bridge seals.js)
 var _seals_n := -1  # the count shown, to mark one being spent
 var _event_row: Button  # an event card waiting (event_card.gd): its title and the season's clock, gold
@@ -602,11 +613,22 @@ func _show_heading(r: Dictionary) -> void:
 ## The realm's numbers in the bar and the reign's line under the date, from the
 ## world as the realm reports it (ui.set_world hands over the crown's report).
 func _show_world(world: Dictionary, c: Dictionary) -> void:
-	_gold.text = ui.heads(int(c.get("treasury", 0)) * UI.CROWNS)
 	# What the crown takes in each season, net of the court and castles: where money comes from.
 	var net := int(c.get("perSeason", 0)) * UI.CROWNS
-	if net != 0:
-		_gold.text += "  %s%s a season" % ["▲" if net > 0 else "▼", ui.heads(absi(net))]
+	var sum := int(c.get("treasury", 0)) * UI.CROWNS
+	# Juice (juice.json; Kingdom Two Crowns' coins): a spend is counted down, coin by coin, not swapped.
+	if Juice.on() and _gold_shown >= 0 and sum != _gold_shown and sum != _gold_to:
+		_gold_to = sum
+		if _gold_tw:
+			_gold_tw.kill()
+		_gold_tw = ui.create_tween()
+		_gold_tw.tween_method(func(v: float): _gold_shown = roundi(v); _gold.text = _gold_line(_gold_shown, _gold_net),
+			float(_gold_shown), float(sum), Juice.knob("coins_seconds", 0.8)).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	elif not (_gold_tw and _gold_tw.is_running()):
+		_gold_shown = sum
+		_gold_to = sum
+	_gold_net = net
+	_gold.text = _gold_line(_gold_shown, net)
 	_peace.text = "%d%%" % int(float(world.get("peace", 1)) * 100)
 	# Why the peace is what it is, and what raises it.
 	var feuds := PackedStringArray()
@@ -706,6 +728,10 @@ func _show_seals(sl) -> void:
 	if _seals_n >= 0 and n < _seals_n:
 		_seals.modulate.a = 0.35
 		ui.create_tween().tween_property(_seals, "modulate:a", 1.0, 0.5)
+		if Juice.on():  # the seal pressed: the pips swell and settle (juice.json seal_punch)
+			_seals.pivot_offset = _seals.size / 2.0
+			_seals.scale = Vector2.ONE * Juice.knob("seal_punch", 1.6)
+			ui.create_tween().tween_property(_seals, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_seals_n = n
 
 
