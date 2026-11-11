@@ -50,3 +50,19 @@ each shot the same frame. Reference: Age of Empires IV and Anno 1800 town camera
     shot keeps the interface, to check that path.
 12. **The yard washing**, close by a cottage (`--city=Rosehall --dist=6`, near the edge houses): linen, faded blue,
     madder and wool cloth on the lines, with their weave; no flat salmon slabs. Before: batch 7's breach-clip-08.
+
+## The army's frame rate, measured clean (Mac's bar: 10 fps)
+
+Batch 7's army launch logged fps=3 at 6,000 men (41 regiments, ~3,400 draws, 142M prims), but read whole the log
+says the capture was the cost, not the army: 25 readings of 2-4 fps all fell while the harness saved 2400x1380
+frames and checks.gd ran its people checks (225 CHECK lines), and the 6 readings after it, the same 6,000 men on
+screen at d12, ran 23-36 fps. The men add one pass of geometry: 6,000 x 5,296 triangles = 32M, the log's 110M -> 142M
+step (knight and knight_v2 are the same mesh). The other 110M is the realm itself at film quality. The d50 launch
+logged no ARMY line at all (it never reached the army). So, before any change to the army's drawing:
+
+13. **Army, no capture:** `--army-spike=6000 --army-shape=line --dist=12`, then `--dist=50`, each with `wait 20`
+    before its first snap and `GOC_PERF_PROBE=1`; take fps from the ARMY lines of the uncaptured stretch only, and
+    the probe's per-system split (army spike, units, villagers, towns...). Then once with `--knight=v2` and
+    `--army-look=painted`, the same. Judge: fps >= 10 with every man drawn; which system owns the process time.
+14. **A battle, no capture:** `--army-battle=3000 --dist=10`, `wait 90`, then read the BATTLE fps lines while the fronts
+    fight.
