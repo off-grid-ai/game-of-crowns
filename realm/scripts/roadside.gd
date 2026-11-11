@@ -599,45 +599,10 @@ func _hold(person: Node3D, component: String) -> void:
 	Scenes._hold(skel, "RightHand", (load(path) as PackedScene).instantiate(), Scenes.SWORD_GRIP)
 
 
-## A beast of the farm (the catalogue's cow, sheep, pig: Quaternius, animated), sized to its true
-## length in metres (roadside.json animals) and stood on the ground, both from its posed mesh
-## (beast_fit), and set going on its idle or its walk.
-static var _beast_fit := {}  # kind -> [scale, lift]: what fits it to its length and stands its hooves on y = 0
+## A beast of the farm, standing about living its idle life or walking (animals.gd make, the one
+## place a beast is made).
 func _animal(kind: String, rng: RandomNumberGenerator, walking := false) -> Node3D:
-	var path := Real.path_of(kind)
-	if path == "" or not ResourceLoader.exists(path):
-		return null
-	if not _beast_fit.has(kind):
-		_beast_fit[kind] = beast_fit(kind, Data.num("roadside", "animals.%s" % kind, 1.5))
-	var fit: Array = _beast_fit[kind]
-	if float(fit[0]) <= 0.0:
-		return null
-	var model: Node3D = (load(path) as PackedScene).instantiate()
-	var root := Node3D.new()
-	root.name = kind.capitalize()
-	model.scale = Vector3.ONE * float(fit[0])
-	model.position.y = float(fit[1])
-	model.rotation.y = rng.randf_range(-0.3, 0.3)
-	root.add_child(model)
-	for g in model.find_children("*", "GeometryInstance3D", true, false):
-		(g as GeometryInstance3D).visibility_range_end = float(_d.get("fade", {}).get("small", 22.0))
-	var ap := model.find_children("*", "AnimationPlayer", true, false)
-	if not ap.is_empty():
-		var anim: AnimationPlayer = ap[0]
-		# A beast standing about lives its own idle life (animals.gd, realm/data/animals.json: a cow
-		# grazes, a pig roots); one on the road, or a kind with no life in data, plays as before.
-		if not walking and not preload("res://scripts/animals.gd").live(model, kind, rng).is_empty():
-			preload("res://scripts/anim_lod.gd").add(anim)
-			return root
-		var want := "Walk" if walking else "Idle"
-		for clip in anim.get_animation_list():
-			if String(clip).ends_with("|" + want) or String(clip) == want:
-				anim.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
-				anim.play(clip)
-				anim.seek(rng.randf() * 2.0, true)
-				break
-		preload("res://scripts/anim_lod.gd").add(anim)
-	return root
+	return preload("res://scripts/animals.gd").make(kind, rng, walking)
 
 
 ## [scale, lift] for an animated beast: its skinned meshes measured as they stand at rest, each

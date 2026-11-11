@@ -82,6 +82,64 @@ static func live(model: Node3D, kind: String, rng: RandomNumberGenerator, busy :
 	return moves.map(func(m): return m[0])
 
 
+## A beast of the farm (the catalogue's cow, sheep, pig: Quaternius, animated), sized to its true
+## length (roadside.json animals, metres) and stood on the ground from its posed mesh (roadside.gd
+## beast_fit), drawn only near the camera; standing, it lives its idle life (live), walking it plays
+## its walk. Whoever moves it says so with walk(beast, true): its idle life waits meanwhile. The one
+## place a beast is made (the roadside, a town's yard, the fields and flocks). null with no model.
+static var _fits := {}  # kind -> [scale, lift]
+static func make(kind: String, rng: RandomNumberGenerator, walking := false) -> Node3D:
+	var path := preload("res://scripts/realistic.gd").path_of(kind)
+	if kind == "" or path == "" or not ResourceLoader.exists(path):
+		return null
+	if not _fits.has(kind):
+		_fits[kind] = load("res://scripts/roadside.gd").beast_fit(kind, Data.num("roadside", "animals.%s" % kind, 1.5))
+	var fit: Array = _fits[kind]
+	if float(fit[0]) <= 0.0:
+		return null
+	var model: Node3D = (load(path) as PackedScene).instantiate()
+	var root := Node3D.new()
+	root.name = kind.capitalize()
+	root.set_meta("beast", kind)
+	model.scale = Vector3.ONE * float(fit[0])
+	model.position.y = float(fit[1])
+	model.rotation.y = rng.randf_range(-0.3, 0.3)
+	root.add_child(model)
+	for g in model.find_children("*", "GeometryInstance3D", true, false):
+		(g as GeometryInstance3D).visibility_range_end = Data.num("roadside", "fade.small", 22.0)
+	var ap := model.find_children("*", "AnimationPlayer", true, false)
+	if ap.is_empty():
+		return root
+	var anim: AnimationPlayer = ap[0]
+	var lived := live(model, kind, rng, func() -> bool: return bool(root.get_meta("walking", false)))
+	if walking or lived.is_empty():
+		root.set_meta("walking", walking)
+		_loop(anim, "Walk" if walking else "Idle", rng)
+	preload("res://scripts/anim_lod.gd").add(anim)
+	return root
+
+
+## Sets a beast made by make() walking (its walk, its idle life waiting) or standing again (its
+## idle life takes up within animals.json busyRetry seconds).
+static func walk(beast: Node3D, on: bool) -> void:
+	if beast == null or bool(beast.get_meta("walking", false)) == on:
+		return
+	beast.set_meta("walking", on)
+	var ap := beast.find_children("*", "AnimationPlayer", true, false)
+	if on and not ap.is_empty():
+		_loop(ap[0], "Walk", null)
+
+
+static func _loop(anim: AnimationPlayer, want: String, rng: RandomNumberGenerator) -> void:
+	var clip := _clip(anim, want)
+	if clip == "":
+		return
+	anim.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
+	anim.play(clip, Data.num("animals", "blend", 0.4))
+	if rng:
+		anim.seek(rng.randf() * 2.0, true)
+
+
 ## The player's clip of this name, however its file prefixes it ("Armature|Idle",
 ## "AnimalArmature|Eating", "idle"): the name after the last bar, any case. "" if none.
 static func _clip(anim: AnimationPlayer, name: String) -> String:

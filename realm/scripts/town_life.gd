@@ -1289,31 +1289,9 @@ static func _weighed(rows: Array, rng: RandomNumberGenerator) -> String:
 	return String(rows[-1][0]) if not rows.is_empty() else ""
 
 
-## A farm beast (the catalogue's cow, sheep, pig), fitted to its true length and
-## stood on the ground as the roadside's are (roadside.gd beast_fit), living its
-## idle life (animals.gd). null when this build has no model for the kind.
-static var _yard_fit := {}
+## A farm beast living its idle life (animals.gd make, the one place a beast is made).
 func _beast(kind: String, rng: RandomNumberGenerator) -> Node3D:
-	var path := Real.path_of(kind)
-	if kind == "" or path == "" or not ResourceLoader.exists(path):
-		return null
-	if not _yard_fit.has(kind):
-		_yard_fit[kind] = preload("res://scripts/roadside.gd").beast_fit(kind, Data.num("roadside", "animals.%s" % kind, 1.5))
-	var fit: Array = _yard_fit[kind]
-	if float(fit[0]) <= 0.0:
-		return null
-	var model: Node3D = (load(path) as PackedScene).instantiate()
-	var beast := Node3D.new()
-	beast.name = kind.capitalize()
-	beast.set_meta("beast", kind)
-	model.scale = Vector3.ONE * float(fit[0])
-	model.position.y = float(fit[1])
-	beast.add_child(model)
-	for g in model.find_children("*", "GeometryInstance3D", true, false):
-		(g as GeometryInstance3D).visibility_range_end = Data.num("roadside", "fade.small", 22.0)
-	if not preload("res://scripts/animals.gd").live(model, kind, rng).is_empty():
-		preload("res://scripts/anim_lod.gd").add(model.find_children("*", "AnimationPlayer", true, false)[0])
-	return beast
+	return preload("res://scripts/animals.gd").make(kind, rng)
 
 
 func _mill(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, kind: String, tick: Works.Tick, millers: int, rng: RandomNumberGenerator) -> void:
