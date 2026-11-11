@@ -186,7 +186,7 @@ func _name_decrees(c: Dictionary, house: Dictionary) -> void:
 		COST[a] = int(_decrees.get(a, {}).get("cost", 0)) * ui.CROWNS
 	for a in names:
 		_decree_btns[a].text = names[a]
-		_decree_btns[a].visible = names[a] != ""
+		_decree_btns[a].visible = names[a] != "" and not bool(_decrees.get(a, {}).get("off", false))  # cut from the King's orders (bridge decrees.json off)
 		var short: bool = ui.purse * 100 < int(COST.get(a, 0))
 		# The crown's great occasions come once a year: the levy, the banners, a
 		# feast at court (a feast in a lord's honour is another matter).

@@ -7,7 +7,7 @@
 // server.js on each call (server.js keeps wrappers of the same names).
 
 import { houseFor, cityName } from "./narrator.js";
-import { DECREES, bannersReady, ECONOMY } from "./crown.js";  // ECONOMY.thin: below it the treasury is thin (data/economy.json)
+import { DECREES, bannersReady, ECONOMY, peaceScale } from "./crown.js";  // ECONOMY.thin: below it the treasury is thin (data/economy.json)
 import { BANDS } from "./favour.js";
 import { calendar } from "./stakes.js";
 import * as chron from "./chronicles.js";
@@ -59,7 +59,7 @@ export function counsel(ctx, players, cities, threat) {
       : "Under 25, a lord may raise his banners against you; two such houses and one claims the throne.";
     out.push({ urgency: f < BANDS.cooling ? 100 : 70, subject: cold.id, text: `${cold.house.name} grows cold to the crown: favour ${f}`,
       why: rule + cause,
-      acts: [...back, ...lighter, { label: "Gift crowns", action: "gift", city: seatOf(cold.id).id }, { label: "A feast in their honour", action: "feast", city: seatOf(cold.id).id }, ...match] });
+      acts: [...back, ...lighter, { label: "A feast in their honour", action: "feast", city: seatOf(cold.id).id }, ...match] });
   }
   // The usurper by name, how long until they march, and how to stop it: the
   // whispers fade once the angry houses (under 25) are won back.
@@ -70,7 +70,7 @@ export function counsel(ctx, players, cities, threat) {
     const angry = great.filter((p) => favourOf(p.id) < BANDS.cooling).map((p) => p.house.name.replace(/^House /, ""));
     out.push({ urgency: 95, subject: pretender?.id ?? null, occur: threat.since, text: `${claimant} whispers of a better claim to the throne`,
       why: `In ${left} season${left === 1 ? "" : "s"} they march on Kingsmere, unless the angry houses are won back above 25: ${angry.join(", ") || "none now"}.`,
-      acts: [pretender && seatOf(pretender.id) ? { label: `Gift crowns to ${claimant.replace(/^House /, "")}`, action: "gift", city: seatOf(pretender.id).id } : null, { label: "Buy off their claim", action: "buyoff" }, { label: "Call the banners", action: "banners" }].filter(Boolean) });
+      acts: [pretender && seatOf(pretender.id) ? { label: `A feast for ${claimant.replace(/^House /, "")}`, action: "feast", city: seatOf(pretender.id).id } : null, { label: "Buy off their claim", action: "buyoff" }, { label: "Call the banners", action: "banners" }].filter(Boolean) });
   } else if (threat.usurper !== "none") out.push({ urgency: 100, kind: "march", subject: pretender?.id ?? null, occur: threat.since, text: `${claimant}'s host marches on Kingsmere`,
     why: `${(threat.theirs * 200).toLocaleString("en-US")} of their men about the walls against ${(threat.ours * 200).toLocaleString("en-US")} of yours: ${threat.theirs > threat.ours ? "as things stand, the walls would fall" : "for now, the walls would hold"}. If Kingsmere falls, the crown is lost. Loyal houses (favour 35 and up) send men to the banners; the royal levy is yours to pay for. Or buy them off: gold for their claim.`, acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }, { label: "Buy them off", action: "buyoff" }] });
   // After a march: the King decides what becomes of the house that rose.
@@ -105,7 +105,7 @@ export function counsel(ctx, players, cities, threat) {
       : `You have done nothing for us in ${since === 1 ? "a season" : `${since} seasons`}. Set that right`;
     out.push({ urgency: 100, kind: "ultimatum", subject: p.id, occur: t.at, text: `${p.house.name} sends the crown an ultimatum`,
       why: `${lord ? lord.name : `The lord of ${short}`}: "${grievance}, or ${short} raises its banners." Answer with a favour they can see; silence is a refusal.`,
-      acts: [{ label: "A feast in their honour", action: "feast", city: seatOf(p.id).id }, { label: "Gift crowns", action: "gift", city: seatOf(p.id).id },
+      acts: [{ label: "A feast in their honour", action: "feast", city: seatOf(p.id).id },
         !wardTaken(p.id) ? { label: `Take their heir as your ward (${short} ${wardHurt}; ${wardFor})`, action: "ward", city: seatOf(p.id).id } : null].filter(Boolean) });
     for (let i = out.length - 2; i >= 0; i--) if (out[i].text.startsWith(`${p.house.name} grows cold`)) out.splice(i, 1);
   }
@@ -128,8 +128,8 @@ export function counsel(ctx, players, cities, threat) {
     if ((d.next ?? 0) - threat.ours * 200 <= 0) d.hold = true;
     const onlyBanners = !d.hold && gap <= 0;
     out.push({ urgency: d.hold ? 40 : 75, occur: (world?.turn ?? 0) + (d.in ?? 0), text: d.hold ? "The dead come south, and you would hold" : "The dead come south",
-      why: `${(d.last ?? 0).toLocaleString("en-US")} of them fell ${where} last time; ${(d.next ?? 0).toLocaleString("en-US")} will come with the next.${when} Against them: your ${(threat.ours * 200).toLocaleString("en-US")} fighting men${bannerMen ? `, and about ${bannerMen.toLocaleString("en-US")} more if you call the banners` : " (the banners are already called this year)"}: ${d.hold ? "your own men would hold" : gap <= 0 ? "with the banners, you would hold" : gap <= 1600 ? `you would lose by ${gap.toLocaleString("en-US")}: a levy (600) and sellswords (1,000) close it` : `you would lose by ${gap.toLocaleString("en-US")}, even with a levy and sellswords`}. If every northern town falls, the realm falls with it.`,
-      acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }, { label: "Hire sellswords", action: "sellswords" }].filter((a) => !d.hold && (!onlyBanners || a.action === "banners")) });
+      why: `${(d.last ?? 0).toLocaleString("en-US")} of them fell ${where} last time; ${(d.next ?? 0).toLocaleString("en-US")} will come with the next.${when} Against them: your ${(threat.ours * 200).toLocaleString("en-US")} fighting men${bannerMen ? `, and about ${bannerMen.toLocaleString("en-US")} more if you call the banners` : " (the banners are already called this year)"}: ${d.hold ? "your own men would hold" : gap <= 0 ? "with the banners, you would hold" : gap <= 600 ? `you would lose by ${gap.toLocaleString("en-US")}: a levy (600) closes it` : `you would lose by ${gap.toLocaleString("en-US")}, even with a levy`}. If every northern town falls, the realm falls with it.`,
+      acts: [{ label: "Call the banners", action: "banners" }, { label: "Raise the royal levy", action: "levy" }].filter((a) => !d.hold && (!onlyBanners || a.action === "banners")) });
   }
   // A town the King has fed this year isn't brought to him again while the grain lasts.
   const hungry = cities.find((c) => c.famine && !((meta.relieved?.[c.id] ?? -99) > (world?.turn ?? 0) - 4));
@@ -149,23 +149,20 @@ export function counsel(ctx, players, cities, threat) {
     const [weak, strong] = [war, foe].sort((a, b) => (a.units ?? 0) - (b.units ?? 0));
     const keeper = great.filter((p) => p.id !== war.id && p.id !== foe.id).sort((a, b) => favourOf(b.id) - favourOf(a.id))[0];
     const acts = [
-      cold
-        ? (keeper ? { label: `Send ${keeper.house.name.replace(/^House /, "")} to keep the peace`, action: "settle", city: seatOf(war.id)?.id, to: foe.id } : null)
-        : { label: "Command peace", action: "peace", city: seatOf(war.id)?.id, to: foe.id },
-      { label: `Back ${weak.house.name.replace(/^House /, "")}, the weaker (${((weak.units ?? 0) * 200).toLocaleString("en-US")} men to ${((strong.units ?? 0) * 200).toLocaleString("en-US")})`, action: "back", city: seatOf(weak.id)?.id, to: strong.id },
+      { label: "Make them stop", action: "peace", city: seatOf(war.id)?.id, to: foe.id, scale: peaceScale(favourOf(war.id), favourOf(foe.id)) },
       { label: "Sit it out", ui: "sitout", war: `${war.id}:${foe.id}` },
       matchFor(ctx, war.id, foe.id) ? { label: "Wed them to each other", action: "marriage", city: seatOf(war.id)?.id, to: foe.id } : null,
     ].filter((a) => a && (a.ui || a.city !== undefined));
     const why = cold
-      ? `${cold.house.name} is too cold to obey a royal peace (favour ${Math.round(favourOf(cold.id))}, it needs 40). Warm them first, or bind the two by marriage.`
-      : "Every season of war burns fields and lowers the realm's peace. Both are warm enough to obey the King's peace.";
+      ? `Every season of war burns fields and lowers the realm's peace. ${cold.house.name} is cold to the crown: made to stop, it will resent it, and the blood-price comes dearer. Or bind the two by marriage.`
+      : "Every season of war burns fields and lowers the realm's peace. Both are warm enough to stop gladly at the King's word.";
     out.push({ urgency: 50, text: `${war.house.name} and ${foe.house.name} are at war`, why, acts: acts.filter((a) => a.city !== undefined) });
   }
   if (purse < ECONOMY.thin) out.push({ urgency: 40, text: "The royal treasury is thin", why: "Every decree costs crowns; a higher tithe fills the purse but cools the houses.", acts: [{ label: "Raise the tithe", ui: "tithe_up" }] });
   if (!out.length) out.push({ urgency: 0, text: "The realm is quiet", why: "A good season to win a house's love before you need it.", acts: [] });
   // Every order shows its price before the King gives it, as the town card does: "Command peace  6k cr".
   // And what it does, so the King weighs effect against price: "Gift crowns  15k cr · +10".
-  const DOES = { sellswords: "1,000 men", back: "+12 them, −12 the other", settle: "truce; keeper +6, both −3", sitout: "the war goes on",  tithe_down: `slower to cool; ${(Math.round(lastSeason.net * 50) / 1000).toFixed(1)}k less a season`, grant: "+20 them, −30 the holder", gift: "+10", feast: "+15", relief: "+12, eases it, cannot end it", marriage: "+8 each, bound in peace", peace: "+2 each, truce", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2", alliance: "sworn 4 years, +5", march: "the host besieges; −25 them" };
+  const DOES = { sitout: "the war goes on",  tithe_down: `slower to cool; ${(Math.round(lastSeason.net * 50) / 1000).toFixed(1)}k less a season`, grant: "+20 them, −30 the holder", gift: "+10", feast: "+15", relief: "+12, eases it, cannot end it", marriage: "+8 each, bound in peace", peace: "a truce; a cold house resents it", banners: "+3 if they come", levy: "600 men", buyoff: "+25, others −2", alliance: "sworn 4 years, +5", march: "the host besieges; −25 them" };
   // The realm's lesser matters: plague, unrest, a thin granary, bare walls, a
   // house grown too strong, a loyal one unrewarded, a full treasury, an heir of
   // age. The Hand raises the one he has raised least lately, so his counsel
@@ -195,7 +192,7 @@ export function counsel(ctx, players, cities, threat) {
   // the ward; gameplay review #4 and its cut list.)
   const loyal = great.filter((p) => favourOf(p.id) >= 75 && seatOf(p.id)).sort((a, b) => favourOf(b.id) - favourOf(a.id))[0];
   if (loyal) occasions.push({ kind: "loyal", urgency: 30, text: `${loyal.house.name} has served you well`, why: `Favour ${Math.round(favourOf(loyal.id))}: they answer every summons. Loyalty left unrewarded cools, and the other houses watch what it earns.`,
-    acts: [{ label: `Swear an alliance with ${short(loyal)}`, action: "alliance", city: seatOf(loyal.id).id }, { label: "Gift crowns", action: "gift", city: seatOf(loyal.id).id },
+    acts: [{ label: `Swear an alliance with ${short(loyal)}`, action: "alliance", city: seatOf(loyal.id).id },
       lacks(seatOf(loyal.id), "Marketplace") ? { label: `Pay for a market at ${seatOf(loyal.id).title}`, action: "build", building: "market", city: seatOf(loyal.id).id } : null].filter(Boolean) });
   const crownSeat = cities.find((c) => players.find((p) => p.id === c.owner)?.house.crown && c.capital);
   if (purse >= 600 && crownSeat) occasions.push({ kind: "rich", urgency: 30, text: "The royal treasury is full", why: "Gold in a chest wins nobody. Spend it where the realm will see it, or ease the tithe and let the houses keep more.",
@@ -236,6 +233,8 @@ export function counsel(ctx, players, cities, threat) {
   // The threat the storyteller raised (director.js): a matter at its place, more urgent as it grows.
   const raised = Director.matter(meta);
   if (raised) out.push(raised);
+  // An order cut from the King's orders (data/decrees.json off) is never offered, whoever raised the matter.
+  for (const o of out) o.acts = o.acts.filter((a) => !DECREES[a.action]?.off);
   for (const o of out) o.acts = o.acts.filter((a) => !(a.action === "banners" && (!bannersReady(world?.turn ?? 0) || seasonsLeft("banners") > 0)) && !(a.action === "levy" && seasonsLeft("levy") > 0) && !(FAVOUR.has(a.action) && a.city != null && seasonsLeft(yearlyKey(a) ?? "") > 0));
   // An order offered once is not offered again under another matter (the
   // banners answer the usurper and the dead alike): the first matter keeps it.
@@ -257,7 +256,7 @@ export function counsel(ctx, players, cities, threat) {
   for (const o of out) for (const a of o.acts) {
     // The price the crown will really pay (a share of a full treasury), never the base.
     if (DECREES[a.action]?.cost) {
-      a.cost = priceOf(a.action);
+      a.cost = Math.round(priceOf(a.action) * (a.scale ?? 1));  // "Make them stop" is dearer the colder the two houses (crown.js peaceScale)
       const short = shortOf(world?.players?.find((p) => houseFor(p).crown)?.gold ?? 0, a.cost);
       if (short) a.short = short;
       a.label += `  ${a.cost >= 10000 ? `${Math.round(a.cost / 1000) / 10}m` : `${Math.round(a.cost / 10)}k`} cr`;  // gold ×100 crowns

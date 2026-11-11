@@ -260,7 +260,7 @@ const HANDLERS = {
       text: `At the King's word, ${k} rides between ${houseFor(owner).name} and ${houseFor(to).name}. ${k}'s men turn back the hosts near their towns, and riders carry the King's word to both houses: a truce for sixteen seasons.` };
   },
   peace(x) {
-    const { cmd, world, cost, pay, c, owner } = x;
+    const { cmd, world, crown, c, owner } = x;
     // The King commands two warring houses to lay down arms. Each obeys by its
     // favour: if both are warm enough, the soldiers camped by the other's towns
     // go home and both lose their taste for war a while (the engine still
@@ -270,13 +270,17 @@ const HANDLERS = {
     if (!to || to.id === owner.id || houseFor(to).wild || houseFor(to).crown || houseFor(owner).crown) return { error: "choose two great houses" };
     const fav = cmd.favourOf ?? (() => 60);
     const a = houseFor(owner).name, b = houseFor(to).name;
-    const cold = [owner, to].filter((p) => fav(p.id) < 40);
-    if (cold.length) {
-      const who = cold.map((p) => houseFor(p).name).join(" and ");
-      return { cost, favour: Object.fromEntries(cold.map((p) => [p.id, -5])), lua: [pay], text: `The King commands peace between ${a} and ${b}. ${who} ${cold.length > 1 ? "refuse" : "refuses"} the King's peace, and the war goes on.` };
-    }
+    // One peace verb, "Make them stop" (the cut list: peace, settle and back were three): it always
+    // holds, but the colder the two houses are, the dearer the blood-price the crown pays, and a cold
+    // house resents being made to stop where a warm one is grateful.
+    const cost = Math.round(x.cost * peaceScale(fav(owner.id), fav(to.id)));
+    if (crown.gold < cost) return { error: `the treasury holds ${(crown.gold * 100).toLocaleString("en-GB")} crowns; this costs ${(cost * 100).toLocaleString("en-GB")}` };
+    const pay = Lua.gold(crown.id, -cost);
+    const cold = [owner, to].filter((p) => fav(p.id) < (DECREES.peace.coldBelow ?? 40));
     const home = (x, y) => `for p in players_iterate() do if p.id == ${x} then for u in p:units_iterate() do local r = u.utype:rule_name(); if r ~= "Workers" and r ~= "Settlers" then for q in players_iterate() do if q.id == ${y} then for c in q:cities_iterate() do if u.tile:sq_distance(c.tile) <= 9 then edit.unit_kill(u, "killed", nil); break end end end end end end end end`;
-    return { cost, favour: { [owner.id]: 2, [to.id]: 2 }, lua: [pay, home(owner.id, to.id), home(to.id, owner.id)], text: `The King commands peace between ${a} and ${b}. Both bow to the crown and pull their hosts back from each other's towns. Riders carry the King's word to both houses: a truce for sixteen seasons.`, truce: [owner.id, to.id] };
+    const favour = Object.fromEntries([owner, to].map((p) => [p.id, cold.includes(p) ? -3 : 2]));
+    const grudging = cold.length ? ` ${cold.map((p) => houseFor(p).name).join(" and ")} ${cold.length > 1 ? "obey" : "obeys"} with bad grace, and the crown pays the blood-price.` : " Both bow to the crown.";
+    return { cost, favour, lua: [pay, home(owner.id, to.id), home(to.id, owner.id)], text: `The King tells ${a} and ${b} to stop.${grudging} They pull their hosts back from each other's towns, and riders carry the King's word to both houses: a truce for sixteen seasons.`, truce: [owner.id, to.id] };
   },
   marriage(x) {
     const { cmd, world, cost, pay, c, owner, lord } = x;
@@ -366,6 +370,15 @@ const HANDLERS = {
   },
 };
 
+// The price of making two warring houses stop, as a multiple of the base: each point under coldBelow
+// adds 1/coldBelow, up to coldMost times (data/decrees.json peace).
+export function peaceScale(fa, fb) {
+  const p = DECREES.peace ?? {};
+  const below = p.coldBelow ?? 40;
+  const cold = Math.max(0, below - fa) + Math.max(0, below - fb);
+  return Math.min(p.coldMost ?? 2, 1 + cold / below);
+}
+
 // Returns { error } or { text, lua, cost, favour: {playerId: delta} }.
 export function decree(cmd, world) {
   const crown = crownOf(world);
@@ -382,6 +395,7 @@ export function decree(cmd, world) {
   const town = c ? cityName(c.id) : "";
   const inCity = (body) => Lua.inCity(c?.id, body);
 
+  if (d.off) return { error: "the King no longer gives that order" };
   const h = Object.hasOwn(HANDLERS, cmd.action) ? HANDLERS[cmd.action] : null;
   if (!h) return { error: "unknown decree" };
   return h({ cmd, world, crown, cost, pay, c, owner, lord, town, inCity });

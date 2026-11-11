@@ -585,6 +585,7 @@ const reignCtx = () => ({ meta, world, court, stakes, arcs, favour, favourPast, 
 // Whether the realm would take this order now, by the decree route's own once-a-year and price rules (next.js offers only these).
 // purse: the gold to judge the price against (Infinity: by the yearly rules only, for what he'd want if he could pay).
 function canDecree(cmd, purse = null) {
+  if (DECREES[cmd.action]?.off) return false;  // cut from the King's orders (data/decrees.json off)
   const y = yearlyKey(cmd);
   if (y && seasonsLeft(y) > 0) return false;
   const crown = crownOf();

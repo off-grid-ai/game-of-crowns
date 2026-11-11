@@ -138,6 +138,8 @@ export function nextThing(ctx, aim) {
     count: x.count ?? null, frac: Math.max(0, Math.min(1, x.frac ?? 0)), tone, options, reach, act: x.act ?? null, alts, ...extra });
   // With the royal seal on and none in hand, nothing is his until the season brings one: the court's next sitting.
   const sealed = Seals.on(meta) && (meta.seals?.n ?? 1) < 1;
+  // One prompt (data/next.json oneVoice): the most urgent use, whoever would favour it.
+  if (!sealed && NEXT.oneVoice && doable.length) return line(doable[0][0], doable[0][1]);
   if (!sealed && first && second) {
     const [a, b] = [first[0], second[0]];
     const soonest = [a, b].filter((x) => x.seasons != null).sort((x, y) => x.seasons - y.seasons)[0];
