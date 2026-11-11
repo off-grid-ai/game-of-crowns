@@ -10,7 +10,9 @@ can't be lost with an account again.
   Mac's Yes/No answers are kept in the page's database (`decisions`); `screen-map-decisions.json` is the
   copy taken at 2026-11-11 (65 rows, every one still "Claude's call").
 
-Known issue carried over: every decision row is saved as `yes`, even where its note says Skip (for
-example C2, the heir question), so the stored choice doesn't match the call for those rows.
+Checked 2026-11-11: `yes` means "agree with Claude's recommendation", so `yes` on a Skip row is "yes,
+skip it" (C2: no heirs, one king's life). Mac confirms a row by pressing Yes or No; it then shows "You"
+instead of "Claude's call". The "0 of 0 decided" seen in the raw HTML is the placeholder before the
+script runs; the page shows 65 once loaded.
 
 The originals (other account): casebook PzdycNn8Wj2xdTp8AX7AYK, screen map PQ1pTTcw55iJAKBjuffWmZ.
