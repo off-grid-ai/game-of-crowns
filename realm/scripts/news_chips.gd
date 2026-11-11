@@ -22,6 +22,7 @@ var _offer: PanelContainer  # "Watch": the latest moment worth seeing, for a few
 var _offer_left := 0.0
 var _toast_top := 78.0  # just under the top bar
 var _toast_time := 0.0
+var _toast_full := 7.0  # the notice's whole time, for its ease in
 
 
 func _init(owner: UI) -> void:
@@ -140,7 +141,8 @@ func _place_notices(delta: float) -> void:
 	_toast_time = maxf(0.0, _toast_time - delta)
 	if _toast.text.strip_edges() == "":
 		_toast_time = 0.0
-	_toast_box.modulate.a = clampf(_toast_time, 0.0, 1.0)
+	# In over 160 ms (ui.ease_in's timing: no card pops in), out over its last second.
+	_toast_box.modulate.a = minf(clampf(_toast_time, 0.0, 1.0), clampf((_toast_full - _toast_time) / 0.16, 0.0, 1.0))
 	_toast_box.visible = _toast_box.modulate.a > 0.01
 
 
@@ -267,6 +269,7 @@ func _say(text: String) -> void:
 		return
 	_toast.text = text
 	_toast_time = 7.0  # long enough to read a sentence or two
+	_toast_full = _toast_time
 	_toast_result = true
 
 
@@ -277,6 +280,7 @@ func caption(text: String) -> void:
 		return
 	_toast.text = text
 	_toast_time = 5.0
+	_toast_full = _toast_time
 	_toast_result = false
 
 
