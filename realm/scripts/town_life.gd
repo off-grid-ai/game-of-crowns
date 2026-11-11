@@ -114,8 +114,8 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 		_crowd(root, life, center, rng, 14, true)
 	elif hungry:
 		_crowd(root, life, center, rng, 4 + mini(int(c.get("size", 1)) / 2, 8), false)
-	if not c.get("disorder", false) and not hungry:
-		_trade(root, life, center, rng)
+	if not c.get("disorder", false):
+		_trade(root, life, center, rng, not hungry)  # a hungry town's stalls are kept, bare: no buyers
 	if c.get("celebrating", false):
 		_bonfire(life, center)
 		_revels(root, life, center, rng, 6 + mini(int(c.get("size", 1)), 8))
@@ -236,7 +236,7 @@ var _people = preload("res://scripts/people.gd").new()
 ## A drill is a short set, not a loop: each recruit does three or four moves
 ## (cuts and thrusts, or draw, aim and loose), then stands easy for good, and
 ## after a season the rank falls out. Nobody blocks (a crouch reads as a fight).
-const DRILL_SWORD := ["SS_Slash_1", "SS_Slash_4", "Spear_Thrust", "SS_Attack_3"]
+const DRILL_SWORD := ["SS_Slash_1", "SS_Slash_4", "Spear_Thrust", "SS_Attack_4"]  # cuts whose feet hold standing (NPC perf, clip_skate_probe 2026-11-11: Sword_Attack, SS_Attack_3, SS_Slash_2 skid 37-59% and end ~50 cm ahead)
 const DRILL_BOW := ["Bow_Draw", "Bow_Aim", "Bow_Shoot"]
 const DRILL_SEASON := 40.0  # seconds: one season, then the recruits fall out
 
@@ -640,8 +640,8 @@ func _revels(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGener
 
 
 ## Trade at the market: a keeper behind each stall facing the square, and a
-## buyer or two at its front, haggling.
-func _trade(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenerator) -> void:
+## buyer or two at its front, haggling (none when there's nothing to buy).
+func _trade(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenerator, buyers := true) -> void:
 	for st in root.get_meta("stalls", []):
 		var m: Vector3 = st[0]
 		var out := Vector3(m.x, 0, m.z).normalized()  # from the square's heart to the stall
@@ -670,7 +670,7 @@ func _trade(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 		_mind(keeper, "trade", center)
 		taken.append(Vector2(at.x, at.z))
 		life.set_meta("standing", taken)
-		for i in rng.randi_range(1, 2):
+		for i in rng.randi_range(1, 2) if buyers else 0:
 			var side := Vector3(-out.z, 0, out.x) * rng.randf_range(-0.12, 0.12)
 			var buyer := _stand(root, life, center, m - out * (float(st[1]) * 0.5 + 0.12) + side, "townsfolk" if rng.randf() < 0.7 else "peasant", ["Idle_Talking", "Arguing", "Nodding"][rng.randi() % 3], rng.randi(), Color.WHITE, 0.2)
 			if buyer:

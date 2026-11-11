@@ -301,7 +301,7 @@ static func post_activities(post: String) -> Array:
 			]
 		"drill":
 			return [
-				seq("cuts", [run(["SS_Slash_1", "SS_Slash_2", "SS_Slash_3", "SS_Slash_4", "SS_Slash_5", "SS_Attack_3", "SS_Attack_4", "Sword_Attack"], 3, 4), brk(["Weight_Shift", "Breathing_Idle"])]),
+				seq("cuts", [run(["SS_Slash_1", "SS_Slash_3", "SS_Slash_4", "SS_Slash_5", "SS_Attack_4"], 3, 4), brk(["Weight_Shift", "Breathing_Idle"])]),
 				seq("thrusts", [run(["Spear_Thrust"], 3, 4), brk(["Weight_Shift", "Breathing_Idle"])]),
 			]
 		"bows":
