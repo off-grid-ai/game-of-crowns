@@ -45,7 +45,9 @@ const IN_PLACE := ["Dodge_Back"]
 const HELD := ["Drinking", "Sitting_Drinking", "Hammer_Swing", "Digging", "Dig_And_Plant", "Watering", "Lute_Playing",
 	"Wheelbarrow", "Throw_Object", "Carrying", "Push_Heavy", "Pick_Fruit"]
 ## Roof height (docs/review/first-principles-motion.md, the ruling): the camera caps just over the roofs,
-## so a crowd is judged as it reads from there: busy, spread, each person with a visible job.
+## so a crowd is judged as it reads from there: busy, spread, each person with a visible job. The reference
+## is Manor Lords' and Bellwright's village view at that height: every villager on a readable errand or at a
+## workplace with its tool, nobody standing about, the work spread over the village rather than one knot.
 ## What a clip reads as from above, one table. A walk or run reads by the body's speed, not its clip.
 const GROUPS := {
 	"work": ["Digging", "Dig_And_Plant", "Planting", "Watering", "Pick_Fruit", "Fixing_Kneeling", "Interact", "PickUp_Table",
@@ -786,7 +788,7 @@ func _report() -> void:
 	var stood := _statues.keys().filter(func(k): return float(_statues[k]) > STATUE)
 	stood.sort_custom(func(a, b): return _statues[a] > _statues[b])
 	print("MOTION roof statues: %s  %d people idle over %.0f s (longest %.1f s)  %s" % [verdict.call(stood.is_empty()), stood.size(), STATUE,
-		_statues.values().max() if not _statues.is_empty() else 0.0, ", ".join(stood.slice(0, 5).map(func(k): return "%s %.1fs" % [_name(k) if is_instance_valid(k) else "?", _statues[k]]))])
+		_statues.values().max() if not _statues.is_empty() else 0.0, ", ".join(stood.slice(0, 5).map(func(k): return "%s %.1fs at (%.1f,%.1f)" % [_name(k) if is_instance_valid(k) else "?", _statues[k], (k as Node3D).global_position.x if is_instance_valid(k) else 0.0, (k as Node3D).global_position.z if is_instance_valid(k) else 0.0]))])
 	var vf: float = maxf(1, _variety[2])
 	print("MOTION roof variety: %s  one activity over %d%% of the crowd in %d%% of frames (%s); under %d kinds of work in %d%% of frames" % [
 		verdict.call(_variety[0] / vf <= ROOF_BREAK and _variety[1] / vf <= ROOF_BREAK), int(ONE_THING * 100), int(100 * _variety[0] / vf), _top(_crowded), KINDS, int(100 * _variety[1] / vf)])
