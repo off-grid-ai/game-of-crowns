@@ -27,6 +27,7 @@ var _burnt := {}  # "town:home" -> {shell, hidden: [[MultiMesh, index, transform
 var _burning := {}  # "town:home" -> its fire node, while it burns (meta stage: catch, burn, collapse, smoulder)
 var _spreads := {}  # town id -> {left: [homes still to catch], lit: [homes caught], root, pace, pick, at}: a fire travelling
 var _orders := {}  # town id -> the order its houses burn in, set by the sack that burnt them (nearest the eye first)
+var _kindled := {}  # "town:home" -> true: a house a fire arrow set alight, kept charred for the session
 var _lines := {}  # town id -> {key: the house it works at, folk: [their minds]}: the town's bucket line
 var _tick := 0.0
 var _clock := 0.0
@@ -70,6 +71,38 @@ func _exit_tree() -> void:
 ## length). False if there's no town there.
 static func ignite(at: Vector3, seconds: float, razed: bool) -> bool:
 	return live != null and live._ignite(at, seconds, razed)
+
+
+## A fire arrow lands at `at`: the house nearest it (within reach) catches, unless it burns already. Kept charred
+## for the session though the realm's burnt share doesn't count it (a siege's arrows, not a sack). False if no
+## house was near.
+static func kindle(at: Vector3, reach := 0.35) -> bool:
+	return live != null and live._kindle(at, reach)
+
+
+func _kindle(at: Vector3, reach: float) -> bool:
+	for id in main.towns.towns:
+		var root: Node3D = main.towns.towns[id].get("node")
+		if root == null or not is_instance_valid(root):
+			continue
+		var homes: Array = root.get_meta("homes", [])
+		var here := root.to_local(at)
+		var best := -1
+		var near := reach
+		for i in homes.size():
+			var p := _home_at(homes[i])
+			var d := Vector2(p.x - here.x, p.z - here.z).length()
+			if d < near:
+				near = d
+				best = i
+		if best >= 0:
+			var key := "%d:%d" % [id, best]
+			if _burning.has(key) or _burnt.has(key):
+				return false
+			_kindled[key] = true
+			_alight(root, key, homes[best], int(id))
+			return true
+	return false
 
 
 ## A yard fire's flames (towns.gd _hearth keeps its light and smoke): the same flames, small.
@@ -415,7 +448,7 @@ func _process(delta: float) -> void:
 				continue  # its turn to catch hasn't come: it stands whole till then
 			if i < n:
 				_char(root, key, homes[order[i]])
-			elif _burnt.has(key) and not _burning.has(key):
+			elif _burnt.has(key) and not _burning.has(key) and not _kindled.has(key):
 				_mend(key)
 	var g := _drift()
 	for key in _burning:
