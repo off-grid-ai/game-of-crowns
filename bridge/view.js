@@ -30,7 +30,11 @@ const RENAMED = {
 export function worldView(ctx) {
   const { world, meta, history, court, stakes, turnSeconds, counselNow, scenes, effects, favourWhy, favourPast, lastSeason, detail, favourOf, marchOdds, greatHouses, sworn, priceOf, seasonsLeft, crownOf, crownSeat, reignInfo, storyNow, marksNow, goalNow, CIVILIAN, TURNING, GOAL_FAVOUR, soulsOf } = ctx;
   const d = detail();
-  const players = world.players.map((p) => ({ ...p, name: RENAMED[p.name] ?? p.name, house: houseFor(p), atWarWith: d?.players[p.id]?.atWarWith ?? [] }));
+  // Each house's head by the one name the court knows them by (gameplay review #10: one lady had three
+  // names, Freeciv's leader on /world, another on her court card, a third in the counsel); the title
+  // (Lord, Lady, Princess) stays Freeciv's.
+  const headOf = (p) => { const l = court?.lordOfHouse(p.id); const was = RENAMED[p.name] ?? p.name; return l?.name ? `${String(was).split(" ")[0]} ${l.name}` : was; };
+  const players = world.players.map((p) => ({ ...p, name: houseFor(p).crown || houseFor(p).wild ? RENAMED[p.name] ?? p.name : headOf(p), house: houseFor(p), atWarWith: d?.players[p.id]?.atWarWith ?? [] }));
   const cities = world.cities.map((c) => {
     const x = d?.cities[c.id];
     // The lesser family seated here (a bannerman), whose banner the town flies.

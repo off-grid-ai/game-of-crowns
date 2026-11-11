@@ -95,7 +95,14 @@ export function counsel(ctx, players, cities, threat) {
     // royal host on our walls, in the autumn of 309"); without one, the plain truth.
     const worst = (deeds[p.id] ?? []).filter((x) => x.d <= -8).sort((a, b) => a.d - b.d)[0];
     const when = worst ? calendar(worst.turn) : null;
-    const grievance = worst ? `You ${worst.what}, in the ${when.season} of ${when.year}. Set that right` : `The crown has done nothing for ${short} since you were crowned. Set that right`;
+    // Without a wrong to name: what the King did for another house instead, or how long he has done nothing.
+    const now = world?.turn ?? 0;
+    const since = Math.max(1, now - (meta.crownedAt ?? meta.ambitionsFrom?.turn ?? now));
+    const other = Object.entries(deeds ?? {}).filter(([pid, xs]) => Number(pid) !== p.id && Array.isArray(xs)).flatMap(([pid, xs]) => (xs ?? []).filter((x) => x.d >= 8 && (x.last ?? x.turn) >= now - 4).map((x) => ({ ...x, pid: Number(pid) }))).sort((a, b) => b.turn - a.turn)[0];
+    const favoured = other ? players.find((q) => q.id === other.pid) : null;
+    const grievance = worst ? `You ${worst.what}, in the ${when.season} of ${when.year}. Set that right`
+      : favoured ? `You honoured ${favoured.house.name} and passed ${short} over. Set that right`
+      : `You have done nothing for us in ${since === 1 ? "a season" : `${since} seasons`}. Set that right`;
     out.push({ urgency: 100, kind: "ultimatum", subject: p.id, occur: t.at, text: `${p.house.name} sends the crown an ultimatum`,
       why: `${lord ? lord.name : `The lord of ${short}`}: "${grievance}, or ${short} raises its banners." Answer with a favour they can see; silence is a refusal.`,
       acts: [{ label: "A feast in their honour", action: "feast", city: seatOf(p.id).id }, { label: "Gift crowns", action: "gift", city: seatOf(p.id).id },
@@ -329,8 +336,10 @@ export function lapseOf(ctx, o) {
   if (o.kind === "mighty" && owner) return { shift: { [owner.id]: 3 }, text: said(`as ${house} grew. They take the crown's silence for weakness, and grow bolder.`) };
   if (o.kind === "match" && owner) return { shift: { [owner.id]: -3 }, text: said(`of ${house}'s heir. Another house will make the match instead.`) };
   if (o.kind === "rich") return { shift: {}, text: said("while the gold sat in the royal chest. The houses saw it sit.") };
-  if (/claim to the throne|marches on Kingsmere|march is over|dead come south/.test(t)) return { shift: Object.fromEntries(loyal.map((p) => [p.id, -2])), text: said(`while ${t.replace(/[:.].*$/, "").toLowerCase()}. The loyal houses wonder whether the crown will act at all.`) };
-  return { shift: owner ? { [owner.id]: -4 } : {}, text: said(`of it: ${t.replace(/:.*$/, "").toLowerCase()}.`) };
+  // The matter's own casing: a house and a town keep their capitals (gameplay review #10: "house stormhold's host").
+  const lower = (x) => (/^(The|A|An) /.test(x) ? x.charAt(0).toLowerCase() + x.slice(1) : x);
+  if (/claim to the throne|marches on Kingsmere|march is over|dead come south/.test(t)) return { shift: Object.fromEntries(loyal.map((p) => [p.id, -2])), text: said(`while ${lower(t.replace(/[:.?].*$/, ""))}. The loyal houses wonder whether the crown will act at all.`) };
+  return { shift: owner ? { [owner.id]: -4 } : {}, text: said(`of it: ${lower(t.replace(/:.*$/, ""))}.`) };
 }
 
 export function lapse(ctx, m, turn) {

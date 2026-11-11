@@ -485,8 +485,11 @@ export class Arcs {
     const folk = ctx.minds && ranks.includes("commoner")
       ? Object.values(ctx.minds.minds).filter((m) => String(m.id).startsWith("folk:") && !m.gone).map((m) => this.folkPerson(m, ctx))
       : [];
+    // No one of a fallen house (it holds no town) is cast: a house that has left the play stays out of
+    // it (gameplay review #10: Ironreach, fallen from the first second, came to court and took a town).
+    const fallen = (c) => !String(c.id).startsWith("folk:") && c.playerId != null && (ctx.world?.players?.find((p) => p.id === c.playerId)?.cities ?? 1) === 0;
     for (const c of [...this.court.alive(), ...folk]) {
-      if (this.busy(c.id) || c.ward && !spec.ward) continue;
+      if (this.busy(c.id) || c.ward && !spec.ward || fallen(c)) continue;
       const w = this.fits(spec, c, roles, ctx);
       if (w > 0) out.push({ c, w });
     }

@@ -667,6 +667,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     if (lately.length >= 3 && lately.filter((p) => p.kind === "remembers").length / lately.length >= 0.25) return made;
     for (const c of this.alive()) {
       if (want <= 0) break;
+      if ((world.players.find((p) => p.id === c.playerId)?.cities ?? 1) === 0) continue;  // a fallen house has left the play
       if (this.petitions.some((p) => !p.answered && p.from === c.id && p.called != null)) continue;  // already before the King
       if (this.petitions.some((p) => p.from === c.id && p.kind === "remembers" && (p.turn ?? 0) > turn - SEASONS_PER_YEAR)) continue;  // once a year
       const owed = (this.deedsOf?.(c.playerId) ?? []).filter((x) => x.by === c.id && x.due != null && x.due <= turn && !x.raised).sort((a, b) => a.due - b.due)[0];
