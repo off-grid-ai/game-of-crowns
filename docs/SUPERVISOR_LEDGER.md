@@ -32,6 +32,8 @@ limit. Newest first. The plan is [PLAN.md](PLAN.md); the running log of checks i
   switch until judged; tunables in data plus docs/TUNING.md.
 
 ## What Mac said (2026-11-11), newest first
+- "You are the only supervisor, so you control everything. There is nobody else running parallel." The supervisor
+  builds through its own agents when the Desktop builders are idle, and keeps this ledger for takeover.
 - "We don't need to look at the fidelity anymore… the generated images match this." Fidelity is settled: docs/art/target.
 - **"This is your North Star, this is what you are going to build."** The target images, with buildings and uniforms
   in their house's colours ("that is smart, that is what we should do"). One shared team-colour mask shader for
