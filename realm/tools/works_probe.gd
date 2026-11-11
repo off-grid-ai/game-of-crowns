@@ -37,12 +37,32 @@ func _town(world: Node3D) -> Node3D:
 		"armoury": {"at": Vector3(1.6, 0, 1.4)},
 		"stables": {"at": Vector3(-1.8, 0, 0.0)},
 		"paddock": {"at": Vector3(-2.6, 0, 1.4), "radius": 0.45},
-		"windmill": {"at": Vector3(-2.0, 0, -2.4)},
+		"windmill": {"at": Vector3(-2.0, 0, -2.4), "node": _rotor(root, Vector3(-2.0, 0.6, -2.1))},
 		"granary": {"at": Vector3(0.0, 0, -2.2)},
 		"tannery": {"at": Vector3(2.4, 0, -1.6)},
 		"barn": {"at": Vector3(-0.6, 0, 2.6)},
 	})
 	return root
+
+
+## A windmill's sails as the town agent stands them (a "sail" node with one sheet, 1.3 across), and a
+## neighbour's house 0.4 off its hub: the sweep would cut its roof.
+func _rotor(root: Node3D, at: Vector3) -> Node3D:
+	var holder := Node3D.new()
+	holder.position = at
+	root.add_child(holder)
+	var sail := Node3D.new()
+	sail.name = "sail"
+	holder.add_child(sail)
+	var sheet := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = Vector3(1.3, 1.3, 0.05)
+	sheet.mesh = box
+	sail.add_child(sheet)
+	var fps: Array = root.get_meta("footprints", [])
+	fps.append(PackedVector2Array([Vector2(-1.7, -1.8), Vector2(-1.3, -1.8), Vector2(-1.3, -1.5), Vector2(-1.7, -1.5)]))
+	root.set_meta("footprints", fps)
+	return holder
 
 
 func _run() -> void:
@@ -98,6 +118,14 @@ func _run() -> void:
 		if horses.any(func(h): return (h as Node).find_children("Life", "Timer", true, false).is_empty()):
 			print("FAIL %s: a paddock horse has no idle life" % name)
 			fails += 1
+		# The windmill's sails repainted and shrunk to clear the neighbour (batch7-review #6, #12).
+		var sail: Node3D = Works.anchors(town)["windmill"]["node"].get_node("sail")
+		var painted: bool = (sail.get_child(0) as GeometryInstance3D).material_override != null
+		if name == "peace":
+			print("WORKS peace   sails: repainted %s, scaled to %.2f to clear the next house" % [painted, sail.scale.x])
+			if not painted or sail.scale.x >= 0.99:
+				print("FAIL peace: the sails keep the palette or sweep the neighbour's roof")
+				fails += 1
 		# The inn's yard by day (works.json inn.tables) and its rail's horses (counts.travellers).
 		var tabled: int = l.get_children().filter(func(n): return n.has_meta("bench") and not n.has_meta("feaster")).size()
 		if name == "peace" and tabled < 4:

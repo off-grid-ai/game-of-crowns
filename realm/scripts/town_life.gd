@@ -1346,8 +1346,59 @@ func _mill(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, kind: Str
 	tick.stacks.append({"what": "mill", "at": sp.get("sacks", door), "yaw": float(b["yaw"]), "prop": "Bag", "nodes": [], "gap": 0.07, "lift": 0.04})
 	var turner := _spinner(root, b, kind)
 	if turner:
+		_dress_rotor(root, b, turner, kind)
 		var ax: Vector3 = Works.v3(Data.value("works", "mill.axis." + kind, [0, 0, 1]))
 		tick.mills.append({"node": turner, "axis": ax.normalized(), "rpm": Data.num("works", "mill.rpm." + kind, 7.0), "speed": 0.0, "needs_grain": true})
+
+
+## A mill's turning part made to read and to fit (batch7-review #6, #12): repainted in our own kit's
+## textures (the Kenney rotor is one palette surface, flat salmon at town scale: canvas for sails,
+## timber for a wheel; works.json mill.paint) and, where its sweep would cut a neighbour's roof, made
+## smaller until it clears every other building's footprint (works.json mill.clear: how near, the
+## least it shrinks to). Once a rotor, whatever rebuilds the town's life.
+func _dress_rotor(root: Node3D, b: Dictionary, turner: Node3D, kind: String) -> void:
+	if turner.has_meta("dressed"):
+		return
+	turner.set_meta("dressed", true)
+	var paint: Dictionary = Data.value("works", "mill.paint." + kind, {})
+	var tex_path := String(paint.get("texture", ""))
+	if tex_path != "" and ResourceLoader.exists(tex_path):
+		var m := StandardMaterial3D.new()
+		m.albedo_texture = load(tex_path)
+		m.albedo_color = Works.colour(paint.get("tint"), Color.WHITE)
+		m.uv1_triplanar = true
+		m.uv1_world_triplanar = false
+		m.uv1_scale = Vector3.ONE * float(paint.get("scale", 1.0))
+		m.roughness = 0.9
+		m.cull_mode = BaseMaterial3D.CULL_DISABLED  # a sail is one sheet: seen from behind too
+		for g in turner.find_children("*", "GeometryInstance3D", true, false):
+			(g as GeometryInstance3D).material_override = m
+	# The sweep: the rotor's reach from its hub, against every footprint but the mill's own.
+	var C: Dictionary = Data.value("works", "mill.clear", {})
+	var hub := root.to_local(turner.global_position)
+	var reach := 0.0
+	for g in turner.find_children("*", "VisualInstance3D", true, false):
+		var box: AABB = (g as VisualInstance3D).get_aabb()
+		var xf := root.global_transform.affine_inverse() * (g as Node3D).global_transform
+		for i in 8:
+			reach = maxf(reach, Vector2((xf * box.get_endpoint(i)).x - hub.x, (xf * box.get_endpoint(i)).z - hub.z).length())
+	if reach <= 0.0:
+		return
+	var own := Vector2(float(b["at"].x), float(b["at"].z))
+	var nearest := INF
+	for fp in root.get_meta("footprints", []):
+		var poly := PackedVector2Array(fp)
+		if poly.size() < 3 or Geometry2D.is_point_in_polygon(own, poly):
+			continue
+		var q := Vector2(hub.x, hub.z)
+		if q.distance_to(poly[0]) > reach + 2.0:
+			continue
+		for i in poly.size():
+			nearest = minf(nearest, q.distance_to(Geometry2D.get_closest_point_to_segment(q, poly[i], poly[(i + 1) % poly.size()])))
+	var room := nearest - float(C.get("gap", 0.04))
+	if room < reach:
+		var k := clampf(room / reach, float(C.get("least", 0.55)), 1.0)
+		turner.scale *= k
 
 
 ## The part of a mill's model that turns (its sails, its wheel), found by name
