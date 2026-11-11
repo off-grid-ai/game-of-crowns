@@ -83,6 +83,10 @@ var _pace := 0.0  # ground covered, world units a second, eased
 var _last := Vector3.INF
 var _for := 0.0  # how long the person has been moving (or still)
 var _wish := ""  # a repeating move asked while on the move, for when they stop
+## The state travelled to since the last advance: the machine only moves there on
+## its next advance, so until then this, not get_current_node(), is what the body
+## is about to show (held_clip: a basket kept in hand across a stop or a start).
+var _to := ""
 var _carry: AnimationNodeAnimation  # the arms' load over the legs, when carrying
 var _held_for := ""  # the move whose tool is in hand now (weapons.gd)
 const Weapons := preload("res://scripts/weapons.gd")
@@ -204,7 +208,7 @@ func play(clip: String, rate := 1.0, hold := false, phase := -1.0, repeat := fal
 		set(_at + "rest/mix/blend_amount", 1.0)
 		_wish = ""
 		if _now() != "rest":
-			_go.travel("rest")
+			_travel("rest")
 		return length
 	set(_at + "rest/mix/blend_amount", 0.0)  # anything else: empty arms swing again
 	if clip in WALKS or clip in RUNS:
@@ -213,7 +217,7 @@ func play(clip: String, rate := 1.0, hold := false, phase := -1.0, repeat := fal
 			_assign(leg, clip, Animation.LOOP_LINEAR, randf())
 		_wish = ""
 		if _now() != "rest":
-			_go.travel("rest")
+			_travel("rest")
 		_clip = String(_legs["stand"].animation)
 		return length
 	# A repeating standing move asked on the move waits until they stop. In v2
@@ -223,7 +227,7 @@ func play(clip: String, rate := 1.0, hold := false, phase := -1.0, repeat := fal
 	if not (hold or (is_once(clip) and not repeat)) and on_move and (_now() == "rest" or (v2 and _now().begins_with("loop"))):
 		_wish = clip
 		if _now() != "rest":
-			_go.travel("rest")
+			_travel("rest")
 		return length
 	# `repeat` loops a move that is one-off by nature: a drill, a cut practised
 	# over and over.
@@ -241,7 +245,7 @@ func play(clip: String, rate := 1.0, hold := false, phase := -1.0, repeat := fal
 	_assign(_nodes[st], clip, Animation.LOOP_NONE if once else Animation.LOOP_LINEAR, randf() if phase < 0.0 and not once else maxf(phase, 0.0))
 	_clip = clip
 	_wish = ""
-	_go.travel(st)
+	_travel(st)
 	return length
 
 
@@ -249,6 +253,7 @@ func play(clip: String, rate := 1.0, hold := false, phase := -1.0, repeat := fal
 ## drives the legs. A standing repeating move gives way to the legs once they
 ## are clearly going somewhere, and comes back once they stop.
 func track(delta: float) -> void:
+	_to = ""  # the last advance has taken the machine wherever it was sent
 	var body := get_parent() as Node3D
 	if body == null or delta <= 0.0 or dead():
 		return
@@ -280,7 +285,7 @@ func track(delta: float) -> void:
 		if _for > SETTLE or v2:
 			_wish = _clip
 			_for = 0.0
-			_go.travel("rest")
+			_travel("rest")
 			if v2 and _carried(_wish):
 				# The load stays in the arms over the walking legs.
 				if String(_carry.animation) != _wish:
@@ -322,9 +327,21 @@ func _carried(clip: String) -> bool:
 
 
 func held_clip() -> String:
-	if _now() == "rest" and float(get(_at + "rest/mix/blend_amount")) > 0.5:
+	var st := _to if _to != "" else _now()  # where the machine is going, not where it was
+	if st == "rest" and float(get(_at + "rest/mix/blend_amount")) > 0.5:
 		return String(_carry.animation)
-	return current()
+	return current(st)
+
+
+## Test aid (the motion probe's empty-hand line): the machine's state behind what held_clip() reads.
+func held_state() -> String:
+	return "now=%s to=%s blend=%.1f %s clip=%s carry=%s wish=%s held_for=%s" % [_now(), _to,
+		float(get(_at + "rest/mix/blend_amount")), "moving" if _pace > MOVING else "still", _clip, _carry.animation if _carry else "-", _wish, _held_for]
+
+
+func _travel(st: String) -> void:
+	_go.travel(st)
+	_to = st
 
 
 ## v2: the body turns toward where its mover set it facing, at a person's rate.
@@ -365,7 +382,7 @@ func die(clip: String, rate := 1.0) -> void:
 	_assign(_nodes["dead"], clip, Animation.LOOP_NONE, 0.0)
 	_clip = clip
 	speed = rate
-	_go.travel("dead")
+	_travel("dead")
 
 
 ## The stance between one-off moves (Sword_Idle for a soldier at the ready).
@@ -379,8 +396,8 @@ func dead() -> bool:
 
 
 ## The move now playing (a one-off that has finished reads as the rest stance).
-func current() -> String:
-	if _now() == "rest":
+func current(st := "") -> String:
+	if (st if st != "" else _now()) == "rest":
 		if _pace > MOVING:
 			return String(_legs["run" if _pace > (_leg_pace("walk") + _leg_pace("run")) * 0.5 else "walk"].animation)
 		return String(_legs["stand"].animation)

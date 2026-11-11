@@ -2,7 +2,7 @@ extends RefCounted
 ## The dev measuring aids: the perf log (user://perf.log, every ten seconds, and
 ## any stall in the verbose log), the triangle profile (--profile), the system
 ## cycle (GOC_LOOK=cycle / cyclevis) and the looks tried from the shell
-## (GOC_LOOK=filmic,aces,nogi,...), with the test switches that hide the woods,
+## (GOC_LOOK=filmic,aces,nogi,gi3,gihalf,...), with the test switches that hide the woods,
 ## the sea, the trees or the instancer. Owned by main.gd, which calls them from
 ## _setup_environment and _process. Off in play unless asked for.
 
@@ -24,6 +24,8 @@ func _try_look(look: String) -> void:
 			"filmic": main.env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 			"aces": main.env.tonemap_mode = Environment.TONE_MAPPER_ACES
 			"nogi": main.env.sdfgi_enabled = false
+			"gi3": main.env.sdfgi_cascades = 3  # the SDFGI A/B: one cascade fewer
+			"gihalf": RenderingServer.gi_set_use_half_resolution(true)  # and the bounce traced at half resolution
 			"nossao": main.env.ssao_enabled = false
 			"nofog": main.env.fog_enabled = false
 			"noshadow": main.sun.shadow_enabled = false
@@ -65,6 +67,10 @@ static var _last_at := 0
 static var _order := PackedStringArray()  # the jobs finished this frame, in order
 static var _prev_order := PackedStringArray()  # and in the frame before
 static var _watch: Thread
+static var _frame_at := 0
+static var _frames := 0
+static var _slow := 0  # frames over SLOW_FRAME, with _frames: the PERF line's hitch count
+const SLOW_FRAME := 0.2  # a frame longer than this is logged (SLOW-FRAME): the player feels it as a hitch
 static var _mutex := Mutex.new()
 
 
@@ -110,6 +116,17 @@ static func _watching() -> void:
 
 func _log_perf(delta: float) -> void:
 	if probing:
+		# Timed on the wall clock between frames: the engine's delta is smoothed.
+		var now := Time.get_ticks_usec()
+		var took := (now - _frame_at) / 1000000.0 if _frame_at > 0 else 0.0
+		_frame_at = now
+		_frames += 1
+		if took > SLOW_FRAME:
+			_slow += 1
+			_mutex.lock()
+			var jobs := _prev_order.duplicate()
+			_mutex.unlock()
+			print("SLOW-FRAME %d ms (stage %s); the frame before's jobs %s" % [int(took * 1000.0), Engine.get_meta("stage", ""), ",".join(jobs)])
 		_frame()
 	if delta > 0.5:
 		print_verbose("STALL %.2f s after: %s" % [delta, Engine.get_meta("stage", "")])
@@ -127,6 +144,9 @@ func _log_perf(delta: float) -> void:
 		Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME),
 		int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000.0), Performance.get_monitor(Performance.OBJECT_NODE_COUNT),
 		main.rig.distance if main.rig else 0.0, main.towns.building() if main.towns and main.towns.has_method("building") else "?"])
+	if probing:
+		print("PERF video=%.0fMB buffers=%.0fMB static=%.0fMB frames=%d over_200ms=%d" % [Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0,
+			Performance.get_monitor(Performance.RENDER_BUFFER_MEM_USED) / 1048576.0, Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0, _frames, _slow])
 	if probing and not tally.is_empty():
 		var jobs := PackedStringArray()
 		for k in tally:
