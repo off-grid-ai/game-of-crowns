@@ -12,6 +12,7 @@ const Herald := preload("res://scripts/herald.gd")  # one notice at a time, in o
 var ui: UI  # the interface that owns these notices: its signals, its building blocks, its cards
 
 var _toast_waiting := ""  # a toast held while another voice speaks
+var holding := false  # a card has the screen (the court, the digest): no Watch offer, no edge arrow, no caption meanwhile (ui.gd)
 var _herald: Array[String] = []  # the herald's notices waiting their turn, oldest first (herald.json)
 
 var _toast: Label
@@ -79,10 +80,10 @@ func _place_notices(delta: float) -> void:
 			_offer.visible = false
 	# The herald's next notice, once the one up has been read and no other voice speaks.
 	if not _herald.is_empty() and (_toast_time <= 0.0 or 7.0 - _toast_time >= Herald.knob("min_read", 3.0)) \
-			and not (_offer and is_instance_valid(_offer) and _offer.visible and _offer_left > 0.5) and not (_edge and _edge.visible):
+			and not (_edge and _edge.visible):
 		_say(_herald.pop_front())
 	# A toast that waited for the other voice speaks once it's clear.
-	if _toast_waiting != "" and not (_offer and is_instance_valid(_offer) and _offer.visible and _offer_left > 0.5) and not (_edge and _edge.visible):
+	if _toast_waiting != "" and not (_edge and _edge.visible):
 		var w := _toast_waiting
 		_toast_waiting = ""
 		toast(w)
@@ -243,7 +244,7 @@ func edge_arrow(at, angle: float, text: String, tone: String, fresh: bool) -> vo
 			_edge.create_tween().tween_property(_edge, "position", goal, 0.16).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 		elif _edge.position.distance_to(goal) > 2.0:
 			_edge.position = goal
-	_edge.visible = show
+	_edge.visible = show and not holding  # held while a card has the screen (ui.gd)
 
 
 func toast(text: String) -> void:
@@ -264,9 +265,14 @@ func toast(text: String) -> void:
 ## A notice on the card now (or held while another voice speaks).
 func _say(text: String) -> void:
 	# One voice at a time: while a Watch card or a news arrow is speaking, this waits its turn.
-	if (_offer and is_instance_valid(_offer) and _offer.visible and _offer_left > 0.5) or (_edge and _edge.visible):
+	if _edge and _edge.visible:
 		_toast_waiting = text
 		return
+	# One slot for the Watch offer and the notice (the professional audit): the notice takes it, the offer goes,
+	# never a fading pill left under the new line.
+	if _offer and is_instance_valid(_offer) and _offer.visible:
+		_offer.visible = false
+		_offer_left = 0.0
 	_toast.text = text
 	_toast_time = 7.0  # long enough to read a sentence or two
 	_toast_full = _toast_time
@@ -276,7 +282,7 @@ func _say(text: String) -> void:
 ## A caption for what the camera shows ("The King's rider, bound for Stormwatch"):
 ## never over the result of the King's own order while that is still up.
 func caption(text: String) -> void:
-	if text.strip_edges() == "" or (_toast_result and _toast_time > 0.5):
+	if holding or text.strip_edges() == "" or (_toast_result and _toast_time > 0.5):
 		return
 	_toast.text = text
 	_toast_time = 5.0

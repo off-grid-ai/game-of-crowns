@@ -631,8 +631,12 @@ func _process_timed(delta: float) -> void:
 	# One card at a time: the side drawers step aside while the court or the digest
 	# is up, and come back where they were once it closes.
 	var holding := (_court_panel and _court_panel.visible) or (_digest_panel and _digest_panel.visible)
+	# One thing on screen (CK3's event window, Frostpunk's law book; the professional audit's first finding):
+	# while the court or the digest is up, the drawers, the camera pad and the ticker step aside too, and
+	# the news holds its Watch offer and edge arrow; all come back as they were once it closes.
+	news.holding = holding
 	if holding:
-		for d in [_houses_panel, _chron_panel]:
+		for d in [_houses_panel, _chron_panel, _pad, _ticker]:
 			if d and d.visible:
 				d.visible = false
 				_drawers_away.append(d)
