@@ -187,6 +187,8 @@ static func states(c: Dictionary, town: int) -> Array:
 		out.append("low")
 	if bool(c.get("prosperity", false)):
 		out.append("prosperity")
+	if bool(c.get("grief", false)):
+		out.append("grief")
 	return _ruled(out, String((c.get("ruling") as Dictionary).get("kind", "")) if c.get("ruling") is Dictionary else "")
 
 
@@ -214,6 +216,8 @@ static func states_bb(bb: Blackboard) -> Array:
 		out.append("low")
 	if bool(bb.get_var(&"prosperity", false, false)):
 		out.append("prosperity")
+	if bool(bb.get_var(&"grief", false, false)):
+		out.append("grief")
 	return _ruled(out, String(bb.get_var(&"ruling", "", false)))
 
 

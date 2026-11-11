@@ -108,15 +108,22 @@ static func cloth_of(role: String) -> Array:
 ## its holder's colour. A crowd in a richer town wears more dyed cloth, and some wear the house's.
 static var _town_rank := "town"
 static var _town_house := Color(0, 0, 0, 0)
-static func dress_for(rank: String, house: Color) -> void:
+static var _town_mourning := false
+static func dress_for(rank: String, house: Color, mourning := false) -> void:
 	_town_rank = rank
 	_town_house = house
+	_town_mourning = mourning
 
 
 ## One person's cloth (batch 8 look2: the crowd in dark, colourless clothes; town-b's is warm and
 ## varied, the holder's colour here and there): the holder's colour by the rank's share, a dyed cloth
 ## for a peasant by the rank's dyed share, else the station's own (people.json cloth.rank).
 static func cloth_pick(role: String, rng: RandomNumberGenerator) -> Color:
+	if _town_mourning:
+		var dark: Array = Data.value("people", "cloth.mourning", [])
+		if not dark.is_empty():
+			var d: Array = dark[rng.randi() % dark.size()]
+			return Color(float(d[0]), float(d[1]), float(d[2]))  # a town in grief, all in dark wool
 	var r: Dictionary = (Data.value("people", "cloth.rank", {}) as Dictionary).get(_town_rank, {})
 	if _town_house.a > 0.0 and rng.randf() < float(r.get("house", 0.0)):
 		return _town_house.lerp(Color.WHITE, float(Data.num("people", "cloth.house_soften", 0.1)))

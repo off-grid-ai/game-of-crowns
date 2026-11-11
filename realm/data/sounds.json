@@ -27,6 +27,7 @@
     "hens": { "takes": ["sfx2/hens_1.ogg", "sfx2/hens_2.ogg"], "db": -18.0, "pitch": [0.95, 1.05], "gain": 2.0, "reach": [1.0, 10.0] },
     "sparrows": { "takes": ["sfx2/sparrows_1.ogg", "sfx2/sparrows_2.ogg"], "db": -18.0, "pitch": [0.95, 1.08], "gain": 3.0, "reach": [1.5, 12.0] },
     "owl": { "takes": ["sfx2/owl_1.ogg", "sfx2/owl_2.ogg"], "db": -16.0, "pitch": [0.95, 1.05], "gain": 2.0, "reach": [2.0, 20.0] },
+    "toll": { "takes": ["sfx/toll_bell.ogg", "sfx/funeral_bell.ogg"], "db": -6.0, "pitch": [0.98, 1.02], "gain": 1.0, "reach": [6.0, 80.0] },
     "bell": { "takes": ["sfx2/church_bell_1.ogg", "sfx2/church_bell_2.ogg", "sfx2/church_bell_3.ogg"], "db": -8.0, "pitch": [0.97, 1.03], "gain": 1.0, "reach": [6.0, 80.0] },
     "engine_creak": { "takes": ["sfx2/wood_creak_1.ogg", "sfx2/wood_creak_2.ogg", "sfx2/wood_creak_3.ogg"], "db": -6.0, "pitch": [0.85, 1.05], "gain": 2.0, "reach": [2.0, 30.0] },
     "impact": { "takes": ["sfx2/impact_stone_1.ogg", "sfx2/impact_stone_2.ogg", "sfx2/impact_stone_3.ogg", "sfx2/impact_stone_4.ogg"], "db": -3.0, "pitch": [0.85, 1.1], "gain": 3.0, "reach": [3.0, 40.0] },
@@ -52,6 +53,7 @@
     "fire": { "sound": "fire_roar", "small": "fire_crackle", "stage": { "catch": 0.5, "burn": 1.0, "collapse": 1.2, "smoulder": 0.3 } },
     "bonfire": { "sound": "bonfire" },
     "levy": { "sound": "levy_drum" },
+    "toll": { "sound": "toll" },
     "calls": {
       "dog": { "sound": "dog", "every": [7.0, 18.0] },
       "cow": { "sound": "cow", "every": [12.0, 30.0] },

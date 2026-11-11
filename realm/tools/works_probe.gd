@@ -77,6 +77,7 @@ func _run() -> void:
 		"low": {"granaryLow": true, "food": 3, "granary": 40},
 		"hunger": {"famine": true, "mood": "hunger"},
 		"feast": {"celebrating": true, "mood": "feast", "prosperity": true},
+		"grief": {"grief": true},
 		"relief": {"ruling": {"kind": "relief", "left": 2}},
 		"justice": {"ruling": {"kind": "justice", "left": 2}},
 		"grant": {"ruling": {"kind": "grant", "left": 2}},
@@ -207,6 +208,26 @@ func _run() -> void:
 		if name == "war" and mustered < 10:
 			print("FAIL war: the muster is too small to read (%d)" % mustered)
 			fails += 1
+		if name == "grief":
+			var walking: int = l.get_children().filter(func(n): return n.has_meta("procession")).size()
+			var toll: bool = l.get_node_or_null("Tolling") != null
+			var lit := 0
+			var cloth := 0
+			for ch in l.get_children():
+				if ch.get_meta("dress", "") == "candle":
+					lit += 1
+				if ch.get_meta("dress", "") == "black_door":
+					cloth += 1
+			var sq: Node = l.get_node_or_null("SquareLife")
+			var from: Vector3 = (l.get_children().filter(func(n): return n.has_meta("procession"))[0] as Node3D).position if walking > 0 else Vector3.ZERO
+			for i in 100:
+				if sq:
+					sq._process(0.1)
+			var moved: float = (l.get_children().filter(func(n): return n.has_meta("procession"))[0] as Node3D).position.distance_to(from) if walking > 0 else 0.0
+			print("WORKS grief   %d in the procession (its head walked %.2f in 10 s), the bell %s, %d candle pieces, %d doors in black" % [walking, moved, "tolling" if toll else "silent", lit, cloth])
+			if walking < 8 or moved < 0.3 or not toll:
+				print("FAIL grief: no procession walking or no bell")
+				fails += 1
 		if name == "peace" and (mustered > 0 or fast > 0):
 			print("FAIL peace: a muster or a hurried forge in peacetime")
 			fails += 1

@@ -286,7 +286,8 @@ func _house_colour(owner: int) -> Color:
 func _spawn(id: int) -> void:
 	var town: Dictionary = towns.towns[id]
 	# Its people dressed as its rank and holder dress them (people.gd cloth_pick; the holder's colour from his banner).
-	people.dress_for(String(town["node"].get_meta("rank", "town")), _house_colour(int(town["data"].get("owner", -1))))
+	var mourning := bool(town["data"].get("grief", false))
+	people.dress_for(String(town["node"].get_meta("rank", "town")), _house_colour(int(town["data"].get("owner", -1))), mourning)
 	var center: Vector3 = town["node"].global_position
 	var size := int(town["data"]["size"])
 	var rng := RandomNumberGenerator.new()
@@ -300,6 +301,8 @@ func _spawn(id: int) -> void:
 	# Crowford (size 6, ~32 houses) had 30 out, enough to fill its one square.
 	var out_by_size := clampi(6 + size * 4, 8, int(_crown_market(id).get("out_most", MAX_PER_TOWN)))
 	var count := clampi(homes.size() * 2 / 3, 8, out_by_size) if not homes.is_empty() else out_by_size
+	if mourning:
+		count = maxi(4, int(count * float(preload("res://scripts/data.gd").num("moods", "grief.out", 0.45))))  # a town in grief keeps indoors
 	# The working buildings' hands first (works.json jobs): an apprentice where
 	# there's a forge, a groom at the stables, carters where there's a mill.
 	var jobs: Array = []

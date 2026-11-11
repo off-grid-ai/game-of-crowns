@@ -71,7 +71,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	_town_on = minds_on(int(c.get("id", -1)))
 	_town_id = int(c.get("id", -1))
 	# Its people dressed as its rank and holder dress them (people.gd cloth_pick).
-	_people.dress_for(String(root.get_meta("rank", "town")), Color.from_string(String(house.get("color", "")), Color(0, 0, 0, 0)))
+	_people.dress_for(String(root.get_meta("rank", "town")), Color.from_string(String(house.get("color", "")), Color(0, 0, 0, 0)), bool(c.get("grief", false)))
 	# Freeciv's own word that the town starved this season. An empty food store
 	# alone isn't hunger: a town that just grew, or holds steady, sits at zero.
 	var hungry: bool = c.get("famine", false)
@@ -137,9 +137,9 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 		_unrest(life, center, rng)
 	_dress(root, life, center, c, rng, house)
 	_works(root, life, center, c, rng)
-	_moods(root, life, center, c, rng, house)
 	if not c.get("disorder", false):
-		_square_life(root, life, center, c, rng)
+		_square_life(root, life, center, c, rng)  # before the moods: a funeral walks with the square's walkers
+	_moods(root, life, center, c, rng, house)
 	_near_only(life)
 	_pin(life, center)
 
@@ -584,34 +584,17 @@ static func _rect(at: Vector3, size: Vector2, rot: float) -> PackedVector2Array:
 
 
 func _bonfire(life: Node3D, center: Vector3) -> void:
-	# A fire you'd gather round: flames, not a flare (additive sparks bloom fast). Each flame drawn at its real
-	# size in the quad: the GPU copy (Particles.to_gpu) loses a CPU effect's scale, so 0.25-wide added quads
-	# stacked into a bright blob (the forge's white ball, batch 7, was the same fault).
-	var p := CPUParticles3D.new()
-	p.amount = 18
-	p.lifetime = 0.8
-	p.direction = Vector3.UP
-	p.spread = 15
-	p.initial_velocity_min = 0.3
-	p.initial_velocity_max = 0.6
-	var grad := Gradient.new()
-	grad.set_color(0, Color(0.85, 0.45, 0.12, 0.7))
-	grad.set_color(1, Color(0.5, 0.12, 0.0, 0.0))
-	p.color_ramp = grad
-	var q := QuadMesh.new()
-	q.size = Vector2(0.07, 0.07)  # a hand of flame each, as the yard hearths' (towns.gd)
-	var m := StandardMaterial3D.new()
-	m.albedo_texture = preload("res://scripts/towns.gd").soft_dot()
-	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	m.vertex_color_use_as_albedo = true
-	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	q.material = m
-	p.mesh = q
-	p.position = Vector3(_fire_at.x, _y(center, _fire_at) + 0.05, _fire_at.z)
-	var fire_at := p.position
-	life.add_child(Particles.to_gpu(p))
+	# A fire you'd gather round, burning in the game's own flames (fire.gd's flame shader, as a house burns:
+	# tongues born small, swelling, eaten away as they rise). Batch 8b centre-feast-wide: the ring stood unlit,
+	# its 0.07-wide added dots too small to read from the town camera. Numbers: moods.json feast.bonfire.
+	const Fire := preload("res://scripts/fire.gd")
+	var B: Dictionary = Data.value("moods", "feast.bonfire", {})
+	var r := fire_reach() - HEAT
+	var rise: Array = B.get("rise", [0.1, 0.2])
+	var flames := Fire._flames(int(B.get("amount", 26)), 0.9, B.get("size", [0.09, 0.16]), Vector2(float(rise[0]), float(rise[1])), Vector3(r * 0.35, 0.01, r * 0.35), Fire._flame_material(true))
+	flames.position = Vector3(_fire_at.x, _y(center, _fire_at) + 0.02, _fire_at.z)
+	var fire_at := flames.position
+	life.add_child(flames)
 	var ring: Node3D = Real.make(Real.one("fire_pit"))  # the stones it burns in
 	if ring:
 		ring.position = Vector3(_fire_at.x, _y(center, _fire_at) - 0.005, _fire_at.z)
@@ -624,8 +607,8 @@ func _bonfire(life: Node3D, center: Vector3) -> void:
 	life.set_meta("fires", [[Vector2(_fire_at.x, _fire_at.z), keep]])
 	var light := OmniLight3D.new()
 	light.light_color = Color(1.0, 0.6, 0.3)
-	light.light_energy = 0.9
-	light.omni_range = 1.1
+	light.light_energy = float(B.get("light", 1.6))
+	light.omni_range = float(B.get("range", 1.4))
 	light.position = fire_at + Vector3(0, 0.2, 0)
 	life.add_child(light)
 
@@ -1586,6 +1569,8 @@ func _moods(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 		if Works.stock(root, "rack") < want:
 			Works.add_stock(root, "rack", want - Works.stock(root, "rack"))
 		_muster(root, life, center, Data.value("moods", "levy.muster" if "levy" in states else "war.muster", {}), rng)
+	if "grief" in states:
+		_mourning(root, life, center, Data.value("moods", "grief", {}), rng)
 	if "hunger" in states:
 		_dole(root, life, center, Data.value("moods", "hunger.dole", {}), rng)
 	if "justice" in states:
@@ -2026,10 +2011,13 @@ class SquareLife extends Node:
 	var patrols: Array = []
 	var dogs: Array = []
 	var chases: Array = []
+	var processions: Array = []  # a funeral round the square: {walkers, bearers, bier, ring, leg, pace, spacing, trail}
 
 	func _process(delta: float) -> void:
 		if not is_instance_valid(life):
 			return
+		for f in processions:
+			_procession(f, delta)
 		for p in patrols:
 			_patrol(p, delta)
 		for d in dogs:
@@ -2098,6 +2086,41 @@ class SquareLife extends Node:
 			return
 		Animals.walk(dog, step(dog, who.position, float(d["trot"]), delta, near))
 
+	## The funeral: its head walks the ring; each behind follows the trail the head left, `spacing` back, so
+	## the column keeps its shape round the bends; the bier rides at the bearers' shoulders.
+	func _procession(f: Dictionary, delta: float) -> void:
+		var walkers: Array = (f["walkers"] as Array).filter(func(w): return is_instance_valid(w))
+		if walkers.is_empty():
+			return
+		var head: Node3D = walkers[0]
+		var ring: Array = f["ring"]
+		if not step(head, ring[int(f["leg"]) % ring.size()], float(f["pace"]), delta, 0.03):
+			f["leg"] = int(f["leg"]) + 1
+		var trail: Array = f["trail"]
+		trail.push_front(head.position)
+		var need := int(walkers.size() * float(f["spacing"]) / maxf(float(f["pace"]) * delta, 0.0005)) + 2
+		while trail.size() > need:
+			trail.pop_back()
+		for i in range(1, walkers.size()):
+			var back := float(f["spacing"]) * i
+			var gone := 0.0
+			var at: Vector3 = trail[trail.size() - 1]
+			for k in range(1, trail.size()):
+				gone += (trail[k] as Vector3).distance_to(trail[k - 1])
+				if gone >= back:
+					at = trail[k]
+					break
+			step(walkers[i], at, float(f["pace"]) * 1.4, delta, 0.005)
+		var bearers: Array = (f["bearers"] as Array).filter(func(w): return is_instance_valid(w))
+		var bier: Variant = f["bier"]
+		if bier != null and is_instance_valid(bier) and not bearers.is_empty():
+			var c := Vector3.ZERO
+			for b in bearers:
+				c += (b as Node3D).position
+			c /= bearers.size()
+			(bier as Node3D).position = c + Vector3(0, 0.15, 0)  # on their shoulders
+			(bier as Node3D).rotation.y = (bearers[0] as Node3D).rotation.y
+
 	func _chase(c: Dictionary, delta: float) -> void:
 		var kids: Array = c["kids"]
 		if kids.size() < 2 or not is_instance_valid(kids[0]) or not is_instance_valid(kids[1]):
@@ -2164,3 +2187,82 @@ func _long_table(life: Node3D, center: Vector3, at: Vector3, out: Vector3, seats
 			sat.append(p)
 	life.set_meta("standing", taken)
 	return sat
+
+
+## A town in grief, unmistakable from the town camera (batch 8b centre-grief: it read as a market day):
+## candles and flowers in a ring at the centrepiece (or the well), black cloth over the doors of the houses
+## nearest the square, the bell tolling from the sept (sound_v2.gd hears the "Tolling" node), and a funeral
+## round the square: a priest, the bier on its bearers' shoulders, mourners behind (SquareLife walks it).
+## The thin dark crowd and the shut stalls are the crowd's and the market's own (people.json cloth.mourning,
+## moods.json grief.out, stalls_open). Numbers: moods.json grief.
+func _mourning(root: Node3D, life: Node3D, center: Vector3, g: Dictionary, rng: RandomNumberGenerator) -> void:
+	var places: Dictionary = root.get_meta("places", {})
+	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
+	var mid := Vector3.ZERO if centre_reach(root) > 0.0 else well
+	var rim := (centre_reach(root) if centre_reach(root) > 0.0 else 0.16) + 0.06
+	var candles := int(g.get("candles", 16))
+	for i in candles:
+		var a := TAU * i / maxf(candles, 1) + rng.randf_range(-0.08, 0.08)
+		var cn := _prop(life, center, ["Candle_1", "Candle_2", "CandleStick"][i % 3], mid + Vector3(cos(a), 0, sin(a)) * (rim + rng.randf_range(0.0, 0.03)), rng.randf() * TAU)
+		if cn:
+			cn.set_meta("dress", "candle")
+	var flower := preload("res://scripts/dressing.gd").mesh_of("nature/Flower_4_Group")
+	if not flower.is_empty():
+		for i in int(g.get("flowers", 10)):
+			var a := TAU * (i + 0.5) / maxf(int(g.get("flowers", 10)), 1)
+			var at := mid + Vector3(cos(a), 0, sin(a)) * (rim + 0.035)
+			var m := MeshInstance3D.new()
+			m.mesh = flower[0]
+			m.scale = Vector3.ONE * 0.12 * 0.6
+			m.position = Vector3(at.x, _y(center, at) - float(flower[1]) * 0.072, at.z)
+			m.rotation.y = rng.randf() * TAU
+			life.add_child(m)
+	# Black cloth over the doors nearest the square.
+	var homes: Array = (root.get_meta("homes", []) as Array).duplicate()
+	homes.sort_custom(func(a, b): return Vector2(a[0].x, a[0].z).length() < Vector2(b[0].x, b[0].z).length())
+	var black := StandardMaterial3D.new()
+	black.albedo_color = Color(0.06, 0.055, 0.06)
+	black.roughness = 1.0
+	for h in homes.slice(0, int(g.get("black_doors", 12))):
+		var step: Vector3 = h[0]
+		var face: Vector3 = h[1]
+		var cloth := _prop(life, center, "Banner_1_Cloth", step - face * 0.1, atan2(face.x, face.z), 0.6, 0.12)
+		if cloth:
+			cloth.set_meta("dress", "black_door")
+			for gi in cloth.find_children("*", "GeometryInstance3D", true, false):
+				(gi as GeometryInstance3D).material_override = black
+	# The bell tolling from the sept (or the square).
+	var toll := Node3D.new()
+	toll.name = "Tolling"
+	toll.set_meta("toll", g.get("toll", [9.0, 12.0]))
+	var sept: Vector3 = places.get("sept", well)
+	toll.position = Vector3(sept.x, _y(center, sept) + 0.3, sept.z)
+	life.add_child(toll)
+	# The funeral, walked round the square.
+	var P: Dictionary = g.get("procession", {})
+	var go: Node = life.get_node_or_null("SquareLife")
+	if go == null or P.is_empty():
+		return
+	var r := float(root.get_meta("square_r", 1.0)) * float(P.get("ring", 0.72))
+	var ring: Array = []
+	var a0 := atan2(sept.x, sept.z)
+	for i in 12:
+		var a := a0 + TAU * i / 12.0
+		ring.append(Vector3(sin(a), 0, cos(a)) * maxf(r, rim + 0.25))
+	var walkers: Array = []
+	if bool(P.get("priest", true)):
+		walkers.append(_townsperson(life, ring[0], "clergy", "Walk", rng.randi()))
+	var bearers: Array = []
+	for i in int(P.get("bearers", 4)):
+		var b := _townsperson(life, ring[0], "peasant", "Walk", rng.randi())
+		bearers.append(b)
+		walkers.append(b)
+	for i in int(P.get("mourners", 8)):
+		walkers.append(_townsperson(life, ring[0], "townsfolk" if i % 2 else "peasant", "Walk", rng.randi()))
+	var bier := _prop(life, center, "Chest_Wood", ring[0], 0.0, 1.0)
+	if bier:
+		bier.scale = Vector3(0.7, 0.5, 1.5) * PROP_SCALE
+	for w in walkers:
+		w.set_meta("procession", true)
+		_people.play(w, "Walk", 0.7)
+	go.processions.append({"walkers": walkers, "bearers": bearers, "bier": bier, "ring": ring, "leg": 1, "pace": float(P.get("pace", 0.07)), "spacing": float(P.get("spacing", 0.11)), "trail": []})

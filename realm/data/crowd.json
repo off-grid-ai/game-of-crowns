@@ -2,10 +2,10 @@
   "_": "The square's own life in a market town (town_life.gd _square_life; art target docs/art/target/town-composition/town-b: a square packed with shoppers, porters, children, dogs, a crier, guards and beggars, each there for a reason). on: the switch (--crowd=off). min_size: towns this big or bigger get it, and the crown's seat always. Each row: how many by the town's state (works.json priority; base, then the first state the town is in). crier: a crier at the well on a market day (his post crier: news, calls, the day's prices). beggars: at the church step (post beg; more in hunger). patrol: guards walking the square's ring in a pair, stopping to look about (pause seconds, pace world units a second, ring as a share of the square's radius; more in war). dogs: town dogs (the Quaternius wolf, shrunk to a dog's length in metres and tinted a hound's brown) trotting after people, sniffing and lying about (trot pace, follow: how near they keep). chase: pairs of children chasing each other round the square (run pace, how far apart before the chaser turns back). gossip: knots of townsfolk talking, who turn to look at news (post gossip; knot size [fewest, most]).",
   "on": true,
   "min_size": 6,
-  "crier": { "base": 1, "hunger": 0 },
+  "crier": { "grief": 0, "base": 1, "hunger": 0 },
   "beggars": { "base": 2, "hunger": 5, "prosperity": 1 },
   "patrol": { "base": 1, "war": 2, "levy": 2, "pause": [3.0, 7.0], "pace": 0.14, "ring": 0.85 },
-  "dogs": { "base": 3, "hunger": 1, "length": 0.85, "tint": [[0.62, 0.44, 0.28], [0.35, 0.28, 0.22], [0.8, 0.7, 0.55], [0.25, 0.22, 0.2]], "trot": 0.2, "follow": 0.12 },
-  "chase": { "base": 2, "war": 0, "hunger": 0, "pace": 0.32, "apart": 0.35 },
-  "gossip": { "base": 3, "war": 4, "feast": 2, "knot": [2, 4] }
+  "dogs": { "grief": 1, "base": 3, "hunger": 1, "length": 0.85, "tint": [[0.62, 0.44, 0.28], [0.35, 0.28, 0.22], [0.8, 0.7, 0.55], [0.25, 0.22, 0.2]], "trot": 0.2, "follow": 0.12 },
+  "chase": { "grief": 0, "base": 2, "war": 0, "hunger": 0, "pace": 0.32, "apart": 0.35 },
+  "gossip": { "grief": 1, "base": 3, "war": 4, "feast": 2, "knot": [2, 4] }
 }
