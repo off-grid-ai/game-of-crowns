@@ -58,18 +58,24 @@ var _yaw_march := 0.6  # onto the column, from its front quarter
 var _tilt := 0.0
 var _want_select := ""
 var _rng := RandomNumberGenerator.new()
+## One side of a field battle (tools/field_battle.gd raises two): {side: 0 or 1, field: the line's middle,
+## face: its facing, colour, house, shape}. Empty for the spike's own muster by the seat.
+var battle := {}
+var mustered := false  # its regiments raised and its line placed (the battle waits on both sides)
+signal raised
 
 
-func _init(owner: Node, count: int) -> void:
+func _init(owner: Node, count: int, side: Dictionary = {}) -> void:
 	main = owner
 	men = count
-	name = "ArmySpike"
+	battle = side
+	name = "ArmySpike" if side.is_empty() else "ArmySide%d" % int(side.get("side", 0))
 
 
 func _ready() -> void:
-	_rng.seed = 3017
-	var shape := "auto"
-	for a in OS.get_cmdline_user_args():
+	_rng.seed = 3017 + int(battle.get("side", 0)) * 101
+	var shape := String(battle.get("shape", "auto"))
+	for a in (OS.get_cmdline_user_args() if battle.is_empty() else PackedStringArray()):
 		if a.begins_with("--dist="):
 			_dist = float(a.substr(7))
 		elif a.begins_with("--army-shape="):
@@ -98,7 +104,7 @@ func _ready() -> void:
 	var colours := _colours()
 	for i in specs.size():
 		var k := i % colours.size() if String(Data.value("army", "colours", "crown")) == "houses" else 0
-		var r := _regiment(specs[i], colours[k], _worn[k] if k < _worn.size() else {})
+		var r := _regiment(specs[i], battle["colour"], battle.get("house", {})) if battle.has("colour") else _regiment(specs[i], colours[k], _worn[k] if k < _worn.size() else {})
 		if r.is_empty():
 			continue
 		_regiments.append(r)
@@ -108,7 +114,11 @@ func _ready() -> void:
 		return
 	# The line: where it stands and the way it faces, every regiment's place in it.
 	var extent := _line_places()
-	if not _field_for(town, extent):
+	if battle.has("field"):  # a battle side stands where the battle puts it
+		_face = float(battle.get("face", 0.0))
+		_field = _ground_at(battle["field"])
+		_take_field(extent)
+	elif not _field_for(town, extent):
 		push_error("ARMY no open ground by the seat")
 		_regiments.clear()
 		return
@@ -135,7 +145,9 @@ func _ready() -> void:
 		roles[r["role"]] = int(roles.get(r["role"], 0)) + 1
 	print("ARMY mustered men=%d regiments=%d %s host=%d shape=%s by %s at %s, line at %s facing %.2f, road in %.1f units" % [_men(), _regiments.size(), str(roles), host_id, shape,
 		String(seat.get("name", "?")), str(town), str(_field), _face, _cum[_cum.size() - 1] if not _cum.is_empty() else 0.0])
-	_hold = true  # the camera on the army itself, at the shot's own --dist, for the whole take (a test aid)
+	_hold = battle.is_empty()  # the camera on the army itself, at the shot's own --dist, for the whole take (a test aid); a battle frames itself
+	mustered = true
+	raised.emit()
 
 
 # --- The command hooks (the command card calls these; nothing in play does yet) -------------------------
@@ -193,6 +205,44 @@ func set_shape(shape: String) -> void:
 			_clips(r, "walk")
 		elif _goal == "column" and r["shape"] == "line" and r["state"] == "rest":
 			_reform(r, "column")
+
+
+# --- For a field battle (tools/field_battle.gd moves the regiments; the spike only draws them) -------------
+
+## The regiments themselves (their state is "battle" while the battle has them: the spike leaves them be).
+func rows() -> Array:
+	return _regiments
+
+
+func field() -> Vector3:
+	return _field
+
+
+func facing() -> float:
+	return _face
+
+
+## A regiment's men in place at once (their `local`), set where it stands on the ground, turned to `yaw`.
+func place(r: Dictionary, p: Vector3, yaw: float) -> void:
+	_set_at(r, p, yaw)
+
+
+func dress(r: Dictionary) -> void:
+	_dress(r)
+
+
+## Every man of a regiment plays a role's clip (walk, rest, ready, attack...).
+func play(r: Dictionary, role: String) -> void:
+	_clips(r, role)
+
+
+func track(r: Dictionary, role: String) -> int:
+	return _track(r, role)
+
+
+## Its banner wavers (0 steady .. 1 about to break; army_banner.gdshader's waver).
+func waver(r: Dictionary, w: float) -> void:
+	(r["banner_mat"] as ShaderMaterial).set_shader_parameter("waver", clampf(w, 0.0, 1.0))
 
 
 # --- Raising the host -------------------------------------------------------------------------------------
@@ -346,7 +396,7 @@ func _layout(r: Dictionary, shape: String) -> Dictionary:
 		var b: Array = bends[k]
 		z += float(b[0]) * sin(x * float(b[2]) * TAU / maxf(sf * files, 0.01) * 3.0 + float(b[1]))
 		at.append(Vector3(x + _rng.randf_range(-place, place), 0.0, z + _rng.randf_range(-place, place)))
-	return {"at": at, "w": files * sf, "d": ranks * sr}
+	return {"at": at, "w": files * sf, "d": ranks * sr, "files": files}
 
 
 ## Lays every man of a regiment at its current positions (its `local`), with his own turn and size.
@@ -458,7 +508,7 @@ func _standard_up() -> void:
 	m.set_shader_parameter("glyph", GLYPHS["crown"])
 	m.set_shader_parameter("pips", 0)
 	m.set_shader_parameter("swallow", false)
-	var crown := _crown_house()
+	var crown: Dictionary = battle.get("house", _crown_house())
 	var path := "res://assets/heraldry/banner-%s.png" % Heraldry.slug(crown) if not crown.is_empty() else ""
 	if path != "" and ResourceLoader.exists(path):
 		m.set_shader_parameter("arms", load(path))
@@ -668,7 +718,17 @@ func _field_for(town: Vector3, extent: Vector2) -> bool:
 	_face = best_a
 	_field = town + Vector3(best_c.x, 0, best_c.y)
 	_field.y = main.terrain.height_at(_field.x, _field.z)
-	# Its ground cleared of trees, and every regiment's slot on it.
+	_take_field(extent)
+	return true
+
+
+## The line's ground (at _field, facing _face) cleared of trees, and every regiment's slot on it.
+func _take_field(extent: Vector2) -> void:
+	var pitch := Data.num("army", "muster.cell", 2.0)
+	var keep := pitch * Data.num("army", "muster.keepOff", 0.75)
+	var woods = main.terrain.get("forest")
+	var nx := maxi(1, int(ceil(extent.x / pitch)) + 1)
+	var nz := maxi(1, int(ceil(extent.y / pitch)) + 1)
 	var fwd3 := Vector3(sin(_face), 0, cos(_face))
 	var right3 := Vector3(cos(_face), 0, -sin(_face))
 	for i in nx:
@@ -680,7 +740,6 @@ func _field_for(town: Vector3, extent: Vector2) -> bool:
 		var pl: Vector2 = r["place"]
 		var p := _field + right3 * pl.x + fwd3 * pl.y
 		r["slot"] = Vector3(p.x, main.terrain.height_at(p.x, p.z), p.z)
-	return true
 
 
 ## A regiment stands in its place in the line at once, at ease.
@@ -699,7 +758,7 @@ func _road_in(town: Vector3) -> void:
 	var need := _column_length() + Data.num("army", "march.lead", 5.0) + 1.0
 	var roads = main.get("roads")
 	var way := PackedVector3Array()
-	if roads and roads.has_method("route"):
+	if roads and roads.has_method("route") and int(battle.get("side", 0)) == 0:
 		var others: Array = (main.bridge.world.get("cities", []) as Array).duplicate()
 		var seat_xy := Vector2(town.x, town.z)
 		var pos := func(c) -> Vector3: return main.terrain.world_pos(float(c["x"]), float(c["y"]))
