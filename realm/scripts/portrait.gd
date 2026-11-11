@@ -127,6 +127,7 @@ func _paint(person: Dictionary, house: Dictionary) -> Texture2D:
 		return null
 	model.scale /= People.S  # in metres, as on the close-up's stage
 	model.rotation.y = 0.35  # turned a little toward the light
+	model.remove_from_group("people")  # a sitter for a painting, not a townsman: no crowd check, ground check or count sees them
 	_stage.add_child(model)
 	People.release(model)  # the portrait drives the player itself
 	var ap := model.get_node_or_null("Anim") as AnimationPlayer

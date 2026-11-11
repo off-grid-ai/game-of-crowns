@@ -328,6 +328,7 @@ func _cast(person: Dictionary, house: Dictionary) -> void:
 	var tint := preload("res://scripts/heraldry.gd").colour(house, Color.GRAY, "#888888").lerp(Color.WHITE, 0.45)
 	var model: Node3D = _people.make(rng, People.station(person), tint, age, "", str(person.get("gender", "")), key)
 	model.scale /= People.S  # the stage is in metres, the realm at town scale
+	model.remove_from_group("people")  # on the close-up's stage, not in the realm: no crowd or ground check sees them
 	_body = Node3D.new()
 	_body.add_child(model)
 	_stage.add_child(_body)
