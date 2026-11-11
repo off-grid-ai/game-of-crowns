@@ -32,6 +32,11 @@ limit. Newest first. The plan is [PLAN.md](PLAN.md); the running log of checks i
   switch until judged; tunables in data plus docs/TUNING.md.
 
 ## What Mac said (2026-11-11), newest first
+- **Fidelity picked: "Foundation and mid polished is what I like."** His likes on the fidelity picker
+  (https://claude.ai/artifact/VABqP8bqvo7BHqKEbVMoPn, db `fidelity`, 39 likes, 0 dislikes): Age of Empires II DE,
+  Age of Mythology Retold, Foundation, Settlers 7 and New Allies, SpellForce 3, Warcraft III, Against the Storm,
+  Tiny Glade, Old World, Diplomacy is Not an Option, Northgard, plus classics (Stronghold HD, Settlers II, AoE2).
+  **The target is polished mid-fidelity** in that family. Armies: the VAT spike is approved (notes/armies-research.md).
 - "Political influence can also be shown better" (the land tinted in the holder's colours, made far richer:
   CK3 map mode in the WC3 look, Builder 2). "Small inns and taverns with army people, roadways with small places
   in between… a really good world is what we need to build… our own twist." Roadside life along the great roads
