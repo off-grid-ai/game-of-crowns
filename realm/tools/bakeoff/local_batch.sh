@@ -15,7 +15,7 @@ for n in $NAMES; do
   arch -arm64 $PY -I "$HERE/cutout.py" "$B/concepts/$n.png" "$B/cutouts/$n.png" || continue
   t=$SECONDS
   (cd $T && arch -arm64 env SPARSE_BACKEND=pytorch ATTN_BACKEND=sdpa PYTORCH_ENABLE_MPS_FALLBACK=1 \
-    $PY scripts/run_real_pipeline.py "$B/cutouts/$n.png" ${n}_trellis --out-dir "$B/ai3d" --skip-previews --texture-size 2048) \
+    $PY scripts/run_real_pipeline.py "$B/cutouts/$n.png" ${n}_trellis --out-dir "$B/ai3d" --skip-previews --texture-size 2048 --multiview-nviews ${NVIEWS:-40} --multiview-resolution ${MVRES:-768}) \
     > "$B/ai3d/local_$n.log" 2>&1
   [ -f "$B/ai3d/${n}_trellis.glb" ] && echo "ok $n $((SECONDS-t))s" || echo "FAILED $n (log: $B/ai3d/local_$n.log)"
 done
