@@ -120,7 +120,9 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 **Running in parallel:** a three-style test sheet (storybook, toon with outlines, 3D pixel; Film); the
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
-## Log of supervisor actions (newest first; details in review/supervisor-log.md)
+## Log
+
+- 2026-11-11 18:14: batch 4 running (/tmp/goc-batch4, scratchpad batch4.sh), with plots dbe3d94b, the church ee360bc1, sites 6126627a, autumn 29a0dcac and far shots b3d7ffbe. The bake-off catalogue is still being made. of supervisor actions (newest first; details in review/supervisor-log.md)
 - 17:50 Batch 3 running (one batch): all slice switches incl. --towns=plots; Kingsmere roof, d40, d55; Goldrock;
   the army at 6k/15k (d40) and 6k (d8), fixed muster; the stone-wall demo; bake-off kit and AI 3D cells; fire.
   Batch 2 stopped (its army runs predated the muster fix). Army perf: 6k and 15k both 12–13 fps at d40 (Mac's bar
