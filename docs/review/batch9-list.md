@@ -43,7 +43,7 @@ Rosehall because a court sitting took the camera (fixed, e87d2394).
     charred shells left. The run log has no `fire.gd` errors (the spread follows the town when towns.gd rebuilds it).
 11. **storm-fire in the breach launch**: after the gap is taken, the town alight in frame (same proof as 10).
 
-## Glow orbs and blob pads (#13; 35ed77ce, ba9f8f56, ae508125, 3a… wear)
+## Glow orbs and blob pads (#13; 35ed77ce, ba9f8f56, ae508125, fec1c0e6)
 
 12. **The forge's anvil** (`work Kingsmere forge 4.5 -25`): no glowing ball at the smith's feet; sparks a short burst
     off the anvil each stroke; the forge mouth warm, not blown out.
