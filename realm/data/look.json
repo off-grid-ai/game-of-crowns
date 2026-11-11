@@ -72,5 +72,23 @@
   "volumetric": 0.003,
   "fog": 0.0008
  },
- "_target_was": "Foundation/Tiny Glade (storybook.png, earthy tints); kept: assets/grade/storybook.png"
+ "_target_was": "Foundation/Tiny Glade (storybook.png, earthy tints); kept: assets/grade/storybook.png",
+ "politics": {
+  "_": "The political map (docs/review/political-map.md; target docs/art/target/02-realm.jpg; CK3's political map mode in Warcraft III's colours). on: the switch (or --politics=on). hold: how strongly a house's land carries its colour, by its favour band (the bridge's reading): loyal heartland strong, cold land fading. stripes_below: a hold under this stripes the land in its rival's colour (the first house it's at war with): slipping. wash_near / wash_far: the colour's strength at town zoom and from far off (times hold). own_mix: how much of the house's flat colour goes over the land's own brightness (0: a hue only, 1: flat paint). border_bright: the border line in the house's own colour, brightened; border_px: its width in screen pixels. stripe_width: the stripes' width in tiles.",
+  "on": false,
+  "hold": {
+   "loyal": 1.0,
+   "sworn": 0.85,
+   "steady": 0.7,
+   "cooling": 0.45,
+   "angry": 0.3
+  },
+  "stripes_below": 0.4,
+  "wash_near": 0.3,
+  "wash_far": 0.8,
+  "own_mix": 0.45,
+  "border_bright": 1.35,
+  "border_px": 3.0,
+  "stripe_width": 1.4
+ }
 }

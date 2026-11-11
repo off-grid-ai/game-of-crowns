@@ -858,6 +858,35 @@ var _rel_sig := ""  # wars, truces, schemes: a change repaints the borders
 ## envoy, a pact the King's spies have revealed, a marriage, drawn on the seam
 ## between the two houses (a = 0.75 envoy, 0.5 pact, 0.25 marriage; 1 none).
 const SCHEME := {"envoy": 0.75, "pact": 0.5, "marriage": 0.25}
+## The political map (realm/data/look.json politics): each house's hold from its favour band (the bridge's
+## reading) and, for a house slipping away, the colour of the first house it's at war with; to the ground's
+## shader as two uniform arrays by owner id, so a change of mood repaints nothing.
+func _set_politics(players: Array, colour: Dictionary, by_name: Dictionary) -> void:
+	if land3d == null:
+		return
+	var pol: Dictionary = preload("res://scripts/look.gd").LOOK.get("politics", {})
+	var args := OS.get_cmdline_user_args()
+	var on := args.has("--politics=on") or (bool(pol.get("on", false)) and not args.has("--politics=off"))
+	var hold := PackedFloat32Array()
+	hold.resize(64)
+	hold.fill(1.0)
+	var lean := PackedVector3Array()
+	lean.resize(64)
+	var bands: Dictionary = pol.get("hold", {})
+	for p in players:
+		var id := int(p.get("id", -1))
+		if id < 0 or id >= 64:
+			continue
+		hold[id] = float(bands.get(String(p.get("band", "")), 1.0))
+		var foes: Array = p.get("atWarWith", [])
+		if not foes.is_empty() and colour.has(int(foes[0])):
+			var c: Color = colour[int(foes[0])]
+			lean[id] = Vector3(c.r, c.g, c.b)
+	land3d.set_politics(on, hold, lean,
+		Vector4(float(pol.get("wash_near", 0.3)), float(pol.get("wash_far", 0.8)), float(pol.get("own_mix", 0.45)), float(pol.get("stripes_below", 0.4))),
+		Vector4(float(pol.get("border_bright", 1.35)), float(pol.get("border_px", 3.0)), float(pol.get("stripe_width", 1.4)), 0.0))
+
+
 func set_realm(owners: Array, players: Array, intrigue: Array = []) -> void:
 	if _land_mat == null or owners.size() != height or (USE_TERRAIN3D and (land3d == null or land3d.land == null)):
 		return  # (the 3D land is still being raised: the next reading paints it)
@@ -891,6 +920,7 @@ func set_realm(owners: Array, players: Array, intrigue: Array = []) -> void:
 		var a := int(it.get("from", -1))
 		var b := int(it.get("to", -1))
 		schemes["%d:%d" % [mini(a, b), maxi(a, b)]] = SCHEME[k]
+	_set_politics(players, colour, by_name)
 	var sig := str(hash(owners)) + str(hash(wars)) + str(hash(truces)) + str(hash(sworn)) + str(hash(schemes))
 	if sig == _realm_sig:
 		return

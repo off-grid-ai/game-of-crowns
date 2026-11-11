@@ -376,6 +376,13 @@ uniform vec2 flood_at[8];
 uniform int flood_n = 0;
 uniform float flood_r = 100000.0;
 uniform float realm_on = 0.0;
+// The political map (data/look.json politics; terrain.set_realm): per owner id, how firm its hold (0..1)
+// and the colour of the house it is slipping toward (black: none).
+uniform float politics = 0.0;
+uniform float hold[64];
+uniform vec3 lean[64];
+uniform vec4 pol_k = vec4(0.3, 0.8, 0.45, 0.4);  // wash_near, wash_far, own_mix, stripes_below
+uniform vec4 pol_b = vec4(1.35, 3.0, 1.4, 0.0);  // border_bright, border_px, stripe_width
 float flood_d(vec2 t) {
 	float d = 100000.0;
 	for (int i = 0; i < flood_n; i++) d = min(d, distance(t, flood_at[i]));
@@ -413,6 +420,7 @@ const REALM_WASH := """
 		float px = max(fwidth(rt.x), fwidth(rt.y));
 		float gap = lead - 0.5;
 		float edge = other >= 0 ? 1.0 - smoothstep(px * 1.2, px * 2.6 + 0.01, gap) : 0.0;
+		if (politics > 0.5 && other >= 0) edge = 1.0 - smoothstep(px * pol_b.y * 0.5, px * pol_b.y + 0.01, gap);  // a crisp, bolder line
 		// A band of stronger colour just inside it, as a map would draw a realm's edge.
 		float band = other >= 0 ? 1.0 - smoothstep(0.0, 0.4, gap) : 0.0;
 		// The two houses' standing across this border (terrain.set_realm): r war, g truce, b sworn.
@@ -436,7 +444,22 @@ const REALM_WASH := """
 			vec3 tinted = clamp(own.rgb * lum / hl * 1.1, 0.0, 1.0);
 			// Wide washes only from a little way off (never a flat coat over the streets); the band always.
 			float k = far_off * mix(0.45, 0.7, realm_mix) + band * mix(0.35, 0.55, far_off) + front * 0.4 * far_off;
-			ALBEDO = mix(ALBEDO, tinted, clamp(k, 0.0, 0.85));
+			if (politics > 0.5) {
+				// CK3's political map in WC3's colours: the house's colour as strong as its hold, saturated toward
+				// its own flat colour; land slipping away striped in the colour of the house it leans to.
+				int oid = clamp(int(round(own.a * 64.0)) - 1, 0, 63);
+				float hd = hold[oid];
+				tinted = mix(tinted, own.rgb, pol_k.z);
+				vec3 ln = lean[oid];
+				if (hd < pol_k.w && dot(ln, vec3(1.0)) > 0.01) {
+					float st = step(0.5, fract((rt.x - rt.y) / max(pol_b.z, 0.1)));
+					vec3 lt = mix(clamp(ln * lum / max(dot(ln, vec3(0.299, 0.587, 0.114)), 0.05) * 1.1, 0.0, 1.0), ln, pol_k.z);
+					tinted = mix(tinted, lt, st);
+					hd = max(hd, 0.6);  // the stripes themselves are the reading: drawn clearly
+				}
+				k = mix(pol_k.x, pol_k.y, far_off) * hd + band * 0.35 + front * 0.5;
+			}
+			ALBEDO = mix(ALBEDO, tinted, clamp(k, 0.0, politics > 0.5 ? 0.92 : 0.85));
 		}
 		// War: red. A truce: muted gold, dashed (held, not settled). Sworn to the crown:
 		// a fine crown-gold edge. Otherwise the house's own colour, darkened.
@@ -446,6 +469,9 @@ const REALM_WASH := """
 		if (envoy) { line = vec3(0.86, 0.86, 0.9); dash = step(0.5, fract((rt.x + rt.y) * 2.0 - TIME * 0.6)); }
 		else if (pact) { line = vec3(0.22, 0.12, 0.3); strength = 0.5; }
 		else if (wed) { line = step(0.5, fract((rt.x + rt.y) * 1.5)) > 0.5 ? own.rgb : o[other].rgb; }
+		// The political map: the line in the house's own colour, brightened (WC3's team colour), unless war,
+		// a truce or an oath has its own.
+		if (politics > 0.5 && !at_war && !truce && !sworn && !envoy && !pact && !wed && own.a > 0.0) { line = clamp(own.rgb * pol_b.x, 0.0, 1.0); strength = 1.0; }
 		ALBEDO = mix(ALBEDO, line, edge * strength * dash);
 	}
 """
@@ -486,6 +512,18 @@ func _show_realm(realm: Texture2D, prev: Texture2D, war: Texture2D, flood: Dicti
 		mat.set_shader_param("flood_r", 0.0)
 		_flood_reach = float(flood["reach"]) + 2.0
 		_flood_t = 0.0
+
+
+## The political map's per-house numbers (terrain.set_realm): hold and lean by owner id, and the knobs.
+func set_politics(on: bool, hold: PackedFloat32Array, lean: PackedVector3Array, k: Vector4, b: Vector4) -> void:
+	if land == null:
+		return
+	var mat: Terrain3DMaterial = land.material
+	mat.set_shader_param("politics", 1.0 if on else 0.0)
+	mat.set_shader_param("hold", hold)
+	mat.set_shader_param("lean", lean)
+	mat.set_shader_param("pol_k", k)
+	mat.set_shader_param("pol_b", b)
 
 
 ## The scars as terrain.set_marks drew them, and the season it is now.
