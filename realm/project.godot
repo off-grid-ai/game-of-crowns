@@ -39,3 +39,10 @@ mesh_lod/lod_change/threshold_pixels=4.0
 [audio]
 
 driver/enable_input=true
+
+[shader_globals]
+
+wind={
+"type": "vec4",
+"value": Vector4(0.8, 0, 0.6, 0.15)
+}

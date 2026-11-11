@@ -38,8 +38,17 @@ var _snow: GPUParticles3D
 var _level := {"rain": 0.0, "snow": 0.0}  # the weather's own fall, before the camera's height
 var _base := {}  # the clear day's light, as look.gd left it: weather scales it, never replaces it
 
+# The one wind (the finesse catalogue's shared fact): where it blows and how hard, from Sky3D's wind as the
+# weather sets it. Owned here; shaders read the global `wind` (project.godot shader_globals: x, z the
+# direction it blows toward, w its strength 0..1), CPU-side effects (smoke, embers: fire.gd) read this.
+const WIND_FULL := 9.0  # m/s (a storm): strength 1
+const PREVAILING_FROM := -70.0  # degrees: the realm's wind comes off the western sea (Sky3D: 0 north, -90 west)
+static var wind := Vector4(0.8, 0.0, 0.6, 0.15)
+
 
 func _ready() -> void:
+	if sky3d:
+		sky3d.wind_direction = deg_to_rad(PREVAILING_FROM)  # the clouds, the smoke and the flames all go one way
 	# Rain: short, fine, faint streaks in a small box about the lens, fading out with distance.
 	_rain = _fall(RAIN_DROPS, Vector2(0.0025, 0.07), Color(0.82, 0.86, 0.92, 0.22), 14.0, 0.45, 4.0)
 	_snow = _fall(SNOW_FLAKES, Vector2(0.035, 0.035), Color(0.96, 0.97, 1.0, 0.85), 1.1, 6.0, 9.0)
@@ -83,6 +92,7 @@ func _process(_delta: float) -> void:
 
 
 func _process_timed(_delta: float) -> void:
+	_publish_wind()
 	# The fall stays about the camera, wherever it looks.
 	var cam := get_viewport().get_camera_3d()
 	if cam == null:
@@ -93,6 +103,19 @@ func _process_timed(_delta: float) -> void:
 	var d: float = float(rig.get("distance")) if rig and rig.get("distance") != null else 0.0
 	_amount(_rain, _level["rain"] * (1.0 - smoothstep(RAIN_NEAR.x, RAIN_NEAR.y, d)))
 	_amount(_snow, _level["snow"] * (1.0 - smoothstep(SNOW_NEAR.x, SNOW_NEAR.y, d)))
+
+
+## Sky3D's wind as the shared fact: wind_direction is where it blows from (0 north, 90 east; north is -z).
+func _publish_wind() -> void:
+	if sky3d == null:
+		return
+	var from := float(sky3d.wind_direction)
+	var toward := Vector2(-sin(from), cos(from))  # from the north (0): toward the south, +z
+	var w := Vector4(toward.x, 0.0, toward.y, clampf(float(sky3d.wind_speed) / WIND_FULL, 0.0, 1.0))
+	if w.is_equal_approx(wind):
+		return
+	wind = w
+	RenderingServer.global_shader_parameter_set(&"wind", w)
 
 
 func _amount(p: GPUParticles3D, v: float) -> void:
