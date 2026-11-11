@@ -469,7 +469,19 @@ def cloth_mask():
     px = np.array(img.pixels[:], dtype=np.float32).reshape(h, w, -1)[:, :, :3]
     hi, lo = px.max(2), px.min(2)
     sat = np.where(hi > 1e-4, (hi - lo) / np.maximum(hi, 1e-4), 0.0)
-    cloth = (hi > float(CFG["mask"]["bright"])) & (sat < float(CFG["mask"]["grey"]))
+    hue_mask = UNIT.get("mask", {})
+    if hue_mask.get("hue"):
+        # A unit whose cloth is dyed (Meshy's blue, crimson, green): the cloth by its hue, saturation and value
+        # (units.<stem>.mask: hue [from, to] in 0..1, wrapping when from > to; sat, the least; val [least, most]).
+        r, g, b = px[:, :, 0], px[:, :, 1], px[:, :, 2]
+        d = np.maximum(hi - lo, 1e-6)
+        hue = np.where(hi == r, ((g - b) / d) % 6.0, np.where(hi == g, (b - r) / d + 2.0, (r - g) / d + 4.0)) / 6.0
+        h0, h1 = float(hue_mask["hue"][0]), float(hue_mask["hue"][1])
+        in_hue = (hue >= h0) & (hue <= h1) if h0 <= h1 else (hue >= h0) | (hue <= h1)
+        v0, v1 = hue_mask.get("val", [0.12, 1.0])
+        cloth = in_hue & (sat >= float(hue_mask.get("sat", 0.3))) & (hi >= float(v0)) & (hi <= float(v1))
+    else:
+        cloth = (hi > float(CFG["mask"]["bright"])) & (sat < float(CFG["mask"]["grey"]))
     raw = float(cloth.mean())
     for _ in range(int(CFG["mask"]["erode"])):  # a steel highlight is a thin streak: shrinking drops it
         c = cloth.copy()
