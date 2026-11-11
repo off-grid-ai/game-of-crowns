@@ -15,6 +15,8 @@ const Plan := preload("res://scripts/roadside_plan.gd")
 const Horse := preload("res://scripts/horse.gd")
 const Scenes := preload("res://scripts/scenes.gd")
 const Countryside := preload("res://scripts/countryside.gd")
+const Mind := preload("res://scripts/npc_mind.gd")  # the people's one decider (LimboAI)
+const TownLife := preload("res://scripts/town_life.gd")  # minds_on: the --limbo switch
 const RIVERS := "res://assets/maps/rivers.json"
 
 var main: Node
@@ -520,7 +522,13 @@ func _people(s: Dictionary) -> void:
 		n.global_position = at
 		n.rotation.y = atan2(face.x - at.x, face.z - at.z)
 		var m := {"node": n, "left": rng.randf_range(0.5, 3.0)}
-		if who == "folk" or who == "soldier":
+		# One decider for what people do: a spec naming a post (an inn's host, its yard's drinkers, a
+		# woodcutter, a pilgrim) gets the townsfolk's mind on LimboAI (npc_mind.gd); the site is a work
+		# site like a town's. Without one, or with minds off (--limbo=none), the old clip timer.
+		if (who == "folk" or who == "soldier") and spec.has("post") and TownLife.minds_on(-1) \
+				and Mind.give(n, String(spec["post"]), func(q: Vector3) -> float: return main.terrain.height_at(q.x, q.z), rng.randi()):
+			pass
+		elif who == "folk" or who == "soldier":
 			m["clips"] = spec.get("clips", ["Idle"])
 			m["last"] = ""
 			_next_clip(m)

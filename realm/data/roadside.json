@@ -46,14 +46,14 @@
         { "who": "horse", "at": [1.05, 0.66], "face": [1.05, 1.2] },
         { "who": "horse", "at": [1.25, 0.72], "face": [1.25, 1.2], "chance": 0.8 },
         { "who": "horse", "at": [2.05, 0.7], "face": [2.05, 1.2], "chance": 0.5 },
-        { "who": "folk", "role": "townsfolk", "at": [0.0, 0.66], "clips": ["Idle_Talking", "Waving", "Looking_Around", "Wiping_Sweat", "Nodding"] },
-        { "who": "folk", "role": "peasant", "at": [0.25, 0.4], "face": [0.28, 0.52], "clips": ["Drinking", "Laughing", "Idle_Talking", "Talking_2", "Nodding"] },
-        { "who": "folk", "role": "townsfolk", "at": [0.42, 0.62], "face": [0.28, 0.52], "clips": ["Drinking", "Talking", "Laughing", "Telling_Secret", "Thinking"], "chance": 0.8 },
-        { "who": "soldier", "role": "soldier", "kit": "sword", "at": [-0.2, 0.66], "face": [-0.28, 0.5], "clips": ["Drinking", "Laughing", "Idle_Talking", "Arguing", "Bored"] },
-        { "who": "soldier", "role": "soldier", "kit": "spear", "at": [-0.38, 0.62], "face": [-0.28, 0.5], "clips": ["Drinking", "Talking", "Laughing", "Weight_Shift"], "chance": 0.7 },
-        { "who": "folk", "role": "townsfolk", "at": [0.6, 0.6], "clips": ["Lute_Playing", "Bored", "Drinking"], "chance": 0.5 },
-        { "who": "folk", "role": "peasant", "at": [1.6, 0.75], "face": [1.75, 1.35], "clips": ["Carrying", "Interact", "Wiping_Sweat", "PickUp_Table"] },
-        { "who": "folk", "role": "townsfolk", "at": [1.15, 0.38], "face": [1.15, 0.55], "clips": ["Talking", "Pointing_Forward", "Thinking", "Arguing"], "chance": 0.6 }
+        { "who": "folk", "post": "host", "role": "townsfolk", "at": [0.0, 0.66], "clips": ["Idle_Talking", "Waving", "Looking_Around", "Wiping_Sweat", "Nodding"] },
+        { "who": "folk", "post": "yard", "role": "peasant", "at": [0.25, 0.4], "face": [0.28, 0.52], "clips": ["Drinking", "Laughing", "Idle_Talking", "Talking_2", "Nodding"] },
+        { "who": "folk", "post": "yard", "role": "townsfolk", "at": [0.42, 0.62], "face": [0.28, 0.52], "clips": ["Drinking", "Talking", "Laughing", "Telling_Secret", "Thinking"], "chance": 0.8 },
+        { "who": "soldier", "post": "yard", "role": "soldier", "kit": "sword", "at": [-0.2, 0.66], "face": [-0.28, 0.5], "clips": ["Drinking", "Laughing", "Idle_Talking", "Arguing", "Bored"] },
+        { "who": "soldier", "post": "yard", "role": "soldier", "kit": "spear", "at": [-0.38, 0.62], "face": [-0.28, 0.5], "clips": ["Drinking", "Talking", "Laughing", "Weight_Shift"], "chance": 0.7 },
+        { "who": "folk", "post": "minstrel", "role": "townsfolk", "at": [0.6, 0.6], "clips": ["Lute_Playing", "Bored", "Drinking"], "chance": 0.5 },
+        { "who": "folk", "post": "stablehand", "role": "peasant", "at": [1.6, 0.75], "face": [1.75, 1.35], "clips": ["Carrying", "Interact", "Wiping_Sweat", "PickUp_Table"] },
+        { "who": "folk", "post": "traveller", "role": "townsfolk", "at": [1.15, 0.38], "face": [1.15, 0.55], "clips": ["Talking", "Pointing_Forward", "Thinking", "Arguing"], "chance": 0.6 }
       ] },
     "hamlet": { "first": 6.0, "every": 15.0, "gap": 10.0, "out": 2.6, "road_clear": 1.2, "room": 2.6, "clear": 3.2, "stop": true,
       "tiles": ["Grassland", "Plains", "Hills"],
@@ -71,10 +71,10 @@
         { "c": "bucket", "at": [0.15, 0.12], "from_site": true }
       ],
       "life": [
-        { "who": "folk", "role": "peasant", "at": [0.2, 2.6], "clips": ["Talking", "Carrying", "Idle_Talking", "Laughing"] },
-        { "who": "folk", "role": "peasant", "near": "fields", "spread": 0.4, "clips": ["Digging", "Planting", "Dig_And_Plant", "Watering", "Wiping_Sweat"] },
-        { "who": "folk", "role": "peasant", "near": "fields", "spread": 0.4, "clips": ["Dig_And_Plant", "Pick_Fruit", "Carrying", "Planting"], "chance": 0.7 },
-        { "who": "folk", "role": "peasant", "near": "homes", "spread": 0.25, "clips": ["Carrying", "Interact", "Idle_Talking", "Looking_Around"], "chance": 0.8 },
+        { "who": "folk", "post": "porter", "role": "peasant", "at": [0.2, 2.6], "clips": ["Talking", "Carrying", "Idle_Talking", "Laughing"] },
+        { "who": "folk", "post": "fieldhand", "role": "peasant", "near": "fields", "spread": 0.4, "clips": ["Digging", "Planting", "Dig_And_Plant", "Watering", "Wiping_Sweat"] },
+        { "who": "folk", "post": "fieldhand", "role": "peasant", "near": "fields", "spread": 0.4, "clips": ["Dig_And_Plant", "Pick_Fruit", "Carrying", "Planting"], "chance": 0.7 },
+        { "who": "folk", "post": "porter", "role": "peasant", "near": "homes", "spread": 0.25, "clips": ["Carrying", "Interact", "Idle_Talking", "Looking_Around"], "chance": 0.8 },
         { "who": "animal", "animal": "pig", "at": [1.25, 3.3], "chance": 0.8 },
         { "who": "animal", "animal": "pig", "at": [1.4, 3.45], "chance": 0.6 },
         { "who": "animal", "animal": "sheep", "near": "fields", "spread": 0.6, "chance": 0.7 },
@@ -89,7 +89,7 @@
         { "c": "candles", "at": [0.24, 0.48] },
         { "c": "boulder", "at": [-0.3, 0.8], "squash": [0.5, 0.5, 0.5], "turn": 180, "chance": 0.6 }
       ],
-      "life": [ { "who": "folk", "role": "peasant", "at": [0.0, 0.48], "face": [0.0, 0.7], "clips": ["Praying", "Kneeling", "Praying"], "chance": 0.5 } ] },
+      "life": [ { "who": "folk", "post": "pilgrim", "role": "peasant", "at": [0.0, 0.48], "face": [0.0, 0.7], "clips": ["Praying", "Kneeling", "Praying"], "chance": 0.5 } ] },
     "woodcutter": { "first": 5.0, "every": 10.0, "gap": 9.0, "out": 1.3, "road_clear": 0.6, "room": 1.2, "clear": 1.4, "stop": true,
       "tiles": ["Forest"],
       "pieces": [
@@ -106,9 +106,9 @@
       ],
       "fire": [[0.2, 1.15]],
       "life": [
-        { "who": "folk", "role": "peasant", "hold": "axe", "at": [-0.2, 0.98], "face": [-0.2, 0.9], "clips": ["Axe_Down", "Axe_Horizontal", "Wiping_Sweat", "Axe_Down"] },
-        { "who": "folk", "role": "peasant", "hold": "axe", "at": [0.35, 0.93], "face": [0.35, 0.85], "clips": ["Axe_Horizontal", "Axe_Down", "Carrying", "Bored"], "chance": 0.8 },
-        { "who": "folk", "role": "peasant", "at": [0.65, 1.15], "face": [0.6, 1.3], "clips": ["Carrying", "PickUp_Table", "Wiping_Sweat"], "chance": 0.7 }
+        { "who": "folk", "post": "woodcutter", "role": "peasant", "hold": "axe", "at": [-0.2, 0.98], "face": [-0.2, 0.9], "clips": ["Axe_Down", "Axe_Horizontal", "Wiping_Sweat", "Axe_Down"] },
+        { "who": "folk", "post": "woodcutter", "role": "peasant", "hold": "axe", "at": [0.35, 0.93], "face": [0.35, 0.85], "clips": ["Axe_Horizontal", "Axe_Down", "Carrying", "Bored"], "chance": 0.8 },
+        { "who": "folk", "post": "porter", "role": "peasant", "at": [0.65, 1.15], "face": [0.6, 1.3], "clips": ["Carrying", "PickUp_Table", "Wiping_Sweat"], "chance": 0.7 }
       ] },
     "bridge": { "max_width": 0.6, "apart": 1.5, "room": 0.6, "span": 1.6, "apron": 0.25, "across": 2, "lift": 0.03, "half_width": 0.3 },
     "ford": { "room": 0.6, "span": 1.4, "stone_gap": 0.12, "stones_out": 0.32,
@@ -126,7 +126,7 @@
       ],
       "smoke": [[0.0, 0.0, 0.9]],
       "life": [
-        { "who": "folk", "role": "peasant", "at": [0.55, 0.65], "clips": ["Carrying", "PickUp_Table", "Wiping_Sweat", "Idle_Talking"] },
+        { "who": "folk", "post": "porter", "role": "peasant", "at": [0.55, 0.65], "clips": ["Carrying", "PickUp_Table", "Wiping_Sweat", "Idle_Talking"] },
         { "who": "horse", "at": [1.0, 0.95], "chance": 0.6 }
       ] },
     "toll": { "out_of_town": 1.6, "apart": 0.6, "room": 1.0,
@@ -140,16 +140,16 @@
       ],
       "fire": [[0.3, -0.6]],
       "life": [
-        { "who": "soldier", "role": "soldier", "kit": "spear", "at": [0.12, 0.34], "face": [0.12, 0.0], "clips": ["Sword_Idle", "Looking_Around", "SS_Idle_2", "Weight_Shift"] },
-        { "who": "soldier", "role": "soldier", "kit": "sword", "at": [0.1, -0.36], "face": [0.1, 0.0], "clips": ["SS_Idle_2", "Looking_Around", "Bored", "Sword_Idle"] },
-        { "who": "folk", "role": "townsfolk", "at": [-0.35, 0.05], "face": [0.12, 0.34], "clips": ["Talking", "Arguing", "Thinking"], "chance": 0.5 }
+        { "who": "soldier", "post": "guard", "role": "soldier", "kit": "spear", "at": [0.12, 0.34], "face": [0.12, 0.0], "clips": ["Sword_Idle", "Looking_Around", "SS_Idle_2", "Weight_Shift"] },
+        { "who": "soldier", "post": "guard", "role": "soldier", "kit": "sword", "at": [0.1, -0.36], "face": [0.1, 0.0], "clips": ["SS_Idle_2", "Looking_Around", "Bored", "Sword_Idle"] },
+        { "who": "folk", "post": "traveller", "role": "townsfolk", "at": [-0.35, 0.05], "face": [0.12, 0.34], "clips": ["Talking", "Arguing", "Thinking"], "chance": 0.5 }
       ] },
     "gallows": { "from": 3.0, "to": 10.0, "out": 0.9, "road_clear": 0.3, "room": 0.8,
       "pieces": [
         { "c": "gallows", "at": [0.0, 0.95] },
         { "c": "boulder", "at": [0.4, 1.1], "squash": [0.4, 0.4, 0.4], "turn": 180 }
       ],
-      "life": [ { "who": "folk", "role": "peasant", "at": [0.25, 0.55], "face": [0.0, 0.95], "clips": ["Looking_Around", "Pointing_Forward", "Thinking"], "chance": 0.4 } ] }
+      "life": [ { "who": "folk", "post": "onlooker", "role": "peasant", "at": [0.25, 0.55], "face": [0.0, 0.95], "clips": ["Looking_Around", "Pointing_Forward", "Thinking"], "chance": 0.4 } ] }
   },
   "candidates": {
     "_": "Models still missing (kit stand-ins above), for the image-to-3D route. concept: the catalogue concept that already exists, or none (needs a concept image first).",
