@@ -51,6 +51,7 @@ import { LEAN, theirs } from "./favourbook.js";
 import { moodFrom, isWatched } from "./claude.js";
 import * as Season from "./season.js";
 import * as Garrison from "./garrison.js";
+import * as Hosts from "./hosts.js";
 import { TURNING } from "./season.js";
 import { intrigueNow } from "./intrigue.js";
 
@@ -409,7 +410,7 @@ function applyStartOptions() {
 const viewCtx = () => ({ markSeasons: MARK_SEASONS, world, meta, history, court, stakes, turnSeconds, counselNow, scenes, effects, favourWhy, favourPast, lastSeason, detail, favourOf, marchOdds, greatHouses, sworn, priceOf, seasonsLeft, crownOf, crownSeat, reignInfo, storyNow, marksNow, goalNow, CIVILIAN, TURNING, GOAL_FAVOUR, soulsOf });
 // The realm as the view sees it (GET /world): built in view.js.
 function worldView() {
-  return View.worldView(viewCtx());
+  return { ...View.worldView(viewCtx()), hosts: Hosts.list({ world, meta }) };  // the King's hosts and their orders (hosts.js)
 }
 
 // The Hand's matters, read from the realm as it stands now.
@@ -945,6 +946,12 @@ const ROUTES = {
   "POST /event/answer": async (req, res, url) => {
     const b = await body(req);
     const [code, out] = Events.answer({ meta, world, court, detail, send, record, shiftFavour, favourOf }, b.choice);
+    return json(res, code, out);
+  },
+  // An order to one of the King's hosts (hosts.js: the view asks, the bridge decides and moves it).
+  "POST /host/order": async (req, res, url) => {
+    const [code, out] = Hosts.order({ world, meta, sworn, crownSeat }, await body(req));
+    if (code === 200) record({ turn: world?.turn ?? 0, kind: "decree", text: out.text });
     return json(res, code, out);
   },
   "POST /decree": (req, res, url) => DecreeRoutes.issueDecree(routeCtx(), req, res, url),
