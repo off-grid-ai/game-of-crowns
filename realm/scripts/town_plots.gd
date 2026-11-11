@@ -169,10 +169,13 @@ static func _open(g: AStarGrid2D, land: Callable, q: Vector2) -> bool:
 ## junction, a bend that comes back) or on a house already cut (the corner
 ## house of the road a lane leaves) slides on along its own street, a step at
 ## a time, until it is clear: the next house stands flush with the corner
-## instead of a whole plot left empty there.
-static func plots(ways: Array, square_r: float, edge: float, widths: Callable, seed: int) -> Array:
+## instead of a whole plot left empty there. `standing`: the outlines of what already stands (the houses
+## round the square, the landmarks, the castle): a plot slides past them too, rather than being cut on top
+## of one and given up (a great house's seat, whose first plots out of the square all fell on the houses
+## round it, and the town, grown out from its heart, stopped there: 9 houses of 62 plots).
+static func plots(ways: Array, square_r: float, edge: float, widths: Callable, seed: int, standing: Array = []) -> Array:
 	var out: Array = []
-	var bodies: Array = []  # every house cut so far: the main roads' first, so a lane's houses start behind the corner house
+	var bodies: Array = standing.duplicate()  # what stands, and every house cut so far: the main roads' first, so a lane's houses start behind the corner house
 	for w in ways.size():
 		var way: PackedVector2Array = ways[w]
 		for side: float in [-1.0, 1.0]:
