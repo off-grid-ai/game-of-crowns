@@ -121,6 +121,14 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 00:35 (11-12) Round plan. Mac: no compromise on UI and finesse; use the kits properly. (1) GPU: batch 7 films
+  alone (towns 171 frames, moods 83 done, fire running); when done the supervisor judges every shot at 100%
+  against its target, lists defects, sends Mac the set; fixes go in one round, then batch 8 in one run.
+  (2) Soldier gate: kits are the base, the finish is ours. works-life bakes KayKit's animation pack into
+  armies/knight_v2 (CPU, docs/research/knight-clips.md); army-ui builds the painted finish (--army-look=painted)
+  and wires the roles; fire-siege has the battle shots and the castle. Meshy only for units no kit covers, and
+  only after one passes the seven-point bar. TRELLIS stays off for soldiers. (3) Kits first: the surveys
+  (free-rts-kits.md, meshy-library.md) give a swap list per category; Mac picks from sheets.
 
 - 2026-11-11 23:55: the old six sessions are on another Claude account and unreachable. This supervisor runs its own: "Army command: select ring and command card" (army-ui, local_f9e805de), "Life at the works and grounded people" (works-life, local_a5e34ab8), "Fire and siege to the measured rules" (fire-siege, local_9b96362d); plus two subagents (army regiments; town light/walls). Film (batch 7 render) and the rig of real soldiers are the supervisor's own, after TRELLIS. Research committed: d5ac4820.
 - 2026-11-11 23:45: the supervisor moved to session "Get context command" (Mac: "you are the main supervisor thread"); "Supervisor: casebook judge" hit the org spend limit (resets 4:10am IST). Its two agents died uncommitted and were restarted here: army regiments/banners/formations (army_spike.gd, army.json, army_vat.gdshader) and town light, walls, greenery and Goldrock's tiled strip (town density, roofs and cobbles already in: 45e62bfc, 32e76dbc). The six builder sessions held the handover messages (permission-mode mismatch or out of quota). Next: batch 7 (docs/review/batch7.sh) once TRELLIS frees the GPU and both agents commit.
