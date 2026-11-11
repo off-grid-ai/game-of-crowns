@@ -146,6 +146,12 @@ export async function issueDecree(ctx, req, res, url) {
   setTimeout(snapshot, 600);
   const sealed = Seals.spend(ctx.meta, cmd.action, ctx.world.turn ?? 0, ruling);
   if (ruling && ctx.sittingCtx) Sittings.answerMatter(ctx.sittingCtx(), String(cmd.matter));
+  // A matter ruled by an order becomes its town's talk too (chatter.afterRuling, as routes_court.answer does).
+  if (ruling) {
+    const house = (pid) => ctx.world?.players?.find((x) => x.id === Number(pid))?.house?.name;
+    const fav = Object.entries(result.favour ?? {});
+    ctx.chatter?.afterRuling({ city: cmd.city ?? seat?.id, text: result.text, helps: fav.filter(([, d]) => d > 0).map(([k]) => house(k)).filter(Boolean), hurts: fav.filter(([, d]) => d < 0).map(([k]) => house(k)).filter(Boolean) })?.catch?.(() => {});
+  }
   return json(res, 200, { ok: true, text: crowns(result.text) + (effects ? `\n${effects}` : ""), cost: result.cost ?? 0, sealed });
 }
 
