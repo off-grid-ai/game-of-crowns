@@ -123,6 +123,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 		if not hungry and bool(root.get_meta("crown_seat", false)):
 			_market_day(root, life, center, rng)  # the crown's seat: the realm's busiest market
 	if c.get("celebrating", false):
+		_fire_at = _fire_spot(root)
 		_bonfire(life, center)
 		_revels(root, life, center, rng, 6 + mini(int(c.get("size", 1)), 8))
 	if c.get("disorder", false):
@@ -601,19 +602,19 @@ func _bonfire(life: Node3D, center: Vector3) -> void:
 	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	q.material = m
 	p.mesh = q
-	p.position = Vector3(0, _y(center, Vector3.ZERO) + 0.05, 0)
+	p.position = Vector3(_fire_at.x, _y(center, _fire_at) + 0.05, _fire_at.z)
 	var fire_at := p.position
 	life.add_child(Particles.to_gpu(p))
 	var ring: Node3D = Real.make(Real.one("fire_pit"))  # the stones it burns in
 	if ring:
-		ring.position = Vector3(0, _y(center, Vector3.ZERO) - 0.005, 0)
+		ring.position = Vector3(_fire_at.x, _y(center, _fire_at) - 0.005, _fire_at.z)
 		ring.scale = Vector3.ONE * RING_SCALE
 		life.add_child(ring)
 	# Nobody stands in the fire: the ring as wide as it really stands, and a
 	# step of heat past its stones, is ground nobody claims, steps on or walks.
 	var keep := fire_reach()
-	life.set_meta("footprints", life.get_meta("footprints") + [_rect(Vector3.ZERO, Vector2(keep, keep) * 2.0, 0.0)])
-	life.set_meta("fires", [[Vector2.ZERO, keep]])
+	life.set_meta("footprints", life.get_meta("footprints") + [_rect(_fire_at, Vector2(keep, keep) * 2.0, 0.0)])
+	life.set_meta("fires", [[Vector2(_fire_at.x, _fire_at.z), keep]])
 	var light := OmniLight3D.new()
 	light.light_color = Color(1.0, 0.6, 0.3)
 	light.light_energy = 0.9
@@ -623,6 +624,26 @@ func _bonfire(life: Node3D, center: Vector3) -> void:
 
 
 const RING_SCALE := 1.4  # the fire pit's stones, a little larger than the model's own
+var _fire_at := Vector3.ZERO  # where the feast's bonfire stands (town-local): the heart, or off a centrepiece standing there
+
+
+## The square's centrepiece (a fountain at a seat, towns.gd root meta centrepiece): how far from the heart
+## its basin reaches (game units), 0 when only the old well stands off the heart.
+static func centre_reach(root: Node3D) -> float:
+	var kind := String(root.get_meta("centrepiece", ""))
+	if kind == "":
+		return 0.0
+	var foot := Real.footprint(kind)
+	return maxf(foot.x, foot.y) * 0.5
+
+
+## Where the feast's bonfire goes: the square's heart, or with a fountain there, on the seen side clear of
+## its basin by moods.json centre.fire (the dancers' ring and the tables follow it).
+func _fire_spot(root: Node3D) -> Vector3:
+	var r := centre_reach(root)
+	if r <= 0.0:
+		return Vector3.ZERO
+	return SEEN * (r + fire_reach() + float(Data.num("moods", "centre.fire", 0.12)))
 const HEAT := 0.06  # past the stones, a step nobody takes: half a metre
 
 
@@ -641,11 +662,11 @@ func _revels(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGener
 	var inner := fire_reach() + 0.08  # the near edge of the ring: past the heat, and a step (the revel's own steps) more
 	for i in count:
 		var a := spin + TAU * i / count + rng.randf_range(-0.1, 0.1)
-		var want := Vector3(cos(a), 0, sin(a)) * rng.randf_range(inner, inner + 0.12)
+		var want := _fire_at + Vector3(cos(a), 0, sin(a)) * rng.randf_range(inner, inner + 0.12)
 		var move: String = ["Dance", "Cheering", "Dance", "Drinking", "Cheering", "Dance"][i % 6]
 		var f := _stand(root, life, center, want, "townsfolk" if i % 3 else "peasant", move, rng.randi(), Color.WHITE, 0.06)
 		if f:
-			f.rotation.y = atan2(-f.position.x, -f.position.z)
+			f.rotation.y = atan2(_fire_at.x - f.position.x, _fire_at.z - f.position.z)
 			_mind(f, "revel", center)
 
 
@@ -1015,15 +1036,19 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 				_watch(g)
 				_mind(g, "guard", center)
 	if c.get("grief", false):
-		# Mourners gathered at the well, candles set down.
+		# Mourners gathered at the well, candles set down; at a fountain, round its rim, outside the basin
+		# (moods.json centre.mourners, centre.candles: past its real radius).
+		var basin := centre_reach(root)
+		var kneel := basin + float(Data.num("moods", "centre.mourners", 0.08)) if basin > 0.0 else 0.22
+		var set_down := basin + float(Data.num("moods", "centre.candles", 0.04)) if basin > 0.0 else 0.19
 		for i in 3:
 			var a := TAU * i / 3.0
-			var f := _stand(root, life, center, well + Vector3(cos(a), 0, sin(a)) * 0.22, "peasant", "Kneeling", rng.randi(), Color(0.35, 0.33, 0.32), 0.1)
+			var f := _stand(root, life, center, well + Vector3(cos(a), 0, sin(a)) * kneel, "peasant", "Kneeling", rng.randi(), Color(0.35, 0.33, 0.32), 0.1)
 			if f:
 				f.rotation.y = atan2(well.x - f.position.x, well.z - f.position.z)
 				_mind(f, "mourn", center)
 		for i in 3:
-			_prop(life, center, "Candle_1", well + Vector3(cos(i * 2.1), 0, sin(i * 2.1)) * 0.19)  # set down round the well's curb (its winch reaches 0.16 out), not in it
+			_prop(life, center, "Candle_1", well + Vector3(cos(i * 2.1), 0, sin(i * 2.1)) * set_down)  # round the well's curb (its winch reaches 0.16 out) or the basin's rim, not in it
 	if c.get("prosperity", false):
 		# One more stall in good times, by the well, heaped with produce.
 		var extra := well + side * 0.38
@@ -1529,6 +1554,7 @@ func _muster(root: Node3D, life: Node3D, center: Vector3, m: Dictionary, rng: Ra
 ## mugs and plates, the town sat at them drinking and talking, a minstrel by them.
 func _feast(root: Node3D, life: Node3D, center: Vector3, house: Dictionary, rng: RandomNumberGenerator) -> void:
 	var f: Dictionary = Data.value("moods", "feast", {})
+	_fire_at = _fire_spot(root)  # this town's fire, whichever town was dressed before
 	var places: Dictionary = root.get_meta("places", {})
 	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
 	var col := Color.from_string(String(house.get("color", "#8a2a1e")), Color(0.55, 0.16, 0.12))
@@ -1542,8 +1568,8 @@ func _feast(root: Node3D, life: Node3D, center: Vector3, house: Dictionary, rng:
 	var sat := []
 	for t in int(f.get("tables", 2)):
 		var a := atan2(SEEN.x, SEEN.z) + (t - (int(f.get("tables", 2)) - 1) * 0.5) * 0.9
-		var at := Vector3(sin(a), 0, cos(a)) * reach
-		var out := at.normalized()
+		var at := _fire_at + Vector3(sin(a), 0, cos(a)) * reach
+		var out := (at - _fire_at).normalized()
 		var along := Vector3(-out.z, 0, out.x)
 		var yaw := atan2(along.x, along.z)
 		if _prop(life, center, "Table_Large", at, yaw, 1.0, 0.0, 0.18) == null:
@@ -1581,7 +1607,11 @@ func _bunting(root: Node3D, life: Node3D, center: Vector3, well: Vector3, b: Dic
 		return
 	var walls := _blocked(root, life)
 	var taken: PackedVector2Array = life.get_meta("standing")
-	var hub_at := _spot(center, well + (Vector3.ZERO - well).normalized() * 0.14, walls, taken, 0.2)
+	# Its tall pole by the well, toward the heart; with a fountain at the heart, clear of its basin on the
+	# seen side (moods.json centre.bunting), never in the water.
+	var basin := centre_reach(root)
+	var hub_want: Vector3 = (SEEN * (basin + float(Data.num("moods", "centre.bunting", 0.1)))) if basin > 0.0 else (well + (Vector3.ZERO - well).normalized() * 0.14)
+	var hub_at := _spot(center, hub_want, walls, taken, 0.2)
 	if is_nan(hub_at.x):
 		return
 	var top := float(b.get("height", 3.8)) * S
