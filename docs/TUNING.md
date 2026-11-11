@@ -54,6 +54,10 @@ Switches (`--name`) go after `--` on the game's command line.
 ## The world's models (NPC perf; the asset catalogue)
 - Which model draws each world component (houses, tavern, hall, barn, mill, castle, church, carts, stalls, fences, clutter, ruins), its true size, the parts the land supplies itself, how often each variant is picked: `realm/data/assets.json`: `components.<id>.variants`. Forests, crops, people and the built keeps and towers join as their placers move over.
 
+## The woods (NPC perf; art direction fix 4)
+- Which trees the woods grow: `realm/data/assets.json`: `woods.set` (`pack`, the realistic packs, today; `kit`, Quaternius' painted trees); `--trees=kit` or `--trees=pack` for one run.
+- The kit's trees, their true heights and how tall young trees and saplings stand: `realm/data/assets.json`: `woods.kit.*`.
+
 ## Battles (NPC perf)
 - How hard a field battle is: blows a man takes, the chance a blow lands for each side, when the beaten side breaks and how long they fight: `realm/data/battle.json`: `hp`, `hit.*`, `breakAt`, `longest`.
 - Knights' charges (how many passes, how fast): `realm/data/battle.json`: `charge.*`. Kicks, dodges and heavy blows that floor a man: `kickOdds`, `kickLands`, `dodge`, `floored`.
@@ -74,3 +78,6 @@ Switches (`--name`) go after `--` on the game's command line.
 
 ## The Hand's prompts in a first reign (Builder 1; `--opening=v2`)
 - Each prompt's words, its moment and its delay: `realm/data/opening.json`: `prompts`.
+- Juice on or off (the seal at the click, the treasury counted down, results at the town, music by tension): `realm/data/juice.json`: `on` (or `--juice=on`).
+- How long the treasury counts to its new sum, how big the spent seal swells: `realm/data/juice.json`: `coins_seconds`, `seal_punch`.
+- How tense the realm must be before the music turns dark, and calm before it settles: `realm/data/juice.json`: `music_tension_above`, `music_calm_below`.

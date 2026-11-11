@@ -148,7 +148,7 @@ func set_season(name: String, towns: Array = [], settle := 10.0) -> void:
 	if name == season:
 		return
 	season = name
-	for mmi in _veg:
+	for mmi in _veg + (forest.leafy() if forest and forest.has_method("leafy") else []):  # the kit woods turn with the season too
 		var mesh: Mesh = mmi.multimesh.mesh
 		for i in mesh.get_surface_count():
 			var mat := mesh.surface_get_material(i) as StandardMaterial3D
@@ -162,7 +162,7 @@ func set_season(name: String, towns: Array = [], settle := 10.0) -> void:
 				_leaf_mats[mat] = mat.albedo_color
 			# Leaves turn and grass dulls over the settle, never in a frame.
 			create_tween().tween_property(mat, "albedo_color", _leaf_mats[mat] * s[key], settle)
-		if s["snow"] > 0.0 and OVERLAY_SNOW:
+		if s["snow"] > 0.0 and OVERLAY_SNOW and mmi in _veg:  # (the kit woods' batches are tinted through one per mesh: no overlay there)
 			mmi.material_overlay = _snow  # left on as it melts; the fade takes it to nothing
 	if land3d:
 		land3d.set_grass(s["ground"], s["snow"] > 0.0, settle)
