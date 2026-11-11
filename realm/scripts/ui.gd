@@ -634,7 +634,7 @@ func _process_timed(delta: float) -> void:
 	# One thing on screen (CK3's event window, Frostpunk's law book; the professional audit's first finding):
 	# while the court or the digest is up, the drawers, the camera pad and the ticker step aside too, and
 	# the news holds its Watch offer and edge arrow; all come back as they were once it closes.
-	news.holding = holding
+	news.holding = holding or _interlude_on  # an act told back is one card: no herald line over it (CK3's interlude)
 	if holding:
 		for d in [_houses_panel, _chron_panel, _pad, _ticker]:
 			if d and d.visible:

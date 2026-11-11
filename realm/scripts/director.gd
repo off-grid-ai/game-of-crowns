@@ -24,6 +24,7 @@ var world := {}
 var active := false
 var _idle := 0.0
 var _shot_left := 0.0
+var _last_turn := -1  # the last shot's turn (camera.json shots.turns), not used twice running
 var _follow: Node3D  # what this shot travels with (a convoy's wagon, a rider's horse, a villager)
 var _last_key := ""
 var _soon := -1.0  # seconds until the camera goes to look, after the court closes; -1: not asked
@@ -154,7 +155,7 @@ func watch_at(at: Vector3, dist: float, caption: String, follow: Node3D = null) 
 	active = true
 	_shot_left = SHOT_SECONDS * 2.0
 	_follow = follow
-	rig.go_to(at, dist)  # the one framing rule: centred, from his heading, turned only to clear the view
+	rig.go_to(at, _vary(dist))  # the one framing rule: centred, from a fresh heading, turned only to clear the view
 	ui.caption(caption)
 
 
@@ -188,13 +189,29 @@ func caption(s: Dictionary) -> String:
 	return String(SceneKinds.of(str(s.get("kind", "")))["caption"]) % _town_near(s, at)
 
 
+## A director's shot never repeats the last framing (Frostpunk and Manor Lords cut to the event from its
+## own side): the heading turns by one of camera.json's shots.turns (not the last one used) and the
+## distance varies a little; go_to's sight rule then clears the view from there.
+func _vary(dist: float) -> float:
+	var shots: Dictionary = rig.KNOBS.get("shots", {}) if rig.KNOBS.get("shots") is Dictionary else {}
+	var turns: Array = shots.get("turns", [])
+	if turns.size() > 1:
+		var k := randi() % turns.size()
+		if k == _last_turn:
+			k = (k + 1) % turns.size()
+		_last_turn = k
+		rig.goal_yaw += float(turns[k])
+	var j := float(shots.get("dist_vary", 0.0))
+	return dist * (1.0 + randf_range(-j, j))
+
+
 func _frame(s: Dictionary, follow: Node3D) -> void:
 	var kind := String(s.get("kind", ""))
 	var at: Vector3 = terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0)))
 	var row := SceneKinds.of(kind)
 	var how: Array = [row["interest"], row["dist"], row["caption"]]
 	_follow = follow
-	rig.go_to(follow.global_position if is_instance_valid(follow) else at, how[1])  # the one framing rule
+	rig.go_to(follow.global_position if is_instance_valid(follow) else at, _vary(float(how[1])))  # the one framing rule, from a fresh heading
 	rig.goal_tilt = 0.0  # a battle's framing lowers the view; each new shot starts level
 	_clear_sight()
 	ui.caption(caption(s))

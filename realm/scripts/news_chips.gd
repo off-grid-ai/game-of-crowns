@@ -79,11 +79,11 @@ func _place_notices(delta: float) -> void:
 		if _offer_left <= 0.0:
 			_offer.visible = false
 	# The herald's next notice, once the one up has been read and no other voice speaks.
-	if not _herald.is_empty() and (_toast_time <= 0.0 or 7.0 - _toast_time >= Herald.knob("min_read", 3.0)) \
+	if not _herald.is_empty() and not ui._interlude_on and (_toast_time <= 0.0 or 7.0 - _toast_time >= Herald.knob("min_read", 3.0)) \
 			and not (_edge and _edge.visible):
 		_say(_herald.pop_front())
 	# A toast that waited for the other voice speaks once it's clear.
-	if _toast_waiting != "" and not (_edge and _edge.visible):
+	if _toast_waiting != "" and not (_edge and _edge.visible) and not ui._interlude_on:
 		var w := _toast_waiting
 		_toast_waiting = ""
 		toast(w)
@@ -265,8 +265,8 @@ func toast(text: String) -> void:
 ## A notice on the card now (or held while another voice speaks).
 func _say(text: String) -> void:
 	# One voice at a time: while a Watch card or a news arrow is speaking, this waits its turn.
-	if _edge and _edge.visible:
-		_toast_waiting = text
+	if (_edge and _edge.visible) or ui._interlude_on:
+		_toast_waiting = text  # waits for the other voice, or for the act being told back to close
 		return
 	# One slot for the Watch offer and the notice (the professional audit): the notice takes it, the offer goes,
 	# never a fading pill left under the new line.

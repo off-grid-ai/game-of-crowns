@@ -10,6 +10,11 @@
   "town_max": 16.0
  },
  "sight_steps": 12,
+ "shots": {
+  "_": "The director's own shots (director.gd; the professional audit: one gate-and-banner framing reused for every scene): each new shot turns from the last by one of these (radians), never the same turn twice running, and its distance varies by up to this share either way. The sight rule (sight_steps) still has the last word.",
+  "turns": [0.8, -0.8, 1.6, -1.6, 2.4, -2.4],
+  "dist_vary": 0.15
+ },
  "near_fade": {
   "buildings": {
    "gone": 1.2,
