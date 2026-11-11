@@ -10,6 +10,7 @@ const SUN_HEIGHT := 35.0  # degrees above the horizon: a warm morning sun, shado
 # The one look (data/look.json; PLAN.md Phase 2 item 1): warm key, cool shade, an earthy kit. Off keeps today's.
 static var LOOK: Dictionary = _read_look()
 var _tinted := {}  # a kit material -> its re-graded copy, made once
+var _haze := 0.006  # the volumetric haze's density at town zoom (look.json haze.volumetric with the one look)
 
 
 static func _read_look() -> Dictionary:
@@ -44,6 +45,8 @@ func _ready() -> void:
 	var env: Environment = main.env
 	var sky3d: Node = main.sky3d
 	var look_one := one()
+	if look_one:
+		_haze = float((LOOK.get("haze", {}) as Dictionary).get("volumetric", 0.008))
 	if not sky3d.game_time_enabled:
 		_golden_hour(sky3d, float(LOOK.get("sun_elevation", SUN_HEIGHT)) if look_one else SUN_HEIGHT)
 	if look_one:
@@ -86,6 +89,17 @@ func _ready() -> void:
 	env.volumetric_fog_enabled = true
 	env.volumetric_fog_density = 0.006
 	env.volumetric_fog_albedo = _rgb("haze_color", Color(0.95, 0.86, 0.72)) if look_one else Color(0.95, 0.86, 0.72)
+	if look_one:
+		# Soft contact shadows and bounced light (Tiny Glade's soft edges), and a gentle haze for depth.
+		var ao: Dictionary = LOOK.get("ssao", {})
+		env.ssao_radius = float(ao.get("radius", 1.6))
+		env.ssao_intensity = float(ao.get("intensity", 2.0))
+		env.ssao_power = float(ao.get("power", 1.4))
+		var il: Dictionary = LOOK.get("ssil", {})
+		env.ssil_radius = float(il.get("radius", 4.0))
+		env.ssil_intensity = float(il.get("intensity", 1.0))
+		env.fog_density = float((LOOK.get("haze", {}) as Dictionary).get("fog", 0.0016))
+		env.fog_light_color = _rgb("haze_color", Color(0.96, 0.86, 0.7))
 	env.volumetric_fog_anisotropy = 0.55
 	env.volumetric_fog_length = 160.0
 	env.volumetric_fog_detail_spread = 2.5
@@ -130,7 +144,7 @@ func _process(_delta: float) -> void:
 	# The haze is for the far hills seen across the land; from high over the
 	# realm the camera looks down through a hundred units of it and the whole
 	# map goes grey, so it thins away as the camera pulls back.
-	main.env.volumetric_fog_density = 0.006 * (1.0 - smoothstep(30.0, 70.0, d))
+	main.env.volumetric_fog_density = _haze * (1.0 - smoothstep(30.0, 70.0, d))
 
 
 ## The kit's materials, re-graded by name (data/look.json kit_tints): a copy of each with its colour
@@ -154,11 +168,11 @@ func _tint_mesh(mi: MeshInstance3D) -> void:
 		var m := mi.get_surface_override_material(i)
 		if m == null:
 			m = mi.mesh.surface_get_material(i)
-		if not m is BaseMaterial3D or _tinted.values().has(m):
+		if not (m is BaseMaterial3D) or _tinted.values().has(m):
 			continue
-		var name := String(m.resource_name)
+		var mat_name := String(m.resource_name)
 		for key in tints:
-			if name.begins_with(String(key)):
+			if mat_name.begins_with(String(key)):
 				if not _tinted.has(m):
 					var t: BaseMaterial3D = (m as BaseMaterial3D).duplicate()
 					var a: Array = tints[key]
