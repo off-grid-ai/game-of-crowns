@@ -146,26 +146,24 @@ function callMatter(ctx, o, turn, crisis) {
 // setting thins or thickens it. Over a 15-minute reign: about 18 matters in 18
 // minutes of play, so one decision a minute, the board the King's about 80%
 // of the time (at ten seconds a decision).
+// The court's pace is data (data/court.json; docs/TUNING.md).
+export const COURT = JSON.parse(fs.readFileSync(new URL("./data/court.json", import.meta.url), "utf8"));
+const stageOf = (meta) => {
+  const k = meta.minutes ? meta.elapsedMs / (meta.minutes * 60000) : null;
+  return k == null ? COURT.noClock : COURT.stages.find((s) => k < s.until) ?? COURT.stages.at(-1);
+};
 function pace(ctx) {
   const { meta } = ctx;
-  const k = meta.minutes ? meta.elapsedMs / (meta.minutes * 60000) : null;
-  const r = Math.random();
-  let want = k == null || k < 0.5 ? 1 : k < 0.75 ? (r < 0.5 ? 1 : 2) : (r < 0.4 ? 1 : r < 0.8 ? 2 : 3);
-  const how = meta.options?.petitions;
-  if (how === "rare") want = Math.max(1, want - 1);
-  if (how === "often") want = Math.min(3, want + 1);
-  return { every: courtEvery(meta), want };
+  let r = Math.random();
+  let want = (stageOf(meta).want.find(([, p]) => (r -= p) < 0) ?? stageOf(meta).want.at(-1))[0];
+  want += COURT.petitions[meta.options?.petitions]?.want ?? 0;
+  return { every: courtEvery(meta), want: Math.max(COURT.wantMin, Math.min(COURT.wantMax, want)) };
 }
 // Seasons between full sittings (pace above; next.js counts down to the next one).
 export function courtEvery(meta) {
-  const k = meta.minutes ? meta.elapsedMs / (meta.minutes * 60000) : null;
-  let every = k == null ? 2 : k < 0.5 ? 3 : k < 0.75 ? 2 : 1;
-  const how = meta.options?.petitions;
-  if (how === "rare") every += 1;
-  if (how === "often") every = Math.max(1, every - 1);
-  return every;
+  return Math.max(1, stageOf(meta).every + (COURT.petitions[meta.options?.petitions]?.every ?? 0));
 }
-export const HAND_YEAR = 4;  // seasons: the Hand calls the King in for a crisis at most once a year
+export const HAND_YEAR = COURT.handYear;  // seasons: the Hand calls the King in for a crisis at most once a year
 // The v2 opening's timings are data (data/opening.json): a new reign's first court sits this long after
 // the King lands in his realm, or, with no word of a landing (the intro skipped), after the reign began.
 export const OPENING = JSON.parse(fs.readFileSync(new URL("./data/opening.json", import.meta.url), "utf8"));

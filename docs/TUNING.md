@@ -29,10 +29,19 @@ Switches (`--name`) go after `--` on the game's command line.
 
 ## The court (Builder 2)
 - One court flow (in, decide, see it, out): the switch `--court=one` (off until filmed and judged).
+- How often the court sits and how many it hears, by stage of the reign: `bridge/data/court.json`: `stages`, `noClock`.
+- What the reign's petitions setting (rare, often) shifts: `bridge/data/court.json`: `petitions`, `wantMin`, `wantMax`.
+- How often the Hand may call the King in for a crisis between sittings: `bridge/data/court.json`: `handYear`.
+
+## Event cards (Builder 2)
+- On or off for reigns that don't say: `bridge/data/events.json`: `settings.on` (a reign can set `options.events`).
+- How likely a card is each season, and in a breather: `bridge/data/events.json`: `settings.chance`, `settings.chanceInBreather`.
+- How long before a card can come again: `bridge/data/events.json`: `settings.rest` (or a card's own `rest`).
+- Which decks a breather may draw, and how much war and famine weigh in the build-up: `bridge/data/events.json`: `settings.breatherDecks`, `settings.boost`.
+- A card's words, choices, costs and what doing nothing costs: `bridge/data/events.json`: `cards[]`.
 
 ## Not yet in data (to move)
 - Sound levels and the music's silences: literals in `realm/scripts/soundscape.gd` (`BEDS`, `STINGS`, `MUSIC_DB`, `CALM_GAP`).
-- The court's pace (seasons between sittings): `bridge/court.js` `courtEvery`.
 
 ## The opening, first ten minutes (Builder 1; `--opening=v2`)
 - How long after the King lands in his realm the first court sits: `bridge/data/opening.json`: `firstCourtAfterLandingSec`.

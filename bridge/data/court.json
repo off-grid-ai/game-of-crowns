@@ -1,0 +1,13 @@
+{
+  "_": "The court's pace (court.js). stages: by the share of the reign's clock gone (until), the seasons between full sittings (every) and how many matters a sitting hears, as [count, chance] pairs (want). noClock: a reign without a clock. petitions: the reign's petitions setting shifts every and want (rare: fewer, more seldom; often: more, sooner), within wantMin..wantMax. handYear: seasons between the Hand calling the King in for a crisis between sittings (an ultimatum always comes).",
+  "stages": [
+    { "until": 0.5, "every": 3, "want": [[1, 1.0]] },
+    { "until": 0.75, "every": 2, "want": [[1, 0.5], [2, 0.5]] },
+    { "until": 1.01, "every": 1, "want": [[1, 0.4], [2, 0.4], [3, 0.2]] }
+  ],
+  "noClock": { "every": 2, "want": [[1, 1.0]] },
+  "petitions": { "rare": { "every": 1, "want": -1 }, "often": { "every": -1, "want": 1 } },
+  "wantMin": 1,
+  "wantMax": 3,
+  "handYear": 4
+}
