@@ -70,6 +70,8 @@ static func minds_on(town: int) -> bool:
 func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	_town_on = minds_on(int(c.get("id", -1)))
 	_town_id = int(c.get("id", -1))
+	# Its people dressed as its rank and holder dress them (people.gd cloth_pick).
+	_people.dress_for(String(root.get_meta("rank", "town")), Color.from_string(String(house.get("color", "")), Color(0, 0, 0, 0)))
 	# Freeciv's own word that the town starved this season. An empty food store
 	# alone isn't hunger: a town that just grew, or holds steady, sits at zero.
 	var hungry: bool = c.get("famine", false)

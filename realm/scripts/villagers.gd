@@ -274,8 +274,19 @@ func _keep_up(id: int) -> void:
 			n.position.y = terrain.height_at(n.position.x, n.position.z)
 
 
+## A house's banner colour (main.gd's houses, by the player who holds the town); none when unknown.
+func _house_colour(owner: int) -> Color:
+	var m: Node = towns.get_parent() if towns else null
+	var hs: Variant = m.get("_houses") if m else null
+	if hs is Dictionary and (hs as Dictionary).has(owner):
+		return Color.from_string(String((hs[owner] as Dictionary).get("color", "")), Color(0, 0, 0, 0))
+	return Color(0, 0, 0, 0)
+
+
 func _spawn(id: int) -> void:
 	var town: Dictionary = towns.towns[id]
+	# Its people dressed as its rank and holder dress them (people.gd cloth_pick; the holder's colour from his banner).
+	people.dress_for(String(town["node"].get_meta("rank", "town")), _house_colour(int(town["data"].get("owner", -1))))
 	var center: Vector3 = town["node"].global_position
 	var size := int(town["data"]["size"])
 	var rng := RandomNumberGenerator.new()

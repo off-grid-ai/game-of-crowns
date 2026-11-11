@@ -96,9 +96,34 @@ const DYED := [Color(0.45, 0.5, 0.7), Color(0.66, 0.36, 0.3), Color(0.5, 0.6, 0.
 const STATION_DRESS := ["clergy", "knight", "noble"]
 
 
-## The cloth a station wears: homespun for peasants, dyed for the rest.
+## The cloth a station wears: homespun for peasants, dyed for the rest (realm/data/people.json
+## cloth.homespun, cloth.dyed; these lists if the data has none).
 static func cloth_of(role: String) -> Array:
-	return HOMESPUN if role == "peasant" else DYED
+	var key := "homespun" if role == "peasant" else "dyed"
+	var d: Array = Data.value("people", "cloth." + key, [])
+	return d.map(func(c): return Color(float(c[0]), float(c[1]), float(c[2]))) if not d.is_empty() else (HOMESPUN if role == "peasant" else DYED)
+
+
+## The town being dressed (town_life and villagers say, before they make its people): its rank and
+## its holder's colour. A crowd in a richer town wears more dyed cloth, and some wear the house's.
+static var _town_rank := "town"
+static var _town_house := Color(0, 0, 0, 0)
+static func dress_for(rank: String, house: Color) -> void:
+	_town_rank = rank
+	_town_house = house
+
+
+## One person's cloth (batch 8 look2: the crowd in dark, colourless clothes; town-b's is warm and
+## varied, the holder's colour here and there): the holder's colour by the rank's share, a dyed cloth
+## for a peasant by the rank's dyed share, else the station's own (people.json cloth.rank).
+static func cloth_pick(role: String, rng: RandomNumberGenerator) -> Color:
+	var r: Dictionary = (Data.value("people", "cloth.rank", {}) as Dictionary).get(_town_rank, {})
+	if _town_house.a > 0.0 and rng.randf() < float(r.get("house", 0.0)):
+		return _town_house.lerp(Color.WHITE, float(Data.num("people", "cloth.house_soften", 0.1)))
+	var pal := cloth_of(role)
+	if role == "peasant" and rng.randf() < float(r.get("dyed", 0.0)):
+		pal = cloth_of("townsfolk")
+	return pal[rng.randi() % pal.size()]
 
 const HEAD_ONLY := preload("res://scripts/head_only.gdshader")
 
@@ -415,7 +440,7 @@ func make(rng: RandomNumberGenerator, role := "peasant", tint := Color.WHITE, ag
 	var person: Node3D = _scene("res://assets/people/%s.gltf" % pick[0]).instantiate()
 	var skeleton: Skeleton3D = person.get_node("Armature/GeneralSkeleton")
 	var palette := cloth_of(role)
-	var cloth: Color = tint if tint != Color.WHITE else palette[rng.randi() % palette.size()]
+	var cloth: Color = tint if tint != Color.WHITE else cloth_pick(role, rng)
 	if tint == Color.WHITE:
 		# The same outfit in the same cloth beside them would be a twin: another cloth.
 		for tries in palette.size():
@@ -538,8 +563,7 @@ func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, ag
 			if tint != Color.WHITE and String(mi.name) in info["cloth"]:
 				_tint(mi, tint, role in SOLDIERLY)
 			elif String(mi.name) in info.get("dyed", []):
-				var dyes := cloth_of(role if role != "" else String(info["roles"][0]))
-				_tint(mi, dyes[rng.randi() % dyes.size()])
+				_tint(mi, cloth_pick(role if role != "" else String(info["roles"][0]), rng))
 	if role == "":
 		role = info["roles"][0]
 	person.set_meta("body", body)
@@ -692,6 +716,12 @@ func _tint(mi: MeshInstance3D, colour: Color, livery := false) -> void:
 			if livery and copy.albedo_texture:
 				copy.albedo_texture = _undyed(copy.albedo_texture)
 				copy.albedo_color = colour * 1.15
+			elif copy.albedo_texture and bool(Data.value("people", "cloth.true", true)):
+				# Everyone else's cloth in its true dye too: the weave kept and lifted to a set brightness,
+				# its own colour taken out first, then dyed. Multiplied onto the coloured cloth, a dye
+				# came out dark and muddy (batch 8 look2).
+				copy.albedo_texture = _undyed(copy.albedo_texture, Data.num("people", "cloth.weave", 0.78))
+				copy.albedo_color = colour
 			_tinted[key] = copy
 			mi.set_surface_override_material(s, copy)
 
@@ -700,8 +730,11 @@ static var _undyed_of := {}
 
 
 ## A cloth texture with its colour taken out, kept for every soldier that wears it.
-static func _undyed(tex: Texture2D) -> Texture2D:
-	if not _undyed_of.has(tex):
+## `lift` (0 to keep it as it is): the weave's mean brightness raised or lowered to this, so a dark
+## cloth takes a dye as brightly as a pale one.
+static func _undyed(tex: Texture2D, lift := 0.0) -> Texture2D:
+	var key := [tex, lift]
+	if not _undyed_of.has(key):
 		var img := tex.get_image()
 		if img == null:
 			return tex
@@ -710,9 +743,19 @@ static func _undyed(tex: Texture2D) -> Texture2D:
 			img.decompress()
 		img.convert(Image.FORMAT_L8)
 		img.convert(Image.FORMAT_RGBA8)
+		if lift > 0.0:
+			# The mean read off a small copy; the lift itself by the engine (Image.adjust_bcs), not per pixel here.
+			var small: Image = img.duplicate()
+			small.resize(64, 64, Image.INTERPOLATE_BILINEAR)
+			var data: PackedByteArray = small.get_data()
+			var sum := 0
+			for i in range(0, data.size(), 4):
+				sum += data[i]
+			var mean := float(sum) / maxf(data.size() / 4.0, 1.0) / 255.0
+			img.adjust_bcs(clampf(lift / maxf(mean, 0.05), 0.5, 3.0), 1.0, 1.0)
 		img.generate_mipmaps()
-		_undyed_of[tex] = ImageTexture.create_from_image(img)
-	return _undyed_of[tex]
+		_undyed_of[key] = ImageTexture.create_from_image(img)
+	return _undyed_of[key]
 
 
 ## Hair and beards are skinned to the head bone; re-home their meshes on our skeleton.
