@@ -1,6 +1,45 @@
 {
- "_": "Painted portraits (realm/tools/portraits/build.py): public-domain museum paintings, cropped and graded as one. sex and age come from the title; '?' is checked by eye.",
+ "_": "Painted portraits (realm/tools/portraits/build.py, gen.py): public-domain museum paintings and generated faces (museum 'generated', with their prompt), cropped and graded as one. sex and age come from the title; '?' is checked by eye.",
  "portraits": [
+  {
+   "museum": "met",
+   "id": "437757",
+   "title": "Old Woman Praying",
+   "artist": "Matthias Stom",
+   "year": 1637,
+   "licence": "CC0 (The Met Open Access)",
+   "page": "https://www.metmuseum.org/art/collection/search/437757",
+   "sex": "f",
+   "age": "old",
+   "file": "met-437757.jpg",
+   "child": false
+  },
+  {
+   "museum": "met",
+   "id": "435596",
+   "title": "Old Woman in an Armchair",
+   "artist": "Jacob Backer",
+   "year": 1629,
+   "licence": "CC0 (The Met Open Access)",
+   "page": "https://www.metmuseum.org/art/collection/search/435596",
+   "sex": "f",
+   "age": "old",
+   "file": "met-435596.jpg",
+   "child": false
+  },
+  {
+   "museum": "met",
+   "id": "437412",
+   "title": "Old Woman Cutting Her Nails",
+   "artist": "Rembrandt (Rembrandt van Rijn)",
+   "year": 1655,
+   "licence": "CC0 (The Met Open Access)",
+   "page": "https://www.metmuseum.org/art/collection/search/437412",
+   "sex": "f",
+   "age": "old",
+   "file": "met-437412.jpg",
+   "child": false
+  },
   {
    "museum": "met",
    "id": "435597",
@@ -2548,84 +2587,6 @@
    "sex": "m",
    "age": "young",
    "child": true
-  },
-  {
-   "museum": "generated",
-   "id": "3e2afbfb20",
-   "title": "an old man of about seventy, white beard trimmed short, bald crown, heavy-lidded eyes, black wool doublet with a plain white collar",
-   "artist": "generated (Codex image tool)",
-   "year": null,
-   "licence": "generated: AI content, disclosed",
-   "prompt": "An oil portrait painting in the manner of a 16th\u201317th century Northern European master (Holbein, Rembrandt, Frans Hals): an old man of about seventy, white beard trimmed short, bald crown, heavy-lidded eyes, black wool doublet with a plain white collar. Half-length, three-quarter view, the head small in the picture with a wide band of plain background above it (a quarter of the height), one sitter only, looking near the viewer. Plain dark brown-green background. Soft warm window light from the upper left, deep shadows, visible brushwork, a matte worn paint surface, aged yellowed varnish and fine craquelure, not glossy or airbrushed. Period clothing of a minor lord's household, no crown, no jewels of state, no religious symbols, no text, no signature, no frame. Portrait orientation, 3:4.",
-   "file": "generated-3e2afbfb20.jpg",
-   "sex": "m",
-   "age": "old",
-   "child": false
-  },
-  {
-   "museum": "generated",
-   "id": "014b7f0907",
-   "title": "an old steward of about sixty-five, grey hair to the ears, clean-shaven, deep lines at the mouth, brown fur-trimmed gown",
-   "artist": "generated (Codex image tool)",
-   "year": null,
-   "licence": "generated: AI content, disclosed",
-   "prompt": "An oil portrait painting in the manner of a 16th\u201317th century Northern European master (Holbein, Rembrandt, Frans Hals): an old steward of about sixty-five, grey hair to the ears, clean-shaven, deep lines at the mouth, brown fur-trimmed gown. Half-length, three-quarter view, the head small in the picture with a wide band of plain background above it (a quarter of the height), one sitter only, looking near the viewer. Plain dark brown-green background. Soft warm window light from the upper left, deep shadows, visible brushwork, a matte worn paint surface, aged yellowed varnish and fine craquelure, not glossy or airbrushed. Period clothing of a minor lord's household, no crown, no jewels of state, no religious symbols, no text, no signature, no frame. Portrait orientation, 3:4.",
-   "file": "generated-014b7f0907.jpg",
-   "sex": "m",
-   "age": "old",
-   "child": false
-  },
-  {
-   "museum": "generated",
-   "id": "42bd2c3d9c",
-   "title": "a weathered old soldier of about sixty, grizzled grey moustache, a scar on one cheek, dark leather jerkin over a linen shirt",
-   "artist": "generated (Codex image tool)",
-   "year": null,
-   "licence": "generated: AI content, disclosed",
-   "prompt": "An oil portrait painting in the manner of a 16th\u201317th century Northern European master (Holbein, Rembrandt, Frans Hals): a weathered old soldier of about sixty, grizzled grey moustache, a scar on one cheek, dark leather jerkin over a linen shirt. Half-length, three-quarter view, the head small in the picture with a wide band of plain background above it (a quarter of the height), one sitter only, looking near the viewer. Plain dark brown-green background. Soft warm window light from the upper left, deep shadows, visible brushwork, a matte worn paint surface, aged yellowed varnish and fine craquelure, not glossy or airbrushed. Period clothing of a minor lord's household, no crown, no jewels of state, no religious symbols, no text, no signature, no frame. Portrait orientation, 3:4.",
-   "file": "generated-42bd2c3d9c.jpg",
-   "sex": "m",
-   "age": "old",
-   "child": false
-  },
-  {
-   "museum": "generated",
-   "id": "08bacee108",
-   "title": "an old woman of about seventy, deep lines around the eyes, white linen cap, dark wool gown with a small white ruff",
-   "artist": "generated (Codex image tool)",
-   "year": null,
-   "licence": "generated: AI content, disclosed",
-   "prompt": "An oil portrait painting in the manner of a 16th\u201317th century Northern European master (Holbein, Rembrandt, Frans Hals): an old woman of about seventy, deep lines around the eyes, white linen cap, dark wool gown with a small white ruff. Half-length, three-quarter view, the head small in the picture with a wide band of plain background above it (a quarter of the height), one sitter only, looking near the viewer. Plain dark brown-green background. Soft warm window light from the upper left, deep shadows, visible brushwork, a matte worn paint surface, aged yellowed varnish and fine craquelure, not glossy or airbrushed. Period clothing of a minor lord's household, no crown, no jewels of state, no religious symbols, no text, no signature, no frame. Portrait orientation, 3:4.",
-   "file": "generated-08bacee108.jpg",
-   "sex": "f",
-   "age": "old",
-   "child": false
-  },
-  {
-   "museum": "generated",
-   "id": "1234db74cc",
-   "title": "a stern old widow of about sixty-five, thin lips, black hood over a white coif, black gown",
-   "artist": "generated (Codex image tool)",
-   "year": null,
-   "licence": "generated: AI content, disclosed",
-   "prompt": "An oil portrait painting in the manner of a 16th\u201317th century Northern European master (Holbein, Rembrandt, Frans Hals): a stern old widow of about sixty-five, thin lips, black hood over a white coif, black gown. Half-length, three-quarter view, the head small in the picture with a wide band of plain background above it (a quarter of the height), one sitter only, looking near the viewer. Plain dark brown-green background. Soft warm window light from the upper left, deep shadows, visible brushwork, a matte worn paint surface, aged yellowed varnish and fine craquelure, not glossy or airbrushed. Period clothing of a minor lord's household, no crown, no jewels of state, no religious symbols, no text, no signature, no frame. Portrait orientation, 3:4.",
-   "file": "generated-1234db74cc.jpg",
-   "sex": "f",
-   "age": "old",
-   "child": false
-  },
-  {
-   "museum": "generated",
-   "id": "f425ea019a",
-   "title": "a kindly old woman of about seventy-five, soft wrinkled cheeks, grey hair under a plain linen kerchief, russet wool shawl",
-   "artist": "generated (Codex image tool)",
-   "year": null,
-   "licence": "generated: AI content, disclosed",
-   "prompt": "An oil portrait painting in the manner of a 16th\u201317th century Northern European master (Holbein, Rembrandt, Frans Hals): a kindly old woman of about seventy-five, soft wrinkled cheeks, grey hair under a plain linen kerchief, russet wool shawl. Half-length, three-quarter view, the head small in the picture with a wide band of plain background above it (a quarter of the height), one sitter only, looking near the viewer. Plain dark brown-green background. Soft warm window light from the upper left, deep shadows, visible brushwork, a matte worn paint surface, aged yellowed varnish and fine craquelure, not glossy or airbrushed. Period clothing of a minor lord's household, no crown, no jewels of state, no religious symbols, no text, no signature, no frame. Portrait orientation, 3:4.",
-   "file": "generated-f425ea019a.jpg",
-   "sex": "f",
-   "age": "old",
-   "child": false
   }
  ]
 }

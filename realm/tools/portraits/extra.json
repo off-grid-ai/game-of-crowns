@@ -1,0 +1,101 @@
+{
+ "_": "Works the museum searches miss, picked by eye (the screen-map session, 2026-11-11): build.py adds them on every run; sex and age as given. drop.txt still wins.",
+ "works": [
+  {
+   "museum": "met",
+   "id": "441024",
+   "title": "Head of an Old Woman",
+   "artist": "Orazio Borgianni",
+   "year": 1611,
+   "licence": "CC0 (The Met Open Access)",
+   "url": "https://images.metmuseum.org/CRDImages/ep/web-large/DP236807.jpg",
+   "page": "https://www.metmuseum.org/art/collection/search/441024",
+   "sex": "f",
+   "age": "old"
+  },
+  {
+   "museum": "met",
+   "id": "437757",
+   "title": "Old Woman Praying",
+   "artist": "Matthias Stom",
+   "year": 1637,
+   "licence": "CC0 (The Met Open Access)",
+   "url": "https://images.metmuseum.org/CRDImages/ep/web-large/DP146510.jpg",
+   "page": "https://www.metmuseum.org/art/collection/search/437757",
+   "sex": "f",
+   "age": "old"
+  },
+  {
+   "museum": "met",
+   "id": "435596",
+   "title": "Old Woman in an Armchair",
+   "artist": "Jacob Backer",
+   "year": 1629,
+   "licence": "CC0 (The Met Open Access)",
+   "url": "https://images.metmuseum.org/CRDImages/ep/web-large/DP146473.jpg",
+   "page": "https://www.metmuseum.org/art/collection/search/435596",
+   "sex": "f",
+   "age": "old"
+  },
+  {
+   "museum": "met",
+   "id": "437412",
+   "title": "Old Woman Cutting Her Nails",
+   "artist": "Rembrandt (Rembrandt van Rijn)",
+   "year": 1655,
+   "licence": "CC0 (The Met Open Access)",
+   "url": "https://images.metmuseum.org/CRDImages/ep/web-large/DP146474.jpg",
+   "page": "https://www.metmuseum.org/art/collection/search/437412",
+   "sex": "f",
+   "age": "old"
+  },
+  {
+   "museum": "rijks",
+   "id": "20025852",
+   "title": "Portrait of an Elderly Lady of the Haling Family",
+   "artist": null,
+   "year": 1630,
+   "licence": "Public domain (Rijksmuseum open data)",
+   "url": "https://iiif.micr.io/WOEaH/full/600,/0/default.jpg",
+   "page": "https://www.rijksmuseum.nl/en/collection/SK-C-506",
+   "sex": "f",
+   "age": "old"
+  },
+  {
+   "museum": "rijks",
+   "id": "20026699",
+   "title": "Old Woman",
+   "artist": null,
+   "year": 1655,
+   "licence": "Public domain (Rijksmuseum open data)",
+   "url": "https://iiif.micr.io/rvgrV/full/600,/0/default.jpg",
+   "page": "https://www.rijksmuseum.nl/en/collection/SK-A-2240",
+   "sex": "f",
+   "age": "old"
+  },
+  {
+   "museum": "rijks",
+   "id": "200109433",
+   "title": "Old Woman Reading",
+   "artist": null,
+   "year": 1624,
+   "licence": "Public domain (Rijksmuseum open data)",
+   "url": "https://iiif.micr.io/pkaDj/full/600,/0/default.jpg",
+   "page": "https://www.rijksmuseum.nl/en/collection/SK-A-4702",
+   "sex": "f",
+   "age": "old"
+  },
+  {
+   "museum": "rijks",
+   "id": "20027805",
+   "title": "Old Woman Reading",
+   "artist": null,
+   "year": 1631,
+   "licence": "Public domain (Rijksmuseum open data)",
+   "url": "https://iiif.micr.io/KzwJs/full/600,/0/default.jpg",
+   "page": "https://www.rijksmuseum.nl/en/collection/SK-A-2627",
+   "sex": "f",
+   "age": "old"
+  }
+ ]
+}

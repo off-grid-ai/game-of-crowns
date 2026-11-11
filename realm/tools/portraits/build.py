@@ -24,6 +24,7 @@ UA = {"User-Agent": "game-of-crowns-portraits (offline asset build)"}
 W, H = 384, 512          # the output plate
 EYE_Y = 0.40             # the eyes' line, as a share of the plate's height
 FACE_H = 0.34            # the face's height (brow to chin), as a share of the plate's height
+PAD = 0.25               # how far past a painting's edge the plate may reach (a close head), filled with a soft wash
 # Sitters a player might recognise, or not a portrait at all: royals, the church's great, famous
 # patrons, poets and reformers, prophets and gods (the supervisor's name list; a by-eye pass, drop.txt, after).
 NAMED = re.compile(r"\b(king|queen|pope|emperor|empress|cardinal|saint|st\.|christ|madonna|virgin|duke|duchess|prince|princess"
@@ -165,10 +166,19 @@ def crop(img, det):
     scale = (FACE_H * H) / fh                            # the face to its share of the plate
     cw, ch = W / scale, H / scale                        # the crop in source pixels
     x0, y0 = cx - cw / 2.0, eyes_y - EYE_Y * ch
-    if x0 < -0.08 * cw or y0 < -0.08 * ch or x0 + cw > w + 0.08 * cw or y0 + ch > h + 0.08 * ch:
+    over = max(-x0 / cw, -y0 / ch, (x0 + cw - w) / cw, (y0 + ch - h) / ch)
+    if over > PAD:
         return None, "face too near the edge"
     m = np.float32([[scale, 0, -x0 * scale], [0, scale, -y0 * scale]])
-    return cv2.warpAffine(img, m, (W, H), flags=cv2.INTER_AREA, borderMode=cv2.BORDER_REPLICATE), "ok"
+    out = cv2.warpAffine(img, m, (W, H), flags=cv2.INTER_AREA, borderMode=cv2.BORDER_REPLICATE)
+    if over > 0.02:
+        # A close head (the painting ends where the plate goes on): the background carried on as a soft, darker
+        # wash instead of stretched edge pixels, the way a painter's ground fades into the varnish.
+        inside = cv2.warpAffine(np.full((h, w), 255, np.uint8), m, (W, H), flags=cv2.INTER_NEAREST, borderValue=0)
+        soft = cv2.GaussianBlur((inside > 0).astype(np.float32), (0, 0), 6)[..., None]
+        wash = cv2.GaussianBlur(out, (0, 0), 28).astype(np.float32) * 0.8
+        out = (out.astype(np.float32) * soft + wash * (1 - soft)).astype(np.uint8)
+    return out, "ok"
 
 
 def grade(img):
@@ -190,7 +200,7 @@ def main():
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--nga-objects", help="NGA open data objects.csv (adds the National Gallery of Art)")
     ap.add_argument("--nga-images", help="NGA open data published_images.csv")
-    ap.add_argument("--only", choices=["met", "nga", "rijks"], help="one museum only")
+    ap.add_argument("--only", choices=["met", "nga", "rijks", "extra"], help="one museum only (extra: add extra.json's works to the set as it is)")
     ap.add_argument("--rijks", action="store_true", help="add the Rijksmuseum (slow: three requests a work)")
     a = ap.parse_args()
     os.makedirs(a.cache, exist_ok=True)
@@ -201,6 +211,10 @@ def main():
         sources += nga_sources(a.nga_objects, a.nga_images, a.limit)
     if (a.rijks and a.only is None) or a.only == "rijks":
         sources += rijks_sources(a.limit)
+    # Works picked by hand that the searches miss (extra.json), on every run; --only extra adds just these to the set.
+    extra = json.load(open(os.path.join(HERE, "extra.json")))["works"] if os.path.exists(os.path.join(HERE, "extra.json")) else []
+    if a.only in (None, "extra"):
+        sources += extra
     kept, why = [], {}
     # Dropped by eye (drop.txt): recognisable sitters, prints, frames and medallions.
     drop = {l.split("#")[0].strip() for l in open(os.path.join(HERE, "drop.txt")) if l.strip() and not l.startswith("#")} if os.path.exists(os.path.join(HERE, "drop.txt")) else set()
@@ -223,12 +237,14 @@ def main():
             continue
         name = f"{s['museum']}-{s['id']}.jpg"
         cv2.imwrite(os.path.join(OUT, name), grade(face), [cv2.IMWRITE_JPEG_QUALITY, 88])
-        sex, age = tag(s["title"])
+        sex, age = (s["sex"], s["age"]) if s.get("sex") else tag(s["title"])
         seen = eye.get(name, {})  # the eye's word over the title's (eye.json)
         kept.append({k: v for k, v in s.items() if k != "url"} | {"file": name, "sex": seen.get("sex", sex), "age": seen.get("age", age), "child": seen.get("child", False)})
-    # Generated faces (gen.py) are kept: this run only remakes the museums'.
+    # Generated faces (gen.py) are kept: this run only remakes the museums'. With --only extra, the whole set is kept.
     old = os.path.join(OUT, "sources.json")
-    kept += [p for p in (json.load(open(old)).get("portraits", []) if os.path.exists(old) else []) if p.get("museum") == "generated"]
+    made = {k["file"] for k in kept}
+    kept += [p for p in (json.load(open(old)).get("portraits", []) if os.path.exists(old) else [])
+             if (p.get("museum") == "generated" or a.only == "extra") and p["file"] not in made]
     json.dump({"_": "Painted portraits (realm/tools/portraits/build.py, gen.py): public-domain museum paintings and generated faces (museum 'generated', with their prompt), cropped and graded as one. sex and age come from the title; '?' is checked by eye.",
                "portraits": kept}, open(os.path.join(OUT, "sources.json"), "w"), indent=1)
     print(json.dumps({"sources": len(sources), "kept": len(kept), "dropped": why,

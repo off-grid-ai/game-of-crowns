@@ -21,3 +21,5 @@ met-436651.jpg  # miniature in an oval (Elizabeth I likeness)
 rijks-200109433.jpg  # recognisable (Rembrandt's old woman reading)
 rijks-20026070.jpg  # allegory, not a portrait
 rijks-20027805.jpg  # recognisable (old woman reading)
+met-441024.jpg  # close head, crop askew
+rijks-20025852.jpg  # inscription on the ground
