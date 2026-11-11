@@ -46,6 +46,12 @@ const STATES := ["loop_a", "loop_b", "once_a", "once_b", "hold_a", "hold_b", "re
 ## A load carried on the move: the arms from these clips over the legs' walk
 ## (Godot's Blend2 with a bone filter), so a sack or a crate shows while they walk.
 const CARRIES := ["Carrying", "Box_Idle", "Carry_Walk"]
+## The body's posture (v3 stage 2, docs/review/first-principles-motion.md): moves
+## played low, on the knees, sat or lying. Interact is down on one knee all
+## through (hips 0.32-0.42 against 0.95 standing, measured). From one of these to a
+## standing move the body rises through Getting_Up, never a crossfade that pops.
+const LOW := ["Fixing_Kneeling", "Interact", "Kneeling", "Praying", "Planting", "Dig_And_Plant", "Sitting_Ground", "Sitting_Cross_Legged",
+	"Sitting_Idle", "Sitting_Drinking", "Sleeping_Idle", "Defeated"]
 const XFADE_STAND := 0.45  # v2: between two standing moves, slow enough that feet planted apart don't skid across
 const ARMS := ["LeftShoulder", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightShoulder", "RightUpperArm", "RightLowerArm", "RightHand",
 	"LeftThumbMetacarpal", "LeftThumbProximal", "LeftThumbDistal", "LeftIndexProximal", "LeftIndexIntermediate", "LeftIndexDistal",
@@ -89,6 +95,12 @@ var _wish := ""  # a repeating move asked while on the move, for when they stop
 var _to := ""
 var _carry: AnimationNodeAnimation  # the arms' load over the legs, when carrying
 var _held_for := ""  # the move whose tool is in hand now (weapons.gd)
+## v3 (docs/review/first-principles-motion.md, stage 1), on for `--motion=v3`: what a
+## person carries is their errand's load, not the clip on screen. `errand_load` is the
+## load's move ("Carrying", "Wheelbarrow"; villagers.gd sets it from the walk's
+## gait), "" for none: while it's set the tool stays in hand whatever the body plays.
+static var v3: bool = OS.get_cmdline_user_args().has("--motion=v3")
+var errand_load := ""
 const Weapons := preload("res://scripts/weapons.gd")
 var _at := "parameters/"  # where the state machine's parameters live (under "sm/" in v2)
 var _gesture: AnimationNodeAnimation  # v2: the upper body's one-shot move
@@ -199,6 +211,13 @@ func play(clip: String, rate := 1.0, hold := false, phase := -1.0, repeat := fal
 	if dead() or not has_animation(clip):
 		return 0.0
 	var length := get_animation(clip).length / maxf(rate, 0.01)
+	# v3: down low and asked a standing move: up first, through Getting_Up; the
+	# move waits (as a wish) until they stand, and starts from the rest stance.
+	if v3 and is_low() and not clip in LOW and not clip in WALKS and not clip in RUNS and clip != "Getting_Up" \
+			and not clip.begins_with("Getting_Up") and has_animation("Getting_Up") and not is_once(clip):
+		play("Getting_Up")
+		_wish = clip
+		return length + get_animation("Getting_Up").length
 	# A way of going (a walk, a run): it becomes the legs' walk or run, and the
 	# legs take over; how fast they go is how fast the person moves.
 	# A load on the move: the arms carry it over the walking legs.
@@ -314,7 +333,7 @@ func track(delta: float) -> void:
 ## frame, and the moment a move is asked for (people.gd), so a hand is never
 ## empty while the move that needs it plays.
 func sync_held() -> void:
-	var moving := held_clip()
+	var moving := errand_load if v3 and errand_load != "" else held_clip()  # v3: the errand's load, whatever the body plays
 	if moving != _held_for and get_parent() is Node3D:
 		_held_for = moving
 		Weapons.hold_for(get_parent(), moving)
@@ -337,6 +356,12 @@ func held_clip() -> String:
 func held_state() -> String:
 	return "now=%s to=%s blend=%.1f %s clip=%s carry=%s wish=%s held_for=%s" % [_now(), _to,
 		float(get(_at + "rest/mix/blend_amount")), "moving" if _pace > MOVING else "still", _clip, _carry.animation if _carry else "-", _wish, _held_for]
+
+
+## Whether the body is down low now (LOW), by where the machine is or is going.
+func is_low() -> bool:
+	var st := _to if _to != "" else _now()
+	return st != "rest" and _clip in LOW
 
 
 func _travel(st: String) -> void:

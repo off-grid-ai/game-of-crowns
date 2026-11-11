@@ -685,7 +685,9 @@ static func play(person: Node3D, anim_name: String, speed := 1.0, phase := -1.0)
 		return
 	if person.get_meta("age", "") == "elder":
 		speed *= 0.75
-	if anim_name == "Idle":
+	if mo and mo.v3 and mo.errand_load != "" and anim_name in IDLES:
+		anim_name = mo.errand_load  # v3: someone carrying a load stands holding it (held up mid-errand), arms and all
+	elif anim_name == "Idle":
 		anim_name = String(person.get_meta("idle", "Idle"))
 	elif anim_name == "Sword_Idle":
 		anim_name = String(person.get_meta("guard", "Sword_Idle"))
