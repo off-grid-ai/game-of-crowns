@@ -4,10 +4,19 @@ extends Node3D
 ## follows the land. Rebuilt only when the network changes.
 
 var TEX: String = preload("res://scripts/terrain.gd").art("res://assets/ground/road-dirt.jpg", "res://assets/ground/dirt-albedo.jpg")
-const TINT := Color(0.66, 0.62, 0.58)
 const WIDTH := 0.26
 
-const KINGS_TINT := Color(0.6, 0.55, 0.5)
+
+
+## The colour a road's earth is drawn in (a multiply on the dirt photo): muted, a little cool, so a
+## track reads as worn earth and stones between grass, not an orange stripe (the photo's dirt is warm;
+## times the old warm tint and the grade it went saturated orange). The King's road a shade darker,
+## worn deeper. One place for every road, street and track (towns.gd draws its streets with it).
+## realm/data/ground.json roads.tint, roads.kingsShade.
+static func earth(kings := false) -> Color:
+	var t: Array = Data.value("ground", "roads.tint", [0.75, 0.85, 1.0])
+	var k := Data.num("ground", "roads.kingsShade", 0.92) if kings else 1.0
+	return Color(float(t[0]) * k, float(t[1]) * k, float(t[2]) * k)
 const Land3D := preload("res://scripts/land3d.gd")  # PAINTED: the painted ground (realm/data/ground.json)
 const Data := preload("res://scripts/data.gd")
 var GRASS: String = "res://assets/ground/grass-albedo.jpg"  # a verge's grass
@@ -58,7 +67,7 @@ func sync(world: Dictionary) -> void:
 		if ra == rb:
 			continue
 		root[ra] = rb
-		_segment(terrain.world_pos(e[1].x, e[1].y), terrain.world_pos(e[2].x, e[2].y), _roads, WIDTH, TINT, "roads")
+		_segment(terrain.world_pos(e[1].x, e[1].y), terrain.world_pos(e[2].x, e[2].y), _roads, WIDTH, "roads")
 
 
 ## A track between two tile centres, bowed gently at the middle so roads don't
@@ -89,7 +98,7 @@ func kings_road(world: Dictionary) -> void:
 			continue
 		var route: PackedVector3Array = terrain.land_path(from, terrain.world_pos(float(c["x"]), float(c["y"])))
 		for i in route.size() - 1:
-			_segment(route[i], route[i + 1], _kings, WIDTH * 2.2, KINGS_TINT, "kings")
+			_segment(route[i], route[i + 1], _kings, WIDTH * 2.2, "kings")
 		_roadside(route, cities)
 	# Lords' roads: every town to the seat of the house that holds it.
 	clear_tracks("lords")
@@ -281,7 +290,7 @@ func track(a: Vector3, b: Vector3, width := WIDTH * 0.7, key := "") -> void:
 		_track_keys[key] = n
 	var route: PackedVector3Array = terrain.land_path(a, b)
 	for i in route.size() - 1:
-		_segment(route[i], route[i + 1], _track_keys[key], width, TINT, "track:" + key)
+		_segment(route[i], route[i + 1], _track_keys[key], width, "track:" + key)
 
 
 ## Where every road and track runs, so grass and the like can keep off them:
@@ -430,7 +439,7 @@ func paths_near(p: Vector3, r: float) -> int:
 	return hash(near)
 
 
-func _segment(a: Vector3, b: Vector3, parent: Node3D = null, width := WIDTH, tint := TINT, owner := "roads") -> void:
+func _segment(a: Vector3, b: Vector3, parent: Node3D = null, width := WIDTH, owner := "roads") -> void:
 	var mid: Vector3 = terrain.road_bow(a, b)  # the same bow travellers ride
 	for run in [[a, mid], [mid, b]]:
 		var p: Vector3 = run[0]
@@ -454,7 +463,4 @@ func _segment(a: Vector3, b: Vector3, parent: Node3D = null, width := WIDTH, tin
 			var vt: Array = Data.value("ground", "roads.vergeTint", [0.82, 0.86, 0.55, 0.85])
 			var verge: Decal = terrain.paint(parent if parent else self, terrain.tiled(GRASS, 2, roundi(len / width), "sides"), at, Vector2(width * Data.num("ground", "roads.verge", 2.4), len), yaw, Color(float(vt[0]), float(vt[1]), float(vt[2]), float(vt[3]) if vt.size() > 3 else 1.0), absf(p.y - q.y) + 3.0, fade)
 			verge.sorting_offset = -1.0  # under the track
-			var rt: Array = Data.value("ground", "roads.tint", [])
-			if rt.size() == 3:
-				tint = Color(float(rt[0]), float(rt[1]), float(rt[2])) * Color(tint.r / TINT.r, tint.g / TINT.g, tint.b / TINT.b)  # a king's road keeps its own shade, warmed the same
-		terrain.paint(parent if parent else self, terrain.tiled(TEX, 2 if width > WIDTH else 1, roundi(len / width), "sides"), at, Vector2(width, len), yaw, tint, absf(p.y - q.y) + 3.0, fade)
+		terrain.paint(parent if parent else self, terrain.tiled(TEX, 2 if width > WIDTH else 1, roundi(len / width), "track"), at, Vector2(width, len), yaw, earth(owner == "kings"), absf(p.y - q.y) + 3.0, fade)

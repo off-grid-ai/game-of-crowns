@@ -26,7 +26,7 @@ var ROAD_TEX: String = preload("res://scripts/terrain.gd").art("res://assets/gro
 ## Field crops by kind, each tinted dirt until its own texture is delivered.
 const CROPS := [["field-wheat", Color(0.85, 0.7, 0.3)], ["field-green", Color(0.45, 0.62, 0.22)], ["field-fallow", Color(0.55, 0.42, 0.26)], ["field-wheat", Color(0.7, 0.66, 0.28)]]
 var SQUARE_TEX: String = preload("res://scripts/terrain.gd").art("res://assets/ground/square-cobbles.jpg", "res://assets/village/T_UnevenBrick_BaseColor.png")
-const ROAD_TINT := Color(0.66, 0.62, 0.58)  # mutes the warm dirt to sit with grass and stone
+static var ROAD_TINT: Color = preload("res://scripts/roads.gd").earth()  # the realm's one road earth (roads.gd earth)
 var life = preload("res://scripts/town_life.gd").new()
 
 
@@ -692,7 +692,7 @@ func _paint_way(root: Node3D, center: Vector3, a: Vector2, b: Vector2, width: fl
 	var mid := (a + b) * 0.5
 	var lo := minf(_ground_y(center, Vector3(a.x, 0, a.y)), _ground_y(center, Vector3(b.x, 0, b.y)))
 	var hi := maxf(_ground_y(center, Vector3(a.x, 0, a.y)), _ground_y(center, Vector3(b.x, 0, b.y)))
-	terrain.paint(root, terrain.tiled(ROAD_TEX, 1, maxi(1, roundi(length / 0.34)), "sides"), Vector3(mid.x, (lo + hi) / 2.0, mid.y), Vector2(width, length + 0.04), atan2(b.x - a.x, b.y - a.y), ROAD_TINT, hi - lo + 1.0)
+	terrain.paint(root, terrain.tiled(ROAD_TEX, 1, maxi(1, roundi(length / 0.34)), "track"), Vector3(mid.x, (lo + hi) / 2.0, mid.y), Vector2(width, length + 0.04), atan2(b.x - a.x, b.y - a.y), ROAD_TINT, hi - lo + 1.0)
 
 
 ## --towns=plots: houses on burgage plots along the town's roads and lanes,
@@ -1446,7 +1446,8 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 		terrain.land3d.paint_mud(center, square_r * 1.3, rng.randi())  # in the ground itself
 	else:
 		terrain.paint(root, terrain.tiled(ROAD_TEX, reps + 2, reps + 2, "round"), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2.ONE * square_r * 3.2, rng.randf() * TAU, ROAD_TINT)
-	terrain.paint(root, terrain.tiled(SQUARE_TEX, reps, reps, "setts"), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2(square_r * 2.0, square_r * 1.6), rng.randf() * TAU)
+	var setts: Decal = terrain.paint(root, terrain.tiled(SQUARE_TEX, reps, reps, "setts"), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2(square_r * 2.0, square_r * 1.6), rng.randf() * TAU)
+	setts.sorting_offset = 1.0  # the paving over the roads that come into the square: a road ends at its setts, never a dirt stripe across them
 
 	var per_variant := {}
 	var real := realistic_towns.has(String(c.get("title", c["name"]))) or realistic_towns.has("*")
@@ -1482,7 +1483,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 			t += 0.28
 		if t > t0:
 			var mid := dir * (t0 + t) / 2.0
-			terrain.paint(root, terrain.tiled(ROAD_TEX, 1, roundi((t - t0) / 0.34), "sides"), Vector3(mid.x, (lo + hi) / 2.0, mid.z), Vector2(0.34, t - t0), atan2(dir.x, dir.z), ROAD_TINT, hi - lo + 1.0)
+			terrain.paint(root, terrain.tiled(ROAD_TEX, 1, roundi((t - t0) / 0.34), "track"), Vector3(mid.x, (lo + hi) / 2.0, mid.z), Vector2(0.34, t - t0), atan2(dir.x, dir.z), ROAD_TINT, hi - lo + 1.0)
 			# Town-local, like the footprints: where the grass keeps off.
 			var lanes: Array = root.get_meta("lanes", [])
 			lanes.append([Vector2(dir.x, dir.z) * t0, Vector2(dir.x, dir.z) * t])
@@ -1712,7 +1713,7 @@ func _footpath(root: Node3D, center: Vector3, door: Vector3) -> void:
 	var mid := (from + to) * 0.5
 	var lo := minf(_ground_y(center, door), _ground_y(center, Vector3(to.x, 0, to.y)))
 	var hi := maxf(_ground_y(center, door), _ground_y(center, Vector3(to.x, 0, to.y)))
-	terrain.paint(root, terrain.tiled(ROAD_TEX, 1, maxi(1, roundi(length / 0.3)), "sides"), Vector3(mid.x, (lo + hi) / 2.0, mid.y), Vector2(0.14, from.distance_to(to)), atan2(to.x - from.x, to.y - from.y), ROAD_TINT, hi - lo + 0.6)
+	terrain.paint(root, terrain.tiled(ROAD_TEX, 1, maxi(1, roundi(length / 0.3)), "track"), Vector3(mid.x, (lo + hi) / 2.0, mid.y), Vector2(0.14, from.distance_to(to)), atan2(to.x - from.x, to.y - from.y), ROAD_TINT, hi - lo + 0.6)
 	var lanes: Array = root.get_meta("lanes", [])
 	lanes.append([from, to])
 	root.set_meta("lanes", lanes)

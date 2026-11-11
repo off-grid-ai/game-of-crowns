@@ -85,7 +85,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - Painted ground on or off: `realm/data/ground.json`: `painted` (or `--ground=painted` / `--ground=photo` for one run). Each layer's colour and how broad its pattern: `layers.<layer>.tint`, `.scale`; the grass's broad colour patches: `macro`.
 - The coast: how far the beach runs above the waterline, and the surf at the shore: `realm/data/ground.json`: `beach.top`, `surf`.
 - How far out the land keeps its fine shape (Terrain3D's rings round the lens; too coarse and a lake's low shore sinks under the water at the mid zoom): `realm/data/ground.json`: `mesh.size`, `mesh.lods`.
-- Roads: the grass verge's width and colour, the track's tint: `realm/data/ground.json`: `roads.*`. The farm hedges' bush: `realm/data/assets.json`: `hedge` (photo), `hedge_painted`.
+- Roads: every road's, street's and track's earth colour and the King's road's shade (`roads.tint`, `roads.kingsShade`), how a track frays into the grass and how dark its ruts (`roads.edge.*`), the painted look's grass verge (`roads.verge`, `roads.vergeTint`): `realm/data/ground.json`. The farm hedges' bush: `realm/data/assets.json`: `hedge` (photo), `hedge_painted`.
 - Which painted texture each ground layer draws (the CC0 watercolor set, packed by `realm/tools/pack_painted_ground.gd`): `realm/data/ground.json`: `layers.<layer>.painting` (rerun the tool and `--import` after changing one).
 
 ## Battles (NPC perf)

@@ -1211,7 +1211,10 @@ static func art(path: String, fallback: String) -> String:
 
 
 ## A texture repeated nx by ny times, so a long road keeps its grain instead of
-## stretching. `edge` softens it: "round" for a worn, ragged patch, "setts" for laid stone, "sides" for a track's verges.
+## stretching. `edge` softens it: "round" for a worn, ragged patch, "setts" for laid stone, "sides" for a
+## verge's frayed edges, "track" for a road's (frayed, with wheel ruts).
+const Data := preload("res://scripts/data.gd")
+const TILED_VERSION := ":v2"  # raise when how a tile is made changes, so the kept copies on disk are made again
 func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 	nx = clampi(nx, 1, 12)
 	ny = clampi(ny, 1, 24)
@@ -1220,7 +1223,7 @@ func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 		return _tiled[key]
 	# Made once ever, then kept on disk: building these pixel by pixel is what
 	# stalled a town's first appearance.
-	var cached := "user://tiled/%s.png" % key.md5_text()
+	var cached := "user://tiled/%s.png" % (key + TILED_VERSION).md5_text()
 	if FileAccess.file_exists(cached):
 		var kept := Image.load_from_file(cached)
 		if kept:
@@ -1273,25 +1276,40 @@ func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 					a *= clampf(0.6 + lost.get_noise_2d(x, y) * 1.4, 0.0, 1.0)  # setts gone in patches
 				if a < 1.0:
 					img.set_pixel(x, y, Color(img.get_pixel(x, y), a))
-	elif edge == "sides":
-		# A road is worn, not ruled: its verges wander in and out, grass creeps
-		# over the edges, and a grassy strip runs down the middle between the
-		# wheel ruts.
+	elif edge == "sides" or edge == "track":
+		# A road is worn, not ruled: its verges wander in and out and break up in
+		# tongues of grass, so it frays into the meadow instead of ending on a line;
+		# a grassy strip runs down the crown; a track ("track", not a verge's grass)
+		# darkens in two wheel ruts. realm/data/ground.json roads.edge.
+		var feather := Data.num("ground", "roads.edge.feather", 0.2)
+		var wander := Data.num("ground", "roads.edge.wander", 0.2)
+		var crown := Data.num("ground", "roads.edge.crown", 0.7)
+		var ruts := Data.num("ground", "roads.edge.ruts", 0.22) if edge == "track" else 0.0
 		var wear := FastNoiseLite.new()
 		wear.seed = nx * 7 + ny
 		wear.frequency = 0.02
 		wear.fractal_octaves = 3
+		var tufts := FastNoiseLite.new()
+		tufts.seed = nx * 3 + ny * 5
+		tufts.frequency = 0.045
 		for y in h:
-			var edge_l := w * (0.12 + 0.12 * (wear.get_noise_2d(0.0, y) + 1.0) * 0.5)
-			var edge_r := w * (0.88 - 0.12 * (wear.get_noise_2d(500.0, y) + 1.0) * 0.5)
+			var edge_l := w * (0.04 + wander * (wear.get_noise_2d(0.0, y) + 1.0) * 0.5)
+			var edge_r := w * (0.96 - wander * (wear.get_noise_2d(500.0, y) + 1.0) * 0.5)
 			for x in w:
-				var a := clampf(minf(x - edge_l, edge_r - x) / (w * 0.08), 0.0, 1.0)
+				var inside := minf(x - edge_l, edge_r - x) / (w * feather)
+				var a := clampf(inside, 0.0, 1.0)
+				if inside < 1.6:
+					a *= clampf(0.35 + tufts.get_noise_2d(x, y) * 1.6 + inside * 0.5, 0.0, 1.0)  # grass breaking in at the verge
 				var mid := absf(x - w * 0.5) / (w * 0.5)
 				if mid < 0.12:
-					a *= 0.55 + mid * 3.0  # the crown of the road, half grassed
+					a *= lerpf(crown, 1.0, mid / 0.12)  # the crown of the road, a little grassed
 				a *= clampf(0.8 + wear.get_noise_2d(x * 3.0, y * 3.0) * 0.5, 0.0, 1.0)
-				if a < 1.0:
-					img.set_pixel(x, y, Color(img.get_pixel(x, y), a))
+				var c := img.get_pixel(x, y)
+				if ruts > 0.0:
+					var r := absf(mid - 0.44) / 0.06  # a rut either side of the crown, where the wheels run
+					var dark := ruts * clampf(1.0 - r, 0.0, 1.0) * (0.75 + wear.get_noise_2d(x * 2.0, y * 0.3) * 0.5)
+					c = Color(c.r * (1.0 - dark), c.g * (1.0 - dark), c.b * (1.0 - dark), c.a)
+				img.set_pixel(x, y, Color(c, a))
 	img.generate_mipmaps()
 	DirAccess.make_dir_recursive_absolute("user://tiled")
 	img.save_png(cached)
