@@ -12,7 +12,7 @@ extends Node
 ##   key G               press and release a key by name
 ##   click 0.5 0.6       left-click at a fraction of the screen
 ##   hover 0.5 0.6       rest the mouse there (tooltips show after a moment)
-##   snap name           save <dir>/name.png
+##   snap name           save <dir>/name.png (open cards and drawers put away first; "snap name ui" keeps them)
 ##   look note           log what the game says now, with a note
 ##   city Kingsmere 6    frame a town by name, at a camera distance
 ##   button Continue     press the visible button whose words begin so
@@ -151,6 +151,12 @@ func _play(quit_after: bool) -> void:
 				Input.parse_input_event(m)
 				await get_tree().create_timer(0.3).timeout
 			"snap":
+				# A film shot shows the world: any open card or drawer is put away first (a town card the
+				# harness opened framing a siege, the chronicle), unless the step asks for the interface
+				# ("snap name ui").
+				if not (w.size() > 2 and w[2] == "ui"):
+					_clear_ui()
+					await get_tree().process_frame
 				await RenderingServer.frame_post_draw
 				var img := get_viewport().get_texture().get_image()
 				var path: String = w[1] if w[1].begins_with("/") else "%s/%s.png" % [out, w[1]]
@@ -442,6 +448,28 @@ func _action(name: String, down: bool) -> void:
 			e.global_position = e.position
 		Input.parse_input_event(e)
 		return
+
+
+## Puts away every card and side drawer the interface has open (the town card, a decree or court card, the
+## chronicle and houses drawers, a story, the Watch offer), as the King would before looking at his realm.
+func _clear_ui() -> void:
+	var ui: Node = main.ui
+	if ui == null:
+		return
+	var town: Variant = ui.get("_town_panel")
+	if town is Control and (town as Control).visible:
+		ui._put_town_away()
+	for c in ui.get("cards") if ui.get("cards") is Array else []:
+		if is_instance_valid(c) and (c as Control).visible:
+			(c as Control).visible = false
+	for k in ["_chron_panel", "_houses_panel", "_story_panel", "_offer"]:
+		var p: Variant = ui.get(k)
+		if p is Control and (p as Control).visible:
+			(p as Control).visible = false
+	for k in ["_chron_btn", "_houses_btn"]:
+		var b: Variant = ui.get(k)
+		if b is Button:
+			(b as Button).set_pressed_no_signal(false)
 
 
 func _key(code: int, down: bool) -> void:
