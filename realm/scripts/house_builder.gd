@@ -135,7 +135,7 @@ func build(spec: Dictionary) -> ArrayMesh:
 	if ResourceLoader.exists(DIR % gable):
 		parts.append([gable, Transform3D(Basis(), Vector3(0, top, hd))])
 		parts.append([gable, Transform3D(Basis(Vector3.UP, PI), Vector3(0, top, -hd))])
-	if rng.randf() < 0.7:
+	if rng.randf() < float(spec.get("chimney", 0.7)):  # spec chimney: the chance of one (data/assets.json), always for a hall
 		parts.append(["Prop_Chimney", Transform3D(Basis(), Vector3(hw * 0.5, top - 0.5, -hd * 0.3))])
 	return _bake(parts)
 
