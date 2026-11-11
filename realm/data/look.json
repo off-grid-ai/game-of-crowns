@@ -90,5 +90,14 @@
   "border_bright": 1.35,
   "border_px": 3.0,
   "stripe_width": 1.4
+ },
+ "team": {
+  "_": "Team colour (team_colour.gd; Mac's North Star, docs/art/target/02-realm.jpg; Warcraft III): the kit materials whose names start with these keys take the holder's colour, by how much (roof tiles strongly, wood trim lightly; walls, brick and stone not at all). on: the switch (or --team=on / --team=off). saturation: the house colours pushed bolder (WC3's team colours). A town that changes hands eases to its new colour over a season.",
+  "on": false,
+  "materials": {
+   "MI_RoundTiles": 0.85,
+   "MI_WoodTrim": 0.35
+  },
+  "saturation": 1.15
  }
 }

@@ -681,6 +681,7 @@ func _setup_environment() -> void:
 	# The grade and atmosphere (look.gd, the look pass), once the scene is up.
 	if ResourceLoader.exists("res://scripts/look.gd"):
 		load("res://scripts/look.gd").apply.call_deferred(self)
+	load("res://scripts/team_colour.gd").apply.call_deferred(self)  # every building in its holder's colours (data/look.json team)
 	# Then the player's graphics choice, over the top of it.
 	get_tree().create_timer(0.5).timeout.connect(apply_graphics)
 
