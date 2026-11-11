@@ -609,8 +609,8 @@ func _animal(kind: String, rng: RandomNumberGenerator, walking := false) -> Node
 ## vertex carried by its bones (skin bind poses times the skeleton's rest), not by their bind-pose
 ## boxes, which the Quaternius rigs' armature turn and hundredfold scale throw out. Scale fits its
 ## longest side to `metres`; lift stands its lowest point on the ground. Needs no scene tree.
-static func beast_fit(kind: String, metres: float) -> Array:
-	var path := Real.path_of(kind)
+static func beast_fit(kind: String, metres: float, model_path := "") -> Array:
+	var path := model_path if model_path != "" else Real.path_of(kind)
 	if path == "" or not ResourceLoader.exists(path):
 		return [0.0, 0.0]
 	var model: Node3D = (load(path) as PackedScene).instantiate()

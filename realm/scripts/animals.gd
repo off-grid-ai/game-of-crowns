@@ -89,11 +89,12 @@ static func live(model: Node3D, kind: String, rng: RandomNumberGenerator, busy :
 ## place a beast is made (the roadside, a town's yard, the fields and flocks). null with no model.
 static var _fits := {}  # kind -> [scale, lift]
 static func make(kind: String, rng: RandomNumberGenerator, walking := false) -> Node3D:
-	var path := preload("res://scripts/realistic.gd").path_of(kind)
+	var own := String(Data.value("animals", "kinds.%s.model" % kind, ""))  # a kind the catalogue doesn't hold (a town dog: the wolf, shrunk)
+	var path := own if own != "" else preload("res://scripts/realistic.gd").path_of(kind)
 	if kind == "" or path == "" or not ResourceLoader.exists(path):
 		return null
 	if not _fits.has(kind):
-		_fits[kind] = load("res://scripts/roadside.gd").beast_fit(kind, Data.num("roadside", "animals.%s" % kind, 1.5))
+		_fits[kind] = load("res://scripts/roadside.gd").beast_fit(kind, Data.num("animals", "kinds.%s.length" % kind, Data.num("roadside", "animals.%s" % kind, 1.5)), own)
 	var fit: Array = _fits[kind]
 	if float(fit[0]) <= 0.0:
 		return null

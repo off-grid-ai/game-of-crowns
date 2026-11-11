@@ -20,7 +20,7 @@ func _initialize() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
 	for kind in kinds:
-		var path := Real.path_of(kind)
+		var path := String(kinds[kind].get("model", "")) if String(kinds[kind].get("model", "")) != "" else Real.path_of(kind)
 		if path == "" or not ResourceLoader.exists(path):
 			path = String(ALSO.get(kind, ""))
 		if path == "" or not ResourceLoader.exists(path):
