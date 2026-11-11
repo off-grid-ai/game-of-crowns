@@ -18,8 +18,8 @@
   },
   "_paddock": "paddock: how far the horses roam from its middle (metres) when the town agent gives no fence; amble: their walking pace (world units a second; a horse walks at 0.2); rest: seconds each stands between strolls (fewest, most); follow: how far behind the groom a led horse walks (world units); tied_secs: how long a horse waits tied at the inn before it is taken home on its own; lead_most: seconds a horse is led before it is let go whatever happened to its groom. A town with stables but no paddock grazes its horses round the stables' middle spot.",
   "paddock": { "roam": 3.5, "amble": 0.07, "rest": [4.0, 14.0], "follow": 0.16, "tied_secs": 90.0, "lead_most": 120.0 },
-  "_counts": "How many work at each building, by the town's state: base, then the first state in priority that the town is in (a feast beats war at the inn). States: hunger and feast (the town's mood), levy (a muster at the town this season or last), war (its house at war), low (its granary under a quarter full), prosperity. size_per adds one per that many of the town's size; most caps it.",
-  "priority": ["hunger", "feast", "levy", "war", "low", "prosperity"],
+  "_counts": "How many work at each building, by the town's state: base, then the first state in priority that the town is in (a feast beats war at the inn). States: hunger and feast (the town's mood), levy (a muster at the town this season or last), war (its house at war), justice, relief, grant, build (a court ruling standing at the town: the bridge's rulings.js; a feast or levy ruled is that state), low (its granary under a quarter full), prosperity. size_per adds one per that many of the town's size; most caps it.",
+  "priority": ["hunger", "feast", "levy", "war", "justice", "relief", "grant", "build", "low", "prosperity"],
   "counts": {
     "smiths": { "base": 1, "levy": 2, "war": 2 },
     "horses": { "base": 3, "size_per": 4, "most": 6, "levy": 1, "war": 1, "prosperity": 5 },
@@ -28,7 +28,7 @@
     "travellers": { "base": 1, "prosperity": 2, "war": 0, "hunger": 0 },
     "granary_queue": { "base": 0, "low": 5, "hunger": 8 },
     "levy_queue": { "base": 0, "war": 3, "levy": 6 },
-    "listeners": { "base": 0, "feast": 6, "levy": 7, "war": 6, "hunger": 6, "low": 5 },
+    "listeners": { "base": 0, "feast": 6, "levy": 7, "war": 6, "hunger": 6, "low": 5, "relief": 8, "justice": 6, "grant": 5, "build": 4 },
     "millers": { "base": 1 },
     "tanners": { "base": 1, "hunger": 0 },
     "beasts": { "base": 4, "size_per": 3, "most": 8, "prosperity": 8, "feast": 6, "war": 3, "hunger": 2 },
@@ -44,7 +44,11 @@
     "low": { "flour": 2.5, "bread": 0.5, "sacks": 2.0, "grumble": 2.5, "dismay": 2.0 },
     "hunger": { "bread": 0.3, "sacks": 2.0, "grumble": 4.0, "dismay": 4.0, "cheer": 0.1, "toast": 0.2 },
     "feast": { "toast": 2.5, "talk": 1.5, "lead": 2.5, "fetch": 1.5, "cheer": 5.0, "dismay": 0.1, "bread": 2.0 },
-    "prosperity": { "bread": 1.5, "lead": 1.5, "toast": 1.5 }
+    "prosperity": { "bread": 1.5, "lead": 1.5, "toast": 1.5 },
+    "relief": { "cheer": 6.0, "dismay": 0.1, "listen": 0.6, "bread": 1.5, "toast": 2.0, "grumble": 0.2 },
+    "justice": { "dismay": 2.5, "murmur": 2.5, "cheer": 0.1, "toast": 0.4, "listen": 1.5 },
+    "grant": { "cheer": 2.5, "murmur": 1.5, "toast": 1.5 },
+    "build": { "cheer": 1.5, "listen": 1.5 }
   },
   "_forge": "The forge's look: glow (its light's colour, energy by day at work, by night banked, and in war or a levy; range in world units), sparks off the anvil while the hammer swings (how many, how long each lives, how fast they fly; war multiplies the amount).",
   "forge": { "glow": { "color": [1.0, 0.52, 0.22], "day": 1.1, "night": 0.35, "war": 1.7, "range": 0.9, "height": 0.12 }, "sparks": { "amount": 14, "war": 2.0, "life": 0.45, "speed": [0.25, 0.6], "size": [0.008, 0.016] } },

@@ -114,6 +114,7 @@ func sync(world: Dictionary) -> void:
 		# A levy raised here: the muster scene at the town this season or last (bridge crown.js levy).
 		bb.set_var(&"levy", now_scenes.any(func(s): return String(s.get("kind", "")) == "muster" and int(s.get("city", -2)) == id and int(s.get("turn", turn)) >= turn - 1))
 		bb.set_var(&"garrison", int(_dict(c.get("garrison")).get("left", 0)))  # seasons a royal company still stands here (bridge garrison.js)
+		bb.set_var(&"ruling", String(_dict(c.get("ruling")).get("kind", "")))  # the King's latest ruling here while it stands: relief, justice, levy, feast, build, grant (bridge rulings.js)
 		bb.set_var(&"favour", favour)
 		bb.set_var(&"crown_town", int(c.get("owner", -1)) == crown_id)
 		bb.set_var(&"house", String((owner.get("house", {}) as Dictionary).get("name", "")))

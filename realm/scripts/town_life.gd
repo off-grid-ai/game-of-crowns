@@ -78,7 +78,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	var progress := float(c.get("progress", 0.0))
 	var sig := "%s|%s|%s|%s|%s|%s|%s|%s|%s" % [kind, building, hungry, c.get("celebrating", false), c.get("disorder", false), c.get("atWar", false), c.get("grief", false), c.get("prosperity", false), c.get("grasping", false)]
 	# The working buildings' life changes with a levy and a low granary too, and when the town agent lists its buildings.
-	sig += "|%s|%s|%d" % [c.get("granaryLow", false), "levy" in Works.states(c, _town_id), hash(root.get_meta("works", {}))]
+	sig += "|%s|%s|%d|%s" % [c.get("granaryLow", false), "levy" in Works.states(c, _town_id), hash(root.get_meta("works", {})), (c.get("ruling") as Dictionary).get("kind", "") if c.get("ruling") is Dictionary else ""]
 	var life: Node3D = root.get_node_or_null("Life")
 	if life and life.get_meta("sig", "") == sig:
 		# Only the work moved on: the site grows where it stands, and the
@@ -118,6 +118,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	elif hungry:
 		_crowd(root, life, center, rng, 4 + mini(int(c.get("size", 1)) / 2, 8), false)
 	if not c.get("disorder", false):
+		_buyers_more = Data.value("moods", "relief.buyers", []) if "relief" in _mood_states(c) else []
 		_trade(root, life, center, rng, not hungry, _mood_num(c, "stalls_open", 1.0))  # a hungry town's stalls are kept, bare: no buyers; war and hunger shut some
 		if not hungry and bool(root.get_meta("crown_seat", false)):
 			_market_day(root, life, center, rng)  # the crown's seat: the realm's busiest market
@@ -684,6 +685,8 @@ func _trade(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 		taken.append(Vector2(at.x, at.z))
 		life.set_meta("standing", taken)
 		var many: Array = _market_knobs(root).get("buyers", [1, 2])  # the crown's market draws more to each stall
+		if not _buyers_more.is_empty() and int(_buyers_more[1]) > int(many[1]):
+			many = _buyers_more  # the tax remitted: the market fills (moods.json relief.buyers)
 		for i in rng.randi_range(int(many[0]), int(many[1])) if buyers else 0:
 			var side := Vector3(-out.z, 0, out.x) * rng.randf_range(-0.12, 0.12)
 			var buyer := _stand(root, life, center, m - out * (float(st[1]) * 0.5 + 0.12) + side, "townsfolk" if rng.randf() < 0.7 else "peasant", ["Idle_Talking", "Arguing", "Nodding"][rng.randi() % 3], rng.randi(), Color.WHITE, 0.2)
@@ -958,7 +961,7 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
 	# At every stall's front: what it has to sell, or that it has nothing.
 	var goods: Array = []
-	if c.get("prosperity", false):
+	if c.get("prosperity", false) or ("relief" in _mood_states(c) and bool(Data.value("moods", "relief.goods", false))):
 		goods = ["FarmCrate_Apple", "FarmCrate_Carrot", "Barrel_Apples", "Coin_Pile"]
 	elif c.get("famine", false) or c.get("atWar", false) or c.get("grief", false):
 		goods = ["FarmCrate_Empty", "Crate_Wooden"]  # shut or sold out
@@ -1058,7 +1061,7 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 const Works := preload("res://scripts/works.gd")
 const Horse := preload("res://scripts/horse.gd")
 const Data := preload("res://scripts/data.gd")
-const NEWS := ["feast", "levy", "war", "hunger", "low"]  # states the crier cries in the square
+const NEWS := ["feast", "levy", "war", "hunger", "low", "relief", "justice", "grant", "build"]  # states the crier cries in the square (the last four: a court ruling, the herald's news)
 
 
 ## The life at the town's working buildings, from the town agent's list of
@@ -1444,6 +1447,8 @@ func _crier(root: Node3D, life: Node3D, center: Vector3, tick: Works.Tick, liste
 
 # --- the realm's state in the streets (realm/data/moods.json) -------------------
 
+var _buyers_more: Array = []  # buyers at each stall while a ruling's relief stands (moods.json relief.buyers), else []
+
 ## The town's states (works.gd: war, a levy, hunger, a feast...) that moods.json
 ## dresses, [] with the switch off (--moods=off).
 func _mood_states(c: Dictionary) -> Array:
@@ -1485,6 +1490,13 @@ func _moods(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 		if Works.stock(root, "rack") < want:
 			Works.add_stock(root, "rack", want - Works.stock(root, "rack"))
 		_muster(root, life, center, Data.value("moods", "levy.muster" if "levy" in states else "war.muster", {}), rng)
+	if "justice" in states:
+		_justice(root, life, center, Data.value("moods", "justice", {}), rng)
+	if "grant" in states:
+		_grant(root, life, center, c, house, Data.value("moods", "grant", {}), rng)
+	if "build" in states:
+		var b: Dictionary = Data.value("moods", "build", {})
+		_construction(root, life, center, String(b.get("site", "Granary")), float(b.get("progress", 0.3)), rng, int(c.get("size", 1)))
 	if "levy" in states:
 		_leaving(root, life, center, Data.value("moods", "levy.leave", {}), rng)
 	if "feast" in states:
@@ -1734,3 +1746,55 @@ class Leaving extends Node:
 			mind.queue_free()  # his post put by: he walks now
 		gone += 1
 		walking.append([p, best])
+
+
+## Justice done (a court sentence standing at the town): an empty gallows at
+## the square's seen edge, the watch either side, and the town come to look in
+## silence (npc_mind post onlooker; a hanging itself is never shown).
+func _justice(root: Node3D, life: Node3D, center: Vector3, j: Dictionary, rng: RandomNumberGenerator) -> void:
+	var places: Dictionary = root.get_meta("places", {})
+	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
+	var toward := Basis(Vector3.UP, -1.0) * SEEN  # the other side of the crier's line from the muster
+	var at := _spot(center, well + toward * float(j.get("from_well", 0.62)), _blocked(root, life), life.get_meta("standing"), 0.3)
+	if is_nan(at.x):
+		return
+	var g: Node3D = Real.make(Real.one("gallows")) if bool(j.get("gallows", true)) else null
+	if g:
+		g.position = Vector3(at.x, _y(center, at), at.z)
+		g.rotation.y = atan2(toward.x, toward.z)
+		g.set_meta("dress", "gallows")
+		life.add_child(g)
+		life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(at, Real.footprint(Real.one("gallows")), atan2(toward.x, toward.z))])
+	var side := Vector3(-toward.z, 0, toward.x)
+	for i in int(j.get("guards", 2)):
+		var w := _stand(root, life, center, at - toward * 0.12 + side * (0.18 if i % 2 else -0.18), "soldier", "Sword_Idle", rng.randi(), Color.WHITE, 0.15)
+		if w:
+			_face(w, w.position - toward)
+			_watch(w)
+			_mind(w, "guard", center)
+	for i in int(j.get("crowd", 7)):
+		var a := atan2(-toward.x, -toward.z) + lerpf(-0.9, 0.9, (i + 0.5) / maxf(1.0, int(j.get("crowd", 7))))
+		var p := _stand(root, life, center, at + Vector3(sin(a), 0, cos(a)) * rng.randf_range(0.3, 0.42), "peasant" if rng.randf() < 0.6 else "townsfolk", "Looking_Around", rng.randi(), Color.WHITE, 0.12)
+		if p:
+			p.set_meta("onlooker", true)
+			_face(p, at)
+			_mind(p, "onlooker", center)
+
+
+## A grant to the house that holds the town (CK3's granted holding): its
+## banners stand round the square, and the work the grant pays for rises.
+func _grant(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, house: Dictionary, g: Dictionary, rng: RandomNumberGenerator) -> void:
+	var col := Color.from_string(String(house.get("color", "#8a2a1e")), Color(0.55, 0.16, 0.12))
+	var n := int(g.get("banners", 4))
+	for i in n:
+		var a := atan2(SEEN.x, SEEN.z) + (i - (n - 1) * 0.5) * 0.7
+		var at := _spot(center, Vector3(sin(a), 0, cos(a)) * float(g.get("ring", 0.7)), _blocked(root, life), life.get_meta("standing"), 0.2)
+		if is_nan(at.x):
+			continue
+		var flag := Heraldry.standard(house, col, STANDARD_TALL)
+		flag.position = Vector3(at.x, _y(center, at), at.z)
+		flag.rotation.y = atan2(-at.x, -at.z)
+		flag.set_meta("dress", "grant_banner")
+		life.add_child(flag)
+		life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(at, Vector2(0.05, 0.05), 0.0)])
+	_construction(root, life, center, String(g.get("site", "Palace")), float(g.get("progress", 0.15)), rng, int(c.get("size", 1)))

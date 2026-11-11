@@ -187,6 +187,14 @@ static func states(c: Dictionary, town: int) -> Array:
 		out.append("low")
 	if bool(c.get("prosperity", false)):
 		out.append("prosperity")
+	return _ruled(out, String((c.get("ruling") as Dictionary).get("kind", "")) if c.get("ruling") is Dictionary else "")
+
+
+## A court ruling standing at the town (the bridge's rulings.js) adds its kind: a feast or a
+## levy ruled is that state; relief, justice, build and grant are states of their own.
+static func _ruled(out: Array, kind: String) -> Array:
+	if kind != "" and not kind in out:
+		out.append(kind)
 	return out
 
 
@@ -206,7 +214,7 @@ static func states_bb(bb: Blackboard) -> Array:
 		out.append("low")
 	if bool(bb.get_var(&"prosperity", false, false)):
 		out.append("prosperity")
-	return out
+	return _ruled(out, String(bb.get_var(&"ruling", "", false)))
 
 
 ## How many of `what` work at a building now (works.json counts).

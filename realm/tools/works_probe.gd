@@ -56,6 +56,10 @@ func _run() -> void:
 		"low": {"granaryLow": true, "food": 3, "granary": 40},
 		"hunger": {"famine": true, "mood": "hunger"},
 		"feast": {"celebrating": true, "mood": "feast", "prosperity": true},
+		"relief": {"ruling": {"kind": "relief", "left": 2}},
+		"justice": {"ruling": {"kind": "justice", "left": 2}},
+		"grant": {"ruling": {"kind": "grant", "left": 2}},
+		"build": {"ruling": {"kind": "build", "left": 2}},
 	}
 	for name in states:
 		var town := _town(world)
@@ -124,6 +128,21 @@ func _run() -> void:
 			print("WORKS war     levy leaving: %d sent out along the road, %d of %d still mustered" % [go.gone, still, mustered])
 			if go.gone != 2 or still != mustered - 2:
 				print("FAIL war: the levy's men didn't walk out")
+				fails += 1
+		# A court ruling's answer in the town (bridge rulings.js; moods.json): the herald cries it, and its mark stands.
+		if name in ["relief", "justice", "grant", "build"]:
+			var dressed := func(what: String) -> int: return l.get_children().filter(func(n): return n.get_meta("dress", "") == what).size()
+			var sites: int = l.get_children().filter(func(n): return String(n.name).begins_with("Site")).size()
+			var onlookers: int = l.get_children().filter(func(n): return n.has_meta("onlooker")).size()
+			var cheer := Works.count("listeners", Works.states(c, 7), 6)
+			print("WORKS %-7s ruling: listeners %d, gallows %d, onlookers %d, banners %d, sites %d" % [name, cheer, dressed.call("gallows"), onlookers, dressed.call("grant_banner"), sites])
+			var ok := cheer > 0
+			match name:
+				"justice": ok = ok and dressed.call("gallows") > 0 and onlookers > 0
+				"grant": ok = ok and dressed.call("grant_banner") > 0 and sites > 0
+				"build": ok = ok and sites > 0
+			if not ok:
+				print("FAIL %s: the ruling's answer isn't in the town" % name)
 				fails += 1
 		if name == "peace" and (mustered > 0 or fast > 0):
 			print("FAIL peace: a muster or a hurried forge in peacetime")
