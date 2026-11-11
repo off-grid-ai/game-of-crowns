@@ -1138,30 +1138,36 @@ func _flush(root: Node3D) -> void:
 	# Anything placed whole (the castle, landmarks) carries furthest.
 	for g in root.find_children("*", "GeometryInstance3D", true, false):
 		if g.visibility_range_end == 0.0:
-			_fade_beyond(g, 90.0)
+			_fade_beyond(g, _reach("castle", 220.0))
 
 
 ## How far away a kit model is still worth drawing, by its real size: clutter
-## only up close, houses across a valley, castles and churches from across the
-## realm. Beyond that the atlas and the town's name carry the view, and the
-## frame isn't spent on millions of triangles no one can see.
+## only up close, houses and castles at every playing height (Warcraft III: a town
+## stays a town from high up). Godot's own generated detail levels (realistic.gd
+## _merge) lighten them with distance. Distances: realm/data/camera.json map.reach.
 func _reach_for(kind: String) -> float:
 	# The fence panel is 14k triangles, heavier than a house, and a town rings
 	# itself with dozens: past a dozen units it is a hairline, not worth them.
 	if kind == "wooden_fence_game_ready_asset":
 		return 12.0
 	var m: float = float(Real.KIT.get(kind, ["", 10.0])[1])
+	if m <= 0.0:
+		# A model our builders raise (kit houses, kit castles) has no catalogue length: its measured footprint.
+		var f: Vector2 = Real.footprint(kind)
+		m = maxf(f.x, f.y) / Real.S
 	if m < 2.0:
-		return 16.0
+		return _reach("clutter", 16.0)
 	if m < 6.0:
-		return 28.0
-	# Past these the painted map has taken over (it is most of the view by
-	# 45 units out): a house there is a few pixels, a castle a small block.
+		return _reach("small", 30.0)
 	if m < 15.0:
-		return 40.0
+		return _reach("house", 150.0)
 	if m < 25.0:
-		return 60.0
-	return 90.0
+		return _reach("great", 170.0)
+	return _reach("castle", 220.0)
+
+
+static func _reach(k: String, fallback: float) -> float:
+	return preload("res://scripts/camera_rig.gd").knob("map.reach." + k, fallback)
 
 
 func _fade_beyond(g: GeometryInstance3D, end: float) -> void:
