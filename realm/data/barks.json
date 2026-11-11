@@ -1,5 +1,5 @@
 {
-  "_": "Every click answers (Warcraft II's replies, Stronghold's lords; fun audit item 2). Lords answer by their favour band; the Nth click on the same one in a short while gets an annoyed line. Tune here, not in code.",
+  "_": "Every click answers (Warcraft II's replies, Stronghold's lords; fun audit item 2), grounded: a lord answers like a lord, by their favour band; pressed again and again they grow curt, in character, never a joke. Tune here, not in code.",
   "annoyed_after": 3,
   "click_memory_sec": 8,
   "no_repeat": 10,
@@ -22,11 +22,11 @@
     ],
     "steady": [
       "Your Grace.",
-      "The crown wants something?",
+      "The crown has need of us?",
       "We are listening.",
-      "Speak, my King. Briefly.",
-      "Our house is busy, but we hear you.",
-      "Well?"
+      "Speak, my King.",
+      "Our house hears you.",
+      "What is the crown's wish?"
     ],
     "cooling": [
       "Your Grace remembers us now?",
@@ -46,25 +46,25 @@
     ]
   },
   "annoyed": [
-    "Has the King nothing better to do?",
-    "Yes, my King. Still here.",
-    "Your Grace, the realm will not rule itself.",
-    "Must I bow again?",
-    "We heard you the first time.",
-    "Is this a summons or a game?"
+    "Your Grace has my answer already.",
+    "I am still at the crown's service.",
+    "As I said, Your Grace.",
+    "We have spoken, my King.",
+    "My answer has not changed.",
+    "If the crown has a command, I will hear it."
   ],
   "folk": [
-    "Your Grace!",
-    "The King, here? Mind your manners, Wat.",
+    "Your Grace.",
+    "God keep the King.",
     "Long live the King.",
     "Bless you, Your Grace.",
-    "We're only simple folk, my King.",
-    "Fine day for it, Your Grace."
+    "My King.",
+    "Your Grace honours us."
   ],
   "folk_annoyed": [
-    "I've work to do, Your Grace.",
-    "Begging your pardon, but the bread won't bake itself.",
-    "Is the King lost?",
-    "Yes, still me, Your Grace."
+    "I've work waiting, Your Grace.",
+    "By your leave, the bread won't bake itself.",
+    "If it please Your Grace, I must get on.",
+    "Forgive me, my King, the day is short."
   ]
 }
