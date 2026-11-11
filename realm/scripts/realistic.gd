@@ -164,13 +164,19 @@ const STONE := ["medieval_castle", "abbey_wall_ruins", "abbey_ruins", "rubble_pi
 ## What stands right in front of the lens (a roof, a wall, a tree's crown)
 ## dissolves so the view sees past it: Godot's own distance fade, dithered, on
 ## the material. Distances in game units from the camera.
-const NEAR_GONE := 0.08  # gone only right at the lens (the lens itself keeps off roofs and street things now)
-const NEAR_SOLID := 0.25  # whole from about 2 m: at street level the nearest stall stays solid
+# At the roof-height floor a roof edge or a tower 1-3 units off the lens fills the view; the
+# distances are data (realm/data/camera.json near_fade; docs/TUNING.md).
+static var NEAR_GONE: float = preload("res://scripts/camera_rig.gd").knob("near_fade.buildings.gone", 1.2)
+static var NEAR_SOLID: float = preload("res://scripts/camera_rig.gd").knob("near_fade.buildings.solid", 2.6)
+static var TREE_GONE: float = preload("res://scripts/camera_rig.gd").knob("near_fade.trees.gone", 1.5)
+static var TREE_SOLID: float = preload("res://scripts/camera_rig.gd").knob("near_fade.trees.solid", 3.0)
 
 
-static func fade_near(mat: BaseMaterial3D, gone := NEAR_GONE, solid := NEAR_SOLID) -> void:
+static func fade_near(mat: BaseMaterial3D, gone := -1.0, solid := -1.0) -> void:
 	if mat == null:
 		return
+	gone = NEAR_GONE if gone < 0.0 else gone
+	solid = NEAR_SOLID if solid < 0.0 else solid
 	mat.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_DITHER
 	mat.distance_fade_min_distance = gone
 	mat.distance_fade_max_distance = solid

@@ -1,6 +1,23 @@
 {
-  "_": "The camera's knobs (camera_rig.gd reads them; one owner). floor: the closest the lens comes, a low oblique just over the roofs (Mac: no close-up realism). go_to: the distance each kind of 'go to X' frames at (the one framing rule, camera_rig.go_to; Anno 1800 / Manor Lords jump). sight_steps: how many headings either way go_to tries before taking the least blocked.",
-  "floor": 6.0,
-  "go_to": { "castle": 11.0, "host": 12.0, "town_base": 8.5, "town_per_size": 0.9, "town_min": 10.0, "town_max": 16.0 },
-  "sight_steps": 12
+ "_": "The camera's knobs (camera_rig.gd reads them; one owner). floor: the closest the lens comes, a low oblique just over the roofs (Mac: no close-up realism). go_to: the distance each kind of 'go to X' frames at (the one framing rule, camera_rig.go_to; Anno 1800 / Manor Lords jump). sight_steps: how many headings either way go_to tries before taking the least blocked. near_fade: what stands right in front of the lens dissolves (Godot's dithered distance fade; Anno 1800 / Manor Lords): gone nearer than 'gone', whole from 'solid', in game units from the lens; buildings and trees each.",
+ "floor": 6.0,
+ "go_to": {
+  "castle": 11.0,
+  "host": 12.0,
+  "town_base": 8.5,
+  "town_per_size": 0.9,
+  "town_min": 10.0,
+  "town_max": 16.0
+ },
+ "sight_steps": 12,
+ "near_fade": {
+  "buildings": {
+   "gone": 1.2,
+   "solid": 2.6
+  },
+  "trees": {
+   "gone": 1.5,
+   "solid": 3.0
+  }
+ }
 }

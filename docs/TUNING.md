@@ -8,6 +8,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - How close the camera may come (the roof-height floor): `realm/data/camera.json`: `floor`.
 - How far a town, a castle or a followed host is framed from: `realm/data/camera.json`: `go_to.*`.
 - How many headings "go to" tries before settling for the least blocked: `realm/data/camera.json`: `sight_steps`.
+- How close a roof, wall or tree may come before it dissolves out of the view (gone nearer than, whole from): `realm/data/camera.json`: `near_fade.buildings`, `near_fade.trees`.
 
 ## Castles (Builder 2)
 - Where a seat's castle may stand when the first search fails (headings, rings, sizes, water allowed at its edge): `realm/data/towns.json`: `castle.*`.

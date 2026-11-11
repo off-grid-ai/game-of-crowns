@@ -201,7 +201,7 @@ func _cutout(mat: Material) -> Material:
 			c.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 			c.alpha_scissor_threshold = 0.5
 		# A crown right in front of the lens dissolves (realistic.gd's fade).
-		preload("res://scripts/realistic.gd").fade_near(c, 0.25, 0.8)
+		preload("res://scripts/realistic.gd").fade_near(c, preload("res://scripts/realistic.gd").TREE_GONE, preload("res://scripts/realistic.gd").TREE_SOLID)
 		_cut[mat] = c
 	return _cut[mat]
 

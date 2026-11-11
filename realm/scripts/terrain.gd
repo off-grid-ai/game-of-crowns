@@ -627,7 +627,7 @@ func _build_vegetation() -> void:
 					var m := baked.surface_get_material(si) as BaseMaterial3D
 					if m:
 						m = m.duplicate()
-						preload("res://scripts/realistic.gd").fade_near(m, 0.25, 0.8)
+						preload("res://scripts/realistic.gd").fade_near(m, preload("res://scripts/realistic.gd").TREE_GONE, preload("res://scripts/realistic.gd").TREE_SOLID)
 						baked.surface_set_material(si, m)
 			meshes[k].append(baked)
 			placed["%s:%d" % [k, meshes[k].size() - 1]] = []
