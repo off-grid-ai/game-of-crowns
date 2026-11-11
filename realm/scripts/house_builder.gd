@@ -66,7 +66,7 @@ func _bake(parts: Array, remap := {}) -> ArrayMesh:
 	for p in parts:
 		var n: Node3D = _piece(p[0])
 		var accent := "MI_Shutter" if String(p[0]).begins_with("WindowShutters") else ("MI_Door" if String(p[0]).begins_with("Door_") else "")
-		_collect(n, p[1], tools, accent, remap)
+		_collect(n, p[1], tools, accent, p[2] if (p as Array).size() > 2 else remap)  # a part's own remap: a dyed cloth (build_pieces)
 		n.free()
 	var mesh := ArrayMesh.new()
 	for key in tools:
@@ -222,9 +222,11 @@ func verges(parts: Array, frame: Transform3D, roof: String, sx := 1.0, pitch := 
 
 
 ## A small thing of a yard (a woodshed, a pen, a washing line) laid from kit pieces and props
-## (data/assets.json components.yard_*): [piece, [x, y, z] metres, yaw, [sx, sy, sz] or a scale].
+## (data/assets.json components.yard_*): [piece, [x, y, z] metres, yaw, [sx, sy, sz] or a scale, dye], dye
+## optional: {material name: [r, g, b]}, that piece's cloth dyed (realistic.gd dyed: the washing's colours).
 func build_pieces(pieces: Array) -> ArrayMesh:
 	var parts := []
+	var dyes := {}  # a dyed piece's index in parts -> its materials' remap
 	for p in pieces:
 		if not p is Array or (p as Array).size() < 2:
 			continue
@@ -236,7 +238,20 @@ func build_pieces(pieces: Array) -> ArrayMesh:
 		var sc := Vector3.ONE
 		if (p as Array).size() > 3:
 			sc = Vector3(float(p[3][0]), float(p[3][1]), float(p[3][2])) if p[3] is Array else Vector3.ONE * float(p[3])
+		if (p as Array).size() > 4 and p[4] is Dictionary:
+			dyes[parts.size()] = p[4]
 		parts.append([name, Transform3D(Basis(Vector3.UP, yaw).scaled_local(sc), Vector3(float(at[0]), float(at[1]), float(at[2])))])
+	for i in dyes:
+		# The dyed piece's cloth as its own copy (realistic.gd dyed), each dye its own surface.
+		var n: Node3D = _piece(parts[i][0])
+		var remap := {}
+		for mi in n.find_children("*", "MeshInstance3D", true, false):
+			for s in ((mi as MeshInstance3D).mesh.get_surface_count() if (mi as MeshInstance3D).mesh else 0):
+				var src: Material = (mi as MeshInstance3D).get_active_material(s)
+				if src and dyes[i].has(src.resource_name):
+					remap[src.resource_name] = preload("res://scripts/realistic.gd").dyed(src, dyes[i][src.resource_name])
+		n.free()
+		parts[i].append(remap)
 	return _bake(parts)
 
 

@@ -136,14 +136,15 @@ static func height(name: String) -> float:
 
 
 ## A copy of `src` dyed `rgb` (its colour multiplied: a kit cloth's pale weave takes the dye), renamed
-## Dyed_<name> so team colour (look.json team.materials, by name) leaves a dyed cloth its own colour:
+## Dyed_<name>_<dye> (one surface per dye where a baker merges by name) so team colour (look.json
+## team.materials, by name) leaves a dyed cloth its own colour:
 ## a market's awnings red, blue, ochre and green, not all the holder's (art target town-b).
 static func dyed(src: Material, rgb) -> Material:
 	if not src is BaseMaterial3D or not rgb is Array or (rgb as Array).size() < 3:
 		return src
 	var m: BaseMaterial3D = src.duplicate()
 	m.albedo_color = Color(m.albedo_color.r * float(rgb[0]), m.albedo_color.g * float(rgb[1]), m.albedo_color.b * float(rgb[2]), m.albedo_color.a)
-	m.resource_name = "Dyed_" + src.resource_name
+	m.resource_name = "Dyed_%s_%s" % [src.resource_name, Color(float(rgb[0]) * 0.5, float(rgb[1]) * 0.5, float(rgb[2]) * 0.5).to_html(false)]
 	return m
 
 

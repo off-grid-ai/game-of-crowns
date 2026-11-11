@@ -1116,7 +1116,7 @@ func _edge_trees(root: Node3D, center: Vector3, edge: PackedVector2Array, ways: 
 
 
 ## One of a yard's working things in its back corner (towns.json plots.yard_things: a woodshed, a pen,
-## a washing line, each by its chance): Manor Lords' backyard extensions, Foundation's garden props.
+## a washing line (art target town-a: washing hung out behind the cottages), each by its chance): Manor Lords' backyard extensions, Foundation's garden props.
 func _yard_thing(root: Node3D, center: Vector3, pl: Array, face: Vector3, lots: Array, rng: RandomNumberGenerator) -> void:
 	var things: Dictionary = _plot_knobs().get("yard_things", {})
 	var total := 0.0
@@ -1132,6 +1132,9 @@ func _yard_thing(root: Node3D, center: Vector3, pl: Array, face: Vector3, lots: 
 			comp = String(k)
 			break
 	var kind := Real.one(comp)
+	var vs: Array = Real.variants(comp)
+	if vs.size() > 1:
+		kind = String(vs[rng.randi() % vs.size()])  # two washing lines aren't hung alike
 	var f: Vector2 = Real.footprint(kind)
 	if kind == "" or f == Vector2.ZERO:
 		return
@@ -1210,6 +1213,11 @@ func _fields_beyond(root: Node3D, center: Vector3, size: int, rng: RandomNumberG
 	var n := clampi(size * 3, 4, 36)
 
 	var laid: Array = []
+	# The town's edge as art target town-a/b paint it: wheat round the windmill, orchards by the roads out
+	# (towns.json edge), then the open strips.
+	var knobs: Dictionary = preload("res://scripts/data.gd").value("towns", "edge", {})
+	_mill_wheat(root, center, edge, int(knobs.get("mill_wheat", 0)), laid, rng)
+	_orchards(root, center, main, edge, int((knobs.get("orchards", {}) as Dictionary).get(_rank, 0)), knobs.get("orchard", {}), laid, rng)
 	for i in n * 8:
 		if laid.size() >= n:
 			break
@@ -1233,6 +1241,91 @@ func _fields_beyond(root: Node3D, center: Vector3, size: int, rng: RandomNumberG
 			continue
 		_field_at(root, center, off, fsize, atan2(out.x, out.y), CROPS[rng.randi() % CROPS.size()], rng)
 		laid.append(mid)
+
+
+## Wheat round the town's windmill (towns.json edge.mill_wheat: how many fields; art target town-a/b: the mill
+## stands in its wheat): fields laid about each windmill that stood, outside the town's edge, on flat dry ground.
+func _mill_wheat(root: Node3D, center: Vector3, edge: PackedVector2Array, want: int, laid: Array, rng: RandomNumberGenerator) -> void:
+	for tr in root.get_meta("trades", []):
+		if String(tr.get("component", "")) != "windmill" or want <= 0:
+			continue
+		var mill: Vector3 = tr["at"]
+		var stood := 0
+		for i in want * 8:
+			if stood >= want:
+				break
+			var a := rng.randf() * TAU
+			var fsize := Vector2(rng.randf_range(0.7, 1.1), rng.randf_range(0.9, 1.4))
+			var off := mill + Vector3(cos(a), 0, sin(a)) * rng.randf_range(0.8, 1.5)
+			var mid := Vector2(off.x, off.z)
+			var yaw := a + rng.randf_range(-0.3, 0.3)
+			if edge.size() >= 3 and Geometry2D.is_point_in_polygon(mid, edge):
+				continue
+			if laid.any(func(q): return q.distance_to(mid) < 0.9) or not _flat_enough(center, off, 0.5) or _built_on(root, off) or not _dry_all_over(center, off, fsize, yaw):
+				continue
+			_field_at(root, center, off, fsize, yaw, CROPS[0], rng)
+			laid.append(mid)
+			stood += 1
+
+
+## Orchards by the roads out of town (towns.json edge.orchards: how many by the town's rank; edge.orchard: rows
+## and columns of trees, their spacing and size; assets.json orchard_tree; art target town-b: rows of fruit
+## trees past the houses): a block of fruit trees in rows, square to the road, just outside the town's edge.
+## Each tree only where the ground is dry and free. Kept as the town's orchards (root meta: [middle, size, yaw]).
+func _orchards(root: Node3D, center: Vector3, main: Array, edge: PackedVector2Array, want: int, k: Dictionary, laid: Array, rng: RandomNumberGenerator) -> void:
+	if want <= 0 or Real.variants("orchard_tree").is_empty():
+		return
+	var lots: Array = []
+	var stood := 0
+	var spacing := float(k.get("spacing", 0.55))
+	var rows_r: Array = k.get("rows", [3, 4])
+	var cols_r: Array = k.get("cols", [3, 5])
+	var sc_r: Array = k.get("scale", [0.85, 1.1])
+	for i in want * 10:
+		if stood >= want:
+			break
+		var road: PackedVector2Array = main[rng.randi() % main.size()]
+		var total := TownPlots.length(road)
+		var s := rng.randf_range(total * 0.55, total + 1.2)
+		var at := TownPlots.point_at(road, minf(s, total - 0.001))
+		if at.is_empty():
+			continue
+		var tan: Vector2 = at[1]
+		var on: Vector2 = at[0] + tan * maxf(0.0, s - total)
+		var out: Vector2 = tan.orthogonal() * (1.0 if rng.randf() < 0.5 else -1.0)
+		var cols := rng.randi_range(int(cols_r[0]), int(cols_r[1]))
+		var rows := rng.randi_range(int(rows_r[0]), int(rows_r[1]))
+		var size := Vector2(cols * spacing, rows * spacing)  # along the road, back from it
+		var mid: Vector2 = on + out * (TownPlots.ROAD_HALF + 0.2 + size.y * 0.5)
+		var off := Vector3(mid.x, 0, mid.y)
+		var reach := size.length() * 0.5
+		if edge.size() >= 3 and (Geometry2D.is_point_in_polygon(mid, edge) or Geometry2D.is_point_in_polygon(mid - out * size.y * 0.5, edge)):
+			continue  # inside the town
+		if laid.any(func(q): return q.distance_to(mid) < reach + 0.6) or TownPlots.near_ways(mid, main, size.y * 0.5 + 0.1):
+			continue
+		if not _flat_enough(center, off, reach * 0.8) or _built_on(root, off):
+			continue
+		var trees := 0
+		for r in rows:
+			for c in cols:
+				var q2: Vector2 = mid + tan * ((c - (cols - 1) * 0.5) * spacing) + out * ((r - (rows - 1) * 0.5) * spacing) + Vector2(rng.randf_range(-0.04, 0.04), rng.randf_range(-0.04, 0.04))
+				var q := Vector3(q2.x, 0, q2.y)
+				if rng.randf() < 0.08 or not terrain.is_land(center.x + q.x, center.z + q.z) or _built_on(root, q) or _on_road(q, 0.08) or TownPlots.near_ways(q2, main, TownPlots.ROAD_HALF + 0.1):
+					continue  # a tree gone, or the ground isn't the orchard's
+				var kind := _green_kind("orchard_tree", rng)
+				if kind == "":
+					return
+				_place(root, kind, q + Vector3(0, _ground_y(center, q) - 0.01, 0), rng.randf() * TAU, Vector3.ONE * rng.randf_range(float(sc_r[0]), float(sc_r[1])), Vector2(0.1, 0.1))
+				trees += 1
+		if trees == 0:
+			continue
+		laid.append(mid)
+		for e in [-0.5, 0.5]:
+			laid.append(mid + tan * size.x * e)  # the strips keep off the whole block
+		var all: Array = root.get_meta("orchards", [])
+		all.append([off, size, atan2(out.x, out.y)])
+		root.set_meta("orchards", all)
+		stood += 1
 
 
 ## Whether a strip of `fsize` at `off` (town-local), turned to `yaw`, is dry land at its corners and
