@@ -43,3 +43,37 @@ only if it would clear its concept in `docs/art/target` at 100%. This file grows
 ## Status
 
 The supervisor stopped batch 8 after look2 (00:49) because of the top-down camera. army-ui is fixing the sight check. The rerun goes to `/tmp/goc-batch8b` and will be judged here.
+
+## 8b (rerun with camera fix 7be7e133, tilts for 30-35 degrees; `/tmp/goc-batch8b`)
+
+Sheets: `/tmp/goc-batch8b/review/sheets/`. Best frames: `/tmp/goc-batch8b/review/best/`.
+
+### look2 (13 frames, 0 script errors)
+
+**Camera check: fixed.** play.log's settled pitches are 13-37 degrees down, so nothing is top-down. Every distance
+lands where asked: d14, 6, 3.5, 2, 8, 18, 4.5 and 2.5. No two of the 13 frames are duplicates (every pair differs
+by more than 12/255). Sky and walls show at the low tilts, and the crowd now wears coloured clothes (red, green,
+blue, ochre). This is the first batch whose town frames read against 01-town.
+
+| Shot | Verdict | Defects |
+|---|---|---|
+| goldrock-fountain | FAIL (best town frame yet) | Gate, curtain wall, banners, stalls, a busy crowd and riders, at a true oblique. Two bare poles (a mast and a spear-like shaft) stand in the middle foreground. The fountain's centrepiece is a stack of grey blocks, not a statue. The wall banners carry no arms. The horse coat is still blotched. |
+| goldrock-stalls | FAIL | A good square. A big thatch roof fills the left third. A pinto rider stands in the foreground. |
+| goldrock-street-height | FAIL | It reads well. The same pinto rider is at the bottom, and a roof edge cuts the left. |
+| goldrock-plots | FAIL | A roof fills the lower 40%. No plots are framed. |
+| goldrock-lanes | FAIL | Foreground roofs fill the lower half. The lanes are only seen between them. |
+| goldrock-rings | FAIL | The d14 overview reads: walls, the square, roofs. It's dense but the rings aren't clear, chimney smoke puffs are bright white blobs, and there's no horizon. |
+| kingsmere-stalls | FAIL | Lively and colourful. A black-shaded tree crown fills the lower left quarter. |
+| kingsmere-statue | FAIL | **Ghost:** a see-through, dithered red stall and its people sit in the middle of frame. The King on his column reads as one more standing man, hidden behind the stalls. A guard is cut by the lower right edge. |
+| kingsmere-yards | FAIL | Readable square and crowd. A red roof slab cuts the lower left. No washing yards in frame. |
+| kingsmere-lanes | FAIL | Good earth lanes, crowd and tower. A blurred roof crosses the lower edge. |
+| kingsmere-orchards | FAIL | The d18 whole-town view works: castle, square, the house ring. No orchards in frame, and it's very busy with roofs. |
+| mill-wheat | FAIL | The mill and the wheat plots are in frame at last. The wheat is flat ochre squares with no stalks. The windmill's sails can't be seen behind the trees. |
+| street-height | FAIL | A ghosted house runs down the left edge. The square and crowd are fine. |
+
+**Top look2 defects (8b):** (1) foreground roofs and tree crowns take a third to a half of 6 of 13 frames: the
+camera still looks over the nearest roofs, not past them (camera_rig.gd sight check: count trees, prefer yaw).
+(2) The ghost remains at short distances (kingsmere-statue, street-height): the clarity fade (camera.json
+clarity.fade, team_colour.gdshader). (3) The squares' centrepieces don't read: a stack of blocks at Goldrock, and the
+King sized as a man (assets.json square_statue). (4) Stray poles in the Goldrock square. (5) Horse coat blotches
+(horse.gd COATS). (6) Flat wheat squares (field crops). (7) Bright white smoke blobs (hearths.gd, chimney smoke).
