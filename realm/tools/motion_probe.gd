@@ -34,13 +34,13 @@ const NEAR := 0.06
 const TOUCHING := ["Clapping", "Praying", "Crying", "Wiping_Sweat", "Thinking", "Drinking", "Sitting_Drinking",
 	"Relieved_Sigh", "Arm_Stretching", "Defeated", "Sitting_Ground", "Sitting_Idle", "Sitting_Cross_Legged",
 	"Sleeping_Idle", "Kneeling", "Injured", "Injured_Walk", "Rubbing_Arm", "Shove_Reaction", "Crossed_Arms"]
-## Clips whose feet slide in the clip itself, measured, not judged: each one's
-## floor is what a perfect body reads (tools/stride_probe.gd --all: the body
-## carried at exactly the clip's own planted-foot pace). These read over
-## SKATE_FAIL with nothing wrong in the game: a dodge or fall skids by design,
-## Running's planted foot changes speed within a short stance. Their feet are
-## left out of the skate check, as riders' are.
-const IN_PLACE := ["Dodge_Left", "Dodge_Back", "Legs_1", "Side_Light", "Knocked_Down", "Running", "Jog_Fwd"]
+## Clips left out of the skate check, as riders' are. An entry stays only if its
+## feet are shown to hold (tools/clip_skate_probe.gd standing still,
+## tools/stride_probe.gd --all carried at the clip's own pace). Measured
+## 2026-11-11: Running (27% at its own pace), Jog_Fwd (12%), Dodge_Left (91-100%),
+## and Legs_1, Side_Light and Knocked_Down (each travels about 1 m) all skid where
+## a player sees it, so they are counted. Dodge_Back holds standing still (3%).
+const IN_PLACE := ["Dodge_Back"]
 ## Clips that need something in hand.
 const HELD := ["Drinking", "Sitting_Drinking", "Hammer_Swing", "Digging", "Dig_And_Plant", "Watering", "Lute_Playing",
 	"Wheelbarrow", "Throw_Object", "Carrying", "Push_Heavy", "Pick_Fruit"]
