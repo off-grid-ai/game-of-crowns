@@ -99,6 +99,9 @@ event cards thin out in breathers first if load rises.
 - New behaviour behind a switch until judged; the old path deleted once the new one is default.
 - Batches tested together in one bundled run, judged on film and numbers, before claiming done.
 - Proven blocks over hand-built code; first principles before patches.
+- Every world component comes through one asset catalogue (component id → model, scale, footprint,
+  variants), so a better free asset family can replace today's in parallel, as a data edit. Building never
+  waits for the art pick.
 
 ## 7. Not now
 Eye-level views and street walking; close-up realism; foot locking and turn-in-place; art policy;
