@@ -70,6 +70,8 @@ var _quiet := 0.0
 var _check := 0.0  # seconds since the stones over a gap were last checked
 var _pending := {}  # section -> {stone: true}: stones the town's wear has doomed, not yet struck down
 var _heap := {}  # rubble cell -> its top, metres: where jumped stones pile
+var _rubble_grid := {}  # half-metre cell -> the rubble's top there, metres (rubble_height)
+var _rubble_at_ms := -100000
 
 static var _material: ShaderMaterial
 static var _box: ArrayMesh
@@ -931,6 +933,30 @@ func foot() -> Array:
 			else:
 				q += 1
 	return out
+
+
+## The top of the rubble under a world point (world y), or -INF where none lies:
+## men storming a breach climb its ramp (siege_ai.gd). A height grid of the
+## fallen stones in half-metre cells, rebuilt at most twice a second.
+func rubble_height(world: Vector3) -> float:
+	var now := Time.get_ticks_msec()
+	if now - _rubble_at_ms > 500:
+		_rubble_at_ms = now
+		_rubble_grid.clear()
+		var mm := _loose.multimesh if _loose else null
+		for i in _xf.size():
+			if _state[i] != RUBBLE or mm == null:
+				continue
+			var t := mm.get_instance_transform(i)
+			var half := maxf(_size[i].x, _size[i].z) * 0.5
+			var top := t.origin.y + _size[i].y * 0.5
+			for cx in range(floori((t.origin.x - half) / 0.5), floori((t.origin.x + half) / 0.5) + 1):
+				for cz in range(floori((t.origin.z - half) / 0.5), floori((t.origin.z + half) / 0.5) + 1):
+					var k := Vector2i(cx, cz)
+					_rubble_grid[k] = maxf(float(_rubble_grid.get(k, -INF)), top)
+	var l := _to_local(world)
+	var top_m: float = _rubble_grid.get(Vector2i(floori(l.x / 0.5), floori(l.z / 0.5)), -INF)
+	return position.y + top_m * S if top_m > -INF else -INF
 
 
 ## The breaches open now: each gap's middle on the ground (world), for troops.

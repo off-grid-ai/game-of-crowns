@@ -173,6 +173,16 @@ func breaches_near(at: Vector3, reach: float) -> Array:
 	return out
 
 
+## The top of any wall's rubble under a world point (world y), or -INF: the ramp
+## a breach leaves, which men storming it climb (siege_ai.gd).
+func rubble_height(at: Vector3) -> float:
+	var top := -INF
+	for w in _walls():
+		if w.distance_to(at) < 0.6:
+			top = maxf(top, w.rubble_height(at))
+	return top
+
+
 func _walls() -> Array:
 	var out := []
 	for id in _rings:
