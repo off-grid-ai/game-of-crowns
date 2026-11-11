@@ -31,7 +31,7 @@ const FIT := {
 	"cottage": {"m": 0.0254, "y": 0.0, "door": Vector2(1270, -1700), "face": 0.0, "floor": [1000, -1930, 1530, -1460], "both": true},
 }
 ## Until a proper interior arrives, a room can stand in from the town kit.
-const FALLBACK := {"chapel": "medieval_church", "great_hall": "medieval_viking_house", "tavern": "medieval_tavern"}
+const FALLBACK := {"chapel": "church", "great_hall": "hall", "tavern": "tavern"}  # room -> a component (realm/data/assets.json)
 
 const People := preload("res://scripts/people.gd")
 var people  # people.gd, shared with the villagers
@@ -221,7 +221,7 @@ func _room_model(room: String) -> Node3D:
 	if ResourceLoader.exists(path):
 		return (load(path) as PackedScene).instantiate()
 	if FALLBACK.has(room):
-		var m: Node3D = preload("res://scripts/realistic.gd").make(FALLBACK[room])
+		var m: Node3D = preload("res://scripts/realistic.gd").make(preload("res://scripts/realistic.gd").one(FALLBACK[room]))
 		if m:
 			m.scale = Vector3.ONE  # back to the model's own units; open() sizes it
 			return m

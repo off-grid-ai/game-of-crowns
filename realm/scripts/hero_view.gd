@@ -299,7 +299,7 @@ func _dress_stage(house: Dictionary, family: Dictionary) -> void:
 		hill.rotation.y = ang
 		hill.add_to_group("hero_dressing")
 		_stage.add_child(hill)
-	var castle: Node3D = preload("res://scripts/realistic.gd").make("medieval_castle")
+	var castle: Node3D = preload("res://scripts/realistic.gd").make(preload("res://scripts/realistic.gd").one("castle"))
 	if castle:
 		castle.scale = Vector3.ONE / preload("res://scripts/realistic.gd").S  # its real size, in metres
 		castle.position = Vector3(-20, 0, -85)  # off to the left, clear of the card
