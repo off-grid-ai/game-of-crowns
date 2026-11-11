@@ -584,7 +584,10 @@ func _square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, k
 				kind = smaller
 				f = Real.footprint(kind)
 			var p := Vector3(cos(ang), 0, sin(ang)) * (ring + f.y * 0.5)
-			if TownPlots.near_ways(Vector2(p.x, p.z), ways, TownPlots.ROAD_HALF + maxf(f.x, f.y) * 0.5):
+			var p2 := Vector2(p.x, p.z)
+			# Its walls held against the roads' bands (not a circle as wide as its longest side, which
+			# turned away nearly every front between roads into the square: Kingsmere stood none in batch 6).
+			if TownPlots.on_other_way(_plot_body(p2, Vector2(-p2.y, p2.x).normalized(), -p2.normalized(), f), ways, -1, TownPlots.ROAD_HALF):
 				continue  # the roads into the square stay open
 			if _put(root, center, kind, p, f, lots, rr, true, -p.normalized(), true):
 				placed += 1
@@ -664,7 +667,9 @@ func _lay_ways(root: Node3D, center: Vector3, c: Dictionary, size: int, square_r
 	_ways_grid = TownPlots.grid(edge + 1.2, height, land, rng.seed + 13)
 	var main: Array = TownPlots.roads(headings, square_r, edge, _ways_grid, land)
 	root.set_meta("ways_main", main)
-	_keep_ways(root, center, main)
+	root.set_meta("crown_seat", crown_town)
+	root.set_meta("seat", bool(c.get("capital", false)))
+	_keep_ways(root, center, main, true)
 	return main
 
 
@@ -699,7 +704,7 @@ func _great_ways(c: Dictionary) -> Array:
 	return out
 
 
-## --towns=plots: the lanes off the town's main roads, more as it grows, laid once the
+## --towns=plots: the ring streets round the square and the lanes off the town's main roads, more as it grows, laid once the
 ## castle and the square's landmarks stand, round them (never through a castle's wall).
 ## Painted and kept as the town's lanes; returns them.
 func _lay_lanes(root: Node3D, center: Vector3, main: Array, count: int, square_r: float, rng: RandomNumberGenerator) -> Array:
@@ -707,30 +712,70 @@ func _lay_lanes(root: Node3D, center: Vector3, main: Array, count: int, square_r
 		return []
 	TownPlots.block(_ways_grid, root.get_meta("footprints", []))
 	var land := func(p: Vector2) -> bool: return terrain.is_land(center.x + p.x, center.z + p.y)
+	# Ring streets round the square first (towns.json plots.rings: the crown's seat's, art target town-b), arcs
+	# between the main roads that the houses line on both sides; then the lanes off the main roads.
+	var radii: Array = _plot_knobs(bool(root.get_meta("crown_seat", false))).get("rings", [])
+	var rings: Array = TownPlots.rings(radii, square_r, _ways_grid, land, rng.seed + 19)
+	_keep_ways(root, center, rings)
+	root.set_meta("ways_ring", rings.size())
 	var lanes: Array = TownPlots.lanes(main, count, square_r, float(root.get_meta("plot_edge", square_r + 3.6)), _ways_grid, land, rng.seed + 17)
 	_keep_ways(root, center, lanes)
 	_ways_grid = null
-	return lanes
+	return rings + lanes
 
 
-func _keep_ways(root: Node3D, center: Vector3, ways: Array) -> void:
+func _keep_ways(root: Node3D, center: Vector3, ways: Array, main := false) -> void:
 	var kept: Array = root.get_meta("lanes", [])
+	# The main streets paved from the square out (towns.json paving.streets: the crown's seat furthest,
+	# a great house's seat some way, a market town not at all; art target town-b).
+	var pave: Dictionary = _paving()
+	var streets: Dictionary = pave.get("streets", {})
+	var share := 0.0
+	if main:
+		share = float(streets.get("crown" if bool(root.get_meta("crown_seat", false)) else ("seat" if bool(root.get_meta("seat", false)) else "town"), 0.0))
 	for way in ways:
+		var paved_to := TownPlots.length(way) * share
+		var gone := 0.0
 		for i in range(1, way.size()):
 			_paint_way(root, center, way[i - 1], way[i], TownPlots.ROAD_HALF * 2.0)
 			kept.append([way[i - 1], way[i]])
+			var seg := (way[i - 1] as Vector2).distance_to(way[i])
+			if gone < paved_to:
+				var b: Vector2 = way[i] if gone + seg <= paved_to else (way[i - 1] as Vector2).lerp(way[i], (paved_to - gone) / maxf(seg, 0.001))
+				_paint_way(root, center, way[i - 1], b, TownPlots.ROAD_HALF * 2.0 * float(pave.get("width", 1.1)), "paved")
+			gone += seg
 	root.set_meta("lanes", kept)
 
 
-## One stretch of a street, painted on the land from `a` to `b` (town-local).
-func _paint_way(root: Node3D, center: Vector3, a: Vector2, b: Vector2, width: float) -> void:
+## The town's paving (towns.json paving).
+static func _paving() -> Dictionary:
+	return preload("res://scripts/data.gd").value("towns", "paving", {})
+
+
+## The crown's seat's market knobs (towns.json market.crown).
+static func _market_crown() -> Dictionary:
+	return preload("res://scripts/data.gd").value("towns", "market", {}).get("crown", {})
+
+
+static func _rgb(a, fallback: Color) -> Color:
+	return Color(float(a[0]), float(a[1]), float(a[2])) if a is Array and (a as Array).size() >= 3 else fallback
+
+
+## One stretch of a street, painted on the land from `a` to `b` (town-local); `paved`: laid with setts
+## over the earth (towns.json paving).
+func _paint_way(root: Node3D, center: Vector3, a: Vector2, b: Vector2, width: float, paved := "") -> void:
 	var length := a.distance_to(b)
 	if length < 0.02:
 		return
 	var mid := (a + b) * 0.5
 	var lo := minf(_ground_y(center, Vector3(a.x, 0, a.y)), _ground_y(center, Vector3(b.x, 0, b.y)))
 	var hi := maxf(_ground_y(center, Vector3(a.x, 0, a.y)), _ground_y(center, Vector3(b.x, 0, b.y)))
-	terrain.paint(root, terrain.tiled(ROAD_TEX, 1, maxi(1, roundi(length / 0.34)), "track"), Vector3(mid.x, (lo + hi) / 2.0, mid.y), Vector2(width, length + 0.04), atan2(b.x - a.x, b.y - a.y), ROAD_TINT, hi - lo + 1.0)
+	if paved != "":
+		var pave: Dictionary = _paving()
+		var setts: Decal = terrain.paint(root, terrain.tiled(String(pave.get("texture", SQUARE_TEX)), 1, maxi(1, roundi((length + width) / width)), "paved"), Vector3(mid.x, (lo + hi) / 2.0, mid.y), Vector2(width, length + width), atan2(b.x - a.x, b.y - a.y), _rgb(pave.get("tint"), Color.WHITE), hi - lo + 1.0)
+		setts.sorting_offset = 0.5  # over the street's earth, under the square's setts
+		return
+	terrain.paint(root, terrain.tiled(ROAD_TEX, 1, maxi(1, roundi((length + width) / 0.34)), "track"), Vector3(mid.x, (lo + hi) / 2.0, mid.y), Vector2(width, length + width), atan2(b.x - a.x, b.y - a.y), ROAD_TINT, hi - lo + 1.0)  # half a width past each end, where the next stretch's frayed end meets it
 
 
 ## --towns=plots: houses on burgage plots along the town's roads and lanes,
@@ -744,7 +789,7 @@ func _plot_lots(root: Node3D, center: Vector3, square_r: float, ways: Array, kin
 		fronts = kinds
 	# Each plot's house by where it falls (town_tiers.gd): the square's end of a main street rich, a lane
 	# poorer, the edge poorest, a corner a rung up; a street trade takes the first plot in its window.
-	var main_n: int = (root.get_meta("ways_main", []) as Array).size()
+	var main_n: int = (root.get_meta("ways_main", []) as Array).size() + int(root.get_meta("ways_ring", 0))  # the ring streets are main streets too
 	var edge_r := float(root.get_meta("plot_edge", square_r + 3.6))
 	var claimed := {}  # a street trade -> the plot handed to it
 	var widths := func(r: RandomNumberGenerator, ctx: Dictionary) -> Array:
@@ -804,6 +849,8 @@ func _plot_lots(root: Node3D, center: Vector3, square_r: float, ways: Array, kin
 		_yard(root, center, s[0], s[1], s[2], s[3], lots, rng, int(s[4]))
 	var size := int(root.get_meta("size", 0))
 	print("CHECK town plots: %s (size %d, edge %.1f): %d plots cut along %d ways, %d houses stood (and %d round the square), %d left in budget; turned away: %s" % [String(root.get_meta("title", "")), size, float(root.get_meta("plot_edge", 0.0)), all.size(), ways.size(), placed, int(root.get_meta("ring_houses", 0)), budget - placed, str(why)])
+	if OS.get_cmdline_user_args().has("--probe=towns"):
+		_probe_dump(root, square_r, ways, all, taken, left)
 	var edge := TownPlots.outline(taken, square_r)
 	var far := 0.0
 	for q in edge:
@@ -811,8 +858,26 @@ func _plot_lots(root: Node3D, center: Vector3, square_r: float, ways: Array, kin
 	root.set_meta("edge_outline", edge)
 	root.set_meta("edge_r", far)
 	_palisade_on(root, center, edge, ways, seat)
+	_edge_trees(root, center, edge, ways, lots, rng)
 	_layout_check(root, taken, ways)
 	return placed
+
+
+## --probe=towns (a test aid, off in play): the town's layout as JSON in user://probe/<town>.json, the ways,
+## every plot cut, the ones taken and the ones left alone, every footprint standing, so a headless run can
+## be drawn and counted without the GPU.
+func _probe_dump(root: Node3D, square_r: float, ways: Array, all: Array, taken: Array, left: Array) -> void:
+	var v := func(p: Vector2) -> Array: return [snappedf(p.x, 0.01), snappedf(p.y, 0.01)]
+	var poly := func(ps) -> Array: return Array(ps).map(func(q): return v.call(q))
+	var out := {"title": String(root.get_meta("title", "")), "square_r": square_r, "edge": float(root.get_meta("plot_edge", 0.0)),
+		"ways": ways.map(func(w): return poly.call(w)), "plots": all.map(func(pl): return poly.call(pl[4])),
+		"taken": taken.map(func(pl): return poly.call(pl[4])), "alone": left.map(func(pl): return poly.call(pl[4])),
+		"footprints": (root.get_meta("footprints", []) as Array).map(func(f): return poly.call(f)),
+		"kinds": taken.map(func(pl): return String(pl[6]))}
+	DirAccess.make_dir_recursive_absolute("user://probe")
+	var f := FileAccess.open("user://probe/%s.json" % out["title"], FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(out))
 
 
 ## One burgage plot (_plot_lots): its house, or a shallower one on the same frontage, where it
@@ -905,9 +970,68 @@ func _yard(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vector3, 
 	_fence_line(root, center, corners[2], corners[3], lots)
 	var yards: int = root.get_meta("plot_yards", 0)
 	root.set_meta("plot_yards", yards + 1)
-	if rng.randf() < 0.65:
+	var green: Dictionary = _plot_knobs(false).get("green", {})
+	if rng.randf() < float(green.get("garden", 0.65)):
 		_croft(root, center, p, face, f, lots, rng, own_lot)
 	_yard_thing(root, center, pl, face, lots, rng)
+	_yard_green(root, center, pl, p, face, f, side_from, lots, rng, green)
+
+
+## A yard's green (towns.json plots.green; art target town-b: trees between the houses, hedges, flower
+## beds): a tree at the back of the yard, a hedge along its side fence, flowers by the back door. Each
+## only where the ground is free, so it never takes a house's, a garden's or a street's.
+func _yard_green(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vector3, f: Vector2, side_from: Vector2, lots: Array, rng: RandomNumberGenerator, green: Dictionary) -> void:
+	var corners: PackedVector2Array = pl[4]
+	var f2 := Vector2(face.x, face.z)
+	var drop := func(comp: String, q2: Vector2, r: float, scale: float) -> void:
+		var kind := _green_kind(comp, rng)
+		var q := Vector3(q2.x, 0, q2.y)
+		if kind == "" or not terrain.is_land(center.x + q.x, center.z + q.z) or _crowded(lots, q, r) or _on_road(q, 0.05):
+			return
+		_place(root, kind, q + Vector3(0, _ground_y(center, q) - 0.01, 0), rng.randf() * TAU, Vector3.ONE * scale, Vector2(r, r))
+		lots.append([q, r])
+	if rng.randf() < float(green.get("tree", 0.0)):
+		var t := 0.25 if rng.randf() < 0.5 else 0.75
+		drop.call("town_tree", corners[3].lerp(corners[2], t) + f2 * 0.16, 0.12, rng.randf_range(0.8, 1.1))
+	if rng.randf() < float(green.get("hedge", 0.0)):
+		for k in 2:
+			drop.call("garden_hedge", side_from.lerp(corners[2], 0.3 + 0.4 * k) + (Vector2(p.x, p.z) - side_from).normalized() * 0.07, 0.06, rng.randf_range(0.8, 1.15))
+	if rng.randf() < float(green.get("flowers", 0.0)):
+		var back := Vector2(p.x, p.z) - f2 * (f.y * 0.5 + 0.09) + f2.orthogonal() * f.x * rng.randf_range(-0.3, 0.3)
+		drop.call("garden_flowers", back, 0.05, rng.randf_range(0.8, 1.1))
+
+
+## One of a garden component's models (assets.json town_tree, garden_hedge, garden_flowers), or "".
+func _green_kind(comp: String, rng: RandomNumberGenerator) -> String:
+	var vs: Array = Real.variants(comp)
+	if vs.is_empty():
+		return ""
+	var kind := String(vs[rng.randi() % vs.size()])
+	return kind if Real.footprint(kind) != Vector2.ZERO else ""
+
+
+## Trees just outside the town's edge (towns.json plots.green.edge_trees: one per that many units of
+## it), in twos and threes, never on a street or a road: the town sits in its trees, not on a lawn.
+func _edge_trees(root: Node3D, center: Vector3, edge: PackedVector2Array, ways: Array, lots: Array, rng: RandomNumberGenerator) -> void:
+	var every := float(_plot_knobs(false).get("green", {}).get("edge_trees", 0.0))
+	if every <= 0.0 or edge.size() < 3:
+		return
+	for i in edge.size():
+		var a: Vector2 = edge[i]
+		var b: Vector2 = edge[(i + 1) % edge.size()]
+		var n := int(a.distance_to(b) / every)
+		for k in n:
+			if rng.randf() < 0.35:
+				continue  # a gap, a field gate
+			var q2 := a.lerp(b, (k + rng.randf()) / maxf(n, 1)) + a.lerp(b, 0.5).normalized() * rng.randf_range(0.15, 0.6)
+			var q := Vector3(q2.x, 0, q2.y)
+			if TownPlots.near_ways(q2, ways, 0.4) or not terrain.is_land(center.x + q.x, center.z + q.z) or _crowded(lots, q, 0.14) or not _flat_enough(center, q, 0.3):
+				continue
+			var kind := _green_kind("town_tree", rng)
+			if kind == "":
+				return
+			_place(root, kind, q + Vector3(0, _ground_y(center, q) - 0.01, 0), rng.randf() * TAU, Vector3.ONE * rng.randf_range(0.85, 1.25), Vector2(0.14, 0.14))
+			lots.append([q, 0.14])
 
 
 ## One of a yard's working things in its back corner (towns.json plots.yard_things: a woodshed, a pen,
@@ -1494,8 +1618,9 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 		root.set_meta("stalls", kept)
 		# Goods at the stall's ends and behind it: crates, baskets, barrels.
 		var along := Vector3(-sin(ang), 0, cos(ang))
+		var heaps: Array = _market_crown().get("goods", [1, 3]) if seat and bool(_house.get("crown", false)) else [1, 3]
 		for e in [-1, 1]:
-			for k in rng.randi_range(1, 3):
+			for k in rng.randi_range(int(heaps[0]), int(heaps[1])):
 				var p: Vector3 = m + along * e * (stall.x * 0.5 + rng.randf_range(0.04, 0.14)) + m.normalized() * rng.randf_range(-0.12, 0.18)
 				drop.call(clutter[rng.randi() % clutter.size()], p, rng.randf() * TAU)
 		if ResourceLoader.exists("res://assets/realistic/ph/wooden_lantern_01/wooden_lantern_01_1k.gltf") and i % 2 == 0:
@@ -1509,6 +1634,17 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 	drop.call("old_wooden_wagon" if Real.footprint("old_wooden_wagon") != Vector2.ZERO else "medieval_wooden_cart", wp, -wa)  # lying along the row
 	for k in 2:
 		drop.call(clutter[rng.randi() % clutter.size()], wp * (1.0 - (0.16 + k * 0.09) / arc) + Vector3(-sin(wa), 0, cos(wa)) * rng.randf_range(-0.12, 0.12), rng.randf() * TAU)
+	# The crown's market spills over (towns.json market.crown.piles; art target town-b): heaps of goods,
+	# barrels, crates and sacks, set down about the square between the stalls and the house fronts.
+	if seat and bool(_house.get("crown", false)):
+		var span_half := (stalls * 0.5 + 0.8) * step
+		for i in int(_market_crown().get("piles", 0)):
+			var a := market_ang + span_half + rng.randf() * (TAU - 2.0 * span_half)
+			var at := Vector3(cos(a), 0, sin(a)) * square_r * rng.randf_range(0.62, 0.86)
+			if at.distance_to(well) < square_r * 0.3:
+				continue  # the well's ground stays open
+			for k in rng.randi_range(2, 4):
+				drop.call(clutter[rng.randi() % clutter.size()], at + Vector3(rng.randf_range(-0.1, 0.1), 0, rng.randf_range(-0.1, 0.1)), rng.randf() * TAU)
 	# Buckets and a basket set down against the well's curb, where water is drawn (not strewn
 	# over the square): just clear of its footprint, on one side of it.
 	var curb := maxf(Real.footprint(well_kind).x, Real.footprint(well_kind).y) * 0.5
@@ -1808,6 +1944,8 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	var square_r := 0.75 if size < 6 else 1.0
 	if realistic_towns.has("*") or realistic_towns.has(String(c.get("title", c["name"]))):
 		square_r = 1.25 if bool(c.get("capital", false)) or size >= 12 else 1.0  # a market square, room for stalls and a crowd
+		if bool(c.get("capital", false)) and bool(house.get("crown", false)):
+			square_r = float(_market_crown().get("square_r", square_r))  # the realm's great market square (art target town-b)
 		reach = maxf(reach, square_r + 3.6)  # the town reaches out to its palisade
 	var reps := roundi(square_r * 4.0)
 	# The square: a cobbled heart laid whole to its edge, and trodden earth
@@ -1816,7 +1954,11 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 		terrain.land3d.paint_mud(center, square_r * 1.3, rng.randi())  # in the ground itself
 	else:
 		terrain.paint(root, terrain.tiled(ROAD_TEX, reps + 2, reps + 2, "round"), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2.ONE * square_r * 3.2, rng.randf() * TAU, ROAD_TINT)
-	var setts: Decal = terrain.paint(root, terrain.tiled(SQUARE_TEX, reps, reps, "setts"), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2(square_r * 2.0, square_r * 1.6), rng.randf() * TAU)
+	# Laid to the house fronts (towns.json paving: the stone, its tint, how far it reaches; art target town-b).
+	var pave: Dictionary = _paving()
+	var pave_span := square_r * float(pave.get("square", 2.0))
+	var pave_reps := clampi(roundi(pave_span / float(pave.get("tile", 0.25))), 2, 12)
+	var setts: Decal = terrain.paint(root, terrain.tiled(String(pave.get("texture", SQUARE_TEX)), pave_reps, pave_reps, "setts"), Vector3(0, _ground_y(center, Vector3.ZERO), 0), Vector2(pave_span, pave_span * float(pave.get("square_aspect", 0.9))), rng.randf() * TAU, _rgb(pave.get("tint"), Color.WHITE))
 	setts.sorting_offset = 1.0  # the paving over the roads that come into the square: a road ends at its setts, never a dirt stripe across them
 
 	var per_variant := {}

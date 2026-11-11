@@ -1221,9 +1221,9 @@ static func art(path: String, fallback: String) -> String:
 
 ## A texture repeated nx by ny times, so a long road keeps its grain instead of
 ## stretching. `edge` softens it: "round" for a worn, ragged patch, "setts" for laid stone, "sides" for a
-## verge's frayed edges, "track" for a road's (frayed, with wheel ruts).
+## verge's frayed edges, "track" for a road's (frayed, with wheel ruts), "paved" for a street of setts.
 const Data := preload("res://scripts/data.gd")
-const TILED_VERSION := ":v2"  # raise when how a tile is made changes, so the kept copies on disk are made again
+const TILED_VERSION := ":v3"  # raise when how a tile is made changes, so the kept copies on disk are made again
 func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 	nx = clampi(nx, 1, 12)
 	ny = clampi(ny, 1, 24)
@@ -1245,9 +1245,19 @@ func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 	src.convert(Image.FORMAT_RGBA8)
 	src.resize(N, N)
 	var img := Image.create(N * nx, N * ny, false, Image.FORMAT_RGBA8)
+	# Every other tile mirrored (still seamless: a mirrored edge meets itself), so a long road or a wide
+	# square doesn't show the same photo stamped in a row (the tiled strip, batch 6 (c)).
+	var flips: Array = [src]
+	for k in 3:
+		var f: Image = src.duplicate()
+		if k != 1:
+			f.flip_x()
+		if k != 0:
+			f.flip_y()
+		flips.append(f)
 	for y in ny:
 		for x in nx:
-			img.blit_rect(src, Rect2i(0, 0, N, N), Vector2i(x * N, y * N))
+			img.blit_rect(flips[(x % 2) + 2 * (y % 2)], Rect2i(0, 0, N, N), Vector2i(x * N, y * N))
 	var w := img.get_width()
 	var h := img.get_height()
 	if edge == "round":
@@ -1285,14 +1295,16 @@ func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 					a *= clampf(0.6 + lost.get_noise_2d(x, y) * 1.4, 0.0, 1.0)  # setts gone in patches
 				if a < 1.0:
 					img.set_pixel(x, y, Color(img.get_pixel(x, y), a))
-	elif edge == "sides" or edge == "track":
+	elif edge == "sides" or edge == "track" or edge == "paved":
 		# A road is worn, not ruled: its verges wander in and out and break up in
 		# tongues of grass, so it frays into the meadow instead of ending on a line;
 		# a grassy strip runs down the crown; a track ("track", not a verge's grass)
 		# darkens in two wheel ruts. realm/data/ground.json roads.edge.
-		var feather := Data.num("ground", "roads.edge.feather", 0.2)
-		var wander := Data.num("ground", "roads.edge.wander", 0.2)
-		var crown := Data.num("ground", "roads.edge.crown", 0.7)
+		# "paved": a street laid with setts (towns.json paving): straighter kerbs, no grass down its crown, no ruts.
+		var paved := edge == "paved"
+		var feather := Data.num("ground", "roads.edge.feather", 0.2) * (0.5 if paved else 1.0)
+		var wander := Data.num("ground", "roads.edge.wander", 0.2) * (0.35 if paved else 1.0)
+		var crown := 1.0 if paved else Data.num("ground", "roads.edge.crown", 0.7)
 		var ruts := Data.num("ground", "roads.edge.ruts", 0.22) if edge == "track" else 0.0
 		var wear := FastNoiseLite.new()
 		wear.seed = nx * 7 + ny
@@ -1301,7 +1313,9 @@ func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 		var tufts := FastNoiseLite.new()
 		tufts.seed = nx * 3 + ny * 5
 		tufts.frequency = 0.045
+		var ends := float(N) * Data.num("ground", "roads.edge.ends", 0.5)  # each end frays out over this (pixels): a stretch never ends square
 		for y in h:
+			var end_a := 1.0 if ends <= 0.0 else clampf(minf(y, h - 1 - y) / ends + wear.get_noise_2d(y * 0.5, 900.0) * 0.35, 0.0, 1.0)
 			var edge_l := w * (0.04 + wander * (wear.get_noise_2d(0.0, y) + 1.0) * 0.5)
 			var edge_r := w * (0.96 - wander * (wear.get_noise_2d(500.0, y) + 1.0) * 0.5)
 			for x in w:
@@ -1313,6 +1327,7 @@ func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 				if mid < 0.12:
 					a *= lerpf(crown, 1.0, mid / 0.12)  # the crown of the road, a little grassed
 				a *= clampf(0.8 + wear.get_noise_2d(x * 3.0, y * 3.0) * 0.5, 0.0, 1.0)
+				a *= end_a
 				var c := img.get_pixel(x, y)
 				if ruts > 0.0:
 					var r := absf(mid - 0.44) / 0.06  # a rut either side of the crown, where the wheels run

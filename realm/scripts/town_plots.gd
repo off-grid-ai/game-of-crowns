@@ -14,6 +14,8 @@ extends RefCounted
 ##   - plots: the Manor Lords burgage rule (frontage on the street, cut into
 ##     strips, house at the front, yard behind). Along a street band, Vanegas
 ##     et al. 2012's OBB split reduces to strips square to the street.
+##   - ring streets: the concentric streets of a market town grown round its square (Manor Lords,
+##     the art target town-b), as arcs on the same cost grid.
 ##   - lanes: Parish and Müller 2001's local rules (branch near square to the
 ##     street, snap to a street met on the way, stop at water or a cliff).
 
@@ -97,6 +99,58 @@ static func lanes(main: Array, count: int, square_r: float, edge: float, g: ASta
 		k += 1
 		along += LANE_EVERY
 	return out
+
+
+## Ring streets round the square (Manor Lords' and town-b's streets that circle the market behind
+## its first row of houses, where an old wall once stood): for each radius in `radii` (out from the
+## square's edge), a street that keeps about that far from the heart, a little uneven, each stretch the
+## cheapest way over `g`; broken where it would cross water, a castle or a landmark (solid on `g`), so
+## it runs as arcs between them. Shorter than `least` and an arc is not laid.
+static func rings(radii: Array, square_r: float, g: AStarGrid2D, land: Callable, seed: int, least := 1.6) -> Array:
+	var out: Array = []
+	var noise := _noise(seed)
+	for r0 in radii:
+		var r := square_r + float(r0)
+		var n := maxi(12, int(TAU * r / 0.8))
+		var arc: Array = []  # the stretch being laid: points on the ring that are open ground
+		var start := 0
+		# Begin at a closed point, so an arc never wraps across the start.
+		for i in n:
+			var q := _ring_at(r, i, n, noise)
+			if not _open(g, land, q):
+				start = i
+				break
+		for k in n + 1:
+			var i := (start + k) % n
+			var q := _ring_at(r, i, n, noise)
+			if _open(g, land, q):
+				arc.append(q)
+				if k < n:
+					continue
+			if arc.size() >= 2:
+				var way := PackedVector2Array()
+				for j in range(1, arc.size()):
+					var leg := path_on(g, arc[j - 1], arc[j])
+					if leg.size() < 2:
+						continue
+					if way.is_empty():
+						way.append_array(leg)
+					else:
+						way.append_array(leg.slice(1))
+				if way.size() >= 2 and length(way) >= least:
+					out.append(way)
+			arc = []
+	return out
+
+
+static func _ring_at(r: float, i: int, n: int, noise: FastNoiseLite) -> Vector2:
+	var a := TAU * i / n
+	return Vector2.from_angle(a) * (r + noise.get_noise_1d(i * 7.0) * 0.35)  # a ring street wanders in and out a little
+
+
+static func _open(g: AStarGrid2D, land: Callable, q: Vector2) -> bool:
+	var c := _cell(g, q)
+	return bool(land.call(q)) and g.is_in_boundsv(c) and not g.is_point_solid(c)
 
 
 ## Every plot along `ways` (polylines), both sides, from the square outward:
