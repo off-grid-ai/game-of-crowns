@@ -351,7 +351,9 @@ func _click(frac: Vector2) -> void:
 func _frame_city(title: String, dist: float) -> void:
 	for c in main.bridge.world.get("cities", []):
 		if String(c.get("title", c.get("name", ""))) == title:
-			main.rig.snap(main.terrain.world_pos(float(c["x"]), float(c["y"])), dist, 0.6)
+			# A cut, from the side the one framing rule picks (camera_rig.go_to): nothing tall in front.
+			var at: Vector3 = main.terrain.world_pos(float(c["x"]), float(c["y"]))
+			main.rig.snap(at, dist, main.rig.sight_yaw(at, maxf(dist, main.rig.min_distance), 0.6))
 			return
 
 
