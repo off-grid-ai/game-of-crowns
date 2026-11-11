@@ -37,6 +37,20 @@ func _ready() -> void:
 
 ## Whether the towns stand: scenes are set out against their buildings, so
 ## none is staged while a realm just opened is still putting them up.
+## How far the town's outermost building stands from its heart (world units), 0 if it isn't up yet.
+func _town_extent(id: int) -> float:
+	if towns == null or not towns.towns.has(id):
+		return 0.0
+	var root: Node3D = towns.towns[id].get("node")
+	if root == null or not is_instance_valid(root):
+		return 0.0
+	var far := 0.0
+	for rect in root.get_meta("footprints", []):
+		for v in rect:
+			far = maxf(far, (v as Vector2).length())
+	return far
+
+
 func _towns_up() -> bool:
 	if towns == null:
 		towns = get_parent().get("towns")
@@ -1031,7 +1045,10 @@ func _siege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, fo
 	var r := _rng(at)
 	var foe_col := Color.from_string(String(foe.get("color", "#7a2222")), Color.DARK_RED).lerp(Color.WHITE, 0.2)
 	var held_col := Color.from_string(String(held.get("color", "#888")), Color.GRAY).lerp(Color.WHITE, 0.3)
-	var reach := clampf(1.6 + size * 0.32, 2.0, 6.0)
+	# The siege stands outside where the town really stands: its houses' outermost corner (round 2's
+	# ring streets and packed plots reach past the old size rule), so the wall, the breach, the band of
+	# engines and the camp are out on open ground with nothing built between them and the camera.
+	var reach := maxf(clampf(1.6 + size * 0.32, 2.0, 6.0), _town_extent(id) + Data.num("siege", "clear_of_town", 0.25))
 	var wall := reach + 0.35
 	var out := Vector3(approach.x - at.x, 0, approach.z - at.z)
 	var want := atan2(out.z, out.x) if out.length() > 0.01 else r.randf() * TAU
