@@ -122,6 +122,15 @@ professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pa
 
 ## Log
 
+- 2026-11-11 23:45: Mac: "start all the workers." All six sessions are woken with separate file areas (code only, no renders; I render batch 7 once):
+  - lead (48da57c5): real flames and walls that crack to a breach (fire.gd, stone_wall.gd, walls.gd);
+  - builder-2 (c4be4c2c): decisions visible in the world (unrest, reinforcement columns, levy muster, feasts);
+  - townsfolk (9d298cd6): the soldier rig pipeline in Blender (weight copy, VAT bake, colour mask);
+  - npc-perf (7118181c): kneel offsets, animal clips (grazing, pecking), a free rigged elephant;
+  - film (883266cc): the batch 7 script and review v15 with references;
+  - research (4e7941d1): army framing and command, town density rules (docs/research/army-and-town-rules.md).
+  Subagents: the town-look agent (density, roof mix, warm walls, cobbles, greenery); local TRELLIS running (farmhouse, armoury, 12 soldiers first).
+
 - 2026-11-11 22:10: Mac approved docs/art/target/town-composition/town-a.jpg and town-b.jpg as THE town reference ("Let's use that as a reference. Let's go!"). Every town review is judged beside them.
 
 - 2026-11-11 21:00: Mac: "apply the same philosophy to everything… armoury, blacksmith, stables, mills, windmill all need to be there… if land is short, reduce the smaller houses… high quality towns… many aspects brought together, pieces interacting very well." Standing rule: a town is a composition. Landmarks and trades come first, then large and middle houses, then small houses as filler. Every building has work and life that ties it to the others and to the realm's state.
