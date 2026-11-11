@@ -31,3 +31,22 @@ the boxes in `meshes.<dir>.emblem` and bands in `meshes.<dir>.trim` may need re-
 7. **A battle in play**, `--battles=field` on a reign with a fight in it: framed with Space from the news chip (the
    battle never moves the camera). Judge: the two houses' colours and arms, sized from the men who fought, the
    beaten breaking.
+
+## Clarity: the player sees clearly what he looks at (7ccb0b73, 41fabfad, 065c9c39; Mac: "I can barely see anything")
+
+The same play file twice, once with `--clarity=old` (before) and once without (after; clarity is on by default),
+each shot the same frame. Reference: Age of Empires IV and Anno 1800 town cameras, art target 01-town.
+
+8. **The breach frame again** (batch 7's breach launch: `breach 4 -25`, `snap breach-cracked`, and the 30-frame
+   breach clip): before, a near house ghosted (dithered away) and smeared across half the screen; after, the lens
+   tipped up over the roofs, the near houses solid and sharp. Judge: nothing in the foreground is see-through or
+   blurred; the view stays oblique (not top-down).
+9. **Any town at roof height** (`--city=Kingsmere --dist=6`, and Rosehall at 6): the colours: roofs and walls in
+   their own colours, not washed orange; the far land faintly hazed and softly blurred only past the town.
+10. **Every autoplay framing step at its lowest tilt** (`look`, `castle <seat> 4 -22`, `breach 3 -25`, `site inn 0 6`,
+    `work Kingsmere forge 4.5`): the lens never inside or behind a building.
+11. **Film shots without panels**: the breach launch's snaps: no Rosehall card, no chronicle drawer over the fight
+    (the harness opens the besieged town's card to frame a siege; snaps now put it away). One `snap name ui`
+    shot keeps the interface, to check that path.
+12. **The yard washing**, close by a cottage (`--city=Rosehall --dist=6`, near the edge houses): linen, faded blue,
+    madder and wool cloth on the lines, with their weave; no flat salmon slabs. Before: batch 7's breach-clip-08.
