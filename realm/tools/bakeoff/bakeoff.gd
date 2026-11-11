@@ -65,6 +65,7 @@ func _init() -> void:
 	root.add_child(thing)
 	_fit(thing, _height if _height > 0.0 else float(TARGET_H.get(kind, 9.0)))
 	_tint(thing)
+	_vertex_colour(thing)
 	_frame(root, thing)
 
 
@@ -241,6 +242,24 @@ func _tint(n: Node) -> void:
 					dup.albedo_color = mat.albedo_color * Color(c[0], c[1], c[2])
 					mi.set_surface_override_material(s, dup)
 					break
+
+
+## Meshes painted per vertex (InstantMesh) and no albedo texture: show the vertex colour.
+func _vertex_colour(n: Node) -> void:
+	for mi in n.find_children("*", "MeshInstance3D", true, false):
+		var m: Mesh = mi.mesh
+		if m == null:
+			continue
+		for s in m.get_surface_count():
+			if not (m.surface_get_format(s) & Mesh.ARRAY_FORMAT_COLOR):
+				continue
+			var mat = mi.get_active_material(s)
+			if mat is BaseMaterial3D and mat.albedo_texture != null:
+				continue
+			var dup: StandardMaterial3D = mat.duplicate() if mat is StandardMaterial3D else StandardMaterial3D.new()
+			dup.vertex_color_use_as_albedo = true
+			dup.vertex_color_is_srgb = true
+			mi.set_surface_override_material(s, dup)
 
 
 ## Roof-height oblique: about 35 degrees down, from the front three-quarter, fitted.
