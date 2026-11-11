@@ -63,6 +63,9 @@ func _unpin_court() -> void:
 
 func _build_court() -> void:
 	_court_panel = ui.card(ui.glass_panel())
+	_court_panel.visibility_changed.connect(func():
+		if _court_panel.visible:
+			ui.ease_in(_court_panel))  # one entrance for every card (ui.ease_in)
 	# The court is the one thing that matters while it sits (a modal, as in CK3
 	# and Civ): drawn above every panel and the minimap, which stay where they are.
 	_court_panel.z_index = 20
@@ -772,6 +775,7 @@ func _see_it(it: Dictionary) -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	_court_panel.add_child(v)
+	ui.ease_in(v)  # the card turns over, eased
 	v.add_child(T.label("The King has ruled"))
 	var what := Label.new()
 	what.text = String(it.get("text", it.get("name", "")))
@@ -781,7 +785,8 @@ func _see_it(it: Dictionary) -> void:
 	v.add_child(what)
 	var result := Label.new()
 	result.name = "Result"
-	result.text = "…"
+	result.text = ""
+	result.visible = false  # no placeholder: it comes in, eased, with the realm's words (result_here)
 	result.autowrap_mode = TextServer.AUTOWRAP_WORD
 	result.custom_minimum_size = Vector2(320, 0)
 	result.add_theme_font_size_override("font_size", T.SIZE_BODY + 1)
@@ -811,6 +816,8 @@ func result_here(ok: bool, text: String) -> bool:
 		return false
 	r.text = text if ok else "The crown cannot: " + text
 	r.add_theme_color_override("font_color", T.TEXT if ok else T.DANGER)
+	r.visible = true
+	ui.ease_in(r)
 	return true
 
 

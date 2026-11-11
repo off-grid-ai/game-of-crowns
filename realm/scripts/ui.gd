@@ -298,6 +298,26 @@ func glass_panel() -> PanelContainer:
 	return p
 
 
+## A card or a card's new face comes in with one ease (UI.md 8: 160 ms, ease out), never popping in:
+## the one timing for every card (the court, the event, a result turning over). Fade only, so no
+## layout is fought.
+func ease_in(c: CanvasItem, secs := 0.16) -> void:
+	if c == null or not is_instance_valid(c):
+		return
+	c.modulate.a = 0.0
+	c.create_tween().tween_property(c, "modulate:a", 1.0, secs).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+
+## And goes out the same way (120 ms), then done(), e.g. its free.
+func ease_out(c: CanvasItem, done: Callable = Callable(), secs := 0.12) -> void:
+	if c == null or not is_instance_valid(c):
+		return
+	var tw := c.create_tween()
+	tw.tween_property(c, "modulate:a", 0.0, secs).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	if done.is_valid():
+		tw.tween_callback(done)
+
+
 func btn(text: String, cb: Callable = Callable()) -> Button:
 	var b := Button.new()
 	b.text = text

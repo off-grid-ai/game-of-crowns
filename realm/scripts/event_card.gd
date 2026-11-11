@@ -65,6 +65,7 @@ func open() -> void:
 	head.add_child(title)
 	var text := Label.new()
 	text.text = String(_up.get("text", ""))
+	text.add_theme_font_size_override("font_size", T.SIZE_BODY)  # the court card's body size: one type scale
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD
 	text.custom_minimum_size = Vector2(420, 0)
 	v.add_child(text)
@@ -96,6 +97,7 @@ func open() -> void:
 	ignore.add_theme_font_size_override("font_size", T.SIZE_DESC)
 	v.add_child(ignore)
 	v.add_child(ui.btn("Later", _close))
+	ui.ease_in(_card)
 
 
 func _choose(i: int) -> void:
@@ -123,6 +125,7 @@ func result(ok: bool, text: String) -> void:
 	var close: Button = ui.btn("Close", _close)
 	close.focus_mode = Control.FOCUS_ALL
 	v.add_child(close)
+	ui.ease_in(v)  # the card turns over to what it did, eased, not swapped
 	close.grab_focus.call_deferred()
 	if not ok:
 		_done = false
@@ -130,6 +133,7 @@ func result(ok: bool, text: String) -> void:
 
 func _close() -> void:
 	if _card != null and is_instance_valid(_card):
-		_card.queue_free()
+		var c := _card
+		ui.ease_out(c, c.queue_free)
 	_card = null
 	_done = false
