@@ -173,14 +173,15 @@ func clear_view(at: Vector3) -> void:
 	var woods = terrain.get("forest") if terrain else null
 	if woods == null or not woods.has_method("blocking"):
 		return
+	var blocked := func(eye: Vector3) -> int: return woods.blocking(eye, at) + _land_between(eye, at)
 	var dist: float = rig.goal_distance
-	if woods.blocking(_eye(at, rig.goal_yaw, rig.goal_tilt, dist), at) == 0:
+	if blocked.call(_eye(at, rig.goal_yaw, rig.goal_tilt, dist)) == 0:
 		return
 	var best := [INF, rig.goal_yaw, rig.goal_tilt]
 	for tilt in SIGHT_TILTS:
 		for k in [0, 1, -1, 2, -2, 3, -3, 4]:
 			var yaw: float = rig.goal_yaw + k * PI / 4.0
-			var n: int = woods.blocking(_eye(at, yaw, tilt, dist), at)
+			var n: int = blocked.call(_eye(at, yaw, tilt, dist))
 			if n < best[0]:
 				best = [n, yaw, tilt]
 			if n == 0:
@@ -190,6 +191,16 @@ func clear_view(at: Vector3) -> void:
 	rig.goal_yaw = best[1]
 	rig.goal_tilt = best[2]
 
+
+## How many points on the line from the lens to `at` the land rises above (a hill
+## between them): the trees' check doesn't see the ground.
+func _land_between(eye: Vector3, at: Vector3) -> int:
+	var n := 0
+	for k in range(1, 12):
+		var p := at.lerp(eye, k / 12.0)
+		if float(terrain.height_at(p.x, p.z)) > p.y:
+			n += 1
+	return n
 
 ## Where the camera's eye would be, looking at `at` from `yaw`, as the rig places it.
 func _eye(at: Vector3, yaw: float, tilt: float, dist: float) -> Vector3:

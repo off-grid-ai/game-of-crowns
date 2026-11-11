@@ -341,39 +341,61 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 	if seat:
 		var cf: Vector2 = Real.footprint("medieval_castle")
 		if cf != Vector2.ZERO:
-			var cd := square_r + maxf(cf.x, cf.y) * 0.55
-			for tries in 8:
-				var cp := Vector3(cos(gap_ang), 0, sin(gap_ang)) * cd
-				# Its wide plot eases back into the land over more ground, so
-				# no raw bank shows below the walls.
-				var cy := _seat(center, cp, cf * 0.8, atan2(-cp.x, -cp.z), 2.2, true)
-				if not is_nan(cy):
+			# Its own ground at the town's edge. First the old search exactly (eight
+			# headings on the square's ring, all dry), so every castle that stood
+			# before stands where it stood; then sixteen headings on three rings out
+			# from the square, where one side may stand over the sea as real ones did
+			# if the keep's ground is dry, nearest ring hugging the square; then the same
+			# castle as a lesser hold at 0.8, and at 0.65 for an island seat.
+			var held := false
+			var passes := [[1.0, 0, 8, 0.0]]
+			for sc in [1.0, 0.8, 0.65]:
+				for ring in [-1, 0, 1, 2]:
+					passes.append([sc, ring, 16, 0.25])
+			for pass_ in passes:
+				if held:
+					break
+				var scale: float = pass_[0]
+				var f: Vector2 = cf * scale
+				var cd := square_r + maxf(f.x, f.y) * (0.55 + 0.25 * int(pass_[1]))
+				for tries in int(pass_[2]):
+					var cp := Vector3(cos(gap_ang + tries * TAU / float(pass_[2])), 0, sin(gap_ang + tries * TAU / float(pass_[2]))) * cd
+					# Its wide plot eases back into the land over more ground, so
+					# no raw bank shows below the walls.
+					var cy := _seat(center, cp, f * 0.8, atan2(-cp.x, -cp.z), 2.2, true, float(pass_[3]))
+					if is_nan(cy):
+						continue
 					var castle: Node3D = Real.make("medieval_castle")
 					castle.name = "Castle"
 					castle.position = Vector3(cp.x, cy, cp.z)
 					castle.rotation.y = atan2(-cp.x, -cp.z)
+					castle.scale *= scale
 					root.add_child(castle)
-					_footprint_rect(root, cp, cf, castle.rotation.y)
+					_footprint_rect(root, cp, f, castle.rotation.y)
 					# The front of its bailey, between the gate and the keep, is open
 					# air: the camera may come down into the yard there (camera_rig).
 					var yb := Basis(Vector3.UP, castle.rotation.y)
 					var yard := PackedVector2Array()
 					for c in [Vector2(-0.36, -0.05), Vector2(0.36, -0.05), Vector2(0.36, 0.36), Vector2(-0.36, 0.36)]:
-						var w: Vector3 = cp + yb * Vector3(c.x * cf.x, 0, c.y * cf.y)
+						var w: Vector3 = cp + yb * Vector3(c.x * f.x, 0, c.y * f.y)
 						yard.append(Vector2(w.x, w.z))
 					var yards: Array = root.get_meta("yards", [])
 					yards.append([yard, root.get_meta("footprints").size() - 1])
 					root.set_meta("yards", yards)
 					# No wood stands inside its walls or leans over them: felled to
 					# the corners, and a crown's reach (about 0.8) beyond.
-					terrain.clear_around(center + cp, cf.length() * 0.5 + 0.8)
-					lots.append([cp, maxf(cf.x, cf.y) * 0.55])
+					terrain.clear_around(center + cp, f.length() * 0.5 + 0.8)
+					lots.append([cp, maxf(f.x, f.y) * 0.55])
 					# The castle's standard, to the castle's scale: over the keep, not taller than its towers.
-					_banner(root, cp + Vector3(0, cy + 0.9, 0), _house_colour, _house, 0.6)
-					_door(root, cp, cf, "great_hall", "great hall")
+					_banner(root, cp + Vector3(0, cy + 0.9 * scale, 0), _house_colour, _house, 0.6 * scale)
+					_door(root, cp, f, "great_hall", "great hall")
 					_bailey(root, cp, cy, castle.rotation.y, rng)
+					held = true
+					if float(pass_[3]) == 0.0:
+						gap_ang += tries * TAU / 8.0  # as the old search left it, for what's laid out after
 					break
-				gap_ang += TAU / 8.0
+			if not held:
+				print("CHECK no castle fits at the seat by %s: every plot on four rings, at full, 0.8 and 0.65 size, is in water or on a cliff" % str(center))
 		gap_ang += PI * 0.6
 	# The landmarks, on the square's edge, facing in.
 	var rooms := {"medieval_tavern": ["tavern", "tavern", "tavern"], "medieval_viking_house": ["great_hall", "longhall", "hall"], "medieval_church": ["chapel", "church", "sept"]}
@@ -644,24 +666,39 @@ func _on_road(p: Vector3, margin := 0.05) -> bool:
 ## Levels the plot for a building and returns its floor height (town-local),
 ## or NAN when any corner is in water or the plot sits on a cliff. The ground is
 ## cut and filled to the plot's mean height, so nothing sinks into a slope.
-func _seat(center: Vector3, p: Vector3, f: Vector2, rot: float, most := 1.2, cut := false) -> float:
+## wet_ok: the share of the plot's edge that may stand over water (a castle on a
+## sea cliff), so long as its middle, the keep's ground, is dry; the level comes
+## from the dry ground only.
+func _seat(center: Vector3, p: Vector3, f: Vector2, rot: float, most := 1.2, cut := false, wet_ok := 0.0) -> float:
 	var b := Basis(Vector3.UP, rot)
 	var lo := INF
 	var hi := -INF
 	var sum := 0.0
-	for c in [Vector3(-0.5, 0, -0.5), Vector3(0.5, 0, -0.5), Vector3(0.5, 0, 0.5), Vector3(-0.5, 0, 0.5), Vector3.ZERO]:
+	var dry := 0
+	var wet := 0
+	var spots := [Vector3(-0.5, 0, -0.5), Vector3(0.5, 0, -0.5), Vector3(0.5, 0, 0.5), Vector3(-0.5, 0, 0.5), Vector3.ZERO]
+	if wet_ok > 0.0:
+		spots += [Vector3(0, 0, -0.5), Vector3(0.5, 0, 0), Vector3(0, 0, 0.5), Vector3(-0.5, 0, 0), Vector3(-0.25, 0, -0.25), Vector3(0.25, 0, -0.25), Vector3(0.25, 0, 0.25), Vector3(-0.25, 0, 0.25)]
+	for c in spots:
 		var w: Vector3 = center + p + b * Vector3(c.x * f.x, 0, c.z * f.y)
 		if not terrain.is_land(w.x, w.z):
-			return NAN
+			# The middle (the keep's ground) must be dry; the edge may meet the sea.
+			if wet_ok <= 0.0 or maxf(absf(c.x), absf(c.z)) < 0.5:
+				return NAN
+			wet += 1
+			continue
+		dry += 1
 		var y: float = terrain.height_at(w.x, w.z)
 		lo = minf(lo, y)
 		hi = maxf(hi, y)
 		sum += y
+	if wet > 0 and float(wet) / float(wet + dry) > wet_ok:
+		return NAN
 	if hi - lo > 0.9:  # about 7 m of fall across the plot: a cliff, not a slope
 		return NAN
 	# Builders cut into a slope more than they fill it: the plot sits nearer its
 	# low side, so it reads as a terrace in the hill, not a mound on it.
-	var level := lerpf(lo, sum / 5.0, 0.4)
+	var level := lerpf(lo, sum / float(dry), 0.4)
 	if cut:
 		# Cut into the hill, never built up on fill: it stands at the plot's low
 		# side, so nothing hangs in the air and no raw bank shows below it.
