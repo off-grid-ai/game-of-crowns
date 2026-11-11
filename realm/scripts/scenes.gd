@@ -1719,7 +1719,7 @@ func _feast(at: Vector3, house: Dictionary) -> void:
 	var local := func(p: Vector3) -> Vector2:
 		return Vector2(p.x - town_root.global_position.x, p.z - town_root.global_position.z) if town_root else Vector2(p.x, p.z)
 	if not lit:
-		var fire: Node3D = Realistic.make("ph/stone_fire_pit")
+		var fire: Node3D = Realistic.make(Realistic.one("fire_pit"))
 		if fire:
 			fire.position = centre
 			fire.scale = Vector3.ONE * TownLife.RING_SCALE  # the same stones as a town's own feast, and the same reach
@@ -1735,7 +1735,7 @@ func _feast(at: Vector3, house: Dictionary) -> void:
 		added["fires"].append([mid, keep])
 		added["footprints"].append(TownLife._rect(Vector3(mid.x, 0, mid.y), Vector2(keep, keep) * 2.0, 0.0))
 	for i in 3:
-		var cask: Node3D = Realistic.make("ph/wine_barrel_01")
+		var cask: Node3D = Realistic.make(Realistic.one("cask"))
 		if cask:
 			var a := TAU * (0.1 + i * 0.07)
 			cask.position = ground(at + Vector3(cos(a), 0, sin(a)) * 0.95)
