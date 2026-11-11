@@ -122,6 +122,7 @@ professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pa
 
 ## Log
 
+- 2026-11-11 23:45: the supervisor moved to session "Get context command" (Mac: "you are the main supervisor thread"); "Supervisor: casebook judge" hit the org spend limit (resets 4:10am IST). Its two agents died uncommitted and were restarted here: army regiments/banners/formations (army_spike.gd, army.json, army_vat.gdshader) and town light, walls, greenery and Goldrock's tiled strip (town density, roofs and cobbles already in: 45e62bfc, 32e76dbc). The six builder sessions held the handover messages (permission-mode mismatch or out of quota). Next: batch 7 (docs/review/batch7.sh) once TRELLIS frees the GPU and both agents commit.
 - 2026-11-11 23:45: Mac: "start all the workers." All six sessions are woken with separate file areas (code only, no renders; I render batch 7 once):
   - lead (48da57c5): real flames and walls that crack to a breach (fire.gd, stone_wall.gd, walls.gd);
   - builder-2 (c4be4c2c): decisions visible in the world (unrest, reinforcement columns, levy muster, feasts);
