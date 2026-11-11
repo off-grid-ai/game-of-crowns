@@ -22,6 +22,7 @@ const KINDS := {
 	"razed": {"tone": HOSTILE, "reach": 7.0, "power": 1.0, "interest": 9, "dist": 9.0, "caption": "%s burns"},
 	"raid": {"tone": HOSTILE, "reach": 4.0, "power": 0.9, "interest": 6, "dist": 7.0, "caption": "Raiders at %s"},
 	"struck": {"tone": HOSTILE, "reach": 1.2, "power": 0.8, "interest": 0, "dist": 4.0, "caption": ""},
+	"fire": {"tone": HOSTILE, "reach": 1.0, "power": 0.9, "interest": 0, "dist": 5.0, "caption": ""},  # a house catching (fire.gd): the near run, the rest come to the bucket line
 	"handover": {"tone": HOSTILE, "reach": 3.0, "power": 0.6, "interest": 3, "dist": 8.0, "caption": "%s changes hands"},
 	"famine": {"tone": TROUBLE, "reach": 3.0, "power": 0.6, "interest": 5, "dist": 6.0, "caption": "Famine in %s"},
 	"plague": {"tone": TROUBLE, "reach": 3.0, "power": 0.6, "interest": 5, "dist": 6.0, "caption": "Plague in %s"},

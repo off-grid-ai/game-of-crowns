@@ -13,6 +13,7 @@ extends Node3D
 const FLAME_SHADER := preload("res://scripts/stylized_fire.gdshader")
 const CHAR_SHADER := preload("res://scripts/charred.gdshader")
 const WeatherFx := preload("res://scripts/weather_fx.gd")
+const SceneKinds := preload("res://scripts/scene_kinds.gd")
 const DIR := "res://assets/fx/fire/"
 const SMOKE_LAYER := 1 << 10  # smoke is lit by the sun, never by the fire's own light (it glowed orange)
 const FAR := 45.0  # game units: beyond this a fire isn't drawn
@@ -23,8 +24,11 @@ static var _cache := {}  # shared textures and materials, made once
 
 var main: Node  # main.gd: its towns and its mirror (awareness)
 var _burnt := {}  # "town:home" -> {shell, hidden: [[MultiMesh, index, transform]], box, root}
-var _burning := {}  # "town:home" -> its fire node, while it burns
+var _burning := {}  # "town:home" -> its fire node, while it burns (meta stage: catch, burn, collapse, smoulder)
+var _spreads := {}  # town id -> {left: [homes still to catch], root, pace, pick, at}: a fire travelling
+var _lines := {}  # town id -> {key: the house it works at, folk: [their minds]}: the town's bucket line
 var _tick := 0.0
+var _clock := 0.0
 
 
 static func knobs() -> Dictionary:
@@ -60,8 +64,9 @@ func _exit_tree() -> void:
 		live = null
 
 
-## A sack (or, razed, a razing) at `at`: the town's houses the damage fact marks burnt catch fire for
-## `seconds` (if the fact hasn't come yet, fire.json's share of them). False if there's no town there.
+## A sack (or, razed, a razing) at `at`: the town's houses the damage fact marks burnt (if the fact hasn't
+## come yet, fire.json's share of them) catch one after another, all within about `seconds` (the scene's
+## length). False if there's no town there.
 static func ignite(at: Vector3, seconds: float, razed: bool) -> bool:
 	return live != null and live._ignite(at, seconds, razed)
 
@@ -96,11 +101,190 @@ func _ignite(at: Vector3, seconds: float, razed: bool) -> bool:
 		return false
 	var share := maxf(_burnt_share(best), float(d.get("share_razed" if razed else "share_sack", 0.4)))
 	var order := _order(best, homes.size())
+	var left := []
 	for i in mini(homes.size(), maxi(1, ceili(share * homes.size()))):
-		var key := "%d:%d" % [best, order[i]]
-		if not _burning.has(key):
-			_alight(root, key, homes[order[i]], seconds)
+		if not _burning.has("%d:%d" % [best, order[i]]):
+			left.append(order[i])
+	if left.is_empty():
+		return true
+	# One house catches first; the rest catch one at a time from the ones already burning (spread). A short
+	# scene (`seconds`) quickens the spread so every house the fact names has caught before it ends.
+	var gap: Array = (d.get("spread", {}) as Dictionary).get("gap_s", [3.0, 12.0])
+	var mean := (float(gap[0]) + float(gap[1])) * 0.5
+	var pace := clampf(seconds * 0.6 / maxf(1.0, (left.size() - 1) * mean), 0.25, 1.0) if seconds > 0.0 else 1.0
+	var first: int = left.pop_front()
+	_alight(root, "%d:%d" % [best, first], homes[first], best)
+	if not left.is_empty():
+		_spreads[best] = {"left": left, "root": root, "pace": pace}
+		_queue_next(best)
 	return true
+
+
+# --- spread (Stronghold, Manor Lords: the fire travels house to house, and the player watches it go) ------
+
+## The house that catches next in a town, and when: the one most exposed to those burning now (near them,
+## downwind of them, and the more the readier its roof burns), after a gap that is shorter for a thatch roof
+## and longer while a bucket line works.
+func _queue_next(id: int) -> void:
+	var s: Dictionary = _spreads[id]
+	var root: Node3D = s["root"]
+	var homes: Array = root.get_meta("homes", [])
+	var sp: Dictionary = knobs().get("spread", {})
+	var wind := _drift()
+	var wd := Vector2(wind.x, wind.z)
+	wd = wd.normalized() if wd.length() > 0.001 else Vector2.ZERO
+	var bias := float(sp.get("wind_bias", 0.6))
+	var pick := int(s["left"][0])
+	var most := -1.0
+	for i in s["left"]:
+		var p := _home_at(homes[i])
+		var exposed := 0.0
+		for key in _burning:
+			if not String(key).begins_with("%d:" % id):
+				continue
+			var q := _home_at(homes[int(String(key).get_slice(":", 1))])
+			var off := Vector2(p.x - q.x, p.z - q.z)
+			var dd := maxf(off.length(), 0.05)
+			exposed += (1.0 + bias * off.normalized().dot(wd)) / (dd * dd)
+		exposed *= _burns(homes[i])
+		if exposed > most:
+			most = exposed
+			pick = i
+	var gap: Array = sp.get("gap_s", [3.0, 12.0])
+	var wait := randf_range(float(gap[0]), float(gap[1])) / maxf(_burns(homes[pick]), 0.1) * float(s["pace"])
+	wait = clampf(wait, float(gap[0]) * float(s["pace"]), float(gap[1]) * 2.0)
+	if _lines.has(id):
+		wait *= float((knobs().get("folk", {}) as Dictionary).get("slow", 1.6))
+	s["pick"] = pick
+	s["at"] = _clock + wait
+
+
+## The next house catches when its time comes.
+func _spread_tick() -> void:
+	for id in _spreads.keys():
+		var s: Dictionary = _spreads[id]
+		if _clock < float(s["at"]):
+			continue
+		var root: Node3D = s["root"]
+		if not is_instance_valid(root):
+			_spreads.erase(id)
+			continue
+		var homes: Array = root.get_meta("homes", [])
+		var pick := int(s["pick"])
+		(s["left"] as Array).erase(pick)
+		if pick < homes.size() and not _burning.has("%d:%d" % [id, pick]):
+			_alight(root, "%d:%d" % [id, pick], homes[pick], id)
+		if (s["left"] as Array).is_empty():
+			_spreads.erase(id)
+		else:
+			_queue_next(id)
+
+
+## Still waiting to catch in a spreading fire (the fact may already count it burnt: it isn't charred yet).
+func _waiting(id: int, home: int) -> bool:
+	return _spreads.has(id) and (_spreads[id]["left"] as Array).has(home)
+
+
+## Where a house stands (its root's frame).
+static func _home_at(h: Array) -> Vector3:
+	return h[2] if h.size() >= 3 else h[0]
+
+
+## How readily a house burns (fire.json spread.burns), by what its kit model's name says it is.
+static func _burns(h: Array) -> float:
+	var sp: Dictionary = knobs().get("spread", {})
+	var burns: Dictionary = sp.get("burns", {})
+	var kind := String(h[3]).to_lower() if h.size() >= 4 else ""
+	var kinds: Dictionary = sp.get("kinds", {})
+	for m in kinds:
+		for word in kinds[m]:
+			if kind.contains(String(word)):
+				return float(burns.get(m, 0.7))
+	return float(burns.get("timber", 0.7))
+
+
+## How many of a town's houses are burning (not yet smouldering): each stands a full smoke column.
+func _columns(id: int) -> int:
+	var n := 0
+	for key in _burning:
+		var f: Node3D = _burning[key]
+		if String(key).begins_with("%d:" % id) and is_instance_valid(f) and String(f.get_meta("stage", "")) != "smoulder":
+			n += 1
+	return n
+
+
+# --- the townsfolk answer a fire (Manor Lords: run from it, or run to the well) --------------------------
+
+## A house catches: the townsfolk near it run (a hostile stimulus on the bus, scene_kinds "fire"), and if
+## none is working yet, a bucket line forms from the well to its door.
+func _alarm(id: int, root: Node3D, key: String, h: Array) -> void:
+	if main.awareness:
+		main.awareness.emit("fire", root.to_global(_home_at(h)))
+	if not _lines.has(id):
+		_line(id, root, key, h)
+
+
+## Up to folk.line of the townsfolk near a burning house (none who are fleeing, no children) stand in a
+## line from the well to its door and pass pails (their minds' fire branch, npc_mind.villager_fire).
+func _line(id: int, root: Node3D, key: String, h: Array) -> void:
+	var fk: Dictionary = knobs().get("folk", {})
+	var n := int(fk.get("line", 6))
+	var vill = main.get("villagers")
+	if n <= 0 or vill == null or not is_instance_valid(vill):
+		return
+	var crowd: Array = (vill.crowds as Dictionary).get(id, [])
+	var door: Vector3 = root.to_global(Vector3(h[0]))
+	var places: Dictionary = root.get_meta("places", {})
+	var well: Vector3 = root.to_global(places["well"]) if places.has("well") else root.global_position
+	var flee := float(SceneKinds.of("fire")["reach"]) * 0.5  # the ones the alarm sends running
+	var within := float(fk.get("pick_within", 4.0))
+	var near := []
+	for a in crowd:
+		if not a.has("mind") or not is_instance_valid(a.get("node")) or not (a["node"] as Node3D).visible:
+			continue
+		if String(a.get("role", "")) == "child" or String(a.get("age", "")) == "child":
+			continue
+		var bb: Blackboard = (a["mind"] as BTPlayer).blackboard
+		if bb.get_var(&"danger", false, false) or bb.get_var(&"firefight", false, false):
+			continue
+		var dd := (a["node"] as Node3D).global_position.distance_to(door)
+		if dd > flee and dd < within:
+			near.append([dd, a])
+	if near.is_empty():
+		return
+	near.sort_custom(func(x, y): return x[0] < y[0])
+	var along := Vector3(well.x - door.x, 0, well.z - door.z)
+	var from := door + along.normalized() * float(fk.get("clear", 0.3))
+	var side := Vector3(-along.z, 0, along.x).normalized() * 0.04
+	var folk := []
+	for i in mini(n, near.size()):
+		var a: Dictionary = near[i][1]
+		var bb: Blackboard = (a["mind"] as BTPlayer).blackboard
+		bb.set_var(&"bucket_at", from.lerp(well, (i + 0.5) / float(n)) + side * (1.0 if i % 2 == 0 else -1.0))
+		bb.set_var(&"fire_at", door)
+		bb.set_var(&"firefight", true)
+		folk.append(a["mind"])
+	_lines[id] = {"key": key, "folk": folk}
+
+
+## The house a line works at has fallen in: the line breaks up, and forms again at the next house still
+## burning in the town, if there is one.
+func _release(id: int, key: String) -> void:
+	if not _lines.has(id) or String(_lines[id]["key"]) != key:
+		return
+	for m in _lines[id]["folk"]:
+		if is_instance_valid(m):
+			(m as BTPlayer).blackboard.set_var(&"firefight", false)
+	_lines.erase(id)
+	for k in _burning:
+		var f: Node3D = _burning[k]
+		if String(k).begins_with("%d:" % id) and k != key and is_instance_valid(f) and String(f.get_meta("stage", "")) in ["catch", "burn"]:
+			var root: Node3D = f.get_parent()
+			var homes: Array = root.get_meta("homes", [])
+			var home := int(String(k).get_slice(":", 1))
+			if home < homes.size():
+				_line(id, root, k, homes[home])
+			return
 
 
 ## The town's burnt share, as the mirror holds it (the bridge's damage fact).
@@ -127,12 +311,17 @@ func _order(id: int, count: int) -> Array:
 ## Once a second: each town's burnt houses follow the fact (charred while it says so, whole again once
 ## rebuilt), and the smoke and embers follow the wind.
 func _process(delta: float) -> void:
+	_clock += delta
 	_tick -= delta
 	if _tick > 0.0:
 		return
 	_tick = 1.0
 	if main == null or main.towns == null:
 		return
+	for key in _burning.keys():
+		if not is_instance_valid(_burning[key]):
+			_burning.erase(key)  # its town was built anew mid-fire
+	_spread_tick()
 	for key in _burnt.keys():
 		if not is_instance_valid(_burnt[key]["shell"]):
 			_burnt.erase(key)  # its town was built anew: charred again below
@@ -147,6 +336,8 @@ func _process(delta: float) -> void:
 		var order := _order(id, homes.size())
 		for i in homes.size():
 			var key := "%d:%d" % [id, order[i]]
+			if _waiting(id, order[i]):
+				continue  # its turn to catch hasn't come: it stands whole till then
 			if i < n:
 				_char(root, key, homes[order[i]])
 			elif _burnt.has(key) and not _burning.has(key):
@@ -166,9 +357,12 @@ static func _drift() -> Vector3:
 	return Vector3(w.x, 0, w.z) * (0.25 + 0.75 * w.w)
 
 
-## A house set alight: charred (its roof falling in as it burns, embers glowing in the char), flames on its
-## roof and out of its front, embers, smoke and the fire's light, for `seconds`; then the flames die down.
-func _alight(root: Node3D, key: String, h: Array, seconds: float) -> void:
+## A house set alight, in four stages, each a visible change (docs/research/world-and-siege-rules.md, fire
+## rule 5; Age of Empires' stepped fire): catching (smoke first, small flames on the roof, the soot creeping
+## over it), burning (full flames on the roof, up the walls and out of the front, embers, the tall column, the
+## roof falling in), collapse (the roof drops, a burst of sparks, the flames fall back), smouldering (a thin grey
+## wisp, the char's embers glowing out); then out, the charred shell left standing.
+func _alight(root: Node3D, key: String, h: Array, town: int) -> void:
 	var d := knobs()
 	var b: Dictionary = _char(root, key, h)
 	var box: AABB = b["box"]
@@ -179,6 +373,7 @@ func _alight(root: Node3D, key: String, h: Array, seconds: float) -> void:
 	fire.name = "Burning"
 	root.add_child(fire)
 	_burning[key] = fire
+	var thin := _columns(town) >= int(d.get("columns", 6))  # past the town's full columns: a thin one
 	var fk: Dictionary = d.get("flames", {})
 	var roof := _flames(int(fk.get("amount", 26)), float(fk.get("life", 0.9)), fk.get("size", [0.2, 0.34]), _v2(fk.get("rise", [0.08, 0.18])), Vector3(box.size.x * 0.3, box.size.y * 0.1, box.size.z * 0.3), _flame_material(false), float(fk.get("aspect", 1.6)), float(fk.get("lift", 0.35)))
 	roof.position = Vector3(c.x, top - box.size.y * 0.3, c.z)
@@ -209,27 +404,85 @@ func _alight(root: Node3D, key: String, h: Array, seconds: float) -> void:
 	light.light_cull_mask = 0xFFFFF & ~SMOKE_LAYER
 	light.position = Vector3(c.x, box.position.y + box.size.y * 0.5, c.z) + Vector3(face.x, 0, face.z).normalized() * lateral * 1.6
 	fire.add_child(light)
-	# The roof falls in as it burns; the embers in the char glow while it does, and go out after.
-	var ck: Dictionary = d.get("char", {})
-	var tw := create_tween()
-	for mi in b["shell"].get_children():
-		if mi is GeometryInstance3D:
-			(mi as GeometryInstance3D).set_instance_shader_parameter("glow", 1.0)
-			var cut := float(mi.get_meta("cut", 1.0))
-			tw.parallel().tween_method(func(v: float): if is_instance_valid(mi): mi.set_instance_shader_parameter("cut", v), 1.0, cut, seconds * 0.6)
-	tw.tween_interval(seconds * 0.4)
+	var st: Dictionary = d.get("stages", {})
+	var r := RandomNumberGenerator.new()
+	r.seed = hash(key + "stages")
+	var catch_s := float(st.get("catch_s", 5.0))
+	var span: Array = st.get("burn_s", [25.0, 50.0])
+	var burn_s := r.randf_range(float(span[0]), float(span[1]))
+	var collapse_s := float(st.get("collapse_s", 2.5))
+	var smoulder_s := float(st.get("smoulder_s", 25.0))
+	var column := 0.35 if thin else 1.0
+	var energy := light.light_energy
+	var flames := fire.get_children().filter(func(n): return n is GPUParticles3D and n != embers and n != smoke)
+	var shell: Array = (b["shell"] as Node).get_children().filter(func(n): return n is GeometryInstance3D)
+	var roof_in := func(v: float):  # 0 whole .. 1 fallen in as far as it will
+		for mi in shell:
+			if is_instance_valid(mi):
+				mi.set_instance_shader_parameter("cut", lerpf(1.0, float(mi.get_meta("cut", 1.0)), v))
+	var shade := func(param: String, v: float):
+		for mi in shell:
+			if is_instance_valid(mi):
+				mi.set_instance_shader_parameter(param, v)
+	# Catching: smoke first, a few small flames on the roof, the house not yet black.
+	fire.set_meta("stage", "catch")
+	for p in flames:
+		(p as GPUParticles3D).amount_ratio = float(st.get("catch_flames", 0.25)) if p == roof else 0.0
+	embers.amount_ratio = 0.2
+	smoke.amount_ratio = column * 0.7
+	light.light_energy = energy * 0.3
+	roof_in.call(0.0)
+	shade.call("sooted", 0.0)
+	shade.call("glow", 0.0)
+	_alarm(town, root, key, h)
+	var tw := fire.create_tween()
+	tw.tween_method(func(v: float): shade.call("sooted", v * 0.4), 0.0, 1.0, catch_s)
+	# Burning: everything at full, the soot over it all, the roof sagging in.
 	tw.tween_callback(func():
-		for p in fire.get_children():
-			if p is GPUParticles3D:
-				p.emitting = false
-		light.queue_free())
-	var glow_out := float(ck.get("glow_out", 20.0))
-	for mi in b["shell"].get_children():
-		if mi is GeometryInstance3D:
-			tw.parallel().tween_method(func(v: float): if is_instance_valid(mi): mi.set_instance_shader_parameter("glow", v), 1.0, 0.0, glow_out)
+		fire.set_meta("stage", "burn")
+		for p in flames:
+			(p as GPUParticles3D).amount_ratio = 1.0
+		embers.amount_ratio = 1.0
+		smoke.amount_ratio = column
+		light.light_energy = energy
+		shade.call("glow", 1.0))
+	tw.tween_method(func(v: float):
+		shade.call("sooted", lerpf(0.4, 1.0, v))
+		roof_in.call(v * 0.4), 0.0, 1.0, burn_s)
+	# Collapse: the roof drops, sparks burst up, the flames fall back.
 	tw.tween_callback(func():
-		fire.queue_free()
-		_burning.erase(key))
+		fire.set_meta("stage", "collapse")
+		var burst := _embers(d.get("burst", {}), Vector3(box.size.x * 0.35, 0.02, box.size.z * 0.35))
+		burst.one_shot = true
+		burst.explosiveness = 0.9
+		burst.position = Vector3(c.x, top - box.size.y * 0.2, c.z)
+		fire.add_child(burst)
+		burst.emitting = true
+		for p in flames:
+			(p as GPUParticles3D).amount_ratio = float(st.get("collapse_flames", 0.35))
+		light.light_energy = energy * 0.5
+		_release(town, key))
+	tw.tween_method(func(v: float): roof_in.call(lerpf(0.4, 1.0, v)), 0.0, 1.0, collapse_s)
+	# Smouldering: the flames out, a thin grey wisp, the char's embers glowing out.
+	tw.tween_callback(func():
+		fire.set_meta("stage", "smoulder")
+		for p in flames:
+			(p as GPUParticles3D).emitting = false
+		embers.emitting = false
+		light.queue_free()
+		smoke.amount_ratio = float(st.get("smoulder_smoke", 0.3))
+		var pm := smoke.process_material as ParticleProcessMaterial
+		pm.scale_min *= 0.5
+		pm.scale_max *= 0.5
+		var tint := float(st.get("smoulder_tint", 2.2))
+		pm.color = Color(tint, tint, tint * 0.97))
+	tw.tween_method(func(v: float): shade.call("glow", v), 1.0, 0.0, smoulder_s)
+	# Out: the smoke thins away; the shell stays while the realm's fact says so.
+	tw.tween_callback(func(): smoke.emitting = false)
+	tw.tween_interval(smoke.lifetime)
+	tw.tween_callback(func():
+		_burning.erase(key)
+		fire.queue_free())
 
 
 ## A house charred: its kit batches' copy of it hidden, a charred shell of the same meshes in its place
@@ -243,7 +496,9 @@ func _char(root: Node3D, key: String, h: Array) -> Dictionary:
 	root.add_child(shell)
 	var r := RandomNumberGenerator.new()
 	r.seed = hash(key)
-	var collapse: Array = (d.get("char", {}) as Dictionary).get("collapse", [0.45, 0.7])
+	# How far its roof falls in; one burnt house in three loses its roof outright (fire rule 6).
+	var ck: Dictionary = d.get("char", {})
+	var collapse: Array = ck.get("roofless" if r.randf() < float(ck.get("roofless_share", 0.0)) else "collapse", [0.45, 0.7])
 	var cut := r.randf_range(float(collapse[0]), float(collapse[1]))
 	var hidden := []
 	var box := AABB()
@@ -440,8 +695,9 @@ static func _smoke(k: Dictionary) -> GPUParticles3D:
 	q.material = _smoke_material()
 	p.draw_pass_1 = q
 	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	p.visibility_aabb = AABB(Vector3(-4, -0.5, -4), Vector3(8, 6, 8))
-	p.visibility_range_end = FAR + 20.0
+	# A column three houses tall and more, seen from as far as the town is (fire rule 1: the far read).
+	p.visibility_aabb = AABB(Vector3(-6, -0.5, -6), Vector3(12, 10, 12))
+	p.visibility_range_end = float(k.get("far", FAR + 20.0))
 	return p
 
 

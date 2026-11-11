@@ -158,6 +158,21 @@ func strike(at: Vector3, along: Vector3) -> void:
 			return
 
 
+## The breaches open now within `reach` (world units) of `at`, nearest first: each gap's middle on the
+## ground (world). The siege's men stream to them (siege_ai.gd).
+func breaches_near(at: Vector3, reach: float) -> Array:
+	var out := []
+	for w in _walls():
+		if w.distance_to(at) > reach + 1.0:
+			continue
+		for b in w.breaches():
+			var p: Vector3 = b
+			if Vector2(p.x - at.x, p.z - at.z).length() < reach:
+				out.append(p)
+	out.sort_custom(func(x, y): return Vector2(x.x - at.x, x.z - at.z).length() < Vector2(y.x - at.x, y.z - at.z).length())
+	return out
+
+
 func _walls() -> Array:
 	var out := []
 	for id in _rings:

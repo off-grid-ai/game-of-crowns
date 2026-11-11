@@ -1084,7 +1084,7 @@ func _siege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, fo
 	for party in 2:
 		parties.append(_assault(root, arc, (party - 0.5) * 0.5, camp_r, wall, foe_col, r, 3.0 + party * 6.0, not minds))
 	if minds:
-		load("res://scripts/siege_ai.gd").new().start(self, root, r, foe_col, parties, [3.0, 9.0])
+		load("res://scripts/siege_ai.gd").new().start(self, root, r, foe_col, parties, [3.0, 9.0], held_col)  # held_col: the block behind a breach
 	var loose := Timer.new()
 	loose.wait_time = 2.6
 	loose.autostart = true

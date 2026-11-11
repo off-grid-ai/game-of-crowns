@@ -40,6 +40,8 @@
     "open_below_m": 1.4,
     "open_min_m": 1.0
   },
+  "stages": {"_": "A section's four looks by its wear (stone_wall.gd _breach; research wall rule 8): cracked from crack (crack band, battlements chipped), crumbling from crumble (top courses going), breached at breach.full_at.", "crack": 0.15, "crumble": 0.4},
+  "assault": {"_": "The breach changes the fight (research wall rule 12; Total War: Warhammer III): once a wall near a siege's front is open, siege_ai.gd sends every party at once and from then on through the gap (reach: how far from a party's foot a breach counts, units; through: how far into the gap they fight, units; spread: how wide they fan across it, units), and defenders form a block behind it (defenders, rows, back: how far behind the gap, units).", "reach": 2.5, "through": 0.08, "spread": 0.16, "defenders": 8, "rows": 2, "back": 0.28},
   "ring": {"height_m": 6.0, "chords_per_section": 3, "sections": 8},
   "strike": {
     "every_s": 2.6,

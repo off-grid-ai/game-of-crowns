@@ -488,15 +488,22 @@ func give_way() -> void:
 
 ## The stones a section's wear brings down: a notch at the section's breach
 ## point, deep with the wear (to the ground at breach.full_at), wider at the top,
-## ragged at its edges. Pure: the same wear, the same stones.
+## ragged at its edges. Pure: the same wear, the same stones. The four looks
+## (docs/research/world-and-siege-rules.md, wall rule 8; Total War, Stronghold):
+## whole; cracked from stages.crack (the crack band, battlements chipped: only
+## the merlons over the wall walk come down); crumbling from stages.crumble (the
+## top courses go, deeper with each blow); breached at breach.full_at (open to
+## the ground, a rubble ramp at its foot).
 func _breach(section: int, wear: float) -> Array:
 	var out := []
-	if wear <= 0.12:
+	var stages: Dictionary = Data.value("walls", "stages", {})
+	if wear <= float(stages.get("crack", 0.12)):
 		return out
 	var b: Dictionary = Data.value("walls", "breach", {})
 	var sec_len := _length / sections
 	var sc := (section + 0.5) * sec_len + (_h01(section * 7 + 1) - 0.5) * sec_len * 0.3
-	var depth := clampf(wear / float(b.get("full_at", 0.75)), 0.0, 1.0)
+	var crumble := float(stages.get("crumble", 0.0))
+	var depth := clampf((wear - crumble) / maxf(float(b.get("full_at", 0.75)) - crumble, 0.01), 0.0, 1.0)
 	var hw_top := minf(lerpf(float(b.get("hw_min_m", 0.9)), float(b.get("hw_max_m", 3.4)), clampf((wear - 0.15) / 0.85, 0.0, 1.0)), sec_len * 0.45)
 	var hw_bot := hw_top * float(b.get("bottom_share", 0.45))
 	var g := _ground_at(sc)
@@ -519,7 +526,7 @@ func _breach(section: int, wear: float) -> Array:
 
 ## Cracked stones round a section's breach: darker, a little out of true.
 func _cracks(section: int, wear: float) -> void:
-	if wear < 0.2:
+	if wear < float(Data.num("walls", "stages.crack", 0.2)):
 		return
 	var b: Dictionary = Data.value("walls", "breach", {})
 	var band := float(b.get("crack_band_m", 1.4))

@@ -16,6 +16,7 @@ uniform vec3 ember : source_color = vec3(1.0, 0.36, 0.06);
 
 instance uniform float glow = 0.0;  // embers in the char: 1 while it burns, out after
 instance uniform float cut = 1.0;  // the share of its height above which the roof has fallen in (1: whole)
+instance uniform float sooted = 1.0;  // how far the soot has crept over it: 0 as it catches, 1 once burnt
 instance uniform float lo = 0.0;  // the mesh's own lowest and highest point (its AABB), for `cut`
 instance uniform float hi = 1.0;
 
@@ -36,7 +37,7 @@ void fragment() {
 		discard;
 	}
 	// Soot heaviest high up (where the flames licked), the char never quite even.
-	float sooty = clamp(char_amount * (0.7 + 0.6 * n) * mix(0.75, 1.1, clamp(h, 0.0, 1.0)), 0.0, 1.0);
+	float sooty = clamp(char_amount * (0.7 + 0.6 * n) * mix(0.75, 1.1, clamp(h, 0.0, 1.0)) * sooted, 0.0, 1.0);
 	ALBEDO = mix(base.rgb, soot, sooty);
 	ROUGHNESS = 1.0;
 	SPECULAR = 0.1;

@@ -10,12 +10,21 @@ extends Node
 ## scenes.gd builds the camp and the walls and hands the parties here. It is
 ## loaded only when the LimboAI extension is present; without it the old
 ## timeline (scenes._assault's cycle) plays instead.
+##
+## The breach changes the fight (docs/research/world-and-siege-rules.md, wall
+## rule 12; Total War: Warhammer III's lesson that a gap nobody reacts to
+## doesn't read): once a stone wall near the front stands open (walls.gd
+## breaches_near; the wall's wear is the bridge's damage fact), every party is
+## sent at once and from then on through the gap, fanned across it, over the
+## rubble ramp; and the holder's men form a block behind it, facing out, cutting
+## and guarding at whoever comes through. Knobs: data/walls.json assault.
 
 const WALK := 0.17  # a man's walk, units a second
 const RUN := 0.45
 const WAVE := 15.0  # seconds between one party's rushes
 const AT_WALL := [3.0, 4.6]  # how long a man fights at the foot of the wall
 const FALL := 0.06  # the chance a blow from above, landing, kills him outright
+const Data := preload("res://scripts/data.gd")
 
 var scenes: Node
 var root: Node3D
@@ -23,13 +32,17 @@ var r: RandomNumberGenerator
 var col: Color
 var parties := []  # arrays of men: {home, foot, node, hsm, alive, out, ...}
 var clock := 0.0
+var held := Color(0.6, 0.6, 0.6)  # the holder's colours: the block behind a breach
+var _held_at := {}  # breach (world, snapped) -> its defenders [{node, last, cool}]
+var _look := 0.0
 
 
-func start(s: Node, siege: Node3D, rng: RandomNumberGenerator, colour: Color, groups: Array, first: Array) -> void:
+func start(s: Node, siege: Node3D, rng: RandomNumberGenerator, colour: Color, groups: Array, first: Array, holder := Color(0.6, 0.6, 0.6)) -> void:
 	scenes = s
 	root = siege
 	r = rng
 	col = colour
+	held = holder
 	parties = groups
 	root.add_child(self)
 	for p in parties.size():
@@ -136,12 +149,109 @@ func _send(p: int) -> void:
 
 func _process(dt: float) -> void:
 	clock += dt
+	_look -= dt
+	if _look <= 0.0:
+		_look = 1.0
+		_watch_breaches()
+		_hold_the_gap()
 	# Felled by an arrow from the walls (scenes._arrows): once he has fallen,
 	# his mind goes to Dead too, and stops carrying him about.
 	for p in parties:
 		for m in p:
 			if not m["alive"] and not m.get("down", false) and is_instance_valid(m.get("node")) and m["node"].has_meta("dead"):
 				m["hsm"].dispatch(&"die")
+
+
+# --- the breach (wall rule 12) -----------------------------------------------
+
+## Once a second: a breach newly open near a party's stretch of wall turns the
+## party to it (and sends it at once), and raises the block that holds it.
+func _watch_breaches() -> void:
+	if not Engine.has_meta("stone_walls"):
+		return
+	var walls: Node = Engine.get_meta("stone_walls")
+	var k: Dictionary = Data.value("walls", "assault", {})
+	for p in parties.size():
+		var men: Array = parties[p]
+		if men.is_empty():
+			continue
+		var foot := Vector3.ZERO
+		var home := Vector3.ZERO
+		for m in men:
+			foot += m.get("wall_foot", m["foot"])
+			home += m["home"]
+		foot /= men.size()
+		home /= men.size()
+		var found: Array = walls.breaches_near(root.global_transform * foot, float(k.get("reach", 2.5)))
+		if found.is_empty():
+			continue
+		var gap: Vector3 = root.global_transform.affine_inverse() * (found[0] as Vector3)
+		var key := Vector3i(roundi(gap.x * 10.0), 0, roundi(gap.z * 10.0))
+		var inward: Vector3 = (gap - home)
+		inward.y = 0.0
+		inward = inward.normalized()
+		var across := Vector3(-inward.z, 0, inward.x)
+		var fresh := false
+		for i in men.size():
+			var m: Dictionary = men[i]
+			if m.get("gap", Vector3i.MAX) == key:
+				continue
+			fresh = true
+			if not m.has("wall_foot"):
+				m["wall_foot"] = m["foot"]
+			var fan := (i - (men.size() - 1) * 0.5) / maxf(men.size() - 1, 1.0) * float(k.get("spread", 0.16))
+			m["foot"] = gap + inward * float(k.get("through", 0.08)) + across * fan
+			m["gap"] = key
+		if not _held_at.has(key):
+			_held_at[key] = _block(gap, inward, across, k)
+		if fresh:
+			_send(p)  # the gap is open: the party goes now, not at its next turn
+
+
+## The holder's men behind a breach: a block in rows, facing out at it.
+func _block(gap: Vector3, inward: Vector3, across: Vector3, k: Dictionary) -> Array:
+	var out := []
+	var n := int(k.get("defenders", 8))
+	var rows := maxi(1, int(k.get("rows", 2)))
+	var per := ceili(float(n) / rows)
+	for i in n:
+		var row := i / per
+		var col_i := i % per
+		var p: Vector3 = gap + inward * (float(k.get("back", 0.28)) + row * 0.1) + across * ((col_i - (per - 1) * 0.5) * 0.09)
+		var f: Node3D = scenes.people.make(r, "soldier", held, "adult")
+		f.position = scenes.stand(p)
+		f.rotation.y = atan2(-inward.x, -inward.z)
+		root.add_child(f)
+		scenes.arm(f, "spear" if row == 0 else "sword")
+		scenes.people.play(f, "Sword_Idle", r.randf_range(0.9, 1.1))
+		out.append({"node": f, "last": "", "cool": r.randf_range(0.0, 1.0), "front": row == 0})
+	return out
+
+
+## The front row of each block cuts and guards at the attackers in the gap; the
+## rows behind brace (Sword_Idle) until a man ahead of them falls.
+func _hold_the_gap() -> void:
+	var near := []
+	for p in parties:
+		for m in p:
+			if m["alive"] and m.get("gap", null) != null and is_instance_valid(m.get("node")):
+				near.append(m["node"].position)
+	for key in _held_at:
+		for d in _held_at[key]:
+			var f: Node3D = d["node"]
+			if not is_instance_valid(f) or f.has_meta("dead"):
+				continue
+			d["cool"] = float(d["cool"]) - 1.0
+			if float(d["cool"]) > 0.0:
+				continue
+			var close := near.any(func(q): return Vector2(q.x - f.position.x, q.z - f.position.z).length() < 0.4)
+			if not close:
+				continue
+			var move: String = scenes.cut(r, d["last"]) if (d["front"] and r.randf() < 0.6) else scenes.guard(r)
+			d["last"] = move
+			scenes.people.play(f, move, r.randf_range(0.95, 1.15))
+			var mo: AnimationTree = scenes.people.motion(f)
+			d["cool"] = (mo.get_animation(move).length if mo and mo.has_animation(move) else 1.0) + r.randf_range(0.2, 0.8)
 
 
 ## Walks or runs toward `to`; there, the next state.

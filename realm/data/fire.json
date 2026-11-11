@@ -1,5 +1,5 @@
 {
-  "_": "Fire, v2 (judged beside docs/art/target/04-siege.jpg: tall shaped flames off the roofs, a dark smoke column leaning in the wind, the house left a charred shell). fire.gd reads it. on: the switch (or --fire=v2; --fire=v1 forces the old puffs). Flames: GDQuest's stylized fire shader (MIT) on Kenney's flame tongues (CC0), in three toon bands. A burning house: flames on its roof and at its front, embers, smoke, a scorch, and it chars (roof falling in) as it burns. Which houses stay burnt is the bridge's damage fact (cities[].damage.burnt, bridge/damage.js), never a timer; share_sack/share_razed only pick how many burn when a sack plays before the damage is known. Sizes are in game units (a house is about 0.3 tall). walls: tongues from each burning house's upper walls (fire.gd _alight).",
+  "_": "Fire, v2 (judged beside docs/art/target/04-siege.jpg: tall shaped flames off the roofs, a dark smoke column leaning in the wind, the house left a charred shell). fire.gd reads it. on: the switch (or --fire=v2; --fire=v1 forces the old puffs). Flames: GDQuest's stylized fire shader (MIT) on Kenney's flame tongues (CC0), in three toon bands. A burning house: flames on its roof and at its front, embers, smoke, a scorch, and it chars (roof falling in) as it burns. Which houses stay burnt is the bridge's damage fact (cities[].damage.burnt, bridge/damage.js), never a timer; share_sack/share_razed only pick how many burn when a sack plays before the damage is known. Sizes are in game units (a house is about 0.3 tall). walls: tongues from each burning house's upper walls (fire.gd _alight). v3 (docs/research/world-and-siege-rules.md, fire rules 1-6): spread: houses catch one at a time, 3-12 s apart, the next the one most exposed to those already burning (nearer, downwind, thatch before timber before stone; Stronghold's travelling fire, Manor Lords' house to house); the bridge's fact still decides which houses burn, the spread only decides the order. stages: catching (smoke first, small flames), burning, collapse (the roof falls in with a burst of sparks), smouldering (a thin grey wisp, glowing char), then out (Age of Empires' stepped fire). columns: at most this many full smoke columns a town, the rest thin (Total War's far read). folk: the townsfolk near a catching house run from it; up to folk.line of the rest stand in a line from the well and pass pails until the roof falls in (Manor Lords), and while a line works the next house catches folk.slow times later.",
   "on": false,
   "share_sack": 0.4,
   "share_razed": 1.0,
@@ -57,15 +57,15 @@
   },
   "smoke": {
     "amount": 26,
-    "life": 7.0,
+    "life": 12.0,
     "size": [
       0.35,
       0.8
     ],
     "grow": 3.0,
     "rise": [
-      0.12,
-      0.22
+      0.2,
+      0.32
     ],
     "drift": 0.18,
     "colour": [
@@ -73,16 +73,22 @@
       0.11,
       0.1,
       0.85
-    ]
+    ],
+    "far": 140.0
   },
   "light_energy": 1.4,
   "light_range": 1.1,
   "char": {
     "collapse": [
-      0.45,
-      0.7
+      0.55,
+      0.75
     ],
-    "glow_out": 20.0
+    "glow_out": 20.0,
+    "roofless_share": 0.33,
+    "roofless": [
+      0.22,
+      0.38
+    ]
   },
   "scorch_size": 1.7,
   "hearth": {
@@ -100,5 +106,67 @@
       0.3
     ],
     "height": 0.55
+  },
+  "spread": {
+    "gap_s": [
+      3.0,
+      12.0
+    ],
+    "wind_bias": 0.6,
+    "burns": {
+      "thatch": 1.0,
+      "timber": 0.7,
+      "stone": 0.3
+    },
+    "kinds": {
+      "thatch": [
+        "thatch",
+        "straw",
+        "hut",
+        "barn",
+        "shed",
+        "stable"
+      ],
+      "stone": [
+        "stone",
+        "castle",
+        "keep",
+        "tower",
+        "church",
+        "sept",
+        "temple",
+        "brick",
+        "hall"
+      ]
+    }
+  },
+  "stages": {
+    "catch_s": 5.0,
+    "burn_s": [
+      25.0,
+      50.0
+    ],
+    "collapse_s": 2.5,
+    "smoulder_s": 25.0,
+    "catch_flames": 0.25,
+    "collapse_flames": 0.35,
+    "smoulder_smoke": 0.3,
+    "smoulder_tint": 2.2
+  },
+  "burst": {
+    "amount": 70,
+    "life": 1.6,
+    "size": 0.02,
+    "rise": [
+      0.5,
+      1.1
+    ]
+  },
+  "columns": 6,
+  "folk": {
+    "line": 6,
+    "pick_within": 4.0,
+    "clear": 0.3,
+    "slow": 1.6
   }
 }

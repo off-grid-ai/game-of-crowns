@@ -287,6 +287,15 @@ func _play(quit_after: bool) -> void:
 				if main.rig.is_processing_input() == false:
 					main.rig.apply()
 				await get_tree().create_timer(3.0).timeout
+			"burn":
+				# burn Town [seconds] [razed]: the town is put to the torch (fire.gd, --fire=v2): its houses
+				# catch one after another downwind, the townsfolk run or form a bucket line, the roofs fall in.
+				var lit := false
+				for c in main.bridge.world.get("cities", []):
+					if String(c.get("title", c.get("name", ""))) == w[1]:
+						lit = preload("res://scripts/fire.gd").ignite(main.terrain.world_pos(float(c["x"]), float(c["y"])), float(w[2]) if w.size() > 2 else 60.0, w.size() > 3 and w[3] == "razed")
+				_note("  burn %s: %s" % [w[1], "alight" if lit else "no town there, or fire is off (--fire=v2)"])
+				await get_tree().create_timer(1.0).timeout
 			"face":
 				# face [n]: open the n-th matter (from 0) by its face on the map, as a click on it
 				# does (the camera frames its place, its card stands beside it). Logs "face none" when none shows.

@@ -142,6 +142,7 @@ Switches (`--name`) go after `--` on the game's command line.
 ## Damage to towns: walls and burnt houses (Builder 1; the bridge owns it)
 - How fast besiegers batter a wall section, when it shows cracked and breached, how fast it's mended, how much a sack or razing burns and how fast it's rebuilt, how many sections: `bridge/data/damage.json`.
 - Stone walls that break stone by stone (on with `walls: "stone"` or `--walls=stone`): the stones' sizes, joints, tint and which painted blocks they show (`block`, `bricks`), the merlons, how stones fall (gravity, weight, friction, how much of a stone must stay carried before it slumps, how long they take to settle), how a section's wear opens the breach (`breach`: widths, how deep at what wear, the cracked band, what gap counts as a way through), a town ring's height and sections, the catapult blows that bring doomed stones down (`strike`: how often, how hard, how wide, how many before the rest gives way), how near the camera the fall is simulated (`sim_radius`, world units), the dust, and the test demo: `realm/data/walls.json`.
+- A wall section's four looks by its wear (cracked, crumbling, breached): `realm/data/walls.json`: `stages.crack`, `stages.crumble` (breached at `breach.full_at`). What a breach does to a siege (how near it must be, how far into the gap the attackers fight and how wide they fan, the holder's block behind it: how many, rows, how far back): `assault.*`. Demo: `--walls=stone --wall-demo --siege`.
 
 ## Fire (lead; behind `--fire=v2`, `--fire=v1` for the old puffs)
 - On by default or not: `realm/data/fire.json`: `on`.
@@ -152,6 +153,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - How much of a burnt house's roof falls in, how long its char glows: `realm/data/fire.json`: `char.collapse`, `char.glow_out`; the scorch under it: `scorch_size`.
 - Which houses stay burnt and for how long: the bridge's damage fact, `bridge/data/damage.json` (above). How many catch when a sack plays before that fact arrives: `realm/data/fire.json`: `share_sack`, `share_razed`.
 - Yard fires: `realm/data/fire.json`: `hearth.*`.
+- How a fire travels house to house (one at a time, the gap between catches, how much the wind steers it, how readily thatch, timber and stone roofs burn and which kit names count as each): `realm/data/fire.json`: `spread.*`. Each house's four stages (catching, burning, the roof's collapse, smouldering: how long, how strong the flames and smoke in each, how grey the last wisp) and the collapse's burst of sparks: `stages.*`, `burst.*`. How many full smoke columns a town shows before the rest are thin: `columns`; how far off the columns are drawn: `smoke.far`. How many burnt houses lose their roof outright: `char.roofless_share`, `char.roofless`. The townsfolk's bucket line (how many, how far they come from, how far from the flames they stand, how much it slows the spread): `folk.*`. Demo: autoplay step `burn Town [seconds] [razed]` with `--fire=v2`.
 - The wind everything leans with: the weather's (`realm/scripts/weather_fx.gd`: `LOOKS.*.wind`, `PREVAILING_FROM`, `WIND_FULL`).
 
 ## The massed army (the army spike, `--army-spike=<men>`)

@@ -720,6 +720,7 @@ class GoTo extends BTAction:
 				"bench": to = a["bench"]
 				"home": to = a["home"]
 				"meet": to = blackboard.get_var(&"meet", a["home"], false)  # where a talk was arranged
+				"bucket": to = blackboard.get_var(&"bucket_at", a["home"], false)  # their place in a bucket line (fire.gd)
 				_: to = v.place(a, where)
 		a["gait"] = gait
 		v.route_to(a, to)
@@ -1220,6 +1221,37 @@ static func villager_danger() -> BTTask:
 	return danger
 
 
+## A house afire near them and a place for them in the bucket line (fire.gd sets firefight, bucket_at and
+## fire_at; Manor Lords' villagers running to the well): they run to it, turn to the fire and pass pails,
+## lift and pass, until the roof falls in and the line breaks up (firefight false).
+static func villager_fire() -> BTTask:
+	var fire := BTSequence.new()
+	var check := BTCheckVar.new()
+	check.variable = &"firefight"
+	check.check_type = LimboUtility.CHECK_EQUAL
+	var yes := BBVariant.new()
+	yes.saved_value = true
+	check.value = yes
+	fire.add_child(check)
+	fire.add_child(get_up())
+	fire.add_child(go("bucket", "Running"))
+	fire.add_child(FaceFire.new())
+	fire.add_child(run(["Watering", "PickUp_Table", "Looking_Around"], 2, 4))
+	return fire
+
+
+## Turn to the burning house (fire_at).
+class FaceFire extends BTAction:
+	func _tick(_delta: float) -> Status:
+		var at: Vector3 = blackboard.get_var(&"fire_at", Vector3.INF, false)
+		var me := (agent as Node3D).global_position
+		var flat := Vector2(at.x - me.x, at.z - me.z)
+		if at != Vector3.INF and flat.length() > 0.01:
+			(agent as Node3D).rotation.y = atan2(flat.x, flat.y)
+			blackboard.set_var(&"face", (agent as Node3D).rotation.y)
+		return SUCCESS
+
+
 static func villager_activities(role: String) -> Array:
 	match role:
 		"farmer":
@@ -1394,6 +1426,7 @@ static func give_villager(person: Node3D, a: Dictionary, vill: Node) -> bool:
 		return false
 	var life := BTDynamicSelector.new()
 	life.add_child(villager_danger())
+	life.add_child(villager_fire())
 	life.add_child(react())
 	life.add_child(answer())
 	for m in villager_moods():
@@ -1451,6 +1484,7 @@ static func give_villager(person: Node3D, a: Dictionary, vill: Node) -> bool:
 	player.blackboard.set_var(&"topic", "")
 	player.blackboard.set_var(&"choices", acts.size())
 	player.blackboard.set_var(&"danger", false)
+	player.blackboard.set_var(&"firefight", false)
 	person.add_child(player)
 	AnimLOD.add_mind(player)
 	a["mind"] = player
