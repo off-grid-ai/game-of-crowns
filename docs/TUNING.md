@@ -186,3 +186,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - The cobbles over the square and the main streets (the stone, its tint and size, how far along each main street, by town rank): `realm/data/towns.json`: `paving`.
 - Green in town: trees at the back of yards, hedges along side fences, flower beds, kitchen gardens, trees round the town's edge: `realm/data/towns.json`: `plots.green` (`tree`, `hedge`, `flowers`, `garden`, `edge_trees`); the models: `realm/data/assets.json`: `town_tree`, `garden_hedge`, `garden_flowers`.
 - How a street's painted stretches fray at their ends (so they never end square or show a tiled strip): `realm/data/ground.json`: `roads.edge.ends`.
+- The King's decisions seen on the map, on or off: `realm/data/decisions.json`: `on` (or `--decisions=on`).
+- Unrest at a displeased house's seat (crowd, barred shops, guards, smoke, the burned cart, by cold and angry): `realm/data/decisions.json`: `unrest`.
+- A feast's lanterns and banners round the square: `realm/data/decisions.json`: `feast`.
+- The levy's recruits at the gate; how long the King's guard stays at a town he reinforced: `realm/data/decisions.json`: `levy`, `garrison.seasons`.

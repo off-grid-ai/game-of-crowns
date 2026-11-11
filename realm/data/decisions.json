@@ -1,0 +1,41 @@
+{
+ "_": "Decisions seen in the world (decisions_world.gd; North Star docs/art/target 07-unrest and 08-reinforce; docs/review/decisions-in-the-world.md; Warcraft III, CK3's county unrest, Total War's reinforcements). What the King decides stays on the map while it's true, read from the realm's state as the view mirrors it (awareness.gd). on: the switch (or --decisions=on / --decisions=off). every: seconds between readings. ease: seconds a mark takes to come in or go. near: how far away (world units) a mark is still drawn.",
+ "on": false,
+ "every": 1.0,
+ "ease": 1.2,
+ "near": 40.0,
+ "unrest": {
+  "_": "A displeased house's seat (its favour under the bridge's bands: under 'steady' it is cold, under 'cooling' angry). cold: a crowd in the square round a speaker, the house's banner lowered, some shops barred. angry: a bigger crowd, more shops barred, smoke, a burned cart and rubble, guards doubled before the crowd. crowd / barred / guards / smoke: how many, by level [cold, angry]. ring: where the crowd stands, as a share of the square's radius.",
+  "crowd": [6, 12],
+  "barred": [3, 8],
+  "guards": [0, 6],
+  "smoke": [0, 2],
+  "cart": [false, true],
+  "ring": 0.45,
+  "banner_tilt": 0.5
+ },
+ "feast": {
+  "_": "A feast in a town (its mood, as the bridge names it): lanterns round the square (how many, and every 'light_every'th one lit with a real light of this colour, energy and range), and the holder's banners between them.",
+  "lanterns": 10,
+  "banners": 4,
+  "ring": 0.85,
+  "light_every": 3,
+  "light": { "color": [1.0, 0.72, 0.38], "energy": 0.9, "range": 0.8 }
+ },
+ "levy": {
+  "_": "A levy raised at a town (the mirror's levy: a muster there this season or last): at its gate, a sergeant at a table under the royal standard and a line of recruits.",
+  "recruits": 6,
+  "spacing": 0.14
+ },
+ "garrison": {
+  "_": "Reinforcements (a muster that marched out of the King's seat to another town: backing a house, the banners, sellswords): once the column is seen, the royal standard stands at that town's gate with a guard for this many seasons.",
+  "seasons": 4,
+  "guards": 6,
+  "standards": 2,
+  "spacing": 0.13
+ },
+ "gate": {
+  "_": "Where a town's gate party stands: this share of the town's edge radius out from its centre, on the side facing the King's seat (the seat itself faces its nearest town).",
+  "at": 0.95
+ }
+}
