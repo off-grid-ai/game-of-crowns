@@ -5,7 +5,7 @@
 # results on the review page.
 #
 #   docs/review/batch7.sh            # all of it, about 77 minutes [estimate: the launches' LIMITs and waits]
-#   ONLY="towns fire" docs/review/batch7.sh   # some launches only: towns moods fire breach army hosts night
+#   ONLY="towns fire" docs/review/batch7.sh   # some launches only: towns moods rulings fire breach army hosts night
 #   OUT=/tmp/goc-batch7 (default)    # frames, logs and clips land here
 #
 # It runs on its own private bridge (8788, Freeciv 5557) with a fresh reign named "Film batch 7", so the
@@ -15,7 +15,7 @@ R=${0:A:h:h:h}
 OUT=${OUT:-/tmp/goc-batch7}
 PORT=${PORT:-8788}; FC=${FC:-5557}
 API=localhost:$PORT
-ONLY=${ONLY:-towns moods fire breach army hosts night}
+ONLY=${ONLY:-towns moods rulings fire breach army hosts night}
 SW=(--look=one --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on)
 B=(--bridge=http://127.0.0.1:$PORT)
 FF=${FF:-/opt/homebrew/bin/ffmpeg}
@@ -225,6 +225,40 @@ print(h[0]['id'], h[0].get('men',0)) if h else print('', 0)")
     print "look hosts-end"
   } > $OUT/hosts.play
   play hosts 420 --hosts=on
+fi
+
+# 3b. The King's rulings seen in the town (works-life's ac9e2ea7 bridge half, 8bcd3c42 view half; CK3, Manor
+# Lords, Stronghold): one ruling at a time at the crown's seat, each staged when the scenario reaches its mark
+# ({city, ruling: kind} on the test reign), then the square shot from roof height and a step back. The one
+# before is cleared first. Relief, justice, grant and build first; feast and levy last (they also raise their
+# scenes, which stay).
+RULINGS=(relief justice grant build feast levy)
+if want rulings; then
+  {
+    print "wait 25"
+    for k in $RULINGS; do
+      print "look ruling-$k"; print "wait 12"
+      print "city $SEAT 4.5 -25"; print "wait 8"; print "snap ruling-$k"
+      print "city $SEAT 7 -25"; print "wait 4"; print "snap ruling-$k-wide"
+    done
+    print "look rulings-end"
+  } > $OUT/rulings.play
+  rm -rf $OUT/rulings
+  # The staging rides alongside the launch: each mark the scenario logs stages its ruling.
+  ( staged=""; for i in {1..900}; do
+      for k in $RULINGS; do
+        if [[ " $staged " != *" $k "* ]] && grep -q "look ruling-$k\$" $OUT/rulings/play.log 2>/dev/null; then
+          [ -n "$staged" ] && stage "{\"city\":$SEATID,\"ruling\":\"none\"}" > /dev/null
+          say "ruling $k at $SEAT: $(stage "{\"city\":$SEATID,\"ruling\":\"$k\"}")"
+          staged="$staged $k"
+        fi
+      done
+      grep -q "rulings-end" $OUT/rulings/play.log 2>/dev/null && break; sleep 1
+    done
+    stage "{\"city\":$SEATID,\"ruling\":\"none\"}" > /dev/null; stage "{\"city\":$SEATID,\"mood\":\"calm\"}" > /dev/null ) &
+  STAGER=$!
+  play rulings 720
+  wait $STAGER  # the stager only: the bridge runs in the background too
 fi
 
 # 7. Night: the inn's windows lit (a test hour; the realm players get is always day in v1).

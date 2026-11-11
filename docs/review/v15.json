@@ -206,6 +206,54 @@
    "still": "moods/war-feast-wide.png"
   },
   {
+   "id": "b7-ruling-relief",
+   "name": "Ruled: a tax remitted",
+   "what": "The herald crying the remitted tax to a cheering crowd; buyers at every stall, goods heaped (the King's relief ruling, at the crown's seat)",
+   "ref": "05-court",
+   "card": "O10",
+   "still": "rulings/ruling-relief.png"
+  },
+  {
+   "id": "b7-ruling-justice",
+   "name": "Ruled: a sentence passed",
+   "what": "The herald's sentence met in silence; an empty gallows at the square's edge, the watch either side, the town come to look (the King's justice ruling, at the crown's seat)",
+   "ref": "07-unrest",
+   "card": "O10",
+   "still": "rulings/ruling-justice.png"
+  },
+  {
+   "id": "b7-ruling-grant",
+   "name": "Ruled: a holding granted",
+   "what": "The holding house's banners round the square and a building site rising for its hall (the King's grant ruling, at the crown's seat)",
+   "ref": "05-court",
+   "card": "O10",
+   "still": "rulings/ruling-grant.png"
+  },
+  {
+   "id": "b7-ruling-build",
+   "name": "Ruled: a work ordered",
+   "what": "The ordered work's site in the square with its builders at it (the King's build ruling, at the crown's seat)",
+   "ref": "05-court",
+   "card": "O10",
+   "still": "rulings/ruling-build.png"
+  },
+  {
+   "id": "b7-ruling-feast",
+   "name": "Ruled: a feast ruled",
+   "what": "The feast the King ordered: bunting, the long tables, the bonfire and its dancers (the King's feast ruling, at the crown's seat)",
+   "ref": "05-court",
+   "card": "O10",
+   "still": "rulings/ruling-feast.png"
+  },
+  {
+   "id": "b7-ruling-levy",
+   "name": "Ruled: a levy ruled",
+   "what": "The levy the King called mustering in the square and marching out, kin waving (the King's levy ruling, at the crown's seat)",
+   "ref": "07-unrest",
+   "card": "O10",
+   "still": "rulings/ruling-levy.png"
+  },
+  {
    "id": "b7-army-close",
    "name": "The army by regiment, close",
    "what": "The host in line (d12), one regiment selected: its ground rectangle and lit banner; melee in front, archers behind",
