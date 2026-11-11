@@ -32,7 +32,7 @@ func lord(pid: int) -> void:
 		if int(p["id"]) != pid:
 			continue
 		var house := String((p.get("house", {}) as Dictionary).get("name", "The lord"))
-		var pool: Array = _d.get("annoyed", []) if _pestered("lord%d" % pid) else (_d.get("lord", {}) as Dictionary).get(String(p.get("band", "steady")), [])
+		var pool: Array = _d.get("annoyed", []) if _pestered("lord%d" % pid) else (_d.get("lord", {}) as Dictionary).get(str(p.get("band", "steady")), [])
 		_say(house, pool, {"name": house})
 		return
 

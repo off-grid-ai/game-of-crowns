@@ -877,7 +877,7 @@ func _set_politics(players: Array, colour: Dictionary, by_name: Dictionary) -> v
 		var id := int(p.get("id", -1))
 		if id < 0 or id >= 64:
 			continue
-		hold[id] = float(bands.get(String(p.get("band", "")), 1.0))
+		hold[id] = float(bands.get(str(p.get("band", "")), 1.0))
 		var foes: Array = p.get("atWarWith", [])
 		if not foes.is_empty() and colour.has(int(foes[0])):
 			var c: Color = colour[int(foes[0])]
