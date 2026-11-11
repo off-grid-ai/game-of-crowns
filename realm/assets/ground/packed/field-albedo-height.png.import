@@ -15,8 +15,8 @@ dest_files=["res://.godot/imported/field-albedo-height.png-777db2abd48b69f530f5e
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

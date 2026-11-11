@@ -242,8 +242,31 @@ func commit_grading() -> void:
 	if hold_grading:
 		return
 	if _graded and land3d and land3d.land:
-		land3d.land.data.update_maps()
+		# Only the regions the grading touched are redrawn (Terrain3D's edited
+		# regions), not the whole realm's maps: that took 1.8 s in one frame.
+		var data = land3d.land.data
+		var touched := []
+		var a := _graded_area
+		var step := 4.0
+		var z := a.position.y
+		while z <= a.end.y + step:
+			var x := a.position.x
+			while x <= a.end.x + step:
+				var r = data.get_regionp(Vector3(minf(x, a.end.x), 0, minf(z, a.end.y)))
+				if r and not touched.has(r):
+					r.set_edited(true)
+					touched.append(r)
+				x += step
+			z += step
+		Engine.set_meta("stage", "terrain.update_maps:%d" % touched.size())
+		if touched.is_empty():
+			data.update_maps()
+		else:
+			data.update_maps(Terrain3DRegion.TYPE_HEIGHT, false, false)
+			for r in touched:
+				r.set_edited(false)
 	if _graded:
+		Engine.set_meta("stage", "terrain.ground_changed")
 		ground_changed.emit(_graded_area)
 	_graded = false
 
@@ -446,9 +469,13 @@ func _build_land() -> void:
 	st.generate_normals()
 	var mat := ShaderMaterial.new()
 	mat.shader = preload("res://scripts/terrain.gdshader")
-	for layer in ["grass", "dirt", "sand", "snow", "rock", "forest"]:
-		mat.set_shader_parameter(layer + "_a", load("res://assets/ground/%s-albedo.jpg" % layer))
-		mat.set_shader_parameter(layer + "_n", load("res://assets/ground/%s-normal.jpg" % layer))
+	# The hand-built mesh's own ground photos only when it is the land shown: with
+	# Terrain3D they were 12 lossless 2048 textures (~200 MB of video memory) on a
+	# hidden mesh. Its material still carries the realm's colours (set_realm).
+	if not USE_TERRAIN3D:
+		for layer in ["grass", "dirt", "sand", "snow", "rock", "forest"]:
+			mat.set_shader_parameter(layer + "_a", load("res://assets/ground/%s-albedo.jpg" % layer))
+			mat.set_shader_parameter(layer + "_n", load("res://assets/ground/%s-normal.jpg" % layer))
 	_land_mat = mat
 	mat.set_shader_parameter("realm_size", Vector2(width, height))
 	mat.set_shader_parameter("tile_size", TILE)
