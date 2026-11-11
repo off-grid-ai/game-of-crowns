@@ -783,7 +783,7 @@ func _put(root: Node3D, center: Vector3, kind: String, p: Vector3, f: Vector2, l
 		if Real.KIT[kind][0] == "house" and rng.randf() < 0.45:
 			var top := Real.height(kind) * k
 			var off := Vector3(-face.z, 0, face.x) * f.x * rng.randf_range(-0.2, 0.2) - face * f.y * 0.1
-			_smoke(root, Vector3(p.x, seat_y + top * 0.92, p.z) + off)
+			_smoke(root, Vector3(p.x, seat_y + top * 0.92, p.z) + off, p + face * (f.y * 0.5 + 0.12))  # its doorstep: lit only while someone's home (hearths.gd)
 	lots.append([p, span * 0.42])
 	return true
 
@@ -1610,7 +1610,7 @@ func _hearth(root: Node3D, pos: Vector3) -> void:
 	_smoke(root, pos + Vector3(0, 0.1, 0))
 
 
-func _smoke(root: Node3D, pos: Vector3) -> void:
+func _smoke(root: Node3D, pos: Vector3, door := Vector3.INF) -> void:
 	# A thread of chimney smoke: thin, grey and drifting, never a pillar.
 	var p := CPUParticles3D.new()
 	p.amount = 10
@@ -1640,6 +1640,9 @@ func _smoke(root: Node3D, pos: Vector3) -> void:
 	# dozen hearths, and particles on the CPU cost every frame, seen or not.
 	var gpu: GPUParticles3D = preload("res://scripts/particles.gd").to_gpu(p, 45.0)
 	gpu.position = pos
+	if door != Vector3.INF:
+		gpu.set_meta("door", door)  # town-local doorstep of the house it rises from
+		gpu.add_to_group("hearths")
 	root.add_child(gpu)
 
 

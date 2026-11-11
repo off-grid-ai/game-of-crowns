@@ -1,0 +1,6 @@
+{
+  "_": "Chimney smoke only where someone's home (the finesse catalogue; Manor Lords, Tiny Glade): a house's hearth smokes while its people are in or at the door (villagers.who_is_home). Towns with no townsfolk drawn keep their smoke as it is. Tune here.",
+  "on": true,
+  "every_sec": 1.0,
+  "door_match": 0.35
+}

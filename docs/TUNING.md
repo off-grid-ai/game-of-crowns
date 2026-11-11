@@ -98,3 +98,6 @@ Switches (`--name`) go after `--` on the game's command line.
 ## The crowd thinks out loud (Builder 1; on by default, view `--thoughts=off`)
 - What a town says after a ruling (by who it helped or hurt), when hungry, besieged or levied; how many thoughts a town shows; Omni's prompt; on/off: `bridge/data/thoughts.json`.
 - How near the camera must be to see a town's talk, and how often it changes: `realm/data/thoughts.json`: `near`, `cycle_sec`.
+
+## Who's home and the hearths (Builder 1; on by default, `--hearths=off`)
+- Chimney smoke only where someone's home: how often it's checked, how near a person must be to their door: `realm/data/hearths.json`.

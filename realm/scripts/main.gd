@@ -480,6 +480,9 @@ func _ready() -> void:
 		labels.visible = false
 	# Launch-video takes: scripted camera moves (cinematics.gd reads --clip itself).
 	if Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--clip=")): add_child(load("res://scripts/cinematics.gd").new())
+	# Chimney smoke only where someone's home (hearths.gd; knobs in data/hearths.json).
+	if not OS.get_cmdline_user_args().has("--hearths=off"):
+		add_child(load("res://scripts/hearths.gd").new(self))
 	# The opening's clock (a test aid, GOC_OPENING_CLOCK=<file>): the first ten minutes, timed.
 	if OS.get_environment("GOC_OPENING_CLOCK") != "":
 		add_child(load("res://tools/opening_clock.gd").new(self))

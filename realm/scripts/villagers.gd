@@ -1990,6 +1990,23 @@ func fire_of(town: int) -> Array:
 
 ## Who a person on the ground is, for a word about them (chatter.mind_line):
 ## a villager's town, index and calling, or empty for anyone else.
+## Who's home (a shared fact, one owner; the finesse catalogue): the town's doorsteps with someone home
+## now, as world positions -> how many. Home is gone in for the night (walked there and hidden indoors,
+## this script's own night rule), or by day standing at their own door. Read by hearths.gd (chimney
+## smoke only where someone's home) and the windows lit at dusk.
+func who_is_home(id: int, reach := 0.3) -> Dictionary:
+	var out := {}
+	for a in crowds.get(id, []):
+		if not a["placed"] or not PackedVector2Array(a["route"]).is_empty():
+			continue
+		var n: Node3D = a["node"]
+		var h: Vector3 = a["home"]
+		var inside: bool = a["block"] == "night" and not n.visible
+		if inside or Vector2(n.position.x - h.x, n.position.z - h.z).length() < reach:
+			out[h] = int(out.get(h, 0)) + 1
+	return out
+
+
 func who_is(n: Node) -> Dictionary:
 	return n.get_meta("folk", {}) if n else {}  # set at spawn: asked every look-round, never a search of every town
 
