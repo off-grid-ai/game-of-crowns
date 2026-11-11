@@ -33,3 +33,11 @@ Switches (`--name`) go after `--` on the game's command line.
 ## Not yet in data (to move)
 - Sound levels and the music's silences: literals in `realm/scripts/soundscape.gd` (`BEDS`, `STINGS`, `MUSIC_DB`, `CALM_GAP`).
 - The court's pace (seasons between sittings): `bridge/court.js` `courtEvery`.
+
+## The opening, first ten minutes (Builder 1; `--opening=v2`)
+- How long after the King lands in his realm the first court sits: `bridge/data/opening.json`: `firstCourtAfterLandingSec`.
+- When it sits anyway if no landing is heard (the intro skipped): `bridge/data/opening.json`: `firstCourtWithoutLandingSec`.
+
+## Townsfolk (Builder 1)
+- Which towns' people have minds: `--limbo=none` (the old rules everywhere) or `--limbo=<ids>` (only those towns); default every town (`realm/scripts/town_life.gd`: `LIMBO_ALL`).
+- Motion v3 (props follow the errand, rising through Getting_Up): `--motion=v3`; `--motion=v1` for the old motion.
