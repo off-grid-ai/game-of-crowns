@@ -24,7 +24,11 @@ UA = {"User-Agent": "game-of-crowns-portraits (offline asset build)"}
 W, H = 384, 512          # the output plate
 EYE_Y = 0.40             # the eyes' line, as a share of the plate's height
 FACE_H = 0.34            # the face's height (brow to chin), as a share of the plate's height
-NAMED = re.compile(r"\b(king|queen|pope|emperor|empress|cardinal|saint|st\.|christ|madonna|virgin|duke|duchess|prince|princess)\b", re.I)
+# Sitters a player might recognise, or not a portrait at all: royals, the church's great, famous
+# patrons, poets and reformers, prophets and gods (the supervisor's name list; a by-eye pass, drop.txt, after).
+NAMED = re.compile(r"\b(king|queen|pope|emperor|empress|cardinal|saint|st\.|christ|madonna|virgin|duke|duchess|prince|princess"
+                   r"|elizabeth|tudor|medici|sforza|este|gonzaga|habsburg|valois|bourbon|stuart|dante|petrarch|erasmus|luther|calvin"
+                   r"|prophet|prophetess|apostle|evangelist|bacchus|apollo|venus|mars|minerva|allegory|vanitas)\b", re.I)
 
 
 def get(url, binary=False):
@@ -103,6 +107,45 @@ def nga_sources(objects_csv, images_csv, limit=0):
     return out
 
 
+def rijks_sources(limit=0):
+    """The Rijksmuseum's open data (public domain; data.rijksmuseum.nl, Linked Art, no key):
+    paintings to 1650 titled as portraits or old people, each followed to its IIIF image."""
+    LD = {**UA, "Accept": "application/ld+json"}
+    ld = lambda u: json.loads(urllib.request.urlopen(urllib.request.Request(u, headers=LD), timeout=60).read())
+    EN = "http://vocab.getty.edu/aat/300388277"
+    ids = []
+    for q in ("portrait of a woman", "portrait of a young woman", "old woman", "portrait of an old", "old man", "portrait of a man", "portrait of a girl", "portrait of a boy"):
+        url = "https://data.rijksmuseum.nl/search/collection?type=painting&title=" + urllib.parse.quote(q)
+        while url:
+            try:
+                page = get(url)
+            except Exception:
+                break
+            ids += [x["id"] for x in page.get("orderedItems", []) if x["id"] not in ids]
+            url = (page.get("next") or {}).get("id")
+    out = []
+    for i in ids:
+        try:
+            item = ld(i)
+            title = next((n["content"] for n in item.get("identified_by", []) if n.get("type") == "Name" and any(l.get("id") == EN for l in n.get("language", []))), "")
+            ts = (item.get("produced_by") or {}).get("timespan") or {}
+            year = int(str(ts.get("begin_of_the_begin", "9999"))[:4])
+            t = title.lower()
+            if year > 1650 or not title or NAMED.search(title) or not ("portrait" in t or "old woman" in t or "old man" in t):
+                continue
+            vi = ld(item["shows"][0]["id"])
+            do = ld(vi["digitally_shown_by"][0]["id"])
+            img = do["access_point"][0]["id"].replace("/full/max/", "/full/1200,/")
+        except Exception:
+            continue
+        num = next((n["content"] for n in item.get("identified_by", []) if n.get("type") == "Identifier"), i.rsplit("/", 1)[-1])
+        out.append({"museum": "rijks", "id": i.rsplit("/", 1)[-1], "title": title, "artist": None, "year": year, "licence": "Public domain (Rijksmuseum open data)",
+                    "url": img, "page": f"https://www.rijksmuseum.nl/en/collection/{num}"})
+        if limit and len(out) >= limit:
+            break
+    return out
+
+
 def detector(model):
     return cv2.FaceDetectorYN.create(model, "", (320, 320), 0.8, 0.3, 5000)
 
@@ -147,14 +190,17 @@ def main():
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--nga-objects", help="NGA open data objects.csv (adds the National Gallery of Art)")
     ap.add_argument("--nga-images", help="NGA open data published_images.csv")
-    ap.add_argument("--only", choices=["met", "nga"], help="one museum only")
+    ap.add_argument("--only", choices=["met", "nga", "rijks"], help="one museum only")
+    ap.add_argument("--rijks", action="store_true", help="add the Rijksmuseum (slow: three requests a work)")
     a = ap.parse_args()
     os.makedirs(a.cache, exist_ok=True)
     os.makedirs(OUT, exist_ok=True)
     det = detector(a.model)
-    sources = [] if a.only == "nga" else met_sources(a.limit)
-    if a.nga_objects and a.nga_images and a.only != "met":
+    sources = met_sources(a.limit) if a.only in (None, "met") else []
+    if a.nga_objects and a.nga_images and a.only in (None, "nga"):
         sources += nga_sources(a.nga_objects, a.nga_images, a.limit)
+    if (a.rijks and a.only is None) or a.only == "rijks":
+        sources += rijks_sources(a.limit)
     kept, why = [], {}
     # Dropped by eye (drop.txt): recognisable sitters, prints, frames and medallions.
     drop = {l.split("#")[0].strip() for l in open(os.path.join(HERE, "drop.txt")) if l.strip() and not l.startswith("#")} if os.path.exists(os.path.join(HERE, "drop.txt")) else set()
