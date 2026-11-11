@@ -10,7 +10,17 @@ extends SceneTree
 ##   ai    image-to-3D (TRELLIS) from our own Codex concept art: --model=<abs .glb> (loaded at run time)
 ## --model=<path> overrides the cell's model (res:// scene or an absolute .glb/.gltf).
 
-const TARGET_H := {"house": 9.0, "keep": 22.0, "trees": 13.0}
+## True heights in metres, by concept name (the cell after its source: ai_cow -> cow); --height=<m> overrides.
+const TARGET_H := {
+	"house": 9.0, "keep": 22.0, "trees": 13.0,
+	"townhouse_2": 11.0, "townhouse_3": 9.0, "cottage": 6.0, "cottage_2": 6.0, "cottage_3": 6.0,
+	"farmhouse_barn": 9.0, "inn": 11.0, "church": 16.0, "mill": 14.0, "watermill": 9.0, "granary": 6.0,
+	"forge": 8.0, "armoury": 10.0, "barracks": 9.0, "stables": 7.0, "guard_tower": 16.0, "gatehouse": 18.0,
+	"manor": 14.0, "market_stall": 3.5,
+	"cow": 1.5, "ox": 1.7, "horse": 1.7, "pig": 0.9, "sheep": 1.0, "goat": 0.9, "chicken": 0.45, "dog": 0.65,
+	"haystack": 3.0, "pen": 1.3, "well": 3.5, "cart": 1.4, "wagon": 2.6, "crops": 1.2,
+	"barrels": 1.0, "crates": 1.4, "banner_pole": 4.5, "anvil": 1.0, "weapon_rack": 1.6,
+}
 const KIT_HOUSE := {"w": 2, "d": 3, "floors": 2, "style": "timber", "seed": 31}  # assets.json kit_townhouse_1
 const KIT_CASTLE := {"w": 18, "d": 16, "wall_storeys": 2, "keep": 4, "keep_storeys": 5, "tower_storeys": 4, "side_towers": false, "banner": 1.5, "seed": 5}  # kit_castle_seat
 const A_TREES := ["res://assets/nature/CommonTree_1.gltf", "res://assets/nature/CommonTree_3.gltf", "res://assets/nature/Pine_2.gltf", "res://assets/nature/CommonTree_4.gltf", "res://assets/nature/Bush_Common.gltf"]
@@ -24,6 +34,7 @@ const STRIP := ["Ground", "GroundWater", "Envoiremt_01", "FrontEnv."]
 var _shot := "user://bakeoff.png"
 var _cell := "a_house"
 var _model := ""
+var _height := 0.0
 var _frames := 0
 var _look := {}
 
@@ -36,21 +47,23 @@ func _init() -> void:
 			_cell = a.substr(7)
 		elif a.begins_with("--model="):
 			_model = a.substr(8)
+		elif a.begins_with("--height="):
+			_height = float(a.substr(9))
 	var f := FileAccess.open("res://data/look.json", FileAccess.READ)
 	var v = JSON.parse_string(f.get_as_text()) if f else null
 	_look = v if v is Dictionary else {}
 	var root := Node3D.new()
 	get_root().add_child(root)
 	_stage(root)
-	var kind := _cell.get_slice("_", 1)
 	var src := _cell.get_slice("_", 0)
+	var kind := _cell.substr(src.length() + 1)
 	var thing := _make(src, kind)
 	if thing == null:
 		push_error("bakeoff: nothing to show for %s" % _cell)
 		quit(1)
 		return
 	root.add_child(thing)
-	_fit(thing, TARGET_H.get(kind, 10.0))
+	_fit(thing, _height if _height > 0.0 else float(TARGET_H.get(kind, 9.0)))
 	_tint(thing)
 	_frame(root, thing)
 
