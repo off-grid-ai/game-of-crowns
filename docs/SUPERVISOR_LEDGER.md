@@ -32,6 +32,10 @@ limit. Newest first. The plan is [PLAN.md](PLAN.md); the running log of checks i
   switch until judged; tunables in data plus docs/TUNING.md.
 
 ## What Mac said (2026-11-11), newest first
+- "Political influence can also be shown better" (the land tinted in the holder's colours, made far richer:
+  CK3 map mode in the WC3 look, Builder 2). "Small inns and taverns with army people, roadways with small places
+  in between… a really good world is what we need to build… our own twist." Roadside life along the great roads
+  (inns, waystations, hamlets, travellers stopping; the lead plus Townsfolk), after the slice. No GoT names.
 - **"Warcraft 3 is exactly what we want."** Mid-fidelity, polished, team colours. Armies dense and real ("when
   you say 6,000 soldiers are there, they need to be there"; tens of thousands), with cannons, artillery,
   horses, elephants, archers, swords, hammers, axes, spears and shields. Each house's armour in its own colour,
