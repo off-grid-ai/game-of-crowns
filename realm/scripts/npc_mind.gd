@@ -41,17 +41,32 @@ class PlayRun extends BTAction:
 			_left = 0.0
 			return
 		var clip: String = choices[randi() % choices.size()]
-		blackboard.set_var(&"last_clip", clip)
 		var n := 1 if again else randi_range(lo, hi)
-		if Motion.is_once(clip):
-			People.repeat(agent, clip)
-		else:
-			People.play(agent, clip)
+		# Up off the ground first, when the last move left them there and this one stands.
+		_rise = GetUp.rise_first(agent, blackboard, clip)
+		_pending = clip
+		blackboard.set_var(&"last_clip", clip)
+		if _rise <= 0.0:
+			_start(clip)
 		# A run is a few goes of a short move, never one long loop held: capped at
 		# about 8 s, so a long clip (a dance) plays once or twice, then something else.
 		_left = minf(_length(clip) * n, maxf(_length(clip), 8.0) if _length(clip) <= 8.0 else 8.0)
 
+	var _rise := 0.0
+	var _pending := ""
+
+	func _start(clip: String) -> void:
+		if Motion.is_once(clip):
+			People.repeat(agent, clip)
+		else:
+			People.play(agent, clip)
+
 	func _tick(delta: float) -> Status:
+		if _rise > 0.0:
+			_rise -= delta
+			if _rise <= 0.0:
+				_start(_pending)
+			return RUNNING
 		_left -= delta
 		return RUNNING if _left > 0.0 else SUCCESS
 
@@ -77,12 +92,24 @@ class Breaker extends BTAction:
 		if choices.is_empty():
 			choices = ["Idle"]
 		var clip: String = choices[randi() % choices.size()]
+		var rise := GetUp.rise_first(agent, blackboard, clip)
 		blackboard.set_var(&"last_breaker", clip)
 		blackboard.set_var(&"last_clip", clip)
-		People.play(agent, clip)
+		_pending = clip
+		_rise = rise
+		if rise <= 0.0:
+			People.play(agent, clip)
 		_left = randf_range(2.0, 5.0)
 
+	var _rise := 0.0
+	var _pending := ""
+
 	func _tick(delta: float) -> Status:
+		if _rise > 0.0:
+			_rise -= delta
+			if _rise <= 0.0:
+				People.play(agent, _pending)
+			return RUNNING
 		_left -= delta
 		return RUNNING if _left > 0.0 else SUCCESS
 
@@ -192,7 +219,8 @@ static func run(pool: Array, lo := 3, hi := 5) -> BTTask:
 ## kneeling or sitting on it (from a standing move it would dip and rise).
 ## Straight from kneeling to a standing move, a body pops upright between frames.
 class GetUp extends BTAction:
-	const GROUND := ["Fixing_Kneeling", "Kneeling", "Praying", "Planting", "Dig_And_Plant", "Sitting_Ground", "Sitting_Cross_Legged",
+	# Interact is down on one knee all through (hips 0.32-0.42 against 0.95 standing, measured).
+	const GROUND := ["Fixing_Kneeling", "Interact", "Kneeling", "Praying", "Planting", "Dig_And_Plant", "Sitting_Ground", "Sitting_Cross_Legged",
 		"Sitting_Idle", "Sitting_Drinking", "Sleeping_Idle", "Defeated"]
 	var _left := 0.0
 
@@ -208,6 +236,17 @@ class GetUp extends BTAction:
 	func _tick(delta: float) -> Status:
 		_left -= delta
 		return RUNNING if _left > 0.0 else SUCCESS
+
+	## For a move about to start: if the last left them on the ground and this
+	## one stands, Getting_Up now, and how long it takes (else 0: start at once).
+	static func rise_first(agent: Node, bb: Blackboard, next: String) -> float:
+		if not String(bb.get_var(&"last_clip", "", false)) in GROUND or next in GROUND:
+			return 0.0
+		var ap: AnimationPlayer = agent.get_node_or_null("Anim")
+		if ap == null or not ap.has_animation("Getting_Up"):
+			return 0.0
+		People.play(agent, "Getting_Up")
+		return ap.get_animation("Getting_Up").length
 
 
 static func get_up() -> BTTask:
@@ -494,8 +533,13 @@ class Weigh extends BTAction:
 			return 4.0 if war else 0.0
 		if act == "mutter":
 			return 3.0 if sour else 0.0
+		# A guard levels his spear and shouts only at a crowd pressing the door:
+		# a watchman at a camp's road edge or the tax table thrusting at empty
+		# air reads as madness (the judge's winter road-edge frame).
+		if act == "warn":
+			return 2.0 if mood == "riot" else 0.0
 		if war:
-			w *= {"hold": 3.0, "watch": 3.0, "warn": 2.0, "browse": 0.5, "haggle": 0.5, "gossip": 1.5, "chat": 1.5}.get(act, 1.0)
+			w *= {"hold": 3.0, "watch": 3.0, "browse": 0.5, "haggle": 0.5, "gossip": 1.5, "chat": 1.5}.get(act, 1.0)
 			if play:
 				w *= 0.2
 		if mood == "hunger" and merry:
@@ -587,7 +631,10 @@ class GoTo extends BTAction:
 		# middle of the square (a man digging at the heart of the town).
 		var here := (agent as Node3D).position
 		var goal: Vector3 = _goal_world(a) if a.has("center") and a.has("goal") else here
-		if Vector2(here.x - goal.x, here.z - goal.z).length() > ARRIVED:
+		# A goal moved far from where this was going (a step aside for a traveller,
+		# a stranded walker's): not this arrival. Ask for the way again.
+		var mine := Vector2(goal.x - _to.x, goal.z - _to.z).length() < 0.6 if a.has("center") and not a.has("parent") else true  # (a child's goal is by their parent, by design)
+		if not mine or Vector2(here.x - goal.x, here.z - goal.z).length() > ARRIVED:
 			_waited += delta
 			if _waited > GIVE_UP:
 				return FAILURE
@@ -745,7 +792,8 @@ class Talk extends PlayRun:
 		_started = false
 		# Nobody talks to the air: until the other stands face to face with
 		# them, they wait at the spot and look for them.
-		if _near():
+		_stepped = false
+		if _in_place():
 			_begin()
 		else:
 			People.play(agent, "Idle")
@@ -764,6 +812,32 @@ class Talk extends PlayRun:
 		var walking: bool = not theirs.is_empty() and not (theirs.get("route", PackedVector2Array()) as PackedVector2Array).is_empty()
 		return d < 0.3 and not walking
 
+	var _stepped := false
+
+	## Both here, and a pace apart (FindPartner.TALK_GAP, about 1.15 m: the
+	## distance two people talk at, Hall's personal space). Each walks to their
+	## own spot and stops within half a metre of it, so two arrive anywhere from
+	## brushing shoulders to calling across: then one of them (the later in the
+	## scene) takes a step to stand a pace off, facing, as people settle into
+	## a talk. One step only; past two seconds they talk where they stand.
+	func _in_place() -> bool:
+		if not _near() or not (blackboard.get_var(&"va", {}, false).get("route", PackedVector2Array()) as PackedVector2Array).is_empty():
+			return false  # (still taking their own step)
+		var them := blackboard.get_var(&"partner") as Node3D
+		var here := (agent as Node3D).global_position
+		var flat := Vector2(here.x - them.global_position.x, here.z - them.global_position.z)
+		if absf(flat.length() - FindPartner.TALK_GAP) < 0.025 or _stepped or _waited > 2.0:
+			return true
+		if agent.get_instance_id() < them.get_instance_id():
+			return false  # the other one steps
+		_stepped = true
+		var v: Node = blackboard.get_var(&"vill", null, false)
+		var dir := flat.normalized() if flat.length() > 0.005 else Vector2.from_angle(randf() * TAU)
+		var spot := Vector3(them.global_position.x + dir.x * FindPartner.TALK_GAP, here.y, them.global_position.z + dir.y * FindPartner.TALK_GAP)
+		if v != null and v.has_method("step_to") and v.step_to(blackboard.get_var(&"va"), (agent as Node3D).position + (spot - here)):
+			return false  # stepping into place: talk once there
+		return true
+
 	## The talk goes on only while the other is still here and still talking
 	## to them; while a line of theirs is being read they listen, and the talk
 	## isn't cut off mid-line.
@@ -774,14 +848,15 @@ class Talk extends PlayRun:
 		var their_mind := (them as Node3D).get_node_or_null("Mind") as BTPlayer
 		if their_mind == null or their_mind.blackboard.get_var(&"partner", null, false) != agent:
 			return SUCCESS
-		_face()
+		if (blackboard.get_var(&"va", {}, false).get("route", PackedVector2Array()) as PackedVector2Array).is_empty():
+			_face()  # (taking their step, they face the way they walk, and turn once there)
 		if not _started:
 			_waited += delta
 			if _waited > WAIT_SECS:
 				return SUCCESS
-			if _waited > 2.0:
+			if _waited > 2.0 and not _stepped:
 				People.play(agent, "Looking_Around")
-			if _near():
+			if _in_place():
 				_begin()
 			return RUNNING
 		var f := _floor_now()

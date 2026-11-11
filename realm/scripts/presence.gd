@@ -12,15 +12,14 @@ extends Node
 const PerfTools := preload("res://scripts/perf_tools.gd")
 
 const CADENCE := 0.1  # seconds between looks round, near the camera only: a newcomer is noticed within the moment
-const NEAR_CAM := 4.0  # world units from the camera: further off, nobody's face is seen
+const NEAR_CAM := 7.0  # world units from the camera: everyone a street-level view has in it (its focus is ~3 off, and the square ~3.5 round that)
 const NOTICE := 0.18  # about 1.5 m: someone this close is noticed
-const FRONT := -0.17  # within about 100 degrees of where they face
+const FRONT := 0.17  # within about 80 degrees of where they face: the head turns that far, over the shoulder at most
 const HOLD := Vector2(1.0, 2.0)  # seconds a glance is held
 const RESTED := 1.0  # seconds before the same person looks round again
-const SWITCH := 0.6  # a glance held this long gives way to someone new stepping up in front
+const SWITCH := 0.3  # a glance held this long gives way to someone new stepping up in front
 const GREET := 0.15  # about 1.2 m: close enough to greet
 const GREET_AGAIN := 30.0  # the same two greet once in this long
-const LIMIT := 80.0  # degrees a head turns from the body, at most (over the shoulder)
 
 ## Where a person stands, by their role or calling (people.gd roles, villagers'
 ## callings): commoners make way and bow to those above them.
@@ -55,10 +54,10 @@ static func fit(person: Node3D) -> void:
 	look.bone = sk.find_bone("Head")
 	look.forward_axis = SkeletonModifier3D.BONE_AXIS_PLUS_Z
 	look.primary_rotation_axis = Vector3.AXIS_Y
-	look.use_angle_limitation = true
-	look.symmetry_limitation = true
-	look.primary_limit_angle = deg_to_rad(LIMIT)
-	look.secondary_limit_angle = deg_to_rad(25.0)
+	# No angle limits on the modifier: they clipped the turn short (a head
+	# aimed 10-30 degrees wide, measured). The turn is kept natural by whom
+	# they look at: only someone within FRONT of where they face.
+	look.use_angle_limitation = false
 	look.duration = 0.25
 	look.transition_type = Tween.TRANS_SINE
 	look.ease_type = Tween.EASE_IN_OUT
@@ -147,7 +146,7 @@ func _noticed(n: Node3D, near: Array[Node3D]) -> Node3D:
 	var best: Node3D = null
 	var best_d := NOTICE
 	for o in near:
-		if o == n or _met(n, o):
+		if o == n:
 			continue
 		var to := _flat(n, o)
 		var d := to.length()

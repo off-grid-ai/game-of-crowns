@@ -619,12 +619,12 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 		if route.is_empty():
 			_set_off(a)  # arrived: straight into what they came for (a talk waits for the others)
 		return
-	var want := to.normalized() * WALK_SPEED * float(a.get("pace", 1.0)) * _mood_pace(a) * _for_the_child(a)
+	var want := to.normalized() * WALK_SPEED * float(a.get("pace", 1.0)) * _mood_pace(a) * _for_the_child(a) * (2.4 if a.get("catch_up", false) else 1.0)
 	var vel: Vector2 = want
 	if a.has("agent"):
 		NavigationServer2D.agent_set_velocity(a["agent"], want)
 		# Making way: a commoner steps round their betters, never the other way about (presence.gd STATION).
-		NavigationServer2D.agent_set_avoidance_priority(a["agent"], 0.3 + 0.2 * _presence.station(n) if _presence else 0.5)
+		NavigationServer2D.agent_set_avoidance_priority(a["agent"], 1.0 if a.get("catch_up", false) else (0.3 + 0.2 * _presence.station(n) if _presence else 0.5))  # a child hurrying to a parent: the grown step round them
 		vel = a["safe"]  # trust the avoidance, even when it says wait
 	var step := vel * delta
 	if step.length() > to.length():
@@ -1254,6 +1254,11 @@ func route_to(a: Dictionary, target: Vector3) -> void:
 		goal = nav.closest(map, Vector2(target.x - center.x, target.z - center.z))  # whatever moved the spot, a child stays by their parent
 	a["goal"] = goal
 	a["route"] = nav.path(map, from, goal)
+	# A parent setting off takes their children along: the same way, a pace to
+	# their side, not a child chasing after a moving parent.
+	for ch in a.get("children", []):
+		if ch["placed"] and (ch["node"] as Node3D).visible and (ch["node"] as Node3D).position.distance_to(n.position) < CHILD_REACH:
+			_walk_beside(ch, a, map)
 
 
 # --- gatherings: talk is always with someone ----------------------------------
@@ -1867,6 +1872,25 @@ func open_talk(a: Dictionary, b: Dictionary, kind := "talk", topic := "") -> int
 	return _talk_keys
 
 
+## A short step for `a` to `target` (town space, as a node's position): to
+## exactly there, not the nearest free ring round it as route_to finds, when
+## it's open ground nobody stands on. A talker settling a pace off the other
+## (npc_mind.gd Talk). False when the spot isn't to be had.
+func step_to(a: Dictionary, target: Vector3) -> bool:
+	if not nav.live(a.get("map", RID())):
+		return false
+	var c: Vector3 = a["center"]
+	var want := Vector2(target.x - c.x, target.z - c.z)
+	var goal := nav.closest(a["map"], want)
+	if goal.distance_to(want) > 0.03 or _body_at(a, goal):
+		return false
+	a["goal"] = goal
+	a["route"] = PackedVector2Array([goal])
+	a["gait"] = "Walk"
+	_set_off(a)
+	return true
+
+
 ## Room for two more to talk at `at` (world): fewer than two knots talking
 ## there already (a third makes them one crowd), and nobody else standing on
 ## the spot. Asked by a mind before it arranges a talk.
@@ -1938,9 +1962,29 @@ func _follow_parents(id: int) -> void:
 		var bound := Vector2(a.get("goal", Vector2(INF, INF)))
 		var c: Vector3 = a["center"]
 		var goal_world := Vector3(c.x + bound.x, 0, c.z + bound.y)
-		# Strayed (about 1.5 m), or bound somewhere the parent isn't: back to their side.
-		if Vector2(cp.x - pp.x, cp.z - pp.z).length() > CHILD_REACH * 0.5 or Vector2(goal_world.x - pp.x, goal_world.z - pp.z).length() > CHILD_REACH * 0.5:
+		# Strayed (about 1.5 m), or bound somewhere the parent isn't: back to their
+		# side, at a run when they're well behind (a child catches up).
+		var gap := Vector2(cp.x - pp.x, cp.z - pp.z).length()
+		if gap > CHILD_REACH * 0.5 or Vector2(goal_world.x - pp.x, goal_world.z - pp.z).length() > CHILD_REACH * 0.5:
+			_hurry(a, gap > CHILD_REACH * 0.6)
 			route_to(a, pp)
+			_set_off(a)
+		elif a.get("catch_up", false):
+			_hurry(a, false)
+
+
+## A child hurrying back to their parent slips through the crowd as children
+## do: quicker than a walk, nimble (Godot's avoidance looks ahead a short
+## moment, not the long look a grown walker takes), and the grown folk step
+## round them. Measured: with a grown walker's avoidance a child behind in a
+## busy square was held to a near standstill, 3-6 m from the parent.
+func _hurry(a: Dictionary, on: bool) -> void:
+	a["catch_up"] = on
+	a["gait"] = "Running" if on else "Walk"
+	if a.has("agent"):
+		NavigationServer2D.agent_set_radius(a["agent"], 0.045)  # a child takes less room than a grown man
+		NavigationServer2D.agent_set_max_speed(a["agent"], WALK_SPEED * (2.6 if on else 1.3))
+		NavigationServer2D.agent_set_time_horizon_agents(a["agent"], 0.6 if on else 2.5)
 
 
 ## Talks long over that nobody closed: a knot of people with minds (the old
@@ -2080,6 +2124,21 @@ func _talk_audit() -> void:
 static func _able(moves: Array, rng: RandomNumberGenerator) -> String:
 	var ok := moves.filter(func(m): return Weapons.can_play(m))
 	return ok[rng.randi() % ok.size()] if not ok.is_empty() else "Idle"
+
+
+## `ch` walks `parent`'s route, CHILD_SIDE to their own side all the way.
+func _walk_beside(ch: Dictionary, parent: Dictionary, map: RID) -> void:
+	var route: PackedVector2Array = parent["route"]
+	if route.is_empty():
+		return
+	var side := Vector2.from_angle(float(ch["i"])) * CHILD_SIDE
+	var mine := PackedVector2Array()
+	for pt in route:
+		mine.append(nav.closest(map, pt + side))
+	ch["route"] = mine
+	ch["goal"] = mine[mine.size() - 1]
+	_hurry(ch, false)
+	_set_off(ch)
 
 
 ## A parent with a child trailing (further than about 1.7 m) walks slower
