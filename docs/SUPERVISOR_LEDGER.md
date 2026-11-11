@@ -121,6 +121,13 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 01:00 (11-12) Batch 7 stopped at its army launch (later shots had the old blur); batch 8 filming (62 shots, 8789).
+  Batch 7 judged (docs/review/batch7-review.md, top 15) and routed: fire-siege the dead sack fire, orbs, ground;
+  works-life moods that read, stiff people, empty roads, mill sails; army-ui knight_v2, army fps (3 at 6k),
+  the distance ladder, settle, harness. Gameplay review (docs/review/gameplay-review.md): throne besieged by
+  minute two, free ward, free decrees, wrong numbers, vanishing cards, decisions off by default, idle armies,
+  goals that don't pull, a firehose chronicle; a builder agent fixes all ten plus the cut list. Mac bought
+  Meshy; the Meshy agent pulls the painted set and generates the man-at-arms in his Chrome.
 - 00:45 (11-12) Mac on the live breach frame: "I can barely see anything" and "be smart about the gameplay, you are
   an expert game creator + designer". Calls: near blur off for good; the camera never inside or behind a building
   (Anno/AoE IV); no orange wash at town zoom; film snaps close panels; pink untextured blocks fixed (army-ui).
