@@ -1485,6 +1485,8 @@ func _moods(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 		if Works.stock(root, "rack") < want:
 			Works.add_stock(root, "rack", want - Works.stock(root, "rack"))
 		_muster(root, life, center, Data.value("moods", "levy.muster" if "levy" in states else "war.muster", {}), rng)
+	if "levy" in states:
+		_leaving(root, life, center, Data.value("moods", "levy.leave", {}), rng)
 	if "feast" in states:
 		_feast(root, life, center, house, rng)
 
@@ -1637,3 +1639,98 @@ func _bunting(root: Node3D, life: Node3D, center: Vector3, well: Vector3, b: Dic
 	mesh.material_override = cloth
 	mesh.set_meta("dress", "bunting")
 	life.add_child(mesh)
+
+
+## A levy marching out: kin at the square seeing them off, and every few
+## seconds one of the mustered men shoulders his bundle and walks out of the
+## town along the nearest road (moods.json levy.leave), until most have gone.
+func _leaving(root: Node3D, life: Node3D, center: Vector3, l: Dictionary, rng: RandomNumberGenerator) -> void:
+	if l.is_empty():
+		return
+	var places: Dictionary = root.get_meta("places", {})
+	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
+	for i in int(l.get("kin", 3)):
+		var k := _stand(root, life, center, well + Basis(Vector3.UP, 1.0) * SEEN * 0.2 + Vector3(rng.randf_range(-0.15, 0.15), 0, rng.randf_range(-0.15, 0.15)), "peasant", "Waving", rng.randi(), Color.WHITE, 0.2)
+		if k:
+			_face(k, k.position + Basis(Vector3.UP, 1.0) * SEEN)
+			_mind(k, "listener", center)
+	var go := Leaving.new()
+	go.name = "Leaving"
+	go.root = root
+	go.life = life
+	go.ground = func(q: Vector3) -> float: return _y(center, q)
+	go.every = l.get("every", [7.0, 13.0])
+	go.most = int(l.get("most", 5))
+	go.pace = float(l.get("pace", 0.15))
+	go.rng.seed = rng.randi()
+	go.wait = go.rng.randf_range(2.0, float(go.every[0]))
+	life.add_child(go)
+
+
+## The levy's men walking out one by one (_leaving): each in turn leaves his
+## place in the muster (his mind put by), carries his bundle out along the road
+## nearest him (the town's main ways, heart outward) and is gone past its end.
+class Leaving extends Node:
+	const People := preload("res://scripts/people.gd")
+	var root: Node3D
+	var life: Node3D
+	var ground: Callable
+	var every: Array = [7.0, 13.0]
+	var most := 5
+	var pace := 0.15
+	var wait := 3.0
+	var gone := 0
+	var rng := RandomNumberGenerator.new()
+	var walking: Array = []  # [person, [points left]]
+
+	func _process(delta: float) -> void:
+		if not is_instance_valid(root) or not is_instance_valid(life):
+			return
+		wait -= delta
+		if wait <= 0.0 and gone < most:
+			wait = rng.randf_range(float(every[0]), float(every[1]))
+			_send()
+		for w in walking.duplicate():
+			var p: Node3D = w[0]
+			var left: Array = w[1]
+			if not is_instance_valid(p) or left.is_empty():
+				walking.erase(w)
+				if is_instance_valid(p):
+					p.queue_free()  # past the road's end: on his way to the host
+				continue
+			var to: Vector3 = left[0]
+			var flat := Vector2(to.x - p.position.x, to.z - p.position.z)
+			var step := pace * delta
+			if flat.length() <= step:
+				p.position = Vector3(to.x, p.position.y, to.z)
+				left.pop_front()
+			else:
+				var d := flat.normalized() * step
+				p.position += Vector3(d.x, 0, d.y)
+				p.rotation.y = lerp_angle(p.rotation.y, atan2(d.x, d.y), minf(1.0, delta * 6.0))
+			p.position.y = float(ground.call(p.position))
+			People.play(p, "Carrying")  # the bundle in his arms over his walking legs
+
+	func _send() -> void:
+		var men := life.get_children().filter(func(n): return n.has_meta("levy_man") and not n.has_meta("leaving"))
+		if men.is_empty():
+			return
+		var p: Node3D = men[rng.randi() % men.size()]
+		var ways: Array = root.get_meta("ways_main", [])
+		var best: Array = []
+		var near := INF
+		for w in ways:
+			var path := PackedVector2Array(w)
+			for i in path.size():
+				var dd := path[i].distance_to(Vector2(p.position.x, p.position.z))
+				if dd < near:
+					near = dd
+					best = Array(path.slice(i)).map(func(q: Vector2) -> Vector3: return Vector3(q.x, 0, q.y))
+		if best.is_empty():
+			return  # a town with no roads: he stays in the muster
+		p.set_meta("leaving", true)
+		var mind := p.get_node_or_null("Mind")
+		if mind:
+			mind.queue_free()  # his post put by: he walks now
+		gone += 1
+		walking.append([p, best])

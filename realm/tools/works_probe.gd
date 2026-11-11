@@ -107,6 +107,24 @@ func _run() -> void:
 			if feasters == 0 or bunting == 0:
 				print("FAIL feast: no tables or no bunting in the square")
 				fails += 1
+		if name == "war":
+			# A levy's men walk out along the road with their bundles (town_life Leaving), checked here on the war's muster.
+			town.set_meta("ways_main", [PackedVector2Array([Vector2(0, 0), Vector2(1.0, 0.2), Vector2(2.6, 0.4)])])
+			var go := TownLife.Leaving.new()
+			go.root = town
+			go.life = l
+			go.ground = func(_q: Vector3) -> float: return 0.0
+			go.most = 2
+			go.every = [1.0, 1.0]
+			go.wait = 0.0
+			l.add_child(go)
+			for i in 400:
+				go._process(0.1)
+			var still: int = l.get_children().filter(func(n): return n.has_meta("levy_man") and not n.is_queued_for_deletion()).size()
+			print("WORKS war     levy leaving: %d sent out along the road, %d of %d still mustered" % [go.gone, still, mustered])
+			if go.gone != 2 or still != mustered - 2:
+				print("FAIL war: the levy's men didn't walk out")
+				fails += 1
 		if name == "peace" and (mustered > 0 or fast > 0):
 			print("FAIL peace: a muster or a hurried forge in peacetime")
 			fails += 1

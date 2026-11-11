@@ -111,11 +111,13 @@ export async function stage(ctx, req, res, url) {
   }
   // {sack: city} or {razed: city}: that town's sack (or razing) plays now, as the director's own does
   // (director.js: scene "sack" at the town), so a film can shoot a stormed town's aftermath on demand.
-  for (const kind of ["sack", "razed"]) {
+  // {muster: city}: a levy musters there (the scene director.js raises as a host gathers): the town's
+  // levy state for a season (the view's awareness mirror reads it), its men marching out with bundles.
+  for (const kind of ["sack", "razed", "muster"]) {
     if (b[kind] == null) continue;
     const c = (ctx.world?.cities ?? []).find((x) => x.id === Number(b[kind]));
     if (!c) return json(res, 404, { ok: false, error: "no such city" });
-    ctx.scene(kind, { x: c.x, y: c.y, city: c.id, owner: c.owner });
+    ctx.scene(kind, kind === "muster" ? { x: c.x, y: c.y, tx: c.x, ty: c.y, city: c.id } : { x: c.x, y: c.y, city: c.id, owner: c.owner });
     return json(res, 200, { ok: true, [kind]: c.id });
   }
   // {damage: {city, section, wear} or {city, burnt}}: a town's walls or houses damaged now (damage.js), for a film.
