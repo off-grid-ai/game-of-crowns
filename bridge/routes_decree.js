@@ -193,7 +193,7 @@ export async function setMood(ctx, req, res, url) {
 
 export async function tithe(ctx, req, res, url) {
   const { rate } = await body(req);
-  ctx.meta.tithe = Math.max(0, Math.min(0.4, Number(rate) || 0));
+  ctx.meta.tithe = Math.max(0, Math.min(Treasury.ECONOMY.tithe.max, Number(rate) || 0));  // data/economy.json
   chron.saveMeta(ctx.meta);
   return json(res, 200, { tithe: ctx.meta.tithe });
 }

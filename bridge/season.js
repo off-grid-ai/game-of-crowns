@@ -184,7 +184,7 @@ export function collectTithe(ctx, turn) {
   for (const t of Object.keys(favourPast)) if (Number(t) < turn - 8) delete favourPast[t];
   // The season's tithe, its wagons and its deed (treasury.js).
   Treasury.tithe(ctx.treasuryCtx(), turn);
-  const wear = isWatched() ? meta.tithe * 4 : 0;  // 10% wears 0.4 a season; the drift to 55 outweighs it
+  const wear = isWatched() ? meta.tithe * Treasury.ECONOMY.tithe.wear : 0;  // data/economy.json: at 10%, 0.4 a season; the drift to 55 outweighs it
   for (const p of world.players) {
     if (houseFor(p).wild || houseFor(p).crown) continue;
     const before = favourOf(p.id);

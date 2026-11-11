@@ -48,7 +48,7 @@ export function crownUpkeep(crown) {
 }
 
 // A tithe this heavy grasps: the ledger's tithe_high, and the towns mutter (view.js townStates).
-export const TITHE_HIGH = 0.19;
+export const TITHE_HIGH = ECONOMY.tithe.high;  // data/economy.json
 
 export function titheLua(world, rate) {
   const crown = crownOf(world);

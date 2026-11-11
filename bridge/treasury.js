@@ -121,7 +121,7 @@ export function tithe(ctx, turn) {
     const from = world.cities.filter((c) => c.owner !== crownId && !houseFor(world.players.find((p) => p.id === c.owner) ?? {}).wild).sort((x, y) => y.size - x.size).slice(0, Math.max(1, Math.round(meta.tithe * 20)));
     if (king) for (const c of from) scene("tribute", { x: c.x, y: c.y, tx: king.x, ty: king.y, city: king.id, tithe: true });
   }
-  if (turn % 4 === 0 && (meta.tithe >= TITHE_HIGH || meta.tithe <= 0.05)) deed(kingDeeds.tagsFor("realm", meta.tithe >= TITHE_HIGH ? "tithe_high" : "tithe_low"), { act: false });
+  if (turn % 4 === 0 && (meta.tithe >= TITHE_HIGH || meta.tithe <= ECONOMY.tithe.low)) deed(kingDeeds.tagsFor("realm", meta.tithe >= TITHE_HIGH ? "tithe_high" : "tithe_low"), { act: false });
   const t = titheLua(world, meta.tithe * (0.4 + 0.6 * peaceNow));
   tally.total += t.total;
   tally.upkeep += t.upkeep;
