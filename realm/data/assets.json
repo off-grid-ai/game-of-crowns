@@ -30,6 +30,22 @@
       { "model": "realistic/ph/tree_stump_02/tree_stump_02_1k.gltf", "name": "ph/tree_stump_02", "length": 1.1 } ] },
     "ruin_wall": { "kind": "ruin", "variants": [ { "model": "realistic/abbey_wall_ruins", "name": "abbey_wall_ruins", "length": 16.0, "stone": true } ] },
     "ruin_abbey": { "kind": "ruin", "variants": [ { "model": "realistic/abbey_ruins", "name": "abbey_ruins", "length": 20.0, "stone": true } ] },
-    "rubble": { "kind": "ruin", "variants": [ { "model": "realistic/rubble_pile", "name": "rubble_pile", "length": 6.0, "stone": true } ] }
+    "rubble": { "kind": "ruin", "variants": [ { "model": "realistic/rubble_pile", "name": "rubble_pile", "length": 6.0, "stone": true } ] },
+    "_files": "Components below are files their own placer loads and sizes (no length: not kit models): the woods, the crops, war gear.",
+    "tree_pine": { "kind": "woods", "variants": [ { "model": "realistic/pines" } ] },
+    "tree_oak": { "kind": "woods", "variants": [ { "model": "realistic/oak_trees_pack" } ] },
+    "bush": { "kind": "woods", "variants": [ { "model": "realistic/bush_models_pack" } ] },
+    "crop_wheat": { "kind": "crop", "variants": [ { "model": "crops/wheat" } ] },
+    "crop_barley": { "kind": "crop", "variants": [ { "model": "crops/wheat" } ] },
+    "crop_flax": { "kind": "crop", "variants": [ { "model": "nature/Grass_Wispy_Tall.gltf" } ] },
+    "crop_beans": { "kind": "crop", "variants": [ { "model": "nature/Plant_1.gltf" } ] },
+    "crop_cabbage": { "kind": "crop", "variants": [ { "model": "crops/cabbage" } ] },
+    "crop_hay": { "kind": "crop", "variants": [ { "model": "crops/hay" } ] },
+    "catapult": { "kind": "siege", "variants": [ { "model": "castle/siege-catapult.glb" } ] },
+    "trebuchet": { "kind": "siege", "variants": [ { "model": "castle/siege-trebuchet.glb" } ] },
+    "sword": { "kind": "gear", "variants": [ { "model": "props/Sword_Bronze.gltf" } ] },
+    "shield": { "kind": "gear", "variants": [ { "model": "props/Shield_Wooden.gltf" } ] },
+    "horse": { "kind": "mount", "variants": [ { "model": "cavalry/horse/horse.glb" } ] },
+    "lance": { "kind": "gear", "variants": [ { "model": "weapons/lance" } ] }
   }
 }

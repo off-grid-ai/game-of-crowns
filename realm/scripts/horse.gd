@@ -15,9 +15,9 @@ extends Node3D
 
 const S := 0.12  # town scale, as people.gd: metres to world units
 const SIZE := 1.1  # the export stands 1.38 m at the withers; a warhorse is 1.5
-const MODEL := "res://assets/cavalry/horse/horse.glb"
+static var MODEL := preload("res://scripts/realistic.gd").path_of("horse")  # by component (realm/data/assets.json)
 const SEAT := "res://assets/anims/mixamo/Ride_Grasp.fbx"
-const LANCE := "res://assets/weapons/lance/scene.gltf"
+static var LANCE := preload("res://scripts/realistic.gd").path_of("lance")
 
 ## Speeds, in world units a second (people walk at 0.17, run at 0.42), each
 ## the pace its loop is made for: the legs keep to the ground at 1x.

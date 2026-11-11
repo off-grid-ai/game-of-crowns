@@ -25,11 +25,17 @@ static var _read := _from_catalogue()
 static func _from_catalogue() -> bool:
 	var comps: Dictionary = Data.value("assets", "components", {})
 	for id in comps:
+		if not comps[id] is Dictionary:
+			continue  # a note in the file ("_files")
 		var c: Dictionary = comps[id]
 		_component[id] = []
+		var i := 0
 		for v: Dictionary in c.get("variants", []):
-			var n := String(v.get("name", v["model"]))
-			KIT[n] = [String(c.get("kind", "")), float(v.get("length", 1.0))]
+			# A kit model (it has a true length) is measured and scaled here; any other is a file its own placer loads.
+			var n := String(v.get("name", id if i == 0 else "%s#%d" % [id, i]))
+			i += 1
+			if v.has("length"):
+				KIT[n] = [String(c.get("kind", "")), float(v["length"])]
 			var m := String(v["model"])
 			_model[n] = "res://assets/" + (m if m.ends_with(".gltf") or m.ends_with(".glb") else m + "/scene.gltf")
 			if v.has("strip"):
@@ -45,6 +51,12 @@ static func _from_catalogue() -> bool:
 ## A component's models (catalogue order), by the names make/footprint/parts take.
 static func variants(component: String) -> Array:
 	return _component.get(component, [])
+
+
+## A component's file (its first variant's, or the i-th), "" when the catalogue has none.
+static func path_of(component: String, i := 0) -> String:
+	var v := variants(component)
+	return _path(String(v[i])) if i < v.size() else ""
 
 
 ## A component's first model (its main one), or "" when the catalogue has none.

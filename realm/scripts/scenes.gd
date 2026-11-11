@@ -24,7 +24,7 @@ var _seen := {}  # scene key -> true, so each event plays once
 var _wagon: Mesh
 var _sieges := {}  # city id -> {root, until}: one camp per besieged town, kept while the host stays
 var _timber: StandardMaterial3D
-var _engines := [preload("res://assets/castle/siege-catapult.glb"), preload("res://assets/castle/siege-trebuchet.glb")]
+var _engines := [load(Realistic.path_of("catapult")), load(Realistic.path_of("trebuchet"))]  # by component (realm/data/assets.json)
 
 
 func _ready() -> void:
@@ -273,8 +273,8 @@ static func cut(r: RandomNumberGenerator, last := "") -> String:
 static func guard(r: RandomNumberGenerator) -> String:
 	var g: Array = Combat.KITS["sword"]["parry"] + [Combat.KITS["sword"]["guard"]]
 	return g[r.randi() % g.size()]
-const SWORD := preload("res://assets/props/Sword_Bronze.gltf")
-const SHIELD := preload("res://assets/props/Shield_Wooden.gltf")
+static var SWORD: PackedScene = load(Realistic.path_of("sword"))
+static var SHIELD: PackedScene = load(Realistic.path_of("shield"))
 # Where a weapon sits in the hand, in the hand bone's own space (metres).
 static var SWORD_GRIP := Transform3D(Basis.from_euler(Vector3(-PI / 2, 0, 0)).scaled(Vector3.ONE * 0.8), Vector3(0, 0.08, 0.02))
 static var SPEAR_GRIP := Transform3D(Basis.from_euler(Vector3(-PI / 2, 0, 0)), Vector3(0, 0.08, 0.02))

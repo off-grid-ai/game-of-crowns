@@ -5,12 +5,13 @@ extends Node3D
 ## ground cell, so a realm-wide forest costs little. Tree positions come from
 ## terrain.gd's woodland noise.
 
-const PACK := "res://assets/realistic/pines/scene.gltf"
-const OAKS := "res://assets/realistic/oak_trees_pack/scene.gltf"
-const BUSHES := "res://assets/realistic/bush_models_pack/scene.gltf"
+const Real := preload("res://scripts/realistic.gd")  # the asset catalogue (realm/data/assets.json)
+static var PACK := Real.path_of("tree_pine")
+static var OAKS := Real.path_of("tree_oak")
+static var BUSHES := Real.path_of("bush")
 # The broadleaf packs: [file, kinds, full-detail group suffix, billboard suffix].
 # Kind indices run on after the pines: oaks from 8, then bushes.
-const MORE := [
+static var MORE := [
 	[OAKS, ["Big_oak_tree__001", "Big_oak_tree__002", "Big_oak_tree__003", "Medium_oak_tree__001", "Medium_oak_tree__002", "Medium_oak_tree__003", "Large_oak_tree_004"], "_LOD2", "_Billboard"],
 	[BUSHES, ["Bush_big_001", "Bush_big_002", "Bush_big_003", "Bush_medium_001", "Bush_medium_003", "Bush_medium_005"], "_LOD1", "_Billboard"],
 	# The rest of each pack, so no two woods grow from the same few shapes (Manor

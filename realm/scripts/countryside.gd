@@ -357,7 +357,7 @@ func _hedgerows(node: Node3D, fields: Array, seed: int) -> void:
 ## tall, barley a little shorter, flax (the nature kit's tall wispy grass) and
 ## beans (its small leafy plant) knee-high, cabbages a third of a metre across,
 ## hay heaped two and a half metres long.
-const CROP_MODELS := {"wheat": "res://assets/crops/wheat/scene.gltf", "barley": "res://assets/crops/wheat/scene.gltf", "flax": "res://assets/nature/Grass_Wispy_Tall.gltf", "beans": "res://assets/nature/Plant_1.gltf", "cabbage": "res://assets/crops/cabbage/scene.gltf", "hay": "res://assets/crops/hay/scene.gltf"}
+static var CROP_MODELS := {"wheat": Real.path_of("crop_wheat"), "barley": Real.path_of("crop_barley"), "flax": Real.path_of("crop_flax"), "beans": Real.path_of("crop_beans"), "cabbage": Real.path_of("crop_cabbage"), "hay": Real.path_of("crop_hay")}  # by component (realm/data/assets.json)
 const CROP_SIZE := {"wheat": 0.13, "barley": 0.1, "flax": 0.09, "beans": 0.06, "cabbage": 0.04, "hay": 0.3}  # cereals and flax by height, the rest by their longest side
 const CROP_ROWS := {"wheat": [0.045, 0.04], "barley": [0.045, 0.035], "flax": [0.05, 0.04], "beans": [0.08, 0.06], "cabbage": [0.09, 0.08]}  # [between rows, along a row]
 const STANDING := ["wheat", "barley", "flax"]  # cut at harvest and left as stubble; the rest are lifted
