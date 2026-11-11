@@ -346,7 +346,15 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 	var lots: Array = [[Vector3.ZERO, square_r * 0.9]]
 	_plaza(root, center, square_r, size, seat, lots, rng)
 	await _pace()
-	var want := clampi(14 + size * 3, 16, 40) + (8 if seat else 0)
+	# How many houses (data/towns.json density): the crown's seat packs its streets tighter and fuller
+	# (art target 01-town: plots shoulder to shoulder behind the square).
+	var dn: Dictionary = preload("res://scripts/data.gd").value("towns", "density", {})
+	var crown_town := seat and bool(_house.get("crown", false))
+	var dcrown: Dictionary = dn.get("crown", {}) if crown_town else {}
+	var want := clampi(int(dn.get("base", 14)) + size * int(dn.get("per_size", 3)), int(dn.get("min", 16)), int(dn.get("max", 40))) + (int(dn.get("seat", 8)) if seat else 0) + int(dcrown.get("extra", 0))
+	var ring_pack := float(dcrown.get("ring_pack", 0.95))
+	var ring_jitter := float(dcrown.get("ring_jitter", 0.3))
+	_street_gaps = float(dcrown.get("street_gaps", 0.14))
 	var placed := 0
 	# A seat's castle: stone walls, towers and gatehouse, on its own ground at
 	# the town's edge, gate turned toward the square, the house's banner above.
@@ -466,7 +474,7 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 			var f: Vector2 = Real.footprint(kind)
 			var span := maxf(f.x, f.y)
 			var p := Vector3(cos(ang), 0, sin(ang)) * ring
-			var step := (span * (0.78 if r == 0 else 0.95) + rr.randf_range(0.0, 0.08 if r == 0 else 0.3)) / ring  # eaves almost touching round the square
+			var step := (span * (0.78 if r == 0 else ring_pack) + rr.randf_range(0.0, 0.08 if r == 0 else ring_jitter)) / ring  # eaves almost touching round the square
 			ang += step
 			walked += step * ring
 			if _on_street(p, streets, 0.32):
@@ -480,6 +488,9 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 			await _pace()
 		ring += 0.95
 	_palisade(root, center, edge, streets, seat)
+
+
+var _street_gaps := 0.14  # the share of street plots left as a yard or an alley (data/towns.json density)
 
 
 ## Houses along each road from the square to the palisade, both sides, front
@@ -503,7 +514,7 @@ func _street_fronts(root: Node3D, center: Vector3, square_r: float, edge: float,
 				t += f.x + rr.randf_range(0.04, 0.2)
 				if p.length() + maxf(f.x, f.y) * 0.5 > edge - 0.15:
 					break  # the palisade
-				if rr.randf() < 0.14:
+				if rr.randf() < _street_gaps:
 					continue  # a yard, an alley
 				var face: Vector3 = -side * s
 				if _put(root, center, kind, p, f, lots, rr, true, face):

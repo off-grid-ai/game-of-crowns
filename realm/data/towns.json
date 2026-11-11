@@ -3,5 +3,7 @@
   "castles": "pack",
   "houses": "pack",
   "_sets": "castles: pack (the realistic kit's castle and longhall) or kit (castle_builder.gd raises each great house's castle, and house_builder.gd its hall, from the Quaternius kit, sized to the seat's rank: data/assets.json castle.kit); --castles=kit for one run. houses: pack or kit (house_builder.gd's townhouses, cottages and inn in place of the downloaded houses); --houses=kit. Kit roofs and banners take the holder's colour with team colour on (look.json team).",
+  "_density": "density: how many houses a town raises (towns.gd _real_lots): base + per_size x its size, held between min and max, seat more at a great house's seat; crown: the crown's seat only (art target 01-town, plots shoulder to shoulder behind the square): extra houses, ring_pack (houses' spacing on the rings past the square as a share of their width; 0.95 elsewhere), ring_jitter (the extra gap's most, in units; 0.3 elsewhere), street_gaps (the share of street plots left as a yard or alley; 0.14 elsewhere).",
+  "density": { "base": 14, "per_size": 3, "min": 16, "max": 40, "seat": 8, "crown": { "extra": 14, "ring_pack": 0.82, "ring_jitter": 0.12, "street_gaps": 0.06 } },
   "castle": { "headings": 16, "rings": [-1, 0, 1, 2], "scales": [1.0, 0.8, 0.65], "wet_ok": 0.25 }
 }

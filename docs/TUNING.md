@@ -60,6 +60,14 @@ Switches (`--name`) go after `--` on the game's command line.
 ## Sizes (NPC perf)
 - How tall each world component should stand, in metres: `realm/data/assets.json`: `components.<id>.heightRange`; `realm/tools/scale_check.gd` fails any model outside it. A model whose length misleads is scaled by its true height instead: a variant's `height`.
 
+## The house colours and the target town (art target 01-town, 02-realm)
+- The political map's wash by zoom: `realm/data/look.json`: `politics.wash_near`, `wash_far`, and `map_from` / `map_to` (the camera's height over the ground where the wash, band and stripes come in; below it the land stays natural and only the border line shows); `--politics=on`.
+- Where a house's colour sits on its buildings: `realm/data/look.json`: `team.materials` (roof tiles, shutters `MI_Shutter`, timber `MI_WoodTrim`, banners), `team.ranks` (which components are ordinary houses), `team.paint.ordinary_share` (an ordinary house's share of the colour on its trims and shutters), `team.paint.saturation`, `team.paint.warm` (the colour toned to painted reds); `--team=on`.
+- Each house's roof (thatch, terracotta, dark tile or the house's colour), for cottages and townhouses: `realm/data/look.json`: `team.roofs.cottage`, `team.roofs.town` (shares, in that order), `team.roofs.thatch`, `team.roofs.dark_tile` (colours). The castle's and hall's roofs always wear the house's colour.
+- The woods in autumn, per kit tree: `realm/data/assets.json`: `woods.kit.seasons` (a tint per model file per season), `woods.kit.leaf_texture` (a leaf texture swapped by material name).
+- The kit castle's gate: how high the portcullis hangs: `realm/data/assets.json`: `components.castle.kit[].spec.gate_portcullis` (metres; 2.4).
+- How many houses a town raises, and the crown's seat packed tighter: `realm/data/towns.json`: `density.*`, `density.crown.*`.
+
 ## The woods (NPC perf; art direction fix 4)
 - Kit castles and kit houses: `realm/data/towns.json`: `castles` and `houses` (`pack`, the downloaded models, today; `kit`, raised from the Quaternius Medieval Village kit by `castle_builder.gd` and `house_builder.gd`); `--castles=kit` or `--houses=kit` for one run. Each castle's size by the seat's rank (bailey cells, wall, keep and tower storeys, side towers, banner size) and each kit house's cells, floors and style: `realm/data/assets.json`: `components.<castle|hall|house_rich|house_poor|tavern>.kit`. Kit banners take the holder's colour: `realm/data/look.json`: `team.materials.MI_Banner`.
 - Which trees the woods grow: `realm/data/assets.json`: `woods.set` (`pack`, the realistic packs, today; `kit`, Quaternius' painted trees); `--trees=kit` or `--trees=pack` for one run.
