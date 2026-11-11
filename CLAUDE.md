@@ -15,5 +15,8 @@ commit and report their switches and demo hooks. Then the supervisor runs one ba
 change together, takes all the screenshots at once and sends them to Mac straight away. A builder that renders
 on its own stalls everyone behind the one GPU.
 
+**Frame rate: anything above 10 fps is fine (Mac, 2026-11-11).** Don't trade density or detail for 30 fps; spend
+the headroom on bigger armies, busier towns and finer detail.
+
 Working rules are the project skills in `.claude/skills/` (start with `goc-cpto`). Marketing copy follows
 the mac-voice skill: only what the player gets, said the way a person talks.
