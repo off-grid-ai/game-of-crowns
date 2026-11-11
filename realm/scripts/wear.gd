@@ -28,6 +28,8 @@ var terrain: Node3D
 var _tiles := {}  # Vector2i -> {img, tex, decal, dirty}
 var _stamp_t := 0.0
 var _up_t := 0.0
+var _was := {}  # a person (instance id) -> where they stood at the last stamp
+var WALK: float = Data.num("ground", "wear.walkMin", 0.01)  # moved at least this far (units) since the last stamp to wear the ground
 
 
 func _process(delta: float) -> void:
@@ -35,10 +37,19 @@ func _process(delta: float) -> void:
 	_up_t += delta
 	if _stamp_t >= EVERY:
 		_stamp_t = 0.0
+		# Paths, not pads: only feet that moved since the last stamp wear the ground. A man standing at
+		# the drill or a stall stamped the same pixels four times a second and wore a 1.5 m square of bare
+		# earth under himself (batch 7 review #13: the bailey's figures on brown blob pads).
+		var seen := {}
 		for n in get_tree().get_nodes_in_group("people"):
 			var p := n as Node3D
 			if p and p.is_visible_in_tree() and not p.has_meta("mounted"):
-				_stamp(p.global_position)
+				var id := p.get_instance_id()
+				var at := p.global_position
+				seen[id] = at
+				if _was.has(id) and Vector2(at.x - (_was[id] as Vector3).x, at.z - (_was[id] as Vector3).z).length() >= WALK:
+					_stamp(at)
+		_was = seen
 	if _up_t >= UPLOAD:
 		_up_t = 0.0
 		_upload()
