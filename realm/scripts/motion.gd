@@ -95,11 +95,11 @@ var _wish := ""  # a repeating move asked while on the move, for when they stop
 var _to := ""
 var _carry: AnimationNodeAnimation  # the arms' load over the legs, when carrying
 var _held_for := ""  # the move whose tool is in hand now (weapons.gd)
-## v3 (docs/review/first-principles-motion.md, stage 1), on for `--motion=v3`: what a
+## v3 (docs/review/first-principles-motion.md, stages 1-2), the default: what a
 ## person carries is their errand's load, not the clip on screen. `errand_load` is the
 ## load's move ("Carrying", "Wheelbarrow"; villagers.gd sets it from the walk's
 ## gait), "" for none: while it's set the tool stays in hand whatever the body plays.
-static var v3: bool = OS.get_cmdline_user_args().has("--motion=v3")
+static var v3: bool = v2 and not OS.get_cmdline_user_args().has("--motion=v2")  # on by default (the judge, 2026-11-11, gate r4); --motion=v2 brings back the clip-keyed props for one round, --motion=v1 the old motion
 var errand_load := ""
 const Weapons := preload("res://scripts/weapons.gd")
 var _at := "parameters/"  # where the state machine's parameters live (under "sm/" in v2)

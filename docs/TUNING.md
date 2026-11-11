@@ -67,7 +67,7 @@ Switches (`--name`) go after `--` on the game's command line.
 
 ## Townsfolk (Builder 1)
 - Which towns' people have minds: `--limbo=none` (the old rules everywhere) or `--limbo=<ids>` (only those towns); default every town (`realm/scripts/town_life.gd`: `LIMBO_ALL`).
-- Motion v3 (props follow the errand, rising through Getting_Up): `--motion=v3`; `--motion=v1` for the old motion.
+- Motion: v3 is the default (props follow the errand, rising through Getting_Up); `--motion=v2` brings back clip-keyed props (one round only), `--motion=v1` the old motion.
 
 ## Every click answers (Builder 1; `--barks`)
 - What a lord says when their sigil is clicked, by favour band; the annoyed lines; after how many clicks; the no-repeat window: `realm/data/barks.json`.
