@@ -1665,7 +1665,9 @@ func _bunting(root: Node3D, life: Node3D, center: Vector3, well: Vector3, b: Dic
 	# Its tall pole by the well, toward the heart; with a fountain at the heart, clear of its basin on the
 	# seen side (moods.json centre.bunting), never in the water.
 	var basin := centre_reach(root)
-	var hub_want: Vector3 = (SEEN * (basin + float(Data.num("moods", "centre.bunting", 0.1)))) if basin > 0.0 else (well + (Vector3.ZERO - well).normalized() * 0.14)
+	# (On the far side of a fountain from the camera's side: the lines then cross the square toward the seen half
+	# and no bare pole stands in the foreground; batch 8b goldrock-fountain.)
+	var hub_want: Vector3 = (-SEEN * (basin + float(Data.num("moods", "centre.bunting", 0.1)))) if basin > 0.0 else (well + (Vector3.ZERO - well).normalized() * 0.14)
 	var hub_at := _spot(center, hub_want, walls, taken, 0.2)
 	if is_nan(hub_at.x):
 		return
@@ -1702,7 +1704,7 @@ func _bunting(root: Node3D, life: Node3D, center: Vector3, well: Vector3, b: Dic
 		var end: Vector3 = pole.call(end_at, low)
 		var dir := (end - hub)
 		var along := Vector3(dir.x, 0, dir.z).normalized()
-		var w := dir.length() / (flags * 2.2)
+		var w := maxf(dir.length() / (flags * 2.2), float(b.get("flag_m", 0.35)) * S * 0.5)  # a pennant you can see from roof height (it was about 18 cm)
 		for k in flags:
 			var t := (k + 0.5) / flags
 			var at := hub.lerp(end, t) - Vector3.UP * sag * 4.0 * t * (1.0 - t)

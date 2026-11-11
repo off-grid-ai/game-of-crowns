@@ -13,6 +13,6 @@
   "build": { "site": "Granary", "progress": 0.3 },
   "_centre": "Round the square's centrepiece (a fountain at a seat; towns.gd root meta centrepiece, its real footprint): how far past its basin's rim things stand (game units). mourners: the grief's kneelers (and anyone set down near the heart: the levy's kin, dogs, children); stall: a good year's extra stall by the well (its canopy); candles: their candles set down; bunting: the feast's tall pole; fire: the feast's bonfire (past its own heat too), moved off the heart to the seen side, its dancers and tables round it.",
   "centre": {"mourners": 0.08, "candles": 0.04, "bunting": 0.1, "fire": 0.12, "stall": 0.2},
-  "feast": { "bonfire": { "amount": 26, "size": [0.09, 0.16], "rise": [0.1, 0.2], "light": 1.6, "range": 1.4 }, "tables": 2, "seats": 3, "bunting": { "lines": 5, "ring": 0.62, "height": 3.8, "edge_height": 2.8, "flags": 12, "sag": 0.45 },
+  "feast": { "bonfire": { "amount": 26, "size": [0.09, 0.16], "rise": [0.1, 0.2], "light": 1.6, "range": 1.4 }, "tables": 2, "seats": 3, "bunting": { "flag_m": 0.35, "lines": 5, "ring": 0.62, "height": 3.8, "edge_height": 2.8, "flags": 12, "sag": 0.45 },
     "colours": [[0.95, 0.92, 0.82], [0.85, 0.68, 0.22], [0.25, 0.4, 0.65]] }
 }
