@@ -28,7 +28,10 @@ const GALLOP := 0.9
 const GAITS := [["idle", 0.0], ["walk", WALK], ["trot", TROT], ["canter", CANTER], ["gallop", GALLOP]]
 
 ## Coats: the texture is a bay; these shift it.
-const COATS := [Color(1, 1, 1), Color(1.15, 0.95, 0.8), Color(0.55, 0.5, 0.48), Color(1.35, 1.3, 1.25), Color(1.2, 0.8, 0.6)]
+## (The first is the bay as painted; the rest are dyed onto its undyed coat: realm/data/animals.json
+## horse_coats overrides them. Multiplied over 1.0 onto the bay, as they were, its pale patches blew out
+## to white blotches: batch 8b look2.)
+const COATS := [Color(1, 1, 1), Color(0.62, 0.36, 0.2), Color(0.2, 0.17, 0.15), Color(0.74, 0.72, 0.68), Color(0.76, 0.62, 0.42)]
 
 ## How far the straddling pose's thighs drop (radians) and its shins come forward.
 const THIGH_DROP := 0.7
@@ -108,7 +111,13 @@ static func _coat(c: int, base: Material) -> Material:
 		if m == null:
 			return base
 		var copy: StandardMaterial3D = m.duplicate()
-		copy.albedo_color = m.albedo_color * COATS[c]
+		var coats: Array = preload("res://scripts/data.gd").value("animals", "horse_coats", [])
+		if c > 0 and copy.albedo_texture:
+			# A chestnut, a black, a grey, a dun: dyed onto the coat's own shading (its colour taken out, its
+			# brightness lifted to one mean), never multiplied past white.
+			var col: Color = COATS[c] if c >= coats.size() else Color(float(coats[c][0]), float(coats[c][1]), float(coats[c][2]))
+			copy.albedo_texture = preload("res://scripts/people.gd")._undyed(copy.albedo_texture, preload("res://scripts/data.gd").num("animals", "horse_coat_weave", 0.75))
+			copy.albedo_color = Color(minf(col.r, 1.0), minf(col.g, 1.0), minf(col.b, 1.0))
 		_coats[c] = copy
 	return _coats[c]
 
