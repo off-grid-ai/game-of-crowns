@@ -323,7 +323,7 @@ func _ready() -> void:
 	ui.event_back.connect(news._back_from_news)
 	ui.house_followed.connect(_follow_house)  # a house's sigil clicked: go with its host
 	# Every click answers (--barks; barks.gd, lines in data/barks.json): the house's lord speaks.
-	if OS.get_cmdline_user_args().has("--barks"):
+	if not OS.get_cmdline_user_args().has("--barks=off"):  # on by default (the Kingsmere slice: click and he answers)
 		barks = load("res://scripts/barks.gd").new(self)
 		add_child(barks)
 		ui.house_followed.connect(barks.lord)

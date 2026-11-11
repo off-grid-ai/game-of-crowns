@@ -79,7 +79,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - Which towns' people have minds: `--limbo=none` (the old rules everywhere) or `--limbo=<ids>` (only those towns); default every town (`realm/scripts/town_life.gd`: `LIMBO_ALL`).
 - Motion: v3 is the default (props follow the errand, rising through Getting_Up); `--motion=v1` the old motion.
 
-## Every click answers (Builder 1; `--barks`)
+## Every click answers (Builder 1; on by default, `--barks=off`)
 - What a lord says when their sigil is clicked, by favour band; the annoyed lines; after how many clicks; the no-repeat window: `realm/data/barks.json`.
 
 ## The Hand's prompts in a first reign (Builder 1; the opening v2, the default)
@@ -95,6 +95,6 @@ Switches (`--name`) go after `--` on the game's command line.
 - What the tithe brings the crown, per town size: `bridge/data/economy.json`: `tithe.perSize`.
 - How often event cards come, and never in a breather (chanceInBreather 0): `bridge/data/events.json`: `settings.chance`, `settings.chanceInBreather`.
 
-## The crowd thinks out loud (Builder 1; view `--thoughts`)
+## The crowd thinks out loud (Builder 1; on by default, view `--thoughts=off`)
 - What a town says after a ruling (by who it helped or hurt), when hungry, besieged or levied; how many thoughts a town shows; Omni's prompt; on/off: `bridge/data/thoughts.json`.
 - How near the camera must be to see a town's talk, and how often it changes: `realm/data/thoughts.json`: `near`, `cycle_sec`.

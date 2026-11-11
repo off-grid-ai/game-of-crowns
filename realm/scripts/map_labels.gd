@@ -171,7 +171,7 @@ func _make(_id: int) -> Dictionary:
 
 ## The town's talk under its name, near the town only, one of its loudest thoughts at a time
 ## (--thoughts; the words are the bridge's, /world cities[].thoughts; distances in data/thoughts.json).
-var _thoughts_on := OS.get_cmdline_user_args().has("--thoughts")
+var _thoughts_on := not OS.get_cmdline_user_args().has("--thoughts=off")  # on by default (the Kingsmere slice: the town reacts)
 var _thinking := {}
 func _think(tag: Dictionary, data: Dictionary, d: float) -> void:
 	var l: Label = tag["thought"]
