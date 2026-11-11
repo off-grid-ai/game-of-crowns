@@ -114,6 +114,12 @@ the host). It now reads: **court rulings about 1 a minute; all decisions togethe
 ≥50% of time with no prompt up; no dead stretch over 45 s.** Measured today: 2.4–2.8 with seals, so
 event cards thin out in breathers first if load rises.
 
+## The first test: would they play to the end? (Mac, 2026-11-11)
+How a reign is won (money, men, support) gets tuned later. First, a player must want to play to the end, so
+nothing may feel gimmicky and everything must feel professional: consistent type, spacing, timing and
+sound; eased transitions; no placeholder text, gags or arithmetic; no bugs on screen. Judged on a full
+15-minute reign filmed start to end at normal speed.
+
 ## The bar (Mac, 2026-11-11)
 The casebook games are the competition, and their finish is the bar; nothing below it ships. Every visual
 change is judged as a still or clip at the same framing beside its reference shot from the casebook and
