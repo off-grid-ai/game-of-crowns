@@ -1,0 +1,663 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>What Makes Medieval Sims Great</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: a designer's casebook. Sticky chapter bar, then each chapter is a table of cases: idea | screenshot | the moment | the lesson. */
+:root{
+  --bg:#f5f6f8; --panel:#ffffff; --fg:#161a24; --muted:#5a6275; --line:#dde1e8;
+  --accent:#2f4fd6; --accent-soft:#e6ebfc; --warn:#b4372d; --warn-soft:#fbe9e7;
+  --dev:#2f4fd6; --ply:#1f7a4d; --prs:#8a5a12;
+  --display:"Young Serif", Georgia, "Times New Roman", serif;
+  --body:"Source Sans 3", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f121a; --panel:#171b26; --fg:#e8ebf2; --muted:#9aa3b8; --line:#2a3042;
+  --accent:#8ea4ff; --accent-soft:#1e2647; --warn:#ff8a7e; --warn-soft:#3a1d1b;
+  --dev:#8ea4ff; --ply:#6fd3a0; --prs:#e3b268; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f121a; --panel:#171b26; --fg:#e8ebf2; --muted:#9aa3b8; --line:#2a3042;
+  --accent:#8ea4ff; --accent-soft:#1e2647; --warn:#ff8a7e; --warn-soft:#3a1d1b;
+  --dev:#8ea4ff; --ply:#6fd3a0; --prs:#e3b268; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16.5px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1180px;margin:0 auto}
+a{color:var(--accent)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+header.hero{padding-block:48px 20px;display:grid;gap:14px;max-width:780px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(34px,5.5vw,56px);line-height:1.05;margin:0;text-wrap:balance}
+.lede{font-size:19px;color:var(--muted);margin:0;max-width:64ch}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;font-size:14.5px;color:var(--muted)}
+.contents{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;margin:8px 0 28px}
+.contents div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:grid;gap:4px;align-content:start}
+.contents b{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.contents a{text-decoration:none;font-weight:600;font-size:15px}
+.contents a:hover{text-decoration:underline}
+.contents a span{font-family:var(--mono);font-size:11.5px;color:var(--muted);font-weight:500;margin-right:6px}
+nav.chapters{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;gap:6px;overflow-x:auto;padding-block:10px;scrollbar-width:none}
+nav.chapters a{flex:none;text-decoration:none;color:var(--fg);font-weight:600;font-size:14px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel)}
+nav.chapters a:hover{border-color:var(--accent);color:var(--accent)}
+nav.chapters .sep{flex:none;width:1px;background:var(--line);margin:4px 4px}
+section.chapter{padding-top:56px;scroll-margin-top:60px;display:grid;gap:18px}
+.part-head{padding-top:72px;display:grid;gap:4px;border-bottom:2px solid var(--fg);padding-bottom:10px}
+.part-head span{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.part-head h2{font-family:var(--display);font-weight:400;font-size:clamp(28px,4vw,40px);margin:0;line-height:1.1}
+.ch-head{display:grid;gap:6px;max-width:780px}
+.ch-head h2{font-family:var(--display);font-weight:400;font-size:clamp(26px,3.6vw,36px);margin:0;line-height:1.1;text-wrap:balance}
+.ch-head p{margin:0;color:var(--muted);font-size:17.5px;max-width:66ch}
+.ch-head .num{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.08em}
+/* the casebook table */
+.cases{border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden}
+.cases .thead,.case{display:grid;grid-template-columns:200px 300px minmax(0,1fr) minmax(0,.85fr);gap:20px;padding:16px 20px}
+.cases .thead{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);padding-block:10px}
+.case+.case{border-top:1px solid var(--line)}
+.case .idea h3{font-family:var(--display);font-weight:400;font-size:20px;line-height:1.2;margin:0 0 6px}
+.case .idea p{margin:0;font-size:14.5px;color:var(--muted)}
+.case .shot{display:grid;gap:6px;align-content:start}
+.case .shot a{display:block;border-radius:6px;overflow:hidden;line-height:0;aspect-ratio:16/9;background:var(--line)}
+.case .shot img{width:100%;height:100%;object-fit:cover;transition:transform .25s}
+.case .shot a:hover img{transform:scale(1.03)}
+.case .game{font-weight:700;font-size:14.5px}
+.case .game span{font-weight:400;color:var(--muted)}
+.case .game em{display:block;font-style:normal;font-weight:400;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+.case .moment p,.case .lesson p{margin:0;min-width:0}
+.case .lesson p{font-weight:600}
+.srcs{display:grid;gap:4px;margin-top:8px}
+.src{font-size:13.5px;color:var(--muted);line-height:1.4}
+.src a{color:var(--muted);text-decoration-color:var(--line);text-underline-offset:2px}
+.src a:hover{color:var(--accent)}
+.who{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:1px 6px;border-radius:4px;margin-right:6px;border:1px solid currentColor;vertical-align:1px}
+.who.d{color:var(--dev)}.who.p{color:var(--ply)}.who.r{color:var(--prs)}
+.lbl{display:none;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.case.anti{background:var(--warn-soft)}
+.case.anti .idea h3{color:var(--warn)}
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:4px;margin-bottom:6px;background:var(--accent-soft);color:var(--accent)}
+.case.anti .tag{background:var(--warn);color:var(--panel)}
+@media (max-width:980px){
+  .cases .thead{display:none}
+  .case{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);grid-template-areas:"idea shot" "moment moment" "lesson lesson";gap:12px 18px}
+  .case .idea{grid-area:idea}.case .shot{grid-area:shot}.case .moment{grid-area:moment}.case .lesson{grid-area:lesson}
+  .lbl{display:block}
+}
+@media (max-width:560px){
+  .case{grid-template-columns:minmax(0,1fr);grid-template-areas:"idea" "shot" "moment" "lesson"}
+}
+/* lens chapter */
+.mda{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden}
+.mda div{padding:18px 20px;display:grid;gap:4px;align-content:start}
+.mda div+div{border-left:1px solid var(--line)}
+.mda b{font-family:var(--display);font-weight:400;font-size:22px}
+.mda .who2{font-family:var(--mono);font-size:11.5px;color:var(--accent);letter-spacing:.06em;text-transform:uppercase}
+.mda p{margin:0;font-size:15px;color:var(--muted)}
+.mda .ex{color:var(--fg)}
+.arrowline{font-family:var(--mono);font-size:13px;color:var(--muted);margin:0}
+@media (max-width:700px){.mda{grid-template-columns:minmax(0,1fr)}.mda div+div{border-left:0;border-top:1px solid var(--line)}}
+.promise{border-left:3px solid var(--accent);padding:4px 0 4px 16px;max-width:780px}
+.promise p{margin:0;font-size:18px}
+.promise p+p{margin-top:6px;font-size:15.5px;color:var(--muted)}
+.kinds{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.kind{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:grid;gap:2px}
+.kind b{font-size:15.5px}
+.kind span{font-size:14px;color:var(--muted)}
+.kind i{font-style:normal;font-size:13.5px;color:var(--accent);font-weight:600}
+table.plain{width:100%;border-collapse:collapse;background:var(--panel);font-size:15px}
+.tablebox{border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+table.plain th{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;font-weight:500;padding:10px 16px;border-bottom:1px solid var(--line)}
+table.plain td{padding:12px 16px;vertical-align:top;border-top:1px solid var(--line)}
+table.plain tr:first-child td{border-top:0}
+table.plain td:first-child{font-weight:700;white-space:nowrap}
+table.plain td:nth-child(2){color:var(--muted);min-width:220px}
+table.plain td:nth-child(3){min-width:260px}
+table.plain.scale td:nth-child(2){color:var(--fg)}
+table.plain.scale td:nth-child(4){min-width:120px;font-size:13.5px}
+table.plain.scale td:nth-child(4) a{color:var(--muted)}
+table.plain.split td:nth-child(2),table.plain.split td:nth-child(3){color:var(--fg);min-width:240px}
+table.plain.split td:nth-child(4){font-weight:600;min-width:220px}
+.note{font-size:14px;color:var(--muted);margin:0;max-width:80ch}
+.reading{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.reading div{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.reading b{display:block}
+.reading b a{color:var(--fg);text-decoration-color:var(--line)}
+.reading b a:hover{color:var(--accent)}
+.reading span{font-size:14px;color:var(--muted)}
+/* gallery: every Steam screenshot of a game, one strip image per game */
+.case .shot{position:relative}
+.case .shot button.open{all:unset;cursor:zoom-in;display:block;border-radius:6px;overflow:hidden;line-height:0;aspect-ratio:16/9;background:var(--line);position:relative}
+.case .shot button.open img{width:100%;height:100%;object-fit:cover;transition:transform .25s}
+.case .shot button.open:hover img{transform:scale(1.03)}
+.case .shot button.open:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.count{position:absolute;right:8px;bottom:8px;line-height:1;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:#fff;background:rgba(10,12,18,.72);padding:5px 7px;border-radius:4px}
+.store{font-size:13px;color:var(--muted)}
+dialog.lb{border:0;padding:0;background:transparent;max-width:none;max-height:none;width:100vw;height:100dvh;margin:0;color:#e8ebf2}
+dialog.lb::backdrop{background:rgba(6,8,12,.92)}
+.lb-in{position:absolute;inset:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:10px;padding:max(14px,env(safe-area-inset-top)) 16px max(14px,env(safe-area-inset-bottom))}
+.lb-top{display:flex;align-items:center;gap:12px;min-width:0}
+.lb-top b{font-family:var(--display);font-weight:400;font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-top span{font-family:var(--mono);font-size:12px;color:#9aa3b8;white-space:nowrap}
+.lb-top a{color:#8ea4ff;font-size:14px;white-space:nowrap;margin-left:auto}
+.lb button{font:inherit;color:#e8ebf2;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:999px;cursor:pointer}
+.lb button:hover{background:rgba(255,255,255,.16)}
+.lb button:focus-visible{outline:2px solid #8ea4ff;outline-offset:2px}
+.lb-x{width:36px;height:36px;font-size:20px;line-height:1;flex:none}
+.lb-stage{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;min-height:0}
+.lb-frame{width:min(100%,calc((100dvh - 190px) * 16 / 9));aspect-ratio:16/9;margin:auto;background-repeat:no-repeat;background-size:100% auto;background-color:#0c0e14;border-radius:6px;touch-action:pan-y}
+.lb-nav{width:44px;height:44px;font-size:22px;line-height:1}
+.lb-strip{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.lb-strip button{all:unset;flex:none;width:96px;aspect-ratio:16/9;border-radius:4px;cursor:pointer;background-repeat:no-repeat;background-size:100% auto;opacity:.55;outline:2px solid transparent;outline-offset:1px}
+.lb-strip button[aria-current="true"]{opacity:1;outline-color:#8ea4ff}
+.lb-strip button:focus-visible{opacity:1;outline-color:#8ea4ff}
+@media (max-width:600px){.lb-nav{display:none}.lb-stage{grid-template-columns:minmax(0,1fr)}.lb-frame{width:100%}.lb-top a{display:none}}
+footer{margin-top:56px;font-size:13.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px;display:grid;gap:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header class="hero">
+  <div class="eyebrow">A casebook of medieval world simulation</div>
+  <h1>What makes a medieval world sim great</h1>
+  <p class="lede">Each idea, with one shipped game that nails it, a real screenshot, the moment players remember, and the lesson to steal. Town builders, dynasty games, sieges and sandboxes, plus a few classics from outside the genre where they're the textbook case.</p>
+  <div class="legend">Every case links its source and says who is talking:
+    <span><span class="who d">Designer</span>the people who made it</span>
+    <span><span class="who p">Players</span>reviews, forums, retellings</span>
+    <span><span class="who r">Press</span>critics and writers</span>
+  </div>
+</header>
+
+<div class="contents" aria-label="Contents">
+  <div><b>The basics</b><a href="#lens"><span>00</span>The lens</a><a href="#parts"><span>00</span>The parts of a game</a></div>
+  <div><b>What players feel</b><a href="#fun"><span>01</span>Fun</a><a href="#immersive"><span>02</span>Immersive</a><a href="#engaging"><span>03</span>Engaging</a><a href="#worth"><span>04</span>Worth playing</a><a href="#sharing"><span>05</span>Worth sharing</a></div>
+  <div><b>The genre's own craft</b><a href="#towns"><span>06</span>Living towns</a><a href="#economy"><span>07</span>Economy and logistics</a><a href="#seasons"><span>08</span>Seasons and survival</a><a href="#war"><span>09</span>War and sieges</a><a href="#world"><span>10</span>A world you ride through</a><a href="#dynasty"><span>11</span>Dynasties and characters</a><a href="#court"><span>12</span>Rulers and the court</a></div>
+  <div><b>Holding it together</b><a href="#stories"><span>13</span>Emergent stories</a><a href="#pacing"><span>14</span>Pacing a long campaign</a><a href="#onboarding"><span>15</span>Onboarding</a><a href="#camera"><span>16</span>Camera and readability</a><a href="#theory"><span>17</span>Game theory</a></div>
+  <div><b>Where it goes wrong</b><a href="#fails"><span>18</span>The genre's failures</a><a href="#scale"><span>19</span>What players say at scale</a><a href="#split"><span>20</span>Designers vs players</a><a href="#reading"><span>21</span>Read next</a></div>
+</div>
+
+<nav class="chapters" aria-label="Chapters">
+  <a href="#lens">Lens</a><a href="#parts">Parts</a><i class="sep"></i><a href="#fun">Fun</a><a href="#immersive">Immersive</a><a href="#engaging">Engaging</a><a href="#worth">Worth playing</a><a href="#sharing">Sharing</a><i class="sep"></i><a href="#towns">Towns</a><a href="#economy">Economy</a><a href="#seasons">Seasons</a><a href="#war">War</a><a href="#world">Open world</a><a href="#dynasty">Dynasties</a><a href="#court">Court</a><i class="sep"></i><a href="#stories">Stories</a><a href="#pacing">Pacing</a><a href="#onboarding">Onboarding</a><a href="#camera">Camera</a><a href="#theory">Game theory</a><i class="sep"></i><a href="#fails">Failures</a><a href="#scale">At scale</a><a href="#split">Designers vs players</a><a href="#reading">Read next</a>
+</nav>
+
+<section class="chapter" id="lens">
+  <div class="ch-head"><span class="num">THE LENS</span><h2>Designers write rules. Players feel something.</h2>
+  <p>The MDA framework (Hunicke, LeBlanc, Zubek, 2004) is the most useful single idea in design. You build left to right; the player meets it right to left.</p></div>
+  <div class="mda">
+    <div><span class="who2">Designer writes</span><b>Mechanics</b><p>The rules and numbers.</p><p class="ex">“Crusader Kings II: opinions are one-way. A vassal can hate you while you like him.”</p></div>
+    <div><span class="who2">Play produces</span><b>Dynamics</b><p>What happens when people play the rules.</p><p class="ex">Players hand out land and marriages to keep the angry ones quiet.</p></div>
+    <div><span class="who2">Player feels</span><b>Aesthetics</b><p>The emotion. This is what you're judged on.</p><p class="ex">“Everyone at my court wants something, and I can't please them all.”</p></div>
+  </div>
+  <p class="arrowline">You can only change mechanics. You can only judge by feelings. Everything else on this page sits between the two.</p>
+  <div class="promise">
+    <p>The genre's promise: a world that goes on without you, that you can steer, and that remembers what you did.</p>
+    <p>Every chapter below is one way of keeping that promise. The failures chapter is every way of breaking it.</p>
+  </div>
+  <div class="ch-head"><h2 style="font-size:24px">Eight kinds of fun, medieval edition</h2><p>From the same paper. Great games pick two or three and go deep. Few do all eight.</p></div>
+  <div class="kinds">
+    <div class="kind"><b>Sensation</b><span>Pleasure of the senses: hits, sound, light.</span><i>Bannerlord: a cavalry charge hitting a line</i></div>
+    <div class="kind"><b>Fantasy</b><span>Being someone else.</span><i>Crusader Kings III: head of a medieval house</i></div>
+    <div class="kind"><b>Narrative</b><span>A story that unfolds.</span><i>Pentiment: a town over 25 years</i></div>
+    <div class="kind"><b>Challenge</b><span>An obstacle to master.</span><i>Battle Brothers: keep your company alive</i></div>
+    <div class="kind"><b>Fellowship</b><span>Play with and against people.</span><i>Boatmurdered: one fortress passed between players</i></div>
+    <div class="kind"><b>Discovery</b><span>Uncharted ground.</span><i>Kenshi: a world that doesn't care you came</i></div>
+    <div class="kind"><b>Expression</b><span>Making something your own.</span><i>Manor Lords: a village drawn by hand</i></div>
+    <div class="kind"><b>Submission</b><span>A calm pastime to sink into.</span><i>Banished: a quiet spring of planting</i></div>
+  </div>
+</section>
+
+<section class="chapter" id="parts">
+  <div class="ch-head"><span class="num">THE PARTS</span><h2>What every game is made of</h2>
+  <p>Components are the nouns. Mechanics are the verbs that act on them. Change any one and the whole game feels different.</p></div>
+  <div class="tablebox"><table class="plain">
+    <thead><tr><th>Component</th><th>What it is</th><th>A medieval sim that uses it well</th></tr></thead>
+    <tbody>
+      <tr><td>Resources</td><td>Things you spend.</td><td>Age of Empires II: food, wood, gold, stone. Each one gates a different kind of power.</td></tr>
+      <tr><td>Actors</td><td>Things with their own goals.</td><td>Crusader Kings III: every vassal wants something, and some want your throne.</td></tr>
+      <tr><td>Space</td><td>Where things happen; distance and adjacency matter.</td><td>Banished: the walk from home to work to stockpile is the hidden tax on everything.</td></tr>
+      <tr><td>Time</td><td>How the clock runs.</td><td>Medieval Dynasty: seasons last three days, the king's tax comes every spring, and your character ages.</td></tr>
+      <tr><td>Information</td><td>Who knows what.</td><td>King of Dragon Pass never shows odds. Your council's advice is all you get, and they disagree.</td></tr>
+      <tr><td>Goals</td><td>What you're trying to do.</td><td>Crusader Kings has no win. Old World ends when your dynasty completes its ambitions.</td></tr>
+      <tr><td>Randomness</td><td><b>Input</b> randomness comes before you choose; <b>output</b> randomness after.</td><td>An event, then a choice, feels fair. Battle Brothers' top player complaint is the other kind: a 90% hit misses and a veteran dies.</td></tr>
+      <tr><td>People</td><td>Characters with memory.</td><td>Mount & Blade: execute a captured lord and the other lords remember.</td></tr>
+      <tr><td>Rhythm</td><td>The beat the game repeats.</td><td>Thronefall: build by day, hold the walls by night.</td></tr>
+      <tr><td>Feedback</td><td>How the game tells you what happened.</td><td>Kingdom Two Crowns: no numbers at all. Coins drop, walls rise, villagers cheer.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<div class="part-head"><span>Part one</span><h2>What players feel</h2></div>
+<section class="chapter" id="fun"><div class="ch-head"><span class="num">01 · FUN</span><h2>Fun is learning, and choosing</h2><p>Raph Koster: a game is fun while you're still learning it, and boring once you've solved it. Sid Meier: a game is a series of interesting decisions.</p></div><div class="cases" data-set="fun"></div></section>
+<section class="chapter" id="immersive"><div class="ch-head"><span class="num">02 · IMMERSIVE</span><h2>The player forgets the screen</h2><p>Immersion comes from a world that answers you, shows instead of tells, and never breaks its own spell.</p></div><div class="cases" data-set="immersive"></div></section>
+<section class="chapter" id="engaging"><div class="ch-head"><span class="num">03 · ENGAGING</span><h2>One more turn, one more year, one more heir</h2><p>What keeps people playing tonight: goals at every distance, loops that pull, and tension that rises and falls on purpose.</p></div><div class="cases" data-set="engaging"></div></section>
+<section class="chapter" id="worth"><div class="ch-head"><span class="num">04 · WORTH PLAYING</span><h2>It means something, and it's different next time</h2><p>What makes people come back for a second run and still think about the game a week later.</p></div><div class="cases" data-set="worth"></div></section>
+<section class="chapter" id="sharing"><div class="ch-head"><span class="num">05 · WORTH SHARING</span><h2>A story they have to tell someone</h2><p>Games spread through stories, clips and screenshots players make themselves. Design for the retelling.</p></div><div class="cases" data-set="sharing"></div></section>
+
+<div class="part-head"><span>Part two</span><h2>The genre's own craft</h2></div>
+<section class="chapter" id="towns"><div class="ch-head"><span class="num">06 · LIVING TOWNS</span><h2>A town you could live in</h2><p>The town is the genre's face. It feels alive when people have homes, wants and routines you can see, and when their lives leave marks on the place.</p></div><div class="cases" data-set="towns"></div></section>
+<section class="chapter" id="economy"><div class="ch-head"><span class="num">07 · ECONOMY AND LOGISTICS</span><h2>Goods have to walk</h2><p>In a medieval sim the economy is not a number; it's carts, backs and distance. The best ones make that movement visible, so shortages have a cause you can find.</p></div><div class="cases" data-set="economy"></div></section>
+<section class="chapter" id="seasons"><div class="ch-head"><span class="num">08 · SEASONS AND SURVIVAL</span><h2>The year has an exam</h2><p>Winter, harvest and sickness give a sim its stakes. Pressure works when it grows out of choices you made months ago, and stops working the moment it's solved.</p></div><div class="cases" data-set="seasons"></div></section>
+<section class="chapter" id="war"><div class="ch-head"><span class="num">09 · WAR AND SIEGES</span><h2>Battles that weigh something</h2><p>Great medieval war is about people breaking, food running out and walls you built yourself. The fight is the end of a story that started on the march.</p></div><div class="cases" data-set="war"></div></section>
+<section class="chapter" id="world"><div class="ch-head"><span class="num">10 · A WORLD YOU RIDE THROUGH</span><h2>You are nobody, at first</h2><p>The open-world medieval sim puts you on the ground. The world has its own business; your place in it is earned, and the world remembers how.</p></div><div class="cases" data-set="world"></div></section>
+<section class="chapter" id="dynasty"><div class="ch-head"><span class="num">11 · DYNASTIES AND CHARACTERS</span><h2>Play the family, not the map</h2><p>The genre's biggest idea since 2012: you are a person, then their child. Death becomes a turn of the page, and every marriage is a bet on the next three rulers.</p></div><div class="cases" data-set="dynasty"></div></section>
+<section class="chapter" id="court"><div class="ch-head"><span class="num">12 · RULERS AND THE COURT</span><h2>Rule people, not a spreadsheet</h2><p>Decisions bite when they land on people with their own memory and loyalty. The court is where a strategy game becomes a drama.</p></div><div class="cases" data-set="court"></div></section>
+
+<div class="part-head"><span>Part three</span><h2>Holding it together</h2></div>
+<section class="chapter" id="stories"><div class="ch-head"><span class="num">13 · EMERGENT STORIES</span><h2>Stories no one wrote, on purpose</h2><p>Emergent means it comes out of the rules, not a script. Designers can't write these stories, but they can make them likely, readable and worth retelling.</p></div><div class="cases" data-set="stories"></div></section>
+<section class="chapter" id="pacing"><div class="ch-head"><span class="num">14 · PACING A LONG CAMPAIGN</span><h2>Hour forty should still have a question</h2><p>The genre's oldest problem: the opening is tense, the middle snowballs, the end is admin. Pacing means planning the threat curve across the whole reign.</p></div><div class="cases" data-set="pacing"></div></section>
+<section class="chapter" id="onboarding"><div class="ch-head"><span class="num">15 · ONBOARDING</span><h2>A front door into a deep sim</h2><p>Depth is the genre's selling point and its top complaint. The best games keep the first hour simple and add the depth behind it.</p></div><div class="cases" data-set="onboarding"></div></section>
+<section class="chapter" id="camera"><div class="ch-head"><span class="num">16 · CAMERA AND READABILITY</span><h2>Read the realm from far, meet a person up close</h2><p>A world sim lives at many zooms. Far out you read the state of things; close in you feel them. Each zoom has its own job.</p></div><div class="cases" data-set="camera"></div></section>
+<section class="chapter" id="theory"><div class="ch-head"><span class="num">17 · GAME THEORY</span><h2>How players (and AI rivals) reason</h2><p>Game theory is the maths of choices that depend on other people's choices. These ideas show up in every strategy game, and most of all at a medieval court.</p></div><div class="cases" data-set="theory"></div></section>
+
+<div class="part-head"><span>Part four</span><h2>Where it goes wrong</h2></div>
+<section class="chapter" id="fails"><div class="ch-head"><span class="num">18 · THE GENRE'S FAILURES</span><h2>How medieval sims lose their players</h2><p>The same few problems show up across hundreds of thousands of reviews: the late game goes quiet, the systems hide their reasons, the chores never end, and the world stops reacting.</p></div><div class="cases" data-set="fails"></div></section>
+
+<section class="chapter" id="scale">
+  <div class="ch-head"><span class="num">19 · WHAT PLAYERS SAY AT SCALE</span><h2>Praise and complaints, game by game</h2>
+  <p>The themes players raise most often in Steam reviews. The pattern: the look and the depth bring people in; poor explanation, slowdown in big towns and a quiet late game push them out.</p></div>
+  <div class="tablebox"><table class="plain scale">
+    <thead><tr><th>Game</th><th>Players praise</th><th>Players complain</th><th>Source</th></tr></thead>
+    <tbody id="scale-rows"></tbody>
+  </table></div>
+  <p class="note">Most rows come from VaporLens, a third-party summary of Steam review text. Numbers in brackets are how often a theme was mentioned in its sample, not a share of all reviews. Its sentiment runs lower than Steam's own labels, so read it for themes, not scores.</p>
+</section>
+
+<section class="chapter" id="split">
+  <div class="ch-head"><span class="num">20 · DESIGNERS VS PLAYERS</span><h2>When the intent and the experience disagree</h2>
+  <p>A designer's reason for a rule is not proof it works. These are the clearest cases where what the studio said and what players reported pull apart.</p></div>
+  <div class="tablebox"><table class="plain split">
+    <thead><tr><th>Game</th><th>The designer said</th><th>Players said</th><th>What to learn</th></tr></thead>
+    <tbody id="split-rows"></tbody>
+  </table></div>
+</section>
+
+<section class="chapter" id="reading">
+  <div class="ch-head"><span class="num">21 · READ NEXT</span><h2>Where these ideas come from</h2></div>
+  <div class="reading" id="reading-list"></div>
+</section>
+
+<footer>
+  <span>Screenshots are from each game's Steam store page and belong to their publishers. Click any screenshot to flip through every screenshot on that game's store page (arrow keys or swipe).</span>
+  <span>Research gathered November 2026. Some press pages could only be read in part; quotes on this page are short and come from the linked source.</span>
+</footer>
+</div>
+
+<dialog class="lb" id="lb" aria-label="Screenshots">
+  <div class="lb-in">
+    <div class="lb-top"><b id="lb-name"></b><span id="lb-pos"></span><a id="lb-store" href="#" target="_blank" rel="noopener">Steam store page ↗</a><button class="lb-x" id="lb-x" aria-label="Close">×</button></div>
+    <div class="lb-stage"><button class="lb-nav" id="lb-prev" aria-label="Previous screenshot">‹</button><div class="lb-frame" id="lb-frame" role="img"></div><button class="lb-nav" id="lb-next" aria-label="Next screenshot">›</button></div>
+    <div class="lb-strip" id="lb-strip"></div>
+  </div>
+</dialog>
+
+<script>
+/* games: key -> [steam app id, name, year shown] */
+const G={
+amongus:[945360,"Among Us","2018"],aoe2:[813780,"Age of Empires II: DE","1999 / 2019"],balatro:[2379780,"Balatro","2024"],banished:[242920,"Banished","2014"],bannerlord:[261550,"Mount & Blade II: Bannerlord","2022"],breach:[590380,"Into the Breach","2018"],celeste:[504230,"Celeste","2018"],civ6:[289070,"Civilization VI","2016"],ck3:[1158310,"Crusader Kings III","2020"],deadspace:[1693980,"Dead Space","2023"],dwarf:[975370,"Dwarf Fortress","2006 / Steam 2022"],edithfinch:[501300,"What Remains of Edith Finch","2017"],frostpunk:[323190,"Frostpunk","2018"],ftl:[212680,"FTL: Faster Than Light","2012"],hades:[1145360,"Hades","2020"],journey:[638230,"Journey","2012"],kerbal:[220200,"Kerbal Space Program","2015"],kingdom:[701160,"Kingdom Two Crowns","2018"],l4d2:[550,"Left 4 Dead 2","2009"],manor:[1363080,"Manor Lords","2024"],mordor:[241930,"Middle-earth: Shadow of Mordor","2014"],papers:[239030,"Papers, Please","2013"],reigns:[474750,"Reigns","2016"],rimworld:[294100,"RimWorld","2018"],rust:[252490,"Rust","2018"],sf6:[1364780,"Street Fighter 6","2023"],skyrim:[489830,"Skyrim","2011"],spire:[646570,"Slay the Spire","2019"],stardew:[413150,"Stardew Valley","2016"],stellaris:[281990,"Stellaris","2016"],storm:[1336490,"Against the Storm","2023"],tw3k:[779340,"Total War: Three Kingdoms","2019"],worldbox:[1206560,"WorldBox","2018"],
+ck2:[203770,"Crusader Kings II","2012"],warband:[48700,"Mount & Blade: Warband","2010"],shcrusader:[3024040,"Stronghold Crusader","2002 / DE 2025"],shde:[2140020,"Stronghold","2001 / DE 2023"],kcd:[379430,"Kingdom Come: Deliverance","2018"],kcd2:[1771300,"Kingdom Come: Deliverance II","2025"],kenshi:[233860,"Kenshi","2018"],med2:[4700,"Medieval II: Total War","2006"],attila:[325610,"Total War: Attila","2015"],foundation:[690830,"Foundation","2019 EA / 2025"],goingmed:[1029780,"Going Medieval","2021 EA"],bellwright:[1812450,"Bellwright","2024 EA"],meddyn:[1129580,"Medieval Dynasty","2021"],kodp:[352220,"King of Dragon Pass","1999 / 2015"],syx:[1162750,"Songs of Syx","2020 EA"],ostriv:[773790,"Ostriv","2020 EA"],frontier:[1044720,"Farthest Frontier","2022 EA / 2025"],bbros:[365360,"Battle Brothers","2017"],pentiment:[1205520,"Pentiment","2022"],thronefall:[2239150,"Thronefall","2023 EA / 2024"],oldworld:[597180,"Old World","2021"],norland:[1857090,"Norland","2022 EA"],eu4:[236850,"Europa Universalis IV","2013"],northgard:[466560,"Northgard","2018"],anno1404:[1281630,"Anno 1404","2009"]};
+const GAL={"anno1404":6,"ck2":10,"warband":7,"shcrusader":5,"shde":8,"kcd":23,"kcd2":10,"kenshi":6,"med2":10,"attila":11,"foundation":17,"goingmed":12,"bellwright":11,"meddyn":15,"kodp":10,"sixages":7,"syx":17,"ostriv":19,"frontier":28,"bbros":10,"pentiment":14,"thronefall":11,"oldworld":11,"norland":11,"eu4":10,"northgard":12,"koh2":10,"dino":13,"ck3":14,"manor":10,"bannerlord":10,"banished":7,"dwarf":20,"kingdom":6,"storm":10,"rimworld":11,"reigns":9,"frostpunk":16,"tw3k":12,"amongus":10,"aoe2":12,"balatro":12,"breach":8,"celeste":12,"civ6":8,"deadspace":10,"edithfinch":5,"ftl":10,"hades":11,"journey":7,"kerbal":12,"l4d2":17,"mordor":5,"papers":15,"rust":33,"sf6":10,"skyrim":8,"spire":6,"stardew":16,"stellaris":6,"worldbox":15};
+const START={"manor-plot":4,"manor-close":3,"ostriv":0,"ostriv-winter":1,"shde":4,"foundation":9,"norland":2,"anno1404":2,"frontier":0,"frontier-raid":8,"northgard":1,"goingmed":4,"syx":7,"thronefall":3,"bellwright":8,"ck2":6,"oldworld":1,"oldworld-tree":3,"kodp":1,"pentiment":5,"attila":6,"med2":3,"bbros":0,"kenshi":2,"eu4":2,"kcd":5,"kcd2":7,"warband":1,"meddyn":4,"shcrusader":3,"ck3-tree":7,"ck3-char":4,"bannerlord-army":5,"bannerlord-march":2,"bannerlord-town":4,"banished-winter":1,"dwarf-siege":11,"tw3k-map":3,"kcd-read":10,"kenshi-b":3,"bbros-b":5,"attila-b":7,"ck2-map":5,"ck2-court":2,"syx-b":4,"frontier-b":4,"med2-b":0};
+/* games from outside the medieval-sim genre get a small note */
+const OUTSIDE=new Set("amongus balatro breach celeste civ6 deadspace edithfinch ftl hades journey kerbal l4d2 mordor papers rust sf6 skyrim spire stardew stellaris worldbox rimworld frostpunk".split(" "));
+/* sources */
+const U={
+mda:"https://users.cs.northwestern.edu/~hunicke/MDA.pdf",
+meier:"https://www.gdcvault.com/play/1015756/Interesting",
+koster:"https://www.theoryoffun.com/",
+reignsDD:"https://gamedeveloper.com/design/game-design-deep-dive-creating-an-adaptive-narrative-in-i-reigns-i-",
+ck2design:"https://www.gamedeveloper.com/design/the-surprising-design-of-i-crusader-kings-ii-i-",
+ck2gdc:"https://gamedeveloper.com/design/video-designing-i-crusader-kings-ii-i-to-generate-strange-emergent-stories",
+noio:"https://gamedeveloper.com/design/-i-kingdom-two-crowns-i-and-the-practical-intersection-of-pixel-art-and-roguelike-design",
+storm:"https://www.gamedeveloper.com/road-to-igf-2023/how-against-the-storm-managed-to-mix-city-building-and-roguelite-play",
+throne:"https://gamedeveloper.com/design/mastering-minimalism-and-layering-complexity-with-strategy-game-thronefall",
+banishedGD:"https://gamedeveloper.com/business/-i-banished-i-s-build-what-you-want-when-you-want-it-game-design",
+crate:"https://forums.crateentertainment.com/t/journey-log-03-harvest-time/114563",
+ffguide:"https://www.farthestfrontier.com/guide/gameplay/farming",
+michet:"https://blog.lauramichet.com/been-replaying-ostriv/",
+jirsa:"https://www.notebookcheck.net/Kingdom-Come-Deliverance-2-lead-designer-RPG-mechanics-with-friction-help-players-feel-they-ve-earned-something.1292235.0.html",
+register:"https://www.theregister.com/2019/05/31/kenshi_sandblasted_swordpunk_where_the_dungeon_master_wants_everyone_dead/",
+hunt:"https://www.pcgamer.com/games/survival-crafting/too-many-games-let-their-players-succeed-says-developer-of-notoriously-tough-survival-rpg-kenshi-and-thats-mind-numbingly-boring-to-me",
+gi_attila:"https://gameinformer.com/games/total_war_attila/b/pc/archive/2015/02/17/defend-or-destroy-the-empire",
+pcg_attila:"https://www.pcgamer.com/total-war-attila-review",
+bradbury:"https://www.gameindustry.com/?p=18919",
+scigamer:"https://scientificgamer.com/thoughts-battle-brothers/",
+bb92:"https://battlebrothersgame.com/?p=18285",
+morale:"https://www.gamebanshee.com/3wppf",
+logistics:"http://www.gamebanshee.com/khpk3",
+yavuz:"http://www.gamebanshee.com/k46uy",
+fief:"https://wccftech.com/mount-blade-ii-bannerlord-gamescom-interview/2/amp/",
+sixages:"https://www.gamedeveloper.com/design/how-i-six-ages-i-builds-a-game-around-the-power-of-myth",
+if50:"https://if50.substack.com/p/1999-king-of-dragon-pass",
+ow7:"https://www.designer-notes.com/old-world-designer-notes-7-characters/",
+ow9:"https://www.designer-notes.com/?p=1733",
+ow11:"https://www.designer-notes.com/?p=1748",
+owElephant:"https://www.designer-notes.com/?p=2155",
+vice_ck3:"https://www.vice.com/en/article/crusader-kings-iii-wants-to-be-a-medieval-soap-opera-for-everyone",
+gp_ck3:"https://www.gamepressure.com/newsroom/creative-ways-to-play-crusader-kings-3-according-to-steam-reviews/zf2436",
+stress:"https://www.pcgamer.com/au/crusader-kings-3s-best-feature-is-that-you-can-get-so-stressed-out-you-die",
+pcgn_ck2:"https://www.pcgamesn.com/crusader-kings-ii/ck2-tips-guide",
+gd_rim:"https://gamedeveloper.com/design/rimworld-dwarf-fortress-and-procedurally-generated-story-telling",
+sylvester:"https://www.pcgamer.com/games/strategy/the-challenges-of-developing-the-colony-sim-from-dungeon-keeper-to-dwarf-fortress-and-beyond/",
+sawyer:"https://www.thegamer.com/interview-obsidian-josh-sawyer-pentiment/",
+vice_pent:"https://www.vice.com/en/article/pentiment-review/",
+techradar:"https://www.techradar.com/gaming/manor-lords-preview-camera-feature-brings-you-down-to-earth",
+seasoned:"https://seasonedgaming.com/2024/05/04/early-access-review-manor-lords-to-reign-or-refrain/",
+escapist:"https://sg.news.yahoo.com/manor-lords-already-feels-ingredients-170000657.html",
+pcgn_found:"https://www.pcgamesn.com:443/foundation/roads-desire-paths-city-builders",
+found_steam:"https://steamcommunity.com/app/690830/discussions/0/600769423993795579",
+gamespot_sh:"https://www.gamespot.com/stronghold-crusader/user-reviews/2200-12624453/",
+norland:"https://hoodedhorse.com/wiki/Norland/Lords",
+outnow:"https://outnow.ch/en/Games/2009/Anno1404/Review/",
+bittech_anno:"https://www.bit-tech.net/reviews/gaming/pc/anno-1404-dawn-of-discovery-review/2/",
+manor_market:"https://steamcommunity.com/app/1363080/discussions/0/4336482437894202448",
+banished_steam:"https://steamcommunity.com/app/242920/discussions/0/522730075946549340",
+bee:"https://www.pcgamer.com/i-became-a-bee-tycoon-in-this-survival-city-builder-then-lost-my-fortune-to-a-perfect-heist",
+banished_essay:"https://www.pcgamer.com/banished-photo-essay-25-years-of-farming-and-surviving-harsh-winters",
+banishedQA:"https://shiningrocksoftware.com/2013-04-07-qa-ii/",
+ostriv_walk:"https://www.pcgamer.com/i-failed-at-this-city-builder-so-badly-all-the-citizens-walked-out-of-town-and-the-game-shut-itself-off",
+bittech_ng:"https://www.bit-tech.net/reviews/gaming/pc/northgard-review/1/",
+gamespace_gm:"https://gamespace.com/featured/going-medieval-early-access-review/",
+syx_gol:"https://www.gamingonlinux.com/2020/01/city-state-building-sim-songs-of-syx-is-looking-good-in-latest-free-build-to-try",
+df_boing:"https://boingboing.net/2022/12/07/epic-roguelike-dwarf-fortress-hits-steam-and-itch-io-with-a-beautiful-new-look.html",
+df_tut:"https://www.pcgamer.com/the-pcs-most-infamously-complex-game-gets-a-tutorial-after-16-years",
+df_siege:"https://www.pcgamer.com/games/sim/dwarf-fortress-is-getting-a-siege-update-in-november-with-goblin-battering-rams-and-defense-destroying-troll-engineers-thatll-dismantle-over-a-decade-of-dwarven-siege-strategy",
+df_goats:"https://www.pcgamer.com/vomiting-goats-kitten-fights-ghost-beheadings-and-other-reasons-steam-reviewers-are-giving-dwarf-fortress-1010-or-higher",
+eremite:"https://eremitegames.com/tutorials-and-tips-update/",
+xbh_kingdom:"https://www.thexboxhub.com/kingdom-two-crowns-review/",
+cows:"https://www.pcgamer.com/stronghold-3-design-a-castle-that-fires-cows",
+sixth_throne:"https://www.thesixthaxis.com/2023/08/03/thronefall-review/",
+kcd_save_gi:"https://www.gameinformer.com/b/news/archive/2018/02/19/kingdom-come-deliverance-developer-compromising-on-controversial-save-system.aspx",
+kcd2_save:"https://www.gamesradar.com/games/action-rpg/kingdom-come-deliverance-2-devs-insist-its-limited-save-feature-will-forever-stay-but-thats-not-stopped-players-from-modding-it-out-hours-after-launch",
+kcd2_brand:"https://www.pcgamer.com/games/rpg/i-messed-up-so-bad-in-kingdom-come-deliverance-2-that-i-was-literally-branded-a-criminal-and-hours-later-im-still-shunned-by-society/",
+asylum_md:"https://www.gamesasylum.com/2022/10/19/medieval-dynasty-review/",
+glitter:"https://tvtropes.org/pmwiki/pmwiki.php/Funny/CrusaderKingsII",
+boat:"https://en.wikipedia.org/wiki/Boatmurdered",
+ryan:"https://escholarship.org/content/qt1340j5h2/qt1340j5h2.pdf?t=plxqme",
+blob_ck3:"https://forum.paradoxplaza.com/forum/threads/anti-blobbing-mechanics.1399857/",
+stack_ck3:"https://forum.paradoxplaza.com/forum/threads/the-gameplay-focus-on-stacking-stats-and-modifiers-runs-counter-to-the-core-design-philosophy-of-crusader-kings-3.1735002/",
+blob_eu4:"https://steamcommunity.com/app/236850/discussions/0/4131557115916109042",
+ck3_events:"https://forum.paradoxplaza.com/forum/threads/random-events-feels-like-im-missing-something.1848968/",
+tw3k_lap:"https://steamcommunity.com/app/779340/discussions/0/3108014879958288205",
+shogun:"https://www.matchstickeyes.com/2011/04/10/shogun2impressions",
+m2patch:"https://worthplaying.com/article/2007/2/22/news/39988-medieval-ii-total-war-v12-patch-details/",
+tw_ai:"https://gamedeveloper.com/design/evolution-of-war-the-ai-of-total-war-part-2-",
+m2_timurid:"https://steamcommunity.com/app/4700/discussions/0/1642044369665852586",
+bl_siege:"https://steamcommunity.com/app/261550/discussions/0/3835424220132712733",
+bl_ea:"https://gamebanshee.com/36q4r",
+zacny:"https://vice.com/en/article/total-war-warhammer-3-immortal-empires-siege-bugs-broken-gates",
+bellwright:"https://www.pcgamesn.com/bellwright/early-access-impressions",
+tw3k_gr:"https://www.gamesradar.com/total-war-three-kingdoms-review-round-up",
+booth:"https://steamcdn-a.akamaihd.net/apps/valve/2009/ai_systems_of_l4d_mike_booth.pdf",
+juice:"https://www.youtube.com/watch?v=Fy0aCDmgnxg",
+trust:"https://ncase.me/trust/",
+rimwiki:"https://rimworldwiki.com/wiki/AI_Storytellers",
+anomaly:"https://stellaris.paradoxwikis.com/Anomaly",
+w:t=>"https://en.wikipedia.org/wiki/"+t
+};
+const V=k=>"https://vaporlens.app/app/"+k;
+const D=(l,u)=>["d",l,u],P=(l,u)=>["p",l,u],R=(l,u)=>["r",l,u];
+const W=(t,label)=>R("Wikipedia: "+(label||t.replace(/_/g," ").replace(/%27/g,"'")),U.w(t));
+
+/* cases: t title, s gloss, i image (img/<i>.jpg; game = part before "-"), m moment, l lesson, src [[who,label,url]], anti */
+const C={
+fun:[
+ {t:"Core loop",s:"The few actions you repeat all game.",i:"stardew",m:"Plant, water, wait a day, harvest, sell, buy better seeds. Every loop ends with a reason to start the next one.",l:"A loop that pays out into the next loop. Players can feel it in the first ten minutes.",src:[W("Stardew_Valley")]},
+ {t:"Every answer costs",s:"No free option.",i:"reigns",m:"Swipe left or right on each request. Every swipe moves the church, the people, the army and the treasury. Max any one and you die too: the church can burn you as easily as starve you.",l:"Too much of a good thing is a loss. That stops players from finding one safe answer and repeating it.",src:[D("François Alliot, Reigns design deep dive",U.reignsDD)]},
+ {t:"Build what you want",s:"Freedom over unlocks.",i:"banished",m:"No tech tree, no unlock screen. Every building is open from the start; the only gate is whether you have the stone, the iron and the people.",l:"When resources are the only gate, every build order is the player's own plan, not the designer's.",src:[D("Luke Hodorowicz on Banished's design",U.banishedGD)]},
+ {t:"One silly act with real weight",s:"A toy inside the sim.",i:"shcrusader",m:"Your trebuchet can fling a diseased cow over the enemy wall. It's a joke, but it's also a real siege weapon that spreads sickness in their keep.",l:"One absurd, physical action can carry a game's charm for twenty years, as long as it's also useful.",src:[R("PC Gamer: “design a castle that fires cows”",U.cows)]},
+ {t:"Interesting decisions",s:"A choice with no obvious right answer.",i:"ftl",m:"A colony asks for help with a plague. Send a crew member in and you might win a reward, or lose them. Or fly on and get nothing.",l:"Good choices trade one thing you want for another. If the answer is obvious, it's a chore, not a choice.",src:[D("Sid Meier, “Interesting Decisions”, GDC 2012",U.meier)]},
+ {t:"Show the threat, then let them solve it",s:"Perfect information.",i:"breach",m:"Every enemy shows exactly where it will strike next turn. You see the whole problem; you just can't save everything.",l:"When players can see it coming, a loss feels like their own mistake, so they want to try again.",src:[W("Into_the_Breach")]},
+ {t:"Challenge that fits skill",s:"The flow channel.",i:"celeste",m:"Brutal jumps, but you respawn in under a second at the start of a short room. You fail hundreds of times and never feel punished.",l:"Too easy is boring and too hard is frustrating. Keep failure cheap and the player stays in the zone.",src:[W("Flow_(psychology)","Csikszentmihalyi's flow")]},
+ {t:"Anti-pattern: the dominant strategy",s:"One answer that always wins.",i:"skyrim",m:"The stealth archer: sneak and shoot beats almost everything, so players stop trying anything else. Dwarf Fortress had its own for years: flood the siege with magma.",l:"If one option wins every time, the other options don't really exist. Find these and break them.",src:[R("PC Gamer on Dwarf Fortress's siege update",U.df_siege)],anti:1}
+],
+immersive:[
+ {t:"No odds, only advice",s:"Information through people.",i:"kodp",m:"No percentages anywhere. Your clan council argues: one says send five warriors, another wants a firm price, a third is just excited. You decide on their word.",l:"Hide the number and let characters carry it. The player reads the world instead of a dice table.",src:[D("David Dunham on Six Ages and King of Dragon Pass",U.sixages),R("IF50: King of Dragon Pass",U.if50)]},
+ {t:"You start as no one",s:"Weakness that's real.",i:"kcd-read",m:"Henry, a blacksmith's son, can't read. Books show scrambled letters until he pays a scribe to teach him. He swings a sword like a farmhand until he trains.",l:"Make the hero's weakness part of the world, and every skill gained becomes a memory.",src:[D("Prokop Jirsa, Warhorse lead designer: “Friction makes you feel like you earned something”",U.jirsa)]},
+ {t:"A world with its own clock",s:"Seasons and life.",i:"manor",m:"Winter comes. Fields go quiet, people trudge through snow, and you're living on what you stored in autumn.",l:"When the world changes without you, it feels alive, and the player plans around it.",src:[R("Seasoned Gaming, Manor Lords early access review",U.seasoned)]},
+ {t:"Let the world speak",s:"Minimal UI.",i:"kingdom",m:"No menus, no numbers. You drop coins; peasants pick up tools, walls rise, archers start hunting. You learn by watching what happens.",l:"When the world itself is the feedback, players watch the world instead of reading a panel.",src:[D("noio on Kingdom Two Crowns: “very little aggregate numbers”",U.noio)]},
+ {t:"Information lives in the world",s:"Diegetic UI.",i:"deadspace",m:"No health bar on screen. Your health glows on the spine of your suit, and ammo floats off the gun.",l:"Every on-screen box reminds players they're playing. Put the information on things that exist in the world.",src:[W("Dead_Space_(2008_video_game)","Dead Space")]},
+ {t:"The place tells the story",s:"Environmental storytelling.",i:"edithfinch",m:"Every bedroom in the house is a dead family member's life, frozen as they left it. You learn who they were from what's in the room.",l:"Let players work it out. A story they piece together feels like their own discovery.",src:[W("What_Remains_of_Edith_Finch")]},
+ {t:"Juice",s:"Feedback on every action.",i:"hades",m:"Every hit flashes, shakes the screen and makes a crunchy sound. Simple button presses feel powerful.",l:"Weight and response make basic actions satisfying. Players feel this before they understand any system.",src:[R("“Juice it or lose it” talk, Jonasson and Purho",U.juice)]},
+ {t:"Mood over words",s:"Atmosphere and sound.",i:"journey",m:"No dialogue at all. The music rises as you climb, and the light changes with how you're doing.",l:"Music, light and pacing can carry the emotion that text usually has to explain.",src:[W("Journey_(2012_video_game)","Journey")]}
+],
+engaging:[
+ {t:"One more generation",s:"Death as a new chapter.",i:"ck2",m:"Your ruler dies at 61. You don't lose; you become his son, with new traits, new enemies and a realm that just split. It's midnight and you want to see how he does.",l:"When the game goes on through the heir, there's never a clean place to stop.",src:[D("Henrik Fåhraeus on CK2: players “grow attached to the characters”",U.ck2design)]},
+ {t:"A ruler you answer to",s:"A clock with a face.",i:"storm",m:"The Queen's impatience fills over time. Finish the town's goals before it fills, or lose the settlement. One streamer ended up shouting “Queeen, please!” at a bar.",l:"Give the deadline a person. A number becomes someone you're letting down.",src:[D("Eremite Games, Road to the IGF",U.storm)]},
+ {t:"Goals at every distance",s:"Short, mid and long term.",i:"spire",m:"Win this fight. Pick a card. Clear the act. Finish the run. Unlock the next character. There's always a goal a minute away and one an hour away.",l:"Layered goals mean there's never a good place to stop.",src:[W("Slay_the_Spire")]},
+ {t:"One more turn",s:"Overlapping timers.",i:"civ6",m:"A wonder finishes in 2 turns, a tech in 3, a settler in 1. Something is always about to pay off.",l:"Stagger the payoffs so they never all land on the same turn.",src:[W("Civilization_VI")]},
+ {t:"Snowball",s:"Positive feedback loop.",i:"aoe2",m:"More villagers gather more food, which makes more villagers. Get ahead early and it compounds.",l:"It feels great, but the leader runs away with it. Use it to reward, then let the game push back.",src:[W("Age_of_Empires_II")]},
+ {t:"Pushback",s:"Negative feedback loop.",i:"ck3",m:"The bigger your realm, the more vassals form factions and plot against you. Winning makes ruling harder. But players still ask the forum for anti-blobbing rules",l:"Pushback has to grow faster than the player does, or the late game goes dull anyway.",src:[W("Crusader_Kings_III"),P("Paradox forum: “Anti-blobbing mechanics”",U.blob_ck3)]},
+ {t:"The director",s:"Pacing tension on purpose.",i:"l4d2",m:"An AI watches how stressed the team is. After a quiet stretch it sends a horde or a Tank; after a hard fight it gives you room to breathe.",l:"Tension should rise and fall in waves. Constant pressure tires players out; constant calm bores them.",src:[D("Michael Booth, The AI Systems of Left 4 Dead",U.booth)]},
+ {t:"Scarcity",s:"Not enough of something.",i:"banished-winter",m:"Winter is long. One bad harvest and the town starves; more people means more mouths.",l:"When something is scarce, every choice to spend it matters.",src:[D("Shining Rock Q&A: deaths from “harsh winters and dry summers”",U.banishedQA)]}
+],
+worth:[
+ {t:"Consequences that ripen",s:"Time skips.",i:"pentiment",m:"The game jumps years ahead between acts. Choices you made come back as changed lives in the same town, on faces you know. A reviewer felt “the ground give way” at the first skip.",l:"Jump time to let consequences grow, then show them on people the player remembers.",src:[D("Josh Sawyer on Pentiment",U.sawyer),R("Vice, Pentiment review",U.vice_pent)]},
+ {t:"What will you become?",s:"Hard laws.",i:"frostpunk",m:"“Facing starvation”: the people protest. Make promises, or crack down. At the end, the game shows you the line you crossed.",l:"Make players choose what kind of leader to be, then show them what it cost.",src:[W("Frostpunk")]},
+ {t:"Characters, not units",s:"Relationships.",i:"tw3k",m:"Generals have friends and rivals. Promote his rival or execute his friend, and he may defect with his army.",l:"When pieces have feelings, every order is also a relationship.",src:[R("GamesRadar review round-up: relationships shape decisions",U.tw3k_gr)]},
+ {t:"Moral weight",s:"The rules ask the question.",i:"papers",m:"Let in someone without the right papers and you're docked pay. Your family goes cold, then hungry. The game never lectures you.",l:"Put the moral question in the rules, not in a cutscene. Then the player's choice is real.",src:[W("Papers,_Please")]},
+ {t:"Enemies that remember you",s:"The Nemesis system.",i:"mordor",m:"The orc who killed you gets promoted. Next time you meet, he's scarred where you burned him and mocks you about your last fight.",l:"When the world remembers what you did, your failures turn into your own story.",src:[W("Middle-earth:_Shadow_of_Mordor","Shadow of Mordor")]},
+ {t:"A storyteller, not a referee",s:"Story-generating AI.",i:"rimworld",m:"You pick a storyteller: Cassandra builds tension, Phoebe gives you room, Randy is pure chaos. Each one picks events to make a good story.",l:"Aim for dramatic, not balanced.",src:[D("Tynan Sylvester: a “rising and falling pacing curve”",U.sylvester),P("RimWorld wiki: AI storytellers",U.rimwiki)]},
+ {t:"Mysteries in the world",s:"Discovery.",i:"stellaris",m:"A survey ship finds an anomaly. It opens an event chain that runs across the galaxy and the next hundred years.",l:"Hidden content gives each run something new to find, so the second run is still a surprise.",src:[P("Stellaris wiki: anomalies",U.anomaly)]}
+],
+sharing:[
+ {t:"Stories no one wrote",s:"Emergent narrative.",i:"dwarf",m:"“Boatmurdered”: in 2006 a forum passed one fortress from player to player, a year each. Elephants, lava and madness. People still retell it, and the game's “fortress lost” music is named after it.",l:"Deep systems make stories nobody planned. Those stories are what players post.",src:[R("Wikipedia: Boatmurdered",U.boat),R("James Ryan, Curating Simulated Storyworlds (PhD)",U.ryan)]},
+ {t:"Ten out of ten for the goat",s:"Reviews as anecdotes.",i:"dwarf-siege",m:"When Dwarf Fortress reached Steam, reviewers didn't list features. They told stories: vomiting goats, kitten fights, a ghost beheading.",l:"If your sim makes anecdotes, your reviews become your marketing. Make strange things readable.",src:[R("PC Gamer on Dwarf Fortress's Steam reviews",U.df_goats)]},
+ {t:"A running joke the system can make",s:"Absurd beats on traits.",i:"ck2-court",m:"A lunatic ruler appoints his horse, Glitterhoof, to the council. A later expansion gave the horse its own culture.",l:"A few hand-written absurd beats, hung on real traits, give players a line to repeat.",src:[P("TV Tropes fan list, Crusader Kings II",U.glitter)]},
+ {t:"Glorious failure",s:"Failure as content.",i:"kerbal",m:"Your rocket rolls over on the pad and explodes. Jeb grins through all of it.",l:"When failing is funny, players share the failures. That's half the game's marketing.",src:[W("Kerbal_Space_Program")]},
+ {t:"Numbers no one believes",s:"Absurd payoffs.",i:"balatro",m:"A hand that started at 300 chips ends in the millions, then in numbers the screen can't show.",l:"A screenshot of a crazy result is proof and a brag in one. Leave room for the game to break in fun ways.",src:[W("Balatro")]},
+ {t:"Toy-like power",s:"Sandbox god powers.",i:"worldbox",m:"Drop a meteor on a kingdom you've watched grow, or bless one village and watch it conquer the map.",l:"Big, readable, physical powers make clips. Players share the cause and the effect in 10 seconds.",src:[W("WorldBox")]},
+ {t:"Drama between people",s:"Social play.",i:"amongus",m:"“Pink was with me in Electrical.” The best moments happen in the chat, not in the game's rules.",l:"When the game is mostly a stage for people, every match makes a new story and good streams.",src:[W("Among_Us")]}
+],
+towns:[
+ {t:"Each house is a family",s:"Homes, not housing units.",i:"manor-plot",m:"Lower the camera to a family's plot: the house, the vegetable garden out back, someone heading off to work. Then walk your lord down the same lane.",l:"Make the unit of the town a family with a place, and let the camera go down to meet it.",src:[R("The Escapist: “you can zoom in and watch what each person is doing”",U.escapist),R("Seasoned Gaming: walk your lord among your subjects",U.seasoned)]},
+ {t:"Households with wallets",s:"Agents, not tiers.",i:"ostriv",m:"The richest family in one town was the barber-surgeon's, soaking up everyone's money. A father who lived out of the barber's reach sat on a bench until he died, leaving three orphans. At planting time, people leave their jobs to help in the fields.",l:"Give households their own money and needs, and stories write themselves out of the gaps.",src:[P("Laura Michet, “Been replaying Ostriv”",U.michet)]},
+ {t:"The crowd is the census",s:"Idle people in one place.",i:"shde",m:"Jobless peasants stand around the campfire in front of the keep. A crowd at the fire means spare hands. An empty fire means you're short.",l:"Show spare population as people in one spot, so a glance replaces a spreadsheet.",src:[P("GameSpot player review, Stronghold Crusader",U.gamespot_sh)]},
+ {t:"Desire paths",s:"The town draws its own roads.",i:"foundation",m:"Villagers walk the same routes until the grass wears down and the track becomes a road. The town looks grown, not placed. Players love it early and call it “a nightmare later on.”",l:"Let people's movement mark the world; it proves they live there. Give a tidy-up tool for the big town.",src:[R("PCGamesN on Foundation's desire paths",U.pcgn_found),P("Steam discussion: “a nightmare later on”",U.found_steam)]},
+ {t:"Lords with their own needs",s:"Named people tied to the economy.",i:"norland",m:"Your lords drink, pray and scheme. Let a lord's loyalty sit too low for too long and his heir rebels or he leaves for another king. A beer shortage can start it.",l:"Tie the few named people to the economy, so a shortage turns into a plot.",src:[D("Norland wiki (publisher): disloyal lords “move to another king”",U.norland)]}
+],
+economy:[
+ {t:"Every coin is a thing",s:"No hidden totals.",i:"kingdom",m:"You pay a worker by dropping a real coin from your pouch. Coins lie on the ground, get stolen, fill a bag you can see. The whole economy is objects.",l:"When a resource is a visible object, players read the economy without a single number.",src:[D("noio: “each coin is one coin in the bag, and not a number on your screen”",U.noio)]},
+ {t:"Distance is the cost",s:"Walking time is the tax.",i:"banished",m:"A woodcutter walks far to the stockpile and back. The town looks fine, then starves in winter. Veterans learn to put a stockpile next to every job.",l:"If walking is the hidden cost, show it, or players blame the people instead of the layout.",src:[P("Steam tips thread: “READ + LEARN = PLAY”",U.banished_steam)]},
+ {t:"The market is a place",s:"Shortages show as empty stalls.",i:"manor-close",m:"You draw a market square. Families set up stalls on their own, stocked from the storehouse and granary. People walk in and carry goods home. An empty stall tells you what's missing.",l:"Make distribution happen in the town square, so a shortage is something you can see.",src:[P("Steam feedback thread on market stalls and their goods",U.manor_market)]},
+ {t:"The land remembers",s:"Soil as a slow clock.",i:"frontier",m:"Plant the same crop three years running and yields sink, weeds rise and blight appears. The fix is rotation with clover, compost from the town's waste, and spacing fields apart.",l:"Make the land remember what you did to it, so farming is a plan, not a click.",src:[D("Crate Entertainment: diseases “accumulate in the soil over time”",U.crate)]},
+ {t:"Two worlds, one need",s:"Trade forced by design.",i:"anno1404",m:"Your western citizens can't rise to the top rank without spices, and spices only grow in the East. You have to found a second settlement and run ships between them.",l:"Put a key need somewhere else on the map, and logistics becomes the game.",src:[R("Outnow review: the Orient is the big new idea",U.outnow)]},
+ {t:"Wealth draws the raid",s:"The economy picks the threat.",i:"frontier-raid",m:"One writer built a fortune on honey and wax. The raiders who came weren't random; they came for the money, in a planned heist.",l:"Let threats read the economy, so getting rich has a cost you can see coming.",src:[R("PC Gamer: “I became a bee tycoon… then lost my fortune to a perfect heist”",U.bee)]}
+],
+seasons:[
+ {t:"Winter as the exam",s:"The year is graded once.",i:"banished-winter",m:"One writer ran a town for 25 years. Children worked fields in snow, a bad harvest killed families, and one mistake left the town frozen. Even good years were one or two bad harvests from disaster.",l:"A season that tests every plan at once makes the whole year feel like it mattered.",src:[D("Hodorowicz: “People have to survive the winter”",U.banishedGD),R("PC Gamer photo essay, 25 years in Banished",U.banished_essay)]},
+ {t:"The cold walks them out",s:"Failure as people leaving.",i:"ostriv-winter",m:"Winter comes before the houses are built. The homeless walk out across frozen fields to the edge of the map. When the last one leaves, the game shuts itself off.",l:"Show collapse as people giving up on you. It hits harder than a game-over screen.",src:[R("PC Gamer: “all the citizens walked out of town and the game shut itself off”",U.ostriv_walk)]},
+ {t:"Winter changes every number",s:"Seasons that slow the war.",i:"northgard",m:"In winter farms stop, wood burns faster, and workers and warriors weaken. You spend summer counting toward the snow.",l:"Make the season touch everything at once, so players feel it in every decision.",src:[R("bit-tech: don't empty food and wood before winter",U.bittech_ng)]},
+ {t:"Sickness from how you built",s:"Prevention beats cure.",i:"frontier-b",m:"Families drink from the lake and get dysentery. Waste piles up and rats come. The fix is wells, compost and spacing, set up long before anyone falls ill.",l:"Tie disease to choices the player made months ago, so outbreaks feel earned, not random.",src:[D("Farthest Frontier farming guide: lake water brings dysentery",U.ffguide)]},
+ {t:"The cellar answers summer",s:"Temperature acts on goods.",i:"goingmed",m:"A player's summer meat rots because there's no basement yet. Digging a cold cellar fixes it.",l:"Let heat and cold act on stored goods, so what you build answers the seasons.",src:[R("Gamespace, Going Medieval early access review",U.gamespace_gm)]},
+ {t:"End it before it's solved",s:"The run outlives no threat.",i:"storm",m:"Each settlement lives through drizzle, clearance and storm, then the run ends. You never reach the point where the town runs itself and nothing can hurt it.",l:"End the run before survival is solved, and carry rewards forward instead.",src:[D("Eremite: before steamrolling “can turn into bitter boredom”",U.storm)]}
+],
+war:[
+ {t:"Panic spreads",s:"Morale is contagious.",i:"bannerlord-army",m:"Each soldier starts with his party's mood. Friends falling near him chip it away. When a few men run, their panic hits the men beside them, and a whole line can fold in seconds.",l:"Let morale travel man to man, so a rout is a chain reaction you can watch start, and stop.",src:[D("TaleWorlds dev blog on morale, modelled on the battle of Towton",U.morale)]},
+ {t:"The march feeds the battle",s:"Supply you can feel.",i:"bannerlord-march",m:"A hungry, unpaid party loses morale on the road, starts the fight with shakier men, and at worst half of it deserts. A party that starves on the way to the muster drops out of the army.",l:"What happened on the march should show up on the battlefield.",src:[D("TaleWorlds: logistics problems grow “as the size of your forces grows”",U.logistics)]},
+ {t:"A siege is a season",s:"Starve, storm or burn.",i:"attila",m:"You camp outside a city and let it starve. The garrison holds a few turns, then loses men every turn. Or you burn it for a quick haul of gold and lose the city for good.",l:"Make a siege a choice over time, so the battle, if it comes, ends a story.",src:[R("Game Informer: wear a settlement down before the battle",U.gi_attila)]},
+ {t:"You build the puzzle",s:"Your castle is the level.",i:"shcrusader",m:"You lay the walls, towers and gatehouse, then hold them. Rams and siege towers roll up; walls crack and fall stone by stone. A gap lets a few men run to your keep and kill your lord.",l:"When the player builds the defences, every siege tests their own design, and every loss teaches.",src:[D("Simon Bradbury, Firefly: city building and RTS “without sacrificing the fun”",U.bradbury)]},
+ {t:"Every soldier has a name",s:"Small, mortal armies.",i:"bbros",m:"One player's best swordsman, Magnus, 25 kills, holds the left flank. The player forgets to pull him back and a pikeman kills him. Wounds stay too: a lost eye, a bad arm.",l:"Small, named, mortal armies make each fight matter. Lasting injuries soften loss without removing it.",src:[P("Scientific Gamer, “Thoughts: Battle Brothers”",U.scigamer)]},
+ {t:"Break the favourite trick",s:"Attackers that adapt.",i:"dwarf-siege",m:"For years players beat every siege by drowning it or pouring magma. A 2025 update gave goblins battering rams and trolls that dig through walls, and made the traps weaker.",l:"If one defence beats every siege, sieges stop being a puzzle. Give attackers an answer to it.",src:[R("PC Gamer, with Tarn Adams on “the old standbys of drowning and magma”",U.df_siege)]},
+ {t:"Build by day, hold by night",s:"War on a beat.",i:"thronefall",m:"By day you spend gold on walls and towers. At night the waves come and your king rides into the fight himself.",l:"A fixed beat of calm then attack makes war readable. It needs fresh threats or it's the same night twice.",src:[R("The Sixth Axis, Thronefall review",U.sixth_throne)]}
+],
+world:[
+ {t:"The world doesn't care",s:"You are nobody.",i:"kenshi",m:"A raid succeeds, but a new recruit, Logan, is left bleeding by the gate. Slavers bandage him and march him off. The player goes home, heals the rest, and plans a rescue. No quest asked for it.",l:"When the world goes on without the player, the player's own troubles become the story.",src:[R("The Register: “no hand-holding in Kenshi”",U.register),D("Chris Hunt: “Too many games let their players succeed”",U.hunt)]},
+ {t:"Lords with their own lives",s:"A sandbox of the powerful.",i:"warband",m:"Wars start and end, caravans trade and lords get captured whether you join in or not. You can catch a lord and sell him back, or be caught yourself.",l:"An open world feels alive when its powerful people have their own goals, and your place among them is earned.",src:[D("Armağan Yavuz, TaleWorlds: “you need to make it replayable”",U.yavuz)]},
+ {t:"Saving costs something",s:"Danger you can't reload away.",i:"kcd",m:"You save by sleeping in your bed or drinking Saviour Schnapps. Die, and you lose the last hour, so you play carefully. Warhorse made the schnapps cheaper and added save-on-quit, but kept the rule.",l:"A costly save makes danger real but splits the audience. Let players quit without cheating.",src:[R("Game Informer: Warhorse compromises on the save system",U.kcd_save_gi)]},
+ {t:"The town remembers your crimes",s:"Witnesses and marks.",i:"kcd2",m:"A writer chained a few crimes, was branded, and hours later was still shunned. Another stole a man's keys and came back to find the locks changed.",l:"Let people react to what they saw, and let the mark stay. Tell players the rules, or it feels random.",src:[R("PC Gamer: “branded a criminal… still shunned”",U.kcd2_brand)]},
+ {t:"Your life is the clock",s:"Seasons, taxes, an heir.",i:"meddyn",m:"Crops grow in their season, winter needs warm clothes, and the king's tax is due every spring. Your character ages, marries and dies, and you go on as your child.",l:"A calendar you can't pause gives chores weight. Keep the long payoffs in reach, or the clock is just waiting.",src:[R("Games Asylum: three-day seasons, taxes every spring",U.asylum_md),P("Steam reviews, VaporLens: “monotonous over time”",V("1129580/medieval_dynasty"))]}
+],
+dynasty:[
+ {t:"Play the family, not the country",s:"The bloodline is the save file.",i:"ck2",m:"Players stop caring which map colour they hold and start caring about their house. The game only ends if your dynasty runs out of heirs, so the realm can shatter and you play on.",l:"Tie the player to a person and a bloodline, and losing land becomes a story instead of a game over.",src:[D("Henrik Fåhraeus: “players care less about which country they are playing”",U.ck2design)]},
+ {t:"Traits as heirlooms",s:"Every marriage is a bet.",i:"ck3-tree",m:"A cousin marriage gives you an inbred heir. A genius or a giant can run down the line for generations. A Steam reviewer: “Finally I can see my lineage of inbreds in 3D.”",l:"When traits pass down, every marriage decides the next three rulers.",src:[D("Fåhraeus: some traits “can be inherited by your offspring”",U.ck2design),P("Steam reviews collected by Gamepressure",U.gp_ck3)]},
+ {t:"The funeral is the crisis",s:"Succession splits the realm.",i:"ck2-map",m:"Your king dies. His lands split between his sons. A kingdom you spent forty years building falls into three, and the brothers start feuding.",l:"Make a ruler's death the riskiest moment in the game; players will plan whole lives around it.",src:[R("PCGamesN: splitting can “set back all the work you've done”",U.pcgn_ck2)]},
+ {t:"Rulers die, and their powers die too",s:"Turnover stops stagnation.",i:"oldworld-tree",m:"Your great builder king dies and his powers vanish. The heir has a different gift, new friends and new grudges, and foreign relations reset around him. You shaped his schooling, but not his nature.",l:"Mortal rulers stop the mid-game settling into one plan. Give influence over the heir, never full control.",src:[D("Soren Johnson: “a new leader who has a new set of relationships”",U.ow7)]},
+ {t:"Personality with teeth",s:"Stress.",i:"ck3-char",m:"A character loses his closest friend. Stress piles up and he copes by drinking. One player: “I became a DRUNKARD!” Act against your nature too often and stress can kill you.",l:"Let players act out of character, but make them pay in a way that changes the character.",src:[P("Steam reviews collected by Gamepressure",U.gp_ck3),R("PC Gamer: “you can get so stressed out you die”",U.stress)]}
+],
+court:[
+ {t:"Opinions run one way",s:"He can hate you while you like him.",i:"ck2-court",m:"Hover over a vassal and see why he dislikes you: you hold land he claims, you married his rival's daughter. Grant him a county and the number turns.",l:"Put every relationship on one visible, explained, one-way number, and the AI can act in character.",src:[D("Fåhraeus: the opinion system is “at the very heart” of the game",U.ck2design)]},
+ {t:"A council that argues back",s:"Advisors with voices.",i:"kodp",m:"Your clan ring of seven weighs in on a mad neighbouring chief. Each speaks from their skill, their memory and their temper. A warlike one sneers at peace even when peace is right.",l:"Let advisors speak in character, so choosing your council is the real decision.",src:[D("David Dunham: advice comes from skill, story and personality",U.sixages)]},
+ {t:"Events as a loose deck",s:"Many small stories, no fragile chains.",i:"oldworld",m:"A childless ruler meets a new nation; an event offers a foreign bride. A bad wound turns a king into “the Learned.” Over 3,000 events, drawn from what's true in your game right now.",l:"Build events as cards with conditions and subjects from the live game, so many writers can add without breaking chains.",src:[D("Soren Johnson, Old World designer notes on events",U.ow9),P("Steam reviews, VaporLens: replayability via events",V("597180/old_world"))]},
+ {t:"What kind of ruler",s:"Declare a character, then get tested.",i:"ck3",m:"You pick a life focus, scheming, war or learning, and the events that follow come from it. Fåhraeus: “You can shape the world, you can mold your own character.”",l:"Let the player say who the ruler is, then feed events that test it.",src:[D("Fåhraeus to Vice: CK3 as a medieval soap opera",U.vice_ck3)]}
+],
+stories:[
+ {t:"Neither plot nor script",s:"Surprise with reasons.",i:"ck3",m:"A player marries off a daughter. She murders him. Her son goes on to restore the Persian Empire. Nobody wrote it.",l:"Surprise must follow from reasons the player can see afterwards. Random-weird kills the story.",src:[D("Fåhraeus, GDC 2014: stories “with neither plot nor script”",U.ck2gdc),P("Steam reviews collected by Gamepressure",U.gp_ck3)]},
+ {t:"Defeat is a chapter",s:"Losing opens a branch.",i:"kenshi-b",m:"You're beaten, enslaved, you lose an arm. You escape, bolt on a robot arm, free the other slaves and march back on your captors.",l:"When losing starts a new thread instead of a reload, players tell the comeback for years.",src:[R("The Register on Kenshi's indifferent world",U.register)]},
+ {t:"Leave gaps",s:"Let players fill in meaning.",i:"rimworld",m:"Sylvester's example: a surgeon about to operate on his own wife. The game shows no faces, so players fill in the history from what came before.",l:"Simple visuals and off-screen time let players write the meaning themselves.",src:[R("Game Developer on RimWorld, Dwarf Fortress and story generation",U.gd_rim)]},
+ {t:"Retelling is the product",s:"Curation.",i:"dwarf",m:"Boatmurdered was a diary: each player wrote up their year with screenshots. The sim made the events; the players chose which ones mattered and told them.",l:"Give players tools to pick out and retell the best moments. Without that step the story never reaches anyone.",src:[R("James Ryan: emergent stories need curation",U.ryan),R("Wikipedia: Boatmurdered",U.boat)]}
+],
+pacing:[
+ {t:"A late crisis",s:"A reason to play once you're strong.",i:"bbros-b",m:"Around day 100 a great threat rises: a war between noble houses, a greenskin invasion, or the dead walking. Orcs can wipe towns off the map; fallen men stand back up mid-fight.",l:"Schedule a world-scale threat for when the player has outgrown the opening.",src:[D("Overhype dev blog: the world “changing around you”",U.bb92)]},
+ {t:"The world gets harsher",s:"Decline, not growth.",i:"attila-b",m:"Late in the campaign the map turns to burned, empty rubble. Hordes raze rather than rule. You play the fall of an empire, trying to keep what's left.",l:"Turn the snowball around: if the world gets harder as you go, the late game stays tense.",src:[R("PC Gamer, Total War: Attila review",U.pcg_attila)]},
+ {t:"An ending the dynasty owns",s:"Ambitions, not points.",i:"oldworld",m:"You win by completing ten ambitions taken up by successive rulers of your house. The AI can't win that way, so no surprise loss after twenty hours.",l:"Make the finish line the family's story, and never end a long game with a surprise loss.",src:[D("Soren Johnson, Old World designer notes on the ending",U.ow11),D("Johnson: victory conditions are “a necessary evil”",U.owElephant)]},
+ {t:"Anti-pattern: the crisis on a timer",s:"It ignores the world.",i:"med2",m:"A warning, then waves of Mongols under strong generals: a classic memory. But many players report the later Timurid horde never came, or came after they'd already won.",l:"A timed crisis has to check the state of the world; a horde after the map is painted is noise.",src:[P("Steam thread: “Mongol Invasion not triggering”",U.m2_timurid)],anti:1}
+],
+onboarding:[
+ {t:"A simple front door",s:"Depth added at the back.",i:"thronefall",m:"Day: build on fixed spots. Night: defend. Perks, weapons and twists unlock slowly, so the first hour stays clean no matter what's added later.",l:"Add depth behind the game so the front door never gets crowded.",src:[D("Jonas Tyroller: onboarding “will stay beautifully unaffected”",U.throne)]},
+ {t:"A sandbox to learn in",s:"Time before the test.",i:"warband",m:"No story pushes you into the next big fight. You ride around, take small jobs and learn the hard combat before anything big depends on it.",l:"Let the open world give players room to practise before the stakes arrive.",src:[D("Yavuz: the sandbox “gives the player more time to learn the combat”",U.yavuz)]},
+ {t:"The first runs are guided",s:"Teach inside real play.",i:"storm",m:"Your first settlements walk you through building, exploring and keeping each species happy. Moving a building is free, so trying things costs nothing. Then the map opens up.",l:"Teach inside a real run, make undo cheap, then let go.",src:[D("Eremite Games tutorials update",U.eremite)]},
+ {t:"Test on an outsider",s:"Not on your fans.",i:"dwarf",m:"After 16 years with no tutorial, the Steam version added one for mining, stockpiles and zones. It was playtested on a family member who didn't play the game.",l:"Test onboarding on someone who never chose your genre.",src:[R("PC Gamer: a tutorial after 16 years",U.df_tut)]},
+ {t:"Learn by touching",s:"Cheap, visible experiments.",i:"kingdom",m:"No text tells you what knights do. You drop coins, watch who picks up what, and maybe lose a run finding out.",l:"If actions are cheap and visible, discovery can replace instructions.",src:[R("Xbox Hub: knights arrive with no description",U.xbh_kingdom)]},
+ {t:"Anti-pattern: the silent locked button",s:"No reason given.",i:"manor-close",m:"New players see greyed-out upgrades with no reason shown, and go to YouTube to find out why.",l:"Every locked button must say what unlocks it.",src:[R("Seasoned Gaming: no real tutorial; rely on guides",U.seasoned)],anti:1}
+],
+camera:[
+ {t:"Down to earth",s:"From the valley to a face.",i:"manor-close",m:"Zoom from the whole valley down to a miner at work, a fire crackling, livestock calling. Then take your lord and walk the street.",l:"Let the close zoom carry sound and small acts, so it rewards looking, not just checking.",src:[R("TechRadar: “a camera that brings you down to earth”",U.techradar)]},
+ {t:"Far out, with a peephole",s:"Keep the people at every zoom.",i:"syx",m:"Zoomed far out over a city of thousands, a small box shows what's happening under your cursor. Players float the cursor around to check on their people.",l:"At far zoom, keep a live close-up so the player never loses sight of the people.",src:[R("GamingOnLinux: “a little window into what's going on beneath your cursor”",U.syx_gol)]},
+ {t:"Same sim, readable skin",s:"Pictures over glyphs.",i:"dwarf-siege",m:"The text-symbol fortress became pictures and mouse controls. People who'd bounced off it for 16 years finally played. Veterans can switch the old look back on.",l:"A deep sim can stay deep and still be read at a glance. The look is not the sim.",src:[R("Boing Boing: “a complete reworking of the game's UX”",U.df_boing)]},
+ {t:"One line, one read",s:"Less camera, faster reading.",i:"kingdom",m:"The whole realm is a strip you ride along. Walls, farms and the enemy's portals all sit on one line, and simple pixel art leaves the rest to imagination.",l:"Fewer camera choices can mean faster reading. Pick the view that shows the decision.",src:[D("noio: “The viewer fills in the details with their imagination”",U.noio)]}
+],
+theory:[
+ {t:"Allies are rivals",s:"Shared rewards.",i:"bannerlord",m:"When your army takes a town, the lords who fought beside you bid influence to own it. Win together, then compete over the prize.",l:"Rewards split among rivals turn every victory into politics.",src:[D("Armağan Yavuz at Gamescom on fief bidding",U.fief)]},
+ {t:"Counters",s:"Rock, paper, scissors.",i:"aoe2",m:"Spearmen beat cavalry, archers beat spearmen, cavalry run down archers. No unit is best; the best one depends on what the other side builds.",l:"Counters turn building an army into reading your opponent.",src:[W("Age_of_Empires_II")]},
+ {t:"Reputation",s:"Repeated games.",i:"warband",m:"Execute a captured lord and every lord in the realm likes you less. Keep your word and they'll join you later.",l:"When you'll meet again, your reputation is worth more than any single win.",src:[W("Mount_%26_Blade:_Warband","Mount & Blade: Warband")]},
+ {t:"Binding promises",s:"Commitment.",i:"ck3",m:"A marriage ties two houses into an alliance. Refuse your ally's call to war and you lose prestige and the alliance.",l:"A promise means something only if breaking it costs more than keeping it.",src:[D("Fåhraeus on CK2's opinion system",U.ck2design)]},
+ {t:"Mixed strategy",s:"Don't be predictable.",i:"sf6",m:"Attack beats throw, throw beats block, block beats attack. Pros win by varying it so the opponent can't guess.",l:"When every option has a counter, the best play is a mix. That's a Nash equilibrium: no one gains by changing their move alone.",src:[W("Nash_equilibrium")]},
+ {t:"Prisoner's dilemma",s:"Trust or betray.",i:"rust",m:"You meet a stranger. Team up and you both do better. Shoot first and you take his loot. If you both shoot first, you both risk dying over a few rocks.",l:"Each side does best by betraying, but both do worse when both betray. Make trust risky and worth it.",src:[R("Nicky Case, The Evolution of Trust",U.trust)]},
+ {t:"Signals and bluffs",s:"Cheap talk vs proof.",i:"amongus",m:"“I was in Medbay” costs nothing to say. Doing a task others can see proves you're innocent.",l:"A claim is only believed if it costs something to make. Players learn to weigh words against deeds.",src:[W("Signalling_theory","Signalling theory")]}
+],
+fails:[
+ {t:"The solved winter",s:"Late-game boredom.",i:"banished-winter",m:"Once food and wood are stocked, winter stops being a threat. Players' top complaint is that it becomes boring and repetitive; mods are the late game.",l:"A threat that can be solved for good stops being a threat. Keep raising it, or end the run.",src:[P("Steam reviews, VaporLens: “becomes boring and repetitive”",V("242920/banished"))],anti:1},
+ {t:"Starving next to full barns",s:"Hidden logistics.",i:"banished",m:"Players see full storehouses and dying villagers. The real cause is walking distance and where the stockpiles are, but the game never shows it.",l:"If the cause of a failure is hidden, players blame the game, not their plan.",src:[P("Steam reviews, VaporLens: “villagers starve even when food is available”",V("242920/banished"))],anti:1},
+ {t:"A great sim behind an unreadable screen",s:"Opaque systems.",i:"syx-b",m:"In the same reviews, depth is the top praise and the interface is a top complaint: cluttered screens, weak tutorials, rules never explained.",l:"Depth only counts if players can read it. The interface is part of the sim.",src:[P("Steam reviews, VaporLens: Songs of Syx",V("1162750/songs_of_syx")),P("Steam reviews, VaporLens: Dwarf Fortress",V("975370/dwarf_fortress"))],anti:1},
+ {t:"Walking to menus",s:"Micromanagement.",i:"bellwright",m:"Villagers work on their own, which players love. But to queue a job you have to walk to each workstation and fight a clumsy menu.",l:"Once a chore is understood, let the player give the order from where they stand.",src:[R("PCGamesN: “physically walk to each workstation”",U.bellwright)],anti:1},
+ {t:"The town dies at scale",s:"The living town stutters.",i:"frontier-b",m:"The top complaint in big town builders is slowdown at high population, and villagers who get stuck. The town stops feeling alive exactly when it gets big.",l:"Budget the crowd from day one. A living town that freezes at 500 people is a dead town.",src:[P("Steam reviews, VaporLens: Farthest Frontier",V("1044720/farthest_frontier")),P("Steam reviews, VaporLens: Foundation",V("690830/foundation"))],anti:1},
+ {t:"The blob",s:"A snowball with no brakes.",i:"eu4",m:"Players stop 100 to 150 years in: they're too strong and the rest is mopping up. In Crusader Kings III players ask for anti-blobbing rules and complain of dynasties stacked with bonuses.",l:"Growth needs rising friction: strife at home, coalitions abroad, decay over time.",src:[P("Steam discussion, Europa Universalis IV",U.blob_eu4),P("Paradox forum: stacking stats and modifiers",U.stack_ck3)],anti:1},
+ {t:"The victory lap",s:"Hours of mopping up.",i:"tw3k-map",m:"“Once you have a third of the map conquered it might as well be over.” Shogun 2 answered this with Realm Divide: near victory, nearly every clan turns on you.",l:"The strongest threat should come late. Turn the lead into a new fight.",src:[P("Steam discussion, Three Kingdoms",U.tw3k_lap),P("Blog: Realm Divide, from “pushover” to “unwinnable”",U.shogun)],anti:1},
+ {t:"The event that repeats",s:"Until it's noise.",i:"reigns",m:"Reigns removes recent cards from the pool, yet repetition is its top complaint. In Crusader Kings III players say the few events that trigger easily show up far too often.",l:"Count how often each event fires in long test runs. A cooldown is not enough.",src:[D("Alliot: recent cards are taken out of the pool",U.reignsDD),P("Steam reviews, VaporLens: repetitive (97 mentions)",V("474750")),P("Paradox forum: “Random events feels like I'm missing something”",U.ck3_events)],anti:1},
+ {t:"Characters as stat blocks",s:"People who only make numbers.",i:"bannerlord-town",m:"Players praise the battles, then complain of basic diplomacy and no depth in relationships or intrigue. Early reviews found cities mostly empty and a world that rarely changed.",l:"Battles bring players in; the politics and life between battles keep them.",src:[P("Steam reviews, VaporLens: Bannerlord",V("261550/mount_blade_ii_bannerlord")),R("GameBanshee early access round-up",U.bl_ea)],anti:1},
+ {t:"The AI that doesn't play",s:"Passive enemies.",i:"med2-b",m:"A real Medieval II patch note: “Siege AI is not passive.” The Stronghold remake's top complaint is AI and pathfinding; Bannerlord troops get stuck on ladders.",l:"An enemy that won't attack or can't climb a wall kills the drama faster than any graphics flaw.",src:[D("Medieval II v1.2 patch notes",U.m2patch),R("Tommy Thompson on Total War's AI",U.tw_ai),P("Steam reviews, VaporLens: Stronghold DE",V("2140020/stronghold_definitive_edition"))],anti:1},
+ {t:"Hard, and unexplained",s:"Friction that doesn't teach.",i:"kcd-read",m:"Kingdom Come's top complaint: combat that's “poorly explained, especially in group fights,” then a punishing start with no guidance.",l:"Hard is fine. Unexplained is not. Teach through the first fights and say why the player lost.",src:[P("Steam reviews, VaporLens: Kingdom Come",V("379430/kingdom_come_deliverance"))],anti:1},
+ {t:"Friction turned grind",s:"The same chore at hour 50.",i:"meddyn",m:"Medieval Dynasty players say tasks become monotonous; Kenshi players call the early game grindy. The chore that felt real at hour two is a job at hour fifty.",l:"Friction pays only while it teaches or tells a story. After that, automate it or hand it to someone in the world.",src:[P("Steam reviews, VaporLens: Medieval Dynasty",V("1129580/medieval_dynasty")),P("Steam reviews, VaporLens: Kenshi",V("233860/kenshi"))],anti:1},
+ {t:"Dice that feel like cheating",s:"Chance with no story.",i:"bbros",m:"Battle Brothers' top complaint is the dice: a 90% hit misses and a veteran dies to a lucky blow. Players accept death, not a death they can't explain.",l:"When chance kills a loved unit, show the odds and give tools to stack them: formation, gear, retreat.",src:[P("Steam reviews, VaporLens: Battle Brothers",V("365360/battle_brothers"))],anti:1},
+]};
+
+/* players at scale: game, praise, complaints, [label,url] */
+const SCALE=[
+ ["Crusader Kings III","Stories that emerge; roleplaying a house; strategy and RPG together","DLC cost; thin base game; late-game blob and boredom (forums)",["VaporLens",V("1158310")]],
+ ["Mount & Blade II: Bannerlord","Exciting battles (32); freedom (21); mods (26)","Mods breaking (34); repetitive late game (21); basic diplomacy (18)",["VaporLens",V("261550/mount_blade_ii_bannerlord")]],
+ ["Mount & Blade: Warband","Mods (52); immersion (36); freedom (26)","Repetitive missions (22); AI (17); limited diplomacy (16)",["VaporLens",V("48700/mount_blade_warband")]],
+ ["Kingdom Come: Deliverance","Combat depth (58); setting (46); authenticity (35)","Combat poorly explained (96); chore quests (63); harsh start (59)",["VaporLens",V("379430/kingdom_come_deliverance")]],
+ ["Kenshi","Freedom to explore (34); rich world (26)","Performance (24); harsh (18); grindy (14)",["VaporLens",V("233860/kenshi")]],
+ ["Battle Brothers","Deep tactical combat (25); challenge (13)","RNG (40); very hard (26)",["VaporLens",V("365360/battle_brothers")]],
+ ["Stronghold: Definitive Edition","New campaigns (95); nostalgia (83)","AI and pathfinding (64); mission design (61)",["VaporLens",V("2140020/stronghold_definitive_edition")]],
+ ["Old World","Fair AI that doesn't cheat; events make every game different","Steep learning curve; sameness in the mid and late game",["VaporLens",V("597180/old_world")]],
+ ["Reigns","Short sessions; many endings; swipes that weigh","Events repeat (97); too random (30)",["VaporLens",V("474750")]],
+ ["Banished","Top city builder; relaxing (36 each)","Boring and repetitive (21); starve next to food (20)",["VaporLens",V("242920/banished")]],
+ ["Manor Lords","Striking visuals (30)","Unfinished and buggy (24); slow early access (18)",["VaporLens",V("1363080/manor_lords")]],
+ ["Farthest Frontier","Excellent city builder (36)","Slowdown at high population (42)",["VaporLens",V("1044720/farthest_frontier")]],
+ ["Foundation","Organic, gridless building (56)","Crashes (63); performance (55); villager AI (34)",["VaporLens",V("690830/foundation")]],
+ ["Songs of Syx","City-building depth (39)","Steep learning curve (26); cluttered UI (23)",["VaporLens",V("1162750/songs_of_syx")]],
+ ["Dwarf Fortress","Fun, addictive (30); emergent stories (28)","Confusing, clunky UI (28)",["VaporLens",V("975370/dwarf_fortress")]],
+ ["Going Medieval","Visuals (23); fun (20)","Bugs (33); performance (27); settler AI (24)",["VaporLens",V("1029780/going_medieval")]],
+ ["Medieval Dynasty","Medieval life sim (28); village building (28)","Repetitive (24); fetch quests (12)",["VaporLens",V("1129580/medieval_dynasty")]],
+ ["Against the Storm","Roguelite and town builder blend (50)","Unintuitive (22); repetitive loop (20)",["VaporLens",V("1336490/against_the_storm")]]
+];
+
+/* designer vs players: game, designer said [text,url], players said [text,url], lesson */
+const SPLIT=[
+ ["Kingdom Come: Deliverance",["“Friction makes you feel like you earned something.” (Prokop Jirsa)",U.jirsa],["Top complaint: combat “poorly explained” (96 mentions); harsh start (59).",V("379430/kingdom_come_deliverance")],"Friction has to teach, or it reads as a broken game."],
+ ["Kingdom Come: Deliverance II",["The limited save “will forever stay.”",U.kcd2_save],["A mod removed it within hours of launch.",U.kcd2_save],"Make the rule punish dying, not stopping for dinner."],
+ ["Banished",["“People have to survive the winter.” (Luke Hodorowicz)",U.banishedGD],["“Becomes boring and repetitive” (21); mods give it a second life.",V("242920/banished")],"A threat you can solve once isn't a threat after that."],
+ ["Old World",["A new ruler brings “a new set of relationships, memories, and opinions.” (Soren Johnson)",U.ow7],["A reader replies: characters feel like “just another abstract resource”; heirs rarely die.",U.ow7],"Mortality matters only if it happens, and changes what you do next."],
+ ["Reigns",["Recently played cards are taken out of the pool. (François Alliot)",U.reignsDD],["Repetition is the top complaint (97 mentions).",V("474750")],"A cooldown hides repeats for a while. Only more cards and rarer triggers fix it."],
+ ["Foundation",["Villagers wear their own paths into roads.",U.pcgn_found],["Charming early, “a nightmare later on.”",U.found_steam],"Organic systems need a tidy-up tool for the big town."],
+ ["Crusader Kings III",["Factions and vassals push back harder as you grow.",U.w("Crusader_Kings_III")],["Forum threads ask for anti-blobbing rules and complain of dynasties stacked with bonuses.",U.stack_ck3],"Pushback has to outgrow the player, or the late game is admin."]
+];
+
+/* read next */
+const READ=[
+ ["Designing Crusader Kings II to generate strange emergent stories",U.ck2gdc,"Henrik Fåhraeus, GDC 2014. Characters, opinions and the line between reasonable surprise and noise."],
+ ["The Surprising Design of Crusader Kings II",U.ck2design,"Fåhraeus on one-way opinions and inherited traits. The core of the dynasty genre."],
+ ["Old World designer notes",U.ow7,"Soren Johnson's series: mortal rulers, the event deck, ambitions as the ending."],
+ ["How Six Ages builds a game around the power of myth",U.sixages,"David Dunham on advisors, hidden odds and King of Dragon Pass's descendants."],
+ ["Game Design Deep Dive: Reigns",U.reignsDD,"François Alliot on four bars, one swipe and a deck that adapts."],
+ ["Battle Brothers dev blog: late game crises",U.bb92,"Overhype on giving a strong company something to fear."],
+ ["TaleWorlds on morale",U.morale,"How Bannerlord spreads panic man to man, modelled on Towton."],
+ ["Banished: build what you want, when you want it",U.banishedGD,"Luke Hodorowicz on winter, freedom and a game made by one person."],
+ ["Kingdom Two Crowns: pixel art and roguelike design",U.noio,"noio on coins as objects and letting the viewer imagine."],
+ ["How Against the Storm mixed city building and roguelite play",U.storm,"Ending each town before it gets boring."],
+ ["Mastering minimalism: Thronefall",U.throne,"Keeping the front door simple while depth grows behind it."],
+ ["Curating Simulated Storyworlds",U.ryan,"James Ryan's thesis: why emergent stories need someone to pick them out and retell them."],
+ ["The AI Systems of Left 4 Dead",U.booth,"Michael Booth on the director: tension in waves."],
+ ["MDA: A Formal Approach to Game Design",U.mda,"Hunicke, LeBlanc, Zubek, 2004. Five pages. The lens at the top of this page."],
+ ["“Interesting Decisions”, GDC 2012",U.meier,"Sid Meier on what makes a choice worth making."],
+ ["A Theory of Fun for Game Design",U.koster,"Raph Koster. Fun as learning; why games go stale."],
+ ["Designing Games",null,"Tynan Sylvester, maker of RimWorld. Games as story engines."],
+ ["The Art of Game Design",null,"Jesse Schell. The best all-round book, built as 100+ “lenses”."],
+ ["The Evolution of Trust",U.trust,"Nicky Case. A free 30-minute playable explainer on trust and reputation."]
+];
+
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const WHO={d:"Designer",p:"Players",r:"Press"};
+const srcHTML=src=>src&&src.length?`<span class="srcs">${src.map(([w,l,u])=>`<span class="src"><span class="who ${w}">${WHO[w]}</span><a href="${esc(u)}" target="_blank" rel="noopener">${esc(l)}</a></span>`).join("")}</span>`:"";
+document.querySelectorAll(".cases").forEach(box=>{
+  let h='<div class="thead" aria-hidden="true"><span>The idea</span><span>The game</span><span>The moment</span><span>The lesson</span></div>';
+  for(const c of C[box.dataset.set]){
+    const g=c.i.split("-")[0], [id,name,yr]=G[g];
+    h+=`<article class="case${c.anti?' anti':''}">
+      <div class="idea">${c.anti?'<span class="tag">Avoid</span>':''}<h3>${esc(c.t.replace(/^Anti-pattern: /,""))}</h3><p>${esc(c.s)}</p></div>
+      <div class="shot"><button class="open" data-g="${g}" data-start="${START[c.i]||0}" aria-label="See all ${GAL[g]||1} screenshots of ${esc(name)}"><img src="img/${c.i}.jpg" alt="Screenshot of ${esc(name)}" loading="lazy" width="960" height="540">${GAL[g]?`<span class="count">${GAL[g]} shots</span>`:''}</button><div class="game">${esc(name)} <span>${esc(yr)}</span>${OUTSIDE.has(g)?'<em>From outside the genre</em>':''}</div></div>
+      <div class="moment"><span class="lbl">The moment</span><p>${esc(c.m)}</p></div>
+      <div class="lesson"><span class="lbl">The lesson</span><p>${esc(c.l)}</p>${srcHTML(c.src)}</div>
+    </article>`;
+  }
+  box.innerHTML=h;
+});
+const link=(t,u)=>u?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a>`:esc(t);
+document.getElementById("scale-rows").innerHTML=SCALE.map(([g,a,b,[l,u]])=>`<tr><td>${esc(g)}</td><td>${esc(a)}</td><td>${esc(b)}</td><td>${link(l,u)}</td></tr>`).join("");
+document.getElementById("split-rows").innerHTML=SPLIT.map(([g,[d,du],[p,pu],l])=>`<tr><td>${esc(g)}</td><td><span class="who d">Designer</span>${link(d,du)}</td><td><span class="who p">Players</span>${link(p,pu)}</td><td>${esc(l)}</td></tr>`).join("");
+/* gallery viewer: gal/<game>.jpg is every Steam screenshot stacked top to bottom, each 800x450 */
+(()=>{
+  const $=id=>document.getElementById(id), lb=$("lb"), frame=$("lb-frame"), strip=$("lb-strip");
+  let g=null,n=0,i=0;
+  const pos=(k,N)=>`0 ${N>1?k/(N-1)*100:0}%`;
+  function show(k){
+    i=(k+n)%n;
+    frame.style.backgroundPosition=pos(i,n);
+    frame.setAttribute("aria-label",`${G[g][1]}, screenshot ${i+1} of ${n}`);
+    $("lb-pos").textContent=`${i+1} / ${n}`;
+    strip.querySelectorAll("button").forEach((b,j)=>b.setAttribute("aria-current",j===i));
+    strip.children[i]?.scrollIntoView({block:"nearest",inline:"nearest"});
+  }
+  function open(key,start){
+    g=key;n=GAL[g]||0;if(!n)return;
+    const url=`url("gal/${g}.jpg")`;
+    frame.style.backgroundImage=url;frame.style.backgroundSize=`100% ${n*100}%`;
+    $("lb-name").textContent=G[g][1];$("lb-store").href=`https://store.steampowered.com/app/${G[g][0]}/`;
+    strip.innerHTML=Array.from({length:n},(_,j)=>`<button aria-label="Screenshot ${j+1}" style='background-image:${url};background-size:100% ${n*100}%;background-position:${pos(j,n)}'></button>`).join("");
+    strip.querySelectorAll("button").forEach((b,j)=>b.onclick=()=>show(j));
+    lb.showModal();show(Math.min(start||0,n-1));
+  }
+  document.addEventListener("click",e=>{const b=e.target.closest("button.open");if(b)open(b.dataset.g,+b.dataset.start)});
+  $("lb-x").onclick=()=>lb.close();
+  $("lb-prev").onclick=()=>show(i-1);$("lb-next").onclick=()=>show(i+1);
+  lb.addEventListener("click",e=>{if(e.target===lb||e.target.classList.contains("lb-in"))lb.close()});
+  lb.addEventListener("keydown",e=>{if(e.key==="ArrowRight"){show(i+1);e.preventDefault()}if(e.key==="ArrowLeft"){show(i-1);e.preventDefault()}});
+  let x0=null;frame.addEventListener("pointerdown",e=>x0=e.clientX);
+  frame.addEventListener("pointerup",e=>{if(x0!==null&&Math.abs(e.clientX-x0)>40)show(i+(e.clientX<x0?1:-1));x0=null});
+})();
+document.getElementById("reading-list").innerHTML=READ.map(([t,u,d])=>`<div><b>${link(t,u)}</b><span>${esc(d)}</span></div>`).join("");
+</script>
+
+</body></html>

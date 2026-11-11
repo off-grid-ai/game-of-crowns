@@ -6,6 +6,14 @@ The one place where decisions live. New ideas get added here. They don't replace
 A living medieval-fantasy world that runs on its own on your laptop. You are its King: you watch it, rule it, and live with what your rulings set in motion.
 
 ## Decided
+- **Our track: win on play, not on pixels (2026-11-11, Mac).** We can't match big-studio graphics, so we
+  stop competing on them. We pick one kind of game and do it really, really well: a short, timed reign
+  where you rule from above (court, seals, houses, the host) and find out what kind of king you'd be. We
+  compete on gameplay: fun, immersive, engaging. Graphics only have to be clear, consistent and
+  readable at roof height and above (the camera cap and "no close-up realism" are part of this). Before
+  any work, ask whether it makes the next ten minutes of a reign more gripping; if it's polish only a
+  close-up would show, it waits. This narrows earlier wishes: the Manor Lords look below, zooming into
+  buildings, and walking among people are no longer goals in their own right.
 - **The King plays with his own hands (2026-11-10, Mac):** playing still wasn't fun; RollerCoaster Tycoon, Civilization and Warcraft II are, because you build and command toward small goals. On top of the court and the houses, the King gets three loops of his own, in this order:
   - **C, a ladder of royal goals:** always one on screen, each with a reward you can see, each leading to the next.
   - **A, the Crown's own lands to build:** chosen from the town card and sited by the game, rising over seasons and producing gold, grain and men.

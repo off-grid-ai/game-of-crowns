@@ -1,0 +1,457 @@
+[
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "A1",
+  "note": "Claude's call: Keep as is"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "A10",
+  "note": "Claude's call: Add later"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "A11",
+  "note": "Claude's call: Skip"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "A12",
+  "note": "Claude's call: Skip"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "A2",
+  "note": "Claude's call: Skip"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "A3",
+  "note": "Claude's call: Merge"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "A4",
+  "note": "Claude's call: Skip"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "A5",
+  "note": "Claude's call: Skip"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "A6",
+  "note": "Claude's call: Keep"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "A7",
+  "note": "Claude's call: Keep, improve"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "A8",
+  "note": "Claude's call: Keep"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "A9",
+  "note": "Claude's call: Skip for now"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "C1",
+  "note": "Claude's call: Keep"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "C2",
+  "note": "Claude's call: Skip"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "C3",
+  "note": "Claude's call: Merge"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "C4",
+  "note": "Claude's call: Add"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "C5",
+  "note": "Claude's call: Merge"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "D1",
+  "note": "Claude's call: Add"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "D2",
+  "note": "Claude's call: Keep, improve"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "D3",
+  "note": "Claude's call: Merge"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "D4",
+  "note": "Claude's call: Add later"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "D5",
+  "note": "Claude's call: Add"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "D6",
+  "note": "Claude's call: Merge"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "D7",
+  "note": "Claude's call: Keep, improve"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "D8",
+  "note": "Claude's call: Merge"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "E1",
+  "note": "Claude's call: Keep, improve"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "E10",
+  "note": "Claude's call: Skip"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "E11",
+  "note": "Claude's call: Skip"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "E2",
+  "note": "Claude's call: Merge"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "E3",
+  "note": "Claude's call: Add"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "E4",
+  "note": "Claude's call: Skip for now"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "E5",
+  "note": "Claude's call: Add"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "E6",
+  "note": "Claude's call: Keep"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "E7",
+  "note": "Claude's call: Merge"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "E8",
+  "note": "Claude's call: Keep, improve"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "E9",
+  "note": "Claude's call: Keep"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "O1",
+  "note": "Claude's call: Keep, improve"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "O10",
+  "note": "Claude's call: Keep"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "O11",
+  "note": "Claude's call: Add later"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "O12",
+  "note": "Claude's call: Skip"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "O2",
+  "note": "Claude's call: Keep, improve"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "O3",
+  "note": "Claude's call: Keep"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "O4",
+  "note": "Claude's call: Keep, improve"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "O5",
+  "note": "Claude's call: Add"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "O6",
+  "note": "Claude's call: Keep, improve"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "O7",
+  "note": "Claude's call: Keep"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "O8",
+  "note": "Claude's call: Merge"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "O9",
+  "note": "Claude's call: Add later"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "P1",
+  "note": "Claude's call: Add"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "P2",
+  "note": "Claude's call: Keep, improve"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "P3",
+  "note": "Claude's call: Add"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "P4",
+  "note": "Claude's call: Add later"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "P5",
+  "note": "Claude's call: Keep"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "P6",
+  "note": "Claude's call: Remove or merge"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "P7",
+  "note": "Claude's call: Keep, improve"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "P8",
+  "note": "Claude's call: Skip"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "W1",
+  "note": "Claude's call: Keep, improve"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "W2",
+  "note": "Claude's call: Keep, improve"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "W3",
+  "note": "Claude's call: Keep, improve"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "W4",
+  "note": "Claude's call: Remove or merge"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "W5",
+  "note": "Claude's call: Add as art"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "W6",
+  "note": "Claude's call: Merge"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "W7",
+  "note": "Claude's call: Keep"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "W8",
+  "note": "Claude's call: Keep, improve"
+ },
+ {
+  "at": "2026-11-11T10:00:00Z",
+  "by": "claude",
+  "choice": "yes",
+  "code": "W9",
+  "note": "Claude's call: Keep"
+ }
+]

@@ -112,6 +112,8 @@ dark-pattern loops (streaks, login rewards, nags). A reign has a clock and a rea
 - **End of the reign:** the ending screen, your name in history, the reign in numbers.
 
 ## How we decide
+- **Our track (VISION.md, 2026-11-11):** we win on play, not on pixels. One kind of game, done really well:
+  a short reign ruled from above. Graphics need to read clearly from roof height and above, nothing more.
 - Judge as a demanding player: does this make the next ten minutes more gripping? If not, cut it.
 - Score it against the fun bar above, with numbers from a real reign where they exist.
 - Check what proven games do (Reigns, Frostpunk, Crusader Kings 3, King of Dragon Pass, Old World,
