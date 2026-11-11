@@ -84,6 +84,7 @@ var _knot := [0, 0, 0]  # [frames the biggest knot passed the square's cap, bigg
 var _nearest := [0.0, 0]  # [sum of frames' mean nearest-other distance, metres; frames]
 var _busy := [0.0, 0]  # [sum of frames' moving share; frames]
 
+var _in_frame := [0.0, 0, 0]  # [sum of people on screen a frame, frames, most on screen] (the crowd's density, town-b's bar)
 var _secs := 60.0
 var _t := 0.0
 var _start := -1.0  # when the measuring began
@@ -217,6 +218,17 @@ func _process(delta: float) -> void:
 		_report()
 		get_tree().quit()
 		return
+	# Everyone the camera has in frame, drawn: the crowd as the player sees it.
+	var cam := get_viewport().get_camera_3d()
+	if cam:
+		var shown := 0
+		for n in all:
+			var q := n as Node3D
+			if q and q.is_visible_in_tree() and cam.is_position_in_frustum(q.global_position + Vector3(0, 0.1, 0)):
+				shown += 1
+		_in_frame[0] = float(_in_frame[0]) + shown
+		_in_frame[1] = int(_in_frame[1]) + 1
+		_in_frame[2] = maxi(int(_in_frame[2]), shown)
 	for p in near:
 		if not _p.has(p):
 			_p[p] = _track(p)
@@ -721,6 +733,7 @@ func _report() -> void:
 	var verdict := func(ok: bool) -> String: return "PASS" if ok else "FAIL"
 	print("MOTION pipeline: %s" % ("v2 (--motion=v2)" if preload("res://scripts/motion.gd").v2 else "today's"))
 	print("MOTION people measured: %d near the camera over %d s" % [people, _secs])
+	print("MOTION in frame: %.0f people on screen on average, %d at most (the crowd's density, against town-b)" % [float(_in_frame[0]) / maxi(int(_in_frame[1]), 1), int(_in_frame[2])])
 	# Report only since the camera caps at roof height (feet, hands at the body and head aim don't read from there).
 	print("MOTION foot skate: REPORT (roof height; was %s)  %d people over %d%% of planted frames sliding (worst %.0f%%)" % [verdict.call(bad == 0), bad, int(SKATE_FAIL * 100), worst * 100])
 	# Who fails it, and where (NPC perf): what they were doing when they first slid, and their worst moves.
