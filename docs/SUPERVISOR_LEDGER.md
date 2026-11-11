@@ -34,6 +34,8 @@ limit. Newest first. The plan is [PLAN.md](PLAN.md); the running log of checks i
   switch until judged; tunables in data plus docs/TUNING.md.
 
 ## What Mac said (2026-11-11), newest first
+- "Allow": the lead may run antzGames' downloaded VAT baker (GPL-3, in Blender, headless) and install the antz VAT
+  plugin (MIT) into realm/addons for the army spike.
 - "I don't really care about 30 FPS. Anything above 10 is fine." The frame-rate bar is ≥10 fps; spend the headroom on
   density and finesse (bigger armies, more detail).
 - "I'm not a fan of the screenshot… it largely looks the same… you haven't changed the components to a better
