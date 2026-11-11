@@ -492,13 +492,15 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 				_trade_record(root, center, {"component": "tavern", "model": lm}, p, -p.normalized(), f)
 			if not square_trade.is_empty():
 				_trade_record(root, center, square_trade, p, -p.normalized(), f)
+			if comp == "church":
+				_walled(root, center, p, -p.normalized(), f, "church", lots)  # the churchyard
 		gap_ang += PI * 0.62
 		await _pace()
 	root.set_meta("places", places)
 	# The trades that need a particular ground take it before any house: the armoury by the castle,
 	# the watermill on the water.
 	for tr in _trades:
-		if String(tr["where"]) in ["castle", "water"]:
+		if String(tr["where"]) in ["castle", "water", "inn"]:
 			await _trade_off_plot(root, center, tr, square_r, square_r + 3.6, ways, lots, rng)
 	if not ways.is_empty():
 		# --towns=plots: the square enclosed by a ring of houses between the roads in, then the
@@ -944,9 +946,10 @@ func _yard_thing(root: Node3D, center: Vector3, pl: Array, face: Vector3, lots: 
 
 ## Fence panels from `a` to `b` (town-local), on the ground, walked round;
 ## none where a house stands.
-func _fence_line(root: Node3D, center: Vector3, a: Vector2, b: Vector2, lots: Array) -> void:
-	# The yards' light fence (data/towns.json plots.fence: a component in assets.json), the palisade's otherwise.
-	var kind := Real.one(String(_plot_knobs(false).get("fence", "fence_yard")))
+func _fence_line(root: Node3D, center: Vector3, a: Vector2, b: Vector2, lots: Array, component := "") -> void:
+	# The yards' light fence (data/towns.json plots.fence: a component in assets.json), the palisade's otherwise;
+	# or `component` (a churchyard's or a manor's low stone wall).
+	var kind := Real.one(component if component != "" else String(_plot_knobs(false).get("fence", "fence_yard")))
 	if kind == "" or Real.footprint(kind) == Vector2.ZERO:
 		kind = "wooden_fence_game_ready_asset"
 	var f: Vector2 = Real.footprint(kind)
@@ -1163,6 +1166,39 @@ func _rotor(root: Node3D, center: Vector3, r: Dictionary, p: Vector3, face: Vect
 	return holder
 
 
+## A low stone wall round a building's ground, a gate gap before its door (assets.json components.<id>.walled:
+## {pad: metres of ground round it, wall: the wall's component, garden: a kitchen garden or flower beds
+## inside}): the churchyard, the manor's walled garden (art target town-a, town-b).
+func _walled(root: Node3D, center: Vector3, p: Vector3, face: Vector3, f: Vector2, component: String, lots: Array) -> void:
+	var w: Dictionary = preload("res://scripts/data.gd").value("assets", "components", {}).get(component, {}).get("walled", {})
+	if w.is_empty():
+		return
+	var pad := float(w.get("pad", 2.0)) * Real.S
+	var along := Vector3(-face.z, 0, face.x)
+	var hx := f.x * 0.5 + pad
+	var hz := f.y * 0.5 + pad
+	var c := [Vector2(-hx, -hz), Vector2(hx, -hz), Vector2(hx, hz), Vector2(-hx, hz)]  # (along, out)
+	var pts: Array = []
+	for k in c:
+		var q: Vector3 = p + along * k.x + face * k.y
+		pts.append(Vector2(q.x, q.z))
+	var gate := 0.18 + 0.06  # half the gate's gap before the door
+	var door := Vector2(p.x, p.z) + Vector2(face.x, face.z) * hz
+	for i in 4:
+		var a: Vector2 = pts[i]
+		var b: Vector2 = pts[(i + 1) % 4]
+		if i == 2:  # the front side: two runs either side of the gate
+			var dir := (b - a).normalized()
+			_fence_line(root, center, a, door - dir * gate, lots, String(w.get("wall", "low_wall")))
+			_fence_line(root, center, door + dir * gate, b, lots, String(w.get("wall", "low_wall")))
+		else:
+			_fence_line(root, center, a, b, lots, String(w.get("wall", "low_wall")))
+	if bool(w.get("garden", false)):
+		var gr := RandomNumberGenerator.new()
+		gr.seed = int(p.x * 1000.0) * 31 + int(p.z * 1000.0)  # the same garden every run
+		_croft(root, center, p, face, f, lots, gr)
+
+
 ## Stands a trade off the plots, on the ground its `where` asks for (towns.json trades): beside the
 ## castle, on the shore, on the highest open ground past the edge, by a main road out past the edge,
 ## downstream. Candidates are scored and the best that stands wins. Returns whether it stood.
@@ -1186,6 +1222,20 @@ func _trade_off_plot(root: Node3D, center: Vector3, tr: Dictionary, square_r: fl
 				dir += d
 		return dir.normalized() if dir != Vector3.ZERO else Vector3.ZERO
 	match where:
+		"inn":
+			# Beside the inn on the square, its front and paddock turned away from the inn along the
+			# square's edge (art target town-a: the inn's stable yard and paddock beside it).
+			for t in root.get_meta("trades", []):
+				if String(t["component"]) != "tavern":
+					continue
+				var tp: Vector3 = t["at"]
+				var tf: Vector3 = t["face"]
+				var ft: Vector2 = Real.footprint(String(t["model"]))
+				var along := Vector3(-tf.z, 0, tf.x)
+				for sd in [1.0, -1.0]:
+					for back in [0.0, 0.3, 0.6]:
+						var q: Vector3 = tp + along * sd * (ft.x * 0.5 + f.y * 0.5 + 0.08) - tf * back
+						cands.append([back, q, along * sd])
 		"castle":
 			var cp: PackedVector2Array = root.get_meta("castle_poly", PackedVector2Array())
 			var mid := Vector3.ZERO
@@ -1268,6 +1318,9 @@ func _trade_off_plot(root: Node3D, center: Vector3, tr: Dictionary, square_r: fl
 			face = -q.normalized()
 		if _put(root, center, kind, q, f, lots, rng, false, face):
 			_trade_record(root, center, tr, q, face, f)
+			var cfg: Dictionary = preload("res://scripts/data.gd").value("assets", "components", {}).get(String(tr["component"]), {})
+			if cfg.has("walled"):
+				_walled(root, center, q, face, f, String(tr["component"]), lots)
 			return true
 		tried += 1
 		if tried % 8 == 0:
