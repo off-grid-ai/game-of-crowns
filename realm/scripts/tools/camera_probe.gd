@@ -97,7 +97,7 @@ func _initialize() -> void:
 	_plan = [
 		[0.5, "settle", func(): pass],
 		[6.5, "zoom", func(): if fmod(_t, 0.05) < _dt: zoom_in.call()],
-		[8.0, "street", func(): pass],
+		[8.0, "roofs", func(): pass],
 		[14.0, "pan", func(): rig.goal_target += Vector3(0.9, 0, 0.12 * sin(_t * 1.3)) * _dt],
 		[16.0, "tilt", func(): rig.goal_tilt = clampf(rig.goal_tilt - 20.0 * _dt, -25.0, 30.0)],
 		[19.0, "zoom out", func(): if fmod(_t, 0.05) < _dt: rig.nudge("out")],

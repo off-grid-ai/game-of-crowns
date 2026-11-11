@@ -18,7 +18,11 @@ var terrain: Node3D
 var target := Vector3.ZERO
 var distance := 120.0
 var yaw := 0.0
-var min_distance := 0.5  # street level (about 4 m): a person at the well fills a good part of the view
+## The closest the camera comes: a low oblique just over the roofs, Manor Lords'
+## village view (Mac, 2026-11-11: no close-up realism; the town reads from above).
+## Past the distance where the eye would drop toward the street (ground_view_at), so
+## every view stays oblique; street and eye-level views fold into this one.
+var min_distance := 4.5
 const EYE := 0.2  # eye height, about 1.7 m
 var max_distance := 260.0
 
@@ -128,6 +132,7 @@ func _blocked(a: Vector3, b: Vector3) -> bool:
 
 
 func snap(pos: Vector3, dist: float, y := 0.0) -> void:
+	dist = maxf(dist, min_distance)  # nobody brings the lens under the roofs
 	_hit = -1.0
 	_look_y = _floor_at(pos)  # a cut: the aim starts where it is, not eased in from the last place
 	target = pos
@@ -448,6 +453,7 @@ func _process(delta: float) -> void:
 	# Zooming in, the eye comes down no faster than the lens can clear the roofs:
 	# while it is still catching up on one, the zoom waits for it.
 	var kd := k * (clampf(1.0 - _lag / (distance * 0.3), 0.15, 1.0) if goal_distance < distance else 1.0)
+	goal_distance = maxf(goal_distance, min_distance)  # whoever set it (a scene, a film, the director): never under the roofs
 	distance = exp(lerpf(log(distance), log(goal_distance), kd))
 	yaw = lerp_angle(yaw, goal_yaw, k)
 	tilt = lerpf(tilt, goal_tilt, k)
