@@ -66,6 +66,13 @@ func _ready() -> void:
 			vat.update_instance_animation_offset(s, randf())
 			vat.update_instance_alpha(s, 1.0)
 	print("ARMY mustered men=%d regiments=%d at Kingsmere%s" % [n * REGIMENT, n, str(at)])
+	# The camera on the army itself, at the shot's own --dist (roof, mid, map), from the town's side.
+	var dist := 12.0
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--dist="):
+			dist = float(a.substr(7))
+	if main.rig:
+		main.rig.snap(at + Vector3(2.5, 0, 0), dist, 0.6)
 
 
 func _process(delta: float) -> void:
