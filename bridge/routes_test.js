@@ -84,6 +84,21 @@ export async function stage(ctx, req, res, url) {
     setTimeout(ctx.snapshot ?? (() => {}), 1500);
     return json(res, 200, { ok: true, city: town.id, to: crown.id });
   }
+  // {favour: {<house id>: value}}: a house's favour set to that value, through the one favour writer.
+  if (b.favour && typeof b.favour === "object") {
+    const moves = Object.fromEntries(Object.entries(b.favour).map(([pid, v]) => [pid, Number(v) - (ctx.favourOf(Number(pid)) ?? 50)]));
+    ctx.shiftAndTell(moves, "a test's staging");
+    return json(res, 200, { ok: true, favour: Object.fromEntries(Object.keys(b.favour).map((pid) => [pid, ctx.favourOf(Number(pid))])) });
+  }
+  // {ultimatum: <house id>}: the house sends the crown its ultimatum now, as season.js askUltimatum does.
+  if (b.ultimatum != null) {
+    const pid = Number(b.ultimatum);
+    const t = ((ctx.meta.turning ??= {})[pid] ??= { seasons: 2, state: null });
+    Object.assign(t, { state: "sent", at: ctx.world?.turn ?? 0 });
+    chron.saveMeta(ctx.meta);
+    ctx.counselStale = true;
+    return json(res, 200, { ok: true, turning: t });
+  }
   // {threat: host|famine|pretender}: the director raises that threat now, at its place (director.js).
   if (b.threat) {
     const d = (ctx.meta.director ??= { calm: 0, rest: 0, threat: null, pushedAt: -99, curve: [] });
