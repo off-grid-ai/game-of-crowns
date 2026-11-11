@@ -94,7 +94,7 @@
   "map_to": 30.0
  },
  "team": {
-  "_": "Team colour (team_colour.gd; Mac's North Star, docs/art/target/02-realm.jpg; Warcraft III): the kit materials whose names start with these keys take the holder's colour, by how much (roof tiles strongly, wood trim lightly; walls, brick and stone not at all). on: the switch (or --team=on / --team=off). saturation: the house colours pushed bolder (WC3's team colours). A town that changes hands eases to its new colour over a season. Art target 01-town: the colour sits on accents. materials: roof tiles (for the castle, the hall and any house whose roof draws 'house'), shutters (MI_Shutter, house_builder.gd), banners strongly; the timber frame (MI_WoodTrim) barely. ranks: which components are ordinary (0 a cottage, 1 a townhouse or inn); everything else (castle, hall, banners, armour) wears the full colour. roofs: per house, seeded by where it stands, the share of thatch, the tiles' own terracotta, darker tile and the house's colour, as [thatch, terracotta, dark, house] for cottages and for townhouses; thatch and dark_tile their colours; materials: which kit materials are roofs. paint: ordinary_share, the share of the colour an ordinary house's trims and shutters take; saturation and warm, the house colour toned toward its grey and warmed (painted reds, not neon).",
+  "_": "Team colour (team_colour.gd; Mac's North Star, docs/art/target/02-realm.jpg; Warcraft III): the kit materials whose names start with these keys take the holder's colour, by how much (roof tiles strongly, wood trim lightly; walls, brick and stone not at all). on: the switch (or --team=on / --team=off). saturation: the house colours pushed bolder (WC3's team colours). A town that changes hands eases to its new colour over a season. Art target 01-town: the colour sits on accents. materials: roof tiles (for the castle, the hall and any house whose roof draws 'house'), shutters (MI_Shutter, house_builder.gd), banners strongly; the timber frame (MI_WoodTrim) barely. ranks: which components are ordinary (0 a cottage, 1 a townhouse or inn); everything else (castle, hall, banners, armour) wears the full colour. roofs: per house, seeded by where it stands, the share of thatch, the tiles' own terracotta, darker tile and the house's colour, as [thatch, terracotta, dark, house] for cottages and for townhouses; thatch and dark_tile their colours (thatch: new straw, warm ochre; thatch_old: the weathered grey-brown each thatched roof leans toward by its own age); straw: how the thatch is drawn (team_colour.gdshader: bundles laid down the slope, never the tiles' rows), fibre and clump (how strongly the bundles and the patches read), eave_dark and eave_band (the ragged darker eave: how dark, how far up as a share of a storey), storey (a kit storey in the mesh's units, where the eave sits); materials: which kit materials are roofs. paint: ordinary_share, the share of the colour an ordinary house's trims and shutters take; saturation and warm, the house colour toned toward its grey and warmed (painted reds, not neon).",
   "on": false,
   "materials": {
    "MI_RoundTiles": 0.85,
@@ -125,10 +125,22 @@
     0.25
    ],
    "thatch": [
-    0.8,
-    0.64,
-    0.34
+    0.72,
+    0.53,
+    0.27
    ],
+   "thatch_old": [
+    0.5,
+    0.42,
+    0.31
+   ],
+   "straw": {
+    "fibre": 0.14,
+    "clump": 0.16,
+    "eave_dark": 0.62,
+    "eave_band": 0.16,
+    "storey": 0.36
+   },
    "dark_tile": [
     0.5,
     0.42,

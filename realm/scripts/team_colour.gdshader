@@ -24,20 +24,42 @@ instance uniform float team_rank = 2.0;
 uniform bool is_roof = false;
 uniform vec4 roof_cottage = vec4(0.55, 0.25, 0.1, 0.1);
 uniform vec4 roof_town = vec4(0.15, 0.4, 0.2, 0.25);
-uniform vec3 thatch : source_color = vec3(0.8, 0.64, 0.34);
+uniform vec3 thatch : source_color = vec3(0.72, 0.53, 0.27);
+// Thatch (look.json team.roofs.thatch, thatch_old, straw.*): straw laid in bundles down the slope, never the tiles' plank-like
+// rows. thatch_old: the weathered grey-brown an older roof turns (each roof somewhere between, by its seed);
+// fibre and clump: how strong the bundles and the patches read; eave_dark: how much darker the ragged
+// eave is; eave_band: how deep it reaches up the roof (a share of a storey); storey: a kit storey in the
+// mesh's own units (house_builder.gd: 3 m at 0.12 units a metre), where a roof's eave sits.
+uniform vec3 thatch_old : source_color = vec3(0.5, 0.42, 0.31);
+uniform float thatch_fibre = 0.14;
+uniform float thatch_clump = 0.16;
+uniform float thatch_eave_dark = 0.62;
+uniform float thatch_eave_band = 0.16;
+uniform float thatch_storey = 0.36;
 uniform vec3 dark_tile : source_color = vec3(0.5, 0.42, 0.4);
 uniform float ordinary_share = 0.5;  // a house's trims and shutters take this share of the colour
 uniform float paint_sat = 0.8;  // the house colour toned toward its own grey: warm, painted, not neon
 uniform vec3 paint_warm : source_color = vec3(1.0, 0.93, 0.84);
 varying float v_seed;
+varying vec3 v_mpos;  // the mesh's own frame: a kit roof's ridge runs along z, its slopes fall along x
+varying vec3 v_mnormal;
 
 float h21(vec2 p) {
 	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
 }
 
+float vnoise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	vec2 u = f * f * (3.0 - 2.0 * f);
+	return mix(mix(h21(i), h21(i + vec2(1.0, 0.0)), u.x), mix(h21(i + vec2(0.0, 1.0)), h21(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+
 void vertex() {
 	// The building's own place (a MultiMesh instance's origin is in MODEL_MATRIX): one seed per house.
 	v_seed = h21(floor(MODEL_MATRIX[3].xz * 8.0) + 0.5);
+	v_mpos = VERTEX;
+	v_mnormal = NORMAL;
 }
 
 void fragment() {
@@ -50,13 +72,30 @@ void fragment() {
 	tc = mix(vec3(dot(tc, vec3(0.299, 0.587, 0.114))), tc, paint_sat) * paint_warm;
 	float amt = team_amount * team_color.a;
 	vec3 base = c.rgb;
+	bool straw = false;
 	if (is_roof && team_rank < 1.5) {
 		vec4 w = team_rank < 0.5 ? roof_cottage : roof_town;
 		float s = v_seed;
 		if (s < w.x) {
-			// Thatch: straw at the tiles' shading, combed into fine streaks down the slope.
-			float streak = 0.82 + 0.3 * h21(vec2(floor(UV.x * 90.0), floor(UV.y * 6.0)));
-			base = thatch * (0.6 + 0.8 * lum) * streak;
+			// Thatch (art target 01-town): soft ochre straw in bundles laid down the slope, patchy,
+			// each roof its own age, the eave darker and ragged. The tiles' texture and their
+			// rows are left out: their columns read as yellow planks.
+			straw = true;
+			float across = v_mpos.z;
+			float down = abs(v_mpos.x);
+			float seed_s = fract(s * 7.31);
+			float bundle = vnoise(vec2(across * 55.0 + seed_s * 17.0, down * 7.0));
+			float fine = vnoise(vec2(across * 140.0, down * 16.0 + seed_s * 5.0));
+			// Fine straw only where a pixel can hold it, so it never shimmers at a distance.
+			float hold = clamp(1.0 - fwidth(across * 140.0) * 0.8, 0.0, 1.0);
+			float clumps = vnoise(v_mpos.xz * 6.0 + seed_s * 31.0);
+			vec3 straw_col = mix(thatch, thatch_old, clamp(seed_s * 0.75 + (clumps - 0.5) * 0.3, 0.0, 1.0));
+			float shade = 1.0 + thatch_fibre * (bundle - 0.5) * 2.0 + thatch_fibre * 0.6 * hold * (fine - 0.5) * 2.0 + thatch_clump * (clumps - 0.5);
+			// The eave: the bottom of the roof, a band above the storey line it sits on, ragged.
+			float up = fract(v_mpos.y / max(thatch_storey, 0.01));
+			float band = thatch_eave_band * (0.55 + 0.9 * vnoise(vec2(across * 22.0, 3.7 + seed_s * 9.0)));
+			float eave = 1.0 - smoothstep(band * 0.4, band, up);
+			base = straw_col * shade * mix(1.0, thatch_eave_dark, eave);
 			amt = 0.0;
 		} else if (s < w.x + w.y) {
 			amt = 0.0;  // the tiles' own fired terracotta
@@ -68,8 +107,13 @@ void fragment() {
 		amt *= ordinary_share;
 	}
 	ALBEDO = mix(base, tc, amt);
-	ROUGHNESS = roughness;
-	if (has_normal) NORMAL_MAP = texture(normal_tex, UV).rgb;
+	ROUGHNESS = straw ? 0.95 : roughness;
+	if (straw) {
+		// Straw lies smooth over the roof's plane: the tiles' rounded rows are lit flat (their normal's
+		// sway across the slope taken out), so no tile ridges show through the thatch.
+		vec3 n = vec3(v_mnormal.x, v_mnormal.y, 0.0);
+		if (length(n) > 0.05) NORMAL = normalize((VIEW_MATRIX * MODEL_MATRIX * vec4(normalize(n), 0.0)).xyz);
+	} else if (has_normal) NORMAL_MAP = texture(normal_tex, UV).rgb;
 	// Dissolve right in front of the lens (Godot's pixel dither, as the other buildings do).
 	float d = length(VERTEX);
 	if (d < fade_solid) {
