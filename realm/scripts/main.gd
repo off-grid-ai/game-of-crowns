@@ -691,6 +691,7 @@ func _setup_environment() -> void:
 		load("res://scripts/look.gd").apply.call_deferred(self)
 	load("res://scripts/team_colour.gd").apply.call_deferred(self)  # every building in its holder's colours (data/look.json team)
 	load("res://scripts/decisions_world.gd").apply.call_deferred(self)  # the King's decisions seen on the map (data/decisions.json)
+	load("res://scripts/host_command.gd").apply.call_deferred(self)  # the King's hosts selected and ordered (data/host_command.json)
 	load("res://scripts/fire.gd").apply.call_deferred(self)  # fire v2: shaped flames, smoke and burnt houses (data/fire.json)
 	# Then the player's graphics choice, over the top of it.
 	get_tree().create_timer(0.5).timeout.connect(apply_graphics)
@@ -1051,6 +1052,9 @@ func _follow_story(e: Dictionary) -> void:
 
 
 func _on_ground_clicked(p: Vector3) -> void:
+	var hosts := get_node_or_null("HostCommand")
+	if hosts and hosts.take_click(p):
+		return  # a host's standard, or where a host was ordered (host_command.gd)
 	# (A villager is looked at on hover, folk_tip.gd; a click on the ground picks a town.)
 	var c: Dictionary = towns.nearest(p)
 	_selected = int(c["id"]) if not c.is_empty() else -1

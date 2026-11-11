@@ -20,6 +20,8 @@ extends Node
 ##   site inn 0 6        frame the n-th roadside site of a kind (from the seat outward), at a distance
 ##   work Kingsmere forge 4.5   frame a trade's building in a town (forge, stables, mill, inn...)
 ##   sigil 2             click the 2nd house sigil on the ladder over the minimap
+##   host 0 6            frame the King's n-th host (the biggest first) and click its standard (--hosts=on)
+##   rclick 0.6 0.5      right-click at a fraction of the screen (a selected host marches there)
 ##   answer              give the matter on the court card its first answer
 ##   director            let the camera director run, as it does in play
 
@@ -133,6 +135,13 @@ func _play(quit_after: bool) -> void:
 			"click":
 				_click(Vector2(float(w[1]), float(w[2])))
 				await get_tree().create_timer(0.4).timeout
+			"rclick":
+				_click(Vector2(float(w[1]), float(w[2])), MOUSE_BUTTON_RIGHT)
+				await get_tree().create_timer(0.4).timeout
+			"host":
+				# host [n] [dist] [tilt]: frames the King's n-th host from /world's hosts (the biggest first),
+				# low and oblique, then clicks its standard as a player would (host_command.gd, --hosts=on).
+				await _host(int(w[1]) if w.size() > 1 else 0, float(w[2]) if w.size() > 2 else 6.0, float(w[3]) if w.size() > 3 else -25.0)
 			"hover":
 				var at := get_viewport().get_visible_rect().size * Vector2(float(w[1]), float(w[2]))
 				get_viewport().warp_mouse(at)
@@ -353,11 +362,11 @@ func _key(code: int, down: bool) -> void:
 	Input.parse_input_event(e)
 
 
-func _click(frac: Vector2) -> void:
+func _click(frac: Vector2, button := MOUSE_BUTTON_LEFT) -> void:
 	var at := get_viewport().get_visible_rect().size * frac
 	for down in [true, false]:
 		var e := InputEventMouseButton.new()
-		e.button_index = MOUSE_BUTTON_LEFT
+		e.button_index = button
 		e.pressed = down
 		e.position = at
 		e.global_position = at
@@ -378,6 +387,31 @@ func _oblique(at: Vector3, dist: float, tilt: float) -> void:
 	main.rig.snap(at, dist, 0.6)
 	main.rig.tilt = clampf(tilt, -40.0, 30.0)
 	main.rig.goal_tilt = main.rig.tilt
+
+
+## Frames the King's n-th host and clicks its standard, as a player selects it (host_command.gd).
+func _host(n: int, dist: float, tilt: float) -> void:
+	var hc: Node = main.get_node_or_null("HostCommand")
+	if hc == null:
+		_note("  host: no host command (--hosts=on)")
+		return
+	var all: Array = hc.hosts()
+	if n < 0 or n >= all.size():
+		_note("  host %d: none (%d hosts in the field)" % [n, all.size()])
+		return
+	var h: Dictionary = all[n]
+	var at: Vector3 = hc._ground(h)
+	_note("  host %d: %d men at %d,%d, order %s" % [n, int(h.get("men", 0)), int(h.get("x", 0)), int(h.get("y", 0)), str(h.get("order"))])
+	_oblique(at, dist, tilt)
+	if main.rig.is_processing_input() == false:
+		main.rig.apply()
+	await get_tree().create_timer(2.0).timeout
+	var cam := get_viewport().get_camera_3d()
+	var b: Node3D = hc._banner(h)
+	var p: Vector3 = b.global_position if b else hc._ground(h)
+	_click(cam.unproject_position(p) / get_viewport().get_visible_rect().size)
+	await get_tree().create_timer(0.5).timeout
+	_note("  host selected: %d" % int(hc.selected))
 
 
 ## Frames the n-th roadside site of a kind, the nearest to the crown's seat first.

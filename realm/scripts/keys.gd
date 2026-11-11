@@ -32,6 +32,12 @@ const ACTIONS := [
 	["minimap", "Show or hide the minimap", "The realm", [KEY_M]],
 	["walk_king", "Walk the realm as the King", "The realm", [KEY_G]],
 	["back", "Close, step back", "The realm", [KEY_ESCAPE]],
+	# The command card's cells, left to right (host_command.gd; Warcraft III's grid keys).
+	["host_march", "March the selected host", "The King's hosts", [KEY_T]],
+	["host_hold", "Hold where it stands", "The King's hosts", [KEY_Y]],
+	["host_garrison", "Garrison a town", "The King's hosts", [KEY_U]],
+	["host_return", "Return to the King's seat", "The King's hosts", [KEY_I]],
+	["host_split", "Split the host in two", "The King's hosts", [KEY_O]],
 	["walk_forward", "Walk forward", "Walking and fighting", [KEY_W, KEY_UP]],
 	["walk_back", "Walk back", "Walking and fighting", [KEY_S, KEY_DOWN]],
 	["walk_left", "Walk left", "Walking and fighting", [KEY_A, KEY_LEFT]],

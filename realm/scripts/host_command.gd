@@ -1,0 +1,441 @@
+extends Node3D
+## Commanding the King's hosts (North Star; docs/research/army-and-town-rules.md section 1). Copied from
+## Warcraft III: click a unit to select it, a ring on the ground under it, and a small fixed command card
+## in a corner whose orders always sit in the same cell with the same key (its "grid" hotkeys: T Y U I O,
+## left to right); right-click on the ground or a town marches. From Total War's campaign map: an army is
+## one thing, its banner glows when selected, and where it is ordered shows as a dotted route on the map.
+##   click a host's standard   select it (the ring and the glow); click the land elsewhere to let it go
+##   March / Garrison          then click where (a town, or the ground); right-click or Esc lets it go
+##   Hold / Return / Split     at once
+## It decides nothing and keeps nothing of the realm's: the hosts and their orders are the bridge's
+## (bridge/hosts.js), read from the view's one mirror (awareness.gd's realm "hosts"); an order is only
+## asked of the bridge (POST /host/order), and the host's standard moves as Freeciv moves its companies
+## (units.gd). A regiment view that joins the group "host_views" and has select_host(host) is told
+## which host is selected (the army spike's regiments, when they come).
+## Numbers, the card and the switch: realm/data/host_command.json (--hosts=on / --hosts=off).
+
+const Data := preload("res://scripts/data.gd")
+const T := preload("res://scripts/theme.gd")
+const Keys := preload("res://scripts/keys.gd")
+const FILE := "host_command"
+
+var main: Node
+var selected := -1  # the selected host's id (bridge/hosts.js: its lowest company's id), or -1
+var _aim := ""  # an order waiting for the King to click where: "march" or "garrison"
+var _card: PanelContainer
+var _title: Label
+var _status: Label
+var _buttons := {}  # order -> its Button on the card
+var _ring: Decal
+var _end: Decal  # the ring where the selected host is bound
+var _glow: OmniLight3D
+var _dots_sel: MultiMeshInstance3D  # the selected host's route
+var _dots_rest: MultiMeshInstance3D  # every other host's route, fainter
+var _right_at := Vector2.INF  # where a right-click went down (the camera turns on a right-drag)
+var _t := 0.0
+
+
+static func on() -> bool:
+	var args := OS.get_cmdline_user_args()
+	return args.has("--hosts=on") or (bool(Data.value(FILE, "on", false)) and not args.has("--hosts=off"))
+
+
+static func apply(m: Node) -> void:
+	if not on():
+		return
+	var h := new()
+	h.name = "HostCommand"
+	h.main = m
+	m.add_child(h)
+
+
+func _ready() -> void:
+	var tex := _ring_texture()
+	_ring = _decal(tex, Data.num(FILE, "ring.energy", 1.6))
+	_end = _decal(tex, Data.num(FILE, "ring.energy", 1.6) * 0.6)
+	_glow = OmniLight3D.new()
+	_glow.light_color = Color.from_string(String(Data.value(FILE, "glow.color", "#f0c878")), Color.GOLD)
+	_glow.light_energy = Data.num(FILE, "glow.energy", 2.2)
+	_glow.omni_range = Data.num(FILE, "glow.range", 0.9)
+	_glow.shadow_enabled = false
+	_glow.visible = false
+	add_child(_glow)
+	var gold := Color.from_string(String(Data.value(FILE, "route.color", "#dbb56e")), T.ACCENT)
+	_dots_sel = _dots(gold)
+	_dots_rest = _dots(Color(gold, Data.num(FILE, "route.others_alpha", 0.4)))
+	_build_card()
+
+
+# --- what the bridge says --------------------------------------------------------------------
+
+## The crown's hosts as the mirror holds them (bridge/hosts.js list()).
+func hosts() -> Array:
+	if main == null or main.awareness == null:
+		return []
+	var v: Variant = main.awareness.realm.get_var(&"hosts", [], false)
+	return v if v is Array else []
+
+
+func host(id: int) -> Dictionary:
+	for h in hosts():
+		if int(h.get("id", -2)) == id:
+			return h
+	return {}
+
+
+## The banner one of a host's companies carries (units.gd plants it on the first man of a tile's
+## company), or null while none of its figures is up.
+func _banner(h: Dictionary) -> Node3D:
+	for id in h.get("units", []):
+		var f: Node3D = main.units.figure_of(int(id))
+		if f and is_instance_valid(f):
+			var b := f.find_child("Banner", true, false) as Node3D
+			if b:
+				return b
+	return null
+
+
+## Where a host stands on the ground: under its banner as it marches, else its lead company, else its tile.
+func _ground(h: Dictionary) -> Vector3:
+	var at := Vector3.INF
+	var b := _banner(h)
+	if b:
+		at = b.global_position
+	else:
+		var f: Node3D = main.units.figure_of(int(h.get("id", -1)))
+		at = f.global_position if f and is_instance_valid(f) else main.terrain.world_pos(float(h.get("x", 0)), float(h.get("y", 0)))
+	return Vector3(at.x, main.terrain.height_at(at.x, at.z), at.z)
+
+
+# --- the King's hand -------------------------------------------------------------------------
+
+## A left click on the land (main._on_ground_clicked asks first): true when it was the host's to take.
+func take_click(ground: Vector3) -> bool:
+	if _aim != "":
+		var kind := _aim
+		_set_aim("")
+		_order_at(kind, ground)
+		return true
+	var id := _pick(get_viewport().get_mouse_position())
+	if id >= 0:
+		select(id)
+		return true
+	if selected >= 0:
+		select(-1)  # the land elsewhere: the host is let go, and the click picks a town as before
+	return false
+
+
+## The host whose standard is under the pointer (nearest within pick_px on screen), or -1.
+func _pick(screen: Vector2) -> int:
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return -1
+	var best := -1
+	var best_d := Data.num(FILE, "pick_px", 30.0)
+	for h in hosts():
+		var b := _banner(h)
+		var points: Array[Vector3] = [_ground(h)]
+		if b:
+			points.append(b.global_position)
+		for p in points:
+			if cam.is_position_behind(p):
+				continue
+			var d := cam.unproject_position(p).distance_to(screen)
+			if d < best_d:
+				best_d = d
+				best = int(h.get("id", -1))
+	return best
+
+
+## Selects a host (or none, -1): the ring, the glow and the card follow it.
+func select(id: int) -> void:
+	selected = id
+	_set_aim("")
+	var h := host(id)
+	if h.is_empty():
+		selected = -1
+	for n in get_tree().get_nodes_in_group(&"host_views"):
+		if n.has_method("select_host"):
+			n.select_host(h)
+	_refresh()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if selected < 0 or not (event is InputEventMouseButton) or event.button_index != MOUSE_BUTTON_RIGHT:
+		return
+	if event.pressed:
+		_right_at = event.position
+		return
+	var was := _right_at
+	_right_at = Vector2.INF
+	if was == Vector2.INF or was.distance_to(event.position) > 6.0:
+		return  # a right-drag turned the camera
+	if get_viewport().gui_get_hovered_control() != null:
+		return
+	if _aim != "":
+		_set_aim("")  # Warcraft III: a right-click lets a waiting order go
+		return
+	var g: Vector3 = main.rig._ground_under(event.position)
+	if g != Vector3.INF:
+		_order_at("march", g)
+
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if selected < 0 or not event.is_pressed() or event.is_echo():
+		return
+	if event.is_action_pressed(&"back"):
+		if _aim != "":
+			_set_aim("")
+		else:
+			select(-1)
+		get_viewport().set_input_as_handled()
+		return
+	for o in Data.value(FILE, "orders", []):
+		var kind := String(o.get("order", ""))
+		if InputMap.has_action(StringName("host_" + kind)) and event.is_action_pressed(StringName("host_" + kind)):
+			_press(kind)
+			get_viewport().set_input_as_handled()
+			return
+
+
+## An order from the card (a click or its key).
+func _press(kind: String) -> void:
+	if selected < 0:
+		return
+	if kind in ["march", "garrison"]:
+		_set_aim("" if _aim == kind else kind)
+		return
+	_set_aim("")
+	_ask({"host": selected, "order": kind})
+
+
+## An order to a place: into the town there when one is near, else to the ground.
+func _order_at(kind: String, ground: Vector3) -> void:
+	var body := {"host": selected, "order": kind}
+	var town: Dictionary = main.towns.nearest(ground, Data.num(FILE, "town_reach", 3.0))
+	if not town.is_empty():
+		body["city"] = int(town.get("id", -1))
+	else:
+		var tile: Vector2i = main.terrain.tile_of(ground)
+		body["x"] = tile.x
+		body["y"] = tile.y
+	_ask(body)
+
+
+## Asks the bridge; it decides, and says so (the toast), and the next /world shows the host's order.
+func _ask(body: Dictionary) -> void:
+	main.bridge._post("/host/order", body, func(code: int, d: Dictionary) -> void:
+		var said := String(d.get("text", d.get("error", "")))
+		if said != "" and main.ui:
+			main.ui.toast(said)
+		if code == 200:
+			main.bridge._poll())
+
+
+func _set_aim(kind: String) -> void:
+	_aim = kind
+	Input.set_default_cursor_shape(Input.CURSOR_CROSS if kind != "" else Input.CURSOR_ARROW)
+	for k in _buttons:
+		(_buttons[k] as Button).set_pressed_no_signal(k == kind)
+
+
+# --- in the world ----------------------------------------------------------------------------
+
+func _process(delta: float) -> void:
+	var h := host(selected) if selected >= 0 else {}
+	if selected >= 0 and h.is_empty() and not hosts().is_empty():
+		select(-1)  # the host is no more (fallen, or joined another)
+	_ring.visible = not h.is_empty()
+	_glow.visible = false
+	if not h.is_empty():
+		var at := _ground(h)
+		var r := minf(Data.num(FILE, "ring.max", 1.6), Data.num(FILE, "ring.radius", 0.55) + Data.num(FILE, "ring.per_company", 0.06) * float(h.get("companies", 1)))
+		_ring.global_position = at
+		_ring.size = Vector3(r * 2.0, 1.2, r * 2.0)
+		var b := _banner(h)
+		if b:
+			_glow.global_position = b.global_position + Vector3(0, 0.05, 0)
+			_glow.visible = true
+	_t += delta
+	if _t >= 0.25:
+		_t = 0.0
+		_routes()
+		_refresh()
+		_place_card()
+
+
+## The dotted road to where each host is bound: bright for the selected one, faint for the rest.
+func _routes() -> void:
+	var sel: Array[Vector3] = []
+	var rest: Array[Vector3] = []
+	var every := maxf(0.1, Data.num(FILE, "route.every", 0.55))
+	var lift := Data.num(FILE, "route.lift", 0.04)
+	_end.visible = false
+	for h in hosts():
+		var o: Variant = h.get("order")
+		if not (o is Dictionary) or o.get("x") == null or o.get("y") == null:
+			continue
+		var to: Vector3 = main.terrain.world_pos(float(o["x"]), float(o["y"]))
+		var from := _ground(h)
+		var flat := Vector2(to.x - from.x, to.z - from.z)
+		if flat.length() < every:
+			continue
+		var mine := int(h.get("id", -1)) == selected
+		if mine:
+			var r := Data.num(FILE, "route.end_ring", 0.35)
+			_end.global_position = to
+			_end.size = Vector3(r * 2.0, 1.2, r * 2.0)
+			_end.visible = true
+		var n := int(flat.length() / every)
+		for i in range(1, n):
+			var p := from.lerp(to, float(i) / float(n))
+			p.y = main.terrain.height_at(p.x, p.z) + lift
+			(sel if mine else rest).append(p)
+	_fill(_dots_sel, sel)
+	_fill(_dots_rest, rest)
+
+
+func _fill(mmi: MultiMeshInstance3D, points: Array[Vector3]) -> void:
+	var mm := mmi.multimesh
+	mm.instance_count = points.size()
+	for i in points.size():
+		mm.set_instance_transform(i, Transform3D(Basis.IDENTITY, points[i]))
+
+
+func _dots(color: Color) -> MultiMeshInstance3D:
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.albedo_color = color
+	if color.a < 1.0:
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	var dot := SphereMesh.new()
+	var r := Data.num(FILE, "route.dot", 0.07)
+	dot.radius = r
+	dot.height = r * 0.8  # a flattened stud, lying on the land
+	dot.radial_segments = 8
+	dot.rings = 4
+	dot.material = m
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = dot
+	var mmi := MultiMeshInstance3D.new()
+	mmi.multimesh = mm
+	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mmi)
+	return mmi
+
+
+## A ground ring painted on the land as it lies (a decal: it follows hills and roads).
+func _decal(tex: Texture2D, energy: float) -> Decal:
+	var d := Decal.new()
+	d.texture_albedo = tex
+	d.texture_emission = tex
+	d.emission_energy = energy
+	d.modulate = Color.from_string(String(Data.value(FILE, "ring.color", "#dbb56e")), T.ACCENT)
+	d.upper_fade = 0.15
+	d.lower_fade = 0.3
+	d.visible = false
+	add_child(d)
+	return d
+
+
+## A thin bright ring on a clear field, drawn from a radial gradient (no art file).
+static func _ring_texture() -> Texture2D:
+	var g := Gradient.new()
+	g.offsets = PackedFloat32Array([0.0, 0.76, 0.82, 0.93, 1.0])
+	g.colors = PackedColorArray([Color(1, 1, 1, 0), Color(1, 1, 1, 0), Color(1, 1, 1, 1), Color(1, 1, 1, 1), Color(1, 1, 1, 0)])
+	var t := GradientTexture2D.new()
+	t.gradient = g
+	t.width = 256
+	t.height = 256
+	t.fill = GradientTexture2D.FILL_RADIAL
+	t.fill_from = Vector2(0.5, 0.5)
+	t.fill_to = Vector2(0.5, 0.0)
+	return t
+
+
+# --- the command card (bottom right, over the minimap) ---------------------------------------
+
+func _build_card() -> void:
+	if main == null or main.ui == null:
+		return
+	_card = main.ui.glass_panel()
+	_card.anchor_left = 1.0
+	_card.anchor_right = 1.0
+	_card.anchor_top = 1.0
+	_card.anchor_bottom = 1.0
+	_card.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_card.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_card.offset_right = -12
+	_card.offset_bottom = -12
+	_card.add_theme_stylebox_override("panel", T._box(T.SURFACE_SOLID, T.HAIRLINE, 10, 8))
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", T.GAP_TIGHT)
+	_card.add_child(v)
+	_title = T.label("The royal host", T.TEXT_2)
+	v.add_child(_title)
+	_status = T.datum("", T.SIZE_DESC, T.TEXT)
+	v.add_child(_status)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", T.GAP_TIGHT)
+	v.add_child(row)
+	for o in Data.value(FILE, "orders", []):
+		var kind := String(o.get("order", ""))
+		var action := "host_" + kind
+		var key := Keys.label(action) if InputMap.has_action(StringName(action)) else ""
+		var b: Button = main.ui.icon_btn(String(o.get("icon", "play")), String(o.get("tip", kind.capitalize())) + ("  (%s)" % key if key != "" else ""))
+		b.toggle_mode = kind in ["march", "garrison"]
+		b.pressed.connect(_press.bind(kind))
+		if key != "":
+			# The key in the button's corner, as Warcraft III's card shows it.
+			var k := T.label(key, T.TEXT_3)
+			k.add_theme_font_size_override("font_size", T.SIZE_LABEL - 2)
+			k.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+			k.position = Vector2(30, 28)
+			k.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			b.add_child(k)
+		row.add_child(b)
+		_buttons[kind] = b
+	_card.visible = false
+
+
+## The card says what the host is and what it is doing, in the realm's words.
+func _refresh() -> void:
+	if _card == null:
+		return
+	var h := host(selected) if selected >= 0 else {}
+	_card.visible = not h.is_empty()
+	if h.is_empty():
+		return
+	var at: Variant = h.get("at")
+	_title.text = ("The royal host at %s" % String(at.get("name", ""))).to_upper() if at is Dictionary else "THE ROYAL HOST"
+	_status.text = "%s men · %s" % [main.ui.heads(int(h.get("men", 0))), _doing(h)]
+	_card.tooltip_text = "%d companies" % int(h.get("companies", 0))
+
+
+static func _doing(h: Dictionary) -> String:
+	var o: Variant = h.get("order")
+	if not (o is Dictionary):
+		return "at ease"
+	var to := String(o.get("to")) if o.get("to") != null else "the place you named"
+	var seasons := int(o.get("seasons", 0))
+	var road := ("a season away" if seasons == 1 else "%d seasons away" % seasons) if seasons > 0 else "there"
+	match String(o.get("kind", "")):
+		"hold":
+			return "holding"
+		"march":
+			return "marching for %s, %s" % [to, road]
+		"garrison":
+			if seasons == 0:
+				return "garrisoning %s" % to
+			return "bound for %s, %s" % [to, road]
+	return String(o.get("kind", ""))
+
+
+## Stacked over the minimap and its camera pad, its right edge with theirs.
+func _place_card() -> void:
+	if _card == null or not _card.visible:
+		return
+	var mm: Control = main.ui.get("_minimap_frame")
+	var h := get_viewport().get_visible_rect().size.y
+	_card.offset_bottom = -(h - mm.get_global_rect().position.y + 8.0) if mm and mm.is_visible_in_tree() else -12.0
