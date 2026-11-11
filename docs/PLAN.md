@@ -120,6 +120,12 @@ nothing may feel gimmicky and everything must feel professional: consistent type
 sound; eased transitions; no placeholder text, gags or arithmetic; no bugs on screen. This is priority
 number one; gameplay depth follows once it's true. No filming beyond the stills needed to judge a change.
 
+## The world is made of its parts (Mac, 2026-11-11)
+Move up to our fidelity level, then make the world make sense: each thing is built from the parts it's really made
+of, and they behave. Walls are stacked stones that crack and fall; fire is flames and smoke that spread with the
+wind; an army is its soldiers in formation; a town is its houses and the people who live and work in them. No
+faked whole objects where the parts should act. Finesse is in how the parts behave together.
+
 ## The target images (Mac approved, 2026-11-11)
 docs/art/target/: eight concept images (town, realm map, army, siege, court, inn, unrest, reinforcement) at
 polished mid-fidelity, Warcraft III/Foundation family. Every visual change is judged beside its image.
