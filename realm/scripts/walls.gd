@@ -18,6 +18,7 @@ const S := 0.12
 
 var main: Node
 var _rings := {}  # town id -> {wall, root, center}
+var _castles := {}  # castle node -> {root, id, center, walls: [{wall, section}]}: a kit castle's stone curtains
 var _demo := {}  # {wall, wear, id, center}
 var _last := {}  # wall -> msec of its last blow
 var _blows := {}  # wall -> blows since its wear last rose
@@ -53,6 +54,7 @@ func _exit_tree() -> void:
 
 func _tick() -> void:
 	_rings_follow()
+	_castles_follow()
 	if OS.get_cmdline_user_args().has("--wall-demo") and _demo.is_empty():
 		_demo_build()
 	var cam := get_viewport().get_camera_3d()
@@ -70,6 +72,22 @@ func _tick() -> void:
 				wall.wear_to(s, wear, near)
 				_blows[wall] = 0
 		_keep_striking(wall, ring["center"])
+	# A kit castle's stone curtains take the wear of the town's section each faces: a siege breaches the castle too.
+	for c in _castles:
+		var cs: Dictionary = _castles[c]
+		var cw: Array = (main.awareness.town(int(cs["id"])).get_var(&"damage", {}, false) as Dictionary).get("walls", []) if main.awareness else []
+		for e in cs["walls"]:
+			var wall: Node3D = e["wall"]
+			if not is_instance_valid(wall):
+				continue
+			var near: bool = eye != Vector3.INF and wall.distance_to(eye) < near_r
+			wall.set_hot(near or wall.busy())
+			if int(e["section"]) < cw.size():
+				var wear := float((cw[int(e["section"])] as Dictionary).get("wear", 0.0))
+				if absf(wear - wall.shown[0]) > 0.005:
+					wall.wear_to(0, wear, near)
+					_blows[wall] = 0
+			_keep_striking(wall, cs["center"])
 	if not _demo.is_empty() and is_instance_valid(_demo["wall"]):
 		var dw: Node3D = _demo["wall"]
 		dw.set_hot(true)
@@ -192,6 +210,10 @@ func _walls() -> Array:
 	for id in _rings:
 		if is_instance_valid(_rings[id]["wall"]):
 			out.append(_rings[id]["wall"])
+	for c in _castles:
+		for e in _castles[c]["walls"]:
+			if is_instance_valid(e["wall"]):
+				out.append(e["wall"])
 	if not _demo.is_empty() and is_instance_valid(_demo["wall"]):
 		out.append(_demo["wall"])
 	return out
@@ -255,18 +277,91 @@ func _ring(id: int, root: Node3D, panels: Array) -> void:
 	_publish(wall, root)
 
 
-## A wall's standing foot goes to its town's walking map: a breach is a way in.
-func _publish(wall: Node3D, root: Node3D) -> void:
+## A wall's standing foot goes to its town's walking map: a breach is a way in. Every stone wall of the
+## town together (its ring and its castle's curtains), so one never writes over another's.
+func _publish(_by: Node3D, root: Node3D) -> void:
 	if not is_instance_valid(root):
 		return
+	var all := []
+	for id in _rings:
+		if _rings[id]["root"] == root and is_instance_valid(_rings[id]["wall"]):
+			all.append(_rings[id]["wall"])
+	for c in _castles:
+		if _castles[c]["root"] == root:
+			for e in _castles[c]["walls"]:
+				if is_instance_valid(e["wall"]):
+					all.append(e["wall"])
+	if not _demo.is_empty() and is_instance_valid(_demo["wall"]) and (main.towns.towns.get(int(_demo["id"]), {}) as Dictionary).get("node") == root:
+		all.append(_demo["wall"])
 	var local := []
-	for q in wall.foot():
+	var feet := []
+	for w in all:
+		feet.append_array(w.foot())
+	for q in feet:
 		var o := PackedVector2Array()
 		for v in q:
 			o.append(v - Vector2(root.global_position.x, root.global_position.z))
 		local.append(o)
 	root.set_meta("stone_walls", local)
 	root.set_meta("stone_walls_rev", int(root.get_meta("stone_walls_rev", 0)) + 1)
+
+
+# --- a kit castle's curtains ---------------------------------------------------
+
+## Every kit castle (castle_builder.gd, --castles=kit) gets stone curtains along its curtain runs, one a
+## tick; the castle itself leaves its kit curtains out while stone walls are on (castle_builder
+## stone_curtains). A castle rebuilt or gone takes its curtains with it.
+func _castles_follow() -> void:
+	for c in _castles.keys():
+		if not is_instance_valid(c):
+			for e in _castles[c]["walls"]:
+				if is_instance_valid(e["wall"]):
+					e["wall"].queue_free()
+			_castles.erase(c)
+	if main.towns == null:
+		return
+	var Life: GDScript = load("res://scripts/castle_life.gd")
+	for id in main.towns.towns:
+		var root: Node3D = main.towns.towns[id].get("node")
+		if root == null or not is_instance_valid(root) or not root.is_inside_tree():
+			continue
+		var castle: Node3D = root.get_node_or_null("Castle")
+		if castle == null or _castles.has(castle):
+			continue
+		var sp: Dictionary = Life.spec_of(castle)
+		if sp.is_empty():
+			_castles[castle] = {"root": root, "id": int(id), "center": root.global_position, "walls": []}
+			continue
+		_castle_curtains(int(id), root, castle, sp)
+		return
+
+
+func _castle_curtains(id: int, root: Node3D, castle: Node3D, sp: Dictionary) -> void:
+	var xf: Transform3D = load("res://scripts/castle_life.gd").frame_of(castle)
+	var scale := xf.basis.get_scale().x / S
+	var center := root.global_position
+	var sections := int(Data.num("walls", "ring.sections", 8))
+	var height := int(sp.get("wall_storeys", 2)) * 3.0 * scale
+	var walls := []
+	for run in preload("res://scripts/castle_builder.gd").curtain_runs(sp):
+		var a: Vector3 = xf * (run["a"] as Vector3)
+		var b: Vector3 = xf * (run["b"] as Vector3)
+		a.y = main.terrain.height_at(a.x, a.z)
+		b.y = main.terrain.height_at(b.x, b.z)
+		var out: Vector3 = (xf.basis * (run["out"] as Vector3)).normalized()
+		var d := b - a
+		var right := Vector3(-d.z, 0, d.x)
+		var wall := StoneWall.build_along(PackedVector3Array([a, b]), height, Color.WHITE, {
+			"sections": 1, "outer": 1.0 if right.dot(out) >= 0.0 else -1.0, "seed": id * 31 + int(run["side"]),
+			"ground": func(p: Vector3) -> float: return main.terrain.height_at(p.x, p.z)})
+		add_child(wall)
+		# The town's wall section it faces (damage.js: section 0 faces north, then clockwise).
+		var mid := (a + b) * 0.5 - center
+		var ang := fposmod(atan2(mid.x, -mid.z) + PI / sections, TAU)
+		walls.append({"wall": wall, "section": int(floor(ang / (TAU / sections))) % sections})
+		wall.opened.connect(_publish.bind(wall, root))
+	_castles[castle] = {"root": root, "id": id, "center": center, "walls": walls}
+	_publish(null, root)
 
 
 # --- the demo (test aid) -----------------------------------------------------
