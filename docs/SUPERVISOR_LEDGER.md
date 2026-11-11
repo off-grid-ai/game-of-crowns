@@ -32,6 +32,12 @@ limit. Newest first. The plan is [PLAN.md](PLAN.md); the running log of checks i
   switch until judged; tunables in data plus docs/TUNING.md.
 
 ## What Mac said (2026-11-11), newest first
+- **"Warcraft 3 is exactly what we want."** Mid-fidelity, polished, team colours. Armies dense and real ("when
+  you say 6,000 soldiers are there, they need to be there"; tens of thousands), with cannons, artillery,
+  horses, elephants, archers, swords, hammers, axes, spears and shields. Each house's armour in its own colour,
+  with detail. Command my army. See decisions in the world: a displeased house shows visible unrest;
+  supporting a house sends my army marching to reinforce them. An armies research agent is running
+  (notes/armies-research.md).
 - "A mid fidelity is what I want… polished but not hyper-realism… Warcraft II is mid fidelity… show me
   screenshots of other games so I can tell you the fidelity I want… and the world's components must
   interact effectively." A fidelity picker page is being built (research) so he can pick.
