@@ -17,6 +17,7 @@ const TownNav := preload("res://scripts/town_nav.gd")  # what stands in a town's
 const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const Weapons := preload("res://scripts/weapons.gd")  # what a move needs in hand (can_play)
 const AnimLOD := preload("res://scripts/anim_lod.gd")  # minds think by distance from the camera
+const Works := preload("res://scripts/works.gd")  # the working buildings: their spots, stacks, horses and state weights
 
 # Breakers between runs (section 2's shared pools).
 const REST := ["Weight_Shift", "Breathing_Idle", "Bored", "Relieved_Sigh", "Looking_Around"]
@@ -299,6 +300,108 @@ static func post_activities(post: String) -> Array:
 			return [
 				seq("forge", [run(["Hammer_Swing"], 3, 5), brk(["Wiping_Sweat", "Weight_Shift"])]),
 				seq("turn", [once("PickUp_Table"), run(["Hammer_Swing"], 2, 3), once("Looking_Around"), brk(REST)]),
+				seq("quench", [once("PickUp_Table"), step(0.15), once("Interact"), step(0.0), run(["Hammer_Swing"], 1, 2), brk(["Wiping_Sweat", "Arm_Stretching"])]),  # the hot iron into the trough, back to the anvil
+			]
+		# --- at the working buildings (town_life._works, works.json) ---
+		"miller":  # at the mill's door: sacks in, flour out
+			return [
+				seq("grind", [once("PickUp_Table"), run(["Interact"], 2, 3), once("Looking_Around"), brk(REST)]),
+				seq("stack", [once("PickUp_Table"), step(0.2), once("PickUp_Table"), step(0.0), brk(REST + SWIG)]),
+				seq("check", [once("Looking_Around"), run(["Thinking", "Pointing_Forward"], 1, 1), brk(["Wiping_Sweat", "Weight_Shift"])]),
+			]
+		"tanner":  # at the vats
+			return [
+				seq("scrape", [run(["Fixing_Kneeling"]), get_up(), brk(REST)]),
+				seq("soak", [once("PickUp_Table"), step(0.2), run(["Pushing"], 1, 2), step(0.0), brk(["Wiping_Sweat", "Weight_Shift"])]),
+				seq("hang", [once("PickUp_Table"), run(["Interact"], 1, 2), brk(LOOK)]),
+			]
+		"queue":  # a line at the granary's door when it runs low
+			return [
+				seq("wait", [run(["Weight_Shift", "Bored", "Looking_Around"], 1, 2), brk(["Thinking", "Breathing_Idle"])]),
+				seq("grumble", [run(["Arguing", "Talking"], 1, 2), once("Shake_No"), brk(LOOK)]),
+				seq("shuffle", [step(0.06), brk(["Weight_Shift", "Bored", "Wiping_Sweat"])]),
+			]
+		"levy":  # men called up, at the armoury for their arms
+			return [
+				seq("wait", [run(["Weight_Shift", "Looking_Around", "Bored"], 1, 2), brk(["Thinking", "Breathing_Idle"])]),
+				seq("arm", [stock("rack", -1), once("PickUp_Table"), once("Salute"), brk(["Weight_Shift", "Looking_Around"])]),
+				seq("talk", [run(["Talking", "Idle_Talking", "Arguing"], 1, 2), once("Nodding"), brk(LOOK)]),
+				seq("cry", [once("Battlecry"), brk(["Weight_Shift", "Looking_Around"])]),
+			]
+		"crier":  # the crier in the square with the news
+			return [
+				seq("cry", [run(["Yelling"], 1, 2), run(["Pointing_Forward", "Talking"], 1, 2), brk(["Weight_Shift"])]),
+				seq("read", [run(["Talking", "Talking_2", "Idle_Talking"], 2, 3), brk(LOOK)]),
+				seq("call", [once("Waving"), run(["Yelling"], 1, 1), once("Talking_Hands"), brk(REST)]),
+			]
+		"listener":  # round the crier: what they make of the news shows (works.json weights)
+			return [
+				seq("listen", [run(["Nodding", "Thinking", "Looking_Around"], 1, 2), brk(["Weight_Shift", "Bored"])]),
+				seq("murmur", [run(["Whispering", "Telling_Secret", "Talking"], 1, 2), brk(LOOK)]),
+				seq("cheer", [run(["Cheering", "Clapping"], 1, 2), once("Laughing"), brk(["Weight_Shift"])]),
+				seq("dismay", [run(["Arguing", "Shake_No", "Disappointed"], 1, 2), once("Defeated"), brk(LOOK)]),
+			]
+		"drinker":  # on the inn's bench by day
+			return [
+				seq("sit", [run(["Sitting_Drinking"], 2, 3), brk(["Laughing", "Idle_Talking"])]),
+				seq("toast", [run(["Drinking"], 2, 3), run(["Laughing", "Telling_Secret", "Idle_Talking"], 1, 2), brk(["Drunk_Idle", "Weight_Shift"])]),
+				seq("talk", [run(["Idle_Talking", "Laughing", "Telling_Secret", "Whispering"], 2, 3), brk(["Sitting_Idle", "Weight_Shift"])]),
+			]
+		# --- along the roads (roadside.gd): a coaching inn's yard is a work site like a town's ---
+		"yard":  # standing drinkers in an inn's yard (soldiers at their ale too)
+			return [
+				seq("toast", [run(["Drinking"], 2, 3), run(["Laughing", "Telling_Secret", "Idle_Talking"], 1, 2), brk(["Drunk_Idle", "Weight_Shift"])]),
+				seq("talk", [run(["Idle_Talking", "Talking", "Talking_2", "Laughing"], 2, 3), once("Nodding"), brk(LOOK)]),
+				seq("argue", [run(["Arguing"], 1, 2), once("Shake_No"), brk(["Bored", "Weight_Shift"])]),
+				seq("song", [run(["Clapping", "Cheering"], 1, 2), brk(["Laughing"])]),
+			]
+		"host":  # the innkeeper at the door
+			return [
+				seq("greet", [run(["Idle_Talking", "Nodding"], 1, 2), once("Waving"), brk(REST)]),
+				seq("watch", [once("Looking_Around"), step(0.12), run(["Thinking"], 1, 1), step(0.0), brk(["Wiping_Sweat", "Weight_Shift"])]),
+				seq("serve", [once("PickUp_Table"), step(0.2), once("PickUp_Table"), step(0.0), brk(REST)]),
+			]
+		"minstrel":
+			return [
+				seq("play", [run(["Lute_Playing"], 2, 3), brk(["Bored", "Weight_Shift"])]),
+				seq("drink", [run(["Drinking"], 1, 2), brk(["Laughing", "Looking_Around"])]),
+				seq("bow", [once("Bow"), run(["Laughing", "Waving"], 1, 1), brk(REST)]),
+			]
+		"stablehand":  # at an inn's or a mill's horses
+			return [
+				seq("fodder", [once("PickUp_Table"), step(0.3), once("PickUp_Table"), step(0.0), brk(REST)]),
+				seq("groom", [run(["Interact"], 2, 3), brk(["Wiping_Sweat", "Weight_Shift"])]),
+				seq("carry", [run(["Carrying"], 1, 1), once("PickUp_Table"), brk(LOOK)]),
+			]
+		"fieldhand":  # a hamlet's fields
+			return [
+				seq("dig", [run(["Digging", "Dig_And_Plant"]), once("Wiping_Sweat"), brk(REST)]),
+				seq("plant", [step(0.2), run(["Planting", "Watering"], 3, 4), brk(REST + SWIG)]),
+				seq("pick", [run(["Pick_Fruit"], 2, 4), step(0.2), brk(LOOK)]),
+			]
+		"woodcutter":  # an axe in hand at the camp
+			return [
+				seq("fell", [run(["Axe_Down", "Axe_Horizontal"], 3, 5), brk(["Wiping_Sweat", "Weight_Shift"])]),
+				seq("split", [step(0.15), run(["Axe_Down"], 2, 3), step(0.0), brk(["Arm_Stretching", "Bored"])]),
+				seq("rest", [once("Wiping_Sweat"), run(["Looking_Around", "Bored"], 1, 1), brk(SWIG)]),
+			]
+		"pilgrim":  # at a wayside shrine
+			return [
+				seq("pray", [run(["Praying", "Kneeling"], 2, 3), get_up(), brk(LOOK)]),
+				seq("bow", [once("Bow"), run(["Praying"], 1, 2), get_up(), brk(["Weight_Shift"])]),
+				seq("rest", [run(["Sitting_Ground"], 1, 1), get_up(), brk(["Looking_Around"])]),
+			]
+		"onlooker":  # someone staring at the gallows
+			return [
+				seq("stare", [run(["Looking_Around", "Thinking"], 1, 2), brk(["Weight_Shift"])]),
+				seq("point", [once("Pointing_Forward"), run(["Whispering", "Shake_No"], 1, 1), brk(LOOK)]),
+				seq("pray", [run(["Praying"], 1, 2), brk(["Defeated", "Looking_Around"])]),
+			]
+		"traveller":  # just in off the road, a horse tied at the inn's rail
+			return [
+				seq("unload", [once("PickUp_Table"), step(0.15), once("PickUp_Table"), step(0.0), brk(REST)]),
+				seq("ask", [run(["Talking", "Pointing_Forward"], 1, 2), once("Nodding"), brk(LOOK)]),
+				seq("rest", [once("Arm_Stretching"), run(["Drinking"], 1, 2), brk(["Weight_Shift", "Wiping_Sweat"])]),
 			]
 		"porter":  # the crown's market: goods fetched to the stalls and set down (towns.json market.crown.porters)
 			return [
@@ -567,7 +670,7 @@ class Weigh extends BTAction:
 		if wet:
 			w *= {"lounge": 0.1, "nap": 0.2, "sit": 0.1, "tag": 0.1, "hide": 0.2, "chat": 0.4, "gossip": 0.4, "promenade": 0.2, "browse": 0.4,
 				"drink": 2.0, "song": 1.5, "pray": 1.5, "craft": 1.5, "counter": 1.5}.get(act, 1.0)
-		return w
+		return w * Works.weight(act, bb)  # war, a levy, a low granary, a feast at the working buildings (works.json weights)
 
 
 ## Activities a state brings out, offered to every calling (weight 0 unless
@@ -605,14 +708,19 @@ class GoTo extends BTAction:
 		var rng: RandomNumberGenerator = a["rng"]
 		var to: Vector3 = a["home"]
 		_none = where == "field" and a.get("field", Vector3.INF) == Vector3.INF
+		if where.contains(".") or where == "gate":
+			# A work spot at one of the town's buildings (works.gd): none here, the activity is off.
+			to = v.work_spot(a, where) if v.has_method("work_spot") else Vector3.INF
+			_none = to == Vector3.INF
 		if _none:
 			return
-		match where:
-			"field": to = v.nearby(a["field"], rng, 0.15)  # at the crops, never out on bare ground
-			"bench": to = a["bench"]
-			"home": to = a["home"]
-			"meet": to = blackboard.get_var(&"meet", a["home"], false)  # where a talk was arranged
-			_: to = v.place(a, where)
+		if not (where.contains(".") or where == "gate"):
+			match where:
+				"field": to = v.nearby(a["field"], rng, 0.15)  # at the crops, never out on bare ground
+				"bench": to = a["bench"]
+				"home": to = a["home"]
+				"meet": to = blackboard.get_var(&"meet", a["home"], false)  # where a talk was arranged
+				_: to = v.place(a, where)
 		a["gait"] = gait
 		v.route_to(a, to)
 		_to = to
@@ -1000,6 +1108,81 @@ static func partner(talk: Array = []) -> BTTask:
 	return t
 
 
+## Turns to face a work spot (the anvil, the rack), and keeps that as the way
+## they face their work. Succeeds either way: with no such spot they face as they were.
+class FaceSpot extends BTAction:
+	@export var key := ""
+
+	func _tick(_delta: float) -> Status:
+		var v: Variant = blackboard.get_var(&"vill", null, false)
+		if v == null or not (v as Object).has_method("work_spot") or not blackboard.has_var(&"va"):
+			return SUCCESS
+		var at: Vector3 = v.work_spot(blackboard.get_var(&"va"), key, false)
+		var me := (agent as Node3D).global_position
+		var flat := Vector2(at.x - me.x, at.z - me.z)
+		if at != Vector3.INF and flat.length() > 0.01:
+			(agent as Node3D).rotation.y = atan2(flat.x, flat.y)
+			blackboard.set_var(&"face", (agent as Node3D).rotation.y)
+		return SUCCESS
+
+
+## A horse on a halter (works.gd): take one loose in the paddock (`take`) or
+## tied at the inn (`tied`), and it walks behind them; `tie` leaves it at the
+## rail where they stand, `free` lets it loose. Taking fails with no horse to take.
+class Lead extends BTAction:
+	@export var how := "take"
+
+	func _tick(_delta: float) -> Status:
+		if how in ["take", "tied"]:
+			var h: Node3D = Works.take_horse(Works.work_root(agent, blackboard), agent as Node3D, how == "tied")
+			if h == null:
+				return FAILURE
+			blackboard.set_var(&"horse", h)
+			return SUCCESS
+		var h: Variant = blackboard.get_var(&"horse", null, false)
+		if h != null and is_instance_valid(h):
+			Works.let_go(h, how == "tie")
+		blackboard.set_var(&"horse", null)
+		return SUCCESS
+
+
+## Sets something down on a stack, or takes one off (works.gd stock: swords on
+## the armoury's rack, sacks by the mill). Taking from an empty stack fails.
+class Stock extends BTAction:
+	@export var what := "rack"
+	@export var n := 1
+
+	func _tick(_delta: float) -> Status:
+		var root := Works.work_root(agent, blackboard)
+		if root == null:
+			return SUCCESS if n >= 0 else FAILURE
+		return SUCCESS if Works.add_stock(root, what, n) else FAILURE
+
+
+static func face(key: String) -> BTTask:
+	var t := FaceSpot.new()
+	t.key = key
+	return t
+
+
+static func lead(how: String) -> BTTask:
+	var t := Lead.new()
+	t.how = how
+	return t
+
+
+static func stock(what: String, n: int) -> BTTask:
+	var t := Stock.new()
+	t.what = what
+	t.n = n
+	return t
+
+
+## A load pushed on the barrow where there is one (weapons.gd), else carried.
+static func cart() -> String:
+	return "Wheelbarrow" if Weapons.can_play("Wheelbarrow") else "Carrying"
+
+
 static func go(where: String, gait := "Walk") -> BTTask:
 	var t := GoTo.new()
 	t.where = where
@@ -1048,6 +1231,30 @@ static func villager_activities(role: String) -> Array:
 				seq("dig", [go("field"), run(["Digging", "Dig_And_Plant"]), once("Wiping_Sweat"), brk(REST)]),
 				seq("weed", [go("field"), run(["Fixing_Kneeling"]), get_up(), brk(["Relieved_Sigh", "Arm_Stretching", "Weight_Shift"]), step(0.2), run(["Fixing_Kneeling"]), get_up()]),
 				seq("chores", [go("bench"), once("PickUp_Table"), run(["Interact", "Thinking"]), brk(REST)]),  # at the door nothing lies on the ground: no kneeling or shoving at air
+				seq("barn", [go("field"), once("PickUp_Table"), go("barn.door", "Carrying"), once("PickUp_Table"), brk(REST)]),  # the cut crop to the barn (none: off)
+			]
+		# --- the working buildings' hands (works.json jobs) ---
+		"apprentice":  # the smith's lad: bellows, quench, coal, and the finished arms to the armoury
+			return [
+				seq("bellows", [go("forge.bellows"), face("forge.hearth"), run(["Pushing"], 3, 5), brk(["Wiping_Sweat", "Weight_Shift"])]),
+				seq("quench", [go("forge.trough"), face("forge.trough"), once("PickUp_Table"), run(["Interact"], 1, 2), brk(REST)]),
+				seq("coal", [go("forge.store"), once("PickUp_Table"), go("forge.hearth", "Carrying"), face("forge.hearth"), once("PickUp_Table"), brk(REST + SWIG)]),
+				seq("deliver", [go("forge.anvil"), once("PickUp_Table"), go("armoury.rack", "Carrying"), face("armoury.rack"), once("PickUp_Table"), stock("rack", 1), brk(REST)]),
+			]
+		"groom":  # the stables: a horse led to the inn's rail or the gate, fetched home, fed and mucked out
+			return [
+				seq("lead", [go("paddock.gate"), lead("take"), go("inn.hitch"), lead("tie"), once("Interact"), brk(REST)]),
+				seq("fetch", [go("inn.hitch"), lead("tied"), go("paddock.gate"), lead("free"), brk(LOOK)]),
+				seq("gate", [go("paddock.gate"), lead("take"), go("gate"), run(["Looking_Around", "Pointing_Forward", "Waving"], 1, 2), go("paddock.gate"), lead("free"), brk(REST)]),
+				seq("fodder", [go("barn.door"), once("PickUp_Table"), go("paddock.gate", "Carrying"), once("PickUp_Table"), brk(REST)]),
+				seq("muck", [go("stables.door"), once("PickUp_Table"), go("stables.heap", "Carrying"), once("PickUp_Table"), brk(["Wiping_Sweat", "Weight_Shift"])]),
+			]
+		"carter":  # the grain chain: field to mill, flour to the granary, bread to the market
+			return [
+				seq("sacks", [go("field"), once("PickUp_Table"), go("mill.sacks", cart()), once("PickUp_Table"), stock("mill", 1), brk(REST)]),
+				seq("flour", [go("mill.door"), stock("mill", -1), once("PickUp_Table"), go("granary.sacks", "Carrying"), once("PickUp_Table"), brk(REST)]),
+				seq("bread", [go("bakery.door"), once("PickUp_Table"), go("market", "Carrying"), once("PickUp_Table"), brk(LOOK)]),
+				seq("rest", [go("mill.door"), run(["Idle_Talking", "Wiping_Sweat"], 1, 2), brk(REST)]),
 			]
 		"market":
 			return [

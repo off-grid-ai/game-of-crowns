@@ -11,8 +11,10 @@ extends SceneTree
 
 const Mind := preload("res://scripts/npc_mind.gd")
 const People := preload("res://scripts/people.gd")
-const POSTS := ["build", "trade", "buy", "drill", "bows", "guard", "riot", "beg", "mourn", "refugee", "revel"]
-const CALLINGS := ["farmer", "market", "pious", "tavern", "keeper", "gentry", "child", "crafter", "idler"]
+const POSTS := ["build", "trade", "buy", "drill", "bows", "guard", "riot", "beg", "mourn", "refugee", "revel",
+	"smith", "miller", "tanner", "queue", "levy", "crier", "listener", "drinker", "traveller",
+	"yard", "host", "minstrel", "stablehand", "fieldhand", "woodcutter", "pilgrim", "onlooker", "porter"]
+const CALLINGS := ["farmer", "market", "pious", "tavern", "keeper", "gentry", "child", "crafter", "idler", "apprentice", "groom", "carter"]
 const RESTFUL := ["Sitting_Ground", "Sitting_Idle", "Sitting_Cross_Legged", "Sitting_Drinking", "Sleeping_Idle", "Kneeling", "Praying", "Idle", "Breathing_Idle"]
 const MOVING := ["Walk", "Running", "Sneak", "Injured_Walk", "Carrying"]
 const AnimLOD := preload("res://scripts/anim_lod.gd")
@@ -46,6 +48,20 @@ class FakeVillage extends Node:
 		return "Planting"
 	func town_mood(_a: Dictionary) -> String:
 		return mood
+	## The working buildings (works.gd): every spot a few steps from home; one town root with two horses.
+	var work := Node3D.new()
+	func work_spot(a: Dictionary, key: String, _spread := true) -> Vector3:
+		return a["home"] + Vector3(float(hash(key) % 7) * 0.1 - 0.3, 0, float(hash(key) % 5) * 0.1 - 0.2)
+	func work_root(_a: Dictionary) -> Node3D:
+		if not work.is_inside_tree():
+			add_child(work)
+			var hs: Array = []
+			for i in 2:
+				var h := Node3D.new()
+				work.add_child(h)
+				hs.append(h)
+			work.set_meta("horses", hs)
+		return work
 
 
 func _init() -> void:

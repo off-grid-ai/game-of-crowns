@@ -110,6 +110,9 @@ func sync(world: Dictionary) -> void:
 		bb.set_var(&"grief", bool(c.get("grief", false)))
 		bb.set_var(&"prosperity", bool(c.get("prosperity", false)))
 		bb.set_var(&"grasping", bool(c.get("grasping", false)))
+		bb.set_var(&"granary_low", bool(c.get("granaryLow", false)))  # under a quarter full (bridge view.js townStates)
+		# A levy raised here: the muster scene at the town this season or last (bridge crown.js levy).
+		bb.set_var(&"levy", now_scenes.any(func(s): return String(s.get("kind", "")) == "muster" and int(s.get("city", -2)) == id and int(s.get("turn", turn)) >= turn - 1))
 		bb.set_var(&"favour", favour)
 		bb.set_var(&"crown_town", int(c.get("owner", -1)) == crown_id)
 		bb.set_var(&"house", String((owner.get("house", {}) as Dictionary).get("name", "")))

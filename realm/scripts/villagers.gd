@@ -25,6 +25,7 @@ var _skin := StandardMaterial3D.new()
 var _check := 0.0
 var people = preload("res://scripts/people.gd").new()
 const TownLife := preload("res://scripts/town_life.gd")
+const Works := preload("res://scripts/works.gd")  # the working buildings and their hands
 const Weapons := preload("res://scripts/weapons.gd")  # what a move needs in hand (can_play)
 const TownNav := preload("res://scripts/town_nav.gd")
 var nav = preload("res://scripts/town_nav.gd").new()
@@ -288,6 +289,15 @@ func _spawn(id: int) -> void:
 	# Crowford (size 6, ~32 houses) had 30 out, enough to fill its one square.
 	var out_by_size := clampi(6 + size * 4, 8, int(_crown_market(id).get("out_most", MAX_PER_TOWN)))
 	var count := clampi(homes.size() * 2 / 3, 8, out_by_size) if not homes.is_empty() else out_by_size
+	# The working buildings' hands first (works.json jobs): an apprentice where
+	# there's a forge, a groom at the stables, carters where there's a mill.
+	var jobs: Array = []
+	if Works.on():
+		var jd: Dictionary = preload("res://scripts/data.gd").value("works", "jobs", {})
+		for job in jd:
+			if Works.has(town["node"], String(jd[job].get("needs", job))):
+				for k in int(jd[job].get("count", 1)):
+					jobs.append(String(job))
 	for i in count:
 		# Each has a calling that decides where their day goes, and what they wear:
 		# farmers dress as peasants, the pious often as clergy, a gentlewoman in
@@ -298,8 +308,10 @@ func _spawn(id: int) -> void:
 		var busy := _crown_market(id)
 		if calling == "farmer" and busy.has("farmers_to_market") and rng.randf() < float(busy["farmers_to_market"]):
 			calling = "market"  # the crown's seat is a city: fewer to the fields, more to the market
-		var station := "peasant" if calling == "farmer" else ("clergy" if calling == "pious" and rng.randf() < 0.6 else ("noble" if calling == "gentry" else "townsfolk"))
-		var person: Node3D = people.make(rng, station, Color.WHITE, "", "", "female" if calling == "gentry" else "")
+		if i < jobs.size():
+			calling = jobs[i]
+		var station := "peasant" if calling in ["farmer", "carter", "groom"] else ("clergy" if calling == "pious" and rng.randf() < 0.6 else ("noble" if calling == "gentry" else "townsfolk"))
+		var person: Node3D = people.make(rng, station, Color.WHITE, "adult" if i < jobs.size() else "", "", "female" if calling == "gentry" else "")
 		add_child(person)
 		# Home is a real house's doorstep, the work done in front of it; a
 		# farmer's strip is one of the town's own fields (or the garden behind
@@ -737,6 +749,27 @@ func _places(id: int, center: Vector3) -> Dictionary:
 			out[k] = p
 		_town_places[id] = out
 	return _town_places[id]
+
+
+## A work spot at one of the town's buildings, "forge.anvil" (works.gd), in
+## the world; INF when the town has no such building. `spread` stands two
+## sent to the same spot a step apart.
+func work_spot(a: Dictionary, key: String, spread := true) -> Vector3:
+	var root := work_root(a)
+	var p := Works.spot(root, key) if root else Vector3.INF
+	if p == Vector3.INF:
+		return p
+	var w := root.to_global(Vector3(p.x, 0, p.z))
+	if spread:
+		w = nearby(w, a["rng"], 0.05)
+	w.y = terrain.height_at(w.x, w.z)
+	return w
+
+
+## The town node a villager lives in (its buildings, stacks and horses), or null.
+func work_root(a: Dictionary) -> Node3D:
+	var t: Dictionary = towns.towns.get(a["town"], {}) if towns else {}
+	return t.get("node") as Node3D if not t.is_empty() and is_instance_valid(t.get("node")) else null
 
 
 ## A spot to work in one of the town's fields, or in a garden behind a house

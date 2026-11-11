@@ -1,0 +1,118 @@
+extends SceneTree
+## Headless check of the life at the working buildings (works.gd, town_life._works), no GPU:
+## a made-up town on flat ground with a forge, armoury, stables, windmill, granary, tannery and
+## an inn, dressed in each of the realm's states. Prints, per state, who stands at each building,
+## the horses, the stacks and the lights, then lets the horses graze a few seconds and checks they
+## moved and stayed in their paddock. Exit 1 on a failure.
+##   arch -arm64 godot --headless --path realm --script res://tools/works_probe.gd
+
+const TownLife := preload("res://scripts/town_life.gd")
+const Works := preload("res://scripts/works.gd")
+
+
+class FlatLand extends Node3D:
+	var season := "summer"
+	func height_at(_x: float, _z: float) -> float:
+		return 0.0
+	func is_land(_x: float, _z: float) -> bool:
+		return true
+
+
+func _init() -> void:
+	_run.call_deferred()
+
+
+func _town(world: Node3D) -> Node3D:
+	var holder := Node3D.new()  # towns.gd's own node holds the towns (on_lane asks its parent)
+	world.add_child(holder)
+	var root := Node3D.new()
+	root.position = Vector3(10, 0, 10)
+	holder.add_child(root)
+	root.set_meta("places", {"tavern": Vector3(0.0, 0, 1.0), "well": Vector3(0.3, 0, -0.3), "market": Vector3(-0.4, 0, 0.2)})
+	root.set_meta("works", {
+		"forge": {"at": Vector3(1.6, 0, 0.0)},
+		"armoury": {"at": Vector3(1.6, 0, 1.4)},
+		"stables": {"at": Vector3(-1.8, 0, 0.0)},
+		"paddock": {"at": Vector3(-2.6, 0, 1.4), "radius": 0.45},
+		"windmill": {"at": Vector3(-2.0, 0, -2.4)},
+		"granary": {"at": Vector3(0.0, 0, -2.2)},
+		"tannery": {"at": Vector3(2.4, 0, -1.6)},
+	})
+	return root
+
+
+func _run() -> void:
+	var fails := 0
+	var world := Node3D.new()
+	root.add_child(world)
+	var land := FlatLand.new()
+	world.add_child(land)
+	var states := {
+		"peace": {},
+		"war": {"atWar": true},
+		"low": {"granaryLow": true, "food": 3, "granary": 40},
+		"hunger": {"famine": true, "mood": "hunger"},
+		"feast": {"celebrating": true, "mood": "feast", "prosperity": true},
+	}
+	for name in states:
+		var town := _town(world)
+		var life := TownLife.new()
+		life.terrain = land
+		var c := {"id": 7, "size": 6, "kind": "", "building": "", "food": 30, "granary": 40}
+		c.merge(states[name], true)
+		life.update(town, c, {"color": "#884422"})
+		var l: Node3D = town.get_node_or_null("Life")
+		var tick: Node = l.get_node_or_null("Works") if l else null
+		if tick == null:
+			print("FAIL %s: no works life" % name)
+			fails += 1
+			continue
+		var by_post := {}
+		for p in l.find_children("*", "Node3D", false, false):
+			var m: Node = p.get_node_or_null("Mind")
+			if m:
+				by_post[p.get_meta("role", "?")] = int(by_post.get(p.get_meta("role", "?"), 0)) + 1
+		var horses := Works.horses(town)
+		print("WORKS %-7s people=%d smiths=%d horses=%d lights=%d stacks=%d sparks=%s glow=%s anchors=%s" % [name, l.find_children("*", "Node3D", false, false).filter(func(n): return n.has_meta("role")).size(),
+			tick.smiths.size(), horses.size(), tick.lights.size(), tick.stacks.size(), tick.sparks != null, tick.glow != null, str(Works.anchors(town).keys())])
+		if tick.smiths.is_empty() or horses.is_empty() or tick.glow == null:
+			print("FAIL %s: the forge or the paddock is empty" % name)
+			fails += 1
+		var want_smiths := Works.count("smiths", Works.states(c, 7), 6)
+		if tick.smiths.size() != want_smiths:
+			print("FAIL %s: %d smiths, works.json says %d" % [name, tick.smiths.size(), want_smiths])
+			fails += 1
+		if name == "peace":
+			var start: Array = horses.map(func(h): return (h as Node3D).position)
+			for i in 200:
+				await process_frame
+				tick._process(0.1)
+			var moved := 0
+			var paddock: Vector3 = tick.paddock
+			for i in horses.size():
+				var h: Node3D = horses[i]
+				if h.position.distance_to(start[i]) > 0.01:
+					moved += 1
+				if Vector2(h.position.x - paddock.x, h.position.z - paddock.z).length() > tick.roam + 0.05:
+					print("FAIL a horse left its paddock")
+					fails += 1
+			print("WORKS horses grazing: %d of %d moved in 20 s" % [moved, horses.size()])
+			if moved == 0:
+				fails += 1
+				print("FAIL no horse moved")
+			# A groom leads one: it follows.
+			var groom := Node3D.new()
+			world.add_child(groom)
+			groom.global_position = town.to_global(Vector3(0.5, 0, 0.5))
+			var led := Works.take_horse(town, groom, false)
+			for i in 200:  # from the paddock to where the groom stands, then it waits behind him
+				tick._process(0.1)
+			var gap := Vector2(led.global_position.x - groom.global_position.x, led.global_position.z - groom.global_position.z).length()
+			print("WORKS a led horse is %.2f behind its groom" % gap)
+			if gap > 0.3:
+				fails += 1
+				print("FAIL the led horse didn't follow")
+			Works.let_go(led, true)
+			print("WORKS stacks: rack %d, mill %d; levy takes one: %s" % [Works.stock(town, "rack"), Works.stock(town, "mill"), Works.add_stock(town, "rack", -1)])
+	print("WORKS VERDICT: %s" % ("PASS" if fails == 0 else "FAIL (%d)" % fails))
+	quit(1 if fails > 0 else 0)

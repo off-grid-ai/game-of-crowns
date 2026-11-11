@@ -77,6 +77,8 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	var building := String(c.get("building", ""))
 	var progress := float(c.get("progress", 0.0))
 	var sig := "%s|%s|%s|%s|%s|%s|%s|%s|%s" % [kind, building, hungry, c.get("celebrating", false), c.get("disorder", false), c.get("atWar", false), c.get("grief", false), c.get("prosperity", false), c.get("grasping", false)]
+	# The working buildings' life changes with a levy and a low granary too, and when the town agent lists its buildings.
+	sig += "|%s|%s|%d" % [c.get("granaryLow", false), "levy" in Works.states(c, _town_id), hash(root.get_meta("works", {}))]
 	var life: Node3D = root.get_node_or_null("Life")
 	if life and life.get_meta("sig", "") == sig:
 		# Only the work moved on: the site grows where it stands, and the
@@ -125,6 +127,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	if c.get("disorder", false):
 		_unrest(life, center, rng)
 	_dress(root, life, center, c, rng, house)
+	_works(root, life, center, c, rng)
 	_near_only(life)
 	_pin(life, center)
 
@@ -1045,3 +1048,306 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 			if q:
 				q.rotation.y = atan2(edge.x, edge.z)
 				_mind(q, "riot", center)
+
+
+# --- the working buildings (works.gd, realm/data/works.json) --------------------
+
+const Works := preload("res://scripts/works.gd")
+const Horse := preload("res://scripts/horse.gd")
+const Data := preload("res://scripts/data.gd")
+const NEWS := ["feast", "levy", "war", "hunger", "low"]  # states the crier cries in the square
+
+
+## The life at the town's working buildings, from the town agent's list of
+## them (works.gd): the smith at the anvil with the forge's glow and sparks,
+## arms stacking on the armoury's rack and the levy lining up for them, horses
+## in the paddock, the miller at the turning mill, the granary's sacks as full
+## as Freeciv says and a queue at its door when it runs low, the tanner at his
+## vats, the inn's benches by day and lit windows by night, a crier in the
+## square when there's news. Who works and how many follow the town's state
+## (works.json counts); the people's choices are their minds' (npc_mind.gd).
+func _works(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: RandomNumberGenerator) -> void:
+	if not Works.on():
+		return
+	var all := Works.anchors(root)
+	if all.is_empty():
+		return
+	var active := Works.states(c, _town_id)
+	var size := int(c.get("size", 1))
+	var tick := Works.Tick.new()
+	tick.name = "Works"
+	tick.root = root
+	tick.life = life
+	tick.ground = func(q: Vector3) -> float: return _y(center, q)
+	tick.hot = "war" in active or "levy" in active
+	tick.make_prop = func(name: String, at: Vector3, yaw: float, lift: float) -> Node3D: return _work_prop(life, center, name, at, yaw, lift)
+	life.add_child(tick)
+	var n := func(what: String) -> int: return Works.count(what, active, size)
+	if all.has("forge"):
+		_forge(root, life, center, all["forge"], tick, n.call("smiths"), rng)
+	if all.has("armoury"):
+		_armoury(root, life, center, all["armoury"], tick, n.call("levy_queue"), rng)
+	var pad := Works.find(root, "paddock")
+	if not pad.is_empty():
+		_paddock(root, life, center, pad, tick, n.call("horses"), rng)
+	for kind in ["windmill", "watermill"]:
+		if all.has(kind):
+			_mill(root, life, center, all[kind], kind, tick, n.call("millers"), rng)
+	if all.has("granary"):
+		_granary(root, life, center, all["granary"], c, tick, n.call("granary_queue"), rng)
+	if all.has("tannery"):
+		for i in n.call("tanners"):
+			var sp: Dictionary = all["tannery"]["spots"]
+			var t := _stand(root, life, center, sp.get("vats", all["tannery"]["at"]), "peasant", "Fixing_Kneeling", rng.randi(), Color.WHITE, 0.2)
+			if t:
+				_face(t, all["tannery"]["at"])
+				_mind(t, "tanner", center)
+	if all.has("inn"):
+		_inn(root, life, center, all["inn"], tick, n, rng)
+	if NEWS.any(func(st): return st in active):
+		_crier(root, life, center, tick, n.call("listeners"), rng)
+
+
+func _face(p: Node3D, at: Vector3) -> void:
+	var flat := Vector2(at.x - p.position.x, at.z - p.position.z)
+	if flat.length() > 0.001:
+		p.rotation.y = atan2(flat.x, flat.y)
+
+
+## A thing set out on a stack while the town is lived in (works.Tick): seen near only.
+func _work_prop(life: Node3D, center: Vector3, name: String, at: Vector3, yaw: float, lift: float) -> Node3D:
+	if not is_instance_valid(life):
+		return null
+	var p := _prop(life, center, name, at, yaw, 1.0, lift)
+	if p:
+		_near_only(p)
+	return p
+
+
+## A line of people from `start` out along `out` (town-local), facing back up it.
+func _line(root: Node3D, life: Node3D, center: Vector3, start: Vector3, out: Vector3, count: int, station: String, anim: String, post: String, rng: RandomNumberGenerator) -> void:
+	for i in count:
+		var p := _stand(root, life, center, start + out * (ROOM * 1.15 * i), station, anim, rng.randi(), Color.WHITE, 0.12)
+		if p:
+			_face(p, p.position - out)
+			_mind(p, post, center)
+
+
+func _front(b: Dictionary) -> Vector3:
+	return Basis(Vector3.UP, float(b["yaw"])) * Vector3(0, 0, 1)
+
+
+func _forge(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: Works.Tick, smiths: int, rng: RandomNumberGenerator) -> void:
+	var sp: Dictionary = b["spots"]
+	var anvil: Vector3 = sp.get("anvil", b["at"] + _front(b) * 0.25)
+	var hearth: Vector3 = sp.get("hearth", b["at"])
+	if b["dress"]:
+		_prop(life, center, "Anvil", anvil, float(b["yaw"]), 1.0, 0.0, 0.1)
+		if sp.has("trough"):
+			_prop(life, center, "Bucket_Metal", sp["trough"], 0.0, 1.0, 0.0, 0.05)
+	var posts: Array = [sp.get("smith", anvil + _front(b) * 0.08), sp.get("second", hearth + _front(b) * 0.1)]
+	for i in mini(smiths, posts.size()):
+		var s := _stand(root, life, center, posts[i], "townsfolk", "Hammer_Swing", rng.randi(), Color.WHITE, 0.2)
+		if s:
+			_face(s, anvil if i == 0 else hearth)
+			_mind(s, "smith", center)
+			tick.smiths.append(s)
+	# The forge's glow, brighter in war, banked at night (works.Tick sets it each second).
+	var g: Dictionary = Data.value("works", "forge.glow", {})
+	var glow := OmniLight3D.new()
+	glow.light_color = Works.colour(g.get("color"), Color(1.0, 0.52, 0.22))
+	glow.light_energy = float(g.get("day", 1.1))
+	glow.omni_range = float(g.get("range", 0.9))
+	glow.position = Vector3(hearth.x, _y(center, hearth) + float(g.get("height", 0.12)), hearth.z)
+	life.add_child(glow)
+	tick.glow = glow
+	# Sparks off the anvil while the hammer swings.
+	var k: Dictionary = Data.value("works", "forge.sparks", {})
+	var p := CPUParticles3D.new()
+	p.amount = maxi(1, int(float(k.get("amount", 14)) * (float(k.get("war", 2.0)) if tick.hot else 1.0)))
+	p.lifetime = float(k.get("life", 0.45))
+	p.direction = Vector3.UP
+	p.spread = 70
+	p.gravity = Vector3(0, -0.9, 0)
+	var speed: Array = k.get("speed", [0.25, 0.6])
+	p.initial_velocity_min = float(speed[0])
+	p.initial_velocity_max = float(speed[1])
+	var size: Array = k.get("size", [0.008, 0.016])
+	p.scale_amount_min = float(size[0]) / 0.25
+	p.scale_amount_max = float(size[1]) / 0.25
+	var grad := Gradient.new()
+	grad.set_color(0, Color(1.0, 0.85, 0.4, 1.0))
+	grad.set_color(1, Color(1.0, 0.3, 0.05, 0.0))
+	p.color_ramp = grad
+	var q := QuadMesh.new()
+	q.size = Vector2(0.25, 0.25)
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = preload("res://scripts/towns.gd").soft_dot()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	m.vertex_color_use_as_albedo = true
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	q.material = m
+	p.mesh = q
+	p.emitting = false
+	p.position = Vector3(anvil.x, _y(center, anvil) + 0.1, anvil.z)
+	var gpu := Particles.to_gpu(p, 25.0)
+	life.add_child(gpu)
+	tick.sparks = gpu
+
+
+func _armoury(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: Works.Tick, levy: int, rng: RandomNumberGenerator) -> void:
+	var sp: Dictionary = b["spots"]
+	var rack: Vector3 = sp.get("rack", b["at"] + _front(b) * 0.25)
+	if b["dress"]:
+		_prop(life, center, "WeaponStand", rack, float(b["yaw"]), 1.0, 0.0, 0.1)
+	# The arms on the rack: the apprentice's deliveries, the levy's takings (works.gd stock).
+	tick.stacks.append({"what": "rack", "at": rack + _front(b) * 0.06, "yaw": float(b["yaw"]), "prop": "Sword_Bronze", "nodes": [], "gap": 0.05, "lift": 0.0})
+	_line(root, life, center, sp.get("queue", rack + _front(b) * 0.2), _front(b), levy, "peasant", "Weight_Shift", "levy", rng)
+
+
+func _paddock(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: Works.Tick, count: int, rng: RandomNumberGenerator) -> void:
+	var sp: Dictionary = b["spots"]
+	var middle: Vector3 = sp.get("middle", b["at"])
+	var roam: float = float(b["radius"]) if float(b["radius"]) > 0.0 else Data.num("works", "paddock.roam", 3.5) * Works.S
+	var list: Array = []
+	for i in count:
+		var h: Node3D = Horse.new(rng.randi() % Horse.COATS.size())
+		var a := rng.randf() * TAU
+		var r := sqrt(rng.randf()) * roam * 0.8
+		var at := middle + Vector3(cos(a) * r, 0, sin(a) * r)
+		h.position = Vector3(at.x, _y(center, at), at.z)
+		h.rotation.y = rng.randf() * TAU
+		h.set_meta("rest", rng.randf_range(0.0, 8.0))
+		life.add_child(h)
+		list.append(h)
+	root.set_meta("horses", list)
+	tick.paddock = middle
+	tick.roam = roam
+
+
+func _mill(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, kind: String, tick: Works.Tick, millers: int, rng: RandomNumberGenerator) -> void:
+	var sp: Dictionary = b["spots"]
+	var door: Vector3 = sp.get("door", b["at"] + _front(b) * 0.25)
+	for i in millers:
+		var m := _stand(root, life, center, door, "peasant", "Interact", rng.randi(), Color.WHITE, 0.2)
+		if m:
+			_face(m, b["at"])
+			_mind(m, "miller", center)
+	tick.stacks.append({"what": "mill", "at": sp.get("sacks", door), "yaw": float(b["yaw"]), "prop": "Bag", "nodes": [], "gap": 0.07, "lift": 0.04})
+	var turner := _spinner(root, b, kind)
+	if turner:
+		var ax: Vector3 = Works.v3(Data.value("works", "mill.axis." + kind, [0, 0, 1]))
+		tick.mills.append({"node": turner, "axis": ax.normalized(), "rpm": Data.num("works", "mill.rpm." + kind, 7.0), "speed": 0.0, "needs_grain": true})
+
+
+## The part of a mill's model that turns (its sails, its wheel), found by name
+## (works.json mill.spin_names) in the building the town agent placed; null when
+## the model is one piece and nothing can turn.
+func _spinner(root: Node3D, b: Dictionary, kind: String) -> Node3D:
+	var names: Array = Data.value("works", "mill.spin_names", [])
+	var bodies: Array = []
+	if b.get("node") is Node3D and is_instance_valid(b["node"]):
+		bodies.append(b["node"])
+	else:
+		for ch in root.get_children():
+			if ch is Node3D and ch.name != "Life" and Vector2(ch.position.x - b["at"].x, ch.position.z - b["at"].z).length() < 0.6:
+				bodies.append(ch)
+	for body: Node3D in bodies:
+		for n in body.find_children("*", "Node3D", true, false):
+			var low := String(n.name).to_lower()
+			if names.any(func(w): return low.contains(String(w))):
+				return n
+	return null
+
+
+func _granary(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, c: Dictionary, tick: Works.Tick, queue: int, rng: RandomNumberGenerator) -> void:
+	var sp: Dictionary = b["spots"]
+	var door: Vector3 = sp.get("door", b["at"] + _front(b) * 0.25)
+	# Its sacks as full as Freeciv says the granary is.
+	var most := int(Data.num("works", "stock.granary_most", 8))
+	var share := clampf(float(c.get("food", 0)) / float(c.get("granary", 1)), 0.0, 1.0) if c.get("food") != null and float(c.get("granary", 0)) > 0.0 else 0.5
+	tick.stacks.append({"what": "granary", "fixed": roundi(share * most), "at": sp.get("sacks", door), "yaw": float(b["yaw"]), "prop": "Bag", "nodes": [], "gap": 0.07, "lift": 0.04})
+	_line(root, life, center, sp.get("queue", door + _front(b) * 0.1), _front(b), queue, "peasant", "Weight_Shift", "queue", rng)
+
+
+func _inn(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: Works.Tick, n: Callable, rng: RandomNumberGenerator) -> void:
+	var sp: Dictionary = b["spots"]
+	var yaw := float(b["yaw"])
+	var along := Basis(Vector3.UP, yaw) * Vector3(1, 0, 0)
+	# Benches by the door; drinkers on them by day (they go in at night: works.Tick).
+	var seats: Array = []
+	for key in ["bench_a", "bench_b"]:
+		if not sp.has(key):
+			continue
+		var at: Vector3 = sp[key]
+		if b["dress"]:
+			_prop(life, center, "Bench", at, yaw, 1.0, 0.0, 0.0)
+		seats += [at - along * 0.04, at + along * 0.04]
+	var taken: PackedVector2Array = life.get_meta("standing")
+	for i in mini(int(n.call("drinkers")), seats.size()):
+		var at: Vector3 = seats[i]
+		var d := _townsperson(life, Vector3(at.x, _y(center, at), at.z), "townsfolk", "Sitting_Drinking", rng.randi())
+		d.rotation.y = yaw  # facing out to the street
+		d.set_meta("bench", true)
+		taken.append(Vector2(at.x, at.z))
+		_mind(d, "drinker", center)
+		tick.by_day.append(d)
+	life.set_meta("standing", taken)
+	# A feast fills the yard.
+	var yard: Vector3 = sp.get("yard", b["at"] + _front(b) * 0.4)
+	for i in n.call("revellers"):
+		var r := _stand(root, life, center, yard, "townsfolk", "Cheering", rng.randi(), Color.WHITE, 0.3)
+		if r:
+			_face(r, b["at"])
+			_mind(r, "revel", center)
+	# Travellers in off the road, each with a horse tied at the rail.
+	var hitch: Vector3 = sp.get("hitch", b["at"] + _front(b) * 0.3)
+	for i in n.call("travellers"):
+		var h: Node3D = Horse.new(rng.randi() % Horse.COATS.size())
+		var hp: Vector3 = hitch + along * (0.22 * i)
+		h.position = Vector3(hp.x, _y(center, hp), hp.z)
+		h.rotation.y = yaw + PI  # nose to the rail
+		life.add_child(h)
+		var t := _stand(root, life, center, hp + _front(b) * 0.14, "townsfolk", "PickUp_Table", rng.randi(), Color.WHITE, 0.2)
+		if t:
+			_face(t, hp)
+			_mind(t, "traveller", center)
+	# The windows lit at night.
+	var l: Dictionary = Data.value("works", "inn.light", {})
+	for key in sp:
+		if not String(key).begins_with("window"):
+			continue
+		var w: Vector3 = sp[key]
+		var light := OmniLight3D.new()
+		light.light_color = Works.colour(l.get("color"), Color(1.0, 0.68, 0.36))
+		light.light_energy = float(l.get("energy", 0.8))
+		light.omni_range = float(l.get("range", 0.7))
+		light.position = Vector3(w.x, _y(center, w) + w.y, w.z)
+		light.visible = false
+		life.add_child(light)
+		tick.lights.append(light)
+
+
+## The crier in the square with the news, and a ring of listeners.
+func _crier(root: Node3D, life: Node3D, center: Vector3, tick: Works.Tick, listeners: int, rng: RandomNumberGenerator) -> void:
+	var places: Dictionary = root.get_meta("places", {})
+	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
+	var at := well + SEEN * Data.num("works", "crier.from_well", 0.35)
+	var crier := _stand(root, life, center, at, "townsfolk", "Yelling", rng.randi(), Color.WHITE, 0.3)
+	if crier == null:
+		return
+	var toward := SEEN  # he faces the seen half of the square, his listeners before him
+	crier.rotation.y = atan2(toward.x, toward.z)
+	_mind(crier, "crier", center)
+	tick.by_day.append(crier)
+	var ring: Array = Data.value("works", "crier.ring", [0.22, 0.38])
+	for i in listeners:
+		var ang := atan2(toward.x, toward.z) + lerpf(-1.6, 1.6, (i + 0.5) / maxf(1.0, listeners)) + rng.randf_range(-0.12, 0.12)
+		var r := rng.randf_range(float(ring[0]), float(ring[1]))
+		var p := _stand(root, life, center, crier.position + Vector3(sin(ang), 0, cos(ang)) * r, "townsfolk", "Nodding", rng.randi(), Color.WHITE, 0.12)
+		if p:
+			_face(p, crier.position)
+			_mind(p, "listener", center)
+			tick.by_day.append(p)
