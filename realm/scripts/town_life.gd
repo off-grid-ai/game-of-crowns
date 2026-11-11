@@ -479,14 +479,14 @@ func _crowd(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 				_mind(g, "guard", center)
 		# What the crowd has done to the square: a cart turned on its side, crates
 		# and a cask knocked over and rolled, in the press where a street camera sees it.
-		var tipped: Node3D = Real.make("medieval_wooden_cart")
+		var tipped: Node3D = Real.make(Real.one("cart"))
 		var tip_at := _spot(center, dir * 0.8, _blocked(root, life), life.get_meta("standing"), 0.35)
 		if tipped and not is_nan(tip_at.x):
 			tipped.position = Vector3(tip_at.x, _y(center, tip_at) + 0.05, tip_at.z)
 			tipped.rotation = Vector3(0, atan2(side.x, side.z), PI * 0.5)  # over on its side
 			tipped.set_meta("dress", "overturned cart")
 			life.add_child(tipped)
-			life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(tip_at, Real.footprint("medieval_wooden_cart"), atan2(side.x, side.z))])
+			life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(tip_at, Real.footprint(Real.one("cart")), atan2(side.x, side.z))])
 		elif tipped:
 			tipped.free()
 		for k in 4:
@@ -595,7 +595,7 @@ func _bonfire(life: Node3D, center: Vector3) -> void:
 	p.position = Vector3(0, _y(center, Vector3.ZERO) + 0.05, 0)
 	var fire_at := p.position
 	life.add_child(Particles.to_gpu(p))
-	var ring: Node3D = Real.make("ph/stone_fire_pit")  # the stones it burns in
+	var ring: Node3D = Real.make(Real.one("fire_pit"))  # the stones it burns in
 	if ring:
 		ring.position = Vector3(0, _y(center, Vector3.ZERO) - 0.005, 0)
 		ring.scale = Vector3.ONE * RING_SCALE
@@ -620,7 +620,7 @@ const HEAT := 0.06  # past the stones, a step nobody takes: half a metre
 ## How far from a bonfire's middle the ground is the fire's: its ring of
 ## stones as wide as it stands (the model's real footprint, scaled), and HEAT.
 static func fire_reach() -> float:
-	var foot := Real.footprint("ph/stone_fire_pit")
+	var foot := Real.footprint(Real.one("fire_pit"))
 	return maxf(foot.x, foot.y) * RING_SCALE * 0.5 + HEAT if foot != Vector2.ZERO else 0.23
 
 
@@ -737,14 +737,14 @@ static func doing_line(kind: String, name: String, progress: float) -> String:
 static func site_kit(building: String) -> String:
 	match building:
 		"Temple", "Cathedral", "Amphitheater", "Colosseum", "Courthouse", "Library", "University":
-			return "medieval_church"
+			return Real.one("church")
 		"Barracks", "Barracks II", "Palace":
-			return "medieval_viking_house"
+			return Real.one("hall")
 		"Granary", "Marketplace", "Harbor":
-			return "old_wooden_barn"
+			return Real.one("barn")
 		"City Walls", "Great Wall":
-			return "wooden_fence_game_ready_asset"
-	return "thatched_rural_houses"
+			return Real.one("fence")
+	return Real.one("house_poor")
 
 
 ## A building site (the royal works and any new building use the same): the
@@ -773,8 +773,8 @@ func _site(root: Node3D, life: Node3D, center: Vector3, base: Vector3, ang: floa
 		pole.position = base + p.rotated(Vector3.UP, ang) + Vector3(0, full * 0.52, 0)
 		life.add_child(pole)
 	# Timber stacked beside it, a cart that brought it, a ladder up the side.
-	var props := [["wood_pile_pack", Vector3(hx + 0.2, 0, 0), ang], ["medieval_wooden_cart", Vector3(hx + 0.25, 0, hz + 0.35), ang + 0.4],
-		["ph/wooden_ladder", Vector3(-hx - 0.04, 0, 0), ang + PI / 2]]
+	var props := [[Real.one("woodpile"), Vector3(hx + 0.2, 0, 0), ang], [Real.one("cart"), Vector3(hx + 0.25, 0, hz + 0.35), ang + 0.4],
+		[Real.one("ladder"), Vector3(-hx - 0.04, 0, 0), ang + PI / 2]]  # by component (realm/data/assets.json)
 	for pr in props:
 		var prop: Node3D = Real.make(pr[0])
 		if prop == null:
@@ -898,14 +898,14 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 	var side := Vector3(-edge.z, 0, edge.x).normalized()
 	if c.get("atWar", false):
 		# A barricade cart across the road in, weapons stacked, and more of the watch.
-		var cart: Node3D = Real.make("medieval_wooden_cart")
+		var cart: Node3D = Real.make(Real.one("cart"))
 		var cart_at := _spot(center, edge * 1.2, _blocked(root, life), life.get_meta("standing"), 0.3)  # the nearest open ground to the way in
 		if cart and not is_nan(cart_at.x):
 			cart.position = Vector3(cart_at.x, _y(center, cart_at), cart_at.z)
 			cart.rotation.y = atan2(side.x, side.z) + 0.35  # slewed across the way, not parked
 			cart.set_meta("dress", "barricade")
 			life.add_child(cart)
-			life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(cart_at, Real.footprint("medieval_wooden_cart"), atan2(side.x, side.z) + 0.35)])
+			life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(cart_at, Real.footprint(Real.one("cart")), atan2(side.x, side.z) + 0.35)])
 		elif cart:
 			cart.free()  # no room on that road: no cart across it
 		# Crates and casks heaped against it: a barricade, not a cart parked.
