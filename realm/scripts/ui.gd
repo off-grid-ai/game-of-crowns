@@ -536,8 +536,23 @@ const MINIMAP_SIZE := Vector2(180, 284)  # the realm's own shape; small at rest 
 const PAD_WIDTH := CameraPad.PAD_WIDTH  # the camera pad's width (camera_pad.gd)
 
 
+var _minimap_frame: Control  # the minimap's card: panels keep clear of it (the professional audit)
+
+
+## A bottom-centred card (half its width: half_w) slides left just enough to end 12 px short of the
+## minimap, on a narrow screen, instead of sitting over it; centred again when there's room.
+func _clear_of_minimap(p: Control, half_w: float) -> void:
+	if p == null or not is_instance_valid(p) or not p.visible or _minimap_frame == null or not _minimap_frame.visible:
+		return
+	var centre := get_viewport().get_visible_rect().size.x * 0.5
+	var shift := maxf(0.0, centre + half_w - (_minimap_frame.get_global_rect().position.x - 12.0))
+	p.offset_left = -half_w - shift
+	p.offset_right = half_w - shift
+
+
 func _build_minimap() -> void:
 	var frame := glass_panel()
+	_minimap_frame = frame
 	frame.anchor_left = 1.0
 	frame.anchor_right = 1.0
 	frame.anchor_top = 1.0
@@ -669,6 +684,7 @@ func _process_timed(delta: float) -> void:
 		if _chron_panel:
 			_chron_panel.offset_top = maxf(84.0, _bar_pill.get_global_rect().end.y + 10.0)
 	_arrange_top()  # the date line grows (a usurper marches…), so keep the bar from overlapping
+	_clear_of_minimap(_town_panel, 290.0)
 	fit_centre(_digest_panel, 620.0)
 	fit_centre(_house_panel, 640.0)
 	fit_centre(_ledger_panel, 820.0)
