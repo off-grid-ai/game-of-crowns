@@ -34,6 +34,10 @@ limit. Newest first. The plan is [PLAN.md](PLAN.md); the running log of checks i
   switch until judged; tunables in data plus docs/TUNING.md.
 
 ## What Mac said (2026-11-11), newest first
+- "It should make an armory, a farm. There should be chicken, livestock, cattle… all of these details… create more
+  Codex-generated images to be used." The bake-off agent is generating a full concept catalogue (buildings, farm,
+  animals, props) and turning it into 3D via an ungated local TRELLIS route; gated DINOv3/RMBG access is pending
+  Meta and BRIA review.
 - "Not a fan of this" (the mid and map zoom: the old castle on a brown pad, no houses, giant trees, a striped paper
   map). An agent is fixing the mid and map zoom toward 02-realm (HLOD towns, the kit castle at all zooms, tree scale,
   the paper-map blend pushed to true map height, no scanlines).
