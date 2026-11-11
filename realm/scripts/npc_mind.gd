@@ -1092,7 +1092,7 @@ static func villager_activities(role: String) -> Array:
 				seq("chat", [partner(), go("meet"), Talk.new(), brk(LOOK)]),
 				seq("lounge", [go("bench"), run(["Sitting_Ground", "Sitting_Idle", "Sitting_Cross_Legged"], 1, 2), get_up(), brk(["Arm_Stretching", "Bored"])]),
 				seq("watch", [go("market"), run(["Looking_Around", "Bored", "Thinking"], 1, 2), brk(REST)]),
-				seq("nap", [go("home"), run(["Sleeping_Idle"], 1, 1), brk(["Arm_Stretching"])]),
+				seq("nap", [go("home"), run(["Sitting_Cross_Legged"], 1, 1), get_up(), brk(["Arm_Stretching"])]),  # a doze against the house wall: nobody lies full length in the street by day (professional-feel audit)
 			]
 	return []
 
