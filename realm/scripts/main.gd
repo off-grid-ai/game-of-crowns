@@ -695,6 +695,7 @@ func _setup_environment() -> void:
 	load("res://scripts/decisions_world.gd").apply.call_deferred(self)  # the King's decisions seen on the map (data/decisions.json)
 	load("res://scripts/host_command.gd").apply.call_deferred(self)  # the King's hosts selected and ordered (data/host_command.json)
 	load("res://scripts/fire.gd").apply.call_deferred(self)  # fire v2: shaped flames, smoke and burnt houses (data/fire.json)
+	load("res://scripts/castle_life.gd").apply.call_deferred(self)  # the kit castle lived in: tower banners, guards, gate torches (data/castle.json)
 	# Then the player's graphics choice, over the top of it.
 	get_tree().create_timer(0.5).timeout.connect(apply_graphics)
 

@@ -53,22 +53,15 @@ func build_castle(spec: Dictionary) -> ArrayMesh:
 		towers.append_array([Vector3(-hx, 0, 0), Vector3(hx, 0, 0)])
 	for t in towers:
 		_block(parts, t, 2, 2, tower_st, rng, {"cone": true, "windows": 0.3})
-	# Curtain walls between them: front (gate on it), right, back (keep in it), left.
-	var gaps := {0: [-gh, gh], 2: [-kh, kh]}
-	for side in 4:
-		var along := w if side % 2 == 0 else d
-		var half := (hz if side % 2 == 0 else hx)
-		var frame := Transform3D(Basis(Vector3.UP, SIDES[side]), Basis(Vector3.UP, SIDES[side]) * Vector3(0, 0, half))
-		var cut: Array = gaps.get(side, [])
-		for i in along:
-			var off := (i - (along - 1) / 2.0) * CELL
-			if absf(off) > along * CELL / 2.0 - 2.0:
-				continue  # inside a corner tower
-			if spec.get("side_towers", false) and side % 2 == 1 and absf(off) < 2.0:
-				continue  # inside the side tower
-			if not cut.is_empty() and off > float(cut[0]) - 1.0 and off < float(cut[1]) + 1.0:
-				continue  # the gatehouse or the keep stands here
-			_curtain(parts, frame, off, wall_st)
+	# Curtain walls between them: front (gate on it), right, back (keep in it), left. With stone walls on
+	# (walls.gd, --walls=stone) they're left out: walls.gd stands stone walls that can breach in their place.
+	if not stone_curtains():
+		var bays := curtain_bays(spec)
+		for side in 4:
+			var half := (hz if side % 2 == 0 else hx)
+			var frame := Transform3D(Basis(Vector3.UP, SIDES[side]), Basis(Vector3.UP, SIDES[side]) * Vector3(0, 0, half))
+			for off in bays[side]:
+				_curtain(parts, frame, off, wall_st)
 	# The gatehouse, astride the front wall, its gate through two storeys.
 	_block(parts, gate_at, gate_w, 3, wall_st + 1, rng, {"gate": true, "crenel": true, "windows": 0.5, "portcullis": float(spec.get("gate_portcullis", 2.4))})
 	for sx in [-1, 1]:
@@ -85,6 +78,78 @@ func build_castle(spec: Dictionary) -> ArrayMesh:
 	for sx in [-1, 1]:
 		parts.append(["res://assets/props/Banner_2.gltf", Transform3D(b.scaled(Vector3.ONE * 0.8), gate_at + Vector3(sx * (gh - 0.9) - 0.65 * banner, (wall_st + 1) * STOREY - 0.6 - 0.7 * banner, 3.0 + 0.15))])
 	return _bake(parts)
+
+
+## The curtain's 2 m bays on each side (front, right, back, left), as offsets along the side's frame: all
+## but where a corner tower, a side tower, the gatehouse or the keep stands. One rule, read by the build
+## and by curtain_runs.
+static func curtain_bays(spec: Dictionary) -> Array:
+	var w := int(spec.get("w", 18))
+	var d := int(spec.get("d", 16))
+	var gh := 4 * CELL / 2.0
+	var kh := int(spec.get("keep", 4)) * CELL / 2.0
+	var gaps := {0: [-gh, gh], 2: [-kh, kh]}
+	var out := []
+	for side in 4:
+		var along := w if side % 2 == 0 else d
+		var cut: Array = gaps.get(side, [])
+		var offs := []
+		for i in along:
+			var off := (i - (along - 1) / 2.0) * CELL
+			if absf(off) > along * CELL / 2.0 - 2.0:
+				continue  # inside a corner tower
+			if spec.get("side_towers", false) and side % 2 == 1 and absf(off) < 2.0:
+				continue  # inside the side tower
+			if not cut.is_empty() and off > float(cut[0]) - 1.0 and off < float(cut[1]) + 1.0:
+				continue  # the gatehouse or the keep stands here
+			offs.append(off)
+		out.append(offs)
+	return out
+
+
+## The curtain as straight runs between towers, in the castle's own frame (metres): [{a, b, out}], a and b
+## the run's ends on its outer face line at the ground, out its outward normal. Stone walls (walls.gd) and
+## the guards on the walks (castle_life.gd) follow these.
+static func curtain_runs(spec: Dictionary) -> Array:
+	var hx := int(spec.get("w", 18)) * CELL / 2.0
+	var hz := int(spec.get("d", 16)) * CELL / 2.0
+	var bays := curtain_bays(spec)
+	var runs := []
+	for side in 4:
+		var basis := Basis(Vector3.UP, SIDES[side])
+		var half := hz if side % 2 == 0 else hx
+		var offs: Array = bays[side]
+		var i := 0
+		while i < offs.size():
+			var j := i
+			while j + 1 < offs.size() and absf(float(offs[j + 1]) - float(offs[j]) - CELL) < 0.01:
+				j += 1
+			runs.append({"a": basis * Vector3(float(offs[i]) - CELL / 2.0, 0, half), "b": basis * Vector3(float(offs[j]) + CELL / 2.0, 0, half), "out": basis * Vector3(0, 0, 1), "side": side})
+			i = j + 1
+	return runs
+
+
+## The towers (corner, side and the gate's two), in the castle's frame: [{at, top}] (metres, top: its top course).
+static func towers(spec: Dictionary) -> Array:
+	var hx := int(spec.get("w", 18)) * CELL / 2.0
+	var hz := int(spec.get("d", 16)) * CELL / 2.0
+	var wall_st := int(spec.get("wall_storeys", 2))
+	var tower_st := int(spec.get("tower_storeys", wall_st + 2))
+	var out := []
+	for c in [Vector3(-hx, 0, -hz), Vector3(hx, 0, -hz), Vector3(hx, 0, hz), Vector3(-hx, 0, hz)]:
+		out.append({"at": c, "top": tower_st * STOREY + 0.12})
+	if spec.get("side_towers", false):
+		for c in [Vector3(-hx, 0, 0), Vector3(hx, 0, 0)]:
+			out.append({"at": c, "top": tower_st * STOREY + 0.12})
+	var gh := 4 * CELL / 2.0
+	for sx in [-1, 1]:
+		out.append({"at": Vector3(sx * (gh + 1.0), 0, hz + 1.0), "top": (wall_st + 2) * STOREY + 0.12, "gate": true})
+	return out
+
+
+## Stone curtains (walls.gd's switch, --walls=stone): the kit curtain is left out of the castle.
+static func stone_curtains() -> bool:
+	return load("res://scripts/walls.gd").on()
 
 
 ## A stone block (tower, keep, gatehouse) standing on `at`: its four faces of
