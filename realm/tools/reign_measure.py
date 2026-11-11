@@ -45,6 +45,11 @@ nx_time, nx_covered, nx_turns, nx_text, nx_last = collections.Counter(), 0.0, 0,
 # The royal seal (bridge seals.js), when the reign has it: this King spends one whenever he
 # holds one and no court is up, on one of the worthwhile uses at random (the line's pick or another).
 seal_acts, seal_hand, seal_fail, seal_last, multi_time = collections.Counter(), 0, 0, 0.0, 0.0
+# SEAL_POLICY=hand: a King who always takes the Hand's pick (the line's act), to see whether the advice dominates.
+import os
+SEAL_POLICY = os.environ.get("SEAL_POLICY", "random")
+crown_towns = lambda w: [c["id"] for c in w.get("cities", []) if any(p.get("id") == c.get("owner") and (p.get("house") or {}).get("crown") for p in w.get("players", []))]
+towns_at_start = None
 while time.time() - start < MIN * 60:
     now = time.time()
     try:
@@ -64,6 +69,8 @@ while time.time() - start < MIN * 60:
     if court or (inter and not inter.get("seen")):
         up_time += now - last
     last = now
+    if towns_at_start is None:
+        towns_at_start = crown_towns(w)
     nx = (w.get("reign") or {}).get("next")
     if isinstance(nx, dict):
         nx_time[nx.get("kind")] += now - nx_last
@@ -77,7 +84,7 @@ while time.time() - start < MIN * 60:
     sl = (w.get("reign") or {}).get("seals")
     if isinstance(sl, dict) and sl.get("n", 0) >= 1 and not court and not (inter and not inter.get("seen")) and now - seal_last >= 6 \
             and isinstance(nx, dict) and nx.get("alts"):
-        pick = random.choice(nx["alts"])
+        pick = nx["act"] if SEAL_POLICY == "hand" and nx.get("act") else random.choice(nx["alts"])
         body = {k: pick[k] for k in ("action", "city", "building", "to") if pick.get(k) is not None}
         r = post("/decree", body)
         seal_last = now
@@ -176,6 +183,11 @@ res = {
     "next_turnover_per_minute": round(nx_turns / mins, 2),
     "next_his_share": round(sum(v for k, v in nx_time.items() if k != "court") / max(1e-9, sum(nx_time.values())), 2) if nx_time else 0,
     "next_kinds_share": {k: round(v / max(1e-9, sum(nx_time.values())), 2) for k, v in nx_time.items()},
+    "seal_policy": SEAL_POLICY,
+    "name_earned": ((w.get("reign") or {}).get("readings") or {}).get("name"),
+    "crown_towns_lost": len(set(towns_at_start or []) - set(crown_towns(w))),
+    "crown_towns_gained": len(set(crown_towns(w)) - set(towns_at_start or [])),
+    "peace_end": round(((w.get("reign") or {}).get("readings") or {}).get("peace", {}).get("now", 0), 2),
     "seals_spent": sum(seal_acts.values()),
     "seals_refused": seal_fail,
     "seal_acts": dict(seal_acts),
