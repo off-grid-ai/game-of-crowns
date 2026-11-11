@@ -306,6 +306,26 @@ func _play(quit_after: bool) -> void:
 						main.rig.apply()
 				_note("  breach: %s" % ("framed at %s" % at if at != Vector3.INF else "no siege staged (--siege)"))
 				await get_tree().create_timer(2.0).timeout
+			"camp":
+				# camp [dist] [tilt]: frames the besiegers' camp (siege_camp.gd, --camp=on) from over its tents
+				# toward the town: tents, fires, palisade, the engines in the band, the wall beyond.
+				var camp: Node = main.scenes.find_child("SiegeCamp", true, false)
+				if camp:
+					_oblique(camp.middle(), float(w[1]) if w.size() > 1 else 8.0, float(w[2]) if w.size() > 2 else -22.0)
+					if main.rig.is_processing_input() == false:
+						main.rig.apply()
+				_note("  camp: %s" % ("framed" if camp else "none pitched (--siege with --camp=on)"))
+				await get_tree().create_timer(2.0).timeout
+			"engine":
+				# engine [n] [dist] [tilt]: frames the n-th siege engine (siege_camp.gd), low and oblique.
+				var all := get_tree().get_nodes_in_group("siege_engines")
+				var n := int(w[1]) if w.size() > 1 else 0
+				if n < all.size():
+					_oblique((all[n] as Node3D).global_position, float(w[2]) if w.size() > 2 else 2.5, float(w[3]) if w.size() > 3 else -20.0)
+					if main.rig.is_processing_input() == false:
+						main.rig.apply()
+				_note("  engine %d: %s" % [n, "framed" if n < all.size() else "none (%d stand)" % all.size()])
+				await get_tree().create_timer(2.0).timeout
 			"burn":
 				# burn Town [seconds] [razed]: the town is put to the torch (fire.gd, --fire=v2): its houses
 				# catch one after another downwind, the townsfolk run or form a bucket line, the roofs fall in.

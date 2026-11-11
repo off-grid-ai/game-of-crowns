@@ -63,8 +63,15 @@ func pitch(s: Node, siege: Node3D, town: Vector3, middle: float, line: float, co
 	_parked()
 	var k: Dictionary = Data.value("siege", "engines", {})
 	var angles: Array = k.get("angles", [0.0])
+	if OS.get_cmdline_user_args().has("--wall-demo"):
+		count = angles.size()  # the demo's wall falls within a take: every engine at it
 	for e in clampi(maxi(count, 1), 1, angles.size()):
 		_engine(["trebuchet", "catapult"][e % 2], float(angles[e]), k)
+
+
+## The camp's middle among its tents (world), for framing it.
+func middle() -> Vector3:
+	return _arc(0.0, camp_r + 0.6)
 
 
 ## The crews, for the walls' archers to shoot at (scenes.gd _arrows' marks).
