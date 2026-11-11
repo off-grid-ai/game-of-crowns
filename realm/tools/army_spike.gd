@@ -19,6 +19,9 @@ var men := 0
 var _regiments: Array = []  # [node, centre, heading, speed]
 var _t := 0.0
 var _report := 0.0
+var _field := Vector3.ZERO  # where the army stands: open ground beside the seat
+var _dist := 12.0
+var _frame_for := 0.0  # seconds left holding the camera on the army
 
 
 func _init(owner: Node, count: int) -> void:
@@ -31,11 +34,17 @@ func _ready() -> void:
 	# Wait for the realm and Kingsmere's town to stand, then muster beside it.
 	while main.towns == null or main.towns.building() or main.terrain.width == 0:
 		await get_tree().create_timer(1.0).timeout
+	# Kingsmere is the crown's seat (/world seatId); the army musters on open ground beside it.
+	var seat := int(main.bridge.world.get("seatId", -1))
 	var at := Vector3.ZERO
-	for id in main.towns.towns:
-		var c: Dictionary = main.towns.towns[id].get("data", {})
-		if String(c.get("title", c.get("name", ""))) == "Kingsmere":
-			at = main.towns.towns[id]["node"].global_position
+	if main.towns.towns.has(seat):
+		at = main.towns.towns[seat]["node"].global_position
+	else:
+		for id in main.towns.towns:
+			var c: Dictionary = main.towns.towns[id].get("data", {})
+			if String(c.get("title", c.get("name", ""))) == "Kingsmere" or String(c.get("name", "")) == "Kingsmere":
+				at = main.towns.towns[id]["node"].global_position
+	_field = _open_ground(at)
 	var mesh := _soldier_mesh()
 	if mesh == null:
 		push_error("ARMY no soldier mesh at " + ASSET)
@@ -53,7 +62,7 @@ func _ready() -> void:
 		add_child(vat)
 		var gx := float(i % per_row) - per_row * 0.5
 		var gz := float(i / per_row) - per_row * 0.5
-		var centre := at + Vector3(2.5 + gx * FILES * SPACING * 1.4, 0, gz * (REGIMENT / FILES) * SPACING * 1.6)
+		var centre := _field + Vector3(gx * FILES * SPACING * 1.4, 0, gz * (REGIMENT / FILES) * SPACING * 1.6)
 		_regiments.append([vat, centre, randf() * TAU, 0.08])
 		var walk := 1  # Walking_A
 		var basis := Basis(Vector3.UP, PI).scaled(Vector3.ONE * MAN)
@@ -65,18 +74,19 @@ func _ready() -> void:
 			vat.update_instance_track(s, walk)
 			vat.update_instance_animation_offset(s, randf())
 			vat.update_instance_alpha(s, 1.0)
-	print("ARMY mustered men=%d regiments=%d at Kingsmere%s" % [n * REGIMENT, n, str(at)])
-	# The camera on the army itself, at the shot's own --dist (roof, mid, map), from the town's side.
-	var dist := 12.0
+	print("ARMY mustered men=%d regiments=%d by the seat %s on open ground %s" % [n * REGIMENT, n, str(at), str(_field)])
+	# The camera on the army itself, at the shot's own --dist (roof, mid, map); held there while the realm settles.
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--dist="):
-			dist = float(a.substr(7))
-	if main.rig:
-		main.rig.snap(at + Vector3(2.5, 0, 0), dist, 0.6)
+			_dist = float(a.substr(7))
+	_frame_for = INF  # held on the army for the whole take (a test aid)
 
 
 func _process(delta: float) -> void:
 	_t += delta
+	if _frame_for > 0.0 and main.rig:
+		_frame_for -= delta
+		main.rig.snap(_field, _dist, 0.6)
 	# Each regiment marches in a slow circle (wheeling) as one node, set on the ground at its centre.
 	for r in _regiments:
 		var vat: MultiMeshInstance3D = r[0]
@@ -92,6 +102,23 @@ func _process(delta: float) -> void:
 			Engine.get_frames_per_second(), Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
 			Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000.0),
 			main.rig.distance if main.rig else 0.0])
+
+
+## Open ground beside the town: rings out from it, eight headings each, the first spot that is dry land,
+## clear of buildings and level enough to stand a host on (town_nav.gd's own answers, terrain.is_land).
+func _open_ground(town: Vector3) -> Vector3:
+	var TownNav := preload("res://scripts/town_nav.gd")
+	for ring in [3.0, 4.0, 5.0, 6.5, 8.0]:
+		for i in 8:
+			var a := TAU * i / 8.0
+			var p: Vector3 = town + Vector3(cos(a), 0, sin(a)) * float(ring)
+			if not main.terrain.is_land(p.x, p.z) or TownNav.in_building(main.towns, p, 0.6):
+				continue
+			var h: float = main.terrain.height_at(p.x, p.z)
+			if absf(main.terrain.height_at(p.x + 0.6, p.z) - h) > 0.15 or absf(main.terrain.height_at(p.x, p.z + 0.6) - h) > 0.15:
+				continue
+			return Vector3(p.x, h, p.z)
+	return town + Vector3(3.0, 0, 0)
 
 
 ## The baked soldier's mesh, its surface wearing the team-colour VAT material (army_vat.gdshader).
