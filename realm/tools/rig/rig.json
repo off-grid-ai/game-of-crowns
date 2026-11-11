@@ -1,0 +1,19 @@
+{
+  "_": "The soldier rig pipeline's numbers (realm/tools/rig/rig_unit.py; docs/TUNING.md). tris: the triangle budget a mesh is decimated to (3-6k reads at army height). weld: metres under which loose vertices are merged before decimating. remesh: voxel size in metres for a remesh first (0 = off; it drops the texture's UVs, so only for a mesh too broken to decimate). man.source: the Mixamo-skeleton character whose skin weights are copied; man.arms: degrees the source's arms are lowered from its T-pose to match the mesh's stance before the copy ('auto' tries each of man.armTries and keeps the one whose width best matches the mesh). man.clips: Mixamo clips baked for the army, [name, looping]. horse.source and horse.clips: the same for a horse. influences: bones per vertex kept after the copy. mask.bright, mask.grey: a texture pixel is white cloth when its brightness is over bright and its saturation under grey; mask.erode: pixels the cloth is shrunk by, which drops steel's thin highlights; mask.soften: pixels of blur on the mask's edge. units: per-mesh overrides by file stem (yaw in degrees to turn a mesh that faces the wrong way, arms, tris).",
+  "tris": 5000,
+  "weld": 0.0005,
+  "remesh": 0.0,
+  "influences": 4,
+  "man": {
+    "source": "realm/assets/hero/medieval_civilian_3/scene.gltf",
+    "arms": "auto",
+    "armTries": [0, 30, 45, 60, 75],
+    "clips": [["Idle", true], ["Walk", true], ["Running", true], ["Sword_Attack", false], ["SS_Slash_1", false], ["SS_Block_Idle", true], ["Hit", false], ["Battlecry", false]]
+  },
+  "horse": {
+    "source": "realm/assets/cavalry/horse/horse.glb",
+    "clips": [["idle", true], ["walk", true], ["trot", true], ["canter", true], ["gallop", true]]
+  },
+  "mask": { "bright": 0.72, "grey": 0.18, "erode": 2, "soften": 1 },
+  "units": {}
+}
