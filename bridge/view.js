@@ -33,7 +33,14 @@ export function worldView(ctx) {
   // Each house's head by the one name the court knows them by (gameplay review #10: one lady had three
   // names, Freeciv's leader on /world, another on her court card, a third in the counsel); the title
   // (Lord, Lady, Princess) stays Freeciv's.
-  const headOf = (p) => { const l = court?.lordOfHouse(p.id); const was = RENAMED[p.name] ?? p.name; return l?.name ? `${String(was).split(" ")[0]} ${l.name}` : was; };
+  const headOf = (p) => {
+    const l = court?.lordOfHouse(p.id);
+    const was = RENAMED[p.name] ?? p.name;
+    if (!l?.name) return was;
+    // The title by the head's own sex (a fresh reign may seat a lady where Freeciv has a lord); a prince stays a prince.
+    const royal = /^(Prince|Princess)\b/.test(was);
+    return `${l.gender === "female" ? (royal ? "Princess" : "Lady") : royal ? "Prince" : "Lord"} ${l.name}`;
+  };
   const players = world.players.map((p) => ({ ...p, name: houseFor(p).crown || houseFor(p).wild ? RENAMED[p.name] ?? p.name : headOf(p), house: houseFor(p), atWarWith: d?.players[p.id]?.atWarWith ?? [] }));
   const cities = world.cities.map((c) => {
     const x = d?.cities[c.id];
