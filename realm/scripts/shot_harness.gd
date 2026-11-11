@@ -192,12 +192,20 @@ func _arm_wait() -> void:
 			return
 		print("SHOT backstop: saved at %.0f s on the clock, %.1f of %s game seconds in (frames too slow for the game clock)" % [
 			Time.get_ticks_msec() / 1000.0, main._game_ms / 1000.0, _shot.get("wait", 8.0)])
-		_take_shot())
+		_take_shot(true))
 
 
-func _take_shot() -> void:
+func _take_shot(backstop := false) -> void:
 	if _shot.get("taken", false):
 		return  # the --wait and its backstop: one still
+	# A still of the realm waits for the realm (batch 7: the army's still was the main menu): while the title is up
+	# (a shot that didn't ask for it), it looks again each second; the backstop saves whatever is there.
+	if not backstop and not _shot.has("title") and main.title and main.title.visible:
+		if not _shot.get("menu_noted", false):
+			_shot["menu_noted"] = true
+			print("SHOT waiting for the realm: the title is still up")
+		main.get_tree().create_timer(1.0).timeout.connect(_take_shot)
+		return
 	_shot["taken"] = true
 	var img := main.get_viewport().get_texture().get_image()
 	img.save_png(_shot["path"])
