@@ -83,7 +83,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 		# townsfolk carry on, rather than the whole scene being rebuilt.
 		var site: Node3D = life.get_node_or_null("Site")
 		if site:
-			site.scale.y = clampf(progress, 0.08, 1.0)
+			_grow(site, clampf(progress, 0.08, 1.0))
 		# A neighbour's plot may have been levelled since: everyone keeps their feet on it.
 		_reground(life, root.position)
 		if kind == "Building" or kind == "UnitType":
@@ -821,7 +821,7 @@ func _site(root: Node3D, life: Node3D, center: Vector3, base: Vector3, ang: floa
 	# The site, its scaffold and its timber stand in the way: walk round them.
 	life.set_meta("footprints", life.get_meta("footprints", []) + [plot, _rect(base + Vector3(f.x * 0.55 + 0.2, 0, 0).rotated(Vector3.UP, ang), Vector2(0.42, 0.36), ang),
 		_rect(base + Vector3(f.x * 0.55 + 0.25, 0, f.y * 0.55 + 0.35).rotated(Vector3.UP, ang), Vector2(0.4, 0.3), ang + 0.4)])
-	site.scale.y = grow
+	_grow(site, grow)
 	site.name = "Site"
 	site.position = base
 	site.rotation.y = ang + PI
@@ -859,6 +859,15 @@ func _site(root: Node3D, life: Node3D, center: Vector3, base: Vector3, ang: floa
 			b.rotation.y = atan2(base.x - b.position.x, base.z - b.position.z)  # facing the work
 			_mind(b, "build", center)
 	return site
+
+
+## How far a site's building has risen (0..1, its height). Below SITE_SHOWS it is not shown at
+## all: the plot, its scaffold poles, the timber and the builders are the site. A model squashed to
+## a sliver read as grey slabs on the grass (Kingsmere's tiltyard at 0%, km-cap).
+const SITE_SHOWS := 0.35
+static func _grow(site: Node3D, g: float) -> void:
+	site.scale.y = g
+	site.visible = g >= SITE_SHOWS
 
 
 ## A new building rising in a town, for towns.gd (builder 2): the same site as
@@ -899,7 +908,7 @@ func raise_site(town_node: Node3D, plot: Transform3D, building: String, seasons:
 		if not is_instance_valid(site):
 			return
 		left[0] -= 1
-		site.create_tween().tween_property(site, "scale:y", minf(1.0, site.scale.y + step), 1.5)
+		site.create_tween().tween_method(func(g: float): _grow(site, g), site.scale.y, minf(1.0, site.scale.y + step), 1.5)
 		if left[0] <= 0:
 			holder.queue_free()
 			if on_done.is_valid():
