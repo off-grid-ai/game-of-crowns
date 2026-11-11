@@ -44,6 +44,12 @@ func _towns_up() -> bool:
 
 
 ## The top node under `sys` that `n` belongs to: a scene's name, for the gate.
+## Two hosts in the field (tools/field_battle.gd), in play when switched on. Loaded, not preloaded: tools/ is
+## left out of an export, so a game without it plays the small skirmish. Move it (and army_spike.gd) into
+## scripts/ when field battles are judged and on for good.
+const FIELD_BATTLE := "res://tools/field_battle.gd"
+
+
 func sync(world: Dictionary, houses: Dictionary) -> void:
 	if not _towns_up():
 		get_tree().create_timer(1.0).timeout.connect(sync.bind(world, houses))
@@ -63,7 +69,18 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 				if played_battle.has(tile):
 					continue
 				played_battle[tile] = true
-				_battle(at, houses.get(int(s.get("owner", -1)), {}), houses.get(_victor(world, s), {}))
+				# The bridge says who won and how many fought (battles.js); a field battle when it can be staged
+				# (tools/field_battle.gd, field.play.on), else the small skirmish.
+				var victor := int(s["victor"]) if s.get("victor") != null else -1
+				if victor < 0:
+					victor = _victor(world, s)  # the bridge didn't see who: whoever stands beside it
+				var staged_field: Node = null
+				if s.get("kinds") != null and ResourceLoader.exists(FIELD_BATTLE):
+					var fb: Script = load(FIELD_BATTLE)
+					if fb.in_play():
+						staged_field = fb.stage(get_parent(), s, houses, battlefield(at))
+				if staged_field == null:
+					_battle(at, houses.get(int(s.get("owner", -1)), {}), houses.get(victor, {}))
 			"sack":
 				_burn(at, 45.0)
 				_refugees(at, 7)

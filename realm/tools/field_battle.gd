@@ -12,7 +12,11 @@ extends Node3D
 ## flank; a beaten regiment's banner wavers as its pips fall, then it breaks and runs, its men scattering; the
 ## victors hold the field. Who wins is the realm's (Freeciv decides, the bridge tells): the beaten side bleeds
 ## faster and breaks, the victors never do. Numbers in data/battle.json field (docs/TUNING.md).
-## Prints "BATTLE …" lines (a test aid). Off in play: nothing else reads it.
+## As a test aid it prints "BATTLE …" lines and frames itself. In play (stage(), from scenes.gd when the bridge tells of
+## a battle; data/battle.json field.play.on or --battles=field) it is quiet, sized from the men who really fought
+## (one regiment per company, of the Freeciv types on each side), ends as Freeciv decided, and never moves the camera:
+## the King hears of it as news (news.gd: the chip, the edge arrow, Space to go and back). Gone field.play.linger
+## seconds after the field is held.
 
 const Army := preload("res://tools/army_spike.gd")
 const Data := preload("res://scripts/data.gd")
@@ -32,6 +36,36 @@ var _focus := Vector3.ZERO
 var _report := 0.0
 var _over := false
 var _formed := 0.0  # seconds both lines have stood formed
+var play := {}  # in play: {at, face, houses: [victors, beaten], kinds: [[types], [types]], men: [victors, beaten], id}; empty for the test aid
+var _over_at := -1.0
+
+
+## Field battles in play, on or off (data/battle.json field.play.on; --battles=field / --battles=skirmish).
+static func in_play() -> bool:
+	var args := OS.get_cmdline_user_args()
+	return args.has("--battles=field") or (bool(Data.value(F, "field.play.on", false)) and not args.has("--battles=skirmish"))
+
+
+## A battle the bridge told of (its scene: x, y, owner the beaten, victor, men [beaten, victors], kinds [beaten,
+## victors]) staged as a field battle at `at` (open ground near it), or null when it can't be: switched off, no
+## victors known, or field.play.most already fighting (scenes.gd then plays the small skirmish).
+static func stage(m: Node, s: Dictionary, houses: Dictionary, at: Vector3) -> Node:
+	if not in_play() or at == Vector3.INF or int(s.get("victor", -1)) < 0 or not (s.get("kinds") is Array):
+		return null
+	if m.get_tree().get_nodes_in_group(&"field_battles").size() >= int(Data.num(F, "field.play.most", 1)):
+		return null
+	var kinds: Array = s["kinds"]
+	var men_: Array = s.get("men", [200, 200])
+	if kinds.size() < 2 or (kinds[1] as Array).is_empty():
+		return null
+	var b = load("res://tools/field_battle.gd").new(m, "0")
+	var seed := hash(String(s.get("id", "%d,%d,%d" % [int(s["x"]), int(s["y"]), int(s.get("turn", 0))])))
+	b.play = {"at": at, "face": float(posmod(seed, 6283)) / 1000.0, "id": seed,
+		"houses": [houses.get(int(s["victor"]), {}), houses.get(int(s.get("owner", -1)), {})],
+		"kinds": [kinds[1], kinds[0]], "men": [int(men_[1]) if men_.size() > 1 else 200, int(men_[0])]}
+	b.add_to_group(&"field_battles")
+	m.add_child(b)
+	return b
 
 
 func _init(owner: Node, arg: String) -> void:
@@ -44,6 +78,9 @@ func _init(owner: Node, arg: String) -> void:
 
 func _ready() -> void:
 	_rng.seed = 1415
+	if not play.is_empty():
+		_raise_in_play()
+		return
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--dist="):
 			_dist = float(a.substr(7))
@@ -69,6 +106,44 @@ func _ready() -> void:
 	_focus = (crown.field() + foe.field()) * 0.5
 	print("BATTLE raised %d a side, %s against %s, the %s beaten; lines %.1f apart" % [men, "the crown", String(house.get("name", "a rebel host")),
 		"crown" if loser == 0 else "foe", crown.field().distance_to(foe.field())])
+
+
+## Both sides at the battle's place, facing each other across field.play.gap: the victors (side 0) and the
+## beaten (side 1), each a regiment per company that fought (the bridge's men and Freeciv types), quiet.
+func _raise_in_play() -> void:
+	_rng.seed = int(play["id"])
+	loser = 1
+	var at: Vector3 = play["at"]
+	var face: float = play["face"]
+	var fwd := Vector3(sin(face), 0, cos(face))
+	var half := Data.num(F, "field.play.gap", 5.0) * 0.5
+	var per := int(Data.num(F, "field.play.perCompany", 150))
+	var most := int(Data.num(F, "field.play.companies", 12))
+	var made: Array = []
+	for k in 2:
+		var house: Dictionary = (play["houses"] as Array)[k]
+		var colour := Heraldry.colour(house, Color(0.5, 0.17, 0.15)) if not house.is_empty() else Color(0.5, 0.17, 0.15)
+		if k == 1 and made.size() == 1 and _alike(colour, (made[0] as Army).battle["colour"]):
+			colour = Color(0.22, 0.3, 0.46)  # two houses in like colours: the beaten in steel blue, so the sides read apart
+		var side: Army = Army.new(main, 0, {"side": k, "field": at - fwd * half if k == 0 else at + fwd * half, "face": face if k == 0 else face + PI,
+			"colour": colour, "house": house, "quiet": true, "shape": "auto"})
+		var specs: Array = []
+		var kinds: Array = (play["kinds"] as Array)[k]
+		for i in mini(kinds.size(), most):
+			specs.append(side.spec_for(String(kinds[i]), per, -(i + 1)))
+		side.battle["specs"] = specs
+		add_child(side)
+		made.append(side)
+	for side in made:
+		if not (side as Army).mustered:
+			await (side as Army).raised
+	sides = made
+	_arrows = _arrow_pool()
+	_focus = at
+
+
+static func _alike(a: Color, b: Color) -> bool:
+	return absf(wrapf(a.h - b.h, -0.5, 0.5)) < 0.12 and a.s > 0.25 and b.s > 0.25
 
 
 ## The foe's house: the first great house with colours that isn't the crown's (the realm's own, as heraldry draws it).
@@ -102,7 +177,8 @@ func _begin() -> void:
 			r["foe"] = null
 			r["moved"] = false
 			_mind(r)
-	print("BATTLE begins")
+	if play.is_empty():
+		print("BATTLE begins")
 
 
 ## A regiment's mind: stand, then by its role loose volleys, advance or ride round the flank; fight; break and run,
@@ -179,7 +255,8 @@ func _process(delta: float) -> void:
 				for k in 2:
 					for r in (sides[k] as Army).rows():
 						_send(r, &"volley" if r["role"] == "ranged" else (&"flank" if r["role"] == "cavalry" else &"advance"))
-		_frame(delta)
+		if play.is_empty():
+			_frame(delta)
 		return
 	clock += delta
 	_fly(delta)
@@ -190,6 +267,13 @@ func _process(delta: float) -> void:
 				_keep_dead(r)
 				r["moved"] = false
 	_morale()
+	if not play.is_empty():
+		# In play: the field held a while, then the battle is gone (its dead too); the camera is never moved.
+		if _over and _over_at < 0.0:
+			_over_at = clock
+		if (_over_at >= 0.0 and clock - _over_at > Data.num(F, "field.play.linger", 60.0)) or clock > Data.num(F, "field.longest", 45.0) + 120.0:
+			queue_free()
+		return
 	_frame(delta)
 	_report -= delta
 	if _report <= 0.0:
@@ -222,7 +306,7 @@ func _morale() -> void:
 			standing += 1
 	if standing == 0 and not _over:
 		_over = true
-		print("BATTLE the %s break; the %s hold the field at t=%.0f" % ["crown's men" if loser == 0 else "foe", "foe" if loser == 0 else "crown's men", clock])
+		if play.is_empty(): print("BATTLE the %s break; the %s hold the field at t=%.0f" % ["crown's men" if loser == 0 else "foe", "foe" if loser == 0 else "crown's men", clock])
 		for r in (sides[1 - loser] as Army).rows():
 			_send(r, &"won")
 
@@ -371,12 +455,14 @@ func _fight(r: Dictionary, dt: float) -> void:
 	var back: Dictionary = r["back"]
 	var range_s: Array = Data.value(F, "field.fight.swing", [0.7, 1.8])
 	var hit_odds := Data.num(F, "field.fight.hitOdds", 0.2)
+	var block_odds := Data.num(F, "field.fight.blockOdds", 0.25)
 	for s in front:
 		if not swing.has(s):
 			swing[s] = clock + _rng.randf_range(0.0, float(range_s[1]))
 		if clock >= float(swing[s]):
 			swing[s] = clock + _rng.randf_range(float(range_s[0]), float(range_s[1]))
-			vat.update_instance_track(s, army.track(r, "hit" if _rng.randf() < hit_odds else "attack"))
+			var roll := _rng.randf()
+			vat.update_instance_track(s, army.track(r, "hit" if roll < hit_odds else ("block" if roll < hit_odds + block_odds else "attack")))
 			back[s] = clock + 0.9
 	# The front surges: each front man a little forward and back on his own beat.
 	var surge := Data.num(F, "field.fight.surge", 0.02)
@@ -470,7 +556,7 @@ func _break(r: Dictionary) -> void:
 			vat.update_instance_track(s, run)
 			vat.update_instance_animation_offset(s, _rng.randf())
 	r["ran"] = 0.0
-	print("BATTLE t=%.0f a %s regiment breaks at %d%%" % [clock, "crown" if int(r["side"]) == 0 else "foe", int(float(r["strength"]) * 100.0)])
+	if play.is_empty(): print("BATTLE t=%.0f a %s regiment breaks at %d%%" % [clock, "crown" if int(r["side"]) == 0 else "foe", int(float(r["strength"]) * 100.0)])
 
 
 ## Running: away from the field at field.run, each man drifting from his place (field.scatter), gone after field.fade.

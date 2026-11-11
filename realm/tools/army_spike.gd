@@ -85,19 +85,22 @@ func _ready() -> void:
 	# Wait for the land and the realm's towns as the bridge reports them.
 	while main.terrain.width == 0 or not main.terrain.built or (main.bridge.world.get("cities", []) as Array).is_empty():
 		await get_tree().create_timer(0.5).timeout
-	var seat := _seat()
-	if seat.is_empty():
-		push_error("ARMY no seat in the realm to muster by")
-		return
-	var id := int(seat["id"])
-	# Its town raised first (its buildings are what the field keeps clear of); a while at most.
-	main.towns.ensure(id)
-	var waited := 0.0
-	while not main.towns.towns.has(id) and waited < 30.0:
-		await get_tree().create_timer(0.5).timeout
-		waited += 0.5
-	var town: Vector3 = main.towns.towns[id]["node"].global_position if main.towns.towns.has(id) else main.terrain.world_pos(float(seat["x"]), float(seat["y"]))
-	var specs := _from_world() if men <= 0 else _made_up(men)
+	var seat := _seat() if not battle.has("field") else {"name": "the field"}
+	var town: Vector3 = _ground_at(battle["field"]) if battle.has("field") else Vector3.ZERO
+	if not battle.has("field"):
+		if seat.is_empty():
+			push_error("ARMY no seat in the realm to muster by")
+			return
+		var id := int(seat["id"])
+		# Its town raised first (its buildings are what the field keeps clear of); a while at most.
+		main.towns.ensure(id)
+		var waited := 0.0
+		while not main.towns.towns.has(id) and waited < 30.0:
+			await get_tree().create_timer(0.5).timeout
+			waited += 0.5
+		town = main.towns.towns[id]["node"].global_position if main.towns.towns.has(id) else main.terrain.world_pos(float(seat["x"]), float(seat["y"]))
+	# A battle side brings its own regiments (field_battle.gd: one per company that fought, from Freeciv's types).
+	var specs: Array = battle["specs"] if battle.has("specs") else (_from_world() if men <= 0 else _made_up(men))
 	if specs.is_empty():
 		push_error("ARMY no host to show (the crown has no soldiers, and no head count was given)")
 		return
@@ -132,10 +135,11 @@ func _ready() -> void:
 		_road_in(town)
 		_column_up()
 	_tilt = Data.num("army", "camera.tilt", -8.0)
-	_yaw_line = _lens_yaw(_field, _face + Data.num("army", "camera.quarter", 0.4))
+	# The spike's own lens (it fells the trees in its way): never for a battle side, which frames nothing.
+	_yaw_line = _lens_yaw(_field, _face + Data.num("army", "camera.quarter", 0.4)) if battle.is_empty() else _face
 	_yaw = _yaw_line
 	_focus = _middle()
-	if shape != "line":
+	if shape != "line" and battle.is_empty():
 		var mid := _at(maxf(0.0, _cum[_cum.size() - 1] - Data.num("army", "march.lead", 5.0) - _column_length() * 0.5))
 		var ahead := _at(_cum[_cum.size() - 1]) - mid
 		_yaw_march = _lens_yaw(mid, atan2(ahead.x, ahead.z) + Data.num("army", "camera.marchQuarter", 0.9))
@@ -143,7 +147,8 @@ func _ready() -> void:
 	var roles := {}
 	for r in _regiments:
 		roles[r["role"]] = int(roles.get(r["role"], 0)) + 1
-	print("ARMY mustered men=%d regiments=%d %s host=%d shape=%s by %s at %s, line at %s facing %.2f, road in %.1f units" % [_men(), _regiments.size(), str(roles), host_id, shape,
+	if not battle.get("quiet", false):
+		print("ARMY mustered men=%d regiments=%d %s host=%d shape=%s by %s at %s, line at %s facing %.2f, road in %.1f units" % [_men(), _regiments.size(), str(roles), host_id, shape,
 		String(seat.get("name", "?")), str(town), str(_field), _face, _cum[_cum.size() - 1] if not _cum.is_empty() else 0.0])
 	_hold = battle.is_empty()  # the camera on the army itself, at the shot's own --dist, for the whole take (a test aid); a battle frames itself
 	mustered = true
@@ -296,6 +301,11 @@ func _made_up(count: int) -> Array:
 		for i in int(counts[k]):
 			out.append({"id": -(out.size() + 1), "unit": String(k), "men": int(units[k].get("men", 150)), "strength": _rng.randf_range(float(low_high[0]), float(low_high[1]))})
 	return out
+
+
+## A regiment's spec for a company of a Freeciv type, of `count` men (field_battle.gd sizes a battle's sides).
+func spec_for(kind: String, count: int, id: int) -> Dictionary:
+	return {"id": id, "unit": _unit_for(kind), "men": count, "strength": 1.0}
 
 
 ## The unit a Freeciv type raises (data/army.json units.<name>.freeciv), else fallbackUnit.
@@ -758,7 +768,7 @@ func _road_in(town: Vector3) -> void:
 	var need := _column_length() + Data.num("army", "march.lead", 5.0) + 1.0
 	var roads = main.get("roads")
 	var way := PackedVector3Array()
-	if roads and roads.has_method("route") and int(battle.get("side", 0)) == 0:
+	if roads and roads.has_method("route") and not battle.has("field"):
 		var others: Array = (main.bridge.world.get("cities", []) as Array).duplicate()
 		var seat_xy := Vector2(town.x, town.z)
 		var pos := func(c) -> Vector3: return main.terrain.world_pos(float(c["x"]), float(c["y"]))
@@ -939,7 +949,7 @@ func _process(delta: float) -> void:
 		main.rig.tilt = _tilt  # lower than the map view's own pitch: a low oblique, as the art targets
 		main.rig.goal_tilt = _tilt
 	_report -= delta
-	if _report <= 0.0:
+	if _report <= 0.0 and not battle.get("quiet", false):
 		_report = 2.0
 		var states := {}
 		for r in _regiments:
