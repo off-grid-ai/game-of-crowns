@@ -624,6 +624,11 @@ func _animal(kind: String, rng: RandomNumberGenerator, walking := false) -> Node
 	var ap := model.find_children("*", "AnimationPlayer", true, false)
 	if not ap.is_empty():
 		var anim: AnimationPlayer = ap[0]
+		# A beast standing about lives its own idle life (animals.gd, realm/data/animals.json: a cow
+		# grazes, a pig roots); one on the road, or a kind with no life in data, plays as before.
+		if not walking and not preload("res://scripts/animals.gd").live(model, kind, rng).is_empty():
+			preload("res://scripts/anim_lod.gd").add(anim)
+			return root
 		var want := "Walk" if walking else "Idle"
 		for clip in anim.get_animation_list():
 			if String(clip).ends_with("|" + want) or String(clip) == want:
