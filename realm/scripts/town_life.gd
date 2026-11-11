@@ -79,6 +79,11 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	var sig := "%s|%s|%s|%s|%s|%s|%s|%s|%s" % [kind, building, hungry, c.get("celebrating", false), c.get("disorder", false), c.get("atWar", false), c.get("grief", false), c.get("prosperity", false), c.get("grasping", false)]
 	# The working buildings' life changes with a levy and a low granary too, and when the town agent lists its buildings.
 	sig += "|%s|%s|%d|%s" % [c.get("granaryLow", false), "levy" in Works.states(c, _town_id), hash(root.get_meta("works", {})), (c.get("ruling") as Dictionary).get("kind", "") if c.get("ruling") is Dictionary else ""]
+	# The town dressed in what we own, once (dressing.gd; --dressing=on): gear at the trades' doors,
+	# planters by house doors, bushes, flowers and rocks between the houses.
+	if Dressing.on() and root.get_node_or_null("Dressing") == null:
+		var at := root.position
+		Dressing.dress(root, func(q: Vector3) -> float: return _y(at, q), func(q: Vector3) -> bool: return terrain.is_land(at.x + q.x, at.z + q.z), int(c.get("id", 0)))
 	var life: Node3D = root.get_node_or_null("Life")
 	if life and life.get_meta("sig", "") == sig:
 		# Only the work moved on: the site grows where it stands, and the
@@ -1086,6 +1091,7 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 # --- the working buildings (works.gd, realm/data/works.json) --------------------
 
 const Works := preload("res://scripts/works.gd")
+const Dressing := preload("res://scripts/dressing.gd")
 const Horse := preload("res://scripts/horse.gd")
 const Data := preload("res://scripts/data.gd")
 const NEWS := ["feast", "levy", "war", "hunger", "low", "relief", "justice", "grant", "build"]  # states the crier cries in the square (the last four: a court ruling, the herald's news)
