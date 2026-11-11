@@ -249,6 +249,8 @@ func _refresh() -> void:
 ## is on the way takes the new streets from where they stand. Those standing
 ## are set back on the ground, should it have been levelled under them.
 func _keep_up(id: int) -> void:
+	if not towns.towns.has(id) or not crowds.has(id):
+		return  # the town is gone or being rebuilt (taken, razed): its folk go with it
 	var map: RID = nav.map_for(id, towns.towns[id]["node"])
 	for a in crowds[id]:
 		var n: Node3D = a["node"]
@@ -1895,12 +1897,16 @@ func gatherings(town: int) -> Array:
 func _in_talk(b: Dictionary, g: Dictionary) -> bool:
 	if not g.get("mind", false):
 		return _present(b, g)
+	if not is_instance_valid(b.get("node")):
+		return false  # gone with their town (rebuilt, razed): not in any talk
 	var nb: Node3D = b["node"]
 	if not nb.visible or not PackedVector2Array(b["route"]).is_empty() or not b.get("conversing", false):
 		return false  # (their mind enters the talk in steps: close, turn, settle; npc_mind.gd Talk)
 	for o in g["members"]:
 		if is_same(o, b):
 			continue
+		if not is_instance_valid(o.get("node")):
+			return false  # the other gone with their town: no talk to be in
 		var no: Node3D = o["node"]
 		var to := Vector2(no.position.x - nb.position.x, no.position.z - nb.position.z)
 		if to.length() > TALK_REACH or (to.length() > 0.005 and absf(angle_difference(nb.rotation.y, atan2(to.x, to.y))) > 0.6):
