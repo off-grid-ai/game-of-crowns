@@ -50,14 +50,20 @@ static func _limbo_args() -> Array[int]:
 
 
 ## Whether a town's people have minds (LimboAI): the one rule, for the town's
-## scenes and its villagers alike. LIMBO_ALL turns every town on (consolidation
-## C1); --limbo=all or --limbo=<ids> does it for one run.
-const LIMBO_ALL := false
-## The King's own seat (Kingsmere) has minds by default since the go-live gate
-## (2026-11-11): main.gd keeps Engine's "crown_seat" from /world's seatId; --limbo=none turns it off.
+## scenes and its villagers alike. Every town has them by default (2026-11-11,
+## after Mac's playtest: Crowford on the old rules was one knot round a cold fire
+## while Kingsmere, on minds, read as a town). Minds cost only where townsfolk
+## are drawn, near the camera. --limbo=none turns them off everywhere (the old
+## rules); --limbo=<ids> keeps them to those towns, for a film or an A/B.
+const LIMBO_ALL := true
 static func minds_on(town: int) -> bool:
-	return LIMBO_ALL or OS.get_cmdline_user_args().has("--limbo=all") or LIMBO_TOWNS.has(town) or _limbo_args().has(town) \
-		or (town >= 0 and town == int(Engine.get_meta("crown_seat", -2)) and not OS.get_cmdline_user_args().has("--limbo=none"))
+	var args := OS.get_cmdline_user_args()
+	if args.has("--limbo=none"):
+		return false
+	var only := _limbo_args()
+	if not only.is_empty():
+		return only.has(town) or LIMBO_TOWNS.has(town)
+	return LIMBO_ALL or args.has("--limbo=all") or LIMBO_TOWNS.has(town)
 
 
 func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:

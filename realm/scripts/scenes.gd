@@ -1804,7 +1804,7 @@ func _handover(at: Vector3, old_house: Dictionary, new_house: Dictionary, town: 
 	add_child(root)
 	var old_col := Color.from_string(String(old_house.get("color", "#777")), Color.GRAY)
 	var new_col := Color.from_string(String(new_house.get("color", "#ccc")), Color.WHITE)
-	var spot := at + Vector3(0.35, 0, -0.35)
+	var spot := stand(at + Vector3(0.35, 0, -0.35))  # on dry ground, clear of the houses (a riverside town's diagonal can be the river)
 	var old_b := _standard(root, spot, old_col, Vector3(0, 0, 1), old_house)
 	var tw := create_tween()
 	tw.tween_interval(3.0)
@@ -1829,8 +1829,11 @@ func _handover(at: Vector3, old_house: Dictionary, new_house: Dictionary, town: 
 		s.rotation.y = atan2(-dir.x, -dir.z)
 		people.play(s, "Walk")
 		var mt := s.create_tween()
-		var from := s.position
-		mt.tween_method(func(k: float): s.position = stand(from.lerp(goal, k)), 0.0, 1.0, 14.0)
+		# Up the realm's own way in (town_nav: streets, roads, over dry land), never a straight line over a river.
+		var way := _route(s.position, goal)
+		if way.size() < 2:
+			way = PackedVector3Array([s.position, goal])
+		mt.tween_method(func(k: float): s.position = stand(terrain.along(way, k)), 0.0, 1.0, 14.0)
 		mt.tween_callback(people.play.bind(s, "Sword_Idle", 1.0))
 	tw.tween_interval(13.0)
 	tw.tween_callback(func():

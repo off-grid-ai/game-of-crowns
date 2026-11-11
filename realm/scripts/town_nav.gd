@@ -357,18 +357,25 @@ func stand(towns: Node3D, p: Vector3, body := 0.0) -> Vector3:
 				break
 	# Wedged between two buildings, pushed from one into the other: the nearest
 	# clear place on rings widening out from where it got to.
-	if not clear(towns, q, body):
-		for ring in range(1, 31):
+	# Or set down on water (a river through the town's edge, a scene's straight
+	# line over it): the same search, for clear dry ground. Nobody stands on water.
+	if not clear(towns, q, body) or not _dry(q):
+		for ring in range(1, 61):
 			var found := false
 			for i in 12:
 				var o := Vector3(cos(TAU * i / 12.0), 0, sin(TAU * i / 12.0)) * ring * 0.04
-				if clear(towns, q + o, body):
+				if clear(towns, q + o, body) and _dry(q + o):
 					q += o
 					found = true
 					break
 			if found:
 				break
 	return Vector3(q.x, terrain.height_at(q.x, q.z) if terrain else p.y, q.z)
+
+
+## Dry land at `p` (world): not sea, lake or river (terrain.is_land). True with no terrain known.
+func _dry(p: Vector3) -> bool:
+	return terrain == null or terrain.is_land(p.x, p.z)
 
 
 ## Whether `p` (world), or anything within `body` of it, is inside a
