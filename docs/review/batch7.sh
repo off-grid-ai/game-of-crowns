@@ -4,8 +4,8 @@
 # reference each is judged beside are listed in docs/review/v15.json; docs/review/v15_apply.py puts the
 # results on the review page.
 #
-#   docs/review/batch7.sh            # all of it, about 77 minutes [estimate: the launches' LIMITs and waits]
-#   ONLY="towns fire" docs/review/batch7.sh   # some launches only: towns moods rulings fire breach army hosts night
+#   docs/review/batch7.sh            # all of it, about 85 minutes [estimate: the launches' LIMITs and waits]
+#   ONLY="towns fire" docs/review/batch7.sh   # some launches only: towns moods rulings fire breach army hosts weather night
 #   OUT=/tmp/goc-batch7 (default)    # frames, logs and clips land here
 #
 # It runs on its own private bridge (8788, Freeciv 5557) with a fresh reign named "Film batch 7", so the
@@ -15,7 +15,7 @@ R=${0:A:h:h:h}
 OUT=${OUT:-/tmp/goc-batch7}
 PORT=${PORT:-8788}; FC=${FC:-5557}
 API=localhost:$PORT
-ONLY=${ONLY:-towns moods rulings fire breach army hosts night}
+ONLY=${ONLY:-towns moods rulings fire breach army hosts weather night}
 SW=(--look=one --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on)
 B=(--bridge=http://127.0.0.1:$PORT)
 FF=${FF:-/opt/homebrew/bin/ffmpeg}
@@ -259,6 +259,32 @@ if want rulings; then
   STAGER=$!
   play rulings 720
   wait $STAGER  # the stager only: the bridge runs in the background too
+fi
+
+# 6c. Weather (7d3e958d, e9b5aca7, 2730b25f; --weather=v2): rain held on the test reign ({weather: rain}), the
+# seat close (wet dark roofs glinting, puddles, mud on the roads, half its people indoors) and whole, with a clip
+# for the banners and grass in the wind; then a winter launch (--season=winter, {weather: snow}): snow on the
+# roofs in patches and on the ground. The weather is set back to clear after.
+if want weather; then
+  say "rain: $(stage '{"weather":"rain"}')"
+  {
+    print "wait 40"
+    print "city $SEAT 4.5 -25"; print "wait 8"; print "snap rain-close"; burst rain-clip 24 0.2
+    print "city $SEAT 3 -22"; print "wait 6"; print "snap rain-square"
+    print "city $SEAT 14 -22"; print "wait 6"; print "snap rain-town"
+    print "look rain-end"
+  } > $OUT/rain.play
+  play rain 420 --weather=v2
+  clip $OUT/rain rain-clip 5
+  say "snow: $(stage '{"weather":"snow"}')"
+  {
+    print "wait 60"
+    print "city $SEAT 4.5 -25"; print "wait 8"; print "snap snow-close"
+    print "city $SEAT 14 -22"; print "wait 6"; print "snap snow-town"
+    print "look snow-end"
+  } > $OUT/snow.play
+  play snow 420 --weather=v2 --season=winter
+  stage '{"weather":"clear"}' > /dev/null
 fi
 
 # 7. Night: the inn's windows lit (a test hour; the realm players get is always day in v1).

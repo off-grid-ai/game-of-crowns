@@ -390,6 +390,47 @@
    "needs": "breach"
   },
   {
+   "id": "b7-rain-close",
+   "name": "Kingsmere in the rain",
+   "what": "Rain on the seat: roofs darker and glinting, puddles on the square, half its people gone in; banners and grass leaning the way the smoke goes",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "rain/rain-close.png",
+   "clip": "rain/rain-clip.mp4"
+  },
+  {
+   "id": "b7-rain-square",
+   "name": "The square in the rain",
+   "what": "Puddles round the square, mud on the road in, the wet cobbles",
+   "ref": "town-a",
+   "card": "W3",
+   "still": "rain/rain-square.png"
+  },
+  {
+   "id": "b7-rain-town",
+   "name": "The town in the rain",
+   "what": "The whole town wet under a grey sky",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "rain/rain-town.png"
+  },
+  {
+   "id": "b7-snow-close",
+   "name": "Kingsmere in winter",
+   "what": "Snow lying in patches on the roofs and on the ground, flakes falling",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "snow/snow-close.png"
+  },
+  {
+   "id": "b7-snow-town",
+   "name": "The town in winter",
+   "what": "The whole town under snow",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "snow/snow-town.png"
+  },
+  {
    "id": "b7-night-inn",
    "name": "The inn at night",
    "what": "The inn's windows lit at night (a test hour: the realm players get is always day for now)",
