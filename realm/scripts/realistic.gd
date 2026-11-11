@@ -51,6 +51,9 @@ static func _from_catalogue() -> bool:
 			var set_name := set_of(String(c["switch"]))
 			if set_name != "variants" and c.get(set_name) is Array:
 				vs = c[set_name]
+		var meshy := _meshy_for(id)
+		if not meshy.is_empty():
+			vs = meshy  # --landmarks=meshy: an imported Meshy piece in this component's place (data/meshy.json)
 		for v0: Dictionary in _expanded(vs):
 			var v: Dictionary = v0
 			# A kit model (it has a true length) is measured and scaled here; any other is a file its own placer loads.
@@ -157,6 +160,35 @@ static func still(model: Node, path: String) -> void:
 		# Its vertices are now in the skeleton's frame: the mesh stands where the skeleton does.
 		if m.get_parent() == sk:
 			m.transform = Transform3D.IDENTITY
+
+
+## Which landmarks stand: "kit" (the catalogue's own) or "meshy" (data/meshy.json's imported pieces, where
+## they've been imported). --landmarks=meshy|kit, else meshy.json landmarks.
+static func landmarks() -> String:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--landmarks="):
+			return a.substr(12)
+	return String(Data.value("meshy", "landmarks", "kit"))
+
+
+## With meshy landmarks on, the variants of a Meshy piece that replaces `component`, once its file is
+## imported (realm/tools/meshy_import.py -> assets/meshy/<name>/<name>.glb): stood by its true height.
+## Else [] (the component as it was).
+static func _meshy_for(component: String) -> Array:
+	if landmarks() != "meshy":
+		return []
+	var pieces: Dictionary = Data.value("meshy", "pieces", {})
+	var defaults: Dictionary = Data.value("meshy", "defaults", {})
+	for name in pieces:
+		var p: Dictionary = pieces[name]
+		if String(p.get("replaces", "")) != component:
+			continue
+		var rel := "meshy/%s/%s.glb" % [name, name]
+		if not ResourceLoader.exists("res://assets/" + rel):
+			continue
+		var h := float(p.get("height_m", defaults.get("height_m", 8.0)))
+		return [{"model": rel, "name": "meshy_" + String(name), "length": h, "height": h}]
+	return []
 
 
 ## A builder variant with a count stands for that many: name_1..name_n, each its own seed (spec seed + i),

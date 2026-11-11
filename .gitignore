@@ -35,6 +35,7 @@ realm/assets/crops/**
 realm/assets/fx/**
 realm/assets/armies/**
 realm/assets/ai3d/**
+realm/assets/meshy/**
 !realm/assets/realistic/**/
 !realm/assets/people/**/
 !realm/assets/hero/**/
@@ -52,6 +53,8 @@ realm/assets/ai3d/**
 !realm/assets/fx/**/
 !realm/assets/armies/**/
 !realm/assets/ai3d/**/
+!realm/assets/meshy/**/
+!realm/assets/meshy/**/import.json
 !realm/assets/armies/**/tracks.json
 !realm/assets/**/*.import
 !realm/assets/**/license.txt
