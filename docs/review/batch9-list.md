@@ -158,3 +158,21 @@ in the world" for that order. Siege camp (`--camp`) and fire (`--fire=v2`) stay 
 
 All seven are through Blender (forge, lumber mill, market, mine, treasury, catapult, guard tower). Run
 `realm/tools/meshy_import.sh --godot-import` once before filming shots 19-24 above (only while no other Godot runs).
+
+## The realm's sound v2 (e633dd03; `--sound=v2`, before: without it; record with `--record-audio=<abs path>.wav`)
+
+Every clip in this list can carry its sound: run the launches with `--sound=v2 --record-audio=…` and judge by ear
+beside the frames. Reference: Anno 1800's town at street height (close detail, far murmur).
+
+41. **The square, near and far:** `city Kingsmere 4.5 -25`, 10 s, then the same at 14 and 40. Judge: the hubbub
+    swells with the crowd and falls away with the zoom; the smith's three blows land on his hammer's strikes; dogs
+    bark when they follow someone; nothing repeats the same take back to back.
+42. **The yard and the paddock** (`work Kingsmere barn`, `work Kingsmere stables`): cows, sheep and pigs, horses
+    snorting, each on its own clock; hens by day.
+43. **The mills** (`work Kingsmere mill`): the sails' creak and the wheel's water, by their speed (quiet at night).
+44. **A levy marching out** (`{"muster": id}`, `road Kingsmere 5`): the drum at the column's head, the march.
+45. **A sack** (fire launch): the roar of a burning house, the crackle as it catches and smoulders.
+46. **A siege throw and a battle** (breach launch, `engine`): the engine's creak, the stone's impact; the clash and
+    the cheer at the end.
+47. **The court:** open, a decree sealed (the bell over the realm), gold spent.
+48. **Dawn and night** (`--hour=5.5` and `--hour=23` if the harness has it): the cock at dawn, the owl at night.
