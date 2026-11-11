@@ -77,3 +77,27 @@ then one headless Godot import so the game can load them; only while no other Go
     it, its stone leaving from its top (no arm of its own to swing: say if that reads wrong).
 23. **The guard tower in the siege band** (the parked siege tower's place): `camp 9 -20`.
 24. **The whole town**, `city Kingsmere 14`, kit then meshy: does the painted set sit with the kit's houses?
+
+## Batch 7's fixes from the village and mood builder (1ee02a1e, 946b702a, d03deec4, b7d36cae)
+
+Each against its batch 7 frame (`/tmp/goc-batch7`), the same step.
+
+25. **Stables and paddock** (batch 7 stables-clip: horses frozen in all 24 frames), `work Kingsmere stables 4.5 -25`,
+    then the same at `--dist=14`: a 24-frame clip at 0.2 s. Judge: horses stroll and drop their heads to graze, near
+    and far (anim_lod now moves horses to 40 units and beasts to 22, not 18).
+26. **The forge** (batch 7 forge-clip: one arm barely moving): `work Kingsmere forge 4.5 -25`, a 6 s clip: two at the
+    anvil, smith and striker.
+27. **A levy marching out** (batch 7 levy-clip: a milling knot): `POST /test/stage {"muster": <Kingsmere id>}`, then
+    `city Kingsmere 6 -25` and `road Kingsmere 5`, a 20 s clip on each. Judge: 24 in four rows before the sergeant,
+    then files of six marching out along the main road one behind the other, kin waving by the well.
+28. **War** (`{"city": id, "mood": "war"}`): 16 in four rows in the square, half the stalls unmanned, barricade and
+    standards at the way in.
+29. **Hunger** (`{"city": id, "mood": "hunger"}`): the dole table at the market with ten in line, beggars at the
+    church step, half the chimneys cold, two thirds of the stalls shut.
+30. **The road** (batch 7 carts-clip: no one in 28 frames): `road Kingsmere 5`, a 28-frame clip. Judge: at least two
+    parties or carts in shot.
+31. **The inn** (batch 7 inn: no horses, no tables): `work Kingsmere inn 4.5 -25`. Judge: two horses at the rail, a
+    long table in the yard with drinkers on its benches by day.
+32. **The windmill and the watermill** (batch 7 mill: flat salmon sails cutting the next roof; hunger-town: a salmon
+    wheel): `work Kingsmere mill 5 -25`, a 6 s clip. Judge: canvas sails and a timber wheel with grain to them, and
+    the sails turning clear of every roof.
