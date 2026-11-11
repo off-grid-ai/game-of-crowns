@@ -6,7 +6,12 @@ import shutil
 import sys
 import time
 
-from gradio_client import Client, handle_file
+from gradio_client import Client as _Client, handle_file
+from huggingface_hub import get_token
+
+
+def Client(space):  # the logged-in quota: HF_TOKEN or ~/.cache/huggingface/token
+    return _Client(space, token=get_token())
 
 route, src, out = sys.argv[1], sys.argv[2], sys.argv[3]
 t = time.time()
