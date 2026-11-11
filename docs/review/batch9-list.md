@@ -140,3 +140,21 @@ in the world" for that order. Siege camp (`--camp`) and fire (`--fire=v2`) stay 
 38. **Commanding a host** (`--hosts=on`; select the royal standard, march it on a great house's town): the ground ring,
     the glowing banner and the dotted route; a second order the same season says "The King's captains have their orders
     for this season" (the bridge's one order a season); the host reaches the town and lays siege (gameplay review #7).
+
+## The siege as spectacle (#5; 3632faa8, 6d4f395a; `--storm-host=on`, on with `--wall-demo`; siege.json storm_host)
+
+26. **The breach launch again** (`--walls=stone --siege --wall-demo --fire=v2`, the scenario of batch 8's breach):
+    before the gap opens, the besiegers' host in line on the camp side (several hundred, their banners up) and fire
+    arrows arcing over the wall, a roof or two catching behind it; the engines throwing, stones striking with dust
+    (`stone-clip`), the wall cracked, crumbling, open. Then the storm (`storm-clip`, 36 frames): regiments queueing
+    into the gap at a run, the front one at blows, the holder's regiments meeting them inside, their banners
+    wavering; then `storm-taken`: the holder's regiments running into the town, the besiegers pouring through. No
+    camera cut inside any clip (siege_ai no longer moves the camera on a rush). Read the run's fps line: Mac's bar
+    is 10 (men 800 + 300 by default; lower `storm_host.men` if it's under).
+27. **The field battle in play** (army-ui's field_battle.gd, `--battles=field` on a reign with a fight, Space to
+    it): the lines meeting with a visible clash front, banners and standards, a rout that runs.
+
+## Meshy's pieces imported (c26ab7ad)
+
+All seven are through Blender (forge, lumber mill, market, mine, treasury, catapult, guard tower). Run
+`realm/tools/meshy_import.sh --godot-import` once before filming shots 19-24 above (only while no other Godot runs).
