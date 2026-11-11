@@ -193,7 +193,8 @@ func caption(s: Dictionary) -> String:
 ## own side): the heading turns by one of camera.json's shots.turns (not the last one used) and the
 ## distance varies a little; go_to's sight rule then clears the view from there.
 func _vary(dist: float) -> float:
-	var shots: Dictionary = rig.KNOBS.get("shots", {}) if rig.KNOBS.get("shots") is Dictionary else {}
+	var knobs: Dictionary = preload("res://scripts/camera_rig.gd").KNOBS  # camera.json, read once by the rig's script
+	var shots: Dictionary = knobs.get("shots", {}) if knobs.get("shots") is Dictionary else {}
 	var turns: Array = shots.get("turns", [])
 	if turns.size() > 1:
 		var k := randi() % turns.size()
