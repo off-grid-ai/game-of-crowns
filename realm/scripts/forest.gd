@@ -392,6 +392,18 @@ func blocking(eye: Vector3, at: Vector3) -> int:
 	return n
 
 
+## How many trees stand within `radius` of `center` on the ground plane: the
+## open ground a host or a camp needs (army_spike.gd keeps its regiments off them).
+func trees_near(center: Vector3, radius: float) -> int:
+	var n := 0
+	for cx in range(floori((center.x - radius) / SIGHT_CELL), floori((center.x + radius) / SIGHT_CELL) + 1):
+		for cz in range(floori((center.z - radius) / SIGHT_CELL), floori((center.z + radius) / SIGHT_CELL) + 1):
+			for t in _sight.get(Vector2i(cx, cz), []):
+				if Vector2(t.x - center.x, t.y - center.z).length() < radius:
+					n += 1
+	return n
+
+
 ## Fells the trees where a town, farm or battle stands.
 func clear(center: Vector3, radius: float) -> void:
 	for cx in range(floori((center.x - radius) / SIGHT_CELL), floori((center.x + radius) / SIGHT_CELL) + 1):

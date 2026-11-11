@@ -53,6 +53,9 @@ instance uniform vec4 team_color : source_color = vec4(0.75, 0.12, 0.10, 1.0);
 uniform float team_strength : hint_range(0.0, 1.0) = 1.0;
 uniform vec4 team_rect_a = vec4(0.0, 0.25, 0.125, 0.5);  // u0, v0, u1, v1: a palette cell that takes the colour
 uniform vec4 team_rect_b = vec4(0.25, 0.5, 0.375, 0.75);
+uniform vec4 team_rect_c = vec4(-1.0);  // up to four cells; an unused one lies off the palette
+uniform vec4 team_rect_d = vec4(-1.0);
+uniform vec4 team_mix = vec4(1.0, 1.0, 1.0, 1.0);  // how much of each cell (a, b, c, d) takes the colour: 1 dyed cloth, less a painted plate
 uniform float team_shade = 1.1;
 uniform sampler2D normal_map: filter_nearest;
 
@@ -169,10 +172,14 @@ void vertex(){
 void fragment() {
 	vec3 base = albedo.rgb * texture(albedo_texture, UV).rgb;
 	// The palette's red swatches are the cloth: they take the regiment's colour at their own brightness.
-	float in_a = step(team_rect_a.x, UV.x) * step(UV.x, team_rect_a.z) * step(team_rect_a.y, UV.y) * step(UV.y, team_rect_a.w);
-	float in_b = step(team_rect_b.x, UV.x) * step(UV.x, team_rect_b.z) * step(team_rect_b.y, UV.y) * step(UV.y, team_rect_b.w);
+	// The cloth swatches (a, b) and, where data/army.json asks, a plate cell (c, d: the kit's knight has
+	// almost no cloth, 3.5% of his surface, so his breastplate takes the colour as painted steel).
+	float in_a = step(team_rect_a.x, UV.x) * step(UV.x, team_rect_a.z) * step(team_rect_a.y, UV.y) * step(UV.y, team_rect_a.w) * team_mix.x;
+	float in_b = step(team_rect_b.x, UV.x) * step(UV.x, team_rect_b.z) * step(team_rect_b.y, UV.y) * step(UV.y, team_rect_b.w) * team_mix.y;
+	float in_c = step(team_rect_c.x, UV.x) * step(UV.x, team_rect_c.z) * step(team_rect_c.y, UV.y) * step(UV.y, team_rect_c.w) * team_mix.z;
+	float in_d = step(team_rect_d.x, UV.x) * step(UV.x, team_rect_d.z) * step(team_rect_d.y, UV.y) * step(UV.y, team_rect_d.w) * team_mix.w;
 	float shade = max(base.r, max(base.g, base.b));
-	ALBEDO = mix(base, team_color.rgb * shade * team_shade, max(in_a, in_b) * team_strength);
+	ALBEDO = mix(base, team_color.rgb * shade * team_shade, max(max(in_a, in_b), max(in_c, in_d)) * team_strength);
 	METALLIC = dot(texture(metallic_texture, UV), metallic_texture_channel) * metallic;
 	SPECULAR = specular;
 	ROUGHNESS = dot(texture(roughness_texture, UV), roughness_texture_channel) * roughness;

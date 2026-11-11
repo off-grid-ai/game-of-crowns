@@ -196,10 +196,19 @@ func _muster(town: Vector3, n: int, pitch: float) -> Array:
 	return out
 
 
-## A regiment's ground: its middle and four corners dry land, clear of buildings, and level enough.
+## A regiment's ground: its middle and four corners dry land, clear of buildings, and level enough;
+## and no tree, road or track anywhere under it (the circle round its square, so a regiment turned a
+## little toward the seat still keeps off them; muster.keepOff, data/army.json).
 func _dry(p: Vector3, size: float) -> bool:
 	var h: float = main.terrain.height_at(p.x, p.z)
 	var slope := Data.num("army", "muster.slope", 0.2)
+	var keep := size * Data.num("army", "muster.keepOff", 0.75)
+	var woods = main.terrain.get("forest")
+	if woods and woods.has_method("trees_near") and int(woods.trees_near(p, keep)) > 0:
+		return false
+	var roads = main.get("roads")
+	if roads and roads.has_method("on_path") and roads.on_path(p, keep):
+		return false
 	for o in [Vector2.ZERO, Vector2(-0.5, -0.5), Vector2(0.5, -0.5), Vector2(-0.5, 0.5), Vector2(0.5, 0.5)]:
 		var q := Vector3(p.x + o.x * size, 0, p.z + o.y * size)
 		if not main.terrain.is_land(q.x, q.z) or TownNav.in_building(main.towns, q, 0.1):
@@ -279,9 +288,12 @@ func _soldier_mesh() -> ArrayMesh:
 	var a := Data.num("army", "albedo", 0.85)
 	m.set_shader_parameter("albedo", Color(a, a, a))
 	var rects: Array = Data.value("army", "team.rects", [])
-	for k in mini(rects.size(), 2):
+	var mix := Vector4.ONE
+	for k in mini(rects.size(), 4):
 		var q: Array = rects[k]
-		m.set_shader_parameter("team_rect_a" if k == 0 else "team_rect_b", Vector4(float(q[0]), float(q[1]), float(q[2]), float(q[3])))
+		m.set_shader_parameter("team_rect_" + "abcd"[k], Vector4(float(q[0]), float(q[1]), float(q[2]), float(q[3])))
+		mix[k] = float(q[4]) if q.size() > 4 else 1.0  # how much of the cell takes the colour
+	m.set_shader_parameter("team_mix", mix)
 	m.set_shader_parameter("team_shade", Data.num("army", "team.shade", 1.1))
 	for i in mesh.get_surface_count():
 		mesh.surface_set_material(i, m)
