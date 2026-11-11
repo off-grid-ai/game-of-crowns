@@ -155,9 +155,9 @@ func _inn(at: Vector3, road: Vector3, rng: RandomNumberGenerator) -> void:
 	if not terrain.is_land(at.x, at.z):
 		return
 	var yaw := atan2(-road.z, road.x)  # the front door faces the road
-	var parts := [["medieval_tavern", Vector3.ZERO, 0.0], ["old_wooden_barn", Vector3(1.4, 0, 0.3), PI / 2],
-		["medieval_wooden_cart", Vector3(0.2, 0, -0.9), 0.4], ["haystack_2", Vector3(1.3, 0, -0.8), 0.0],
-		["wooden_fence_game_ready_asset", Vector3(-1.0, 0, 0.6), PI / 2]]
+	var parts := [[Real.one("tavern"), Vector3.ZERO, 0.0], [Real.one("barn"), Vector3(1.4, 0, 0.3), PI / 2],
+		[Real.one("cart"), Vector3(0.2, 0, -0.9), 0.4], [Real.one("haystack"), Vector3(1.3, 0, -0.8), 0.0],
+		[Real.one("fence"), Vector3(-1.0, 0, 0.6), PI / 2]]  # by component (realm/data/assets.json)
 	var b := Basis(Vector3.UP, yaw)
 	for part in parts:
 		var n: Node3D = Real.make(part[0])
