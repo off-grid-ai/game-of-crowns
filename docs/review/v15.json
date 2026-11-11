@@ -1,5 +1,5 @@
 {
- "_": "Review v15: batch 7's shots, each beside its reference from docs/art/target (copied to screens/ref). docs/review/batch7.sh makes the frames (paths under its OUT folder); docs/review/v15_apply.py turns each into a screen on the review page with two versions: the target, then ours, so Side by side shows them together. 'card' is the copy sheet's card. 'needs' names the harness step that frames the shot (site, work); if the step finds nothing, the shot shows the road or the square and the batch's log says so.",
+ "_": "Review v15: batch 7's shots, each beside its reference from docs/art/target (copied to screens/ref). docs/review/batch7.sh makes the frames (paths under its OUT folder); docs/review/v15_apply.py turns each into a screen on the review page with two versions: the target, then ours, so Side by side shows them together. 'card' is the copy sheet's card. 'needs' names the harness step that frames the shot (site, work, breach, host); if the step finds nothing, the shot shows the road or the square and the batch's log says so.",
  "group": "Batch 7 beside the target",
  "label": "Batch 7: every switch on",
  "switches": "--look=one --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on",
@@ -99,6 +99,16 @@
    "needs": "work"
   },
   {
+   "id": "b7-barnyard",
+   "name": "The barn's yard",
+   "what": "Cows, sheep and pigs grazing and rooting by the barn, the yardhand milking, feeding, mucking out",
+   "ref": "town-a",
+   "card": "W3",
+   "still": "towns/barnyard.png",
+   "clip": "towns/barnyard-clip.mp4",
+   "needs": "work"
+  },
+  {
    "id": "b7-inn",
    "name": "A roadside inn",
    "what": "A coaching inn on the great road: horses, drinkers, soldiers at their ale",
@@ -145,6 +155,15 @@
    "clip": "moods/war-clip.mp4"
   },
   {
+   "id": "b7-war-inn",
+   "name": "The inn in war",
+   "what": "The war town's inn: the crown's men on its benches",
+   "ref": "06-inn",
+   "card": "W3",
+   "still": "moods/war-inn.png",
+   "needs": "work"
+  },
+  {
    "id": "b7-feast-town",
    "name": "A town at feast",
    "what": "Kingsmere feasting: the inn's yard full, the crier's ring cheering",
@@ -152,6 +171,31 @@
    "card": "O10",
    "still": "moods/feast-town.png",
    "clip": "moods/feast-clip.mp4"
+  },
+  {
+   "id": "b7-feast-tables",
+   "name": "The feast's tables",
+   "what": "Bunting over the square, the long tables, a dozen drinking and talking, the minstrel",
+   "ref": "05-court",
+   "card": "O10",
+   "still": "moods/feast-tables.png"
+  },
+  {
+   "id": "b7-hunger-town",
+   "name": "A starving town",
+   "what": "Cold chimneys, the market bare, a queue at the granary",
+   "ref": "07-unrest",
+   "card": "W3",
+   "still": "moods/hunger-town.png"
+  },
+  {
+   "id": "b7-levy-town",
+   "name": "A levy marches out",
+   "what": "The levy mustered in the square, men walking out along the road with their bundles, kin waving at the well",
+   "ref": "08-reinforce",
+   "card": "W3",
+   "still": "moods/levy-town.png",
+   "clip": "moods/levy-clip.mp4"
   },
   {
    "id": "b7-war-feast",
@@ -163,20 +207,46 @@
   },
   {
    "id": "b7-army-close",
-   "name": "The army, close",
-   "what": "6,000 men in their house's colours, from d8",
+   "name": "The army by regiment, close",
+   "what": "The host in line (d12), one regiment selected: its ground rectangle and lit banner; melee in front, archers behind",
    "ref": "03-army",
    "card": "O2",
-   "still": "army-d8.png"
+   "still": "army-line-d12.png"
   },
   {
    "id": "b7-army-far",
-   "name": "The army, from above",
-   "what": "The host of 6,000 on its field from d40, marching",
+   "name": "The army from far",
+   "what": "The line at d50: each regiment a coloured block under its standard and strength",
    "ref": "03-army",
    "card": "A7",
-   "still": "army-d40.png",
+   "still": "army-line-d50.png"
+  },
+  {
+   "id": "b7-army-march",
+   "name": "The army on the march",
+   "what": "The host in column four to six wide marching along the road (d25)",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "army/army-march.png",
    "clip": "army/army-clip.mp4"
+  },
+  {
+   "id": "b7-host-selected",
+   "name": "A host selected",
+   "what": "A click on the host's standard: the gold ring under it, its banner lit, the command card over the minimap",
+   "ref": "03-army",
+   "card": "O2",
+   "still": "hosts/host-selected.png",
+   "needs": "host"
+  },
+  {
+   "id": "b7-host-route",
+   "name": "A host's march",
+   "what": "The host ordered to march on a town: its dotted route across the land",
+   "ref": "02-realm",
+   "card": "O2",
+   "still": "hosts/host-route.png",
+   "needs": "host"
   },
   {
    "id": "b7-fire",
@@ -198,11 +268,49 @@
   {
    "id": "b7-breach",
    "name": "The wall breach",
-   "what": "A stone wall under thrown stones: cracking, stones falling, a breach",
+   "what": "The stone wall opened by thrown stones: a gap to the ground and its rubble ramp",
    "ref": "04-siege",
    "card": "O4",
-   "still": "breach.png",
-   "clip": "breach.mp4"
+   "still": "breach/breach.png",
+   "clip": "breach/breach-clip.mp4",
+   "needs": "breach"
+  },
+  {
+   "id": "b7-breach-cracked",
+   "name": "The wall cracking",
+   "what": "The wall under the first stones: the crack band, battlements chipped, dust",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "breach/breach-cracked.png",
+   "needs": "breach"
+  },
+  {
+   "id": "b7-storm",
+   "name": "The storm through the breach",
+   "what": "The besiegers fight the holder's block man to man in the gap, over the rubble; the losers fall back",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "breach/storm-clip-18.png",
+   "clip": "breach/storm-clip.mp4",
+   "needs": "breach"
+  },
+  {
+   "id": "b7-storm-taken",
+   "name": "The gap taken",
+   "what": "The block broken and run, the besiegers in over the rubble, cheering",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "breach/storm-taken.png",
+   "needs": "breach"
+  },
+  {
+   "id": "b7-storm-fire",
+   "name": "The town put to the torch",
+   "what": "After the storm: the town's houses catching one after another, smoke columns leaning with the wind",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "breach/storm-fire.png",
+   "needs": "breach"
   },
   {
    "id": "b7-night-inn",
@@ -222,6 +330,14 @@
   {
    "step": "work <Town> <trade> [dist] [tilt]",
    "what": "Frames a trade's building in a town from the town root's works (autoplay.gd; works.gd find). play.log says where, or which trades the town has."
+  },
+  {
+   "step": "breach [dist] [tilt]",
+   "what": "Frames the first open breach in a stone wall near the staged siege's front, low and oblique (the siege's front if none is open yet; autoplay.gd)."
+  },
+  {
+   "step": "host [n] [dist] [tilt]",
+   "what": "Frames the King's n-th host and clicks its standard (autoplay.gd; host_command.gd, --hosts=on). play.log says how many hosts stand."
   }
  ]
 }
