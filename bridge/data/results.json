@@ -27,20 +27,16 @@
  ],
  "informer.dismiss": [
   "The King dismisses the accusation. {informer} leaves court red-faced.",
-  "\"Gossip,\" says the King. {informer} bows very low, red to the ears.",
-  "The King hears {informer} out, and laughs. The court laughs with him. {informer} does not.",
-  "The accusation is thrown out. {suspect} sends {informer} a cask of wine, which is worse than a blade."
+  "The King hears {informer} out, and laughs. The court laughs with him. {informer} does not."
  ],
  "remembers.hear": [
   "The King hears {name} out and promises nothing. {house} goes home with its grudge, and it grows.",
   "{name} speaks; the King listens; nothing is promised. {house} rides home angrier than it came.",
-  "The King nods through all of it and offers nothing. {name} has heard kinder silence from a wall.",
   "\"We will think on it,\" says the King. {house} has heard that before. The grudge gets heavier.",
   "{name} is heard to the end, and sent away with nothing. {house}'s old wound opens a little wider."
  ],
  "remembers.purse": [
   "{house} sends {gold} gold to Kingsmere. {name} had hoped for thanks, not a bill.",
-  "The King answers {name}'s complaint with an invoice: {gold} gold. {house} pays, and seethes.",
   "{name} came for an apology and leaves {gold} gold lighter. {house} will tell this story for years.",
   "{gold} gold from {house} to the crown, for the trouble of listening. {name} pays with a smile like a knife."
  ],
@@ -54,7 +50,6 @@
   "The King sides with {winner}. {loser} leaves the council hall without bowing.",
   "The King's word goes to {winner}. {loser}'s lords push back their chairs and walk out.",
   "{winner} has the King's backing. {loser} hears it with a face like stone, and is gone before the wine.",
-  "The council ends with {winner} smiling. {loser} slams the door hard enough to shake the tapestries.",
   "The King rules for {winner}. {loser} doesn't argue; it just stops coming to council."
  ],
  "reword": {

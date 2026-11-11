@@ -36,6 +36,8 @@ static func voice(text: String) -> String:
 		var start := String(v.get("starts", ""))
 		if start == "" or not text.begins_with(start):
 			continue
+		if randf() >= float(_d.get("chance", 1.0)):
+			return text  # the plain line most of the time: a dry voice only where it lands
 		if v.has("whole"):
 			var w: Array = v["whole"]
 			return String(w[randi() % w.size()]) if not w.is_empty() else text
