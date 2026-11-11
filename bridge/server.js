@@ -5,6 +5,7 @@
 //   times and scores reigns.
 // - Exposes a small HTTP API on 127.0.0.1:8787 for the view.
 
+import * as Events from "./events.js";
 import fs from "node:fs";
 import zlib from "node:zlib";
 import http from "node:http";
@@ -550,7 +551,7 @@ function onEvent(line) {
 // and ambitions, its goal, its readings and how it ends. Its context, read fresh
 // on every call (getters for what the bridge reassigns; endReign pauses through setPaused).
 const reignCtx = () => ({ meta, world, court, stakes, arcs, favour, favourPast, turnSeconds, get paused() { return paused; }, setPaused: (v) => { paused = v; },
-  get history() { return history; }, get chronicle() { return chronicle; }, record, send, scene, detail, favourOf, saveFavour, crownOf, crownSeat, SOLDIER, soulsOf, theirs, canDecree });
+  get history() { return history; }, get chronicle() { return chronicle; }, get counselNow() { return counselNow; }, record, send, scene, detail, favourOf, saveFavour, crownOf, crownSeat, SOLDIER, soulsOf, theirs, canDecree });
 // Whether the realm would take this order now, by the decree route's own once-a-year and price rules (next.js offers only these).
 function canDecree(cmd) {
   const y = yearlyKey(cmd);
@@ -588,7 +589,7 @@ function marksNow() {
 const seasonCtx = () => ({ get world() { return world; }, get meta() { return meta; }, get court() { return court; }, get stakes() { return stakes; }, get minds() { return minds; },
   get P() { return P; }, get favour() { return favour; }, get deeds() { return deeds; }, get blights() { return blights; }, setBlights: (v) => { blights = v; },
   favourWhy, favourPast, treasuryCtx, send, record, flushHeld, courtSeason, royalWorks, resolveCampaigns, favourOf, restingFavour, noteFavour, recordDeed,
-  causeOf, saveFavour, goalNow, sworn, shiftFavour, heardCtx, ceasefire, snapshot, runArcs, addMark });
+  causeOf, saveFavour, goalNow, sworn, shiftFavour, heardCtx, ceasefire, snapshot, runArcs, addMark, detail });
 function runSeason() { return Season.runSeason(seasonCtx()); }
 function turnHouses(turn) { return Season.turnHouses(seasonCtx(), turn); }
 function storyMarch(pid, size) { return Season.storyMarch(seasonCtx(), pid, size); }
@@ -935,6 +936,12 @@ const ROUTES = {
   "* /ai": (req, res, url) => RealmRoutes.ai(routeCtx(), req, res, url),
   "POST /speed": (req, res, url) => RealmRoutes.speed(routeCtx(), req, res, url),
   "POST /counsel/answer": (req, res, url) => CourtRoutes.counselAnswer(routeCtx(), req, res, url),
+  // An event card answered (events.js): its cost paid, its effect now, its later one queued.
+  "POST /event/answer": async (req, res, url) => {
+    const b = await body(req);
+    const [code, out] = Events.answer({ meta, world, court, detail, send, record, shiftFavour, favourOf }, b.choice);
+    return json(res, code, out);
+  },
   "POST /decree": (req, res, url) => DecreeRoutes.issueDecree(routeCtx(), req, res, url),
   "POST /test/court": (req, res, url) => TestRoutes.sit(routeCtx(), req, res, url),
   "POST /test/stage": (req, res, url) => TestRoutes.stage(routeCtx(), req, res, url),

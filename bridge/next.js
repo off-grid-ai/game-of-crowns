@@ -11,6 +11,7 @@ import { houseFor, cityName } from "./narrator.js";
 import * as Director from "./director.js";
 import { courtEvery } from "./court.js";
 import * as Seals from "./seals.js";
+import { buildKey } from "./crown.js";
 
 // When the season now running began (season.js turn), for the countdown.
 let seasonAt = Date.now();
@@ -52,9 +53,9 @@ export function nextThing(ctx, aim) {
   const seat = world.cities.find((c) => c.owner === crown?.id && c.capital);
   const aimTown = aim?.at != null ? town(aim.at) : null;
   const aimAct = !aim?.do ? null : aim.key === "host" ? { action: "levy", city: seat?.id ?? null }
-    : ["granary", "walls"].includes(aim.key) ? { action: "build", city: seat?.id ?? null, building: aim.key === "granary" ? "Granary" : "City Walls" }
-    : aim.key === "market" ? { action: "build", city: aimTown?.id ?? null, building: "Marketplace" }
-    : aim.building ? { action: "build", city: aimTown?.id ?? null, building: aim.building }
+    : ["granary", "walls"].includes(aim.key) ? { action: "build", city: seat?.id ?? null, building: aim.key }
+    : aim.key === "market" ? { action: "build", city: aimTown?.id ?? null, building: "market" }
+    : aim.building ? { action: "build", city: aimTown?.id ?? null, building: buildKey(aim.building) }
     : aimTown && (aim.key === "friend" || String(aim.key).startsWith("win-")) ? { action: "feast", city: aimTown.id } : null;
   const ladder = !aim?.do ? null : (() => {
     const who = aim.key === "friend" && aimTown ? houseFor(world.players.find((p) => p.id === aimTown.owner) ?? {}).name : null;
@@ -63,11 +64,19 @@ export function nextThing(ctx, aim) {
   })();
   const feed = hungry ? { kind: "own", text: `${hungry.famine ? "Starving" : "Granary low"}. Send grain to ${cityName(hungry.id)}`, city: hungry.id, seasons: 1,
     act: { action: "relief", city: hungry.id }, frac: 1 - Math.min(1, (hungry.food ?? 0) / Math.max(1, hungry.granary ?? 1)) } : null;
-  // In order: a threat about to land, a royal town going hungry, a threat further off, the aim's next step.
+  // What the Hand's counsel finds worth doing in the realm (counsel.js decides it; not a crisis, which
+  // goes to court): each matter's first order the realm would take, as one more use for a seal.
+  const counsel = (ctx.counselNow ?? []).filter((o) => o.urgency < 75 && o.acts?.length).map((o) => {
+    const a = o.acts.find((x) => !x.ui && x.action);
+    const city = a?.city ?? seat?.id ?? null;
+    return a && city != null ? { kind: "counsel", text: `${o.text}. ${String(a.label).split("  ")[0]} at ${cityName(city)}`, city, act: { action: a.action, city, ...(a.to != null ? { to: a.to } : {}), ...(a.building ? { building: a.building } : {}) } } : null;
+  }).filter(Boolean);
+  // In order: a threat about to land, a royal town going hungry, a threat further off, the aim's next step, the Hand's counsel.
   // A goal is something he can do now: only what the realm would let him order (the decree's own once-a-year
   // and price rules, canDecree) is offered; the rest wait for the season they can be given in.
   const order = [...threats.filter((t) => t.seasons <= SOON).map((t) => [t, t.seasons <= 1 ? "loss" : "act"]),
-    ...(feed ? [[feed, hungry.famine ? "loss" : "act"]] : []), ...threats.filter((t) => t.seasons > SOON).map((t) => [t, "act"]), ...(ladder ? [[ladder, "act"]] : [])];
+    ...(feed ? [[feed, hungry.famine ? "loss" : "act"]] : []), ...threats.filter((t) => t.seasons > SOON).map((t) => [t, "act"]), ...(ladder ? [[ladder, "act"]] : []),
+    ...counsel.map((c) => [c, "act"])];
   const doable = order.filter(([x]) => x.act && x.act.city != null && (!ctx.canDecree || ctx.canDecree(x.act)));
   // How many things are worth a seal now: the choice is real only when there's more than one (reign_measure.py).
   const options = doable.length;

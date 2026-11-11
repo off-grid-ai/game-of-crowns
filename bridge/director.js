@@ -7,6 +7,7 @@
 // numbers and words are data (data/director.json); this is the one decider.
 // Nothing here reads server.js: what it needs comes in as one context argument.
 
+import * as Events from "./events.js";
 import fs from "node:fs";
 import { houseFor, cityName } from "./narrator.js";
 import { blightLua } from "./blight.js";
@@ -56,6 +57,9 @@ export function season(ctx, turn) {
   if (Object.entries(before).some(([id, owner]) => world.cities.find((c) => c.id === Number(id))?.owner !== owner)) crisis(meta);
   d.held = Object.fromEntries(world.cities.filter(ours).map((c) => [c.id, c.owner]));
   pushback(ctx, d, turn, peace);
+  // Between courts, a card from the realm as it is (events.js): the director decides the
+  // wave (a breather draws only low stakes, and seldom); the deck decides which card.
+  Events.season(ctx, turn, resting(meta));
   chron.saveMeta(meta);
 }
 

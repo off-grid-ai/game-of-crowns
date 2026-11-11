@@ -20,6 +20,8 @@ let bannersCalled = -99;
 export const bannersReady = (turn) => turn - bannersCalled >= 4;
 
 const BUILDABLE = { temple: "Temple", granary: "Granary", walls: "City Walls", market: "Marketplace", aqueduct: "Aqueduct", barracks: "Barracks" };
+// The build decree's key for a building's own name ("Marketplace" -> "market"), or null.
+export const buildKey = (name) => Object.keys(BUILDABLE).find((k) => BUILDABLE[k] === name) ?? null;
 
 function crownOf(world) {
   return world?.players?.find((p) => houseFor(p).crown);

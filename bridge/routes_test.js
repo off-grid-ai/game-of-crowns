@@ -8,6 +8,7 @@
 // snapshot or a switch of chronicle during an await is seen.
 
 import * as Director from "./director.js";
+import * as Events from "./events.js";
 import * as Lua from "./lua.js";
 import { houseFor } from "./narrator.js";
 import * as chron from "./chronicles.js";
@@ -83,6 +84,12 @@ export async function stage(ctx, req, res, url) {
     ctx.send(`lua cmd ${Lua.transferCity(town.id, crown.id)}`);
     setTimeout(ctx.snapshot ?? (() => {}), 1500);
     return json(res, 200, { ok: true, city: town.id, to: crown.id });
+  }
+  // {event: "draw" | "lapse"}: an event card drawn now (past the opening's quiet), or the one up lapses (events.js).
+  if (b.event) {
+    const e = Events.testNow({ meta: ctx.meta, world: ctx.world, court: ctx.court, detail: ctx.detail, send: ctx.send, record: ctx.record,
+      shiftFavour: (c, why) => ctx.shiftAndTell(c, why), favourOf: ctx.favourOf, history: ctx.history }, String(b.event));
+    return json(res, 200, { ok: true, up: e.up, lapsed: e.lapsed });
   }
   // {favour: {<house id>: value}}: a house's favour set to that value, through the one favour writer.
   if (b.favour && typeof b.favour === "object") {

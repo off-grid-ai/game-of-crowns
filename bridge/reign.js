@@ -9,6 +9,7 @@
 // (getters for what it reassigns, setPaused for the clock's hold); server.js
 // keeps wrappers of the same names.
 
+import * as Events from "./events.js";
 import * as Seals from "./seals.js";
 import * as Next from "./next.js";
 import { houseFor, cityName } from "./narrator.js";
@@ -455,5 +456,6 @@ export function reignInfo(ctx) {
     souls: world?.cities?.reduce((t, c) => t + soulsOf(c.size), 0) ?? 0,
     next,
     seals: Seals.view(meta),
+    event: Events.view(meta),
   };
 }
