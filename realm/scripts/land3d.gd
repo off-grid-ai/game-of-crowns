@@ -271,6 +271,14 @@ const SNOW_UNIFORMS := """
 uniform float rain_wet = 0.0;
 uniform float snow_cover = 0.0;
 uniform vec3 snow_col : source_color = vec3(0.84, 0.86, 0.91);
+uniform float rough_floor = 0.72;  // the dry land is matte: rock and grass never shinier than this
+uniform float spec_cap = 0.35;
+"""
+## The dry land matte (batch 7 review #14: glossy white specular blobs on the far mountains): its roughness
+## floored and its specular capped, before snow and rain set their own (wet ground still glints).
+const MATTE := """
+	roughness = max(roughness, rough_floor);
+	specular = min(specular, spec_cap);
 """
 const SNOW_COVER := """
 	float snow_k = 0.0;
@@ -354,7 +362,7 @@ func _drape_atlas(mat: Terrain3DMaterial, terrain: Node3D) -> void:
 		return
 	var code := sh.code.replace("varying vec3 v_vertex;", "varying vec3 v_vertex;\nuniform sampler2D atlas_tex : source_color, filter_linear_mipmap_anisotropic, repeat_disable;\nuniform vec2 atlas_size = vec2(1.0);\nuniform float atlas_mix = 0.0;\n" + SNOW_UNIFORMS + REALM_UNIFORMS + SCAR_UNIFORMS)
 	# The snow, worked out where Terrain3D sets its roughness and specular, before it applies them.
-	code = code.replace("\t// Apply PBR", SNOW_COVER + WET_GROUND + "\n\t// Apply PBR")
+	code = code.replace("\t// Apply PBR", MATTE + SNOW_COVER + WET_GROUND + "\n\t// Apply PBR")
 	var at := code.find("ALBEDO = ")
 	var end := code.find("\n", at)
 	code = code.insert(end, SCAR_ALBEDO + SNOW_ALBEDO + "\n\tALBEDO = mix(ALBEDO, texture(atlas_tex, v_vertex.xz / atlas_size).rgb, atlas_mix);" + REALM_WASH)
