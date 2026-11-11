@@ -5,10 +5,11 @@ extends Node3D
 ## its ruin stands until a town is raised on the spot again.
 ## Models: the realistic kit (realistic.gd), stumps from Poly Haven, charred.
 
-const STUMPS := ["ph/tree_stump_01", "ph/tree_stump_02"]
+const Real := preload("res://scripts/realistic.gd")  # the asset catalogue (realm/data/assets.json)
+static var STUMPS: Array = Real.variants("stump")
 const CHAR := Color(0.22, 0.19, 0.17)  # the stump's own wood, blackened
-const RUINS := ["abbey_wall_ruins", "abbey_ruins"]  # the razed town's walls, when the kit holds them
-const RUBBLE := "rubble_pile"
+static var RUINS: Array = Real.variants("ruin_wall") + Real.variants("ruin_abbey")  # the razed town's walls, when the kit holds them
+static var RUBBLE := Real.one("rubble")
 # How soon each takes the lighter versions Godot built for it (realistic.gd's
 # generate_lods): a stump a metre tall, of 40-60k triangles, needs its full detail
 # only right under the lens; the ruins a little later. Lower is coarser sooner.

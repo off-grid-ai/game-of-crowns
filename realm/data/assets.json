@@ -15,9 +15,8 @@
     "market_stall": { "kind": "market", "variants": [ { "model": "realistic/medieval_market_asset_pack", "name": "medieval_market_asset_pack", "length": 9.0 } ] },
     "woodpile": { "kind": "prop", "variants": [ { "model": "realistic/wood_pile_pack", "name": "wood_pile_pack", "length": 3.5 } ] },
     "fence": { "kind": "fence", "variants": [ { "model": "realistic/wooden_fence_game_ready_asset", "name": "wooden_fence_game_ready_asset", "length": 3.4 } ] },
-    "barrel": { "kind": "clutter", "variants": [
-      { "model": "realistic/ph/wooden_barrels_01/wooden_barrels_01_1k.gltf", "name": "ph/wooden_barrels_01", "length": 1.6 },
-      { "model": "realistic/ph/wine_barrel_01/wine_barrel_01_1k.gltf", "name": "ph/wine_barrel_01", "length": 0.9 } ] },
+    "barrel": { "kind": "clutter", "variants": [ { "model": "realistic/ph/wooden_barrels_01/wooden_barrels_01_1k.gltf", "name": "ph/wooden_barrels_01", "length": 1.6 } ] },
+    "cask": { "kind": "clutter", "variants": [ { "model": "realistic/ph/wine_barrel_01/wine_barrel_01_1k.gltf", "name": "ph/wine_barrel_01", "length": 0.9 } ] },
     "crate": { "kind": "clutter", "variants": [
       { "model": "realistic/ph/wooden_crate_01/wooden_crate_01_1k.gltf", "name": "ph/wooden_crate_01", "length": 0.8 },
       { "model": "realistic/ph/wooden_crate_02/wooden_crate_02_1k.gltf", "name": "ph/wooden_crate_02", "length": 0.8 } ] },

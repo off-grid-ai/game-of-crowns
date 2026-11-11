@@ -46,6 +46,12 @@ static func _from_catalogue() -> bool:
 static func variants(component: String) -> Array:
 	return _component.get(component, [])
 
+
+## A component's first model (its main one), or "" when the catalogue has none.
+static func one(component: String) -> String:
+	var v := variants(component)
+	return String(v[0]) if not v.is_empty() else ""
+
 static var _cache := {}
 
 
