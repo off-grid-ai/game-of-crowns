@@ -40,6 +40,15 @@ Switches (`--name`) go after `--` on the game's command line.
 - Which decks a breather may draw, and how much war and famine weigh in the build-up: `bridge/data/events.json`: `settings.breatherDecks`, `settings.boost`.
 - A card's words, choices, costs and what doing nothing costs: `bridge/data/events.json`: `cards[]`.
 
+## The realm's clock and the houses' favour (NPC perf; changeability audit)
+- How long a season lasts, in every realm: `bridge/data/pace.json`: `season`. The view reads it from /world (`turnSeconds`); crops, snow, sieges and the recruits' drill follow it.
+- How fast or slow the speed buttons may set a season: `bridge/data/pace.json`: `fastest`, `slowest`.
+- What a house's favour means (loyal, sworn, steady, cooling): `bridge/data/favour.json`. The houses panel's words, the court, counsel, the reign's goal and the townsfolk's mood all follow it.
+- When the treasury counts as thin (the Hand says so, the court may hear of it): `bridge/data/economy.json`: `thin`.
+
+## Measuring (NPC perf)
+- A frame-time run drawn as the game is played, not at film quality: `--perf` with `--shot`'s framing (`--perf=smooth` or `--perf=beautiful` to pick).
+
 ## Not yet in data (to move)
 - Sound levels and the music's silences: literals in `realm/scripts/soundscape.gd` (`BEDS`, `STINGS`, `MUSIC_DB`, `CALM_GAP`).
 
