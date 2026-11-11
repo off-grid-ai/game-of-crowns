@@ -642,6 +642,20 @@ static func centre_reach(root: Node3D) -> float:
 	return maxf(foot.x, foot.y) * 0.5
 
 
+## A point pushed out past the square's centrepiece (its basin's rim, plus `clear`), if it fell inside: a
+## stall, a dog, a child, the levy's kin, never in the fountain's water (batch 8 review: a canopy over it).
+func _off_centre(root: Node3D, p: Vector3, clear: float) -> Vector3:
+	var r := centre_reach(root)
+	if r <= 0.0:
+		return p
+	var flat := Vector2(p.x, p.z)
+	var keep := r + clear
+	if flat.length() >= keep:
+		return p
+	var dir := flat.normalized() if flat.length() > 0.001 else Vector2(SEEN.x, SEEN.z)
+	return Vector3(dir.x * keep, p.y, dir.y * keep)
+
+
 ## Where the feast's bonfire goes: the square's heart, or with a fountain there, on the seen side clear of
 ## its basin by moods.json centre.fire (the dancers' ring and the tables follow it).
 func _fire_spot(root: Node3D) -> Vector3:
@@ -1056,7 +1070,7 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 			_prop(life, center, "Candle_1", well + Vector3(cos(i * 2.1), 0, sin(i * 2.1)) * set_down)  # round the well's curb (its winch reaches 0.16 out) or the basin's rim, not in it
 	if c.get("prosperity", false):
 		# One more stall in good times, by the well, heaped with produce.
-		var extra := well + side * 0.38
+		var extra := _off_centre(root, well + side * 0.38, float(Data.num("moods", "centre.stall", 0.2)))  # the canopy clear of a fountain's rim
 		var stall := _prop(life, center, "Stall_Empty", extra, atan2(-extra.x, -extra.z), 1.0, 0.0, 0.16)
 		if stall:
 			for i in 3:
@@ -1734,7 +1748,7 @@ func _leaving(root: Node3D, life: Node3D, center: Vector3, l: Dictionary, rng: R
 	var places: Dictionary = root.get_meta("places", {})
 	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
 	for i in int(l.get("kin", 3)):
-		var k := _stand(root, life, center, well + Basis(Vector3.UP, 1.0) * SEEN * 0.2 + Vector3(rng.randf_range(-0.15, 0.15), 0, rng.randf_range(-0.15, 0.15)), "peasant", "Waving", rng.randi(), Color.WHITE, 0.2)
+		var k := _stand(root, life, center, _off_centre(root, well + Basis(Vector3.UP, 1.0) * SEEN * 0.2 + Vector3(rng.randf_range(-0.15, 0.15), 0, rng.randf_range(-0.15, 0.15)), float(Data.num("moods", "centre.mourners", 0.08))), "peasant", "Waving", rng.randi(), Color.WHITE, 0.2)
 		if k:
 			_face(k, k.position + Basis(Vector3.UP, 1.0) * SEEN)
 			_mind(k, "listener", center)
@@ -1956,7 +1970,7 @@ func _square_life(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rn
 					var copy: StandardMaterial3D = m.duplicate()
 					copy.albedo_color = col
 					(mi as MeshInstance3D).material_override = copy
-		var at := well + Vector3(rng.randf_range(-r, r), 0, rng.randf_range(-r, r)) * 0.6
+		var at := _off_centre(root, well + Vector3(rng.randf_range(-r, r), 0, rng.randf_range(-r, r)) * 0.6, float(Data.num("moods", "centre.mourners", 0.08)))
 		dog.position = Vector3(at.x, _y(center, at), at.z)
 		dog.rotation.y = rng.randf() * TAU
 		dog.set_meta("town_dog", true)
@@ -1967,7 +1981,7 @@ func _square_life(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rn
 	for k in n.call("chase"):
 		var kids: Array = []
 		for j in 2:
-			var at := well + Vector3(rng.randf_range(-r, r), 0, rng.randf_range(-r, r)) * 0.5
+			var at := _off_centre(root, well + Vector3(rng.randf_range(-r, r), 0, rng.randf_range(-r, r)) * 0.5, float(Data.num("moods", "centre.mourners", 0.08)))
 			var kid := _townsperson(life, Vector3(at.x, _y(center, at), at.z), "peasant", "Laughing", rng.randi())
 			kid.set_meta("chasing", true)
 			_people.play(kid, "Running")  # their legs run while they're moved (motion.gd reads their pace)
