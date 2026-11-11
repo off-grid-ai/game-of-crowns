@@ -1,5 +1,5 @@
 {
- "_": "The camera's knobs (camera_rig.gd reads them; one owner). floor: the closest the lens comes, a low oblique just over the roofs (Mac: no close-up realism). go_to: the distance each kind of 'go to X' frames at (the one framing rule, camera_rig.go_to; Anno 1800 / Manor Lords jump). sight_steps: how many headings either way go_to tries before taking the least blocked. near_fade: what stands right in front of the lens dissolves (Godot's dithered distance fade; Anno 1800 / Manor Lords): gone nearer than 'gone', whole from 'solid', in game units from the lens; buildings and trees each.",
+ "_": "The camera's knobs (camera_rig.gd reads them; one owner). floor: the closest the lens comes, a low oblique just over the roofs (Mac: no close-up realism). go_to: the distance each kind of 'go to X' frames at (the one framing rule, camera_rig.go_to; Anno 1800 / Manor Lords jump). sight_steps: how many headings either way go_to tries before taking the least blocked. near_fade: what stands right in front of the lens dissolves (Godot's dithered distance fade; Anno 1800 / Manor Lords): gone nearer than 'gone', whole from 'solid', in game units from the lens; buildings, trees and a castle's walls each (a castle's go sooner: wide and tall, at roof height they would fill the foreground).",
  "floor": 6.0,
  "go_to": {
   "castle": 11.0,
@@ -15,10 +15,20 @@
   "turns": [0.8, -0.8, 1.6, -1.6, 2.4, -2.4],
   "dist_vary": 0.15
  },
+ "town_shot": {
+  "_": "A town's square framed for a still (the shot harness's --city; camera_rig.square_view; art target 01-town): away_from_castle (1: the lens on the far side of the square from the castle, so the castle stands behind it; 0: the old fixed heading), turn (radians off that line, so the castle sits to one side), card_shift (the square set right of the middle by this share of the distance, clear of the town card on the left).",
+  "away_from_castle": 1,
+  "turn": 0.4,
+  "card_shift": 0.14
+ },
  "near_fade": {
   "buildings": {
    "gone": 1.2,
    "solid": 2.6
+  },
+  "castle": {
+   "gone": 2.4,
+   "solid": 4.2
   },
   "trees": {
    "gone": 1.5,

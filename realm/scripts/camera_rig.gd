@@ -106,6 +106,24 @@ func frame_town(pos: Vector3, size: int) -> void:
 	go_to(pos, clampf(knob("go_to.town_base", 8.5) + size * knob("go_to.town_per_size", 0.9), knob("go_to.town_min", 10.0), knob("go_to.town_max", 16.0)))
 
 
+## A town's square framed for a still or a film (the shot harness's --city; camera.json town_shot;
+## art target 01-town): from the side away from its castle, so the castle stands behind the square
+## (turned a little, `turn`) instead of its wall filling the foreground, and the square set right of
+## the middle (`card_shift`, a share of the distance), in the open part of the screen beside the town
+## card on the left. The sight rule still has the last word. Returns [where to look, the yaw].
+func square_view(root: Node3D, dist: float) -> Array:
+	var at := root.global_position
+	var yaw := 0.6
+	var castle: Node3D = root.get_node_or_null("Castle")
+	if castle and knob("town_shot.away_from_castle", 1.0) > 0.0:
+		var to := Vector2(castle.position.x, castle.position.z)
+		if to.length() > 0.01:
+			yaw = atan2(-to.x, -to.y) + knob("town_shot.turn", 0.4)  # the lens on the far side of the square from the castle
+	var right := Vector3(cos(yaw), 0, -sin(yaw))
+	var look := at - right * dist * knob("town_shot.card_shift", 0.14)
+	return [look, sight_yaw(look, dist, yaw)]
+
+
 ## The one framing rule for every "go to X" (a town, a castle, a host, a matter),
 ## as Anno 1800's notification jump and Manor Lords' jump to a building do it: the
 ## target centred at the distance its kind wants, from the heading the King already

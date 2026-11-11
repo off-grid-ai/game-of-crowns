@@ -125,6 +125,14 @@ static func _built(name: String) -> Node3D:
 	var mi := MeshInstance3D.new()
 	mi.name = "Model"
 	mi.mesh = _builders[kind].build_castle(spec) if kind == "castle" else _builders[kind].build(spec)
+	if kind == "castle":
+		# Its own copies of the kit's materials: a castle wall dissolves sooner at the lens than a
+		# house does (camera.json near_fade.castle), and the houses share the kit's materials.
+		var mesh: ArrayMesh = mi.mesh
+		for i in mesh.get_surface_count():
+			var m := mesh.surface_get_material(i)
+			if m:
+				mesh.surface_set_material(i, m.duplicate())
 	var root := Node3D.new()
 	root.add_child(mi)
 	mi.owner = root
@@ -166,7 +174,7 @@ static func _template(name: String) -> Dictionary:
 	model.scale = Vector3.ONE * k
 	model.position = -Vector3(box.get_center().x, box.position.y, box.get_center().z) * k
 	_own(model, root)
-	_no_glow(root, name in STONE)
+	_no_glow(root, name in STONE, KIT[name][0] == "castle")
 	# The same model as plain meshes, for drawing many copies in one batch.
 	var parts := []
 	for mi in root.find_children("*", "MeshInstance3D", true, false):
@@ -222,6 +230,9 @@ static var NEAR_GONE: float = preload("res://scripts/camera_rig.gd").knob("near_
 static var NEAR_SOLID: float = preload("res://scripts/camera_rig.gd").knob("near_fade.buildings.solid", 2.6)
 static var TREE_GONE: float = preload("res://scripts/camera_rig.gd").knob("near_fade.trees.gone", 1.5)
 static var TREE_SOLID: float = preload("res://scripts/camera_rig.gd").knob("near_fade.trees.solid", 3.0)
+# A castle's walls are wide and tall: at roof height they would fill the foreground, so they go sooner.
+static var CASTLE_GONE: float = preload("res://scripts/camera_rig.gd").knob("near_fade.castle.gone", 1.2)
+static var CASTLE_SOLID: float = preload("res://scripts/camera_rig.gd").knob("near_fade.castle.solid", 2.6)
 
 
 static func fade_near(mat: BaseMaterial3D, gone := -1.0, solid := -1.0) -> void:
@@ -234,7 +245,9 @@ static func fade_near(mat: BaseMaterial3D, gone := -1.0, solid := -1.0) -> void:
 	mat.distance_fade_max_distance = solid
 
 
-static func _no_glow(root: Node, stone := false) -> void:
+static func _no_glow(root: Node, stone := false, castle := false) -> void:
+	var gone := CASTLE_GONE if castle else -1.0
+	var solid := CASTLE_SOLID if castle else -1.0
 	var lit_of := {}  # one copy per material, so merged surfaces still share it
 	for mi in root.find_children("*", "MeshInstance3D", true, false):
 		var m: MeshInstance3D = mi
@@ -242,7 +255,7 @@ static func _no_glow(root: Node, stone := false) -> void:
 			continue
 		for i in m.mesh.get_surface_count():
 			var mat := m.get_active_material(i) as BaseMaterial3D
-			fade_near(mat)  # the shared material: every copy of the model, batched or not
+			fade_near(mat, gone, solid)  # the shared material: every copy of the model, batched or not
 			if mat and (mat.emission_enabled or (stone and mat.metallic > 0.0)):
 				if not lit_of.has(mat):
 					var lit: BaseMaterial3D = mat.duplicate()
@@ -250,7 +263,7 @@ static func _no_glow(root: Node, stone := false) -> void:
 					if stone:
 						lit.metallic = 0.0
 						lit.metallic_texture = null
-					fade_near(lit)
+					fade_near(lit, gone, solid)
 					lit_of[mat] = lit
 				m.set_surface_override_material(i, lit_of[mat])
 

@@ -336,6 +336,22 @@ func _frame_for_shot(world: Dictionary) -> void:
 			main._selected = int(best["id"])
 			main._show_selected(world)
 			main.rig.snap(main.terrain.world_pos(float(best["x"]), float(best["y"])), float(_shot.get("dist", 16.0)), 0.6)
+			if not _shot.get("castle", false) and not _shot.get("battle", false) and not _shot.get("siege", false):
+				# Once the town stands: its square from the side away from its castle, clear of the
+				# town card (camera_rig.square_view; camera.json town_shot).
+				var sid := int(best["id"])
+				for wait in range(2, 60, 2):
+					main.get_tree().create_timer(float(wait)).timeout.connect(func():
+						if _shot.get("square_framed", false):
+							return
+						var t: Dictionary = main.towns.towns.get(sid, {})
+						var node = t.get("node")
+						if not is_instance_valid(node) or not node.is_inside_tree() or not node.has_meta("square_r"):
+							return
+						_shot["square_framed"] = true
+						var d := float(_shot.get("dist", 16.0))
+						var v: Array = main.rig.square_view(node, d)
+						main.rig.snap(v[0], d, float(v[1])))
 			if _shot.get("castle", false):
 				# The castle goes up with the town: frame its courtyard once it stands.
 				var tid := int(best["id"])
