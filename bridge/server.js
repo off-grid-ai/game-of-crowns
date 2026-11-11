@@ -928,6 +928,7 @@ const ROUTES = {
   "POST /chronicles/open": (req, res, url) => RealmRoutes.openChronicle(routeCtx(), req, res, url),
   "POST /reign/end": (req, res, url) => RealmRoutes.end(routeCtx(), req, res, url),
   "POST /reign/continue": (req, res, url) => RealmRoutes.continueReign(routeCtx(), req, res, url),
+  "POST /reign/opening": (req, res, url) => RealmRoutes.opening(routeCtx(), req, res, url),
   "POST /pause": (req, res, url) => RealmRoutes.pause(routeCtx(), req, res, url),
   "POST /resume": (req, res, url) => ROUTES["POST /pause"](req, res, url),
   "* /reign/options": (req, res, url) => RealmRoutes.reignOptions(routeCtx(), req, res, url),

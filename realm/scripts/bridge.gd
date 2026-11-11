@@ -178,6 +178,12 @@ func house(id: int, cb: Callable) -> void:
 	_http_get("/house?id=%d" % id, cb)
 
 
+## The v2 opening (docs/review/first-ten-minutes-plan.md): the King has landed in
+## his realm ("realm"), so its first court may sit (the bridge's court.js waits for this).
+func opening(at: String) -> void:
+	_post("/reign/opening", {"at": at}, func(_c, _d): pass)
+
+
 ## A reign whose clock ran out goes on, endless, in the same realm.
 func continue_reign(cb: Callable) -> void:
 	_post("/reign/continue", {}, cb)

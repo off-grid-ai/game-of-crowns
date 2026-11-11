@@ -10,6 +10,7 @@
 // reassigns, which the sitting reads again after each await; setSitting for the
 // hold); server.js keeps wrappers of the same names.
 
+import fs from "node:fs";
 import * as Treasury from "./treasury.js";
 import { houseFor, cityName } from "./narrator.js";
 import { BANDS } from "./favour.js";
@@ -165,6 +166,11 @@ export function courtEvery(meta) {
   return every;
 }
 export const HAND_YEAR = 4;  // seasons: the Hand calls the King in for a crisis at most once a year
+// The v2 opening's timings are data (data/opening.json): a new reign's first court sits this long after
+// the King lands in his realm, or, with no word of a landing (the intro skipped), after the reign began.
+export const OPENING = JSON.parse(fs.readFileSync(new URL("./data/opening.json", import.meta.url), "utf8"));
+const FIRST_COURT_MS = OPENING.firstCourtAfterLandingSec * 1000;
+const FIRST_COURT_LATE_MS = OPENING.firstCourtWithoutLandingSec * 1000;
 
 // force (a test reign's /test/court): sit now, watched or not, due or not, even with no one waiting.
 export async function courtSeason(ctx, turn, force = false) {
@@ -177,6 +183,12 @@ export async function courtSeason(ctx, turn, force = false) {
   if (counselNow.length) for (const key of Object.keys(c.hand)) if (!counselNow.some((x) => x.key === key)) delete c.hand[key];
   turnHouses(turn);  // watched or not: a house turns, and warns, either way
   if ((!isWatched() && !force) || c.sitting != null) { chron.saveMeta(meta); return; }
+  // The opening (routes_realm.opening): a new reign's first court waits for the King in his
+  // realm, FIRST_COURT_MS after he lands, not under the intro (Reigns' first card).
+  const first = meta.firstCourt ?? (meta.options?.opening === "v2" ? (meta.firstCourt = { landedAt: null }) : null);
+  // No word of a landing (the intro skipped): it sits FIRST_COURT_LATE_MS after the reign began, as it would anyway.
+  const ready = first?.landedAt ? Date.now() - first.landedAt >= FIRST_COURT_MS : Date.now() - (meta.created ?? 0) >= FIRST_COURT_LATE_MS;
+  if (!force && c.lastSat == null && first && !ready) { chron.saveMeta(meta); return; }
   const { every, want: wanted } = pace(ctx);
   const crises = counselNow.filter((o) => isCrisis(o) && o.acts?.length && c.heard[o.key] == null && !c.hand[o.key]);
   // A herald's terms under a siege can't wait for the next sitting: the court sits for them.

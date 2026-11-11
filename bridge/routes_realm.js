@@ -95,6 +95,19 @@ export async function end(ctx, req, res, url) {
   return json(res, 200, reignInfo());
 }
 
+// The opening (--opening=v2, docs/review/first-ten-minutes-plan.md item 2; Reigns: the first
+// input is the core verb, and it comes once the player is in the world): the view says when a new
+// reign's story begins ({at: "intro"}) and when the King has landed in his realm ({at: "realm"}).
+// While meta.firstCourt is set and he hasn't been in the realm FIRST_COURT_MS, the court doesn't
+// sit (court.js). A view that never says (today's opening) leaves the court as it was.
+export async function opening(ctx, req, res) {
+  const { at } = await body(req);
+  const f = (ctx.meta.firstCourt ??= { landedAt: null });
+  if (at === "realm" && f.landedAt == null) f.landedAt = Date.now();
+  chron.saveMeta(ctx.meta);
+  return json(res, 200, { ok: true, firstCourt: f });
+}
+
 export async function continueReign(ctx, req, res, url) {
   const { send, timeoutNow, record, reignInfo } = ctx;
   // A timed reign has ended and been scored; the King rules on, with no clock,

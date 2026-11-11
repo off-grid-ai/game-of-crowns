@@ -1363,7 +1363,10 @@ func _begin() -> void:
 	_reign = ""  # the next reign gets a name of its own
 	if n == "":
 		n = "The Realm of %s" % ("Strangers" if _scenario == "random" else "Aldmere")
-	bridge.create_chronicle(n, _scenario, _minutes, "normal", _wealth, _mood_edit.text.strip_edges(), _opt, func(code, d):
+	var opt := _opt.duplicate()
+	if OS.get_cmdline_user_args().has("--opening=v2"):
+		opt["opening"] = "v2"  # the first court waits for the King in his realm (court.js)
+	bridge.create_chronicle(n, _scenario, _minutes, "normal", _wealth, _mood_edit.text.strip_edges(), opt, func(code, d):
 		if code == 200 and d is Dictionary:
 			began.emit()
 			_wait_for(String(d.get("id", "")), "The realm is being forged…")

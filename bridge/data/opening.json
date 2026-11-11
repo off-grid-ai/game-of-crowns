@@ -1,0 +1,5 @@
+{
+  "_": "The first ten minutes (--opening=v2; docs/review/first-ten-minutes-plan.md). Tune here, not in code.",
+  "firstCourtAfterLandingSec": 30,
+  "firstCourtWithoutLandingSec": 180
+}
