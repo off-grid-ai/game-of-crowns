@@ -32,6 +32,11 @@ limit. Newest first. The plan is [PLAN.md](PLAN.md); the running log of checks i
   switch until judged; tunables in data plus docs/TUNING.md.
 
 ## What Mac said (2026-11-11), newest first
+- "I'm not a fan of the screenshot… it largely looks the same… you haven't changed the components to a better
+  abstraction or fidelity level." Right: the lighting and ground passes sat on the same mismatched components. Now a
+  bake-off agent: the same house, keep and trees from (A) Quaternius, (B) paid hand-painted kits ≤$200, (C) AI
+  image-to-3D from our concept art, (D) hand-painted textures on the kit, rendered beside 01-town. Pick the source,
+  then replace components wholesale.
 - "The worlds need to be interactive… the walls need to be built of stones stacked together, then the stones break,
   the stones fall." A build agent is making stone_wall.gd: masonry courses, MultiMesh while intact, Jolt rigid stones
   on a hit, slump, rubble, a breach troops can path through, driven by the shared damage fact (--walls=stone).
