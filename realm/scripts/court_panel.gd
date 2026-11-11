@@ -725,9 +725,8 @@ func _close_doors() -> void:
 
 
 ## See it (ONE): the card turns over to what the ruling did, in the realm's words as
-## the bridge tells it (result_here), with whose favour it moved; then the next matter,
-## or the doors close. He can go on at once; it goes on by itself after a few seconds.
-const SEE_FOR := 4.0
+## the bridge tells it (result_here). It stays until the King moves on (the player owns
+## the clock): one press, a click or Enter, brings the next matter or closes the doors.
 func _see_it(it: Dictionary) -> void:
 	_seeing = it
 	for c in _court_panel.get_children():
@@ -751,10 +750,15 @@ func _see_it(it: Dictionary) -> void:
 	result.custom_minimum_size = Vector2(320, 0)
 	result.add_theme_font_size_override("font_size", T.SIZE_BODY + 1)
 	v.add_child(result)
-	var on := ui.btn("Next  ·  %d waiting" % _petitions.size() if not _petitions.is_empty() else "Close the court", _after_seeing.bind(it))
+	var on := ui.btn("Next matter  ·  %d waiting" % _petitions.size() if not _petitions.is_empty() else "Close the court", _after_seeing.bind(it))
+	on.focus_mode = Control.FOCUS_ALL  # Enter or Space presses it
 	v.add_child(on)
-	await ui.get_tree().create_timer(SEE_FOR).timeout
-	_after_seeing(it)
+	var hint := Label.new()
+	hint.text = "Enter for the next"
+	hint.add_theme_color_override("font_color", T.TEXT_3)
+	hint.add_theme_font_size_override("font_size", T.SIZE_DESC)
+	v.add_child(hint)
+	on.grab_focus.call_deferred()
 
 
 ## What the bridge said the ruling did, put on the card that's showing it (ONE).
