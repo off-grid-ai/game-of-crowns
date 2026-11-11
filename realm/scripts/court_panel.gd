@@ -135,6 +135,9 @@ func set_court(petitions: Array) -> void:
 			_court_hidden = true
 			_held_court = false
 			ui.toast("The court sits: %d wait for you. Their faces are on the map; the crown at the top right opens them all." % petitions.size())
+			# The first face, if he can't see it, gets the edge arrow and Space (news.gd), as news does.
+			var first: Dictionary = petitions.filter(func(p): return p.get("place") is Dictionary)[0]
+			ui.court_waits_at.emit(ui.place_of.call(first), "%s waits at %s" % [String(first.get("name", "A lord")), String((first["place"] as Dictionary).get("name", "their town"))], String(first["id"]))
 		return
 	if ui.busy() or ui.card_up(_court_panel):
 		_held_court = true  # he's using a card, or another is up: it waits its turn on the badge

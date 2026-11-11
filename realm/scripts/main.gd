@@ -314,6 +314,7 @@ func _ready() -> void:
 	ui.counsel_answered.connect(func(key): bridge.counsel_answered(key))
 	ui.court_closed.connect(func(): director.soon())  # the doors shut: the camera goes to look
 	ui.last_event.connect(news._to_news)
+	ui.court_waits_at.connect(func(at, caption, id): news.point_at(at, caption, ui.open_matter.bind(id)))
 	ui.event_back.connect(news._back_from_news)
 	ui.house_followed.connect(_follow_house)  # a house's sigil clicked: go with its host
 	ui.interlude_closed.connect(func(): bridge.close_interlude())  # the act told back: the realm goes on

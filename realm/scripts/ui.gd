@@ -103,6 +103,7 @@ var events := preload("res://scripts/event_card.gd").new(self)  # an event card 
 signal event_chosen(choice: int)  # the King's answer to the event card (main.gd sends it to the bridge)
 signal event_lapsed  # an event card left past its season: its cost landed (main.gd rings the bell)
 signal event_came  # an event card arrives (main.gd: a parchment sound)
+signal court_waits_at(at: Vector3, caption: String, id: String)  # a court matter waiting at its place (news.gd points the edge arrow at it)
 func event_arrived() -> void:
 	event_came.emit()
 # The court's state, read and set here by the cards it shares the screen with.

@@ -64,6 +64,13 @@ func _on_staged(s: Dictionary, follow: Node3D) -> void:
 		_offer(main.director.caption(s), main.director.watch.bind(s, follow), kind in KINGS_OWN and not s.get("lord", false))
 
 
+## A court matter waiting at its place (court_panel.gd, through ui.court_waits_at): it
+## becomes the latest news, so the edge arrow points at it while it's off screen and
+## Space (or the arrow) opens it there; pressed again, back. Nothing moves by itself.
+func point_at(at: Vector3, caption: String, go: Callable) -> void:
+	_news = {"at": at, "caption": caption, "ms": Time.get_ticks_msec(), "new": true, "tone": "crown", "go": go}
+
+
 ## One Watch offer at a time; the realm's own news no more than every 20 s,
 ## the King's own deeds and a story's turns always.
 func _offer(text: String, go: Callable, always: bool) -> void:
@@ -84,6 +91,9 @@ func _to_news() -> void:
 	if _news.is_empty():
 		return
 	_before_news = {"target": main.rig.goal_target, "distance": main.rig.goal_distance, "yaw": main.rig.goal_yaw, "tilt": main.rig.goal_tilt}
+	if _news.get("go") is Callable and (_news["go"] as Callable).is_valid():
+		(_news["go"] as Callable).call()
+		return
 	var f = _news.get("follow")
 	main.director.watch(_news["s"], f if is_instance_valid(f) else null)
 
