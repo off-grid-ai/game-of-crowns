@@ -21,6 +21,7 @@ import { isWatched, ruleFrom, reactTo } from "./claude.js";
 import * as chron from "./chronicles.js";
 import * as kingDeeds from "./ledger.js";
 import { recordRuling } from "./favourbook.js";
+import * as Rulings from "./rulings.js";
 
 // A ruling on a petition, by option: the treasury pays, the realm changes,
 // favour shifts, the chronicle and the world show it. Shared by a chosen
@@ -75,6 +76,7 @@ export function rule(ctx, id, option) {
   if (!String(out.text ?? "").trim()) out.text = `The King gives his answer${petition ? ` to ${petition.name}` : ""}: ${String(asked?.label ?? option).replace(/ \(.*\)$/, "").toLowerCase()}.`;
   record({ turn: world.turn, kind: "decree", text: out.text });
   rulingScene(ctx, id, option, out);
+  Rulings.note(ctx, petition, asked ?? { id: option }, out);  // its answer stands at the town it touches for a season or two (rulings.js)
   return { ok: true, text: crowns(out.text) + (effects ? `\n${effects}` : "") };
 }
 

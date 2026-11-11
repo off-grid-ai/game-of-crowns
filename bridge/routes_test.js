@@ -8,6 +8,7 @@
 // snapshot or a switch of chronicle during an await is seen.
 
 import * as Damage from "./damage.js";
+import * as Rulings from "./rulings.js";
 import * as Director from "./director.js";
 import * as Events from "./events.js";
 import * as Lua from "./lua.js";
@@ -108,6 +109,22 @@ export async function stage(ctx, req, res, url) {
     chron.saveMeta(ctx.meta);
     ctx.counselStale = true;
     return json(res, 200, { ok: true, turning: t });
+  }
+  // {city, ruling: relief|justice|levy|feast|build|grant|none}: a court ruling of that kind stands at the town
+  // from this season, as if the King had just given it there (rulings.js), so a film can shoot its answer in the town.
+  if (b.ruling) {
+    const c = (ctx.world?.cities ?? []).find((x) => x.id === Number(b.city));
+    if (!c) return json(res, 404, { ok: false, error: "no such city" });
+    if (b.ruling === "none") {  // a film's clean-up: the town as if nothing had been ruled there
+      ctx.meta.rulings = (ctx.meta.rulings ?? []).filter((x) => x.city !== c.id);
+      chron.saveMeta(ctx.meta);
+      return json(res, 200, { ok: true, ruling: null });
+    }
+    const r = Rulings.post(ctx.meta, c.id, String(b.ruling), ctx.world?.turn ?? 0);
+    if (!r) return json(res, 400, { error: `ruling is one of ${Rulings.KINDS.join(", ")}` });
+    if (r.kind === "feast") ctx.scene("feast", { x: c.x, y: c.y, city: c.id, owner: c.owner });  // as court.js rulingScene raises them
+    if (r.kind === "levy") ctx.scene("muster", { x: c.x, y: c.y, tx: c.x, ty: c.y, city: c.id });
+    return json(res, 200, { ok: true, ruling: r });
   }
   // {sack: city} or {razed: city}: that town's sack (or razing) plays now, as the director's own does
   // (director.js: scene "sack" at the town), so a film can shoot a stormed town's aftermath on demand.

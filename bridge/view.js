@@ -163,6 +163,7 @@ export function townStates(ctx) {
     c.situation = situation({ world, scenes, marks: ctx.marksNow?.() ?? [], besiegers }, c);
     c.thoughts = ctx.thoughtsOf?.(c.id) ?? [];  // what the town is saying (chatter.js; the crowd thinks out loud)
     c.garrison = ctx.garrisonOf?.(c) ?? null;  // a royal company standing here, and its seasons left (garrison.js, the one owner)
+    c.ruling = ctx.rulingOf?.(c) ?? null;  // the King's latest ruling here and its seasons left (rulings.js, the one owner)
     c.damage = ctx.damageOf?.(c) ?? null;  // its walls' sections and its burnt houses (damage.js, the one owner)
   }
 }

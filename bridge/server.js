@@ -51,6 +51,7 @@ import { LEAN, theirs } from "./favourbook.js";
 import { moodFrom, isWatched } from "./claude.js";
 import * as Season from "./season.js";
 import * as Garrison from "./garrison.js";
+import * as Rulings from "./rulings.js";
 import * as Hosts from "./hosts.js";
 import { TURNING } from "./season.js";
 import { intrigueNow } from "./intrigue.js";
@@ -424,7 +425,7 @@ function refreshCounsel() {
 
 // The realm's states, set on each town (view.js).
 function townStates() {
-  View.townStates({ world, meta, scenes, detail, besiegers, favourOf, marksNow, thoughtsOf: (id) => chatter?.thoughtsOf(id) ?? [], damageOf: (c) => Damage.view(meta, c), garrisonOf: (c) => Garrison.view(meta, c, world?.turn ?? 0) });
+  View.townStates({ world, meta, scenes, detail, besiegers, favourOf, marksNow, thoughtsOf: (id) => chatter?.thoughtsOf(id) ?? [], damageOf: (c) => Damage.view(meta, c), garrisonOf: (c) => Garrison.view(meta, c, world?.turn ?? 0), rulingOf: (c) => Rulings.view(meta, c, world?.turn ?? 0) });
   world.intrigue = intrigueNow({ world, court });  // the houses' schemes, for the map (intrigue.js)
 }
 

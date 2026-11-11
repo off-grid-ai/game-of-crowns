@@ -1,0 +1,13 @@
+{
+  "_": "A court ruling's answer, seen in the town where it lands (rulings.js, the one owner; the view draws it: realm/data/moods.json). Each ruling is read once, when the King gives it, into one kind by the first row whose pattern matches the option, its label or the ruling's words (lower case); a row with cost: true also needs the ruling to have cost the crown gold. The kind stands at the town for 'seasons' (the season it was given and the next). Kinds, each after a reference: relief (tax remitted, grain given, debts forgiven: Manor Lords' market fills and approval rises; the herald is cheered), justice (a sentence passed: Stronghold's gallows and stocks, fear keeps people in; CK3's dread), levy (men called up: Total War's recruitment at the settlement), feast (CK3's feast activity in the host's seat), build (a work ordered: Manor Lords' construction site with its builders), grant (land, gold or a charter to a house: CK3's granted title, the house's banners raised over its new holding and something built for it).",
+  "seasons": 2,
+  "kinds": [
+    { "kind": "justice", "match": "\\b(hang|burn|punish|flog|whip|stocks|pillory|exile|banish|execut|imprison|gaol|jail|brand|condemn|sentence|try him|try her|the rope)" },
+    { "kind": "build", "match": "\\b(build|rebuild|repair|raise (a|the) (wall|bridge|mill|church|sept|granary|hall|keep|tower)|mend|bridge|walls?\\b|mill|granary|road|dig|drain|works)" },
+    { "kind": "levy", "match": "\\b(levy|muster|call (up|the banners)|raise (men|troops|the host)|to arms|march|strike)" },
+    { "kind": "feast", "match": "\\b(feast|bless|wed|celebrat|tourney|revel)" },
+    { "kind": "relief", "match": "\\b(relie(f|ve)|remit|forgive|spare|lower|ease|grain|feed|alms|harvest|pardon|mercy|exempt)" },
+    { "kind": "grant", "match": "\\b(grant|endow|gift|land|title|charter|reward|gold|award|confirm)" },
+    { "kind": "grant", "match": ".", "cost": true }
+  ]
+}
