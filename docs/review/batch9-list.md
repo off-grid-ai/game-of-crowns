@@ -143,7 +143,7 @@ in the world" for that order. Siege camp (`--camp`) and fire (`--fire=v2`) stay 
 
 ## The siege as spectacle (#5; 3632faa8, 6d4f395a; `--storm-host=on`, on with `--wall-demo`; siege.json storm_host)
 
-26. **The breach launch again** (`--walls=stone --siege --wall-demo --fire=v2`, the scenario of batch 8's breach):
+39. **The breach launch again** (`--walls=stone --siege --wall-demo --fire=v2`, the scenario of batch 8's breach):
     before the gap opens, the besiegers' host in line on the camp side (several hundred, their banners up) and fire
     arrows arcing over the wall, a roof or two catching behind it; the engines throwing, stones striking with dust
     (`stone-clip`), the wall cracked, crumbling, open. Then the storm (`storm-clip`, 36 frames): regiments queueing
@@ -151,7 +151,7 @@ in the world" for that order. Siege camp (`--camp`) and fire (`--fire=v2`) stay 
     wavering; then `storm-taken`: the holder's regiments running into the town, the besiegers pouring through. No
     camera cut inside any clip (siege_ai no longer moves the camera on a rush). Read the run's fps line: Mac's bar
     is 10 (men 800 + 300 by default; lower `storm_host.men` if it's under).
-27. **The field battle in play** (army-ui's field_battle.gd, `--battles=field` on a reign with a fight, Space to
+40. **The field battle in play** (army-ui's field_battle.gd, `--battles=field` on a reign with a fight, Space to
     it): the lines meeting with a visible clash front, banners and standards, a rout that runs.
 
 ## Meshy's pieces imported (c26ab7ad)
