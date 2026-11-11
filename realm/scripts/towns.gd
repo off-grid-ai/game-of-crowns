@@ -197,15 +197,19 @@ func _raise(best: int, job: Dictionary) -> void:
 	_slice = Time.get_ticks_msec()
 	terrain.hold_grading = true
 	var node: Node3D = await _build_town(job["c"], job["house"])
+	Engine.set_meta("stage", "towns.add")  # each step after the paced build named, for the slow-frame log (perf_tools.gd)
 	add_child(node)
 	if towns.has(best):
 		var pt := Time.get_ticks_usec()
+		Engine.set_meta("stage", "towns.grow")
 		_grow(towns[best], node, job["c"])
 		preload("res://scripts/perf_tools.gd").add("town_sites", Time.get_ticks_usec() - pt)
 		towns[best]["node"].queue_free()
 	towns[best] = {"node": node, "signature": job["sig"], "data": job["c"]}
+	Engine.set_meta("stage", "towns.life")
 	life.update(node, job["c"], job["house"])
 	# Each new town takes the season as it stands (snow on its roofs in winter).
+	Engine.set_meta("stage", "towns.season")
 	terrain.season_on(node)
 	_raised += 1
 	terrain.hold_grading = false
@@ -214,6 +218,7 @@ func _raise(best: int, job: Dictionary) -> void:
 	var now := Time.get_ticks_msec()
 	if _queue.is_empty() or now - _graded_at > 750:
 		_graded_at = now
+		Engine.set_meta("stage", "towns.grade")
 		terrain.commit_grading()
 	if _queue.is_empty():
 		print_verbose("BUILD towns raised %d in %d ms, a few per frame" % [_raised, now - _raising_since])
