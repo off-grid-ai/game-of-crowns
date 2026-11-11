@@ -33,7 +33,9 @@ export function counsel(ctx, players, cities, threat) {
     const f = favourOf(cold.id);
     // The Hand names what is cooling them most, from the house's ledger of causes.
     const drain = (favourWhy[cold.id] ?? []).filter((r) => r.d < 0).sort((a, b) => a.d - b.d)[0];
-    const cause = drain ? ` What cools them most: ${drain.why} (${Math.round(drain.d)}).` : "";
+    // In words, never a number (the Hand speaks; the professional-feel audit): how deep it cuts.
+    const depth = (d) => (d <= -15 ? "and it cuts deep" : d <= -8 ? "and they have not forgotten it" : "though it is a small thing");
+    const cause = drain ? ` What cools them most: ${drain.why}, ${depth(drain.d)}.` : "";
     // A royal match binds the cold house to the most loyal one: both warm, and a long truce holds.
     const friend = great.filter((p) => p.id !== cold.id && !stilled(cold.id, p.id)).sort((a, b) => favourOf(b.id) - favourOf(a.id))[0];
     const match = friend && matchFor(ctx, cold.id, friend.id) ? [{ label: `Wed them to ${friend.house.name.replace(/^House /, "")}`, action: "marriage", city: seatOf(cold.id).id, to: friend.id }] : [];
