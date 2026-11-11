@@ -2653,12 +2653,7 @@ func _hearth(root: Node3D, pos: Vector3) -> void:
 		Fire.hearth(root, pos)  # fire v2: the same shaped flames as a burning house, small
 	else:
 		_hearth_puffs(root, pos)
-	var light := OmniLight3D.new()
-	light.light_color = Color(1.0, 0.55, 0.25)
-	light.light_energy = 0.5
-	light.omni_range = 0.6
-	light.position = pos + Vector3(0, 0.12, 0)
-	root.add_child(light)
+	Fire.hearth_light(root, pos)  # warm, low and over the flames (fire.json hearth.light): no glowing orb on the grass
 	_smoke(root, pos + Vector3(0, 0.1, 0))
 
 

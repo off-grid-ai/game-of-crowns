@@ -92,6 +92,7 @@
   },
   "scorch_size": 1.7,
   "hearth": {
+    "light": {"energy": 0.3, "range": 0.45, "falloff": 1.6, "height": 0.3},
     "amount": 8,
     "size": [
       0.05,

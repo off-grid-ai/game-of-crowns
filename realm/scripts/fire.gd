@@ -82,6 +82,22 @@ static func hearth(root: Node3D, pos: Vector3) -> void:
 	root.add_child(p)
 
 
+## A yard fire's light (towns.gd _hearth): warm, low and soft, held over the flames (fire.json hearth.light).
+## It stood 0.12 over the ground at 0.5: the grass right under it lit to white and bloomed into a glowing
+## orb beside the fire (batch 7 review #13, the bailey's campfire).
+static func hearth_light(root: Node3D, pos: Vector3) -> void:
+	var k: Dictionary = (knobs().get("hearth", {}) as Dictionary).get("light", {})
+	var light := OmniLight3D.new()
+	light.light_color = Color(1.0, 0.55, 0.25)
+	light.light_energy = float(k.get("energy", 0.3))
+	light.omni_range = float(k.get("range", 0.45))
+	light.omni_attenuation = float(k.get("falloff", 1.6))
+	light.light_specular = 0.0
+	light.shadow_enabled = false
+	light.position = pos + Vector3(0, float(k.get("height", 0.3)), 0)
+	root.add_child(light)
+
+
 func _ignite(at: Vector3, seconds: float, razed: bool) -> bool:
 	var d := knobs()
 	var best := -1
