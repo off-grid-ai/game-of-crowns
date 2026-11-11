@@ -1,5 +1,5 @@
 {
-  "_": "The townsfolk's bodies and where they stand (people.gd reads it through data.gd; docs/TUNING.md). feet: every move stands on its feet (Unity's root height based upon feet): each clip's hips are raised by how far the lowest foot of its standing frames falls below the reference outfit's feet at rest. on: the switch (--feet=off for the clips' own keys); reference: the skeleton the clips are measured on; samples: poses measured per clip; mostLift: the most a clip or body is raised (metres, on a 0.95 m hip); seated: a frame with the hips under this share of their rest height is sat or lying and doesn't count; kneeling: nor one with a knee under this share of its rest height (on a knee). Crouches and lunges count. kneeRadius, instep: for a move that never stands (kneeling, praying, planting), how far the knee bone and a laid-down foot's bones stand above the ground (metres; seat: the hips' bone, sat back on the heels); it is raised by how far either goes under. bodyClips: the moves each Mixamo body's own legs are measured in, to raise the body by what its feet still fall short after the clips are planted on the reference. seats: moves (by the start of their name) sat on a cart's box or a saddle, kept as they are (sat on a bench or the ground, the feet still find the ground). low: each Mixamo body's low moves (motion.gd LOW, and lowAlso) are measured on its own skeleton and the body raised while one plays by what its knee, laid foot or seat still goes under the ground (fuse_civilian_1 sank 16 cm on a knee, the noble lady 14, the monk 13); lowExtra: metres more for a body, by its name. travel.groundStep: a road traveller's path takes its height from the ground this often (game units), not lerped between waypoints a tile apart.",
+  "_": "The townsfolk's bodies and where they stand (people.gd reads it through data.gd; docs/TUNING.md). feet: every move stands on its feet (Unity's root height based upon feet): each clip's hips are raised by how far the lowest foot of its standing frames falls below the reference outfit's feet at rest. on: the switch (--feet=off for the clips' own keys); reference: the skeleton the clips are measured on; samples: poses measured per clip; mostLift: the most a clip or body is raised (metres, on a 0.95 m hip); seated: a frame with the hips under this share of their rest height is sat or lying and doesn't count; kneeling: nor one with a knee under this share of its rest height (on a knee). Crouches and lunges count. kneeRadius, instep: for a move that never stands (kneeling, praying, planting), how far the knee bone and a laid-down foot's bones stand above the ground (metres; seat: the hips' bone, sat back on the heels); it is raised by how far either goes under. bodyClips: the moves each Mixamo body's own legs are measured in, to raise the body by what its feet still fall short after the clips are planted on the reference. seats: moves (by the start of their name) sat on a cart's box or a saddle, kept as they are (sat on a bench or the ground, the feet still find the ground). low: each Mixamo body's low moves (motion.gd LOW, and lowAlso) are measured on its own skeleton and the body raised while one plays by what its knee, laid foot or seat still goes under the ground (fuse_civilian_1 sank 16 cm on a knee, the noble lady 14, the monk 13); lowExtra: metres more for a body, by its name. bodyMoves: standing moves measured the same way on each Mixamo body's own legs, and raised while they play by what its feet still fall short (a crouch's heel-up foot sank 10-12 cm on fuse_civilian_1 and Medieval Man). travel.groundStep: a road traveller's path takes its height from the ground this often (game units), not lerped between waypoints a tile apart.",
   "feet": {
     "on": true,
     "reference": "res://assets/people/Male_Peasant.gltf",
@@ -20,8 +20,16 @@
     "seat": 0.12,
     "low": true,
     "lowAlso": [
-      "Kneeling_Idle",
-      "Milking"
+      "Kneeling_Idle"
+    ],
+    "bodyMoves": [
+      "Crouch_Fwd",
+      "Crouch_Idle",
+      "Crouch_And_Point",
+      "Push",
+      "Push_Heavy",
+      "SS_Slash_5",
+      "Jog_Fwd"
     ],
     "lowExtra": {}
   },

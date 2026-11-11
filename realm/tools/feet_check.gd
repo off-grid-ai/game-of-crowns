@@ -8,12 +8,18 @@ extends SceneTree
 ##   arch -arm64 godot --headless --path realm -s res://tools/feet_check.gd [-- --all]
 ## Prints one FEET line per body: its feet bones' rest height and the worst moves, how far
 ## (metres) their lowest foot falls below or stays above that.
+## A frame down low (sat, lying or on a knee: people.gd _sole_drop's own test) is judged
+## as play judges it: by what touches the ground there (the knee less its roundness, a
+## laid-down foot less its instep, the seat), not by a laid foot's ankle against a
+## standing one. Moves sat on a cart's box or a saddle (people.json feet.seats) are
+## held by the seat, not the ground, and aren't measured.
 
 const People := preload("res://scripts/people.gd")
 const S := 0.12
 const FEET := ["LeftToes", "RightToes", "LeftFoot", "RightFoot"]
 const SINK := -0.06  # metres: feet lower than at rest by this are in the ground
 const FLOAT := 0.12  # and higher by this (both feet) stand on air
+const Data := preload("res://scripts/data.gd")
 
 
 func _initialize() -> void:
@@ -41,6 +47,8 @@ func _initialize() -> void:
 		anim.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE
 		var sk: Skeleton3D = person.find_child("GeneralSkeleton", true, false)
 		var bones := FEET.map(func(n): return sk.find_bone(n)).filter(func(i): return i >= 0)
+		var at := func(n: String) -> float:
+			return (sk.global_transform * sk.get_bone_global_pose(sk.find_bone(n))).origin.y / S
 		var sole := func() -> float:
 			sk.force_update_all_bone_transforms()
 			var lo := INF
@@ -52,10 +60,14 @@ func _initialize() -> void:
 		# whole (people.gd _stand_up) is measured from before it was raised.
 		var raised: float = (person.global_transform.basis * sk.transform.basis * Vector3(0, float(ppl._body_lift.get(String(w[0]).trim_prefix("body:"), 0.0)), 0)).y / S
 		var rest: float = sole.call() - raised
+		var hips_rest: float = at.call("Hips") - raised
+		var knee_rest: float = at.call("LeftLowerLeg") - raised
+		var per := hips_rest / 0.95  # the contact sizes are for a 0.95 m hip
+		var seats: Array = Data.value("people", "feet.seats", ["Driving", "Riding"])
 		var worst := []
 		for clip in anim.get_animation_list():
 			var c := String(clip)
-			if c == "RESET":
+			if c == "RESET" or seats.any(func(k): return c.begins_with(String(k))):
 				continue
 			var a := anim.get_animation(clip)
 			anim.play(clip)
@@ -67,6 +79,14 @@ func _initialize() -> void:
 			for k in 6:
 				anim.seek(a.length * k / 6.0, true)
 				var y: float = sole.call() - rest + knelt  # against the feet at rest: soles on the ground
+				var hip: float = at.call("Hips") - raised + knelt
+				var knee := minf(at.call("LeftLowerLeg"), at.call("RightLowerLeg")) - raised + knelt
+				if hip < hips_rest * Data.num("people", "feet.seated", 0.45) or knee < knee_rest * Data.num("people", "feet.kneeling", 0.4):
+					# Down low: what touches the ground, against the ground (y = 0 under the body).
+					y = minf(minf(knee - Data.num("people", "feet.kneeRadius", 0.06) * per, sole.call() - raised + knelt - Data.num("people", "feet.instep", 0.05) * per),
+						hip - Data.num("people", "feet.seat", 0.12) * per)
+					lo = minf(lo, y)
+					continue
 				lo = minf(lo, y)
 				hi = maxf(hi, y)
 			if lo < SINK or (lo > FLOAT and not c.contains("Jump")) or all:

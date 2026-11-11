@@ -328,6 +328,15 @@ func _kneel_up(person: Node3D, body: String, skeleton: Skeleton3D) -> void:
 			var up := _sole_drop(skeleton, _lib.get_animation(String(c)), true) - float(_body_lift.get(body, 0.0)) + extra
 			if up > 0.01 * per_m:
 				lifts[String(c)] = up
+		# Standing moves whose feet these legs plant deeper than the reference's
+		# (feet.bodyMoves: a crouch's heel-up foot sank 10-12 cm on fuse_civilian_1 and
+		# Medieval Man): measured on this skeleton's standing frames, raised by the rest.
+		for c in Data.value("people", "feet.bodyMoves", []):
+			if not _lib.has_animation(String(c)) or lifts.has(String(c)):
+				continue
+			var up := _sole_drop(skeleton, _lib.get_animation(String(c))) - float(_body_lift.get(body, 0.0))
+			if up > 0.01 * per_m:
+				lifts[String(c)] = up
 		_low_lift[body] = lifts
 	var mine := {}
 	for c in _low_lift[body]:
