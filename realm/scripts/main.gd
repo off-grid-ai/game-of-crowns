@@ -682,6 +682,7 @@ func _setup_environment() -> void:
 	if ResourceLoader.exists("res://scripts/look.gd"):
 		load("res://scripts/look.gd").apply.call_deferred(self)
 	load("res://scripts/team_colour.gd").apply.call_deferred(self)  # every building in its holder's colours (data/look.json team)
+	load("res://scripts/fire.gd").apply.call_deferred(self)  # fire v2: shaped flames, smoke and burnt houses (data/fire.json)
 	# Then the player's graphics choice, over the top of it.
 	get_tree().create_timer(0.5).timeout.connect(apply_graphics)
 

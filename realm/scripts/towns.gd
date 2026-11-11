@@ -243,6 +243,7 @@ func nearest(pos: Vector3, max_dist := 6.0) -> Dictionary:
 
 # --- the realistic kit (assets/realistic) -----------------------------------------
 
+const Fire := preload("res://scripts/fire.gd")  # fire v2: shaped flames (data/fire.json)
 const Real = preload("res://scripts/realistic.gd")
 const Fields = preload("res://scripts/countryside.gd")  # crops, and fields that line up with their soil
 const TownPlots = preload("res://scripts/town_plots.gd")  # roads, burgage plots and lanes (--towns=plots)
@@ -782,7 +783,7 @@ func _put(root: Node3D, center: Vector3, kind: String, p: Vector3, f: Vector2, l
 	if dress:
 		_door(root, p, f, "cottage", "house", face)
 		var homes: Array = root.get_meta("homes", [])
-		homes.append([p + face * (f.y * 0.5 + 0.12), face])  # its doorstep, and which way it looks
+		homes.append([p + face * (f.y * 0.5 + 0.12), face, p, kind, _batch[kind].size() - 1])  # its doorstep, which way it looks, where it stands, and its kit batch and place in it (fire.gd chars it)
 		root.set_meta("homes", homes)
 		_footpath(root, center, p + face * (f.y * 0.5 + 0.12))
 		_dress(root, center, p, face, Vector3(-face.z, 0, face.x), f.x, f.y, rng)
@@ -1003,6 +1004,7 @@ func _flush(root: Node3D) -> void:
 				mm.set_instance_transform(i, xfs[i] * part[1])
 			var mmi := MultiMeshInstance3D.new()
 			mmi.multimesh = mm
+			mmi.set_meta("kind", kind)  # which kit model it batches (fire.gd finds a burnt house's place in it)
 			_fade_beyond(mmi, _reach_for(kind))
 			root.add_child(mmi)
 	_batch.clear()
@@ -1571,6 +1573,21 @@ static func smoke_material(unshaded := false) -> StandardMaterial3D:
 ## A yard fire burning low in its pit: small flames, a warm light on the
 ## stones round it, and a thread of smoke.
 func _hearth(root: Node3D, pos: Vector3) -> void:
+	if Fire.on():
+		Fire.hearth(root, pos)  # fire v2: the same shaped flames as a burning house, small
+	else:
+		_hearth_puffs(root, pos)
+	var light := OmniLight3D.new()
+	light.light_color = Color(1.0, 0.55, 0.25)
+	light.light_energy = 0.5
+	light.omni_range = 0.6
+	light.position = pos + Vector3(0, 0.12, 0)
+	root.add_child(light)
+	_smoke(root, pos + Vector3(0, 0.1, 0))
+
+
+## The old yard fire's flames (fire v1): soft orange puffs.
+func _hearth_puffs(root: Node3D, pos: Vector3) -> void:
 	# Built like the town bonfire (town_life._bonfire), smaller, and simulated on
 	# the GPU with its own process material (so each flame keeps its small size,
 	# which converting from CPU particles lost): a town has many hearths, and CPU
@@ -1608,13 +1625,6 @@ func _hearth(root: Node3D, pos: Vector3) -> void:
 	p.visibility_aabb = AABB(Vector3(-0.3, -0.1, -0.3), Vector3(0.6, 0.8, 0.6))
 	p.position = pos + Vector3(0, 0.02, 0)
 	root.add_child(p)
-	var light := OmniLight3D.new()
-	light.light_color = Color(1.0, 0.55, 0.25)
-	light.light_energy = 0.5
-	light.omni_range = 0.6
-	light.position = pos + Vector3(0, 0.12, 0)
-	root.add_child(light)
-	_smoke(root, pos + Vector3(0, 0.1, 0))
 
 
 func _smoke(root: Node3D, pos: Vector3, door := Vector3.INF) -> void:

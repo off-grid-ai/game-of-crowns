@@ -1,5 +1,6 @@
 extends Node3D
 const Particles := preload("res://scripts/particles.gd")  # smoke and fire on the GPU
+const Fire := preload("res://scripts/fire.gd")  # fire v2: shaped flames, smoke and burnt houses
 ## The scene director: turns what just happened in Freeciv into something you
 ## can watch where it happened. Battles clash and leave the fallen; sacked
 ## towns burn while their people flee; famine sends families onto the roads;
@@ -1401,6 +1402,8 @@ func _puffs(color: Color, amount: int, life: float, smin: float, smax: float, ad
 
 
 func _burn(at: Vector3, seconds: float, scale := 1.0) -> void:
+	if Fire.ignite(at, seconds, scale > 1.0):
+		return  # fire v2 (fire.gd): the town's houses burn, and stand burnt while the realm says so
 	var root := Node3D.new()
 	root.name = "Burn"
 	add_child(root)

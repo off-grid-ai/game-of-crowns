@@ -111,3 +111,14 @@ Switches (`--name`) go after `--` on the game's command line.
 
 ## Damage to towns: walls and burnt houses (Builder 1; the bridge owns it)
 - How fast besiegers batter a wall section, when it shows cracked and breached, how fast it's mended, how much a sack or razing burns and how fast it's rebuilt, how many sections: `bridge/data/damage.json`.
+
+## Fire (lead; behind `--fire=v2`, `--fire=v1` for the old puffs)
+- On by default or not: `realm/data/fire.json`: `on`.
+- The flames on a burning roof (how many, how big, how tall for their width, how fast they rise, how far they lean downwind, how fine their licks): `realm/data/fire.json`: `flames.*`; the smaller ones out of the front: `front.*`.
+- The flames' three colours (core, body, edge) and their brightness: `realm/data/fire.json`: `colours.*`.
+- Embers, and the smoke column (how dark, how big, how high, how far it drifts on the wind): `realm/data/fire.json`: `embers.*`, `smoke.*`.
+- The fire's light on the street: `realm/data/fire.json`: `light_energy`, `light_range`.
+- How much of a burnt house's roof falls in, how long its char glows: `realm/data/fire.json`: `char.collapse`, `char.glow_out`; the scorch under it: `scorch_size`.
+- Which houses stay burnt and for how long: the bridge's damage fact, `bridge/data/damage.json` (above). How many catch when a sack plays before that fact arrives: `realm/data/fire.json`: `share_sack`, `share_razed`.
+- Yard fires: `realm/data/fire.json`: `hearth.*`.
+- The wind everything leans with: the weather's (`realm/scripts/weather_fx.gd`: `LOOKS.*.wind`, `PREVAILING_FROM`, `WIND_FULL`).
