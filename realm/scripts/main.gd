@@ -318,6 +318,11 @@ func _ready() -> void:
 	ui.court_waits_at.connect(func(at, caption, id): news.point_at(at, caption, ui.open_matter.bind(id)))
 	ui.event_back.connect(news._back_from_news)
 	ui.house_followed.connect(_follow_house)  # a house's sigil clicked: go with its host
+	# Every click answers (--barks; barks.gd, lines in data/barks.json): the house's lord speaks.
+	if OS.get_cmdline_user_args().has("--barks"):
+		var barks: Node = load("res://scripts/barks.gd").new(self)
+		add_child(barks)
+		ui.house_followed.connect(barks.lord)
 	ui.interlude_closed.connect(func(): bridge.close_interlude())  # the act told back: the realm goes on
 	ui.reign_continued.connect(func(): bridge.continue_reign(func(_c, d): if d is Dictionary: ui.set_reign(d)))
 	ui.town_closed.connect(func(): _selected = -1)
@@ -419,10 +424,17 @@ func _ready() -> void:
 		get_tree().create_timer(float(_shot.get("wait", 8.0)) - 4.0).timeout.connect(func():
 			lore.open(int(_shot["lore"])))
 	bridge.paid.connect(func(_cost): sound.ui("coins"))
-	bridge.sealed.connect(func(): sound.ui("seal"))  # the royal seal pressed into the wax
-	ui.event_chosen.connect(func(i): bridge.event_answer(i, func(ok, text):
-		sound.ui("seal" if ok else "error")
-		ui.events.result(ok, text)))
+	# Juice (juice.json): the seal is heard at the click, not when the realm answers; a refusal still sounds its error.
+	bridge.ordered.connect(func(): if Juice.on(): sound.ui("seal"))
+	bridge.command_done.connect(func(ok, _t): if Juice.on() and not ok: sound.ui("error"))
+	bridge.sealed.connect(func(): if not Juice.on(): sound.ui("seal"))  # the royal seal pressed into the wax
+	ui.event_chosen.connect(func(i):
+		if Juice.on():
+			sound.ui("seal")
+		bridge.event_answer(i, func(ok, text):
+			if not Juice.on() or not ok:
+				sound.ui("seal" if ok else "error")
+			ui.events.result(ok, text)))
 	ui.event_lapsed.connect(func(): sound.ui("lapse"))  # an event's cost landing: a bell, not to be missed
 	ui.event_came.connect(func(): sound.ui("event"))
 	bridge.command_done.connect(func(ok, text):

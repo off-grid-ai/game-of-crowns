@@ -1,0 +1,14 @@
+{
+  "_": "Every click answers (Warcraft II's replies, Stronghold's lords; fun audit item 2). Lords answer by their favour band; the Nth click on the same one in a short while gets an annoyed line. Tune here, not in code.",
+  "annoyed_after": 3,
+  "click_memory_sec": 8,
+  "no_repeat": 10,
+  "lord": {
+    "loyal": ["My King.", "Command me, Your Grace.", "My sword is yours, as ever.", "The realm is in good hands.", "Say the word, my King.", "Our banners fly beside yours."],
+    "sworn": ["Your Grace.", "We keep our oath.", "What would the crown have of us?", "We stand ready.", "My King calls; I answer.", "As you say, Your Grace."],
+    "steady": ["Your Grace.", "The crown wants something?", "We are listening.", "Speak, my King. Briefly.", "Our house is busy, but we hear you.", "Well?"],
+    "cooling": ["Your Grace remembers us now?", "The crown asks much and gives little.", "What is it this time?", "We hear you. We have not forgotten.", "Another summons.", "Our patience has an end, my King."],
+    "angry": ["We have nothing to say to the crown.", "You have a nerve, sending for us.", "Our gates are shut to you.", "Say your piece and be gone.", "We remember every slight, Your Grace.", "Not now. Not ever, perhaps."]
+  },
+  "annoyed": ["Has the King nothing better to do?", "Yes, my King. Still here.", "Your Grace, the realm will not rule itself.", "Must I bow again?", "We heard you the first time.", "Is this a summons or a game?"]
+}
