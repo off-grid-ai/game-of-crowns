@@ -126,6 +126,12 @@ export function temper(ctx, action, house, changes, dry = false) {
   return out;
 }
 
+// A change of favour in words, never the arithmetic (data/court.json favourWords): "warmer", "much colder".
+export function favourWord(d) {
+  const W = COURT.favourWords;
+  return d > 0 ? (d >= W.big ? W.bigUp : W.up) : (-d >= W.big ? W.bigDown : W.down);
+}
+
 // Shifts favour and says what it did, for the result card: "6,000 crowns · Thornvale cooler".
 export function shiftAndTell(ctx, changes, why, cost = 0) {
   const { world } = ctx;
@@ -135,8 +141,7 @@ export function shiftAndTell(ctx, changes, why, cost = 0) {
     const p = world?.players.find((x) => x.id === Number(id));
     const now = Math.round(favourOf(ctx, Number(id)));
     // Direction and size in words, never the arithmetic (data/court.json favourWords).
-    const d = now - was[id], W = COURT.favourWords;
-    const word = d > 0 ? (d >= W.big ? W.bigUp : W.up) : (-d >= W.big ? W.bigDown : W.down);
+    const word = favourWord(now - was[id]);
     return p && now !== was[id] ? `${houseFor(p).name.replace(/^House /, "")} ${word}` : null;
   }).filter(Boolean);
   const price = cost ? [`${(cost * 100).toLocaleString("en-US")} crowns`] : [];
@@ -153,7 +158,7 @@ export function shiftFavour(ctx, changes, why = "", told = false) {
     noteFavour(ctx, id, delta, why);
     const now = Math.round(favourOf(ctx, Number(id)));
     const p = world?.players?.find((x) => x.id === Number(id));
-    if (p && now !== was) moves.push({ id: Number(id), house: houseFor(p).name.replace(/^House /, ""), from: was, to: now });
+    if (p && now !== was) moves.push({ id: Number(id), house: houseFor(p).name.replace(/^House /, ""), from: was, to: now, word: favourWord(now - was) });
   }
   saveFavour(ctx);
   // Every change is seen (UI rule 13): the game shows what moved and why.

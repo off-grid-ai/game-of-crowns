@@ -569,7 +569,7 @@ func _build_court() -> void:
 
 ## What changed that the King didn't order himself (his silence, a petitioner
 ## leaving, a story's turn), said once, as cause and effect: "The King's
-## silence: Sunspire 25 → 19". His own decrees already say theirs.
+## silence: Sunspire cooler" (the bridge's words, never the arithmetic). His own decrees already say theirs.
 var _effect_seq := -1
 
 
@@ -588,7 +588,7 @@ func _tell_effects(list: Array) -> void:
 		var why := String(e.get("why", ""))
 		var moved := PackedStringArray()
 		for m in e.get("moves", []):
-			moved.append("%s %d → %d" % [String(m.get("house", "")), int(m.get("from", 0)), int(m.get("to", 0))])
+			moved.append("%s %s" % [String(m.get("house", "")), String(m.get("word", "warmer" if int(m.get("to", 0)) > int(m.get("from", 0)) else "cooler"))])
 		if not moved.is_empty() and why != "":
 			lines.append("%s: %s" % [why.left(1).to_upper() + why.substr(1), "  ·  ".join(moved.slice(0, 4))])
 	if not lines.is_empty():
