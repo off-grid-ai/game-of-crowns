@@ -16,14 +16,15 @@
   "animals": { "cow": 2.3, "sheep": 1.3, "pig": 1.4 },
   "life": { "every_sec": 0.5, "reach": 16.0, "keep": 22.0, "most_sites": 6, "swap_sec": [5.0, 11.0] },
   "traffic": {
-    "_mix": "Who sets out on a road by day (traffic.gd _who; research rule 8: about half on foot, a quarter carts, 15% riders, herds about 10% at hamlets): each kind by how often. patrol goes only on a road from or to a crown town (else a walker). night: the hours [from, to) the roads are dark, and who goes then (rule 8: a torchlit patrol or a late rider). parties: the kinds that walk as a party (traffic.gd party): who (roles in file order, by how many [fewest, most]), gait (their move as they walk), rate (its speed), pace (world units a second), cloth (their homespun, if set), kit (in hand), gap (world units between them), torch (a light at the leader's hand at night).",
+    "_mix": "towns: the roads between towns near the camera (traffic.gd): towns within near of the camera send travellers to a town within reach (world units), at most most out at once round a town in plenty (one fewer in plain times, three fewer in want), a departure every gap seconds; mid: the share of parties already part way along when they appear. Who sets out on a road by day (traffic.gd _who; research rule 8: about half on foot, a quarter carts, 15% riders, herds about 10% at hamlets): each kind by how often. patrol goes only on a road from or to a crown town (else a walker). night: the hours [from, to) the roads are dark, and who goes then (rule 8: a torchlit patrol or a late rider). parties: the kinds that walk as a party (traffic.gd party): who (roles in file order, by how many [fewest, most]), gait (their move as they walk), rate (its speed), pace (world units a second), cloth (their homespun, if set), kit (in hand), gap (world units between them), torch (a light at the leader's hand at night).",
+    "towns": { "near": 34.0, "reach": 26.0, "most": 6, "gap": [3.0, 7.0], "mid": 0.5 },
     "mix": { "walker": 30, "pedlar": 12, "pilgrim": 8, "cart": 25, "rider": 9, "messenger": 6, "patrol": 6 },
     "night": { "hours": [20.5, 5.5], "mix": { "patrol": 3, "messenger": 1 } },
     "parties": {
       "pedlar": { "who": ["townsfolk"], "count": [1, 1], "gait": "Carrying", "rate": 0.9, "pace": 0.2 },
       "pilgrim": { "who": ["peasant", "peasant", "townsfolk"], "count": [1, 3], "gait": "Walk", "rate": 0.8, "pace": 0.15, "cloth": [0.42, 0.38, 0.33], "age": "elder", "gap": 0.11 },
       "patrol": { "who": ["soldier"], "count": [3, 4], "gait": "SS_Walk", "rate": 1.0, "pace": 0.26, "kit": "spear", "gap": 0.12, "torch": true }
-    }, "gap": [6.0, 12.0], "most": 4, "reach": 20.0, "town_reach": 24.0, "herd_chance": 0.12,
+    }, "gap": [4.0, 8.0], "most": 5, "reach": 20.0, "town_reach": 24.0, "herd_chance": 0.12,
     "herd": { "beasts": ["cow", "cow", "sheep"], "count": [3, 6], "gap": 0.1, "pace": 0.16 } },
   "kinds": {
     "inn": { "crossroads": true, "crossroads_along": 1.2, "first": 9.0, "every": 18.0, "gap": 12.0, "out": 1.1, "road_clear": 0.45, "room": 1.8, "clear": 2.2, "stop": true,

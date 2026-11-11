@@ -1405,8 +1405,18 @@ func _inn(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: Work
 		_mind(d, "drinker", center)
 		tick.by_day.append(d)
 	life.set_meta("standing", taken)
-	# A feast fills the yard.
+	# A long table in the yard by day, drinkers at it (works.json inn.tables; the crown's men among them in war).
 	var yard: Vector3 = sp.get("yard", b["at"] + _front(b) * 0.4)
+	var tables := int(Data.num("works", "inn.tables", 1))
+	for k in tables:
+		var at := _spot(center, yard + along * (k - (tables - 1) * 0.5) * 0.36, _blocked(root, life), life.get_meta("standing"), 0.25)
+		if is_nan(at.x):
+			continue
+		for p in _long_table(life, center, at, _front(b), int(Data.num("works", "inn.seats", 2)), k, rng, "soldier" if int(n.call("inn_soldiers")) > 0 and k == 0 else ""):
+			p.set_meta("bench", true)
+			_mind(p, "drinker", center)
+			tick.by_day.append(p)
+	# A feast fills the yard.
 	for i in n.call("revellers"):
 		var r := _stand(root, life, center, yard, "townsfolk", "Cheering", rng.randi(), Color.WHITE, 0.3)
 		if r:
@@ -1578,25 +1588,10 @@ func _feast(root: Node3D, life: Node3D, center: Vector3, house: Dictionary, rng:
 		var a := atan2(SEEN.x, SEEN.z) + (t - (int(f.get("tables", 2)) - 1) * 0.5) * 0.9
 		var at := _fire_at + Vector3(sin(a), 0, cos(a)) * reach
 		var out := (at - _fire_at).normalized()
-		var along := Vector3(-out.z, 0, out.x)
-		var yaw := atan2(along.x, along.z)
-		if _prop(life, center, "Table_Large", at, yaw, 1.0, 0.0, 0.18) == null:
-			continue
-		const TOP := 0.09  # the table's height at PROP_SCALE
-		var ware := ["Mug", "Table_Plate", "Chalice", "Mug", "Pot_1", "Table_Plate", "Mug"]
-		for i in 5:
-			_prop(life, center, ware[(t * 3 + i) % ware.size()], at + along * (i - 2) * 0.04 + out * rng.randf_range(-0.015, 0.015), rng.randf() * TAU, 1.0, TOP)
-		for sgn in [-1.0, 1.0]:
-			var bench: Vector3 = at + out * sgn * 0.1
-			_prop(life, center, "Bench", bench, yaw, 1.0, 0.0, 0.0)
-			for i in int(f.get("seats", 3)):
-				var seat: Vector3 = bench + along * (i - (int(f.get("seats", 3)) - 1) * 0.5) * 0.08
-				var p := _townsperson(life, Vector3(seat.x, _y(center, seat), seat.z), "townsfolk" if rng.randf() < 0.6 else "peasant", "Sitting_Drinking", rng.randi())
-				p.rotation.y = atan2(-out.x * sgn, -out.z * sgn)  # facing across the table
-				p.set_meta("feaster", true)
-				taken.append(Vector2(seat.x, seat.z))
-				sat.append(p)
-	life.set_meta("standing", taken)
+		for p in _long_table(life, center, at, out, int(f.get("seats", 3)), t, rng):
+			p.set_meta("feaster", true)
+			sat.append(p)
+
 	for p in sat:
 		_mind(p, "drinker", center)
 	if not sat.is_empty() and preload("res://scripts/weapons.gd").can_play("Lute_Playing"):
@@ -2074,3 +2069,31 @@ func _dole(root: Node3D, life: Node3D, center: Vector3, d: Dictionary, rng: Rand
 	for p in life.get_children():
 		if p.get_meta("role", "") == "peasant" and p.position.distance_to(at) < 0.16 + ROOM * 1.15 * men:
 			p.set_meta("dole", true)
+
+
+## A long table at `at` (town-local), its length across `out`, set with mugs and plates, a bench
+## either side and `seats` a side sat drinking, facing across it (a feast's, the inn yard's). Returns
+## who sits there; their minds are the caller's to give.
+func _long_table(life: Node3D, center: Vector3, at: Vector3, out: Vector3, seats: int, n: int, rng: RandomNumberGenerator, role := "") -> Array:
+	var along := Vector3(-out.z, 0, out.x)
+	var yaw := atan2(along.x, along.z)
+	if _prop(life, center, "Table_Large", at, yaw, 1.0, 0.0, 0.18) == null:
+		return []
+	const TOP := 0.09  # the table's height at PROP_SCALE
+	var ware := ["Mug", "Table_Plate", "Chalice", "Mug", "Pot_1", "Table_Plate", "Mug"]
+	for i in 5:
+		_prop(life, center, ware[(n * 3 + i) % ware.size()], at + along * (i - 2) * 0.04 + out * rng.randf_range(-0.015, 0.015), rng.randf() * TAU, 1.0, TOP)
+	var taken: PackedVector2Array = life.get_meta("standing")
+	var sat: Array = []
+	for sgn in [-1.0, 1.0]:
+		var bench: Vector3 = at + out * sgn * 0.1
+		_prop(life, center, "Bench", bench, yaw, 1.0, 0.0, 0.0)
+		for i in seats:
+			var seat: Vector3 = bench + along * (i - (seats - 1) * 0.5) * 0.08
+			var who := role if role != "" else ("townsfolk" if rng.randf() < 0.6 else "peasant")
+			var p := _townsperson(life, Vector3(seat.x, _y(center, seat), seat.z), who, "Sitting_Drinking", rng.randi())
+			p.rotation.y = atan2(-out.x * sgn, -out.z * sgn)  # facing across the table
+			taken.append(Vector2(seat.x, seat.z))
+			sat.append(p)
+	life.set_meta("standing", taken)
+	return sat

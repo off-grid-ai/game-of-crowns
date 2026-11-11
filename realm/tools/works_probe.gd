@@ -98,6 +98,11 @@ func _run() -> void:
 		if horses.any(func(h): return (h as Node).find_children("Life", "Timer", true, false).is_empty()):
 			print("FAIL %s: a paddock horse has no idle life" % name)
 			fails += 1
+		# The inn's yard by day (works.json inn.tables) and its rail's horses (counts.travellers).
+		var tabled: int = l.get_children().filter(func(n): return n.has_meta("bench") and not n.has_meta("feaster")).size()
+		if name == "peace" and tabled < 4:
+			print("FAIL peace: no drinkers at the inn's bench and table (%d)" % tabled)
+			fails += 1
 		# The realm's state in the streets (moods.json): in war the levy musters in the square and the forge hammers faster.
 		var mustered: int = l.get_children().filter(func(n): return n.has_meta("levy_man")).size()
 		var fast: int = tick.smiths.filter(func(sm): return float((sm.get_meta("work_pace", {}) as Dictionary).get("Hammer_Swing", 1.0)) > 1.0).size()

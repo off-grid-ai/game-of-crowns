@@ -9,14 +9,17 @@ extends Node
 ## the dark roads at night: docs/research/world-and-siege-rules.md rule 8 (realm/data/roadside.json
 ## traffic.mix, night, parties).
 
-const NEAR := 30.0  # world units from the camera: travellers only where he can see them
-const REACH := 18.0  # a day's walk between neighbouring towns
-const MOST := 5  # never a crowd on the roads at once
-const GAP := Vector2(6.0, 12.0)  # seconds between departures in plain times
+## How busy the roads are (realm/data/roadside.json traffic.towns; batch 7's road shots held no one in 28 s):
+## towns within near of the camera send travellers, to a town within reach; most out at once around a town
+## in plenty (in want fewer); gap: seconds between departures.
+static var NEAR: float = Data.num("roadside", "traffic.towns.near", 30.0)
+static var REACH: float = Data.num("roadside", "traffic.towns.reach", 18.0)
+static var MOST: int = int(Data.num("roadside", "traffic.towns.most", 5))
+static var GAP := Vector2(float(Data.value("roadside", "traffic.towns.gap", [6.0, 12.0])[0]), float(Data.value("roadside", "traffic.towns.gap", [6.0, 12.0])[1]))
 
 var terrain: Node3D
 var scenes: Node  # scenes.gd: traveller(from, to, kind) builds and walks one
-var _left := 6.0
+var _left := 1.0  # the first sets out at once, so a road framed is soon in use
 var _out := 0
 var _rng := RandomNumberGenerator.new()
 
@@ -226,11 +229,13 @@ func party(from: Vector3, to: Vector3, kind: String, on_done := Callable()) -> b
 					People.play(p, gait, rate))
 	var lead := gap * n
 	var pace := float(P.get("pace", 0.2))
+	# Some are already on their way when the road comes into view: they start part way along it.
+	var start := length * rng.randf_range(0.0, 0.6) if rng.randf() < Data.num("roadside", "traffic.towns.mid", 0.5) else 0.0
 	var tw := create_tween()
 	tw.tween_method(func(v: float):
 		for fl in follows:
 			if is_instance_valid(fl[0]):
-				(fl[0] as PathFollow3D).progress = clampf(v - lead + float(fl[1]), 0.0, length), 0.0, length + lead, clampf((length + lead) / pace, 15.0, 120.0))
+				(fl[0] as PathFollow3D).progress = clampf(v - lead + float(fl[1]), 0.0, length), start, length + lead, clampf((length + lead - start) / pace, 8.0, 120.0))
 	tw.tween_callback(func():
 		path.queue_free()
 		if on_done.is_valid():
@@ -243,5 +248,5 @@ func _most(a: Blackboard) -> int:
 	if a.get_var(&"prosperity", false):
 		return MOST
 	if String(a.get_var(&"mood", "")) == "hunger":
-		return 2
-	return 3
+		return maxi(1, MOST - 3)
+	return maxi(1, MOST - 1)
