@@ -1,0 +1,55 @@
+{
+  "_": "Stone walls that are built of stones and break stone by stone (Mac: 'the walls need to actually be built of stones stacked together. Then the stones break, the stones fall'). stone_wall.gd lays the courses and runs the fall; walls.gd puts them round walled towns and lets each town's damage (bridge damage.js, /world cities[].damage) drive the hits. Off unless walls is 'stone' here or --walls=stone. Lengths in metres (the realm draws 0.12 units a metre). docs/TUNING.md.",
+  "walls": "off",
+  "block": {
+    "course_m": [0.62, 0.82],
+    "length_m": [0.95, 1.65],
+    "thick_m": 1.8,
+    "min_joint_m": 0.28,
+    "shrink": 0.975,
+    "jitter_deg": 1.4,
+    "jitter_m": 0.03,
+    "tint": "#d9d6d0",
+    "tint_spread": 0.1
+  },
+  "merlon": {"w_m": 1.15, "gap_m": 0.75, "courses": 2, "depth_m": 0.75},
+  "bricks": [
+    [390, 1150, 720, 1325], [755, 1150, 1135, 1325], [1165, 1150, 1535, 1325], [1560, 1150, 1925, 1325],
+    [195, 1345, 530, 1520], [560, 1345, 915, 1520], [935, 1345, 1350, 1520], [1370, 1345, 1750, 1520],
+    [415, 1540, 775, 1715], [800, 1540, 1165, 1715], [1190, 1540, 1575, 1715], [1595, 1540, 1925, 1715]
+  ],
+  "bricks_of": 1932,
+  "fall": {
+    "gravity": 9.8,
+    "density_t": 2.4,
+    "support_min": 0.34,
+    "settle_s": 7.0,
+    "cool_s": 12.0,
+    "friction": 0.65,
+    "bounce": 0.05,
+    "spin": 1.2
+  },
+  "breach": {
+    "hw_min_m": 0.9,
+    "hw_max_m": 3.4,
+    "bottom_share": 0.45,
+    "full_at": 0.75,
+    "ragged_m": 0.45,
+    "crack_band_m": 1.4,
+    "crack_dark": 0.7,
+    "open_below_m": 1.4,
+    "open_min_m": 1.0
+  },
+  "ring": {"height_m": 6.0, "chords_per_section": 3, "sections": 8},
+  "strike": {
+    "every_s": 2.6,
+    "force": 8.0,
+    "radius_m": 1.5,
+    "max": 10,
+    "from_m": 70.0,
+    "flight_s": 1.7
+  },
+  "sim_radius": 12.0,
+  "dust": {"amount": 22, "life_s": 2.4, "size": 0.32, "colour": "#a39580"},
+  "demo": {"height_m": 7.0, "span_rad": 0.5, "sections": 3, "wear_per_hit": 0.12, "first_s": 4.0}
+}
