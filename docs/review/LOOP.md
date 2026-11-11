@@ -949,3 +949,14 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
 - **Load stages** (land 2.3–2.8 s, sea 2.0–2.8 s, rivers and vegetation about 1 s) sit behind the loading screen.
 - **Messaging:** back. The gate failures went to Townsfolk look and NPC perf.
 - **Verdict:** on course. No mid-play stall found at normal load.
+
+## 2026-11-11 08:10, for Mac when he's back (one step only he can do)
+
+- **Naming the 1.8 GB of video memory nobody can account for** needs Godot's editor debugger, which takes clicks no session can make:
+  1. Run `arch -arm64 godot --path realm -e`.
+  2. In Project Settings → Run → Main Run Args, enter `--bridge=http://127.0.0.1:8787 --city=Kingsmere --dist=0.6 --limbo=all --motion=v2`.
+  3. Press F5 and wait for street level.
+  4. Open Debugger → Video RAM → Refresh, then Save to CSV.
+  The CSV names every texture and its size. Video memory is now 5.4 GB against a 3 GB target.
+- **Also waiting on Mac:** merging each person's clothing pieces into one mesh (about 0.4 GB saved). It would be a hand-built system, so it's his call.
+- **In progress:** NPC perf is tracing why the knight body's feet slide (it's the rig, not the clip) and is turning SDFGI off where it adds little, with a film A/B. The go-live gate reruns on HEAD once the GPU frees.
