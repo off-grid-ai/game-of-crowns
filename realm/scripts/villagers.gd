@@ -1103,8 +1103,14 @@ func _who(n: Node3D) -> String:
 	var at := "(%.2f,%.2f)" % [n.global_position.x, n.global_position.z]
 	var v := who_is(n)
 	if not v.is_empty():
-		var a: Dictionary = crowds[v["town"]].filter(func(b): return b["node"] == n)[0]
-		at += "{%s goal=%s route=%d place=%s}" % [v["role"], a.get("goal", "-"), PackedVector2Array(a["route"]).size(), a.get("place_key", "")]
+		# A villager tagged at spawn (meta folk) may no longer be in its town's crowd: the crowd rebuilt or
+		# moved on and this body is on its way out (batch 8 look2: 9 errors here indexing an empty match).
+		var found: Array = crowds.get(v.get("town", -1), []).filter(func(b): return b["node"] == n)
+		if found.is_empty():
+			at += "{%s, no longer in its crowd}" % v.get("role", "?")
+		else:
+			var a: Dictionary = found[0]
+			at += "{%s goal=%s route=%d place=%s}" % [v["role"], a.get("goal", "-"), PackedVector2Array(a.get("route", PackedVector2Array())).size(), a.get("place_key", "")]
 	return "%s:%s:%s:%s%s" % [n.get_parent().name if n.get_parent() else "?", n.name, act, people.clip(n), at]
 
 
