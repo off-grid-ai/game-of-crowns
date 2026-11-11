@@ -224,7 +224,10 @@ def main():
         cv2.imwrite(os.path.join(OUT, name), grade(face), [cv2.IMWRITE_JPEG_QUALITY, 88])
         sex, age = tag(s["title"])
         kept.append({k: v for k, v in s.items() if k != "url"} | {"file": name, "sex": sex, "age": age})
-    json.dump({"_": "Painted portraits (realm/tools/portraits/build.py): public-domain museum paintings, cropped and graded as one. sex and age come from the title; '?' is checked by eye.",
+    # Generated faces (gen.py) are kept: this run only remakes the museums'.
+    old = os.path.join(OUT, "sources.json")
+    kept += [p for p in (json.load(open(old)).get("portraits", []) if os.path.exists(old) else []) if p.get("museum") == "generated"]
+    json.dump({"_": "Painted portraits (realm/tools/portraits/build.py, gen.py): public-domain museum paintings and generated faces (museum 'generated', with their prompt), cropped and graded as one. sex and age come from the title; '?' is checked by eye.",
                "portraits": kept}, open(os.path.join(OUT, "sources.json"), "w"), indent=1)
     print(json.dumps({"sources": len(sources), "kept": len(kept), "dropped": why,
                       "women": sum(k["sex"] == "f" for k in kept), "men": sum(k["sex"] == "m" for k in kept), "unsexed": sum(k["sex"] == "?" for k in kept),
