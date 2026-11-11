@@ -4,11 +4,67 @@
   "click_memory_sec": 8,
   "no_repeat": 10,
   "lord": {
-    "loyal": ["My King.", "Command me, Your Grace.", "My sword is yours, as ever.", "The realm is in good hands.", "Say the word, my King.", "Our banners fly beside yours."],
-    "sworn": ["Your Grace.", "We keep our oath.", "What would the crown have of us?", "We stand ready.", "My King calls; I answer.", "As you say, Your Grace."],
-    "steady": ["Your Grace.", "The crown wants something?", "We are listening.", "Speak, my King. Briefly.", "Our house is busy, but we hear you.", "Well?"],
-    "cooling": ["Your Grace remembers us now?", "The crown asks much and gives little.", "What is it this time?", "We hear you. We have not forgotten.", "Another summons.", "Our patience has an end, my King."],
-    "angry": ["We have nothing to say to the crown.", "You have a nerve, sending for us.", "Our gates are shut to you.", "Say your piece and be gone.", "We remember every slight, Your Grace.", "Not now. Not ever, perhaps."]
+    "loyal": [
+      "My King.",
+      "Command me, Your Grace.",
+      "My sword is yours, as ever.",
+      "The realm is in good hands.",
+      "Say the word, my King.",
+      "Our banners fly beside yours."
+    ],
+    "sworn": [
+      "Your Grace.",
+      "We keep our oath.",
+      "What would the crown have of us?",
+      "We stand ready.",
+      "My King calls; I answer.",
+      "As you say, Your Grace."
+    ],
+    "steady": [
+      "Your Grace.",
+      "The crown wants something?",
+      "We are listening.",
+      "Speak, my King. Briefly.",
+      "Our house is busy, but we hear you.",
+      "Well?"
+    ],
+    "cooling": [
+      "Your Grace remembers us now?",
+      "The crown asks much and gives little.",
+      "What is it this time?",
+      "We hear you. We have not forgotten.",
+      "Another summons.",
+      "Our patience has an end, my King."
+    ],
+    "angry": [
+      "We have nothing to say to the crown.",
+      "You have a nerve, sending for us.",
+      "Our gates are shut to you.",
+      "Say your piece and be gone.",
+      "We remember every slight, Your Grace.",
+      "Not now. Not ever, perhaps."
+    ]
   },
-  "annoyed": ["Has the King nothing better to do?", "Yes, my King. Still here.", "Your Grace, the realm will not rule itself.", "Must I bow again?", "We heard you the first time.", "Is this a summons or a game?"]
+  "annoyed": [
+    "Has the King nothing better to do?",
+    "Yes, my King. Still here.",
+    "Your Grace, the realm will not rule itself.",
+    "Must I bow again?",
+    "We heard you the first time.",
+    "Is this a summons or a game?"
+  ],
+  "folk": [
+    "Your Grace!",
+    "The King, here? Mind your manners, Wat.",
+    "Long live the King.",
+    "Bless you, Your Grace.",
+    "We're only simple folk, my King.",
+    "Fine day for it, Your Grace."
+  ],
+  "folk_annoyed": [
+    "I've work to do, Your Grace.",
+    "Begging your pardon, but the bread won't bake itself.",
+    "Is the King lost?",
+    "Yes, still me, Your Grace."
+  ]
 }

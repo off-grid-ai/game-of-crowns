@@ -74,6 +74,15 @@ func _process(delta: float) -> void:
 	_place_by_cursor()
 
 
+## A click on the person shown: they answer out loud (--barks; barks.gd), as Warcraft II's units do.
+func _unhandled_input(event: InputEvent) -> void:
+	if main == null or main.get("barks") == null or not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
+		return
+	if _who == null or not is_instance_valid(_who) or not _trade.visible:
+		return
+	main.barks.folk(_who, String(_said.get("line", "")), {"name": String(_said.get("name", "")), "gender": String(_said.get("gender", ""))})
+
+
 ## No one under the cursor: a scar of war on the ground there (a battle's ground,
 ## a stormed or razed town's burnt ring), told in the bridge's own line.
 func _show_scar() -> void:

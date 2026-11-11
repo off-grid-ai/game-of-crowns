@@ -37,6 +37,14 @@ func lord(pid: int) -> void:
 		return
 
 
+## A townsman clicked: they say what's on their mind (the line the hover shows), else a greeting;
+## pestered, they'd rather get back to work.
+func folk(node: Node3D, line: String, voice: Dictionary) -> void:
+	var pestered := _pestered("folk%d" % node.get_instance_id())
+	var pool: Array = _d.get("folk_annoyed", []) if pestered else ([line] if line != "" else _d.get("folk", []))
+	_say(String(voice.get("name", "")) if voice.get("name", "") != "" else "A townsman", pool, voice, line != "" and not pestered)
+
+
 ## The same target clicked again within click_memory_sec counts up; past annoyed_after, it's annoyed.
 func _pestered(target: String) -> bool:
 	var now := Time.get_ticks_msec()
@@ -46,8 +54,8 @@ func _pestered(target: String) -> bool:
 	return n > int(_d.get("annoyed_after", 3))
 
 
-func _say(who: String, pool: Array, voice: Dictionary) -> void:
-	var fresh := pool.filter(func(l): return not _recent.has(String(l)))
+func _say(who: String, pool: Array, voice: Dictionary, own := false) -> void:
+	var fresh := pool if own else pool.filter(func(l): return not _recent.has(String(l)))  # their own thought is theirs to repeat
 	if fresh.is_empty():
 		fresh = pool
 	if fresh.is_empty():

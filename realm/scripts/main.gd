@@ -55,6 +55,7 @@ const IntroStory := preload("res://scripts/intro_story.gd")
 var story := IntroStory.new(self)  # the intro story (intro_story.gd): when it is due, and telling it
 var _music_dark := false  # juice: the music turned dark by the realm's tension (with its lower mark to settle)
 var order_at := [Vector3.INF, -1]  # juice: where the King's own order lands, and the frame its result was told there
+var barks: Node = null  # every click answers (barks.gd), when --barks
 var hand_prompts: Node = null  # the v2 opening's Hand prompts (hand_prompts.gd), when --opening=v2
 const Walking := preload("res://scripts/walking.gd")
 var walking := Walking.new(self)  # walking as a character (walking.gd): control, mic, interiors, the King
@@ -323,7 +324,7 @@ func _ready() -> void:
 	ui.house_followed.connect(_follow_house)  # a house's sigil clicked: go with its host
 	# Every click answers (--barks; barks.gd, lines in data/barks.json): the house's lord speaks.
 	if OS.get_cmdline_user_args().has("--barks"):
-		var barks: Node = load("res://scripts/barks.gd").new(self)
+		barks = load("res://scripts/barks.gd").new(self)
 		add_child(barks)
 		ui.house_followed.connect(barks.lord)
 	ui.interlude_closed.connect(func(): bridge.close_interlude())  # the act told back: the realm goes on
