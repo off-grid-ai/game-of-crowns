@@ -14,7 +14,9 @@ func _piece(name: String) -> Node3D:
 	var path := name if name.begins_with("res://") else DIR % name
 	if not _cache.has(path):
 		_cache[path] = load(path)
-	return _cache[path].instantiate()
+	var n: Node3D = _cache[path].instantiate()
+	preload("res://scripts/realistic.gd").still(n, path)  # a skinned figure (a statue's king) in its pose as plain meshes
+	return n
 
 
 ## The shutters' wood as a material of its own (MI_Shutter), so the house's colour can paint the shutters

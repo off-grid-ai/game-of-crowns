@@ -79,6 +79,86 @@ static func _from_catalogue() -> bool:
 	return true
 
 
+## A skinned figure (a Quaternius character: FBX2glTF, its armature turned and scaled to stand it up) made
+## plain meshes in a pose, so it can be merged and batched like any model. Merged as it came, its meshes
+## kept their bind data, which is Z-up: the king lay flat (74fe391f). The pose is one frame of one of its
+## clips (assets.json poses: {path: [clip, seconds]}; else its rest pose), set straight on the skeleton
+## from the clip's tracks, and each skinned mesh's vertices and normals moved by their bones on the CPU
+## (no tree, no animation player, no GPU needed). Nothing happens to a model without a skeleton.
+static func still(model: Node, path: String) -> void:
+	var sks := model.find_children("*", "Skeleton3D", true, false)
+	if sks.is_empty():
+		return
+	var sk: Skeleton3D = sks[0]
+	var pose: Array = (Data.value("assets", "poses", {}) as Dictionary).get(path, [])
+	var players := model.find_children("*", "AnimationPlayer", true, false)
+	if pose.size() >= 1 and not players.is_empty():
+		var ap: AnimationPlayer = players[0]
+		if ap.has_animation(String(pose[0])):
+			var anim := ap.get_animation(String(pose[0]))
+			var t := float(pose[1]) if pose.size() > 1 else 0.0
+			for tr in anim.get_track_count():
+				var b := sk.find_bone(String(anim.track_get_path(tr).get_concatenated_subnames()))
+				if b < 0:
+					continue
+				match anim.track_get_type(tr):
+					Animation.TYPE_POSITION_3D:
+						sk.set_bone_pose_position(b, anim.position_track_interpolate(tr, t))
+					Animation.TYPE_ROTATION_3D:
+						sk.set_bone_pose_rotation(b, anim.rotation_track_interpolate(tr, t))
+					Animation.TYPE_SCALE_3D:
+						sk.set_bone_pose_scale(b, anim.scale_track_interpolate(tr, t))
+	sk.force_update_all_bone_transforms()
+	for mi in model.find_children("*", "MeshInstance3D", true, false):
+		var m: MeshInstance3D = mi
+		if m.skin == null or m.mesh == null:
+			continue
+		var skin := m.skin
+		var mats: Array[Transform3D] = []
+		for bi in skin.get_bind_count():
+			var bone := skin.get_bind_bone(bi)
+			if bone < 0:
+				bone = sk.find_bone(String(skin.get_bind_name(bi)))
+			mats.append(sk.get_bone_global_pose(maxi(bone, 0)) * skin.get_bind_pose(bi))
+		var out := ArrayMesh.new()
+		for s in m.mesh.get_surface_count():
+			var arr: Array = m.mesh.surface_get_arrays(s)
+			var verts: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+			var norms: PackedVector3Array = arr[Mesh.ARRAY_NORMAL] if arr[Mesh.ARRAY_NORMAL] != null else PackedVector3Array()
+			var bones: PackedInt32Array = arr[Mesh.ARRAY_BONES] if arr[Mesh.ARRAY_BONES] != null else PackedInt32Array()
+			var weights: PackedFloat32Array = arr[Mesh.ARRAY_WEIGHTS] if arr[Mesh.ARRAY_WEIGHTS] != null else PackedFloat32Array()
+			var per := bones.size() / maxi(verts.size(), 1)
+			if per > 0:
+				for v in verts.size():
+					var p := Vector3.ZERO
+					var nn := Vector3.ZERO
+					for k in per:
+						var w := weights[v * per + k]
+						if w <= 0.0 or bones[v * per + k] >= mats.size():
+							continue
+						var xf: Transform3D = mats[bones[v * per + k]]
+						p += xf * verts[v] * w
+						if not norms.is_empty():
+							nn += xf.basis * norms[v] * w
+					verts[v] = p
+					if not norms.is_empty():
+						norms[v] = nn.normalized()
+			arr[Mesh.ARRAY_VERTEX] = verts
+			if not norms.is_empty():
+				arr[Mesh.ARRAY_NORMAL] = norms
+			arr[Mesh.ARRAY_BONES] = null
+			arr[Mesh.ARRAY_WEIGHTS] = null
+			arr[Mesh.ARRAY_TANGENT] = null
+			out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
+			out.surface_set_material(s, m.get_active_material(s))
+		m.mesh = out
+		m.skin = null
+		m.skeleton = NodePath()
+		# Its vertices are now in the skeleton's frame: the mesh stands where the skeleton does.
+		if m.get_parent() == sk:
+			m.transform = Transform3D.IDENTITY
+
+
 ## A builder variant with a count stands for that many: name_1..name_n, each its own seed (spec seed + i),
 ## so a tier of houses is one line of data (assets.json house tiers).
 static func _expanded(vs: Array) -> Array:
@@ -202,6 +282,7 @@ static func _template(name: String) -> Dictionary:
 	if not KIT.has(name) or not (BUILT.has(name) or ResourceLoader.exists(path)):
 		return {}
 	var model: Node3D = _built(name) if BUILT.has(name) else (load(path) as PackedScene).instantiate()
+	still(model, path)  # a skinned figure stood in its pose as plain meshes (assets.json poses)
 	# Some kits carry things that don't belong in this age (cannon and shot).
 	# (A match can sit inside another match, so check each is still there before freeing it.)
 	var unwanted: Array = model.find_children("*Cannon*", "", true, false)
