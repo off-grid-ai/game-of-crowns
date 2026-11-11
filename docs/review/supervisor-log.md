@@ -157,3 +157,4 @@ design call from the casebook and Mac's rules. This log is the report for Mac wh
 - **11 15:22 check.** Seals round six is running; messages are paused until Mac types, with rulings in supervisor-rulings.md. No notes from Mac.
 - **11 15:32 check.** No new commits since 15:11. Waiting on seals round six; messages are paused until Mac types.
 - **11 15:38.** perfround6's halved fps came from a second Godot outside the queue (15:09-15:28; it may have been Mac playing). Reminder to all in the notes: one Godot through the queue, Mac's own game first. r7 (the gate naming the statue, then fullscreen 3024×1964 perf with no other Godot) is starting.
+- **11 15:42 check.** r7 running; seals round six pending; no new commits; messages paused until Mac types.
