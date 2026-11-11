@@ -10,6 +10,7 @@
 // reassigns, which the sitting reads again after each await; setSitting for the
 // hold); server.js keeps wrappers of the same names.
 
+import * as Opening from "./opening.js";
 import fs from "node:fs";
 import * as Treasury from "./treasury.js";
 import { houseFor, cityName } from "./narrator.js";
@@ -66,7 +67,9 @@ export function rule(ctx, id, option) {
     const d = Number(out.favour?.[asker.playerId] ?? 0);
     const matter = petition.thread ?? null;
     const what = `heard ${matter ? `us on ${matter}` : "our plea"} at court and ruled: ${String(asked.label ?? asked.id).replace(/ \(.*\)$/, "").toLowerCase()}`;
-    recordRuling(court.deedsOf(asker.playerId), { d, what, by: asker.id, turn: world.turn ?? 0 });
+    // Opening v2: the first ruling that slights its asker comes back about five minutes in, as the first setback (opening.js).
+    const late = Opening.firstSetback(meta, d);
+    recordRuling(court.deedsOf(asker.playerId), { d, what, by: asker.id, turn: world.turn ?? 0, ...(late != null ? { due: late, setback: true } : {}) });
   }
   // Every ruling is told, even one whose answer has no words of its own written for it.
   if (!String(out.text ?? "").trim()) out.text = `The King gives his answer${petition ? ` to ${petition.name}` : ""}: ${String(asked?.label ?? option).replace(/ \(.*\)$/, "").toLowerCase()}.`;

@@ -7,6 +7,7 @@
 // numbers and words are data (data/director.json); this is the one decider.
 // Nothing here reads server.js: what it needs comes in as one context argument.
 
+import * as Opening from "./opening.js";
 import * as Events from "./events.js";
 import fs from "node:fs";
 import { houseFor, cityName } from "./narrator.js";
@@ -47,7 +48,7 @@ export function season(ctx, turn) {
   else if (meta.lastAct) finale(ctx, d, turn);
   else {
     // The build-up: each act the realm stays quiet for less long before the next threat.
-    d.calm = t < DIRECTOR.quietBelow ? d.calm + 1 : 0;
+    d.calm = Opening.quiet(meta) ? 0 : t < DIRECTOR.quietBelow ? d.calm + 1 : 0;  // the opening's quiet: nothing rises before the first winter (opening.js)
     if (d.calm >= (DIRECTOR.quietByAct?.[actOf(meta)] ?? DIRECTOR.quietSeasons)) raise(ctx, d, turn);
   }
   // A town taken from the crown or a sworn ally is a crisis to the King, whoever took it

@@ -13,6 +13,7 @@
 // turn's timers; setBlights for the blights), and server.js keeps wrappers of the
 // same names where its own code still calls them.
 
+import * as Opening from "./opening.js";
 import * as Reword from "./reword.js";
 import * as Seals from "./seals.js";
 import * as Next from "./next.js";
@@ -35,6 +36,7 @@ import * as kingDeeds from "./ledger.js";
 export function turn(ctx, ev) {
   const { send } = ctx;
   Next.seasonBegan();  // the next thing's countdown runs from here
+  Opening.season(ctx.meta, Number(ev.turn));  // the first winter seen and passed (opening.js)
   Seals.season(ctx.meta, Number(ev.turn));  // the season's royal seal (seals.js)
   Reword.season();  // one more wording of a court result from the local model, in idle time (reword.js)
   healBlights(ctx, Number(ev.turn));
@@ -117,7 +119,7 @@ export function turnHouses(ctx, turn) {
     }
     // An ultimatum met (favour shown, anger drained) calls the story's march off.
     if (t.march != null && !t.state) t.march = null;
-    if (t.seasons >= TURNING && !t.state) {
+    if (t.seasons >= TURNING && !t.state && !Opening.quiet(meta)) {  // no ultimatum before the first winter has passed (opening.js)
       t.state = "sent";
       t.at = turn;
       record({ turn, kind: "unrest", text: `${houseFor(p).name} sends a rider to Kingsmere with an ultimatum for the King.` });

@@ -674,13 +674,13 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       // Not always a plea (the judge: vary the return by what the ruling did). A
       // lord who was favoured may simply repay; one who was slighted may scheme;
       // one gravely wronged comes to court to demand amends.
-      if (owed.d > 0 && Math.random() < 0.5) {
+      if (owed.d > 0 && !owed.setback && Math.random() < 0.5) {
         owed.raised = turn;
         ctx.send?.(`for p in players_iterate() do if p.id == ${world.players.find((x) => houseFor(x).crown)?.id ?? -1} then edit.change_gold(p, 40) end end`);
         this.record({ turn, kind: "loyalty", text: `${c.name} of ${c.house} has not forgotten the King's ruling: a chest of 40 gold comes to Kingsmere, "for the crown's kindness".`, city: c.seat ?? undefined });
         continue;
       }
-      if (owed.d < 0 && owed.d > -15 && Math.random() < 0.5) {
+      if (owed.d < 0 && owed.d > -15 && !owed.setback && Math.random() < 0.5) {
         owed.raised = turn;
         const cold = world.players.filter((x) => x.id !== c.playerId && !houseFor(x).crown && !houseFor(x).wild).sort((a, b) => (ctx.favour?.(a.id) ?? 50) - (ctx.favour?.(b.id) ?? 50))[0];
         if (cold) this.scheme({ kind: "envoy", from: c.playerId, to: cold.id, turn, secret: true, line: `${c.house}'s envoys ride to ${houseFor(cold).name}: the King's ruling at court is not forgotten.` });

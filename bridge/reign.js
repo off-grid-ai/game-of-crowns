@@ -9,6 +9,7 @@
 // (getters for what it reassigns, setPaused for the clock's hold); server.js
 // keeps wrappers of the same names.
 
+import * as Opening from "./opening.js";
 import { say } from "./say.js";
 import * as Events from "./events.js";
 import * as Seals from "./seals.js";
@@ -443,6 +444,16 @@ export function tick(ctx) {
   }
 }
 
+// Opening v2: until the first winter has passed, the aim is to hold the realm to it, with the seasons left
+// (opening.js; the first-ten-minutes plan's tracker). The ladder's aims come after.
+function winterAim(meta, world) {
+  const left = Opening.toWinter(meta, world?.turn ?? 0);
+  if (left == null) return null;
+  const a = Opening.OPENING.winterAim ?? {};
+  return { n: 0, of: null, text: a.text ?? "Hold the realm whole to the first winter", how: a.how ?? "", at: null,
+    progress: { text: left === 1 ? "the last season of winter" : `${left} seasons to the end of winter`, frac: Math.max(0, Math.min(1, 1 - (left - 1) / 4)) } };
+}
+
 export function reignInfo(ctx) {
   const { meta, world, paused, soulsOf } = ctx;
   const aim = aimNow(ctx);
@@ -453,7 +464,7 @@ export function reignInfo(ctx) {
     id: meta.id, name: meta.name, scenario: meta.scenario, status: meta.status, paused, minutes: meta.minutes,
     elapsedMs: meta.elapsedMs, remainingMs: meta.minutes > 0 ? Math.max(0, meta.minutes * 60000 - meta.elapsedMs) : null,
     score: meta.score, verdict: meta.verdict, title: meta.title, why: meta.why ?? null, outcome: meta.outcome, ended: meta.endedAt,
-    epilogue: meta.epilogue ?? null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, aim: aim ? { n: Math.min(meta.ladder.i, LADDER.length) + (meta.ladder.n ?? 0) + 1, of: meta.ladder.i < LADDER.length ? LADDER.length : null, text: aim.text, how: aim.how, progress: aimProgress(ctx, aim), at: aimPlace(ctx, aim) } : null, aimDone: meta.ladder?.just && Date.now() - meta.ladder.just.at < 8000 ? meta.ladder.just.text : null, readings: meta.status === "running" ? readings(ctx) : null,
+    epilogue: meta.epilogue ?? null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, aim: winterAim(meta, world) ?? (aim ? { n: Math.min(meta.ladder.i, LADDER.length) + (meta.ladder.n ?? 0) + 1, of: meta.ladder.i < LADDER.length ? LADDER.length : null, text: aim.text, how: aim.how, progress: aimProgress(ctx, aim), at: aimPlace(ctx, aim) } : null), aimDone: meta.ladder?.just && Date.now() - meta.ladder.just.at < 8000 ? meta.ladder.just.text : null, readings: meta.status === "running" ? readings(ctx) : null,
     souls: world?.cities?.reduce((t, c) => t + soulsOf(c.size), 0) ?? 0,
     next,
     seals: Seals.view(meta),
