@@ -97,7 +97,8 @@ func _ready() -> void:
 		return
 	var colours := _colours()
 	for i in specs.size():
-		var r := _regiment(specs[i], colours[i % colours.size()] if String(Data.value("army", "colours", "crown")) == "houses" else colours[0])
+		var k := i % colours.size() if String(Data.value("army", "colours", "crown")) == "houses" else 0
+		var r := _regiment(specs[i], colours[k], _worn[k] if k < _worn.size() else {})
 		if r.is_empty():
 			continue
 		_regiments.append(r)
@@ -272,7 +273,7 @@ func _unit(name: String) -> Dictionary:
 
 ## One regiment: its node (at its middle, on the ground), its men (one VAT draw), its banner, its ground
 ## rectangle and its far block. Its men keep who they are (turn, size) through every shape.
-func _regiment(spec: Dictionary, colour: Color) -> Dictionary:
+func _regiment(spec: Dictionary, colour: Color, house: Dictionary = {}) -> Dictionary:
 	var row := _unit(String(spec["unit"]))
 	var kit := _asset(String(row["asset"]), row)
 	if kit.is_empty():
@@ -285,6 +286,7 @@ func _regiment(spec: Dictionary, colour: Color) -> Dictionary:
 	# The plugin's own advice: the VAT material in the Material Override slot, one per regiment (its colour).
 	var own := (kit["mat"] as ShaderMaterial).duplicate() as ShaderMaterial
 	own.set_shader_parameter("team_color", colour)
+	_wear_arms(own, house)
 	vat.material_override = own
 	vat.instance_count = count
 	vat.rand_anim_offset = true
@@ -998,16 +1000,41 @@ func _crown_house() -> Dictionary:
 ## houses as heraldry draws them; the stock six when there are none yet.
 func _colours() -> Array:
 	var out: Array = []
+	_worn = []
 	var crown := _crown_house()
 	if not crown.is_empty() and crown.has("color"):
 		out.append(Heraldry.colour(crown))
+		_worn.append(crown)
 	var houses: Variant = main.get("_houses")
 	for h in (houses as Dictionary).values() if houses is Dictionary else []:
 		if h is Dictionary and not h.get("wild", false) and h.has("color"):
 			var c: Color = Heraldry.colour(h)
 			if not out.has(c):
 				out.append(c)
-	return out if out.size() >= 2 else HOUSES
+				_worn.append(h)
+	if out.size() < 2:
+		_worn = []
+		return HOUSES
+	return out
+
+
+var _worn: Array = []  # the houses whose colours _colours() gave, in its order ({} for the stock six)
+
+
+## A regiment wears its house's arms on the shield's face and the tabard's front (army_vat.gdshader's
+## emblem; data/army.json emblem and meshes.<dir>.emblem): the top of the house's banner, the picture its
+## standard flies (heraldry.gd). A house with no banner drawn, or a mesh with no places for them, wears its
+## colour alone.
+func _wear_arms(mat: ShaderMaterial, house: Dictionary) -> void:
+	var path := "res://assets/heraldry/banner-%s.png" % Heraldry.slug(house) if not house.is_empty() else ""
+	if not bool(Data.value("army", "emblem.on", true)) or path == "" or not ResourceLoader.exists(path):
+		mat.set_shader_parameter("emblem_on", false)
+		return
+	var rect: Array = Data.value("army", "emblem.rect", [0.0, 0.06, 1.0, 0.56])
+	mat.set_shader_parameter("emblem_texture", load(path))
+	mat.set_shader_parameter("emblem_rect", Vector4(float(rect[0]), float(rect[1]), float(rect[2]), float(rect[3])))
+	mat.set_shader_parameter("emblem_light", Data.num("army", "emblem.light", 0.9))
+	mat.set_shader_parameter("emblem_on", true)
 
 
 ## The lens's heading onto `look`: from `start`, the first of 24 turns either way from which, at the shot's
@@ -1113,6 +1140,19 @@ func _asset(asset: String, row: Dictionary) -> Dictionary:
 			mix[k] = float(q[4]) if q.size() > 4 else 1.0  # how much of the cell takes the colour
 		mat.set_shader_parameter("team_mix", mix)
 	mat.set_shader_parameter("team_shade", Data.num("army", "team.shade", 1.1))
+	# Where this soldier wears the arms (his rest pose; tools/emblem_probe.gd measures it): up to two places.
+	var places: Array = row.get("emblem", [])
+	for k in mini(places.size(), 2):
+		var b: Dictionary = places[k]
+		var v3 := func(key: String, fb: Array) -> Vector3:
+			var q: Array = b.get(key, fb)
+			return Vector3(float(q[0]), float(q[1]), float(q[2]))
+		var at: Vector3 = v3.call("center", [0, -99, 0])
+		var sz: Vector3 = v3.call("size", [0, 0, 0])
+		mat.set_shader_parameter("emblem_%s_center" % "ab"[k], Vector4(at.x, at.y, at.z, 1.0 if b.get("round", false) else 0.0))
+		mat.set_shader_parameter("emblem_%s_size" % "ab"[k], Vector4(sz.x, sz.y, sz.z, float(b.get("facingMin", 0.3))))
+		mat.set_shader_parameter("emblem_%s_facing" % "ab"[k], v3.call("facing", [0, 0, 1]))
+		mat.set_shader_parameter("emblem_%s_up" % "ab"[k], v3.call("up", [0, 1, 0]))
 	for i in mesh.get_surface_count():
 		mesh.surface_set_material(i, mat)
 	_assets[asset] = {"asset": asset, "mesh": mesh, "mat": mat, "tracks": tracks, "index": index, "height": maxf(mesh.get_aabb().size.y, 0.01),

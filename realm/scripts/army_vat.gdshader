@@ -62,6 +62,25 @@ uniform float team_shade = 1.1;
 uniform bool team_by_mask = false;
 uniform sampler2D team_mask : hint_default_black, filter_linear_mipmap;
 uniform sampler2D normal_map: filter_nearest;
+// The house's arms worn on the shield's face and the tabard's front (Total War's faction shields; the arms are the
+// top of the house's banner, assets/heraldry, the same picture its standard flies). Each place is a box in the
+// soldier's rest pose (data/army.json meshes.<dir>.emblem): centre (xyz, w 1 for a round shield), size (across, up,
+// depth; w the least its face must turn toward the box's facing), facing and up. Read from the mesh as it stands
+// before the bake's offsets, so the arms ride every frame of every clip; one texture per regiment, no draw added.
+uniform bool emblem_on = false;
+uniform sampler2D emblem_texture : source_color, hint_default_transparent, filter_linear_mipmap, repeat_disable;
+uniform vec4 emblem_rect = vec4(0.0, 0.06, 1.0, 0.56);  // u0, v0, u1, v1: the arms within the banner picture
+uniform float emblem_light = 0.9;  // the arms' paint under the realm's sun
+uniform vec4 emblem_a_center = vec4(0.0, -99.0, 0.0, 0.0);
+uniform vec4 emblem_a_size = vec4(0.0, 0.0, 0.0, 0.3);
+uniform vec3 emblem_a_facing = vec3(0.0, 0.0, 1.0);
+uniform vec3 emblem_a_up = vec3(0.0, 1.0, 0.0);
+uniform vec4 emblem_b_center = vec4(0.0, -99.0, 0.0, 0.0);
+uniform vec4 emblem_b_size = vec4(0.0, 0.0, 0.0, 0.3);
+uniform vec3 emblem_b_facing = vec3(0.0, 0.0, 1.0);
+uniform vec3 emblem_b_up = vec3(0.0, 1.0, 0.0);
+varying vec3 rest_pos;
+varying vec3 rest_nrm;
 
 group_uniforms Albedo;
 uniform vec4 albedo : source_color = vec4(1.0); // Opaque white by default
@@ -90,12 +109,28 @@ group_uniforms;
 varying flat vec4 custom_data;
 varying flat vec4 color_data;
 
+// How much of the arms lie at this point of the soldier, and where in them (rgb, a: their cover).
+vec4 emblem_at(vec4 centre, vec4 size, vec3 facing, vec3 up) {
+	vec3 f = normalize(facing);
+	vec3 u = normalize(up - f * dot(up, f));
+	vec3 r = cross(u, f);
+	vec3 d = rest_pos - centre.xyz;
+	vec2 q = vec2(dot(d, r) / max(size.x, 0.0001), -dot(d, u) / max(size.y, 0.0001));  // -0.5..0.5 across the box
+	float inside = step(abs(q.x), 0.5) * step(abs(q.y), 0.5) * step(abs(dot(d, f)), size.z * 0.5);
+	inside *= step(size.w, dot(normalize(rest_nrm), f));  // its face, not its rim or the arm behind
+	inside *= mix(1.0, step(length(q), 0.5), centre.w);  // a round shield wears the arms in a roundel
+	vec4 arms = texture(emblem_texture, mix(emblem_rect.xy, emblem_rect.zw, q + 0.5));
+	return vec4(arms.rgb, arms.a * inside);
+}
+
 int extractDigitGroup(float value, int groupIndex, int digitCount) {
     float exp = pow(10.0, float(digitCount));
     return int(mod(value * exp * pow(10.0, float(groupIndex * digitCount)), exp));
 }
 
 void vertex(){
+	rest_pos = VERTEX;  // the soldier as he stands in the bind pose, before the clip's offsets
+	rest_nrm = NORMAL;
 	custom_data = INSTANCE_CUSTOM;
 	color_data = COLOR;
 
@@ -185,7 +220,15 @@ void fragment() {
 	float shade = max(base.r, max(base.g, base.b));
 	float dyed = team_by_mask ? texture(team_mask, UV).r : max(max(in_a, in_b), max(in_c, in_d));
 	ALBEDO = mix(base, team_color.rgb * shade * team_shade, dyed * team_strength);
-	METALLIC = dot(texture(metallic_texture, UV), metallic_texture_channel) * metallic;
+	float painted = 0.0;
+	if (emblem_on) {
+		vec4 ea = emblem_at(emblem_a_center, emblem_a_size, emblem_a_facing, emblem_a_up);
+		vec4 eb = emblem_at(emblem_b_center, emblem_b_size, emblem_b_facing, emblem_b_up);
+		vec4 e = ea.a >= eb.a ? ea : eb;
+		ALBEDO = mix(ALBEDO, e.rgb * emblem_light, e.a);
+		painted = e.a;
+	}
+	METALLIC = dot(texture(metallic_texture, UV), metallic_texture_channel) * metallic * (1.0 - painted);  // the arms are paint; the rest of the steel stays steel
 	SPECULAR = specular;
 	ROUGHNESS = dot(texture(roughness_texture, UV), roughness_texture_channel) * roughness;
 	if (use_normal_texture) {
