@@ -4,7 +4,8 @@
 # realm/tools/render.sh's queue. Every launch runs with the round's switches on (--ui=v2, the dressing, the
 # landmarks: --landmarks=meshy unless a before shot sets LM=--landmarks=kit) and silent (no audio device), but
 # the sound launch, which records. It starts with the import step: Meshy's pieces through Blender, then one
-# headless Godot import pass. The shots and their references are in docs/review/v17.json; v17_apply.py puts them
+# headless Godot import pass. Close town shots stop at roof height (Mac: no close-up realism; at least 3.5 out,
+# tilt -5). The shots and their references are in docs/review/v17.json; v17_apply.py puts them
 # on the review page. Generated from the list (the fire-siege session); edit the launches here, not the list.
 #
 #   docs/review/batch9.sh            # all of it, about 137 minutes [estimate: the launches' LIMITs and waits]
@@ -19,7 +20,7 @@ OUT=${OUT:-/tmp/goc-batch9}
 PORT=${PORT:-8788}; FC=${FC:-5557}
 API=localhost:$PORT
 ONLY=${ONLY:-ladder settled clarity fire fixes meshy village fountain ui decisions breach hosts battle sound}
-SW=(--look=one --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on --ui=v2 --dressing=on)
+SW=(--look=one --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on --ui=v2 --dressing=on --castle-life=on --weather=v2)
 # The landmarks (--landmarks=meshy) ride on every launch through LM; a before shot sets LM=--landmarks=kit for its run.
 LM=${LM:---landmarks=meshy}
 # Films run silent (no audio device: faster, and no sound to wait on); the sound launch sets its own.
@@ -119,7 +120,7 @@ fi
 if want settled; then
   {
     print "wait 30"
-    print "work Kingsmere forge 4.5 -25"; print "snap forge"; burst forge-clip 24 0.2
+    print "work Kingsmere forge 4.5 -5"; print "snap forge"; burst forge-clip 24 0.2
     print "snap forge-ui ui"
     print "look settled-end"
   } > $OUT/settled.play
@@ -137,7 +138,7 @@ if want clarity; then
       print "wait 30"
       print "city Kingsmere 6 -25"; print "wait 6"; print "snap kingsmere-$v"
       print "city Goldrock 6 -25"; print "wait 6"; print "snap goldrock-$v"
-      print "work Kingsmere forge 4.5 -25"; print "wait 4"; print "snap forge-$v"
+      print "work Kingsmere forge 4.5 -5"; print "wait 4"; print "snap forge-$v"
       print "look clarity-$v-end"
     } > $OUT/clarity-$v.play
     if [ $v = old ]; then play clarity-$v 300 --clarity=old; else play clarity-$v 300; fi
@@ -167,14 +168,14 @@ fi
 if want fixes; then
   {
     print "wait 30"
-    if has_step castle; then print "castle Kingsmere 4 -22"; else print "city Kingsmere 40"; fi
+    if has_step castle; then print "castle Kingsmere 4 -5"; else print "city Kingsmere 40"; fi
     print "wait 8"; print "snap bailey"
     print "city Kingsmere 30"; print "wait 6"; print "snap mountains"
     if has_step field; then print "field summer 0.3 0 9 -20"; else print "city Goldrock 16 -20"; fi
     print "wait 6"; print "snap hedges"
     if has_step work; then print "work Goldrock mill 5 -25"; print "wait 6"; print "snap goldrock-mill"; print "work $HUNGER mill 5 -25"; print "wait 6"; print "snap dry-mill"; fi
     print "look feast-now"; print "wait 14"
-    print "city $SEAT 3 -22"; print "wait 6"; print "snap feast-bonfire"
+    print "city $SEAT 3.5 -5"; print "wait 6"; print "snap feast-bonfire"
     print "look fixes-end"
   } > $OUT/fixes.play
   stage_on fixes feast-now "{\"city\":$SEATID,\"mood\":\"feast\"}"
@@ -188,8 +189,7 @@ if want meshy; then
   for v in kit meshy; do
     {
       print "wait 30"
-      print "work Kingsmere forge 4.5 -25"; print "wait 6"; print "snap forge-$v"
-      print "work Kingsmere forge 4.5 -12"; print "wait 4"; print "snap forge-low-$v"
+      print "work Kingsmere forge 4.5 -5"; print "wait 6"; print "snap forge-$v"
       print "work Goldrock mill 5 -25"; print "wait 6"; print "snap mill-$v"
       print "work Kingsmere guild 6 -25"; print "wait 6"; print "snap treasury-$v"
       print "city Kingsmere 14"; print "wait 6"; print "snap town-$v"
@@ -204,12 +204,12 @@ if want village; then
   say "war: $(stage "{\"city\":$WARID,\"mood\":\"war\"}")  hunger: $(stage "{\"city\":$HUNGERID,\"mood\":\"hunger\"}")"
   {
     print "wait 30"
-    print "work Kingsmere stables 4.5 -25"; print "wait 6"; burst stables-clip 24 0.2
+    print "work Kingsmere stables 4.5 -5"; print "wait 6"; burst stables-clip 24 0.2
     print "work Kingsmere stables 14 -22"; print "wait 4"; burst stables-far-clip 24 0.2
     print "city $WAR 6 -25"; print "wait 8"; print "snap war"
     print "city $HUNGER 6 -25"; print "wait 8"; print "snap hunger"
     print "road Kingsmere 5"; print "wait 6"; burst road-clip 28 0.2
-    print "work Kingsmere inn 4.5 -25"; print "wait 6"; print "snap inn"
+    print "work Kingsmere inn 4.5 -5"; print "wait 6"; print "snap inn"
     print "work Kingsmere mill 5 -25"; print "wait 6"; burst mill-clip 30 0.2
     print "look muster-now"; print "wait 10"
     print "city Kingsmere 6 -25"; print "wait 4"; burst levy-clip 40 0.5
@@ -227,8 +227,8 @@ fi
 if want fountain; then
   {
     print "wait 30"
-    print "city Goldrock 3 -25"; print "wait 6"; print "snap goldrock-fountain"
-    print "city Kingsmere 3 -25"; print "wait 6"; print "snap kingsmere-statue"
+    print "city Goldrock 3.5 -5"; print "wait 6"; print "snap goldrock-fountain"
+    print "city Kingsmere 3.5 -5"; print "wait 6"; print "snap kingsmere-statue"
     print "city Kingsmere 6 -25"; print "wait 8"; print "snap kingsmere-crowd"
     print "city $LEVY 6 -25"; print "wait 8"; print "snap village-crowd"
     print "look fountain-end"
@@ -281,16 +281,16 @@ if want breach; then
   {
     print "wait 25"
     if has_step camp; then print "camp 9 -20"; print "wait 4"; print "snap siege-camp"; fi
-    if has_step engine; then print "engine 0 2.5 -18"; print "wait 14"; burst engine-clip 45 0.2; fi
-    if has_step breach; then print "breach 4 -3"; else print "look breach-front"; fi
+    if has_step engine; then print "engine 0 3.5 -5"; print "wait 14"; burst engine-clip 45 0.2; fi
+    if has_step breach; then print "breach 4 -5"; else print "look breach-front"; fi
     burst stone-clip 40 0.2
     print "snap breach-cracked"
     print "wait 45"
-    if has_step breach; then print "breach 3 -3"; fi
+    if has_step breach; then print "breach 3.5 -5"; fi
     print "snap breach"; burst breach-clip 30 0.2
     print "wait 4"; burst storm-clip 36 0.25
     print "wait 30"
-    if has_step breach; then print "breach 3.5 -3"; fi
+    if has_step breach; then print "breach 3.5 -5"; fi
     print "snap storm-taken"
     print "wait 25"
     if has_step breach; then print "breach 7 -3"; fi
@@ -339,11 +339,11 @@ fi
 if want sound; then
   {
     print "wait 30"
-    print "city Kingsmere 4.5 -25"; print "wait 10"; print "snap sound-square-near"
+    print "city Kingsmere 4.5 -5"; print "wait 10"; print "snap sound-square-near"
     print "city Kingsmere 14"; print "wait 8"; print "snap sound-square-14"
     print "city Kingsmere 40"; print "wait 8"; print "snap sound-square-40"
-    print "work Kingsmere barn 4.5 -25"; print "wait 10"; print "snap sound-yard"
-    print "work Kingsmere stables 4.5 -25"; print "wait 10"; print "snap sound-paddock"
+    print "work Kingsmere barn 4.5 -5"; print "wait 10"; print "snap sound-yard"
+    print "work Kingsmere stables 4.5 -5"; print "wait 10"; print "snap sound-paddock"
     print "work Kingsmere mill 5 -25"; print "wait 10"; print "snap sound-mill"
     print "look sound-muster"; print "wait 10"
     print "road Kingsmere 5"; print "wait 15"; print "snap sound-levy"

@@ -2,7 +2,7 @@
  "_": "Review v17: batch 9's shots (docs/review/batch9-list.md, all four sessions'), each beside its reference from docs/art/target. docs/review/batch9.sh makes the frames; docs/review/v17_apply.py turns each into a screen with two versions: the target, then ours. Generated with batch9.sh from one description.",
  "group": "Batch 9 beside the target",
  "label": "Batch 9",
- "switches": "--look=one --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on --ui=v2 --dressing=on --landmarks=meshy",
+ "switches": "--look=one --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on --ui=v2 --dressing=on --castle-life=on --weather=v2 --landmarks=meshy",
  "shots": [
   {
    "id": "b9-kingsmere-6",
@@ -263,14 +263,6 @@
    "still": "meshy-kit/forge-kit.png"
   },
   {
-   "id": "b9-meshy-forge-low-kit",
-   "name": "The forge, low (kit)",
-   "what": "The hand-painted look beside the kit's (before)",
-   "ref": "01-town",
-   "card": "W3",
-   "still": "meshy-kit/forge-low-kit.png"
-  },
-  {
    "id": "b9-meshy-mill-kit",
    "name": "The lumber mill (kit)",
    "what": "In the watermill's place, its wheel in the stream (before)",
@@ -301,14 +293,6 @@
    "ref": "01-town",
    "card": "W3",
    "still": "meshy-meshy/forge-meshy.png"
-  },
-  {
-   "id": "b9-meshy-forge-low-meshy",
-   "name": "The forge, low (meshy)",
-   "what": "The hand-painted look beside the kit's (after)",
-   "ref": "01-town",
-   "card": "W3",
-   "still": "meshy-meshy/forge-low-meshy.png"
   },
   {
    "id": "b9-meshy-mill-meshy",
