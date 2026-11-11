@@ -179,6 +179,18 @@ static func _built(name: String) -> Node3D:
 	return root
 
 
+## A kit house raised from its tier (house_tiers.gd) stands at assets.json house_kit.scale of the kit's metres
+## (scale_kinds: the components it applies to): the kit's 3 m storeys and steep roofs put a townhouse's ridge at
+## 9.7 m and a merchant's at 12-15 m beside 1.7 m townsfolk; a medieval storey was nearer 2.5 m. Trades keep
+## the kit's size (their work spots are in its metres: works.gd).
+static func _built_scale(name: String) -> float:
+	var spec: Dictionary = BUILT[name].get("spec", {})
+	var hk: Dictionary = Data.value("assets", "house_kit", {})
+	if not spec.has("tier") or not String(KIT[name][0]) in (hk.get("scale_kinds", []) as Array):
+		return 1.0
+	return float(hk.get("scale", 1.0))
+
+
 static func _path(name: String) -> String:
 	return String(_model.get(name, ""))
 
@@ -210,7 +222,7 @@ static func _template(name: String) -> Dictionary:
 	var longest := maxf(box.size.x, box.size.z)
 	var k: float = 1.0 if longest <= 0.0 else float(KIT[name][1]) * S / longest
 	if BUILT.has(name):
-		k = S  # built in metres
+		k = S * _built_scale(name)  # built in metres
 	if BY_HEIGHT.has(name) and box.size.y > 0.0:
 		k = float(BY_HEIGHT[name]) * S / box.size.y  # a model whose length misleads (a tall stack, a lying cluster): by its true height
 	# Wrap so the model is scaled, centred on its footprint and standing on the ground.
