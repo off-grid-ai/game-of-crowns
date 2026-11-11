@@ -40,14 +40,20 @@ It has total of 4 floats. All renderers supported.
 
 // The army's soldiers (army spike): antzGames' VAT shader (MIT, realm/addons/godot_vat) with team colour
 // added (Warcraft III's way; docs/art/target/03-army.jpg): KayKit's palette paints the cloth (cape,
-// tabard) in its red swatches, so a red-dominant texel takes the regiment's colour, keeping its light and
-// shade. One instance uniform per regiment (a MultiMesh), so every regiment wears its house's colour.
+// tabard) in its red swatches, so the texels inside those palette cells (team_rect_a, team_rect_b; data/army.json
+// team.rects) take the regiment's colour, keeping their light and shade. Picked by palette cell, not by hue, so
+// skin and leather keep their own colour. One instance uniform per regiment (a MultiMesh), so every regiment
+// wears its house's colour. Opaque (a fade cuts out at half alpha), so the men take the realm's shadows and
+// ambient occlusion like everything else; the kit has no normal texture, so none is applied unless given.
 shader_type spatial;
-render_mode blend_mix,depth_draw_always,depth_prepass_alpha,cull_disabled; // change if needed
+render_mode cull_disabled;
 
 uniform sampler2D offset_map: filter_nearest;
 instance uniform vec4 team_color : source_color = vec4(0.75, 0.12, 0.10, 1.0);
 uniform float team_strength : hint_range(0.0, 1.0) = 1.0;
+uniform vec4 team_rect_a = vec4(0.0, 0.25, 0.125, 0.5);  // u0, v0, u1, v1: a palette cell that takes the colour
+uniform vec4 team_rect_b = vec4(0.25, 0.5, 0.375, 0.75);
+uniform float team_shade = 1.1;
 uniform sampler2D normal_map: filter_nearest;
 
 group_uniforms Albedo;
@@ -69,7 +75,8 @@ uniform vec4 roughness_texture_channel : source_color = vec4(1.0, 0.0, 0.0, 0.0)
 group_uniforms;
 
 group_uniforms NormalMap;
-uniform sampler2D normal_map_texture : hint_roughness_normal;
+uniform bool use_normal_texture = false;
+uniform sampler2D normal_map_texture : hint_normal;
 uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
 group_uniforms;
 
@@ -95,7 +102,7 @@ void vertex(){
 	int frame_count = int(end_frame - start_frame);  // for % mod used later
 	
 	float frame_offset = num_frames * custom_data.r;
-	float speed = max(1, float(float(extractDigitGroup(color_data.r, 1, 3))));
+	float speed = max(1.0, float(float(extractDigitGroup(color_data.r, 1, 3))));
 
 	// if start_frame and end_frame are the same - prevents divide by zero
 	num_frames = clamp(num_frames, 0.0001, 8192.0);
@@ -162,13 +169,17 @@ void vertex(){
 void fragment() {
 	vec3 base = albedo.rgb * texture(albedo_texture, UV).rgb;
 	// The palette's red swatches are the cloth: they take the regiment's colour at their own brightness.
-	float red = smoothstep(0.08, 0.25, base.r - max(base.g, base.b));
+	float in_a = step(team_rect_a.x, UV.x) * step(UV.x, team_rect_a.z) * step(team_rect_a.y, UV.y) * step(UV.y, team_rect_a.w);
+	float in_b = step(team_rect_b.x, UV.x) * step(UV.x, team_rect_b.z) * step(team_rect_b.y, UV.y) * step(UV.y, team_rect_b.w);
 	float shade = max(base.r, max(base.g, base.b));
-	ALBEDO = mix(base, team_color.rgb * shade * 1.15, red * team_strength);
+	ALBEDO = mix(base, team_color.rgb * shade * team_shade, max(in_a, in_b) * team_strength);
 	METALLIC = dot(texture(metallic_texture, UV), metallic_texture_channel) * metallic;
 	SPECULAR = specular;
 	ROUGHNESS = dot(texture(roughness_texture, UV), roughness_texture_channel) * roughness;
-	NORMAL_MAP = texture(normal_map_texture, UV).rgb;
-	NORMAL_MAP_DEPTH = normal_scale;
-	ALPHA = custom_data.a;  // fader
+	if (use_normal_texture) {
+		NORMAL_MAP = texture(normal_map_texture, UV).rgb;
+		NORMAL_MAP_DEPTH = normal_scale;
+	}
+	ALPHA = custom_data.a;  // fader: a man fading out is cut away at half
+	ALPHA_SCISSOR_THRESHOLD = 0.5;
 }

@@ -139,3 +139,6 @@ Switches (`--name`) go after `--` on the game's command line.
 - Which houses stay burnt and for how long: the bridge's damage fact, `bridge/data/damage.json` (above). How many catch when a sack plays before that fact arrives: `realm/data/fire.json`: `share_sack`, `share_razed`.
 - Yard fires: `realm/data/fire.json`: `hearth.*`.
 - The wind everything leans with: the weather's (`realm/scripts/weather_fx.gd`: `LOOKS.*.wind`, `PREVAILING_FROM`, `WIND_FULL`).
+
+## The massed army (the army spike, `--army-spike=<men>`)
+- Men to a regiment, the frontages a regiment may stand in (lines and columns), a man's height, the spacing between men and between regiments, how loosely each man stands (off his mark, turned, taller or shorter), how much open ground the host needs and how far from the seat, the share still marching in (from how far, how fast), the share standing at the ready, the paint's brightness under the sun, and which palette cells take the house colour: `realm/data/army.json`.

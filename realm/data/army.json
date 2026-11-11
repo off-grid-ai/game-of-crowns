@@ -1,0 +1,14 @@
+{
+  "_": "The massed army (tools/army_spike.gd, scripts/army_vat.gdshader read it through data.gd; docs/TUNING.md). regiment: men in one regiment (one draw). frontages: men abreast a regiment may stand (each regiment picks one: lines and columns, not one square). man: the soldier's height in world units (the realm's people stand ~0.22). spacing.file, spacing.rank: units between men abreast and front to back. jitter.place, jitter.turn, jitter.size: how far a man stands off his mark, turns off the line (radians), and differs in size (share). gap: units between regiments. muster.clear: units kept clear round the seat's centre; muster.reach: how far out the field may run; muster.slope: the most a regiment's ground may rise across it. march.share: the share of regiments still marching in to the muster; march.from: how far back (units) they start, low and high; march.speed: units a second. stance: the share of standing regiments at the ready (shields up) instead of at ease. albedo: the kit's paint brightness under the realm's sun. team.rects: the KayKit palette cells (u0, v0, u1, v1) that take the house colour (the red cloth swatches); team.shade: the colour's brightness over the swatch's own light.",
+  "regiment": 150,
+  "frontages": [10, 15, 15, 20, 25],
+  "man": 0.22,
+  "spacing": { "file": 0.1, "rank": 0.12 },
+  "jitter": { "place": 0.012, "turn": 0.18, "size": 0.06 },
+  "gap": 0.35,
+  "muster": { "clear": 4.5, "reach": 40.0, "slope": 0.2 },
+  "march": { "share": 0.3, "from": [3.0, 9.0], "speed": 0.07 },
+  "stance": 0.25,
+  "albedo": 0.85,
+  "team": { "rects": [[0.0, 0.25, 0.125, 0.5], [0.25, 0.5, 0.375, 0.75]], "shade": 1.1 }
+}
