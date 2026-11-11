@@ -54,7 +54,7 @@ func _rank_houses(players: Array, fallen: Array = []) -> void:
 			var place := Label.new()
 			place.name = "Place"
 			place.add_theme_font_override("font", T.mono)
-			place.add_theme_font_size_override("font_size", 10)
+			place.add_theme_font_size_override("font_size", T.SIZE_LABEL)
 			place.add_theme_color_override("font_color", T.TEXT_3)
 			place.position = Vector2(3, 0)
 			place.mouse_filter = Control.MOUSE_FILTER_IGNORE

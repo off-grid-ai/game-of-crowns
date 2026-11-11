@@ -214,7 +214,7 @@ func edge_arrow(at, angle: float, text: String, tone: String, fresh: bool) -> vo
 		_edge_icon.pivot_offset = Vector2(7, 7)
 		_edge_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_edge_label = Label.new()
-		_edge_label.add_theme_font_size_override("font_size", 13)
+		_edge_label.add_theme_font_size_override("font_size", T.SIZE_LABEL)
 		_edge_label.add_theme_color_override("font_color", T.TEXT)
 		_edge_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(_edge_icon)

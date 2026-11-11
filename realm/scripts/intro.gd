@@ -177,13 +177,13 @@ func _build() -> void:
 	head.add_child(_title)
 	_line = Label.new()
 	_line.autowrap_mode = TextServer.AUTOWRAP_WORD
-	_line.add_theme_font_size_override("font_size", 24)
+	_line.add_theme_font_size_override("font_size", T.SIZE_TITLE)
 	_line.add_theme_color_override("font_color", Color(0.95, 0.93, 0.88))
 	_line.custom_minimum_size.x = 600
 	box.add_child(_line)
 	_keys = Label.new()
 	_keys.add_theme_font_override("font", T.mono)
-	_keys.add_theme_font_size_override("font_size", 15)
+	_keys.add_theme_font_size_override("font_size", T.SIZE_DESC)
 	_keys.add_theme_color_override("font_color", T.ACCENT)
 	box.add_child(_keys)
 	_hint = T.label("")
@@ -201,7 +201,7 @@ func _build() -> void:
 	_hint.add_theme_constant_override("shadow_offset_x", 0)
 	_hint.add_theme_constant_override("shadow_offset_y", 1)
 	_hint.add_theme_constant_override("shadow_outline_size", 6)
-	_hint.add_theme_font_size_override("font_size", 14)
+	_hint.add_theme_font_size_override("font_size", T.SIZE_DESC)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(_hint)
 	# The storybook takes its clicks in _input; its pictures never catch the

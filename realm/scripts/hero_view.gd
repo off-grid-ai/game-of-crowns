@@ -505,7 +505,7 @@ func _fill_panel(p: Dictionary, house: Dictionary, editing := false) -> void:
 		var field := LineEdit.new()
 		field.visible = false
 		field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		field.add_theme_font_size_override("font_size", 22)
+		field.add_theme_font_size_override("font_size", T.SIZE_TITLE)
 		field.text = first
 		field.placeholder_text = "Their first name"
 		names.add_child(field)

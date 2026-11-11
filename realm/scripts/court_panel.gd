@@ -579,6 +579,8 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 			if int(w.get("cost", 0)) > 0:
 				name += "  ·  %s" % ui.crowns(int(w["cost"]))
 		var b := ui.btn(name, func(): pass)
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.autowrap_mode = TextServer.AUTOWRAP_WORD  # a long answer wraps, never cut off (the audit)
 		answers.append(b)
 		b.pressed.connect(func():
 			# One answer to a matter: the one given says so, the others go quiet,

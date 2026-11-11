@@ -158,7 +158,7 @@ func _fill_houses(world: Dictionary) -> void:
 			line.scroll_active = false
 			line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			line.add_theme_font_override("normal_font", T.mono)
-			line.add_theme_font_size_override("normal_font_size", 9)
+			line.add_theme_font_size_override("normal_font_size", T.SIZE_LABEL)
 			line.text = "  ".join(odds)
 			var said := PackedStringArray()
 			if not wars.is_empty():

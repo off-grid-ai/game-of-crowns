@@ -78,6 +78,7 @@ func open() -> void:
 			label += "  ·  %s" % ui.crowns(int(ch["cost"]))
 		var b: Button = ui.btn(label, _choose.bind(int(ch.get("i", 0))))
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.autowrap_mode = TextServer.AUTOWRAP_WORD  # a long answer wraps, never cut off (the audit)
 		if int(ch.get("cost", 0)) > ui.purse:
 			b.disabled = true
 			b.tooltip_text = "The treasury holds too little for this."

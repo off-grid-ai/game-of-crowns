@@ -147,21 +147,21 @@ func _make(_id: int) -> Dictionary:
 	var house := Label.new()
 	house.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	house.add_theme_font_override("font", T.mono)
-	house.add_theme_font_size_override("font_size", 9)
+	house.add_theme_font_size_override("font_size", T.SIZE_LABEL)
 	house.add_theme_color_override("font_color", Color(0.95, 0.93, 0.88, 0.78))
 	_shadow(house)
 	box.add_child(house)
 	# What the town is busy with: a building going up, recruits in training.
 	var doing := Label.new()
 	doing.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	doing.add_theme_font_size_override("font_size", 11)
+	doing.add_theme_font_size_override("font_size", T.SIZE_LABEL)
 	doing.add_theme_color_override("font_color", T.ACCENT)
 	_shadow(doing)
 	box.add_child(doing)
 	# What the town is saying (--thoughts; RCT's guest thoughts): a quiet line, near the town only.
 	var thought := Label.new()
 	thought.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	thought.add_theme_font_size_override("font_size", 11)
+	thought.add_theme_font_size_override("font_size", T.SIZE_LABEL)
 	thought.add_theme_color_override("font_color", Color(0.95, 0.92, 0.85, 0.82))
 	_shadow(thought)
 	thought.visible = false

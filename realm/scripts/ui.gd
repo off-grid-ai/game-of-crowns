@@ -410,7 +410,7 @@ func gauge(parent: Control, icon_name: String, tip: String, word := "") -> Label
 	if word != "":
 		var w := T.label(word.to_upper())
 		w.add_theme_font_override("font", T.mono)
-		w.add_theme_font_size_override("font_size", 9)
+		w.add_theme_font_size_override("font_size", T.SIZE_LABEL)
 		w.add_theme_color_override("font_color", T.TEXT_3)
 		w.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		h.add_child(w)

@@ -209,7 +209,7 @@ func _epilogue(ep: Dictionary, title := "The reign, as it will be told", wait_cl
 	var said := Label.new()
 	said.autowrap_mode = TextServer.AUTOWRAP_WORD
 	said.add_theme_font_override("font", T.speech)
-	said.add_theme_font_size_override("font_size", 22)
+	said.add_theme_font_size_override("font_size", T.SIZE_TITLE)
 	said.add_theme_color_override("font_color", Color(0.94, 0.9, 0.82))
 	v.add_child(said)
 	var after := Label.new()
@@ -359,7 +359,7 @@ func _reign_end(r: Dictionary) -> void:
 	verdict.custom_minimum_size.x = 760
 	verdict.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	verdict.add_theme_font_override("font", T.speech)
-	verdict.add_theme_font_size_override("font_size", 26)
+	verdict.add_theme_font_size_override("font_size", T.SIZE_TITLE)
 	verdict.add_theme_color_override("font_color", Color(0.92, 0.88, 0.8))
 	col.add_child(verdict)
 	# The reign in numbers.
@@ -401,7 +401,7 @@ func _reign_end(r: Dictionary) -> void:
 		_end_panel = null
 		ui.reign_continued.emit())
 	on.custom_minimum_size = Vector2(200, 48)
-	on.add_theme_font_size_override("font_size", 18)
+	on.add_theme_font_size_override("font_size", T.SIZE_BODY)
 	on.add_theme_stylebox_override("normal", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.24), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.6), 8, 10))
 	on.add_theme_stylebox_override("hover", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.36), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.85), 8, 10))
 	on.add_theme_color_override("font_color", Color(1, 0.93, 0.78))
@@ -412,7 +412,7 @@ func _reign_end(r: Dictionary) -> void:
 		_end_panel = null
 		ui.open_menu.emit())
 	menu.custom_minimum_size = Vector2(200, 48)
-	menu.add_theme_font_size_override("font_size", 18)
+	menu.add_theme_font_size_override("font_size", T.SIZE_BODY)
 	go.add_child(menu)
 	var tw := root.create_tween()
 	tw.tween_interval(0.6)

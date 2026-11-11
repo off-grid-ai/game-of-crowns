@@ -220,7 +220,7 @@ func _build_top_bar() -> void:
 	_year = T.title("The realm is forming", 15)
 	who.add_child(_year)
 	_reign = T.label("Aldmere")
-	_reign.add_theme_font_size_override("font_size", 9)
+	_reign.add_theme_font_size_override("font_size", T.SIZE_LABEL)
 	who.add_child(_reign)
 	# The story that comes for the throne: how near it is, as a thin bar under its name.
 	_threat_bar = ProgressBar.new()
@@ -254,13 +254,13 @@ func _build_top_bar() -> void:
 		_heading.add_child(icon)
 		var way := Label.new()
 		way.add_theme_font_override("font", T.mono)
-		way.add_theme_font_size_override("font_size", 15)
+		way.add_theme_font_size_override("font_size", T.SIZE_DESC)
 		way.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		way.visible = false
 		_heading.add_child(way)
 		_ways[k[0]] = way
 	_earning = Label.new()
-	_earning.add_theme_font_size_override("font_size", 15)
+	_earning.add_theme_font_size_override("font_size", T.SIZE_DESC)
 	_earning.add_theme_color_override("font_color", T.TEXT)
 	_earning.add_theme_font_override("font", T.sans)  # a step heavier than the light titles: read at a glance
 	_earning.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -268,13 +268,13 @@ func _build_top_bar() -> void:
 	who.add_child(_heading)
 	_last_act = Label.new()
 	_last_act.add_theme_font_override("font", T.mono)
-	_last_act.add_theme_font_size_override("font_size", 9)
+	_last_act.add_theme_font_size_override("font_size", T.SIZE_LABEL)
 	_last_act.add_theme_color_override("font_color", T.ACCENT)  # gold: what needs him; red is only for loss
 	_last_act.visible = false
 	who.add_child(_last_act)
 	# The King's own aim, always before him: what to do next, in gold.
 	_aim = Label.new()
-	_aim.add_theme_font_size_override("font_size", 18)  # the one line that says what to do next: read at a glance
+	_aim.add_theme_font_size_override("font_size", T.SIZE_BODY)  # the one line that says what to do next: read at a glance
 	_aim.add_theme_font_override("font", T.sans)
 	_aim.add_theme_color_override("font_color", T.ACCENT)
 	_aim.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -303,7 +303,7 @@ func _build_top_bar() -> void:
 	_aim_how.add_child(aim_track)
 	_aim_count = Label.new()
 	_aim_count.add_theme_font_override("font", T.mono)
-	_aim_count.add_theme_font_size_override("font_size", 11)
+	_aim_count.add_theme_font_size_override("font_size", T.SIZE_LABEL)
 	_aim_count.add_theme_color_override("font_color", Color(T.ACCENT, 0.85))
 	_aim_count.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_aim_how.add_child(_aim_count)
@@ -321,14 +321,14 @@ func _build_top_bar() -> void:
 			ui.focus_city.emit(_next_at))
 	_seals = Label.new()
 	_seals.add_theme_font_override("font", T.mono)
-	_seals.add_theme_font_size_override("font_size", 11)
+	_seals.add_theme_font_size_override("font_size", T.SIZE_LABEL)
 	_seals.add_theme_color_override("font_color", T.ACCENT)
 	_seals.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_seals.visible = false
 	_next_row.add_child(_seals)
 	_next = Label.new()
 	_next.add_theme_font_override("font", T.sans)
-	_next.add_theme_font_size_override("font_size", 13)
+	_next.add_theme_font_size_override("font_size", T.SIZE_LABEL)
 	_next.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_next_row.add_child(_next)
 	var next_track := ColorRect.new()
@@ -343,7 +343,7 @@ func _build_top_bar() -> void:
 	_next_row.add_child(next_track)
 	_next_clock = Label.new()
 	_next_clock.add_theme_font_override("font", T.mono)
-	_next_clock.add_theme_font_size_override("font_size", 11)
+	_next_clock.add_theme_font_size_override("font_size", T.SIZE_LABEL)
 	_next_clock.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_next_row.add_child(_next_clock)
 	# The clock runs down between the realm's reports, four times a second.
@@ -361,7 +361,7 @@ func _build_top_bar() -> void:
 	_event_row.flat = true
 	_event_row.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_event_row.add_theme_color_override("font_color", T.ACCENT)
-	_event_row.add_theme_font_size_override("font_size", 13)
+	_event_row.add_theme_font_size_override("font_size", T.SIZE_LABEL)
 	_event_row.visible = false
 	who.add_child(_event_row)
 	when.add_child(who)
@@ -374,7 +374,7 @@ func _build_top_bar() -> void:
 	who.move_child(line, 0)
 	_year.reparent(line)
 	_aim.reparent(line)
-	_aim.add_theme_font_size_override("font_size", 15)
+	_aim.add_theme_font_size_override("font_size", T.SIZE_DESC)
 	_heading_more = VBoxContainer.new()
 	_heading_more.add_theme_constant_override("separation", 3)
 	_heading_more.visible = false
@@ -437,7 +437,7 @@ func _build_top_bar() -> void:
 		_court_btn.add_theme_color_override("icon_%s_color" % look, T.ACCENT)
 	_court_badge = Label.new()
 	_court_badge.add_theme_font_override("font", T.mono)
-	_court_badge.add_theme_font_size_override("font_size", 12)
+	_court_badge.add_theme_font_size_override("font_size", T.SIZE_LABEL)
 	_court_badge.add_theme_color_override("font_color", Color(0.1, 0.08, 0.06))
 	_court_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_court_badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -664,17 +664,17 @@ func _show_world(world: Dictionary, c: Dictionary) -> void:
 		_threat_bar.value = threat
 		_threat_fill.bg_color = T.DANGER if threat >= 66.0 else T.ACCENT
 		_reign.text = "%s  ·  Act %d" % [String(story.get("title", "")), int(story.get("act", 1))]
-		_reign.add_theme_font_size_override("font_size", 12)
+		_reign.add_theme_font_size_override("font_size", T.SIZE_LABEL)
 		_reign.remove_theme_font_override("font")  # the story's name in the reading face, not tiny capitals
 		_reign.add_theme_color_override("font_color", T.DANGER if threat >= 66.0 else T.ACCENT)
 		_reign.get_parent().get_parent().tooltip_text = "%s\n\n%s\n\nHow near it is to the throne: %d in 100." % [String(story.get("title", "")), String(story.get("last", "")), int(threat)]
 	elif danger.is_empty():
 		_reign.add_theme_font_override("font", T.mono)
-		_reign.add_theme_font_size_override("font_size", 9)
+		_reign.add_theme_font_size_override("font_size", T.SIZE_LABEL)
 		_reign.add_theme_color_override("font_color", T.TEXT_3)
 	else:
 		_reign.add_theme_font_override("font", T.mono)
-		_reign.add_theme_font_size_override("font_size", 9)
+		_reign.add_theme_font_size_override("font_size", T.SIZE_LABEL)
 		# The gravest danger only: a longer line would push the realm's numbers off the bar.
 		_reign.text = String(danger[0]).to_upper()
 		_reign.add_theme_color_override("font_color", T.DANGER)
