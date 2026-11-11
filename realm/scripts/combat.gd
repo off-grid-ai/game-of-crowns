@@ -17,7 +17,7 @@ const REACH := 0.16  # town units: about 1.3 m, a sword's length (the AI's closi
 const ARC := 0.75  # cos of the half-angle a strike covers (about 40 degrees each side)
 const FOLLOW := 0.4  # seconds a move runs on past its blow before the fighter is ready again
 const DODGE := 0.6  # metres a dodge carries you
-const FLOORED := 0.3  # chance a heavy blow that doesn't kill knocks you down
+static var FLOORED := preload("res://scripts/data.gd").num("battle", "floored", 0.3)  # chance a heavy blow that doesn't kill knocks you down (realm/data/battle.json)
 # Moves heavy enough to floor someone: the big two-handed and spinning cuts.
 const HEAVY := ["GS_Attack", "GS_Slash_1", "GS_Slash_3", "GS_Spin", "Axe_Down", "Axe_Spin"]
 # Cuts that come down from above land on the head; the rest are a body blow

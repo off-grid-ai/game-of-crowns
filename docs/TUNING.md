@@ -24,6 +24,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - On or off for reigns that don't say: `bridge/data/seals.json`: `on`. A new reign can set it with `options.seals`.
 - Seals a season, and how many he can keep: `bridge/data/seals.json`: `perSeason`, `bank`, `bankLastAct`.
 - How near a threat must be to top the "next thing" line: `bridge/data/next.json`: `soon`.
+- The uses always on offer for a royal seal, after the urgent ones (a feast or a ward for the coldest house, the banners, walls, the levy): `bridge/data/next.json`: `standing`.
 
 ## Decrees and their prices (Builder 2)
 - Each decree's price and words: `bridge/data/decrees.json`: `<decree>.cost`, `.label`.
@@ -49,6 +50,10 @@ Switches (`--name`) go after `--` on the game's command line.
 
 ## Measuring (NPC perf)
 - A frame-time run drawn as the game is played, not at film quality: `--perf` with `--shot`'s framing (`--perf=smooth` or `--perf=beautiful` to pick).
+
+## Battles (NPC perf)
+- How hard a field battle is: blows a man takes, the chance a blow lands for each side, when the beaten side breaks and how long they fight: `realm/data/battle.json`: `hp`, `hit.*`, `breakAt`, `longest`.
+- Knights' charges (how many passes, how fast): `realm/data/battle.json`: `charge.*`. Kicks, dodges and heavy blows that floor a man: `kickOdds`, `kickLands`, `dodge`, `floored`.
 
 ## Not yet in data (to move)
 - Sound levels and the music's silences: literals in `realm/scripts/soundscape.gd` (`BEDS`, `STINGS`, `MUSIC_DB`, `CALM_GAP`).

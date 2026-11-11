@@ -1,0 +1,12 @@
+{
+  "_": "How a field battle plays (battle_ai.gd, combat.gd read it through data.gd; docs/TUNING.md). hp: blows a soldier takes. hit.beaten, hit.victors: a blow's chance to land, by side. kickLands: a kick's chance to land. dodge: the chance a blow that misses is a dodge rather than a parry. kickOdds: how often a swordsman kicks instead of cutting. breakAt: the beaten side runs when this share of it is left. longest: seconds at blows before whatever is left runs. charge.passes: a knight's charges through the line. charge.ride: a knight's charge speed, units a second. floored: the chance a heavy blow that doesn't kill knocks a man down.",
+  "hp": 2,
+  "hit": { "beaten": 0.22, "victors": 0.5 },
+  "kickLands": 0.7,
+  "dodge": 0.25,
+  "kickOdds": 0.08,
+  "breakAt": 0.55,
+  "longest": 18.0,
+  "charge": { "passes": 3, "ride": 0.85 },
+  "floored": 0.3
+}

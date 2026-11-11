@@ -10,16 +10,21 @@ extends Node
 ## LimboAI extension is present; without it the old timeline plays instead.
 
 const Combat := preload("res://scripts/combat.gd")
+const Data := preload("res://scripts/data.gd")  # the battle's numbers: realm/data/battle.json
 const WALK := 0.2  # a soldier's walk, units a second (about the Walk clip's stride)
 const RUN := 0.55
 const REACH := 0.2  # two duelists this far apart are at sword's length
 const SPACE := 0.14  # men of one side keep this far apart
-const HP := 2
-const HIT := [0.22, 0.5]  # a blow's chance to land, beaten side and victors
-const BREAK := 0.55  # the beaten side runs when this share of it is left
-const LONGEST := 18.0  # or after this long at blows, whatever is left
-const RIDE := 0.85  # a knight's charge (Horse.GALLOP is 0.9)
-const PASSES := 3
+# How the fight goes is data (realm/data/battle.json); today's values are the fallbacks.
+static var HP := int(Data.num("battle", "hp", 2))
+static var HIT := [Data.num("battle", "hit.beaten", 0.22), Data.num("battle", "hit.victors", 0.5)]  # a blow's chance to land, beaten side and victors
+static var BREAK := Data.num("battle", "breakAt", 0.55)  # the beaten side runs when this share of it is left
+static var LONGEST := Data.num("battle", "longest", 18.0)  # or after this long at blows, whatever is left
+static var RIDE := Data.num("battle", "charge.ride", 0.85)  # a knight's charge (Horse.GALLOP is 0.9)
+static var PASSES := int(Data.num("battle", "charge.passes", 3))
+static var KICK_ODDS := Data.num("battle", "kickOdds", 0.08)  # how often a swordsman kicks instead of cutting
+static var KICK_LANDS := Data.num("battle", "kickLands", 0.7)
+static var DODGE_ODDS := Data.num("battle", "dodge", 0.25)  # a missed blow dodged rather than parried
 
 var scenes: Node  # scenes.gd: _stand, _die, _arrows, framing, _people
 var root: Node3D
@@ -347,7 +352,7 @@ func _fight(m: Dictionary, dt: float) -> void:
 	# A cut from the sword-and-shield set the duels use (combat.gd), never the
 	# same one twice running; now and then a kick to break the other's guard.
 	var moves: Array = Combat.KITS["sword"]["attacks"].filter(func(x): return x != m.get("last", "") and x != "Sword_Attack_2")
-	var move: String = Combat.KITS["sword"]["kick"] if r.randf() < 0.08 else moves[r.randi() % moves.size()]
+	var move: String = Combat.KITS["sword"]["kick"] if r.randf() < KICK_ODDS else moves[r.randi() % moves.size()]
 	if m["kit"] == "spear":
 		move = "Spear_Thrust"
 	m["last"] = move
@@ -372,13 +377,13 @@ func _answer(m: Dictionary, e: Dictionary, move: String) -> void:
 	if not m["alive"] or not e["alive"] or e.get("busy", 0.0) > clock:
 		return
 	var kick: bool = move == Combat.KITS["sword"]["kick"]
-	var lands: bool = r.randf() < (0.7 if kick else float(HIT[m["team"]]))
+	var lands: bool = r.randf() < (KICK_LANDS if kick else float(HIT[m["team"]]))
 	e["fate"] = lands
 	if lands:
 		return
 	var parry: Array = Combat.KITS["sword"]["parry"]
 	var clip: String = parry[r.randi() % parry.size()]
-	if r.randf() < 0.25:
+	if r.randf() < DODGE_ODDS:
 		clip = ["Dodge_Back", "Dodge_Left", "Dodge_Right"][r.randi() % 3]
 	e["guarding"] = false
 	e["busy"] = clock + _play(e, clip, r.randf_range(1.0, 1.2)) * 0.8
