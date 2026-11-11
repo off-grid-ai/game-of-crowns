@@ -391,7 +391,7 @@ func _show_audience() -> void:
 		tip.text = "Give the lords their own words: run Off Grid AI"
 		tip.uri = ui.OFFGRID_URL
 		tip.underline = LinkButton.UNDERLINE_MODE_ON_HOVER
-		tip.add_theme_font_size_override("font_size", 13)
+		tip.add_theme_font_size_override("font_size", T.SIZE_DESC)  # on the type scale (theme.gd: 12 / 14 / 16 / 22)
 		tip.add_theme_color_override("font_color", T.MUTED)
 		v.add_child(tip)
 		ui.offgrid_tell()
@@ -541,7 +541,7 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 	var head := Label.new()
 	head.text = String(it.get("text", ""))
 	head.autowrap_mode = TextServer.AUTOWRAP_WORD
-	head.add_theme_font_size_override("font_size", T.SIZE_BODY + 1)
+	head.add_theme_font_size_override("font_size", T.SIZE_BODY)
 	head.add_theme_color_override("font_color", T.DANGER if it.get("crisis", false) else T.TEXT)
 	v.add_child(head)
 	v.add_child(_hand_says(String(it.get("why", ""))))
@@ -789,16 +789,12 @@ func _see_it(it: Dictionary) -> void:
 	result.visible = false  # no placeholder: it comes in, eased, with the realm's words (result_here)
 	result.autowrap_mode = TextServer.AUTOWRAP_WORD
 	result.custom_minimum_size = Vector2(320, 0)
-	result.add_theme_font_size_override("font_size", T.SIZE_BODY + 1)
+	result.add_theme_font_size_override("font_size", T.SIZE_BODY)
 	v.add_child(result)
 	var on := ui.btn("Next matter  ·  %d waiting" % _petitions.size() if not _petitions.is_empty() else "Close the court", _after_seeing.bind(it))
 	on.focus_mode = Control.FOCUS_ALL  # Enter or Space presses it
+	on.tooltip_text = "Enter or Space"  # the key, in a tooltip, not a strip on the card (no key strips on screen)
 	v.add_child(on)
-	var hint := Label.new()
-	hint.text = "Enter for the next"
-	hint.add_theme_color_override("font_color", T.TEXT_3)
-	hint.add_theme_font_size_override("font_size", T.SIZE_DESC)
-	v.add_child(hint)
 	on.grab_focus.call_deferred()
 	# The card fits its words (CK3's event outcome), not the matter's full height before it.
 	_court_panel.custom_minimum_size.y = 0
