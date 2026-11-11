@@ -51,7 +51,7 @@ func _process(delta: float) -> void:
 func _mark(it: Dictionary) -> Control:
 	var ui: Node = main.ui
 	var houses: Dictionary = main.get("_houses")
-	var card := ui.glass_panel() as PanelContainer
+	var card := ui.glass_panel() as PanelContainer  # already on the UI's root
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 2)
 	card.add_child(v)
@@ -77,7 +77,6 @@ func _mark(it: Dictionary) -> Control:
 	card.mouse_exited.connect(func():
 		line.visible = false
 		card.reset_size())
-	ui.root.add_child(card)
 	# On the way between the two seats, a little toward the one it comes from.
 	var a: Vector3 = main.terrain.world_pos(float(it["x"]), float(it["y"]))
 	var b: Vector3 = main.terrain.world_pos(float(it["tx"]), float(it["ty"]))
@@ -94,7 +93,7 @@ const THREAT_LINE := {"host": "%s gathers men at %s.", "famine": "Hunger spreads
 func _threat_mark(th: Dictionary) -> Control:
 	var ui: Node = main.ui
 	var houses: Dictionary = main.get("_houses")
-	var card := ui.glass_panel() as PanelContainer
+	var card := ui.glass_panel() as PanelContainer  # already on the UI's root
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 2)
 	card.add_child(v)
@@ -118,7 +117,6 @@ func _threat_mark(th: Dictionary) -> Control:
 	card.mouse_exited.connect(func():
 		line.visible = false
 		card.reset_size())
-	ui.root.add_child(card)
 	var at: Vector3 = main.terrain.world_pos(float(th["x"]), float(th["y"]))
 	at.y += 0.9
 	ui.anchor.pin(card, at, false)
