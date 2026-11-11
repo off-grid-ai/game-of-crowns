@@ -518,6 +518,7 @@ func _people(s: Dictionary) -> void:
 		var n: Node3D
 		if who == "horse":
 			n = Horse.new()
+			n.ready.connect(n.live_idle.bind(rng), CONNECT_ONE_SHOT)  # head down to graze at the rail now and then (animals.gd), once it stands
 		elif who == "animal":
 			n = _animal(String(spec.get("animal", "sheep")), rng)
 		else:

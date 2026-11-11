@@ -35,8 +35,12 @@ static var moved := 0
 static var thought := 0
 
 
-static func add(player: AnimationMixer) -> void:
+## `reach`: how far off it still moves, as far as it's drawn (a horse or a farm beast is drawn further
+## than a person, People.SEEN_TO: past it, it stood frozen in batch 7's paddock and levy shots).
+static func add(player: AnimationMixer, reach := -1.0) -> void:
 	player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+	if reach > 0.0:
+		player.set_meta("lod_reach", reach)
 	_players.append(weakref(player))
 
 
@@ -91,11 +95,11 @@ func _process(delta: float) -> void:
 
 ## How often a person at this distance is seen to: 1 every frame, n one frame in
 ## n, 0 out of sight (off screen or past People.SEEN_TO).
-static func every(cam: Camera3D, body: Node3D) -> int:
+static func every(cam: Camera3D, body: Node3D, reach := -1.0) -> int:
 	if flat:
 		return 1
 	var d := (body.global_position + Vector3(0, 0.1, 0)).distance_to(cam.global_position)
-	if d > People.SEEN_TO or not in_view(cam, body):
+	if d > (reach if reach > 0.0 else People.SEEN_TO) or not in_view(cam, body):
 		return 0
 	if d < NEAR:
 		return 1
@@ -117,7 +121,7 @@ func _animate(delta: float, vp: Viewport, cam: Camera3D) -> void:
 		if cam == null or p.get_viewport() != vp:
 			_move(p, delta)
 			continue
-		var n := every(cam, body)
+		var n := every(cam, body, float(p.get_meta("lod_reach", -1.0)))
 		if n == 0:
 			_owed.erase(id)
 			continue

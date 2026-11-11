@@ -116,7 +116,7 @@ static func make(kind: String, rng: RandomNumberGenerator, walking := false) -> 
 	if walking or lived.is_empty():
 		root.set_meta("walking", walking)
 		_loop(anim, "Walk" if walking else "Idle", rng)
-	preload("res://scripts/anim_lod.gd").add(anim)
+	preload("res://scripts/anim_lod.gd").add(anim, Data.num("roadside", "fade.small", 22.0))  # moving as far off as it's drawn
 	return root
 
 

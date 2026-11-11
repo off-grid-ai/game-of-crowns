@@ -85,7 +85,7 @@ func _init(coat := -1) -> void:
 		_looped = true
 		for g in GAITS:
 			_anim.get_animation(g[0]).loop_mode = Animation.LOOP_LINEAR
-	preload("res://scripts/anim_lod.gd").add(_anim)  # moved by distance, as people are
+	preload("res://scripts/anim_lod.gd").add(_anim, 40.0)  # moved by distance, as people are, as far off as it's drawn
 	_head = _skel.find_bone("DEF-head")
 	var head_rest := _skel.get_bone_global_rest(_head).affine_inverse()
 	_bits = [head_rest * BIT, head_rest * (BIT * Vector3(-1, 1, 1))]
