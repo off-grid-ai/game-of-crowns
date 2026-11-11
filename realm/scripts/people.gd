@@ -199,10 +199,10 @@ static func _plant(lib: AnimationLibrary) -> void:
 	var sk: Skeleton3D = ref.find_child("GeneralSkeleton", true, false)
 	var hips := sk.find_bone("Hips")
 	var ms := maxf(sk.motion_scale, 0.001)
-	var seats: Array = Data.value("people", "feet.seats", ["Sitting", "Driving", "Riding"])
+	var seats: Array = Data.value("people", "feet.seats", ["Driving", "Riding"])
 	for name in lib.get_animation_list():
 		if seats.any(func(k): return String(name).begins_with(String(k))):
-			continue  # on a bench, a cart's box or a saddle: the seat holds them, not their feet
+			continue  # on a cart's box or a saddle: the seat holds them, not their feet (sat on a bench or the ground, the feet still find the ground)
 		var a := lib.get_animation(name)
 		var pt := a.find_track(NodePath("%GeneralSkeleton:Hips"), Animation.TYPE_POSITION_3D)
 		if pt < 0 or a.track_get_key_count(pt) == 0:
@@ -250,6 +250,10 @@ static func _sole_drop(sk: Skeleton3D, a: Animation) -> float:
 	var pt := a.find_track(NodePath(path + "Hips"), Animation.TYPE_POSITION_3D)
 	var rt := LEGS.map(func(n): return a.find_track(NodePath(path + n), Animation.TYPE_ROTATION_3D))
 	var lo := INF
+	var touch := INF  # down low: the lowest of the knees and the laid-down feet, less what lies between bone and ground
+	var knee_r := Data.num("people", "feet.kneeRadius", 0.06) * hips_rest / 0.95
+	var instep := Data.num("people", "feet.instep", 0.05) * hips_rest / 0.95
+	var seat_r := Data.num("people", "feet.seat", 0.12) * hips_rest / 0.95
 	for k in samples + 1:
 		var t := a.length * k / samples
 		var pose := {}
@@ -264,10 +268,16 @@ static func _sole_drop(sk: Skeleton3D, a: Animation) -> float:
 		for kn in knees:
 			down = down or (where.call(kn, pose) as Transform3D).origin.y < knee_rest * kneeling
 		if down:
+			for kn in knees:
+				touch = minf(touch, (where.call(kn, pose) as Transform3D).origin.y - knee_r)
+			touch = minf(touch, low.call(pose) - instep)
+			touch = minf(touch, (where.call(hips, pose) as Transform3D).origin.y - seat_r)  # sat back on the heels
 			continue  # sat, lying or on a knee: the seat or the knee is on the ground, not the soles
 		lo = minf(lo, low.call(pose))
 	if lo == INF:
-		return 0.0
+		# A move that never stands (kneeling, praying, planting): raised by how far its knee or its
+		# laid-down foot goes under the ground, never lowered; sat or lying moves keep their keys.
+		return clampf(-touch, 0.0, Data.num("people", "feet.mostLift", 0.25) * hips_rest / 0.95) if touch != INF else 0.0
 	var most := Data.num("people", "feet.mostLift", 0.25) * hips_rest / 0.95
 	return clampf(rest - lo, -most, most)
 
