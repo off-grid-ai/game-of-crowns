@@ -114,6 +114,12 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log of supervisor actions (newest first; details in review/supervisor-log.md)
+- 17:15 Batch 1 rendered km-cap and Goldrock (kit castle and houses in house colours; sent to Mac); km-mid and
+  map-mid failed (check logs); fire last. Fixes from batch 1 committed (52583ee..e02b89b). Stone walls (78923501,
+  2e516b8b), the army VAT spike (b4763818) and the bake-off scene (97ba1a7) are ready. Batch 2 queued to follow: town
+  shots, the wall demo, the army at 6k/15k/30k, the bake-off kit row. Disk freed (Mac: "Clear"; old DMGs, Brave
+  and ShipIt caches, the mobile app's Gradle/Android/Xcode build caches): 34 GB free. AI image-to-3D waits on the HF
+  token's location (not in ~/.cache/huggingface).
 - 16:35 Mac: "you're the only one running… take control, run threads, get things moving fast." All six Desktop
   sessions were idle (likely usage limits). The supervisor now renders Milestone 1 itself (/tmp/goc-milestone1, all
   switches on) and runs build agents in its own session: (a) the kit castle and kit houses in house colours
