@@ -85,6 +85,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - Painted ground on or off: `realm/data/ground.json`: `painted` (or `--ground=painted` / `--ground=photo` for one run). Each layer's colour and how broad its pattern: `layers.<layer>.tint`, `.scale`; the grass's broad colour patches: `macro`.
 - The coast: how far the beach runs above the waterline, and the surf at the shore: `realm/data/ground.json`: `beach.top`, `surf`.
 - How far out the land keeps its fine shape (Terrain3D's rings round the lens; too coarse and a lake's low shore sinks under the water at the mid zoom): `realm/data/ground.json`: `mesh.size`, `mesh.lods`.
+- Rivers' ends and colour (how far a mouth sinks under the sea or a lake and over how many points, how a spring or a joining river narrows, the water's shallow and deep colour): `realm/data/ground.json`: `rivers.*`.
 - Roads: every road's, street's and track's earth colour and the King's road's shade (`roads.tint`, `roads.kingsShade`), how a track frays into the grass and how dark its ruts (`roads.edge.*`), the painted look's grass verge (`roads.verge`, `roads.vergeTint`): `realm/data/ground.json`. The farm hedges' bush: `realm/data/assets.json`: `hedge` (photo), `hedge_painted`.
 - Which painted texture each ground layer draws (the CC0 watercolor set, packed by `realm/tools/pack_painted_ground.gd`): `realm/data/ground.json`: `layers.<layer>.painting` (rerun the tool and `--import` after changing one).
 
@@ -125,6 +126,13 @@ Switches (`--name`) go after `--` on the game's command line.
 
 ## Who's home and the hearths (Builder 1; on by default, `--hearths=off`)
 - Chimney smoke only where someone's home: how often it's checked, how near a person must be to their door: `realm/data/hearths.json`.
+
+## Life along the roads (off until judged: `on` in the file, or `--roadside=on` / `--roadside=off`)
+- Which roads get it, how far from towns, farms and roads.gd's own inns it keeps: `realm/data/roadside.json`: `roads`, `town_clear`, `farm_room`, `inn_room`.
+- How often each kind stands along a road (inns a day's ride apart and at crossroads, hamlets, woodcutters in the woods, shrines, waystones), how far off the road and how much room each takes: `realm/data/roadside.json`: `kinds.<kind>.first`, `every`, `gap`, `chance`, `out`, `room`, `tiles`.
+- What each site is made of (catalogue pieces, where and how turned), its smoke, yard fire and the inn's sign and names: `realm/data/roadside.json`: `kinds.<kind>.pieces`, `smoke`, `fire`, `sign`; a hamlet's cottages, ring and fields: `kinds.hamlet.*`; bridges (how narrow a river gets one, the span) and fords: `kinds.bridge`, `kinds.ford`; the mill on a stream: `kinds.mill`; toll gates out of castle towns: `kinds.toll`; the gallows by the crown's seat: `kinds.gallows`.
+- Who is about at each (horses, drinkers, soldiers, stablehand, farmers, woodcutters, pilgrims, toll guards, beasts), their moves, how near the camera they appear and how often they change what they do: `realm/data/roadside.json`: `kinds.<kind>.life`, `life.*`, `animals`.
+- Travellers and herds to and from inns, hamlets, mills and camps (how often, how many, herd beasts and pace): `realm/data/roadside.json`: `traffic.*`. Models still missing, for image-to-3D: `candidates`. Check: `arch -arm64 godot --headless --path realm -s res://tools/roadside_probe.gd`.
 
 ## Damage to towns: walls and burnt houses (Builder 1; the bridge owns it)
 - How fast besiegers batter a wall section, when it shows cracked and breached, how fast it's mended, how much a sack or razing burns and how fast it's rebuilt, how many sections: `bridge/data/damage.json`.
