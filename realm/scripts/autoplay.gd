@@ -308,17 +308,21 @@ func _play(quit_after: bool) -> void:
 				# breach [dist] [tilt]: frames the first open breach in a stone wall (walls.gd), low and oblique
 				# from inside the camp's side, where the storm is fought; the siege's front if none is open yet.
 				var at := Vector3.INF
+				var town := Vector3.INF
 				var sieges: Dictionary = main.scenes.get("_sieges")
 				for id in sieges:
 					if sieges[id].get("front") is Vector3:
 						at = sieges[id]["front"]
+						for c in main.bridge.world.get("cities", []):
+							if int(c["id"]) == int(id):
+								town = main.terrain.world_pos(float(c["x"]), float(c["y"]))
 						break
 				if at != Vector3.INF and Engine.has_meta("stone_walls"):
 					var gaps: Array = Engine.get_meta("stone_walls").breaches_near(at, 6.0)
 					if not gaps.is_empty():
 						at = gaps[0]
 				if at != Vector3.INF:
-					_oblique(at, float(w[1]) if w.size() > 1 else 3.0, float(w[2]) if w.size() > 2 else -25.0)
+					_from_outside(at, town, float(w[1]) if w.size() > 1 else 3.0, float(w[2]) if w.size() > 2 else -25.0)
 					if main.rig.is_processing_input() == false:
 						main.rig.apply()
 				_note("  breach: %s" % ("framed at %s" % at if at != Vector3.INF else "no siege staged (--siege)"))
@@ -348,7 +352,7 @@ func _play(quit_after: bool) -> void:
 				# toward the town: tents, fires, palisade, the engines in the band, the wall beyond.
 				var camp: Node = main.scenes.find_child("SiegeCamp", true, false)
 				if camp:
-					_oblique(camp.middle(), float(w[1]) if w.size() > 1 else 8.0, float(w[2]) if w.size() > 2 else -22.0)
+					_from_outside(camp.middle(), camp.at, float(w[1]) if w.size() > 1 else 8.0, float(w[2]) if w.size() > 2 else -22.0)
 					if main.rig.is_processing_input() == false:
 						main.rig.apply()
 				_note("  camp: %s" % ("framed" if camp else "none pitched (--siege with --camp=on)"))
@@ -358,7 +362,8 @@ func _play(quit_after: bool) -> void:
 				var all := get_tree().get_nodes_in_group("siege_engines")
 				var n := int(w[1]) if w.size() > 1 else 0
 				if n < all.size():
-					_oblique((all[n] as Node3D).global_position, float(w[2]) if w.size() > 2 else 2.5, float(w[3]) if w.size() > 3 else -20.0)
+					var camp_of: Node = (all[n] as Node).get_parent().find_child("SiegeCamp", false, false)
+					_from_outside((all[n] as Node3D).global_position, camp_of.at if camp_of else Vector3.INF, float(w[2]) if w.size() > 2 else 2.5, float(w[3]) if w.size() > 3 else -20.0)
 					if main.rig.is_processing_input() == false:
 						main.rig.apply()
 				_note("  engine %d: %s" % [n, "framed" if n < all.size() else "none (%d stand)" % all.size()])
@@ -465,6 +470,19 @@ func _frame_city(title: String, dist: float) -> void:
 			var at: Vector3 = main.terrain.world_pos(float(c["x"]), float(c["y"]))
 			main.rig.snap(at, dist, main.rig.sight_yaw(at, maxf(dist, main.rig.min_distance), 0.6))
 			return
+
+
+## The camera low and oblique on a siege's piece from outside the town (`town`: its heart), looking in
+## toward it, so the town's houses stand behind the subject, never between it and the lens; turned only as
+## far as the rig's own sight check needs for a clear view.
+func _from_outside(at: Vector3, town: Vector3, dist: float, tilt: float) -> void:
+	var out := Vector3(at.x - town.x, 0, at.z - town.z) if town != Vector3.INF else Vector3(0, 0, 1)
+	var yaw := atan2(out.x, out.z)
+	if main.rig.has_method("sight_yaw"):
+		yaw = main.rig.sight_yaw(at, dist, yaw, tilt)
+	main.rig.snap(at, dist, yaw)
+	main.rig.tilt = clampf(tilt, -40.0, 30.0)
+	main.rig.goal_tilt = main.rig.tilt
 
 
 ## The camera low and oblique over a place: never top-down (a tilt below 0 looks further out).
