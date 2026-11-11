@@ -75,7 +75,7 @@ func open() -> void:
 		row.add_theme_constant_override("separation", T.GAP_TIGHT)
 		var label := String(ch.get("label", ""))
 		if int(ch.get("cost", 0)) > 0:
-			label += "  ·  %s crowns" % ui.heads(int(ch["cost"]) * 100)
+			label += "  ·  %s" % ui.crowns(int(ch["cost"]))
 		var b: Button = ui.btn(label, _choose.bind(int(ch.get("i", 0))))
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		if int(ch.get("cost", 0)) > ui.purse:

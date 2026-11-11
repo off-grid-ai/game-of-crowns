@@ -23,7 +23,10 @@ var _opened_at := Vector3.INF  # the place of the matter the King opened from it
 ## in (the court sits) / decide (who asks, what they want, the Hand's view, the answers
 ## with what each costs and whom it moves) / see it (the card turns over to what the
 ## ruling did) / out (the next, or the doors close once).
-static var ONE: bool = OS.get_cmdline_user_args().has("--court=one")
+## On by default now (the professional audit: the card shrinks after a ruling, painted faces); --court=old brings back the old flow.
+static var ONE: bool = not OS.get_cmdline_user_args().has("--court=old")
+const HAND_FACE := {"id": "the-hand-of-the-king", "gender": "male", "age": 62}  # the Hand's own painted face, the same every reign
+const FACE_SIZE := Vector2(96, 128)  # a painted face the eye goes to first (CK3's event portrait), not a 40 px figure
 const PaintedFaces := preload("res://scripts/painted_faces.gd")
 var _seeing: Dictionary = {}  # the matter just ruled, while the card shows what it did (ONE)
 var _doors_shut := false  # the doors-close word said once a sitting
@@ -312,7 +315,9 @@ func _show_audience() -> void:
 	named.add_theme_constant_override("separation", T.GAP_WIDE)
 	v.add_child(named)
 	var sitter = p.get("who")
-	var painted: Texture2D = PaintedFaces.face(sitter) if ONE and sitter is Dictionary else null
+	# A painted face for every matter (CK3's event portrait; KoDP's council, one face per voice): the lord who
+	# asks, or the Hand himself when the matter is the realm's.
+	var painted: Texture2D = PaintedFaces.face(sitter) if sitter is Dictionary else (PaintedFaces.face(HAND_FACE) if p.get("hand", false) else null)
 	if painted:
 		# One court flow: their painted face (painted_faces.gd), in a frame of their house's colour.
 		var frame := PanelContainer.new()
@@ -325,7 +330,7 @@ func _show_audience() -> void:
 		frame.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		var face := TextureRect.new()
 		face.texture = painted
-		face.custom_minimum_size = Vector2(72, 96)
+		face.custom_minimum_size = FACE_SIZE
 		face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		frame.add_child(face)
@@ -352,7 +357,9 @@ func _show_audience() -> void:
 		pname.size_flags_horizontal = Control.SIZE_FILL
 		names.add_child(pname)
 		var wl := Label.new()
-		wl.text = "Wants to %s" % want
+		# Their own pronoun, not "their" (the audit: a named woman read as machine-made).
+		var pron := "her" if String((sitter as Dictionary).get("gender", "")) == "female" else "his"
+		wl.text = "Wants to %s" % RegEx.create_from_string("\\btheir\\b").sub(want, pron, true)
 		wl.autowrap_mode = TextServer.AUTOWRAP_WORD
 		wl.add_theme_color_override("font_color", T.TEXT_2)
 		names.add_child(wl)
@@ -570,7 +577,7 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 			# The order's name and its true price; the hand-written effect words give way to the weighed numbers.
 			name = name.get_slice("  ", 0).get_slice(" · ", 0)
 			if int(w.get("cost", 0)) > 0:
-				name += "  ·  %s crowns" % ui.heads(int(w["cost"]) * 100)
+				name += "  ·  %s" % ui.crowns(int(w["cost"]))
 		var b := ui.btn(name, func(): pass)
 		answers.append(b)
 		b.pressed.connect(func():
@@ -631,7 +638,32 @@ func _weighs_chips(w: Dictionary) -> Control:
 	var pad := MarginContainer.new()
 	pad.add_theme_constant_override("margin_left", 12)
 	pad.add_child(moves)
-	for side in ["helps", "hurts"]:
+	# Many houses moved: one line in words, the detail on hover (the audit: a row of six chips is noise;
+	# CK3's options carry one short effect line).
+	var all_moves: Array = (w.get("helps", []) as Array) + (w.get("hurts", []) as Array)
+	if all_moves.size() > 3:
+		var short := func(m) -> String: return str(m.get("house", "")).trim_prefix("House ").trim_prefix("The ")
+		var count := func(arr: Array, verb: String) -> String:
+			if arr.is_empty():
+				return ""
+			if arr.size() == 1:
+				return "%s %s" % [verb, short.call(arr[0])]
+			return "%s %s houses" % [verb, ["", "one", "two", "three", "four", "five", "six", "seven", "eight"][mini(arr.size(), 8)]]
+		var parts := PackedStringArray([count.call(w.get("helps", []), "pleases"), count.call(w.get("hurts", []), "angers")])
+		var line := Label.new()
+		line.text = "  ·  ".join(Array(parts).filter(func(x): return x != ""))
+		line.text = line.text.left(1).to_upper() + line.text.substr(1)
+		line.add_theme_color_override("font_color", T.TEXT_2)
+		line.add_theme_font_size_override("font_size", T.SIZE_DESC)
+		line.mouse_filter = Control.MOUSE_FILTER_STOP
+		var tip := PackedStringArray()
+		for m in all_moves:
+			var d := int(m.get("d", 0))
+			tip.append("%s  %s" % [short.call(m), ("much warmer" if d >= BIG_MOVE else "warmer") if d > 0 else ("much colder" if -d >= BIG_MOVE else "cooler")])
+		line.tooltip_text = "\n".join(tip)
+		moves.add_child(line)
+		all_moves = []
+	for side in (["helps", "hurts"] if not all_moves.is_empty() else []):
 		for m in w.get(side, []):
 			var who := str(m.get("house", ""))
 			var house: Dictionary = ui.house_by_name.get(who, ui.house_by_name.get("House " + who, {}))
@@ -650,7 +682,7 @@ func _weighs_chips(w: Dictionary) -> Control:
 			moves.add_child(chip)
 	if int(w.get("cost", 0)) > 0:
 		var price := Label.new()
-		price.text = "%s crowns" % ui.heads(int(w["cost"]) * 100)
+		price.text = ui.crowns(int(w["cost"]))
 		price.add_theme_color_override("font_color", T.TEXT_2)
 		price.add_theme_font_size_override("font_size", T.SIZE_DESC)
 		moves.add_child(price)

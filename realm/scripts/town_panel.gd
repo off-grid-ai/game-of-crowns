@@ -79,7 +79,7 @@ func _build_town_panel() -> void:
 	row.add_child(_marriage_menu)
 	var build := HFlowContainer.new()
 	v.add_child(build)
-	_fund_label = T.label("Fund  18k cr")
+	_fund_label = T.label("Fund  " + ui.crowns(180))
 	build.add_child(_fund_label)
 	for pair in [["Sept", "temple"], ["Granary", "granary"], ["Walls", "walls"], ["Market", "market"], ["Barracks", "barracks"], ["Aqueduct", "aqueduct"]]:
 		var bld: String = pair[1]
@@ -111,10 +111,9 @@ var _decrees := {}  # the bridge's own decree list: action -> {cost (in gold), l
 var _favour_wait := {}  # house id -> seasons until it may have another royal favour
 
 
-## A decree's price as the bridge has it, in crowns: "12k cr".
+## A decree's price as the bridge has it, in crowns, written one way: "12,000 crowns".
 func _price(action: String, fallback: int) -> String:
-	var gold := int(_decrees.get(action, {}).get("cost", fallback / ui.CROWNS))
-	return "%dk cr" % int(round(gold * ui.CROWNS / 1000.0))
+	return ui.crowns(int(_decrees.get(action, {}).get("cost", fallback / ui.CROWNS)))
 
 
 var _build_btns := {}  # build key -> its button on the town card

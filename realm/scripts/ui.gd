@@ -714,6 +714,18 @@ static func real(key: String, v: int) -> String:
 
 
 ## A headcount for people to read: 7,500 / 48k / 1.2m.
+## A price, written one way everywhere (the professional audit: "10,000 crowns", never "10k cr"):
+## gold is the bridge's gold (×CROWNS).
+static func crowns(gold: int) -> String:
+	var n := absi(gold * CROWNS)
+	var s := str(n)
+	var out := ""
+	while s.length() > 3:
+		out = "," + s.right(3) + out
+		s = s.left(s.length() - 3)
+	return "%s%s crowns" % ["-" if gold < 0 else "", s + out]
+
+
 static func heads(n: int) -> String:
 	if n >= 1000000:
 		return "%.1fm" % (n / 1000000.0)
