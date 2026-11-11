@@ -4,6 +4,14 @@
 everything on by default. Judged as stills plus one short clip beside Foundation, Tiny Glade and Manor Lords.
 **Breadth waits:** nothing outside the slice until it holds up.
 
+**Judged first on interactions, each a short clip** (Mac: beautiful isn't realism; at low or mid fidelity a great
+interaction experience wins). The look comes second, at our chosen abstraction.
+1. Click a lord or a townsman and he answers. (Builder 1: barks, on)
+2. Rule at court and the town changes where you see it. (Builder 2)
+3. Set a fire: it spreads house to house, people flee and fight it (a bucket line with pails), it leaves ruins. (Builder 1; ruins.gd exists)
+4. Besiege the wall: it cracks, then breaches, and men pour through. (Builder 1, wall pieces from Townsfolk)
+5. A season turns and the town reacts (work, dress, light, talk change with it). (Builder 2 + Townsfolk)
+
 | Piece | Owner | On by default when | Reference |
 |---|---|---|---|
 | The look: grade, soft contact shadows, haze (`--look=one`) | Builder 2 | the stills beside the references pass | Tiny Glade, Foundation |
