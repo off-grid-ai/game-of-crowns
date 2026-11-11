@@ -78,6 +78,45 @@ func _play(quit_after: bool) -> void:
 			continue
 		var w := line.split(" ", false)
 		_note("> " + line)
+		await _step(w)
+		# A framing step: the next snap waits for the camera to settle (batch 7: frames taken mid-move), and the
+		# log says where it stood (the distance ladder, checkable from play.log).
+		if w[0] in FRAMING:
+			await _settle()
+	if quit_after:
+		_note("done")
+		_log.close()
+		get_tree().quit()
+
+
+## Steps that frame the camera (each waits for it to settle before the next step).
+const FRAMING := ["city", "road", "site", "work", "field", "flock", "breach", "castle", "camp", "engine", "burn", "host", "town", "unit", "tile", "life"]
+
+
+## The camera settled: it has moved less than SETTLE_EPS a frame for SETTLE_FRAMES frames running (its eases and
+## the clarity lift done), or SETTLE_MOST seconds passed. Logs its distance, pitch and how long it took.
+const SETTLE_EPS := 0.002
+const SETTLE_FRAMES := 8
+const SETTLE_MOST := 5.0
+func _settle() -> void:
+	var cam: Camera3D = get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	var t0 := Time.get_ticks_msec()
+	var still := 0
+	var last := cam.global_position
+	while still < SETTLE_FRAMES and Time.get_ticks_msec() - t0 < SETTLE_MOST * 1000.0:
+		await get_tree().process_frame
+		var now := cam.global_position
+		still = still + 1 if now.distance_to(last) < SETTLE_EPS else 0
+		last = now
+	var look := cam.global_position + (-cam.global_basis.z) * 10.0
+	var pitch := rad_to_deg(asin(clampf(-(-cam.global_basis.z).y, -1.0, 1.0)))
+	_note("  settled in %.1f s: distance %.1f (rig), %.1f to the ground ahead, %.0f deg down%s" % [(Time.get_ticks_msec() - t0) / 1000.0,
+		float(main.rig.distance), cam.global_position.y - main.terrain.height_at(look.x, look.z), pitch, "" if still >= SETTLE_FRAMES else " (still moving)"])
+
+
+func _step(w: PackedStringArray) -> void:
 		match w[0]:
 			"wait":
 				await get_tree().create_timer(float(w[1])).timeout
@@ -158,12 +197,18 @@ func _play(quit_after: bool) -> void:
 					_clear_ui()
 					await get_tree().process_frame
 				await RenderingServer.frame_post_draw
+				# The realm's time stands still while the frame is saved (batch 7: a full-size PNG took most of a
+				# second of game time, so 'wait 0.2' between clip frames came out a second apart): the next wait
+				# is then the true gap between frames.
+				var was := Engine.time_scale
+				Engine.time_scale = 0.0
 				var img := get_viewport().get_texture().get_image()
 				var path: String = w[1] if w[1].begins_with("/") else "%s/%s.png" % [out, w[1]]
 				if path.ends_with(".jpg"):
 					img.save_jpg(path, 0.85)
 				else:
 					img.save_png(path)
+				Engine.time_scale = was
 			"look":
 				_note("  " + " ".join(w.slice(1)) + " :: " + JSON.stringify(_observe()))
 			"button":
@@ -430,10 +475,6 @@ func _play(quit_after: bool) -> void:
 				main.rig.set_process(false)
 				main.rig.set_process_input(false)
 				main.rig.set_process_unhandled_input(false)
-	if quit_after:
-		_note("done")
-		_log.close()
-		get_tree().quit()
 
 
 func _action(name: String, down: bool) -> void:
