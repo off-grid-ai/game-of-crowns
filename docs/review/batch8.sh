@@ -86,24 +86,24 @@ if want towns; then
     print "wait 25"
     for T in Kingsmere Goldrock; do
       t=${T:l}
-      print "city $T 4.5 -25"; print "wait 10"; print "snap $t-d4"
-      print "city $T 6 -25"; print "wait 5"; print "snap $t-d6"
-      print "city $T 14 -22"; print "wait 6"; print "snap $t-d14"
-      print "city $T 40 -20"; print "wait 6"; print "snap $t-d40"
+      print "city $T 4.5 -3"; print "wait 10"; print "snap $t-d4"
+      print "city $T 6 -3"; print "wait 5"; print "snap $t-d6"
+      print "city $T 14 -3"; print "wait 6"; print "snap $t-d14"
+      print "city $T 40 -3"; print "wait 6"; print "snap $t-d40"
     done
     # The working buildings (works.gd): the forge, the stables and paddock, the mill.
     if has_step work; then
       # Each from the square first, so a town without the trade still shows its square (play.log says which).
-      print "city Kingsmere 4.5 -25"; print "work Kingsmere forge 4.5 -25"; print "wait 8"; print "snap forge"; burst forge-clip 24 0.2
-      print "city Kingsmere 4.5 -25"; print "work Kingsmere stables 5 -25"; print "wait 8"; print "snap stables"; burst stables-clip 24 0.2
-      print "city Goldrock 8 -25"; print "work Goldrock mill 5 -25"; print "wait 8"; print "snap mill"; burst mill-clip 24 0.2
+      print "city Kingsmere 4.5 -3"; print "work Kingsmere forge 4.5 -3"; print "wait 8"; print "snap forge"; burst forge-clip 24 0.2
+      print "city Kingsmere 4.5 -3"; print "work Kingsmere stables 5 -3"; print "wait 8"; print "snap stables"; burst stables-clip 24 0.2
+      print "city Goldrock 8 -3"; print "work Goldrock mill 5 -3"; print "wait 8"; print "snap mill"; burst mill-clip 24 0.2
       # The barn's yard (2d5a2118): cows, sheep and pigs grazing and rooting, the yardhand milking and mucking out.
-      print "city Kingsmere 4.5 -25"; print "work Kingsmere barn 4.5 -25"; print "wait 8"; print "snap barnyard"; burst barnyard-clip 24 0.2
+      print "city Kingsmere 4.5 -3"; print "work Kingsmere barn 4.5 -3"; print "wait 8"; print "snap barnyard"; burst barnyard-clip 24 0.2
     else
       # No step frames a trade's building yet: the square, where the inn, stables, paddock and forge stand.
-      print "city Kingsmere 4.5 -25"; print "wait 8"; print "snap forge"; burst forge-clip 24 0.2
+      print "city Kingsmere 4.5 -3"; print "wait 8"; print "snap forge"; burst forge-clip 24 0.2
       print "life Kingsmere groom 4.5"; print "wait 6"; print "snap stables"; burst stables-clip 24 0.2
-      print "city Goldrock 8 -25"; print "wait 8"; print "snap mill"; burst mill-clip 24 0.2
+      print "city Goldrock 8 -3"; print "wait 8"; print "snap mill"; burst mill-clip 24 0.2
     fi
     # Life along the roads (roadside.gd): an inn, a hamlet, a bridge; carts and travellers on the road.
     if has_step site; then
@@ -133,18 +133,18 @@ fi
 if want look2; then
   {
     print "wait 30"
-    print "city Goldrock 14 -22"; print "wait 10"; print "snap goldrock-rings"
-    print "city Goldrock 6 -25"; print "wait 6"; print "snap goldrock-plots"
-    print "city Kingsmere 3.5 -25"; print "wait 8"; print "snap kingsmere-stalls"
-    print "city Goldrock 3.5 -25"; print "wait 6"; print "snap goldrock-stalls"
-    print "city Kingsmere 2 -18"; print "wait 6"; print "snap kingsmere-statue"
-    print "city Goldrock 2 -18"; print "wait 6"; print "snap goldrock-fountain"
-    print "city Kingsmere 8 -30"; print "wait 6"; print "snap kingsmere-lanes"
-    print "city Goldrock 8 -30"; print "wait 6"; print "snap goldrock-lanes"
-    print "city Kingsmere 18 -20"; print "wait 8"; print "snap kingsmere-orchards"
-    if has_step work; then print "work Goldrock mill 6 -22"; else print "city Goldrock 16 -20"; fi
+    print "city Goldrock 14 -3"; print "wait 10"; print "snap goldrock-rings"
+    print "city Goldrock 6 -3"; print "wait 6"; print "snap goldrock-plots"
+    print "city Kingsmere 3.5 -3"; print "wait 8"; print "snap kingsmere-stalls"
+    print "city Goldrock 3.5 -3"; print "wait 6"; print "snap goldrock-stalls"
+    print "city Kingsmere 2 -8"; print "wait 6"; print "snap kingsmere-statue"
+    print "city Goldrock 2 -8"; print "wait 6"; print "snap goldrock-fountain"
+    print "city Kingsmere 8 -3"; print "wait 6"; print "snap kingsmere-lanes"
+    print "city Goldrock 8 -3"; print "wait 6"; print "snap goldrock-lanes"
+    print "city Kingsmere 18 -3"; print "wait 8"; print "snap kingsmere-orchards"
+    if has_step work; then print "work Goldrock mill 6 -3"; else print "city Goldrock 16 -3"; fi
     print "wait 8"; print "snap mill-wheat"
-    print "city Kingsmere 4.5 -30"; print "wait 6"; print "snap kingsmere-yards"
+    print "city Kingsmere 4.5 -3"; print "wait 6"; print "snap kingsmere-yards"
     print "city Kingsmere 2.5 -12"; print "wait 8"; print "snap street-height"
     print "city Goldrock 2.5 -12"; print "wait 6"; print "snap goldrock-street-height"
     print "look look2-end"
@@ -160,10 +160,10 @@ if want centre; then
   say "grief at $SEAT: $(stage "{\"city\":$SEATID,\"mood\":\"grief\"}")"
   {
     print "wait 35"
-    print "city $SEAT 2 -20"; print "wait 8"; print "snap centre-grief"
+    print "city $SEAT 2 -3"; print "wait 8"; print "snap centre-grief"
     print "look centre-feast"; print "wait 14"
-    print "city $SEAT 3 -22"; print "wait 8"; print "snap centre-feast"
-    print "city $SEAT 5 -25"; print "wait 4"; print "snap centre-feast-wide"
+    print "city $SEAT 3 -3"; print "wait 8"; print "snap centre-feast"
+    print "city $SEAT 5 -3"; print "wait 4"; print "snap centre-feast-wide"
     print "look centre-end"
   } > $OUT/centre.play
   rm -rf $OUT/centre
@@ -186,8 +186,8 @@ if want square; then
   for v in before after; do
     {
       print "wait 25"
-      print "city Kingsmere 6 -25"; print "wait 10"; print "snap square-$v"
-      print "city Kingsmere 4.5 -25"; print "wait 6"; print "snap square-street-$v"; burst square-clip-$v 24 0.2
+      print "city Kingsmere 6 -3"; print "wait 10"; print "snap square-$v"
+      print "city Kingsmere 4.5 -3"; print "wait 6"; print "snap square-street-$v"; burst square-clip-$v 24 0.2
       print "look square-$v-end"
     } > $OUT/square-$v.play
     if [ $v = before ]; then play square-$v 360 --crowd=off; else play square-$v 360; fi
@@ -202,13 +202,13 @@ if want castle; then
   {
     print "wait 30"
     if has_step castle; then
-      print "castle $SEAT 6 -22"; print "wait 8"; print "snap castle"
-      print "castle $SEAT 2.5 -18"; print "wait 6"; print "snap castle-walls"; burst guards-clip 30 0.25
-      print "castle $SEAT 3 -20 gate"; print "wait 4"; print "snap castle-gate"
+      print "castle $SEAT 6 -3"; print "wait 8"; print "snap castle"
+      print "castle $SEAT 2.5 -8"; print "wait 6"; print "snap castle-walls"; burst guards-clip 30 0.25
+      print "castle $SEAT 3 -3 gate"; print "wait 4"; print "snap castle-gate"
       print "look castle-breach"; print "wait 4"
-      print "castle $SEAT 4 -22"; print "wait 25"; print "snap castle-breached"
+      print "castle $SEAT 4 -3"; print "wait 25"; print "snap castle-breached"
     else
-      print "city $SEAT 6 -22"; print "wait 8"; print "snap castle"
+      print "city $SEAT 6 -3"; print "wait 8"; print "snap castle"
     fi
     print "look castle-end"
   } > $OUT/castle.play
@@ -236,12 +236,12 @@ if want moods; then
   say "hunger: $(stage "{\"city\":$HUNGERID,\"mood\":\"hunger\"}")  levy: $(stage "{\"muster\":$LEVYID}")"
   {
     print "wait 25"
-    print "city $WAR 6 -25"; print "wait 10"; print "snap war-town"; burst war-clip 24 0.2
-    if has_step work; then print "work $WAR inn 4.5 -25"; print "wait 6"; print "snap war-inn"; fi
-    print "city $SEAT 6 -25"; print "wait 10"; print "snap feast-town"; burst feast-clip 24 0.2
-    print "city $SEAT 3.5 -25"; print "wait 6"; print "snap feast-tables"
-    print "city $HUNGER 6 -25"; print "wait 10"; print "snap hunger-town"
-    print "city $LEVY 6 -25"; print "wait 10"; print "snap levy-town"; burst levy-clip 28 0.25
+    print "city $WAR 6 -3"; print "wait 10"; print "snap war-town"; burst war-clip 24 0.2
+    if has_step work; then print "work $WAR inn 4.5 -3"; print "wait 6"; print "snap war-inn"; fi
+    print "city $SEAT 6 -3"; print "wait 10"; print "snap feast-town"; burst feast-clip 24 0.2
+    print "city $SEAT 3.5 -3"; print "wait 6"; print "snap feast-tables"
+    print "city $HUNGER 6 -3"; print "wait 10"; print "snap hunger-town"
+    print "city $LEVY 6 -3"; print "wait 10"; print "snap levy-town"; burst levy-clip 28 0.25
     print "tile $MX $MY $MD"; print "wait 8"; print "snap war-feast-wide"
     print "look moods-end"
   } > $OUT/moods.play
@@ -265,7 +265,7 @@ if want fields; then
       print "field autumn 0.6 0 3 -22"; print "wait 8"; print "snap field-glean"
       print "field summer 0.4 0 9 -20"; print "wait 6"; print "snap fields-wide"
     else
-      print "city $SEAT 9 -20"; print "wait 8"; print "snap fields-wide"
+      print "city $SEAT 9 -3"; print "wait 8"; print "snap fields-wide"
     fi
     if has_step flock; then print "field summer 0.5 0 9 -20"; print "flock 0 3 -22"; print "wait 8"; print "snap flock"; burst flock-clip 40 0.5; fi
     print "look fields-end"
@@ -279,7 +279,7 @@ fi
 if want fire; then
   {
     print "wait 25"
-    print "city $SACK 6 -25"; print "wait 10"; print "snap fire-before"
+    print "city $SACK 6 -3"; print "wait 10"; print "snap fire-before"
     print "look sack-now"; print "wait 6"
     print "snap fire-06s"; burst fire-clip 28 0.2
     print "wait 4"; print "snap fire-20s"
@@ -303,18 +303,18 @@ if want breach; then
     print "wait 25"
     if has_step camp; then print "camp 9 -20"; print "wait 4"; print "snap siege-camp"; fi
     if has_step engine; then print "engine 0 2.5 -18"; print "wait 14"; burst engine-clip 45 0.2; fi
-    if has_step breach; then print "breach 4 -25"; else print "look breach-front"; fi
+    if has_step breach; then print "breach 4 -3"; else print "look breach-front"; fi
     burst stone-clip 40 0.2
     print "snap breach-cracked"
     print "wait 45"
-    if has_step breach; then print "breach 3 -25"; fi
+    if has_step breach; then print "breach 3 -3"; fi
     print "snap breach"; burst breach-clip 30 0.2
     print "wait 4"; burst storm-clip 36 0.25
     print "wait 30"
-    if has_step breach; then print "breach 3.5 -25"; fi
+    if has_step breach; then print "breach 3.5 -3"; fi
     print "snap storm-taken"
     print "wait 25"
-    if has_step breach; then print "breach 7 -22"; fi
+    if has_step breach; then print "breach 7 -3"; fi
     print "snap storm-fire"
     print "look breach-end"
   } > $OUT/breach.play
@@ -430,8 +430,8 @@ if want rulings; then
     print "wait 25"
     for k in $RULINGS; do
       print "look ruling-$k"; print "wait 12"
-      print "city $SEAT 4.5 -25"; print "wait 8"; print "snap ruling-$k"
-      print "city $SEAT 7 -25"; print "wait 4"; print "snap ruling-$k-wide"
+      print "city $SEAT 4.5 -3"; print "wait 8"; print "snap ruling-$k"
+      print "city $SEAT 7 -3"; print "wait 4"; print "snap ruling-$k-wide"
     done
     print "look rulings-end"
   } > $OUT/rulings.play
@@ -461,9 +461,9 @@ if want weather; then
   say "rain: $(stage '{"weather":"rain"}')"
   {
     print "wait 40"
-    print "city $SEAT 4.5 -25"; print "wait 8"; print "snap rain-close"; burst rain-clip 24 0.2
-    print "city $SEAT 3 -22"; print "wait 6"; print "snap rain-square"
-    print "city $SEAT 14 -22"; print "wait 6"; print "snap rain-town"
+    print "city $SEAT 4.5 -3"; print "wait 8"; print "snap rain-close"; burst rain-clip 24 0.2
+    print "city $SEAT 3 -3"; print "wait 6"; print "snap rain-square"
+    print "city $SEAT 14 -3"; print "wait 6"; print "snap rain-town"
     print "look rain-end"
   } > $OUT/rain.play
   play rain 420 --weather=v2
@@ -471,8 +471,8 @@ if want weather; then
   say "snow: $(stage '{"weather":"snow"}')"
   {
     print "wait 60"
-    print "city $SEAT 4.5 -25"; print "wait 8"; print "snap snow-close"
-    print "city $SEAT 14 -22"; print "wait 6"; print "snap snow-town"
+    print "city $SEAT 4.5 -3"; print "wait 8"; print "snap snow-close"
+    print "city $SEAT 14 -3"; print "wait 6"; print "snap snow-town"
     print "look snow-end"
   } > $OUT/snow.play
   play snow 420 --weather=v2 --season=winter
@@ -483,11 +483,11 @@ fi
 if want night; then
   {
     print "wait 25"
-    if has_step work; then print "work Kingsmere inn 4.5 -25"; else print "city Kingsmere 4.5 -25"; fi
+    if has_step work; then print "work Kingsmere inn 4.5 -3"; else print "city Kingsmere 4.5 -3"; fi
     print "wait 10"; print "snap night-inn"
     if has_step site; then print "site inn 0 6 -25"; print "wait 8"; print "snap night-road-inn"; fi
     print "road Kingsmere 8"; print "wait 10"; print "snap night-road"  # only a torchlit patrol or a messenger by night
-    if has_step castle; then print "castle Kingsmere 3 -20 gate"; print "wait 6"; print "snap night-castle-gate"; fi
+    if has_step castle; then print "castle Kingsmere 3 -3 gate"; print "wait 6"; print "snap night-castle-gate"; fi
     print "look night-end"
   } > $OUT/night.play
   play night 420 --hour=21 --castle-life=on
