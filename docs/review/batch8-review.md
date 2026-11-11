@@ -77,3 +77,18 @@ camera still looks over the nearest roofs, not past them (camera_rig.gd sight ch
 clarity.fade, team_colour.gdshader). (3) The squares' centrepieces don't read: a stack of blocks at Goldrock, and the
 King sized as a man (assets.json square_statue). (4) Stray poles in the Goldrock square. (5) Horse coat blotches
 (horse.gd COATS). (6) Flat wheat squares (field crops). (7) Bright white smoke blobs (hearths.gd, chimney smoke).
+
+### centre (3 frames, 0 script errors; pitches 15, 22 and 26 degrees, distances 2, 3 and 5 as asked)
+
+| Shot | Verdict | Defects |
+|---|---|---|
+| centre-grief | FAIL | **No grief reads.** The same busy market as a calm day: open stalls, a colourful crowd and no candles at the rim that you could see. The see-through, dithered red stall sits in the middle again, just as in look2's kingsmere-statue. The King on his column reads as a standing man. Winter: the ground is flat, untextured white snow, yet every roof is bare. |
+| centre-feast | FAIL | The feast reads: bunting, long tables and a crowd round the column. A huge near roof fills the lower-left quarter, and a black-shaded tree crown sits beside it. The centrepiece is a man on a stack of blocks. |
+| centre-feast-wide | FAIL (best frame of 8b so far) | Bunting, tables, dancers, the bonfire ring and the stalls together at 26 degrees. The bonfire ring is unlit: no flames at a feast. Roofs fill the bottom and left edges. Snow lies flat white on the ground with none on the roofs. A news toast sits in the lower left. |
+
+**Centre defects:** (1) a grief mood that looks like any market day: town_life.gd `_moods`, data/moods.json grief
+(shut the stalls, thin and darken the crowd, light the candles). (2) The near-camera stall dither persists at d2-d3
+in the square: the clarity fade or the stall material (team_colour.gdshader fade_gone/solid). (3) An unlit bonfire at
+the feast: towns.json centre bonfire, fire.gd hearth. (4) Winter has no snow on the roofs and flat white ground:
+terrain.gd and ground.json snow, team_colour or roof snow. (5) Foreground roofs at the short distances: the camera_rig.gd
+sight check.
