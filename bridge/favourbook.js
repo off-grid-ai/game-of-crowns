@@ -9,6 +9,7 @@
 // each call (getters for what it reassigns, nextEffect for the effects'
 // numbering); server.js keeps wrappers of the same names.
 
+import { COURT } from "./court.js";
 import fs from "node:fs";
 import path from "node:path";
 import { houseFor } from "./narrator.js";
@@ -125,7 +126,7 @@ export function temper(ctx, action, house, changes, dry = false) {
   return out;
 }
 
-// Shifts favour and says what it did, for the result card: "6,000 crowns · Thornvale 34 → 29".
+// Shifts favour and says what it did, for the result card: "6,000 crowns · Thornvale cooler".
 export function shiftAndTell(ctx, changes, why, cost = 0) {
   const { world } = ctx;
   const was = Object.fromEntries(Object.keys(changes ?? {}).map((id) => [id, Math.round(favourOf(ctx, Number(id)))]));
@@ -133,7 +134,10 @@ export function shiftAndTell(ctx, changes, why, cost = 0) {
   const moved = Object.keys(was).map((id) => {
     const p = world?.players.find((x) => x.id === Number(id));
     const now = Math.round(favourOf(ctx, Number(id)));
-    return p && now !== was[id] ? `${houseFor(p).name.replace(/^House /, "")} ${was[id]} → ${now}` : null;
+    // Direction and size in words, never the arithmetic (data/court.json favourWords).
+    const d = now - was[id], W = COURT.favourWords;
+    const word = d > 0 ? (d >= W.big ? W.bigUp : W.up) : (-d >= W.big ? W.bigDown : W.down);
+    return p && now !== was[id] ? `${houseFor(p).name.replace(/^House /, "")} ${word}` : null;
   }).filter(Boolean);
   const price = cost ? [`${(cost * 100).toLocaleString("en-US")} crowns`] : [];
   const shown = moved.length > 7 ? [...moved.slice(0, 6), `and ${moved.length - 6} more`] : moved;

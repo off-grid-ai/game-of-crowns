@@ -255,6 +255,11 @@ func _show_audience() -> void:
 	# Opened from its marker: the card stands by the matter's place. Come up by
 	# itself (a sitting, a crisis), it stands where the court always does.
 	var here: Vector3 = ui.place_of.call(p)
+	# One court flow: a matter with a place is decided at it, on the map (CK3/KoDP's card in
+	# the world): the King's own press (the court, Next) frames its town, and the card stands by it.
+	if ONE and here != Vector3.INF and _opened_at != here:
+		_opened_at = here
+		ui.matter_opened.emit(here)
 	if _opened_at != Vector3.INF and here == _opened_at:
 		# By its place the card is narrow (as a town's card is) and as tall as its words.
 		_court_panel.custom_minimum_size = Vector2(PINNED_WIDTH, 0)
