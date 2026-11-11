@@ -122,6 +122,10 @@ professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pa
 
 ## Log
 
+- 2026-11-11 21:00: Mac: "apply the same philosophy to everything… armoury, blacksmith, stables, mills, windmill all need to be there… if land is short, reduce the smaller houses… high quality towns… many aspects brought together, pieces interacting very well." Standing rule: a town is a composition. Landmarks and trades come first, then large and middle houses, then small houses as filler. Every building has work and life that ties it to the others and to the realm's state.
+  - The town agent's scope is widened to whole-town composition: trades placed with sense, a land budget, AI meshes wired by data.
+  - New agent on life at buildings: forge, stables, the grain chain (field → mill → granary → market), inn, square; reactions to war, levy, famine and feasts.
+
 - 2026-11-11 20:45: Mac: "roads, houses, all picturesque… small, medium, big, really large houses, smaller lots… places to stay… not limited, not made on a budget. 4 Claude accounts: use a bench, don't worry about limits; keep the ledger of what's done and what's next."
   Running now (code only; renders bundle later):
   - Finesse pass: grounded feet, a real well, worn roads, seated props, the lake smear, fields on water, grey army colour, regiments on trees.
