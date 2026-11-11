@@ -1,75 +1,76 @@
 {
- "_": "The one look (PLAN.md Phase 2 item 1; art-direction-report.md: Foundation's town lit like Tiny Glade; target art-direction/concept-town-repaint.png). look.gd reads it. on: the switch (or --look=one); off keeps today's light. sun_elevation: degrees above the horizon (25-35: long soft shadows). sun_color / horizon_color: the warm key (about 4500 K) at height and near the horizon. sky_contribution: how much of the shade's light comes from the sky (the rest is ambient_color: the cool blue fill in the shadows). lut: the colour grade (assets/grade/storybook.png, made by tools/make_storybook_lut.py: lifted warm mids, quieter greens, cool shadows; empty: none; today's golden-hour LUT only browns). saturation, contrast: the gentle S-curve after AgX. exposure. haze_color: the warm distance haze. kit_tints: the free kit's materials re-graded by name (a multiply on their colour: earthy terracotta roofs, honey stone, darker oak, deeper leaves; kit.py's unify table). ssao / ssil: soft contact shadows (radius, intensity, power) and bounced light. haze: the volumetric haze's density near the ground (fades out as the camera pulls back) and the distance fog's density.",
+ "_": "The one look (PLAN.md Phase 2 item 1; retargeted by Mac to Warcraft III Reforged at the RTS camera: chunky readable shapes, rich saturated colour, bold house colours, crisp light). look.gd reads it. on: the switch (or --look=one); off keeps today's light. sun_elevation: degrees above the horizon (25-35: long soft shadows). sun_color / horizon_color: the warm key (about 4500 K) at height and near the horizon. sky_contribution: how much of the shade's light comes from the sky (the rest is ambient_color: the cool blue fill in the shadows). lut: the colour grade (assets/grade/storybook.png, made by tools/make_storybook_lut.py: lifted warm mids, quieter greens, cool shadows; empty: none; today's golden-hour LUT only browns). saturation, contrast: the gentle S-curve after AgX. exposure. haze_color: the warm distance haze. kit_tints: the free kit's materials re-graded by name (a multiply on their colour: earthy terracotta roofs, honey stone, darker oak, deeper leaves; kit.py's unify table). ssao / ssil: soft contact shadows (radius, intensity, power) and bounced light. haze: the volumetric haze's density near the ground (fades out as the camera pulls back) and the distance fog's density.",
  "on": false,
- "sun_elevation": 30.0,
+ "sun_elevation": 42.0,
  "sun_color": [
   1.0,
-  0.86,
-  0.68
+  0.95,
+  0.86
  ],
  "horizon_color": [
   1.0,
-  0.7,
-  0.48
+  0.82,
+  0.62
  ],
- "sky_contribution": 0.7,
+ "sky_contribution": 0.8,
  "ambient_color": [
-  0.5,
-  0.6,
-  0.88
+  0.55,
+  0.65,
+  0.95
  ],
- "lut": "res://assets/grade/storybook.png",
- "saturation": 1.05,
- "contrast": 1.12,
- "exposure": 1.1,
+ "lut": "res://assets/grade/bold.png",
+ "saturation": 1.3,
+ "contrast": 1.15,
+ "exposure": 1.12,
  "haze_color": [
-  0.96,
-  0.86,
-  0.7
+  0.9,
+  0.92,
+  1.0
  ],
  "kit_tints": {
   "MI_RoundTiles": [
-   0.86,
-   0.66,
-   0.56
+   1.05,
+   0.82,
+   0.78
   ],
   "MI_UnevenBrick": [
-   0.96,
-   0.86,
-   0.72
+   1.05,
+   1.0,
+   0.92
   ],
   "MI_WoodTrim": [
+   0.8,
    0.62,
-   0.5,
-   0.42
+   0.48
   ],
   "MI_Plaster": [
-   1.0,
-   0.94,
-   0.84
+   1.08,
+   1.04,
+   0.96
   ],
   "Leaves_NormalTree": [
-   0.8,
-   0.86,
-   0.6
+   0.85,
+   1.1,
+   0.7
   ],
   "Leaves_Pine": [
-   0.72,
-   0.8,
-   0.64
+   0.75,
+   1.0,
+   0.7
   ]
  },
  "ssao": {
-  "radius": 1.6,
-  "intensity": 2.0,
-  "power": 1.4
+  "radius": 1.2,
+  "intensity": 1.8,
+  "power": 1.6
  },
  "ssil": {
   "radius": 4.0,
   "intensity": 1.0
  },
  "haze": {
-  "volumetric": 0.008,
-  "fog": 0.0016
- }
+  "volumetric": 0.003,
+  "fog": 0.0008
+ },
+ "_target_was": "Foundation/Tiny Glade (storybook.png, earthy tints); kept: assets/grade/storybook.png"
 }
