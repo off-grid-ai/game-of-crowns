@@ -537,6 +537,8 @@ func _frame_city(title: String, dist: float) -> void:
 		if String(c.get("title", c.get("name", ""))) == title:
 			# A cut, from the side the one framing rule picks (camera_rig.go_to): nothing tall in front.
 			var at: Vector3 = main.terrain.world_pos(float(c["x"]), float(c["y"]))
+			if dist < main.rig.min_distance:
+				_note("  city %s: %.1f is under the camera's floor (camera.json floor %.1f): framed at the floor" % [title, dist, main.rig.min_distance])
 			main.rig.snap(at, dist, main.rig.sight_yaw(at, maxf(dist, main.rig.min_distance), 0.6))
 			return
 
