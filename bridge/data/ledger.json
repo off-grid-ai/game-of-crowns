@@ -372,7 +372,7 @@
     "axes": {
      "mercy": 1
     },
-    "says": "the old gods let be"
+    "says": "the old rites let be"
    }
   },
   "defector_knight": {
@@ -504,17 +504,17 @@
   "dragon_egg": {
    "buy": {
     "axes": {},
-    "says": "the dragon egg bought for the crown"
+    "says": "the sea-kings' crown bought for the throne"
    },
    "claim": {
     "axes": {
      "give": -1
     },
-    "says": "the dragon egg taken by right"
+    "says": "the sea-kings' crown taken by right"
    },
    "keep": {
     "axes": {},
-    "says": "the dragon egg left with its finders"
+    "says": "the sea-kings' crown left with its finders"
    }
   },
   "envoy_insult": {
@@ -583,7 +583,7 @@
    },
    "septon": {
     "axes": {},
-    "says": "the marriage quarrel sent to the Archbishop"
+    "says": "the marriage quarrel sent to the high priest"
    }
   },
   "royal_match": {
@@ -1375,7 +1375,7 @@
     "axes": {
      "mercy": -1
     },
-    "says": "the north left alone at the wall"
+    "says": "the north left alone on the border"
    }
   },
   "lost-brother:the-stranger": {
