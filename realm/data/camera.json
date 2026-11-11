@@ -1,0 +1,6 @@
+{
+  "_": "The camera's knobs (camera_rig.gd reads them; one owner). floor: the closest the lens comes, a low oblique just over the roofs (Mac: no close-up realism). go_to: the distance each kind of 'go to X' frames at (the one framing rule, camera_rig.go_to; Anno 1800 / Manor Lords jump). sight_steps: how many headings either way go_to tries before taking the least blocked.",
+  "floor": 6.0,
+  "go_to": { "castle": 11.0, "host": 12.0, "town_base": 8.5, "town_per_size": 0.9, "town_min": 10.0, "town_max": 16.0 },
+  "sight_steps": 12
+}

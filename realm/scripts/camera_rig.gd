@@ -24,7 +24,17 @@ var yaw := 0.0
 ## every view stays oblique; street and eye-level views fold into this one. At 6 the
 ## eye stands about 3 up at the closest pitch, just over a tall house's roof (about 2.4):
 ## at 4.5 it stood under them, and the first ring of towers and barns filled the view (v14).
-var min_distance := 6.0
+## The camera's knobs, from data (realm/data/camera.json; docs/TUNING.md): this rig is their one owner.
+static var KNOBS: Dictionary = (func():
+	var f := FileAccess.open("res://data/camera.json", FileAccess.READ)
+	var d = JSON.parse_string(f.get_as_text()) if f else null
+	return d if d is Dictionary else {}).call()
+static func knob(path: String, fallback: float) -> float:
+	var v = KNOBS
+	for k in path.split("."):
+		v = v.get(k) if v is Dictionary else null
+	return float(v) if v != null else fallback
+var min_distance := knob("floor", 6.0)
 const EYE := 0.2  # eye height, about 1.7 m
 var max_distance := 260.0
 
@@ -92,7 +102,8 @@ func nudge(action: String) -> void:
 ## country around it, looked at across the land (not from above), turned so
 ## the sun is behind you. size: the town's Freeciv size.
 func frame_town(pos: Vector3, size: int) -> void:
-	go_to(pos, clampf(8.5 + size * 0.9, 10.0, 16.0))  # the town fills most of the view
+	# The town fills most of the view.
+	go_to(pos, clampf(knob("go_to.town_base", 8.5) + size * knob("go_to.town_per_size", 0.9), knob("go_to.town_min", 10.0), knob("go_to.town_max", 16.0)))
 
 
 ## The one framing rule for every "go to X" (a town, a castle, a host, a matter),
@@ -113,8 +124,9 @@ func go_to(at: Vector3, dist: float) -> void:
 func sight_yaw(at: Vector3, dist: float, yaw: float, tilt := 0.0) -> float:
 	var look := at + Vector3.UP * 0.4
 	var best := [INF, yaw]
-	for k in 12:
-		var y := yaw + ((k + 1) / 2) * (TAU / 12.0) * (1.0 if k % 2 == 1 else -1.0)
+	var steps := int(knob("sight_steps", 12))
+	for k in steps:
+		var y := yaw + ((k + 1) / 2) * (TAU / float(steps)) * (1.0 if k % 2 == 1 else -1.0)
 		var n := blocked_from(eye_at(look, y, tilt, dist), look)
 		if n == 0:
 			return y

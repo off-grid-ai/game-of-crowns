@@ -359,9 +359,10 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 			# castle as a lesser hold at 0.8, and at 0.65 for an island seat.
 			var held := false
 			var passes := [[1.0, 0, 8, 0.0]]
-			for sc in [1.0, 0.8, 0.65]:
-				for ring in [-1, 0, 1, 2]:
-					passes.append([sc, ring, 16, 0.25])
+			var knobs: Dictionary = _castle_knobs()
+			for sc in knobs.get("scales", [1.0, 0.8, 0.65]):
+				for ring in knobs.get("rings", [-1, 0, 1, 2]):
+					passes.append([float(sc), int(ring), int(knobs.get("headings", 16)), float(knobs.get("wet_ok", 0.25))])
 			for pass_ in passes:
 				if held:
 					break
@@ -1640,3 +1641,13 @@ func _smoke(root: Node3D, pos: Vector3) -> void:
 	var gpu: GPUParticles3D = preload("res://scripts/particles.gd").to_gpu(p, 45.0)
 	gpu.position = pos
 	root.add_child(gpu)
+
+
+## The castle search's knobs, from data (realm/data/towns.json; docs/TUNING.md).
+static var _town_knobs = null
+static func _castle_knobs() -> Dictionary:
+	if _town_knobs == null:
+		var f := FileAccess.open("res://data/towns.json", FileAccess.READ)
+		var d = JSON.parse_string(f.get_as_text()) if f else null
+		_town_knobs = d if d is Dictionary else {}
+	return (_town_knobs as Dictionary).get("castle", {})

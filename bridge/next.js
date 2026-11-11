@@ -16,7 +16,9 @@ import * as Seals from "./seals.js";
 let seasonAt = Date.now();
 export function seasonBegan() { seasonAt = Date.now(); }
 
-const SOON = 2;  // seasons: a threat this close comes before anything else
+import fs from "node:fs";
+// seasons: a threat this close comes before anything else (data/next.json; docs/TUNING.md)
+const SOON = JSON.parse(fs.readFileSync(new URL("./data/next.json", import.meta.url), "utf8")).soon ?? 2;
 
 // ctx: meta, world, court, turnSeconds, paused, crownOf. aim: the ladder's aim
 // with its place (city id) and progress (reign.js reignInfo).

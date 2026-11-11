@@ -1005,7 +1005,7 @@ func _follow_house(pid: int) -> void:
 	_house_seen = -1
 	var host: Node3D = units.army_of(pid, bridge.world)
 	if host:
-		director.watch_at(host.global_position, 12.0, "%s's host" % name, host)  # from above the canopy, not through it
+		director.watch_at(host.global_position, rig.knob("go_to.host", 12.0), "%s's host" % name, host)  # from above the canopy, not through it
 		return
 	for c in bridge.world.get("cities", []):
 		if int(c["owner"]) == pid and c.get("capital", false):
@@ -1024,7 +1024,7 @@ func _frame_castle(city_id: int) -> void:
 	var castle: Node3D = (t["node"] as Node3D).get_node_or_null("Castle") if t is Dictionary and is_instance_valid(t.get("node")) else null
 	if castle == null:
 		return  # a seat with no castle built yet: the town's own framing stands
-	rig.go_to(castle.global_position + Vector3.UP * 0.8, 11.0)  # the keep centred: the one framing rule (camera_rig.go_to)
+	rig.go_to(castle.global_position + Vector3.UP * 0.8, rig.knob("go_to.castle", 11.0))  # the keep centred: the one framing rule (camera_rig.go_to)
 
 
 func _focus_city(city_id: int) -> void:
