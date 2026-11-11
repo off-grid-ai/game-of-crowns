@@ -383,6 +383,7 @@ uniform float hold[64];
 uniform vec3 lean[64];
 uniform vec4 pol_k = vec4(0.3, 0.8, 0.45, 0.4);  // wash_near, wash_far, own_mix, stripes_below
 uniform vec4 pol_b = vec4(1.35, 3.0, 1.4, 0.0);  // border_bright, border_px, stripe_width
+uniform vec2 pol_z = vec2(12.0, 30.0);  // map_from, map_to: the camera's height over the ground where the wash comes in
 float flood_d(vec2 t) {
 	float d = 100000.0;
 	for (int i = 0; i < flood_n; i++) d = min(d, distance(t, flood_at[i]));
@@ -457,7 +458,11 @@ const REALM_WASH := """
 					tinted = mix(tinted, lt, st);
 					hd = max(hd, 0.6);  // the stripes themselves are the reading: drawn clearly
 				}
-				k = mix(pol_k.x, pol_k.y, far_off) * hd + band * 0.35 + front * 0.5;
+				// By the camera's height, not each spot's distance: at roof and town height the land near and far
+				// stays natural (the house reads from banners and roofs); the wash, the band and the stripes come in
+				// only as the lens rises to the map. The border line stays at every height.
+				float map_zoom = smoothstep(pol_z.x, pol_z.y, CAMERA_POSITION_WORLD.y - v_vertex.y);
+				k = (mix(pol_k.x, pol_k.y, map_zoom) * hd + band * 0.35 + front * 0.5) * mix(0.15, 1.0, map_zoom);
 			}
 			ALBEDO = mix(ALBEDO, tinted, clamp(k, 0.0, politics > 0.5 ? 0.92 : 0.85));
 		}
@@ -515,7 +520,7 @@ func _show_realm(realm: Texture2D, prev: Texture2D, war: Texture2D, flood: Dicti
 
 
 ## The political map's per-house numbers (terrain.set_realm): hold and lean by owner id, and the knobs.
-func set_politics(on: bool, hold: PackedFloat32Array, lean: PackedVector3Array, k: Vector4, b: Vector4) -> void:
+func set_politics(on: bool, hold: PackedFloat32Array, lean: PackedVector3Array, k: Vector4, b: Vector4, z := Vector2(12.0, 30.0)) -> void:
 	if land == null:
 		return
 	var mat: Terrain3DMaterial = land.material
@@ -524,6 +529,7 @@ func set_politics(on: bool, hold: PackedFloat32Array, lean: PackedVector3Array, 
 	mat.set_shader_param("lean", lean)
 	mat.set_shader_param("pol_k", k)
 	mat.set_shader_param("pol_b", b)
+	mat.set_shader_param("pol_z", z)
 
 
 ## The scars as terrain.set_marks drew them, and the season it is now.

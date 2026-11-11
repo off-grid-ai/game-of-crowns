@@ -884,7 +884,8 @@ func _set_politics(players: Array, colour: Dictionary, by_name: Dictionary) -> v
 			lean[id] = Vector3(c.r, c.g, c.b)
 	land3d.set_politics(on, hold, lean,
 		Vector4(float(pol.get("wash_near", 0.3)), float(pol.get("wash_far", 0.8)), float(pol.get("own_mix", 0.45)), float(pol.get("stripes_below", 0.4))),
-		Vector4(float(pol.get("border_bright", 1.35)), float(pol.get("border_px", 3.0)), float(pol.get("stripe_width", 1.4)), 0.0))
+		Vector4(float(pol.get("border_bright", 1.35)), float(pol.get("border_px", 3.0)), float(pol.get("stripe_width", 1.4)), 0.0),
+		Vector2(float(pol.get("map_from", 12.0)), float(pol.get("map_to", 30.0))))
 
 
 func set_realm(owners: Array, players: Array, intrigue: Array = []) -> void:
