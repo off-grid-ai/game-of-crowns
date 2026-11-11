@@ -57,10 +57,11 @@
     "crate": { "heightRange": [0.25, 1.2], "kind": "clutter", "variants": [
       { "model": "realistic/ph/wooden_crate_01/wooden_crate_01_1k.gltf", "name": "ph/wooden_crate_01", "length": 0.8 },
       { "model": "realistic/ph/wooden_crate_02/wooden_crate_02_1k.gltf", "name": "ph/wooden_crate_02", "length": 0.8 } ] },
-    "bucket": { "heightRange": [0.25, 0.6], "kind": "clutter", "variants": [ { "model": "realistic/ph/wooden_bucket_01/wooden_bucket_01_1k.gltf", "name": "ph/wooden_bucket_01", "length": 0.4 } ] },
+    "bucket": { "heightRange": [0.25, 0.6], "kind": "clutter", "variants": [ { "model": "realistic/ph/wooden_bucket_01/wooden_bucket_01_1k.gltf", "name": "ph/wooden_bucket_01", "length": 0.3 } ] },
     "basket": { "heightRange": [0.15, 0.7], "kind": "clutter", "variants": [ { "model": "realistic/ph/wicker_basket_01/wicker_basket_01_1k.gltf", "name": "ph/wicker_basket_01", "length": 0.6 } ] },
     "ladder": { "heightRange": [2, 5], "kind": "clutter", "variants": [ { "model": "realistic/ph/wooden_ladder/wooden_ladder_1k.gltf", "name": "ph/wooden_ladder", "length": 3.0 } ] },
     "lantern": { "heightRange": [0.2, 0.9], "kind": "clutter", "variants": [ { "model": "realistic/ph/wooden_lantern_01/wooden_lantern_01_1k.gltf", "name": "ph/wooden_lantern_01", "length": 0.35 } ] },
+    "well": { "heightRange": [2.5, 4.5], "kind": "well", "variants": [ { "model": "q/well-0.glb", "name": "q/well", "length": 2.6, "height": 3.3, "stone": true } ] },
     "fire_pit": { "heightRange": [0.2, 1], "kind": "well", "variants": [ { "model": "realistic/ph/stone_fire_pit/stone_fire_pit_1k.gltf", "name": "ph/stone_fire_pit", "length": 1.6 } ] },
     "stump": { "heightRange": [0.2, 1.2], "kind": "stump", "variants": [
       { "model": "realistic/ph/tree_stump_01/tree_stump_01_1k.gltf", "name": "ph/tree_stump_01", "length": 0.9 },

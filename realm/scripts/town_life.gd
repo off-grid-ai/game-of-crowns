@@ -1007,12 +1007,12 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 		# Mourners gathered at the well, candles set down.
 		for i in 3:
 			var a := TAU * i / 3.0
-			var f := _stand(root, life, center, well + Vector3(cos(a), 0, sin(a)) * 0.16, "peasant", "Kneeling", rng.randi(), Color(0.35, 0.33, 0.32), 0.1)
+			var f := _stand(root, life, center, well + Vector3(cos(a), 0, sin(a)) * 0.22, "peasant", "Kneeling", rng.randi(), Color(0.35, 0.33, 0.32), 0.1)
 			if f:
 				f.rotation.y = atan2(well.x - f.position.x, well.z - f.position.z)
 				_mind(f, "mourn", center)
 		for i in 3:
-			_prop(life, center, "Candle_1", well + Vector3(cos(i * 2.1), 0, sin(i * 2.1)) * 0.14)  # set down round the well, not in it
+			_prop(life, center, "Candle_1", well + Vector3(cos(i * 2.1), 0, sin(i * 2.1)) * 0.19)  # set down round the well's curb (its winch reaches 0.16 out), not in it
 	if c.get("prosperity", false):
 		# One more stall in good times, by the well, heaped with produce.
 		var extra := well + side * 0.38

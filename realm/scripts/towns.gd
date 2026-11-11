@@ -1087,14 +1087,19 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 	var drop := func(kind: String, p: Vector3, yaw: float) -> bool:
 		if not terrain.is_land(center.x + p.x, center.z + p.z):
 			return false
-		_place(root, kind, p + Vector3(0, _ground_y(center, p) - 0.01, 0), yaw)
+		_place(root, kind, p + Vector3(0, _foot_y(center, p, Real.footprint(kind), yaw), 0), yaw)
 		return true
 	var places: Dictionary = root.get_meta("places", {})
 	var market_ang := rng.randf() * TAU
 	# The well, off the heart toward the side away from the stalls, so the
 	# market keeps its open ground.
 	var well := Vector3(cos(market_ang + PI), 0, sin(market_ang + PI)) * square_r * rng.randf_range(0.42, 0.52)
-	if drop.call("ph/stone_fire_pit", well, rng.randf() * TAU):
+	# A draw well: a stone curb about a metre high, posts, a little roof, the winch and its bucket
+	# (assets.json well); the ring of the stone fire pit only when the catalogue has none.
+	var well_kind := Real.one("well")
+	if Real.footprint(well_kind) == Vector2.ZERO:
+		well_kind = "ph/stone_fire_pit"
+	if drop.call(well_kind, well, rng.randf() * TAU):
 		places["well"] = well
 	var stall := Real.footprint("medieval_market_asset_pack")
 	# A market the King built fills the square with two more stalls.
@@ -1134,11 +1139,14 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 	drop.call("old_wooden_wagon" if Real.footprint("old_wooden_wagon") != Vector2.ZERO else "medieval_wooden_cart", wp, -wa)  # lying along the row
 	for k in 2:
 		drop.call(clutter[rng.randi() % clutter.size()], wp * (1.0 - (0.16 + k * 0.09) / arc) + Vector3(-sin(wa), 0, cos(wa)) * rng.randf_range(-0.12, 0.12), rng.randf() * TAU)
-	# A few odds and ends where work spills out, by the well.
-	for i in 2 + rng.randi() % 3:
-		var p := well + Vector3(rng.randf_range(-0.3, 0.3), 0, rng.randf_range(-0.3, 0.3))
-		if p.distance_to(well) > 0.16:
-			drop.call(["ph/wooden_bucket_01", "ph/wicker_basket_01", "ph/wooden_bucket_01"][i % 3], p, rng.randf() * TAU)
+	# Buckets and a basket set down against the well's curb, where water is drawn (not strewn
+	# over the square): just clear of its footprint, on one side of it.
+	var curb := maxf(Real.footprint(well_kind).x, Real.footprint(well_kind).y) * 0.5
+	var side_ang := rng.randf() * TAU
+	for i in 2 + rng.randi() % 2:
+		var a := side_ang + rng.randf_range(-0.7, 0.7)
+		var p := well + Vector3(cos(a), 0, sin(a)) * (curb + rng.randf_range(0.03, 0.07))
+		drop.call(["ph/wooden_bucket_01", "ph/wicker_basket_01", "ph/wooden_bucket_01"][i % 3], p, rng.randf() * TAU)
 	root.set_meta("places", places)
 
 
@@ -1317,6 +1325,20 @@ func _fade_beyond(g: GeometryInstance3D, end: float) -> void:
 
 func _ground_y(center: Vector3, off: Vector3) -> float:
 	return terrain.height_at(center.x + off.x, center.z + off.z) - center.y
+
+
+## Where a prop of footprint `foot`, turned to `yaw`, sits (town-local height): on the lowest of
+## the ground under its middle and its four corners, a little into it, so no corner hangs in the air
+## over a slope or a dip (a barrel set down on the downhill side settles there; the uphill side of
+## a wagon's footprint takes the bank). PROP_SINK: realm/data/towns.json props.sink (game units).
+func _foot_y(center: Vector3, off: Vector3, foot: Vector2, yaw: float) -> float:
+	var b := Basis(Vector3.UP, yaw)
+	var lo := _ground_y(center, off)
+	for c in [Vector3(-0.5, 0, -0.5), Vector3(0.5, 0, -0.5), Vector3(0.5, 0, 0.5), Vector3(-0.5, 0, 0.5)]:
+		lo = minf(lo, _ground_y(center, off + b * Vector3(c.x * foot.x, 0, c.z * foot.y)))
+	return lo - PROP_SINK
+const Data := preload("res://scripts/data.gd")
+static var PROP_SINK: float = Data.num("towns", "props.sink", 0.006)
 
 
 func _flat_enough(center: Vector3, off: Vector3, r: float) -> bool:

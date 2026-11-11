@@ -783,7 +783,7 @@ func town_mood(a: Dictionary) -> String:
 ## out from its heart, and no more than `room` of them at once.
 ## A square looks busy at 15-25 people with room between them, never shoulder
 ## to shoulder (the judge, from Manor Lords): what each place holds.
-const ROOM := {"market": {"near": 0.3, "far": 1.0, "room": 6}, "well": {"near": 0.15, "far": 0.65, "room": 4},
+const ROOM := {"market": {"near": 0.3, "far": 1.0, "room": 6}, "well": {"near": 0.21, "far": 0.65, "room": 4},
 	"tavern": {"near": 0.15, "far": 0.6, "room": 7}, "sept": {"near": 0.15, "far": 0.55, "room": 5},
 	# Round the town's feast fire, out from its reach (town_life.fire_reach) and
 	# past the revellers' own ring: a second ring of faces, a shoulder apart.
