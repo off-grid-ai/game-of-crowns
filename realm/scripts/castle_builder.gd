@@ -62,10 +62,15 @@ func build_castle(spec: Dictionary) -> ArrayMesh:
 			var frame := Transform3D(Basis(Vector3.UP, SIDES[side]), Basis(Vector3.UP, SIDES[side]) * Vector3(0, 0, half))
 			for off in bays[side]:
 				_curtain(parts, frame, off, wall_st)
-	# The gatehouse, astride the front wall, its gate through two storeys.
-	_block(parts, gate_at, gate_w, 3, wall_st + 1, rng, {"gate": true, "crenel": true, "windows": 0.5, "portcullis": float(spec.get("gate_portcullis", 2.4))})
-	for sx in [-1, 1]:
-		_block(parts, gate_at + Vector3(sx * (gh + 1.0), 0, 1.0), 2, 2, wall_st + 2, rng, {"cone": true, "windows": 0.5})
+	# The gatehouse, astride the front wall, its gate through two storeys; with --landmarks=meshy and Meshy's
+	# gatehouse imported (data/meshy.json gatehouse: castle), that piece in its place instead, in metres.
+	var meshy_gate := meshy_gatehouse()
+	if meshy_gate != "":
+		parts.append([meshy_gate, Transform3D(Basis(), gate_at + Vector3(0, 0, 1.0))])
+	else:
+		_block(parts, gate_at, gate_w, 3, wall_st + 1, rng, {"gate": true, "crenel": true, "windows": 0.5, "portcullis": float(spec.get("gate_portcullis", 2.4))})
+		for sx in [-1, 1]:
+			_block(parts, gate_at + Vector3(sx * (gh + 1.0), 0, 1.0), 2, 2, wall_st + 2, rng, {"cone": true, "windows": 0.5})
 	# The keep: tall, crenellated, a tiled roof over its leads, a turret at each corner.
 	_block(parts, keep_at, keep, keep, keep_st, rng, {"door": true, "crenel": true, "windows": 0.45, "roof": true})
 	for k in 4:
@@ -145,6 +150,17 @@ static func towers(spec: Dictionary) -> Array:
 	for sx in [-1, 1]:
 		out.append({"at": Vector3(sx * (gh + 1.0), 0, hz + 1.0), "top": (wall_st + 2) * STOREY + 0.12, "gate": true})
 	return out
+
+
+## Meshy's gatehouse, if it stands in for the kit's (--landmarks=meshy, meshy.json pieces.gatehouse.replaces
+## "castle_gate", and imported): its file, else "".
+static func meshy_gatehouse() -> String:
+	var Real = load("res://scripts/realistic.gd")
+	if Real.landmarks() != "meshy":
+		return ""
+	var g: Dictionary = (preload("res://scripts/data.gd").value("meshy", "pieces", {}) as Dictionary).get("gatehouse", {})
+	var path := "res://assets/meshy/gatehouse/gatehouse.glb"
+	return path if String(g.get("replaces", "")) == "castle_gate" and ResourceLoader.exists(path) else ""
 
 
 ## Stone curtains (walls.gd's switch, --walls=stone): the kit curtain is left out of the castle.

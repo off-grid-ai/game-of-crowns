@@ -1,0 +1,18 @@
+{
+ "name": "market_cart",
+ "source": "/Users/user/code/goc-kits/meshy/market_cart/Meshy_AI_Stylized_Merchant_Car_1110221659_texture.glb",
+ "tris_before": 5633,
+ "tris_after": 2999,
+ "scale": 3.3679933796381873,
+ "size_m": [
+  3.21,
+  2.52,
+  2.6
+ ],
+ "house_share": 0.042,
+ "mask_png": true,
+ "materials": [
+  "Material_0",
+  "MI_RoundTiles_house"
+ ]
+}

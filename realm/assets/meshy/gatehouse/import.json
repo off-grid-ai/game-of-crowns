@@ -1,0 +1,18 @@
+{
+ "name": "gatehouse",
+ "source": "/Users/user/code/goc-kits/meshy/gatehouse/Meshy_AI__Whimsical_slightly__1111144701_texture.glb",
+ "tris_before": 9959,
+ "tris_after": 5998,
+ "scale": 7.693052222849405,
+ "size_m": [
+  14.71,
+  5.06,
+  12.0
+ ],
+ "house_share": 0.007,
+ "mask_png": true,
+ "materials": [
+  "Material_0",
+  "MI_RoundTiles_house"
+ ]
+}
