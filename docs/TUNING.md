@@ -62,6 +62,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - Painted ground on or off: `realm/data/ground.json`: `painted` (or `--ground=painted` / `--ground=photo` for one run). Each layer's colour and how broad its pattern: `layers.<layer>.tint`, `.scale`; the grass's broad colour patches: `macro`.
 - The coast: how far the beach runs above the waterline, and the surf at the shore: `realm/data/ground.json`: `beach.top`, `surf`.
 - Roads: the grass verge's width and colour, the track's tint: `realm/data/ground.json`: `roads.*`. The farm hedges' bush: `realm/data/assets.json`: `hedge` (photo), `hedge_painted`.
+- Which painted texture each ground layer draws (the CC0 watercolor set, packed by `realm/tools/pack_painted_ground.gd`): `realm/data/ground.json`: `layers.<layer>.painting` (rerun the tool and `--import` after changing one).
 
 ## Battles (NPC perf)
 - How hard a field battle is: blows a man takes, the chance a blow lands for each side, when the beaten side breaks and how long they fight: `realm/data/battle.json`: `hp`, `hit.*`, `breakAt`, `longest`.

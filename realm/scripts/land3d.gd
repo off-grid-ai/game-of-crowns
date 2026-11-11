@@ -38,8 +38,12 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 		# The town's trodden ground is dry packed earth (the beach's gravelly
 		# sand, browned): the muddy-tracks photo read as a wet red band.
 		var file: String = "sand" if LAYERS[i] == "mud" else LAYERS[i]
-		ta.albedo_texture = load("res://assets/ground/packed/%s-albedo-height.png" % file)
-		ta.normal_texture = load("res://assets/ground/packed/%s-normal-rough.png" % file)
+		var dir := "packed"
+		if PAINTED and String(Data.value("ground", "layers.%s.painting" % LAYERS[i], "")) != "" and ResourceLoader.exists("res://assets/ground/painted/%s-albedo-height.png" % LAYERS[i]):
+			dir = "painted"  # the painted set (tools/pack_painted_ground.gd, realm/data/ground.json layers.<layer>.painting)
+			file = LAYERS[i]
+		ta.albedo_texture = load("res://assets/ground/%s/%s-albedo-height.png" % [dir, file])
+		ta.normal_texture = load("res://assets/ground/%s/%s-normal-rough.png" % [dir, file])
 		ta.uv_scale = UV_SCALE[i]
 		ta.albedo_color = TINT[i]
 		if PAINTED:
