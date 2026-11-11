@@ -93,6 +93,16 @@ func _run() -> void:
 		if horses.any(func(h): return (h as Node).find_children("Life", "Timer", true, false).is_empty()):
 			print("FAIL %s: a paddock horse has no idle life" % name)
 			fails += 1
+		# The realm's state in the streets (moods.json): in war the levy musters in the square and the forge hammers faster.
+		var mustered: int = l.get_children().filter(func(n): return n.has_meta("levy_man")).size()
+		var fast: int = tick.smiths.filter(func(sm): return float((sm.get_meta("work_pace", {}) as Dictionary).get("Hammer_Swing", 1.0)) > 1.0).size()
+		print("WORKS %-7s moods: %d mustered in the square, %d smiths hammering faster, rack %d" % [name, mustered, fast, Works.stock(town, "rack")])
+		if name == "war" and (mustered == 0 or fast == 0 or Works.stock(town, "rack") < 5):
+			print("FAIL war: no muster in the square, the smiths at their own pace, or the rack not filled")
+			fails += 1
+		if name == "peace" and (mustered > 0 or fast > 0):
+			print("FAIL peace: a muster or a hurried forge in peacetime")
+			fails += 1
 		if name == "war" and l.get_children().filter(func(n): return n.has_meta("bench") and n.get_meta("role", "") == "soldier").is_empty():
 			print("FAIL war: no soldier on the inn's benches")
 			fails += 1

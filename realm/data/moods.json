@@ -1,0 +1,10 @@
+{
+  "_": "The town shows the realm's state in its streets (town_life.gd _moods; docs/TUNING.md). The state is the bridge's (each city's atWar, famine, celebrating in /world, and the muster scene for a levy, read through works.gd states); this only says how it looks. on: the switch (--moods=off: the town dressed as before). A state's row: stalls_open (the share of market stalls still kept: the rest stand shut, no keeper, no buyers), rack (swords on the armoury rack when it starts), hammer (how fast the smiths swing, times their own pace), muster (men gathered in the square: men, rows, how far from the well toward the seen side in world units, and the share of them soldiers), leave (a levy: one man every [fewest, most] seconds shoulders his bundle and walks out along the road, until most have gone; kin: who stays at the square to see them off), feast (tables: long tables set in the square, seats a side; bunting: lines of pennants from a pole by the well out to poles round the square, height in metres, flags a line, sag in metres; colours: the house's, then these).",
+  "on": true,
+  "war": { "stalls_open": 0.5, "rack": 5, "hammer": 1.4, "muster": { "men": 6, "rows": 2, "from_well": 0.45, "soldiers": 0.35 } },
+  "levy": { "stalls_open": 0.7, "rack": 4, "hammer": 1.3, "muster": { "men": 8, "rows": 2, "from_well": 0.45, "soldiers": 0.15 },
+    "leave": { "every": [7.0, 13.0], "most": 5, "pace": 0.15, "kin": 3 } },
+  "hunger": { "stalls_open": 0.35 },
+  "feast": { "tables": 2, "seats": 3, "bunting": { "lines": 5, "ring": 0.62, "height": 3.8, "edge_height": 2.8, "flags": 12, "sag": 0.45 },
+    "colours": [[0.95, 0.92, 0.82], [0.85, 0.68, 0.22], [0.25, 0.4, 0.65]] }
+}

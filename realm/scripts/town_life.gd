@@ -118,7 +118,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	elif hungry:
 		_crowd(root, life, center, rng, 4 + mini(int(c.get("size", 1)) / 2, 8), false)
 	if not c.get("disorder", false):
-		_trade(root, life, center, rng, not hungry)  # a hungry town's stalls are kept, bare: no buyers
+		_trade(root, life, center, rng, not hungry, _mood_num(c, "stalls_open", 1.0))  # a hungry town's stalls are kept, bare: no buyers; war and hunger shut some
 		if not hungry and bool(root.get_meta("crown_seat", false)):
 			_market_day(root, life, center, rng)  # the crown's seat: the realm's busiest market
 	if c.get("celebrating", false):
@@ -128,6 +128,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 		_unrest(life, center, rng)
 	_dress(root, life, center, c, rng, house)
 	_works(root, life, center, c, rng)
+	_moods(root, life, center, c, rng, house)
 	_near_only(life)
 	_pin(life, center)
 
@@ -647,9 +648,11 @@ func _revels(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGener
 
 ## Trade at the market: a keeper behind each stall facing the square, and a
 ## buyer or two at its front, haggling (none when there's nothing to buy).
-func _trade(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenerator, buyers := true) -> void:
+func _trade(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenerator, buyers := true, open := 1.0) -> void:
 	for st in root.get_meta("stalls", []):
 		var m: Vector3 = st[0]
+		if open < 1.0 and float(absi(hash(Vector2i(roundi(m.x * 100.0), roundi(m.z * 100.0)))) % 1000) / 1000.0 >= open:
+			continue  # shut for the war or the hunger (moods.json stalls_open): no keeper, no buyers, the same stalls each time
 		var out := Vector3(m.x, 0, m.z).normalized()  # from the square's heart to the stall
 		# The keeper's mark: behind the counter, on the stall's back side (the
 		# model faces the square), just clear of its footprint, facing the lane
@@ -1437,3 +1440,80 @@ func _crier(root: Node3D, life: Node3D, center: Vector3, tick: Works.Tick, liste
 			_face(p, crier.position)
 			_mind(p, "listener", center)
 			tick.by_day.append(p)
+
+
+# --- the realm's state in the streets (realm/data/moods.json) -------------------
+
+## The town's states (works.gd: war, a levy, hunger, a feast...) that moods.json
+## dresses, [] with the switch off (--moods=off).
+func _mood_states(c: Dictionary) -> Array:
+	if not bool(Data.value("moods", "on", true)) or OS.get_cmdline_user_args().has("--moods=off"):
+		return []
+	return Works.states(c, _town_id).filter(func(st): return (Data.value("moods", st, {}) as Dictionary).size() > 0)
+
+
+## A mood's number for this town: the least over its states that set it (the
+## shut-most market, the slowest...), or with `most`, the greatest; `fallback` when none does.
+func _mood_num(c: Dictionary, key: String, fallback: float, most := false) -> float:
+	var out := fallback
+	var any := false
+	for st in _mood_states(c):
+		var row: Dictionary = Data.value("moods", st, {})
+		if row.has(key) and row[key] is float:
+			out = float(row[key]) if not any else (maxf(out, float(row[key])) if most else minf(out, float(row[key])))
+			any = true
+	return out
+
+
+## What the realm's state makes of the streets, over what the town already
+## shows (the barricade and the watch in war, bare stalls in hunger, the bonfire
+## at a feast): in war or a levy the forge hammers faster, swords fill the
+## armoury's rack and the levy gathers in the square before a sergeant.
+func _moods(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: RandomNumberGenerator, house: Dictionary) -> void:
+	var states := _mood_states(c)
+	if states.is_empty():
+		return
+	var hot := "war" in states or "levy" in states
+	if hot:
+		var tick: Node = life.get_node_or_null("Works")
+		var pace := _mood_num(c, "hammer", 1.0, true)
+		if tick and pace != 1.0:
+			for sm in tick.smiths:
+				if is_instance_valid(sm):
+					(sm as Node).set_meta("work_pace", {"Hammer_Swing": pace})
+		var want := int(_mood_num(c, "rack", 0.0, true))
+		if Works.stock(root, "rack") < want:
+			Works.add_stock(root, "rack", want - Works.stock(root, "rack"))
+		_muster(root, life, center, Data.value("moods", "levy.muster" if "levy" in states else "war.muster", {}), rng)
+
+
+## The levy gathered in the square: rows of men facing a sergeant who calls
+## them (npc_mind posts levy and crier), on the seen half of the square, turned
+## off the crier's line so the two crowds stand apart.
+func _muster(root: Node3D, life: Node3D, center: Vector3, m: Dictionary, rng: RandomNumberGenerator) -> void:
+	var men := int(m.get("men", 0))
+	if men <= 0:
+		return
+	var places: Dictionary = root.get_meta("places", {})
+	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
+	var toward := Basis(Vector3.UP, 1.0) * SEEN
+	var front := well + toward * float(m.get("from_well", 0.45))
+	var side := Vector3(-toward.z, 0, toward.x)
+	var sergeant := _stand(root, life, center, front, "soldier", "Pointing_Forward", rng.randi(), Color.WHITE, 0.2)
+	if sergeant == null:
+		return
+	_face(sergeant, sergeant.position + toward)
+	_watch(sergeant)
+	_mind(sergeant, "crier", center)
+	var rows := maxi(1, int(m.get("rows", 2)))
+	var cols := ceili(float(men) / rows)
+	for i in men:
+		var r := i / cols
+		var k := i % cols
+		var at := sergeant.position + toward * (0.2 + r * ROOM * 1.25) + side * (k - (cols - 1) * 0.5) * ROOM * 1.15
+		var soldier := rng.randf() < float(m.get("soldiers", 0.2))
+		var p := _stand(root, life, center, at, "soldier" if soldier else "peasant", "Weight_Shift", rng.randi(), Color.WHITE, 0.1)
+		if p:
+			p.set_meta("levy_man", true)
+			_face(p, sergeant.position)
+			_mind(p, "levy", center)
