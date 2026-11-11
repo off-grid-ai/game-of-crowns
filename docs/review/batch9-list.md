@@ -185,3 +185,12 @@ beside the frames. Reference: Anno 1800's town at street height (close detail, f
     clip. Judge: a field of standing stalks swaying with the wind, gold in autumn, the painted ground barely showing.
 51. **Chimney smoke** (goldrock-rings: bright white blobs): `city Kingsmere 14 -22`, a 6 s clip. Judge: thin
     grey-brown threads leaning one way with the wind, not white puffs.
+
+## Grief and the feast's fire (batch 8b centre-grief, centre-feast-wide)
+
+52. **Grief at the seat** (`{"city": id, "mood": "grief"}` if the stage has it, else a sack's aftermath: the bridge's
+    grief follows a sack, a razing, a vigil or a death), `city Kingsmere 6 -25`, a 20 s clip with `--sound=v2`. Judge:
+    stalls shut, a thin crowd in dark wool, candles and flowers ringing the centrepiece, black cloth over the doors
+    near the square, the funeral (priest, bier on four shoulders, mourners) walking round, the bell tolling.
+53. **The feast's bonfire** (centre-feast-wide): the same step as batch 8b. Judge: flames rising from the stones, its
+    light on the dancers' faces.
