@@ -4,6 +4,7 @@
 // petition, the petitioner, the option chosen, the result being built, a
 // gold() helper and the world.
 import { cityName, houseFor } from "./narrator.js";
+import { say } from "./say.js";
 
 export const ANSWERS = {
   siege({ p, c, option, out, gold, world }) {
@@ -29,12 +30,12 @@ export const ANSWERS = {
     this.remember(c.id, option === "abandon" ? `The King left ${town} to ${them}.` : `The King came to ${town}'s aid against ${them}.`);
   },
   grain({ p, c, opt, option, out, gold, world }) {
-    if (option === "grant") { Object.assign(out.favour, opt?.favour ?? { [c.playerId]: 15 }); gold(c.playerId, 150); out.text = `The crown sends grain to ${c.house}.`; }
-    if (option === "order") { Object.assign(out.favour, opt?.favour ?? { [p.donor]: -20, [c.playerId]: 10 }); gold(p.donor, -150); gold(c.playerId, 150); out.text = `By royal command, ${houseFor(world.players.find((x) => x.id === p.donor)).name} feeds the starving of ${c.house}, and resents every sack.`; }
+    if (option === "grant") { Object.assign(out.favour, opt?.favour ?? { [c.playerId]: 15 }); gold(c.playerId, 150); out.text = say("grain.grant", { house: c.house }, `The crown sends grain to ${c.house}.`); }
+    if (option === "order") { Object.assign(out.favour, opt?.favour ?? { [p.donor]: -20, [c.playerId]: 10 }); gold(p.donor, -150); gold(c.playerId, 150); out.text = say("grain.order", { donor: houseFor(world.players.find((x) => x.id === p.donor)).name, house: c.house }, `By royal command, ${houseFor(world.players.find((x) => x.id === p.donor)).name} feeds the starving of ${c.house}, and resents every sack.`); }
     if (option === "refuse") {
       Object.assign(out.favour, opt?.favour ?? { [c.playerId]: -15 });
       for (const b of this.alive().filter((x) => x.rank === "bannerman" && x.playerId === c.playerId)) b.loyalty = Math.max(0, b.loyalty - 15);
-      out.text = `The King refuses grain. In ${c.house}'s lands, the bannermen begin to talk.`;
+      out.text = say("grain.refuse", { house: c.house }, `The King refuses grain. In ${c.house}'s lands, the bannermen begin to talk.`);
     }
     this.remember(c.id, option === "refuse" ? "The King let my people starve." : "The King fed my people when they starved.");
   },
@@ -90,11 +91,11 @@ export const ANSWERS = {
       Object.assign(out.favour, opt?.favour ?? { [c.playerId]: 3 });
       // Heard, not answered: the grudge deepens, and they'll be back within the year.
       if (deed) { deed.d = Math.max(-60, Math.round(deed.d * 1.25)); deed.raised = world.turn - 8; }
-      out.text = `The King hears ${c.name} out and promises nothing. ${c.house} goes home with its grudge, and it grows.`;
+      out.text = say("remembers.hear", { name: c.name, house: c.house }, `The King hears ${c.name} out and promises nothing. ${c.house} goes home with its grudge, and it grows.`);
     }
-    if (option === "firm") { out.favour[c.playerId] = -8; this.remember(c.id, "I reminded the King what he did to my house. He said the crown did what it must."); if (this.warlike(c)) c.goals.unshift({ kind: "revenge", text: "make the crown answer for what it did to my house" }); out.text = `"The crown did what it must." ${c.name} bows, and adds it to the account.`; }
+    if (option === "firm") { out.favour[c.playerId] = -8; this.remember(c.id, "I reminded the King what he did to my house. He said the crown did what it must."); if (this.warlike(c)) c.goals.unshift({ kind: "revenge", text: "make the crown answer for what it did to my house" }); out.text = say("remembers.firm", { name: c.name, house: c.house }, `"The crown did what it must." ${c.name} bows, and adds it to the account.`); }
     if (option === "oath") { Object.assign(out.favour, opt.favour ?? { [c.playerId]: 6 }); c.loyalty = Math.min(100, c.loyalty + 10); out.text = `${c.name} kneels and swears ${c.house} to the crown before the whole court.`; }
-    if (option === "purse") { out.favour[c.playerId] = -4; gold(c.playerId, -60); const crown = world.players.find((x) => houseFor(x).crown); if (crown) gold(crown.id, 60); out.text = `${c.house} sends 60 gold to Kingsmere. ${c.name} had hoped for thanks, not a bill.`; }
+    if (option === "purse") { out.favour[c.playerId] = -4; gold(c.playerId, -60); const crown = world.players.find((x) => houseFor(x).crown); if (crown) gold(crown.id, 60); out.text = say("remembers.purse", { name: c.name, house: c.house, gold: 60 }, `${c.house} sends 60 gold to Kingsmere. ${c.name} had hoped for thanks, not a bill.`); }
     this.save(c);
   },
   match({ p, c, opt, option, out, gold, world }) {
@@ -137,8 +138,8 @@ export const ANSWERS = {
     const suspect = this.people[p.suspect];
     const heir = this.people[p.heir];
     if (option === "hostage") { out.favour[suspect.playerId] = -20; suspect.hostage = heir.id; heir.rank = heir.rank === "heir" ? "heir" : heir.rank; heir.ward = true; this.remember(suspect.id, `The King took my child ${heir.name} to Kingsmere on a bannerman's word.`); this.save(heir); out.text = `${heir.name} rides to Kingsmere as a royal ward. ${suspect.name} will not rise while the King holds his child, and will not forget.`; }
-    if (option === "reward") { informer.loyalty = Math.min(100, informer.loyalty + 20); this.shift(suspect.id, informer.id, -40, `${informer.name} sold tales of me to the King.`); this.shift(informer.id, suspect.id, -10); out.text = `${informer.name} leaves court with a heavier purse. Within the month, ${suspect.name} knows who talked.`; }
-    if (option === "dismiss") { out.favour[suspect.playerId] = 5; this.remember(informer.id, "The King called me a liar before the court."); informer.loyalty = Math.max(0, informer.loyalty - 10); out.text = `The King dismisses the accusation. ${informer.name} leaves court red-faced.`; }
+    if (option === "reward") { informer.loyalty = Math.min(100, informer.loyalty + 20); this.shift(suspect.id, informer.id, -40, `${informer.name} sold tales of me to the King.`); this.shift(informer.id, suspect.id, -10); out.text = say("informer.reward", { informer: informer.name, suspect: suspect.name }, `${informer.name} leaves court with a heavier purse. Within the month, ${suspect.name} knows who talked.`); }
+    if (option === "dismiss") { out.favour[suspect.playerId] = 5; this.remember(informer.id, "The King called me a liar before the court."); informer.loyalty = Math.max(0, informer.loyalty - 10); out.text = say("informer.dismiss", { informer: informer.name, suspect: suspect.name }, `The King dismisses the accusation. ${informer.name} leaves court red-faced.`); }
     this.save(informer); this.save(suspect);
   },
   regency({ p, c, opt, option, out, gold, world }) {

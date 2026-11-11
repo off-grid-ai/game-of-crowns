@@ -1,0 +1,7 @@
+{
+ "_": "Surnames for the realm's minor folk: bannermen and their families (characters.js when a realm is first peopled; written.js freshMinorNames deals them anew each real reign, so the same informer isn't back every time). Add a name to widen it.",
+ "bannermen": ["Ashby", "Greyford", "Hollin", "Marsh", "Thorne", "Varn", "Crane", "Dale", "Brook", "Fenwick", "Holt", "Roswell", "Kettle", "Morrow", "Pell", "Strand",
+  "Ambrose", "Blackwood", "Coldwater", "Dunmore", "Elmstead", "Farrow", "Gilchrist", "Harrow", "Ingleby", "Kestrel", "Langley", "Merriweather", "Norcross", "Oakhurst",
+  "Penrose", "Quarrell", "Redfern", "Saltash", "Tallow", "Underhill", "Vance", "Whitlock", "Yarrow", "Bramble", "Cobb", "Draycott", "Fairweather", "Gorse", "Hatch",
+  "Lark", "Mallory", "Nettle", "Pike", "Rook", "Sedge", "Tanner", "Wick", "Ashdown", "Brackley", "Crowe", "Ferrier", "Grimsby", "Haldane", "Lockwood"]
+}

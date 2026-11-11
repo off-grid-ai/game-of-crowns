@@ -1,0 +1,60 @@
+{
+ "_": "Several wordings per court result (say.js; Reigns' fresh deck): the realm never says the same thing twice in a row. Keys are kind.option; {names} are filled by the court. Add a wording to any list to widen it; a key with none uses the court's own line.",
+ "grain.order": [
+  "By royal command, {donor} feeds the starving of {house}, and resents every sack.",
+  "{donor}'s granaries open on the King's word. The carts roll to {house}, and {donor} counts each one.",
+  "The King makes {donor} feed {house}. {house} eats; {donor} keeps the bill in its head.",
+  "{donor} sends grain to {house}, because the King said so. Nobody in {donor}'s hall says thank you.",
+  "Wagons of {donor}'s wheat reach {house}'s hungry. {donor}'s steward calls it theft with a seal on it."
+ ],
+ "grain.grant": [
+  "The crown sends grain to {house}.",
+  "Royal grain rolls out of Kingsmere for {house}. The bakers there light their ovens again.",
+  "The King opens his own stores for {house}. Tonight, {house}'s children eat.",
+  "Kingsmere's granary feeds {house} this winter. Its lord will remember who did."
+ ],
+ "grain.refuse": [
+  "The King refuses grain. In {house}'s lands, the bannermen begin to talk.",
+  "No grain for {house}. Its bannermen eat their seed corn and wonder aloud what a King is for.",
+  "The King keeps his granaries shut. {house} tightens its belt, and its bannermen loosen their tongues.",
+  "{house} goes hungry by the King's word. Its knights start asking who else might feed them."
+ ],
+ "informer.reward": [
+  "{informer} leaves court with a heavier purse. Within the month, {suspect} knows who talked.",
+  "The King pays {informer} for the tale. {suspect} hears of it before the coins are spent.",
+  "{informer} is rewarded in silver. Court is a small place: {suspect} soon knows whose silver.",
+  "Gold for {informer}, a long memory for {suspect}. The two no longer dine at the same table."
+ ],
+ "informer.dismiss": [
+  "The King dismisses the accusation. {informer} leaves court red-faced.",
+  "\"Gossip,\" says the King. {informer} bows very low, red to the ears.",
+  "The King hears {informer} out, and laughs. The court laughs with him. {informer} does not.",
+  "The accusation is thrown out. {suspect} sends {informer} a cask of wine, which is worse than a blade."
+ ],
+ "remembers.hear": [
+  "The King hears {name} out and promises nothing. {house} goes home with its grudge, and it grows.",
+  "{name} speaks; the King listens; nothing is promised. {house} rides home angrier than it came.",
+  "The King nods through all of it and offers nothing. {name} has heard kinder silence from a wall.",
+  "\"We will think on it,\" says the King. {house} has heard that before. The grudge gets heavier.",
+  "{name} is heard to the end, and sent away with nothing. {house}'s old wound opens a little wider."
+ ],
+ "remembers.purse": [
+  "{house} sends {gold} gold to Kingsmere. {name} had hoped for thanks, not a bill.",
+  "The King answers {name}'s complaint with an invoice: {gold} gold. {house} pays, and seethes.",
+  "{name} came for an apology and leaves {gold} gold lighter. {house} will tell this story for years.",
+  "{gold} gold from {house} to the crown, for the trouble of listening. {name} pays with a smile like a knife."
+ ],
+ "remembers.firm": [
+  "\"The crown did what it must.\" {name} bows, and adds it to the account.",
+  "The King stands by what was done. {name} bows, and {house} adds a line to its long ledger.",
+  "\"It was right then and it's right now,\" says the King. {name} says nothing, which says enough.",
+  "The King gives no ground. {name} leaves, already counting what the crown will owe for it."
+ ],
+ "council.side": [
+  "The King sides with {winner}. {loser} leaves the council hall without bowing.",
+  "The King's word goes to {winner}. {loser}'s lords push back their chairs and walk out.",
+  "{winner} has the King's backing. {loser} hears it with a face like stone, and is gone before the wine.",
+  "The council ends with {winner} smiling. {loser} slams the door hard enough to shake the tapestries.",
+  "The King rules for {winner}. {loser} doesn't argue; it just stops coming to council."
+ ]
+}

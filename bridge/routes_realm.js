@@ -76,6 +76,8 @@ export async function createChronicle(ctx, req, res, url) {
   const scenario = ["random", "aldmere", "aldmere_fresh"].includes(b.scenario) ? b.scenario : "aldmere";
   const m = chron.create({ name: String(b.name || "A New Realm").slice(0, 40), scenario, minutes: b.minutes, pace: b.options?.pace ?? ctx.turnSeconds, fate: b.fate, wealth: b.wealth, mood: b.mood, options: b.options });
   rewrites.applyTo(path.join(chron.paths(m.id).base, "characters"));  // the starting cast as the player rewrote it
+  // A real reign deals its minor folk fresh names; test, film and check reigns keep the baseline's, so proofs repeat.
+  if (!/test|film|check|proof/i.test(m.name)) try { rewrites.freshMinorNames(chron.paths(m.id).base, JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "data", "first-names.json"), "utf8")), JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "data", "surnames.json"), "utf8")).bannermen); } catch (e) { console.log("fresh names:", e.message); }
   try { rewrites.distinctNames(chron.paths(m.id).base, JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), "data", "first-names.json"), "utf8"))); } catch (e) { console.log("names:", e.message); }  // no two living share a first name
   switchTo(m.id);
   return json(res, 200, m);

@@ -269,7 +269,7 @@
         "text": "The King names {heir} to run {me.house} in {me.his} name. The old {me.lord} sits by the fire and doesn't understand." },
       { "id": "wait", "label": "A lord rules until he dies", "hint": "{me.house} +5 · {heir} grows impatient",
         "effects": { "favour": { "me": 5 }, "goal": { "heir": { "kind": "crown", "text": "rule {me.house} now, whatever it takes" } } },
-        "text": "The King says no. {heir} leaves court with dark thoughts." }
+        "text": ["The King says no. {heir} leaves court with dark thoughts.", "\"A lord rules until he dies.\" {heir} bows, and starts counting the old {me.lord}'s breaths.", "The King sends {heir} home to wait. {me} asks who the young stranger at the door was.", "No regency for {heir}. In {me.house}'s hall, the heir sits a little closer to the high seat every week."] }
     ]
   },
   {
@@ -356,7 +356,7 @@
         "text": "The deserters are handed over and hanged at the crossroads. The levies stop running." },
       { "id": "pardon", "label": "Pardon them and send them back (50 gold)", "cost": 50, "hint": "The crown gains men, and pays to rearm them · {me.house} +5",
         "effects": { "units": { "crown": { "count": 2, "type": "Pikemen" } }, "favour": { "me": 5 } },
-        "text": "The deserters are pardoned and march back to the King's banner." },
+        "text": ["The deserters are pardoned and march back to the King's banner.", "Forty pardoned men march back under the King's banner, singing louder than they need to.", "The deserters get new boots, old pikes and the King's pardon. They walk back into the levy as if they never left.", "Pardoned. The forty come home to the King's host, and the sergeants pretend not to know their faces."] },
       { "id": "let", "label": "Let {me.house} keep them", "hint": "{me.house} +10 · the King's levy is a joke",
         "effects": { "favour": { "me": 10, "all": -2 } },
         "text": "The deserters stay in {town}. Now every lord knows the King's levy is optional." }

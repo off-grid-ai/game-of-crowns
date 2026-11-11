@@ -9,6 +9,7 @@
 // (getters for what it reassigns, setPaused for the clock's hold); server.js
 // keeps wrappers of the same names.
 
+import { say } from "./say.js";
 import * as Events from "./events.js";
 import * as Seals from "./seals.js";
 import * as Next from "./next.js";
@@ -288,8 +289,8 @@ export function council(ctx) {
   court.arcPetition({ arc: "council", beat: `council-${due}`, thread: "the great council", from,
     text: `The great council divides over the war between ${name(a)} and ${name(b)}. ${camp(a)}; ${camp(b)}. The lords wait on the King's word.`,
     options: [
-      { id: "a", label: `Side with ${name(a)}`, hint: `${name(a)} +15 · ${name(b)} −20`, favour: { [a.id]: 15, [b.id]: -20 }, result: `The King sides with ${name(a)}. ${name(b)} leaves the council hall without bowing.` },
-      { id: "b", label: `Side with ${name(b)}`, hint: `${name(b)} +15 · ${name(a)} −20`, favour: { [b.id]: 15, [a.id]: -20 }, result: `The King sides with ${name(b)}. ${name(a)} leaves the council hall without bowing.` },
+      { id: "a", label: `Side with ${name(a)}`, hint: `${name(a)} +15 · ${name(b)} −20`, favour: { [a.id]: 15, [b.id]: -20 }, result: say("council.side", { winner: name(a), loser: name(b) }, `The King sides with ${name(a)}. ${name(b)} leaves the council hall without bowing.`) },
+      { id: "b", label: `Side with ${name(b)}`, hint: `${name(b)} +15 · ${name(a)} −20`, favour: { [b.id]: 15, [a.id]: -20 }, result: say("council.side", { winner: name(b), loser: name(a) }, `The King sides with ${name(b)}. ${name(a)} leaves the council hall without bowing.`) },
       { id: "peace", label: "Command them both to make peace (300 gold)", hint: `${name(a)} −5 · ${name(b)} −5 · the crown pays the blood-price`, cost: 300, favour: { [a.id]: -5, [b.id]: -5 }, result: `The King orders peace and pays the blood-price himself. Neither house thanks him for it.` },
     ] }, world);
   (meta.councilWar ??= {})[`council-${due}`] = [a.id, b.id];

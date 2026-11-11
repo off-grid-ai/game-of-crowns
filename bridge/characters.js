@@ -6,6 +6,7 @@
 // here; pivotal ones go to Claude in the character's own voice. Results land
 // in Freeciv (towns change hands, rebellions, gold) and at the King's court.
 
+import { pick as wording } from "./say.js";  // one of a result's wordings (data/dilemmas.json text lists)
 import fs from "node:fs";
 import path from "node:path";
 import { cityName, houseFor } from "./narrator.js";
@@ -28,6 +29,8 @@ const NO_MOOD = { aggression: 0, loyalty: 0, ambition: 0, caution: 0, cunning: 0
 // people share one, so "Cecily" is always the one Cecily. M and F are the old
 // short lists, kept for anything that still reads them.
 const NAMES_FILE = new URL("./data/first-names.json", import.meta.url);
+// Bannermen's surnames (data/surnames.json): one list, here and for each reign's fresh names (written.js).
+const SURNAMES = JSON.parse(fs.readFileSync(new URL("./data/surnames.json", import.meta.url), "utf8")).bannermen;
 let firstNames = null;
 function namePool(gender) {
   if (!firstNames) { try { firstNames = JSON.parse(fs.readFileSync(NAMES_FILE, "utf8")); } catch { firstNames = { male: M, female: F }; } }
@@ -291,7 +294,7 @@ export class Court {
       }
       for (const town of world.cities.filter((c) => c.owner === p.id && !c.capital)) {
         if (this.lordOfTown(town.id)) continue;
-        const surname = pick(["Ashby", "Greyford", "Hollin", "Marsh", "Thorne", "Varn", "Crane", "Dale", "Brook", "Fenwick", "Holt", "Roswell", "Kettle", "Morrow", "Pell", "Strand"], r);
+        const surname = pick(SURNAMES, r);
         const liege = this.lordOfHouse(p.id);
         const bm = this.newPerson({ surname, house: h.name, playerId: p.id, rank: "bannerman", seat: town.id, liege: liege?.id ?? null, age: 25 + Math.floor(r() * 35) }, r);
         bm.goals = [this.goalFor(bm, r)];
@@ -1141,7 +1144,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       if (this.truces) delete this.truces[[atk.id, def.id].sort().join(":")];
       this.record({ turn: world.turn, kind: "rebellion", text: `${atk.house} marches on ${prey ? cityName(prey.id) : def.house}. War between ${atk.house} and ${def.house}.`, city: prey?.id });
     }
-    out.text = this.fill(o.text, roles);
+    out.text = this.fill(wording(`${card.id}.${o.id}`, o.text), roles);  // a list: one of its wordings, not one heard lately (say.js)
   }
 
   // Loans from the crown fall due after two years: paid, or defaulted on.
