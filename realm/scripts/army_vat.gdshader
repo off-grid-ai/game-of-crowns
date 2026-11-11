@@ -39,7 +39,7 @@ It has total of 4 floats. All renderers supported.
 */
 
 // The army's soldiers (army spike): antzGames' VAT shader (MIT, realm/addons/godot_vat) with team colour
-// added (Warcraft III's way; docs/art/target/03-army.jpg): KayKit's palette paints the cloth (cape,
+// added, by palette cell (the KayKit knight) or by mask (image-made units) (Warcraft III's way; docs/art/target/03-army.jpg): KayKit's palette paints the cloth (cape,
 // tabard) in its red swatches, so the texels inside those palette cells (team_rect_a, team_rect_b; data/army.json
 // team.rects) take the regiment's colour, keeping their light and shade. Picked by palette cell, not by hue, so
 // skin and leather keep their own colour. Each regiment (a MultiMesh) has its own copy of the material, so every regiment
@@ -57,6 +57,10 @@ uniform vec4 team_rect_c = vec4(-1.0);  // up to four cells; an unused one lies 
 uniform vec4 team_rect_d = vec4(-1.0);
 uniform vec4 team_mix = vec4(1.0, 1.0, 1.0, 1.0);  // how much of each cell (a, b, c, d) takes the colour: 1 dyed cloth, less a painted plate
 uniform float team_shade = 1.1;
+// An image-made soldier (tools/rig/README.md) wears its house colour where its mask.png is white (the rig
+// pipeline paints the white cloth there), instead of by palette cell; data/army.json meshes.<dir>.team "mask".
+uniform bool team_by_mask = false;
+uniform sampler2D team_mask : hint_default_black, filter_linear_mipmap;
 uniform sampler2D normal_map: filter_nearest;
 
 group_uniforms Albedo;
@@ -179,7 +183,8 @@ void fragment() {
 	float in_c = step(team_rect_c.x, UV.x) * step(UV.x, team_rect_c.z) * step(team_rect_c.y, UV.y) * step(UV.y, team_rect_c.w) * team_mix.z;
 	float in_d = step(team_rect_d.x, UV.x) * step(UV.x, team_rect_d.z) * step(team_rect_d.y, UV.y) * step(UV.y, team_rect_d.w) * team_mix.w;
 	float shade = max(base.r, max(base.g, base.b));
-	ALBEDO = mix(base, team_color.rgb * shade * team_shade, max(max(in_a, in_b), max(in_c, in_d)) * team_strength);
+	float dyed = team_by_mask ? texture(team_mask, UV).r : max(max(in_a, in_b), max(in_c, in_d));
+	ALBEDO = mix(base, team_color.rgb * shade * team_shade, dyed * team_strength);
 	METALLIC = dot(texture(metallic_texture, UV), metallic_texture_channel) * metallic;
 	SPECULAR = specular;
 	ROUGHNESS = dot(texture(roughness_texture, UV), roughness_texture_channel) * roughness;

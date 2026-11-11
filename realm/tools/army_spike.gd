@@ -1,32 +1,63 @@
 extends Node3D
-## The army spike (a test aid; docs/review/army-spike-plan.md; target docs/art/target/03-army.jpg). Run with
-## --army-spike=<men> in a shot (--dist=<height>): it draws that many soldiers as regiments, each regiment one
-## VATMultiMeshInstance3D (antzGames' VAT plugin, MIT) of the baked KayKit Knight (CC0; realm/assets/armies/knight),
-## each in a house's colour (army_vat.gdshader's team colour), mustered on open dry ground beside the crown's seat
-## and facing it, a share still marching in, and prints "ARMY men=… regiments=… fps=… process=… draws=… prims=…"
-## every 2 s. Off in play; nothing else reads it. The numbers are in data/army.json (docs/TUNING.md).
-## The soldier is asked for by catalogue id (ASSET) so another family is a data change.
+## The army spike (a test aid; docs/review/army-spike-plan.md; targets docs/art/target/03-army.jpg and
+## docs/research/army-and-town-rules.md section 1: Total War's regiment and banner, Warcraft III's worn colour,
+## Age of Empires' column and line). Run with --army-spike=<men> in a shot (--dist=<height>), or
+## --army-spike=host for the crown's largest host as the bridge reports it (/world hosts, bridge/hosts.js).
+##
+## The host is commanded by regiment, never by man. A regiment (100-200 men) is one VATMultiMeshInstance3D
+## (antzGames' VAT plugin, MIT) of its unit's baked soldier, wearing the house colour (army_vat.gdshader), under
+## ONE banner (army_banner.gdshader: house colour, its type's glyph, strength as pips). The host has one larger
+## standard over the commander's regiment. Two shapes, chosen by the game: a column 4-6 men wide marching along
+## the road, then a line at the muster (melee in front, archers behind, cavalry on the wings); ranks loose, each
+## man a little off his mark. Marching men keep their regiment's step, each a little off it; men at ease shift,
+## turn and change their stance now and then. From afar (far.at) the host shows as coloured blocks with its
+## standard and its strength. select(id) lays a rectangle on the ground under a regiment and lights its banner;
+## regiments() lists them (the command card will call both). Ids follow the bridge: a regiment is a company (its
+## Freeciv unit id), the host its lead company's; a made-up host's regiments have negative ids.
+##
+## Switches: --army-shape=auto (march in, then form the line; the default), march (stay in column), line (stand
+## in line from the start); --army-select=<n>|all (select the n-th regiment, or the whole host by its standard,
+## once it stands). Prints "ARMY …" lines (a test aid). Off in play; nothing else reads it. Numbers in
+## data/army.json (docs/TUNING.md); units, their roles, meshes and clips are rows there (tools/rig/README.md's hook).
 
-const ASSET := "res://assets/armies/knight/"
+const KNIGHT := "armies/knight"
 const Data := preload("res://scripts/data.gd")
 const TownNav := preload("res://scripts/town_nav.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
 const VAT := preload("res://addons/godot_vat/vat_multi_mesh_instance_3d.gd")
+const BANNER := preload("res://scripts/army_banner.gdshader")
+const Terrain := preload("res://scripts/terrain.gd")
 const HOUSES := [Color(0.82, 0.62, 0.12), Color(0.72, 0.12, 0.12), Color(0.15, 0.32, 0.72), Color(0.18, 0.5, 0.22), Color(0.45, 0.2, 0.55), Color(0.85, 0.85, 0.82)]
-const IDLE := 0  # the baked tracks (tracks.json): Idle, Walking_A, Running_A, two attacks, Block, Hit_A, Death_A
-const WALK := 1
-const BLOCK := 5
+const GLYPHS := {"sword": 1, "spear": 2, "bow": 3, "horse": 4, "axe": 5, "engine": 6, "crown": 7}
+
+## A regiment is shown or selected (the command card listens; no one else does yet).
+signal selection_changed(ids: Array)
 
 var main: Node
 var men := 0
-var REGIMENT := int(Data.num("army", "regiment", 150))
-var _regiments: Array = []  # {vat, slot, at, face, speed, marching}
+var host_id := 0  # the bridge's host id (its lead company), 0 for a made-up host
+var _regiments: Array = []  # see _regiment()
+var _by_id := {}  # regiment id -> its regiment
+var _assets := {}  # asset dir -> {mesh, mat, tracks, index, height}
+var _standard: MeshInstance3D
+var _strength_label: Label3D
+var _commander: Dictionary = {}
 var _report := 0.0
-var _field := Vector3.ZERO  # the muster's middle, on the ground
+var _field := Vector3.ZERO  # the line's middle, on the ground
+var _face := 0.0  # the line's facing (yaw; the soldier faces +Z)
+var _path := PackedVector3Array()  # the column's road in, ending where it turns off for the muster
+var _cum := PackedFloat32Array()  # distance along _path at each point
+var _goal := "line"  # the shape the game wants: line (form at the muster) or column (stay on the road)
+var _far := false
 var _dist := 12.0
 var _hold := false  # the camera held on the army (the whole take)
-var _yaw := 0.6  # the camera's heading onto the host: a low oblique from its front quarter, nothing in the way
-var _tilt := 0.0  # the camera's tilt from its own pitch (data/army.json camera.tilt): lower than the map view
+var _focus := Vector3.ZERO
+var _yaw := 0.6  # the lens's heading now
+var _yaw_line := 0.6  # onto the line, from its front quarter
+var _yaw_march := 0.6  # onto the column, from its front quarter
+var _tilt := 0.0
+var _want_select := ""
+var _rng := RandomNumberGenerator.new()
 
 
 func _init(owner: Node, count: int) -> void:
@@ -36,9 +67,15 @@ func _init(owner: Node, count: int) -> void:
 
 
 func _ready() -> void:
+	_rng.seed = 3017
+	var shape := "auto"
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--dist="):
 			_dist = float(a.substr(7))
+		elif a.begins_with("--army-shape="):
+			shape = a.substr(13)
+		elif a.begins_with("--army-select="):
+			_want_select = a.substr(14)
 	# Wait for the land and the realm's towns as the bridge reports them.
 	while main.terrain.width == 0 or not main.terrain.built or (main.bridge.world.get("cities", []) as Array).is_empty():
 		await get_tree().create_timer(0.5).timeout
@@ -54,71 +91,886 @@ func _ready() -> void:
 		await get_tree().create_timer(0.5).timeout
 		waited += 0.5
 	var town: Vector3 = main.towns.towns[id]["node"].global_position if main.towns.towns.has(id) else main.terrain.world_pos(float(seat["x"]), float(seat["y"]))
-	var mesh := _soldier_mesh()
-	if mesh == null:
-		push_error("ARMY no soldier mesh at " + ASSET)
+	var specs := _from_world() if men <= 0 else _made_up(men)
+	if specs.is_empty():
+		push_error("ARMY no host to show (the crown has no soldiers, and no head count was given)")
 		return
-	var mat := mesh.surface_get_material(0) as ShaderMaterial
-	var tracks := _tracks()
-	var n := int(ceil(float(men) / REGIMENT))
-	var colours := _house_colours()
-	var frontages: Array = Data.value("army", "frontages", [15])
-	var sf := Data.num("army", "spacing.file", 0.1)
-	var sr := Data.num("army", "spacing.rank", 0.12)
-	# The largest regiment's footprint sets the field's grid, so no two regiments overlap.
-	var wide := 0.0
-	var deep := 0.0
-	for f in frontages:
-		wide = maxf(wide, int(f) * sf)
-		deep = maxf(deep, ceil(float(REGIMENT) / int(f)) * sr)
-	var slots := _muster(town, n, maxf(wide, deep) + Data.num("army", "gap", 0.35))
-	if slots.is_empty():
-		push_error("ARMY no open ground by the seat")
-		return
-	# The lens: on the far side of the host from the seat (the town behind them), low and oblique, with no
-	# tree crown or roof between; the host turned toward it a little off square, so faces and colours show.
-	_yaw = _lens_yaw(town)
-	var yaw := _yaw + Data.num("army", "camera.quarter", 0.4)  # the knight faces +Z
-	var face := Vector3(sin(yaw), 0, cos(yaw))
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 3017
-	var share := Data.num("army", "march.share", 0.3)
-	var from: Array = Data.value("army", "march.from", [3.0, 9.0])
-	var speed := Data.num("army", "march.speed", 0.07)
-	var stance := Data.num("army", "stance", 0.25)
-	for i in slots.size():
-		var slot: Vector3 = slots[i]
-		var vat: VATMultiMeshInstance3D = VAT.new()
-		vat.exported_mesh = mesh
-		# The plugin's own advice: the VAT material in the Material Override slot. One material per regiment,
-		# its house colour a plain uniform (a regiment is one draw either way).
-		var own := mat.duplicate() as ShaderMaterial
-		own.set_shader_parameter("team_color", colours[i % colours.size()])
-		vat.material_override = own
-		vat.instance_count = REGIMENT
-		vat.rand_anim_offset = true
-		vat.vat_animation_tracks = tracks
-		add_child(vat)
-		# Some regiments are still marching in from behind the host, along open ground.
-		var start := slot
-		var marching := false
-		if rng.randf() < share:
-			var back := slot - face * rng.randf_range(float(from[0]), float(from[1]))
-			if _ground(back, wide) and _ground((back + slot) * 0.5, wide):
-				start = back
-				marching = true
-				_fell(back, slot, wide * 0.6)
-		var clip := WALK if marching else (BLOCK if rng.randf() < stance else IDLE)
-		_dress(vat, int(frontages[rng.randi() % frontages.size()]), sf, sr, clip, rng)
-		var r := {"vat": vat, "slot": slot, "at": start, "yaw": yaw + rng.randf_range(-0.06, 0.06), "speed": speed * rng.randf_range(0.9, 1.1), "marching": marching}
+	var colours := _colours()
+	for i in specs.size():
+		var r := _regiment(specs[i], colours[i % colours.size()] if String(Data.value("army", "colours", "crown")) == "houses" else colours[0])
+		if r.is_empty():
+			continue
 		_regiments.append(r)
-		_place(r)
-	var probe := mesh.surface_get_arrays(0)
-	print("ARMY mustered men=%d regiments=%d by %s at %s on open ground %s, %d marching; soldier verts=%d uv2=%s albedo=%s" % [slots.size() * REGIMENT, slots.size(),
-		String(seat.get("name", "?")), str(town), str(_field), _regiments.filter(func(r): return r["marching"]).size(),
-		(probe[Mesh.ARRAY_VERTEX] as PackedVector3Array).size(), str(probe[Mesh.ARRAY_TEX_UV2] != null), str(mat.get_shader_parameter("albedo_texture") != null)])
+		_by_id[r["id"]] = r
+	if _regiments.is_empty():
+		push_error("ARMY no soldier mesh to raise the host with")
+		return
+	# The line: where it stands and the way it faces, every regiment's place in it.
+	var extent := _line_places()
+	if not _field_for(town, extent):
+		push_error("ARMY no open ground by the seat")
+		_regiments.clear()
+		return
+	_standard_up()
+	# The column on the road in, unless the host starts in line.
+	_goal = "column" if shape == "march" else "line"
+	if shape == "line":
+		for r in _regiments:
+			_stand_in_line(r)
+	else:
+		_road_in(town)
+		_column_up()
+	_tilt = Data.num("army", "camera.tilt", -8.0)
+	_yaw_line = _lens_yaw(_field, _face + Data.num("army", "camera.quarter", 0.4))
+	_yaw = _yaw_line
+	_focus = _middle()
+	if shape != "line":
+		var mid := _at(maxf(0.0, _cum[_cum.size() - 1] - Data.num("army", "march.lead", 5.0) - _column_length() * 0.5))
+		var ahead := _at(_cum[_cum.size() - 1]) - mid
+		_yaw_march = _lens_yaw(mid, atan2(ahead.x, ahead.z) + Data.num("army", "camera.marchQuarter", 0.9))
+		_yaw = _yaw_march
+	var roles := {}
+	for r in _regiments:
+		roles[r["role"]] = int(roles.get(r["role"], 0)) + 1
+	print("ARMY mustered men=%d regiments=%d %s host=%d shape=%s by %s at %s, line at %s facing %.2f, road in %.1f units" % [_men(), _regiments.size(), str(roles), host_id, shape,
+		String(seat.get("name", "?")), str(town), str(_field), _face, _cum[_cum.size() - 1] if not _cum.is_empty() else 0.0])
 	_hold = true  # the camera on the army itself, at the shot's own --dist, for the whole take (a test aid)
 
+
+# --- The command hooks (the command card calls these; nothing in play does yet) -------------------------
+
+## The host's regiments as the command card shows them: [{id, host, unit, role, glyph, men, strength, colour,
+## shape, at, selected, commander}].
+func regiments() -> Array:
+	var out: Array = []
+	for r in _regiments:
+		out.append({"id": r["id"], "host": host_id, "unit": r["unit"], "role": r["role"], "glyph": r["glyph"], "men": r["men"],
+			"strength": r["strength"], "colour": r["colour"], "shape": r["shape"], "at": (r["node"] as Node3D).global_position,
+			"selected": r["selected"], "commander": is_same(r, _commander)})
+	return out
+
+
+## Selects one regiment (its ground rectangle and its banner's glow); the others are let go. False when no
+## regiment has that id.
+func select(regiment_id: int) -> bool:
+	if not _by_id.has(regiment_id):
+		return false
+	for r in _regiments:
+		_mark(r, r["id"] == regiment_id)
+	selection_changed.emit([regiment_id])
+	return true
+
+
+## The whole host, as a click on its standard selects it.
+func select_all() -> void:
+	for r in _regiments:
+		_mark(r, true)
+	selection_changed.emit(_regiments.map(func(r): return r["id"]))
+
+
+func deselect() -> void:
+	for r in _regiments:
+		_mark(r, false)
+	selection_changed.emit([])
+
+
+## A regiment's strength (0..1: its men left over its full muster), shown as its banner's pips.
+func set_strength(regiment_id: int, share: float) -> void:
+	if _by_id.has(regiment_id):
+		var r: Dictionary = _by_id[regiment_id]
+		r["strength"] = clampf(share, 0.0, 1.0)
+		(r["banner_mat"] as ShaderMaterial).set_shader_parameter("strength", r["strength"])
+
+
+## The shape the game wants: "line" (each regiment marches to its place at the muster and turns into line),
+## or "column" (each regiment closes up into column where it stands).
+func set_shape(shape: String) -> void:
+	_goal = "column" if shape == "column" else "line"
+	for r in _regiments:
+		if _goal == "line" and r["state"] in ["halt", "rest"] and r["shape"] == "column":
+			r["state"] = "deploy"
+			_clips(r, "walk")
+		elif _goal == "column" and r["shape"] == "line" and r["state"] == "rest":
+			_reform(r, "column")
+
+
+# --- Raising the host -------------------------------------------------------------------------------------
+
+## The crown's largest host from /world (bridge/hosts.js), a regiment per company: [{id, unit, men, strength}].
+func _from_world() -> Array:
+	var hosts: Array = main.bridge.world.get("hosts", [])
+	if hosts.is_empty():
+		return []
+	var h: Dictionary = hosts[0]  # the bridge sorts them largest first
+	host_id = int(h.get("id", 0))
+	var types := {}
+	for u in main.bridge.world.get("units", []):
+		types[int(u.get("id", -1))] = u
+	var each := float(h.get("men", 0)) / maxf(1.0, float(h.get("companies", 1)))
+	var full := Data.num("army", "hpFull", 10.0)
+	var out: Array = []
+	for uid in h.get("units", []):
+		var u: Dictionary = types.get(int(uid), {})
+		var unit := _unit_for(String(u.get("type", "")))
+		var hp: float = float(u.get("hp", full)) if u.get("hp") != null else full
+		out.append({"id": int(uid), "unit": unit, "men": int(clampf(each, 100.0, 200.0)), "strength": clampf(hp / full, 0.05, 1.0)})
+	return out
+
+
+## A made-up host of about `count` men, its regiments shared out among the units by their share (largest
+## remainder), with negative ids.
+func _made_up(count: int) -> Array:
+	var units: Dictionary = Data.value("army", "units", {})
+	var mean := 0.0
+	var total := 0.0
+	for k in units:
+		mean += float(units[k].get("share", 0.0)) * float(units[k].get("men", 150))
+		total += float(units[k].get("share", 0.0))
+	mean = mean / total if total > 0.0 else 150.0
+	var n := maxi(1, roundi(count / mean))
+	var counts := {}
+	var rest: Array = []
+	var given := 0
+	for k in units:
+		var want := n * float(units[k].get("share", 0.0)) / maxf(total, 0.001)
+		counts[k] = int(floor(want))
+		given += int(counts[k])
+		rest.append([want - floor(want), k])
+	rest.sort_custom(func(a, b): return a[0] > b[0])
+	for i in n - given:
+		counts[rest[i % rest.size()][1]] += 1
+	var low_high: Array = Data.value("army", "spike.strength", [1.0, 1.0])
+	var out: Array = []
+	for k in units:
+		for i in int(counts[k]):
+			out.append({"id": -(out.size() + 1), "unit": String(k), "men": int(units[k].get("men", 150)), "strength": _rng.randf_range(float(low_high[0]), float(low_high[1]))})
+	return out
+
+
+## The unit a Freeciv type raises (data/army.json units.<name>.freeciv), else fallbackUnit.
+func _unit_for(kind: String) -> String:
+	var units: Dictionary = Data.value("army", "units", {})
+	for k in units:
+		if (units[k].get("freeciv", []) as Array).has(kind):
+			return String(k)
+	return String(Data.value("army", "fallbackUnit", "men_at_arms"))
+
+
+## A unit's row, with its mesh's fields under it (meshes.<asset>) and its own over them.
+func _unit(name: String) -> Dictionary:
+	var row: Dictionary = (Data.value("army", "units", {}) as Dictionary).get(name, {})
+	var asset := String(row.get("asset", KNIGHT))
+	var out: Dictionary = ((Data.value("army", "meshes", {}) as Dictionary).get(asset, {}) as Dictionary).duplicate(true)
+	for k in row:
+		if k == "tracks" and out.has("tracks"):
+			(out["tracks"] as Dictionary).merge(row[k], true)
+		else:
+			out[k] = row[k]
+	out["asset"] = asset
+	return out
+
+
+## One regiment: its node (at its middle, on the ground), its men (one VAT draw), its banner, its ground
+## rectangle and its far block. Its men keep who they are (turn, size) through every shape.
+func _regiment(spec: Dictionary, colour: Color) -> Dictionary:
+	var row := _unit(String(spec["unit"]))
+	var kit := _asset(String(row["asset"]), row)
+	if kit.is_empty():
+		return {}
+	var count := int(spec["men"])
+	var node := Node3D.new()
+	add_child(node)
+	var vat: VATMultiMeshInstance3D = VAT.new()
+	vat.exported_mesh = kit["mesh"]
+	# The plugin's own advice: the VAT material in the Material Override slot, one per regiment (its colour).
+	var own := (kit["mat"] as ShaderMaterial).duplicate() as ShaderMaterial
+	own.set_shader_parameter("team_color", colour)
+	vat.material_override = own
+	vat.instance_count = count
+	vat.rand_anim_offset = true
+	vat.vat_animation_tracks = kit["tracks"]
+	node.add_child(vat)
+	var turn := Data.num("army", "jitter.turn", 0.18)
+	var size := Data.num("army", "jitter.size", 0.06)
+	var yaws := PackedFloat32Array()
+	var sizes := PackedFloat32Array()
+	for s in count:
+		yaws.append(_rng.randf_range(-turn, turn))
+		sizes.append(_rng.randf_range(1.0 - size, 1.0 + size))
+	var spacing: Dictionary = row.get("spacing", {})
+	var r := {"id": int(spec["id"]), "unit": String(spec["unit"]), "role": String(row.get("role", "melee")), "glyph": String(row.get("glyph", "sword")),
+		"men": count, "strength": float(spec.get("strength", 1.0)), "colour": colour, "node": node, "vat": vat, "kit": kit,
+		"tracks": row.get("tracks", {}) if kit["asset"] == row["asset"] else kit["roles"],
+		"sf": float(spacing.get("file", Data.num("army", "spacing.file", 0.1))), "sr": float(spacing.get("rank", Data.num("army", "spacing.rank", 0.12))),
+		"speed": Data.num("army", "march.speed", 0.16) * float(row.get("speed", 1.0)),
+		"yaws": yaws, "sizes": sizes, "local": PackedVector3Array(), "from": PackedVector3Array(), "to": PackedVector3Array(),
+		"shape": "line", "state": "rest", "s": 0.0, "off": 0.0, "slot": Vector3.ZERO, "place": Vector2.ZERO, "t": 0.0,
+		"fidget": _rng.randf_range(0.5, 3.0), "backs": [], "selected": false, "w": 1.0, "d": 1.0}
+	r["line"] = _layout(r, "line")
+	r["column"] = _layout(r, "column")
+	_banner(r)
+	_ground_marks(r)
+	return r
+
+
+## The men of a regiment in a shape, in its own frame (+Z its front): {at: positions, w, d}. A line stands
+## line.frontage men abreast, a column 4-6 (column.files); each rank bows a little along its length and each
+## man stands a little off his mark, so the ranks read as men, not a printed grid. A short last rank is centred.
+func _layout(r: Dictionary, shape: String) -> Dictionary:
+	var count := int(r["men"])
+	var files: int
+	var sf: float = r["sf"]
+	var sr: float = r["sr"]
+	if shape == "column":
+		var cf: Array = Data.value("army", "column.files", [4, 6])
+		files = _rng.randi_range(int(cf[0]), int(cf[1]))
+		sr = maxf(sr, Data.num("army", "column.rank", 0.14))
+	else:
+		var lf: Array = (Data.value("army", "line.frontage", {}) as Dictionary).get(r["role"], [18, 25])
+		files = _rng.randi_range(int(lf[0]), int(lf[1]))
+	files = clampi(files, 1, count)
+	var ranks := int(ceil(float(count) / files))
+	var place := Data.num("army", "jitter.place", 0.014)
+	var bow := Data.num("army", "jitter.rank", 0.03)
+	var bends: Array = []
+	for k in ranks:
+		bends.append([_rng.randf_range(-bow, bow), _rng.randf_range(0.0, TAU), _rng.randf_range(0.15, 0.4)])
+	var at := PackedVector3Array()
+	for s in count:
+		var k := s / files
+		var in_rank := mini(files, count - k * files)
+		var x := (float(s % files) - (in_rank - 1) * 0.5) * sf
+		var z := -(float(k) - (ranks - 1) * 0.5) * sr
+		var b: Array = bends[k]
+		z += float(b[0]) * sin(x * float(b[2]) * TAU / maxf(sf * files, 0.01) * 3.0 + float(b[1]))
+		at.append(Vector3(x + _rng.randf_range(-place, place), 0.0, z + _rng.randf_range(-place, place)))
+	return {"at": at, "w": files * sf, "d": ranks * sr}
+
+
+## Lays every man of a regiment at its current positions (its `local`), with his own turn and size.
+func _dress(r: Dictionary) -> void:
+	var vat: VATMultiMeshInstance3D = r["vat"]
+	var tall: float = Data.num("army", "man", 0.22) / float(r["kit"]["height"])
+	var at: PackedVector3Array = r["local"]
+	var yaws: PackedFloat32Array = r["yaws"]
+	var sizes: PackedFloat32Array = r["sizes"]
+	for s in at.size():
+		var b := Basis(Vector3.UP, yaws[s]).scaled(Vector3.ONE * tall * sizes[s])
+		vat.multimesh.set_instance_transform(s, Transform3D(b, at[s]))
+
+
+## Takes a regiment's shape at once (its men's places, its banner's pips, its rectangle and block fitted).
+func _shape(r: Dictionary, shape: String) -> void:
+	var l: Dictionary = r[shape]
+	r["shape"] = shape
+	r["local"] = (l["at"] as PackedVector3Array).duplicate()
+	r["w"] = l["w"]
+	r["d"] = l["d"]
+	_dress(r)
+	_fit(r)
+
+
+## Plays a regiment's men a role's clip. walk: the whole regiment on one step, each man a little off it
+## (jitter.step). rest: each man his own pick from the rest pool (name: weight), at his own point in it.
+func _clips(r: Dictionary, role: String) -> void:
+	var vat: VATMultiMeshInstance3D = r["vat"]
+	var step := Data.num("army", "jitter.step", 0.06)
+	var phase := _rng.randf()
+	for s in vat.multimesh.instance_count:
+		vat.update_instance_track(s, _track(r, role))
+		vat.update_instance_animation_offset(s, fposmod(phase + _rng.randf_range(-step, step), 1.0) if role == "walk" else _rng.randf())
+		vat.update_instance_alpha(s, 1.0)
+	r["backs"] = []
+
+
+## A track index for a role on a regiment's mesh: the role's clip name, one of a list, or one of a pool by
+## weight (data/army.json meshes.<dir>.tracks); the mesh's first track when it has no such clip.
+func _track(r: Dictionary, role: String) -> int:
+	var want: Variant = (r["tracks"] as Dictionary).get(role, (r["tracks"] as Dictionary).get("idle", "Idle"))
+	var name := ""
+	if want is Array and not (want as Array).is_empty():
+		name = String(want[_rng.randi() % (want as Array).size()])
+	elif want is Dictionary:
+		var sum := 0.0
+		for k in want:
+			sum += float(want[k])
+		var roll := _rng.randf() * sum
+		for k in want:
+			roll -= float(want[k])
+			name = String(k)
+			if roll <= 0.0:
+				break
+	else:
+		name = String(want)
+	return int((r["kit"]["index"] as Dictionary).get(name, 0))
+
+
+# --- Banner, standard, ground rectangle, far block -------------------------------------------------------
+
+## A regiment's banner: one billboard quad (pole and cloth) at its middle, in its house colour with its glyph.
+func _banner(r: Dictionary) -> void:
+	var man := Data.num("army", "man", 0.22)
+	var mi := _flag_quad(man * Data.num("army", "banner.height", 2.6), man * Data.num("army", "banner.width", 1.6))
+	var m: ShaderMaterial = mi.material_override
+	m.set_shader_parameter("field_color", r["colour"])
+	m.set_shader_parameter("glyph", int(GLYPHS.get(r["glyph"], 1)))
+	m.set_shader_parameter("strength", r["strength"])
+	m.set_shader_parameter("pips", int(Data.num("army", "banner.pips", 5)))
+	(r["node"] as Node3D).add_child(mi)
+	r["banner"] = mi
+	r["banner_mat"] = m
+
+
+## A banner quad `high` tall and `wide` across, its pivot at the pole's foot.
+func _flag_quad(high: float, wide: float) -> MeshInstance3D:
+	var q := QuadMesh.new()
+	q.size = Vector2(wide, high)
+	q.subdivide_width = 10
+	q.subdivide_depth = 8
+	q.center_offset = Vector3(wide * 0.5, high * 0.5, 0.0)
+	var m := ShaderMaterial.new()
+	m.shader = BANNER
+	m.set_shader_parameter("span", wide)
+	m.set_shader_parameter("phase", _rng.randf() * TAU)
+	var flag_v := Vector2(0.03, 0.40)
+	m.set_shader_parameter("flag_v", flag_v)
+	m.set_shader_parameter("aspect", wide * (1.0 - 0.04) / (high * (flag_v.y - flag_v.x)))
+	var mi := MeshInstance3D.new()
+	mi.mesh = q
+	mi.material_override = m
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return mi
+
+
+## The army's standard over the commander's regiment (the middle of the front row): larger, the crown's
+## painted arms where heraldry has them (assets/heraldry), else its colour with a crown; no pips. The host's
+## strength in men stands under it from afar.
+func _standard_up() -> void:
+	var c: Dictionary = _commander if not _commander.is_empty() else _regiments[0]
+	_commander = c
+	var man := Data.num("army", "man", 0.22)
+	var k := Data.num("army", "standard.scale", 1.7)
+	_standard = _flag_quad(man * Data.num("army", "banner.height", 2.6) * k, man * Data.num("army", "banner.width", 1.6) * k)
+	var m: ShaderMaterial = _standard.material_override
+	m.set_shader_parameter("field_color", c["colour"])
+	m.set_shader_parameter("glyph", GLYPHS["crown"])
+	m.set_shader_parameter("pips", 0)
+	m.set_shader_parameter("swallow", false)
+	var crown := _crown_house()
+	var path := "res://assets/heraldry/banner-%s.png" % Heraldry.slug(crown) if not crown.is_empty() else ""
+	if path != "" and ResourceLoader.exists(path):
+		m.set_shader_parameter("arms", load(path))
+		m.set_shader_parameter("use_arms", true)
+	(c["node"] as Node3D).add_child(_standard)
+	_strength_label = Label3D.new()
+	_strength_label.text = _thousands(_men())
+	_strength_label.font = load("res://assets/fonts/GeistMono.ttf")
+	_strength_label.font_size = 28
+	_strength_label.outline_size = 8
+	_strength_label.modulate = Color(0.95, 0.93, 0.88)
+	_strength_label.outline_modulate = Color(0.1, 0.08, 0.06, 0.8)
+	_strength_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_strength_label.fixed_size = true
+	_strength_label.pixel_size = 0.0006
+	_strength_label.no_depth_test = true
+	_strength_label.visible = false
+	(c["node"] as Node3D).add_child(_strength_label)
+	_standard_place()
+
+
+## The standard stands just behind the commander's regiment's banner, so the two never overlap.
+func _standard_place() -> void:
+	if _standard == null:
+		return
+	var back := -float(_commander["d"]) * 0.5 - 0.1
+	_standard.position = Vector3(0.0, 0.0, back)
+	_strength_label.position = Vector3(0.0, -0.05, back)
+
+
+## The ground rectangle under a regiment (a decal on the land alone, terrain.gd's GROUND_LAYER, so it never
+## paints the men) and the block it shows as from afar.
+func _ground_marks(r: Dictionary) -> void:
+	var d := Decal.new()
+	d.texture_albedo = _rect_texture()
+	d.modulate = r["colour"]
+	d.cull_mask = Terrain.GROUND_LAYER
+	d.upper_fade = 0.0
+	d.lower_fade = 0.0
+	d.albedo_mix = 1.0
+	d.emission_energy = 0.6
+	d.texture_emission = d.texture_albedo
+	(r["node"] as Node3D).add_child(d)
+	r["ring"] = d
+	var block := MeshInstance3D.new()
+	block.mesh = BoxMesh.new()
+	var m := StandardMaterial3D.new()
+	m.albedo_color = r["colour"]
+	m.emission_enabled = true
+	m.emission = (r["colour"] as Color) * 0.35
+	m.roughness = 0.9
+	block.material_override = m
+	block.visible = false
+	(r["node"] as Node3D).add_child(block)
+	r["block"] = block
+	_mark(r, false)
+
+
+## Fits the rectangle and the block to a regiment's shape.
+func _fit(r: Dictionary) -> void:
+	var margin := Data.num("army", "select.margin", 0.15)
+	var man := Data.num("army", "man", 0.22)
+	var d: Decal = r["ring"]
+	d.size = Vector3(float(r["w"]) + margin * 2.0, 1.2, float(r["d"]) + margin * 2.0)
+	var block: MeshInstance3D = r["block"]
+	(block.mesh as BoxMesh).size = Vector3(float(r["w"]), man, float(r["d"]))
+	block.position = Vector3(0.0, man * 0.5, 0.0)
+	if is_same(r, _commander):
+		_standard_place()
+
+
+static var _rect_tex: ImageTexture
+## A rectangle's outline with a faint fill, white (the decal tints it): made once.
+static func _rect_texture() -> ImageTexture:
+	if _rect_tex:
+		return _rect_tex
+	var n := 64
+	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+	for y in n:
+		for x in n:
+			var e := mini(mini(x, y), mini(n - 1 - x, n - 1 - y))
+			img.set_pixel(x, y, Color(1, 1, 1, 1.0 if e < 3 else (0.5 if e < 5 else 0.12)))
+	_rect_tex = ImageTexture.create_from_image(img)
+	return _rect_tex
+
+
+## A regiment selected or let go: its rectangle shown (select.alpha) or at rest (select.idle), its banner lit.
+func _mark(r: Dictionary, on: bool) -> void:
+	r["selected"] = on
+	var a := Data.num("army", "select.alpha", 0.9) if on else Data.num("army", "select.idle", 0.0)
+	var d: Decal = r["ring"]
+	var c: Color = r["colour"]
+	d.modulate = Color(c.r, c.g, c.b, a)
+	d.visible = a > 0.0 and not _far
+	(r["banner_mat"] as ShaderMaterial).set_shader_parameter("selected", 1.0 if on else 0.0)
+
+
+# --- The two shapes ---------------------------------------------------------------------------------------
+
+## Every regiment's place in the line, in the line's frame (x right, z forward, its middle at 0): melee rows
+## at the front (line.maxFront abreast, more rows behind), cavalry on the front row's wings, ranged rows behind
+## the melee. The commander's regiment is the front row's middle. Returns the line's width and depth.
+func _line_places() -> Vector2:
+	var gap := Data.num("army", "gap", 0.35)
+	var row_gap := Data.num("army", "line.rowGap", 0.7)
+	var wing_gap := Data.num("army", "line.wingGap", 0.6)
+	var most := int(Data.num("army", "line.maxFront", 8))
+	var melee: Array = _regiments.filter(func(r): return r["role"] == "melee")
+	var ranged: Array = _regiments.filter(func(r): return r["role"] == "ranged")
+	var horse: Array = _regiments.filter(func(r): return r["role"] == "cavalry")
+	if melee.is_empty():  # a host of archers and horse still stands a front
+		melee = ranged
+		ranged = []
+	var rows: Array = []
+	for list in [melee, ranged]:
+		for i in range(0, list.size(), most):
+			rows.append(list.slice(i, i + most))
+	var z := 0.0
+	var wide := 0.0
+	for ri in rows.size():
+		var row: Array = rows[ri]
+		var deep := 0.0
+		var span := 0.0
+		for r in row:
+			deep = maxf(deep, float(r["line"]["d"]))
+			span += float(r["line"]["w"]) + gap
+		span -= gap
+		var x := -span * 0.5
+		for r in row:
+			var w := float(r["line"]["w"])
+			r["place"] = Vector2(x + w * 0.5, z - deep * 0.5)
+			x += w + gap
+		if ri == 0:
+			_commander = row[row.size() / 2]
+			# The wings: horse outward from the front row's ends, left and right in turn.
+			var left := -span * 0.5 - wing_gap
+			var right := span * 0.5 + wing_gap
+			for i in horse.size():
+				var h: Dictionary = horse[i]
+				var w := float(h["line"]["w"])
+				if i % 2 == 0:
+					h["place"] = Vector2(right + w * 0.5, z - deep * 0.5)
+					right += w + gap
+				else:
+					h["place"] = Vector2(left - w * 0.5, z - deep * 0.5)
+					left -= w + gap
+			span = right - left
+		wide = maxf(wide, span)
+		z -= deep + row_gap
+	var depth := -z - row_gap
+	for r in _regiments:  # the line's middle at 0
+		r["place"] = (r["place"] as Vector2) + Vector2(0.0, depth * 0.5)
+	return Vector2(wide, depth)
+
+
+## Where the line stands: every cell of a grid round the seat is asked whether its ground suits men (_ground:
+## dry land, no building, road or track, level enough) and how many trees stand on it; then each cell is tried
+## as the line's middle, facing away from the seat or half a quarter either side, and scored on the line's
+## ground (cells unsuitable, trees to fell) and its way from the seat (muster.missCost, treeCost, nearCost).
+## The best is taken; the trees under it are felled (forest.clear, as a town or a battle clears its ground).
+func _field_for(town: Vector3, extent: Vector2) -> bool:
+	var pitch := Data.num("army", "muster.cell", 2.0)
+	var clear := Data.num("army", "muster.clear", 4.5)
+	var reach := Data.num("army", "muster.reach", 40.0)
+	var keep := pitch * Data.num("army", "muster.keepOff", 0.75)
+	var tree_cost := Data.num("army", "muster.treeCost", 0.15)
+	var miss_cost := Data.num("army", "muster.missCost", 4.0)
+	var near_cost := Data.num("army", "muster.nearCost", 0.25)
+	var woods = main.terrain.get("forest")
+	var span := int(ceil(reach / pitch))
+	var ok := {}  # Vector2i cell -> trees on it, for the cells whose ground suits men
+	for gx in range(-span, span + 1):
+		for gz in range(-span, span + 1):
+			var off := Vector2(gx, gz) * pitch
+			if off.length() < clear or off.length() > reach:
+				continue
+			var p := town + Vector3(off.x, 0, off.y)
+			if _ground(p, pitch * 0.9):
+				ok[Vector2i(gx, gz)] = int(woods.trees_near(p, keep)) if woods and woods.has_method("trees_near") else 0
+	if ok.is_empty():
+		return false
+	var nx := maxi(1, int(ceil(extent.x / pitch)) + 1)
+	var nz := maxi(1, int(ceil(extent.y / pitch)) + 1)
+	var best_score := INF
+	var best_c := Vector2.ZERO
+	var best_a := 0.0
+	for c in ok:
+		var mid := Vector2(c) * pitch
+		var base := atan2(mid.x, mid.y)
+		var near := Vector2(c).length() * near_cost
+		for turn in [0.0, -PI / 4.0, PI / 4.0]:
+			var a: float = base + turn
+			var fwd := Vector2(sin(a), cos(a))
+			var right := Vector2(cos(a), -sin(a))
+			var score := near
+			for i in nx:
+				for j in nz:
+					var p := mid + right * (float(i) - (nx - 1) * 0.5) * pitch + fwd * (float(j) - (nz - 1) * 0.5) * pitch
+					var cell := Vector2i(roundi(p.x / pitch), roundi(p.y / pitch))
+					score += float(ok[cell]) * tree_cost if ok.has(cell) else miss_cost
+				if score >= best_score:
+					break
+			if score < best_score:
+				best_score = score
+				best_c = mid
+				best_a = a
+	_face = best_a
+	_field = town + Vector3(best_c.x, 0, best_c.y)
+	_field.y = main.terrain.height_at(_field.x, _field.z)
+	# Its ground cleared of trees, and every regiment's slot on it.
+	var fwd3 := Vector3(sin(_face), 0, cos(_face))
+	var right3 := Vector3(cos(_face), 0, -sin(_face))
+	for i in nx:
+		for j in nz:
+			var p := _field + right3 * (float(i) - (nx - 1) * 0.5) * pitch + fwd3 * (float(j) - (nz - 1) * 0.5) * pitch
+			if woods and woods.has_method("clear"):
+				woods.clear(p, keep)
+	for r in _regiments:
+		var pl: Vector2 = r["place"]
+		var p := _field + right3 * pl.x + fwd3 * pl.y
+		r["slot"] = Vector3(p.x, main.terrain.height_at(p.x, p.z), p.z)
+	return true
+
+
+## A regiment stands in its place in the line at once, at ease.
+func _stand_in_line(r: Dictionary) -> void:
+	_shape(r, "line")
+	r["state"] = "rest"
+	_set_at(r, r["slot"], _face)
+	_clips(r, "rest")
+
+
+## The road in: from the nearest town with a road to the seat (roads.route, the great roads and the King's
+## road), cut where it passes nearest the muster, so the host marches in along it and turns off to its line.
+## Its last stretch is kept, long enough for the whole column (lengthened straight back where the road is
+## short). With no road, the host comes straight over open land along its line's flank.
+func _road_in(town: Vector3) -> void:
+	var need := _column_length() + Data.num("army", "march.lead", 5.0) + 1.0
+	var roads = main.get("roads")
+	var way := PackedVector3Array()
+	if roads and roads.has_method("route"):
+		var others: Array = (main.bridge.world.get("cities", []) as Array).duplicate()
+		var seat_xy := Vector2(town.x, town.z)
+		var pos := func(c) -> Vector3: return main.terrain.world_pos(float(c["x"]), float(c["y"]))
+		others = others.filter(func(c): return Vector2((pos.call(c) as Vector3).x, (pos.call(c) as Vector3).z).distance_to(seat_xy) > 1.0)
+		others.sort_custom(func(a, b): return Vector2((pos.call(a) as Vector3).x, (pos.call(a) as Vector3).z).distance_to(seat_xy) < Vector2((pos.call(b) as Vector3).x, (pos.call(b) as Vector3).z).distance_to(seat_xy))
+		for c in others.slice(0, int(Data.num("army", "march.roadTries", 6))):
+			way = roads.route(pos.call(c), town)
+			if way.size() >= 2:
+				break
+	if way.size() >= 2:
+		var k := 1
+		for i in way.size():
+			if Vector2(way[i].x - _field.x, way[i].z - _field.z).length() < Vector2(way[k].x - _field.x, way[k].z - _field.z).length():
+				k = i
+		way = way.slice(0, maxi(k, 1) + 1)
+	if way.size() < 2:  # in along the line's right flank, clear of the seat behind it
+		var side := Vector3(cos(_face), 0, -sin(_face))
+		way = PackedVector3Array([_field + side * need, _field + side * 2.0])
+	# Its last `need` units, lengthened straight back where it is shorter.
+	var total := 0.0
+	var i := way.size() - 1
+	while i > 0 and total + way[i].distance_to(way[i - 1]) < need:
+		total += way[i].distance_to(way[i - 1])
+		i -= 1
+	var keep := way.slice(i)
+	if i > 0:
+		var cut := keep[0].lerp(way[i - 1], (need - total) / maxf(keep[0].distance_to(way[i - 1]), 0.001))
+		keep.insert(0, cut)
+	elif total < need and keep.size() >= 2:
+		keep.insert(0, keep[0] + (keep[0] - keep[1]).normalized() * (need - total))
+	_path = keep
+	_cum = PackedFloat32Array([0.0])
+	for j in range(1, _path.size()):
+		_cum.append(_cum[j - 1] + _path[j].distance_to(_path[j - 1]))
+	var road_w := 0.5
+	for j in range(1, _path.size()):
+		_fell(_path[j - 1], _path[j], road_w)
+
+
+## The column's length: every regiment's column depth and the gaps between them.
+func _column_length() -> float:
+	var gap := Data.num("army", "column.gap", 0.3)
+	var n := 0.0
+	for r in _regiments:
+		n += float(r["column"]["d"]) + gap
+	return n
+
+
+## The host in column on the road, its head march.lead short of the turn-off, in column.order (by role), each
+## regiment marching on its own step.
+func _column_up() -> void:
+	var order: Array = Data.value("army", "column.order", ["cavalry", "melee", "ranged"])
+	var sorted := _regiments.duplicate()
+	sorted.sort_custom(func(a, b): return order.find(a["role"]) < order.find(b["role"]) if a["role"] != b["role"] else int(a["id"]) > int(b["id"]))
+	var gap := Data.num("army", "column.gap", 0.3)
+	var head := _cum[_cum.size() - 1] - Data.num("army", "march.lead", 5.0)
+	var off := 0.0
+	var slowest := INF
+	for r in sorted:
+		slowest = minf(slowest, float(r["speed"]))
+	for r in sorted:
+		off += float(r["column"]["d"]) * 0.5
+		r["off"] = off
+		r["s"] = head - off
+		off += float(r["column"]["d"]) * 0.5 + gap
+		r["speed"] = slowest  # the host marches at its slowest regiment's pace
+		_shape(r, "column")
+		r["state"] = "road"
+		var p := _at(r["s"])
+		_set_at(r, p, _heading(r["s"]))
+		_clips(r, "walk")
+
+
+## A point `s` units along the road in (clamped to its ends), on the ground.
+func _at(s: float) -> Vector3:
+	if _path.is_empty():
+		return _field
+	s = clampf(s, 0.0, _cum[_cum.size() - 1])
+	var i := _cum.bsearch(s)
+	if i <= 0:
+		return _ground_at(_path[0])
+	var a := _path[i - 1]
+	var b := _path[mini(i, _path.size() - 1)]
+	var t := (s - _cum[i - 1]) / maxf(_cum[mini(i, _cum.size() - 1)] - _cum[i - 1], 0.0001)
+	return _ground_at(a.lerp(b, clampf(t, 0.0, 1.0)))
+
+
+## The road's heading at `s` (yaw), over a regiment's length so a bend turns it smoothly.
+func _heading(s: float) -> float:
+	var d := _at(s + 0.6) - _at(s - 0.6)
+	return atan2(d.x, d.z) if Vector2(d.x, d.z).length() > 0.001 else _face
+
+
+func _ground_at(p: Vector3) -> Vector3:
+	return Vector3(p.x, main.terrain.height_at(p.x, p.z), p.z)
+
+
+func _set_at(r: Dictionary, p: Vector3, yaw: float) -> void:
+	r["yaw"] = yaw
+	(r["node"] as Node3D).global_transform = Transform3D(Basis(Vector3.UP, yaw), _ground_at(p))
+
+
+## A regiment turns from one shape to the other where it stands: each man walks from his place in the one to
+## his place in the other over line.reform seconds, the regiment turning to its facing as it does.
+func _reform(r: Dictionary, shape: String) -> void:
+	r["from"] = (r["local"] as PackedVector3Array).duplicate()
+	r["to"] = r[shape]["at"]
+	r["into"] = shape
+	r["t"] = 0.0
+	r["turn_from"] = r["yaw"]
+	r["state"] = "reform"
+	_clips(r, "walk")
+
+
+# --- Each frame -------------------------------------------------------------------------------------------
+
+func _process(delta: float) -> void:
+	if _regiments.is_empty() or _standard == null:
+		return
+	for r in _regiments:
+		match String(r["state"]):
+			"road":
+				# Along the road at the host's pace; at the turn-off, out to its place in the line; on a column
+				# order, it halts at its own place in the column.
+				var end := _cum[_cum.size() - 1] - (float(r["off"]) if _goal == "column" else 0.0)
+				r["s"] = minf(float(r["s"]) + float(r["speed"]) * delta, end)
+				var yaw := lerp_angle(float(r["yaw"]), _heading(r["s"]), minf(1.0, delta * 3.0))
+				_set_at(r, _at(r["s"]), yaw)
+				if float(r["s"]) >= end:
+					if _goal == "column":
+						r["state"] = "halt"
+						_clips(r, "rest")
+					else:
+						r["state"] = "deploy"
+			"deploy":
+				var at: Vector3 = (r["node"] as Node3D).global_position
+				var to: Vector3 = r["slot"] - at
+				to.y = 0.0
+				var step := float(r["speed"]) * delta
+				if to.length() <= step:
+					_set_at(r, r["slot"], r["yaw"])
+					_reform(r, "line")
+				else:
+					_set_at(r, at + to.normalized() * step, lerp_angle(float(r["yaw"]), atan2(to.x, to.z), minf(1.0, delta * 3.0)))
+			"reform":
+				r["t"] = minf(1.0, float(r["t"]) + delta / maxf(Data.num("army", "line.reform", 5.0), 0.1))
+				var e := smoothstep(0.0, 1.0, float(r["t"]))
+				var from: PackedVector3Array = r["from"]
+				var to: PackedVector3Array = r["to"]
+				var local: PackedVector3Array = r["local"]
+				for s in local.size():
+					local[s] = from[s].lerp(to[s], e)
+				r["local"] = local
+				_dress(r)
+				var face := _face if r["into"] == "line" else float(r["turn_from"])
+				_set_at(r, (r["node"] as Node3D).global_position, lerp_angle(float(r["turn_from"]), face, e))
+				if float(r["t"]) >= 1.0:
+					_shape(r, String(r["into"]))
+					r["state"] = "rest"
+					_clips(r, "rest")
+			"halt", "rest":
+				_at_ease(r, delta)
+	_far_view()
+	if _want_select != "" and _regiments.all(func(r): return r["state"] in ["rest", "halt"]):
+		if _want_select == "all":
+			select_all()
+		else:
+			var i := int(_want_select)
+			if i >= 0 and i < _regiments.size():
+				select(int(_regiments[i]["id"]))
+		_want_select = ""
+	if _hold and main.rig:
+		var mid := _middle()
+		_focus = _focus.lerp(mid, minf(1.0, delta * 1.5))
+		var want := _yaw_line if _regiments.any(func(r): return r["state"] in ["deploy", "reform", "rest"]) else _yaw_march
+		_yaw = lerp_angle(_yaw, want, minf(1.0, delta * 0.6))
+		main.rig.snap(_focus, _dist, _yaw)
+		main.rig.tilt = _tilt  # lower than the map view's own pitch: a low oblique, as the art targets
+		main.rig.goal_tilt = _tilt
+	_report -= delta
+	if _report <= 0.0:
+		_report = 2.0
+		var states := {}
+		for r in _regiments:
+			states[r["state"]] = int(states.get(r["state"], 0)) + 1
+		print("ARMY men=%d regiments=%d %s far=%s fps=%d process=%.1fms draws=%d prims=%dk cam=%.1f" % [_men(), _regiments.size(), str(states), str(_far),
+			Engine.get_frames_per_second(), Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
+			Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000.0),
+			main.rig.distance if main.rig else 0.0])
+
+
+## Men at ease shift now and then: every rest.every seconds a few of a regiment's men (rest.men) take another
+## clip from the rest pool and turn a little (rest.turn), so no two moments of a standing host look alike.
+## A clip that plays once returns its man to the regiment's idle when it ends.
+func _at_ease(r: Dictionary, delta: float) -> void:
+	var vat: VATMultiMeshInstance3D = r["vat"]
+	var backs: Array = r["backs"]
+	var now := Time.get_ticks_msec() / 1000.0
+	for i in range(backs.size() - 1, -1, -1):
+		if float(backs[i][1]) <= now:
+			var s := int(backs[i][0])
+			vat.update_instance_track(s, _track(r, "idle"))
+			vat.update_instance_animation_offset(s, _rng.randf())
+			backs.remove_at(i)
+	r["fidget"] = float(r["fidget"]) - delta
+	if float(r["fidget"]) > 0.0:
+		return
+	var every: Array = Data.value("army", "rest.every", [1.5, 4.0])
+	var some: Array = Data.value("army", "rest.men", [3, 9])
+	var turn := Data.num("army", "rest.turn", 0.35)
+	var most := Data.num("army", "jitter.turn", 0.18) + turn
+	r["fidget"] = _rng.randf_range(float(every[0]), float(every[1]))
+	var yaws: PackedFloat32Array = r["yaws"]
+	var tracks: Array = r["kit"]["tracks"]
+	for n in _rng.randi_range(int(some[0]), int(some[1])):
+		var s := _rng.randi() % int(r["men"])
+		var t := _track(r, "rest")
+		vat.update_instance_track(s, t)
+		vat.update_instance_animation_offset(s, _rng.randf())
+		yaws[s] = clampf(yaws[s] + _rng.randf_range(-turn, turn), -most, most)
+		var clip: VATAnimationTrack = tracks[t]
+		if not clip.isLooping:
+			backs.append([s, now + float(clip.endFrame - clip.startFrame) / maxf(float(clip.framerate), 1.0)])
+	r["yaws"] = yaws
+	_dress(r)
+
+
+## From afar (far.at; back to men under far.back) the host shows as one coloured block per regiment, nose to
+## tail on the march or side by side in line, with its standard and its strength; banners and the standard
+## keep their size on screen beyond banner.fixedFrom.
+func _far_view() -> void:
+	var d: float = main.rig.distance if main.rig else _dist
+	var far := d > Data.num("army", "far.at", 34.0) if not _far else d > Data.num("army", "far.back", 30.0)
+	if far != _far:
+		_far = far
+		for r in _regiments:
+			(r["vat"] as Node3D).visible = not far
+			(r["banner"] as Node3D).visible = not far
+			(r["block"] as Node3D).visible = far
+			_mark(r, r["selected"])
+		_strength_label.visible = far
+	var k := maxf(1.0, d / maxf(Data.num("army", "banner.fixedFrom", 14.0), 0.1))
+	for r in _regiments:
+		(r["banner"] as Node3D).scale = Vector3.ONE * k
+	_standard.scale = Vector3.ONE * k
+	_strength_label.position.y = Data.num("army", "man", 0.22) * Data.num("army", "banner.height", 2.6) * Data.num("army", "standard.scale", 1.7) * k * 1.05
+
+
+## The host's middle on the ground: where its regiments stand, on average.
+func _middle() -> Vector3:
+	var sum := Vector3.ZERO
+	for r in _regiments:
+		sum += (r["node"] as Node3D).global_position
+	return sum / _regiments.size()
+
+
+func _men() -> int:
+	var n := 0
+	for r in _regiments:
+		n += int(r["men"])
+	return n
+
+
+static func _thousands(n: int) -> String:
+	var s := str(n)
+	var out := ""
+	while s.length() > 3:
+		out = "," + s.substr(s.length() - 3) + out
+		s = s.substr(0, s.length() - 3)
+	return s + out
+
+
+# --- The realm around it ----------------------------------------------------------------------------------
 
 ## The crown's seat (/world seatId), or Kingsmere by name.
 func _seat() -> Dictionary:
@@ -133,9 +985,22 @@ func _seat() -> Dictionary:
 	return {}
 
 
-## The realm's house colours (as heraldry draws them), the stock six when there are none yet.
-func _house_colours() -> Array:
+## The crown's house as the view knows it ({} when not yet known).
+func _crown_house() -> Dictionary:
+	var houses: Variant = main.get("_houses")
+	for h in (houses as Dictionary).values() if houses is Dictionary else []:
+		if h is Dictionary and h.get("crown", false):
+			return h
+	return {}
+
+
+## The colours the regiments wear: the crown's first (colours "crown" takes only it), then the realm's other
+## houses as heraldry draws them; the stock six when there are none yet.
+func _colours() -> Array:
 	var out: Array = []
+	var crown := _crown_house()
+	if not crown.is_empty() and crown.has("color"):
+		out.append(Heraldry.colour(crown))
 	var houses: Variant = main.get("_houses")
 	for h in (houses as Dictionary).values() if houses is Dictionary else []:
 		if h is Dictionary and not h.get("wild", false) and h.has("color"):
@@ -145,104 +1010,16 @@ func _house_colours() -> Array:
 	return out if out.size() >= 2 else HOUSES
 
 
-## One regiment's men in ranks and files, in its own frame (it moves as one node): a frontage of `files`,
-## each man a little off his mark, turned a little, a little taller or shorter, at his own point in the clip.
-func _dress(vat: VATMultiMeshInstance3D, files: int, sf: float, sr: float, clip: int, rng: RandomNumberGenerator) -> void:
-	var tall := Data.num("army", "man", 0.22) / _height
-	var place := Data.num("army", "jitter.place", 0.012)
-	var turn := Data.num("army", "jitter.turn", 0.18)
-	var size := Data.num("army", "jitter.size", 0.06)
-	var ranks := int(ceil(float(REGIMENT) / files))
-	for s in REGIMENT:
-		var f := float(s % files) - (files - 1) * 0.5
-		var k := float(s / files) - (ranks - 1) * 0.5
-		var b := Basis(Vector3.UP, rng.randf_range(-turn, turn)).scaled(Vector3.ONE * tall * rng.randf_range(1.0 - size, 1.0 + size))
-		var p := Vector3(f * sf + rng.randf_range(-place, place), 0, -k * sr + rng.randf_range(-place, place))
-		vat.multimesh.set_instance_transform(s, Transform3D(b, p))
-		vat.update_instance_track(s, clip)
-		vat.update_instance_animation_offset(s, rng.randf())
-		vat.update_instance_alpha(s, 1.0)
-
-
-## Where the host stands: one field, the whole host together. Every cell of a grid round the seat (a
-## regiment's square) is asked whether its ground suits a regiment (_ground: dry land, no building, road or
-## track, level enough) and how many trees stand on it; the field is the cell whose `n` nearest suitable cells
-## lie closest together, then with the fewest trees, then nearest the seat (muster.treeCost, muster.nearCost).
-## Open fields win; where the land round the seat is wooded the host still stands together, and the trees
-## under it are felled (forest.clear, as a town or a battle clears its ground). Returns the regiments' slots.
-func _muster(town: Vector3, n: int, pitch: float) -> Array:
-	var clear := Data.num("army", "muster.clear", 4.5)
-	var reach := Data.num("army", "muster.reach", 40.0)
-	var keep := pitch * Data.num("army", "muster.keepOff", 0.75)
-	var tree_cost := Data.num("army", "muster.treeCost", 0.15)
-	var near_cost := Data.num("army", "muster.nearCost", 0.25)
-	var woods = main.terrain.get("forest")
-	var span := int(ceil(reach / pitch))
-	var ok := {}  # Vector2i cell -> trees on it, for the cells whose ground suits a regiment
-	for gx in range(-span, span + 1):
-		for gz in range(-span, span + 1):
-			var off := Vector2(gx, gz) * pitch
-			if off.length() < clear or off.length() > reach:
-				continue
-			var p := town + Vector3(off.x, 0, off.y)
-			if _ground(p, pitch * 0.9):
-				ok[Vector2i(gx, gz)] = int(woods.trees_near(p, keep)) if woods and woods.has_method("trees_near") else 0
-	# The cells round a field, nearest first, out to a ring with room for the host and its gaps.
-	var r := int(ceil(sqrt(float(n) / PI) * 1.6)) + 1
-	var rings: Array = []
-	for dx in range(-r, r + 1):
-		for dz in range(-r, r + 1):
-			if Vector2(dx, dz).length() <= r:
-				rings.append(Vector2i(dx, dz))
-	rings.sort_custom(func(a: Vector2i, b: Vector2i): return a.length_squared() < b.length_squared())
-	var best := Vector2i.MAX
-	var best_score := INF
-	for c in ok:
-		var got := 0
-		var trees := 0
-		var far := 0.0
-		for o in rings:
-			if ok.has(c + o):
-				got += 1
-				trees += int(ok[c + o])
-				far = Vector2(o).length()
-				if got >= n:
-					break
-		if got < n:
-			continue
-		var score: float = far + trees * tree_cost + Vector2(c).length() * near_cost
-		if score < best_score:
-			best_score = score
-			best = c
-	if best == Vector2i.MAX:
-		return []
-	var out: Array = []
-	for o in rings:
-		if out.size() >= n:
-			break
-		if ok.has(best + o):
-			var p: Vector3 = town + Vector3((best + o).x * pitch, 0, (best + o).y * pitch)
-			if int(ok[best + o]) > 0 and woods and woods.has_method("clear"):
-				woods.clear(p, keep)  # the host's ground cleared of trees
-			out.append(Vector3(p.x, main.terrain.height_at(p.x, p.z), p.z))
-	var mid := town + Vector3(best.x * pitch, 0, best.y * pitch)
-	_field = Vector3(mid.x, main.terrain.height_at(mid.x, mid.z), mid.z)
-	return out
-
-
-## The lens's heading onto the host: starting from the side away from the seat (the town behind the host),
-## the first of 24 turns either way from which, at the shot's distance, no tree crown and no roof stands
-## between the lens and the host (forest.blocking, camera_rig.blocked_from); with none clear, the least
-## blocked, and the trees on that line felled, so the camera never has to climb over a canopy to see.
-func _lens_yaw(town: Vector3) -> float:
-	_tilt = Data.num("army", "camera.tilt", -8.0)
+## The lens's heading onto `look`: from `start`, the first of 24 turns either way from which, at the shot's
+## distance, no tree crown and no roof stands between the lens and the host (forest.blocking,
+## camera_rig.blocked_from); with none clear, the least blocked, and the trees on that line felled, so the
+## camera never has to climb over a canopy to see.
+func _lens_yaw(look: Vector3, start: float) -> float:
 	var rig = main.rig
 	var woods = main.terrain.get("forest")
-	var away := (_field - town) * Vector3(1, 0, 1)
-	var start := atan2(away.x, away.z) if away.length() > 0.01 else 0.6
 	if rig == null or not rig.has_method("eye_at"):
 		return start
-	var look := _field + Vector3.UP * 0.1
+	look += Vector3.UP * 0.1
 	var best := start
 	var least := 1 << 30
 	for k in 24:
@@ -259,11 +1036,11 @@ func _lens_yaw(town: Vector3) -> float:
 		if n == 0:
 			break
 	if least > 0:
-		_fell(_field, rig.eye_at(look, best, _tilt, maxf(_dist, float(rig.min_distance))), 1.0)
+		_fell(look, rig.eye_at(look, best, _tilt, maxf(_dist, float(rig.min_distance))), 1.0)
 	return best
 
 
-## Fells the trees along a line on the ground (a sight line, a regiment's road in), `width` either side.
+## Fells the trees along a line on the ground (a sight line, the road in), `width` either side.
 func _fell(a: Vector3, b: Vector3, width: float) -> void:
 	var woods = main.terrain.get("forest")
 	if not woods or not woods.has_method("clear"):
@@ -275,7 +1052,7 @@ func _fell(a: Vector3, b: Vector3, width: float) -> void:
 		woods.clear(Vector3(p.x, 0, p.z), width)
 
 
-## A regiment's ground: dry land all over, clear of buildings, roads and tracks, and level enough
+## A cell's ground: dry land all over, clear of buildings, roads and tracks, and level enough
 ## (trees are counted by the muster, and felled where the host stands).
 func _ground(p: Vector3, size: float) -> bool:
 	var h: float = main.terrain.height_at(p.x, p.z)
@@ -296,52 +1073,68 @@ func _ground(p: Vector3, size: float) -> bool:
 	return true
 
 
-func _place(r: Dictionary) -> void:
-	var at: Vector3 = r["at"]
-	at.y = main.terrain.height_at(at.x, at.z)
-	(r["vat"] as Node3D).global_transform = Transform3D(Basis(Vector3.UP, float(r["yaw"])), at)
+# --- The baked soldiers -----------------------------------------------------------------------------------
+
+## A unit's baked soldier (res://assets/<asset>/: soldier.glb, offsets.exr, normals.png, tracks.json, its paint
+## and, for an image-made unit, mask.png), read once per folder: {asset, mesh, mat, tracks, index (clip name ->
+## track), height, roles (its clips by role)}. A folder not baked yet falls back to the knight, so a unit row can name its mesh before it lands.
+func _asset(asset: String, row: Dictionary) -> Dictionary:
+	if not ResourceLoader.exists("res://assets/%s/soldier.glb" % asset) and asset != KNIGHT:
+		push_warning("ARMY %s is not baked yet; its regiments wear the knight" % asset)
+		asset = KNIGHT
+		row = _unit_row_for_mesh(KNIGHT, row)
+	if _assets.has(asset):
+		return _assets[asset]
+	var dir := "res://assets/%s/" % asset
+	var mesh := _soldier_mesh(dir)
+	if mesh == null:
+		push_error("ARMY no soldier mesh at " + dir)
+		return {}
+	var tracks := _tracks(dir)
+	var index := {}
+	for i in tracks.size():
+		index[tracks[i].name] = i
+	var mat := ShaderMaterial.new()
+	mat.shader = load("res://scripts/army_vat.gdshader")
+	mat.set_shader_parameter("offset_map", load(dir + "offsets.exr"))
+	mat.set_shader_parameter("normal_map", load(dir + "normals.png"))
+	mat.set_shader_parameter("albedo_texture", load(dir + String(row.get("albedo", "albedo.png"))))
+	var a := Data.num("army", "albedo", 0.85)
+	mat.set_shader_parameter("albedo", Color(a, a, a))
+	if String(row.get("team", "rects")) == "mask" and ResourceLoader.exists(dir + "mask.png"):
+		mat.set_shader_parameter("team_by_mask", true)
+		mat.set_shader_parameter("team_mask", load(dir + "mask.png"))
+	else:
+		var rects: Array = Data.value("army", "team.rects", [])
+		var mix := Vector4.ONE
+		for k in mini(rects.size(), 4):
+			var q: Array = rects[k]
+			mat.set_shader_parameter("team_rect_" + "abcd"[k], Vector4(float(q[0]), float(q[1]), float(q[2]), float(q[3])))
+			mix[k] = float(q[4]) if q.size() > 4 else 1.0  # how much of the cell takes the colour
+		mat.set_shader_parameter("team_mix", mix)
+	mat.set_shader_parameter("team_shade", Data.num("army", "team.shade", 1.1))
+	for i in mesh.get_surface_count():
+		mesh.surface_set_material(i, mat)
+	_assets[asset] = {"asset": asset, "mesh": mesh, "mat": mat, "tracks": tracks, "index": index, "height": maxf(mesh.get_aabb().size.y, 0.01),
+		"roles": row.get("tracks", {})}
+	return _assets[asset]
 
 
-func _process(delta: float) -> void:
-	if _hold and main.rig:
-		main.rig.snap(_field, _dist, _yaw)
-		main.rig.tilt = _tilt  # lower than the map view's own pitch: a low oblique, as the art targets
-		main.rig.goal_tilt = _tilt
-	# The regiments still marching in come on toward their places and stand there at ease.
-	for r in _regiments:
-		if not r["marching"]:
-			continue
-		var to: Vector3 = r["slot"] - r["at"]
-		to.y = 0.0
-		var step := float(r["speed"]) * delta
-		if to.length() <= step:
-			r["at"] = r["slot"]
-			r["marching"] = false
-			var vat: VATMultiMeshInstance3D = r["vat"]
-			for s in vat.multimesh.instance_count:
-				vat.update_instance_track(s, IDLE)
-				vat.update_instance_animation_offset(s, randf())
-		else:
-			r["at"] = r["at"] + to.normalized() * step
-		_place(r)
-	_report -= delta
-	if _report <= 0.0 and not _regiments.is_empty():
-		_report = 2.0
-		print("ARMY men=%d regiments=%d fps=%d process=%.1fms draws=%d prims=%dk cam=%.1f" % [_regiments.size() * REGIMENT, _regiments.size(),
-			Engine.get_frames_per_second(), Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
-			Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000.0),
-			main.rig.distance if main.rig else 0.0])
+## A unit row put on another mesh: that mesh's paint, colour and clips, the unit's role and numbers kept.
+func _unit_row_for_mesh(asset: String, row: Dictionary) -> Dictionary:
+	var out := row.duplicate(true)
+	var mesh: Dictionary = (Data.value("army", "meshes", {}) as Dictionary).get(asset, {})
+	for k in mesh:
+		out[k] = mesh[k]
+	return out
 
 
-var _height := 2.45  # the baked soldier's own height (its mesh's bounds), so data/army.json's man is his height in the world
-
-
-## The baked soldier as one plain mesh wearing the team-colour VAT material (army_vat.gdshader): the import's
-## arrays laid into a fresh ArrayMesh, uncompressed, without the importer's LODs or shadow mesh. The VAT shader
-## reads each vertex's frame by its UV2 column; a simplified LOD or a merged shadow mesh would draw other
-## vertices than the ones baked (the plugin's import guide: compression and LODs off).
-func _soldier_mesh() -> ArrayMesh:
-	var scene: PackedScene = load(ASSET + "soldier.glb")
+## The baked soldier as one plain mesh: the import's arrays laid into a fresh ArrayMesh, uncompressed, without
+## the importer's LODs or shadow mesh. The VAT shader reads each vertex's frame by its UV2 column; a simplified
+## LOD or a merged shadow mesh would draw other vertices than the ones baked (the plugin's import guide:
+## compression and LODs off).
+func _soldier_mesh(dir: String) -> ArrayMesh:
+	var scene: PackedScene = load(dir + "soldier.glb")
 	if scene == null:
 		return null
 	var root := scene.instantiate()
@@ -359,31 +1152,13 @@ func _soldier_mesh() -> ArrayMesh:
 			return null
 		arrays[Mesh.ARRAY_TANGENT] = null  # the shader rebuilds its own frame from the baked normals
 		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	_height = maxf(mesh.get_aabb().size.y, 0.01)
-	var m := ShaderMaterial.new()
-	m.shader = load("res://scripts/army_vat.gdshader")
-	m.set_shader_parameter("offset_map", load(ASSET + "offsets.exr"))
-	m.set_shader_parameter("normal_map", load(ASSET + "normals.png"))
-	m.set_shader_parameter("albedo_texture", load(ASSET + "knight_texture.png"))
-	var a := Data.num("army", "albedo", 0.85)
-	m.set_shader_parameter("albedo", Color(a, a, a))
-	var rects: Array = Data.value("army", "team.rects", [])
-	var mix := Vector4.ONE
-	for k in mini(rects.size(), 4):
-		var q: Array = rects[k]
-		m.set_shader_parameter("team_rect_" + "abcd"[k], Vector4(float(q[0]), float(q[1]), float(q[2]), float(q[3])))
-		mix[k] = float(q[4]) if q.size() > 4 else 1.0  # how much of the cell takes the colour
-	m.set_shader_parameter("team_mix", mix)
-	m.set_shader_parameter("team_shade", Data.num("army", "team.shade", 1.1))
-	for i in mesh.get_surface_count():
-		mesh.surface_set_material(i, m)
 	return mesh
 
 
 ## The baked clips (tracks.json, written by tools/vat_bake.py) as the plugin's tracks.
-func _tracks() -> Array[VATAnimationTrack]:
+func _tracks(dir: String) -> Array[VATAnimationTrack]:
 	var out: Array[VATAnimationTrack] = []
-	var f := FileAccess.open(ASSET + "tracks.json", FileAccess.READ)
+	var f := FileAccess.open(dir + "tracks.json", FileAccess.READ)
 	for t in JSON.parse_string(f.get_as_text()) if f else []:
 		var v := VATAnimationTrack.new()
 		v.name = String(t["name"])
