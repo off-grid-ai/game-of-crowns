@@ -76,12 +76,14 @@ func build_castle(spec: Dictionary) -> ArrayMesh:
 	for k in 4:
 		var c := Vector3((-1 if k in [0, 3] else 1) * (kh + 0.3), 0, (-1 if k < 2 else 1) * (kh + 0.3))
 		_block(parts, keep_at + c, 2, 2, keep_st + (1 if k % 2 == 0 else 0), rng, {"cone": true, "windows": 0.4})
-	# Banners: down the keep's face over its door and either side of the gate.
-	var top := keep_st * STOREY
-	var b := Basis(Vector3.UP, 0.0).scaled(Vector3.ONE * banner)
-	parts.append(["res://assets/props/Banner_1.gltf", Transform3D(b, keep_at + Vector3(-0.8 * banner, top - 2.0 - 0.84 * banner, kh + 0.15))])
-	for sx in [-1, 1]:
-		parts.append(["res://assets/props/Banner_2.gltf", Transform3D(b.scaled(Vector3.ONE * 0.8), gate_at + Vector3(sx * (gh - 0.9) - 0.65 * banner, (wall_st + 1) * STOREY - 0.6 - 0.7 * banner, 3.0 + 0.15))])
+	# Banners: down the keep's face over its door and either side of the gate. With the castle lived in
+	# (castle_life.gd, --castle-life=on) it hangs the house's painted arms in these places instead.
+	if not load("res://scripts/castle_life.gd").on():
+		var top := keep_st * STOREY
+		var b := Basis(Vector3.UP, 0.0).scaled(Vector3.ONE * banner)
+		parts.append(["res://assets/props/Banner_1.gltf", Transform3D(b, keep_at + Vector3(-0.8 * banner, top - 2.0 - 0.84 * banner, kh + 0.15))])
+		for sx in [-1, 1]:
+			parts.append(["res://assets/props/Banner_2.gltf", Transform3D(b.scaled(Vector3.ONE * 0.8), gate_at + Vector3(sx * (gh - 0.9) - 0.65 * banner, (wall_st + 1) * STOREY - 0.6 - 0.7 * banner, 3.0 + 0.15))])
 	return _bake(parts)
 
 

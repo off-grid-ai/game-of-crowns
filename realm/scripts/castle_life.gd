@@ -108,6 +108,8 @@ func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 		var top: Vector3 = xf * (t["at"] + Vector3(0, float(t["top"]) + float(bk.get("lift", 2.6)), 0))
 		if main.towns.has_method("_banner"):
 			main.towns._banner(root, root.to_local(top), colour, house, float(bk.get("size", 0.32)) * scale)
+	# The house's painted arms where the kit hung plain cloth: down the keep's face, either side of the gate.
+	_arms(xf, sp, house, colour, d)
 	# A guard on each curtain's walk.
 	var gk: Dictionary = Data.value("castle", "guards", {})
 	var walk := int(sp.get("wall_storeys", 2)) * Builder.STOREY + 0.12
@@ -140,6 +142,50 @@ func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 			well.rotation.y = yaw
 			add_child(well)
 			d["nodes"].append(well)
+
+
+## The house's painted banners (assets/heraldry/banner-<house>.png; else a cloth in its colour) hung flat on
+## the castle where the kit's plain ones hung (castle_builder.gd leaves those out while this is on): one long
+## down the keep's face, one either side of the gate (batch 8b: plain yellow cloth with no arms).
+func _arms(xf: Transform3D, sp: Dictionary, house: Dictionary, colour: Color, d: Dictionary) -> void:
+	var k: Dictionary = Data.value("castle", "arms", {})
+	var size := float(sp.get("banner", 1.6)) * float(k.get("size", 1.0))
+	var cell := Builder.CELL
+	var hz := int(sp.get("d", 16)) * cell / 2.0
+	var kh := int(sp.get("keep", 4)) * cell / 2.0
+	var keep_z := -hz + kh - 1.0 + kh + 0.12
+	var keep_top := int(sp.get("keep_storeys", 5)) * Builder.STOREY - 1.0
+	var gate_top := (int(sp.get("wall_storeys", 2)) + 1) * Builder.STOREY - 0.4
+	var gate_z := hz + (3.6 if Builder.meshy_gatehouse() != "" else 3.0) + 0.12
+	var gh := 4 * cell / 2.0
+	var mat := _arms_material(house, colour)
+	var hangs := [[Vector3(0, keep_top, keep_z), Vector2(1.2, 3.0) * size]]
+	for sx in [-1.0, 1.0]:
+		hangs.append([Vector3(sx * (gh - 0.6), gate_top, gate_z), Vector2(0.9, 2.2) * size])
+	for h in hangs:
+		var q := QuadMesh.new()
+		q.size = h[1]
+		q.center_offset = Vector3(0, -(h[1] as Vector2).y * 0.5, 0)  # hung from its top edge
+		var m := MeshInstance3D.new()
+		m.mesh = q
+		m.material_override = mat
+		add_child(m)
+		m.global_transform = xf * Transform3D(Basis(), h[0])
+		d["nodes"].append(m)
+
+
+func _arms_material(house: Dictionary, colour: Color) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.roughness = 0.95
+	var path := "res://assets/heraldry/banner-%s.png" % Heraldry.slug(house)
+	if Heraldry.slug(house) != "" and ResourceLoader.exists(path):
+		m.albedo_texture = load(path)
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+		m.alpha_scissor_threshold = 0.5
+	else:
+		m.albedo_color = colour
+	return m
 
 
 ## The town's holder as the bridge reports it.
