@@ -94,7 +94,7 @@
     "low_wall": { "heightRange": [0.6, 1.6], "kind": "fence", "variants": [ { "name": "kit_low_wall", "builder": "house", "spec": { "pieces": [ ["Wall_UnevenBrick_Straight", [0, 0, 0], 0, [1, 0.36, 1]] ] } } ] },
     "town_tree": { "heightRange": [6, 13], "kind": "garden", "variants": [ { "model": "nature/CommonTree_1.gltf", "name": "town_tree_1", "length": 4.3, "height": 9.0 }, { "model": "nature/CommonTree_2.gltf", "name": "town_tree_2", "length": 4.3, "height": 10.0 }, { "model": "nature/CommonTree_3.gltf", "name": "town_tree_3", "length": 4.1, "height": 11.0 }, { "model": "nature/CommonTree_4.gltf", "name": "town_tree_4", "length": 4.3, "height": 9.0 }, { "model": "nature/CommonTree_5.gltf", "name": "town_tree_5", "length": 4.3, "height": 10.0 } ] },
     "orchard_tree": { "heightRange": [3.5, 7], "kind": "garden", "variants": [ { "model": "nature/CommonTree_1.gltf", "name": "orchard_tree_1", "length": 4.3, "height": 5.0 }, { "model": "nature/CommonTree_3.gltf", "name": "orchard_tree_3", "length": 4.1, "height": 5.5 }, { "model": "nature/CommonTree_5.gltf", "name": "orchard_tree_5", "length": 4.3, "height": 5.0 } ] },
-    "garden_hedge": { "heightRange": [0.8, 1.8], "kind": "garden", "variants": [ { "model": "nature/Bush_Common.gltf", "name": "garden_hedge", "length": 1.6, "height": 1.2 } ] },
+    "garden_hedge": { "heightRange": [0.8, 1.8], "kind": "garden", "variants": [ { "model": "nature/Bush_Common_Flowers.gltf", "name": "garden_hedge", "length": 1.6, "height": 1.2 } ] },
     "garden_flowers": { "heightRange": [0.4, 1.5], "kind": "garden", "variants": [ { "model": "nature/Bush_Common_Flowers.gltf", "name": "garden_flowers", "length": 1.2, "height": 1.0 }, { "model": "nature/Flower_4_Group.gltf", "name": "garden_flowers_2", "length": 0.9, "height": 0.7 } ] },
     "yard_shed": { "heightRange": [1.5, 3.5], "kind": "yard", "variants": [ { "name": "kit_yard_shed", "builder": "house", "spec": { "pieces": [
       ["Roof_Wooden_2x1", [0, 1.55, -0.75], 0, [1, 1, 1]], ["Corner_Exterior_Wood", [-1.0, 0, 0.7], 0, [1, 0.52, 1]], ["Corner_Exterior_Wood", [1.0, 0, 0.7], 0, [1, 0.52, 1]],
@@ -204,7 +204,7 @@
     "tree_oak": { "kind": "woods", "variants": [ { "model": "realistic/oak_trees_pack" } ] },
     "bush": { "kind": "woods", "variants": [ { "model": "realistic/bush_models_pack" } ] },
     "hedge": { "kind": "woods", "variants": [ { "model": "nature/Plant_1.gltf" } ] },
-    "hedge_painted": { "kind": "woods", "variants": [ { "model": "nature/Bush_Common.gltf" } ] },
+    "hedge_painted": { "kind": "woods", "variants": [ { "model": "nature/Bush_Common_Flowers.gltf" } ] },
     "crop_wheat": { "kind": "crop", "variants": [ { "model": "crops/wheat" } ] },
     "crop_barley": { "kind": "crop", "variants": [ { "model": "crops/wheat" } ] },
     "crop_flax": { "kind": "crop", "variants": [ { "model": "nature/Grass_Wispy_Tall.gltf" } ] },
