@@ -58,7 +58,7 @@ def main():
     d = json.load(open(path))
     d["portraits"] = [p for p in d["portraits"] if p["file"] != name] + [
         {"museum": "generated", "id": gid, "title": a.subject, "artist": "generated (Codex image tool)", "year": None,
-         "licence": "generated: AI content, disclosed", "prompt": prompt, "file": name, "sex": a.sex, "age": a.age}]
+         "licence": "generated: AI content, disclosed", "prompt": prompt, "file": name, "sex": a.sex, "age": a.age, "child": False}]
     json.dump(d, open(path, "w"), indent=1)
     print(name)
 

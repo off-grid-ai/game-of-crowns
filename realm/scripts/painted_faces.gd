@@ -3,7 +3,8 @@ extends RefCounted
 ## tools/portraits/build.py from public-domain museum portraits; references CK2
 ## and King of Dragon Pass's painted faces). The one owner of who wears which
 ## face: a person gets the same face every time, drawn from the faces of their
-## sex and time of life (a child, the old, the rest), by their id.
+## sex and time of life by their id: a child from children's faces (and only a
+## child), the old from old faces, the rest from young and grown faces.
 
 const DIR := "res://assets/portraits/painted/"
 const OLD := 55
@@ -27,12 +28,15 @@ static func face(person: Dictionary) -> Texture2D:
 		return null
 	var sex := "f" if String(person.get("gender", "")) == "female" else "m"
 	var years := int(person.get("age", 30))
-	var band := "young" if years < CHILD else "old" if years >= OLD else "adult"
-	# Theirs first (sex and time of life), then their sex, then anyone: never a man's face on a woman.
-	var picks: Array = _pool.filter(func(p): return p["sex"] == sex and p["age"] == band)
+	var child := years < CHILD
+	var old := years >= OLD
+	# Theirs first (sex and time of life), then their sex at any grown age: never a man's face on a woman,
+	# never a child's face on a grown person.
+	var picks: Array = _pool.filter(func(p): return p["sex"] == sex and bool(p.get("child", false)) == child \
+		and (child or (p["age"] == "old") == old))
 	if picks.size() < 3:
-		picks = _pool.filter(func(p): return p["sex"] == sex)
+		picks = _pool.filter(func(p): return p["sex"] == sex and bool(p.get("child", false)) == child)
 	if picks.is_empty():
-		picks = _pool
+		picks = _pool.filter(func(p): return not bool(p.get("child", false)))
 	var p: Dictionary = picks[absi(hash(String(person.get("id", person.get("name", ""))))) % picks.size()]
 	return load(DIR + String(p["file"])) as Texture2D

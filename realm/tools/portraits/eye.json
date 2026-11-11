@@ -1,0 +1,365 @@
+{
+ "_": "Sex and age checked by eye (2026-11-11, the screen-map session), over what build.py reads from a title. age: young (a young adult), adult, old; child: a child's face, drawn only for children.",
+ "faces": {
+  "met-435598.jpg": {
+   "sex": "m",
+   "age": "old",
+   "child": false
+  },
+  "met-435615.jpg": {
+   "sex": "m",
+   "age": "adult",
+   "child": false
+  },
+  "met-435860.jpg": {
+   "sex": "m",
+   "age": "adult",
+   "child": false
+  },
+  "met-435896.jpg": {
+   "sex": "m",
+   "age": "adult",
+   "child": false
+  },
+  "met-436258.jpg": {
+   "sex": "m",
+   "age": "young",
+   "child": false
+  },
+  "met-436310.jpg": {
+   "sex": "m",
+   "age": "adult",
+   "child": false
+  },
+  "met-436337.jpg": {
+   "sex": "m",
+   "age": "old",
+   "child": false
+  },
+  "met-436490.jpg": {
+   "sex": "m",
+   "age": "old",
+   "child": false
+  },
+  "met-436660.jpg": {
+   "sex": "m",
+   "age": "young",
+   "child": false
+  },
+  "met-436834.jpg": {
+   "sex": "m",
+   "age": "young",
+   "child": false
+  },
+  "met-436986.jpg": {
+   "sex": "f",
+   "age": "old",
+   "child": false
+  },
+  "met-437000.jpg": {
+   "sex": "f",
+   "age": "young",
+   "child": false
+  },
+  "met-437143.jpg": {
+   "sex": "m",
+   "age": "young",
+   "child": false
+  },
+  "met-437154.jpg": {
+   "sex": "m",
+   "age": "young",
+   "child": true
+  },
+  "met-437206.jpg": {
+   "sex": "m",
+   "age": "old",
+   "child": false
+  },
+  "met-437208.jpg": {
+   "sex": "m",
+   "age": "adult",
+   "child": false
+  },
+  "met-437209.jpg": {
+   "sex": "m",
+   "age": "young",
+   "child": false
+  },
+  "met-437275.jpg": {
+   "sex": "m",
+   "age": "adult",
+   "child": false
+  },
+  "met-437287.jpg": {
+   "sex": "f",
+   "age": "young",
+   "child": true
+  },
+  "met-437390.jpg": {
+   "sex": "f",
+   "age": "old",
+   "child": false
+  },
+  "met-437401.jpg": {
+   "sex": "m",
+   "age": "old",
+   "child": false
+  },
+  "met-437510.jpg": {
+   "sex": "m",
+   "age": "young",
+   "child": false
+  },
+  "met-437598.jpg": {
+   "sex": "m",
+   "age": "young",
+   "child": false
+  },
+  "met-437822.jpg": {
+   "sex": "m",
+   "age": "old",
+   "child": false
+  },
+  "met-437825.jpg": {
+   "sex": "m",
+   "age": "young",
+   "child": false
+  },
+  "met-437883.jpg": {
+   "sex": "m",
+   "age": "old",
+   "child": false
+  },
+  "nga-46153.jpg": {
+   "sex": "m",
+   "age": "old",
+   "child": false
+  },
+  "nga-43515.jpg": {
+   "sex": "m",
+   "age": "adult",
+   "child": false
+  },
+  "nga-33752.jpg": {
+   "sex": "m",
+   "age": "adult",
+   "child": false
+  },
+  "nga-37003.jpg": {
+   "sex": "f",
+   "age": "adult",
+   "child": false
+  },
+  "nga-34082.jpg": {
+   "sex": "m",
+   "age": "old",
+   "child": false
+  },
+  "nga-46109.jpg": {
+   "sex": "m",
+   "age": "adult",
+   "child": false
+  },
+  "nga-1177.jpg": {
+   "sex": "m",
+   "age": "young",
+   "child": false
+  },
+  "nga-25.jpg": {
+   "sex": "f",
+   "age": "young",
+   "child": false
+  },
+  "nga-41600.jpg": {
+   "sex": "m",
+   "age": "adult",
+   "child": false
+  },
+  "nga-1209.jpg": {
+   "sex": "m",
+   "age": "old",
+   "child": false
+  },
+  "nga-118611.jpg": {
+   "sex": "m",
+   "age": "adult",
+   "child": false
+  },
+  "nga-46137.jpg": {
+   "sex": "m",
+   "age": "adult",
+   "child": false
+  },
+  "nga-46110.jpg": {
+   "sex": "f",
+   "age": "young",
+   "child": false
+  },
+  "nga-41686.jpg": {
+   "sex": "m",
+   "age": "young",
+   "child": false
+  },
+  "nga-75.jpg": {
+   "sex": "m",
+   "age": "adult",
+   "child": false
+  },
+  "nga-41689.jpg": {
+   "sex": "m",
+   "age": "young",
+   "child": false
+  },
+  "nga-45887.jpg": {
+   "sex": "f",
+   "age": "young",
+   "child": false
+  },
+  "nga-53.jpg": {
+   "sex": "m",
+   "age": "adult",
+   "child": false
+  },
+  "nga-399.jpg": {
+   "sex": "m",
+   "age": "adult",
+   "child": false
+  },
+  "nga-46063.jpg": {
+   "sex": "m",
+   "age": "old",
+   "child": false
+  },
+  "nga-128004.jpg": {
+   "sex": "m",
+   "age": "young",
+   "child": false
+  },
+  "rijks-200107942.jpg": {
+   "sex": "f",
+   "age": "young",
+   "child": false
+  },
+  "rijks-20025908.jpg": {
+   "sex": "f",
+   "age": "old",
+   "child": false
+  },
+  "rijks-20027162.jpg": {
+   "sex": "f",
+   "age": "old",
+   "child": false
+  },
+  "rijks-20027574.jpg": {
+   "sex": "f",
+   "age": "old",
+   "child": false
+  },
+  "rijks-20027797.jpg": {
+   "sex": "f",
+   "age": "old",
+   "child": false
+  },
+  "rijks-20027824.jpg": {
+   "sex": "f",
+   "age": "young",
+   "child": false
+  },
+  "rijks-20027839.jpg": {
+   "sex": "f",
+   "age": "old",
+   "child": false
+  },
+  "rijks-20025874.jpg": {
+   "sex": "m",
+   "age": "old",
+   "child": false
+  },
+  "rijks-20025906.jpg": {
+   "sex": "m",
+   "age": "old",
+   "child": false
+  },
+  "rijks-20026037.jpg": {
+   "sex": "m",
+   "age": "old",
+   "child": false
+  },
+  "rijks-20026159.jpg": {
+   "sex": "m",
+   "age": "old",
+   "child": false
+  },
+  "rijks-20026297.jpg": {
+   "sex": "m",
+   "age": "old",
+   "child": false
+  },
+  "rijks-20026410.jpg": {
+   "sex": "m",
+   "age": "old",
+   "child": false
+  },
+  "rijks-20026693.jpg": {
+   "sex": "m",
+   "age": "adult",
+   "child": false
+  },
+  "rijks-20027181.jpg": {
+   "sex": "m",
+   "age": "adult",
+   "child": false
+  },
+  "rijks-20027879.jpg": {
+   "sex": "m",
+   "age": "old",
+   "child": false
+  },
+  "rijks-20028059.jpg": {
+   "sex": "m",
+   "age": "old",
+   "child": false
+  },
+  "rijks-20028060.jpg": {
+   "sex": "m",
+   "age": "old",
+   "child": false
+  },
+  "rijks-20028072.jpg": {
+   "sex": "m",
+   "age": "old",
+   "child": false
+  },
+  "rijks-20028346.jpg": {
+   "sex": "m",
+   "age": "old",
+   "child": false
+  },
+  "rijks-200108377.jpg": {
+   "sex": "f",
+   "age": "young",
+   "child": true
+  },
+  "rijks-200107795.jpg": {
+   "sex": "m",
+   "age": "young",
+   "child": true
+  },
+  "rijks-20026891.jpg": {
+   "sex": "m",
+   "age": "young",
+   "child": true
+  },
+  "rijks-20026956.jpg": {
+   "sex": "m",
+   "age": "young",
+   "child": true
+  },
+  "rijks-20027457.jpg": {
+   "sex": "m",
+   "age": "young",
+   "child": true
+  }
+ }
+}

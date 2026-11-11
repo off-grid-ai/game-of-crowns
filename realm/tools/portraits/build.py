@@ -205,6 +205,7 @@ def main():
     # Dropped by eye (drop.txt): recognisable sitters, prints, frames and medallions.
     drop = {l.split("#")[0].strip() for l in open(os.path.join(HERE, "drop.txt")) if l.strip() and not l.startswith("#")} if os.path.exists(os.path.join(HERE, "drop.txt")) else set()
     sources = [s for s in sources if f"{s['museum']}-{s['id']}.jpg" not in drop]
+    eye = json.load(open(os.path.join(HERE, "eye.json")))["faces"] if os.path.exists(os.path.join(HERE, "eye.json")) else {}
     for s in sources:
         path = os.path.join(a.cache, f"{s['museum']}-{s['id']}.jpg")
         if not os.path.exists(path):
@@ -223,7 +224,8 @@ def main():
         name = f"{s['museum']}-{s['id']}.jpg"
         cv2.imwrite(os.path.join(OUT, name), grade(face), [cv2.IMWRITE_JPEG_QUALITY, 88])
         sex, age = tag(s["title"])
-        kept.append({k: v for k, v in s.items() if k != "url"} | {"file": name, "sex": sex, "age": age})
+        seen = eye.get(name, {})  # the eye's word over the title's (eye.json)
+        kept.append({k: v for k, v in s.items() if k != "url"} | {"file": name, "sex": seen.get("sex", sex), "age": seen.get("age", age), "child": seen.get("child", False)})
     # Generated faces (gen.py) are kept: this run only remakes the museums'.
     old = os.path.join(OUT, "sources.json")
     kept += [p for p in (json.load(open(old)).get("portraits", []) if os.path.exists(old) else []) if p.get("museum") == "generated"]

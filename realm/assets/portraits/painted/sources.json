@@ -11,7 +11,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/435597",
    "file": "met-435597.jpg",
    "sex": "f",
-   "age": "old"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "met",
@@ -23,7 +24,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/435598",
    "file": "met-435598.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "met",
@@ -35,7 +37,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/435615",
    "file": "met-435615.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -47,7 +50,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/435664",
    "file": "met-435664.jpg",
    "sex": "m",
-   "age": "young"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "met",
@@ -59,7 +63,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/435689",
    "file": "met-435689.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -71,7 +76,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/435802",
    "file": "met-435802.jpg",
    "sex": "m",
-   "age": "young"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "met",
@@ -83,7 +89,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/435819",
    "file": "met-435819.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -95,7 +102,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/435820",
    "file": "met-435820.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -107,7 +115,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/435835",
    "file": "met-435835.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -118,8 +127,9 @@
    "licence": "CC0 (The Met Open Access)",
    "page": "https://www.metmuseum.org/art/collection/search/435860",
    "file": "met-435860.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "m",
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -130,8 +140,9 @@
    "licence": "CC0 (The Met Open Access)",
    "page": "https://www.metmuseum.org/art/collection/search/435896",
    "file": "met-435896.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "m",
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -143,7 +154,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/435956",
    "file": "met-435956.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -155,7 +167,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/435958",
    "file": "met-435958.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -167,7 +180,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/436044",
    "file": "met-436044.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -179,7 +193,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/436254",
    "file": "met-436254.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -191,7 +206,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/436255",
    "file": "met-436255.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -202,8 +218,9 @@
    "licence": "CC0 (The Met Open Access)",
    "page": "https://www.metmuseum.org/art/collection/search/436258",
    "file": "met-436258.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "m",
+   "age": "young",
+   "child": false
   },
   {
    "museum": "met",
@@ -215,7 +232,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/436286",
    "file": "met-436286.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -226,8 +244,9 @@
    "licence": "CC0 (The Met Open Access)",
    "page": "https://www.metmuseum.org/art/collection/search/436310",
    "file": "met-436310.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "m",
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -238,8 +257,9 @@
    "licence": "CC0 (The Met Open Access)",
    "page": "https://www.metmuseum.org/art/collection/search/436337",
    "file": "met-436337.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "m",
+   "age": "old",
+   "child": false
   },
   {
    "museum": "met",
@@ -251,7 +271,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/436409",
    "file": "met-436409.jpg",
    "sex": "m",
-   "age": "young"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "met",
@@ -263,7 +284,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/436490",
    "file": "met-436490.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "met",
@@ -275,7 +297,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/436521",
    "file": "met-436521.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -287,7 +310,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/436574",
    "file": "met-436574.jpg",
    "sex": "m",
-   "age": "old"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "met",
@@ -299,7 +323,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/436617",
    "file": "met-436617.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -311,7 +336,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/436621",
    "file": "met-436621.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -323,7 +349,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/436641",
    "file": "met-436641.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -335,7 +362,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/436660",
    "file": "met-436660.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "met",
@@ -347,7 +375,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/436667",
    "file": "met-436667.jpg",
    "sex": "f",
-   "age": "young"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "met",
@@ -359,7 +388,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/436668",
    "file": "met-436668.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -371,7 +401,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/436741",
    "file": "met-436741.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -383,7 +414,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/436788",
    "file": "met-436788.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -395,7 +427,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/436789",
    "file": "met-436789.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -406,8 +439,9 @@
    "licence": "CC0 (The Met Open Access)",
    "page": "https://www.metmuseum.org/art/collection/search/436834",
    "file": "met-436834.jpg",
-   "sex": "f",
-   "age": "young"
+   "sex": "m",
+   "age": "young",
+   "child": false
   },
   {
    "museum": "met",
@@ -419,7 +453,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/436910",
    "file": "met-436910.jpg",
    "sex": "f",
-   "age": "young"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "met",
@@ -431,7 +466,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/436985",
    "file": "met-436985.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -443,7 +479,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/436986",
    "file": "met-436986.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "met",
@@ -455,7 +492,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437000",
    "file": "met-437000.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "met",
@@ -467,7 +505,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437087",
    "file": "met-437087.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -479,7 +518,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437141",
    "file": "met-437141.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -491,7 +531,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437143",
    "file": "met-437143.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "met",
@@ -503,7 +544,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437146",
    "file": "met-437146.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -515,7 +557,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437154",
    "file": "met-437154.jpg",
    "sex": "m",
-   "age": "young"
+   "age": "young",
+   "child": true
   },
   {
    "museum": "met",
@@ -527,7 +570,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437158",
    "file": "met-437158.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -539,7 +583,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437165",
    "file": "met-437165.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -551,7 +596,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437205",
    "file": "met-437205.jpg",
    "sex": "f",
-   "age": "young"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "met",
@@ -563,7 +609,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437206",
    "file": "met-437206.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "met",
@@ -575,7 +622,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437207",
    "file": "met-437207.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -586,8 +634,9 @@
    "licence": "CC0 (The Met Open Access)",
    "page": "https://www.metmuseum.org/art/collection/search/437208",
    "file": "met-437208.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "m",
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -599,7 +648,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437209",
    "file": "met-437209.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "met",
@@ -611,7 +661,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437210",
    "file": "met-437210.jpg",
    "sex": "m",
-   "age": "young"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "met",
@@ -623,7 +674,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437237",
    "file": "met-437237.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -635,7 +687,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437255",
    "file": "met-437255.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -646,8 +699,9 @@
    "licence": "CC0 (The Met Open Access)",
    "page": "https://www.metmuseum.org/art/collection/search/437275",
    "file": "met-437275.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "m",
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -659,7 +713,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437287",
    "file": "met-437287.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "young",
+   "child": true
   },
   {
    "museum": "met",
@@ -671,7 +726,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437374",
    "file": "met-437374.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -683,7 +739,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437386",
    "file": "met-437386.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -695,7 +752,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437387",
    "file": "met-437387.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -707,7 +765,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437388",
    "file": "met-437388.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -719,7 +778,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437390",
    "file": "met-437390.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "met",
@@ -731,7 +791,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437391",
    "file": "met-437391.jpg",
    "sex": "f",
-   "age": "young"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "met",
@@ -743,7 +804,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437401",
    "file": "met-437401.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "met",
@@ -755,7 +817,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437510",
    "file": "met-437510.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "met",
@@ -767,7 +830,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437530",
    "file": "met-437530.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -779,7 +843,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437531",
    "file": "met-437531.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -791,7 +856,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437595",
    "file": "met-437595.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -803,7 +869,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437598",
    "file": "met-437598.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "met",
@@ -815,7 +882,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437600",
    "file": "met-437600.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -827,7 +895,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437645",
    "file": "met-437645.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -839,7 +908,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437759",
    "file": "met-437759.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -851,7 +921,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437772",
    "file": "met-437772.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -863,7 +934,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437822",
    "file": "met-437822.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "met",
@@ -875,7 +947,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437825",
    "file": "met-437825.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "met",
@@ -887,7 +960,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437832",
    "file": "met-437832.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -899,7 +973,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437874",
    "file": "met-437874.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -911,7 +986,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437883",
    "file": "met-437883.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "met",
@@ -923,7 +999,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437893",
    "file": "met-437893.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -935,7 +1012,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/437921",
    "file": "met-437921.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -947,7 +1025,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/438377",
    "file": "met-438377.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -959,7 +1038,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/438378",
    "file": "met-438378.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "met",
@@ -971,7 +1051,8 @@
    "page": "https://www.metmuseum.org/art/collection/search/906341",
    "file": "met-906341.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -983,7 +1064,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.51096.html",
    "file": "nga-51096.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -994,8 +1076,9 @@
    "licence": "CC0 (National Gallery of Art open access)",
    "page": "https://www.nga.gov/collection/art-object-page.46153.html",
    "file": "nga-46153.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "m",
+   "age": "old",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1007,7 +1090,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.89.html",
    "file": "nga-89.jpg",
    "sex": "m",
-   "age": "young"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1019,7 +1103,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.44.html",
    "file": "nga-44.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1031,7 +1116,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.50722.html",
    "file": "nga-50722.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1043,7 +1129,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.158097.html",
    "file": "nga-158097.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1054,8 +1141,9 @@
    "licence": "CC0 (National Gallery of Art open access)",
    "page": "https://www.nga.gov/collection/art-object-page.43515.html",
    "file": "nga-43515.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "m",
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1066,8 +1154,9 @@
    "licence": "CC0 (National Gallery of Art open access)",
    "page": "https://www.nga.gov/collection/art-object-page.33752.html",
    "file": "nga-33752.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "m",
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1078,8 +1167,9 @@
    "licence": "CC0 (National Gallery of Art open access)",
    "page": "https://www.nga.gov/collection/art-object-page.37003.html",
    "file": "nga-37003.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "f",
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1091,7 +1181,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.22.html",
    "file": "nga-22.jpg",
    "sex": "m",
-   "age": "young"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1103,7 +1194,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.46120.html",
    "file": "nga-46120.jpg",
    "sex": "m",
-   "age": "young"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1115,7 +1207,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.51.html",
    "file": "nga-51.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1127,7 +1220,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.34082.html",
    "file": "nga-34082.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1139,7 +1233,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.78.html",
    "file": "nga-78.jpg",
    "sex": "m",
-   "age": "young"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1151,7 +1246,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.1190.html",
    "file": "nga-1190.jpg",
    "sex": "f",
-   "age": "young"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1163,7 +1259,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.398.html",
    "file": "nga-398.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1174,8 +1271,9 @@
    "licence": "CC0 (National Gallery of Art open access)",
    "page": "https://www.nga.gov/collection/art-object-page.46109.html",
    "file": "nga-46109.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "m",
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1186,8 +1284,9 @@
    "licence": "CC0 (National Gallery of Art open access)",
    "page": "https://www.nga.gov/collection/art-object-page.1177.html",
    "file": "nga-1177.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "m",
+   "age": "young",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1199,7 +1298,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.573.html",
    "file": "nga-573.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1211,7 +1311,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.25.html",
    "file": "nga-25.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1223,7 +1324,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.371.html",
    "file": "nga-371.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1234,8 +1336,9 @@
    "licence": "CC0 (National Gallery of Art open access)",
    "page": "https://www.nga.gov/collection/art-object-page.41600.html",
    "file": "nga-41600.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "m",
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1246,8 +1349,9 @@
    "licence": "CC0 (National Gallery of Art open access)",
    "page": "https://www.nga.gov/collection/art-object-page.1209.html",
    "file": "nga-1209.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "m",
+   "age": "old",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1258,8 +1362,9 @@
    "licence": "CC0 (National Gallery of Art open access)",
    "page": "https://www.nga.gov/collection/art-object-page.118611.html",
    "file": "nga-118611.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "m",
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1271,7 +1376,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.19.html",
    "file": "nga-19.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1282,8 +1388,9 @@
    "licence": "CC0 (National Gallery of Art open access)",
    "page": "https://www.nga.gov/collection/art-object-page.46137.html",
    "file": "nga-46137.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "m",
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1294,8 +1401,9 @@
    "licence": "CC0 (National Gallery of Art open access)",
    "page": "https://www.nga.gov/collection/art-object-page.46110.html",
    "file": "nga-46110.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "f",
+   "age": "young",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1307,7 +1415,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.41686.html",
    "file": "nga-41686.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1319,7 +1428,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.1168.html",
    "file": "nga-1168.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1330,8 +1440,9 @@
    "licence": "CC0 (National Gallery of Art open access)",
    "page": "https://www.nga.gov/collection/art-object-page.75.html",
    "file": "nga-75.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "m",
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1343,7 +1454,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.46095.html",
    "file": "nga-46095.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1355,7 +1467,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.41689.html",
    "file": "nga-41689.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1367,7 +1480,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.1167.html",
    "file": "nga-1167.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1379,7 +1493,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.45887.html",
    "file": "nga-45887.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1391,7 +1506,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.41726.html",
    "file": "nga-41726.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1403,7 +1519,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.74.html",
    "file": "nga-74.jpg",
    "sex": "f",
-   "age": "old"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1414,8 +1531,9 @@
    "licence": "CC0 (National Gallery of Art open access)",
    "page": "https://www.nga.gov/collection/art-object-page.53.html",
    "file": "nga-53.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "m",
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1427,7 +1545,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.399.html",
    "file": "nga-399.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1439,7 +1558,8 @@
    "page": "https://www.nga.gov/collection/art-object-page.73.html",
    "file": "nga-73.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1450,8 +1570,9 @@
    "licence": "CC0 (National Gallery of Art open access)",
    "page": "https://www.nga.gov/collection/art-object-page.46063.html",
    "file": "nga-46063.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "m",
+   "age": "old",
+   "child": false
   },
   {
    "museum": "nga",
@@ -1462,8 +1583,9 @@
    "licence": "CC0 (National Gallery of Art open access)",
    "page": "https://www.nga.gov/collection/art-object-page.128004.html",
    "file": "nga-128004.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "m",
+   "age": "young",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1475,7 +1597,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-C-597",
    "file": "rijks-200107942.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1487,7 +1610,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-3411",
    "file": "rijks-20025849.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1499,7 +1623,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-2108",
    "file": "rijks-20025865.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1511,7 +1636,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-327",
    "file": "rijks-20025905.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1523,7 +1649,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-2080",
    "file": "rijks-20025908.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1535,7 +1662,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-1623",
    "file": "rijks-20025974.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1547,7 +1675,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-C-241",
    "file": "rijks-20026393.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1559,7 +1688,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-588",
    "file": "rijks-20026487.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1571,7 +1701,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-3006",
    "file": "rijks-20026561.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1583,7 +1714,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-403",
    "file": "rijks-20026694.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1595,7 +1727,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-4053",
    "file": "rijks-20026914.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1607,7 +1740,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-636",
    "file": "rijks-20027162.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1619,7 +1753,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-1309",
    "file": "rijks-20027294.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1631,7 +1766,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-1596",
    "file": "rijks-20027390.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1643,7 +1779,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-2531",
    "file": "rijks-20027574.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1655,7 +1792,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-810",
    "file": "rijks-20027728.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1667,7 +1805,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-1690",
    "file": "rijks-20027797.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1679,7 +1818,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-4221",
    "file": "rijks-20027815.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1691,7 +1831,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-2183",
    "file": "rijks-20027816.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1703,7 +1844,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-969",
    "file": "rijks-20027824.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1715,7 +1857,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-1792",
    "file": "rijks-20027839.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1727,7 +1870,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-3299",
    "file": "rijks-20028069.jpg",
    "sex": "f",
-   "age": "young"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1739,7 +1883,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-3301",
    "file": "rijks-20028522.jpg",
    "sex": "f",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1751,7 +1896,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-4468",
    "file": "rijks-20028965.jpg",
    "sex": "f",
-   "age": "young"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1763,7 +1909,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-C-106",
    "file": "rijks-20026655.jpg",
    "sex": "f",
-   "age": "old"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1775,7 +1922,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-246",
    "file": "rijks-20028227.jpg",
    "sex": "f",
-   "age": "old"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1787,7 +1935,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-714",
    "file": "rijks-200108260.jpg",
    "sex": "f",
-   "age": "old"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1799,7 +1948,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-C-1365",
    "file": "rijks-20025772.jpg",
    "sex": "m",
-   "age": "old"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1811,7 +1961,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-843",
    "file": "rijks-20027767.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1823,7 +1974,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-2841",
    "file": "rijks-20029289.jpg",
    "sex": "m",
-   "age": "old"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1835,7 +1987,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-C-1440",
    "file": "rijks-200107771.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1847,7 +2000,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-C-1827",
    "file": "rijks-20014014.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1859,7 +2013,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-743",
    "file": "rijks-20015844.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1871,7 +2026,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-3410",
    "file": "rijks-20025770.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1883,7 +2039,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-577",
    "file": "rijks-20025871.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1895,7 +2052,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-587",
    "file": "rijks-20025873.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1907,7 +2065,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-738",
    "file": "rijks-20025874.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1919,7 +2078,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-328",
    "file": "rijks-20025876.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1931,7 +2091,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-2079",
    "file": "rijks-20025902.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1943,7 +2104,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-326",
    "file": "rijks-20025904.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1955,7 +2117,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-4101",
    "file": "rijks-20025906.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1967,7 +2130,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-920",
    "file": "rijks-20025907.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1979,7 +2143,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-1244",
    "file": "rijks-20026037.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -1991,7 +2156,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-C-240",
    "file": "rijks-20026147.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2003,7 +2169,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-358",
    "file": "rijks-20026159.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2015,7 +2182,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-1424",
    "file": "rijks-20026297.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2027,7 +2195,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-2964",
    "file": "rijks-20026410.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2039,7 +2208,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-1345",
    "file": "rijks-20026553.jpg",
    "sex": "m",
-   "age": "young"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2051,7 +2221,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-402",
    "file": "rijks-20026693.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2063,7 +2234,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-3352",
    "file": "rijks-20026869.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2074,8 +2246,9 @@
    "licence": "Public domain (Rijksmuseum open data)",
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-725",
    "file": "rijks-20027181.jpg",
-   "sex": "?",
-   "age": "adult"
+   "sex": "m",
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2087,7 +2260,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-3744",
    "file": "rijks-20027707.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2099,7 +2273,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-3294",
    "file": "rijks-20027719.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2111,7 +2286,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-1593",
    "file": "rijks-20027759.jpg",
    "sex": "m",
-   "age": "young"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2123,7 +2299,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-C-284",
    "file": "rijks-20027777.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2135,7 +2312,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-1689",
    "file": "rijks-20027796.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2147,7 +2325,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-2182",
    "file": "rijks-20027817.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2159,7 +2338,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-1791",
    "file": "rijks-20027837.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2171,7 +2351,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-582",
    "file": "rijks-20027879.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2183,7 +2364,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-1248",
    "file": "rijks-20028059.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2195,7 +2377,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-C-289",
    "file": "rijks-20028060.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2207,7 +2390,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-567",
    "file": "rijks-20028072.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2219,7 +2403,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-3493",
    "file": "rijks-20028184.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2231,7 +2416,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-911",
    "file": "rijks-20028317.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2243,7 +2429,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-C-12",
    "file": "rijks-20028346.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2255,7 +2442,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-4166",
    "file": "rijks-20028768.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2267,7 +2455,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-4484",
    "file": "rijks-20028971.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2279,7 +2468,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-C-1553",
    "file": "rijks-20029255.jpg",
    "sex": "m",
-   "age": "adult"
+   "age": "adult",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2291,7 +2481,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-3064",
    "file": "rijks-200108377.jpg",
    "sex": "f",
-   "age": "young"
+   "age": "young",
+   "child": true
   },
   {
    "museum": "rijks",
@@ -2303,7 +2494,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-956",
    "file": "rijks-200107795.jpg",
    "sex": "m",
-   "age": "young"
+   "age": "young",
+   "child": true
   },
   {
    "museum": "rijks",
@@ -2315,7 +2507,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-4049",
    "file": "rijks-20025959.jpg",
    "sex": "m",
-   "age": "young"
+   "age": "young",
+   "child": false
   },
   {
    "museum": "rijks",
@@ -2327,7 +2520,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-2577",
    "file": "rijks-20026891.jpg",
    "sex": "m",
-   "age": "young"
+   "age": "young",
+   "child": true
   },
   {
    "museum": "rijks",
@@ -2339,7 +2533,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-2221",
    "file": "rijks-20026956.jpg",
    "sex": "m",
-   "age": "young"
+   "age": "young",
+   "child": true
   },
   {
    "museum": "rijks",
@@ -2351,7 +2546,8 @@
    "page": "https://www.rijksmuseum.nl/en/collection/SK-A-1907",
    "file": "rijks-20027457.jpg",
    "sex": "m",
-   "age": "young"
+   "age": "young",
+   "child": true
   },
   {
    "museum": "generated",
@@ -2363,7 +2559,8 @@
    "prompt": "An oil portrait painting in the manner of a 16th\u201317th century Northern European master (Holbein, Rembrandt, Frans Hals): an old man of about seventy, white beard trimmed short, bald crown, heavy-lidded eyes, black wool doublet with a plain white collar. Half-length, three-quarter view, the head small in the picture with a wide band of plain background above it (a quarter of the height), one sitter only, looking near the viewer. Plain dark brown-green background. Soft warm window light from the upper left, deep shadows, visible brushwork, a matte worn paint surface, aged yellowed varnish and fine craquelure, not glossy or airbrushed. Period clothing of a minor lord's household, no crown, no jewels of state, no religious symbols, no text, no signature, no frame. Portrait orientation, 3:4.",
    "file": "generated-3e2afbfb20.jpg",
    "sex": "m",
-   "age": "old"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "generated",
@@ -2375,7 +2572,8 @@
    "prompt": "An oil portrait painting in the manner of a 16th\u201317th century Northern European master (Holbein, Rembrandt, Frans Hals): an old steward of about sixty-five, grey hair to the ears, clean-shaven, deep lines at the mouth, brown fur-trimmed gown. Half-length, three-quarter view, the head small in the picture with a wide band of plain background above it (a quarter of the height), one sitter only, looking near the viewer. Plain dark brown-green background. Soft warm window light from the upper left, deep shadows, visible brushwork, a matte worn paint surface, aged yellowed varnish and fine craquelure, not glossy or airbrushed. Period clothing of a minor lord's household, no crown, no jewels of state, no religious symbols, no text, no signature, no frame. Portrait orientation, 3:4.",
    "file": "generated-014b7f0907.jpg",
    "sex": "m",
-   "age": "old"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "generated",
@@ -2387,7 +2585,8 @@
    "prompt": "An oil portrait painting in the manner of a 16th\u201317th century Northern European master (Holbein, Rembrandt, Frans Hals): a weathered old soldier of about sixty, grizzled grey moustache, a scar on one cheek, dark leather jerkin over a linen shirt. Half-length, three-quarter view, the head small in the picture with a wide band of plain background above it (a quarter of the height), one sitter only, looking near the viewer. Plain dark brown-green background. Soft warm window light from the upper left, deep shadows, visible brushwork, a matte worn paint surface, aged yellowed varnish and fine craquelure, not glossy or airbrushed. Period clothing of a minor lord's household, no crown, no jewels of state, no religious symbols, no text, no signature, no frame. Portrait orientation, 3:4.",
    "file": "generated-42bd2c3d9c.jpg",
    "sex": "m",
-   "age": "old"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "generated",
@@ -2399,7 +2598,8 @@
    "prompt": "An oil portrait painting in the manner of a 16th\u201317th century Northern European master (Holbein, Rembrandt, Frans Hals): an old woman of about seventy, deep lines around the eyes, white linen cap, dark wool gown with a small white ruff. Half-length, three-quarter view, the head small in the picture with a wide band of plain background above it (a quarter of the height), one sitter only, looking near the viewer. Plain dark brown-green background. Soft warm window light from the upper left, deep shadows, visible brushwork, a matte worn paint surface, aged yellowed varnish and fine craquelure, not glossy or airbrushed. Period clothing of a minor lord's household, no crown, no jewels of state, no religious symbols, no text, no signature, no frame. Portrait orientation, 3:4.",
    "file": "generated-08bacee108.jpg",
    "sex": "f",
-   "age": "old"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "generated",
@@ -2411,7 +2611,8 @@
    "prompt": "An oil portrait painting in the manner of a 16th\u201317th century Northern European master (Holbein, Rembrandt, Frans Hals): a stern old widow of about sixty-five, thin lips, black hood over a white coif, black gown. Half-length, three-quarter view, the head small in the picture with a wide band of plain background above it (a quarter of the height), one sitter only, looking near the viewer. Plain dark brown-green background. Soft warm window light from the upper left, deep shadows, visible brushwork, a matte worn paint surface, aged yellowed varnish and fine craquelure, not glossy or airbrushed. Period clothing of a minor lord's household, no crown, no jewels of state, no religious symbols, no text, no signature, no frame. Portrait orientation, 3:4.",
    "file": "generated-1234db74cc.jpg",
    "sex": "f",
-   "age": "old"
+   "age": "old",
+   "child": false
   },
   {
    "museum": "generated",
@@ -2423,7 +2624,8 @@
    "prompt": "An oil portrait painting in the manner of a 16th\u201317th century Northern European master (Holbein, Rembrandt, Frans Hals): a kindly old woman of about seventy-five, soft wrinkled cheeks, grey hair under a plain linen kerchief, russet wool shawl. Half-length, three-quarter view, the head small in the picture with a wide band of plain background above it (a quarter of the height), one sitter only, looking near the viewer. Plain dark brown-green background. Soft warm window light from the upper left, deep shadows, visible brushwork, a matte worn paint surface, aged yellowed varnish and fine craquelure, not glossy or airbrushed. Period clothing of a minor lord's household, no crown, no jewels of state, no religious symbols, no text, no signature, no frame. Portrait orientation, 3:4.",
    "file": "generated-f425ea019a.jpg",
    "sex": "f",
-   "age": "old"
+   "age": "old",
+   "child": false
   }
  ]
 }
