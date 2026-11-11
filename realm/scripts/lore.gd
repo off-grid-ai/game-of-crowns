@@ -424,7 +424,9 @@ func _house(h: Dictionary) -> void:
 	if not baseline:
 		facts.append("%d towns" % int(h.get("towns", 0)))
 	if h.get("favour") != null and not baseline:
-		facts.append("favour %d of 100" % int(h["favour"]))
+		var fw := String(preload("res://scripts/ui.gd").mood(int(h["favour"]))).to_lower()
+		if fw != "":
+			facts.append(fw + " toward the crown")
 	_page.add_child(T.label("  ·  ".join(facts)))
 	if baseline and h.get("seat") != null and fetch_map.is_valid():  # in a reign, Go to flies there instead
 		var on_map := Button.new()

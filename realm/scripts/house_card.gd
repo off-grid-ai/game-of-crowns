@@ -69,8 +69,12 @@ func show_house(d: Dictionary) -> void:
 		grid.add_child(cell)
 	if d.get("favour") != null:
 		var cell := VBoxContainer.new()
-		cell.add_child(T.label("Favour to the crown (of 100)"))
-		cell.add_child(T.datum("%d" % int(d["favour"]), 20))
+		# A word, the number on hover (CK3's opinion: a word and an icon, the sum in the tooltip; UI.md 6).
+		cell.add_child(T.label("Toward the crown"))
+		var fw := T.datum(ui.mood(int(d["favour"])), 20)
+		fw.tooltip_text = "Favour %d of 100" % int(d["favour"])
+		fw.mouse_filter = Control.MOUSE_FILTER_STOP
+		cell.add_child(fw)
 		grid.add_child(cell)
 	var lord: Dictionary = d.get("lord", {}) if d.get("lord") is Dictionary else {}
 	if not lord.is_empty():

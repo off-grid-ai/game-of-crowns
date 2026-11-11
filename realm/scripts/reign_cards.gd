@@ -366,9 +366,11 @@ func _reign_end(r: Dictionary) -> void:
 	var e: Dictionary = r.get("ended", {}) if r.get("ended") is Dictionary else {}
 	var turns := int(e.get("turn", 0))
 	var years := turns / 4
-	var facts := [["Score", ui.heads(int(r.get("score", 0)))],
-		["Reigned", ("%d years" % years) if years != 1 else "a year"],
-		["Peace", "%d%%" % roundi(float(e.get("peace", 0.0)) * 100.0)],
+	# The reign's name and its story carry the verdict (the audit: no SCORE; Reigns ends on the name):
+	# the facts are in words and plain counts, the peace as the realm would say it.
+	var pc := float(e.get("peace", 0.0))
+	var facts := [["Reigned", ("%d years" % years) if years != 1 else "a year"],
+		["The realm", "at peace" if pc >= 0.8 else "mostly at peace" if pc >= 0.6 else "troubled" if pc >= 0.4 else "at war with itself"],
 		["Souls", ui.heads(int(r.get("souls", 0)))],
 		["Great houses standing", str(int(e.get("houses", 0)))]]
 	var row := HBoxContainer.new()
@@ -378,7 +380,7 @@ func _reign_end(r: Dictionary) -> void:
 	for f in facts:
 		var cell := VBoxContainer.new()
 		cell.add_theme_constant_override("separation", 2)
-		var v := T.title(String(f[1]), 30, T.ACCENT if f[0] == "Score" else T.TEXT)
+		var v := T.title(String(f[1]), 30, T.TEXT)
 		v.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		cell.add_child(v)
 		var k := T.label(String(f[0]))
@@ -403,7 +405,7 @@ func _reign_end(r: Dictionary) -> void:
 	on.add_theme_stylebox_override("normal", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.24), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.6), 8, 10))
 	on.add_theme_stylebox_override("hover", T._box(Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.36), Color(T.ACCENT.r, T.ACCENT.g, T.ACCENT.b, 0.85), 8, 10))
 	on.add_theme_color_override("font_color", Color(1, 0.93, 0.78))
-	on.tooltip_text = "The same realm, with no clock. This score stays in the Hall of Records."
+	on.tooltip_text = "The same realm, with no clock. This reign stays in the Hall of Records."
 	go.add_child(on)
 	var menu := ui.btn("Back to the menu", func():
 		layer.queue_free()

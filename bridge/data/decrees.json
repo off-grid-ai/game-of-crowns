@@ -5,7 +5,7 @@
   "levy": { "cost": 200, "label": "Raise a royal levy", "courtEffect": "600 men of your own" },
   "build": { "cost": 180, "label": "Raise a building" },
   "grant": { "cost": 0, "label": "Grant this castle to another house" },
-  "feast": { "cost": 100, "label": "Hold a feast in the lord's honour", "effect": "+15", "courtEffect": "every house +5" },
+  "feast": { "cost": 100, "label": "Hold a feast in the lord's honour", "effect": "much warmer", "courtEffect": "every house a little warmer" },
   "banners": { "cost": 50, "label": "Call the banners", "courtEffect": "loyal houses send men" },
   "marriage": { "cost": 400, "label": "Arrange a marriage between two houses" },
   "peace": { "cost": 150, "label": "Command peace between two warring houses" },

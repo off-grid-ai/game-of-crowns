@@ -547,7 +547,7 @@ func _fill_panel(p: Dictionary, house: Dictionary, editing := false) -> void:
 	var nature := ", ".join(p.get("traits", []))
 	v.add_child(T.datum(nature.left(1).to_upper() + nature.substr(1), T.SIZE_BODY))
 	var loyal := int(p.get("loyalty", 50))
-	v.add_child(T.label("Loyalty to their liege (of 100)"))
+	v.add_child(T.label("Loyalty to their liege"))
 	var bar := ProgressBar.new()
 	bar.max_value = 100
 	bar.value = loyal
