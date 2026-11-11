@@ -16,3 +16,8 @@ how the world reacts. Every visual change is judged beside the matching image at
 
 Fidelity: polished mid (Mac's picker likes: Foundation, AoE2 DE, AoM Retold, Settlers 7, SpellForce 3, Warcraft III).
 The style prompt is style-prompt.txt; the scenes are scene-prompts.txt.
+
+**House colours everywhere (Mac, 2026-11-11: "that is good, that is smart, that is what we should do… this is your
+North Star"):** buildings and uniforms wear the holding house's colours, as in 02-realm. Roof tiles, trims, shutters,
+awnings and banners take the colour; walls and stone stay natural. A town that changes hands recolours. One shared
+team-colour mask shader serves buildings and armour (the Warcraft III approach).
