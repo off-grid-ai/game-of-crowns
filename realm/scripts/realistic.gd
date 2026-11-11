@@ -17,6 +17,7 @@ static var STRIP := {}
 # (below this height, game units) are dropped, so the house stands in our land.
 static var FLOOR_CUT := {}
 static var STONE: Array = []  # stone models: no glow
+static var BY_HEIGHT := {}  # name -> true height in metres, for a model scaled by its height rather than its length (assets.json variant height)
 static var _model := {}  # name -> its file
 static var _component := {}  # component id -> its model names, in order
 static var _read := _from_catalogue()
@@ -44,6 +45,8 @@ static func _from_catalogue() -> bool:
 				FLOOR_CUT[n] = float(v["floorCut"])
 			if v.get("stone", false):
 				STONE.append(n)
+			if v.has("height"):
+				BY_HEIGHT[n] = float(v["height"])
 			_component[id].append(n)
 	return true
 
@@ -112,6 +115,8 @@ static func _template(name: String) -> Dictionary:
 	var box := _bounds(model)
 	var longest := maxf(box.size.x, box.size.z)
 	var k: float = 1.0 if longest <= 0.0 else float(KIT[name][1]) * S / longest
+	if BY_HEIGHT.has(name) and box.size.y > 0.0:
+		k = float(BY_HEIGHT[name]) * S / box.size.y  # a model whose length misleads (a tall stack, a lying cluster): by its true height
 	# Wrap so the model is scaled, centred on its footprint and standing on the ground.
 	var root := Node3D.new()
 	root.name = name
