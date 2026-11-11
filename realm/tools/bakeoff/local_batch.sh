@@ -7,7 +7,8 @@ B=$1; shift
 T=~/code/ai3d/trellis-mac-mps
 PY=$T/.venv/bin/python
 HERE=${0:A:h}
-NAMES=(${@:-farmhouse_barn armoury unit_knight unit_man_at_arms unit_spearman unit_archer unit_heavy_cavalry unit_war_elephant unit_axeman unit_warhammer unit_crossbowman unit_light_cavalry unit_cannon unit_general townhouse_2 townhouse_3 cottage cottage_2 cottage_3 market_stall inn church forge barracks stables mill watermill granary manor guard_tower gatehouse haystack pen well cart wagon crops trees cow chicken horse ox pig sheep goat dog barrels crates banner_pole anvil weapon_rack})
+NAMES=(farmhouse_barn armoury unit_knight unit_man_at_arms unit_spearman unit_archer unit_heavy_cavalry unit_war_elephant unit_axeman unit_warhammer unit_crossbowman unit_light_cavalry unit_cannon unit_general townhouse_2 townhouse_3 cottage cottage_2 cottage_3 market_stall inn church forge barracks stables mill watermill granary manor guard_tower gatehouse haystack pen well cart wagon crops trees cow chicken horse ox pig sheep goat dog barrels crates banner_pole anvil weapon_rack)
+(( $# )) && NAMES=($@)
 mkdir -p "$B/cutouts" "$B/ai3d"
 for n in $NAMES; do
   [ -f "$B/ai3d/${n}_trellis.glb" ] && { echo "skip $n"; continue; }
