@@ -1,36 +1,227 @@
 {
- "_": "Review v15: batch 7's shots, each beside its reference from docs/art/target (copied to screens/ref). docs/review/batch7.sh makes the frames (paths under its OUT folder); docs/review/v15_apply.py turns each into a screen on the review page with two versions: the target, then ours, so Side by side shows them together. 'card' is the copy sheet's card. 'needs' names a harness step the shot would use if it existed.",
+ "_": "Review v15: batch 7's shots, each beside its reference from docs/art/target (copied to screens/ref). docs/review/batch7.sh makes the frames (paths under its OUT folder); docs/review/v15_apply.py turns each into a screen on the review page with two versions: the target, then ours, so Side by side shows them together. 'card' is the copy sheet's card. 'needs' names the harness step that frames the shot (site, work); if the step finds nothing, the shot shows the road or the square and the batch's log says so.",
  "group": "Batch 7 beside the target",
  "label": "Batch 7: every switch on",
  "switches": "--look=one --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on",
  "shots": [
-  {"id": "b7-kingsmere-close", "name": "Kingsmere, close", "what": "Kingsmere's square from roof height, the closest the camera goes (d4.5)", "ref": "town-a", "card": "W3", "still": "towns/kingsmere-d4.png"},
-  {"id": "b7-kingsmere-d6", "name": "Kingsmere, the town", "what": "Kingsmere a step back (d6): houses, plots, the castle", "ref": "01-town", "card": "W3", "still": "towns/kingsmere-d6.png"},
-  {"id": "b7-kingsmere-d14", "name": "Kingsmere, whole", "what": "The whole of Kingsmere and its fields (d14)", "ref": "town-b", "card": "W3", "still": "towns/kingsmere-d14.png"},
-  {"id": "b7-kingsmere-d40", "name": "Kingsmere on the map", "what": "Kingsmere's lands from map height (d40)", "ref": "02-realm", "card": "W2", "still": "towns/kingsmere-d40.png"},
-  {"id": "b7-goldrock-close", "name": "Goldrock, close", "what": "Goldrock's square from roof height (d4.5)", "ref": "town-a", "card": "W3", "still": "towns/goldrock-d4.png"},
-  {"id": "b7-goldrock-d6", "name": "Goldrock, the town", "what": "Goldrock a step back (d6)", "ref": "01-town", "card": "W3", "still": "towns/goldrock-d6.png"},
-  {"id": "b7-goldrock-d14", "name": "Goldrock, whole", "what": "The whole of Goldrock and its fields (d14)", "ref": "town-b", "card": "W3", "still": "towns/goldrock-d14.png"},
-  {"id": "b7-goldrock-d40", "name": "Goldrock on the map", "what": "Goldrock's lands from map height (d40)", "ref": "02-realm", "card": "W2", "still": "towns/goldrock-d40.png"},
-  {"id": "b7-forge", "name": "The forge", "what": "The smith at his anvil, sparks and the hearth's glow", "ref": "town-a", "card": "W3", "still": "towns/forge.png", "clip": "towns/forge-clip.mp4", "needs": "work"},
-  {"id": "b7-stables", "name": "The stables and paddock", "what": "Horses in the paddock, the groom leading one to the inn's rail", "ref": "town-a", "card": "W3", "still": "towns/stables.png", "clip": "towns/stables-clip.mp4", "needs": "work"},
-  {"id": "b7-mill", "name": "The mill", "what": "The mill turning, sacks stacked by it, carters from the fields", "ref": "town-b", "card": "W3", "still": "towns/mill.png", "clip": "towns/mill-clip.mp4", "needs": "work"},
-  {"id": "b7-inn", "name": "A roadside inn", "what": "A coaching inn on the great road: horses, drinkers, soldiers at their ale", "ref": "06-inn", "card": "W3", "still": "towns/inn.png", "clip": "towns/inn-clip.mp4", "needs": "site"},
-  {"id": "b7-hamlet", "name": "A hamlet", "what": "A hamlet of a few cottages and its fields by the road", "ref": "06-inn", "card": "W3", "still": "towns/hamlet.png", "needs": "site"},
-  {"id": "b7-bridge", "name": "A bridge", "what": "A bridge where the road meets a river", "ref": "06-inn", "card": "W2", "still": "towns/bridge.png", "needs": "site"},
-  {"id": "b7-carts", "name": "Carts on the road", "what": "Carts, travellers and herds on the road out of Kingsmere", "ref": "06-inn", "card": "A6", "still": "towns/carts.png", "clip": "towns/carts-clip.mp4"},
-  {"id": "b7-war-town", "name": "A town at war", "what": "The seat's neighbour at war: the levy, the forge working double, the paddock emptied", "ref": "08-reinforce", "card": "W3", "still": "moods/war-town.png", "clip": "moods/war-clip.mp4"},
-  {"id": "b7-feast-town", "name": "A town at feast", "what": "Kingsmere feasting: the inn's yard full, the crier's ring cheering", "ref": "05-court", "card": "O10", "still": "moods/feast-town.png", "clip": "moods/feast-clip.mp4"},
-  {"id": "b7-war-feast", "name": "War beside feast", "what": "The two towns in one view: one at war, its neighbour at feast", "ref": "02-realm", "card": "W2", "still": "moods/war-feast-wide.png"},
-  {"id": "b7-army-close", "name": "The army, close", "what": "6,000 men in their house's colours, from d8", "ref": "03-army", "card": "O2", "still": "army-d8.png"},
-  {"id": "b7-army-far", "name": "The army, from above", "what": "The host of 6,000 on its field from d40, marching", "ref": "03-army", "card": "A7", "still": "army-d40.png", "clip": "army/army-clip.mp4"},
-  {"id": "b7-fire", "name": "A town burning", "what": "A sacked town about six seconds in: flames and dark smoke", "ref": "04-siege", "card": "O4", "still": "fire/fire-06s.png", "clip": "fire/fire-clip.mp4"},
-  {"id": "b7-fire-ruin", "name": "After the fire", "what": "The same town a minute on: the fires dying, what's left charred", "ref": "04-siege", "card": "O4", "still": "fire/fire-ruin.png"},
-  {"id": "b7-breach", "name": "The wall breach", "what": "A stone wall under thrown stones: cracking, stones falling, a breach", "ref": "04-siege", "card": "O4", "still": "breach.png", "clip": "breach.mp4"},
-  {"id": "b7-night-inn", "name": "The inn at night", "what": "The inn's windows lit at night (a test hour: the realm players get is always day for now)", "ref": "06-inn", "card": "W3", "still": "night/night-inn.png"}
+  {
+   "id": "b7-kingsmere-close",
+   "name": "Kingsmere, close",
+   "what": "Kingsmere's square from roof height, the closest the camera goes (d4.5)",
+   "ref": "town-a",
+   "card": "W3",
+   "still": "towns/kingsmere-d4.png"
+  },
+  {
+   "id": "b7-kingsmere-d6",
+   "name": "Kingsmere, the town",
+   "what": "Kingsmere a step back (d6): houses, plots, the castle",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "towns/kingsmere-d6.png"
+  },
+  {
+   "id": "b7-kingsmere-d14",
+   "name": "Kingsmere, whole",
+   "what": "The whole of Kingsmere and its fields (d14)",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "towns/kingsmere-d14.png"
+  },
+  {
+   "id": "b7-kingsmere-d40",
+   "name": "Kingsmere on the map",
+   "what": "Kingsmere's lands from map height (d40)",
+   "ref": "02-realm",
+   "card": "W2",
+   "still": "towns/kingsmere-d40.png"
+  },
+  {
+   "id": "b7-goldrock-close",
+   "name": "Goldrock, close",
+   "what": "Goldrock's square from roof height (d4.5)",
+   "ref": "town-a",
+   "card": "W3",
+   "still": "towns/goldrock-d4.png"
+  },
+  {
+   "id": "b7-goldrock-d6",
+   "name": "Goldrock, the town",
+   "what": "Goldrock a step back (d6)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "towns/goldrock-d6.png"
+  },
+  {
+   "id": "b7-goldrock-d14",
+   "name": "Goldrock, whole",
+   "what": "The whole of Goldrock and its fields (d14)",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "towns/goldrock-d14.png"
+  },
+  {
+   "id": "b7-goldrock-d40",
+   "name": "Goldrock on the map",
+   "what": "Goldrock's lands from map height (d40)",
+   "ref": "02-realm",
+   "card": "W2",
+   "still": "towns/goldrock-d40.png"
+  },
+  {
+   "id": "b7-forge",
+   "name": "The forge",
+   "what": "The smith at his anvil, sparks and the hearth's glow",
+   "ref": "town-a",
+   "card": "W3",
+   "still": "towns/forge.png",
+   "clip": "towns/forge-clip.mp4",
+   "needs": "work"
+  },
+  {
+   "id": "b7-stables",
+   "name": "The stables and paddock",
+   "what": "Horses in the paddock, the groom leading one to the inn's rail",
+   "ref": "town-a",
+   "card": "W3",
+   "still": "towns/stables.png",
+   "clip": "towns/stables-clip.mp4",
+   "needs": "work"
+  },
+  {
+   "id": "b7-mill",
+   "name": "The mill",
+   "what": "The mill turning, sacks stacked by it, carters from the fields",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "towns/mill.png",
+   "clip": "towns/mill-clip.mp4",
+   "needs": "work"
+  },
+  {
+   "id": "b7-inn",
+   "name": "A roadside inn",
+   "what": "A coaching inn on the great road: horses, drinkers, soldiers at their ale",
+   "ref": "06-inn",
+   "card": "W3",
+   "still": "towns/inn.png",
+   "clip": "towns/inn-clip.mp4",
+   "needs": "site"
+  },
+  {
+   "id": "b7-hamlet",
+   "name": "A hamlet",
+   "what": "A hamlet of a few cottages and its fields by the road",
+   "ref": "06-inn",
+   "card": "W3",
+   "still": "towns/hamlet.png",
+   "needs": "site"
+  },
+  {
+   "id": "b7-bridge",
+   "name": "A bridge",
+   "what": "A bridge where the road meets a river",
+   "ref": "06-inn",
+   "card": "W2",
+   "still": "towns/bridge.png",
+   "needs": "site"
+  },
+  {
+   "id": "b7-carts",
+   "name": "Carts on the road",
+   "what": "Carts, travellers and herds on the road out of Kingsmere",
+   "ref": "06-inn",
+   "card": "A6",
+   "still": "towns/carts.png",
+   "clip": "towns/carts-clip.mp4"
+  },
+  {
+   "id": "b7-war-town",
+   "name": "A town at war",
+   "what": "The seat's neighbour at war: the levy, the forge working double, the paddock emptied",
+   "ref": "08-reinforce",
+   "card": "W3",
+   "still": "moods/war-town.png",
+   "clip": "moods/war-clip.mp4"
+  },
+  {
+   "id": "b7-feast-town",
+   "name": "A town at feast",
+   "what": "Kingsmere feasting: the inn's yard full, the crier's ring cheering",
+   "ref": "05-court",
+   "card": "O10",
+   "still": "moods/feast-town.png",
+   "clip": "moods/feast-clip.mp4"
+  },
+  {
+   "id": "b7-war-feast",
+   "name": "War beside feast",
+   "what": "The two towns in one view: one at war, its neighbour at feast",
+   "ref": "02-realm",
+   "card": "W2",
+   "still": "moods/war-feast-wide.png"
+  },
+  {
+   "id": "b7-army-close",
+   "name": "The army, close",
+   "what": "6,000 men in their house's colours, from d8",
+   "ref": "03-army",
+   "card": "O2",
+   "still": "army-d8.png"
+  },
+  {
+   "id": "b7-army-far",
+   "name": "The army, from above",
+   "what": "The host of 6,000 on its field from d40, marching",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "army-d40.png",
+   "clip": "army/army-clip.mp4"
+  },
+  {
+   "id": "b7-fire",
+   "name": "A town burning",
+   "what": "A sacked town about six seconds in: flames and dark smoke",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "fire/fire-06s.png",
+   "clip": "fire/fire-clip.mp4"
+  },
+  {
+   "id": "b7-fire-ruin",
+   "name": "After the fire",
+   "what": "The same town a minute on: the fires dying, what's left charred",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "fire/fire-ruin.png"
+  },
+  {
+   "id": "b7-breach",
+   "name": "The wall breach",
+   "what": "A stone wall under thrown stones: cracking, stones falling, a breach",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "breach.png",
+   "clip": "breach.mp4"
+  },
+  {
+   "id": "b7-night-inn",
+   "name": "The inn at night",
+   "what": "The inn's windows lit at night (a test hour: the realm players get is always day for now)",
+   "ref": "06-inn",
+   "card": "W3",
+   "still": "night/night-inn.png"
+  }
  ],
- "needed": [
-  {"step": "site <kind> [n] [dist] [tilt]", "why": "Frames the n-th roadside site of a kind (inn, hamlet, bridge, mill...) nearest the crown's seat. roadside.gd holds them in _sites (each with 'kind' and 'at'); nothing prints or frames them, and their places are decided at run time from the drawn roads. Until it exists the inn, hamlet and bridge shots frame the road out of town and may miss the site.", "where": "realm/scripts/autoplay.gd (one case, about 12 lines) and a getter on roadside.gd"},
-  {"step": "work <Town> <trade> [dist] [tilt]", "why": "Frames one trade's building in a town (forge, stables, mill, inn) from the town root's 'works' meta, which works.gd already reads. Until it exists the forge, stables and mill shots frame the square, where the inn, stables, paddock and forge stand.", "where": "realm/scripts/autoplay.gd (one case, about 10 lines)"}
+ "needed": [],
+ "steps": [
+  {
+   "step": "site <kind> [n] [dist] [tilt]",
+   "what": "Frames the n-th roadside site of a kind, from the crown's seat outward (autoplay.gd; roadside.gd sites()). play.log says where it stood, or that none of that kind stands."
+  },
+  {
+   "step": "work <Town> <trade> [dist] [tilt]",
+   "what": "Frames a trade's building in a town from the town root's works (autoplay.gd; works.gd find). play.log says where, or which trades the town has."
+  }
  ]
 }

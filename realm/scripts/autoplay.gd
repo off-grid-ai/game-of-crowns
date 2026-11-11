@@ -17,6 +17,8 @@ extends Node
 ##   city Kingsmere 6    frame a town by name, at a camera distance
 ##   button Continue     press the visible button whose words begin so
 ##   town Kingsmere      open a town's card
+##   site inn 0 6        frame the n-th roadside site of a kind (from the seat outward), at a distance
+##   work Kingsmere forge 4.5   frame a trade's building in a town (forge, stables, mill, inn...)
 ##   sigil 2             click the 2nd house sigil on the ladder over the minimap
 ##   answer              give the matter on the court card its first answer
 ##   director            let the camera director run, as it does in play
@@ -262,6 +264,20 @@ func _play(quit_after: bool) -> void:
 				if main.rig.is_processing_input() == false:
 					main.rig.apply()
 				await get_tree().create_timer(3.0).timeout
+			"site":
+				# site kind [n] [dist] [tilt]: frames the n-th roadside site of a kind (inn, hamlet, bridge,
+				# mill...; roadside.gd), counted from the crown's seat outward, low and oblique.
+				_frame_site(w[1], int(w[2]) if w.size() > 2 else 0, float(w[3]) if w.size() > 3 else 6.0, float(w[4]) if w.size() > 4 else -25.0)
+				if main.rig.is_processing_input() == false:
+					main.rig.apply()
+				await get_tree().create_timer(3.0).timeout
+			"work":
+				# work Town trade [dist] [tilt]: frames a trade's building in a town (forge, stables, mill,
+				# inn...; the town root's works, works.gd), low and oblique.
+				_frame_work(w[1], w[2] if w.size() > 2 else "inn", float(w[3]) if w.size() > 3 else 4.5, float(w[4]) if w.size() > 4 else -25.0)
+				if main.rig.is_processing_input() == false:
+					main.rig.apply()
+				await get_tree().create_timer(3.0).timeout
 			"face":
 				# face [n]: open the n-th matter (from 0) by its face on the map, as a click on it
 				# does (the camera frames its place, its card stands beside it). Logs "face none" when none shows.
@@ -355,6 +371,50 @@ func _frame_city(title: String, dist: float) -> void:
 			var at: Vector3 = main.terrain.world_pos(float(c["x"]), float(c["y"]))
 			main.rig.snap(at, dist, main.rig.sight_yaw(at, maxf(dist, main.rig.min_distance), 0.6))
 			return
+
+
+## The camera low and oblique over a place: never top-down (a tilt below 0 looks further out).
+func _oblique(at: Vector3, dist: float, tilt: float) -> void:
+	main.rig.snap(at, dist, 0.6)
+	main.rig.tilt = clampf(tilt, -40.0, 30.0)
+	main.rig.goal_tilt = main.rig.tilt
+
+
+## Frames the n-th roadside site of a kind, the nearest to the crown's seat first.
+func _frame_site(kind: String, n: int, dist: float, tilt: float) -> void:
+	var roadside: Node = main.get_node_or_null("Roadside")
+	if roadside == null:
+		_note("  site %s: no roadside (--roadside=on)" % kind)
+		return
+	var all: Array = roadside.sites(kind)
+	var seat := Vector3.ZERO
+	for c in main.bridge.world.get("cities", []):
+		if int(c["id"]) == int(main.bridge.world.get("seatId", -1)):
+			seat = main.terrain.world_pos(float(c["x"]), float(c["y"]))
+	all.sort_custom(func(a: Vector3, b: Vector3) -> bool: return a.distance_squared_to(seat) < b.distance_squared_to(seat))
+	if n < 0 or n >= all.size():
+		_note("  site %s %d: none (%d of that kind stand)" % [kind, n, all.size()])
+		return
+	_note("  site %s %d of %d at %s" % [kind, n, all.size(), all[n]])
+	_oblique(all[n], dist, tilt)
+
+
+## Frames a trade's building in a town, from the town root's works (works.gd; any mill for "mill").
+func _frame_work(title: String, trade: String, dist: float, tilt: float) -> void:
+	for c in main.bridge.world.get("cities", []):
+		if String(c.get("title", c.get("name", ""))) != title:
+			continue
+		var t: Dictionary = main.towns.towns.get(int(c["id"]), {})
+		var root: Node3D = t.get("node") if not t.is_empty() else null
+		var b: Dictionary = preload("res://scripts/works.gd").find(root, trade) if root else {}
+		if b.is_empty():
+			_note("  work %s %s: none (the town has: %s)" % [title, trade, ", ".join(PackedStringArray(preload("res://scripts/works.gd").anchors(root).keys())) if root else "no town built"])
+			return
+		var at: Vector3 = root.to_global(b["at"])
+		_note("  work %s %s at %s" % [title, trade, at])
+		_oblique(at, dist, tilt)
+		return
+	_note("  work %s: no such town" % title)
 
 
 ## Frames the middle of the road from a town to its nearest neighbour (roads.route,

@@ -167,6 +167,17 @@ func _lay() -> void:
 	_busy = false
 
 
+## Where the sites of a kind stand (inn, hamlet, bridge, mill...; "" for every kind): world points on
+## the ground, read only (a film frames one: autoplay.gd's `site` step).
+func sites(kind := "") -> Array:
+	var out: Array = []
+	for s in _sites:
+		if kind == "" or String(s["kind"]) == kind:
+			var at: Vector2 = s["at"]
+			out.append(Vector3(at.x, main.terrain.height_at(at.x, at.y), at.y))
+	return out
+
+
 # --- raising a site --------------------------------------------------------------------------------
 
 func _kind(s: Dictionary) -> Dictionary:

@@ -22,7 +22,7 @@ FF=${FF:-/opt/homebrew/bin/ffmpeg}
 mkdir -p $OUT; LOG=$OUT/batch.log
 say() { echo "$(date +%T) $*" | tee -a $LOG; }
 want() { [[ " $ONLY " == *" $1 "* ]]; }
-# A harness step exists (autoplay.gd)? "site" and "work" don't yet: see "Still needed" in v15.json.
+# A harness step exists (autoplay.gd)? "site" and "work" frame a roadside site and a trade's building.
 has_step() { grep -q "^[[:space:]]*\"$1\":" $R/realm/scripts/autoplay.gd; }
 # burst <name> <frames> <gap s>: scenario lines for a clip's frames (name-01.png ...).
 burst() { local k; for k in {1..$2}; do print "snap $(printf '%s-%02d' $1 $k)"; print "wait $3"; done; }
@@ -32,6 +32,7 @@ play() {
   say "launch $name: $*"
   curl -s -m 5 -o /dev/null -X POST $API/court/close
   LIMIT=$limit $R/realm/tools/render.sh $OUT/$name.png $B $SW "$@" --play=$OUT/$name.play --out=$OUT/$name >> $OUT/render.out 2>&1
+  grep "^ *[0-9.]* *  \(site\|work\) " $OUT/$name/play.log 2>/dev/null | tee -a $LOG
   say "launch $name done: $(/bin/ls $OUT/$name 2>/dev/null | grep -c png) frames; script errors: $(grep -c 'SCRIPT ERROR\|SHADER ERROR' $OUT/$name.log 2>/dev/null)"
 }
 # clip <dir> <prefix> <fps>: the frames of a burst as a small looping mp4 beside them.
@@ -83,9 +84,10 @@ if want towns; then
     done
     # The working buildings (works.gd): the forge, the stables and paddock, the mill.
     if has_step work; then
-      print "work Kingsmere forge 4.5 -25"; print "wait 8"; print "snap forge"; burst forge-clip 24 0.2
-      print "work Kingsmere stables 5 -25"; print "wait 8"; print "snap stables"; burst stables-clip 24 0.2
-      print "work Goldrock mill 5 -25"; print "wait 8"; print "snap mill"; burst mill-clip 24 0.2
+      # Each from the square first, so a town without the trade still shows its square (play.log says which).
+      print "city Kingsmere 4.5 -25"; print "work Kingsmere forge 4.5 -25"; print "wait 8"; print "snap forge"; burst forge-clip 24 0.2
+      print "city Kingsmere 4.5 -25"; print "work Kingsmere stables 5 -25"; print "wait 8"; print "snap stables"; burst stables-clip 24 0.2
+      print "city Goldrock 8 -25"; print "work Goldrock mill 5 -25"; print "wait 8"; print "snap mill"; burst mill-clip 24 0.2
     else
       # No step frames a trade's building yet: the square, where the inn, stables, paddock and forge stand.
       print "city Kingsmere 4.5 -25"; print "wait 8"; print "snap forge"; burst forge-clip 24 0.2
@@ -94,9 +96,10 @@ if want towns; then
     fi
     # Life along the roads (roadside.gd): an inn, a hamlet, a bridge; carts and travellers on the road.
     if has_step site; then
-      print "site inn 0 6 -25"; print "wait 8"; print "snap inn"; burst inn-clip 24 0.2
-      print "site hamlet 0 8 -25"; print "wait 8"; print "snap hamlet"
-      print "site bridge 0 6 -25"; print "wait 8"; print "snap bridge"
+      # Each from the road first, so a realm without the kind still shows the road (play.log says which).
+      print "road Kingsmere 8"; print "site inn 0 6 -25"; print "wait 8"; print "snap inn"; burst inn-clip 24 0.2
+      print "road Goldrock 8"; print "site hamlet 0 8 -25"; print "wait 8"; print "snap hamlet"
+      print "road Kingsmere 16"; print "site bridge 0 6 -25"; print "wait 8"; print "snap bridge"
     else
       # No step frames a roadside site yet: the road out of each town, where the first inn stands 9 units on.
       print "road Kingsmere 8"; print "wait 8"; print "snap inn"; burst inn-clip 24 0.2
