@@ -1,0 +1,11 @@
+{
+  "_": "The first ten minutes in the view (--opening=v2; docs/review/first-ten-minutes-plan.md). Tune here, not in code. The Hand speaks each prompt once, in the first reign only (Against the Storm's envoy; Six Ages: teach a few things).",
+  "speaker": "The Hand",
+  "prompts": [
+    {"id": "realm", "on": "landed", "after_sec": 3, "text": "The realm is yours, Your Grace. The court is waiting."},
+    {"id": "lord", "on": "court_waits", "after_sec": 0, "text": "A lord asks for you. Go to him."},
+    {"id": "goal", "on": "first_ruling", "after_sec": 6, "text": "Hold the realm whole to the first winter."},
+    {"id": "setback", "on": "house_turns", "after_sec": 0, "text": "A house turns from you. The court will let you answer."},
+    {"id": "winter", "on": "winter", "after_sec": 2, "text": "Winter, and the realm stands. History is watching."}
+  ]
+}

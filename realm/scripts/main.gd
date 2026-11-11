@@ -52,6 +52,7 @@ const PerfTools := preload("res://scripts/perf_tools.gd")
 var perf := PerfTools.new(self)  # the dev measuring aids (perf_tools.gd): perf.log, --profile, GOC_LOOK
 const IntroStory := preload("res://scripts/intro_story.gd")
 var story := IntroStory.new(self)  # the intro story (intro_story.gd): when it is due, and telling it
+var hand_prompts: Node = null  # the v2 opening's Hand prompts (hand_prompts.gd), when --opening=v2
 const Walking := preload("res://scripts/walking.gd")
 var walking := Walking.new(self)  # walking as a character (walking.gd): control, mic, interiors, the King
 var _framed := false
@@ -442,6 +443,10 @@ func _ready() -> void:
 		labels.visible = false
 	# Launch-video takes: scripted camera moves (cinematics.gd reads --clip itself).
 	if Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--clip=")): add_child(load("res://scripts/cinematics.gd").new())
+	# The v2 opening: the Hand's prompts in a first reign (hand_prompts.gd; texts and moments in data/opening.json).
+	if OS.get_cmdline_user_args().has("--opening=v2"):
+		hand_prompts = load("res://scripts/hand_prompts.gd").new(self)
+		add_child(hand_prompts)
 	# The motion probe (tools/motion_probe.gd): test runs only, headless on a private bridge.
 	if Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--motion-probe=")): add_child(load("res://tools/motion_probe.gd").new())
 	# How much of the screen the interface covers at rest (tools/ui_coverage.gd): test runs only.
