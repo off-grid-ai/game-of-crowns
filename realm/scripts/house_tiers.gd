@@ -92,7 +92,7 @@ func _look(kit_mat: String, look: String, tint: Color) -> Material:
 
 ## The kit's own material by name, from the piece that carries it.
 func _kit_material(name: String) -> Material:
-	var from := {"MI_Plaster": "Wall_Plaster_Straight", "MI_RoundTiles": "Roof_RoundTiles_4x4"}
+	var from := {"MI_Plaster": "Wall_Plaster_Straight", "MI_RoundTiles": "Roof_RoundTiles_4x4", "MI_UnevenBrick": "Wall_UnevenBrick_Straight", "MI_WoodTrim": "Wall_Plaster_WoodGrid"}
 	var n: Node3D = _b._piece(from.get(name, "Wall_Plaster_Straight"))
 	var found: Material = null
 	for mi in n.find_children("*", "MeshInstance3D", true, false):
@@ -143,7 +143,13 @@ func build(spec: Dictionary) -> ArrayMesh:
 	var remap := {
 		"MI_Plaster": _look("MI_Plaster", "wash%d" % wash_i, _rgb(washes[wash_i % washes.size()], Color.WHITE)),
 		"MI_RoundTiles": _look("MI_RoundTiles", roof_kind, _rgb((_k.get("roof_tints", {}) as Dictionary).get(roof_kind), Color.WHITE)),
+		# Honey stone and honey timber (house_kit stone_tint, timber_tint; art target town-b): the kit's own read near black.
+		"MI_UnevenBrick": _look("MI_UnevenBrick", "honey", _rgb(_k.get("stone_tint"), Color.WHITE)),
+		"MI_WoodTrim": _look("MI_WoodTrim", "honey", _rgb(_k.get("timber_tint"), Color.WHITE)),
 	}
+	for key in remap.keys():
+		if remap[key] == null:
+			remap.erase(key)  # a kit without that material keeps its own
 	var hw := w * CELL / 2.0
 	var hd := d * CELL / 2.0
 	var jet := float(_k.get("jetty_m", 0.45)) if floors >= 2 and _rng.randf() < float(_t.get("jetty", 0.0)) else 0.0
@@ -308,7 +314,7 @@ func _roof(w: int, d: int, hw: float, back: float, front: float, top: float, rid
 
 
 ## What makes a house its own: a porch over the door, a lean-to at the back, an outside stair,
-## a signboard, a balcony, ivy, and anything the tier bakes in (a forge's anvil, a stable's racks).
+## a signboard, a balcony, the holder's banner, ivy, and anything the tier bakes in (a forge's anvil, a stable's racks).
 func _extras(w: int, d: int, hw: float, hd: float, back: float, fronts: Array, floors: int, door_i: int, stair: bool) -> void:
 	var front0: float = fronts[0]
 	var door_x := (door_i - (w - 1) / 2.0) * CELL
@@ -341,6 +347,13 @@ func _extras(w: int, d: int, hw: float, hd: float, back: float, fronts: Array, f
 		var fz: float = fronts[1]
 		_add("Floor_WoodDark", Transform3D(Basis.from_scale(Vector3(1, 1, 0.55)), Vector3(bx, STOREY, fz + 0.55)))
 		_add("Balcony_Simple_Straight" if _rng.randf() < 0.5 else "Balcony_Cross_Straight", Transform3D(Basis(), Vector3(bx, STOREY, fz)))
+	if floors >= 2 and _chance("banner"):
+		# The holder's banner hung down the street front of the upper storey, by a corner (art target
+		# town-b: the lion banners on the square's houses; its cloth takes the house's colour, MI_Banner).
+		var sc := float(_k.get("banner_scale", 0.7))
+		var bx := (hw - 0.62) * (1.0 if _rng.randf() < 0.5 else -1.0) - 0.8 * sc  # the cloth hangs from its left edge
+		var fz: float = fronts[1]
+		_add("res://assets/props/Banner_1.gltf", Transform3D(Basis.from_scale(Vector3.ONE * sc), Vector3(bx, 2.0 * STOREY - 0.35 - 0.84 * sc, fz + 0.1 * sc + 0.04)))
 	if _chance("vines"):
 		var vx := (hw - 0.4) * (1.0 if _rng.randf() < 0.5 else -1.0)
 		_add("Prop_Vine1" if _rng.randf() < 0.5 else "Prop_Vine4", Transform3D(Basis(), Vector3(vx, minf(floors * STOREY, 5.5) - 0.3, front0 + 0.1)))

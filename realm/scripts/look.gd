@@ -59,8 +59,10 @@ func _ready() -> void:
 		sky3d.sky.sun_horizon_light_color = _rgb("horizon_color", Color(1.0, 0.7, 0.48))
 		sky3d.sky_contribution = float(LOOK.get("sky_contribution", 0.7))
 		env.ambient_light_color = _rgb("ambient_color", Color(0.5, 0.6, 0.88))
-		sky3d.ambient_energy = 1.8
-		sky3d.sun_shadow_opacity = 0.85
+		sky3d.ambient_energy = float(LOOK.get("ambient_energy", 1.8))
+		# Bright late-afternoon sun with soft shadows (art target town-b; look.json sun_energy, shadow_opacity).
+		sky3d.sun_energy = float(LOOK.get("sun_energy", 1.0))
+		sky3d.sun_shadow_opacity = float(LOOK.get("shadow_opacity", 0.85))
 		sky3d.tonemap_exposure = float(LOOK.get("exposure", 1.1))
 		# The free kit re-graded as it enters the realm (kit_tints), wherever a placer puts it.
 		get_tree().node_added.connect(_tint)

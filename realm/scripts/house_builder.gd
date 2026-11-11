@@ -19,22 +19,26 @@ func _piece(name: String) -> Node3D:
 
 ## The shutters' wood as a material of its own (MI_Shutter), so the house's colour can paint the shutters
 ## and leave the timber frame brown (team_colour.gd, data/look.json team.materials; art target 01-town).
+## The doors' wood likewise (MI_Door): a front door in the house's colour, an accent (art target town-b).
 static var _shutter_of := {}
 
 
-static func _shutter(mat: Material) -> Material:
+static func _shutter(mat: Material, name := "MI_Shutter") -> Material:
 	if not mat is BaseMaterial3D:
 		return mat
-	if not _shutter_of.has(mat):
+	if name == "MI_Door" and not String(mat.resource_name).begins_with("MI_WoodTrim"):
+		return mat  # the door's ironwork stays iron
+	var key := [mat, name]
+	if not _shutter_of.has(key):
 		var m: BaseMaterial3D = mat.duplicate()
-		m.resource_name = "MI_Shutter"
-		_shutter_of[mat] = m
-	return _shutter_of[mat]
+		m.resource_name = name
+		_shutter_of[key] = m
+	return _shutter_of[key]
 
 
 ## Adds every mesh surface under `node` into per-material SurfaceTools. `remap`: a kit material's
 ## name -> the material this house wears in its place (its plaster's wash, its roof's covering).
-func _collect(node: Node, xf: Transform3D, tools: Dictionary, shutter := false, remap := {}) -> void:
+func _collect(node: Node, xf: Transform3D, tools: Dictionary, shutter := "", remap := {}) -> void:
 	var here := xf
 	if node is Node3D:
 		here = xf * node.transform
@@ -43,8 +47,8 @@ func _collect(node: Node, xf: Transform3D, tools: Dictionary, shutter := false, 
 			var mat: Material = node.get_active_material(s)
 			if mat and remap.has(mat.resource_name):
 				mat = remap[mat.resource_name]
-			if shutter:
-				mat = _shutter(mat)
+			if shutter != "":
+				mat = _shutter(mat, shutter)
 			# By the material's name: every kit file brings its own copy of MI_WoodTrim and the rest, and
 			# one surface per copy cost a draw call each (30-50 a house); one per look is ten or so.
 			var key: Variant = (mat.resource_name if mat.resource_name != "" else str(mat.get_instance_id())) if mat else "-"
@@ -61,7 +65,8 @@ func _bake(parts: Array, remap := {}) -> ArrayMesh:
 	var tools := {}
 	for p in parts:
 		var n: Node3D = _piece(p[0])
-		_collect(n, p[1], tools, String(p[0]).begins_with("WindowShutters"), remap)
+		var accent := "MI_Shutter" if String(p[0]).begins_with("WindowShutters") else ("MI_Door" if String(p[0]).begins_with("Door_") else "")
+		_collect(n, p[1], tools, accent, remap)
 		n.free()
 	var mesh := ArrayMesh.new()
 	for key in tools:

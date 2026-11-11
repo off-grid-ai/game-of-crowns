@@ -1,11 +1,14 @@
 {
- "_": "The one look (PLAN.md Phase 2 item 1; retargeted by Mac to Warcraft III Reforged at the RTS camera: chunky readable shapes, rich saturated colour, bold house colours, crisp light). look.gd reads it. on: the switch (or --look=one); off keeps today's light. sun_elevation: degrees above the horizon (25-35: long soft shadows). sun_color / horizon_color: the warm key (about 4500 K) at height and near the horizon. sky_contribution: how much of the shade's light comes from the sky (the rest is ambient_color: the cool blue fill in the shadows). lut: the colour grade (assets/grade/storybook.png, made by tools/make_storybook_lut.py: lifted warm mids, quieter greens, cool shadows; empty: none; today's golden-hour LUT only browns). saturation, contrast: the gentle S-curve after AgX. exposure. haze_color: the warm distance haze. kit_tints: the free kit's materials re-graded by name (a multiply on their colour: earthy terracotta roofs, honey stone, darker oak, deeper leaves; kit.py's unify table). ssao / ssil: soft contact shadows (radius, intensity, power) and bounced light. haze: the volumetric haze's density near the ground (fades out as the camera pulls back) and the distance fog's density.",
+ "_": "The one look (PLAN.md Phase 2 item 1; retargeted by Mac to Warcraft III Reforged at the RTS camera: chunky readable shapes, rich saturated colour, bold house colours, crisp light). look.gd reads it. on: the switch (or --look=one); off keeps today's light. sun_elevation: degrees above the horizon (25-35: long soft shadows). sun_energy: the sun's strength (Sky3D, 1 its default; art target town-b: bright late-afternoon sun); shadow_opacity: how dark its shadows fall (1 black; town-b: soft); ambient_energy: the shade's fill. sun_color / horizon_color: the warm key (about 4000 K, late afternoon) at height and near the horizon. sky_contribution: how much of the shade's light comes from the sky (the rest is ambient_color: the cool blue fill in the shadows). lut: the colour grade (assets/grade/storybook.png, made by tools/make_storybook_lut.py: lifted warm mids, quieter greens, cool shadows; empty: none; today's golden-hour LUT only browns). saturation, contrast: the gentle S-curve after AgX. exposure. haze_color: the warm distance haze. kit_tints: the free kit's materials re-graded by name (a multiply on their colour: earthy terracotta roofs, honey stone, darker oak, deeper leaves; kit.py's unify table). ssao / ssil: soft contact shadows (radius, intensity, power) and bounced light. haze: the volumetric haze's density near the ground (fades out as the camera pulls back) and the distance fog's density.",
  "on": false,
- "sun_elevation": 42.0,
+ "sun_elevation": 38.0,
+ "sun_energy": 1.3,
+ "shadow_opacity": 0.72,
+ "ambient_energy": 2.0,
  "sun_color": [
   1.0,
-  0.95,
-  0.86
+  0.91,
+  0.76
  ],
  "horizon_color": [
   1.0,
@@ -14,14 +17,14 @@
  ],
  "sky_contribution": 0.8,
  "ambient_color": [
-  0.55,
-  0.65,
-  0.95
+  0.66,
+  0.72,
+  0.92
  ],
  "lut": "res://assets/grade/bold.png",
  "saturation": 1.3,
  "contrast": 1.15,
- "exposure": 1.12,
+ "exposure": 1.16,
  "haze_color": [
   0.9,
   0.92,
@@ -103,12 +106,13 @@
   "line_crisp": 0.55
  },
  "team": {
-  "_": "Team colour (team_colour.gd; Mac's North Star, docs/art/target/02-realm.jpg; Warcraft III): the kit materials whose names start with these keys take the holder's colour, by how much (roof tiles strongly, wood trim lightly; walls, brick and stone not at all). on: the switch (or --team=on / --team=off). saturation: the house colours pushed bolder (WC3's team colours). A town that changes hands eases to its new colour over a season. Art target 01-town: the colour sits on accents. materials: roof tiles (for the castle, the hall and any house whose roof draws 'house'), shutters (MI_Shutter, house_builder.gd), banners strongly; the timber frame (MI_WoodTrim) barely. ranks: which components are ordinary (0 a cottage, 1 a townhouse or inn); everything else (castle, hall, banners, armour) wears the full colour. roofs: per house, seeded by where it stands, the share of thatch, the tiles' own terracotta, darker tile and the house's colour, as [thatch, terracotta, dark, house] for cottages and for townhouses; thatch and dark_tile their colours (thatch: new straw, warm ochre; thatch_old: the weathered grey-brown each thatched roof leans toward by its own age); straw: how the thatch is drawn (team_colour.gdshader: bundles laid down the slope, never the tiles' rows), fibre and clump (how strongly the bundles and the patches read), eave_dark and eave_band (the ragged darker eave: how dark, how far up as a share of a storey), storey (a kit storey in the mesh's units, where the eave sits); materials: which kit materials are roofs. paint: ordinary_share, the share of the colour an ordinary house's trims and shutters take; saturation and warm, the house colour toned toward its grey and warmed (painted reds, not neon).",
+  "_": "Team colour (team_colour.gd; Mac's North Star, docs/art/target/02-realm.jpg; Warcraft III): the kit materials whose names start with these keys take the holder's colour, by how much (roof tiles strongly, wood trim lightly; walls, brick and stone not at all). on: the switch (or --team=on / --team=off). saturation: the house colours pushed bolder (WC3's team colours). A town that changes hands eases to its new colour over a season. Art target town-b: ordinary houses keep their own roof (red tile, blue-grey slate, golden thatch, brown shingle) and the colour sits on accents: their shutters, front doors (MI_Door) and banners; only the castle, the manor, the guild hall and the armoury wear it on their roofs (house_kit tiers' 'house' roof). materials: roof tiles (the castle, the hall and any house whose roof draws 'house'), shutters (MI_Shutter, house_builder.gd), doors (MI_Door), banners strongly; the timber frame (MI_WoodTrim) barely. ranks: which components are ordinary (0 a cottage, 1 a townhouse or inn); everything else (castle, hall, banners, armour) wears the full colour. roofs: per house not built from the kit's tiers, seeded by where it stands, the share of thatch, the tiles' own terracotta, slate and the house's colour, as [thatch, terracotta, slate, house] for cottages and for townhouses (house 0: an ordinary roof never wears the colour); thatch and dark_tile (blue-grey slate) their colours (thatch: new straw, warm ochre; thatch_old: the weathered grey-brown each thatched roof leans toward by its own age); straw: how the thatch is drawn (team_colour.gdshader: bundles laid down the slope, never the tiles' rows), fibre and clump (how strongly the bundles and the patches read), eave_dark and eave_band (the ragged darker eave: how dark, how far up as a share of a storey), storey (a kit storey in the mesh's units, where the eave sits); materials: which kit materials are roofs. paint: ordinary_share, the share of the colour an ordinary house's trims and shutters take; saturation and warm, the house colour toned toward its grey and warmed (painted reds, not neon).",
   "on": false,
   "materials": {
    "MI_RoundTiles": 0.85,
    "MI_Shutter": 0.85,
-   "MI_WoodTrim": 0.12,
+   "MI_Door": 0.8,
+   "MI_WoodTrim": 0.04,
    "MI_Banner": 0.95
   },
   "saturation": 1.0,
@@ -135,14 +139,14 @@
    "cottage": [
     0.55,
     0.25,
-    0.1,
-    0.1
+    0.2,
+    0.0
    ],
    "town": [
     0.15,
+    0.45,
     0.4,
-    0.2,
-    0.25
+    0.0
    ],
    "thatch": [
     0.72,
@@ -162,13 +166,13 @@
     "storey": 0.36
    },
    "dark_tile": [
-    0.5,
     0.42,
-    0.4
+    0.47,
+    0.56
    ]
   },
   "paint": {
-   "ordinary_share": 0.5,
+   "ordinary_share": 0.75,
    "saturation": 0.8,
    "warm": [
     1.0,
