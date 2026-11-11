@@ -3,8 +3,11 @@ extends Node
 ## mirror (its town scopes), never from /world. Busy roads in peace and plenty,
 ## wagons between big towns; thin in winter and hunger; refugees leaving a
 ## town that grieves; and where a town is at war, only soldiers on its roads.
-## This decides; scenes.gd's traveller() builds and walks each one.
-## Casebook: Manor Lords' and Anno's roads, which show the economy at a glance.
+## This decides; scenes.gd's traveller() builds and walks each one, and the parties that walk
+## together (a pedlar with his pack, pilgrims, a royal patrol) are walked here (party).
+## Casebook: Manor Lords' and Anno's roads, which show the economy at a glance; the mix by day and
+## the dark roads at night: docs/research/world-and-siege-rules.md rule 8 (realm/data/roadside.json
+## traffic.mix, night, parties).
 
 const NEAR := 30.0  # world units from the camera: travellers only where he can see them
 const REACH := 18.0  # a day's walk between neighbouring towns
@@ -23,6 +26,9 @@ func _ready() -> void:
 
 
 const PerfTools := preload("res://scripts/perf_tools.gd")
+const Data := preload("res://scripts/data.gd")
+const Works := preload("res://scripts/works.gd")
+const People := preload("res://scripts/people.gd")
 
 
 func _process(delta: float) -> void:
@@ -93,8 +99,8 @@ func _decide(delta: float) -> void:
 	var wheeled := kind in ["cart", "wagon"]
 	if wheeled and _carting.has(road):
 		return
-	# traveller() is false when no road joins the two: then nobody set out.
-	if scenes.traveller(a["at"], b["at"], kind, func():
+	# go() is false when no road joins the two: then nobody set out.
+	if go(a["at"], b["at"], kind, func():
 			_out -= 1
 			if wheeled:
 				_carting.erase(road)):
@@ -122,10 +128,114 @@ func _who(a: Blackboard, b: Blackboard, season: String) -> String:
 	var hungry := String(a.get_var(&"mood", "")) == "hunger"
 	if (season == "winter" or hungry) and _rng.randf() < 0.65:
 		return ""  # thin roads in the cold and the lean times
+	var T: Dictionary = Data.value("roadside", "traffic", {})
+	var night: Dictionary = T.get("night", {})
+	if _dark(night):
+		return _pick(night.get("mix", {}), a, b, "")  # by night only a patrol with a torch, or a late rider
 	if a.get_var(&"prosperity", false) and b.get_var(&"prosperity", false) and _rng.randf() < 0.4:
 		return "wagon"  # trade between two thriving towns
-	var r := _rng.randf()
-	return "cart" if r < 0.35 else ("rider" if r < 0.45 else "walker")
+	return _pick(T.get("mix", {"walker": 55, "cart": 35, "rider": 10}), a, b)
+
+
+## A kind by its share (roadside.json traffic.mix); a patrol only on a crown town's road.
+func _pick(mix: Dictionary, a: Blackboard, b: Blackboard, instead := "walker") -> String:
+	var total := 0.0
+	for k in mix:
+		total += float(mix[k])
+	var roll := _rng.randf() * total
+	for k in mix:
+		roll -= float(mix[k])
+		if roll <= 0.0:
+			if k == "patrol" and not (bool(a.get_var(&"crown_town", false, false)) or bool(b.get_var(&"crown_town", false, false))):
+				return instead  # no crown road: a walker by day, nobody by night
+			return String(k)
+	return "walker"
+
+
+## Whether the village clock (works.gd hour) is in the night's hours [from, to), wrapping midnight.
+func _dark(night: Dictionary) -> bool:
+	var span: Array = night.get("hours", [21.0, 5.0])
+	var h := Works.hour()
+	var f := float(span[0])
+	var t := float(span[1])
+	return (h >= f or h < t) if f > t else (h >= f and h < t)
+
+
+## Sets someone of `kind` off on the road from one point to another: a party (pedlar, pilgrims,
+## patrol: party), a messenger at the gallop (scenes.gd rider), anyone else as scenes.gd
+## traveller() makes them. False when no road joins the two.
+func go(from: Vector3, to: Vector3, kind: String, on_done := Callable()) -> bool:
+	if (Data.value("roadside", "traffic.parties", {}) as Dictionary).has(kind):
+		return party(from, to, kind, on_done)
+	if kind == "messenger":
+		return scenes.rider_on_road(from, to, on_done) != null
+	return scenes.traveller(from, to, kind, on_done)
+
+
+## A party on the road (roadside.json traffic.parties): its people in file along the road's own
+## curve (Godot's PathFollow3D, as every traveller rides it), each playing the party's gait.
+func party(from: Vector3, to: Vector3, kind: String, on_done := Callable()) -> bool:
+	var P: Dictionary = Data.value("roadside", "traffic.parties.%s" % kind, {})
+	var way: PackedVector3Array = scenes._route(from, to)
+	if way.size() <= 2 or P.is_empty():
+		return false
+	var path := Path3D.new()
+	path.name = "Party_" + kind
+	path.curve = scenes._on_ground(terrain.smooth_road(way))
+	scenes.add_child(path)
+	var length: float = maxf(path.curve.get_baked_length(), 0.01)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = Time.get_ticks_usec()
+	var who: Array = P.get("who", ["peasant"])
+	var cnt: Array = P.get("count", [1, 1])
+	var n := rng.randi_range(int(cnt[0]), int(cnt[1]))
+	var gap := float(P.get("gap", 0.11))
+	var gait := String(P.get("gait", "Walk"))
+	var rate := float(P.get("rate", 1.0))
+	var cloth: Color = Works.colour(P.get("cloth"), Color.WHITE)
+	var follows: Array = []
+	var members: Array = []
+	for i in n:
+		var p: Node3D = scenes.people.make(rng, String(who[i % who.size()]), cloth, String(P.get("age", "")) if rng.randf() < 0.5 else "")
+		if P.has("kit"):
+			scenes.arm(p, String(P["kit"]))
+		var f := PathFollow3D.new()
+		f.rotation_mode = PathFollow3D.ROTATION_Y
+		f.loop = false
+		f.h_offset = rng.randf_range(-0.02, 0.02)
+		path.add_child(f)
+		p.rotation.y = PI  # people face +z; the follower carries -z forward
+		f.add_child(p)
+		People.play(p, gait, rate)
+		follows.append([f, gap * (n - 1 - i)])
+		members.append(p)
+	if bool(P.get("torch", false)) and _dark(Data.value("roadside", "traffic.night", {})) and not members.is_empty():
+		var light := OmniLight3D.new()  # a torch held up at the head of the patrol
+		light.light_color = Color(1.0, 0.62, 0.3)
+		light.light_energy = 1.2
+		light.omni_range = 0.6
+		light.position = Vector3(0.03, 0.22, 0)
+		(members[-1] as Node3D).add_child(light)
+	# A load is carried, or a step kept, once they are on the move (a standing move asked at rest
+	# would hold them still): the gait asked again when they have set off.
+	var again := get_tree().create_timer(0.8) if is_inside_tree() else null
+	if again:
+		again.timeout.connect(func():
+			for p in members:
+				if is_instance_valid(p):
+					People.play(p, gait, rate))
+	var lead := gap * n
+	var pace := float(P.get("pace", 0.2))
+	var tw := create_tween()
+	tw.tween_method(func(v: float):
+		for fl in follows:
+			if is_instance_valid(fl[0]):
+				(fl[0] as PathFollow3D).progress = clampf(v - lead + float(fl[1]), 0.0, length), 0.0, length + lead, clampf((length + lead) / pace, 15.0, 120.0))
+	tw.tween_callback(func():
+		path.queue_free()
+		if on_done.is_valid():
+			on_done.call())
+	return true
 
 
 ## How many may be out at once around a town: more in plenty, fewer in want.

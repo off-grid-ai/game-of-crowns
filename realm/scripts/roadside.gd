@@ -723,7 +723,7 @@ func _traffic(delta: float) -> void:
 	if s["kind"] == "hamlet" and kind in ["walker", "cart"] and _rng.randf() < float(T.get("herd_chance", 0.3)):
 		if _herd(stop if home else best_at, best_at if home else stop):
 			return
-	if main.scenes.traveller(stop if home else best_at, best_at if home else stop, kind, func(): _out -= 1):
+	if traffic.go(stop if home else best_at, best_at if home else stop, kind, func(): _out -= 1):
 		_out += 1
 
 
