@@ -222,10 +222,10 @@ func _process(delta: float) -> void:
 		if delta > 0.034:  # a frame that missed 30 fps: what the realm was doing
 			_hitches.append([delta, String(Engine.get_meta("stage", ""))])
 	if visible and _hint:
-		var words := "Click for the next page  ·  Esc to return to the menu" if watching \
-			else "Click or press any key to begin" if _is_ready() \
-			else "The realm is forming…  click for the next page"
-		_hint.text = words.to_upper()
+		# One quiet line, in sentence case, not a strip of keys in capitals (the audit; no key strips on screen):
+		# a click still turns the page and Esc still returns to the menu.
+		var words := "" if watching else "Click to begin" if _is_ready() else "The realm is forming…"
+		_hint.text = words
 
 
 func _next() -> void:

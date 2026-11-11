@@ -160,7 +160,7 @@ func show_main() -> void:
 	var reign: Dictionary = bridge.world.get("reign", {})
 	_has_continue = not reign.is_empty()
 	if not reign.is_empty():
-		var label := "Continue  ·  %s" % reign.get("name", "the realm")
+		var label := "Continue" if reign.get("test", false) else "Continue  ·  %s" % reign.get("name", "the realm")  # a run of ours shows no name
 		var go := _close
 		# A reign whose clock ran out isn't over for the King: he rules on, in the
 		# same realm, with no clock (its score stays in the Hall of Records).

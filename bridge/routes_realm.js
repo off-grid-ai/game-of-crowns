@@ -68,7 +68,7 @@ export async function chronicleOptions(ctx, req, res, url) {
 }
 
 export async function listChronicles(ctx, req, res, url) {
-  return json(res, 200, { active: ctx.meta.id, list: chron.list() });
+  return json(res, 200, { active: ctx.meta.id, list: chron.list().filter((c) => !chron.isTest(c)) });  // the player's reigns only (chronicles.isTest)
 }
 
 export async function createChronicle(ctx, req, res, url) {

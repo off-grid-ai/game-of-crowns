@@ -461,7 +461,7 @@ export function reignInfo(ctx) {
   // Behind the royal seal's switch with it (seals.js on), so the loop being playtested stays as it is.
   const next = !Seals.on(meta) ? null : Next.nextThing(ctx, aim ? { key: aim.key, do: aim.do, building: aim.building ?? null, at: aimPlace(ctx, aim), progress: aimProgress(ctx, aim) } : null);
   return {
-    id: meta.id, name: meta.name, scenario: meta.scenario, status: meta.status, paused, minutes: meta.minutes,
+    id: meta.id, name: meta.name, test: chron.isTest(meta), scenario: meta.scenario, status: meta.status, paused, minutes: meta.minutes,
     elapsedMs: meta.elapsedMs, remainingMs: meta.minutes > 0 ? Math.max(0, meta.minutes * 60000 - meta.elapsedMs) : null,
     score: meta.score, verdict: meta.verdict, title: meta.title, why: meta.why ?? null, outcome: meta.outcome, ended: meta.endedAt,
     epilogue: meta.epilogue ?? null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, aim: winterAim(meta, world) ?? (aim ? { n: Math.min(meta.ladder.i, LADDER.length) + (meta.ladder.n ?? 0) + 1, of: meta.ladder.i < LADDER.length ? LADDER.length : null, text: aim.text, how: aim.how, progress: aimProgress(ctx, aim), at: aimPlace(ctx, aim) } : null), aimDone: meta.ladder?.just && Date.now() - meta.ladder.just.at < 8000 ? meta.ladder.just.text : null, readings: meta.status === "running" ? readings(ctx) : null,

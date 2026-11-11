@@ -40,6 +40,10 @@ export function paths(id) {
   };
 }
 
+// A reign started by our own runs (tests, film, checks, measures), not a player: the one rule. The player's
+// lists never show one, and the view never shows its name (the professional audit: no dev save in his face).
+export const isTest = (m) => /test|film|check|proof|measured|batch|probe|gate/i.test(String(m?.name ?? ""));
+
 export function list() {
   return fs.readdirSync(ROOT)
     .filter((d) => fs.existsSync(path.join(ROOT, d, "meta.json")))
@@ -185,7 +189,7 @@ export function create({ name, scenario = "aldmere", minutes = 0, pace, fate = "
     writeNations(path.join(p.data, "nation"), false, opt.temper);
     // Test, film and check reigns keep the baseline exactly, so proofs repeat;
     // every real reign is dealt its own dice, tensions and grudges.
-    const test = /test|film|check|proof/i.test(name);
+    const test = isTest({ name });
     const seed = test ? 1066 : 1 + Math.floor(Math.random() * 2147483646);
     const opening = test ? null : freshStart(p.base, seed);
     const meta = {

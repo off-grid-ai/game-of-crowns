@@ -1047,7 +1047,8 @@ func set_reign(r: Dictionary) -> void:
 	paused = bool(r.get("paused", false))
 	_pause_btn.button_pressed = paused
 	_pause_btn.disabled = r.get("status", "") == "ended"
-	_reign.text = ("%s  ·  %s" % [r.get("name", ""), clock]).to_upper()
+	# A run of ours (the bridge's test flag) never shows its name: just the clock (the audit: no dev save in his face).
+	_reign.text = (clock if r.get("test", false) else "%s  ·  %s" % [r.get("name", ""), clock]).to_upper()
 	if r.get("status", "") == "ended":
 		_reign_end(r)
 	else:
