@@ -270,7 +270,7 @@ func _set_snow(v: float) -> void:
 const SNOW_UNIFORMS := """
 uniform float rain_wet = 0.0;
 uniform float snow_cover = 0.0;
-uniform vec3 snow_col : source_color = vec3(0.86, 0.88, 0.92);
+uniform vec3 snow_col : source_color = vec3(0.84, 0.86, 0.91);
 """
 const SNOW_COVER := """
 	float snow_k = 0.0;
@@ -332,7 +332,10 @@ const WET_GROUND := """
 		specular = mix(specular, 0.55, wet_k);
 	}
 """
-const SNOW_ALBEDO := "\n\tALBEDO = mix(ALBEDO, snow_col * (0.94 + 0.06 * mat.albedo_height.a), snow_k);"
+## Snow with shape (batch 7 review #14: a flat, shadeless white plane): the ground's own texture shows
+## faintly through it (its brightness and height), it lies in broad drifts across the land (world space,
+## metres apart), and it stops a hair short of pure white so the sun's shading reads on it under the grade.
+const SNOW_ALBEDO := "\n\tfloat snow_lum = dot(ALBEDO, vec3(0.299, 0.587, 0.114));\n\tfloat snow_drift = 0.5 + 0.5 * sin(v_vertex.x * 0.9 + sin(v_vertex.z * 0.7) * 1.7) * sin(v_vertex.z * 1.1 + v_vertex.x * 0.3);\n\tALBEDO = mix(ALBEDO, snow_col * (0.8 + 0.12 * mat.albedo_height.a + 0.08 * snow_drift) * mix(1.0, 0.75 + 0.5 * snow_lum, 0.35), snow_k * 0.94);"
 
 
 ## The realm's atlas (assets/maps/atlas.png, Azgaar's map drawn from its own
