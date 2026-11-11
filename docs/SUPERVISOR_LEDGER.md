@@ -32,6 +32,8 @@ limit. Newest first. The plan is [PLAN.md](PLAN.md); the running log of checks i
   switch until judged; tunables in data plus docs/TUNING.md.
 
 ## What Mac said (2026-11-11), newest first
+- **"This is the level that we wanted to be at."** On the eight Codex concept images, now the art and interaction
+  target in docs/art/target/ (README lists what each sets). Every visual change is judged beside its image.
 - **Fidelity picked: "Foundation and mid polished is what I like."** His likes on the fidelity picker
   (https://claude.ai/artifact/VABqP8bqvo7BHqKEbVMoPn, db `fidelity`, 39 likes, 0 dislikes): Age of Empires II DE,
   Age of Mythology Retold, Foundation, Settlers 7 and New Allies, SpellForce 3, Warcraft III, Against the Storm,

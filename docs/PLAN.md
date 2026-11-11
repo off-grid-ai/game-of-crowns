@@ -120,6 +120,10 @@ nothing may feel gimmicky and everything must feel professional: consistent type
 sound; eased transitions; no placeholder text, gags or arithmetic; no bugs on screen. This is priority
 number one; gameplay depth follows once it's true. No filming beyond the stills needed to judge a change.
 
+## The target images (Mac approved, 2026-11-11)
+docs/art/target/: eight concept images (town, realm map, army, siege, court, inn, unrest, reinforcement) at
+polished mid-fidelity, Warcraft III/Foundation family. Every visual change is judged beside its image.
+
 ## The bar (Mac, 2026-11-11)
 The casebook games are the competition, and their finish is the bar; nothing below it ships. Every visual
 change is judged as a still or clip at the same framing beside its reference shot from the casebook and
