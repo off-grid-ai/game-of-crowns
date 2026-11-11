@@ -99,6 +99,15 @@ export async function stage(ctx, req, res, url) {
     ctx.counselStale = true;
     return json(res, 200, { ok: true, turning: t });
   }
+  // {sack: city} or {razed: city}: that town's sack (or razing) plays now, as the director's own does
+  // (director.js: scene "sack" at the town), so a film can shoot a stormed town's aftermath on demand.
+  for (const kind of ["sack", "razed"]) {
+    if (b[kind] == null) continue;
+    const c = (ctx.world?.cities ?? []).find((x) => x.id === Number(b[kind]));
+    if (!c) return json(res, 404, { ok: false, error: "no such city" });
+    ctx.scene(kind, { x: c.x, y: c.y, city: c.id, owner: c.owner });
+    return json(res, 200, { ok: true, [kind]: c.id });
+  }
   // {threat: host|famine|pretender}: the director raises that threat now, at its place (director.js).
   if (b.threat) {
     const d = (ctx.meta.director ??= { calm: 0, rest: 0, threat: null, pushedAt: -99, curve: [] });
