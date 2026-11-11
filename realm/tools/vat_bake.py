@@ -19,6 +19,20 @@ FPS = int(cfg.get("fps", 24))
 os.makedirs(out, exist_ok=True)
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.gltf(filepath=glb)
+# More clips for the same skeleton from animation packs ("actions_from": glbs whose armature shares the
+# character's bone names, e.g. KayKit Character Animations' Rig_Medium for a KayKit Adventurer): their
+# actions are kept, their own armature and meshes dropped. A clip whose name the character already has
+# keeps the character's; the pack's is named <name>_pack.
+for extra in cfg.get("actions_from", []):
+    had_objects, had_actions = set(bpy.data.objects), {a.name for a in bpy.data.actions}
+    bpy.ops.import_scene.gltf(filepath=os.path.expanduser(extra))
+    for a in bpy.data.actions:
+        if a.name not in had_actions:
+            base = a.name.rsplit(".", 1)[0] if a.name[-4:-3] == "." and a.name[-3:].isdigit() else a.name
+            a.name = base + "_pack" if base in had_actions else base
+            a.use_fake_user = True
+    for o in [o for o in bpy.data.objects if o not in had_objects]:
+        bpy.data.objects.remove(o, do_unlink=True)
 spec = importlib.util.spec_from_file_location("vat_baker", BAKER)
 baker = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(baker)

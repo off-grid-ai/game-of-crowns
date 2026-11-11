@@ -1,0 +1,218 @@
+[
+ {
+  "name": "Idle",
+  "startFrame": 0,
+  "endFrame": 25,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Idle_A",
+  "startFrame": 26,
+  "endFrame": 51,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Idle_B",
+  "startFrame": 52,
+  "endFrame": 103,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Blocking",
+  "startFrame": 104,
+  "endFrame": 129,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Walking_A",
+  "startFrame": 130,
+  "endFrame": 155,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Walking_B",
+  "startFrame": 156,
+  "endFrame": 181,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Walking_C",
+  "startFrame": 182,
+  "endFrame": 220,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Running_A",
+  "startFrame": 221,
+  "endFrame": 240,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Running_B",
+  "startFrame": 241,
+  "endFrame": 266,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "1H_Melee_Attack_Chop",
+  "startFrame": 267,
+  "endFrame": 292,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "1H_Melee_Attack_Slice_Diagonal",
+  "startFrame": 293,
+  "endFrame": 317,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "1H_Melee_Attack_Slice_Horizontal",
+  "startFrame": 318,
+  "endFrame": 343,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "1H_Melee_Attack_Stab",
+  "startFrame": 344,
+  "endFrame": 382,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Melee_1H_Attack_Jump_Chop",
+  "startFrame": 383,
+  "endFrame": 415,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Block_Attack",
+  "startFrame": 416,
+  "endFrame": 441,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Block",
+  "startFrame": 442,
+  "endFrame": 467,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Block_Hit",
+  "startFrame": 468,
+  "endFrame": 493,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Hit_A",
+  "startFrame": 494,
+  "endFrame": 510,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Hit_B",
+  "startFrame": 511,
+  "endFrame": 531,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Death_A",
+  "startFrame": 532,
+  "endFrame": 551,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Death_B",
+  "startFrame": 552,
+  "endFrame": 615,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Lie_Down",
+  "startFrame": 616,
+  "endFrame": 688,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Cheer",
+  "startFrame": 689,
+  "endFrame": 729,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Waving",
+  "startFrame": 730,
+  "endFrame": 781,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Interact",
+  "startFrame": 782,
+  "endFrame": 813,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Use_Item",
+  "startFrame": 814,
+  "endFrame": 852,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Skeletons_Taunt",
+  "startFrame": 853,
+  "endFrame": 877,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ }
+]
