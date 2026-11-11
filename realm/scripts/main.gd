@@ -972,12 +972,25 @@ func _show_selected(world: Dictionary) -> void:
 	ui.show_town({}, {}, {})
 
 
-## Goes with a house's host in the field, or, with none out, to its seat.
+## A house's sigil clicked (Mac's playtest: the wolf went to a lakeshore, not
+## Wolfholt): the first click goes to its seat and frames the castle; clicked
+## again while there, it goes with the house's host in the field.
+var _house_seen := -1  # the house whose seat the last sigil click framed
 func _follow_house(pid: int) -> void:
 	var name := "The house"
 	for p in bridge.world.get("players", []):
 		if int(p["id"]) == pid:
 			name = String((p.get("house", {}) as Dictionary).get("name", name))
+	var seat := -1
+	for c in bridge.world.get("cities", []):
+		if int(c["owner"]) == pid and (c.get("capital", false) or seat < 0):
+			seat = int(c["id"])
+	if seat >= 0 and (_house_seen != pid or _selected != seat):
+		_house_seen = pid
+		_focus_city(seat)
+		_frame_castle(seat)
+		return
+	_house_seen = -1
 	var host: Node3D = units.army_of(pid, bridge.world)
 	if host:
 		director.watch_at(host.global_position, 6.0, "%s's host" % name, host)
@@ -990,6 +1003,21 @@ func _follow_house(pid: int) -> void:
 		if int(c["owner"]) == pid:
 			_focus_city(int(c["id"]))
 			return
+
+
+## A seat's castle in the middle of the view, seen from its town's side (its gate
+## faces the square), at the low oblique angle, turned so no tall building hides it.
+func _frame_castle(city_id: int) -> void:
+	var t = towns.towns.get(city_id)
+	var castle: Node3D = (t["node"] as Node3D).get_node_or_null("Castle") if t is Dictionary and is_instance_valid(t.get("node")) else null
+	if castle == null:
+		return  # a seat with no castle built yet: the town's own framing stands
+	var at := castle.global_position
+	var back: Vector3 = (t["node"] as Node3D).global_position - at
+	var yaw := atan2(back.x, back.z) if Vector2(back.x, back.z).length() > 0.01 else deg_to_rad(35.0)
+	rig.goal_target = at
+	rig.goal_distance = 11.0
+	rig.goal_yaw = rig.clear_yaw(at, 11.0, yaw)
 
 
 func _focus_city(city_id: int) -> void:

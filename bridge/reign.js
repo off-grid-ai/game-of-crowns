@@ -335,7 +335,10 @@ export function interlude(ctx) {
   let deed = null;
   if (top) {
     const named = (world?.cities ?? []).find((c) => String(top.says).includes(c.name) || String(top.says).includes(cityName(c.id) ?? "\u0000"));
-    const at = named ?? (picked[0] ? world?.cities?.find((c) => c.id === picked[0].city) : null) ?? world?.cities?.find((c) => houseFor(world.players.find((p) => p.id === c.owner) ?? {}).crown && c.capital);
+    // A deed that names a house (a council's side taken) stands at that house's seat, where its banner flies.
+    const house = !named ? (world?.players ?? []).find((p) => !houseFor(p).crown && houseFor(p).name && String(top.says).includes(houseFor(p).name)) : null;
+    const houseSeat = house ? world.cities.find((c) => c.owner === house.id && c.capital) ?? world.cities.find((c) => c.owner === house.id) : null;
+    const at = named ?? houseSeat ?? (picked[0] ? world?.cities?.find((c) => c.id === picked[0].city) : null) ?? world?.cities?.find((c) => houseFor(world.players.find((p) => p.id === c.owner) ?? {}).crown && c.capital);
     const line = String(top.says);
     deed = { line: line.charAt(0).toUpperCase() + line.slice(1), city: at?.id ?? null, x: at?.x ?? null, y: at?.y ?? null };
   }

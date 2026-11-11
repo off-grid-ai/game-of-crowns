@@ -17,6 +17,7 @@ extends Node
 ##   city Kingsmere 6    frame a town by name, at a camera distance
 ##   button Continue     press the visible button whose words begin so
 ##   town Kingsmere      open a town's card
+##   sigil 2             click the 2nd house sigil on the ladder over the minimap
 ##   answer              give the matter on the court card its first answer
 ##   director            let the camera director run, as it does in play
 
@@ -160,6 +161,15 @@ func _play(quit_after: bool) -> void:
 						hit = true
 						break
 				_note("  button %s: %s" % [want, "pressed" if hit else "NOT FOUND"])
+				await get_tree().create_timer(0.4).timeout
+			"sigil":
+				# Click the Nth house sigil on the ladder over the minimap (1 = leftmost), as a player does.
+				var chips: Array = main.ui.rank_strip._rank_chips.values().filter(func(c): return is_instance_valid(c) and (c as Control).is_visible_in_tree())
+				chips.sort_custom(func(a, b): return (a as Control).global_position.x < (b as Control).global_position.x)
+				var n := int(w[1]) - 1
+				if n >= 0 and n < chips.size():
+					var r: Rect2 = (chips[n] as Control).get_global_rect()
+					_click((r.position + r.size * 0.5) / get_viewport().get_visible_rect().size)
 				await get_tree().create_timer(0.4).timeout
 			"town":
 				# Open a town's card, as clicking the town would.

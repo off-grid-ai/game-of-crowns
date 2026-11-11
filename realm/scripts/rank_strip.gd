@@ -44,9 +44,9 @@ func _rank_houses(players: Array, fallen: Array = []) -> void:
 		if fresh:
 			chip = Control.new()
 			chip.mouse_filter = Control.MOUSE_FILTER_STOP
-			# Click a house to follow its host in the field (or see its seat).
+			# Click a house to see its seat; again, to follow its host in the field.
 			chip.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-			chip.tooltip_text = "Follow %s's host" % String(p["house"].get("name", "this house"))
+			chip.tooltip_text = "%s's seat. Click again to follow its host" % String(p["house"].get("name", "This house"))
 			chip.gui_input.connect(func(e: InputEvent):
 				if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 					ui.house_followed.emit(id))

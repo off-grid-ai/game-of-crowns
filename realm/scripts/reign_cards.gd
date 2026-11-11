@@ -104,7 +104,6 @@ func _act_moment(il: Dictionary, deed: Dictionary) -> void:
 	card.add_child(v)
 	v.add_child(T.label(String(il.get("title", "The act ends")).to_upper()))
 	v.add_child(T.title(String(deed["line"]), 20))
-	ui.root.add_child(card)
 	var cam := ui.get_viewport().get_camera_3d()
 	var seen := at != Vector3.INF and cam and not cam.is_position_behind(at) and ui.get_viewport().get_visible_rect().has_point(cam.unproject_position(at))
 	if seen:
