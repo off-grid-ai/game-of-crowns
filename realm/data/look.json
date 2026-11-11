@@ -1,5 +1,5 @@
 {
- "_": "The one look (PLAN.md Phase 2 item 1; art-direction-report.md: Foundation's town lit like Tiny Glade; target art-direction/concept-town-repaint.png). look.gd reads it. on: the switch (or --look=one); off keeps today's light. sun_elevation: degrees above the horizon (25-35: long soft shadows). sun_color / horizon_color: the warm key (about 4500 K) at height and near the horizon. sky_contribution: how much of the shade's light comes from the sky (the rest is ambient_color: the cool blue fill in the shadows). lut: a colour grade (empty: none; today's golden-hour LUT only browns). saturation, contrast: the gentle S-curve after AgX. exposure. haze_color: the warm distance haze. kit_tints: the free kit's materials re-graded by name (a multiply on their colour: earthy terracotta roofs, honey stone, darker oak, deeper leaves; kit.py's unify table). ssao / ssil: soft contact shadows (radius, intensity, power) and bounced light. haze: the volumetric haze's density near the ground (fades out as the camera pulls back) and the distance fog's density.",
+ "_": "The one look (PLAN.md Phase 2 item 1; art-direction-report.md: Foundation's town lit like Tiny Glade; target art-direction/concept-town-repaint.png). look.gd reads it. on: the switch (or --look=one); off keeps today's light. sun_elevation: degrees above the horizon (25-35: long soft shadows). sun_color / horizon_color: the warm key (about 4500 K) at height and near the horizon. sky_contribution: how much of the shade's light comes from the sky (the rest is ambient_color: the cool blue fill in the shadows). lut: the colour grade (assets/grade/storybook.png, made by tools/make_storybook_lut.py: lifted warm mids, quieter greens, cool shadows; empty: none; today's golden-hour LUT only browns). saturation, contrast: the gentle S-curve after AgX. exposure. haze_color: the warm distance haze. kit_tints: the free kit's materials re-graded by name (a multiply on their colour: earthy terracotta roofs, honey stone, darker oak, deeper leaves; kit.py's unify table). ssao / ssil: soft contact shadows (radius, intensity, power) and bounced light. haze: the volumetric haze's density near the ground (fades out as the camera pulls back) and the distance fog's density.",
  "on": false,
  "sun_elevation": 30.0,
  "sun_color": [
@@ -18,7 +18,7 @@
   0.6,
   0.88
  ],
- "lut": "",
+ "lut": "res://assets/grade/storybook.png",
  "saturation": 1.05,
  "contrast": 1.12,
  "exposure": 1.1,
