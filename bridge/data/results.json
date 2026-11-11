@@ -3,7 +3,7 @@
  "grain.order": [
   "By royal command, {donor} feeds the starving of {house}, and resents every sack.",
   "{donor}'s granaries open on the King's word. The carts roll to {house}, and {donor} counts each one.",
-  "The King makes {donor} feed {house}. {house} eats; {donor} keeps the bill in its head.",
+  "The King makes {donor} feed {house}. {house} eats; {donor} keeps the reckoning in its head.",
   "{donor} sends grain to {house}, because the King said so. Nobody in {donor}'s hall says thank you.",
   "Wagons of {donor}'s wheat reach {house}'s hungry. {donor}'s steward calls it theft with a seal on it."
  ],
@@ -36,9 +36,9 @@
   "{name} is heard to the end, and sent away with nothing. {house}'s old wound opens a little wider."
  ],
  "remembers.purse": [
-  "{house} sends {gold} gold to Kingsmere. {name} had hoped for thanks, not a bill.",
+  "{house} sends {gold} gold to Kingsmere. {name} had hoped for thanks, not a reckoning.",
   "{name} came for an apology and leaves {gold} gold lighter. {house} will tell this story for years.",
-  "{gold} gold from {house} to the crown, for the trouble of listening. {name} pays with a smile like a knife."
+  "{gold} gold from {house} to the crown, for the trouble of listening. {name} pays, and does not smile."
  ],
  "remembers.firm": [
   "\"The crown did what it must.\" {name} bows, and adds it to the account.",
@@ -49,8 +49,8 @@
  "council.side": [
   "The King sides with {winner}. {loser} leaves the council hall without bowing.",
   "The King's word goes to {winner}. {loser}'s lords push back their chairs and walk out.",
-  "{winner} has the King's backing. {loser} hears it with a face like stone, and is gone before the wine.",
-  "The King rules for {winner}. {loser} doesn't argue; it just stops coming to council."
+  "{winner} has the King's backing. {loser} hears it in silence, and is gone before the wine.",
+  "The King rules for {winner}. {loser} does not argue. It simply stops coming to council."
  ],
  "reword": {
   "on": false,
