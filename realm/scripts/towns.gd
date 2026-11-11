@@ -1636,8 +1636,9 @@ func _trade_off_plot(root: Node3D, center: Vector3, tr: Dictionary, square_r: fl
 					var a := TAU * i / 16.0
 					var q := Vector3(cos(a), 0, sin(a)) * (edge + span * 0.6)
 					cands.append([float(i) * 0.01, q, -q.normalized()])
-	# Last, anywhere just past the edge, nearest first: a trade the town has stands somewhere.
-	if where != "castle":
+	# Last, anywhere just past the edge, nearest first: a trade the town has stands somewhere; but a watermill
+	# only by water (batch 7 review #14: one stood on dry grass, its wheel in nothing).
+	if where != "castle" and where != "water":
 		for ring in 3:
 			for i in 24:
 				var a := TAU * i / 24.0
