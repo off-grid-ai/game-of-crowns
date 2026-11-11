@@ -651,6 +651,7 @@ func _sound_events(entries: Array) -> void:
 ## the old height, sunk into raised ground or hovering over a cut.
 func _on_ground_changed(area: Rect2) -> void:
 	area = area.grow(0.05)
+	preload("res://scripts/town_nav.gd").forget_shore(area)  # a shore traced over it is traced again
 	for p in get_tree().get_nodes_in_group("people"):
 		if not _stands_on_ground(p):
 			continue
@@ -1018,9 +1019,9 @@ func _frame_castle(city_id: int) -> void:
 	rig.goal_target = at
 	rig.goal_distance = 11.0
 	rig.goal_yaw = rig.clear_yaw(at, 11.0, yaw)
-
 	# No tree crowns between the lens and the keep's top either (Sunspire's castle sat behind its woods).
 	director.clear_view(at + Vector3.UP * 0.8)
+
 
 func _focus_city(city_id: int) -> void:
 	for c in bridge.world.get("cities", []):

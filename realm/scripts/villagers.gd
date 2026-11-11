@@ -111,8 +111,19 @@ func _process_timed(delta: float) -> void:
 				a["owed"] = owed
 				continue
 			a["owed"] = 0.0
+			_hold_load(a)
 			_step(a, minf(owed, 0.5), t)
 	_keep_apart()
+
+
+## v3 (motion.gd `errand_load`): the body carries what this walk carries. The walk's
+## gait is the one fact (a load from GAITS, set by the minds' GoTo or by
+## _choose_next); it ends when the walk does.
+func _hold_load(a: Dictionary) -> void:
+	var mo = people.motion(a["node"])
+	if mo and mo.v3:
+		var g := String(a.get("gait", ""))
+		mo.errand_load = g if GAITS.has(g) and Weapons.can_play(g) else ""
 
 
 ## Personal space, after everyone has moved: the crowd's avoidance steers
@@ -269,7 +280,12 @@ func _spawn(id: int) -> void:
 	var homes: Array = town["node"].get_meta("homes", [])
 	var start := rng.randi() % maxi(1, homes.size())
 	# Busier as a town grows: a hamlet has a handful about, a market town a crowd.
-	for i in clampi(6 + size * 4, 8, MAX_PER_TOWN):
+	# By day about two out for every three houses (the rest at work indoors, in
+	# the fields beyond, on the road), never more than the town's size allows:
+	# Crowford (size 6, ~32 houses) had 30 out, enough to fill its one square.
+	var out_by_size := clampi(6 + size * 4, 8, MAX_PER_TOWN)
+	var count := clampi(homes.size() * 2 / 3, 8, out_by_size) if not homes.is_empty() else out_by_size
+	for i in count:
 		# Each has a calling that decides where their day goes, and what they wear:
 		# farmers dress as peasants, the pious often as clergy, a gentlewoman in
 		# her gown, the rest as townsfolk.
@@ -617,6 +633,8 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 		a["best"] = INF
 		a["since"] = 0.0
 		if route.is_empty():
+			if people.motion(a["node"]) and people.motion(a["node"]).v3 and GAITS.has(String(a.get("gait", ""))):
+				a["gait"] = "Walk"  # v3: the load is set down with the walk's end (as the minds' GoTo does)
 			_set_off(a)  # arrived: straight into what they came for (a talk waits for the others)
 		return
 	var want := to.normalized() * WALK_SPEED * float(a.get("pace", 1.0)) * _mood_pace(a) * _for_the_child(a) * (2.4 if a.get("catch_up", false) else 1.0)
@@ -767,13 +785,17 @@ const ROOM := {"market": {"near": 0.3, "far": 1.0, "room": 6}, "well": {"near": 
 ## Where those who find a place full go instead.
 const OVERFLOW := {"market": ["well", "tavern"], "well": ["market", "sept"], "tavern": ["market", "well"], "sept": ["well", "market"], "feast": ["market", "tavern"]}
 const SHOULDER := 0.11  # two people standing: a shoulder's width apart
-const SQUARE_HOLDS := 10  # at most this many bound for the square at once (talkers included)
+const SQUARE_HOLDS := 10  # at most this many bound for the square at once (talkers included), in the biggest towns (_square_cap)
+const GATHER_REACH := 1.0  # about 8 m: who a villager calls over to talk
+const SQUARE_EDGE := 0.6  # past the square's paving this far is still the square: stall fronts, the well, the doors on its edge
 const KNOT := 0.26  # a gathering keeps this clear round its middle: knots of two or three, never one blob
 
 
 ## A free spot at a shared place (world), spread over its ground on the walk
 ## map and clear of where everyone else stands or is bound; a full place sends
-## them on to the next that fits, and failing all, home.
+## them on to the next that fits, and failing all, to their own work spot by
+## their door (their bench: the yard, the workshop front), where a town's
+## people mostly are.
 func place(a: Dictionary, key: String, knot := false) -> Vector3:
 	for k in [key] + Array(OVERFLOW.get(key, [])):
 		var clear := KNOT if knot else (SHOULDER * 1.2 if k == "feast" else SHOULDER * 2.6)  # alone, a couple of strides from the next: a lively square, not a crowd; round a fire, a shoulder apart
@@ -782,7 +804,7 @@ func place(a: Dictionary, key: String, knot := false) -> Vector3:
 			a["place_key"] = k
 			return p
 	a["place_key"] = ""
-	return nearby(a["home"], a["rng"], 0.25)
+	return a["bench"] if a.has("bench") and not _on_square(a, Vector2(a["bench"].x - a["center"].x, a["bench"].z - a["center"].z)) else nearby(a["home"], a["rng"], 0.25)
 
 
 func _claim(a: Dictionary, key: String, clear: float) -> Vector3:
@@ -800,6 +822,8 @@ func _claim(a: Dictionary, key: String, clear: float) -> Vector3:
 	else:
 		var heart: Vector3 = _places(a["town"], c)[key]
 		h = Vector2(heart.x - c.x, heart.z - c.z)
+	if _on_square(a, h) and _square_full(a):
+		return Vector3(NAN, 0, 0)  # the square's budget is spent, whichever of its places they asked for
 	var goals := []
 	var there := 0
 	for b in crowds.get(a["town"], []):
@@ -1270,16 +1294,25 @@ func _gather(a: Dictionary, target: Vector3, places: Dictionary) -> bool:
 	var want := Vector2(target.x - c.x, target.z - c.z)
 	var now := Time.get_ticks_msec() * 0.001
 	var list: Array = _talks.get(a["town"], [])
+	# The square's budget counts talk too: full, nobody gathers there.
+	if _on_square(a, want) and _square_full(a):
+		return false
 	for g in list:
 		if not g.get("mind", false) and g["members"].size() < 3 and Vector2(g["centre"]).distance_to(want) < 0.6 and float(g["until"]) > now + 6.0:
 			_join(a, g)
 			return true
+	# Two knots talking at a spot already: a third would make them one crowd
+	# (as _meet and room_to_talk hold).
+	if list.filter(func(g): return Vector2(g["centre"]).distance_to(want) < 0.6).size() >= 2:
+		return false
 	# Someone near, standing about or wandering, not already in company, kept
-	# by the player, or a child at play.
+	# by the player, or a child at play: a neighbour within about 8 m, never
+	# called across the town (2.5, about 20 m, emptied the streets into the
+	# square). Those with minds keep their own day (npc_mind FindPartner).
 	var best := {}
-	var best_d := 2.5
+	var best_d := GATHER_REACH
 	for b in crowds.get(a["town"], []):
-		if is_same(b, a) or not b["placed"] or not b["node"].visible or not b.get("talk", {}).is_empty():
+		if is_same(b, a) or not b["placed"] or not b["node"].visible or not b.get("talk", {}).is_empty() or b.has("mind"):
 			continue
 		if b["role"] == "child" or Time.get_ticks_msec() < int(b.get("hold_until", 0)):
 			continue
@@ -1592,7 +1625,7 @@ func _room_in_square(a: Dictionary, goal: Vector2, map: RID) -> Vector2:
 	if town.is_empty():
 		return goal
 	var sq: float = town["node"].get_meta("square_r", 0.0) + 0.1
-	if goal.length() >= sq:
+	if not _on_square(a, goal):
 		return goal
 	if _grieving(a):
 		# A town mourns in small knots spread through it, never one crowd in
@@ -1603,22 +1636,48 @@ func _room_in_square(a: Dictionary, goal: Vector2, map: RID) -> Vector2:
 		if home.length() < sq + 0.15:
 			home = home.normalized() * (sq + 0.25) if home.length() > 0.01 else Vector2(sq + 0.25, 0)
 		return nav.closest(map, home)
-	var there := 0
-	for b in crowds.get(a["town"], []):
-		if not is_same(b, a) and Vector2(b.get("goal", Vector2(99, 99))).length() < sq:
-			there += 1
-	# Those town life already stands there (beggars, a mob, revellers, buyers
-	# at the stalls) count too: two crowds in one square make a press.
-	var life: Node = town["node"].get_node_or_null("Life")
-	if life:
-		for p: Vector2 in life.get_meta("standing", PackedVector2Array()):
-			if p.length() < sq:
-				there += 1
-	if there < SQUARE_HOLDS:
+	if not _square_full(a):
 		return goal
 	var c: Vector3 = a["center"]
 	var near := nearby(a["home"], a["rng"], 0.2)
 	return nav.closest(map, Vector2(near.x - c.x, near.z - c.z))
+
+
+## The square and the ring round its edge (town-local): in a small town every
+## shared place stands here (stalls, well, tavern and church doors), so it is
+## one ground with one budget, not four places each with its own room.
+func _on_square(a: Dictionary, p: Vector2) -> bool:
+	var town_node: Node3D = towns.towns.get(a["town"], {}).get("node")
+	if not is_instance_valid(town_node):
+		return false
+	return p.length() < float(town_node.get_meta("square_r", 0.0)) + SQUARE_EDGE
+
+
+## How many the square holds at once, by the town's size: a hamlet's square
+## has a handful about it, a market town's its fill (SQUARE_HOLDS). Crowford
+## (size 6) had 30 villagers and four places' rooms on one square: a press.
+func _square_cap(a: Dictionary) -> int:
+	var size := int(towns.towns.get(a["town"], {}).get("data", {}).get("size", 1))
+	return clampi(2 + size, 5, SQUARE_HOLDS)
+
+
+## Whether the square (with its edge) already holds its fill: everyone bound
+## there, and those town life stands there (beggars, a mob, revellers, keepers
+## and buyers at the stalls), since two crowds in one square make a press.
+func _square_full(a: Dictionary) -> bool:
+	var town_node: Node3D = towns.towns.get(a["town"], {}).get("node")
+	if not is_instance_valid(town_node):
+		return false
+	var there := 0
+	for b in crowds.get(a["town"], []):
+		if not is_same(b, a) and b["node"].visible and _on_square(a, Vector2(b.get("goal", Vector2(99, 99)))):
+			there += 1
+	var life: Node = town_node.get_node_or_null("Life")
+	if life:
+		for p: Vector2 in life.get_meta("standing", PackedVector2Array()):
+			if _on_square(a, p):
+				there += 1
+	return there >= _square_cap(a)
 
 
 ## Meets the people the plan names: in the gathering one of them is already
@@ -1837,8 +1896,8 @@ func _in_talk(b: Dictionary, g: Dictionary) -> bool:
 	if not g.get("mind", false):
 		return _present(b, g)
 	var nb: Node3D = b["node"]
-	if not nb.visible or not PackedVector2Array(b["route"]).is_empty():
-		return false
+	if not nb.visible or not PackedVector2Array(b["route"]).is_empty() or not b.get("conversing", false):
+		return false  # (their mind enters the talk in steps: close, turn, settle; npc_mind.gd Talk)
 	for o in g["members"]:
 		if is_same(o, b):
 			continue

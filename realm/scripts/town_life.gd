@@ -140,6 +140,7 @@ func _y(center: Vector3, off: Vector3) -> float:
 
 
 const ROOM := 0.11  # world units between two people standing (about 0.9 m): shoulders never meet
+const KEEPER_BACK := 0.07  # a stall keeper stands this far behind the counter's back edge (about half a metre)
 const LANE := 0.06  # past a road's verge, ground the travellers on it keep: nobody stands there
 const HEART := 0.2  # about 1.7 m round a town's heart, where every road's travellers come through and wait
 
@@ -645,15 +646,19 @@ func _trade(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 	for st in root.get_meta("stalls", []):
 		var m: Vector3 = st[0]
 		var out := Vector3(m.x, 0, m.z).normalized()  # from the square's heart to the stall
-		# The keeper stands at the counter's end, by the goods, facing the square:
-		# behind it the ground rises off the square and the counter hides him.
+		# The keeper's mark: behind the counter, on the stall's back side (the
+		# model faces the square), just clear of its footprint, facing the lane
+		# over the goods (the judge's spec). At the counter's end he stood in the
+		# heap of goods towns.gd _plaza piles there (and knelt, on Interact):
+		# Crowford's log had him inside the stall's footprint, unseen.
+		# Failing the mark (someone there), past either end of the goods.
 		var along := Vector3(-out.z, 0, out.x) * (1.0 if rng.randf() < 0.5 else -1.0)
 		var taken: PackedVector2Array = life.get_meta("standing")
-		# Either end of the counter, whichever nobody stands at: two stalls side
-		# by side would otherwise put their keepers in one body.
 		var at := Vector3(NAN, 0, 0)
+		var marks: Array[Vector3] = [m + out * (float(st[1]) * 0.5 + KEEPER_BACK)]
 		for end in [1.0, -1.0]:
-			var try: Vector3 = m + along * end * (float(st[2]) * 0.5 + 0.05) - out * float(st[1]) * 0.25
+			marks.append(m + along * end * (float(st[2]) * 0.5 + 0.22) - out * float(st[1]) * 0.25)
+		for try: Vector3 in marks:
 			var free := true
 			for q: Vector2 in taken:
 				if q.distance_to(Vector2(try.x, try.z)) < ROOM:
@@ -665,7 +670,7 @@ func _trade(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 		if is_nan(at.x):
 			continue  # this stall's keeper is the next one's: one keeps both
 		at.y = _y(center, at)
-		var keeper := _townsperson(life, at, "townsfolk", ["Idle_Talking", "Interact", "Nodding"][rng.randi() % 3], rng.randi())
+		var keeper := _townsperson(life, at, "townsfolk", ["Idle_Talking", "Pointing_Forward", "Nodding"][rng.randi() % 3], rng.randi())
 		keeper.rotation.y = atan2(-out.x, -out.z)
 		_mind(keeper, "trade", center)
 		taken.append(Vector2(at.x, at.z))

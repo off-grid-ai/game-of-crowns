@@ -219,9 +219,7 @@ static func run(pool: Array, lo := 3, hi := 5) -> BTTask:
 ## kneeling or sitting on it (from a standing move it would dip and rise).
 ## Straight from kneeling to a standing move, a body pops upright between frames.
 class GetUp extends BTAction:
-	# Interact is down on one knee all through (hips 0.32-0.42 against 0.95 standing, measured).
-	const GROUND := ["Fixing_Kneeling", "Interact", "Kneeling", "Praying", "Planting", "Dig_And_Plant", "Sitting_Ground", "Sitting_Cross_Legged",
-		"Sitting_Idle", "Sitting_Drinking", "Sleeping_Idle", "Defeated"]
+	const GROUND := Motion.LOW  # the low postures: one list, the body's own (motion.gd)
 	var _left := 0.0
 
 	func _enter() -> void:
@@ -291,7 +289,9 @@ static func post_activities(post: String) -> Array:
 			]
 		"trade":
 			return [
-				seq("mind", [run(["Interact"]), once("Looking_Around"), once("PickUp_Table"), run(["Interact"]), brk(["Bored", "Weight_Shift", "Drinking", "Whispering"])]),
+				# A keeper stands at the counter (never on one knee, Interact: down there
+				# the counter and the goods hide him, and the stall reads unkept).
+				seq("mind", [run(["Idle_Talking", "Nodding"], 1, 2), once("Looking_Around"), once("PickUp_Table"), run(["Pointing_Forward", "Idle_Talking"], 1, 2), brk(["Bored", "Weight_Shift", "Drinking", "Whispering"])]),
 				seq("cry", [run(["Yelling"], 1, 2), once("Talking_Hands"), once("Waving"), brk(REST)]),
 			]
 		"buy":
@@ -793,14 +793,37 @@ class Talk extends PlayRun:
 		# Nobody talks to the air: until the other stands face to face with
 		# them, they wait at the spot and look for them.
 		_stepped = false
-		if _in_place():
-			_begin()
-		else:
-			People.play(agent, "Idle")
+		_both_for = 0.0
+		_step_at = -100000
+		_settled = 0.0
+		People.play(agent, "Idle")
+
+	## A talk is a stance entered in steps, as people do (a posture graph):
+	## approach (each walks to their spot), close (a step to a pace apart,
+	## _in_place), turn (the body round to face them, at a person's rate), settle
+	## (a beat, face to face), and only then converse: the moves start and the
+	## talk is one the town overhears (villagers.gd _in_talk reads "conversing").
+	const SETTLED := 0.4  # seconds face to face before the first word
+	const FACING := 0.35  # radians (20 deg): the body is round to them
+	var _settled := 0.0
 
 	func _begin() -> void:
 		_started = true
+		(blackboard.get_var(&"va", {}, false) as Dictionary)["conversing"] = true
 		super._enter()
+
+	## Whether the body, as drawn, has come round to face the partner: the
+	## motion machine's own turning yaw where it keeps one (v2), else the wish.
+	func _facing() -> bool:
+		var them := blackboard.get_var(&"partner", null, false) as Node3D
+		if them == null:
+			return false
+		var here := (agent as Node3D).global_position
+		var want := atan2(them.global_position.x - here.x, them.global_position.z - here.z)
+		var mo := People.motion(agent)
+		var yaw = mo.get("_yaw") if mo else null
+		var now: float = float(yaw) if yaw != null and is_finite(float(yaw)) else (agent as Node3D).global_rotation.y
+		return absf(angle_difference(now, want)) < FACING
 
 	## The other has arrived and stopped, within talking distance.
 	func _near() -> bool:
@@ -817,26 +840,33 @@ class Talk extends PlayRun:
 	## Both here, and a pace apart (FindPartner.TALK_GAP, about 1.15 m: the
 	## distance two people talk at, Hall's personal space). Each walks to their
 	## own spot and stops within half a metre of it, so two arrive anywhere from
-	## brushing shoulders to calling across: then one of them (the later in the
-	## scene) takes a step to stand a pace off, facing, as people settle into
-	## a talk. One step only; past two seconds they talk where they stand.
+	## brushing shoulders to calling across: then both settle into it, as people
+	## do, each taking a short step to cover half what's off (whoever moves,
+	## the gap closes), a step every second or so. Four seconds after both
+	## stand (SETTLE), they talk where they are.
+	const SETTLE := 4.0
+	var _both_for := 0.0  # seconds both have stood within reach, for this talk
+	var _step_at := -100000  # when this one last stepped (msec)
+
 	func _in_place() -> bool:
 		if not _near() or not (blackboard.get_var(&"va", {}, false).get("route", PackedVector2Array()) as PackedVector2Array).is_empty():
 			return false  # (still taking their own step)
 		var them := blackboard.get_var(&"partner") as Node3D
 		var here := (agent as Node3D).global_position
 		var flat := Vector2(here.x - them.global_position.x, here.z - them.global_position.z)
-		if absf(flat.length() - FindPartner.TALK_GAP) < 0.025 or _stepped or _waited > 2.0:
+		var off := flat.length() - FindPartner.TALK_GAP  # >0 too far, <0 too close
+		if absf(off) < 0.025 or _both_for > SETTLE:
 			return true
-		if agent.get_instance_id() < them.get_instance_id():
-			return false  # the other one steps
+		if Time.get_ticks_msec() - _step_at < 1200:
+			return false  # (settling: the other may be stepping too)
+		_step_at = Time.get_ticks_msec()
 		_stepped = true
 		var v: Node = blackboard.get_var(&"vill", null, false)
 		var dir := flat.normalized() if flat.length() > 0.005 else Vector2.from_angle(randf() * TAU)
-		var spot := Vector3(them.global_position.x + dir.x * FindPartner.TALK_GAP, here.y, them.global_position.z + dir.y * FindPartner.TALK_GAP)
-		if v != null and v.has_method("step_to") and v.step_to(blackboard.get_var(&"va"), (agent as Node3D).position + (spot - here)):
-			return false  # stepping into place: talk once there
-		return true
+		var to := here - Vector3(dir.x, 0, dir.y) * off * 0.5
+		if v != null and v.has_method("step_to"):
+			v.step_to(blackboard.get_var(&"va"), (agent as Node3D).position + (to - here))
+		return false
 
 	## The talk goes on only while the other is still here and still talking
 	## to them; while a line of theirs is being read they listen, and the talk
@@ -856,8 +886,16 @@ class Talk extends PlayRun:
 				return SUCCESS
 			if _waited > 2.0 and not _stepped:
 				People.play(agent, "Looking_Around")
+			if _near():
+				_both_for += delta
 			if _in_place():
-				_begin()
+				# Turn and settle: face to face for a beat, then the first word.
+				# (A body the machine can't turn, past SETTLE and two more seconds, talks as it stands.)
+				_settled = _settled + delta if _facing() else 0.0
+				if _settled >= SETTLED or _both_for > SETTLE + 2.0:
+					_begin()
+			else:
+				_settled = 0.0
 			return RUNNING
 		var f := _floor_now()
 		if f != _floor:
@@ -891,6 +929,7 @@ class Talk extends PlayRun:
 				agent.rotation.y = atan2(flat.x, flat.y)
 
 	func _exit() -> void:
+		(blackboard.get_var(&"va", {}, false) as Dictionary).erase("conversing")
 		blackboard.set_var(&"called", false)
 		blackboard.set_var(&"talking", false)
 		blackboard.set_var(&"partner", null)

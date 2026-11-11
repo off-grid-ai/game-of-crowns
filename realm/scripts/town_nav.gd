@@ -16,7 +16,17 @@ static var _live := {}  # RID -> true for every map not yet freed: a freed one i
 static var _built_from := {}  # town id -> what its map was baked from: the town node and its life
 static var _baking := {}  # map RID -> its regions' bakes still out on worker threads
 static var _baked_at := {}  # map RID -> the map's iteration when its last bake landed: ready once it has synced past it
-static var _shore := {}  # [town place, reach] -> its water outlines: the shore never moves, so traced once
+static var _shore := {}  # [town place, reach] -> its water outlines, traced once the land is built; dropped where the ground changes (forget_shore)
+
+
+## The ground changed in `area` (terrain.ground_changed: a square levelled at a
+## bank): any shore traced over it is traced again at the next bake.
+static func forget_shore(area: Rect2) -> void:
+	for key in _shore.keys():
+		var at: Vector3 = key[0]
+		var reach: float = key[1]
+		if area.intersects(Rect2(at.x - reach, at.z - reach, reach * 2.0, reach * 2.0)):
+			_shore.erase(key)
 
 
 func map_for(id: int, root: Node3D) -> RID:
@@ -208,7 +218,8 @@ func _water(at: Vector3, reach: float) -> Array:
 				var h := WATER_STEP * 0.5
 				out.append(PackedVector2Array([Vector2(start - h, z - h), Vector2(x - h, z - h), Vector2(x - h, z + h), Vector2(start - h, z + h)]))
 				start = INF
-	_shore[key] = out
+	if terrain.get("built"):
+		_shore[key] = out  # before the land is built, heights come from the raw land file: not kept
 	return out
 
 
