@@ -86,3 +86,14 @@ Switches (`--name`) go after `--` on the game's command line.
 - Juice on or off (the seal at the click, the treasury counted down, results at the town, music by tension): `realm/data/juice.json`: `on` (or `--juice=on`).
 - How long the treasury counts to its new sum, how big the spent seal swells: `realm/data/juice.json`: `coins_seconds`, `seal_punch`.
 - How tense the realm must be before the music turns dark, and calm before it settles: `realm/data/juice.json`: `music_tension_above`, `music_calm_below`.
+- Court results' wordings, and the local model adding more (on, how many per result): `bridge/data/results.json` (and `reword`).
+- Bannermen's surnames, dealt fresh each real reign: `bridge/data/surnames.json`.
+- One court matter at a time, and how likely a season brings one by the stage of the reign: `bridge/data/court.json`: `one`.
+- The herald: on or off, how many notices wait, how long each is read, its dry voices: `realm/data/herald.json`.
+- How often a royal seal comes (0.5: every other season): `bridge/data/seals.json`: `perSeason`.
+- What the tithe brings the crown, per town size: `bridge/data/economy.json`: `tithe.perSize`.
+- How often event cards come, and never in a breather (chanceInBreather 0): `bridge/data/events.json`: `settings.chance`, `settings.chanceInBreather`.
+
+## The crowd thinks out loud (Builder 1; view `--thoughts`)
+- What a town says after a ruling (by who it helped or hurt), when hungry, besieged or levied; how many thoughts a town shows; Omni's prompt; on/off: `bridge/data/thoughts.json`.
+- How near the camera must be to see a town's talk, and how often it changes: `realm/data/thoughts.json`: `near`, `cycle_sec`.
