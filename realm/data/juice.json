@@ -1,6 +1,6 @@
 {
  "_": "Juice (PLAN.md, Phase 1; Kingdom Two Crowns' coin drop, Into the Breach's instant reply): every order answered at the click, the treasury counted down, the seal pressed, music that follows the realm's tension. on: the switch (or --juice=on); off until judged on a clip. coins_seconds: how long the treasury counts to its new sum. seal_punch: how big the spent seal's pip swells. music_tension_above: the realm's tension (bridge director.js, 0 calm to 1 on fire) above which the music turns dark; music_calm_below: below which it settles again.",
- "on": false,
+ "on": true,
  "coins_seconds": 0.8,
  "seal_punch": 1.6,
  "music_tension_above": 0.55,
