@@ -9,6 +9,7 @@
 // A host is the crown's fighting companies standing together (data/hosts.json near), or the
 // companies under one order. Orders are kept with the reign (meta.hostOrders). Numbers: data/hosts.json.
 import fs from "node:fs";
+import path from "node:path";
 import * as chron from "./chronicles.js";
 import { houseFor, cityName } from "./narrator.js";
 import { CIVILIAN } from "./campaigns.js";
@@ -46,9 +47,16 @@ export function list(ctx) {
       id: lead.id, x: lead.x, y: lead.y, companies: g.units.length, men: g.units.length * HOSTS.men,
       at: town ? { id: town.id, name: cityName(town.id) } : null, units: g.units.map((u) => u.id),
       order: o ? { kind: o.kind, x: o.x ?? null, y: o.y ?? null, city: o.city ?? null, to: o.city != null ? cityName(o.city) : null,
-        seasons: o.x != null ? Math.ceil(cheb(lead, o) / HOSTS.speed) : 0 } : null,
+        seasons: o.x != null ? Math.ceil(Math.max(0, roadTo(lead, o)) / HOSTS.speed) : 0 } : null,
     };
   }).sort((a, b) => b.companies - a.companies);
+}
+
+// Steps over land from a host to a place: -1 when the sea lies between (or the place is water), the
+// straight count when the land isn't known yet.
+function roadTo(h, to) {
+  const steps = stepsTo(to);
+  return steps ? steps.at(h) : landOf() ? -1 : cheb(h, to);
 }
 
 function save(meta, orders) {
@@ -76,17 +84,21 @@ export function order(ctx, b) {
     case "march": {
       const to = town ? { x: town.x, y: town.y } : { x: Math.round(Number(b.x)), y: Math.round(Number(b.y)) };
       if (!inside(to.x, to.y)) return [400, { error: "choose where on the map" }];
+      const road = roadTo(h, to);
+      if (road < 0) return [400, { error: `there is no way over land to ${town ? cityName(town.id) : "that place"}` }];
       // Into a town only where the gates are open to the King's men; before another's walls otherwise.
       save(meta, [...rest, { kind: "march", units: h.units, x: to.x, y: to.y, city: town?.id ?? null, since: world.turn }]);
-      const seasons = Math.max(1, Math.ceil(cheb(h, to) / HOSTS.speed));
+      const seasons = Math.max(1, Math.ceil(road / HOSTS.speed));
       return [200, { ok: true, text: `${name} marches${town ? ` for ${cityName(town.id)}` : ""}: ${seasons === 1 ? "a season" : `${seasons} seasons`} on the road.` }];
     }
     case "garrison": {
       if (!town) return [400, { error: "choose a town to garrison" }];
       const open = town.owner === crown?.id || sworn?.(town.owner);
       if (!open) return [400, { error: `${cityName(town.id)}'s gates are not open to the King's men: its house is not sworn to the crown` }];
+      const road = roadTo(h, town);
+      if (road < 0) return [400, { error: `there is no way over land to ${cityName(town.id)}` }];
       save(meta, [...rest, { kind: "garrison", units: h.units, x: town.x, y: town.y, city: town.id, since: world.turn }]);
-      const seasons = Math.ceil(cheb(h, town) / HOSTS.speed);
+      const seasons = Math.ceil(road / HOSTS.speed);
       return [200, { ok: true, text: seasons ? `${name} marches to garrison ${cityName(town.id)}: ${seasons === 1 ? "a season" : `${seasons} seasons`} on the road.` : `${name} garrisons ${cityName(town.id)}.` }];
     }
     case "return": {
@@ -108,9 +120,72 @@ export function order(ctx, b) {
   return [400, { error: "no such order" }];
 }
 
-// One company's move toward a tile, in Freeciv: up to n steps, each to the neighbouring land tile
-// nearest the goal (never the sea), stopping when it can go no nearer or the way is shut.
-const stepLua = (id, x, y, n) => `local u = find.unit(nil, ${id}); if u then for i = 1, ${n} do local t = u.tile; local best, bd = nil, math.max(math.abs(t.x - ${x}), math.abs(t.y - ${y})); for a in t:square_iterate(1) do local nm = a.terrain:rule_name(); local d = math.max(math.abs(a.x - ${x}), math.abs(a.y - ${y})); if d < bd and not nm:find("Ocean") and nm ~= "Lake" then best, bd = a, d end end; if not best then break end; pcall(edit.unit_teleport, u, best); if u.tile ~= best then break end end end`;
+// Freeciv 3.2's teleport takes every argument (embark_to, allow_disembark, conquer_city, conquer_extra,
+// enter_hut, frighten_hut); given two it throws, and no host ever moved.
+const TELEPORT = "edit.unit_teleport, u, t, nil, false, false, false, false, false";
+
+// One company's season on the road, in Freeciv: tile by tile along the way the bridge found, stopping
+// where the way is shut (another's men stand there).
+const walkLua = (id, tiles) => `local u = find.unit(nil, ${id}); if u then for _, p in ipairs({${tiles.map(([x, y]) => `{${x},${y}}`).join(",")}}) do local t = find.tile(p[1], p[2]); if not t then break end; pcall(${TELEPORT}); if u.tile ~= t then break end end end`;
+
+// With no way over land known: up to n steps, each to the neighbouring land tile nearest the goal.
+const stepLua = (id, x, y, n) => `local u = find.unit(nil, ${id}); if u then for i = 1, ${n} do local c = u.tile; local t, bd = nil, math.max(math.abs(c.x - ${x}), math.abs(c.y - ${y})); for a in c:square_iterate(1) do local nm = a.terrain:rule_name(); local d = math.max(math.abs(a.x - ${x}), math.abs(a.y - ${y})); if d < bd and not nm:find("Ocean") and nm ~= "Lake" then t, bd = a, d end end; if not t then break end; pcall(${TELEPORT}); if u.tile ~= t then break end end end`;
+
+// The land as Freeciv wrote it for the reign (snapshot.lua's map.json): which tiles a host can walk.
+let land = { file: null };
+function landOf() {
+  const file = path.join(chron.paths(chron.activeId()).state, "map.json");
+  if (land.file !== file) {
+    const m = chron.readJson(file);
+    if (!m?.tiles) return null;
+    const walk = new Uint8Array(m.width * m.height);
+    for (const [x, y, n] of m.tiles) walk[y * m.width + x] = /Ocean|Lake/.test(String(n)) ? 0 : 1;
+    land = { file, w: m.width, h: m.height, walk };
+  }
+  return land;
+}
+
+// How many steps over land each tile is from a goal (breadth-first over the eight neighbours, as a
+// unit moves in Freeciv), or null when the goal isn't on the land. shut: tiles ("x,y") no host can
+// pass this season (another house's town or men stand there; Freeciv won't put the King's men in).
+function stepsTo(goal, shut = null) {
+  const L = landOf();
+  if (!L || goal.x < 0 || goal.y < 0 || goal.x >= L.w || goal.y >= L.h || !L.walk[goal.y * L.w + goal.x]) return null;
+  const d = new Int32Array(L.w * L.h).fill(-1);
+  const q = [goal.y * L.w + goal.x];
+  d[q[0]] = 0;
+  for (let i = 0; i < q.length; i++) {
+    const x = q[i] % L.w, y = (q[i] / L.w) | 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= L.w || ny >= L.h) continue;
+      const k = ny * L.w + nx;
+      if (d[k] < 0 && L.walk[k] && !shut?.has(`${nx},${ny}`)) { d[k] = d[q[i]] + 1; q.push(k); }
+    }
+  }
+  return { at: (p) => d[p.y * L.w + p.x], w: L.w, h: L.h };
+}
+
+// The next n tiles of a company's way down the steps, or [] when it can't reach the goal over land.
+function wayOn(steps, from, n) {
+  const out = [];
+  let p = { x: from.x, y: from.y }, here = steps.at(p);
+  if (here < 0) return out;
+  while (out.length < n && here > 0) {
+    let best = null;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const q = { x: p.x + dx, y: p.y + dy };
+      if (q.x < 0 || q.y < 0 || q.x >= steps.w || q.y >= steps.h) continue;
+      const v = steps.at(q);
+      if (v >= 0 && v < here && (!best || v < best.v)) best = { ...q, v };
+    }
+    if (!best) break;
+    out.push([best.x, best.y]);
+    p = best;
+    here = best.v;
+  }
+  return out;
+}
 
 // Each season (season.js): every host under a marching order moves; one that has arrived stands
 // (a march becomes a hold; a garrison stays a garrison, in the town).
@@ -120,24 +195,34 @@ export function season(ctx, turn) {
   const crown = crownOf(world);
   const byId = new Map(soldiersOf(world, crown?.id).map((u) => [u.id, u]));
   const next = [];
+  const shut = new Set([...(world.cities ?? []), ...(world.units ?? [])].filter((x) => x.owner !== crown?.id).map((x) => `${x.x},${x.y}`));
   for (const o of meta.hostOrders) {
     const units = o.units.filter((id) => byId.has(id));
     if (!units.length) continue;  // the host is no more
     if (o.x == null) { next.push({ ...o, units }); continue; }
-    const there = units.every((id) => cheb(byId.get(id), o) === 0);
+    // There: on the place, or before the walls of a town that isn't the crown's (a march halts at another's gates).
+    const goal = o.city != null ? world.cities.find((c) => c.id === o.city) : null;
+    const reach0 = goal && goal.owner !== crown?.id && o.kind === "march" ? 1 : 0;
+    const there = units.every((id) => cheb(byId.get(id), o) <= reach0);
     if (there) {
       if (!o.arrived) record?.({ turn, kind: "decree", text: o.kind === "garrison" ? `The royal host ${o.home ? "is home at" : "garrisons"} ${cityName(o.city)}.` : `The royal host has reached ${o.city != null ? cityName(o.city) : "the place the King named"}.`, city: o.city ?? undefined });
       next.push(o.kind === "march" ? { kind: "hold", units, since: turn } : { ...o, units, arrived: true });
       continue;
     }
     // A host that came no nearer last season (the sea, or gates shut to it) stands where it is.
-    const far = units.reduce((t, id) => t + cheb(byId.get(id), o), 0);
+    // Nearer is counted in steps over land where the way is known (around a lake is nearer too).
+    const steps = stepsTo(o, new Set([...shut].filter((k) => k !== `${o.x},${o.y}`))) ?? stepsTo(o);
+    const reach = (u) => (steps && steps.at(u) >= 0 ? steps.at(u) : cheb(u, o));
+    const far = units.reduce((t, id) => t + reach(byId.get(id)), 0);
     if (o.far != null && far >= o.far) {
       record?.({ turn, kind: "decree", text: `The royal host can go no nearer ${o.city != null ? cityName(o.city) : "the place the King named"}, and makes camp.`, city: o.city ?? undefined });
       next.push({ kind: "hold", units, since: turn });
       continue;
     }
-    for (const id of units) send(`lua cmd ${stepLua(id, o.x, o.y, HOSTS.speed)}`);
+    for (const id of units) {
+      const way = steps ? wayOn(steps, byId.get(id), HOSTS.speed) : [];
+      send(`lua cmd ${way.length ? walkLua(id, way) : stepLua(id, o.x, o.y, HOSTS.speed)}`);
+    }
     next.push({ ...o, units, far });
   }
   save(meta, next);
