@@ -1381,6 +1381,19 @@ static func plain(steps: Array) -> BTTask:
 	return s
 
 
+## In rain or a storm, a steady share of the townsfolk (the same people for the whole shower: by who they
+## are, not a roll each tick) are rained in. Children and the tavern's folk among them.
+class RainedIn extends BTCondition:
+	func _tick(_delta: float) -> Status:
+		var w := String(blackboard.get_var(&"weather", "clear", false))
+		var share := float(preload("res://scripts/data.gd").num("weather", "home." + w, 0.0)) if w in ["rain", "storm"] else 0.0
+		if share <= 0.0 or not load("res://scripts/weather_fx.gd").dressed():  # load: weather_fx reaches main
+			return FAILURE
+		var a: Dictionary = blackboard.get_var(&"va", {}, false)
+		var who := float(hash(int(a.get("i", 0)) * 31 + int(a.get("town", 0)))) / 2147483647.0
+		return SUCCESS if absf(fmod(who, 1.0)) < share else FAILURE
+
+
 ## Succeeds in `season` (the realm scope's season).
 class SeasonIs extends BTCondition:
 	@export var season := ""
@@ -1461,6 +1474,9 @@ static func give_villager(person: Node3D, a: Dictionary, vill: Node) -> bool:
 	night.add_child(go("home"))
 	night.add_child(brk(["Idle", "Breathing_Idle"]))
 	life.add_child(night)
+	# Rain or a storm: a share of those who'd be out stay home (Manor Lords, Foundation: a wet town empties;
+	# data/weather.json home, read through the realm's weather in the mirror).
+	life.add_child(plain([RainedIn.new(), go("home"), brk(["Idle", "Breathing_Idle"])]))
 	if not role in ["tavern", "keeper"]:
 		# Winter evenings are spent indoors: home early, the square left to the few.
 		life.add_child(plain([season_is("winter"), block_is(["evening"]), go("home"), brk(["Idle", "Breathing_Idle"])]))
