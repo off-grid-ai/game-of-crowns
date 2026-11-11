@@ -4,8 +4,8 @@
 # reference each is judged beside are listed in docs/review/v15.json; docs/review/v15_apply.py puts the
 # results on the review page.
 #
-#   docs/review/batch7.sh            # all of it, about 116 minutes [estimate: the launches' LIMITs and waits]
-#   ONLY="towns fire" docs/review/batch7.sh   # some launches only: towns castle moods rulings fields fire breach army battle hosts weather night
+#   docs/review/batch7.sh            # all of it, about 124 minutes [estimate: the launches' LIMITs and waits]
+#   ONLY="towns fire" docs/review/batch7.sh   # some launches only: towns square castle moods rulings fields fire breach army battle hosts weather night
 #   OUT=/tmp/goc-batch7 (default)    # frames, logs and clips land here
 #
 # It runs on its own private bridge (8788, Freeciv 5557) with a fresh reign named "Film batch 7", so the
@@ -15,7 +15,7 @@ R=${0:A:h:h:h}
 OUT=${OUT:-/tmp/goc-batch7}
 PORT=${PORT:-8788}; FC=${FC:-5557}
 API=localhost:$PORT
-ONLY=${ONLY:-towns castle moods rulings fields fire breach army battle hosts weather night}
+ONLY=${ONLY:-towns square castle moods rulings fields fire breach army battle hosts weather night}
 SW=(--look=one --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on)
 B=(--bridge=http://127.0.0.1:$PORT)
 FF=${FF:-/opt/homebrew/bin/ffmpeg}
@@ -117,6 +117,22 @@ if want towns; then
   has_step site || note "inn, hamlet, bridge: framed along the road out of town (no 'site' step in the harness yet); check what's in frame"
   play towns 1200
   for c in forge-clip stables-clip mill-clip barnyard-clip inn-clip carts-clip; do clip $OUT/towns $c 5; done
+fi
+
+# 2a. Kingsmere's fuller square (works-life's 5c3d1e70, 08de3013, a09db4fb): the same shots before (--crowd=off:
+# no crier, beggars at the church step, guard patrol, dogs, children chasing, gossip knots) and after; the
+# denser market (towns.json market.crown) stays on in both. The crowd takes about 10 s to form.
+if want square; then
+  for v in before after; do
+    {
+      print "wait 25"
+      print "city Kingsmere 6 -25"; print "wait 10"; print "snap square-$v"
+      print "city Kingsmere 4.5 -25"; print "wait 6"; print "snap square-street-$v"; burst square-clip-$v 24 0.2
+      print "look square-$v-end"
+    } > $OUT/square-$v.play
+    if [ $v = before ]; then play square-$v 360 --crowd=off; else play square-$v 360; fi
+    clip $OUT/square-$v square-clip-$v 5
+  done
 fi
 
 # 2b. The castle (89de30e6, 9228f28c, a0bd512b; --castle-life=on --walls=stone): the seat's kit castle with its

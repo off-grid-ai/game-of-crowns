@@ -146,6 +146,32 @@
    "clip": "towns/carts-clip.mp4"
   },
   {
+   "id": "b7-square-before",
+   "name": "Kingsmere's square, before",
+   "what": "The crown's market without the square's life (--crowd=off): stalls, buyers and porters only",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "square-before/square-before.png",
+   "clip": "square-before/square-clip-before.mp4"
+  },
+  {
+   "id": "b7-square-after",
+   "name": "Kingsmere's square, after",
+   "what": "The square alive: a crier and his listeners, beggars at the church step, the guard's patrol round its edge, dogs, children chasing, knots of gossip",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "square-after/square-after.png",
+   "clip": "square-after/square-clip-after.mp4"
+  },
+  {
+   "id": "b7-square-street-after",
+   "name": "Kingsmere's square, street level",
+   "what": "The fuller square from the street (d4.5)",
+   "ref": "town-a",
+   "card": "W3",
+   "still": "square-after/square-street-after.png"
+  },
+  {
    "id": "b7-castle",
    "name": "The castle",
    "what": "The seat's castle: keep, curtain walls and towers, the lord's banners on every tower, the gatehouse",
