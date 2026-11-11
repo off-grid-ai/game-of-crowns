@@ -121,6 +121,14 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 00:45 (11-12) Mac on the live breach frame: "I can barely see anything" and "be smart about the gameplay, you are
+  an expert game creator + designer". Calls: near blur off for good; the camera never inside or behind a building
+  (Anno/AoE IV); no orange wash at town zoom; film snaps close panels; pink untextured blocks fixed (army-ui).
+  Breach staged where the line of sight is open (fire-siege). Agents: a designer's gameplay review played on a
+  private bridge (docs/review/gameplay-review.md) and a full batch 7 judge (docs/review/batch7-review.md); their
+  top items become the next jobs. Kit survey: no free kit reaches the painted look; KayKit animations are the one
+  free win (works-life baking). Meshy: all CC0, downloads need Mac's paid login (waits for Mac); its painted
+  building set is the strongest lead for landmarks.
 - 00:50 (11-12) Mac asleep: "work autonomously and get this through… explicit go ahead to do whatever it takes."
   No questions to Mac overnight; calls are taken and logged here. Mac had to click a ChatGPT download for the
   concept agent: from now every worker runs headless only. Order of the night: batch 7 ends -> judge all shots
