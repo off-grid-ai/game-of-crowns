@@ -22,12 +22,16 @@
   "card_shift": 0.14
  },
  "clarity": {
-  "_": "The player always sees clearly what he looks at (Mac, 2026-11-12: 'I can barely see anything'; Age of Empires IV and Anno 1800 town cameras: no near blur, the lens never in or behind a building, a crisp foreground). on (or --clarity=on; --clarity=old for the before shot): the lens first tips up, liftStep degrees at a time up to liftTries times (never past the steepest pitch), until its line to what it looks at clears the roofs, eased at liftEase a second; then, if still blocked, it comes in short of the building at any distance; and what stands at the lens dissolves only within fade.gone..fade.solid (game units), instead of near_fade's wider ghosting.",
+  "_": "The player always sees clearly what he looks at (Mac, 2026-11-12: 'I can barely see anything'; Age of Empires IV and Anno 1800 town cameras: no near blur, the lens never in or behind a building, a crisp foreground). on (or --clarity=on; --clarity=old for the before shot): the pitch is the player's or the step's; a roof in the line, the view first swings swingStep degrees either way, up to swingTries steps, to a clear line; failing that it lifts liftStep degrees at a time, at most liftTries steps and never past maxPitch degrees down (batch 8: an unlimited lift made every town shot top-down); then it comes in short of the roof, but never nearer than nearest of its distance (batch 8: d14 collapsed to 6); all eased at liftEase a second; and what stands at the lens dissolves only within fade.gone..fade.solid (game units), instead of near_fade's wider ghosting.",
   "on": true,
-  "liftStep": 2.5,
-  "liftTries": 14,
+  "swingStep": 4.0,
+  "swingTries": 6,
+  "liftStep": 2.0,
+  "liftTries": 3,
+  "maxPitch": 40.0,
+  "nearest": 0.75,
   "liftEase": 4.0,
-  "fade": { "gone": 0.25, "solid": 0.45 }
+  "fade": { "gone": 0.5, "solid": 1.0 }
  },
  "near_fade": {
   "buildings": {

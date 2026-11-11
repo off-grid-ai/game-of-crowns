@@ -537,9 +537,9 @@ func _frame_city(title: String, dist: float) -> void:
 		if String(c.get("title", c.get("name", ""))) == title:
 			# A cut, from the side the one framing rule picks (camera_rig.go_to): nothing tall in front.
 			var at: Vector3 = main.terrain.world_pos(float(c["x"]), float(c["y"]))
-			if dist < main.rig.min_distance:
-				_note("  city %s: %.1f is under the camera's floor (camera.json floor %.1f): framed at the floor" % [title, dist, main.rig.min_distance])
-			main.rig.snap(at, dist, main.rig.sight_yaw(at, maxf(dist, main.rig.min_distance), 0.6))
+			# The step's own distance, honoured even under the player's floor (batch 8: d2 at street height came out d6).
+			main.rig.step_floor = maxf(1.5, dist) if dist < main.rig.min_distance else 0.0
+			main.rig.snap(at, dist, main.rig.sight_yaw(at, maxf(dist, main.rig.floor_now()), 0.6))
 			return
 
 
@@ -558,6 +558,7 @@ func _from_outside(at: Vector3, town: Vector3, dist: float, tilt: float) -> void
 
 ## The camera low and oblique over a place: never top-down (a tilt below 0 looks further out).
 func _oblique(at: Vector3, dist: float, tilt: float) -> void:
+	main.rig.step_floor = maxf(1.5, dist) if dist < main.rig.min_distance else 0.0  # the step's own distance
 	main.rig.snap(at, dist, 0.6)
 	main.rig.tilt = clampf(tilt, -40.0, 30.0)
 	main.rig.goal_tilt = main.rig.tilt

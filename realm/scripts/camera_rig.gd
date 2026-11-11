@@ -230,7 +230,7 @@ func _blocked(a: Vector3, b: Vector3) -> bool:
 
 
 func snap(pos: Vector3, dist: float, y := 0.0) -> void:
-	dist = maxf(dist, min_distance)  # nobody brings the lens under the roofs
+	dist = maxf(dist, floor_now())  # nobody brings the lens under the roofs (a film step may ask for its own distance)
 	_hit = -1.0
 	_look_y = _floor_at(pos)  # a cut: the aim starts where it is, not eased in from the last place
 	target = pos
@@ -390,7 +390,28 @@ const NEAREST := 0.35  # the lens comes in no closer than this share of its dist
 const STEEPEST := 58.0  # degrees below the horizon the lens may ever look
 const GUARD := 4.5  # camera distance under which the lens looks out for buildings
 static var CLEAR: bool = clarity()  # read once: the lens keeps its sight over the roofs
-var _lift := 0.0  # radians the lens is tipped up to see over the roofs (eased)
+var _lift := 0.0  # radians the lens is tipped up to see over the roofs (eased; a last resort, a few degrees)
+var _swing := 0.0  # radians the view is swung about what it looks at to find a clear line (eased)
+## A film step's own distance under the floor (autoplay asks for d2 at street height): 0 for none, the floor holds.
+var step_floor := 0.0
+
+
+## The nearest the lens may come now: the floor, or a film step's own distance under it.
+func floor_now() -> float:
+	return minf(min_distance, step_floor) if step_floor > 0.0 else min_distance
+
+
+## Whether the lens at `pos` sees `look` with no building in the line.
+func _sees(look: Vector3, pos: Vector3) -> bool:
+	return _clear(look, pos).distance_squared_to(pos) < 0.0001
+
+
+## The lens at `pos` swung about what it looks at by `turn` radians (its height and arm kept).
+func _swung(look: Vector3, pos: Vector3, turn: float) -> Vector3:
+	if absf(turn) < 0.00001:
+		return pos
+	var arm := pos - look
+	return look + Vector3(arm.x * cos(turn) + arm.z * sin(turn), arm.y, -arm.x * sin(turn) + arm.z * cos(turn))
 
 
 ## The lens at `pos` tipped up about what it looks at by `up` radians, its arm's length kept, never steeper than STEEPEST.
@@ -399,7 +420,8 @@ func _tipped(look: Vector3, pos: Vector3, up: float) -> Vector3:
 		return pos
 	var arm := pos - look
 	var flat := Vector2(arm.x, arm.z)
-	var pitch := minf(atan2(arm.y, flat.length()) + up, deg_to_rad(STEEPEST))
+	var now := atan2(arm.y, flat.length())
+	var pitch := maxf(now, minf(now + up, deg_to_rad(knob("clarity.maxPitch", 40.0))))  # never lifted past the oblique band
 	var dir := flat.normalized() if flat.length() > 0.0001 else Vector2(0, 1)
 	var l := arm.length()
 	return look + Vector3(dir.x * cos(pitch) * l, sin(pitch) * l, dir.y * cos(pitch) * l)
@@ -565,7 +587,7 @@ func _process(delta: float) -> void:
 	# Zooming in, the eye comes down no faster than the lens can clear the roofs:
 	# while it is still catching up on one, the zoom waits for it.
 	var kd := k * (clampf(1.0 - _lag / (distance * 0.3), 0.15, 1.0) if goal_distance < distance else 1.0)
-	goal_distance = maxf(goal_distance, min_distance)  # whoever set it (a scene, a film, the director): never under the roofs
+	goal_distance = maxf(goal_distance, floor_now())  # whoever set it (a scene, a film, the director): never under the roofs
 	distance = exp(lerpf(log(distance), log(goal_distance), kd))
 	yaw = lerp_angle(yaw, goal_yaw, k)
 	tilt = lerpf(tilt, goal_tilt, k)
@@ -658,18 +680,41 @@ func apply() -> void:
 	if over > -INF:
 		need.y = maxf(need.y, over + 0.05 - pos.y)
 	if CLEAR:
-		# Clarity: first the lens tips up until its line to what it looks at clears the roofs (Anno 1800, Age of
-		# Empires IV), eased; only if that isn't enough does it come in short of the building, at any distance.
-		var want := 0.0
-		var lstep := deg_to_rad(knob("clarity.liftStep", 2.5))
-		for k in int(knob("clarity.liftTries", 14)):
-			var tipped := _tipped(look, pos + need, want)
-			if _clear(look, tipped).distance_squared_to(tipped) < 0.0001:
-				break
-			want += lstep
-		_lift = lerpf(_lift, want, 1.0 - exp(-get_process_delta_time() * knob("clarity.liftEase", 4.0)))
-		var lifted := _tipped(look, pos + need, _lift)
-		need = _clear(look, lifted) - pos
+		# Clarity, as Anno 1800, Age of Empires IV and Total War keep a town in view: the pitch is the player's (or
+		# the step's). A roof in the line: first the view swings a little either way to a clear line; failing
+		# that, a few degrees of lift, never past clarity.maxPitch; then the lens comes in short of the roof, but
+		# never nearer than clarity.nearest of its distance; whatever still stands there dissolves at the lens
+		# (clarity.fade, per roof). All eased, so the view never jumps.
+		var base := pos + need
+		var want_swing := 0.0
+		var want_lift := 0.0
+		if not _sees(look, base):
+			var sstep := deg_to_rad(knob("clarity.swingStep", 4.0))
+			var found := false
+			for k in range(1, int(knob("clarity.swingTries", 6)) + 1):
+				for sgn in [1.0, -1.0]:
+					if _sees(look, _swung(look, base, sstep * k * sgn)):
+						want_swing = sstep * k * sgn
+						found = true
+						break
+				if found:
+					break
+			if not found:
+				var lstep := deg_to_rad(knob("clarity.liftStep", 2.0))
+				for k in range(1, int(knob("clarity.liftTries", 3)) + 1):
+					want_lift = lstep * k
+					if _sees(look, _tipped(look, base, want_lift)):
+						break
+		var ease := 1.0 - exp(-get_process_delta_time() * knob("clarity.liftEase", 4.0))
+		_swing = lerpf(_swing, want_swing, ease)
+		_lift = lerpf(_lift, want_lift, ease)
+		var seen := _tipped(look, _swung(look, base, _swing), _lift)
+		var arm := seen - look
+		var short := _clear(look, seen) - look
+		var least := arm.length() * knob("clarity.nearest", 0.75)
+		if short.length() < least:
+			short = arm.normalized() * least  # no nearer: what still stands there dissolves at the lens
+		need = look + short - pos
 	elif distance <= GUARD:
 		# Faded in over the last unit before GUARD, so it never starts or stops at a line.
 		var guard := 1.0 - smoothstep(GUARD - 1.0, GUARD, distance)
