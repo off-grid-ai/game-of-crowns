@@ -486,6 +486,10 @@ func _ready() -> void:
 	# Chimney smoke only where someone's home (hearths.gd; knobs in data/hearths.json).
 	if not OS.get_cmdline_user_args().has("--hearths=off"):
 		add_child(load("res://scripts/hearths.gd").new(self))
+	# The army spike (a test aid, --army-spike=<men>; tools/army_spike.gd): regiments of VAT soldiers by Kingsmere.
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--army-spike="):
+			add_child(load("res://tools/army_spike.gd").new(self, int(a.substr(13))))
 	# The opening's clock (a test aid, GOC_OPENING_CLOCK=<file>): the first ten minutes, timed.
 	if OS.get_environment("GOC_OPENING_CLOCK") != "":
 		add_child(load("res://tools/opening_clock.gd").new(self))

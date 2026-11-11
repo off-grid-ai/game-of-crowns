@@ -1,0 +1,66 @@
+[
+ {
+  "name": "Idle",
+  "startFrame": 0,
+  "endFrame": 25,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Walking_A",
+  "startFrame": 26,
+  "endFrame": 51,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Running_A",
+  "startFrame": 52,
+  "endFrame": 71,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "1H_Melee_Attack_Chop",
+  "startFrame": 72,
+  "endFrame": 97,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "1H_Melee_Attack_Slice_Diagonal",
+  "startFrame": 98,
+  "endFrame": 122,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Block",
+  "startFrame": 123,
+  "endFrame": 148,
+  "isLooping": true,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Hit_A",
+  "startFrame": 149,
+  "endFrame": 165,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
+  "name": "Death_A",
+  "startFrame": 166,
+  "endFrame": 185,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ }
+]
