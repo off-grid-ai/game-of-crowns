@@ -1,0 +1,462 @@
+{
+ "_": "Review v16: batch 8's shots, each beside its reference from docs/art/target (copied to screens/ref). docs/review/batch8.sh makes the frames (paths under its OUT folder); docs/review/v16_apply.py turns each into a screen on the review page with two versions: the target, then ours. The b8- shots repeat batch 7's where batch 7 started before they landed (v15 has their first take, if any), and add the town look round 2 and the centrepiece at a grief and a feast. 'needs' names the harness step that frames the shot.",
+ "group": "Batch 8 beside the target",
+ "label": "Batch 8",
+ "switches": "--look=one --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on",
+ "shots": [
+  {
+   "id": "b8-goldrock-rings",
+   "name": "Goldrock's ring streets",
+   "what": "Goldrock from higher (d14): two ring streets round its square and packed plots, a town not a village",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "look2/goldrock-rings.png"
+  },
+  {
+   "id": "b8-goldrock-plots",
+   "name": "Goldrock's plots",
+   "what": "Goldrock at d6: narrow plots shoulder to shoulder along its streets",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "look2/goldrock-plots.png"
+  },
+  {
+   "id": "b8-kingsmere-stalls",
+   "name": "The crown's market rows",
+   "what": "Kingsmere's stalls in rows facing the square's heart, awnings of many colours, goods heaped at their ends",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "look2/kingsmere-stalls.png"
+  },
+  {
+   "id": "b8-goldrock-stalls",
+   "name": "A seat's market rows",
+   "what": "Goldrock's stalls in rows facing its fountain",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "look2/goldrock-stalls.png"
+  },
+  {
+   "id": "b8-kingsmere-statue",
+   "name": "The King on his column",
+   "what": "The crown's square's centrepiece close: the King standing on the brick column in the fountain's basin",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "look2/kingsmere-statue.png"
+  },
+  {
+   "id": "b8-goldrock-fountain",
+   "name": "A seat's fountain",
+   "what": "Goldrock's fountain close: the round basin, the column and its urn",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "look2/goldrock-fountain.png"
+  },
+  {
+   "id": "b8-kingsmere-lanes",
+   "name": "Earth lanes",
+   "what": "Kingsmere's back lanes as trodden earth worn into the grass, the main streets cobbled or rutted",
+   "ref": "town-a",
+   "card": "W3",
+   "still": "look2/kingsmere-lanes.png"
+  },
+  {
+   "id": "b8-goldrock-lanes",
+   "name": "Goldrock's lanes",
+   "what": "Goldrock's back lanes, earth with soft edges",
+   "ref": "town-a",
+   "card": "W3",
+   "still": "look2/goldrock-lanes.png"
+  },
+  {
+   "id": "b8-orchards",
+   "name": "Orchards at the edge",
+   "what": "Blocks of fruit trees in rows just past Kingsmere's edge, square to a road out",
+   "ref": "town-b",
+   "card": "W2",
+   "still": "look2/kingsmere-orchards.png"
+  },
+  {
+   "id": "b8-mill-wheat",
+   "name": "Wheat by the windmill",
+   "what": "Wheat fields laid round Goldrock's windmill outside the edge",
+   "ref": "town-b",
+   "card": "W2",
+   "still": "look2/mill-wheat.png",
+   "needs": "work"
+  },
+  {
+   "id": "b8-yards",
+   "name": "Washing in the yards",
+   "what": "Kingsmere's yards from above: washing lines with white, blue-grey, rose and ochre hangings in about one yard in four",
+   "ref": "town-a",
+   "card": "W3",
+   "still": "look2/kingsmere-yards.png"
+  },
+  {
+   "id": "b8-street-height",
+   "name": "Houses beside people",
+   "what": "Street level at Kingsmere: a two-storey house about 8-9 m to the ridge beside 1.7 m townsfolk",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "look2/street-height.png"
+  },
+  {
+   "id": "b8-goldrock-street-height",
+   "name": "Goldrock's street",
+   "what": "Street level at Goldrock: house heights beside the townsfolk",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "look2/goldrock-street-height.png"
+  },
+  {
+   "id": "b8-centre-grief",
+   "name": "Grief at the statue",
+   "what": "Mourners kneeling and candles set round the basin's rim, none in the water",
+   "ref": "07-unrest",
+   "card": "O10",
+   "still": "centre/centre-grief.png"
+  },
+  {
+   "id": "b8-centre-feast",
+   "name": "A feast by the statue",
+   "what": "The bonfire off the heart on the seen side, the dancers and tables round it, the bunting's pole clear of the basin",
+   "ref": "05-court",
+   "card": "O10",
+   "still": "centre/centre-feast.png"
+  },
+  {
+   "id": "b8-centre-feast-wide",
+   "name": "The feast, wide",
+   "what": "The square at feast: statue, bonfire, tables and bunting together",
+   "ref": "05-court",
+   "card": "O10",
+   "still": "centre/centre-feast-wide.png"
+  },
+  {
+   "id": "b8-square-before",
+   "name": "Kingsmere's square, before",
+   "what": "The crown's market without the square's life (--crowd=off): stalls, buyers and porters only",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "square-before/square-before.png",
+   "clip": "square-before/square-clip-before.mp4"
+  },
+  {
+   "id": "b8-square-after",
+   "name": "Kingsmere's square, after",
+   "what": "The square alive: a crier and his listeners, beggars at the church step, the guard's patrol round its edge, dogs, children chasing, knots of gossip",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "square-after/square-after.png",
+   "clip": "square-after/square-clip-after.mp4"
+  },
+  {
+   "id": "b8-square-street-after",
+   "name": "Kingsmere's square, street level",
+   "what": "The fuller square from the street (d4.5)",
+   "ref": "town-a",
+   "card": "W3",
+   "still": "square-after/square-street-after.png"
+  },
+  {
+   "id": "b8-castle",
+   "name": "The castle",
+   "what": "The seat's castle: keep, curtain walls and towers, the lord's banners on every tower, the gatehouse",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "castle/castle.png",
+   "needs": "castle"
+  },
+  {
+   "id": "b8-castle-walls",
+   "name": "Guards on the walls",
+   "what": "Guards in the lord's colours walking the wall walks, turning at the towers to look out",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "castle/castle-walls.png",
+   "clip": "castle/guards-clip.mp4",
+   "needs": "castle"
+  },
+  {
+   "id": "b8-castle-gate",
+   "name": "The castle gate",
+   "what": "The gatehouse: arch, portcullis half raised, leaves open, banners either side",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "castle/castle-gate.png",
+   "needs": "castle"
+  },
+  {
+   "id": "b8-castle-breached",
+   "name": "The castle breached",
+   "what": "The castle's stone curtains under the town's wall wear: cracked, crumbling, open to the ground with rubble",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "castle/castle-breached.png",
+   "needs": "castle"
+  },
+  {
+   "id": "b8-army-arms",
+   "name": "House arms on the men",
+   "what": "Close on the line (d3): the crown's arms on each man's chest and a roundel on his shield, steel elsewhere",
+   "ref": "03-army",
+   "card": "O2",
+   "still": "army-arms-d3.png"
+  },
+  {
+   "id": "b8-battle-1",
+   "name": "Two lines formed",
+   "what": "Two hosts facing in line, crown colours against a house's, banners and standards",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "battle/battle-1-lines-formed.png"
+  },
+  {
+   "id": "b8-battle-2",
+   "name": "The volleys",
+   "what": "Arrows arcing between the lines, men falling under them",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "battle/battle-2-volleys.png"
+  },
+  {
+   "id": "b8-battle-3",
+   "name": "The fronts meet",
+   "what": "The fronts at sword's length along their whole length, not a blob; cuts and reels",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "battle/battle-3-fronts-meet.png"
+  },
+  {
+   "id": "b8-battle-4",
+   "name": "Horse on the flank",
+   "what": "Cavalry going in on the end of the enemy line",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "battle/battle-4-flank.png"
+  },
+  {
+   "id": "b8-battle-5",
+   "name": "The rout",
+   "what": "Beaten banners wavering, regiments running, the fallen left behind",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "battle/battle-5-waver-rout.png"
+  },
+  {
+   "id": "b8-battle-6",
+   "name": "The field held",
+   "what": "The victors at ease on the field",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "battle/battle-6-field-held.png"
+  },
+  {
+   "id": "b8-battle-close",
+   "name": "Men at blows",
+   "what": "The fight close (d4): pairs at sword's length, cuts, parries and reels",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "battle-close/battle-close.png",
+   "clip": "battle-close/battle-clip.mp4"
+  },
+  {
+   "id": "b8-battle-in-play",
+   "name": "A battle in play",
+   "what": "A battle the realm fought, staged where the bridge reported it: both sides in their houses' colours, the beaten one breaking (only if this reign has had one; else the latest news)",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "battle-play/battle-in-play.png"
+  },
+  {
+   "id": "b8-host-selected",
+   "name": "A host selected",
+   "what": "A click on the host's standard: the gold ring under it, its banner lit, the command card over the minimap",
+   "ref": "03-army",
+   "card": "O2",
+   "still": "hosts/host-selected.png",
+   "needs": "host"
+  },
+  {
+   "id": "b8-host-route",
+   "name": "A host's march",
+   "what": "The host ordered to march on a town: its dotted route across the land",
+   "ref": "02-realm",
+   "card": "O2",
+   "still": "hosts/host-route.png",
+   "needs": "host"
+  },
+  {
+   "id": "b8-host-march",
+   "name": "Ordering a march",
+   "what": "March chosen on the card and a click on the land: the route to it drawn",
+   "ref": "02-realm",
+   "card": "O2",
+   "still": "hosts/host-march-click.png",
+   "needs": "host"
+  },
+  {
+   "id": "b8-field-plough",
+   "name": "Ploughing",
+   "what": "Spring: an ox team drawing the plough along the furrows, the ploughman behind",
+   "ref": "town-b",
+   "card": "W2",
+   "still": "fields/field-plough.png",
+   "clip": "fields/plough-clip.mp4",
+   "needs": "field"
+  },
+  {
+   "id": "b8-field-sow",
+   "name": "Sowing",
+   "what": "Spring: sowers casting seed from the hip across the turned field",
+   "ref": "town-b",
+   "card": "W2",
+   "still": "fields/field-sow.png",
+   "needs": "field"
+  },
+  {
+   "id": "b8-field-weed",
+   "name": "Weeding",
+   "what": "Summer: the green rows weeded, hoed and watered",
+   "ref": "town-b",
+   "card": "W2",
+   "still": "fields/field-weed.png",
+   "needs": "field"
+  },
+  {
+   "id": "b8-field-reap",
+   "name": "The harvest",
+   "what": "Autumn: reapers cutting the gold, binders standing the sheaves in stooks",
+   "ref": "town-b",
+   "card": "W2",
+   "still": "fields/field-reap.png",
+   "clip": "fields/reap-clip.mp4",
+   "needs": "field"
+  },
+  {
+   "id": "b8-field-glean",
+   "name": "Gleaning",
+   "what": "Late autumn: the stubble gleaned, the stooks carted off",
+   "ref": "town-b",
+   "card": "W2",
+   "still": "fields/field-glean.png",
+   "needs": "field"
+  },
+  {
+   "id": "b8-fields-wide",
+   "name": "The fields round the seat",
+   "what": "The seat's fields in summer from higher: work in several at once",
+   "ref": "02-realm",
+   "card": "W2",
+   "still": "fields/fields-wide.png"
+  },
+  {
+   "id": "b8-flock",
+   "name": "A flock on the fallow",
+   "what": "A shepherd with 5-8 sheep grazing a fallow field, moving on to the next",
+   "ref": "town-b",
+   "card": "W2",
+   "still": "fields/flock.png",
+   "needs": "flock",
+   "clip": "fields/flock-clip.mp4"
+  },
+  {
+   "id": "b8-rain-close",
+   "name": "Kingsmere in the rain",
+   "what": "Rain on the seat: roofs darker and glinting, puddles on the square, half its people gone in; banners and grass leaning the way the smoke goes",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "rain/rain-close.png",
+   "clip": "rain/rain-clip.mp4"
+  },
+  {
+   "id": "b8-rain-square",
+   "name": "The square in the rain",
+   "what": "Puddles round the square, mud on the road in, the wet cobbles",
+   "ref": "town-a",
+   "card": "W3",
+   "still": "rain/rain-square.png"
+  },
+  {
+   "id": "b8-rain-town",
+   "name": "The town in the rain",
+   "what": "The whole town wet under a grey sky",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "rain/rain-town.png"
+  },
+  {
+   "id": "b8-snow-close",
+   "name": "Kingsmere in winter",
+   "what": "Snow lying in patches on the roofs and on the ground, flakes falling",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "snow/snow-close.png"
+  },
+  {
+   "id": "b8-snow-town",
+   "name": "The town in winter",
+   "what": "The whole town under snow",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "snow/snow-town.png"
+  },
+  {
+   "id": "b8-night-road",
+   "name": "The road at night",
+   "what": "The road out of Kingsmere by night: only a torchlit patrol or a messenger",
+   "ref": "06-inn",
+   "card": "W3",
+   "still": "night/night-road.png"
+  },
+  {
+   "id": "b8-night-castle-gate",
+   "name": "The castle gate at night",
+   "what": "The gate's two torches lit, a warm light on the stone",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "night/night-castle-gate.png",
+   "needs": "castle"
+  }
+ ],
+ "needed": [],
+ "steps": [
+  {
+   "step": "site <kind> [n] [dist] [tilt]",
+   "what": "Frames the n-th roadside site of a kind, from the crown's seat outward (autoplay.gd; roadside.gd sites()). play.log says where it stood, or that none of that kind stands."
+  },
+  {
+   "step": "work <Town> <trade> [dist] [tilt]",
+   "what": "Frames a trade's building in a town from the town root's works (autoplay.gd; works.gd find). play.log says where, or which trades the town has."
+  },
+  {
+   "step": "breach [dist] [tilt]",
+   "what": "Frames the first open breach in a stone wall near the staged siege's front, low and oblique (the siege's front if none is open yet; autoplay.gd)."
+  },
+  {
+   "step": "host [n] [dist] [tilt]",
+   "what": "Frames the King's n-th host and clicks its standard (autoplay.gd; host_command.gd, --hosts=on). play.log says how many hosts stand."
+  },
+  {
+   "step": "camp [dist] [tilt]",
+   "what": "Frames the besiegers' camp from over its tents toward the town (autoplay.gd; siege_camp.gd, --camp=on or --wall-demo)."
+  },
+  {
+   "step": "engine [n] [dist] [tilt]",
+   "what": "Frames the n-th siege engine low and oblique (autoplay.gd; group siege_engines)."
+  },
+  {
+   "step": "field season t [n] [dist] [tilt]",
+   "what": "Holds the fields' year at a season and how far through it, and frames the n-th sown field from the crown's seat (autoplay.gd; works-life's countryside.gd hold_season)."
+  },
+  {
+   "step": "flock [n] [dist] [tilt]",
+   "what": "Frames the n-th fallow field, where a shepherd's flock grazes (autoplay.gd)."
+  },
+  {
+   "step": "castle Town [dist] [tilt] [gate]",
+   "what": "Frames the town's castle low and oblique, or its gatehouse (autoplay.gd)."
+  }
+ ]
+}
