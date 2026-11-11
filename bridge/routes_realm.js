@@ -39,7 +39,10 @@ export async function realmMap(ctx, req, res, url) {
 export async function chronicle(ctx, req, res, url) {
   const { inCrowns } = ctx;
   const since = Number(url.searchParams.get("since") || 0);
-  return json(res, 200, inCrowns(ctx.chronicle.filter((e) => e.seq > since).slice(-200)));
+  // The reign's own chronicle, from the crowning: the realm's history before it is not his to read
+  // through (gameplay review #9; ?all=1 for the whole of it).
+  const from = url.searchParams.get("all") === "1" ? -Infinity : (ctx.meta?.crownedAt ?? ctx.meta?.ambitionsFrom?.turn ?? -Infinity);
+  return json(res, 200, inCrowns(ctx.chronicle.filter((e) => e.seq > since && (e.turn ?? 0) >= from).slice(-200)));
 }
 
 export async function ledger(ctx, req, res, url) {

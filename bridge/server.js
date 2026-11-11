@@ -287,6 +287,13 @@ function writeRecord(entry) {
   if (entry.text && recent.some((e) => e.text === entry.text && (entry.turn ?? 0) - (e.turn ?? 0) <= 4)) return;
   entry.seq = chronicle.length ? chronicle[chronicle.length - 1].seq + 1 : 1;
   entry.at = Date.now();
+  // Whether the line touches the crown (the ticker shows other houses' news only in the drawer;
+  // realm/data/ticker.json): a royal or sworn town, or the King, the crown or Kingsmere named.
+  if (entry.crown == null) {
+    const town = entry.city != null ? world?.cities?.find((c) => c.id === Number(entry.city)) : null;
+    const owner = town ? world.players.find((p) => p.id === town.owner) : null;
+    entry.crown = !!(owner && (houseFor(owner).crown || sworn(owner.id))) || /\b(King|King's|crown|Crown|Kingsmere|royal)\b/.test(String(entry.text ?? ""));
+  }
   chronicle.push(entry);
   fs.appendFileSync(path.join(P.state, "chronicle.jsonl"), JSON.stringify(entry) + "\n");
   minds?.perceive(entry);
@@ -365,6 +372,7 @@ function applyStartOptions() {
   const o = meta.options;
   if (!o || meta.optionsApplied || !world) return;
   meta.optionsApplied = true;
+  meta.crownedAt ??= world.turn;  // the reign's chronicle begins here (routes_realm.js chronicle)
   chron.saveMeta(meta);
   const lua = [];
   const who = (id) => `for q in players_iterate() do if q.id == ${id} then`;

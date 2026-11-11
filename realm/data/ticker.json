@@ -1,0 +1,6 @@
+{
+ "_": "What the chronicle's ticker shows (chronicle_panel.gd; CK3 and Total War filter the feed to your realm, Anno 1800 ranks and hides the low ones; gameplay review #9: 9 to 15 lines a season, most of them other houses' business). always: kinds that are the King's own business, shown whatever they touch. ifCrown: kinds shown only when the line touches the crown (the bridge marks it: a royal or sworn town, or the King, the crown or Kingsmere named). Every other line goes to the chronicle drawer only. on: false brings back the old ticker (every line).",
+ "on": true,
+ "always": ["decree", "court", "rebellion", "reign_end", "act", "ambition", "aim", "name", "crown", "betrayal", "council", "sack", "levy", "ladder", "threat", "decreed"],
+ "ifCrown": ["unrest", "battle", "siege", "raid", "death", "arc", "city_transferred", "city_destroyed", "city_shrank", "building_lost", "disaster", "famine", "plague", "marriage", "peace", "succession", "civil_war", "revenge", "scheme", "event"]
+}

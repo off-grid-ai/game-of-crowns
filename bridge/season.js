@@ -111,7 +111,9 @@ export function turnHouses(ctx, turn) {
     // rising itself, not a fresh ultimatum: the banners gather at the house's seat,
     // seen on the map, and the host marches in two seasons unless the King wins
     // the house back first (the judge: a threat you can ignore for free is no threat).
-    if (t.state === "refused" && t.march == null && favourOf(p.id) < BANDS.cooling) {
+    // (Not while its host already marches on Kingsmere: the banners gathered once; gameplay review #9.)
+    const marching = stakes?.s?.usurper?.stage === "march" && stakes.s.usurper.house === p.id;
+    if (t.state === "refused" && t.march == null && !marching && favourOf(p.id) < BANDS.cooling) {
       t.march = 8;
       t.riseAt = turn + RISE_IN;
       const seat = world.cities.find((c) => c.owner === p.id && c.capital) ?? world.cities.find((c) => c.owner === p.id);

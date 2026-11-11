@@ -86,11 +86,28 @@ func add_chronicle(entries: Array) -> void:
 		elif e.has("city") and e["city"] != null:
 			text = "[url=%d]%s[/url]" % [int(e["city"]), text]
 		_lines.push_front("[font_size=11][color=#6f6f6c]%s[/color][/font_size]   %s" % [ui.season_of(int(e.get("turn", 0))), text])
-		if kind != "year":
+		if kind != "year" and _ticks(e):
 			_tick(e, loss)
 	if _lines.size() > 300:
 		_lines.resize(300)
 	_chronicle.text = "\n\n".join(_lines)
+
+
+static var _ticker_rules = null
+
+
+## Whether a line is the King's own business, for the ticker (data/ticker.json): its kind is always
+## his, or it touches the crown (the bridge's crown mark). The rest stays in the drawer.
+static func _ticks(e: Dictionary) -> bool:
+	if _ticker_rules == null:
+		var f := FileAccess.open("res://data/ticker.json", FileAccess.READ)
+		var j = JSON.parse_string(f.get_as_text()) if f else null
+		_ticker_rules = j if j is Dictionary else {}
+	var r: Dictionary = _ticker_rules
+	if not bool(r.get("on", false)):
+		return true
+	var kind := String(e.get("kind", ""))
+	return kind in (r.get("always", []) as Array) or (bool(e.get("crown", false)) and kind in (r.get("ifCrown", []) as Array))
 
 
 func _tick(e: Dictionary, loss: bool) -> void:
