@@ -1,0 +1,13 @@
+{
+ "_": "The herald (news_chips.gd; Theme Hospital's announcer, Stronghold's scribe): one notice on screen at a time, the rest wait their turn in order instead of being written over, and the plain refusals get a dry voice. on: the switch (or --herald=on). queue: notices kept waiting at most (the oldest goes). min_read: seconds a notice stays before the next may take its place. voices: a notice that starts with 'starts' gets one of 'say' in place of that start (the rest of the line kept); 'whole' replaces the whole line.",
+ "on": false,
+ "queue": 3,
+ "min_read": 3.0,
+ "voices": [
+  {"starts": "The crown cannot: ", "say": ["The treasurer coughs: ", "The steward winces: ", "The exchequer begs to differ: ", "A clerk whispers that it can't be done: ", "The Hand, very quietly: "]},
+  {"starts": "That petitioner has already gone.", "whole": ["That petitioner has already gone. The bench is still warm.", "Gone. Petitioners are like that.", "The petitioner left. Something about the wait."]},
+  {"starts": "First choose a town", "whole": ["Which town, Majesty? The map is right there.", "A town first, Majesty. Any town. Click one.", "The herald needs a town to shout at. Pick one on the map."]},
+  {"starts": "The doors of the court close", "whole": ["The doors of the court close, and the realm moves again.", "Court is done. The lords file out, the realm carries on.", "The doors close. Somewhere a steward exhales."]},
+  {"starts": "The realm hears your will", "whole": ["The realm hears your will…", "The heralds run. The realm hears your will…", "Your word goes out, Majesty…"]}
+ ]
+}

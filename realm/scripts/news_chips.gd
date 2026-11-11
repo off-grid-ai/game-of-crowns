@@ -7,10 +7,12 @@ extends RefCounted
 
 const T := preload("res://scripts/theme.gd")
 const UI := preload("res://scripts/ui.gd")
+const Herald := preload("res://scripts/herald.gd")  # one notice at a time, in order, with a dry voice (data/herald.json)
 
 var ui: UI  # the interface that owns these notices: its signals, its building blocks, its cards
 
 var _toast_waiting := ""  # a toast held while another voice speaks
+var _herald: Array[String] = []  # the herald's notices waiting their turn, oldest first (herald.json)
 
 var _toast: Label
 var _toast_box: PanelContainer  # the card the notice sits on
@@ -74,6 +76,10 @@ func _place_notices(delta: float) -> void:
 		_offer.modulate.a = clampf(_offer_left, 0.0, 1.0)
 		if _offer_left <= 0.0:
 			_offer.visible = false
+	# The herald's next notice, once the one up has been read and no other voice speaks.
+	if not _herald.is_empty() and (_toast_time <= 0.0 or 7.0 - _toast_time >= Herald.knob("min_read", 3.0)) \
+			and not (_offer and is_instance_valid(_offer) and _offer.visible and _offer_left > 0.5) and not (_edge and _edge.visible):
+		_say(_herald.pop_front())
 	# A toast that waited for the other voice speaks once it's clear.
 	if _toast_waiting != "" and not (_offer and is_instance_valid(_offer) and _offer.visible and _offer_left > 0.5) and not (_edge and _edge.visible):
 		var w := _toast_waiting
@@ -241,6 +247,20 @@ func edge_arrow(at, angle: float, text: String, tone: String, fresh: bool) -> vo
 func toast(text: String) -> void:
 	if text.strip_edges() == "":
 		return  # nothing to say: no empty card
+	if Herald.on():
+		# The herald: in its voice, in order, one at a time; the same notice twice is said once.
+		var said := Herald.voice(text)
+		if _herald.has(said) or (_toast_time > 0.0 and _toast.text == said):
+			return
+		_herald.append(said)
+		while _herald.size() > int(Herald.knob("queue", 3)):
+			_herald.pop_front()
+		return
+	_say(text)
+
+
+## A notice on the card now (or held while another voice speaks).
+func _say(text: String) -> void:
 	# One voice at a time: while a Watch card or a news arrow is speaking, this waits its turn.
 	if (_offer and is_instance_valid(_offer) and _offer.visible and _offer_left > 0.5) or (_edge and _edge.visible):
 		_toast_waiting = text
