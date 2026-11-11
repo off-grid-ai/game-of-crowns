@@ -401,9 +401,34 @@ func floor_now() -> float:
 	return minf(min_distance, step_floor) if step_floor > 0.0 else min_distance
 
 
-## Whether the lens at `pos` sees `look` with no building in the line.
+## Whether the lens at `pos` sees `look` with no building in the line, and the frame's lower third free of anything
+## near the lens (batch 8b: a stall dithered see-through in the foreground, a house down the left edge): lines from
+## the lens to the ground clarity.lowerAt of the way to what it looks at, in the middle and clarity.lowerSide of its
+## distance either side, against buildings and street things (stalls, carts); a hit in the near clarity.lowerNear of
+## the line counts.
 func _sees(look: Vector3, pos: Vector3) -> bool:
-	return _clear(look, pos).distance_squared_to(pos) < 0.0001
+	if _clear(look, pos).distance_squared_to(pos) >= 0.0001:
+		return false
+	if not is_inside_tree():
+		return true
+	var space := get_world_3d().direct_space_state
+	var flat := Vector3(look.x - pos.x, 0.0, look.z - pos.z)
+	var side := Vector3(-flat.z, 0.0, flat.x).normalized() * flat.length() * knob("clarity.lowerSide", 0.25)
+	var near := knob("clarity.lowerNear", 0.6)
+	var ats: Array = KNOBS.get("clarity", {}).get("lowerAt", [0.45, 0.7]) if KNOBS.get("clarity") is Dictionary else [0.45, 0.7]
+	var targets: Array[Vector3] = []
+	for t in ats:
+		targets.append(pos + flat * float(t))
+	var last := pos + flat * float(ats[ats.size() - 1]) if not ats.is_empty() else look
+	targets.append(last + side)
+	targets.append(last - side)
+	for g in targets:
+		var to := Vector3(g.x, _floor_at(g) + 0.05, g.z)
+		var q := PhysicsRayQueryParameters3D.create(pos, to, LENS_LAYER | PROP_LAYER)
+		var hit := space.intersect_ray(q)
+		if not hit.is_empty() and pos.distance_to(hit["position"]) < pos.distance_to(to) * near:
+			return false
+	return true
 
 
 ## The lens at `pos` swung about what it looks at by `turn` radians (its height and arm kept).
