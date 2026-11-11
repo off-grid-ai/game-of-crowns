@@ -1,0 +1,260 @@
+extends RefCounted
+## A town laid out as medieval towns grew (docs: side-session-notes town-layout-one-page.md):
+## roads first, from the square out to where they lead (the realm's roads, the
+## fields), each the cheapest way over the land; then burgage plots cut along
+## them, a narrow strip each side of the street, the house at the street end
+## facing it, a yard behind; lanes branching off as the town grows; the edge
+## where the plots stop. Pure geometry, town-local XZ (Vector2): towns.gd
+## builds what it says.
+##
+## Who solved what (no complete block exists, so this is the glue):
+##   - roads: Godot's AStarGrid2D on a cost grid of slope and water, the
+##     anisotropic shortest path of Emilien et al. 2012, "Procedural generation
+##     of villages on arbitrary terrains".
+##   - plots: the Manor Lords burgage rule (frontage on the street, cut into
+##     strips, house at the front, yard behind). Along a street band, Vanegas
+##     et al. 2012's OBB split reduces to strips square to the street.
+##   - lanes: Parish and Müller 2001's local rules (branch near square to the
+##     street, snap to a street met on the way, stop at water or a cliff).
+
+const CELL := 0.15  # world units per grid cell: about a metre and a quarter
+const SLOPE_COST := 40.0  # how much a rise of one unit per unit costs, against level ground
+const ROAD_HALF := 0.17  # half a street's width (town_nav reads a lane as 0.34 wide)
+const SET_BACK := 0.04  # between the street's edge and a house front
+const YARD := 0.55  # a yard's depth behind a house (about 4.5 m): room for its kitchen garden
+const GAP := 0.03  # between two plots' houses
+const LANE_EVERY := 2.4  # along a road, how far between branch lanes
+const LANE_LENGTH := 1.9  # how far a lane runs from its road
+
+
+## The town's main roads (town-local polylines), from the square's edge out
+## past `edge` toward each heading (radians, town-local XZ angle), each the
+## cheapest way over `g` (grid()). `land` takes town-local Vector2.
+static func roads(headings: Array, square_r: float, edge: float, g: AStarGrid2D, land: Callable) -> Array:
+	var out: Array = []
+	for ang: float in headings:
+		var dir := Vector2.from_angle(ang)
+		var goal := dir * (edge + 1.0)
+		var t := edge + 1.0
+		while t > square_r + 0.6 and not bool(land.call(goal)):
+			t -= CELL * 2.0
+			goal = dir * t  # a road to the water's edge, not into it
+		var path := path_on(g, dir * square_r * 0.9, goal)
+		if path.size() >= 2:
+			out.append(path)
+	return out
+
+
+## Lanes off the main roads, as many as the town's size calls for: each from a
+## point along a road, out to one side, square to it, the cheapest way; one
+## that comes near another street ends on it (a junction).
+static func lanes(main: Array, count: int, square_r: float, edge: float, g: AStarGrid2D, land: Callable, seed: int) -> Array:
+	if count <= 0 or main.is_empty():
+		return []
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed
+	var out: Array = []
+	var k := 0
+	var along := square_r + 1.4
+	while out.size() < count and along < edge:
+		for r in main.size():
+			if out.size() >= count:
+				break
+			var road: PackedVector2Array = main[r]
+			var at := point_at(road, along)
+			if at.is_empty():
+				continue
+			var p: Vector2 = at[0]
+			var tan: Vector2 = at[1]
+			var side := 1.0 if (k + r) % 2 == 0 else -1.0
+			var goal := p + tan.orthogonal() * side * LANE_LENGTH
+			# A street met on the way: the lane ends on it, a junction.
+			for other in main + out:
+				var q := closest_on(other, goal)
+				if q.distance_to(goal) < 0.5 and q.distance_to(p) > 0.8:
+					goal = q
+					break
+			if not bool(land.call(goal)):
+				continue  # it would run into water: no lane here
+			var path := path_on(g, p, goal)
+			if path.size() >= 2:
+				out.append(path)
+		k += 1
+		along += LANE_EVERY
+	return out
+
+
+## Every plot along `ways` (polylines), both sides, from the square outward:
+## [house centre, facing (Vector2), the frontage width, the depth, the plot's
+## four corners (front-left, front-right, back-right, back-left), how far
+## from the square, what `widths` named the house, which way and side].
+## `widths` gives each next house as [frontage, depth, its kind] from a rng;
+## plots are cut until `edge`. Sorted nearest the square first, so a town that
+## grows only adds at its ends.
+static func plots(ways: Array, square_r: float, edge: float, widths: Callable, seed: int) -> Array:
+	var out: Array = []
+	for w in ways.size():
+		var way: PackedVector2Array = ways[w]
+		for side: float in [-1.0, 1.0]:
+			var rng := RandomNumberGenerator.new()
+			rng.seed = seed + 131 * (w + 1) + int(side)
+			var s := 0.0
+			var total := length(way)
+			while s < total:
+				var pick: Array = widths.call(rng)
+				var fd := Vector2(float(pick[0]), float(pick[1]))  # x: frontage, y: depth
+				var mid := point_at(way, s + fd.x * 0.5)
+				if mid.is_empty():
+					break
+				var p: Vector2 = mid[0]
+				var tan: Vector2 = mid[1]
+				s += fd.x + GAP
+				if p.length() < square_r + 0.35:
+					continue  # the square's own ground
+				if p.length() > edge:
+					break
+				var n: Vector2 = tan.orthogonal() * side  # out from the street
+				var front := p + n * (ROAD_HALF + SET_BACK)
+				var house := front + n * fd.y * 0.5
+				var back := front + n * (fd.y + YARD)
+				var half := tan * fd.x * 0.5
+				out.append([house, -n, fd.x, fd.y, PackedVector2Array([front - half, front + half, back + half, back - half]), p.length(), pick[2], "%d%s" % [w, "+" if side > 0.0 else "-"]])
+	out.sort_custom(func(a, b): return float(a[5]) < float(b[5]))
+	return out
+
+
+## The edge: the outline round every plot taken, a little out from it.
+static func outline(taken: Array, square_r: float) -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	for pl in taken:
+		pts.append_array(pl[4])
+	for i in 12:
+		pts.append(Vector2.from_angle(TAU * i / 12) * (square_r + 0.6))
+	var hull := Geometry2D.convex_hull(pts)
+	var grown := Geometry2D.offset_polygon(hull, 0.15)
+	return grown[0] if not grown.is_empty() else hull
+
+
+## Whether `p` is within `d` of any of `ways` (a street, or a road's line).
+static func near_ways(p: Vector2, ways: Array, d: float) -> bool:
+	for way in ways:
+		if closest_on(way, p).distance_to(p) < d:
+			return true
+	return false
+
+
+# --- polylines ---------------------------------------------------------------
+
+static func length(way: PackedVector2Array) -> float:
+	var total := 0.0
+	for i in range(1, way.size()):
+		total += way[i - 1].distance_to(way[i])
+	return total
+
+
+## [the point `s` along `way`, the way's direction there], or [] past its end.
+static func point_at(way: PackedVector2Array, s: float) -> Array:
+	var gone := 0.0
+	for i in range(1, way.size()):
+		var seg := way[i - 1].distance_to(way[i])
+		if gone + seg >= s and seg > 0.0001:
+			var t := (s - gone) / seg
+			return [way[i - 1].lerp(way[i], t), (way[i] - way[i - 1]) / seg]
+		gone += seg
+	return []
+
+
+static func closest_on(way: PackedVector2Array, p: Vector2) -> Vector2:
+	var best := Vector2.INF
+	for i in range(1, way.size()):
+		var q := Geometry2D.get_closest_point_to_segment(p, way[i - 1], way[i])
+		if q.distance_to(p) < best.distance_to(p):
+			best = q
+	return best
+
+
+# --- the cost grid -----------------------------------------------------------
+
+## AStarGrid2D over the square of half-size `r` round the town's heart:
+## water solid, each cell weighted by the slope under it. Built once per town,
+## for its roads and its lanes.
+static func grid(r: float, height: Callable, land: Callable) -> AStarGrid2D:
+	var n := int(ceil(r * 2.0 / CELL)) + 1
+	var g := AStarGrid2D.new()
+	g.region = Rect2i(0, 0, n, n)
+	g.cell_size = Vector2(CELL, CELL)
+	g.offset = Vector2(-r, -r)
+	g.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
+	g.default_compute_heuristic = AStarGrid2D.HEURISTIC_OCTILE
+	g.default_estimate_heuristic = AStarGrid2D.HEURISTIC_OCTILE
+	g.update()
+	var hs := PackedFloat32Array()
+	hs.resize(n * n)
+	for y in n:
+		for x in n:
+			var p := Vector2(-r + x * CELL, -r + y * CELL)
+			hs[y * n + x] = float(height.call(p))
+			if not bool(land.call(p)):
+				g.set_point_solid(Vector2i(x, y), true)
+	for y in n:
+		for x in n:
+			var h := hs[y * n + x]
+			var rise := 0.0
+			if x + 1 < n:
+				rise = maxf(rise, absf(hs[y * n + x + 1] - h))
+			if y + 1 < n:
+				rise = maxf(rise, absf(hs[(y + 1) * n + x] - h))
+			g.set_point_weight_scale(Vector2i(x, y), 1.0 + SLOPE_COST * rise / CELL)
+	return g
+
+
+## The cheapest way from `a` to `b` on `g`, simplified and eased into curves.
+static func path_on(g: AStarGrid2D, a: Vector2, b: Vector2) -> PackedVector2Array:
+	var ia := _cell(g, a)
+	var ib := _cell(g, b)
+	if not g.is_in_boundsv(ia) or not g.is_in_boundsv(ib):
+		return PackedVector2Array()
+	g.set_point_solid(ia, false)  # the ends themselves are always walkable
+	g.set_point_solid(ib, false)
+	var raw := g.get_point_path(ia, ib, true)
+	if raw.size() < 2:
+		return PackedVector2Array()
+	raw[0] = a
+	raw[raw.size() - 1] = b
+	return _chaikin(_simplify(raw, CELL * 0.6))
+
+
+static func _cell(g: AStarGrid2D, p: Vector2) -> Vector2i:
+	return Vector2i(roundi((p.x - g.offset.x) / CELL), roundi((p.y - g.offset.y) / CELL))
+
+
+## Ramer-Douglas-Peucker: the grid's stair-steps gone, the bends kept.
+static func _simplify(pts: PackedVector2Array, eps: float) -> PackedVector2Array:
+	if pts.size() < 3:
+		return pts
+	var worst := 0.0
+	var at := 0
+	for i in range(1, pts.size() - 1):
+		var d := Geometry2D.get_closest_point_to_segment(pts[i], pts[0], pts[pts.size() - 1]).distance_to(pts[i])
+		if d > worst:
+			worst = d
+			at = i
+	if worst <= eps:
+		return PackedVector2Array([pts[0], pts[pts.size() - 1]])
+	var left := _simplify(pts.slice(0, at + 1), eps)
+	var right := _simplify(pts.slice(at), eps)
+	left.resize(left.size() - 1)
+	left.append_array(right)
+	return left
+
+
+## One pass of Chaikin's corner cutting: a road bends, it doesn't kink.
+static func _chaikin(pts: PackedVector2Array) -> PackedVector2Array:
+	if pts.size() < 3:
+		return pts
+	var out := PackedVector2Array([pts[0]])
+	for i in range(pts.size() - 1):
+		out.append(pts[i].lerp(pts[i + 1], 0.25))
+		out.append(pts[i].lerp(pts[i + 1], 0.75))
+	out.append(pts[pts.size() - 1])
+	return out

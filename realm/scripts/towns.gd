@@ -54,6 +54,11 @@ func _ready() -> void:
 ## the screen, and a season's growth never stalls the game.
 func sync(world: Dictionary, houses: Dictionary) -> void:
 	_raise_banners(world)
+	_road_tiles.clear()
+	for r in world.get("roads", []):
+		_road_tiles[Vector2i(int(r[0]), int(r[1]))] = true
+	for c0 in world.get("cities", []):
+		_road_tiles[Vector2i(int(c0["x"]), int(c0["y"]))] = true
 	var seen := {}
 	for c in world.get("cities", []):
 		var id := int(c["id"])
@@ -240,6 +245,11 @@ func nearest(pos: Vector3, max_dist := 6.0) -> Dictionary:
 
 const Real = preload("res://scripts/realistic.gd")
 const Fields = preload("res://scripts/countryside.gd")  # crops, and fields that line up with their soil
+const TownPlots = preload("res://scripts/town_plots.gd")  # roads, burgage plots and lanes (--towns=plots)
+## `--towns=plots`: a town laid out along its roads, in burgage plots, the way
+## medieval towns grew (town_plots.gd), instead of rings round the square.
+var plots_on := OS.get_cmdline_user_args().has("--towns=plots")
+var _road_tiles := {}  # Vector2i tile -> true: Freeciv's roads and towns, where a town's roads lead out
 var realistic_towns: Array = []
 var _house := {}  # the house of the town being built, for its castle banner
 var _house_colour := Color.GRAY  # town names drawn from the realistic kit; "*" for all
@@ -323,7 +333,7 @@ func _bailey(root: Node3D, cp: Vector3, cy: float, yaw: float, rng: RandomNumber
 ## turned to face it, spaced by its own size. Real towns sit on slopes, so a
 ## house is seated at the low corner of its plot (its foundation takes up the
 ## rest) rather than refused; only water or a cliff turns a plot away.
-func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds: Array, rng: RandomNumberGenerator, streets: Array = [], seat := false) -> void:
+func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds: Array, rng: RandomNumberGenerator, streets: Array = [], seat := false, ways: Array = []) -> void:
 	# Every town is at least a market town: a cobbled square with its well and
 	# stalls, the tavern and the hall facing it, a tight ring of townhouses
 	# around it, houses along the roads leading in, and a palisade with gates
@@ -362,6 +372,8 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 					var cp := Vector3(cos(gap_ang + tries * TAU / float(pass_[2])), 0, sin(gap_ang + tries * TAU / float(pass_[2]))) * cd
 					# Its wide plot eases back into the land over more ground, so
 					# no raw bank shows below the walls.
+					if not ways.is_empty() and TownPlots.near_ways(Vector2(cp.x, cp.z), ways, maxf(f.x, f.y) * 0.5):
+						continue  # never across one of the town's roads
 					var cy := _seat(center, cp, f * 0.8, atan2(-cp.x, -cp.z), 2.2, true, float(pass_[3]))
 					if is_nan(cy):
 						continue
@@ -405,6 +417,12 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 		if f == Vector2.ZERO:
 			continue
 		var p := Vector3(cos(gap_ang), 0, sin(gap_ang)) * (square_r + maxf(f.x, f.y) * 0.45)
+		# Between the roads into the square, never across one (--towns=plots).
+		for turn in (16 if not ways.is_empty() else 0):
+			if not TownPlots.near_ways(Vector2(p.x, p.z), ways, maxf(f.x, f.y) * 0.5 + 0.05):
+				break
+			gap_ang += TAU / 16.0
+			p = Vector3(cos(gap_ang), 0, sin(gap_ang)) * (square_r + maxf(f.x, f.y) * 0.45)
 		if _put(root, center, lm, p, f, lots, rng, false):
 			placed += 1
 			_door(root, p, f, rooms[lm][0], rooms[lm][1])
@@ -415,6 +433,10 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 		gap_ang += PI * 0.62
 		await _pace()
 	root.set_meta("places", places)
+	if not ways.is_empty():
+		# --towns=plots: burgage plots along the roads and lanes, the edge where they stop.
+		await _plot_lots(root, center, square_r, ways, kinds, lots, rng, want - placed, seat)
+		return
 	# The ring of townhouses framing the square, shoulder to shoulder; then the
 	# roads out, lined with houses doors-to-the-road the way a medieval street
 	# fills; then the backlands between them, looser and turned every which way.
@@ -481,6 +503,214 @@ func _street_fronts(root: Node3D, center: Vector3, square_r: float, edge: float,
 						_croft(root, center, p, face, f, lots, rr)
 				await _pace()
 	return placed
+
+
+## --towns=plots: the town's roads, laid first. One leads out toward each
+## neighbouring tile Freeciv has a road or a town on (where the realm's roads
+## come in), at least two (the town's own spokes make up the rest), each the
+## cheapest way over the land; then lanes off them, more as the town grows.
+## Painted, and kept as the town's lanes (town_nav walks them). Returns the
+## roads and lanes as town-local polylines.
+func _lay_ways(root: Node3D, center: Vector3, c: Dictionary, size: int, square_r: float, reach: float, streets: Array, rng: RandomNumberGenerator) -> Array:
+	var tile := Vector2i(int(c["x"]), int(c["y"]))
+	var headings: Array = []
+	for d in [Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-1, 1), Vector2i(-1, 0), Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1)]:
+		if _road_tiles.has(tile + d):
+			var to: Vector3 = terrain.world_pos(float(tile.x + d.x), float(tile.y + d.y)) - center
+			headings.append(atan2(to.z, to.x))
+	for ang in streets:  # the town's own ways out (to its fields, its water), where the realm's are few
+		if headings.size() >= maxi(2, streets.size() - 1):
+			break
+		if headings.all(func(h): return absf(angle_difference(float(h), float(ang))) > 0.7):
+			headings.append(float(ang))
+	var edge := reach
+	root.set_meta("plot_edge", edge)
+	var height := func(p: Vector2) -> float: return _ground_y(center, Vector3(p.x, 0, p.y))
+	var land := func(p: Vector2) -> bool: return terrain.is_land(center.x + p.x, center.z + p.y)
+	var grid: AStarGrid2D = TownPlots.grid(edge + 1.2, height, land)
+	var main: Array = TownPlots.roads(headings, square_r, edge, grid, land)
+	var lanes: Array = TownPlots.lanes(main, clampi((size - 2) / 2, 0, 6), square_r, edge, grid, land, rng.seed + 17)
+	root.set_meta("ways_main", main)
+	var kept: Array = root.get_meta("lanes", [])
+	for way in main + lanes:
+		for i in range(1, way.size()):
+			_paint_way(root, center, way[i - 1], way[i], TownPlots.ROAD_HALF * 2.0)
+			kept.append([way[i - 1], way[i]])
+	root.set_meta("lanes", kept)
+	return main + lanes
+
+
+## One stretch of a street, painted on the land from `a` to `b` (town-local).
+func _paint_way(root: Node3D, center: Vector3, a: Vector2, b: Vector2, width: float) -> void:
+	var length := a.distance_to(b)
+	if length < 0.02:
+		return
+	var mid := (a + b) * 0.5
+	var lo := minf(_ground_y(center, Vector3(a.x, 0, a.y)), _ground_y(center, Vector3(b.x, 0, b.y)))
+	var hi := maxf(_ground_y(center, Vector3(a.x, 0, a.y)), _ground_y(center, Vector3(b.x, 0, b.y)))
+	terrain.paint(root, terrain.tiled(ROAD_TEX, 1, maxi(1, roundi(length / 0.34)), "sides"), Vector3(mid.x, (lo + hi) / 2.0, mid.y), Vector2(width, length + 0.04), atan2(b.x - a.x, b.y - a.y), ROAD_TINT, hi - lo + 1.0)
+
+
+## --towns=plots: houses on burgage plots along the town's roads and lanes,
+## nearest the square first: each on its own strip, front to the street, a
+## yard behind with a fence at its back and one side, a kitchen garden in
+## most. The town's edge is where the plots stop, and the palisade follows it.
+## Returns how many houses stand.
+func _plot_lots(root: Node3D, center: Vector3, square_r: float, ways: Array, kinds: Array, lots: Array, rng: RandomNumberGenerator, budget: int, seat: bool) -> int:
+	var fronts: Array = kinds.filter(func(k): return Real.KIT.get(k, [""])[0] != "barn")  # barns stand in yards, not on the street
+	if fronts.is_empty():
+		fronts = kinds
+	var widths := func(r: RandomNumberGenerator) -> Array:
+		var kind: String = fronts[r.randi() % fronts.size()]
+		var f: Vector2 = Real.footprint(kind)
+		return [f.x, f.y, kind]
+	var all: Array = TownPlots.plots(ways, square_r, float(root.get_meta("plot_edge", square_r + 3.6)), widths, rng.seed + 29)
+	var taken: Array = []
+	var placed := 0
+	for pl in all:
+		if placed >= budget:
+			break
+		var kind: String = pl[6]
+		var f: Vector2 = Real.footprint(kind)
+		var house: Vector2 = pl[0]
+		var own := int(String(pl[7]).trim_suffix("+").trim_suffix("-"))
+		var clear := true
+		for wi in ways.size():
+			if wi != own and TownPlots.closest_on(ways[wi], house).distance_to(house) < maxf(f.x, f.y) * 0.5 + TownPlots.ROAD_HALF:
+				clear = false  # another street runs through this plot (a junction, a bend)
+				break
+		if not clear:
+			continue
+		var face := Vector3(pl[1].x, 0, pl[1].y)
+		var p := Vector3(house.x, 0, house.y)
+		if _put(root, center, kind, p, f, lots, rng, true, face):
+			placed += 1
+			taken.append(pl)
+			_yard(root, center, pl, p, face, f, lots, rng)
+		await _pace()
+	var edge := TownPlots.outline(taken, square_r)
+	var far := 0.0
+	for q in edge:
+		far = maxf(far, q.length())
+	root.set_meta("edge_outline", edge)
+	root.set_meta("edge_r", far)
+	_palisade_on(root, center, edge, ways, seat)
+	_layout_check(root, taken, ways)
+	return placed
+
+
+## A house's yard: a fence along its back and one side, and its kitchen garden.
+func _yard(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vector3, f: Vector2, lots: Array, rng: RandomNumberGenerator) -> void:
+	var corners: PackedVector2Array = pl[4]
+	var house_part := float(pl[3]) / (float(pl[3]) + TownPlots.YARD)
+	var side_from := corners[1].lerp(corners[2], house_part)
+	_fence_line(root, center, side_from, corners[2], lots)
+	_fence_line(root, center, corners[2], corners[3], lots)
+	var yards: int = root.get_meta("plot_yards", 0)
+	root.set_meta("plot_yards", yards + 1)
+	if rng.randf() < 0.65:
+		_croft(root, center, p, face, f, lots, rng)
+
+
+## Fence panels from `a` to `b` (town-local), on the ground, walked round;
+## none where a house stands.
+func _fence_line(root: Node3D, center: Vector3, a: Vector2, b: Vector2, lots: Array) -> void:
+	var f: Vector2 = Real.footprint("wooden_fence_game_ready_asset")
+	if f == Vector2.ZERO or a.distance_to(b) < 0.05:
+		return
+	var panel := maxf(f.x, f.y) * 0.95
+	var n := maxi(1, roundi(a.distance_to(b) / panel))
+	var d := (b - a).normalized()
+	var yaw := atan2(d.x, d.y) if f.y > f.x else atan2(-d.y, d.x)
+	for i in n:
+		var q := a.lerp(b, (i + 0.5) / n)
+		var p := Vector3(q.x, 0, q.y)
+		if not terrain.is_land(center.x + p.x, center.z + p.z) or _crowded(lots, p, 0.02):
+			continue
+		_place(root, "wooden_fence_game_ready_asset", p + Vector3(0, _ground_y(center, p) - 0.01, 0), yaw, Vector3.ONE, Vector2(panel * 1.05, 0.06))
+
+
+## The palisade round the plots' edge (an outline, town-local), with a gate
+## wherever a street or a road goes through.
+func _palisade_on(root: Node3D, center: Vector3, edge: PackedVector2Array, ways: Array, seat: bool) -> void:
+	var f: Vector2 = Real.footprint("wooden_fence_game_ready_asset")
+	if f == Vector2.ZERO or edge.size() < 3:
+		return
+	var panel := maxf(f.x, f.y) * 0.95
+	for i in edge.size():
+		var a: Vector2 = edge[i]
+		var b: Vector2 = edge[(i + 1) % edge.size()]
+		var d := (b - a).normalized()
+		var yaw := atan2(d.x, d.y) if f.y > f.x else atan2(-d.y, d.x)
+		var n := maxi(1, roundi(a.distance_to(b) / panel))
+		for k in n:
+			var q := a.lerp(b, (k + 0.5) / n)
+			var p := Vector3(q.x, 0, q.y)
+			if TownPlots.near_ways(q, ways, 0.32) or _on_road(p, 0.12) or not terrain.is_land(center.x + p.x, center.z + p.z):
+				continue  # the gate, where a street or a road goes through
+			_place(root, "wooden_fence_game_ready_asset", p + Vector3(0, _ground_y(center, p) - 0.01, 0), yaw, Vector3(1, 1.6, 1) if seat else Vector3.ONE, Vector2(panel * 1.05, 0.08))
+
+
+## --towns=plots: the open fields, out past the plots along the roads: long
+## strips running back from the road on either side, furlong by furlong.
+func _fields_beyond(root: Node3D, center: Vector3, size: int, rng: RandomNumberGenerator) -> void:
+	var main: Array = root.get_meta("ways_main", [])
+	var edge: PackedVector2Array = root.get_meta("edge_outline", PackedVector2Array())
+	if main.is_empty():
+		return
+	var n := clampi(size * 3, 4, 36)
+
+	var laid: Array = []
+	for i in n * 8:
+		if laid.size() >= n:
+			break
+		var road: PackedVector2Array = main[i % main.size()]
+		var total := TownPlots.length(road)
+		var s := rng.randf_range(total * 0.3, total + 2.4)
+		var at := TownPlots.point_at(road, minf(s, total - 0.001))
+		if at.is_empty():
+			continue
+		var tan: Vector2 = at[1]
+		var on: Vector2 = at[0] + tan * maxf(0.0, s - total)  # past the road's end, on in its line
+		var out: Vector2 = tan.orthogonal() * (1.0 if rng.randf() < 0.5 else -1.0)
+		var fsize := Vector2(rng.randf_range(0.32, 0.5), rng.randf_range(1.1, 1.8))  # narrow, and long back from the road
+		var mid: Vector2 = on + out * (TownPlots.ROAD_HALF + 0.1 + fsize.y * 0.5)
+		var off := Vector3(mid.x, 0, mid.y)
+		if edge.size() >= 3 and Geometry2D.is_point_in_polygon(mid, edge):
+			continue  # inside the town
+		if laid.any(func(q): return q.distance_to(mid) < fsize.y * 0.55) or TownPlots.near_ways(mid, main, fsize.y * 0.45):
+			continue
+		if not _flat_enough(center, off, 0.5) or _built_on(root, off):
+			continue
+		_field_at(root, center, off, fsize, atan2(out.x, out.y), CROPS[rng.randi() % CROPS.size()], rng)
+		laid.append(mid)
+
+
+## CHECK line (--towns=plots): how the plots read, for the judge. Houses whose
+## front faces a street within 30 degrees, each with its yard, and how far
+## neighbours along one street differ in heading.
+func _layout_check(root: Node3D, taken: Array, ways: Array) -> void:
+	var facing := 0
+	var turn := 0.0
+	var pairs := 0
+	var last := {}
+	for pl in taken:
+		var house: Vector2 = pl[0]
+		var face: Vector2 = pl[1]
+		var best := Vector2.INF
+		for w in ways:
+			var q := TownPlots.closest_on(w, house)
+			if q.distance_to(house) < best.distance_to(house):
+				best = q
+		if absf(face.angle_to(best - house)) < deg_to_rad(30.0):
+			facing += 1
+		var key := String(pl[7])
+		if last.has(key):
+			turn += absf(rad_to_deg(face.angle_to(last[key])))
+			pairs += 1
+		last[key] = face
+	var n := maxi(1, taken.size())
+	print("CHECK town layout (plots): %d houses, %d%% face a street, %d%% with a fenced yard, neighbours turn %.0f deg on average" % [taken.size(), roundi(100.0 * facing / n), roundi(100.0 * int(root.get_meta("plot_yards", 0)) / n), turn / maxi(1, pairs)])
 
 
 ## A kitchen garden behind a house: a strip of turned earth with cabbages or
@@ -925,7 +1155,12 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	for m in _houses:
 		var bb: AABB = m.get_aabb()
 		foot.append(Vector2(bb.size.x, bb.size.z) * S)
-	for ang in streets:
+	# --towns=plots: the roads come first, laid over the land toward where they
+	# lead, and lanes off them as the town grows; the spokes below stand aside.
+	var ways: Array = []
+	if plots_on and real:
+		ways = _lay_ways(root, center, c, size, square_r, reach, streets, rng)
+	for ang in (streets if ways.is_empty() else []):
 		var dir := Vector3(cos(ang), 0, sin(ang))
 		var side := Vector3(-dir.z, 0, dir.x)
 		var t0 := square_r - 0.1
@@ -990,7 +1225,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	for v in per_variant:
 		_instances(root, _houses[v], per_variant[v])
 	if real and not real_houses.is_empty():
-		await _real_lots(root, center, square_r, size, real_houses, rng, streets, bool(c.get("capital", false)))
+		await _real_lots(root, center, square_r, size, real_houses, rng, streets, bool(c.get("capital", false)), ways)
 
 	# Keep or castle beside the square.
 	var keep_off := Vector3(cos(base_ang + PI / street_count), 0, sin(base_ang + PI / street_count)) * (square_r + 0.55)
@@ -1060,6 +1295,8 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 					_footprint_rect(root, h.origin, Vector2(box.size.x, box.size.z), h.basis.get_euler().y)  # a heap is walked round too
 
 	var outer := reach + 0.35
+	if not ways.is_empty():
+		outer = maxf(outer, float(root.get_meta("edge_r", 0.0)))  # the plots' own edge
 	root.set_meta("reach", reach + 3.0)
 	root.set_meta("trodden", outer)  # where its people walk: no grass grows within
 	# A realistic town's palisade is its wall (a seat's stands taller).
@@ -1069,7 +1306,10 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	terrain.commit_grading()
 	terrain.clear_around(center, outer + 0.6)
 	await _pace()
-	_fields(root, center, outer, size, rng)
+	if ways.is_empty():
+		_fields(root, center, outer, size, rng)
+	else:
+		_fields_beyond(root, center, size, rng)  # strips out past the plots, along the roads
 	_smoke(root, keep_off + Vector3(0.2, _ground_y(center, keep_off) + 1.2, 0.1))
 
 	await _pace()
@@ -1112,9 +1352,6 @@ func _walls(root: Node3D, center: Vector3, r: float) -> void:
 ## Strip fields in the town's surrounding land, more as the town grows.
 func _fields(root: Node3D, center: Vector3, outer: float, size: int, rng: RandomNumberGenerator) -> void:
 	var n := clampi(size * 3, 4, 36)
-	var plots := _plots(root)
-	var fields: Node3D = plots[0]
-	var crops: Node3D = plots[1]
 	var placed := 0
 	for i in n * 5:
 		if placed >= n:
@@ -1127,19 +1364,29 @@ func _fields(root: Node3D, center: Vector3, outer: float, size: int, rng: Random
 		var crop: Array = CROPS[rng.randi() % CROPS.size()]
 		var fsize := Vector2(rng.randf_range(0.9, 1.6), rng.randf_range(0.45, 0.8))
 		var yaw := ang + rng.randf_range(-0.3, 0.3)
-		off = Fields.on_furrows(terrain, center + off, fsize) - center  # its soil and its crop in one place
-		var tex: String = terrain.art("res://assets/ground/%s.jpg" % crop[0], DIRT)
-		var field: Decal = terrain.paint(fields, terrain.tiled(tex, roundi(fsize.x * 1.5), roundi(fsize.y * 1.5)), off + Vector3(0, _ground_y(center, off), 0), fsize, yaw, Color.WHITE if tex != DIRT else crop[1])
-		field.set_meta("reps", Vector2i(roundi(fsize.x * 1.5), roundi(fsize.y * 1.5)))
-		if terrain.land3d and terrain.land3d.land:
-			# Ploughed soil in the ground itself; the crop lies over it, the earth showing through.
-			Fields.plough(terrain, center + off, fsize, yaw)
-			field.albedo_mix = 0.55
-		Fields.sow(crops, terrain, center, Fields.crop_for(crop[0], rng), center + off, fsize, yaw, rng)
-		var all: Array = root.get_meta("fields", [])
-		all.append([off, fsize, yaw])
-		root.set_meta("fields", all)
+		_field_at(root, center, off, fsize, yaw, crop, rng)
 		placed += 1
+
+
+## One field (`crop`, from CROPS) of `fsize` at `off` (town-local), turned to
+## `yaw`: its soil ploughed and its crop sown in one place, and recorded as
+## one of the town's fields (villagers go to work there).
+func _field_at(root: Node3D, center: Vector3, off: Vector3, fsize: Vector2, yaw: float, crop: Array, rng: RandomNumberGenerator) -> void:
+	var plots := _plots(root)
+	var fields: Node3D = plots[0]
+	var crops: Node3D = plots[1]
+	off = Fields.on_furrows(terrain, center + off, fsize) - center  # its soil and its crop in one place
+	var tex: String = terrain.art("res://assets/ground/%s.jpg" % crop[0], DIRT)
+	var field: Decal = terrain.paint(fields, terrain.tiled(tex, roundi(fsize.x * 1.5), roundi(fsize.y * 1.5)), off + Vector3(0, _ground_y(center, off), 0), fsize, yaw, Color.WHITE if tex != DIRT else crop[1])
+	field.set_meta("reps", Vector2i(roundi(fsize.x * 1.5), roundi(fsize.y * 1.5)))
+	if terrain.land3d and terrain.land3d.land:
+		# Ploughed soil in the ground itself; the crop lies over it, the earth showing through.
+		Fields.plough(terrain, center + off, fsize, yaw)
+		field.albedo_mix = 0.55
+	Fields.sow(crops, terrain, center, Fields.crop_for(crop[0], rng), center + off, fsize, yaw, rng)
+	var all: Array = root.get_meta("fields", [])
+	all.append([off, fsize, yaw])
+	root.set_meta("fields", all)
 
 
 
