@@ -34,6 +34,9 @@ limit. Newest first. The plan is [PLAN.md](PLAN.md); the running log of checks i
   switch until judged; tunables in data plus docs/TUNING.md.
 
 ## What Mac said (2026-11-11), newest first
+- "Not a fan of this" (the mid and map zoom: the old castle on a brown pad, no houses, giant trees, a striped paper
+  map). An agent is fixing the mid and map zoom toward 02-realm (HLOD towns, the kit castle at all zooms, tree scale,
+  the paper-map blend pushed to true map height, no scanlines).
 - "Allow": the lead may run antzGames' downloaded VAT baker (GPL-3, in Blender, headless) and install the antz VAT
   plugin (MIT) into realm/addons for the army spike.
 - "I don't really care about 30 FPS. Anything above 10 is fine." The frame-rate bar is ≥10 fps; spend the headroom on
