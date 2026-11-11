@@ -817,6 +817,7 @@ func _plot_lots(root: Node3D, center: Vector3, square_r: float, ways: Array, kin
 	shallow.sort_custom(func(a, b): return Real.footprint(a).x * Real.footprint(a).y > Real.footprint(b).x * Real.footprint(b).y)
 	var taken: Array = []
 	var bodies: Array = []  # each standing plot house's outline (town-local)
+	_standing = _buildings_standing(root)
 	var why := {"another street": 0, "another house": 0, "the realm's road": 0, "crowded": 0, "water or a cliff": 0, "alone": 0}
 	var stood: Array = []  # [plot, house, face, footprint]: their yards are laid once every house stands
 	var placed := 0
@@ -911,7 +912,7 @@ func _plot_one(root: Node3D, center: Vector3, pl0: Array, ways: Array, shallow: 
 			last = "the realm's road"
 			continue
 		house -= face2 * back
-		if bodies.any(func(b): return not Geometry2D.intersect_polygons(body, b).is_empty()):
+		if bodies.any(func(b): return not Geometry2D.intersect_polygons(body, b).is_empty()) or _standing.any(func(b): return not Geometry2D.intersect_polygons(body, b).is_empty()):
 			last = "another house"
 			continue
 		var p := Vector3(house.x, 0, house.y)
@@ -940,6 +941,35 @@ func _plot_one(root: Node3D, center: Vector3, pl0: Array, ways: Array, shallow: 
 		why[last] += 1
 	await _pace()
 	return false
+
+
+var _standing: Array = []  # the buildings that stood before the plots were cut (_buildings_standing)
+
+
+## The outlines of every building already standing in the town before its plots are cut: the houses
+## round the square, the landmarks, the trades off the plots, the castle (each footprint _place kept,
+## a little inside its walls; small things, a stall or a cart, left out). A plot house was held only
+## against a circle round each, half as deep as a burgher's house: a deep house round the square and the
+## one behind it on the first ring street stood into each other, one's roof running out of the other's
+## wall (Goldrock, gr-cap bottom left: the tiled strip out of a wall, batch 4 and 6).
+func _buildings_standing(root: Node3D) -> Array:
+	var out: Array = []
+	for fp in root.get_meta("footprints", []):
+		var poly: PackedVector2Array = fp
+		if poly.size() < 3 or absf(_area(poly)) < 0.3:
+			continue
+		var inner: Array = Geometry2D.offset_polygon(poly, -0.03)
+		if not inner.is_empty():
+			out.append(inner[0])
+	return out
+
+
+static func _area(poly: PackedVector2Array) -> float:
+	var a := 0.0
+	for i in poly.size():
+		var j := (i + 1) % poly.size()
+		a += poly[i].x * poly[j].y - poly[j].x * poly[i].y
+	return a * 0.5
 
 
 ## A plot house's outline (town-local): `house` its middle, `face` toward the street.
