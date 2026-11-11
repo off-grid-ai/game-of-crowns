@@ -101,3 +101,9 @@ Each against its batch 7 frame (`/tmp/goc-batch7`), the same step.
 32. **The windmill and the watermill** (batch 7 mill: flat salmon sails cutting the next roof; hunger-town: a salmon
     wheel): `work Kingsmere mill 5 -25`, a 6 s clip. Judge: canvas sails and a timber wheel with grain to them, and
     the sails turning clear of every roof.
+
+## The fountain (batch 8 review look2; d8f73471, this commit's fountain stone)
+
+25. **Goldrock's fountain and Kingsmere's statue close** (`city Goldrock 3 -25`, `city Kingsmere 3 -25`): the basin in
+    the village kit's grey uneven stone, dark still water that catches the sky; no stall canopy over the basin, no
+    one standing in the water (dogs, children, the levy's kin all start outside its rim).
