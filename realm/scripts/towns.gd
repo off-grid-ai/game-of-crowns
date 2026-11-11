@@ -1681,49 +1681,90 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 		well_kind = "ph/stone_fire_pit"
 	if drop.call(well_kind, well, rng.randf() * TAU):
 		places["well"] = well
-	var stall := Real.footprint("medieval_market_asset_pack")
+	# The stalls (assets.json market_stall: the kit's stalls, their awnings dyed red, blue, ochre, green, purple
+	# and cream, or the downloaded pack's), in rows on the market's side of the square, each facing its heart,
+	# no two neighbours alike (art target town-b: a square full of stalls and goods). towns.json
+	# market.<rank>.rows: each row's radius as a share of the square's, and its share of the stalls; span: how
+	# far either side of the market's middle a row may run (degrees). One row at 0.8 elsewhere, as before.
+	var stall_kinds: Array = Real.variants("market_stall").filter(func(k): return Real.footprint(k) != Vector2.ZERO)
+	var mk := _market_knobs()
 	# A market the King built fills the square with two more stalls.
 	var stalls := 1 + (1 if size >= 6 else 0) + (1 if seat or size >= 10 else 0) + (2 if "Marketplace" in root.get_meta("buildings", []) else 0)
-	stalls += int(_market_knobs().get("stalls_more", 0))  # the realm's busiest market at the crown's seat, a great house's seat's
-	var arc := square_r * 0.8
-	var step := (stall.x * 1.08) / arc
-	var clutter: Array = Real.names_of("clutter").filter(func(n): return n != "ph/stone_fire_pit" and n != "ph/wooden_ladder")
+	stalls += int(mk.get("stalls_more", 0))  # the realm's busiest market at the crown's seat, a great house's seat's
+	var rows: Array = mk.get("rows", [[0.8, 1.0]])
+	var span := deg_to_rad(float(mk.get("span", 180.0)))
+	# The goods heaped at the stalls (assets.json market_goods: the kit's crates of apples and carrots, barrels,
+	# sacks and jars), else the yard clutter.
+	var clutter: Array = Real.variants("market_goods").filter(func(k): return Real.footprint(k) != Vector2.ZERO)
+	if clutter.is_empty():
+		clutter = Real.names_of("clutter").filter(func(n): return n != "ph/stone_fire_pit" and n != "ph/wooden_ladder")
+	var heaps: Array = mk.get("goods", [1, 3])
 	var fronts := Vector3.ZERO
 	var n := 0
-	for i in stalls:
-		var ang := market_ang + (i - (stalls - 1) * 0.5) * step
-		var m := Vector3(cos(ang), 0, sin(ang)) * arc
-		var yaw := atan2(-m.x, -m.z)
-		if not drop.call("medieval_market_asset_pack", m, yaw):
-			continue
-		fronts += m * (1.0 - (stall.y * 0.5 + 0.3) / arc)  # where buyers stand
-		n += 1
-		var kept: Array = root.get_meta("stalls", [])
-		kept.append([m, stall.y, stall.x])  # where it stands (its front toward the square), how deep and how wide
-		root.set_meta("stalls", kept)
-		# Goods at the stall's ends and behind it: crates, baskets, barrels.
-		var along := Vector3(-sin(ang), 0, cos(ang))
-		var heaps: Array = _market_knobs().get("goods", [1, 3])
-		for e in [-1, 1]:
-			for k in rng.randi_range(int(heaps[0]), int(heaps[1])):
-				var p: Vector3 = m + along * e * (stall.x * 0.5 + rng.randf_range(0.04, 0.14)) + m.normalized() * rng.randf_range(-0.12, 0.18)
-				drop.call(clutter[rng.randi() % clutter.size()], p, rng.randf() * TAU)
-		if ResourceLoader.exists("res://assets/realistic/ph/wooden_lantern_01/wooden_lantern_01_1k.gltf") and i % 2 == 0:
-			drop.call("ph/wooden_lantern_01", m - m.normalized() * (stall.y * 0.5 + 0.05) + along * stall.x * 0.45, yaw)
-	lots.append([Vector3(cos(market_ang), 0, sin(market_ang)) * arc, stall.x * 0.5])
+	var outer_end := 0.0  # how far the outer row runs either side of the market's middle (radians)
+	var outer_arc := square_r * 0.8
+	var left := stalls
+	var last_kind := ""
+	for ri in rows.size():
+		if stall_kinds.is_empty() or left <= 0:
+			break
+		var arc := square_r * float(rows[ri][0])
+		var want := left if ri == rows.size() - 1 else mini(left, roundi(stalls * float(rows[ri][1])))
+		# This row's stalls, picked first so the row is centred on the market's middle.
+		var row: Array = []
+		var width := 0.0
+		for i in want:
+			var k: String = stall_kinds[rng.randi() % stall_kinds.size()]
+			if k == last_kind and stall_kinds.size() > 1:
+				k = stall_kinds[(stall_kinds.find(k) + 1 + rng.randi() % (stall_kinds.size() - 1)) % stall_kinds.size()]
+			last_kind = k
+			var w := Real.footprint(k).x * 1.08 / arc
+			if (width + w) * 0.5 > span:
+				break  # the row is full
+			row.append([k, w])
+			width += w
+		left -= row.size()
+		if ri == 0:
+			outer_end = width * 0.5
+			outer_arc = arc
+		var ang := market_ang - width * 0.5
+		for i in row.size():
+			var kind: String = row[i][0]
+			var stall: Vector2 = Real.footprint(kind)
+			var a: float = ang + float(row[i][1]) * 0.5
+			ang += float(row[i][1])
+			var m := Vector3(cos(a), 0, sin(a)) * arc
+			var yaw := atan2(-m.x, -m.z)
+			if not drop.call(kind, m, yaw):
+				continue
+			lots.append([m, maxf(stall.x, stall.y) * 0.5])
+			fronts += m * (1.0 - (stall.y * 0.5 + 0.3) / arc)  # where buyers stand
+			n += 1
+			var kept: Array = root.get_meta("stalls", [])
+			kept.append([m, stall.y, stall.x])  # where it stands (its front toward the square), how deep and how wide
+			root.set_meta("stalls", kept)
+			# Goods at the stall's ends and behind it: crates, sacks, barrels.
+			var along := Vector3(-sin(a), 0, cos(a))
+			for e in [-1, 1]:
+				for k in rng.randi_range(int(heaps[0]), int(heaps[1])):
+					var p: Vector3 = m + along * e * (stall.x * 0.5 + rng.randf_range(0.03, 0.1)) + m.normalized() * rng.randf_range(-0.08, 0.12)
+					drop.call(clutter[rng.randi() % clutter.size()], p, rng.randf() * TAU)
+			if ResourceLoader.exists("res://assets/realistic/ph/wooden_lantern_01/wooden_lantern_01_1k.gltf") and i % 2 == 0:
+				drop.call("ph/wooden_lantern_01", m - m.normalized() * (stall.y * 0.5 + 0.05) + along * stall.x * 0.45, yaw)
+	root.set_meta("stalls_stood", n)
 	if n > 0:
 		places["market"] = fronts / n
-	# A wagon drawn up at the end of the row, unloading.
-	var wa := market_ang + (stalls * 0.5 + 0.35) * step
-	var wp := Vector3(cos(wa), 0, sin(wa)) * arc
+	# A wagon drawn up at the end of the outer row, unloading.
+	var wa := market_ang + outer_end + 0.35 * 0.8 / maxf(outer_arc, 0.1)
+	var wp := Vector3(cos(wa), 0, sin(wa)) * outer_arc
 	drop.call("old_wooden_wagon" if Real.footprint("old_wooden_wagon") != Vector2.ZERO else "medieval_wooden_cart", wp, -wa)  # lying along the row
 	for k in 2:
-		drop.call(clutter[rng.randi() % clutter.size()], wp * (1.0 - (0.16 + k * 0.09) / arc) + Vector3(-sin(wa), 0, cos(wa)) * rng.randf_range(-0.12, 0.12), rng.randf() * TAU)
-	# The crown's market spills over (towns.json market.crown.piles; art target town-b): heaps of goods,
-	# barrels, crates and sacks, set down about the square between the stalls and the house fronts.
-	if int(_market_knobs().get("piles", 0)) > 0:
-		var span_half := (stalls * 0.5 + 0.8) * step
-		for i in int(_market_knobs().get("piles", 0)):
+		drop.call(clutter[rng.randi() % clutter.size()], wp * (1.0 - (0.16 + k * 0.09) / outer_arc) + Vector3(-sin(wa), 0, cos(wa)) * rng.randf_range(-0.12, 0.12), rng.randf() * TAU)
+	# A busy market spills over (towns.json market.<rank>.piles; art target town-b): heaps of goods,
+	# barrels, crates and sacks, set down about the square beyond the stalls, before the house fronts.
+	if int(mk.get("piles", 0)) > 0:
+		var span_half := outer_end + 0.6 / maxf(outer_arc, 0.1)
+		for i in int(mk.get("piles", 0)):
 			var a := market_ang + span_half + rng.randf() * (TAU - 2.0 * span_half)
 			var at := Vector3(cos(a), 0, sin(a)) * square_r * rng.randf_range(0.62, 0.86)
 			if at.distance_to(well) < square_r * 0.3:

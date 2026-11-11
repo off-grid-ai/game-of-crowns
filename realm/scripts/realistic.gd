@@ -18,6 +18,7 @@ static var STRIP := {}
 static var FLOOR_CUT := {}
 static var STONE: Array = []  # stone models: no glow
 static var BY_HEIGHT := {}  # name -> true height in metres, for a model scaled by its height rather than its length (assets.json variant height)
+static var DYE := {}  # name -> {material name: [r, g, b]}: a cloth dyed (assets.json variant dye; a market stall's awning)
 static var _model := {}  # name -> its file
 static var _component := {}  # component id -> its model names, in order
 # name -> {builder: house|castle, spec}: a model our builders raise from the Quaternius kit
@@ -70,6 +71,8 @@ static func _from_catalogue() -> bool:
 				FLOOR_CUT[n] = float(v["floorCut"])
 			if v.get("stone", false):
 				STONE.append(n)
+			if v.get("dye") is Dictionary:
+				DYE[n] = v["dye"]
 			if v.has("height"):
 				BY_HEIGHT[n] = float(v["height"])
 			_component[id].append(n)
@@ -132,6 +135,18 @@ static func height(name: String) -> float:
 	return t["top"] if t else 0.0
 
 
+## A copy of `src` dyed `rgb` (its colour multiplied: a kit cloth's pale weave takes the dye), renamed
+## Dyed_<name> so team colour (look.json team.materials, by name) leaves a dyed cloth its own colour:
+## a market's awnings red, blue, ochre and green, not all the holder's (art target town-b).
+static func dyed(src: Material, rgb) -> Material:
+	if not src is BaseMaterial3D or not rgb is Array or (rgb as Array).size() < 3:
+		return src
+	var m: BaseMaterial3D = src.duplicate()
+	m.albedo_color = Color(m.albedo_color.r * float(rgb[0]), m.albedo_color.g * float(rgb[1]), m.albedo_color.b * float(rgb[2]), m.albedo_color.a)
+	m.resource_name = "Dyed_" + src.resource_name
+	return m
+
+
 static func names_of(kind: String) -> Array:
 	return KIT.keys().filter(func(n): return KIT[n][0] == kind and (BUILT.has(n) or ResourceLoader.exists(_path(n))))
 
@@ -183,6 +198,13 @@ static func _template(name: String) -> Dictionary:
 		if is_instance_valid(n):
 			n.get_parent().remove_child(n)
 			n.free()
+	if DYE.has(name):
+		for mi in model.find_children("*", "MeshInstance3D", true, false):
+			var m: MeshInstance3D = mi
+			for i in (m.mesh.get_surface_count() if m.mesh else 0):
+				var src := m.get_active_material(i)
+				if src and DYE[name].has(src.resource_name):
+					m.set_surface_override_material(i, dyed(src, DYE[name][src.resource_name]))
 	var box := _bounds(model)
 	var longest := maxf(box.size.x, box.size.z)
 	var k: float = 1.0 if longest <= 0.0 else float(KIT[name][1]) * S / longest
