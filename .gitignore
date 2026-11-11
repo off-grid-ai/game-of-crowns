@@ -32,6 +32,7 @@ realm/assets/audio/**
 realm/assets/cavalry/**
 realm/assets/weapons/**
 realm/assets/crops/**
+realm/assets/fx/**
 !realm/assets/realistic/**/
 !realm/assets/people/**/
 !realm/assets/hero/**/
@@ -46,6 +47,7 @@ realm/assets/crops/**
 !realm/assets/cavalry/**/
 !realm/assets/weapons/**/
 !realm/assets/crops/**/
+!realm/assets/fx/**/
 !realm/assets/**/*.import
 !realm/assets/**/license.txt
 !realm/assets/**/LICENSE*

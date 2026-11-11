@@ -1,0 +1,55 @@
+{
+  "_": "Fire, v2 (judged beside docs/art/target/04-siege.jpg: tall shaped flames off the roofs, a dark smoke column leaning in the wind, the house left a charred shell). fire.gd reads it. on: the switch (or --fire=v2; --fire=v1 forces the old puffs). Flames: GDQuest's stylized fire shader (MIT) on Kenney's flame tongues (CC0), in three toon bands. A burning house: flames on its roof and at its front, embers, smoke, a scorch, and it chars (roof falling in) as it burns. Which houses stay burnt is the bridge's damage fact (cities[].damage.burnt, bridge/damage.js), never a timer; share_sack/share_razed only pick how many burn when a sack plays before the damage is known. Sizes are in game units (a house is about 0.3 tall).",
+  "on": false,
+  "share_sack": 0.4,
+  "share_razed": 1.0,
+  "reach": 1.6,
+  "flames": {
+    "amount": 26,
+    "life": 0.9,
+    "size": [0.2, 0.34],
+    "aspect": 1.6,
+    "rise": [0.08, 0.18],
+    "lift": 0.35,
+    "lean": 0.7,
+    "noise_scale": 7.0
+  },
+  "front": {
+    "amount": 10,
+    "size": [0.09, 0.15],
+    "height": 0.35
+  },
+  "colours": {
+    "core": [1.0, 0.93, 0.55],
+    "body": [1.0, 0.52, 0.08],
+    "edge": [0.78, 0.14, 0.03],
+    "brightness": 1.25
+  },
+  "embers": {
+    "amount": 14,
+    "life": 2.2,
+    "size": 0.014,
+    "rise": [0.25, 0.5]
+  },
+  "smoke": {
+    "amount": 26,
+    "life": 7.0,
+    "size": [0.35, 0.8],
+    "grow": 3.0,
+    "rise": [0.12, 0.22],
+    "drift": 0.18,
+    "colour": [0.12, 0.11, 0.1, 0.85]
+  },
+  "light_energy": 1.4,
+  "light_range": 1.1,
+  "char": {
+    "collapse": [0.45, 0.7],
+    "glow_out": 20.0
+  },
+  "scorch_size": 1.7,
+  "hearth": {
+    "amount": 8,
+    "size": [0.05, 0.08],
+    "life": 0.6
+  }
+}
