@@ -7,6 +7,7 @@
 // ctx.meta...) at the moment it is used, as the handlers read it before, so a
 // snapshot or a switch of chronicle during an await is seen.
 
+import * as Damage from "./damage.js";
 import * as Director from "./director.js";
 import * as Events from "./events.js";
 import * as Lua from "./lua.js";
@@ -116,6 +117,12 @@ export async function stage(ctx, req, res, url) {
     if (!c) return json(res, 404, { ok: false, error: "no such city" });
     ctx.scene(kind, { x: c.x, y: c.y, city: c.id, owner: c.owner });
     return json(res, 200, { ok: true, [kind]: c.id });
+  }
+  // {damage: {city, section, wear} or {city, burnt}}: a town's walls or houses damaged now (damage.js), for a film.
+  if (b.damage) {
+    const c = (ctx.world?.cities ?? []).find((x) => x.id === Number(b.damage.city));
+    if (!c) return json(res, 404, { ok: false, error: "no such city" });
+    return json(res, 200, { ok: true, damage: Damage.stage(ctx.meta, c.id, b.damage) });
   }
   // {threat: host|famine|pretender}: the director raises that threat now, at its place (director.js).
   if (b.threat) {

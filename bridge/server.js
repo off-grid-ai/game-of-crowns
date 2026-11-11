@@ -5,6 +5,7 @@
 //   times and scores reigns.
 // - Exposes a small HTTP API on 127.0.0.1:8787 for the view.
 
+import * as Damage from "./damage.js";
 import * as Events from "./events.js";
 import fs from "node:fs";
 import zlib from "node:zlib";
@@ -421,7 +422,7 @@ function refreshCounsel() {
 
 // The realm's states, set on each town (view.js).
 function townStates() {
-  View.townStates({ world, meta, scenes, detail, besiegers, favourOf, marksNow, thoughtsOf: (id) => chatter?.thoughtsOf(id) ?? [] });
+  View.townStates({ world, meta, scenes, detail, besiegers, favourOf, marksNow, thoughtsOf: (id) => chatter?.thoughtsOf(id) ?? [], damageOf: (c) => Damage.view(meta, c) });
   world.intrigue = intrigueNow({ world, court });  // the houses' schemes, for the map (intrigue.js)
 }
 
@@ -590,7 +591,7 @@ function marksNow() {
 const seasonCtx = () => ({ get world() { return world; }, get meta() { return meta; }, get court() { return court; }, get stakes() { return stakes; }, get minds() { return minds; },
   get P() { return P; }, get favour() { return favour; }, get deeds() { return deeds; }, get blights() { return blights; }, setBlights: (v) => { blights = v; },
   favourWhy, favourPast, treasuryCtx, send, record, flushHeld, courtSeason, royalWorks, resolveCampaigns, favourOf, restingFavour, noteFavour, recordDeed,
-  causeOf, saveFavour, goalNow, sworn, shiftFavour, heardCtx, ceasefire, snapshot, runArcs, addMark, detail });
+  causeOf, saveFavour, goalNow, sworn, shiftFavour, heardCtx, ceasefire, snapshot, runArcs, addMark, detail, marksNow, besiegers });
 function runSeason() { return Season.runSeason(seasonCtx()); }
 function turnHouses(turn) { return Season.turnHouses(seasonCtx(), turn); }
 function storyMarch(pid, size) { return Season.storyMarch(seasonCtx(), pid, size); }

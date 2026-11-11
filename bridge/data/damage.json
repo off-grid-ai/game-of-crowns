@@ -1,0 +1,13 @@
+{
+  "_": "Damage done to each town (the finesse catalogue's shared fact; Stronghold, Total War, Manor Lords): wall sections battered by a siege's besiegers until they crack and breach, mended out of siege; houses burnt by a sack or razing, rebuilt season by season. damage.js owns it; /world cities[].damage shows it. Tune here.",
+  "on": true,
+  "sections": 8,
+  "besiegersToBatter": 3,
+  "perBesiegerSeason": 0.1,
+  "mendPerSeason": 0.05,
+  "crackedAt": 0.35,
+  "breachedAt": 0.75,
+  "burntOnSack": 0.4,
+  "burntOnRazed": 1.0,
+  "rebuildPerSeason": 0.08
+}

@@ -162,6 +162,7 @@ export function townStates(ctx) {
     // Why the town looks as it does, in one line (situation.js): the card's first line.
     c.situation = situation({ world, scenes, marks: ctx.marksNow?.() ?? [], besiegers }, c);
     c.thoughts = ctx.thoughtsOf?.(c.id) ?? [];  // what the town is saying (chatter.js; the crowd thinks out loud)
+    c.damage = ctx.damageOf?.(c) ?? null;  // its walls' sections and its burnt houses (damage.js, the one owner)
   }
 }
 

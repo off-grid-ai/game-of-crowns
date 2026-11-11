@@ -107,3 +107,6 @@ Switches (`--name`) go after `--` on the game's command line.
 
 ## Who's home and the hearths (Builder 1; on by default, `--hearths=off`)
 - Chimney smoke only where someone's home: how often it's checked, how near a person must be to their door: `realm/data/hearths.json`.
+
+## Damage to towns: walls and burnt houses (Builder 1; the bridge owns it)
+- How fast besiegers batter a wall section, when it shows cracked and breached, how fast it's mended, how much a sack or razing burns and how fast it's rebuilt, how many sections: `bridge/data/damage.json`.
