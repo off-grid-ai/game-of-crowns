@@ -32,6 +32,9 @@ limit. Newest first. The plan is [PLAN.md](PLAN.md); the running log of checks i
   switch until judged; tunables in data plus docs/TUNING.md.
 
 ## What Mac said (2026-11-11), newest first
+- "A mid fidelity is what I want… polished but not hyper-realism… Warcraft II is mid fidelity… show me
+  screenshots of other games so I can tell you the fidelity I want… and the world's components must
+  interact effectively." A fidelity picker page is being built (research) so he can pick.
 - "Beautiful does not mean hyper-realism… even at low or mid fidelity, if the interaction experience is
   great, we'll win. That's what you need to focus on." The slice is judged first on interactions (every
   action answered in the world, things reacting to each other), then on the look at our chosen abstraction.
