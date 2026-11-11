@@ -88,12 +88,35 @@ export function nextThing(ctx, aim) {
     if (near) pool.push({ kind: "walls", text: `${th.houseName} gathers. Wall ${cityName(near.id)}`, city: near.id, act: { action: "build", city: near.id, building: "walls" } });
     if (seat) pool.push({ kind: "levy", text: `${th.houseName} gathers. Raise the levy at ${cityName(seat.id)}`, city: seat.id, act: { action: "levy", city: seat.id } });
   }
+  // Standing uses (data/next.json standing): always on offer after the rest, so each voice has one in a quiet
+  // season and a thin purse; the price filter below keeps only what the treasury can pay.
+  const coldest = great.map((p) => [p, ctx.favourOf?.(p.id) ?? 50]).sort((a, b) => a[1] - b[1])[0]?.[0];
+  const coldSeat = coldest ? world.cities.find((c) => c.owner === coldest.id && c.capital) : null;
+  const theirs = world.cities.filter((c) => great.some((p) => p.id === c.owner));
+  const exposed = world.cities.filter((c) => c.owner === crown?.id && !(c.buildings ?? []).includes("City Walls"))
+    .map((c) => [c, Math.min(...theirs.map((t) => Math.hypot(c.x - t.x, c.y - t.y)))]).sort((a, b) => a[1] - b[1])[0]?.[0];
+  for (const s of NEXT.standing ?? []) {
+    const at = s.at === "coldest" ? coldSeat : s.at === "exposed" ? exposed : seat;
+    if (!at) continue;
+    const text = s.text.replace("{house}", coldest ? houseFor(coldest).name : "").replace("{town}", cityName(at.id));
+    pool.push({ kind: "standing", text, city: at.id, act: { action: s.action, city: at.id, ...(s.building ? { building: s.building } : {}) } });
+  }
   // In order: a threat about to land, a royal town going hungry, a threat further off, the aim's next step, the Hand's counsel, the wider pool.
   // A goal is something he can do now: only what the realm would let him order (the decree's own once-a-year
   // and price rules, canDecree) is offered; the rest wait for the season they can be given in.
   const order = [...threats.filter((t) => t.seasons <= SOON).map((t) => [t, t.seasons <= 1 ? "loss" : "act"]),
     ...(feed ? [[feed, hungry.famine ? "loss" : "act"]] : []), ...threats.filter((t) => t.seasons > SOON).map((t) => [t, "act"]), ...(ladder ? [[ladder, "act"]] : []),
     ...counsel.map((c) => [c, "act"]), ...pool.map((c) => [c, "act"])];
+  // Scarcity, measured (PLAN.md, the seals row): of the three most urgent uses the yearly rules allow, how many
+  // the treasury covers now. The economy aims at two of three: just short, never empty (Frostpunk, Against the Storm).
+  const wanted = [], wseen = new Set();
+  for (const [x] of order) {
+    const k = x.act ? `${x.act.action}:${x.act.city}:${x.act.building ?? ""}` : "";
+    if (!x.act || x.act.city == null || wseen.has(k) || (ctx.canDecree && !ctx.canDecree(x.act, Infinity))) continue;
+    wseen.add(k); wanted.push(x.act);
+    if (wanted.length === 3) break;
+  }
+  const reach = { of: wanted.length, can: ctx.canDecree ? wanted.filter((a) => ctx.canDecree(a)).length : wanted.length };
   const seen = new Set();
   const doable = order.filter(([x]) => {
     const k = x.act ? `${x.act.action}:${x.act.city}:${x.act.building ?? ""}` : "";
@@ -112,7 +135,7 @@ export function nextThing(ctx, aim) {
   const first = doable.find(([x]) => favours(V1, x)) ?? doable[0];
   const second = doable.find(([x]) => x !== first?.[0] && favours(V2, x)) ?? doable.find(([x]) => x !== first?.[0]);
   const line = (x, tone, extra = {}) => ({ kind: x.kind, text: x.text, city: x.city ?? null, seconds: x.seasons != null ? secs(x.seasons) : null,
-    count: x.count ?? null, frac: Math.max(0, Math.min(1, x.frac ?? 0)), tone, options, act: x.act ?? null, alts, ...extra });
+    count: x.count ?? null, frac: Math.max(0, Math.min(1, x.frac ?? 0)), tone, options, reach, act: x.act ?? null, alts, ...extra });
   // With the royal seal on and none in hand, nothing is his until the season brings one: the court's next sitting.
   const sealed = Seals.on(meta) && (meta.seals?.n ?? 1) < 1;
   if (!sealed && first && second) {

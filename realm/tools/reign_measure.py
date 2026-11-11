@@ -56,7 +56,8 @@ SEAL_POLICY = os.environ.get("SEAL_POLICY", "random")
 crown_towns = lambda w: [c["id"] for c in w.get("cities", []) if any(p.get("id") == c.get("owner") and (p.get("house") or {}).get("crown") for p in w.get("players", []))]
 towns_at_start = None
 seal_refused_now = []  # refused since the last seal spent: tried again only once all have been
-ev_seen, ev_done, events_answered = {}, set(), 0  # event cards (bridge events.js) seen and answered
+ev_seen, ev_done, events_answered = {}, set(), 0
+seal_seasons, choice_seasons, reach_at_seal = set(), set(), {}  # seasons with a seal in hand; those with 2+ uses on offer  # event cards (bridge events.js) seen and answered
 while time.time() - start < MIN * 60:
     now = time.time()
     try:
@@ -88,6 +89,14 @@ while time.time() - start < MIN * 60:
             nx_text = nx.get("text")
         if (nx.get("options") or 0) >= 2:
             multi_time += now - nx_last
+        # PLAN.md's seals row, per season: of the seasons he holds a seal, those offering 2+ uses at some point.
+        if ((w.get("reign") or {}).get("seals") or {}).get("n", 0) >= 1:
+            seal_seasons.add(w.get("turn"))
+            if (nx.get("options") or 0) >= 2:
+                choice_seasons.add(w.get("turn"))
+            rc = nx.get("reach") or {}
+            if rc.get("of"):
+                reach_at_seal[w.get("turn")] = f"{rc.get('can')}/{rc.get('of')}"  # the season's last look with a seal in hand
     # An event card (bridge events.js): read for 3 s, then answered at random, as one more decision.
     ev = ((w.get("reign") or {}).get("event") or {}).get("up")
     if isinstance(ev, dict) and not court:
@@ -104,7 +113,10 @@ while time.time() - start < MIN * 60:
     if isinstance(sl, dict) and sl.get("n", 0) >= 1 and not court and not (inter and not inter.get("seen")) and now - seal_last >= 6 \
             and isinstance(nx, dict) and nx.get("alts"):
         tried = [a for a in nx["alts"] if a not in seal_refused_now]
-        pick = nx["act"] if SEAL_POLICY == "hand" and nx.get("act") and nx["act"] not in seal_refused_now else random.choice(tried or nx["alts"])
+        # hand / marshal: always the first / second voice's pick (next.js voices), to see whether one way dominates.
+        vo = {v.get("who", ""): v.get("act") for v in (nx.get("voices") or [])}
+        want = nx.get("act") if SEAL_POLICY == "hand" else (list(vo.values())[1] if SEAL_POLICY == "marshal" and len(vo) > 1 else None)
+        pick = want if want and want not in seal_refused_now else random.choice(tried or nx["alts"])
         body = {k: pick[k] for k in ("action", "city", "building", "to") if pick.get(k) is not None}
         r = post("/decree", body)
         seal_last = now
@@ -207,6 +219,9 @@ res = {
     "next_kinds_share": {k: round(v / max(1e-9, sum(nx_time.values())), 2) for k, v in nx_time.items()},
     "seal_policy": SEAL_POLICY,
     "name_earned": ((w.get("reign") or {}).get("readings") or {}).get("name"),
+    # Strength (the Marshal's ground): the King's own fighting men at the end, and his towns held.
+    "crown_soldiers_end": sum(1 for u in w.get("units", []) if u.get("type") not in ("Settlers", "Workers", "Trireme", "Caravan", "Explorer") and any(p.get("id") == u.get("owner") and (p.get("house") or {}).get("crown") for p in w.get("players", []))),
+    "crown_towns_end": len(crown_towns(w)),
     "crown_towns_lost": len(set(towns_at_start or []) - set(crown_towns(w))),
     "crown_towns_gained": len(set(crown_towns(w)) - set(towns_at_start or [])),
     "peace_end": round(((w.get("reign") or {}).get("readings") or {}).get("peace", {}).get("now", 0), 2),
@@ -217,6 +232,9 @@ res = {
     "seal_top_share": round(max(seal_acts.values()) / sum(seal_acts.values()), 2) if seal_acts else 0,
     "seal_hand_pick_share": round(seal_hand / sum(seal_acts.values()), 2) if seal_acts else 0,
     "two_or_more_worth_a_seal_share": round(multi_time / (mins * 60), 2),
+    "seasons_with_seal": len(seal_seasons),
+    "reach_at_seal": dict(collections.Counter(reach_at_seal.values())),  # of the 3 best uses, how many the treasury covers (aim: 2/3)
+    "seasons_with_a_choice_share": round(len(choice_seasons) / max(1, len(seal_seasons)), 2),
     "reign_clock_minutes": round(((w.get("reign") or {}).get("elapsedMs") or 0) / 60000, 1),
 }
 json.dump(res, open(OUT, "w"), indent=1)

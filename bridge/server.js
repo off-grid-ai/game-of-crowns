@@ -553,11 +553,12 @@ function onEvent(line) {
 const reignCtx = () => ({ meta, world, court, stakes, arcs, favour, favourPast, turnSeconds, get paused() { return paused; }, setPaused: (v) => { paused = v; },
   get history() { return history; }, get chronicle() { return chronicle; }, get counselNow() { return counselNow; }, record, send, scene, detail, favourOf, saveFavour, crownOf, crownSeat, SOLDIER, soulsOf, theirs, canDecree });
 // Whether the realm would take this order now, by the decree route's own once-a-year and price rules (next.js offers only these).
-function canDecree(cmd) {
+// purse: the gold to judge the price against (Infinity: by the yearly rules only, for what he'd want if he could pay).
+function canDecree(cmd, purse = null) {
   const y = yearlyKey(cmd);
   if (y && seasonsLeft(y) > 0) return false;
   const crown = crownOf();
-  return !!crown && (crown.gold ?? 0) >= priceOf(cmd.action);
+  return !!crown && (purse ?? crown.gold ?? 0) >= priceOf(cmd.action);
 }
 // The King's ledger and the name the realm gives him (reign.js).
 function kingName(outcome = null) { return Reign.kingName(reignCtx(), outcome); }

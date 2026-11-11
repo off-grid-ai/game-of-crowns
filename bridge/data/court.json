@@ -74,7 +74,7 @@
   "bigDown": "much colder"
  },
  "one": {
-  "on": false,
+  "on": true,
   "stages": [
    {
     "until": 0.5,
