@@ -82,7 +82,8 @@ def main():
     out_dir, names = a[0], a[1:]
     os.makedirs(out_dir, exist_ok=True)
     for name in names:
-        path = os.path.join(REALM, "assets", "meshy", name, name + ".glb")
+        path = name if name.endswith(".glb") else os.path.join(REALM, "assets", "meshy", name, name + ".glb")  # a .glb path: any model
+        name = os.path.splitext(os.path.basename(name))[0]
         if not os.path.exists(path):
             print("TURN %s: not imported" % name)
             continue
