@@ -84,7 +84,7 @@ var _snowed := -1  # town count when the season was last laid on them
 
 func _ready() -> void:
 	shots._parse_args()
-	if _shot.has("path") or _shot.has("hq"):
+	if _film():
 		shots._capture_quality()
 		# A render is not the game: say so on its window, so a still being drawn
 		# without the interface is never mistaken for the game losing its panels.
@@ -508,12 +508,19 @@ var graphics_smooth := true
 var _rich := {}  # the Beautiful values, kept to put back
 
 
+## Drawn at film quality (shot_harness._capture_quality, Beautiful): a still or a film take,
+## but not a measuring run (--perf), which is drawn as the game is played.
+func _film() -> bool:
+	return (_shot.has("path") or _shot.has("hq")) and not _shot.has("perf")
+
+
 func apply_graphics() -> void:
 	if env == null or sun == null:
 		return
 	if _rich.is_empty():
 		_rich = {"sdfgi": env.sdfgi_enabled, "ssao": env.ssao_enabled, "ssil": env.ssil_enabled, "vol": env.volumetric_fog_enabled, "glow": env.glow_enabled, "shadow": sun.directional_shadow_max_distance}
-	graphics_smooth = String(Settings.get_value("graphics")) != "beautiful" and not (_shot.has("path") or _shot.has("hq"))
+	var chosen := String(_shot["perf"]) if String(_shot.get("perf", "")) != "" else String(Settings.get_value("graphics"))
+	graphics_smooth = chosen != "beautiful" and not _film()
 	env.sdfgi_enabled = _rich["sdfgi"] and not graphics_smooth
 	env.ssao_enabled = _rich["ssao"] and not graphics_smooth
 	env.ssil_enabled = _rich["ssil"] and not graphics_smooth
@@ -523,7 +530,7 @@ func apply_graphics() -> void:
 	# size was tried for Smooth and smeared people and ground; the effects it
 	# drops buy nearly all its frame rate. (Stills and films draw at full size in
 	# _capture_quality (shot_harness.gd), which sets its own.)
-	if not (_shot.has("path") or _shot.has("hq")):
+	if not _film():
 		get_viewport().scaling_3d_scale = float(ProjectSettings.get_setting("rendering/scaling_3d/scale", 0.67))
 	sun.directional_shadow_max_distance = minf(_rich["shadow"], 40.0) if graphics_smooth else _rich["shadow"]
 	# The woods: their leafy middle detail runs out sooner, and painted cards take over.

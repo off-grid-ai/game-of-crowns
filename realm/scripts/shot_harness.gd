@@ -44,6 +44,10 @@ func _parse_args() -> void:
 			_shot["path"] = a.substr(7)
 		elif a.begins_with("--wait="):
 			_shot["wait"] = a.substr(7)
+		elif a == "--perf" or a.begins_with("--perf="):
+			# A measuring run: framed like a shot, drawn as the game is played (no film quality),
+			# in the player's Settings graphics or the one named (--perf=smooth / --perf=beautiful).
+			_shot["perf"] = a.substr(7) if a.begins_with("--perf=") else ""
 		elif a.begins_with("--cam="):
 			_shot["cam"] = a.substr(6).split(",")
 		elif a.begins_with("--time="):
