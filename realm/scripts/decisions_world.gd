@@ -7,7 +7,7 @@ extends Node3D
 ##             barred; angry: smoke, a burned cart and rubble, guards doubled before the crowd
 ##   feast     lanterns round the square and the holder's banners
 ##   levy      a sergeant, a table and a line of recruits under the royal standard at the gate
-##   garrison  the royal standard and a guard at the gate of a town the King's men marched to
+##   garrison  the royal standard and a guard at the gate of a town the King's men stand at (the bridge's garrison.js)
 ## The one owner of these marks. It decides nothing: every reading comes from the realm as the view
 ## mirrors it (awareness.gd's town scopes and the world's scenes); the people are the scenes' own
 ## (scenes.people), the props come from the asset catalogue (realistic.gd), the banners from heraldry.
@@ -29,7 +29,6 @@ static var CFG: Dictionary = _read()
 
 var main: Node
 var _marks := {}  # "town:kind" -> {root, sig}
-var _garrisons := {}  # town id -> the season its guard goes home
 var _t := 0.0
 
 
@@ -61,8 +60,6 @@ func _process(delta: float) -> void:
 	if main.awareness == null or main.towns == null or main.terrain == null or main.scenes == null:
 		return
 	var world: Dictionary = main.bridge.world
-	var turn := int(world.get("turn", 0))
-	_note_garrisons(world, turn)
 	var want := {}  # "town:kind" -> [town id, kind, level]
 	var bands: Dictionary = Awareness.bands
 	for c in world.get("cities", []):
@@ -81,7 +78,7 @@ func _process(delta: float) -> void:
 			want["%d:feast" % id] = [id, "feast", 1]
 		if bool(bb.get_var(&"levy", false, false)):
 			want["%d:levy" % id] = [id, "levy", 1]
-		if int(_garrisons.get(id, -1)) > turn:
+		if int(bb.get_var(&"garrison", 0, false)) > 0:  # the bridge's own reading (garrison.js): it survives a restart
 			want["%d:garrison" % id] = [id, "garrison", 1]
 	# A test aid for one batched render (off in play): --decisions-demo=unrest,unrest2,feast,levy,garrison
 	# raises those marks at --city's town (else the King's seat), whatever the realm says.
@@ -105,22 +102,6 @@ func _process(delta: float) -> void:
 	for key in want:
 		if not _marks.has(key):
 			_raise(key, want[key])
-
-
-## A muster that marched from the King's seat to another town leaves a guard there (the garrison's seasons).
-func _note_garrisons(world: Dictionary, turn: int) -> void:
-	var seasons := int((CFG.get("garrison", {}) as Dictionary).get("seasons", 4))
-	for s in world.get("scenes", []):
-		if String(s.get("kind", "")) != "muster" or s.get("tx") == null:
-			continue
-		for c in world.get("cities", []):
-			if int(c.get("x", -1)) == int(s["tx"]) and int(c.get("y", -1)) == int(s["ty"]) and int(c.get("id", -1)) != int(s.get("city", -2)):
-				var until := int(s.get("turn", turn)) + seasons
-				if until > int(_garrisons.get(int(c["id"]), -1)):
-					_garrisons[int(c["id"])] = until
-	for id in _garrisons.keys():
-		if int(_garrisons[id]) <= turn:
-			_garrisons.erase(id)
 
 
 # --- raising and lowering a mark -------------------------------------------------------------------

@@ -6,11 +6,26 @@
  "near": 40.0,
  "unrest": {
   "_": "A displeased house's seat (its favour under the bridge's bands: under 'steady' it is cold, under 'cooling' angry). cold: a crowd in the square round a speaker, the house's banner lowered, some shops barred. angry: a bigger crowd, more shops barred, smoke, a burned cart and rubble, guards doubled before the crowd. crowd / barred / guards / smoke: how many, by level [cold, angry]. ring: where the crowd stands, as a share of the square's radius.",
-  "crowd": [6, 12],
-  "barred": [3, 8],
-  "guards": [0, 6],
-  "smoke": [0, 2],
-  "cart": [false, true],
+  "crowd": [
+   6,
+   12
+  ],
+  "barred": [
+   3,
+   8
+  ],
+  "guards": [
+   0,
+   6
+  ],
+  "smoke": [
+   0,
+   2
+  ],
+  "cart": [
+   false,
+   true
+  ],
   "ring": 0.45,
   "banner_tilt": 0.5
  },
@@ -20,7 +35,15 @@
   "banners": 4,
   "ring": 0.85,
   "light_every": 3,
-  "light": { "color": [1.0, 0.72, 0.38], "energy": 0.9, "range": 0.8 }
+  "light": {
+   "color": [
+    1.0,
+    0.72,
+    0.38
+   ],
+   "energy": 0.9,
+   "range": 0.8
+  }
  },
  "levy": {
   "_": "A levy raised at a town (the mirror's levy: a muster there this season or last): at its gate, a sergeant at a table under the royal standard and a line of recruits.",
@@ -28,8 +51,7 @@
   "spacing": 0.14
  },
  "garrison": {
-  "_": "Reinforcements (a muster that marched out of the King's seat to another town: backing a house, the banners, sellswords): once the column is seen, the royal standard stands at that town's gate with a guard for this many seasons.",
-  "seasons": 4,
+  "_": "Reinforcements: while the bridge says a royal company stands at a town (cities[].garrison; bridge/garrison.js and data/garrison.json own how long), the royal standard stands at its gate with a guard.",
   "guards": 6,
   "standards": 2,
   "spacing": 0.13

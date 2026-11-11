@@ -190,4 +190,5 @@ Switches (`--name`) go after `--` on the game's command line.
 - The King's decisions seen on the map, on or off: `realm/data/decisions.json`: `on` (or `--decisions=on`).
 - Unrest at a displeased house's seat (crowd, barred shops, guards, smoke, the burned cart, by cold and angry): `realm/data/decisions.json`: `unrest`.
 - A feast's lanterns and banners round the square: `realm/data/decisions.json`: `feast`.
-- The levy's recruits at the gate; how long the King's guard stays at a town he reinforced: `realm/data/decisions.json`: `levy`, `garrison.seasons`.
+- The levy's recruits at the gate, the guard's size at a reinforced town: `realm/data/decisions.json`: `levy`, `garrison`.
+- How long the King's company stands at a town he sent men to, how many men join its defence, which decrees send them: `bridge/data/garrison.json`.

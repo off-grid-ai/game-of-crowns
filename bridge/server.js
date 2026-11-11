@@ -50,6 +50,7 @@ import * as Book from "./favourbook.js";
 import { LEAN, theirs } from "./favourbook.js";
 import { moodFrom, isWatched } from "./claude.js";
 import * as Season from "./season.js";
+import * as Garrison from "./garrison.js";
 import { TURNING } from "./season.js";
 import { intrigueNow } from "./intrigue.js";
 
@@ -422,7 +423,7 @@ function refreshCounsel() {
 
 // The realm's states, set on each town (view.js).
 function townStates() {
-  View.townStates({ world, meta, scenes, detail, besiegers, favourOf, marksNow, thoughtsOf: (id) => chatter?.thoughtsOf(id) ?? [], damageOf: (c) => Damage.view(meta, c) });
+  View.townStates({ world, meta, scenes, detail, besiegers, favourOf, marksNow, thoughtsOf: (id) => chatter?.thoughtsOf(id) ?? [], damageOf: (c) => Damage.view(meta, c), garrisonOf: (c) => Garrison.view(meta, c, world?.turn ?? 0) });
   world.intrigue = intrigueNow({ world, court });  // the houses' schemes, for the map (intrigue.js)
 }
 
@@ -517,6 +518,8 @@ function decreeScenes(cmd, result, seat, target) {
     case "ward": if (target && target.id !== seat.id) scene("ward", { x: target.x, y: target.y, tx: seat.x, ty: seat.y, city: seat.id }); break;
     case "banners": case "sellswords": case "back":  // men gather at Kingsmere and march out
       scene("muster", { x: seat.x, y: seat.y, tx: target ? target.x : seat.x + 3, ty: target ? target.y : seat.y + 2, city: seat.id });
+      // Marched to another town, the company stands there (garrison.js, the one owner; kept with the reign).
+      if (target && target.id !== seat.id) Garrison.post(meta, cmd.action, target, world.turn ?? 0, send);
       break;
   }
 }
