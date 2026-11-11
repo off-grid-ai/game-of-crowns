@@ -545,6 +545,16 @@ const TINTS := {"green": Color(0.5, 0.95, 0.32), "yellowing": Color(0.85, 0.95, 
 const FLAX_TINTS := {"green": Color(0.8, 1.0, 0.8), "yellowing": Color(1.0, 0.95, 0.6), "gold": Color(1.25, 0.9, 0.5), "stubble": Color(1.0, 0.8, 0.55)}
 static var _season_name := ""
 static var _season_from := 0
+static var _held := false  # a film's season held (hold_season), whatever the realm's own
+
+
+## A film aid (autoplay's field step; off in play): the fields' year set to `season`, `t` of the
+## way through it, and held there from the realm's own season changes; their crops ripen to it and
+## their work follows (field_work.gd).
+static func hold_season(season: String, t: float) -> void:
+	_held = true
+	_season_name = season
+	_season_from = Time.get_ticks_msec() - int(clampf(t, 0.0, 1.0) * maxf(Awareness.season_seconds, 1.0) * 1000.0)
 static var _tinted := {}  # "kind|stage" -> the crop's material in that colour
 
 
@@ -603,7 +613,7 @@ static func _tint(kind: String, stage: String) -> Material:
 func _check_season() -> void:
 	if terrain == null:
 		return
-	if terrain.season != _season_name:
+	if terrain.season != _season_name and not _held:
 		_season_name = terrain.season
 		_season_from = Time.get_ticks_msec()
 	var t := _through()

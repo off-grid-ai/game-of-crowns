@@ -287,6 +287,23 @@ func _play(quit_after: bool) -> void:
 				if main.rig.is_processing_input() == false:
 					main.rig.apply()
 				await get_tree().create_timer(3.0).timeout
+			"field":
+				# field season t [n] [dist] [tilt]: the countryside's year held at that season and that far
+				# through it (countryside.gd hold_season), then the n-th sown field from the crown's seat
+				# framed low and oblique; its work (ploughing, sowing, weeding, reaping and stooking,
+				# gleaning, lifting: field_work.gd) comes out as the camera arrives.
+				preload("res://scripts/countryside.gd").hold_season(w[1], float(w[2]) if w.size() > 2 else 0.5)
+				_frame_field(false, int(w[3]) if w.size() > 3 else 0, float(w[4]) if w.size() > 4 else 4.0, float(w[5]) if w.size() > 5 else -25.0)
+				if main.rig.is_processing_input() == false:
+					main.rig.apply()
+				await get_tree().create_timer(3.0).timeout
+			"flock":
+				# flock [n] [dist] [tilt]: the n-th fallow field from the crown's seat, where a shepherd's
+				# flock grazes (field_work.gd; spring to autumn), framed low and oblique.
+				_frame_field(true, int(w[1]) if w.size() > 1 else 0, float(w[2]) if w.size() > 2 else 4.0, float(w[3]) if w.size() > 3 else -25.0)
+				if main.rig.is_processing_input() == false:
+					main.rig.apply()
+				await get_tree().create_timer(3.0).timeout
 			"breach":
 				# breach [dist] [tilt]: frames the first open breach in a stone wall (walls.gd), low and oblique
 				# from inside the camp's side, where the storm is fought; the siege's front if none is open yet.
@@ -478,6 +495,29 @@ func _frame_site(kind: String, n: int, dist: float, tilt: float) -> void:
 		_note("  site %s %d: none (%d of that kind stand)" % [kind, n, all.size()])
 		return
 	_note("  site %s %d of %d at %s" % [kind, n, all.size(), all[n]])
+	_oblique(all[n], dist, tilt)
+
+
+## Frames the n-th field from the crown's seat outward: a sown one (its crop tagged with its field:
+## countryside.gd sow) or, for a flock, a fallow one (countryside.gd fallow_near).
+func _frame_field(fallow: bool, n: int, dist: float, tilt: float) -> void:
+	var seat := Vector3.ZERO
+	for c in main.bridge.world.get("cities", []):
+		if int(c["id"]) == int(main.bridge.world.get("seatId", -1)):
+			seat = main.terrain.world_pos(float(c["x"]), float(c["y"]))
+	var all: Array = []
+	if fallow:
+		all = main.countryside.fallow_near(Vector2(seat.x, seat.z), 60.0).map(func(f): return f[0])
+	else:
+		for crop in get_tree().get_nodes_in_group("crops"):
+			if crop.has_meta("field"):
+				all.append(crop.get_meta("field")[0])
+	all.sort_custom(func(a: Vector3, b: Vector3) -> bool: return a.distance_squared_to(seat) < b.distance_squared_to(seat))
+	var what := "fallow field" if fallow else "field"
+	if n < 0 or n >= all.size():
+		_note("  %s %d: none (%d stand)" % [what, n, all.size()])
+		return
+	_note("  %s %d of %d at %s" % [what, n, all.size(), all[n]])
 	_oblique(all[n], dist, tilt)
 
 
