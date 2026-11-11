@@ -98,6 +98,9 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log of supervisor actions (newest first; details in review/supervisor-log.md)
+- 16:30 Milestone 1 asked for the next Godot slot: everything built so far on together (look, kit trees, painted
+  ground, wear, team colour, political map, kit castle if ready), Kingsmere, Goldrock and the map beside
+  01-town and 02-realm. The full slice (kit houses, fire, breach) follows over the next days [est].
 - 16:45 finesse catalogue routed into the slice: five shared facts first (wind, wetness, who's home, ground wear,
   damage per segment), then flames, chimney smoke, lit windows, wall breaches, ruins, fire response, rain, fields.
   A fidelity picker for Mac is being built by research. The text pass is done (GoT furniture out).
