@@ -161,6 +161,7 @@ export function townStates(ctx) {
     c.mood = c.disorder ? "riot" : c.famine ? "hunger" : c.celebrating ? "feast" : "";
     // Why the town looks as it does, in one line (situation.js): the card's first line.
     c.situation = situation({ world, scenes, marks: ctx.marksNow?.() ?? [], besiegers }, c);
+    c.thoughts = ctx.thoughtsOf?.(c.id) ?? [];  // what the town is saying (chatter.js; the crowd thinks out loud)
   }
 }
 

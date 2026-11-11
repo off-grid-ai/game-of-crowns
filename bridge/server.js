@@ -421,7 +421,7 @@ function refreshCounsel() {
 
 // The realm's states, set on each town (view.js).
 function townStates() {
-  View.townStates({ world, meta, scenes, detail, besiegers, favourOf, marksNow });
+  View.townStates({ world, meta, scenes, detail, besiegers, favourOf, marksNow, thoughtsOf: (id) => chatter?.thoughtsOf(id) ?? [] });
   world.intrigue = intrigueNow({ world, court });  // the houses' schemes, for the map (intrigue.js)
 }
 
@@ -900,7 +900,7 @@ const routeCtx = () => ({
   get history() { return history; },
   get turnSeconds() { return turnSeconds; }, set turnSeconds(v) { turnSeconds = v; },
   get paused() { return paused; }, set paused(v) { paused = v; },
-  get court() { return court; },
+  get court() { return court; }, get chatter() { return chatter; },
   get decreesIssued() { return decreesIssued; }, set decreesIssued(v) { decreesIssued = v; },
   get stakes() { return stakes; },
   get minds() { return minds; },

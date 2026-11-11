@@ -1,0 +1,5 @@
+{
+  "_": "A town's talk under its name (--thoughts; RCT's guest thoughts): what the town says, shown only near it, one line at a time. The words come from the bridge (bridge/data/thoughts.json, chatter.js). Tune here.",
+  "near": 30.0,
+  "cycle_sec": 6.0
+}

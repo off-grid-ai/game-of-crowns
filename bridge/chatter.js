@@ -11,6 +11,9 @@
 
 import fs from "node:fs";
 import path from "node:path";
+
+// What a town says about the King and its own state (the crowd thinks out loud).
+const THOUGHTS = JSON.parse(fs.readFileSync(new URL("./data/thoughts.json", import.meta.url), "utf8"));
 import * as llm from "./claude.js";
 import { cityName } from "./narrator.js";
 
@@ -495,6 +498,7 @@ Write ${count} lines of their talk, taking turns, ${first(order[0])} first.`;
   idle() {
     try {
       const turn = this.ctx.turn();
+      this.fromState(this.ctx.world());  // a town's hunger, siege or levy becomes its talk
       this.travel(turn);
       // Old news stops travelling: only rumours heard in the last few seasons are told on.
       const live = Object.keys(this.heard).filter((id) => this.minds.rumours(id).some((b) => turn - (b.heard ?? 0) <= STALE));
@@ -515,6 +519,59 @@ Write ${count} lines of their talk, taking turns, ${first(order[0])} first.`;
   }
 
   // POST /minds/rumour { city, i, text }: a rumour starts with one person (story arcs, something seen).
+  // --- the crowd thinks out loud (bridge/data/thoughts.json; RCT's guest thoughts) ---------
+
+  // A ruling at a town becomes the town's talk: Omni words it from the ruling and the town's state
+  // when Off Grid AI is running, else a line from thoughts.json by who it helped or hurt.
+  // ruling: { city, text, helps: [house names], hurts: [house names] }
+  async afterRuling(ruling) {
+    if (!THOUGHTS.on || ruling?.city == null) return null;
+    const town = cityName(ruling.city);
+    const helped = ruling.helps?.[0], hurt = ruling.hurts?.[0];
+    const who = helped ? `It helped ${helped}.` : hurt ? `It hurt ${hurt}.` : "";
+    const o = THOUGHTS.omni;
+    const said = await words(false, o.system.replace("{town}", town ?? "town"), o.prompt.replace("{ruling}", String(ruling.text ?? "").slice(0, 160)).replace("{who}", who), o.max);
+    const pool = helped ? THOUGHTS.ruling.helped : hurt ? THOUGHTS.ruling.hurt : THOUGHTS.ruling.plain;
+    const line = said ?? pick(pool).replace("{house}", helped ?? hurt ?? "");
+    return this.think(ruling.city, line);
+  }
+
+  // What a town's state says before any number does: hunger, siege, a levy (once per spell).
+  fromState(world) {
+    if (!THOUGHTS.on) return;
+    const seen = (this.stateSeen ??= {});
+    for (const c of world?.cities ?? []) {
+      for (const [kind, on] of [["hunger", c.famine], ["siege", c.besieged], ["levy", (c.levy ?? 0) > 0]]) {
+        const key = `${c.id}:${kind}`;
+        if (on && !seen[key]) { seen[key] = true; this.think(c.id, pick(THOUGHTS[kind])); }
+        else if (!on) delete seen[key];
+      }
+    }
+  }
+
+  // One of the town's folk takes it up; travellers carry it on from there.
+  think(city, text) {
+    const folk = (this.minds.town(city) ?? []).filter(Boolean);
+    const m = pick(folk);
+    return m && text ? this.startRumour(m, String(text).slice(0, 200)) : null;
+  }
+
+  // The town's loudest thoughts: what most of its folk now hold, freshest first.
+  thoughtsOf(city) {
+    const count = {};
+    // Read from what the town's folk have heard (this.heard, by mind id), never seeding minds for a town.
+    const prefix = `folk:${city}:`;
+    for (const id of Object.keys(this.heard).filter((k) => k.startsWith(prefix))) {
+      for (const b of this.minds.rumours(id)) {
+        const k = b.rumour;
+        count[k] ??= { text: b.text, n: 0, heard: b.heard ?? 0 };
+        count[k].n++;
+        count[k].heard = Math.max(count[k].heard, b.heard ?? 0);
+      }
+    }
+    return Object.values(count).sort((a, b) => b.n - a.n || b.heard - a.heard).slice(0, THOUGHTS.perTown).map((t) => t.text);
+  }
+
   plant(city, i, text) {
     const m = this.minds.town(city)[i];
     return m && text ? { id: this.startRumour(m, String(text).slice(0, 200)).rumour } : null;

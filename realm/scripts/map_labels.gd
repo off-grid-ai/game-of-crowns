@@ -91,6 +91,7 @@ func _process_timed(_delta: float) -> void:
 		# with how long it has left, so his open matters are always in sight.
 		tag["doing"].text = mine
 		tag["doing"].visible = mine != ""
+		_think(tag, data, d)
 		var p := cam.unproject_position(at)
 		var size := box.get_combined_minimum_size()
 		var rect := Rect2(p - Vector2(size.x * 0.5, size.y), size)
@@ -157,7 +158,34 @@ func _make(_id: int) -> Dictionary:
 	doing.add_theme_color_override("font_color", T.ACCENT)
 	_shadow(doing)
 	box.add_child(doing)
-	return {"box": box, "name": name, "house": house, "sigil": sigil, "doing": doing, "sig": ""}
+	# What the town is saying (--thoughts; RCT's guest thoughts): a quiet line, near the town only.
+	var thought := Label.new()
+	thought.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	thought.add_theme_font_size_override("font_size", 11)
+	thought.add_theme_color_override("font_color", Color(0.95, 0.92, 0.85, 0.82))
+	_shadow(thought)
+	thought.visible = false
+	box.add_child(thought)
+	return {"box": box, "name": name, "house": house, "sigil": sigil, "doing": doing, "thought": thought, "sig": ""}
+
+
+## The town's talk under its name, near the town only, one of its loudest thoughts at a time
+## (--thoughts; the words are the bridge's, /world cities[].thoughts; distances in data/thoughts.json).
+var _thoughts_on := OS.get_cmdline_user_args().has("--thoughts")
+var _thinking := {}
+func _think(tag: Dictionary, data: Dictionary, d: float) -> void:
+	var l: Label = tag["thought"]
+	var said: Array = data.get("thoughts", []) if _thoughts_on else []
+	if said.is_empty():
+		l.visible = false
+		return
+	if _thinking.is_empty():
+		var f := FileAccess.open("res://data/thoughts.json", FileAccess.READ)
+		var j = JSON.parse_string(f.get_as_text()) if f else null
+		_thinking = j if j is Dictionary else {"near": 30.0, "cycle_sec": 6.0}
+	l.visible = d < float(_thinking.get("near", 30.0))
+	var i := int(Time.get_ticks_msec() / 1000.0 / float(_thinking.get("cycle_sec", 6.0))) % said.size()
+	l.text = "\u201c%s\u201d" % String(said[i])
 
 
 ## Only rewrite a tag when its town's name, owner or rank changed.

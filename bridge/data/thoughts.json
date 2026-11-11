@@ -1,0 +1,18 @@
+{
+  "_": "The crowd thinks out loud (RCT's guest thoughts, Theme Hospital's patients; PLAN.md, fun audit item 5). A ruling, and a town's hunger, siege or levy, start a rumour in that town; travellers carry it on (chatter.js). With Off Grid AI running, Omni words it; without, these lines. Tune here, not in code.",
+  "on": true,
+  "perTown": 3,
+  "ruling": {
+    "helped": ["The King stood by {house}, they say.", "{house} have the King's ear now.", "{house} did well at court, and don't they know it.", "The crown's been kind to {house}. Kinder than to us."],
+    "hurt": ["The King's no friend to {house} now.", "{house} came away from court with nothing.", "They say {house} are sore at the crown.", "Mark me, {house} won't forget this."],
+    "plain": ["The King's ruled on it. We'll see what comes.", "Court's spoken. Nobody asked us.", "Another ruling from the castle. Bread costs the same."]
+  },
+  "hunger": ["Bread's dear and the granary's bare.", "Children crying for supper again.", "The King fed someone. Not us."],
+  "siege": ["Nobody gets in or out. How long can we hold?", "The walls are full of soldiers and the larder's empty.", "They say the King's host is coming. They'd better be."],
+  "levy": ["They took my boy for the King's host.", "Half the men gone to the levy. Who brings the harvest in?", "Banners and drums. The levy's marching."],
+  "omni": {
+    "system": "You are a townsperson in a medieval town called {town}. Say one short sentence of street talk about what the King just did, blunt and plain, in your own voice. No quotation marks.",
+    "prompt": "The King ruled: {ruling}. {who} How does the town take it? One sentence.",
+    "max": 40
+  }
+}

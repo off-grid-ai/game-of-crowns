@@ -77,8 +77,11 @@ export async function answer(ctx, req, res, url) {
   const { rule, closeIfDone } = ctx;
   ctx.counselStale = true;
   const { id, option } = await body(req);
+  const before = ctx.court?.petitions?.find((x) => x.id === id);
   const out = rule(id, option);
   closeIfDone(ctx.world?.turn ?? 0);
+  // The ruling becomes the town's talk (chatter.afterRuling; the crowd thinks out loud).
+  if (!out.error && before) ctx.chatter?.afterRuling(rulingFor(ctx, before, option, out.text)).catch(() => {});
   // What the ruling paid or brought in shows now (the treasury, a house's purse), as a decree's does.
   if (!out.error) setTimeout(ctx.snapshot, 600);
   return json(res, out.error ? 400 : 200, out);
@@ -89,4 +92,13 @@ export async function say(ctx, req, res, url) {
   // The King answers a petition in his own words; nothing happens until he confirms it (court.js).
   const [code, out] = await Sittings.say(sittingCtx(), await body(req));
   return json(res, code, out);
+}
+
+// A ruling as the town will talk of it: where, what was said, whose favour it raised or cut.
+function rulingFor(ctx, p, option, text) {
+  const o = (p.options ?? []).find((x) => x.id === option) ?? {};
+  const house = (pid) => ctx.world?.players?.find((x) => x.id === Number(pid))?.house?.name;
+  const fav = Object.entries(o.favour ?? {});
+  const city = p.city ?? p.place?.id ?? ctx.world?.cities?.find((c) => c.owner === ctx.court?.people?.[p.from]?.playerId && c.capital)?.id;
+  return { city, text, helps: fav.filter(([, d]) => d > 0).map(([k]) => house(k)).filter(Boolean), hurts: fav.filter(([, d]) => d < 0).map(([k]) => house(k)).filter(Boolean) };
 }
