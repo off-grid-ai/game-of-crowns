@@ -70,6 +70,8 @@
         "props": [["res://assets/props/Cauldron.gltf", [-1.2, 0, 0.8], 0, 1.1, "front"], ["res://assets/props/Cauldron.gltf", [0.3, 0, 0.9], 0, 0.9, "front"], ["res://assets/props/Barrel.gltf", [1.5, 0, 0.6], 0, 1, "front"]] }
     }
   },
+  "_poses": "A skinned figure stood still as plain meshes (realistic.gd still): its path -> [clip, seconds into it]. The crown's square's king (square_statue) stands in his idle, chin up.",
+  "poses": {"res://assets/q/king-0.glb": ["CharacterArmature|Idle", 0.4]},
   "components": {
     "tavern": { "heightRange": [5, 16], "kind": "house", "switch": "houses", "variants": [ { "model": "realistic/medieval_tavern", "name": "medieval_tavern", "length": 10.0, "floorCut": 0.02 } ],
       "kit": [ { "name": "kit_inn", "builder": "house", "spec": { "tier": "inn", "seed": 41 }, "count": 3 } ],
@@ -166,6 +168,8 @@
     "basket": { "heightRange": [0.15, 0.7], "kind": "clutter", "variants": [ { "model": "realistic/ph/wicker_basket_01/wicker_basket_01_1k.gltf", "name": "ph/wicker_basket_01", "length": 0.6 } ] },
     "ladder": { "heightRange": [2, 5], "kind": "clutter", "variants": [ { "model": "realistic/ph/wooden_ladder/wooden_ladder_1k.gltf", "name": "ph/wooden_ladder", "length": 3.0 } ] },
     "lantern": { "heightRange": [0.2, 0.9], "kind": "clutter", "variants": [ { "model": "realistic/ph/wooden_lantern_01/wooden_lantern_01_1k.gltf", "name": "ph/wooden_lantern_01", "length": 0.35 } ] },
+    "square_statue": { "heightRange": [3.0, 5.5], "kind": "centrepiece", "variants": [ { "name": "kit_square_statue", "builder": "house", "spec": { "pieces": [
+      ["res://assets/town/fountain-round.glb", [0, 0, 0], 0, 2.2], ["Corner_Exterior_Brick", [0, 0, 0], 0, [2.4, 0.55, 2.2]], ["res://assets/q/king-0.glb", [0, 1.62, 0], 0, 1.15] ] } } ] },
     "square_fountain": { "heightRange": [1.5, 3.5], "kind": "centrepiece", "variants": [ { "name": "kit_square_fountain", "builder": "house", "spec": { "pieces": [
       ["res://assets/town/fountain-round.glb", [0, 0, 0], 0, 2.2], ["Corner_Exterior_Brick", [0, 0, 0], 0, [2.4, 0.55, 2.2]], ["res://assets/props/Vase_2.gltf", [0, 1.62, 0], 0, 0.8] ] } } ] },
     "well": { "heightRange": [2.5, 4.5], "kind": "well", "variants": [ { "model": "q/well-0.glb", "name": "q/well", "length": 2.6, "height": 3.3, "stone": true } ] },
