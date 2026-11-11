@@ -275,7 +275,10 @@ func show_town(c: Dictionary, house: Dictionary, _player: Dictionary) -> void:
 	if c.get("granary"):
 		# How full the granary is, as a steward would say it, not tonnes of a capacity.
 		var full := clampf(float(c.get("food", 0)) / maxf(float(c["granary"]), 1.0), 0.0, 1.0)
-		parts.append("starving" if c.get("famine", false) else ("granary empty" if full < 0.05 else ("granary %s" % ("low" if full < 0.34 else ("half full" if full < 0.67 else "full")))))
+		var stores := "starving" if c.get("famine", false) else ("granary empty" if full < 0.05 else ("granary %s" % ("low" if full < 0.34 else ("half full" if full < 0.67 else "full"))))
+		# Said once: the first line (what has befallen it) may already say it.
+		if not (befallen is String and (befallen as String).to_lower().contains(stores.get_slice(" ", 0))):
+			parts.append(stores)
 	if b.size() > 0:
 		parts.append(", ".join(b.map(_realm_word)))
 	_town_info.text = "  ·  ".join(parts)
