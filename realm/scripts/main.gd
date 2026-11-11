@@ -1024,14 +1024,7 @@ func _frame_castle(city_id: int) -> void:
 	var castle: Node3D = (t["node"] as Node3D).get_node_or_null("Castle") if t is Dictionary and is_instance_valid(t.get("node")) else null
 	if castle == null:
 		return  # a seat with no castle built yet: the town's own framing stands
-	var at := castle.global_position
-	var back: Vector3 = (t["node"] as Node3D).global_position - at
-	var yaw := atan2(back.x, back.z) if Vector2(back.x, back.z).length() > 0.01 else deg_to_rad(35.0)
-	rig.goal_target = at
-	rig.goal_distance = 11.0
-	rig.goal_yaw = rig.clear_yaw(at, 11.0, yaw)
-	# No tree crowns between the lens and the keep's top either (Sunspire's castle sat behind its woods).
-	director.clear_view(at + Vector3.UP * 0.8)
+	rig.go_to(castle.global_position + Vector3.UP * 0.8, 11.0)  # the keep centred: the one framing rule (camera_rig.go_to)
 
 
 func _focus_city(city_id: int) -> void:

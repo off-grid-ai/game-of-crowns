@@ -154,9 +154,7 @@ func watch_at(at: Vector3, dist: float, caption: String, follow: Node3D = null) 
 	active = true
 	_shot_left = SHOT_SECONDS * 2.0
 	_follow = follow
-	rig.focus(at, dist)
-	rig.goal_tilt = 0.0
-	_clear_sight()
+	rig.go_to(at, dist)  # the one framing rule: centred, from his heading, turned only to clear the view
 	ui.caption(caption)
 
 
@@ -164,7 +162,6 @@ func watch_at(at: Vector3, dist: float, caption: String, follow: Node3D = null) 
 ## way the camera already faces, then a quarter or half turn round, and only
 ## when every side is wooded, from a little higher.
 var _sight_left := 0.0
-const SIGHT_TILTS := [0.0, 14.0, 24.0]
 
 
 func _clear_sight() -> void:
@@ -177,43 +174,7 @@ func _clear_sight() -> void:
 ## from which no tree crown stands between the lens and `at` (forest.blocking);
 ## with none clear, the least blocked. Used for what's watched and for a seat's castle.
 func clear_view(at: Vector3) -> void:
-	var woods = terrain.get("forest") if terrain else null
-	if woods == null or not woods.has_method("blocking"):
-		return
-	var blocked := func(eye: Vector3) -> int: return woods.blocking(eye, at) + _land_between(eye, at)
-	var dist: float = rig.goal_distance
-	if blocked.call(_eye(at, rig.goal_yaw, rig.goal_tilt, dist)) == 0:
-		return
-	var best := [INF, rig.goal_yaw, rig.goal_tilt]
-	for tilt in SIGHT_TILTS:
-		for k in [0, 1, -1, 2, -2, 3, -3, 4]:
-			var yaw: float = rig.goal_yaw + k * PI / 4.0
-			var n: int = blocked.call(_eye(at, yaw, tilt, dist))
-			if n < best[0]:
-				best = [n, yaw, tilt]
-			if n == 0:
-				rig.goal_yaw = yaw
-				rig.goal_tilt = tilt
-				return
-	rig.goal_yaw = best[1]
-	rig.goal_tilt = best[2]
-
-
-## How many points on the line from the lens to `at` the land rises above (a hill
-## between them): the trees' check doesn't see the ground.
-func _land_between(eye: Vector3, at: Vector3) -> int:
-	var n := 0
-	for k in range(1, 12):
-		var p := at.lerp(eye, k / 12.0)
-		if float(terrain.height_at(p.x, p.z)) > p.y:
-			n += 1
-	return n
-
-## Where the camera's eye would be, looking at `at` from `yaw`, as the rig places it.
-func _eye(at: Vector3, yaw: float, tilt: float, dist: float) -> Vector3:
-	var t := clampf((dist - rig.min_distance) / (rig.max_distance - rig.min_distance), 0.0, 1.0)
-	var p := deg_to_rad(clampf(lerpf(30.0, 55.0, pow(t, 0.7)) + tilt, 8.0, 89.0))
-	return at + Vector3(sin(yaw) * cos(p), sin(p), cos(yaw) * cos(p)) * dist
+	rig.goal_yaw = rig.sight_yaw(at, rig.goal_distance, rig.goal_yaw, rig.goal_tilt)  # the one framing rule (camera_rig.go_to)
 
 
 ## What a scene is called on screen: "The King's grain on the road to Oldburg".
@@ -233,7 +194,7 @@ func _frame(s: Dictionary, follow: Node3D) -> void:
 	var row := SceneKinds.of(kind)
 	var how: Array = [row["interest"], row["dist"], row["caption"]]
 	_follow = follow
-	rig.focus(follow.global_position if is_instance_valid(follow) else at, how[1])
+	rig.go_to(follow.global_position if is_instance_valid(follow) else at, how[1])  # the one framing rule
 	rig.goal_tilt = 0.0  # a battle's framing lowers the view; each new shot starts level
 	_clear_sight()
 	ui.caption(caption(s))

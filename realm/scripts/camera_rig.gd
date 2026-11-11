@@ -92,10 +92,59 @@ func nudge(action: String) -> void:
 ## country around it, looked at across the land (not from above), turned so
 ## the sun is behind you. size: the town's Freeciv size.
 func frame_town(pos: Vector3, size: int) -> void:
-	goal_target = pos
-	goal_distance = clampf(8.5 + size * 0.9, 10.0, 16.0)  # the town fills most of the view
+	go_to(pos, clampf(8.5 + size * 0.9, 10.0, 16.0))  # the town fills most of the view
+
+
+## The one framing rule for every "go to X" (a town, a castle, a host, a matter),
+## as Anno 1800's notification jump and Manor Lords' jump to a building do it: the
+## target centred at the distance its kind wants, from the heading the King already
+## has; only if that line of sight is blocked (a tall building, tree crowns, land
+## rising between) does the view turn, by the smallest step that clears it, and with
+## no side clear, to the least blocked one.
+func go_to(at: Vector3, dist: float) -> void:
+	_hit = -1.0
+	goal_target = at
+	goal_distance = maxf(dist, min_distance)
 	goal_tilt = 0.0
-	goal_yaw = deg_to_rad(35.0)
+	goal_yaw = sight_yaw(at, goal_distance, goal_yaw)
+
+
+## The heading nearest `yaw` (twelve steps either way) from which nothing hides `at`.
+func sight_yaw(at: Vector3, dist: float, yaw: float, tilt := 0.0) -> float:
+	var look := at + Vector3.UP * 0.4
+	var best := [INF, yaw]
+	for k in 12:
+		var y := yaw + ((k + 1) / 2) * (TAU / 12.0) * (1.0 if k % 2 == 1 else -1.0)
+		var n := blocked_from(eye_at(look, y, tilt, dist), look)
+		if n == 0:
+			return y
+		if n < best[0]:
+			best = [n, y]
+	return best[1]
+
+
+## How much stands between an eye and what it looks at: tall buildings, tree crowns
+## (forest.gd's sight lines) and land rising above the line.
+func blocked_from(eye: Vector3, at: Vector3) -> int:
+	var n := 0
+	if towns and _blocked(at, Vector3(eye.x, at.y, eye.z)):
+		n += 4
+	var woods = terrain.get("forest") if terrain else null
+	if woods and woods.has_method("blocking"):
+		n += int(woods.blocking(eye, at))
+	if terrain:
+		for k in range(1, 12):
+			var p := at.lerp(eye, k / 12.0)
+			if float(terrain.height_at(p.x, p.z)) > p.y:
+				n += 1
+	return n
+
+
+## Where the lens stands looking at `at` from `yaw`, as apply() places it.
+func eye_at(at: Vector3, yaw: float, tilt: float, dist: float) -> Vector3:
+	var t := clampf((dist - min_distance) / (max_distance - min_distance), 0.0, 1.0)
+	var p := deg_to_rad(clampf(lerpf(30.0, 55.0, pow(t, 0.7)) + tilt, 8.0, 89.0))
+	return at + Vector3(sin(yaw) * cos(p), sin(p), cos(yaw) * cos(p)) * dist
 
 
 ## A side to look at `pos` from with nothing tall in the way: starting at
