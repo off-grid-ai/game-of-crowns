@@ -11,6 +11,8 @@ const SUN_HEIGHT := 35.0  # degrees above the horizon: a warm morning sun, shado
 static var LOOK: Dictionary = _read_look()
 var _tinted := {}  # a kit material -> its re-graded copy, made once
 var _haze := 0.006  # the volumetric haze's density at town zoom (look.json haze.volumetric with the one look)
+var _fill: DirectionalLight3D  # the soft light over the camera's shoulder (look.json fill), or null
+var _fill_energy := 0.0
 
 
 static func _read_look() -> Dictionary:
@@ -67,6 +69,7 @@ func _ready() -> void:
 		# The free kit re-graded as it enters the realm (kit_tints), wherever a placer puts it.
 		get_tree().node_added.connect(_tint)
 		_tint_all(main)
+		_add_fill()
 	else:
 		env.adjustment_color_correction = load("res://assets/grade/golden-hour.png")
 		# The low sun is warm already: the colour main gives back to AgX's grey
@@ -128,7 +131,46 @@ func _golden_hour(sky3d: Node, height := SUN_HEIGHT) -> void:
 		t += step
 
 
+## The fill (look.json fill; film's key and fill): a soft, shadowless light from over the camera's
+## shoulder, so the walls the camera looks at are lit whichever way it faces the sun (batch 6: Kingsmere,
+## framed into the sun, showed its street walls near black). Only its direction follows the camera.
+func _add_fill() -> void:
+	var f: Dictionary = LOOK.get("fill", {})
+	if not bool(f.get("on", false)) or float(f.get("energy", 0.0)) <= 0.0:
+		return
+	_fill = DirectionalLight3D.new()
+	_fill.name = "Fill"
+	_fill.shadow_enabled = false
+	_fill.sky_mode = DirectionalLight3D.SKY_MODE_LIGHT_ONLY  # no second sun in the sky
+	_fill.light_specular = 0.0  # no glints off every wet stone facing the lens
+	_fill.light_bake_mode = Light3D.BAKE_DISABLED  # nor a second bounce in the GI: the sun's is the bounce
+	_fill.light_color = _rgb_of(f.get("color"), Color(1.0, 0.94, 0.84))
+	_fill_energy = float(f.get("energy", 0.0))
+	_fill.light_energy = _fill_energy
+	main.add_child(_fill)
+	_aim_fill()
+
+
+func _aim_fill() -> void:
+	var f: Dictionary = LOOK.get("fill", {})
+	var yaw: float = main.rig.yaw if main.rig else 0.0
+	var el := deg_to_rad(float(f.get("elevation", 28.0)))
+	var a := yaw - deg_to_rad(float(f.get("turn", 35.0)))  # the camera stands toward (sin yaw, cos yaw) from what it looks at
+	var to_light := Vector3(sin(a) * cos(el), sin(el), cos(a) * cos(el))
+	_fill.basis = Basis.looking_at(-to_light, Vector3.UP)
+	# Day light only: it fades as the sun goes down (Sky3D dims its sun light with the sun's height).
+	var sky3d: Node = main.sky3d
+	var day := clampf(float(sky3d.sun.light_energy) / maxf(float(sky3d.sun_energy), 0.01), 0.0, 1.0)
+	_fill.light_energy = _fill_energy * day
+
+
+static func _rgb_of(a, fallback: Color) -> Color:
+	return Color(float(a[0]), float(a[1]), float(a[2])) if a is Array and (a as Array).size() >= 3 else fallback
+
+
 func _process(_delta: float) -> void:
+	if _fill:
+		_aim_fill()
 	if _attrs == null or main.rig == null:
 		return
 	# Tilt-shift at town zoom: the town in focus, the near ground and the far
@@ -170,8 +212,8 @@ func _tint_mesh(mi: MeshInstance3D) -> void:
 		var m := mi.get_surface_override_material(i)
 		if m == null:
 			m = mi.mesh.surface_get_material(i)
-		if not (m is BaseMaterial3D) or _tinted.values().has(m):
-			continue
+		if not (m is BaseMaterial3D) or _tinted.values().has(m) or m.has_meta("graded"):
+			continue  # a tiered kit house's wash, honey stone and timber are already its look (house_tiers.gd)
 		var mat_name := String(m.resource_name)
 		for key in tints:
 			if mat_name.begins_with(String(key)):

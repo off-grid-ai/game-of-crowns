@@ -5,6 +5,14 @@
  "sun_energy": 1.3,
  "shadow_opacity": 0.72,
  "ambient_energy": 2.0,
+ "fill": {
+  "_": "The fill light (look.gd; film's key-and-fill, and the fixed RTS camera of Warcraft III and Anno that always sees the lit faces): a soft light from over the camera's shoulder that turns with the camera, so the walls you look at are never left in the dark when the camera faces into the sun (batch 6: Kingsmere's street walls at luma 0.10-0.17). It casts no shadows, so the sun's shadows stay put. on: the switch. energy: its strength (the sun is sun_energy). color: its tint. elevation: degrees above the horizon. turn: degrees round from straight behind the camera (positive: from its left). Fades with the sun at night. Predicted with tools/light_probe.py.",
+  "on": true,
+  "energy": 0.35,
+  "color": [1.0, 0.94, 0.84],
+  "elevation": 28.0,
+  "turn": 35.0
+ },
  "sun_color": [
   1.0,
   0.91,

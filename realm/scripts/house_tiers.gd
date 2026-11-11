@@ -86,6 +86,7 @@ func _look(kit_mat: String, look: String, tint: Color) -> Material:
 	var m: BaseMaterial3D = src.duplicate()
 	m.resource_name = "%s_%s" % [kit_mat, look]
 	m.albedo_color = tint
+	m.set_meta("graded", true)  # its look is final: look.gd's kit_tints leave it be (a roadside house is a lone mesh)
 	_mats[key] = m
 	return m
 
