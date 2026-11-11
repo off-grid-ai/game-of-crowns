@@ -121,6 +121,15 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 02:00 (11-12) Usage limit hit (resets ~4:30 IST); all sessions and agents stopped. Batch 8b keeps filming in the
+  background (/tmp/goc-batch8b; judged so far: look2, centre, square-before in docs/review/batch8-review.md 8b).
+  On resume, in order: (1) judge the rest of 8b; (2) run docs/review/batch9.sh if fire-siege finished it, else
+  build it from docs/review/batch9-list.md (UI v2, sound v2, dressing, storm, Meshy landmarks, knight_v2);
+  (3) army-ui: Meshy man-at-arms try 3 (cape weighting, house mask, arms on tabard; 16cbbeab partial), then the
+  framing leftovers; (4) fire-siege: Meshy building fixes (meshy-pulls.md), snow on roofs, the statue, the square
+  pole/posts, castle banner arms; (5) works-life: grief that reads, bonfire lit, sound v2, horses/wheat/smoke;
+  (6) the King's-loop agent's fixes (check git log for its commits and gameplay-review.md's before/after table).
+  Meshy: 15/15 community downloads used, 65 credits spent; a try 3 re-texture may have been started.
 - 01:00 (11-12) Batch 7 stopped at its army launch (later shots had the old blur); batch 8 filming (62 shots, 8789).
   Batch 7 judged (docs/review/batch7-review.md, top 15) and routed: fire-siege the dead sack fire, orbs, ground;
   works-life moods that read, stiff people, empty roads, mill sails; army-ui knight_v2, army fps (3 at 6k),
