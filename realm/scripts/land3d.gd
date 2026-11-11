@@ -35,15 +35,9 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 	for i in LAYERS.size():
 		var ta := Terrain3DTextureAsset.new()
 		ta.name = LAYERS[i]
-		# The town's trodden ground is dry packed earth (the beach's gravelly
-		# sand, browned): the muddy-tracks photo read as a wet red band.
-		var file: String = "sand" if LAYERS[i] == "mud" else LAYERS[i]
-		var dir := "packed"
-		if PAINTED and String(Data.value("ground", "layers.%s.painting" % LAYERS[i], "")) != "" and ResourceLoader.exists("res://assets/ground/painted/%s-albedo-height.png" % LAYERS[i]):
-			dir = "painted"  # the painted set (tools/pack_painted_ground.gd, realm/data/ground.json layers.<layer>.painting)
-			file = LAYERS[i]
-		ta.albedo_texture = load("res://assets/ground/%s/%s-albedo-height.png" % [dir, file])
-		ta.normal_texture = load("res://assets/ground/%s/%s-normal-rough.png" % [dir, file])
+		var tex := layer_textures(i, PAINTED)
+		ta.albedo_texture = load(tex[0])
+		ta.normal_texture = load(tex[1])
 		ta.uv_scale = UV_SCALE[i]
 		ta.albedo_color = TINT[i]
 		if PAINTED:
@@ -119,6 +113,19 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 		floor.blit_rect(control, Rect2i(Vector2i.ZERO, control.get_size()), Vector2i.ZERO)
 		control = floor
 	land.data.import_images([heights, control, null], Vector3.ZERO, 0.0, 1.0)
+
+
+## A ground layer's two textures (albedo with height, normal with roughness), the one
+## place their paths are decided: the game's ground and tools/ground_check.gd both ask here.
+static func layer_textures(i: int, painted: bool) -> Array:
+	# The town's trodden ground is dry packed earth (the beach's gravelly
+	# sand, browned): the muddy-tracks photo read as a wet red band.
+	var file: String = "sand" if LAYERS[i] == "mud" else LAYERS[i]
+	var dir := "packed"
+	if painted and String(Data.value("ground", "layers.%s.painting" % LAYERS[i], "")) != "" and ResourceLoader.exists("res://assets/ground/painted/%s-albedo-height.png" % LAYERS[i]):
+		dir = "painted"  # the painted set (tools/pack_painted_ground.gd, realm/data/ground.json layers.<layer>.painting)
+		file = LAYERS[i]
+	return ["res://assets/ground/%s/%s-albedo-height.png" % [dir, file], "res://assets/ground/%s/%s-normal-rough.png" % [dir, file]]
 
 
 static var _beach_top: float = Data.num("ground", "beach.top", 0.02) if PAINTED else 0.02

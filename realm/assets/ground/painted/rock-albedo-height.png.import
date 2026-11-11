@@ -2,28 +2,30 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://x0jwy6pm6spl"
-path="res://.godot/imported/rock-albedo-height.png-1f151bdda77ae9fbbd046b8e70ea562b.ctex"
+uid="uid://bx4jybfwblo2"
+path.bptc="res://.godot/imported/rock-albedo-height.png-1f151bdda77ae9fbbd046b8e70ea562b.bptc.ctex"
+path.astc="res://.godot/imported/rock-albedo-height.png-1f151bdda77ae9fbbd046b8e70ea562b.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/ground/painted/rock-albedo-height.png"
-dest_files=["res://.godot/imported/rock-albedo-height.png-1f151bdda77ae9fbbd046b8e70ea562b.ctex"]
+dest_files=["res://.godot/imported/rock-albedo-height.png-1f151bdda77ae9fbbd046b8e70ea562b.bptc.ctex", "res://.godot/imported/rock-albedo-height.png-1f151bdda77ae9fbbd046b8e70ea562b.astc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
