@@ -47,3 +47,7 @@ wind={
 "type": "vec4",
 "value": Vector4(0.8, 0, 0.6, 0.15)
 }
+wet={
+"type": "float",
+"value": 0.0
+}

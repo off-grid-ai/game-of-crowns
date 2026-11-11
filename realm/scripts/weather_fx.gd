@@ -44,6 +44,19 @@ var _base := {}  # the clear day's light, as look.gd left it: weather scales it,
 const WIND_FULL := 9.0  # m/s (a storm): strength 1
 const PREVAILING_FROM := -70.0  # degrees: the realm's wind comes off the western sea (Sky3D: 0 north, -90 west)
 static var wind := Vector4(0.8, 0.0, 0.6, 0.15)
+# The one wetness (the finesse catalogue's second shared fact): 0 dry .. 1 soaked, settling with the weather's
+# `wet` as the land's sheen does. Shaders read the global `wet`; CPU-side readers (fire spread) read this.
+static var wet := 0.0
+
+const Data := preload("res://scripts/data.gd")
+const SNOW := preload("res://scripts/snow.gdshader")
+const Terrain := preload("res://scripts/terrain.gd")
+var _roof: ShaderMaterial  # the weather on the towns' buildings (snow.gdshader as an overlay)
+var _roofed := {}  # building batch -> true while it wears the overlay
+var _wet_goal := 0.0
+var _snow_now := 0.0
+var _puddled := {}  # town id -> its node of puddles and mud
+var _look_tick := 0.0
 
 
 func _ready() -> void:
@@ -79,6 +92,22 @@ func show_weather(kind: String, settle: float) -> void:
 	tw.tween_method(func(v: float): _level["snow"] = v, _level["snow"], float(l["snow"]), settle)
 	if land3d and land3d.has_method("set_wet"):
 		land3d.set_wet(float(l["wet"]), settle)
+	tw.tween_method(_set_wet, wet, float(l["wet"]), settle)
+	_wet_goal = float(l["wet"])
+
+
+## The wetness fact as it settles: the shader global and the static, together.
+func _set_wet(v: float) -> void:
+	wet = v
+	RenderingServer.global_shader_parameter_set(&"wet", v)
+
+
+## The town's weather dressing on (--weather=v2 / --weather=off, or data/weather.json on).
+static func dressed() -> bool:
+	var args := OS.get_cmdline_user_args()
+	if args.has("--weather=off"):
+		return false
+	return args.has("--weather=v2") or bool(Data.value("weather", "on", false))
 
 
 ## Each frame, timed for the frame-cost probe (perf_tools.gd, GOC_PERF_PROBE=1; off in play).
@@ -93,6 +122,11 @@ func _process(_delta: float) -> void:
 
 func _process_timed(_delta: float) -> void:
 	_publish_wind()
+	_look_tick -= _delta
+	if _look_tick <= 0.0:
+		_look_tick = 1.0
+		if dressed():
+			_dress_towns()
 	# The fall stays about the camera, wherever it looks.
 	var cam := get_viewport().get_camera_3d()
 	if cam == null:
@@ -172,3 +206,141 @@ func _fall(count: int, size: Vector2, colour: Color, speed: float, life: float, 
 	p.position = Vector3(0, 6, 0)
 	add_child(p)
 	return p
+
+
+# --- the weather on the towns (Manor Lords, Foundation) ---------------------------------------------------
+
+## Once a second: the roofs wear the weather (wet, or the season's snow) while there is any, and the towns
+## near the camera get puddles round their squares and mud on their roads while it's wet enough.
+func _dress_towns() -> void:
+	var main := get_parent()
+	var towns: Node = main.get("towns") if main else null
+	if towns == null:
+		return
+	var k: Dictionary = Data.value("weather", "roof", {})
+	var aw: Object = Engine.get_meta("awareness") if Engine.has_meta("awareness") else null
+	var season := String(aw.realm.get_var(&"season", "", false)) if aw else ""
+	var snow := float((Terrain.SEASONS.get(season, {}) as Dictionary).get("snow", 0.0)) * float(k.get("snow", 1.6))
+	_snow_now = move_toward(_snow_now, clampf(snow, 0.0, 1.0), 0.02)  # settles and melts over about a minute
+	var on := wet > 0.01 or _snow_now > 0.01 or _wet_goal > 0.01
+	if _roof == null:
+		_roof = ShaderMaterial.new()
+		_roof.shader = SNOW
+	_roof.set_shader_parameter("amount", _snow_now)
+	_roof.set_shader_parameter("dark", float(k.get("dark", 0.34)))
+	_roof.set_shader_parameter("sheen", float(k.get("sheen", 0.18)))
+	for b in _roofed.keys():
+		if not is_instance_valid(b):
+			_roofed.erase(b)
+		elif not on:
+			(b as GeometryInstance3D).material_overlay = null
+			_roofed.erase(b)
+	var cam := get_viewport().get_camera_3d()
+	var pk: Dictionary = Data.value("weather", "puddles", {})
+	var near := float(pk.get("near", 18.0))
+	for id in towns.towns:
+		var root: Node3D = towns.towns[id].get("node")
+		if root == null or not is_instance_valid(root):
+			continue
+		if on:
+			for g in root.get_children():
+				if g is MultiMeshInstance3D and g.has_meta("kind") and not _roofed.has(g):
+					(g as GeometryInstance3D).material_overlay = _roof  # buildings only: never people
+					_roofed[g] = true
+		var close: bool = cam != null and cam.global_position.distance_to(root.global_position) < near
+		var want := close and wet > float(pk.get("from", 0.45)) * 0.5 and _wet_goal >= float(pk.get("from", 0.45))
+		if want and not _puddled.has(id):
+			_puddled[id] = _puddles(int(id), root, pk, main)
+		elif _puddled.has(id) and (not want or not is_instance_valid(_puddled[id])):
+			if is_instance_valid(_puddled[id]):
+				_puddled[id].queue_free()
+			_puddled.erase(id)
+	for id in _puddled:
+		var n: Node3D = _puddled[id]
+		if is_instance_valid(n):
+			var fade := clampf((wet - float(pk.get("from", 0.45)) * 0.5) / 0.5, 0.0, 1.0)
+			for d in n.get_children():
+				(d as Decal).modulate.a = fade
+
+
+## Puddles round a town's square and mud along its roads near it: decals (Godot's own), dark and glossy,
+## the same spots every time for the same town.
+func _puddles(id: int, root: Node3D, k: Dictionary, main: Node) -> Node3D:
+	var n := Node3D.new()
+	n.name = "Puddles"
+	root.add_child(n)
+	var r := RandomNumberGenerator.new()
+	r.seed = hash(id) + 77
+	var terrain: Node = main.get("terrain")
+	var roads: Node = main.get("roads")
+	var c := root.global_position
+	var ring: Array = k.get("ring", [0.35, 1.6])
+	var sz: Array = k.get("size", [0.12, 0.3])
+	for i in int(k.get("count", 14)):
+		var a := r.randf() * TAU
+		var p := c + Vector3(cos(a), 0, sin(a)) * r.randf_range(float(ring[0]), float(ring[1]))
+		_decal(n, p, r.randf_range(float(sz[0]), float(sz[1])), r, false, terrain)
+	# Mud: along whatever road passes near, every mud_every, out to the ring's edge and a little past.
+	if roads and roads.has_method("on_path"):
+		var msz: Array = k.get("mud_size", [0.14, 0.24])
+		var left := int(k.get("mud", 26))
+		var step := float(k.get("mud_every", 0.22))
+		var rad := float(ring[0]) + step
+		while left > 0 and rad < float(ring[1]) * 2.2:
+			var around := maxi(6, int(TAU * rad / step))
+			for j in around:
+				var a := TAU * j / around
+				var p := c + Vector3(cos(a), 0, sin(a)) * rad
+				if roads.on_path(p) and r.randf() < 0.6:
+					_decal(n, p, r.randf_range(float(msz[0]), float(msz[1])), r, true, terrain)
+					left -= 1
+					if left <= 0:
+						break
+			rad += step * 2.0
+	return n
+
+
+func _decal(parent: Node3D, p: Vector3, size: float, r: RandomNumberGenerator, mud: bool, terrain: Node) -> void:
+	var d := Decal.new()
+	var key := "mud" if mud else "puddle"
+	d.texture_albedo = _blob(key)
+	d.texture_orm = _blob(key + "_orm")
+	d.size = Vector3(size, 0.2, size * r.randf_range(0.6, 1.0))
+	d.rotation.y = r.randf() * TAU
+	var y: float = terrain.height_at(p.x, p.z) if terrain and terrain.has_method("height_at") else p.y
+	d.position = parent.to_local(Vector3(p.x, y, p.z))
+	d.modulate = Color(1, 1, 1, 0)
+	d.distance_fade_enabled = true
+	d.distance_fade_begin = 14.0
+	d.distance_fade_length = 4.0
+	parent.add_child(d)
+
+
+static var _blobs := {}
+
+
+## A soft irregular blob (Godot's own noise): the puddle's dark water, the mud's wet brown, and for each its
+## ORM (low roughness where it's water: it glints).
+static func _blob(key: String) -> Texture2D:
+	if _blobs.has(key):
+		return _blobs[key]
+	var noise := FastNoiseLite.new()
+	noise.seed = 11 if key.begins_with("mud") else 5
+	noise.frequency = 0.035
+	var img := Image.create_empty(64, 64, false, Image.FORMAT_RGBA8)
+	for y in 64:
+		for x in 64:
+			var dx := (x - 31.5) / 31.5
+			var dy := (y - 31.5) / 31.5
+			var edge := 1.0 - sqrt(dx * dx + dy * dy) + noise.get_noise_2d(x, y) * 0.55
+			var a := clampf(smoothstep(0.0, 0.25, edge), 0.0, 1.0)
+			if key == "puddle":
+				img.set_pixel(x, y, Color(0.09, 0.09, 0.08, a * 0.75))
+			elif key == "mud":
+				img.set_pixel(x, y, Color(0.2, 0.15, 0.1, a * 0.7))
+			else:  # ORM: occlusion 1, roughness low in water, a little higher in mud, metal 0
+				img.set_pixel(x, y, Color(1.0, 0.08 if key == "puddle_orm" else 0.35, 0.0, a))
+	img.generate_mipmaps()
+	var t := ImageTexture.create_from_image(img)
+	_blobs[key] = t
+	return t
