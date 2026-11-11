@@ -161,6 +161,8 @@
     "basket": { "heightRange": [0.15, 0.7], "kind": "clutter", "variants": [ { "model": "realistic/ph/wicker_basket_01/wicker_basket_01_1k.gltf", "name": "ph/wicker_basket_01", "length": 0.6 } ] },
     "ladder": { "heightRange": [2, 5], "kind": "clutter", "variants": [ { "model": "realistic/ph/wooden_ladder/wooden_ladder_1k.gltf", "name": "ph/wooden_ladder", "length": 3.0 } ] },
     "lantern": { "heightRange": [0.2, 0.9], "kind": "clutter", "variants": [ { "model": "realistic/ph/wooden_lantern_01/wooden_lantern_01_1k.gltf", "name": "ph/wooden_lantern_01", "length": 0.35 } ] },
+    "square_fountain": { "heightRange": [1.5, 3.5], "kind": "centrepiece", "variants": [ { "name": "kit_square_fountain", "builder": "house", "spec": { "pieces": [
+      ["res://assets/town/fountain-round.glb", [0, 0, 0], 0, 2.2], ["Corner_Exterior_Brick", [0, 0, 0], 0, [2.4, 0.55, 2.2]], ["res://assets/props/Vase_2.gltf", [0, 1.62, 0], 0, 0.8] ] } } ] },
     "well": { "heightRange": [2.5, 4.5], "kind": "well", "variants": [ { "model": "q/well-0.glb", "name": "q/well", "length": 2.6, "height": 3.3, "stone": true } ] },
     "fire_pit": { "heightRange": [0.2, 1], "kind": "well", "variants": [ { "model": "realistic/ph/stone_fire_pit/stone_fire_pit_1k.gltf", "name": "ph/stone_fire_pit", "length": 1.6 } ] },
     "stump": { "heightRange": [0.2, 1.2], "kind": "stump", "variants": [

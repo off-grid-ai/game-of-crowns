@@ -1659,8 +1659,8 @@ func _palisade(root: Node3D, center: Vector3, r: float, streets: Array, seat: bo
 		_place(root, "wooden_fence_game_ready_asset", p + Vector3(0, _ground_y(center, p) - 0.01, 0), -ang + (PI / 2 if f.y > f.x else 0.0), Vector3(1, 1.6, 1) if seat else Vector3.ONE, Vector2(panel * 1.05, 0.08))
 
 
-## The square's life: a well at its heart, and the market along one side: a
-## row of stalls (more as the town grows), goods stacked at each stall's ends,
+## The square's life: a well at its heart (a great town's fountain), and the market along one side: rows
+## of stalls (more as the town grows), goods stacked at each stall's ends,
 ## a wagon drawn up to unload, and lanterns. The well and the market are
 ## recorded as the town's places (villagers.gd sends people to them).
 func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: bool, lots: Array, rng: RandomNumberGenerator) -> void:
@@ -1679,7 +1679,17 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 	var well_kind := Real.one("well")
 	if Real.footprint(well_kind) == Vector2.ZERO:
 		well_kind = "ph/stone_fire_pit"
-	if drop.call(well_kind, well, rng.randf() * TAU):
+	# A great town's square has a centrepiece at its heart in the well's stead (towns.json market.<rank>.centre,
+	# a component: the crown's seat's and a great house's seat's fountain; art target town-b), the market's
+	# rows round it; the town draws its water there.
+	var centre_kind := Real.one(String(_market_knobs().get("centre", "")))
+	var centre_yaw := rng.randf() * TAU
+	if centre_kind != "" and Real.footprint(centre_kind) != Vector2.ZERO:
+		well_kind = centre_kind
+		well = Vector3.ZERO
+		lots.append([well, maxf(Real.footprint(centre_kind).x, Real.footprint(centre_kind).y) * 0.5])
+		root.set_meta("centrepiece", centre_kind)
+	if drop.call(well_kind, well, centre_yaw):
 		places["well"] = well
 	# The stalls (assets.json market_stall: the kit's stalls, their awnings dyed red, blue, ochre, green, purple
 	# and cream, or the downloaded pack's), in rows on the market's side of the square, each facing its heart,
