@@ -32,6 +32,7 @@ limit. Newest first. The plan is [PLAN.md](PLAN.md); the running log of checks i
   switch until judged; tunables in data plus docs/TUNING.md.
 
 ## What Mac said (2026-11-11), newest first
+- "We don't need to look at the fidelity anymore… the generated images match this." Fidelity is settled: docs/art/target.
 - **"This is your North Star, this is what you are going to build."** The target images, with buildings and uniforms
   in their house's colours ("that is smart, that is what we should do"). One shared team-colour mask shader for
   buildings and armour (Builder 2), with kit houses and castle built with the mask (Townsfolk).
