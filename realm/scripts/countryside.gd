@@ -168,18 +168,16 @@ func _raise(key: String, farms: Array, sig: String) -> void:
 	add_child(node)
 	var hedges: Array = []
 	var steads: Array = []
-	var hay: Array = []
 	var trees: Array = [[], []]
 	for f in farms:
 		var site: Dictionary = f[0]
 		var rng := RandomNumberGenerator.new()
 		rng.seed = site["seed"]
-		steads.append(_farmstead(node, site["at"], rng, hedges, hay, trees))
+		steads.append(_farmstead(node, site["at"], rng, hedges, trees))
 		if roads and f[1] != null:
 			roads.track(site["at"], f[1], roads.WIDTH * 0.45, key)
 	_flush(node)
 	_hedgerows(node, hedges, hash(key))
-	pile_hay(node, hay)
 	for v in trees.size():
 		if trees[v].is_empty() or v >= _fruit.size():
 			continue
@@ -201,7 +199,7 @@ func _raise(key: String, farms: Array, sig: String) -> void:
 ## One family's holding: a house, often a barn with hay heaped by it, a
 ## haystack, and two to four fields around it bounded by hedges. Returns what
 ## its grass keeps off: {at, fields, yard}.
-func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: Array, hay: Array, trees: Array) -> Dictionary:
+func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: Array, trees: Array) -> Dictionary:
 	var yaw := rng.randf() * TAU
 	var face := Vector3(sin(yaw), 0, cos(yaw))
 	var side := Vector3(face.z, 0, -face.x)
@@ -215,7 +213,9 @@ func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: A
 		yard.append([barn, 0.6])
 		var heap := barn + face * 0.75 + side * rng.randf_range(-0.2, 0.2)
 		if terrain.is_land(heap.x, heap.z):
-			hay.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU), Vector3(heap.x, terrain.height_at(heap.x, heap.z) - 0.01, heap.z)))
+			# A stacked bale by the barn door: the scanned loose-hay pile lay flat as a pale orange
+			# disc from any height (a flat stand-in, batch 5's army stills).
+			_place(Real.one("haystack"), heap, rng.randf() * TAU)
 			yard.append([heap, 0.25])
 	if rng.randf() < 0.7:
 		_place(Real.one("haystack"), at - side * 1.2 + face * 0.6, rng.randf() * TAU)
@@ -262,12 +262,19 @@ func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: A
 			continue
 		var size := Vector2(rng.randf_range(1.4, 2.4), rng.randf_range(0.8, 1.3))
 		var fyaw := ang + rng.randf_range(-0.2, 0.2)
+		# Only on open, dry, gentle ground: a field painted over a slope steeper than its paint's
+		# depth was cut off in a triangle, and one laid in the woods showed as an orange quad among
+		# the trees. The woods are felled where a field is ploughed (realm/data/towns.json farms.*).
+		var rise := _rise(c, size, fyaw)
+		if rise < 0.0 or rise > FIELD_RISE:
+			continue
+		terrain.clear_around(c, size.length() * 0.5 + 0.1)
 		var kind := rng.randi() % _field_tex.size()
 		var tex: String = _field_tex[kind]
 		if not ResourceLoader.exists(tex):
 			tex = "res://assets/ground/dirt-albedo.jpg"
 		c = on_furrows(terrain, c, size)
-		var crop: Decal = terrain.paint(node, terrain.tiled(tex, roundi(size.x * 1.5), roundi(size.y * 1.5)), Vector3(c.x, terrain.height_at(c.x, c.z), c.z), size, fyaw)
+		var crop: Decal = terrain.paint(node, terrain.tiled(tex, roundi(size.x * 1.5), roundi(size.y * 1.5)), Vector3(c.x, terrain.height_at(c.x, c.z), c.z), size, fyaw)  # its paint 1.5 deep: wider than any rise a field may have (FIELD_RISE)
 		if terrain.land3d and terrain.land3d.land:
 			plough(terrain, c, size, fyaw)  # ploughed soil under the crop
 			crop.albedo_mix = 0.55
@@ -278,6 +285,23 @@ func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: A
 
 
 var _batch := {}  # model -> transforms, for the patch being laid out
+static var FIELD_RISE: float = preload("res://scripts/data.gd").num("towns", "farms.fieldRise", 0.35)  # the most a farm field's ground may rise across it (game units)
+
+
+## How far the ground rises across a field (its middle, corners and the middles of its sides),
+## or -1 when any of them is water.
+func _rise(c: Vector3, size: Vector2, yaw: float) -> float:
+	var b := Basis(Vector3.UP, yaw)
+	var lo := INF
+	var hi := -INF
+	for o in [Vector2.ZERO, Vector2(-0.5, -0.5), Vector2(0.5, -0.5), Vector2(0.5, 0.5), Vector2(-0.5, 0.5), Vector2(0, -0.5), Vector2(0.5, 0), Vector2(0, 0.5), Vector2(-0.5, 0)]:
+		var w: Vector3 = c + b * Vector3(o.x * size.x, 0, o.y * size.y)
+		if not terrain.is_land(w.x, w.z):
+			return -1.0
+		var y: float = terrain.height_at(w.x, w.z)
+		lo = minf(lo, y)
+		hi = maxf(hi, y)
+	return hi - lo
 
 
 func _place(kind: String, at: Vector3, yaw: float) -> void:
@@ -483,25 +507,6 @@ static func sow(parent: Node3D, land: Node3D, origin: Vector3, kind: String, c: 
 	mmi.set_meta("lag", rng.randf())  # each field ripens and is reaped on a day of its own
 	mmi.add_to_group("crops")
 	_ripen(mmi, _season_name if _season_name != "" else String(land.season), _through() if _season_name != "" else 0.0)
-	parent.add_child(mmi)
-
-
-## Loose hay heaped by barns, one batch for the lot; fodder, kept all year.
-static func pile_hay(parent: Node3D, xfs: Array) -> void:
-	var mesh := crop_mesh("hay")
-	if mesh == null or xfs.is_empty():
-		return
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = mesh
-	mm.instance_count = xfs.size()
-	for i in xfs.size():
-		mm.set_instance_transform(i, xfs[i])
-	var mmi := MultiMeshInstance3D.new()
-	mmi.name = "Hay"
-	mmi.multimesh = mm
-	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	mmi.visibility_range_end = 40.0
 	parent.add_child(mmi)
 
 

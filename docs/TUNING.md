@@ -159,6 +159,7 @@ Switches (`--name`) go after `--` on the game's command line.
 ## The square's things (props, the well)
 - Which model draws the square's well (a stone curb, posts, a roof, the winch and bucket): `realm/data/assets.json`: `well` (its true height in metres: `height`).
 - How far a prop on the square sits into the ground below the lowest of its middle and corners: `realm/data/towns.json`: `props.sink`.
+- How steep a farmstead's field may be before it isn't laid: `realm/data/towns.json`: `farms.fieldRise`. A hay bale's and the market stall's true size: `realm/data/assets.json`: `haystack`, `market_stall` (`length`, metres).
 
 ## Borders on the ground (the political map)
 - From what camera height the border line fades in and by what height it is whole, how wide its soft painted band, and how much of it is the fine line: `realm/data/look.json`: `politics.line_from`, `line_to`, `line_soft`, `line_crisp`.

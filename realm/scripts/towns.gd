@@ -1588,18 +1588,13 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 			_single(root, _barn, gp + Vector3(0, _ground_y(center, gp), 0), base_ang)
 			stored = true
 		if stored:
-			# Hay heaped by the granary's barn, against the winter.
-			var heaps: Array = []
+			# Hay stacked by the granary's barn, against the winter: bales (assets.json haystack), not the
+			# scanned loose-hay pile, which lay flat as a pale orange disc from any height.
 			for k in 2:
 				var hp: Vector3 = gp + Vector3(-sin(base_ang - 0.5), 0, cos(base_ang - 0.5)) * (0.6 + k * 0.32) * (1 if k == 0 else -1)
 				if terrain.is_land(center.x + hp.x, center.z + hp.z):
-					heaps.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU), hp + Vector3(0, _ground_y(center, hp) - 0.01, 0)))
-			Fields.pile_hay(root, heaps)
-			var hay: Mesh = Fields.crop_mesh("hay")
-			if hay:
-				var box := hay.get_aabb()
-				for h in heaps:
-					_footprint_rect(root, h.origin, Vector2(box.size.x, box.size.z), h.basis.get_euler().y)  # a heap is walked round too
+					var hyaw := rng.randf() * TAU
+					_place(root, Real.one("haystack"), hp + Vector3(0, _foot_y(center, hp, Real.footprint(Real.one("haystack")), hyaw), 0), hyaw)
 
 	var outer := reach + 0.35
 	if not ways.is_empty():

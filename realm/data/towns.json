@@ -13,5 +13,7 @@
   "_market": "market.crown: the crown's seat's market at midday (art target 01-town: some twenty at work round the square). stalls_more (stalls past a seat's three, and the Marketplace's two), buyers (each stall's buyers, fewest and most; 1-2 elsewhere), smith (a smith at his anvil), carts (carters selling from a cart), porters (porters at the stalls' ends), square_holds (how many villagers the square holds at once with its scene folk; 5 to 10 elsewhere by size), rooms (how many each of its places holds: market, well, tavern, sept), out_most (the most of its people out by day; 40 elsewhere), farmers_to_market (the share of would-be farmers who keep a city trade at the market instead).",
   "market": {"crown": {"stalls_more": 1, "buyers": [2, 3], "smith": true, "carts": 1, "porters": 3, "square_holds": 34, "rooms": {"market": 14, "well": 6, "tavern": 9, "sept": 6}, "out_most": 50, "farmers_to_market": 0.5}},
   "_props": "props.sink: how far a prop on the square (stall, wagon, barrels, crates, the well) sits into the ground below the lowest of its middle and four corners (game units; 0.006 is about 5 cm), so nothing hangs over a slope.",
-  "props": {"sink": 0.006}
+  "props": {"sink": 0.006},
+  "_farms": "farms.fieldRise: the most a farmstead's field's ground may rise across it (game units, about 3 m); steeper and the field is not laid (its paint was cut off in a triangle on a slope).",
+  "farms": {"fieldRise": 0.35}
 }
