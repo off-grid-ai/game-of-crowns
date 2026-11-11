@@ -5,12 +5,14 @@
 # docs/review/v16_apply.py puts the results on the review page. New: the town look round 2 (look2) and the
 # seat's statue and fountain at a grief and a feast (centre). Repeated, because batch 7 started before they
 # landed: Kingsmere's square before/after, the castle, the fields, the house arms close, the field battle,
-# the host scenario, the weather, the night (castle gate, road). The launches batch 7 did film (towns, moods,
-# rulings, fire, breach, the army's line and march) stay here, off by default (ONLY= turns them on).
+# the host scenario, the weather, the night (castle gate, road). The breach again: batch 7's had no wall in
+# frame (4ea627d2, 72cbe0d1: the siege now stands past the town's edge, the steps look from outside). The
+# soldiers' painted finish (army-ui's batch8-list.md, 598a1e45). The launches batch 7 did film (towns,
+# moods, rulings, fire, the army's line and march) stay here, off by default (ONLY= turns them on).
 # Other sessions append their own launches at the end, before "What came out" (army-ui, works-life).
 #
-#   docs/review/batch8.sh            # its default launches, about 115 minutes [estimate: LIMITs and waits]
-#   ONLY="look2 centre" docs/review/batch8.sh   # some launches only: look2 centre square castle fields arms battle hosts weather night (or towns moods rulings fire breach army)
+#   docs/review/batch8.sh            # its default launches, about 145 minutes [estimate: LIMITs and waits]
+#   ONLY="look2 centre" docs/review/batch8.sh   # some launches only: look2 centre square castle breach fields arms painted battle hosts weather night knight2 (or towns moods rulings fire army)
 #   OUT=/tmp/goc-batch8 (default)    # frames, logs and clips land here
 #
 # It runs on its own private bridge (8788, Freeciv 5557) with a fresh reign named "Film batch 8", so the
@@ -20,7 +22,7 @@ R=${0:A:h:h:h}
 OUT=${OUT:-/tmp/goc-batch8}
 PORT=${PORT:-8788}; FC=${FC:-5557}
 API=localhost:$PORT
-ONLY=${ONLY:-look2 centre square castle fields arms battle hosts weather night}
+ONLY=${ONLY:-look2 centre square castle breach fields arms painted battle hosts weather night knight2}
 SW=(--look=one --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on)
 B=(--bridge=http://127.0.0.1:$PORT)
 FF=${FF:-/opt/homebrew/bin/ffmpeg}
@@ -327,6 +329,31 @@ if want arms; then
   grep "^ARMY" $OUT/army-arms-d3.log | tail -3 >> $LOG
 fi
 
+# 5c. The soldiers' painted finish (army-ui's 598a1e45, docs/review/batch8-list.md 1-4; --army-look=painted):
+# the same close frame with the kit's paint and painted (before/after), a march (clip), and a melee (clip).
+# Their per-house crops (list item 2) need army.json colours "houses"; army_spike has no switch for that, so
+# they run only once it has one (--army-colours=houses), else the batch notes it.
+if want painted; then
+  for look in kit painted; do
+    say "launch army d3 line, --army-look=$look"
+    LIMIT=360 $R/realm/tools/render.sh $OUT/painted-$look-d3.png $B $SW --dist=3 --wait=80 --army-spike=1200 --army-shape=line --army-select=0 --army-look=$look >> $OUT/render.out 2>&1
+    grep "^ARMY" $OUT/painted-$look-d3.log | tail -2 >> $LOG
+  done
+  if grep -q -- '--army-colours=' $R/realm/tools/army_spike.gd; then
+    say "launch army d3 line, painted, each house's colours"
+    LIMIT=360 $R/realm/tools/render.sh $OUT/painted-houses-d3.png $B $SW --dist=3 --wait=80 --army-spike=1200 --army-shape=line --army-look=painted --army-colours=houses >> $OUT/render.out 2>&1
+  else
+    note "painted: no --army-colours switch in army_spike.gd yet; the per-house crops (batch8-list.md 2) weren't filmed"
+  fi
+  { print "wait 45"; print "snap painted-march"; burst painted-march-clip 20 0.2; print "look painted-march-end"; } > $OUT/painted-march.play
+  play painted-march 360 --dist=6 --army-spike=1200 --army-shape=march --army-look=painted
+  clip $OUT/painted-march painted-march-clip 5
+  { print "wait 82"; print "snap painted-melee"; burst painted-melee-clip 20 0.2; print "look painted-melee-end"; } > $OUT/painted-melee.play
+  play painted-melee 360 --dist=4 --army-battle=1200 --army-look=painted
+  grep "^BATTLE" $OUT/painted-melee.log 2>/dev/null | tail -8 >> $LOG
+  clip $OUT/painted-melee painted-melee-clip 5
+fi
+
 # 6. The army by regiment (fcf18837; army_spike.gd frames the host itself at the shot's --dist): the line with a
 # regiment selected, close (d12); the line from far, where it shows as blocks (d50); the column marching on the
 # road (d25), with a clip.
@@ -464,6 +491,11 @@ if want night; then
     print "look night-end"
   } > $OUT/night.play
   play night 420 --hour=21 --castle-life=on
+fi
+
+# 7b. works-life's knight_v2 set goes here (launch name: knight2; on by default once it lands).
+if want knight2; then
+  note "knight2: works-life's knight_v2 shots not added yet"
 fi
 
 # 8. What came out, and onto the review page's folder.

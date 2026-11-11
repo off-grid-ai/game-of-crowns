@@ -197,12 +197,130 @@
    "needs": "castle"
   },
   {
+   "id": "b8-siege-camp",
+   "name": "The besiegers' camp",
+   "what": "The camp wide: tents in the besieger's colours, cook fires, the palisade, wagons behind, the engines going up in the band, the wall beyond (again: batch 7's had no wall in frame; now from outside the town)",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "breach/siege-camp.png",
+   "needs": "camp"
+  },
+  {
+   "id": "b8-engine-throw",
+   "name": "An engine mid-throw",
+   "what": "A trebuchet worked by its crew: the arm drawn back, loaded, whipping over, the stone away on its arc (again: batch 7's had no wall in frame; now from outside the town)",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "breach/engine-clip-24.png",
+   "clip": "breach/engine-clip.mp4",
+   "needs": "engine"
+  },
+  {
+   "id": "b8-stone-hit",
+   "name": "A stone hitting the wall",
+   "what": "The engines' stones striking the wall: dust, stones falling, the crack band (again: batch 7's had no wall in frame; now from outside the town)",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "breach/stone-clip-20.png",
+   "clip": "breach/stone-clip.mp4",
+   "needs": "breach"
+  },
+  {
+   "id": "b8-breach",
+   "name": "The wall breach",
+   "what": "The stone wall opened by thrown stones: a gap to the ground and its rubble ramp (again: batch 7's had no wall in frame; now from outside the town)",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "breach/breach.png",
+   "clip": "breach/breach-clip.mp4",
+   "needs": "breach"
+  },
+  {
+   "id": "b8-breach-cracked",
+   "name": "The wall cracking",
+   "what": "The wall under the first stones: the crack band, battlements chipped, dust (again: batch 7's had no wall in frame; now from outside the town)",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "breach/breach-cracked.png",
+   "needs": "breach"
+  },
+  {
+   "id": "b8-storm",
+   "name": "The storm through the breach",
+   "what": "The besiegers fight the holder's block man to man in the gap, over the rubble; the losers fall back (again: batch 7's had no wall in frame; now from outside the town)",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "breach/storm-clip-18.png",
+   "clip": "breach/storm-clip.mp4",
+   "needs": "breach"
+  },
+  {
+   "id": "b8-storm-taken",
+   "name": "The gap taken",
+   "what": "The block broken and run, the besiegers in over the rubble, cheering (again: batch 7's had no wall in frame; now from outside the town)",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "breach/storm-taken.png",
+   "needs": "breach"
+  },
+  {
+   "id": "b8-storm-fire",
+   "name": "The town put to the torch",
+   "what": "After the storm: the town's houses catching one after another, smoke columns leaning with the wind (again: batch 7's had no wall in frame; now from outside the town)",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "breach/storm-fire.png",
+   "needs": "breach"
+  },
+  {
    "id": "b8-army-arms",
    "name": "House arms on the men",
    "what": "Close on the line (d3): the crown's arms on each man's chest and a roundel on his shield, steel elsewhere",
    "ref": "03-army",
    "card": "O2",
    "still": "army-arms-d3.png"
+  },
+  {
+   "id": "b8-painted-kit",
+   "name": "The soldiers, kit paint (before)",
+   "what": "The line close (d3) in the kit's own paint",
+   "ref": "03-army",
+   "card": "O2",
+   "still": "painted-kit-d3.png"
+  },
+  {
+   "id": "b8-painted",
+   "name": "The soldiers, painted (after)",
+   "what": "The same frame painted: steel reads as steel from the shadow side, darker hem and collar, feet grounded, no clones",
+   "ref": "03-army",
+   "card": "O2",
+   "still": "painted-painted-d3.png"
+  },
+  {
+   "id": "b8-painted-houses",
+   "name": "Each house's colours",
+   "what": "Painted regiments in each house's colours: the arms crisp on shield and chest, the colour in big clean blocks",
+   "ref": "03-army",
+   "card": "O2",
+   "still": "painted-houses-d3.png"
+  },
+  {
+   "id": "b8-painted-march",
+   "name": "A painted march",
+   "what": "The column marching (d6): per-man variation holds as they move, no swimming paint",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "painted-march/painted-march.png",
+   "clip": "painted-march/painted-march-clip.mp4"
+  },
+  {
+   "id": "b8-painted-melee",
+   "name": "A painted melee",
+   "what": "Men at blows (d4): steel and cloth read in motion, the arms on shields turned to and from the light",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "painted-melee/painted-melee.png",
+   "clip": "painted-melee/painted-melee-clip.mp4"
   },
   {
    "id": "b8-battle-1",
