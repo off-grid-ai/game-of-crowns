@@ -109,7 +109,8 @@ export function cleanOptions(o = {}, fate) {
   out.storyTags = (Array.isArray(o?.storyTags) ? o.storyTags : []).filter((t) => typeof t === "string" && /^[a-z-]{1,24}$/.test(t)).slice(0, 6);
   out.usurper = o?.usurper === undefined ? true : Boolean(o.usurper);
   if (o?.seals !== undefined) out.seals = Boolean(o.seals);  // the royal seal (seals.js); unset, the reign follows data/seals.json
-  if (o?.events !== undefined) out.events = Boolean(o.events);  // event cards (events.js); unset, the reign follows data/events.json
+  if (o?.events !== undefined) out.events = Boolean(o.events);
+  if (o?.oneAtATime !== undefined) out.oneAtATime = Boolean(o.oneAtATime);  // one court matter at a time (court.js); unset, data/court.json one.on  // event cards (events.js); unset, the reign follows data/events.json
   if (o?.opening === "v2") out.opening = "v2";  // the v2 opening (court.js: the first court waits for the King in his realm)
   out.skip = (Array.isArray(o?.skip) ? o.skip : []).filter((h) => h in HOUSE_NATIONS).slice(0, 5);
   return out;

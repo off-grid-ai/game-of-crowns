@@ -152,8 +152,15 @@ const stageOf = (meta) => {
   const k = meta.minutes ? meta.elapsedMs / (meta.minutes * 60000) : null;
   return k == null ? COURT.noClock : COURT.stages.find((s) => k < s.until) ?? COURT.stages.at(-1);
 };
+// One matter at a time (data/court.json one): a sitting for one matter, most seasons, never a clump.
+export const oneAtATime = (meta) => Boolean(meta?.options?.oneAtATime ?? COURT.one?.on);
+function oneChance(meta) {
+  const k = meta.minutes ? meta.elapsedMs / (meta.minutes * 60000) : null;
+  return k == null ? COURT.one.noClock : (COURT.one.stages.find((s) => k < s.until) ?? COURT.one.stages.at(-1)).chance;
+}
 function pace(ctx) {
   const { meta } = ctx;
+  if (oneAtATime(meta)) return { every: 1, want: Math.random() < oneChance(meta) ? 1 : 0 };
   let r = Math.random();
   let want = (stageOf(meta).want.find(([, p]) => (r -= p) < 0) ?? stageOf(meta).want.at(-1))[0];
   want += COURT.petitions[meta.options?.petitions]?.want ?? 0;
@@ -161,6 +168,7 @@ function pace(ctx) {
 }
 // Seasons between full sittings (pace above; next.js counts down to the next one).
 export function courtEvery(meta) {
+  if (oneAtATime(meta)) return 1;
   return Math.max(1, stageOf(meta).every + (COURT.petitions[meta.options?.petitions]?.every ?? 0));
 }
 export const HAND_YEAR = COURT.handYear;  // seasons: the Hand calls the King in for a crisis at most once a year
@@ -194,23 +202,26 @@ export async function courtSeason(ctx, turn, force = false) {
   // Back from away with a matter waiting: the court sits at once.
   const back = c.sitOnReturn && court.petitions.some((p) => !p.answered && p.called == null);
   c.sitOnReturn = false;
-  const due = force || c.lastSat == null || turn - c.lastSat >= every || herald || back;
+  const one = oneAtATime(meta);
+  // One at a time: a season with no matter drawn has no sitting, unless a crisis, a herald or a return needs one.
+  const due = force || (one ? wanted > 0 || herald || back : c.lastSat == null || turn - c.lastSat >= every || herald || back);
   // Between sittings the Hand calls the King in only for a real crisis, at most once a year.
   // An ultimatum always reaches the King the season it's sent (one court flow): a house
   // never rises on terms he didn't see, whatever the Hand's once-a-year rule says.
   const ultimatum = crises.some((o) => o.kind === "ultimatum");
   const push = !due && crises.length > 0 && (ultimatum || c.lastPush == null || turn - c.lastPush >= HAND_YEAR);
   if (!due && !push) { chron.saveMeta(meta); return; }
-  let want = wanted;
+  let want = one ? 1 : wanted;
+  const room = one ? 1 : 2;  // crises and pleas heading a sitting: one at a time, or two at most
   // A lord whose town starves or is besieged speaks for it first, ahead of the
   // Hand (the judge: urgency beats the rotation, and a face beats a report).
-  const pleas = await court.callCrises(world, turn, Math.min(2, want), courtCtx(ctx));
+  const pleas = await court.callCrises(world, turn, Math.min(room, want), courtCtx(ctx));
   ({ world, meta, court, counselNow } = ctx);
   want -= pleas.length;
   const pleading = new Set(pleas.map((p) => court.people[p.from]?.playerId));
   // A lord the King ruled on two seasons ago comes back by name: a seat of their
   // own at a full sitting, ahead of the Hand's matters (a promise kept, not a draw).
-  if (due) {
+  if (due && want > 0) {
     const returns = await court.callReturns(world, turn, 1, courtCtx(ctx));
     ({ world, meta, court, counselNow } = ctx);
     want -= returns.length;
@@ -218,7 +229,9 @@ export async function courtSeason(ctx, turn, force = false) {
   const ownerOf = (o) => world.cities.find((x) => x.id === o.acts?.[0]?.city)?.owner;
   // The crises head the sitting, two at most (a realm in crisis is pressed, not
   // flooded); the gravest first, the rest wait for the next sitting.
-  for (const o of crises.filter((o) => !pleading.has(ownerOf(o))).slice(0, Math.max(0, 2 - pleas.length))) { callMatter(ctx, o, turn, true); want--; }
+  // One at a time: an ultimatum first (it can't wait), else the gravest; the rest wait for the next season.
+  const heads = one ? [...crises].sort((a, b) => Number(b.kind === "ultimatum") - Number(a.kind === "ultimatum")) : crises;
+  for (const o of heads.filter((o) => !pleading.has(ownerOf(o))).slice(0, Math.max(0, room - pleas.length))) { callMatter(ctx, o, turn, true); want--; }
   if (!push) {
     // The lords come first (the judge: a court of people, not an advisor's list);
     // the Hand brings his own routine matter only to a seat they left empty.
@@ -229,7 +242,7 @@ export async function courtSeason(ctx, turn, force = false) {
     const own = counselNow.find((o) => !isCrisis(o) && o.acts?.length && c.heard[o.key] == null && !c.hand[o.key]);
     if (own && want > 0) { callMatter(ctx, own, turn, false); want--; }
     // A story's matter waiting in the hall is heard now, whatever the count.
-    for (const p of court.petitions) if (!p.answered && p.called == null && p.kind === "arc") p.called = turn;
+    for (const p of court.petitions) if (!p.answered && p.called == null && p.kind === "arc" && (!one || want > 0 || p.arc === "siege")) { p.called = turn; want--; }
   }
   // Only now, with the matters called, does the court sit (a reading taken
   // meanwhile must not find an empty court and close it under them).
