@@ -7,7 +7,7 @@
 import { houseFor, cityName, HOUSES } from "./narrator.js";
 import { BUILD_COST, granarySize } from "./rules.js";
 import { DECREES, TITHE_HIGH } from "./crown.js";
-import { shortOf } from "./treasury.js";
+import { shortOf, titheWait } from "./treasury.js";
 import { BANDS, band } from "./favour.js";
 import { calendar } from "./stakes.js";
 import * as names from "./names.js";
@@ -59,7 +59,7 @@ export function worldView(ctx) {
   });
   const last = history[history.length - 1];
   const crownP = players.find((p) => p.house.crown);
-  const crown = { treasury: crownP?.gold ?? 0, tithe: meta.tithe, titheHigh: TITHE_HIGH, decrees: Object.fromEntries(Object.entries(DECREES).map(([k, v]) => { const cost = priceOf(k); const short = shortOf(crownP?.gold ?? 0, cost); return [k, { ...v, cost, wait: seasonsLeft(k === "feast" ? "feast:court" : k), ...(short ? { short } : {}) }]; })), favourWait: Object.fromEntries(world.players.map((p) => [p.id, seasonsLeft(`favour:${p.id}`)]).filter(([, n]) => n > 0)), perSeason: lastSeason.net, threat: meta.director?.threat ?? null };
+  const crown = { treasury: crownP?.gold ?? 0, tithe: meta.tithe, titheWait: titheWait(meta, world.turn ?? 0), titheHigh: TITHE_HIGH, decrees: Object.fromEntries(Object.entries(DECREES).map(([k, v]) => { const cost = priceOf(k); const short = shortOf(crownP?.gold ?? 0, cost); return [k, { ...v, cost, wait: seasonsLeft(k === "feast" ? "feast:court" : k), ...(short ? { short } : {}) }]; })), favourWait: Object.fromEntries(world.players.map((p) => [p.id, seasonsLeft(`favour:${p.id}`)]).filter(([, n]) => n > 0)), perSeason: lastSeason.net, threat: meta.director?.threat ?? null };
   for (const p of players) {
     p.favour = p.house.wild || p.house.crown ? null : favourOf(p.id);
     p.favourWhy = favourWhy[p.id] ?? [];

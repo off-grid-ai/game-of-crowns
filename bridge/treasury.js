@@ -41,6 +41,8 @@ export const SHARE = { gift: 0.04, feast: 0.03, relief: 0.03, marriage: 0.08, al
 // The crown's great occasions come once a year: a levy drains the countryside of
 // men, a feast at court is an event, the banners answer once. The turn each was
 // last given is kept with the reign; seat feasts are keyed apart from a lord's.
+// Seasons before the King may change the tithe again (data/economy.json tithe.changeEvery).
+export const titheWait = (meta, turn) => Math.max(0, (meta?.titheSetAt ?? -99) + (ECONOMY.tithe.changeEvery ?? 0) - turn);
 export const YEARLY = 4;  // seasons
 export const FAVOUR = new Set(["gift", "feast", "relief"]);
 export function yearlyKey(ctx, cmd) {

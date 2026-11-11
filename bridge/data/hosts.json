@@ -1,8 +1,17 @@
 {
- "_": "The King's hosts and their orders (hosts.js; Warcraft III's command card, Total War's campaign map: an army is one thing on the map, ordered as one). near: crown companies within this many tiles of each other (and under no separate order) are one host. speed: tiles a host moves each season on an order. men: men to a company, as the ledger counts them. splitMin: a host needs at least this many companies to split. ships: unit types that are never part of a host.",
+ "_": "The King's hosts and their orders (hosts.js; Warcraft III's command card, Total War's campaign map: an army is one thing on the map, ordered as one). near: crown companies within this many tiles of each other (and under no separate order) are one host. speed: tiles a host moves each season on an order. men: men to a company, as the ledger counts them. splitMin: a host needs at least this many companies to split. ships: unit types that are never part of a host. ordersPerSeason: orders the King may give his hosts in one season, all hosts together (Total War's one move a turn; gameplay review #3: three hosts were sent in one second).",
  "near": 1,
  "speed": 3,
  "men": 200,
  "splitMin": 2,
- "ships": ["Trireme", "Caravel", "Galleon", "Frigate", "Transport", "Ironclad", "Destroyer"]
+ "ships": [
+  "Trireme",
+  "Caravel",
+  "Galleon",
+  "Frigate",
+  "Transport",
+  "Ironclad",
+  "Destroyer"
+ ],
+ "ordersPerSeason": 1
 }

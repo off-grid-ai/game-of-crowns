@@ -418,7 +418,7 @@ function applyStartOptions() {
 const viewCtx = () => ({ markSeasons: MARK_SEASONS, world, meta, history, court, stakes, turnSeconds, counselNow, scenes, effects, favourWhy, favourPast, lastSeason, detail, favourOf, marchOdds, greatHouses, sworn, priceOf, seasonsLeft, crownOf, crownSeat, reignInfo, storyNow, marksNow, goalNow, CIVILIAN, TURNING, GOAL_FAVOUR, soulsOf });
 // The realm as the view sees it (GET /world): built in view.js.
 function worldView() {
-  return { ...View.worldView(viewCtx()), hosts: Hosts.list({ world, meta }) };  // the King's hosts and their orders (hosts.js)
+  return { ...View.worldView(viewCtx()), hosts: Hosts.list({ world, meta }), hostOrdersLeft: Hosts.ordersLeft({ world, meta }) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
 }
 
 // The Hand's matters, read from the realm as it stands now.

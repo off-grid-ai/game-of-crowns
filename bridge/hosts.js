@@ -66,12 +66,26 @@ function save(meta, orders) {
 
 // POST /host/order {host, order, x?, y?, city?}: returns [code, {ok, text} | {error}].
 export function order(ctx, b) {
+  const out = give(ctx, b);
+  if (out[0] === 200) {
+    const { world, meta } = ctx;
+    meta.hostOrdered = { turn: world.turn, n: (meta.hostOrdered?.turn === world.turn ? meta.hostOrdered.n : 0) + 1 };
+    chron.saveMeta(meta);
+  }
+  return out;
+}
+// How many more orders the hosts may have this season (for /world and the command card).
+export const ordersLeft = (ctx) => Math.max(0, (HOSTS.ordersPerSeason ?? 99) - (ctx.meta?.hostOrdered?.turn === ctx.world?.turn ? ctx.meta.hostOrdered.n : 0));
+function give(ctx, b) {
   const { world, meta, sworn, crownSeat } = ctx;
   if (!world || meta?.status !== "running") return [400, { error: "no reign is running" }];
   const hosts = list(ctx);
   const h = hosts.find((x) => x.id === Number(b.host));
   if (!h) return [404, { error: "no such host" }];
   const kind = String(b.order ?? "");
+  // One order a season, all hosts together (data/hosts.json ordersPerSeason).
+  const given = meta.hostOrdered?.turn === world.turn ? meta.hostOrdered.n : 0;
+  if (given >= (HOSTS.ordersPerSeason ?? Infinity)) return [400, { error: "The King's captains have their orders for this season. The next order goes with the season's turn." }];
   const rest = (meta.hostOrders ?? []).filter((o) => !o.units.some((id) => h.units.includes(id)));
   const name = `The royal host (${h.men.toLocaleString("en-US")} men)`;
   const crown = crownOf(world);

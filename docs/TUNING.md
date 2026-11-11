@@ -243,3 +243,6 @@ Switches (`--name`) go after `--` on the game's command line.
 
 ## The interface's finesse pass (docs/review/ui-pass.md)
 - Which interface (`version`: v1 as before, v2 the pass; `--ui=v1` / `--ui=v2`), the date card's widest (`top.maxWidth`), the chronicle drawer's width and greatest height (`chronicle.width`, `chronicle.height`, a share of the screen), a town card's width when it isn't standing by its town (`townCard.width`), a toast's width (`toast.width`): `realm/data/ui.json`. The camera pad in v2: only when the player picks "always" in Settings.
+- Which decrees take a royal seal: every one but an order that answers a matter at court (`bridge/seals.js`; the counts are `bridge/data/seals.json`).
+- How many orders the King's hosts take a season, all hosts together: `bridge/data/hosts.json`: `ordersPerSeason`.
+- How often the tithe may change: `bridge/data/economy.json`: `tithe.changeEvery` (seasons; the top bar says "again in N seasons").

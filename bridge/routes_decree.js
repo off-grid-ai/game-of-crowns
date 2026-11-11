@@ -210,9 +210,16 @@ export async function setMood(ctx, req, res, url) {
 
 export async function tithe(ctx, req, res, url) {
   const { rate } = await body(req);
-  ctx.meta.tithe = Math.max(0, Math.min(Treasury.ECONOMY.tithe.max, Number(rate) || 0));  // data/economy.json
+  const want = Math.max(0, Math.min(Treasury.ECONOMY.tithe.max, Number(rate) || 0));  // data/economy.json
+  if (Math.abs(want - (ctx.meta.tithe ?? 0)) < 0.001) return json(res, 200, { tithe: ctx.meta.tithe });
+  // Once a year (data/economy.json tithe.changeEvery): the houses are told the crown's rate for the year.
+  const turn = ctx.world?.turn ?? 0;
+  const wait = Treasury.titheWait(ctx.meta, turn);
+  if (wait > 0) return json(res, 400, { error: `The tithe was set this year. It may change again in ${wait} season${wait === 1 ? "" : "s"}.`, tithe: ctx.meta.tithe, wait });
+  ctx.meta.tithe = want;
+  ctx.meta.titheSetAt = turn;
   chron.saveMeta(ctx.meta);
-  return json(res, 200, { tithe: ctx.meta.tithe });
+  return json(res, 200, { tithe: ctx.meta.tithe, wait: Treasury.titheWait(ctx.meta, turn) });
 }
 
 
