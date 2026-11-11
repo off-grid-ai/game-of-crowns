@@ -4,8 +4,8 @@
 # reference each is judged beside are listed in docs/review/v15.json; docs/review/v15_apply.py puts the
 # results on the review page.
 #
-#   docs/review/batch7.sh            # all of it, about 92 minutes [estimate: the launches' LIMITs and waits]
-#   ONLY="towns fire" docs/review/batch7.sh   # some launches only: towns moods rulings fields fire breach army hosts weather night
+#   docs/review/batch7.sh            # all of it, about 108 minutes [estimate: the launches' LIMITs and waits]
+#   ONLY="towns fire" docs/review/batch7.sh   # some launches only: towns moods rulings fields fire breach army battle hosts weather night
 #   OUT=/tmp/goc-batch7 (default)    # frames, logs and clips land here
 #
 # It runs on its own private bridge (8788, Freeciv 5557) with a fresh reign named "Film batch 7", so the
@@ -15,7 +15,7 @@ R=${0:A:h:h:h}
 OUT=${OUT:-/tmp/goc-batch7}
 PORT=${PORT:-8788}; FC=${FC:-5557}
 API=localhost:$PORT
-ONLY=${ONLY:-towns moods rulings fields fire breach army hosts weather night}
+ONLY=${ONLY:-towns moods rulings fields fire breach army battle hosts weather night}
 SW=(--look=one --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on)
 B=(--bridge=http://127.0.0.1:$PORT)
 FF=${FF:-/opt/homebrew/bin/ffmpeg}
@@ -221,6 +221,9 @@ if want army; then
   say "launch army line d12, regiment 0 selected"
   LIMIT=420 $R/realm/tools/render.sh $OUT/army-line-d12.png $B $SW --dist=12 --wait=90 --army-spike=6000 --army-shape=line --army-select=0 >> $OUT/render.out 2>&1
   grep "^ARMY" $OUT/army-line-d12.log | tail -3 >> $LOG
+  say "launch army line d3, house arms on shields and chests (2d434625)"
+  LIMIT=420 $R/realm/tools/render.sh $OUT/army-arms-d3.png $B $SW --dist=3 --wait=90 --army-spike=6000 --army-shape=line --army-select=0 >> $OUT/render.out 2>&1
+  grep "^ARMY" $OUT/army-arms-d3.log | tail -3 >> $LOG
   say "launch army line d50"
   LIMIT=420 $R/realm/tools/render.sh $OUT/army-line-d50.png $B $SW --dist=50 --wait=90 --army-spike=6000 --army-shape=line >> $OUT/render.out 2>&1
   grep "^ARMY" $OUT/army-line-d50.log | tail -3 >> $LOG
@@ -228,6 +231,27 @@ if want army; then
   { print "wait 60"; print "snap army-march"; burst army-clip 28 0.2; print "look army-end"; } > $OUT/army.play
   play army 480 --dist=25 --army-spike=6000 --army-shape=march
   clip $OUT/army army-clip 5
+fi
+
+# 6a. A field battle (army-ui's d3680bfa, 5891d912; --army-battle=<men a side>): two hosts deploy, volley, meet,
+# the horse goes in on the flank, the beaten waver and run, the victors hold the field. The battle frames itself
+# at the shot's --dist. Timings are army-ui's estimates from "BATTLE begins" (deploy takes about 40-70 s).
+# Then the same close (d4) for men at blows, with a clip for motion.
+if want battle; then
+  {
+    print "wait 70"; print "snap battle-1-lines-formed"
+    print "wait 8"; print "snap battle-2-volleys"
+    print "wait 12"; print "snap battle-3-fronts-meet"
+    print "wait 12"; print "snap battle-4-flank"
+    print "wait 10"; print "snap battle-5-waver-rout"
+    print "wait 10"; print "snap battle-6-field-held"
+    print "look battle-end"
+  } > $OUT/battle.play
+  play battle 480 --dist=10 --army-battle=3000
+  grep "^BATTLE" $OUT/battle.log 2>/dev/null | tail -20 >> $LOG
+  { print "wait 82"; print "snap battle-close"; burst battle-clip 30 0.2; print "look battle-close-end"; } > $OUT/battle-close.play
+  play battle-close 420 --dist=4 --army-battle=3000
+  clip $OUT/battle-close battle-clip 5
 fi
 
 # 6b. Commanding a host (3770f00c, --hosts=on): the crown's largest host ordered to march on the war town (through
@@ -246,7 +270,8 @@ print(h[0]['id'], h[0].get('men',0)) if h else print('', 0)")
   {
     print "wait 25"
     print "host 0 6 -25"; print "wait 2"; print "snap host-selected"
-    print "host 0 16 -22"; print "wait 3"; print "snap host-route"
+    print "tap host_hold"; print "rclick 0.65 0.45"; print "wait 2"; print "snap host-route"
+    print "tap host_march"; print "click 0.3 0.4"; print "wait 2"; print "snap host-march-click"
     print "look hosts-end"
   } > $OUT/hosts.play
   play hosts 420 --hosts=on

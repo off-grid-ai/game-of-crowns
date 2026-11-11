@@ -262,6 +262,14 @@
    "still": "army-line-d12.png"
   },
   {
+   "id": "b7-army-arms",
+   "name": "House arms on the men",
+   "what": "Close on the line (d3): the crown's arms on each man's chest and a roundel on his shield, steel elsewhere",
+   "ref": "03-army",
+   "card": "O2",
+   "still": "army-arms-d3.png"
+  },
+  {
    "id": "b7-army-far",
    "name": "The army from far",
    "what": "The line at d50: each regiment a coloured block under its standard and strength",
@@ -279,6 +287,63 @@
    "clip": "army/army-clip.mp4"
   },
   {
+   "id": "b7-battle-1",
+   "name": "Two lines formed",
+   "what": "Two hosts facing in line, crown colours against a house's, banners and standards",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "battle/battle-1-lines-formed.png"
+  },
+  {
+   "id": "b7-battle-2",
+   "name": "The volleys",
+   "what": "Arrows arcing between the lines, men falling under them",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "battle/battle-2-volleys.png"
+  },
+  {
+   "id": "b7-battle-3",
+   "name": "The fronts meet",
+   "what": "The fronts at sword's length along their whole length, not a blob; cuts and reels",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "battle/battle-3-fronts-meet.png"
+  },
+  {
+   "id": "b7-battle-4",
+   "name": "Horse on the flank",
+   "what": "Cavalry going in on the end of the enemy line",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "battle/battle-4-flank.png"
+  },
+  {
+   "id": "b7-battle-5",
+   "name": "The rout",
+   "what": "Beaten banners wavering, regiments running, the fallen left behind",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "battle/battle-5-waver-rout.png"
+  },
+  {
+   "id": "b7-battle-6",
+   "name": "The field held",
+   "what": "The victors at ease on the field",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "battle/battle-6-field-held.png"
+  },
+  {
+   "id": "b7-battle-close",
+   "name": "Men at blows",
+   "what": "The fight close (d4): pairs at sword's length, cuts, parries and reels",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "battle-close/battle-close.png",
+   "clip": "battle-close/battle-clip.mp4"
+  },
+  {
    "id": "b7-host-selected",
    "name": "A host selected",
    "what": "A click on the host's standard: the gold ring under it, its banner lit, the command card over the minimap",
@@ -294,6 +359,15 @@
    "ref": "02-realm",
    "card": "O2",
    "still": "hosts/host-route.png",
+   "needs": "host"
+  },
+  {
+   "id": "b7-host-march",
+   "name": "Ordering a march",
+   "what": "March chosen on the card and a click on the land: the route to it drawn",
+   "ref": "02-realm",
+   "card": "O2",
+   "still": "hosts/host-march-click.png",
    "needs": "host"
   },
   {
