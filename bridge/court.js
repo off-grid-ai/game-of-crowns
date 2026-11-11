@@ -140,9 +140,30 @@ export function hold(ctx, on) {
 
 function callMatter(ctx, o, turn, crisis) {
   const c = courtYearOf(ctx);
-  c.hand[o.key] = { crisis, sitting: turn };
+  c.hand[o.key] = { crisis, sitting: turn, subject: o.subject ?? null, o: snap(o) };
   c.heard[o.key] = turn;
 }
+// A called matter as the King was shown it, kept with the card so it stays until he answers it or
+// closes the court (Reigns: the card stays until you swipe it; gameplay review #5).
+const snap = (o) => ({ text: o.text, why: o.why, acts: o.acts, kind: o.kind ?? null, subject: o.subject ?? null, occur: o.occur ?? null, urgency: o.urgency ?? 0, place: o.place ?? null });
+// The called matters against the realm's matters now: one still there is shown as it is now; one the
+// realm turned worse for the same house (cold, then an ultimatum, then a march) is replaced in place,
+// with a short glow (worse); one the realm settled on its own keeps its card until the King answers
+// it or closes the court. Nothing called ever leaves the docket by itself.
+function follow(ctx, turn) {
+  const { counselNow } = ctx;
+  const c = courtYearOf(ctx);
+  for (const [key, m] of Object.entries(c.hand)) {
+    const now = counselNow.find((x) => x.key === key);
+    if (now) { m.o = snap(now); continue; }
+    const next = m.subject != null ? counselNow.find((x) => x.subject === m.subject && !c.hand[x.key] && x.acts?.length) : null;
+    if (!next) continue;
+    c.hand[next.key] = { ...m, crisis: m.crisis || isCrisis(next), o: snap(next), worse: Date.now(), was: m.o?.text ?? null };
+    c.heard[next.key] = turn;
+    delete c.hand[key];
+  }
+}
+const matterOf = (ctx, key) => ctx.counselNow.find((x) => x.key === key) ?? courtYearOf(ctx).hand[key]?.o ?? null;
 
 // The court's pace: it sits only when it has something worth hearing. Through
 // the first half of the reign that is one matter every third season; in the
@@ -190,8 +211,8 @@ export async function courtSeason(ctx, turn, force = false) {
   const { record, ceasefire, turnHouses } = ctx;
   if (!court || !world) return;
   const c = courtYearOf(ctx);
-  // A matter the realm settled on its own (the famine ended, the war is over) goes quietly.
-  if (counselNow.length) for (const key of Object.keys(c.hand)) if (!counselNow.some((x) => x.key === key)) delete c.hand[key];
+  // A called matter stays until the King answers it; one the realm made worse is replaced in place.
+  follow(ctx, turn);
   turnHouses(turn);  // watched or not: a house turns, and warns, either way
   if ((!isWatched() && !force) || c.sitting != null) { chron.saveMeta(meta); return; }
   // The opening (routes_realm.opening): a new reign's first court waits for the King in his
@@ -274,8 +295,9 @@ export async function courtSeason(ctx, turn, force = false) {
 export function closeCourt(ctx, turn) {
   const { meta, court, counselNow, lapse, lapseOf, shiftFavour } = ctx;
   const c = courtYearOf(ctx);
+  follow(ctx, turn);
   for (const key of Object.keys(c.hand)) {
-    const o = counselNow.find((x) => x.key === key);
+    const o = matterOf(ctx, key);
     if (o) {
       lapse({ key: matterKey(o), text: o.text, lapse: lapseOf(o) }, turn);
       // An ultimatum met with silence is refused: now the lord may rise.
@@ -296,9 +318,9 @@ export function closeIfDone(ctx, turn, closing = false) {
     hold(ctx, false);  // never held with no court sitting
     return;
   }
-  // A matter the realm settled on its own while the court sat (the war ended, the
-  // famine eased) is off the docket: it must not hold the doors, and the realm, shut.
-  if (counselNow.length) for (const key of Object.keys(c.hand)) if (!counselNow.some((x) => x.key === key)) delete c.hand[key];
+  // A called matter holds the doors until the King answers it or closes the court (gameplay review #5:
+  // a matter the counsel re-worded was dropped and the court shut before he saw it).
+  follow(ctx, turn);
   const open = Object.keys(c.hand).length || court?.petitions.some((p) => !p.answered && p.called != null);
   if ((open || c.forced) && !closing) return;
   c.sitting = null;
@@ -359,12 +381,13 @@ export function docket(ctx) {
   closeIfDone(ctx, world?.turn ?? 0);
   const ownerOf = (o) => (o.acts ?? []).map((a) => world?.cities?.find((x) => x.id === Number(a.city))).map((x) => x && world.players.find((p) => p.id === x.owner)).find((p) => p && !houseFor(p).crown && !houseFor(p).wild);
   const hand = Object.entries(c.hand).map(([key, m]) => {
-    const o = counselNow.find((x) => x.key === key);
+    const o = matterOf(ctx, key);
     if (!o) return null;
     // Brought by the lord of the house it touches; a matter of the whole realm, by the Hand himself.
     const owner = ownerOf(o);
     const lord = owner ? court.lordOfHouse(owner.id) : null;
     return { id: `hand:${key}`, hand: true, key, crisis: m.crisis, sitting: m.sitting, text: o.text, why: o.why, acts: o.acts, place: o.place ?? null,
+      ...(m.worse && Date.now() - m.worse < 6000 ? { worse: true, was: m.was } : {}),
       name: lord?.name ?? "The Hand of the King", house: lord ? houseFor(owner).name : "", from: lord?.id ?? null, who: lord ? court.sitter(lord.id) : null, due: null };
   }).filter(Boolean).sort((a, b) => Number(b.crisis) - Number(a.crisis));
   // No fuse at court: the realm holds while it sits, so no timer would tell true.
@@ -391,7 +414,7 @@ export function answerMatter(ctx, key) {
   const { world, meta, counselNow } = ctx;
   if (key) {
     // A matter at court is keyed by the matter itself; it rests as its kind does.
-    const o = counselNow.find((x) => x.key === String(key));
+    const o = matterOf(ctx, String(key));
     (meta.mattersRest ??= {})[o ? matterKey(o) : String(key)] = world?.turn ?? 0;
     // An ultimatum answered: the house's anger starts over (it may turn again).
     // Met only if the answer won the house back above cooling; otherwise it stands refused, and the house rises (season.js).

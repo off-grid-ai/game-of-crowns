@@ -247,3 +247,4 @@ Switches (`--name`) go after `--` on the game's command line.
 - Which decrees take a royal seal: every one but an order that answers a matter at court (`bridge/seals.js`; the counts are `bridge/data/seals.json`).
 - How many orders the King's hosts take a season, all hosts together: `bridge/data/hosts.json`: `ordersPerSeason`.
 - How often the tithe may change: `bridge/data/economy.json`: `tithe.changeEvery` (seasons; the top bar says "again in N seasons").
+- A called court matter keeps its card until the King answers it or closes the court; one the realm makes worse for the same house replaces it in place, glowing (`worse`) for a few seconds: `bridge/court.js` (`follow`; the glow's length is the 6 s in `docket`).
