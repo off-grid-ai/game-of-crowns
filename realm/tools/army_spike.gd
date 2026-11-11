@@ -196,7 +196,7 @@ func _muster(town: Vector3, n: int, pitch: float) -> Array:
 	return out
 
 
-## A regiment's ground: its middle and four corners dry land, clear of buildings, and level enough;
+## A regiment's ground: dry land all over, clear of buildings, and level enough;
 ## and no tree, road or track anywhere under it (the circle round its square, so a regiment turned a
 ## little toward the seat still keeps off them; muster.keepOff, data/army.json).
 func _dry(p: Vector3, size: float) -> bool:
@@ -209,12 +209,15 @@ func _dry(p: Vector3, size: float) -> bool:
 	var roads = main.get("roads")
 	if roads and roads.has_method("on_path") and roads.on_path(p, keep):
 		return false
-	for o in [Vector2.ZERO, Vector2(-0.5, -0.5), Vector2(0.5, -0.5), Vector2(-0.5, 0.5), Vector2(0.5, 0.5)]:
-		var q := Vector3(p.x + o.x * size, 0, p.z + o.y * size)
-		if not main.terrain.is_land(q.x, q.z) or TownNav.in_building(main.towns, q, 0.1):
-			return false
-		if absf(main.terrain.height_at(q.x, q.z) - h) > slope:
-			return false
+	# Every point of a 5 by 5 grid over its square, not only its middle and corners: a house
+	# (0.7 units across) stood between the corners of a regiment 2.5 wide, and the men stood in it.
+	for gx in 5:
+		for gz in 5:
+			var q := Vector3(p.x + (gx / 4.0 - 0.5) * size, 0, p.z + (gz / 4.0 - 0.5) * size)
+			if not main.terrain.is_land(q.x, q.z) or TownNav.in_building(main.towns, q, 0.1):
+				return false
+			if absf(main.terrain.height_at(q.x, q.z) - h) > slope:
+				return false
 	return true
 
 
