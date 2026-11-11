@@ -117,6 +117,11 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log of supervisor actions (newest first; details in review/supervisor-log.md)
+- 17:50 Batch 3 running (one batch): all slice switches incl. --towns=plots; Kingsmere roof, d40, d55; Goldrock;
+  the army at 6k/15k (d40) and 6k (d8), fixed muster; the stone-wall demo; bake-off kit and AI 3D cells; fire.
+  Batch 2 stopped (its army runs predated the muster fix). Army perf: 6k and 15k both 12–13 fps at d40 (Mac's bar
+  is 10). The mid/map zoom fixed (b7d84a3, cf18dd0, eb6879b): the paper map only from 54, no scanlines, town
+  draw reach 150–220, trees 10–12 m. Defaults flip after batch 3 is judged.
 - 17:15 Batch 1 rendered km-cap and Goldrock (kit castle and houses in house colours; sent to Mac); km-mid and
   map-mid failed (check logs); fire last. Fixes from batch 1 committed (52583ee..e02b89b). Stone walls (78923501,
   2e516b8b), the army VAT spike (b4763818) and the bake-off scene (97ba1a7) are ready. Batch 2 queued to follow: town
