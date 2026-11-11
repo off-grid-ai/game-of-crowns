@@ -4,7 +4,7 @@
 # reference each is judged beside are listed in docs/review/v15.json; docs/review/v15_apply.py puts the
 # results on the review page.
 #
-#   docs/review/batch7.sh            # all of it, about 124 minutes [estimate: the launches' LIMITs and waits]
+#   docs/review/batch7.sh            # all of it, about 129 minutes [estimate: the launches' LIMITs and waits]
 #   ONLY="towns fire" docs/review/batch7.sh   # some launches only: towns square castle moods rulings fields fire breach army battle hosts weather night
 #   OUT=/tmp/goc-batch7 (default)    # frames, logs and clips land here
 #
@@ -300,6 +300,11 @@ if want battle; then
   { print "wait 82"; print "snap battle-close"; burst battle-clip 30 0.2; print "look battle-close-end"; } > $OUT/battle-close.play
   play battle-close 420 --dist=4 --army-battle=3000
   clip $OUT/battle-close battle-clip 5
+  # A battle in play (army-ui's 5a47b648, --battles=field): where the bridge reports a battle, one is staged
+  # on open ground there, sized from the men who fought. It never moves the camera: Space jumps to the latest
+  # news. Only shows a battle if this reign has had one by now; play.log and the frame say what it found.
+  { print "wait 60"; print "key Space"; print "wait 5"; print "snap battle-in-play"; print "look battle-play-end"; } > $OUT/battle-play.play
+  play battle-play 300 --battles=field
 fi
 
 # 6b. Commanding a host (3770f00c, --hosts=on): the crown's largest host ordered to march on the war town (through

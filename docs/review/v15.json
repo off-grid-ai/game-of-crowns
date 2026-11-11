@@ -407,6 +407,14 @@
    "clip": "battle-close/battle-clip.mp4"
   },
   {
+   "id": "b7-battle-in-play",
+   "name": "A battle in play",
+   "what": "A battle the realm fought, staged where the bridge reported it: both sides in their houses' colours, the beaten one breaking (only if this reign has had one; else the latest news)",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "battle-play/battle-in-play.png"
+  },
+  {
    "id": "b7-host-selected",
    "name": "A host selected",
    "what": "A click on the host's standard: the gold ring under it, its banner lit, the command card over the minimap",
