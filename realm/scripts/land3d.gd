@@ -393,6 +393,7 @@ uniform vec3 lean[64];
 uniform vec4 pol_k = vec4(0.3, 0.8, 0.45, 0.4);  // wash_near, wash_far, own_mix, stripes_below
 uniform vec4 pol_b = vec4(1.35, 3.0, 1.4, 0.0);  // border_bright, border_px, stripe_width
 uniform vec2 pol_z = vec2(12.0, 30.0);  // map_from, map_to: the camera's height over the ground where the wash comes in
+uniform vec4 pol_l = vec4(9.0, 22.0, 0.22, 0.55);  // line_from, line_to (camera height where borders fade in), soft (the painted band's width, tile share), crisp (the fine line's share)
 float flood_d(vec2 t) {
 	float d = 100000.0;
 	for (int i = 0; i < flood_n; i++) d = min(d, distance(t, flood_at[i]));
@@ -489,7 +490,12 @@ const REALM_WASH := """
 		// The political map: the line in the house's own colour, brightened (WC3's team colour), unless war,
 		// a truce or an oath has its own.
 		if (politics > 0.5 && !at_war && !truce && !sworn && !envoy && !pact && !wed && own.a > 0.0) { line = clamp(own.rgb * pol_b.x, 0.0, 1.0); strength = 1.0; }
-		ALBEDO = mix(ALBEDO, line, edge * strength * dash);
+		// Never on the ground at roof or town height (the ground stays ground, Warcraft III); fading in as
+		// the lens rises, and drawn as a painted border, a soft brush band under a finer line, not a hard rule.
+		float line_zoom = smoothstep(pol_l.x, pol_l.y, CAMERA_POSITION_WORLD.y - v_vertex.y);
+		float soft = other >= 0 ? 1.0 - smoothstep(0.0, pol_l.z, gap) : 0.0;
+		float paint = max(edge * pol_l.w, soft * soft * (1.0 - pol_l.w));
+		ALBEDO = mix(ALBEDO, line, paint * strength * dash * line_zoom);
 	}
 """
 var _flood_t := -1.0  # seconds into a flood; -1: none running
@@ -532,7 +538,7 @@ func _show_realm(realm: Texture2D, prev: Texture2D, war: Texture2D, flood: Dicti
 
 
 ## The political map's per-house numbers (terrain.set_realm): hold and lean by owner id, and the knobs.
-func set_politics(on: bool, hold: PackedFloat32Array, lean: PackedVector3Array, k: Vector4, b: Vector4, z := Vector2(12.0, 30.0)) -> void:
+func set_politics(on: bool, hold: PackedFloat32Array, lean: PackedVector3Array, k: Vector4, b: Vector4, z := Vector2(12.0, 30.0), l := Vector4(9.0, 22.0, 0.22, 0.55)) -> void:
 	if land == null:
 		return
 	var mat: Terrain3DMaterial = land.material
@@ -542,6 +548,7 @@ func set_politics(on: bool, hold: PackedFloat32Array, lean: PackedVector3Array, 
 	mat.set_shader_param("pol_k", k)
 	mat.set_shader_param("pol_b", b)
 	mat.set_shader_param("pol_z", z)
+	mat.set_shader_param("pol_l", l)
 
 
 ## The scars as terrain.set_marks drew them, and the season it is now.
