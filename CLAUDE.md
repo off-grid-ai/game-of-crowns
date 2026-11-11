@@ -9,5 +9,11 @@ Read these before deciding anything about the game:
 - [VISION.md](VISION.md): decisions and scope, including the "Decisions that matter" plan and the roadmap.
 - [DESIGN.md](DESIGN.md): the world, its systems and the art direction.
 
+**Renders: build everything, then render everything once (Mac, 2026-11-11, said many times).** Never queue
+renders per session, per agent or per change. Builders and agents code, check with a headless `--check-only`,
+commit and report their switches and demo hooks. Then the supervisor runs one batched render of every view and
+change together, takes all the screenshots at once and sends them to Mac straight away. A builder that renders
+on its own stalls everyone behind the one GPU.
+
 Working rules are the project skills in `.claude/skills/` (start with `goc-cpto`). Marketing copy follows
 the mac-voice skill: only what the player gets, said the way a person talks.
