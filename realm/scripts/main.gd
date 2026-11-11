@@ -443,6 +443,9 @@ func _ready() -> void:
 		labels.visible = false
 	# Launch-video takes: scripted camera moves (cinematics.gd reads --clip itself).
 	if Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--clip=")): add_child(load("res://scripts/cinematics.gd").new())
+	# The opening's clock (a test aid, GOC_OPENING_CLOCK=<file>): the first ten minutes, timed.
+	if OS.get_environment("GOC_OPENING_CLOCK") != "":
+		add_child(load("res://tools/opening_clock.gd").new(self))
 	# The v2 opening: the Hand's prompts in a first reign (hand_prompts.gd; texts and moments in data/opening.json).
 	if OS.get_cmdline_user_args().has("--opening=v2"):
 		hand_prompts = load("res://scripts/hand_prompts.gd").new(self)
