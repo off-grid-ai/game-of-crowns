@@ -17,6 +17,9 @@ const WINDOW := "Wall_UnevenBrick_Window_Thin_Round"
 const DOOR := "Wall_UnevenBrick_Door_Round"
 const CONE := "Roof_Tower_RoundTiles"
 const CAP := "Floor_UnevenBrick"
+const ARCH := "DoorFrame_Round_Brick"  # the kit's stone round door frame, at twice size the gate's arch
+const BARS := "Prop_MetalFence_Simple"  # the kit's iron railing, stood up tall: the portcullis
+const LEAF := "Door_8_Round"  # the kit's iron-bound plank door: the gate's two leaves
 const SIDES := [0.0, PI / 2, PI, -PI / 2]
 
 
@@ -67,7 +70,7 @@ func build_castle(spec: Dictionary) -> ArrayMesh:
 				continue  # the gatehouse or the keep stands here
 			_curtain(parts, frame, off, wall_st)
 	# The gatehouse, astride the front wall, its gate through two storeys.
-	_block(parts, gate_at, gate_w, 3, wall_st + 1, rng, {"gate": true, "crenel": true, "windows": 0.5})
+	_block(parts, gate_at, gate_w, 3, wall_st + 1, rng, {"gate": true, "crenel": true, "windows": 0.5, "portcullis": float(spec.get("gate_portcullis", 2.4))})
 	for sx in [-1, 1]:
 		_block(parts, gate_at + Vector3(sx * (gh + 1.0), 0, 1.0), 2, 2, wall_st + 2, rng, {"cone": true, "windows": 0.5})
 	# The keep: tall, crenellated, a tiled roof over its leads, a turret at each corner.
@@ -104,12 +107,15 @@ func _block(parts: Array, at: Vector3, wc: int, dc: int, storeys: int, rng: Rand
 				var piece := WALL
 				var front: bool = side == 0 or (side == 2 and bool(opts.get("gate", false)))
 				if opts.get("gate", false) and front and f < 2 and absf(off) < CELL:
-					# The gate: one door panel at twice the size fills the two middle cells, two storeys up.
+					# The gate: one door panel at twice the size fills the two middle cells, two storeys up, its
+					# arch dressed in cut stone (the kit's round door frame), front and back; the passage runs
+					# through between them (art target 01-town: an arched gate, not a door).
 					if f == 0 and off < 0.0:
 						var g := basis.scaled(Vector3(2.0, 2.0, 1.0))
 						parts.append([DOOR, Transform3D(g, at + basis * Vector3(0, 0, half))])
+						parts.append([ARCH, Transform3D(basis * Basis.from_scale(Vector3(2.0, 2.0, 1.5)), at + basis * Vector3(0, 0, half + 0.05))])
 						if side == 0:
-							parts.append(["Door_1_Round", Transform3D(g, at + basis * Vector3(0, 0, half))])
+							_passage(parts, at, half, opts)
 					continue
 				if opts.get("door", false) and side == 0 and f == 0 and i == along / 2:
 					piece = DOOR
@@ -138,6 +144,31 @@ func _block(parts: Array, at: Vector3, wc: int, dc: int, storeys: int, rng: Rand
 			if ResourceLoader.exists(DIR % gable):
 				parts.append([gable, Transform3D(Basis(), at + Vector3(0, top + 0.3, rc * CELL / 2.0))])
 				parts.append([gable, Transform3D(Basis(Vector3.UP, PI), at + Vector3(0, top + 0.3, -rc * CELL / 2.0))])
+
+
+## The gate's passage through the gatehouse (the front face at +half, the back at -half): stone walls
+## either side, a vaulted stone ceiling, a paved floor, the portcullis hanging half raised just inside the
+## arch, and behind it the two plank leaves swung open against the walls. The arch at twice the kit's
+## door is about 2.2 m wide and 4.6 m high. spec gate_portcullis: how high its foot hangs, in metres.
+func _passage(parts: Array, at: Vector3, half: float, opts: Dictionary) -> void:
+	const W := 1.1  # half the arch's width
+	const H := 4.6  # the arch's crown
+	var depth := half * 2.0
+	var n := maxi(1, int(round(depth / CELL)))
+	var step := depth / n
+	var tall := Basis.from_scale(Vector3(step / CELL, H / STOREY, 1.0))
+	for i in n:
+		var z := half - step * (i + 0.5)
+		parts.append([WALL, Transform3D(Basis(Vector3.UP, PI / 2) * tall, at + Vector3(-W, 0, z))])
+		parts.append([WALL, Transform3D(Basis(Vector3.UP, -PI / 2) * tall, at + Vector3(W, 0, z))])
+		var sc := Basis.from_scale(Vector3(W, 1.0, step / CELL))
+		parts.append([CAP, Transform3D(Basis(Vector3.RIGHT, PI) * sc, at + Vector3(0, H, z))])
+		parts.append([CAP, Transform3D(sc, at + Vector3(0, 0.03, z))])
+	var up := float(opts.get("portcullis", 2.4))
+	parts.append([BARS, Transform3D(Basis.from_scale(Vector3(W * 2.0 / 1.95, H / 2.87, 1.0)), at + Vector3(0, up, half - 0.7))])
+	var leaf := Basis(Vector3.UP, PI / 2) * Basis.from_scale(Vector3(W / 1.1, H / 2.36, 1.0))
+	for sx in [-1, 1]:
+		parts.append([LEAF, Transform3D(leaf, at + Vector3(sx * (W - 0.12), 0.03, half - 1.4))])
 
 
 ## One 2 m bay of curtain wall, `off` along the run's frame (+Z outward): stone
