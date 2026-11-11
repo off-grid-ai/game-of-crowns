@@ -69,6 +69,22 @@ playing it. Work inside a phase runs in parallel by owner; one bundled Godot run
 | The first ten minutes (opening v2: 2 screens, first card at 1:00, the ruling seen on the map, quiet to winter, 5 Hand prompts, reveal as it matters) | Lead | the timed harness shows first card ≤1:00, first ruling ≤1:30, setback from a ruling ~5:00 |
 | Motion that reads at roof height (v3 props and posture; the square budget; no statues) | Lead + Townsfolk | gate equals or beats v2 on every line |
 
+**From the fun audit (2026-11-11, fun-audit-report.md in the notes; ranked by fun per effort):** today the
+King's own moves are off by default, the reign is back-loaded (0.6 decisions a minute in minutes 1–5,
+2.8 in minutes 11–14, in clumps), nothing answers a click, result lines repeat (one 33 times in 10 reigns),
+and there's no humour. Added to Phase 1, in this order:
+
+| Item (reference) | Owner | Done when |
+|---|---|---|
+| Juice: the seal thunks, coins count down with a sound, results land at the town, music follows the tension (Kingdom Two Crowns) | Builder 2 | answer to sound <0.2 s, to the world <2 s, timed on a clip |
+| Kill the repeats: several wordings per result, Omni rewords flavour, fresh minor names each reign (Reigns, RCT's guests) | Builder 2 | 0 repeated kinds; ≥90% distinct result sentences |
+| Every click answers out loud: lords, the host and townsfolk reply, annoyed by the fourth click (Warcraft II, Stronghold) | Lead | click to sound <0.2 s; no line repeated within 10 clicks |
+| One matter at a time, spread through the season, riders at their towns with deadlines (Frostpunk) | Builder 2 | ≤2 decisions in any 15 s; minutes 1–5 at 1–1.5 a minute |
+| The crowd thinks out loud: gossip by each town echoes your rulings (RCT's thoughts) | Lead | ≥60% of rulings echoed within 2 seasons |
+| A herald with a dry wit replaces the toast stack (Theme Hospital, Stronghold's scribe) | Builder 2 | ≤1 toast on screen; quiet share holds |
+| The King's own works rise where he sees them, with a crown pennant, and can be threatened (Stronghold, Manor Lords) | Lead + Townsfolk | his own things are the next goal ≥50%; ≥2 open projects at any pause |
+| An ending worth retelling (an Omni epitaph from his weightiest rulings), the next reign inherits a grudge (Reigns) | Builder 2, Phase 3 | testers start a second reign |
+
 ### Phase 2: a realm worth looking at (the look)
 | Item | Owner | Done when |
 |---|---|---|
