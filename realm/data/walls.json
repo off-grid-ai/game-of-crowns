@@ -51,5 +51,5 @@
   },
   "sim_radius": 12.0,
   "dust": {"amount": 22, "life_s": 2.4, "size": 0.32, "colour": "#a39580"},
-  "demo": {"height_m": 7.0, "span_rad": 0.5, "sections": 3, "wear_per_hit": 0.12, "first_s": 4.0}
+  "demo": {"height_m": 7.0, "span_rad": 0.5, "sections": 3, "wear_per_hit": 0.25, "first_s": 2.0, "every_s": 1.3, "flight_s": 1.1, "max": 4}
 }

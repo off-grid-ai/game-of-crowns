@@ -188,6 +188,13 @@ func _alight(root: Node3D, key: String, h: Array, seconds: float) -> void:
 	var lateral := Vector3(box.size.x, 0, box.size.z).length() * 0.3
 	front.position = Vector3(c.x, box.position.y + box.size.y * float(fr.get("height", 0.35)), c.z) + Vector3(face.x, 0, face.z).normalized() * lateral
 	fire.add_child(front)
+	# Up the walls: tongues from the walls' upper half all round, licking up into the roof (Stronghold's
+	# and Manor Lords' burning houses: the walls burn, not only the roof).
+	var wk: Dictionary = d.get("walls", {})
+	if int(wk.get("amount", 0)) > 0:
+		var walls := _flames(int(wk.get("amount", 18)), float(fk.get("life", 0.9)), wk.get("size", [0.14, 0.26]), _v2(fk.get("rise", [0.08, 0.18])), Vector3(box.size.x * 0.5, box.size.y * 0.2, box.size.z * 0.5), _flame_material(false), float(fk.get("aspect", 1.6)), float(fk.get("lift", 0.35)))
+		walls.position = Vector3(c.x, box.position.y + box.size.y * float(wk.get("height", 0.55)), c.z)
+		fire.add_child(walls)
 	var ek: Dictionary = d.get("embers", {})
 	var embers := _embers(ek, Vector3(box.size.x * 0.3, 0.02, box.size.z * 0.3))
 	embers.position = Vector3(c.x, top, c.z)

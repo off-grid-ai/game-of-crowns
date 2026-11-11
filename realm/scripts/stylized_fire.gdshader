@@ -53,7 +53,7 @@ void vertex() {
 }
 
 void fragment() {
-	float mask = texture(texture_mask, UV).r;
+	float mask = texture(texture_mask, UV).a;  // the tongue's shape is the strip's alpha (fire.gd _strip: white, alpha = brightness)
 	vec2 pan = vec2(0.15, 1.0) * (-TIME * time_scale);
 	float noise_xy = texture(noise_texture, world_coord.xy * texture_scale + pan).r;
 	float noise_zy = texture(noise_texture, world_coord.zy * texture_scale + pan + vec2(0.7, 0.3)).r;

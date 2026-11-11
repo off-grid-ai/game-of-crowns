@@ -86,11 +86,14 @@ func _keep_striking(wall: Node3D, center: Vector3) -> void:
 	var target: Vector3 = wall.aim()
 	if target == Vector3.INF or _thrown.get(wall, false):
 		return
-	if Time.get_ticks_msec() - int(_last.get(wall, 0)) < float(Data.num("walls", "strike.every_s", 2.6)) * 1000.0:
+	# The demo wall is battered at its own, quicker pace (demo.every_s, demo.max), so a short take sees it
+	# crack, notch and breach; a real siege keeps strike.*.
+	var demo: bool = not _demo.is_empty() and wall == _demo["wall"]
+	if Time.get_ticks_msec() - int(_last.get(wall, 0)) < float(Data.num("walls", "demo.every_s" if demo else "strike.every_s", 2.6)) * 1000.0:
 		return
 	if not wall.hot:
 		return
-	if int(_blows.get(wall, 0)) >= int(Data.num("walls", "strike.max", 10)):
+	if int(_blows.get(wall, 0)) >= int(Data.num("walls", "demo.max" if demo else "strike.max", 10)):
 		wall.give_way()
 		return
 	var out := Vector3(target.x - center.x, 0, target.z - center.z).normalized()
@@ -117,7 +120,7 @@ func _throw(wall: Node3D, from: Vector3, to: Vector3) -> void:
 	tw.tween_method(func(t: float):
 		var p := from.lerp(to, t)
 		p.y = lerpf(from.y, to.y, t) + (top - maxf(from.y, to.y)) * 4.0 * t * (1.0 - t)
-		stone.global_position = p, 0.0, 1.0, float(Data.num("walls", "strike.flight_s", 1.7)))
+		stone.global_position = p, 0.0, 1.0, float(Data.num("walls", "demo.flight_s" if not _demo.is_empty() and wall == _demo["wall"] else "strike.flight_s", 1.7)))
 	tw.tween_callback(func():
 		stone.queue_free()
 		_thrown[wall] = false
@@ -277,3 +280,4 @@ func _demo_wear() -> void:
 	_demo["wear"] = minf(1.0, float(_demo["wear"]) + float(Data.num("walls", "demo.wear_per_hit", 0.12)))
 	_blows[w] = 0
 	w.wear_to(1, float(_demo["wear"]), true)
+	print("WALL demo wear=%.2f (cracked from 0.2, breached to the ground at %.2f) at %.1f s" % [float(_demo["wear"]), float(Data.num("walls", "breach.full_at", 0.75)), (Time.get_ticks_msec() - int(_demo["at"])) / 1000.0])
