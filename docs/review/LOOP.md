@@ -960,3 +960,24 @@ Shipped: 0.6 on GitHub (v0.6-20261107-b39885f, notarised). **0.6 is live on itch
   The CSV names every texture and its size. Video memory is now 5.4 GB against a 3 GB target.
 - **Also waiting on Mac:** merging each person's clothing pieces into one mesh (about 0.4 GB saved). It would be a hand-built system, so it's his call.
 - **In progress:** NPC perf is tracing why the knight body's feet slide (it's the rig, not the clip) and is turning SDFGI off where it adds little, with a film A/B. The go-live gate reruns on HEAD once the GPU frees.
+
+## 2026-11-11 09:30, Kingsmere live by default (b6e8914)
+
+- **The switch:** the crown's seat has minds and motion v2 is the default. Escape hatches: `--limbo=none`, `--motion=v1`. The behaviour probe passes 20/20, and a no-flags run has 0 script errors.
+- **Gate, old rules → new (Kingsmere, about 40 people):**
+
+  | Line | Old rules | New |
+  |---|---|---|
+  | Turn snaps | 1459 | 0–3 |
+  | Kneel at nothing | 26 | 0 |
+  | Pops | 6 | 2–5 |
+  | Greet | 4% | 62–67% |
+  | Glance | 76% | 80–85% |
+  | Station | 93% | 92–95% |
+  | Overlaps | 0 | 0–1 |
+  | Skate (people) | 20, worst 90% | 19–20, worst 36% |
+
+- **Worse, and the top fixes before anything new** (the judge accepted the switch on that condition):
+  - empty hands while carrying, 3 → 18–24 frames (target ≤ 3; NPC perf);
+  - children near a parent, 69% → 27–56% (target ≥ 69%; Townsfolk look).
+- **Then:** the gate again, Film's live-Kingsmere clips and review v14, then launch Mac's own game on HEAD at Kingsmere for his first playtest of the new loop.
