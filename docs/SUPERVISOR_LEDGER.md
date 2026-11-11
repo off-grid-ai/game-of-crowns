@@ -122,6 +122,8 @@ professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pa
 
 ## Log
 
+- 2026-11-11 19:30: Mac: "much better… right direction, but still not Warcraft 3 quality, not the 8 codex images. Create the soldiers from images too, paint them the army's colour; good armour on soldiers, horses, elephants." Action: an agent is making unit concepts (white cloth for the house-colour mask: knight, man-at-arms, axe, hammer, spear, longbow, crossbow, barded cavalry, light horse, armoured elephant, cannon, mounted captain) and surveying auto-rig blocks (UniRig, Mixamo, AccuRIG, Rigify) for the VAT bake. The local TRELLIS run is blocked by the safety check: Mac must run local_batch.sh himself or add a permission rule. Fps is not a gate for now.
+
 - 2026-11-11 18:14: batch 4 running (/tmp/goc-batch4, scratchpad batch4.sh), with plots dbe3d94b, the church ee360bc1, sites 6126627a, autumn 29a0dcac and far shots b3d7ffbe. The bake-off catalogue is still being made. of supervisor actions (newest first; details in review/supervisor-log.md)
 - 17:50 Batch 3 running (one batch): all slice switches incl. --towns=plots; Kingsmere roof, d40, d55; Goldrock;
   the army at 6k/15k (d40) and 6k (d8), fixed muster; the stone-wall demo; bake-off kit and AI 3D cells; fire.
