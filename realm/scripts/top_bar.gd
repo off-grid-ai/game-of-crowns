@@ -41,6 +41,8 @@ func _arrange_top() -> void:
 	var when: Control = _top[0]
 	var state: Control = _top[1]
 	var act: Control = _top[2]
+	if UI.v2():
+		_cap_when(when)
 	var w := ui.get_viewport().get_visible_rect().size.x
 	var sw := state.get_combined_minimum_size().x
 	var left := when.position.x + when.get_combined_minimum_size().x + 12.0
@@ -70,6 +72,23 @@ func _arrange_top() -> void:
 	var bottom := 10.0 + maxf(when.get_combined_minimum_size().y, act.get_combined_minimum_size().y)
 	bottom = maxf(bottom, state.offset_top + state.get_combined_minimum_size().y)
 	ui._toast_top = bottom + 12.0
+
+
+## The finesse pass: the date card no wider than ui.json top.maxWidth (AoE IV's compact time chip): each line keeps
+## its own width up to the cap, then ends in an ellipsis rather than widening the card across the realm.
+func _cap_when(when: Control) -> void:
+	var most := UI.ui_num("top.maxWidth", 520.0) - 32.0
+	for l in when.find_children("*", "Label", true, false):
+		var label := l as Label
+		if label.autowrap_mode != TextServer.AUTOWRAP_OFF:
+			continue
+		var font := label.get_theme_font("font")
+		var size := label.get_theme_font_size("font_size")
+		var natural := font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x if font else 0.0
+		label.clip_text = true
+		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		label.custom_minimum_size.x = minf(natural + 2.0, most)
+		label.tooltip_text = label.text if natural > most else ""
 
 
 func _pill(anchor_x: float, grow: int) -> HBoxContainer:
@@ -641,7 +660,7 @@ func _show_world(world: Dictionary, c: Dictionary) -> void:
 	_peace.get_parent().tooltip_text = "Peace: how much of the realm is free of war between the great houses. A host marching on the throne halves it.\n\n" + \
 		(("At war: " + ", ".join(feuds) + ".\nCommand peace, or wed two warring houses, to raise it.") if not feuds.is_empty() else "No great houses are at war.")
 	_souls.text = ui.heads(int(world.get("souls", 0)))
-	_tithe_l.text = "%d%%" % int(ui.tithe * 100)
+	_tithe_l.text = "%d%%" % int(ui.tithe * 100) + ("  ·  again in %d season%s" % [ui.tithe_wait, "" if ui.tithe_wait == 1 else "s"] if ui.tithe_wait > 0 else "")
 	_year.text = String(world.get("date", {}).get("text", "The realm is forming"))
 	# Danger to the crown shows in the reign line, in red, only while it lasts.
 	var th: Dictionary = world.get("threat", {})

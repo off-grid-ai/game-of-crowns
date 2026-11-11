@@ -39,6 +39,19 @@ signal house_followed(player_id: int)  # a sigil on the ladder clicked: the came
 signal matter_opened(at: Vector3)  # a matter's marker clicked: the King looks at its place (his own click)
 signal counsel_answered(key: String)  # the King answered the Hand's matter  # a story's name clicked in the chronicle
 
+## The finesse pass (docs/review/ui-pass.md; data/ui.json version, --ui=v1 / --ui=v2): the world the hero,
+## panels compact and in the corners, no camera buttons on screen unless asked for.
+static func v2() -> bool:
+	var args := OS.get_cmdline_user_args()
+	if args.has("--ui=v1"):
+		return false
+	return args.has("--ui=v2") or String(preload("res://scripts/data.gd").value("ui", "version", "v1")) == "v2"
+
+
+static func ui_num(path: String, fallback: float) -> float:
+	return preload("res://scripts/data.gd").num("ui", path, fallback)
+
+
 const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const Features := preload("res://scripts/features.gd")
 const T := preload("res://scripts/theme.gd")
@@ -59,6 +72,7 @@ const NewsChips := preload("res://scripts/news_chips.gd")
 var root: Control
 var omens: ColorRect  # omens.gd: blood and soot, the colour draining, at the screen's edge
 var tithe := 0.1
+var tithe_wait := 0  # seasons before the tithe may change again (bridge economy.json tithe.changeEvery)
 var paused := false
 
 var houses_drawer := HousesPanel.new(self)  # the great houses drawer (houses_panel.gd): its state lives there
@@ -557,7 +571,7 @@ func _build_minimap() -> void:
 	frame.anchor_right = 1.0
 	frame.anchor_top = 1.0
 	frame.anchor_bottom = 1.0
-	frame.offset_right = -(12 + PAD_WIDTH + 8)
+	frame.offset_right = -12 if v2() else -(12 + PAD_WIDTH + 8)  # v2: flush to the edge, no camera pad beside it
 	frame.offset_bottom = -12
 	frame.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	frame.grow_vertical = Control.GROW_DIRECTION_BEGIN
@@ -684,7 +698,8 @@ func _process_timed(delta: float) -> void:
 		if _chron_panel:
 			_chron_panel.offset_top = maxf(84.0, _bar_pill.get_global_rect().end.y + 10.0)
 	_arrange_top()  # the date line grows (a usurper marches…), so keep the bar from overlapping
-	_clear_of_minimap(_town_panel, 290.0)
+	if not v2():
+		_clear_of_minimap(_town_panel, 290.0)  # v2's card stands on the left, clear of the minimap
 	fit_centre(_digest_panel, 620.0)
 	fit_centre(_house_panel, 640.0)
 	fit_centre(_ledger_panel, 820.0)
@@ -1020,6 +1035,10 @@ func counsel_act(act: Dictionary, matter := "") -> void:
 
 
 func set_tithe(rate: float) -> void:
+	# Once a year: the houses are told the crown's rate for the year (the bridge refuses it too).
+	if tithe_wait > 0:
+		toast("The tithe was set this year. It may change again in %d season%s." % [tithe_wait, "" if tithe_wait == 1 else "s"])
+		return
 	tithe = clampf(snappedf(rate, 0.05), 0.0, 0.4)
 	_tithe_asked = tithe
 	_tithe_asked_at = Time.get_ticks_msec()
@@ -1180,6 +1199,7 @@ func set_world(world: Dictionary, houses: Dictionary) -> void:
 	# The realm's report can be older than the King's last word: until it
 	# carries the tithe just set, the screen keeps showing that one.
 	var reported := float(c.get("tithe", tithe))
+	tithe_wait = int(c.get("titheWait", 0))
 	if _tithe_asked < 0.0 or absf(reported - _tithe_asked) < 0.001 or Time.get_ticks_msec() - _tithe_asked_at > 30000:
 		tithe = reported
 		_tithe_asked = -1.0

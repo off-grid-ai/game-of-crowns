@@ -34,6 +34,12 @@ func _build_town_panel() -> void:
 	_town_panel.anchor_bottom = 1.0
 	_town_panel.offset_left = -290
 	_town_panel.offset_right = 290
+	if UI.v2():
+		# Not over the middle of the realm: on the left, narrow (CK3's holding window, Anno's building panel).
+		_town_panel.anchor_left = 0.0
+		_town_panel.anchor_right = 0.0
+		_town_panel.offset_left = 12
+		_town_panel.offset_right = 12 + UI.ui_num("townCard.width", 400.0)
 	_town_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_town_panel.offset_bottom = -12
 	_town_panel.visible = false

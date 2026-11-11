@@ -112,3 +112,14 @@ Each against its batch 7 frame (`/tmp/goc-batch7`), the same step.
     holder's colour at the crown's seat, fewer in a village; peasants in lighter homespun. Set `cloth.true` false in
     `realm/data/people.json` for the before.
 34. **No crowd-check errors** (dca52a35): grep the launch logs for `villagers.gd` script errors: none.
+
+## The UI finesse pass (docs/review/ui-pass.md; --ui=v1 before, --ui=v2 after)
+
+10. **The town at rest, the interface as the player sees it** (`city Kingsmere 10 -3`, `snap ui-town ui`), v1 then v2:
+    no camera buttons on the right edge (move the pointer to the bottom-right corner first: `hover 0.97 0.9`), the
+    minimap flush to the edge, the date card no wider than about a fifth of the screen.
+11. **The chronicle open** (`tap chronicle`, `snap ui-chronicle ui`), v1 then v2: v2 narrow and under half the screen tall.
+12. **A town's card not pinned** (the harness's `--town` still, Rosehall), v1 then v2: v2 on the left, narrow, the
+    town itself in view.
+13. **A toast** (any decree: `town Kingsmere` then a decree button, `snap ui-toast ui` within 2 s), v1 then v2.
+Judge each against ui-pass.md's reference column (AoE IV, Anno 1800, CK3).

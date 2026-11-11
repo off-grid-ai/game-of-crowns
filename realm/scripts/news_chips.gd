@@ -43,8 +43,9 @@ func _build_toast() -> void:
 	_toast_box.add_theme_stylebox_override("panel", _toast_style)
 	_toast_box.anchor_left = 0.5
 	_toast_box.anchor_right = 0.5
-	_toast_box.offset_left = -250
-	_toast_box.offset_right = 250
+	var half := UI.ui_num("toast.width", 400.0) * 0.5 if UI.v2() else 250.0
+	_toast_box.offset_left = -half
+	_toast_box.offset_right = half
 	_toast_box.offset_top = 78
 	_toast_box.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_toast_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
