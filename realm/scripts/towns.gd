@@ -513,6 +513,7 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 			root.set_meta("ring_houses", ring_n)
 		ways = ways + _lay_lanes(root, center, ways, clampi(int((size - 2) * float(pk.get("lanes_per_size", 0.5))), 0, int(pk.get("lanes_most", 6))), square_r, rng)
 		await _plot_lots(root, center, square_r, ways, kinds, lots, rng, want - placed, seat)
+		_square_trees(root, center, square_r, ways, lots, rng)
 		await _trades_beyond(root, center, square_r, float(root.get_meta("edge_r", square_r + 3.6)), ways, lots, rng)
 		return
 	# The ring of townhouses framing the square, shoulder to shoulder; then the
@@ -1002,14 +1003,15 @@ func _yard(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vector3, 
 	root.set_meta("plot_yards", yards + 1)
 	var green: Dictionary = _plot_knobs(false).get("green", {})
 	if rng.randf() < float(green.get("garden", 0.65)):
-		_croft(root, center, p, face, f, lots, rng, own_lot)
+		_croft(root, center, p, face, f, lots, rng, own_lot, true)
 	_yard_thing(root, center, pl, face, lots, rng)
 	_yard_green(root, center, pl, p, face, f, side_from, lots, rng, green)
 
 
 ## A yard's green (towns.json plots.green; art target town-b: trees between the houses, hedges, flower
-## beds): a tree at the back of the yard, a hedge along its side fence, flowers by the back door. Each
-## only where the ground is free, so it never takes a house's, a garden's or a street's.
+## beds): a tree in a back corner of the yard, a hedge along its side fence, flowers by the back door,
+## to one side of the bed. Each only where the ground is free, so it never takes a house's, a garden's or
+## a street's; a tree holds only its trunk's ground (tree_ground), its crown overhangs the beds and the fence.
 func _yard_green(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vector3, f: Vector2, side_from: Vector2, lots: Array, rng: RandomNumberGenerator, green: Dictionary) -> void:
 	var corners: PackedVector2Array = pl[4]
 	var f2 := Vector2(face.x, face.z)
@@ -1021,14 +1023,36 @@ func _yard_green(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vec
 		_place(root, kind, q + Vector3(0, _ground_y(center, q) - 0.01, 0), rng.randf() * TAU, Vector3.ONE * scale, Vector2(r, r))
 		lots.append([q, r])
 	if rng.randf() < float(green.get("tree", 0.0)):
-		var t := 0.25 if rng.randf() < 0.5 else 0.75
-		drop.call("town_tree", corners[3].lerp(corners[2], t) + f2 * 0.16, 0.12, rng.randf_range(0.8, 1.1))
+		var t := 0.12 if rng.randf() < 0.5 else 0.88
+		drop.call("town_tree", corners[3].lerp(corners[2], t) + f2 * 0.1, float(green.get("tree_ground", 0.12)), rng.randf_range(0.8, 1.1))
 	if rng.randf() < float(green.get("hedge", 0.0)):
 		for k in 2:
 			drop.call("garden_hedge", side_from.lerp(corners[2], 0.3 + 0.4 * k) + (Vector2(p.x, p.z) - side_from).normalized() * 0.07, 0.06, rng.randf_range(0.8, 1.15))
 	if rng.randf() < float(green.get("flowers", 0.0)):
-		var back := Vector2(p.x, p.z) - f2 * (f.y * 0.5 + 0.09) + f2.orthogonal() * f.x * rng.randf_range(-0.3, 0.3)
+		var back := Vector2(p.x, p.z) - f2 * (f.y * 0.5 + 0.09) + f2.orthogonal() * f.x * rng.randf_range(0.3, 0.42) * (1.0 if rng.randf() < 0.5 else -1.0)
 		drop.call("garden_flowers", back, 0.05, rng.randf_range(0.8, 1.1))
+
+
+## Shade trees round the square's rim, before the house fronts (towns.json plots.green.square_trees;
+## research rule 8: a town centre's trees cluster at the square; art target town-b), never on a street
+## into it nor on the stalls, the well or a house. Only the trunk takes the square's ground.
+func _square_trees(root: Node3D, center: Vector3, square_r: float, ways: Array, lots: Array, rng: RandomNumberGenerator) -> void:
+	var want := int(_plot_knobs(false).get("green", {}).get("square_trees", 0))
+	var stood := 0
+	for _try in want * 12:
+		if stood >= want:
+			break
+		var a := rng.randf() * TAU
+		var q2 := Vector2.from_angle(a) * square_r * rng.randf_range(0.97, 1.05)
+		var q := Vector3(q2.x, 0, q2.y)
+		if TownPlots.near_ways(q2, ways, TownPlots.ROAD_HALF + 0.12) or _crowded(lots.slice(1), q, 0.06) or not terrain.is_land(center.x + q.x, center.z + q.z):
+			continue  # lots[0] is the square's own ground, which a tree at its rim may stand on
+		var kind := _green_kind("town_tree", rng)
+		if kind == "":
+			return
+		_place(root, kind, q + Vector3(0, _ground_y(center, q) - 0.01, 0), rng.randf() * TAU, Vector3.ONE * rng.randf_range(0.7, 0.85), Vector2(0.08, 0.08))
+		lots.append([q, 0.06])
+		stood += 1
 
 
 ## One of a garden component's models (assets.json town_tree, garden_hedge, garden_flowers), or "".
@@ -1498,11 +1522,16 @@ func _trades_beyond(root: Node3D, center: Vector3, square_r: float, edge: float,
 ## A kitchen garden behind a house: a strip of turned earth with cabbages or
 ## beans in rows. Tended by whoever lives there (villagers.gd reads "gardens").
 ## own_lot: its house's entry in `lots` (the last one when not given), which it may stand against.
-func _croft(root: Node3D, center: Vector3, hp: Vector3, face: Vector3, f: Vector2, lots: Array, rng: RandomNumberGenerator, own_lot := -1) -> void:
-	var size := Vector2(clampf(f.x * 0.75, 0.4, 0.8), rng.randf_range(0.3, 0.42))
+## `plot`: a burgage yard's bed (towns.json plots.green garden_depth): shallower, and holding only the
+## ground it covers, so the yard's tree, hedge and flowers stand round it (the old circle as wide as the
+## bed took the whole yard: batch 6's yards grew 3 trees for 61 houses, by the green probe).
+func _croft(root: Node3D, center: Vector3, hp: Vector3, face: Vector3, f: Vector2, lots: Array, rng: RandomNumberGenerator, own_lot := -1, plot := false) -> void:
+	var deep: Array = _plot_knobs(false).get("green", {}).get("garden_depth", [0.3, 0.42]) if plot else [0.3, 0.42]
+	var size := Vector2(clampf(f.x * 0.75, 0.4, 0.8), rng.randf_range(float(deep[0]), float(deep[1])))
 	var back := hp - face * (f.y * 0.5 + size.y * 0.5 + 0.1)
+	var held := minf(size.x, size.y) * 0.5 if plot else size.x * 0.4  # the ground it keeps others off
 	var others: Array = lots.slice(0, lots.size() - 1) if own_lot < 0 else lots.slice(0, own_lot) + lots.slice(own_lot + 1)
-	if _crowded(others, back, size.x * 0.4) or not _flat_enough(center, back, 0.18) or _built_on(root, back):
+	if _crowded(others, back, held) or not _flat_enough(center, back, 0.18) or _built_on(root, back):
 		return
 	var yaw := atan2(face.x, face.z) + PI / 2
 	var plots := _plots(root)
@@ -1511,7 +1540,7 @@ func _croft(root: Node3D, center: Vector3, hp: Vector3, face: Vector3, f: Vector
 	else:
 		terrain.paint(plots[0], terrain.tiled(terrain.art("res://assets/ground/field-fallow.jpg", DIRT), 1, 1), back + Vector3(0, _ground_y(center, back), 0), size, yaw, Color(0.55, 0.42, 0.26))
 	Fields.sow(plots[1], terrain, center, ["cabbage", "beans", "cabbage"][rng.randi() % 3], center + back, size, yaw, rng)
-	lots.append([back, size.x * 0.4])
+	lots.append([back, held])
 	var all: Array = root.get_meta("gardens", [])
 	all.append(back)
 	root.set_meta("gardens", all)
