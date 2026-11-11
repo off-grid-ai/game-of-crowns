@@ -96,6 +96,10 @@ func _keep_striking(wall: Node3D, center: Vector3) -> void:
 	if int(_blows.get(wall, 0)) >= int(Data.num("walls", "demo.max" if demo else "strike.max", 10)):
 		wall.give_way()
 		return
+	# Engines standing near (siege_camp.gd) throw the stones themselves: none from nowhere.
+	for e in get_tree().get_nodes_in_group("siege_engines"):
+		if is_instance_valid(e) and wall.distance_to((e as Node3D).global_position) < float(Data.num("walls", "strike.from_m", 70.0)) * S * 1.5:
+			return
 	var out := Vector3(target.x - center.x, 0, target.z - center.z).normalized()
 	var from := target + out * float(Data.num("walls", "strike.from_m", 70.0)) * S + Vector3.UP * 0.4
 	_throw(wall, from, target)

@@ -1,0 +1,15 @@
+{
+  "_": "The besiegers' camp and their engines (realm/scripts/siege_camp.gd; North Star docs/art/target/04-siege.jpg; Stronghold, Age of Empires II, Total War; research rule 13: three rings, the town and its wall, a band of open ground with the engines and the assault parties, the camp of tents and cook fires behind). on: the switch (or --camp=on / --camp=off; on with --wall-demo). Distances in world units from the camp line (camp_r, where the companies stand; minus is toward the town); angles in radians either side of the camp's middle. tents: rows of tents in the besieger's colours (canvas: how far toward cream; size: width, height, length). palisade: a line of stakes and planking in front of the tents (Kenney Castle Kit), gaps where the companies go out. fires: cook fires among the tents with men sat round them. wagons: the baggage behind. engines: built on the spot (build_s, carpenters hammering) then worked by their crews: wind (the arm drawn back), load, throw (the arm whips over, the stone flies on an arc), settle; every_s between throws; per kind the arm's node, its angles (rest, wind, throw), when in the throw the stone lets go (release) and where on the arm it sits (tip, in the model's own units). A stone lands on the wall where it is doomed (walls.gd aim/strike: the wall's wear is the bridge's damage fact; the demo wall wears with each) or, with no wall, inside the town in a puff of dust. crew: men per engine; the walls' archers shoot at them, and a fallen man is replaced from the camp after crew_back_s. parked: a ram and a siege tower waiting in the band (no gate to take them yet).",
+  "on": false,
+  "tents": {"rows": [0.75, 1.15], "span": 0.85, "every": 0.38, "canvas": 0.5, "size": [0.26, 0.2, 0.36]},
+  "palisade": {"at": 0.35, "span": 0.95, "width": 0.22, "gaps": [-0.5, 0.0, 0.5], "gap_half": 0.09},
+  "fires": {"count": 4, "at": 0.95, "sitters": 2},
+  "wagons": {"count": 3, "at": 1.55, "props": 4},
+  "engines": {"at": -0.55, "angles": [0.0, -0.55, 0.55], "height": 0.7, "build_s": 12.0, "every_s": [6.0, 9.0], "wind_s": 2.6, "load_s": 1.2, "throw_s": 0.45, "settle_s": 1.6, "flight_s": 1.6, "arc": 0.45, "spread": 0.8, "crew": 3, "crew_back_s": 20.0,
+    "kinds": {
+      "trebuchet": {"arm": "arm", "rest": 0.0, "wind": 0.55, "throw": -2.1, "release": 0.7, "tip": [-1.0, -0.2, 0.0]},
+      "catapult": {"arm": "catapult", "rest": 0.0, "wind": 0.12, "throw": -1.6, "release": 0.8, "tip": [-1.35, 0.06, 0.0]}
+    }
+  },
+  "parked": {"at": -0.2, "angles": [-0.85, 0.85], "height": 0.5, "crew": 2}
+}

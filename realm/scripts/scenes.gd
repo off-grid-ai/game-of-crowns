@@ -1,5 +1,6 @@
 extends Node3D
 const Particles := preload("res://scripts/particles.gd")  # smoke and fire on the GPU
+const SiegeCamp := preload("res://scripts/siege_camp.gd")  # the besiegers' camp and engines (--camp=on)
 const Fire := preload("res://scripts/fire.gd")  # fire v2: shaped flames, smoke and burnt houses
 ## The scene director: turns what just happened in Freeciv into something you
 ## can watch where it happened. Battles clash and leave the fallen; sacked
@@ -1042,8 +1043,13 @@ func _siege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, fo
 			root.add_child(f)
 			arm(f, "spear" if i % 2 == 0 else "sword")
 			people.play(f, "Sword_Idle" if r.randf() < 0.6 else "Idle", r.randf_range(0.8, 1.1))
-	# The engines, set back behind the camp line, and their stones.
-	for e in clampi(maxi(engines, 1), 1, 3):
+	# The camp and its engines (siege_camp.gd, --camp=on): tents, palisade, fires, wagons, and engines built on
+	# the spot and worked by their crews, their stones driving the wall's fall. Else the engines as before.
+	var camp: Node3D = null
+	if SiegeCamp.on():
+		camp = SiegeCamp.new()
+		camp.pitch(self, root, at, base, camp_r, foe_col, engines, r)
+	for e in (0 if camp else clampi(maxi(engines, 1), 1, 3)):
 		var a := (e - 1) * 0.45 + r.randf_range(-0.05, 0.05)
 		var ep: Vector3 = arc.call(a, camp_r + 0.75)
 		var engine: Node3D = _engines[e % 2].instantiate()
@@ -1092,6 +1098,8 @@ func _siege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, fo
 		var marks := []
 		for men in parties:
 			marks.append_array(men.filter(func(m): return m.get("out", false) and m["alive"]))
+		if is_instance_valid(camp):
+			marks.append_array(camp.marks())  # the engines' crews
 		if not marks.is_empty():
 			_arrows(root, archers, marks, r)
 		# The spearmen above thrust down at the men at the foot of the wall,
