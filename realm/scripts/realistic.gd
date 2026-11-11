@@ -220,6 +220,16 @@ static func height(name: String) -> float:
 ## team.materials, by name) leaves a dyed cloth its own colour:
 ## a market's awnings red, blue, ochre and green, not all the holder's (art target town-b).
 static func dyed(src: Material, rgb) -> Material:
+	# {"paint": [r, g, b]}: the cloth repainted in its own colour, its weave kept in the normal map. A multiply
+	# can't make linen of a red cloth (the yard washing was red banner cloth times 1.35: flat salmon, batch 7).
+	if src is BaseMaterial3D and rgb is Dictionary and (rgb as Dictionary).get("paint") is Array:
+		var paint: Array = rgb["paint"]
+		var p: BaseMaterial3D = src.duplicate()
+		p.albedo_texture = null
+		p.albedo_color = Color(float(paint[0]), float(paint[1]), float(paint[2]), p.albedo_color.a)
+		p.roughness = maxf(p.roughness, 0.85)
+		p.resource_name = "Painted_%s_%s" % [src.resource_name, p.albedo_color.to_html(false)]
+		return p
 	if not src is BaseMaterial3D or not rgb is Array or (rgb as Array).size() < 3:
 		return src
 	var m: BaseMaterial3D = src.duplicate()
