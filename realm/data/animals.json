@@ -1,0 +1,37 @@
+{
+  "_": "How the farm's beasts idle (animals.gd reads it through data.gd; docs/TUNING.md). kinds.<kind>.life: the moves a beast of that kind plays one after another, each [move, how often it's picked, [fewest, most] times in a row]; a move is the model's own clip of that name, or one made in derive. derive.<move>: a head-down move made from the idle: from (the base clip), bones (the neck chain and the head, turned evenly), head (the head bone), muzzle (how far past the head bone the nose lies, in neck lengths: the rigs have no nose bone), to (the share of its standing height the muzzle comes down to: 0.1 is nose in the grass), bob ([degrees, seconds]: a slow chew, a pig's rooting, a quick peck), ease (seconds in and out). blend: seconds one move takes to become the next. mostTurn: the most a neck and head are turned in all, degrees (a short-necked rig stops here with its nose as low as it goes: the cow, sheep and war horse don't reach the grass by the neck alone). Goat and chicken have no model in the game yet: their lives wait here for one (its bone names may need setting).",
+  "blend": 0.4,
+  "mostTurn": 85,
+  "kinds": {
+    "cow": {
+      "life": [["Idle", 3, [1, 1]], ["Graze", 5, [1, 3]]],
+      "derive": {"Graze": {"from": "Idle", "bones": ["Neck", "Head"], "head": "Head", "to": 0.12, "bob": [3, 1.6], "ease": 0.9, "muzzle": 1.0}}
+    },
+    "sheep": {
+      "life": [["Idle", 2, [1, 1]], ["Graze", 6, [1, 4]]],
+      "derive": {"Graze": {"from": "Idle", "bones": ["Neck", "Head"], "head": "Head", "to": 0.1, "bob": [4, 1.1], "ease": 0.7, "muzzle": 1.0}}
+    },
+    "pig": {
+      "life": [["Idle", 2, [1, 1]], ["Root", 5, [1, 3]]],
+      "derive": {"Root": {"from": "Idle", "bones": ["Neck", "Head"], "head": "Head", "to": 0.08, "bob": [7, 0.7], "ease": 0.6, "muzzle": 1.0}}
+    },
+    "goat": {
+      "life": [["Idle", 3, [1, 1]], ["Graze", 4, [1, 2]]],
+      "derive": {"Graze": {"from": "Idle", "bones": ["Neck", "Head"], "head": "Head", "to": 0.15, "bob": [5, 0.9], "ease": 0.6, "muzzle": 1.0}}
+    },
+    "chicken": {
+      "life": [["Idle", 2, [1, 1]], ["Peck", 6, [1, 4]]],
+      "derive": {"Peck": {"from": "Idle", "bones": ["Neck", "Head"], "head": "Head", "to": 0.2, "bob": [28, 0.35], "ease": 0.25, "muzzle": 0.6}}
+    },
+    "deer": {
+      "life": [["Idle", 2, [1, 1]], ["Idle_2", 2, [1, 1]], ["Eating", 4, [1, 2]], ["Idle_Headlow", 2, [1, 1]]]
+    },
+    "horse": {
+      "life": [["idle", 3, [1, 3]], ["Graze", 4, [1, 2]]],
+      "derive": {"Graze": {"from": "idle", "bones": ["DEF-neck.001", "DEF-neck.002", "DEF-neck.003", "DEF-neck.004", "DEF-head"], "head": "DEF-head", "to": 0.12, "bob": [2, 1.8], "ease": 0.9, "muzzle": 0.7}}
+    },
+    "horse_q": {
+      "life": [["Idle", 3, [1, 2]], ["Idle_Eating", 5, [1, 3]]]
+    }
+  }
+}

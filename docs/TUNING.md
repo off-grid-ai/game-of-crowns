@@ -192,3 +192,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - A feast's lanterns and banners round the square: `realm/data/decisions.json`: `feast`.
 - The levy's recruits at the gate, the guard's size at a reinforced town: `realm/data/decisions.json`: `levy`, `garrison`.
 - How long the King's company stands at a town he sent men to, how many men join its defence, which decrees send them: `bridge/data/garrison.json`.
+
+## Animals and bodies at rest (NPC perf)
+- What each farm beast does standing about (a cow grazes, a pig roots, a chicken pecks), how often and how many times in a row; how far a head comes down and how it chews or pecks: `realm/data/animals.json`: `kinds.<kind>.life`, `.derive.*`; `realm/tools/animals_check.gd` checks every kind.
+- Kneeling and sitting on a body's own knees: `realm/data/people.json`: `feet.low` (switch), `feet.lowAlso` (more moves), `feet.lowExtra` (metres more for a body by name).
