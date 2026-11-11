@@ -42,14 +42,14 @@ It has total of 4 floats. All renderers supported.
 // added (Warcraft III's way; docs/art/target/03-army.jpg): KayKit's palette paints the cloth (cape,
 // tabard) in its red swatches, so the texels inside those palette cells (team_rect_a, team_rect_b; data/army.json
 // team.rects) take the regiment's colour, keeping their light and shade. Picked by palette cell, not by hue, so
-// skin and leather keep their own colour. One instance uniform per regiment (a MultiMesh), so every regiment
+// skin and leather keep their own colour. Each regiment (a MultiMesh) has its own copy of the material, so every regiment
 // wears its house's colour. Opaque (a fade cuts out at half alpha), so the men take the realm's shadows and
 // ambient occlusion like everything else; the kit has no normal texture, so none is applied unless given.
 shader_type spatial;
 render_mode cull_disabled;
 
 uniform sampler2D offset_map: filter_nearest;
-instance uniform vec4 team_color : source_color = vec4(0.75, 0.12, 0.10, 1.0);
+uniform vec4 team_color : source_color = vec4(0.75, 0.12, 0.10, 1.0);  // the regiment's house (each regiment its own material)
 uniform float team_strength : hint_range(0.0, 1.0) = 1.0;
 uniform vec4 team_rect_a = vec4(0.0, 0.25, 0.125, 0.5);  // u0, v0, u1, v1: a palette cell that takes the colour
 uniform vec4 team_rect_b = vec4(0.25, 0.5, 0.375, 0.75);
