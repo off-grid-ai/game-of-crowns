@@ -1509,6 +1509,8 @@ func _moods(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 		if Works.stock(root, "rack") < want:
 			Works.add_stock(root, "rack", want - Works.stock(root, "rack"))
 		_muster(root, life, center, Data.value("moods", "levy.muster" if "levy" in states else "war.muster", {}), rng)
+	if "hunger" in states:
+		_dole(root, life, center, Data.value("moods", "hunger.dole", {}), rng)
 	if "justice" in states:
 		_justice(root, life, center, Data.value("moods", "justice", {}), rng)
 	if "grant" in states:
@@ -1692,6 +1694,8 @@ func _leaving(root: Node3D, life: Node3D, center: Vector3, l: Dictionary, rng: R
 			_mind(k, "listener", center)
 	var go := Leaving.new()
 	go.name = "Leaving"
+	go.file = int(l.get("file", 1))
+	go.spacing = float(l.get("spacing", 0.13))
 	go.root = root
 	go.life = life
 	go.ground = func(q: Vector3) -> float: return _y(center, q)
@@ -1717,7 +1721,9 @@ class Leaving extends Node:
 	var wait := 3.0
 	var gone := 0
 	var rng := RandomNumberGenerator.new()
-	var walking: Array = []  # [person, [points left]]
+	var file := 1  # men who set off together, one behind the other
+	var spacing := 0.13  # world units between them in the column
+	var walking: Array = []  # [person, [points left], seconds before he steps off]
 
 	func _process(delta: float) -> void:
 		if not is_instance_valid(root) or not is_instance_valid(life):
@@ -1729,6 +1735,9 @@ class Leaving extends Node:
 		for w in walking.duplicate():
 			var p: Node3D = w[0]
 			var left: Array = w[1]
+			if w.size() > 2 and float(w[2]) > 0.0:
+				w[2] = float(w[2]) - delta  # his place in the column: he steps off after the man in front
+				continue
 			if not is_instance_valid(p) or left.is_empty():
 				walking.erase(w)
 				if is_instance_valid(p):
@@ -1747,11 +1756,31 @@ class Leaving extends Node:
 			p.position.y = float(ground.call(p.position))
 			People.play(p, "Carrying")  # the bundle in his arms over his walking legs
 
+	## A file of men marches off together: the first picks the road out nearest him, the rest fall in
+	## behind him one by one, so the town sees a column on its road.
 	func _send() -> void:
 		var men := life.get_children().filter(func(n): return n.has_meta("levy_man") and not n.has_meta("leaving"))
 		if men.is_empty():
 			return
-		var p: Node3D = men[rng.randi() % men.size()]
+		men.sort_custom(func(a, b): return int(a.get_meta("role", "") == "soldier") > int(b.get_meta("role", "") == "soldier"))  # a soldier leads
+		var lead: Node3D = men[0]
+		var path := _road_out(lead)
+		if path.is_empty():
+			return  # a town with no roads: they stay in the muster
+		for k in mini(file, men.size()):
+			if gone >= most:
+				break
+			var p: Node3D = men[k]
+			p.set_meta("leaving", true)
+			var mind := p.get_node_or_null("Mind")
+			if mind:
+				mind.queue_free()  # his post put by: he marches now
+			gone += 1
+			walking.append([p, [path[0]] + path.duplicate(), k * spacing / maxf(pace, 0.01)])
+
+
+	## The way out along the nearest main road, heart outward, from near `p`; [] with no roads.
+	func _road_out(p: Node3D) -> Array:
 		var ways: Array = root.get_meta("ways_main", [])
 		var best: Array = []
 		var near := INF
@@ -1762,14 +1791,7 @@ class Leaving extends Node:
 				if dd < near:
 					near = dd
 					best = Array(path.slice(i)).map(func(q: Vector2) -> Vector3: return Vector3(q.x, 0, q.y))
-		if best.is_empty():
-			return  # a town with no roads: he stays in the muster
-		p.set_meta("leaving", true)
-		var mind := p.get_node_or_null("Mind")
-		if mind:
-			mind.queue_free()  # his post put by: he walks now
-		gone += 1
-		walking.append([p, best])
+		return best
 
 
 ## Justice done (a court sentence standing at the town): an empty gallows at
@@ -2025,3 +2047,30 @@ class SquareLife extends Node:
 			c["goal"] = Vector3(cos(a), 0, sin(a)) * float(c["r"]) * rng.randf_range(0.3, 1.0)
 		if not step(chaser, runner.position, float(c["pace"]) * 0.97, delta, 0.06):
 			c["kids"] = [chaser, runner]  # caught: now the other one runs
+
+
+## A famine's dole (the hungry in a line for bread, readable from the square's camera in seconds):
+## a table at the market with a few sacks and a doler handing out, and the line out from it
+## (npc_mind posts trade and queue). The granary's own queue (works.gd) stands besides, where there is one.
+func _dole(root: Node3D, life: Node3D, center: Vector3, d: Dictionary, rng: RandomNumberGenerator) -> void:
+	var men := int(d.get("men", 0))
+	if men <= 0:
+		return
+	var places: Dictionary = root.get_meta("places", {})
+	var at: Vector3 = places.get(String(d.get("at", "market")), places.get("well", Vector3(0.4, 0, 0.4)))
+	at = _spot(center, at, _blocked(root, life), life.get_meta("standing"), 0.3)
+	if is_nan(at.x):
+		return
+	var out := Vector3(at.x, 0, at.z).normalized() if Vector2(at.x, at.z).length() > 0.05 else SEEN
+	var yaw := atan2(out.x, out.z) + PI / 2
+	_prop(life, center, "Table_Large", at, yaw, 1.0, 0.0, 0.16)
+	_prop(life, center, "Bag", at + Vector3(-out.z, 0, out.x) * 0.05, rng.randf() * TAU, 1.0, 0.09)
+	_prop(life, center, "Bag", at - out * 0.12 + Vector3(-out.z, 0, out.x) * 0.1, rng.randf() * TAU)
+	var doler := _stand(root, life, center, at - out * 0.12, "townsfolk", "PickUp_Table", rng.randi(), Color(0.45, 0.4, 0.3), 0.1)
+	if doler:
+		_face(doler, at)
+		_mind(doler, "trade", center)
+	_line(root, life, center, at + out * 0.16, out, men, "peasant", "Weight_Shift", "queue", rng)
+	for p in life.get_children():
+		if p.get_meta("role", "") == "peasant" and p.position.distance_to(at) < 0.16 + ROOM * 1.15 * men:
+			p.set_meta("dole", true)

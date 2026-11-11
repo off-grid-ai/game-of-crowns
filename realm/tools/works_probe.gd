@@ -119,7 +119,8 @@ func _run() -> void:
 			go.root = town
 			go.life = l
 			go.ground = func(_q: Vector3) -> float: return 0.0
-			go.most = 2
+			go.most = 4
+			go.file = 2
 			go.every = [1.0, 1.0]
 			go.wait = 0.0
 			l.add_child(go)
@@ -127,7 +128,7 @@ func _run() -> void:
 				go._process(0.1)
 			var still: int = l.get_children().filter(func(n): return n.has_meta("levy_man") and not n.is_queued_for_deletion()).size()
 			print("WORKS war     levy leaving: %d sent out along the road, %d of %d still mustered" % [go.gone, still, mustered])
-			if go.gone != 2 or still != mustered - 2:
+			if go.gone != 4 or still != mustered - 4:
 				print("FAIL war: the levy's men didn't walk out")
 				fails += 1
 		# The square's own life (crowd.json): crier, beggars at the step, a patrol, dogs, children chasing, gossip.
@@ -164,6 +165,15 @@ func _run() -> void:
 			if not ok:
 				print("FAIL %s: the ruling's answer isn't in the town" % name)
 				fails += 1
+		if name == "hunger":
+			var dole: int = l.get_children().filter(func(n): return n.has_meta("dole")).size()
+			print("WORKS hunger  dole: %d in the line for bread at the market" % dole)
+			if dole < 4:
+				print("FAIL hunger: no dole line in the square")
+				fails += 1
+		if name == "war" and mustered < 10:
+			print("FAIL war: the muster is too small to read (%d)" % mustered)
+			fails += 1
 		if name == "peace" and (mustered > 0 or fast > 0):
 			print("FAIL peace: a muster or a hurried forge in peacetime")
 			fails += 1
