@@ -32,6 +32,15 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 	land.render_layers = 1 | ground_layer  # so painted roads and squares land on it
 	land.vertex_spacing = 1.0
 	land.region_size = Terrain3D.SIZE_256
+	# Terrain3D draws the land in rings that coarsen away from the lens (each ring's
+	# vertices twice as far apart). With its default 48-vertex rings, ground 25-50 units
+	# off was drawn from points 2 units apart, so the low shore round a lake sagged under
+	# the water's surface: a grey sheet of shallows over dry land, with the fields laid on
+	# it reading as fields on the lake. Wider rings keep the fine detail out to the mid
+	# zoom (realm/data/ground.json mesh; about 32 square units of dry land round Kingsmere
+	# were drawn under the water at 2-unit spacing, 1.5 at half a unit).
+	land.mesh_size = int(Data.num("ground", "mesh.size", 48))
+	land.mesh_lods = int(Data.num("ground", "mesh.lods", 7))
 	for i in LAYERS.size():
 		var ta := Terrain3DTextureAsset.new()
 		ta.name = LAYERS[i]
