@@ -2,7 +2,7 @@
 # No Mixamo login (Mac): the skin weights are copied from a character we already have on the Mixamo
 # skeleton, with Blender's own Data Transfer modifier, and our Mixamo clips play on the result.
 # Run headless, on the CPU, from the repo root:
-#   Blender -b --python realm/tools/rig/rig_unit.py -- <mesh.glb> <out_dir> [--kind man|horse] [--yaw deg] [--arms deg] [--bake]
+#   Blender -b --python realm/tools/rig/rig_unit.py -- <mesh.glb> <out_dir> [--kind man|horse] [--yaw deg] [--arms deg] [--clips a,b] [--bake]
 # Steps (numbers in rig.json beside this file, docs/TUNING.md):
 #   1 clean    weld, optional voxel remesh, decimate to the triangle budget, normals outward
 #   2 align    the mesh scaled to the source character's height, feet on its ground, centred on it
@@ -209,22 +209,48 @@ with active(unit):
 # fingertip) than flesh does is gear: each connected piece of it goes whole to one bone, the hand
 # when it sits by the wrist, the forearm otherwise (a strapped shield). rig.json units.<name>.rigid
 # can name boxes instead ([bone, [x0,y0,z0], [x1,y1,z1]] in shares of the mesh's bounds).
+# An image-made mesh fuses gear to the body (a shield's back grown into the chest): the gear is then
+# cut off as its own piece (the faces wholly inside it split from the rest, each side's opening
+# closed), so the bridge between them follows the body and the gear never stretches.
 def seg_dist(p, a, b):
     ab = b - a
     t = np.clip(((p - a) @ ab) / max(float(ab @ ab), 1e-9), 0.0, 1.0)
     return np.linalg.norm(p - (a + np.outer(t, ab)), axis=1)
 
 
-def make_rigid(indices, bone):
-    g = unit.vertex_groups.get(bone)
-    if g is None:
-        return 0
-    idx = [int(i) for i in indices]
-    for other in unit.vertex_groups:
-        if other.index != g.index:
-            other.remove(idx)
-    g.add(idx, 1.0, "REPLACE")
-    return len(idx)
+def cut_gear(gear):
+    """gear: vertex index -> bone. Cuts each bone's gear off the body and binds it whole to that bone.
+    Returns {bone: vertices bound}."""
+    gi = {}
+    for bone in set(gear.values()):
+        g = unit.vertex_groups.get(bone) or unit.vertex_groups.new(name=bone)
+        gi[bone] = g.index
+    bm = bmesh.new()
+    bm.from_mesh(unit.data)
+    bm.verts.ensure_lookup_table()
+    dl = bm.verts.layers.deform.verify()
+    owner = {}  # face -> bone, the faces wholly inside one bone's gear
+    for f in bm.faces:
+        bones = {gear.get(v.index) for v in f.verts}
+        if len(bones) == 1 and None not in bones:
+            owner[f] = bones.pop()
+    seam = [e for e in bm.edges if len({owner.get(f) for f in e.link_faces}) > 1]
+    split = bmesh.ops.split_edges(bm, edges=seam)["edges"]
+    opening = [e for e in set(seam) | set(split) if e.is_valid and e.is_boundary]
+    count = {}
+    for f, bone in owner.items():
+        for v in f.verts:
+            v[dl].clear()
+            v[dl][gi[bone]] = 1.0
+    for bone in gi:
+        count[bone] = len({v for f, b in owner.items() if b == bone for v in f.verts})
+    filled = bmesh.ops.holes_fill(bm, edges=opening, sides=0)["faces"]  # both sides' openings closed
+    bmesh.ops.triangulate(bm, faces=filled)
+    bm.to_mesh(unit.data)
+    bm.free()
+    REPORT.setdefault("cut", {})["seam_edges"] = len(seam)
+    REPORT["cut"]["filled"] = len(filled)
+    return count
 
 
 rigid = {}
@@ -233,10 +259,13 @@ if KIND == "man":
     co = np.array([unit.matrix_world @ v.co for v in unit.data.vertices])
     height = REPORT["align"]["height"]
     lo_b, hi_b = co.min(0), co.max(0)
+    gear = {}
     for bone, b0, b1 in UNIT.get("rigid", []):
+        if bone not in arm.data.bones:
+            continue
         a0, a1 = lo_b + (hi_b - lo_b) * np.array(b0), lo_b + (hi_b - lo_b) * np.array(b1)
-        inside = np.where(((co >= a0) & (co <= a1)).all(1))[0]
-        rigid["box " + bone] = make_rigid(inside, bone)
+        for i in np.where(((co >= a0) & (co <= a1)).all(1))[0].tolist():
+            gear.setdefault(i, bone)
     if not UNIT.get("rigid") and R.get("auto", True):
         gnames = [g.name for g in unit.vertex_groups]
         top = np.array([max(v.groups, key=lambda ge: ge.weight).group if v.groups else -1 for v in unit.data.vertices])
@@ -255,24 +284,24 @@ if KIND == "man":
             lower = {i for i, n in enumerate(gnames) if n.startswith("mixamorig:%sForeArm" % side) or n.startswith("mixamorig:%sHand" % side)}
             mine = np.isin(top, list(lower))
             off = np.minimum(seg_dist(co, elbow, wrist), seg_dist(co, wrist, tip))
-            gear = set(np.where(mine & (off > float(R.get("limb", 0.05)) * height))[0].tolist())
-            count = {"hand": 0, "forearm": 0}
-            while gear:
-                piece, todo = [], [gear.pop()]
+            found = set(np.where(mine & (off > float(R.get("limb", 0.05)) * height))[0].tolist())
+            while found:
+                piece, todo = [], [found.pop()]
                 while todo:
                     v = todo.pop()
                     piece.append(v)
                     for n in near.get(v, []):
-                        if n in gear:
-                            gear.discard(n)
+                        if n in found:
+                            found.discard(n)
                             todo.append(n)
                 if len(piece) < int(R.get("min", 12)):
                     continue  # a cuff's edge, a stray fold: left as flesh
                 mid = co[piece].mean(0)
                 to_hand = np.linalg.norm(mid - wrist) <= np.linalg.norm(mid - elbow) * float(R.get("handBias", 1.0))
-                make_rigid(piece, "mixamorig:%s%s" % (side, "Hand" if to_hand else "ForeArm"))
-                count["hand" if to_hand else "forearm"] += len(piece)
-            rigid[side] = count
+                for v in piece:
+                    gear[v] = "mixamorig:%s%s" % (side, "Hand" if to_hand else "ForeArm")
+    if gear:
+        rigid = cut_gear(gear)
 REPORT["rigid"] = rigid
 
 # Un-pose: the mesh stands as the posed skeleton does; carried back to the rest pose through each
@@ -323,6 +352,17 @@ def fcurves(act):
     return list(getattr(act, "fcurves", []))
 
 
+def on_our_bones(act):
+    """Some Mixamo downloads (the sword-and-shield and great-sword packs) name their bones
+    'mixamorig1:Hips': such a clip binds to nothing on our skeleton and plays frozen. Renamed to ours."""
+    for fc in fcurves(act):
+        p = re.sub(r"mixamorig\d+:", "mixamorig:", fc.data_path)
+        if p != fc.data_path:
+            fc.data_path = p
+    for g in getattr(act, "groups", []):
+        g.name = re.sub(r"mixamorig\d+:", "mixamorig:", g.name)
+
+
 def in_place(act):
     """A regiment's men move by their place in it, never by the clip: the hips keep to their spot
     over the ground (as people.gd does for the townsfolk), the rise and fall of the step kept."""
@@ -336,12 +376,52 @@ def in_place(act):
             fc.update()
 
 
+def on_ground(act):
+    """The clips come from other characters (another hips height) and this mesh is bulkier than theirs,
+    so its feet sank and a fallen man lay half in the earth. Each frame, the hips are raised or lowered
+    so the man's lowest point (his gear left out: a sword's tip may dip) touches the ground: the
+    standing foot of a step, the body of the fallen. A line soldier's clips have no leaps to lose."""
+    hips = arm.pose.bones.get("mixamorig:Hips")
+    chans = {fc.array_index: fc for fc in fcurves(act) if fc.data_path == 'pose.bones["mixamorig:Hips"].location'}
+    if hips is None or len(chans) < 3:
+        return None
+    names = {g.index: g.name for g in unit.vertex_groups}
+    body = [v.index for v in unit.data.vertices if v.groups and not re.search(r"Hand|ForeArm", names[max(v.groups, key=lambda ge: ge.weight).group])]
+    to_local = (arm.matrix_world.to_3x3() @ hips.bone.matrix_local.to_3x3()).inverted()
+    for t in arm.animation_data.nla_tracks:
+        t.mute = True  # the clips laid before this one stay out of its measure
+    arm.animation_data.action = act
+    if hasattr(arm.animation_data, "action_slot") and getattr(act, "slots", None):
+        arm.animation_data.action_slot = act.slots[0]
+    scene = bpy.context.scene
+    f0, f1 = int(act.frame_range[0]), int(act.frame_range[1])
+    lift = {}
+    for f in range(f0, f1 + 1):
+        scene.frame_set(f)
+        me = unit.evaluated_get(bpy.context.evaluated_depsgraph_get()).data
+        mw = unit.matrix_world
+        lift[f] = -min((mw @ me.vertices[i].co).z for i in body)  # the game's ground is the origin
+    arm.animation_data.action = None
+    for t in arm.animation_data.nla_tracks:
+        t.mute = False
+    for f, dz in lift.items():
+        d = to_local @ Vector((0.0, 0.0, dz))
+        vals = {i: fc.evaluate(f) for i, fc in chans.items()}
+        for i, fc in chans.items():
+            fc.keyframe_points.insert(f, vals[i] + d[i], options={"FAST", "REPLACE"})
+    for fc in chans.values():
+        fc.update()
+    lifts = list(lift.values())
+    return [round(min(lifts), 4), round(max(lifts), 4)]
+
+
 clips = []
 arm.animation_data_create()
 arm.animation_data.action = None
 for t in list(arm.animation_data.nla_tracks):
     arm.animation_data.nla_tracks.remove(t)
-for name, loop in K["clips"]:
+CLIPS = [[c, True] for c in str(opts["clips"]).split(",")] if opts.get("clips") else UNIT.get("clips", K["clips"])  # --clips a,b: a trial set
+for name, loop in CLIPS:
     act = bpy.data.actions.get(name)
     if act is None and KIND == "man":
         path = os.path.join(REPO, "realm/assets/anims/mixamo", name + ".fbx")
@@ -356,7 +436,10 @@ for name, loop in K["clips"]:
             continue
         act = fresh[0]
         act.name = name
+        on_our_bones(act)
         in_place(act)
+        if CFG.get("ground", True):
+            REPORT.setdefault("ground", {})[name] = on_ground(act)
     if act is None:
         continue
     track = arm.animation_data.nla_tracks.new()
@@ -366,6 +449,7 @@ for name, loop in K["clips"]:
         strip.action_slot = act.slots[0]
     clips.append([name, bool(loop)])
 REPORT["clips"] = [c[0] for c in clips]
+REPORT["roles"] = UNIT.get("roles")  # for data/army.json meshes.<dir>.tracks
 
 # --- 5 the house-colour mask: the white cloth, not the steel's shine -------------------------------
 def cloth_mask():

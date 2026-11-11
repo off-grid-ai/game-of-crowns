@@ -36,8 +36,18 @@ Sources: a man copies from `assets/hero/medieval_civilian_3` (Mixamo skeleton; c
 
 - Gear is rigid: in the lower arm's share of the mesh, whatever stands further from the arm's line than
   flesh does (`rigid.limb`) goes whole to the hand (by the wrist) or the forearm (a strapped shield), a
-  joined piece at a time. Untested on a real soldier: a sword held against the body, or a shield over the
-  chest, may be missed or take some chest with it; then give the unit boxes (`units.<name>.rigid`).
+  joined piece at a time; or a unit names boxes (`units.<name>.rigid`; the man-at-arms needs them). The
+  gear is then cut off the body (faces wholly inside it split away, both openings closed), since TRELLIS
+  fuses a shield's back into the chest: the bridge follows the body and the gear never stretches. The
+  bake's weld only joins twins with the same skin, so the cut survives it.
+- Clips: the sword-and-shield and great-sword packs (`SS_*`, `GS_*`) name their bones `mixamorig1:`;
+  they are renamed to ours on import (they played frozen before). A unit can bake its own clips
+  (`units.<name>.clips`) and say which plays each part (`roles`, for `data/army.json` meshes.<dir>.tracks).
+- Ground: the clips come from other characters, so each frame the hips are moved to put the man's lowest
+  point (gear left out) on the ground. A sword may still dip into it (the man-at-arms' death).
+- The bake laid each clip on its own NLA track with Blender's default hold: the top track (the last clip)
+  covered all the others, so every clip but the last baked as one still pose. Fixed in vat_bake.py
+  (2026-11-12); bakes made before then (the knight's) need baking again.
 - The bake welds the vertices a glTF splits at UV islands (`"weld"` in vat.json; UVs stay on the faces'
   corners): the keep bakes at 2,403 vertices, `offsets.exr` 8.6 MB for 8 clips (22 MB unwelded; the knight
   is 7.4 MB).
