@@ -239,7 +239,11 @@ func _stooks(w: Dictionary, t: float) -> void:
 		have.append(m)
 
 
-func _stop(crop: Node) -> void:
+## Untyped: a crop already freed (its town rebuilt, its field gone) is still let go of here (batch 7: 306 errors
+## when a freed crop was handed to a Node parameter).
+func _stop(crop) -> void:
+	if not _worked.has(crop):
+		return
 	var w: Dictionary = _worked[crop]
 	if is_instance_valid(w["node"]):
 		(w["node"] as Node).queue_free()
