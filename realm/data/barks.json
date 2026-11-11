@@ -31,14 +31,14 @@
     "cooling": [
       "Your Grace remembers us now?",
       "The crown asks much and gives little.",
-      "What is it this time?",
+      "What does the crown want of us now?",
       "We hear you. We have not forgotten.",
       "Another summons.",
       "Our patience has an end, my King."
     ],
     "angry": [
       "We have nothing to say to the crown.",
-      "You have a nerve, sending for us.",
+      "The crown sends for us, after all this?",
       "Our gates are shut to you.",
       "Say your piece and be gone.",
       "We remember every slight, Your Grace.",
@@ -55,7 +55,7 @@
   ],
   "folk": [
     "Your Grace.",
-    "God keep the King.",
+    "The gods keep the King.",
     "Long live the King.",
     "Bless you, Your Grace.",
     "My King.",
@@ -63,7 +63,7 @@
   ],
   "folk_annoyed": [
     "I've work waiting, Your Grace.",
-    "By your leave, the bread won't bake itself.",
+    "By your leave, the ovens are hot.",
     "If it please Your Grace, I must get on.",
     "Forgive me, my King, the day is short."
   ]
