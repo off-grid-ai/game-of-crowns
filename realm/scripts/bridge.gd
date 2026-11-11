@@ -9,6 +9,7 @@ signal command_done(ok: bool, text: String)
 signal realm_changed
 signal decrees_changed(list: Array)
 signal paid(cost: float)  # a decree went through and the treasury paid for it
+signal sealed  # a decree took one of the King's royal seals (bridge seals.js)
 
 var _reign_id := ""
 
@@ -67,6 +68,8 @@ func decree(action: String, city_id: int, building := "", to := -1) -> void:
 	_post("/decree", body, func(code, data):
 		if code == 200 and float(data.get("cost", 0)) > 0:
 			paid.emit(float(data["cost"]))
+		if code == 200 and data.get("sealed", false):
+			sealed.emit()
 		command_done.emit(code == 200, data.get("text", data.get("error", ""))))
 
 

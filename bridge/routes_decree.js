@@ -8,6 +8,7 @@
 // ctx.meta...) at the moment it is used, as the handlers read it before, so a
 // snapshot or a switch of chronicle during an await is seen.
 
+import * as Seals from "./seals.js";
 import * as Director from "./director.js";
 import * as Treasury from "./treasury.js";
 import { WORK_SEASONS } from "./treasury.js";
@@ -25,6 +26,9 @@ export async function issueDecree(ctx, req, res, url) {
   ctx.decreesIssued++;
   const cmd = await body(req);
   if (ctx.meta.status !== "running") return json(res, 400, { error: "this reign has ended" });
+  // Between sittings each decree takes a royal seal (seals.js); at a sitting it's a ruling, and free.
+  const noSeal = Seals.refuse(ctx.meta);
+  if (noSeal) return json(res, 400, { error: noSeal });
   // A royal match needs a pair: an unwed son or daughter of age from each house,
   // one of each, chosen before a crown is spent. Nobody is wed twice.
   let pair = null;
@@ -135,7 +139,8 @@ export async function issueDecree(ctx, req, res, url) {
   decreeScenes(cmd, result, seat, target);
   record({ turn: ctx.world?.turn ?? 0, kind: "decree", text: result.text, city: cmd.city });
   setTimeout(snapshot, 600);
-  return json(res, 200, { ok: true, text: crowns(result.text) + (effects ? `\n${effects}` : ""), cost: result.cost ?? 0 });
+  const sealed = Seals.spend(ctx.meta, cmd.action, ctx.world.turn ?? 0);
+  return json(res, 200, { ok: true, text: crowns(result.text) + (effects ? `\n${effects}` : ""), cost: result.cost ?? 0, sealed });
 }
 
 export async function arrived(ctx, req, res, url) {

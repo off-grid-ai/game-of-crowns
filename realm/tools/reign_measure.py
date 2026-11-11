@@ -39,6 +39,12 @@ log = open(OUT + ".log", "w")
 # (a scene, a scheme, a threat's change) and no news in the chronicle.
 events = [0.0]
 scene_ids, scheme_sig, threat_sig, news_seq = set(), None, None, 0
+# The next thing (bridge next.js): time by kind, time covered by a goal a minute away
+# or one he can take now, and how often it turns over.
+nx_time, nx_covered, nx_turns, nx_text, nx_last = collections.Counter(), 0.0, 0, None, start
+# The royal seal (bridge seals.js), when the reign has it: this King spends one whenever he
+# holds one and no court is up, on one of the worthwhile uses at random (the line's pick or another).
+seal_acts, seal_hand, seal_fail, seal_last, multi_time = collections.Counter(), 0, 0, 0.0, 0.0
 while time.time() - start < MIN * 60:
     now = time.time()
     try:
@@ -58,6 +64,33 @@ while time.time() - start < MIN * 60:
     if court or (inter and not inter.get("seen")):
         up_time += now - last
     last = now
+    nx = (w.get("reign") or {}).get("next")
+    if isinstance(nx, dict):
+        nx_time[nx.get("kind")] += now - nx_last
+        if nx.get("kind") != "court" or (nx.get("seconds") or 999) <= 60:
+            nx_covered += now - nx_last
+        if nx.get("text") != nx_text:
+            nx_turns += 1 if nx_text is not None else 0
+            nx_text = nx.get("text")
+        if (nx.get("options") or 0) >= 2:
+            multi_time += now - nx_last
+    sl = (w.get("reign") or {}).get("seals")
+    if isinstance(sl, dict) and sl.get("n", 0) >= 1 and not court and not (inter and not inter.get("seen")) and now - seal_last >= 6 \
+            and isinstance(nx, dict) and nx.get("alts"):
+        pick = random.choice(nx["alts"])
+        body = {k: pick[k] for k in ("action", "city", "building", "to") if pick.get(k) is not None}
+        r = post("/decree", body)
+        seal_last = now
+        if r.get("ok"):
+            seal_acts[pick["action"]] += 1
+            seal_hand += 1 if pick == nx.get("act") else 0
+            decisions.append((round(now - start), "seal:" + pick["action"], None, None))
+            events.append(now - start)
+            log.write(f"{now-start:.0f} sealed {body} -> {str(r.get('text'))[:100]}\n")
+        else:
+            seal_fail += 1
+            log.write(f"{now-start:.0f} seal refused {body}: {r.get('error')}\n")
+    nx_last = now
     t_now = now - start
     new = [x.get("id") for x in (w.get("scenes") or []) if x.get("id") not in scene_ids]
     if new:
@@ -139,6 +172,16 @@ res = {
     "longest_dead_s": round(max(gaps) if gaps else 0),
     "dead_share": round(sum(dead) / (mins * 60), 2),
     "schemes_at_once_max": intrigue_max,
+    "next_covered_share": round(nx_covered / (mins * 60), 2),
+    "next_turnover_per_minute": round(nx_turns / mins, 2),
+    "next_his_share": round(sum(v for k, v in nx_time.items() if k != "court") / max(1e-9, sum(nx_time.values())), 2) if nx_time else 0,
+    "next_kinds_share": {k: round(v / max(1e-9, sum(nx_time.values())), 2) for k, v in nx_time.items()},
+    "seals_spent": sum(seal_acts.values()),
+    "seals_refused": seal_fail,
+    "seal_acts": dict(seal_acts),
+    "seal_top_share": round(max(seal_acts.values()) / sum(seal_acts.values()), 2) if seal_acts else 0,
+    "seal_hand_pick_share": round(seal_hand / sum(seal_acts.values()), 2) if seal_acts else 0,
+    "two_or_more_worth_a_seal_share": round(multi_time / (mins * 60), 2),
     "reign_clock_minutes": round(((w.get("reign") or {}).get("elapsedMs") or 0) / 60000, 1),
 }
 json.dump(res, open(OUT, "w"), indent=1)

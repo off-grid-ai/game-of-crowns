@@ -106,6 +106,7 @@ export function cleanOptions(o = {}, fate) {
   out.story = typeof o?.story === "string" && /^[a-z0-9-]{1,60}$/.test(o.story) ? o.story : null;
   out.storyTags = (Array.isArray(o?.storyTags) ? o.storyTags : []).filter((t) => typeof t === "string" && /^[a-z-]{1,24}$/.test(t)).slice(0, 6);
   out.usurper = o?.usurper === undefined ? true : Boolean(o.usurper);
+  if (o?.seals !== undefined) out.seals = Boolean(o.seals);  // the royal seal (seals.js); unset, the reign follows data/seals.json
   out.skip = (Array.isArray(o?.skip) ? o.skip : []).filter((h) => h in HOUSE_NATIONS).slice(0, 5);
   return out;
 }

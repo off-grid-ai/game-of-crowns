@@ -307,6 +307,51 @@ func _build_top_bar() -> void:
 	_aim_count.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_aim_how.add_child(_aim_count)
 	who.add_child(_aim_how)
+	# The next thing, under the date and the aim at rest: what he can do soonest and
+	# where, one quiet line (UI.md: text, a mono clock, a thin bar; gold only when it
+	# needs him, red only when it's about to be lost). A click flies there.
+	_next_row = HBoxContainer.new()
+	_next_row.add_theme_constant_override("separation", 8)
+	_next_row.mouse_filter = Control.MOUSE_FILTER_STOP
+	_next_row.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_next_row.visible = false
+	_next_row.gui_input.connect(func(e: InputEvent):
+		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT and _next_at >= 0:
+			ui.focus_city.emit(_next_at))
+	_seals = Label.new()
+	_seals.add_theme_font_override("font", T.mono)
+	_seals.add_theme_font_size_override("font_size", 11)
+	_seals.add_theme_color_override("font_color", T.ACCENT)
+	_seals.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_seals.visible = false
+	_next_row.add_child(_seals)
+	_next = Label.new()
+	_next.add_theme_font_override("font", T.sans)
+	_next.add_theme_font_size_override("font_size", 13)
+	_next.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_next_row.add_child(_next)
+	var next_track := ColorRect.new()
+	next_track.color = Color(T.TEXT, 0.14)
+	next_track.custom_minimum_size = Vector2(48, 2)
+	next_track.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	next_track.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_next_fill = ColorRect.new()
+	_next_fill.size = Vector2(0, 2)
+	_next_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	next_track.add_child(_next_fill)
+	_next_row.add_child(next_track)
+	_next_clock = Label.new()
+	_next_clock.add_theme_font_override("font", T.mono)
+	_next_clock.add_theme_font_size_override("font_size", 11)
+	_next_clock.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_next_row.add_child(_next_clock)
+	# The clock runs down between the realm's reports, four times a second.
+	var tick := Timer.new()
+	tick.wait_time = 0.25
+	tick.autostart = true
+	tick.timeout.connect(_tick_next)
+	_next_row.add_child(tick)
+	who.add_child(_next_row)
 	when.add_child(who)
 	# At rest the heading is one line, the date and the aim (UI.md §1: the world is
 	# the content); the story, the name being earned, the last act and the aim's
@@ -449,6 +494,15 @@ var _aim_fill: ColorRect
 var _aim_count: Label
 var _aim_frac := -1.0  # the fill shown, eased toward the real one
 var _aim_told := ""  # the last aim met, toasted once
+var _seals: Label  # the King's royal seals this season, as gold pips (bridge seals.js)
+var _seals_n := -1  # the count shown, to mark one being spent
+var _next_row: HBoxContainer  # the next thing, a minute away (bridge next.js): words, a countdown, a thin bar
+var _next: Label
+var _next_clock: Label
+var _next_fill: ColorRect
+var _next_at := -1  # its town, flown to on a click
+var _next_ends := -1.0  # when its countdown runs out (engine seconds); -1 for a step with no clock
+var _next_key := ""  # what it says, to tell a new one from the same one
 var _last_act_told := ""
 
 
@@ -507,6 +561,8 @@ func _show_heading(r: Dictionary) -> void:
 			var tw := ui.create_tween()
 			tw.tween_property(_aim_fill, "size:x", 120.0 * f, 0.6 if _aim_frac >= 0.0 else 0.0).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 			_aim_frac = f
+	_show_next(r.get("next"))
+	_show_seals(r.get("seals"))
 	var done = r.get("aimDone")
 	if done != null and String(done) != _aim_told:
 		_aim_told = String(done)
@@ -585,3 +641,53 @@ func _show_world(world: Dictionary, c: Dictionary) -> void:
 		# The gravest danger only: a longer line would push the realm's numbers off the bar.
 		_reign.text = String(danger[0]).to_upper()
 		_reign.add_theme_color_override("font_color", T.DANGER)
+
+
+## The next thing from the bridge (next.js): its words, its tone, its clock or count.
+func _show_next(n) -> void:
+	_next_row.visible = n is Dictionary
+	if not n is Dictionary:
+		return
+	var tone := String(n.get("tone", "quiet"))
+	var col: Color = T.DANGER if tone == "loss" else T.ACCENT if tone == "act" else Color(T.TEXT, 0.7)
+	_next.text = String(n.get("text", ""))
+	_next.add_theme_color_override("font_color", col)
+	_next_clock.add_theme_color_override("font_color", Color(col, 0.85))
+	_next_fill.color = col
+	_next_fill.size.x = 48.0 * clampf(float(n.get("frac", 0.0)), 0.0, 1.0)
+	_next_at = int(n["city"]) if n.get("city") != null else -1
+	_next_row.tooltip_text = "What you can do next.%s" % ("\nClick to go there" if _next_at >= 0 else "")
+	var key := String(n.get("text", ""))
+	if n.get("seconds") != null:
+		var ends := Time.get_ticks_msec() / 1000.0 + float(n["seconds"])
+		# The same thing re-reported keeps its own clock unless the realm's is far off (a court paused it).
+		if key != _next_key or absf(ends - _next_ends) > 3.0:
+			_next_ends = ends
+	else:
+		_next_ends = -1.0
+		_next_clock.text = String(n.get("count", "")) if n.get("count") != null else ""
+	_next_key = key
+	_tick_next()
+
+
+func _tick_next() -> void:
+	if _next_ends < 0.0 or _next_clock == null:
+		return
+	var left := maxi(0, int(ceil(_next_ends - Time.get_ticks_msec() / 1000.0)))
+	_next_clock.text = "%d:%02d" % [left / 60, left % 60]
+
+
+## The royal seals in hand: a filled pip for each, a hollow one for each he could
+## hold; one just spent fades out of its pip so the press is seen.
+func _show_seals(sl) -> void:
+	_seals.visible = sl is Dictionary
+	if not sl is Dictionary:
+		return
+	var n := int(sl.get("n", 0))
+	var of := int(sl.get("of", 2))
+	_seals.text = "●".repeat(n) + "○".repeat(maxi(0, of - n))
+	_seals.tooltip_text = "Royal seals: each order you choose between sittings takes one. A new one comes each season; at court your rulings take none."
+	if _seals_n >= 0 and n < _seals_n:
+		_seals.modulate.a = 0.35
+		ui.create_tween().tween_property(_seals, "modulate:a", 1.0, 0.5)
+	_seals_n = n

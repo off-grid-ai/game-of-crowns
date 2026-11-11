@@ -1,0 +1,7 @@
+{
+  "_": "The royal seal (seals.js; King of Dragon Pass's actions a season): each decree the King chooses between sittings takes a seal as well as its gold; a ruling while the court sits takes none. on: the default for a reign that doesn't say (its options.seals). perSeason seals come with each season, kept up to bank (bankLastAct in the last act). A 40 s season makes this at most about 1.5 sealed decisions a minute beside the court's one.",
+  "on": false,
+  "perSeason": 1,
+  "bank": 2,
+  "bankLastAct": 3
+}

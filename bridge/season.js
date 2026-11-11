@@ -13,6 +13,8 @@
 // turn's timers; setBlights for the blights), and server.js keeps wrappers of the
 // same names where its own code still calls them.
 
+import * as Seals from "./seals.js";
+import * as Next from "./next.js";
 import * as Director from "./director.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -31,6 +33,8 @@ import * as kingDeeds from "./ledger.js";
 
 export function turn(ctx, ev) {
   const { send } = ctx;
+  Next.seasonBegan();  // the next thing's countdown runs from here
+  Seals.season(ctx.meta, Number(ev.turn));  // the season's royal seal (seals.js)
   healBlights(ctx, Number(ev.turn));
   collectTithe(ctx, Number(ev.turn));
   // The storyteller's pace: a threat rises after a quiet stretch and grows until answered (director.js).

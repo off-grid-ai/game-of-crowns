@@ -9,6 +9,8 @@
 // (getters for what it reassigns, setPaused for the clock's hold); server.js
 // keeps wrappers of the same names.
 
+import * as Seals from "./seals.js";
+import * as Next from "./next.js";
 import { houseFor, cityName } from "./narrator.js";
 import { BANDS } from "./favour.js";
 import { calendar } from "./stakes.js";
@@ -108,17 +110,17 @@ export const AMBITIONS = [
 const crownHas = ({ world, crownOf }, b, seatOnly = false) => { const c = crownOf(); return !!c && world.cities.some((x) => x.owner === c.id && (!seatOnly || x.capital) && (x.buildings ?? []).includes(b)); };
 
 export const LADDER = [
-  { key: "granary", text: "Raise a granary in Kingsmere", how: "Open Kingsmere's card and fund a granary.",
+  { key: "granary", do: "Fund a granary", text: "Raise a granary in Kingsmere", how: "Open Kingsmere's card and fund a granary.",
     met: (ctx) => crownHas(ctx, "Granary", true), reward: "feast", says: "Kingsmere's granary stands full. The town holds a harvest feast in the King's name." },
-  { key: "host", text: "Muster a royal host of 2,400 men", how: "Raise the levy, or call the banners.",
+  { key: "host", do: "Raise the levy", text: "Muster a royal host of 2,400 men", how: "Raise the levy, or call the banners.",
     met: ({ world, crownOf, SOLDIER }) => (world.units ?? []).filter((u) => u.owner === crownOf()?.id && SOLDIER(u)).length >= 12, reward: "knights", says: "Two thousand four hundred men stand under the royal banner. Two knights ride in to join them, unasked." },
-  { key: "friend", text: "Win a great house to the Crown", how: "Favour a house until it stands at 70.",
+  { key: "friend", do: "Win over", text: "Win a great house to the Crown", how: "Favour a house until it stands at 70.",
     met: ({ world, favourOf }) => world.players.some((p) => !houseFor(p).wild && !houseFor(p).crown && favourOf(p.id) >= 70), reward: "gold", says: "A great house swears itself to the Crown, and sends a chest of silver to prove it." },
-  { key: "market", text: "Raise a market in a royal town", how: "Fund a market in any town of the Crown.",
+  { key: "market", do: "Fund a market", text: "Raise a market in a royal town", how: "Fund a market in any town of the Crown.",
     met: (ctx) => crownHas(ctx, "Marketplace"), reward: "gold", says: "The royal market opens. Merchants come from three houses' lands to trade under the King's peace." },
-  { key: "town", text: "Bring a new town under the Crown", how: "March the royal host on a town, or win one by grant.",
+  { key: "town", do: "March the host", text: "Bring a new town under the Crown", how: "March the royal host on a town, or win one by grant.",
     met: ({ world, meta, crownOf }) => { const c = crownOf(); return !!c && world.cities.some((x) => x.owner === c.id && !(meta.ladder?.held ?? []).includes(x.id)); }, reward: "feast", says: "A new town flies the royal banner. Its people line the road to see the King's men ride in." },
-  { key: "walls", text: "Wall Kingsmere against what comes", how: "Fund walls in Kingsmere.",
+  { key: "walls", do: "Fund walls", text: "Wall Kingsmere against what comes", how: "Fund walls in Kingsmere.",
     met: (ctx) => crownHas(ctx, "City Walls", true), reward: "knights", says: "Stone walls ring Kingsmere. Let them come." },
 ];
 
@@ -133,12 +135,12 @@ export function nextAim(ctx) {
   if (cold && favourOf(cold.id) < 45 && want) {
     const lord = court?.lordOfHouse(cold.id);
     const to = Math.min(70, Math.round(favourOf(cold.id)) + 20);
-    return { key: `win-${cold.id}-${to}`, text: `Win back ${lord ? lord.name : houseFor(cold).name} of ${houseFor(cold).name}`, how: `Bring ${houseFor(cold).name} to ${to} favour: a gift, a feast, a match, or a ruling in their favour.`,
+    return { key: `win-${cold.id}-${to}`, do: "Win back", text: `Win back ${lord ? lord.name : houseFor(cold).name} of ${houseFor(cold).name}`, how: `Bring ${houseFor(cold).name} to ${to} favour: a gift, a feast, a match, or a ruling in their favour.`,
       pid: cold.id, to, reward: "gold", says: `${lord ? lord.name : houseFor(cold).name} rides to Kingsmere and kneels before the whole court.` };
   }
   for (const c of world.cities.filter((x) => x.owner === crown.id)) {
     const lacks = [["Granary", "a granary"], ["Marketplace", "a market"], ["City Walls", "walls"], ["Barracks", "a barracks"]].find(([b]) => !(c.buildings ?? []).includes(b) && !meta.works?.[c.id]);
-    if (lacks) return { key: `build-${c.id}-${lacks[0]}`, text: `Raise ${lacks[1]} in ${cityName(c.id)}`, how: `Open ${cityName(c.id)}'s card and fund ${lacks[1]}.`, city: c.id, building: lacks[0], reward: "feast", says: `${cityName(c.id)} has its ${lacks[1].replace(/^an? /, "")}. The townsfolk drink to the King.` };
+    if (lacks) return { key: `build-${c.id}-${lacks[0]}`, do: `Fund ${lacks[1]}`, text: `Raise ${lacks[1]} in ${cityName(c.id)}`, how: `Open ${cityName(c.id)}'s card and fund ${lacks[1]}.`, city: c.id, building: lacks[0], reward: "feast", says: `${cityName(c.id)} has its ${lacks[1].replace(/^an? /, "")}. The townsfolk drink to the King.` };
   }
   return null;
 }
@@ -439,11 +441,16 @@ export function tick(ctx) {
 export function reignInfo(ctx) {
   const { meta, world, paused, soulsOf } = ctx;
   const aim = aimNow(ctx);
+  // The next thing, a minute away (next.js): what he can do soonest, with its place and clock.
+  // Behind the royal seal's switch with it (seals.js on), so the loop being playtested stays as it is.
+  const next = !Seals.on(meta) ? null : Next.nextThing(ctx, aim ? { key: aim.key, do: aim.do, building: aim.building ?? null, at: aimPlace(ctx, aim), progress: aimProgress(ctx, aim) } : null);
   return {
     id: meta.id, name: meta.name, scenario: meta.scenario, status: meta.status, paused, minutes: meta.minutes,
     elapsedMs: meta.elapsedMs, remainingMs: meta.minutes > 0 ? Math.max(0, meta.minutes * 60000 - meta.elapsedMs) : null,
     score: meta.score, verdict: meta.verdict, title: meta.title, why: meta.why ?? null, outcome: meta.outcome, ended: meta.endedAt,
     epilogue: meta.epilogue ?? null, lastAct: meta.lastAct ?? null, interlude: meta.interlude && !meta.interlude.seen ? meta.interlude : null, ambitions: meta.ambitions ?? null, aim: aim ? { n: Math.min(meta.ladder.i, LADDER.length) + (meta.ladder.n ?? 0) + 1, of: meta.ladder.i < LADDER.length ? LADDER.length : null, text: aim.text, how: aim.how, progress: aimProgress(ctx, aim), at: aimPlace(ctx, aim) } : null, aimDone: meta.ladder?.just && Date.now() - meta.ladder.just.at < 8000 ? meta.ladder.just.text : null, readings: meta.status === "running" ? readings(ctx) : null,
     souls: world?.cities?.reduce((t, c) => t + soulsOf(c.size), 0) ?? 0,
+    next,
+    seals: Seals.view(meta),
   };
 }

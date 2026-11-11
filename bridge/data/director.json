@@ -9,6 +9,7 @@
     "host": {
       "weight": 3,
       "grow": 0.25,
+      "short": "{house}'s host",
       "says": ["{house} gathers men at {town}", "{house}'s host at {town} grows: {n} companies under arms", "{house}'s host at {town} is ready to march"],
       "broke": "{house}'s host marches out of {town}, against the crown's towns",
       "passed": "{house}'s host at {town} goes home",
@@ -26,6 +27,7 @@
     "famine": {
       "weight": 3,
       "grow": 0.34,
+      "short": "Hunger at {town}",
       "says": ["The fields round {town} are failing", "Hunger spreads at {town}", "{town} is starving, and the hunger reaches its neighbours"],
       "broke": "Famine spreads from {town} through {house}'s lands",
       "passed": "The King's grain reaches {town}, and the hunger eases",
@@ -37,6 +39,7 @@
     "pretender": {
       "weight": 2,
       "grow": 0.25,
+      "short": "{house}'s claim",
       "says": ["Banners that are not the King's are seen at {town}", "At {town}, {house} speaks of a better claim to the throne", "{house} raises a pretender's banners at {town}"],
       "broke": "{house} proclaims a pretender at {town}; every house is asked to choose",
       "passed": "The pretender's banners at {town} come down",

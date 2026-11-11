@@ -126,7 +126,8 @@ function grow(ctx, d, turn) {
   const spec = DIRECTOR.threats[th.kind];
   const at = world.cities.find((c) => c.id === th.city);
   if (!at) { d.threat = null; return; }
-  th.level = Math.min(1, th.level + (th.finale ? paced(ctx.meta, d, turn, th.level, spec.grow) : spec.grow));
+  th.step = th.finale ? paced(ctx.meta, d, turn, th.level, spec.grow) : spec.grow;  // kept, so its countdown is honest (due)
+  th.level = Math.min(1, th.level + th.step);
   if (th.level >= 1 && turn > th.since) return breaks(ctx, d, turn);
   const stage = Math.min(spec.says.length - 1, Math.floor(th.level * spec.says.length));
   if (th.kind === "host") {
@@ -222,6 +223,16 @@ export function answered(meta, cmd, world, record) {
   }
   chron.saveMeta(meta);
   return true;
+}
+
+// How soon the threat lands, in seasons, and what it's called in a line (next.js):
+// it breaks on the season its growth would carry it to 1.
+export function due(meta) {
+  const th = meta?.director?.threat;
+  if (!th) return null;
+  const spec = DIRECTOR.threats[th.kind];
+  const step = th.step ?? spec.grow;
+  return { seasons: Math.max(1, Math.ceil((1 - th.level) / step - 1e-6)), level: th.level, city: th.city, town: th.townName, short: fill(spec.short ?? spec.says[0], th) };
 }
 
 // The threat as a matter for the Hand (counsel.js): its place, how near it is to breaking, the orders that answer it there.

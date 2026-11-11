@@ -149,11 +149,20 @@ function pace(ctx) {
   const { meta } = ctx;
   const k = meta.minutes ? meta.elapsedMs / (meta.minutes * 60000) : null;
   const r = Math.random();
-  let [every, want] = k == null ? [2, 1] : k < 0.5 ? [3, 1] : k < 0.75 ? [2, r < 0.5 ? 1 : 2] : [1, r < 0.4 ? 1 : r < 0.8 ? 2 : 3];
+  let want = k == null || k < 0.5 ? 1 : k < 0.75 ? (r < 0.5 ? 1 : 2) : (r < 0.4 ? 1 : r < 0.8 ? 2 : 3);
   const how = meta.options?.petitions;
-  if (how === "rare") { every += 1; want = Math.max(1, want - 1); }
-  if (how === "often") { every = Math.max(1, every - 1); want = Math.min(3, want + 1); }
-  return { every, want };
+  if (how === "rare") want = Math.max(1, want - 1);
+  if (how === "often") want = Math.min(3, want + 1);
+  return { every: courtEvery(meta), want };
+}
+// Seasons between full sittings (pace above; next.js counts down to the next one).
+export function courtEvery(meta) {
+  const k = meta.minutes ? meta.elapsedMs / (meta.minutes * 60000) : null;
+  let every = k == null ? 2 : k < 0.5 ? 3 : k < 0.75 ? 2 : 1;
+  const how = meta.options?.petitions;
+  if (how === "rare") every += 1;
+  if (how === "often") every = Math.max(1, every - 1);
+  return every;
 }
 export const HAND_YEAR = 4;  // seasons: the Hand calls the King in for a crisis at most once a year
 
