@@ -122,6 +122,15 @@ professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pa
 
 ## Log
 
+- 2026-11-11 20:45: Mac: "roads, houses, all picturesque… small, medium, big, really large houses, smaller lots… places to stay… not limited, not made on a budget. 4 Claude accounts: use a bench, don't worry about limits; keep the ledger of what's done and what's next."
+  Running now (code only; renders bundle later):
+  - Finesse pass: grounded feet, a real well, worn roads, seated props, the lake smear, fields on water, grey army colour, regiments on trees.
+  - Town variety: house tiers (cottage → townhouse → merchant → burgher hall → manor), lot sizes, wealth gradient from the square, inns, alehouse, guild hall, backyards.
+  - Life along the roads: inns at crossroads, waystones, shrines, bridges, tolls, hamlets, traffic (new script + roadside.json + switch).
+  - Local TRELLIS: fixed the hard-coded author paths and missing packages (torchvision, rembg…); the batch reruns once imports pass. Order: farmhouse_barn, armoury, the 12 soldiers, then the catalogue.
+  - Hosted: farmhouse_barn and armoury from InstantMesh (vertex colour); free quota out for about 22 h.
+  Next: batch 6 render of all of it, then soldier rigging by weight copy in Blender.
+
 - 2026-11-11 20:10: rigging decision (Mac: no Mixamo login; we already have the animations). Infantry: in Blender headless, align each TRELLIS soldier to an existing Mixamo-skeleton character and copy the skin weights (Data Transfer), then retarget our 172 Mixamo clips and bake with vat_bake.py. Horse: copy weights from realm/assets/cavalry/horse. Elephant: last, no donor rig. 12 unit concepts are in bakeoff/concepts/units.jpg, queued right after farmhouse_barn and armoury in local_batch.sh. Close-up finesse pass started (sunk feet, flat well, orange road, props).
 
 - 2026-11-11 19:30: Mac: "much better… right direction, but still not Warcraft 3 quality, not the 8 codex images. Create the soldiers from images too, paint them the army's colour; good armour on soldiers, horses, elephants." Action: an agent is making unit concepts (white cloth for the house-colour mask: knight, man-at-arms, axe, hammer, spear, longbow, crossbow, barded cavalry, light horse, armoured elephant, cannon, mounted captain) and surveying auto-rig blocks (UniRig, Mixamo, AccuRIG, Rigify) for the VAT bake. The local TRELLIS run is blocked by the safety check: Mac must run local_batch.sh himself or add a permission rule. Fps is not a gate for now.
