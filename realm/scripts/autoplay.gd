@@ -163,14 +163,62 @@ func _play(quit_after: bool) -> void:
 				_note("  button %s: %s" % [want, "pressed" if hit else "NOT FOUND"])
 				await get_tree().create_timer(0.4).timeout
 			"sigil":
-				# Click the Nth house sigil on the ladder over the minimap (1 = leftmost), as a player does.
-				var chips: Array = main.ui.rank_strip._rank_chips.values().filter(func(c): return is_instance_valid(c) and (c as Control).is_visible_in_tree())
-				chips.sort_custom(func(a, b): return (a as Control).global_position.x < (b as Control).global_position.x)
+				# The Nth house sigil on the ladder over the minimap (1 = leftmost), as its click
+				# sends it (the town step's way: synthetic clicks don't reach the ladder's chips).
+				var chips: Dictionary = main.ui.rank_strip._rank_chips
+				var ids: Array = chips.keys().filter(func(k): return is_instance_valid(chips[k]))
+				ids.sort_custom(func(a, b): return (chips[a] as Control).position.x < (chips[b] as Control).position.x)
 				var n := int(w[1]) - 1
-				if n >= 0 and n < chips.size():
-					var r: Rect2 = (chips[n] as Control).get_global_rect()
-					_click((r.position + r.size * 0.5) / get_viewport().get_visible_rect().size)
+				if n >= 0 and n < ids.size():
+					main.ui.house_followed.emit(int(ids[n]))
 				await get_tree().create_timer(0.4).timeout
+			"wet":
+				# wet: who stands on water, measured (Mac's Crowford note): everyone whose feet
+				# terrain.is_land calls water; near the view, ground the drawn sea covers that is_land
+				# calls land; and the nearest town's traced shore (town_nav._shore, cached once)
+				# against is_land now.
+				var tr: Node = main.terrain
+				var folk := get_tree().get_nodes_in_group("people")
+				var wet := 0
+				for p in folk:
+					var q := (p as Node3D).global_position
+					var g: float = tr.height_at(q.x, q.z)
+					if not tr.is_land(q.x, q.z):
+						wet += 1
+						if wet <= 12:
+							_note("  wet: %s at (%.2f, %.2f), ground %.3f" % [p.name, q.x, q.z, g])
+				_note("  wet: %d of %d people stand where is_land says water" % [wet, folk.size()])
+				var c: Vector3 = main.rig.goal_target
+				var over := 0
+				for gx in range(-60, 61):
+					for gz in range(-60, 61):
+						var x := c.x + gx * 0.1
+						var z := c.z + gz * 0.1
+						if float(tr.height_at(x, z)) < tr.SEA_LEVEL + 0.021 and tr.is_land(x, z):
+							over += 1
+				_note("  wet: drawn sea over ground is_land calls land, within 6 units of the view: %d of %d" % [over, 121 * 121])
+				var nav: GDScript = load("res://scripts/town_nav.gd")
+				var best = null
+				for key in nav._shore.keys():
+					if best == null or Vector2(key[0].x - c.x, key[0].z - c.z).length() < Vector2(best[0].x - c.x, best[0].z - c.z).length():
+						best = key
+				if best != null:
+					var rects := []
+					for o in nav._shore[best]:
+						rects.append(Rect2((o as PackedVector2Array)[0], (o as PackedVector2Array)[2] - (o as PackedVector2Array)[0]))
+					var missed := 0
+					var cells := 0
+					var at: Vector3 = best[0]
+					var r: float = best[1]
+					for gx in range(-int(r / 0.1), int(r / 0.1) + 1, 2):
+						for gz in range(-int(r / 0.1), int(r / 0.1) + 1, 2):
+							var lp := Vector2(gx * 0.1, gz * 0.1)
+							if tr.is_land(at.x + lp.x, at.z + lp.y):
+								continue
+							cells += 1
+							if not rects.any(func(rc): return (rc as Rect2).grow(0.001).has_point(lp)):
+								missed += 1
+					_note("  wet: the walk map's shore at (%.1f, %.1f) misses %d of %d water spots is_land sees now" % [at.x, at.z, missed, cells])
 			"town":
 				# Open a town's card, as clicking the town would.
 				for c in main.bridge.world.get("cities", []):

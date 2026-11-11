@@ -46,9 +46,7 @@ export function nextThing(ctx, aim) {
   threats.sort((a, b) => a.seasons - b.seasons);
   // A royal town going hungry: grain from the royal stores, sent to it (its card offers it; the seat feeds itself).
   const hungry = world.cities.filter((c) => c.owner === crown?.id && !c.capital && (c.famine || c.granaryLow)).sort((a, b) => (a.food ?? 0) / Math.max(1, a.granary ?? 1) - (b.food ?? 0) / Math.max(1, b.granary ?? 1))[0];
-  // How many things are worth a seal now: the choice is real only when there's more than one (reign_measure.py).
-  const options = threats.length + (hungry ? 1 : 0) + (aim?.do ? 1 : 0);
-  // The order each candidate needs, so the line's pick and the others can be told apart (the measuring King uses alts).
+  // The order each candidate needs.
   const seat = world.cities.find((c) => c.owner === crown?.id && c.capital);
   const aimTown = aim?.at != null ? town(aim.at) : null;
   const aimAct = !aim?.do ? null : aim.key === "host" ? { action: "levy", city: seat?.id ?? null }
@@ -56,22 +54,27 @@ export function nextThing(ctx, aim) {
     : aim.key === "market" ? { action: "build", city: aimTown?.id ?? null, building: "Marketplace" }
     : aim.building ? { action: "build", city: aimTown?.id ?? null, building: aim.building }
     : aimTown && (aim.key === "friend" || String(aim.key).startsWith("win-")) ? { action: "feast", city: aimTown.id } : null;
-  const alts = [...threats.map((t) => t.act), hungry ? { action: "relief", city: hungry.id } : null, aimAct].filter((a) => a && a.city != null);
+  const ladder = !aim?.do ? null : (() => {
+    const who = aim.key === "friend" && aimTown ? houseFor(world.players.find((p) => p.id === aimTown.owner) ?? {}).name : null;
+    const text = who ? `${aim.do} ${who} at ${cityName(aimTown.id)}` : aimTown ? `${aim.do} at ${cityName(aimTown.id)}` : aim.do;
+    return { kind: "ladder", text, city: aimTown?.id ?? null, count: aim.progress?.text ?? null, frac: aim.progress?.frac ?? 0, act: aimAct };
+  })();
+  const feed = hungry ? { kind: "own", text: `${hungry.famine ? "Starving" : "Granary low"}. Send grain to ${cityName(hungry.id)}`, city: hungry.id, seasons: 1,
+    act: { action: "relief", city: hungry.id }, frac: 1 - Math.min(1, (hungry.food ?? 0) / Math.max(1, hungry.granary ?? 1)) } : null;
+  // In order: a threat about to land, a royal town going hungry, a threat further off, the aim's next step.
+  // A goal is something he can do now: only what the realm would let him order (the decree's own once-a-year
+  // and price rules, canDecree) is offered; the rest wait for the season they can be given in.
+  const order = [...threats.filter((t) => t.seasons <= SOON).map((t) => [t, t.seasons <= 1 ? "loss" : "act"]),
+    ...(feed ? [[feed, hungry.famine ? "loss" : "act"]] : []), ...threats.filter((t) => t.seasons > SOON).map((t) => [t, "act"]), ...(ladder ? [[ladder, "act"]] : [])];
+  const doable = order.filter(([x]) => x.act && x.act.city != null && (!ctx.canDecree || ctx.canDecree(x.act)));
+  // How many things are worth a seal now: the choice is real only when there's more than one (reign_measure.py).
+  const options = doable.length;
+  const alts = doable.map(([x]) => x.act);
   const line = (x, tone) => ({ kind: x.kind, text: x.text, city: x.city ?? null, seconds: x.seasons != null ? secs(x.seasons) : null,
     count: x.count ?? null, frac: Math.max(0, Math.min(1, x.frac ?? 0)), tone, options, act: x.act ?? null, alts });
   // With the royal seal on and none in hand, nothing is his until the season brings one: the court's next sitting.
   const sealed = Seals.on(meta) && (meta.seals?.n ?? 1) < 1;
-  if (!sealed && threats[0] && threats[0].seasons <= SOON) return line(threats[0], threats[0].seasons <= 1 ? "loss" : "act");
-  if (!sealed && hungry) return line({ kind: "own", text: `${hungry.famine ? "Starving" : "Granary low"}. Send grain to ${cityName(hungry.id)}`, city: hungry.id, seasons: 1, act: { action: "relief", city: hungry.id },
-    frac: 1 - Math.min(1, (hungry.food ?? 0) / Math.max(1, hungry.granary ?? 1)) }, hungry.famine ? "loss" : "act");
-  if (!sealed && threats[0]) return line(threats[0], "act");
-  // The next step of his aim: its verb, at its place.
-  if (!sealed && aim?.do) {
-    const at = aim.at != null ? town(aim.at) : null;
-    const who = aim.key === "friend" && at ? houseFor(world.players.find((p) => p.id === at.owner) ?? {}).name : null;
-    const text = who ? `${aim.do} ${who} at ${cityName(at.id)}` : at ? `${aim.do} at ${cityName(at.id)}` : aim.do;
-    return line({ kind: "ladder", text, city: at?.id ?? null, count: aim.progress?.text ?? null, frac: aim.progress?.frac ?? 0, act: aimAct }, "act");
-  }
+  if (!sealed && doable[0]) return line(doable[0][0], doable[0][1]);
   // Nothing of his: the court's next sitting.
   const c = meta.court ?? {};
   if (c.sitting != null) return null;  // it's sitting now: the board is up

@@ -19,6 +19,11 @@ def post(path, body):
     try:
         with urllib.request.urlopen(req, timeout=60) as r:
             return json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        try:
+            return json.loads(e.read())  # the realm's own reason ("once a year: again in 2 seasons")
+        except Exception:
+            return {"error": str(e)}
     except Exception as e:
         return {"error": str(e)}
 
@@ -50,6 +55,7 @@ import os
 SEAL_POLICY = os.environ.get("SEAL_POLICY", "random")
 crown_towns = lambda w: [c["id"] for c in w.get("cities", []) if any(p.get("id") == c.get("owner") and (p.get("house") or {}).get("crown") for p in w.get("players", []))]
 towns_at_start = None
+seal_refused_now = []  # refused since the last seal spent: tried again only once all have been
 while time.time() - start < MIN * 60:
     now = time.time()
     try:
@@ -84,11 +90,13 @@ while time.time() - start < MIN * 60:
     sl = (w.get("reign") or {}).get("seals")
     if isinstance(sl, dict) and sl.get("n", 0) >= 1 and not court and not (inter and not inter.get("seen")) and now - seal_last >= 6 \
             and isinstance(nx, dict) and nx.get("alts"):
-        pick = nx["act"] if SEAL_POLICY == "hand" and nx.get("act") else random.choice(nx["alts"])
+        tried = [a for a in nx["alts"] if a not in seal_refused_now]
+        pick = nx["act"] if SEAL_POLICY == "hand" and nx.get("act") and nx["act"] not in seal_refused_now else random.choice(tried or nx["alts"])
         body = {k: pick[k] for k in ("action", "city", "building", "to") if pick.get(k) is not None}
         r = post("/decree", body)
         seal_last = now
         if r.get("ok"):
+            seal_refused_now.clear()
             seal_acts[pick["action"]] += 1
             seal_hand += 1 if pick == nx.get("act") else 0
             decisions.append((round(now - start), "seal:" + pick["action"], None, None))
@@ -96,6 +104,7 @@ while time.time() - start < MIN * 60:
             log.write(f"{now-start:.0f} sealed {body} -> {str(r.get('text'))[:100]}\n")
         else:
             seal_fail += 1
+            seal_refused_now.append(pick)
             log.write(f"{now-start:.0f} seal refused {body}: {r.get('error')}\n")
     nx_last = now
     t_now = now - start

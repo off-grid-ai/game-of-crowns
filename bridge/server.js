@@ -550,7 +550,14 @@ function onEvent(line) {
 // and ambitions, its goal, its readings and how it ends. Its context, read fresh
 // on every call (getters for what the bridge reassigns; endReign pauses through setPaused).
 const reignCtx = () => ({ meta, world, court, stakes, arcs, favour, favourPast, turnSeconds, get paused() { return paused; }, setPaused: (v) => { paused = v; },
-  get history() { return history; }, get chronicle() { return chronicle; }, record, send, scene, detail, favourOf, saveFavour, crownOf, crownSeat, SOLDIER, soulsOf, theirs });
+  get history() { return history; }, get chronicle() { return chronicle; }, record, send, scene, detail, favourOf, saveFavour, crownOf, crownSeat, SOLDIER, soulsOf, theirs, canDecree });
+// Whether the realm would take this order now, by the decree route's own once-a-year and price rules (next.js offers only these).
+function canDecree(cmd) {
+  const y = yearlyKey(cmd);
+  if (y && seasonsLeft(y) > 0) return false;
+  const crown = crownOf();
+  return !!crown && (crown.gold ?? 0) >= priceOf(cmd.action);
+}
 // The King's ledger and the name the realm gives him (reign.js).
 function kingName(outcome = null) { return Reign.kingName(reignCtx(), outcome); }
 function deed(tag, opts = {}) { return Reign.deed(reignCtx(), tag, opts); }

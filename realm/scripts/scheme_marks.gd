@@ -76,6 +76,9 @@ func _mark(it: Dictionary) -> Control:
 	line.visible = false
 	v.add_child(line)
 	card.mouse_filter = Control.MOUSE_FILTER_STOP
+	# The plate itself takes the pointer: its sigils and words let it through.
+	for n in card.find_children("*", "Control", true, false):
+		(n as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card.mouse_entered.connect(func():
 		line.visible = true
 		card.reset_size())
@@ -93,13 +96,13 @@ func _stand(card: Control, it: Dictionary) -> void:
 		var traffic: Node = main.get_node_or_null("Traffic")
 		var horse: Node3D = traffic.envoy(String(it.get("id", ""))) if traffic and traffic.has_method("envoy") else null
 		if horse:
-			if card.get_meta("on", null) != horse:
+			if not card.has_meta("on") or card.get_meta("on") != horse:
 				card.set_meta("on", horse)
 				main.ui.anchor.pin_on(card, horse, RIDE_LIFT)
 			return
 	var seat: Vector3 = main.terrain.world_pos(float(it["tx"]), float(it["ty"])) if envoy else main.terrain.world_pos(float(it["x"]), float(it["y"]))
 	seat.y = main.terrain.height_at(seat.x, seat.z) + SEAT_LIFT
-	if card.get_meta("on", null) != seat:
+	if not card.has_meta("on") or card.get_meta("on") != seat:
 		card.set_meta("on", seat)
 		main.ui.anchor.pin(card, seat, false)
 
@@ -129,6 +132,9 @@ func _threat_mark(th: Dictionary) -> Control:
 	line.visible = false
 	v.add_child(line)
 	card.mouse_filter = Control.MOUSE_FILTER_STOP
+	# The plate itself takes the pointer: its sigils and words let it through.
+	for n in card.find_children("*", "Control", true, false):
+		(n as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card.mouse_entered.connect(func():
 		line.visible = true
 		card.reset_size())

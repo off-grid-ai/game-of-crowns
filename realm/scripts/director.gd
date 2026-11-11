@@ -161,11 +161,18 @@ const SIGHT_TILTS := [0.0, 14.0, 24.0]
 
 
 func _clear_sight() -> void:
+	var at: Vector3 = _follow.global_position if is_instance_valid(_follow) else rig.goal_target
+	at.y = terrain.height_at(at.x, at.z) + 0.15
+	clear_view(at)
+
+
+## Turns the rig, at its distance, to the first of eight sides and three tilts
+## from which no tree crown stands between the lens and `at` (forest.blocking);
+## with none clear, the least blocked. Used for what's watched and for a seat's castle.
+func clear_view(at: Vector3) -> void:
 	var woods = terrain.get("forest") if terrain else null
 	if woods == null or not woods.has_method("blocking"):
 		return
-	var at: Vector3 = _follow.global_position if is_instance_valid(_follow) else rig.goal_target
-	at.y = terrain.height_at(at.x, at.z) + 0.15
 	var dist: float = rig.goal_distance
 	if woods.blocking(_eye(at, rig.goal_yaw, rig.goal_tilt, dist), at) == 0:
 		return

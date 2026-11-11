@@ -1019,6 +1019,8 @@ func _frame_castle(city_id: int) -> void:
 	rig.goal_distance = 11.0
 	rig.goal_yaw = rig.clear_yaw(at, 11.0, yaw)
 
+	# No tree crowns between the lens and the keep's top either (Sunspire's castle sat behind its woods).
+	director.clear_view(at + Vector3.UP * 0.8)
 
 func _focus_city(city_id: int) -> void:
 	for c in bridge.world.get("cities", []):
