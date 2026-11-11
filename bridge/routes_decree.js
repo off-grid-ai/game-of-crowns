@@ -149,6 +149,7 @@ export async function issueDecree(ctx, req, res, url) {
   if (result.truce) keepTruce(result.truce);
   // A royal match: the two lords' heirs (or kin) are named, they warm to each
   // other, and a long truce holds their houses from raids and plots.
+  if (result.pact) { ctx.meta.matchesMade = (ctx.meta.matchesMade ?? 0) + 1; chron.saveMeta(ctx.meta); }  // the "wed two houses" ambition (reign.js)
   if (result.pact && ctx.court && pair) {
     const [a, b, ka, kb] = pair;
     {

@@ -1,5 +1,5 @@
 {
- "_": "What a house's favour toward the crown means, one place (favour.js reads it; /world sends each house's band and these numbers, the view never repeats them). loyal: full banners, answers the call gladly, a quarter of its men. sworn: trusts the crown enough to swear an oath, and counts toward the reign's goal. steady: keeps its oath and its counsel, an eighth of its men to the banners. cooling: under this it may rise against the King. startFloor: no great house begins a reign below this (the reign's dealt grudges land at the banners' line, never at the rising line; gameplay review #1); startFloorResentful: the floor when the King chose a resentful realm (just above the rising line). idle: a King who gives no order and no ruling for idle.seasons seasons in a row is thought asleep: every great house cools by idle.cool each season after, and the chronicle says so once (gameplay review #8).",
+ "_": "What a house's favour toward the crown means, one place (favour.js reads it; /world sends each house's band and these numbers, the view never repeats them). loyal: full banners, answers the call gladly, a quarter of its men. sworn: trusts the crown enough to swear an oath, and counts toward the reign's goal. steady: keeps its oath and its counsel, an eighth of its men to the banners. cooling: under this it may rise against the King. startFloor: no great house begins a reign below this (the reign's dealt grudges land at the banners' line, never at the rising line; gameplay review #1); startFloorResentful: the floor when the King chose a resentful realm (just above the rising line). idle: a King who gives no order and no ruling for idle.seasons seasons in a row (4: a year) is thought asleep: every great house cools by idle.cool each season after, and the chronicle says so once (gameplay review #8).",
  "loyal": 60,
  "sworn": 50,
  "steady": 35,
@@ -7,7 +7,7 @@
  "startFloor": 35,
  "startFloorResentful": 26,
  "idle": {
-  "seasons": 3,
+  "seasons": 4,
   "cool": 2
  }
 }

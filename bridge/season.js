@@ -24,7 +24,7 @@ import path from "node:path";
 import { houseFor, cityName } from "./narrator.js";
 import { regrowLua } from "./blight.js";
 import { decree, clampFavour } from "./crown.js";
-import { BANDS } from "./favour.js";
+import { BANDS, IDLE } from "./favour.js";
 import { calendar } from "./stakes.js";
 import { isWatched } from "./claude.js";
 import * as Weather from "./weather.js";
@@ -216,6 +216,7 @@ export function collectTithe(ctx, turn) {
     }
   }
   ctx.saveFavour();
+  idle(ctx, turn);
   // The reign's goal: every great house firmly the King's (GOAL_FAVOUR and up)
   // and no war between them. Marked once in the chronicle when won; lost again
   // when a house falls away or two take up arms.
@@ -229,6 +230,23 @@ export function collectTithe(ctx, turn) {
     chron.saveMeta(meta);
   }
   Treasury.reckoning(ctx.treasuryCtx(), turn);
+}
+
+// A King who gives no order and no ruling for a year is thought asleep (data/favour.json idle;
+// gameplay review #8: a reign run out with no orders at all was "A steady hand"): every great house
+// cools each season after, and the chronicle says so once, until he acts again (reign.js deed).
+export function idle(ctx, turn) {
+  const { world, meta, record } = ctx;
+  if (!world || meta.status !== "running" || !meta.minutes || !isWatched() || meta.lastActAt == null) return;
+  const since = turn - meta.lastActAt;
+  if (since < IDLE.seasons) return;
+  const great = world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown && world.cities.some((c) => c.owner === p.id));
+  ctx.shiftFavour(Object.fromEntries(great.map((p) => [p.id, -IDLE.cool])), "the King's long silence");
+  if (!meta.idleTold) {
+    meta.idleTold = true;
+    chron.saveMeta(meta);
+    record({ turn, kind: "unrest", text: `No word has come from the throne in ${since} seasons. The great houses whisper that the King sleeps, and each begins to look to its own.` });
+  }
 }
 
 // Blighted land grows back when its time comes (the blights themselves are kept by server.js's onEvent).

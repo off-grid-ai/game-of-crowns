@@ -14,6 +14,7 @@ import { say } from "./say.js";
 import * as Events from "./events.js";
 import * as Seals from "./seals.js";
 import * as Next from "./next.js";
+import * as Director from "./director.js";
 import { houseFor, cityName } from "./narrator.js";
 import { BANDS } from "./favour.js";
 import { calendar } from "./stakes.js";
@@ -32,6 +33,7 @@ export function deed(ctx, tag, opts = {}) {
   if (!meta || (!tag && opts.act === false)) return;
   const turn = world?.turn ?? 0;
   const before = meta.ledger?.name ?? null;
+  if (opts.act !== false) { meta.lastActAt = turn; meta.idleTold = false; }  // the King acted: not idle (season.js idle)
   kingDeeds.note(meta, tag, { turn, ...opts });
   const now = kingName(ctx).name;
   meta.ledger.name = now;
@@ -85,12 +87,21 @@ export function lastAct(ctx) {
   const u = stakes?.s.usurper;
   const story = arcs?.reignView();
   const pretender = u && u.stage !== "none" ? world?.players?.find((p) => p.id === u.house) : null;
-  const threat = pretender ? `${houseFor(pretender).name}'s claim to the throne`
-    : story && story.status === "running" ? story.title
-    : (stakes?.s.north?.waves ?? 0) > 0 ? "the dead from the North" : "the houses' own ambitions";
   // kind: what the climax is, so the director knows whether to stay out of its way (director.js finale).
   const kind = pretender ? "pretender" : story && story.status === "running" ? "story" : (stakes?.s.north?.waves ?? 0) > 0 ? "north" : "houses";
-  meta.lastAct = { threat, kind, turn: world?.turn ?? 0 };
+  // With no pretender, story or dead, the coldest great house is the threat: its host, by name and by the
+  // season it lands (the director's finale raises it there; gameplay review #8: "the houses' own ambitions"
+  // had no face and no date).
+  const turn = world?.turn ?? 0;
+  const cold = kind === "houses" ? (world?.players ?? []).filter((p) => !houseFor(p).wild && !houseFor(p).crown && world.cities.some((c) => c.owner === p.id)).sort((a, b) => ctx.favourOf(a.id) - ctx.favourOf(b.id))[0] : null;
+  const landAt = Director.DIRECTOR.finale?.landAt ?? 0.92;
+  const lands = turn + Math.max(1, Math.round(((landAt - meta.elapsedMs / (meta.minutes * 60000)) * meta.minutes * 60) / Math.max(1, ctx.turnSeconds ?? 40)));
+  const when = calendar(lands);
+  const threat = pretender ? `${houseFor(pretender).name}'s claim to the throne`
+    : story && story.status === "running" ? story.title
+    : (stakes?.s.north?.waves ?? 0) > 0 ? "the dead from the North"
+    : cold ? `${houseFor(cold).name}'s host, by the ${when.season} of ${when.year}` : "the houses' own ambitions";
+  meta.lastAct = { threat, kind, turn, ...(cold ? { house: cold.id, lands } : {}) };
   chron.saveMeta(meta);
   record({ turn: world?.turn ?? 0, kind: "act", text: `The last act of the reign begins. What comes for the throne now: ${threat}.` });
 }
@@ -98,12 +109,31 @@ export function lastAct(ctx) {
 // The King's ambitions: three goals he carries from his first season, each a
 // way to be remembered. Met, it is told in the chronicle, the great houses
 // warm to a King who does what he set out to do, and history counts it.
+// Drawn from the realm as the King finds it (gameplay review #8: "twenty decrees" rewarded spam and
+// "200,000 crowns" was out of reach unless he never spent): a war he can end, the seat he must keep,
+// houses he can bind. A drawn ambition carries its own subjects (a, b); fail: true once it can't be met.
+const atWar = ({ detail, court }, a, b) => {
+  const d = detail?.();
+  const la = court?.lordOfHouse(a), lb = court?.lordOfHouse(b);
+  return (d?.players?.[a]?.atWarWith ?? []).includes(b) && !(la && lb && court.truce(la.id, lb.id));
+};
+const houseName = (world, pid) => houseFor(world?.players?.find((p) => p.id === pid) ?? {}).name ?? "a house";
 export const AMBITIONS = [
+  { key: "endwar", draw: (ctx) => {
+      const { world, detail } = ctx;
+      const great = (world?.players ?? []).filter((p) => !houseFor(p).wild && !houseFor(p).crown && world.cities.some((c) => c.owner === p.id));
+      const power = (p) => world.cities.filter((c) => c.owner === p.id).length * 2 + (p.units ?? 0);
+      let pair = null;
+      for (const a of great) for (const b of great) if (a.id < b.id && atWar(ctx, a.id, b.id) && (!pair || power(a) + power(b) > power(pair[0]) + power(pair[1]))) pair = [a, b];
+      return pair ? { a: pair[0].id, b: pair[1].id, text: `End the war between ${houseName(world, pair[0].id).replace(/^House /, "")} and ${houseName(world, pair[1].id).replace(/^House /, "")}` } : null;
+    },
+    met: (ctx, a) => a.a != null && !atWar(ctx, a.a, a.b) },
+  { key: "seat", text: "Keep Kingsmere unbesieged to the last act",
+    met: ({ meta }) => !!meta.lastAct && meta.seatBesieged == null, fail: ({ meta }) => meta.seatBesieged != null },
+  { key: "wed", text: "Wed two great houses by the King's word", met: ({ meta }) => (meta.matchesMade ?? 0) >= 1 },
   { key: "peace", text: "Keep the realm truly at peace for two whole years", met: ({ history }) => history.length >= 8 && history.slice(-8).every((r) => r.peace >= 0.85) },
-  { key: "treasury", text: "Fill the royal treasury to 200,000 crowns", met: ({ history }) => (history.at(-1)?.treasury ?? 0) >= 2000 },  // history keeps gold; a crown is a hundredth of it
   { key: "loyal", text: "Win four of the great houses to the crown", met: ({ world, favourOf }) => (world?.players ?? []).filter((p) => !houseFor(p).wild && !houseFor(p).crown && favourOf(p.id) >= BANDS.loyal).length >= 4 },
   { key: "grow", text: "Grow the realm by a fifth", met: ({ meta, history }) => meta.ambitionsFrom?.pop > 0 && (history.at(-1)?.pop ?? 0) >= meta.ambitionsFrom.pop * 1.2 },
-  { key: "decrees", text: "Rule with a firm hand: twenty decrees in the King's name", met: ({ meta, chronicle }) => chronicle.filter((e) => e.kind === "decree" && e.turn >= (meta.ambitionsFrom?.turn ?? 0)).length >= 20 },
 ];
 
 // The royal ladder: one aim always before the King, each with a reward he can
@@ -244,15 +274,25 @@ export function ambitions(ctx) {
   const { meta, world, history, favour, favourOf, saveFavour, record } = ctx;
   if (!meta.minutes || meta.status !== "running" || !world) return;
   if (!meta.ambitions) {
-    // Three that aren't already true when the reign begins, chosen by the realm's own seed.
+    // Three that aren't already true when the reign begins, drawn from the realm as the King finds it:
+    // a war between two great houses first, when there is one; the rest by the realm's own seed.
     meta.ambitionsFrom = { turn: world.turn, pop: history.at(-1)?.pop ?? 0 };  // what this reign is measured from
-    const open = AMBITIONS.filter((a) => !a.met(ctx));
+    meta.lastActAt ??= world.turn;  // an idle King is counted from his crowning (season.js idle)
+    const drawn = AMBITIONS.map((a) => (a.draw ? (() => { const d = a.draw(ctx); return d ? { ...a, ...d } : null; })() : a)).filter((a) => a && !a.met(ctx, a));
     const hash = (t) => t.split("").reduce((h, ch) => (Math.imul(h, 31) + ch.charCodeAt(0)) >>> 0, 7);
-    meta.ambitions = [...open].sort((a, b) => hash(meta.id + a.key) - hash(meta.id + b.key)).slice(0, 3).map((a) => ({ key: a.key, text: a.text, met: null }));
+    const first = drawn.filter((a) => a.draw);
+    const rest = drawn.filter((a) => !a.draw).sort((a, b) => hash(meta.id + a.key) - hash(meta.id + b.key));
+    meta.ambitions = [...first, ...rest].slice(0, 3).map((a) => ({ key: a.key, text: a.text, met: null, ...(a.a != null ? { a: a.a, b: a.b } : {}) }));
     chron.saveMeta(meta);
   }
+  // Kingsmere besieged (a pretender's host at its walls, or any siege of it) fails "keep it unbesieged".
+  const seat = ctx.crownSeat?.();
+  if (meta.seatBesieged == null && (ctx.stakes?.s?.usurper?.stage === "march" || seat?.besieged)) { meta.seatBesieged = world.turn; chron.saveMeta(meta); }
   for (const a of meta.ambitions) {
-    if (a.met != null || !AMBITIONS.find((x) => x.key === a.key)?.met(ctx)) continue;
+    const spec = AMBITIONS.find((x) => x.key === a.key);
+    if (a.met != null || a.failed != null) continue;
+    if (spec?.fail?.(ctx, a)) { a.failed = world.turn; chron.saveMeta(meta); continue; }
+    if (!spec?.met(ctx, a)) continue;
     a.met = world.turn;
     for (const p of world.players.filter((p) => !houseFor(p).wild && !houseFor(p).crown)) favour[p.id] = Math.min(100, favourOf(p.id) + 5);
     saveFavour();
@@ -404,10 +444,14 @@ export function score(ctx) {
   const last = history[history.length - 1];
   const alive = Object.values(last.houses).filter((h) => h.towns > 0).length;
   const total = Math.round(peace * 600 + last.pop * 4 + alive * 30 + last.treasury * 0.5);
-  const verdict = peace > 0.8 && last.pop > 150 ? "A golden age. Songs will be sung of your reign."
-    : peace > 0.6 ? "A steady hand. The realm endured and grew."
-    : peace > 0.35 ? "A troubled reign. The houses bled one another while you watched."
-    : "A realm on fire. History will remember your reign as the age of swords.";
+  // The verdict is the King's deeds first (the ledger's name and why), the realm's numbers only as
+  // support (gameplay review #8: "A steady hand" came from peace and population, whatever he did).
+  const realm = peace > 0.8 && last.pop > 150 ? "The realm grew rich and quiet under him."
+    : peace > 0.6 ? "The realm endured."
+    : peace > 0.35 ? "The houses bled one another while he ruled."
+    : "The realm burned, and the songs remember swords.";
+  const k = kingName(ctx);
+  const verdict = `${k.why || "History found little to say of him."} ${realm}`;
   return { score: total, peace, pop: last.pop, verdict };
 }
 

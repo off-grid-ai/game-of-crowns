@@ -89,7 +89,11 @@ export function crisis(meta) {
 function finale(ctx, d, turn) {
   const named = ctx.meta.lastAct?.kind ?? ((ctx.usurper ?? "none") !== "none" ? "pretender" : "houses");
   if (d.finaleDone || named !== "houses") return;
-  raise(ctx, d, turn, null, true);
+  // The house the last act named (reign.js lastAct) is the one whose host masses: what was named comes.
+  const house = ctx.meta.lastAct?.house;
+  if (house != null && (ctx.world?.cities ?? []).some((c) => c.owner === house)) d.envious = house;
+  raise(ctx, d, turn, house != null ? DIRECTOR.finale?.kind ?? "host" : null, true);
+  if (!d.threat && house != null) raise(ctx, d, turn, null, true);  // that house can't mass a host now: whatever the realm can raise
   d.finaleDone = !!d.threat;  // none possible this season: it tries again the next
 }
 
