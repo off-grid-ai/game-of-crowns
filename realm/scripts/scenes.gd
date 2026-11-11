@@ -1407,15 +1407,19 @@ func _burn(at: Vector3, seconds: float, scale := 1.0) -> void:
 	for i in int(5 * scale):
 		var off := Vector3(r.randf_range(-1.2, 1.2), 0, r.randf_range(-1.2, 1.2)) * scale
 		var p := ground(at + off)
-		# Flames as lit particles, not additive glow: additive fire blooms into
-		# white orbs at this scale.
+		# Flames and smoke are unshaded: they give the fire's light, they don't
+		# take it. Shaded, the big smoke puffs inside the fire's own light were lit
+		# bright orange and read as glowing balls over a stormed town (review v14,
+		# Stormwatch); additive fire blooms into white orbs at this scale.
 		var fire := _puffs(Color(1.0, 0.45, 0.1, 0.85), 18, 0.7, 0.05, 0.12)
 		fire.initial_velocity_min = 0.15
 		fire.initial_velocity_max = 0.35
 		fire.position = p + Vector3(0, 0.2, 0)
+		(fire.mesh.material as StandardMaterial3D).shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		root.add_child(Particles.to_gpu(fire))
 		var smoke := _puffs(Color(0.12, 0.11, 0.1, 0.75), 30, 6.0, 0.3, 0.8)
 		smoke.position = p + Vector3(0, 0.6, 0)
+		(smoke.mesh.material as StandardMaterial3D).shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		root.add_child(Particles.to_gpu(smoke))
 		var light := OmniLight3D.new()
 		light.light_color = Color(1.0, 0.5, 0.2)
@@ -1427,7 +1431,7 @@ func _burn(at: Vector3, seconds: float, scale := 1.0) -> void:
 	tw.tween_interval(seconds)
 	tw.tween_callback(func():
 		for c in root.get_children():
-			if c is CPUParticles3D:
+			if c is CPUParticles3D or c is GPUParticles3D:  # the flames are GPU particles (Particles.to_gpu): they die down too
 				c.emitting = false
 			elif c is OmniLight3D:
 				c.queue_free())
