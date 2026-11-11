@@ -107,3 +107,8 @@ Each against its batch 7 frame (`/tmp/goc-batch7`), the same step.
 25. **Goldrock's fountain and Kingsmere's statue close** (`city Goldrock 3 -25`, `city Kingsmere 3 -25`): the basin in
     the village kit's grey uneven stone, dark still water that catches the sky; no stall canopy over the basin, no
     one standing in the water (dogs, children, the levy's kin all start outside its rim).
+33. **The crowd's clothes** (batch 8 look2: dark, colourless; 3a593e33): `city Kingsmere 6 -25` and a village at the
+    same step. Judge against town-b: warm, varied cloth (madder, woad, weld, cream, russet), about one in six in the
+    holder's colour at the crown's seat, fewer in a village; peasants in lighter homespun. Set `cloth.true` false in
+    `realm/data/people.json` for the before.
+34. **No crowd-check errors** (dca52a35): grep the launch logs for `villagers.gd` script errors: none.
