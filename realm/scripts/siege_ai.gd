@@ -38,6 +38,7 @@ const FALL := 0.06  # the chance a blow from above, landing, kills him outright
 const Data := preload("res://scripts/data.gd")
 const Combat := preload("res://scripts/combat.gd")
 const Fire := preload("res://scripts/fire.gd")
+const SiegeStorm := preload("res://scripts/siege_storm.gd")
 
 var scenes: Node
 var root: Node3D
@@ -86,6 +87,22 @@ func start(s: Node, siege: Node3D, rng: RandomNumberGenerator, colour: Color, gr
 			if is_instance_valid(t):
 				_send(p)
 				t.start())
+	# The storm as a mass: hundreds in their houses' colours behind these men (siege_storm.gd), driven by
+	# this one's breach.
+	if _storm and SiegeStorm.on() and not parties.is_empty():
+		var camp := Vector3.ZERO
+		var wall := Vector3.ZERO
+		var n := 0
+		for p in parties:
+			for m in p:
+				camp += m["home"]
+				wall += m["foot"]
+				n += 1
+		camp /= maxf(n, 1)
+		wall /= maxf(n, 1)
+		var heart: Vector3 = town_at if town_at != Vector3.INF else wall + (wall - camp)
+		var out := Vector3(camp.x - heart.x, 0, camp.z - heart.z).normalized()
+		SiegeStorm.new().begin(self, camp + out * Data.num("siege", "storm_host.camp_back", 0.3), wall, heart, col, held, {}, {})
 
 
 ## A fresh man in the camp, and his mind.
@@ -175,19 +192,8 @@ func _man(m: Dictionary) -> void:
 ## A party is sent: the fallen are replaced from the camp, and each man goes
 ## forward on his own beat.
 func _send(p: int) -> void:
-	# The camera comes in on the rush: low, from the camp side, on the stretch
-	# of wall this party goes for (a beat of the siege, as battles call theirs).
-	var men: Array = parties[p]
-	if not men.is_empty():
-		var foot := Vector3.ZERO
-		var home := Vector3.ZERO
-		for m in men:
-			foot += m["foot"]
-			home += m["home"]
-		foot /= men.size()
-		home /= men.size()
-		var back: Vector3 = home - foot
-		scenes.framing.emit(scenes.ground(foot.lerp(home, 0.3)), 2.0, atan2(back.x, back.z))
+	# No camera move on a rush (camera never steals; batch 7 review #5: every breach clip cut mid-way as each
+	# party was sent): the siege shows from wherever the King looks.
 	for m in parties[p]:
 		if not m["alive"]:
 			_man(m)
