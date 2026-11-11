@@ -48,6 +48,13 @@ export function season(ctx, turn) {
     d.calm = t < DIRECTOR.quietBelow ? d.calm + 1 : 0;
     if (d.calm >= (DIRECTOR.quietByAct?.[actOf(meta)] ?? DIRECTOR.quietSeasons)) raise(ctx, d, turn);
   }
+  // A town taken from the crown or a sworn ally is a crisis to the King, whoever took it
+  // (Freeciv's own wars included): the breather follows. Wars between other houses stay background.
+  const crown = crownOf(world);
+  const ours = (c) => crown && (c.owner === crown.id || (meta.alliances?.[c.owner] ?? -1) > turn);
+  const before = d.held ?? {};
+  if (Object.entries(before).some(([id, owner]) => world.cities.find((c) => c.id === Number(id))?.owner !== owner)) crisis(meta);
+  d.held = Object.fromEntries(world.cities.filter(ours).map((c) => [c.id, c.owner]));
   pushback(ctx, d, turn, peace);
   chron.saveMeta(meta);
 }
