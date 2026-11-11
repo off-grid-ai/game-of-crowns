@@ -139,7 +139,7 @@
   {
    "id": "b7-carts",
    "name": "Carts on the road",
-   "what": "Carts, travellers and herds on the road out of Kingsmere",
+   "what": "The road out of Kingsmere: walkers, pedlars, pilgrims, carts, riders, a messenger at the gallop, the King's spear patrol",
    "ref": "06-inn",
    "card": "A6",
    "still": "towns/carts.png",
@@ -354,11 +354,12 @@
   {
    "id": "b7-flock",
    "name": "A flock on the fallow",
-   "what": "A shepherd with his sheep grazing a fallow field",
+   "what": "A shepherd with 5-8 sheep grazing a fallow field, moving on to the next",
    "ref": "town-b",
    "card": "W2",
    "still": "fields/flock.png",
-   "needs": "flock"
+   "needs": "flock",
+   "clip": "fields/flock-clip.mp4"
   },
   {
    "id": "b7-fire",
@@ -501,6 +502,14 @@
    "ref": "06-inn",
    "card": "W3",
    "still": "night/night-inn.png"
+  },
+  {
+   "id": "b7-night-road",
+   "name": "The road at night",
+   "what": "The road out of Kingsmere by night: only a torchlit patrol or a messenger",
+   "ref": "06-inn",
+   "card": "W3",
+   "still": "night/night-road.png"
   }
  ],
  "needed": [],

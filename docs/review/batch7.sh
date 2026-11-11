@@ -152,19 +152,19 @@ if want fields; then
     if has_step field; then
       print "field spring 0.15 0 3 -22"; print "wait 8"; print "snap field-plough"; burst plough-clip 30 0.2
       print "field spring 0.5 0 3 -22"; print "wait 8"; print "snap field-sow"
-      print "field summer 0.4 0 3 -22"; print "wait 8"; print "snap field-weed"
-      print "field autumn 0.3 0 3 -22"; print "wait 8"; print "snap field-reap"; burst reap-clip 30 0.2
-      print "field autumn 0.85 0 3 -22"; print "wait 8"; print "snap field-glean"
+      print "field summer 0.3 0 3 -22"; print "wait 8"; print "snap field-weed"
+      print "field autumn 0.15 0 3 -22"; print "wait 8"; print "snap field-reap"; burst reap-clip 30 0.2
+      print "field autumn 0.6 0 3 -22"; print "wait 8"; print "snap field-glean"
       print "field summer 0.4 0 9 -20"; print "wait 6"; print "snap fields-wide"
     else
       print "city $SEAT 9 -20"; print "wait 8"; print "snap fields-wide"
     fi
-    if has_step flock; then print "flock 0 3 -22"; print "wait 8"; print "snap flock"; fi
+    if has_step flock; then print "field summer 0.5 0 9 -20"; print "flock 0 3 -22"; print "wait 8"; print "snap flock"; burst flock-clip 40 0.5; fi
     print "look fields-end"
   } > $OUT/fields.play
   has_step field || note "fields: no 'field' step in the harness; only the wide shot round the seat"
   play fields 600
-  for c in plough-clip reap-clip; do clip $OUT/fields $c 5; done
+  for c in plough-clip reap-clip flock-clip; do clip $OUT/fields $c 5; done
 fi
 
 # 4. Fire: a town sacked while the camera watches (--fire=v2), then what's left.
@@ -319,6 +319,7 @@ if want night; then
     if has_step work; then print "work Kingsmere inn 4.5 -25"; else print "city Kingsmere 4.5 -25"; fi
     print "wait 10"; print "snap night-inn"
     if has_step site; then print "site inn 0 6 -25"; print "wait 8"; print "snap night-road-inn"; fi
+    print "road Kingsmere 8"; print "wait 10"; print "snap night-road"  # only a torchlit patrol or a messenger by night
     print "look night-end"
   } > $OUT/night.play
   play night 420 --hour=21
