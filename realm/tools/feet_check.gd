@@ -61,9 +61,12 @@ func _initialize() -> void:
 			anim.play(clip)
 			var lo := INF
 			var hi := -INF
+			# A body raised for its own knees in a low move (people.gd _kneel_up; motion.gd raises it in play).
+			var up: Vector3 = (person.get_meta("low_lift", {}) as Dictionary).get(c, Vector3.ZERO)
+			var knelt: float = ((sk.get_parent() as Node3D).global_transform.basis * up).y / S
 			for k in 6:
 				anim.seek(a.length * k / 6.0, true)
-				var y: float = sole.call() - rest  # against the feet at rest: soles on the ground
+				var y: float = sole.call() - rest + knelt  # against the feet at rest: soles on the ground
 				lo = minf(lo, y)
 				hi = maxf(hi, y)
 			if lo < SINK or (lo > FLOAT and not c.contains("Jump")) or all:

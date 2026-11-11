@@ -222,7 +222,7 @@ static var FEET_ON: bool = bool(Data.value("people", "feet.on", true)) and not O
 ## by hand down the leg chain (a skeleton outside the tree doesn't pose itself):
 ## a bone's place is its parent's times its own pose, the clip's where it has a
 ## key, its rest where not. Capped at feet.mostLift (metres on a 0.95 m hip).
-static func _sole_drop(sk: Skeleton3D, a: Animation) -> float:
+static func _sole_drop(sk: Skeleton3D, a: Animation, down_only := false) -> float:
 	var samples := int(Data.num("people", "feet.samples", 12))
 	var seated := Data.num("people", "feet.seated", 0.45)
 	var kneeling := Data.num("people", "feet.kneeling", 0.4)
@@ -274,7 +274,8 @@ static func _sole_drop(sk: Skeleton3D, a: Animation) -> float:
 			touch = minf(touch, (where.call(hips, pose) as Transform3D).origin.y - seat_r)  # sat back on the heels
 			continue  # sat, lying or on a knee: the seat or the knee is on the ground, not the soles
 		lo = minf(lo, low.call(pose))
-	if lo == INF:
+	if lo == INF or down_only:
+		# (down_only: only the frames down low are asked about, whatever else the move does.)
 		# A move that never stands (kneeling, praying, planting): raised by how far its knee or its
 		# laid-down foot goes under the ground, never lowered; sat or lying moves keep their keys.
 		return clampf(-touch, 0.0, Data.num("people", "feet.mostLift", 0.25) * hips_rest / 0.95) if touch != INF else 0.0
@@ -299,6 +300,40 @@ func _stand_up(body: String, skeleton: Skeleton3D) -> void:
 				n += 1
 		_body_lift[body] = maxf(sum / maxi(n, 1), 0.0)
 	skeleton.position += skeleton.transform.basis * Vector3(0, float(_body_lift[body]), 0)
+
+
+## A body's own knees and seat, in the moves played down low (Motion.LOW and
+## feet.lowAlso): the clips are planted on the reference's legs, and a body with
+## longer shins or a deeper seat still sank on a knee (tools/feet_check.gd:
+## fuse_civilian_1 16 cm, the noble lady 14, the monk 13). Each low move is
+## measured on the body's own skeleton, once per body, and what its knee, laid
+## foot or seat still goes under the ground is kept on the person (meta
+## "low_lift": move -> how far to raise the skeleton); motion.gd eases the body
+## up by it while that move plays and back down after. feet.lowExtra adds to a
+## body by hand (metres). Root height by the body's own contact points, as
+## Unity's humanoid "root transform position (Y): feet" does per avatar.
+var _low_lift := {}
+func _kneel_up(person: Node3D, body: String, skeleton: Skeleton3D) -> void:
+	if not FEET_ON or not bool(Data.value("people", "feet.low", true)):
+		return
+	if not _low_lift.has(body):
+		var lifts := {}
+		var hips := skeleton.find_bone("Hips")
+		var per_m: float = skeleton.get_bone_global_rest(hips).origin.y / 0.95 if hips >= 0 else 1.0  # skeleton units in a metre (a 0.95 m hip)
+		var extra := float((Data.value("people", "feet.lowExtra", {}) as Dictionary).get(body, 0.0)) * per_m
+		var clips: Array = Motion.LOW + (Data.value("people", "feet.lowAlso", []) as Array)
+		for c in clips:
+			if not _lib.has_animation(String(c)):
+				continue
+			var up := _sole_drop(skeleton, _lib.get_animation(String(c)), true) - float(_body_lift.get(body, 0.0)) + extra
+			if up > 0.01 * per_m:
+				lifts[String(c)] = up
+		_low_lift[body] = lifts
+	var mine := {}
+	for c in _low_lift[body]:
+		mine[c] = skeleton.transform.basis * Vector3(0, float(_low_lift[body][c]), 0)
+	if not mine.is_empty():
+		person.set_meta("low_lift", mine)
 
 
 ## Townsfolk are moved by the game, not the clip: keep the hips' sway and bob
@@ -483,6 +518,7 @@ func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, ag
 	else:
 		skeleton.reparent(armature, false)
 	_stand_up(body, skeleton)
+	_kneel_up(person, body, skeleton)
 	# The moves find the skeleton by its unique name, which needs its owner back.
 	skeleton.owner = person
 	skeleton.unique_name_in_owner = true

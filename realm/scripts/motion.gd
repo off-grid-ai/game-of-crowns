@@ -268,6 +268,28 @@ func play(clip: String, rate := 1.0, hold := false, phase := -1.0, repeat := fal
 	return length
 
 
+## A body whose own knees or seat sink in a low move (people.gd _kneel_up, meta
+## "low_lift": move -> how far its skeleton is raised): eased up while that move
+## plays, and back down as it ends. Bodies that kneel true carry no such meta.
+var _low_up := Vector3.ZERO  # how far the skeleton is raised now
+var _low_sk: Node3D
+func _kneel(body: Node3D, delta: float) -> void:
+	if not body.has_meta("low_lift"):
+		return
+	var want: Vector3 = (body.get_meta("low_lift") as Dictionary).get(current(), Vector3.ZERO)
+	if want.is_equal_approx(_low_up):
+		return
+	if _low_sk == null:
+		_low_sk = body.find_child("GeneralSkeleton", true, false) as Node3D
+		if _low_sk == null:
+			return
+	var next := _low_up.lerp(want, 1.0 - exp(-delta * 8.0))
+	if next.distance_to(want) < want.length() * 0.02 + 0.00001:
+		next = want
+	_low_sk.position += next - _low_up
+	_low_up = next
+
+
 ## Called every frame (anim_lod.gd): how fast the person crosses the ground
 ## drives the legs. A standing repeating move gives way to the legs once they
 ## are clearly going somewhere, and comes back once they stop.
@@ -276,6 +298,7 @@ func track(delta: float) -> void:
 	var body := get_parent() as Node3D
 	if body == null or delta <= 0.0 or dead():
 		return
+	_kneel(body, delta)
 	var at := body.global_position
 	var now_pace := 0.0  # v2: the ground covered this very frame, uneased
 	if _last != Vector3.INF and not _mounted():
