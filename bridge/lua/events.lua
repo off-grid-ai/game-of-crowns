@@ -34,6 +34,14 @@ function ev_unit_lost(unit, loser, reason)
     emit("unit_killed", {unit = unit.utype:rule_name(), owner = loser.id, x = unit.tile.x, y = unit.tile.y})
   end
 end
+-- Who struck: an attack on a tile, so the bridge knows the victors when a company dies there (battles.js).
+function ev_attack(action, actor, target)
+  local ok, name = pcall(function() return action:rule_name() end)
+  local t = target and (target.tile or target)  -- a unit struck, or a tile
+  if ok and name and name:find("Attack") and actor and t then
+    emit("attack", {owner = actor.owner.id, unit = actor.utype:rule_name(), x = t.x, y = t.y, ax = actor.tile.x, ay = actor.tile.y})
+  end
+end
 function ev_tech(tech, player, source)
   emit("tech", {tech = tech:rule_name(), owner = player.id, source = source})
 end
@@ -62,7 +70,7 @@ local hooks = {
   {"disaster_occurred", "ev_disaster"}, {"building_built", "ev_building_built"},
   {"building_lost", "ev_building_lost"}, {"unit_lost", "ev_unit_lost"},
   {"tech_researched", "ev_tech"}, {"civil_war_triggered", "ev_civil_war"},
-  {"turn_begin", "ev_turn"},
+  {"turn_begin", "ev_turn"}, {"action_started_unit_units", "ev_attack"}, {"action_started_unit_unit", "ev_attack"}, {"action_started_unit_tile", "ev_attack"},  -- Freeciv 3.2 reports an attack as unit-on-tile
 }
 for _, h in ipairs(hooks) do
   local ok, err = pcall(signal.connect, h[1], h[2])

@@ -53,6 +53,7 @@ import * as Season from "./season.js";
 import * as Garrison from "./garrison.js";
 import * as Rulings from "./rulings.js";
 import * as Hosts from "./hosts.js";
+import * as Battles from "./battles.js";
 import { TURNING } from "./season.js";
 import { intrigueNow } from "./intrigue.js";
 
@@ -535,10 +536,13 @@ function onEvent(line) {
     return;
   }
   if (ev.kind === "turn") return Season.turn(seasonCtx(), ev);  // the turn's sequence (season.js)
+  if (ev.kind === "attack") return Battles.struck(ev, world?.turn ?? 0);  // who struck where (battles.js)
   const town = ev.city !== undefined ? world?.cities?.find((c) => c.id === Number(ev.city)) : null;
   if (ev.kind === "unit_killed") {
     const loser = world?.players?.find((p) => p.id === Number(ev.owner));
-    scene("battle", { x: Number(ev.x), y: Number(ev.y), owner: Number(ev.owner), unit: ev.unit, house: loser ? houseFor(loser).name : null });
+    // Who fought, how many and who won (battles.js); one battle per tile a season.
+    const f = Battles.fields(world, ev);
+    if (!Battles.merge(scenes, f, world?.turn ?? 0)) scene("battle", { ...f, house: loser ? houseFor(loser).name : null });
   }
   if (ev.kind === "city_transferred" && town) scene(ev.reason === "conquest" ? "sack" : "handover", { x: town.x, y: town.y, city: town.id, from: Number(ev.from), to: Number(ev.to) });
   if (ev.kind === "city_destroyed" && town) scene("razed", { x: town.x, y: town.y, city: town.id });
