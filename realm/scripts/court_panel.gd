@@ -37,6 +37,9 @@ func _init(owner: UI) -> void:
 	ui = owner
 
 
+var _kings_press := false  # the next audience was asked for by the King himself (the court button, an answer, his words): it may frame its place
+
+
 func _toggle_court() -> void:
 	if _petitions.is_empty():
 		ui.toast("Nobody waits at court. It sits when it has matters for you; the Hand calls you sooner only for a crisis.")
@@ -46,6 +49,7 @@ func _toggle_court() -> void:
 		_court_panel.visible = false
 	else:
 		_court_hidden = false
+		_kings_press = true
 		_show_audience()
 
 
@@ -247,6 +251,11 @@ func open_matter(id: String) -> void:
 
 
 func _show_audience() -> void:
+	# The camera never steals (Mac's rule; batch 7: a sitting that came up mid-film took the camera to Rosehall):
+	# only the King's own press frames a matter's town; a sitting that comes by itself waits at its place, and the
+	# edge arrow and Space take him there (court_waits_at, news.gd).
+	var pressed := _kings_press
+	_kings_press = false
 	for c in _court_panel.get_children():
 		_court_panel.remove_child(c)  # gone at once: the new "Scroll" keeps its name, so the card is measured by it, not left an empty bar
 		c.queue_free()
@@ -272,7 +281,7 @@ func _show_audience() -> void:
 	var here: Vector3 = ui.place_of.call(p)
 	# One court flow: a matter with a place is decided at it, on the map (CK3/KoDP's card in
 	# the world): the King's own press (the court, Next) frames its town, and the card stands by it.
-	if ONE and here != Vector3.INF and _opened_at != here:
+	if ONE and pressed and here != Vector3.INF and _opened_at != here:
 		_opened_at = here
 		ui.matter_opened.emit(here)
 	if _opened_at != Vector3.INF and here == _opened_at:
@@ -768,6 +777,7 @@ func ruled_in_words(id: String, d: Dictionary) -> void:
 	_petitions = _petitions.filter(func(x): return String(x["id"]) != id)
 	ui._court_badge.text = str(_petitions.size())
 	ui._court_waiting_shown(_petitions.size())
+	_kings_press = true  # his own words ruled it: on to the next matter, at its place
 	_show_audience()
 
 
@@ -784,6 +794,7 @@ func _answer(id: String, option: String) -> void:
 	if ONE and not it.is_empty():
 		_see_it(it)
 		return
+	_kings_press = true  # his own answer: on to the next matter, at its place
 	_show_audience()
 
 
@@ -859,4 +870,5 @@ func _after_seeing(it: Dictionary) -> void:
 		_court_panel.visible = false
 		_close_doors()
 	else:
+		_kings_press = true  # on from the matter he just answered (Next): its place may be framed
 		_show_audience()
