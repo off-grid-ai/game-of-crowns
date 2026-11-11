@@ -24,6 +24,7 @@ var _opened_at := Vector3.INF  # the place of the matter the King opened from it
 ## with what each costs and whom it moves) / see it (the card turns over to what the
 ## ruling did) / out (the next, or the doors close once).
 static var ONE: bool = OS.get_cmdline_user_args().has("--court=one")
+const PaintedFaces := preload("res://scripts/painted_faces.gd")
 var _seeing: Dictionary = {}  # the matter just ruled, while the card shows what it did (ONE)
 var _doors_shut := false  # the doors-close word said once a sitting
 var _FAVOUR_RE := RegEx.create_from_string("((?:House|The) [A-Z][a-z]+)\\s*([+−-]\\d+)")  # "House Thornvale +15" in an answer's hint
@@ -294,7 +295,25 @@ func _show_audience() -> void:
 	named.add_theme_constant_override("separation", 14)
 	v.add_child(named)
 	var sitter = p.get("who")
-	if ui.portrait.is_valid() and sitter is Dictionary:
+	var painted: Texture2D = PaintedFaces.face(sitter) if ONE and sitter is Dictionary else null
+	if painted:
+		# One court flow: their painted face (painted_faces.gd), in a frame of their house's colour.
+		var frame := PanelContainer.new()
+		var box := StyleBoxFlat.new()
+		box.bg_color = Color(0, 0, 0, 0)
+		box.border_color = Color.from_string(String(ui.house_by_name.get(String(p.get("house", "")), {}).get("color", "#c9a95a")), T.ACCENT)
+		box.set_border_width_all(2)
+		box.set_corner_radius_all(3)
+		frame.add_theme_stylebox_override("panel", box)
+		frame.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		var face := TextureRect.new()
+		face.texture = painted
+		face.custom_minimum_size = Vector2(72, 96)
+		face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		frame.add_child(face)
+		named.add_child(frame)
+	elif ui.portrait.is_valid() and sitter is Dictionary:
 		var figure := TextureRect.new()
 		figure.custom_minimum_size = Vector2(56, 90)
 		figure.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
