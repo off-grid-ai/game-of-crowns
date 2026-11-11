@@ -88,7 +88,12 @@ and there's no humour. Added to Phase 1, in this order:
 ### Phase 2: a realm worth looking at (the look)
 | Item | Owner | Done when |
 |---|---|---|
-| One building pipeline (research → pick → 30 types in one style) | Research, then a builder | prototype house and keep beside Manor Lords; Mac approves the look |
+| **The finesse level (picked 2026-11-11, art-direction-report.md):** a painted storybook look, Foundation's town view lit like Tiny Glade at Manor Lords' plot density. Chunky silhouettes, steep roofs carrying the colour, painted materials (no photo textures, no outlines), warm low sun with cool shadows, ~5 readable features a building. One free family: Quaternius (Medieval Village, Stylized Nature, Fantasy Props MegaKits, CC0), through the asset catalogue; gaps filled in its style. Target frame: Codex's repaint of Kingsmere (art-direction/concept-town-repaint.png) | supervisor | stills beside the target pass |
+| 1. One look: lighting, colour grade, the kit colour pass | Builder 2 | a Kingsmere still beside the target |
+| 2. Castles built from the kit's walls and towers (a castle builder like house_builder.gd); the Kenney castle and the black hall retired | Townsfolk | every seat's castle beside the concept keep |
+| 3. Every house from house_builder.gd, with thatch and yards in dense street-facing plots; the Sketchfab houses retired | Townsfolk | ~20 houses at Kingsmere, one style |
+| 4. Quaternius trees in clumps with bushes at the edges, season colour, a far version | NPC perf (via the catalogue) | forest stills beside Tiny Glade and Foundation |
+| 5. Painted ground, roads with verges, strip fields with hedges, a sand band at the coast | NPC perf + Builder 2 | land still beside the concept |
 | Dense plot towns along growing streets | Townsfolk | ~20 houses at Kingsmere, ≥90% facing a street, beside the Manor Lords shot |
 | Fire, smoke, sack and razing that read as fire | Lead | a still beside the reference |
 | Light, grade, seasons and the map at three zooms, judged against the copy sheet | Builder 2 | side-by-side stills pass |
