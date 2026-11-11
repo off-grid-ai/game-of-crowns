@@ -105,7 +105,7 @@ export function turnHouses(ctx, turn) {
     }
     // A story's march, held for its ultimatum: it goes once the King refused, or let it lie (and a gathering host, once its seasons are out).
     if (t.march != null && mayRise(ctx, p.id) && (t.riseAt == null || turn >= t.riseAt)) {
-      stakes?.declare(p.id, world, { send: (l) => send(`lua cmd ${l}`) }, t.march);
+      if (stakes?.declare(p.id, world, { send: (l) => send(`lua cmd ${l}`) }, t.march)) Director.crisis(meta);
       t.march = null;
       t.riseAt = null;
     }
@@ -123,7 +123,11 @@ export function turnHouses(ctx, turn) {
 // the ultimatum goes to court first, and the march waits for its answer.
 export function storyMarch(ctx, pid, size) {
   const { world, meta, stakes, send } = ctx;
-  if (mayRise(ctx, pid)) return stakes?.declare(pid, world, { send: (l) => send(`lua cmd ${l}`) }, size);
+  if (mayRise(ctx, pid)) {
+    const marched = stakes?.declare(pid, world, { send: (l) => send(`lua cmd ${l}`) }, size);
+    if (marched) Director.crisis(meta);
+    return marched;
+  }
   askUltimatum(ctx, pid).march = size ?? 10;
   chron.saveMeta(meta);
 }
@@ -146,10 +150,12 @@ export function askUltimatum(ctx, pid) {
 
 // Whether a lord may raise his banners against the crown: only after his ultimatum.
 // Refused, or two seasons gone since it came with no favour shown: then the rising.
-export const mayRise = (ctx, pid) => { const { world, meta } = ctx; const t = meta.turning?.[pid]; return t?.state === "refused" || (t?.state === "sent" && (world?.turn ?? 0) - t.at >= 2); };
+// After a crisis the realm gets its breather first (director.js resting): the rising waits, it isn't lost.
+export const mayRise = (ctx, pid) => { const { world, meta } = ctx; const t = meta.turning?.[pid]; return !Director.resting(meta) && (t?.state === "refused" || (t?.state === "sent" && (world?.turn ?? 0) - t.at >= 2)); };
 export function rose(ctx, pid) {
   const t = ctx.meta.turning?.[pid];
   if (t) { t.state = null; t.seasons = 0; }
+  Director.crisis(ctx.meta);  // a house has risen: the breather follows
 }
 
 // --- the season's sequence ---------------------------------------------------------

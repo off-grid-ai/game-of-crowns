@@ -36,23 +36,63 @@ export function season(ctx, turn) {
   const { world, meta } = ctx;
   if (!world || !meta || meta.status !== "running") return;
   const d = (meta.director ??= { calm: 0, rest: 0, threat: null, pushedAt: -99, curve: [] });
+  d.from ??= { turn, ms: meta.elapsedMs ?? 0 };  // where the reign's clock and its seasons started, to pace the finale
   const peace = ctx.history?.[ctx.history.length - 1]?.peace ?? 1;
   const t = tension(world, meta, peace, ctx.usurper ?? "none");
   d.curve = [...(d.curve ?? []), { turn, t: Math.round(t * 100) / 100, threat: d.threat?.kind ?? null, level: d.threat?.level ?? 0 }].slice(-60);
   if (d.threat) grow(ctx, d, turn);
   else if (d.rest > 0) d.rest -= 1;
+  else if (meta.lastAct) finale(ctx, d, turn);
   else {
+    // The build-up: each act the realm stays quiet for less long before the next threat.
     d.calm = t < DIRECTOR.quietBelow ? d.calm + 1 : 0;
-    if (d.calm >= DIRECTOR.quietSeasons) raise(ctx, d, turn);
+    if (d.calm >= (DIRECTOR.quietByAct?.[actOf(meta)] ?? DIRECTOR.quietSeasons)) raise(ctx, d, turn);
   }
   pushback(ctx, d, turn, peace);
   chron.saveMeta(meta);
 }
 
+// The act of the reign (0-3) by its clock; a reign without a clock stays in the second.
+const actOf = (meta) => meta?.minutes ? Math.max(0, Math.min(3, Math.floor((meta.elapsedMs ?? 0) / (meta.minutes * 60000) * 4))) : 1;
+
+// After a crisis, a breather (tension in waves): while it lasts no house rises
+// (season.js mayRise) and no threat of the director's begins. The last act starts
+// no new one (crisis): once the breather it opened with is out, it builds to the end.
+export const resting = (meta) => (meta?.director?.rest ?? 0) > 0;
+
+// A crisis struck from elsewhere in the realm (a house rising, a story's march):
+// the breather that follows is the same one the director's own threats get.
+export function crisis(meta) {
+  if (!meta || meta.lastAct) return;
+  const d = (meta.director ??= { calm: 0, rest: 0, threat: null, pushedAt: -99, curve: [] });
+  d.rest = Math.max(d.rest ?? 0, DIRECTOR.breather);
+  d.calm = 0;
+  chron.saveMeta(meta);
+}
+
+// The last act's climax. A named story or pretender is the climax: the director
+// stays out of its way. Named only as the houses' ambitions, one threat rises now
+// and grows to land near the reign's end (finale.landAt), so the ending is a peak.
+function finale(ctx, d, turn) {
+  const named = ctx.meta.lastAct?.kind ?? ((ctx.usurper ?? "none") !== "none" ? "pretender" : "houses");
+  if (d.finaleDone || named !== "houses") return;
+  raise(ctx, d, turn, null, true);
+  d.finaleDone = !!d.threat;  // none possible this season: it tries again the next
+}
+
+// The finale's growth a season: what is left of it, over the seasons left before it lands.
+function paced(meta, d, turn, level, grow) {
+  const total = (meta.minutes ?? 0) * 60000;
+  const perTurn = ((meta.elapsedMs ?? 0) - (d.from?.ms ?? 0)) / Math.max(1, turn - (d.from?.turn ?? turn));
+  if (!total || !(perTurn > 0)) return grow;
+  const left = Math.max(1, Math.round((DIRECTOR.finale.landAt * total - meta.elapsedMs) / perTurn));
+  return Math.min(0.5, Math.max(grow * 0.5, (1 - level) / left));
+}
+
 // A threat rises: the kind the realm makes possible, at its place. A house that
 // envies the King (pushback) is the one whose host masses next: threats come
 // from the scheming houses, not from nowhere. want: a kind asked for (a test stage).
-export function raise(ctx, d, turn, want = null) {
+export function raise(ctx, d, turn, want = null, isFinale = false) {
   const { world, favourOf } = ctx;
   const crown = crownOf(world);
   const mine = world.cities.filter((c) => c.owner === crown?.id);
@@ -74,7 +114,7 @@ export function raise(ctx, d, turn, want = null) {
   const at = kind === "famine" ? big : border;
   const owner = world.players.find((p) => p.id === at.owner);
   d.envious = null;
-  d.threat = { kind, city: at.id, x: at.x, y: at.y, house: owner.id, houseName: houseFor(owner).name, townName: cityName(at.id), level: 0, n: 0, since: turn };
+  d.threat = { kind, city: at.id, x: at.x, y: at.y, house: owner.id, houseName: houseFor(owner).name, townName: cityName(at.id), level: 0, n: 0, since: turn, ...(isFinale ? { finale: true } : {}) };
   d.calm = 0;
   grow(ctx, d, turn);
 }
@@ -86,7 +126,7 @@ function grow(ctx, d, turn) {
   const spec = DIRECTOR.threats[th.kind];
   const at = world.cities.find((c) => c.id === th.city);
   if (!at) { d.threat = null; return; }
-  th.level = Math.min(1, th.level + spec.grow);
+  th.level = Math.min(1, th.level + (th.finale ? paced(ctx.meta, d, turn, th.level, spec.grow) : spec.grow));
   if (th.level >= 1 && turn > th.since) return breaks(ctx, d, turn);
   const stage = Math.min(spec.says.length - 1, Math.floor(th.level * spec.says.length));
   if (th.kind === "host") {
@@ -147,7 +187,7 @@ function breaks(ctx, d, turn) {
   record({ turn, kind: "rebellion", text: `${fill(spec.broke, th)}${cost ? `: ${cost}` : ""}.`, city: th.city });
   d.last = th.kind;
   d.threat = null;
-  d.rest = DIRECTOR.breather;
+  d.rest = th.finale ? 0 : DIRECTOR.breather;  // the finale is the end's own peak: no breather after it
 }
 
 // A decree given (routes_decree.js), weighed against the threat (data answers):
@@ -167,7 +207,7 @@ export function answered(meta, cmd, world, record) {
     record({ turn, kind: "court", text: `${fill(spec.passed, th)}.`, city: th.city });
     meta.director.last = th.kind;
     meta.director.threat = null;
-    meta.director.rest = DIRECTOR.breather;
+    meta.director.rest = meta.lastAct ? 0 : DIRECTOR.breather;
   };
   if (ans.ends) pass();
   else if (ans.ease) {

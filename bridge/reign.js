@@ -83,7 +83,9 @@ export function lastAct(ctx) {
   const threat = pretender ? `${houseFor(pretender).name}'s claim to the throne`
     : story && story.status === "running" ? story.title
     : (stakes?.s.north?.waves ?? 0) > 0 ? "the dead from the North" : "the houses' own ambitions";
-  meta.lastAct = { threat, turn: world?.turn ?? 0 };
+  // kind: what the climax is, so the director knows whether to stay out of its way (director.js finale).
+  const kind = pretender ? "pretender" : story && story.status === "running" ? "story" : (stakes?.s.north?.waves ?? 0) > 0 ? "north" : "houses";
+  meta.lastAct = { threat, kind, turn: world?.turn ?? 0 };
   chron.saveMeta(meta);
   record({ turn: world?.turn ?? 0, kind: "act", text: `The last act of the reign begins. What comes for the throne now: ${threat}.` });
 }
