@@ -122,6 +122,8 @@ professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pa
 
 ## Log
 
+- 2026-11-11 22:10: Mac approved docs/art/target/town-composition/town-a.jpg and town-b.jpg as THE town reference ("Let's use that as a reference. Let's go!"). Every town review is judged beside them.
+
 - 2026-11-11 21:00: Mac: "apply the same philosophy to everything… armoury, blacksmith, stables, mills, windmill all need to be there… if land is short, reduce the smaller houses… high quality towns… many aspects brought together, pieces interacting very well." Standing rule: a town is a composition. Landmarks and trades come first, then large and middle houses, then small houses as filler. Every building has work and life that ties it to the others and to the realm's state.
   - The town agent's scope is widened to whole-town composition: trades placed with sense, a land budget, AI meshes wired by data.
   - New agent on life at buildings: forge, stables, the grain chain (field → mill → granary → market), inn, square; reactions to war, levy, famine and feasts.
