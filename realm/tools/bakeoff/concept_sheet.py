@@ -1,5 +1,6 @@
 """Concept catalogue sheet: every concept PNG in a folder as a labelled grid, by group.
-   python3 concept_sheet.py <concepts dir> [out.jpg]   (needs Pillow)"""
+   python3 concept_sheet.py <concepts dir> [out.jpg] [group ...]   (needs Pillow)
+   Naming groups draws only those, e.g. concept_sheet.py <dir> <dir>/units.jpg Soldiers"""
 import os
 import sys
 
@@ -14,6 +15,9 @@ GROUPS = [
     ("Animals", ["cow", "ox", "horse", "pig", "sheep", "goat", "chicken", "dog"]),
     ("Farm", ["haystack", "pen", "well", "cart", "wagon", "crops", "trees"]),
     ("Props", ["barrels", "crates", "banner_pole", "anvil", "weapon_rack"]),
+    ("Soldiers", ["unit_knight", "unit_man_at_arms", "unit_axeman", "unit_warhammer", "unit_spearman", "unit_archer",
+                  "unit_crossbowman", "unit_heavy_cavalry", "unit_light_cavalry", "unit_war_elephant", "unit_cannon",
+                  "unit_general"]),
 ]
 CELL, COLS, PAD, HEAD = 300, 7, 8, 44
 try:
@@ -25,6 +29,8 @@ except OSError:
 known = {n for _, ns in GROUPS for n in ns}
 extra = sorted(f[:-4] for f in os.listdir(D) if f.endswith(".png") and f[:-4] not in known)
 groups = GROUPS + ([("Other", extra)] if extra else [])
+if len(sys.argv) > 3:
+    groups = [g for g in groups if g[0] in sys.argv[3:]]
 rows = sum(HEAD + -(-len(ns) // COLS) * (CELL + 30) for _, ns in groups)
 sheet = Image.new("RGB", (COLS * (CELL + PAD) + PAD, rows + PAD), (24, 24, 28))
 d = ImageDraw.Draw(sheet)
