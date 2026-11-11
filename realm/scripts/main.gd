@@ -371,7 +371,7 @@ func _ready() -> void:
 	title.began.connect(func(): story._intro_due = true)
 	# The launch screens play over the menu (in renders only with --splash).
 	var Splash := preload("res://scripts/splash.gd")
-	if (not _shot.has("path") or _shot.has("splash")) and Splash.any():
+	if (not _shot.has("path") or _shot.has("splash")) and Splash.any() and not OS.get_cmdline_user_args().has("--opening=v2"):  # v2: no launch screens before play
 		add_child(Splash.new())
 	# The menu stands alone: the game's interface hides behind it until a
 	# chronicle is open (and again whenever the menu is brought back).

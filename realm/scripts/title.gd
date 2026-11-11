@@ -614,7 +614,7 @@ func show_new() -> void:
 			st.add_theme_color_override("font_color", GOLD if k == _new_step else MUTED)
 		next.visible = _new_step < NEW_STEPS.size() - 1
 		next.text = "Next: its story" if _new_step == 0 else "Customise the realm"
-		begin.visible = _new_step >= 1
+		begin.visible = _new_step >= 1 or OS.get_cmdline_user_args().has("--opening=v2")  # v2: Begin from the first page, the rest at their defaults (Reigns, Frostpunk: no setup before play)
 		back.text = "Back" if _new_step > 0 else "Cancel"
 	for i in NEW_STEPS.size():
 		var st := Button.new()
