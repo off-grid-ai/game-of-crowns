@@ -63,3 +63,11 @@ the symptom; v2 stays the default until v3 equals or beats it on every line. Not
 - Hold the SS_Attack_3 exclusion (not committed).
 - Commit from today's bundled gate only what passes and doesn't bend the probe.
 - Start v3 stage 1 (prop by state) once the judge agrees.
+
+## Ruling (2026-11-11, Mac's product call via the judge)
+
+We don't compete on close-up realism: the camera caps at about roof height. So v3 is **stages 1-2 only**
+(props by state, posture), since empty hands and pops show at any height. **Turn-in-place and foot lock
+are dropped**: feet don't read from the roof. Children by offset pursuit was already dropped (95% on v2).
+Gate r2 judges v3 against v2; v3 becomes the default if it equals or beats v2 on every line. Crowds are
+judged at roof height from now on: busy, spread, each person with a visible job.
