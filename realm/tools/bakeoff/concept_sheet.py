@@ -18,6 +18,8 @@ GROUPS = [
     ("Soldiers", ["unit_knight", "unit_man_at_arms", "unit_axeman", "unit_warhammer", "unit_spearman", "unit_archer",
                   "unit_crossbowman", "unit_heavy_cavalry", "unit_light_cavalry", "unit_war_elephant", "unit_cannon",
                   "unit_general"]),
+    ("Roadside", ["milestone", "wayside_shrine", "gallows", "toll_gate", "inn_sign", "timber_bridge", "stone_bridge",
+                  "fingerpost", "horse_trough"]),
 ]
 CELL, COLS, PAD, HEAD = 300, 7, 8, 44
 try:

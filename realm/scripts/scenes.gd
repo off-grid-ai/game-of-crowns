@@ -255,7 +255,8 @@ func _route(from: Vector3, to: Vector3) -> PackedVector3Array:
 
 
 func ground(p: Vector3) -> Vector3:
-	return Vector3(p.x, terrain.height_at(p.x, p.z), p.z)
+	var rs := get_parent().get_node_or_null("Roadside")  # a bridge's deck, where one stands (roadside.gd)
+	return Vector3(p.x, maxf(terrain.height_at(p.x, p.z), rs.deck_at(p.x, p.z) if rs else -INF), p.z)
 
 
 ## The road a traveller's PathFollow3D rides, with its height taken from the

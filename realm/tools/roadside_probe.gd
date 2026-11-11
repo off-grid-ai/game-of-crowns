@@ -132,6 +132,41 @@ func _initialize() -> void:
 		if int(made.get(kind, 0)) == 0:
 			print("ROADSIDE FAIL no %s pieces raised" % kind)
 			_bad += 1
+	_m = m
+	_rs = rs
+	process_frame.connect(_beasts, CONNECT_ONE_SHOT)  # the beasts once the tree runs: skins resolve only inside it
+
+
+var _m: Node
+var _rs: Node
+
+
+func _beasts() -> void:
+	var m := _m
+	var rs := _rs
+	# The beasts as the game fits them (each vertex carried by its bones at rest), checked against
+	# their skeletons as they stand in the scene: the lowest bone (a hoof) on the ground, the bones'
+	# span no longer than the beast. (Godot's own posed bake needs a renderer; headless has none.)
+	for kind in ["cow", "sheep", "pig"]:
+		var fit: Array = rs.beast_fit(kind, Data.num("roadside", "animals.%s" % kind, 1.5))
+		var a: Node3D = rs._animal(kind, RandomNumberGenerator.new())
+		if a == null or float(fit[0]) <= 0.0:
+			print("ROADSIDE FAIL %s could not be measured" % kind)
+			_bad += 1
+			continue
+		m.add_child(a)
+		var skel: Skeleton3D = a.find_children("*", "Skeleton3D", true, false)[0]
+		var lo := INF
+		var span := Vector2(INF, -INF)
+		for b in skel.get_bone_count():
+			var p: Vector3 = skel.global_transform * skel.get_bone_global_rest(b).origin
+			lo = minf(lo, p.y)
+			span = Vector2(minf(span.x, p.z), maxf(span.y, p.z))
+		var want := Data.num("roadside", "animals.%s" % kind, 1.5)
+		print("ROADSIDE %s: scale %.4f, lowest bone %.3f m off the ground, bones span %.2f m of its %.1f m" % [kind, fit[0], lo / Real.S, absf(span.y - span.x) / Real.S, want])
+		if absf(lo / Real.S) > 0.25:
+			print("ROADSIDE FAIL %s floats or sinks" % kind)
+			_bad += 1
 	print("ROADSIDE %s" % ("PASS" if _bad == 0 else "FAIL (%d)" % _bad))
 	m.free()
 	quit(1 if _bad > 0 else 0)

@@ -150,6 +150,7 @@ func _lay() -> void:
 	if _root:
 		_root.queue_free()
 	_alive = []
+	_bridges = []
 	roads.clear_tracks("roadside")
 	_root = Node3D.new()
 	_root.name = "Sites"
@@ -321,6 +322,7 @@ func _bridge(node: Node3D, s: Dictionary, k: Dictionary) -> void:
 	var a0 := -span * 0.5 + step * 0.5
 	var h := maxf(_world(s, -span * 0.5, 0).y, _world(s, span * 0.5, 0).y) + float(k.get("lift", 0.03))
 	s["deck"] = h
+	_bridges.append(s)
 	var yaw := atan2((s["dir"] as Vector2).x, (s["dir"] as Vector2).y)
 	var rng := RandomNumberGenerator.new()
 	for i in n:
@@ -434,10 +436,9 @@ func _hamlet(node: Node3D, s: Dictionary, k: Dictionary, rng: RandomNumberGenera
 
 ## How high a bridge's deck stands at a world spot, or -INF where there is none: for the walkers'
 ## ground (scenes.gd ground()) to take, so travellers cross over the deck and not through the river.
+var _bridges: Array = []  # the bridge sites raised, for deck_at (asked at every step of a traveller's road)
 func deck_at(x: float, z: float) -> float:
-	for s in _sites:
-		if s["kind"] != "bridge" or not s.has("deck"):
-			continue
+	for s in _bridges:
 		var rel := Vector2(x, z) - (s["road"] as Vector2)
 		var span := float(s["width"]) * float(_kind(s).get("span", 1.6)) * 0.5 + float(_kind(s).get("apron", 0.25))
 		if absf(rel.dot(s["dir"])) <= span and absf(rel.dot(s["side"])) <= float(_kind(s).get("half_width", 0.3)):
@@ -588,20 +589,23 @@ func _hold(person: Node3D, component: String) -> void:
 
 
 ## A beast of the farm (the catalogue's cow, sheep, pig: Quaternius, animated), sized to its true
-## length in metres (roadside.json animals) and set going on its idle or its walk.
-static var _beast_scale := {}
+## length in metres (roadside.json animals) and stood on the ground, both from its posed mesh
+## (beast_fit), and set going on its idle or its walk.
+static var _beast_fit := {}  # kind -> [scale, lift]: what fits it to its length and stands its hooves on y = 0
 func _animal(kind: String, rng: RandomNumberGenerator, walking := false) -> Node3D:
 	var path := Real.path_of(kind)
 	if path == "" or not ResourceLoader.exists(path):
 		return null
+	if not _beast_fit.has(kind):
+		_beast_fit[kind] = beast_fit(kind, Data.num("roadside", "animals.%s" % kind, 1.5))
+	var fit: Array = _beast_fit[kind]
+	if float(fit[0]) <= 0.0:
+		return null
 	var model: Node3D = (load(path) as PackedScene).instantiate()
-	if not _beast_scale.has(kind):
-		var box := Real._bounds(model)
-		var longest := maxf(box.size.x, maxf(box.size.y, box.size.z))
-		_beast_scale[kind] = 0.0 if longest <= 0.0 else Data.num("roadside", "animals.%s" % kind, 1.5) * Real.S / longest
 	var root := Node3D.new()
 	root.name = kind.capitalize()
-	model.scale = Vector3.ONE * float(_beast_scale[kind])
+	model.scale = Vector3.ONE * float(fit[0])
+	model.position.y = float(fit[1])
 	model.rotation.y = rng.randf_range(-0.3, 0.3)
 	root.add_child(model)
 	for g in model.find_children("*", "GeometryInstance3D", true, false):
@@ -618,6 +622,70 @@ func _animal(kind: String, rng: RandomNumberGenerator, walking := false) -> Node
 				break
 		preload("res://scripts/anim_lod.gd").add(anim)
 	return root
+
+
+## [scale, lift] for an animated beast: its skinned meshes measured as they stand at rest, each
+## vertex carried by its bones (skin bind poses times the skeleton's rest), not by their bind-pose
+## boxes, which the Quaternius rigs' armature turn and hundredfold scale throw out. Scale fits its
+## longest side to `metres`; lift stands its lowest point on the ground. Needs no scene tree.
+static func beast_fit(kind: String, metres: float) -> Array:
+	var path := Real.path_of(kind)
+	if path == "" or not ResourceLoader.exists(path):
+		return [0.0, 0.0]
+	var model: Node3D = (load(path) as PackedScene).instantiate()
+	var lo := Vector3.INF
+	var hi := -Vector3.INF
+	for mi in model.find_children("*", "MeshInstance3D", true, false):
+		var m := mi as MeshInstance3D
+		if m.mesh == null:
+			continue
+		var xf := _rel(model, m)
+		var skel := m.get_node_or_null(m.skeleton) as Skeleton3D if m.skin else null
+		var bones: Array[Transform3D] = []
+		if skel:
+			var sx := _rel(model, skel)
+			for b in m.skin.get_bind_count():
+				var bi := m.skin.get_bind_bone(b)
+				if bi < 0:
+					bi = skel.find_bone(m.skin.get_bind_name(b))
+				bones.append(sx * (skel.get_bone_global_rest(bi) if bi >= 0 else Transform3D.IDENTITY) * m.skin.get_bind_pose(b))
+		for sf in m.mesh.get_surface_count():
+			var a := m.mesh.surface_get_arrays(sf)
+			var verts: PackedVector3Array = a[Mesh.ARRAY_VERTEX]
+			var bi: Variant = a[Mesh.ARRAY_BONES]
+			var wt: Variant = a[Mesh.ARRAY_WEIGHTS]
+			var per := 0 if bones.is_empty() or bi == null or wt == null else (bi as PackedInt32Array).size() / maxi(verts.size(), 1)
+			for v in verts.size():
+				var p: Vector3
+				if per > 0:
+					p = Vector3.ZERO
+					for k in per:
+						var w: float = (wt as PackedFloat32Array)[v * per + k]
+						var bone: int = (bi as PackedInt32Array)[v * per + k]
+						if w > 0.0 and bone < bones.size():
+							p += (bones[bone] * verts[v]) * w
+				else:
+					p = xf * verts[v]
+				lo = lo.min(p)
+				hi = hi.max(p)
+	model.free()
+	var size := hi - lo
+	var longest := maxf(size.x, size.z)
+	if lo == Vector3.INF or longest <= 0.0:
+		return [0.0, 0.0]
+	var k := metres * Real.S / longest
+	return [k, -lo.y * k]
+
+
+## Where a node stands within `top` (its transforms multiplied up), with no scene tree needed.
+static func _rel(top: Node, n: Node) -> Transform3D:
+	var xf := Transform3D.IDENTITY
+	var p: Node = n
+	while p != null and p != top:
+		if p is Node3D:
+			xf = (p as Node3D).transform * xf
+		p = p.get_parent()
+	return xf
 
 
 # --- travellers to and from the roadside -----------------------------------------------------------
