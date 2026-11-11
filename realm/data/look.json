@@ -1,0 +1,22 @@
+{
+ "_": "The one look (PLAN.md Phase 2 item 1; art-direction-report.md: Foundation's town lit like Tiny Glade; target art-direction/concept-town-repaint.png). look.gd reads it. on: the switch (or --look=one); off keeps today's light. sun_elevation: degrees above the horizon (25-35: long soft shadows). sun_color / horizon_color: the warm key (about 4500 K) at height and near the horizon. sky_contribution: how much of the shade's light comes from the sky (the rest is ambient_color: the cool blue fill in the shadows). lut: a colour grade (empty: none; today's golden-hour LUT only browns). saturation, contrast: the gentle S-curve after AgX. exposure. haze_color: the warm distance haze. kit_tints: the free kit's materials re-graded by name (a multiply on their colour: earthy terracotta roofs, honey stone, darker oak, deeper leaves; kit.py's unify table).",
+ "on": false,
+ "sun_elevation": 30.0,
+ "sun_color": [1.0, 0.86, 0.68],
+ "horizon_color": [1.0, 0.7, 0.48],
+ "sky_contribution": 0.7,
+ "ambient_color": [0.5, 0.6, 0.88],
+ "lut": "",
+ "saturation": 1.1,
+ "contrast": 1.12,
+ "exposure": 1.1,
+ "haze_color": [0.96, 0.86, 0.7],
+ "kit_tints": {
+  "MI_RoundTiles": [0.86, 0.66, 0.56],
+  "MI_UnevenBrick": [0.96, 0.86, 0.72],
+  "MI_WoodTrim": [0.62, 0.5, 0.42],
+  "MI_Plaster": [1.0, 0.94, 0.84],
+  "Leaves_NormalTree": [0.8, 0.86, 0.6],
+  "Leaves_Pine": [0.72, 0.8, 0.64]
+ }
+}
