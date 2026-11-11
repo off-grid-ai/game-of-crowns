@@ -366,13 +366,13 @@ static func _template(name: String) -> Dictionary:
 ## the material. Distances in game units from the camera.
 # At the roof-height floor a roof edge or a tower 1-3 units off the lens fills the view; the
 # distances are data (realm/data/camera.json near_fade; docs/TUNING.md).
-static var NEAR_GONE: float = preload("res://scripts/camera_rig.gd").knob("near_fade.buildings.gone", 1.2)
-static var NEAR_SOLID: float = preload("res://scripts/camera_rig.gd").knob("near_fade.buildings.solid", 2.6)
-static var TREE_GONE: float = preload("res://scripts/camera_rig.gd").knob("near_fade.trees.gone", 1.5)
-static var TREE_SOLID: float = preload("res://scripts/camera_rig.gd").knob("near_fade.trees.solid", 3.0)
+static var NEAR_GONE: float = preload("res://scripts/camera_rig.gd").fade_knob("near_fade.buildings.gone", 1.2)
+static var NEAR_SOLID: float = preload("res://scripts/camera_rig.gd").fade_knob("near_fade.buildings.solid", 2.6)
+static var TREE_GONE: float = preload("res://scripts/camera_rig.gd").fade_knob("near_fade.trees.gone", 1.5)
+static var TREE_SOLID: float = preload("res://scripts/camera_rig.gd").fade_knob("near_fade.trees.solid", 3.0)
 # A castle's walls are wide and tall: at roof height they would fill the foreground, so they go sooner.
-static var CASTLE_GONE: float = preload("res://scripts/camera_rig.gd").knob("near_fade.castle.gone", 1.2)
-static var CASTLE_SOLID: float = preload("res://scripts/camera_rig.gd").knob("near_fade.castle.solid", 2.6)
+static var CASTLE_GONE: float = preload("res://scripts/camera_rig.gd").fade_knob("near_fade.castle.gone", 1.2)
+static var CASTLE_SOLID: float = preload("res://scripts/camera_rig.gd").fade_knob("near_fade.castle.solid", 2.6)
 
 
 static func fade_near(mat: BaseMaterial3D, gone := -1.0, solid := -1.0) -> void:

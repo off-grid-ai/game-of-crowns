@@ -87,9 +87,8 @@ func _team_mat(src: BaseMaterial3D, amount: float) -> ShaderMaterial:
 	m.set_shader_parameter("ordinary_share", float(paint.get("ordinary_share", 0.5)))
 	m.set_shader_parameter("paint_sat", float(paint.get("saturation", 0.8)))
 	m.set_shader_parameter("paint_warm", _rgb(paint.get("warm"), Color(1.0, 0.93, 0.84)))
-	var nf: Dictionary = CameraRig.KNOBS.get("near_fade", {}).get("buildings", {}) if CameraRig.KNOBS.get("near_fade") is Dictionary else {}
-	m.set_shader_parameter("fade_gone", float(nf.get("gone", 1.2)))
-	m.set_shader_parameter("fade_solid", float(nf.get("solid", 2.6)))
+	m.set_shader_parameter("fade_gone", CameraRig.fade_knob("near_fade.buildings.gone", 1.2))  # clarity: only what touches the lens
+	m.set_shader_parameter("fade_solid", CameraRig.fade_knob("near_fade.buildings.solid", 2.6))
 	_team_of[src] = m
 	return m
 

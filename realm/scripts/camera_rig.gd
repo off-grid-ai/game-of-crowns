@@ -35,6 +35,23 @@ static func knob(path: String, fallback: float) -> float:
 		v = v.get(k) if v is Dictionary else null
 	return float(v) if v != null else fallback
 var min_distance := knob("floor", 6.0)
+
+
+## Clarity (camera.json clarity; --clarity=old for the before shot): the lens keeps its line of sight over the
+## roofs, and nothing near it ghosts. The one switch the look (look.gd), the near fade (realistic.gd,
+## team_colour.gd) and this rig read.
+static func clarity() -> bool:
+	var args := OS.get_cmdline_user_args()
+	if args.has("--clarity=old"):
+		return false
+	return args.has("--clarity=on") or knob("clarity.on", 1.0) > 0.5
+
+
+## A near-fade distance (near_fade.<kind>.gone|solid): with clarity, only what touches the lens dissolves.
+static func fade_knob(path: String, fallback: float) -> float:
+	if clarity():
+		return knob("clarity.fade." + path.get_slice(".", path.get_slice_count(".") - 1), fallback)
+	return knob(path, fallback)
 const EYE := 0.2  # eye height, about 1.7 m
 var max_distance := 260.0
 
@@ -372,6 +389,20 @@ var _fix := Vector3.ZERO  # the lens's own correction (roofs, crowns), eased tow
 const NEAREST := 0.35  # the lens comes in no closer than this share of its distance to what it looks at
 const STEEPEST := 58.0  # degrees below the horizon the lens may ever look
 const GUARD := 4.5  # camera distance under which the lens looks out for buildings
+static var CLEAR: bool = clarity()  # read once: the lens keeps its sight over the roofs
+var _lift := 0.0  # radians the lens is tipped up to see over the roofs (eased)
+
+
+## The lens at `pos` tipped up about what it looks at by `up` radians, its arm's length kept, never steeper than STEEPEST.
+func _tipped(look: Vector3, pos: Vector3, up: float) -> Vector3:
+	if up <= 0.0:
+		return pos
+	var arm := pos - look
+	var flat := Vector2(arm.x, arm.z)
+	var pitch := minf(atan2(arm.y, flat.length()) + up, deg_to_rad(STEEPEST))
+	var dir := flat.normalized() if flat.length() > 0.0001 else Vector2(0, 1)
+	var l := arm.length()
+	return look + Vector3(dir.x * cos(pitch) * l, sin(pitch) * l, dir.y * cos(pitch) * l)
 const LENS_SPEED := 2.5  # the most the lens's correction moves, in camera distances a second
 const LENS_REACH := 0.05  # the lens's sweep, as a share of its arm: how early a roof is felt
 const LENS_EASE := 10.0  # how quickly the lens's own corrections (roofs, crowns, the ground's rise) settle, per second
@@ -626,7 +657,20 @@ func apply() -> void:
 	var over := _prop_top(pos + need)
 	if over > -INF:
 		need.y = maxf(need.y, over + 0.05 - pos.y)
-	if distance <= GUARD:
+	if CLEAR:
+		# Clarity: first the lens tips up until its line to what it looks at clears the roofs (Anno 1800, Age of
+		# Empires IV), eased; only if that isn't enough does it come in short of the building, at any distance.
+		var want := 0.0
+		var lstep := deg_to_rad(knob("clarity.liftStep", 2.5))
+		for k in int(knob("clarity.liftTries", 14)):
+			var tipped := _tipped(look, pos + need, want)
+			if _clear(look, tipped).distance_squared_to(tipped) < 0.0001:
+				break
+			want += lstep
+		_lift = lerpf(_lift, want, 1.0 - exp(-get_process_delta_time() * knob("clarity.liftEase", 4.0)))
+		var lifted := _tipped(look, pos + need, _lift)
+		need = _clear(look, lifted) - pos
+	elif distance <= GUARD:
 		# Faded in over the last unit before GUARD, so it never starts or stops at a line.
 		var guard := 1.0 - smoothstep(GUARD - 1.0, GUARD, distance)
 		need = need.lerp(_clear(look, pos + need) - pos, guard)

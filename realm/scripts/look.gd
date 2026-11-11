@@ -10,6 +10,9 @@ const SUN_HEIGHT := 35.0  # degrees above the horizon: a warm morning sun, shado
 # The one look (data/look.json; PLAN.md Phase 2 item 1): warm key, cool shade, an earthy kit. Off keeps today's.
 static var LOOK: Dictionary = _read_look()
 var _tinted := {}  # a kit material -> its re-graded copy, made once
+## Clarity (camera_rig.clarity: data/camera.json clarity.on, --clarity=old for the before shot): no near blur, a
+## faint far blur only past the town, the haze thin at the town's zoom, the town in its true colours (look.json clarity).
+var _clear: bool = preload("res://scripts/camera_rig.gd").clarity()
 var _haze := 0.006  # the volumetric haze's density at town zoom (look.json haze.volumetric with the one look)
 var _fill: DirectionalLight3D  # the soft light over the camera's shoulder (look.json fill), or null
 var _fill_energy := 0.0
@@ -55,9 +58,9 @@ func _ready() -> void:
 		# The one look: no brown LUT; a warm key against a cool shade, and a gentle S-curve after AgX.
 		var lut := String(LOOK.get("lut", ""))
 		env.adjustment_color_correction = load(lut) if lut != "" and ResourceLoader.exists(lut) else null
-		env.adjustment_saturation = float(LOOK.get("saturation", 1.1))
-		env.adjustment_contrast = float(LOOK.get("contrast", 1.12))
-		sky3d.sky.sun_light_color = _rgb("sun_color", Color(1.0, 0.86, 0.68))
+		env.adjustment_saturation = float(_clarity("saturation", LOOK.get("saturation", 1.1)))
+		env.adjustment_contrast = float(_clarity("contrast", LOOK.get("contrast", 1.12)))
+		sky3d.sky.sun_light_color = _rgb_of(_clarity("sun_color", null), _rgb("sun_color", Color(1.0, 0.86, 0.68)))
 		sky3d.sky.sun_horizon_light_color = _rgb("horizon_color", Color(1.0, 0.7, 0.48))
 		sky3d.sky_contribution = float(LOOK.get("sky_contribution", 0.7))
 		env.ambient_light_color = _rgb("ambient_color", Color(0.5, 0.6, 0.88))
@@ -93,7 +96,7 @@ func _ready() -> void:
 	# toward the sun, so far hills fall back in warm light.
 	env.volumetric_fog_enabled = true
 	env.volumetric_fog_density = 0.006
-	env.volumetric_fog_albedo = _rgb("haze_color", Color(0.95, 0.86, 0.72)) if look_one else Color(0.95, 0.86, 0.72)
+	env.volumetric_fog_albedo = _rgb_of(_clarity("haze_color", null), _rgb("haze_color", Color(0.95, 0.86, 0.72))) if look_one else Color(0.95, 0.86, 0.72)
 	if look_one:
 		# Soft contact shadows and bounced light (Tiny Glade's soft edges), and a gentle haze for depth.
 		var ao: Dictionary = LOOK.get("ssao", {})
@@ -104,7 +107,7 @@ func _ready() -> void:
 		env.ssil_radius = float(il.get("radius", 4.0))
 		env.ssil_intensity = float(il.get("intensity", 1.0))
 		env.fog_density = float((LOOK.get("haze", {}) as Dictionary).get("fog", 0.0016))
-		env.fog_light_color = _rgb("haze_color", Color(0.96, 0.86, 0.7))
+		env.fog_light_color = _rgb_of(_clarity("haze_color", null), _rgb("haze_color", Color(0.96, 0.86, 0.7)))
 	env.volumetric_fog_anisotropy = 0.55
 	env.volumetric_fog_length = 160.0
 	env.volumetric_fog_detail_spread = 2.5
@@ -164,6 +167,12 @@ func _aim_fill() -> void:
 	_fill.light_energy = _fill_energy * day
 
 
+## A clarity value from look.json clarity when clarity is on, else the fallback.
+func _clarity(key: String, fallback: Variant) -> Variant:
+	var c: Variant = LOOK.get("clarity", {})
+	return (c as Dictionary).get(key, fallback) if _clear and c is Dictionary else fallback
+
+
 static func _rgb_of(a, fallback: Color) -> Color:
 	return Color(float(a[0]), float(a[1]), float(a[2])) if a is Array and (a as Array).size() >= 3 else fallback
 
@@ -179,16 +188,17 @@ func _process(_delta: float) -> void:
 	# Smooth graphics (Settings) go without the blur: a full-screen pass every frame.
 	var town := 0.0 if main.get("graphics_smooth") else 1.0 - smoothstep(18.0, 30.0, d)
 	_attrs.dof_blur_far_enabled = town > 0.0
-	_attrs.dof_blur_near_enabled = town > 0.0
-	_attrs.dof_blur_far_distance = d * 1.25
+	_attrs.dof_blur_near_enabled = town > 0.0 and not _clear  # clarity: never a smeared foreground
+	_attrs.dof_blur_far_distance = d * (float(_clarity("farBlurFrom", 1.8)) if _clear else 1.25)
 	_attrs.dof_blur_far_transition = d * 1.6
 	_attrs.dof_blur_near_distance = d * 0.55
 	_attrs.dof_blur_near_transition = d * 0.35
-	_attrs.dof_blur_amount = 0.05 * town
+	_attrs.dof_blur_amount = (float(_clarity("farBlur", 0.02)) if _clear else 0.05) * town
 	# The haze is for the far hills seen across the land; from high over the
 	# realm the camera looks down through a hundred units of it and the whole
 	# map goes grey, so it thins away as the camera pulls back.
-	main.env.volumetric_fog_density = _haze * (1.0 - smoothstep(30.0, 70.0, d))
+	var near := lerpf(float(_clarity("hazeTown", 0.2)), 1.0, smoothstep(0.0, float(_clarity("hazeFull", 30.0)), d)) if _clear else 1.0
+	main.env.volumetric_fog_density = _haze * near * (1.0 - smoothstep(30.0, 70.0, d))
 
 
 ## The kit's materials, re-graded by name (data/look.json kit_tints): a copy of each with its colour

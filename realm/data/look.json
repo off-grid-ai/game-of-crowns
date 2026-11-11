@@ -188,5 +188,16 @@
     0.84
    ]
   }
- }
+ },
+  "clarity": {
+    "_": "With the camera's clarity on (data/camera.json clarity.on; --clarity=old for the before shot): the town seen in its true colours at its own zoom, not washed orange (Mac, 2026-11-12; art target 01-town). Over the one look's values: saturation, contrast, sun_color, haze_color (the haze's and the depth fog's light). hazeTown: the volumetric haze's share of its density at the closest zoom, rising to all of it by hazeFull (camera distance). No near blur at all; the far blur only beyond farBlurFrom camera-distances (past the town's far edge), at farBlur strength.",
+    "saturation": 1.12,
+    "contrast": 1.14,
+    "sun_color": [1.0, 0.94, 0.86],
+    "haze_color": [0.86, 0.9, 0.96],
+    "hazeTown": 0.2,
+    "hazeFull": 30.0,
+    "farBlurFrom": 1.8,
+    "farBlur": 0.02
+  }
 }

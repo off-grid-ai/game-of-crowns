@@ -224,3 +224,8 @@ Switches (`--name`) go after `--` on the game's command line.
 ## Animals and bodies at rest (NPC perf)
 - What each farm beast does standing about (a cow grazes, a pig roots, a chicken pecks), how often and how many times in a row; how far a head comes down and how it chews or pecks: `realm/data/animals.json`: `kinds.<kind>.life`, `.derive.*`; `realm/tools/animals_check.gd` checks every kind. How often a beast's next move is a different one, and how soon a horse that was walked or led takes up grazing again: `realm/data/animals.json`: `change`, `busyRetry`.
 - Kneeling and sitting on a body's own knees: `realm/data/people.json`: `feet.low` (switch), `feet.lowAlso` (more moves), `feet.lowExtra` (metres more for a body by name); standing moves (crouches, pushes) raised on a body's own legs: `feet.bodyMoves`.
+
+## Clarity: the player always sees clearly what he looks at (Mac, 2026-11-12)
+- On or off (`clarity.on`; `--clarity=old` for the before shot): `realm/data/camera.json`.
+- How the lens keeps its sight over the roofs (tips up `clarity.liftStep` degrees at a time, up to `liftTries`, eased at `liftEase`), and what still dissolves at the lens (`clarity.fade.gone`, `solid`; the old wide ghosting is `near_fade`): `realm/data/camera.json`.
+- The town's colours at its own zoom (`clarity.saturation`, `contrast`, `sun_color`, `haze_color`), the haze's share at town zoom and where it's whole (`clarity.hazeTown`, `hazeFull`), the faint far blur only past the town (`clarity.farBlurFrom`, `farBlur`; never a near blur): `realm/data/look.json`.
