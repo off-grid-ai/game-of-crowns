@@ -46,6 +46,8 @@
     "tree_pine": { "kind": "woods", "variants": [ { "model": "realistic/pines" } ] },
     "tree_oak": { "kind": "woods", "variants": [ { "model": "realistic/oak_trees_pack" } ] },
     "bush": { "kind": "woods", "variants": [ { "model": "realistic/bush_models_pack" } ] },
+    "hedge": { "kind": "woods", "variants": [ { "model": "nature/Plant_1.gltf" } ] },
+    "hedge_painted": { "kind": "woods", "variants": [ { "model": "nature/Bush_Common.gltf" } ] },
     "crop_wheat": { "kind": "crop", "variants": [ { "model": "crops/wheat" } ] },
     "crop_barley": { "kind": "crop", "variants": [ { "model": "crops/wheat" } ] },
     "crop_flax": { "kind": "crop", "variants": [ { "model": "nature/Grass_Wispy_Tall.gltf" } ] },

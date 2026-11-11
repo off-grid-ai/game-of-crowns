@@ -14,6 +14,10 @@ const UV_SCALE := [0.8, 0.6, 0.6, 0.32, 1.0, 0.8, 0.72, 0.72]  # a game unit is 
 const TINT := [Color(0.95, 1.0, 0.9), Color.WHITE, Color.WHITE, Color(0.92, 0.94, 0.97), Color(0.9, 0.9, 0.88), Color.WHITE, Color(0.74, 0.71, 0.66), Color.WHITE]  # the trodden earth a dry grey-brown, a little darker than a beach (warmer and the grade turns it orange)
 
 var land: Terrain3D
+const Data := preload("res://scripts/data.gd")
+## The painted ground (realm/data/ground.json painted, or --ground=painted): each
+## layer's tint and scale from data, a wider beach, no surf. Off, today's ground.
+static var PAINTED: bool = OS.get_cmdline_user_args().has("--ground=painted") or (bool(Data.value("ground", "painted", false)) and not OS.get_cmdline_user_args().has("--ground=photo"))
 
 
 func build(terrain: Node3D, ground_layer: int) -> void:
@@ -38,6 +42,11 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 		ta.normal_texture = load("res://assets/ground/packed/%s-normal-rough.png" % file)
 		ta.uv_scale = UV_SCALE[i]
 		ta.albedo_color = TINT[i]
+		if PAINTED:
+			var tint: Array = Data.value("ground", "layers.%s.tint" % LAYERS[i], [])
+			if tint.size() == 3:
+				ta.albedo_color = Color(float(tint[0]), float(tint[1]), float(tint[2]))
+			ta.uv_scale = Data.num("ground", "layers.%s.scale" % LAYERS[i], UV_SCALE[i])
 		# Terrain3D's detiling turns and shifts each tile so the repeat never shows.
 		if "detiling_rotation" in ta:
 			ta.set("detiling_rotation", 0.3)
@@ -58,6 +67,11 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 	# blended in with distance so the tiling never shows.
 	mat.projection_enabled = true
 	mat.macro_variation_enabled = true
+	if PAINTED:
+		for k in [["a", "macro_variation1"], ["b", "macro_variation2"]]:
+			var c: Array = Data.value("ground", "macro." + String(k[0]), [])
+			if c.size() == 3:
+				mat.set_shader_param(String(k[1]), Color(float(c[0]), float(c[1]), float(c[2])))
 	mat.dual_scaling_enabled = true
 	mat.set_shader_param("macro_variation1", Color(0.78, 0.9, 0.7))  # lusher hollows
 	mat.set_shader_param("macro_variation2", Color(1.0, 0.86, 0.7))  # drier, sun-burnt rises
@@ -103,6 +117,9 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 	land.data.import_images([heights, control, null], Vector3.ZERO, 0.0, 1.0)
 
 
+static var _beach_top: float = Data.num("ground", "beach.top", 0.02) if PAINTED else 0.02
+
+
 ## The ground for an eroded heightmap, from the land itself rather than the
 ## coarse tile grid: grass (rock on cliffs by the auto shader), forest floor in
 ## forest tiles, sand at the waterline and below, snow on the high peaks.
@@ -141,7 +158,7 @@ func _control_from_land(terrain: Node3D) -> Image:
 		for x in w:
 			var y := hm.get_pixel(x, z).r
 			var v: float
-			var sand := smoothstep(0.02, -0.12, y)  # a narrow beach at the waterline, sand on the sea floor
+			var sand := smoothstep(_beach_top, -0.12, y)  # a beach at the waterline (wider when painted), sand on the sea floor
 			if sand > 0.02:
 				v = over.call(2, sand)
 			elif y > 7.5:

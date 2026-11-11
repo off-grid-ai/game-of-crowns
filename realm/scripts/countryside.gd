@@ -54,7 +54,8 @@ func _update(cities: Array) -> void:
 	if towns == null:
 		towns = get_parent().get("towns")
 	if _bush == null:
-		_bush = preload("res://scripts/house_builder.gd").new().bake_path("res://assets/nature/Plant_1.gltf")
+		# The hedgerows' bush (catalogue hedge; the painted ground's fuller hedge_painted, realm/data/ground.json).
+		_bush = preload("res://scripts/house_builder.gd").new().bake_path(Real.path_of("hedge_painted" if preload("res://scripts/land3d.gd").PAINTED else "hedge"))
 		for t in ["CommonTree_2", "CommonTree_4"]:
 			_fruit.append(preload("res://scripts/house_builder.gd").new().bake_path("res://assets/nature/%s.gltf" % t))
 	var realm := _realm_now()

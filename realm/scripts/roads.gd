@@ -8,6 +8,9 @@ const TINT := Color(0.66, 0.62, 0.58)
 const WIDTH := 0.26
 
 const KINGS_TINT := Color(0.6, 0.55, 0.5)
+const Land3D := preload("res://scripts/land3d.gd")  # PAINTED: the painted ground (realm/data/ground.json)
+const Data := preload("res://scripts/data.gd")
+var GRASS: String = "res://assets/ground/grass-albedo.jpg"  # a verge's grass
 
 var terrain: Node3D
 var _signature := ""
@@ -442,4 +445,16 @@ func _segment(a: Vector3, b: Vector3, parent: Node3D = null, width := WIDTH, tin
 			continue
 		var len := Vector2(q.x - p.x, q.z - p.z).length() + width
 		_remember(owner, p, q, width * 0.5)
-		terrain.paint(parent if parent else self, terrain.tiled(TEX, 2 if width > WIDTH else 1, roundi(len / width), "sides"), Vector3(c.x, (p.y + q.y) / 2.0, c.z), Vector2(width, len), atan2(q.x - p.x, q.z - p.z), tint, absf(p.y - q.y) + 3.0, 100.0 if width > WIDTH * 0.8 else 40.0)
+		var at := Vector3(c.x, (p.y + q.y) / 2.0, c.z)
+		var yaw := atan2(q.x - p.x, q.z - p.z)
+		var fade := 100.0 if width > WIDTH * 0.8 else 40.0
+		if Land3D.PAINTED:
+			# The painted ground (realm/data/ground.json roads): a soft grass verge either side, under the track,
+			# so it reads as a worn way through the grass (Foundation, Tiny Glade); the track itself warmer.
+			var vt: Array = Data.value("ground", "roads.vergeTint", [0.82, 0.86, 0.55, 0.85])
+			var verge: Decal = terrain.paint(parent if parent else self, terrain.tiled(GRASS, 2, roundi(len / width), "sides"), at, Vector2(width * Data.num("ground", "roads.verge", 2.4), len), yaw, Color(float(vt[0]), float(vt[1]), float(vt[2]), float(vt[3]) if vt.size() > 3 else 1.0), absf(p.y - q.y) + 3.0, fade)
+			verge.sorting_offset = -1.0  # under the track
+			var rt: Array = Data.value("ground", "roads.tint", [])
+			if rt.size() == 3:
+				tint = Color(float(rt[0]), float(rt[1]), float(rt[2])) * Color(tint.r / TINT.r, tint.g / TINT.g, tint.b / TINT.b)  # a king's road keeps its own shade, warmed the same
+		terrain.paint(parent if parent else self, terrain.tiled(TEX, 2 if width > WIDTH else 1, roundi(len / width), "sides"), at, Vector2(width, len), yaw, tint, absf(p.y - q.y) + 3.0, fade)

@@ -58,6 +58,11 @@ Switches (`--name`) go after `--` on the game's command line.
 - Which trees the woods grow: `realm/data/assets.json`: `woods.set` (`pack`, the realistic packs, today; `kit`, Quaternius' painted trees); `--trees=kit` or `--trees=pack` for one run.
 - The kit's trees, their true heights and how tall young trees and saplings stand: `realm/data/assets.json`: `woods.kit.*`.
 
+## The ground (NPC perf; art direction fix 5)
+- Painted ground on or off: `realm/data/ground.json`: `painted` (or `--ground=painted` / `--ground=photo` for one run). Each layer's colour and how broad its pattern: `layers.<layer>.tint`, `.scale`; the grass's broad colour patches: `macro`.
+- The coast: how far the beach runs above the waterline, and the surf at the shore: `realm/data/ground.json`: `beach.top`, `surf`.
+- Roads: the grass verge's width and colour, the track's tint: `realm/data/ground.json`: `roads.*`. The farm hedges' bush: `realm/data/assets.json`: `hedge` (photo), `hedge_painted`.
+
 ## Battles (NPC perf)
 - How hard a field battle is: blows a man takes, the chance a blow lands for each side, when the beaten side breaks and how long they fight: `realm/data/battle.json`: `hp`, `hit.*`, `breakAt`, `longest`.
 - Knights' charges (how many passes, how fast): `realm/data/battle.json`: `charge.*`. Kicks, dodges and heavy blows that floor a man: `kickOdds`, `kickLands`, `dodge`, `floored`.
