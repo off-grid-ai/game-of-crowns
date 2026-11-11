@@ -352,6 +352,17 @@ func _build_top_bar() -> void:
 	tick.timeout.connect(_tick_next)
 	_next_row.add_child(tick)
 	who.add_child(_next_row)
+	# An event card waiting, on its own line under the next thing: gold, with the season's
+	# clock running down (Frostpunk's law timer), opened with a click.
+	_event_row = ui.btn("", func():
+		if _event_open.is_valid():
+			_event_open.call())
+	_event_row.flat = true
+	_event_row.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_event_row.add_theme_color_override("font_color", T.ACCENT)
+	_event_row.add_theme_font_size_override("font_size", 13)
+	_event_row.visible = false
+	who.add_child(_event_row)
 	when.add_child(who)
 	# At rest the heading is one line, the date and the aim (UI.md §1: the world is
 	# the content); the story, the name being earned, the last act and the aim's
@@ -496,6 +507,10 @@ var _aim_frac := -1.0  # the fill shown, eased toward the real one
 var _aim_told := ""  # the last aim met, toasted once
 var _seals: Label  # the King's royal seals this season, as gold pips (bridge seals.js)
 var _seals_n := -1  # the count shown, to mark one being spent
+var _event_row: Button  # an event card waiting (event_card.gd): its title and the season's clock, gold
+var _event_open := Callable()
+var _event_ends := -1.0
+var _event_title := ""
 var _next_row: HBoxContainer  # the next thing, a minute away (bridge next.js): words, a countdown, a thin bar
 var _next: Label
 var _next_clock: Label
@@ -671,6 +686,7 @@ func _show_next(n) -> void:
 
 
 func _tick_next() -> void:
+	_tick_event()
 	if _next_ends < 0.0 or _next_clock == null:
 		return
 	var left := maxi(0, int(ceil(_next_ends - Time.get_ticks_msec() / 1000.0)))
@@ -691,3 +707,30 @@ func _show_seals(sl) -> void:
 		_seals.modulate.a = 0.35
 		ui.create_tween().tween_property(_seals, "modulate:a", 1.0, 0.5)
 	_seals_n = n
+
+
+## The event card's line (event_card.gd): shown while a card waits, its clock to the season's end.
+func show_event(up: Dictionary, seconds: int, open: Callable) -> void:
+	_event_open = open
+	_event_row.visible = not up.is_empty()
+	if up.is_empty():
+		_event_ends = -1.0
+		_event_title = ""
+		return
+	var title := String(up.get("title", ""))
+	if title != _event_title:
+		_event_title = title
+		ui.event_arrived()
+	if seconds >= 0:
+		var ends := Time.get_ticks_msec() / 1000.0 + float(seconds)
+		if _event_ends < 0.0 or absf(ends - _event_ends) > 3.0:
+			_event_ends = ends
+	_tick_event()
+
+
+func _tick_event() -> void:
+	if not _event_row.visible:
+		return
+	var left := maxi(0, int(ceil(_event_ends - Time.get_ticks_msec() / 1000.0))) if _event_ends >= 0.0 else -1
+	_event_row.text = "◆ %s%s" % [_event_title, ("  ·  %d:%02d" % [left / 60, left % 60]) if left >= 0 else ""]
+	_event_row.add_theme_color_override("font_color", T.DANGER if left >= 0 and left <= 10 else T.ACCENT)

@@ -98,6 +98,12 @@ var house_by_name := {}  # "House Goldcrest" -> house, for petitions that name t
 const Heraldry = preload("res://scripts/heraldry.gd")
 
 var court := CourtPanel.new(self)  # the court card (court_panel.gd): its state lives there
+var events := preload("res://scripts/event_card.gd").new(self)  # an event card between courts (event_card.gd)
+signal event_chosen(choice: int)  # the King's answer to the event card (main.gd sends it to the bridge)
+signal event_lapsed  # an event card left past its season: its cost landed (main.gd rings the bell)
+signal event_came  # an event card arrives (main.gd: a parchment sound)
+func event_arrived() -> void:
+	event_came.emit()
 # The court's state, read and set here by the cards it shares the screen with.
 var _court_panel: PanelContainer:
 	get:
@@ -971,6 +977,7 @@ func set_tithe(rate: float) -> void:
 ## Where the reign is heading, under the date (top_bar.gd).
 func _show_heading(r: Dictionary) -> void:
 	top_bar._show_heading(r)
+	events.show(r.get("event"))
 
 
 var _interlude_told: String:  # "reign id:quarter" of the interlude told (reign_cards.gd)

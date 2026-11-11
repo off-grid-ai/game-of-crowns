@@ -118,7 +118,9 @@ const LIFT_MOOD := {"battle": ["battle", 60.0], "siege": ["battle", 60.0], "feas
 const UI_SOUNDS := {"click": ["ui/click.wav", -6.0], "open": ["ui/open.wav", -4.0], "close": ["ui/close.wav", -6.0],
 	"page": ["ui/page.wav", -6.0], "seal": ["ui/seal.wav", 0.0], "decree": ["ui/seal.wav", 0.0],
 	"parchment": ["ui/parchment.wav", -3.0], "quill": ["ui/quill.wav", -4.0], "error": ["ui/error.wav", -8.0],
-	"coins": ["sfx/coins.wav|sfx/coins_1.ogg|sfx/coins_2.ogg", -6.0]}  # the treasury pays for a decree
+	"coins": ["sfx/coins.wav|sfx/coins_1.ogg|sfx/coins_2.ogg", -6.0],  # the treasury pays for a decree
+	"event": ["ui/parchment.wav", -3.0],  # an event card comes before the King
+	"lapse": ["sfx/toll_bell.ogg", -4.0]}  # an event left past its season: its cost lands
 const MAX_STINGERS := 12
 
 var _beds := {}  # name -> {player, level (0..1), target}

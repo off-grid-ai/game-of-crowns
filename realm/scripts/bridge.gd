@@ -75,6 +75,12 @@ func decree(action: String, city_id: int, building := "", to := -1, matter := ""
 		command_done.emit(code == 200, data.get("text", data.get("error", ""))))
 
 
+## The King's answer to the event card (bridge events.js): cb(ok, text).
+func event_answer(choice: int, cb: Callable) -> void:
+	_post("/event/answer", {"choice": choice}, func(code, data):
+		cb.call(code == 200, String(data.get("text", data.get("error", "")))))
+
+
 func set_mood(text: String) -> void:
 	_post("/mood", {"text": text}, func(code, data):
 		decrees(func(list): decrees_changed.emit(list))

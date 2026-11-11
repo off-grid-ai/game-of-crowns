@@ -417,6 +417,11 @@ func _ready() -> void:
 			lore.open(int(_shot["lore"])))
 	bridge.paid.connect(func(_cost): sound.ui("coins"))
 	bridge.sealed.connect(func(): sound.ui("seal"))  # the royal seal pressed into the wax
+	ui.event_chosen.connect(func(i): bridge.event_answer(i, func(ok, text):
+		sound.ui("seal" if ok else "error")
+		ui.events.result(ok, text)))
+	ui.event_lapsed.connect(func(): sound.ui("lapse"))  # an event's cost landing: a bell, not to be missed
+	ui.event_came.connect(func(): sound.ui("event"))
 	bridge.command_done.connect(func(ok, text):
 		if not ok and text == "no such petition":
 			# The court moved on (answered, or gone with an old session): show who

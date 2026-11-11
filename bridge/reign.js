@@ -456,6 +456,6 @@ export function reignInfo(ctx) {
     souls: world?.cities?.reduce((t, c) => t + soulsOf(c.size), 0) ?? 0,
     next,
     seals: Seals.view(meta),
-    event: Events.view(meta),
+    event: (() => { const e = Events.view(meta); return e?.up ? { ...e, seconds: Next.secondsToSeasonEnd(ctx.turnSeconds) } : e; })(),
   };
 }

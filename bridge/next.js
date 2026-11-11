@@ -16,6 +16,8 @@ import { buildKey } from "./crown.js";
 // When the season now running began (season.js turn), for the countdown.
 let seasonAt = Date.now();
 export function seasonBegan() { seasonAt = Date.now(); }
+// Seconds left of the season now running (an event card lapses at its end).
+export const secondsToSeasonEnd = (turnSeconds) => Math.max(0, Math.round(turnSeconds - (Date.now() - seasonAt) / 1000));
 
 import fs from "node:fs";
 // seasons: a threat this close comes before anything else (data/next.json; docs/TUNING.md)
