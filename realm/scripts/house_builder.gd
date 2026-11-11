@@ -17,14 +17,31 @@ func _piece(name: String) -> Node3D:
 	return _cache[path].instantiate()
 
 
+## The shutters' wood as a material of its own (MI_Shutter), so the house's colour can paint the shutters
+## and leave the timber frame brown (team_colour.gd, data/look.json team.materials; art target 01-town).
+static var _shutter_of := {}
+
+
+static func _shutter(mat: Material) -> Material:
+	if not mat is BaseMaterial3D:
+		return mat
+	if not _shutter_of.has(mat):
+		var m: BaseMaterial3D = mat.duplicate()
+		m.resource_name = "MI_Shutter"
+		_shutter_of[mat] = m
+	return _shutter_of[mat]
+
+
 ## Adds every mesh surface under `node` into per-material SurfaceTools.
-func _collect(node: Node, xf: Transform3D, tools: Dictionary) -> void:
+func _collect(node: Node, xf: Transform3D, tools: Dictionary, shutter := false) -> void:
 	var here := xf
 	if node is Node3D:
 		here = xf * node.transform
 	if node is MeshInstance3D and node.mesh:
 		for s in node.mesh.get_surface_count():
 			var mat: Material = node.get_active_material(s)
+			if shutter:
+				mat = _shutter(mat)
 			var key := mat.get_instance_id() if mat else 0
 			if not tools.has(key):
 				var st := SurfaceTool.new()
@@ -32,14 +49,14 @@ func _collect(node: Node, xf: Transform3D, tools: Dictionary) -> void:
 				tools[key] = {"st": st, "mat": mat}
 			tools[key]["st"].append_from(node.mesh, s, here)
 	for c in node.get_children():
-		_collect(c, here, tools)
+		_collect(c, here, tools, shutter)
 
 
 func _bake(parts: Array) -> ArrayMesh:
 	var tools := {}
 	for p in parts:
 		var n: Node3D = _piece(p[0])
-		_collect(n, p[1], tools)
+		_collect(n, p[1], tools, String(p[0]).begins_with("WindowShutters"))
 		n.free()
 	var mesh := ArrayMesh.new()
 	for key in tools:

@@ -66,6 +66,17 @@ func _team_mat(src: BaseMaterial3D, amount: float) -> ShaderMaterial:
 		m.set_shader_parameter("normal_tex", src.normal_texture)
 	m.set_shader_parameter("roughness", src.roughness)
 	m.set_shader_parameter("team_amount", amount)
+	# The roofs' mix and the colour's tone (data/look.json team.roofs, team.paint; art target 01-town).
+	var roofs: Dictionary = cfg().get("roofs", {})
+	m.set_shader_parameter("is_roof", (roofs.get("materials", ["MI_RoundTiles"]) as Array).any(func(k): return String(src.resource_name).begins_with(String(k))))
+	m.set_shader_parameter("roof_cottage", _v4(roofs.get("cottage"), Vector4(0.55, 0.25, 0.1, 0.1)))
+	m.set_shader_parameter("roof_town", _v4(roofs.get("town"), Vector4(0.15, 0.4, 0.2, 0.25)))
+	m.set_shader_parameter("thatch", _rgb(roofs.get("thatch"), Color(0.8, 0.64, 0.34)))
+	m.set_shader_parameter("dark_tile", _rgb(roofs.get("dark_tile"), Color(0.5, 0.42, 0.4)))
+	var paint: Dictionary = cfg().get("paint", {})
+	m.set_shader_parameter("ordinary_share", float(paint.get("ordinary_share", 0.5)))
+	m.set_shader_parameter("paint_sat", float(paint.get("saturation", 0.8)))
+	m.set_shader_parameter("paint_warm", _rgb(paint.get("warm"), Color(1.0, 0.93, 0.84)))
 	var nf: Dictionary = CameraRig.KNOBS.get("near_fade", {}).get("buildings", {}) if CameraRig.KNOBS.get("near_fade") is Dictionary else {}
 	m.set_shader_parameter("fade_gone", float(nf.get("gone", 1.2)))
 	m.set_shader_parameter("fade_solid", float(nf.get("solid", 2.6)))
@@ -98,10 +109,38 @@ func _take(g: GeometryInstance3D) -> void:
 	any = _done[mesh.get_instance_id()]
 	if not any:
 		return
+	# What it is: a cottage (0) or a townhouse or inn (1) carries a smaller share of the colour and a roof of
+	# its own; the castle, the hall and anything else (2, the shader's default) the full colour.
+	var rank := _rank_of(g)
+	if rank < 2:
+		g.set_instance_shader_parameter("team_rank", float(rank))
 	# Which town it stands in: the town whose node holds it (towns.gd keeps each town's root).
 	var town := _town_of(g)
 	if town >= 0:
 		_members.append([g, town])
+
+
+static var _ranks := {}  # kit model name -> 0 cottage, 1 townhouse or inn
+
+
+func _rank_of(g: Node) -> int:
+	if not g.has_meta("kind"):
+		return 2
+	if _ranks.is_empty():
+		var Real := preload("res://scripts/realistic.gd")
+		var by: Dictionary = cfg().get("ranks", {"house_poor": 0, "house_rich": 1, "tavern": 1})
+		for comp in by:
+			for n in Real.variants(String(comp)):
+				_ranks[String(n)] = int(by[comp])
+	return int(_ranks.get(String(g.get_meta("kind")), 2))
+
+
+static func _v4(a, fallback: Vector4) -> Vector4:
+	return Vector4(float(a[0]), float(a[1]), float(a[2]), float(a[3])) if a is Array and a.size() >= 4 else fallback
+
+
+static func _rgb(a, fallback: Color) -> Color:
+	return Color(float(a[0]), float(a[1]), float(a[2])) if a is Array and a.size() >= 3 else fallback
 
 
 func _town_of(n: Node) -> int:

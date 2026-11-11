@@ -94,13 +94,55 @@
   "map_to": 30.0
  },
  "team": {
-  "_": "Team colour (team_colour.gd; Mac's North Star, docs/art/target/02-realm.jpg; Warcraft III): the kit materials whose names start with these keys take the holder's colour, by how much (roof tiles strongly, wood trim lightly; walls, brick and stone not at all). on: the switch (or --team=on / --team=off). saturation: the house colours pushed bolder (WC3's team colours). A town that changes hands eases to its new colour over a season.",
+  "_": "Team colour (team_colour.gd; Mac's North Star, docs/art/target/02-realm.jpg; Warcraft III): the kit materials whose names start with these keys take the holder's colour, by how much (roof tiles strongly, wood trim lightly; walls, brick and stone not at all). on: the switch (or --team=on / --team=off). saturation: the house colours pushed bolder (WC3's team colours). A town that changes hands eases to its new colour over a season. Art target 01-town: the colour sits on accents. materials: roof tiles (for the castle, the hall and any house whose roof draws 'house'), shutters (MI_Shutter, house_builder.gd), banners strongly; the timber frame (MI_WoodTrim) barely. ranks: which components are ordinary (0 a cottage, 1 a townhouse or inn); everything else (castle, hall, banners, armour) wears the full colour. roofs: per house, seeded by where it stands, the share of thatch, the tiles' own terracotta, darker tile and the house's colour, as [thatch, terracotta, dark, house] for cottages and for townhouses; thatch and dark_tile their colours; materials: which kit materials are roofs. paint: ordinary_share, the share of the colour an ordinary house's trims and shutters take; saturation and warm, the house colour toned toward its grey and warmed (painted reds, not neon).",
   "on": false,
   "materials": {
    "MI_RoundTiles": 0.85,
-   "MI_WoodTrim": 0.35,
+   "MI_Shutter": 0.85,
+   "MI_WoodTrim": 0.12,
    "MI_Banner": 0.95
   },
-  "saturation": 1.15
+  "saturation": 1.0,
+  "ranks": {
+   "house_poor": 0,
+   "house_rich": 1,
+   "tavern": 1
+  },
+  "roofs": {
+   "materials": [
+    "MI_RoundTiles"
+   ],
+   "cottage": [
+    0.55,
+    0.25,
+    0.1,
+    0.1
+   ],
+   "town": [
+    0.15,
+    0.4,
+    0.2,
+    0.25
+   ],
+   "thatch": [
+    0.8,
+    0.64,
+    0.34
+   ],
+   "dark_tile": [
+    0.5,
+    0.42,
+    0.4
+   ]
+  },
+  "paint": {
+   "ordinary_share": 0.5,
+   "saturation": 0.8,
+   "warm": [
+    1.0,
+    0.93,
+    0.84
+   ]
+  }
  }
 }
