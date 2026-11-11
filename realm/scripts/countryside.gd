@@ -205,7 +205,7 @@ func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: A
 	var face := Vector3(sin(yaw), 0, cos(yaw))
 	var side := Vector3(face.z, 0, -face.x)
 	var yard: Array = [[at, 0.55]]  # [where, how far round it]: the house and what stands by it
-	var houses: Array = Real.names_of("house").filter(func(n): return n != "medieval_tavern")
+	var houses: Array = Real.names_of("house").filter(func(n): return not n in Real.variants("tavern"))
 	if not houses.is_empty():
 		_place(houses[rng.randi() % houses.size()], at, yaw)
 	if rng.randf() < 0.6 and not Real.names_of("barn").is_empty():
@@ -217,12 +217,12 @@ func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: A
 			hay.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU), Vector3(heap.x, terrain.height_at(heap.x, heap.z) - 0.01, heap.z)))
 			yard.append([heap, 0.25])
 	if rng.randf() < 0.7:
-		_place("haystack_2", at - side * 1.2 + face * 0.6, rng.randf() * TAU)
+		_place(Real.one("haystack"), at - side * 1.2 + face * 0.6, rng.randf() * TAU)
 		yard.append([at - side * 1.2 + face * 0.6, 0.25])
 	if rng.randf() < 0.5:
-		_place("medieval_wooden_cart", at + face * 1.0 - side * 0.4, yaw + rng.randf_range(-0.8, 0.8))
+		_place(Real.one("cart"), at + face * 1.0 - side * 0.4, yaw + rng.randf_range(-0.8, 0.8))
 	if rng.randf() < 0.6:
-		_place("wood_pile_pack", at - side * 0.75 - face * 0.2, yaw + PI / 2)  # the winter's firewood against the wall
+		_place(Real.one("woodpile"), at - side * 0.75 - face * 0.2, yaw + PI / 2)  # the winter's firewood against the wall
 		yard.append([at - side * 0.75 - face * 0.2, 0.25])
 	# Fields beyond the yard, each a strip with a hedge along its edges.
 	var fields: Array = []
@@ -248,10 +248,10 @@ func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: A
 				trees[rng.randi() % 2].append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(k, k * rng.randf_range(0.85, 1.1), k)), Vector3(t.x, terrain.height_at(t.x, t.z) - 0.02, t.z)))
 		yard.append([o, 0.6])
 	# Now and then a mill, where the farms around bring their grain.
-	if rng.randf() < 0.08 and Real.footprint("medieval_mill") != Vector2.ZERO:
+	if rng.randf() < 0.08 and Real.footprint(Real.one("mill")) != Vector2.ZERO:
 		var m := at + face * 2.1 + side * 0.9
 		if terrain.is_land(m.x, m.z):
-			_place("medieval_mill", m, yaw + PI)
+			_place(Real.one("mill"), m, yaw + PI)
 			yard.append([m, 0.85])
 	for i in rng.randi_range(2, 4):
 		var ang := yaw + PI + rng.randf_range(-1.2, 1.2)
