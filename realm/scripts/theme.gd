@@ -19,6 +19,11 @@ const SIZE_TITLE := 22
 const SIZE_BODY := 16
 const SIZE_DESC := 14
 const SIZE_LABEL := 12
+# One spacing scale for every card (CK3 and Frostpunk keep one rhythm): within a row, between rows, between sections, around groups.
+const GAP_TIGHT := 4
+const GAP := 8
+const GAP_SECTION := 12
+const GAP_WIDE := 16
 const GLASS := preload("res://scripts/glass.gdshader")
 
 # Old names kept so older callers still read sensibly.

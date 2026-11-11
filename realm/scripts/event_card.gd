@@ -50,11 +50,11 @@ func open() -> void:
 	_card.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_card.position.y = 96
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 10)
+	v.add_theme_constant_override("separation", T.GAP_SECTION)
 	_card.add_child(v)
 	# The plate: the house's arms and the matter's title (the painting comes with the portraits).
 	var head := HBoxContainer.new()
-	head.add_theme_constant_override("separation", 12)
+	head.add_theme_constant_override("separation", T.GAP_SECTION)
 	v.add_child(head)
 	var house: Dictionary = ui.house_by_name.get(String(_up.get("house", "")), {})
 	if not house.is_empty():
@@ -72,7 +72,7 @@ func open() -> void:
 	v.add_child(HSeparator.new())
 	for ch in _up.get("choices", []):
 		var row := VBoxContainer.new()
-		row.add_theme_constant_override("separation", 2)
+		row.add_theme_constant_override("separation", T.GAP_TIGHT)
 		var label := String(ch.get("label", ""))
 		if int(ch.get("cost", 0)) > 0:
 			label += "  ·  %s crowns" % ui.heads(int(ch["cost"]) * 100)
@@ -114,7 +114,7 @@ func result(ok: bool, text: String) -> void:
 		_card.remove_child(c)
 		c.queue_free()
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 10)
+	v.add_theme_constant_override("separation", T.GAP_SECTION)
 	_card.add_child(v)
 	var said := Label.new()
 	said.text = text if ok else "The crown cannot: " + text

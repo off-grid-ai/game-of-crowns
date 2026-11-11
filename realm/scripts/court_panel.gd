@@ -289,7 +289,7 @@ func _show_audience() -> void:
 	scroll.name = "Scroll"
 	_court_panel.add_child(scroll)
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 10)
+	v.add_theme_constant_override("separation", T.GAP_SECTION)
 	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(v)
 	if not ui.guide_loaded:
@@ -298,7 +298,7 @@ func _show_audience() -> void:
 		v.add_child(ui.guide_block())
 		v.add_child(HSeparator.new())
 	var head := HBoxContainer.new()
-	head.add_theme_constant_override("separation", 16)
+	head.add_theme_constant_override("separation", T.GAP_WIDE)
 	v.add_child(head)
 	# The court's own sitting, or the Hand calling the King in between for a crisis.
 	var where := ("The Hand calls you" if p.get("push", false) and not ONE else "The court sits") + "  ·  the realm holds still"
@@ -309,7 +309,7 @@ func _show_audience() -> void:
 	# The petitioner, standing (their own painted figure, as the Lore book shows
 	# them), beneath their house's sigil.
 	var named := HBoxContainer.new()
-	named.add_theme_constant_override("separation", 14)
+	named.add_theme_constant_override("separation", T.GAP_WIDE)
 	v.add_child(named)
 	var sitter = p.get("who")
 	var painted: Texture2D = PaintedFaces.face(sitter) if ONE and sitter is Dictionary else null
@@ -347,7 +347,7 @@ func _show_audience() -> void:
 	var want := String((sitter as Dictionary).get("want", "")) if sitter is Dictionary and (sitter as Dictionary).get("want") != null else ""
 	if want != "":
 		var names := VBoxContainer.new()
-		names.add_theme_constant_override("separation", 2)
+		names.add_theme_constant_override("separation", T.GAP_TIGHT)
 		names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		pname.size_flags_horizontal = Control.SIZE_FILL
 		names.add_child(pname)
@@ -422,10 +422,10 @@ func _show_audience() -> void:
 		# and red down (Reigns' preview, our way).
 		var rest := String(o.get("hint", ""))
 		var moves := HBoxContainer.new()
-		moves.add_theme_constant_override("separation", 10)
+		moves.add_theme_constant_override("separation", T.GAP_SECTION)
 		for m in _FAVOUR_RE.search_all(rest):
 			var chip := HBoxContainer.new()
-			chip.add_theme_constant_override("separation", 3)
+			chip.add_theme_constant_override("separation", T.GAP_TIGHT)
 			chip.add_child(ui.sigil_icon(ui.house_by_name.get(m.get_string(1), {}), 16))
 			var n := Label.new()
 			var up := not m.get_string(2).begins_with("−") and not m.get_string(2).begins_with("-")
@@ -461,7 +461,7 @@ func _show_audience() -> void:
 			own.text = "The court weighs your words…"
 			ui.petition_spoken.emit(String(p["id"]), _spoken, ""))
 	var own_row := HBoxContainer.new()
-	own_row.add_theme_constant_override("separation", 8)
+	own_row.add_theme_constant_override("separation", T.GAP)
 	own.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	own_row.add_child(own)
 	# Speaking mode: the hall simply listens for your ruling.
@@ -495,7 +495,7 @@ func _show_audience() -> void:
 ## each house takes his silence as an answer, and the realm moves again).
 func _court_later(v: VBoxContainer, tip: String) -> void:
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
+	row.add_theme_constant_override("separation", T.GAP)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_child(row)
 	# Two exits, each saying what it does (CK3 states the cost of a choice on the button).
@@ -547,8 +547,8 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 	v.add_child(_hand_says(String(it.get("why", ""))))
 	v.add_child(HSeparator.new())
 	var flow := HFlowContainer.new()
-	flow.add_theme_constant_override("h_separation", 6)
-	flow.add_theme_constant_override("v_separation", 6)
+	flow.add_theme_constant_override("h_separation", T.GAP)
+	flow.add_theme_constant_override("v_separation", T.GAP)
 	var acts: Container = flow
 	v.add_child(acts)
 	var answers: Array[Button] = []  # its answers: choosing one settles it
@@ -557,7 +557,7 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 	var weighed: bool = ONE or (it.get("acts", []) as Array).any(func(x): return x is Dictionary and x.get("weighs") is Dictionary)
 	if weighed:
 		var rows := VBoxContainer.new()
-		rows.add_theme_constant_override("separation", 6)
+		rows.add_theme_constant_override("separation", T.GAP)
 		v.remove_child(acts)
 		acts.queue_free()
 		acts = rows
@@ -611,7 +611,7 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 			b.tooltip_text = "The Hand's advice"
 		if w is Dictionary:
 			var row := VBoxContainer.new()
-			row.add_theme_constant_override("separation", 2)
+			row.add_theme_constant_override("separation", T.GAP_TIGHT)
 			b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 			row.add_child(b)
 			row.add_child(_weighs_chips(w))
@@ -627,7 +627,7 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 const BIG_MOVE := 10  # favour points: a move this size or more shows two marks
 func _weighs_chips(w: Dictionary) -> Control:
 	var moves := HBoxContainer.new()
-	moves.add_theme_constant_override("separation", 10)
+	moves.add_theme_constant_override("separation", T.GAP_SECTION)
 	var pad := MarginContainer.new()
 	pad.add_theme_constant_override("margin_left", 12)
 	pad.add_child(moves)
@@ -637,7 +637,7 @@ func _weighs_chips(w: Dictionary) -> Control:
 			var house: Dictionary = ui.house_by_name.get(who, ui.house_by_name.get("House " + who, {}))
 			var d := int(m.get("d", 0))
 			var chip := HBoxContainer.new()
-			chip.add_theme_constant_override("separation", 3)
+			chip.add_theme_constant_override("separation", T.GAP_TIGHT)
 			chip.add_child(ui.sigil_icon(house, 16))
 			var n := Label.new()
 			# A direction and a size, never the number (Reigns: which bars move, and
@@ -718,7 +718,7 @@ func ruled_in_words(id: String, d: Dictionary) -> void:
 		meant.add_theme_color_override("font_color", T.ACCENT)
 		row.add_child(meant)
 		var go := HBoxContainer.new()
-		go.add_theme_constant_override("separation", 8)
+		go.add_theme_constant_override("separation", T.GAP)
 		go.add_child(ui.btn("Rule so", func():
 			row.queue_free()
 			_own_line.text = "Your ruling is carried out…"
@@ -773,7 +773,7 @@ func _see_it(it: Dictionary) -> void:
 		c.queue_free()
 	_court_panel.visible = true
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 10)
+	v.add_theme_constant_override("separation", T.GAP_SECTION)
 	_court_panel.add_child(v)
 	ui.ease_in(v)  # the card turns over, eased
 	v.add_child(T.label("The King has ruled"))

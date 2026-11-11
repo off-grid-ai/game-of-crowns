@@ -165,7 +165,7 @@ func offer_watch(text: String, go: Callable) -> void:
 	_offer.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_offer.offset_top = _toast_top + 34.0
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 14)
+	row.add_theme_constant_override("separation", T.GAP_WIDE)
 	_offer.add_child(row)
 	row.add_child(T.title(text, 15, T.TEXT))
 	var b := ui.btn("Watch", func():
@@ -201,7 +201,7 @@ func edge_arrow(at, angle: float, text: String, tone: String, fresh: bool) -> vo
 			if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 				ui.last_event.emit())
 		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 7)
+		row.add_theme_constant_override("separation", T.GAP)
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_edge.add_child(row)
 		_edge_icon = TextureRect.new()
