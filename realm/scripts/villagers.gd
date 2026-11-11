@@ -132,6 +132,7 @@ func _hold_load(a: Dictionary) -> void:
 ## space is eased out of it sideways, a few centimetres a frame: the walker
 ## yields; someone standing, a scene's person or a traveller is never moved.
 const SPACE := 0.07  # about 0.6 m between middles
+const ARRIVE := 0.03  # a waypoint this near is reached (about a quarter of a metre): a step shorter than this barely moves anyone
 const EASE := 0.006  # at most this far a frame (about 5 cm): a sidestep, never a jump
 
 
@@ -629,7 +630,7 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 	# Walk the navmesh path, waypoint by waypoint, around the buildings, letting
 	# the avoidance steer around whoever is in the way.
 	var to := route[0] - here
-	if to.length() < 0.03:
+	if to.length() < ARRIVE:
 		route.remove_at(0)
 		a["route"] = route
 		a["best"] = INF

@@ -864,7 +864,11 @@ class Talk extends PlayRun:
 		_stepped = true
 		var v: Node = blackboard.get_var(&"vill", null, false)
 		var dir := flat.normalized() if flat.length() > 0.005 else Vector2.from_angle(randf() * TAU)
-		var to := here - Vector3(dir.x, 0, dir.y) * off * 0.5
+		# Half of what's off, aimed past by the walker's arrival reach (villagers.ARRIVE): a
+		# waypoint counts as reached that near, so a short step aimed exactly barely moved them
+		# (talkers stayed ~1.8 m apart, gate r3-r4).
+		var reach: float = float(v.get("ARRIVE")) if v != null and v.get("ARRIVE") != null else 0.0
+		var to := here - Vector3(dir.x, 0, dir.y) * (off * 0.5 + signf(off) * reach)
 		if v != null and v.has_method("step_to"):
 			v.step_to(blackboard.get_var(&"va"), (agent as Node3D).position + (to - here))
 		return false
