@@ -232,9 +232,14 @@ const SNOW_COVER := """
 	float snow_k = 0.0;
 	if (snow_cover > 0.0) {
 		float snow_up = smoothstep(0.62, 0.86, w_normal.y);
-		ivec2 sid = texture_ids[3];
-		vec2 sw = t_weights[3];
-		float trod = (sid.x == %d || sid.x == %d ? sw.x : 0.0) + (sid.y == %d || sid.y == %d ? sw.y : 0.0);
+		// The trodden share, from Terrain3D's own blend over all four corners of the
+		// cell (each corner's two ids by their weights), so the cover thins smoothly
+		// toward a road instead of stepping where one corner's id changes.
+		float trod = 0.0;
+		for (int i = 0; i < 4; i++) {
+			trod += (texture_ids[i].x == %d || texture_ids[i].x == %d ? weights_id_0[i] : 0.0)
+				+ (texture_ids[i].y == %d || texture_ids[i].y == %d ? weights_id_1[i] : 0.0);
+		}
 		float depth = snow_cover * snow_up * (1.0 - 0.6 * clamp(trod, 0.0, 1.0));
 		float bump = mat.albedo_height.a;
 		snow_k = smoothstep(bump * 0.6, bump * 0.6 + 0.3, depth);
