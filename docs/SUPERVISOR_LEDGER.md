@@ -98,6 +98,11 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log of supervisor actions (newest first; details in review/supervisor-log.md)
+- 16:35 Mac: "you're the only one running… take control, run threads, get things moving fast." All six Desktop
+  sessions were idle (likely usage limits). The supervisor now renders Milestone 1 itself (/tmp/goc-milestone1, all
+  switches on) and runs build agents in its own session: (a) the kit castle and kit houses in house colours
+  (--castles=kit, --houses=kit); (b) real fire, smoke and charred ruins (--fire=v2). Both render only via
+  realm/tools/render.sh and commit by path.
 - 16:30 Milestone 1 asked for the next Godot slot: everything built so far on together (look, kit trees, painted
   ground, wear, team colour, political map, kit castle if ready), Kingsmere, Goldrock and the map beside
   01-town and 02-realm. The full slice (kit houses, fire, breach) follows over the next days [est].
