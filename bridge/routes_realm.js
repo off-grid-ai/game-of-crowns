@@ -17,6 +17,7 @@ import { HOUSES, cityName, houseFor, nameIn } from "./narrator.js";
 import { ROLES } from "./characters.js";
 import { aiStatus, usageToday, watched } from "./claude.js";
 import * as chron from "./chronicles.js";
+import { OPENING } from "./court.js";
 import * as names from "./names.js";
 import * as rewrites from "./written.js";
 import { body, json } from "./http_util.js";
@@ -105,7 +106,13 @@ export async function end(ctx, req, res, url) {
 export async function opening(ctx, req, res) {
   const { at } = await body(req);
   const f = (ctx.meta.firstCourt ??= { landedAt: null });
-  if (at === "realm" && f.landedAt == null) f.landedAt = Date.now();
+  if (at === "realm" && f.landedAt == null) {
+    f.landedAt = Date.now();
+    // The court looks again just after the wait, not at the next season's turn (up to 40 s later):
+    // the same gate decides (court.js), unforced.
+    const court = ctx.courtSeason;
+    setTimeout(() => court(ctx.world?.turn ?? 0).catch(() => {}), OPENING.firstCourtAfterLandingSec * 1000 + 500);
+  }
   chron.saveMeta(ctx.meta);
   return json(res, 200, { ok: true, firstCourt: f });
 }
