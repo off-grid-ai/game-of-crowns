@@ -29,6 +29,9 @@
       "Push",
       "Push_Heavy",
       "SS_Slash_5",
+      "SS_Attack_3",
+      "Sword_Attack",
+      "Sword_Attack_2",
       "Jog_Fwd"
     ],
     "lowExtra": {}
