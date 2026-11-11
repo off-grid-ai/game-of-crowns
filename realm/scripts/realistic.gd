@@ -20,7 +20,19 @@ static var STONE: Array = []  # stone models: no glow
 static var BY_HEIGHT := {}  # name -> true height in metres, for a model scaled by its height rather than its length (assets.json variant height)
 static var _model := {}  # name -> its file
 static var _component := {}  # component id -> its model names, in order
+# name -> {builder: house|castle, spec}: a model our builders raise from the Quaternius kit
+# (house_builder.gd, castle_builder.gd) instead of a file; it is built in metres.
+static var BUILT := {}
 static var _read := _from_catalogue()
+
+
+## Which set a component draws from: its "switch" (castles, houses) set to "kit" in
+## realm/data/towns.json, or --castles=kit / --houses=kit for one run, takes its "kit" variants.
+static func set_of(switch: String) -> String:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--%s=" % switch):
+			return a.get_slice("=", 1)
+	return String(Data.value("towns", switch, "pack"))
 
 
 static func _from_catalogue() -> bool:
@@ -31,10 +43,18 @@ static func _from_catalogue() -> bool:
 		var c: Dictionary = comps[id]
 		_component[id] = []
 		var i := 0
-		for v: Dictionary in c.get("variants", []):
+		var vs: Array = c.get("variants", [])
+		if c.has("switch") and c.has("kit") and set_of(String(c["switch"])) == "kit":
+			vs = c["kit"]
+		for v: Dictionary in vs:
 			# A kit model (it has a true length) is measured and scaled here; any other is a file its own placer loads.
 			var n := String(v.get("name", id if i == 0 else "%s#%d" % [id, i]))
 			i += 1
+			if v.has("builder"):
+				BUILT[n] = {"builder": String(v["builder"]), "spec": v.get("spec", {})}
+				KIT[n] = [String(c.get("kind", "")), 0.0]
+				_component[id].append(n)
+				continue
 			if v.has("length"):
 				KIT[n] = [String(c.get("kind", "")), float(v["length"])]
 			var m := String(v["model"])
@@ -89,7 +109,26 @@ static func height(name: String) -> float:
 
 
 static func names_of(kind: String) -> Array:
-	return KIT.keys().filter(func(n): return KIT[n][0] == kind and ResourceLoader.exists(_path(n)))
+	return KIT.keys().filter(func(n): return KIT[n][0] == kind and (BUILT.has(n) or ResourceLoader.exists(_path(n))))
+
+
+static var _builders := {}
+
+
+## A model our builders raise from the kit, as a scene node (metres).
+static func _built(name: String) -> Node3D:
+	var b: Dictionary = BUILT[name]
+	var kind := String(b["builder"])
+	if not _builders.has(kind):
+		_builders[kind] = (preload("res://scripts/castle_builder.gd") if kind == "castle" else preload("res://scripts/house_builder.gd")).new()
+	var spec: Dictionary = b["spec"]
+	var mi := MeshInstance3D.new()
+	mi.name = "Model"
+	mi.mesh = _builders[kind].build_castle(spec) if kind == "castle" else _builders[kind].build(spec)
+	var root := Node3D.new()
+	root.add_child(mi)
+	mi.owner = root
+	return root
 
 
 static func _path(name: String) -> String:
@@ -100,9 +139,9 @@ static func _template(name: String) -> Dictionary:
 	if _cache.has(name):
 		return _cache[name]
 	var path := _path(name)
-	if not KIT.has(name) or not ResourceLoader.exists(path):
+	if not KIT.has(name) or not (BUILT.has(name) or ResourceLoader.exists(path)):
 		return {}
-	var model: Node3D = (load(path) as PackedScene).instantiate()
+	var model: Node3D = _built(name) if BUILT.has(name) else (load(path) as PackedScene).instantiate()
 	# Some kits carry things that don't belong in this age (cannon and shot).
 	# (A match can sit inside another match, so check each is still there before freeing it.)
 	var unwanted: Array = model.find_children("*Cannon*", "", true, false)
@@ -115,6 +154,8 @@ static func _template(name: String) -> Dictionary:
 	var box := _bounds(model)
 	var longest := maxf(box.size.x, box.size.z)
 	var k: float = 1.0 if longest <= 0.0 else float(KIT[name][1]) * S / longest
+	if BUILT.has(name):
+		k = S  # built in metres
 	if BY_HEIGHT.has(name) and box.size.y > 0.0:
 		k = float(BY_HEIGHT[name]) * S / box.size.y  # a model whose length misleads (a tall stack, a lying cluster): by its true height
 	# Wrap so the model is scaled, centred on its footprint and standing on the ground.

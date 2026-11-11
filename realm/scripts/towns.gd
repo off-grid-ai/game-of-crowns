@@ -281,7 +281,7 @@ func _top(root: Node3D, top: float) -> void:
 ## other, a well at its heart and the clutter of work about the yard. Laid out
 ## in the castle's own frame, from the kit the towns already use.
 const BAILEY := [
-	["medieval_viking_house", Vector3(1.55, 0, 1.15), -PI / 2],  # to the side: the gate's view into the yard stays open
+	["@hall", Vector3(1.55, 0, 1.15), -PI / 2],  # to the side: the gate's view into the yard stays open (@: a component, data/assets.json)
 	["old_wooden_barn", Vector3(-1.75, 0, -0.1), PI / 2],
 	["haystack_2", Vector3(-1.2, 0, -0.85), 0.4],
 	["haystack_2", Vector3(-1.05, 0, -1.1), 1.7],
@@ -312,6 +312,8 @@ func _bailey(root: Node3D, cp: Vector3, cy: float, yaw: float, rng: RandomNumber
 	var b := Basis(Vector3.UP, yaw)
 	for item in BAILEY:
 		var kind: String = item[0]
+		if kind.begins_with("@"):
+			kind = Real.one(kind.substr(1))
 		if Real.footprint(kind) == Vector2.ZERO:
 			continue  # not in this build's kit: the yard goes without it
 		var at: Vector3 = cp + b * item[1]
@@ -349,7 +351,10 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 	# the town's edge, gate turned toward the square, the house's banner above.
 	var gap_ang := rng.randf() * TAU
 	if seat:
-		var cf: Vector2 = Real.footprint("medieval_castle")
+		# The castle to the seat's rank (data/assets.json castle: the crown's first, a great house's after it).
+		var cv: Array = Real.variants("castle")
+		var castle_kind: String = "" if cv.is_empty() else String(cv[0 if _house.get("crown", false) else cv.size() - 1])
+		var cf: Vector2 = Real.footprint(castle_kind)
 		if cf != Vector2.ZERO:
 			# Its own ground at the town's edge. First the old search exactly (eight
 			# headings on the square's ring, all dry), so every castle that stood
@@ -378,7 +383,7 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 					var cy := _seat(center, cp, f * 0.8, atan2(-cp.x, -cp.z), 2.2, true, float(pass_[3]))
 					if is_nan(cy):
 						continue
-					var castle: Node3D = Real.make("medieval_castle")
+					var castle: Node3D = Real.make(castle_kind)
 					castle.name = "Castle"
 					castle.position = Vector3(cp.x, cy, cp.z)
 					castle.rotation.y = atan2(-cp.x, -cp.z)
@@ -411,9 +416,11 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 				print("CHECK no castle fits at the seat by %s: every plot on four rings, at full, 0.8 and 0.65 size, is in water or on a cliff" % str(center))
 		gap_ang += PI * 0.6
 	# The landmarks, on the square's edge, facing in.
-	var rooms := {"medieval_tavern": ["tavern", "tavern", "tavern"], "medieval_viking_house": ["great_hall", "longhall", "hall"], "medieval_church": ["chapel", "church", "sept"]}
+	# By component (data/assets.json), so a kit set (--houses=kit, --castles=kit) stands in their place.
+	var rooms := {"tavern": ["tavern", "tavern", "tavern"], "hall": ["great_hall", "longhall", "hall"], "church": ["chapel", "church", "sept"]}
 	var places: Dictionary = root.get_meta("places", {})
-	for lm in ["medieval_tavern", "medieval_viking_house", "medieval_church"]:
+	for comp in ["tavern", "hall", "church"]:
+		var lm := Real.one(comp)
 		var f: Vector2 = Real.footprint(lm)
 		if f == Vector2.ZERO:
 			continue
@@ -426,10 +433,10 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 			p = Vector3(cos(gap_ang), 0, sin(gap_ang)) * (square_r + maxf(f.x, f.y) * 0.45)
 		if _put(root, center, lm, p, f, lots, rng, false):
 			placed += 1
-			_door(root, p, f, rooms[lm][0], rooms[lm][1])
+			_door(root, p, f, rooms[comp][0], rooms[comp][1])
 			# Where the town gathers: just out from its door, on the square.
-			places[rooms[lm][2]] = p - p.normalized() * (f.y * 0.5 + 0.35)
-			if lm == "medieval_tavern":
+			places[rooms[comp][2]] = p - p.normalized() * (f.y * 0.5 + 0.35)
+			if comp == "tavern":
 				_tether(root, center, p, f)
 		gap_ang += PI * 0.62
 		await _pace()
@@ -1147,7 +1154,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	var real := realistic_towns.has(String(c.get("title", c["name"]))) or realistic_towns.has("*")
 	# Townhouses mostly; now and then an inn-like timber house or a barn
 	# (the tavern on the square stays the one that stands out).
-	var homes_only: Array = Real.names_of("house").filter(func(n): return n != "medieval_tavern")
+	var homes_only: Array = Real.names_of("house").filter(func(n): return not n in Real.variants("tavern"))
 	var real_houses: Array = homes_only + homes_only + Real.names_of("house") + Real.names_of("barn")
 	var budget := clampi(size * 3, 4, 54)
 	var placed := 0

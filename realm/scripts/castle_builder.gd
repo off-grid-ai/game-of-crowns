@@ -1,0 +1,159 @@
+extends "res://scripts/house_builder.gd"
+## Assembles a great house's castle from the Medieval Village MegaKit, the way
+## house_builder.gd raises a townhouse: the kit's 2 m stone wall panel stacked in
+## 3 m storeys makes the keep, the towers, the gatehouse and the curtain walls;
+## the same panel, cut down, makes the merlons; the kit's tiled roofs and tower
+## cones crown them, and its banners hang on the keep and the gate. Baked into
+## one mesh. Roof tiles, trims and banners take the holder's colour through the
+## team-colour shader (team_colour.gd); the stone stays as it is.
+## The art thread's Blender proof (art-direction/kit.py kit_keep, kit_wall) is
+## the assembly; the castle's size comes from the seat's rank (data/assets.json).
+##
+## Its frame: metres, the gate on +Z (toward the town's square), the keep at the
+## back, y = 0 the ground.
+
+const WALL := "Wall_UnevenBrick_Straight"
+const WINDOW := "Wall_UnevenBrick_Window_Thin_Round"
+const DOOR := "Wall_UnevenBrick_Door_Round"
+const CONE := "Roof_Tower_RoundTiles"
+const CAP := "Floor_UnevenBrick"
+const SIDES := [0.0, PI / 2, PI, -PI / 2]
+
+
+## spec (all in kit cells of 2 m and storeys of 3 m): w, d: the bailey across and
+## deep; wall_storeys: the curtain's height; keep, keep_storeys: the keep's side and
+## height; tower_storeys: the corner and wall towers; side_towers: a tower midway
+## along each side wall (a royal seat); banner: the banners' size; seed.
+func build_castle(spec: Dictionary) -> ArrayMesh:
+	var w := int(spec.get("w", 18))
+	var d := int(spec.get("d", 16))
+	var wall_st := int(spec.get("wall_storeys", 2))
+	var keep := int(spec.get("keep", 4))
+	var keep_st := int(spec.get("keep_storeys", 5))
+	var tower_st := int(spec.get("tower_storeys", wall_st + 2))
+	var banner := float(spec.get("banner", 1.6))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = int(spec.get("seed", 1))
+	var parts := []
+	var hx := w * CELL / 2.0
+	var hz := d * CELL / 2.0
+	var kh := keep * CELL / 2.0
+	var gate_w := 4  # the gatehouse, cells across
+	var gh := gate_w * CELL / 2.0
+	# The keep stands into the back wall, its back face a little proud of it.
+	var keep_at := Vector3(0, 0, -hz + kh - 1.0)
+	var gate_at := Vector3(0, 0, hz)
+	# Towers: a corner tower at each corner, and on a royal seat one midway along
+	# each side wall; each a 2x2 stone shaft under the kit's tiled cone.
+	var towers: Array = [Vector3(-hx, 0, -hz), Vector3(hx, 0, -hz), Vector3(hx, 0, hz), Vector3(-hx, 0, hz)]
+	if spec.get("side_towers", false):
+		towers.append_array([Vector3(-hx, 0, 0), Vector3(hx, 0, 0)])
+	for t in towers:
+		_block(parts, t, 2, 2, tower_st, rng, {"cone": true, "windows": 0.3})
+	# Curtain walls between them: front (gate on it), right, back (keep in it), left.
+	var gaps := {0: [-gh, gh], 2: [-kh, kh]}
+	for side in 4:
+		var along := w if side % 2 == 0 else d
+		var half := (hz if side % 2 == 0 else hx)
+		var frame := Transform3D(Basis(Vector3.UP, SIDES[side]), Basis(Vector3.UP, SIDES[side]) * Vector3(0, 0, half))
+		var cut: Array = gaps.get(side, [])
+		for i in along:
+			var off := (i - (along - 1) / 2.0) * CELL
+			if absf(off) > along * CELL / 2.0 - 2.0:
+				continue  # inside a corner tower
+			if spec.get("side_towers", false) and side % 2 == 1 and absf(off) < 2.0:
+				continue  # inside the side tower
+			if not cut.is_empty() and off > float(cut[0]) - 1.0 and off < float(cut[1]) + 1.0:
+				continue  # the gatehouse or the keep stands here
+			_curtain(parts, frame, off, wall_st)
+	# The gatehouse, astride the front wall, its gate through two storeys.
+	_block(parts, gate_at, gate_w, 3, wall_st + 1, rng, {"gate": true, "crenel": true, "windows": 0.5})
+	for sx in [-1, 1]:
+		_block(parts, gate_at + Vector3(sx * (gh + 1.0), 0, 1.0), 2, 2, wall_st + 2, rng, {"cone": true, "windows": 0.5})
+	# The keep: tall, crenellated, a tiled roof over its leads, a turret at each corner.
+	_block(parts, keep_at, keep, keep, keep_st, rng, {"door": true, "crenel": true, "windows": 0.45, "roof": true})
+	for k in 4:
+		var c := Vector3((-1 if k in [0, 3] else 1) * (kh + 0.3), 0, (-1 if k < 2 else 1) * (kh + 0.3))
+		_block(parts, keep_at + c, 2, 2, keep_st + (1 if k % 2 == 0 else 0), rng, {"cone": true, "windows": 0.4})
+	# Banners: down the keep's face over its door and either side of the gate.
+	var top := keep_st * STOREY
+	var b := Basis(Vector3.UP, 0.0).scaled(Vector3.ONE * banner)
+	parts.append(["res://assets/props/Banner_1.gltf", Transform3D(b, keep_at + Vector3(-0.8 * banner, top - 2.0 - 0.84 * banner, kh + 0.15))])
+	for sx in [-1, 1]:
+		parts.append(["res://assets/props/Banner_2.gltf", Transform3D(b.scaled(Vector3.ONE * 0.8), gate_at + Vector3(sx * (gh - 0.9) - 0.65 * banner, (wall_st + 1) * STOREY - 0.6 - 0.7 * banner, 3.0 + 0.15))])
+	return _bake(parts)
+
+
+## A stone block (tower, keep, gatehouse) standing on `at`: its four faces of
+## panels in storeys, stretched a hair so its corners close, capped with stone,
+## and as opts say: windows (a share of the upper panels), a door or a gate in
+## its front, merlons, the tiled cone (a 2x2 tower) or a tiled roof (the keep).
+func _block(parts: Array, at: Vector3, wc: int, dc: int, storeys: int, rng: RandomNumberGenerator, opts: Dictionary) -> void:
+	var hw := wc * CELL / 2.0
+	var hd := dc * CELL / 2.0
+	for f in storeys:
+		var y := f * STOREY
+		for side in 4:
+			var along := wc if side % 2 == 0 else dc
+			var half := hd if side % 2 == 0 else hw
+			var stretch := (along * CELL + 0.2) / (along * CELL)
+			var basis := Basis(Vector3.UP, SIDES[side])
+			for i in along:
+				var off := (i - (along - 1) / 2.0) * CELL * stretch
+				var pos := at + basis * Vector3(off, y, half)
+				var piece := WALL
+				var front: bool = side == 0 or (side == 2 and bool(opts.get("gate", false)))
+				if opts.get("gate", false) and front and f < 2 and absf(off) < CELL:
+					# The gate: one door panel at twice the size fills the two middle cells, two storeys up.
+					if f == 0 and off < 0.0:
+						var g := basis.scaled(Vector3(2.0, 2.0, 1.0))
+						parts.append([DOOR, Transform3D(g, at + basis * Vector3(0, 0, half))])
+						if side == 0:
+							parts.append(["Door_1_Round", Transform3D(g, at + basis * Vector3(0, 0, half))])
+					continue
+				if opts.get("door", false) and side == 0 and f == 0 and i == along / 2:
+					piece = DOOR
+					parts.append(["Door_1_Round", Transform3D(basis, pos)])
+				elif f > 0 and rng.randf() < float(opts.get("windows", 0.0)):
+					piece = WINDOW
+					parts.append(["Window_Thin_Round1", Transform3D(basis, pos)])
+				parts.append([piece, Transform3D(basis.scaled(Vector3(stretch, 1, 1)), pos)])
+	var top := storeys * STOREY + 0.12
+	if opts.get("cone", false):
+		parts.append([CONE, Transform3D(Basis.from_scale(Vector3(hw / 2.0, 1.0, hd / 2.0) * 0.85), at + Vector3(0, top, 0))])
+		return
+	for ix in wc:
+		for iz in dc:
+			parts.append([CAP, Transform3D(Basis(), at + Vector3((ix - (wc - 1) / 2.0) * CELL, top - 0.02, (iz - (dc - 1) / 2.0) * CELL))])
+	if opts.get("crenel", false):
+		for side in 4:
+			_merlons(parts, Transform3D(Basis(Vector3.UP, SIDES[side]), at + Basis(Vector3.UP, SIDES[side]) * Vector3(0, 0, hd if side % 2 == 0 else hw)), wc if side % 2 == 0 else dc, top)
+	if opts.get("roof", false):
+		# A tiled roof over the leads, set in from the parapet: the kit's roof two cells smaller, gabled.
+		var rc := maxi(wc - 2, 2)
+		var roof := "Roof_RoundTiles_%dx%d" % [rc * 2, rc * 2]
+		if ResourceLoader.exists(DIR % roof):
+			parts.append([roof, Transform3D(Basis(), at + Vector3(0, top + 0.3, 0))])
+			var gable := "Roof_Front_Brick%d" % (rc * 2)
+			if ResourceLoader.exists(DIR % gable):
+				parts.append([gable, Transform3D(Basis(), at + Vector3(0, top + 0.3, rc * CELL / 2.0))])
+				parts.append([gable, Transform3D(Basis(Vector3.UP, PI), at + Vector3(0, top + 0.3, -rc * CELL / 2.0))])
+
+
+## One 2 m bay of curtain wall, `off` along the run's frame (+Z outward): stone
+## both faces, a walk along its top, a merlon on its outer edge every other metre.
+func _curtain(parts: Array, frame: Transform3D, off: float, storeys: int) -> void:
+	for f in storeys:
+		parts.append([WALL, frame * Transform3D(Basis(), Vector3(off, f * STOREY, 0))])
+		parts.append([WALL, frame * Transform3D(Basis(Vector3.UP, PI), Vector3(off, f * STOREY, -0.4))])
+	var top := storeys * STOREY + 0.12
+	parts.append([CAP, frame * Transform3D(Basis.from_scale(Vector3(1.0, 1.0, 0.3)), Vector3(off, top - 0.02, -0.2))])
+	parts.append([WALL, frame * Transform3D(Basis.from_scale(Vector3(0.42, 0.4, 1.6)), Vector3(off - 0.5, top - 0.05, 0))])
+
+
+## Merlons along one face's top: a cut-down panel every other metre, the corners closed.
+func _merlons(parts: Array, frame: Transform3D, cells: int, top: float) -> void:
+	var n := cells * 2
+	for k in n:
+		if k % 2 == 0 or k == n - 1:
+			parts.append([WALL, frame * Transform3D(Basis.from_scale(Vector3(0.42, 0.4, 1.6)), Vector3(-cells + 0.5 + k, top - 0.05, 0))])

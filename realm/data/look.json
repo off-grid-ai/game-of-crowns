@@ -96,7 +96,8 @@
   "on": false,
   "materials": {
    "MI_RoundTiles": 0.85,
-   "MI_WoodTrim": 0.35
+   "MI_WoodTrim": 0.35,
+   "MI_Banner": 0.95
   },
   "saturation": 1.15
  }

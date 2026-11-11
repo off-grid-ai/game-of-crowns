@@ -61,6 +61,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - How tall each world component should stand, in metres: `realm/data/assets.json`: `components.<id>.heightRange`; `realm/tools/scale_check.gd` fails any model outside it. A model whose length misleads is scaled by its true height instead: a variant's `height`.
 
 ## The woods (NPC perf; art direction fix 4)
+- Kit castles and kit houses: `realm/data/towns.json`: `castles` and `houses` (`pack`, the downloaded models, today; `kit`, raised from the Quaternius Medieval Village kit by `castle_builder.gd` and `house_builder.gd`); `--castles=kit` or `--houses=kit` for one run. Each castle's size by the seat's rank (bailey cells, wall, keep and tower storeys, side towers, banner size) and each kit house's cells, floors and style: `realm/data/assets.json`: `components.<castle|hall|house_rich|house_poor|tavern>.kit`. Kit banners take the holder's colour: `realm/data/look.json`: `team.materials.MI_Banner`.
 - Which trees the woods grow: `realm/data/assets.json`: `woods.set` (`pack`, the realistic packs, today; `kit`, Quaternius' painted trees); `--trees=kit` or `--trees=pack` for one run.
 - The kit's trees, their true heights and how tall young trees and saplings stand: `realm/data/assets.json`: `woods.kit.*`.
 

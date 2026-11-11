@@ -1,4 +1,7 @@
 {
   "_": "Town building knobs (towns.gd reads them). castle: where a great house's castle may stand when the first, old search (eight headings on the square's ring, all dry) finds no plot: headings around, rings out from the square (0 is the old ring; -1 hugs the square), sizes tried in order, and the share of the plot's edge that may stand over water if the keep's middle is dry.",
+  "castles": "pack",
+  "houses": "pack",
+  "_sets": "castles: pack (the realistic kit's castle and longhall) or kit (castle_builder.gd raises each great house's castle, and house_builder.gd its hall, from the Quaternius kit, sized to the seat's rank: data/assets.json castle.kit); --castles=kit for one run. houses: pack or kit (house_builder.gd's townhouses, cottages and inn in place of the downloaded houses); --houses=kit. Kit roofs and banners take the holder's colour with team colour on (look.json team).",
   "castle": { "headings": 16, "rings": [-1, 0, 1, 2], "scales": [1.0, 0.8, 0.65], "wet_ok": 0.25 }
 }
