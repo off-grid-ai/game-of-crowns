@@ -560,7 +560,7 @@ func apply_graphics() -> void:
 	# drops buy nearly all its frame rate. (Stills and films draw at full size in
 	# _capture_quality (shot_harness.gd), which sets its own.)
 	if not _film():
-		get_viewport().scaling_3d_scale = float(ProjectSettings.get_setting("rendering/scaling_3d/scale", 0.67))
+		get_viewport().scaling_3d_scale = float(_shot.get("scale", ProjectSettings.get_setting("rendering/scaling_3d/scale", 0.67)))  # --scale= for a measuring run's A/B
 	sun.directional_shadow_max_distance = minf(_rich["shadow"], 40.0) if graphics_smooth else _rich["shadow"]
 	# The woods: their leafy middle detail runs out sooner, and painted cards take over.
 	if terrain and terrain.forest and terrain.forest.has_method("set_reach"):
