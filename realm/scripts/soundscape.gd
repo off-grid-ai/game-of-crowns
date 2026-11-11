@@ -477,6 +477,8 @@ func _tick_clips(delta: float) -> void:
 		for person in _clips.keys():
 			if not is_instance_valid(person):
 				_clips.erase(person)
+			elif not (person as Node3D).is_inside_tree():
+				continue  # out of the scene for now (a body set aside): nothing to hear, its move kept
 			elif cam.global_position.distance_to((person as Node3D).global_position) <= HEARD_WITHIN:
 				_near_clips.append(person)
 	var now := Time.get_ticks_msec() / 1000.0

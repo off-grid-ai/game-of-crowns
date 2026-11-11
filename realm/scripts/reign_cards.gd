@@ -281,6 +281,12 @@ var _end_seen := ""  # the ended reign whose card was shown (once, unless he rul
 ## and on it what the realm calls him, its verdict, the reign in numbers, and
 ## what next (rule on in the same realm, or the menu).
 func _reign_end(r: Dictionary) -> void:
+	# The bridge sends null for what a reign hasn't got (a name's why, a verdict):
+	# read those as missing, so each line below falls back to its default.
+	r = r.duplicate()
+	for k in r.keys():
+		if r[k] == null:
+			r.erase(k)
 	var key := "%s|%s|%s" % [r.get("id", ""), r.get("title", ""), r.get("score", 0)]
 	if key == _end_seen:
 		return
