@@ -77,7 +77,14 @@ func look_season(world: Dictionary) -> String:
 	if _shot.has("season"):
 		return String(_shot["season"])
 	var mirror := String(awareness.realm.get_var(&"season", "", false)) if awareness else ""
-	return mirror if mirror != "" else String(world.get("date", {}).get("season", "summer"))
+	var now := mirror if mirror != "" else String(world.get("date", {}).get("season", "summer"))
+	# A film keeps the first season it sees for the whole run: a test reign's seasons turn in a minute, and
+	# batch 7's fire launch flipped winter, spring and summer mid-shot, the snow gone at a stroke.
+	if _film():
+		if _film_season == "":
+			_film_season = now
+		return _film_season
+	return now
 
 
 ## How long the land takes to settle into a new season: a quarter of the realm's season.
@@ -86,6 +93,7 @@ func season_settle(world: Dictionary) -> float:
 
 
 var _snowed := -1  # town count when the season was last laid on them
+var _film_season := ""  # the season a film holds (look_season)
 
 
 func _ready() -> void:
