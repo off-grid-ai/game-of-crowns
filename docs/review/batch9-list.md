@@ -123,3 +123,20 @@ Each against its batch 7 frame (`/tmp/goc-batch7`), the same step.
     town itself in view.
 13. **A toast** (any decree: `town Kingsmere` then a decree button, `snap ui-toast ui` within 2 s), v1 then v2.
 Judge each against ui-pass.md's reference column (AoE IV, Anno 1800, CK3).
+
+## The King's decisions in the world (gameplay review #6; switches `--decisions=on`, `--hosts=on`; both off by default until this passes)
+
+Pass each beside North Star 07-unrest and 08-reinforce; a pass turns its switch on by default (`realm/data/decisions.json`
+`on`, `realm/data/host_command.json` `on`), a fail takes the promise out of GAME_DESIGN's "within seconds... the result plays
+in the world" for that order. Siege camp (`--camp`) and fire (`--fire=v2`) stay with their own items above.
+35. **Unrest at a cold house's seat** (`--decisions=on`; `POST /test/stage {"favour": {"<house id>": 20}}` or the house
+    coldest in the reign, `city <its seat> 10`): a knot of townsfolk in the square, banners at half-mast; at an ultimatum,
+    guards doubled and braziers lit. Judge against 07-unrest.
+36. **A feast's lanterns** (`--decisions=on`; a feast decree at a house's seat, `city <seat> 8 -25` within 2 s and at
+    +20 s): lanterns round the square and the holder's banners between them, still there a season later.
+37. **The levy's table and the royal company at a gate** (`--decisions=on`; a levy at Kingsmere, then
+    `city Kingsmere 8`; a garrison stage at a sworn town): recruits in line under the royal standard; the standard and a
+    guard at the reinforced town's gate. Judge against 08-reinforce.
+38. **Commanding a host** (`--hosts=on`; select the royal standard, march it on a great house's town): the ground ring,
+    the glowing banner and the dotted route; a second order the same season says "The King's captains have their orders
+    for this season" (the bridge's one order a season); the host reaches the town and lays siege (gameplay review #7).
