@@ -114,6 +114,14 @@ the host). It now reads: **court rulings about 1 a minute; all decisions togethe
 ≥50% of time with no prompt up; no dead stretch over 45 s.** Measured today: 2.4–2.8 with seals, so
 event cards thin out in breathers first if load rises.
 
+## The bar (Mac, 2026-11-11)
+The casebook games are the competition, and their finish is the bar; nothing below it ships. Every visual
+change is judged as a still or clip at the same framing beside its reference shot from the casebook and
+the screen map (Foundation and Tiny Glade for towns and light, Manor Lords for layout, CK3 and KoDP for
+the court and faces). It goes on by default only when it holds up beside that shot, judged by the
+supervisor and shown to Mac. Where a free kit can't reach the bar, say so and price the fix (budget up to
+~$200).
+
 ## 6. How we work (so Mac can change anything while playing)
 - Copy, don't invent: every screen names its reference from the copy sheet.
 - One owner per fact; tunables in data; every system's knobs listed in docs/TUNING.md.
