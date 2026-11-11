@@ -1,0 +1,721 @@
+{
+ "_": "Review v17: batch 9's shots (docs/review/batch9-list.md, all four sessions'), each beside its reference from docs/art/target. docs/review/batch9.sh makes the frames; docs/review/v17_apply.py turns each into a screen with two versions: the target, then ours. Generated with batch9.sh from one description.",
+ "group": "Batch 9 beside the target",
+ "label": "Batch 9",
+ "switches": "--look=one --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on --ui=v2 --dressing=on --landmarks=meshy",
+ "shots": [
+  {
+   "id": "b9-kingsmere-6",
+   "name": "Kingsmere at 6",
+   "what": "The ladder at the rig's own pitch: each step further and higher (play.log: distance 6)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "ladder/kingsmere-6.png"
+  },
+  {
+   "id": "b9-kingsmere-10",
+   "name": "Kingsmere at 10",
+   "what": "The ladder at the rig's own pitch: each step further and higher (play.log: distance 10)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "ladder/kingsmere-10.png"
+  },
+  {
+   "id": "b9-kingsmere-16",
+   "name": "Kingsmere at 16",
+   "what": "The ladder at the rig's own pitch: each step further and higher (play.log: distance 16)",
+   "ref": "02-realm",
+   "card": "W3",
+   "still": "ladder/kingsmere-16.png"
+  },
+  {
+   "id": "b9-kingsmere-30",
+   "name": "Kingsmere at 30",
+   "what": "The ladder at the rig's own pitch: each step further and higher (play.log: distance 30)",
+   "ref": "02-realm",
+   "card": "W3",
+   "still": "ladder/kingsmere-30.png"
+  },
+  {
+   "id": "b9-kingsmere-50",
+   "name": "Kingsmere at 50",
+   "what": "The ladder at the rig's own pitch: each step further and higher (play.log: distance 50)",
+   "ref": "02-realm",
+   "card": "W3",
+   "still": "ladder/kingsmere-50.png"
+  },
+  {
+   "id": "b9-kingsmere-14-low",
+   "name": "Kingsmere 14, low tilt",
+   "what": "Batch 7's low tilt for the record: the lens tips up where roofs block it",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "ladder/kingsmere-14-low.png"
+  },
+  {
+   "id": "b9-kingsmere-40-low",
+   "name": "Kingsmere 40, low tilt",
+   "what": "Batch 7's low tilt at 40",
+   "ref": "02-realm",
+   "card": "W3",
+   "still": "ladder/kingsmere-40-low.png"
+  },
+  {
+   "id": "b9-goldrock-6",
+   "name": "Goldrock at 6",
+   "what": "Goldrock stays in frame with a court due (no court taking the camera)",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "ladder/goldrock-6.png"
+  },
+  {
+   "id": "b9-goldrock-10",
+   "name": "Goldrock at 10",
+   "what": "Goldrock stays in frame with a court due (no court taking the camera)",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "ladder/goldrock-10.png"
+  },
+  {
+   "id": "b9-goldrock-16",
+   "name": "Goldrock at 16",
+   "what": "Goldrock stays in frame with a court due (no court taking the camera)",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "ladder/goldrock-16.png"
+  },
+  {
+   "id": "b9-goldrock-30",
+   "name": "Goldrock at 30",
+   "what": "Goldrock stays in frame with a court due (no court taking the camera)",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "ladder/goldrock-30.png"
+  },
+  {
+   "id": "b9-forge",
+   "name": "The forge, settled",
+   "what": "The first frame already settled; no glowing ball at the smith's feet; sparks a short burst each stroke; two at the anvil",
+   "ref": "town-a",
+   "card": "W3",
+   "still": "settled/forge.png",
+   "clip": "settled/forge-clip.mp4"
+  },
+  {
+   "id": "b9-forge-ui",
+   "name": "The forge with its panels",
+   "what": "The same frame with the panels kept (snap ... ui): the film's own snaps leave them out",
+   "ref": "town-a",
+   "card": "W3",
+   "still": "settled/forge-ui.png"
+  },
+  {
+   "id": "b9-army-d12",
+   "name": "The army at d12",
+   "what": "The army, not the main menu",
+   "ref": "03-army",
+   "card": "O2",
+   "still": "army-line-d12.png"
+  },
+  {
+   "id": "b9-clarity-kingsmere-old",
+   "name": "Kingsmere, clarity old",
+   "what": "No ghosted near houses, no near blur, no orange wash (before)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "clarity-old/kingsmere-old.png"
+  },
+  {
+   "id": "b9-clarity-goldrock-old",
+   "name": "Goldrock, clarity old",
+   "what": "No ghosted near houses, no near blur, no orange wash (before)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "clarity-old/goldrock-old.png"
+  },
+  {
+   "id": "b9-clarity-forge-old",
+   "name": "The forge, clarity old",
+   "what": "No ghosted near houses, no near blur, no orange wash (before)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "clarity-old/forge-old.png"
+  },
+  {
+   "id": "b9-clarity-kingsmere-new",
+   "name": "Kingsmere, clarity new",
+   "what": "No ghosted near houses, no near blur, no orange wash (after)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "clarity-new/kingsmere-new.png"
+  },
+  {
+   "id": "b9-clarity-goldrock-new",
+   "name": "Goldrock, clarity new",
+   "what": "No ghosted near houses, no near blur, no orange wash (after)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "clarity-new/goldrock-new.png"
+  },
+  {
+   "id": "b9-clarity-forge-new",
+   "name": "The forge, clarity new",
+   "what": "No ghosted near houses, no near blur, no orange wash (after)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "clarity-new/forge-new.png"
+  },
+  {
+   "id": "b9-fire-before",
+   "name": "A sack, before",
+   "what": "The town before (and the season it starts in, held)",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "fire/fire-before.png"
+  },
+  {
+   "id": "b9-fire-06s",
+   "name": "A sack, 06s",
+   "what": "Three houses torched at once, spaced, mid-frame",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "fire/fire-06s.png",
+   "clip": "fire/fire-clip.mp4"
+  },
+  {
+   "id": "b9-fire-20s",
+   "name": "A sack, 20s",
+   "what": "The fire going house to house downwind",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "fire/fire-20s.png"
+  },
+  {
+   "id": "b9-fire-45s",
+   "name": "A sack, 45s",
+   "what": "Roofs falling in, smoke columns leaning one way",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "fire/fire-45s.png"
+  },
+  {
+   "id": "b9-fire-90s",
+   "name": "A sack, 90s",
+   "what": "Charred shells left",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "fire/fire-90s.png"
+  },
+  {
+   "id": "b9-bailey",
+   "name": "The bailey",
+   "what": "No orb beside the campfire; the drill on grass, not brown pads",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "fixes/bailey.png"
+  },
+  {
+   "id": "b9-mountains",
+   "name": "The far mountains",
+   "what": "Matte rock, no white specular blobs",
+   "ref": "02-realm",
+   "card": "W3",
+   "still": "fixes/mountains.png"
+  },
+  {
+   "id": "b9-hedges",
+   "name": "Field hedges",
+   "what": "Green hedgerows with a few small flowers, no red rings",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "fixes/hedges.png"
+  },
+  {
+   "id": "b9-goldrock-mill",
+   "name": "Goldrock's mill",
+   "what": "A watermill only on water",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "fixes/goldrock-mill.png"
+  },
+  {
+   "id": "b9-dry-mill",
+   "name": "A dry town's mill",
+   "what": "No watermill on dry grass (a windmill or none)",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "fixes/dry-mill.png"
+  },
+  {
+   "id": "b9-feast-bonfire",
+   "name": "The feast's bonfire",
+   "what": "Flames, not a bright blob; off the fountain, dancers round it",
+   "ref": "05-court",
+   "card": "W3",
+   "still": "fixes/feast-bonfire.png"
+  },
+  {
+   "id": "b9-meshy-forge-kit",
+   "name": "The forge (kit)",
+   "what": "Stands on the ground facing the street, its size beside the townsfolk, its roof or banner in the holder's colour (before)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "meshy-kit/forge-kit.png"
+  },
+  {
+   "id": "b9-meshy-forge-low-kit",
+   "name": "The forge, low (kit)",
+   "what": "The hand-painted look beside the kit's (before)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "meshy-kit/forge-low-kit.png"
+  },
+  {
+   "id": "b9-meshy-mill-kit",
+   "name": "The lumber mill (kit)",
+   "what": "In the watermill's place, its wheel in the stream (before)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "meshy-kit/mill-kit.png"
+  },
+  {
+   "id": "b9-meshy-treasury-kit",
+   "name": "The treasury (kit)",
+   "what": "In the guild hall's place (before)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "meshy-kit/treasury-kit.png"
+  },
+  {
+   "id": "b9-meshy-town-kit",
+   "name": "The whole town (kit)",
+   "what": "Does the painted set sit with the kit's houses? (before)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "meshy-kit/town-kit.png"
+  },
+  {
+   "id": "b9-meshy-forge-meshy",
+   "name": "The forge (meshy)",
+   "what": "Stands on the ground facing the street, its size beside the townsfolk, its roof or banner in the holder's colour (after)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "meshy-meshy/forge-meshy.png"
+  },
+  {
+   "id": "b9-meshy-forge-low-meshy",
+   "name": "The forge, low (meshy)",
+   "what": "The hand-painted look beside the kit's (after)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "meshy-meshy/forge-low-meshy.png"
+  },
+  {
+   "id": "b9-meshy-mill-meshy",
+   "name": "The lumber mill (meshy)",
+   "what": "In the watermill's place, its wheel in the stream (after)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "meshy-meshy/mill-meshy.png"
+  },
+  {
+   "id": "b9-meshy-treasury-meshy",
+   "name": "The treasury (meshy)",
+   "what": "In the guild hall's place (after)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "meshy-meshy/treasury-meshy.png"
+  },
+  {
+   "id": "b9-meshy-town-meshy",
+   "name": "The whole town (meshy)",
+   "what": "Does the painted set sit with the kit's houses? (after)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "meshy-meshy/town-meshy.png"
+  },
+  {
+   "id": "b9-stables",
+   "name": "Stables and paddock",
+   "what": "Horses stroll and graze, near",
+   "ref": "town-a",
+   "card": "W3",
+   "still": "village/stables-clip-01.png",
+   "clip": "village/stables-clip.mp4"
+  },
+  {
+   "id": "b9-stables-far",
+   "name": "The paddock from further",
+   "what": "Horses still moving at 14",
+   "ref": "town-a",
+   "card": "W3",
+   "still": "village/stables-far-clip-01.png",
+   "clip": "village/stables-far-clip.mp4"
+  },
+  {
+   "id": "b9-war",
+   "name": "War",
+   "what": "16 in four rows in the square, half the stalls unmanned, a barricade and standards",
+   "ref": "08-reinforce",
+   "card": "W3",
+   "still": "village/war.png"
+  },
+  {
+   "id": "b9-hunger",
+   "name": "Hunger",
+   "what": "The dole table and its line, beggars, cold chimneys, shut stalls",
+   "ref": "07-unrest",
+   "card": "W3",
+   "still": "village/hunger.png"
+  },
+  {
+   "id": "b9-road",
+   "name": "The road",
+   "what": "At least two parties or carts in shot",
+   "ref": "06-inn",
+   "card": "W3",
+   "still": "village/road-clip-01.png",
+   "clip": "village/road-clip.mp4"
+  },
+  {
+   "id": "b9-inn",
+   "name": "The inn",
+   "what": "Two horses at the rail, a long table with drinkers",
+   "ref": "06-inn",
+   "card": "W3",
+   "still": "village/inn.png"
+  },
+  {
+   "id": "b9-mill",
+   "name": "The windmill",
+   "what": "Canvas sails turning clear of every roof, grain to it",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "village/mill-clip-01.png",
+   "clip": "village/mill-clip.mp4"
+  },
+  {
+   "id": "b9-levy",
+   "name": "A levy mustered",
+   "what": "24 in four rows before the sergeant, kin waving",
+   "ref": "08-reinforce",
+   "card": "W3",
+   "still": "village/levy-clip-01.png",
+   "clip": "village/levy-clip.mp4"
+  },
+  {
+   "id": "b9-levy-road",
+   "name": "The levy marching out",
+   "what": "Files of six marching out along the main road",
+   "ref": "08-reinforce",
+   "card": "W3",
+   "still": "village/levy-road-clip-01.png",
+   "clip": "village/levy-road-clip.mp4"
+  },
+  {
+   "id": "b9-goldrock-fountain",
+   "name": "Goldrock's fountain",
+   "what": "Grey uneven stone, dark still water, nobody in it, no canopy over it",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "fountain/goldrock-fountain.png"
+  },
+  {
+   "id": "b9-kingsmere-statue",
+   "name": "The King on his column",
+   "what": "The statue upright on the column in a stone basin",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "fountain/kingsmere-statue.png"
+  },
+  {
+   "id": "b9-kingsmere-crowd",
+   "name": "The crowd's clothes",
+   "what": "Warm, varied cloth; about one in six in the holder's colour",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "fountain/kingsmere-crowd.png"
+  },
+  {
+   "id": "b9-village-crowd",
+   "name": "A smaller town's crowd",
+   "what": "Lighter homespun, fewer in the holder's colour",
+   "ref": "town-a",
+   "card": "W3",
+   "still": "fountain/village-crowd.png"
+  },
+  {
+   "id": "b9-ui-town-v1",
+   "name": "The town at rest (v1)",
+   "what": "No camera buttons on the right edge, the minimap flush, the date card about a fifth of the screen (before)",
+   "ref": "05-court",
+   "card": "O10",
+   "still": "ui-v1/ui-town-v1.png"
+  },
+  {
+   "id": "b9-ui-chronicle-v1",
+   "name": "The chronicle open (v1)",
+   "what": "Narrow, under half the screen tall (before)",
+   "ref": "05-court",
+   "card": "O10",
+   "still": "ui-v1/ui-chronicle-v1.png"
+  },
+  {
+   "id": "b9-ui-towncard-v1",
+   "name": "A town's card (v1)",
+   "what": "On the left, narrow, the town in view (before)",
+   "ref": "05-court",
+   "card": "O10",
+   "still": "ui-v1/ui-towncard-v1.png"
+  },
+  {
+   "id": "b9-ui-town-v2",
+   "name": "The town at rest (v2)",
+   "what": "No camera buttons on the right edge, the minimap flush, the date card about a fifth of the screen (after)",
+   "ref": "05-court",
+   "card": "O10",
+   "still": "ui-v2/ui-town-v2.png"
+  },
+  {
+   "id": "b9-ui-chronicle-v2",
+   "name": "The chronicle open (v2)",
+   "what": "Narrow, under half the screen tall (after)",
+   "ref": "05-court",
+   "card": "O10",
+   "still": "ui-v2/ui-chronicle-v2.png"
+  },
+  {
+   "id": "b9-ui-towncard-v2",
+   "name": "A town's card (v2)",
+   "what": "On the left, narrow, the town in view (after)",
+   "ref": "05-court",
+   "card": "O10",
+   "still": "ui-v2/ui-towncard-v2.png"
+  },
+  {
+   "id": "b9-unrest",
+   "name": "Unrest at a cold house's seat",
+   "what": "A knot of townsfolk in the square, banners at half-mast",
+   "ref": "07-unrest",
+   "card": "O10",
+   "still": "decisions/unrest.png"
+  },
+  {
+   "id": "b9-lanterns-2s",
+   "name": "A feast's lanterns",
+   "what": "Lanterns round the square and the holder's banners, within 2 s",
+   "ref": "05-court",
+   "card": "O10",
+   "still": "decisions/lanterns-2s.png"
+  },
+  {
+   "id": "b9-lanterns-20s",
+   "name": "The lanterns at +20 s",
+   "what": "Still there",
+   "ref": "05-court",
+   "card": "O10",
+   "still": "decisions/lanterns-20s.png"
+  },
+  {
+   "id": "b9-levy-table",
+   "name": "The levy's table",
+   "what": "Recruits in line under the royal standard",
+   "ref": "08-reinforce",
+   "card": "O10",
+   "still": "decisions/levy-table.png"
+  },
+  {
+   "id": "b9-siege-camp",
+   "name": "The besiegers' camp",
+   "what": "Tents, fires, palisade, the engines going up (the Meshy catapult and guard tower with --landmarks=meshy), the besiegers' host in line",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "breach/siege-camp.png",
+   "clip": "breach/engine-clip.mp4"
+  },
+  {
+   "id": "b9-breach-cracked",
+   "name": "The wall cracking",
+   "what": "Stones striking with dust, the crack band",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "breach/breach-cracked.png"
+  },
+  {
+   "id": "b9-breach",
+   "name": "The breach",
+   "what": "Open to the ground, rubble",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "breach/breach.png"
+  },
+  {
+   "id": "b9-storm",
+   "name": "The storm",
+   "what": "Regiments queueing into the gap at a run, the holder's meeting them, banners wavering; fire arrows over the wall",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "breach/storm-clip-18.png",
+   "clip": "breach/storm-clip.mp4"
+  },
+  {
+   "id": "b9-storm-taken",
+   "name": "The gap taken",
+   "what": "The holder's regiments running into the town, the besiegers pouring through",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "breach/storm-taken.png"
+  },
+  {
+   "id": "b9-storm-fire",
+   "name": "The town alight",
+   "what": "Roofs burning behind the wall",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "breach/storm-fire.png"
+  },
+  {
+   "id": "b9-host-selected",
+   "name": "A host selected",
+   "what": "The ground ring, the glowing banner, the command card",
+   "ref": "02-realm",
+   "card": "O2",
+   "still": "hosts/host-selected.png"
+  },
+  {
+   "id": "b9-host-route",
+   "name": "A host's route",
+   "what": "The dotted route",
+   "ref": "02-realm",
+   "card": "O2",
+   "still": "hosts/host-route.png"
+  },
+  {
+   "id": "b9-host-march",
+   "name": "Ordering a march",
+   "what": "March by click: its route",
+   "ref": "02-realm",
+   "card": "O2",
+   "still": "hosts/host-march-click.png"
+  },
+  {
+   "id": "b9-battle-in-play",
+   "name": "A battle in play",
+   "what": "The lines meeting with a clash front, banners and standards, a rout that runs",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "battle-play/battle-in-play.png"
+  },
+  {
+   "id": "b9-sound-square-near",
+   "name": "The square near (sound)",
+   "what": "The hubbub with the crowd; the smith's blows on his strikes; dogs (judge by ear: sound.wav)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "sound/sound-square-near.png"
+  },
+  {
+   "id": "b9-sound-square-14",
+   "name": "The square at 14 (sound)",
+   "what": "Falling away with the zoom (judge by ear: sound.wav)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "sound/sound-square-14.png"
+  },
+  {
+   "id": "b9-sound-square-40",
+   "name": "The square at 40 (sound)",
+   "what": "A far murmur (judge by ear: sound.wav)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "sound/sound-square-40.png"
+  },
+  {
+   "id": "b9-sound-yard",
+   "name": "The yard (sound)",
+   "what": "Cows, sheep, pigs, hens, each on its own clock (judge by ear: sound.wav)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "sound/sound-yard.png"
+  },
+  {
+   "id": "b9-sound-paddock",
+   "name": "The paddock (sound)",
+   "what": "Horses snorting (judge by ear: sound.wav)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "sound/sound-paddock.png"
+  },
+  {
+   "id": "b9-sound-mill",
+   "name": "The mill (sound)",
+   "what": "Sails' creak, the wheel's water (judge by ear: sound.wav)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "sound/sound-mill.png"
+  },
+  {
+   "id": "b9-sound-levy",
+   "name": "The levy (sound)",
+   "what": "The drum at the column's head (judge by ear: sound.wav)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "sound/sound-levy.png"
+  },
+  {
+   "id": "b9-sound-hour-5.5",
+   "name": "Kingsmere at 5.5 (sound)",
+   "what": "The cock at dawn (sound-hour-5.5.wav)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "sound-hour-5.5/sound-hour-5.5.png"
+  },
+  {
+   "id": "b9-sound-hour-23",
+   "name": "Kingsmere at 23 (sound)",
+   "what": "The owl at night (sound-hour-23.wav)",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "sound-hour-23/sound-hour-23.png"
+  }
+ ],
+ "needed": [],
+ "steps": [
+  {
+   "step": "site <kind> [n] [dist] [tilt]",
+   "what": "Frames the n-th roadside site of a kind, from the crown's seat outward (autoplay.gd; roadside.gd sites()). play.log says where it stood, or that none of that kind stands."
+  },
+  {
+   "step": "work <Town> <trade> [dist] [tilt]",
+   "what": "Frames a trade's building in a town from the town root's works (autoplay.gd; works.gd find). play.log says where, or which trades the town has."
+  },
+  {
+   "step": "breach [dist] [tilt]",
+   "what": "Frames the first open breach in a stone wall near the staged siege's front, low and oblique (the siege's front if none is open yet; autoplay.gd)."
+  },
+  {
+   "step": "host [n] [dist] [tilt]",
+   "what": "Frames the King's n-th host and clicks its standard (autoplay.gd; host_command.gd, --hosts=on). play.log says how many hosts stand."
+  },
+  {
+   "step": "camp [dist] [tilt]",
+   "what": "Frames the besiegers' camp from over its tents toward the town (autoplay.gd; siege_camp.gd, --camp=on or --wall-demo)."
+  },
+  {
+   "step": "engine [n] [dist] [tilt]",
+   "what": "Frames the n-th siege engine low and oblique (autoplay.gd; group siege_engines)."
+  },
+  {
+   "step": "field season t [n] [dist] [tilt]",
+   "what": "Holds the fields' year at a season and how far through it, and frames the n-th sown field from the crown's seat (autoplay.gd; works-life's countryside.gd hold_season)."
+  },
+  {
+   "step": "flock [n] [dist] [tilt]",
+   "what": "Frames the n-th fallow field, where a shepherd's flock grazes (autoplay.gd)."
+  },
+  {
+   "step": "castle Town [dist] [tilt] [gate]",
+   "what": "Frames the town's castle low and oblique, or its gatehouse (autoplay.gd)."
+  }
+ ]
+}
