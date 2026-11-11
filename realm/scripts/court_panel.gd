@@ -74,6 +74,15 @@ func _build_court() -> void:
 	_court_panel.visible = false
 
 
+## The matter before the court with this id ({} if it's gone): read by the v2 opening to
+## show a ruling where it lands (main.gd).
+func matter(id: String) -> Dictionary:
+	for p in _petitions:
+		if String(p.get("id", "")) == id:
+			return p
+	return {}
+
+
 ## Whether the court's matters carry their places (they then wait on the map as faces).
 func _placed(petitions: Array) -> bool:
 	return petitions.any(func(p): return p.get("place") is Dictionary)

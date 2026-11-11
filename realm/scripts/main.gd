@@ -447,6 +447,17 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--opening=v2"):
 		hand_prompts = load("res://scripts/hand_prompts.gd").new(self)
 		add_child(hand_prompts)
+		# Item 3: a ruling is seen where it lands. Its result becomes the latest news at the
+		# matter's town, with the edge arrow and Space to go and look (news.point_at; Warcraft's
+		# jump-to-event, Frostpunk's consequence on the map). The camera is never taken.
+		var ruled_at := [Vector3.INF]
+		ui.petition_answered.connect(func(id, _o):
+			var m: Dictionary = ui.court.matter(String(id))
+			ruled_at[0] = ui.place_of.call(m) if not m.is_empty() else Vector3.INF)
+		bridge.command_done.connect(func(ok, text):
+			if ok and ruled_at[0] != Vector3.INF and String(text) != "":
+				news.point_at(ruled_at[0], String(text), func(): pass)
+			ruled_at[0] = Vector3.INF)
 	# The motion probe (tools/motion_probe.gd): test runs only, headless on a private bridge.
 	if Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--motion-probe=")): add_child(load("res://tools/motion_probe.gd").new())
 	# How much of the screen the interface covers at rest (tools/ui_coverage.gd): test runs only.
