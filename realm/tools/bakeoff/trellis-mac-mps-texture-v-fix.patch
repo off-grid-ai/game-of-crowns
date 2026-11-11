@@ -1,0 +1,26 @@
+diff --git a/trellis/renderers/sw_rasterizer.py b/trellis/renderers/sw_rasterizer.py
+index 456d1b3..84dfc5d 100644
+--- a/trellis/renderers/sw_rasterizer.py
++++ b/trellis/renderers/sw_rasterizer.py
+@@ -252,8 +252,11 @@ def texture(tex: torch.Tensor, uv: torch.Tensor, uv_da=None, mip=None, filter_mo
+ 
+     Args:
+         tex: [B, H_tex, W_tex, C] texture image(s).
+-        uv: [B, H, W, 2] normalized UV coordinates in [0, 1], OpenGL convention (v=0 is the
+-            bottom row of `tex`, v=1 is the top row), matching xatlas's UV output convention.
++        uv: [B, H, W, 2] normalized UV coordinates in [0, 1], nvdiffrast's convention: v=0 is
++            row 0 of `tex` (its first row in memory), v=1 the last row. bake_texture relies on
++            this (it flips the optimised texture with .flip(0) afterwards, as upstream TRELLIS
++            does for real nvdiffrast); sampling v=0 from the last row instead baked every UV
++            chart upside down and the GLB came out as scattered patches.
+     Returns:
+         [B, H, W, C] sampled colors.
+     """
+@@ -261,6 +264,6 @@ def texture(tex: torch.Tensor, uv: torch.Tensor, uv_da=None, mip=None, filter_mo
+     u = uv[..., 0]
+     v = uv[..., 1]
+     grid_x = u * 2.0 - 1.0
+-    grid_y = 1.0 - v * 2.0
++    grid_y = v * 2.0 - 1.0  # v=0 -> row 0, as nvdiffrast's dr.texture
+     sampled = _bilinear_sample_manual(tex_nchw, grid_x, grid_y)
+     return sampled.permute(0, 2, 3, 1)                      # [B, H, W, C]
