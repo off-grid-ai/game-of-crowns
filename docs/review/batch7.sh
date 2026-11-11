@@ -4,7 +4,7 @@
 # reference each is judged beside are listed in docs/review/v15.json; docs/review/v15_apply.py puts the
 # results on the review page.
 #
-#   docs/review/batch7.sh            # all of it, about 75 minutes [estimate: the launches' LIMITs and waits]
+#   docs/review/batch7.sh            # all of it, about 77 minutes [estimate: the launches' LIMITs and waits]
 #   ONLY="towns fire" docs/review/batch7.sh   # some launches only: towns moods fire breach army hosts night
 #   OUT=/tmp/goc-batch7 (default)    # frames, logs and clips land here
 #
@@ -163,11 +163,17 @@ fi
 # 959e850f): the wall cracks, crumbles and opens (about 20-30 s after the siege stands), the parties fight the
 # holder's block in the gap, the losers fall back, the town is taken and put to the torch (--fire=v2).
 if want breach; then
+  # The camp and its engines first (9d299d6f, on with --wall-demo): the camp wide while the engines go up, an
+  # engine through a whole throw, its stones hitting the wall; then the breach and the storm as before. With
+  # only the engines throwing now, the wall opens about 60-80 s after they're built [estimate]: the waits allow it.
   {
     print "wait 25"
+    if has_step camp; then print "camp 9 -20"; print "wait 4"; print "snap siege-camp"; fi
+    if has_step engine; then print "engine 0 2.5 -18"; print "wait 14"; burst engine-clip 45 0.2; fi
     if has_step breach; then print "breach 4 -25"; else print "look breach-front"; fi
-    print "wait 12"; print "snap breach-cracked"
-    print "wait 20"
+    burst stone-clip 40 0.2
+    print "snap breach-cracked"
+    print "wait 45"
     if has_step breach; then print "breach 3 -25"; fi
     print "snap breach"; burst breach-clip 30 0.2
     print "wait 4"; burst storm-clip 36 0.25
@@ -180,7 +186,7 @@ if want breach; then
     print "look breach-end"
   } > $OUT/breach.play
   play breach 600 --walls=stone --siege --wall-demo
-  for c in breach-clip storm-clip; do clip $OUT/breach $c 5; done
+  for c in engine-clip stone-clip breach-clip storm-clip; do clip $OUT/breach $c 5; done
 fi
 
 # 6. The army by regiment (fcf18837; army_spike.gd frames the host itself at the shot's --dist): the line with a

@@ -1,5 +1,5 @@
 {
- "_": "Review v15: batch 7's shots, each beside its reference from docs/art/target (copied to screens/ref). docs/review/batch7.sh makes the frames (paths under its OUT folder); docs/review/v15_apply.py turns each into a screen on the review page with two versions: the target, then ours, so Side by side shows them together. 'card' is the copy sheet's card. 'needs' names the harness step that frames the shot (site, work, breach, host); if the step finds nothing, the shot shows the road or the square and the batch's log says so.",
+ "_": "Review v15: batch 7's shots, each beside its reference from docs/art/target (copied to screens/ref). docs/review/batch7.sh makes the frames (paths under its OUT folder); docs/review/v15_apply.py turns each into a screen on the review page with two versions: the target, then ours, so Side by side shows them together. 'card' is the copy sheet's card. 'needs' names the harness step that frames the shot (site, work, breach, host, camp, engine); if the step finds nothing, the shot shows the road or the square and the batch's log says so.",
  "group": "Batch 7 beside the target",
  "label": "Batch 7: every switch on",
  "switches": "--look=one --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on",
@@ -266,6 +266,35 @@
    "still": "fire/fire-ruin.png"
   },
   {
+   "id": "b7-siege-camp",
+   "name": "The besiegers' camp",
+   "what": "The camp wide: tents in the besieger's colours, cook fires, the palisade, wagons behind, the engines going up in the band, the wall beyond",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "breach/siege-camp.png",
+   "needs": "camp"
+  },
+  {
+   "id": "b7-engine-throw",
+   "name": "An engine mid-throw",
+   "what": "A trebuchet worked by its crew: the arm drawn back, loaded, whipping over, the stone away on its arc",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "breach/engine-clip-24.png",
+   "clip": "breach/engine-clip.mp4",
+   "needs": "engine"
+  },
+  {
+   "id": "b7-stone-hit",
+   "name": "A stone hitting the wall",
+   "what": "The engines' stones striking the wall: dust, stones falling, the crack band",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "breach/stone-clip-20.png",
+   "clip": "breach/stone-clip.mp4",
+   "needs": "breach"
+  },
+  {
    "id": "b7-breach",
    "name": "The wall breach",
    "what": "The stone wall opened by thrown stones: a gap to the ground and its rubble ramp",
@@ -338,6 +367,14 @@
   {
    "step": "host [n] [dist] [tilt]",
    "what": "Frames the King's n-th host and clicks its standard (autoplay.gd; host_command.gd, --hosts=on). play.log says how many hosts stand."
+  },
+  {
+   "step": "camp [dist] [tilt]",
+   "what": "Frames the besiegers' camp from over its tents toward the town (autoplay.gd; siege_camp.gd, --camp=on or --wall-demo)."
+  },
+  {
+   "step": "engine [n] [dist] [tilt]",
+   "what": "Frames the n-th siege engine low and oblique (autoplay.gd; group siege_engines)."
   }
  ]
 }
