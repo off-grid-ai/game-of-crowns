@@ -64,7 +64,7 @@ func show_marks(marks: Array, turn: int) -> void:
 		if kind != "sack" and kind != "razed":
 			continue
 		var age := turn - int(m.get("turn", turn))
-		var life: float = terrain.SCAR[kind][2]
+		var life: float = terrain.scar_heals(m)
 		var key := "%s:%d:%d" % [kind, int(m["x"]), int(m["y"])]
 		if kind == "sack" and age >= life * 0.85:
 			continue  # the burn has all but healed: the stumps are gone with it
@@ -84,7 +84,7 @@ func show_marks(marks: Array, turn: int) -> void:
 			if is_instance_valid(_shown[key]):
 				_shown[key].queue_free()
 			_shown.erase(key)
-		elif is_instance_valid(_shown[key]) and turn - int(_shown[key].get_meta("turn", turn)) >= float(terrain.SCAR["razed"][2]) * 0.85:
+		elif is_instance_valid(_shown[key]) and turn - int(_shown[key].get_meta("turn", turn)) >= terrain.RAZED_BURN * 0.85:
 			var stumps: Node = _shown[key].get_node_or_null("Stumps")  # the ruin stays; the burn round it has healed
 			if stumps:
 				stumps.queue_free()

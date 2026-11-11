@@ -21,6 +21,13 @@ var towns: Node3D
 var villagers: Node3D
 
 var realm := Blackboard.new()
+## The realm's rules as the bridge sends them in /world, each decided once there
+## (docs/TUNING.md): the view reads these and never repeats the numbers.
+## Static, so any script can read them through a preload, node or not.
+static var season_seconds := 0.0  # world.turnSeconds: how long a season lasts (bridge/data/pace.json); 0 until the first world
+static var bands := {}  # world.bands: the favour each band starts at, loyal/sworn/steady/cooling (bridge/data/favour.json)
+static var civilian: Array = []  # world.civilian: Freeciv unit types that aren't soldiers (bridge campaigns.js CIVILIAN)
+static var tithe_high := 1.0  # world.crown.titheHigh: the tithe the houses grumble at (bridge crown.js TITHE_HIGH)
 var _towns := {}  # town id -> Blackboard
 var _seen := {}  # scene id -> true: each scene is news once
 
@@ -70,6 +77,14 @@ func sync(world: Dictionary) -> void:
 	var crown: Dictionary = _dict(world.get("crown"))
 	realm.set_var(&"treasury", int(crown.get("treasury", 0)))
 	realm.set_var(&"tithe", float(crown.get("tithe", 0)) if crown.get("tithe") != null else 0.0)
+	if world.get("turnSeconds") != null:
+		season_seconds = float(world["turnSeconds"])
+	if world.get("bands") is Dictionary:
+		bands = world["bands"]
+	if world.get("civilian") is Array:
+		civilian = world["civilian"]
+	if crown.get("titheHigh") != null:
+		tithe_high = float(crown["titheHigh"])
 	var players := {}
 	for p in world.get("players", []):
 		players[int(p["id"])] = p
@@ -122,6 +137,14 @@ func sync(world: Dictionary) -> void:
 		if kind == "rider" and int(s.get("owner", -2)) == crown_id:
 			kind = "king"  # the King's own rider: his banner passing
 		emit(kind, terrain.world_pos(float(s.get("x", 0)), float(s.get("y", 0))), house, float(s.get("strength", -1.0)))
+
+
+## A house's favour as a word anyone would say (Loyal, Content, Cold, Angry), by the
+## bridge's bands: the one place the view turns a favour number into a mood.
+static func mood_of(f: float) -> String:
+	if bands.is_empty():
+		return ""
+	return "Loyal" if f >= float(bands["loyal"]) else ("Content" if f >= float(bands["steady"]) else ("Cold" if f >= float(bands["cooling"]) else "Angry"))
 
 
 ## A value from /world that should be a record: an empty one when it's missing or null

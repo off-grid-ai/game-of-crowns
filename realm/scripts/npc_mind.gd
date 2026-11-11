@@ -14,6 +14,7 @@ const People := preload("res://scripts/people.gd")
 const SceneKinds := preload("res://scripts/scene_kinds.gd")
 const Motion := preload("res://scripts/motion.gd")
 const TownNav := preload("res://scripts/town_nav.gd")  # what stands in a town's way
+const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const Weapons := preload("res://scripts/weapons.gd")  # what a move needs in hand (can_play)
 const AnimLOD := preload("res://scripts/anim_lod.gd")  # minds think by distance from the camera
 
@@ -523,7 +524,7 @@ class Weigh extends BTAction:
 		var mood := String(bb.get_var(&"mood", "", false))
 		var grief: bool = bb.get_var(&"grief", false, false)
 		var rich: bool = bb.get_var(&"prosperity", false, false)
-		var sour: bool = bb.get_var(&"grasping", false, false) or float(bb.get_var(&"favour", 100.0, false)) < 35.0
+		var sour: bool = bb.get_var(&"grasping", false, false) or float(bb.get_var(&"favour", 100.0, false)) < float(Awareness.bands.get("steady", 0.0))  # cooling or worse, by the bridge's bands
 		var winter := String(bb.get_var(&"season", "", false)) == "winter"
 		var wet := String(bb.get_var(&"weather", "clear", false)) in ["rain", "storm"]
 		var merry := act in ["dance", "song", "toast", "clap", "lute"]

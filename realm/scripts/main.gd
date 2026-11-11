@@ -36,6 +36,7 @@ var mic: Node  # speaking instead of typing
 var interior: CanvasLayer  # inside a building
 var _selected := -1
 var _time_of_day := 0.36
+const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const ShotHarness := preload("res://scripts/shot_harness.gd")
 var shots := ShotHarness.new(self)  # the test-and-film harness (shot_harness.gd): the flags and the shots
 var _shot: Dictionary:  # the command-line flags, read here wherever a test shot differs from play
@@ -76,7 +77,7 @@ func look_season(world: Dictionary) -> String:
 
 ## How long the land takes to settle into a new season: a quarter of the realm's season.
 func season_settle(world: Dictionary) -> float:
-	return maxf(2.0, float(world.get("turnSeconds", 40)) / 4.0)
+	return maxf(2.0, Awareness.season_seconds / 4.0)
 
 
 var _snowed := -1  # town count when the season was last laid on them
@@ -841,7 +842,6 @@ func _on_world(world: Dictionary) -> void:
 			print("LANES %d trees, %d ms" % [n, Time.get_ticks_msec() - t0])
 			await get_tree().process_frame
 		Engine.set_meta("stage", "countryside")
-		countryside.SEASON_SECONDS = float(world.get("turnSeconds", 40))  # crops ripen over the realm's own season
 		countryside.build(world.get("cities", []))
 		if Time.get_ticks_msec() - tt > 500:
 			print_verbose("BUILD roads+countryside %d ms" % (Time.get_ticks_msec() - tt))

@@ -39,6 +39,7 @@ signal house_followed(player_id: int)  # a sigil on the ladder clicked: the came
 signal matter_opened(at: Vector3)  # a matter's marker clicked: the King looks at its place (his own click)
 signal counsel_answered(key: String)  # the King answered the Hand's matter  # a story's name clicked in the chronicle
 
+const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const Features := preload("res://scripts/features.gd")
 const T := preload("res://scripts/theme.gd")
 const Keys := preload("res://scripts/keys.gd")
@@ -971,7 +972,7 @@ func set_tithe(rate: float) -> void:
 	_tithe_asked_at = Time.get_ticks_msec()
 	tithe_changed.emit(tithe)
 	_tithe_l.text = "%d%%" % int(tithe * 100)
-	toast("The royal tithe is now %d%%. %s" % [int(tithe * 100), "The houses grumble." if tithe >= 0.2 else "The houses breathe easier."])
+	toast("The royal tithe is now %d%%. %s" % [int(tithe * 100), "The houses grumble." if tithe >= Awareness.tithe_high else "The houses breathe easier."])
 
 
 ## Where the reign is heading, under the date (top_bar.gd).
@@ -1100,7 +1101,7 @@ func arms_pair(row: HBoxContainer, name: String, house: Dictionary, px: int) -> 
 
 ## A house's mood toward the King, as anyone would say it.
 static func mood(f: int) -> String:
-	return "Loyal" if f >= 60 else ("Content" if f >= 35 else ("Cold" if f >= 25 else "Angry"))
+	return Awareness.mood_of(f)  # by the bridge's favour bands (bridge/data/favour.json)
 
 
 func set_sigil(rect: TextureRect, house: Dictionary) -> void:
@@ -1109,11 +1110,9 @@ func set_sigil(rect: TextureRect, house: Dictionary) -> void:
 	rect.modulate = preload("res://scripts/heraldry.gd").colour(house, Color.GRAY, "#888").lerp(Color.WHITE, 0.25)
 
 
-var _season_s := 20.0  # seconds a season lasts, from the bridge
 
 
 func set_world(world: Dictionary, houses: Dictionary) -> void:
-	_season_s = float(world.get("turnSeconds", _season_s))
 	_tell_effects(world.get("effects", []))
 	houses_drawer._read_standing(world)
 	purse = int(world.get("crown", {}).get("treasury", 0))  # the court's orders check the purse

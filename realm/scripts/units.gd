@@ -5,12 +5,12 @@ const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost prob
 
 var terrain: Node3D
 var towns: Node3D  # towns.gd: inside a town's reach, soldiers keep to its streets
+const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const TownNav = preload("res://scripts/town_nav.gd")
 var _nav = TownNav.new()
 var _figures := {}  # unit id -> {node, target}
 
 
-const NOT_SOLDIERS := ["Workers", "Settlers", "Migrants", "Engineers", "Explorer", "Caravan", "Freight", "Diplomat", "Spy", "Leader"]
 
 
 ## A house's host to follow: soldiers only, the biggest stack in the field
@@ -18,7 +18,7 @@ const NOT_SOLDIERS := ["Workers", "Settlers", "Migrants", "Engineers", "Explorer
 func army_of(owner: int, world: Dictionary) -> Node3D:
 	var stacks := {}  # tile -> [count, node, in the field]
 	for u in world.get("units", []):
-		if int(u["owner"]) != owner or String(u["type"]) in NOT_SOLDIERS or not _figures.has(int(u["id"])):
+		if int(u["owner"]) != owner or String(u["type"]) in Awareness.civilian or not _figures.has(int(u["id"])):
 			continue
 		var node: Node3D = _figures[int(u["id"])]["node"]
 		if not is_instance_valid(node):
@@ -38,7 +38,6 @@ var _mats := {}
 var _people = preload("res://scripts/people.gd").new()
 const Scenes = preload("res://scripts/scenes.gd")
 const Horse = preload("res://scripts/horse.gd")
-var turn_seconds := 12.0
 
 const MOUNTED := ["Horsemen", "Chariot", "Elephants", "Crusaders", "Knights", "Dragoons", "Cavalry"]
 const LANCES := ["Knights", "Crusaders"]
@@ -73,7 +72,6 @@ var _heading := {}  # tile -> the way the army standing there last marched
 
 
 func sync(world: Dictionary, houses: Dictionary) -> void:
-	turn_seconds = float(world.get("turnSeconds", 12))
 	var seen := {}
 	var per_tile := {}
 	_town_tiles.clear()
@@ -248,7 +246,7 @@ func _process_timed(delta: float) -> void:
 			var length := road.get_baked_length()
 			# A steady march: across the season if the road is short, never faster
 			# than a soldier's pace if it is long (a sprint reads as fleeing).
-			var speed := minf(length / maxf(2.0, turn_seconds * 0.9), MARCH_SPEED)
+			var speed := minf(length / maxf(2.0, Awareness.season_seconds * 0.9), MARCH_SPEED)
 			f["t"] = minf(1.0, f["t"] + (delta * speed / length if length > 0.01 else 1.0))
 			f["pace"] = speed
 			# A march with nowhere to go (already there) stands: no curve to walk.

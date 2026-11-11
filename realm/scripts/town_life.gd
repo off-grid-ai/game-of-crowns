@@ -5,6 +5,7 @@ const Particles := preload("res://scripts/particles.gd")  # smoke and fire on th
 ## square while troops train; hunger browns the fields and queues people at the
 ## keep; celebrations light a bonfire; unrest sets roofs smoking.
 
+const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const S := 0.12
 const Real = preload("res://scripts/realistic.gd")
 
@@ -106,7 +107,7 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	_fields(root, hungry)
 	if kind == "Building" and building != "" and building != "Coinage":
 		_construction(root, life, center, building, progress, rng, int(c["size"]))
-	elif kind == "UnitType" and building != "" and not building in ["Settlers", "Workers", "Migrants", "Engineers", "Explorer", "Caravan", "Diplomat"]:
+	elif kind == "UnitType" and building != "" and not building in Awareness.civilian:  # a soldier's training, not a civilian's (bridge campaigns.js CIVILIAN)
 		_drill(root, life, center, progress, color, building)
 	# The town's health, readable at its door: beggars and the homeless when it
 	# starves (more in a bigger town), an angry crowd when it's in disorder.
@@ -239,7 +240,6 @@ var _people = preload("res://scripts/people.gd").new()
 ## after a season the rank falls out. Nobody blocks (a crouch reads as a fight).
 const DRILL_SWORD := ["SS_Slash_1", "SS_Slash_4", "Spear_Thrust", "SS_Attack_4"]  # cuts whose feet hold standing (NPC perf, clip_skate_probe 2026-11-11: Sword_Attack, SS_Attack_3, SS_Slash_2 skid 37-59% and end ~50 cm ahead)
 const DRILL_BOW := ["Bow_Draw", "Bow_Aim", "Bow_Shoot"]
-const DRILL_SEASON := 40.0  # seconds: one season, then the recruits fall out
 
 func _drill_routine(s: Node3D, bow: bool, seed: int) -> void:
 	var rng := RandomNumberGenerator.new()
@@ -274,7 +274,7 @@ func _drill_routine(s: Node3D, bow: bool, seed: int) -> void:
 	out.timeout.connect(func():
 		if is_instance_valid(s):
 			s.queue_free())
-	out.start(DRILL_SEASON + rng.randf_range(0.0, 4.0))
+	out.start(maxf(Awareness.season_seconds, 1.0) + rng.randf_range(0.0, 4.0))  # one season of the realm's, then the recruits fall out
 
 
 func _townsperson(parent: Node3D, pos: Vector3, role: String, anim: String, seed: int, tint := Color.WHITE) -> Node3D:

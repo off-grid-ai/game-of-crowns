@@ -25,7 +25,7 @@ const GREET_AGAIN := 30.0  # the same two greet once in this long
 ## callings): commoners make way and bow to those above them.
 const STATION := {"child": 0, "peasant": 1, "townsfolk": 1, "farmer": 1, "market": 1, "tavern": 1, "keeper": 1, "crafter": 1,
 	"idler": 1, "clergy": 2, "pious": 2, "soldier": 2, "archer": 2, "knight": 3, "noble": 3, "gentry": 3}
-const SOLDIERLY := ["soldier", "archer", "knight"]
+const SOLDIERLY := preload("res://scripts/people.gd").SOLDIERLY  # who fights: one list (people.gd)
 ## What the one passing does, by how they stand to the other.
 const TO_BETTER := ["Bow", "Nodding"]
 const TO_EQUAL := ["Nodding", "Waving", "Nodding"]

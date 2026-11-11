@@ -15,6 +15,7 @@ var terrain: Node3D
 var towns: Node3D
 var nav = preload("res://scripts/town_nav.gd").new()  # where people may stand, and the streets they walk
 var people = preload("res://scripts/people.gd").new()
+const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const Heraldry = preload("res://scripts/heraldry.gd")
 const Realistic = preload("res://scripts/realistic.gd")
 const TownLife := preload("res://scripts/town_life.gd")  # a feast's fire, its reach, and footprints
@@ -76,7 +77,7 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 					if int(c["id"]) == int(s["city"]):
 						city = c
 				var approach: Vector3 = terrain.world_pos(float(s.get("ax", s["x"])), float(s.get("ay", s["y"])))
-				_siege(int(s["city"]), at, approach, int(city.get("size", 4)), int(s.get("engines", 0)), houses.get(int(s.get("owner", -1)), {}), houses.get(int(s.get("defender", -1)), {}), float(world.get("turnSeconds", 20.0)))
+				_siege(int(s["city"]), at, approach, int(city.get("size", 4)), int(s.get("engines", 0)), houses.get(int(s.get("owner", -1)), {}), houses.get(int(s.get("defender", -1)), {}), Awareness.season_seconds)
 			"grain", "tribute":
 				follow = _convoy(at, terrain.world_pos(float(s["tx"]), float(s["ty"])), s["kind"] == "grain", "", s)
 			"muster":

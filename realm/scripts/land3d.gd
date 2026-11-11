@@ -5,6 +5,7 @@ extends Node3D
 ## through terrain.height_at(), so towns, roads and people stay on the ground.
 
 const LAYERS := ["grass", "dirt", "sand", "snow", "rock", "forest", "mud", "field"]  # the order of terrain._layers_at(), then the town's trodden mud and ploughed soil
+const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const MUD := 6
 const FIELD := 7
 const UV_SCALE := [0.8, 0.6, 0.6, 0.32, 1.0, 0.8, 0.72, 0.72]  # a game unit is ~8 m and a Poly Haven set ~2 m: any coarser and the grass smears into streaks
@@ -172,7 +173,9 @@ func _control(weights: Array) -> float:
 ## The season's colour for grass and open ground; in winter, snow settles
 ## over the land (SNOW_COVER, in Terrain3D's shader) in the first quarter of
 ## the winter and holds; it melts in the first quarter of the spring.
-func set_grass(tint: Color, snow := false, settle := SNOW_SETTLE) -> void:
+func set_grass(tint: Color, snow := false, settle := -1.0) -> void:
+	if settle < 0.0:
+		settle = _settle()
 	var ta: Terrain3DTextureAsset = land.assets.get_texture_asset(0)
 	if ta == null:
 		return
@@ -194,7 +197,9 @@ func set_grass(tint: Color, snow := false, settle := SNOW_SETTLE) -> void:
 	_snow_tween.tween_method(_set_snow, _snow_now, goal, settle)
 
 
-const SNOW_SETTLE := 10.0  # seconds, when no settle is given: a quarter of a 40 s season (main.gd passes the realm's own)
+## When no settle is given: a quarter of the realm's season (main.gd passes the realm's own).
+static func _settle() -> float:
+	return maxf(2.0, Awareness.season_seconds / 4.0)
 var _snow_now := 0.0
 var _snow_to := 0.0
 var _snow_laid := false
@@ -203,7 +208,9 @@ var _snow_tween: Tween
 
 ## How wet the ground is (0 dry, 1 soaked), settling over `settle` seconds.
 var _wet_now := 0.0
-func set_wet(v: float, settle := SNOW_SETTLE) -> void:
+func set_wet(v: float, settle := -1.0) -> void:
+	if settle < 0.0:
+		settle = _settle()
 	if land == null:
 		return
 	create_tween().tween_method(func(x: float):

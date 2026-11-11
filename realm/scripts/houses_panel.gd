@@ -6,6 +6,7 @@ extends RefCounted
 
 const T := preload("res://scripts/theme.gd")
 const UI := preload("res://scripts/ui.gd")
+const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const Heraldry = preload("res://scripts/heraldry.gd")
 
 var ui: UI  # the interface that owns this drawer: its signals, its building blocks, its other cards
@@ -186,7 +187,11 @@ func _fill_houses(world: Dictionary) -> void:
 				var d := int(r.get("d", 0))
 				if d != 0:
 					why.append("%s%d  %s" % ["+" if d > 0 else "", d, String(r.get("why", ""))])
-			var means := "Below 25 they may rise against you and refuse your banners." if f < 25 else ("Cooling: below 35 they won't answer your banners; below 25 they may rise." if f < 35 else ("Loyal: they answer your banners at once." if f >= 60 else "Content, for now."))
+			# By the bridge's bands (bridge/data/favour.json): the words name the numbers it sends.
+			var bd := Awareness.bands
+			var cool := int(bd.get("cooling", 0))
+			var steady := int(bd.get("steady", 0))
+			var means := ("Below %d they may rise against you and refuse your banners." % cool) if f < cool else (("Cooling: below %d they won't answer your banners; below %d they may rise." % [steady, cool]) if f < steady else ("Loyal: they answer your banners at once." if f >= int(bd.get("loyal", 101)) else "Content, for now."))
 			fav.tooltip_text = "Favour toward the crown: %d of 100\n\n%s%s" % [f, ("\n".join(why) + "\n\n") if not why.is_empty() else "", means]
 			fav.mouse_filter = Control.MOUSE_FILTER_PASS
 			# Which way they're going: "37 ▼10" over the last year, so a drift shows

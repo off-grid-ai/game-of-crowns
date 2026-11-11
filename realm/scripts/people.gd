@@ -16,6 +16,10 @@ const MOVING_PACE := WALK_PACE * 0.5  # steadier than this across the ground is 
 const IDLES := ["Idle", "Breathing_Idle", "Standing_Idle", "Standing_Idle_2", "Weight_Shift", "Looking_Around"]
 ## And how they talk, played for every "Idle_Talking".
 const TALKS := ["Idle_Talking", "Talking", "Talking_2", "Happy_Gesture"]
+## Who fights (dressed and tinted as soldiers; presence.gd's soldierly bearing), and of
+## them who stands ready with a sword (an archer stands with his bow): one list each.
+const SOLDIERLY := ["soldier", "archer", "knight"]
+const SWORDED := ["soldier", "knight"]
 const SEEN_TO := 18.0  # world units: beyond this a person isn't drawn or animated (a few pixels tall)
 
 const OUTFITS := {
@@ -237,7 +241,7 @@ func make(rng: RandomNumberGenerator, role := "peasant", tint := Color.WHITE, ag
 				_seen("body:" + body)
 			return make_body(rng, body, tint, age, build, role)
 	# A lady in a crowd, or too young or old for the gowned body, wears the dress in her house's colour.
-	var outfit_role := "soldier" if role in ["soldier", "archer", "knight"] or (role == "noble" and sex.left(1) != "f") else "peasant"
+	var outfit_role := "soldier" if role in SOLDIERLY or (role == "noble" and sex.left(1) != "f") else "peasant"
 	var outfits: Array = OUTFITS[outfit_role].filter(func(o): return (sex == "" or o[1] == sex.left(1)) and not o[0] in NEVER)
 	if outfits.is_empty():
 		outfits = OUTFITS[outfit_role].filter(func(o): return not o[0] in NEVER)
@@ -364,7 +368,7 @@ func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, ag
 			mi.owner = person
 			_solid(mi, nested)
 			if tint != Color.WHITE and String(mi.name) in info["cloth"]:
-				_tint(mi, tint, role in ["soldier", "archer", "knight"])
+				_tint(mi, tint, role in SOLDIERLY)
 			elif String(mi.name) in info.get("dyed", []):
 				var dyes := cloth_of(role if role != "" else String(info["roles"][0]))
 				_tint(mi, dyes[rng.randi() % dyes.size()])
@@ -448,7 +452,7 @@ func _finish(person: Node3D, skeleton: Skeleton3D, rng: RandomNumberGenerator, r
 	anim.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	# Every move goes through the person's state machine (motion.gd); the player
 	# only holds the moves.
-	var stance := "Sword_Idle" if role in ["soldier", "knight"] else ("Bow_Idle" if role == "archer" else "Idle")
+	var stance := "Sword_Idle" if role in SWORDED else ("Bow_Idle" if role == "archer" else "Idle")
 	var mo: AnimationTree = Motion.new()
 	person.add_child(mo)
 	mo.setup(anim, stance)
@@ -467,7 +471,7 @@ func _finish(person: Node3D, skeleton: Skeleton3D, rng: RandomNumberGenerator, r
 	if role in ["peasant", "townsfolk", "clergy", "noble"]:
 		person.set_meta("idle", IDLES[randi() % IDLES.size()])
 		person.set_meta("talk", TALKS[randi() % TALKS.size()])
-	if role in ["soldier", "knight"]:
+	if role in SWORDED:
 		# Each soldier has his own way of standing ready, so a company at ease
 		# isn't one pose copied down the ranks.
 		person.set_meta("guard", GUARDS[randi() % GUARDS.size()])

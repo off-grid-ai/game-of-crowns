@@ -3,6 +3,7 @@ extends Node3D
 ## terrain, a sea plane, and forests/rocks scattered on the right tiles.
 
 const TILE := 4.0
+const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const SUB := 4  # mesh vertices per tile edge
 const USE_TERRAIN3D := true  # false falls back to the hand-built mesh below
 const GROUND_LAYER := 2  # render layer of the land mesh alone, so painted ground never lands on people
@@ -110,7 +111,6 @@ const SEASONS := {
 
 ## Turns the land to the season: leaf colour, grass, the ground, and snow on
 ## whatever faces up in winter (trees, roofs). towns: their nodes, for the snow.
-const SNOW_FADE := 20.0  # seconds for snow to settle or melt: about half a season
 var _snow_fade: Tween
 
 
@@ -138,7 +138,7 @@ func set_season(name: String, towns: Array = [], settle := 10.0) -> void:
 	if _snow_fade:
 		_snow_fade.kill()
 	_snow_fade = create_tween()
-	_snow_fade.tween_method(func(v: float): _snow.set_shader_parameter("amount", v), from, float(s["snow"]), SNOW_FADE)
+	_snow_fade.tween_method(func(v: float): _snow.set_shader_parameter("amount", v), from, float(s["snow"]), maxf(2.0, Awareness.season_seconds / 2.0))  # snow settles or melts over half the realm's season
 	if s["snow"] <= 0.0:
 		var gone := towns.duplicate()
 		_snow_fade.tween_callback(func():
@@ -987,8 +987,20 @@ func set_realm(owners: Array, players: Array, intrigue: Array = []) -> void:
 ## r = how hard it burned, g = the season it happened, b = the seasons it
 ## takes to heal. The shader fades each by its age, so nothing is repainted
 ## as they heal. A battle burns its own tile; a town its tile and the ring
-## round it, fainter out.
-const SCAR := {"battle": [0.75, 0, 12.0], "sack": [1.0, 1, 16.0], "razed": [1.0, 1, 16.0]}
+## round it, fainter out. How long a battle's or a sack's scar shows is the
+## bridge's (each mark's `seasons`, server.js MARK_SEASONS); a razed town's
+## ruin stands until the bridge drops it, and the scorched ring round it heals
+## in RAZED_BURN seasons. SCAR keeps only the look: [how hard, how far].
+const SCAR := {"battle": [0.75, 0], "sack": [1.0, 1], "razed": [1.0, 1]}
+const RAZED_BURN := 16.0
+
+
+## The seasons a mark's burn takes to heal: the bridge's for a battle or a sack,
+## RAZED_BURN for the ground round a ruin.
+static func scar_heals(m: Dictionary) -> float:
+	if String(m.get("kind", "")) == "razed" or m.get("seasons") == null:
+		return RAZED_BURN
+	return float(m["seasons"])
 var _scar_sig := ""
 
 
@@ -1017,7 +1029,7 @@ func set_marks(marks: Array, turn: int) -> void:
 				if x < 0 or y < 0 or x >= width or y >= height:
 					continue
 				var k := 1.0 if dx == 0 and dy == 0 else 0.55
-				var c := Color(float(sc[0]) * k, float(m.get("turn", turn)), float(sc[2]), 1.0)
+				var c := Color(float(sc[0]) * k, float(m.get("turn", turn)), scar_heals(m), 1.0)
 				if left.call(c) > left.call(img.get_pixel(x, y)):
 					img.set_pixel(x, y, c)
 	land3d.set_scars(ImageTexture.create_from_image(img), turn)

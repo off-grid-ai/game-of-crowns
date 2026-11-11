@@ -508,7 +508,7 @@ static func pile_hay(parent: Node3D, xfs: Array) -> void:
 ## crop stands full and green, the grain yellowing toward the season's end.
 ## Autumn: gold until the field's harvest day, then stubble (or, for cabbages
 ## and beans, bare earth once lifted). Winter: bare, under the snow.
-static var SEASON_SECONDS := 20.0  # the realm's pace, from the bridge (main.gd sets it with each world)
+const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const TINTS := {"green": Color(0.5, 0.95, 0.32), "yellowing": Color(0.85, 0.95, 0.5), "gold": Color.WHITE, "stubble": Color(0.78, 0.66, 0.46)}
 const FLAX_TINTS := {"green": Color(0.8, 1.0, 0.8), "yellowing": Color(1.0, 0.95, 0.6), "gold": Color(1.25, 0.9, 0.5), "stubble": Color(1.0, 0.8, 0.55)}
 static var _season_name := ""
@@ -518,7 +518,7 @@ static var _tinted := {}  # "kind|stage" -> the crop's material in that colour
 
 ## How far through the season the realm is, 0 to 1.
 static func _through() -> float:
-	return clampf((Time.get_ticks_msec() - _season_from) / 1000.0 / SEASON_SECONDS, 0.0, 1.0)
+	return clampf((Time.get_ticks_msec() - _season_from) / 1000.0 / maxf(Awareness.season_seconds, 1.0), 0.0, 1.0)  # the realm's own season (bridge pace)
 
 
 static func _stage(kind: String, season: String, t: float, lag: float) -> Array:
