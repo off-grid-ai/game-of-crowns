@@ -8,6 +8,10 @@ Can the M5 draw 1,500 / 6,000 / 15,000 stylised soldiers in regiments, animated,
 house's colour, at Kingsmere's camera heights (roof, mid, map) at 3024x1964, at 30 fps or better, and does it
 look like target 03?
 
+**Bar (Mac, 2026-11-11):** "anything above 10 fps is fine." Go at **≥10 fps at mid zoom with 6,000 men**; then push
+the count (15,000, 30,000) and report the largest army that holds 10 fps. Density and the look beside 03 matter
+more than frame rate.
+
 ## Blocks (all free; downloaded under Mac's standing MIT/CC0 rule)
 | Need | Block | Licence |
 |---|---|---|
@@ -25,8 +29,8 @@ look like target 03?
    150 men, each one MultiMeshInstance3D (fixed slot grid, ranks and files), two LODs by distance, team colour per
    regiment (6 houses' colours), regiments marching and wheeling on a loop; the camera at roof, mid and map
    heights over the Kingsmere terrain; prints fps, CPU and GPU ms, draw calls every 2 s. Flags: `--regiments=10|40|100`.
-4. **Batch takes** (supervisor's render): 3 counts x 3 heights, stills + one 5 s marching clip, beside target 03.
-5. **Go/no-go:** go if 6,000 men hold 30 fps at mid height and the still reads as 03; then a one-page plan for the
+4. **Batch takes** (supervisor's render): counts 1,500 / 6,000 / 15,000 / 30,000 x 3 heights, stills + one 5 s marching clip, beside target 03.
+5. **Go/no-go:** go if 6,000 men hold 10 fps at mid height and the still reads as 03; then a one-page plan for the
    game (regiment per Freeciv unit, the skinned duel layer kept up close, Warcraft III command for the royal host).
 
 ## Risks
