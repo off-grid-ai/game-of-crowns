@@ -3,6 +3,8 @@ extends Node
 ## house smokes because a family is in). Reads the shared fact villagers.who_is_home and lights or
 ## damps each house's chimney (towns.gd tags each with its doorstep, group "hearths"). It decides
 ## nothing about the people; towns with no townsfolk drawn keep their smoke as built.
+## A starving town (the mirror's town mood, from the bridge's famine) burns little: only a share
+## of its hearths smoke even with someone home, and those thinly (hearths.json hunger).
 ## Knobs: realm/data/hearths.json. --hearths=off leaves every chimney as built.
 
 var main: Node
@@ -31,6 +33,8 @@ func _process(delta: float) -> void:
 	for id in main.towns.towns:
 		town_of[main.towns.towns[id]["node"]] = id
 	var home_by_town := {}
+	var hungry_town := {}
+	var aw: Object = Engine.get_meta("awareness") if Engine.has_meta("awareness") else null
 	for h in get_tree().get_nodes_in_group("hearths"):
 		var smoke := h as GPUParticles3D
 		var root := smoke.get_parent() as Node3D if smoke else null
@@ -47,5 +51,15 @@ func _process(delta: float) -> void:
 			if Vector2((at as Vector3).x - door.x, (at as Vector3).z - door.z).length() < float(_d.get("door_match", 0.35)):
 				lit = true
 				break
+		if not hungry_town.has(id):
+			hungry_town[id] = aw != null and String(aw.town(id).get_var(&"mood", "", false)) == "hunger"
+		var thin := 1.0
+		if hungry_town[id]:
+			var hg: Dictionary = _d.get("hunger", {})
+			if float(absi(hash(Vector2i(roundi(door.x * 100.0), roundi(door.z * 100.0)))) % 1000) / 1000.0 >= float(hg.get("share", 0.5)):
+				lit = false  # nothing to cook: this hearth stays cold
+			thin = float(hg.get("thin", 0.35))
+		if not is_equal_approx(smoke.amount_ratio, thin):
+			smoke.amount_ratio = thin
 		if smoke.emitting != lit:
 			smoke.emitting = lit

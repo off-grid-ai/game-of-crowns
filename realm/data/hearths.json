@@ -1,6 +1,7 @@
 {
-  "_": "Chimney smoke only where someone's home (the finesse catalogue; Manor Lords, Tiny Glade): a house's hearth smokes while its people are in or at the door (villagers.who_is_home). Towns with no townsfolk drawn keep their smoke as it is. Tune here.",
+  "_": "Chimney smoke only where someone's home (the finesse catalogue; Manor Lords, Tiny Glade): a house's hearth smokes while its people are in or at the door (villagers.who_is_home). Towns with no townsfolk drawn keep their smoke as it is. hunger: in a starving town (the bridge's famine, the mirror's town mood) only this share of hearths smoke even with someone home (share), each at this share of its smoke (thin). Tune here.",
   "on": true,
   "every_sec": 1.0,
-  "door_match": 0.35
+  "door_match": 0.35,
+  "hunger": { "share": 0.5, "thin": 0.35 }
 }
