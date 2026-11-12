@@ -2,6 +2,8 @@
 
 Messages from the supervisor pause after 10 sends while Mac isn't typing. Rulings land here instead. Newest first.
 
+- (11-12 15:35) **Takeover:** the old account hit its spend limit at ~15:27. Threads restarted in a new account from their hand-over notes: GoC (local_22c5fa46, restarts fire-siege and army-command), freeciv (local_c385a820), town-life (local_906aade6), works-life (local_f473ce79), army-layer (local_7f29ed9b), one-store (local_dad14ab9). Old session ids are dead; message the new ones. READY 9: Freeciv side done (truce and plague wired since d28e91c7).
+
 - (11-12 15:55) **Reassigned to army command:** audit #6 (soundscape reads buildings from the store), moved from **town life**, and audit #8 map_look v1/v2, moved from **one store**. Town life and one store: drop those two.
 - (11-12 15:45) **Data handles are fine:** a member like `_x = Data.read(...)` is a handle to data.gd's one cache, not a copy. Leave chronicle_panel, gold_mines, fire, roadside, town_scenes and towns as they are. Only a second loader or a copied value breaks READY 15.
 - (11-12 15:25) **The Mover's yield moves to army command** (it asked; army layer has not started it). One rule in mover.gd's base: a mover yields to, or re-routes round, any body in its way, not only one straight ahead, covering the cart's arc into a soldier and the led horse that waits forever, then gives up and reports. **Army layer: drop it** and go on with your audit items (#12 split army.gd, #8 knight/motion).
