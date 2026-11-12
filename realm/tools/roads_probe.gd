@@ -12,6 +12,7 @@ const Roads := preload("res://scripts/roads.gd")
 
 ## The little of the terrain that painting a road asks for: flat dry land, decals and tiles.
 class FlatLand extends Node3D:
+	var paths = self  # the overland paths (terrain.paths, land_paths.gd): this stand-in answers them itself
 	func is_land(_x: float, _z: float) -> bool:
 		return true
 	func in_river(_x: float, _z: float) -> bool:

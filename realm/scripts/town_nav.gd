@@ -534,7 +534,7 @@ func route(towns: Node3D, from: Vector3, to: Vector3, wide := false) -> PackedVe
 	var b := _walked(towns, to)
 	if a.is_empty() and b.is_empty():
 		var on_road: PackedVector3Array = roads.route(from, to) if roads and roads.has_method("route") else PackedVector3Array()
-		return on_road if not on_road.is_empty() else terrain.bowed(terrain.land_path(from, to))
+		return on_road if not on_road.is_empty() else terrain.paths.bowed(terrain.paths.land_path(from, to))
 	if not a.is_empty() and not b.is_empty() and a[0] == b[0]:
 		return walk(a[0], a[1], from, to, wide)
 	var out := PackedVector3Array()
@@ -548,7 +548,7 @@ func route(towns: Node3D, from: Vector3, to: Vector3, wide := false) -> PackedVe
 		tail = spot(b[0], b[1], head, wide)
 	# Between towns, along the drawn roads where they join the two; over the land where they don't.
 	var on_road: PackedVector3Array = roads.route(head, tail) if roads and roads.has_method("route") else PackedVector3Array()
-	out.append_array(on_road if not on_road.is_empty() else terrain.bowed(terrain.land_path(head, tail)))
+	out.append_array(on_road if not on_road.is_empty() else terrain.paths.bowed(terrain.paths.land_path(head, tail)))
 	if not b.is_empty():
 		out.append_array(walk(b[0], b[1], tail, to, wide))
 	return out

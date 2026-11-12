@@ -46,6 +46,7 @@ class Towns:
 
 
 class Terrain:
+	var paths = self  # the overland paths (terrain.paths, land_paths.gd): this stand-in answers them itself
 	func tile_of(p: Vector3) -> Vector2i:
 		return Vector2i(floori(p.x / 4.0), floori(p.z / 4.0))
 	func world_pos(x: float, y: float) -> Vector3:

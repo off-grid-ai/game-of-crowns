@@ -228,7 +228,7 @@ func _march(f: Dictionary) -> void:
 	mo.route_to(f["target"], func(way: PackedVector3Array):
 		if way[0].distance_to(n.position) > 0.01:
 			way.insert(0, n.position)
-		var road: Curve3D = terrain.smooth_road(way)
+		var road: Curve3D = terrain.paths.smooth_road(way)
 		var length := road.get_baked_length()
 		if length < 0.01:
 			return  # already there: he stands

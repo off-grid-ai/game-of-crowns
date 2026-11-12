@@ -460,7 +460,7 @@ static func road(holder: Node, way: PackedVector3Array, members: Array, pace: fl
 		return null
 	var path := Path3D.new()
 	path.name = "Road"
-	path.curve = main.scenes._on_ground(main.terrain.smooth_road(way))
+	path.curve = main.scenes._on_ground(main.terrain.paths.smooth_road(way))
 	holder.add_child(path)
 	var length: float = maxf(path.curve.get_baked_length(), 0.01)
 	var lead := 0.0

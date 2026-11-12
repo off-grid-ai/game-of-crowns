@@ -11,6 +11,7 @@ const People := preload("res://scripts/people.gd")
 
 
 class Flat extends Node3D:
+	var paths = self  # the overland paths (terrain.paths, land_paths.gd): this stand-in answers them itself
 	func smooth_road(way: PackedVector3Array) -> Curve3D:
 		var c := Curve3D.new()
 		for p in way:

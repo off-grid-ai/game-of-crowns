@@ -39,7 +39,7 @@ func sync() -> void:
 	if sig == _signature:
 		return
 	_signature = sig
-	terrain.set_roads(st.rec("roads", []))
+	terrain.paths.set_roads(st.rec("roads", []))
 	if _roads:
 		_roads.queue_free()
 	_roads = Node3D.new()
@@ -98,7 +98,7 @@ func kings_road() -> void:
 	for c in cities:
 		if not c.get("capital", false) or int(c["id"]) == int(hub["id"]):
 			continue
-		var route: PackedVector3Array = terrain.land_path(from, terrain.world_pos(float(c["x"]), float(c["y"])))
+		var route: PackedVector3Array = terrain.paths.land_path(from, terrain.world_pos(float(c["x"]), float(c["y"])))
 		for i in route.size() - 1:
 			_segment(route[i], route[i + 1], _kings, WIDTH * 2.2, "kings")
 		_roadside(route, cities)
@@ -291,7 +291,7 @@ func track(a: Vector3, b: Vector3, width := WIDTH * 0.7, key := "") -> void:
 		n.name = "Track_" + key.validate_node_name()
 		_tracks.add_child(n)
 		_track_keys[key] = n
-	var route: PackedVector3Array = terrain.land_path(a, b)
+	var route: PackedVector3Array = terrain.paths.land_path(a, b)
 	for i in route.size() - 1:
 		_segment(route[i], route[i + 1], _track_keys[key], width, "track:" + key)
 
@@ -443,7 +443,7 @@ func paths_near(p: Vector3, r: float) -> int:
 
 
 func _segment(a: Vector3, b: Vector3, parent: Node3D = null, width := WIDTH, owner := "roads") -> void:
-	var mid: Vector3 = terrain.road_bow(a, b)  # the same bow travellers ride
+	var mid: Vector3 = terrain.paths.road_bow(a, b)  # the same bow travellers ride
 	for run in [[a, mid], [mid, b]]:
 		var p: Vector3 = run[0]
 		var q: Vector3 = run[1]

@@ -315,7 +315,7 @@ func _place_body(kind: String, ground: Vector3) -> Dictionary:
 	if not town.is_empty():
 		body["city"] = int(town.get("id", -1))
 	else:
-		var tile: Vector2i = main.terrain.tile_of(ground)
+		var tile: Vector2i = main.terrain.paths.tile_of(ground)
 		body["x"] = tile.x
 		body["y"] = tile.y
 	return body

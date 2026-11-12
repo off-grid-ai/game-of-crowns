@@ -938,7 +938,7 @@ func _field_cost(c: Vector3, roads) -> float:
 		if not terrain.is_land(q.x, q.z):
 			return INF
 		var rise := absf(terrain.height_at(q.x, q.z) - c.y)
-		var tile: Vector2i = terrain.tile_of(q)
+		var tile: Vector2i = terrain.paths.tile_of(q)
 		var kind := String(terrain.tile_at(tile.x, tile.y))
 		# A mountainside is never a battlefield: the lines can't stand on it.
 		if rise > FIELD_RISE or kind == "Mountains" or kind == "Glacier":
@@ -1126,7 +1126,7 @@ func _walk(n: Node3D, goal: Vector3, seconds: float, fade: bool) -> void:
 	tw.tween_method(func(t: float):
 		if not is_instance_valid(n):
 			return
-		var p: Vector3 = terrain.along(route, t)
+		var p: Vector3 = terrain.paths.along(route, t)
 		if not terrain.is_land(p.x, p.z):
 			return  # never step into water; stop at the shore
 		n.position = stand(p), 0.0, 1.0, seconds)
@@ -1162,7 +1162,7 @@ func _rider(from: Vector3, to: Vector3, label: String, s := {}) -> Node3D:
 	horse.mount(rider)
 	carried_standard(rider, {"name": "The Crown", "crown": true}, Color(0.72, 0.13, 0.16))
 	var tag := _caption(self, label, ground(from) + Vector3(0, 0.45, 0))
-	var road: Curve3D = terrain.smooth_road(_route(from, to))
+	var road: Curve3D = terrain.paths.smooth_road(_route(from, to))
 	var length: float = maxf(road.get_baked_length(), 0.01)
 	# Eased in and out, the pace peaks at about pi/2 the average: a gallop
 	# (horse.gd) over the open road, a walk at either end.
@@ -1216,7 +1216,7 @@ func _convoy(from: Vector3, to: Vector3, grain: bool, label := "", scene := {}) 
 		root.add_child(s)
 		people.play(s, "Walk")
 		escort.append(s)
-	var road: Curve3D = terrain.smooth_road(_route(from, to))
+	var road: Curve3D = terrain.paths.smooth_road(_route(from, to))
 	var length: float = maxf(road.get_baked_length(), 0.01)
 	var seconds := clampf(length / 0.35, 12.0, 70.0)
 	# No road joins the two towns and the way runs over the land: a cart track
@@ -1409,7 +1409,7 @@ func _handover(at: Vector3, old_house: Dictionary, new_house: Dictionary, town: 
 		var way := _route(s.position, goal)
 		if way.size() < 2:
 			way = PackedVector3Array([s.position, goal])
-		mt.tween_method(func(k: float): s.position = stand(terrain.along(way, k)), 0.0, 1.0, 14.0)
+		mt.tween_method(func(k: float): s.position = stand(terrain.paths.along(way, k)), 0.0, 1.0, 14.0)
 		mt.tween_callback(people.play.bind(s, "Sword_Idle", 1.0))
 	tw.tween_interval(13.0)
 	tw.tween_callback(func():
