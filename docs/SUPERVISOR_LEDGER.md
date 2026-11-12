@@ -121,6 +121,13 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 16:00 (11-12) Mac gave a Meshy API key (macOS keychain: `security find-generic-password -a goc -s meshy-api-key -w`;
+  never printed, filed or committed). All Meshy work goes through the API, no browser. Balance 1,060 credits.
+  fire-siege pushed the square fixes (13429948 roof patches gone, 01236c8d 7 stalls round the edge, 24084252 bake-off
+  stands, 2759f0f9 awnings painted); works-life c49a6ae1 crowd dressed as 01-town. Round 12 waits on army-ui's dressing.
+- 15:45 (11-12) Meshy API key from Mac, in the macOS keychain (`security find-generic-password -a goc -s
+  meshy-api-key -w`; never in files or git). Balance 1,060 credits. All Meshy generation is headless via the API now
+  (the square set had been made by driving meshy.ai in Chrome). Army layer landed 4e789399.
 - 15:30 (11-12) Mac: "why not just start a thread to move the rules into freeciv?" Right: it's bridge + ruleset work,
   no Godot, no square files, so it runs in parallel. Session local_02d81d9f (renamed "Freeciv: move the king's rules
   into Freeciv") builds the note's steps in order, private bridge 8788/5557, no realm/ edits. Supersedes 15:20's "after".
