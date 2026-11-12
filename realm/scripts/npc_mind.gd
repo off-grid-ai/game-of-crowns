@@ -27,6 +27,8 @@ const SWIG := ["Drinking"]
 
 ## Plays a working move from `pool` for a run of lo..hi times (never the clip
 ## played last), then succeeds.
+const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
+
 class PlayRun extends BTAction:
 	@export var pool: Array = []
 	@export var lo := 3
@@ -140,7 +142,7 @@ class Step extends BTAction:
 				Turn.toward(agent as Node3D, atan2(f0.x, f0.y))
 			People.play(agent, "Walk")
 			_left = maxf(0.3, Vector2(_to.x - agent.position.x, _to.z - agent.position.z).length() / 0.17)
-			agent.create_tween().tween_property(agent, "position", _to, _left)
+			_walk(_to)
 			return
 		if back > 0.0:
 			var fwd := Vector3(sin(agent.rotation.y), 0, cos(agent.rotation.y))
@@ -168,7 +170,18 @@ class Step extends BTAction:
 			Turn.toward(agent as Node3D, atan2(flat.x, flat.y))  # turned over a beat, not snapped
 		People.play(agent, "Walk")
 		_left = maxf(0.3, flat.length() / 0.17)
-		agent.create_tween().tween_property(agent, "position", _to, _left)
+		_walk(_to)
+
+	## The few paces taken by the Mover (CLAUDE.md, one way to move): routed round whatever stands between,
+	## on the person's own ground. `to` is in the person's parent's space, as their post is.
+	func _walk(to: Vector3) -> void:
+		var parent := agent.get_parent() as Node3D
+		var m: Node = Mover.of(agent as Node3D)
+		m.speed = 0.17
+		m.clip = ""  # Walk is already playing
+		var g: Callable = blackboard.get_var(&"ground", Callable(), false)
+		m.ground = (func(w: Vector3) -> float: return float(g.call(parent.to_local(w)))) if g.is_valid() and parent else Callable()
+		m.go(parent.to_global(to) if parent else to)
 
 	## Nobody else on the ground within a shoulder's width (0.11, about 0.9 m)
 	## of `to`, and no fire, stall, cart or table there (any footprint of the
@@ -201,11 +214,14 @@ class Step extends BTAction:
 			return not TownNav.clear(v.towns, at)
 		return false
 
+	func _exit() -> void:
+		Mover.of(agent as Node3D).stop()  # cut short (news, danger): they stop where they stand
+
 	func _tick(delta: float) -> Status:
 		_left -= delta
 		# Done once the body is there, not when the clock says: the next move
 		# begun while the step's tween still carries them is a standing pose sliding.
-		if _left > 0.0 or (agent.position.distance_to(_to) > 0.002 and _left > -0.5):
+		if Mover.of(agent as Node3D).moving() and _left > -2.0:
 			return RUNNING
 		agent.remove_meta("step_to")
 		if spot == "":

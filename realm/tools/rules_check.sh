@@ -8,7 +8,7 @@ known=tools/rules_known.txt
 fail=0
 check() {  # rule, pattern
   local rule=$1 pat=$2
-  for hit in $(grep -lE "$pat" scripts/*.gd | grep -v "scripts/mover.gd"); do
+  for hit in $(grep -lE "$pat" scripts/*.gd | grep -v "scripts/mover.gd" | grep -vE "scripts/(intro|news_chips).gd"); do  # screen-space UI slides, not travel
     if grep -qx "$hit:$rule" $known 2>/dev/null; then continue; fi
     grep -nE "$pat" $hit | sed "s#^#$hit:#;s#\$#   <- $rule#"
     fail=1
