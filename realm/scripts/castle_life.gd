@@ -5,7 +5,7 @@ extends Node3D
 ## curtain's walk, turning at the towers to look out, two torches lit either side of the gate from dusk to
 ## dawn, and the bailey's well. Only castles our builder raises (--castles=kit): their frame is
 ## castle_builder.gd's (towers, curtain_runs), read off the castle's own size.
-## Knobs: data/castle.json. On with castle.json on.
+## Knobs: data/castle.json.
 
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const Data := preload("res://scripts/data.gd")
@@ -21,13 +21,7 @@ var _done := {}  # castle node -> its dressing {torches: [lights and flames]}
 var _rng := RandomNumberGenerator.new()
 
 
-static func on() -> bool:
-	return bool(Data.value("castle", "on", false))
-
-
 static func apply(m: Node) -> void:
-	if not on():
-		return
 	var c := new()
 	c.name = "CastleLife"
 	c.main = m

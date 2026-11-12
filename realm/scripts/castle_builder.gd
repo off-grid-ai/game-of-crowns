@@ -31,15 +31,12 @@ func build_castle(spec: Dictionary) -> ArrayMesh:
 	var keep := int(spec.get("keep", 4))
 	var keep_st := int(spec.get("keep_storeys", 5))
 	var tower_st := int(spec.get("tower_storeys", wall_st + 2))
-	var banner := float(spec.get("banner", 1.6))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(spec.get("seed", 1))
 	var parts := []
 	var hx := w * CELL / 2.0
 	var hz := d * CELL / 2.0
 	var kh := keep * CELL / 2.0
-	var gate_w := 4  # the gatehouse, cells across
-	var gh := gate_w * CELL / 2.0
 	# The keep stands into the back wall, its back face a little proud of it.
 	var keep_at := Vector3(0, 0, -hz + kh - 1.0)
 	var gate_at := Vector3(0, 0, hz)
@@ -93,14 +90,7 @@ func build_castle(spec: Dictionary) -> ArrayMesh:
 	for k in 4:
 		var c := Vector3((-1 if k in [0, 3] else 1) * (kh + 0.3), 0, (-1 if k < 2 else 1) * (kh + 0.3))
 		_block(parts, keep_at + c, 2, 2, keep_st + up + (1 if k % 2 == 0 else 0), rng, {"cone": true, "windows": 0.4})
-	# Banners: down the keep's face over its door and either side of the gate. With the castle lived in
-	# (castle_life.gd, --castle-life=on) it hangs the house's painted arms in these places instead.
-	if not load("res://scripts/castle_life.gd").on():
-		var top := (keep_st + up) * STOREY
-		var b := Basis(Vector3.UP, 0.0).scaled(Vector3.ONE * banner)
-		parts.append(["res://assets/props/Banner_1.gltf", Transform3D(b, keep_at + Vector3(-0.8 * banner, top - 2.0 - 0.84 * banner, kh + 0.15))])
-		for sx in [-1, 1]:
-			parts.append(["res://assets/props/Banner_2.gltf", Transform3D(b.scaled(Vector3.ONE * 0.8), gate_at + Vector3(sx * (gh - 0.9) - 0.65 * banner, (wall_st + 1) * STOREY - 0.6 - 0.7 * banner, 3.0 + 0.15))])
+	# The house's banners on the keep and the gate are castle_life.gd's (its painted arms).
 	var stone := _castle_stone()
 	if not stone.is_empty():
 		for p in parts:
