@@ -87,7 +87,14 @@
  "sea": {
   "_": "The sea (terrain.gd _build_sea, Boujie Water Shader). waves_fade: from and to what distance from the lens (game units) the swell settles into a flat sheen. Its lighting is per vertex on rings that coarsen away from the lens, so further out it aliased into even stripes across the water (the scanlines at mid zoom); was 40 / 120. depth_fade: from and to what distance from the lens the water's colour stops reading the depth to the sea bed (Terrain3D draws the bed in rings that coarsen away from the lens, and their edges showed as straight seams across the sea at the mid zoom); was 40 / 120.",
   "waves_fade": [10.0, 26.0],
-  "depth_fade": [12.0, 30.0]
+  "depth_fade": [12.0, 30.0],
+  "floor": {
+   "_": "The open sea's floor past the realm's land (terrain.gd _build_sea_floor; batch 9 goldrock-30: the sky showed through the see-through water past the land's edge as a pale square panel over the sea). on: the switch. depth: its height (just under the deep sea floor's -3.2). color: its colour (the deep water reads it as deep). reach: its width (game units; the sea's far edge is 2000 from the lens).",
+   "on": true,
+   "depth": -3.3,
+   "color": [0.04, 0.11, 0.14],
+   "reach": 4000.0
+  }
  },
  "politics": {
   "_": "The political map (docs/review/political-map.md; target docs/art/target/02-realm.jpg; CK3's political map mode in Warcraft III's colours). on: the switch (or --politics=on). hold: how strongly a house's land carries its colour, by its favour band (the bridge's reading): loyal heartland strong, cold land fading. stripes_below: a hold under this stripes the land in its rival's colour (the first house it's at war with): slipping. wash_near / wash_far: the colour's strength at town zoom and from far off (times hold). own_mix: how much of the house's flat colour goes over the land's own brightness (0: a hue only, 1: flat paint). border_bright: the border line in the house's own colour, brightened; border_px: its width in screen pixels. stripe_width: the stripes' width in tiles. map_from / map_to: the camera's height over the ground (game units; a town view stands about 5-9 up, the mid zoom about 24-27 at camera distance 40, the most the 3D view draws back about 37-44 at distance 60, where the painted overview takes over) between which the wash, the band and the stripes come in, and the plain (politics off) far wash with them; below map_from the land stays natural (about a seventh of wash_near) and only the border line shows (target 01-town: no red ground at roof height; Warcraft III: no map overlay at playing heights). line_from / line_to: the camera's height over the ground (game units) between which the border line fades in: none at roof or town height and none over the wide town shots (d30 stands about 18 up, d50 about 31: batch 9 read the line there as a loud red road), whole only at the map zoom (d60, about 38 up; past it the painted overview draws its own borders); was 9 / 22; border_bright was 1.35 (the crown's red went salmon); line_soft: the painted border's soft band, as a share of a tile from the seam; line_crisp: how much of it is the fine line over the band (the rest the band). Was 12 / 30, which coated the mid zoom's land in the house's colour (a bare brown pad round Kingsmere).",
@@ -199,5 +206,18 @@
     "hazeFull": 30.0,
     "farBlurFrom": 1.8,
     "farBlur": 0.02
+  },
+  "v3": {
+    "_": "The v3 look (docs/review/look-gap.md; art target docs/art/target/01-town.jpg: warm, saturated, crisp light, clear air), tuned first on Kingsmere's square at the default town view (Mac, 2026-11-12: one view until it's right). --look=v3 for one run, or on; --look=one keeps the one look as it was (the before shot). Its keys are laid over the one look's above, key by key (look.gd _overlay): any key above may be set here. lut: the grade fitted offline from batch 9's Kingsmere frames to 01-town by realm/tools/fit_look_lut.py, composed after bold.png (chroma x1.15, Lab orange turned 9 deg toward the target's reds, olive grass 12 deg toward green, a gentle S of slope 1.1 round L 46, the crushed shade's toe lifted 8 L); previews in /tmp/goc-look. exposure (was 1.16): Kingsmere's square sat at L 41 against the target's 47. sun_elevation (was 38), sun_energy (was 1.3), shadow_opacity (was 0.72): a higher, stronger sun, its shadows a little crisper (not darker than this: Kingsmere's darkest tenth is already near black, L 3 vs 14). fill.energy (was 0.35): the walls facing the camera out of the sun. ssao: tighter contact shadows (radius was 1.2, power 1.6), light_affect: how much they show in sunlit areas (was 0.15). haze: the volumetric haze and depth fog thinned (was 0.003 / 0.0008); clarity.hazeTown: the haze's share at the closest zoom (was 0.2). Every value an estimate until filmed.",
+    "on": false,
+    "lut": "res://assets/grade/v3.png",
+    "exposure": 1.22,
+    "sun_elevation": 44.0,
+    "sun_energy": 1.4,
+    "shadow_opacity": 0.78,
+    "fill": { "energy": 0.45 },
+    "ssao": { "radius": 0.9, "intensity": 2.0, "power": 1.6, "light_affect": 0.22 },
+    "haze": { "volumetric": 0.0015, "fog": 0.0003 },
+    "clarity": { "hazeTown": 0.08 }
   }
 }
