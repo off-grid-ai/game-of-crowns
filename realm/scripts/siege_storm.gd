@@ -28,6 +28,8 @@ var _wave_t := 0.0
 var _arrow_t := 0.0
 var _arrows: Array = []  # [{node, from, to, t, dur, top}]
 var _rng := RandomNumberGenerator.new()
+var _said := ""  # the phase last printed (--probe: a headless state proof, silent in play)
+var _probe_t := 0.0
 
 
 static func on() -> bool:
@@ -51,6 +53,8 @@ func begin(siege_ai: Node, camp: Vector3, wall: Vector3, town: Vector3, foe_col:
 	name = "SiegeStorm"
 	_rng.seed = hash(town)
 	ai.root.add_child(self)
+	if OS.get_cmdline_user_args().has("--probe"):
+		print("STORM begun: besiegers by %s, the wall at %s, the town at %s" % [str(camp), str(wall), str(town)])
 	var out := Vector3(camp.x - town.x, 0, camp.z - town.z).normalized()
 	var men: Array = Data.value("siege", "storm_host.men", [800, 300])
 	var face_in := atan2(-out.x, -out.z)  # the soldier faces +Z: toward the town
@@ -67,8 +71,34 @@ func begin(siege_ai: Node, camp: Vector3, wall: Vector3, town: Vector3, foe_col:
 				r["goal"] = (r["node"] as Node3D).global_position
 				r["pace"] = 0.0
 				a.play(r, "ready" if i == 0 else "rest")
-			_ready_sides += 1)
+			_ready_sides += 1
+			if OS.get_cmdline_user_args().has("--probe"):
+				print("STORM side %d raised: %d regiments" % [i, a.rows().size()]))
 		sides.append(a)
+
+
+## --probe only: the storm's state as it goes (phase changes, and every 10 s the men in the gap and through it).
+func _probe(phase: String, st: Dictionary, dt: float) -> void:
+	if not OS.get_cmdline_user_args().has("--probe"):
+		return
+	_probe_t -= dt
+	if phase == _said and _probe_t > 0.0:
+		return
+	_probe_t = 10.0
+	_said = phase
+	var gap: Vector3 = st.get("gap", Vector3.ZERO)
+	var inward: Vector3 = st.get("inward", Vector3.ZERO)
+	var through := 0
+	var at_gap := 0
+	for r in (sides[0] as Army).rows():
+		var p: Vector3 = (r["node"] as Node3D).global_position
+		var d := (p - gap).dot(inward) if not st.is_empty() else -9.0
+		if d > 0.2:
+			through += int(r["men"])
+		elif d > -0.6:
+			at_gap += int(r["men"])
+	var defenders := (st.get("men", []) as Array).filter(func(x): return x["alive"]).size()
+	print("STORM t=%.0f phase=%s besiegers_at_gap=%d through=%d gap_defenders=%d regiments_sent=%d" % [_clock, phase, at_gap, through, defenders, _queue.size()])
 
 
 func _gap() -> Dictionary:
@@ -83,6 +113,7 @@ func _process(delta: float) -> void:
 	_clock += delta
 	var st := _gap()
 	var phase := String(st.get("phase", "")) if not st.is_empty() else "wall"
+	_probe(phase, st, delta)
 	if phase == "wall":
 		_fire_arrows(delta)
 	elif phase == "hold":

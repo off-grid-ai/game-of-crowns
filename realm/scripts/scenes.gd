@@ -1121,6 +1121,8 @@ func _siege(id: int, at: Vector3, approach: Vector3, size: int, engines: int, fo
 	# Fought by the men in them (siege_ai.gd, LimboAI) when the extension is
 	# there; else the timeline in _assault plays it.
 	var minds := ClassDB.class_exists("LimboHSM")
+	if OS.get_cmdline_user_args().has("--probe"):
+		print("SIEGE staged: minds=%s parties=%d" % [str(minds), 2])
 	for party in 2:
 		parties.append(_assault(root, arc, (party - 0.5) * 0.5, camp_r, wall, foe_col, r, 3.0 + party * 6.0, not minds))
 	if minds:
