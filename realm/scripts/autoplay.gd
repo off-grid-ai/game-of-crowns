@@ -346,7 +346,7 @@ func _step(w: PackedStringArray) -> void:
 					var rng := RandomNumberGenerator.new()
 					rng.seed = 11
 					var r: Dictionary = nav.probe(int(c["id"]), root, nn, rng)
-					_note("CHECK nav probe: %s: %d walks, %d segments, %d crossing something (%d walks), straight lines would cross %d; %d outlines; crossed near %s" % [title, r["paths"], r["segments"], r["crossing"], r["paths_crossing"], r["straight"], load("res://scripts/town_nav.gd").footprints(root).size(), str(r["what"])])
+					_note("CHECK nav probe: %s: %d walks, %d segments, %d crossing something (%d walks), straight lines would cross %d; the cart's straight legs into the market: %d of %d through something; %d outlines; crossed near %s" % [title, r["paths"], r["segments"], r["crossing"], r["paths_crossing"], r["straight"], r.get("cart_crossing", 0), r.get("cart_legs", 0), load("res://scripts/town_nav.gd").footprints(root).size(), str(r["what"])])
 					break
 			"town":
 				# Open a town's card, as clicking the town would.

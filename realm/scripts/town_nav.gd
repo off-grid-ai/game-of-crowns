@@ -524,6 +524,21 @@ func probe(id: int, root: Node3D, n: int, rng: RandomNumberGenerator) -> Diction
 					(out["what"] as Array).append(at)
 		if hit:
 			out["paths_crossing"] = int(out["paths_crossing"]) + 1
+	# The square's cart as town_life lays its route today (straight legs: from each of the first two main streets' ends
+	# inside the square to the market, 0.7 of the way out, crowd.json cart.market_in), and how many of those legs pass
+	# through something; 0 once the cart walks the map.
+	var mkt_v: Vector3 = (root.get_meta("places", {}) as Dictionary).get("market", Vector3.ZERO) * float(preload("res://scripts/data.gd").num("crowd", "cart.market_in", 0.7))
+	var mkt := Vector2(mkt_v.x, mkt_v.z)
+	var r := float(root.get_meta("square_r", 1.0))
+	out["cart_legs"] = 0
+	out["cart_crossing"] = 0
+	for w in (root.get_meta("ways_main", []) as Array).slice(0, 2):
+		for q: Vector2 in (w as PackedVector2Array):
+			if q.length() > r * 0.9:
+				out["cart_legs"] = int(out["cart_legs"]) + 1
+				if _crosses(q, mkt, outlines) != Vector2.INF:
+					out["cart_crossing"] = int(out["cart_crossing"]) + 1
+				break
 	return out
 
 
