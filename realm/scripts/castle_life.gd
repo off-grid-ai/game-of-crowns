@@ -146,6 +146,8 @@ func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 	# at the top (01-town: the steps up to the keep, the carpet, the halberdiers).
 	if Builder.podium() > 0:
 		_carpet(xf, sp, colour, d)
+	# The bailey's buildings, their backs to the curtain wall: stables, the forge, the armoury, the stores.
+	_bailey_buildings(xf, sp, d)
 	# The bailey lived in: drill, the butts, the gate's guards, the smith, the stores' cart, servants and grooms
 	# (castle_folk.gd, the people layer's).
 	preload("res://scripts/castle_folk.gd").dress(self, main, xf, sp, colour, d)
@@ -162,6 +164,59 @@ func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 			well.rotation.y = yaw
 			add_child(well)
 			d["nodes"].append(well)
+
+
+## The bailey's buildings against the curtain wall (data/castle.json bailey_buildings; Mac on Kingsmere from
+## above: "the emptiness looks kinda weird"; 01-town and Stronghold's yard ringed with lean-tos): kit houses of a
+## tier (house_tiers.gd: the stables' open arcade, the forge's chimney, the armoury's stone, the granary's stores)
+## built narrow, back to the wall, front to the yard. Built in the castle's metres, so a lesser hold's are smaller.
+## Switch: --bailey-buildings=on|off, or bailey_buildings.on.
+static var _house_builder: RefCounted
+
+
+func _bailey_buildings(xf: Transform3D, sp: Dictionary, d: Dictionary) -> void:
+	var k: Dictionary = Data.value("castle", "bailey_buildings", {})
+	var args := OS.get_cmdline_user_args()
+	if args.has("--bailey-buildings=off") or not (bool(k.get("on", false)) or args.has("--bailey-buildings=on")):
+		return
+	if _house_builder == null:
+		_house_builder = preload("res://scripts/house_builder.gd").new()
+	var hx := int(sp.get("w", 18)) * Builder.CELL / 2.0
+	var hz := int(sp.get("d", 16)) * Builder.CELL / 2.0
+	var wall_in := float(k.get("wall_in", 1.2))
+	var size := float(k.get("scale", 0.85))
+	for r: Dictionary in k.get("rows", []):
+		var spec := {"tier": String(r.get("tier", "stables")), "seed": int(r.get("seed", 1)), "extras": {}, "props": []}
+		for key in ["w", "d", "floors"]:
+			if r.has(key):
+				spec[key] = int(r[key])
+		var mesh: ArrayMesh = _house_builder.build(spec)
+		if mesh == null:
+			continue
+		var box := mesh.get_aabb()
+		var deep := box.size.z * size
+		var at := float(r.get("at", 0.0))
+		# The house's front (+z) turned to the yard; its back half its depth off the wall's inner face.
+		var turn := 0.0
+		var p := Vector3.ZERO
+		match String(r.get("side", "left")):
+			"left":
+				turn = PI / 2
+				p = Vector3(-hx + wall_in + deep / 2.0, 0, at * hz)
+			"right":
+				turn = -PI / 2
+				p = Vector3(hx - wall_in - deep / 2.0, 0, at * hz)
+			_:
+				p = Vector3(at * hx, 0, -hz + wall_in + deep / 2.0)
+		var b := Basis(Vector3.UP, turn).scaled(Vector3.ONE * size)
+		var mi := MeshInstance3D.new()
+		mi.mesh = mesh
+		add_child(mi)
+		var w: Vector3 = xf * p
+		w.y = main.terrain.height_at(w.x, w.z)
+		# The box's own middle onto the spot, its floor on the ground.
+		mi.global_transform = Transform3D(xf.basis * b, w) * Transform3D(Basis(), -Vector3(box.get_center().x, box.position.y, box.get_center().z))
+		d["nodes"].append(mi)
 
 
 ## The house's painted banners (assets/heraldry/banner-<house>.png; else a cloth in its colour) hung flat on
