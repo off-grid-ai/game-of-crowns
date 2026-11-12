@@ -630,37 +630,67 @@ func _square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, k
 	var walked := 0.0
 	var half_prev := 0.0
 	var placed := 0
-	var why := {"a street": 0, "crowded": 0, "the ground": 0}  # why a front was turned away (the CHECK line)
+	var why := {"a street": 0, "crowded": 0, "the realm's road": 0, "the ground": 0}  # why a front was turned away (the CHECK line)
+	# A front turned away (a road in, a landmark, a stall) slides on round the edge a short step and is tried
+	# again, rather than giving up a whole house's width each time (round 3: Kingsmere's 11 roads in and its
+	# landmarks turned away 20 fronts and stood 3). towns.json plots.ring_slide; --ring-slide=off as before.
+	var slide := 0.0 if OS.get_cmdline_user_args().has("--ring-slide=off") else float(_plot_knobs().get("ring_slide", 0.06))
+	# What already stands (the castle, the landmarks) as outlines, not the circles in `lots`: a castle's circle
+	# left its front curtain's ends open, and round 3 stood square fronts on Kingsmere's wall beside the gate.
+	var standing := _buildings_standing(root)
+	why["a building"] = 0
+	var kind := ""
+	var f := Vector2.ZERO
 	while walked < TAU * ring and placed < budget:
-		var kind: String = _tier_pick(rr, fronts, "square", 0.0, "square")  # the square's fronts: the town's richest
-		var f: Vector2 = Real.footprint(kind)
-		var step := (half_prev + f.x * 0.52 + rr.randf_range(0.0, 0.03)) / ring  # fronts nearly touching
-		half_prev = f.x * 0.52
+		var step := 0.0
+		if kind == "" or slide <= 0.0:
+			kind = _tier_pick(rr, fronts, "square", 0.0, "square")  # the square's fronts: the town's richest
+			f = Real.footprint(kind)
+			step = (half_prev + f.x * 0.52 + rr.randf_range(0.0, 0.03)) / ring  # fronts nearly touching
+		else:
+			step = slide / ring  # the same house, a little further on
 		ang += step
 		walked += step * ring
+		var stood := false
+		var k := kind
+		var kf := f
 		# A rich house that will not fit between the roads in gives way to a smaller one on the same
 		# frontage (a townhouse or a cottage), as a real square's fronts mix.
 		for attempt in 2:
 			if attempt == 1:
 				var smaller := _tier_pick(rr, fronts, "lane", 0.0, "square")
-				if Real.footprint(smaller).x > f.x or smaller == kind:
+				if Real.footprint(smaller).x > kf.x or smaller == k:
 					break
-				kind = smaller
-				f = Real.footprint(kind)
-			var p := Vector3(cos(ang), 0, sin(ang)) * (ring + f.y * 0.5)
+				k = smaller
+				kf = Real.footprint(k)
+			var p := Vector3(cos(ang), 0, sin(ang)) * (ring + kf.y * 0.5)
 			var p2 := Vector2(p.x, p.z)
 			# Its walls held against the roads' bands (not a circle as wide as its longest side, which
 			# turned away nearly every front between roads into the square: Kingsmere stood none in batch 6).
-			if TownPlots.on_other_way(_plot_body(p2, Vector2(-p2.y, p2.x).normalized(), -p2.normalized(), f), ways, -1, TownPlots.ROAD_HALF):
+			var body := _plot_body(p2, Vector2(-p2.y, p2.x).normalized(), -p2.normalized(), kf)
+			if TownPlots.on_other_way(body, ways, -1, TownPlots.ROAD_HALF):
 				why["a street"] += 1
 				continue  # the roads into the square stay open
-			if _crowded(lots, p, f.x * 0.45):
-				why["crowded"] += 1  # a stall, the hall, the tavern, the castle or a realm's road
+			if standing.any(func(o): return not Geometry2D.intersect_polygons(body, o).is_empty()):
+				why["a building"] += 1
 				continue
-			if _put(root, center, kind, p, f, lots, rr, true, -p.normalized(), true):
+			if _on_road(p, kf.x * 0.45 * 0.6):
+				why["the realm's road"] += 1
+				continue
+			if _crowded(lots, p, kf.x * 0.45):
+				why["crowded"] += 1  # a stall, the hall, the tavern, the castle
+				continue
+			if _put(root, center, k, p, kf, lots, rr, true, -p.normalized(), true):
 				placed += 1
+				stood = true
 				break
 			why["the ground"] += 1
+		if stood:
+			# The next front starts from this one's half width, flush beside it.
+			half_prev = kf.x * 0.52
+			kind = ""
+		elif slide <= 0.0:
+			half_prev = f.x * 0.52  # as before: the next front steps on from the one turned away
 		await _pace()
 	print("CHECK square ring: %s (square %.2f): %d fronts stood; turned away: %s" % [String(root.get_meta("title", "")), square_r, placed, str(why)])
 	return placed
