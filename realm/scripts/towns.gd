@@ -606,6 +606,74 @@ static func front_ring(square_r: float) -> float:
 	return square_r + 0.25
 
 
+## Where the King's statue stands beside the crown's well (towns.json market.<rank>.beside): off the heart opposite
+## the market, on the castle's way in, at well_at of the square, turned beside_turn degrees off that way so it flanks
+## the approach. Static, so a probe stands it in the same place.
+static func statue_spot(mk: Dictionary, square_r: float, market_ang: float) -> Vector3:
+	var v := Vector3(cos(market_ang + PI), 0, sin(market_ang + PI)) * square_r * float(mk.get("well_at", 0.5))
+	return Basis(Vector3.UP, deg_to_rad(float(mk.get("beside_turn", 0.0)))) * v
+
+
+## The clusters of small things in the third of the square toward the castle gate, where the stalls' rows end
+## (towns.json market.<rank>.strew; round 11's crates, benches, barrels and sacks): on each of `rings` (shares of the
+## square), every `step` degrees within `third` degrees either side of the gate's way, at most `most`, each `reach`
+## round, kept where it clears the game's rules: lane_m from the stalls, the statue, the wagon and each other (a cart
+## gets by), walk_m round the well's rim, gate_way_m either side of the way to the gate, inside the square.
+## [[centre (town-local), the angle its bench lies along, ...]]. Static, so a probe lays the same clusters.
+static func strew_spots(mk: Dictionary, square_r: float, market_ang: float, laid: Dictionary) -> Array:
+	var k: Dictionary = mk.get("strew", {})
+	var out: Array = []
+	if k.is_empty():
+		return out
+	var lane := float(mk.get("lane_m", 1.2)) * S
+	var walk := float(mk.get("walk_m", 2.0)) * S
+	var way := float(mk.get("gate_way_m", 3.0)) * S
+	var reach := float(k.get("reach", 0.15))
+	var gate := market_ang + PI
+	var gate_dir := Vector2(cos(gate), sin(gate))
+	var wf := Real.footprint(Real.one(String(mk.get("centre", "well"))))
+	var well_r := maxf(wf.x, wf.y) * 0.5
+	var sv := statue_spot(mk, square_r, market_ang)
+	var statue := Vector2(sv.x, sv.z)
+	var sf := Real.footprint(Real.one(String(mk.get("beside", "square_statue"))))
+	var statue_r := maxf(sf.x, sf.y) * 0.5
+	var ws := wagon_spot(mk, laid, market_ang)
+	var wagon := Vector2(cos(float(ws[0])), sin(float(ws[0]))) * float(ws[1])
+	var wgf := Real.footprint("old_wooden_wagon" if Real.footprint("old_wooden_wagon") != Vector2.ZERO else "medieval_wooden_cart")
+	var wagon_r := maxf(wgf.x, wgf.y) * 0.5
+	var third := deg_to_rad(float(k.get("third", 60.0)))
+	var step := deg_to_rad(float(k.get("step", 10.0)))
+	for ring in k.get("rings", [0.45]):
+		var a := -third
+		while a <= third + 0.0001 and out.size() < int(k.get("most", 8)):
+			var ang := gate + a
+			var c := Vector2(cos(ang), sin(ang)) * square_r * float(ring)
+			a += step
+			var ray := absf(c.dot(Vector2(-gate_dir.y, gate_dir.x))) if c.dot(gate_dir) > 0.0 else c.length()
+			if c.length() - reach - well_r < walk or ray - reach < way or c.length() + reach > square_r:
+				continue
+			if (c - statue).length() - reach - statue_r < lane or (c - wagon).length() - reach - wagon_r < lane:
+				continue
+			if (laid.get("stalls", []) as Array).any(func(st): return _stall_gap(st, c) - reach < lane):
+				continue
+			if out.any(func(o): return Vector2(o[0].x - c.x, o[0].z - c.y).length() - 2.0 * reach < lane):
+				continue
+			out.append([Vector3(c.x, 0, c.y), ang + PI / 2.0])
+	return out
+
+
+## How far a point lies from a laid stall's footprint ([kind, angle, radius], its front toward the heart).
+static func _stall_gap(st: Array, p: Vector2) -> float:
+	var c := Vector2(cos(float(st[1])), sin(float(st[1]))) * float(st[2])
+	var f := -c.normalized()
+	var al := Vector2(-f.y, f.x)
+	var fp := Real.footprint(String(st[0]))
+	var d := p - c
+	var lx := clampf(d.dot(al), -fp.x * 0.5, fp.x * 0.5)
+	var ly := clampf(d.dot(f), -fp.y * 0.5, fp.y * 0.5)
+	return (d - al * lx - f * ly).length()
+
+
 ## A house's stable id in its town (fire.gd and the realm's damage fact, bridge/damage.js kindled): where it stands,
 ## town-local, in decimetres, "x_z". The same house keeps it however the town's houses happen to be laid in order;
 ## a house moved by a new layout is a new house, and an old ruin's id then finds none (integration audit #16).
@@ -2240,10 +2308,9 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 	# The draw well too, beside a centrepiece (towns.json market.<rank>.well_too; art target 01-town: the crown's
 	# square has its statue and, out in the cobbles, the little roofed well the town draws its water from).
 	if well != draw_well and bool(_market_knobs().get("well_too", false)) and Real.footprint(draw_kind) != Vector2.ZERO:
-		draw_well = draw_well.normalized() * square_r * float(_market_knobs().get("well_at", 0.5))
-		# Turned aside off the castle's way in (towns.json market.<rank>.beside_turn, degrees): the statue flanks the
-		# approach to the gate rather than standing in it.
-		draw_well = Basis(Vector3.UP, deg_to_rad(float(_market_knobs().get("beside_turn", 0.0)))) * draw_well
+		# Turned aside off the castle's way in (statue_spot): the statue flanks the approach to the gate rather than
+		# standing in it.
+		draw_well = statue_spot(_market_knobs(), square_r, market_ang)
 		var beside_yaw := rng.randf() * TAU
 		# The King's monument faces the square's heart (01-town's monument; the Meshy square set's statue).
 		var monument := draw_kind == Real.one("square_statue")
@@ -2315,6 +2382,22 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 	var wagon_side := -wp.normalized()  # its side toward the square's heart, where it's unloaded
 	var tangent := Vector3(-sin(wa), 0, cos(wa))  # the wagon lies along the row: its length (deep) runs this way, its width out to its side
 	_pile(drop, clutter, wp + wagon_side * wagon_foot.x * 0.5 - tangent * wagon_foot.y * 0.3, tangent, wagon_side, 2, wagon_foot.y * 0.6, rng)
+	# The third toward the gate filled with small things (GoC on round 16: bare paving where round 11 had crates,
+	# benches, barrels and sacks): a bench at each of strew_spots with goods stacked at both its ends, squared to it.
+	var sk: Dictionary = mk.get("strew", {})
+	var bench := Real.one(String(sk.get("anchor", "bench")))
+	if bench != "" and Real.footprint(bench) != Vector2.ZERO:
+		var bf := Real.footprint(bench)
+		var heap: Array = sk.get("goods", [2, 3])
+		for c in strew_spots(mk, square_r, market_ang, laid):
+			var at: Vector3 = c[0]
+			var along := Vector3(cos(float(c[1])), 0, sin(float(c[1])))
+			var across := Vector3(-along.z, 0, along.x)
+			if not drop.call(bench, at, atan2(across.x, across.z)):
+				continue
+			lots.append([at, float(sk.get("reach", 0.15))])
+			for e in [-1, 1]:
+				_pile(drop, clutter, at + along * e * bf.x * 0.5 - across * bf.y * 0.5, across, along * e, rng.randi_range(int(heap[0]), int(heap[1])), float(sk.get("reach", 0.15)), rng)
 	# A busy market spills over (towns.json market.<rank>.piles): laid against the square's house fronts once its
 	# ring stands (_square_piles), never out in the walk.
 	root.set_meta("market_goods", clutter)

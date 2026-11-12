@@ -11,17 +11,21 @@ extends SceneTree
 ## than LANE metres, none within WALK metres of the well's rim, none past the square's edge, the King's statue (towns.gd:
 ## off the heart opposite the market at well_at, turned beside_turn) a LANE clear of every stall, and the way in from the
 ## castle gate (opposite the market, approach_clear either side) left open: no stall, nor the unloading wagon
-## (towns.gd wagon_spot), within GATE metres of its line.
+## (towns.gd wagon_spot), within GATE metres of its line. And no third of the square bare (GoC on round 16: the third
+## toward the gate was bare paving where round 11 had crates, benches, barrels and sacks): the small things in each
+## third (thirds centred on the gate's way and 120 degrees either side: the stalls' end piles and counters, and the
+## clusters of goods stacked against a bench or a cart, towns.gd strew_spots) at least THIRD of the mean third's; each
+## cluster the same lanes clear (stalls, the well, the statue, the wagon, the gate's way, LANE between two clusters so
+## a cart gets by), and inside the square. The lane, walk and gate numbers are the game's rules (towns.json
+## market.<rank> lane_m, walk_m, gate_way_m); the probe reads them.
 ## Prints CHECK lines; exits 1 on a fail.
 ##   arch -arm64 godot --headless --path realm -s res://tools/square_density_probe.gd
 
 const Real := preload("res://scripts/realistic.gd")
 const S := 0.12  # world units per metre (towns.gd)
-const LANE := 1.2  # metres between any two stalls: a buyer walks between them (01-town's stalls stand a body apart)
-const WALK := 2.0  # metres between a stall and the well's rim: the town goes to draw water
+const THIRD := 0.5  # a third's small things against the mean third's: under half reads as bare paving
 const OPEN := 0.55  # the share of the square's ground nothing stands on: a wide square you see across (still_probe on
 	# round 11's render: paving 59% of the square's box; round 15: 21%)
-const GATE := 3.0  # metres either side of the way from the heart to the castle gate kept clear (the King's way in, the muster)
 ## Round 11's crown market (git show 01236c8d^:realm/data/towns.json market.crown): the floor.
 const R11 := {"square_r": 2.1, "stalls_more": 17, "rows": [[0.84, 0.45], [0.55, 0.25], [0.3, 0.3, 120]], "span": 75,
 	"goods": [2, 4], "piles": 14, "counter": {"count": [5, 6]}}
@@ -34,7 +38,14 @@ func _init() -> void:
 	var kinds: Array = Real.variants("market_stall").filter(func(k): return Real.footprint(k) != Vector2.ZERO)
 	var well := Real.footprint(Real.one(String(mk.get("centre", "well"))))
 	var well_r := maxf(well.x, well.y) * 0.5
+	var LANE := float(mk.get("lane_m", 1.2))  # metres between two things a buyer or a cart passes between
+	var WALK := float(mk.get("walk_m", 2.0))  # metres round the well's rim: the town goes to draw water
+	var GATE := float(mk.get("gate_way_m", 3.0))  # metres either side of the way from the heart to the castle gate
 	var fail := 0
+	if not towns.get_script_method_list().any(func(m): return String(m["name"]) == "strew_spots") or not mk.has("strew"):
+		print("CHECK square: towns.gd has no strew_spots or towns.json market.crown no strew (the third toward the gate stays bare): FAIL")
+		quit(1)
+		return
 	for seed in 6:
 		var size := 8 + seed
 		var market := seed % 2 == 0
@@ -51,7 +62,8 @@ func _init() -> void:
 		var statue_gap := INF
 		var gate_gap := INF
 		var gate_dir := Vector2(cos(float(now["ang"]) + PI), sin(float(now["ang"]) + PI))
-		var statue := _statue(mk, sq, float(now["ang"]))
+		var statue3: Vector3 = towns.call("statue_spot", mk, sq, float(now["ang"]))
+		var statue := Vector2(statue3.x, statue3.z)
 		var statue_r := maxf(Real.footprint(Real.one("square_statue")).x, Real.footprint(Real.one("square_statue")).y) * 0.5
 		for i in st.size():
 			var a := _rect(st[i])
@@ -74,10 +86,42 @@ func _init() -> void:
 		for s in st:
 			var fp := Real.footprint(String(s[0]))
 			covered += (fp.x + fp.y) * fp.y  # the stall and a pile its depth long and half deep at either end
+		# The clusters of goods against a bench or a cart, in the third toward the gate (towns.gd strew_spots).
+		var strew: Array = towns.call("strew_spots", mk, sq, float(now["ang"]), now["laid"])
+		var sk: Dictionary = mk["strew"]
+		var cluster := float(sk.get("reach", 0.15))
+		var strew_gap := INF
+		for i in strew.size():
+			var c3: Vector3 = strew[i][0]
+			var c := Vector2(c3.x, c3.z)
+			var g := minf(minf(c.length() - cluster - well_r - WALK * S, _ray_dist(c, gate_dir) - cluster - GATE * S), (c - statue).length() - cluster - statue_r - LANE * S)
+			g = minf(g, (c - wpos).length() - cluster - wagon_r - LANE * S)
+			g = minf(g, sq - c.length() - cluster)
+			for s in st:
+				g = minf(g, _to_circle(_rect(s), c) - cluster - LANE * S)
+			for j in range(i + 1, strew.size()):
+				var d3: Vector3 = strew[j][0]
+				g = minf(g, Vector2(d3.x - c.x, d3.z - c.y).length() - 2.0 * cluster - LANE * S)
+			strew_gap = minf(strew_gap, g)
+			covered += PI * cluster * cluster
+		var ok_strew := strew.is_empty() or strew_gap >= -0.0001
+		# The small things in each third: centred on the gate's way, and 120 degrees either side.
+		var per := _per_stall(mk)
+		var pieces := (float((sk.get("goods", [2, 4]) as Array)[0]) + float((sk.get("goods", [2, 4]) as Array)[1])) + 1.0  # a pile at each end of its bench, and the bench
+		var thirds := [0.0, 0.0, 0.0]
+		var gate_ang := float(now["ang"]) + PI
+		for s in st:
+			thirds[_third(float(s[1]), gate_ang)] += per
+		for c in strew:
+			thirds[_third(atan2((c[0] as Vector3).z, (c[0] as Vector3).x), gate_ang)] += pieces
+		var mean: float = (float(thirds[0]) + float(thirds[1]) + float(thirds[2])) / 3.0
+		var ok_thirds: bool = thirds.all(func(t): return t >= mean * THIRD)
 		var open := 1.0 - covered / (PI * sq * sq)
 		var ok_size := sq >= float(R11["square_r"]) - 0.001 and open >= OPEN
 		var ok_walk := ok_size and ok_wagon and lane / S >= LANE and walk / S >= WALK and edge <= sq and statue_gap / S >= LANE and gate_gap / S >= GATE
-		var ok := ok_n and ok_g and ok_walk
+		var ok := ok_n and ok_g and ok_walk and ok_strew and ok_thirds
+		print("CHECK square seed %d thirds: small things toward the gate %.0f, either side %.0f and %.0f (want each >= %.0f%% of the mean %.0f); %d clusters, their clearest lane %.1f m past the rules: %s" % [
+			seed, thirds[0], thirds[1], thirds[2], THIRD * 100.0, mean, strew.size(), strew_gap / S if strew_gap != INF else 0.0, "ok" if ok_thirds and ok_strew else "FAIL"])
 		print("CHECK square seed %d: square_r %.2f (round 11: %.2f), open ground %.0f%% (want >= %.0f%%); stalls %d (round 11: %d), goods %d (round 11: %d); per 100 m2 stalls %.1f goods %.1f (round 11: %.1f, %.1f); closest stalls %.1f m (want >= %.1f), to the well's rim %.1f m (want >= %.1f), to the statue %.1f m (want >= %.1f), to the gate's way %.1f m (want >= %.1f), the wagon %.1f m from it (want >= %.1f), outermost edge %.2f of square_r %.2f: %s" % [
 			seed, sq, float(R11["square_r"]), open * 100.0, OPEN * 100.0, st.size(), (old["stalls"] as Array).size(), now["goods"], old["goods"],
 			st.size() * 100.0 / area, int(now["goods"]) * 100.0 / area,
@@ -99,18 +143,21 @@ func _lay(towns: Script, mk: Dictionary, size: int, market: bool, kinds: Array, 
 	var ang := rng.randf() * TAU
 	var laid: Dictionary = towns.call("lay_stalls", mk, count, float(mk.get("square_r", 2.1)), ang, kinds, rng)
 	var n := (laid["stalls"] as Array).size()
-	var g: Array = mk.get("goods", [1, 3])
-	var c: Array = (mk.get("counter", {}) as Dictionary).get("count", [0, 0])
-	var per := 2.0 * (float(g[0]) + float(g[1])) * 0.5 + (float(c[0]) + float(c[1])) * 0.5
+	var per := _per_stall(mk)
 	return {"stalls": laid["stalls"], "goods": int(n * per) + int(mk.get("piles", 0)) * 3, "ang": ang, "laid": laid}
 
 
-## Where the King's statue stands, as towns.gd's _plaza sets it: off the heart opposite the market, at well_at of the
-## square, turned beside_turn degrees off the castle's way in.
-func _statue(mk: Dictionary, sq: float, market_ang: float) -> Vector2:
-	var v := Vector3(cos(market_ang + PI), 0, sin(market_ang + PI)) * sq * float(mk.get("well_at", 0.5))
-	v = Basis(Vector3.UP, deg_to_rad(float(mk.get("beside_turn", 0.0)))) * v
-	return Vector2(v.x, v.z)
+## The small things at a stall: its two end piles at the middle of the goods range, its counter at the middle of its count.
+func _per_stall(mk: Dictionary) -> float:
+	var g: Array = mk.get("goods", [1, 3])
+	var c: Array = (mk.get("counter", {}) as Dictionary).get("count", [0, 0])
+	return 2.0 * (float(g[0]) + float(g[1])) * 0.5 + (float(c[0]) + float(c[1])) * 0.5
+
+
+## Which third of the square an angle falls in: 0 the third centred on the gate's way, 1 and 2 either side.
+func _third(a: float, gate_ang: float) -> int:
+	var d := angle_difference(gate_ang, a)
+	return 0 if absf(d) <= PI / 3.0 else (1 if d > 0.0 else 2)
 
 
 ## How far a point lies from the ray out of the heart along `dir` (its distance from the heart when behind it).

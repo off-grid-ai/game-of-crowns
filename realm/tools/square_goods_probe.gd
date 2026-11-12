@@ -108,7 +108,7 @@ func _run() -> void:
 
 
 ## What a good may lean on: [centre (x, z), size (across, deep), yaw, yaw to square to]. The stalls, the wagon,
-## the well or the statue, and every house front (a strip along its wall).
+## a bench out on the square (towns.gd strew_spots), the well or the statue, and every house front (a strip along its wall).
 func _anchors(town: Node3D, towns) -> Array:
 	var out: Array = []
 	for s: Array in town.get_meta("stalls", []):
@@ -116,7 +116,7 @@ func _anchors(town: Node3D, towns) -> Array:
 		var yaw := atan2(-m.x, -m.z)
 		out.append([Vector2(m.x, m.z), Vector2(float(s[2]), float(s[1])), yaw, yaw])
 	for kind in towns._batch:
-		if not (kind.contains("wagon") or kind.contains("cart") or kind.begins_with("meshy_sq_well") or kind.begins_with("meshy_sq_statue") or kind == Real.one("well") or kind == Real.one("square_statue")):
+		if not (kind.contains("wagon") or kind.contains("cart") or kind == Real.one("bench") or kind.begins_with("meshy_sq_well") or kind.begins_with("meshy_sq_statue") or kind == Real.one("well") or kind == Real.one("square_statue")):
 			continue
 		for t: Transform3D in towns._batch[kind]:
 			var yaw := atan2(t.basis.z.x, t.basis.z.z)
