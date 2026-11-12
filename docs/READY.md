@@ -33,3 +33,13 @@ Audit 2026-11-12 (supervisor): what the design homework planned against what lan
 | 13 | People live by a plan | The director owns the day plan (no `villagers._block`, no random `Weigh` pick in the square); `square_probe.gd`; unrest in the streets reads mood from the mirror | Town life | open |
 | 14 | Command card on | Attack and besiege orders exist, drag-to-face, and `host_command.json` is switched on | Army command | built (d0a609b9; host_command.json on since 5af67493) |
 | 15 | Properly integrated | Mac: "everything properly integrated: SSOT, SRP, DRY, SOLID, OOP." Every finding of the architecture audit (supervisor, 12 Nov) fixed at its seam: one writer per fact, no duplicated logic, god files split, no second path left; less hand code (Mac: "make sure that there is less hand code"): what an engine block, add-on, Freeciv rule or data row can do is deleted from our code, and the hand-code line count goes down | All threads, by file owner | open |
+
+## Milestone clips (part of the plan, never a stop)
+
+Mac: "make this part of the plan. I don't want to lose time." A clip is cut when a group of lines is built. GoC renders it in the background through render.sh, and no builder waits for it or stops for it. Headless probes keep running beside it. Defects it shows go to their owners as normal items.
+
+| Milestone | Lines | Clip |
+|---|---|---|
+| 1. The war slice | 1 (square), 2-8, 14 | /tmp/goc-focus/milestone1/milestone1.mp4 (rendering) |
+| 2. The living realm | 9 (stories as politics, unrest), 13 (day plan), 11 (one store) | when built |
+| 3. Ready to play | 10 (a full reign), 12, 15 | the one full round; then Mac plays |
