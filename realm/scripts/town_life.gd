@@ -817,8 +817,13 @@ func _market_day(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberG
 	var side := Vector3(-toward.z, 0, toward.x)
 	if side.dot(SEEN) < 0.0:
 		side = -side  # the seen half
-	# The smith: an anvil on the square's edge, hammering.
-	if bool(k.get("smith", true)) and preload("res://scripts/weapons.gd").can_play("Hammer_Swing"):
+	# The smith: an anvil on the square's edge, hammering; not when the town's smithy stands on the square (towns.gd
+	# _smithy, 01-town's forge): one smith, at his forge (crowd.json square_agents.smith_in_smithy).
+	var smithy := false
+	var wk: Dictionary = root.get_meta("works", {})
+	if wk.has("forge") and bool(Data.value("crowd", "square_agents.smith_in_smithy", true)) and square_agents_on():
+		smithy = (wk["forge"]["at"] as Vector3).length() < square_r * 1.8
+	if not smithy and bool(k.get("smith", true)) and preload("res://scripts/weapons.gd").can_play("Hammer_Swing"):
 		var at := side * square_r * 0.72
 		var anvil := _prop(life, center, "Anvil", at, atan2(-side.x, -side.z), 1.0, 0.0, 0.1)
 		if anvil:
@@ -1289,6 +1294,10 @@ func _forge(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: Wo
 		var s := _stand(root, life, center, posts[i], "townsfolk", "Hammer_Swing" if i == 0 else "Pushing", rng.randi(), Color.WHITE, 0.12, "smith" if i == 0 else "", true)
 		if s:
 			_face(s, anvil if i == 0 else hearth)
+			if i == 0 and sp.has("trough"):
+				s.set_meta("spot_quench", sp["trough"])  # the quench: to the trough and back (npc_mind spot_step)
+			if i == 1:
+				s.set_meta("spot_coal", sp.get("store", hearth))  # the bellows boy fetches coal from the store
 			_mind(s, "smith" if i == 0 else "bellows", center)
 			tick.smiths.append(s)
 	# The forge's glow, brighter in war, banked at night (works.Tick sets it each second).
@@ -2376,11 +2385,29 @@ func _beat(root: Node3D, life: Node3D, center: Vector3, r: float, k: int, rng: R
 	var by_well := _spot(center, mid + Vector3(rng.randf_range(-1, 1), 0, rng.randf_range(-1, 1)).normalized() * 0.3, walls, PackedVector2Array(), 0.4)
 	var a: Vector3 = mouths[k % mouths.size()]
 	var b: Vector3 = mouths[(k + 1) % mouths.size()]
-	var route: Array = [a]
+	# The castle's gate, when the castle stands by the square (towns.gd castle_frame): the beat starts and ends
+	# before it (01-town: the guards between the gate and the square's mouths).
+	var gate := Vector3.INF
+	var castle: Array = root.get_meta("castle_frame", [])
+	if castle.size() >= 3 and bool(Data.value("crowd", "patrol.gate", true)):
+		var cp: Vector3 = castle[0]
+		var cb := Basis(Vector3.UP, float(castle[1]))
+		var half := float((castle[2] as Vector2).y) * 0.5 + float(Data.num("crowd", "patrol.gate_out", 0.2))
+		var g1: Vector3 = cp + cb * Vector3(0, 0, half)
+		var g2: Vector3 = cp - cb * Vector3(0, 0, half)
+		var g := g1 if g1.length() < g2.length() else g2  # the castle's end toward the square
+		if g.length() < r * 3.0:
+			var q := _spot(center, g, walls, PackedVector2Array(), 0.4)
+			if not is_nan(q.x):
+				gate = q
+	var route: Array = []
+	if gate != Vector3.INF:
+		route.append(gate)
+	route.append(a)
 	if not is_nan(by_well.x):
 		route.append(by_well)
 	route.append(b)
-	if not is_nan(by_well.x):
+	if not is_nan(by_well.x) and gate == Vector3.INF:
 		route.append(by_well)
 	return route
 
@@ -2589,11 +2616,36 @@ class SquareLife extends Node:
 			return
 		var runner: Node3D = kids[0]
 		var chaser: Node3D = kids[1]
+		if float(c.get("rest", 0.0)) > 0.0:
+			c["rest"] = float(c["rest"]) - delta
+			if float(c["rest"]) <= 0.0:
+				for kd in kids:
+					People.play(kd, "Running")
+			return
 		if c["goal"] == Vector3.INF or not step(runner, c["goal"], float(c["pace"]), delta):
-			var a := rng.randf() * TAU
-			c["goal"] = Vector3(cos(a), 0, sin(a)) * float(c["r"]) * rng.randf_range(0.3, 1.0)
+			c["goal"] = _open_cobble(float(c["r"]))
 		if not step(chaser, runner.position, float(c["pace"]) * 0.97, delta, 0.06):
 			c["kids"] = [chaser, runner]  # caught: now the other one runs
+			var C: Dictionary = preload("res://scripts/data.gd").value("crowd", "chase", {})
+			if rng.randf() < float(C.get("stop", 0.5)):
+				# A breather after a catch: laughing, bent over, pointing off at something, then off again.
+				var span: Array = C.get("rest", [2.0, 4.0])
+				c["rest"] = rng.randf_range(float(span[0]), float(span[1]))
+				for kd in kids:
+					People.play(kd, ["Laughing", "Crouch_Idle", "Pointing_Forward", "Waving"][rng.randi() % 4])
+
+	## A point on the square's open cobble within `r` of its heart: off every stall, house and plinth.
+	func _open_cobble(r: float) -> Vector3:
+		if _blocks.is_empty() and blocks.is_valid():
+			_blocks = blocks.call()
+		var p := Vector3.ZERO
+		for t in 8:
+			var a := rng.randf() * TAU
+			p = Vector3(cos(a), 0, sin(a)) * r * rng.randf_range(0.3, 1.0)
+			var q := Vector2(p.x, p.z)
+			if not _blocks.any(func(fp): return (fp as PackedVector2Array).size() > 2 and q.distance_to(fp[0]) < 1.5 and Geometry2D.is_point_in_polygon(q, fp)):
+				return p
+		return p
 
 
 ## A famine's dole (the hungry in a line for bread, readable from the square's camera in seconds):

@@ -121,11 +121,27 @@ class Breaker extends BTAction:
 class Step extends BTAction:
 	@export var reach := 0.25
 	@export var back := 0.0
+	@export var spot := ""  # a meta on the person naming a town-local spot to step to (the forge's trough), else about the post
 	var _to := Vector3.ZERO
 	var _left := 0.0
 
 	func _enter() -> void:
 		var post: Vector3 = blackboard.get_var(&"post", agent.position, false)
+		if spot != "" and agent.has_meta(spot):
+			var sp: Vector3 = agent.get_meta(spot)
+			var near := sp + (post - sp).normalized() * 0.07  # beside it, not in it
+			_to = near
+			blackboard.set_var(&"at_post", false)
+			var g0: Callable = blackboard.get_var(&"ground", Callable(), false)
+			if g0.is_valid():
+				_to.y = g0.call(_to)
+			var f0 := Vector2(sp.x - agent.position.x, sp.z - agent.position.z)
+			if f0.length() > 0.01:
+				Turn.toward(agent as Node3D, atan2(f0.x, f0.y))
+			People.play(agent, "Walk")
+			_left = maxf(0.3, Vector2(_to.x - agent.position.x, _to.z - agent.position.z).length() / 0.17)
+			agent.create_tween().tween_property(agent, "position", _to, _left)
+			return
 		if back > 0.0:
 			var fwd := Vector3(sin(agent.rotation.y), 0, cos(agent.rotation.y))
 			_to = agent.position - fwd * back
@@ -192,8 +208,9 @@ class Step extends BTAction:
 		if _left > 0.0 or (agent.position.distance_to(_to) > 0.002 and _left > -0.5):
 			return RUNNING
 		agent.remove_meta("step_to")
-		var face: float = blackboard.get_var(&"face", agent.rotation.y, false)
-		Turn.toward(agent as Node3D, face)  # back round to the work, over a beat
+		if spot == "":
+			var face: float = blackboard.get_var(&"face", agent.rotation.y, false)
+			Turn.toward(agent as Node3D, face)  # back round to the work, over a beat
 		return SUCCESS
 
 
@@ -297,6 +314,13 @@ static func brk(pool: Array) -> BTTask:
 	return t
 
 
+## A step to the spot the person's meta `key` names (town-local) and stop there facing it; step(0.0) goes back.
+static func spot_step(key: String) -> BTTask:
+	var t := Step.new()
+	t.spot = key
+	return t
+
+
 static func step(reach := 0.25, back := 0.0) -> BTTask:
 	var t := Step.new()
 	t.reach = reach
@@ -334,13 +358,14 @@ static func post_activities(post: String) -> Array:
 			return [
 				seq("forge", [run(["Hammer_Swing"], 3, 5), brk(["Wiping_Sweat", "Weight_Shift"])]),
 				seq("turn", [once("PickUp_Table"), run(["Hammer_Swing"], 2, 3), once("Looking_Around"), brk(REST)]),
-				seq("quench", [once("PickUp_Table"), step(0.15), once("Watering"), step(0.0), run(["Hammer_Swing"], 1, 2), brk(["Wiping_Sweat", "Arm_Stretching"])]),  # the hot iron into the trough, back to the anvil
+				seq("quench", [once("PickUp_Table"), spot_step("spot_quench"), once("Watering"), step(0.0), run(["Hammer_Swing"], 1, 2), brk(["Wiping_Sweat", "Arm_Stretching"])]),  # the hot iron into the trough, back to the anvil
 				seq("judge", [once("PickUp_Table"), run(["Thinking"], 1, 1), once("Firm_Nod"), run(["Hammer_Swing"], 1, 2), brk(["Weight_Shift", "Slow_Nod"])]),  # the blade held up to the light, a nod, back to it
 			]
 		"bellows":  # the second smith at the hearth: pumps the bellows, turns the iron in the coals, wipes his brow
 			return [
 				seq("blow", [run(["Pushing"], 3, 5), brk(["Wiping_Sweat", "Weight_Shift"])]),
 				seq("stoke", [once("PickUp_Table"), run(["Pushing"], 2, 3), once("Looking_Around"), brk(REST)]),
+				seq("coal", [spot_step("spot_coal"), once("PickUp_Table"), step(0.0), once("PickUp_Table"), run(["Pushing"], 2, 3), brk(["Wiping_Sweat", "Weight_Shift"])]),  # a scuttle of coal from the store to the hearth
 			]
 		# --- at the working buildings (town_life._works, works.json) ---
 		"miller":  # at the mill's door: sacks in, flour out
