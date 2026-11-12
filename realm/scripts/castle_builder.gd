@@ -253,6 +253,42 @@ static func meshy_gatehouse() -> String:
 	return path if String(g.get("replaces", "")) == "castle_gate" and ResourceLoader.exists(path) else ""
 
 
+## Round turrets (01-town's round towers under red cones; castle.json turrets): every coned 2 x 2 tower, the castle's
+## corners and gate, the keep's turrets and the town wall's, as Kenney's hexagonal tower (Castle Kit, CC0: its base, as
+## many middles as its height takes, its pointed roof) at castle size, its stone the castle's (the kit's stone laid
+## world-free, warmed as castle.json stone.tint), its roof the kit's terracotta tiles. --turrets=square for the kit's.
+static func _round_turrets() -> bool:
+	var args := OS.get_cmdline_user_args()
+	if args.has("--turrets=square"):
+		return false
+	return args.has("--turrets=round") or bool((preload("res://scripts/data.gd").value("castle", "turrets", {}) as Dictionary).get("round", false))
+
+
+func _round_tower(parts: Array, at: Vector3, storeys: int) -> void:
+	var k: Dictionary = preload("res://scripts/data.gd").value("castle", "turrets", {})
+	var sc := float(k.get("scale", 4.4))
+	var Real := preload("res://scripts/realistic.gd")
+	var dummy := StandardMaterial3D.new()
+	var st: Dictionary = preload("res://scripts/data.gd").value("castle", "stone", {})
+	var stone_dye := {"like": "Floor_UnevenBrick", "triplanar": float(k.get("triplanar", 0.5))}
+	if st.get("tint") is Array:
+		stone_dye["tint"] = st["tint"]
+	var stone := {"colormap": Real.dyed(dummy, stone_dye)}
+	var tiles := {"colormap": Real.dyed(dummy, {"like": "Roof_RoundTiles_4x4", "material": "MI_RoundTiles", "triplanar": float(k.get("tile_triplanar", 0.7)), "tint": k.get("roof_tint", [0.88, 0.78, 0.72])})}
+	var h := storeys * STOREY + 0.12
+	var base_h := 1.31 * sc  # tower-hexagon-base.glb is 1.31 tall at 1
+	var mid_h := 0.46 * sc  # tower-hexagon-mid.glb 0.46
+	if h <= base_h:
+		parts.append(["res://assets/castle/tower-hexagon-base.glb", Transform3D(Basis.from_scale(Vector3(sc, h / 1.31, sc)), at), stone])
+	else:
+		parts.append(["res://assets/castle/tower-hexagon-base.glb", Transform3D(Basis.from_scale(Vector3.ONE * sc), at), stone])
+		var n := maxi(1, int(ceil((h - base_h) / mid_h)))
+		var sy := (h - base_h) / (n * 0.46)
+		for i in n:
+			parts.append(["res://assets/castle/tower-hexagon-mid.glb", Transform3D(Basis.from_scale(Vector3(sc, sy, sc)), at + Vector3(0, base_h + i * (h - base_h) / n, 0)), stone])
+	parts.append(["res://assets/castle/tower-hexagon-roof.glb", Transform3D(Basis.from_scale(Vector3(sc, sc * float(k.get("roof_tall", 1.3)), sc)), at + Vector3(0, h, 0)), tiles])
+
+
 ## A town's stone wall (01-town's wall round the town, its towers and its gate; towns.gd _town_wall lays it out):
 ## the curtain's bays, each [centre (metres, town-local, its foot), yaw (its outer face toward +Z turned by yaw),
 ## index along its run], and cone towers at `towers` (metres, their foot), the curtain `storeys` high. The castle's
@@ -315,6 +351,9 @@ static func stone_curtains() -> bool:
 ## and as opts say: windows (a share of the upper panels), a door or a gate in
 ## its front, merlons, the tiled cone (a 2x2 tower) or a tiled roof (the keep).
 func _block(parts: Array, at: Vector3, wc: int, dc: int, storeys: int, rng: RandomNumberGenerator, opts: Dictionary) -> void:
+	if opts.get("cone", false) and wc == 2 and dc == 2 and _round_turrets():
+		_round_tower(parts, at, storeys)
+		return
 	var hw := wc * CELL / 2.0
 	var hd := dc * CELL / 2.0
 	for f in storeys:

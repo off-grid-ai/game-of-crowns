@@ -275,16 +275,21 @@ static func dyed(src: Material, rgb) -> Material:
 	# in world-free triplanar so it needs none of this mesh's UVs (the Kenney fountain's basin pointed its UVs
 	# at a palette's cells: flat lavender plastic, batch 8 review; now the village kit's stone).
 	if rgb is Dictionary and (rgb as Dictionary).has("like"):
-		var key := "like:%s:%s:%s" % [rgb["like"], rgb.get("triplanar", 0.5), str(rgb.get("tint", ""))]
+		var key := "like:%s:%s:%s:%s" % [rgb["like"], rgb.get("triplanar", 0.5), str(rgb.get("tint", "")), str(rgb.get("material", ""))]
 		if _cache.has(key):
 			return _cache[key]
 		var path := "res://assets/village/%s.gltf" % String(rgb["like"])
 		var n: Node = (load(path) as PackedScene).instantiate() if ResourceLoader.exists(path) else null
 		var got: BaseMaterial3D = null
+		# "material": that piece's material by name (a roof piece's tiles, not its timber trim); else its first.
+		var want := String((rgb as Dictionary).get("material", ""))
 		for mi in (n.find_children("*", "MeshInstance3D", true, false) if n else []):
-			var m := (mi as MeshInstance3D).get_active_material(0)
-			if m is BaseMaterial3D:
-				got = (m as BaseMaterial3D).duplicate()
+			for si in ((mi as MeshInstance3D).mesh.get_surface_count() if (mi as MeshInstance3D).mesh else 0):
+				var m := (mi as MeshInstance3D).get_active_material(si)
+				if m is BaseMaterial3D and (want == "" or m.resource_name == want):
+					got = (m as BaseMaterial3D).duplicate()
+					break
+			if got != null:
 				break
 		if n:
 			n.free()
