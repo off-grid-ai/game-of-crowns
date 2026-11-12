@@ -30,7 +30,7 @@
     "armies/meshy_town_guard": {
       "albedo": "albedo.png",
       "team": "mask",
-      "tracks": { "idle": "Sword_Idle", "rest": { "Sword_Idle": 0.8, "SS_Block_Idle": 0.2 }, "walk": "SS_Walk", "run": "Running", "ready": "SS_Block_Idle", "block": "SS_Block_1", "attack": ["SS_Slash_5", "SS_Attack_4", "SS_Slash_2"], "hit": ["SS_Impact_1", "SS_Impact_2"], "death": ["SS_Death_2", "SS_Death_1"], "cheer": "Battlecry" }
+      "tracks": { "idle": "Sword_Idle", "rest": { "Sword_Idle": 0.8, "SS_Block_Idle": 0.2 }, "walk": "SS_Walk", "run": "Running", "ready": "SS_Block_Idle", "block": "SS_Block_1", "attack": ["SS_Slash_5"], "hit": ["SS_Impact_1", "SS_Impact_2"], "death": ["SS_Death_2", "SS_Death_1"], "cheer": "Battlecry" }
     },
     "armies/meshy_ranger": {
       "albedo": "albedo.png",
