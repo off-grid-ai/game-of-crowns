@@ -83,9 +83,11 @@ function save(meta, orders) {
 }
 
 // POST /host/order {host, order, x?, y?, city?}: returns [code, {ok, text} | {error}].
+// dry: true (a march only) answers as the order would, by land or by sea, and gives nothing: no order, none of the
+// season's orders spent, no declaration (GoC's render pass asks before it spends a host's one order).
 export function order(ctx, b) {
   const out = give(ctx, b);
-  if (out[0] === 200) {
+  if (out[0] === 200 && !b.dry) {
     const { world, meta } = ctx;
     const by = meta.hostOrdered?.turn === world.turn ? { ...meta.hostOrdered.by } : {};
     by[Number(b.host)] = (by[Number(b.host)] ?? 0) + 1;
@@ -104,6 +106,7 @@ function give(ctx, b) {
   const h = hosts.find((x) => x.id === Number(b.host));
   if (!h) return [404, { error: "no such host" }];
   const kind = String(b.order ?? "");
+  if (b.dry && kind !== "march") return [400, { error: "only a march can be asked dry" }];
   // One order a season to each host (data/hosts.json ordersPerHost): another host may still be ordered.
   if (ordersLeft(ctx, h.id) < 1) return [400, { error: "This host has its orders for this season; the next goes with the season's turn. Another host may still be ordered." }];
   const rest = (meta.hostOrders ?? []).filter((o) => !o.units.some((id) => h.units.includes(id)));
@@ -128,6 +131,10 @@ function give(ctx, b) {
       // and the house hears of it now (declare: the route moves favour and names the deed).
       const owner = town ? world.players.find((p) => p.id === town.owner) : null;
       const foe = owner && !houseFor(owner).crown && !houseFor(owner).wild && !sworn?.(owner.id) ? owner : null;
+      if (b.dry) {
+        const seasons = sea ? Math.max(1, Math.ceil(sea.walk / HOSTS.speed) + Math.ceil(sea.sail / sea.speed) + Math.ceil(sea.ashore / HOSTS.speed)) : Math.max(1, Math.ceil(road / HOSTS.speed));
+        return [200, { ok: true, dry: true, by: sea ? "sea" : "land", seasons, ...(foe ? { siege: true } : {}), ...(sea ? { sea: { port: sea.port, hulls: sea.hulls, landing: sea.landing } } : {}) }];
+      }
       save(meta, [...rest, { kind: "march", units: h.units, x: to.x, y: to.y, city: town?.id ?? null, since: world.turn, ...(foe ? { siege: true, house: foe.id } : {}), ...face,
         ...(sea ? { sea: { phase: "port", port: sea.port, hulls: sea.hulls, landing: sea.landing } } : {}) }]);
       if (sea) {

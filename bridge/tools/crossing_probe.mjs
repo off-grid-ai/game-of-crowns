@@ -49,6 +49,17 @@ const host = (ctx) => Hosts.list(ctx).find((h) => h.units.includes(1));
   check(out[0] === 400 && /No ship lies free/.test(out[1]?.error ?? ""), `with no hull free the march is refused, saying why: ${out[0]} ${out[1]?.error}`);
 }
 const ctx = stage();
+{
+  // Asked dry (GoC's render pass, before it spends the host's one order): the plan, nothing given.
+  const left = Hosts.ordersLeft(ctx, host(ctx).id);
+  const sea = Hosts.order(ctx, { host: host(ctx).id, order: "march", city: 901, dry: true });
+  check(sea[0] === 200 && sea[1]?.dry && sea[1]?.by === "sea" && sea[1]?.sea?.port?.id === 900 && sea[1]?.seasons >= 1, `asked dry, the march over water answers by sea, naming the port: ${JSON.stringify(sea)}`);
+  const land = Hosts.order(ctx, { host: host(ctx).id, order: "march", city: 900, dry: true });
+  check(land[0] === 200 && land[1]?.by === "land" && !land[1]?.sea, `asked dry, a march over land answers by land: ${JSON.stringify(land)}`);
+  check(!(ctx.meta.hostOrders ?? []).length && Hosts.ordersLeft(ctx, host(ctx).id) === left, `asked dry, nothing is given: no order, the season's orders untouched (${left})`);
+  const hold = Hosts.order(ctx, { host: host(ctx).id, order: "hold", dry: true });
+  check(hold[0] === 400 && !(ctx.meta.hostOrders ?? []).length, "only a march is asked dry");
+}
 const out = Hosts.order(ctx, { host: host(ctx).id, order: "march", city: 901 });
 check(out[0] === 200 && /takes ship/.test(out[1]?.text ?? ""), `the march over water is one order that takes ship: ${out[0]} ${out[1]?.text ?? out[1]?.error}`);
 const o = ctx.meta.hostOrders?.[0];
