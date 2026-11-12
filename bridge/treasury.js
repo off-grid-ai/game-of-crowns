@@ -139,13 +139,13 @@ export function purse(ctx, ev) {
 }
 
 // Every house's season by source (Freeciv's "income", realmrules/script.lua realm_books_close): its towns, its
-// mines, the tithe, the Royal Court and the bridge's dealings, kept as meta.income (id -> sources) for /world's
-// houses. The crown's season for the top bar (lastSeason.net) is its income less the King's own dealings.
+// mines, the tithe, the Royal Court and the bridge's dealings, and its purse at the books' close, kept as
+// meta.income (id -> sources and purse) for /world's houses. The crown's season for the top bar (lastSeason.net) is its income less the King's own dealings.
 const SOURCES = ["towns", "mines", "tithe", "court", "dealings"];
 export function income(ctx, ev) {
   ctx.meta.income = Object.fromEntries(String(ev.by ?? "").split(";").filter(Boolean).map((r) => {
     const [id, ...v] = r.split(":").map(Number);
-    return [id, Object.fromEntries(SOURCES.map((k, i) => [k, v[i] || 0]))];
+    return [id, { ...Object.fromEntries(SOURCES.map((k, i) => [k, v[i] || 0])), purse: v[SOURCES.length] ?? null }];
   }));
   const crown = ctx.meta.income[Number(ev.crown)];
   if (crown && ctx.lastSeason) ctx.lastSeason.net = crown.towns + crown.mines + crown.tithe + crown.court;

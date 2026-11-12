@@ -403,6 +403,8 @@ function ev_building_lost(city, btype, reason, destroyer)
   emit("building_lost", {building = btype:rule_name(), city = city.id, owner = city.owner.id, reason = reason})
 end
 function ev_unit_lost(unit, loser, reason)
+  -- Every unit Freeciv takes off the map, and why (the reign harness checks no unit vanishes without one).
+  log.normal("UNIT_LOST %d %s %d", unit.id, tostring(reason), loser and loser.id or -1)
   if reason == "killed" then
     emit("unit_killed", {unit = unit.utype:rule_name(), owner = loser.id, x = unit.tile.x, y = unit.tile.y})
   end
@@ -915,7 +917,7 @@ end
 -- taxes, less its upkeep and what its towns buy) and the bridge's dealings (every gold the bridge moves goes
 -- through realm_gold). The ruleset's own moves this turn are booked as they happen (realm_book: the seams'
 -- "mines", the "tithe", the Royal Court's "court"); the close reports "income" (by: "id:towns:mines:tithe:court:
--- dealings;...", crown: its id) and takes each purse as the next season's start. Plain text globals, which the
+-- dealings:purse;...", the purse as the close leaves it; crown: its id) and takes each purse as the next season's start. Plain text globals, which the
 -- save keeps ("id:gold;..." at the close, "id:gold;..." dealt since). A house first seen at a close reports from
 -- the next season on.
 GOC_BOOKS = GOC_BOOKS or ""
@@ -972,6 +974,7 @@ function realm_books_close()
       if b then
         local r = {p.id}
         for _, k in ipairs(BOOK_SOURCES) do r[#r + 1] = b[k] end
+        r[#r + 1] = p:gold()  -- the purse at the close
         rows[#rows + 1] = table.concat(r, ":")
       end
     end
