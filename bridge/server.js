@@ -164,6 +164,7 @@ function load(id) {
   meta.tithe ??= 0.1;
   court = new Court(P.base, (e) => { record(e); picture(e); });  // what the lords do is told, and shown
   court.onTruce = (pair, seasons) => houseTruce(pair, seasons);  // every truce reaches Freeciv (the one writer)
+  court.onWar = (pair) => diplomacyNow([pair[0], pair[1], 0, "War"]);  // and every story's war (arcs.js, characters.js)
   court.deedsOf = (pid) => (deeds[pid] ??= []);
   arcs = new Arcs(P.base, court, record);
   arcsRunning = false;  // a new realm's stories start free of the last one's

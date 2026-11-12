@@ -760,6 +760,7 @@ export class Arcs {
       const [atk, def] = [R(d.war[0]), R(d.war[1])];
       const prey = (d.war[2] && R(d.war[2])?.town && R(d.war[2])) || ctx.world.cities.find((x) => x.owner === def.playerId && !x.capital) || ctx.world.cities.find((x) => x.owner === def.playerId);
       if (prey && atk.playerId !== def.playerId) {
+        court.onWar?.([atk.playerId, def.playerId]);  // the war itself, in Freeciv (the one diplomacy writer), so the host fights
         send(`realm_host(realm_find_player(${atk.playerId}), ${prey.x}, ${prey.y}, {"Pikemen","Archers","Knights","Catapult"}, ${Math.round(Number(d.warSize ?? 6) * dials(arc.tags).hosts)})`);
         const muster = warMuster(ctx.world, atk.playerId, prey);
         if (muster) ctx.scene("muster", muster);  // the attacker's host marches out from its seat
@@ -783,6 +784,10 @@ export class Arcs {
       const [who, to] = [R(d.defect[0]), R(d.defect[1])];
       const p = ctx.world.players.find((x) => x.id === to.playerId);
       if (p && who.playerId !== to.playerId) {
+        // A defector with a seat takes it with him: the town goes to his new house (Freeciv's own transfer). Never his
+        // old house's capital, which stays with its lord.
+        const seat = who.seat != null ? ctx.world.cities.find((c) => c.id === who.seat) : null;
+        if (seat && seat.owner === who.playerId && !seat.capital) send(Lua.transferCity(seat.id, p.id));
         who.house = houseFor(p).name; who.playerId = p.id; who.liege = court.lordOfHouse(p.id)?.id ?? null; who.loyalty = 55;
       }
     }

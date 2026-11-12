@@ -1148,7 +1148,10 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     if (e.war && roles[e.war[0]] && roles[e.war[1]]) {
       const [atk, def] = [roles[e.war[0]], roles[e.war[1]]];
       const prey = (def === roles.rival && roles.rivalTown) || world.cities.find((x) => x.owner === def.playerId && !x.capital) || world.cities.find((x) => x.owner === def.playerId);
-      if (prey?.x !== undefined) out.lua.push(`realm_host(realm_find_player(${atk.playerId}), ${prey.x}, ${prey.y}, {"Pikemen","Archers","Knights","Catapult"}, ${Number(e.warSize ?? 8)})`);
+      if (prey?.x !== undefined) {
+        this.onWar?.([atk.playerId, def.playerId]);  // the war itself, in Freeciv (the one diplomacy writer), so the host fights
+        out.lua.push(`realm_host(realm_find_player(${atk.playerId}), ${prey.x}, ${prey.y}, {"Pikemen","Archers","Knights","Catapult"}, ${Number(e.warSize ?? 8)})`);
+      }
       const muster = warMuster(world, atk.playerId, prey);
       if (muster) (out.musters ??= []).push(muster);  // court.js rulingScene shows it
       this.shift(def.id, atk.id, -60);
