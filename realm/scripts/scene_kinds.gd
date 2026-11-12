@@ -14,11 +14,11 @@ const CROWN := "crown"  # the King's own doing on the roads
 const NEUTRAL := "neutral"
 
 ## kind -> {tone, reach (world units), power (0-1), interest (director), dist
-## (camera distance), caption (with %s for the town), play (the class that stages it: scene_kind.gd's, one a kind), fleeing (how many
+## (camera distance), caption (with %s for the town), play (the class that stages it: scene_kind.gd's; scenes.gd keeps one of each class), fleeing (how many
 ## refugees leave the town), burn ([seconds, size] of the fire set in it)}.
 const KINDS := {
-	"siege": {"tone": HOSTILE, "reach": 5.0, "power": 0.9, "interest": 10, "dist": 7.0, "caption": "The siege of %s"},
-	"storm": {"tone": HOSTILE, "reach": 6.0, "power": 1.0, "interest": 10, "dist": 7.0, "caption": "%s is stormed"},  # Freeciv's assault on a siege (campaigns.js stormScene)
+	"siege": {"tone": HOSTILE, "reach": 5.0, "power": 0.9, "interest": 10, "dist": 7.0, "caption": "The siege of %s", "play": "res://scripts/scene_kinds/siege.gd"},
+	"storm": {"tone": HOSTILE, "reach": 6.0, "power": 1.0, "interest": 10, "dist": 7.0, "caption": "%s is stormed", "play": "res://scripts/scene_kinds/siege.gd"},  # Freeciv's assault on a siege (campaigns.js stormScene)
 	"battle": {"tone": HOSTILE, "reach": 5.0, "power": 0.9, "interest": 9, "dist": 8.0, "caption": "Battle near %s", "play": "res://scripts/scene_kinds/battle.gd"},
 	"sack": {"tone": HOSTILE, "reach": 6.0, "power": 1.0, "interest": 9, "dist": 8.0, "caption": "%s is sacked", "fleeing": 7, "burn": [45.0, 1.0], "play": "res://scripts/scene_kinds/sack.gd"},
 	"razed": {"tone": HOSTILE, "reach": 7.0, "power": 1.0, "interest": 9, "dist": 9.0, "caption": "%s burns", "fleeing": 10, "burn": [70.0, 2.0], "play": "res://scripts/scene_kinds/sack.gd"},

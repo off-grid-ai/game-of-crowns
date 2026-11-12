@@ -161,8 +161,8 @@ func _stage() -> void:
 			for pid in main._houses:
 				if int(pid) != int(city["owner"]) and not main._houses[pid].get("wild", false):
 					foe = main._houses[pid]
-			main.scenes._siege(int(city["id"]), _at, main.terrain.world_pos(float(city["x"]) + 1.0, float(city["y"]) + 0.4), int(city["size"]), 2, foe, main._houses.get(int(city["owner"]), {}), 600.0)
-			_at = main.scenes._sieges[int(city["id"])]["front"]
+			main.scenes.kind("siege").besiege(int(city["id"]), _at, main.terrain.world_pos(float(city["x"]) + 1.0, float(city["y"]) + 0.4), int(city["size"]), 2, foe, main._houses.get(int(city["owner"]), {}), 600.0)
+			_at = main.scenes.kind("siege").sieges[int(city["id"])]["front"]
 		"feast":
 			main.scenes.kind("feast").stage_feast(_at, main._houses.get(int(city["owner"]), {}))
 		"duel", "walk", "hall":

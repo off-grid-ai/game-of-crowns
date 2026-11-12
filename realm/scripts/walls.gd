@@ -377,7 +377,7 @@ func _publish(_by: Node3D, root: Node3D) -> void:
 ## A wall across a staged siege's front: between the defenders and the foot of
 ## the assault, an arc facing the camp.
 func _demo_build() -> void:
-	var sieges: Dictionary = main.scenes.get("_sieges")
+	var sieges: Dictionary = main.scenes.kind("siege").sieges
 	for id in sieges:
 		var s: Dictionary = sieges[id]
 		if s.get("root") == null or not is_instance_valid(s["root"]) or not main.awareness:

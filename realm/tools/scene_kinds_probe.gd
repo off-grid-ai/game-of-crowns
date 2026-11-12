@@ -15,14 +15,16 @@ const OLD := {"feast": "_feast", "handover": "_handover", "grain": "_convoy", "t
 	"rider": "_rider", "muster": "_muster", "battle": "_battle", "siege": "_siege", "storm": "storm",
 	"sack": "_burn", "razed": "_burn", "famine": "_refugees", "plague": "_refugees"}
 
-## The kinds that are their own class by now (grows a kind a commit, till scenes.gd stages none itself).
-const CLASSED := ["feast", "grain", "tribute", "ward", "rider", "muster", "famine", "plague", "sack", "razed", "handover", "battle"]
+## The kinds that are their own class (every kind scenes.gd once staged itself).
+const CLASSED := ["feast", "grain", "tribute", "ward", "rider", "muster", "famine", "plague", "sack", "razed", "handover", "battle", "siege", "storm"]
 
 ## What each kind, staged on the stand-in, must set down: [the node's name under the stage, the least of its children].
-const STAGED := {"feast": ["Feast", 10], "grain": ["Convoy", 4], "tribute": ["Convoy", 4], "ward": ["Convoy", 4], "rider": ["Rider", 1], "famine": ["Refugees", 5], "plague": ["Refugees", 3], "sack": ["Burn", 15], "razed": ["Burn", 30], "handover": ["Handover", 7], "battle": ["Battle", 60]}
+const STAGED := {"feast": ["Feast", 10], "grain": ["Convoy", 4], "tribute": ["Convoy", 4], "ward": ["Convoy", 4], "rider": ["Rider", 1], "famine": ["Refugees", 5], "plague": ["Refugees", 3], "sack": ["Burn", 15], "razed": ["Burn", 30], "handover": ["Handover", 7], "battle": ["Battle", 60], "siege": ["Siege", 20]}
 
 
 class Land extends Node3D:
+	var width := 64  # tiles
+	var height := 64
 	func world_pos(tx: float, ty: float) -> Vector3:
 		return Vector3(tx, 0, ty)
 	func height_at(_x: float, _z: float) -> float:
@@ -64,6 +66,7 @@ class Store extends Node:
 
 class Main extends Node:
 	var towns = null
+	var terrain: Node3D = null
 	var scenes = null  # the Movers find the realm's navigation through it: none here, so they stand where set down
 	var roads = null
 
@@ -103,6 +106,7 @@ func _run() -> void:
 	Engine.set_meta("awareness", store)
 	var land := Land.new()
 	main.add_child(land)
+	main.terrain = land
 	for k in moved:
 		if not STAGED.has(k):
 			continue
@@ -119,6 +123,16 @@ func _run() -> void:
 			print("FAIL %s: staged %d things, want at least %d" % [k, count, int(want[1])])
 			fails += 1
 		stage.queue_free()
+	# One sync: scenes.gd plays every kind through its class, and keeps no match of its own; kinds sharing a class
+	# share one of it (a storm finds the siege its siege kind pitched).
+	if (Scenes as GDScript).source_code.contains('match String(s["kind"])'):
+		print("FAIL scenes.sync still matches on the kind itself")
+		fails += 1
+	var one: Node3D = Scenes.new()
+	if one.kind("siege") != one.kind("storm") or one.kind("grain") != one.kind("ward"):
+		print("FAIL kinds of one class don't share it (siege/storm, grain/ward)")
+		fails += 1
+	one.free()
 	print("KINDS VERDICT: %s" % ("PASS" if fails == 0 else "FAIL (%d)" % fails))
 	quit(1 if fails > 0 else 0)
 
