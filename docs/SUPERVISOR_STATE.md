@@ -26,6 +26,8 @@ Built: 1-6, 9, 11-15. Reopened: 7 (capture chain fails at link 3), 8 (film click
 In: Meshy army (67c15196), horse legs (174883d1), castle ck_* and houses hs_* (2dcec252), cog (cbc97f6f), castle banners in house colour, crowd colour. Coming: 3 soldiers remade (they fail army_colour_probe today), nature set. Town walls stay kit until fire-siege closes; then walls' look goes to the look audit. Square fill: GoC. Fields from Freeciv (9dbdf1ec), plague shown (a0778c91).
 
 ## Decisions and why
+- Remove what we won't use (Mac, 11-12): unused art, the replaced off-family packs, dead code and switches. Untracked art moves to ~/goc-asset-archive/<date>/ (reversible), not rm. Nothing the game loads or a feature uses goes. Owner: One store, after the crown-town fix.
+- The King's sea crossing is wanted (Mac: ships move armies). Owner: One store (bridge), after the cleanup.
 - Army density (supervisor): keep drawPerMan 0.1 (Mac's fps rule) plus a per-regiment floor (40), so every regiment reads as a block; the plate shows the real men; bigger hosts still look bigger. Reversible in army.json.
 - One order per host per season (supervisor, on Mac's "just get this right"): each army acts each season, closer to the WC3 command bar; the season still sets the pace. Reversible in hosts.json.
 - The square keeps the r11 openness floor and fills with life to 01-town's density (supervisor): both are Mac's picks, and filling serves both.
