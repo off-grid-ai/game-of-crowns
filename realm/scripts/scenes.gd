@@ -40,6 +40,10 @@ var _timber: StandardMaterial3D
 
 
 func _ready() -> void:
+	# Where people may stand and the ways they walk (town_nav.gd), for every Mover from the first frame: the realm's
+	# land and roads as main hands them over, not on the first scene that stands someone.
+	nav.terrain = terrain
+	nav.roads = get_parent().get("roads")
 	var builder = preload("res://scripts/house_builder.gd").new()
 	wagon_mesh = builder.piece_mesh("Prop_Wagon")
 
@@ -164,9 +168,6 @@ func rng(at: Vector3) -> RandomNumberGenerator:
 func stand(p: Vector3, body := 0.0) -> Vector3:
 	if towns == null:
 		towns = get_parent().get("towns")
-	nav.terrain = terrain
-	if nav.roads == null:
-		nav.roads = get_parent().get("roads")
 	return nav.stand(towns, p, body)
 
 
@@ -390,8 +391,12 @@ func _arrows(root: Node3D, archers_team: Array, targets: Array, r: RandomNumberG
 		tw.tween_callback(func():
 			if not m["alive"]:
 				return
+			# A mark is picked as he looses, among those still standing: one picked when he drew may be gone.
+			var standing := targets.filter(func(t): return is_instance_valid(t["node"]))
+			if standing.is_empty():
+				return
 			people.play(n, "Bow_Shoot", 1.0)
-			var mark: Dictionary = targets[r.randi() % targets.size()]
+			var mark: Dictionary = standing[r.randi() % standing.size()]
 			var land: Vector3 = mark["node"].position + Vector3(r.randf_range(-0.12, 0.12), 0, r.randf_range(-0.12, 0.12))
 			_arrow(root, n.position + Vector3(0, 0.17, 0), land, r)
 			if mark["alive"] and mark["rank"] > 0 and r.randf() < 0.08:
