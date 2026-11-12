@@ -106,7 +106,7 @@ func _ready() -> void:
 		return
 	var colours := _colours()
 	for i in specs.size():
-		var k := i % colours.size() if String(Data.value("army", "colours", "crown")) == "houses" else 0
+		var k := i % colours.size() if colour_mode() == "houses" else 0
 		var r := _regiment(specs[i], battle["colour"], battle.get("house", {})) if battle.has("colour") else _regiment(specs[i], colours[k], _worn[k] if k < _worn.size() else {})
 		if r.is_empty():
 			continue
@@ -325,6 +325,15 @@ static func knight() -> String:
 	if want == "v2" and ResourceLoader.exists("res://assets/armies/knight_v2/soldier.glb"):
 		return "armies/knight_v2"
 	return KNIGHT
+
+
+## crown (every regiment in the crown's colour and arms) or houses (each its house's): data/army.json colours, or
+## --army-colours=houses|crown for a per-house shot.
+static func colour_mode() -> String:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--army-colours="):
+			return a.substr(15)
+	return String(Data.value("army", "colours", "crown"))
 
 
 ## The Meshy soldiers on (data/army.json units_set meshy, or --units=meshy; --units=kit for the before shot).
