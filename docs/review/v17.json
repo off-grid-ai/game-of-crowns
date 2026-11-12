@@ -714,6 +714,63 @@
    "still": "season/season-melee-later.png"
   },
   {
+   "id": "b9-castle",
+   "name": "The castle",
+   "what": "Its whole front from the town's side: gatehouse (Meshy's), towers with the house's arms, keep behind",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "castle/castle.png"
+  },
+  {
+   "id": "b9-castle-walls",
+   "name": "Guards on the walls",
+   "what": "Guards in the lord's colours walking the walks, turning at the towers",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "castle/castle-walls.png",
+   "clip": "castle/guards-clip.mp4"
+  },
+  {
+   "id": "b9-castle-gate",
+   "name": "The castle gate",
+   "what": "The gatehouse, the house's painted banners either side",
+   "ref": "01-town",
+   "card": "W3",
+   "still": "castle/castle-gate.png"
+  },
+  {
+   "id": "b9-castle-breached",
+   "name": "The castle breached",
+   "what": "A gap in its stone curtains, rubble, seen from outside",
+   "ref": "04-siege",
+   "card": "O4",
+   "still": "castle/castle-breached.png"
+  },
+  {
+   "id": "b9-night-inn",
+   "name": "The inn at night",
+   "what": "Its windows lit, warm, not blown out; a real inn, not a map view",
+   "ref": "06-inn",
+   "card": "W3",
+   "still": "night/night-inn.png"
+  },
+  {
+   "id": "b9-night-road",
+   "name": "The road at night",
+   "what": "Only a torchlit patrol or a messenger",
+   "ref": "06-inn",
+   "card": "W3",
+   "still": "night/night-road.png"
+  },
+  {
+   "id": "b9-night-castle-gate",
+   "name": "The castle gate at night",
+   "what": "The gate's two torches lit, warm light on the stone",
+   "ref": "06-inn",
+   "card": "W3",
+   "still": "night/night-castle-gate.png"
+  },
+  {
    "id": "b9-sound-square-near",
    "name": "The square near (sound)",
    "what": "The hubbub with the crowd; the smith's blows on his strikes; dogs (judge by ear: sound.wav)",

@@ -8,8 +8,8 @@
 # tilt -5). The shots and their references are in docs/review/v17.json; v17_apply.py puts them
 # on the review page. Generated from the list (the fire-siege session); edit the launches here, not the list.
 #
-#   docs/review/batch9.sh            # all of it, about 166 minutes [estimate: the launches' LIMITs and waits]
-#   ONLY="ladder fire" docs/review/batch9.sh   # some launches only: ladder settled clarity fire fixes meshy village fountain look8b rim grief season ui decisions breach hosts battle sound
+#   docs/review/batch9.sh            # all of it, about 180 minutes [estimate: the launches' LIMITs and waits]
+#   ONLY="ladder fire" docs/review/batch9.sh   # some launches only: ladder settled clarity fire fixes meshy village fountain look8b rim grief season castle night ui decisions breach hosts battle sound
 #   OUT=/tmp/goc-batch9 (default)    # frames, logs and clips land here
 #
 # Its own private bridge (8788, Freeciv 5557; PORT, FC to change) with a fresh reign named "Film batch 9", so the
@@ -19,7 +19,7 @@ R=${0:A:h:h:h}
 OUT=${OUT:-/tmp/goc-batch9}
 PORT=${PORT:-8788}; FC=${FC:-5557}
 API=localhost:$PORT
-ONLY=${ONLY:-ladder settled clarity fire fixes meshy village fountain look8b rim grief season ui decisions breach hosts battle sound}
+ONLY=${ONLY:-ladder settled clarity fire fixes meshy village fountain look8b rim grief season castle night ui decisions breach hosts battle sound}
 SW=(--look=one --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on --ui=v2 --dressing=on --castle-life=on --weather=v2)
 # The landmarks (--landmarks=meshy) ride on every launch through LM; a before shot sets LM=--landmarks=kit for its run.
 LM=${LM:---landmarks=meshy}
@@ -379,6 +379,36 @@ fi
 if want season; then
   { print "wait 82"; print "snap season-melee"; print "wait 40"; print "snap season-melee-later"; print "look season-end"; } > $OUT/season.play
   play season 300 --dist=4 --army-battle=1200 --army-look=painted
+fi
+
+# Batch 8b #7: the castle's whole front from its gate's side, the walls with their guards, the gate, then its walls worn to a breach on the test reign and the gap framed from outside.
+if want castle; then
+  {
+    print "wait 30"
+    print "castle $SEAT 8 -5"; print "wait 8"; print "snap castle"
+    print "castle $SEAT 5 -5"; print "wait 6"; print "snap castle-walls"; burst guards-clip 30 0.25
+    print "castle $SEAT 4 -5 gate"; print "wait 4"; print "snap castle-gate"
+    print "look castle-breach"; print "wait 30"
+    print "castle $SEAT 5 -5 breach"; print "wait 4"; print "snap castle-breached"
+    print "look castle-end"
+  } > $OUT/castle.play
+  stage_on castle castle-breach "{\"damage\":{\"city\":$SEATID,\"section\":0,\"wear\":0.85}}" "{\"damage\":{\"city\":$SEATID,\"section\":1,\"wear\":0.85}}" "{\"damage\":{\"city\":$SEATID,\"section\":2,\"wear\":0.85}}" "{\"damage\":{\"city\":$SEATID,\"section\":3,\"wear\":0.85}}" "{\"damage\":{\"city\":$SEATID,\"section\":4,\"wear\":0.85}}" "{\"damage\":{\"city\":$SEATID,\"section\":5,\"wear\":0.85}}" "{\"damage\":{\"city\":$SEATID,\"section\":6,\"wear\":0.85}}" "{\"damage\":{\"city\":$SEATID,\"section\":7,\"wear\":0.85}}"
+  play castle 420 --walls=stone
+  settle_stagers
+  clip $OUT/castle guards-clip 5
+  for sec in 0 1 2 3 4 5 6 7; do stage "{\"damage\":{\"city\":$SEATID,\"section\":$sec,\"wear\":0}}" > /dev/null; done
+fi
+
+# Batch 8b #10: night at an inn that stands (the first town with one), the road, the castle gate's torches.
+if want night; then
+  {
+    print "wait 30"
+    print "work * inn 4.5 -5"; print "wait 8"; print "snap night-inn"
+    print "road Kingsmere 8"; print "wait 8"; print "snap night-road"
+    print "castle $SEAT 4 -5 gate"; print "wait 6"; print "snap night-castle-gate"
+    print "look night-end"
+  } > $OUT/night.play
+  play night 360 --hour=21
 fi
 
 # 41-48. The realm's sound v2 (--sound=v2), recorded with each clip (--record-audio): the square near and far, the yard and paddock, the mills, a levy, dawn and night. The sack, the siege and the court are heard in their own launches when those run with --sound=v2.
