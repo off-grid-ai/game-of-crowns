@@ -206,3 +206,16 @@ beside the frames. Reference: Anno 1800's town at street height (close detail, f
     herds stop at the town's edge.
 57. **Season in a film** (batch 8b painted-melee: snow under "Spring"; b4259715): any launch with a long wait
     (painted-melee again). Judge: the land's season matches the date shown at every shot.
+
+## The Meshy cast (12098da7; `--cast=meshy`, before: `--cast=kit`; docs/research/cast-integration.md)
+
+Before filming: one `arch -arm64 godot --headless --path realm --import` while no other Godot runs (the cast's
+retarget at import), then `arch -arm64 godot --headless --path realm -s res://tools/feet_check.gd -- --cast=meshy`.
+
+58. **Kingsmere's square, kit then cast,** `city Kingsmere 6 -25` and `--dist=3`. Judge: the young ranger among the
+    townsfolk and peasants, his green cloak in the town's dyes, never twins side by side; the town guard on the
+    watch, at the gates and walls in the house's colour on his skirt. Feet on the cobbles in every move.
+59. **A clip at the forge and the fields** (`work Kingsmere forge 4.5 -25`, `field spring 0.5`): the cast at work,
+    hands meeting the hammer, the basket and the seed.
+60. **The inn's benches in war** (`{"city": id, "mood": "war"}`, `work Kingsmere inn`): the guard's Sitting_Drinking
+    (the clip the CPU proxy couldn't hold).
