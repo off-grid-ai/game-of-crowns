@@ -26,6 +26,16 @@ static func value(name: String, path: String, fallback: Variant) -> Variant:
 	return fallback if v == null else v
 
 
+## A colour as data writes it: [r, g, b] or [r, g, b, a] (0-1), or a string Godot reads ("#c8a050", "gold"); else the fallback.
+## The one place a data colour becomes a Color (integration audit #18).
+static func colour(v: Variant, fallback: Color) -> Color:
+	if v is Array and (v as Array).size() >= 3:
+		return Color(float(v[0]), float(v[1]), float(v[2]), float(v[3]) if (v as Array).size() > 3 else 1.0)
+	if v is String and v != "":
+		return Color.from_string(v, fallback)
+	return fallback
+
+
 ## A number by its dotted path, or the fallback.
 static func num(name: String, path: String, fallback: float) -> float:
 	var v: Variant = value(name, path, fallback)

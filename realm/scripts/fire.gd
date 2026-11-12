@@ -11,6 +11,7 @@ extends Node3D
 ## each house that catches is told to the bridge (kindled), so it stands burnt through a reload, and whole again
 ## as the realm rebuilds it. Knobs: data/fire.json. On with fire.json on.
 
+const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 const FLAME_SHADER := preload("res://scripts/stylized_fire.gdshader")
 const CHAR_SHADER := preload("res://scripts/charred.gdshader")
 const WeatherFx := preload("res://scripts/weather_fx.gd")
@@ -35,9 +36,7 @@ var _clock := 0.0
 
 static func knobs() -> Dictionary:
 	if _knobs == null:
-		var f := FileAccess.open("res://data/fire.json", FileAccess.READ)
-		var j = JSON.parse_string(f.get_as_text()) if f else null
-		_knobs = j if j is Dictionary else {}
+		_knobs = Data.read("fire")
 	return _knobs
 
 

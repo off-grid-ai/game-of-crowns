@@ -1,4 +1,5 @@
 extends CanvasLayer
+const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
 ## Town names on the map, the way a good strategy map draws them: flat on the
 ## screen over each town (never cut by a hill or a roof), in the interface's
@@ -181,9 +182,8 @@ var _thoughts_on := not OS.get_cmdline_user_args().has("--thoughts=off")  # on b
 var _thinking := {}
 func _thought_cfg() -> Dictionary:
 	if _thinking.is_empty():
-		var f := FileAccess.open("res://data/thoughts.json", FileAccess.READ)
-		var j = JSON.parse_string(f.get_as_text()) if f else null
-		_thinking = j if j is Dictionary else {"near": 30.0, "cycle_sec": 6.0}
+		var j := Data.read("thoughts")
+		_thinking = j if not j.is_empty() else {"near": 30.0, "cycle_sec": 6.0}
 	return _thinking
 
 

@@ -328,8 +328,6 @@ static func within(h: float, key: String) -> bool:
 	return (h >= a and h < b) if a <= b else (h >= a or h < b)
 
 
-static func colour(v: Variant, fallback: Color) -> Color:
-	return Color(float(v[0]), float(v[1]), float(v[2])) if v is Array and (v as Array).size() >= 3 else fallback
 
 
 ## The buildings' running life, under a town's Life (town_life.gd adds it):

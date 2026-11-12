@@ -364,13 +364,13 @@ func _bailey_ground(root: Node3D, cp: Vector3, cy: float, yaw: float, rng: Rando
 	var tile := float(pave.get("tile", 0.3))
 	var court: Array = k.get("court", [0.5, 0.45])  # the cobbled court's size, shares of the footprint
 	var cs := Vector2(f.x * float(court[0]), f.y * float(court[1]))
-	terrain.paint(root, terrain.tiled(stone, (cs.x / tile), (cs.y / tile), "setts"), cp + Vector3(0, cy, 0) + b * Vector3(0, 0, float(k.get("court_z", 0.1)) * f.y), cs, yaw, _rgb(pave.get("tint"), Color.WHITE))
+	terrain.paint(root, terrain.tiled(stone, (cs.x / tile), (cs.y / tile), "setts"), cp + Vector3(0, cy, 0) + b * Vector3(0, 0, float(k.get("court_z", 0.1)) * f.y), cs, yaw, Data.colour(pave.get("tint"), Color.WHITE))
 	var way: Array = k.get("way", [0.5, -0.15, 0.1])  # from the gate (z share) to the keep (z share), its width (x share)
 	var a := float(way[0]) * f.y
 	var e := float(way[1]) * f.y
 	var w := float(way[2]) * f.x
 	var run := absf(a - e)
-	terrain.paint(root, terrain.tiled(stone, (w / tile), (run / tile), "paved"), cp + Vector3(0, cy, 0) + b * Vector3(0, 0, (a + e) * 0.5), Vector2(w, run), yaw, _rgb(pave.get("tint"), Color.WHITE), 1.5)
+	terrain.paint(root, terrain.tiled(stone, (w / tile), (run / tile), "paved"), cp + Vector3(0, cy, 0) + b * Vector3(0, 0, (a + e) * 0.5), Vector2(w, run), yaw, Data.colour(pave.get("tint"), Color.WHITE), 1.5)
 	# The forecourt (towns.json bailey.forecourt [width, game units]; round 5, 01-town: a broad cobbled way from the
 	# square up to the gate, no lawn between the stalls and the castle): setts from the gate out to the square's heart,
 	# under the square's own (they lie over it there).
@@ -383,7 +383,7 @@ func _bailey_ground(root: Node3D, cp: Vector3, cy: float, yaw: float, rng: Rando
 			var mid := (gate + to) * 0.5
 			var lo := minf(_ground_y(center, gate), _ground_y(center, to))
 			var hi := maxf(_ground_y(center, gate), _ground_y(center, to))
-			var fc: Decal = terrain.paint(root, terrain.tiled(stone, (fw / tile), ((long + fw) / tile), "paved"), Vector3(mid.x, (lo + hi) * 0.5, mid.z), Vector2(fw, long + fw * 0.5), atan2(gate.x - to.x, gate.z - to.z), _rgb(pave.get("tint"), Color.WHITE), hi - lo + 1.5)
+			var fc: Decal = terrain.paint(root, terrain.tiled(stone, (fw / tile), ((long + fw) / tile), "paved"), Vector3(mid.x, (lo + hi) * 0.5, mid.z), Vector2(fw, long + fw * 0.5), atan2(gate.x - to.x, gate.z - to.z), Data.colour(pave.get("tint"), Color.WHITE), hi - lo + 1.5)
 			fc.sorting_offset = 0.5  # as a street's setts: over the roads' earth, under the square's
 			_note_paved(root, Vector2(gate.x, gate.z), Vector2.ZERO, fw * 0.5)
 
@@ -926,7 +926,7 @@ func _back_lane(root: Node3D, center: Vector3, way: PackedVector2Array) -> void:
 			var hi2 := maxf(_ground_y(center, Vector3(a2.x, 0, a2.y)), _ground_y(center, Vector3(b2.x, 0, b2.y)))
 			var reps := ((run + width) / float(pave.get("tile", 0.3)))
 			_note_paved(root, a2, b2, width * 0.5)
-			terrain.paint(root, terrain.tiled(stone, (width / float(pave.get("tile", 0.3))), reps, "paved"), Vector3(mid2.x, (lo2 + hi2) / 2.0, mid2.y), Vector2(width, run + width), atan2(b2.x - a2.x, b2.y - a2.y), _rgb(pave.get("tint"), Color.WHITE), hi2 - lo2 + 1.0)
+			terrain.paint(root, terrain.tiled(stone, (width / float(pave.get("tile", 0.3))), reps, "paved"), Vector3(mid2.x, (lo2 + hi2) / 2.0, mid2.y), Vector2(width, run + width), atan2(b2.x - a2.x, b2.y - a2.y), Data.colour(pave.get("tint"), Color.WHITE), hi2 - lo2 + 1.0)
 		return
 	if bool(k.get("ground", true)) and terrain.land3d and terrain.land3d.land:
 		var step := float(k.get("stamp", 0.12))
@@ -952,7 +952,7 @@ func _back_lane(root: Node3D, center: Vector3, way: PackedVector2Array) -> void:
 		var mid := (a + b) * 0.5
 		var lo := minf(_ground_y(center, Vector3(a.x, 0, a.y)), _ground_y(center, Vector3(b.x, 0, b.y)))
 		var hi := maxf(_ground_y(center, Vector3(a.x, 0, a.y)), _ground_y(center, Vector3(b.x, 0, b.y)))
-		terrain.paint(root, terrain.tiled(tex, 1, ((length + width) / width), "sides"), Vector3(mid.x, (lo + hi) / 2.0, mid.y), Vector2(width, length + width), atan2(b.x - a.x, b.y - a.y), _rgb(k.get("tint"), ROAD_TINT), hi - lo + 1.0)
+		terrain.paint(root, terrain.tiled(tex, 1, ((length + width) / width), "sides"), Vector3(mid.x, (lo + hi) / 2.0, mid.y), Vector2(width, length + width), atan2(b.x - a.x, b.y - a.y), Data.colour(k.get("tint"), ROAD_TINT), hi - lo + 1.0)
 
 
 ## The town's paving (towns.json paving).
@@ -969,8 +969,6 @@ static func market_knobs_for(rank: String) -> Dictionary:
 	return preload("res://scripts/data.gd").value("towns", "market", {}).get(rank, {})
 
 
-static func _rgb(a, fallback: Color) -> Color:
-	return Color(float(a[0]), float(a[1]), float(a[2])) if a is Array and (a as Array).size() >= 3 else fallback
 
 
 ## One stretch of a street, painted on the land from `a` to `b` (town-local); `paved`: laid with setts
@@ -985,7 +983,7 @@ func _paint_way(root: Node3D, center: Vector3, a: Vector2, b: Vector2, width: fl
 	if paved != "":
 		var pave: Dictionary = _paving()
 		var tile := float(pave.get("tile", 0.3))  # the square's setts' size, so a wide street's stones match them
-		var setts: Decal = terrain.paint(root, terrain.tiled(String(pave.get("texture", SQUARE_TEX)), (width / tile), ((length + width) / tile), "paved"), Vector3(mid.x, (lo + hi) / 2.0, mid.y), Vector2(width, length + width), atan2(b.x - a.x, b.y - a.y), _rgb(pave.get("tint"), Color.WHITE), hi - lo + 1.0)
+		var setts: Decal = terrain.paint(root, terrain.tiled(String(pave.get("texture", SQUARE_TEX)), (width / tile), ((length + width) / tile), "paved"), Vector3(mid.x, (lo + hi) / 2.0, mid.y), Vector2(width, length + width), atan2(b.x - a.x, b.y - a.y), Data.colour(pave.get("tint"), Color.WHITE), hi - lo + 1.0)
 		setts.sorting_offset = 0.5  # over the street's earth, under the square's setts
 		return
 	terrain.paint(root, terrain.tiled(ROAD_TEX, 1, ((length + width) / 0.34), "track"), Vector3(mid.x, (lo + hi) / 2.0, mid.y), Vector2(width, length + width), atan2(b.x - a.x, b.y - a.y), ROAD_TINT, hi - lo + 1.0)  # half a width past each end, where the next stretch's frayed end meets it
@@ -2794,7 +2792,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	var pave_reps := pave_span / float(pave.get("tile", 0.25))  # every sheet at its own size, a part sheet too (setts_probe)
 	var setts_size := Vector2(pave_span, pave_span * float(pave.get("square_aspect", 0.9)))
 	var setts_yaw := rng.randf() * TAU
-	var setts: Decal = terrain.paint(root, terrain.tiled(String(pave.get("texture", SQUARE_TEX)), pave_reps, (pave_reps * float(pave.get("square_aspect", 0.9))), String(pave.get("square_edge", "setts"))), Vector3(0, _ground_y(center, Vector3.ZERO), 0), setts_size, setts_yaw, _rgb(pave.get("tint"), Color.WHITE))
+	var setts: Decal = terrain.paint(root, terrain.tiled(String(pave.get("texture", SQUARE_TEX)), pave_reps, (pave_reps * float(pave.get("square_aspect", 0.9))), String(pave.get("square_edge", "setts"))), Vector3(0, _ground_y(center, Vector3.ZERO), 0), setts_size, setts_yaw, Data.colour(pave.get("tint"), Color.WHITE))
 	_note_setts(root, setts_size, setts_yaw)
 	setts.sorting_offset = 1.0  # the paving over the roads that come into the square: a road ends at its setts, never a dirt stripe across them
 
@@ -3262,9 +3260,7 @@ func _smoke(root: Node3D, pos: Vector3, door := Vector3.INF) -> void:
 static var _town_knobs = null
 static func _castle_knobs() -> Dictionary:
 	if _town_knobs == null:
-		var f := FileAccess.open("res://data/towns.json", FileAccess.READ)
-		var d = JSON.parse_string(f.get_as_text()) if f else null
-		_town_knobs = d if d is Dictionary else {}
+		_town_knobs = Data.read("towns")
 	return (_town_knobs as Dictionary).get("castle", {})
 
 

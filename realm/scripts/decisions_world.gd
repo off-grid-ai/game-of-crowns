@@ -15,6 +15,7 @@ extends Node3D
 ## town in disorder and the feast's fire (town_life.gd), the levy at the armoury and the crier (works.gd).
 ## Numbers and the switch: realm/data/decisions.json (--decisions=on / --decisions=off).
 
+const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 const Realistic := preload("res://scripts/realistic.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
 const Awareness := preload("res://scripts/awareness.gd")
@@ -35,9 +36,7 @@ var _t := 0.0
 
 
 static func _read() -> Dictionary:
-	var f := FileAccess.open("res://data/decisions.json", FileAccess.READ)
-	var v = JSON.parse_string(f.get_as_text()) if f else null
-	return v if v is Dictionary else {}
+	return Data.read("decisions")
 
 
 static func on() -> bool:

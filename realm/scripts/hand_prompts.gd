@@ -6,7 +6,7 @@ extends Node
 ## when each moment has come. It reads the realm (the store, awareness.gd) and the court's signals; it decides
 ## nothing about the realm itself.
 
-const DATA := "res://data/opening.json"
+const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 const SEEN := "hand_prompts"  # settings.cfg section: which prompts this player has heard
 
 var main: Node
@@ -24,12 +24,10 @@ func _init(owner: Node) -> void:
 
 
 func _ready() -> void:
-	var f := FileAccess.open(DATA, FileAccess.READ)
-	if f:
-		var d = JSON.parse_string(f.get_as_text())
-		if d is Dictionary:
-			_prompts = d.get("prompts", [])
-			_speaker = String(d.get("speaker", _speaker))
+	var d := Data.read("opening")
+	if not d.is_empty():
+		_prompts = d.get("prompts", [])
+		_speaker = String(d.get("speaker", _speaker))
 	var cfg := ConfigFile.new()
 	cfg.load("user://settings.cfg")
 	for p in _prompts:

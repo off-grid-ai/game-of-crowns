@@ -3,15 +3,12 @@ extends RefCounted
 ## at a time, the rest in order, and the plain refusals said with a dry wit (PLAN.md Phase 1:
 ## Theme Hospital's announcer, Stronghold's scribe).
 
+const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 static var _d: Dictionary = {}
 
 
 static func _load() -> void:
-	if not _d.is_empty():
-		return
-	var f := FileAccess.open("res://data/herald.json", FileAccess.READ)
-	var v = JSON.parse_string(f.get_as_text()) if f else null
-	_d = v if v is Dictionary else {"on": false}
+	_d = Data.read("herald")  # off when the file is missing ("on" absent)
 
 
 static func on() -> bool:

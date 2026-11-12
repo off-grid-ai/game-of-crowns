@@ -191,7 +191,7 @@ func party(from: Vector3, to: Vector3, kind: String, on_done := Callable()) -> b
 	var gap := float(P.get("gap", 0.11))
 	var gait := String(P.get("gait", "Walk"))
 	var rate := float(P.get("rate", 1.0))
-	var cloth: Color = Works.colour(P.get("cloth"), Color.WHITE)
+	var cloth: Color = Data.colour(P.get("cloth"), Color.WHITE)
 	var file: Array = []  # [person, how far behind the head, how far across]
 	var members: Array = []
 	for i in n:

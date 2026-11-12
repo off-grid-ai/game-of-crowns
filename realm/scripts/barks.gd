@@ -5,8 +5,8 @@ extends Node
 ## quill's scratch (under 0.2 s), then is spoken aloud through the game's voices when they're on.
 ## The lines are data (realm/data/barks.json); this only picks one: never one of the last few said.
 
-const DATA := "res://data/barks.json"
 
+const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 var main: Node
 var _d := {}
 var _recent: Array[String] = []
@@ -19,11 +19,9 @@ func _init(owner: Node) -> void:
 
 
 func _ready() -> void:
-	var f := FileAccess.open(DATA, FileAccess.READ)
-	if f:
-		var d = JSON.parse_string(f.get_as_text())
-		if d is Dictionary:
-			_d = d
+	var d := Data.read("barks")
+	if not d.is_empty():
+		_d = d
 
 
 ## A house's sigil clicked: its lord answers, by their favour band.

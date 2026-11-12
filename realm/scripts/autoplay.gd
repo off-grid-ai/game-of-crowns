@@ -32,6 +32,7 @@ extends Node
 ##   director            let the camera director run, as it does in play
 ##   rout 120            wait (at most 120 s) for the field battle's first break (--army-battle), so the film starts there
 
+const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 var main: Node
 var out := ""
 var _steps: PackedStringArray = []
@@ -460,9 +461,7 @@ func _step(w: PackedStringArray) -> void:
 					if String(c.get("title", c.get("name", ""))) == stitle:
 						var st: Dictionary = main.towns.towns.get(int(c["id"]), {})
 						sroot = st.get("node") if not st.is_empty() else null
-				var tf := FileAccess.open("res://data/towns.json", FileAccess.READ)
-				var tj = JSON.parse_string(tf.get_as_text()) if tf else null
-				var sq: Dictionary = (tj as Dictionary).get("square", {}) if tj is Dictionary else {}
+				var sq: Dictionary = Data.value("towns", "square", {})
 				var tg: Dictionary = sq.get("targets", {})
 				var um: float = load("res://scripts/towns.gd").S  # world units per metre
 				var near := float(sq.get("near_m", 2.0)) * um

@@ -69,4 +69,8 @@ for f in $(grep -lE 'Engine\.set_meta\(' scripts/*.gd); do
 done
 #   one-scale: metres to world units is Units.M (scripts/world_units.gd); no script keeps its own 0.12 (audit #17).
 check "one-scale" '^const [A-Z_]*(S|SCALE) := 0\.12\b' 'scripts/world_units\.gd'
+#   one-loader: realm/data is read only through data.gd (Data.read/value/num); one-colour: a data colour becomes a
+#   Color only through Data.colour (audit #18).
+check "one-loader" 'FileAccess\.(open|get_file_as_string)\(("res://data/|DATA\b)|"res://data/[a-z_]+\.json"' 'scripts/data\.gd'
+check "one-colour" 'func _rgb|Color\(float\([A-Za-z_]+\[0\]\), *float\([A-Za-z_]+\[1\]\), *float\([A-Za-z_]+\[2\]\)' 'scripts/data\.gd'
 exit $fail

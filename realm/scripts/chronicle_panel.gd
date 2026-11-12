@@ -4,6 +4,7 @@ extends RefCounted
 ## same entries. Owned by ui.gd, which keeps the chronicle key in the bar and
 ## forwards its public calls here (ui.add_chronicle and the rest).
 
+const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 const T := preload("res://scripts/theme.gd")
 const UI := preload("res://scripts/ui.gd")
 
@@ -96,9 +97,7 @@ static var _ticker_rules = null
 ## his, or it touches the crown (the bridge's crown mark). The rest stays in the drawer.
 static func _ticks(e: Dictionary) -> bool:
 	if _ticker_rules == null:
-		var f := FileAccess.open("res://data/ticker.json", FileAccess.READ)
-		var j = JSON.parse_string(f.get_as_text()) if f else null
-		_ticker_rules = j if j is Dictionary else {}
+		_ticker_rules = Data.read("ticker")
 	var r: Dictionary = _ticker_rules
 	if not bool(r.get("on", false)):
 		return true

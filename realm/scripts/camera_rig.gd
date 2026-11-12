@@ -12,6 +12,7 @@ signal overview  # drawn back past OVERVIEW: the painted map takes over from her
 
 ## Past this the land can't be read (towns are smudges), so zooming out hands
 ## over to the realm's painted map (main._overview) instead of going higher.
+const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 const OVERVIEW := 60.0
 const NavGround := preload("res://scripts/nav_ground.gd")  # what a town's life has set down
 
@@ -26,15 +27,9 @@ var yaw := 0.0
 ## eye stands about 3 up at the closest pitch, just over a tall house's roof (about 2.4):
 ## at 4.5 it stood under them, and the first ring of towers and barns filled the view (v14).
 ## The camera's knobs, from data (realm/data/camera.json; docs/TUNING.md): this rig is their one owner.
-static var KNOBS: Dictionary = (func():
-	var f := FileAccess.open("res://data/camera.json", FileAccess.READ)
-	var d = JSON.parse_string(f.get_as_text()) if f else null
-	return d if d is Dictionary else {}).call()
+static var KNOBS: Dictionary = Data.read("camera")
 static func knob(path: String, fallback: float) -> float:
-	var v = KNOBS
-	for k in path.split("."):
-		v = v.get(k) if v is Dictionary else null
-	return float(v) if v != null else fallback
+	return Data.num("camera", path, fallback)
 var min_distance := knob("floor", 6.0)
 
 

@@ -6,6 +6,7 @@ extends Node
 ## of a tilt-shift photo, so a town reads as a world in miniature.
 ## GOC_LOOK=noview leaves it all off, for side-by-side renders.
 
+const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 const SUN_HEIGHT := 35.0  # degrees above the horizon: a warm morning sun, shadows long but never swallowing the square
 # The one look (data/look.json; PLAN.md Phase 2 item 1): warm key, cool shade, an earthy kit. Off keeps today's.
 static var LOOK: Dictionary = _read_look()
@@ -21,9 +22,7 @@ var _air := false  # v3: the depth fog thinned by distance here (look.json haze)
 
 
 static func _read_look() -> Dictionary:
-	var f := FileAccess.open("res://data/look.json", FileAccess.READ)
-	var v = JSON.parse_string(f.get_as_text()) if f else null
-	var look: Dictionary = v if v is Dictionary else {}
+	var look: Dictionary = Data.read("look").duplicate(true)
 	# The v3 look (look.json v3; docs/review/look-gap.md): its values laid over the one look's, key by key.
 	if _v3_on(look):
 		look = _overlay(look, look.get("v3", {}))
@@ -59,9 +58,6 @@ static func one() -> bool:
 	return bool(LOOK.get("on", false)) or v3()
 
 
-static func _rgb(key: String, fallback: Color) -> Color:
-	var a = LOOK.get(key)
-	return Color(float(a[0]), float(a[1]), float(a[2])) if a is Array and a.size() >= 3 else fallback
 
 var main: Node
 var _attrs: CameraAttributesPractical
@@ -95,10 +91,10 @@ func _ready() -> void:
 		env.adjustment_color_correction = _lut(lut)
 		env.adjustment_saturation = float(_clarity("saturation", LOOK.get("saturation", 1.1)))
 		env.adjustment_contrast = float(_clarity("contrast", LOOK.get("contrast", 1.12)))
-		sky3d.sky.sun_light_color = _rgb_of(_clarity("sun_color", null), _rgb("sun_color", Color(1.0, 0.86, 0.68)))
-		sky3d.sky.sun_horizon_light_color = _rgb("horizon_color", Color(1.0, 0.7, 0.48))
+		sky3d.sky.sun_light_color = Data.colour(_clarity("sun_color", null), Data.colour(LOOK.get("sun_color"), Color(1.0, 0.86, 0.68)))
+		sky3d.sky.sun_horizon_light_color = Data.colour(LOOK.get("horizon_color"), Color(1.0, 0.7, 0.48))
 		sky3d.sky_contribution = float(LOOK.get("sky_contribution", 0.7))
-		env.ambient_light_color = _rgb("ambient_color", Color(0.5, 0.6, 0.88))
+		env.ambient_light_color = Data.colour(LOOK.get("ambient_color"), Color(0.5, 0.6, 0.88))
 		sky3d.ambient_energy = float(LOOK.get("ambient_energy", 1.8))
 		# Bright late-afternoon sun with soft shadows (art target town-b; look.json sun_energy, shadow_opacity).
 		sky3d.sun_energy = float(LOOK.get("sun_energy", 1.0))
@@ -133,7 +129,7 @@ func _ready() -> void:
 	# toward the sun, so far hills fall back in warm light.
 	env.volumetric_fog_enabled = true
 	env.volumetric_fog_density = 0.006
-	env.volumetric_fog_albedo = _rgb_of(_clarity("haze_color", null), _rgb("haze_color", Color(0.95, 0.86, 0.72))) if look_one else Color(0.95, 0.86, 0.72)
+	env.volumetric_fog_albedo = Data.colour(_clarity("haze_color", null), Data.colour(LOOK.get("haze_color"), Color(0.95, 0.86, 0.72))) if look_one else Color(0.95, 0.86, 0.72)
 	if look_one:
 		# Soft contact shadows and bounced light (Tiny Glade's soft edges), and a gentle haze for depth.
 		var ao: Dictionary = LOOK.get("ssao", {})
@@ -145,7 +141,7 @@ func _ready() -> void:
 		env.ssil_intensity = float(il.get("intensity", 1.0))
 		env.ssao_light_affect = float(ao.get("light_affect", 0.15))  # v3: contact shadows show in the sun too, not only the shade
 		env.fog_density = float((LOOK.get("haze", {}) as Dictionary).get("fog", 0.0016))
-		env.fog_light_color = _rgb_of(_clarity("haze_color", null), _rgb("haze_color", Color(0.96, 0.86, 0.7)))
+		env.fog_light_color = Data.colour(_clarity("haze_color", null), Data.colour(LOOK.get("haze_color"), Color(0.96, 0.86, 0.7)))
 	env.volumetric_fog_anisotropy = 0.55
 	env.volumetric_fog_length = 160.0
 	env.volumetric_fog_detail_spread = 2.5
@@ -273,7 +269,7 @@ func _add_fill() -> void:
 	_fill.sky_mode = DirectionalLight3D.SKY_MODE_LIGHT_ONLY  # no second sun in the sky
 	_fill.light_specular = 0.0  # no glints off every wet stone facing the lens
 	_fill.light_bake_mode = Light3D.BAKE_DISABLED  # nor a second bounce in the GI: the sun's is the bounce
-	_fill.light_color = _rgb_of(f.get("color"), Color(1.0, 0.94, 0.84))
+	_fill.light_color = Data.colour(f.get("color"), Color(1.0, 0.94, 0.84))
 	_fill_energy = float(f.get("energy", 0.0))
 	_fill.light_energy = _fill_energy
 	main.add_child(_fill)
@@ -299,8 +295,6 @@ func _clarity(key: String, fallback: Variant) -> Variant:
 	return (c as Dictionary).get(key, fallback) if _clear and c is Dictionary else fallback
 
 
-static func _rgb_of(a, fallback: Color) -> Color:
-	return Color(float(a[0]), float(a[1]), float(a[2])) if a is Array and (a as Array).size() >= 3 else fallback
 
 
 func _process(_delta: float) -> void:

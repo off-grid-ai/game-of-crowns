@@ -964,7 +964,7 @@ func _forge(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: Wo
 	# The forge's glow, brighter in war, banked at night (works.Tick sets it each second).
 	var g: Dictionary = Data.value("works", "forge.glow", {})
 	var glow := OmniLight3D.new()
-	glow.light_color = Works.colour(g.get("color"), Color(1.0, 0.52, 0.22))
+	glow.light_color = Data.colour(g.get("color"), Color(1.0, 0.52, 0.22))
 	glow.light_energy = float(g.get("day", 1.1))
 	glow.omni_range = float(g.get("range", 0.9))
 	# Inside the hearth, not out at its mouth: set back toward the building's middle (forge.glow.inset), so it
@@ -1138,7 +1138,7 @@ func _dress_rotor(root: Node3D, b: Dictionary, turner: Node3D, kind: String) -> 
 	if tex_path != "" and ResourceLoader.exists(tex_path):
 		var m := StandardMaterial3D.new()
 		m.albedo_texture = load(tex_path)
-		m.albedo_color = Works.colour(paint.get("tint"), Color.WHITE)
+		m.albedo_color = Data.colour(paint.get("tint"), Color.WHITE)
 		m.uv1_triplanar = true
 		m.uv1_world_triplanar = false
 		m.uv1_scale = Vector3.ONE * float(paint.get("scale", 1.0))
@@ -1266,7 +1266,7 @@ func _inn(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: Work
 			continue
 		var w: Vector3 = sp[key]
 		var light := OmniLight3D.new()
-		light.light_color = Works.colour(l.get("color"), Color(1.0, 0.68, 0.36))
+		light.light_color = Data.colour(l.get("color"), Color(1.0, 0.68, 0.36))
 		light.light_energy = float(l.get("energy", 0.8))
 		light.omni_range = float(l.get("range", 0.7))
 		light.position = Vector3(w.x, _y(center, w) + w.y, w.z)
@@ -1564,7 +1564,7 @@ func beast(root: Node3D, kind: String, pos: Vector3, tints: Array, i: int, rng: 
 	if b == null or life == null:
 		return null
 	if not tints.is_empty():
-		var col := Works.colour(tints[i % tints.size()], Color.WHITE)
+		var col := Data.colour(tints[i % tints.size()], Color.WHITE)
 		for mi in b.find_children("*", "MeshInstance3D", true, false):
 			var m := (mi as MeshInstance3D).get_active_material(0)
 			if m is StandardMaterial3D:
@@ -1810,7 +1810,7 @@ func dress_feast(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumber
 	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
 	var colours: Array = [house_colour(root)]
 	for k in f.get("colours", []):
-		colours.append(Works.colour(k, Color.WHITE))
+		colours.append(Data.colour(k, Color.WHITE))
 	_bunting(root, life, center, well, f.get("bunting", {}), colours, rng)
 	var reach := fire_reach() + 0.28
 	var seats: Array = []

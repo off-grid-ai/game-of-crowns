@@ -6,6 +6,7 @@ extends Node
 ## A starving town (the mirror's town mood, from the bridge's famine) burns little: only a share
 ## of its hearths smoke even with someone home, and those thinly (hearths.json hunger).
 ## Knobs: realm/data/hearths.json. --hearths=off leaves every chimney as built.
+const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 const WeatherFx := preload("res://scripts/weather_fx.gd")
 
 var main: Node
@@ -19,10 +20,7 @@ func _init(owner: Node) -> void:
 
 
 func _ready() -> void:
-	var f := FileAccess.open("res://data/hearths.json", FileAccess.READ)
-	var j = JSON.parse_string(f.get_as_text()) if f else null
-	if j is Dictionary:
-		_d.merge(j, true)
+	_d.merge(Data.read("hearths"), true)
 
 
 func _process(delta: float) -> void:

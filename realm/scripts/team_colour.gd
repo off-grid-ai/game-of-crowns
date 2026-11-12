@@ -6,6 +6,7 @@ extends Node
 ## the bridge reports it. A town that changes hands recolours over a season, as the land's colour spreads.
 ## The army's armour uses the same shader (team_colour.gdshader). On with look.json team.on.
 
+const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 const SHADER := preload("res://scripts/team_colour.gdshader")
 const CameraRig := preload("res://scripts/camera_rig.gd")
 
@@ -74,10 +75,10 @@ func _team_mat(src: BaseMaterial3D, amount: float) -> ShaderMaterial:
 	m.set_shader_parameter("roof_kind", {"thatch": 1, "tile": 2, "slate": 3, "house": 4, "shingle": 5}.get(cover, 0))
 	m.set_shader_parameter("roof_cottage", _v4(roofs.get("cottage"), Vector4(0.55, 0.25, 0.1, 0.1)))
 	m.set_shader_parameter("roof_town", _v4(roofs.get("town"), Vector4(0.15, 0.4, 0.2, 0.25)))
-	m.set_shader_parameter("thatch", _rgb(roofs.get("thatch"), Color(0.8, 0.64, 0.34)))
+	m.set_shader_parameter("thatch", Data.colour(roofs.get("thatch"), Color(0.8, 0.64, 0.34)))
 	m.set_shader_parameter("house_roof_share", float(roofs.get("house_share", 1.0)))
-	m.set_shader_parameter("dark_tile", _rgb(roofs.get("dark_tile"), Color(0.5, 0.42, 0.4)))
-	m.set_shader_parameter("thatch_old", _rgb(roofs.get("thatch_old"), Color(0.5, 0.42, 0.31)))
+	m.set_shader_parameter("dark_tile", Data.colour(roofs.get("dark_tile"), Color(0.5, 0.42, 0.4)))
+	m.set_shader_parameter("thatch_old", Data.colour(roofs.get("thatch_old"), Color(0.5, 0.42, 0.31)))
 	var straw: Dictionary = roofs.get("straw", {})
 	m.set_shader_parameter("thatch_fibre", float(straw.get("fibre", 0.14)))
 	m.set_shader_parameter("thatch_clump", float(straw.get("clump", 0.16)))
@@ -87,7 +88,7 @@ func _team_mat(src: BaseMaterial3D, amount: float) -> ShaderMaterial:
 	var paint: Dictionary = cfg().get("paint", {})
 	m.set_shader_parameter("ordinary_share", float(paint.get("ordinary_share", 0.5)))
 	m.set_shader_parameter("paint_sat", float(paint.get("saturation", 0.8)))
-	m.set_shader_parameter("paint_warm", _rgb(paint.get("warm"), Color(1.0, 0.93, 0.84)))
+	m.set_shader_parameter("paint_warm", Data.colour(paint.get("warm"), Color(1.0, 0.93, 0.84)))
 	m.set_shader_parameter("fade_gone", CameraRig.fade_knob("near_fade.buildings.gone", 1.2))  # clarity: only what touches the lens
 	m.set_shader_parameter("fade_solid", CameraRig.fade_knob("near_fade.buildings.solid", 2.6))
 	_team_of[src] = m
@@ -149,8 +150,6 @@ static func _v4(a, fallback: Vector4) -> Vector4:
 	return Vector4(float(a[0]), float(a[1]), float(a[2]), float(a[3])) if a is Array and a.size() >= 4 else fallback
 
 
-static func _rgb(a, fallback: Color) -> Color:
-	return Color(float(a[0]), float(a[1]), float(a[2])) if a is Array and a.size() >= 3 else fallback
 
 
 func _town_of(n: Node) -> int:
