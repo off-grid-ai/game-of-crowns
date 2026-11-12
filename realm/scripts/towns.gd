@@ -103,8 +103,8 @@ func _refresh_life(start: int) -> void:
 ## one didn't rises as a building site (town_life.raise_site: scaffold, builders,
 ## a season a step) where it will stand, instead of popping in. A town that
 ## changed hands or shrank is simply rebuilt. Only the realistic kit's buildings
-## (one node each); the old stylised houses still appear at once.
-const GROW_SITES := 3  # at most this many sites at once in one town; the rest stand at once
+## (one node each); the old stylised houses still appear at once. At most towns.json grow.sites at once in one
+## town; the rest stand at once.
 func _grow(was: Dictionary, node: Node3D, c: Dictionary) -> void:
 	var old: Dictionary = was.get("data", {})
 	if old.is_empty() or int(old.get("owner", -1)) != int(c.get("owner", -2)) or int(c.get("size", 0)) < int(old.get("size", 0)):
@@ -118,8 +118,9 @@ func _grow(was: Dictionary, node: Node3D, c: Dictionary) -> void:
 	# What it gained that's a building (a temple, barracks, a granary): the first new site is that one.
 	var gained: Array = (c.get("buildings", []) as Array).filter(func(b): return not (old.get("buildings", []) as Array).has(b))
 	var sites := 0
+	var most := int(preload("res://scripts/data.gd").num("towns", "grow.sites", 3))
 	for ch in node.get_children():
-		if sites >= GROW_SITES or not (ch is Node3D):
+		if sites >= most or not (ch is Node3D):
 			continue
 		var kind := String(ch.name).rstrip("0123456789")
 		if not Real.KIT.has(kind) or not Real.KIT[kind][0] in ["house", "hall", "barn", "mill", "church"]:
