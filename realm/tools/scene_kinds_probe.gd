@@ -16,10 +16,10 @@ const OLD := {"feast": "_feast", "handover": "_handover", "grain": "_convoy", "t
 	"sack": "_burn", "razed": "_burn", "famine": "_refugees", "plague": "_refugees"}
 
 ## The kinds that are their own class by now (grows a kind a commit, till scenes.gd stages none itself).
-const CLASSED := ["feast", "grain", "tribute", "ward", "rider", "muster"]
+const CLASSED := ["feast", "grain", "tribute", "ward", "rider", "muster", "famine", "plague"]
 
 ## What each kind, staged on the stand-in, must set down: [the node's name under the stage, the least of its children].
-const STAGED := {"feast": ["Feast", 10], "grain": ["Convoy", 4], "tribute": ["Convoy", 4], "ward": ["Convoy", 4], "rider": ["Rider", 1]}
+const STAGED := {"feast": ["Feast", 10], "grain": ["Convoy", 4], "tribute": ["Convoy", 4], "ward": ["Convoy", 4], "rider": ["Rider", 1], "famine": ["Refugees", 5], "plague": ["Refugees", 3]}
 
 
 class Land extends Node3D:
@@ -94,10 +94,13 @@ func _run() -> void:
 	for k in moved:
 		if not STAGED.has(k):
 			continue
+		var before: Array = stage.get_children()
 		stage.kind(k).play({"kind": k, "owner": 1, "x": 10, "y": 10, "tx": 16, "ty": 12}, Vector3(10, 0, 10), {1: {"name": "Ashby", "color": "#884422"}})
 		await process_frame
 		var want: Array = STAGED[k]
-		var n: Node = stage.get_node_or_null(String(want[0]))
+		var was: Array = before
+		var fresh: Array = stage.get_children().filter(func(c): return not was.has(c))
+		var n: Node = stage.get_node_or_null(String(want[0])) if fresh.has(stage.get_node_or_null(String(want[0]))) else (fresh[0] if fresh.size() == 1 else null)  # what it just set down (a second of a name is renamed)
 		var count: int = n.get_child_count() if n else 0
 		print("KINDS staged %-9s %s with %d things in it" % [k, want[0] if n else "nothing", count])
 		if count < int(want[1]):

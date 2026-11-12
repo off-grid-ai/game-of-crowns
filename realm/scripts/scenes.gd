@@ -109,14 +109,10 @@ func sync(houses: Dictionary) -> void:
 					_battle(at, houses.get(int(s.get("owner", -1)), {}), houses.get(victor, {}))
 			"sack":
 				_burn(at, 45.0)
-				_refugees(at, 7)
+				kind("famine").flee(at, 7)
 			"razed":
 				_burn(at, 70.0, 2.0)
-				_refugees(at, 10)
-			"famine":
-				_refugees(at, 5)
-			"plague":
-				_refugees(at, 3)
+				kind("famine").flee(at, 10)
 			"siege":
 				var city: Dictionary = {}
 				for c in store.rec("cities", []):
@@ -1096,42 +1092,6 @@ func _burn(at: Vector3, seconds: float, scale := 1.0) -> void:
 				c.queue_free())
 	tw.tween_interval(8.0)
 	tw.tween_callback(root.queue_free)
-
-
-func _refugees(at: Vector3, count: int) -> void:
-	var r := rng(at)
-	# Flee toward land: try directions until one leads somewhere walkable.
-	var ang := r.randf() * TAU
-	for tries in 12:
-		var probe := at + Vector3(cos(ang), 0, sin(ang)) * 5.5
-		if terrain.is_land(probe.x, probe.z):
-			break
-		ang += TAU / 12.0
-	for i in count:
-		var f: Node3D = people.make(r, "peasant", Color(0.75, 0.72, 0.68))
-		var start := at + Vector3(cos(ang), 0, sin(ang)) * (2.0 + i * 0.12) + Vector3(r.randf_range(-0.1, 0.1), 0, r.randf_range(-0.1, 0.1))
-		var goal := start + Vector3(cos(ang), 0, sin(ang)) * 4.0
-		add_child(f)
-		f.look_at_from_position(stand(start), ground(goal) + Vector3(0, ground(start).y - terrain.height_at(goal.x, goal.z), 0), Vector3.UP)
-		f.rotate_y(PI)
-		# Some flee at a run, the rest trudge with what they could carry.
-		var running := i % 3 == 0
-		people.play(f, "Running" if running else "Walk", 1.0 if running else 0.7)
-		_walk(f, goal, 14.0 if running else 30.0, true)
-
-
-func _walk(n: Node3D, goal: Vector3, seconds: float, fade: bool) -> void:
-	var route: PackedVector3Array = route(n.position, goal)
-	var tw := create_tween()
-	tw.tween_method(func(t: float):
-		if not is_instance_valid(n):
-			return
-		var p: Vector3 = terrain.paths.along(route, t)
-		if not terrain.is_land(p.x, p.z):
-			return  # never step into water; stop at the shore
-		n.position = stand(p), 0.0, 1.0, seconds)
-	if fade:
-		tw.tween_callback(n.queue_free)
 
 
 # --- feasts and handovers ----------------------------------------------------------

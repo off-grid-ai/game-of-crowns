@@ -14,7 +14,8 @@ const CROWN := "crown"  # the King's own doing on the roads
 const NEUTRAL := "neutral"
 
 ## kind -> {tone, reach (world units), power (0-1), interest (director), dist
-## (camera distance), caption (with %s for the town), play (the class that stages it: scene_kind.gd's, one a kind)}.
+## (camera distance), caption (with %s for the town), play (the class that stages it: scene_kind.gd's, one a kind), fleeing (how many
+## refugees leave the town), burn ([seconds, size] of the fire set in it)}.
 const KINDS := {
 	"siege": {"tone": HOSTILE, "reach": 5.0, "power": 0.9, "interest": 10, "dist": 7.0, "caption": "The siege of %s"},
 	"storm": {"tone": HOSTILE, "reach": 6.0, "power": 1.0, "interest": 10, "dist": 7.0, "caption": "%s is stormed"},  # Freeciv's assault on a siege (campaigns.js stormScene)
@@ -25,8 +26,8 @@ const KINDS := {
 	"struck": {"tone": HOSTILE, "reach": 1.2, "power": 0.8, "interest": 0, "dist": 4.0, "caption": ""},
 	"fire": {"tone": HOSTILE, "reach": 1.8, "power": 0.9, "interest": 0, "dist": 5.0, "caption": ""},  # a house catching (fire.gd): the near run (batch 9: at 1.0 the square carried on beside it), the rest come to the bucket line
 	"handover": {"tone": HOSTILE, "reach": 3.0, "power": 0.6, "interest": 3, "dist": 8.0, "caption": "%s changes hands"},
-	"famine": {"tone": TROUBLE, "reach": 3.0, "power": 0.6, "interest": 5, "dist": 6.0, "caption": "Famine in %s"},
-	"plague": {"tone": TROUBLE, "reach": 3.0, "power": 0.6, "interest": 5, "dist": 6.0, "caption": "Plague in %s"},
+	"famine": {"tone": TROUBLE, "reach": 3.0, "power": 0.6, "interest": 5, "dist": 6.0, "caption": "Famine in %s", "fleeing": 5, "play": "res://scripts/scene_kinds/refugees.gd"},
+	"plague": {"tone": TROUBLE, "reach": 3.0, "power": 0.6, "interest": 5, "dist": 6.0, "caption": "Plague in %s", "fleeing": 3, "play": "res://scripts/scene_kinds/refugees.gd"},
 	"vigil": {"tone": GRIEF, "reach": 2.5, "power": 0.9, "interest": 4, "dist": 5.0, "caption": "A vigil at %s"},
 	"death": {"tone": GRIEF, "reach": 2.5, "power": 0.8, "interest": 4, "dist": 5.0, "caption": "Mourning at %s"},
 	"feast": {"tone": JOY, "reach": 2.5, "power": 0.7, "interest": 3, "dist": 6.0, "caption": "A feast at %s", "play": "res://scripts/scene_kinds/feast.gd"},
