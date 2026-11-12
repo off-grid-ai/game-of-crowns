@@ -395,7 +395,7 @@ function applyStartOptions() {
 // What view.js needs to build the /world answer, read fresh on every call.
 // The realm as the view sees it (GET /world): built in view.js.
 function worldView() {
-  return { ...View.worldView(realmCtx()), hosts: Hosts.list({ world, meta }), hostOrdersLeft: Hosts.ordersLeft({ world, meta }) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
+  return { ...View.worldView(realmCtx()), hosts: Hosts.list({ world, meta }) };  // the King's hosts and their orders, and how many more orders this season (hosts.js)
 }
 
 // The Hand's matters, read from the realm as it stands now.

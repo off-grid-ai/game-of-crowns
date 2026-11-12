@@ -79,7 +79,7 @@ export async function issueDecree(ctx, req, res, url) {
     const hctx = { world: ctx.world, meta: ctx.meta, sworn, crownSeat: ctx.crownSeat };
     host = Hosts.list(hctx)[0] ?? null;
     if (!host) return json(res, 400, { error: "The crown has no host to march" });
-    if (Hosts.ordersLeft(hctx) < 1) return json(res, 400, { error: "The King's captains have their orders for this season. The next order goes with the season's turn." });
+    if (Hosts.ordersLeft(hctx, host.id) < 1) return json(res, 400, { error: "This host has its orders for this season; the next goes with the season's turn." });
   }
   const price = priceOf(cmd.action);
   const result = decree({ ...cmd, host, works: ctx.meta.works ?? {}, price, favourOf, causeOf, sworn, warded: (pid) => (ctx.stakes?.s.wards?.[pid] ?? -1) > (ctx.world.turn ?? 0), marching: (city) => (ctx.meta.campaigns ?? []).some((x) => x.city === city), usurper: ctx.stakes?.s.usurper, seat: ctx.stakes?.s.seat }, ctx.world);

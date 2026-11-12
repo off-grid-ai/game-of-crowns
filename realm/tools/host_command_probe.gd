@@ -15,9 +15,10 @@ extends SceneTree
 ##     a host nobody selected): with a second host in the field selected, the card's and the play step's (autoplay
 ##     `order`) Besiege ask for it alone; with none selected, nothing is asked; the play step gives orders only
 ##     through the card (host_command.order), never its own /host/order;
-##   - the orders a season (bridge hosts.json ordersPerSeason, /world hostOrdersLeft, the store's host slice): with
-##     none left the card says so, every order button is greyed with the reason, and nothing is asked (a press, a key,
-##     the play step); with one left they are live again.
+##   - a host's orders a season (bridge hosts.json ordersPerHost, /world hosts[].ordersLeft, the store's host slice):
+##     with none left for the selected host the card says so, every order button is greyed with the reason, and nothing
+##     is asked (a press, a key, the play step); another host with its order still to give is live; with one left
+##     the first is live again.
 ## Exit 1 on a fail.
 ##   arch -arm64 godot --headless --path realm -s res://tools/host_command_probe.gd
 
@@ -31,9 +32,8 @@ const TOWN := {"id": 3, "x": 4.0, "y": 0.0}  # its centre at (4, 0, 0) on the gr
 class Realm:
 	var hosts: Array = [{"id": HOST, "x": 0, "y": 0, "companies": 4, "men": 2000, "units": [HOST, 8, 9, 10], "order": null},
 		{"id": OTHER, "x": 9, "y": 9, "companies": 2, "men": 1000, "units": [OTHER, 21], "order": null}]
-	var orders_left := -1  # the store's host_orders_left: -1 before the bridge says
-	func get_var(k: StringName, _d: Variant = null, _c := false) -> Variant:
-		return orders_left if k == &"host_orders_left" else hosts
+	func get_var(_k: StringName, _d: Variant = null, _c := false) -> Variant:
+		return hosts
 
 
 class Awareness:
@@ -297,7 +297,8 @@ func _run() -> void:
 	main.add_child(hc._card)
 	_check(hc._buttons.size() >= 5, "the card has its order buttons (%d)" % hc._buttons.size())
 	hc.select(HOST)
-	main.awareness.realm.orders_left = 0
+	main.awareness.realm.hosts[0]["ordersLeft"] = 0
+	main.awareness.realm.hosts[1]["ordersLeft"] = 1
 	hc._refresh()
 	var greyed := true
 	for k in hc._buttons:
@@ -308,7 +309,11 @@ func _run() -> void:
 	hc._press("hold")
 	var given: bool = hc.order("return")
 	_check(asked.size() == n1 and not given, "with none left nothing is asked (a press, the play step's order)")
-	main.awareness.realm.orders_left = 1
+	hc.select(OTHER)
+	hc._refresh()
+	_check(not (hc._buttons["hold"] as Button).disabled and hc.orders_left() == 1, "another host, with its season's order still to give, is live (%d left)" % hc.orders_left())
+	hc.select(HOST)
+	main.awareness.realm.hosts[0]["ordersLeft"] = 1
 	hc._refresh()
 	_check(not (hc._buttons["hold"] as Button).disabled, "with one left the buttons are live again")
 	hc._press("hold")

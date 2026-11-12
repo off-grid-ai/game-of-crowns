@@ -251,7 +251,6 @@ func _reduce_land(world: Dictionary) -> void:
 func _reduce_hosts(world: Dictionary) -> void:
 	realm.set_var(&"threat", _dict(world.get("crown")).get("threat"))  # the director's live threat, or null (bridge director.js)
 	realm.set_var(&"hosts", world.get("hosts") if world.get("hosts") is Array else [])  # the King's hosts and their orders (bridge hosts.js)
-	realm.set_var(&"host_orders_left", int(world.get("hostOrdersLeft", -1)) if world.get("hostOrdersLeft") != null else -1)  # orders left this season (hosts.json ordersPerSeason); -1 untold
 	realm.set_var(&"armies", _armies(world))  # every house's hosts in the field (the map's banners, map_look.gd)
 
 

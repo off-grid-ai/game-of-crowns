@@ -16,5 +16,5 @@
  ],
  "doing": {"ease": "at ease", "hold": "holding", "march": {"road": "marching for {to}, {road}", "there": "at {to}"}, "attack": {"road": "marching on the foe at {to}, {road}", "there": "falling on the foe at {to}"}, "besiege": {"road": "marching on {to} to lay siege, {road}", "there": "besieging {to}"}, "garrison": {"road": "bound for {to}, {road}", "there": "garrisoning {to}"}},
  "face": {"drag_px": 14, "ghost": 0.12, "color": "#f0c878"},
-  "left": {"_": "The card's line on the orders a season (bridge hosts.json ordersPerSeason): one, with one left; some, with {n} the orders left; none, when spent; why, the greyed buttons' tip.", "one": "One order left this season", "some": "{n} orders left this season", "none": "The captains have their orders this season", "why": "The captains have their orders this season. The next goes with the turn of the season."}
+  "left": {"_": "The card's line on the selected host's orders this season (bridge hosts.json ordersPerHost, /world hosts[].ordersLeft): one, with one left; some, with {n} the orders left; none, when spent; why, the greyed buttons' tip.", "one": "One order left this season", "some": "{n} orders left this season", "none": "The captains have their orders this season", "why": "The captains have their orders this season. The next goes with the turn of the season."}
 }

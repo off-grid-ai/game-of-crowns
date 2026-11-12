@@ -266,11 +266,11 @@ func _press(kind: String) -> void:
 	order(kind)
 
 
-## Orders the King may still give this season (the store's host slice, from /world hostOrdersLeft; the bridge reads
-## hosts.json ordersPerSeason), -1 while the bridge hasn't said.
+## Orders the King may still give the selected host this season (each host its own: /world hosts[].ordersLeft, the
+## bridge reads hosts.json ordersPerHost), -1 while the bridge hasn't said or none is selected.
 func orders_left() -> int:
-	var aw: Object = main.get("awareness") if main else null
-	return int(aw.realm.get_var(&"host_orders_left", -1, false)) if aw else -1
+	var h: Dictionary = host(selected) if selected >= 0 else {}
+	return int(h.get("ordersLeft", -1)) if h.get("ordersLeft") != null else -1
 
 
 ## An order's row on the card (host_command.json orders), or {}.
@@ -502,7 +502,7 @@ func _refresh() -> void:
 	_title.text = ("The royal host at %s" % String(at.get("name", ""))).to_upper() if at is Dictionary else "THE ROYAL HOST"
 	_status.text = "%s men · %s" % [main.ui.heads(int(h.get("men", 0))), _doing(h)]
 	_card.tooltip_text = "%d companies" % int(h.get("companies", 0))
-	# The orders a season (bridge hosts.json ordersPerSeason): the card says how many are left, and with none its
+	# The host's orders this season (bridge hosts.json ordersPerHost): the card says how many it has left, and with none its
 	# buttons are greyed with the reason rather than looking live and refusing.
 	var left := orders_left()
 	var texts: Dictionary = Data.value(FILE, "left", {})
