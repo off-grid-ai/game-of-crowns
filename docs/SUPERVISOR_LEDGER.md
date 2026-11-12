@@ -121,6 +121,12 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11:00 (11-12) Supervisor moved to this account (session "GoC"); the three builders recreated here with the same
+  titles and layers: works-life "Life at the works and grounded people" `local_eb1d9df5-48cf-466c-b31e-f1bf6a182996`
+  (people), fire-siege "Fire and siege to the measured rules" `local_1d3c1906-060c-4383-8a73-289c5a1621d9`
+  (buildings; kit 8-sheet repaint, kit_paint.py uncommitted, then bailey buildings), army-ui "Army command: select
+  ring and command card" `local_c5e049d3-0de4-4ce2-8cb9-2d9df6a49f84` (ground). Camera and look agents restarted as
+  this session's subagents. The old account's sessions (local_9b96362d, local_f9e805de, local_a5e34ab8) are retired.
 - 10:30 (11-12) Usage limit; agents stopped. Focus round 1 (/tmp/goc-focus/r1/ladder) FAILED its framing:
   km-18_-3 shows countryside and a hamlet, not Kingsmere's square (check the other km-* frames and play.log;
   the camera code changed mid-run). On resume: run docs/review/focus.sh (camera agent's, db3e41a6; ROUND=r2,
