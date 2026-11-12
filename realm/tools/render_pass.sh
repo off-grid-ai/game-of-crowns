@@ -31,17 +31,21 @@
 #   siege    the siege taken: breach, storm, the town changing hands (04-siege; READY 6, 7)
 #   command  a host in open ground clicked by its standard, then Besiege (03-army for the field; READY 8)
 #   face     the same host given a line by a right drag (its own reign: one order a season a host; READY 8)
+#   walls    Kingsmere's walls whole, from outside and low (01-town)
+#   breach   a breached section beside whole ones (--siege --wall-demo, no storm; 04-siege)
+#   seasons  the wood's edge and the fields in summer and in autumn (the nature set's seasonal leaves; 01-town)
+#   host5    the host in column at 03-army's framing with all five kinds, 1500 men in the crown's colours (03-army)
 #   castle   Kingsmere's castle close from its gate side (01-town; the Meshy castle set)
 #   street   the smallest town's street of houses at its town view (01-town; the Meshy house set)
 #   crossing the King's host at sea in the cog (08-reinforce): ordered over water (One store's crossing, d70ca994), then
-#            framed once aboard (CROSS_WAIT, 600 s of the reign); skipped and said when no march goes by sea
+#            framed once aboard (CROSS_WAIT, 900 s of the reign); skipped and said when no march goes by sea
 set -u
 R=$(cd "$(dirname "$0")/../.." && pwd)
 STAMP=$(date +%H%M)
 OUT=${OUT:-/tmp/goc-pass/$STAMP}
 PORT=${PORT:-8789}; FC=${FC:-5558}
 API=localhost:$PORT
-ONLY=${ONLY:-"town landuse realm muster cavalry battle siege command face castle street crossing"}
+ONLY=${ONLY:-"town landuse realm muster cavalry battle siege command face walls breach seasons host5 castle street crossing"}
 TARGETS=$R/docs/art/target
 say() { echo "$(date +%T) $*" | tee -a $OUT/pass.log; }
 
@@ -199,6 +203,34 @@ if want face; then
   shot face 1500 film $SW
   side face $OUT/frames/face/faced.png $TARGETS/03-army.jpg "READY 8: $(grep -hE 'host selected' $OUT/frames/face/play.log 2>/dev/null | head -1)"
 fi
+# Kingsmere's walls whole, from outside and low (01-town's walls; walls.gd: the kit curtain where a section is whole).
+if want walls; then
+  { print "wait 30"; print "city Kingsmere 10 -12"; print "wait 6"; print "city Kingsmere 10 -12"; print "wait 3"; print "snap walls"; print "look end"; } > $OUT/walls.play
+  shot walls 1500 film $SW
+  side walls $OUT/frames/walls/walls.png $TARGETS/01-town.jpg "Kingsmere's walls whole"
+fi
+# A breached section beside whole ones (--wall-demo: a wall across a staged siege's front worn by its stones; no storm).
+if want breach; then
+  { print "wait 45"; print "breach 4 -20"; print "wait 3"; print "snap breach"; print "look end"; } > $OUT/breach.play
+  shot breach 1800 film --siege --wall-demo --probe
+  side breach $OUT/frames/breach/breach.png $TARGETS/04-siege.jpg "a breached section beside whole ones"
+fi
+# The wood's edge and the fields in summer and in autumn (the nature set's seasonal leaves; autoplay field holds the
+# countryside's year at that season and frames the crown's first sown field low).
+if want seasons; then
+  for se in summer autumn; do
+    { print "wait 30"; print "field $se 0.5 0 6 -20"; print "wait 6"; print "snap $se"; print "look end"; } > $OUT/season_$se.play
+    shot season_$se 1500 film $SW --season=$se
+    side season_$se $OUT/frames/season_$se/$se.png $TARGETS/01-town.jpg "the wood's edge and the fields in $se"
+  done
+fi
+# The host at 03-army's framing with all five kinds (pikemen, men-at-arms, archers, knights, cavalry): army.json's
+# shares (0.3, 0.25, 0.2, 0.1, 0.15) give every kind a regiment at about ten regiments, so 1500 men, in column on the
+# road at a high oblique, in the crown's colours.
+if want host5; then
+  shot host5 900 still $SW --army-spike=1500 --army-colours=crown --army-shape=march --dist=9 --wait=50
+  side host5 $OUT/frames/host5.png $TARGETS/03-army.jpg "all five kinds: $(grep -h 'ARMY mustered' $OUT/frames/host5.log 2>/dev/null | grep -o 'regiments=[0-9]* {[^}]*}' | head -1)"
+fi
 # The rest of the look, each beside its target: the castle from its gate, a village street, a host crossing the sea.
 world_pick() {  # world_pick village: the smallest town's name, from /world
   curl -s -m 10 "$API/world?peek=1" | python3 -I -c "
@@ -220,29 +252,30 @@ if want crossing; then
   new_reign  # its own season of orders
   # The King's host takes ship (One store's crossing, d70ca994: a march with no road over land walks to the nearest crown
   # port, boards the crown's hulls, sails, lands near the goal). The pass asks each march dry first (d94c3c83: by land or
-  # by sea, nothing given), farthest town first, orders the first that goes by sea, then waits (CROSS_WAIT, 600 s of the reign) until it is aboard, and frames its lead company on
+  # by sea, nothing given) for every host and town, orders the quickest by sea, then waits (CROSS_WAIT, 900 s of the reign:
+  # a season at the shore while the crown raises its Triremes, 7b10e42d) until it is aboard, and frames its lead company on
   # the hull: the cog.
   CROSS=$(curl -s -m 10 "$API/world?peek=1" | python3 -I -c "
 import json,sys,urllib.request
 d=json.load(sys.stdin); hs=d.get('hosts',[]); cs=d.get('cities',[])
-if not hs: sys.exit()
-h=hs[0]
-cs=sorted(cs, key=lambda c: -((c['x']-h['x'])**2+(c['y']-h['y'])**2))
 def ask(body):
     req=urllib.request.Request('http://$API/host/order', data=json.dumps(body).encode(), method='POST')
     try:
         return json.load(urllib.request.urlopen(req, timeout=20))
     except Exception:
         return {}
-for c in cs:
-    # dry first (One store, d94c3c83): by land or by sea, nothing given and the season's order not spent
-    d=ask({'host':h['id'],'order':'march','city':c['id'],'dry':True})
-    if d.get('by')!='sea':
-        continue
+# Every host to every town, asked dry (d94c3c83: by land or by sea, nothing given); the quickest march by sea is ordered.
+best=None
+for h in hs:
+    for c in cs:
+        a=ask({'host':h['id'],'order':'march','city':c['id'],'dry':True})
+        if a.get('by')=='sea' and (best is None or int(a.get('seasons',99))<best[0]):
+            best=(int(a.get('seasons',99)), h, c)
+if best:
+    _, h, c = best
     r=ask({'host':h['id'],'order':'march','city':c['id']})
     if r.get('ok'):
         print(h['id'], c.get('title', c.get('name','')), r.get('text','')[:120])
-    break
 " 2>/dev/null)
   set -- ${=CROSS}
   HID=${1:-}
@@ -251,7 +284,7 @@ for c in cs:
   else
     say "crossing: host $HID ordered over water: ${CROSS#* }"
     LEAD=""; waited=0
-    while [ -z "$LEAD" ] && [ $waited -lt ${CROSS_WAIT:-600} ]; do
+    while [ -z "$LEAD" ] && [ $waited -lt ${CROSS_WAIT:-900} ]; do
       LEAD=$(curl -s -m 10 "$API/world?peek=1" | python3 -I -c "
 import json,sys; d=json.load(sys.stdin)
 me=[x for x in d.get('hosts',[]) if str(x.get('id'))=='$HID' and x.get('aboard')]
@@ -259,7 +292,7 @@ print(min(me[0].get('units',[me[0]['id']])) if me else '')" 2>/dev/null)
       [ -z "$LEAD" ] && { sleep 15; waited=$((waited + 15)); }
     done
     if [ -z "$LEAD" ]; then
-      say "crossing: host $HID not aboard in ${CROSS_WAIT:-600} s of the reign; no frame"
+      say "crossing: host $HID not aboard in ${CROSS_WAIT:-900} s of the reign; no frame"
     else
       { print "wait 30"; print "unit $LEAD 3"; print "wait 4"; print "snap crossing"; print "unit $LEAD 1.5"; print "wait 3"; print "snap cog"; print "look end"; } > $OUT/crossing.play
       shot crossing 1500 film $SW
