@@ -131,12 +131,13 @@ func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object)
 func _census_cap(k: Dictionary, role: Dictionary) -> int:
 	var c: Dictionary = k["census"]
 	var w: Variant = role.get("census", 0.0)
-	if int(c["budget"]) < 0 and (w is String or float(w) > 0.0):
+	if int(c["budget"]) == -1 and (w is String or float(w) > 0.0):
 		var m2 := open_setts_m2(k["root"])
 		c["m2"] = m2
-		c["budget"] = int(round(m2 / 100.0 * Data.num("towns", "square.targets.per_100m2", 6.0)))
+		# No paved square read (a town without setts, a made-up probe town): no census, each row's own count stands.
+		c["budget"] = int(round(m2 / 100.0 * Data.num("towns", "square.targets.per_100m2", 6.0))) if m2 > 0.0 else -2
 		c["left"] = int(c["budget"]) - int(c["cast"])
-	if w is String or float(w) <= 0.0:
+	if w is String or float(w) <= 0.0 or int(c["budget"]) == -2:
 		return -1
 	var share := float(c["left"]) * float(w) / maxf(float(c["weights"]), 0.001)
 	c["weights"] = float(c["weights"]) - float(w)
