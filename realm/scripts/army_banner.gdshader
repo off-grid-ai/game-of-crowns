@@ -1,8 +1,9 @@
 // A regiment's banner (Total War's regiment banner, Shogun 2's way: the type painted on the cloth, strength
 // under it; docs/research/army-and-town-rules.md section 1): one quad, pole and cloth together, turned about
 // its pole to face the camera as heraldry.gd's flags are (banner_cloth.gdshader's turn). The cloth is the
-// house colour with a unit-type glyph (sword, spear, bow, horse, axe, engine; the army's standard a crown or
-// the house's painted arms), a swallowtail for a regiment, and up to five strength pips beneath: filled for
+// house's painted arms with its unit-type glyph (sword, spear, bow, horse, axe, engine) in the canton on the house
+// colour (Total War: the faction's emblem on every regiment's banner, the type beside it); a house with no arms
+// drawn, its colour with the glyph large; the army's standard the arms alone (or a crown); a swallowtail for a regiment, and up to five strength pips beneath: filled for
 // the strength it holds, hollow for what it has lost. Selected, it brightens and wears a gold edge (the one
 // accent); wavering, it flashes. The quad's pivot is the pole's foot; army.gd scales it so it keeps its
 // size on screen from afar. Numbers in data/army.json banner.*.
@@ -19,7 +20,9 @@ uniform int pips = 5;  // 0 shows none (the standard)
 uniform float selected = 0.0;
 uniform float waver = 0.0;
 uniform bool swallow = true;
-uniform bool use_arms = false;  // the standard: the house's painted banner on the cloth
+uniform bool use_arms = false;  // the house's painted banner on the cloth
+uniform bool canton = false;  // with the arms: the glyph in a square of house colour at the hoist's top (a regiment)
+uniform float canton_size = 0.46;  // the canton's side, share of the cloth's height
 uniform sampler2D arms : source_color, filter_linear_mipmap;
 uniform float phase = 0.0;  // this flag's place in the wind
 uniform float span = 0.35;  // the quad's width in world units
@@ -103,6 +106,14 @@ void fragment() {
 		vec3 field = field_color.rgb;
 		if (use_arms) {
 			field = texture(arms, vec2(fx, fy)).rgb;
+			vec2 c = vec2(fx * aspect, fy) / canton_size;  // the canton's square, 0..1 each way
+			if (canton && c.x <= 1.0 && c.y <= 1.0) {
+				vec3 ground = field_color.rgb * ((c.x > 0.92 || c.y > 0.92) ? 0.72 : 1.0);
+				vec2 q = (c - 0.5) / 0.8 + 0.5;
+				float aa = max(fwidth(q.x) * 0.8, 0.0001);
+				float lum = dot(field_color.rgb, vec3(0.3, 0.59, 0.11));
+				field = mix(ground, lum > 0.62 ? vec3(0.12, 0.09, 0.07) : glyph_color.rgb, glyph_mask(q, glyph, aa));
+			}
 		} else {
 			float border = (fx < 0.035 || fy < 0.06 || fy > 0.94) ? 0.72 : 1.0;
 			field *= border;

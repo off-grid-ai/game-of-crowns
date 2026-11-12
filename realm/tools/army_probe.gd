@@ -26,7 +26,10 @@ extends SceneTree
 ##     than SPREAD apart, the far end last; never two in one moment;
 ##  9. the battle's lens frames the rout (round 15: the camera sat far back over open grass and nothing read): it
 ##     stands at the town view's distance (camera.json town_view.dist, the square's), and at blows it looks at the
-##     beaten regiment that breaks next, then at the next as the rout runs along the line, and stays where it ended.
+##     beaten regiment that breaks next, then at the next as the rout runs along the line, and stays where it ended;
+## 10. the right banner (READY line 4): a regiment raised for a house with arms flies those arms on its banner (its
+##     kind's glyph in the canton) and its men wear them on shield and tabard, in its colour; a house with none
+##     drawn flies its colour with the glyph; the host's standard flies the same arms (heraldry.gd arms, one place).
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
@@ -61,6 +64,7 @@ func _run() -> void:
 	_panic_spreads()
 	_rout_runs_along_the_line()
 	_lens_on_the_rout()
+	_the_right_banner()
 	print("ARMY PROBE PASS" if _fails == 0 else "ARMY PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
 
@@ -422,6 +426,38 @@ func _lens_on_the_rout() -> void:
 	var after: Vector3 = FieldS.call("lens_aim", rows, 1, true, aim)
 	_check(after.distance_to(aim) < 0.01, "once none stands, the lens stays where the rout ended")
 	holder.free()
+
+
+## 10. The right banner: regiments raised (army.gd _regiment, as every host raises them) for House Ashby, whose arms
+## are drawn, and for a house with none.
+func _the_right_banner() -> void:
+	var H: GDScript = load("res://scripts/heraldry.gd")
+	var ArmyS: GDScript = load("res://scripts/army.gd")
+	var ashby := {"name": "House Ashby"}
+	var none := {"name": "House Nobody"}
+	var want: Texture2D = load("res://assets/heraldry/banner-ashby.png")
+	_check(H.get_script_method_list().any(func(m): return m["name"] == "arms"), "a house's arms come from one place (heraldry.gd arms)")
+	var a: Object = ArmyS.new(Node.new(), 0, {"side": 0, "colour": Color(0.2, 0.3, 0.6), "house": ashby})
+	var units: Dictionary = Data.value("army", "units", {})
+	var colour := Color(0.2, 0.3, 0.6)
+	for k in ["spearmen", "archers"]:
+		if not units.has(k):
+			continue
+		var r: Dictionary = a.call("_regiment", {"id": 1, "unit": k, "men": 150}, colour, ashby)
+		if r.is_empty():
+			_check(false, "%s raised (its baked soldier loads)" % k)
+			continue
+		var bm: ShaderMaterial = r["banner_mat"]
+		var lv: ShaderMaterial = (r["vat"] as GeometryInstance3D).material_override
+		_check(bool(bm.get_shader_parameter("use_arms")) and bm.get_shader_parameter("arms") == want and bool(bm.get_shader_parameter("canton")),
+			"%s of House Ashby: its banner flies Ashby's arms, its glyph in the canton" % k)
+		_check((bm.get_shader_parameter("field_color") as Color).is_equal_approx(colour), "%s: the canton and pips in its house colour" % k)
+		_check(bool(lv.get_shader_parameter("emblem_on")) and lv.get_shader_parameter("emblem_texture") == want and (lv.get_shader_parameter("team_color") as Color).is_equal_approx(colour),
+			"%s: its men wear Ashby's arms on shield and tabard, in its colour" % k)
+	var plain: Dictionary = a.call("_regiment", {"id": 2, "unit": "spearmen", "men": 150}, colour, none)
+	if not plain.is_empty():
+		_check((plain["banner_mat"] as ShaderMaterial).get_shader_parameter("use_arms") != true, "a house with no arms drawn flies its colour with the glyph")
+	a.free()
 
 
 ## 6. One figure for ten, each with room about him.

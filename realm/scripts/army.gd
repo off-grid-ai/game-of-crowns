@@ -470,7 +470,7 @@ func _regiment(spec: Dictionary, colour: Color, house: Dictionary = {}) -> Dicti
 		"speed": Data.num("army", "march.speed", 0.16) * float(row.get("speed", 1.0)),
 		"yaws": yaws, "sizes": sizes, "local": PackedVector3Array(), "from": PackedVector3Array(), "to": PackedVector3Array(),
 		"shape": "line", "state": "rest", "s": 0.0, "off": 0.0, "slot": Vector3.ZERO, "place": Vector2.ZERO, "t": 0.0,
-		"fidget": _rng.randf_range(0.5, 3.0), "backs": [], "selected": false, "w": 1.0, "d": 1.0}
+		"fidget": _rng.randf_range(0.5, 3.0), "backs": [], "selected": false, "w": 1.0, "d": 1.0, "house": house}
 	r["line"] = _layout(r, "line")
 	r["column"] = _layout(r, "column")
 	_banner(r)
@@ -597,13 +597,20 @@ func _track(r: Dictionary, role: String) -> int:
 
 # --- Banner, standard, ground rectangle, far block -------------------------------------------------------
 
-## A regiment's banner: one billboard quad (pole and cloth) at its middle, in its house colour with its glyph.
+## A regiment's banner: one billboard quad (pole and cloth) at its middle: its house's painted arms (Total War's
+## faction emblem on every regiment's banner) with its kind's glyph in the canton on its house colour; a house with
+## no arms drawn flies its colour with the glyph.
 func _banner(r: Dictionary) -> void:
 	var man := Data.num("army", "man", 0.22)
 	var mi := _flag_quad(man * Data.num("army", "banner.height", 2.6), man * Data.num("army", "banner.width", 1.6))
 	var m: ShaderMaterial = mi.material_override
 	m.set_shader_parameter("field_color", r["colour"])
 	m.set_shader_parameter("glyph", int(GLYPHS.get(r["glyph"], 1)))
+	var arms := Heraldry.arms(r.get("house", {}))
+	if arms != null:
+		m.set_shader_parameter("arms", arms)
+		m.set_shader_parameter("use_arms", true)
+		m.set_shader_parameter("canton", true)
 	m.set_shader_parameter("strength", r["strength"])
 	m.set_shader_parameter("pips", int(Data.num("army", "banner.pips", 5)))
 	(r["node"] as Node3D).add_child(mi)
@@ -646,10 +653,9 @@ func _standard_up() -> void:
 	m.set_shader_parameter("glyph", GLYPHS["crown"])
 	m.set_shader_parameter("pips", 0)
 	m.set_shader_parameter("swallow", false)
-	var crown: Dictionary = battle.get("house", _crown_house())
-	var path := "res://assets/heraldry/banner-%s.png" % Heraldry.slug(crown) if not crown.is_empty() else ""
-	if path != "" and ResourceLoader.exists(path):
-		m.set_shader_parameter("arms", load(path))
+	var arms := Heraldry.arms(battle.get("house", _crown_house()))
+	if arms != null:
+		m.set_shader_parameter("arms", arms)
 		m.set_shader_parameter("use_arms", true)
 	(c["node"] as Node3D).add_child(_standard)
 	_strength_label = Label3D.new()
@@ -1354,12 +1360,12 @@ func _finish(mat: ShaderMaterial, row: Dictionary, mesh: Mesh) -> void:
 ## standard flies (heraldry.gd). A house with no banner drawn, or a mesh with no places for them, wears its
 ## colour alone.
 func _wear_arms(mat: ShaderMaterial, house: Dictionary) -> void:
-	var path := "res://assets/heraldry/banner-%s.png" % Heraldry.slug(house) if not house.is_empty() else ""
-	if not bool(Data.value("army", "emblem.on", true)) or path == "" or not ResourceLoader.exists(path):
+	var arms := Heraldry.arms(house)
+	if not bool(Data.value("army", "emblem.on", true)) or arms == null:
 		mat.set_shader_parameter("emblem_on", false)
 		return
 	var rect: Array = Data.value("army", "emblem.rect", [0.0, 0.06, 1.0, 0.56])
-	mat.set_shader_parameter("emblem_texture", load(path))
+	mat.set_shader_parameter("emblem_texture", arms)
 	mat.set_shader_parameter("emblem_rect", Vector4(float(rect[0]), float(rect[1]), float(rect[2]), float(rect[3])))
 	mat.set_shader_parameter("emblem_light", Data.num("army", "emblem.light", 0.9))
 	mat.set_shader_parameter("emblem_on", true)

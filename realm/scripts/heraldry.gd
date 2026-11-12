@@ -15,6 +15,14 @@ static func family(surname: String) -> Dictionary:
 static var _cache := {}
 
 
+## A house's painted arms (its banner in assets/heraldry), or null if it has none drawn: what its standard, its
+## regiments' banners and its men's shields wear.
+static func arms(house: Dictionary) -> Texture2D:
+	var key := slug(house) if not house.is_empty() else ""
+	var path := "res://assets/heraldry/banner-%s.png" % key
+	return load(path) as Texture2D if key != "" and ResourceLoader.exists(path) else null
+
+
 ## The banner cloth material for a house, or a plain one in `fallback`.
 static func cloth(house: Dictionary, fallback: Color) -> Material:
 	var key := slug(house)
