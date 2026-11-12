@@ -57,3 +57,17 @@ countryside hedges).
 **Clarity verdict:** keep it on. It removes the near blur and the orange cast and most ghosting. Left: near buildings at the
 frame edge still ghost (camera_rig.gd sight check / clarity.fade), and foreground roofs and chimney pots still crowd
 the lower third at d4.5-6.
+
+## fire (35 frames, 0 script errors; sack staged on Highfell)
+
+| Shot | Verdict | Defects |
+|---|---|---|
+| fire-06s / fire-20s / fire-clip | FAIL (fire reads, first time in the sack shot) | A house catches in frame: tall flames off the roof and out of the walls, and it chars. Against 04-siege: the flames are flat paper-cut sheets with a mottled cream-orange fill, not volumetric. **No smoke column at all.** Only one house burns in 90 s (fire.log: at most 1 lit fire). No spread. No one reacts: no bucket line, no fleeing, the square goes on as normal. |
+| fire-45s | FAIL | The roof has fallen in to a charred shell (good). A leftover flame stands on top. Still one house. |
+| fire-90s | FAIL | **The house stands whole again**: the same frame as fire-before. The burnt house should stay charred while the bridge's damage fact says it's burnt. |
+| fire-before | FAIL | Flat white snow ground and island town. Readable. |
+
+**fire defects:** (1) the sack lights one house and nothing spreads (fire.gd sack/spread; fire.json share_sack and spread).
+(2) The charred house resets to whole within 90 s (fire.gd charring vs bridge/damage.js burnt). (3) No smoke column
+(fire.gd smoke; fire.json columns). (4) Flat flame cards (the GDQuest shader's look). (5) The folk don't react
+(fire.gd folk lines).
