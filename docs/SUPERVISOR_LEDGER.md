@@ -121,6 +121,12 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 17:15 (11-12) RULING (pending delivery, message cap): Freeciv step 5 stays with the Freeciv thread (built, uncommitted:
+  campaigns.js dice gone, Lua.assault, Royal Siege decree). Ground truth takes only D (breach removes City Walls, from
+  damage.js). Reverses 16:40's B: in the baseline the King is at war with only Norwegian (0 towns) and the Orca, so B
+  would forbid almost every march. Accepted: ctx.diplomacy (the save rewrite) as the ONE sanctioned war writer until
+  Freeciv 3.3, owned by the Freeciv thread, its reload cost noted; no second writer. Mac: changes go in the real tree,
+  never scratch copies (goc-engineering 82b95552); private-index commits refresh the shared index (b9dacd7c).
 - 16:55 (11-12) Double-click zoom landed (f7de4b61, probe double_click_probe.gd: 20->13, aim on the spot, floor-capped).
   Double-click a soldier to select all of a kind (WC3): deferred to RTS command after the square (multi-select is a
   new system; hosts select one at a time today). Commits: always `git commit --only -- <paths>` (a bare commit swept
