@@ -50,7 +50,10 @@ extends SceneTree
 ##     on a mark that is freed before he looses; the shot finds another mark or none, and no freed node is read;
 ## 16. the map's host marks wait for the land (the reign replay: 72 errors, map_marks drew a host's standard through
 ##     terrain.tile_at before the land was laid): with a host in the field and the land not yet built, map_marks.gd
-##     reads no tile.
+##     reads no tile;
+## 17. the film waits for the lines to meet (GoC's battle take: a fixed `wait 20` filmed the last of the walk-in and the
+##     hold, and no meeting read): army_field.gd says when its lines have met (met()), and autoplay has a `clash`
+##     step that waits on it, as `rout` waits on the first break.
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
@@ -91,8 +94,39 @@ func _run() -> void:
 	_one_body_one_finish()
 	await _route_before_any_scene()
 	await _marks_wait_for_land()
+	_film_waits_for_the_clash()
 	print("ARMY PROBE PASS" if _fails == 0 else "ARMY PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
+
+
+## 17. The film waits for the clash: a field battle whose sides are two stand-in hosts, first walking in, then one
+## regiment at blows.
+func _film_waits_for_the_clash() -> void:
+	var F: GDScript = load("res://scripts/army_field.gd")
+	var has := F.get_script_method_list().any(func(m): return m["name"] == "met")
+	_check(has, "a field battle says when its lines have met (army_field.gd met)")
+	var auto_src := FileAccess.get_file_as_string("res://scripts/autoplay.gd")
+	_check(auto_src.contains("\"clash\":") and auto_src.contains(".call(\"met\")"), "the film has a play step that waits for the lines to meet (autoplay clash)")
+	if not has:
+		return
+	var hs := GDScript.new()
+	hs.source_code = "extends Node\nvar rs: Array = []\nfunc rows() -> Array:\n\treturn rs\n"
+	hs.reload()
+	var a := Node.new()
+	a.set_script(hs)
+	var b := Node.new()
+	b.set_script(hs)
+	a.rs = [{"state_name": "advance"}, {"state_name": "volley"}]
+	b.rs = [{"state_name": "advance"}]
+	var f: Object = F.new(Node.new(), "600:foe")
+	f.set("sides", [a, b])
+	var walking: bool = f.call("met")
+	b.rs[0]["state_name"] = "fight"
+	var at_blows: bool = f.call("met")
+	_check(not walking and at_blows, "met() is false while they walk in, true once a regiment is at blows (%s, %s)" % [walking, at_blows])
+	f.free()
+	a.free()
+	b.free()
 
 
 ## 16. The map's host marks before the land is laid: a stand-in main far out (the marks show), a host in the field,

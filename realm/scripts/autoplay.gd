@@ -822,6 +822,16 @@ func _step(w: PackedStringArray) -> void:
 				else:
 					print("AUTOPLAY face none (%d on the map)" % faces.size())
 				await get_tree().create_timer(2.0).timeout
+			"clash":
+				# clash [most]: waits until the field battle's lines meet (--army-battle, army_field.gd met: a regiment at
+				# blows), at most `most` seconds (120), so a take films the meeting, not a fixed wait before it.
+				var most := float(w[1]) if w.size() > 1 else 120.0
+				var t0 := Time.get_ticks_msec()
+				var field: Node = main.get_node_or_null("FieldBattle")
+				while (Time.get_ticks_msec() - t0) / 1000.0 < most and (field == null or not bool(field.call("met"))):
+					await get_tree().create_timer(0.25).timeout
+					field = main.get_node_or_null("FieldBattle")
+				_note("  clash: %s after %.0f s" % ["the lines met" if field != null and bool(field.call("met")) else "no meeting", (Time.get_ticks_msec() - t0) / 1000.0])
 			"rout":
 				# rout [most]: waits until a regiment of the field battle (--army-battle, army_field.gd) breaks, at most
 				# `most` seconds (120); the lens is already on the line where it breaks (army_field.lens_aim).

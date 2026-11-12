@@ -329,7 +329,7 @@ func _morale(dt: float) -> void:
 func _frame(delta: float) -> void:
 	if main.rig == null:
 		return
-	_focus = _focus.lerp(lens_aim(_rows(), loser, _lines_met(), _focus), minf(1.0, delta * Data.num(F, "field.camera.follow", 1.2)))
+	_focus = _focus.lerp(lens_aim(_rows(), loser, met(), _focus), minf(1.0, delta * Data.num(F, "field.camera.follow", 1.2)))
 	var crown: Army = sides[0]
 	main.rig.step_floor = _dist if _dist < main.rig.min_distance else 0.0  # the shot's own distance (d4 is d4)
 	main.rig.snap(_focus, _dist, crown.facing() + Data.num(F, "field.camera.quarter", 0.9))
@@ -405,7 +405,7 @@ func _volley(r: Dictionary, dt: float) -> void:
 	if foe.is_empty():
 		return
 	_face_toward(r, (foe["node"] as Node3D).global_position, dt)
-	if _front_gap(r, foe) < Data.num(F, "field.volley.until", 3.0) or _lines_met():
+	if _front_gap(r, foe) < Data.num(F, "field.volley.until", 3.0) or met():
 		return  # the lines are at blows: no shooting into the press
 	r["volley_t"] = float(r["volley_t"]) - dt
 	if float(r["volley_t"]) > 0.0:
@@ -735,9 +735,10 @@ func _front_gap(r: Dictionary, foe: Dictionary) -> float:
 	return (theirs - mine).dot(fwd)
 
 
-func _lines_met() -> bool:
+## The lines have met: a regiment of either side is at blows (the film's clash step waits on it).
+func met() -> bool:
 	for a in sides:
-		for r in (a as Army).rows():
+		for r in a.rows():
 			if r.get("state_name", "") == "fight":
 				return true
 	return false
