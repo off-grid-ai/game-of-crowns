@@ -2105,7 +2105,7 @@ func _square_more(root: Node3D, life: Node3D, center: Vector3, n: Callable, go: 
 					far = q
 					break
 			ends.append(Vector3(far.x, 0, far.y))
-		var rig := _horse_cart(rng)
+		var rig := horse_cart(_people, rng)
 		if rig:
 			rig.position = Vector3(ends[0].x, _y(center, ends[0]), ends[0].z)
 			life.add_child(rig)
@@ -2165,7 +2165,7 @@ func _shoulder_sack(p: Node3D) -> void:
 
 ## A horse and cart in one piece (scenes.gd's road cart, facing +z as the town's people do): the wagon, the
 ## horse between its shafts and the carter at the horse's head.
-func _horse_cart(rng: RandomNumberGenerator) -> Node3D:
+static func horse_cart(people: Object, rng: RandomNumberGenerator) -> Node3D:
 	if _wagon_mesh == null:
 		_wagon_mesh = preload("res://scripts/house_builder.gd").new().piece_mesh("Prop_Wagon")
 	if _wagon_mesh == null:
@@ -2188,7 +2188,7 @@ func _horse_cart(rng: RandomNumberGenerator) -> Node3D:
 	var horse: Node3D = Horse.new(rng.randi() % Horse.COATS.size())
 	horse.rotation.y = PI
 	hitch.add_child(horse)
-	var carter := _people.make(rng, "peasant", Color.WHITE, "adult", "", "male")
+	var carter: Node3D = people.make(rng, "peasant", Color.WHITE, "adult", "", "male")
 	carter.position = Vector3(0.09, 0, -0.16) * big
 	carter.rotation.y = PI
 	rig.add_child(carter)

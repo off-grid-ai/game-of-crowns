@@ -146,6 +146,9 @@ func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 	# at the top (01-town: the steps up to the keep, the carpet, the halberdiers).
 	if Builder.podium() > 0:
 		_carpet(xf, sp, colour, d)
+	# The bailey lived in: drill, the butts, the gate's guards, the smith, the stores' cart, servants and grooms
+	# (castle_folk.gd, the people layer's).
+	preload("res://scripts/castle_folk.gd").dress(self, main, xf, sp, colour, d)
 	# The bailey's well, at its heart.
 	var w: Array = Data.value("castle", "well", [0.75, 0.0, 0.45])
 	var well_kind := Real.one("well")
