@@ -538,6 +538,7 @@ function onEvent(line) {
   if (ev.kind === "city_destroyed" && town) scene("razed", { x: town.x, y: town.y, city: town.id });
   if (ev.kind === "seam_spent") Mines.spent(meta, ev);  // the old workings stay where the gold ran out (mines.js)
   if (ev.kind === "seams_worked") return Mines.worked(meta, ev);  // which town works each seam (mines.js)
+  if (ev.kind === "purse") return Treasury.purse(realmCtx(), ev);  // the season's tithe and the Royal Court's upkeep (treasury.js)
   // The land keeps its scars (state/marks.json): where men died, a town was stormed, a town was razed.
   // The view burns the ground there, fading with the mark's age, and a razed town leaves a ruin.
   const scar = ev.kind === "unit_killed" ? ["battle", Number(ev.x), Number(ev.y)] : ev.kind === "city_transferred" && ev.reason === "conquest" && town ? ["sack", town.x, town.y] : ev.kind === "city_destroyed" && town ? ["razed", town.x, town.y] : null;

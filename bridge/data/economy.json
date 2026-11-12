@@ -1,13 +1,11 @@
 {
- "_": "The crown's money, one place (treasury.js reads it). start: the King's purse at his crowning, in gold, by the reign's wealth. tithe.perSize: what a great house's towns yield the crown a year per size point at a tithe of 1 (a quarter each season; at the usual 0.1 the realm's ~125 sizes bring about 95 a season: with a seal every other season, about two of the three best uses saved up by each seal, just short of all). tithe.housePays: the most a house hands over from its own purse in a season, as a share of it (the rest is taken at the town gates). wear: each time the King buys the same thing within wear.seasons, its price rises by wear.step of the base. upkeepShare: what a great treasury costs the crown each season (stewards, gifts, loans called in), as a share of it, so an idle purse levels off. thin: below this the treasury is thin (one big thing's worth) and the court may hear of it. tithe.start: a new realm's tithe; step: how far one 'raise' or 'lower' moves it; max: the highest the King may set; high: the houses grumble at or above it (and the ledger names a heavy hand); low: at or below it the ledger names a light hand; wear: favour each house loses a season per whole tithe (at 0.1, 0.4 a season). tithe.changeEvery: seasons between two changes of the tithe (4 = once a year; the top bar says when it may change again; gameplay review #3: it was a free slider, 0 to 40% in two calls). marketGold: gold the crown gets each season per Marketplace in its towns on top of Freeciv's own tax (0: none; it was 40, gold from nothing; a house's gold comes from what its land yields, gold seams most of all: data/mines.json).",
+ "_": "The crown's money, the King's side of it (treasury.js reads it; what the tithe yields and the Royal Court costs each season is Freeciv's: realmrules/luadata.txt [purse]). start: the King's purse at his crowning, in gold, by the reign's wealth. wear: each time the King buys the same thing within wear.seasons, its price rises by wear.step of the base. thin: below this the treasury is thin (one big thing's worth) and the court may hear of it. tithe.start: a new realm's tithe; step: how far one 'raise' or 'lower' moves it; max: the highest the King may set; high: the houses grumble at or above it (and the ledger names a heavy hand); low: at or below it the ledger names a light hand; wear: favour each house loses a season per whole tithe (at 0.1, 0.4 a season). tithe.changeEvery: seasons between two changes of the tithe (4 = once a year; the top bar says when it may change again; gameplay review #3: it was a free slider, 0 to 40% in two calls). marketGold: gold the crown gets each season per Marketplace in its towns on top of Freeciv's own tax (0: none; it was 40, gold from nothing; a house's gold comes from what its land yields, gold seams most of all: data/mines.json).",
  "start": {
   "poor": 150,
   "comfortable": 500,
   "rich": 1500
  },
  "tithe": {
-  "perSize": 30,
-  "housePays": 0.25,
   "start": 0.1,
   "step": 0.05,
   "max": 0.4,
@@ -20,7 +18,6 @@
   "step": 0.25,
   "seasons": 4
  },
- "upkeepShare": 0.02,
  "thin": 250,
  "marketGold": 0
 }

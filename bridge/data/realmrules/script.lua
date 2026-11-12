@@ -438,6 +438,7 @@ function ev_turn(turn, year)
   realm_decrees_lapse()
   realm_raids_turn()
   realm_risings_turn()
+  realm_purse()
 end
 
 -- Any conquest, by any house's AI or the rebels, takes the town, never razes it (realm_spare_hamlet): Freeciv
@@ -901,6 +902,50 @@ function realm_risings_phase(rebel)
       end
     end
   end
+end
+
+-- The crown's purse each season (READY.md line 12: the tithe and the Royal Court's upkeep in Freeciv): every great
+-- house pays its tithe, the rate of what its towns yield (their size), handing over what it can spare from its
+-- purse (purse.house_pays) while the rest is taken at its town gates; the crown receives it all, less the Royal
+-- Court's upkeep (purse.court_base, purse.court_per_town for each crown town, purse.court_share of the purse).
+-- The rate is the King's tithe as the bridge last set it (realm_tithe_rate: his rate, thinned by the realm's wars),
+-- kept with the save. Reports "purse" (what came in, what the court cost, each house's take).
+GOC_TITHE_RATE = GOC_TITHE_RATE or 0
+function realm_tithe_rate(rate) GOC_TITHE_RATE = tonumber(rate) or 0 end
+
+local function purse_num(key, default) return tonumber(luadata.get_str("purse." .. key)) or default end
+
+local function tithed(p)
+  local n = p.nation and p.nation:rule_name() or ""
+  return p.is_alive and n ~= "Norman" and n ~= "Barbarian" and n ~= "Pirate" and n ~= "Animal Kingdom" and p.name ~= "The Dead"
+end
+
+function realm_purse()
+  local crown = nil
+  for p in players_iterate() do if p.nation and p.nation:rule_name() == "Norman" then crown = p end end
+  if not crown then return end
+  local per, pays, total, takes = purse_num("per_size", 7.5), purse_num("house_pays", 0.25), 0, {}
+  if GOC_TITHE_RATE > 0 then
+    for p in players_iterate() do
+      if tithed(p) then
+        local size = 0
+        for c in p:cities_iterate() do size = size + c.size end
+        local take = math.floor(size * per * GOC_TITHE_RATE)
+        if take > 0 then
+          local paid = math.min(take, math.floor(math.max(0, p:gold()) * pays))
+          if paid > 0 then edit.change_gold(p, -paid) end
+          total = total + take
+          takes[#takes + 1] = string.format("%d:%d", p.id, take)
+        end
+      end
+    end
+  end
+  local towns = 0
+  for c in crown:cities_iterate() do towns = towns + 1 end
+  local court = purse_num("court_base", 2) + purse_num("court_per_town", 2) * towns + math.floor(math.max(0, crown:gold()) * purse_num("court_share", 0.02))
+  local upkeep = math.min(court, math.max(0, crown:gold() + total))
+  if total - upkeep ~= 0 then edit.change_gold(crown, total - upkeep) end
+  emit("purse", {total = total, upkeep = upkeep, takes = table.concat(takes, ";")})
 end
 
 -- Men raised in a town for its house, homed there so Freeciv charges their upkeep (a levy, sellswords, a garrison,

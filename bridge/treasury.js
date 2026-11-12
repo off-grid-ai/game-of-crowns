@@ -9,7 +9,7 @@
 import { crownOf } from "./realm.js";
 import { SEASONS_PER_YEAR, isYearEnd } from "./calendar.js";
 import { houseFor, cityName } from "./narrator.js";
-import { DECREES, titheLua, TITHE_HIGH, ECONOMY } from "./crown.js";
+import { DECREES, TITHE_HIGH, ECONOMY } from "./crown.js";
 import * as Lua from "./lua.js";
 import * as chron from "./chronicles.js";
 import * as kingDeeds from "./ledger.js";
@@ -128,19 +128,25 @@ export function tithe(ctx, turn) {
   // A heavy tithe is felt in Freeciv: every great house bears a Heavy Tithe (one townsman fewer content in each of its towns).
   const bearing = meta.tithe >= TITHE_HIGH ? world.players.filter((p) => !houseFor(p).crown && !houseFor(p).wild).map((p) => p.id) : [];
   send(`lua cmd ${Lua.heavyTithe(bearing)}`);
-  const t = titheLua(world, meta.tithe * (0.4 + 0.6 * peaceNow));
-  tally.total += t.total;
-  tally.upkeep += t.upkeep;
-  // The season's true income, as the top bar shows it: what came in besides the
-  // tithe (the crown's own towns, its markets) is the purse's rise since last
-  // season plus what the King spent, and the tithe less the upkeep on top.
+  // The rate Freeciv takes next season (realmrules/script.lua realm_purse): the King's, thinned by the realm's wars.
+  send(`lua cmd ${Lua.titheRate(meta.tithe * (0.4 + 0.6 * peaceNow))}`);
+}
+
+// What the season's purse brought (Freeciv's "purse": the tithe taken, the Royal Court's upkeep paid): the
+// reckoning's tally, and the season's true income as the top bar shows it: what came in besides the tithe (the
+// crown's own towns, its markets) is the purse's rise since last season plus what the King spent, and the
+// tithe less the upkeep on top.
+export function purse(ctx, ev) {
+  const { world, meta, tally, lastSeason } = ctx;
+  const total = Number(ev.total) || 0, upkeep = Number(ev.upkeep) || 0;
+  tally.total += total;
+  tally.upkeep += upkeep;
   const gold = crownOf(world)?.gold ?? 0;
   const econ = (meta.econ ??= {});
   const besides = econ.base == null ? 0 : gold - econ.base + (econ.spentSince ?? 0);
-  lastSeason.net = besides + t.total - t.upkeep;
-  econ.base = gold + t.total - t.upkeep;
+  lastSeason.net = besides + total - upkeep;
+  econ.base = gold + total - upkeep;
   econ.spentSince = 0;
-  t.lua.forEach((l) => send(`lua cmd ${l}`));
 }
 
 // Every ten seasons the chronicle tells what the tithe brought and cost.

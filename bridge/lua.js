@@ -35,6 +35,9 @@ export const walk = (id, tiles) => `local u = find.unit(nil, ${n(id)}); if u the
 // tiles short of it (1 before another's walls).
 export const step = (id, x, y, steps, stop = 0) => `local u = find.unit(nil, ${n(id)}); if u then for i = 1, ${n(steps)} do local c = u.tile; local t, bd = nil, math.max(math.abs(c.x - ${n(x)}), math.abs(c.y - ${n(y)})); if bd <= ${n(stop)} then break end; for a in c:square_iterate(1) do local nm = a.terrain:rule_name(); local d = math.max(math.abs(a.x - ${n(x)}), math.abs(a.y - ${n(y)})); if d < bd and not nm:find("Ocean") and nm ~= "Lake" then t, bd = a, d end end; if not t then break end; pcall(${MOVE}); if u.tile ~= t then break end end end`;
 
+// The tithe's rate for the crown's purse each season (realmrules/script.lua realm_purse, which reports "purse").
+export const titheRate = (rate) => `realm_tithe_rate(${n(rate)})`;
+
 // Run a Lua body with c bound to the town, if it still stands.
 export const inCity = (cityId, body) => `local c = find.city(nil, ${n(cityId)}); if c then ${body} end`;
 

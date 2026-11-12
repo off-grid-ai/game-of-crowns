@@ -2,7 +2,6 @@
 // the great houses, each house's favour toward the crown, and royal decrees
 // that cost gold and move favour. Each decree becomes Freeciv Lua.
 
-import { SEASONS_PER_YEAR } from "./calendar.js";
 import { cityName, houseFor } from "./narrator.js";
 import { greatHouses, crownOf } from "./realm.js";
 import { BANDS } from "./favour.js";
@@ -50,40 +49,8 @@ const within = (at, r) => (u) => Math.hypot(u.x - at.x, u.y - at.y) <= r;
 // Beside another house's towns (three tiles), as the old kill path counted them.
 const byTownsOf = (world, pid) => (u) => world.cities.some((c) => c.owner === pid && (u.x - c.x) ** 2 + (u.y - c.y) ** 2 <= 9);
 
-export function crownUpkeep(crown) {
-  return 2 + (crown.cities ?? 0) * 2 + Math.floor(Math.max(0, crown.gold) * ECONOMY.upkeepShare);
-}
-
 // A tithe this heavy grasps: the ledger's tithe_high, and the towns mutter (view.js townStates).
 export const TITHE_HIGH = ECONOMY.tithe.high;  // data/economy.json
-
-export function titheLua(world, rate) {
-  const crown = crownOf(world);
-  if (!crown) return { lua: [], total: 0, takes: {}, upkeep: 0 };
-  const takes = {};
-  let total = 0;
-  const lua = [];
-  const { perSize, housePays } = ECONOMY.tithe;
-  for (const p of world.players) {
-    const h = houseFor(p);
-    if (h.wild || h.crown) continue;
-    // The tithe is the rate of what a house's towns yield (their size), a quarter
-    // each season: a share of the houses' own small purses brought the crown next
-    // to nothing. A house hands over what it can spare from its purse; the rest is
-    // taken at its town gates.
-    const size = (world.cities ?? []).filter((c) => c.owner === p.id).reduce((n, c) => n + (c.size ?? 0), 0);
-    const take = rate > 0 ? Math.floor((size * perSize * rate) / SEASONS_PER_YEAR) : 0;
-    if (take <= 0) continue;
-    takes[p.id] = take;
-    total += take;
-    const paid = Math.min(take, Math.floor(Math.max(0, p.gold ?? 0) * housePays));
-    if (paid > 0) lua.push(Lua.gold(p.id, -paid));
-  }
-  const upkeep = Math.min(crownUpkeep(crown), Math.max(0, crown.gold + total));
-  const net = total - upkeep;
-  if (net !== 0) lua.push(Lua.gold(crown.id, net));
-  return { lua, total, takes, upkeep };
-}
 
 // The decrees, one handler each. A new decree is a row in data/decrees.json plus
 // a handler here; x is what decree() reckoned for it (the crown, the price, the

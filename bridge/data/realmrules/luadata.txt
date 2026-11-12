@@ -19,6 +19,17 @@ feast = "4"
 relief = "2"
 blight = "12"
 
+[purse]
+; The crown's purse each season (script.lua realm_purse). per_size: what a great house's towns yield the crown a
+; season per size point at a tithe of 1 (at the usual 0.1, the realm's ~125 sizes bring ~95 gold a season).
+; house_pays: the share of its own purse a house hands over (the rest is taken at its town gates). The Royal
+; Court's upkeep each season: court_base, court_per_town for each crown town, court_share of the crown's purse.
+per_size = "7.5"
+house_pays = "0.25"
+court_base = "2"
+court_per_town = "2"
+court_share = "0.02"
+
 [raids]
 ; A raid's life (script.lua realm_raid): Freeciv's barbarians raised beside a town pillage the land around it each
 ; season, then leave after this many seasons.
