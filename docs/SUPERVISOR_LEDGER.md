@@ -121,6 +121,12 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 15:20 (11-12) Mac: "Yes, square first": Kingsmere's square is the one gate; next render judged on it alone.
+  fire-siege pushed 98b8e119 (Meshy square set, probe 0->17), 43283b40 (no trees on paving, 421->0), dc39742c (seats
+  get the Meshy well, kit fountain deleted; Mac's "grey fountain" was the kit fountain). Next: roof-mask smears, 5-7
+  varied stalls round the edges, bake-off standing; bridges later through roadside.gd (one system, roads.gd code goes).
+  army-ui: square dressing (planks, crates). works-life: square people's looks + animals. Light: supervisor's agent
+  tunes look data from round 11's numbers (luma 0.50/7% clipped/sat 0.38 vs 01-town 0.43/0.5%/0.47), no own renders.
 - 14:50 (11-12) Mac: "Yes, square first". The Kingsmere square is the one gate until it's really right; every thread
   serves it, the next render is judged only on it. Mac on a square still: "its SUPER weird" (crowd knot, horse/cart in
   props, planks and tipped tables, strewn crates, grey fountain-well, trees in paving, washed-out light); on the Meshy
