@@ -451,7 +451,8 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 	# The castle across the square from its stalls (towns.json castle.gate_clear; round 3, 01-town: a clear cobbled
 	# way from the square to the gate, the stalls ringing the well, not pressed against the gate): its heading search
 	# starts opposite the market's side. Off: a random start, as before.
-	if seat and bool(_castle_knobs().get("gate_clear", false)) and root.has_meta("market_ang"):
+	var gate_clear := seat and bool(_castle_knobs().get("gate_clear", false)) and root.has_meta("market_ang")
+	if gate_clear:
 		gap_ang = float(root.get_meta("market_ang")) + PI
 	if seat:
 		# The castle to the seat's rank (data/assets.json castle: the crown's first, a great house's after it).
@@ -480,7 +481,10 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 				if cd - f.y * 0.5 < square_r + 0.2:
 					continue  # hugging the square so close its walls would stand on it: the square stays the town's
 				for tries in int(pass_[2]):
-					var cp := Vector3(cos(gap_ang + tries * TAU / float(pass_[2])), 0, sin(gap_ang + tries * TAU / float(pass_[2]))) * cd
+					# gate_clear: the headings nearest the one opposite the market first, either side in turn (0, +1, -1,
+					# +2, ...), so a wet or steep heading there falls to its neighbour, not round to the stalls' side.
+					var step := float(tries) if not gate_clear else float((tries + 1) / 2) * (1.0 if tries % 2 == 1 else -1.0)
+					var cp := Vector3(cos(gap_ang + step * TAU / float(pass_[2])), 0, sin(gap_ang + step * TAU / float(pass_[2]))) * cd
 					# Its wide plot eases back into the land over more ground, so
 					# no raw bank shows below the walls.
 					if not ways.is_empty() and TownPlots.near_ways(Vector2(cp.x, cp.z), ways, maxf(f.x, f.y) * 0.5):
@@ -517,7 +521,7 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 					_bailey(root, cp, cy, castle.rotation.y, rng)
 					held = true
 					if float(pass_[3]) == 0.0:
-						gap_ang += tries * TAU / 8.0  # as the old search left it, for what's laid out after
+						gap_ang += step * TAU / 8.0  # as the old search left it, for what's laid out after
 					break
 			if not held:
 				print("CHECK no castle fits at the seat by %s: every plot on four rings, at full, 0.8 and 0.65 size, is in water or on a cliff" % str(center))
@@ -949,7 +953,8 @@ func _paint_way(root: Node3D, center: Vector3, a: Vector2, b: Vector2, width: fl
 	var hi := maxf(_ground_y(center, Vector3(a.x, 0, a.y)), _ground_y(center, Vector3(b.x, 0, b.y)))
 	if paved != "":
 		var pave: Dictionary = _paving()
-		var setts: Decal = terrain.paint(root, terrain.tiled(String(pave.get("texture", SQUARE_TEX)), 1, maxi(1, roundi((length + width) / width)), "paved"), Vector3(mid.x, (lo + hi) / 2.0, mid.y), Vector2(width, length + width), atan2(b.x - a.x, b.y - a.y), _rgb(pave.get("tint"), Color.WHITE), hi - lo + 1.0)
+		var tile := float(pave.get("tile", 0.3))  # the square's setts' size, so a wide street's stones match them
+		var setts: Decal = terrain.paint(root, terrain.tiled(String(pave.get("texture", SQUARE_TEX)), maxi(1, roundi(width / tile)), maxi(1, roundi((length + width) / tile)), "paved"), Vector3(mid.x, (lo + hi) / 2.0, mid.y), Vector2(width, length + width), atan2(b.x - a.x, b.y - a.y), _rgb(pave.get("tint"), Color.WHITE), hi - lo + 1.0)
 		setts.sorting_offset = 0.5  # over the street's earth, under the square's setts
 		return
 	terrain.paint(root, terrain.tiled(ROAD_TEX, 1, maxi(1, roundi((length + width) / 0.34)), "track"), Vector3(mid.x, (lo + hi) / 2.0, mid.y), Vector2(width, length + width), atan2(b.x - a.x, b.y - a.y), ROAD_TINT, hi - lo + 1.0)  # half a width past each end, where the next stretch's frayed end meets it

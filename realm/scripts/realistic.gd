@@ -337,6 +337,7 @@ static func dyed(src: Material, rgb) -> Material:
 			var s: BaseMaterial3D = src.duplicate()
 			s.albedo_texture = ImageTexture.create_from_image(img)
 			s.albedo_color = Color(1, 1, 1, s.albedo_color.a)
+			s.vertex_color_use_as_albedo = false  # the kit cloth's vertex colours (dark orange and red) dulled the stripes to maroon and the white to orange (round 4)
 			s.roughness = maxf(s.roughness, 0.85)
 			s.resource_name = "Striped_%s_%d" % [src.resource_name, hash(key)]
 			_cache[key] = s
