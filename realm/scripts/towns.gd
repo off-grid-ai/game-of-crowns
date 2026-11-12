@@ -772,14 +772,27 @@ func _palisade_on(root: Node3D, center: Vector3, edge: PackedVector2Array, ways:
 			_place(root, "wooden_fence_game_ready_asset", p + Vector3(0, _ground_y(center, p) - 0.01, 0), yaw, Vector3(1, 1.6, 1) if seat else Vector3.ONE, Vector2(panel * 1.05, 0.08))
 
 
+## Whether a town has a stone wall: Freeciv's City Walls stand in it, or any section of its wall is worn in the
+## store's damage fact (damage.js, /world cities[].damage).
+func _holds_wall(root: Node3D) -> bool:
+	if "City Walls" in (root.get_meta("buildings", []) as Array):
+		return true
+	var st: Node = Awareness.store()
+	if st == null or not root.has_meta("city"):
+		return false
+	var dmg: Dictionary = st.town(int(root.get_meta("city"))).get_var(&"damage", {}, false)
+	return (dmg.get("walls", []) as Array).any(func(w: Variant) -> bool: return w is Dictionary and float((w as Dictionary).get("wear", 0.0)) > 0.0)
+
+
 ## The town's stone wall round its edge, in place of the palisade: planned here (meta town_wall), built by walls.gd (towns.json town_wall; 01-town: the town wall in
 ## the distance, its towers with red cones and its arched gate): the castle's curtain in 2 m bays along the edge's
 ## outline, a round tower at each turn of it (round 9: towers every 36 m crowded it), a gatehouse (castle_builder.gd
 ## town_gate) where each main road runs out, and a gap where a lane does; never over water or into the castle.
-## For the ranks in town_wall.ranks (the others keep the palisade). Returns whether it stood.
+## For a town that holds Freeciv's City Walls, or whose wall the bridge's damage fact still shows worn (a breach that
+## cost it City Walls stands breached, not gone); the others keep the palisade. Returns whether it stood.
 func _town_wall(root: Node3D, center: Vector3, edge: PackedVector2Array, ways: Array) -> bool:
 	var k: Dictionary = preload("res://scripts/data.gd").value("towns", "town_wall", {})
-	if edge.size() < 3 or not _rank in (k.get("ranks", []) as Array):
+	if edge.size() < 3 or not _holds_wall(root):
 		return false
 	var grown := Geometry2D.offset_polygon(edge, float(k.get("out", 0.25)))
 	var line: PackedVector2Array = grown[0] if not grown.is_empty() else edge
@@ -1878,6 +1891,7 @@ func _pace() -> void:
 func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	var root := Node3D.new()
 	root.set_meta("owner", int(c["owner"]))  # whose favour its banners show
+	root.set_meta("city", int(c["id"]))  # its Freeciv city: the store's town scope (damage) is read by it
 	var center: Vector3 = terrain.world_pos(float(c["x"]), float(c["y"]))
 	_center = center
 	root.position = center

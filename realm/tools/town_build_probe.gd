@@ -12,7 +12,8 @@ extends SceneTree
 ## stands as the kit curtain, one piece a damage section, every bay towns.gd planned; with one section's wear staged
 ## cracked and another's breached (the store's world, as damage.js sends it), exactly those two show the stacked stones
 ## (stone_wall.gd) and their kit faces hide, the rest stay kit, and the breach's open foot reaches the town's walk map
-## (root meta stone_walls). Prints CHECK lines; exits 1 on a fail.
+## (root meta stone_walls). And the wall follows Freeciv's City Walls, in every town that stood: one holding them walls,
+## the smallest town (without) walls only because a breach is staged on it before the build, the rest keep the palisade. Prints CHECK lines; exits 1 on a fail.
 ##   arch -arm64 godot --headless --path realm -s res://tools/town_build_probe.gd
 
 const FIX := "res://tools/fixtures/town_build_%s.json"
@@ -78,6 +79,14 @@ func _run() -> void:
 		if small.is_empty() or int(c.get("size", 1)) < int(small.get("size", 99)):
 			small = c
 	var want := [crown, small]
+	# The smallest town holds no City Walls; a breach the bridge reports there still raises its wall (breached).
+	var worn := []
+	for s in 8:
+		worn.append({"stage": "breached" if s == 2 else "whole", "wear": 1.0 if s == 2 else 0.0})
+	for c: Dictionary in cities:
+		if int(c["id"]) == int(small["id"]):
+			c["damage"] = {"walls": worn, "burnt": 0.0, "kindled": []}
+	store.dispatch(store.SYNC, {"world": world})
 	towns.sync(store.houses_by_id())
 	for c: Dictionary in want:
 		towns.ensure(int(c["id"]))
@@ -107,6 +116,7 @@ func _run() -> void:
 			name, int(c.get("size", 1)), ways, homes, ring, stalls, square_r, "PASS" if ok else "FAIL"])
 		if not ok:
 			fail += 1
+	fail += _walled(towns, cities)
 	fail += await _wall(store, towns, terrain, world, crown)
 	print("CHECK town build, script errors in the build %d%s (elsewhere, not judged: %d): %s" % [errors.build.size(), (": " + str(errors.build.slice(0, 3))) if not errors.build.is_empty() else "", errors.other, "PASS" if errors.build.is_empty() else "FAIL"])
 	if not errors.build.is_empty():
@@ -170,3 +180,22 @@ func _wall(store: Node, towns: Node, terrain: Node, world: Dictionary, crown: Di
 	print("CHECK town wall worn: sections %d cracked and %d breached; kit hidden at %s (want %s), stone runs at %s, open feet on the walk map %d: %s" % [
 		cracked, breached, hidden, want, stones.keys(), feet, "PASS" if ok else "FAIL"])
 	return (0 if whole else 1) + (0 if ok else 1)
+
+
+## A town's stone wall follows Freeciv's City Walls (or a wall the damage fact shows worn); the rest keep the palisade.
+func _walled(towns: Node, cities: Array) -> int:
+	var fail := 0
+	for c: Dictionary in cities:
+		var t: Dictionary = towns.towns.get(int(c["id"]), {})
+		var town: Node3D = t.get("node") if not t.is_empty() else null
+		if town == null or not is_instance_valid(town):
+			continue
+		var holds := "City Walls" in (c.get("buildings", []) as Array)
+		var walls: Array = (c["damage"] as Dictionary).get("walls", []) if c.get("damage") is Dictionary else []  # null on an unharmed town
+		var worn := walls.any(func(w: Dictionary) -> bool: return float(w.get("wear", 0.0)) > 0.0)
+		var stands := town.has_meta("town_wall")
+		var ok := stands == (holds or worn)
+		print("CHECK town wall follows City Walls, %s: City Walls %s, worn %s, stone wall %s: %s" % [String(c.get("title", c.get("name", ""))), holds, worn, stands, "PASS" if ok else "FAIL"])
+		if not ok:
+			fail += 1
+	return fail
