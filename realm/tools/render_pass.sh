@@ -14,10 +14,10 @@
 # Risk, untested on this Mac: macOS may stop drawing a window it thinks is off the desktop (render.sh retries a take that
 # stalls on 'timeout waiting for fence'), or pull it back on screen. If the first frames stall, run with another OFF
 # (engine flags, e.g. OFF="--audio-driver Dummy --position 0,2000" for a second display) and say so to the supervisor.
-# Its own copy of the game: HEAD's code (git archive) in $OUT/tree, realm/assets a symlink to the shared tree's (the one
-# source of art, gitignored local files included; tools/link_assets.sh when it lands), the shared import cache cloned
-# (APFS, no copy), then a headless import. The shared checkout is never touched. ASSETS.txt records the code commit and
-# the art's state (a hash of realm/assets/armies, the art's newest file).
+# Its own copy of the game: HEAD's code (git archive) in $OUT/tree, its realm/assets and realm/.godot linked to the
+# shared tree's by tools/link_assets.sh (the one source of art, gitignored local files included, and its import cache),
+# then a check-only of main.gd (it stops if HEAD doesn't compile). ASSETS.txt records the code commit and the art's
+# state (a hash of realm/assets/armies, the art's newest file).
 # One private bridge (8789, Freeciv 5558; PORT and FC to change) started fresh from that copy, so /world carries what
 # HEAD's bridge sends (units' men: a1e42ae0); the pass checks it before the first frame and stops the bridge at the end.
 #
@@ -54,12 +54,11 @@ say "render pass into $OUT at $(git -C $R log --oneline -1 | cut -c1-90)"
 F=$OUT/tree
 rm -rf $F; mkdir -p $F
 git -C $R archive HEAD realm bridge docs/art | tar -x -C $F
-if [ -f $R/realm/tools/link_assets.sh ]; then
-  zsh $R/realm/tools/link_assets.sh $F || { say "link_assets.sh failed"; exit 3; }
-else
-  rm -rf $F/realm/assets && ln -s $R/realm/assets $F/realm/assets
-fi
-cp -cR $R/realm/.godot $F/realm/.godot 2>/dev/null || cp -R $R/realm/.godot $F/realm/.godot
+# The shared tree's art and its import cache, linked (One store's link_assets.sh, 67077a0f): the copy draws exactly what
+# the shared tree draws and imports nothing of its own. (No copy of .godot after it: the link is the shared cache, and a
+# copy onto it would nest 7 GB inside the shared tree.)
+zsh $R/realm/tools/link_assets.sh $F >> $OUT/pass.log || { say "link_assets.sh failed"; exit 3; }
+[ -L $F/realm/assets ] && [ -L $F/realm/.godot ] || { say "link_assets.sh left no links"; exit 3; }
 # Off-screen and never focused: the copy's project only.
 python3 -I - "$F/realm/project.godot" <<'EOF'
 import sys, re
@@ -71,11 +70,11 @@ else:
     s += "\n[display]\n\n" + line + "\n"
 open(p, "w").write(s)
 EOF
-( cd $F/realm && perl -e 'alarm shift; exec @ARGV' 900 arch -arm64 godot --headless --import > $OUT/import.log 2>&1 )
-grep -q "SCRIPT ERROR\|Parse Error" $OUT/import.log && say "import: $(grep -c 'SCRIPT ERROR\|Parse Error' $OUT/import.log) script errors (see import.log)"
+( cd $F/realm && perl -e 'alarm shift; exec @ARGV' 300 arch -arm64 godot --headless --check-only --path . -s scripts/main.gd > $OUT/check.log 2>&1 )
+grep -q "SCRIPT ERROR\|Parse Error" $OUT/check.log && { say "check-only: HEAD's main.gd does not compile (see check.log); nothing rendered"; exit 3; }
 {
   echo "code: $(git -C $R rev-parse --short HEAD) (git archive)"
-  echo "art: realm/assets -> $(readlink $F/realm/assets || echo 'linked by link_assets.sh') at $(date '+%F %T')"
+  echo "art: realm/assets -> $(readlink $F/realm/assets), import cache -> $(readlink $F/realm/.godot), at $(date '+%F %T')"
   echo "armies hash: $(cd $R/realm/assets/armies && find . -type f -not -name '*.blend*' | sort | xargs md5 -q | md5 -q)"
   echo "newest art file: $(cd $R/realm/assets && find . -type f -not -name '*.import' -print0 | xargs -0 stat -f '%m %N' | sort -n | tail -1 | cut -d' ' -f2-)"
 } > $OUT/ASSETS.txt
