@@ -1920,9 +1920,13 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	var family: Dictionary = {}
 	if c.get("family") is String and not c["capital"] and not house.get("crown", false):
 		family = preload("res://scripts/heraldry.gd").family(String(c["family"]))
+	# The house that holds the town flies its banner at the square (a town taken changes it: it is built anew for its
+	# new house); a bannerman's family arms stand beside it.
+	var sq := -keep_off.normalized() * (square_r + 0.15)
+	banners.stand(root, sq + Vector3(0, _ground_y(center, sq), 0), color, house, 0.85)
 	if not family.is_empty():
-		var sq := -keep_off.normalized() * (square_r + 0.15)
-		banners.stand(root, sq + Vector3(0, _ground_y(center, sq), 0), color, family, 0.85)
+		var side := Vector3(-sq.z, 0, sq.x).normalized() * 0.18
+		banners.stand(root, sq + side + Vector3(0, _ground_y(center, sq + side), 0), color, family, 0.85)
 
 	# The church, hall and tavern stand on the square from the kit (town_layout.real_lots).
 	if "Granary" in buildings and not _trade_of("granary").has("stood"):  # a granary trade stood: it is the store

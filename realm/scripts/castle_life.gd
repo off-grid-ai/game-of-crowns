@@ -106,7 +106,7 @@ func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 	var bk: Dictionary = Data.value("castle", "banners", {})
 	for t in Builder.towers(sp):
 		var top: Vector3 = xf * (t["at"] + Vector3(0, float(t["top"]) + float(bk.get("lift", 2.6)), 0))
-		if main.towns.has_method("_banner"):
+		if main.towns.get("banners") != null:  # town_banners.gd, the towns' banners (towns.gd banners)
 			main.towns.banners.stand(root, root.to_local(top), colour, house, float(bk.get("size", 0.32)) * scale)
 	# The house's painted arms where the kit hung plain cloth: down the keep's face, either side of the gate.
 	_arms(xf, sp, house, colour, d)
