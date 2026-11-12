@@ -5,6 +5,17 @@ description: How code is changed, checked and committed in Game of Crowns (realm
 
 # Engineering
 
+## No hack-fixes: reproduce it, then fix the system (Mac, 2026-11-12)
+
+Mac: "that's where we've been struggling, cause you keep making hackfixes." A bug seen on screen (a cart through a
+well, a horse spinning) is a symptom. Before any code:
+1. **Reproduce it with a headless probe first** (no GPU: a script under `realm/tools/` that sets the scene up and
+   asserts the rule: nobody spins on the spot, no path crosses a footprint, everyone arrives). It must fail now.
+2. **Name the general problem and the block that solves it** (the gate below). Write 3-5 lines of design in the
+   commit or `docs/` before code when a shared system changes: which block, what hand-written code it replaces.
+3. **Fix the system, not the instance.** The probe passes; it stays as a guard and runs on every later change.
+No fix lands without its probe. Patching the same area twice means the first fix was a hack: stop and redesign.
+
 ## Before any change: who already solved this? (Mac, 2026-11-10)
 
 Every change, even a one-line fix, passes this gate first. A fix that places, times or decides something by
