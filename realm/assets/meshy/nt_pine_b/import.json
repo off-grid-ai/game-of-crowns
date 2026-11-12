@@ -1,0 +1,23 @@
+{
+ "name": "nt_pine_b",
+ "source": "/Users/user/code/goc-kits/meshy/nature/pine_b/pine_b.glb",
+ "tris_before": 4184,
+ "tris_after": 3000,
+ "scale": 6.311533975754057,
+ "size_m": [
+  10.49,
+  9.71,
+  12.0
+ ],
+ "house_share": 0.0,
+ "leaves_share": 0.809,
+ "mask_png": true,
+ "materials": [
+  "Material_0",
+  "MI_Leaves"
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
+}

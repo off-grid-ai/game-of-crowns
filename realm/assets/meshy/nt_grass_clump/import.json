@@ -1,0 +1,23 @@
+{
+ "name": "nt_grass_clump",
+ "source": "/Users/user/code/goc-kits/meshy/nature/grass_clump/grass_clump.glb",
+ "tris_before": 1525,
+ "tris_after": 500,
+ "scale": 0.36226055796606044,
+ "size_m": [
+  0.69,
+  0.61,
+  0.5
+ ],
+ "house_share": 0.0,
+ "leaves_share": 0.95,
+ "mask_png": true,
+ "materials": [
+  "Material_0",
+  "MI_Leaves"
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
+}

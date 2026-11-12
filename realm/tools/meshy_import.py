@@ -205,9 +205,11 @@ class Pixels:
         return (self.px[i], self.px[i + 1], self.px[i + 2])
 
 
-def split_house(obj, mask):
-    """The house-colour faces into their own material (a copy of theirs, renamed), by their texture's colour at
+def split_house(obj, mask, into=None):
+    """`into` (default the house colour, MI_RoundTiles_house): a second split, say a tree's leaves into MI_Leaves (meshy.json
+    leaves: a mask, tinted by the season at run time). The house-colour faces into their own material (a copy of theirs, renamed), by their texture's colour at
     the face's middle (or their material's colour when untextured). Returns the share of faces moved."""
+    name = into or HOUSE
     if not any(r.get("hues") for r in _rules(mask)):
         return 0.0
     bm = bmesh.new()
@@ -236,8 +238,10 @@ def split_house(obj, mask):
         if not any(_rule_house(rgb, r) for r in rules):
             continue
         if f.material_index not in house_of:
-            m = src.copy() if src else bpy.data.materials.new(HOUSE)
-            m.name = HOUSE if not house_of else "%s.%d" % (HOUSE, len(house_of))
+            if src is not None and src.name.startswith((HOUSE, "MI_Leaves")):
+                continue  # already split by an earlier mask
+            m = src.copy() if src else bpy.data.materials.new(name)
+            m.name = name if not house_of else "%s.%d" % (name, len(house_of))
             mats.append(m)
             house_of[f.material_index] = len(mats) - 1
         f.material_index = house_of[f.material_index]
@@ -246,8 +250,8 @@ def split_house(obj, mask):
     bm.free()
     # Godot keys the team shader by the name's start: each copy must start with MI_RoundTiles_house.
     for m in obj.data.materials:
-        if m and m.name.startswith(HOUSE + "."):
-            m.name = HOUSE + "_" + m.name.split(".")[-1]
+        if m and m.name.startswith(name + "."):
+            m.name = name + "_" + m.name.split(".")[-1]
     return moved / float(max(len(obj.data.polygons), 1))
 
 
@@ -516,12 +520,13 @@ def main():
         for n, lo, hi, col in islands(obj)[:40]:
             print("ISLAND faces=%d min=%s max=%s colour=%s" % (n, [round(x, 2) for x in lo], [round(x, 2) for x in hi], col))
     share = split_house(obj, spec["mask"])
+    leaves = split_house(obj, spec["leaves"], "MI_Leaves") if spec.get("leaves") else 0.0
     arm = split_arm(obj, spec["arm"]) if spec.get("arm") else None
     has_mask = mask_png(obj, spec["mask"], out)
     glb = os.path.join(out, name + ".glb")
     bpy.ops.export_scene.gltf(filepath=glb, export_format="GLB", use_selection=False, export_yup=True, export_apply=True)
     report = {"name": name, "source": src, "tris_before": before, "tris_after": after, "scale": k,
-              "size_m": [round(x, 2) for x in size], "house_share": round(share, 3), "mask_png": has_mask,
+              "size_m": [round(x, 2) for x in size], "house_share": round(share, 3), "leaves_share": round(leaves, 3), "mask_png": has_mask,
               "materials": [m.name for m in obj.data.materials if m], "cut_faces": removed, "arm": arm is not None, "repainted": repainted, "flattened": pressed}
     json.dump(report, open(os.path.join(out, "import.json"), "w"), indent=1)
     print("MESHY " + json.dumps(report))

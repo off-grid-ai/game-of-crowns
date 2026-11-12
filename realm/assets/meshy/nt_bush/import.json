@@ -1,0 +1,23 @@
+{
+ "name": "nt_bush",
+ "source": "/Users/user/code/goc-kits/meshy/nature/bush/bush.glb",
+ "tris_before": 2598,
+ "tris_after": 1200,
+ "scale": 1.2014212314382224,
+ "size_m": [
+  2.28,
+  2.26,
+  1.6
+ ],
+ "house_share": 0.0,
+ "leaves_share": 0.89,
+ "mask_png": true,
+ "materials": [
+  "Material_0",
+  "MI_Leaves"
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
+}
