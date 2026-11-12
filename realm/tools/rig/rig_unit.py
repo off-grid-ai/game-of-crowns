@@ -215,45 +215,6 @@ def _seg(p, a, b):
     return (a + ab * t - p).length
 
 
-CAPE = UNIT.get("cape")
-if CAPE and KIND == "man":
-    c_lo, c_hi = bounds([unit])
-    c_size = c_hi - c_lo
-    box0, box1 = CAPE["box"]
-    legs = []
-    for side in ("Left", "Right"):
-        bs = [arm.pose.bones.get("mixamorig:%s%s" % (side, n)) for n in ("UpLeg", "Leg", "Foot", "ToeBase")]
-        if all(bs):
-            legs.append([arm.matrix_world @ b.head for b in bs])
-    clear = float(CAPE.get("clear", 0.07)) * float(c_size[2])
-    chain = sorted(CAPE.get("bones", [["mixamorig:Hips", 0.0], ["mixamorig:Spine", 0.4], ["mixamorig:Spine1", 0.62], ["mixamorig:Spine2", 0.82]]), key=lambda c: c[1])
-    groups = {n: (unit.vertex_groups.get(n) or unit.vertex_groups.new(name=n)) for n, _ in chain}
-    caped = 0
-    mw = unit.matrix_world
-    for v in unit.data.vertices:
-        p = mw @ v.co
-        sh = [(p[i] - c_lo[i]) / max(float(c_size[i]), 1e-6) for i in range(3)]
-        if not all(box0[i] <= sh[i] <= box1[i] for i in range(3)):
-            continue
-        if any(_seg(p, l[k], l[k + 1]) < clear for l in legs for k in range(len(l) - 1)):
-            continue
-        for g in list(v.groups):
-            unit.vertex_groups[g.group].remove([v.index])
-        h = sh[2]
-        if h <= chain[0][1]:
-            groups[chain[0][0]].add([v.index], 1.0, "REPLACE")
-        elif h >= chain[-1][1]:
-            groups[chain[-1][0]].add([v.index], 1.0, "REPLACE")
-        else:
-            for k in range(len(chain) - 1):
-                if chain[k][1] <= h <= chain[k + 1][1]:
-                    t = (h - chain[k][1]) / max(chain[k + 1][1] - chain[k][1], 1e-6)
-                    groups[chain[k][0]].add([v.index], 1.0 - t, "REPLACE")
-                    groups[chain[k + 1][0]].add([v.index], t, "ADD")
-                    break
-        caped += 1
-    REPORT["cape"] = {"verts": caped, "of": len(unit.data.vertices)}
-
 def _image_of(o):
     best = None
     for mat in o.data.materials:
@@ -277,6 +238,81 @@ def _hsv(c):
         h = (c[0] - c[1]) / d + 4.0
     return h / 6.0, (d / hi if hi > 1e-6 else 0.0), hi
 
+
+CAPE = UNIT.get("cape")
+if CAPE and KIND == "man":
+    c_lo, c_hi = bounds([unit])
+    c_size = c_hi - c_lo
+    box0, box1 = CAPE["box"]
+    legs = []
+    for side in ("Left", "Right"):
+        bs = [arm.pose.bones.get("mixamorig:%s%s" % (side, n)) for n in ("UpLeg", "Leg", "Foot", "ToeBase")]
+        if all(bs):
+            legs.append([arm.matrix_world @ b.head for b in bs])
+    clear = float(CAPE.get("clear", 0.07)) * float(c_size[2])
+    chain = sorted(CAPE.get("bones", [["mixamorig:Hips", 0.0], ["mixamorig:Spine", 0.4], ["mixamorig:Spine1", 0.62], ["mixamorig:Spine2", 0.82]]), key=lambda c: c[1])
+    groups = {n: (unit.vertex_groups.get(n) or unit.vertex_groups.new(name=n)) for n, _ in chain}
+    caped = 0
+    mw = unit.matrix_world
+    # By colour (cape.byColour): the cape is the unit's cloth (its mask's hue) inside the box, however near a leg
+    # (a stocky man's calves stand as far from the bone as his cape's hem: distance alone left the hem on the leg).
+    blue = None
+    if CAPE.get("byColour") and UNIT.get("mask", {}).get("hue"):
+        img = _image_of(unit)
+        uvl = unit.data.uv_layers.active
+        if img is not None and uvl is not None:
+            iw, ih = img.size
+            PX = np.array(img.pixels[:], dtype=np.float32).reshape(ih, iw, -1)[:, :, :3]
+            sums = np.zeros((len(unit.data.vertices), 2)); cnt = np.zeros(len(unit.data.vertices))
+            for li, lp in enumerate(unit.data.loops):
+                sums[lp.vertex_index] += uvl.data[li].uv
+                cnt[lp.vertex_index] += 1
+            uvs = sums / np.maximum(cnt, 1)[:, None]
+            m = UNIT["mask"]
+            h0, h1 = float(m["hue"][0]), float(m["hue"][1])
+            blue = []
+            for u, v in uvs:
+                c = PX[min(ih - 1, max(0, int(v % 1.0 * ih))), min(iw - 1, max(0, int(u % 1.0 * iw)))]
+                hh, ss, vv = _hsv(c)
+                inh = (h0 <= hh <= h1) if h0 <= h1 else (hh >= h0 or hh <= h1)
+                blue.append(inh and ss >= float(m.get("sat", 0.3)))
+    for v in unit.data.vertices:
+        p = mw @ v.co
+        sh = [(p[i] - c_lo[i]) / max(float(c_size[i]), 1e-6) for i in range(3)]
+        if not all(box0[i] <= sh[i] <= box1[i] for i in range(3)):
+            continue
+        # Blue cloth is cape however near a leg; anything else is cape only when clear of the legs (the union: colour
+        # alone left the cape's shaded texels on the legs, and its hem tore into spikes).
+        legs_ = [] if (blue is not None and blue[v.index]) else legs
+        near_leg = False
+        for l in legs_:
+            for k_ in range(len(l) - 1):
+                if _seg(p, l[k_], l[k_ + 1]) < clear:
+                    # Close to a leg, but behind its line (the cape's hem at the ankles): still cape, or the hem keeps
+                    # the leg's weight and tears into shards in a lunge.
+                    ab = l[k_ + 1] - l[k_]
+                    t_ = max(0.0, min(1.0, (p - l[k_]).dot(ab) / max(ab.length_squared, 1e-9)))
+                    on = l[k_] + ab * t_
+                    if (p[1] - on[1]) < clear * float(CAPE.get("behind", 0.5)):
+                        near_leg = True
+        if near_leg:
+            continue
+        for g in list(v.groups):
+            unit.vertex_groups[g.group].remove([v.index])
+        h = sh[2]
+        if h <= chain[0][1]:
+            groups[chain[0][0]].add([v.index], 1.0, "REPLACE")
+        elif h >= chain[-1][1]:
+            groups[chain[-1][0]].add([v.index], 1.0, "REPLACE")
+        else:
+            for k in range(len(chain) - 1):
+                if chain[k][1] <= h <= chain[k + 1][1]:
+                    t = (h - chain[k][1]) / max(chain[k + 1][1] - chain[k][1], 1e-6)
+                    groups[chain[k][0]].add([v.index], 1.0 - t, "REPLACE")
+                    groups[chain[k + 1][0]].add([v.index], t, "ADD")
+                    break
+        caped += 1
+    REPORT["cape"] = {"verts": caped, "of": len(unit.data.vertices)}
 
 def _repaint(piece):
     """A prop painted from another palette (KayKit's) takes the soldier's own paint, so the army's one-texture
