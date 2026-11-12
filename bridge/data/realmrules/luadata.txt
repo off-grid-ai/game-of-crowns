@@ -25,10 +25,12 @@ blight = "12"
 seasons = "8"
 
 [risings]
-; A great house split by Freeciv's civil war (script.lua realm_rising): the rebels' host (how many companies, of
-; which kinds), how many tiles it marches a season on the lord's nearest town, and the seasons before the rising
-; settles itself (the side with more towns keeps them).
-host = "6"
+; A great house split by Freeciv's civil war (script.lua realm_rising, called by a story beat): the rebels' host
+; (how many companies, of which kinds) and how many tiles it marches a season on the lord's seat. Taking the seat
+; wins the rising (the rebels keep what they hold, a lesser house); else after `seasons` it settles itself (the side
+; with more towns keeps them). Measured on the baseline (host 4, speed 1: three risings, each a split, the lord
+; keeping 3, 4 and 3 towns; host 6, speed 2 marching on every town wiped a house out in 8 seasons).
+host = "4"
 host_kinds = "Pikemen,Archers,Knights"
-speed = "2"
+speed = "1"
 seasons = "8"

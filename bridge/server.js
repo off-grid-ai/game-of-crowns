@@ -167,8 +167,7 @@ function load(id) {
   court.deedsOf = (pid) => (deeds[pid] ??= []);
   arcs = new Arcs(P.base, court, record);
   arcsRunning = false;  // a new realm's stories start free of the last one's
-  court.onArcRuling = (arc, beat, option) => arc === "council" ? councilRuled(beat, option) : arc === "siege" ? siegeRuled(beat, option) : arc === "rising" ? Risings.ruled(risingsCtx(), beat, option) : arcs.rule(arc, beat, option);
-  court.onSuccession = (pid, why, turn) => Risings.claim(risingsCtx(), pid, why, turn);  // a child heir or none: a claimant may rise (risings.js)
+  court.onArcRuling = (arc, beat, option) => arc === "council" ? councilRuled(beat, option) : arc === "siege" ? siegeRuled(beat, option) : arcs.rule(arc, beat, option);
   chatter?.stop();
   chatter = new Chatter(P.state, { world: () => world, turn: () => world?.turn ?? 0, minds: () => minds });
   stakes = new Stakes(P.state, record, endReign);
@@ -534,7 +533,7 @@ function rule(id, option) { return Sittings.rule(sittingCtx(), id, option); }
 // A town besieged, the royal host and its sieges: campaigns.js. Its context,
 // read fresh on every call; scenes is read live, as scene() may replace it.
 // Risings (risings.js): the realm's side of a house split by Freeciv's civil war.
-const risingsCtx = () => ({ world, meta, court, send, record, scene, favourOf, marchOn, diplomacy: diplomacyNow });
+const risingsCtx = () => ({ world, meta, send, record, scene, diplomacy: diplomacyNow });
 const campCtx = () => ({ world, meta, court, get scenes() { return scenes; }, send, record, scene, deed, shiftFavour, greatHouses, crownOf, favourOf, causeOf, SOLDIER, detail, diplomacy: diplomacyNow });
 // The fighting companies of other houses on the tiles around a town (campaigns.js).
 function besiegers(c) { return Camp.besiegers(campCtx(), c); }
@@ -644,7 +643,7 @@ function marksNow() {
 const seasonCtx = () => ({ get world() { return world; }, get meta() { return meta; }, get court() { return court; }, get stakes() { return stakes; }, get minds() { return minds; },
   get P() { return P; }, get favour() { return favour; }, get deeds() { return deeds; },
   favourWhy, favourPast, treasuryCtx, send, record, flushHeld, courtSeason, royalWorks, resolveCampaigns, favourOf, restingFavour, noteFavour, recordDeed,
-  causeOf, saveFavour, goalNow, sworn, shiftFavour, heardCtx, setDiplomacy, diplomacy: diplomacyNow, snapshot, runArcs, addMark, detail, marksNow, besiegers, startCampaign, risingsCtx });
+  causeOf, saveFavour, goalNow, sworn, shiftFavour, heardCtx, setDiplomacy, diplomacy: diplomacyNow, snapshot, runArcs, addMark, detail, marksNow, besiegers, startCampaign });
 function runSeason() { return Season.runSeason(seasonCtx()); }
 function turnHouses(turn) { return Season.turnHouses(seasonCtx(), turn); }
 function storyMarch(pid, size) { return Season.storyMarch(seasonCtx(), pid, size); }
@@ -725,6 +724,9 @@ function arcCtx() {
     // The throne's own war: a story's pretender marches on Kingsmere (stakes.js runs the march).
     // A story's march waits on the house's ultimatum, as any rising does (turnHouses).
     declare: (pid, size) => storyMarch(pid, size),
+    // A story splits a house by Freeciv's civil war, warns of the odds first, and settles it (risings.js).
+    rising: (pid, leader) => Risings.rise(risingsCtx(), pid, leader),
+    risingOdds: (pid) => Risings.odds(risingsCtx(), pid),
     usurperStage: () => stakes?.s.usurper.stage ?? "none",
     // How far through its clock the reign is (0-1): a story's acts land at its quarters.
     reignAt: meta.minutes > 0 ? Math.min(1, meta.elapsedMs / (meta.minutes * 60000)) : null,

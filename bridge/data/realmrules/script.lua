@@ -440,6 +440,13 @@ function ev_turn(turn, year)
   realm_risings_turn()
 end
 
+-- Any conquest, by any house's AI or the rebels, takes the town, never razes it (realm_spare_hamlet): Freeciv
+-- says the action is starting before it runs, so the hamlet gains its townsman first.
+function ev_conquer(action, actor, city)
+  local ok, name = pcall(function() return action:rule_name() end)
+  if ok and name and name:find("^Conquer City") then realm_spare_hamlet(city) end
+end
+
 -- A player's phase begins with its men's moves restored: the rebels march and strike then (realm_risings_phase).
 function ev_phase(player, is_new_phase)
   realm_risings_phase(player)
@@ -451,7 +458,7 @@ local hooks = {
   {"disaster_occurred", "ev_disaster"}, {"building_built", "ev_building_built"},
   {"building_lost", "ev_building_lost"}, {"unit_lost", "ev_unit_lost"},
   {"tech_researched", "ev_tech"},
-  {"turn_begin", "ev_turn"}, {"player_phase_begin", "ev_phase"}, {"action_started_unit_units", "ev_attack"}, {"action_started_unit_unit", "ev_attack"}, {"action_started_unit_tile", "ev_attack"},  -- Freeciv 3.2 reports an attack as unit-on-tile
+  {"turn_begin", "ev_turn"}, {"player_phase_begin", "ev_phase"}, {"action_started_unit_city", "ev_conquer"}, {"action_started_unit_units", "ev_attack"}, {"action_started_unit_unit", "ev_attack"}, {"action_started_unit_tile", "ev_attack"},  -- Freeciv 3.2 reports an attack as unit-on-tile
 }
 for _, h in ipairs(hooks) do
   local ok, err = pcall(signal.connect, h[1], h[2])
@@ -466,14 +473,21 @@ GOC_SEAMS_LAID = GOC_SEAMS_LAID or false
 GOC_SEAMS_TURN = GOC_SEAMS_TURN or -1
 
 -- Close enough to a town of the land's owner to be worked (Freeciv's Lua can't say which tiles a town works).
-local function seam_worked(t)
+-- The town that works a gold seam: the land owner's town nearest it whose radius reaches it, else nil. The one
+-- rule (Freeciv 3.2's Lua has no worked-tile call): the seam wears down by it, and the snapshot's gold rows
+-- name it, so the miners and the ore carts go to the town that really works it.
+function realm_seam_town(t)
   local owner = t.owner
-  if not owner then return false end
+  if not owner then return nil end
+  local best, bd = nil, nil
   for c in owner:cities_iterate() do
-    if t:sq_distance(c.tile) <= c:map_sq_radius() then return true end
+    local d = t:sq_distance(c.tile)
+    if d <= c:map_sq_radius() and (not bd or d < bd) then best, bd = c, d end
   end
-  return false
+  return best
 end
+
+local function seam_worked(t) return realm_seam_town(t) ~= nil end
 
 -- One seam in reach of each of the gold house's towns, until `count`: on a mountain there, or, where
 -- its land is all field and forest (the realm's map rarely puts mountains by a town), a forest tile
@@ -768,7 +782,7 @@ function realm_rising(house_id, chance)
   local banners = find.building_type("Rebel Banners")
   if banners then edit.create_building(muster, banners) end
   local til = game.current_turn() + rising_num("seasons", 8)
-  GOC_RISINGS = GOC_RISINGS .. (GOC_RISINGS == "" and "" or ";") .. string.format("%d|%d|%d", r.id, house_id, til)
+  GOC_RISINGS = GOC_RISINGS .. (GOC_RISINGS == "" and "" or ";") .. string.format("%d|%d|%d|%d", r.id, house_id, til, seat.id)
   local towns = {}
   for c in r:cities_iterate() do towns[#towns + 1] = string.format("%d", c.id) end
   emit("rising", {house = house_id, rebel = r.id, towns = table.concat(towns, ","), muster = muster.id, til = til})
@@ -791,14 +805,16 @@ function realm_rising_odds(house_id)
   emit("rising_odds", {house = house_id, odds = odds, unhappy = unhappy, celebrating = glad, towns = towns})
 end
 
--- How a rising ends: "return" (the rebels' towns go back to the lord by Freeciv's transfer, their men disband),
+-- How a rising ends (id: the rebels' player or the house they rose in): "return" (the rebels' towns go back to the lord by Freeciv's transfer, their men disband),
 -- "keep" (the rebels hold what they hold, a lesser house), "auto" (the side with more towns keeps them).
-function realm_rising_end(rebel_id, how)
+function realm_rising_end(id, how)
   local kept = {}
-  local rebel, house = nil, nil
-  for rid, hid, til in GOC_RISINGS:gmatch("(%d+)|(%d+)|(%d+)") do
-    if tonumber(rid) == rebel_id then rebel, house = realm_find_player(rebel_id), realm_find_player(tonumber(hid))
-    else kept[#kept + 1] = rid .. "|" .. hid .. "|" .. til end
+  local rebel, house, rebel_id = nil, nil, nil
+  for rid, hid, til, seat in GOC_RISINGS:gmatch("(%d+)|(%d+)|(%d+)|(%d+)") do
+    if (tonumber(rid) == id or tonumber(hid) == id) and not rebel then
+      rebel_id = tonumber(rid)
+      rebel, house = realm_find_player(rebel_id), realm_find_player(tonumber(hid))
+    else kept[#kept + 1] = rid .. "|" .. hid .. "|" .. til .. "|" .. seat end
   end
   GOC_RISINGS = table.concat(kept, ";")
   if not rebel then return end
@@ -818,13 +834,15 @@ function realm_rising_end(rebel_id, how)
     for u in rebel:units_iterate() do men[#men + 1] = u end
     for _, u in ipairs(men) do pcall(edit.perform_action, u, disband) end
   end
-  emit("rising_over", {house = house.id, rebel = rebel_id, how = how, towns = mine})
+  local left = 0
+  for c in house:cities_iterate() do left = left + 1 end
+  emit("rising_over", {house = house.id, rebel = rebel_id, how = how, towns = mine, lord = left})
 end
 
 function realm_risings_turn()
   if GOC_RISINGS == "" then return end
   local todo = {}
-  for rid, hid, til in GOC_RISINGS:gmatch("(%d+)|(%d+)|(%d+)") do todo[#todo + 1] = {tonumber(rid), tonumber(hid), tonumber(til)} end
+  for rid, hid, til, seat in GOC_RISINGS:gmatch("(%d+)|(%d+)|(%d+)|(%d+)") do todo[#todo + 1] = {tonumber(rid), tonumber(hid), tonumber(til), tonumber(seat)} end
   for _, r in ipairs(todo) do
     local rebel, house = realm_find_player(r[1]), realm_find_player(r[2])
     local towns = 0
@@ -835,6 +853,8 @@ function realm_risings_turn()
       realm_rising_end(r[1], "keep")  -- the lord's house is gone: the rising has won
     elseif not (rebel and rebel.is_alive and towns > 0) then
       realm_rising_end(r[1], "return")  -- crushed
+    elseif find.city(nil, r[4]) == nil or find.city(nil, r[4]).owner == rebel then
+      realm_rising_end(r[1], "keep")  -- the lord's seat has fallen to them: the rising has won what it holds
     elseif game.current_turn() >= r[3] then
       realm_rising_end(r[1], "auto")
     end
@@ -846,11 +866,13 @@ end
 function realm_risings_phase(rebel)
   if GOC_RISINGS == "" then return end
   local speed = rising_num("speed", 2)
-  for rid, hid in GOC_RISINGS:gmatch("(%d+)|(%d+)|%d+") do
+  for rid, hid, seat_id in GOC_RISINGS:gmatch("(%d+)|(%d+)|%d+|(%d+)") do
     local house = realm_find_player(tonumber(hid))
     if tonumber(rid) == rebel.id and house and house.is_alive then
+      -- They march on the lord's seat, the prize of a succession fight, not on every town in reach: take it and
+      -- the rising has won; hold it and the house stays two (a split, settled at the end).
       local men = soldiers_of(rebel)
-      local target = men[1] and nearest_town(house, men[1].tile)
+      local target = find.city(nil, tonumber(seat_id))
       if target then
         local at_walls = 0
         for _, u in ipairs(men) do

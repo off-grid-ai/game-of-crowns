@@ -29,7 +29,6 @@ import * as Hosts from "./hosts.js";
 import * as Treasury from "./treasury.js";
 import * as chron from "./chronicles.js";
 import * as kingDeeds from "./ledger.js";
-import * as Risings from "./risings.js";
 
 // --- the turn (onEvent's "turn" branch) ------------------------------------------
 
@@ -42,7 +41,6 @@ export function turn(ctx, ev) {
   Reword.season();  // one more wording of a court result from the local model, in idle time (reword.js)
   Damage.season(ctx, Number(ev.turn));  // walls battered and mended, houses burnt and rebuilt (damage.js)
   collectTithe(ctx, Number(ev.turn));
-  Risings.season(ctx.risingsCtx(), Number(ev.turn));  // claims against a house's lord, and Freeciv's roll (risings.js)
   // The storyteller's pace: a threat rises after a quiet stretch and grows until answered (director.js).
   const tc = ctx.treasuryCtx();
   Director.season({ world: ctx.world, meta: ctx.meta, history: tc.history, usurper: ctx.stakes?.s?.usurper?.stage ?? "none", send: ctx.send, record: ctx.record, scene: tc.scene, favourOf: ctx.favourOf, shiftFavour: ctx.shiftFavour, addMark: ctx.addMark, court: ctx.court, detail: ctx.detail }, Number(ev.turn));

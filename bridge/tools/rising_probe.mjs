@@ -5,6 +5,7 @@
 // docs/research/risings-civil-war-2026-11-12.md). Bare Freeciv, our ruleset, no bridge. Exits 1 on a failure.
 //   node tools/rising_probe.mjs        (from bridge/)
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { bareFreeciv, checker } from "./fc_probe_lib.mjs";
@@ -18,33 +19,39 @@ const { check, done } = checker("RISING");
 const seasons = Number(fs.readFileSync(path.join(BRIDGE, "data/realmrules/luadata.txt"), "utf8").match(/\[risings\][^[]*?seasons = "(\d+)"/)?.[1]);
 check(seasons > 0, "luadata.txt has no [risings] seasons");
 
-// The realm's side (risings.js), with Freeciv's replies played in: a claim warns, the roll goes after the
-// warning, a split declares the war and puts the matter to court, the King's answer reaches Freeciv, the end is told.
+// One trigger path, the stories (Mac: "our stories should be enough... they just need to be wired in"): the
+// succession crisis warns of the odds, splits the house when the claimant seizes the hall, and every ending
+// settles the rising; the King's answers to the heir at court are its branches. Then risings.js, with Freeciv's
+// replies played in: the war declared, the end told, the towns' side in /world.
 {
-  const sent = [], told = [], wars = [], asked = [];
+  const arc = JSON.parse(fs.readFileSync(path.join(BRIDGE, "arcs/succession-crisis.json"), "utf8"));
+  const beat = (id) => arc.beats.find((b) => b.id === id);
+  check(beat("deathbed")?.do?.risingOdds === "hall" && beat("passing")?.do?.risingOdds === "hall", "the succession crisis doesn't warn of the odds before the split");
+  check(JSON.stringify(beat("seizes")?.do?.rising) === '["heir","hall"]', "the claimant seizing the hall doesn't split the house");
+  check(beat("escape")?.court?.options?.map((o) => o.id).join() === "restore,grant,refuse", "the heir's plea at court lacks its three answers");
+  const ends = Object.fromEntries(arc.beats.filter((b) => b.end).map((b) => [b.id, b.do?.risingEnd?.[1] ?? null]));
+  check(ends.restored === "return" && ends.exile === "return" && ends["usurper-holds"] === "return" && ends.divided === "keep", `an ending doesn't settle the rising (${JSON.stringify(ends)})`);
+  const { Arcs } = await import("../arcs.js");
+  const sent = [], told = [], wars = [], rose = [], warned = [];
   const world = { turn: 50, players: [{ id: 4, nation: "Welsh", name: "Lord Robb Stormhold" }, { id: 9, nation: "Cornish", name: "Arthur Gernow" }],
     cities: [{ id: 1, owner: 4, x: 1, y: 1 }, { id: 2, owner: 4, x: 2, y: 2 }, { id: 3, owner: 4, x: 3, y: 3 }, { id: 4, owner: 4, x: 4, y: 4 }] };
-  const lord = { id: "l", name: "Lord Robb", playerId: 4, rank: "lord", age: 40, relationships: {} };
-  const owain = { id: "o", name: "Ser Owain", playerId: 4, rank: "bannerman", age: 30, relationships: { l: { opinion: -40 } } };
-  const court = { lordOfHouse: () => lord, alive: () => [lord, owain], arcPetition: (p) => asked.push(p) };
   const meta = {};
-  const ctx = { world, meta, court, send: (l) => sent.push(l), record: (e) => told.push(e.text), scene: () => {}, favourOf: () => 50, marchOn: () => {}, diplomacy: (p) => wars.push(p), saveMeta: () => {} };
-  Risings.claim(ctx, 4, "child", 50);
-  check(meta.risings?.claims?.[4]?.name === "Ser Owain", `the claimant isn't the bannerman who thinks least of his lord (${JSON.stringify(meta.risings?.claims)})`);
-  check(sent.some((l) => l.includes("realm_rising_odds(4)")), "the claim didn't ask Freeciv for the odds");
-  Risings.season(ctx, 51);
-  check(!sent.some((l) => l.includes("realm_rising(4")), "the house split before its warning ran");
-  Risings.season(ctx, 50 + Risings.RISINGS.warnSeasons);
-  check(sent.some((l) => l.includes("realm_rising(4, 0)")), "the roll didn't go to Freeciv's own odds after the warning");
+  const rctx = { world, meta, send: (l) => sent.push(l), record: (e) => told.push(e.text), scene: () => {}, diplomacy: (p) => wars.push(p), saveMeta: () => {} };
+  const arcs = new Arcs(fs.mkdtempSync(path.join(os.tmpdir(), "goc-arcs-")), { shift: () => {}, people: {}, save: () => {} }, () => {});
+  const roles = { heir: { name: "Owain", playerId: 4 }, hall: { town: true, id: 1, owner: 4 } };
+  const actx = { world, send: (l) => sent.push(l), scene: () => {}, rising: (pid, who) => { rose.push([pid, who]); Risings.rise(rctx, pid, who); }, risingOdds: (pid) => { warned.push(pid); Risings.odds(rctx, pid); } };
+  arcs.act(beat("deathbed").do.risingOdds ? { risingOdds: "hall" } : {}, { tags: [] }, roles, actx);
+  arcs.act({ rising: ["heir", "hall"] }, { tags: [] }, roles, actx);
+  check(warned[0] === 4 && sent.some((l) => l.includes("realm_rising_odds(4)")), "the odds beat didn't ask Freeciv");
+  check(rose[0]?.[0] === 4 && rose[0][1] === "Owain" && sent.some((l) => l.includes("realm_rising(4, 0)")), "the seizing beat didn't roll Freeciv's own odds for the hall's house");
   world.cities[2].owner = world.cities[3].owner = 9;
-  Risings.event(ctx, { kind: "rising", turn: "52", house: "4", rebel: "9", towns: "3,4", muster: "3" });
+  Risings.event(rctx, { kind: "rising", turn: "52", house: "4", rebel: "9", towns: "3,4", muster: "3" });
   check(wars.some((p) => p[0] === 9 && p[1] === 4 && p[3] === "War"), "the split didn't declare the war (Freeciv leaves them at cease-fire)");
-  check(asked[0]?.arc === "rising" && asked[0].options.map((o) => o.id).join() === "lord,claimant,terms,out", "the rising didn't go to court with its four answers");
   check(Risings.townRising(meta, world.cities[3])?.side === "rebels" && Risings.townRising(meta, world.cities[0])?.side === "lord", "/world doesn't say which side holds a town");
-  Risings.ruled(ctx, "rising-9", "claimant");
-  check(sent.some((l) => l.includes('realm_rising_end(9, "keep")')), "backing the claimant didn't reach Freeciv");
-  Risings.event(ctx, { kind: "rising_over", turn: "53", house: "4", rebel: "9", how: "keep", towns: "2" });
-  check(wars.some((p) => p[0] === 9 && p[1] === 4 && p[3] === "Armistice"), "a claimant who keeps his towns made no peace with his lord");
+  arcs.act({ risingEnd: ["hall", "keep"] }, { tags: [] }, roles, actx);
+  check(sent.some((l) => l.includes('realm_rising_end(4, "keep")')), "the story's ending didn't settle the rising in Freeciv");
+  Risings.event(rctx, { kind: "rising_over", turn: "53", house: "4", rebel: "9", how: "keep", towns: "2" });
+  check(wars.some((p) => p[0] === 9 && p[1] === 4 && p[3] === "Armistice"), "a lesser house made no peace with its old lord");
   check(!Risings.townRising(meta, world.cities[3]), "a settled rising still shows in /world");
   console.log(`  bridge: ${told.length} lines told; last: ${told.at(-1)}`);
 }
@@ -89,7 +96,9 @@ console.log(`  ${marches.length} seasons marched (last: ${marches.at(-1)}); ${st
 console.log("  assaults:", ev.filter((e) => e.kind === "assault").map((e) => JSON.stringify(e)).join(" "));
 check(marches.length > 0, "the rebels never marched");
 check(atWalls, "the rebels never reached the lord's walls");
-check(strikes > 0, "the rebels never struck a blow (The AI that doesn't play)");
+check(strikes + taken.length > 0, "the rebels never struck a blow nor took a town (The AI that doesn't play)");
+check(Number(over?.lord ?? 0) > 0, `the rising wiped the lord's house out (casebook failures; a rising ends in a split or a settlement): ${JSON.stringify(over)}`);
+check(!ev.some((e) => e.kind === "city_destroyed" && [STORMHOLD, rebel].includes(Number(e.loser))), "a town was razed in the rising (every conquest takes, never razes)");
 check(over, `the rising hadn't settled after ${seasons} seasons`);
 await b.quit();
 done();

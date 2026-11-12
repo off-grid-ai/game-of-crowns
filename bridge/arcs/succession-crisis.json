@@ -157,7 +157,8 @@
         "die": {
           "who": "old",
           "how": "I died in my bed at {hall}, with {heir} beside me."
-        }
+        },
+        "risingOdds": "hall"
       },
       "after": [
         1,
@@ -231,7 +232,10 @@
         }
       ],
       "patience": 1,
-      "otherwise": "regency-talk"
+      "otherwise": "regency-talk",
+      "do": {
+        "risingOdds": "hall"
+      }
     },
     {
       "id": "regency-talk",
@@ -278,7 +282,7 @@
       "stage": "crisis",
       "speaker": "claimant",
       "at": "hall",
-      "text": "{claimant} takes the keys of {hall} at night. {heir} is kept \"safe\" in the north tower, as {claimant} puts it.",
+      "text": "{claimant} takes the keys of {hall} at night. {heir} is kept \"safe\" in the north tower, as {claimant} puts it. Not every town will have {claimant}: those loyal to {heir} shut their gates.",
       "memory": {
         "heir": "{claimant} stole the keys of {hall} and locked me in the tower.",
         "claimant": "I took {hall}. Someone had to."
@@ -298,6 +302,10 @@
             "claimant",
             -70
           ]
+        ],
+        "rising": [
+          "heir",
+          "hall"
         ]
       },
       "after": [
@@ -347,6 +355,24 @@
       "next": [
         {
           "if": {
+            "ruled": "restore"
+          },
+          "to": "restored"
+        },
+        {
+          "if": {
+            "ruled": "grant"
+          },
+          "to": "divided"
+        },
+        {
+          "if": {
+            "ruled": "refuse"
+          },
+          "to": "exile"
+        },
+        {
+          "if": {
             "favour": [
               "heir",
               ">",
@@ -363,7 +389,39 @@
         }
       ],
       "patience": 1,
-      "otherwise": "exile"
+      "otherwise": "exile",
+      "court": {
+        "from": "heir",
+        "text": "{heir}, in torn clothes, kneels before the throne: \"{claimant} holds {hall} and my father's towns are at war over it. My towns stand for me, Your Grace. Stand with them.\"",
+        "options": [
+          {
+            "id": "restore",
+            "label": "Ride with {heir} and take back {hall}",
+            "hint": "{heir.houseName} restored under {heir} · the towns that rose go back to their house",
+            "favour": {
+              "heir": 10,
+              "claimant": -15
+            },
+            "result": "The crown's riders saddle at dawn, {heir} at their head."
+          },
+          {
+            "id": "grant",
+            "label": "Let {heir} keep the towns that stood for {heir}",
+            "hint": "a lesser house of {heir}'s own · {claimant} keeps {hall}",
+            "favour": {
+              "heir": 5,
+              "claimant": -5
+            },
+            "result": "The King lets the towns that rose keep {heir} as their lord."
+          },
+          {
+            "id": "refuse",
+            "label": "The crown will not take sides",
+            "hint": "the rising settles itself: the side with more towns keeps them",
+            "result": "The King sends {heir} away with a purse and no promise."
+          }
+        ]
+      }
     },
     {
       "id": "restored",
@@ -393,6 +451,30 @@
             "kind": "revenge",
             "text": "take back what {heir} and the King took from me"
           }
+        },
+        "risingEnd": [
+          "hall",
+          "return"
+        ]
+      }
+    },
+    {
+      "id": "divided",
+      "stage": "resolution",
+      "end": "resolved",
+      "speaker": "heir",
+      "text": "{old.houseName} is two houses now. {claimant} holds {hall}; the towns that rose for {heir} keep {heir} as their lord, by the King's leave.",
+      "memory": {
+        "heir": "The King let me keep the towns that stood by me. Not my father's hall, but mine.",
+        "claimant": "I hold {hall}, and the King gave half my house to a child."
+      },
+      "do": {
+        "risingEnd": [
+          "hall",
+          "keep"
+        ],
+        "rank": {
+          "heir": "lord"
         }
       }
     },
@@ -414,7 +496,11 @@
             "kind": "revenge",
             "text": "take back {hall} from {claimant}"
           }
-        }
+        },
+        "risingEnd": [
+          "hall",
+          "return"
+        ]
       }
     },
     {
@@ -427,7 +513,11 @@
       "do": {
         "loyalty": {
           "claimant": 20
-        }
+        },
+        "risingEnd": [
+          "hall",
+          "return"
+        ]
       }
     },
     {

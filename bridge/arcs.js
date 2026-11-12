@@ -24,6 +24,7 @@ import { fileURLToPath } from "node:url";
 import { cityName, houseFor } from "./narrator.js";
 import { arcLine } from "./claude.js";
 import { warMuster } from "./characters.js";
+import * as Lua from "./lua.js";
 
 const DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "arcs");
 // The player's own stories (generated or written) live with their realms, not
@@ -748,6 +749,13 @@ export class Arcs {
       if (court.people[def.id]) court.shift(def.id, atk.id, -35);
     }
     // War: a host raised beside the victim's town; Freeciv's AI fights it out.
+    // A house divided (READY line 9): Freeciv's own civil war splits the house of `of` (a person, or a town's
+    // holder), its loyal towns rising for `leader` (risings.js; realm_rising). risingOdds warns of it first;
+    // risingEnd settles it: "return" (the towns go back) or "keep" (a lesser house).
+    const houseOf = (k) => (R(k)?.town ? R(k).owner : R(k)?.playerId);
+    if (d.risingOdds && houseOf(d.risingOdds) != null) ctx.risingOdds?.(houseOf(d.risingOdds));
+    if (d.rising && R(d.rising[0]) && houseOf(d.rising[1]) != null) ctx.rising?.(houseOf(d.rising[1]), R(d.rising[0]).name);
+    if (d.risingEnd && houseOf(d.risingEnd[0]) != null) send(Lua.risingEnd(houseOf(d.risingEnd[0]), d.risingEnd[1]));
     if (d.war && R(d.war[0]) && R(d.war[1])) {
       const [atk, def] = [R(d.war[0]), R(d.war[1])];
       const prey = (d.war[2] && R(d.war[2])?.town && R(d.war[2])) || ctx.world.cities.find((x) => x.owner === def.playerId && !x.capital) || ctx.world.cities.find((x) => x.owner === def.playerId);

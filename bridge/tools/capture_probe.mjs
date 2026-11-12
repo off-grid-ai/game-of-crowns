@@ -41,27 +41,42 @@ await b.until(/Now accepting new client connections/, 30000);
 
 // Two towns of the house, founded here so the probe never depends on where its AI settled: one to grow to size 3,
 // and a hamlet left at size 1.
-const who = await b.cmd(`lua cmd PCROWN, PFOE = find.player(${CROWN}), find.player(${FOE}); local n = 0; for t in whole_map_iterate() do if n < 2 and not t:city() and t.terrain:class_name() == "Land" and t:num_units() == 0 then pcall(edit.create_city, PFOE, t, "Probe" .. n) if t:city() then n = n + 1; if n == 1 then TOWN = t:city() else HAMLET = t:city() end end end end; log.normal("SETUP %s %s %d %d %d", PCROWN.nation:rule_name(), PFOE.nation:rule_name(), n, TOWN and TOWN.id or -1, HAMLET and HAMLET.id or -1)`, /SETUP /);
-const [, crownNation, , made, townId, hamletId] = (who ?? "").match(/SETUP (\w+) (\w+) (\d+) (-?\d+) (-?\d+)/) ?? [];
-check(crownNation === "Norman" && made === "2", `no Norman crown or no two towns founded (${who})`);
+const who = await b.cmd(`lua cmd PCROWN, PFOE = find.player(${CROWN}), find.player(${FOE}); function open_ground(t) local k = 0 for x in t:square_iterate(1) do if x ~= t and not x:city() and x.terrain:class_name() == "Land" then k = k + 1 end end return k >= 4 and not t:city() and t.terrain:class_name() == "Land" and t:num_units() == 0 end; local n = 0; for t in whole_map_iterate() do if n < 2 and open_ground(t) then pcall(edit.create_city, PFOE, t, "Probe" .. n) if t:city() then n = n + 1; if n == 1 then TOWN = t:city() else HAMLET = t:city() end end end end; for t in whole_map_iterate() do if not OURS and open_ground(t) then pcall(edit.create_city, PCROWN, t, "Probe2") OURS = t:city() end end; log.normal("SETUP %s %s %d %d %d %d", PCROWN.nation:rule_name(), PFOE.nation:rule_name(), n, TOWN and TOWN.id or -1, HAMLET and HAMLET.id or -1, OURS and OURS.id or -1)`, /SETUP /);
+const [, crownNation, , made, townId, hamletId, oursId] = (who ?? "").match(/SETUP (\w+) (\w+) (\d+) (-?\d+) (-?\d+) (-?\d+)/) ?? [];
+check(crownNation === "Norman" && made === "2" && Number(oursId) >= 0, `no Norman crown or no three towns founded (${who})`);
 
-// Turn 4: the town grows to 3 by Freeciv's Join City; both stand empty, two of the King's companies beside each,
-// held there as a siege host is (kept from their AI).
-// Turn 5: the King's order, the assault on each (Lua.assault, realm_assault).
-await b.cmd(`lua cmd function probe_turn(turn)
+// Turn 4: the town grows to 3 by Freeciv's Join City. Turn 5: the towns emptied, two of the King's companies
+// beside each of the house's, the King's order (Lua.assault, realm_assault); and a house's knight takes the crown's.
+// The hook goes in as a file (the console cuts a long line).
+const hook = path.join(a.dir, "probe_hook.lua");
+fs.writeFileSync(hook, `function probe_turn(turn)
   if turn == 4 then
     local m = find.unit_type("Migrants")
     for i = 1, 2 do local u = edit.create_unit(PFOE, TOWN.tile, m, 0, TOWN, -1); pcall(edit.perform_action, u, find.action("Join City"), TOWN) end
-    for _, c in ipairs({TOWN, HAMLET}) do
-      local gone = {} for u in c.tile:units_iterate() do gone[#gone + 1] = u end for _, u in ipairs(gone) do edit.unit_kill(u, "disbanded", nil) end
-      local n = 0 for t in c.tile:square_iterate(1) do if n < 2 and t ~= c.tile and not t:city() and t.terrain:class_name() == "Land" then local k = edit.create_unit(PCROWN, t, find.unit_type("Knights"), 2, nil, -1) edit.movement_disallow(k) n = n + 1 end end
-    end
     log.normal("PROBE grown %d hamlet %d", TOWN.size, HAMLET.size)
   elseif turn == 5 then
+    -- All in one breath (between turns the AIs move men in and out): each town emptied, the attackers set
+    -- beside it, then the King's assault on the house's two, and the house's own Conquer City on the crown's.
+    local function empty(c) local gone = {} for u in c.tile:units_iterate() do gone[#gone + 1] = u end for _, u in ipairs(gone) do edit.unit_kill(u, "disbanded", nil) end end
+    local function beside(c, owner, n)
+      local made = {}
+      for t in c.tile:square_iterate(1) do
+        if #made < n and t ~= c.tile and not t:city() and t.terrain:class_name() == "Land" then
+          local gone = {} for u in t:units_iterate() do gone[#gone + 1] = u end for _, u in ipairs(gone) do edit.unit_kill(u, "disbanded", nil) end
+          made[#made + 1] = edit.create_unit(owner, t, find.unit_type("Knights"), 2, nil, -1)
+        end
+      end
+      return made
+    end
+    for _, c in ipairs({TOWN, HAMLET, OURS}) do empty(c) end
+    beside(TOWN, PCROWN, 2) beside(HAMLET, PCROWN, 2)
+    local foeman = beside(OURS, PFOE, 1)[1]
     ${Lua.assault(townId, CROWN)}
     ${Lua.assault(hamletId, CROWN)}
+    if foeman then pcall(edit.perform_action, foeman, find.action("Conquer City"), OURS) end
   end
-end; signal.connect("turn_begin", "probe_turn"); log.normal("HOOKED")`.replace(/\n\s*/g, " "), /HOOKED/);
+end; signal.connect("turn_begin", "probe_turn"); log.normal("HOOKED")`);
+await b.cmd(`lua file ${hook}`, /HOOKED/);
 b.send("set endturn 5");
 b.send("start");
 check(await b.until(/Game ended as the turn limit/, 90000), "the game didn't run on");
@@ -72,8 +87,11 @@ const taken = (id) => ev.find((e) => e.kind === "city_transferred" && Number(e.c
 const razed = (id) => ev.some((e) => e.kind === "city_destroyed" && Number(e.city) === Number(id));
 check(taken(townId), `the King's host didn't take the empty town ${townId} (Freeciv sent no conquest to the crown)`);
 check(taken(hamletId) && !razed(hamletId), `the King's capture razed or missed the hamlet ${hamletId}`);
+// Any conquest, not only the King's: the house takes a crown hamlet by Freeciv's own Conquer City, and it stays a town.
+const foeTook = ev.find((e) => e.kind === "city_transferred" && Number(e.city) === Number(oursId) && e.reason === "conquest" && Number(e.to) === FOE);
+check(foeTook && !razed(oursId), `a house's conquest razed or missed the crown's hamlet ${oursId}`);
 console.log(`  assaults: ${ev.filter((e) => e.kind === "assault").map((e) => `${e.city} men ${e.men} blows ${e.blows} -> ${e.owner}`).join("; ")}`);
-console.log(`  town ${townId}: ${taken(townId) ? "taken" : "not taken"}; hamlet ${hamletId}: ${razed(hamletId) ? "razed" : taken(hamletId) ? "taken, still a town" : "not taken"}`);
+console.log(`  town ${townId}: ${taken(townId) ? "taken" : "not taken"}; hamlet ${hamletId}: ${razed(hamletId) ? "razed" : taken(hamletId) ? "taken, still a town" : "not taken"}; the house's conquest of hamlet ${oursId}: ${razed(oursId) ? "razed" : foeTook ? "taken, still a town" : "not taken"}`);
 await b.quit();
 fs.rmSync(a.dir, { recursive: true, force: true });
 done();
