@@ -4,6 +4,8 @@
   "readable": 1.5,
   "_held": "held: what's in a hand (weapons.gd: swords, spears, bows, shields, hammers, baskets, pails) drawn this much larger again, from the grip (quality-deep-dive.md #9: tools and weapons read at the town view at about 1.3 over the bodies' scale).",
   "held": 1.3,
+  "_furniture": "furniture: what people sit on, eat at and work at, drawn at their size (readable) so the drinkers sit on the benches and not proud of them (town_life.gd _prop: the inn's benches, the long tables and what's set on them, the anvils; the benches 0.53 m and tables 0.81 m high at life size). on: the switch (--furniture=off draws them life size); props: the kit's names that grow.",
+  "furniture": { "on": true, "props": ["Bench", "Table_Large", "Anvil", "Mug", "Table_Plate", "Chalice", "Pot_1"] },
   "feet": {
     "on": true,
     "reference": "res://assets/people/Male_Peasant.gltf",

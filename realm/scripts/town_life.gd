@@ -990,6 +990,18 @@ func raise_site(town_node: Node3D, plot: Transform3D, building: String, seasons:
 const PROPS := "res://assets/props/%s.gltf"
 const PROP_SCALE := 0.12  # the props kit is in metres; a person here stands about 0.2
 static var _prop_cache := {}
+## What people sit on, eat at and work at (people.json furniture: benches, tables and what's on them, the
+## anvil) is drawn at the people's own size (readable), so a drinker sits on the bench and not proud of it.
+## --furniture=off draws it life size, as before.
+static var FURN: float = _furn_scale()
+static var FURN_NAMES: Array = preload("res://scripts/data.gd").value("people", "furniture.props", []) if FURN != 1.0 else []
+
+
+static func _furn_scale() -> float:
+	var D := preload("res://scripts/data.gd")
+	if OS.get_cmdline_user_args().has("--furniture=off") or not bool(D.value("people", "furniture.on", true)):
+		return 1.0
+	return float(D.num("people", "readable", 1.0))
 
 
 func _prop(life: Node3D, center: Vector3, name: String, at: Vector3, yaw := 0.0, scale := 1.0, lift := 0.0, size := 0.0) -> Node3D:
@@ -999,6 +1011,9 @@ func _prop(life: Node3D, center: Vector3, name: String, at: Vector3, yaw := 0.0,
 	if scene == null:
 		return null
 	var n: Node3D = scene.instantiate()
+	if name in FURN_NAMES:
+		scale *= FURN
+		size *= FURN
 	n.scale = Vector3.ONE * PROP_SCALE * scale
 	n.position = Vector3(at.x, _y(center, at) + lift, at.z)
 	n.rotation.y = yaw
@@ -1095,7 +1110,7 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 		# The tax collector's table in the square, coin and ledger on it, a guard by him, a queue muttering.
 		var at := edge * 0.6
 		_prop(life, center, "Table_Large", at, atan2(side.x, side.z), 1.0, 0.0, 0.16)
-		const TABLE_TOP := 0.09  # the table's height at PROP_SCALE: coin and ledger lie on it
+		var TABLE_TOP := 0.098 * FURN  # the table's height (0.815 m at PROP_SCALE, drawn at the people's size): coin and ledger lie on it
 		_prop(life, center, "Coin_Pile", at + side * 0.04, 0.0, 1.0, TABLE_TOP)
 		_prop(life, center, "Scroll_1", at - side * 0.04, 0.0, 1.0, TABLE_TOP)
 		_prop(life, center, "Chest_Wood", at + edge.normalized() * 0.2, atan2(side.x, side.z), 1.0, 0.0, 0.07)
@@ -1472,7 +1487,7 @@ func _inn(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: Work
 		var at: Vector3 = sp[key]
 		if b["dress"]:
 			_prop(life, center, "Bench", at, yaw, 1.0, 0.0, 0.0)
-		seats += [at - along * 0.04, at + along * 0.04]
+		seats += [at - along * 0.04 * FURN, at + along * 0.04 * FURN]
 	var taken: PackedVector2Array = life.get_meta("standing")
 	# In war or a levy the crown's men take the benches first (works.json counts.inn_soldiers).
 	var soldiers := mini(int(n.call("inn_soldiers")), seats.size())
@@ -2434,17 +2449,17 @@ func _long_table(life: Node3D, center: Vector3, at: Vector3, out: Vector3, seats
 	var yaw := atan2(along.x, along.z)
 	if _prop(life, center, "Table_Large", at, yaw, 1.0, 0.0, 0.18) == null:
 		return []
-	const TOP := 0.09  # the table's height at PROP_SCALE
+	var TOP := 0.098 * FURN  # the table's height (0.815 m at PROP_SCALE, drawn at the people's size)
 	var ware := ["Mug", "Table_Plate", "Chalice", "Mug", "Pot_1", "Table_Plate", "Mug"]
 	for i in 5:
-		_prop(life, center, ware[(n * 3 + i) % ware.size()], at + along * (i - 2) * 0.04 + out * rng.randf_range(-0.015, 0.015), rng.randf() * TAU, 1.0, TOP)
+		_prop(life, center, ware[(n * 3 + i) % ware.size()], at + (along * (i - 2) * 0.04 + out * rng.randf_range(-0.015, 0.015)) * FURN, rng.randf() * TAU, 1.0, TOP)
 	var taken: PackedVector2Array = life.get_meta("standing")
 	var sat: Array = []
 	for sgn in [-1.0, 1.0]:
-		var bench: Vector3 = at + out * sgn * 0.1
+		var bench: Vector3 = at + out * sgn * 0.1 * FURN  # clear of the table's edge at its drawn size
 		_prop(life, center, "Bench", bench, yaw, 1.0, 0.0, 0.0)
 		for i in seats:
-			var seat: Vector3 = bench + along * (i - (seats - 1) * 0.5) * 0.08
+			var seat: Vector3 = bench + along * (i - (seats - 1) * 0.5) * 0.08 * FURN
 			var who := role if role != "" else ("townsfolk" if rng.randf() < 0.6 else "peasant")
 			var p := _townsperson(life, Vector3(seat.x, _y(center, seat), seat.z), who, "Sitting_Drinking", rng.randi())
 			p.rotation.y = atan2(-out.x * sgn, -out.z * sgn)  # facing across the table
