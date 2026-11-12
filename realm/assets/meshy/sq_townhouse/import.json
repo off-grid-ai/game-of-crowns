@@ -9,11 +9,10 @@
   4.93,
   9.0
  ],
- "house_share": 0.198,
+ "house_share": 0.0,
  "mask_png": true,
  "materials": [
-  "BakedMaterial",
-  "MI_RoundTiles_house"
+  "BakedMaterial"
  ],
  "cut_faces": 0,
  "arm": false,

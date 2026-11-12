@@ -69,5 +69,23 @@ func _init() -> void:
 			else:
 				kit += 1
 				fail += 1
+	# No house-colour patches on the set's roofs (round 11: the importer's roof mask split Meshy's baked atlas face by face,
+	# and the Crown's colour lay on the red tiles as smears). Only the statue keeps its mask (its banner, the bar Mac
+	# liked: "this actually looks good").
+	for piece in ["sq_townhouse", "sq_cottage", "sq_merchant_house", "sq_smithy", "sq_well"]:
+		var path := "res://assets/meshy/%s/%s.glb" % [piece, piece]
+		var n: Node = (load(path) as PackedScene).instantiate() if ResourceLoader.exists(path) else null
+		var patches := 0
+		if n:
+			for mi in n.find_children("*", "MeshInstance3D", true, false):
+				var mesh: Mesh = (mi as MeshInstance3D).mesh
+				for i in (mesh.get_surface_count() if mesh else 0):
+					var m := mesh.surface_get_material(i)
+					if m and m.resource_name.ends_with("_house"):
+						patches += 1
+			n.free()
+		print("CHECK %s roof house-colour patches: %d (want 0)%s" % [piece, patches, "" if patches == 0 else ": FAIL"])
+		if patches > 0:
+			fail += 1
 	print("CHECK square set: %d meshy, %d kit where the set belongs; %d fail" % [meshy, kit, fail])
 	quit(1 if fail > 0 else 0)
