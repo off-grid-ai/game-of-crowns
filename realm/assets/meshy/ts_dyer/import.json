@@ -1,0 +1,21 @@
+{
+ "name": "ts_dyer",
+ "source": "/Users/user/code/goc-kits/meshy/trades/dyer/dyer_25k.glb",
+ "tris_before": 25453,
+ "tris_after": 25000,
+ "scale": 4.098733277256047,
+ "size_m": [
+  7.79,
+  5.29,
+  5.5
+ ],
+ "house_share": 0.0,
+ "mask_png": true,
+ "materials": [
+  "Material_0"
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
+}
