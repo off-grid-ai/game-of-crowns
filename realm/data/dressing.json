@@ -19,8 +19,8 @@
     "alehouse": [["props/Barrel", -2.4, 1.6, 0, 1.0], ["props/Barrel_Apples", -2.7, 2.0, 0, 1.0], ["props/Mug", 2.3, 1.6, 0, 1.0], ["props/Crate_Wooden", 2.6, 2.1, 15, 1.0]],
     "guild": [["props/Chest_Wood", 2.1, 1.0, 0, 1.0], ["props/Crate_Wooden", -2.1, 1.0, 10, 1.0], ["nature/Bush_Common_Flowers", 2.8, 0.9, 0, 0.8], ["nature/Bush_Common_Flowers", -2.8, 0.9, 0, 0.8]]
   },
-  "homes": [["nature/Flower_3_Group", 1.6, 0.1, 0, 0.7], ["nature/Flower_4_Group", -1.6, 0.1, 0, 0.7], ["props/Vase_2", 1.9, 0.15, 0, 0.9], ["props/Bucket_Wooden_1", -1.9, 0.15, 0, 0.9], ["props/Barrel", 2.0, 0.2, 0, 0.85], ["nature/Bush_Common_Flowers", -2.0, 0.2, 0, 0.5]],
-  "homes_most": 2,
+  "homes": [["nature/Flower_3_Group", 1.6, 0.1, 0, 0.9], ["nature/Flower_4_Group", -1.6, 0.1, 0, 0.9], ["nature/Flower_4_Group", 2.7, 0.15, 0, 1.0], ["nature/Flower_3_Group", -2.7, 0.15, 0, 1.0], ["nature/Bush_Common_Flowers", 3.4, 0.25, 0, 0.6], ["nature/Bush_Common_Flowers", -3.4, 0.25, 0, 0.6], ["props/Vase_2", 1.9, 0.15, 0, 0.9], ["props/Bucket_Wooden_1", -1.9, 0.15, 0, 0.9], ["props/Barrel", 2.0, 0.2, 0, 0.85], ["nature/Bush_Common_Flowers", -2.0, 0.2, 0, 0.5]],
+  "homes_most": 4,
   "ground": {
     "tries": 400,
     "gap": 0.11,

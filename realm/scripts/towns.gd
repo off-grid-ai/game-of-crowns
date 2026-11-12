@@ -1241,21 +1241,30 @@ func _yard(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vector3, 
 func _yard_green(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vector3, f: Vector2, side_from: Vector2, lots: Array, rng: RandomNumberGenerator, green: Dictionary) -> void:
 	var corners: PackedVector2Array = pl[4]
 	var f2 := Vector2(face.x, face.z)
+	var tree_comp := _tree_comp()
+	var placed := {"kind": "", "scale": 1.0}
 	var drop := func(comp: String, q2: Vector2, r: float, scale: float) -> void:
 		var kind := _green_kind(comp, rng)
 		var q := Vector3(q2.x, 0, q2.y)
 		if kind == "" or not terrain.is_land(center.x + q.x, center.z + q.z) or _crowded(lots, q, r) or _on_road(q, 0.05):
 			return
+		if comp == tree_comp and Real.height(kind) > 0.0:
+			scale = minf(scale, float(green.get("tree_most", 99.0)) * S / Real.height(kind))  # no taller than tree_most metres (research #6: about 1.2x a two-storey house)
 		_place(root, kind, q + Vector3(0, _ground_y(center, q) - 0.01, 0), rng.randf() * TAU, Vector3.ONE * scale, Vector2(r, r))
 		lots.append([q, r])
+		placed["kind"] = kind
+		placed["scale"] = scale
+		if comp == tree_comp:
+			_crown(center, q, kind, scale)  # a yard tree: the camera reads its crown as a roof
+			_tree_feet(root, center, q, lots, rng)
 	if rng.randf() < float(green.get("tree", 0.0)):
 		var t := 0.12 if rng.randf() < 0.5 else 0.88
 		var at2: Vector2 = corners[3].lerp(corners[2], t) + f2 * 0.1
-		var grown := minf(rng.randf_range(0.8, 1.1), float(green.get("tree_most", 99.0)) / 10.0)  # no taller than tree_most metres (the broadleaf stands ~10 m; research #6: about 1.2x a two-storey house)
+		var grown := rng.randf_range(0.8, 1.1)
 		var before: int = lots.size()
-		drop.call("town_tree", at2, float(green.get("tree_ground", 0.12)), grown)
+		drop.call(tree_comp, at2, float(green.get("tree_ground", 0.12)), grown)
 		if lots.size() > before and rng.randf() < float(green.get("apples", 0.0)):
-			_apples(root, center, Vector3(at2.x, 0, at2.y), grown, green, rng)
+			_apples(root, center, Vector3(at2.x, 0, at2.y), Real.height(String(placed["kind"])) * float(placed["scale"]), green, rng, tree_comp)
 	if rng.randf() < float(green.get("hedge", 0.0)):
 		for k in 2:
 			drop.call("garden_hedge", side_from.lerp(corners[2], 0.3 + 0.4 * k) + (Vector2(p.x, p.z) - side_from).normalized() * 0.07, 0.06, rng.randf_range(0.8, 1.15))
@@ -1268,12 +1277,11 @@ func _yard_green(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vec
 ## (assets.json fruit_apple) set about the outside of a yard tree's crown, more on its lower half and its sides, big
 ## enough to read from roof height. The crown is taken as a ball: crown [its middle's height, its radius] as shares
 ## of the tree's height (the kit's broadleaf, town_tree, about 10 m at `grown` 1).
-func _apples(root: Node3D, center: Vector3, at: Vector3, grown: float, green: Dictionary, rng: RandomNumberGenerator) -> void:
+func _apples(root: Node3D, center: Vector3, at: Vector3, tall: float, green: Dictionary, rng: RandomNumberGenerator, comp := "town_tree") -> void:
 	var kind := Real.one("fruit_apple")
-	if kind == "" or Real.footprint(kind) == Vector2.ZERO:
+	if kind == "" or Real.footprint(kind) == Vector2.ZERO or tall <= 0.0:
 		return
-	var tall := 10.0 * S * grown
-	var cr: Array = green.get("crown", [0.66, 0.3])
+	var cr: Array = (green.get("crown_of", {}) as Dictionary).get(comp, green.get("crown", [0.66, 0.3]))  # each kind of tree's crown
 	var mid := at + Vector3(0, _ground_y(center, at) + tall * float(cr[0]), 0)
 	var r := tall * float(cr[1])
 	var n := rng.randi_range(int((green.get("apple_count", [10, 16]) as Array)[0]), int((green.get("apple_count", [10, 16]) as Array)[1]))
@@ -1299,13 +1307,14 @@ func _square_trees(root: Node3D, center: Vector3, square_r: float, ways: Array, 
 		var q := Vector3(q2.x, 0, q2.y)
 		if TownPlots.near_ways(q2, ways, TownPlots.ROAD_HALF + 0.12) or _crowded(lots.slice(1), q, 0.06) or not terrain.is_land(center.x + q.x, center.z + q.z):
 			continue  # lots[0] is the square's own ground, which a tree at its rim may stand on
-		var kind := _green_kind("town_tree", rng)
+		var kind := _green_kind(_tree_comp(), rng)
 		if kind == "":
 			return
 		var sc := rng.randf_range(0.7, 0.85)
 		_place(root, kind, q + Vector3(0, _ground_y(center, q) - 0.01, 0), rng.randf() * TAU, Vector3.ONE * sc, Vector2(0.08, 0.08))
 		_crown(center, q, kind, sc)
 		lots.append([q, 0.06])
+		_tree_feet(root, center, q, lots, rng)
 		stood += 1
 
 
@@ -1342,7 +1351,7 @@ func _edge_trees(root: Node3D, center: Vector3, edge: PackedVector2Array, ways: 
 			var q := Vector3(q2.x, 0, q2.y)
 			if TownPlots.near_ways(q2, ways, 0.4) or not terrain.is_land(center.x + q.x, center.z + q.z) or _crowded(lots, q, 0.14) or not _flat_enough(center, q, 0.3):
 				continue
-			var kind := _green_kind("town_tree", rng)
+			var kind := _green_kind(_tree_comp(), rng)
 			if kind == "":
 				return
 			var sc := rng.randf_range(0.85, 1.25)
@@ -3069,3 +3078,32 @@ func _note_paved(root: Node3D, a: Vector2, b: Vector2, half: float) -> void:
 	var all: Array = root.get_meta("paved", [])
 	all.append([a, b, half])
 	root.set_meta("paved", all)
+
+
+## The town trees' component (towns.json plots.green.tree_comp: town_tree_round, KayKit's round painted crowns, round 7;
+## --town-trees=kit for the nature kit's town_tree as before).
+static func _tree_comp() -> String:
+	if OS.get_cmdline_user_args().has("--town-trees=kit"):
+		return "town_tree"
+	var c := String(preload("res://scripts/data.gd").value("towns", "plots.green.tree_comp", "town_tree"))
+	return c if not Real.variants(c).is_empty() else "town_tree"
+
+
+## Round shrubs and flowers at a town tree's foot (towns.json plots.green.feet: [least, most] pieces, [nearest, furthest]
+## from the trunk, the shrubs' share; round 7, 01-town: flowering shrubs round the trees' feet, trunks half hidden).
+func _tree_feet(root: Node3D, center: Vector3, q: Vector3, lots: Array, rng: RandomNumberGenerator) -> void:
+	var k: Dictionary = (_plot_knobs().get("green", {}) as Dictionary).get("feet", {})
+	if k.is_empty():
+		return
+	var n: Array = k.get("count", [2, 4])
+	var reach: Array = k.get("reach", [0.05, 0.12])
+	for i in rng.randi_range(int(n[0]), int(n[1])):
+		var a := rng.randf() * TAU
+		var p := q + Vector3(cos(a), 0, sin(a)) * rng.randf_range(float(reach[0]), float(reach[1]))
+		if not terrain.is_land(center.x + p.x, center.z + p.z) or _on_road(p, 0.04) or _built_on(root, p):
+			continue
+		var comp := "tree_shrub" if rng.randf() < float(k.get("shrubs", 0.6)) else "garden_flowers"
+		var kind := _green_kind(comp, rng)
+		if kind == "":
+			continue
+		_place(root, kind, p + Vector3(0, _ground_y(center, p) - 0.01, 0), rng.randf() * TAU, Vector3.ONE * rng.randf_range(0.8, 1.15), Vector2(0.03, 0.03))
