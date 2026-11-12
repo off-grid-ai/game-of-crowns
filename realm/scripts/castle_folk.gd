@@ -89,6 +89,15 @@ static func dress(host: Node, main: Node, xf: Transform3D, sp: Dictionary, colou
 	var n_arch := int(Ar.get("count", 5))
 	for i in int(Ar.get("butts_count", 3)):
 		var bp: Vector3 = at.call(float(butts_at[0]) + (i - 1) * 0.12, float(butts_at[1]))
+		# A straw archery target on its stand (castle_folk.json archers.butt: [model, size, turn]); a shield on a
+		# barrel where that model isn't on hand.
+		var B: Array = Ar.get("butt", [])
+		var butt := _prop(String(B[0]), float(B[1])) if B.size() >= 2 else null
+		if butt:
+			put.call(butt, bp)
+			face.call(butt, at.call(float(line_at[0]), float(line_at[1])))
+			butt.rotation.y += deg_to_rad(float(B[2]) if B.size() > 2 else 0.0)
+			continue
 		var barrel := _prop("Barrel", 1.0)
 		if barrel:
 			put.call(barrel, bp)
@@ -179,9 +188,14 @@ static func dress(host: Node, main: Node, xf: Transform3D, sp: Dictionary, colou
 
 
 static func _prop(name: String, size: float) -> Node3D:
-	if not ResourceLoader.exists(PROPS % name):
+	# "kit/model" names a kit in dressing.json kits (yard/archery_target); a bare name is the props kit's.
+	var path: String = PROPS % name
+	if name.contains("/"):
+		var kit: Array = (Data.value("dressing", "kits", {}) as Dictionary).get(name.get_slice("/", 0), [PROPS])
+		path = String(kit[0]) % name.get_slice("/", 1)
+	if not ResourceLoader.exists(path):
 		return null
-	var n: Node3D = (load(PROPS % name) as PackedScene).instantiate()
+	var n: Node3D = (load(path) as PackedScene).instantiate()
 	n.scale = Vector3.ONE * 0.12 * size * float(Data.num("people", "readable", 1.0)) * float(Data.num("castle_folk", "props", 1.0))
 	return n
 

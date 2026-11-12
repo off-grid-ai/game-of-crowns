@@ -1,0 +1,15 @@
+Yard props for the castle's bailey (dressing.json bailey), from Poly Pizza.
+
+archery_target.glb
+* title:   Target
+* source:  https://poly.pizza/m/Ev3BbukDFS
+* author:  Quaternius
+* licence: Public Domain (CC0 1.0)
+
+horse_trough.glb
+* title:   Wood Water Trough
+* source:  https://poly.pizza/m/eWOPxWJkqL3
+* author:  Oliver Herklotz
+* licence: CC-BY 3.0 (https://creativecommons.org/licenses/by/3.0/)
+* changed: the wood's colour lightened to the props kit's brown, the water made glossy.
+Credit: "Wood Water Trough" by Oliver Herklotz (https://poly.pizza/m/eWOPxWJkqL3), CC-BY 3.0, recoloured.
