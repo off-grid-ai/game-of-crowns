@@ -10,6 +10,14 @@
     "mud": { "painting": "Dirt_03", "tint": [0.86, 0.78, 0.64], "scale": 0.45 },
     "field": { "painting": "Dirt_04", "tint": [1.15, 1.0, 0.82], "scale": 0.45 }
   },
+  "terrain": {
+    "_": "The ground by Freeciv's terrain (terrain.gd tile_mix; land3d.gd lays the strongest layer over the grass, blended across tile edges): each terrain's weights of the ground layers in land3d.gd's order: grass, dirt, sand, snow, rock, forest, mud. A river tile (Grassland|river) takes its terrain's. Water tiles are grass here: the beach and the sea floor come from the land's height. patches: worn earth through the grass (Mac, pass 2159: one flat lawn outside the towns; 01-town and 03-army show bare earth and varied ground): layer (its index), most (its weight at a patch's heart, times the tile's grass), from (the noise level where a patch starts: higher, fewer), soft (how far it frays), scale (noise per game unit: higher, smaller patches).",
+    "Grassland": [1.0, 0, 0, 0, 0, 0, 0], "Plains": [0.7, 0.55, 0, 0, 0, 0, 0], "Hills": [0.7, 0.35, 0, 0, 0.55, 0, 0],
+    "Mountains": [0.1, 0.2, 0, 0, 1.0, 0, 0], "Desert": [0.1, 0.3, 1.0, 0, 0, 0, 0], "Tundra": [0.3, 0.75, 0, 0.3, 0.1, 0, 0],
+    "Glacier": [0, 0, 0, 1.0, 0.1, 0, 0], "Swamp": [0.35, 0.2, 0, 0, 0, 0.3, 0.85], "Forest": [0.1, 0, 0, 0, 0, 1.0, 0],
+    "Jungle": [0.15, 0, 0, 0, 0, 1.0, 0.2], "Ocean": [1.0, 0, 0, 0, 0, 0, 0], "Deep Ocean": [1.0, 0, 0, 0, 0, 0, 0], "Lake": [1.0, 0, 0, 0, 0, 0, 0],
+    "patches": { "layer": 1, "most": 0.75, "from": 0.08, "soft": 0.25, "scale": 0.35 }
+  },
   "beach": { "top": 0.035 },
   "winter": { "snow": [0.74, 0.76, 0.82] },
   "surf": false,

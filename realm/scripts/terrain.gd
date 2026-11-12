@@ -464,16 +464,20 @@ func _color_at(wx: float, wz: float, h: float) -> Color:
 
 
 # Ground layer weights per terrain: grass, dirt, sand, snow, rock, forest floor.
-const LAYERS := {
-	"Grassland": [1.0, 0.0, 0, 0, 0, 0], "Plains": [0.8, 0.3, 0, 0, 0, 0], "Desert": [0, 0.3, 1.0, 0, 0, 0],
-	"Tundra": [0.15, 0.7, 0, 0.35, 0.1, 0], "Glacier": [0, 0, 0, 1.0, 0.1, 0], "Swamp": [0.3, 0.6, 0, 0, 0, 0.6],
-	"Jungle": [0.5, 0, 0, 0, 0, 0.8], "Forest": [0.3, 0, 0, 0, 0, 1.0], "Hills": [0.8, 0.15, 0, 0, 0.35, 0],
-	"Mountains": [0, 0.1, 0, 0, 1.0, 0], "Ocean": [0, 0, 1.0, 0, 0.1, 0], "Deep Ocean": [0, 0, 0.6, 0, 0.6, 0],
-	"Lake": [0, 0.3, 0.7, 0, 0, 0],
-}
-
-
-func _layers_at(wx: float, wz: float, h: float) -> Array:
+## The ground's layers at a point of the land by Freeciv's terrain (realm/data/ground.json terrain): the four tiles
+## round it blended smoothly (their edges frayed by _warp), a river tile taking its terrain's, and worn earth through
+## the grass in ragged patches (terrain.patches). Weights in land3d.gd's LAYERS order: grass, dirt, sand, snow, rock,
+## forest, mud. The one reader of the terrain's ground: land3d.gd's control map and _layers_at both ask here.
+static var GROUND: Dictionary = preload("res://scripts/data.gd").value("ground", "terrain", {})
+const MIX_N := 7
+var _mix := PackedFloat32Array()  # per tile, its terrain's weights (MIX_N each)
+func tile_mix(wx: float, wz: float) -> Array:
+	if _mix.is_empty():
+		_mix.resize(width * height * MIX_N)
+		for t in width * height:
+			var row: Array = GROUND.get(String(terrain[t]).get_slice("|", 0), [1.0])
+			for i in MIX_N:
+				_mix[t * MIX_N + i] = float(row[i]) if i < row.size() else 0.0
 	var warped := _warp(wx, wz)
 	var fx := warped.x / TILE - 0.5
 	var fz := warped.y / TILE - 0.5
@@ -481,21 +485,28 @@ func _layers_at(wx: float, wz: float, h: float) -> Array:
 	var z0 := floori(fz)
 	var tx := smoothstep(0.0, 1.0, fx - x0)
 	var tz := smoothstep(0.0, 1.0, fz - z0)
-	var out := [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+	var out := [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 	for dz in 2:
 		for dx in 2:
 			var w := (tx if dx == 1 else 1.0 - tx) * (tz if dz == 1 else 1.0 - tz)
-			var l: Array = LAYERS.get(tile_at(x0 + dx, z0 + dz), [1, 0, 0, 0, 0, 0])
-			for i in 6:
-				out[i] += l[i] * w
+			var t := clampi(z0 + dz, 0, height - 1) * width + clampi(x0 + dx, 0, width - 1)
+			for i in MIX_N:
+				out[i] += _mix[t * MIX_N + i] * w
+	var pt: Dictionary = GROUND.get("patches", {})
+	if not pt.is_empty():
+		var k := float(pt.get("scale", 0.35)) / _noise.frequency
+		var n := _noise.get_noise_2d(wx * k + 300.0, wz * k - 170.0)
+		var from := float(pt.get("from", 0.18))
+		out[int(pt.get("layer", 1))] += out[0] * float(pt.get("most", 0.75)) * smoothstep(from, from + float(pt.get("soft", 0.25)), n)
+	return out
+
+
+func _layers_at(wx: float, wz: float, h: float) -> Array:
+	var out := tile_mix(wx, wz)
 	if h > 4.8:
 		out[3] += clampf((h - 4.8) / 1.2, 0.0, 1.0) * 2.0
 	if h < 0.3:
 		out[2] += clampf((0.3 - h) / 0.5, 0.0, 1.0) * 1.5
-	# Patchy variation so plains aren't one flat colour.
-	var n := _noise.get_noise_2d(wx * 1.3 + 50.0, wz * 1.3)
-	out[0] *= 1.0 + n * 0.6
-	out[1] *= 1.0 - n * 0.6
 	return out
 
 

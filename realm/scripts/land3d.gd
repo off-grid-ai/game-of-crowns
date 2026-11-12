@@ -144,41 +144,25 @@ static func layer_textures(i: int) -> Array:
 static var _beach_top: float = Data.num("ground", "beach.top", 0.02)
 
 
-## The ground for an eroded heightmap, from the land itself rather than the
-## coarse tile grid: grass (rock on cliffs by the auto shader), forest floor in
-## forest tiles, sand at the waterline and below, snow on the high peaks.
+## The ground for an eroded heightmap: sand at the waterline and below and snow on the high peaks from the land
+## itself; elsewhere grass (rock on cliffs by the auto shader) with the terrain's own ground laid over it
+## (terrain.tile_mix: Freeciv's terrain, blended across tiles, worn earth in patches through the grass).
 func _control_from_land(terrain: Node3D) -> Image:
 	var hm: Image = terrain.land
 	var w := hm.get_width()
 	var h := hm.get_height()
 	var per: int = terrain.land_per_unit
-	var tile: float = terrain.TILE
 	# Terrain3D switches base textures hard from vertex to vertex, which draws
 	# stair-steps; overlays blend. So the ground is grass everywhere, with sand,
-	# forest floor and snow laid over it at a blend that ramps smoothly.
+	# snow and the terrain's own ground laid over it at a blend that ramps smoothly.
 	var over := func(layer: int, weight: float) -> float:
 		var enc := Terrain3DUtil.enc_base(0) | Terrain3DUtil.enc_auto(true)
 		var bl := clampi(int(weight * 255.0), 0, 255)
 		if bl > 0:
 			enc |= Terrain3DUtil.enc_overlay(layer) | Terrain3DUtil.enc_blend(bl)
 		return Terrain3DUtil.as_float(enc)
-	var tw: int = terrain.width
-	var th: int = terrain.height
-	var wood := func(fx: float, fz: float) -> float:
-		# The forest tiles, blended across tile edges and frayed a little.
-		fx += sin(fz * 1.7) * 0.18 - 0.5
-		fz += cos(fx * 1.9) * 0.18 - 0.5
-		var x0 := floori(fx)
-		var z0 := floori(fz)
-		var u := fx - x0
-		var v := fz - z0
-		var f := func(x: int, z: int) -> float:
-			return 1.0 if terrain.tile_at(clampi(x, 0, tw - 1), clampi(z, 0, th - 1)) == "Forest" else 0.0
-		var t: float = lerpf(lerpf(f.call(x0, z0), f.call(x0 + 1, z0), u), lerpf(f.call(x0, z0 + 1), f.call(x0 + 1, z0 + 1), u), v)
-		return t * t * (3.0 - 2.0 * t)
 	var out := Image.create_empty(w, h, false, Image.FORMAT_RF)
 	for z in h:
-		var fz := (z + 0.5) / (tile * per)
 		for x in w:
 			var y := hm.get_pixel(x, z).r
 			var v: float
@@ -188,7 +172,13 @@ func _control_from_land(terrain: Node3D) -> Image:
 			elif y > 7.5:
 				v = over.call(3, smoothstep(7.5, 9.5, y))
 			else:
-				v = over.call(5, wood.call((x + 0.5) / (tile * per), fz))
+				# The terrain's own ground (terrain.tile_mix): its strongest layer laid over the grass.
+				var mix: Array = terrain.tile_mix((x + 0.5) / per, (z + 0.5) / per)
+				var top := 1
+				for i in range(2, mix.size()):
+					if mix[i] > mix[top]:
+						top = i
+				v = over.call(top, mix[top] / (mix[0] + mix[top] + 0.0001))
 			out.set_pixel(x, z, Color(v, 0, 0, 1))
 	return out
 

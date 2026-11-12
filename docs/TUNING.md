@@ -100,6 +100,7 @@ Switches (`--name`) go after `--` on the game's command line.
 
 ## The ground (NPC perf; art direction fix 5)
 - The painted ground (the realm's one): `realm/data/ground.json`: each layer's colour and how broad its pattern: `layers.<layer>.tint`, `.scale`; the grass's broad colour patches: `macro`.
+- The ground by Freeciv's terrain (plains earthier, hills stony, desert sand, swamp mud, tundra bare earth, forest floor): `realm/data/ground.json` `terrain.<terrain>` (each layer's weight: grass, dirt, sand, snow, rock, forest, mud); the worn earth through the grass: `terrain.patches` (`most`: how bare at a patch's heart; `from`: higher, fewer patches; `soft`: how far they fray; `scale`: higher, smaller patches).
 - The coast: how far the beach runs above the waterline, and the surf at the shore: `realm/data/ground.json`: `beach.top`, `surf`.
 - How far out the land keeps its fine shape (Terrain3D's rings round the lens; too coarse and a lake's low shore sinks under the water at the mid zoom): `realm/data/ground.json`: `mesh.size`, `mesh.lods`.
 - From what distance the sea's colour stops reading the depth to its bed (nearer shows clear shallows, but the bed's coarser rings show as seams further out): `realm/data/look.json`: `sea.depth_fade`.
