@@ -85,7 +85,7 @@
   "spike": { "strength": [0.45, 1.0] },
   "camera": { "tilt": -8.0, "quarter": 0.4, "marchQuarter": 0.9 },
   "albedo": 0.85,
-  "look": { "on": false, "steelSat": 0.14, "steelMetal": 0.65, "steelRough": 0.38, "steelLift": 1.12, "steelGlow": 0.05, "rim": 0.35, "rimTint": 0.6, "footDark": 0.55, "footHeight": 0.14, "trimDark": 0.62, "varyValue": 0.08, "varyTint": 0.06 },
-  "emblem": { "on": true, "rect": [0.0, 0.06, 1.0, 0.56], "light": 0.9 },
+  "look": { "on": false, "steelSat": 0.14, "steelMetal": 0.65, "steelRough": 0.38, "steelLift": 1.0, "steelGlow": 0.0, "rim": 0.2, "rimTint": 0.6, "footDark": 0.55, "footHeight": 0.14, "trimDark": 0.62, "varyValue": 0.08, "varyTint": 0.06 },
+  "emblem": { "on": true, "rect": [0.0, 0.06, 1.0, 0.56], "light": 0.75 },
   "team": { "rects": [[0.0, 0.25, 0.125, 0.5], [0.125, 0.0, 0.25, 0.25, 0.5], [0.375, 0.125, 0.5, 0.25, 0.65]], "shade": 1.1 }
 }
