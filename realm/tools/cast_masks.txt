@@ -3,7 +3,7 @@
 # skin stays out. farmer_m: hue:0.15,0.33 (Meshy's own rig). The priest's brown habit is never dyed (no mask in cast.json).
 blacksmith hue:0.95,0.04,0.55
 farmer_f hue:0.95,0.05,0.55
-merchant hue:0.3,0.45
+merchant hue:0.22,0.5,0.15
 miller hue:0.1,0.17
 old_man hue:0.55,0.68,0.15
 stallholder hue:0.45,0.55

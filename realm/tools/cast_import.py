@@ -91,6 +91,22 @@ if base:
             v = 1.0 if (hi > mask_cfg["bright"] and sat < mask_cfg["grey"]) else 0.0
         mask_px += int(v)
         out[i * 4:i * 4 + 4] = [v, v, v, 1.0]
+    # The dye cloth undyed (look-gap.md: the dye is multiplied over it in game, people.gd _mask_dye, so a teal
+    # vest dyed red came out a muddy brown): its colour taken out and its weave lifted to an even pale grey
+    # (UNDYE, the mean brightness), so the town's reds, whites and ochres come out as themselves.
+    UNDYE = 0.8
+    lum = [0.3 * px[i * 4] + 0.59 * px[i * 4 + 1] + 0.11 * px[i * 4 + 2] for i in range(w * h)]
+    masked = [lum[i] for i in range(w * h) if out[i * 4] > 0.5]
+    if masked:
+        k = UNDYE / max(sum(masked) / len(masked), 0.05)
+        new = list(px)
+        for i in range(w * h):
+            if out[i * 4] > 0.5:
+                v = min(1.0, lum[i] * k)
+                new[i * 4:i * 4 + 3] = [v, v, v]
+        base.pixels[:] = new
+        base.update()
+        base.pack()
     mask = bpy.data.images.new(name + "_mask", w, h)
     mask.pixels[:] = out
     mask.filepath_raw = os.path.join(root, name + "_mask.png")
