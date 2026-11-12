@@ -23,3 +23,15 @@ Goldrock 6, 10, 16 and 30. There are no duplicate frames, and every shot settles
 **ladder defects:** (1) wet glare: white blown-out highlights on roofs and the ground in rain (weather_fx.gd wetness,
 weather.json; look.gd glow). (2) The foreground chimney pot and roof edges at d6 (camera_rig.gd lower-third clear,
 46aefe45: still catches the nearest chimney). (3) Rain drawn as long white streaks. (4) A loud red territory line on the roads at d30-50.
+
+## settled (26 frames, 0 script errors; the forge at 4.5, settled in 0.6 s at 30 degrees)
+
+| Shot | Verdict | Defects |
+|---|---|---|
+| forge / forge-ui | FAIL | The settled framing works: no camera drift. The new forge with its house-colour shield, the fire inside, two smiths, a busy lane and a barn read clearly. Winter now puts **snow on the roofs** (a gain). Defects: the snow on the trees is **flat white cross-quads** sticking out of the crowns (cards, not snow). Summer grass tufts and red flowers poke up through the snow everywhere. A red blob floats in mid-air left of the forge. The inn's name label ("...en Wheel") is cut by a roof. A grey see-through rectangle sits on the snow behind the fence (a water or decal plane). The left house's snowy roof is blown-out flat white. forge-ui is the same frame as forge: no interface difference shows. |
+| forge-clip | FAIL | The camera is steady (difference 0.45 throughout), and frames are now about 0.6 s of wall time apart. The two smiths stand by the door, away from the anvil: one bends, the other shifts. No hammering is seen at the anvil. The fire flickers. |
+
+**settled defects:** (1) tree snow drawn as white cross-quad cards (forest.gd winter snow on foliage, or the snow
+material). (2) Summer grass and flowers through the snow (grass.gd or countryside props aren't seasoned). (3) The
+smiths don't work at the anvil (works.gd smith anchor positions, works.json). (4) Floating red blob (a seed, an ember
+sprite or a flower prop). (5) The name label is cut by roofs (towns.gd site labels).
