@@ -415,7 +415,7 @@ func _step(w: PackedStringArray) -> void:
 				_note("  breach: %s" % ("framed at %s" % at if at != Vector3.INF else "no siege staged (--siege)"))
 				await get_tree().create_timer(2.0).timeout
 			"castle":
-				# castle Town [dist] [tilt] [gate]: frames the town's castle low and oblique, from its gate side
+				# castle Town [dist] [tilt] [gate|breach]: frames the town's castle low and oblique from its gate's side (gate: its gatehouse; breach: the first open gap in its stone curtains, from outside)
 				# (gate: on the gatehouse itself), for its towers, banners, walks and bailey.
 				var at := Vector3.INF
 				var gate_side := Vector3.ZERO
@@ -427,9 +427,19 @@ func _step(w: PackedStringArray) -> void:
 							at = castle.global_position
 							gate_side = castle.global_transform.basis.z.normalized()
 				if at != Vector3.INF:
-					if w.size() > 4 and w[4] == "gate":
+					var mode := String(w[4]) if w.size() > 4 else ""
+					var heart := at
+					if mode == "gate":
 						at += gate_side * 0.9
-					_oblique(at, float(w[2]) if w.size() > 2 else 5.0, float(w[3]) if w.size() > 3 else -22.0)
+					elif mode == "breach" and Engine.has_meta("stone_walls"):
+						# The first open gap in its stone curtains (walls.gd), looked at from outside the castle.
+						var gaps: Array = Engine.get_meta("stone_walls").breaches_near(at, 3.0)
+						if not gaps.is_empty():
+							at = gaps[0]
+					# The castle's whole silhouette from its gate's side (the town's), or a gap from outside it:
+					# never a fixed heading that showed one tower's wall (batch 8b review #7).
+					var from := heart - gate_side * 2.0 if mode != "breach" else heart
+					_from_outside(at, from, float(w[2]) if w.size() > 2 else 6.0, float(w[3]) if w.size() > 3 else -5.0)
 					if main.rig.is_processing_input() == false:
 						main.rig.apply()
 				_note("  castle %s: %s" % [w[1], "framed" if at != Vector3.INF else "none stands"])
