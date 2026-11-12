@@ -267,6 +267,16 @@ func blocking(eye: Vector3, at: Vector3) -> int:
 	return n
 
 
+## A tree planted by someone else (a town's square, edge and orchard trees: towns.gd) joins the sight lines, so the
+## camera reads its crown as it does the woods' (camera_rig: the line to what it looks at, the frame's bottom).
+## `at`: its foot in the world; `height`: its height in game units.
+func add_crown(at: Vector3, height: float) -> void:
+	var cell := Vector2i(floori(at.x / SIGHT_CELL), floori(at.z / SIGHT_CELL))
+	if not _sight.has(cell):
+		_sight[cell] = []
+	_sight[cell].append(Vector4(at.x, at.z, at.y, height))
+
+
 ## How many trees stand within `radius` of `center` on the ground plane: the
 ## open ground a host or a camp needs (army.gd keeps its regiments off them).
 func trees_near(center: Vector3, radius: float) -> int:
