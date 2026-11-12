@@ -1,0 +1,10 @@
+{
+  "_": "The countryside round the towns (countryside.gd; docs/TUNING.md). near_town: tiles kept clear round a town for its own fields. crop.sway: how far the ears move in a fresh breeze (about a fifth of their height at 1.2; the h-squared law in the shader); crop.cut: how low a reaped field's stubble stands; crop.reach: crops are drawn this near the camera (world units), the field's painted colour beyond. tuft_reach: grass tufts are drawn this near the camera.",
+  "near_town": 2.4,
+  "crop": {
+    "sway": 1.2,
+    "cut": 0.32,
+    "reach": 25.0
+  },
+  "tuft_reach": 22.0
+}

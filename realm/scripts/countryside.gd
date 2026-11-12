@@ -8,7 +8,7 @@ extends Node3D
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const Real = preload("res://scripts/realistic.gd")
 const S := Units.M  # game units per metre
-const NEAR_TOWN := 2.4  # tiles kept clear around a town for its own fields
+static var NEAR_TOWN: float = preload("res://scripts/data.gd").num("countryside", "near_town", 2.4)  # tiles kept clear around a town for its own fields
 const CHUNK := 20.0  # farms are kept and batched by patch of land, so distant ones still cull
 
 var terrain: Node3D
@@ -438,11 +438,11 @@ const CROP_SIZE := {"wheat": 0.15, "barley": 0.12, "flax": 0.09, "beans": 0.06, 
 ## Standing grain sown close (batch 8b look2: the wheat read as flat ochre squares from roof height: its
 ## cards are 84% cut away, so a sparse field showed its painted ground), swaying in the one wind as the
 ## grass does (plant_wind.gdshader; CROP_SWAY the bend), its cards cut a little fuller (CROP_CUT).
-const CROP_SWAY := 1.2  # the ears move about a fifth of their height in a fresh breeze (h² law in the shader)
-const CROP_CUT := 0.32
+static var CROP_SWAY: float = preload("res://scripts/data.gd").num("countryside", "crop.sway", 1.2)  # the ears move about a fifth of their height in a fresh breeze (h² law in the shader)
+static var CROP_CUT: float = preload("res://scripts/data.gd").num("countryside", "crop.cut", 0.32)
 const CROP_ROWS := {"wheat": [0.03, 0.028], "barley": [0.032, 0.026], "flax": [0.05, 0.04], "beans": [0.08, 0.06], "cabbage": [0.09, 0.08]}  # [between rows, along a row]
 const STANDING := ["wheat", "barley", "flax"]  # cut at harvest and left as stubble; the rest are lifted
-const CROP_REACH := 25.0  # crops are drawn this near the camera; the field's painted colour does beyond
+static var CROP_REACH: float = preload("res://scripts/data.gd").num("countryside", "crop.reach", 25.0)  # crops are drawn this near the camera; the field's painted colour does beyond
 static var _crop_meshes := {}
 
 
@@ -747,7 +747,7 @@ var _tuft_meshes: Array = []
 ## clover and wildflowers among it.
 const TUFTS := ["Grass_Common_Short", "Grass_Wispy_Short", "Clover_1", "Flower_3_Group"]
 const TUFT_ODDS := [0.58, 0.3, 0.08, 0.04]
-const TUFT_REACH := 22.0  # drawn only this near the camera
+static var TUFT_REACH: float = preload("res://scripts/data.gd").num("countryside", "tuft_reach", 22.0)  # drawn only this near the camera
 const PLANT_WIND := preload("res://scripts/plant_wind.gdshader")
 
 

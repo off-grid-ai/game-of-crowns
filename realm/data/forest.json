@@ -1,0 +1,5 @@
+{
+  "_": "The woods (forest.gd; docs/TUNING.md). near: within this distance of the camera (world units) trees are drawn in full, with shadows (a block of woods switches as one); mid: out to this distance the middle batch, without shadows; the far batch beyond.",
+  "near": 6.0,
+  "mid": 24.0
+}

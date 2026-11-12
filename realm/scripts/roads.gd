@@ -6,7 +6,7 @@ extends Node3D
 const Awareness := preload("res://scripts/awareness.gd")  # the view's one store: the realm's records (rec)
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M): the verge plants' size
 var TEX: String = preload("res://scripts/terrain.gd").art("res://assets/ground/road-dirt.jpg", "res://assets/ground/dirt-albedo.jpg")
-const WIDTH := 0.26
+static var WIDTH: float = preload("res://scripts/data.gd").num("ground", "roads.width", 0.26)
 
 
 
@@ -345,7 +345,7 @@ func _cells() -> Dictionary:
 ## over the land. The great roads and the King's road only, not farm tracks.
 var _graph: AStar3D
 var _graph_version := -1
-const ROAD_REACH := 2.5  # how far an end may be from the road to set out along it
+static var ROAD_REACH: float = preload("res://scripts/data.gd").num("ground", "roads.reach", 2.5)  # how far an end may be from the road to set out along it
 func route(from: Vector3, to: Vector3) -> PackedVector3Array:
 	if _graph == null or _graph_version != version:
 		_graph = AStar3D.new()

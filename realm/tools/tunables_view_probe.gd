@@ -52,6 +52,15 @@ const MOVED := [
 	["motion", "STEP_CEIL", "people", "motion.step_ceil"],
 	["units", "MARCH_SPEED", "army", "map.march_speed"],
 	["units", "WOUNDED_HP", "army", "map.wounded_hp"],
+	["countryside", "NEAR_TOWN", "countryside", "near_town"],
+	["countryside", "CROP_SWAY", "countryside", "crop.sway"],
+	["countryside", "CROP_CUT", "countryside", "crop.cut"],
+	["countryside", "CROP_REACH", "countryside", "crop.reach"],
+	["countryside", "TUFT_REACH", "countryside", "tuft_reach"],
+	["forest", "NEAR", "forest", "near"],
+	["forest", "MID", "forest", "mid"],
+	["roads", "WIDTH", "ground", "roads.width"],
+	["roads", "ROAD_REACH", "ground", "roads.reach"],
 ]
 
 
