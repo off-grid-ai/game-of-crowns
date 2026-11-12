@@ -1,12 +1,54 @@
 {
-  "_": "The realm's gold mines in the view (gold_mines.gd): a mine stands on every gold seam the bridge reports, worked by miners when the camera is near; where a seam ran out, the old workings stand dark and empty. Where the gold is and how long it lasts is Freeciv's (bridge/data/mines.json). on: false (or --gold-mines=off) shows none. scale: the mine's size against its true metres. off: where on the tile it stands, in tiles from the centre. miners: how many work a live seam; ring: how far from the mine they stand (world units); clips: what they do, swapped every swap_sec; near: the camera distance (world units) inside which miners are about. spent_shade: how dark the old workings are (0 none, 1 black).",
+  "_": "The realm's gold mines in the view (gold_mines.gd): a mine stands on every gold seam the bridge reports, worked by miners when the camera is near; where a seam ran out, the old workings stand dark and empty. Where the gold is and how long it lasts is Freeciv's (bridge/data/mines.json). on: false (or --gold-mines=off) shows none. scale: the mine's size against its true metres. off: where on the tile it stands, in tiles from the centre. miners: how many work a live seam; ring: how far from the mine they stand (world units); clips: what they do, swapped every swap_sec; near: the camera distance (world units) inside which miners are about. spent_shade: how dark the old workings are (0 none, 1 black). Dressing (a live seam): rocks, a stony outcrop round the mine (count, ring in world units from its middle, outside its ~0.8 footprint; size: times the ~3 m boulder in metres); banner, the owning house's standard planted beside it (at: offset in world units, height); gold, a heap of glinting ore before the mine (at: world units, turned with the mine; pieces; size: each half-metre nugget's scale in world units; glow). A spent seam keeps its rocks, not its banner or gold.",
   "on": true,
-  "scale": 1.0,
-  "off": [0.18, -0.12],
+  "scale": 1.3,
+  "off": [
+    0.18,
+    -0.12
+  ],
   "miners": 4,
-  "ring": [0.9, 1.5],
-  "clips": ["Axe_Down", "Axe_Horizontal", "Axe_Down", "Wiping_Sweat", "Carrying"],
-  "swap_sec": [4.0, 9.0],
+  "ring": [
+    0.9,
+    1.5
+  ],
+  "clips": [
+    "Axe_Down",
+    "Axe_Horizontal",
+    "Axe_Down",
+    "Wiping_Sweat",
+    "Carrying"
+  ],
+  "swap_sec": [
+    4.0,
+    9.0
+  ],
   "near": 40.0,
-  "spent_shade": 0.45
+  "spent_shade": 0.45,
+  "rocks": {
+    "count": 8,
+    "ring": [
+      0.9,
+      1.4
+    ],
+    "size": [
+      0.6,
+      1.4
+    ]
+  },
+  "banner": {
+    "at": [
+      0.95,
+      0.5
+    ],
+    "height": 0.55
+  },
+  "gold": {
+    "at": [
+      0.3,
+      0.95
+    ],
+    "pieces": 8,
+    "size": 0.15,
+    "glow": 0.6
+  }
 }

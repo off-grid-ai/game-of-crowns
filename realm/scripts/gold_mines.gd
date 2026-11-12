@@ -10,6 +10,9 @@ const Data := preload("res://scripts/data.gd")
 const People := preload("res://scripts/people.gd")
 const Real := preload("res://scripts/realistic.gd")
 const Scenes := preload("res://scripts/scenes.gd")
+const Heraldry := preload("res://scripts/heraldry.gd")
+const ROCKS := ["res://assets/nature/Rock_Medium_1.gltf", "res://assets/nature/Rock_Medium_2.gltf", "res://assets/nature/Rock_Medium_3.gltf"]
+const PEBBLE := "res://assets/nature/Pebble_Round_1.gltf"
 const MODEL := "res://assets/meshy/mine/mine.glb"
 
 var main: Node
@@ -63,9 +66,11 @@ func _follow() -> void:
 		return
 	_sig = sig
 	var want := {}
+	var owners := {}
 	for g in gold:
 		if g is Array and (g as Array).size() >= 2:
 			want[Vector2i(int(g[0]), int(g[1]))] = false
+			owners[Vector2i(int(g[0]), int(g[1]))] = int(g[2]) if (g as Array).size() > 2 else -1
 	for s in spent:
 		if s is Array and (s as Array).size() >= 2:
 			var t := Vector2i(int(s[0]), int(s[1]))
@@ -76,13 +81,13 @@ func _follow() -> void:
 			_drop(t)
 	for t in want:
 		if not _sites.has(t):
-			_raise(t, bool(want[t]))
+			_raise(t, bool(want[t]), int(owners.get(t, -1)))
 		elif bool(_sites[t]["spent"]) != bool(want[t]):
 			_drop(t)
-			_raise(t, bool(want[t]))
+			_raise(t, bool(want[t]), int(owners.get(t, -1)))
 
 
-func _raise(t: Vector2i, spent: bool) -> void:
+func _raise(t: Vector2i, spent: bool, owner := -1) -> void:
 	var off: Array = _d.get("off", [0.0, 0.0])
 	var at: Vector3 = main.terrain.world_pos(float(t.x) + float(off[0]), float(t.y) + float(off[1]))
 	if not main.terrain.is_land(at.x, at.z):
@@ -99,14 +104,85 @@ func _raise(t: Vector2i, spent: bool) -> void:
 		shade.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		for mi in n.find_children("*", "MeshInstance3D", true, false):
 			(mi as MeshInstance3D).material_overlay = shade
-	_sites[t] = {"node": n, "spent": spent, "at": at}
+	var dress := Node3D.new()
+	dress.name = "Dressing"
+	add_child(dress)
+	_rocks(dress, at, hash(t))
+	if not spent:
+		_banner(dress, at, owner)
+		_gold(dress, at, n.rotation.y)
+	_sites[t] = {"node": n, "dress": dress, "spent": spent, "at": at}
+
+
+## A stony outcrop round the mine, so it sits in broken ground and not on a lawn.
+func _rocks(parent: Node3D, at: Vector3, seed: int) -> void:
+	var r: Dictionary = _d.get("rocks", {})
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed
+	var ring: Array = r.get("ring", [0.45, 0.95])
+	var size: Array = r.get("size", [0.35, 0.9])
+	for i in int(r.get("count", 7)):
+		var path: String = ROCKS[rng.randi() % ROCKS.size()]
+		if not ResourceLoader.exists(path):
+			continue
+		var rock: Node3D = (load(path) as PackedScene).instantiate()
+		var a := rng.randf() * TAU
+		var d := rng.randf_range(float(ring[0]), float(ring[1]))
+		var p := at + Vector3(cos(a) * d, 0, sin(a) * d)
+		parent.add_child(rock)
+		rock.global_position = Vector3(p.x, main.terrain.height_at(p.x, p.z), p.z)
+		rock.rotation.y = rng.randf() * TAU
+		rock.scale = Vector3.ONE * rng.randf_range(float(size[0]), float(size[1])) * Real.S
+
+
+## The owning house's standard planted by the mine: whose gold this is, at a glance.
+func _banner(parent: Node3D, at: Vector3, owner: int) -> void:
+	var house: Dictionary = {}
+	for p in main.awareness.realm.get_var(&"houses", [], false):
+		if p is Dictionary and int(p.get("id", -2)) == owner:
+			house = p.get("house", {}) if p.get("house") is Dictionary else {}
+	if house.is_empty():
+		return
+	var b: Dictionary = _d.get("banner", {})
+	var off: Array = b.get("at", [0.55, 0.35])
+	var std: Node3D = Heraldry.standard(house, Heraldry.colour(house, Color.GOLD, "#d4a62a"), float(b.get("height", 0.55)))
+	parent.add_child(std)
+	var p := at + Vector3(float(off[0]), 0, float(off[1]))
+	std.global_position = Vector3(p.x, main.terrain.height_at(p.x, p.z), p.z)
+
+
+## A heap of gold ore by the cart, catching the light: what comes out of this hill.
+func _gold(parent: Node3D, at: Vector3, yaw: float) -> void:
+	if not ResourceLoader.exists(PEBBLE):
+		return
+	var g: Dictionary = _d.get("gold", {})
+	var off: Array = g.get("at", [0.25, 0.42])
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.95, 0.75, 0.2)
+	mat.metallic = 0.9
+	mat.roughness = 0.3
+	mat.emission_enabled = true
+	mat.emission = Color(1.0, 0.8, 0.3)
+	mat.emission_energy_multiplier = float(g.get("glow", 0.6))
+	var base := at + Vector3(float(off[0]), 0, float(off[1])).rotated(Vector3.UP, yaw)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(base)
+	for i in int(g.get("pieces", 6)):
+		var piece: Node3D = (load(PEBBLE) as PackedScene).instantiate()
+		parent.add_child(piece)
+		var p := base + Vector3(rng.randf_range(-0.08, 0.08), 0, rng.randf_range(-0.08, 0.08))
+		piece.global_position = Vector3(p.x, main.terrain.height_at(p.x, p.z) + 0.01 * i, p.z)
+		piece.scale = Vector3.ONE * float(g.get("size", 0.06)) * rng.randf_range(0.7, 1.3)
+		for mi in piece.find_children("*", "MeshInstance3D", true, false):
+			(mi as MeshInstance3D).material_override = mat
 
 
 func _drop(t: Vector2i) -> void:
 	var s: Dictionary = _sites[t]
 	_unpeople(s)
-	if is_instance_valid(s["node"]):
-		s["node"].queue_free()
+	for k in ["node", "dress"]:
+		if s.has(k) and is_instance_valid(s[k]):
+			s[k].queue_free()
 	_sites.erase(t)
 
 
