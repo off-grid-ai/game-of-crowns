@@ -248,6 +248,103 @@ def mask_png(obj, mask, out):
     return False
 
 
+def islands(obj):
+    """The mesh's loose parts: [(faces, bbox min, bbox max, mean colour)], biggest first: what --islands prints and
+    cut / split pick from (metres, after the import has placed the piece)."""
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bm.faces.ensure_lookup_table()
+    uv = bm.loops.layers.uv.active
+    mats = obj.data.materials
+    pixels = {}
+    seen = set()
+    out = []
+    for f0 in bm.faces:
+        if f0.index in seen:
+            continue
+        stack, part = [f0], []
+        seen.add(f0.index)
+        while stack:
+            f = stack.pop()
+            part.append(f)
+            for e in f.edges:
+                for g in e.link_faces:
+                    if g.index not in seen:
+                        seen.add(g.index)
+                        stack.append(g)
+        vs = [v.co for f in part for v in f.verts]
+        lo = [min(v[i] for v in vs) for i in range(3)]
+        hi = [max(v[i] for v in vs) for i in range(3)]
+        col = [0.0, 0.0, 0.0]
+        for f in part[:200]:
+            src = mats[f.material_index] if f.material_index < len(mats) else None
+            img = base_image(src)
+            if img is not None and uv is not None:
+                if img.name not in pixels:
+                    pixels[img.name] = Pixels(img)
+                px = pixels[img.name].at(sum(l[uv].uv.x for l in f.loops) / len(f.loops), sum(l[uv].uv.y for l in f.loops) / len(f.loops))
+            else:
+                px = base_colour(src)
+            col = [col[i] + px[i] for i in range(3)]
+        n = min(len(part), 200)
+        out.append((len(part), lo, hi, [round(c / n, 2) for c in col]))
+    bm.free()
+    return sorted(out, key=lambda x: -x[0])
+
+
+def in_box(co, box):
+    return all(box[0][i] <= co[i] <= box[1][i] for i in range(3))
+
+
+def cut(obj, boxes, grey_above=None):
+    """Faces whose middle lies in any of `boxes` ([[x0,y0,z0],[x1,y1,z1]], metres, Blender's frame: z up) are
+    removed; and with grey_above (a share of the height), whole loose parts above it that are grey (painted smoke)."""
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    gone = [f for f in bm.faces if any(in_box(f.calc_center_median(), b) for b in boxes)]
+    bmesh.ops.delete(bm, geom=gone, context="FACES")
+    bm.to_mesh(obj.data)
+    bm.free()
+    removed = len(gone)
+    if grey_above is not None:
+        top = max(v.co.z for v in obj.data.vertices)
+        for n, lo, hi, col in islands(obj):
+            h, s, v = colorsys.rgb_to_hsv(*col)
+            if lo[2] > top * grey_above and s < 0.18:
+                removed += cut(obj, [[[lo[0] - 0.01, lo[1] - 0.01, lo[2] - 0.01], [hi[0] + 0.01, hi[1] + 0.01, hi[2] + 0.01]]])
+    return removed
+
+
+def split_arm(obj, spec):
+    """The throwing arm (the faces in spec box) made its own object, named arm, its origin at spec pivot and its
+    local X along the arm toward spec tip, so the game swings it about its local Z (Godot) as the kit's arm."""
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="DESELECT")
+    bpy.ops.object.mode_set(mode="OBJECT")
+    box = spec["box"]
+    for p in obj.data.polygons:
+        p.select = in_box(p.center, box)
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.separate(type="SELECTED")
+    bpy.ops.object.mode_set(mode="OBJECT")
+    arm = [o for o in bpy.context.selected_objects if o != obj][0]
+    arm.name = "arm"
+    pivot = spec["pivot"]
+    tip = spec["tip"]
+    yaw = math.atan2(-(tip[1] - pivot[1]), -(tip[0] - pivot[0]))  # its local -X toward the tip, as the kit's arm
+    # Its origin at the pivot, its frame turned by yaw: vertices moved into that frame.
+    import mathutils
+    m = mathutils.Matrix.Translation(pivot) @ mathutils.Matrix.Rotation(yaw, 4, "Z")
+    arm.data.transform(m.inverted())
+    arm.matrix_world = m
+    arm.parent = obj
+    arm.matrix_parent_inverse = obj.matrix_world.inverted()
+    return arm
+
+
 def main():
     name, test = args()
     spec = spec_of(name, test)
@@ -260,13 +357,18 @@ def main():
     obj.name = name + "_body"  # never a name a placer looks for as a part (siege_camp.gd finds a catapult's arm by "catapult")
     k, size = place(obj, spec)
     before, after = decimate(obj, int(spec["tris"]))
+    removed = cut(obj, spec.get("cut", []), spec.get("smoke_above")) if spec.get("cut") or spec.get("smoke_above") is not None else 0
+    if "--islands" in sys.argv:
+        for n, lo, hi, col in islands(obj)[:40]:
+            print("ISLAND faces=%d min=%s max=%s colour=%s" % (n, [round(x, 2) for x in lo], [round(x, 2) for x in hi], col))
     share = split_house(obj, spec["mask"])
+    arm = split_arm(obj, spec["arm"]) if spec.get("arm") else None
     has_mask = mask_png(obj, spec["mask"], out)
     glb = os.path.join(out, name + ".glb")
     bpy.ops.export_scene.gltf(filepath=glb, export_format="GLB", use_selection=False, export_yup=True, export_apply=True)
     report = {"name": name, "source": src, "tris_before": before, "tris_after": after, "scale": k,
               "size_m": [round(x, 2) for x in size], "house_share": round(share, 3), "mask_png": has_mask,
-              "materials": [m.name for m in obj.data.materials if m]}
+              "materials": [m.name for m in obj.data.materials if m], "cut_faces": removed, "arm": arm is not None}
     json.dump(report, open(os.path.join(out, "import.json"), "w"), indent=1)
     print("MESHY " + json.dumps(report))
 

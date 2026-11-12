@@ -2,7 +2,7 @@
  "name": "tavern",
  "source": "/Users/user/code/goc-kits/meshy/tavern/Meshy_AI_Single_isometric_3_4__1111191836_texture.glb",
  "tris_before": 1283956,
- "tris_after": 8000,
+ "tris_after": 30000,
  "scale": 5.780119079312084,
  "size_m": [
   9.82,
@@ -14,5 +14,7 @@
  "materials": [
   "Material_0",
   "MI_RoundTiles_house"
- ]
+ ],
+ "cut_faces": 674,
+ "arm": false
 }
