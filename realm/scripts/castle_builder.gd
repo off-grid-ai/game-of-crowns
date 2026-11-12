@@ -49,15 +49,13 @@ func build_castle(spec: Dictionary) -> ArrayMesh:
 		# Round at the four corners only (round 9: round everywhere read as a forest of grey cylinders).
 		var corner := absf(t.x) > 0.01 and absf(t.z) > 0.01
 		_block(parts, t, 2, 2, tower_st, rng, {"cone": true, "windows": 0.3, "round": corner})
-	# Curtain walls between them: front (gate on it), right, back (keep in it), left. With stone walls on
-	# (walls.gd, --walls=stone) they're left out: walls.gd stands stone walls that can breach in their place.
-	if not stone_curtains():
-		var bays := curtain_bays(spec)
-		for side in 4:
-			var half := (hz if side % 2 == 0 else hx)
-			var frame := Transform3D(Basis(Vector3.UP, SIDES[side]), Basis(Vector3.UP, SIDES[side]) * Vector3(0, 0, half))
-			for off in bays[side]:
-				_curtain(parts, frame, off, wall_st)
+	# Curtain walls between them: front (gate on it), right, back (keep in it), left: the kit's curtain.
+	var bays := curtain_bays(spec)
+	for side in 4:
+		var half := (hz if side % 2 == 0 else hx)
+		var frame := Transform3D(Basis(Vector3.UP, SIDES[side]), Basis(Vector3.UP, SIDES[side]) * Vector3(0, 0, half))
+		for off in bays[side]:
+			_curtain(parts, frame, off, wall_st)
 	# The gatehouse astride the front wall: Meshy's (data/meshy.json gatehouse, imported), in metres.
 	var meshy_gate := meshy_gatehouse()
 	if meshy_gate != "":
@@ -297,11 +295,6 @@ func town_gate(_wall_st: int, _seed: int) -> ArrayMesh:
 ## steps.storeys).
 static func podium() -> int:
 	return int((preload("res://scripts/data.gd").value("castle", "steps", {}) as Dictionary).get("storeys", 1))
-
-
-## Stone curtains (walls.gd's switch, --walls=stone): the kit curtain is left out of the castle.
-static func stone_curtains() -> bool:
-	return load("res://scripts/walls.gd").on()
 
 
 ## A stone block (tower, keep, gatehouse) standing on `at`: its four faces of

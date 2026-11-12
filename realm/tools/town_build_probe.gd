@@ -7,11 +7,17 @@ extends SceneTree
 ## (doors near the square's rim); Kingsmere's market (stalls_stood) in range of square_density_probe's; and no script
 ## error raised in the build (towns.gd, its parts, town_plots/tiers/trades anywhere in the error's backtrace: a Logger
 ## sees them). Errors elsewhere (the townsfolk who start walking once a town stands look for the game's main node,
-## which a probe has none of) are counted and shown, not judged. Prints CHECK lines; exits 1 on a fail.
+## which a probe has none of) are counted and shown, not judged.
+## Then Kingsmere's town wall (integration audit #7: one owner, walls.gd, reading the bridge's damage fact): whole, it
+## stands as the kit curtain, one piece a damage section, every bay towns.gd planned; with one section's wear staged
+## cracked and another's breached (the store's world, as damage.js sends it), exactly those two show the stacked stones
+## (stone_wall.gd) and their kit faces hide, the rest stay kit, and the breach's open foot reaches the town's walk map
+## (root meta stone_walls). Prints CHECK lines; exits 1 on a fail.
 ##   arch -arm64 godot --headless --path realm -s res://tools/town_build_probe.gd
 
 const FIX := "res://tools/fixtures/town_build_%s.json"
 const WAIT_S := 150.0
+const WALL_WAIT_S := 30.0
 const BUILD := ["towns.gd", "town_layout.gd", "town_fields.gd", "town_banners.gd", "town_plots.gd", "town_tiers.gd", "town_trades.gd"]
 
 
@@ -28,6 +34,13 @@ class Errors extends Logger:
 			build.append("%s (%s)" % [rationale, ", ".join(files.map(func(f): return String(f).get_file()))])
 		else:
 			other += 1
+
+
+## The game's main node, as walls.gd asks it: the towns, the store and the land.
+class Main extends Node:
+	var towns: Node
+	var awareness: Node
+	var terrain: Node
 
 var errors := Errors.new()
 
@@ -94,8 +107,66 @@ func _run() -> void:
 			name, int(c.get("size", 1)), ways, homes, ring, stalls, square_r, "PASS" if ok else "FAIL"])
 		if not ok:
 			fail += 1
+	fail += await _wall(store, towns, terrain, world, crown)
 	print("CHECK town build, script errors in the build %d%s (elsewhere, not judged: %d): %s" % [errors.build.size(), (": " + str(errors.build.slice(0, 3))) if not errors.build.is_empty() else "", errors.other, "PASS" if errors.build.is_empty() else "FAIL"])
 	if not errors.build.is_empty():
 		fail += 1
 	print("CHECK town build: %s" % ("PASS" if fail == 0 else "%d FAIL" % fail))
 	quit(1 if fail > 0 else 0)
+
+
+## Kingsmere's town wall: kit while whole, stone only where the damage fact cracks or breaches a section.
+func _wall(store: Node, towns: Node, terrain: Node, world: Dictionary, crown: Dictionary) -> int:
+	var id := int(crown["id"])
+	var main := Main.new()
+	main.towns = towns
+	main.awareness = store
+	main.terrain = terrain
+	root.add_child(main)
+	var walls: Node = load("res://scripts/walls.gd").new(main)
+	root.add_child(walls)
+	var town: Node3D = towns.towns[id]["node"]
+	var plan: Dictionary = town.get_meta("town_wall", {})
+	if not "_town_walls" in walls or plan.is_empty():
+		print("CHECK town wall: walls.gd doesn't own the town wall (no _town_walls), or towns.gd plans none (meta town_wall): FAIL")
+		return 1
+	var t0 := Time.get_ticks_msec()
+	while not walls._town_walls.has(id) and Time.get_ticks_msec() - t0 < WALL_WAIT_S * 1000.0:
+		await process_frame
+	if not walls._town_walls.has(id):
+		print("CHECK town wall: Kingsmere's wall never stood: FAIL")
+		return 1
+	var w: Dictionary = walls._town_walls[id]
+	var kits: Dictionary = w["kits"]
+	var bays := 0
+	for s in w["bays"]:
+		bays += (w["bays"][s] as Array).size()
+	var whole: bool = not kits.is_empty() and kits.values().all(func(k): return (k as Node3D).visible) and (w["stones"] as Dictionary).is_empty() and bays == (plan["bays"] as Array).size()
+	print("CHECK town wall whole: %d kit sections, %d of %d planned bays, %d stone runs: %s" % [kits.size(), bays, (plan["bays"] as Array).size(), (w["stones"] as Dictionary).size(), "PASS" if whole else "FAIL"])
+	# Two sections that have bays: one cracked, one breached (damage.json crackedAt 0.35, breachedAt 0.75).
+	var secs: Array = kits.keys()
+	secs.sort()
+	var cracked: int = secs[0]
+	var breached: int = secs[secs.size() / 2]
+	var dmg := []
+	for s in 8:
+		var wear := 0.5 if s == cracked else (1.0 if s == breached else 0.0)
+		dmg.append({"stage": "breached" if wear >= 0.75 else ("cracked" if wear >= 0.35 else "whole"), "wear": wear})
+	var hurt := world.duplicate(true)
+	for c: Dictionary in hurt["cities"]:
+		if int(c["id"]) == id:
+			c["damage"] = {"walls": dmg, "burnt": 0.0, "kindled": []}
+	store.dispatch(store.SYNC, {"world": hurt})
+	t0 = Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < 4000:
+		await process_frame
+	var stones: Dictionary = w["stones"]
+	var hidden: Array = kits.keys().filter(func(s): return not (kits[s] as Node3D).visible)
+	hidden.sort()
+	var want := [cracked, breached]
+	want.sort()
+	var feet := (town.get_meta("stone_walls", []) as Array).size()
+	var ok := hidden == want and stones.keys().size() == 2 and stones.has(cracked) and stones.has(breached) and feet > 0
+	print("CHECK town wall worn: sections %d cracked and %d breached; kit hidden at %s (want %s), stone runs at %s, open feet on the walk map %d: %s" % [
+		cracked, breached, hidden, want, stones.keys(), feet, "PASS" if ok else "FAIL"])
+	return (0 if whole else 1) + (0 if ok else 1)

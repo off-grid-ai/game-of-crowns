@@ -21,8 +21,6 @@ var _hall: ArrayMesh
 var _bell: ArrayMesh
 var _barn: ArrayMesh
 var _barracks: ArrayMesh
-var _wall_panel: ArrayMesh
-var _wall_tower: ArrayMesh
 const DIRT := "res://assets/ground/dirt-albedo.jpg"
 var ROAD_TEX: String = preload("res://scripts/terrain.gd").art("res://assets/ground/road-dirt.jpg", DIRT)
 ## Field crops by kind, each tinted dirt until its own texture is delivered.
@@ -43,8 +41,6 @@ func _ready() -> void:
 	_bell = _builder.build({"w": 2, "d": 2, "floors": 5, "style": "brick", "tower": true, "seed": 11})
 	_barn = _builder.build({"w": 3, "d": 4, "floors": 1, "style": "timber", "seed": 12})
 	_barracks = _builder.build({"w": 2, "d": 4, "floors": 1, "style": "brick", "seed": 13})
-	_wall_panel = _builder.piece_mesh("Wall_UnevenBrick_Straight")
-	_wall_tower = _builder.build({"w": 2, "d": 2, "floors": 2, "style": "brick", "tower": true, "seed": 14})
 	life.terrain = terrain
 	life.towns_node = self
 
@@ -776,7 +772,7 @@ func _palisade_on(root: Node3D, center: Vector3, edge: PackedVector2Array, ways:
 			_place(root, "wooden_fence_game_ready_asset", p + Vector3(0, _ground_y(center, p) - 0.01, 0), yaw, Vector3(1, 1.6, 1) if seat else Vector3.ONE, Vector2(panel * 1.05, 0.08))
 
 
-## The town's stone wall round its edge, in place of the palisade (towns.json town_wall; 01-town: the town wall in
+## The town's stone wall round its edge, in place of the palisade: planned here (meta town_wall), built by walls.gd (towns.json town_wall; 01-town: the town wall in
 ## the distance, its towers with red cones and its arched gate): the castle's curtain in 2 m bays along the edge's
 ## outline, a round tower at each turn of it (round 9: towers every 36 m crowded it), a gatehouse (castle_builder.gd
 ## town_gate) where each main road runs out, and a gap where a lane does; never over water or into the castle.
@@ -844,25 +840,10 @@ func _town_wall(root: Node3D, center: Vector3, edge: PackedVector2Array, ways: A
 			towers.append(m.call(b))
 	if bays.is_empty():
 		return false
-	var Builder := preload("res://scripts/castle_builder.gd")
-	var builder = Builder.new()
-	var mi := MeshInstance3D.new()
-	mi.name = "TownWall"
-	mi.mesh = builder.town_wall(bays, towers, int(k.get("storeys", 2)), int(root.get_meta("size", 1)) * 31 + 7)
-	mi.scale = Vector3.ONE * S
-	root.add_child(mi)
-	_fade_beyond(mi, _reach("castle", 220.0))
-	for g in gates:
-		var q: Vector2 = g[0]
-		var n: Vector2 = g[1]
-		var gm := MeshInstance3D.new()
-		gm.name = "TownGate"
-		gm.mesh = builder.town_gate(int(k.get("storeys", 2)), int(q.x * 100.0))
-		gm.scale = Vector3.ONE * S
-		gm.position = Vector3(q.x, _ground_y(center, Vector3(q.x, 0, q.y)) - 0.02, q.y)
-		gm.rotation.y = atan2(n.x, n.y)
-		root.add_child(gm)
-		_fade_beyond(gm, _reach("castle", 220.0))
+	# The wall itself is walls.gd's, its one owner (integration audit #7): the curtain bays, towers and gatehouses
+	# planned here, built there, each stretch drawn at the wear the bridge's damage fact gives its section.
+	root.set_meta("town_wall", {"bays": bays, "towers": towers, "gates": gates, "storeys": int(k.get("storeys", 2)),
+		"seed": int(root.get_meta("size", 1)) * 31 + 7})
 	print("CHECK town wall: %s: %d bays, %d towers, %d gates" % [String(root.get_meta("title", "")), bays.size(), towers.size(), gates.size()])
 	return true
 
@@ -2102,10 +2083,6 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 		outer = maxf(outer, float(root.get_meta("edge_r", 0.0)))  # the plots' own edge
 	root.set_meta("reach", reach + 3.0)
 	root.set_meta("trodden", outer)  # where its people walk: no grass grows within
-	# A realistic town's palisade is its wall (a seat's stands taller).
-	if "City Walls" in buildings and not real:
-		_walls(root, center, outer)
-		outer += 0.4
 	terrain.commit_grading()
 	terrain.clear_around(center, outer + 0.6)
 	await _pace()
@@ -2121,37 +2098,6 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	_flush(root)
 	# Its name on the map is drawn in screen space by map_labels.gd.
 	return root
-
-
-func _walls(root: Node3D, center: Vector3, r: float) -> void:
-	var panel_w := 2.0 * S
-	var count := int(TAU * r / panel_w)
-	var panels := []
-	var towers := []
-	for i in count:
-		var a := TAU * i / count
-		var off := Vector3(cos(a) * r, 0, sin(a) * r)
-		var p := center + off
-		if not terrain.is_land(p.x, p.z):
-			continue
-		var y: float = _ground_y(center, off)
-		if i % 14 == 0:
-			towers.append(Transform3D(Basis().scaled(Vector3.ONE * S), off + Vector3(0, y - 0.05, 0)))
-		else:
-			panels.append(Transform3D(Basis(Vector3.UP, -a + PI / 2).scaled(Vector3(S, S * 0.9, S)), off + Vector3(0, y - 0.05, 0)))
-	_instances(root, _wall_panel, panels)
-	_instances(root, _wall_tower, towers)
-	# The camera keeps above them (townsfolk keep their own way through).
-	var shells: Array = root.get_meta("walls", [])
-	for pair in [[_wall_panel, panels], [_wall_tower, towers]]:
-		var bb: AABB = (pair[0] as Mesh).get_aabb()
-		for xf in pair[1]:
-			var pts := PackedVector2Array()
-			for c in [Vector3(bb.position.x, 0, bb.position.z), Vector3(bb.end.x, 0, bb.position.z), Vector3(bb.end.x, 0, bb.end.z), Vector3(bb.position.x, 0, bb.end.z)]:
-				var w: Vector3 = xf * c
-				pts.append(Vector2(w.x, w.z))
-			shells.append([pts, (xf * Vector3(0, bb.end.y, 0)).y])
-	root.set_meta("walls", shells)
 
 
 ## A worn footpath from a doorstep to the nearest street: a narrow track of

@@ -1,14 +1,14 @@
 extends Node3D
-## The realm's stone walls (stone_wall.gd), behind a switch: --walls=stone, or
-## "walls": "stone" in data/walls.json. A walled town's ring of kit wall panels
-## gives way to a ring of stacked stones in eight sections, each section drawn at
-## the wear the bridge reports for it (damage.js, /world cities[].damage, read
-## through the awareness mirror; the view decides nothing). When a section's wear
-## rises near the camera, catapult stones bring the doomed stones down one blow at
-## a time (the siege's own volleys, scenes._volley, strike the wall through aim and
-## strike; between them this throws its own); away from the camera the wall jumps
-## to the same breach. Each wall's open foot goes to its town's walking map
-## (town_nav, meta "stone_walls"), so a breach is a way in.
+## The realm's town walls, one owner (integration audit #7). towns.gd plans a walled town's wall (meta town_wall:
+## its curtain bays along the town's edge, towers at the turns, gatehouses where the main roads run out); this builds
+## it and keeps it at the wear the bridge reports for each of its eight sections (damage.js, /world cities[].damage,
+## read through the awareness mirror; the view decides nothing). Whole, a section stands as the castle kit's curtain
+## (castle_builder.gd town_wall: its arrow slits and merlons, the look of round 11); cracked or breached, that
+## section's kit face gives way to stacked stones (stone_wall.gd) at its wear, mended back to the kit when the realm
+## rebuilds it. When a section's wear rises near the camera, catapult stones bring the doomed stones down one blow at
+## a time (the siege camp's engines strike the wall through aim and strike; between them this throws its own); away
+## from the camera the wall jumps to the same breach. Each stone run's open foot goes to its town's walking map
+## (town_nav, meta "stone_walls"), so a breach is a way in. A castle's curtains are castle_builder.gd's kit for now.
 ## A test aid, --wall-demo: a wall across a staged siege's front (--siege) whose
 ## middle section each stone that strikes it wears further, without the bridge.
 
@@ -18,20 +18,11 @@ const Data := preload("res://scripts/data.gd")
 const S := Units.M
 
 var main: Node
-var _rings := {}  # town id -> {wall, root, center}
-var _castles := {}  # castle node -> {root, id, center, walls: [{wall, section}]}: a kit castle's stone curtains
+var _town_walls := {}  # town id -> {root, center, kits: {section: kit curtain}, bays: {section: [bay]}, stones: {section: [stone runs]}, storeys, seed}
 var _demo := {}  # {wall, wear, id, center}
 var _last := {}  # wall -> msec of its last blow
 var _blows := {}  # wall -> blows since its wear last rose
 var _thrown := {}  # wall -> a stone of its own in the air
-
-
-## On for this run?
-static func on() -> bool:
-	for a in OS.get_cmdline_user_args():
-		if a.begins_with("--walls="):
-			return a.substr(8) == "stone"
-	return String(Data.value("walls", "walls", "off")) == "stone"
 
 
 func _init(m: Node) -> void:
@@ -54,41 +45,14 @@ func _exit_tree() -> void:
 
 
 func _tick() -> void:
-	_rings_follow()
-	_castles_follow()
+	_towns_follow()
 	if OS.get_cmdline_user_args().has("--wall-demo") and _demo.is_empty():
 		_demo_build()
 	var cam := get_viewport().get_camera_3d()
 	var eye := cam.global_position if cam else Vector3.INF
 	var near_r := float(Data.num("walls", "sim_radius", 12.0))
-	for id in _rings:
-		var ring: Dictionary = _rings[id]
-		var wall: Node3D = ring["wall"]
-		var near: bool = eye != Vector3.INF and wall.distance_to(eye) < near_r
-		wall.set_hot(near or wall.busy())
-		var walls: Array = (main.awareness.town(id).get_var(&"damage", {}, false) as Dictionary).get("walls", []) if main.awareness else []
-		for s in mini(walls.size(), wall.sections):
-			var wear := float((walls[s] as Dictionary).get("wear", 0.0))
-			if absf(wear - wall.shown[s]) > 0.005:
-				wall.wear_to(s, wear, near)
-				_blows[wall] = 0
-		_keep_striking(wall, ring["center"])
-	# A kit castle's stone curtains take the wear of the town's section each faces: a siege breaches the castle too.
-	for c in _castles:
-		var cs: Dictionary = _castles[c]
-		var cw: Array = (main.awareness.town(int(cs["id"])).get_var(&"damage", {}, false) as Dictionary).get("walls", []) if main.awareness else []
-		for e in cs["walls"]:
-			var wall: Node3D = e["wall"]
-			if not is_instance_valid(wall):
-				continue
-			var near: bool = eye != Vector3.INF and wall.distance_to(eye) < near_r
-			wall.set_hot(near or wall.busy())
-			if int(e["section"]) < cw.size():
-				var wear := float((cw[int(e["section"])] as Dictionary).get("wear", 0.0))
-				if absf(wear - wall.shown[0]) > 0.005:
-					wall.wear_to(0, wear, near)
-					_blows[wall] = 0
-			_keep_striking(wall, cs["center"])
+	for id in _town_walls:
+		_wear(int(id), _town_walls[id], eye, near_r)
 	if not _demo.is_empty() and is_instance_valid(_demo["wall"]):
 		var dw: Node3D = _demo["wall"]
 		dw.set_hot(true)
@@ -224,134 +188,175 @@ func rubble_height(at: Vector3) -> float:
 
 func _walls() -> Array:
 	var out := []
-	for id in _rings:
-		if is_instance_valid(_rings[id]["wall"]):
-			out.append(_rings[id]["wall"])
-	for c in _castles:
-		for e in _castles[c]["walls"]:
-			if is_instance_valid(e["wall"]):
-				out.append(e["wall"])
+	for id in _town_walls:
+		for runs in (_town_walls[id]["stones"] as Dictionary).values():
+			for w in runs:
+				if is_instance_valid(w):
+					out.append(w)
 	if not _demo.is_empty() and is_instance_valid(_demo["wall"]):
 		out.append(_demo["wall"])
 	return out
 
 
-# --- town rings --------------------------------------------------------------
+# --- a town's wall -------------------------------------------------------------
 
-## Every walled town gets its ring (one a tick); a rebuilt or gone town's goes.
-func _rings_follow() -> void:
+## Every walled town's wall (towns.gd plans it: meta town_wall), one a tick; a rebuilt or gone town's goes with it.
+func _towns_follow() -> void:
 	if main.towns == null:
 		return
-	var panel: Mesh = main.towns.get("_wall_panel")
-	for id in _rings.keys():
-		var r: Dictionary = _rings[id]
+	for id in _town_walls.keys():
+		var tw: Dictionary = _town_walls[id]
 		var t: Dictionary = main.towns.towns.get(id, {})
-		if t.is_empty() or t.get("node") != r["root"] or not is_instance_valid(r["root"]):
-			if is_instance_valid(r["wall"]):
-				r["wall"].queue_free()
-			_rings.erase(id)
+		if t.is_empty() or t.get("node") != tw["root"] or not is_instance_valid(tw["root"]):
+			for runs in (tw["stones"] as Dictionary).values():
+				for w in runs:
+					if is_instance_valid(w):
+						w.queue_free()
+			_town_walls.erase(id)
 	for id in main.towns.towns:
-		if _rings.has(id):
+		if _town_walls.has(id):
 			continue
 		var root: Node3D = main.towns.towns[id].get("node")
-		if root == null or not is_instance_valid(root) or not root.is_inside_tree():
+		if root == null or not is_instance_valid(root) or not root.is_inside_tree() or not root.has_meta("town_wall"):
 			continue
-		var panels: Array = root.get_children().filter(func(n): return n is MultiMeshInstance3D and n.multimesh and n.multimesh.mesh == panel)
-		if panels.is_empty() or root.get_meta("walls", []).is_empty():
+		_build(int(id), root, root.get_meta("town_wall"))
+		return  # one wall a tick: the frame never waits on more
+
+
+## The damage section a point (town-local) faces: section 0 north, then clockwise (bridge damage.js sectionFacing).
+static func section_of(p: Vector2, sections: int) -> int:
+	var ang := fposmod(atan2(p.x, -p.y) + PI / sections, TAU)
+	return int(floor(ang / (TAU / sections))) % sections
+
+
+## A town's wall as towns.gd planned it: the kit curtain, one piece a damage section (each stretch's bays in that
+## section, in the line's order), its towers and gatehouses; whole until the damage fact says otherwise.
+func _build(id: int, root: Node3D, plan: Dictionary) -> void:
+	var Builder := preload("res://scripts/castle_builder.gd")
+	var builder = Builder.new()
+	var storeys := int(plan.get("storeys", 2))
+	var seed := int(plan.get("seed", id))
+	var sections := int(Data.num("walls", "ring.sections", 8))
+	var fade: float = main.towns._reach("castle", 220.0)
+	var by := {}
+	for b in plan.get("bays", []):
+		var p: Vector3 = (b[0] as Vector3) * S
+		var s := section_of(Vector2(p.x, p.z), sections)
+		if not by.has(s):
+			by[s] = []
+		(by[s] as Array).append(b)
+	var kits := {}
+	for s in by:
+		kits[s] = _kit(root, "TownWall%d" % s, builder.town_wall(by[s], [], storeys, seed), fade)
+	if not (plan.get("towers", []) as Array).is_empty():
+		_kit(root, "TownWallTowers", builder.town_wall([], plan["towers"], storeys, seed), fade)
+	for g in plan.get("gates", []):
+		var q: Vector2 = g[0]
+		var n: Vector2 = g[1]
+		var gm := _kit(root, "TownGate", builder.town_gate(storeys, int(q.x * 100.0)), fade)
+		gm.position = Vector3(q.x, main.towns._ground_y(root.global_position, Vector3(q.x, 0, q.y)) - 0.02, q.y)
+		gm.rotation.y = atan2(n.x, n.y)
+	_town_walls[id] = {"root": root, "center": root.global_position, "kits": kits, "bays": by, "stones": {}, "storeys": storeys, "seed": seed}
+
+
+## A piece of the kit wall on its town, at our scale, faded out past its reach as the town's buildings are.
+func _kit(root: Node3D, name_: String, mesh: Mesh, fade: float) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	mi.name = name_
+	mi.mesh = mesh
+	mi.scale = Vector3.ONE * S
+	root.add_child(mi)
+	main.towns._fade_beyond(mi, fade)
+	return mi
+
+
+## Each section at the wear the damage fact gives it: whole, the kit curtain; cracked or breached, stacked stones in
+## its place at that wear (and the kit again once the realm has mended it).
+func _wear(id: int, tw: Dictionary, eye: Vector3, near_r: float) -> void:
+	var dmg: Array = (main.awareness.town(id).get_var(&"damage", {}, false) as Dictionary).get("walls", []) if main.awareness else []
+	var stones: Dictionary = tw["stones"]
+	for s in tw["kits"]:
+		var d: Dictionary = dmg[s] if s < dmg.size() and dmg[s] is Dictionary else {}
+		var wear := float(d.get("wear", 0.0))
+		if String(d.get("stage", "whole")) == "whole":
+			if stones.has(s):
+				for w in stones[s]:
+					if is_instance_valid(w):
+						w.queue_free()
+				stones.erase(s)
+				(tw["kits"][s] as Node3D).visible = true
+				_publish(null, tw["root"])
 			continue
-		_ring(id, root, panels)
-		return  # one ring a tick: the frame never waits on more
+		if not stones.has(s):
+			stones[s] = _stone_runs(id, tw, s)
+			(tw["kits"][s] as Node3D).visible = false
+			_publish(null, tw["root"])
+		for w in stones[s]:
+			if not is_instance_valid(w):
+				continue
+			var near: bool = eye != Vector3.INF and w.distance_to(eye) < near_r
+			w.set_hot(near or w.busy())
+			if absf(wear - w.shown[0]) > 0.005:
+				w.wear_to(0, wear, near)
+				_blows[w] = 0
+			_keep_striking(w, tw["center"])
 
 
-func _ring(id: int, root: Node3D, panels: Array) -> void:
-	# The ring's radius, from the panels' outlines towns.gd keeps (meta "walls").
-	var shells: Array = root.get_meta("walls", [])
-	var r := 0.0
-	for sh in shells:
-		var q: PackedVector2Array = sh[0]
-		r += ((q[0] + q[1] + q[2] + q[3]) / 4.0).length()
-	r /= maxf(shells.size(), 1)
-	if r < 0.5:
-		return
-	var center := root.global_position
-	var ring: Dictionary = Data.value("walls", "ring", {})
-	var sections := int(ring.get("sections", 8))
-	var chords := sections * int(ring.get("chords_per_section", 3))
-	var pts := PackedVector3Array()
-	for k in chords + 1:
-		var a := -PI / sections + TAU * k / chords  # section 0 faces north, then clockwise (bridge damage.js)
-		var p := center + Vector3(sin(a), 0, -cos(a)) * r
-		p.y = main.terrain.height_at(p.x, p.z)
-		pts.append(p)
-	# Its gates: where a road runs out through the ring (01-town: the arched gate in the town wall), the wall
-	# left open and a gatehouse astride the road (castle_builder.gd town_gate).
-	var gk: Dictionary = ring.get("gates", {})
-	var gates := _gate_spots(center, r, gk)
-	var wall := StoneWall.build_along(pts, float(ring.get("height_m", 6.0)), Color.WHITE, {
-		"sections": sections, "outer": 1.0, "seed": id, "gaps": gates, "gap_m": float(gk.get("half_m", 7.0)),
-		"ground": func(p: Vector3) -> float: return main.terrain.height_at(p.x, p.z)})
-	add_child(wall)
-	for g in gates:
-		var out := Vector3(g.x - center.x, 0, g.z - center.z).normalized()
-		var mi := MeshInstance3D.new()
-		mi.name = "TownGate"
-		mi.mesh = preload("res://scripts/castle_builder.gd").new().town_gate(maxi(1, int(round(float(ring.get("height_m", 6.0)) / 3.0))), id)
-		wall.add_child(mi)
-		mi.global_transform = Transform3D(Basis(Vector3.UP, atan2(out.x, out.z)).scaled(Vector3.ONE * S), g)
-	for p in panels:
-		p.visible = false  # the stones stand in the kit panels' place
-	_rings[id] = {"wall": wall, "root": root, "center": center}
-	wall.opened.connect(_publish.bind(wall, root))
-	_publish(wall, root)
-
-
-## Where roads run out through a town's ring (centre, radius r): the middle of each crossing, on the ground
-## (world), at most gates.most; none with --town-gates=off or gates.on false.
-func _gate_spots(center: Vector3, r: float, k: Dictionary) -> Array:
-	var args := OS.get_cmdline_user_args()
-	if args.has("--town-gates=off") or not (args.has("--town-gates=on") or bool(k.get("on", false))):
-		return []
-	var roads: Node = main.get("roads")
-	if roads == null or not roads.has_method("on_path"):
-		return []
-	var n := maxi(64, int(TAU * r / 0.03))
+## A section's bays as stacked stones: one run for each unbroken stretch of them (a gate or a lane's gap splits a
+## section), as long, as high and on the same line as the kit curtain it stands in for, its merlons outward.
+func _stone_runs(id: int, tw: Dictionary, s: int) -> Array:
+	var root: Node3D = tw["root"]
+	var bays: Array = tw["bays"][s]
+	var half := 1.0 * S  # half a 2 m bay
 	var runs := []
-	var start := -1
-	for i in n + 1:
-		var a := TAU * i / n
-		var p := center + Vector3(sin(a), 0, -cos(a)) * r
-		var on: bool = i < n and roads.on_path(p, 0.0)
-		if on and start < 0:
-			start = i
-		elif not on and start >= 0:
-			runs.append([i - start, (start + i - 1) * 0.5 * TAU / n])
-			start = -1
-	runs.sort_custom(func(x, y): return x[0] > y[0])  # the widest roads first (a great road before a farm track)
+	var run := []
+	for b in bays:
+		var p: Vector3 = root.global_transform * ((b[0] as Vector3) * S)
+		if not run.is_empty() and Vector2(p.x - run[-1][0].x, p.z - run[-1][0].z).length() > half * 3.2:
+			runs.append(run)
+			run = []
+		run.append([p, float(b[1])])
+	if not run.is_empty():
+		runs.append(run)
 	var out := []
-	for run in runs:
-		var a: float = run[1]
-		if out.size() >= int(k.get("most", 2)):
-			break
-		var p := center + Vector3(sin(a), 0, -cos(a)) * r
-		p.y = main.terrain.height_at(p.x, p.z)
-		out.append(p)
+	for r in runs.size():
+		var bs: Array = runs[r]
+		var yaw: float = bs[0][1]
+		var along := Vector3(cos(yaw), 0, -sin(yaw))  # a bay's own +x, as towns.gd laid it
+		var first: Vector3 = bs[0][0]
+		var last: Vector3 = bs[-1][0]
+		if bs.size() > 1 and (last - first).dot(along) < 0.0:
+			along = -along
+		var pts := PackedVector3Array([first - along * half])
+		for b in bs:
+			pts.append(b[0])
+		pts.append(last + along * half)
+		for i in pts.size():
+			pts[i].y = main.terrain.height_at(pts[i].x, pts[i].z)
+		var outward := Vector3(sin(yaw), 0, cos(yaw))  # the bay's outer face
+		var d: Vector3 = pts[pts.size() - 1] - pts[0]
+		var right := Vector3(-d.z, 0, d.x)
+		var wall := StoneWall.build_along(pts, int(tw["storeys"]) * 3.0, Color.WHITE, {
+			"sections": 1, "outer": 1.0 if right.dot(outward) >= 0.0 else -1.0, "seed": int(tw["seed"]) * 31 + s * 7 + r,
+			"ground": func(p: Vector3) -> float: return main.terrain.height_at(p.x, p.z)})
+		add_child(wall)
+		wall.opened.connect(_publish.bind(wall, root))
+		out.append(wall)
 	return out
 
 
-## A wall's standing foot goes to its town's walking map: a breach is a way in. Every stone wall of the
-## town together (its ring and its castle's curtains), so one never writes over another's.
+## A wall's standing foot goes to its town's walking map: a breach is a way in. Every stone run of the town
+## together, so one never writes over another's.
 func _publish(_by: Node3D, root: Node3D) -> void:
 	if not is_instance_valid(root):
 		return
 	var all := []
-	for id in _rings:
-		if _rings[id]["root"] == root and is_instance_valid(_rings[id]["wall"]):
-			all.append(_rings[id]["wall"])
-	for c in _castles:
-		if _castles[c]["root"] == root:
-			for e in _castles[c]["walls"]:
-				if is_instance_valid(e["wall"]):
-					all.append(e["wall"])
+	for id in _town_walls:
+		if _town_walls[id]["root"] == root:
+			for runs in (_town_walls[id]["stones"] as Dictionary).values():
+				for w in runs:
+					if is_instance_valid(w):
+						all.append(w)
 	if not _demo.is_empty() and is_instance_valid(_demo["wall"]) and (main.towns.towns.get(int(_demo["id"]), {}) as Dictionary).get("node") == root:
 		all.append(_demo["wall"])
 	var local := []
@@ -365,64 +370,6 @@ func _publish(_by: Node3D, root: Node3D) -> void:
 		local.append(o)
 	root.set_meta("stone_walls", local)
 	root.set_meta("stone_walls_rev", int(root.get_meta("stone_walls_rev", 0)) + 1)
-
-
-# --- a kit castle's curtains ---------------------------------------------------
-
-## Every kit castle (castle_builder.gd, --castles=kit) gets stone curtains along its curtain runs, one a
-## tick; the castle itself leaves its kit curtains out while stone walls are on (castle_builder
-## stone_curtains). A castle rebuilt or gone takes its curtains with it.
-func _castles_follow() -> void:
-	for c in _castles.keys():
-		if not is_instance_valid(c):
-			for e in _castles[c]["walls"]:
-				if is_instance_valid(e["wall"]):
-					e["wall"].queue_free()
-			_castles.erase(c)
-	if main.towns == null:
-		return
-	var Life: GDScript = load("res://scripts/castle_life.gd")
-	for id in main.towns.towns:
-		var root: Node3D = main.towns.towns[id].get("node")
-		if root == null or not is_instance_valid(root) or not root.is_inside_tree():
-			continue
-		var castle: Node3D = root.get_node_or_null("Castle")
-		if castle == null or _castles.has(castle):
-			continue
-		var sp: Dictionary = Life.spec_of(castle)
-		if sp.is_empty():
-			_castles[castle] = {"root": root, "id": int(id), "center": root.global_position, "walls": []}
-			continue
-		_castle_curtains(int(id), root, castle, sp)
-		return
-
-
-func _castle_curtains(id: int, root: Node3D, castle: Node3D, sp: Dictionary) -> void:
-	var xf: Transform3D = load("res://scripts/castle_life.gd").frame_of(castle)
-	var scale := xf.basis.get_scale().x / S
-	var center := root.global_position
-	var sections := int(Data.num("walls", "ring.sections", 8))
-	var height := int(sp.get("wall_storeys", 2)) * 3.0 * scale
-	var walls := []
-	for run in preload("res://scripts/castle_builder.gd").curtain_runs(sp):
-		var a: Vector3 = xf * (run["a"] as Vector3)
-		var b: Vector3 = xf * (run["b"] as Vector3)
-		a.y = main.terrain.height_at(a.x, a.z)
-		b.y = main.terrain.height_at(b.x, b.z)
-		var out: Vector3 = (xf.basis * (run["out"] as Vector3)).normalized()
-		var d := b - a
-		var right := Vector3(-d.z, 0, d.x)
-		var wall := StoneWall.build_along(PackedVector3Array([a, b]), height, Color.WHITE, {
-			"sections": 1, "outer": 1.0 if right.dot(out) >= 0.0 else -1.0, "seed": id * 31 + int(run["side"]),
-			"ground": func(p: Vector3) -> float: return main.terrain.height_at(p.x, p.z)})
-		add_child(wall)
-		# The town's wall section it faces (damage.js: section 0 faces north, then clockwise).
-		var mid := (a + b) * 0.5 - center
-		var ang := fposmod(atan2(mid.x, -mid.z) + PI / sections, TAU)
-		walls.append({"wall": wall, "section": int(floor(ang / (TAU / sections))) % sections})
-		wall.opened.connect(_publish.bind(wall, root))
-	_castles[castle] = {"root": root, "id": id, "center": center, "walls": walls}
-	_publish(null, root)
 
 
 # --- the demo (test aid) -----------------------------------------------------

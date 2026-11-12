@@ -500,9 +500,8 @@ func _ready() -> void:
 		labels.visible = false
 	# Launch-video takes: scripted camera moves (cinematics.gd reads --clip itself).
 	if Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--clip=")): add_child(load("res://scripts/cinematics.gd").new())
-	# Stone walls that break stone by stone (walls.gd; --walls=stone or data/walls.json).
-	if preload("res://scripts/walls.gd").on():
-		add_child(load("res://scripts/walls.gd").new(self))
+	# The towns' walls (walls.gd, their one owner): the kit curtain, stacked stones where the damage fact wears it.
+	add_child(load("res://scripts/walls.gd").new(self))
 	# Chimney smoke only where someone's home (hearths.gd; knobs in data/hearths.json).
 	if not OS.get_cmdline_user_args().has("--hearths=off"):
 		add_child(load("res://scripts/hearths.gd").new(self))
