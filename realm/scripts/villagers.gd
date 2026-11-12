@@ -32,6 +32,7 @@ const Weapons := preload("res://scripts/weapons.gd")  # what a move needs in han
 const TownNav := preload("res://scripts/town_nav.gd")
 var nav = preload("res://scripts/town_nav.gd").new()
 var talk = preload("res://scripts/village_talk.gd").new(self)  # who talks with whom (village_talk.gd): chatter.gd and the minds ask it
+var registry = preload("res://scripts/village_registry.gd").new(self)  # who is who and where (village_registry.gd): a click, a name, the homes lit, the feast fire
 var slots = preload("res://scripts/village_slots.gd").new(self)  # where a villager may stand (village_slots.gd): the places' rings, the stall, well, street and cart slots, the square's room
 const WALK_SPEED := 0.17  # world units per second: an unhurried 1.4 m/s at town scale
 static var _steer: Dictionary = preload("res://scripts/data.gd").value("people", "steer", {}) if bool(preload("res://scripts/data.gd").value("people", "steer.on", true)) and not OS.get_cmdline_user_args().has("--steer=off") else {"turn": 1000.0, "turn_slow": 1.0, "start_from": 1.0, "arrive_from": 1.0, "smooth": 1000.0, "corner": 0.0}
@@ -399,56 +400,6 @@ static func _weighed_key(weights: Dictionary, rng: RandomNumberGenerator) -> Str
 		if roll <= 0.0:
 			return String(k)
 	return String(weights.keys()[0])
-
-
-## The villager nearest a point on the ground, within reach of a click:
-## {town, i} so the bridge can say who they are, or empty.
-func who_at(p: Vector3, reach := 0.35) -> Dictionary:
-	var best := {}
-	var best_d := reach
-	for id in crowds:
-		var list: Array = crowds[id]
-		for i in list.size():
-			var n: Node3D = list[i]["node"]
-			var d := Vector2(n.position.x - p.x, n.position.z - p.z).length()
-			if d < best_d:
-				best_d = d
-				best = {"town": int(id), "i": i, "node": n}
-	return best
-
-
-## The villager under the pointer on screen, if the click was on them: a
-## click on the town around them is not a hello.
-func who_on_screen(cam: Camera3D, at: Vector2, px := 18.0) -> Dictionary:
-	var best := {}
-	var best_d := px
-	for id in crowds:
-		var list: Array = crowds[id]
-		for i in list.size():
-			var n: Node3D = list[i]["node"]
-			if not n.visible:
-				continue
-			var mid := n.global_position + Vector3(0, 0.11, 0)  # their middle, not their feet
-			if cam.is_position_behind(mid):
-				continue
-			var d := cam.unproject_position(mid).distance_to(at)
-			if d < best_d:
-				best_d = d
-				best = {"town": int(id), "i": i, "node": n}
-	return best
-
-
-## Someone looked at from above stops where they are and turns up to face
-## the watcher, for as long as their card is open.
-func hold(town: int, i: int, face: Vector3, ms := 1500) -> void:
-	var list: Array = crowds.get(town, [])
-	if i < list.size():
-		if Time.get_ticks_msec() >= int(list[i].get("hold_until", 0)):
-			var heard: Array = _spoken.get(town, [])
-			heard.append("folk:%d:%d" % [town, i])  # the minds hear who was spoken to
-			_spoken[town] = heard
-		list[i]["hold_until"] = Time.get_ticks_msec() + ms
-		list[i]["face"] = face
 
 
 func _exit_tree() -> void:
@@ -983,7 +934,7 @@ func _who(n: Node3D) -> String:
 	var mind := n.get_node_or_null("Mind")
 	var act := String(mind.blackboard.get_var(&"last_activity", "", false)) if mind else ""
 	var at := "(%.2f,%.2f)" % [n.global_position.x, n.global_position.z]
-	var v := who_is(n)
+	var v: Dictionary = registry.who_is(n)
 	if not v.is_empty():
 		# A villager tagged at spawn (meta folk) may no longer be in its town's crowd: the crowd rebuilt or
 		# moved on and this body is on its way out (batch 8 look2: 9 errors here indexing an empty match).
@@ -1238,39 +1189,6 @@ func step_to(a: Dictionary, target: Vector3) -> bool:
 	a["gait"] = "Walk"
 	_set_off(a)
 	return true
-
-
-## The town's lit feast fire: [where (town-local), how far its reach goes],
-## or empty. One fire per feast: town_life's bonfire, or a wedding feast's
-## (scenes.gd), each recorded on the town's Life as "fires".
-func fire_of(town: int) -> Array:
-	var node: Node3D = towns.towns.get(town, {}).get("node")
-	var life: Node = node.get_node_or_null("Life") if is_instance_valid(node) else null
-	var fires: Array = life.get_meta("fires", []) if life else []
-	return fires[0] if not fires.is_empty() else []
-
-
-## Who a person on the ground is, for a word about them (chatter.mind_line):
-## a villager's town, index and calling, or empty for anyone else.
-## Who's home (a shared fact, one owner; the finesse catalogue): the town's doorsteps with someone home
-## now, as world positions -> how many. Home is gone in for the night (walked there and hidden indoors,
-## this script's own night rule), or by day standing at their own door. Read by hearths.gd (chimney
-## smoke only where someone's home) and the windows lit at dusk.
-func who_is_home(id: int, reach := 0.3) -> Dictionary:
-	var out := {}
-	for a in crowds.get(id, []):
-		if not a["placed"] or not PackedVector2Array(a["route"]).is_empty():
-			continue
-		var n: Node3D = a["node"]
-		var h: Vector3 = a["home"]
-		var inside: bool = a["block"] == "night" and not n.visible
-		if inside or Vector2(n.position.x - h.x, n.position.z - h.z).length() < reach:
-			out[h] = int(out.get(h, 0)) + 1
-	return out
-
-
-func who_is(n: Node) -> Dictionary:
-	return n.get_meta("folk", {}) if n else {}  # set at spawn: asked every look-round, never a search of every town
 
 
 ## Once a second: a child further than CHILD_REACH from their parent goes back

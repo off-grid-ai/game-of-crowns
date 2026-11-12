@@ -13,7 +13,8 @@ extends SceneTree
 ## - one path for a villager's day (integration audit #1): no old-rules routine in villagers.gd (`_choose_next`, its
 ##   gatherings and the minds-off switch), and every calling a villager can be given has a mind's activities;
 ## - villagers.gd split (integration audit #10): the talks are village_talk.gd's alone (no talk function or store
-##   left in villagers.gd, nobody reaching for villagers' own); the claims on places and slots are village_slots.gd's.
+##   left in villagers.gd, nobody reaching for villagers' own); the claims on places and slots are village_slots.gd's;
+##   who is who and where (who_at, who_is, who_is_home, fire_of) is village_registry.gd's.
 ##   arch -arm64 godot --headless --path realm --script res://tools/square_probe.gd
 
 const Mind := preload("res://scripts/npc_mind.gd")
@@ -266,6 +267,7 @@ const TALK := ["func gatherings(", "func open_talk(", "func join_talk(", "func l
 	"func give_floor(", "func talk_centre(", "func room_to_talk(", "func talk_counts(", "var _talks"]
 const SLOTS := ["func place(", "func _claim(", "func at_stall(", "func _slot(", "func room_in_square(", "func on_square(",
 	"func square_cap(", "func crown_market(", "func square_full(", "const ROOM", "var _released"]
+const REGISTRY := ["func who_at(", "func who_is(", "func who_is_home(", "func fire_of("]
 
 
 func _split() -> void:
@@ -283,6 +285,12 @@ func _split() -> void:
 			_fail("villagers.gd still keeps the slot claims (%s): village_slots.gd owns them" % f)
 		elif not ssrc.contains(f):
 			_fail("village_slots.gd has no %s" % f)
+	var rsrc := FileAccess.get_file_as_string("res://scripts/village_registry.gd")
+	for f in REGISTRY:
+		if vsrc.contains(f):
+			_fail("villagers.gd still answers who is who (%s): village_registry.gd owns it" % f)
+		elif not rsrc.contains(f):
+			_fail("village_registry.gd has no %s" % f)
 	for dir in ["res://scripts", "res://tools"]:
 		for file in DirAccess.get_files_at(dir):
 			if file.ends_with(".gd") and file != "square_probe.gd" and FileAccess.get_file_as_string(dir.path_join(file)).contains("._talks"):

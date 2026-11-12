@@ -810,7 +810,7 @@ func _report() -> void:
 	var vg = get_parent().get("villagers")
 	if vg and vg.has_method("who_is_home"):
 		for id in vg.crowds:
-			homes_in += (vg.who_is_home(id) as Dictionary).size()
+			homes_in += (vg.registry.who_is_home(id) as Dictionary).size()
 	print("MOTION hearths: %d of %d chimneys lit; %d homes with someone home (towns with folk drawn)" % [lit, hearths.size(), homes_in])
 	print("MOTION roof statues: %s  %d people idle over %.0f s (longest %.1f s)  %s" % [verdict.call(stood.is_empty()), stood.size(), STATUE,
 		_statues.values().max() if not _statues.is_empty() else 0.0, ", ".join(stood.slice(0, 5).map(func(k): return "%s %.1fs at (%.1f,%.1f) from %s" % [_name(k) if is_instance_valid(k) else "?", _statues[k], (k as Node3D).global_position.x if is_instance_valid(k) else 0.0, (k as Node3D).global_position.z if is_instance_valid(k) else 0.0, _owner_of(k)]))])

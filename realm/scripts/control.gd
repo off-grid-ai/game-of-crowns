@@ -355,7 +355,7 @@ func _look_around() -> void:
 			_near = {"kind": "named", "town": _town, "id": n["id"], "name": n["name"]}
 			_prompt.text = Keys.label("interact") + "  ·  speak with %s" % n["name"]
 			return
-	var who: Dictionary = villagers.who_at(_body.position, 0.28)
+	var who: Dictionary = villagers.registry.who_at(_body.position, 0.28)
 	if not who.is_empty():
 		_near = {"kind": "folk", "town": who["town"], "i": who["i"]}
 		_prompt.text = Keys.label("interact") + "  ·  speak with them"

@@ -104,7 +104,7 @@ func _claim(a: Dictionary, key: String, clear: float) -> Vector3:
 	var h: Vector2
 	if room.get("fire", false):
 		# The feast's ring is round the town's lit fire: none lit, no feast ring.
-		var fire: Array = v.fire_of(a["town"])
+		var fire: Array = v.registry.fire_of(a["town"])
 		if fire.is_empty():
 			return Vector3(NAN, 0, 0)
 		h = fire[0]

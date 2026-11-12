@@ -257,7 +257,7 @@ var _better := {}  # person instance id -> Callable: who wants their own words w
 func mind_line(person: Node3D, better := Callable()) -> Dictionary:
 	if person == null or not is_instance_valid(person):
 		return {}
-	var who: Dictionary = villagers.who_is(person) if villagers and villagers.has_method("who_is") else {}
+	var who: Dictionary = villagers.registry.who_is(person) if villagers and villagers.get("registry") != null else {}
 	var role := String(who.get("role", person.get_meta("role", "")))
 	var town := int(who.get("town", _town_of(person)))
 	var trade := String(CALLINGS.get(role, "townsman"))

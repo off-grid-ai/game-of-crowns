@@ -207,7 +207,7 @@ func station_name(n: Node) -> String:
 func _role(n: Node) -> String:
 	var role := String(n.get_meta("role", ""))
 	if villagers and villagers.has_method("who_is"):
-		var v: Dictionary = villagers.who_is(n)
+		var v: Dictionary = villagers.registry.who_is(n)
 		if not v.is_empty():
 			role = String(v["role"])
 	return role

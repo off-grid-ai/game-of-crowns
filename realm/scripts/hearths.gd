@@ -46,7 +46,7 @@ func _process(delta: float) -> void:
 		if not main.villagers.crowds.has(id):
 			continue  # no townsfolk drawn here: the chimney stays as built
 		if not home_by_town.has(id):
-			home_by_town[id] = main.villagers.who_is_home(id)
+			home_by_town[id] = main.villagers.registry.who_is_home(id)
 		var door: Vector3 = root.global_transform * (smoke.get_meta("door") as Vector3)
 		var lit := false
 		for at in home_by_town[id]:
