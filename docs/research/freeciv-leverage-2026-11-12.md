@@ -199,7 +199,7 @@ All seven steps landed, each with a headless probe in `bridge/tools/*_probe.mjs`
 **Findings while building:**
 - A negative Make_Content makes no one unhappy (`common/city.c` citizen_content_buildings). Unrest has to lower City_Unhappy_Size, and only a wonder reaches a whole house.
 - Freeciv's AI never lets a town riot, so the Disorder counter can't be a clock.
-- Attack enablers must require war (hard rule); Lua's `perform_action` "Conquer City" is refused even through the native enabler, while `edit.unit_move(..., conquer_city)` works.
+- Attack enablers must require war (hard rule); `edit.perform_action` "Conquer City" returns false, yet in capture_probe (an empty size-3 town, the crown at war) it did take the town: `edit.*` calls aren't gated by the action enablers, so the Norman ban only binds Freeciv's AI. The King's assault uses `edit.unit_move(..., conquer_city)`, which works.
 - The server console cuts long lines: long Lua goes in a file (`lua file`).
 
 **The one diplomacy writer:** `server.js` `setDiplomacy` (a truce or a war) rewrites the save and resumes. Measured reload cost: 874 ms and 995 ms [2 samples, bridge.log]. Freeciv 3.3's `Player:cancel_pact` and `Player:add_love` replace it once 3.3 is released.
