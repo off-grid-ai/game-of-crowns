@@ -1077,7 +1077,7 @@ func _plot_lots(root: Node3D, center: Vector3, square_r: float, ways: Array, kin
 	var things := {}
 	for t in root.get_meta("yard_things", []):
 		things[String(t["component"])] = int(things.get(String(t["component"]), 0)) + 1
-	print("CHECK town yards: %s: %d yards for %d houses, %d kitchen gardens (refused: %s), yard things %s, %d fence panels (%d refused)" % [String(root.get_meta("title", "")), int(root.get_meta("plot_yards", 0)), stood.size(), (root.get_meta("gardens", []) as Array).size(), str(root.get_meta("garden_why", {})), str(things), int(root.get_meta("fence_panels", 0)), int(root.get_meta("fence_refused", 0))])
+	print("CHECK town yards: %s: %d yards for %d houses, %d kitchen gardens (refused: %s), yard things %s (%d refused), %d fence panels (%d refused)" % [String(root.get_meta("title", "")), int(root.get_meta("plot_yards", 0)), stood.size(), (root.get_meta("gardens", []) as Array).size(), str(root.get_meta("garden_why", {})), str(things), int(root.get_meta("yard_things_refused", 0)), int(root.get_meta("fence_panels", 0)), int(root.get_meta("fence_refused", 0))])
 	var size := int(root.get_meta("size", 0))
 	print("CHECK town plots: %s (size %d, edge %.1f): %d plots cut along %d ways, %d houses stood (and %d round the square), %d left in budget; turned away: %s" % [String(root.get_meta("title", "")), size, float(root.get_meta("plot_edge", 0.0)), all.size(), ways.size(), placed, int(root.get_meta("ring_houses", 0)), budget - placed, str(why)])
 	if OS.get_cmdline_user_args().has("--probe=towns"):
@@ -1237,9 +1237,9 @@ func _yard(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vector3, 
 	if tr.size() >= 2 and rng.randf() < float(tr[0]) and terrain.land3d and terrain.land3d.land:
 		var yard_mid := (corners[2] + corners[3] + side_from + corners[0].lerp(corners[3], house_part)) * 0.25
 		terrain.land3d.paint_mud(center + Vector3(yard_mid.x, 0, yard_mid.y), TownPlots.YARD * float(tr[1]), rng.randi())
+	_yard_thing(root, center, pl, face, lots, rng)  # first: the shed, pen or washing line won't shrink as a bed will
 	if rng.randf() < float(green.get("garden", 0.65)):
 		_croft(root, center, p, face, f, lots, rng, own_lot, true)
-	_yard_thing(root, center, pl, face, lots, rng)
 	_yard_green(root, center, pl, p, face, f, side_from, lots, rng, green)
 
 
@@ -1393,14 +1393,30 @@ func _yard_thing(root: Node3D, center: Vector3, pl: Array, face: Vector3, lots: 
 	if kind == "" or f == Vector2.ZERO:
 		return
 	var corners: PackedVector2Array = pl[4]
-	var side := 0.22 if rng.randf() < 0.5 else 0.78
-	var q2: Vector2 = corners[3].lerp(corners[2], side) + Vector2(face.x, face.z) * (f.y * 0.5 + 0.04)
-	var q := Vector3(q2.x, 0, q2.y)
-	if not terrain.is_land(center.x + q.x, center.z + q.z) or _crowded(lots, q, maxf(f.x, f.y) * 0.4) or _on_road(q, 0.05) or not _flat_enough(center, q, 0.15):
+	# Tried in either back corner and the middle of the back, then a size smaller (towns.json plots.yard_tries:
+	# [sides], [scales]); round 8: one corner only, and the yard's garden and tree took it, so 15 of 93 yards stood one.
+	var yt: Array = _plot_knobs().get("yard_tries", [[0.22, 0.78, 0.5], [1.0]])
+	var sides: Array = (yt[0] as Array).duplicate()
+	if rng.randf() < 0.5 and sides.size() > 1:
+		sides.reverse()
+	var q := Vector3.INF
+	var k := 1.0
+	for sc in yt[1]:
+		for side in sides:
+			var q2: Vector2 = corners[3].lerp(corners[2], float(side)) + Vector2(face.x, face.z) * (f.y * 0.5 * float(sc) + 0.04)
+			var c := Vector3(q2.x, 0, q2.y)
+			if terrain.is_land(center.x + c.x, center.z + c.z) and not _crowded(lots, c, maxf(f.x, f.y) * 0.4 * float(sc)) and not _on_road(c, 0.05) and _flat_enough(center, c, 0.15):
+				q = c
+				k = float(sc)
+				break
+		if q != Vector3.INF:
+			break
+	if q == Vector3.INF:
+		root.set_meta("yard_things_refused", int(root.get_meta("yard_things_refused", 0)) + 1)  # the CHECK town yards line
 		return
 	var yaw := atan2(face.x, face.z)
-	_place(root, kind, q + Vector3(0, _ground_y(center, q) - 0.005, 0), yaw)
-	lots.append([q, maxf(f.x, f.y) * 0.4])
+	_place(root, kind, q + Vector3(0, _ground_y(center, q) - 0.005, 0), yaw, Vector3.ONE * k)
+	lots.append([q, maxf(f.x, f.y) * 0.4 * k])
 	var all: Array = root.get_meta("yard_things", [])
 	all.append({"component": comp, "at": q})  # where the life at a yard goes (a pen's animals, the washing)
 	root.set_meta("yard_things", all)
