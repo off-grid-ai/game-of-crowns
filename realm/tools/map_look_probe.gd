@@ -30,9 +30,10 @@ func _init() -> void:
 	if rm == null or rm.get_script_property_list().any(func(p): return p.name == "v2"):
 		print("FAIL realm_map.gd keeps its v2 member")
 		fails += 1
-	# The chronicle's map (lore.gd) has no mirror: its hosts and sieges come from the bridge's realm map.
+	# The chronicle's map (lore.gd) has no mirror: its hosts and sieges come from the bridge's realm map, each host
+	# with its companies' men as the bridge counts them (routes_realm.js, hosts.js menOf; a1e42ae0).
 	var view = rm.new()
-	view.data = {"towns": [{"x": 3, "y": 4, "title": "A", "besieged": true}], "armies": [{"x": 5, "y": 6, "companies": 2, "key": "House Goldcrest", "color": "#c90"}]}
+	view.data = {"towns": [{"x": 3, "y": 4, "title": "A", "besieged": true}], "armies": [{"x": 5, "y": 6, "companies": 2, "men": 310, "key": "House Goldcrest", "color": "#c90"}]}
 	if view._hosts().size() != 1 or int(view._hosts()[0]["men"]) <= 0:
 		print("FAIL the chronicle's map loses its hosts")
 		fails += 1
