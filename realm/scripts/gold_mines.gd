@@ -2,7 +2,7 @@ extends Node3D
 ## The realm's gold mines: a mine on every gold seam (/world gold, through the mirror), worked by
 ## miners with picks while the camera is near; where a seam ran out, the old workings stand dark and
 ## empty (/world spentSeams). Freeciv decides where the gold lies and how long it lasts (bridge
-## mines.js, lua/events.lua realm_mines); this only shows it, the way Settlers and Anno show a mine
+## mines.js, bridge/data/realmrules/script.lua realm_mines); this only shows it, the way Settlers and Anno show a mine
 ## at its deposit. Reads the mirror (awareness.gd), edits nothing else.
 ## Knobs: realm/data/gold_mines.json (docs/TUNING.md). --gold-mines=off shows none.
 

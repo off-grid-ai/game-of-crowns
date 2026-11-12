@@ -422,7 +422,10 @@ func _step(w: PackedStringArray) -> void:
 							for fp in outlines:
 								if (fp as PackedVector2Array).size() > 2 and Geometry2D.is_point_in_polygon(q, fp):
 									var key := "%s#%d" % [b[1], n.get_instance_id()]
-									var row: Array = hits.get(key, [b[1], 0, q])
+									# Who placed it (town-life asked, round 13: bodies parked at the square's middle): the
+									# director's row id (scene meta), else the parent's name and the body's own.
+									var who := "%s/%s" % [str(n.get_meta("scene", "-")), n.get_parent().name if n.get_parent() else "?"]
+									var row: Array = hits.get(key, [b[1], 0, q, who, n.name])
 									row[1] = int(row[1]) + 1
 									hits[key] = row
 									break
