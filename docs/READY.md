@@ -11,7 +11,7 @@ shot or clip that shows it. The status column is updated by the supervisor only.
 
 | # | Line | What passes looks like | Owner | Status |
 |---|------|------------------------|-------|--------|
-| 1 | The square | Matches or beats r11 c01: open (visible paving ≥ 55%), detailed (≥ 16 stalls, ≥ 226 goods), people at the stalls, no one stacked or inside a building | Fire and siege, Town life | square built (22bd0e9c); people built (8b93de23, bb90a325); one inside-a-building check open (town life) |
+| 1 | The square | Matches or beats r11 c01: open (visible paving ≥ 55%), detailed (≥ 16 stalls, ≥ 226 goods), people at the stalls, no one stacked or inside a building | Fire and siege, Town life | built (22bd0e9c square, 8b93de23 and bb90a325 people, f4049612 one inside-check) |
 | 2 | People can walk the town | Kingsmere's walk map bakes (nav_dense_probe PASS); nobody stands still for lack of a path | Army command | built (996f29bb, nav_dense PASS) |
 | 3 | War: the armies march out | When war is declared, the host forms up at its seat and marches out along the roads, seen from the town and the realm views | Army layer | built (b7f20217, 851cc670, 3731a4a5) |
 | 4 | The right banner | Every regiment carries its own house's emblem and colours, on banner and livery, at every zoom | Army layer | built (1514f7ee, army_probe 10) |
