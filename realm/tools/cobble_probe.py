@@ -10,8 +10,9 @@ paving.texture, at paving.tile game units a sheet), and prints, for each, the nu
   stone  one stone's size on the ground, metres (the texture's dominant repeat by autocorrelation, along both axes,
          averaged; 01-town's measured against a person there: TARGET_PX_PER_M)
 
-and PASS or FAIL against 01-town: the hue within TOL (warm, not pink or grey), the joints at least as dark as
-01-town's (JOINT_FLOOR). Saturation, value and stone size are printed, not judged: 01-town is a lit painting seen
+and PASS or FAIL against 01-town on the joints only: at least as dark as 01-town's (JOINT_FLOOR). Hue, saturation,
+value and stone size are printed, not judged: Mac picked round 11's light-grey setts over 01-town's warm ones
+(2026-11-12: "tbh I like the first one"), and 01-town is a lit painting seen
 from a few metres, our c01 camera sits about five times further out, so its real-size pebbles (0.19 m, 6a7746cf)
 landed at 2-3 px a stone and the square read as sand (round 15). Whether the setts read as stones is judged on the
 rendered frame: realm/tools/still_probe.py's setts line. Exit 1 on a fail.
@@ -32,7 +33,6 @@ TARGET = os.path.join(ROOT, "..", "docs", "art", "target", "01-town.jpg")
 PATCHES = [(880, 750, 60, 45), (920, 625, 50, 40)]
 TARGET_PX_PER_M = 89.0  # 01-town's guard by the smithy: about 160 px from helmet to feet for about 1.8 m
 S = 0.12  # game units a metre (towns.gd S)
-TOL = {"hue": 12.0}
 JOINT_FLOOR = 1.0  # the joints' depth (joint) at least this share of 01-town's
 
 
@@ -106,8 +106,6 @@ def main():
     for p in paths:
         n = ours(p, tile, tint)
         fails = []
-        if abs((n["hue"] - t["hue"] + 180) % 360 - 180) > TOL["hue"]:
-            fails.append("hue")
         if n["joint"] < t["joint"] * JOINT_FLOOR:
             fails.append("joint")
         print("%-8s hue %5.1f  sat %.3f  val %.3f  joint %.3f  stone %.2f m  %s  (%s)" % (
