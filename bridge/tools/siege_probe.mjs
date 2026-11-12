@@ -18,7 +18,7 @@ check(!/edit\.transfer_city|transferCity/.test(camp), "campaigns.js still hands 
 check(/Lua\.assault\(/.test(camp), "campaigns.js doesn't order the assault");
 check(/diplomacy\?\.\(\[crown\.id, house, 0, "War"\]\)/.test(camp), "the King's march doesn't declare war on the house");
 
-const a = await bareFreeciv({ serv: ["set nationset all", "set aifill 0", "set minplayers 0", "set timeout -1", "set saveturns 1", 'set autosaves "TURN|GAMEOVER"', 'set savename "probe"',
+const a = await bareFreeciv({ serv: ["set nationset all", "set gameseed 1066", "set mapseed 1066", "set aifill 0", "set minplayers 0", "set timeout -1", "set saveturns 1", 'set autosaves "TURN|GAMEOVER"', 'set savename "probe"',
   "create Crown", "create Foe", 'playernation Crown norman 1 "The King"', 'playernation Foe english 1 "Lord Foe"', "set endturn 3", "start"] });
 check(await a.until(/Game ended as the turn limit/, 90000), "the game didn't run");
 const first = fs.readdirSync(a.dir).filter((f) => /-auto\.sav\.zst$/.test(f)).sort().pop();
