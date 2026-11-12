@@ -34,10 +34,12 @@ const failures = [];
 const fail = (turn, check, text) => { failures.push({ turn, check, text }); console.log(`  T${turn} ${check}: ${text}`); };
 const killFc = () => { try { execFileSync("pkill", ["-KILL", "-f", `freeciv-server -p ${FC_PORT} `]); } catch { /* none */ } };
 
-// A free slot: fewer than two private bridges (any node server.js but the main one on 8787) besides ours.
+// A free slot: fewer than two private bridges (any node server.js but the main one on 8787) besides ours. The pattern matches
+// server.js as its own file name only: "node.*server.js" also counted tsserver.js (an editor's TypeScript server), so a
+// harness waited the whole 30 min with no bridge running.
 for (let waited = 0; ; waited += 10) {
   let n = 0;
-  try { n = execFileSync("pgrep", ["-f", "node.*server.js"]).toString().trim().split("\n").filter(Boolean).length; } catch { /* none */ }
+  try { n = execFileSync("pgrep", ["-f", "node(.*[ /])?server\\.js( |$)"]).toString().trim().split("\n").filter(Boolean).length; } catch { /* none */ }
   if (n - 1 < 2) break;  // the main bridge is one of them
   if (waited === 0) console.log(`  waiting for a private bridge slot (${n - 1} running)`);
   if (waited > 1800) { console.log("REIGN HARNESS: no private bridge slot in 30 min"); process.exit(2); }
