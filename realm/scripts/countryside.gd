@@ -167,6 +167,31 @@ func fallow_near(p: Vector2, r: float) -> Array:
 	return out
 
 
+## Whether a farm holds the ground at `p` (within `r`): a farmstead's yard (its house, barn, stacks, orchard)
+## or a hedged field, with its hedge. What a host mustering in the open keeps off (army_spike.gd).
+func occupied(p: Vector3, r := 0.0) -> bool:
+	var q := Vector2(p.x, p.z)
+	var cx := floori(p.x / CHUNK)
+	var cz := floori(p.z / CHUNK)
+	for key in ["%d|%d" % [cx, cz], "%d|%d" % [cx - 1, cz], "%d|%d" % [cx + 1, cz], "%d|%d" % [cx, cz - 1], "%d|%d" % [cx, cz + 1], "%d|%d" % [cx - 1, cz - 1], "%d|%d" % [cx + 1, cz - 1], "%d|%d" % [cx - 1, cz + 1], "%d|%d" % [cx + 1, cz + 1]]:
+		if not _patches.has(key):
+			continue
+		for stead in _patches[key]["steads"]:
+			var at := Vector2((stead["at"] as Vector3).x, (stead["at"] as Vector3).z)
+			if at.distance_to(q) > r + 6.0:
+				continue
+			for y in stead["yard"]:
+				if Vector2((y[0] as Vector3).x, (y[0] as Vector3).z).distance_to(q) < float(y[1]) + r:
+					return true
+			for f in stead["fields"]:
+				var c := Vector2((f[0] as Vector3).x, (f[0] as Vector3).z)
+				var half: Vector2 = (f[1] as Vector2) * 0.5 + Vector2(r + 0.12, r + 0.12)  # the hedge round it
+				var local := (q - c).rotated(float(f[2]))
+				if absf(local.x) <= half.x and absf(local.y) <= half.y:
+					return true
+	return false
+
+
 ## Takes up a patch of farms: its buildings, fields, hedges and tracks.
 func _drop(key: String) -> void:
 	if not _patches.has(key):

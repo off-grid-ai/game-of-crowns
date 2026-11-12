@@ -264,3 +264,8 @@ Switches (`--name`) go after `--` on the game's command line.
 
 ## The realm at map zoom (docs/review/realm-map.md)
 - Behind `--map=v2` (`--map=v1` the before): `realm/data/map.json`: `version`; `politics` (v2 turns the political map on); `marks.from` / `marks.to` (the camera distance where the army standards, march lines and siege swords come in over the land); `marks.banner.*` (an army's standard in pixels), `marks.men_per_company`, `marks.siege.*`, `marks.route.*`; `labels.far_base` / `far_per_size` (how far out a town of each size stays named) and `font_base` / `font_per_size` / `font_most`; `overview.wash` (house colours on the painted map, was 0.2), `border_px`, `border_dark`, `town_r_*`, `font_*`, `named_size`, `named_zoom`, `banner_scale`, `match` / `match_most` / `ease_to` (the painting opens at the camera's own scale, then eases out).
+
+## The army in the field (docs/review/batch9-review.md army-line-d12)
+- Clear ground for every regiment (off houses, farms, hedged fields and roads), how far one looks for it, the clear margin round it: `realm/data/army.json`: `muster.margin`, `muster.probe`, `muster.search`.
+- The soldiers' lighter levels and how soon they come in: `lod.on` (`--army-lod=off`), `lod.bias`, `lod.least`, `lod.mergeAngle`; which regiments cast shadows: `shadows.near`.
+- The bodies the host wears: `units_set` (meshy: men-at-arms, the town guard as spearmen, the ranger as archers; `--units=kit` the before), `meshy.<unit>`; the painted finish that carries the house colour onto the men: `look.on` (`--army-look=kit` the before).

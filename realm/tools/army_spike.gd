@@ -414,6 +414,7 @@ func _regiment(spec: Dictionary, colour: Color, house: Dictionary = {}) -> Dicti
 	vat.instance_count = count
 	vat.rand_anim_offset = true
 	vat.vat_animation_tracks = kit["tracks"]
+	vat.lod_bias = Data.num("army", "lod.bias", 1.0)
 	node.add_child(vat)
 	var turn := Data.num("army", "jitter.turn", 0.18)
 	var size := Data.num("army", "jitter.size", 0.06)
@@ -813,6 +814,76 @@ func _take_field(extent: Vector2) -> void:
 		var pl: Vector2 = r["place"]
 		var p := _field + right3 * pl.x + fwd3 * pl.y
 		r["slot"] = Vector3(p.x, main.terrain.height_at(p.x, p.z), p.z)
+	if battle.is_empty():
+		_clear_slots(right3, fwd3)
+
+
+## A farm's yard or hedged field at q (countryside.occupied): what a muster keeps off.
+func _farmed(q: Vector3, r: float) -> bool:
+	var land = main.get("countryside")
+	return land != null and land.has_method("occupied") and land.occupied(q, r)
+
+
+## Whether a regiment's ground (its line's rectangle round `mid`, turned to the line, and muster.margin round it)
+## is clear: dry land, no building, no farm or field, no road; and no other regiment's ground in `taken`.
+func _clear_at(mid: Vector3, right3: Vector3, fwd3: Vector3, w: float, d: float, taken: Array) -> bool:
+	var m := Data.num("army", "muster.margin", 0.15)
+	var step := Data.num("army", "muster.probe", 0.35)
+	var gap := Data.num("army", "gap", 0.35) * 0.5
+	for t in taken:  # in the line's own frame: rectangles side by side, rows behind rows
+		var o: Dictionary = t
+		var off: Vector3 = mid - (o["at"] as Vector3)
+		if absf(off.dot(right3)) < (w + float(o["w"])) * 0.5 + gap and absf(off.dot(fwd3)) < (d + float(o["d"])) * 0.5 + gap:
+			return false
+	var roads = main.get("roads")
+	var nx := maxi(2, int(ceil((w + m * 2.0) / step)) + 1)
+	var nz := maxi(2, int(ceil((d + m * 2.0) / step)) + 1)
+	for i in nx:
+		for j in nz:
+			var q := mid + right3 * ((float(i) / (nx - 1) - 0.5) * (w + m * 2.0)) + fwd3 * ((float(j) / (nz - 1) - 0.5) * (d + m * 2.0))
+			if not main.terrain.is_land(q.x, q.z) or TownNav.in_building(main.towns, q, 0.05) or _farmed(q, 0.0):
+				return false
+			if roads and roads.has_method("on_path") and roads.on_path(q, 0.05):
+				return false
+	return true
+
+
+## Every regiment on clear ground (Total War's deployment never stands men in a house): a regiment whose place in
+## the line falls on a building, a farm, a field or a road moves to the nearest clear ground round it, keeping
+## its facing, rings of muster.cell outward up to muster.reach; one that finds none keeps its place.
+func _clear_slots(right3: Vector3, fwd3: Vector3) -> void:
+	var pitch := Data.num("army", "muster.cell", 2.0) * 0.5
+	var reach := Data.num("army", "muster.search", 8.0)
+	var taken: Array = []
+	var moved := 0
+	var stuck := 0
+	for r in _regiments:
+		var w := float(r["line"]["w"])
+		var d := float(r["line"]["d"])
+		var at: Vector3 = r["slot"]
+		at.y = 0.0
+		var found := _clear_at(at, right3, fwd3, w, d, taken)
+		if not found:
+			var ring := 1
+			while not found and ring * pitch <= reach:
+				var n := ring * 8
+				for k in n:
+					var a := TAU * float(k) / n
+					var q := at + (right3 * cos(a) + fwd3 * sin(a)) * ring * pitch
+					if _clear_at(q, right3, fwd3, w, d, taken):
+						at = q
+						found = true
+						break
+				ring += 1
+			if found:
+				at.y = main.terrain.height_at(at.x, at.z)
+				moved += 1
+			else:
+				stuck += 1
+		r["slot"] = Vector3(at.x, main.terrain.height_at(at.x, at.z), at.z)
+		taken.append({"at": Vector3(at.x, 0, at.z), "w": w, "d": d})
+	if moved + stuck > 0 and not battle.get("quiet", false):
+		print("ARMY muster: %d regiments moved to clear ground, %d found none" % [moved, stuck])
 
 
 ## A regiment stands in its place in the line at once, at ease.
@@ -1062,7 +1133,27 @@ func _at_ease(r: Dictionary, delta: float) -> void:
 ## From afar (far.at; back to men under far.back) the host shows as one coloured block per regiment, nose to
 ## tail on the march or side by side in line, with its standard and its strength; banners and the standard
 ## keep their size on screen beyond banner.fixedFrom.
+var _shade_t := 0.0
+## Only the regiments near the lens cast shadows (shadows.near, units from the camera; every cascade draws its
+## casters again, so 6,000 men cast into each was most of the frame's triangles); further off the ground mark
+## and the men's own shading carry them. shadows.near 0 keeps every regiment casting.
+func _shadows() -> void:
+	_shade_t -= get_process_delta_time()
+	if _shade_t > 0.0:
+		return
+	_shade_t = 0.5
+	var near := Data.num("army", "shadows.near", 18.0)
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	for r in _regiments:
+		var vat: GeometryInstance3D = r["vat"]
+		var far := near > 0.0 and (r["node"] as Node3D).global_position.distance_to(cam.global_position) > near
+		vat.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if far else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+
+
 func _far_view() -> void:
+	_shadows()
 	var d: float = main.rig.distance if main.rig else _dist
 	var far := d > Data.num("army", "far.at", 34.0) if not _far else d > Data.num("army", "far.back", 30.0)
 	if far != _far:
@@ -1244,7 +1335,7 @@ func _ground(p: Vector3, size: float) -> bool:
 	for gx in 5:
 		for gz in 5:
 			var q := Vector3(p.x + (gx / 4.0 - 0.5) * size, 0, p.z + (gz / 4.0 - 0.5) * size)
-			if not main.terrain.is_land(q.x, q.z) or TownNav.in_building(main.towns, q, 0.1):
+			if not main.terrain.is_land(q.x, q.z) or TownNav.in_building(main.towns, q, 0.1) or _farmed(q, 0.05):
 				return false
 			if absf(main.terrain.height_at(q.x, q.z) - h) > slope:
 				return false
@@ -1322,9 +1413,11 @@ func _unit_row_for_mesh(asset: String, row: Dictionary) -> Dictionary:
 
 
 ## The baked soldier as one plain mesh: the import's arrays laid into a fresh ArrayMesh, uncompressed, without
-## the importer's LODs or shadow mesh. The VAT shader reads each vertex's frame by its UV2 column; a simplified
-## LOD or a merged shadow mesh would draw other vertices than the ones baked (the plugin's import guide:
-## compression and LODs off).
+## the importer's shadow mesh. The VAT shader reads each vertex's frame by its UV2 column, so the vertices must
+## stay the ones baked (the plugin's import guide: compression off). Its lighter levels (lod.on) are Godot's own
+## (ImporterMesh.generate_lods, meshoptimizer): a level is only a shorter index list over the same vertices, so
+## every vertex keeps its column; they are kept only when the vertices came back untouched, and Godot picks the
+## level per regiment by its size on screen (lod.bias), one draw per regiment as before.
 func _soldier_mesh(dir: String) -> ArrayMesh:
 	var scene: PackedScene = load(dir + "soldier.glb")
 	if scene == null:
@@ -1337,14 +1430,63 @@ func _soldier_mesh(dir: String) -> ArrayMesh:
 	var src: Mesh = (mi[0] as MeshInstance3D).mesh
 	root.free()
 	var mesh := ArrayMesh.new()
+	var lod := bool(Data.value("army", "lod.on", true)) and not OS.get_cmdline_user_args().has("--army-lod=off")
+	var tris: Array = []
 	for i in src.get_surface_count():
 		var arrays := src.surface_get_arrays(i)
 		if arrays[Mesh.ARRAY_TEX_UV2] == null or arrays[Mesh.ARRAY_TEX_UV] == null:
 			push_error("ARMY the soldier's mesh has lost its UVs (the VAT column or the palette)")
 			return null
 		arrays[Mesh.ARRAY_TANGENT] = null  # the shader rebuilds its own frame from the baked normals
-		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		var lods := _lods(arrays) if lod else {}
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays, [], lods)
+		var n: Array = [(arrays[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3 if arrays[Mesh.ARRAY_INDEX] != null else (arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).size() / 3]
+		for k in lods:
+			n.append((lods[k] as PackedInt32Array).size() / 3)
+		tris.append(n)
+	if not battle.get("quiet", false):
+		print("ARMY %s triangles by level %s" % [dir.get_base_dir().get_file(), str(tris)])
 	return mesh
+
+
+## A surface's lighter levels ({screen size: indices}), down to lod.least triangles, or none when the
+## simplifier gave back other vertices than these.
+func _lods(arrays: Array) -> Dictionary:
+	if arrays[Mesh.ARRAY_INDEX] == null:
+		return {}
+	# Welded by position for the simplifier: a body cut into many UV islands is all seams, and the simplifier
+	# won't move a seam, so it stopped at a third of the triangles. Vertices on one spot share their bones and
+	# so their baked motion; a lighter level's seam takes one of their paints, too small to see where it's drawn.
+	var verts0: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var spot := {}
+	var canon := PackedInt32Array()
+	canon.resize(verts0.size())
+	for v in verts0.size():
+		var key := (verts0[v] * 10000.0).round()
+		if not spot.has(key):
+			spot[key] = v
+		canon[v] = spot[key]
+	var welded := arrays.duplicate()
+	var idx0: PackedInt32Array = (arrays[Mesh.ARRAY_INDEX] as PackedInt32Array).duplicate()
+	for k in idx0.size():
+		idx0[k] = canon[idx0[k]]
+	welded[Mesh.ARRAY_INDEX] = idx0
+	var im := ImporterMesh.new()
+	im.add_surface(Mesh.PRIMITIVE_TRIANGLES, welded)
+	im.generate_lods(Data.num("army", "lod.mergeAngle", 25.0), 60.0, [])
+	var back: Array = im.get_surface_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	if (back[Mesh.ARRAY_VERTEX] as PackedVector3Array) != verts or (back[Mesh.ARRAY_TEX_UV2] as PackedVector2Array) != (arrays[Mesh.ARRAY_TEX_UV2] as PackedVector2Array):
+		push_warning("ARMY the soldier's lighter levels moved its vertices: drawn at full detail")
+		return {}
+	var least := int(Data.num("army", "lod.least", 400.0))
+	var out := {}
+	for l in im.get_surface_lod_count(0):
+		var idx: PackedInt32Array = im.get_surface_lod_indices(0, l)
+		if idx.size() / 3 < least:
+			break
+		out[im.get_surface_lod_size(0, l)] = idx
+	return out
 
 
 ## The baked clips (tracks.json, written by tools/vat_bake.py) as the plugin's tracks.
