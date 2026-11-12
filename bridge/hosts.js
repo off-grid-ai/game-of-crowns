@@ -22,7 +22,7 @@ import { CIVILIAN } from "./campaigns.js";
 import * as Lua from "./lua.js";
 
 export const HOSTS = JSON.parse(fs.readFileSync(new URL("./data/hosts.json", import.meta.url), "utf8"));
-const SHIPS = new Set(HOSTS.ships);
+export const SHIPS = new Set(HOSTS.ships);  // the hulls that carry hosts over water (data/hosts.json ships)
 const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 
 const soldiersOf = (world, pid) => (world?.units ?? []).filter((u) => u.owner === pid && !CIVILIAN.has(u.type) && !SHIPS.has(u.type));

@@ -12,6 +12,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { CIVILIAN } from "./campaigns.js";
+import { SHIPS } from "./hosts.js";
 import { FAMILIES, LESSER, bible } from "./lore.js";
 import { HOUSES, cityName, houseFor, nameIn } from "./narrator.js";
 import { ROLES } from "./characters.js";
@@ -231,7 +232,7 @@ export async function loreMap(ctx, req, res, url) {
     return { title: cityName(c.id), x: c.x, y: c.y, size: c.size, capital: !!c.capital, house: h?.name ?? "", key: h?.name ?? "", color: h?.color ?? "#888", sigil: h?.sigil ?? "", besieged: Boolean(c.besieged) };
   });
   const hosts = [];
-  for (const u of (ctx.world.units ?? []).filter((x) => !CIVILIAN.has(x.type) && !/Trireme|Caravel|Galleon|Frigate|Transport/.test(x.type))) {
+  for (const u of (ctx.world.units ?? []).filter((x) => !CIVILIAN.has(x.type) && !SHIPS.has(x.type))) {
     if (ctx.world.cities.some((c) => c.x === u.x && c.y === u.y)) continue;  // a garrison, not a host
     const near = hosts.find((g) => g.owner === u.owner && Math.max(Math.abs(g.x - u.x), Math.abs(g.y - u.y)) <= 2);
     if (near) { near.x = (near.x * near.companies + u.x) / (near.companies + 1); near.y = (near.y * near.companies + u.y) / (near.companies + 1); near.companies++; }
