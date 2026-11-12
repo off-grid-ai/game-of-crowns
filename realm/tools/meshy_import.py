@@ -143,6 +143,18 @@ def base_image(mat):
     return None
 
 
+def normal_image(mat):
+    """The image behind a material's normal map, if it has one."""
+    if mat is None or not mat.use_nodes:
+        return None
+    for n in mat.node_tree.nodes:
+        if n.type == "NORMAL_MAP":
+            for l in n.inputs["Color"].links:
+                if l.from_node.type == "TEX_IMAGE":
+                    return l.from_node.image
+    return None
+
+
 def base_colour(mat):
     if mat is None:
         return (1.0, 1.0, 1.0)
@@ -315,6 +327,23 @@ def cut(obj, boxes, grey_above=None):
     return removed
 
 
+def flatten(obj, rules):
+    """Press a raised emblem flat (a relief "$" on a coin): every vertex within radius of centre (in the two axes
+    other than axis) and standing proud of `to` along axis (toward `out`, -1 or 1) is set to `to`. Returns how many."""
+    n = 0
+    for rule in rules:
+        ax = "xyz".index(rule["axis"])
+        others = [i for i in range(3) if i != ax]
+        c, r, to, out = rule["centre"], float(rule["radius"]), float(rule["to"]), float(rule.get("out", -1))
+        for v in obj.data.vertices:
+            d = math.hypot(v.co[others[0]] - c[0], v.co[others[1]] - c[1])
+            if d <= r and (v.co[ax] - to) * out > 0.0:
+                v.co[ax] = to
+                n += 1
+    obj.data.update()
+    return n
+
+
 def split_arm(obj, spec):
     """The throwing arm (the faces in spec box) made its own object, named arm, its origin at spec pivot and its
     local X along the arm toward spec tip, so the game swings it about its local Z (Godot) as the kit's arm."""
@@ -359,17 +388,22 @@ def repaint(obj, rules):
     for rule in rules:
         tris = {}
         for f in bm.faces:
-            if not in_box(f.calc_center_median(), rule["box"]):
+            touch = rule.get("match") and any(in_box(v.co, rule["box"]) for v in f.verts)  # a gold match also takes big faces reaching in
+            if not touch and not in_box(f.calc_center_median(), rule["box"]):
                 continue
             src = mats[f.material_index] if f.material_index < len(mats) else None
             img = base_image(src)
             if img is None or uv is None:
                 continue
             loops = [l[uv].uv.copy() for l in f.loops]
+            nimg = normal_image(src) if rule.get("flat") else None
             for i in range(1, len(loops) - 1):
                 tris.setdefault(img.name, []).append((loops[0], loops[i], loops[i + 1]))
+                if nimg is not None:
+                    tris.setdefault("normal:" + nimg.name, []).append((loops[0], loops[i], loops[i + 1]))
         for name, ts in tris.items():
-            img = bpy.data.images[name]
+            flat_normal = name.startswith("normal:")  # a flat rule's normal map flattened too: the relief's shading gone
+            img = bpy.data.images[name[7:] if flat_normal else name]
             w, h = img.size
             px = np.array(img.pixels[:], dtype=np.float32).reshape(h, w, 4)
             mask = np.zeros((h, w), dtype=bool)
@@ -391,13 +425,28 @@ def repaint(obj, rules):
                 l2 = (v0[0] * q[..., 1] - v0[1] * q[..., 0]) / d
                 inside = (l1 >= 0) & (l2 >= 0) & (l1 + l2 <= 1)
                 mask[y0:y1 + 1, x0:x1 + 1] |= inside
+            if flat_normal:
+                px[mask, :3] = (0.5, 0.5, 1.0)
+                img.pixels[:] = px.ravel()
+                img.pack()
+                continue
             rgb = px[..., :3]
             mx = rgb.max(-1)
             mn = rgb.min(-1)
             sat = np.where(mx > 0, (mx - mn) / np.maximum(mx, 1e-6), 0)
             pale = mask & (mx > float(rule.get("light_above", 0.6))) & (sat < 0.4)
+            if rule.get("match") == "gold":  # a gold emblem painted on a wall: gold texels take the wall's colour
+                hue = np.zeros_like(mx)
+                d = np.maximum(mx - mn, 1e-6)
+                hue = np.where(mx == rgb[..., 0], ((rgb[..., 1] - rgb[..., 2]) / d) / 6.0 % 1.0, hue)
+                pale = mask & (hue > 0.06) & (hue < 0.16) & (sat > 0.45) & (mx > 0.55)
+            if rule.get("flat"):
+                pale = mask.copy()  # the whole region one colour: an emblem in its own colour (a gold "$" on a gold coin)
+                fill_flat = np.median(rgb[mask], 0) if mask.any() else None
             board = mask & ~pale
             fill = np.median(rgb[board], 0) if board.any() else np.array(rule.get("colour", [0.36, 0.24, 0.14]))
+            if rule.get("flat") and fill_flat is not None:
+                fill = fill_flat
             rgb[pale] = fill
             px[..., :3] = rgb
             img.pixels[:] = px.ravel()
@@ -449,6 +498,7 @@ def main():
     removed = cut(obj, spec.get("cut", []), spec.get("smoke_above")) if spec.get("cut") or spec.get("smoke_above") is not None else 0
     if spec.get("passage"):
         passage(obj, spec["passage"])
+    pressed = flatten(obj, spec["flatten"]) if spec.get("flatten") else 0
     repainted = repaint(obj, spec["repaint"]) if spec.get("repaint") else 0
     if "--islands" in sys.argv:
         for n, lo, hi, col in islands(obj)[:40]:
@@ -460,7 +510,7 @@ def main():
     bpy.ops.export_scene.gltf(filepath=glb, export_format="GLB", use_selection=False, export_yup=True, export_apply=True)
     report = {"name": name, "source": src, "tris_before": before, "tris_after": after, "scale": k,
               "size_m": [round(x, 2) for x in size], "house_share": round(share, 3), "mask_png": has_mask,
-              "materials": [m.name for m in obj.data.materials if m], "cut_faces": removed, "arm": arm is not None, "repainted": repainted}
+              "materials": [m.name for m in obj.data.materials if m], "cut_faces": removed, "arm": arm is not None, "repainted": repainted, "flattened": pressed}
     json.dump(report, open(os.path.join(out, "import.json"), "w"), indent=1)
     print("MESHY " + json.dumps(report))
 
