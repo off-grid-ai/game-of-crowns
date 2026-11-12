@@ -46,6 +46,7 @@ var _wait := 0.0
 var _rng := RandomNumberGenerator.new()
 var _live := {}  # town id -> Array of running passing scenes {row, key, at, ends, cast: Array[Node3D], ending}
 var _seq := 0
+var _no_walk := {}  # town id -> {n: passing people not cast for want of a way in, rows: {id: n}, said: msec}
 var _marches: Array = []  # levies marching out: {root, life, every, wait, file, spacing, most, gone, pace, rng}
 
 
@@ -936,6 +937,7 @@ func _start(id: int, root: Node3D, row: Dictionary) -> Dictionary:
 	if at == Vector3.INF or main.scenes == null:
 		return {}
 	var last: Array = row.get("last", [30, 60])
+	var enter: Array = _d.get("director", {}).get("enter", [1.2, 2.0])
 	_seq += 1
 	var s := {"row": row, "key": "%s:%d" % [row["id"], _seq], "at": at, "cast": [], "ending": false,
 		"ends": Time.get_ticks_msec() + int(_rng.randf_range(float(last[0]), float(last[1])) * 1000.0), "town": id}
@@ -945,14 +947,35 @@ func _start(id: int, root: Node3D, row: Dictionary) -> Dictionary:
 		var n: Array = role.get("n", [1, 1])
 		var count := _rng.randi_range(int(n[0]), int(n[1]))
 		for i in count:
-			var spot := _passing_spot(at, role, i, count, axis)
+			var slot: Vector3 = main.scenes.stand(_passing_spot(at, role, i, count, axis))
+			var ea := _rng.randf() * TAU
+			var door: Vector3 = main.scenes.stand(slot + Vector3(cos(ea), 0, sin(ea)) * _rng.randf_range(float(enter[0]), float(enter[1])))
+			if main.scenes.nav.waits(main.towns, door, slot):
+				_unwalkable(id, root, String(row["id"]))  # no way in (the walk map baking, or empty): nobody parked
+				continue
 			var face := at
 			if bool(role.get("face", false)) and first != Vector3.INF:
 				face = first
-			var p := _cast(s, role, main.scenes.stand(spot), face)
+			var p := _cast(s, role, slot, face, door)
 			if p and first == Vector3.INF:
-				first = main.scenes.stand(spot)
+				first = slot
+	if (s["cast"] as Array).is_empty():
+		return {}  # nobody could walk in: the scene isn't playing
 	return s
+
+
+## A passing person the director didn't cast: the town's walk map gives no way from their way in to their spot
+## (still baking, or baked to nothing as Kingsmere's was in round 13; town_nav.waits). Said in the play log as it
+## starts and every `director.say_every` seconds while it lasts, with the count, so an empty map shows.
+func _unwalkable(id: int, root: Node3D, row_id: String) -> void:
+	var w: Dictionary = _no_walk.get(id, {"n": 0, "rows": {}, "said": -1})
+	w["n"] = int(w["n"]) + 1
+	w["rows"][row_id] = int(w["rows"].get(row_id, 0)) + 1
+	var now := Time.get_ticks_msec()
+	if int(w["said"]) < 0 or now - int(w["said"]) > int(float(_d.get("director", {}).get("say_every", 30.0)) * 1000.0):
+		w["said"] = now
+		print("CHECK town scenes: %s: no way to walk in for %d passing people so far (by row %s): its walk map gives no route (empty, or still baking); nobody cast there" % [String(root.get_meta("title", root.name)), int(w["n"]), str(w["rows"])])
+	_no_walk[id] = w
 
 
 ## A passing person's spot by the role's form: a ring round the object, a line out from it, a pair facing.
@@ -975,7 +998,7 @@ func _passing_spot(at: Vector3, role: Dictionary, i: int, count: int, axis: floa
 
 
 ## One person for a passing role: made at the edge of view, given their tree, walked to their spot by the Mover.
-func _cast(s: Dictionary, role: Dictionary, spot: Vector3, face: Vector3) -> Node3D:
+func _cast(s: Dictionary, role: Dictionary, spot: Vector3, face: Vector3, door: Vector3) -> Node3D:
 	var who := String(role.get("who", "townsfolk"))
 	var age := ""
 	if who == "child":
@@ -988,9 +1011,7 @@ func _cast(s: Dictionary, role: Dictionary, spot: Vector3, face: Vector3) -> Nod
 	add_child(person)
 	person.set_meta("scene", String(s["row"]["id"]))
 	var D: Dictionary = _d.get("director", {})
-	var enter: Array = D.get("enter", [1.2, 2.0])
-	var a := _rng.randf() * TAU
-	person.global_position = main.scenes.stand(spot + Vector3(cos(a), 0, sin(a)) * _rng.randf_range(float(enter[0]), float(enter[1])))
+	person.global_position = door
 	var mover: Node = Mover.of(person)
 	mover.speed = float(D.get("pace", 0.17))
 	var bt := BehaviorTree.new()

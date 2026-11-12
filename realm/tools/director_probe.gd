@@ -34,10 +34,12 @@ class FlatLand extends Node3D:
 		return true
 
 
-## Stands in for the realm's navigation: a straight route (the probe's town has nothing to go round).
+## Stands in for the realm's navigation: a straight route (the probe's town has nothing to go round). `empty`: the
+## town's walk map baked to nothing (round 13's Kingsmere): no route anywhere, so a Mover asking waits for ever.
 class Nav extends RefCounted:
+	var empty := false
 	func waits(_towns: Variant, _from: Vector3, _to: Vector3, _wide := false) -> bool:
-		return false
+		return empty
 	func route(_towns: Variant, from: Vector3, to: Vector3, _wide := false) -> PackedVector3Array:
 		return PackedVector3Array([from, to])
 
@@ -45,8 +47,9 @@ class Nav extends RefCounted:
 class Scenes extends Node3D:
 	var nav := Nav.new()
 	var people = preload("res://scripts/people.gd").new()
+	var middle := Vector3.INF  # with an empty map, every stand answers the town's middle (town_nav closest(): (0, 0))
 	func stand(p: Vector3) -> Vector3:
-		return p
+		return middle if nav.empty and middle != Vector3.INF else p
 
 
 ## The mirror's stand-in: one blackboard per town (the levy is a mirror fact), news never comes.
@@ -293,8 +296,8 @@ func _run() -> void:
 			var where := (o[0] as Node3D).position if is_instance_valid(o[0]) else Vector3.ZERO
 			if is_instance_valid(o[0]) and is_instance_valid(o[1]):
 				var mind: Node = o[0].get_node_or_null("Mind")
-				if mind and (mind as BTPlayer).blackboard.has_var(&"pair"):
-					var pr: Dictionary = (mind as BTPlayer).blackboard.get_var(&"pair")
+				var pr: Dictionary = (mind as BTPlayer).blackboard.get_var(&"pair", {}, false) if mind else {}
+				if not pr.is_empty():  # a chasing child (every town mind has `pair`; only theirs is set)
 					print("DIRECTOR stuck tag: now %d until %d count %d goal %s runner is first %s resting %s" % [Time.get_ticks_msec(), pr["until"], pr.get("count", 0), pr["goal"], pr["kids"][0] == o[0], pr.get("resting", false)])
 				print("DIRECTOR stuck: pairs %s %s, apart %.3f, moving %s %s" % [o[0].get_meta("pair", "-"), o[1].get_meta("pair", "-"), (o[0] as Node3D).position.distance_to((o[1] as Node3D).position), Mover.of(o[0]).moving(), Mover.of(o[1]).moving()])
 			fail.call("%s: %d pairs of bodies inside each other (first: %s %s and %s %s, %.1f s, at %s)" % [name, stuck.size(), o[0].get_meta("scene", "?"), o[0].get_meta("role", ""), o[1].get_meta("scene", "?"), o[1].get_meta("role", ""), float(o[2]), where])
@@ -327,6 +330,28 @@ func _run() -> void:
 				await process_frame
 			print("DIRECTOR peace   %d passing scenes started and ticked" % started)
 			director._end_town(7)
+			# Round 13: Kingsmere's walk map empty (Godot's 2D bake failed). The navigation then answers every stand with
+			# the town's middle and gives no way anywhere: the director casts nobody it can't walk in, never parks a
+			# body in the well for good, and says so (a CHECK line; its count here).
+			main.scenes.nav.empty = true
+			main.scenes.middle = town.global_position
+			var said := int(director._no_walk.get(7, {}).get("n", 0)) if "_no_walk" in director else 0
+			var none := 0
+			for row in director._d.get("scenes", []):
+				if not director._start(7, town, row).is_empty():
+					none += 1
+			for _f in 3:
+				await process_frame
+			var at_mid: Array = director.get_children().filter(func(n): return n is Node3D and n.has_meta("scene") and not (n as Node).is_queued_for_deletion() and Vector2((n as Node3D).global_position.x - town.global_position.x, (n as Node3D).global_position.z - town.global_position.z).length() < ORIGIN)
+			var told := (int(director._no_walk.get(7, {}).get("n", 0)) if "_no_walk" in director else 0) - said
+			print("DIRECTOR peace   empty walk map: %d passing scenes started, %d parked at the middle, %d not cast and said" % [none, at_mid.size(), told])
+			if not at_mid.is_empty():
+				fail.call("peace, empty walk map: %d passing people parked at the town's middle (first: %s)" % [at_mid.size(), at_mid[0].get_meta("scene", "?")])
+			if told == 0:
+				fail.call("peace, empty walk map: the director cast nobody walkable and said nothing")
+			director._end_town(7)
+			main.scenes.nav.empty = false
+			main.scenes.middle = Vector3.INF
 			main.towns.towns.erase(7)
 		if name == "peace":
 			# The town dressed again as its state turns (a good year): its Life is rebuilt, the director still casts it.
