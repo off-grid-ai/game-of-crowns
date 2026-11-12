@@ -721,6 +721,8 @@ func _trade(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 		var many: Array = _market_knobs(root).get("buyers", [1, 2])  # the crown's market draws more to each stall
 		if not _buyers_more.is_empty() and int(_buyers_more[1]) > int(many[1]):
 			many = _buyers_more  # the tax remitted: the market fills (moods.json relief.buyers)
+		if square_agents_on():
+			many = Data.value("crowd", "square_agents.posted.buyers", many)  # the villagers come to the stalls themselves
 		for i in rng.randi_range(int(many[0]), int(many[1])) if buyers else 0:
 			var side := Vector3(-out.z, 0, out.x) * rng.randf_range(-0.12, 0.12)
 			var buyer := _stand(root, life, center, m - out * (float(st[1]) * 0.5 + 0.12) + side, "townsfolk" if rng.randf() < 0.7 else "peasant", ["Idle_Talking", "Arguing", "Nodding"][rng.randi() % 3], rng.randi(), Color.WHITE, 0.2)
@@ -1988,13 +1990,16 @@ func _square_life(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rn
 		for i in 8:
 			var a := a0 + TAU * i / 8.0 * (1.0 if k % 2 == 0 else -1.0)
 			ring.append(Vector3(cos(a), 0, sin(a)) * r * float(P.get("ring", 0.85)))
+		var route := _beat(root, life, center, r, k, rng) if square_agents_on() else []
+		if route.size() >= 2:
+			ring = route  # a beat between the square's mouths and the well, not a ring (round 6 clip: it read mechanical)
 		var pair: Array = []
 		for j in 2:
 			var g := _townsperson(life, Vector3(ring[0].x, _y(center, ring[0]), ring[0].z) + Vector3(0.07 * j, 0, 0), "soldier", "Sword_Idle", rng.randi(), _house_col)
 			_watch(g)
 			g.set_meta("patrol", true)
 			pair.append(g)
-		go.patrols.append({"men": pair, "ring": ring, "leg": 1, "rest": 0.0, "pace": float(P.get("pace", 0.14)), "pause": P.get("pause", [3.0, 7.0])})
+		go.patrols.append({"men": pair, "ring": ring, "beat": ring == route, "leg": 1, "rest": 0.0, "pace": float(P.get("pace", 0.14)), "pause": P.get("pause", [3.0, 7.0])})
 	# Town dogs.
 	var D: Dictionary = Data.value("crowd", "dogs", {})
 	var tints: Array = D.get("tint", [])
@@ -2121,6 +2126,13 @@ func _square_more(root: Node3D, life: Node3D, center: Vector3, n: Callable, go: 
 		var loads: Array = E.get("loads", [["Carrying", "townsfolk", "female"], ["Box_Walk", "peasant", "male"]])
 		for i in n.call("errands"):
 			var ld: Array = loads[i % loads.size()]
+			if i == 0:
+				# Each place's stop on open ground by it, never its middle: the well's middle is in the well (round 6 clip).
+				var walls := _blocked(root, life)
+				for si in stops.size():
+					var q := _spot(center, stops[si], walls, PackedVector2Array(), 0.4)
+					if not is_nan(q.x):
+						stops[si] = q
 			var first: Vector3 = stops[rng.randi() % stops.size()]
 			var p := _stand(root, life, center, first + Vector3(rng.randf_range(-0.2, 0.2), 0, rng.randf_range(-0.2, 0.2)), String(ld[1]), String(ld[0]), rng.randi(), Color.WHITE, 0.3)
 			if p == null:
@@ -2274,11 +2286,51 @@ static func horse_cart(people: Object, rng: RandomNumberGenerator) -> Node3D:
 
 ## How many of `what` (crowd.json) stand in a town in these states: base, else the first state set.
 func _crowd_count(what: String, active: Array) -> int:
+	# With the square's agents on, the posted crowd is cut to crowd.json square_agents.posted (the villagers walk the
+	# square on errands instead: stall to street, well to door).
+	var cut: Dictionary = Data.value("crowd", "square_agents.posted", {}) if square_agents_on() else {}
+	if cut.has(what):
+		return int(cut[what])
 	var row: Dictionary = Data.value("crowd", what, {})
 	for st in Data.value("works", "priority", []):
 		if st in active and row.has(st):
 			return int(row[st])
 	return int(row.get("base", 0))
+
+
+## Whether the square's people are agents on errands (villagers.gd _slot, npc_mind's shopper, water carrier and
+## porter; crowd.json square_agents) rather than posted in place: --square-agents=on|off, else crowd.json.
+static func square_agents_on() -> bool:
+	var args := OS.get_cmdline_user_args()
+	if args.has("--square-agents=off"):
+		return false
+	return args.has("--square-agents=on") or bool(preload("res://scripts/data.gd").value("crowd", "square_agents.on", false))
+
+
+## A guard pair's beat (crowd.json patrol.beat): from one main street's mouth across the square past the well to
+## another's, a stop at each to look about, then back; each pair starts from its own mouth.
+func _beat(root: Node3D, life: Node3D, center: Vector3, r: float, k: int, rng: RandomNumberGenerator) -> Array:
+	var mouths: Array = []
+	for w in root.get_meta("ways_main", []):
+		for q in w as PackedVector2Array:
+			if q.length() > r * float(Data.num("crowd", "patrol.mouth", 0.95)):
+				mouths.append(Vector3(q.x, 0, q.y))
+				break
+	if mouths.size() < 2:
+		return []
+	var places: Dictionary = root.get_meta("places", {})
+	var walls := _blocked(root, life)
+	var mid: Vector3 = places.get("well", Vector3.ZERO)
+	var by_well := _spot(center, mid + Vector3(rng.randf_range(-1, 1), 0, rng.randf_range(-1, 1)).normalized() * 0.3, walls, PackedVector2Array(), 0.4)
+	var a: Vector3 = mouths[k % mouths.size()]
+	var b: Vector3 = mouths[(k + 1) % mouths.size()]
+	var route: Array = [a]
+	if not is_nan(by_well.x):
+		route.append(by_well)
+	route.append(b)
+	if not is_nan(by_well.x):
+		route.append(by_well)
+	return route
 
 
 ## The square's walkers, moved here (movement only; what they're for is said where they're placed):
@@ -2409,7 +2461,7 @@ class SquareLife extends Node:
 			moving = step(men[i], to + side, float(p["pace"]), delta) or moving
 		if not moving:
 			p["leg"] = int(p["leg"]) + 1
-			if int(p["leg"]) % 2 == 0:  # every other corner they stop and look about
+			if bool(p.get("beat", false)) or int(p["leg"]) % 2 == 0:  # on a beat at every stop, on a ring every other corner, they stop and look about
 				var span: Array = p["pause"]
 				p["rest"] = rng.randf_range(float(span[0]), float(span[1]))
 				for m in men:

@@ -323,9 +323,12 @@ func _spawn(id: int) -> void:
 		var busy := _crown_market(id)
 		if calling == "farmer" and busy.has("farmers_to_market") and rng.randf() < float(busy["farmers_to_market"]):
 			calling = "market"  # the crown's seat is a city: fewer to the fields, more to the market
+		var agents: Dictionary = preload("res://scripts/data.gd").value("crowd", "square_agents.callings", {}) if TownLife.square_agents_on() and not busy.is_empty() else {}
+		if not agents.is_empty() and rng.randf() < float(preload("res://scripts/data.gd").num("crowd", "square_agents.share", 0.6)):
+			calling = _weighed_key(agents, rng)  # the crown's square's errands: shoppers, water carriers, porters (crowd.json)
 		if i < jobs.size():
 			calling = jobs[i]
-		var station := "peasant" if calling in ["farmer", "carter", "groom"] else ("clergy" if calling == "pious" and rng.randf() < 0.6 else ("noble" if calling == "gentry" else "townsfolk"))
+		var station := "peasant" if calling in ["farmer", "carter", "groom", "porter"] or (calling == "water" and rng.randf() < 0.5) else ("clergy" if calling == "pious" and rng.randf() < 0.6 else ("noble" if calling == "gentry" else "townsfolk"))
 		var person: Node3D = people.make(rng, station, Color.WHITE, "adult" if i < jobs.size() else "", "", "female" if calling == "gentry" else "")
 		add_child(person)
 		# Home is a real house's doorstep, the work done in front of it; a
@@ -384,6 +387,19 @@ func _spawn(id: int) -> void:
 			a["parent"] = best
 			best["children"] = best.get("children", []) + [a]
 			a["node"].set_meta("parent", best["node"])  # who the child keeps near, for anyone reading (the motion probe)
+
+
+## A key of `weights` ({key: weight}) drawn by weight.
+static func _weighed_key(weights: Dictionary, rng: RandomNumberGenerator) -> String:
+	var total := 0.0
+	for k in weights:
+		total += float(weights[k])
+	var roll := rng.randf() * total
+	for k in weights:
+		roll -= float(weights[k])
+		if roll <= 0.0:
+			return String(k)
+	return String(weights.keys()[0])
 
 
 ## The villager nearest a point on the ground, within reach of a click:
@@ -851,6 +867,17 @@ const KNOT := 0.26  # a gathering keeps this clear round its middle: knots of tw
 ## their door (their bench: the yard, the workshop front), where a town's
 ## people mostly are.
 func place(a: Dictionary, key: String, knot := false) -> Vector3:
+	a["face_at"] = Vector3.INF
+	if key in SLOTS:
+		# A smart object's slot (a stall's front, the well's rim, a street's mouth): claimed, faced, never stacked.
+		var sp := _slot(a, key)
+		if not is_nan(sp.x):
+			a["place_key"] = key
+			return sp
+		key = "market" if key != "street" else "home"
+		if key == "home":
+			a["place_key"] = ""
+			return nearby(a["home"], a["rng"], 0.25)
 	for k in [key] + Array(OVERFLOW.get(key, [])):
 		var clear := KNOT if knot else (SHOULDER * 1.2 if k == "feast" else SHOULDER * 2.6)  # alone, a couple of strides from the next: a lively square, not a crowd; round a fire, a shoulder apart
 		var p := _claim(a, k, clear)
@@ -931,6 +958,80 @@ func _claim(a: Dictionary, key: String, clear: float) -> Vector3:
 					break
 			if clear_here:
 				return Vector3(c.x + q.x, terrain.height_at(c.x + q.x, c.z + q.y), c.z + q.y)
+	return Vector3(NAN, 0, 0)
+
+
+## The square's smart objects (crowd.json square_agents, the switch --square-agents=on|off; supervisor 2026-11-12,
+## Mac: "the people behaviour is poor"): each stall's front, the well's rim and the main streets' mouths offer a
+## few slots, each with the way to face (the counter, the well, out along the street). A villager sent there
+## (npc_mind go("stall"), go("draw"), go("street")) claims a slot nobody stands on or is bound for, as Manor
+## Lords' and Anno's villagers claim a market stall's or a well's slot, so two never stack and the square fills
+## by its stalls and its well, not in one ring round a point.
+const SLOTS := ["stall", "draw", "street"]
+
+
+func _slot(a: Dictionary, key: String) -> Vector3:
+	if not TownLife.square_agents_on():
+		return Vector3(NAN, 0, 0)
+	var town_node: Node3D = towns.towns.get(a["town"], {}).get("node")
+	if not is_instance_valid(town_node):
+		return Vector3(NAN, 0, 0)
+	var c: Vector3 = a["center"]
+	var K: Dictionary = preload("res://scripts/data.gd").value("crowd", "square_agents", {})
+	var r := float(town_node.get_meta("square_r", 1.0))
+	var offers: Array = []  # [town-local spot, town-local spot to face]
+	match key:
+		"stall":
+			var off := float(K.get("stall_out", 0.13))
+			for st in town_node.get_meta("stalls", []):
+				var m: Vector3 = st[0]
+				var out := Vector3(m.x, 0, m.z).normalized()
+				var along := Vector3(-out.z, 0, out.x)
+				var front := m - out * (float(st[1]) * 0.5 + off)
+				for k in [0.0, -0.32, 0.32]:
+					offers.append([front + along * float(st[2]) * k, m])
+		"draw":
+			var places: Dictionary = town_node.get_meta("places", {})
+			if places.has("well"):
+				var w: Vector3 = places["well"]
+				var rim := float(K.get("well_rim", 0.2))
+				for i in 5:
+					var ang := TAU * i / 5.0 + 0.4
+					offers.append([w + Vector3(cos(ang), 0, sin(ang)) * rim, w])
+		"street":
+			var reach := float(K.get("street_out", 1.25)) * r
+			for wy in town_node.get_meta("ways_main", []):
+				var line := wy as PackedVector2Array
+				for q in line:
+					if q.length() > reach:
+						var o := Vector3(q.x, 0, q.y)
+						var side := Vector3(-o.z, 0, o.x).normalized()
+						for k in [-0.07, 0.07]:
+							offers.append([o + side * k, o * 2.0])  # facing on out along the street
+						break
+	if offers.is_empty():
+		return Vector3(NAN, 0, 0)
+	var goals: Array = []
+	for b in crowds.get(a["town"], []):
+		if not is_same(b, a) and b.has("goal") and b["node"].visible:
+			goals.append(b["goal"])
+	var life: Node = town_node.get_node_or_null("Life")
+	if life:
+		goals.append_array(Array(life.get_meta("standing", PackedVector2Array())))
+	var clear := float(K.get("slot_clear", 0.1))
+	var first: int = a["rng"].randi() % offers.size()
+	for i in offers.size():
+		var o: Array = offers[(first + i) % offers.size()]
+		var q := nav.closest(a["map"], Vector2(o[0].x, o[0].z))
+		if q.distance_to(Vector2(o[0].x, o[0].z)) > 0.06:
+			continue  # under a stall's counter or a wall
+		if not nav.inside(town_node, Vector3(c.x + q.x, 0, c.z + q.y)).is_empty():
+			continue
+		if goals.any(func(g: Vector2) -> bool: return g.distance_to(q) < clear):
+			continue  # someone there, or on their way
+		var f: Vector3 = o[1]
+		a["face_at"] = Vector3(c.x + f.x, 0, c.z + f.z)
+		return Vector3(c.x + q.x, terrain.height_at(c.x + q.x, c.z + q.y), c.z + q.y)
 	return Vector3(NAN, 0, 0)
 
 
@@ -1723,6 +1824,8 @@ func _on_square(a: Dictionary, p: Vector2) -> bool:
 func _square_cap(a: Dictionary) -> int:
 	var size := int(towns.towns.get(a["town"], {}).get("data", {}).get("size", 1))
 	var busy := _crown_market(a["town"])
+	if busy.has("square_holds") and TownLife.square_agents_on():
+		return int(preload("res://scripts/data.gd").num("crowd", "square_agents.square_holds", float(busy["square_holds"])))  # the walkers on errands are the square's crowd now
 	if busy.has("square_holds"):
 		return int(busy["square_holds"])  # the crown's seat: the realm's busiest market (data/towns.json market.crown)
 	return clampi(2 + size, 5, SQUARE_HOLDS)
@@ -1749,7 +1852,7 @@ func _square_full(a: Dictionary) -> bool:
 		if not is_same(b, a) and b["node"].visible and _on_square(a, Vector2(b.get("goal", Vector2(99, 99)))):
 			there += 1
 	var life: Node = town_node.get_node_or_null("Life")
-	if life:
+	if life and not TownLife.square_agents_on():  # with the square's agents on, the posted few (keepers, the drill) don't use up the walkers' room
 		for p: Vector2 in life.get_meta("standing", PackedVector2Array()):
 			if _on_square(a, p):
 				there += 1

@@ -826,7 +826,13 @@ class GoTo extends BTAction:
 				var v: Node = blackboard.get_var(&"vill")
 				v.route_to(a, _to)  # ask again: the map may answer now
 			return RUNNING
-		# Arrived: this is now their post, and they face the way they came in.
+		# Arrived: this is now their post, and they face the way they came in, or what the slot they claimed
+		# faces (a stall's counter, the well, on along the street: villagers.gd _slot).
+		var fa: Vector3 = a.get("face_at", Vector3.INF)
+		if fa != Vector3.INF:
+			var to_f := Vector2(fa.x - here.x, fa.z - here.z)
+			if to_f.length() > 0.01:
+				(agent as Node3D).rotation.y = atan2(to_f.x, to_f.y)
 		blackboard.set_var(&"post", agent.position)
 		blackboard.set_var(&"face", agent.rotation.y)
 		blackboard.set_var(&"at_post", true)
@@ -1354,6 +1360,27 @@ static func villager_activities(role: String) -> Array:
 				seq("bread", [go("bakery.door"), once("PickUp_Table"), go("market", "Carrying"), once("PickUp_Table"), brk(LOOK)]),
 				seq("rest", [go("mill.door"), run(["Idle_Talking", "Wiping_Sweat"], 1, 2), brk(REST)]),
 				seq("load", [go("granary.door"), run(["Push_Heavy"], 1, 1), once("PickUp_Table"), go("market", cart()), once("PickUp_Table"), brk(LOOK)]),  # the granary's grain out to the market stalls
+			]
+		"market" when load("res://scripts/town_life.gd").square_agents_on():  # (loaded, not preloaded: town_life preloads this)
+			# The square's shopper (crowd.json square_agents): in off a street, to a stall's front, haggles, takes
+			# what was bought and is off up a street with it; or browses along the stalls; or meets a neighbour.
+			return [
+				seq("shop", [go("street"), go("stall"), run(["Idle_Talking", "Pointing_Forward", "Arguing"], 2, 3), run(["Nod_Yes", "Shake_No", "Nodding"], 1, 1), once("PickUp_Table"), go("street", "Carrying"), brk(LOOK)]),
+				seq("browse", [go("stall"), once("Looking_Around"), run(["Thinking", "Doubtful"], 1, 1), go("stall"), once("PickUp_Table"), run(["Nod_Yes", "Nodding"], 1, 1), brk(LOOK)]),
+				seq("gossip", [partner(), go("meet"), Talk.new(), brk(LOOK)]),
+				seq("errand", [go("stall"), run(["Idle_Talking", "Nodding"], 1, 2), once("PickUp_Table"), go("home", "Carrying"), once("PickUp_Table"), brk(REST)]),
+			]
+		"water":  # the square's water carrier: to the well's rim, draws, carries it home or up a street
+			return [
+				seq("draw", [go("draw"), once("PickUp_Table"), run(["Pushing"], 1, 2), once("PickUp_Table"), go("home", "Carrying"), once("PickUp_Table"), brk(REST)]),
+				seq("sell", [go("draw"), once("PickUp_Table"), run(["Pushing"], 1, 1), go("stall", "Carrying"), once("PickUp_Table"), run(["Idle_Talking", "Nodding"], 1, 1), brk(LOOK)]),
+				seq("chat", [go("draw"), run(["Idle_Talking", "Laughing", "Nodding"], 2, 3), brk(LOOK)]),
+			]
+		"porter":  # the square's porter: a load in off the street to a stall, and back for the next
+			return [
+				seq("haul", [go("street"), once("PickUp_Table"), go("stall", "Carrying"), once("PickUp_Table"), run(["Wiping_Sweat", "Idle_Talking"], 1, 1), brk(REST)]),
+				seq("box", [go("stall"), once("PickUp_Table"), go("street", "Box_Walk" if Weapons.can_play("Box_Walk") else "Carrying"), once("PickUp_Table"), brk(["Wiping_Sweat", "Weight_Shift"])]),
+				seq("rest", [go("draw"), run(["Wiping_Sweat", "Idle_Talking"], 1, 2), brk(REST)]),
 			]
 		"market":
 			return [
