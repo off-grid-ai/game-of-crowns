@@ -48,10 +48,17 @@ func _tick() -> void:
 					n.queue_free()
 			_done.erase(c)
 	var lit := Works.within(Works.hour(), "lit") and Works.dark()  # lit only when the sky is dark
+	var st: Node = preload("res://scripts/awareness.gd").store()
+	var units: Array = st.rec("units", []) if st else []
+	var Aw := preload("res://scripts/awareness.gd")
 	for c in _done:
 		for t in _done[c]["torches"]:
 			if is_instance_valid(t):
 				t.visible = lit
+		# The training yard drills as many lines as the lord has companies standing in the town (castle_folk.gd).
+		if (_done[c] as Dictionary).has("drill") and st:
+			var town: Dictionary = st.city(int(_done[c].get("city", -1)))
+			preload("res://scripts/castle_folk.gd").show_lines(_done[c], preload("res://scripts/castle_folk.gd").garrison_lines(units, Aw.civilian, Aw.ships, town, (_done[c]["drill"] as Array).size()))
 	if main == null or main.get("towns") == null:
 		return
 	for id in main.towns.towns:
@@ -87,7 +94,7 @@ static func frame_of(castle: Node3D) -> Transform3D:
 
 func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 	var sp := spec_of(castle)
-	var d := {"nodes": [], "torches": []}
+	var d := {"nodes": [], "torches": [], "city": id}
 	_done[castle] = d
 	if sp.is_empty():
 		return  # not our builder's castle (the downloaded one): nothing to read its frame from

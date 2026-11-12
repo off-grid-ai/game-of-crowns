@@ -23,6 +23,27 @@ static func on() -> bool:
 
 ## Peoples the bailey of the castle framed by `xf` (castle metres to the world), built to `sp` (castle_builder's spec).
 ## `host`: the node that holds them (castle_life); `d`: its record of what it made (d["nodes"]).
+## How many of the training yard's lines drill: one for each of the lord's companies Freeciv has standing in the town
+## (the store's units on the town's tile, its owner's, neither civilian nor a ship; the engine-visual map: the bailey's
+## men were generic, not the house's), never more than `most`. A garrison that marches out leaves the yard empty.
+static func garrison_lines(units: Array, civilian: Array, ships: Array, town: Dictionary, most: int) -> int:
+	var n := 0
+	for u in units:
+		if int(u.get("x", -1)) == int(town.get("x", -2)) and int(u.get("y", -1)) == int(town.get("y", -2)) and int(u.get("owner", -1)) == int(town.get("owner", -2)) \
+				and not String(u.get("type", "")) in civilian and not String(u.get("type", "")) in ships:
+			n += 1
+	return mini(n, most)
+
+
+## Shows the first `n` lines of the drill (dress's d["drill"]), the rest stood down.
+static func show_lines(d: Dictionary, n: int) -> void:
+	var lines: Array = d.get("drill", [])
+	for l in lines.size():
+		for f in lines[l]:
+			if is_instance_valid(f):
+				f.visible = l < n
+
+
 static func dress(host: Node, main: Node, xf: Transform3D, sp: Dictionary, colour: Color, d: Dictionary) -> void:
 	if not on():
 		return
@@ -55,13 +76,16 @@ static func dress(host: Node, main: Node, xf: Transform3D, sp: Dictionary, colou
 	var gap: Array = Dr.get("gap", [0.11, 0.13])  # across, between lines (shares)
 	var sergeant_at: Vector3 = at.call(float(yard[0]) + 0.32, float(yard[1]))
 	var drillers: Array = []
+	d["drill"] = []  # the lines, each its men: as many shown as the town has companies standing in it (garrison_lines)
 	for l in lines:
+		d["drill"].append([])
 		for i in per:
 			var p: Vector3 = at.call(float(yard[0]) - l * float(gap[0]), float(yard[1]) + (i - (per - 1) * 0.5) * float(gap[1]))
 			var f: Node3D = put.call(people.make(rng, "soldier", cloth, "adult"), p)
 			main.scenes.arm(f, "sword" if l % 2 == 0 else "spear")
 			face.call(f, sergeant_at)
 			drillers.append(f)
+			d["drill"][l].append(f)
 	var sergeant: Node3D = put.call(people.make(rng, "soldier", cloth, "adult"), sergeant_at)
 	face.call(sergeant, at.call(float(yard[0]) - 0.3, float(yard[1])))
 	People.play(sergeant, "Yelling")

@@ -39,6 +39,7 @@ var realm := Blackboard.new()
 static var season_seconds := 0.0  # world.turnSeconds: how long a season lasts (bridge/data/pace.json); 0 until the first world
 static var bands := {}  # world.bands: the favour each band starts at, loyal/sworn/steady/cooling (bridge/data/favour.json)
 static var civilian: Array = []  # world.civilian: Freeciv unit types that aren't soldiers (bridge campaigns.js CIVILIAN)
+static var ships: Array = []  # world.ships: the hulls that carry hosts over water, never soldiers (bridge hosts.json ships)
 static var tithe_high := 1.0  # world.crown.titheHigh: the tithe the houses grumble at (bridge crown.js TITHE_HIGH)
 var _towns := {}  # town id -> Blackboard
 var _seen := {}  # scene id -> true: each scene is news once
@@ -178,6 +179,8 @@ func _reduce_realm(world: Dictionary) -> void:
 		bands = world["bands"]
 	if world.get("civilian") is Array:
 		civilian = world["civilian"]
+	if world.get("ships") is Array:
+		ships = world["ships"]
 	if crown.get("titheHigh") != null:
 		tithe_high = float(crown["titheHigh"])
 	# The weather, as the bridge reads it (/world's weather: clear, showers, rain,

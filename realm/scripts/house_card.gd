@@ -42,6 +42,19 @@ static func purse(pid: int) -> Dictionary:
 	return {}
 
 
+## How the house is ruled, in the realm's words (ui.json house_card.rule, by Freeciv's government: the store's
+## players[].government), "" when the store hasn't the house or the word.
+static func rule(pid: int) -> String:
+	var st: Node = Awareness.store()
+	if st == null:
+		return ""
+	for p in st.rec("players", []):
+		if int(p.get("id", -1)) == pid:
+			var words: Dictionary = preload("res://scripts/data.gd").value("ui", "house_card.rule", {})
+			return String(words.get(String(p.get("government", "")), ""))
+	return ""
+
+
 ## A great house in full: its standing now and how it has moved, its lord,
 ## its bannermen and their loyalty, its wars and its friends.
 func show_house(d: Dictionary) -> void:
@@ -95,6 +108,13 @@ func show_house(d: Dictionary) -> void:
 			row.add_child(T.datum(("  ▲ %s" if diff > 0 else "  ▼ %s") % ui.real(key, absi(diff)), T.SIZE_DESC, Color("#7fb069") if diff > 0 else Color("#e86b5c")))
 		cell.add_child(row)
 		cell.add_child(_spark(hist.map(func(r): return float(r.get(key, 0)))))
+		grid.add_child(cell)
+	var ruled := rule(int(d.get("id", -1)))
+	if ruled != "":
+		# How the house is ruled (Freeciv's government; a house in anarchy reads so at once).
+		var cell := VBoxContainer.new()
+		cell.add_child(T.label("Rule"))
+		cell.add_child(T.datum(ruled, 20))
 		grid.add_child(cell)
 	if books.has("net"):
 		# Last season's gold, each source on hover (Freeciv's books: towns, mines, the tithe, the court, dealings).
