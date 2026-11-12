@@ -494,6 +494,30 @@ func _shape(r: Dictionary, shape: String) -> void:
 	r["d"] = l["d"]
 	_dress(r)
 	_fit(r)
+	_bear(r)
+
+
+## The regiment's standard bearer (Total War: the colours carried by a man in the front rank, not a pole among
+## the ranks): its middle man of the front rank holds the banner at his side (banner.bearer: how far to his
+## right, in men's heights), so it marches, wheels and stands where he does.
+func _bear(r: Dictionary) -> void:
+	if not r.has("banner"):
+		return
+	var at: PackedVector3Array = r["local"]
+	if at.is_empty():
+		return
+	var front := -INF
+	for p in at:
+		front = maxf(front, p.z)
+	var best := 0
+	var near := INF
+	for i in at.size():
+		if at[i].z > front - 0.05 and absf(at[i].x) < near:
+			near = absf(at[i].x)
+			best = i
+	r["bearer"] = best
+	var man := Data.num("army", "man", 0.22)
+	(r["banner"] as Node3D).position = at[best] + Vector3(man * Data.num("army", "banner.bearer", 0.25), 0, 0)
 
 
 ## Plays a regiment's men a role's clip. walk: the whole regiment on one step, each man a little off it

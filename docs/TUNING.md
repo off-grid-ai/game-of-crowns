@@ -270,4 +270,5 @@ Switches (`--name`) go after `--` on the game's command line.
 - Clear ground for every regiment (off houses, farms, hedged fields and roads), how far one looks for it, the clear margin round it: `realm/data/army.json`: `muster.margin`, `muster.probe`, `muster.search`.
 - The soldiers' lighter levels and how soon they come in: `lod.on` (`--army-lod=off`), `lod.bias`, `lod.least`, `lod.mergeAngle`; which regiments cast shadows: `shadows.near`.
 - The cavalry: how tall horse and rider stand and how loosely they rank: `meshes.armies/cavalry.tall`, `units.horse.spacing`; the seat, the horse's size and weight, the leg spread: `realm/tools/rig/cavalry.json` (`rider.*`, rebaked with vat_bake.py).
+- Where the standard bearer (the front rank's middle man) holds his regiment's colours: `banner.bearer`.
 - The bodies the host wears: `units_set` (meshy: men-at-arms, the town guard as spearmen, the ranger as archers; `--units=kit` the before), `meshy.<unit>`; the painted finish that carries the house colour onto the men: `look.on` (`--army-look=kit` the before).
