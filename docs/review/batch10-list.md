@@ -44,3 +44,26 @@ to order. Oblique, the rig's own pitch.
     `city Kingsmere 30`, `city Kingsmere 50`, `city Kingsmere 60`. Judge against batch 9's kingsmere-30/50: no
     salmon line round Kingsmere at 30, at most a faint one at 50, the border whole (and in the crown's own red,
     not salmon) only at 60.
+
+## The whole Meshy cast (3790e402, 405a7085, 73c7369e; `--cast=meshy`, before: `--cast=kit`)
+
+Before filming: one `arch -arm64 godot --headless --path realm --import` while no other Godot runs (the cast's 13
+new bodies retarget at import), then `-s res://tools/feet_check.gd -- --cast=meshy` and `-s res://tools/mind_probe.gd`.
+Each shot twice, kit then cast, the same frame, at roof height or above.
+
+11. **Kingsmere's square** (`city Kingsmere 6 -25`): men and women of several looks (ranger, both farmers,
+    townswoman, merchant, stallholder), never twins side by side, in the town's dyes on their own colour garment;
+    the crier at the heart; the noble lady among the gentry. Judge: one painted look across the crowd, nobody
+    standing out (the lady is the one to watch).
+12. **Children at play** (the square's chase, `city Kingsmere 5 -25`, a 4 s clip at 0.2): the boy and the girl
+    running, child-sized (about 0.7 of a grown body), never a grown body.
+13. **Old folk** (`city Kingsmere 6 -25` by day, a lane of houses): the old man and old woman at doors and on
+    benches; feet on the bench in Sitting_Idle (feet_check).
+14. **The forge at work** (`work Kingsmere forge 4.5 -25`, then a 24-frame clip at 0.2, with `--landmarks=meshy`
+    and with kit): the blacksmith at the anvil on its stump, the second at the bellows by the hearth door pumping
+    (Pushing); sparks on the frame the hammer meets the iron, the ring with them (`--sound=v2`). Not at the door.
+15. **The mill and the friar** (`work Kingsmere windmill 4.5 -25`, a funeral or `city Kingsmere 6` near the sept):
+    the miller at the door, the friar walking.
+16. **What's drawn where** (batch 9's forge frame, `work Kingsmere forge 4.5 -25` in winter): `pick 0.373 0.522`
+    (the red blob in mid-air), `pick 0.75 0.88` (the grey see-through rectangle), `pick 0.17 0.19` (the inn's
+    name under a roof). play.log names each, its mesh, colour and height over the ground: the fixes follow.

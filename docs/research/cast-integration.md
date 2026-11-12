@@ -84,3 +84,44 @@ Neither of the first two is rejected. Neither has a female body, a child or an e
 | woman (several looks) | peasant, townsfolk | everywhere |
 | child (two looks) | (outfits today) | the square's games |
 | noble, lady | noble | the keep, the court |
+
+## The fourteen (2026-11-12)
+
+Meshy's Starter plan rigged only the farmer, so the other thirteen came as 8k A-pose meshes with no skeleton. They're
+rigged by `realm/tools/cast_rig.py` (Blender on the CPU, no account):
+- **The skeleton:** the farmer's Meshy/Mixamo skeleton, fitted to each body by the landmarks Mixamo's auto-rigger
+  asks for, read off its front silhouette: groin (a robe closes it, so its legs part as the template's), hands,
+  shoulders (where the arm's top edge meets the neck), and the neck's base (kept where a head can end: about 0.72 of
+  the height for a child, 0.82 at most for a grown body). A picture of the fitted joints is written beside each rig.
+- **The skin:** each bone ends where its chain's next begins. Blender's automatic weights are taken on a watertight
+  voxel copy (a coarser one when heat fails: the noble lady's hanging sleeves), then handed to the body by Data
+  Transfer. A vertex hanging only on a far bone goes to its nearest one (the boy's hair tuft first came out on the
+  spine, a spike).
+- `rig_unit.py` (the soldiers' path) wasn't used: it keeps the source skeleton's proportions, so a child's or a
+  robed body's joints would sit off.
+
+Then `cast_import.py` with each one's dye cloth (`realm/tools/cast_masks.txt`): the concept's own colour garment,
+reds above saturation 0.55 so skin stays out. Meshy's stray 80-face sphere is dropped from every import.
+
+**Verdicts** (23 clips each, 6 frames, at 100%: `/tmp/goc-models/<name>_clips_a.jpg` and `_b.jpg`). All pass;
+none rejected.
+
+| Member | Plays | Watch |
+|---|---|---|
+| farmer_m (Meshy's rig) | peasant | straw brim in a tight crowd |
+| farmer_f | peasant, townsfolk (f) | skirt bulges in kneels |
+| townswoman | townsfolk (f) | dark side blotches on the dress (Meshy's bake; fine at roof height) |
+| stallholder | townsfolk (m); one stall | clean |
+| merchant | townsfolk (m) | fur collar rides up in deep bends; dark blotches (bake) |
+| blacksmith | the forge's smith only | his bald head reads dark in shade |
+| miller | the mill's miller only | clean |
+| town_crier | the crier only | clean |
+| priest | every friar | habit undyed, by choice |
+| noble_lady | gentry ladies | a little more finished than the rest; her long sleeves swing wide in a run |
+| boy, girl | children (play, the chase) | big heads by design (no extra scale on them) |
+| old_man, old_woman | elders (benches, doorways) | old woman's dark blotches (bake) |
+
+The same three watch items hold for everyone, as for the first two: Sitting_Drinking leaves the frame in the CPU
+proxy (hip travel), arms hang a little out at rest in the proxy, and skirts stretch between the legs in a run or a
+kneel (no cloth sim). Heights: every body is about 1.9 m in its file; people.gd stands each by its head bone
+(adults at our people's height, children at 0.72 of it, elders 0.96).
