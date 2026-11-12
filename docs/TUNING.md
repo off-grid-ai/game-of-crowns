@@ -239,6 +239,7 @@ Switches (`--name`) go after `--` on the game's command line.
 ## Animals and bodies at rest (NPC perf)
 - What each farm beast does standing about (a cow grazes, a pig roots, a chicken pecks), how often and how many times in a row; how far a head comes down and how it chews or pecks: `realm/data/animals.json`: `kinds.<kind>.life`, `.derive.*`; `realm/tools/animals_check.gd` checks every kind. How often a beast's next move is a different one, and how soon a horse that was walked or led takes up grazing again: `realm/data/animals.json`: `change`, `busyRetry`.
 - What the crowd wears: the homespun and dyed cloths, by town rank the share of peasants in dyed cloth and of everyone in the holder's colour, and how bright a cloth's weave is lifted before it's dyed (`cloth.true`: off for the old multiplied tint): `realm/data/people.json`: `cloth.*`.
+- How a Meshy cast member's cloth takes its dye (`mix`: the dye laid over the painted cloth at `strength`, bright; `mul`: multiplied in, dark, the switch back) and how much brighter the whole figure is drawn, skin too (`lift`): `realm/data/people.json`: `cloth.cast_dye`.
 - Kneeling and sitting on a body's own knees: `realm/data/people.json`: `feet.low` (switch), `feet.lowAlso` (more moves), `feet.lowExtra` (metres more for a body by name); standing moves (crouches, pushes) raised on a body's own legs: `feet.bodyMoves`.
 
 ## Clarity: the player always sees clearly what he looks at (Mac, 2026-11-12)

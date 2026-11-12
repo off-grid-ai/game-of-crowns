@@ -827,12 +827,21 @@ func _mask_dye(mi: MeshInstance3D, mask_path: String, colour: Color) -> void:
 		var key := [m, mask_path, colour]
 		if not _masked.has(key):
 			var copy: StandardMaterial3D = m.duplicate()
+			# people.json cloth.cast_dye (round 3: the crowd read grey-brown, 01-town's in bright cloth): "mix" lays
+			# the dye over the cloth at `strength`, keeping that much less of the painted weave, so a red reads red;
+			# "mul" (the switch back) multiplies it into the painted cloth, darkening it. `lift` brightens the whole
+			# figure, skin and all (Meshy's albedo is painted dark for its own light).
+			var D: Dictionary = Data.value("people", "cloth.cast_dye", {})
+			var mix := String(D.get("mode", "mul")) == "mix"
 			var img := Image.create(4, 4, false, Image.FORMAT_RGBA8)
-			img.fill(colour)
+			img.fill(Color(colour, float(D.get("strength", 0.7))) if mix else colour)
 			copy.detail_enabled = true
 			copy.detail_mask = mask
 			copy.detail_albedo = ImageTexture.create_from_image(img)
-			copy.detail_blend_mode = BaseMaterial3D.BLEND_MODE_MUL
+			copy.detail_blend_mode = BaseMaterial3D.BLEND_MODE_MIX if mix else BaseMaterial3D.BLEND_MODE_MUL
+			var lift := float(D.get("lift", 1.0))
+			if lift != 1.0:
+				copy.albedo_color = Color(copy.albedo_color.r * lift, copy.albedo_color.g * lift, copy.albedo_color.b * lift, copy.albedo_color.a)
 			copy.detail_uv_layer = BaseMaterial3D.DETAIL_UV_1
 			_masked[key] = copy
 		mi.set_surface_override_material(s, _masked[key])
