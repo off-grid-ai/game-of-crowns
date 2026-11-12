@@ -2,12 +2,19 @@
 # Focus: Kingsmere's square at the default town view against art target 01-town (docs/art/target/01-town.jpg).
 # One short film (about 5 minutes [estimate]) of that one view with the current default switches: the hero frame
 # (the view you start with: camera_rig.town_view, camera.json town_view), the same frame turned 15 degrees left and
-# right, and one closer. Then side-by-side composites with 01-town into /tmp/goc-focus/<round>/. Run by the
+# right, and one closer (0.7 of it). The hero sits about 40 degrees down at distance 19 (camera.json town_view;
+# docs/research/quality-deep-dive.md #1: 01-town reads 40-45). Every frame is framed by autoplay's "home" step
+# (camera_rig.town_view: the castle behind the square), never "city" (its heading ignores the castle, so the wall
+# stands in the foreground: round 1's ladder). Each frame is framed twice, the second time straight before its snap:
+# the film's window takes real input (it comes to the front), and in round 1 something moved the view off Kingsmere
+# during an 8 s wait (km-18_-3: the camera at the same distance between Kingsmere and Goldrock, as a click on the
+# minimap or a pan would put it). Then side-by-side composites with 01-town into /tmp/goc-focus/<round>/. Run by the
 # supervisor each round, after any batch (one Godot at a time through realm/tools/render.sh's queue).
 #
 #   docs/review/focus.sh                 # ROUND defaults to the time (HHMM)
 #   ROUND=r3 docs/review/focus.sh        # frames, logs and composites in /tmp/goc-focus/r3/
 #   CLOSER=0.7                           # the closer frame's share of the hero distance
+#   LOOK=--look=v3 EXTRA=--cast=meshy    # the look switch (default --look=one) and any more switches
 #
 # Its own private bridge (8789, Freeciv 5558; PORT, FC to change) with a fresh reign named "Film focus", so Mac's
 # realm on 8787 is never touched. It stops that bridge when it ends. Nothing here edits the repo.
@@ -17,7 +24,8 @@ OUT=${OUT:-/tmp/goc-focus/$ROUND}
 PORT=${PORT:-8789}; FC=${FC:-5558}
 API=localhost:$PORT
 CLOSER=${CLOSER:-0.7}
-SW=(--look=one --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on --ui=v2 --dressing=on --castle-life=on --weather=v2 --landmarks=meshy)
+LOOK=${LOOK:---look=one}
+SW=($LOOK ${=EXTRA} --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on --ui=v2 --dressing=on --castle-life=on --weather=v2 --landmarks=meshy)
 B=(--bridge=http://127.0.0.1:$PORT)
 TARGET=$R/docs/art/target/01-town.jpg
 mkdir -p $OUT; LOG=$OUT/focus.log
@@ -39,13 +47,15 @@ for i in {1..60}; do curl -s -m 5 $API/world | python3 -I -c "import json,sys; s
 say "reign $NID is up"
 
 # The film: the hero frame, 15 degrees left and right, then closer (autoplay.gd's "home" step: the view you start
-# with, turned by degrees and its distance scaled).
+# with, turned by degrees and its distance scaled). Framed, a wait for the town to draw, then framed again so the
+# snap takes the view as composed whatever moved it in the wait.
+frame() { print "home Kingsmere $1 $2"; print "wait 6"; print "home Kingsmere $1 $2"; print "snap $3"; }
 {
   print "wait 30"
-  print "home Kingsmere 0 1"; print "wait 6"; print "snap hero"
-  print "home Kingsmere 15 1"; print "wait 6"; print "snap left15"
-  print "home Kingsmere -15 1"; print "wait 6"; print "snap right15"
-  print "home Kingsmere 0 $CLOSER"; print "wait 6"; print "snap closer"
+  frame 0 1 hero
+  frame 15 1 left15
+  frame -15 1 right15
+  frame 0 $CLOSER closer
   print "look focus-end"
 } > $OUT/focus.play
 curl -s -m 5 -o /dev/null -X POST $API/court/close

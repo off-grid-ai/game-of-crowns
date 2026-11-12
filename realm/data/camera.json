@@ -16,9 +16,9 @@
   "dist_vary": 0.15
  },
  "town_view": {
-  "_": "The town view you start with (main._home_view, the Z key; autoplay's home step; docs/review/focus.sh; camera_rig.town_view; art target 01-town): the square in the middle, the castle behind it to the upper right, houses all round, the wall and fields beyond, a band of sky. dist (camera units), pitch (degrees down), castle_x (where the castle stands: 0 the middle, 1 the right edge), castle_turn_most (radians the heading may turn from the side away from the castle to put it there).",
-  "dist": 12.0,
-  "pitch": 22.0,
+  "_": "The town view you start with (main._home_view, the Z key; autoplay's home step; docs/review/focus.sh; camera_rig.town_view; art target 01-town): the square in the middle, the castle behind it to the upper right, houses all round, the wall and fields beyond. dist (camera units), pitch (degrees down; docs/research/quality-deep-dive.md #1: RTS town cameras sit at 40-60 degrees and 01-town reads 40-45, so 40 at d19 and at the film's closer frame; camera_rig.town_view sets it as the view's tilt over the rig's own pitch for that distance, so zooming in from it keeps the tilt: about 35-37 down at the floor, under clarity.maxPitch), castle_x (where the castle stands: 0 the middle, 1 the right edge), castle_turn_most (radians the heading may turn from the side away from the castle to put it there).",
+  "dist": 19.0,
+  "pitch": 40.0,
   "castle_x": 0.45,
   "castle_turn_most": 1.2
  },

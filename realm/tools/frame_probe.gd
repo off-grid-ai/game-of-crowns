@@ -82,9 +82,7 @@ func _frame(s: Array) -> void:
 		main.rig.goal_tilt = main.rig.tilt
 		var castle: Node3D = root.get_node_or_null("Castle")
 		await get_tree().create_timer(3.0).timeout
-		if castle:
-			var px: Vector2 = main.rig.cam.unproject_position(castle.global_position) / get_viewport().get_visible_rect().size
-			print("FRAME home %s %s: castle at %.2f, %.2f of the frame (x from the left, y from the top)" % [str(s[2]), str(s[3]), px.x, px.y])
+		_composition("home %s %s" % [str(s[2]), str(s[3])], root, castle)
 		return
 	var dist := float(s[2])
 	main.rig.step_floor = maxf(1.5, dist) if dist < main.rig.min_distance else 0.0
@@ -136,3 +134,65 @@ func _measure(mode: String, launch: String, s: Array) -> void:
 	print("FRAME %-7s %-8s %-28s %5.1f  %4.1f  %4.1f  %5.0f%%  %3.0f%%  %-5s  %5.1f  %4.1f  %4.2f  %5.2f" % [mode, launch, name, pitch,
 		float(rig.distance), focus, share * 100.0, near * 100.0, "yes" if ghost else "no", rad_to_deg(float(rig.get("_swing"))),
 		rad_to_deg(float(rig.get("_lift"))), float(rig.get("_rise")), float(rig.get("_short"))])
+
+
+## What the frame holds, against art target 01-town (the square in the middle, the castle to the upper right, houses
+## all round, the wall and fields beyond, sky at the top): where the square and the castle's top land on the film's
+## frame (camera.json clarity.frame.aspect wide: the headless window is square), and for the top, middle and bottom
+## thirds the share of rays (16 x 4 each) that end in sky (no land within 400), on a building or a wall (the lens's
+## bodies), on a field or a farm (countryside.occupied) or on open ground.
+func _composition(name: String, root: Node3D, castle: Node3D) -> void:
+	var rig: Node3D = main.rig
+	var cam: Camera3D = rig.cam
+	var eye := cam.global_position
+	var fwd := -cam.global_basis.z
+	var right := cam.global_basis.x
+	var up := cam.global_basis.y
+	var tv := tan(deg_to_rad(cam.fov * 0.5))
+	var aspect := Rig.knob("clarity.frame.aspect", 1.74)
+	var at := func(p: Vector3) -> Vector2:  # a world point on the film's frame, 0..1 from the top left
+		var c := p - eye
+		var z := maxf(c.dot(fwd), 0.001)
+		return Vector2(0.5 + 0.5 * c.dot(right) / z / (tv * aspect), 0.5 - 0.5 * c.dot(up) / z / tv)
+	var sq: Vector2 = at.call(root.global_position)
+	var line := "FRAME %s: square at %.2f, %.2f" % [name, sq.x, sq.y]
+	if castle:
+		var top := castle.global_position
+		for g in castle.find_children("*", "GeometryInstance3D", true, false):
+			if g is MeshInstance3D or g is MultiMeshInstance3D:
+				top.y = maxf(top.y, ((g as Node3D).global_transform * (g as VisualInstance3D).get_aabb()).end.y)
+		var c0: Vector2 = at.call(castle.global_position)
+		var c1: Vector2 = at.call(top)
+		line += "; castle foot %.2f, %.2f, top %.2f, %.2f" % [c0.x, c0.y, c1.x, c1.y]
+	print(line + " (x from the left, y from the top)")
+	var space := get_viewport().get_world_3d().direct_space_state
+	var land = main.get("countryside")
+	for band in 3:
+		var n := {"sky": 0, "built": 0, "fields": 0, "ground": 0}
+		for j in 4:
+			var sy := 1.0 - (band + (j + 0.5) / 4.0) * (2.0 / 3.0)
+			for i in 16:
+				var sx := -1.0 + (i + 0.5) / 16.0 * 2.0
+				var d := (fwd + right * (sx * tv * aspect) + up * (sy * tv)).normalized()
+				var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(eye, eye + d * 400.0, Rig.LENS_LAYER | Rig.PROP_LAYER))
+				var ground := Vector3.INF
+				var step := 0.1
+				var p := eye
+				var gone := 0.0
+				while gone < 400.0:
+					p += d * step
+					gone += step
+					if p.y <= maxf(main.terrain.height_at(p.x, p.z), 0.0):
+						ground = p
+						break
+					step = minf(step * 1.08, 2.0)
+				if not hit.is_empty() and (ground == Vector3.INF or eye.distance_to(hit["position"]) < eye.distance_to(ground)):
+					n["built"] += 1
+				elif ground == Vector3.INF:
+					n["sky"] += 1
+				elif land and land.has_method("occupied") and land.occupied(ground, 0.0):
+					n["fields"] += 1
+				else:
+					n["ground"] += 1
+		print("FRAME %s %-6s sky %3d%%  built %3d%%  fields %3d%%  ground %3d%%" % [name, ["top", "middle", "bottom"][band],
+			n["sky"] * 100 / 64, n["built"] * 100 / 64, n["fields"] * 100 / 64, n["ground"] * 100 / 64])

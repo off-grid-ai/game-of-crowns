@@ -144,14 +144,14 @@ func square_view(root: Node3D, dist: float) -> Array:
 ## The town view you start with (camera.json town_view; art target 01-town): the square in the middle of the frame,
 ## the castle standing behind it to the upper right (the heading turned until the castle sits castle_x of the way from
 ## the middle to the right edge, searched from the side away from it up to castle_turn_most radians), houses all
-## round, the wall and the fields beyond, a band of sky at the top (pitch about pitch degrees down: the tilt that
-## gives it at that distance). `turn` degrees and `scale` of the distance on top (a film's turned and closer frames).
+## round, the wall and the fields beyond (pitch degrees down, 40 as the references sit: the tilt that gives it at
+## that distance). `turn` degrees and `scale` of the distance on top (a film's turned and closer frames).
 ## Returns [where to look, yaw, distance, tilt]. The clarity frame still keeps its foreground clear.
 func town_view(root: Node3D, turn := 0.0, scale := 1.0) -> Array:
 	var at := root.global_position
-	var dist := knob("town_view.dist", 12.0) * scale
+	var dist := knob("town_view.dist", 19.0) * scale
 	var t := clampf((dist - min_distance) / (max_distance - min_distance), 0.0, 1.0)
-	var tilt := knob("town_view.pitch", 22.0) - lerpf(30.0, 55.0, pow(t, 0.7))  # apply()'s own pitch, moved to the view's
+	var tilt := knob("town_view.pitch", 40.0) - lerpf(30.0, 55.0, pow(t, 0.7))  # apply()'s own pitch, moved to the view's
 	var yaw := 0.6
 	var castle: Node3D = root.get_node_or_null("Castle")
 	if castle:
