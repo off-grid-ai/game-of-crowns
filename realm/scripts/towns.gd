@@ -3274,11 +3274,14 @@ func _note_paved(root: Node3D, a: Vector2, b: Vector2, half: float) -> void:
 	root.set_meta("paved", all)
 
 
-## The town trees' component (towns.json plots.green.tree_comp: town_tree_round, KayKit's round painted crowns, round 7;
-## --town-trees=kit for the nature kit's town_tree as before).
+## The town trees' component (towns.json plots.green.tree_comp, now the nature kit's town_tree again: Mac turned KayKit's
+## round crowns down; --town-trees=kaykit for them, town_tree_round; --town-trees=kit for the kit's whatever the data).
 static func _tree_comp() -> String:
-	if OS.get_cmdline_user_args().has("--town-trees=kit"):
+	var args := OS.get_cmdline_user_args()
+	if args.has("--town-trees=kit"):
 		return "town_tree"
+	if args.has("--town-trees=kaykit") and not Real.variants("town_tree_round").is_empty():
+		return "town_tree_round"
 	var c := String(preload("res://scripts/data.gd").value("towns", "plots.green.tree_comp", "town_tree"))
 	return c if not Real.variants(c).is_empty() else "town_tree"
 
@@ -3296,7 +3299,7 @@ func _tree_feet(root: Node3D, center: Vector3, q: Vector3, lots: Array, rng: Ran
 		var p := q + Vector3(cos(a), 0, sin(a)) * rng.randf_range(float(reach[0]), float(reach[1]))
 		if not terrain.is_land(center.x + p.x, center.z + p.z) or _on_road(p, 0.04) or _built_on(root, p):
 			continue
-		var comp := "tree_shrub" if rng.randf() < float(k.get("shrubs", 0.6)) else "garden_flowers"
+		var comp := _shrub_comp() if rng.randf() < float(k.get("shrubs", 0.6)) else "garden_flowers"
 		var kind := _green_kind(comp, rng)
 		if kind == "":
 			continue
@@ -3317,7 +3320,7 @@ func _hedgerow(root: Node3D, center: Vector3, off: Vector3, fsize: Vector2, yaw:
 		if not terrain.is_land(center.x + p.x, center.z + p.z) or _on_road(p, 0.05) or _built_on(root, p):
 			continue
 		var tree := rng.randf() < float(knobs.get("hedge_tree", 0.0))
-		var kind := _green_kind(_pick_tree(rng) if tree else "tree_shrub", rng)
+		var kind := _green_kind(_pick_tree(rng) if tree else _shrub_comp(), rng)
 		if kind == "":
 			continue
 		var sc := rng.randf_range(0.75, 0.95) if tree else rng.randf_range(0.9, 1.3)
@@ -3333,3 +3336,9 @@ func _pick_tree(rng: RandomNumberGenerator) -> String:
 	if comp != "town_tree" and rng.randf() < float((_plot_knobs().get("green", {}) as Dictionary).get("cypress", 0.0)) and not Real.variants("town_cypress").is_empty():
 		return "town_cypress"
 	return comp
+
+
+## The shrubs round a tree's foot and in the hedgerows: KayKit's round bushes with its trees (tree_shrub), the nature
+## kit's flowering bush (garden_hedge) with the kit's.
+static func _shrub_comp() -> String:
+	return "tree_shrub" if _tree_comp() == "town_tree_round" else "garden_hedge"
