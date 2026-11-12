@@ -1000,6 +1000,7 @@ const ROUTES = {
   "POST /test/news": (req, res, url) => TestRoutes.news(routeCtx(), req, res, url),
   "POST /test/clock": (req, res, url) => TestRoutes.clock(routeCtx(), req, res, url),
   "POST /scene/arrived": (req, res, url) => DecreeRoutes.arrived(routeCtx(), req, res, url),
+  "POST /scene/kindled": (req, res, url) => DecreeRoutes.kindled(routeCtx(), req, res, url),
   "* /usage": (req, res, url) => RealmRoutes.usage(routeCtx(), req, res, url),
   "GET /mood": (req, res, url) => DecreeRoutes.moods(routeCtx(), req, res, url),
   "POST /mood/revoke": (req, res, url) => DecreeRoutes.revokeMood(routeCtx(), req, res, url),

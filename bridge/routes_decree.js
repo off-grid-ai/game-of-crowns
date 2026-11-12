@@ -18,6 +18,7 @@ import * as chron from "./chronicles.js";
 import { cityName, houseFor } from "./narrator.js";
 import { decree, DECREES } from "./crown.js";
 import * as kingDeeds from "./ledger.js";
+import * as Damage from "./damage.js";
 import * as Rulings from "./rulings.js";
 import { moodFrom, moodRules } from "./claude.js";
 import { body, json } from "./http_util.js";
@@ -199,6 +200,14 @@ export async function arrived(ctx, req, res, url) {
     record({ turn: ctx.world.turn, kind: "crown", city: town.id, text: `${what} ${cityName(town.id)}${b.label ? `: ${String(b.label).slice(0, 80)}` : ""}.` });
   }
   return json(res, 200, { ok: true });
+}
+
+// A siege's fire arrow set a town's house alight in the view (fire.gd): the town's damage fact keeps it burnt
+// (damage.js), so it survives a reload and the realm rebuilds it in time.
+export async function kindled(ctx, req, res, url) {
+  const b = await body(req);
+  const d = Damage.kindle(ctx.meta, ctx.world, b.city, b.home);
+  return d ? json(res, 200, { ok: true, damage: d }) : json(res, 400, { error: "no such town or house" });
 }
 
 export async function moods(ctx, req, res, url) {

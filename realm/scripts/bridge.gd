@@ -359,6 +359,12 @@ func scene_arrived(s: Dictionary) -> void:
 	_post("/scene/arrived", {"kind": s.get("kind", ""), "city": s.get("city", -1), "label": s.get("label", ""), "sent": s.get("at", 0)}, func(_c, _d): pass)
 
 
+## A fire arrow or a sack's spread set one of a town's houses alight (fire.gd): the town's damage fact keeps it
+## burnt (bridge damage.js kindled), through a reload, till the realm rebuilds it.
+func kindled(city: int, home: int) -> void:
+	_post("/scene/kindled", {"city": city, "home": home}, func(_c, _d): pass)
+
+
 func _post(path: String, body: Dictionary, cb: Callable) -> void:
 	var req := HTTPRequest.new()
 	add_child(req)

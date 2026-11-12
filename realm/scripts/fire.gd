@@ -5,10 +5,11 @@ extends Node3D
 ## falling in. Made of blocks: GDQuest's stylized fire shader (MIT) over Kenney's Particle Pack flame tongues,
 ## smoke and scorch sprites (CC0) on Godot's GPUParticles3D; the char is ruins.gd's charring as a shader.
 ##
-## The one owner of the fire's look, and of which houses stand burnt: that is the bridge's damage fact
-## (/world cities[].damage.burnt, bridge/damage.js), read from the mirror (awareness.gd's town scope, "burnt"),
-## never a timer. A sack or razing (scenes.gd) sets the houses alight; they stay charred while the fact says so
-## and stand whole again as the bridge rebuilds them. Knobs: data/fire.json. On with fire.json on.
+## The one owner of the fire's look. Which houses stand burnt is the bridge's damage fact (/world cities[].damage:
+## its burnt share, and the houses kindled, bridge/damage.js), read from the mirror (awareness.gd's town scope,
+## "damage"), never a timer and never kept here. A sack or razing (scenes.gd) or a fire arrow sets houses alight;
+## each house that catches is told to the bridge (kindled), so it stands burnt through a reload, and whole again
+## as the realm rebuilds it. Knobs: data/fire.json. On with fire.json on.
 
 const FLAME_SHADER := preload("res://scripts/stylized_fire.gdshader")
 const CHAR_SHADER := preload("res://scripts/charred.gdshader")
@@ -26,9 +27,7 @@ var main: Node  # main.gd: its towns and its mirror (awareness)
 var _burnt := {}  # "town:home" -> {shell, hidden: [[MultiMesh, index, transform]], box, root}
 var _burning := {}  # "town:home" -> its fire node, while it burns (meta stage: catch, burn, collapse, smoulder)
 var _spreads := {}  # town id -> {left: [homes still to catch], lit: [homes caught], root, pace, pick, at}: a fire travelling
-var _orders := {}  # town id -> the order its houses burn in, set by the sack that burnt them (nearest the eye first)
-var _kindled := {}  # "town:home" -> true: a house a fire arrow set alight, kept charred for the session
-var _shares := {}  # town id -> its burnt share last seen: a drop is the realm rebuilding
+var _told := {}  # "town:home" -> true: a house that caught, told to the bridge, until the mirror has it (kindled)
 var _lines := {}  # town id -> {key: the house it works at, folk: [their minds]}: the town's bucket line
 var _tick := 0.0
 var _clock := 0.0
@@ -71,9 +70,8 @@ static func ignite(at: Vector3, seconds: float, razed: bool) -> bool:
 	return live != null and live._ignite(at, seconds, razed)
 
 
-## A fire arrow lands at `at`: the house nearest it (within reach) catches, unless it burns already. Kept charred
-## for the session though the realm's burnt share doesn't count it (a siege's arrows, not a sack). False if no
-## house was near.
+## A fire arrow lands at `at`: the house nearest it (within reach) catches, unless it burns already, and stands
+## burnt in the realm's damage fact (kindled) until the realm rebuilds it. False if no house was near.
 static func kindle(at: Vector3, reach := 0.35) -> bool:
 	return live != null and live._kindle(at, reach)
 
@@ -97,7 +95,6 @@ func _kindle(at: Vector3, reach: float) -> bool:
 			var key := "%d:%d" % [id, best]
 			if _burning.has(key) or _burnt.has(key):
 				return false
-			_kindled[key] = true
 			_alight(root, key, homes[best], int(id))
 			return true
 	return false
@@ -148,10 +145,9 @@ func _ignite(at: Vector3, seconds: float, razed: bool) -> bool:
 	if homes.is_empty():
 		return false
 	var share := maxf(_burnt_share(best), float(d.get("share_razed" if razed else "share_sack", 0.4)))
-	# The houses that burn are the ones nearest what the King is looking at (a sack is a decision: its fire
-	# must be seen), and they stay the ones the realm's burnt share means for the rest of the reign's session.
-	_orders[best] = _nearest_first(root, homes)
-	var order := _order(best, homes.size())
+	# The houses that catch are the ones nearest what the King is looking at (a sack is a decision: its fire
+	# must be seen); each that catches is told to the bridge, so those are the ones that stand burnt.
+	var order := _nearest_first(root, homes)
 	var left := []
 	var least := int((d.get("spread", {}) as Dictionary).get("least", 4))  # a sack is seen to spread: a few houses at least
 	for i in mini(homes.size(), maxi(mini(least, homes.size()), ceili(share * homes.size()))):
@@ -392,6 +388,15 @@ func _release(id: int, key: String) -> void:
 			return
 
 
+## The houses the fact names burnt in a town (fire arrows, a sack's spread: damage.kindled), as the mirror holds it.
+func _kindled_of(id: int) -> Array:
+	if main.awareness == null:
+		return []
+	var d = main.awareness.town(id).get_var(&"damage", {}, false)
+	var k = d.get("kindled", []) if d is Dictionary else []
+	return k if k is Array else []
+
+
 ## The town's burnt share, as the mirror holds it (the bridge's damage fact).
 func _burnt_share(id: int) -> float:
 	if main.awareness == null:
@@ -399,11 +404,8 @@ func _burnt_share(id: int) -> float:
 	return float(main.awareness.town(id).get_var(&"burnt", 0.0, false))
 
 
-## The order a town's houses burn in: the same every time (by its id), so the fact's share always means the
-## same houses, and a sack sets alight the ones that will stand burnt.
+## The houses the fact's burnt share means past those it names (kindled): the same every time (by its id).
 func _order(id: int, count: int) -> Array:
-	if _orders.has(id) and (_orders[id] as Array).size() == count:
-		return _orders[id]  # the order the sack burnt them in, this session
 	var r := RandomNumberGenerator.new()
 	r.seed = hash(id)
 	var order := range(count)
@@ -439,23 +441,31 @@ func _process(delta: float) -> void:
 		var homes: Array = root.get_meta("homes", [])
 		if homes.is_empty():
 			continue
-		var share := _burnt_share(id)
-		if share < float(_shares.get(id, 0.0)) - 0.001:
-			# The realm rebuilt some of it: the ruins past what it still counts burnt stand whole again.
-			var keep := roundi(share * homes.size())
-			var ord := _order(id, homes.size())
-			for i in range(keep, homes.size()):
-				_kindled.erase("%d:%d" % [id, ord[i]])
-		_shares[id] = share
-		var n := roundi(share * homes.size())
-		var order := _order(id, homes.size())
-		for i in homes.size():
-			var key := "%d:%d" % [id, order[i]]
-			if _waiting(id, order[i]):
-				continue  # its turn to catch hasn't come: it stands whole till then
-			if i < n or (_kindled.has(key) and not _burning.has(key)):
-				_char(root, key, homes[order[i]])  # charred while the fact says so, and a house that burnt here stays a ruin
-			elif _burnt.has(key) and not _burning.has(key) and not _kindled.has(key):
+		# Burnt: the houses the fact names (kindled, and those just told it), then, by the town's own order, as
+		# many more as its burnt share counts past them. The rest stand whole (the realm rebuilt them).
+		var named: Array = _kindled_of(id)
+		var burnt := {}
+		for h in named:
+			if int(h) < homes.size():
+				burnt[int(h)] = true
+		for key in _told.keys():
+			if String(key).begins_with("%d:" % id):
+				if named.has(int(String(key).get_slice(":", 1))):
+					_told.erase(key)  # the mirror has it now
+				else:
+					burnt[int(String(key).get_slice(":", 1))] = true
+		var n := roundi(_burnt_share(id) * homes.size())
+		for h in _order(id, homes.size()):
+			if burnt.size() >= n:
+				break
+			burnt[int(h)] = true
+		for h in homes.size():
+			var key := "%d:%d" % [id, h]
+			if _waiting(id, h) or _burning.has(key):
+				continue  # its turn to catch hasn't come, or it burns now: as it stands
+			if burnt.has(h):
+				_char(root, key, homes[h])  # charred while the fact says so
+			elif _burnt.has(key):
 				_mend(key)
 	# Fewer flames and embers on the far fires (data fire.json lod: full to near, down to far_share by far):
 	# many houses can burn at once. The smoke keeps whole: it's what's seen across the town.
@@ -502,7 +512,11 @@ func _alight(root: Node3D, key: String, h: Array, town: int) -> void:
 	fire.name = "Burning"
 	root.add_child(fire)
 	_burning[key] = fire
-	_kindled[key] = true  # a ruin stays a ruin until the realm rebuilds it (batch 9: it stood whole again by 90 s)
+	# A ruin stays a ruin until the realm rebuilds it (batch 9: it stood whole again by 90 s): the bridge keeps it.
+	if not _kindled_of(town).has(int(key.get_slice(":", 1))) and not _told.has(key):
+		_told[key] = true
+		if main.bridge and main.bridge.has_method("kindled"):
+			main.bridge.kindled(town, int(key.get_slice(":", 1)))
 	if OS.get_cmdline_user_args().has("--probe"):
 		print("FIRE lit %s (burning %d in town %d)" % [key, _columns(town), town])
 	var thin := _columns(town) >= int(d.get("columns", 6))  # past the town's full columns: a thin one

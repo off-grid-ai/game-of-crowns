@@ -142,7 +142,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - Travellers and herds to and from inns, hamlets, mills and camps (how often, how many, herd beasts and pace): `realm/data/roadside.json`: `traffic.*`. Models still missing, for image-to-3D: `candidates`. Check: `arch -arm64 godot --headless --path realm -s res://tools/roadside_probe.gd`.
 
 ## Damage to towns: walls and burnt houses (Builder 1; the bridge owns it)
-- How fast besiegers batter a wall section, when it shows cracked and breached, how fast it's mended, how much a sack or razing burns and how fast it's rebuilt, how many sections: `bridge/data/damage.json`.
+- How fast besiegers batter a wall section, when it shows cracked and breached, how fast it's mended, how much a sack or razing burns and how fast it's rebuilt, how many houses a fire arrow lit are rebuilt a season (`kindledRebuiltPerSeason`), how many sections: `bridge/data/damage.json`.
 - How long a gold seam lasts while worked, whose hills hold the realm's gold and how many seams are laid there, or seams that never run out: `bridge/data/mines.json`: `seamSeasons`, `goldHouse`, `goldSeams`, `on`.
 - Gold the crown gets per Marketplace on top of Freeciv's own tax (0: none, so a house is as rich as its land): `bridge/data/economy.json`: `marketGold`.
 - The gold mines in the view: the mine's size and place on its tile, how many miners work a live seam, how far out they stand, what they do and how often they change, how near the camera must be, how dark spent workings are: `realm/data/gold_mines.json`: `scale`, `off`, `miners`, `ring`, `clips`, `swap_sec`, `near`, `spent_shade`. `--gold-mines=off` shows none.

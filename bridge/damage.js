@@ -1,7 +1,8 @@
 // The damage done to each town: a shared fact with one owner (the finesse catalogue). Its wall sections
 // (0 whole .. 1 gone; section 0 faces north, then clockwise), each battered by the besiegers facing it
 // until it cracks and breaches, mended season by season once the siege lifts (Stronghold, Total War);
-// and the share of its houses burnt by a sack or a razing, rebuilt season by season (Manor Lords).
+// and the share of its houses burnt by a sack or a razing, rebuilt season by season (Manor Lords), and the houses a
+// siege's fire arrows set alight (kindled: the view's home numbers, as its towns lay them), rebuilt one a season.
 // Read by /world (cities[].damage) for the view's cracks, breaches, burnt shells and rubble; the view
 // decides nothing. Tunables: data/damage.json. Saved in the realm's meta (meta.damage).
 import fs from "node:fs";
@@ -16,7 +17,7 @@ export function season(ctx, turn) {
   const all = (meta.damage ??= {});
   const marks = ctx.marksNow?.() ?? [];
   for (const c of world.cities) {
-    const d = (all[c.id] ??= { walls: Array(DAMAGE.sections).fill(0), burnt: 0, heard: -1 });
+    const d = (all[c.id] ??= fresh());
     const near = ctx.besiegers?.(c) ?? [];
     if (near.length >= DAMAGE.besiegersToBatter) {
       for (const u of near) {
@@ -32,6 +33,7 @@ export function season(ctx, turn) {
       d.heard = hit.turn;
     } else {
       d.burnt = Math.max(0, d.burnt - DAMAGE.rebuildPerSeason);
+      d.kindled = (d.kindled ?? []).slice(DAMAGE.kindledRebuiltPerSeason);  // the first lit, the first rebuilt
     }
   }
   for (const id of Object.keys(all)) if (!world.cities.some((c) => c.id === Number(id))) delete all[id];
@@ -42,12 +44,32 @@ export function season(ctx, turn) {
 export function view(meta, c) {
   const d = meta?.damage?.[c.id];
   if (!d) return null;
-  return { walls: d.walls.map((w) => ({ stage: stageOf(w), wear: Math.round(w * 100) / 100 })), burnt: Math.round(d.burnt * 100) / 100 };
+  return { walls: d.walls.map((w) => ({ stage: stageOf(w), wear: Math.round(w * 100) / 100 })), burnt: Math.round(d.burnt * 100) / 100, kindled: d.kindled ?? [] };
+}
+
+// A siege's fire arrow set one of a town's houses alight (the view's fire.gd, as it lands): that house stands
+// burnt from now on, through a reload, until the realm rebuilds it. `home` is the town's house number as the view
+// lays its homes. Returns the town's damage, or null for no such town.
+export function kindle(meta, world, city, home) {
+  const c = world?.cities?.find((x) => x.id === Number(city));
+  const h = Number(home);
+  if (!c || !Number.isInteger(h) || h < 0) return null;
+  const d = ((meta.damage ??= {})[c.id] ??= fresh());
+  d.kindled ??= [];
+  if (!d.kindled.includes(h)) {
+    d.kindled.push(h);
+    chron.saveMeta(meta);
+  }
+  return view(meta, c);
+}
+
+function fresh() {
+  return { walls: Array(DAMAGE.sections).fill(0), burnt: 0, heard: -1, kindled: [] };
 }
 
 // A test reign's staged damage (routes_test): a section's wear, or a town's burnt share.
 export function stage(meta, city, { section, wear, burnt }) {
-  const d = ((meta.damage ??= {})[city] ??= { walls: Array(DAMAGE.sections).fill(0), burnt: 0, heard: -1 });
+  const d = ((meta.damage ??= {})[city] ??= fresh());
   if (section != null && wear != null) d.walls[Number(section) % DAMAGE.sections] = Math.max(0, Math.min(1, Number(wear)));
   if (burnt != null) d.burnt = Math.max(0, Math.min(1, Number(burnt)));
   chron.saveMeta(meta);
