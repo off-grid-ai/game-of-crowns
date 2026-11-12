@@ -57,6 +57,35 @@ static func _matte(mat: Material) -> Material:
 	return _matte_of[mat]
 
 
+## The kit's colour sheets repainted in the painted style (realm/tools/kit_paint.py, data/kit_paint.json; North Star
+## 01-town): a kit material whose base colour is one of the kit's T_<sheet>_BaseColor sheets wears the painted copy
+## from assets/village/painted/ when data/kit_paint.json on (or --kit-paint=painted; --kit-paint=kit for the kit's own).
+## Same layout, so every UV lands where it did. One copy per material.
+static var _painted_of := {}
+
+
+static func _painted(mat: Material) -> Material:
+	if not mat is BaseMaterial3D or (mat as BaseMaterial3D).albedo_texture == null:
+		return mat
+	var args := OS.get_cmdline_user_args()
+	if args.has("--kit-paint=kit"):
+		return mat
+	if not args.has("--kit-paint=painted") and not bool(preload("res://scripts/data.gd").value("kit_paint", "on", false)):
+		return mat
+	if _painted_of.has(mat):
+		return _painted_of[mat]
+	var src := String((mat as BaseMaterial3D).albedo_texture.resource_path)
+	var out := mat
+	if src.begins_with("res://assets/village/T_") and src.ends_with("_BaseColor.png"):
+		var p := "res://assets/village/painted/" + src.get_file().get_basename() + ".webp"
+		if ResourceLoader.exists(p):
+			var m: BaseMaterial3D = mat.duplicate()
+			m.albedo_texture = load(p)
+			out = m
+	_painted_of[mat] = out
+	return out
+
+
 ## Adds every mesh surface under `node` into per-material SurfaceTools. `remap`: a kit material's
 ## name -> the material this house wears in its place (its plaster's wash, its roof's covering).
 func _collect(node: Node, xf: Transform3D, tools: Dictionary, shutter := "", remap := {}) -> void:
@@ -74,7 +103,7 @@ func _collect(node: Node, xf: Transform3D, tools: Dictionary, shutter := "", rem
 			# one surface per copy cost a draw call each (30-50 a house); one per look is ten or so.
 			var key: Variant = (mat.resource_name if mat.resource_name != "" else str(mat.get_instance_id())) if mat else "-"
 			if not tools.has(key):
-				mat = _matte(mat)
+				mat = _painted(_matte(mat))
 				var st := SurfaceTool.new()
 				st.begin(Mesh.PRIMITIVE_TRIANGLES)
 				tools[key] = {"st": st, "mat": mat}

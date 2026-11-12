@@ -88,7 +88,11 @@ def paint(name, k):
         t = np.array(tgt, np.float32)
         lum = (rgb @ np.array([0.299, 0.587, 0.114], np.float32))[..., None]
         tl = float(t @ np.array([0.299, 0.587, 0.114], np.float32))
-        rgb = rgb * (1.0 - float(k.get("hue_mix", 0.45))) + (t / max(tl, 1e-3)) * lum * float(k.get("hue_mix", 0.45))
+        # Only where the sheet is coloured already: a trim sheet holds several materials in bands (the wood sheet's
+        # grey stone and white strip), and a grey band keeps its grey.
+        own = rgb.max(-1, keepdims=True) - rgb.min(-1, keepdims=True)
+        mix = float(k.get("hue_mix", 0.45)) * np.clip(own / float(k.get("hue_floor", 0.12)), 0.0, 1.0)
+        rgb = rgb * (1.0 - mix) + (t / max(tl, 1e-3)) * lum * mix
     # Saturation.
     lum = (rgb @ np.array([0.299, 0.587, 0.114], np.float32))[..., None]
     rgb = lum + (rgb - lum) * float(k.get("saturation", 1.2))
@@ -102,7 +106,7 @@ def paint(name, k):
     rgb = rgb * (1.0 - float(k.get("groove", 0.55)) * groove[..., None])
     rgb = rgb * (1.0 - float(k.get("edge", 0.18)) * steep[..., None])
     rgb = rgb + float(k.get("crest", 0.14)) * crest[..., None] * warm
-    rgb = np.clip(rgb, 0.0, 1.0)
+    rgb = np.clip(rgb * float(k.get("gain", 1.0)), 0.0, 1.0)
     out = np.concatenate([rgb, alpha], -1)
     os.makedirs(OUT, exist_ok=True)
     o = bpy.data.images.new("painted_" + name, w, h, alpha=True)
