@@ -309,7 +309,7 @@ func _rout_runs_along_the_line() -> void:
 		var r := {"name": nm, "side": side, "men": 150, "figures": int(a.call("figures", 150)), "role": String(row.get("role", "melee")),
 			"sf": float(sp.get("file", Data.num("army", "spacing.file", 0.1))), "sr": float(sp.get("rank", Data.num("army", "spacing.rank", 0.12))),
 			"state_name": "fight"}
-		var l: Dictionary = a.call("_layout", r, "line")
+		var l: Dictionary = (load("res://scripts/army_formation.gd") as GDScript).call("layout", r, "line", deep, a.get("_rng"))
 		r["w"] = float(l["w"])
 		r["d"] = float(l["d"])
 		var n := Node3D.new()
@@ -446,6 +446,8 @@ func _the_right_banner() -> void:
 	_check(banner_owner, "a host's banners and standard have one owner (army_banners.gd; integration audit #12)")
 	var look_owner := ResourceLoader.exists("res://scripts/army_visual.gd") and not ArmyS.get_script_method_list().any(func(m): return m["name"] in ["_asset", "_soldier_mesh", "_lods", "_wear_arms", "_shadows"])
 	_check(look_owner, "the soldiers' look and lighter levels have one owner (army_visual.gd; integration audit #12)")
+	var shape_owner := ResourceLoader.exists("res://scripts/army_formation.gd") and not ArmyS.get_script_method_list().any(func(m): return m["name"] in ["_layout", "_line_places", "_in_column_order", "_column_length"])
+	_check(shape_owner, "a host's shapes have one owner (army_formation.gd; integration audit #12)")
 	var a: Object = ArmyS.new(Node.new(), 0, {"side": 0, "colour": Color(0.2, 0.3, 0.6), "house": ashby})
 	var units: Dictionary = Data.value("army", "units", {})
 	var colour := Color(0.2, 0.3, 0.6)
@@ -591,7 +593,7 @@ func _figures_and_room() -> void:
 		var r := {"men": men, "figures": got, "role": String(row.get("role", "melee")),
 			"sf": float(sp.get("file", Data.num("army", "spacing.file", 0.1))), "sr": float(sp.get("rank", Data.num("army", "spacing.rank", 0.12)))}
 		for shape in ["line", "column"]:
-			var l: Dictionary = a.call("_layout", r, shape)
+			var l: Dictionary = (load("res://scripts/army_formation.gd") as GDScript).call("layout", r, shape, null, a.get("_rng"))
 			var at: PackedVector3Array = l["at"]
 			var near := INF
 			for i in at.size():
