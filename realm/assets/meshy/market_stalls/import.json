@@ -9,12 +9,13 @@
   6.73,
   3.5
  ],
- "house_share": 0.185,
+ "house_share": 0.132,
  "mask_png": true,
  "materials": [
   "Material_0",
   "MI_RoundTiles_house"
  ],
- "cut_faces": 0,
- "arm": false
+ "cut_faces": 8151,
+ "arm": false,
+ "repainted": 0
 }
