@@ -104,7 +104,7 @@ func _process(delta: float) -> void:
 	else:
 		_t += delta
 	var u := clampf(_t / seconds, 0.0, 1.0) if seconds > 0.0 else 1.0
-	_move(u, _ease(u))
+	_move(u, Tween.interpolate_value(0.0, 1.0, u, 1.0, Tween.TRANS_SINE, Tween.EASE_IN_OUT))
 	# The film shows what was drawn last frame: save that, then aim for this one.
 	if _n > 0 and frames_dir != "" and seconds > 0.0:
 		_film.get_texture().get_image().save_jpg(frames_dir.path_join("%05d.jpg" % (_n - 1)), 0.95)
@@ -338,6 +338,3 @@ func _city(title: String) -> Dictionary:
 			return c
 	return {}
 
-
-static func _ease(u: float) -> float:
-	return 0.5 - 0.5 * cos(PI * u)
