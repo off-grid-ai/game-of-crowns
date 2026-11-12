@@ -362,7 +362,29 @@ func _frame_for_shot() -> void:
 								main.director._clear_sight())
 					return
 				if _shot.get("muster", false):
-					main.scenes._muster(from, to)
+					# War's muster as the bridge raises it (characters.js warMuster): the crown's host at its seat,
+					# out toward the nearest town in its colours; the lens on the host as it forms, then along
+					# the road with it (army.gd march_out).
+					var army: Node3D = main.scenes._muster({"x": king["x"], "y": king["y"], "tx": near["x"], "ty": near["y"], "city": king["id"], "owner": king.get("owner", -1)}, from, main._houses)
+					main._framed_until = int(main._game_ms) + 600000
+					var said := [false, false]
+					var follow := Timer.new()
+					follow.wait_time = 0.1
+					follow.autostart = true
+					main.add_child(follow)
+					follow.timeout.connect(func():
+						if not is_instance_valid(army) or not bool(army.get("mustered")):
+							return
+						if not said[0]:
+							said[0] = true
+							print("MUSTER formed at %s; marches out in %.0f s" % [String(king.get("name", "")), preload("res://scripts/data.gd").num("army", "march.form", 6.0)])
+						if bool(army.get("_out")) and not said[1]:
+							said[1] = true
+							print("MUSTER marching out toward %s" % String(near.get("name", "")))
+						var mid: Vector3 = army.call("_middle")
+						main._framed_at = mid
+						main.rig.focus(mid, float(_shot.get("dist", 4.0))))
+					return
 				else:
 					main.scenes._rider(from, to, "The King rules for House Thornvale")
 				var spot: Vector3 = from + (to - from).normalized() * 1.6

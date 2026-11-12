@@ -1138,15 +1138,17 @@ func _walk(n: Node3D, goal: Vector3, seconds: float, fade: bool) -> void:
 ## and sieges: "The march feeds the battle"): the army layer's host (army.gd), formed in line by the seat, then out
 ## in column by each regiment's Mover (march_out). The crown's largest host as the realm reports it (new levies of
 ## march.men when it has none in the field); a rising's muster, its house's men in its colours and arms.
-func _muster(s: Dictionary, at: Vector3, houses: Dictionary) -> void:
+func _muster(s: Dictionary, at: Vector3, houses: Dictionary) -> Node3D:
 	var house: Dictionary = houses.get(int(s.get("owner", -1)), {})
 	var host := {"side": 0, "seat": int(s.get("city", -1)), "shape": "line", "quiet": true,
 		"out_to": terrain.world_pos(float(s.get("tx", s["x"])), float(s.get("ty", s["y"])))}
 	if not house.is_empty():
 		host["house"] = house
 		host["colour"] = Heraldry.colour(house, Color(0.5, 0.17, 0.15))
-	get_parent().add_child(Army.new(get_parent(), 0, host))
+	var army: Node3D = Army.new(get_parent(), 0, host)
+	get_parent().add_child(army)
 	framing.emit(ground(at), 2.6, 0.0)
+	return army
 
 
 ## A royal rider carries the King's ruling to the petitioner's seat on a
