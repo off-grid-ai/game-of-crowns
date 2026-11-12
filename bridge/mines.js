@@ -5,6 +5,16 @@
 // (narrator.js). Widelands and Settlers do the same: a mine's ore runs out, and the land's wealth
 // with it. Tunables: realmrules/luadata.txt [mines].
 
+// Which town works each seam (Freeciv's "seams_worked" each season: realm_seam_town, the one rule the seam
+// wears down by), kept in the realm's meta (meta.seamTowns: "x,y" -> town id) and put on /world's gold rows
+// as their fourth field (worked), -1 for a seam no town works.
+export function worked(meta, ev) {
+  meta.seamTowns = Object.fromEntries(String(ev.at ?? "").split(";").filter(Boolean).map((s) => { const [x, y, c] = s.split(",").map(Number); return [`${x},${y}`, c]; }));
+}
+export function withTowns(gold, meta) {
+  return (gold ?? []).map(([x, y, owner]) => [x, y, owner, meta?.seamTowns?.[`${x},${y}`] ?? -1]);
+}
+
 // A seam worked out (Freeciv's "seam_spent" event): where the old workings stand, kept in the realm's
 // meta (meta.spentSeams: [x, y, turn]) so the view shows the abandoned mine there (/world spentSeams).
 export function spent(meta, ev) {

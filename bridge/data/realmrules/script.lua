@@ -487,7 +487,6 @@ function realm_seam_town(t)
   return best
 end
 
-local function seam_worked(t) return realm_seam_town(t) ~= nil end
 
 -- One seam in reach of each of the gold house's towns, until `count`: on a mountain there, or, where
 -- its land is all field and forest (the realm's map rarely puts mountains by a town), a forest tile
@@ -542,12 +541,14 @@ function realm_mines(seasons, house, count)
   if GOC_SEAMS_TURN == turn then return end  -- once a season, however often the bridge asks
   GOC_SEAMS_TURN = turn
   if not GOC_SEAMS_LAID then seams_lay(seasons, house, count) return end
-  local kept = {}
+  local kept, worked = {}, {}
   for x, y, left in GOC_SEAMS:gmatch("(%d+),(%d+),(%-?%d+)") do
     local t = find.tile(tonumber(x), tonumber(y))
     left = tonumber(left)
     if t and t:has_extra("Gold") then
-      if seam_worked(t) then left = left - 1 end
+      local by = realm_seam_town(t)
+      if by then left = left - 1 end
+      worked[#worked + 1] = string.format("%d,%d,%d", t.x, t.y, by and by.id or -1)
       if left <= 0 then
         local owner = t.owner
         edit.remove_extra(t, "Gold")
@@ -560,6 +561,8 @@ function realm_mines(seasons, house, count)
     end
   end
   GOC_SEAMS = table.concat(kept, ";")
+  -- Which town works each seam this season, for the view's miners and ore carts (mines.js puts it on /world).
+  emit("seams_worked", {at = table.concat(worked, ";")})
 end
 
 -- Hosts raised by the bridge's stakes (the usurper, the dead). Defined here so
