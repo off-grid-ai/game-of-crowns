@@ -53,14 +53,7 @@ func map_for(id: int, root: Node3D) -> RID:
 	for i in 24:
 		var a := TAU * i / 24
 		outline.append(Vector2(cos(a), sin(a)) * reach)
-	var blocks: Array = []
-	for fp in NavGround.all(root, terrain):  # everything standing in the town, its walls included
-		# Slightly enlarged so people pass alongside walls, not inside them.
-		var c: Vector2 = (fp[0] + fp[1] + fp[2] + fp[3]) / 4.0
-		var grown := PackedVector2Array()
-		for p in fp:
-			grown.append(c + (p - c) * 1.08)
-		blocks.append(grown)
+	var blocks: Array = blocks_of(root, terrain)
 	# People keep to the streets, the square and the footpaths: those are cheap
 	# to walk, open ground costs several times as much, so a path crosses grass
 	# only where it has to (out to the fields, a house off the lanes).
@@ -80,6 +73,20 @@ func map_for(id: int, root: Node3D) -> RID:
 
 
 const CELL := 0.01
+const AGENT := 0.035  # a walker's half-width: the baked map keeps this far from anything standing
+
+
+## What the walk map is cut round: everything standing in the town (nav_ground.gd), its walls included, slightly
+## enlarged so people pass alongside walls, not inside them. One answer for the map and for tools/nav_probe.gd.
+static func blocks_of(root: Node3D, land: Node3D) -> Array:
+	var blocks: Array = []
+	for fp in NavGround.all(root, land):
+		var c: Vector2 = (fp[0] + fp[1] + fp[2] + fp[3]) / 4.0
+		var grown := PackedVector2Array()
+		for p in fp:
+			grown.append(c + (p - c) * 1.08)
+		blocks.append(grown)
+	return blocks
 const OPEN_COST := 6.0  # open ground: six times a street, so people keep to the streets but cross a green between two neighbouring lanes rather than all funnelling through the square
 
 
@@ -96,7 +103,7 @@ func _region(map: RID, root: Node3D, reach: float, walk: Array, blocks: Array, c
 
 func _bake_into(region: RID, map: RID, root: Node3D, reach: float, walk: Array, blocks: Array, cut: Array) -> void:
 	var poly := NavigationPolygon.new()
-	poly.agent_radius = 0.035
+	poly.agent_radius = AGENT
 	poly.cell_size = CELL
 	var src := NavigationMeshSourceGeometryData2D.new()
 	for o in walk:
