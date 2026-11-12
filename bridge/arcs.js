@@ -754,7 +754,8 @@ export class Arcs {
     // holder), its loyal towns rising for `leader` (risings.js; realm_rising). risingOdds warns of it first;
     // risingEnd settles it: "return" (the towns go back) or "keep" (a lesser house).
     const houseOf = (k) => (R(k)?.town ? R(k).owner : R(k)?.playerId);
-    if (d.risingOdds && houseOf(d.risingOdds) != null) ctx.risingOdds?.(houseOf(d.risingOdds));
+    const [oddsWho, oddsOf] = Array.isArray(d.risingOdds) ? d.risingOdds : [null, d.risingOdds];
+    if (oddsOf && houseOf(oddsOf) != null) ctx.risingOdds?.(houseOf(oddsOf), R(oddsWho)?.name ?? null);
     if (d.rising && R(d.rising[0]) && houseOf(d.rising[1]) != null) ctx.rising?.(houseOf(d.rising[1]), R(d.rising[0]).name);
     if (d.risingEnd && houseOf(d.risingEnd[0]) != null) send(Lua.risingEnd(houseOf(d.risingEnd[0]), d.risingEnd[1]));
     if (d.war && R(d.war[0]) && R(d.war[1])) {

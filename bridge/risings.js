@@ -24,8 +24,8 @@ export function rise(ctx, house, leader) {
 }
 
 // A story warns of it first (arcs.js `risingOdds`): the chance, told when Freeciv answers.
-export function odds(ctx, house) {
-  state(ctx.meta).pending[house] ??= {};
+export function odds(ctx, house, claimant = null) {
+  state(ctx.meta).pending[house] = { ...(state(ctx.meta).pending[house] ?? {}), claimant: claimant ?? state(ctx.meta).pending[house]?.claimant ?? null };
   ctx.send(`lua cmd ${Lua.risingOdds(Number(house))}`);
   save(ctx);
 }
@@ -37,6 +37,8 @@ export function event(ctx, ev) {
   const turn = Number(ev.turn);
   const house = Number(ev.house);
   if (ev.kind === "rising_odds") {
+    if (r.pending[house]) r.pending[house].odds = Number(ev.odds);  // the warning's town fact (townRising: brewing)
+    save(ctx);
     record({ turn, kind: "unrest", text: `The captains put the chance that ${nameOf(world, house)} splits at ${ev.odds} in a hundred: ${ev.unhappy} of its ${ev.towns} towns are restless, ${ev.celebrating} are feasting. A feast or relief from the King lowers it.` });
     return;
   }
@@ -50,7 +52,7 @@ export function event(ctx, ev) {
       return;
     }
     const towns = String(ev.towns ?? "").split(",").filter(Boolean).map(Number);
-    r.active[rebel] = { house, rebel, name: p.leader ?? "A pretender", turn, towns };
+    r.active[rebel] = { house, rebel, name: p.leader ?? p.claimant ?? "A pretender", turn, towns };
     diplomacy?.([rebel, house, 0, "War"]);  // Freeciv leaves the two at cease-fire; the one writer declares the war
     const muster = world?.cities?.find((x) => x.id === Number(ev.muster));
     if (muster) scene("muster", { x: muster.x, y: muster.y, city: muster.id, owner: rebel, strength: 0.8 });
@@ -72,11 +74,15 @@ export function event(ctx, ev) {
   }
 }
 
-// A town in a rising, for /world (view.js): which side holds it, and against whom. Null outside a rising.
+// A town in a rising, for /world (view.js), the one writer of it: while a story warns of it, the house's towns are
+// "brewing" (Freeciv's odds, the claimant gathering men); once it splits, "risen", with which side holds the town
+// and against whom. Null outside a rising.
 export function townRising(meta, c) {
   for (const a of Object.values(meta?.risings?.active ?? {})) {
-    if (c.owner === a.rebel) return { side: "rebels", house: a.house, rebel: a.rebel, claimant: a.name };
-    if (c.owner === a.house) return { side: "lord", house: a.house, rebel: a.rebel, claimant: a.name };
+    if (c.owner === a.rebel) return { stage: "risen", side: "rebels", house: a.house, rebel: a.rebel, claimant: a.name };
+    if (c.owner === a.house) return { stage: "risen", side: "lord", house: a.house, rebel: a.rebel, claimant: a.name };
   }
+  const p = meta?.risings?.pending?.[c.owner];
+  if (p) return { stage: "brewing", house: c.owner, odds: p.odds ?? null, claimant: p.claimant ?? p.leader ?? null };
   return null;
 }

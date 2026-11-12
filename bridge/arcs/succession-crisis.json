@@ -158,7 +158,10 @@
           "who": "old",
           "how": "I died in my bed at {hall}, with {heir} beside me."
         },
-        "risingOdds": "hall"
+        "risingOdds": [
+          "claimant",
+          "hall"
+        ]
       },
       "after": [
         1,
@@ -234,7 +237,10 @@
       "patience": 1,
       "otherwise": "regency-talk",
       "do": {
-        "risingOdds": "hall"
+        "risingOdds": [
+          "claimant",
+          "hall"
+        ]
       }
     },
     {
