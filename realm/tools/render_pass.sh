@@ -54,8 +54,8 @@ say "render pass into $OUT at $(git -C $R log --oneline -1 | cut -c1-90)"
 F=$OUT/tree
 rm -rf $F; mkdir -p $F
 git -C $R archive HEAD realm bridge docs/art | tar -x -C $F
-if [ -x $R/realm/tools/link_assets.sh ]; then
-  $R/realm/tools/link_assets.sh $F/realm || { say "link_assets.sh failed"; exit 3; }
+if [ -f $R/realm/tools/link_assets.sh ]; then
+  zsh $R/realm/tools/link_assets.sh $F || { say "link_assets.sh failed"; exit 3; }
 else
   rm -rf $F/realm/assets && ln -s $R/realm/assets $F/realm/assets
 fi
