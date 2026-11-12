@@ -9,6 +9,7 @@
 "butt": ["yard/archery_target", 1.6, 0], "beat": { "Bow_Draw": 1.0, "Bow_Aim": 1.4, "Bow_Shoot": 0.8, "Bow_Idle": 1.6 } },
   "gate": { "per_side": 1, "out": 0.16, "z": 0.86 },
   "smith": { "at": [-0.82, -0.45] },
+  "fire_groom": { "_": "a groom warming himself at the bailey's fire (towns.gd lays the fire pit, its BAILEY row): by, where he stands off the fire in the bailey's frame (game units, +z toward the gate); kind and clip, who and how", "by": [0.25, 0.25], "kind": "peasant", "clip": "Idle" },
   "stores": { "at": [0.78, -0.55], "pace": 0.18 },
   "servants": { "count": 4, "well": [0.1, 0.0], "keep": [0.18, -0.35], "pace": 0.17 },
   "grooms": { "count": 2, "stables": [-0.82, 0.62], "pace": 0.15 }

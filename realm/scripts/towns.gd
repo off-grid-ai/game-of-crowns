@@ -391,19 +391,6 @@ func _bailey_ground(root: Node3D, cp: Vector3, cy: float, yaw: float, rng: Rando
 			_note_paved(root, Vector2(gate.x, gate.z), Vector2.ZERO, fw * 0.5)
 
 
-## Who's in the yard: role, place (castle frame), move, facing.
-const BAILEY_FOLK := [
-	# The drill in the open half of the yard, between the fire and the gate,
-	# clear of the keep's shadow; the sergeant faces them from the gate side.
-	["soldier", Vector3(-0.75, 0, 0.5), "SS_Slash_1", 0.0],
-	["soldier", Vector3(-0.4, 0, 0.55), "Spear_Thrust", 0.0],
-	["soldier", Vector3(-0.05, 0, 0.5), "SS_Slash_4", 0.0],
-	["soldier", Vector3(-0.4, 0, 0.95), "Yelling", PI],
-	["peasant", Vector3(0.25, 0, 0.35), "Idle", -2.4],
-	["peasant", Vector3(-1.3, 0, 0.6), "Carrying", PI / 2],
-]
-
-
 func _bailey(root: Node3D, cp: Vector3, cy: float, yaw: float, rng: RandomNumberGenerator) -> void:
 	var b := Basis(Vector3.UP, yaw)
 	_bailey_ground(root, cp, cy, yaw, rng)
@@ -416,16 +403,9 @@ func _bailey(root: Node3D, cp: Vector3, cy: float, yaw: float, rng: RandomNumber
 		var at: Vector3 = cp + b * item[1]
 		_place(root, kind, Vector3(at.x, cy, at.z), yaw + float(item[2]) + rng.randf_range(-0.05, 0.05))
 		if kind == "ph/stone_fire_pit":
-			_hearth(root, Vector3(at.x, cy, at.z))  # a fire the groom can warm himself at
-	# The yard lived in: the garrison drilling under a sergeant, each at his own
-	# move, a groom warming at the fire, a servant carrying.
-	for f in BAILEY_FOLK:
-		var at: Vector3 = cp + b * f[1]
-		# The garrison in its lord's colour; the household in its own clothes.
-		var tint: Color = _house_colour.lerp(Color.WHITE, 0.3) if f[0] == "soldier" else Color.WHITE
-		var p: Node3D = life._townsperson(root, Vector3(at.x, cy, at.z), f[0], f[2], rng.randi(), tint)
-		if p:
-			p.rotation.y = yaw + float(f[3])
+			_hearth(root, Vector3(at.x, cy, at.z))  # a fire the groom can warm himself at (castle_folk.json fire_groom)
+	# The yard lived in is castle_folk.gd's (the drill, the butts, the guards, grooms, servants, the smith, the stores'
+	# cart, and the groom warming at this fire): one crowd in the bailey.
 
 
 ## A realistic town laid out in lots: houses on rings around the square, each

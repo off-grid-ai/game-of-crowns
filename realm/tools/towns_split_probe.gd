@@ -29,5 +29,15 @@ func _init() -> void:
 		print("CHECK towns split, %s: still in towns.gd %s; %s %s: %s" % [seam[0], still, String(seam[1]).get_file(), "missing " + str(missing) if owner else "absent", "PASS" if ok else "FAIL"])
 		if not ok:
 			fail += 1
+	# One crowd in the bailey: castle_folk.gd's (the people layer). towns.gd lays the yard's ground and things only; the
+	# groom who warmed himself at its fire is castle_folk's (castle_folk.json fire_groom), beside the fire towns.gd lays.
+	var consts: Dictionary = towns.get_script_constant_map()
+	var folk: Dictionary = preload("res://scripts/data.gd").read("castle_folk")
+	var one_crowd: bool = not consts.has("BAILEY_FOLK") and folk.has("fire_groom") and consts.has("BAILEY") \
+		and (consts["BAILEY"] as Array).any(func(r): return String(r[0]) == "ph/stone_fire_pit")
+	print("CHECK towns split, the bailey's crowd: towns.gd's own crowd %s, castle_folk's groom at the fire %s: %s" % [
+		"gone" if not consts.has("BAILEY_FOLK") else "still there", "there" if folk.has("fire_groom") else "missing", "PASS" if one_crowd else "FAIL"])
+	if not one_crowd:
+		fail += 1
 	print("CHECK towns split: %s" % ("PASS" if fail == 0 else "%d FAIL" % fail))
 	quit(1 if fail > 0 else 0)

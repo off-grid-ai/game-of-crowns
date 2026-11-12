@@ -141,6 +141,22 @@ static func dress(host: Node, main: Node, xf: Transform3D, sp: Dictionary, colou
 	face.call(helper, anvil_at)
 	People.repeat(helper, "Pushing")  # at the bellows
 
+	# A groom warming himself at the yard's fire: towns.gd's bailey dressing lays the fire pit (its BAILEY row, in the
+	# bailey's frame: the castle's place and turn, game units); he stands off it (castle_folk.json fire_groom), facing it.
+	var Fg: Dictionary = K.get("fire_groom", {})
+	for row in (load("res://scripts/towns.gd").BAILEY as Array):
+		if Fg.is_empty() or String(row[0]) != "ph/stone_fire_pit":
+			continue
+		var frame := xf.basis.orthonormalized()
+		var fire: Vector3 = xf.origin + frame * Vector3(row[1])
+		var by: Array = Fg.get("by", [0.25, 0.25])
+		var gp: Vector3 = fire + frame * Vector3(float(by[0]), 0, float(by[1]))
+		gp.y = main.terrain.height_at(gp.x, gp.z)
+		var groom: Node3D = put.call(people.make(rng, String(Fg.get("kind", "peasant")), Color.WHITE, "adult", "", "male"), gp)
+		face.call(groom, Vector3(fire.x, gp.y, fire.z))
+		People.play(groom, String(Fg.get("clip", "Idle")))
+		break
+
 	# The stores: crates, barrels and sacks against the wall by the keep, a horse and cart drawn up, two men unloading.
 	var St: Dictionary = K.get("stores", {})
 	var sto: Array = St.get("at", [0.78, -0.55])
