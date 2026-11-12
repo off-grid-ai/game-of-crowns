@@ -12,5 +12,6 @@
   "_minds": "minds (npc_mind.gd): give_up_secs with no way to where they're going, the activity is off; partner_near how far a mind looks for someone to talk to; talk_gap how far apart two talking stand; news_fresh_ms how old news may be and still be talked of (chatter too); booked_ms how long an arranged talk waits to begin; partner_wait_secs how long one waits for the other to come; line_cap_secs the longest a talk is held for lines still being read; settled_secs face to face before the first word; settle_secs both standing before they talk where they are.",
   "minds": {"give_up_secs": 3.0, "partner_near": 2.5, "talk_gap": 0.14, "news_fresh_ms": 90000, "booked_ms": 20000, "partner_wait_secs": 8.0, "line_cap_secs": 25.0, "settled_secs": 0.4, "settle_secs": 4.0},
   "_chatter": "chatter (chatter.gd): hear the camera within this of a gathering to overhear it; town_near a town talks with its centre within this of the camera; own_words_secs how long a talk waits for the minds' words before plain words of its own; said_fresh_ms how long a line said stays fresh.",
-  "chatter": {"hear": 2.6, "town_near": 9.0, "own_words_secs": 5.0, "said_fresh_ms": 300000}
+  "chatter": {"hear": 2.6, "town_near": 9.0, "own_words_secs": 5.0, "said_fresh_ms": 300000},
+  "presence": {"near_cam": 7.0, "notice": 0.18, "front": 0.17, "rested": 1.0, "switch": 0.3, "greet": 0.15, "greet_again": 30.0}
 }

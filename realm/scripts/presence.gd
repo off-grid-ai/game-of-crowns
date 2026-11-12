@@ -12,14 +12,14 @@ extends Node
 const PerfTools := preload("res://scripts/perf_tools.gd")
 
 const CADENCE := 0.1  # seconds between looks round, near the camera only: a newcomer is noticed within the moment
-const NEAR_CAM := 7.0  # world units from the camera: everyone a street-level view has in it (its focus is ~3 off, and the square ~3.5 round that)
-const NOTICE := 0.18  # about 1.5 m: someone this close is noticed
-const FRONT := 0.17  # within about 80 degrees of where they face: the head turns that far, over the shoulder at most
+static var NEAR_CAM: float = preload("res://scripts/data.gd").num("crowd", "presence.near_cam", 7.0)  # world units from the camera: everyone a street-level view has in it (its focus is ~3 off, and the square ~3.5 round that) (crowd.json presence.near_cam)
+static var NOTICE: float = preload("res://scripts/data.gd").num("crowd", "presence.notice", 0.18)  # about 1.5 m: someone this close is noticed (crowd.json presence.notice)
+static var FRONT: float = preload("res://scripts/data.gd").num("crowd", "presence.front", 0.17)  # within about 80 degrees of where they face: the head turns that far, over the shoulder at most (crowd.json presence.front)
 const HOLD := Vector2(1.0, 2.0)  # seconds a glance is held
-const RESTED := 1.0  # seconds before the same person looks round again
-const SWITCH := 0.3  # a glance held this long gives way to someone new stepping up in front
-const GREET := 0.15  # about 1.2 m: close enough to greet
-const GREET_AGAIN := 30.0  # the same two greet once in this long
+static var RESTED: float = preload("res://scripts/data.gd").num("crowd", "presence.rested", 1.0)  # seconds before the same person looks round again (crowd.json presence.rested)
+static var SWITCH: float = preload("res://scripts/data.gd").num("crowd", "presence.switch", 0.3)  # a glance held this long gives way to someone new stepping up in front (crowd.json presence.switch)
+static var GREET: float = preload("res://scripts/data.gd").num("crowd", "presence.greet", 0.15)  # about 1.2 m: close enough to greet (crowd.json presence.greet)
+static var GREET_AGAIN: float = preload("res://scripts/data.gd").num("crowd", "presence.greet_again", 30.0)  # the same two greet once in this long (crowd.json presence.greet_again)
 
 ## Where a person stands, by their role or calling (people.gd roles, villagers'
 ## callings): commoners make way and bow to those above them.
