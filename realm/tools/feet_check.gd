@@ -27,7 +27,7 @@ func _initialize() -> void:
 	var all := OS.get_cmdline_user_args().has("--all")
 	var rng := RandomNumberGenerator.new()
 	var who := []
-	for b in People.BODIES:
+	for b in People.all_bodies():
 		if not b in People.NEVER and ppl._usable(b):
 			who.append(["body:" + b, ppl.make_body(rng, b, Color.WHITE, "adult", "average")])
 	for sex in ["male", "female"]:

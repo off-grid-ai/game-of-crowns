@@ -421,7 +421,8 @@ func make(rng: RandomNumberGenerator, role := "peasant", tint := Color.WHITE, ag
 	# Children and elders are outfits only: every Mixamo character is in their
 	# prime, so a lady of 74 would stand there looking 25. Built from parts,
 	# an elder gets grey hair and a slightly shorter frame.
-	if (age not in ["child", "elder"] or (role in STATION_DRESS and age != "child")) and (roll < MIXAMO_SHARE[role] or look != ""):  # an old friar is still robed, an old knight in his surcoat
+	var share: float = 1.0 if CAST_ON and cast_members().any(func(b): return role in body_info(b)["roles"]) else MIXAMO_SHARE[role]  # the cast plays its roles always
+	if (age not in ["child", "elder"] or (role in STATION_DRESS and age != "child")) and (roll < share or look != ""):  # an old friar is still robed, an old knight in his surcoat
 		# A named person is known by their body, so only a crowd needs one that shows its colour.
 		# A crowd's sex is rolled first, so the mix of bodies on hand doesn't decide it.
 		var want := sex if sex != "" or look != "" else ("male" if rng.randf() < 0.5 or role in ["clergy", "knight"] else "female")  # friars and knights (no nun's habit or woman's mail yet)
@@ -503,9 +504,38 @@ static func station(person: Dictionary) -> String:
 ## any are, able to wear a house's colour if one is asked, and light enough
 ## for a crowd unless they stand alone.
 func _bodies(role: String, sex: String, coloured: bool, crowd: bool) -> Array:
+	# The cast (--cast=meshy; realm/data/cast.json): a role the cast covers is played by the cast alone.
+	if CAST_ON:
+		var cast := cast_members().filter(func(b): return role in body_info(b)["roles"] and _usable(b) and (sex == "" or body_info(b)["sex"] == sex.left(1)))
+		if not cast.is_empty():
+			return cast
 	var pool := BODIES.keys().filter(func(b): return not b in NEVER and role in BODIES[b]["roles"] and (not crowd or BODIES[b]["crowd"]) and (not coloured or not BODIES[b]["cloth"].is_empty()) and _usable(b))
 	# Never the other sex: with no body of theirs, they wear an outfit instead.
 	return pool.filter(func(b): return sex == "" or BODIES[b]["sex"] == sex.left(1))
+
+
+## The cast: Meshy characters brought in by tools/cast_import.py (realm/assets/people/mixamo/cast_*), each a body
+## like the Mixamo ones, listed with its roles in realm/data/cast.json; with --cast=meshy (or cast.json on) they
+## play every role they cover, --cast=kit the bodies and outfits as before (the before shot).
+static var CAST_ON: bool = OS.get_cmdline_user_args().has("--cast=meshy") or (bool(Data.value("cast", "on", false)) and not OS.get_cmdline_user_args().has("--cast=kit"))
+
+
+static func cast_members() -> Array:
+	return (Data.value("cast", "members", {}) as Dictionary).keys()
+
+
+## A body's row: the Mixamo bodies' (BODIES) or a cast member's (cast.json members).
+static func body_info(body: String) -> Dictionary:
+	if BODIES.has(body):
+		return BODIES[body]
+	var m: Dictionary = (Data.value("cast", "members", {}) as Dictionary).get(body, {})
+	var row := {"sex": String(m.get("sex", "m")), "roles": m.get("roles", []), "cloth": [], "crowd": true, "cast": true, "mask": String(m.get("mask", ""))}
+	return row
+
+
+## Every body there is to dress the crowd in: the Mixamo bodies and, with the cast on, the cast.
+static func all_bodies() -> Array:
+	return BODIES.keys() + (cast_members() if CAST_ON else [])
 
 
 ## A body whose file is on disk and imported with the shared skeleton: one
@@ -531,7 +561,7 @@ static func _path(body: String) -> String:
 ## GeneralSkeleton, an "Anim" player on the shared moves) and stood as tall
 ## as one, whatever units it came in.
 func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, age := "adult", build := "average", role := "") -> Node3D:
-	var info: Dictionary = BODIES[body]
+	var info: Dictionary = body_info(body)
 	var person: Node3D = _scene(_path(body)).instantiate()
 	for n in person.get_children():
 		if n is AnimationPlayer:
@@ -571,6 +601,10 @@ func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, ag
 				_tint(mi, tint, role in SOLDIERLY)
 			elif String(mi.name) in info.get("dyed", []):
 				_tint(mi, cloth_pick(role if role != "" else String(info["roles"][0]), rng))
+			elif String(info.get("mask", "")) != "":
+				# A cast member's cloth by its mask (cast_import.py): the house's colour or a dye of the town's on
+				# the masked cloth only, its skin, leather and steel kept as painted.
+				_mask_dye(mi, String(info["mask"]), tint if tint != Color.WHITE else cloth_pick(role if role != "" else String(info["roles"][0]), rng))
 	if role == "":
 		role = info["roles"][0]
 	person.set_meta("body", body)
@@ -734,6 +768,31 @@ func _tint(mi: MeshInstance3D, colour: Color, livery := false) -> void:
 
 
 static var _undyed_of := {}
+static var _masked := {}  # [material, mask, colour] -> the dyed copy, shared by everyone wearing it
+
+
+## Dyes a body's cloth through a mask (white: the cloth that takes the dye): the material's detail layer, the
+## colour on the masked texels only (StandardMaterial3D detail_mask), so no shader of our own.
+func _mask_dye(mi: MeshInstance3D, mask_path: String, colour: Color) -> void:
+	if not ResourceLoader.exists(mask_path) and not FileAccess.file_exists(mask_path):
+		return
+	var mask: Texture2D = load(mask_path) if ResourceLoader.exists(mask_path) else ImageTexture.create_from_image(Image.load_from_file(mask_path))
+	for s in mi.mesh.get_surface_count():
+		var m := mi.get_active_material(s) as StandardMaterial3D
+		if m == null:
+			continue
+		var key := [m, mask_path, colour]
+		if not _masked.has(key):
+			var copy: StandardMaterial3D = m.duplicate()
+			var img := Image.create(4, 4, false, Image.FORMAT_RGBA8)
+			img.fill(colour)
+			copy.detail_enabled = true
+			copy.detail_mask = mask
+			copy.detail_albedo = ImageTexture.create_from_image(img)
+			copy.detail_blend_mode = BaseMaterial3D.BLEND_MODE_MUL
+			copy.detail_uv_layer = BaseMaterial3D.DETAIL_UV_1
+			_masked[key] = copy
+		mi.set_surface_override_material(s, _masked[key])
 
 
 ## A cloth texture with its colour taken out, kept for every soldier that wears it.
