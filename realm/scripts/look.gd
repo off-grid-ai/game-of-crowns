@@ -107,6 +107,7 @@ func _ready() -> void:
 		get_tree().node_added.connect(_tint)
 		_tint_all(main)
 		_add_fill()
+		_add_outline()
 	else:
 		env.adjustment_color_correction = load("res://assets/grade/golden-hour.png")
 		# The low sun is warm already: the colour main gives back to AgX's grey
@@ -189,6 +190,42 @@ func _golden_hour(sky3d: Node, height := SUN_HEIGHT) -> void:
 		if rad_to_deg(asin(clampf(sun.global_basis.z.y, -1.0, 1.0))) <= height:
 			break
 		t += step
+
+
+## The painted line and edge light (look.json outline, set under v3; scripts/outline.gdshader, built on EMBYR's
+## and Leo Peltola's MIT post-process outlines): a thin warm-dark line round buildings and people where the depth
+## jumps or a surface folds inward, and a soft warm light on the folds that turn outward (a ridge, a beam's corner),
+## art target 01-town's bold painted edges. A 2x2 quad on the lens, drawn last over the scene's depth and normals.
+func _add_outline() -> void:
+	var o: Variant = LOOK.get("outline", {})
+	if not (o is Dictionary) or not bool((o as Dictionary).get("on", false)) or main.rig == null:
+		return
+	var cam: Camera3D = main.rig.get("cam")
+	if cam == null:
+		return
+	var mat := ShaderMaterial.new()
+	mat.shader = load("res://scripts/outline.gdshader")
+	mat.render_priority = Material.RENDER_PRIORITY_MAX
+	for k in o:
+		var val: Variant = o[k]
+		if k == "on" or k == "_":
+			continue
+		if val is Array:
+			var a: Array = val
+			mat.set_shader_parameter(k, Color(float(a[0]), float(a[1]), float(a[2]), float(a[3]) if a.size() > 3 else 1.0))
+		elif val is float or val is int:
+			mat.set_shader_parameter(k, float(val))
+	var quad := QuadMesh.new()
+	quad.size = Vector2(2.0, 2.0)
+	quad.flip_faces = true
+	var mi := MeshInstance3D.new()
+	mi.name = "Outline"
+	mi.mesh = quad
+	mi.material_override = mat
+	mi.extra_cull_margin = 16384.0
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.position = Vector3(0.0, 0.0, -0.1)  # in front of the near plane, never culled with the lens looking down
+	cam.add_child(mi)
 
 
 ## The fill (look.json fill; film's key and fill): a soft, shadowless light from over the camera's

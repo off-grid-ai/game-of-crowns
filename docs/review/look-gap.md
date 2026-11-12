@@ -99,6 +99,28 @@ exposure changes can only be judged on film.
 - **Fine detail in the art itself:** the target's bold dark outlines and painted edge highlights. A Godot 4 outline
   or edge-detect pass would raise the detail number; that's a building block to survey (none chosen).
 
+## The painted line and edge light (v3)
+
+The target's bold painted edges and part of the fine-detail gap. Survey (2026-11-12):
+
+| block | licence | how | fit |
+|---|---|---|---|
+| **High Quality Post Process Outline** (EMBYR, godotshaders.com) | MIT | full-screen quad: 3x3 depth and normal edges, width and strength easing with distance, grazing-angle guard | the most used Godot 4 outline; works on 4.3+ reverse-Z; Forward+ normal buffer. **Picked** |
+| 3D Pixel art outline & highlight (Leo Peltola; perspective by Riley Evans) | MIT | full-screen quad: depth outline plus a light on convex normal edges | the edge-light idea taken from it; its depth thresholds are absolute and pixel-art tuned |
+| Sobel outline (LoudFlameLava) | MIT | Sobel on depth and normals | noted unreliable far away |
+| Inverted hull (per-mesh second pass) | n/a | a grown, front-culled copy of every mesh | doubles triangles (143M a frame at 6,000 men already); can't reach baked or VAT meshes; no crease lines |
+| CompositorEffect compute outlines (forum playgrounds, itch) | mixed | compute pass on the buffers | no mature, licensed, maintained block; more glue for the same result |
+
+Why EMBYR's: proven, MIT, one material on one quad (nothing touches the buildings, people or army meshes), and
+its distance easing suits a camera that runs from 6 to 60 units. Fitted: the depth test is relative to the
+distance (one absolute threshold can't serve 6 and 60 units off), the normals are decoded, the grazing guard is a
+plain multiplier on edge-on surfaces, and Peltola's edge light falls only on outward folds of one surface.
+Concave folds (a wall meeting the ground, an eave over a wall) get the line; convex ones (ridges, beam corners,
+trims) the warm light. Compiled on Metal Forward+ (Godot 4.7.2, a 6-frame headless-free compile test, no
+picture taken). Every number in `look.json v3.outline`. Known risks to watch on film: lines in foliage (noisy
+normals) and on grass cards, shimmer under MetalFX temporal upscaling at the play resolution (films draw at full
+size), outlines drawn through smoke (smoke isn't in the depth buffer).
+
 ## To film (supervisor's batch)
 
 Kingsmere's square at the default town view, three shots at the same frame: `--look=one` (before), `--look=v3`, and

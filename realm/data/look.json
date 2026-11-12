@@ -218,6 +218,26 @@
     "fill": { "energy": 0.45 },
     "ssao": { "radius": 0.9, "intensity": 2.0, "power": 1.6, "light_affect": 0.22 },
     "haze": { "volumetric": 0.0015, "fog": 0.0003 },
-    "clarity": { "hazeTown": 0.08 }
+    "clarity": { "hazeTown": 0.08 },
+    "outline": {
+      "_": "The painted line and edge light (look.gd _add_outline, scripts/outline.gdshader: a full-screen pass over depth and normals, built on EMBYR's High Quality Post Process Outline and Leo Peltola's outline & highlight, both MIT, godotshaders.com; art target 01-town's bold painted edges; the measured fine-detail gap, docs/review/look-gap.md). on: the switch (v3 only). line_color: the line's colour and strength [r, g, b, a] (warm dark brown, never black). width_near / width_far: its width in pixels at near_at / far_at (game units from the lens), gone by fade_far. depth_threshold: a depth jump of this share of the distance (summed over the 8 neighbours) draws a silhouette line; grazing and grazing_power: how much larger it must be on a surface seen edge-on (the ground at a low pitch, or it fills with lines). normal_threshold / normal_smoothing: how sharp an inward fold draws a line (a wall meeting the ground, the eave under a roof), at normal_line of the silhouette's strength. light_color: the edge light's colour and strength on outward folds (a roof's ridge, a beam's corner, trims), from convexity light_from to light_to, only within same_surface of the distance (one surface). Every value an estimate until filmed; tune for Kingsmere's square at the default town view.",
+      "on": true,
+      "line_color": [0.16, 0.09, 0.05, 0.7],
+      "width_near": 1.6,
+      "width_far": 0.8,
+      "near_at": 4.0,
+      "far_at": 60.0,
+      "fade_far": 80.0,
+      "depth_threshold": 0.035,
+      "grazing": 6.0,
+      "grazing_power": 3.0,
+      "normal_threshold": 0.9,
+      "normal_smoothing": 0.25,
+      "normal_line": 0.6,
+      "light_color": [1.0, 0.93, 0.78, 0.22],
+      "light_from": 0.15,
+      "light_to": 0.6,
+      "same_surface": 0.02
+    }
   }
 }
