@@ -28,11 +28,10 @@ static var _cache := {}  # shared textures and materials, made once
 var main: Node  # main.gd: its towns and its mirror (awareness)
 var _burnt := {}  # "town:home" -> {shell, hidden: [[MultiMesh, index, transform]], box, root}
 var _burning := {}  # "town:home" -> its fire node, while it burns (meta stage: catch, burn, collapse, smoulder)
-var _spreads := {}  # town id -> {left: [homes still to catch], lit: [homes caught], root, pace, pick, at}: a fire travelling
+var _spreads := {}  # town id -> {left: [homes still to catch], lit: [homes caught], root, pace, pick, timer}: a fire travelling
 var _told := {}  # "town:home" -> true: a house that caught, told to the bridge, until the mirror has it (kindled)
 var _lines := {}  # town id -> {key: the house it works at, folk: [their minds]}: the town's bucket line
 var _tick := 0.0
-var _clock := 0.0
 
 
 static func knobs() -> Dictionary:
@@ -173,9 +172,7 @@ func _ignite(at: Vector3, seconds: float, razed: bool) -> bool:
 		left.erase(h)
 		_alight(root, "%d:%d" % [best, h], homes[h], best)
 	_spreads[best] = {"left": left, "lit": lit, "root": root, "pace": pace}
-	if left.is_empty():
-		_spreads[best]["at"] = INF
-	else:
+	if not left.is_empty():
 		_queue_next(best)
 	return true
 
@@ -213,7 +210,7 @@ func _queue_next(id: int) -> void:
 	var s: Dictionary = _spreads[id]
 	var root := _root_of(id)
 	if root == null:
-		_spreads.erase(id)
+		_end_spread(id)
 		return
 	var homes: Array = root.get_meta("homes", [])
 	var sp: Dictionary = knobs().get("spread", {})
@@ -245,40 +242,68 @@ func _queue_next(id: int) -> void:
 	# A wet town burns slower (the one wetness, weather_fx.gd; data/weather.json fire.slow).
 	wait *= 1.0 + WeatherFx.wet * float(preload("res://scripts/data.gd").num("weather", "fire.slow", 1.2))
 	s["pick"] = pick
-	s["at"] = _clock + wait
+	var t: Timer = s.get("timer")
+	if t == null:
+		t = Timer.new()
+		t.one_shot = true
+		t.timeout.connect(_catch_next.bind(id))
+		add_child(t)
+		s["timer"] = t
+	t.start(wait)
 
 
-## The next house catches when its time comes.
-func _spread_tick() -> void:
+## Its time come, the picked house catches, and the next is queued (fire.gd's timer per town, the engine's clock).
+func _catch_next(id: int) -> void:
+	var root := _follow(id)
+	if root == null:
+		return
+	var s: Dictionary = _spreads[id]
+	var homes: Array = root.get_meta("homes", [])
+	var pick := int(s["pick"])
+	(s["left"] as Array).erase(pick)
+	if pick < homes.size() and not _burning.has("%d:%d" % [id, pick]):
+		_alight(root, "%d:%d" % [id, pick], homes[pick], id)
+		(s["lit"] as Array).append(pick)
+	if not (s["left"] as Array).is_empty():
+		_queue_next(id)
+
+
+## A spreading fire follows its town as it stands now: towns.gd builds a sacked town anew, freeing the root the fire
+## began on (batch 7: 178 errors and a fire that stopped at its first house). The fire goes on in the new one: the
+## houses already caught are set alight again there, the rest still to come. The town's root, or null (the spread ends).
+func _follow(id: int) -> Node3D:
+	if not _spreads.has(id):
+		return null
+	var s: Dictionary = _spreads[id]
+	var root := _root_of(id)
+	if root == null:
+		_end_spread(id)
+		return null
+	var homes: Array = root.get_meta("homes", [])
+	if root != s.get("root"):
+		s["root"] = root
+		for h in s["lit"]:
+			var key := "%d:%d" % [id, int(h)]
+			if int(h) < homes.size() and not (_burning.has(key) and is_instance_valid(_burning[key])):  # its fire went with the old root
+				_alight(root, key, homes[int(h)], id)
+	return root
+
+
+## Every spreading fire follows its town, and ends once every house caught has burnt out (kept till then, so a
+## rebuild sets them alight again).
+func _follow_spreads() -> void:
 	for id in _spreads.keys():
-		var s: Dictionary = _spreads[id]
-		# The town as it stands now: towns.gd builds a sacked town anew, freeing the root the fire began on
-		# (batch 7: 178 errors and a fire that stopped at its first house). The fire goes on in the new one:
-		# the houses already caught are set alight again there, the rest still to come.
-		var root := _root_of(id)
-		if root == null:
-			_spreads.erase(id)
+		if _follow(id) == null:
 			continue
-		var homes: Array = root.get_meta("homes", [])
-		if root != s.get("root"):
-			s["root"] = root
-			for h in s["lit"]:
-				if int(h) < homes.size() and not _burning.has("%d:%d" % [id, int(h)]):
-					_alight(root, "%d:%d" % [id, int(h)], homes[int(h)], id)
-		if (s["left"] as Array).is_empty() and not _burning.keys().any(func(k): return String(k).begins_with("%d:" % id)):
-			_spreads.erase(id)  # every house caught and burnt out
-			continue
-		if _clock < float(s.get("at", INF)):
-			continue
-		var pick := int(s["pick"])
-		(s["left"] as Array).erase(pick)
-		if pick < homes.size() and not _burning.has("%d:%d" % [id, pick]):
-			_alight(root, "%d:%d" % [id, pick], homes[pick], id)
-			(s["lit"] as Array).append(pick)
-		if (s["left"] as Array).is_empty():
-			s["at"] = INF  # all caught: kept while they burn, so a rebuild sets them alight again
-		else:
-			_queue_next(id)
+		if (_spreads[id]["left"] as Array).is_empty() and not _burning.keys().any(func(k): return String(k).begins_with("%d:" % id)):
+			_end_spread(id)
+
+
+func _end_spread(id: int) -> void:
+	var t = _spreads[id].get("timer")
+	if t != null and is_instance_valid(t):
+		t.queue_free()
+	_spreads.erase(id)
 
 
 ## Still waiting to catch in a spreading fire (the fact may already count it burnt: it isn't charred yet).
@@ -452,7 +477,6 @@ static func share_order(town: int, homes: Array) -> Array:
 ## Once a second: each town's burnt houses follow the fact (charred while it says so, whole again once
 ## rebuilt), and the smoke and embers follow the wind.
 func _process(delta: float) -> void:
-	_clock += delta
 	_tick -= delta
 	if _tick > 0.0:
 		return
@@ -462,7 +486,7 @@ func _process(delta: float) -> void:
 	for key in _burning.keys():
 		if not is_instance_valid(_burning[key]):
 			_burning.erase(key)  # its town was built anew mid-fire
-	_spread_tick()
+	_follow_spreads()
 	for key in _burnt.keys():
 		if not is_instance_valid(_burnt[key]["shell"]):
 			_burnt.erase(key)  # its town was built anew: charred again below
@@ -666,8 +690,9 @@ func _alight(root: Node3D, key: String, h: Array, town: int) -> void:
 ## A house charred: its kit batches' copy of it hidden, a charred shell of the same meshes in its place
 ## (part of the roof gone), a scorch under it. Kept in _burnt until mended.
 func _char(root: Node3D, key: String, h: Array) -> Dictionary:
-	if _burnt.has(key):
+	if _burnt.has(key) and is_instance_valid(_burnt[key]["shell"]):
 		return _burnt[key]
+	_burnt.erase(key)  # its shell went with a town built anew: charred again on this one
 	var d := knobs()
 	var shell := Node3D.new()
 	shell.name = "Burnt"
