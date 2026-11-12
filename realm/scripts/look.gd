@@ -79,6 +79,7 @@ static func apply(m: Node) -> void:
 	look.name = "Look"
 	look.main = m
 	m.add_child(look)
+	preload("res://scripts/paint.gd").apply(m)  # the painterly pass, a trial (look.json paint; --paint=kuwahara)
 
 
 func _ready() -> void:
