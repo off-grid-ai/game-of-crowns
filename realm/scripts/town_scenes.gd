@@ -151,10 +151,10 @@ func _census_cap(k: Dictionary, role: Dictionary) -> int:
 	var c: Dictionary = k["census"]
 	var w: Variant = role.get("census", 0.0)
 	if int(c["budget"]) == -1 and (w is String or float(w) > 0.0):
-		var m2 := open_setts_m2(k["root"])
-		c["m2"] = m2
+		c["m2"] = open_setts_m2(k["root"])
 		# No paved square read (a town without setts, a made-up probe town): no census, each row's own count stands.
-		c["budget"] = int(round(m2 / 100.0 * Data.num("towns", "square.targets.per_100m2", 6.0))) if m2 > 0.0 else -2
+		var b := square_budget(k["root"])
+		c["budget"] = b if b >= 0 else -2
 		c["left"] = int(c["budget"]) - int(c["cast"])
 	if w is String or float(w) <= 0.0 or int(c["budget"]) == -2:
 		return -1
@@ -188,6 +188,19 @@ func _counted(k: Dictionary, role: Dictionary, body: Node3D) -> void:
 ## The square's open setts in square metres: metre cells inside its paved disc (towns.gd's first `paved` entry) under
 ## nothing that stands on it (nav_ground's outlines centred on the setts: stalls, the well, the statue). The measure
 ## squarelife (autoplay.gd) reads the square by.
+## How many stand on the town's square at once, everyone counted (the scene cast's census here and the villagers bound
+## there, village_slots square_cap): its open setts at a lived-in square's density, towns.json
+## square.targets.per_100m2 (01-town's). The one owner of that number (tools/square_crowd_probe.gd); worked out once a
+## town root stands with its stalls, and kept on the root (meta "square_budget"). -1: no paved square.
+static func square_budget(root: Node3D) -> int:
+	if root.has_meta("square_budget"):
+		return int(root.get_meta("square_budget"))
+	var m2 := open_setts_m2(root)
+	var b := int(round(m2 / 100.0 * Data.num("towns", "square.targets.per_100m2", 6.0))) if m2 > 0.0 else -1
+	root.set_meta("square_budget", b)
+	return b
+
+
 static func open_setts_m2(root: Node3D) -> float:
 	var um: float = load("res://scripts/towns.gd").S
 	var pr := 0.0

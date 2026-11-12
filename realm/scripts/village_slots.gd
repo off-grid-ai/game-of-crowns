@@ -28,8 +28,6 @@ const OVERFLOW := {"market": ["well", "tavern"], "well": ["market", "sept"], "ta
 
 static var SHOULDER: float = preload("res://scripts/data.gd").num("crowd", "villagers.shoulder", 0.11)  # two people standing: a shoulder's width apart
 
-static var SQUARE_HOLDS: int = int(preload("res://scripts/data.gd").num("crowd", "villagers.square_holds", 10))  # at most this many bound for the square at once (talkers included), in the biggest towns (_square_cap)
-
 static var SQUARE_EDGE: float = preload("res://scripts/data.gd").num("crowd", "villagers.square_edge", 0.6)  # past the square's paving this far is still the square: stall fronts, the well, the doors on its edge
 
 static var KNOT: float = preload("res://scripts/data.gd").num("crowd", "villagers.knot_clear", 0.26)  # a gathering keeps this clear round its middle: knots of two or three, never one blob
@@ -316,17 +314,14 @@ func on_square(a: Dictionary, p: Vector2) -> bool:
 	return p.length() < float(town_node.get_meta("square_r", 0.0)) + SQUARE_EDGE
 
 
-## How many the square holds at once, by the town's size: a hamlet's square
-## has a handful about it, a market town's its fill (SQUARE_HOLDS). Crowford
-## (size 6) had 30 villagers and four places' rooms on one square: a press.
+## How many the square holds at once, everyone counted (the scene cast standing there and the villagers bound there):
+## the square's one budget, its open setts at a lived-in square's density (town_scenes.gd square_budget, towns.json
+## square.targets.per_100m2; tools/square_crowd_probe.gd). A town with no paved square has no square crowd.
 func square_cap(a: Dictionary) -> int:
-	var size := int(v.towns.towns.get(a["town"], {}).get("data", {}).get("size", 1))
-	var busy := crown_market(a["town"])
-	if busy.has("square_holds") and v.TownLife.square_agents_on():
-		return int(preload("res://scripts/data.gd").num("crowd", "square_agents.square_holds", float(busy["square_holds"])))  # the walkers on errands are the square's crowd now
-	if busy.has("square_holds"):
-		return int(busy["square_holds"])  # the crown's seat: the realm's busiest market (data/towns.json market.crown)
-	return clampi(2 + size, 5, SQUARE_HOLDS)
+	var town_node: Node3D = v.towns.towns.get(a["town"], {}).get("node")
+	if not is_instance_valid(town_node):
+		return 0
+	return maxi(0, preload("res://scripts/town_scenes.gd").square_budget(town_node))
 
 
 ## The crown's seat's market knobs (data/towns.json market.crown), or {} for any other town:

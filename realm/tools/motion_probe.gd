@@ -598,8 +598,8 @@ func _roof(near: Array[Node3D], delta: float) -> void:
 					knot.append(o)
 			i += 1
 		biggest = maxi(biggest, knot.size())
-	cap = cap if cap > 0 else (int(vill.SQUARE_HOLDS) if vill else 10)
-	if biggest > cap:
+	# The square's one budget (village_slots square_cap: town_scenes square_budget); none read, no knot check.
+	if cap > 0 and biggest > cap:
 		_knot[0] += 1
 	if biggest > int(_knot[1]):
 		_knot[1] = biggest

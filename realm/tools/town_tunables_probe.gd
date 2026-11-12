@@ -17,7 +17,6 @@ const KNOBS := [
 	["village_talk", "TALK_REACH", "crowd", "villagers.talk_reach", 0.3],
 	["village_talk", "MIND_TALK_SECS", "crowd", "villagers.talk_lapse_secs", 40.0],
 	["village_slots", "SHOULDER", "crowd", "villagers.shoulder", 0.11],
-	["village_slots", "SQUARE_HOLDS", "crowd", "villagers.square_holds", 10],
 	["village_slots", "SQUARE_EDGE", "crowd", "villagers.square_edge", 0.6],
 	["village_slots", "KNOT", "crowd", "villagers.knot_clear", 0.26],
 	["npc_mind", "GIVE_UP", "crowd", "minds.give_up_secs", 3.0],
