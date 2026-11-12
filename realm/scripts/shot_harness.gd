@@ -367,7 +367,7 @@ func _frame_for_shot() -> void:
 					# War's muster as the bridge raises it (characters.js warMuster): the crown's host at its seat,
 					# out toward the nearest town in its colours; the lens on the host as it forms, then along
 					# the road with it (army.gd march_out).
-					var army: Node3D = main.scenes._muster({"x": king["x"], "y": king["y"], "tx": near["x"], "ty": near["y"], "city": king["id"], "owner": king.get("owner", -1)}, from, main._houses)
+					var army: Node3D = main.scenes.kind("muster").raise({"x": king["x"], "y": king["y"], "tx": near["x"], "ty": near["y"], "city": king["id"], "owner": king.get("owner", -1)}, from, main._houses)
 					main._framed_until = int(main._game_ms) + 600000
 					var said := [false, false]
 					var follow := Timer.new()

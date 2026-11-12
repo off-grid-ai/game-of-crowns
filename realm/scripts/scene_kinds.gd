@@ -33,7 +33,7 @@ const KINDS := {
 	"grain": {"tone": CROWN, "reach": 1.5, "power": 0.4, "interest": 4, "dist": 9.0, "caption": "The King's grain on the road to %s", "play": "res://scripts/scene_kinds/convoy.gd"},
 	"tribute": {"tone": CROWN, "reach": 1.2, "power": 0.3, "interest": 3, "dist": 9.0, "caption": "The King's gold on the road to %s", "play": "res://scripts/scene_kinds/convoy.gd"},
 	"wagon": {"tone": CROWN, "reach": 1.2, "power": 0.3, "interest": 2, "dist": 9.0, "caption": "Wagons on the road to %s"},
-	"muster": {"tone": CROWN, "reach": 2.5, "power": 0.6, "interest": 4, "dist": 6.0, "caption": "The King's levy musters at %s"},
+	"muster": {"tone": CROWN, "reach": 2.5, "power": 0.6, "interest": 4, "dist": 6.0, "caption": "The King's levy musters at %s", "play": "res://scripts/scene_kinds/muster.gd"},
 	"rider": {"tone": CROWN, "reach": 1.5, "power": 0.5, "interest": 3, "dist": 9.0, "caption": "The King's rider, bound for %s", "play": "res://scripts/scene_kinds/rider.gd"},
 	"king": {"tone": CROWN, "reach": 2.0, "power": 0.8, "interest": 3, "dist": 9.0, "caption": "The King's banner passes %s"},
 	"ward": {"tone": CROWN, "reach": 2.0, "power": 0.5, "interest": 2, "dist": 9.0, "caption": "A ward on the road to %s", "play": "res://scripts/scene_kinds/convoy.gd"},

@@ -16,7 +16,7 @@ const OLD := {"feast": "_feast", "handover": "_handover", "grain": "_convoy", "t
 	"sack": "_burn", "razed": "_burn", "famine": "_refugees", "plague": "_refugees"}
 
 ## The kinds that are their own class by now (grows a kind a commit, till scenes.gd stages none itself).
-const CLASSED := ["feast", "grain", "tribute", "ward", "rider"]
+const CLASSED := ["feast", "grain", "tribute", "ward", "rider", "muster"]
 
 ## What each kind, staged on the stand-in, must set down: [the node's name under the stage, the least of its children].
 const STAGED := {"feast": ["Feast", 10], "grain": ["Convoy", 4], "tribute": ["Convoy", 4], "ward": ["Convoy", 4], "rider": ["Rider", 1]}

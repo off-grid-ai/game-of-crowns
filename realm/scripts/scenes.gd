@@ -69,7 +69,6 @@ func _towns_up() -> bool:
 
 ## The army layer (docs/research/army-layer-2026-11-12.md): two hosts in the field (army_field.gd, in play when
 ## switched on), else the small skirmish (army_skirmish.gd); a siege's assault parties (army_assault.gd).
-const Army := preload("res://scripts/army.gd")  # a host mustering and marching out (READY.md line 3)
 const ArmyField := preload("res://scripts/army_field.gd")
 const ArmySkirmish := preload("res://scripts/army_skirmish.gd")
 const ArmyAssault := preload("res://scripts/army_assault.gd")
@@ -135,8 +134,6 @@ func sync(houses: Dictionary) -> void:
 						town_size = int(c.get("size", 4))
 				_siege(stormed, at, terrain.world_pos(float(s.get("ax", s["x"])), float(s.get("ay", s["y"]))), town_size, int(s.get("engines", 0)), houses.get(int(s.get("owner", -1)), {}), houses.get(int(s.get("defender", -1)), {}), Awareness.season_seconds)
 				storm(stormed, bool(s.get("taken", false)))
-			"muster":
-				_muster(s, at, houses)
 			"handover":
 				var town := "The town"
 				for c in store.rec("cities", []):
@@ -1135,23 +1132,6 @@ func _walk(n: Node3D, goal: Vector3, seconds: float, fade: bool) -> void:
 		n.position = stand(p), 0.0, 1.0, seconds)
 	if fade:
 		tw.tween_callback(n.queue_free)
-
-
-## A host musters at its seat and marches out along the roads to where it is sent (READY.md line 3; casebook, War
-## and sieges: "The march feeds the battle"): the army layer's host (army.gd), formed in line by the seat, then out
-## in column by each regiment's Mover (march_out). The crown's largest host as the realm reports it (new levies of
-## march.men when it has none in the field); a rising's muster, its house's men in its colours and arms.
-func _muster(s: Dictionary, at: Vector3, houses: Dictionary) -> Node3D:
-	var house: Dictionary = houses.get(int(s.get("owner", -1)), {})
-	var host := {"side": 0, "seat": int(s.get("city", -1)), "shape": "line", "quiet": true,
-		"out_to": terrain.world_pos(float(s.get("tx", s["x"])), float(s.get("ty", s["y"])))}
-	if not house.is_empty():
-		host["house"] = house
-		host["colour"] = Heraldry.colour(house, Color(0.5, 0.17, 0.15))
-	var army: Node3D = Army.new(get_parent(), 0, host)
-	get_parent().add_child(army)
-	framing.emit(ground(at), 2.6, 0.0)
-	return army
 
 
 # --- feasts and handovers ----------------------------------------------------------
