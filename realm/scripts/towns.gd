@@ -549,12 +549,11 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 	_tiers = TownTiers.new(size, seat)
 	_trades = TownTrades.plan(size, root.get_meta("buildings", []), seat, rng.seed + 53)
 	# A trade that stands elsewhere at this rank (towns.json trades.list where_by_rank): the crown's smithy on the
-	# square's edge, its foreground trade (01-town). --smithy=off: where it stands at every rank.
-	if not OS.get_cmdline_user_args().has("--smithy=off"):
-		for tr in _trades:
-			var wr: Dictionary = tr.get("where_by_rank", {})
-			if wr.has(_rank):
-				tr["where"] = String(wr[_rank])
+	# square's edge, its foreground trade (01-town).
+	for tr in _trades:
+		var wr: Dictionary = tr.get("where_by_rank", {})
+		if wr.has(_rank):
+			tr["where"] = String(wr[_rank])
 	var landmarks: Array = ["tavern", "hall", "church"]
 	for tr in _trades:
 		if String(tr["where"]) == "square":
@@ -593,10 +592,9 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 	root.set_meta("places", places)
 	# --towns=plots: the square's fronts first (round 4: the trades below took the band just outside the square
 	# before its ring was laid, 118-139 fronts turned away by "a building", 3-4 stood): the square's ring of
-	# houses, then the trades round them. towns.json plots.ring_first; --ring-first=off as before.
+	# houses, then the trades round them.
 	var pk := _plot_knobs()
-	var ring_first := not ways.is_empty() and bool(pk.get("square_ring", true)) and bool(pk.get("ring_first", true)) and not OS.get_cmdline_user_args().has("--ring-first=off")
-	if ring_first:
+	if not ways.is_empty() and bool(pk.get("square_ring", true)):
 		var ring_n0: int = await _square_ring(root, center, square_r, ways, kinds, lots, rng, want - placed)
 		placed += ring_n0
 		root.set_meta("ring_houses", ring_n0)
@@ -606,13 +604,8 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 		if String(tr["where"]) in ["castle", "water", "inn"]:
 			await _trade_off_plot(root, center, tr, square_r, square_r + 3.6, ways, lots, rng)
 	if not ways.is_empty():
-		# --towns=plots: the square enclosed by a ring of houses between the roads in, then the
-		# lanes (laid now, round the castle and the landmarks), then burgage plots along the
-		# roads and lanes, the edge where they stop.
-		if bool(pk.get("square_ring", true)) and not ring_first:
-			var ring_n: int = await _square_ring(root, center, square_r, ways, kinds, lots, rng, want - placed)
-			placed += ring_n
-			root.set_meta("ring_houses", ring_n)
+		# --towns=plots: the square's ring (above), then the lanes (laid now, round the castle and the
+		# landmarks), then burgage plots along the roads and lanes, the edge where they stop.
 		ways = ways + _lay_lanes(root, center, ways, clampi(int((size - 2) * float(pk.get("lanes_per_size", 0.5))), 0, int(pk.get("lanes_most", 6))), square_r, rng)
 		await _plot_lots(root, center, square_r, ways, kinds, lots, rng, want - placed, seat)
 		_square_trees(root, center, square_r, ways, lots, rng)
@@ -673,8 +666,8 @@ func _square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, k
 	var why := {"a street": 0, "crowded": 0, "the realm's road": 0, "the ground": 0}  # why a front was turned away (the CHECK line)
 	# A front turned away (a road in, a landmark, a stall) slides on round the edge a short step and is tried
 	# again, rather than giving up a whole house's width each time (round 3: Kingsmere's 11 roads in and its
-	# landmarks turned away 20 fronts and stood 3). towns.json plots.ring_slide; --ring-slide=off as before.
-	var slide := 0.0 if OS.get_cmdline_user_args().has("--ring-slide=off") else float(_plot_knobs().get("ring_slide", 0.06))
+	# landmarks turned away 20 fronts and stood 3). towns.json plots.ring_slide.
+	var slide := maxf(float(_plot_knobs().get("ring_slide", 0.06)), 0.01)
 	# What already stands (the castle, the landmarks) as outlines, not the circles in `lots`: a castle's circle
 	# left its front curtain's ends open, and round 3 stood square fronts on Kingsmere's wall beside the gate.
 	var standing := _buildings_standing(root)
@@ -683,7 +676,7 @@ func _square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, k
 	var f := Vector2.ZERO
 	while walked < TAU * ring and placed < budget:
 		var step := 0.0
-		if kind == "" or slide <= 0.0:
+		if kind == "":
 			kind = _tier_pick(rr, fronts, "square", 0.0, "square")  # the square's fronts: the town's richest
 			f = Real.footprint(kind)
 			step = (half_prev + f.x * 0.52 + rr.randf_range(0.0, 0.03)) / ring  # fronts nearly touching
@@ -729,8 +722,6 @@ func _square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, k
 			# The next front starts from this one's half width, flush beside it.
 			half_prev = kf.x * 0.52
 			kind = ""
-		elif slide <= 0.0:
-			half_prev = f.x * 0.52  # as before: the next front steps on from the one turned away
 		await _pace()
 	print("CHECK square ring: %s (square %.2f): %d fronts stood; turned away: %s" % [String(root.get_meta("title", "")), square_r, placed, str(why)])
 	return placed
@@ -811,11 +802,11 @@ func _lay_ways(root: Node3D, center: Vector3, c: Dictionary, size: int, square_r
 	# 01-town: the main street and one or two lanes into the square, no more (round 4: eleven ways met at
 	# Kingsmere's square and left its fronts no room). At most plots.square_roads.most roads run into the
 	# square, the realm's great roads first; the rest start at the first ring street (plots.rings), which
-	# carries them round to it. --square-roads=all: every road to the square, as before.
+	# carries them round to it.
 	var sr: Dictionary = pk.get("square_roads", {})
 	var radii: Array = pk.get("rings", [])
 	var most := int(sr.get("most", 0))
-	if most > 0 and headings.size() > most and not radii.is_empty() and not OS.get_cmdline_user_args().has("--square-roads=all"):
+	if most > 0 and headings.size() > most and not radii.is_empty():
 		var ranked: Array = headings.duplicate()
 		ranked.sort_custom(func(a, b): return great.any(func(g): return absf(angle_difference(float(g), float(a))) < 0.35) and not great.any(func(g): return absf(angle_difference(float(g), float(b))) < 0.35))
 		var start := square_r + float(radii[0]) - float(sr.get("into_ring", 0.15))
@@ -1478,12 +1469,12 @@ func _palisade_on(root: Node3D, center: Vector3, edge: PackedVector2Array, ways:
 
 ## The town's stone wall round its edge, in place of the palisade (towns.json town_wall; 01-town: the town wall in
 ## the distance, its towers with red cones and its arched gate): the castle's curtain in 2 m bays along the edge's
-## outline, a cone tower at each corner of it and every tower_every_m metres, a gatehouse (castle_builder.gd
+## outline, a round tower at each turn of it (round 9: towers every 36 m crowded it), a gatehouse (castle_builder.gd
 ## town_gate) where each main road runs out, and a gap where a lane does; never over water or into the castle.
-## For the ranks in town_wall.ranks; --town-wall=off for the palisade. Returns whether it stood.
+## For the ranks in town_wall.ranks (the others keep the palisade). Returns whether it stood.
 func _town_wall(root: Node3D, center: Vector3, edge: PackedVector2Array, ways: Array) -> bool:
 	var k: Dictionary = preload("res://scripts/data.gd").value("towns", "town_wall", {})
-	if edge.size() < 3 or not _rank in (k.get("ranks", []) as Array) or OS.get_cmdline_user_args().has("--town-wall=off"):
+	if edge.size() < 3 or not _rank in (k.get("ranks", []) as Array):
 		return false
 	var grown := Geometry2D.offset_polygon(edge, float(k.get("out", 0.25)))
 	var line: PackedVector2Array = grown[0] if not grown.is_empty() else edge
@@ -1513,8 +1504,6 @@ func _town_wall(root: Node3D, center: Vector3, edge: PackedVector2Array, ways: A
 	var bays: Array = []
 	var towers: Array = []
 	var turn := deg_to_rad(float(k.get("turn_deg", 20.0)))
-	var every := float(k.get("tower_every_m", 36.0)) * S
-	var since := 0.0
 	var m := func(q: Vector2) -> Vector3: return Vector3(q.x, _ground_y(center, Vector3(q.x, 0, q.y)) - 0.02, q.y) / S
 	var open := func(q: Vector2) -> bool:
 		if not terrain.is_land(center.x + q.x, center.z + q.y):
@@ -1538,18 +1527,12 @@ func _town_wall(root: Node3D, center: Vector3, edge: PackedVector2Array, ways: A
 		var step := a.distance_to(b) / cnt
 		for j in cnt:
 			var q := start + xdir * step * (j + 0.5)
-			since += step
-			if since >= every and open.call(q):
-				towers.append(m.call(q))
-				since = 0.0
-				continue
 			if open.call(q):
 				bays.append([m.call(q), yaw, j])
 		# A tower where the line turns.
 		var d2 := (c - b).normalized()
 		if absf(d.angle_to(d2)) > turn and open.call(b):
 			towers.append(m.call(b))
-			since = 0.0
 	if bays.is_empty():
 		return false
 	var Builder := preload("res://scripts/castle_builder.gd")
@@ -2290,8 +2273,8 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 		draw_well = Basis(Vector3.UP, deg_to_rad(float(_market_knobs().get("beside_turn", 0.0)))) * draw_well
 		var beside_yaw := rng.randf() * TAU
 		# The King's monument faces the square's heart, the house's arms on its plinth (Mac 2026-11-12: a live
-		# figure on a lumpy rock, "no finesse"; 01-town's monument). --house-finesse=off as before.
-		var monument := draw_kind == Real.one("square_statue") and not OS.get_cmdline_user_args().has("--house-finesse=off")
+		# figure on a lumpy rock, "no finesse"; 01-town's monument).
+		var monument := draw_kind == Real.one("square_statue")
 		if monument:
 			beside_yaw = atan2(-draw_well.x, -draw_well.z)
 		var stood: bool = drop.call(draw_kind, draw_well, beside_yaw)
@@ -2377,8 +2360,8 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 			if ResourceLoader.exists("res://assets/realistic/ph/wooden_lantern_01/wooden_lantern_01_1k.gltf") and i % 2 == 0:
 				drop.call("ph/wooden_lantern_01", m - m.normalized() * (stall.y * 0.5 + 0.05) + along * stall.x * 0.45, yaw)
 			# The others a lantern on its post at the front corner (Kenney's town lantern; Mac 2026-11-12, "no
-			# finesse"; 01-town's lit stalls). towns.json market.<rank>.stall_posts; --house-finesse=off.
-			elif bool(mk.get("stall_posts", false)) and Real.one("lamp_post") != "" and not OS.get_cmdline_user_args().has("--house-finesse=off"):
+			# finesse"; 01-town's lit stalls). towns.json market.<rank>.stall_posts.
+			elif bool(mk.get("stall_posts", false)) and Real.one("lamp_post") != "":
 				drop.call(Real.one("lamp_post"), m - m.normalized() * (stall.y * 0.5 + 0.05) - along * stall.x * 0.5, yaw)
 	root.set_meta("stalls_stood", n)
 	if n > 0:
@@ -2730,11 +2713,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	var square_r := 0.75 if size < 6 else 1.0
 	if realistic_towns.has("*") or realistic_towns.has(String(c.get("title", c["name"]))):
 		square_r = 1.25 if bool(c.get("capital", false)) or size >= 12 else 1.0  # a market square, room for stalls and a crowd
-		square_r = float(_market_knobs().get("square_r", square_r))  # by the town's rank: the realm's great market square at the crown's seat (art target town-b)
-		# Grown (market.<rank>.square_r_grown; round 6: the castle front, the landmarks and three roads left the
-		# crown's 1.6 rim room for 3 fronts): --square-size=old for square_r.
-		if not OS.get_cmdline_user_args().has("--square-size=old"):
-			square_r = float(_market_knobs().get("square_r_grown", square_r))
+		square_r = float(_market_knobs().get("square_r", square_r))  # by the town's rank: the realm's great market square at the crown's seat (art target town-b; the crown's 2.1 since round 6)
 		reach = maxf(reach, square_r + 3.6)  # the town reaches out to its palisade
 	var reps := roundi(square_r * 4.0)
 	# The square: a cobbled heart laid whole to its edge, and trodden earth
