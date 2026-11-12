@@ -121,6 +121,12 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 18:20 (11-12) Mac: "the casebook is the right one... thats our goal" -> goc-cpto 6a5a4b04: casebook = bar for play,
+  docs/art/target = bar for look; every change names its case. Freeciv move: steps 1-7 landed (sieges by Freeciv
+  combat, seasons/blight, real moves, homed companies); setDiplomacy the one war writer until 3.3. Raids call
+  (Claude's): Freeciv barbarians with onsetbarbarian 1, lowest level where unleash works, measured (>1 unprovoked town
+  lost in 60 turns -> stop). Army: a tenth drawn + open ranks (160e97bd); Panic spreads next (army_morale.gd). squarelife
+  (429fdf49). Tight square (7a8153dd). Bridge chronicle crash fixed (f21947a1).
 - 17:25 (11-12) Round 13 sent (/tmp/goc-focus/r13): LIGHT PASS (mean 0.43, sat 0.466), 0 script errors. Wrong: square
   too big/empty (fire-siege: tighten to 01-town), 18 people inside things, several parked at (0,0) (town-life),
   navprobe empty map from blocks not water (army-ui), dclick pans rather than steps in (army-ui). Landed since:
