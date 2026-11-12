@@ -181,3 +181,25 @@ Each step gets a state check on the private bridge: AI behaviour changes, and a 
 - [freeciv-web](https://github.com/freeciv/freeciv-web); [Longturn Lua scripting](https://longturn.readthedocs.io/en/latest/Modding/Rulesets/script.html);
   [Longturn game admin guide](https://longturn.readthedocs.io/en/stable/Contributing/game-admin.html).
 - Our code: line numbers above, read on 12 November 2026 from the shared checkout (other threads are editing it).
+
+## Built (12 November 2026, same day)
+
+All seven steps landed, each with a headless probe in `bridge/tools/*_probe.mjs` (bare Freeciv, our ruleset).
+
+| Step | Commit | What changed |
+|---|---|---|
+| 1 Ruleset Lua | 20c2ee09 | `lua/events.lua` is in `realmrules/script.lua`; mine numbers in `realmrules/luadata.txt` |
+| 2 Medieval ruleset | c56a5f0d | Modern governments, nukes and spaceship gone; three policies the AI sets |
+| 3 Decree buildings | 9a3ac0cc | Royal Feast, Royal Relief, Heavy Tithe |
+| 4 Grievance | 98f85600 (files in f7de4b61) | Cold houses lose content citizens; small wonders, because negative Make_Content does nothing |
+| 5 Sieges | aad88002 | War on march; Freeciv fights each assault; conquest by `edit.unit_move`; breach removes City Walls |
+| 6 Seasons | dc961492 | Four named fragments a year, winter food -20%, Blight building and disaster; `blight.js` gone |
+| 7 Real moves | d58878d4 | Hosts move by `edit.unit_move`; raised companies homed (upkeep) |
+
+**Findings while building:**
+- A negative Make_Content makes no one unhappy (`common/city.c` citizen_content_buildings). Unrest has to lower City_Unhappy_Size, and only a wonder reaches a whole house.
+- Freeciv's AI never lets a town riot, so the Disorder counter can't be a clock.
+- Attack enablers must require war (hard rule); Lua's `perform_action` "Conquer City" is refused even through the native enabler, while `edit.unit_move(..., conquer_city)` works.
+- The server console cuts long lines: long Lua goes in a file (`lua file`).
+
+**The one diplomacy writer:** `server.js` `setDiplomacy` (a truce or a war) rewrites the save and resumes. Measured reload cost: 874 ms and 995 ms [2 samples, bridge.log]. Freeciv 3.3's `Player:cancel_pact` and `Player:add_love` replace it once 3.3 is released.
