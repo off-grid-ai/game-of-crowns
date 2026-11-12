@@ -1,0 +1,21 @@
+{
+ "name": "hs_cottage_thatch",
+ "source": "/Users/user/code/goc-kits/meshy/houses/cottage_thatch/cottage_thatch.glb",
+ "tris_before": 20521,
+ "tris_after": 20521,
+ "scale": 3.618017778904322,
+ "size_m": [
+  6.56,
+  6.87,
+  6.5
+ ],
+ "house_share": 0.0,
+ "mask_png": true,
+ "materials": [
+  "Material_0"
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
+}

@@ -1,0 +1,22 @@
+{
+ "name": "hs_townhouse_narrow",
+ "source": "/Users/user/code/goc-kits/meshy/houses/townhouse_narrow/townhouse_narrow.glb",
+ "tris_before": 20294,
+ "tris_after": 20294,
+ "scale": 6.306167698036297,
+ "size_m": [
+  5.26,
+  5.85,
+  12.0
+ ],
+ "house_share": 0.205,
+ "mask_png": true,
+ "materials": [
+  "Material_0",
+  "MI_RoundTiles_house"
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
+}

@@ -1,0 +1,22 @@
+{
+ "name": "ck_keep",
+ "source": "/Users/user/code/goc-kits/meshy/castle/keep/keep.glb",
+ "tris_before": 20537,
+ "tris_after": 20537,
+ "scale": 10.515778274940029,
+ "size_m": [
+  15.71,
+  17.5,
+  20.0
+ ],
+ "house_share": 0.146,
+ "mask_png": true,
+ "materials": [
+  "Material_0",
+  "MI_RoundTiles_house"
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
+}

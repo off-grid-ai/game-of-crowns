@@ -1,0 +1,22 @@
+{
+ "name": "hs_cottage_tile",
+ "source": "/Users/user/code/goc-kits/meshy/houses/cottage_tile/cottage_tile.glb",
+ "tris_before": 20412,
+ "tris_after": 20412,
+ "scale": 4.21993668667298,
+ "size_m": [
+  6.92,
+  7.0,
+  8.0
+ ],
+ "house_share": 0.226,
+ "mask_png": true,
+ "materials": [
+  "Material_0",
+  "MI_RoundTiles_house"
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
+}

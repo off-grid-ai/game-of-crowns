@@ -1,0 +1,22 @@
+{
+ "name": "ck_wall_tower",
+ "source": "/Users/user/code/goc-kits/meshy/castle/wall_tower/wall_tower.glb",
+ "tris_before": 20619,
+ "tris_after": 19999,
+ "scale": 7.35904777946213,
+ "size_m": [
+  7.36,
+  7.37,
+  14.0
+ ],
+ "house_share": 0.106,
+ "mask_png": true,
+ "materials": [
+  "Material_0",
+  "MI_RoundTiles_house"
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
+}

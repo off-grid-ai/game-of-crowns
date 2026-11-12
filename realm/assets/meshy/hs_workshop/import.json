@@ -1,0 +1,22 @@
+{
+ "name": "hs_workshop",
+ "source": "/Users/user/code/goc-kits/meshy/houses/workshop/workshop.glb",
+ "tris_before": 20087,
+ "tris_after": 20087,
+ "scale": 3.2060325709631563,
+ "size_m": [
+  5.88,
+  6.09,
+  6.0
+ ],
+ "house_share": 0.23,
+ "mask_png": true,
+ "materials": [
+  "Material_0",
+  "MI_RoundTiles_house"
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
+}

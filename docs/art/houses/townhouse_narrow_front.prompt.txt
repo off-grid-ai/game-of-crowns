@@ -1,0 +1,14 @@
+Tool: built-in image_gen
+
+Initial prompt:
+Use case: stylized-concept.
+Create a single original game asset concept: one tall narrow medieval fantasy town house, approximately 5 m wide, exactly three full storeys plus a steep roof with one dormer.
+Input image: reference image only. Match the attached crop's architecture, rich warm colours, chunky shapes, and painted finish. Do not copy its camera or surroundings. Original design, not an existing franchise asset.
+The stone ground floor has chunky warm grey masonry and a solid plank entrance door. Above it, two distinct full upper storeys of heavy dark oak timber framing and cream plaster project outward on solid thick wooden supports. Each upper storey is clearly readable and jettied over the floor beneath. Warm golden-lit leaded windows have attached wooden flower boxes. A steep roof has chunky overlapping red clay tiles, one small gabled dormer, and a solid stone chimney. Thick timbers, robust stones, slightly exaggerated proportions, clean bold silhouette, softly hand-painted surface textures and visible brush strokes. Polished stylised 3D real-time strategy game model with storybook medieval market-town character, matching the reference finish.
+Square image. Show the WHOLE object alone, centred, filling about 80 percent of the canvas vertically with clear margins on every side including above the chimney and below the house. Three-quarter view from slightly above, looking down about 25 degrees, with the front and one side both visible. Tall narrow proportions.
+Warm even studio light; warm saturated red roof, cream plaster, dark oak, warm grey stone, golden window light, red flowers and green leaves. Every part solid and attached.
+Plain uniform flat medium grey background. No ground, no ground plane, no platform, no shadow or cast shadow on the background, no surroundings, no people, no animals, no smoke, no text, no logos, no frame, no floating or loose parts.
+
+Final framing edit prompt:
+Use case: precise-object-edit. Keep this exact house design, all three full storeys, materials, colours, brush texture, flower boxes, warm windows, roof, dormer, chimney and camera angle unchanged. Change only framing and backdrop: make a square canvas and scale the entire house down uniformly so its full height including chimney and door threshold is exactly about 80% of image height, centred vertically and horizontally, leaving a clear flat medium grey border with approximately 10% blank space above and 10% below. Background must be completely flat uniform medium grey with no ground plane and no cast shadow, gradients, texture or vignette. Whole house visible and all parts solid and attached. No additional objects, no text.
+
