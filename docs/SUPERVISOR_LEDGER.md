@@ -121,6 +121,16 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 12:30 (11-12) Mac upgraded Meshy to Pro (1,445 credits); an agent is making 8 square pieces from 01-town crops
+  (townhouse, cottage, merchant house, smithy, stall, well, statue, cart) -> docs/research/meshy-square-set.md.
+  Mac: "start using the meshy products in the game": an agent is making the plain launch equal the render
+  (cast, landmarks, look, etc. as defaults). New CLAUDE.md rule (02eeb2df): no fallbacks, replace and delete the
+  old path. Mac's other session ("Game of Crowns visual polish", local_a4e5fc5c) owns town life: redux-style store
+  and director (docs/TOWN_LIFE.md); it owns town_life.gd scene code, npc_mind.gd, villagers.gd decisions,
+  awareness.gd, crowd/moods/works.json. Cart-through-well: the cart steps straight lines (town_life _cart), not nav;
+  theirs to fix; army-ui writes a footprint/crossing probe. No 3D navmesh rebake.
+  Message cap hit (10 sends): undelivered to works-life: "don't edit the behaviour files; your files are people.gd,
+  cast.json, cast import/rig, animals". Resend on Mac's next message.
 - 12:00 (11-12) Mac: "there should be some engine that already solves for this", then "let me get this work done in
   another one of my agents. you continue with the other stuff." Town-life behaviour (director, group scenes,
   routines, the engine survey) now belongs to Mac's other session; my survey agent stopped. works-life moved to how
