@@ -3,7 +3,8 @@ extends SceneTree
 ## by day between two plain towns and between a crown town and another (research rule 8: about half
 ## on foot, a quarter carts, some riders; a patrol only on a crown road), and the parties (a pedlar,
 ## pilgrims, a royal patrol) walked along a made-up road: each set out, carried along, and gone at
-## the end. Exit 1 on a failure.
+## the end. A party is the Mover's road (Mover.road, named Party_<kind>); with no navigation to lay a
+## road nobody sets out, and go() says so. Exit 1 on a failure.
 ##   arch -arm64 godot --headless --path realm -s res://tools/traffic_probe.gd
 
 const Traffic := preload("res://scripts/traffic.gd")
@@ -48,6 +49,7 @@ func _run() -> void:
 	root.add_child(t.terrain)
 	root.add_child(t.scenes)
 	root.add_child(t)
+	t.set_process(false)  # only go() is under test here, not the clock that decides who sets out
 	var town := func(is_crown: bool) -> Blackboard:
 		var bb := Blackboard.new()
 		for v in [[&"at_war", false], [&"grief", false], [&"mood", ""], [&"prosperity", false], [&"crown_town", is_crown]]:
@@ -71,6 +73,21 @@ func _run() -> void:
 		if share.call(["walker", "pedlar", "pilgrim", "patrol"]) < 0.4 or share.call(["cart"]) < 0.15:
 			print("FAIL the mix is off rule 8")
 			fails += 1
+	# No navigation yet (the Mover finds none): nobody sets out, and go() says so rather than leave a party nowhere.
+	var lost: bool = t.go(Vector3.ZERO, Vector3(3, 0, 0), "pedlar")
+	print("ROADS no navigation: go() %s" % lost)
+	if lost or t.scenes.get_children().any(func(c): return String(c.name).begins_with("Party_")):
+		print("FAIL a party set out with no road laid")
+		fails += 1
+	# The navigation the Mover asks (its main: scenes and terrain), as the game has it.
+	var main := Node.new()
+	main.set_script(_main_src())
+	main.scenes = t.scenes
+	main.terrain = t.terrain
+	root.add_child(main)
+	var aw := Node.new()
+	main.add_child(aw)
+	Engine.set_meta("awareness", aw)
 	for kind in ["pedlar", "pilgrim", "patrol"]:
 		var done := [false]
 		var ok: bool = t.go(Vector3.ZERO, Vector3(3, 0, 0), kind, func(): done[0] = true)
@@ -84,5 +101,13 @@ func _run() -> void:
 		if not ok or folk == 0:
 			print("FAIL the %s didn't set out" % kind)
 			fails += 1
+	Engine.remove_meta("awareness")
 	print("ROADS VERDICT: %s" % ("PASS" if fails == 0 else "FAIL (%d)" % fails))
 	quit(1 if fails > 0 else 0)
+
+
+func _main_src() -> GDScript:
+	var g := GDScript.new()
+	g.source_code = "extends Node\nvar scenes: Node\nvar terrain: Node\n"
+	g.reload()
+	return g

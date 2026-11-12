@@ -254,8 +254,7 @@ func party(from: Vector3, to: Vector3, kind: String, on_done := Callable()) -> b
 	# Some are already on their way when the road comes into view: they start part way along it.
 	var share := rng.randf_range(0.0, 0.6) if rng.randf() < Data.num("roadside", "traffic.towns.mid", 0.5) else 0.0
 	# In file along the road the navigation gave (Mover.road).
-	Mover.road(scenes, way, file, pace, {"min": 8.0, "max": 120.0, "start_share": share}, on_done)
-	return true
+	return Mover.road(scenes, way, file, pace, {"name": "Party_" + kind, "min": 8.0, "max": 120.0, "start_share": share}, on_done) != null
 
 
 ## How many may be out at once around a town: more in plenty, fewer in want.

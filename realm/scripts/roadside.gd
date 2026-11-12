@@ -746,7 +746,8 @@ func _herd(from: Vector3, to: Vector3) -> bool:
 		if a == null:
 			break
 		members.append([a, gap * (n - i) + rng.randf_range(-0.03, 0.03), rng.randf_range(-0.05, 0.05)])
-	_out += 1
 	# The herd in file behind its herder, along the road the navigation gave (Mover.road).
-	Mover.road(self, way, members, float(H.get("pace", 0.16)), {"min": 15.0, "max": 120.0}, func(): _out -= 1)
+	if Mover.road(self, way, members, float(H.get("pace", 0.16)), {"name": "Herd", "min": 15.0, "max": 120.0}, func(): _out -= 1) == null:
+		return false
+	_out += 1
 	return true

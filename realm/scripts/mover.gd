@@ -450,16 +450,21 @@ static func _main() -> Node:
 ## navigation gave (town_nav.route or roads.route), smoothed and laid on the ground as a Path3D, and Godot's
 ## PathFollow3D carries each member along it, `offset` behind the head (and `side` across). One place for all
 ## road travel. members: [[node, offset, side], ...] (nodes face +z; turned to the follower's -z here).
-## opts: start (how far along they begin) or start_share (as a share of the road), min/max (seconds for the whole road), yields (the head waits up to
+## opts: name (the road's node, so a party can be found on it), start (how far along they begin) or start_share (as a share of the road), min/max (seconds for the whole road), yields (the head waits up to
 ## WAIT_MAX for anyone standing in the road just ahead, ahead: how far it looks). `then` runs when they're gone.
+## Null when no road can be laid (no navigation, or a way of fewer than two points): the members it was handed
+## are freed then, and the caller says nobody set out.
 const WAIT_MAX := 4.0
 
 static func road(holder: Node, way: PackedVector3Array, members: Array, pace: float, opts := {}, then := Callable()) -> Path3D:
 	var main := _main()
 	if main == null or way.size() < 2:
+		for m in members:
+			if is_instance_valid(m[0]) and (m[0] as Node).get_parent() == null:
+				(m[0] as Node).queue_free()
 		return null
 	var path := Path3D.new()
-	path.name = "Road"
+	path.name = String(opts.get("name", "Road"))
 	path.curve = main.scenes._on_ground(main.terrain.paths.smooth_road(way))
 	holder.add_child(path)
 	var length: float = maxf(path.curve.get_baked_length(), 0.01)

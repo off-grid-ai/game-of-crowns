@@ -208,8 +208,7 @@ func traveller(from: Vector3, to: Vector3, kind := "walker", on_done := Callable
 	people.play(who, gait, r.randf_range(0.9, 1.1))
 	var pace: float = {"cart": 0.22, "wagon": 0.18, "soldier": 0.3, "refugee": 0.2}.get(kind, 0.26)
 	# Along the road the navigation gave, giving way to anyone standing in it (Mover.road).
-	Mover.road(self, way, [[body, 0.0]], pace, {"min": 15.0, "max": 90.0, "yields": true, "ahead": 0.16 if carter else 0.1}, on_done)
-	return true
+	return Mover.road(self, way, [[body, 0.0]], pace, {"name": "Traveller", "min": 15.0, "max": 90.0, "yields": true, "ahead": 0.16 if carter else 0.1}, on_done) != null
 
 
 ## One horse and cart, built as a single piece so its parts can never come
