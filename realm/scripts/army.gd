@@ -35,10 +35,9 @@ const Ground := preload("res://scripts/army_ground.gd")
 const TownNav := preload("res://scripts/town_nav.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
 const VAT := preload("res://addons/godot_vat/vat_multi_mesh_instance_3d.gd")
-const BANNER := preload("res://scripts/army_banner.gdshader")
+const Banners := preload("res://scripts/army_banners.gd")  # its banners and standard (READY.md line 4)
 const Terrain := preload("res://scripts/terrain.gd")
 const HOUSES := [Color(0.82, 0.62, 0.12), Color(0.72, 0.12, 0.12), Color(0.15, 0.32, 0.72), Color(0.18, 0.5, 0.22), Color(0.45, 0.2, 0.55), Color(0.85, 0.85, 0.82)]
-const GLYPHS := {"sword": 1, "spear": 2, "bow": 3, "horse": 4, "axe": 5, "engine": 6, "crown": 7}
 
 ## A regiment is shown or selected (the command card listens; no one else does yet).
 signal selection_changed(ids: Array)
@@ -49,8 +48,7 @@ var host_id := 0  # the bridge's host id (its lead company), 0 for a made-up hos
 var _regiments: Array = []  # see _regiment()
 var _by_id := {}  # regiment id -> its regiment
 var _assets := {}  # asset dir -> {mesh, mat, tracks, index, height}
-var _standard: MeshInstance3D
-var _strength_label: Label3D
+var banners := Banners.new()  # every regiment's banner and the host's standard (army_banners.gd)
 var _commander: Dictionary = {}
 var _report := 0.0
 var _field := Vector3.ZERO  # the line's middle, on the ground
@@ -263,7 +261,7 @@ func set_strength(regiment_id: int, share: float) -> void:
 	if _by_id.has(regiment_id):
 		var r: Dictionary = _by_id[regiment_id]
 		r["strength"] = clampf(share, 0.0, 1.0)
-		(r["banner_mat"] as ShaderMaterial).set_shader_parameter("strength", r["strength"])
+		banners.strength(r)
 
 
 ## The shape the game wants: "line" (each regiment marches to its place at the muster and turns into line),
@@ -303,7 +301,7 @@ func stand_at(at: Vector3, face: float) -> void:
 	_take_field(_extent)
 	for r in _regiments:
 		_stand_in_line(r)
-	_standard_place()
+	banners.place()
 
 
 ## Whether a line of the given width and depth, its middle at `at` facing `face`, stands on ground fit for men
@@ -351,7 +349,7 @@ func track(r: Dictionary, role: String) -> int:
 
 ## Its banner wavers (0 steady .. 1 about to break; army_banner.gdshader's waver).
 func waver(r: Dictionary, w: float) -> void:
-	(r["banner_mat"] as ShaderMaterial).set_shader_parameter("waver", clampf(w, 0.0, 1.0))
+	banners.waver(r, w)
 
 
 # --- Raising the host -------------------------------------------------------------------------------------
@@ -515,7 +513,7 @@ func _regiment(spec: Dictionary, colour: Color, house: Dictionary = {}) -> Dicti
 		"fidget": _rng.randf_range(0.5, 3.0), "backs": [], "selected": false, "w": 1.0, "d": 1.0, "house": house}
 	r["line"] = _layout(r, "line")
 	r["column"] = _layout(r, "column")
-	_banner(r)
+	banners.banner(r)
 	_ground_marks(r)
 	return r
 
@@ -639,90 +637,12 @@ func _track(r: Dictionary, role: String) -> int:
 
 # --- Banner, standard, ground rectangle, far block -------------------------------------------------------
 
-## A regiment's banner: one billboard quad (pole and cloth) at its middle: its house's painted arms (Total War's
-## faction emblem on every regiment's banner) with its kind's glyph in the canton on its house colour; a house with
-## no arms drawn flies its colour with the glyph.
-func _banner(r: Dictionary) -> void:
-	var man := Data.num("army", "man", 0.22)
-	var mi := _flag_quad(man * Data.num("army", "banner.height", 2.6), man * Data.num("army", "banner.width", 1.6))
-	var m: ShaderMaterial = mi.material_override
-	m.set_shader_parameter("field_color", r["colour"])
-	m.set_shader_parameter("glyph", int(GLYPHS.get(r["glyph"], 1)))
-	var arms := Heraldry.arms(r.get("house", {}))
-	if arms != null:
-		m.set_shader_parameter("arms", arms)
-		m.set_shader_parameter("use_arms", true)
-		m.set_shader_parameter("canton", true)
-	m.set_shader_parameter("strength", r["strength"])
-	m.set_shader_parameter("pips", int(Data.num("army", "banner.pips", 5)))
-	(r["node"] as Node3D).add_child(mi)
-	r["banner"] = mi
-	r["banner_mat"] = m
-
-
-## A banner quad `high` tall and `wide` across, its pivot at the pole's foot.
-func _flag_quad(high: float, wide: float) -> MeshInstance3D:
-	var q := QuadMesh.new()
-	q.size = Vector2(wide, high)
-	q.subdivide_width = 10
-	q.subdivide_depth = 8
-	q.center_offset = Vector3(wide * 0.5, high * 0.5, 0.0)
-	var m := ShaderMaterial.new()
-	m.shader = BANNER
-	m.set_shader_parameter("span", wide)
-	m.set_shader_parameter("phase", _rng.randf() * TAU)
-	var flag_v := Vector2(0.03, 0.40)
-	m.set_shader_parameter("flag_v", flag_v)
-	m.set_shader_parameter("aspect", wide * (1.0 - 0.04) / (high * (flag_v.y - flag_v.x)))
-	var mi := MeshInstance3D.new()
-	mi.mesh = q
-	mi.material_override = m
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	return mi
-
-
-## The army's standard over the commander's regiment (the middle of the front row): larger, the crown's
-## painted arms where heraldry has them (assets/heraldry), else its colour with a crown; no pips. The host's
-## strength in men stands under it from afar.
+## The host's standard over its commander's regiment (the middle of the front row; army_banners.gd), in its
+## house's arms, its strength in men under it from afar.
 func _standard_up() -> void:
 	var c: Dictionary = _commander if not _commander.is_empty() else _regiments[0]
 	_commander = c
-	var man := Data.num("army", "man", 0.22)
-	var k := Data.num("army", "standard.scale", 1.7)
-	_standard = _flag_quad(man * Data.num("army", "banner.height", 2.6) * k, man * Data.num("army", "banner.width", 1.6) * k)
-	var m: ShaderMaterial = _standard.material_override
-	m.set_shader_parameter("field_color", c["colour"])
-	m.set_shader_parameter("glyph", GLYPHS["crown"])
-	m.set_shader_parameter("pips", 0)
-	m.set_shader_parameter("swallow", false)
-	var arms := Heraldry.arms(battle.get("house", _crown_house()))
-	if arms != null:
-		m.set_shader_parameter("arms", arms)
-		m.set_shader_parameter("use_arms", true)
-	(c["node"] as Node3D).add_child(_standard)
-	_strength_label = Label3D.new()
-	_strength_label.text = _thousands(_men())
-	_strength_label.font = load("res://assets/fonts/GeistMono.ttf")
-	_strength_label.font_size = 28
-	_strength_label.outline_size = 8
-	_strength_label.modulate = Color(0.95, 0.93, 0.88)
-	_strength_label.outline_modulate = Color(0.1, 0.08, 0.06, 0.8)
-	_strength_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_strength_label.fixed_size = true
-	_strength_label.pixel_size = 0.0006
-	_strength_label.no_depth_test = true
-	_strength_label.visible = false
-	(c["node"] as Node3D).add_child(_strength_label)
-	_standard_place()
-
-
-## The standard stands just behind the commander's regiment's banner, so the two never overlap.
-func _standard_place() -> void:
-	if _standard == null:
-		return
-	var back := -float(_commander["d"]) * 0.5 - 0.1
-	_standard.position = Vector3(0.0, 0.0, back)
-	_strength_label.position = Vector3(0.0, -0.05, back)
+	banners.raise_standard(c, battle.get("house", _crown_house()), _men())
 
 
 ## The ground rectangle under a regiment (a decal on the land alone, terrain.gd's GROUND_LAYER, so it never
@@ -762,8 +682,8 @@ func _fit(r: Dictionary) -> void:
 	var block: MeshInstance3D = r["block"]
 	(block.mesh as BoxMesh).size = Vector3(float(r["w"]), man, float(r["d"]))
 	block.position = Vector3(0.0, man * 0.5, 0.0)
-	if is_same(r, _commander):
-		_standard_place()
+	if banners.rides_with(r):
+		banners.place()
 
 
 static var _rect_tex: ImageTexture
@@ -789,7 +709,7 @@ func _mark(r: Dictionary, on: bool) -> void:
 	var c: Color = r["colour"]
 	d.modulate = Color(c.r, c.g, c.b, a)
 	d.visible = a > 0.0 and not _far
-	(r["banner_mat"] as ShaderMaterial).set_shader_parameter("selected", 1.0 if on else 0.0)
+	banners.lit(r, on)
 
 
 # --- The two shapes ---------------------------------------------------------------------------------------
@@ -1183,7 +1103,7 @@ func _reform(r: Dictionary, shape: String) -> void:
 # --- Each frame -------------------------------------------------------------------------------------------
 
 func _process(delta: float) -> void:
-	if _regiments.is_empty() or _standard == null:
+	if _regiments.is_empty() or banners.standard == null:
 		return
 	for r in _regiments:
 		r["yaw"] = (r["node"] as Node3D).rotation.y  # its Mover turns it as it goes
@@ -1312,15 +1232,9 @@ func _far_view() -> void:
 		_far = far
 		for r in _regiments:
 			(r["vat"] as Node3D).visible = not far
-			(r["banner"] as Node3D).visible = not far
 			(r["block"] as Node3D).visible = far
 			_mark(r, r["selected"])
-		_strength_label.visible = far
-	var k := maxf(1.0, d / maxf(Data.num("army", "banner.fixedFrom", 14.0), 0.1))
-	for r in _regiments:
-		(r["banner"] as Node3D).scale = Vector3.ONE * k
-	_standard.scale = Vector3.ONE * k
-	_strength_label.position.y = Data.num("army", "man", 0.22) * Data.num("army", "banner.height", 2.6) * Data.num("army", "standard.scale", 1.7) * k * 1.05
+	banners.view(_regiments, d, _far)
 
 
 ## The host's middle on the ground: where its regiments stand, on average.
@@ -1336,15 +1250,6 @@ func _men() -> int:
 	for r in _regiments:
 		n += int(r["men"])
 	return n
-
-
-static func _thousands(n: int) -> String:
-	var s := str(n)
-	var out := ""
-	while s.length() > 3:
-		out = "," + s.substr(s.length() - 3) + out
-		s = s.substr(0, s.length() - 3)
-	return s + out
 
 
 # --- The realm around it ----------------------------------------------------------------------------------

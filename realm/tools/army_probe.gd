@@ -442,6 +442,8 @@ func _the_right_banner() -> void:
 	var none := {"name": "House Nobody"}
 	var want: Texture2D = load("res://assets/heraldry/banner-ashby.png")
 	_check(H.get_script_method_list().any(func(m): return m["name"] == "arms"), "a house's arms come from one place (heraldry.gd arms)")
+	var banner_owner := ResourceLoader.exists("res://scripts/army_banners.gd") and not ArmyS.get_script_method_list().any(func(m): return m["name"] in ["_banner", "_flag_quad", "_standard_place"])
+	_check(banner_owner, "a host's banners and standard have one owner (army_banners.gd; integration audit #12)")
 	var a: Object = ArmyS.new(Node.new(), 0, {"side": 0, "colour": Color(0.2, 0.3, 0.6), "house": ashby})
 	var units: Dictionary = Data.value("army", "units", {})
 	var colour := Color(0.2, 0.3, 0.6)
@@ -609,7 +611,7 @@ var scenes: Node
 func build() -> void:
 	terrain = Node3D.new()
 	var ts := GDScript.new()
-	ts.source_code = "extends Node3D\\nvar built := true\\nfunc height_at(_x: float, _z: float) -> float:\\n\\treturn 0.0\\nfunc is_land(_x: float, _z: float) -> bool:\\n\\treturn true\\nfunc walkable(_x: float, _z: float) -> bool:\\n\\treturn true\\nfunc land_path(a: Vector3, b: Vector3) -> PackedVector3Array:\\n\\treturn PackedVector3Array([a, b])\\nfunc bowed(p: PackedVector3Array) -> PackedVector3Array:\\n\\treturn p\\n"
+	ts.source_code = "extends Node3D\\nvar built := true\\nvar paths = self\\nfunc height_at(_x: float, _z: float) -> float:\\n\\treturn 0.0\\nfunc is_land(_x: float, _z: float) -> bool:\\n\\treturn true\\nfunc walkable(_x: float, _z: float) -> bool:\\n\\treturn true\\nfunc land_path(a: Vector3, b: Vector3) -> PackedVector3Array:\\n\\treturn PackedVector3Array([a, b])\\nfunc bowed(p: PackedVector3Array) -> PackedVector3Array:\\n\\treturn p\\n"
 	ts.reload()
 	terrain.set_script(ts)
 	add_child(terrain)
