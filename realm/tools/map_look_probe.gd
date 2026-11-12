@@ -38,5 +38,38 @@ func _init() -> void:
 		print("FAIL the chronicle's map loses its sieges")
 		fails += 1
 	view.free()
+	# v2 draws each thing v1 drew (GoC, 12 Nov: towns, the besieged ring, hosts, lands), from the mirror and without it.
+	for mirror in [true, false]:
+		var v = rm.new()
+		v.size = Vector2(800, 600)
+		v.data = {"tiles": [12, 12], "land": [[3, 4], [5, 6]], "towns": [{"x": 3, "y": 4, "title": "Ashford", "color": "#c90", "size": 2, "besieged": true}, {"x": 8, "y": 8, "title": "Seat", "color": "#36c", "capital": true}], "armies": [{"x": 5, "y": 6, "companies": 2, "key": "House Goldcrest", "color": "#c90"}]}
+		v.center = Vector2(5.5, 5.5)
+		if mirror:
+			var row := []
+			for x in 12:
+				row.append("1")
+			v.houses = {1: {"name": "House Goldcrest", "color": "#cc9900"}}
+			v.owners = Array([]).duplicate()
+			for y in 12:
+				v.owners.append(",".join(row))
+			v.hosts = [{"x": 5.0, "y": 6.0, "men": 400, "house": {"name": "House Goldcrest", "color": "#cc9900"}}]
+			v.sieges = [Vector2(3, 4)]
+		var how := "with the mirror" if mirror else "without the mirror (lore.gd)"
+		var marks: Array = v._town_marks(Rect2(Vector2.ZERO, v.size)) if v.has_method("_town_marks") else []
+		if marks.size() != 2 or not marks.any(func(m): return m["seat"] and m["named"]):
+			print("FAIL v2 marks every town, the seat named, %s (%d marks)" % [how, marks.size()])
+			fails += 1
+		if v._sieges() != [Vector2(3, 4)]:
+			print("FAIL v2 rings the besieged town %s" % how)
+			fails += 1
+		if v._hosts().size() != 1:
+			print("FAIL v2 shows the host %s" % how)
+			fails += 1
+		var lands: Texture2D = v._lands_of()
+		var img := lands.get_image() if lands else null
+		if img == null or img.get_pixel(int((3 + 0.5) * 8), int((4 + 0.5) * 8)).a <= 0.0:
+			print("FAIL v2 tints the house's lands %s" % how)
+			fails += 1
+		v.free()
 	print("PASS" if fails == 0 else "FAIL %d" % fails)
 	quit(1 if fails else 0)

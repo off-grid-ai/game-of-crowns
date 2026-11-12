@@ -312,31 +312,25 @@ func _draw_marks() -> void:
 			draw_line(a - side * step, b - side * step, c1.lightened(0.15), px, true)
 		draw_line(a, b, core, maxf(1.0, px * MapLook.num("overview.border_dark", 0.4) * 2.0), true)
 	# Towns, sized by how big they are; the big ones named from the whole realm, all of them up close.
-	var named_size := int(MapLook.num("overview.named_size", 5.0))
-	var all_named := zoom >= MapLook.num("overview.named_zoom", 1.8)
-	var order: Array = (data.get("towns", []) as Array).duplicate()
-	order.sort_custom(func(x, y): return _weight(x) > _weight(y))
 	var placed: Array[Rect2] = []
-	for t in order:
-		var at := to_screen(float(t["x"]), float(t["y"]))
-		if not view.has_point(at):
-			continue
-		var col := Color.from_string(String(t.get("color", "#888")), Color.GRAY)
-		var seat: bool = t.get("capital", false)
-		var sz := int(t.get("size", 1))
+	for m in _town_marks(view):
+		var t: Dictionary = m["town"]
+		var at: Vector2 = m["at"]
+		var r: float = m["r"]
+		var seat: bool = m["seat"]
+		var marked: bool = m["marked"]
 		var title := String(t["title"])
-		var marked: bool = title == mark or title == _hover
-		var r := (MapLook.num("overview.town_r_seat", 6.5) if seat else MapLook.num("overview.town_r_base", 2.2) + sz * MapLook.num("overview.town_r_per_size", 0.32)) * (1.0 + (zoom - 1.0) * 0.12)
 		if marked:
 			draw_arc(at, r + 8.0, 0.0, TAU, 32, T.ACCENT, 3.0, true)
 		draw_circle(at, r + 1.5, Color(0.08, 0.06, 0.04, 0.9))
-		draw_circle(at, r, col.lerp(Color(0.95, 0.9, 0.8), 0.15))
+		draw_circle(at, r, Color.from_string(String(t.get("color", "#888")), Color.GRAY).lerp(Color(0.95, 0.9, 0.8), 0.15))
 		if seat:
 			var sig := Heraldry.sigil({"name": t.get("key", t.get("house", "")), "sigil": t.get("sigil", "")})
 			if sig:
 				draw_texture_rect(sig, Rect2(at - Vector2(r, r) * 0.8, Vector2(r, r) * 1.6), false, Color(1, 0.97, 0.9))
-		if not (seat or marked or all_named or sz >= named_size):
+		if not m["named"]:
 			continue
+		var sz := int(t.get("size", 1))
 		var fs := int(MapLook.num("overview.font_seat", 17.0) if seat else MapLook.num("overview.font_base", 11.0) + sz * MapLook.num("overview.font_per_size", 0.5)) + int(minf(zoom, 4.0) * 0.5)
 		var w := font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 		var box := Rect2(at + Vector2(-w * 0.5, r + 2.0), Vector2(w, fs + 4.0))
@@ -362,6 +356,27 @@ func _draw_marks() -> void:
 	standing.sort_custom(func(x, y): return x[0].y < y[0].y)
 	for e in standing:
 		MapLook.draw_banner(self, e[0], e[1]["house"], int(e[1]["men"]), k)
+
+
+## The towns the painting marks in `view` (screen rect), a seat first, then the bigger town: [{town, at, r, seat,
+## marked, named}]. named: its name is drawn (a seat, the ringed one, every town once close, a big one from afar).
+func _town_marks(view: Rect2) -> Array:
+	var named_size := int(MapLook.num("overview.named_size", 5.0))
+	var all_named := zoom >= MapLook.num("overview.named_zoom", 1.8)
+	var order: Array = (data.get("towns", []) as Array).duplicate()
+	order.sort_custom(func(x, y): return _weight(x) > _weight(y))
+	var out := []
+	for t in order:
+		var at := to_screen(float(t["x"]), float(t["y"]))
+		if not view.has_point(at):
+			continue
+		var seat: bool = t.get("capital", false)
+		var sz := int(t.get("size", 1))
+		var title := String(t["title"])
+		var marked: bool = title == mark or title == _hover
+		var r := (MapLook.num("overview.town_r_seat", 6.5) if seat else MapLook.num("overview.town_r_base", 2.2) + sz * MapLook.num("overview.town_r_per_size", 0.32)) * (1.0 + (zoom - 1.0) * 0.12)
+		out.append({"town": t, "at": at, "r": r, "seat": seat, "marked": marked, "named": seat or marked or all_named or sz >= named_size})
+	return out
 
 
 ## The hosts in the field: the mirror's (overview.gd) or, with no mirror (the chronicle's map, lore.gd), the
