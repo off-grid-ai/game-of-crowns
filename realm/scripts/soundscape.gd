@@ -32,15 +32,15 @@ extends Node
 
 const ROOT := "res://assets/audio/"
 const BUSES := {"Music": -6.0, "Ambience": -4.0, "SFX": -2.0, "Voice": 0.0, "UI": -8.0}
-const DUCK_MUSIC_DB := -9.0  # extra dip while someone speaks
-const DUCK_AMB_DB := -5.0
-const FADE := 0.6  # seconds for an ambience layer to move halfway to its target
+static var DUCK_MUSIC_DB: float = preload("res://scripts/data.gd").num("sounds", "scape.duck_music_db", -9.0)  # extra dip while someone speaks
+static var DUCK_AMB_DB: float = preload("res://scripts/data.gd").num("sounds", "scape.duck_ambience_db", -5.0)
+static var FADE: float = preload("res://scripts/data.gd").num("sounds", "scape.fade", 0.6)  # seconds for an ambience layer to move halfway to its target
 # The weather is mood under the world, never over it (Manor Lords, Journey): its
 # beds play on their own bus under Ambience, mixed well below footsteps and
 # voices, and ducked by anything played on SFX or Voice (Godot's sidechain
 # compressor), so a horn, a cheer or talk always cuts through.
 const WEATHER_BEDS := ["rain", "storm", "rain_roof", "snow_wind"]
-const WEATHER_DB := -18.0  # the Weather bus, under Ambience
+static var WEATHER_DB: float = preload("res://scripts/data.gd").num("sounds", "scape.weather_db", -18.0)  # the Weather bus, under Ambience
 var weather_settle := 30.0  # seconds a change of weather takes to come in or go (main: a quarter season, as the sky)
 var _weather := {"rain": 0.0, "storm": 0.0, "snow": 0.0}  # the weather's own strength, eased over weather_settle
 
@@ -295,9 +295,9 @@ func ui(kind: String) -> void:
 ## A crowd's steps are a texture, never a drumbeat (Mac: a thud near the feast's fire,
 ## where the town gathers): heard only near the lens, a handful a second at most,
 ## each falling away within a few paces.
-const STEP_REACH := 3.0  # game units from the camera (about 25 m)
-const STEPS_A_SECOND := 6
-const STEP_DB := -18.0
+static var STEP_REACH: float = preload("res://scripts/data.gd").num("sounds", "scape.step_reach", 3.0)  # game units from the camera (about 25 m)
+static var STEPS_A_SECOND: int = int(preload("res://scripts/data.gd").num("sounds", "scape.steps_a_second", 6))
+static var STEP_DB: float = preload("res://scripts/data.gd").num("sounds", "scape.step_db", -18.0)
 var _step_times: Array = []  # when the last steps sounded (ms)
 
 
@@ -505,7 +505,7 @@ const CLIP_SOUNDS := {
 	"Hammer_Swing": ["sfx/hammer.wav|sfx/hammer_1.wav|sfx/hammer_2.wav|sfx/hammer_3.wav|sfx/hammer_4.wav", [0.45]],
 	"Axe_Down": ["sfx/chop.wav|sfx/chop_1.ogg|sfx/chop_2.ogg|sfx/chop_3.ogg|sfx/chop_4.ogg|sfx/chop_5.ogg", [0.5]],
 }
-const HEARD_WITHIN := 14.0  # game units from the camera: further, a move makes no sound
+static var HEARD_WITHIN: float = preload("res://scripts/data.gd").num("sounds", "scape.heard_within", 14.0)  # game units from the camera: further, a move makes no sound
 var _clips := {}  # person -> [clip, period, start (s), looping, hits fired, cycle]
 var _near_clips: Array = []  # the people with a sounding move near the camera, renewed twice a second
 var _near_in := 0.0

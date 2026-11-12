@@ -82,5 +82,6 @@
     "battle_end": [["cheer", 0.5]],
     "feast": [["bell", 0.0]],
     "crown": [["bell", 4.0]]
-  }
+  },
+  "scape": { "duck_music_db": -9.0, "duck_ambience_db": -5.0, "fade": 0.6, "weather_db": -18.0, "step_reach": 3.0, "steps_a_second": 6, "step_db": -18.0, "heard_within": 14.0 }
 }
