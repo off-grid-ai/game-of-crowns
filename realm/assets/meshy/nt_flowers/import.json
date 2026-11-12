@@ -1,0 +1,23 @@
+{
+ "name": "nt_flowers",
+ "source": "/Users/user/code/goc-kits/meshy/nature/flowers/flowers.glb",
+ "tris_before": 3019,
+ "tris_after": 1500,
+ "scale": 0.2707034091619589,
+ "size_m": [
+  0.51,
+  0.47,
+  0.4
+ ],
+ "house_share": 0.0,
+ "leaves_share": 0.707,
+ "mask_png": true,
+ "materials": [
+  "Material_0",
+  "MI_Leaves"
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
+}
