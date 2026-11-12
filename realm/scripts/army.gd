@@ -28,7 +28,7 @@ extends Node3D
 ## once it stands). Prints "ARMY …" lines (a test aid). Off in play; nothing else reads it. Numbers in
 ## data/army.json (docs/TUNING.md); units, their roles, meshes and clips are rows there (tools/rig/README.md's hook).
 
-const KNIGHT := "armies/knight"
+const KNIGHT := "armies/knight_v2"  # the knight every regiment of the kit wears (27 clips, several to a role; docs/research/knight-clips.md)
 const Data := preload("res://scripts/data.gd")
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const Ground := preload("res://scripts/army_ground.gd")
@@ -430,8 +430,6 @@ func _unit_for(kind: String) -> String:
 	return String(Data.value("army", "fallbackUnit", "men_at_arms"))
 
 
-## The knight the army wears (data/army.json knight; --knight=v1 / --knight=v2): armies/knight_v2, its 27 clips
-## several to a role (docs/research/knight-clips.md), once it is baked and imported; else the first knight.
 ## One drawn soldier stands for this many men (data/army.json drawPerMan: 0.1, one figure for ten; Mac: fewer and
 ## further apart). Every regiment's figures come from here (_regiment); its men, the number the player reads, stay
 ## its full strength.
@@ -442,14 +440,6 @@ static func ratio() -> float:
 ## How many figures a regiment of `men` draws: one for every 1 / ratio() men, at least one.
 static func figures(men: int) -> int:
 	return maxi(1, ceili(men * ratio() - 0.0001))
-
-
-static func knight() -> String:
-	var args := OS.get_cmdline_user_args()
-	var want := "v1" if args.has("--knight=v1") else ("v2" if args.has("--knight=v2") else String(Data.value("army", "knight", "v2")))
-	if want == "v2" and ResourceLoader.exists("res://assets/armies/knight_v2/soldier.glb"):
-		return "armies/knight_v2"
-	return KNIGHT
 
 
 ## crown (every regiment in the crown's colour and arms) or houses (each its house's): data/army.json colours, or
@@ -475,8 +465,6 @@ func _unit(name: String) -> Dictionary:
 	var asset := String(row.get("asset", KNIGHT))
 	if meshy() and (Data.value("army", "meshy", {}) as Dictionary).has(name):
 		asset = String((Data.value("army", "meshy", {}) as Dictionary)[name])  # the Meshy soldier this unit wears
-	elif asset == KNIGHT:
-		asset = knight()  # the knight the army wears (v2 once baked)
 	var out: Dictionary = ((Data.value("army", "meshes", {}) as Dictionary).get(asset, {}) as Dictionary).duplicate(true)
 	for k in row:
 		if k == "tracks" and out.has("tracks"):
@@ -1516,9 +1504,9 @@ func _ground(p: Vector3, size: float) -> bool:
 ## and, for an image-made unit, mask.png), read once per folder: {asset, mesh, mat, tracks, index (clip name ->
 ## track), height, roles (its clips by role)}. A folder not baked yet falls back to the knight, so a unit row can name its mesh before it lands.
 func _asset(asset: String, row: Dictionary) -> Dictionary:
-	if not ResourceLoader.exists("res://assets/%s/soldier.glb" % asset) and asset != knight():
+	if not ResourceLoader.exists("res://assets/%s/soldier.glb" % asset) and asset != KNIGHT:
 		push_warning("ARMY %s is not baked yet; its regiments wear the knight" % asset)
-		asset = knight()
+		asset = KNIGHT
 		row = _unit_row_for_mesh(asset, row)
 	if _assets.has(asset):
 		return _assets[asset]

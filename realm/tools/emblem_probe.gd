@@ -3,11 +3,11 @@ extends SceneTree
 ## the house arms on his shield and chest (army_vat.gdshader's emblem boxes, data/army.json meshes.<dir>.emblem).
 ## Prints the mesh's bounds, then each palette cell's share of the vertices with its bounds and mean normal,
 ## so the shield's face and the tabard's front can be read off by where they stand and which way they face.
-## arch -arm64 godot --headless --path realm -s res://tools/emblem_probe.gd -- armies/knight [cells]
+## arch -arm64 godot --headless --path realm -s res://tools/emblem_probe.gd -- armies/knight_v2 [cells]
 
 func _init() -> void:
 	var args := OS.get_cmdline_user_args()
-	var asset := args[0] if args.size() > 0 else "armies/knight"
+	var asset := args[0] if args.size() > 0 else "armies/knight_v2"
 	var cells := int(args[1]) if args.size() > 1 else 8
 	var scene: PackedScene = load("res://assets/%s/soldier.glb" % asset)
 	var root := scene.instantiate()
