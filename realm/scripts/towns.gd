@@ -252,15 +252,7 @@ var _tiers: RefCounted = null  # the town being built's house decider (town_tier
 var _trades: Array = []  # the town being built's trades (town_trades.gd plan), each marked once it stands
 const Fields = preload("res://scripts/countryside.gd")  # crops, and fields that line up with their soil
 const TownPlots = preload("res://scripts/town_plots.gd")  # roads, burgage plots and lanes (--towns=plots)
-## `--towns=plots`: a town laid out along its roads, in burgage plots, the way
-## medieval towns grew (town_plots.gd), instead of rings round the square.
-## Data: realm/data/towns.json layout (rings or plots).
-var plots_on := _layout_is_plots()
 var _ways_grid: AStarGrid2D  # the cost grid the town's roads were laid on, kept for its lanes (laid after the castle)
-
-
-static func _layout_is_plots() -> bool:
-	return String(preload("res://scripts/data.gd").value("towns", "layout", "rings")) == "plots"
 
 
 ## The plots' knobs for the town being built (data/towns.json plots, with its rank's own on top: plots.crown,
@@ -450,12 +442,9 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 	var crown_town := seat and bool(_house.get("crown", false))
 	var dcrown: Dictionary = dn.get("crown", {}) if crown_town else {}
 	var want := clampi(int(dn.get("base", 14)) + size * int(dn.get("per_size", 3)), int(dn.get("min", 16)), int(dn.get("max", 40))) + (int(dn.get("seat", 8)) if seat else 0) + int(dcrown.get("extra", 0))
-	if plots_on and not ways.is_empty():
+	if not ways.is_empty():
 		want += int(_plot_knobs().get("extra", 0))  # plots pack a street shoulder to shoulder: more houses stand
 	root.set_meta("crown_seat", crown_town)  # the crown's seat: its market is the realm's busiest (town_life, villagers; towns.json market.crown)
-	var ring_pack := float(dcrown.get("ring_pack", 0.95))
-	var ring_jitter := float(dcrown.get("ring_jitter", 0.3))
-	_street_gaps = float(dcrown.get("street_gaps", 0.14))
 	var placed := 0
 	# A seat's castle: stone walls, towers and gatehouse, on its own ground at
 	# the town's edge, gate turned toward the square, the house's banner above.
@@ -601,50 +590,12 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 	for tr in _trades:
 		if String(tr["where"]) in ["castle", "water", "inn"]:
 			await _trade_off_plot(root, center, tr, square_r, square_r + 3.6, ways, lots, rng)
-	if not ways.is_empty():
-		# --towns=plots: the square's ring (above), then the lanes (laid now, round the castle and the
-		# landmarks), then burgage plots along the roads and lanes, the edge where they stop.
-		ways = ways + _lay_lanes(root, center, ways, clampi(int((size - 2) * float(pk.get("lanes_per_size", 0.5))), 0, int(pk.get("lanes_most", 6))), square_r, rng)
-		await _plot_lots(root, center, square_r, ways, kinds, lots, rng, want - placed, seat)
-		_square_trees(root, center, square_r, ways, lots, rng)
-		await _trades_beyond(root, center, square_r, float(root.get_meta("edge_r", square_r + 3.6)), ways, lots, rng)
-		return
-	# The ring of townhouses framing the square, shoulder to shoulder; then the
-	# roads out, lined with houses doors-to-the-road the way a medieval street
-	# fills; then the backlands between them, looser and turned every which way.
-	var ring := square_r + 0.6
-	var edge := ring + 4 * 0.95 - 0.4  # the palisade
-	for r in 4:
-		if r == 1:
-			placed += await _street_fronts(root, center, square_r, edge, streets, kinds, lots, rng, want - placed)
-		# Each ring draws from its own sequence, so a bigger town carries on
-		# along the same ring instead of shifting every house after it.
-		var rr := RandomNumberGenerator.new()
-		rr.seed = rng.seed + 7 * (r + 1)
-		var circ := TAU * ring
-		var ang := rr.randf() * TAU
-		var walked := 0.0
-		while walked < circ and placed < want:
-			# Wealth falls ring by ring from the square (towns.json tiers.wealth).
-			var kind: String = _tier_pick(rr, kinds, ["square", "main", "lane", "lane"][r], [0.0, 0.3, 0.6, 1.0][r], "ring%d" % r)
-			var f: Vector2 = Real.footprint(kind)
-			var span := maxf(f.x, f.y)
-			var p := Vector3(cos(ang), 0, sin(ang)) * ring
-			var step := (span * (0.78 if r == 0 else ring_pack) + rr.randf_range(0.0, 0.08 if r == 0 else ring_jitter)) / ring  # eaves almost touching round the square
-			ang += step
-			walked += step * ring
-			if _on_street(p, streets, 0.32):
-				continue  # keep the roads into the square open
-			# Out past the square no one lines up on it: each house sits as its plot fell.
-			var face := Vector3.ZERO if r == 0 else (-p.normalized()).rotated(Vector3.UP, rr.randf_range(-0.6, 0.6))
-			if _put(root, center, kind, p, f, lots, rr, true, face):
-				placed += 1
-				if r > 0 and rr.randf() < 0.4:
-					_croft(root, center, p, face, f, lots, rr)
-			await _pace()
-		ring += 0.95
-	_palisade(root, center, edge, streets, seat)
-	await _trades_beyond(root, center, square_r, edge, [], lots, rng)
+	# The square's ring (above), then the lanes (laid now, round the castle and the landmarks), then burgage plots
+	# along the roads and lanes, the edge where they stop.
+	ways = ways + _lay_lanes(root, center, ways, clampi(int((size - 2) * float(pk.get("lanes_per_size", 0.5))), 0, int(pk.get("lanes_most", 6))), square_r, rng)
+	await _plot_lots(root, center, square_r, ways, kinds, lots, rng, want - placed, seat)
+	_square_trees(root, center, square_r, ways, lots, rng)
+	await _trades_beyond(root, center, square_r, float(root.get_meta("edge_r", square_r + 3.6)), ways, lots, rng)
 
 
 ## --towns=plots: the square enclosed (art target 01-town): a ring of houses on its edge
@@ -722,41 +673,6 @@ func _square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, k
 			kind = ""
 		await _pace()
 	print("CHECK square ring: %s (square %.2f): %d fronts stood; turned away: %s" % [String(root.get_meta("title", "")), square_r, placed, str(why)])
-	return placed
-
-
-var _street_gaps := 0.14  # the share of street plots left as a yard or an alley (data/towns.json density)
-
-
-## Houses along each road from the square to the palisade, both sides, front
-## doors on the road, narrow fronts nearly touching with now and then a gap
-## for a yard or an alley, and a kitchen garden behind some. Returns how many.
-func _street_fronts(root: Node3D, center: Vector3, square_r: float, edge: float, streets: Array, kinds: Array, lots: Array, rng: RandomNumberGenerator, budget: int) -> int:
-	var placed := 0
-	for si in streets.size():
-		var dir := Vector3(cos(streets[si]), 0, sin(streets[si]))
-		var side := Vector3(-dir.z, 0, dir.x)
-		for s in [-1, 1]:
-			var rr := RandomNumberGenerator.new()
-			rr.seed = rng.seed + 101 * (si + 1) + s  # its own, so growth only adds at the far end
-			var t := square_r + 1.45
-			while placed < budget:
-				var kind: String = _tier_pick(rr, kinds, "main", clampf((t - square_r) / maxf(edge - square_r, 0.1), 0.0, 1.0), "street%d%d" % [si, s])
-				if Real.KIT.get(kind, [""])[0] == "barn":
-					kind = kinds[0]  # barns stand back in the yards, not on the street
-				var f: Vector2 = Real.footprint(kind)
-				var p: Vector3 = dir * (t + f.x * 0.5) + side * s * (0.3 + f.y * 0.5)
-				t += f.x + rr.randf_range(0.04, 0.2)
-				if p.length() + maxf(f.x, f.y) * 0.5 > edge - 0.15:
-					break  # the palisade
-				if rr.randf() < _street_gaps:
-					continue  # a yard, an alley
-				var face: Vector3 = -side * s
-				if _put(root, center, kind, p, f, lots, rr, true, face):
-					placed += 1
-					if rr.randf() < 0.55:
-						_croft(root, center, p, face, f, lots, rr)
-				await _pace()
 	return placed
 
 
@@ -2193,35 +2109,6 @@ func _put(root: Node3D, center: Vector3, kind: String, p: Vector3, f: Vector2, l
 	return true
 
 
-func _on_street(p: Vector3, streets: Array, half_width: float) -> bool:
-	for ang in streets:
-		var dir := Vector3(cos(ang), 0, sin(ang))
-		var along := p.dot(dir)
-		if along > 0.0 and (p - dir * along).length() < half_width:
-			return true
-	return false
-
-
-## The town's edge: a timber palisade of fence runs on a ring, broken by a
-## gate wherever a road comes through.
-func _palisade(root: Node3D, center: Vector3, r: float, streets: Array, seat: bool) -> void:
-	var f: Vector2 = Real.footprint("wooden_fence_game_ready_asset")
-	if f == Vector2.ZERO:
-		return
-	var panel := maxf(f.x, f.y) * 0.95
-	var n := int(TAU * r / panel)
-	for i in n:
-		var ang := TAU * i / n
-		var p := Vector3(cos(ang), 0, sin(ang)) * r
-		if _on_street(p, streets, 0.45) or _on_road(p, 0.12):
-			continue  # the gate, where a street or a road comes through
-		if not terrain.is_land(center.x + p.x, center.z + p.z):
-			continue
-		# A seat's stockade stands taller.
-		# Townsfolk keep inside it and leave by the gates, not through the stakes.
-		_place(root, "wooden_fence_game_ready_asset", p + Vector3(0, _ground_y(center, p) - 0.01, 0), -ang + (PI / 2 if f.y > f.x else 0.0), Vector3(1, 1.6, 1) if seat else Vector3.ONE, Vector2(panel * 1.05, 0.08))
-
-
 ## The square's life: a well at its heart (a great town's fountain), and the market along one side: rows
 ## of stalls (more as the town grows), goods stacked at each stall's ends,
 ## a wagon drawn up to unload, and lanterns. The well and the market are
@@ -2747,7 +2634,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	# --towns=plots: the roads come first, laid over the land toward where they
 	# lead, and lanes off them as the town grows; the spokes below stand aside.
 	var ways: Array = []
-	if plots_on and real:
+	if real:
 		ways = _lay_ways(root, center, c, size, square_r, reach, streets, rng)
 	for ang in (streets if ways.is_empty() else []):
 		var dir := Vector3(cos(ang), 0, sin(ang))
@@ -3149,53 +3036,9 @@ static func smoke_material(unshaded := false) -> StandardMaterial3D:
 ## A yard fire burning low in its pit: small flames, a warm light on the
 ## stones round it, and a thread of smoke.
 func _hearth(root: Node3D, pos: Vector3) -> void:
-	if Fire.on():
-		Fire.hearth(root, pos)  # fire v2: the same shaped flames as a burning house, small
-	else:
-		_hearth_puffs(root, pos)
+	Fire.hearth(root, pos)  # the same shaped flames as a burning house, small
 	Fire.hearth_light(root, pos)  # warm, low and over the flames (fire.json hearth.light): no glowing orb on the grass
 	_smoke(root, pos + Vector3(0, 0.1, 0))
-
-
-## The old yard fire's flames (fire v1): soft orange puffs.
-func _hearth_puffs(root: Node3D, pos: Vector3) -> void:
-	# Built like the town bonfire (town_life._bonfire), smaller, and simulated on
-	# the GPU with its own process material (so each flame keeps its small size,
-	# which converting from CPU particles lost): a town has many hearths, and CPU
-	# particles cost every frame, seen or not. Gone past 30 units.
-	var pm := ParticleProcessMaterial.new()
-	pm.direction = Vector3.UP
-	pm.spread = 12
-	pm.initial_velocity_min = 0.15
-	pm.initial_velocity_max = 0.3
-	pm.gravity = Vector3.ZERO
-	pm.scale_min = 0.4
-	pm.scale_max = 0.8
-	var grad := Gradient.new()
-	grad.set_color(0, Color(1.0, 0.6, 0.2, 0.8))
-	grad.set_color(1, Color(0.8, 0.2, 0.05, 0.0))
-	var ramp := GradientTexture1D.new()
-	ramp.gradient = grad
-	pm.color_ramp = ramp
-	var p := GPUParticles3D.new()
-	p.amount = 12
-	p.lifetime = 0.5
-	p.process_material = pm
-	var q := QuadMesh.new()
-	q.size = Vector2(0.08, 0.08)
-	var m := StandardMaterial3D.new()
-	m.albedo_texture = soft_dot()
-	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	m.vertex_color_use_as_albedo = true
-	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	q.material = m
-	p.draw_pass_1 = q
-	p.visibility_range_end = 30.0
-	p.visibility_aabb = AABB(Vector3(-0.3, -0.1, -0.3), Vector3(0.6, 0.8, 0.6))
-	p.position = pos + Vector3(0, 0.02, 0)
-	root.add_child(p)
 
 
 func _smoke(root: Node3D, pos: Vector3, door := Vector3.INF) -> void:
