@@ -61,6 +61,14 @@ static func work_spots(component: String, at: Vector3, face: Vector3, foot: Vect
 	return spots
 
 
+## Whether the model a trade stands in brings its own work props (meshy.json pieces own_props: the square's smithy has
+## its anvil and trough modelled in), so the trade's life lays no kit ones over them (towns.gd: the works entry's dress).
+static func own_props(model: String) -> bool:
+	if not model.begins_with("meshy_"):
+		return false
+	return bool((Data.value("meshy", "pieces", {}).get(model.substr(6), {}) as Dictionary).get("own_props", false))
+
+
 ## The trade it houses, as works.gd names trades (assets.json components.<id>.trade), "" for none.
 static func trade_of(component: String) -> String:
 	return String(Data.value("assets", "components", {}).get(component, {}).get("trade", ""))

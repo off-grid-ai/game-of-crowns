@@ -1745,7 +1745,7 @@ func _trade_record(root: Node3D, center: Vector3, tr: Dictionary, p: Vector3, fa
 	if trade != "":
 		var works: Dictionary = root.get_meta("works", {})
 		if not works.has(trade):
-			works[trade] = {"at": p, "yaw": atan2(face.x, face.z), "spots": spots, "component": comp}
+			works[trade] = {"at": p, "yaw": atan2(face.x, face.z), "spots": spots, "component": comp, "dress": not TownTrades.own_props(String(tr["model"]))}
 			if comp == "town_stables" and spots.has("middle"):
 				works["paddock"] = {"at": spots["middle"], "yaw": atan2(face.x, face.z), "radius": 1.9 * Real.S, "component": comp}
 			root.set_meta("works", works)

@@ -61,5 +61,13 @@ func _init() -> void:
 			fails += 0 if ok else 1
 			print("WORK %s %s %s at (%.2f, %.2f) m: %s, %.2f m in front of its front edge" % ["ok  " if ok else "FAIL", kind, named,
 				at.x / Real.S, at.z / Real.S, "inside its outline" if inside else "outside", ahead])
+		# A model that brings its own work props (meshy.json own_props: the smithy's anvil and trough are in it) gets no
+		# kit ones laid over them (towns.gd puts dress false on its works entry; town_life._forge skips the kit anvil).
+		var own := TownTrades.own_props(kind)
+		fails += 0 if own else 1
+		print("WORK %s %s brings its own work props: %s" % ["ok  " if own else "FAIL", kind, own])
+	if TownTrades.own_props("forge"):
+		fails += 1
+		print("WORK FAIL the kit forge claims its own work props (it has none: town_life dresses it)")
 	print("WORK VERDICT: %s" % ("PASS" if fails == 0 else "FAIL"))
 	quit(1 if fails > 0 else 0)
