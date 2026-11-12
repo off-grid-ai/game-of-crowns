@@ -4,6 +4,8 @@ extends RefCounted
 
 const T := preload("res://scripts/theme.gd")
 const UI := preload("res://scripts/ui.gd")
+const Awareness := preload("res://scripts/awareness.gd")  # the store: the house's purse and season, as Freeciv's books have them
+const SOURCES := [["towns", "Towns"], ["mines", "Mines"], ["tithe", "Tithe"], ["court", "The court"], ["dealings", "Dealings"]]
 
 var ui: UI  # the interface that owns this card: its signals, its building blocks, its other cards
 
@@ -12,6 +14,32 @@ var _house_panel: PanelContainer
 
 func _init(owner: UI) -> void:
 	ui = owner
+
+
+## A house's purse now and its last season (the engine-visual map: every house's income and gold were never shown),
+## from the store's players (Freeciv's books, bridge treasury.js income): {gold, net, by: [[name, gold]...]}; net and
+## by only once a season's books have closed. {} when the store has no such house.
+static func purse(pid: int) -> Dictionary:
+	var st: Node = Awareness.store()
+	if st == null:
+		return {}
+	for p in st.rec("players", []):
+		if int(p.get("id", -1)) != pid:
+			continue
+		var out := {"gold": int(p.get("gold", 0))}
+		var inc: Variant = p.get("income")
+		if inc is Dictionary:
+			var by: Array = []
+			var net := 0
+			for s in SOURCES:
+				var v := int((inc as Dictionary).get(s[0], 0))
+				net += v
+				if v != 0:
+					by.append([s[1], v])
+			out["net"] = net
+			out["by"] = by
+		return out
+	return {}
 
 
 ## A great house in full: its standing now and how it has moved, its lord,
@@ -54,11 +82,12 @@ func show_house(d: Dictionary) -> void:
 	grid.add_theme_constant_override("h_separation", 26)
 	grid.add_theme_constant_override("v_separation", 8)
 	v.add_child(grid)
+	var books := purse(int(d.get("id", -1)))
 	for pair in [["Treasury", "gold"], ["Souls", "souls"], ["Men-at-arms", "armies"], ["Grain", "grain"], ["Towns", "towns"]]:
 		var key: String = pair[1]
 		var cell := VBoxContainer.new()
 		cell.add_child(T.label(pair[0]))
-		var val := int(now.get(key, 0))
+		var val := int(books["gold"]) if key == "gold" and books.has("gold") else int(now.get(key, 0))  # the purse as it is now
 		var diff := val - int(then.get(key, val))
 		var row := HBoxContainer.new()
 		row.add_child(T.datum(ui.real(key, val), 20))
@@ -66,6 +95,16 @@ func show_house(d: Dictionary) -> void:
 			row.add_child(T.datum(("  ▲ %s" if diff > 0 else "  ▼ %s") % ui.real(key, absi(diff)), T.SIZE_DESC, Color("#7fb069") if diff > 0 else Color("#e86b5c")))
 		cell.add_child(row)
 		cell.add_child(_spark(hist.map(func(r): return float(r.get(key, 0)))))
+		grid.add_child(cell)
+	if books.has("net"):
+		# Last season's gold, each source on hover (Freeciv's books: towns, mines, the tithe, the court, dealings).
+		var cell := VBoxContainer.new()
+		cell.add_child(T.label("Last season"))
+		var net := int(books["net"])
+		var nw := T.datum(("+%s" if net >= 0 else "−%s") % ui.real("gold", absi(net)), 20, Color("#7fb069") if net >= 0 else Color("#e86b5c"))
+		nw.tooltip_text = "\n".join(PackedStringArray((books["by"] as Array).map(func(s): return "%s  %s%s" % [s[0], "+" if int(s[1]) >= 0 else "−", ui.real("gold", absi(int(s[1])))])))
+		nw.mouse_filter = Control.MOUSE_FILTER_STOP
+		cell.add_child(nw)
 		grid.add_child(cell)
 	if d.get("favour") != null:
 		var cell := VBoxContainer.new()
