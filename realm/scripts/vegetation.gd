@@ -5,6 +5,7 @@ extends Node3D
 ## terrain.gd plants them. terrain.clear_around and settle_scatter clear and settle both.
 
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
+const Data := preload("res://scripts/data.gd")  # forest.json: the woods and the ground cover
 var land: Node3D  # terrain.gd: the tile map, its size and its ground
 
 
@@ -32,46 +33,20 @@ var batches: Array[MultiMeshInstance3D] = []
 ## ([kind, transform], for forest.gd to plant) or none when the kit is not here (then the woods are in the scatter).
 func build() -> Array:
 	var builder = preload("res://scripts/house_builder.gd").new()
-	var kinds := {
-		"broad": ["CommonTree_1", "CommonTree_2", "CommonTree_3", "CommonTree_4", "CommonTree_5"],
-		"pine": ["Pine_1", "Pine_2", "Pine_3", "Pine_4", "Pine_5"],
-		"dead": ["DeadTree_1", "DeadTree_2", "DeadTree_3"],
-		"bush": ["Fern_1", "Plant_1", "Plant_7"],
-		"grass": ["Grass_Common_Short", "Grass_Wispy_Short"],
-		"rock": ["Rock_Medium_1", "Rock_Medium_2", "Rock_Medium_3"],
-	}
+	var kinds: Dictionary = Data.value("forest", "cover", {})  # the ground cover by role: bush, grass, rock (files under assets/)
 	var meshes := {}
 	var placed := {}
 	for k in kinds:
 		meshes[k] = []
 		for name in kinds[k]:
-			var baked: Mesh = builder.bake_path("res://assets/nature/%s.gltf" % name)
-			if baked and k in ["broad", "pine", "dead"]:
-				# A crown right in front of the lens dissolves (realistic.gd's fade).
-				for si in baked.get_surface_count():
-					var m := baked.surface_get_material(si) as BaseMaterial3D
-					if m:
-						m = m.duplicate()
-						preload("res://scripts/realistic.gd").fade_near(m, preload("res://scripts/realistic.gd").TREE_GONE, preload("res://scripts/realistic.gd").TREE_SOLID)
-						baked.surface_set_material(si, m)
-			meshes[k].append(baked)
+			meshes[k].append(builder.bake_path("res://assets/" + String(name)))
 			placed["%s:%d" % [k, meshes[k].size() - 1]] = []
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 42
 	for ty in land.height:
 		for tx in land.width:
 			var name: String = land.terrain[ty * land.width + tx]
-			var mix := {}  # kind -> count per tile
-			match name:
-				"Forest": mix = {"bush": 6, "grass": 6}
-				"Jungle": mix = {"broad": 22, "bush": 8}
-				"Swamp": mix = {"dead": 5, "bush": 6}
-				"Grassland": mix = {"bush": 1, "grass": 18}
-				"Plains": mix = {"bush": 1, "grass": 12}
-				"Hills": mix = {"pine": 6, "rock": 1, "bush": 2}
-				"Tundra": mix = {"pine": 4, "dead": 1, "rock": 1}
-				"Mountains": mix = {"rock": 2, "pine": 2}
-				"Desert": mix = {"rock": 1, "dead": 1 if rng.randf() < 0.3 else 0}
+			var mix: Dictionary = (Data.value("forest", "cover_per_tile", {}) as Dictionary).get(name, {})  # role -> count per tile
 			for kind in mix:
 				for i in int(mix[kind]):
 					var wx: float = (tx + rng.randf()) * land.TILE
@@ -110,74 +85,65 @@ func build() -> Array:
 	return _pines if _pines_ok else []
 
 
-## The open country isn't evenly dotted with trees: woods gather where the
-## land lets them (a slow noise decides where), thick in the middle and
-## thinning at the edges into copses and the odd lone oak, with open pasture
-## between. Broadleaf in the lowlands, pine creeping in as the ground rises.
+## Where the woods stand is Freeciv's: its forest and jungle tiles are woods, its hills, tundra and mountains hold
+## copses of pine, and the open country (grassland, plains) a copse every 60-100 m, so no stretch of it is bare
+## lawn (the look audit); a town's own land is its fields, hedges and corner clumps (land_use.gd), the woods felled there. A wood is clumps of 3-7 trees (never lone trees or rings, the art
+## standard), as close as its tile's knob says; its edge follows the land's own warped biome line (terrain.biome_at), so
+## a wood is never a tile's square. Pine on hills and high ground, oak in the lowland woods; a bush under some clumps.
+## realm/data/forest.json woods.
 var _pines: Array = []
 var _pines_ok := false
 
 
-func _woodland(meshes: Dictionary, placed: Dictionary, rng: RandomNumberGenerator) -> void:
+func _woodland(_meshes: Dictionary, _placed: Dictionary, rng: RandomNumberGenerator) -> void:
 	_pines.clear()
 	var Forest = preload("res://scripts/forest.gd")
 	_pines_ok = Forest.available()
-	var broad: bool = Forest.broadleaf()
-	var wood := FastNoiseLite.new()
-	wood.seed = 911
-	wood.frequency = 0.045
-	wood.fractal_octaves = 3
-	var step := 0.36  # one chance of a tree every third of a unit (about 3 m)
-	for zi in int(land.height * land.TILE / step):
-		for xi in int(land.width * land.TILE / step):
-			var wx := xi * step + rng.randf_range(-0.25, 0.25)
-			var wz := zi * step + rng.randf_range(-0.25, 0.25)
-			var name: String = land.tile_at(int(wx / land.TILE), int(wz / land.TILE))
-			if not (name in ["Grassland", "Plains", "Forest", "Hills"]):
-				continue
-			var n := wood.get_noise_2d(wx, wz)
-			var chance := 0.0
-			if name == "Forest":
-				chance = 0.75 if n > -0.25 else 0.35
-			elif n > 0.1:
-				chance = 0.9  # deep in a wood
-			elif n > 0.0:
-				chance = 0.4  # its fringe
-			elif n > -0.35:
-				chance = 0.008  # a lone tree in the fields
-			if rng.randf() > chance or not land.is_land(wx, wz):
-				continue
-			var y: float = land.height_at(wx, wz)
-			if y < 0.15:
-				continue
-			if _pines_ok:
-				# The game-ready trees (forest.gd): pine on the hills, in the
-				# great forests and the cold north; oak in the lowland woods.
-				# Size varies a little, as trees do.
-				var ps := rng.randf_range(0.7, 1.25)
-				var fringe := chance < 0.5
-				var kind := Forest.pine_kind(rng, fringe)
-				var north: float = wz / (land.height * land.TILE)  # 0 at the top of the map
-				if broad and name != "Forest" and y < 2.2 and rng.randf() > 0.15 + (0.6 if north < 0.3 else 0.0):
-					kind = Forest.oak_kind(rng, fringe)
-					ps *= 0.85
-				_pines.append([kind, Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(ps, ps * rng.randf_range(0.9, 1.15), ps)), Vector3(wx, y - 0.03, wz))])
-			else:
-				var kind := "pine" if y > 2.2 or rng.randf() < 0.18 else "broad"
-				var s := VEG_SCALE * rng.randf_range(1.0, 1.8)
-				var b := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(s, s * rng.randf_range(0.85, 1.2), s))
-				var v: int = rng.randi() % meshes[kind].size()
-				placed["%s:%d" % [kind, v]].append(Transform3D(b, Vector3(wx, y - 0.03, wz)))
-			# Undergrowth under the canopy (and thickets at the wood's edge).
-			if broad and rng.randf() < (0.3 if chance > 0.5 else 0.6):
-				var bu := Vector3(wx + rng.randf_range(-0.3, 0.3), 0, wz + rng.randf_range(-0.3, 0.3))
-				var bsz := rng.randf_range(0.6, 1.1)
-				_pines.append([Forest.bush_kind(rng), Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * bsz), Vector3(bu.x, land.height_at(bu.x, bu.z) - 0.02, bu.z))])
-			elif chance > 0.5 and rng.randf() < 0.5:
-				var u := Vector3(wx + rng.randf_range(-0.3, 0.3), 0, wz + rng.randf_range(-0.3, 0.3))
-				var bs := VEG_SCALE * rng.randf_range(0.6, 1.1)
-				var bv: int = rng.randi() % meshes["bush"].size()
-				placed["bush:%d" % bv].append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * bs), Vector3(u.x, land.height_at(u.x, u.z) - 0.03, u.z)))
+	if not _pines_ok:
+		push_error("WOODS: the woods' kit isn't here (assets.json woods.kit): no woods planted")
+		return
+	var k: Dictionary = Data.value("forest", "woods", {})
+	var rules: Dictionary = k.get("tiles", {})
+	var broad: bool = Forest.broadleaf()  # the kit has its oaks
+	var size: Array = k.get("size", [0.7, 1.25])
+	var jitter := float(k.get("jitter", 0.4))  # a clump's wander off its grid point, a share of its gap
+	# Each terrain's clumps on a grid of its own gap, each point wandering: even enough that open land has no hole wider
+	# than about two gaps, ragged enough that no row shows.
+	for biome in rules:
+		var r: Dictionary = rules[biome]
+		var g := float(r.get("gap", 1.0))
+		for zi in int(land.height * land.TILE / g):
+			for xi in int(land.width * land.TILE / g):
+				var cx := (xi + 0.5 + rng.randf_range(-jitter, jitter)) * g
+				var cz := (zi + 0.5 + rng.randf_range(-jitter, jitter)) * g
+				if land.biome_at(cx, cz) == biome:
+					_clump(Forest, broad, k, r, biome, cx, cz, size, rng)
+
+
+## One clump of a wood (_woodland): its trees round (cx, cz), each on the same biome, a bush under some.
+func _clump(Forest: Variant, broad: bool, k: Dictionary, r: Dictionary, biome: String, cx: float, cz: float, size: Array, rng: RandomNumberGenerator) -> void:
+	var clump: Array = r.get("clump", [3, 7])
+	var reach := float(r.get("r", 0.35))
+	var fringe: bool = land.tile_at(int(cx / land.TILE), int(cz / land.TILE)) != biome  # past the tile itself: the wood's edge
+	for i in rng.randi_range(int(clump[0]), int(clump[1])):
+		var a := rng.randf() * TAU
+		var d := sqrt(rng.randf()) * reach
+		var wx := cx + cos(a) * d
+		var wz := cz + sin(a) * d
+		if land.biome_at(wx, wz) != biome or not land.is_land(wx, wz):
+			continue
+		var y: float = land.height_at(wx, wz)
+		if y < float(k.get("y_min", 0.15)):
+			continue
+		var ps := rng.randf_range(float(size[0]), float(size[1]))
+		var pine := not broad or rng.randf() < float(r.get("pine", 0.3)) + (0.4 if y > float(k.get("pine_above", 2.2)) else 0.0)
+		var kind: int = Forest.pine_kind(rng, fringe) if pine else Forest.oak_kind(rng, fringe)
+		if not pine:
+			ps *= 0.85
+		_pines.append([kind, Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(ps, ps * rng.randf_range(0.9, 1.15), ps)), Vector3(wx, y - 0.03, wz))])
+	if rng.randf() < float(r.get("undergrowth", 0.3)):
+		var bsz := rng.randf_range(0.6, 1.1)
+		_pines.append([Forest.bush_kind(rng), Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * bsz), Vector3(cx, land.height_at(cx, cz) - 0.02, cz))])
 
 
 ## Clears the wild plants and rocks within `radius` of `center` (terrain.clear_around, where a town stands).

@@ -391,6 +391,13 @@ func height_at(wx: float, wz: float) -> float:
 
 
 ## Bends sample positions with noise so coasts and biome edges don't follow the tile grid.
+## The land's kind at a world point, its edges warped so biomes never follow the tile grid (the woods' edge, the
+## ground's colours): the tile under the warped point.
+func biome_at(wx: float, wz: float) -> String:
+	var w := _warp(wx, wz)
+	return tile_at(int(w.x / TILE), int(w.y / TILE))
+
+
 func _warp(wx: float, wz: float) -> Vector2:
 	return Vector2(wx + _noise.get_noise_2d(wx * 0.6 + 100.0, wz * 0.6) * 2.2, wz + _noise.get_noise_2d(wx * 0.6, wz * 0.6 + 100.0) * 2.2)
 

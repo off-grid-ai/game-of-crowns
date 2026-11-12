@@ -1,5 +1,135 @@
 {
-  "_": "The woods (forest.gd; docs/TUNING.md). near: within this distance of the camera (world units) trees are drawn in full, with shadows (a block of woods switches as one); mid: out to this distance the middle batch, without shadows; the far batch beyond.",
-  "near": 6.0,
-  "mid": 24.0
+ "_": "The woods (forest.gd; docs/TUNING.md). near: within this distance of the camera (world units) trees are drawn in full, with shadows (a block of woods switches as one); mid: out to this distance the middle batch, without shadows; the far batch beyond. woods: where trees stand, by Freeciv's tile under the land's warped biome line (vegetation.gd _woodland): jitter (a clump's wander off its terrain's grid, a share of its gap), size [least, most] (a tree's scale on its kind's height), y_min (no tree below this height: the shore), pine_above (pine likelier above this height); tiles.<Freeciv terrain>: gap (game units between clumps), clump [least, most] trees, r (a clump's reach), pine (the share of pine), undergrowth (the chance of a bush under a clump). cover: the ground cover's files by role (bush, grass, rock; under assets/). cover_per_tile: how many of each role a tile of that terrain holds. Densities from the look audit's spec (2026-11-12, read off 01-town and 03-army, estimates): inside a wood trunks 5-6 m apart, 3-4 trees per 100 m2; copses of 3-7 25-40 m apart outside woods. Grassland and plains hold copses 60-100 m apart (the look audit: never a screen of plain grass away from towns; a town's own land is its fields and hedges).",
+ "near": 6.0,
+ "mid": 24.0,
+ "woods": {
+  "size": [
+   0.7,
+   1.25
+  ],
+  "y_min": 0.15,
+  "pine_above": 2.2,
+  "tiles": {
+   "Forest": {
+    "gap": 1.5,
+    "clump": [
+     4,
+     7
+    ],
+    "r": 0.8,
+    "pine": 0.35,
+    "undergrowth": 0.4
+   },
+   "Jungle": {
+    "gap": 1.4,
+    "clump": [
+     5,
+     7
+    ],
+    "r": 0.8,
+    "pine": 0.0,
+    "undergrowth": 0.5
+   },
+   "Hills": {
+    "gap": 3.6,
+    "clump": [
+     3,
+     7
+    ],
+    "r": 0.5,
+    "pine": 0.9,
+    "undergrowth": 0.2
+   },
+   "Tundra": {
+    "gap": 4.0,
+    "clump": [
+     3,
+     4
+    ],
+    "r": 0.4,
+    "pine": 1.0,
+    "undergrowth": 0.1
+   },
+   "Mountains": {
+    "gap": 4.5,
+    "clump": [
+     3,
+     4
+    ],
+    "r": 0.4,
+    "pine": 1.0,
+    "undergrowth": 0.0
+   },
+   "Grassland": {
+    "gap": 9.0,
+    "clump": [
+     3,
+     6
+    ],
+    "r": 0.5,
+    "pine": 0.1,
+    "undergrowth": 0.3
+   },
+   "Plains": {
+    "gap": 9.0,
+    "clump": [
+     3,
+     6
+    ],
+    "r": 0.5,
+    "pine": 0.1,
+    "undergrowth": 0.3
+   }
+  },
+  "jitter": 0.4
+ },
+ "cover": {
+  "bush": [
+   "nature/Fern_1.gltf",
+   "nature/Plant_1.gltf",
+   "nature/Plant_7.gltf"
+  ],
+  "grass": [
+   "nature/Grass_Common_Short.gltf",
+   "nature/Grass_Wispy_Short.gltf"
+  ],
+  "rock": [
+   "nature/Rock_Medium_1.gltf",
+   "nature/Rock_Medium_2.gltf",
+   "nature/Rock_Medium_3.gltf"
+  ]
+ },
+ "cover_per_tile": {
+  "Forest": {
+   "bush": 6,
+   "grass": 6
+  },
+  "Jungle": {
+   "bush": 8
+  },
+  "Swamp": {
+   "bush": 6
+  },
+  "Grassland": {
+   "bush": 1,
+   "grass": 18
+  },
+  "Plains": {
+   "bush": 1,
+   "grass": 12
+  },
+  "Hills": {
+   "rock": 1,
+   "bush": 2
+  },
+  "Tundra": {
+   "rock": 1
+  },
+  "Mountains": {
+   "rock": 2
+  },
+  "Desert": {
+   "rock": 1
+  }
+ }
 }

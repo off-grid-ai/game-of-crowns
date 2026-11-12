@@ -183,6 +183,7 @@ func _lay(t: Vector2i, w: Dictionary, town: Node3D) -> void:
 			_hedge(hedges, c - b * Vector3(fsize.x * 0.5 + 0.03, 0, 0), b * Vector3(0, 0, 1), fsize.y, k, rng)
 		for e in [-1.0, 1.0]:
 			_hedge(hedges, c + b * Vector3(0, 0, e * (fsize.y * 0.5 + 0.03)), b * Vector3(1, 0, 0), fsize.x, k, rng)
+		_margin(hedges, c, b, fsize, k, rng)
 		corner = c + b * Vector3(fsize.x * 0.5, 0, fsize.y * 0.5)
 	if corner != Vector3.INF and rng.randf() < float(k.get("clump", 0.25)):
 		_clump(hedges, corner, k.get("clump_trees", [3, 7]), rng)
@@ -260,6 +261,28 @@ func _hedge(hedges: Dictionary, at: Vector3, dir: Vector3, length: float, k: Dic
 		hedges[kind].append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * sc), p))
 
 
+## The field's margin inside its hedge: clumps of grass and flowers along both long edges (the art set's meadow
+## between fields; forest.json cover: the ground cover's files by role), a clump every margin_every.
+func _margin(hedges: Dictionary, c: Vector3, b: Basis, fsize: Vector2, k: Dictionary, rng: RandomNumberGenerator) -> void:
+	var cover: Dictionary = Data.value("forest", "cover", {})
+	var roles: Array = k.get("margin", ["grass", "flowers"])
+	var every := float(k.get("margin_every", 0.3))
+	for side in [-1.0, 1.0]:
+		var s := -fsize.y * 0.5 + every * 0.5
+		while s < fsize.y * 0.5:
+			var p: Vector3 = c + b * Vector3(side * (fsize.x * 0.5 - 0.05), 0, s + rng.randf_range(-0.3, 0.3) * every)
+			s += every
+			var vs: Array = cover.get(String(roles[rng.randi() % roles.size()]), [])
+			if vs.is_empty() or not main.terrain.is_land(p.x, p.z):
+				continue
+			p.y = main.terrain.height_at(p.x, p.z) - 0.01
+			var kind := "path:" + String(vs[rng.randi() % vs.size()])  # a file under assets/, not a catalogue name
+			if not hedges.has(kind):
+				hedges[kind] = []
+			var sc := float(k.get("margin_scale", 0.12)) * rng.randf_range(0.6, 1.0)
+			hedges[kind].append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * sc), p))
+
+
 ## A clump of trees (art set: 3-7 at a field's corner, never lone ones or rows).
 func _clump(hedges: Dictionary, at: Vector3, count: Array, rng: RandomNumberGenerator) -> void:
 	var vs: Array = Real.variants(String(Data.value("land_use", "fields.tree", "town_tree")))
@@ -284,7 +307,7 @@ func _clump(hedges: Dictionary, at: Vector3, count: Array, rng: RandomNumberGene
 func _batch(node: Node3D, hedges: Dictionary, reach: float) -> void:
 	for kind in hedges:
 		var xfs: Array = hedges[kind]
-		for part in Real.parts(kind):
+		for part in (_path_parts(kind.trim_prefix("path:")) if kind.begins_with("path:") else Real.parts(kind)):
 			var mm := MultiMesh.new()
 			mm.transform_format = MultiMesh.TRANSFORM_3D
 			mm.mesh = part[0]
@@ -297,6 +320,14 @@ func _batch(node: Node3D, hedges: Dictionary, reach: float) -> void:
 			mmi.visibility_range_end = reach
 			mmi.visibility_range_end_margin = reach * 0.15
 			node.add_child(mmi)
+
+
+## A ground-cover file as one part [mesh, its offset], baked once (house_builder.bake_path, as vegetation.gd does).
+var _cover_mesh := {}
+func _path_parts(rel: String) -> Array:
+	if not _cover_mesh.has(rel):
+		_cover_mesh[rel] = preload("res://scripts/house_builder.gd").new().bake_path("res://assets/" + rel)
+	return [] if _cover_mesh[rel] == null else [[_cover_mesh[rel], Transform3D.IDENTITY]]
 
 
 ## A tile no longer worked as it was: its fields, hedges and soil taken up.
