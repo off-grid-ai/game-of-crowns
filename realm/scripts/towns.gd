@@ -3217,11 +3217,13 @@ func _tree_bakeoff(root: Node3D, center: Vector3) -> void:
 	var away := -Vector2((fr[0] as Vector3).x, (fr[0] as Vector3).z).normalized()  # the camera's side of the town
 	var gap := float(k.get("spacing", 0.72))
 	var keep := float(k.get("clear", 1.0))
-	var out_d := float(root.get_meta("plot_edge", 6.0)) + float(k.get("out", 1.8))
 	var fields: Array = root.get_meta("fields", [])
 	var ways: Array = root.get_meta("ways_main", [])
-	for t in 17:
-		var turn := deg_to_rad(22.5) * float((t + 1) / 2) * (1.0 if t % 2 == 1 else -1.0)
+	# Nearest first: each turn round the town at the given distance, then further out (towns.json tree_bakeoff.further,
+	# game units, how far past `out` to look; round 11: Kingsmere's fields and plots filled the ring at `out`).
+	for t in 17 * (1 + int(float(k.get("further", 6.0)) / maxf(gap, 0.1))):
+		var out_d := float(root.get_meta("plot_edge", 6.0)) + float(k.get("out", 1.8)) + gap * float(t / 17)
+		var turn := deg_to_rad(22.5) * float((t % 17 + 1) / 2) * (1.0 if t % 17 % 2 == 1 else -1.0)
 		var dir := away.rotated(turn)
 		var mid2 := dir * out_d
 		var across2 := dir.orthogonal()
@@ -3256,7 +3258,7 @@ func _tree_bakeoff(root: Node3D, center: Vector3) -> void:
 		var works: Dictionary = root.get_meta("works", {})
 		works["tree_bakeoff"] = {"at": mid, "yaw": yaw}
 		root.set_meta("works", works)
-		print("CHECK tree bakeoff: %s, posts 1-%d left to right, in a row at %s (town-local), %.0f deg off the side away from the castle" % [", ".join(PackedStringArray(kinds)), kinds.size(), mid, rad_to_deg(turn)])
+		print("CHECK tree bakeoff: %s round %s, posts 1-%d left to right, in a row at %s (town-local, %.1f past the edge), %.0f deg off the side away from the castle" % [", ".join(PackedStringArray(kinds)), String(root.get_meta("title", "")), kinds.size(), mid, out_d - float(root.get_meta("plot_edge", 6.0)), rad_to_deg(turn)])
 		return
 	print("CHECK tree bakeoff: no open ground found round %s" % String(root.get_meta("title", "")))
 
