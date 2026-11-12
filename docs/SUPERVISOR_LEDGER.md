@@ -121,6 +121,13 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11:00 (11-12) Mac: "the people behaviour is poor. that's the problem." Clip of the square (/tmp/goc-focus/clip1,
+  24 frames over 6 s): almost nobody moves; no purposeful errands (buy, draw water, carry, cross to a door); a
+  figure lying flat, one frozen mid-leap, one in the well; guards on fixed rings. Cause: town_life._square_life
+  posts people with looped clips and ring loops; only a few have LimboAI minds. Routed to works-life as top
+  priority: every square person a LimboAI agent with errands (shopper, water carrier, porter, stallholder,
+  children, guards, gossips), smart objects (stalls, well, benches, doors) with claimed slots, NavigationAgent3D
+  with avoidance over a square+streets navmesh, every clip used, --square-agents switch. Judge by clips, not stills.
 - 10:45 (11-12) Round 6: the castle in light warm stone and terracotta roofs, a clear step. Still: the ring's final
   pass 3 fronts (narrow townhouses didn't help; next lever fronts before the tavern and/or a bigger square_r), houses
   at random angles -> fire-siege; no gardens read, square edge grass -> army-ui; sprawled oversized horses at the
