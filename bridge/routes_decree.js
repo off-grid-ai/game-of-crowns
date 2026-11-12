@@ -74,7 +74,7 @@ export async function issueDecree(ctx, req, res, url) {
   }
   // March: the King's own biggest host goes (hosts.js), and it is the season's order to his hosts.
   let host = null;
-  if (cmd.action === "march") {
+  if (cmd.action === "march" || cmd.action === "reinforce") {
     const hctx = { world: ctx.world, meta: ctx.meta, sworn, crownSeat: ctx.crownSeat };
     host = Hosts.list(hctx)[0] ?? null;
     if (!host) return json(res, 400, { error: "The crown has no host to march" });
@@ -98,7 +98,9 @@ export async function issueDecree(ctx, req, res, url) {
   if (result.alliance != null) { (ctx.meta.alliances ??= {})[result.alliance] = (ctx.world.turn ?? 0) + 16; chron.saveMeta(ctx.meta); }
   if (result.march) startCampaign(result.march);
   if (result.hostMarch) {
-    const [code, out] = Hosts.order({ world: ctx.world, meta: ctx.meta, sworn, crownSeat: ctx.crownSeat }, { host: result.hostMarch.host, order: "march", city: result.hostMarch.city, declared: true });
+    // A house that asked the King's help opens its gates to his host (reinforce): its town may be garrisoned.
+    const open = result.hostMarch.opens != null ? (pid) => pid === result.hostMarch.opens || sworn(pid) : sworn;
+    const [code, out] = Hosts.order({ world: ctx.world, meta: ctx.meta, sworn: open, crownSeat: ctx.crownSeat }, { host: result.hostMarch.host, order: result.hostMarch.order ?? "march", city: result.hostMarch.city, declared: true });
     if (code === 200) result.text = `${result.text} ${out.text.replace(/^.*?: /, "").replace(/^./, (c) => c.toUpperCase())}`;
   }
   if (yearly) { (ctx.meta.decreeAt ??= {})[yearly] = ctx.world.turn ?? 0; chron.saveMeta(ctx.meta); }

@@ -16,6 +16,7 @@
   "settle": { "cost": 100, "label": "Tell another house to settle a war", "off": true },
   "alliance": { "cost": 200, "label": "Swear an alliance with a house" },
   "march": { "cost": 100, "label": "March the royal host on a house's town", "favour": -25, "others": -2 },
+  "reinforce": { "cost": 60, "label": "Send the royal host to reinforce a house", "favour": 15, "others": 0 },
   "promise": { "cost": 0, "label": "Promise a house a seat at the King's council", "favour": 10, "rival": -8, "courtOnly": true, "oncePerHouse": true, "rider": "The King's word: a seat at his council" },
   "cede": { "cost": 0, "label": "Cede a royal town for their claim", "favour": 25, "others": -2, "courtOnly": true }
 }

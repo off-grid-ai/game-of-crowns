@@ -363,6 +363,25 @@ const HANDLERS = {
     return { cost: 0, favour: { [to.id]: d.favour ?? 25, ...others }, lua: [Lua.transferCity(c.id, to.id)], homeward: home ? [home] : [], endUsurper: !!home,
       text: `The King cedes ${town} to ${houseFor(to).name} for their claim. ${home ? "Their host goes home with a town to show for it, and" : "And"} every house marks what rising against the crown can buy.` };
   },
+  reinforce(x) {
+    const { cmd, world, cost, pay, owner, lord } = x;
+    // The King stands by a house (READY line 9: supporting a house sends your army to reinforce it): the
+    // royal host marches to its town under siege, else its seat, and garrisons it by the house's leave.
+    // The same march as any other (hosts.js garrison), only to a friend's gates.
+    if (!owner || houseFor(owner).crown || houseFor(owner).wild) return { error: "choose a great house's town to reinforce" };
+    const theirs = world.cities.filter((t) => t.owner === owner.id);
+    if (theirs.some((t) => (cmd.marching ?? (() => false))(t.id))) return { error: `the royal host is besieging ${lord}` };
+    const to = theirs.find((t) => t.besieged) ?? theirs.find((t) => t.capital) ?? theirs[0];
+    if (!to) return { error: `${lord} holds no town to reinforce` };
+    const h = cmd.host;
+    if (!h) return { error: "the crown has no host to send" };
+    const d = DECREES.reinforce;
+    const others = greatHouses(world).filter((p) => p.id !== owner.id);
+    const why = to.besieged ? `to break the siege of ${cityName(to.id)}` : `to ${cityName(to.id)}, its seat`;
+    return { cost, lua: [pay], favour: { [owner.id]: d.favour ?? 15, ...Object.fromEntries(others.map((p) => [p.id, d.others ?? 0])) },
+      hostMarch: { host: h.id, city: to.id, house: owner.id, order: "garrison", opens: owner.id },
+      text: `The King stands by ${lord}: the royal host, ${h.men.toLocaleString("en-US")} men, marches ${why}.` };
+  },
   march(x) {
     const { cmd, world, crown, cost, pay, c, owner, lord, town } = x;
     // The royal host marches on a town, and lays siege when it reaches the walls (hosts.js, then
