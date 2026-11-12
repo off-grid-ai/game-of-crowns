@@ -2249,7 +2249,7 @@ func _square_more(root: Node3D, life: Node3D, center: Vector3, n: Callable, go: 
 				waits = []
 				for q in route:
 					waits.append(q == mkt or q == ends[0] or q == ends[1])
-			go.carts.append({"rig": rig, "stops": route, "waits": waits, "leg": 0, "rest": 0.0, "pace": float(K.get("pace", 0.16)), "stop": K.get("stop", [6.0, 12.0])})
+			go.carts.append({"rig": rig, "market": mkt, "stops": route, "waits": waits, "leg": 0, "rest": 0.0, "pace": float(K.get("pace", 0.16)), "stop": K.get("stop", [6.0, 12.0])})
 	# The yards nearest the square: hens and a pig about the beds, a gardener on their knees.
 	var gardens: Array = (root.get_meta("gardens", []) as Array).filter(func(g): return Vector3(g).length() < r * float(Data.num("crowd", "yards.within", 3.0)))
 	gardens.sort_custom(func(a, b): return Vector3(a).length() < Vector3(b).length())
@@ -2287,11 +2287,24 @@ static var _wagon_mesh: Mesh
 ## A sack slung on a porter's right shoulder (crowd.json cart.sack: [up, back] metres from the shoulder bone,
 ## its size), on the bone itself so it goes with him through every step and stoop.
 func _shoulder_sack(p: Node3D) -> void:
+	shoulder_sack(p, true)
+
+
+## A sack slung on `p`'s right shoulder (`on`), or taken off (a porter's load: npc_mind Sack).
+static func shoulder_sack(p: Node3D, on: bool) -> void:
 	var skel := p.find_child("GeneralSkeleton", true, false) as Skeleton3D
-	if skel == null or skel.find_bone("RightShoulder") < 0 or not ResourceLoader.exists(PROPS % "Bag"):
+	if skel == null:
+		return
+	var had := skel.get_node_or_null("ShoulderSack")
+	if not on:
+		if had:
+			had.queue_free()
+		return
+	if had or skel.find_bone("RightShoulder") < 0 or not ResourceLoader.exists(PROPS % "Bag"):
 		return
 	var S2: Array = Data.value("crowd", "errands.sack", [0.16, -0.04, 0.9])
 	var at := BoneAttachment3D.new()
+	at.name = "ShoulderSack"
 	at.bone_name = "RightShoulder"
 	skel.add_child(at)
 	var bag: Node3D = (load(PROPS % "Bag") as PackedScene).instantiate()
@@ -2474,6 +2487,8 @@ class SquareLife extends Node:
 			return
 		var stops: Array = k["stops"]
 		if step(rig, stops[int(k["leg"]) % stops.size()], float(k["pace"]), delta, 0.08, false):
+			if life.get_parent() and life.get_parent().has_meta("cart_tail"):
+				life.get_parent().remove_meta("cart_tail")  # rolling: nothing to unload
 			if carter is Node3D and is_instance_valid(carter) and not (carter as Node3D).has_meta("walking"):
 				(carter as Node3D).set_meta("walking", true)
 				People.play(carter, "Walk")
@@ -2483,6 +2498,11 @@ class SquareLife extends Node:
 		k["leg"] = int(k["leg"]) + 1
 		if not waits.is_empty() and not bool(waits[here]):
 			return  # a bend in the street: on without stopping
+		# Drawn up at the market: its tail is a porter's slot to unload from (villagers.gd _slot "cart") while it waits.
+		var town := life.get_parent()
+		if town and stops[here] == k.get("market", Vector3.INF):
+			var back := Vector3(sin(rig.rotation.y), 0, cos(rig.rotation.y))
+			town.set_meta("cart_tail", [rig.position - back * float(preload("res://scripts/data.gd").num("crowd", "cart.tail", 0.22)), rig.position])
 		var span: Array = k["stop"]
 		k["rest"] = rng.randf_range(float(span[0]), float(span[1]))
 		if carter is Node3D and is_instance_valid(carter):

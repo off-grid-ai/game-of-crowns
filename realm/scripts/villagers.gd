@@ -904,6 +904,12 @@ func place(a: Dictionary, key: String, knot := false) -> Vector3:
 	a["face_at"] = Vector3.INF
 	a["slot_stall"] = -1
 	a["slot_kind"] = ""
+	if key == "cart":
+		var sc := _slot(a, "cart")  # the market cart's tail while it waits there; none, the errand is off
+		if not is_nan(sc.x):
+			a["place_key"] = "cart"
+			return sc
+		return Vector3.INF
 	if key == "stall_buy":
 		# Up from the queue to a buying slot: one or none; none sends them on (GoTo fails, the tree moves on).
 		var sb := _slot(a, "stall", false)
@@ -1027,7 +1033,7 @@ func at_stall(a: Dictionary, who: Node3D) -> void:
 ## (npc_mind go("stall"), go("draw"), go("street")) claims a slot nobody stands on or is bound for, as Manor
 ## Lords' and Anno's villagers claim a market stall's or a well's slot, so two never stack and the square fills
 ## by its stalls and its well, not in one ring round a point.
-const SLOTS := ["stall", "draw", "street"]
+const SLOTS := ["stall", "draw", "street", "cart"]
 var _released := {}  # slot id -> when it was last left (msec): shut for square_agents.cooldown after
 
 
@@ -1069,6 +1075,13 @@ func _slot(a: Dictionary, key: String, queue := true) -> Vector3:
 				for i in 5:
 					var ang := TAU * i / 5.0 + 0.4
 					offers.append([w + Vector3(cos(ang), 0, sin(ang)) * rim, w])
+		"cart":
+			var tail: Array = town_node.get_meta("cart_tail", [])
+			if tail.size() >= 2:
+				var tp: Vector3 = tail[0]
+				var side := Vector3(-(tail[1] - tp).z, 0, (tail[1] - tp).x).normalized()
+				for k in [0.0, -0.08, 0.08]:
+					offers.append([tp + side * k, tail[1]])
 		"street":
 			var reach := float(K.get("street_out", 1.25)) * r
 			for wy in town_node.get_meta("ways_main", []):

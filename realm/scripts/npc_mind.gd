@@ -315,6 +315,21 @@ static func brk(pool: Array) -> BTTask:
 
 
 ## A step to the spot the person's meta `key` names (town-local) and stop there facing it; step(0.0) goes back.
+## A sack onto the shoulder (`on`) or off it (town_life.shoulder_sack): the porter's load, carried through every move.
+class Sack extends BTAction:
+	@export var on := true
+
+	func _tick(_delta: float) -> Status:
+		load("res://scripts/town_life.gd").shoulder_sack(agent as Node3D, on)
+		return SUCCESS
+
+
+static func sack(on: bool) -> BTTask:
+	var t := Sack.new()
+	t.on = on
+	return t
+
+
 static func spot_step(key: String) -> BTTask:
 	var t := Step.new()
 	t.spot = key
@@ -1511,6 +1526,12 @@ static func villager_activities(role: String) -> Array:
 				seq("gossip", [partner(), go("meet"), Talk.new(), brk(LOOK)]),
 				seq("errand", [go("stall"), run(["Idle_Talking", "Nodding"], 1, 2), once("PickUp_Table"), go("home", "Carrying"), once("PickUp_Table"), brk(REST)]),
 			]
+		"gossip":  # the square's gossip: meets a neighbour and talks it over, strolls by the stalls, waves at the well
+			return [
+				seq("chat", [partner(), go("meet"), Talk.new(), brk(LOOK)]),
+				seq("stroll", [go("stall"), once("Pointing_Forward"), run(["Thinking", "Doubtful"], 1, 1), go("street"), brk(["Weight_Shift", "Arm_Stretching"])]),
+				seq("well", [go("draw"), once("Waving"), run(["Idle_Talking", "Laughing", "Nodding"], 1, 2), brk(["Weight_Shift", "Bored"])]),
+			]
 		"water":  # the square's water carrier: to the well's rim, draws, carries it home or up a street
 			return [
 				# The bucket set down on the rim, the windlass wound a few turns, the bucket lifted off, a breath, and home with it.
@@ -1518,9 +1539,11 @@ static func villager_activities(role: String) -> Array:
 				seq("sell", [go("draw"), once("PickUp_Table"), run(["Pushing"], 1, 1), go("stall", "Carrying"), once("PickUp_Table"), run(["Idle_Talking", "Nodding"], 1, 1), brk(LOOK)]),
 				seq("chat", [go("draw"), run(["Idle_Talking", "Laughing", "Nodding"], 2, 3), brk(LOOK)]),
 			]
-		"porter":  # the square's porter: a load in off the street to a stall, and back for the next
+		"porter":  # the square's porter: sacks off the market cart, or a load in off the street, to a stall, and back
 			return [
-				seq("haul", [go("street"), once("PickUp_Table"), go("stall", "Carrying"), brk(["Box_Idle", "Weight_Shift"]), once("PickUp_Table"), run(["Wiping_Sweat", "Idle_Talking"], 1, 1), brk(REST)]),
+				# The cart drawn up at the market: a sack off its tail onto the shoulder, to a stall's pile, set down.
+				seq("unload", [go("cart"), once("PickUp_Table"), sack(true), go("stall"), brk(["Weight_Shift", "Looking_Around"]), once("PickUp_Table"), sack(false), run(["Wiping_Sweat", "Arm_Stretching"], 1, 1), brk(REST)]),
+				seq("haul", [go("street"), once("PickUp_Table"), sack(true), go("stall"), brk(["Weight_Shift", "Looking_Around"]), once("PickUp_Table"), sack(false), run(["Wiping_Sweat", "Idle_Talking"], 1, 1), brk(REST)]),
 				seq("box", [go("stall"), once("PickUp_Table"), go("street", "Box_Walk" if Weapons.can_play("Box_Walk") else "Carrying"), once("PickUp_Table"), brk(["Wiping_Sweat", "Weight_Shift"])]),
 				seq("rest", [go("draw"), run(["Wiping_Sweat", "Idle_Talking"], 1, 2), brk(REST)]),
 			]

@@ -14,7 +14,7 @@ const People := preload("res://scripts/people.gd")
 const POSTS := ["build", "trade", "buy", "drill", "bows", "guard", "riot", "beg", "mourn", "refugee", "revel",
 	"smith", "bellows", "miller", "tanner", "queue", "levy", "crier", "listener", "drinker", "traveller",
 	"yard", "host", "minstrel", "stablehand", "fieldhand", "woodcutter", "pilgrim", "onlooker", "porter", "yardhand", "sower", "weeder", "reaper", "binder", "gleaner", "lifter", "shepherd", "gossip"]
-const CALLINGS := ["farmer", "market", "pious", "tavern", "keeper", "gentry", "child", "crafter", "idler", "apprentice", "groom", "carter", "water", "porter"]
+const CALLINGS := ["farmer", "market", "pious", "tavern", "keeper", "gentry", "child", "crafter", "idler", "apprentice", "groom", "carter", "water", "porter", "gossip"]
 const RESTFUL := ["Sitting_Ground", "Sitting_Idle", "Sitting_Cross_Legged", "Sitting_Drinking", "Sleeping_Idle", "Kneeling", "Praying", "Idle", "Breathing_Idle"]
 const MOVING := ["Walk", "Running", "Sneak", "Injured_Walk", "Carrying"]
 const AnimLOD := preload("res://scripts/anim_lod.gd")
