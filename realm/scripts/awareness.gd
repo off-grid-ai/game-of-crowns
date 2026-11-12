@@ -102,9 +102,11 @@ func attach(player: BTPlayer, town_id: int, vars := {}) -> void:
 	dispatch(JOIN, {"mind": player, "town": town_id, "vars": vars})
 
 
-## A decider hands a mind its part: these vars land on its blackboard, through the store.
-func assign(player: BTPlayer, vars: Dictionary) -> void:
-	dispatch(ASSIGN, {"mind": player, "vars": vars})
+## A decider hands a mind its part, or a new mind its starting state: these vars land on its blackboard. Static,
+## so a mind made where there's no realm (a probe, the title's crowd) is started the same way: the ASSIGN reducer
+## needs nothing of the store's own state.
+static func assign(player: BTPlayer, vars: Dictionary) -> void:
+	_reduce_minds_assign(player, vars)
 
 
 ## Reads.
@@ -284,7 +286,7 @@ func _reduce_minds_join(player: BTPlayer, town_id: int, vars: Dictionary) -> voi
 
 
 ## The minds slice, on an assignment: the vars land on that one mind's blackboard.
-func _reduce_minds_assign(player: BTPlayer, vars: Dictionary) -> void:
+static func _reduce_minds_assign(player: BTPlayer, vars: Dictionary) -> void:
 	if not is_instance_valid(player):
 		return
 	for k in vars:
