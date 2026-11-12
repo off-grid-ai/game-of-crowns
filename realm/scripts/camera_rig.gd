@@ -282,6 +282,30 @@ func snap(pos: Vector3, dist: float, y := 0.0) -> void:
 	apply()
 
 
+## A double-click's second press belongs to whoever took its first click, as an OS double-click does: when that was
+## this view's own click on the ground (here, within DOUBLE_WINDOW and DOUBLE_SLOP), it is the view's, ahead of the
+## interface. The first click may have opened a card right under the cursor (main.gd: the town's card, pinned over the
+## town on screen, town_panel.gd); round 13's dz strip settled on the town framing because the card took the press.
+## A double-click whose first click went to the interface stays the interface's. Its release is no second single click.
+func _input(event: InputEvent) -> void:
+	if not (event is InputEventMouseButton) or event.button_index != MOUSE_BUTTON_LEFT:
+		return
+	if event.pressed and event.double_click and not _before_click.is_empty() \
+			and Time.get_ticks_msec() - int(_before_click[4]) <= DOUBLE_WINDOW \
+			and (event.position as Vector2).distance_to(_before_click[5]) <= DOUBLE_SLOP:
+		double_click(event.position)
+		_doubled = true
+		_dragging = MOUSE_BUTTON_LEFT  # held, it drags the ground as any press does
+		_drag_moved = 0.0
+		_grab = _ground_under(event.position)
+		get_viewport().set_input_as_handled()
+	elif not event.pressed and _doubled:
+		_doubled = false
+		_dragging = 0
+		_grab = Vector3.INF
+		get_viewport().set_input_as_handled()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	# Panels (chronicle, houses, a town) own the mouse while it's over them.
 	if (event is InputEventMouse or event is InputEventGesture) and get_viewport().gui_get_hovered_control() != null and _dragging == 0:
@@ -295,9 +319,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
 			_zoom_at(event.position, 1.0 / 0.86 if event.factor == 0.0 else pow(1.0 / 0.86, event.factor))
 		elif event.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT, MOUSE_BUTTON_MIDDLE]:
-			if event.pressed and event.double_click and event.button_index == MOUSE_BUTTON_LEFT:
-				double_click(event.position)
-				_doubled = true  # its release is no second single click
 			if event.pressed:
 				_dragging = event.button_index
 				_drag_moved = 0.0
@@ -305,9 +326,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				_grab = _ground_under(event.position) if event.button_index != MOUSE_BUTTON_RIGHT and not event.alt_pressed else Vector3.INF
 			else:
 				_grab = Vector3.INF
-				if event.button_index == MOUSE_BUTTON_LEFT and _drag_moved < 6.0 and not _doubled:
+				if event.button_index == MOUSE_BUTTON_LEFT and _drag_moved < 6.0:
 					_click(event.position)
-				_doubled = false
 				_dragging = 0
 	elif event is InputEventMouseMotion and _dragging != 0:
 		_drag_moved += event.relative.length()
@@ -856,13 +876,14 @@ func double_click(screen: Vector2) -> void:
 	goal_distance = maxf(goal_distance * (1.0 - knob("doubleClick.step", 0.35)), floor_now())
 
 
-var _doubled := false  # the button's down was a double-click's: its release is not a single click
-var _before_click: Array = []  # the view's goals just before the last single click: [target, distance, yaw, tilt, ms]
+var _doubled := false  # the button's down was a double-click this view took: its release is not a single click
+var _before_click: Array = []  # the view's goals just before the last single click: [target, distance, yaw, tilt, ms, where on screen]
 const DOUBLE_WINDOW := 600  # ms: a double-click this soon after a click supersedes it (OS double-click times run 400-500)
+const DOUBLE_SLOP := 8.0  # px: and this near it (the OS's own double-click slop is a few pixels)
 
 
 func _click(screen: Vector2) -> void:
-	_before_click = [goal_target, goal_distance, goal_yaw, goal_tilt, Time.get_ticks_msec()]
+	_before_click = [goal_target, goal_distance, goal_yaw, goal_tilt, Time.get_ticks_msec(), screen]
 	var p := _ground_under(screen)
 	if p != Vector3.INF:
 		clicked.emit(p)

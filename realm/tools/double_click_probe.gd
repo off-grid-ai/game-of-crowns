@@ -9,7 +9,11 @@ extends SceneTree
 ##   - a single click changes neither (what single clicks do stays as it is);
 ##   - with the game's own single-click answer wired (main.gd: a click on the ground frames the nearest town,
 ##     rig.frame_town, which pulls the view out), the double-click still wins: each click of a double-click also
-##     arrives as a single click, and round 12 ended far out, not closer (dz-strip).
+##     arrives as a single click, and round 12 ended far out, not closer (dz-strip);
+##   - and when that first click opens a card under the cursor (main.gd shows the town's card, pinned over the town on
+##     screen: town_panel.gd), the double press is still the view's: round 13's dz strip settled on the town framing,
+##     turned and aimed at the town, because the card took the second press.
+## Every click goes through the viewport (push_input: _input, the interface, then _unhandled_input), as a player's does.
 ## Exit 1 on a fail.
 ##   arch -arm64 godot --headless --path realm -s res://tools/double_click_probe.gd
 
@@ -22,22 +26,40 @@ func _init() -> void:
 
 
 func _click(rig: Node3D, screen: Vector2, double: bool) -> void:
+	var move := InputEventMouseMotion.new()
+	move.position = screen
+	move.global_position = screen
+	root.push_input(move)
 	var e := InputEventMouseButton.new()
 	e.button_index = MOUSE_BUTTON_LEFT
 	e.position = screen
 	e.global_position = screen
 	e.pressed = true
 	e.double_click = double
-	rig._unhandled_input(e)
+	root.push_input(e)
 	var up := e.duplicate() as InputEventMouseButton
 	up.pressed = false
 	up.double_click = false
-	rig._unhandled_input(up)
+	root.push_input(up)
 
 
 ## main.gd's answer to a click on the ground: frame the nearest town (here: the click's spot, a size 6 town).
 func _frames(p: Vector3, rig: Node3D) -> void:
 	rig.frame_town(p, 6)
+
+
+var _card: Panel
+
+
+## main.gd's answer with its card: the town framed and its card opened under the cursor, taking the mouse there.
+func _frames_with_card(p: Vector3, rig: Node3D) -> void:
+	rig.frame_town(p, 6)
+	if _card == null:
+		_card = Panel.new()
+		_card.mouse_filter = Control.MOUSE_FILTER_STOP
+		_card.size = Vector2(240, 160)
+		root.add_child(_card)
+	_card.position = rig.get_viewport().get_mouse_position() - Vector2(120, 80)
 
 
 func _run() -> void:
@@ -46,10 +68,10 @@ func _run() -> void:
 	root.add_child(rig)
 	rig.cam.current = true
 	var step := Rig.knob("doubleClick.step", 0.0)
-	for case in [[20.0, "a step in", false], [7.0, "at the floor", false], [6.0, "with a click framing the town", true], [20.0, "far, with a click framing the town", true]]:
+	for case in [[20.0, "a step in", false], [7.0, "at the floor", false], [6.0, "with a click framing the town", true], [20.0, "far, with a click framing the town", true], [15.0, "with a click opening a card under the cursor", true, true]]:
 		var d: float = case[0]
 		var framing: bool = case[2]
-		var frames := _frames.bind(rig)
+		var frames := (_frames_with_card if case.size() > 3 else _frames).bind(rig)
 		if framing:
 			rig.clicked.connect(frames)
 		rig.target = Vector3.ZERO
@@ -73,6 +95,9 @@ func _run() -> void:
 		_click(rig, screen, true)
 		if framing:
 			rig.clicked.disconnect(frames)
+		if _card:
+			_card.queue_free()
+			_card = null
 		var want := maxf(d * (1.0 - step), rig.floor_now())
 		var aim: Vector3 = rig.goal_target
 		var off := Vector2(aim.x - spot.x, aim.z - spot.z).length()
