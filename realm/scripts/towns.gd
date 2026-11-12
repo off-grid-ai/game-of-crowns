@@ -1966,6 +1966,9 @@ func _counter(root: Node3D, center: Vector3, kind: String, m: Vector3, yaw: floa
 	var c: Dictionary = _market_knobs().get("counter", {})
 	if c.is_empty() or goods.is_empty() or kind.contains("cart"):
 		return
+	var wares: Array = Real.variants(String(c.get("comp", ""))).filter(func(k): return Real.footprint(k) != Vector2.ZERO)
+	if not wares.is_empty():
+		goods = wares
 	var stall: Vector2 = Real.footprint(kind)
 	var top := _foot_y(center, m, stall, yaw) + stall.x * float(c.get("height", 0.45))
 	var n := rng.randi_range(int((c.get("count", [3, 4]) as Array)[0]), int((c.get("count", [3, 4]) as Array)[1]))
