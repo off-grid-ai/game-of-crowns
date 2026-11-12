@@ -466,7 +466,7 @@ func _autoplay() -> void:
 	await main.get_tree().create_timer(3.0).timeout
 	var a: Node = preload("res://scripts/autoplay.gd").new()
 	a.main = main
-	main.add_child(a)
+	main.get_tree().root.add_child(a)  # last under the root, so its _input hears real input first and swallows it
 	a.start(String(_shot["play"]), String(_shot.get("out", "user://play")))
 
 

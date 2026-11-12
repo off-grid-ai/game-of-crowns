@@ -62,6 +62,7 @@ func serve(dir: String) -> void:
 
 
 func start(scenario: String, dir: String) -> void:
+	_deaf = true
 	out = dir
 	DirAccess.make_dir_recursive_absolute(out)
 	_log = FileAccess.open(out + "/play.log", FileAccess.WRITE)
@@ -162,7 +163,7 @@ func _step(w: PackedStringArray) -> void:
 				var mv := InputEventMouseMotion.new()  # the pointer there first, so what's under it is what it's over
 				mv.position = at
 				mv.global_position = at
-				Input.parse_input_event(mv)
+				_feed(mv)
 				await get_tree().process_frame
 				for i in absi(int(w[3])):
 					var e := InputEventMouseButton.new()
@@ -171,7 +172,7 @@ func _step(w: PackedStringArray) -> void:
 					e.global_position = at
 					e.pressed = true
 					e.factor = 1.0
-					Input.parse_input_event(e)
+					_feed(e)
 					await get_tree().create_timer(0.12).timeout
 			"probe":
 				# probe fx fy: what the pointer is over there (the control that takes a click), for finding what swallows clicks.
@@ -180,7 +181,7 @@ func _step(w: PackedStringArray) -> void:
 				var mv := InputEventMouseMotion.new()
 				mv.position = at
 				mv.global_position = at
-				Input.parse_input_event(mv)
+				_feed(mv)
 				await get_tree().process_frame
 				await get_tree().process_frame
 				var c := get_viewport().gui_get_hovered_control()
@@ -228,7 +229,7 @@ func _step(w: PackedStringArray) -> void:
 				var m := InputEventMouseMotion.new()
 				m.position = at
 				m.global_position = at
-				Input.parse_input_event(m)
+				_feed(m)
 				await get_tree().create_timer(0.3).timeout
 			"snap":
 				# The realm's time stands still from here until the burst ends (batch 8b: frames came out ~1 s apart,
@@ -544,7 +545,7 @@ func _action(name: String, down: bool) -> void:
 			e.pressed = down
 			e.position = get_viewport().get_visible_rect().size * 0.5
 			e.global_position = e.position
-		Input.parse_input_event(e)
+		_feed(e)
 		return
 
 
@@ -580,12 +581,29 @@ func _clear_ui() -> void:
 			(b as Button).set_pressed_no_signal(false)
 
 
+## The scenario's own input: tagged with DEVICE so _input lets it through, then fed as a player's would be.
+const DEVICE := 4207
+var _deaf := false  # a --play run hears only its scenario: the window coming to the front, a stray click or key, moves nothing
+
+
+func _feed(e: InputEvent) -> void:
+	e.device = DEVICE
+	Input.parse_input_event(e)
+
+
+## During a --play run, every real mouse and key event is swallowed before anything else sees it (this node sits
+## last under the root, so it hears input first): a click on the minimap or a drag can't move the camera mid-film.
+func _input(event: InputEvent) -> void:
+	if _deaf and event.device != DEVICE:
+		get_viewport().set_input_as_handled()
+
+
 func _key(code: int, down: bool) -> void:
 	var e := InputEventKey.new()
 	e.keycode = code
 	e.physical_keycode = code
 	e.pressed = down
-	Input.parse_input_event(e)
+	_feed(e)
 
 
 func _click(frac: Vector2, button := MOUSE_BUTTON_LEFT) -> void:
@@ -596,7 +614,7 @@ func _click(frac: Vector2, button := MOUSE_BUTTON_LEFT) -> void:
 		e.pressed = down
 		e.position = at
 		e.global_position = at
-		Input.parse_input_event(e)
+		_feed(e)
 
 
 func _frame_city(title: String, dist: float) -> void:
