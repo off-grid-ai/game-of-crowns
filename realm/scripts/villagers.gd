@@ -123,7 +123,7 @@ func _process_timed(delta: float) -> void:
 ## _choose_next); it ends when the walk does.
 func _hold_load(a: Dictionary) -> void:
 	var mo = people.motion(a["node"])
-	if mo and mo.v3:
+	if mo:
 		var g := String(a.get("gait", ""))
 		mo.errand_load = g if GAITS.has(g) and Weapons.can_play(g) else ""
 
@@ -592,7 +592,7 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 		a["best"] = INF
 		a["since"] = 0.0
 		if route.is_empty():
-			if people.motion(a["node"]) and people.motion(a["node"]).v3 and GAITS.has(String(a.get("gait", ""))):
+			if people.motion(a["node"]) and GAITS.has(String(a.get("gait", ""))):
 				a["gait"] = "Walk"  # v3: the load is set down with the walk's end (as the minds' GoTo does)
 			_set_off(a)  # arrived: straight into what they came for (a talk waits for the others)
 		return

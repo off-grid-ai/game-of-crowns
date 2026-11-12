@@ -99,7 +99,6 @@ var _held_for := ""  # the move whose tool is in hand now (weapons.gd)
 ## person carries is their errand's load, not the clip on screen. `errand_load` is the
 ## load's move ("Carrying", "Wheelbarrow"; villagers.gd sets it from the walk's
 ## gait), "" for none: while it's set the tool stays in hand whatever the body plays.
-const v3 := true  # villagers.gd still asks (mo.v3); goes when town life drops those two reads (integration audit #8)
 var errand_load := ""
 const Weapons := preload("res://scripts/weapons.gd")
 var _at := "parameters/"  # where the state machine's parameters live (under "sm/": the gesture sits over the state machine)

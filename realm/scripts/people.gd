@@ -1262,7 +1262,7 @@ static func play(person: Node3D, anim_name: String, speed := 1.0, phase := -1.0)
 		speed *= 0.75
 	if person.has_meta("work_pace"):
 		speed *= float((person.get_meta("work_pace") as Dictionary).get(anim_name, 1.0))  # a smith hammering faster for the war (town_life _moods)
-	if mo and mo.v3 and mo.errand_load != "" and anim_name in IDLES:
+	if mo and mo.errand_load != "" and anim_name in IDLES:
 		anim_name = mo.errand_load  # v3: someone carrying a load stands holding it (held up mid-errand), arms and all
 	elif anim_name == "Idle":
 		anim_name = String(person.get_meta("idle", "Idle"))
