@@ -18,6 +18,7 @@ import * as chron from "./chronicles.js";
 import { cityName, houseFor } from "./narrator.js";
 import { decree, DECREES } from "./crown.js";
 import * as kingDeeds from "./ledger.js";
+import * as Rulings from "./rulings.js";
 import { moodFrom, moodRules } from "./claude.js";
 import { body, json } from "./http_util.js";
 import * as names from "./names.js";
@@ -136,6 +137,10 @@ export async function issueDecree(ctx, req, res, url) {
   // A feast is held at court, as the decree says; the honoured house's colours fly over it.
   if (seat && cmd.action === "feast") scene("feast", { x: seat.x, y: seat.y, city: seat.id, owner: target?.owner ?? crownNow.id });
   if (target && cmd.action === "grant") scene("handover", { x: target.x, y: target.y, city: target.id, from: target.owner, to: Number(cmd.to) });
+  // Relief, a grant, a building: the town shows it as the same ruling would (rulings.js decreed): the herald cries it.
+  if (target) Rulings.decreed(ctx.meta, cmd.action, target.id, ctx.world.turn ?? 0);
+  // A word carried (decrees.json <action>.rider: the rider's label): the King's promise rides to the lord's town.
+  if (away && DECREES[cmd.action]?.rider) scene("rider", { x: seat.x, y: seat.y, tx: target.x, ty: target.y, city: target.id, label: DECREES[cmd.action].rider });
   if (away && cmd.action === "build") scene("rider", { x: seat.x, y: seat.y, tx: target.x, ty: target.y, city: target.id, label: "The crown's purse for a new building" });
   if (seat && cmd.action === "levy") {
     // The host marches for the town the levy was raised for, else toward the

@@ -46,6 +46,12 @@ export function note(ctx, petition, asked, out) {
   return at && kind ? post(meta, at.id, kind, world.turn ?? 0) : null;
 }
 
+// A decree that leaves its mark in the town it names (rulings.json decrees: relief, grant, build), as a ruling would.
+export function decreed(meta, action, cityId, turn) {
+  const kind = RULINGS.decrees?.[action];
+  return kind ? post(meta, cityId, kind, turn) : null;
+}
+
 // For /world (view.js townStates): the ruling standing at this town, or null. left: its seasons still to stand.
 export function view(meta, city, turn) {
   const r = live(meta ?? {}, turn).find((x) => x.city === city.id);
