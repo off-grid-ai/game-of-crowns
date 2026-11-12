@@ -250,6 +250,9 @@ func set_wet(v: float, settle := -1.0) -> void:
 		settle = _settle()
 	if land == null:
 		return
+	var g: Array = preload("res://scripts/data.gd").value("weather", "ground", [0.5, 0.4])  # soaked ground's roughness, specular: wet reads darker and a little glossy, never white
+	land.material.set_shader_param("wet_rough", float(g[0]))
+	land.material.set_shader_param("wet_spec", float(g[1]))
 	create_tween().tween_method(func(x: float):
 		_wet_now = x
 		land.material.set_shader_param("rain_wet", x), _wet_now, clampf(v, 0.0, 1.0), settle)
@@ -273,6 +276,8 @@ uniform float snow_cover = 0.0;
 uniform vec3 snow_col : source_color = vec3(0.84, 0.86, 0.91);
 uniform float rough_floor = 0.72;  // the dry land is matte: rock and grass never shinier than this
 uniform float spec_cap = 0.35;
+uniform float wet_rough = 0.5;  // soaked ground's roughness and specular (data/weather.json ground)
+uniform float wet_spec = 0.4;
 """
 ## The dry land matte (batch 7 review #14: glossy white specular blobs on the far mountains): its roughness
 ## floored and its specular capped, before snow and rain set their own (wet ground still glints).
@@ -336,8 +341,8 @@ const SCAR_ALBEDO := """
 const WET_GROUND := """
 	if (rain_wet > 0.0) {
 		float wet_k = rain_wet * (1.0 - snow_k);
-		roughness = mix(roughness, 0.28, wet_k);
-		specular = mix(specular, 0.55, wet_k);
+		roughness = mix(roughness, wet_rough, wet_k);
+		specular = mix(specular, wet_spec, wet_k);
 	}
 """
 ## Snow with shape (batch 7 review #14: a flat, shadeless white plane): the ground's own texture shows

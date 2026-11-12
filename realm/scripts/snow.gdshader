@@ -6,7 +6,8 @@ render_mode blend_mix, depth_draw_never, cull_back, diffuse_burley;
 // Snow: `amount` (the season's, weather_fx.gd). Wet: the one wetness fact (global `wet`, 0 dry .. 1 soaked).
 uniform float amount : hint_range(0.0, 1.0) = 1.0;
 uniform float dark = 0.34;  // how much a soaked roof darkens
-uniform float sheen = 0.18;  // how glossy a soaked roof gets (roughness)
+uniform float sheen = 0.5;  // how glossy a soaked roof gets (its roughness when soaked: never a mirror)
+uniform float spec = 0.4;  // a soaked roof's specular (batch 9: at 0.7 the sun blew it out to white)
 global uniform float wet;
 
 varying float up;
@@ -44,6 +45,6 @@ void fragment() {
 	float wet_a = soak * dark;
 	ALBEDO = mix(vec3(0.03, 0.03, 0.035), vec3(0.9, 0.91, 0.94), step(wet_a, snow));
 	ROUGHNESS = snow > wet_a ? 0.85 : mix(1.0, sheen, soak);
-	SPECULAR = snow > wet_a ? 0.3 : mix(0.3, 0.7, soak);
+	SPECULAR = snow > wet_a ? 0.3 : mix(0.3, spec, soak);
 	ALPHA = max(snow, wet_a);
 }

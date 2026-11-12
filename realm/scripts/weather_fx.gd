@@ -71,8 +71,14 @@ func _ready() -> void:
 	# Rain: short, fine, faint streaks in a small box about the lens, fading out with distance.
 	var rk: Array = _fall_knob("rain_drop", [0.004, 0.11, 0.3, 6.0])  # width, length, alpha, the ring's reach round the lens
 	var sk: Array = _fall_knob("snow_flake", [0.045, 0.85, 10.0])  # size, alpha, reach
-	_rain = _fall(RAIN_DROPS, Vector2(float(rk[0]), float(rk[1])), Color(0.82, 0.86, 0.92, float(rk[2])), 14.0, 0.45, float(rk[3]))
+	_rain = _fall(RAIN_DROPS, Vector2(float(rk[0]), float(rk[1])), _rain_tint(float(rk[2])), 14.0, 0.45, float(rk[3]))
 	_snow = _fall(SNOW_FLAKES, Vector2(float(sk[0]), float(sk[0])), Color(0.96, 0.97, 1.0, float(sk[1])), 1.1, 6.0, float(sk[2]))
+
+
+## The rain's colour: a soft grey, never white (data/weather.json fall.rain_colour), at the drop's alpha.
+func _rain_tint(alpha: float) -> Color:
+	var c: Array = _fall_knob("rain_colour", [0.62, 0.66, 0.72])
+	return Color(float(c[0]), float(c[1]), float(c[2]), alpha)
 
 
 ## The weather as the mirror holds it now; settle: seconds to change over.
@@ -236,7 +242,8 @@ func _dress_towns() -> void:
 		_roof.shader = SNOW
 	_roof.set_shader_parameter("amount", _snow_now)
 	_roof.set_shader_parameter("dark", float(k.get("dark", 0.34)))
-	_roof.set_shader_parameter("sheen", float(k.get("sheen", 0.18)))
+	_roof.set_shader_parameter("sheen", float(k.get("sheen", 0.5)))
+	_roof.set_shader_parameter("spec", float(k.get("spec", 0.4)))
 	for b in _roofed.keys():
 		if not is_instance_valid(b):
 			_roofed.erase(b)
@@ -347,7 +354,8 @@ static func _blob(key: String) -> Texture2D:
 			elif key == "mud":
 				img.set_pixel(x, y, Color(0.2, 0.15, 0.1, a * 0.7))
 			else:  # ORM: occlusion 1, roughness low in water, a little higher in mud, metal 0
-				img.set_pixel(x, y, Color(1.0, 0.08 if key == "puddle_orm" else 0.35, 0.0, a))
+				var rough: Array = Data.value("weather", "puddles.rough", [0.35, 0.55])  # water, mud: glossy, never a mirror (batch 9: 0.08 blew out white)
+				img.set_pixel(x, y, Color(1.0, float(rough[0]) if key == "puddle_orm" else float(rough[1]), 0.0, a))
 	img.generate_mipmaps()
 	var t := ImageTexture.create_from_image(img)
 	_blobs[key] = t
