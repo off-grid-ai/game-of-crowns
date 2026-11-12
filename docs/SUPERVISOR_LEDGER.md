@@ -121,6 +121,11 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 13:20 (11-12) Mac's other session (visual polish, town life) started two more: "army-layer" (units, battle_ai,
+  siege_ai, siege_storm, combat, army_spike onto LimboAI + Mover) and "ground-truth" (walk maps from placed shapes,
+  one river truth, fire damage owned by the bridge; overlaps army-ui: coordinate). Mover.road carries all road travel.
+  Mac on a horse spinning in place: routed to the movement owner (turning radius, arc turns). Mac offered Meshy
+  Premium; advised holding until Pro hits a limit.
 - 13:00 (11-12) Mac: "ignore the performance metrics for now, just make a really good experience" (memory updated).
   Defaults flipped (1a32e409): the plain launch equals the render; old branches listed for retirement and routed
   (fire-siege castles/towns/fire v1, army-ui woods/photo ground, works-life kit bodies; UI v1 unassigned).
