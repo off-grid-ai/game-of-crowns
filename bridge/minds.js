@@ -10,6 +10,7 @@ import path from "node:path";
 import { townsfolk } from "./townsfolk.js";
 import { cityName, houseFor } from "./narrator.js";
 import { calendar } from "./calendar.js";
+import { readJson } from "./chronicles.js";
 import { think, modelQueue } from "./claude.js";
 
 const FEELINGS = ["fear", "anger", "joy", "grief", "faith", "hunger"];
@@ -96,14 +97,13 @@ const clamp = (v, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v));
 const round = (m) => Object.fromEntries(FEELINGS.map((k) => [k, Math.round(m[k] * 100) / 100]));
 const firstSentence = (t) => (String(t).match(/^[^.!?]+[.!?]?/)?.[0] ?? String(t)).trim();
 
-// The block of the day an hour falls in, as the town in villagers.gd counts it.
-function block(h) {
-  if (h < 5.5 || h >= 21.5) return ["night", h < 5.5 ? 5.5 : 29.5];
-  if (h < 7) return ["dawn", 7];
-  if (h < 12) return ["work", 12];
-  if (h < 13) return ["meal", 13];
-  if (h < 18) return ["work2", 18];
-  return ["evening", 21.5];
+// The day's parts, one table for the town and its minds: realm/data/town_scenes.json `day` (rows of from, to, part;
+// a row whose from is past its to runs over midnight).
+const DAY = readJson(new URL("../realm/data/town_scenes.json", import.meta.url), {}).day ?? [];
+// The part of the day an hour falls in, and the hour it ends (past 24 when it ends tomorrow).
+export function block(h) {
+  const row = DAY.find((r) => (r.from < r.to ? h >= r.from && h < r.to : h >= r.from || h < r.to));
+  return [row?.part, row && row.from > row.to && h >= row.from ? row.to + 24 : row?.to];
 }
 
 // Their past, as townsfolk.js tells it of them, in their own mouth.
