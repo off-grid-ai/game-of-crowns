@@ -33,8 +33,8 @@
 #   face     the same host given a line by a right drag (its own reign: one order a season a host; READY 8)
 #   castle   Kingsmere's castle close from its gate side (01-town; the Meshy castle set)
 #   street   the smallest town's street of houses at its town view (01-town; the Meshy house set)
-#   crossing a hull at sea with a company aboard, the cog (08-reinforce): a house's own crossing, waited for (CROSS_WAIT,
-#            600 s); the King can't order one (hosts.js), so skipped and said when none sails in that time
+#   crossing the King's host at sea in the cog (08-reinforce): ordered over water (One store's crossing, d70ca994), then
+#            framed once aboard (CROSS_WAIT, 600 s of the reign); skipped and said when no march goes by sea
 set -u
 R=$(cd "$(dirname "$0")/../.." && pwd)
 STAMP=$(date +%H%M)
@@ -200,17 +200,10 @@ if want face; then
   side face $OUT/frames/face/faced.png $TARGETS/03-army.jpg "READY 8: $(grep -hE 'host selected' $OUT/frames/face/play.log 2>/dev/null | head -1)"
 fi
 # The rest of the look, each beside its target: the castle from its gate, a village street, a host crossing the sea.
-world_pick() {  # world_pick village|ship: the smallest town's name, or a ship's unit id (MapLook.SHIPS), from /world
+world_pick() {  # world_pick village: the smallest town's name, from /world
   curl -s -m 10 "$API/world?peek=1" | python3 -I -c "
-import json,sys; d=json.load(sys.stdin); want=sys.argv[1]
-if want=='village':
-    cs=sorted(d.get('cities',[]), key=lambda c: c.get('size',0)); print(cs[0].get('title', cs[0].get('name','')) if cs else '')
-else:
-    ships={'Trireme','Caravel','Galleon','Frigate','Transport'}
-    us=d.get('units',[]); at={(u['x'],u['y']) for u in us if u.get('type') not in ships}
-    hull=[u for u in us if u.get('type') in ships]
-    full=[u for u in hull if (u['x'],u['y']) in at]  # a hull with a company aboard (on its tile)
-    print((full or [{'id':''}])[0]['id'])" "$1" 2>/dev/null
+import json,sys; d=json.load(sys.stdin)
+cs=sorted(d.get('cities',[]), key=lambda c: c.get('size',0)); print(cs[0].get('title', cs[0].get('name','')) if cs else '')" 2>/dev/null
 }
 if want castle; then
   { print "wait 30"; print "castle Kingsmere 4 -20 gate"; print "wait 4"; print "snap castle"; print "look end"; } > $OUT/castle.play
@@ -224,17 +217,50 @@ if want street; then
   side street $OUT/frames/street/street.png $TARGETS/01-town.jpg "a village street: ${V:-none found, Kingsmere}"
 fi
 if want crossing; then
-  # The King can't order a host over water (bridge hosts.js: "the sea lies between"); Freeciv's houses ship their own
-  # companies in Triremes and Galleons. So the pass waits, at most CROSS_WAIT seconds of the reign, for a hull with a
-  # company aboard, and frames that.
-  SHIP=""; waited=0
-  while [ -z "$SHIP" ] && [ $waited -lt ${CROSS_WAIT:-600} ]; do SHIP=$(world_pick ship); [ -z "$SHIP" ] && { sleep 15; waited=$((waited + 15)); }; done
-  if [ -z "$SHIP" ]; then
-    say "crossing: no hull with a company aboard in ${CROSS_WAIT:-600} s of the reign; no frame (the King can't order a crossing: hosts.js)"
+  new_reign  # its own season of orders
+  # The King's host takes ship (One store's crossing, d70ca994: a march with no road over land walks to the nearest crown
+  # port, boards the crown's hulls, sails, lands near the goal). The pass orders a host on the towns farthest first until
+  # one order goes by sea, then waits (CROSS_WAIT, 600 s of the reign) until it is aboard, and frames its lead company on
+  # the hull: the cog.
+  CROSS=$(curl -s -m 10 "$API/world?peek=1" | python3 -I -c "
+import json,sys,urllib.request
+d=json.load(sys.stdin); hs=d.get('hosts',[]); cs=d.get('cities',[])
+if not hs: sys.exit()
+h=hs[0]
+cs=sorted(cs, key=lambda c: -((c['x']-h['x'])**2+(c['y']-h['y'])**2))
+for c in cs[:12]:
+    req=urllib.request.Request('http://$API/host/order', data=json.dumps({'host':h['id'],'order':'march','city':c['id']}).encode(), method='POST')
+    try:
+        r=json.load(urllib.request.urlopen(req, timeout=20))
+    except Exception:
+        continue
+    w=json.load(urllib.request.urlopen('http://$API/world?peek=1', timeout=20))
+    me=[x for x in w.get('hosts',[]) if x.get('id')==h['id']]
+    if me and (me[0].get('order') or {}).get('sea'):
+        print(h['id'], c.get('title', c.get('name','')), r.get('text','')[:120]); break
+" 2>/dev/null)
+  set -- ${=CROSS}
+  HID=${1:-}
+  if [ -z "$HID" ]; then
+    say "crossing: no march of the King's host went by sea (no town across the water, port or free hull); no frame"
   else
-    { print "wait 30"; print "unit $SHIP 3"; print "wait 4"; print "snap crossing"; print "look end"; } > $OUT/crossing.play
-    shot crossing 1500 film $SW
-    side crossing $OUT/frames/crossing/crossing.png $TARGETS/08-reinforce.jpg "a host at sea in its cog (unit $SHIP)"
+    say "crossing: host $HID ordered over water: ${CROSS#* }"
+    LEAD=""; waited=0
+    while [ -z "$LEAD" ] && [ $waited -lt ${CROSS_WAIT:-600} ]; do
+      LEAD=$(curl -s -m 10 "$API/world?peek=1" | python3 -I -c "
+import json,sys; d=json.load(sys.stdin)
+me=[x for x in d.get('hosts',[]) if str(x.get('id'))=='$HID' and x.get('aboard')]
+print(min(me[0].get('units',[me[0]['id']])) if me else '')" 2>/dev/null)
+      [ -z "$LEAD" ] && { sleep 15; waited=$((waited + 15)); }
+    done
+    if [ -z "$LEAD" ]; then
+      say "crossing: host $HID not aboard in ${CROSS_WAIT:-600} s of the reign; no frame"
+    else
+      { print "wait 30"; print "unit $LEAD 3"; print "wait 4"; print "snap crossing"; print "unit $LEAD 1.5"; print "wait 3"; print "snap cog"; print "look end"; } > $OUT/crossing.play
+      shot crossing 1500 film $SW
+      side crossing $OUT/frames/crossing/crossing.png $TARGETS/08-reinforce.jpg "the King's host at sea in the cog (host $HID, company $LEAD)"
+      side crossing_cog $OUT/frames/crossing/cog.png $TARGETS/08-reinforce.jpg "the cog close"
+    fi
   fi
 fi
 say "render pass done: $OUT/side/INDEX.md"
