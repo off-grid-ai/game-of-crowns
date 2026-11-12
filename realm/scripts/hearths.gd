@@ -6,6 +6,7 @@ extends Node
 ## A starving town (the mirror's town mood, from the bridge's famine) burns little: only a share
 ## of its hearths smoke even with someone home, and those thinly (hearths.json hunger).
 ## Knobs: realm/data/hearths.json. --hearths=off leaves every chimney as built.
+const WeatherFx := preload("res://scripts/weather_fx.gd")
 
 var main: Node
 var _d := {"on": true, "every_sec": 1.0, "door_match": 0.35}
@@ -128,13 +129,12 @@ func _style(smoke: GPUParticles3D) -> void:
 	_styled.append(weakref(smoke))
 
 
-## The one wind (weather_fx.gd's global `wind`: x, z where it blows, w its strength) leans every chimney's
+## The one wind (weather_fx.gd's WeatherFx.wind, the shader global `wind`'s owner: x, z where it blows, w its strength) leans every chimney's
 ## smoke the same way, as it bends the grass and the wheat.
 func _drift() -> void:
 	if _styled.is_empty():
 		return
-	var w: Variant = RenderingServer.global_shader_parameter_get(&"wind")
-	var wind: Vector4 = w if w is Vector4 else Vector4(0.8, 0.0, 0.6, 0.3)
+	var wind: Vector4 = WeatherFx.wind  # the owner's own value: reading the shader global back is editor-only (it logged every call)
 	var k := float((_d.get("look", {}) as Dictionary).get("drift", 0.06))
 	var lean := Vector3(wind.x, 0, wind.z).normalized() * k * (0.3 + clampf(wind.w, 0.0, 1.0) * 1.7) if Vector2(wind.x, wind.z).length() > 0.001 else Vector3.ZERO
 	var keep: Array = []
