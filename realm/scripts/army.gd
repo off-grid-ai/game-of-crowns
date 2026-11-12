@@ -454,20 +454,10 @@ static func colour_mode() -> String:
 	return String(Data.value("army", "colours", "crown"))
 
 
-## The Meshy soldiers on (data/army.json units_set meshy, or --units=meshy; --units=kit for the before shot).
-static func meshy() -> bool:
-	var args := OS.get_cmdline_user_args()
-	if args.has("--units=kit"):
-		return false
-	return args.has("--units=meshy") or String(Data.value("army", "units_set", "kit")) == "meshy"
-
-
 ## A unit's row, with its mesh's fields under it (meshes.<asset>) and its own over them.
 func _unit(name: String) -> Dictionary:
 	var row: Dictionary = (Data.value("army", "units", {}) as Dictionary).get(name, {})
-	var asset := String(row.get("asset", KNIGHT))
-	if meshy() and (Data.value("army", "meshy", {}) as Dictionary).has(name):
-		asset = String((Data.value("army", "meshy", {}) as Dictionary)[name])  # the Meshy soldier this unit wears
+	var asset := String(row.get("asset", KNIGHT))  # the baked soldier this kind wears
 	var out: Dictionary = ((Data.value("army", "meshes", {}) as Dictionary).get(asset, {}) as Dictionary).duplicate(true)
 	for k in row:
 		if k == "tracks" and out.has("tracks"):

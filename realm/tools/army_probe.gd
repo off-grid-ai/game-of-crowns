@@ -37,7 +37,11 @@ extends SceneTree
 ## 12. a click picks a host by its own body (READY line 8; the milestone's command take selected nothing): a
 ##     standard-bearer (scaled as the map's people are) and a regiment carry pick proxies, and a physics ray from
 ##     the camera through the standard picks that company, through the regiment picks it with its view, and through
-##     open land picks nothing; host_command.gd takes the pick at the press, with no screen-distance guess.
+##     open land picks nothing; host_command.gd takes the pick at the press, with no screen-distance guess;
+## 13. one body set, one finish (CLAUDE.md: no fallbacks): every kind wears its own baked soldier by its own asset
+##     (the Meshy men-at-arms, town guard as spearmen, ranger as archers, the cavalry horse), with no kit/meshy
+##     switch (units_set, meshy.<unit>, --units=); every soldier wears the painted finish, with no switch
+##     (look.on, --army-look=) and no off branch in army_vat.gdshader.
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
@@ -75,8 +79,37 @@ func _run() -> void:
 	_the_right_banner()
 	await _march_out()
 	await _pick_by_body()
+	_one_body_one_finish()
 	print("ARMY PROBE PASS" if _fails == 0 else "ARMY PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
+
+
+## 13. One body set, one finish: the data, the scripts and the shader carry no old path, and a raised regiment
+## wears its kind's own body with the painted finish on.
+func _one_body_one_finish() -> void:
+	var units: Dictionary = Data.value("army", "units", {})
+	var want := {"men_at_arms": "armies/meshy_man_at_arms", "spearmen": "armies/meshy_town_guard", "archers": "armies/meshy_ranger", "horse": "armies/cavalry"}
+	for k in want:
+		_check(String((units.get(k, {}) as Dictionary).get("asset", "")) == want[k], "%s wears its own body by its asset (%s)" % [k, want[k]])
+	_check(Data.value("army", "units_set", null) == null and Data.value("army", "meshy", null) == null and Data.value("army", "look.on", null) == null,
+		"army.json has no kit/meshy switch (units_set, meshy) and no finish switch (look.on)")
+	var src := func(path: String) -> String: return FileAccess.get_file_as_string(path)
+	var army_src: String = src.call("res://scripts/army.gd")
+	var vis_src: String = src.call("res://scripts/army_visual.gd")
+	var sh_src: String = src.call("res://scripts/army_vat.gdshader")
+	_check(not army_src.contains("--units=") and not army_src.contains("func meshy("), "army.gd has no --units= switch and no meshy()")
+	_check(not vis_src.contains("--army-look") and not vis_src.contains("look.on"), "army_visual.gd has no --army-look switch")
+	_check(not sh_src.contains("look_painted"), "army_vat.gdshader has no finish-off branch (look_painted)")
+	var ArmyS: GDScript = load("res://scripts/army.gd")
+	var a: Object = ArmyS.new(Node.new(), 0, {"side": 0, "colour": Color(0.2, 0.3, 0.6)})
+	var r: Dictionary = a.call("_regiment", {"id": 1, "unit": "spearmen", "men": 150}, Color(0.2, 0.3, 0.6), {})
+	if r.is_empty():
+		_check(false, "spearmen raised (their baked soldier loads)")
+	else:
+		var mat: ShaderMaterial = (r["vat"] as GeometryInstance3D).material_override
+		_check(String(r["kit"]["asset"]) == "armies/meshy_town_guard", "a spearmen regiment raised wears the town guard (%s)" % r["kit"]["asset"])
+		_check(not is_equal_approx(float(mat.get_shader_parameter("mesh_height")), 2.45), "its men wear the painted finish (mesh_height set: %s)" % mat.get_shader_parameter("mesh_height"))
+	a.free()
 
 
 ## 1. Every mind row whole, every method it names there.

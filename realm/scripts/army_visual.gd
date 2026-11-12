@@ -175,14 +175,9 @@ static func _tracks(dir: String) -> Array[VATAnimationTrack]:
 
 
 ## The painted finish on a soldier's material (army_vat.gdshader's look; data/army.json look, meshes.<dir>.trim):
-## steel that reads as steel, the cloth's trim band, grounded feet, each man a little off his fellows. Behind its
-## switch: --army-look=painted (or look.on); --army-look=kit keeps the kit's own paint.
+## steel that reads as steel, the cloth's trim band, grounded feet, each man a little off his fellows. Every
+## soldier wears it.
 static func _finish(mat: ShaderMaterial, row: Dictionary, mesh: Mesh) -> void:
-	var args := OS.get_cmdline_user_args()
-	var on := args.has("--army-look=painted") or (bool(Data.value("army", "look.on", false)) and not args.has("--army-look=kit"))
-	mat.set_shader_parameter("look_painted", on)
-	if not on:
-		return
 	mat.set_shader_parameter("mesh_height", maxf(mesh.get_aabb().size.y, 0.01))
 	for pair in [["steel_sat", "steelSat", 0.14], ["steel_metal", "steelMetal", 0.65], ["steel_rough", "steelRough", 0.38], ["steel_lift", "steelLift", 1.12],
 			["steel_glow", "steelGlow", 0.05], ["rim", "rim", 0.35], ["rim_tint", "rimTint", 0.6], ["foot_dark", "footDark", 0.55], ["foot_height", "footHeight", 0.14],

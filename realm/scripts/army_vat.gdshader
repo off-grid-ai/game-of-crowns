@@ -83,12 +83,11 @@ varying vec3 rest_pos;
 varying vec3 rest_nrm;
 varying flat float man_roll;  // this man's own draw, 0..1: his variation from his fellows
 
-// The painted finish (--army-look=painted; data/army.json look): the kit soldier read as Age of Empires IV's and
+// The painted finish every soldier wears (data/army.json look): the kit soldier read as Age of Empires IV's and
 // Warcraft III Reforged's men do at the camera's closest stop. Steel that reads as steel from every side (found
 // by its low saturation, so a palette knight and a mask-painted soldier alike; metal, a lower roughness, a rim);
 // the house cloth with a darker trim band at its hem and collar (bands of the rest pose's height); feet grounded
 // by a darkening toward the ground; each man a little off his fellows in value and tint.
-uniform bool look_painted = false;
 uniform float mesh_height = 2.45;  // the soldier's rest-pose height, in his own units (army.gd sets it)
 uniform float steel_sat = 0.14;  // saturation below which a texel is steel
 uniform float steel_metal = 0.65;
@@ -245,13 +244,11 @@ void fragment() {
 	float dyed = team_by_mask ? texture(team_mask, UV).r : max(max(in_a, in_b), max(in_c, in_d));
 	vec3 cloth = team_color.rgb * shade * team_shade;
 	float rel = rest_pos.y / max(mesh_height, 0.001);  // how far up the man this point stands in his rest pose
-	if (look_painted) {
-		// His own cloth, a little off his fellows'; a darker trim band at the hem and collar.
-		float r2 = fract(man_roll * 7.31);
-		cloth *= vec3(1.0 + (r2 - 0.5) * vary_tint, 1.0 + (fract(r2 * 3.7) - 0.5) * vary_tint, 1.0 + (fract(r2 * 9.1) - 0.5) * vary_tint);
-		float trim = max(step(trim_a.x, rel) * step(rel, trim_a.y), step(trim_b.x, rel) * step(rel, trim_b.y));
-		cloth *= mix(1.0, trim_dark, trim);
-	}
+	// His own cloth, a little off his fellows'; a darker trim band at the hem and collar.
+	float r2 = fract(man_roll * 7.31);
+	cloth *= vec3(1.0 + (r2 - 0.5) * vary_tint, 1.0 + (fract(r2 * 3.7) - 0.5) * vary_tint, 1.0 + (fract(r2 * 9.1) - 0.5) * vary_tint);
+	float trim = max(step(trim_a.x, rel) * step(rel, trim_a.y), step(trim_b.x, rel) * step(rel, trim_b.y));
+	cloth *= mix(1.0, trim_dark, trim);
 	ALBEDO = mix(base, cloth, dyed * team_strength);
 	float painted = 0.0;
 	if (emblem_on) {
@@ -264,20 +261,19 @@ void fragment() {
 	METALLIC = dot(texture(metallic_texture, UV), metallic_texture_channel) * metallic * (1.0 - painted);  // the arms are paint; the rest of the steel stays steel
 	SPECULAR = specular;
 	ROUGHNESS = dot(texture(roughness_texture, UV), roughness_texture_channel) * roughness;
-	if (look_painted) {
-		float hi = max(base.r, max(base.g, base.b));
-		float sat = (hi - min(base.r, min(base.g, base.b))) / max(hi, 0.001);
-		float steel = (1.0 - smoothstep(steel_sat, steel_sat + 0.08, sat)) * smoothstep(0.22, 0.38, hi) * (1.0 - dyed * team_strength) * (1.0 - painted);
-		ALBEDO = mix(ALBEDO, ALBEDO * steel_lift, steel);
-		METALLIC = mix(METALLIC, steel_metal, steel);
-		ROUGHNESS = mix(ROUGHNESS, steel_rough, steel);
-		EMISSION = ALBEDO * steel_glow * steel;
-		RIM = rim;
-		RIM_TINT = rim_tint;
-		// Grounded: darker toward his feet; and his own value, a little off his fellows'.
-		ALBEDO *= mix(foot_dark, 1.0, smoothstep(0.0, foot_height, rel));
-		ALBEDO *= 1.0 + (man_roll - 0.5) * vary_value;
-	}
+	// Steel that reads as steel: found by its low saturation.
+	float hi = max(base.r, max(base.g, base.b));
+	float sat = (hi - min(base.r, min(base.g, base.b))) / max(hi, 0.001);
+	float steel = (1.0 - smoothstep(steel_sat, steel_sat + 0.08, sat)) * smoothstep(0.22, 0.38, hi) * (1.0 - dyed * team_strength) * (1.0 - painted);
+	ALBEDO = mix(ALBEDO, ALBEDO * steel_lift, steel);
+	METALLIC = mix(METALLIC, steel_metal, steel);
+	ROUGHNESS = mix(ROUGHNESS, steel_rough, steel);
+	EMISSION = ALBEDO * steel_glow * steel;
+	RIM = rim;
+	RIM_TINT = rim_tint;
+	// Grounded: darker toward his feet; and his own value, a little off his fellows'.
+	ALBEDO *= mix(foot_dark, 1.0, smoothstep(0.0, foot_height, rel));
+	ALBEDO *= 1.0 + (man_roll - 0.5) * vary_value;
 	if (use_normal_texture) {
 		NORMAL_MAP = texture(normal_map_texture, UV).rgb;
 		NORMAL_MAP_DEPTH = normal_scale;
