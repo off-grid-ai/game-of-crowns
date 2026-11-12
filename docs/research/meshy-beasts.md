@@ -23,10 +23,12 @@ Tags: **SEEN** (looked at in Meshy's viewer and our Blender pose renders), **VEN
 |---|---|---|
 | Hen | 35 | 25 model + 10 texture |
 | Dog | 35 | |
-| Watchman (the square's guard, cast) | 35 | made in the same sitting; not imported yet |
+| Watchman, browser copy | 35 | made in the same sitting; the API can't see web-made tasks, so it was never downloaded |
+| Watchman, through the API | 35 | image-to-3D: latest (7.1), geometry 2k, Meshy 7 texture 2k with PBR, image enhancement, A-pose, remesh 10k triangle; single image (the API's multi-view needs our own views) |
+| Watchman rig, through the API | 5 | rigging, skeleton_template mixamo, 1.75 m; no finger bones |
 | Remeshes, multi-view images, downloads | 0 | |
 
-Balance 1,165 before, 1,060 after: **105 spent.** Nothing bought, no plan or setting changed. **VENDOR + SEEN**
+Balance 1,165 before, 1,020 after: **145 spent** (35 wasted on the browser watchman). Nothing bought, no plan or setting changed. **VENDOR + SEEN**
 
 ## The pieces
 
@@ -38,3 +40,13 @@ Balance 1,165 before, 1,060 after: **105 spent.** Nothing bought, no plan or set
 Probe: `tools/animals_check.gd` with `animals.json` `set` (kinds chicken and dog; cow, sheep, pig, goat listed as
 next). Before: chicken had no model at all (the square's yards asked for 2-4 hens and none appeared), the dog was
 the grey wolf. After: both drawn from the set, PASS.
+
+## The watchman (the square's guard, cast)
+
+Concept `docs/art/cast/watchman_front.png`, drawn from 01-town's guard (`docs/art/cast/ref/watchman_ref.png`): silver
+plate and helm, red plume, crimson tunic with a cream panel down the chest and gold trim, brown boots. Made and rigged
+through the Meshy API (key from the keychain at run time). 10,408 tris, Mixamo skeleton, imported by
+`realm/tools/cast_import.py` as `cast_watchman` with the crimson cloth and plume masked for the house colour (share
+0.31). Replaces the community "Town Guard Soldier" outright (blue armour, red boots: read as a superhero against
+01-town's). cast.json `panel`: his chest panel is painted on, so people.gd puts only the house arms on it. Back seen in
+Blender: clean and consistent with the front. Defects: bare oversized hands (no gauntlets), no finger bones.

@@ -60,8 +60,7 @@
       "GS_Impact_1"
     ],
     "lowExtra": {
-      "cast_young_ranger": { "Sitting_Idle": 0.1, "Sitting_Cross_Legged": 0.08, "Sitting_Talking": 0.08, "Sitting_Enter": 0.06, "Sitting_Exit": 0.06, "Planting": 0.07, "GS_Death_1": 0.08 },
-      "cast_town_guard": { "Planting": 0.07 }
+      "cast_young_ranger": { "Sitting_Idle": 0.1, "Sitting_Cross_Legged": 0.08, "Sitting_Talking": 0.08, "Sitting_Enter": 0.06, "Sitting_Exit": 0.06, "Planting": 0.07, "GS_Death_1": 0.08 }
     }
   },
   "travel": {

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b3ja810jshawp"
-path="res://.godot/imported/cast_town_guard_mask.png-1cc0bd9ba345b18a509ae744be6bf789.ctex"
+uid="uid://wrajn01txsl2"
+path="res://.godot/imported/Image_0.png-75826766c904e298866b6403eb3d4976.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/people/mixamo/cast_town_guard/cast_town_guard_mask.png"
-dest_files=["res://.godot/imported/cast_town_guard_mask.png-1cc0bd9ba345b18a509ae744be6bf789.ctex"]
+source_file="res://assets/people/mixamo/cast_watchman/Image_0.png"
+dest_files=["res://.godot/imported/Image_0.png-75826766c904e298866b6403eb3d4976.ctex"]
 
 [params]
 

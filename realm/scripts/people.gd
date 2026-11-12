@@ -742,7 +742,7 @@ func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, ag
 	if bool(info.get("cast", false)):
 		var colour := tint if tint != Color.WHITE else _town_house
 		if role == "soldier" and colour.a > 0.0:
-			_tabard(skeleton, colour)
+			_tabard(skeleton, colour, bool((Data.value("cast", "members", {}) as Dictionary).get(body, {}).get("panel", false)))
 		if String((Data.value("cast", "members", {}) as Dictionary).get(body, {}).get("palette", "")) == "rich":
 			_gold_belt(skeleton)
 	person.set_meta("body", body)
@@ -790,7 +790,8 @@ static func _on_bone(skeleton: Skeleton3D, bone_name: String, node: Node3D, xf: 
 ## on the chest; people.json dress.tabard): a cream panel down the chest, the house's sigil on it in the house's
 ## colour. The house is the realm's house of that colour (awareness's realm scope), its sigil heraldry.gd's.
 static var _panel_mats := {}
-static func _tabard(skeleton: Skeleton3D, colour: Color) -> void:
+## `painted`: the body wears the cream panel already (cast.json member panel: the watchman's tunic): only the arms go on.
+static func _tabard(skeleton: Skeleton3D, colour: Color, painted := false) -> void:
 	var K: Dictionary = Data.value("people", "dress.tabard", {})
 	if not bool(K.get("on", true)):
 		return
@@ -818,13 +819,14 @@ static func _tabard(skeleton: Skeleton3D, colour: Color) -> void:
 		_panel_mats[key] = [cream, arms]
 	var mats: Array = _panel_mats[key]
 	var at := Vector3(rest.origin.x, rest.origin.y - h * float(K.get("drop", 0.2)), float(f[1]) + float(K.get("out", 0.012)))
-	var panel := MeshInstance3D.new()
-	panel.name = "Tabard"
-	var q := QuadMesh.new()
-	q.size = Vector2(w, h)
-	panel.mesh = q
-	panel.material_override = mats[0]
-	_on_bone(skeleton, chest, panel, Transform3D(Basis.IDENTITY, at))
+	if not painted:
+		var panel := MeshInstance3D.new()
+		panel.name = "Tabard"
+		var q := QuadMesh.new()
+		q.size = Vector2(w, h)
+		panel.mesh = q
+		panel.material_override = mats[0]
+		_on_bone(skeleton, chest, panel, Transform3D(Basis.IDENTITY, at))
 	if mats[1]:
 		var sig := MeshInstance3D.new()
 		sig.name = "Arms"

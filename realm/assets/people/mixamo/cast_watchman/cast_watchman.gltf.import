@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://bwn8a8w3m8vit"
-path="res://.godot/imported/cast_town_guard.gltf-959436e4880fe900794b6adb4dd1bb64.scn"
+uid="uid://dnk4dahcb1hwr"
+path="res://.godot/imported/cast_watchman.gltf-91e686e941deb6a1aaabf864ae2b233e.scn"
 
 [deps]
 
-source_file="res://assets/people/mixamo/cast_town_guard/cast_town_guard.gltf"
-dest_files=["res://.godot/imported/cast_town_guard.gltf-959436e4880fe900794b6adb4dd1bb64.scn"]
+source_file="res://assets/people/mixamo/cast_watchman/cast_watchman.gltf"
+dest_files=["res://.godot/imported/cast_watchman.gltf-91e686e941deb6a1aaabf864ae2b233e.scn"]
 
 [params]
 

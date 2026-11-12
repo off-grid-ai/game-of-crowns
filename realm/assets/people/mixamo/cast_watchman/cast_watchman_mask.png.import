@@ -2,17 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://3ue2fs5qa8ks"
-path="res://.godot/imported/Image_2.jpg-500f47018ec204e0d37e0f54a13e6bf0.ctex"
+uid="uid://d27mvra572dy3"
+path="res://.godot/imported/cast_watchman_mask.png-c45dfeae875f1a996403934fa35b809a.ctex"
 metadata={
 "vram_texture": false
 }
-generator_parameters={}
 
 [deps]
 
-source_file="res://assets/people/mixamo/cast_town_guard/Image_2.jpg"
-dest_files=["res://.godot/imported/Image_2.jpg-500f47018ec204e0d37e0f54a13e6bf0.ctex"]
+source_file="res://assets/people/mixamo/cast_watchman/cast_watchman_mask.png"
+dest_files=["res://.godot/imported/cast_watchman_mask.png-c45dfeae875f1a996403934fa35b809a.ctex"]
 
 [params]
 
@@ -24,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
