@@ -35,6 +35,7 @@ import * as Realm from "./realm.js";
 import * as Freeciv from "./freeciv.js";
 import * as View from "./view.js";
 import * as Camp from "./campaigns.js";
+import * as Risings from "./risings.js";
 import { CIVILIAN } from "./campaigns.js";
 import * as Counsel from "./counsel.js";
 import * as Treasury from "./treasury.js";
@@ -166,7 +167,8 @@ function load(id) {
   court.deedsOf = (pid) => (deeds[pid] ??= []);
   arcs = new Arcs(P.base, court, record);
   arcsRunning = false;  // a new realm's stories start free of the last one's
-  court.onArcRuling = (arc, beat, option) => arc === "council" ? councilRuled(beat, option) : arc === "siege" ? siegeRuled(beat, option) : arcs.rule(arc, beat, option);
+  court.onArcRuling = (arc, beat, option) => arc === "council" ? councilRuled(beat, option) : arc === "siege" ? siegeRuled(beat, option) : arc === "rising" ? Risings.ruled(risingsCtx(), beat, option) : arcs.rule(arc, beat, option);
+  court.onSuccession = (pid, why, turn) => Risings.claim(risingsCtx(), pid, why, turn);  // a child heir or none: a claimant may rise (risings.js)
   chatter?.stop();
   chatter = new Chatter(P.state, { world: () => world, turn: () => world?.turn ?? 0, minds: () => minds });
   stakes = new Stakes(P.state, record, endReign);
@@ -531,6 +533,8 @@ function rule(id, option) { return Sittings.rule(sittingCtx(), id, option); }
 
 // A town besieged, the royal host and its sieges: campaigns.js. Its context,
 // read fresh on every call; scenes is read live, as scene() may replace it.
+// Risings (risings.js): the realm's side of a house split by Freeciv's civil war.
+const risingsCtx = () => ({ world, meta, court, send, record, scene, favourOf, marchOn, diplomacy: diplomacyNow });
 const campCtx = () => ({ world, meta, court, get scenes() { return scenes; }, send, record, scene, deed, shiftFavour, greatHouses, crownOf, favourOf, causeOf, SOLDIER, detail, diplomacy: diplomacyNow });
 // The fighting companies of other houses on the tiles around a town (campaigns.js).
 function besiegers(c) { return Camp.besiegers(campCtx(), c); }
@@ -564,6 +568,8 @@ function decreeScenes(cmd, result, seat, target) {
 function onEvent(line) {
   let ev;
   try { ev = JSON.parse(line.slice(line.indexOf("EVENT {") + 6)); } catch { return; }
+  // A house split by Freeciv's civil war, its odds and its end (risings.js).
+  if (ev.kind === "rising" || ev.kind === "rising_odds" || ev.kind === "rising_over") return Risings.event(risingsCtx(), ev);
   // A blight run its course (realmrules/script.lua: its Blight building taken up): the land recovers.
   if (ev.kind === "decree_lapsed") {
     if (ev.building === "Blight" && world?.cities?.some((c) => c.id === Number(ev.city))) record({ turn: Number(ev.turn), kind: "heal", text: `The land around ${cityName(Number(ev.city))} slowly recovers.`, city: Number(ev.city) });
@@ -638,7 +644,7 @@ function marksNow() {
 const seasonCtx = () => ({ get world() { return world; }, get meta() { return meta; }, get court() { return court; }, get stakes() { return stakes; }, get minds() { return minds; },
   get P() { return P; }, get favour() { return favour; }, get deeds() { return deeds; },
   favourWhy, favourPast, treasuryCtx, send, record, flushHeld, courtSeason, royalWorks, resolveCampaigns, favourOf, restingFavour, noteFavour, recordDeed,
-  causeOf, saveFavour, goalNow, sworn, shiftFavour, heardCtx, setDiplomacy, diplomacy: diplomacyNow, snapshot, runArcs, addMark, detail, marksNow, besiegers, startCampaign });
+  causeOf, saveFavour, goalNow, sworn, shiftFavour, heardCtx, setDiplomacy, diplomacy: diplomacyNow, snapshot, runArcs, addMark, detail, marksNow, besiegers, startCampaign, risingsCtx });
 function runSeason() { return Season.runSeason(seasonCtx()); }
 function turnHouses(turn) { return Season.turnHouses(seasonCtx(), turn); }
 function storyMarch(pid, size) { return Season.storyMarch(seasonCtx(), pid, size); }

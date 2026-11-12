@@ -2360,6 +2360,29 @@ helptext	= _("\
 Raised in the house's seat while its lord has turned from the King: in every town of the house three townsmen fewer are content.\
 ")
 
+[building_rebel_banners]
+name		= _("Rebel Banners")
+genus		= "SmallWonder"
+reqs	=
+    { "type", "name", "range"
+      "Tech", "Forbidden Lore", "Player"
+    }
+graphic         = "b.temple"
+graphic_alt     = "-"
+graphic_alt2    = "-"
+obsolete_by	=
+    { "type", "name", "range"
+    }
+build_cost	= 1
+upkeep		= 0
+sabotage	= 0
+sound		= "b_generic"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+helptext	= _("\
+Raised in the rebels' seat while a rising lasts (script.lua realm_rising): they treat with no one until it is settled.\
+")
+
 [building_blight]
 name		= _("Blight")
 genus		= "Improvement"

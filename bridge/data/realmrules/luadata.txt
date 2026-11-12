@@ -23,3 +23,12 @@ blight = "12"
 ; A raid's life (script.lua realm_raid): Freeciv's barbarians raised beside a town pillage the land around it each
 ; season, then leave after this many seasons.
 seasons = "8"
+
+[risings]
+; A great house split by Freeciv's civil war (script.lua realm_rising): the rebels' host (how many companies, of
+; which kinds), how many tiles it marches a season on the lord's nearest town, and the seasons before the rising
+; settles itself (the side with more towns keeps them).
+host = "6"
+host_kinds = "Pikemen,Archers,Knights"
+speed = "2"
+seasons = "8"

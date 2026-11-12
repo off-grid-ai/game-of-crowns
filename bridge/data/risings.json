@@ -1,0 +1,7 @@
+{
+  "_": "Risings: a great house split by Freeciv's civil war (risings.js; the Freeciv half in realmrules/script.lua and luadata.txt [risings]). warnSeasons: seasons from the claim to the roll (Freeciv's own odds then decide). coldSeasons: seasons a great house sits below the cooling band before a claimant stands up against its lord. minTowns: a house smaller than this can't split. favour: what each answer at court moves (lord, claimant's new house).",
+  "warnSeasons": 2,
+  "coldSeasons": 6,
+  "minTowns": 3,
+  "favour": { "lord": 10, "claimant": 10, "spurned": -10, "terms": 3 }
+}

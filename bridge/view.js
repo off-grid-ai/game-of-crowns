@@ -4,6 +4,7 @@
 // own helpers come in as one context argument, built fresh by server.js on
 // each call (server.js keeps wrappers of the same names).
 
+import * as Risings from "./risings.js";
 import { houseFor, cityName, HOUSES } from "./narrator.js";
 import { BUILD_COST, granarySize } from "./rules.js";
 import { DECREES, TITHE_HIGH } from "./crown.js";
@@ -174,6 +175,7 @@ export function townStates(ctx) {
     c.situation = situation({ world, scenes, marks: ctx.marksNow?.() ?? [], besiegers }, c);
     c.thoughts = ctx.thoughtsOf?.(c.id) ?? [];  // what the town is saying (chatter.js; the crowd thinks out loud)
     c.garrison = ctx.garrisonOf?.(c) ?? null;  // a royal company standing here, and its seasons left (garrison.js, the one owner)
+    c.rising = Risings.townRising(meta, c);  // a house split in a rising: which side holds the town (risings.js)
     c.ruling = ctx.rulingOf?.(c) ?? null;  // the King's latest ruling here and its seasons left (rulings.js, the one owner)
     c.damage = ctx.damageOf?.(c) ?? null;  // its walls' sections and its burnt houses (damage.js, the one owner)
   }

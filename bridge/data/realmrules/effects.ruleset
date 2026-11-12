@@ -4179,6 +4179,17 @@ reqs    =
       "Building", "Heavy Tithe", "Player"
     }
 
+; A rising is fought out, not bargained away: while the rebels' banners stand (realm_rising, taken down by
+; realm_rising_end) neither they nor anyone can open talks with them, so Freeciv's AIs can't agree a cease-fire
+; mid-rising (measured: the lord begged one three seasons in and every blow after was refused).
+[effect_rebel_banners]
+type    = "No_Diplomacy"
+value   = 1
+reqs    =
+    { "type", "name", "range"
+      "Building", "Rebel Banners", "Player"
+    }
+
 [effect_grievance]
 type    = "City_Unhappy_Size"
 value   = -3

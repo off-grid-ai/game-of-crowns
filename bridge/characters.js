@@ -457,8 +457,10 @@ export class Court {
       for (const [id, rel] of Object.entries(c.relationships)) heir.relationships[id] = { opinion: Math.round(rel.opinion * 0.6) };
       this.record({ turn, kind: "succession", text: `${heir.name}, ${heir.age}, succeeds as ${c.rank === "lord" ? "lord of " + c.house : "lord of " + cityName(c.seat)}.`, city: c.seat ?? undefined });
       if (heir.age < 16) this.record({ turn, kind: "unrest", text: `A child sits the seat of ${cityName(c.seat)}. Ambitious men take note.`, city: c.seat ?? undefined });
+      if (heir.age < 16 && c.rank === "lord") this.onSuccession?.(c.playerId, "child", turn);  // a claimant may rise (risings.js)
     } else if (c.rank === "lord") {
       this.record({ turn, kind: "unrest", text: `${c.house} has no heir. The succession is contested.` });
+      this.onSuccession?.(c.playerId, "noheir", turn);  // a claimant may rise (risings.js)
     }
   }
 

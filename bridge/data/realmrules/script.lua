@@ -437,6 +437,12 @@ function ev_turn(turn, year)
   realm_mines_turn()
   realm_decrees_lapse()
   realm_raids_turn()
+  realm_risings_turn()
+end
+
+-- A player's phase begins with its men's moves restored: the rebels march and strike then (realm_risings_phase).
+function ev_phase(player, is_new_phase)
+  realm_risings_phase(player)
 end
 
 local hooks = {
@@ -445,7 +451,7 @@ local hooks = {
   {"disaster_occurred", "ev_disaster"}, {"building_built", "ev_building_built"},
   {"building_lost", "ev_building_lost"}, {"unit_lost", "ev_unit_lost"},
   {"tech_researched", "ev_tech"},
-  {"turn_begin", "ev_turn"}, {"action_started_unit_units", "ev_attack"}, {"action_started_unit_unit", "ev_attack"}, {"action_started_unit_tile", "ev_attack"},  -- Freeciv 3.2 reports an attack as unit-on-tile
+  {"turn_begin", "ev_turn"}, {"player_phase_begin", "ev_phase"}, {"action_started_unit_units", "ev_attack"}, {"action_started_unit_unit", "ev_attack"}, {"action_started_unit_tile", "ev_attack"},  -- Freeciv 3.2 reports an attack as unit-on-tile
 }
 for _, h in ipairs(hooks) do
   local ok, err = pcall(signal.connect, h[1], h[2])
@@ -715,6 +721,161 @@ function realm_raids_turn()
     end
   end
   GOC_RAIDS = table.concat(kept, ";")
+end
+
+-- Risings: a great house split by Freeciv's own civil war (edit.civil_war: Freeciv's odds from its government and its
+-- unhappy and celebrating towns, or a fixed chance; about half its towns other than its seat go over to a new AI
+-- player). Left alone, Freeciv's rebels sit still (measured: 0 attacks in 40 turns, docs/research/risings-civil-war-
+-- 2026-11-12.md), so the rising has a host and a march: the rebels' men raised at their town nearest the lord's seat
+-- (realm_host), walking each season by Freeciv's own moves on the lord's nearest town and assaulting it at the walls
+-- (realm_assault, Freeciv's combat and conquest). After risings.seasons it settles itself: the side with more towns
+-- keeps them (the rebels as a lesser house, or their towns go back to the lord). The bridge (risings.js) decides when
+-- and how the King rules on it. Kept as a plain string ("rebel|house|until;..."), which the save keeps.
+GOC_RISINGS = GOC_RISINGS or ""
+
+local function rising_num(key, default) return tonumber(luadata.get_str("risings." .. key)) or default end
+
+local function soldiers_of(p)
+  local out = {}
+  for u in p:units_iterate() do if not u.utype:has_flag("NonMil") and u.utype:can_exist_at_tile(u.tile) then out[#out + 1] = u end end
+  return out
+end
+
+local function nearest_town(p, from)
+  local best, bd = nil, nil
+  for c in p:cities_iterate() do
+    local d = c.tile:sq_distance(from)
+    if not bd or d < bd then best, bd = c, d end
+  end
+  return best
+end
+
+function realm_rising(house_id, chance)
+  local p = realm_find_player(house_id)
+  if not p then return end
+  local r = edit.civil_war(p, chance or 0)
+  if not r then emit("rising", {house = house_id, rebel = -1}); return end
+  local seat = nil
+  for c in p:cities_iterate() do if c:is_capital() then seat = c end end
+  seat = seat or nearest_town(p, r:cities_iterate()().tile)
+  local muster = nearest_town(r, seat.tile)
+  local kinds = {}
+  for k in tostring(luadata.get_str("risings.host_kinds") or "Pikemen,Archers,Knights"):gmatch("[^,]+") do kinds[#kinds + 1] = k end
+  realm_host(r, muster.tile.x, muster.tile.y, kinds, rising_num("host", 6))
+  -- The host is the rising's, not its AI's: held from Freeciv's AI (which would spend its moves wandering) and
+  -- freed only for its march and assault each season (realm_risings_phase), as the homeward march is.
+  for _, u in ipairs(soldiers_of(r)) do edit.movement_disallow(u) end
+  local banners = find.building_type("Rebel Banners")
+  if banners then edit.create_building(muster, banners) end
+  local til = game.current_turn() + rising_num("seasons", 8)
+  GOC_RISINGS = GOC_RISINGS .. (GOC_RISINGS == "" and "" or ";") .. string.format("%d|%d|%d", r.id, house_id, til)
+  local towns = {}
+  for c in r:cities_iterate() do towns[#towns + 1] = string.format("%d", c.id) end
+  emit("rising", {house = house_id, rebel = r.id, towns = table.concat(towns, ","), muster = muster.id, til = til})
+end
+
+-- Freeciv's own odds that a house splits if a rising is tried now (plrhand.c civil_war_triggered): its
+-- government's Civil_War_Chance, +5 for each unhappy town and -5 for each celebrating one (game.ruleset
+-- civil_war_bonus_unhappy / civil_war_bonus_celebrating; rising_probe checks they still match). Reports
+-- "rising_odds", so the King sees the chance before it's rolled, and what a feast or relief does to it.
+function realm_rising_odds(house_id)
+  local p = realm_find_player(house_id)
+  if not p then return end
+  local odds, unhappy, glad, towns = effects.player_bonus(p, "Civil_War_Chance"), 0, 0, 0
+  for c in p:cities_iterate() do
+    towns = towns + 1
+    if c:is_unhappy() then unhappy = unhappy + 1 end
+    if c:is_celebrating() then glad = glad + 1 end
+  end
+  odds = math.max(0, math.min(100, odds + 5 * unhappy - 5 * glad))
+  emit("rising_odds", {house = house_id, odds = odds, unhappy = unhappy, celebrating = glad, towns = towns})
+end
+
+-- How a rising ends: "return" (the rebels' towns go back to the lord by Freeciv's transfer, their men disband),
+-- "keep" (the rebels hold what they hold, a lesser house), "auto" (the side with more towns keeps them).
+function realm_rising_end(rebel_id, how)
+  local kept = {}
+  local rebel, house = nil, nil
+  for rid, hid, til in GOC_RISINGS:gmatch("(%d+)|(%d+)|(%d+)") do
+    if tonumber(rid) == rebel_id then rebel, house = realm_find_player(rebel_id), realm_find_player(tonumber(hid))
+    else kept[#kept + 1] = rid .. "|" .. hid .. "|" .. til end
+  end
+  GOC_RISINGS = table.concat(kept, ";")
+  if not rebel then return end
+  if not house then emit("rising_over", {house = -1, rebel = rebel_id, how = "keep", towns = 0}); return end
+  local mine, theirs = 0, 0
+  for c in rebel:cities_iterate() do mine = mine + 1 end
+  for c in house:cities_iterate() do theirs = theirs + 1 end
+  if how == "auto" then how = theirs >= mine and "return" or "keep" end
+  local banners = find.building_type("Rebel Banners")
+  if banners then for c in rebel:cities_iterate() do if c:has_building(banners) then edit.remove_building(c, banners) end end end
+  if how == "return" then
+    local towns = {}
+    for c in rebel:cities_iterate() do towns[#towns + 1] = c end
+    for _, c in ipairs(towns) do edit.transfer_city(c, house) end
+    local disband = find.action("Disband Unit")
+    local men = {}
+    for u in rebel:units_iterate() do men[#men + 1] = u end
+    for _, u in ipairs(men) do pcall(edit.perform_action, u, disband) end
+  end
+  emit("rising_over", {house = house.id, rebel = rebel_id, how = how, towns = mine})
+end
+
+function realm_risings_turn()
+  if GOC_RISINGS == "" then return end
+  local todo = {}
+  for rid, hid, til in GOC_RISINGS:gmatch("(%d+)|(%d+)|(%d+)") do todo[#todo + 1] = {tonumber(rid), tonumber(hid), tonumber(til)} end
+  for _, r in ipairs(todo) do
+    local rebel, house = realm_find_player(r[1]), realm_find_player(r[2])
+    local towns = 0
+    if rebel then for c in rebel:cities_iterate() do towns = towns + 1 end end
+    local held = 0
+    if house and house.is_alive then for c in house:cities_iterate() do held = held + 1 end end
+    if held == 0 then
+      realm_rising_end(r[1], "keep")  -- the lord's house is gone: the rising has won
+    elseif not (rebel and rebel.is_alive and towns > 0) then
+      realm_rising_end(r[1], "return")  -- crushed
+    elseif game.current_turn() >= r[3] then
+      realm_rising_end(r[1], "auto")
+    end
+  end
+end
+
+-- The rebels' own phase, their men's moves restored: the host marches on the lord's nearest town, a few tiles a season, and
+-- strikes at its walls (Freeciv's Attack needs moves left, so not at the turn's start).
+function realm_risings_phase(rebel)
+  if GOC_RISINGS == "" then return end
+  local speed = rising_num("speed", 2)
+  for rid, hid in GOC_RISINGS:gmatch("(%d+)|(%d+)|%d+") do
+    local house = realm_find_player(tonumber(hid))
+    if tonumber(rid) == rebel.id and house and house.is_alive then
+      local men = soldiers_of(rebel)
+      local target = men[1] and nearest_town(house, men[1].tile)
+      if target then
+        local at_walls = 0
+        for _, u in ipairs(men) do
+          edit.movement_allow(u)
+          for i = 1, speed do
+            if u.tile:sq_distance(target.tile) <= 2 then break end
+            local best, bd = nil, u.tile:sq_distance(target.tile)
+            for t in u.tile:square_iterate(1) do
+              local clear = t:city() == nil and t.terrain:class_name() == "Land"
+              for o in t:units_iterate() do if o.owner ~= rebel then clear = false end end
+              local d = t:sq_distance(target.tile)
+              if clear and d < bd then best, bd = t, d end
+            end
+            if not best then break end
+            pcall(edit.unit_move, u, best, 0, nil, false, false, false, false, false)
+            if u.tile ~= best then break end
+          end
+          if u.tile:sq_distance(target.tile) <= 2 then at_walls = at_walls + 1 end
+        end
+        log.normal("RISING %d marches on %s: %d of %d at the walls", rebel.id, target.name, at_walls, #men)
+        if at_walls > 0 then realm_assault(target.id, rebel.id) end
+        for _, u in ipairs(soldiers_of(rebel)) do edit.movement_disallow(u) end
+      end
+    end
+  end
 end
 
 -- Decree buildings (buildings.ruleset "Royal Feast", "Royal Relief", "Blight", "Heavy Tithe"; their effects in

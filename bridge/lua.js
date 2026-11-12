@@ -18,6 +18,14 @@ export const decree = (cityId, kind, seasons) => `realm_decree(${n(cityId)}, "${
 // (realmrules/script.lua realm_assault; Freeciv fights every blow and reports "assault").
 export const assault = (cityId, crownId) => `realm_assault(${n(cityId)}, ${n(crownId)})`;
 
+// A great house split by Freeciv's civil war, its rebels raised and marching (realmrules/script.lua realm_rising):
+// chance 0 lets Freeciv's own odds decide (its government, unhappy and celebrating towns). Reports "rising".
+export const rising = (houseId, chance = 0) => `realm_rising(${n(houseId)}, ${n(chance)})`;
+// Freeciv's own odds that the house splits if a rising is tried now (realm_rising_odds). Reports "rising_odds".
+export const risingOdds = (houseId) => `realm_rising_odds(${n(houseId)})`;
+// How a rising ends: "return" (the towns go back to the lord), "keep" (the rebels a lesser house). Reports "rising_over".
+export const risingEnd = (rebelId, how) => `realm_rising_end(${n(rebelId)}, "${how === "keep" ? "keep" : "return"}")`;
+
 // A mark the houses (player ids) bear in their seat, felt in all their towns, lifted everywhere else
 // (realmrules/script.lua realm_bear).
 const bear = (name, pids) => `realm_bear("${name}", "${pids.map(n).join(",")}")`;
