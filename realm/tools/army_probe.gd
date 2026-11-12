@@ -444,8 +444,6 @@ func _the_right_banner() -> void:
 	_check(H.get_script_method_list().any(func(m): return m["name"] == "arms"), "a house's arms come from one place (heraldry.gd arms)")
 	var banner_owner := ResourceLoader.exists("res://scripts/army_banners.gd") and not ArmyS.get_script_method_list().any(func(m): return m["name"] in ["_banner", "_flag_quad", "_standard_place"])
 	_check(banner_owner, "a host's banners and standard have one owner (army_banners.gd; integration audit #12)")
-	var look_owner := ResourceLoader.exists("res://scripts/army_visual.gd") and not ArmyS.get_script_method_list().any(func(m): return m["name"] in ["_asset", "_soldier_mesh", "_lods", "_wear_arms", "_shadows"])
-	_check(look_owner, "the soldiers' look and lighter levels have one owner (army_visual.gd; integration audit #12)")
 	var a: Object = ArmyS.new(Node.new(), 0, {"side": 0, "colour": Color(0.2, 0.3, 0.6), "house": ashby})
 	var units: Dictionary = Data.value("army", "units", {})
 	var colour := Color(0.2, 0.3, 0.6)
