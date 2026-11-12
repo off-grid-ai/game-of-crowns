@@ -253,6 +253,28 @@ static func meshy_gatehouse() -> String:
 	return path if String(g.get("replaces", "")) == "castle_gate" and ResourceLoader.exists(path) else ""
 
 
+## A town's stone wall (01-town's wall round the town, its towers and its gate; towns.gd _town_wall lays it out):
+## the curtain's bays, each [centre (metres, town-local, its foot), yaw (its outer face toward +Z turned by yaw),
+## index along its run], and cone towers at `towers` (metres, their foot), the curtain `storeys` high. The castle's
+## stone, the same slits and merlons. Baked into one mesh.
+func town_wall(bays: Array, towers: Array, storeys: int, seed: int) -> ArrayMesh:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed
+	var parts := []
+	for b in bays:
+		var basis := Basis(Vector3.UP, float(b[1]))
+		var off := (int(b[2]) + 0.5) * CELL  # its place along the run: every third bay slit, as the castle's
+		_curtain(parts, Transform3D(basis, Vector3(b[0]) - basis * Vector3(off, 0, 0)), off, storeys)
+	for t in towers:
+		_block(parts, t, 2, 2, storeys + 2, rng, {"cone": true, "windows": 0.3})
+	var stone := _castle_stone()
+	if not stone.is_empty():
+		for p in parts:
+			if String(p[0]).begins_with("res://"):
+				p.append({})
+	return _bake(parts, stone)
+
+
 ## A town wall's gatehouse (walls.gd: where a road runs through a town's ring wall; 01-town's arched gate in
 ## the town wall): the castle's own gate, its passage through and a cone tower either side, or Meshy's
 ## gatehouse with --landmarks=meshy; in metres, the way out on +Z, the wall's line at z 0, y 0 the road.

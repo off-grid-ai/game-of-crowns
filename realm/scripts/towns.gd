@@ -1088,7 +1088,8 @@ func _plot_lots(root: Node3D, center: Vector3, square_r: float, ways: Array, kin
 		far = maxf(far, q.length())
 	root.set_meta("edge_outline", edge)
 	root.set_meta("edge_r", far)
-	_palisade_on(root, center, edge, ways, seat)
+	if not _town_wall(root, center, edge, ways):
+		_palisade_on(root, center, edge, ways, seat)
 	_edge_trees(root, center, edge, ways, lots, rng)
 	_layout_check(root, taken, ways)
 	return placed
@@ -1473,6 +1474,105 @@ func _palisade_on(root: Node3D, center: Vector3, edge: PackedVector2Array, ways:
 			if castle.size() >= 3 and Geometry2D.is_point_in_polygon(q, castle):
 				continue
 			_place(root, "wooden_fence_game_ready_asset", p + Vector3(0, _ground_y(center, p) - 0.01, 0), yaw, Vector3(1, 1.6, 1) if seat else Vector3.ONE, Vector2(panel * 1.05, 0.08))
+
+
+## The town's stone wall round its edge, in place of the palisade (towns.json town_wall; 01-town: the town wall in
+## the distance, its towers with red cones and its arched gate): the castle's curtain in 2 m bays along the edge's
+## outline, a cone tower at each corner of it and every tower_every_m metres, a gatehouse (castle_builder.gd
+## town_gate) where each main road runs out, and a gap where a lane does; never over water or into the castle.
+## For the ranks in town_wall.ranks; --town-wall=off for the palisade. Returns whether it stood.
+func _town_wall(root: Node3D, center: Vector3, edge: PackedVector2Array, ways: Array) -> bool:
+	var k: Dictionary = preload("res://scripts/data.gd").value("towns", "town_wall", {})
+	if edge.size() < 3 or not _rank in (k.get("ranks", []) as Array) or OS.get_cmdline_user_args().has("--town-wall=off"):
+		return false
+	var grown := Geometry2D.offset_polygon(edge, float(k.get("out", 0.25)))
+	var line: PackedVector2Array = grown[0] if not grown.is_empty() else edge
+	var castle: PackedVector2Array = root.get_meta("castle_poly", PackedVector2Array())
+	if castle.size() >= 3:
+		var cg := Geometry2D.offset_polygon(castle, 0.2)
+		castle = cg[0] if not cg.is_empty() else castle
+	var bay := 2.0 * S
+	var gate_half := float(k.get("gate_half_m", 7.5)) * S
+	var main: Array = root.get_meta("ways_main", [])
+	# Where each main road crosses the line: a gatehouse there.
+	var gates: Array = []  # [point, outward normal]
+	# Out of the town: the side of each stretch away from the line's inside.
+	var out_of := func(a: Vector2, b: Vector2) -> Vector2:
+		var d := (b - a).normalized()
+		var n := Vector2(d.y, -d.x)
+		return -n if Geometry2D.is_point_in_polygon((a + b) * 0.5 + n * 0.05, line) else n
+	for i in line.size():
+		var a: Vector2 = line[i]
+		var b: Vector2 = line[(i + 1) % line.size()]
+		var n: Vector2 = out_of.call(a, b)
+		for way: PackedVector2Array in main:
+			for j in way.size() - 1:
+				var hit: Variant = Geometry2D.segment_intersects_segment(a, b, way[j], way[j + 1])
+				if hit != null and gates.all(func(g): return (g[0] as Vector2).distance_to(hit) > gate_half * 2.0):
+					gates.append([hit, n])
+	var bays: Array = []
+	var towers: Array = []
+	var turn := deg_to_rad(float(k.get("turn_deg", 20.0)))
+	var every := float(k.get("tower_every_m", 36.0)) * S
+	var since := 0.0
+	var m := func(q: Vector2) -> Vector3: return Vector3(q.x, _ground_y(center, Vector3(q.x, 0, q.y)) - 0.02, q.y) / S
+	var open := func(q: Vector2) -> bool:
+		if not terrain.is_land(center.x + q.x, center.z + q.y):
+			return false
+		if castle.size() >= 3 and Geometry2D.is_point_in_polygon(q, castle):
+			return false
+		if gates.any(func(g): return (g[0] as Vector2).distance_to(q) < gate_half):
+			return false
+		return not TownPlots.near_ways(q, ways, 0.3)  # a lane's mouth: a gap
+	for i in line.size():
+		var a: Vector2 = line[i]
+		var b: Vector2 = line[(i + 1) % line.size()]
+		var c: Vector2 = line[(i + 2) % line.size()]
+		var d := (b - a).normalized()
+		var n: Vector2 = out_of.call(a, b)
+		var yaw := atan2(n.x, n.y)
+		# The bays run along the wall's local +x: (cos yaw, -sin yaw) on the ground; from whichever end that starts.
+		var xdir := Vector2(cos(yaw), -sin(yaw))
+		var start := a if xdir.dot(d) > 0.0 else b
+		var cnt := maxi(1, int(round(a.distance_to(b) / bay)))
+		var step := a.distance_to(b) / cnt
+		for j in cnt:
+			var q := start + xdir * step * (j + 0.5)
+			since += step
+			if since >= every and open.call(q):
+				towers.append(m.call(q))
+				since = 0.0
+				continue
+			if open.call(q):
+				bays.append([m.call(q), yaw, j])
+		# A tower where the line turns.
+		var d2 := (c - b).normalized()
+		if absf(d.angle_to(d2)) > turn and open.call(b):
+			towers.append(m.call(b))
+			since = 0.0
+	if bays.is_empty():
+		return false
+	var Builder := preload("res://scripts/castle_builder.gd")
+	var builder = Builder.new()
+	var mi := MeshInstance3D.new()
+	mi.name = "TownWall"
+	mi.mesh = builder.town_wall(bays, towers, int(k.get("storeys", 2)), int(root.get_meta("size", 1)) * 31 + 7)
+	mi.scale = Vector3.ONE * S
+	root.add_child(mi)
+	_fade_beyond(mi, _reach("castle", 220.0))
+	for g in gates:
+		var q: Vector2 = g[0]
+		var n: Vector2 = g[1]
+		var gm := MeshInstance3D.new()
+		gm.name = "TownGate"
+		gm.mesh = builder.town_gate(int(k.get("storeys", 2)), int(q.x * 100.0))
+		gm.scale = Vector3.ONE * S
+		gm.position = Vector3(q.x, _ground_y(center, Vector3(q.x, 0, q.y)) - 0.02, q.y)
+		gm.rotation.y = atan2(n.x, n.y)
+		root.add_child(gm)
+		_fade_beyond(gm, _reach("castle", 220.0))
+	print("CHECK town wall: %s: %d bays, %d towers, %d gates" % [String(root.get_meta("title", "")), bays.size(), towers.size(), gates.size()])
+	return true
 
 
 ## --towns=plots: the open fields, out past the plots along the roads: long
