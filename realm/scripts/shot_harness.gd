@@ -341,7 +341,11 @@ func _frame_for_shot() -> void:
 				if c != king and (near.is_empty() or Vector2(c["x"] - king["x"], c["y"] - king["y"]).length() < Vector2(near["x"] - king["x"], near["y"] - king["y"]).length()):
 					near = c
 			var to: Vector3 = main.terrain.world_pos(float(near["x"]), float(near["y"]))
-			# A played take ends itself (its --wait is 9999): it stages --lead seconds in; a still stages lead before its --wait.
+			# A played take ends itself (its --wait is 9999): it stages --lead seconds after the realm has built, when its
+			# play starts (_autoplay); a still stages lead before its --wait.
+			if _shot.has("play"):
+				while main.towns.building() or main.terrain.width == 0:
+					await main.get_tree().create_timer(1.0).timeout
 			var stage_in := float(_shot.get("lead", 4.0)) if _shot.has("play") else maxf(1.0, float(_shot.get("wait", 8.0)) - float(_shot.get("lead", 4.0)))
 			main.get_tree().create_timer(stage_in).timeout.connect(func():
 				if _shot.get("convoy", false):
