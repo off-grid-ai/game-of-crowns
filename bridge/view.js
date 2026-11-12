@@ -4,7 +4,7 @@
 // own helpers come in as one context argument, built fresh by server.js on
 // each call (server.js keeps wrappers of the same names).
 
-import { crownOf } from "./realm.js";
+import { crownOf, northTowns } from "./realm.js";
 import * as Risings from "./risings.js";
 import { houseFor, cityName, HOUSES } from "./narrator.js";
 import { BUILD_COST, granarySize } from "./rules.js";
@@ -120,7 +120,7 @@ export function worldView(ctx) {
   const crownId = players.find((p) => p.house.crown)?.id;
   // The dead: which northern town they strike, how many came, and when the next comes.
   const nn = stakes?.s.north ?? {};
-  const northTown = (world?.cities ?? []).filter((c) => c.y < 30).sort((a, b) => a.y - b.y)[0];
+  const northTown = northTowns(world)[0];
   const dead = { town: northTown ? cityName(northTown.id) : null, owner: northTown?.owner ?? null,
     last: (3 + (nn.waves ?? 0) * 2) * 200, next: (3 + ((nn.waves ?? 0) + 1) * 2) * 200, in: nn.nextAt ? Math.max(0, nn.nextAt - (world?.turn ?? 0)) : null };
   const threat = { usurper, north: (stakes?.s.north.waves ?? 0), dead, pretender: u?.house ?? null, since: u?.since ?? 0, turn: world?.turn ?? 0,

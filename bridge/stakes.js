@@ -9,7 +9,7 @@ import * as Lua from "./lua.js";
 import fs from "node:fs";
 import path from "node:path";
 import { houseFor, cityName } from "./narrator.js";
-import { greatHouses, crownOf } from "./realm.js";
+import { greatHouses, crownOf, northTowns, farNorthTowns } from "./realm.js";
 import { BANDS } from "./favour.js";
 
 
@@ -176,14 +176,14 @@ export class Stakes {
     if (n.nextAt && turn >= n.nextAt && !(turn >= n.awakeAt && !n.nextAt)) {
       n.waves++;
       n.nextAt = turn + Math.max(6, 16 - n.waves);
-      const north = world.cities.filter((c) => c.y < 30).sort((a, b) => a.y - b.y)[0];
+      const north = northTowns(world)[0];
       const x = north ? north.x : 28;
       const y = north ? Math.max(2, north.y - 4) : 6;
       this.host(ctx, this.theDead(), x, y, ["Warriors", "Archers", "Pikemen"], 3 + n.waves * 2);
       // Remember where they struck, to tell how it ended.
       if (north) n.struck = { id: north.id, owner: north.owner, turn, men: (3 + n.waves * 2) * 200 };
       this.record({ turn, kind: "rebellion", text: n.waves === 1 ? "The dead come over the wall. The North bleeds first." : `The dead come again, more than before${n.waves > 4 ? ", as they have for years now" : ""}. The northern houses beg the King for aid.` });
-      const northernSeats = world.cities.filter((c) => c.y < 22);
+      const northernSeats = farNorthTowns(world);
       if (n.waves >= 4 && northernSeats.length === 0) this.endReign("The North is lost to the dead, and the realm with it.", "fallen");
     }
     this.save();

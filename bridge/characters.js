@@ -6,7 +6,7 @@
 // here; pivotal ones go to Claude in the character's own voice. Results land
 // in Freeciv (towns change hands, rebellions, gold) and at the King's court.
 
-import { crownOf } from "./realm.js";
+import { crownOf, northTowns } from "./realm.js";
 import * as Lua from "./lua.js";
 import { pick as wording } from "./say.js";  // one of a result's wordings (data/dilemmas.json text lists)
 import fs from "node:fs";
@@ -50,7 +50,6 @@ function namePool(gender) {
 const M = ["Aldric", "Bran", "Cedric", "Dunstan", "Edric", "Godwin", "Harold", "Jory", "Osric", "Rowan", "Tobin", "Hugh", "Garth", "Alaric", "Ewan", "Roderick", "Leofric", "Merrick", "Corwin", "Tristan", "Benedict", "Gareth", "Lucan", "Willem"];
 const F = ["Agnes", "Bryony", "Cecily", "Edith", "Elsbeth", "Gwen", "Hilda", "Isolde", "Joan", "Maud", "Rosalind", "Wynne", "Alys", "Mira", "Tamsin", "Ysolde", "Rhiannon", "Elaine", "Beatrix", "Constance", "Genevieve", "Odette"];
 export const TRAITS = ["ambitious", "honourable", "greedy", "vengeful", "pious", "cunning", "craven", "brave", "content", "paranoid", "generous", "proud", "patient", "wrathful", "just"];
-const NORTH_Y = 30;  // towns north of this row are the North (the hill clans' and the dead's country)  // the one year length the court and the bridge count by
 
 // Roles a player can give a character: a title, and the leanings that come with it.
 export const ROLES = {
@@ -1011,7 +1010,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
     // Raiders are men (barbarians, sea raiders), not the wild beasts.
     const raider = (pid) => { const p = world.players.find((x) => x.id === pid); return !!p && /raiders/.test(houseFor(p).name ?? ""); };
     const raided = towns.filter((x) => (world.units ?? []).some((u) => raider(u.owner) && Math.max(Math.abs(u.x - x.x), Math.abs(u.y - x.y)) <= 3));
-    const north = towns.filter((x) => x.y < NORTH_Y);
+    const north = northTowns({ cities: towns });
     const warring = world.players.some((p) => p.id !== c.playerId && !isWild(p.id) && ctx.atWar?.(c.playerId, p.id));
     if (w.atWar && !warring) return null;
     if (w.disorder && !hot.length) return null;

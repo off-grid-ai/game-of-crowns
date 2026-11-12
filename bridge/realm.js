@@ -1,6 +1,9 @@
 // Who's who in the realm, defined once (consolidation-plan B2). Every file asks
 // these instead of filtering players its own way.
+import fs from "node:fs";
 import { houseFor } from "./narrator.js";
+
+const GEO = JSON.parse(fs.readFileSync(new URL("./data/geography.json", import.meta.url), "utf8"));
 
 // A great house: not wild, not the crown, and holds at least one town (the
 // supervisor's ruling). Pass anyTown=false to count a house with no town but a
@@ -14,6 +17,10 @@ export function houseName(world, pid, fallback = "A house") {
   const p = (world?.players ?? []).find((x) => x.id === Number(pid));
   return p ? houseFor(p).name : fallback;  // (houseFor names any player, even none, so the fallback is decided here)
 }
+
+// The North (data/geography.json): its towns, northernmost first; and the far North, where its seats stand.
+export const northTowns = (world) => (world?.cities ?? []).filter((c) => c.y < GEO.north).sort((a, b) => a.y - b.y);
+export const farNorthTowns = (world) => (world?.cities ?? []).filter((c) => c.y < GEO.farNorth);
 
 // The crown's player, or undefined.
 export function crownOf(world) {
