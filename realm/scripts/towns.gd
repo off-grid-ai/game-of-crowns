@@ -1112,7 +1112,7 @@ func _yard_green(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vec
 	if rng.randf() < float(green.get("tree", 0.0)):
 		var t := 0.12 if rng.randf() < 0.5 else 0.88
 		var at2: Vector2 = corners[3].lerp(corners[2], t) + f2 * 0.1
-		var grown := rng.randf_range(0.8, 1.1)
+		var grown := minf(rng.randf_range(0.8, 1.1), float(green.get("tree_most", 99.0)) / 10.0)  # no taller than tree_most metres (the broadleaf stands ~10 m; research #6: about 1.2x a two-storey house)
 		var before: int = lots.size()
 		drop.call("town_tree", at2, float(green.get("tree_ground", 0.12)), grown)
 		if lots.size() > before and rng.randf() < float(green.get("apples", 0.0)):

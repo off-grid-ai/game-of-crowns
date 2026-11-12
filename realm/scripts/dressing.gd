@@ -36,7 +36,7 @@ static func dress(root: Node3D, ground: Callable, land: Callable, seed: int) -> 
 	var rank := float((Data.value("dressing", "rank", {}) as Dictionary).get(String(root.get_meta("rank", "village")), 0.5))
 	var placed := {}  # "kit/model" -> [Transform3D...]
 	var taken: Array[Vector2] = []
-	var counts := {"trade": 0, "home": 0, "ground": 0, "edge": 0, "refused": 0}
+	var counts := {"trade": 0, "home": 0, "ground": 0, "edge": 0, "cluster": 0, "refused": 0}
 	var put := func(model: String, at: Vector3, turn: float, scale: float, why: String) -> bool:
 		if not _fits(root, at, taken, why == "ground"):
 			counts["refused"] = int(counts["refused"]) + 1
@@ -116,6 +116,48 @@ static func dress(root: Node3D, ground: Callable, land: Callable, seed: int) -> 
 				break
 		var span: Array = row[2]
 		put.call(String(row[0]), at, rng.randf() * TAU, rng.randf_range(float(span[0]), float(span[1])), "ground")
+	# Every gap dressed the way Anno does it (docs/research/quality-deep-dive.md #4; dressing.json clusters): a group
+	# round one big piece (a wagon, a workbench, a barrel rack, a big plant), a few medium things about it (barrels,
+	# crates, a stool, a bucket, a bush) and many small ones further out (flowers, grass tufts, pebbles, petals), so a
+	# yard or a corner reads as lived in, not as one prop on a lawn. Every piece passes the same tests as all the rest.
+	var C: Dictionary = Data.value("dressing", "clusters", {})
+	var cbig: Array = C.get("big", [])
+	if not cbig.is_empty():
+		var pick_of := func(rows: Array) -> Array:
+			var t := 0.0
+			for p in rows:
+				t += float(p[1])
+			var roll := rng.randf() * t
+			for p in rows:
+				roll -= float(p[1])
+				if roll <= 0.0:
+					return p
+			return rows[0]
+		var mids: Array = C.get("medium", [])
+		var smalls: Array = C.get("small", [])
+		var nmid: Array = C.get("medium_n", [2, 4])
+		var nsmall: Array = C.get("small_n", [5, 9])
+		var rmid: Array = C.get("medium_r", [0.1, 0.2])
+		var rsmall: Array = C.get("small_r", [0.12, 0.34])
+		for i in int(float(C.get("tries", 40)) * rank):
+			var a := rng.randf() * TAU
+			var d := sqrt(rng.randf_range(inner * inner, outer * outer))
+			var at := Vector3(cos(a) * d, 0, sin(a) * d)
+			if taken.any(func(q: Vector2) -> bool: return q.distance_to(Vector2(at.x, at.z)) < float(C.get("gap", 0.3))):
+				continue
+			var row: Array = pick_of.call(cbig)
+			if not put.call(String(row[0]), at, rng.randf() * TAU, rng.randf_range(float(row[2][0]), float(row[2][1])), "cluster"):
+				continue
+			for ring in [[mids, nmid, rmid], [smalls, nsmall, rsmall]]:
+				if (ring[0] as Array).is_empty():
+					continue
+				for k in rng.randi_range(int(ring[1][0]), int(ring[1][1])):
+					var b := rng.randf() * TAU
+					var q := at + Vector3(cos(b), 0, sin(b)) * rng.randf_range(float(ring[2][0]), float(ring[2][1]))
+					if taken.any(func(w: Vector2) -> bool: return w.distance_to(Vector2(q.x, q.z)) < 0.04):
+						continue
+					var r2: Array = pick_of.call(ring[0])
+					put.call(String(r2[0]), q, rng.randf() * TAU, rng.randf_range(float(r2[2][0]), float(r2[2][1])), "cluster")
 	# The square's rim (batch 8b goldrock-fountain: big empty cobbles between the stalls and the house fronts):
 	# benches facing the heart, barrels, crates, potted shrubs and flower tubs along the inside of the rim, off
 	# the stalls' fronts, the doors, the road mouths and the centrepiece's basin.
