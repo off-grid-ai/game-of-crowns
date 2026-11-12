@@ -18,13 +18,20 @@ export const decree = (cityId, kind, seasons) => `realm_decree(${n(cityId)}, "${
 // (realmrules/script.lua realm_assault; Freeciv fights every blow and reports "assault").
 export const assault = (cityId, crownId) => `realm_assault(${n(cityId)}, ${n(crownId)})`;
 
+// The King's companies fall on the foe's men on a tile beside them (hosts.js attack): each strikes once by
+// Freeciv's own Attack action (its enablers: war with the foe, moves left; its combat decides; a winner may march
+// onto the tile, Freeciv's occupy chance), while any of the foe still stands there. Run on the season
+// step, as the siege's assault is (at turn_begin Freeciv has not yet given the moves back).
+export const strike = (ids, x, y) => `local t = find.tile(${n(x)}, ${n(y)}); local attack = find.action("Attack"); if t then for _, id in ipairs({${ids.map(n).join(",")}}) do local u = find.unit(nil, id); local foe = false; if u then for v in t:units_iterate() do if v.owner ~= u.owner then foe = true end end end; if foe and math.max(math.abs(u.tile.x - t.x), math.abs(u.tile.y - t.y)) == 1 then pcall(edit.perform_action, u, attack, t) end end end`;
+
 // A great house split by Freeciv's civil war, its rebels raised and marching (realmrules/script.lua realm_rising):
 // chance 0 lets Freeciv's own odds decide (its government, unhappy and celebrating towns). Reports "rising".
 export const rising = (houseId, chance = 0) => `realm_rising(${n(houseId)}, ${n(chance)})`;
 // Freeciv's own odds that the house splits if a rising is tried now (realm_rising_odds). Reports "rising_odds".
 export const risingOdds = (houseId) => `realm_rising_odds(${n(houseId)})`;
-// How a rising ends: "return" (the towns go back to the lord), "keep" (the rebels a lesser house). Reports "rising_over".
-export const risingEnd = (rebelId, how) => `realm_rising_end(${n(rebelId)}, "${how === "keep" ? "keep" : "return"}")`;
+// How a rising ends (id: the house it split, or its rebels): "return" (the towns go back to the lord), "keep" (the
+// rebels a lesser house). Reports "rising_over".
+export const risingEnd = (id, how) => `realm_rising_end(${n(id)}, "${how === "keep" ? "keep" : "return"}")`;
 
 // A mark the houses (player ids) bear in their seat, felt in all their towns, lifted everywhere else
 // (realmrules/script.lua realm_bear).

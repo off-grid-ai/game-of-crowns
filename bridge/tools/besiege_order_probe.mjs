@@ -26,8 +26,8 @@ const row = card.orders.find((o) => o.order === "besiege");
 check(row, "the command card has no Besiege");
 
 const a = await bareFreeciv({ port: PORT, serv: ["set nationset all", "set aifill 0", "set minplayers 0", "set timeout -1", "set saveturns 1", 'set autosaves "TURN|GAMEOVER"', 'set savename "probe"',
-  "create Crown", "create Foe", 'playernation Crown norman 1 "The King"', 'playernation Foe english 1 "Lord Foe"', "set endturn 12", "start"] });
-check(await a.until(/Game ended as the turn limit/, 90000), "the game didn't run");
+  "create Crown", "create Foe", 'playernation Crown norman 1 "The King"', 'playernation Foe english 1 "Lord Foe"', "set endturn 50", "start"] });
+check(await a.until(/Game ended as the turn limit/, 180000), "the game didn't run");
 const first = fs.readdirSync(a.dir).filter((f) => /-auto\.sav\.zst$/.test(f)).sort().pop();
 await a.quit();
 // At war, as the King's march makes it (the bridge's diplomacy writer; written into the save here, as capture_probe does).
@@ -51,16 +51,16 @@ async function snapshot(turn) {
   return w;
 }
 
-// The house's largest town, grown on its own over twelve seasons (Freeciv razes a size-1 town it conquers, and a
-// loaded game that isn't running refuses Join City), emptied of its men; the King's host, three companies of
-// knights, standing off.
+// The house's largest town, grown on its own over fifty seasons, emptied of its men. (Freeciv razes a size-1 town
+// it conquers; a loaded game that isn't running refuses Join City, and one that runs to its end removes its players,
+// so the bridge's seasons are stepped in the loaded game.)
 let world = await snapshot(1);
 const crown = world.players.find((p) => houseFor(p).crown);
 const foe = world.players.find((p) => p !== crown);
 const town = world.cities.filter((c) => c.owner === foe?.id).sort((x, y) => y.size - x.size)[0];
 check(crown && foe && town, `no crown, house and town (${JSON.stringify(world.players)} ${JSON.stringify(world.cities)})`);
 if (!town) { await b.quit(); done(); }
-const emptied = await b.cmd(`lua cmd local c = find.city(nil, ${town?.id ?? -1}); local gone = {}; for u in c.tile:units_iterate() do gone[#gone + 1] = u end; for _, u in ipairs(gone) do edit.unit_kill(u, "disbanded", nil) end; log.normal("EMPTIED %d", c.size)`, /EMPTIED/);
+const emptied = await b.cmd(`lua cmd local c = find.city(nil, ${town.id}); local gone = {}; for u in c.tile:units_iterate() do gone[#gone + 1] = u end; for _, u in ipairs(gone) do edit.unit_kill(u, "disbanded", nil) end; log.normal("EMPTIED %d", c.size)`, /EMPTIED/);
 check(/EMPTIED [2-9]/.test(emptied ?? ""), `the house's town is still a hamlet (${emptied}): Freeciv razes a size-1 town it conquers`);
 // The host two tiles off, with land between it and the walls (so its walk is one step: the step that must stop
 // short of the town's tile).

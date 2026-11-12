@@ -1,7 +1,12 @@
 // The King's hosts and their orders: the one owner (Warcraft III: select, then one of a few fixed
 // orders; Total War's campaign map: an army is one thing, ordered as one). The view only asks
 // (POST /host/order); this decides and moves the army in Freeciv, a few tiles each season.
-//   march     to a tile or a town: it stands there when it arrives
+//   march     to a tile or a town: it stands there when it arrives; on another's town it halts at the walls and
+//             lays siege (campaigns.js), which the card calls Besiege
+//   attack    on a foe's men in the field: it follows them, and from beside them strikes each season by
+//             Freeciv's Attack (Lua.strike) until they are gone
+//   face      (march, attack) the way the host forms its line on arrival: a yaw, atan2 of x and z in the
+//             view's world XZ (Total War's drag to face); kept on the order and shown in list()
 //   hold      stop where it is
 //   garrison  march into a town of the crown's, or of a house sworn to it, and stay
 //   return    march home to the King's seat
@@ -48,7 +53,7 @@ export function list(ctx) {
       id: lead.id, x: lead.x, y: lead.y, companies: g.units.length, men: g.units.length * HOSTS.men,
       at: town ? { id: town.id, name: cityName(town.id) } : null, units: g.units.map((u) => u.id),
       order: o ? { kind: o.kind, x: o.x ?? null, y: o.y ?? null, city: o.city ?? null, to: o.city != null ? cityName(o.city) : null,
-        seasons: o.x != null ? Math.ceil(Math.max(0, roadTo(lead, o)) / HOSTS.speed) : 0 } : null,
+        seasons: o.x != null ? Math.ceil(Math.max(0, roadTo(lead, o)) / HOSTS.speed) : 0, face: o.face ?? null } : null,
     };
   }).sort((a, b) => b.companies - a.companies);
 }
@@ -92,6 +97,7 @@ function give(ctx, b) {
   const crown = crownOf(world);
   const town = b.city != null ? world.cities.find((c) => c.id === Number(b.city)) : null;
   const inside = (x, y) => Number.isFinite(x) && Number.isFinite(y) && x >= 0 && y >= 0 && x < (world.width ?? 9999) && y < (world.height ?? 9999);
+  const face = Number.isFinite(Number(b.face)) && b.face !== null && b.face !== "" ? { face: Number(b.face) } : {};
   switch (kind) {
     case "hold":
       save(meta, [...rest, { kind: "hold", units: h.units, since: world.turn }]);
@@ -106,10 +112,26 @@ function give(ctx, b) {
       // and the house hears of it now (declare: the route moves favour and names the deed).
       const owner = town ? world.players.find((p) => p.id === town.owner) : null;
       const foe = owner && !houseFor(owner).crown && !houseFor(owner).wild && !sworn?.(owner.id) ? owner : null;
-      save(meta, [...rest, { kind: "march", units: h.units, x: to.x, y: to.y, city: town?.id ?? null, since: world.turn, ...(foe ? { siege: true, house: foe.id } : {}) }]);
+      save(meta, [...rest, { kind: "march", units: h.units, x: to.x, y: to.y, city: town?.id ?? null, since: world.turn, ...(foe ? { siege: true, house: foe.id } : {}), ...face }]);
       const seasons = Math.max(1, Math.ceil(road / HOSTS.speed));
       return [200, { ok: true, text: `${name} marches${town ? ` ${foe ? "on" : "for"} ${cityName(town.id)}` : ""}: ${seasons === 1 ? "a season" : `${seasons} seasons`} on the road${foe ? ", and lays siege when it reaches the walls" : ""}.`,
         ...(foe && !b.declared ? { declare: { city: town.id, house: foe.id } } : {}) }];
+    }
+    case "attack": {
+      // The foe's men on the tile named or beside it: another house's, not sworn to the crown, nor the wild's.
+      const at = { x: Math.round(Number(b.x)), y: Math.round(Number(b.y)) };
+      if (!inside(at.x, at.y)) return [400, { error: "choose the foe's men on the map" }];
+      const theirs = (world.units ?? []).filter((u) => u.owner !== crown?.id && !CIVILIAN.has(u.type) && cheb(u, at) <= 1)
+        .filter((u) => { const p = world.players.find((q) => q.id === u.owner); return p && !houseFor(p).crown && !sworn?.(p.id); })
+        .sort((u, v) => cheb(u, at) - cheb(v, at));
+      const target = theirs[0];
+      if (!target) return [400, { error: "No foe's men stand there for the royal host to fall on." }];
+      const road = roadTo(h, target);
+      if (road < 0) return [400, { error: "The royal host can find no road over land to them; the sea lies between." }];
+      const who = houseFor(world.players.find((p) => p.id === target.owner) ?? {}).name ?? "the foe";
+      save(meta, [...rest, { kind: "attack", units: h.units, x: target.x, y: target.y, target: target.id, house: target.owner, since: world.turn, ...face }]);
+      const seasons = Math.max(1, Math.ceil(road / HOSTS.speed));
+      return [200, { ok: true, text: `${name} marches to fall on ${who}'s men: ${seasons === 1 ? "a season" : `${seasons} seasons`} on the road.` }];
     }
     case "garrison": {
       if (!town) return [400, { error: "choose a town to garrison" }];
@@ -254,9 +276,23 @@ export function season(ctx, turn) {
       continue;
     }
     if (o.x == null) { next.push({ ...o, units }); continue; }
+    if (o.kind === "attack") {
+      // The foe's men are followed where they go; gone (fallen, or home behind walls), the host stands.
+      const foe = (world.units ?? []).find((u) => u.id === o.target);
+      if (!foe) {
+        record?.({ turn, kind: "decree", text: "The foe the royal host marched on is gone from the field; the host makes camp." });
+        next.push({ kind: "hold", units, since: turn, ...(o.face != null ? { face: o.face } : {}) });
+        continue;
+      }
+      o.x = foe.x;
+      o.y = foe.y;
+      const beside = units.filter((id) => cheb(byId.get(id), foe) === 1);
+      if (beside.length) send(`lua cmd ${Lua.strike(beside, foe.x, foe.y)}`);  // from beside them, each strikes once
+      if (beside.length === units.length) { next.push({ ...o, units, far: null }); continue; }
+    }
     // There: on the place, or before the walls of a town that isn't the crown's (a march halts at another's gates).
     const goal = o.city != null ? world.cities.find((c) => c.id === o.city) : null;
-    const reach0 = goal && goal.owner !== crown?.id && o.kind === "march" ? 1 : 0;
+    const reach0 = (goal && goal.owner !== crown?.id && o.kind === "march") || o.kind === "attack" ? 1 : 0;
     const there = units.every((id) => cheb(byId.get(id), o) <= reach0);
     if (there) {
       // At the walls of the house it marched on: the siege begins (campaigns.js), the host holds before them.
@@ -275,7 +311,7 @@ export function season(ctx, turn) {
     const steps = stepsTo(o, new Set([...shut].filter((k) => k !== `${o.x},${o.y}`))) ?? stepsTo(o);
     const reach = (u) => (steps && steps.at(u) >= 0 ? steps.at(u) : cheb(u, o));
     const far = units.reduce((t, id) => t + reach(byId.get(id)), 0);
-    if (o.far != null && far >= o.far) {
+    if (o.far != null && far >= o.far && o.kind !== "attack") {  // (a foe followed may draw off a season; it isn't a wall)
       record?.({ turn, kind: "decree", text: `The royal host can go no nearer ${o.city != null ? cityName(o.city) : "the place the King named"}, and makes camp.`, city: o.city ?? undefined });
       next.push({ kind: "hold", units, since: turn });
       continue;
