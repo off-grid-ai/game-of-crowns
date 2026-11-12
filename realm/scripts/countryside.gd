@@ -677,8 +677,8 @@ var _grass_sig := ""
 var _tuft_meshes: Array = []
 ## The nature kit's low plants, and how often each grows: mostly grass, with
 ## clover and wildflowers among it.
-const TUFTS := ["meshy/nt_grass_clump/nt_grass_clump.glb", "nature/Clover_1.gltf", "nature/Flower_3_Group.gltf"]  # under assets/: the nature set's grass clump (0.5 m at scale 1), clover, flowers
-const TUFT_ODDS := [0.88, 0.08, 0.04]
+const TUFTS := ["meshy/nt_grass_clump/nt_grass_clump.glb", "meshy/nt_flowers/nt_flowers.glb"]  # under assets/: the nature set's grass clump (0.5 m at scale 1) and wildflowers (0.4 m)
+const TUFT_ODDS := [0.88, 0.12]
 static var TUFT_REACH: float = preload("res://scripts/data.gd").num("countryside", "tuft_reach", 22.0)  # drawn only this near the camera
 const PLANT_WIND := preload("res://scripts/plant_wind.gdshader")
 
@@ -705,7 +705,7 @@ func _grass(cities: Array) -> void:
 		var builder = preload("res://scripts/house_builder.gd").new()
 		for n in TUFTS:
 			var plants: Dictionary = preload("res://scripts/data.gd").value("weather", "plants", {})
-			var bury := float(plants.get("flowers", 1.0)) if n.begins_with("nature/Flower") or n.begins_with("nature/Clover") else float(plants.get("grass", 0.6))
+			var bury := float(plants.get("flowers", 1.0)) if n.begins_with("meshy/nt_flowers") else float(plants.get("grass", 0.6))
 			_tuft_meshes.append(_windy(builder.bake_path("res://assets/" + n), bury))
 	if _grass_root == null or not is_instance_valid(_grass_root):
 		_grass_nodes.clear()  # a new realm took the old batches with it

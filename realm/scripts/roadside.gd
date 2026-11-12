@@ -353,7 +353,8 @@ func _ford(node: Node3D, s: Dictionary, k: Dictionary, rng: RandomNumberGenerato
 	var t := -span * 0.5
 	while t <= span * 0.5:
 		var w3 := _world(s, t, o + rng.randf_range(-0.03, 0.03))
-		_piece(node, s, {"c": "stepping_stone", "road": true, "turn": 180}, rng, Vector3(w3.x, maxf(w3.y, _level(s)) - 0.01, w3.z))
+		# a stepping stone: the nature set's small boulder laid flat
+		_piece(node, s, {"c": "stepping_stone", "road": true, "turn": 180, "squash": [1.0, 0.12, 1.0]}, rng, Vector3(w3.x, maxf(w3.y, _level(s)) - 0.01, w3.z))
 		t += gap
 	for p in k.get("pieces", []):
 		_piece(node, s, p, rng)

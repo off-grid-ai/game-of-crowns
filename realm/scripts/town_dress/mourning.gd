@@ -17,15 +17,15 @@ func dress(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumberGenera
 		var cn := tl._prop(life, center, ["Candle_1", "Candle_2", "CandleStick"][i % 3], mid + Vector3(cos(a), 0, sin(a)) * (rim + rng.randf_range(0.0, 0.03)), rng.randf() * TAU)
 		if cn:
 			cn.set_meta("dress", "candle")
-	var flower := preload("res://scripts/dressing.gd").mesh_of("nature/Flower_4_Group")
+	var flower := preload("res://scripts/dressing.gd").mesh_of("meshy/nt_flowers")  # the nature set's wildflowers, 0.4 m
 	if not flower.is_empty():
 		for i in int(g.get("flowers", 10)):
 			var a := TAU * (i + 0.5) / maxf(int(g.get("flowers", 10)), 1)
 			var at := mid + Vector3(cos(a), 0, sin(a)) * (rim + 0.035)
 			var m := MeshInstance3D.new()
 			m.mesh = flower[0]
-			m.scale = Vector3.ONE * 0.12 * 0.6
-			m.position = Vector3(at.x, tl._y(center, at) - float(flower[1]) * 0.072, at.z)
+			m.scale = Vector3.ONE * 0.12 * 1.5
+			m.position = Vector3(at.x, tl._y(center, at) - float(flower[1]) * 0.18, at.z)
 			m.rotation.y = rng.randf() * TAU
 			life.add_child(m)
 	var homes: Array = (root.get_meta("homes", []) as Array).duplicate()

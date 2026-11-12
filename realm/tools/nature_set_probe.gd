@@ -1,8 +1,9 @@
 extends SceneTree
 ## Guard for the nature set (Mac: "major issues with the trees, the grass"; the look audit's fix plan 3, docs/art/nature):
 ## the woods, the ground cover, the town, orchard and castle trees, the verges' bushes, the tufts and the towns' dressing
-## draw the nature set's pieces (nt_oak_a, nt_oak_b, nt_pine_a, nt_pine_b, nt_bush, nt_grass_clump, nt_cypress, nt_rock_b),
-## never Quaternius' trees, bushes, grass tufts, rocks or pebbles, nor KayKit's cypress, which are gone from realm/assets.
+## draw the nature set's pieces (nt_oak_a, nt_oak_b, nt_pine_a, nt_pine_b, nt_bush, nt_grass_clump, nt_flowers, nt_cypress,
+## nt_rock_a, nt_rock_b): no Quaternius nature file (realm/assets/nature's own: trees, bushes, grass, flowers, clover,
+## mushrooms, rocks, pebbles) nor KayKit's cypress, which are gone from realm/assets.
 ##   1. nothing the game or its tools read names a Quaternius tree, bush, tuft, rock or pebble or KayKit's cypress
 ##      (realm/scripts, realm/data, realm/tools);
 ##   2. every nature-set file a role names is in realm/assets (woods.kit, forest.json cover, the catalogue's tree,
@@ -14,7 +15,7 @@ extends SceneTree
 ## Prints CHECK lines; exits 1 on a fail.   arch -arm64 godot --headless --path realm -s res://tools/nature_set_probe.gd
 
 const FIX := "res://tools/fixtures/town_build_map.json"
-const GONE := "(nature/)?(CommonTree_\\d|TwistedTree_\\d|DeadTree_\\d|Pine_\\d|Bush_Common[\"./]|Bush_Common$|Fern_1|Plant_7[\"./]|Grass_Common_Short|Grass_Common_Tall|Grass_Wispy_Short|Rock_Medium_\\d|Pebble_(Round|Square)_\\d|RockPath_(Round_Small|Round_Thin|Square)|kaykit/Tree_4_)"
+const GONE := "nature/[A-Z]|(nature/)?(CommonTree_\\d|TwistedTree_\\d|DeadTree_\\d|Pine_\\d|Bush_Common[\"./]|Bush_Common$|Fern_1|Plant_7[\"./]|Grass_Common_Short|Grass_Common_Tall|Grass_Wispy_Short|Rock_Medium_\\d|Pebble_(Round|Square)_\\d|RockPath_(Round_Small|Round_Thin|Square)|kaykit/Tree_4_|Bush_Common_Flowers|Clover_\\d|Flower_[34]_|Mushroom_|Petal_\\d|Plant_1|Grass_Wispy_Tall|RockPath_)"
 const OLD_MATS := ["Leaves", "Leaf_", "Bark_", "Grass"]
 
 var fail := 0
@@ -52,7 +53,7 @@ func _run() -> void:
 		var m := re.search(text)
 		if m:
 			named.append("%s: %s" % [f, m.get_string()])
-	_check(named.is_empty(), "nothing names a Quaternius tree, bush, tuft, rock or pebble, or KayKit's cypress %s" % [named.slice(0, 6)])
+	_check(named.is_empty(), "nothing names a Quaternius nature file or KayKit's cypress %s" % [named.slice(0, 6)])
 
 	# 2. Every nature-set file a role names is there.
 	var Real := preload("res://scripts/realistic.gd")
@@ -66,19 +67,21 @@ func _run() -> void:
 	for role in ["bush", "grass", "rock"]:
 		for m in cover.get(role, []):
 			paths.append("res://assets/" + String(m))
-	for comp in ["town_tree", "orchard_tree", "castle_shrub", "town_cypress", "castle_cypress", "castle_rock", "milestone"]:
+	for comp in ["town_tree", "orchard_tree", "castle_shrub", "town_cypress", "castle_cypress", "castle_rock", "milestone", "garden_hedge", "garden_flowers", "hedge_painted", "crop_flax", "crop_beans", "stepping_stone"]:
 		for i in Real.variants(comp).size():
 			paths.append(Real.path_of(comp, i))
 	paths.append(str(load("res://scripts/roads.gd").get("BUSH")))  # the verges' bush
 	var mines: GDScript = load("res://scripts/gold_mines.gd")
 	paths.append_array(mines.get_script_constant_map().get("ROCKS", []))
 	paths.append(str(mines.get_script_constant_map().get("PEBBLE", "")))
-	paths.append("res://assets/" + String(preload("res://scripts/countryside.gd").TUFTS[0]))
+	for t in preload("res://scripts/countryside.gd").TUFTS:
+		paths.append("res://assets/" + String(t))
+	paths.append(String((Data.value("assets", "house_kit.window_flowers", [""]) as Array)[0]))
 	var bad := []
 	for p in paths:
 		if not String(p).begins_with("res://assets/meshy/nt_") or not ResourceLoader.exists(p):
 			bad.append(p)
-	_check(paths.size() >= 22 and bad.is_empty(), "every tree, bush, grass and rock role is a nature-set piece in realm/assets (%d paths) %s" % [paths.size(), bad])
+	_check(paths.size() >= 32 and bad.is_empty(), "every tree, bush, grass, flower, crop and rock role is a nature-set piece in realm/assets (%d paths) %s" % [paths.size(), bad])
 	var oaks: Array = (kit.get("oak", {}) as Dictionary).get("models", [])
 	_check(oaks.size() >= 2, "the oak role is a list (%d models)" % oaks.size())
 

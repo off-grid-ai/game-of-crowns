@@ -206,7 +206,7 @@ static func dress(root: Node3D, ground: Callable, land: Callable, seed: int) -> 
 	root.add_child(node)
 	for model in placed:
 		var mmi := Batch.make(batch_name(model), mesh_of(model)[0], placed[model])  # the batch owns where its copies stand
-		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if model.begins_with("nature/") or model.begins_with("meshy/nt_") else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if model.begins_with("meshy/nt_") else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		mmi.visibility_range_end = 30.0  # small things: drawn near the camera only
 		node.add_child(mmi)
 	node.set_meta("counts", counts)
