@@ -22,6 +22,7 @@ extends Node
 ##   work Kingsmere forge 4.5   frame a trade's building in a town (forge, stables, mill, inn...)
 ##   sigil 2             click the 2nd house sigil on the ladder over the minimap
 ##   host 0 6            frame the King's n-th host (the biggest first) and click its standard (--hosts=on)
+##   dclick 0.65 0.6     left double-click at a fraction of the screen (the view comes closer onto the spot)
 ##   rclick 0.6 0.5      right-click at a fraction of the screen (a selected host marches there)
 ##   order march         give the selected host (else the first) an order; march/garrison to the nearest town it can reach
 ##   answer              give the matter on the court card its first answer
@@ -210,6 +211,11 @@ func _step(w: PackedStringArray) -> void:
 			"click":
 				_click(Vector2(float(w[1]), float(w[2])))
 				await get_tree().create_timer(0.4).timeout
+			"dclick":
+				# A click, then a second with Godot's double_click set (as the OS marks it), as a player double-clicks.
+				_click(Vector2(float(w[1]), float(w[2])))
+				_click(Vector2(float(w[1]), float(w[2])), MOUSE_BUTTON_LEFT, true)
+				await get_tree().create_timer(0.6).timeout
 			"order":
 				# order <march|garrison|hold|return|split>: the selected host (else the first) is given an order;
 				# march and garrison go to the nearest town the bridge accepts (tried nearest first), so the
@@ -696,12 +702,13 @@ func _key(code: int, down: bool) -> void:
 	_feed(e)
 
 
-func _click(frac: Vector2, button := MOUSE_BUTTON_LEFT) -> void:
+func _click(frac: Vector2, button := MOUSE_BUTTON_LEFT, double := false) -> void:
 	var at := get_viewport().get_visible_rect().size * frac
 	for down in [true, false]:
 		var e := InputEventMouseButton.new()
 		e.button_index = button
 		e.pressed = down
+		e.double_click = double and down
 		e.position = at
 		e.global_position = at
 		_feed(e)
