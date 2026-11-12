@@ -1,4 +1,11 @@
 # Supervisor state (kept by the top supervisor every turn; Mac never has to remember)
+- 22:15 Crossing LANDED 7b10e42d; pikemen LANDED 468f3213 (no forward jab yet). Only cypress/flowers/rocks left (look audit), then the one render pass.
+- 22:00 Ruling: King's crossing = host walks to nearest reachable coast, crown raises real Freeciv Triremes there (charged Freeciv build cost per hull from the treasury, refused with reason if unaffordable), sails, lands, disbands. Crown-port rule deleted. Why: neither crown town is coastal, so the wanted crossing could never happen; paying keeps it an engine fact.
+- 21:55 Nature swap LANDED 44acc885 (Quaternius gone), harness fix 3f7decca. Only asset left: pikemen. Then one render pass (rm /tmp/goc-no-render).
+- 21:40 Assets left: One store nature swap + Quaternius delete (nature set 0f5c2752 all six); pikemen round 2 (body + pike prop). Hall/church/guild hall DONE 5347140d. Crossing d70ca994, cleanup c9b7ead8 DONE.
+- 21:20 Look audit: nature 4/6 in (c288eb25), oak_a/pine_a judging, then One store swaps + deletes Quaternius. Hall/church/guild hall and two-handed pikemen building. Archer colour DONE (dbe14762).
+
+- 21:10 Mac: no game run until every asset is in. Render pass stopped, /tmp/goc-no-render back. Still missing: nature-set swap (trees, ground cover; 4 pieces imported c288eb25, not wired), hall/church/guild hall, remade pikemen.
 
 Updated 2026-11-12 ~19:45.
 
