@@ -180,13 +180,16 @@ static func _frame(to_tip: Vector3, to_edge: Vector3) -> Basis:
 	return Basis(t, e, t.cross(e))
 
 
+static var HELD: float = preload("res://scripts/data.gd").num("people", "held", 1.0)
 static func _hold(skel: Skeleton3D, kind: String, bone: String, socket: Transform3D, role := "Weapon") -> Node3D:
 	if skel.find_bone(bone) < 0:
 		return null
 	var fit := _fitted(kind)
 	var model: Node3D = (fit[0] as PackedScene).instantiate()
 	_keep(model, _spec(kind).get("keep", []))
-	model.transform = socket * (fit[1] as Transform3D)
+	# Drawn larger in the hand than life, as the people are (people.json held, over readable): a sword or a
+	# hammer reads at the town view (quality-deep-dive.md #9); grown from the grip, so it stays in the fist.
+	model.transform = socket * Transform3D(Basis().scaled(Vector3.ONE * HELD), Vector3.ZERO) * (fit[1] as Transform3D)
 	model.set_meta("tip_at", fit[2])
 	var at := BoneAttachment3D.new()
 	at.name = role

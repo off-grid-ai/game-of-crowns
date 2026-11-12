@@ -16,7 +16,8 @@ glb, name = args[0], args[1]
 budget = int(args[2]) if len(args) > 2 else 12000
 # The cloth that takes the dye: "cream" (bright, unsaturated: rig.json mask, as the army's) or "hue:lo,hi" (a coloured
 # cloth by its hue, 0-1, wrapping past 1: the guard's red skirt, the ranger's green cloak), saturated and not dark
-# ("hue:lo,hi,sat": a softer colour's own saturation floor, 0.3 otherwise: the old woman's lavender shawl).
+# ("hue:lo,hi,sat": a softer colour's own saturation floor, 0.3 otherwise: the old woman's lavender shawl;
+# "hue:lo,hi,sat,vmax;lo,hi,...": several cloths, each no brighter than vmax: the guard's skirt and cuirass).
 mask_by = args[3] if len(args) > 3 else "cream"
 root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "assets", "people", "mixamo", name))
 os.makedirs(root, exist_ok=True)
@@ -72,9 +73,6 @@ if base:
         hi, lo = max(r, g, b), min(r, g, b)
         sat = (hi - lo) / hi if hi > 0 else 0.0
         if mask_by.startswith("hue:"):
-            spec = [float(x) for x in mask_by[4:].split(",")]
-            lo_h, hi_h = spec[0], spec[1]
-            sat_min = spec[2] if len(spec) > 2 else 0.3
             d = hi - lo
             hue = 0.0
             if d > 0:
@@ -85,8 +83,18 @@ if base:
                 else:
                     hue = (r - g) / d + 4
                 hue /= 6.0
-            inside = (lo_h <= hue <= hi_h) if lo_h <= hi_h else (hue >= lo_h or hue <= hi_h)
-            v = 1.0 if (inside and sat > sat_min and hi > 0.18) else 0.0
+            v = 0.0
+            # Several ranges, ";" between: each "lo,hi[,sat[,vmax]]" (vmax: no brighter than this, so a leather
+            # the colour of skin is taken and the skin, brighter, is not: the guard's cuirass).
+            for part in mask_by[4:].split(";"):
+                spec = [float(x) for x in part.replace("hue:", "").split(",")]
+                lo_h, hi_h = spec[0], spec[1]
+                sat_min = spec[2] if len(spec) > 2 else 0.3
+                vmax = spec[3] if len(spec) > 3 else 1.01
+                inside = (lo_h <= hue <= hi_h) if lo_h <= hi_h else (hue >= lo_h or hue <= hi_h)
+                if inside and sat > sat_min and 0.18 < hi <= vmax:
+                    v = 1.0
+                    break
         else:
             v = 1.0 if (hi > mask_cfg["bright"] and sat < mask_cfg["grey"]) else 0.0
         mask_px += int(v)
