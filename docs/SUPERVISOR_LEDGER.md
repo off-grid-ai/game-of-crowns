@@ -121,6 +121,11 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 15:40 (11-12) Light: 38f9f33d (look.json v3 exposure 1.35->1.25, white 5->8, bloom 0.08->0, saturation 1.25;
+  weather roof snow 1.6->1.2; probe realm/tools/still_probe.py vs 01-town). Offline estimate only; next square round
+  judges it (r11: mean 0.517, 7.7% blown, sat 0.39; target 0.431/0.5%/0.47). Ground snow tint -> army-ui.
+  works-life: 1a7ebba6 own stride per body; animals approved square-first (chicken + dog, 70 Meshy credits, Mac's Chrome
+  as before). Next round waits on fire-siege (roof smears, stalls) and army-ui (planks, crates).
 - 15:20 (11-12) Mac: "Yes, square first": Kingsmere's square is the one gate; next render judged on it alone.
   fire-siege pushed 98b8e119 (Meshy square set, probe 0->17), 43283b40 (no trees on paving, 421->0), dc39742c (seats
   get the Meshy well, kit fountain deleted; Mac's "grey fountain" was the kit fountain). Next: roof-mask smears, 5-7
