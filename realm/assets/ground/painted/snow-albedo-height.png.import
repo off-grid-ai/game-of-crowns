@@ -2,9 +2,9 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dyn5telsbxw3i"
-path.bptc="res://.godot/imported/rock-albedo-height.png-78c0205d269db2650a54177670bd67de.bptc.ctex"
-path.astc="res://.godot/imported/rock-albedo-height.png-78c0205d269db2650a54177670bd67de.astc.ctex"
+uid="uid://b8acapquc43gi"
+path.bptc="res://.godot/imported/snow-albedo-height.png-7da06d9ac5eedcb895eb15d1c12857f1.bptc.ctex"
+path.astc="res://.godot/imported/snow-albedo-height.png-7da06d9ac5eedcb895eb15d1c12857f1.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -12,8 +12,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/ground/packed/rock-albedo-height.png"
-dest_files=["res://.godot/imported/rock-albedo-height.png-78c0205d269db2650a54177670bd67de.bptc.ctex", "res://.godot/imported/rock-albedo-height.png-78c0205d269db2650a54177670bd67de.astc.ctex"]
+source_file="res://assets/ground/painted/snow-albedo-height.png"
+dest_files=["res://.godot/imported/snow-albedo-height.png-7da06d9ac5eedcb895eb15d1c12857f1.bptc.ctex", "res://.godot/imported/snow-albedo-height.png-7da06d9ac5eedcb895eb15d1c12857f1.astc.ctex"]
 
 [params]
 

@@ -2,9 +2,9 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bj0x67dwxtyqn"
-path.bptc="res://.godot/imported/field-normal-rough.png-2adb39f812a40e1726a4533216fd50e8.bptc.ctex"
-path.astc="res://.godot/imported/field-normal-rough.png-2adb39f812a40e1726a4533216fd50e8.astc.ctex"
+uid="uid://c5mwuxf5sxpq4"
+path.bptc="res://.godot/imported/snow-normal-rough.png-a9fcff052b67c9a518a2c90b3beaf719.bptc.ctex"
+path.astc="res://.godot/imported/snow-normal-rough.png-a9fcff052b67c9a518a2c90b3beaf719.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -12,8 +12,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/ground/packed/field-normal-rough.png"
-dest_files=["res://.godot/imported/field-normal-rough.png-2adb39f812a40e1726a4533216fd50e8.bptc.ctex", "res://.godot/imported/field-normal-rough.png-2adb39f812a40e1726a4533216fd50e8.astc.ctex"]
+source_file="res://assets/ground/painted/snow-normal-rough.png"
+dest_files=["res://.godot/imported/snow-normal-rough.png-a9fcff052b67c9a518a2c90b3beaf719.bptc.ctex", "res://.godot/imported/snow-normal-rough.png-a9fcff052b67c9a518a2c90b3beaf719.astc.ctex"]
 
 [params]
 
@@ -38,5 +38,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=1024
+process/size_limit=0
 detect_3d/compress_to=1

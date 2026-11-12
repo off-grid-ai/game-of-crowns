@@ -2,7 +2,9 @@ extends SceneTree
 ## Fails (exit 1) when the ground can't draw: a Terrain3D layer texture missing, or the
 ## layers not sharing one size, format and mipmaps, which Terrain3D needs (its Texture
 ## Prep) and otherwise draws its missing-texture checkerboard over the whole land.
-## The painted ground (realm/data/ground.json layers), the realm's one.
+## Also fails a layer not drawn from the painted set: the realm has one look, the painted
+## ground (realm/data/ground.json layers), and a photographed beach, snowfield or ploughed
+## plot beside it reads as a patch from another game.
 ##   arch -arm64 godot --headless --path realm -s res://tools/ground_check.gd
 
 const Land3D := preload("res://scripts/land3d.gd")
@@ -16,6 +18,9 @@ func _init() -> void:
 			var first: Texture2D = null
 			for i in Land3D.LAYERS.size():
 				var path: String = Land3D.layer_textures(i)[kind]
+				if not path.begins_with("res://assets/ground/painted/"):
+					print("GROUND FAIL %s %s: %s is not the painted set" % [name, Land3D.LAYERS[i], path])
+					bad += 1
 				var tex := load(path) as Texture2D if ResourceLoader.exists(path) else null
 				if tex == null:
 					print("GROUND FAIL %s %s: %s missing (not imported? run --import)" % [name, Land3D.LAYERS[i], path])

@@ -8,9 +8,8 @@ const LAYERS := ["grass", "dirt", "sand", "snow", "rock", "forest", "mud", "fiel
 const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const MUD := 6
 const FIELD := 7
-const UV_SCALE := [0.8, 0.6, 0.6, 0.32, 1.0, 0.8, 0.72, 0.72]  # a game unit is ~8 m and a Poly Haven set ~2 m: any coarser and the grass smears into streaks
-# Poly Haven's photographed ground (tools/pack_ground.gd) is true to colour:
-# only a touch of grading, so the realm reads as one place.
+const UV_SCALE := [0.8, 0.6, 0.6, 0.32, 1.0, 0.8, 0.72, 0.72]  # each layer's repeats per game unit unless ground.json layers.<layer>.scale gives one
+# Each layer's tint unless ground.json layers.<layer>.tint gives one.
 const TINT := [Color(0.95, 1.0, 0.9), Color.WHITE, Color.WHITE, Color(0.92, 0.94, 0.97), Color(0.9, 0.9, 0.88), Color.WHITE, Color(0.74, 0.71, 0.66), Color.WHITE]  # the trodden earth a dry grey-brown, a little darker than a beach (warmer and the grade turns it orange)
 
 var land: Terrain3D
@@ -88,6 +87,11 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 	if Data.value("ground", "macro.slope", null) != null:
 		mat.set_shader_param("macro_variation_slope", Data.num("ground", "macro.slope", 0.333))
 	_drape_atlas(mat, terrain)
+	# Winter's snow colour on the land (ground.json winter.snow; the light pass, 38f9f33d: the blown whites in the
+	# square's stills were mostly the snow round it).
+	var snow: Array = Data.value("ground", "winter.snow", [])
+	if snow.size() == 3:
+		mat.set_shader_param("snow_col", Color(float(snow[0]), float(snow[1]), float(snow[2])))
 	var w: int = terrain.width * int(terrain.TILE)
 	var h: int = terrain.height * int(terrain.TILE)
 	# Ground layers once per game unit; the eroded heightmap, where the realm has
@@ -132,14 +136,9 @@ func build(terrain: Node3D, ground_layer: int) -> void:
 ## A ground layer's two textures (albedo with height, normal with roughness), the one
 ## place their paths are decided: the game's ground and tools/ground_check.gd both ask here.
 static func layer_textures(i: int) -> Array:
-	# The town's trodden ground is dry packed earth (the beach's gravelly
-	# sand, browned): the muddy-tracks photo read as a wet red band.
-	var file: String = "sand" if LAYERS[i] == "mud" else LAYERS[i]
-	var dir := "packed"
-	if String(Data.value("ground", "layers.%s.painting" % LAYERS[i], "")) != "" and ResourceLoader.exists("res://assets/ground/painted/%s-albedo-height.png" % LAYERS[i]):
-		dir = "painted"  # the painted set (tools/pack_painted_ground.gd, realm/data/ground.json layers.<layer>.painting)
-		file = LAYERS[i]
-	return ["res://assets/ground/%s/%s-albedo-height.png" % [dir, file], "res://assets/ground/%s/%s-normal-rough.png" % [dir, file]]
+	# The painted set (tools/pack_painted_ground.gd, realm/data/ground.json layers.<layer>.painting).
+	var d := "res://assets/ground/painted/%s" % LAYERS[i]
+	return [d + "-albedo-height.png", d + "-normal-rough.png"]
 
 
 static var _beach_top: float = Data.num("ground", "beach.top", 0.02)

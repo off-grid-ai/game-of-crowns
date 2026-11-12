@@ -2,9 +2,9 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d1ncqlprq6y8f"
-path.bptc="res://.godot/imported/dirt-albedo-height.png-8586b85a2f924878b61bb0b270e29f90.bptc.ctex"
-path.astc="res://.godot/imported/dirt-albedo-height.png-8586b85a2f924878b61bb0b270e29f90.astc.ctex"
+uid="uid://c104txtufpkc2"
+path.bptc="res://.godot/imported/field-normal-rough.png-0d2199debaee6596fdb5b392ba36e8bf.bptc.ctex"
+path.astc="res://.godot/imported/field-normal-rough.png-0d2199debaee6596fdb5b392ba36e8bf.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -12,8 +12,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/ground/packed/dirt-albedo-height.png"
-dest_files=["res://.godot/imported/dirt-albedo-height.png-8586b85a2f924878b61bb0b270e29f90.bptc.ctex", "res://.godot/imported/dirt-albedo-height.png-8586b85a2f924878b61bb0b270e29f90.astc.ctex"]
+source_file="res://assets/ground/painted/field-normal-rough.png"
+dest_files=["res://.godot/imported/field-normal-rough.png-0d2199debaee6596fdb5b392ba36e8bf.bptc.ctex", "res://.godot/imported/field-normal-rough.png-0d2199debaee6596fdb5b392ba36e8bf.astc.ctex"]
 
 [params]
 
