@@ -179,6 +179,12 @@ func _arms(xf: Transform3D, sp: Dictionary, house: Dictionary, colour: Color, d:
 	var hangs := [[Vector3(0, keep_top, keep_z), Vector2(1.2, 3.0) * size]]
 	for sx in [-1.0, 1.0]:
 		hangs.append([Vector3(sx * (gh - 0.6), gate_top, gate_z), Vector2(0.9, 2.2) * size])
+	# One down the town-facing face of each front and gate tower (01-town: the arms on every tower).
+	for t in Builder.towers(sp):
+		var at: Vector3 = t["at"]
+		if at.z <= 0.0:
+			continue
+		hangs.append([Vector3(at.x, float(t["top"]) - float(k.get("tower_below", 1.2)), at.z + Builder.CELL + 0.12), Vector2(0.9, 2.4) * size * float(k.get("tower_size", 0.9))])
 	for h in hangs:
 		var q := QuadMesh.new()
 		q.size = h[1]
