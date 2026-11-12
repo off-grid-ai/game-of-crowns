@@ -22,6 +22,8 @@ uniform float width_far = 0.8;    // and at far
 uniform float near_at = 4.0;       // game units from the lens
 uniform float far_at = 60.0;
 uniform float fade_far = 80.0;    // gone by this distance
+uniform float near_soft = 1.0;    // the line's and edge light's strength at near_at (1: no close fade)
+uniform float soft_to = 4.0;      // whole again by this distance (game units from the lens)
 uniform float depth_threshold = 0.035;  // a jump of this share of the distance (summed over 8 neighbours) draws a line
 uniform float grazing = 6.0;       // how much larger the jump must be on a surface seen edge-on
 uniform float grazing_power = 3.0;
@@ -103,7 +105,7 @@ void fragment() {
 	float one_surface = 1.0 - smoothstep(same_surface, same_surface * 2.0, abs(jump) / 8.0);
 	float lit = smoothstep(light_from, light_to, convex) * one_surface * (1.0 - sil);
 
-	float fade = 1.0 - smoothstep(far_at, fade_far, d);
+	float fade = (1.0 - smoothstep(far_at, fade_far, d)) * mix(near_soft, 1.0, smoothstep(near_at, max(soft_to, near_at + 0.001), d));
 	float line_a = max(sil, crease * normal_line * (1.0 - smoothstep(light_from, light_to, convex))) * line_color.a * fade;
 	float light_a = lit * light_color.a * fade;
 	if (line_a >= light_a) {
