@@ -170,6 +170,22 @@ func aim(from: Vector3) -> Vector3:
 	return best.aim()
 
 
+## The outer face of the nearest wall to `from` (within 9 units), straight in front of it and `out` metres
+## off the face, on the wall's own line (world; its y the wall's base), or INF. Where a ram stops to batter
+## and a siege tower rolls up to (siege_camp.gd).
+func face_toward(from: Vector3, out := 0.3) -> Vector3:
+	var best: Node3D = null
+	var bd := 9.0
+	for w in _walls():
+		var d: float = w.distance_to(from)
+		if d < bd:
+			bd = d
+			best = w
+	if best == null:
+		return Vector3.INF
+	return best._world_at(best.along(from), best._thick * 0.5 + out)
+
+
 ## A stone lands at `at` (world) on a wall, flying along `along`.
 func strike(at: Vector3, along: Vector3) -> void:
 	for w in _walls():

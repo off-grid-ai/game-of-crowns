@@ -33,6 +33,7 @@ var _crews := []  # every crewman as the walls' archers see him: {node, alive, r
 var _stone_mesh: SphereMesh
 var _stone_mat: StandardMaterial3D
 var _wood: Material
+var _rolling := []  # the ram and the tower on their way to the wall: {node, kind, crew, to, from, t, dur, beat}
 
 
 ## On for this run? --camp=on/off, on with the wall demo, else siege.json on.
@@ -241,8 +242,82 @@ func _parked() -> void:
 		scenes._weather(m)
 		m.position = p
 		m.rotation.y = _x_to_town(p)
+		var crew := []
 		for j in int(k.get("crew", 2)):
-			_crewman(p + Vector3(r.randf_range(-0.2, 0.2), 0, r.randf_range(-0.2, 0.2)), ["Idle", "Looking_Around", "Weight_Shift"])
+			crew.append(_crewman(p + Vector3(r.randf_range(-0.2, 0.2), 0, r.randf_range(-0.2, 0.2)), ["Idle", "Looking_Around", "Weight_Shift"]))
+		# Then pushed up to the wall (04-siege: the ram at the wall, the tower against it): after roll_after_s,
+		# its crew behind it at pace, the ram to batter the wall's face, the tower to stand against it.
+		var to: Vector3 = _wall_face(p, float(k.get("ram_out" if kinds[i] == "siege_ram" else "tower_out", 0.15)))
+		if to != Vector3.INF:
+			var dur := p.distance_to(to) / maxf(float(k.get("pace", 0.12)), 0.01)
+			var go := {"node": m, "kind": kinds[i], "crew": crew, "from": p, "to": to, "t": -float(k.get("roll_after_s", 10.0)) - i * 4.0, "dur": dur, "beat": 0.0}
+			_rolling.append(go)
+
+
+## The wall's outer face in front of `p`, `out` metres off it, on the ground (world), or INF (no wall).
+func _wall_face(p: Vector3, out: float) -> Vector3:
+	var walls: Node = Engine.get_meta("stone_walls") if Engine.has_meta("stone_walls") else null
+	if walls == null or not walls.has_method("face_toward"):
+		return Vector3.INF
+	var f: Vector3 = walls.face_toward(p, out)
+	return scenes.ground(f) if f != Vector3.INF else f
+
+
+## The ram and the tower on their way: rolled by their crews (pushing behind), then the ram swings at the
+## wall every blow_s, a blow and a burst of dust (walls.gd strike: a doomed stone falls to it), its crew heaving.
+func _roll(dt: float) -> void:
+	var k: Dictionary = Data.value("siege", "parked", {})
+	for g in _rolling:
+		var m: Node3D = g["node"]
+		if not is_instance_valid(m):
+			continue
+		var t0 := float(g["t"])
+		g["t"] = t0 + dt
+		if float(g["t"]) < 0.0:
+			continue
+		var dir: Vector3 = (g["to"] - g["from"]).normalized()
+		var u := clampf(float(g["t"]) / maxf(float(g["dur"]), 0.1), 0.0, 1.0)
+		if u < 1.0:
+			if t0 < 0.0:
+				for c in g["crew"]:
+					if c["alive"] and is_instance_valid(c["node"]):
+						scenes.people.play(c["node"], "Pushing", 1.0)
+			m.global_position = scenes.ground((g["from"] as Vector3).lerp(g["to"], u))
+			var j := 0
+			for c in g["crew"]:
+				if c["alive"] and is_instance_valid(c["node"]):
+					var side := Vector3(-dir.z, 0, dir.x) * (0.12 * (j - 0.5))
+					(c["node"] as Node3D).global_position = scenes.stand(m.global_position - dir * float(k.get("behind", 0.35)) + side)
+					(c["node"] as Node3D).rotation.y = atan2(dir.x, dir.z)
+				j += 1
+			continue
+		if g["kind"] != "siege_ram":
+			if not g.get("there", false):
+				g["there"] = true
+				for c in g["crew"]:
+					if c["alive"] and is_instance_valid(c["node"]):
+						scenes.people.play(c["node"], "Cheering", 1.0)
+			continue
+		# The ram at the wall: drawn back and driven in, a blow at the end of each swing.
+		g["beat"] = float(g["beat"]) + dt
+		var blow := float(k.get("blow_s", 1.8))
+		var b := fmod(float(g["beat"]), blow) / blow
+		var back := float(k.get("swing", 0.08))
+		var off := -back * smoothstep(0.0, 0.7, b) if b < 0.7 else -back * (1.0 - smoothstep(0.7, 0.8, b))
+		m.global_position = scenes.ground(g["to"]) + dir * off
+		var hit_now: bool = b >= 0.8 and not g.get("struck", false)
+		if b < 0.8:
+			g["struck"] = false
+		if hit_now:
+			g["struck"] = true
+			var walls: Node = Engine.get_meta("stone_walls") if Engine.has_meta("stone_walls") else null
+			var face: Vector3 = g["to"] + dir * float(k.get("ram_out", 0.15)) + Vector3(0, 0.12, 0)
+			if walls and is_instance_valid(walls):
+				walls.strike(face, dir)
+			_puff(face, Color(0.55, 0.5, 0.42, 0.3), 1.0)
+			for c in g["crew"]:
+				if c["alive"] and is_instance_valid(c["node"]):
+					scenes.people.play(c["node"], "Pushing", 1.2)
 
 
 func _crewman(p: Vector3, idle: Array) -> Dictionary:
@@ -404,12 +479,26 @@ func _loose(e: Dictionary, stone: MeshInstance3D) -> void:
 	var land: Vector3 = on_wall if on_wall != Vector3.INF else scenes.ground(at + Vector3(r.randf_range(-spread, spread), 0, r.randf_range(-spread, spread)))
 	var top := maxf(from.y, land.y) + from.distance_to(land) * float(k.get("arc", 0.45))
 	var flight := float(k.get("flight_s", 1.6)) * clampf(from.distance_to(land) / 2.5, 0.7, 1.6)
+	# Its trail: a thin smear of dust behind it, so the arc reads from the camera (04-siege's flying stones).
+	var trail: CPUParticles3D = scenes._puffs(Color(0.62, 0.58, 0.52, float(k.get("trail_alpha", 0.28))), int(k.get("trail", 24)), 0.9, 0.025, 0.06)
+	trail.local_coords = false
+	var tg: GPUParticles3D = Particles.to_gpu(trail)
+	stone.add_child(tg)
+	tg.emitting = true
 	var tw := stone.create_tween()
 	tw.tween_method(func(t: float):
 		var q := from.lerp(land, t)
 		q.y = lerpf(from.y, land.y, t) + (top - maxf(from.y, land.y)) * 4.0 * t * (1.0 - t)
 		stone.global_position = q, 0.0, 1.0, flight)
 	tw.tween_callback(func():
+		# The stone gone, its trail let fade where it is.
+		if is_instance_valid(tg):
+			var at_end := tg.global_transform
+			stone.remove_child(tg)
+			root.add_child(tg)
+			tg.global_transform = at_end
+			tg.emitting = false
+			get_tree().create_timer(1.5).timeout.connect(tg.queue_free)
 		stone.queue_free()
 		if on_wall != Vector3.INF and walls and is_instance_valid(walls):
 			walls.strike(land, (land - from).normalized())  # its own dust and falling stones
@@ -417,7 +506,7 @@ func _loose(e: Dictionary, stone: MeshInstance3D) -> void:
 				if m["alive"] and is_instance_valid(m["node"]) and r.randf() < 0.5:
 					scenes.people.play(m["node"], "Cheering", 1.0)
 		else:
-			_puff(land + Vector3(0, 0.05, 0), Color(0.5, 0.45, 0.38, 0.22)))
+			_puff(land + Vector3(0, 0.05, 0), Color(0.5, 0.45, 0.38, 0.3), float(k.get("impact", 2.5))))  # a burst of earth where it lands
 
 
 func _stone() -> MeshInstance3D:
@@ -435,8 +524,9 @@ func _stone() -> MeshInstance3D:
 	return s
 
 
-## A held stone follows the arm's tip as it swings.
+## A held stone follows the arm's tip as it swings; the ram and the tower roll.
 func _process(_delta: float) -> void:
+	_roll(_delta)
 	for s in get_children():
 		if s is MeshInstance3D and s.has_meta("held"):
 			var held: Node3D = s.get_meta("held")
@@ -444,8 +534,8 @@ func _process(_delta: float) -> void:
 				(s as MeshInstance3D).global_position = held.global_position
 
 
-func _puff(p: Vector3, c: Color) -> void:
-	var d: CPUParticles3D = scenes._puffs(c, 6, 1.0, 0.04, 0.1)
+func _puff(p: Vector3, c: Color, big := 1.0) -> void:
+	var d: CPUParticles3D = scenes._puffs(c, int(6 * big * 2.0), 1.0 + 0.4 * big, 0.04 * big, 0.1 * big)
 	d.one_shot = true
 	d.explosiveness = 0.9
 	d.position = p
