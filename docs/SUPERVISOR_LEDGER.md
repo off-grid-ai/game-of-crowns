@@ -132,6 +132,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- (11-12) Mac: "finish all your work and then play the game, and then refine… it's not making sense to play the game in between." No more 15-minute rounds: GoC's round clock and the supervisor's check are stopped. Build every READY line with headless probes; then one full filmed round; then refine.
 - (11-12) Mac: "work autonomously. I'm not going to be here to approve anything, so just do what you think is right." The supervisor decides every call and logs it here; no thread waits on Mac. The goal: every line of docs/READY.md passes on film, then the game opens for him.
 - (11-12) Mac on politics: "our stories should be enough right? … they just need to be wired in." Risings are not a separate trigger system: the story arcs drive them, and every arc effect reaches Freeciv. Supersedes the risings triggers in risings-civil-war-2026-11-12.md.
 - (11-12) Mac: build risings ("Yes, my defaults"): the Crown never splits, a backed rival becomes a lesser house, a rising settles after 8 seasons. Freeciv thread, after line 7; it is the core of READY line 9.

@@ -5,7 +5,7 @@ the world to be interactive, the world to make sense. I want the armies to march
 I want the politics to be better. When we actually have a war, I want to see the armies march out. I want
 the armies to have the right emblem or banner. I want to be able to capture a town."
 
-The game opens for Mac only when every line passes on film in one supervisor round (GoC renders it), judged
+Build every line first, proven by its headless probe; no renders in between (Mac: "finish all your work and then play the game, and then refine"). Then one full round (GoC) films every line, and the game opens for Mac when every line passes, judged
 against the casebook and docs/art/target. Each line has one owner, a probe that fails before the fix, and a
 shot or clip that shows it. The status column is updated by the supervisor only.
 
