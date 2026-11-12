@@ -19,6 +19,7 @@ var villagers: Node3D
 var title: CanvasLayer
 var roads: Node3D
 var countryside: Node3D
+var land_use: Node3D  # the land the towns work, from Freeciv's worked map (land_use.gd)
 var scenes: Node3D
 var director: Node
 var sun: DirectionalLight3D
@@ -152,9 +153,14 @@ func _ready() -> void:
 	roads = preload("res://scripts/roads.gd").new()
 	roads.terrain = terrain
 	add_child(roads)
+	land_use = preload("res://scripts/land_use.gd").new()
+	land_use.name = "LandUse"
+	land_use.main = self
+	add_child(land_use)
 	countryside = preload("res://scripts/countryside.gd").new()
 	countryside.terrain = terrain
 	countryside.roads = roads
+	countryside.land_use = land_use
 	add_child(countryside)
 	scenes = preload("res://scripts/scenes.gd").new()
 	scenes.terrain = terrain
@@ -178,6 +184,7 @@ func _ready() -> void:
 	villagers = preload("res://scripts/villagers.gd").new()
 	villagers.terrain = terrain
 	villagers.towns = towns
+	villagers.land_use = land_use
 	villagers.rig = rig
 	add_child(villagers)
 	if _shot.has("path"):
@@ -898,6 +905,7 @@ func _on_synced() -> void:
 	var tt := Time.get_ticks_msec()
 	Engine.set_meta("stage", "towns.sync")
 	towns.sync(_houses)
+	land_use.sync()  # the land each town works, as Freeciv has it this season (drawn as each town stands)
 	if Time.get_ticks_msec() - tt > 500:
 		print_verbose("BUILD towns %d ms" % (Time.get_ticks_msec() - tt))
 	# The companies on the map as soon as the towns stand: the first reading's road and countryside laying below waits

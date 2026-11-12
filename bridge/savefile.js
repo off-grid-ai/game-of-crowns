@@ -109,7 +109,29 @@ export function extractDetail(save) {
   // Who holds each tile: one comma-separated row per map line, "-" for nobody.
   const owners = [];
   for (let y = 0; save.map?.[`owner${String(y).padStart(4, "0")}`] !== undefined; y++) owners.push(String(save.map[`owner${String(y).padStart(4, "0")}`]));
-  return { players, cities, units, owners };
+  // Which town works each tile (Freeciv's worked map: the town's id, "-" for none), one row per map line as owners.
+  const worked = [];
+  for (let y = 0; save.map?.[`worked${String(y).padStart(4, "0")}`] !== undefined; y++) worked.push(String(save.map[`worked${String(y).padStart(4, "0")}`]));
+  return { players, cities, units, owners, worked, tilled: tilled(save) };
+}
+
+// How each tile is tilled, one string per map line, a character a tile: "f" farmland (watered and rich), "i" irrigated,
+// "." neither. Freeciv packs a tile's extras four to a hex digit (map e<group>_<line>: extra 4*group+bit), named in
+// the save's own extras_vector.
+function tilled(save) {
+  const names = String(save.savefile?.extras_vector ?? "").split(/"?,"?/).map((x) => x.replace(/"/g, ""));
+  const bit = (name) => { const i = names.indexOf(name); return i < 0 ? null : { key: `e${String(Math.floor(i / 4)).padStart(2, "0")}_`, mask: 1 << (i % 4) }; };
+  const irr = bit("Irrigation"), farm = bit("Farmland");
+  if (!irr) return [];
+  const out = [];
+  for (let y = 0; save.map?.[`${irr.key}${String(y).padStart(4, "0")}`] !== undefined; y++) {
+    const line = (b) => (b ? String(save.map[`${b.key}${String(y).padStart(4, "0")}`] ?? "") : "");
+    const i = line(irr), f = line(farm);
+    let row = "";
+    for (let x = 0; x < i.length; x++) row += farm && parseInt(f[x] || "0", 16) & farm.mask ? "f" : parseInt(i[x], 16) & irr.mask ? "i" : ".";
+    out.push(row);
+  }
+  return out;
 }
 
 // Row q of a per-player table ("diplstate" or "ai") in player p's section.

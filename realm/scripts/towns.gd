@@ -251,7 +251,7 @@ var _tiers: RefCounted = null  # the town being built's house decider (town_tier
 var _trades: Array = []  # the town being built's trades (town_trades.gd plan), each marked once it stands
 const Fields = preload("res://scripts/countryside.gd")  # crops, and fields that line up with their soil
 const TownPlots = preload("res://scripts/town_plots.gd")  # roads, burgage plots and lanes (--towns=plots)
-const TownFields = preload("res://scripts/town_fields.gd")  # the fields and orchards out past the plots
+const TownFields = preload("res://scripts/town_fields.gd")  # the orchards out past the plots
 const TownBanners = preload("res://scripts/town_banners.gd")  # a house's banners, raised as high as its favour
 const TownLayout = preload("res://scripts/town_layout.gd")  # the town's ways, lanes, square ring and plots, and the houses on them
 var layout: RefCounted = TownLayout.new(self)  # that job, given this builder's placing, ground and the town being built
@@ -2101,10 +2101,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	terrain.commit_grading()
 	terrain.clear_around(center, outer + 0.6)
 	await _pace()
-	if ways.is_empty():
-		fields.ring(root, center, outer, size, rng)
-	else:
-		fields.beyond(root, center, size, rng)  # strips out past the plots, along the roads (town_fields.gd)
+	fields.edge(root, center, rng)  # the orchards by the roads out (town_fields.gd); the fields are land_use.gd's
 	_smoke(root, keep_off + Vector3(0.2, _ground_y(center, keep_off) + 1.2, 0.1))
 
 	if real:

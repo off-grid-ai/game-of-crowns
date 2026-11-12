@@ -14,6 +14,7 @@ var _frame := 0
 
 var terrain: Node3D
 var towns: Node3D
+var land_use: Node3D  # the towns' worked fields (land_use.gd), where farmers go to work
 var rig: Node3D
 var night := false
 var hour := 9.0  # the village clock: main.gd keeps it, with or without the sky's day cycle
@@ -727,7 +728,7 @@ func work_root(a: Dictionary) -> Node3D:
 ## when it has no field in reach (world).
 func _strip(node: Node3D, center: Vector3, rng: RandomNumberGenerator, home := Vector3.INF) -> Vector3:
 	var reach := float(node.get_meta("reach", 6.0)) - 0.4
-	var fields: Array = node.get_meta("fields", []).filter(func(f): return Vector3(f[0]).length() < reach)
+	var fields: Array = (land_use.fields_of(int(node.get_meta("city", -1)), center) if land_use else []).filter(func(f): return Vector3(f[0]).length() < reach)
 	var gardens: Array = node.get_meta("gardens", [])
 	if not fields.is_empty() and (gardens.is_empty() or rng.randf() < 0.7):
 		var f: Array = fields[rng.randi() % fields.size()]

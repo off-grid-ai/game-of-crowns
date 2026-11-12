@@ -14,6 +14,7 @@ const CHUNK := 20.0  # farms are kept and batched by patch of land, so distant o
 var terrain: Node3D
 var roads: Node3D
 var towns: Node3D  # the towns, for their squares, lanes and doors (found beside us if unset)
+var land_use: Node3D  # the towns' worked fields (land_use.gd): no tufts on them
 var _bush: Mesh
 var _fruit: Array = []  # orchard trees: the nature kit's broadleaf, grown small
 var _field_tex := ["res://assets/ground/field-wheat.jpg", "res://assets/ground/field-green.jpg", "res://assets/ground/field-fallow.jpg"]
@@ -862,7 +863,7 @@ func _bare_ground(p: Vector3, r: float, town: Node3D, stead) -> Dictionary:
 			for v in poly:
 				box = box.expand(v)
 			mark.call(box.position, box.end, func(q: Vector2) -> bool: return Geometry2D.is_point_in_polygon(q, poly))
-		for f in town.get_meta("fields", []):
+		for f in (land_use.fields_of(int(town.get_meta("city", -1)), town.position) if land_use else []):
 			fields.append([town.position + f[0], f[1], f[2]])
 	if stead:
 		fields.append_array(stead["fields"])

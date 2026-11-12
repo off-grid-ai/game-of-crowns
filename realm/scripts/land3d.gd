@@ -715,3 +715,22 @@ func paint_field(at: Vector3, size: Vector2, yaw: float) -> void:
 			z += step
 		x += step
 
+
+## Ploughed soil taken back out of the ground (land_use.gd: a tile no longer worked, or worked another way): the
+## ground under the field goes back to the land's own layers.
+func unpaint_field(at: Vector3, size: Vector2, yaw: float) -> void:
+	var b := Basis(Vector3.UP, -yaw)
+	var step := land.vertex_spacing
+	var reach := size.length() * 0.5 + 0.2
+	var x := at.x - reach
+	while x <= at.x + reach:
+		var z := at.z - reach
+		while z <= at.z + reach:
+			var p := Vector3(x, 0.0, z)
+			var l := b * (p - Vector3(at.x, 0.0, at.z))
+			if maxf(absf(l.x) - size.x * 0.5, absf(l.z) - size.y * 0.5) < 0.12 and land.data.has_regionp(p):
+				land.data.set_control_auto(p, true)
+				land.data.set_control_blend(p, 0.0)
+			z += step
+		x += step
+
