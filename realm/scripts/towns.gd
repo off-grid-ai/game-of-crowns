@@ -2851,6 +2851,8 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 		_fields_beyond(root, center, size, rng)  # strips out past the plots, along the roads
 	_smoke(root, keep_off + Vector3(0.2, _ground_y(center, keep_off) + 1.2, 0.1))
 
+	if real:
+		_kerbs(root, center)  # after the houses and stalls stand: the kerb runs only where the paving meets open ground
 	await _pace()
 	_flush(root)
 	# Its name on the map is drawn in screen space by map_labels.gd.
@@ -3165,6 +3167,50 @@ func _note_paved(root: Node3D, a: Vector2, b: Vector2, half: float) -> void:
 ## _paved_at; the "paved" stretches hold only the disc inside it (wear.gd's), and its corners reach further.
 func _note_setts(root: Node3D, size: Vector2, yaw: float) -> void:
 	root.set_meta("setts", [size * 0.5, yaw])
+
+
+## The square's kerb (art target 01-town: the cobbles end at a low stone border where they meet the grass; round 12
+## Kingsmere, the paving frayed into the grass with no edge): the Medieval Village kit's exterior border (assets.json
+## kerb, 2 m, 0.13 m high) laid end to end along each side of the square's setts (meta setts), its back on the paving's
+## edge and turned square to it; none where a building, a stall or a fence stands on the line (footprints), across a
+## street (lanes, a street's half-width and the kerb's depth either side) or off the land. Each side's run is centred.
+func _kerbs(root: Node3D, center: Vector3) -> void:
+	var setts: Array = root.get_meta("setts", [])
+	var kinds: Array = Real.variants("kerb").filter(func(k): return Real.footprint(k) != Vector2.ZERO)
+	if setts.size() != 2 or kinds.is_empty():
+		return
+	var half: Vector2 = setts[0]
+	var b := Basis(Vector3.UP, float(setts[1]))
+	var f := Real.footprint(kinds[0])
+	var fps: Array = root.get_meta("footprints", [])
+	var ways: Array = root.get_meta("lanes", [])
+	var blocked := func(p: Vector3) -> bool:
+		var q := Vector2(p.x, p.z)
+		if not terrain.is_land(center.x + p.x, center.z + p.z):
+			return true
+		for fp in fps:
+			if Geometry2D.is_point_in_polygon(q, PackedVector2Array(fp)):
+				return true
+		for w in ways:
+			if q.distance_to(Geometry2D.get_closest_point_to_segment(q, w[0], w[1])) < TownPlots.ROAD_HALF + f.y:
+				return true
+		return false
+	var i := 0
+	for n_l: Vector3 in [Vector3.RIGHT, Vector3.LEFT, Vector3.BACK, Vector3.FORWARD]:
+		var a_l := Vector3(-n_l.z, 0, n_l.x)
+		var reach: float = half.y if absf(n_l.x) > 0.5 else half.x  # half this side's length
+		var off: float = half.x if absf(n_l.x) > 0.5 else half.y  # how far the side stands from the heart
+		var n := b * n_l
+		var along := b * a_l
+		var count := int(floor(2.0 * reach / f.x))
+		for k in count:
+			var c: Vector3 = b * (n_l * off + a_l * ((k + 0.5) * f.x - count * f.x * 0.5)) + n * f.y * 0.5
+			if blocked.call(c) or blocked.call(c + along * f.x * 0.45) or blocked.call(c - along * f.x * 0.45):
+				continue
+			var kind: String = kinds[i % kinds.size()]
+			i += 1
+			var yaw := atan2(n.x, n.z)
+			_place(root, kind, c + Vector3(0, _foot_y(center, c, f, yaw), 0), yaw)
 
 
 ## Whether a town-local spot (with `margin` round it) is on laid stone: the square's setts or a paved street. Nothing

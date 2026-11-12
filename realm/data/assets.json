@@ -161,6 +161,7 @@
     "bench": { "heightRange": [0.3, 0.7], "kind": "roadprop", "variants": [ { "model": "props/Bench.gltf", "name": "props/Bench", "length": 1.8 } ] },
     "table": { "heightRange": [0.5, 1.0], "kind": "roadprop", "variants": [ { "model": "props/Table_Large.gltf", "name": "props/Table_Large", "length": 2.0 } ] },
     "inn_sign": { "heightRange": [2, 3.5], "kind": "roadprop", "variants": [ { "model": "props/Banner_1.gltf", "name": "props/Banner_1", "length": 1.8, "height": 2.7 } ] },
+    "kerb": { "heightRange": [0.05, 0.4], "kind": "roadprop", "variants": [ { "model": "village/Prop_ExteriorBorder_Straight1.gltf", "name": "kerb_1", "length": 2.0 }, { "model": "village/Prop_ExteriorBorder_Straight2.gltf", "name": "kerb_2", "length": 2.0 } ] },
     "lean_to": { "heightRange": [2, 3.5], "kind": "roadprop", "variants": [ { "model": "props/Stall_Empty.gltf", "name": "props/Stall_Empty", "length": 2.4, "height": 2.7 } ] },
     "sawbench": { "heightRange": [0.6, 1.2], "kind": "roadprop", "variants": [ { "model": "props/Workbench.gltf", "name": "props/Workbench", "length": 2.0 } ] },
     "sack": { "heightRange": [0.4, 1.0], "kind": "roadprop", "variants": [ { "model": "props/Bag.gltf", "name": "props/Bag", "length": 0.8, "height": 0.7 } ] },
