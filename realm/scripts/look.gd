@@ -94,6 +94,9 @@ func _ready() -> void:
 	if look_one:
 		# The one look: no brown LUT; a warm key against a cool shade, and a gentle S-curve after AgX.
 		var lut := String(LOOK.get("lut", ""))
+		for a in OS.get_cmdline_user_args():  # --lut=res://…: another grade for one run (the before shot)
+			if String(a).begins_with("--lut="):
+				lut = String(a).substr(6)
 		env.adjustment_color_correction = _lut(lut)
 		env.adjustment_saturation = float(_clarity("saturation", LOOK.get("saturation", 1.1)))
 		env.adjustment_contrast = float(_clarity("contrast", LOOK.get("contrast", 1.12)))

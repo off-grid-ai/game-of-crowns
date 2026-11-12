@@ -11,7 +11,20 @@ what differs is where the colour sits and how far it goes. So the fit is paramet
   by up to `green`.
 - strength: the share of the change kept.
 The fit becomes a 33^3 LUT composed after the current grade (assets/grade/bold.png): v3.png = fit(bold(x)),
-in golden-hour.png's layout (red across, green down, blue by tile), and before/after previews of each frame."""
+in golden-hour.png's layout (red across, green down, blue by tile), and before/after previews of each frame.
+
+Second pass (--over; round 8's Kingsmere frames, rendered with v3.png, beside 01-town): the grade is the last step
+of Godot's chain, so a correction measured on frames already graded composes exactly after it: v3b.png = over(v3(x)).
+Measured (focus r8 hero, HUD masked; 01-town): luma mean 0.479 vs 0.431, spread 0.180 vs 0.211, p5 0.161 vs 0.126
+(too bright and flat, the shade lifted); greens' value 0.55 vs 0.37 (lime, not deep); stone's value 0.65 vs 0.54
+and 27% of the frame vs 11% (white cobbles); the brightest 5% neutral (r-b 0.11) vs warm (0.27); the darkest
+tenth a little blue (b/r 0.39 vs 0.27). Each knob from one of those:
+- OVER_L: the share of a lightness rank match (our L's rank -> the target's L at the same rank) kept.
+- OVER_GREEN_L / OVER_GREEN_C: yellow-greens and greens (Lab hue 90-150) darkened and their chroma eased (deep,
+  not lime: darkening at fixed chroma reads more saturated).
+- OVER_HI / OVER_SH: Lab (a, b) added toward the highlights (L 55 -> 85) and the deepest shade (L < 35): warm
+  sunlit tops, shadows a touch less blue.
+Run: arch -arm64 /usr/bin/python3 realm/tools/fit_look_lut.py --over OUT_PREVIEW_DIR FRAME..."""
 import os
 import sys
 import numpy as np
@@ -22,6 +35,12 @@ ROOT = os.path.join(HERE, "..", "..")
 TARGET = os.path.join(ROOT, "docs", "art", "target", "01-town.jpg")
 BOLD = os.path.join(HERE, "..", "assets", "grade", "bold.png")
 OUT = os.path.join(HERE, "..", "assets", "grade", "v3.png")
+OUT_OVER = os.path.join(HERE, "..", "assets", "grade", "v3b.png")
+OVER_L = 0.8        # share of the lightness rank match kept
+OVER_GREEN_L = 0.82  # greens' lightness times this
+OVER_GREEN_C = 0.8   # greens' chroma times this
+OVER_HI = (1.5, 10.0)  # Lab (a, b) added at the highlights
+OVER_SH = (-1.0, 1.0)  # Lab (a, b) added in the deepest shade
 N = 33
 STRENGTH = 1.0
 TURN = 9.0     # degrees, orange (Lab hue 52-82) toward red
@@ -107,7 +126,51 @@ def write_lut(f):
     return OUT
 
 
-if __name__ == "__main__":
+def fit_over(frames):
+    tl = lab_of(small(TARGET)).reshape(-1, 3)
+    ol = np.concatenate([lab_of(im)[masked(im)] for im in map(small, frames)])
+    bins = np.linspace(0, 100, 257)
+    mid = 0.5 * (bins[1:] + bins[:-1])
+    lmap = np.interp(cdf(ol[:, 0], bins), cdf(tl[:, 0], bins), mid)
+    lmap = cv2.GaussianBlur(lmap.reshape(1, -1).astype(np.float32), (1, 0), 6).ravel()
+    return {"lmid": mid, "lmap": lmap}
+
+
+def over_lab(lab, f):
+    L, a, b = lab[..., 0], lab[..., 1], lab[..., 2]
+    L2 = L + (np.interp(L, f["lmid"], f["lmap"]) - L) * OVER_L
+    C = np.hypot(a, b)
+    hdeg = np.degrees(np.arctan2(b, a))
+    w_gr = np.clip(1.0 - np.abs(hdeg - 120.0) / 30.0, 0.0, 1.0) * np.clip(C / 15.0, 0.0, 1.0)
+    L2 = L2 * (1.0 - (1.0 - OVER_GREEN_L) * w_gr)
+    C2 = C * (1.0 - (1.0 - OVER_GREEN_C) * w_gr)
+    hr = np.radians(hdeg)
+    hi = np.clip((L2 - 55.0) / 30.0, 0.0, 1.0)
+    sh = np.clip(1.0 - L2 / 35.0, 0.0, 1.0)
+    a2 = C2 * np.cos(hr) + OVER_HI[0] * hi + OVER_SH[0] * sh
+    b2 = C2 * np.sin(hr) + OVER_HI[1] * hi + OVER_SH[1] * sh
+    return np.stack([np.clip(L2, 0.0, 100.0), a2, b2], axis=-1)
+
+
+def over_bgr(img_u8, f):
+    out = cv2.cvtColor(over_lab(lab_of(img_u8), f).astype(np.float32), cv2.COLOR_LAB2BGR)
+    return (np.clip(out, 0, 1) * 255 + 0.5).astype(np.uint8)
+
+
+def main_over(outdir, frames):
+    os.makedirs(outdir, exist_ok=True)
+    f = fit_over(frames)
+    for p in frames:
+        name = p.split("/")[-3] + "-" + os.path.basename(p).rsplit(".", 1)[0]
+        cv2.imwrite(os.path.join(outdir, name + "-over.png"), over_bgr(cv2.imread(p), f))
+    base = cv2.imread(OUT)  # the strip is an image like any other: the correction runs on its colours
+    cv2.imwrite(OUT_OVER, over_bgr(base, f))
+    print(OUT_OVER)
+
+
+if __name__ == "__main__" and sys.argv[1] == "--over":
+    main_over(sys.argv[2], sys.argv[3:])
+elif __name__ == "__main__":
     outdir, frames = sys.argv[1], sys.argv[2:]
     os.makedirs(outdir, exist_ok=True)
     f = fit(frames)
