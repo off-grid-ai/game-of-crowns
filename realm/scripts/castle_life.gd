@@ -142,6 +142,10 @@ func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 			path.append(q)
 		for i in int(wk.get("count", 3)):
 			d["nodes"].append(_walker(path, colour, wk, scale, i))
+	# The red carpet up the keep's steps and across the bailey to the gate, a guard either side of the door
+	# at the top (01-town: the steps up to the keep, the carpet, the halberdiers).
+	if Builder.podium() > 0:
+		_carpet(xf, sp, colour, d)
 	# The bailey's well, at its heart.
 	var w: Array = Data.value("castle", "well", [0.75, 0.0, 0.45])
 	var well_kind := Real.one("well")
@@ -167,7 +171,7 @@ func _arms(xf: Transform3D, sp: Dictionary, house: Dictionary, colour: Color, d:
 	var hz := int(sp.get("d", 16)) * cell / 2.0
 	var kh := int(sp.get("keep", 4)) * cell / 2.0
 	var keep_z := -hz + kh - 1.0 + kh + 0.12
-	var keep_top := int(sp.get("keep_storeys", 5)) * Builder.STOREY - 1.0
+	var keep_top := (int(sp.get("keep_storeys", 5)) + Builder.podium()) * Builder.STOREY - 1.0
 	var gate_top := (int(sp.get("wall_storeys", 2)) + 1) * Builder.STOREY - 0.4
 	var gate_z := hz + (3.6 if Builder.meshy_gatehouse() != "" else 3.0) + 0.12
 	var gh := 4 * cell / 2.0
@@ -229,6 +233,55 @@ func _guard(a: Vector3, b: Vector3, colour: Color, k: Dictionary, scale: float) 
 		tw.tween_callback(func(): main.scenes.people.play(f, ["Looking_Around", "Weight_Shift", "Idle"][_rng.randi() % 3], 1.0))
 		tw.tween_interval(look)
 	return f
+
+
+## The carpet: a strip down the keep's steps from its door (the podium's top) to their foot, then on along the
+## bailey's floor to the gate's inner face (castle-local metres; castle_builder.gd lays the steps).
+func _carpet(xf: Transform3D, sp: Dictionary, colour: Color, d: Dictionary) -> void:
+	var k: Dictionary = Data.value("castle", "steps", {})
+	var hz := int(sp.get("d", 16)) * Builder.CELL / 2.0
+	var kh := int(sp.get("keep", 4)) * Builder.CELL / 2.0
+	var kf := -hz + kh - 1.0 + kh
+	var top := Builder.podium() * Builder.STOREY
+	var foot := kf + 2.0 * Builder.podium() * int(Builder.STOREY)
+	var half := float(k.get("carpet_w", 1.6)) * 0.5
+	var lift := float(k.get("carpet_lift", 0.06))
+	var to_gate := hz - float(k.get("gate_in", 3.2))
+	var pts := [Vector3(0, top + lift, kf + 0.25), Vector3(0, lift, foot), Vector3(0, lift * 0.5, to_gate)]
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in pts.size() - 1:
+		var a: Vector3 = pts[i]
+		var b: Vector3 = pts[i + 1]
+		var quad := [a + Vector3(-half, 0, 0), a + Vector3(half, 0, 0), b + Vector3(half, 0, 0), b + Vector3(-half, 0, 0)]
+		var n := (b - a).cross(Vector3.RIGHT).normalized()
+		if n.y < 0.0:
+			n = -n
+		for t in [[0, 1, 2], [0, 2, 3]]:
+			for v in t:
+				st.set_normal(n)
+				st.add_vertex(quad[v])
+	var m := MeshInstance3D.new()
+	m.mesh = st.commit()
+	var mat := StandardMaterial3D.new()
+	var c: Array = k.get("carpet", [0.6, 0.07, 0.06])
+	mat.albedo_color = Color(float(c[0]), float(c[1]), float(c[2]))
+	mat.roughness = 1.0
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.material_override = mat
+	add_child(m)
+	m.global_transform = xf
+	d["nodes"].append(m)
+	# The door's guards at the top of the steps.
+	for sx in [-1.0, 1.0]:
+		var g: Node3D = main.scenes.people.make(_rng, "soldier", colour.lerp(Color.WHITE, 0.3), "adult")
+		add_child(g)
+		main.scenes.arm(g, "spear")
+		g.global_position = xf * Vector3(sx * (half + 0.7), top, kf + 0.9)
+		var out: Vector3 = xf.basis * Vector3(0, 0, 1)  # facing down the steps, toward the gate
+		g.global_rotation.y = atan2(out.x, out.z)
+		main.scenes.people.play(g, "Idle", 1.0)
+		d["nodes"].append(g)
 
 
 ## One of the folk going in and out by the gate: along `path` (the road outside, the gate, the passage's

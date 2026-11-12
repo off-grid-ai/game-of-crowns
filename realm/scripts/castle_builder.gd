@@ -71,15 +71,30 @@ func build_castle(spec: Dictionary) -> ArrayMesh:
 		_block(parts, gate_at, gate_w, 3, wall_st + 1, rng, {"gate": true, "crenel": true, "windows": 0.5, "portcullis": float(spec.get("gate_portcullis", 2.4))})
 		for sx in [-1, 1]:
 			_block(parts, gate_at + Vector3(sx * (gh + 1.0), 0, 1.0), 2, 2, wall_st + 2, rng, {"cone": true, "windows": 0.5})
-	# The keep: tall, crenellated, a tiled roof over its leads, a turret at each corner.
-	_block(parts, keep_at, keep, keep, keep_st, rng, {"door": true, "crenel": true, "windows": 0.45, "roof": true})
+	# The keep: tall, crenellated, a tiled roof over its leads, a turret at each corner. On a seat's castle it
+	# stands on a stone podium, a broad flight of steps up to its door (01-town: the steps up to the keep, the
+	# red carpet down them; castle_life.gd lays the carpet): the kit's exterior stairs, a metre a flight.
+	var up := podium()
+	if up > 0:
+		_block(parts, keep_at, keep, keep, up, rng, {})
+		var kf := keep_at.z + kh
+		var rises := up * int(STOREY)
+		for i in rises:
+			var y := float(rises - 1 - i)
+			var z := kf + 1.0 + 2.0 * i
+			for sx in [-1.0, 1.0]:
+				parts.append(["Stairs_Exterior_Straight", Transform3D(Basis(), Vector3(sx, y, z))])
+				for j in int(y):
+					parts.append(["Stairs_Exterior_Sides", Transform3D(Basis(), Vector3(sx, float(j), z))])
+	var lift := Vector3(0, up * STOREY, 0)
+	_block(parts, keep_at + lift, keep, keep, keep_st, rng, {"door": true, "crenel": true, "windows": 0.45, "roof": true})
 	for k in 4:
 		var c := Vector3((-1 if k in [0, 3] else 1) * (kh + 0.3), 0, (-1 if k < 2 else 1) * (kh + 0.3))
-		_block(parts, keep_at + c, 2, 2, keep_st + (1 if k % 2 == 0 else 0), rng, {"cone": true, "windows": 0.4})
+		_block(parts, keep_at + c, 2, 2, keep_st + up + (1 if k % 2 == 0 else 0), rng, {"cone": true, "windows": 0.4})
 	# Banners: down the keep's face over its door and either side of the gate. With the castle lived in
 	# (castle_life.gd, --castle-life=on) it hangs the house's painted arms in these places instead.
 	if not load("res://scripts/castle_life.gd").on():
-		var top := keep_st * STOREY
+		var top := (keep_st + up) * STOREY
 		var b := Basis(Vector3.UP, 0.0).scaled(Vector3.ONE * banner)
 		parts.append(["res://assets/props/Banner_1.gltf", Transform3D(b, keep_at + Vector3(-0.8 * banner, top - 2.0 - 0.84 * banner, kh + 0.15))])
 		for sx in [-1, 1]:
@@ -163,6 +178,18 @@ static func meshy_gatehouse() -> String:
 	var g: Dictionary = (preload("res://scripts/data.gd").value("meshy", "pieces", {}) as Dictionary).get("gatehouse", {})
 	var path := "res://assets/meshy/gatehouse/gatehouse.glb"
 	return path if String(g.get("replaces", "")) == "castle_gate" and ResourceLoader.exists(path) else ""
+
+
+## How many storeys of stone podium the keep stands on, with its steps up the front (data/castle.json
+## steps.storeys; --keep-steps=off for none). 0: the keep on the bailey's floor, as before.
+static func podium() -> int:
+	var args := OS.get_cmdline_user_args()
+	if args.has("--keep-steps=off"):
+		return 0
+	var k: Dictionary = preload("res://scripts/data.gd").value("castle", "steps", {})
+	if args.has("--keep-steps=on") or bool(k.get("on", false)):
+		return int(k.get("storeys", 1))
+	return 0
 
 
 ## Stone curtains (walls.gd's switch, --walls=stone): the kit curtain is left out of the castle.
