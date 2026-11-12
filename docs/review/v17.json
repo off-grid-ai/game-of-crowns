@@ -591,6 +591,129 @@
    "still": "battle-play/battle-in-play.png"
   },
   {
+   "id": "b9-horses",
+   "name": "Horses' coats",
+   "what": "Bay, chestnut, black, grey and dun, their own shading, no white patches",
+   "ref": "town-a",
+   "card": "W3",
+   "still": "look8b/horses.png"
+  },
+  {
+   "id": "b9-wheat-summer",
+   "name": "Wheat in summer",
+   "what": "Standing stalks swaying with the wind, the ground barely showing",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "look8b/wheat-summer.png",
+   "clip": "look8b/wheat-clip.mp4"
+  },
+  {
+   "id": "b9-wheat-summer-8",
+   "name": "Wheat at 8",
+   "what": "The field from further",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "look8b/wheat-summer-8.png"
+  },
+  {
+   "id": "b9-wheat-autumn",
+   "name": "Wheat in autumn",
+   "what": "Gold, swaying",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "look8b/wheat-autumn.png"
+  },
+  {
+   "id": "b9-fields-plough",
+   "name": "Ploughing (again)",
+   "what": "An open field outside the town, its hands at work, never a town plot",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "look8b/field-plough.png"
+  },
+  {
+   "id": "b9-fields-reap",
+   "name": "Reaping (again)",
+   "what": "Open field, reapers and binders",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "look8b/field-reap.png"
+  },
+  {
+   "id": "b9-fields-glean",
+   "name": "Gleaning (again)",
+   "what": "Open field, gleaners among the stooks",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "look8b/field-glean.png"
+  },
+  {
+   "id": "b9-smoke",
+   "name": "Chimney smoke",
+   "what": "Thin grey-brown threads leaning one way, not white puffs",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "look8b/smoke-clip-15.png",
+   "clip": "look8b/smoke-clip.mp4"
+  },
+  {
+   "id": "b9-rim-goldrock-off",
+   "name": "Goldrock's square, dressing and crowd off",
+   "what": "Off: the thin old square, bare cobbles. On: benches, barrels, tubs along the rim, the square full, no cows in it",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "rim-off/rim-goldrock-off.png"
+  },
+  {
+   "id": "b9-rim-kingsmere-off",
+   "name": "Kingsmere's square, dressing and crowd off",
+   "what": "Off: the thin old square, bare cobbles. On: benches, barrels, tubs along the rim, the square full, no cows in it",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "rim-off/rim-kingsmere-off.png"
+  },
+  {
+   "id": "b9-rim-goldrock-on",
+   "name": "Goldrock's square, dressing and crowd on",
+   "what": "Off: the thin old square, bare cobbles. On: benches, barrels, tubs along the rim, the square full, no cows in it",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "rim-on/rim-goldrock-on.png"
+  },
+  {
+   "id": "b9-rim-kingsmere-on",
+   "name": "Kingsmere's square, dressing and crowd on",
+   "what": "Off: the thin old square, bare cobbles. On: benches, barrels, tubs along the rim, the square full, no cows in it",
+   "ref": "town-b",
+   "card": "W3",
+   "still": "rim-on/rim-kingsmere-on.png"
+  },
+  {
+   "id": "b9-grief",
+   "name": "Grief at the seat",
+   "what": "Stalls shut, a thin crowd in dark wool, candles round the centrepiece, black cloth over doors, the funeral walking round (grief.wav: the bell)",
+   "ref": "07-unrest",
+   "card": "W3",
+   "still": "grief/grief.png",
+   "clip": "grief/grief-clip.mp4"
+  },
+  {
+   "id": "b9-season-melee",
+   "name": "The season in a long take",
+   "what": "The land's season matches the date shown (no snow under 'Spring')",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "season/season-melee.png"
+  },
+  {
+   "id": "b9-season-melee-later",
+   "name": "The season, 40 s on",
+   "what": "Still matching",
+   "ref": "03-army",
+   "card": "A7",
+   "still": "season/season-melee-later.png"
+  },
+  {
    "id": "b9-sound-square-near",
    "name": "The square near (sound)",
    "what": "The hubbub with the crowd; the smith's blows on his strikes; dogs (judge by ear: sound.wav)",

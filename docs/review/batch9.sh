@@ -8,8 +8,8 @@
 # tilt -5). The shots and their references are in docs/review/v17.json; v17_apply.py puts them
 # on the review page. Generated from the list (the fire-siege session); edit the launches here, not the list.
 #
-#   docs/review/batch9.sh            # all of it, about 137 minutes [estimate: the launches' LIMITs and waits]
-#   ONLY="ladder fire" docs/review/batch9.sh   # some launches only: ladder settled clarity fire fixes meshy village fountain ui decisions breach hosts battle sound
+#   docs/review/batch9.sh            # all of it, about 166 minutes [estimate: the launches' LIMITs and waits]
+#   ONLY="ladder fire" docs/review/batch9.sh   # some launches only: ladder settled clarity fire fixes meshy village fountain look8b rim grief season ui decisions breach hosts battle sound
 #   OUT=/tmp/goc-batch9 (default)    # frames, logs and clips land here
 #
 # Its own private bridge (8788, Freeciv 5557; PORT, FC to change) with a fresh reign named "Film batch 9", so the
@@ -19,7 +19,7 @@ R=${0:A:h:h:h}
 OUT=${OUT:-/tmp/goc-batch9}
 PORT=${PORT:-8788}; FC=${FC:-5557}
 API=localhost:$PORT
-ONLY=${ONLY:-ladder settled clarity fire fixes meshy village fountain ui decisions breach hosts battle sound}
+ONLY=${ONLY:-ladder settled clarity fire fixes meshy village fountain look8b rim grief season ui decisions breach hosts battle sound}
 SW=(--look=one --trees=kit --ground=painted --wear=on --team=on --politics=on --castles=kit --houses=kit --towns=plots --fire=v2 --roadside=on --ui=v2 --dressing=on --castle-life=on --weather=v2)
 # The landmarks (--landmarks=meshy) ride on every launch through LM; a before shot sets LM=--landmarks=kit for its run.
 LM=${LM:---landmarks=meshy}
@@ -333,6 +333,52 @@ if want battle; then
   # news. Only shows a battle if this reign has had one by now; play.log and the frame say what it found.
   { print "wait 60"; print "key Space"; print "wait 5"; print "snap battle-in-play"; print "look battle-play-end"; } > $OUT/battle-play.play
   play battle-play 300 --battles=field
+fi
+
+# 49-51, 55. Batch 8b's look follow-ups: horses' coats in the paddock, wheat swaying, chimney smoke leaning, the fields as open fields.
+if want look8b; then
+  {
+    print "wait 30"
+    print "work Kingsmere stables 4 -5"; print "wait 6"; print "snap horses"
+    print "field summer 0.8 0 4 -5"; print "wait 4"; print "snap wheat-summer"; burst wheat-clip 30 0.2
+    print "field summer 0.8 0 8 -20"; print "wait 4"; print "snap wheat-summer-8"
+    print "field autumn 0.1 0 4 -5"; print "wait 4"; print "snap wheat-autumn"
+    print "field spring 0.15 0 4 -5"; print "wait 4"; print "snap field-plough"
+    print "field autumn 0.15 0 4 -5"; print "wait 4"; print "snap field-reap"
+    print "field autumn 0.6 0 4 -5"; print "wait 4"; print "snap field-glean"
+    print "city Kingsmere 14 -22"; print "wait 6"; burst smoke-clip 30 0.2
+    print "look look8b-end"
+  } > $OUT/look8b.play
+  play look8b 420
+  for c in wheat-clip smoke-clip; do clip $OUT/look8b $c 5; done
+fi
+
+# 54, 56. The square's rim (--dressing) and its crowd (--crowd), each without and with.
+if want rim; then
+  for v in off on; do
+    {
+      print "wait 30"
+      print "city Goldrock 6 -25"; print "wait 8"; print "snap rim-goldrock-$v"
+      print "city Kingsmere 6 -25"; print "wait 8"; print "snap rim-kingsmere-$v"
+      print "look rim-$v-end"
+    } > $OUT/rim-$v.play
+    if [ $v = off ]; then play rim-$v 300 --dressing=off --crowd=off; else play rim-$v 300; fi
+  done
+fi
+
+# 52. Grief at the seat: stalls shut, dark wool, candles round the centrepiece, black cloth on doors, the funeral walking round, the bell (with --sound=v2, recorded).
+if want grief; then
+  say "grief at $SEAT: $(stage "{\"city\":$SEATID,\"mood\":\"grief\"}")"
+  { print "wait 35"; print "city Kingsmere 6 -25"; print "wait 6"; print "snap grief"; burst grief-clip 40 0.5; print "look grief-end"; } > $OUT/grief.play
+  GODOT_ARGS="" play grief 360 --sound=v2 --record-audio=$OUT/grief.wav
+  clip $OUT/grief grief-clip 5
+  stage "{\"city\":$SEATID,\"mood\":\"calm\"}" > /dev/null
+fi
+
+# 57. The season in a film: a long take (the painted melee); the land's season matches the date shown at every shot.
+if want season; then
+  { print "wait 82"; print "snap season-melee"; print "wait 40"; print "snap season-melee-later"; print "look season-end"; } > $OUT/season.play
+  play season 300 --dist=4 --army-battle=1200 --army-look=painted
 fi
 
 # 41-48. The realm's sound v2 (--sound=v2), recorded with each clip (--record-audio): the square near and far, the yard and paddock, the mills, a levy, dawn and night. The sack, the siege and the court are heard in their own launches when those run with --sound=v2.
