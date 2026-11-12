@@ -20,7 +20,7 @@ import * as chron from "./chronicles.js";
 import { houseFor, cityName } from "./narrator.js";
 import { CIVILIAN, sworn } from "./campaigns.js";
 import * as Lua from "./lua.js";
-import { HITPOINTS } from "./rules.js";
+import { HITPOINTS, HULLS } from "./rules.js";
 
 export const HOSTS = JSON.parse(fs.readFileSync(new URL("./data/hosts.json", import.meta.url), "utf8"));
 
@@ -62,7 +62,9 @@ export function list(ctx) {
       id: lead.id, x: lead.x, y: lead.y, companies: g.units.length, men: g.units.reduce((n, u) => n + menOf(u), 0),
       at: town ? { id: town.id, name: cityName(town.id) } : null, units: g.units.map((u) => u.id),
       order: o ? { kind: o.kind, x: o.x ?? null, y: o.y ?? null, city: o.city ?? null, to: o.city != null ? cityName(o.city) : null,
-        seasons: o.x != null ? Math.ceil(Math.max(0, roadTo(lead, o)) / HOSTS.speed) : 0, face: o.face ?? null } : null,
+        seasons: o.x != null ? Math.ceil(Math.max(0, roadTo(lead, o)) / HOSTS.speed) : 0, face: o.face ?? null,
+        sea: o.sea ? { phase: o.sea.phase, port: cityName(o.sea.port.id), landing: o.sea.landing, hulls: o.sea.hulls } : null } : null,
+      aboard: o?.sea?.phase === "sail",  // at sea in the crown's hulls (its crossing: hosts.js crossing)
       ordersLeft: ordersLeft(ctx, lead.id),  // this host's orders still to give this season (data/hosts.json ordersPerHost)
     };
   }).sort((a, b) => b.companies - a.companies);
@@ -118,13 +120,21 @@ function give(ctx, b) {
       const to = town ? { x: town.x, y: town.y } : { x: Math.round(Number(b.x)), y: Math.round(Number(b.y)) };
       if (!inside(to.x, to.y)) return [400, { error: "choose where on the map" }];
       const road = roadTo(h, to);
-      if (road < 0) return [400, { error: `The royal host can find no road over land to ${town ? cityName(town.id) : "that place"}; the sea lies between.` }];
+      // No road over land: the host takes ship (Mac: "ships are just to move armies from one point to another").
+      const sea = road < 0 ? crossing(ctx, h, to) : null;
+      if (sea?.error) return [400, { error: sea.error }];
       // Into a town only where the gates are open to the King's men; before another's walls otherwise.
       // A great house's town not sworn to the crown is marched on: the host lays siege when it arrives,
       // and the house hears of it now (declare: the route moves favour and names the deed).
       const owner = town ? world.players.find((p) => p.id === town.owner) : null;
       const foe = owner && !houseFor(owner).crown && !houseFor(owner).wild && !sworn?.(owner.id) ? owner : null;
-      save(meta, [...rest, { kind: "march", units: h.units, x: to.x, y: to.y, city: town?.id ?? null, since: world.turn, ...(foe ? { siege: true, house: foe.id } : {}), ...face }]);
+      save(meta, [...rest, { kind: "march", units: h.units, x: to.x, y: to.y, city: town?.id ?? null, since: world.turn, ...(foe ? { siege: true, house: foe.id } : {}), ...face,
+        ...(sea ? { sea: { phase: "port", port: sea.port, hulls: sea.hulls, landing: sea.landing } } : {}) }]);
+      if (sea) {
+        const seasons = Math.max(1, Math.ceil(sea.walk / HOSTS.speed) + Math.ceil(sea.sail / sea.speed) + Math.ceil(sea.ashore / HOSTS.speed));
+        return [200, { ok: true, text: `${name} marches to ${cityName(sea.port.id)}, takes ship and lands on the far shore${town ? ` for ${cityName(town.id)}` : ""}: about ${seasons === 1 ? "a season" : `${seasons} seasons`}${foe ? ", and lays siege when it reaches the walls" : ""}.`,
+          ...(foe && !b.declared ? { declare: { city: town.id, house: foe.id } } : {}) }];
+      }
       const seasons = Math.max(1, Math.ceil(road / HOSTS.speed));
       return [200, { ok: true, text: `${name} marches${town ? ` ${foe ? "on" : "for"} ${cityName(town.id)}` : ""}: ${seasons === 1 ? "a season" : `${seasons} seasons`} on the road${foe ? ", and lays siege when it reaches the walls" : ""}.`,
         ...(foe && !b.declared ? { declare: { city: town.id, house: foe.id } } : {}) }];
@@ -183,8 +193,12 @@ function landOf() {
     const m = chron.readJson(file);
     if (!m?.tiles) return null;
     const walk = new Uint8Array(m.width * m.height);
-    for (const [x, y, n] of m.tiles) walk[y * m.width + x] = /Ocean|Lake/.test(String(n)) ? 0 : 1;
-    land = { file, w: m.width, h: m.height, walk };
+    const sea = new Uint8Array(m.width * m.height);  // 0 land, 1 coastal water (Ocean, Lake), 2 deep water
+    for (const [x, y, n] of m.tiles) {
+      walk[y * m.width + x] = /Ocean|Lake/.test(String(n)) ? 0 : 1;
+      sea[y * m.width + x] = /Deep Ocean/.test(String(n)) ? 2 : /Ocean|Lake/.test(String(n)) ? 1 : 0;
+    }
+    land = { file, w: m.width, h: m.height, walk, sea };
   }
   return land;
 }
@@ -229,6 +243,81 @@ function wayOn(steps, from, n, stop = 0) {
     here = best.v;
   }
   return out;
+}
+
+// The eight tiles round (x, y) on the map.
+function round(L, x, y) {
+  const out = [];
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    const nx = x + dx, ny = y + dy;
+    if ((dx || dy) && nx >= 0 && ny >= 0 && nx < L.w && ny < L.h) out.push([nx, ny]);
+  }
+  return out;
+}
+const sails = (L, x, y, deep) => L.sea[y * L.w + x] === 1 || (deep && L.sea[y * L.w + x] === 2);
+
+// A sea road for hulls (deep: they may cross deep water) from any of the tiles `from` to any of `to`: the tiles in
+// order, its first a start, or null.
+function seaRoad(L, from, to, deep) {
+  const goal = new Set(to.map(([x, y]) => y * L.w + x));
+  const prev = new Int32Array(L.w * L.h).fill(-2);
+  const q = from.map(([x, y]) => y * L.w + x);
+  for (const k of q) prev[k] = -1;
+  for (let i = 0; i < q.length; i++) {
+    if (goal.has(q[i])) {
+      const out = [];
+      for (let k = q[i]; k >= 0; k = prev[k]) out.unshift([k % L.w, (k / L.w) | 0]);
+      return out;
+    }
+    for (const [nx, ny] of round(L, q[i] % L.w, (q[i] / L.w) | 0)) {
+      const k = ny * L.w + nx;
+      if (prev[k] === -2 && sails(L, nx, ny, deep)) { prev[k] = q[i]; q.push(k); }
+    }
+  }
+  return null;
+}
+
+// How a host crosses the water to `to` (Mac: "ships are just to move armies from one point to another"): it walks to
+// the nearest town the crown holds on the water that it can reach over land, takes ship there in the crown's hulls
+// standing free in or beside it (enough room for every company: the ruleset's transport_cap), sails the sea road to
+// the shore nearest the goal (a Trireme keeps to coastal water), lands, and marches on. {port, hulls, landing, walk,
+// sail, ashore, speed} or {error: the reason, for the card}.
+function crossing(ctx, h, to) {
+  const { world, meta } = ctx;
+  const L = landOf();
+  const crown = crownOf(world);
+  const toSteps = stepsTo(to);
+  if (!L || !toSteps) return { error: "Choose a place on the land for the royal host." };
+  const busy = new Set((meta.hostOrders ?? []).flatMap((o) => [...o.units, ...(o.sea?.hulls ?? [])]));
+  const free = (world.units ?? []).filter((u) => u.owner === crown?.id && HULLS[u.type] && !busy.has(u.id));
+  const ports = (world.cities ?? []).filter((c) => c.owner === crown?.id && round(L, c.x, c.y).some(([x, y]) => L.sea[y * L.w + x]))
+    .map((c) => ({ c, walk: stepsTo(c)?.at(h) ?? -1 })).filter((p) => p.walk >= 0).sort((a, b) => a.walk - b.walk);
+  if (!ports.length) return { error: "The crown holds no port the royal host can reach to take ship." };
+  const shores = [];
+  for (let y = 0; y < L.h; y++) for (let x = 0; x < L.w; x++) {
+    const ashore = toSteps.at({ x, y });
+    if (ashore >= 0 && round(L, x, y).some(([a, b]) => L.sea[b * L.w + a])) shores.push({ x, y, ashore });
+  }
+  shores.sort((a, b) => a.ashore - b.ashore);
+  let why = "";
+  for (const p of ports) {
+    const at = free.filter((u) => cheb(u, p.c) <= 1).sort((a, b) => HULLS[b.type].carry - HULLS[a.type].carry);
+    const take = [];
+    let room = 0;
+    for (const u of at) if (room < h.units.length) { take.push(u); room += HULLS[u.type].carry; }
+    if (room < h.units.length) {
+      why ||= `No ship lies free at ${cityName(p.c.id)} for the royal host: room for ${room} of its ${h.units.length} companies.`;
+      continue;
+    }
+    const deep = take.every((u) => HULLS[u.type].deep);
+    const from = round(L, p.c.x, p.c.y).filter(([x, y]) => sails(L, x, y, deep));
+    for (const s of shores.slice(0, 60)) {
+      const road = seaRoad(L, from, round(L, s.x, s.y).filter(([x, y]) => sails(L, x, y, deep)), deep);
+      if (road) return { port: { id: p.c.id, x: p.c.x, y: p.c.y }, hulls: take.map((u) => u.id), landing: { x: s.x, y: s.y }, walk: p.walk, sail: road.length, ashore: s.ashore, speed: Math.min(...take.map((u) => HULLS[u.type].speed)) };
+    }
+    why ||= `No sea road from ${cityName(p.c.id)} reaches a shore near the goal${deep ? "" : " for a coastal ship"}.`;
+  }
+  return { error: why };
 }
 
 // A house's men sent home by a decree (crown.js buyoff, settle, peace, cede): one order, walked each season
@@ -301,6 +390,55 @@ export function season(ctx, turn) {
       const beside = units.filter((id) => cheb(byId.get(id), foe) === 1);
       if (beside.length) send(`lua cmd ${Lua.strike(beside, foe.x, foe.y)}`);  // from beside them, each strikes once
       if (beside.length === units.length) { next.push({ ...o, units, far: null }); continue; }
+    }
+    // Over the water (crossing): to the port, aboard, at sea, ashore; then the march goes on to its goal. The hulls are
+    // the King's while they carry his host: held from Freeciv's AI (realm_hold) and let go only for their own sailing,
+    // freed when the host is ashore.
+    if (o.sea && o.sea.phase !== "landed") {
+      const sea = o.sea;
+      const L = landOf();
+      const hulls = sea.hulls.map((id) => (world.units ?? []).find((u) => u.id === id && u.owner === crown?.id)).filter(Boolean);
+      if (!L || hulls.length < sea.hulls.length) {
+        record?.({ turn, kind: "decree", text: "The ships meant for the royal host are lost; the host makes camp." });
+        if (hulls.length) send(`lua cmd ${Lua.homewardRelease(hulls.map((u) => u.id))}`);
+        next.push({ kind: "hold", units, since: turn });
+        continue;
+      }
+      const held = new Set([...(meta.hostsHeld ?? []), ...(meta.siegeHeld ?? [])]);
+      const go = (way) => {  // a step of the King's own, let go from any hold for it
+        const ids = way.filter(([, w]) => w.length).map(([id]) => id);
+        if (ids.length) send(`lua cmd ${Lua.homewardRelease(ids)}`);
+        for (const [id, w] of way) if (w.length) send(`lua cmd ${Lua.walk(id, w)}`);
+        const back = ids.filter((id) => held.has(id) || sea.hulls.includes(id));
+        if (back.length) send(`lua cmd ${Lua.homewardHold(back)}`);
+      };
+      if (sea.phase === "port") {
+        send(`lua cmd ${Lua.homewardHold(sea.hulls)}`);  // the hulls wait in port for the host
+        if (units.every((id) => cheb(byId.get(id), sea.port) === 0)) {
+          send(`lua cmd ${Lua.ferryBoard(units, sea.hulls)}`);
+          record?.({ turn, kind: "decree", text: `The royal host takes ship at ${cityName(sea.port.id)}.`, city: sea.port.id });
+          next.push({ ...o, units, sea: { ...sea, phase: "sail" } });
+          continue;
+        }
+        const steps = stepsTo(sea.port, new Set([...shut].filter((k) => k !== `${sea.port.x},${sea.port.y}`))) ?? stepsTo(sea.port);
+        go(units.map((id) => [id, steps ? wayOn(steps, byId.get(id), HOSTS.speed) : []]));
+        next.push({ ...o, units });
+        continue;
+      }
+      // At sea: the hulls (and the host in them) sail toward the water beside the landing; there, the host comes ashore.
+      const deep = hulls.every((u) => HULLS[u.type]?.deep);
+      const beside = round(L, sea.landing.x, sea.landing.y).filter(([x, y]) => sails(L, x, y, deep));
+      const near = new Set(beside.map(([x, y]) => `${x},${y}`));
+      if (hulls.every((u) => near.has(`${u.x},${u.y}`))) {
+        send(`lua cmd ${Lua.ferryLand(units, sea.landing.x, sea.landing.y)}`);
+        send(`lua cmd ${Lua.homewardRelease(sea.hulls)}`);  // the ships are free again
+        record?.({ turn, kind: "decree", text: `The royal host comes ashore${o.city != null ? ` on the road to ${cityName(o.city)}` : ""}.`, city: o.city ?? undefined });
+        next.push({ ...o, units, far: null, sea: { ...sea, phase: "landed" } });
+        continue;
+      }
+      go(hulls.map((u) => [u.id, (seaRoad(L, [[u.x, u.y]], beside, deep) ?? []).slice(1, 1 + (HULLS[u.type]?.speed ?? 1))]));
+      next.push({ ...o, units });
+      continue;
     }
     // There: on the place, or before the walls of a town that isn't the crown's (a march halts at another's gates).
     const goal = o.city != null ? world.cities.find((c) => c.id === o.city) : null;

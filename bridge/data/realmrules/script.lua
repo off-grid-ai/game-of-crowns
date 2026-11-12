@@ -1211,6 +1211,60 @@ function realm_disband_home(id, city_id)
 end
 
 -- Men who can go no nearer home (or whose seat is lost) are their house's AI's again, where they stand.
+-- The King's host takes ship (bridge hosts.js crossing): each company boards one of the hulls named, in its town or
+-- on the water beside it, by Freeciv's own transport actions (the hull's room is the ruleset's transport_cap).
+local function realm_try(u, names, target)
+  for _, a in ipairs(names) do
+    local ok, act = pcall(find.action, a)
+    if ok and act then pcall(edit.perform_action, u, act, target) end
+    if names.done(u) then return true end
+  end
+  return false
+end
+
+function realm_ferry_board(units, hulls)
+  local hs = {}
+  for id in tostring(hulls or ""):gmatch("%d+") do
+    local h = find.unit(nil, tonumber(id))
+    if h then edit.movement_allow(h); hs[#hs + 1] = h end
+  end
+  local n, ok = 0, 0
+  for id in tostring(units or ""):gmatch("%d+") do
+    local u = find.unit(nil, tonumber(id))
+    n = n + 1
+    if u then
+      edit.movement_allow(u)
+      for _, h in ipairs(hs) do
+        if u:transporter() then break end
+        realm_try(u, {"Transport Board", "Transport Board 2", "Transport Board 3", "Transport Embark", "Transport Embark 2", "Transport Embark 3", done = function(x) return x:transporter() ~= nil end}, h)
+      end
+      if u:transporter() then ok = ok + 1 end
+      edit.movement_disallow(u)
+    end
+  end
+  for _, h in ipairs(hs) do edit.movement_disallow(h) end
+  log.normal("FERRY board %d of %d", ok, n)
+end
+
+-- The King's host comes ashore on the tile (x, y) beside its hulls, by Freeciv's own Transport Disembark. (Aboard,
+-- realm_ferry_board left each company held from the AI: it goes where its hull goes.)
+function realm_ferry_land(units, x, y)
+  local t = find.tile(x, y)
+  local n, ok = 0, 0
+  for id in tostring(units or ""):gmatch("%d+") do
+    local u = find.unit(nil, tonumber(id))
+    n = n + 1
+    if u and t then
+      edit.movement_allow(u)
+      if u:transporter() then
+        realm_try(u, {"Transport Disembark", "Transport Disembark 2", "Transport Disembark 3", "Transport Disembark 4", done = function(x) return x.tile == t end}, t)
+      end
+      if u.tile == t then ok = ok + 1 end  -- ashore, free to march on (the bridge holds it again if its order does)
+    end
+  end
+  log.normal("FERRY land %d of %d", ok, n)
+end
+
 function realm_release(ids)
   for id in tostring(ids or ""):gmatch("%d+") do
     local u = find.unit(nil, tonumber(id))
