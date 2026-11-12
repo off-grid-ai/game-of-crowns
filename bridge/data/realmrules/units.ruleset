@@ -1003,7 +1003,6 @@ class         = "Land"
 reqs          =
   { "type", "name", "range"
     "Tech", "Guerilla Warfare", "Player"
-    "Gov",  "Fundamentalism", "Player"
   }
 obsolete_by   = "None"
 graphic       = "u.fanatics"

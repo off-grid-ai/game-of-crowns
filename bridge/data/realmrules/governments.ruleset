@@ -227,135 +227,6 @@ _("\
 ")
 
 ;------------------------------------------------------------------------
-[government_communism]
-
-name        = _("Communism")
-reqs = { "type", "name", "range"
-         "tech", "Communism", "Player"
-       }
-graphic     = "gov.communism"
-graphic_alt = "-"
-sound       = "g_communism"
-sound_alt   = "g_generic"
-sound_alt2  = "-"
-
-ruler_male_title = _("Comrade %s")
-ruler_female_title = _("?female:Comrade %s")
-
-helptext = _("\
-A Communist government is based on the ideal that all people are\
- equal.  All goods are owned by the state, rather than by private\
- citizens.  Communism gives a balance between military and commercial\
- styles of government.\
-"), _("\
-Communism is a good government for maximizing shield production, and\
- for large empires.\
-"),
-; /* xgettext:no-c-format */
-_("\
-* City improvements which would normally have an upkeep of 1 gold are\
- free of upkeep.\n\
-* Cancels the bonus from Mysticism and Theology (to Temples and Cathedrals).\n\
-* Each city can support up to 3 units for free (the maximum possible);\
- further units each cost 1 shield per turn.\n\
-* Each city tolerates up to 3 aggressively deployed military units;\
- each further unit causes 1 unhappy citizen.\n\
-* Military units impose martial law. Up to 3 military units inside a city\
- will each force 2 unhappy citizens to become content (the maximum\
- possible).\n\
-* Base corruption is 30%, but is not affected by distance to the capital.\n\
-* There is no production waste.\
-")
-
-;------------------------------------------------------------------------
-[government_fundamentalism]
-
-name        = _("Fundamentalism")
-reqs = { "type", "name", "range"
-         "tech", "Theology", "Player"
-       }
-graphic     = "gov.fundamentalism"
-graphic_alt = "-"
-sound       = "g_fundamentalism"
-sound_alt   = "g_generic"
-sound_alt2  = "-"
-
-ruler_male_title = _("High Priest %s")
-ruler_female_title = _("High Priestess %s")
-
-helptext = _("\
-Fundamentalism is a form of government organized around a central\
- set of beliefs. The beliefs, usually religious in nature, form\
- a rigid guideline for actions and reactions of both the rulers\
- and the people.\
-"), _("\
-In a fundamentalist society, the people and the rulers are entirely\
- devoted to their beliefs, and are usually willing to die to\
- preserve them.\
-"), _("\
-Improvements that normally convert unhappy citizens to content\
- citizens, produce `tithes' (gold) equivalent to the number\
- of people they would convert, and require no maintenance.\
-"), _("\
-Fundamentalism is a good government for maximizing gold, and its Fanatics\
- are useful in wartime, but it has a heavy penalty to technological\
- progress.\
-"),
-; /* xgettext:no-c-format */
-_("\
-* Base science production is half that of other governments. (A\
- Fundamentalist city with a Library produces as much science as a\
- city under another government does alone.)\n\
-* Each city can support up to 2 units for free; further units each cost\
- 2 gold per turn (except for Fanatics).\n\
-* Each city tolerates up to 2 aggressively deployed military units;\
- each further unit causes 1 unhappy citizen.\n\
-* Base corruption is 15%. This increases with distance from the capital\
- (half as fast with knowledge of The Corporation).\n\
-* Base production waste is 15%. This increases with distance from the\
- capital (half as fast with knowledge of Trade).\
-")
-
-;------------------------------------------------------------------------
-[government_federation]
-
-name        = _("Federation")
-reqs = { "type", "name", "range"
-         "tech", "Economics", "Player"
-       }
-graphic     = "gov.federation"
-graphic_alt = "s.tax_gold"
-sound       = "g_federation"
-sound_alt   = "g_generic"
-sound_alt2  = "-"
-
-ruler_male_title = _("Consul %s")
-ruler_female_title = _("?female:Consul %s")
-
-helptext = _("\
-Federalism is a system in which the power to govern is shared between\
- national and provincial governments. \
- This decentralization minimizes the corruption and waste caused by distance\
- to capital, and avoids separatist movements.\
-"),
-; /* xgettext:no-c-format */
-_("\
-* Each city gets 2 extra luxury points.\n\
-* Celebrating cities produce one extra trade point for every tile which is\
- already producing trade. (Cities below size 3 will not celebrate.)\n\
-* Each city can support up to 2 units for free; further units each cost\
- 2 gold per turn.\n\
-* Each city tolerates up to 2 aggressively deployed military units;\
- each further unit causes 1 unhappy citizen.\n\
-* There is no base level of corruption, but an increasing amount\
- with distance from the capital (half as much as with most other\
- governments). Knowledge of The Corporation eliminates this corruption.\n\
-* Base production waste is 30%, but is not affected by distance to the\
- capital.\n\
-* Has a senate that may prevent declaration of war.\
-")
-
-;------------------------------------------------------------------------
 [government_republic]
 
 name        = _("Republic")
@@ -397,69 +268,44 @@ _("\
 ")
 
 ;------------------------------------------------------------------------
-[government_democracy]
-
-name        = _("Democracy")
-reqs = { "type", "name", "range"
-         "tech", "Democracy", "Player"
-       }
-graphic     = "gov.democracy"
-graphic_alt = "-"
-sound       = "g_democracy"
-sound_alt   = "g_generic"
-sound_alt2  = "-"
-
-ruler_male_title = _("Prime Minister %s")
-ruler_female_title = _("?female:Prime Minister %s")
-
-helptext = _("\
-Under Democracy, citizens govern directly by voting on issues.\
- Democracy offers the highest possible level of trade, but also\
- offers the most potential for unhappiness; citizens become very\
- upset during wars.\
-"),
-; /* xgettext:no-c-format */
-_("\
-* Cities produce an extra trade point for every worked land tile that is\
- already producing trade.\n\
-* Celebrating cities produce a further trade point for every worked tile\
- (land or water) which is already producing trade. (Cities below size 3\
- will not celebrate.)\n\
-* Each city can support one unit for free; further units each cost\
- 2 gold per turn.\n\
-* Each city tolerates a single aggressively deployed military unit;\
- each further unit causes 2 unhappy citizens.\n\
-* Base corruption is 5%. This increases with distance from the capital\
- (half as fast with knowledge of The Corporation).\n\
-* Base production waste is 25%. This increases with distance from the\
- capital (half as fast with knowledge of Trade).\n\
-* Has a senate that may prevent declaration of war.\
-")
 
 ; /* <-- avoid gettext warnings
 ;
-; Multipliers (aka policies), there can be up to 50:
-;
-; name                    = translatable name as seen by user
-; rule_name               = (optional) internal name for savegames, rulesets
-;                           etc; if not present, "name" is used for this
-;                           purpose too. Since the name used in savegames must
-;                           not change, if you want to rename an item after a
-;                           ruleset has been released, you should set
-;                           "rule_name" to the original value of "name".
-; default                 = default value (as presented in UI)
-; start                   = minimum value (as presented in UI)
-; stop                    = maximum value (as presented in UI)
-; step                    = minimum increase/decrease (as presented in UI)
-; offset                  = offset/factor control how UI values are turned
-; factor                  = into effect values for use in effects.ruleset.
-;                           effect_value = (ui_value + offset) * (factor/100)
-;                           Optional; by default offset=0, factor=100, so
-;                           that UI values are used as-is.
-; minimum_turns           = how often multiplier can be changed, or: how long one is stuck
-;                           with the given value after changing to it
-; reqs                    = requirements for adjusting this policy (see README.effects)
-; helptext                = optional help text string; should escape all raw
-;                           newlines so that xgettext parsing works
+; Policies (Freeciv multipliers): each house's AI sets its own each turn by what its towns
+; gain (ai/default/daidata.c dai_adjust_policies). Effects carrying `multiplier =` in
+; effects.ruleset count once per step. Format: see Freeciv's sandbox/governments.ruleset.
 ;
 ; */ <-- avoid gettext warnings
+
+[multiplier_levy_muster]
+name      = _("Levy Muster")
+start     = 0
+stop      = 3
+step      = 1
+default   = 0
+helptext  = _("\
+Each step keeps one more company of a town's levy fed by its lord instead of the town, \
+but every step pulls a working man from the fields and leaves one more townsman unhappy.\
+")
+
+[multiplier_market_tolls]
+name      = _("Market Tolls")
+start     = 0
+stop      = 4
+step      = 1
+default   = 0
+helptext  = _("\
+Each step of tolls at the town gates brings 5% more gold, and costs 10% of the town's \
+merriment.\
+")
+
+[multiplier_granary_stores]
+name      = _("Granary Stores")
+start     = 0
+stop      = 3
+step      = 1
+default   = 0
+helptext  = _("\
+Each step keeps 10% more of the grain when a town grows, and costs 5% of its work, \
+spent filling the stores.\
+")

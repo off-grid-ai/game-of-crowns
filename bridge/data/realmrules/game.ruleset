@@ -23,7 +23,7 @@ description_file = "realmrules/README.civ2civ3"
 
 [about]
 ; Ruleset name
-name = _("Realm medieval ruleset")
+name = _("Game of Crowns: the realm's medieval rules")
 
 ; There`s no separate versioning in rulesets part of main freeciv distribution
 ;version = ""
@@ -468,56 +468,6 @@ reqs           =
     }
 frequency      = 10
 effects        = "DestroyBuilding"
-
-[disaster_industrial_accident]
-name           = _("Industrial Accident")
-reqs           =
-    { "type", "name", "range"
-      "Building", "Mfg. Plant", "City"
-    }
-frequency      = 10
-effects        = "ReducePopulation", "Pollution"
-
-[disaster_nuclear_accident]
-name           = _("Nuclear Accident")
-reqs           =
-    { "type", "name", "range"
-      "Building", "Nuclear Plant", "City"
-    }
-frequency      = 10
-effects        = "ReducePopulation", "Fallout"
-
-; /* <-- avoid gettext warnings
-;
-; Achievement types, there can be up to 40:
-;
-; name                    = translatable name as seen by user
-; rule_name               = (optional) internal name for savegames, rulesets
-;                           etc; if not present, "name" is used for this
-;                           purpose too. Since the name used in savegames must
-;                           not change, if you want to rename an item after a
-;                           ruleset has been released, you should set
-;                           "rule_name" to the original value of "name".
-; type                    = What event grants the achievement to player.
-;                           See README.achievements for list of these types.
-; unique                  = If TRUE, only first one reaching the achievement will
-;                           get it. Defaults to TRUE.
-; value                   = Value to reach. Exact meaning of this depends on
-;                           achievement type.
-; culture                 = Amount of culture granted to player who gets achievement
-;                           granted.
-; first_msg               = Message shown to first player gaining the achievement
-; cons_msg                = Message shown to consecutive players gaining the achievement
-;
-; */ <-- avoid gettext warnings
-
-[achievement_spaceship]
-name           = _("Spaceship Launch")
-type           = "Spaceship"
-unique         = FALSE
-culture        = 5000
-first_msg      = _("You're the first one to launch a spaceship towards Alpha Centauri!")
-cons_msg       = _("You have launched a spaceship towards Alpha Centauri!")
 
 [achievement_map_known]
 name           = _("Entire Map Known")

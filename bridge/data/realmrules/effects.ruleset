@@ -525,31 +525,9 @@ reqs    =
     { "type", "name", "range", "present"
       "OutputType", "Trade", "Local", TRUE
       "Tech", "The Corporation", "Player", FALSE
-      "Gov", "Communism", "Player", FALSE
     }
 
 ; Total = 0 for Communism
-[effect_corruption_distance_communism]
-type    = "Output_Waste_By_Distance"
-value   = -100
-reqs    =
-    { "type", "name", "range", "quiet"
-      "Gov", "Communism", "Player", TRUE
-      "OutputType", "Trade", "Local", FALSE
-    }
-
-; Total = 0 for Federation with The Corporation, -1% for Federation alone
-[effect_corruption_distance_federation]
-type    = "Output_Waste_By_Distance"
-value   = -100
-reqs    =
-    { "type", "name", "range", "quiet"
-      "Gov", "Federation", "Player", TRUE
-      "OutputType", "Trade", "Local", FALSE
-    }
-
-; Corruption + waste = 30% for all govs
-
 [effect_corruption_tribal]
 type    = "Output_Waste"
 value   = 30
@@ -577,24 +555,6 @@ reqs    =
       "OutputType", "Trade", "Local", FALSE
     }
 
-[effect_corruption_communism]
-type    = "Output_Waste"
-value   = 30
-reqs    =
-    { "type", "name", "range", "quiet"
-      "Gov", "Communism", "Player", TRUE
-      "OutputType", "Trade", "Local", FALSE
-    }
-
-[effect_corruption_fundamentalism]
-type    = "Output_Waste"
-value   = 15
-reqs    =
-    { "type", "name", "range", "quiet"
-      "Gov", "Fundamentalism", "Player", TRUE
-      "OutputType", "Trade", "Local", FALSE
-    }
-
 [effect_corruption_republic]
 type    = "Output_Waste"
 value   = 25
@@ -604,16 +564,6 @@ reqs    =
       "OutputType", "Trade", "Local", FALSE
     }
 
-[effect_corruption_democracy]
-type    = "Output_Waste"
-value   = 5
-reqs    =
-    { "type", "name", "range", "quiet"
-      "Gov", "Democracy", "Player", TRUE
-      "OutputType", "Trade", "Local", FALSE
-    }
-
-; base -1% shields each tile
 [effect_waste_distance]
 type    = "Output_Waste_By_Distance"
 value   = 100
@@ -630,30 +580,9 @@ reqs    =
     { "type", "name", "range", "present"
       "OutputType", "Shield", "Local", TRUE
       "Tech", "Trade", "Player", FALSE
-      "Gov", "Communism", "Player", FALSE
-      "Gov", "Federation", "Player", FALSE
     }
 
 ; 1 - 1 = 0% with Communism
-[effect_waste_distance_communism]
-type    = "Output_Waste_By_Distance"
-value   = -100
-reqs    =
-    { "type", "name", "range", "quiet"
-      "Gov", "Communism", "Player", TRUE
-      "OutputType", "Shield", "Local", FALSE
-    }
-
-; 1 - 1 = 0% with Federation
-[effect_waste_distance_federation]
-type    = "Output_Waste_By_Distance"
-value   = -100
-reqs    =
-    { "type", "name", "range", "quiet"
-      "Gov", "Federation", "Player", TRUE
-      "OutputType", "Shield", "Local", FALSE
-    }
-
 [effect_waste_anarchy]
 type    = "Output_Waste"
 value   = 30
@@ -681,39 +610,12 @@ reqs    =
       "OutputType", "Shield", "Local", FALSE
     }
 
-[effect_waste_fundamentalism]
-type    = "Output_Waste"
-value   = 15
-reqs    =
-    { "type", "name", "range", "quiet"
-      "Gov", "Fundamentalism", "Player", TRUE
-      "OutputType", "Shield", "Local", FALSE
-    }
-
-[effect_waste_federation]
-type    = "Output_Waste"
-value   = 30
-reqs    =
-    { "type", "name", "range", "quiet"
-      "Gov", "Federation", "Player", TRUE
-      "OutputType", "Shield", "Local", FALSE
-    }
-
 [effect_waste_republic]
 type    = "Output_Waste"
 value   = 5
 reqs    =
     { "type", "name", "range", "quiet"
       "Gov", "Republic", "Player", TRUE
-      "OutputType", "Shield", "Local", FALSE
-    }
-
-[effect_waste_democracy]
-type    = "Output_Waste"
-value   = 25
-reqs    =
-    { "type", "name", "range", "quiet"
-      "Gov", "Democracy", "Player", TRUE
       "OutputType", "Shield", "Local", FALSE
     }
 
@@ -733,14 +635,6 @@ reqs    =
       "Gov", "Anarchy", "Player", TRUE
     }
 
-[effect_building_upkeep_communism]
-type    = "Upkeep_Free"
-value   = 1
-reqs    =
-    { "type", "name", "range", "quiet"
-      "Gov", "Communism", "Player", TRUE
-    }
-
 [effect_shield2gold]
 type    = "Shield2Gold_Factor"
 value   = 100
@@ -748,7 +642,6 @@ reqs    =
     { "type",         "name",            "range", "present"
       "Gov", "Anarchy", "Player", FALSE
       "Gov", "Tribal", "Player", FALSE
-      "Gov", "Communism", "Player", FALSE
 ;      "Gov", "Despotism", "Player", FALSE
 ;      "Gov", "Monarchy", "Player", FALSE
 ;      "Gov", "Fundamentalism", "Player", FALSE
@@ -765,7 +658,6 @@ reqs    =
       "OutputType", "Gold", "Local", TRUE
       "Gov", "Anarchy", "Player", FALSE
       "Gov", "Tribal", "Player", FALSE
-      "Gov", "Communism", "Player", FALSE
 ;      "Gov", "Despotism", "Player", FALSE
 ;      "Gov", "Monarchy", "Player", FALSE
 ;      "Gov", "Fundamentalism", "Player", FALSE
@@ -783,7 +675,6 @@ reqs    =
       "OutputType", "Gold", "Local", TRUE
       "Gov", "Anarchy", "Player", FALSE
       "Gov", "Tribal", "Player", FALSE
-      "Gov", "Communism", "Player", FALSE
       "Gov", "Despotism", "Player", FALSE
       "Gov", "Monarchy", "Player", FALSE
 ;      "Gov", "Fundamentalism", "Player", FALSE
@@ -803,10 +694,7 @@ reqs    =
 ;      "Gov", "Communism", "Player", FALSE
       "Gov", "Despotism", "Player", FALSE
       "Gov", "Monarchy", "Player", FALSE
-      "Gov", "Fundamentalism", "Player", FALSE
-      "Gov", "Federation", "Player", FALSE
 ;      "Gov", "Republic", "Player", FALSE
-      "Gov", "Democracy", "Player", FALSE
     }
 
 [effect_base_unit_upkeep_food]
@@ -830,29 +718,9 @@ reqs   =
 ;      "Gov", "Fundamentalism", "Player", FALSE
 ;      "Gov", "Federation", "Player", FALSE
 ;      "Gov", "Republic", "Player", FALSE
-      "Gov", "Democracy", "Player", FALSE
     }
 
 ; exclusive with above
-[effect_unit_unhappiness_democracy]
-type    = "Unhappy_Factor"
-value   = 2
-reqs    =
-    { "type", "name", "range", "quiet"
-      "Gov", "Democracy", "Player", TRUE
-    }
-
-; ...except Women's Suffrage reduces it back to Republic levels
-[effect_womens_suffrage_1]
-type    = "Unhappy_Factor"
-value   = -1
-reqs    =
-    { "type", "name", "range"
-      "Building", "Women's Suffrage", "Player"
-      "Gov", "Democracy", "Player"
-    }
-
-; Govs with 1 free unit
 [effect_upkeep_free_mil_1]
 type    = "Make_Content_Mil"
 value   = 1
@@ -860,13 +728,9 @@ reqs   =
     { "type", "name", "range", "present"
       "Gov", "Anarchy", "Player", FALSE
       "Gov", "Tribal", "Player", FALSE
-      "Gov", "Communism", "Player", FALSE
       "Gov", "Despotism", "Player", FALSE
       "Gov", "Monarchy", "Player", FALSE
-      "Gov", "Fundamentalism", "Player", FALSE
-      "Gov", "Federation", "Player", FALSE
 ;      "Gov", "Republic", "Player", FALSE
-      "Gov", "Democracy", "Player", FALSE
     }
 
 ; Govs with 2 free units (exclusive with previous)
@@ -877,7 +741,6 @@ reqs   =
     { "type", "name", "range", "present"
 ;      "Gov", "Anarchy", "Player", FALSE
 ;      "Gov", "Tribal", "Player", FALSE
-      "Gov", "Communism", "Player", FALSE
 ;      "Gov", "Despotism", "Player", FALSE
       "Gov", "Monarchy", "Player", FALSE
 ;      "Gov", "Fundamentalism", "Player", FALSE
@@ -897,23 +760,11 @@ reqs   =
 ;      "Gov", "Communism", "Player", FALSE
       "Gov", "Despotism", "Player", FALSE
 ;      "Gov", "Monarchy", "Player", FALSE
-      "Gov", "Fundamentalism", "Player", FALSE
-      "Gov", "Federation", "Player", FALSE
       "Gov", "Republic", "Player", FALSE
-      "Gov", "Democracy", "Player", FALSE
     }
 
 ; normally 2 for Democracy, but 1 of these not needed with Women's Suffrage
 ; due to reduced Unhappy_Factor
-[effect_womens_suffrage_2]
-type    = "Make_Content_Mil"
-value   = -1
-reqs    =
-    { "type", "name", "range"
-      "Building", "Women's Suffrage", "Player"
-      "Gov", "Democracy", "Player"
-    }
-
 [effect_upkeep_free_units_anarchy]
 type    = "Unit_Upkeep_Free_Per_City"
 value   = 2
@@ -950,15 +801,6 @@ reqs    =
       "OutputType", "Gold", "Local", FALSE
     }
 
-[effect_upkeep_free_units_fundamentalism]
-type    = "Unit_Upkeep_Free_Per_City"
-value   = 4
-reqs    =
-    { "type", "name", "range", "quiet"
-      "Gov", "Fundamentalism", "Player", TRUE
-      "OutputType", "Gold", "Local", FALSE
-    }
-
 [effect_upkeep_free_units_republic]
 type    = "Unit_Upkeep_Free_Per_City"
 value   = 1
@@ -968,34 +810,6 @@ reqs    =
       "OutputType", "Shield", "Local", FALSE
     }
 
-[effect_upkeep_free_units_democracy]
-type    = "Unit_Upkeep_Free_Per_City"
-value   = 2
-reqs    =
-    { "type", "name", "range", "quiet"
-      "Gov", "Democracy", "Player", TRUE
-      "OutputType", "Gold", "Local", FALSE
-    }
-
-[effect_upkeep_free_units_federation]
-type    = "Unit_Upkeep_Free_Per_City"
-value   = 4
-reqs    =
-    { "type", "name", "range", "quiet"
-      "Gov", "Federation", "Player", TRUE
-      "OutputType", "Gold", "Local", FALSE
-    }
-
-[effect_upkeep_free_units_communism]
-type    = "Unit_Upkeep_Free_Per_City"
-value   = 3
-reqs    =
-    { "type", "name", "range", "quiet"
-      "Gov", "Communism", "Player", TRUE
-      "OutputType", "Shield", "Local", FALSE
-    }
-
-; Any city can support up to four units...
 [effect_upkeep_free_units_food_base]
 type    = "Unit_Upkeep_Free_Per_City"
 value   = 4
@@ -1182,44 +996,12 @@ reqs    =
       "Gov", "Monarchy", "Player"
     }
 
-[effect_civil_war_communism]
-type    = "Civil_War_Chance"
-value   = 50
-reqs    =
-    { "type", "name", "range"
-      "Gov", "Communism", "Player"
-    }
-
-[effect_civil_war_fundamentalism]
-type    = "Civil_War_Chance"
-value   = 60
-reqs    =
-    { "type", "name", "range"
-      "Gov", "Fundamentalism", "Player"
-    }
-
-[effect_civil_war_federation]
-type    = "Civil_War_Chance"
-value   = 20
-reqs    =
-    { "type", "name", "range"
-      "Gov", "Federation", "Player"
-    }
-
 [effect_civil_war_republic]
 type    = "Civil_War_Chance"
 value   = 40
 reqs    =
     { "type", "name", "range"
       "Gov", "Republic", "Player"
-    }
-
-[effect_civil_war_democracy]
-type    = "Civil_War_Chance"
-value   = 30
-reqs    =
-    { "type", "name", "range"
-      "Gov", "Democracy", "Player"
     }
 
 [effect_empire_size_base_tribal]
@@ -1246,44 +1028,12 @@ reqs    =
       "Gov", "Monarchy", "Player"
     }
 
-[effect_empire_size_base_communism]
-type    = "Empire_Size_Base"
-value   = 28
-reqs    =
-    { "type", "name", "range"
-      "Gov", "Communism", "Player"
-    }
-
-[effect_empire_size_base_fundamentalism]
-type    = "Empire_Size_Base"
-value   = 20
-reqs    =
-    { "type", "name", "range"
-      "Gov", "Fundamentalism", "Player"
-    }
-
-[effect_empire_size_base_federation]
-type    = "Empire_Size_Base"
-value   = 24
-reqs    =
-    { "type", "name", "range"
-      "Gov", "Federation", "Player"
-    }
-
 [effect_empire_size_base_republic]
 type    = "Empire_Size_Base"
 value   = 16
 reqs    =
     { "type", "name", "range"
       "Gov", "Republic", "Player"
-    }
-
-[effect_empire_size_base_democracy]
-type    = "Empire_Size_Base"
-value   = 32
-reqs    =
-    { "type", "name", "range"
-      "Gov", "Democracy", "Player"
     }
 
 [effect_empire_size_step_tribal]
@@ -1310,44 +1060,12 @@ reqs    =
       "Gov", "Monarchy", "Player"
     }
 
-[effect_empire_size_step_communism]
-type    = "Empire_Size_Step"
-value   = 28
-reqs    =
-    { "type", "name", "range"
-      "Gov", "Communism", "Player"
-    }
-
-[effect_empire_size_step_fundamentalism]
-type    = "Empire_Size_Step"
-value   = 20
-reqs    =
-    { "type", "name", "range"
-      "Gov", "Fundamentalism", "Player"
-    }
-
-[effect_empire_size_step_federation]
-type    = "Empire_Size_Step"
-value   = 24
-reqs    =
-    { "type", "name", "range"
-      "Gov", "Federation", "Player"
-    }
-
 [effect_empire_size_step_republic]
 type    = "Empire_Size_Step"
 value   = 16
 reqs    =
     { "type", "name", "range"
       "Gov", "Republic", "Player"
-    }
-
-[effect_empire_size_step_democracy]
-type    = "Empire_Size_Step"
-value   = 32
-reqs    =
-    { "type", "name", "range"
-      "Gov", "Democracy", "Player"
     }
 
 [effect_max_rates_anarchy]
@@ -1382,44 +1100,12 @@ reqs    =
       "Gov", "Monarchy", "Player"
     }
 
-[effect_max_rates_communism]
-type    = "Max_Rates"
-value   = 80
-reqs    =
-    { "type", "name", "range"
-      "Gov", "Communism", "Player"
-    }
-
-[effect_max_rates_fundamentalism]
-type    = "Max_Rates"
-value   = 70
-reqs    =
-    { "type", "name", "range"
-      "Gov", "Fundamentalism", "Player"
-    }
-
-[effect_max_rates_federation]
-type    = "Max_Rates"
-value   = 90
-reqs    =
-    { "type", "name", "range"
-      "Gov", "Federation", "Player"
-    }
-
 [effect_max_rates_republic]
 type    = "Max_Rates"
 value   = 80
 reqs    =
     { "type", "name", "range"
       "Gov", "Republic", "Player"
-    }
-
-[effect_max_rates_democracy]
-type    = "Max_Rates"
-value   = 90
-reqs    =
-    { "type", "name", "range"
-      "Gov", "Democracy", "Player"
     }
 
 [effect_martial_law_each_anarchy]
@@ -1446,14 +1132,6 @@ reqs    =
       "Gov", "Monarchy", "Player", TRUE
     }
 
-[effect_martial_law_each_communism]
-type    = "Martial_Law_Each"
-value   = 2
-reqs    =
-    { "type", "name", "range", "quiet"
-      "Gov", "Communism", "Player", TRUE
-    }
-
 [effect_martial_law_max]
 type    = "Martial_Law_Max"
 value   = 3
@@ -1464,10 +1142,7 @@ reqs    =
 ;      "Gov", "Communism", "Player", FALSE
 ;      "Gov", "Despotism", "Player", FALSE
 ;      "Gov", "Monarchy", "Player", FALSE
-      "Gov", "Fundamentalism", "Player", FALSE
-      "Gov", "Federation", "Player", FALSE
       "Gov", "Republic", "Player", FALSE
-      "Gov", "Democracy", "Player", FALSE
     }
 
 ; Railroad because makes Pyramids obsolete
@@ -1523,16 +1198,6 @@ reqs    =
       "TerrainClass", "Oceanic", "Tile", FALSE, FALSE
     }
 
-[effect_gov_tile_bonus_democracy]
-type    = "Output_Inc_Tile"
-value   = 1
-reqs    =
-    { "type", "name", "range", "present", "quiet"
-      "Gov", "Democracy", "Player", TRUE, TRUE
-      "OutputType", "Trade", "Local", TRUE, FALSE
-      "TerrainClass", "Oceanic", "Tile", FALSE, FALSE
-    }
-
 [effect_gov_tile_bonus_celebrate]
 type    = "Output_Inc_Tile_Celebrate"
 value   = 1
@@ -1541,10 +1206,8 @@ reqs    =
       "OutputType", "Trade", "Local", TRUE, TRUE
       "Gov", "Anarchy", "Player", FALSE, FALSE
       "Gov", "Tribal", "Player", FALSE, FALSE
-      "Gov", "Communism", "Player", FALSE, FALSE
       "Gov", "Despotism", "Player", FALSE, FALSE
 ;      "Gov", "Monarchy", "Player", FALSE, FALSE
-      "Gov", "Fundamentalism", "Player", FALSE, FALSE
 ;      "Gov", "Federation", "Player", FALSE, FALSE
 ;      "Gov", "Republic", "Player", FALSE, FALSE
 ;      "Gov", "Democracy", "Player", FALSE, FALSE
@@ -1577,84 +1240,6 @@ reqs    =
       "Gov", "Republic", "Player"
     }
 
-[effect_revolution_democracy]
-type    = "Revolution_Unhappiness"
-value   = 2
-reqs    =
-    { "type", "name", "range"
-      "Gov", "Democracy", "Player"
-    }
-
-[effect_senate_federation]
-type    = "Has_Senate"
-value   = 1
-reqs    =
-    { "type", "name", "range", "present"
-      "Gov", "Federation", "Player", TRUE
-      "Building", "Statue of Liberty", "Player", FALSE
-    }
-
-[effect_senate_democracy]
-type    = "Has_Senate"
-value   = 1
-reqs    =
-    { "type", "name", "range", "present"
-      "Gov", "Democracy", "Player", TRUE
-      "Building", "Statue of Liberty", "Player", FALSE
-    }
-
-[effect_veteran_communism]
-type    = "Veteran_Build"
-value   = 1
-reqs    =
-    { "type", "name", "range"
-      "Gov", "Communism", "Player"
-      "UnitFlag", "Diplomat", "Local"
-    }
-
-[effect_veteran_federation]
-type    = "Veteran_Build"
-value   = 1
-reqs    =
-    { "type", "name", "range"
-      "Gov", "Federation", "Player"
-      "UnitFlag", "Diplomat", "Local"
-    }
-
-[effect_partisan_communism]
-type    = "Inspire_Partisans"
-value   = 1
-reqs    =
-    { "type", "name", "range", "present"
-      "Gov", "Communism", "Player", TRUE
-      "Tech", "Communism", "Player", TRUE
-      "Tech", "Gunpowder", "Player", TRUE
-      "Tech", "Guerilla Warfare", "World", TRUE
-      "NationGroup", "Barbarian", "Player", FALSE
-    }
-
-[effect_partisan_democracy]
-type    = "Inspire_Partisans"
-value   = 1
-reqs    =
-    { "type", "name", "range", "present"
-      "Gov", "Democracy", "Player", TRUE
-      "Tech", "Communism", "Player", TRUE
-      "Tech", "Gunpowder", "Player", TRUE
-      "Tech", "Guerilla Warfare", "World", TRUE
-      "NationGroup", "Barbarian", "Player", FALSE
-    }
-
-[effect_lux_federation]
-type    = "Output_Add_Tile"
-value   = 2
-reqs    =
-    { "type", "name", "range", "quiet"
-      "Gov", "Federation", "Player", TRUE
-      "CityTile", "Center", "Tile", FALSE
-      "OutputType", "Luxury", "Local", FALSE
-    }
-
 [effect_bad_lux_anarchy]
 type    = "Output_Bonus"
 value   = -50
@@ -1662,31 +1247,6 @@ reqs    =
     { "type", "name", "range", "quiet"
       "Gov", "Anarchy", "Player", TRUE
       "OutputType", "Luxury", "Local", FALSE
-    }
-
-[effect_bad_sci_fundamentalism]
-type    = "Output_Bonus"
-value   = -50
-reqs    =
-    { "type", "name", "range", "quiet"
-      "Gov", "Fundamentalism", "Player", TRUE
-      "OutputType", "Science", "Local", FALSE
-    }
-
-[effect_tithes_fundamentalism]
-type    = "Happiness_To_Gold"
-value   = 1
-reqs    =
-    { "type", "name", "range", "quiet"
-      "Gov", "Fundamentalism", "Player", TRUE
-    }
-
-[effect_fanatics_fundamentalism]
-type    = "Fanatics"
-value   = 1
-reqs    =
-    { "type", "name", "range"
-      "Gov", "Fundamentalism", "Player"
     }
 
 [effect_airport]
@@ -1869,7 +1429,6 @@ reqs    =
     { "type", "name", "range", "present"
       "Tech", "Theology", "Player", TRUE
       "Building", "Cathedral", "City", TRUE
-      "Gov", "Communism", "Player", FALSE
     }
 
 ; All Ground units
@@ -2501,16 +2060,6 @@ reqs    =
     }
 
 ; Net effect is to neutralize one unit's unhappiness
-[effect_police_station_democracy]
-type    = "Make_Content_Mil"
-value   = 1
-reqs    =
-    { "type", "name", "range", "present"
-      "Gov", "Democracy", "Player", TRUE
-      "Building", "Police Station", "City", TRUE
-      "Building", "Women's Suffrage", "Player", FALSE
-    }
-
 [effect_port_facility]
 type    = "Veteran_Build"
 value   = 1
@@ -2882,7 +2431,6 @@ reqs    =
     { "type", "name", "range", "present"
       "Tech", "Mysticism", "Player", TRUE
       "Building", "Temple", "City", TRUE
-      "Gov", "Communism", "Player", FALSE
     }
 
 [effect_temple_culture]
@@ -2941,7 +2489,6 @@ reqs    =
     { "type", "name", "range", "present"
       "Building", "A.Smith's Trading Co.", "Player", TRUE
       "Building", "Stock Exchange", "City", TRUE
-      "Gov", "Communism", "Player", FALSE
     }
 
 ;2 + 1 = 3
@@ -3681,7 +3228,6 @@ reqs    =
       "Building", "United Nations", "World", TRUE
 ; Without negated req UN would make revolution less likely instead
 ; of enabling it with Democracy or Republic (value 2 -> 4 instead of 0 -> 2)
-      "Gov", "Democracy", "Player", FALSE
       "Gov", "Republic", "Player", FALSE
     }
 
@@ -4631,4 +4177,51 @@ value   = -50
 reqs    =
     { "type",   "name",         "range", "present"
       "Action", "Upgrade Unit", "Local", TRUE
+    }
+
+; Policies (governments.ruleset [multiplier_*]): one step's worth each; Freeciv multiplies by the step.
+[effect_policy_levy_upkeep]
+type    = "Unit_Upkeep_Free_Per_City"
+value   = 1
+multiplier = "Levy Muster"
+reqs    =
+    { "type", "name", "range"
+      "OutputType", "Shield", "Local"
+    }
+
+[effect_policy_levy_unrest]
+type    = "Make_Content"
+value   = -1
+multiplier = "Levy Muster"
+
+[effect_policy_tolls_gold]
+type    = "Output_Bonus"
+value   = 5
+multiplier = "Market Tolls"
+reqs    =
+    { "type", "name", "range"
+      "OutputType", "Gold", "Local"
+    }
+
+[effect_policy_tolls_merriment]
+type    = "Output_Bonus"
+value   = -10
+multiplier = "Market Tolls"
+reqs    =
+    { "type", "name", "range"
+      "OutputType", "Luxury", "Local"
+    }
+
+[effect_policy_granary_food]
+type    = "Growth_Food"
+value   = 10
+multiplier = "Granary Stores"
+
+[effect_policy_granary_work]
+type    = "Output_Bonus"
+value   = -5
+multiplier = "Granary Stores"
+reqs    =
+    { "type", "name", "range"
+      "OutputType", "Shield", "Local"
     }
