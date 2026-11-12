@@ -42,4 +42,22 @@ for (const [raiders, want] of [["normal", true], ["none", false]]) {
   console.log(`raiders ${raiders}: ${raised} barbarians raised beside town ${id}; its ${men} men untouched`);
   await b.quit();
 }
+// A raid's life on the baseline realm: raised beside Caerdydd (no men in reach), the raiders pillage with Freeciv's
+// own order, take no town, and are gone after luadata's raids.seasons.
+const seasons = Number(read("data/realmrules/luadata.txt").match(/\[raids\][^[]*?seasons = "(\d+)"/)?.[1]);
+const base = await bareFreeciv({ port: 5574, save: path.join(BRIDGE, "baseline/aldmere/saves/realm-T0038-Y-2150-auto.sav.zst"), serv: [`set barbarians ${BARBARIANS.normal}`, "set timeout -1", 'aitoggle "The King"'] });
+check(await base.until(/Now accepting new client connections/, 30000), "the baseline didn't load");
+const from = base.lines.length;
+check(/raised [1-9]/.test((await base.cmd("lua cmd realm_raid(306)", /RAID /)) ?? ""), "no raiders rose by Caerdydd");
+base.send(`set endturn ${38 + seasons + 1}`);
+base.send("start");
+check(await base.until(/Game ended as the turn limit/, 300000, from), "the baseline didn't run on");
+const L = base.lines.slice(from);
+const pillaged = L.filter((l) => /RAID pillage /.test(l)).length;
+const lost = L.filter((l) => /"kind":"city_(transferred|destroyed)"/.test(l) && /"from":"4"|"loser":"4"/.test(l)).length;
+check(pillaged > 0, "the raiders pillaged nothing");
+check(lost === 0, `Stormhold lost ${lost} towns to a raid`);
+check(L.some((l) => /RAID over by Caerdydd/.test(l)), `the raiders hadn't left after ${seasons} seasons`);
+console.log(`raid on Caerdydd: ${pillaged} pillages, ${lost} towns lost, gone after ${seasons} seasons`);
+await base.quit();
 done();

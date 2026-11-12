@@ -436,6 +436,7 @@ function ev_turn(turn, year)
   emit("turn", {year = year})
   realm_mines_turn()
   realm_decrees_lapse()
+  realm_raids_turn()
 end
 
 local hooks = {
@@ -579,10 +580,24 @@ function realm_host(who, x, y, kinds, count)
   log.normal("HOST %s raised %d of %d near (%d,%d)", who.name, made, count, x, y)
 end
 
--- Men without banners: Freeciv's own barbarians raised beside a town (a paid raid, a story's raid). Freeciv's
--- barbarian AI then raids, pillages and plunders as it does with a hut's. Raised on an empty land tile two out,
--- never on anyone's men (unleashing wipes the tile's units). Needs the barbarians setting above "disabled" and
--- onsetbarbs passed (game.ruleset sets it to 1); with raiders off, nothing comes.
+-- Men without banners: a raid is an event, not a standing army. Freeciv's own barbarians are raised beside a
+-- town (a paid raid, a story's raid), on an empty land tile two out, never on anyone's men (unleashing wipes the
+-- tile's units). They can't take the town (actions.ruleset); each season they pillage the land around it with
+-- Freeciv's own Pillage order, and after raids.seasons seasons they leave (Disband Unit). Needs the barbarians
+-- setting above "disabled" and onsetbarbs passed (game.ruleset sets it to 1); with raiders off, nothing comes.
+-- Kept as a plain string ("unit,unit|town|until;..."), which the save keeps.
+GOC_RAIDS = GOC_RAIDS or ""
+local RAID_SPOILS = {"Farmland", "Railroad", "Mine", "Irrigation", "Road", "Fortress", "Fort"}
+
+local function raiders_now()
+  local ids = {}
+  for p in players_iterate() do
+    local n = p.nation and p.nation:rule_name() or ""
+    if n == "Barbarian" or n == "Pirate" then for u in p:units_iterate() do ids[u.id] = true end end
+  end
+  return ids
+end
+
 function realm_raid(city_id)
   local c = find.city(nil, city_id)
   if not c then log.normal("RAID no town %s", tostring(city_id)); return end
@@ -594,10 +609,77 @@ function realm_raid(city_id)
     end
   end
   if #spots == 0 then log.normal("RAID no open ground by %s", c.name); return end
-  local function barbs() local n = 0 for p in players_iterate() do if p.nation and p.nation:rule_name() == "Barbarian" then n = n + p:num_units() end end return n end
-  local before = barbs()
+  local before = raiders_now()
   spots[random(1, #spots)]:unleash_barbarians()
-  log.normal("RAID %s raised %d", c.name, barbs() - before)
+  local raised = {}
+  for id in pairs(raiders_now()) do if not before[id] then raised[#raised + 1] = id end end
+  if #raised > 0 then
+    local til = game.current_turn() + (tonumber(luadata.get_str("raids.seasons")) or 8)
+    for i, id in ipairs(raised) do raised[i] = string.format("%d", id) end
+    GOC_RAIDS = GOC_RAIDS .. (GOC_RAIDS == "" and "" or ";") .. string.format("%s|%d|%d", table.concat(raised, ","), c.id, til)
+  end
+  log.normal("RAID %s raised %d", c.name, #raised)
+end
+
+-- A raider on spoiled ground pillages it; otherwise he steps to the next spoil by the town and starts there.
+local function raid_pillage(u, t)
+  local pillage = find.action("Pillage")
+  for _, e in ipairs(RAID_SPOILS) do
+    if t:has_extra(e) then
+      local ok, done = pcall(edit.perform_action, u, pillage, t, e)
+      if ok and done then log.normal("RAID pillage %s at (%d,%d)", e, t.x, t.y); return true end
+    end
+  end
+  return false
+end
+
+local function raid_season(u, town)
+  if raid_pillage(u, u.tile) then return end
+  local best, bd = nil, nil
+  for t in u.tile:square_iterate(1) do
+    local clear = true
+    for o in t:units_iterate() do if o.owner ~= u.owner then clear = false end end
+    if t ~= u.tile and t:city() == nil and clear then
+      for _, e in ipairs(RAID_SPOILS) do
+        if t:has_extra(e) then
+          local d = town and town.tile:sq_distance(t) or 0
+          if not bd or d < bd then best, bd = t, d end
+          break
+        end
+      end
+    end
+  end
+  if best then
+    pcall(edit.unit_move, u, best, 0, nil, false, false, false, false, false)
+    if u.tile == best then raid_pillage(u, best) end
+  end
+end
+
+function realm_raids_turn()
+  if GOC_RAIDS == "" then return end
+  local kept = {}
+  local disband = find.action("Disband Unit")
+  for ids, city_id, til in GOC_RAIDS:gmatch("([%d,]+)|(%d+)|(%d+)") do
+    local town = find.city(nil, tonumber(city_id))
+    local alive = {}
+    for id in ids:gmatch("%d+") do
+      local u = find.unit(nil, tonumber(id))
+      if u then alive[#alive + 1] = u end
+    end
+    if game.current_turn() >= tonumber(til) then
+      for _, u in ipairs(alive) do pcall(edit.perform_action, u, disband) end
+      log.normal("RAID over by %s: %d raiders leave", town and town.name or city_id, #alive)
+    elseif #alive > 0 then
+      local left = {}
+      for _, u in ipairs(alive) do
+        local id = u.id
+        raid_season(u, town)
+        if find.unit(nil, id) then left[#left + 1] = string.format("%d", id) end
+      end
+      if #left > 0 then kept[#kept + 1] = string.format("%s|%s|%s", table.concat(left, ","), city_id, til) end
+    end
+  end
+  GOC_RAIDS = table.concat(kept, ";")
 end
 
 -- Decree buildings (buildings.ruleset "Royal Feast", "Royal Relief", "Blight", "Heavy Tithe"; their effects in

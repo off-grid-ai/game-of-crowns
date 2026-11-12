@@ -18,3 +18,8 @@ gold_seams = "3"
 feast = "4"
 relief = "2"
 blight = "12"
+
+[raids]
+; A raid's life (script.lua realm_raid): Freeciv's barbarians raised beside a town pillage the land around it each
+; season, then leave after this many seasons.
+seasons = "8"
