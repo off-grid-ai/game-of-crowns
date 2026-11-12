@@ -17,7 +17,7 @@ const Scenes := preload("res://scripts/scenes.gd")
 const Countryside := preload("res://scripts/countryside.gd")
 const Mind := preload("res://scripts/npc_mind.gd")  # the people's one decider (LimboAI)
 const TownLife := preload("res://scripts/town_life.gd")  # minds_on: the --limbo switch
-const RIVERS := "res://assets/maps/rivers.json"
+const Rivers := preload("res://scripts/rivers.gd")  # the realm's rivers, read once by their owner
 
 var main: Node
 var _d: Dictionary
@@ -115,12 +115,7 @@ func _keep_off() -> Array:
 
 
 func _read_rivers() -> void:
-	if not FileAccess.file_exists(RIVERS):
-		return
-	var j = JSON.parse_string(FileAccess.get_file_as_string(RIVERS))
-	if not j is Dictionary:
-		return
-	for r in j.get("rivers", []):
+	for r in Rivers.lines():
 		var pts := PackedVector2Array()
 		var w := PackedFloat32Array()
 		var lvl := PackedFloat32Array()

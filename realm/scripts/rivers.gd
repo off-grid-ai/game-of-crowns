@@ -9,13 +9,20 @@ const RiverManager := preload("res://addons/waterways/river_manager.gd")
 const Data := preload("res://scripts/data.gd")
 
 
+static var _lines = null  # the file's rivers, parsed once
+
+
+## The realm's rivers as the file holds them, read once (this script owns the file; roadside.gd reads them here):
+## [{points: [[x, water level, z, width], ...]}, ...], source to mouth; [] when the file is missing or malformed.
+static func lines() -> Array:
+	if _lines == null:
+		var data = JSON.parse_string(FileAccess.get_file_as_string(RIVERS)) if FileAccess.file_exists(RIVERS) else null
+		_lines = data.get("rivers", []) if data is Dictionary else []
+	return _lines
+
+
 func build(terrain: Node3D) -> void:
-	if not FileAccess.file_exists(RIVERS):
-		return
-	var data = JSON.parse_string(FileAccess.get_file_as_string(RIVERS))
-	if not data is Dictionary:
-		return
-	for r in data.get("rivers", []):
+	for r in lines():
 		_river(terrain, r["points"])
 
 
