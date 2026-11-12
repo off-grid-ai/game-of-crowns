@@ -5,6 +5,9 @@ Updated 2026-11-12 ~19:45.
 ## Waiting on Mac
 - Nothing.
 
+## Mode (Mac, 20:15)
+Code first. No Godot windows or renders until every coding change is done and every new asset is wired. Headless probes only. Then one off-screen render pass.
+
 ## Threads (4 + 1 closing)
 | Thread | Session | Doing now | Next |
 |---|---|---|---|

@@ -2,6 +2,8 @@
 
 Messages from the supervisor pause after 10 sends while Mac isn't typing. Rulings land here instead. Newest first.
 
+- (11-12 20:15) **Mac: no running Godot windows until all coding changes are done.** No renders, takes, film or windowed runs, by anyone. Headless probes only (never a window). Finish the code and wire every new asset first; then one render pass, off-screen, to judge.
+
 - (11-12 19:50) **Fire and siege stays open for READY 7** (its capture_chain_probe fails at link 3). It owns bridge hosts.js and campaigns.js for this fix: the besiegers hold the walls, an assault follows when the walls are breached or the engines are ready, and a siege survives the target changing hands (re-aim at the new owner, or end with a reason the player sees). The probe passes end to end, links 1-5. Then it closes.
 
 - (11-12 18:40) **Engines and visuals are one (Mac: "we need to combine the engines with the visuals… that will ensure we take the right decisions… right now they are disjointed").** The decision test for every change: (1) every thing drawn is driven by an engine fact (Freeciv /world, the bridge's stories, court and seasons, the minds); nothing decorative stands in for a fact; (2) every engine fact a player would care about shows in the world; (3) if the engine doesn't have it, the game doesn't draw it (ships carry armies and fight nothing, so no warships); if the world needs it, add it to the engine first. Land use reads Freeciv's worked tiles and specials. Army layer is mapping every fact against what's on screen (docs/research/engine-visual-map-2026-11-12.md).
