@@ -106,6 +106,12 @@ def paint(name, k):
     rgb = rgb * (1.0 - float(k.get("groove", 0.55)) * groove[..., None])
     rgb = rgb * (1.0 - float(k.get("edge", 0.18)) * steep[..., None])
     rgb = rgb + float(k.get("crest", 0.14)) * crest[..., None] * warm
+    # The kit sheet's own mean brightness kept (keep_mean): every tint laid on top (house_tiers.gd's washes and honey
+    # stone and timber, look.json kit_tints in the one look and v3) was tuned on the kit's values, so the repaint moves
+    # contrast, grooves, highlights and hue inside the sheet, never the material's overall value. gain on top.
+    if k.get("keep_mean", True):
+        w3 = np.array([0.299, 0.587, 0.114], np.float32)
+        rgb = rgb * (float((px[..., :3] @ w3).mean()) / max(float((np.clip(rgb, 0.0, 1.0) @ w3).mean()), 1e-4))
     rgb = np.clip(rgb * float(k.get("gain", 1.0)), 0.0, 1.0)
     out = np.concatenate([rgb, alpha], -1)
     os.makedirs(OUT, exist_ok=True)
