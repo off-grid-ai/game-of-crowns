@@ -4190,6 +4190,17 @@ reqs    =
       "Building", "Rebel Banners", "Player"
     }
 
+; The crown's wars and truces are the King's alone, written by the bridge's one diplomacy writer (server.js
+; setDiplomacy): its AI opens no talks and agrees no cease-fire on its own. Measured: a war the King declared
+; became a cease-fire the next turn, between the two AIs, and his host's march-in on the town was refused.
+[effect_crown_diplomacy]
+type    = "No_Diplomacy"
+value   = 1
+reqs    =
+    { "type", "name", "range"
+      "Nation", "Norman", "Player"
+    }
+
 [effect_grievance]
 type    = "City_Unhappy_Size"
 value   = -3

@@ -999,6 +999,27 @@ target_reqs   =
       "MaxUnitsOnTile", "0",              "Tile",   TRUE
     }
 
+; ...except on the King's order: realm_assault raises the Royal Warrant (a small wonder in a crown town) for the
+; moment his men march in and takes it down in the same Lua call, so the crown's AI never sees it standing.
+; (Freeciv requires every Conquer City enabler to keep the animal and move-left requirements.)
+[actionenabler_conquer_city_native_royal]
+action        = "Conquer City"
+actor_reqs    =
+    { "type",           "name",           "range",  "present"
+      "UnitClassFlag",  "CanOccupyCity",  "Local",  TRUE
+      "UnitFlag",       "NonMil",         "Local",  FALSE
+      "DiplRel",        "War",            "Local",  TRUE
+      "MinMoveFrags",   "1",              "Local",  TRUE
+      "UnitState",      "OnLivableTile",  "Local",  TRUE
+      "Nation",         "Animal Kingdom", "Player", FALSE
+      "Nation",         "Norman",         "Player", TRUE
+      "Building",       "Royal Warrant",  "Player", TRUE
+    }
+target_reqs   =
+    { "type",           "name",           "range",  "present"
+      "MaxUnitsOnTile", "0",              "Tile",   TRUE
+    }
+
 [actionenabler_change_home_city]
 action        = "Home City"
 actor_reqs    =

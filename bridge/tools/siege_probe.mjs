@@ -18,7 +18,7 @@ check(!/edit\.transfer_city|transferCity/.test(camp), "campaigns.js still hands 
 check(/Lua\.assault\(/.test(camp), "campaigns.js doesn't order the assault");
 check(/diplomacy\?\.\(\[crown\.id, house, 0, "War"\]\)/.test(camp), "the King's march doesn't declare war on the house");
 
-const a = await bareFreeciv({ serv: ["set aifill 0", "set minplayers 0", "set timeout -1", "set saveturns 1", 'set autosaves "TURN|GAMEOVER"', 'set savename "probe"',
+const a = await bareFreeciv({ serv: ["set nationset all", "set aifill 0", "set minplayers 0", "set timeout -1", "set saveturns 1", 'set autosaves "TURN|GAMEOVER"', 'set savename "probe"',
   "create Crown", "create Foe", 'playernation Crown norman 1 "The King"', 'playernation Foe english 1 "Lord Foe"', "set endturn 3", "start"] });
 check(await a.until(/Game ended as the turn limit/, 90000), "the game didn't run");
 const first = fs.readdirSync(a.dir).filter((f) => /-auto\.sav\.zst$/.test(f)).sort().pop();
@@ -32,7 +32,7 @@ fs.writeFileSync(atWar, zlib.zstdCompressSync(Buffer.from(text)));
 const b = await bareFreeciv({ save: atWar, saves: a.dir });
 await b.until(/Now accepting new client connections/, 30000);
 const town = async () => {
-  const l = await b.cmd('lua cmd local crown = find.player("Crown"); local s = ""; for p in players_iterate() do for c in p:cities_iterate() do s = s .. string.format("%d:%d:%d:%d ", c.id, p.id, crown.id, c.tile:num_units()) end end; log.normal("TOWN %s.", s)', /TOWN /);
+  const l = await b.cmd('lua cmd local crown = find.player(0); local s = ""; for p in players_iterate() do for c in p:cities_iterate() do s = s .. string.format("%d:%d:%d:%d ", c.id, p.id, crown.id, c.tile:num_units()) end end; log.normal("TOWN %s.", s)', /TOWN /);
   const foe = [...(l ?? "").matchAll(/(\d+):(\d+):(\d+):(\d+)/g)].map((m) => ({ city: +m[1], owner: +m[2], crown: +m[3], units: +m[4] }));
   return foe;
 };
@@ -44,10 +44,10 @@ if (!target) { await b.quit(); done(); }
 // The town's garrison (a fresh town may hold only workers, whom Freeciv captures rather than fights).
 await b.cmd(`lua cmd local c = find.city(nil, ${target.city}); edit.create_unit(c.owner, c.tile, find.unit_type("Pikemen"), 0, c, -1)`);
 // The crown's host beside the walls (made here for the test; the King's host marches there in play).
-b.send(`lua cmd local c = find.city(nil, ${target.city}); local crown = find.player("Crown"); local k = find.unit_type("Knights"); local n = 0; for t in c.tile:square_iterate(1) do if n < 8 and t ~= c.tile and not t:city() and t.terrain:class_name() == "Land" then edit.create_unit(crown, t, k, 2, nil, -1); n = n + 1 end end; log.normal("HOSTSET %d", n)`);
+b.send(`lua cmd local c = find.city(nil, ${target.city}); local crown = find.player(0); local k = find.unit_type("Knights"); local n = 0; for t in c.tile:square_iterate(1) do if n < 8 and t ~= c.tile and not t:city() and t.terrain:class_name() == "Land" then edit.create_unit(crown, t, k, 2, nil, -1); n = n + 1 end end; log.normal("HOSTSET %d", n)`);
 check(await b.until(/HOSTSET [1-9]/, 10000), "couldn't set the host beside the town");
 let after = target;
-const season = 'lua cmd for u in find.player("Crown"):units_iterate() do edit.unit_add_movepoints(u, 9) end';  // a new season's moves
+const season = 'lua cmd for u in find.player(0):units_iterate() do edit.unit_add_movepoints(u, 9) end';  // a new season's moves
 for (let i = 0; i < 6 && after && after.owner !== crownId; i++) {
   await b.cmd(season);
   await b.cmd(`lua cmd ${Lua.assault(target.city, crownId)}`, /"kind":"assault"/);

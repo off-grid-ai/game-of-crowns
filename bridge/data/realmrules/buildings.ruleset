@@ -2360,6 +2360,29 @@ helptext	= _("\
 Raised in the house's seat while its lord has turned from the King: in every town of the house three townsmen fewer are content.\
 ")
 
+[building_royal_warrant]
+name		= _("Royal Warrant")
+genus		= "SmallWonder"
+reqs	=
+    { "type", "name", "range"
+      "Tech", "Forbidden Lore", "Player"
+    }
+graphic         = "b.temple"
+graphic_alt     = "-"
+graphic_alt2    = "-"
+obsolete_by	=
+    { "type", "name", "range"
+    }
+build_cost	= 1
+upkeep		= 0
+sabotage	= 0
+sound		= "b_generic"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+helptext	= _("\
+The King's word to take a town: raised by realm_assault for the moment his men march in, and taken down at once, so the crown's soldiers take a town only when he orders it.\
+")
+
 [building_rebel_banners]
 name		= _("Rebel Banners")
 genus		= "SmallWonder"

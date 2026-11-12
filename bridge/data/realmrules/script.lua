@@ -929,6 +929,34 @@ function realm_bear(name, houses)
   end
 end
 
+-- The King's word to take a town (actions.ruleset: the crown conquers only while its Royal Warrant stands):
+-- raised in one of the crown's towns for the moment of the march-in, and taken down again. Only the crown
+-- needs it; returns whether it raised one.
+function realm_warrant(p, up)
+  local b = find.building_type("Royal Warrant")
+  if not b or not p or not p.nation or p.nation:rule_name() ~= "Norman" then return false end
+  for c in p:cities_iterate() do
+    if up and not c:has_building(b) then edit.create_building(c, b); return true end
+    if not up and c:has_building(b) then edit.remove_building(c, b) end
+  end
+  return false
+end
+
+-- A town is taken, never razed (Mac, 2026-11-12: capturing must never lose a town the world had). Freeciv's
+-- conquest always costs a town one townsman and razes a size-1 one (citytools.c unit_conquer_city; no ruleset
+-- or server setting changes it), so a hamlet about to be taken first gains one by Freeciv's own Join City: a
+-- settler of its own house joins it, and the conquest takes him instead.
+function realm_spare_hamlet(c)
+  if not c or c.size > 1 then return end
+  local kind = find.unit_type("Migrants") or find.unit_type("Settlers")
+  local ok, u = pcall(edit.create_unit, c.owner, c.tile, kind, 0, c, -1)
+  if not (ok and u) then return end
+  local id = u.id
+  pcall(edit.perform_action, u, find.action("Join City"), c)
+  local left = find.unit(nil, id)  -- refused: the settler doesn't stay
+  if left then edit.unit_kill(left, "disbanded", nil) end
+end
+
 -- The King's assault on a house's town (the crown is at war with it: the bridge's one diplomacy writer):
 -- each of the crown's fighting men beside its walls strikes once (Freeciv's combat: walls, veterans,
 -- terrain), and when no defender is left one of them marches in and takes it (Freeciv's own conquest:
@@ -955,7 +983,11 @@ function realm_assault(city_id, crown_id)
         local ok, done = pcall(edit.perform_action, u, attack, tile)
         if ok and done then blows = blows + 1 end
       else
+        realm_spare_hamlet(town)
+        edit.movement_allow(u)  -- a host held at the walls (its AI kept from wandering it off) marches in on the order
+        local warrant = realm_warrant(u.owner, true)
         pcall(edit.unit_move, u, tile, 0, nil, false, true, false, false, false)
+        if warrant then realm_warrant(u.owner, false) end
       end
     end
   end

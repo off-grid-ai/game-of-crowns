@@ -18,7 +18,7 @@ for (const f of ["arcs.js", "characters.js"]) check(!/math\.random\(\) < 0\.5 th
 
 // Raiders never take a town: both conquer enablers exclude Freeciv's barbarians (the dead, a player of their own, still can).
 const enablers = read("data/realmrules/actions.ruleset").split(/\n(?=\[)/).filter((s) => /^\[actionenabler_conquer_city/.test(s));
-check(enablers.length === 2 && enablers.every((s) => /"PlayerState",\s*"Barbarian",\s*"Player",\s*FALSE/.test(s)), "a Conquer City enabler lets barbarians take a town");
+check(enablers.filter((s) => !/_royal\]/.test(s)).length === 2 && enablers.filter((s) => !/_royal\]/.test(s)).every((s) => /"PlayerState",\s*"Barbarian",\s*"Player",\s*FALSE/.test(s)), "a Conquer City enabler lets barbarians take a town");
 
 // A short game, then its save loaded the way the bridge loads a realm.
 const a = await bareFreeciv({ port: 5574, serv: ["set aifill 3", "set minplayers 0", "set timeout -1", `set barbarians ${BARBARIANS.normal}`, "set endturn 3", "start"] });

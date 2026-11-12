@@ -1,8 +1,11 @@
 // Guards READY.md line 7, "capture a town" (casebook, War and sieges: A siege is a season, Total War: Attila): on the
-// King's order the royal host takes a house's town in Freeciv (realm_assault, Lua.assault: Freeciv's own conquest),
-// and the town changes hands (a size-1 hamlet is razed, Freeciv's rule). The crown's AI still takes none unbidden:
-// actions.ruleset keeps Norman out of Freeciv's Conquer City. Bare Freeciv, our ruleset, a Norman crown and one
-// house, no bridge. Exits 1 on a failure.   node tools/capture_probe.mjs        (from bridge/)
+// King's order the royal host takes a house's town in Freeciv (realm_assault: Freeciv's own conquest) and the town
+// changes hands; a hamlet (size 1) is taken, never razed (Mac, 2026-11-12: realm_spare_hamlet grows it by Freeciv's
+// Join City first). The crown's AI still takes none unbidden: actions.ruleset keeps Norman out of Freeciv's Conquer
+// City. Bare Freeciv, our ruleset, a Norman crown and an English house, no bridge. Exits 1 on a failure.
+//   node tools/capture_probe.mjs        (from bridge/)
+// Freeciv refuses actions (Join City) in a game loaded but not started, so the setup and the assault run in turn
+// hooks of a running game, and the probe judges by Freeciv's own events.
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
@@ -12,49 +15,65 @@ import { editRow } from "../fresh.js";
 
 const { check, done } = checker("CAPTURE");
 const PORT = 5578;
-const a = await bareFreeciv({ port: PORT, serv: ["set aifill 0", "set minplayers 0", "set timeout -1", "set saveturns 1", 'set autosaves "TURN|GAMEOVER"', 'set savename "probe"',
+
+// The crown's AI on its own takes no town: the two Conquer City enablers keep Norman out, and the third lets the
+// crown conquer only while the Royal Warrant stands (realm_assault raises it for the King's march-in alone).
+const rules = fs.readFileSync(new URL("../data/realmrules/actions.ruleset", import.meta.url), "utf8").split(/\n(?=\[)/).filter((x) => /^\[actionenabler_conquer_city/.test(x));
+const royal = rules.filter((x) => /_royal\]/.test(x));
+check(rules.length === 3 && rules.filter((x) => !royal.includes(x)).every((x) => /"Nation",\s*"Norman",\s*"Player",\s*FALSE/.test(x)), "a Conquer City enabler lets the crown's AI take a town unbidden");
+check(royal.length === 1 && /"Building",\s*"Royal Warrant",\s*"Player",\s*TRUE/.test(royal[0]), "the crown's conquest isn't bound to the King's Royal Warrant");
+
+const a = await bareFreeciv({ port: PORT, serv: ["set nationset all", "set aifill 0", "set minplayers 0", "set timeout -1", "set saveturns 1", 'set autosaves "TURN|GAMEOVER"', 'set savename "probe"',
   "create Crown", "create Foe", 'playernation Crown norman 1 "The King"', 'playernation Foe english 1 "Lord Foe"', "set endturn 3", "start"] });
 check(await a.until(/Game ended as the turn limit/, 90000), "the game didn't run");
 const first = fs.readdirSync(a.dir).filter((f) => /-auto\.sav\.zst$/.test(f)).sort().pop();
 await a.quit();
 
-// At war, as the King's march makes it (server.js setDiplomacy writes the save; done the same here).
+// At war, as the King's march makes it (server.js setDiplomacy writes the save; done the same here). Crown and
+// house are players 0 and 1, as created.
+const CROWN = 0, FOE = 1;
 const atWar = path.join(a.dir, "probe-war.sav.zst");
 let text = zlib.zstdDecompressSync(fs.readFileSync(path.join(a.dir, first))).toString();
-for (const [p, q] of [[0, 1], [1, 0]]) text = editRow(text, p, "diplstate", q, (c) => { c[0] = c[1] = '"War"'; if (c[2] === "0") c[2] = "1"; c[3] = c[4] = "0"; });
+for (const [p, q] of [[CROWN, FOE], [FOE, CROWN]]) text = editRow(text, p, "diplstate", q, (c) => { c[0] = c[1] = '"War"'; if (c[2] === "0") c[2] = "1"; c[3] = c[4] = "0"; });
 fs.writeFileSync(atWar, zlib.zstdCompressSync(Buffer.from(text)));
-const b = await bareFreeciv({ port: PORT, save: atWar, saves: a.dir });
+const b = await bareFreeciv({ port: PORT, save: atWar, saves: a.dir, serv: ["set timeout -1"] });
 await b.until(/Now accepting new client connections/, 30000);
 
-const towns = async () => {
-  const l = await b.cmd('lua cmd local crown = find.player("Crown"); local s = ""; for p in players_iterate() do for c in p:cities_iterate() do s = s .. string.format("%d:%d:%d:%d:%d ", c.id, p.id, crown.id, c.tile:num_units(), c.size) end end; log.normal("TOWN %s.", s)', /TOWN /);
-  return [...(l ?? "").matchAll(/(\d+):(\d+):(\d+):(\d+):(\d+)/g)].map((m) => ({ city: +m[1], owner: +m[2], crown: +m[3], units: +m[4], size: +m[5] }));
-};
-// The house's town, founded here so the probe never depends on where the AI settled: land four tiles from the crown's.
-await b.cmd('lua cmd local foe = find.player("Foe"); local home; for c in find.player("Crown"):cities_iterate() do home = c end; for t in home.tile:square_iterate(4) do if home.tile:sq_distance(t) >= 13 and not t:city() and t.terrain:class_name() == "Land" and t:num_units() == 0 then edit.create_city(foe, t, "Probeford") break end end; log.normal("FOUNDED")', /FOUNDED/);
-const before = await towns();
-const crownId = before[0]?.crown;
-const target = before.filter((t) => t.owner !== crownId).pop();
-check(target, `no house town to take (${JSON.stringify(before)})`);
-if (!target) { await b.quit(); done(); }
+// Two towns of the house, founded here so the probe never depends on where its AI settled: one to grow to size 3,
+// and a hamlet left at size 1.
+const who = await b.cmd(`lua cmd PCROWN, PFOE = find.player(${CROWN}), find.player(${FOE}); local n = 0; for t in whole_map_iterate() do if n < 2 and not t:city() and t.terrain:class_name() == "Land" and t:num_units() == 0 then pcall(edit.create_city, PFOE, t, "Probe" .. n) if t:city() then n = n + 1; if n == 1 then TOWN = t:city() else HAMLET = t:city() end end end end; log.normal("SETUP %s %s %d %d %d", PCROWN.nation:rule_name(), PFOE.nation:rule_name(), n, TOWN and TOWN.id or -1, HAMLET and HAMLET.id or -1)`, /SETUP /);
+const [, crownNation, , made, townId, hamletId] = (who ?? "").match(/SETUP (\w+) (\w+) (\d+) (-?\d+) (-?\d+)/) ?? [];
+check(crownNation === "Norman" && made === "2", `no Norman crown or no two towns founded (${who})`);
 
-// An empty town of size 3 (no garrison; its workers out), and the King's host beside it.
-await b.cmd(`lua cmd local c = find.city(nil, ${target.city}); local m = find.unit_type("Migrants") or find.unit_type("Settlers"); for i = 1, 2 do local u = edit.create_unit(c.owner, c.tile, m, 0, nil, -1); pcall(edit.perform_action, u, find.action("Join City"), c) end; for u in c.tile:units_iterate() do edit.unit_kill(u, "disbanded", nil) end; log.normal("EMPTIED %d", c.size)`, /EMPTIED/);
-b.send(`lua cmd local c = find.city(nil, ${target.city}); local crown = find.player("Crown"); local k = find.unit_type("Knights"); local n = 0; for t in c.tile:square_iterate(1) do if n < 3 and t ~= c.tile and not t:city() and t.terrain:class_name() == "Land" then edit.create_unit(crown, t, k, 2, nil, -1); n = n + 1 end end; log.normal("HOSTSET %d", n)`);
-check(await b.until(/HOSTSET [1-9]/, 10000), "couldn't set the host beside the town");
-
-// The crown's AI on its own takes no town: both Conquer City enablers keep Norman out (Freeciv's AI reads them;
-// the King's order goes through realm_assault's edit move, which the enablers don't gate).
-const rules = fs.readFileSync(new URL("../data/realmrules/actions.ruleset", import.meta.url), "utf8").split(/\n(?=\[)/).filter((x) => /^\[actionenabler_conquer_city/.test(x));
-check(rules.length === 2 && rules.every((x) => /"Nation",\s*"Norman",\s*"Player",\s*FALSE/.test(x)), "a Conquer City enabler lets the crown's AI take a town unbidden");
-
-// The King's order: the assault. The town is the crown's now, one size smaller (Freeciv's conquest).
-await b.cmd(`lua cmd ${Lua.assault(target.city, crownId)}`, /"kind":"assault"/);
-const after = (await towns()).find((t) => t.city === target.city);
-check(b.lines.some((l) => /"kind":"city_transferred"/.test(l) && /"reason":"conquest"/.test(l) && l.includes(`"city":"${target.city}"`)), "Freeciv sent no city_transferred for the conquest (the bridge hears hands change by it)");
-check(after?.owner === crownId, `the King's host didn't take the empty town (held by ${after?.owner}, crown ${crownId})`);
-check(after?.size === 2, `the taken town is size ${after?.size} (want 2: Freeciv takes one citizen on conquest)`);
-console.log(`  town ${target.city}: house ${target.owner} -> ${after?.owner} (crown ${crownId}), size 3 -> ${after?.size}`);
+// Turn 4: the town grows to 3 by Freeciv's Join City; both stand empty, two of the King's companies beside each,
+// held there as a siege host is (kept from their AI).
+// Turn 5: the King's order, the assault on each (Lua.assault, realm_assault).
+await b.cmd(`lua cmd function probe_turn(turn)
+  if turn == 4 then
+    local m = find.unit_type("Migrants")
+    for i = 1, 2 do local u = edit.create_unit(PFOE, TOWN.tile, m, 0, TOWN, -1); pcall(edit.perform_action, u, find.action("Join City"), TOWN) end
+    for _, c in ipairs({TOWN, HAMLET}) do
+      local gone = {} for u in c.tile:units_iterate() do gone[#gone + 1] = u end for _, u in ipairs(gone) do edit.unit_kill(u, "disbanded", nil) end
+      local n = 0 for t in c.tile:square_iterate(1) do if n < 2 and t ~= c.tile and not t:city() and t.terrain:class_name() == "Land" then local k = edit.create_unit(PCROWN, t, find.unit_type("Knights"), 2, nil, -1) edit.movement_disallow(k) n = n + 1 end end
+    end
+    log.normal("PROBE grown %d hamlet %d", TOWN.size, HAMLET.size)
+  elseif turn == 5 then
+    ${Lua.assault(townId, CROWN)}
+    ${Lua.assault(hamletId, CROWN)}
+  end
+end; signal.connect("turn_begin", "probe_turn"); log.normal("HOOKED")`.replace(/\n\s*/g, " "), /HOOKED/);
+b.send("set endturn 5");
+b.send("start");
+check(await b.until(/Game ended as the turn limit/, 90000), "the game didn't run on");
+const ev = b.lines.filter((l) => l.includes("EVENT {")).map((l) => JSON.parse(l.slice(l.indexOf("{"))));
+const grown = b.lines.find((l) => /PROBE grown/.test(l));
+check(/PROBE grown 3 hamlet 1/.test(grown ?? ""), `the setup didn't give a size-3 town and a hamlet (${grown})`);
+const taken = (id) => ev.find((e) => e.kind === "city_transferred" && Number(e.city) === Number(id) && e.reason === "conquest" && Number(e.to) === CROWN);
+const razed = (id) => ev.some((e) => e.kind === "city_destroyed" && Number(e.city) === Number(id));
+check(taken(townId), `the King's host didn't take the empty town ${townId} (Freeciv sent no conquest to the crown)`);
+check(taken(hamletId) && !razed(hamletId), `the King's capture razed or missed the hamlet ${hamletId}`);
+console.log(`  assaults: ${ev.filter((e) => e.kind === "assault").map((e) => `${e.city} men ${e.men} blows ${e.blows} -> ${e.owner}`).join("; ")}`);
+console.log(`  town ${townId}: ${taken(townId) ? "taken" : "not taken"}; hamlet ${hamletId}: ${razed(hamletId) ? "razed" : taken(hamletId) ? "taken, still a town" : "not taken"}`);
 await b.quit();
 fs.rmSync(a.dir, { recursive: true, force: true });
 done();
