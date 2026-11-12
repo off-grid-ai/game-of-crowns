@@ -1,0 +1,10 @@
+scripts/battle_ai.gd:one-way-to-move
+scripts/castle_life.gd:one-way-to-move
+scripts/combat.gd:one-way-to-move
+scripts/intro.gd:one-way-to-move
+scripts/npc_mind.gd:one-way-to-move
+scripts/news_chips.gd:one-way-to-move
+scripts/roadside.gd:one-way-to-move
+scripts/scenes.gd:one-way-to-move
+scripts/siege_ai.gd:one-way-to-move
+scripts/traffic.gd:one-way-to-move
