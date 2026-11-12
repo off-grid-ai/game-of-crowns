@@ -15,7 +15,8 @@ args = sys.argv[sys.argv.index("--") + 1:]
 glb, name = args[0], args[1]
 budget = int(args[2]) if len(args) > 2 else 12000
 # The cloth that takes the dye: "cream" (bright, unsaturated: rig.json mask, as the army's) or "hue:lo,hi" (a coloured
-# cloth by its hue, 0-1, wrapping past 1: the guard's red skirt, the ranger's green cloak), saturated and not dark.
+# cloth by its hue, 0-1, wrapping past 1: the guard's red skirt, the ranger's green cloak), saturated and not dark
+# ("hue:lo,hi,sat": a softer colour's own saturation floor, 0.3 otherwise: the old woman's lavender shawl).
 mask_by = args[3] if len(args) > 3 else "cream"
 root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "assets", "people", "mixamo", name))
 os.makedirs(root, exist_ok=True)
@@ -36,6 +37,10 @@ if arm.animation_data:
         arm.animation_data.nla_tracks.remove(t)
 for a in list(bpy.data.actions):
     bpy.data.actions.remove(a)
+# Only the body the skeleton moves comes in: a mesh with no skin (a stray sphere left in Meshy's export) goes.
+for o in [o for o in bpy.data.objects if o.type == "MESH" and not any(m.type == "ARMATURE" for m in o.modifiers)]:
+    print("DROPPED", o.name, len(o.data.polygons), "faces (no skin)")
+    bpy.data.objects.remove(o, do_unlink=True)
 meshes = [o for o in bpy.data.objects if o.type == "MESH"]
 tris = sum(sum(len(p.vertices) - 2 for p in o.data.polygons) for o in meshes)
 if tris > budget:
@@ -67,7 +72,9 @@ if base:
         hi, lo = max(r, g, b), min(r, g, b)
         sat = (hi - lo) / hi if hi > 0 else 0.0
         if mask_by.startswith("hue:"):
-            lo_h, hi_h = [float(x) for x in mask_by[4:].split(",")]
+            spec = [float(x) for x in mask_by[4:].split(",")]
+            lo_h, hi_h = spec[0], spec[1]
+            sat_min = spec[2] if len(spec) > 2 else 0.3
             d = hi - lo
             hue = 0.0
             if d > 0:
@@ -79,7 +86,7 @@ if base:
                     hue = (r - g) / d + 4
                 hue /= 6.0
             inside = (lo_h <= hue <= hi_h) if lo_h <= hi_h else (hue >= lo_h or hue <= hi_h)
-            v = 1.0 if (inside and sat > 0.3 and hi > 0.18) else 0.0
+            v = 1.0 if (inside and sat > sat_min and hi > 0.18) else 0.0
         else:
             v = 1.0 if (hi > mask_cfg["bright"] and sat < mask_cfg["grey"]) else 0.0
         mask_px += int(v)

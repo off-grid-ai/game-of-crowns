@@ -1,0 +1,16 @@
+# The cast's dye cloth, one line a member: <name> <mask> (cast_import.py's fourth argument: "cream", or "hue:lo,hi[,sat]"),
+# chosen on each body's concept (docs/art/cast/sheet.jpg): the garment that reads as its colour; reds need sat 0.55 so
+# skin stays out. farmer_m: hue:0.15,0.33 (Meshy's own rig). The priest's brown habit is never dyed (no mask in cast.json).
+blacksmith hue:0.95,0.04,0.55
+farmer_f hue:0.95,0.05,0.55
+merchant hue:0.3,0.45
+miller hue:0.1,0.17
+old_man hue:0.55,0.68,0.15
+stallholder hue:0.45,0.55
+town_crier hue:0.95,0.04,0.55
+townswoman hue:0.8,0.95
+boy hue:0.53,0.62
+girl hue:0.1,0.17
+noble_lady hue:0.6,0.7
+old_woman hue:0.7,0.85,0.12
+priest cream
