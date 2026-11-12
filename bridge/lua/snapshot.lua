@@ -56,7 +56,7 @@ for t in whole_map_iterate() do
 end
 
 -- The realm's gold (Gold on hills and mountains) and whose land it lies in: the seams the view shows worked.
--- A spent seam's Gold is gone (lua/events.lua realm_mines), so it drops out of this list.
+-- A spent seam's Gold is gone (realmrules/script.lua realm_mines), so it drops out of this list.
 local gold = {}
 for t in whole_map_iterate() do
   local ok, has = pcall(function() return t:has_extra("Gold") end)

@@ -143,7 +143,7 @@ Switches (`--name`) go after `--` on the game's command line.
 
 ## Damage to towns: walls and burnt houses (Builder 1; the bridge owns it)
 - How fast besiegers batter a wall section, when it shows cracked and breached, how fast it's mended, how much a sack or razing burns and how fast it's rebuilt, how many houses a fire arrow lit are rebuilt a season (`kindledRebuiltPerSeason`), how many sections: `bridge/data/damage.json`.
-- How long a gold seam lasts while worked, whose hills hold the realm's gold and how many seams are laid there, or seams that never run out: `bridge/data/mines.json`: `seamSeasons`, `goldHouse`, `goldSeams`, `on`.
+- How long a gold seam lasts while worked, whose hills hold the realm's gold and how many seams are laid there, or seams that never run out: `bridge/data/realmrules/luadata.txt` `[mines]`: `seam_seasons`, `gold_house`, `gold_seams`, `on` ("no": endless gold). Freeciv reads it with the ruleset; a running realm takes a change on its next restart.
 - Gold the crown gets per Marketplace on top of Freeciv's own tax (0: none, so a house is as rich as its land): `bridge/data/economy.json`: `marketGold`.
 - The gold mines in the view: the mine's size and place on its tile, how many miners work a live seam, how far out they stand, what they do and how often they change, how near the camera must be, how dark spent workings are: `realm/data/gold_mines.json`: `scale`, `off`, `miners`, `ring`, `clips`, `swap_sec`, `near`, `spent_shade`. `--gold-mines=off` shows none.
 - How tight a horse or a cart may turn (it steers on an arc this wide, world units, never spins on the spot): `realm/data/works.json`: `paddock.turn_radius` (led and paddock horses), `realm/data/crowd.json`: `cart.turn_radius` (the square's cart).

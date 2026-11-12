@@ -8,7 +8,6 @@ import { spawn, execFileSync } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
-import * as Mines from "./mines.js";
 
 export const FC_PORT = Number(process.env.FC_PORT || 5556);
 
@@ -52,7 +51,7 @@ export function start({ name, P, dir, onEvent, onExit }) {
   } catch { /* none running */ }
   const save = newestSave(P.saves);
   const resume = path.join(P.base, "resume.serv");
-  fs.writeFileSync(resume, `lua file ${path.join(dir, "lua", "events.lua")}\nstart\n${Mines.command()}\n`);  // the gold seams laid at once (mines.js)
+  fs.writeFileSync(resume, "start\n");  // the game's own Lua comes with the ruleset (realmrules/script.lua)
   const args = ["-p", String(FC_PORT), "-s", P.saves, "-d", "n", "-b", "127.0.0.1"];
   if (save) args.push("-f", save, "-r", resume);
   else args.push("-r", P.serv);

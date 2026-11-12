@@ -42,5 +42,4 @@ playernation Highfell irish 1 "Lord Declan Highfell"
 aitoggle Crown
 playernation Crown norman 1 "The King"
 lua file lua/world_setup.lua
-lua file lua/events.lua
 start

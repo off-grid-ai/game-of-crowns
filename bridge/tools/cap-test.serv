@@ -4,5 +4,4 @@ set minplayers 0
 set timeout -1
 set endturn 250
 set sciencebox 100
-lua file lua/events.lua
 start

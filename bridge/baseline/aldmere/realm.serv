@@ -41,5 +41,4 @@ playernation Sunspire castilian 0 "Princess Ximena Sunspire"
 playernation Highfell irish 1 "Lord Declan Highfell"
 playernation Crown norman 1 "The King"
 lua file /Users/user/wednesday/civilization/bridge/chronicles/aldmere-baseline-mw0zeo6b/world_setup.lua
-lua file /Users/user/wednesday/civilization/bridge/lua/events.lua
 start

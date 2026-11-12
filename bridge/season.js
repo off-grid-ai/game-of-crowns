@@ -14,7 +14,6 @@
 // same names where its own code still calls them.
 
 import * as Damage from "./damage.js";
-import * as Mines from "./mines.js";
 import * as Opening from "./opening.js";
 import * as Reword from "./reword.js";
 import * as Seals from "./seals.js";
@@ -45,7 +44,6 @@ export function turn(ctx, ev) {
   Reword.season();  // one more wording of a court result from the local model, in idle time (reword.js)
   healBlights(ctx, Number(ev.turn));
   Damage.season(ctx, Number(ev.turn));  // walls battered and mended, houses burnt and rebuilt (damage.js)
-  Mines.season(ctx);  // gold seams worked down, and spent ones gone from the land (mines.js)
   collectTithe(ctx, Number(ev.turn));
   // The storyteller's pace: a threat rises after a quiet stretch and grows until answered (director.js).
   const tc = ctx.treasuryCtx();

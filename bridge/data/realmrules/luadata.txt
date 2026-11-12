@@ -1,0 +1,14 @@
+; Game of Crowns: the numbers the ruleset's Lua reads (script.lua, luadata.get_str("section.key")).
+; Freeciv loads this file with the ruleset (server/ruleset.c openload_luadata_file). Values are strings.
+
+[mines]
+; Gold seams. Freeciv's Gold never runs out; here each seam is worked out over seam_seasons seasons while a
+; town of the land's owner lies close enough to work it, then the Gold is gone from the land and its yield
+; with it (the bridge hears "seam_spent"). gold_house: the nation whose hills hold the realm's gold
+; ("English" = House Goldcrest, "Wealth Is Strength"); gold_seams: how many seams are laid in its hills when
+; a realm first meets this rule (other gold already on the map counts as seams too). on: "no" keeps
+; Freeciv's own endless gold.
+on = "yes"
+seam_seasons = "40"
+gold_house = "English"
+gold_seams = "3"

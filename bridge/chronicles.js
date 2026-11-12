@@ -220,7 +220,6 @@ export function create({ name, scenario = "aldmere", minutes = 0, pace, fate = "
   fs.writeFileSync(p.setup, fs.readFileSync(p.setup, "utf8").replace("edit.change_gold(p, 500)", `edit.change_gold(p, ${gold})`));
   let serv = fs.readFileSync(path.join(DIR, "realm.serv"), "utf8")
     .replace("lua file lua/world_setup.lua", `lua file ${p.setup}`)
-    .replace("lua file lua/events.lua", `lua file ${path.join(DIR, "lua", "events.lua")}`)
     .replace(/^set xsize \d+$/m, `set xsize ${mapW}`)
     .replace(/^set ysize \d+$/m, `set ysize ${mapH}`);
   serv = servFor(serv, opt);

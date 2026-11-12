@@ -1,7 +1,0 @@
-{
-  "_": "Gold seams (mines.js, lua/events.lua realm_mines). Freeciv's Gold never runs out; here each seam is worked out over seamSeasons seasons while a town of the land's owner lies close enough to work it, then the Gold is gone from the land and its yield with it. goldHouse: the nation of the house whose hills hold the realm's gold (english = House Goldcrest, 'Wealth Is Strength'); goldSeams: how many seams are laid in its hills when a realm first meets this rule (other gold already on the map is counted as seams too). on: false stops seams running out (Freeciv's own endless gold).",
-  "on": true,
-  "seamSeasons": 40,
-  "goldHouse": "English",
-  "goldSeams": 3
-}

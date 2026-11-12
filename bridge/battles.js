@@ -1,5 +1,5 @@
 // A fight Freeciv has settled, as the realm tells it (the one owner of who fought, how many, and who won).
-// Freeciv reports each company killed (lua/events.lua unit_killed); the companies of the beaten house on and
+// Freeciv reports each company killed (realmrules/script.lua unit_killed); the companies of the beaten house on and
 // beside that tile were the beaten side, and the nearest other house with men beside it the victors. Many
 // companies killed on one tile in one season are one battle: their scene is kept and its fallen counted up.
 // The view stages it (scenes.gd: a field battle sized from these men, ending as Freeciv decided).
@@ -10,7 +10,7 @@ const SHIPS = new Set(HOSTS.ships);
 const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 const soldier = (u) => !CIVILIAN.has(u.type) && !SHIPS.has(u.type);
 
-// The strikes Freeciv reported this season (lua/events.lua attack): who attacked which tile, from where.
+// The strikes Freeciv reported this season (realmrules/script.lua attack): who attacked which tile, from where.
 let strikes = [];
 export function struck(ev, turn) {
   strikes = strikes.filter((x) => x.turn >= turn - 1).slice(-60);

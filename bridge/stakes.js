@@ -55,7 +55,7 @@ export class Stakes {
     this.save();
   }
 
-  // Raises a host through realm_host() in lua/events.lua; Freeciv's AI then
+  // Raises a host through realm_host() in realmrules/script.lua; Freeciv's AI then
   // fights with it. `who` is a Lua expression for the owning player.
   host(ctx, who, x, y, units, count) {
     ctx.send(`realm_host(${who}, ${x}, ${y}, {${units.map((u) => `"${u}"`).join(",")}}, ${count})`);
