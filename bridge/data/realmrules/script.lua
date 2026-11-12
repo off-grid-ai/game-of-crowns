@@ -585,17 +585,51 @@ end
 -- tile's units). They can't take the town (actions.ruleset); each season they pillage the land around it with
 -- Freeciv's own Pillage order, and after raids.seasons seasons they leave (Disband Unit). Needs the barbarians
 -- setting above "disabled" and onsetbarbs passed (game.ruleset sets it to 1); with raiders off, nothing comes.
--- Kept as a plain string ("unit,unit|town|until;..."), which the save keeps.
+-- Freeciv's own barbarians (a hut's, the wild hordes) get the same season: realm_raids_turn takes in any raider it
+-- hasn't seen, beside the town nearest him. Kept as a plain string ("unit,unit|town|until;..."), which the save keeps.
 GOC_RAIDS = GOC_RAIDS or ""
 local RAID_SPOILS = {"Farmland", "Railroad", "Mine", "Irrigation", "Road", "Fortress", "Fort"}
 
+-- Freeciv's barbarians, land and sea. The dead wear the Barbarian nation too but are a player of their own
+-- (realm_the_dead): they march to take the North, not to raid.
 local function raiders_now()
   local ids = {}
   for p in players_iterate() do
     local n = p.nation and p.nation:rule_name() or ""
-    if n == "Barbarian" or n == "Pirate" then for u in p:units_iterate() do ids[u.id] = true end end
+    if (n == "Barbarian" or n == "Pirate") and p.name ~= "The Dead" then for u in p:units_iterate() do ids[u.id] = u end end
   end
   return ids
+end
+
+local function raid_seasons() return tonumber(luadata.get_str("raids.seasons")) or 8 end
+
+-- Raiders Freeciv raised on its own, not yet in a raid: one raid per town they rise nearest to.
+local function raids_take_in()
+  local known = {}
+  for id in GOC_RAIDS:gmatch("%d+") do known[tonumber(id)] = true end
+  local by_town, order = {}, {}
+  for id, u in pairs(raiders_now()) do
+    if not known[id] then
+      local best, bd = nil, nil
+      for p in players_iterate() do
+        if p ~= u.owner then
+          for c in p:cities_iterate() do
+            local d = c.tile:sq_distance(u.tile)
+            if not bd or d < bd then best, bd = c, d end
+          end
+        end
+      end
+      if best then
+        if not by_town[best.id] then by_town[best.id] = {}; order[#order + 1] = best.id end
+        table.insert(by_town[best.id], string.format("%d", id))
+      end
+    end
+  end
+  local til = game.current_turn() + raid_seasons()
+  for _, cid in ipairs(order) do
+    GOC_RAIDS = GOC_RAIDS .. (GOC_RAIDS == "" and "" or ";") .. string.format("%s|%d|%d", table.concat(by_town[cid], ","), cid, til)
+    log.normal("RAID wild raiders by %s: %d", find.city(nil, cid).name, #by_town[cid])
+  end
 end
 
 function realm_raid(city_id)
@@ -614,7 +648,7 @@ function realm_raid(city_id)
   local raised = {}
   for id in pairs(raiders_now()) do if not before[id] then raised[#raised + 1] = id end end
   if #raised > 0 then
-    local til = game.current_turn() + (tonumber(luadata.get_str("raids.seasons")) or 8)
+    local til = game.current_turn() + raid_seasons()
     for i, id in ipairs(raised) do raised[i] = string.format("%d", id) end
     GOC_RAIDS = GOC_RAIDS .. (GOC_RAIDS == "" and "" or ";") .. string.format("%s|%d|%d", table.concat(raised, ","), c.id, til)
   end
@@ -656,6 +690,7 @@ local function raid_season(u, town)
 end
 
 function realm_raids_turn()
+  raids_take_in()
   if GOC_RAIDS == "" then return end
   local kept = {}
   local disband = find.action("Disband Unit")

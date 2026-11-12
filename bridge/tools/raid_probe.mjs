@@ -49,6 +49,8 @@ const base = await bareFreeciv({ port: 5574, save: path.join(BRIDGE, "baseline/a
 check(await base.until(/Now accepting new client connections/, 30000), "the baseline didn't load");
 const from = base.lines.length;
 check(/raised [1-9]/.test((await base.cmd("lua cmd realm_raid(306)", /RAID /)) ?? ""), "no raiders rose by Caerdydd");
+// Freeciv's own barbarians (a hut's, the hordes): raised by Freeciv beside Goldrock, not by realm_raid, they get the same season.
+await base.cmd(`lua cmd for t in find.city(nil, 187).tile:square_iterate(2) do local n = t.terrain:rule_name() if t:city() == nil and t:num_units() == 0 and not n:find("Ocean") and n ~= "Lake" then t:unleash_barbarians() break end end`);
 base.send(`set endturn ${38 + seasons + 1}`);
 base.send("start");
 check(await base.until(/Game ended as the turn limit/, 300000, from), "the baseline didn't run on");
@@ -58,6 +60,8 @@ const lost = L.filter((l) => /"kind":"city_(transferred|destroyed)"/.test(l) && 
 check(pillaged > 0, "the raiders pillaged nothing");
 check(lost === 0, `Stormhold lost ${lost} towns to a raid`);
 check(L.some((l) => /RAID over by Caerdydd/.test(l)), `the raiders hadn't left after ${seasons} seasons`);
+check(L.some((l) => /RAID wild raiders by Goldrock/.test(l)), "Freeciv's own raiders by Goldrock weren't taken into a raid");
+
 console.log(`raid on Caerdydd: ${pillaged} pillages, ${lost} towns lost, gone after ${seasons} seasons`);
 await base.quit();
 done();
