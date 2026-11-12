@@ -121,6 +121,13 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 13:00 (11-12) Mac: "ignore the performance metrics for now, just make a really good experience" (memory updated).
+  Defaults flipped (1a32e409): the plain launch equals the render; old branches listed for retirement and routed
+  (fire-siege castles/towns/fire v1, army-ui woods/photo ground, works-life kit bodies; UI v1 unassigned).
+  Painterly filter rejected (comic ink) -> removed. Whole Meshy cast in the crowd (79c3035f). Mac: "get some more
+  people from meshy, some more components... already built ones... what I want now is uniformity": the Meshy agent
+  adds phase E: ~40-60 community models in one painted look (props, animals incl. hens/goats, people, buildings),
+  works-life rigs people/animals, buildings thread wires buildings/props, replacing kit pieces outright.
 - 12:30 (11-12) Mac upgraded Meshy to Pro (1,445 credits); an agent is making 8 square pieces from 01-town crops
   (townhouse, cottage, merchant house, smithy, stall, well, statue, cart) -> docs/research/meshy-square-set.md.
   Mac: "start using the meshy products in the game": an agent is making the plain launch equal the render
