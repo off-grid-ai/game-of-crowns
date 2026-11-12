@@ -731,7 +731,7 @@ func _report() -> void:
 			if r > SKATE_FAIL:
 				bad += 1
 	var verdict := func(ok: bool) -> String: return "PASS" if ok else "FAIL"
-	print("MOTION pipeline: %s" % ("v2 (--motion=v2)" if preload("res://scripts/motion.gd").v2 else "today's"))
+	print("MOTION pipeline: the one (motion.gd)")
 	print("MOTION people measured: %d near the camera over %d s" % [people, _secs])
 	print("MOTION in frame: %.0f people on screen on average, %d at most (the crowd's density, against town-b)" % [float(_in_frame[0]) / maxi(int(_in_frame[1]), 1), int(_in_frame[2])])
 	# Report only since the camera caps at roof height (feet, hands at the body and head aim don't read from there).

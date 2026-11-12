@@ -47,14 +47,14 @@ const STATES := ["loop_a", "loop_b", "once_a", "once_b", "hold_a", "hold_b", "re
 ## A load carried on the move: the arms from these clips over the legs' walk
 ## (Godot's Blend2 with a bone filter), so a sack or a crate shows while they walk.
 const CARRIES := ["Carrying", "Box_Idle", "Carry_Walk"]
-## The body's posture (v3 stage 2, docs/review/first-principles-motion.md): moves
+## The body's posture (stage 2, docs/review/first-principles-motion.md): moves
 ## played low, on the knees, sat or lying. Interact is down on hands and knees, head at the
 ## ground, for most of its 7.6 s (hips 0.40-0.45 m, head 0.25-0.5 m, measured): from roof height it reads as
 ## a body lying on the cobbles (batch 6), so it is played only at ground work on a building site. From one of these to a
 ## standing move the body rises through Getting_Up, never a crossfade that pops.
 const LOW := ["Fixing_Kneeling", "Interact", "Kneeling", "Praying", "Planting", "Dig_And_Plant", "Sitting_Ground", "Sitting_Cross_Legged",
 	"Sitting_Idle", "Sitting_Drinking", "Sitting_Talking", "Sleeping_Idle", "Defeated", "Milking"]
-const XFADE_STAND := 0.45  # v2: between two standing moves, slow enough that feet planted apart don't skid across
+const XFADE_STAND := 0.45  # between two standing moves, slow enough that feet planted apart don't skid across
 const ARMS := ["LeftShoulder", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightShoulder", "RightUpperArm", "RightLowerArm", "RightHand",
 	"LeftThumbMetacarpal", "LeftThumbProximal", "LeftThumbDistal", "LeftIndexProximal", "LeftIndexIntermediate", "LeftIndexDistal",
 	"LeftMiddleProximal", "LeftMiddleIntermediate", "LeftMiddleDistal", "LeftRingProximal", "LeftRingIntermediate", "LeftRingDistal",
@@ -62,12 +62,10 @@ const ARMS := ["LeftShoulder", "LeftUpperArm", "LeftLowerArm", "LeftHand", "Righ
 	"RightIndexProximal", "RightIndexIntermediate", "RightIndexDistal", "RightMiddleProximal", "RightMiddleIntermediate", "RightMiddleDistal",
 	"RightRingProximal", "RightRingIntermediate", "RightRingDistal", "RightLittleProximal", "RightLittleIntermediate", "RightLittleDistal"]
 
-## The second motion pipeline (docs/review/animation-pipeline.md, steps 2-3), on
-## for `--motion=v2` until the motion probe passes: the legs' blend space synced,
-## pace read in the person's own size, slow steps at a slow cadence, and the body
-## turning at a person's rate instead of snapping.
-static var v2: bool = not OS.get_cmdline_user_args().has("--motion=v1")  # on by default since the go-live gate (2026-11-11); --motion=v1 for the old one
-## v2: each way of going's stride on this body's own legs (people.gd strides_of: how fast a planted foot travels
+## The motion pipeline (docs/review/animation-pipeline.md, steps 2-3; the one way since the integration audit #8,
+## 2026-11-12, the old pipeline and --motion=v1 gone): the legs' blend space synced, pace read in the person's own
+## size, slow steps at a slow cadence, and the body turning at a person's rate instead of snapping.
+## Each way of going's stride on this body's own legs (people.gd strides_of: how fast a planted foot travels
 ## back under the hips, in skeleton units a second at speed 1; Mixamo moves are In Place), measured once per body
 ## when it is made, as Unity's humanoid avatar carries its own scale. A child's short legs, a woman's, a slimmed
 ## cast body each cover their own ground, so a foot on the ground stays put at any pace (tools/child_stride_probe.gd).
@@ -97,18 +95,18 @@ var _wish := ""  # a repeating move asked while on the move, for when they stop
 var _to := ""
 var _carry: AnimationNodeAnimation  # the arms' load over the legs, when carrying
 var _held_for := ""  # the move whose tool is in hand now (weapons.gd)
-## v3 (docs/review/first-principles-motion.md, stages 1-2), the default: what a
+## Loads (docs/review/first-principles-motion.md, stages 1-2): what a
 ## person carries is their errand's load, not the clip on screen. `errand_load` is the
 ## load's move ("Carrying", "Wheelbarrow"; villagers.gd sets it from the walk's
 ## gait), "" for none: while it's set the tool stays in hand whatever the body plays.
-static var v3: bool = v2  # the default since gate r6 (the judge, 2026-11-11); v2's clip-keyed loads are gone, --motion=v1 is the old motion
+const v3 := true  # villagers.gd still asks (mo.v3); goes when town life drops those two reads (integration audit #8)
 var errand_load := ""
 const Weapons := preload("res://scripts/weapons.gd")
-var _at := "parameters/"  # where the state machine's parameters live (under "sm/" in v2)
-var _gesture: AnimationNodeAnimation  # v2: the upper body's one-shot move
-var _yaw := INF  # v2: the way the body faces now, in the world
-var _yaw_set := 0.0  # v2: the body's own rotation as _face last left it
-var _yaw_wish := 0.0  # v2: the way its mover wants it to face, in its holder's frame
+var _at := "parameters/"  # where the state machine's parameters live (under "sm/": the gesture sits over the state machine)
+var _gesture: AnimationNodeAnimation  # the upper body's one-shot move
+var _yaw := INF  # the way the body faces now, in the world
+var _yaw_set := 0.0  # the body's own rotation as _face last left it
+var _yaw_wish := 0.0  # the way its mover wants it to face, in its holder's frame
 
 
 ## A person's moves, read from their AnimationPlayer's library; `ready` is
@@ -126,10 +124,9 @@ func setup(player: AnimationPlayer, stance: String) -> void:
 	# beyond; the blend between them follows the ground covered.
 	_feet = AnimationNodeBlendSpace1D.new()
 	_feet.min_space = 0.0
-	_feet.max_space = RUN_PACE * 1.2  # v2: _refit sets it to this body's own run
-	if v2:
-		# Walk and run kept in step: their cycles time-scaled to one (Godot 4.7).
-		_feet.sync_mode = AnimationNodeBlendSpace1D.SYNC_MODE_CYCLIC_MUTABLE
+	_feet.max_space = RUN_PACE * 1.2  # _refit sets it to this body's own run
+	# Walk and run kept in step: their cycles time-scaled to one (Godot 4.7).
+	_feet.sync_mode = AnimationNodeBlendSpace1D.SYNC_MODE_CYCLIC_MUTABLE
 	for leg in [["stand", 0.0], ["walk", WALK_PACE], ["run", RUN_PACE]]:
 		var n := AnimationNodeAnimation.new()
 		_legs[leg[0]] = n
@@ -161,37 +158,34 @@ func setup(player: AnimationPlayer, stance: String) -> void:
 				t.advance_mode = AnimationNodeStateMachineTransition.ADVANCE_MODE_AUTO
 			elif b.begins_with("once") or b.begins_with("hold"):
 				t.xfade_time = XFADE_HIT
-			elif v2 and b.begins_with("loop") and (a.begins_with("loop") or a == "rest"):
+			elif b.begins_with("loop") and (a.begins_with("loop") or a == "rest"):
 				t.xfade_time = XFADE_STAND
 			_sm.add_transition(a, b, t)
 		# Anything can end in death; nothing comes back from it.
 		var die := AnimationNodeStateMachineTransition.new()
 		die.xfade_time = XFADE_HIT
 		_sm.add_transition(a, "dead", die)
-	if v2:
-		# v2: a gesture (a nod, a wave) over whatever the body is doing: Godot's
-		# OneShot, filtered to the spine, neck, head and arms, on top of the
-		# state machine, so the legs keep their own clip under it.
-		var top := AnimationNodeBlendTree.new()
-		top.add_node("sm", _sm)
-		_gesture = AnimationNodeAnimation.new()
-		top.add_node("gesture", _gesture)
-		top.add_node("gscale", AnimationNodeTimeScale.new())
-		top.connect_node("gscale", 0, "gesture")
-		var shot := AnimationNodeOneShot.new()
-		shot.fadein_time = 0.15
-		shot.fadeout_time = 0.2
-		shot.filter_enabled = true
-		for b in UPPER + ARMS:
-			shot.set_filter_path(NodePath("%GeneralSkeleton:" + b), true)
-		top.add_node("shot", shot)
-		top.connect_node("shot", 0, "sm")
-		top.connect_node("shot", 1, "gscale")
-		top.connect_node("output", 0, "shot")
-		tree_root = top
-		_at = "parameters/sm/"
-	else:
-		tree_root = _sm
+	# A gesture (a nod, a wave) over whatever the body is doing: Godot's
+	# OneShot, filtered to the spine, neck, head and arms, on top of the
+	# state machine, so the legs keep their own clip under it.
+	var top := AnimationNodeBlendTree.new()
+	top.add_node("sm", _sm)
+	_gesture = AnimationNodeAnimation.new()
+	top.add_node("gesture", _gesture)
+	top.add_node("gscale", AnimationNodeTimeScale.new())
+	top.connect_node("gscale", 0, "gesture")
+	var shot := AnimationNodeOneShot.new()
+	shot.fadein_time = 0.15
+	shot.fadeout_time = 0.2
+	shot.filter_enabled = true
+	for b in UPPER + ARMS:
+		shot.set_filter_path(NodePath("%GeneralSkeleton:" + b), true)
+	top.add_node("shot", shot)
+	top.connect_node("shot", 0, "sm")
+	top.connect_node("shot", 1, "gscale")
+	top.connect_node("output", 0, "shot")
+	tree_root = top
+	_at = "parameters/sm/"
 	# The moves themselves: the same shared libraries the player holds.
 	for lib in player.get_animation_library_list():
 		add_animation_library(lib, player.get_animation_library(lib))
@@ -213,12 +207,12 @@ func play(clip: String, rate := 1.0, hold := false, phase := -1.0, repeat := fal
 	if dead() or not has_animation(clip):
 		return 0.0
 	var length := get_animation(clip).length / maxf(rate, 0.01)
-	# v3: down low and asked a standing move: up first, through Getting_Up; the
+	# Down low and asked a standing move: up first, through Getting_Up; the
 	# move waits (as a wish) until they stand, and starts from the rest stance.
 	# The rise by the posture (people.json rise): off a bench Sitting_Exit, off the back Getting_Up (Mixamo's rise
 	# from lying flat: after a kneel or a seat on the ground it read as a body on the cobbles, legs in the air), from
 	# a kneel none (the crossfade brings them up).
-	var rise := _rise_from(_clip) if v3 and is_low() else ""
+	var rise := _rise_from(_clip) if is_low() else ""
 	if rise != "" and not clip in LOW and not clip in WALKS and not clip in RUNS and clip != rise \
 			and not clip.begins_with("Getting_Up") and not is_once(clip):
 		play(rise)
@@ -245,11 +239,11 @@ func play(clip: String, rate := 1.0, hold := false, phase := -1.0, repeat := fal
 			_travel("rest")
 		_clip = String(_legs["stand"].animation)
 		return length
-	# A repeating standing move asked on the move waits until they stop. In v2
-	# that holds whatever stands now: a body still carried along (avoidance
+	# A repeating standing move asked on the move waits until they stop. That
+	# holds whatever stands now: a body still carried along (avoidance
 	# pushing, arriving) walks, it never glides in a standing pose.
 	var on_move := _pace > MOVING and not _mounted()
-	if not (hold or (is_once(clip) and not repeat)) and on_move and (_now() == "rest" or (v2 and _now().begins_with("loop"))):
+	if not (hold or (is_once(clip) and not repeat)) and on_move and (_now() == "rest" or _now().begins_with("loop")):
 		_wish = clip
 		if _now() != "rest":
 			_travel("rest")
@@ -306,39 +300,35 @@ func track(delta: float) -> void:
 		return
 	_kneel(body, delta)
 	var at := body.global_position
-	var now_pace := 0.0  # v2: the ground covered this very frame, uneased
+	var now_pace := 0.0  # the ground covered this very frame, uneased
 	if _last != Vector3.INF and not _mounted():
 		var flat := Vector2(at.x - _last.x, at.z - _last.z).length() / delta
-		if v2:
-			_refit(body)
-			now_pace = flat
-		# v2 eases quicker: a walk starting is in the legs within a few frames, not a third of a second.
-		_pace = lerpf(_pace, flat, minf(1.0, delta * (20.0 if v2 else 8.0)))
+		_refit(body)
+		now_pace = flat
+		# It eases quickly: a walk starting is in the legs within a few frames, not a third of a second.
+		_pace = lerpf(_pace, flat, minf(1.0, delta * 20.0))
 	_last = at
-	if v2:
-		if _mounted():
-			_yaw = INF  # a rider faces as the horse does; picked up afresh on foot
-		else:
-			_face(body, delta)
-	# v2: once moving, below walking pace the walk plays whole at a slower cadence
+	if _mounted():
+		_yaw = INF  # a rider faces as the horse does; picked up afresh on foot
+	else:
+		_face(body, delta)
+	# Once moving, below walking pace the walk plays whole at a slower cadence
 	# (never half stance, half walk at full cadence: short quick sliding steps).
 	var walk := _leg_pace("walk")
-	var slow := v2 and _pace > walk * 0.12 and _pace < walk * STEP_CEIL
+	var slow := _pace > walk * 0.12 and _pace < walk * STEP_CEIL
 	set(_at + "rest/feet/blend_position", walk if slow else _pace)
 	var now := _now()
 	var going := _pace > MOVING or now_pace > MOVING
 	if going and now.begins_with("loop"):
-		_for += delta
-		# v2: a body covering ground walks at once; a standing move never glides along.
-		if _for > SETTLE or v2:
-			_wish = _clip
-			_for = 0.0
-			_travel("rest")
-			if v2 and _carried(_wish):
-				# The load stays in the arms over the walking legs.
-				if String(_carry.animation) != _wish:
-					_assign(_carry, _wish, Animation.LOOP_LINEAR, randf())
-				set(_at + "rest/mix/blend_amount", 1.0)
+		# A body covering ground walks at once; a standing move never glides along.
+		_wish = _clip
+		_for = 0.0
+		_travel("rest")
+		if _carried(_wish):
+			# The load stays in the arms over the walking legs.
+			if String(_carry.animation) != _wish:
+				_assign(_carry, _wish, Animation.LOOP_LINEAR, randf())
+			set(_at + "rest/mix/blend_amount", 1.0)
 	elif not going and now == "rest" and _wish != "":
 		_for += delta
 		if _for > SETTLE:
@@ -353,7 +343,7 @@ func track(delta: float) -> void:
 		speed = maxf(1.0, _pace / _leg_pace("run"))
 		if slow:
 			speed = maxf(STEP_FLOOR, _pace / walk)
-		elif v2 and _pace > walk and _pace < _leg_pace("run"):
+		elif _pace > walk and _pace < _leg_pace("run"):
 			speed = _pace / _between(_pace)
 	# What's in hand goes with the move (weapons.gd CLIP_TOOLS): a bowl while
 	# drinking, a basket while carrying, nothing once the move is over.
@@ -364,16 +354,16 @@ func track(delta: float) -> void:
 ## frame, and the moment a move is asked for (people.gd), so a hand is never
 ## empty while the move that needs it plays.
 func sync_held() -> void:
-	var moving := errand_load if v3 and errand_load != "" else held_clip()  # v3: the errand's load, whatever the body plays
+	var moving := errand_load if errand_load != "" else held_clip()  # the errand's load, whatever the body plays
 	if moving != _held_for and get_parent() is Node3D:
 		_held_for = moving
 		Weapons.hold_for(get_parent(), moving)
 
 
 ## The move whose hands count: a load carried over walking legs, or the move now playing.
-## A load carried over walking legs: CARRIES, and in v2 the barrow pushed too.
+## A load carried over walking legs: CARRIES, and the barrow pushed.
 func _carried(clip: String) -> bool:
-	return clip in CARRIES or (v2 and clip == "Wheelbarrow")
+	return clip in CARRIES or clip == "Wheelbarrow"
 
 
 func held_clip() -> String:
@@ -413,7 +403,7 @@ func _travel(st: String) -> void:
 	_to = st
 
 
-## v2: the body turns toward where its mover set it facing, at a person's rate.
+## the body turns toward where its mover set it facing, at a person's rate.
 ## Movers keep setting rotation.y as they always have; that's the wish.
 ## Facing is kept in the world, so whatever turns the body (its mover, or what
 ## carries it: a traveller's path round a bend) it turns at that rate.
@@ -494,7 +484,7 @@ func add_moves(lib_name: String, lib: AnimationLibrary) -> void:
 
 func _assign(n: AnimationNodeAnimation, clip: String, loop: int, phase: float) -> void:
 	n.animation = clip
-	if v2 and _feet and (n == _legs.get("walk") or n == _legs.get("run")):
+	if _feet and (n == _legs.get("walk") or n == _legs.get("run")):
 		# The legs' point for this way of going moves to its own pace (its stride on these legs).
 		_feet.set_blend_point_position(1 if n == _legs["walk"] else 2, _leg_pace("walk" if n == _legs["walk"] else "run"))
 	if not has_animation(clip):
@@ -510,15 +500,13 @@ func _assign(n: AnimationNodeAnimation, clip: String, loop: int, phase: float) -
 
 
 ## The pace the legs' walk or run plays at speed 1, in world units a second: in
-## v2 its clip's stride on this body's legs (strides) at the skeleton's size in
-## the world, the old guesses otherwise.
+## its clip's stride on this body's legs (strides) at the skeleton's size in
+## the world.
 func _leg_pace(leg: String) -> float:
-	if not v2:
-		return WALK_PACE if leg == "walk" else RUN_PACE
 	return float(strides.get(String(_legs[leg].animation), strides.get("Walk" if leg == "walk" else "Running", 0.0))) * _sk_scale
 
 
-## v2: the ground the legs cover a second at speed 1 part way from the walk to
+## the ground the legs cover a second at speed 1 part way from the walk to
 ## the run. The blend keeps the two in step (SYNC_MODE_CYCLIC_MUTABLE): one
 ## cycle as long as the blend of theirs, each step as long as the blend of
 ## theirs; so its pace is the blended step over the blended cycle, not the
@@ -532,7 +520,7 @@ func _between(pace: float) -> float:
 	return maxf(lerpf(pw * lw, pr * lr, f) / lerpf(lw, lr, f), 0.0001)
 
 
-## v2: the legs' walk and run points at this body's own stride in the world,
+## the legs' walk and run points at this body's own stride in the world,
 ## set again whenever the skeleton's size there changes (made, grown, carried
 ## by a scaled holder).
 func _refit(body: Node3D) -> void:
@@ -549,13 +537,13 @@ func _refit(body: Node3D) -> void:
 	_feet.set_blend_point_position(2, _leg_pace("run"))
 
 
-## v2: a gesture (a nod, a wave, a bow of the head) over whatever the legs are
+## a gesture (a nod, a wave, a bow of the head) over whatever the legs are
 ## doing, the upper body only, once. Returns its length at `rate`, or 0.0 when
 ## it doesn't play: v1, an unknown clip, the dead or a rider, or while a blow,
 ## a held pose or a fall owns the whole body. A newer gesture replaces one
 ## still playing.
 func gesture(clip: String, rate := 1.0) -> float:
-	if not v2 or _gesture == null or not has_animation(clip) or dead() or _mounted() or body_busy():
+	if _gesture == null or not has_animation(clip) or dead() or _mounted() or body_busy():
 		return 0.0
 	_assign(_gesture, clip, Animation.LOOP_NONE, 0.0)
 	set("parameters/gscale/scale", rate)
