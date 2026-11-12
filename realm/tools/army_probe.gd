@@ -47,7 +47,10 @@ extends SceneTree
 ##     set out): the real scenes.gd, set up as main sets it up (terrain, roads), gives the Mover a route at once;
 ##     scenes.gd sets its nav's terrain and roads where it gets them, not lazily in stand();
 ## 15. an arrow at a fallen man (the reign replay: scenes.gd's volley read a freed mark's position): an archer draws
-##     on a mark that is freed before he looses; the shot finds another mark or none, and no freed node is read.
+##     on a mark that is freed before he looses; the shot finds another mark or none, and no freed node is read;
+## 16. the map's host marks wait for the land (the reign replay: 72 errors, map_marks drew a host's standard through
+##     terrain.tile_at before the land was laid): with a host in the field and the land not yet built, map_marks.gd
+##     reads no tile.
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
@@ -87,8 +90,54 @@ func _run() -> void:
 	await _pick_by_body()
 	_one_body_one_finish()
 	await _route_before_any_scene()
+	await _marks_wait_for_land()
 	print("ARMY PROBE PASS" if _fails == 0 else "ARMY PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
+
+
+## 16. The map's host marks before the land is laid: a stand-in main far out (the marks show), a host in the field,
+## and land that isn't built yet and says so when anything reads it.
+func _marks_wait_for_land() -> void:
+	var t := GDScript.new()
+	t.source_code = '''extends Node
+class Land extends RefCounted:
+	var built := false
+	var width := 0
+	var read := 0
+	func world_pos(tx: float, ty: float) -> Vector3:
+		read += 1
+		return Vector3(tx, 0, ty)
+	func height_at(_x: float, _z: float) -> float:
+		read += 1
+		return 0.0
+class Rig extends RefCounted:
+	var distance := 40.0
+class Realm extends RefCounted:
+	func get_var(name: StringName, d = null, _c := true):
+		if name == &"armies":
+			return [{"owner": 1, "x": 3.0, "y": 3.0, "companies": 2}]
+		return d
+class Aw extends RefCounted:
+	var realm := Realm.new()
+var terrain := Land.new()
+var rig := Rig.new()
+var labels := CanvasLayer.new()
+var awareness := Aw.new()
+'''
+	t.reload()
+	var main := Node.new()
+	main.set_script(t)
+	root.add_child(main)
+	var cam := Camera3D.new()
+	main.add_child(cam)
+	cam.current = true
+	var mm: CanvasLayer = load("res://scripts/map_marks.gd").new()
+	mm.main = main
+	main.add_child(mm)
+	await process_frame
+	mm.call("_draw_marks")
+	_check(int(main.terrain.read) == 0, "the map's host marks read no land before it is laid (%d reads)" % int(main.terrain.read))
+	main.queue_free()
 
 
 ## Counts the engine's errors about a freed object (a lambda or tween reading a node already gone).

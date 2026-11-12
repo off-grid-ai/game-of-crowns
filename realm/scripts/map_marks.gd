@@ -55,6 +55,8 @@ func _draw_marks() -> void:
 	var cam := get_viewport().get_camera_3d()
 	if a <= 0.01 or cam == null:
 		return
+	if main.terrain == null or not main.terrain.built:
+		return  # the land isn't laid yet: nothing stands on it to be marked
 	var aw: Object = main.get("awareness")
 	var view := Rect2(Vector2.ZERO, _canvas.size).grow(60.0)
 	for r in MapLook.marches(aw):
