@@ -19,6 +19,10 @@ check() {  # rule, pattern, files exempt (regex on the path)
     grep -nE "$pat" $hit | sed "s#^#$hit:#;s#\$#   <- $rule#"
     fail=1
   done
+  # A known breach that's gone comes off the list in the same change: the list only shrinks.
+  for f in $(grep -E ":$rule\$" $known 2>/dev/null | cut -d: -f1); do
+    if [[ ! -f $f ]] || ! grep -qE "$pat" $f; then echo "$f:$rule   <- fixed: take it off $known"; fail=1; fi
+  done
 }
 check "one-way-to-move" 'tween_property\([^,]*, *"(global_)?position"|PathFollow3D\.new\(\)' \
   'scripts/(mover|intro|news_chips)\.gd'  # intro and news chips: screen-space UI slides, not travel

@@ -303,7 +303,6 @@ func _ready() -> void:
 	bridge.active = _shot.has("path") and not _shot.has("title")
 	add_child(bridge)
 	bridge.map_loaded.connect(_on_map)
-	over._overview_setup()
 	bridge.chronicle_added.connect(ui.add_chronicle)
 	# The realm's sound: ambience from the camera, stingers from the chronicle.
 	sound = preload("res://scripts/soundscape.gd").new()
@@ -318,6 +317,7 @@ func _ready() -> void:
 	awareness.bridge = bridge  # the store takes /world itself; the view redraws when it has (synced)
 	add_child(awareness)
 	awareness.synced.connect(_on_synced)
+	over._overview_setup()  # its map redraws on the store's synced
 	# Town life's one director (town_scenes.gd): it casts every town scene's people from realm/data/town_scenes.json.
 	var town_scenes := preload("res://scripts/town_scenes.gd").new(self)
 	add_child(town_scenes)
@@ -380,6 +380,7 @@ func _ready() -> void:
 	ui.tithe_changed.connect(func(r): bridge.set_tithe(r))
 	title = preload("res://scripts/title.gd").new()
 	title.bridge = bridge
+	title.store = awareness
 	lore.fetch = bridge.lore
 	lore.fetch_map = bridge.lore_map
 	lore.fetch_written = bridge.lore_written

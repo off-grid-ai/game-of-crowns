@@ -17,12 +17,10 @@ scripts/main.gd:raw-world
 scripts/minimap.gd:raw-world
 scripts/news.gd:raw-world
 scripts/npc_mind.gd:cross-mind-write
-scripts/overview.gd:raw-world
 scripts/roads.gd:raw-world
 scripts/scenes.gd:raw-world
 scripts/shot_harness.gd:raw-world
 scripts/team_colour.gd:raw-world
-scripts/title.gd:raw-world
 scripts/top_bar.gd:raw-world
 scripts/town_scenes.gd:cross-mind-write
 scripts/towns.gd:raw-world

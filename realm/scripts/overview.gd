@@ -40,7 +40,7 @@ func _overview_setup() -> void:
 	main.rig.overview.connect(_overview_open)
 	_over_map.zoomed_past.connect(func(c: Vector2): _overview_close(c))
 	_over_map.town_pressed.connect(func(t: Dictionary): _overview_close(Vector2(float(t["x"]), float(t["y"])), int(t.get("size", 4))))
-	main.bridge.world_updated.connect(func(_w):
+	main.awareness.synced.connect(func():
 		if _over_open:
 			_mirror()
 			main.bridge.realm_map(func(d): _over_map.data = d))

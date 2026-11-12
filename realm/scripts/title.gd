@@ -13,6 +13,7 @@ const MUTED := Color(0.72, 0.66, 0.56)
 const GOLD := Color(0.86, 0.68, 0.32)
 
 var bridge: Node
+var store: Node  # awareness.gd: the realm as the view knows it (the reign, for Continue)
 var _root: Control
 var _body: VBoxContainer
 var _logo: TextureRect
@@ -96,7 +97,7 @@ func _ready() -> void:
 	col.add_child(_body)
 	_here = show_main
 	show_main()
-	bridge.world_updated.connect(_on_world)
+	store.synced.connect(_on_synced)
 
 
 var _on_main := true
@@ -104,8 +105,8 @@ var _scrim: ColorRect  # darkens the painting behind the forms
 
 
 ## The menu's first page shows "Continue" once the realm has reported in.
-func _on_world(w) -> void:
-	if visible and _on_main and not _has_continue and w is Dictionary and not w.get("reign", {}).is_empty():
+func _on_synced() -> void:
+	if visible and _on_main and not _has_continue and not (store.rec("reign", {}) as Dictionary).is_empty():
 		show_main()
 
 
@@ -130,7 +131,7 @@ func _back() -> void:
 	if not _trail.is_empty():
 		_here = _trail.pop_back()
 		_here.call()
-	elif bridge.world.get("reign", {}).is_empty():
+	elif (store.rec("reign", {}) as Dictionary).is_empty():
 		# No realm to return to yet: the main menu is the floor.
 		if _here != show_main:
 			_here = show_main
@@ -157,7 +158,7 @@ func show_main() -> void:
 	if _scrim:
 		_scrim.visible = false
 	_on_main = true
-	var reign: Dictionary = bridge.world.get("reign", {})
+	var reign: Dictionary = store.rec("reign", {})
 	_has_continue = not reign.is_empty()
 	if not reign.is_empty():
 		var label := "Continue" if reign.get("test", false) else "Continue  ·  %s" % reign.get("name", "the realm")  # a run of ours shows no name
@@ -1389,19 +1390,25 @@ func _wait_for(id: String, text: String) -> void:
 	if id == "":
 		return
 	_body.add_child(_label("The land is being laid out and the houses are taking their seats.", 15, MUTED))
-	if not bridge.world_updated.is_connected(_arrived):
-		bridge.world_updated.connect(_arrived)
+	if not store.synced.is_connected(_arrived):
+		store.synced.connect(_arrived)
 	# If the realm never reports, don't strand the player here.
 	get_tree().create_timer(120.0).timeout.connect(func():
 		if visible and _waiting_for == id:
-			_arrived({"reign": {"id": id}}))
+			_arrive(id))
 
 
-func _arrived(w: Dictionary) -> void:
-	if _waiting_for == "" or String(w.get("reign", {}).get("id", "")) != _waiting_for:
+## The store has a new /world: is it the realm we're waiting for?
+func _arrived() -> void:
+	_arrive(String((store.rec("reign", {}) as Dictionary).get("id", "")))
+
+
+func _arrive(rid: String) -> void:
+	if _waiting_for == "" or rid != _waiting_for:
 		return
 	_waiting_for = ""
-	bridge.world_updated.disconnect(_arrived)
+	if store.synced.is_connected(_arrived):
+		store.synced.disconnect(_arrived)
 	_close()
 
 
