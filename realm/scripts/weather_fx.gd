@@ -288,8 +288,9 @@ static func _cut_out(g: MultiMeshInstance3D) -> bool:
 	return false
 
 
-## Puddles round a town's square and mud along its roads near it: decals (Godot's own), dark and glossy,
-## the same spots every time for the same town.
+## Puddles and mud near a town after rain: decals (Godot's own), the same spots every time for the same town. Never on
+## laid stone (round 12: dark blobs on Kingsmere's setts read as stray shadows): puddles lie in the lowest dirt spots
+## and in the gutter just off the paving's edge, mud only on dirt roads clear of where they meet the paving.
 func _puddles(id: int, root: Node3D, k: Dictionary, main: Node) -> Node3D:
 	var n := Node3D.new()
 	n.name = "Puddles"
@@ -298,31 +299,57 @@ func _puddles(id: int, root: Node3D, k: Dictionary, main: Node) -> Node3D:
 	r.seed = hash(id) + 77
 	var terrain: Node = main.get("terrain")
 	var roads: Node = main.get("roads")
-	var c := root.global_position
-	var ring: Array = k.get("ring", [0.35, 1.6])
+	var towns: Node = main.get("towns")
+	var paved := func(p: Vector3, margin: float) -> bool:
+		return towns != null and towns.has_method("_paved_at") and bool(towns._paved_at(root, root.to_local(p), margin))
+	var dirt := func(p: Vector3) -> bool:
+		return roads != null and roads.has_method("on_path") and bool(roads.on_path(p))
+	var height := func(p: Vector3) -> float:
+		return float(terrain.height_at(p.x, p.z)) if terrain and terrain.has_method("height_at") else p.y
+	for s in spots(root.global_position, k, r, paved, dirt, height):
+		_decal(n, s[0], float(s[1]), r, bool(s[2]), terrain)
+	return n
+
+
+## Where a town's puddles and mud lie (weather.json puddles), as [world spot, size, mud] rows. paved(spot, margin) is the
+## town's laid stone (towns.gd _paved_at, its one owner), dirt(spot) a dirt road (roads.gd on_path), height(spot) the
+## ground's. Puddles: of `tries` candidates per puddle in the ring round the heart, those wholly off the paving and on a
+## dirt road or in its gutter (within `gutter` of the paving's edge), lowest first (water runs down). Mud: on dirt roads
+## every mud_every, never within mud_clear of the paving.
+static func spots(c: Vector3, k: Dictionary, r: RandomNumberGenerator, paved: Callable, dirt: Callable, height: Callable) -> Array:
+	var out: Array = []
+	var ring: Array = k.get("ring", [0.35, 3.2])
 	var sz: Array = k.get("size", [0.12, 0.3])
-	for i in int(k.get("count", 14)):
+	var gutter := float(k.get("gutter", 0.35))
+	var cands: Array = []
+	for i in int(k.get("count", 14)) * int(k.get("tries", 6)):
 		var a := r.randf() * TAU
 		var p := c + Vector3(cos(a), 0, sin(a)) * r.randf_range(float(ring[0]), float(ring[1]))
-		_decal(n, p, r.randf_range(float(sz[0]), float(sz[1])), r, false, terrain)
-	# Mud: along whatever road passes near, every mud_every, out to the ring's edge and a little past.
-	if roads and roads.has_method("on_path"):
-		var msz: Array = k.get("mud_size", [0.14, 0.24])
-		var left := int(k.get("mud", 26))
-		var step := float(k.get("mud_every", 0.22))
-		var rad := float(ring[0]) + step
-		while left > 0 and rad < float(ring[1]) * 2.2:
-			var around := maxi(6, int(TAU * rad / step))
-			for j in around:
-				var a := TAU * j / around
-				var p := c + Vector3(cos(a), 0, sin(a)) * rad
-				if roads.on_path(p) and r.randf() < 0.6:
-					_decal(n, p, r.randf_range(float(msz[0]), float(msz[1])), r, true, terrain)
-					left -= 1
-					if left <= 0:
-						break
-			rad += step * 2.0
-	return n
+		var size := r.randf_range(float(sz[0]), float(sz[1]))
+		if paved.call(p, size * 0.5) or not (dirt.call(p) or paved.call(p, size * 0.5 + gutter)):
+			continue
+		cands.append([p, size, float(height.call(p))])
+	cands.sort_custom(func(x: Array, y: Array) -> bool: return float(x[2]) < float(y[2]))
+	for cd in cands.slice(0, int(k.get("count", 14))):
+		out.append([cd[0], cd[1], false])
+	var msz: Array = k.get("mud_size", [0.14, 0.24])
+	var clear := float(k.get("mud_clear", 0.3))
+	var left := int(k.get("mud", 26))
+	var step := float(k.get("mud_every", 0.22))
+	var rad := float(ring[0]) + step
+	while left > 0 and rad < float(ring[1]) * 2.2:
+		var around := maxi(6, int(TAU * rad / step))
+		for j in around:
+			var a := TAU * j / around
+			var p := c + Vector3(cos(a), 0, sin(a)) * rad
+			var size := r.randf_range(float(msz[0]), float(msz[1]))
+			if dirt.call(p) and not paved.call(p, size * 0.5 + clear) and r.randf() < 0.6:
+				out.append([p, size, true])
+				left -= 1
+				if left <= 0:
+					break
+		rad += step * 2.0
+	return out
 
 
 func _decal(parent: Node3D, p: Vector3, size: float, r: RandomNumberGenerator, mud: bool, terrain: Node) -> void:
@@ -344,7 +371,7 @@ func _decal(parent: Node3D, p: Vector3, size: float, r: RandomNumberGenerator, m
 static var _blobs := {}
 
 
-## A soft irregular blob (Godot's own noise): the puddle's dark water, the mud's wet brown, and for each its
+## A soft irregular blob (Godot's own noise): the puddle's wet sheen, the mud's wet brown, and for each its
 ## ORM (low roughness where it's water: it glints).
 static func _blob(key: String) -> Texture2D:
 	if _blobs.has(key):
@@ -359,8 +386,9 @@ static func _blob(key: String) -> Texture2D:
 			var dy := (y - 31.5) / 31.5
 			var edge := 1.0 - sqrt(dx * dx + dy * dy) + noise.get_noise_2d(x, y) * 0.55
 			var a := clampf(smoothstep(0.0, 0.25, edge), 0.0, 1.0)
-			if key == "puddle":
-				img.set_pixel(x, y, Color(0.09, 0.09, 0.08, a * 0.75))
+			if key == "puddle":  # wet gloss over the ground, a little darker, never a flat dark blob (weather.json puddles.water)
+				var w: Array = Data.value("weather", "puddles.water", [0.3, 0.32, 0.35, 0.4])
+				img.set_pixel(x, y, Color(float(w[0]), float(w[1]), float(w[2]), a * float(w[3])))
 			elif key == "mud":
 				img.set_pixel(x, y, Color(0.2, 0.15, 0.1, a * 0.7))
 			else:  # ORM: occlusion 1, roughness low in water, a little higher in mud, metal 0
