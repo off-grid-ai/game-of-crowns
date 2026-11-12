@@ -53,7 +53,10 @@ extends SceneTree
 ##     reads no tile;
 ## 17. the film waits for the lines to meet (GoC's battle take: a fixed `wait 20` filmed the last of the walk-in and the
 ##     hold, and no meeting read): army_field.gd says when its lines have met (met()), and autoplay has a `clash`
-##     step that waits on it, as `rout` waits on the first break.
+##     step that waits on it, as `rout` waits on the first break;
+## 18. a company's figure keeps up with its company (READY line 10, the reign replay: 310 off-tile faults in 20
+##     seasons, the lag growing): sent any distance, it arrives within the season, at its steady march when that
+##     does, running (a forced march) when it must go faster (units.gd march_pace).
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
@@ -95,8 +98,26 @@ func _run() -> void:
 	await _route_before_any_scene()
 	await _marks_wait_for_land()
 	_film_waits_for_the_clash()
+	_figure_keeps_up()
 	print("ARMY PROBE PASS" if _fails == 0 else "ARMY PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
+
+
+## 18. A figure keeps up: the pace units.gd marches a company's figure at, for a short move and a long one.
+func _figure_keeps_up() -> void:
+	var U: GDScript = load("res://scripts/units.gd")
+	var has := U.get_script_method_list().any(func(m): return m["name"] == "march_pace")
+	_check(has, "units.gd says the pace a company's figure marches at (march_pace)")
+	if not has:
+		return
+	var season := 40.0
+	var cap := float(U.get("MARCH_SPEED"))
+	var short: Dictionary = U.call("march_pace", 4.0, season)
+	var long: Dictionary = U.call("march_pace", 30.0, season)
+	_check(4.0 / float(short["speed"]) <= season and not bool(short["run"]) and float(short["speed"]) <= cap,
+		"one tile: it walks, at no more than its steady march, and arrives within the season (%s)" % str(short))
+	_check(30.0 / float(long["speed"]) <= season and bool(long["run"]),
+		"seven tiles' worth of road: it runs, and arrives within the season (%s)" % str(long))
 
 
 ## 17. The film waits for the clash: a field battle whose sides are two stand-in hosts, first walking in, then one

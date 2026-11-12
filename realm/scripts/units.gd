@@ -219,8 +219,9 @@ func _stood(f: Dictionary, at: Vector3) -> Vector3:
 
 
 ## A company marches to its new place: the navigation's route, smoothed as a road is, followed by its Mover across
-## the whole turn (armies are always visibly on the move), never faster than a soldier's steady march (a sprint
-## reads as fleeing). A beast goes the same way, at its own pace.
+## the whole turn (armies are always visibly on the move), at its steady march, or running when the march can't get
+## it there within the season (march_pace: a figure never stands tiles from its company). A beast goes the same way,
+## at its own pace.
 func _march(f: Dictionary) -> void:
 	var n: Node3D = f["node"]
 	var mo: Node = Mover.of(n)
@@ -235,9 +236,18 @@ func _march(f: Dictionary) -> void:
 		if length < 0.01:
 			return  # already there: he stands
 		road.bake_interval = 0.05
-		mo.speed = minf(length / maxf(2.0, Awareness.season_seconds * 0.9), MARCH_SPEED)
-		mo.clip = "" if f.get("horse", false) else ("Injured_Walk" if f.get("hurt", false) else "Walk")
+		var pace := march_pace(length, Awareness.season_seconds)
+		mo.speed = float(pace["speed"])
+		mo.clip = "" if f.get("horse", false) else ("Injured_Walk" if f.get("hurt", false) else ("Running" if pace["run"] else "Walk"))
 		mo.follow(road.get_baked_points()))
+
+
+## The pace a company's figure goes `length` world units at, so it is there within the season (Freeciv has already
+## moved the company): across the whole season at no more than its steady march (MARCH_SPEED) when that does it,
+## else a forced march, running at the pace that gets it there. {speed, run}.
+static func march_pace(length: float, season: float) -> Dictionary:
+	var need := length / maxf(2.0, season * 0.9)
+	return {"speed": need, "run": need > MARCH_SPEED}
 
 
 ## Through a town with no walk map the way is a straight line: a marcher keeps off its buildings as he goes.
