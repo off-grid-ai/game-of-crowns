@@ -1,6 +1,29 @@
 {
- "_": "The cavalry (army.json units.horse): one Meshy model of the knight on his barded warhorse (docs/art/army/knight_mounted2_side.png, drawn over the CC0 horse rig's own side view so its legs match), fitted to that rig by tools/beast_rig.py (fit y: one even scale from its length) and kept in ~/code/goc-kits/meshy/army/mounted2/rigged with its paint and house-colour mask (rig_unit.py, units.mounted). The rider rides with the horse in every gait. Baked: Blender -b --python realm/tools/vat_bake.py -- ~/code/goc-kits/meshy/army/mounted2/rigged/mounted.glb realm/assets/armies/cavalry realm/tools/rig/cavalry.json, then albedo.png and mask.png copied beside it.",
- "meshes": ["Mesh_0"],
+ "_": "The cavalry (army.json units.horse): one Meshy model of the knight on his barded warhorse (docs/art/army/knight_mounted2_side.png, drawn over the CC0 horse rig's own side view), fitted to that rig by tools/beast_rig.py (fit y: one even scale from its length). Below the caparison's hem its legs are the rig's own horse legs with their own weights (tools/rig/mount_legs.py), so they bend at the true knee and hock in every gait; they wear the model's bay coat and hooves. Kept in ~/code/goc-kits/meshy/army/mounted2/rigged (mounted_legs.glb, albedo.png, mask.png). Baked: Blender -b --python realm/tools/vat_bake.py -- ~/code/goc-kits/meshy/army/mounted2/rigged/mounted_legs.glb realm/assets/armies/cavalry realm/tools/rig/cavalry.json, then albedo.png and mask.png copied beside it.",
+ "meshes": [
+  "Mesh_0"
+ ],
  "weld": true,
- "clips": [["idle", true], ["walk", true], ["trot", true], ["canter", true], ["gallop", true]]
+ "clips": [
+  [
+   "idle",
+   true
+  ],
+  [
+   "walk",
+   true
+  ],
+  [
+   "trot",
+   true
+  ],
+  [
+   "canter",
+   true
+  ],
+  [
+   "gallop",
+   true
+  ]
+ ]
 }
