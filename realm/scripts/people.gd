@@ -742,6 +742,16 @@ func _finish(person: Node3D, skeleton: Skeleton3D, rng: RandomNumberGenerator, r
 			mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 	_shape(skeleton, build, "" if person.has_meta("body") and body_info(String(person.get_meta("body"))).get("cast", false) else age)  # a cast child is drawn a child already
 	var height: float = rng.randf_range(0.96, 1.04) * {"child": 0.72, "young": 0.98, "adult": 1.0, "elder": 0.96}[age]
+	# people.json build (Mac 2026-11-12: "the NPCs look like they are on steroids"): a woman a little shorter than a
+	# man, and a Meshy cast body slimmed across the shoulders and chest (its upper arms stood 26% of its height apart,
+	# a man's about 20%): the skeleton narrowed in x and z, the person's own scale left even for everything that reads it.
+	var B: Dictionary = Data.value("people", "build", {})
+	if gender == "female":
+		height *= float(B.get("female", 1.0))
+	var cast_body := person.has_meta("body") and bool(body_info(String(person.get_meta("body"))).get("cast", false))
+	var slim := float(B.get("slim_cast", 1.0)) if cast_body else float(B.get("slim_kit", 1.0))
+	if slim != 1.0:
+		skeleton.scale = Vector3(skeleton.scale.x * slim, skeleton.scale.y, skeleton.scale.z * slim)
 	person.scale = Vector3.ONE * height * k * S * READ
 	person.set_meta("age", age)
 	if role in ["peasant", "townsfolk", "clergy", "noble"]:
