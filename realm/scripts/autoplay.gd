@@ -922,14 +922,11 @@ func _key(code: int, down: bool) -> void:
 	_feed(e)
 
 
-## Why a town's walk map answers no paths: its open-ground source baked again here, synchronously, with and without
+## Why a town's walk map answers no paths: its open ground baked again by town_nav's own bake, synchronously, with and without
 ## the water town_nav cuts out (its _water), and with nothing cut out at all, each bake's polygon count; the
 ## largest obstruction outlines (area, middle). A bake of 0 polygons is an empty map: closest() answers (0, 0).
 func _nav_why(nav, root: Node3D) -> void:
 	var reach := float(root.get_meta("reach", 6.0))
-	var ring := PackedVector2Array()
-	for i in 24:
-		ring.append(Vector2.from_angle(TAU * i / 24) * reach)
 	var blocks: Array = nav.blocks_of(root, main.terrain)
 	var water: Array = nav._water(root.position, reach)
 	var big: Array = []
@@ -945,15 +942,7 @@ func _nav_why(nav, root: Node3D) -> void:
 	big.sort_custom(func(x, y): return x[0] > y[0])
 	var counts := []
 	for set in [[blocks + water, "all"], [blocks, "no water"], [[], "nothing cut"]]:
-		var np := NavigationPolygon.new()
-		np.agent_radius = 0.035
-		np.cell_size = 0.01
-		var src := NavigationMeshSourceGeometryData2D.new()
-		src.add_traversable_outline(ring)
-		for o in set[0]:
-			src.add_obstruction_outline(o)
-		NavigationServer2D.bake_from_source_geometry_data(np, src)
-		counts.append("%s %d" % [set[1], np.get_polygon_count()])
+		counts.append("%s %d" % [set[1], (nav.bake_open(reach, set[0]) as NavigationPolygon).get_polygon_count()])  # town_nav's own bake
 	_note("  nav why: reach %.1f, %d blocks, %d water outlines; open ground baked: %s; largest outlines: %s" % [reach, blocks.size(), water.size(), ", ".join(counts),
 		", ".join(big.slice(0, 4).map(func(b): return "%.2f at (%.1f, %.1f) %d pts%s" % [b[0], b[1].x, b[1].y, b[2], " water" if b[3] else ""]))])
 
