@@ -263,15 +263,22 @@ func _block(parts: Array, at: Vector3, wc: int, dc: int, storeys: int, rng: Rand
 		for side in 4:
 			_merlons(parts, Transform3D(Basis(Vector3.UP, SIDES[side]), at + Basis(Vector3.UP, SIDES[side]) * Vector3(0, 0, hd if side % 2 == 0 else hw)), wc if side % 2 == 0 else dc, top)
 	if opts.get("roof", false):
-		# A tiled roof over the leads, set in from the parapet: the kit's roof two cells smaller, gabled.
-		var rc := maxi(wc - 2, 2)
+		# A tiled roof over the leads, set in from the parapet, gabled to the town (data/castle.json keep_roof: in,
+		# cells in from the walls; lift, metres over the leads). Two cells in, the keep's roof hid behind its
+		# parapet and the keep read as a flat slab (round 3); one cell in, its red gable shows over the merlons.
+		var kr: Dictionary = preload("res://scripts/data.gd").value("castle", "keep_roof", {})
+		var rc := maxi(wc - int(kr.get("in", 2)), 2)
 		var roof := "Roof_RoundTiles_%dx%d" % [rc * 2, rc * 2]
+		var lift := float(kr.get("lift", 0.3))
+		if not ResourceLoader.exists(DIR % roof):
+			rc = maxi(wc - 2, 2)  # the kit has no roof that size: the smaller one, as before
+			roof = "Roof_RoundTiles_%dx%d" % [rc * 2, rc * 2]
 		if ResourceLoader.exists(DIR % roof):
-			parts.append([roof, Transform3D(Basis(), at + Vector3(0, top + 0.3, 0))])
+			parts.append([roof, Transform3D(Basis(), at + Vector3(0, top + lift, 0))])
 			var gable := "Roof_Front_Brick%d" % (rc * 2)
 			if ResourceLoader.exists(DIR % gable):
-				parts.append([gable, Transform3D(Basis(), at + Vector3(0, top + 0.3, rc * CELL / 2.0))])
-				parts.append([gable, Transform3D(Basis(Vector3.UP, PI), at + Vector3(0, top + 0.3, -rc * CELL / 2.0))])
+				parts.append([gable, Transform3D(Basis(), at + Vector3(0, top + lift, rc * CELL / 2.0))])
+				parts.append([gable, Transform3D(Basis(Vector3.UP, PI), at + Vector3(0, top + lift, -rc * CELL / 2.0))])
 
 
 ## The gate's passage through the gatehouse (the front face at +half, the back at -half): stone walls
