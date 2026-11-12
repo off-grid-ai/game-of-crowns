@@ -450,7 +450,7 @@ func _drill(root: Node3D, life: Node3D, center: Vector3, progress: float, color:
 		for i in count:
 			var p := spots[i]
 			p.y = _y(center, p)
-			var s := _townsperson(life, p, "soldier", "Idle", hash(unit) + i, color.lerp(Color.WHITE, 0.35))
+			var s := _townsperson(life, p, "soldier", "Idle", hash(unit) + i, color.lerp(Color.WHITE, float(Data.num("crowd", "posted.lighten", 0.0))))  # the house's colour as the posted guards wear it (round 5: lightened 35%, it read pink)
 			s.rotation.y = atan2(face.x, face.z)
 			if not _mind(s, "bows" if bow else "drill", center):
 				_drill_routine(s, bow, hash(unit) + i)
@@ -1305,11 +1305,16 @@ func _paddock(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: 
 	var middle: Vector3 = sp.get("middle", b["at"])
 	var roam: float = float(b["radius"]) if float(b["radius"]) > 0.0 else Data.num("works", "paddock.roam", 3.5) * Works.S
 	var list: Array = []
+	var gap := Data.num("works", "paddock.gap", 0.45)
 	for i in count:
 		var h: Node3D = Horse.new(rng.randi() % Horse.COATS.size())
-		var a := rng.randf() * TAU
-		var r := sqrt(rng.randf()) * roam * 0.8
-		var at := middle + Vector3(cos(a) * r, 0, sin(a) * r)
+		var at := middle
+		for t in 10:  # each its own patch of grass, a horse's length and more from the rest (round 5: they stood in each other)
+			var a := rng.randf() * TAU
+			var r := sqrt(rng.randf()) * roam * 0.8
+			at = middle + Vector3(cos(a) * r, 0, sin(a) * r)
+			if list.all(func(o: Node3D) -> bool: return Vector2(o.position.x - at.x, o.position.z - at.z).length() >= gap):
+				break
 		h.position = Vector3(at.x, _y(center, at), at.z)
 		h.rotation.y = rng.randf() * TAU
 		h.set_meta("rest", rng.randf_range(0.0, 8.0))
@@ -1959,6 +1964,7 @@ func _square_life(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rn
 	var go := SquareLife.new()
 	go.name = "SquareLife"
 	go.ground = func(q: Vector3) -> float: return _y(center, q)
+	go.blocks = func() -> Array: return _blocked(root, life)  # every building, stall, plinth and table (read once, after the square is set)
 	go.life = life
 	go.rng.seed = rng.randi()
 	life.add_child(go)
@@ -2027,8 +2033,13 @@ func _square_life(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rn
 	var G: Dictionary = Data.value("crowd", "gossip", {})
 	var knot: Array = G.get("knot", [2, 4])
 	for k in n.call("gossip"):
-		var a := atan2(SEEN.x, SEEN.z) + rng.randf_range(-1.4, 1.4)
-		var mid := Vector3(sin(a), 0, cos(a)) * r * rng.randf_range(0.35, 0.75)
+		# Spread round the square's open cobble, each knot in its own arc of it (crowd.json gossip.arc radians either side
+		# of the seen side, reach [nearest, furthest] in square radii; round 5: the knots met in one clump at the heart).
+		var arc := float(G.get("arc", 1.4))
+		var reach: Array = G.get("reach", [0.35, 0.75])
+		var share: float = (k + rng.randf_range(0.2, 0.8)) / maxf(float(n.call("gossip")), 1.0)
+		var a := atan2(SEEN.x, SEEN.z) + lerpf(-arc, arc, share)
+		var mid := Vector3(sin(a), 0, cos(a)) * r * rng.randf_range(float(reach[0]), float(reach[1]))
 		if k < int(G.get("at_well", 0)):
 			# 01-town's women talking at the well's rim, a step toward the square's heart (crowd.json gossip.at_well).
 			mid = well - well.normalized() * float(G.get("well_out", 0.22)) + Vector3(rng.randf_range(-0.06, 0.06), 0, rng.randf_range(-0.06, 0.06))
@@ -2327,10 +2338,33 @@ class SquareLife extends Node:
 		if flat.length() <= near:
 			return false
 		var d := flat.normalized() * minf(pace * delta, flat.length() - near * 0.5)
+		d = _round(n.position, d)
 		n.position += Vector3(d.x, 0, d.y)
 		n.position.y = float(ground.call(n.position))
 		n.rotation.y = lerp_angle(n.rotation.y, atan2(d.x, d.y), minf(1.0, delta * 8.0))
 		return true
+
+	## The step `d` turned aside (up to WIDE either way) so it doesn't walk into a footprint: a stall, a
+	## house, the statue's plinth (round 5: a walker hung half inside it). Already inside one, it walks out.
+	## crowd.json walk_round: off walks straight through, as before.
+	var blocks := Callable()
+	var _blocks: Array = []
+	const WIDE := [0.0, 0.6, -0.6, 1.1, -1.1, 1.6, -1.6]
+	func _round(at: Vector3, d: Vector2) -> Vector2:
+		if not bool(preload("res://scripts/data.gd").value("crowd", "walk_round", true)) or not blocks.is_valid():
+			return d
+		if _blocks.is_empty():
+			_blocks = blocks.call()
+		var here := Vector2(at.x, at.z)
+		var near: Array = _blocks.filter(func(fp): return (fp as PackedVector2Array).size() > 2 and here.distance_to(fp[0]) < 1.5)
+		if near.is_empty() or near.any(func(fp): return Geometry2D.is_point_in_polygon(here, fp)):
+			return d
+		for turn: float in WIDE:
+			var t := d.rotated(turn)
+			var ahead := here + t.normalized() * maxf(t.length(), 0.03)  # a stride's look ahead
+			if not near.any(func(fp): return Geometry2D.is_point_in_polygon(ahead, fp)):
+				return t
+		return Vector2.ZERO  # boxed in: wait a beat
 
 	func _patrol(p: Dictionary, delta: float) -> void:
 		var men: Array = (p["men"] as Array).filter(func(m): return is_instance_valid(m))

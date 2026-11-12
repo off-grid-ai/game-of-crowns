@@ -438,7 +438,31 @@ class Tick extends Node:
 
 	## Horses: led ones walk behind their groom, tied ones wait at the rail
 	## (then walk home on their own if nobody comes), loose ones graze about.
+	## Whether `at` is `gap` clear of every horse but `h`, and of where each is headed.
+	func _clear_of_horses(h: Node3D, at: Vector3, gap: float) -> bool:
+		for o: Node3D in Works.horses(root):
+			if o == h:
+				continue
+			var g: Vector3 = o.get_meta("goal", Vector3.INF)
+			if Vector2(at.x - o.position.x, at.z - o.position.z).length() < gap or (g != Vector3.INF and Vector2(at.x - g.x, at.z - g.z).length() < gap):
+				return false
+		return true
+
+	## Whether another horse stands within `gap` in front of `h` as it heads along `flat`.
+	func _horse_ahead(h: Node3D, flat: Vector2, gap: float) -> bool:
+		if flat.length() < 0.001:
+			return false
+		var dir := flat.normalized()
+		for o: Node3D in Works.horses(root):
+			if o == h:
+				continue
+			var off := Vector2(o.position.x - h.position.x, o.position.z - h.position.z)
+			if off.length() < gap and off.dot(dir) > 0.0:
+				return true
+		return false
+
 	func _horses(delta: float) -> void:
+		var gap := Data.num("works", "paddock.gap", 0.45)
 		var follow := Data.num("works", "paddock.follow", 0.16)
 		var amble := Data.num("works", "paddock.amble", 0.07)
 		for h: Node3D in Works.horses(root):
@@ -464,9 +488,14 @@ class Tick extends Node:
 				var rest := float(h.get_meta("rest", 0.0)) - delta
 				h.set_meta("rest", rest)
 				if goal == Vector3.INF and rest <= 0.0 and paddock != Vector3.INF:
-					var a := _rng.randf() * TAU
-					var r := sqrt(_rng.randf()) * roam
-					goal = paddock + Vector3(cos(a) * r, 0, sin(a) * r)
+					# A spot of its own, a horse's length and more from every other horse and where it's headed
+					# (works.json paddock.gap; round 5: the paddock's horses walked into each other).
+					for t in 8:
+						var a := _rng.randf() * TAU
+						var r := sqrt(_rng.randf()) * roam
+						goal = paddock + Vector3(cos(a) * r, 0, sin(a) * r)
+						if _clear_of_horses(h, goal, gap):
+							break
 					h.set_meta("goal", goal)
 				if goal != Vector3.INF:
 					to = goal
@@ -478,6 +507,10 @@ class Tick extends Node:
 			if to == Vector3.INF:
 				continue
 			var flat := Vector2(to.x - h.position.x, to.z - h.position.z)
+			if by == null and _horse_ahead(h, flat, gap * 0.75):
+				h.set_meta("goal", Vector3.INF)  # another horse in its way: it stands a moment, then makes for somewhere else
+				h.set_meta("rest", _rng.randf_range(1.0, 3.0))
+				continue
 			var stepv := minf(flat.length(), pace * delta)
 			if flat.length() > 0.001:
 				h.rotation.y = lerp_angle(h.rotation.y, atan2(flat.x, flat.y), minf(1.0, delta * 4.0))
