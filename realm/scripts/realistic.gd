@@ -275,7 +275,7 @@ static func dyed(src: Material, rgb) -> Material:
 	# in world-free triplanar so it needs none of this mesh's UVs (the Kenney fountain's basin pointed its UVs
 	# at a palette's cells: flat lavender plastic, batch 8 review; now the village kit's stone).
 	if rgb is Dictionary and (rgb as Dictionary).has("like"):
-		var key := "like:%s:%s" % [rgb["like"], rgb.get("triplanar", 0.5)]
+		var key := "like:%s:%s:%s" % [rgb["like"], rgb.get("triplanar", 0.5), str(rgb.get("tint", ""))]
 		if _cache.has(key):
 			return _cache[key]
 		var path := "res://assets/village/%s.gltf" % String(rgb["like"])
@@ -293,6 +293,11 @@ static func dyed(src: Material, rgb) -> Material:
 		got.uv1_triplanar = true
 		got.uv1_scale = Vector3.ONE * float(rgb.get("triplanar", 0.5))
 		got.resource_name = "Like_%s" % got.resource_name
+		# "tint": [r, g, b], that stone warmed or cooled (the King's monument's warm plinth).
+		if (rgb as Dictionary).get("tint") is Array:
+			var t: Array = rgb["tint"]
+			got.albedo_color = Color(float(t[0]), float(t[1]), float(t[2]))
+			got.resource_name += "_" + got.albedo_color.to_html(false)
 		_cache[key] = got
 		return got
 	# {"water": {colour, alpha, roughness}}: still water that reads as water: dark and deep, a little see-through,
@@ -315,6 +320,10 @@ static func dyed(src: Material, rgb) -> Material:
 		p.albedo_texture = null
 		p.albedo_color = Color(float(paint[0]), float(paint[1]), float(paint[2]), p.albedo_color.a)
 		p.roughness = maxf(p.roughness, 0.85)
+		# "metallic" and "roughness": a gilt that catches the light (the monument's crown), not a matte cloth.
+		if (rgb as Dictionary).has("metallic"):
+			p.metallic = float(rgb["metallic"])
+			p.roughness = float(rgb.get("roughness", 0.35))
 		p.resource_name = "Painted_%s_%s" % [src.resource_name, p.albedo_color.to_html(false)]
 		return p
 	# {"sway": lean, "texture": path}: a tree's crown in the wind (tree_sway.gdshader; KayKit's round trees, round 7: the

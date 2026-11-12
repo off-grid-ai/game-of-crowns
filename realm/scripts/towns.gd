@@ -1788,11 +1788,11 @@ func _smithy(root: Node3D, center: Vector3, p: Vector3, face: Vector3, f: Vector
 
 
 ## The house's arms carved on the front of the King's monument's plinth (assets.json square_statue: the plinth
-## 1.4 m square, its face 1.0-2.5 m up): the house's painted banner, else a panel in its colour.
+## 1.6 m square, its face 1.15-3.55 m up): the house's painted banner, else a panel in its colour.
 func _plinth_arms(root: Node3D, center: Vector3, p: Vector3, yaw: float, foot: Vector2) -> void:
 	var face := Vector3(sin(yaw), 0, cos(yaw))
 	var y := _foot_y(center, p, foot, yaw)
-	_arms_quad(root, p + face * (0.7 + 0.015) * S + Vector3(0, y + 1.75 * S, 0), yaw, Vector2(0.8, 1.2) * S)
+	_arms_quad(root, p + face * (0.8 + 0.015) * S + Vector3(0, y + 2.35 * S, 0), yaw, Vector2(1.0, 1.6) * S)
 
 
 ## The house's arms as a flat panel (its painted banner, else its colour) centred on `at`, facing along `yaw`.
