@@ -9,7 +9,7 @@
 import { houseFor, cityName } from "./narrator.js";
 import { DECREES, bannersReady, ECONOMY, peaceScale } from "./crown.js";  // ECONOMY.thin: below it the treasury is thin (data/economy.json)
 import { BANDS } from "./favour.js";
-import { calendar } from "./stakes.js";
+import { calendar, yearsIn } from "./calendar.js";
 import * as chron from "./chronicles.js";
 import { shortOf } from "./treasury.js";
 import * as Director from "./director.js";
@@ -29,7 +29,7 @@ export function counsel(ctx, players, cities, threat) {
   // A ward is had of a house once a reign, and holds it for its seasons (data/decrees.json ward).
   const wardTaken = (pid) => (meta.oncePerHouse?.ward ?? {})[pid] != null || (stakes?.s.wards?.[pid] ?? -1) > (world?.turn ?? 0);
   const wardHurt = String(DECREES.ward.favour ?? -15).replace("-", "−");
-  const wardYears = Math.round((DECREES.ward.seasons ?? 12) / 4);
+  const wardYears = Math.round(yearsIn(DECREES.ward.seasons ?? 12));
   const wardFor = `they cannot rise for ${wardYears === 1 ? "a year" : `${["", "one", "two", "three", "four", "five", "six"][wardYears] ?? wardYears} years`}`;
   // A war or bond the King has stilled (his peace, or a royal match).
   const stilled = (x, y) => { const a = court?.lordOfHouse(x), b = court?.lordOfHouse(y); return !!(a && b && court.truce(a.id, b.id)); };

@@ -4,7 +4,7 @@
 // out only here, from the one bridge state (townStates' fields, the scenes and
 // the land's marks), so the player sees the cause beside the effect.
 import { houseFor, cityName } from "./narrator.js";
-import { calendar } from "./stakes.js";
+import { calendar } from "./calendar.js";
 
 const when = (turn) => { const d = calendar(turn); return `${d.season} ${d.year}`; };
 const houseName = (world, id) => houseFor(world.players.find((p) => p.id === id) ?? {}).name ?? "raiders";

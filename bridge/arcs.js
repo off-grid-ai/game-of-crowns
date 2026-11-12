@@ -18,6 +18,7 @@
 //
 // State lives in the chronicle folder: <chronicle>/arcs.json.
 
+import { seasonsIn } from "./calendar.js";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -468,7 +469,7 @@ export class Arcs {
       // The same person doesn't lead the same kind of story twice running.
       const leadKey = keys.find((k) => roles[k] && !roles[k].town);
       const lead = roles[leadKey];
-      if (lead && this.done.some((d) => d.template === t.id && d.roles[leadKey] === lead.id && this.clock - (d.ended ?? 0) < (t.cooldown ?? 12) * 4)) continue;
+      if (lead && this.done.some((d) => d.template === t.id && d.roles[leadKey] === lead.id && this.clock - (d.ended ?? 0) < seasonsIn(t.cooldown ?? 12))) continue;
       const arc = { roles: Object.fromEntries(Object.entries(roles).map(([k, v]) => [k, v.town ? `town:${v.id}` : v.id])), started: this.clock };
       if (this.test(t.when ?? {}, arc, ctx, roles)) {
         // Someone made for the story only joins the realm once it begins.
@@ -768,7 +769,7 @@ export class Arcs {
         if (court.truces) delete court.truces[[atk.id, def.id].sort().join(":")];
       }
     }
-    if (d.truce && R(d.truce[0]) && R(d.truce[1])) { court.makeTruce(R(d.truce[0]), R(d.truce[1]), 4 * (d.truce[2] ?? 2), ctx.world); court.saveCourt(); }
+    if (d.truce && R(d.truce[0]) && R(d.truce[1])) { court.makeTruce(R(d.truce[0]), R(d.truce[1]), seasonsIn(d.truce[2] ?? 2), ctx.world); court.saveCourt(); }
     // A town changes hands; whoever holds it as a seat goes with it.
     if (d.transfer && R(d.transfer[0])?.town && R(d.transfer[1])) {
       const [town, to] = [R(d.transfer[0]), R(d.transfer[1])];

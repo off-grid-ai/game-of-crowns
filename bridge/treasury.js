@@ -6,6 +6,7 @@
 // one context argument, built fresh by server.js on each call (server.js keeps
 // wrappers of the same names, and the tally and lastSeason objects).
 
+import { SEASONS_PER_YEAR, isYearEnd } from "./calendar.js";
 import { houseFor, cityName } from "./narrator.js";
 import { DECREES, titheLua, TITHE_HIGH, ECONOMY } from "./crown.js";
 import * as Lua from "./lua.js";
@@ -44,7 +45,6 @@ export const SHARE = { gift: 0.04, feast: 0.03, relief: 0.03, marriage: 0.08, al
 // last given is kept with the reign; seat feasts are keyed apart from a lord's.
 // Seasons before the King may change the tithe again (data/economy.json tithe.changeEvery).
 export const titheWait = (meta, turn) => Math.max(0, (meta?.titheSetAt ?? -99) + (ECONOMY.tithe.changeEvery ?? 0) - turn);
-export const YEARLY = 4;  // seasons
 export const FAVOUR = new Set(["gift", "feast", "relief"]);
 export function yearlyKey(ctx, cmd) {
   const { world } = ctx;
@@ -66,7 +66,7 @@ export function yearlyKey(ctx, cmd) {
 export function seasonsLeft(ctx, key) {
   const { world, meta } = ctx;
   const at = meta?.decreeAt?.[key];
-  return at == null ? 0 : Math.max(0, YEARLY - ((world?.turn ?? 0) - at));
+  return at == null ? 0 : Math.max(0, SEASONS_PER_YEAR - ((world?.turn ?? 0) - at));
 }
 
 export function priceOf(ctx, action) {
@@ -105,7 +105,7 @@ export function royalWorks(ctx, turn) {
   // A market's gold beyond Freeciv's own tax (data/economy.json marketGold; 0: the crown earns only what its towns yield).
   const marketGold = ECONOMY.marketGold ?? 0;
   if (markets && marketGold) send(`lua cmd ${Lua.gold(crown.id, markets * marketGold)}`);
-  if (turn % 4 === 0) for (const x of mine.filter((y) => (y.buildings ?? []).includes("Barracks"))) {
+  if (isYearEnd(turn)) for (const x of mine.filter((y) => (y.buildings ?? []).includes("Barracks"))) {
     send(`lua cmd ${Lua.levy(x.id, ["Pikemen"])}`);
   }
   chron.saveMeta(meta);
@@ -120,13 +120,13 @@ export function tithe(ctx, turn) {
   const peaceNow = history[history.length - 1]?.peace ?? 1;
   // The tithe, seen: at the year's turn wagons roll to Kingsmere from the realm's
   // biggest towns, more of them the higher the tithe.
-  if (turn % 4 === 0 && meta.tithe > 0) {
+  if (isYearEnd(turn) && meta.tithe > 0) {
     const crownId = world.players.find((p) => houseFor(p).crown)?.id;
     const king = world.cities.find((c) => c.owner === crownId && c.capital);
     const from = world.cities.filter((c) => c.owner !== crownId && !houseFor(world.players.find((p) => p.id === c.owner) ?? {}).wild).sort((x, y) => y.size - x.size).slice(0, Math.max(1, Math.round(meta.tithe * 20)));
     if (king) for (const c of from) scene("tribute", { x: c.x, y: c.y, tx: king.x, ty: king.y, city: king.id, tithe: true });
   }
-  if (turn % 4 === 0 && (meta.tithe >= TITHE_HIGH || meta.tithe <= ECONOMY.tithe.low)) deed(kingDeeds.tagsFor("realm", meta.tithe >= TITHE_HIGH ? "tithe_high" : "tithe_low"), { act: false });
+  if (isYearEnd(turn) && (meta.tithe >= TITHE_HIGH || meta.tithe <= ECONOMY.tithe.low)) deed(kingDeeds.tagsFor("realm", meta.tithe >= TITHE_HIGH ? "tithe_high" : "tithe_low"), { act: false });
   // A heavy tithe is felt in Freeciv: every great house bears a Heavy Tithe (one townsman fewer content in each of its towns).
   const bearing = meta.tithe >= TITHE_HIGH ? world.players.filter((p) => !houseFor(p).crown && !houseFor(p).wild).map((p) => p.id) : [];
   send(`lua cmd ${Lua.heavyTithe(bearing)}`);

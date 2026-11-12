@@ -1,5 +1,5 @@
 // Guards step 6 (docs/research/freeciv-leverage-2026-11-12.md): seasons and blight are Freeciv's. A turn is a
-// season (calendar fragments, Spring first, as stakes.js calendar counts), four to a year; a blight is a Blight
+// season (calendar fragments, Spring first, as calendar.js counts), four to a year; a blight is a Blight
 // building that halves a town's food for its seasons (lua.js decree "blight"), lapses by itself and reports
 // "decree_lapsed" so the bridge tells the land recovering; no terrain is edited for it any more.
 // Bare Freeciv on 5571, our ruleset, no bridge. Exits 1 on a failure.
@@ -8,7 +8,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { bareFreeciv, checker } from "./fc_probe_lib.mjs";
 import * as Lua from "../lua.js";
-import { calendar } from "../stakes.js";
+import { calendar } from "../calendar.js";
 
 const { check, done } = checker("SEASONS");
 const src = (f) => fs.readFileSync(new URL(`../${f}`, import.meta.url), "utf8");

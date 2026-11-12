@@ -16,7 +16,7 @@ import fs from "node:fs";
 import * as Treasury from "./treasury.js";
 import { houseFor, cityName } from "./narrator.js";
 import { BANDS } from "./favour.js";
-import { calendar } from "./stakes.js";
+import { calendar } from "./calendar.js";
 import { matterKey } from "./counsel.js";
 import { isWatched, ruleFrom, reactTo } from "./claude.js";
 import * as chron from "./chronicles.js";

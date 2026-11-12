@@ -13,7 +13,7 @@ import path from "node:path";
 import { cityName, houseFor } from "./narrator.js";
 import { decide } from "./claude.js";
 
-import { calendar } from "./stakes.js";
+import { calendar, SEASONS_PER_YEAR, yearsIn, isYearEnd } from "./calendar.js";
 import { ANSWERS } from "./petitions.js";
 import { BANDS } from "./favour.js";
 import * as names from "./names.js";
@@ -49,7 +49,6 @@ function namePool(gender) {
 const M = ["Aldric", "Bran", "Cedric", "Dunstan", "Edric", "Godwin", "Harold", "Jory", "Osric", "Rowan", "Tobin", "Hugh", "Garth", "Alaric", "Ewan", "Roderick", "Leofric", "Merrick", "Corwin", "Tristan", "Benedict", "Gareth", "Lucan", "Willem"];
 const F = ["Agnes", "Bryony", "Cecily", "Edith", "Elsbeth", "Gwen", "Hilda", "Isolde", "Joan", "Maud", "Rosalind", "Wynne", "Alys", "Mira", "Tamsin", "Ysolde", "Rhiannon", "Elaine", "Beatrix", "Constance", "Genevieve", "Odette"];
 export const TRAITS = ["ambitious", "honourable", "greedy", "vengeful", "pious", "cunning", "craven", "brave", "content", "paranoid", "generous", "proud", "patient", "wrathful", "just"];
-export const SEASONS_PER_YEAR = 4;  // the one year length the court and the bridge count by
 const NORTH_Y = 30;  // towns north of this row are the North (the hill clans' and the dead's country)  // the one year length the court and the bridge count by
 
 // Roles a player can give a character: a title, and the leanings that come with it.
@@ -408,7 +407,7 @@ export class Court {
     const r = rng(world.turn * 104729);
     const turn = world.turn;
     // Age, and sometimes death; heirs inherit.
-    if (turn % SEASONS_PER_YEAR === 0) {
+    if (isYearEnd(turn)) {
       for (const c of this.alive()) {
         c.age++;
         const risk = c.age > 75 ? 0.2 : c.age > 60 ? 0.06 : 0.004;
@@ -898,7 +897,7 @@ Return {"choice": one of the choices exactly, "line": what they say, one short s
       const when = calendar(deed.turn);
       // Once: "Two years ago, in the winter of 352, you took a town that was ours."
       // Year on year: "Since the winter of 352 you have bled us with the tithe, year after year."
-      const ago = Math.max(1, Math.floor((turn - deed.turn) / 4));
+      const ago = Math.max(1, Math.floor(yearsIn(turn - deed.turn)));
       // A ruling a season or two old: "In the spring of 312, you heard our plea at court and ruled: ...".
       const said = deed.last - deed.turn >= 4
         ? `Since the ${when.season} of ${when.year}, you ${deed.what}, year after year`

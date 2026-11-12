@@ -4,7 +4,7 @@
 // ruling that slights a lord is the one that comes back, about five minutes in, as the first setback.
 // Numbers in data/opening.json.
 import fs from "node:fs";
-import { calendar } from "./stakes.js";
+import { calendar, SEASONS } from "./calendar.js";
 
 export const OPENING = JSON.parse(fs.readFileSync(new URL("./data/opening.json", import.meta.url), "utf8"));
 
@@ -33,8 +33,7 @@ export const usurperMay = (meta) => !quiet(meta) && actOf(meta) >= (OPENING.usur
 // Seasons until the first winter is over (the top bar's tracker), or null once it is (or not a v2 reign).
 export function toWinter(meta, turn) {
   if (!v2(meta) || meta?.openingState?.wintered) return null;
-  const seasons = ["spring", "summer", "autumn", "winter"];
-  const i = seasons.indexOf(calendar(turn).season);
+  const i = SEASONS.indexOf(calendar(turn).season);
   return i < 0 ? null : 3 - i + 1;  // this season to the end of winter, counted whole
 }
 

@@ -12,7 +12,7 @@
 import * as Lua from "./lua.js";
 import fs from "node:fs";
 import { houseFor, cityName } from "./narrator.js";
-import { calendar } from "./stakes.js";
+import { calendar } from "./calendar.js";
 import * as chron from "./chronicles.js";
 
 export const EVENTS = JSON.parse(fs.readFileSync(new URL("./data/events.json", import.meta.url), "utf8"));

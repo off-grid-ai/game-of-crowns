@@ -12,13 +12,6 @@ import { houseFor, cityName } from "./narrator.js";
 import { greatHouses } from "./realm.js";
 import { BANDS } from "./favour.js";
 
-const SEASONS = ["spring", "summer", "autumn", "winter"];
-const CONQUEST_YEAR = 300; // the realm's calendar starts 300 years after the Conquest
-
-export function calendar(turn) {
-  const t = Math.max(1, Number(turn) || 1) - 1;
-  return { season: SEASONS[t % 4], year: CONQUEST_YEAR + Math.floor(t / 4), text: `${SEASONS[t % 4][0].toUpperCase()}${SEASONS[t % 4].slice(1)} of ${CONQUEST_YEAR + Math.floor(t / 4)} AC` };
-}
 
 // The reign's stakes now being kept (one reign at a time), for raisePretender.
 let current = null;

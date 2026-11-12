@@ -10,7 +10,7 @@
 import { houseFor, cityName } from "./narrator.js";
 import fs from "node:fs";
 import { decree } from "./crown.js";
-import { calendar } from "./stakes.js";
+import { calendar } from "./calendar.js";
 import * as chron from "./chronicles.js";
 import * as kingDeeds from "./ledger.js";
 import * as Lua from "./lua.js";

@@ -2,6 +2,7 @@
 // the great houses, each house's favour toward the crown, and royal decrees
 // that cost gold and move favour. Each decree becomes Freeciv Lua.
 
+import { SEASONS_PER_YEAR } from "./calendar.js";
 import { cityName, houseFor } from "./narrator.js";
 import { greatHouses } from "./realm.js";
 import { BANDS } from "./favour.js";
@@ -74,7 +75,7 @@ export function titheLua(world, rate) {
     // to nothing. A house hands over what it can spare from its purse; the rest is
     // taken at its town gates.
     const size = (world.cities ?? []).filter((c) => c.owner === p.id).reduce((n, c) => n + (c.size ?? 0), 0);
-    const take = rate > 0 ? Math.floor((size * perSize * rate) / 4) : 0;
+    const take = rate > 0 ? Math.floor((size * perSize * rate) / SEASONS_PER_YEAR) : 0;
     if (take <= 0) continue;
     takes[p.id] = take;
     total += take;

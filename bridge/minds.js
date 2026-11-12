@@ -9,7 +9,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { townsfolk } from "./townsfolk.js";
 import { cityName, houseFor } from "./narrator.js";
-import { calendar } from "./stakes.js";
+import { calendar } from "./calendar.js";
 import { think, modelQueue } from "./claude.js";
 
 const FEELINGS = ["fear", "anger", "joy", "grief", "faith", "hunger"];

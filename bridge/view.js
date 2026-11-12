@@ -10,7 +10,7 @@ import { BUILD_COST, granarySize } from "./rules.js";
 import { DECREES, TITHE_HIGH } from "./crown.js";
 import { shortOf, titheWait } from "./treasury.js";
 import { BANDS, band } from "./favour.js";
-import { calendar } from "./stakes.js";
+import { calendar } from "./calendar.js";
 import * as names from "./names.js";
 import { situation, scarLine } from "./situation.js";
 

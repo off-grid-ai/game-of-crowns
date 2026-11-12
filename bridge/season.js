@@ -22,7 +22,7 @@ import * as Lua from "./lua.js";
 import { houseFor, cityName } from "./narrator.js";
 import { decree, clampFavour } from "./crown.js";
 import { BANDS, IDLE } from "./favour.js";
-import { calendar } from "./stakes.js";
+import { calendar, isYearEnd, isYearStart } from "./calendar.js";
 import { isWatched } from "./claude.js";
 import * as Weather from "./weather.js";
 import * as Hosts from "./hosts.js";
@@ -45,14 +45,14 @@ export function turn(ctx, ev) {
   const tc = ctx.treasuryCtx();
   Director.season({ world: ctx.world, meta: ctx.meta, history: tc.history, usurper: ctx.stakes?.s?.usurper?.stage ?? "none", send: ctx.send, record: ctx.record, scene: tc.scene, favourOf: ctx.favourOf, shiftFavour: ctx.shiftFavour, addMark: ctx.addMark, court: ctx.court, detail: ctx.detail }, Number(ev.turn));
   setTimeout(() => ctx.stakes?.tick(Number(ev.turn), ctx.world, { favour: ctx.favourOf, sworn: ctx.sworn, shift: ctx.shiftFavour, send: (l) => send(`lua cmd ${l}`), watched: isWatched(), options: ctx.meta.options ?? {}, usurperMay: Opening.usurperMay(ctx.meta), mayRise: (pid) => mayRise(ctx, pid), ultimatum: (pid) => askUltimatum(ctx, pid), rose: (pid) => rose(ctx, pid) }), 2000);
-  if (Number(ev.turn) % 4 === 0) setTimeout(() => runSeason(ctx), 2500);
+  if (isYearEnd(ev.turn)) setTimeout(() => runSeason(ctx), 2500);
   // The season's weather, rolled once as the season turns (weather.js, from the reign's seed).
   Weather.advance(ctx.meta, Number(ev.turn), calendar(Number(ev.turn)).season);
   setTimeout(() => ctx.runArcs(1), 4000);
   // Let the AI finish its start-of-turn moves before dumping the world.
   setTimeout(ctx.snapshot, 1500);
   setTimeout(() => ctx.minds?.tick(Number(ev.turn)), 3000);
-  if ((Number(ev.turn) - 1) % 4 === 0) ctx.record({ turn: Number(ev.turn), kind: "year", text: `The year ${calendar(ev.turn).year} AC begins.` });
+  if (isYearStart(ev.turn)) ctx.record({ turn: Number(ev.turn), kind: "year", text: `The year ${calendar(ev.turn).year} AC begins.` });
 }
 
 // Every four turns (a year of seasons), the people of the realm make their moves.
@@ -213,7 +213,7 @@ export function collectTithe(ctx, turn) {
     // in a year it remembers at the year's end.
     const pain = (deeds._tithe ??= {});
     pain[p.id] = (pain[p.id] ?? 0) + wear;
-    if (turn % 4 === 0) { if (pain[p.id] >= 3) ctx.recordDeed(p.id, -pain[p.id], "the royal tithe", turn - 1); pain[p.id] = 0; }
+    if (isYearEnd(turn)) { if (pain[p.id] >= 3) ctx.recordDeed(p.id, -pain[p.id], "the royal tithe", turn - 1); pain[p.id] = 0; }
     if (before >= 20 && favour[p.id] < 20) {
       const why = ctx.causeOf(p.id);
       record({ turn, kind: "unrest", text: `${houseFor(p).name} speaks openly against the crown. Their loyalty hangs by a thread.${why ? ` They have not forgotten ${why}.` : ""}` });

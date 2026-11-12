@@ -18,7 +18,7 @@ import * as Next from "./next.js";
 import * as Director from "./director.js";
 import { houseFor, cityName } from "./narrator.js";
 import { BANDS } from "./favour.js";
-import { calendar } from "./stakes.js";
+import { calendar } from "./calendar.js";
 import * as chron from "./chronicles.js";
 import * as kingDeeds from "./ledger.js";
 

@@ -14,7 +14,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { houseFor } from "./narrator.js";
 import { clampFavour } from "./crown.js";
-import { calendar } from "./stakes.js";
+import { calendar } from "./calendar.js";
 
 export function saveFavour(ctx) {
   const { P, favour, favourWhy, deeds, favourPast, lastSeason } = ctx;
