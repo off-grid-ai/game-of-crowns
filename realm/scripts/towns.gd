@@ -254,15 +254,12 @@ const Fields = preload("res://scripts/countryside.gd")  # crops, and fields that
 const TownPlots = preload("res://scripts/town_plots.gd")  # roads, burgage plots and lanes (--towns=plots)
 ## `--towns=plots`: a town laid out along its roads, in burgage plots, the way
 ## medieval towns grew (town_plots.gd), instead of rings round the square.
-## Data: realm/data/towns.json layout (rings or plots); --towns=plots / --towns=rings for one run.
+## Data: realm/data/towns.json layout (rings or plots).
 var plots_on := _layout_is_plots()
 var _ways_grid: AStarGrid2D  # the cost grid the town's roads were laid on, kept for its lanes (laid after the castle)
 
 
 static func _layout_is_plots() -> bool:
-	for a in OS.get_cmdline_user_args():
-		if a.begins_with("--towns="):
-			return a == "--towns=plots"
 	return String(preload("res://scripts/data.gd").value("towns", "layout", "rings")) == "plots"
 
 

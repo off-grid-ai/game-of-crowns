@@ -6,8 +6,7 @@ extends Node3D
 ## stands is roadside_plan.gd's to decide; this raises them from the catalogue (realm/data/assets.json,
 ## through realistic.gd), peoples them only near the camera, and sends travellers and herds to and
 ## from them. Reads roads.gd's drawn paths and the towns as they stand; edits neither.
-## Every number is realm/data/roadside.json's (docs/TUNING.md). On with `on: true` there or --roadside=on
-## for one run; --roadside=off overrides the file.
+## Every number is realm/data/roadside.json's (docs/TUNING.md). On with `on: true` there.
 
 const Data := preload("res://scripts/data.gd")
 const Real := preload("res://scripts/realistic.gd")
@@ -30,11 +29,8 @@ var _rivers: Array = []
 var _rng := RandomNumberGenerator.new()
 
 
-## The switch: --roadside=on|off for one run, else realm/data/roadside.json's `on`.
+## On with realm/data/roadside.json's `on`.
 static func on() -> bool:
-	for a in OS.get_cmdline_user_args():
-		if a.begins_with("--roadside="):
-			return a.get_slice("=", 1) == "on"
 	return bool(Data.value("roadside", "on", false))
 
 

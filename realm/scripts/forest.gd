@@ -7,15 +7,11 @@ extends Node3D
 
 const Real := preload("res://scripts/realistic.gd")  # the asset catalogue (realm/data/assets.json)
 const Data := preload("res://scripts/data.gd")
-## Which trees the woods grow (realm/data/assets.json woods.set; --trees= overrides):
+## Which trees the woods grow (realm/data/assets.json woods.set):
 ## "pack", the realistic pine, oak and bush packs below, or "kit", Quaternius'
 ## Stylized Nature trees (the painted look, docs art-direction fix 4), drawn by the
 ## same near/middle/far blocks, the far ones by Godot's import-made detail levels.
-static var SET: String = (func():
-	for a in OS.get_cmdline_user_args():
-		if a.begins_with("--trees="):
-			return a.substr(8)
-	return String(Data.value("assets", "woods.set", "pack"))).call()
+static var SET: String = String(Data.value("assets", "woods.set", "pack"))
 ## The kit's kinds, from data alone (the pickers run before any mesh loads):
 ## [file, scale on its true height] per kind, and role -> [first kind, count].
 static var _kit: Array = []

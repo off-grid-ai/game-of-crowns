@@ -3,7 +3,7 @@
   "matte": ["MI_RockTrim"],
   "woods": {
     "_": "Which trees the woods grow (forest.gd). set: pack (the realistic pine, oak and bush packs) or kit (Quaternius Stylized Nature, the painted look); --trees=pack or --trees=kit overrides. kit: per role (pine, oak, bush) the model files and the true height in metres a grown one stands; young and sapling: how tall the younger trees are, as a share of grown. Grown trees stand one to two houses tall (a kit cottage about 6 m, a townhouse about 9 m: tools/scale_check.gd holds the grown heights to tree_range, metres); they were 17 and 15 m and read huge beside the houses from mid zoom (Warcraft III: clustered stylised trees at a house and a half). pack_scale: the realistic packs come at their true size (13-31 m); this share of it.",
-    "set": "pack",
+    "set": "kit",
     "pack_scale": 0.6,
     "tree_range": [8, 14],
     "kit": {

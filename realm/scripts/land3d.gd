@@ -16,9 +16,9 @@ const TINT := [Color(0.95, 1.0, 0.9), Color.WHITE, Color.WHITE, Color(0.92, 0.94
 var land: Terrain3D
 var _grass_tint := Color.WHITE  # the painted grass's own tint (ground.json layers.grass.tint), under the season's
 const Data := preload("res://scripts/data.gd")
-## The painted ground (realm/data/ground.json painted, or --ground=painted): each
-## layer's tint and scale from data, a wider beach, no surf. Off, today's ground.
-static var PAINTED: bool = OS.get_cmdline_user_args().has("--ground=painted") or (bool(Data.value("ground", "painted", false)) and not OS.get_cmdline_user_args().has("--ground=photo"))
+## The painted ground (realm/data/ground.json painted): each layer's tint and scale
+## from data, a wider beach, no surf.
+static var PAINTED: bool = bool(Data.value("ground", "painted", false))
 
 
 func build(terrain: Node3D, ground_layer: int) -> void:

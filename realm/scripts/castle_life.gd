@@ -5,7 +5,7 @@ extends Node3D
 ## curtain's walk, turning at the towers to look out, two torches lit either side of the gate from dusk to
 ## dawn, and the bailey's well. Only castles our builder raises (--castles=kit): their frame is
 ## castle_builder.gd's (towers, curtain_runs), read off the castle's own size.
-## Knobs: data/castle.json. Switch: --castle-life=on|off, or castle.json on.
+## Knobs: data/castle.json. On with castle.json on.
 
 const Data := preload("res://scripts/data.gd")
 const Builder := preload("res://scripts/castle_builder.gd")
@@ -21,10 +21,7 @@ var _rng := RandomNumberGenerator.new()
 
 
 static func on() -> bool:
-	var args := OS.get_cmdline_user_args()
-	if args.has("--castle-life=off"):
-		return false
-	return args.has("--castle-life=on") or bool(Data.value("castle", "on", false))
+	return bool(Data.value("castle", "on", false))
 
 
 static func apply(m: Node) -> void:

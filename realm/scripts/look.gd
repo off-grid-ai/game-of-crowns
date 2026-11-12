@@ -30,14 +30,10 @@ static func _read_look() -> Dictionary:
 	return look
 
 
-## The v3 look (art target 01-town: crisp sun, strong contact shadows, clear air, the fitted grade): --look=v3,
-## or look.json v3.on; --look=one (or --look=today) keeps the one look as it was, for the before shot.
+## The v3 look (art target 01-town: crisp sun, strong contact shadows, clear air, the fitted grade): look.json v3.on.
 static func _v3_on(look: Dictionary) -> bool:
-	var args := OS.get_cmdline_user_args()
-	if args.has("--look=v3"):
-		return true
 	var v: Variant = look.get("v3", {})
-	return v is Dictionary and bool((v as Dictionary).get("on", false)) and not args.has("--look=one") and not args.has("--look=today")
+	return v is Dictionary and bool((v as Dictionary).get("on", false))
 
 
 static func v3() -> bool:
@@ -60,8 +56,7 @@ static func _overlay(a: Dictionary, b: Variant, top := true) -> Dictionary:
 
 
 static func one() -> bool:
-	var args := OS.get_cmdline_user_args()
-	return args.has("--look=one") or args.has("--look=v3") or (bool(LOOK.get("on", false)) and not args.has("--look=today")) or v3()
+	return bool(LOOK.get("on", false)) or v3()
 
 
 static func _rgb(key: String, fallback: Color) -> Color:

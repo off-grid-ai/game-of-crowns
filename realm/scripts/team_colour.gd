@@ -4,7 +4,7 @@ extends Node
 ## swapped for one shared shader (team_colour.gdshader: roof tiles and trims take the colour, walls and
 ## stone stay natural), and each town's batches get its holder's colour per instance, from the realm as
 ## the bridge reports it. A town that changes hands recolours over a season, as the land's colour spreads.
-## The army's armour uses the same shader (team_colour.gdshader). Off: --team=off or data team.on false.
+## The army's armour uses the same shader (team_colour.gdshader). On with look.json team.on.
 
 const SHADER := preload("res://scripts/team_colour.gdshader")
 const CameraRig := preload("res://scripts/camera_rig.gd")
@@ -23,8 +23,7 @@ static func cfg() -> Dictionary:
 
 
 static func on() -> bool:
-	var args := OS.get_cmdline_user_args()
-	return args.has("--team=on") or (bool(cfg().get("on", false)) and not args.has("--team=off"))
+	return bool(cfg().get("on", false))
 
 
 static func apply(m: Node) -> void:

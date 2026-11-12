@@ -39,13 +39,10 @@ signal house_followed(player_id: int)  # a sigil on the ladder clicked: the came
 signal matter_opened(at: Vector3)  # a matter's marker clicked: the King looks at its place (his own click)
 signal counsel_answered(key: String)  # the King answered the Hand's matter  # a story's name clicked in the chronicle
 
-## The finesse pass (docs/review/ui-pass.md; data/ui.json version, --ui=v1 / --ui=v2): the world the hero,
+## The finesse pass (docs/review/ui-pass.md; data/ui.json version): the world the hero,
 ## panels compact and in the corners, no camera buttons on screen unless asked for.
 static func v2() -> bool:
-	var args := OS.get_cmdline_user_args()
-	if args.has("--ui=v1"):
-		return false
-	return args.has("--ui=v2") or String(preload("res://scripts/data.gd").value("ui", "version", "v1")) == "v2"
+	return String(preload("res://scripts/data.gd").value("ui", "version", "v1")) == "v2"
 
 
 static func ui_num(path: String, fallback: float) -> float:

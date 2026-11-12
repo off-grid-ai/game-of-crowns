@@ -163,11 +163,8 @@ static func still(model: Node, path: String) -> void:
 
 
 ## Which landmarks stand: "kit" (the catalogue's own) or "meshy" (data/meshy.json's imported pieces, where
-## they've been imported). --landmarks=meshy|kit, else meshy.json landmarks.
+## they've been imported): meshy.json landmarks.
 static func landmarks() -> String:
-	for a in OS.get_cmdline_user_args():
-		if a.begins_with("--landmarks="):
-			return a.substr(12)
 	return String(Data.value("meshy", "landmarks", "kit"))
 
 

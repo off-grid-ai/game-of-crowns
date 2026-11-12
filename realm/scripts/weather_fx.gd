@@ -116,12 +116,9 @@ func _set_wet(v: float) -> void:
 	RenderingServer.global_shader_parameter_set(&"wet", v)
 
 
-## The town's weather dressing on (--weather=v2 / --weather=off, or data/weather.json on).
+## The town's weather dressing on (data/weather.json on).
 static func dressed() -> bool:
-	var args := OS.get_cmdline_user_args()
-	if args.has("--weather=off"):
-		return false
-	return args.has("--weather=v2") or bool(Data.value("weather", "on", false))
+	return bool(Data.value("weather", "on", false))
 
 
 ## Each frame, timed for the frame-cost probe (perf_tools.gd, GOC_PERF_PROBE=1; off in play).

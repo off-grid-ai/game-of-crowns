@@ -564,9 +564,9 @@ func _bodies(role: String, sex: String, coloured: bool, crowd: bool) -> Array:
 
 
 ## The cast: Meshy characters brought in by tools/cast_import.py (realm/assets/people/mixamo/cast_*), each a body
-## like the Mixamo ones, listed with its roles in realm/data/cast.json; with --cast=meshy (or cast.json on) they
-## play every role they cover, --cast=kit the bodies and outfits as before (the before shot).
-static var CAST_ON: bool = OS.get_cmdline_user_args().has("--cast=meshy") or (bool(Data.value("cast", "on", false)) and not OS.get_cmdline_user_args().has("--cast=kit"))
+## like the Mixamo ones, listed with its roles in realm/data/cast.json; with cast.json on they play every role they
+## cover.
+static var CAST_ON: bool = bool(Data.value("cast", "on", false))
 
 
 static func cast_members() -> Array:

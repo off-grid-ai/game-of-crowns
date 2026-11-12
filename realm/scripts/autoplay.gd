@@ -508,7 +508,7 @@ func _step(w: PackedStringArray) -> void:
 				for c in main.bridge.world.get("cities", []):
 					if String(c.get("title", c.get("name", ""))) == w[1]:
 						lit = preload("res://scripts/fire.gd").ignite(main.terrain.world_pos(float(c["x"]), float(c["y"])), float(w[2]) if w.size() > 2 else 60.0, w.size() > 3 and w[3] == "razed")
-				_note("  burn %s: %s" % [w[1], "alight" if lit else "no town there, or fire is off (--fire=v2)"])
+				_note("  burn %s: %s" % [w[1], "alight" if lit else "no town there, or fire is off (fire.json on)"])
 				await get_tree().create_timer(1.0).timeout
 			"face":
 				# face [n]: open the n-th matter (from 0) by its face on the map, as a click on it
@@ -759,7 +759,7 @@ func _host(n: int, dist: float, tilt: float) -> void:
 func _frame_site(kind: String, n: int, dist: float, tilt: float) -> void:
 	var roadside: Node = main.get_node_or_null("Roadside")
 	if roadside == null:
-		_note("  site %s: no roadside (--roadside=on)" % kind)
+		_note("  site %s: no roadside (roadside.json on)" % kind)
 		return
 	var all: Array = roadside.sites(kind)
 	var seat := Vector3.ZERO

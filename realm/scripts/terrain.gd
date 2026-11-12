@@ -63,7 +63,7 @@ func build(map: Dictionary) -> void:
 	await get_tree().process_frame
 	var t2 := Time.get_ticks_msec()
 	_build_paths()
-	# Paths worn by real feet (wear.gd; realm/data/ground.json wear.on, or --wear=on).
+	# Paths worn by real feet (wear.gd; realm/data/ground.json wear.on).
 	if preload("res://scripts/wear.gd").ON and get_node_or_null("Wear") == null:
 		var w := preload("res://scripts/wear.gd").new()
 		w.name = "Wear"
@@ -931,9 +931,8 @@ func _set_politics(players: Array, colour: Dictionary, by_name: Dictionary) -> v
 	if land3d == null:
 		return
 	var pol: Dictionary = preload("res://scripts/look.gd").LOOK.get("politics", {})
-	var args := OS.get_cmdline_user_args()
-	var on := args.has("--politics=on") or (bool(pol.get("on", false)) and not args.has("--politics=off"))
-	if preload("res://scripts/map_look.gd").politics() and not args.has("--politics=off"):
+	var on := bool(pol.get("on", false))
+	if preload("res://scripts/map_look.gd").politics():
 		on = true  # the realm at map zoom reads who holds it (data/map.json politics)
 	var hold := PackedFloat32Array()
 	hold.resize(64)

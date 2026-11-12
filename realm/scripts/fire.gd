@@ -8,7 +8,7 @@ extends Node3D
 ## The one owner of the fire's look, and of which houses stand burnt: that is the bridge's damage fact
 ## (/world cities[].damage.burnt, bridge/damage.js), read from the mirror (awareness.gd's town scope, "burnt"),
 ## never a timer. A sack or razing (scenes.gd) sets the houses alight; they stay charred while the fact says so
-## and stand whole again as the bridge rebuilds them. Knobs: data/fire.json. Switch: --fire=v2 (or fire.json on).
+## and stand whole again as the bridge rebuilds them. Knobs: data/fire.json. On with fire.json on.
 
 const FLAME_SHADER := preload("res://scripts/stylized_fire.gdshader")
 const CHAR_SHADER := preload("res://scripts/charred.gdshader")
@@ -43,10 +43,7 @@ static func knobs() -> Dictionary:
 
 
 static func on() -> bool:
-	var args := OS.get_cmdline_user_args()
-	if args.has("--fire=v1"):
-		return false
-	return args.has("--fire=v2") or bool(knobs().get("on", false))
+	return bool(knobs().get("on", false))
 
 
 static func apply(m: Node) -> void:

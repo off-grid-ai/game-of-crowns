@@ -1,6 +1,6 @@
 {
   "_": "Life along the roads between the towns (roadside.gd builds, roadside_plan.gd places; docs/TUNING.md). Art target 06-inn; casebook Manor Lords, Kingdom Come, The Witcher 3. Distances are game units (about 8 m each; a tile is 4). A piece is {c: catalogue component (realm/data/assets.json), at: [along the road, out from it], yaw: degrees (0 faces the road), chance, jitter, turn: random turn in degrees, squash: [x, y, z] scale, lift, road: true when it may stand on the road, from_site: true to measure from the site rather than the road}. A life spot is {who: folk|soldier|horse|animal, role (peasant, townsfolk, soldier, noble, clergy), at, face: [along, out], clips (Mixamo moves; never the same twice running), kit (sword|spear), hold (a component in the right hand), animal (cow|sheep|pig), near (homes|fields: by a hamlet's), spread, chance}. --roadside=on|off overrides on.",
-  "on": false,
+  "on": true,
   "roads": ["kings", "track:lords", "roads"],
   "settle_sec": 3.0,
   "frame_ms": 4.0,

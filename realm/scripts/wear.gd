@@ -9,10 +9,10 @@ extends Node3D
 ## (TILE units square, ~0.5 m a pixel), stamped from the people's positions a few
 ## times a second on the CPU, uploaded every few seconds, and drawn as a soft
 ## earth-coloured decal under the roads (the decals the roads and squares use).
-## On with realm/data/ground.json wear.on, or --wear=on.
+## On with realm/data/ground.json wear.on.
 
 const Data := preload("res://scripts/data.gd")
-static var ON: bool = OS.get_cmdline_user_args().has("--wear=on") or (bool(Data.value("ground", "wear.on", false)) and not OS.get_cmdline_user_args().has("--wear=off"))
+static var ON: bool = bool(Data.value("ground", "wear.on", false))
 
 const TILE := 8.0  # game units a patch spans
 const PX := 128  # its image's side (TILE units over PX pixels: ~0.5 m a pixel)

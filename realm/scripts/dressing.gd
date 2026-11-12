@@ -9,7 +9,7 @@ extends RefCounted
 ## spot people stand at, and stood on the ground by its own lowest point (nothing floats). It decides
 ## nothing anyone does; it only reads what the town agent laid out (the town root's metas: works,
 ## homes, doors, lanes, ways_main, footprints, places, square_r, trodden, rank). One batch per model
-## a town. Knobs: realm/data/dressing.json (--dressing=on / --dressing=off).
+## a town. Knobs: realm/data/dressing.json (on).
 
 const Data := preload("res://scripts/data.gd")
 const Works := preload("res://scripts/works.gd")
@@ -19,10 +19,7 @@ static var _builder = null
 
 
 static func on() -> bool:
-	var args := OS.get_cmdline_user_args()
-	if args.has("--dressing=off"):
-		return false
-	return args.has("--dressing=on") or bool(Data.value("dressing", "on", false))
+	return bool(Data.value("dressing", "on", false))
 
 
 ## Dresses a town once: a node "Dressing" under its root (kept while the town stands; built again
