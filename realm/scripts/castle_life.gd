@@ -170,14 +170,13 @@ func _dress(id: int, root: Node3D, castle: Node3D) -> void:
 ## above: "the emptiness looks kinda weird"; 01-town and Stronghold's yard ringed with lean-tos): kit houses of a
 ## tier (house_tiers.gd: the stables' open arcade, the forge's chimney, the armoury's stone, the granary's stores)
 ## built narrow, back to the wall, front to the yard. Built in the castle's metres, so a lesser hold's are smaller.
-## Switch: --bailey-buildings=on|off, or bailey_buildings.on.
+## On with bailey_buildings.on.
 static var _house_builder: RefCounted
 
 
 func _bailey_buildings(xf: Transform3D, sp: Dictionary, d: Dictionary) -> void:
 	var k: Dictionary = Data.value("castle", "bailey_buildings", {})
-	var args := OS.get_cmdline_user_args()
-	if args.has("--bailey-buildings=off") or not (bool(k.get("on", false)) or args.has("--bailey-buildings=on")):
+	if not bool(k.get("on", false)):
 		return
 	if _house_builder == null:
 		_house_builder = preload("res://scripts/house_builder.gd").new()
@@ -222,10 +221,9 @@ func _bailey_buildings(xf: Transform3D, sp: Dictionary, d: Dictionary) -> void:
 ## The castle's rock (data/castle.json outcrop; 01-town: the castle up on a rocky outcrop, shrubs and dark cypresses
 ## growing out of it): grey rocks banked against the outer foot of every curtain, shrubs among them and a slim
 ## cypress now and then, clear of the gate's approach and never on water. The keep's stair climbs inside as before.
-## --outcrop=off.
 func _outcrop(xf: Transform3D, sp: Dictionary, d: Dictionary) -> void:
 	var k: Dictionary = Data.value("castle", "outcrop", {})
-	if k.is_empty() or not bool(k.get("on", false)) or OS.get_cmdline_user_args().has("--outcrop=off"):
+	if k.is_empty() or not bool(k.get("on", false)):
 		return
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(k.get("seed", 91))

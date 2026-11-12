@@ -27,15 +27,6 @@ static var BUILT := {}
 static var _read := _from_catalogue()
 
 
-## Which set a component draws from: its "switch" (castles, houses) set to "kit" in
-## realm/data/towns.json, or --castles=kit / --houses=kit for one run, takes its "kit" variants.
-static func set_of(switch: String) -> String:
-	for a in OS.get_cmdline_user_args():
-		if a.begins_with("--%s=" % switch):
-			return a.get_slice("=", 1)
-	return String(Data.value("towns", switch, "pack"))
-
-
 static func _from_catalogue() -> bool:
 	var comps: Dictionary = Data.value("assets", "components", {})
 	for id in comps:
@@ -45,15 +36,9 @@ static func _from_catalogue() -> bool:
 		_component[id] = []
 		var i := 0
 		var vs: Array = c.get("variants", [])
-		# The switch's set, when the component has one by that name ("kit": raised from the Quaternius kit;
-		# "ai": image-to-3D models), else its variants.
-		if c.has("switch"):
-			var set_name := set_of(String(c["switch"]))
-			if set_name != "variants" and c.get(set_name) is Array:
-				vs = c[set_name]
 		var meshy := _meshy_for(id)
 		if not meshy.is_empty():
-			vs = meshy  # --landmarks=meshy: an imported Meshy piece in this component's place (data/meshy.json)
+			vs = meshy  # an imported Meshy piece in this component's place (data/meshy.json)
 		for v0: Dictionary in _expanded(vs):
 			var v: Dictionary = v0
 			# A kit model (it has a true length) is measured and scaled here; any other is a file its own placer loads.
@@ -162,18 +147,10 @@ static func still(model: Node, path: String) -> void:
 			m.transform = Transform3D.IDENTITY
 
 
-## Which landmarks stand: "kit" (the catalogue's own) or "meshy" (data/meshy.json's imported pieces, where
-## they've been imported): meshy.json landmarks.
-static func landmarks() -> String:
-	return String(Data.value("meshy", "landmarks", "kit"))
-
-
 ## A judged Meshy piece that stands in for something no catalogue component names (meshy.json replaces: say,
-## "square_cart"), made to our scale (its file is in metres, stood and centred by the import), when meshy
-## landmarks are on and it's imported; else null (the caller keeps its own).
+## "square_cart"), made to our scale (its file is in metres, stood and centred by the import), once it's
+## imported; else null (the caller keeps its own).
 static func meshy_piece(role: String) -> Node3D:
-	if landmarks() != "meshy":
-		return null
 	var pieces: Dictionary = Data.value("meshy", "pieces", {})
 	for name in pieces:
 		if String((pieces[name] as Dictionary).get("replaces", "")) != role:
@@ -187,12 +164,10 @@ static func meshy_piece(role: String) -> Node3D:
 	return null
 
 
-## With meshy landmarks on, the variants of a Meshy piece that replaces `component`, once its file is
+## The variants of a Meshy piece that replaces `component`, once its file is
 ## imported (realm/tools/meshy_import.py -> assets/meshy/<name>/<name>.glb): stood by its true height.
 ## Else [] (the component as it was).
 static func _meshy_for(component: String) -> Array:
-	if landmarks() != "meshy":
-		return []
 	var pieces: Dictionary = Data.value("meshy", "pieces", {})
 	var defaults: Dictionary = Data.value("meshy", "defaults", {})
 	for name in pieces:

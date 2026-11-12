@@ -17,9 +17,6 @@ const WINDOW := "Wall_UnevenBrick_Window_Thin_Round"
 const DOOR := "Wall_UnevenBrick_Door_Round"
 const CONE := "Roof_Tower_RoundTiles"
 const CAP := "Floor_UnevenBrick"
-const ARCH := "DoorFrame_Round_Brick"  # the kit's stone round door frame, at twice size the gate's arch
-const BARS := "Prop_MetalFence_Simple"  # the kit's iron railing, stood up tall: the portcullis
-const LEAF := "Door_8_Round"  # the kit's iron-bound plank door: the gate's two leaves
 const SIDES := [0.0, PI / 2, PI, -PI / 2]
 
 
@@ -64,8 +61,7 @@ func build_castle(spec: Dictionary) -> ArrayMesh:
 			var frame := Transform3D(Basis(Vector3.UP, SIDES[side]), Basis(Vector3.UP, SIDES[side]) * Vector3(0, 0, half))
 			for off in bays[side]:
 				_curtain(parts, frame, off, wall_st)
-	# The gatehouse, astride the front wall, its gate through two storeys; with --landmarks=meshy and Meshy's
-	# gatehouse imported (data/meshy.json gatehouse: castle), that piece in its place instead, in metres.
+	# The gatehouse astride the front wall: Meshy's (data/meshy.json gatehouse, imported), in metres.
 	var meshy_gate := meshy_gatehouse()
 	if meshy_gate != "":
 		# Set into the curtain, a little proud of it, between two cone towers (castle.json meshy_gate; round 4:
@@ -75,10 +71,6 @@ func build_castle(spec: Dictionary) -> ArrayMesh:
 		if bool(mg.get("towers", false)):
 			for sx in [-1, 1]:
 				_block(parts, gate_at + Vector3(sx * gate_tower_x(), 0, 1.0), 2, 2, wall_st + 2, rng, {"cone": true, "windows": 0.5, "round": true})
-	else:
-		_block(parts, gate_at, gate_w, 3, wall_st + 1, rng, {"gate": true, "crenel": true, "windows": 0.5, "portcullis": float(spec.get("gate_portcullis", 2.4))})
-		for sx in [-1, 1]:
-			_block(parts, gate_at + Vector3(sx * (gh + 1.0), 0, 1.0), 2, 2, wall_st + 2, rng, {"cone": true, "windows": 0.5, "round": true})
 	# The keep: tall, crenellated, a tiled roof over its leads, a turret at each corner. On a seat's castle it
 	# stands on a stone podium, a broad flight of steps up to its door (01-town: the steps up to the keep, the
 	# red carpet down them; castle_life.gd lays the carpet): the kit's exterior stairs, a metre a flight.
@@ -113,8 +105,8 @@ func build_castle(spec: Dictionary) -> ArrayMesh:
 	if not stone.is_empty():
 		for p in parts:
 			var piece := String(p[0])
-			if piece in [LEAF, BARS, DOOR] or piece.begins_with("res://") or piece.begins_with("Stairs"):
-				p.append({})  # the gate's leaves, its portcullis, the doors, the stairs, Meshy's gate and the banners keep their own
+			if piece == DOOR or piece.begins_with("res://") or piece.begins_with("Stairs"):
+				p.append({})  # the doors, the stairs, Meshy's gate and the banners keep their own
 	return _bake(parts, stone)
 
 
@@ -213,7 +205,7 @@ static func towers(spec: Dictionary) -> Array:
 	if spec.get("side_towers", false):
 		for c in [Vector3(-hx, 0, 0), Vector3(hx, 0, 0)]:
 			out.append({"at": c, "top": tower_st * STOREY + 0.12})
-	if meshy_gatehouse() == "" or bool(_meshy_gate().get("towers", false)):
+	if bool(_meshy_gate().get("towers", false)):
 		for sx in [-1, 1]:
 			out.append({"at": Vector3(sx * gate_tower_x(), 0, hz + 1.0), "top": (wall_st + 2) * STOREY + 0.12, "gate": true})
 	return out
@@ -229,8 +221,7 @@ static func _meshy_gate() -> Dictionary:
 ## How far either side of the middle the gate's two towers stand (metres): beside the kit's gatehouse, or
 ## beside Meshy's, which is wider.
 static func gate_tower_x() -> float:
-	if meshy_gatehouse() != "":
-		return float(_meshy_gate().get("half_w", 7.35)) + 1.0
+	return float(_meshy_gate().get("half_w", 7.35)) + 1.0
 	return 4 * CELL / 2.0 + 1.0
 
 
@@ -238,18 +229,12 @@ static func gate_tower_x() -> float:
 ## walkers stand by it (castle_life.gd).
 static func gate_front(spec: Dictionary) -> float:
 	var hz := int(spec.get("d", 16)) * CELL / 2.0
-	if meshy_gatehouse() != "":
-		var mg := _meshy_gate()
-		return hz + float(mg.get("z", 1.0)) + float(mg.get("half_d", 2.53))
-	return hz + 3.0
+	var mg := _meshy_gate()
+	return hz + float(mg.get("z", 1.0)) + float(mg.get("half_d", 2.53))
 
 
-## Meshy's gatehouse, if it stands in for the kit's (--landmarks=meshy, meshy.json pieces.gatehouse.replaces
-## "castle_gate", and imported): its file, else "".
+## Meshy's gatehouse (meshy.json pieces.gatehouse.replaces "castle_gate"), once imported: its file, else "".
 static func meshy_gatehouse() -> String:
-	var Real = load("res://scripts/realistic.gd")
-	if Real.landmarks() != "meshy":
-		return ""
 	var g: Dictionary = (preload("res://scripts/data.gd").value("meshy", "pieces", {}) as Dictionary).get("gatehouse", {})
 	var path := "res://assets/meshy/gatehouse/gatehouse.glb"
 	return path if String(g.get("replaces", "")) == "castle_gate" and ResourceLoader.exists(path) else ""
@@ -307,34 +292,21 @@ func town_wall(bays: Array, towers: Array, storeys: int, seed: int) -> ArrayMesh
 	return _bake(parts, stone)
 
 
-## A town wall's gatehouse (walls.gd: where a road runs through a town's ring wall; 01-town's arched gate in
-## the town wall): the castle's own gate, its passage through and a cone tower either side, or Meshy's
-## gatehouse with --landmarks=meshy; in metres, the way out on +Z, the wall's line at z 0, y 0 the road.
-func town_gate(wall_st: int, seed: int) -> ArrayMesh:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = seed
+## A town wall's gatehouse (walls.gd and towns.gd _town_wall: where a road runs through a town's wall; 01-town's
+## arched gate in the town wall): Meshy's gatehouse, in metres, the way out on +Z, the wall's line at z 0, y 0 the
+## road. Empty until it is imported.
+func town_gate(_wall_st: int, _seed: int) -> ArrayMesh:
 	var parts := []
-	var gh := 4 * CELL / 2.0
 	var meshy_gate := meshy_gatehouse()
 	if meshy_gate != "":
 		parts.append([meshy_gate, Transform3D()])
-	else:
-		_block(parts, Vector3.ZERO, 4, 3, wall_st + 1, rng, {"gate": true, "crenel": true, "windows": 0.5, "portcullis": 2.4})
-		for sx in [-1, 1]:
-			_block(parts, Vector3(sx * (gh + 1.0), 0, 0), 2, 2, wall_st + 2, rng, {"cone": true, "windows": 0.5, "round": true})
 	return _bake(parts)
 
 
 ## How many storeys of stone podium the keep stands on, with its steps up the front (data/castle.json
-## steps.storeys; --keep-steps=off for none). 0: the keep on the bailey's floor, as before.
+## steps.storeys).
 static func podium() -> int:
-	var args := OS.get_cmdline_user_args()
-	if args.has("--keep-steps=off"):
-		return 0
-	var k: Dictionary = preload("res://scripts/data.gd").value("castle", "steps", {})
-	if args.has("--keep-steps=on") or bool(k.get("on", false)):
-		return int(k.get("storeys", 1))
-	return 0
+	return int((preload("res://scripts/data.gd").value("castle", "steps", {}) as Dictionary).get("storeys", 1))
 
 
 ## Stone curtains (walls.gd's switch, --walls=stone): the kit curtain is left out of the castle.
@@ -363,18 +335,6 @@ func _block(parts: Array, at: Vector3, wc: int, dc: int, storeys: int, rng: Rand
 				var off := (i - (along - 1) / 2.0) * CELL * stretch
 				var pos := at + basis * Vector3(off, y, half)
 				var piece := WALL
-				var front: bool = side == 0 or (side == 2 and bool(opts.get("gate", false)))
-				if opts.get("gate", false) and front and f < 2 and absf(off) < CELL:
-					# The gate: one door panel at twice the size fills the two middle cells, two storeys up, its
-					# arch dressed in cut stone (the kit's round door frame), front and back; the passage runs
-					# through between them (art target 01-town: an arched gate, not a door).
-					if f == 0 and off < 0.0:
-						var g := basis.scaled(Vector3(2.0, 2.0, 1.0))
-						parts.append([DOOR, Transform3D(g, at + basis * Vector3(0, 0, half))])
-						parts.append([ARCH, Transform3D(basis * Basis.from_scale(Vector3(2.0, 2.0, 1.5)), at + basis * Vector3(0, 0, half + 0.05))])
-						if side == 0:
-							_passage(parts, at, half, opts)
-					continue
 				if opts.get("door", false) and side == 0 and f == 0 and i == along / 2:
 					piece = DOOR
 					parts.append(["Door_1_Round", Transform3D(basis, pos)])
@@ -409,31 +369,6 @@ func _block(parts: Array, at: Vector3, wc: int, dc: int, storeys: int, rng: Rand
 			if ResourceLoader.exists(DIR % gable):
 				parts.append([gable, Transform3D(Basis(), at + Vector3(0, top + lift, rc * CELL / 2.0))])
 				parts.append([gable, Transform3D(Basis(Vector3.UP, PI), at + Vector3(0, top + lift, -rc * CELL / 2.0))])
-
-
-## The gate's passage through the gatehouse (the front face at +half, the back at -half): stone walls
-## either side, a vaulted stone ceiling, a paved floor, the portcullis hanging half raised just inside the
-## arch, and behind it the two plank leaves swung open against the walls. The arch at twice the kit's
-## door is about 2.2 m wide and 4.6 m high. spec gate_portcullis: how high its foot hangs, in metres.
-func _passage(parts: Array, at: Vector3, half: float, opts: Dictionary) -> void:
-	const W := 1.1  # half the arch's width
-	const H := 4.6  # the arch's crown
-	var depth := half * 2.0
-	var n := maxi(1, int(round(depth / CELL)))
-	var step := depth / n
-	var tall := Basis.from_scale(Vector3(step / CELL, H / STOREY, 1.0))
-	for i in n:
-		var z := half - step * (i + 0.5)
-		parts.append([WALL, Transform3D(Basis(Vector3.UP, PI / 2) * tall, at + Vector3(-W, 0, z))])
-		parts.append([WALL, Transform3D(Basis(Vector3.UP, -PI / 2) * tall, at + Vector3(W, 0, z))])
-		var sc := Basis.from_scale(Vector3(W, 1.0, step / CELL))
-		parts.append([CAP, Transform3D(Basis(Vector3.RIGHT, PI) * sc, at + Vector3(0, H, z))])
-		parts.append([CAP, Transform3D(sc, at + Vector3(0, 0.03, z))])
-	var up := float(opts.get("portcullis", 2.4))
-	parts.append([BARS, Transform3D(Basis.from_scale(Vector3(W * 2.0 / 1.95, H / 2.87, 1.0)), at + Vector3(0, up, half - 0.7))])
-	var leaf := Basis(Vector3.UP, PI / 2) * Basis.from_scale(Vector3(W / 1.1, H / 2.36, 1.0))
-	for sx in [-1, 1]:
-		parts.append([LEAF, Transform3D(leaf, at + Vector3(sx * (W - 0.12), 0.03, half - 1.4))])
 
 
 ## One 2 m bay of curtain wall, `off` along the run's frame (+Z outward): stone
