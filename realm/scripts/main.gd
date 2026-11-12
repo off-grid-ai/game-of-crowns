@@ -900,6 +900,10 @@ func _on_synced() -> void:
 	towns.sync(_houses)
 	if Time.get_ticks_msec() - tt > 500:
 		print_verbose("BUILD towns %d ms" % (Time.get_ticks_msec() - tt))
+	# The companies on the map as soon as the towns stand: the first reading's road and countryside laying below waits
+	# over frames, and companies synced after it had no figure, or figures no company, all that while (reign replay).
+	Engine.set_meta("stage", "units.sync")
+	units.sync(_houses)
 	# The land's borders, scars and ruins, from the mirror (awareness.gd), not from /world.
 	var realm_bb: Blackboard = awareness.realm
 	var pt := Time.get_ticks_usec()
@@ -953,8 +957,6 @@ func _on_synced() -> void:
 		_laying = false
 	Engine.set_meta("stage", "scenes.sync")
 	scenes.sync(_houses)
-	Engine.set_meta("stage", "units.sync")
-	units.sync(_houses)
 	Engine.set_meta("stage", "ui.set_world")
 	ui.set_world(_houses)
 	if ui.minimap.terrain == null:
