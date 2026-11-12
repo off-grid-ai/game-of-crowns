@@ -318,6 +318,7 @@ func _sign(node: Node3D, s: Dictionary, k: Dictionary, rng: RandomNumberGenerato
 	l.visibility_range_begin = float(k.get("near", 1.6))
 	l.visibility_range_end = float(k.get("far", 14.0))
 	node.add_child(l)
+	preload("res://scripts/camera_rig.gd").sign_over(l, node)  # clarity: over its roofs, hidden behind others
 
 
 ## A timber bridge over a narrow river: kit planks laid across at the height of the higher bank, a

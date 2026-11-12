@@ -34,7 +34,32 @@
   "lowerSide": 0.25,
   "lowerNear": 0.6,
   "liftEase": 4.0,
-  "fade": { "gone": 0.5, "solid": 1.0 }
+  "fade": { "gone": 0.5, "solid": 1.0 },
+  "frame": {
+   "_": "The clear frame bottom (batch 9: a ghosted house down the right quarter of Kingsmere, near roofs and chimney pots over the bottom third at d4.5-6). Age of Empires IV's and Anno 1800's closest town zoom: the camera stands over open ground with the frame's bottom clear, and nothing is cut away or see-through. on (0: batch 9's lower-third lines, lowerAt..lowerNear). Rays through a 6x3 grid over the frame's bottom third (aspect: the film's width over height) count what a building, a street thing or a tree's crown (forest.gd's sight lines, as roofs) fills nearer than within of the way to the aim; a frame is clean at allow or less, with no roof or crown on the line to the aim and nothing within gap of the lens (fade.solid is 1.0: nearer, it would ghost). Not clean: the smallest change that is, in order: a swing (swingStep, swingTries), the lens and its aim raised together over the roof line (riseStep of the distance but at least riseLeast units, riseTries; Anno 1800's pivot over the rooftops: the pitch kept, the ground a little lower in the frame), the lens in along its arm (shortStep of the arm, shortTries), a lift (liftStep, liftTries, never past maxPitch), then swings with each rise; none clean, the least bad. Re-chosen when the lens or aim moves or every hold seconds; eased at liftEase.",
+   "on": 1,
+   "aspect": 1.74,
+   "within": 0.5,
+   "allow": 0.08,
+   "gap": 1.15,
+   "riseStep": 0.05,
+   "riseTries": 4,
+   "riseLeast": 0.3,
+   "shortStep": 0.06,
+   "shortTries": 3,
+   "hold": 0.5
+  },
+  "smoke": {
+   "_": "Chimney smoke near the lens fades out (hearths.gd; the smoke material's distance fade): gone nearer than 'gone', whole from 'solid', in game units from the lens (batch 9: smoke drifting across the near houses at d6).",
+   "gone": 2.0,
+   "solid": 3.5
+  },
+  "labels": {
+   "_": "An inn's name (roads.gd, roadside.gd): set 'over' above the top of its own roofs within 'reach' of it, and hidden while a building stands between it and the lens (camera_rig, checked every 'every' seconds) instead of being cut by a roof.",
+   "over": 0.25,
+   "reach": 1.2,
+   "every": 0.25
+  }
  },
  "near_fade": {
   "buildings": {

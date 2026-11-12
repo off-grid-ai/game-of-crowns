@@ -531,6 +531,8 @@ func _ready() -> void:
 			ruled_at[0] = Vector3.INF)
 	# The motion probe (tools/motion_probe.gd): test runs only, headless on a private bridge.
 	if Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--motion-probe=")): add_child(load("res://tools/motion_probe.gd").new())
+	# The frame probe (tools/frame_probe.gd): test runs only, headless on a private bridge.
+	if Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--frame-probe=")): add_child(load("res://tools/frame_probe.gd").new())
 	# How much of the screen the interface covers at rest (tools/ui_coverage.gd): test runs only.
 	if Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--ui-coverage=")): add_child(load("res://tools/ui_coverage.gd").new())
 

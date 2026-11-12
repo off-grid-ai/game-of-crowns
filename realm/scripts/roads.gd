@@ -192,6 +192,7 @@ func _inn(at: Vector3, road: Vector3, rng: RandomNumberGenerator) -> void:
 	sign.position = Vector3(at.x, terrain.height_at(at.x, at.z) + 1.1, at.z)
 	sign.visibility_range_end = 14.0
 	_kings.add_child(sign)
+	preload("res://scripts/camera_rig.gd").sign_over(sign, _kings)  # clarity: over its roofs, hidden behind others
 
 
 ## A milestone of grey stone by the verge.

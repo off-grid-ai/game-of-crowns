@@ -392,6 +392,13 @@ const GUARD := 4.5  # camera distance under which the lens looks out for buildin
 static var CLEAR: bool = clarity()  # read once: the lens keeps its sight over the roofs
 var _lift := 0.0  # radians the lens is tipped up to see over the roofs (eased; a last resort, a few degrees)
 var _swing := 0.0  # radians the view is swung about what it looks at to find a clear line (eased)
+## The clear frame bottom (camera.json clarity.frame): on with clarity unless frame.on is 0; the frame probe
+## (tools/frame_probe.gd) flips it to measure before and after in one run.
+static var FRAME: bool = CLEAR and knob("clarity.frame.on", 1.0) > 0.5
+var _rise := 0.0  # how far the lens and its aim stand raised over the roof line, the pitch kept (eased; clarity.frame)
+var _short := 0.0  # the share of its arm the lens has come in to clear the frame's bottom (eased; clarity.frame)
+var _pick := [0.0, 0.0, 0.0, 0.0]  # the frame's last choice: swing, lift, rise, short
+var _pick_at := [Vector3.INF, Vector3.INF, 0.0]  # where it was chosen (aim, lens) and how long ago
 ## A film step's own distance under the floor (autoplay asks for d2 at street height): 0 for none, the floor holds.
 var step_floor := 0.0
 
@@ -429,6 +436,170 @@ func _sees(look: Vector3, pos: Vector3) -> bool:
 		if not hit.is_empty() and pos.distance_to(hit["position"]) < pos.distance_to(to) * near:
 			return false
 	return true
+
+
+## The share of the frame's lower third, seen from `pos` along `fwd` (right and up the frame's own), that a building
+## or a street thing fills nearer than `reach` from the lens: rays through a cols x rows grid over the bottom third
+## (camera.json clarity.frame.aspect: the film's width over its height). Batch 9: near roofs, chimney pots and a
+## half-ghosted house filled the bottom of the d4.5-6 town frames.
+func lower_share(pos: Vector3, fwd: Vector3, right: Vector3, up: Vector3, reach: float, cols := 6, rows := 3) -> float:
+	if not is_inside_tree() or reach <= 0.0:
+		return 0.0
+	var space := get_world_3d().direct_space_state
+	var woods = terrain.get("forest") if terrain else null  # tree crowns count as roofs do (forest.gd's sight lines)
+	if woods and not woods.has_method("blocking"):
+		woods = null
+	var tv := tan(deg_to_rad(cam.fov * 0.5))
+	var aspect := knob("clarity.frame.aspect", 1.74)
+	var hits := 0
+	for j in rows:
+		var sy := -1.0 + (j + 0.5) / float(rows) * (2.0 / 3.0)  # the bottom third of the frame, -1 to -1/3
+		for i in cols:
+			var sx := -1.0 + (i + 0.5) / float(cols) * 2.0
+			var d := (fwd + right * (sx * tv * aspect) + up * (sy * tv)).normalized()
+			if not space.intersect_ray(PhysicsRayQueryParameters3D.create(pos, pos + d * reach, LENS_LAYER | PROP_LAYER)).is_empty():
+				hits += 1
+			elif woods and int(woods.blocking(pos, pos + d * reach)) > 0:
+				hits += 1
+	return float(hits) / float(cols * rows)
+
+
+## Whether a building, a street thing or a tree's crown stands within `r` of the lens at `pos` (there it would
+## dissolve: a ghost). Crowns by forest.gd's sight lines, level with the lens and a little down, four ways.
+func crowded(pos: Vector3, r: float) -> bool:
+	if not is_inside_tree():
+		return false
+	var woods = terrain.get("forest") if terrain else null
+	if woods and woods.has_method("blocking"):
+		for v in [Vector3(r, -r * 0.5, 0), Vector3(-r, -r * 0.5, 0), Vector3(0, -r * 0.5, r), Vector3(0, -r * 0.5, -r)]:
+			if int(woods.blocking(pos, pos + v)) > 0:
+				return true
+	var q := PhysicsShapeQueryParameters3D.new()
+	var ball := SphereShape3D.new()
+	ball.radius = r
+	q.shape = ball
+	q.transform = Transform3D(Basis(), pos)
+	q.collision_mask = LENS_LAYER | PROP_LAYER
+	return not get_world_3d().direct_space_state.intersect_shape(q, 1).is_empty()
+
+
+## How badly the lens at `pos`, aiming at `aim`, frames it (clarity.frame): 0 is clean. The line to the aim must be
+## clear (+2 if not); nothing within frame.gap of the lens (+1: it would ghost); then the share of the lower third
+## filled nearer than frame.within of the way to the aim.
+func _frame_cost(aim: Vector3, pos: Vector3) -> float:
+	var cost := 0.0
+	var woods = terrain.get("forest") if terrain else null
+	if _clear(aim, pos).distance_squared_to(pos) >= 0.0001 or (woods and woods.has_method("blocking") and int(woods.blocking(pos, aim)) > 0):
+		cost += 2.0  # a roof or a tree's crown between the lens and what it looks at
+	if crowded(pos, knob("clarity.frame.gap", 1.15)):
+		cost += 1.0
+	var fwd := (aim - pos).normalized()
+	var right := fwd.cross(Vector3.UP).normalized()
+	return cost + lower_share(pos, fwd, right, right.cross(fwd), pos.distance_to(aim) * knob("clarity.frame.within", 0.5))
+
+
+## The frame's choice for the lens at `base` looking at `look` (clarity.frame; Age of Empires IV's and Anno 1800's
+## closest town zoom: the camera stands over open ground, the frame's bottom clear, and nothing is see-through):
+## [swing, lift, rise, short], the smallest change whose frame is clean (its lower third at most frame.allow filled
+## near the lens), tried in order: none; a swing either way (swingStep, swingTries); the lens and its aim raised
+## together over the roof line (frame.riseStep of the distance, at least riseLeast, riseTries; Anno 1800's pivot over the rooftops: the
+## pitch kept, the ground looked at a little lower in the frame);
+## the lens in along its arm (frame.shortStep, shortTries); a lift (liftStep, liftTries, never past maxPitch); then
+## the swings with each rise. None clean: the least bad. Kept while the lens and the aim hold still (frame.hold s).
+func _frame_pick(look: Vector3, base: Vector3) -> Array:
+	var still := distance * 0.01
+	_pick_at[2] = float(_pick_at[2]) + get_process_delta_time()
+	if (_pick_at[0] as Vector3).distance_to(look) < still and (_pick_at[1] as Vector3).distance_to(base) < still and float(_pick_at[2]) < knob("clarity.frame.hold", 0.5):
+		return _pick
+	var sstep := deg_to_rad(knob("clarity.swingStep", 4.0))
+	var st := int(knob("clarity.swingTries", 6))
+	var lstep := deg_to_rad(knob("clarity.liftStep", 2.0))
+	var lt := int(knob("clarity.liftTries", 3))
+	var rstep := maxf(knob("clarity.frame.riseStep", 0.05) * distance, knob("clarity.frame.riseLeast", 0.3))
+	var rt := int(knob("clarity.frame.riseTries", 4))
+	var kstep := knob("clarity.frame.shortStep", 0.06)
+	var kt := int(knob("clarity.frame.shortTries", 3))
+	var tries: Array = [[0.0, 0.0, 0.0, 0.0]]
+	for k in range(1, maxi(maxi(st, rt), maxi(kt, lt)) + 1):
+		if k <= st:
+			tries.append([sstep * k, 0.0, 0.0, 0.0])
+			tries.append([-sstep * k, 0.0, 0.0, 0.0])
+		if k <= rt:
+			tries.append([0.0, 0.0, rstep * k, 0.0])
+		if k <= kt:
+			tries.append([0.0, 0.0, 0.0, kstep * k])
+		if k <= lt:
+			tries.append([0.0, lstep * k, 0.0, 0.0])
+	for r in range(1, rt + 1):
+		for k in range(1, st + 1):
+			tries.append([sstep * k, 0.0, rstep * r, 0.0])
+			tries.append([-sstep * k, 0.0, rstep * r, 0.0])
+	var allow := knob("clarity.frame.allow", 0.08)
+	var best := [INF, tries[0]]
+	for t in tries:
+		var lens := _framed(look, base, t)
+		var c := _frame_cost(look + Vector3.UP * float(t[2]), lens)
+		if c <= allow:
+			best = [c, t]
+			break
+		if c < float(best[0]) - 0.02:  # a clearly better frame only: the least change wins a tie
+			best = [c, t]
+	_pick = best[1]
+	_pick_at = [look, base, 0.0]
+	return _pick
+
+
+## The lens for a frame choice [swing, lift, rise, short]: rise lifts the lens and its aim together (the pitch kept).
+func _framed(look: Vector3, base: Vector3, t: Array) -> Vector3:
+	var lens := _tipped(look, _swung(look, base, float(t[0])), float(t[1]))
+	return look + (lens - look) * (1.0 - float(t[3])) + Vector3.UP * float(t[2])
+
+
+## A site's name sign (an inn's: roads.gd, roadside.gd) set clear of its roofs, with clarity (camera.json
+## clarity.labels; batch 9: the inn's name sat in a roof and was cut by it): raised to clarity.labels.over above the
+## top of whatever `holder` draws within clarity.labels.reach of it, and joined to the signs the lens hides while a
+## building stands between them (_hide_signs). `label` is a child of `holder`, already placed.
+static func sign_over(label: Label3D, holder: Node3D) -> void:
+	if not CLEAR:
+		return
+	var reach := knob("clarity.labels.reach", 1.2)
+	var top := -INF
+	for g in holder.find_children("*", "GeometryInstance3D", true, false):
+		if not (g is MeshInstance3D or g is MultiMeshInstance3D):
+			continue
+		var xf := Transform3D()
+		var n: Node = g
+		while n != null and n != holder:
+			xf = (n as Node3D).transform * xf if n is Node3D else xf
+			n = n.get_parent()
+		var box: AABB = xf * (g as VisualInstance3D).get_aabb()
+		var mid := box.get_center()
+		if Vector2(mid.x - label.position.x, mid.z - label.position.z).length() <= reach + maxf(box.size.x, box.size.z) * 0.5:
+			top = maxf(top, box.end.y)
+	if top > -INF:
+		label.position.y = maxf(label.position.y, top + knob("clarity.labels.over", 0.25))
+	label.add_to_group("site_signs")
+
+
+## Every site sign near the lens hidden while a building stands between it and the lens, shown again when clear
+## (every clarity.labels.every seconds): never cut by a roof.
+var _signs_check := 0.0
+func _hide_signs() -> void:
+	_signs_check -= get_process_delta_time()
+	if _signs_check > 0.0 or not is_inside_tree():
+		return
+	_signs_check = knob("clarity.labels.every", 0.25)
+	var space := get_world_3d().direct_space_state
+	var eye := cam.global_position
+	for l in get_tree().get_nodes_in_group("site_signs"):
+		var sign := l as Label3D
+		if sign == null or not sign.is_inside_tree():
+			continue
+		var at := sign.global_position
+		var far := sign.visibility_range_end if sign.visibility_range_end > 0.0 else 30.0
+		if eye.distance_to(at) > far + 1.0:
+			continue
+		sign.visible = space.intersect_ray(PhysicsRayQueryParameters3D.create(eye, at, LENS_LAYER)).is_empty()
 
 
 ## The lens at `pos` swung about what it looks at by `turn` radians (its height and arm kept).
@@ -713,7 +884,15 @@ func apply() -> void:
 		var base := pos + need
 		var want_swing := 0.0
 		var want_lift := 0.0
-		if not _sees(look, base):
+		var want_rise := 0.0
+		var want_short := 0.0
+		if FRAME:
+			var pick := _frame_pick(look, base)
+			want_swing = float(pick[0])
+			want_lift = float(pick[1])
+			want_rise = float(pick[2])
+			want_short = float(pick[3])
+		elif not _sees(look, base):
 			var sstep := deg_to_rad(knob("clarity.swingStep", 4.0))
 			var found := false
 			for k in range(1, int(knob("clarity.swingTries", 6)) + 1):
@@ -733,7 +912,10 @@ func apply() -> void:
 		var ease := 1.0 - exp(-get_process_delta_time() * knob("clarity.liftEase", 4.0))
 		_swing = lerpf(_swing, want_swing, ease)
 		_lift = lerpf(_lift, want_lift, ease)
-		var seen := _tipped(look, _swung(look, base, _swing), _lift)
+		_rise = lerpf(_rise, want_rise, ease)
+		_short = lerpf(_short, want_short, ease)
+		var seen := _framed(look, base, [_swing, _lift, _rise, _short])
+		look += Vector3.UP * _rise  # lens and aim raised together over the roof line, the pitch kept
 		var arm := seen - look
 		var short := _clear(look, seen) - look
 		var least := arm.length() * knob("clarity.nearest", 0.75)
@@ -767,3 +949,5 @@ func apply() -> void:
 	cam.fov = lerpf(45.0, 62.0, ground_view)  # wider on the ground, as a person sees
 	cam.global_position = pos
 	cam.look_at(look + Vector3(0, distance * 0.02 * (1.0 - ground_view), 0), Vector3.UP)
+	if CLEAR:
+		_hide_signs()

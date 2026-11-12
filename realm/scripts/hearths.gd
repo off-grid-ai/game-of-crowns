@@ -113,6 +113,13 @@ func _style(smoke: GPUParticles3D) -> void:
 	smoke.amount = int(L.get("amount", 16))
 	if _mat == null:
 		_mat = preload("res://scripts/towns.gd").smoke_material(true)
+		var Rig := preload("res://scripts/camera_rig.gd")
+		if Rig.CLEAR:
+			# Clarity: smoke right at the lens fades out (camera.json clarity.smoke; batch 9: smoke drifting
+			# across the near houses at d6), Godot's own per-pixel distance fade on the one smoke material.
+			_mat.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_ALPHA
+			_mat.distance_fade_min_distance = Rig.knob("clarity.smoke.gone", 2.0)
+			_mat.distance_fade_max_distance = Rig.knob("clarity.smoke.solid", 3.5)
 	var q := smoke.draw_pass_1 as QuadMesh
 	if q:
 		q = q.duplicate()
