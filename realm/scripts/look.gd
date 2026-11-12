@@ -52,7 +52,8 @@ func _ready() -> void:
 	var look_one := one()
 	if look_one:
 		_haze = float((LOOK.get("haze", {}) as Dictionary).get("volumetric", 0.008))
-	if not sky3d.game_time_enabled:
+	# A shot's own hour (--hour=, shot_harness) stands: the golden hour overwrote it (batch 8b: night shots in daylight).
+	if not sky3d.game_time_enabled and not Array(OS.get_cmdline_user_args()).any(func(x): return String(x).begins_with("--hour=")):
 		_golden_hour(sky3d, float(LOOK.get("sun_elevation", SUN_HEIGHT)) if look_one else SUN_HEIGHT)
 	if look_one:
 		# The one look: no brown LUT; a warm key against a cool shade, and a gentle S-curve after AgX.

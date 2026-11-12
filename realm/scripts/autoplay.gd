@@ -368,7 +368,7 @@ func _step(w: PackedStringArray) -> void:
 					main.rig.apply()
 				await get_tree().create_timer(3.0).timeout
 			"work":
-				# work Town trade [dist] [tilt]: frames a trade's building in a town (forge, stables, mill,
+				# work Town trade [dist] [tilt] (Town *: the first town that has it): frames a trade's building in a town (forge, stables, mill,
 				# inn...; the town root's works, works.gd), low and oblique.
 				_frame_work(w[1], w[2] if w.size() > 2 else "inn", float(w[3]) if w.size() > 3 else 4.5, float(w[4]) if w.size() > 4 else -25.0)
 				if main.rig.is_processing_input() == false:
@@ -745,11 +745,13 @@ func _frame_field(fallow: bool, n: int, dist: float, tilt: float) -> void:
 ## Frames a trade's building in a town, from the town root's works (works.gd; any mill for "mill").
 func _frame_work(title: String, trade: String, dist: float, tilt: float) -> void:
 	for c in main.bridge.world.get("cities", []):
-		if String(c.get("title", c.get("name", ""))) != title:
+		if title != "*" and String(c.get("title", c.get("name", ""))) != title:
 			continue
 		var t: Dictionary = main.towns.towns.get(int(c["id"]), {})
 		var root: Node3D = t.get("node") if not t.is_empty() else null
 		var b: Dictionary = preload("res://scripts/works.gd").find(root, trade) if root else {}
+		if b.is_empty() and title == "*":
+			continue  # "*": the first town that has the trade (batch 8b: Kingsmere has no inn)
 		if b.is_empty():
 			_note("  work %s %s: none (the town has: %s)" % [title, trade, ", ".join(PackedStringArray(preload("res://scripts/works.gd").anchors(root).keys())) if root else "no town built"])
 			return
@@ -757,7 +759,7 @@ func _frame_work(title: String, trade: String, dist: float, tilt: float) -> void
 		_note("  work %s %s at %s" % [title, trade, at])
 		_oblique(at, dist, tilt)
 		return
-	_note("  work %s: no such town" % title)
+	_note("  work %s: no such town" % title if title != "*" else "  work * %s: no town has one" % trade)
 
 
 ## Frames the middle of the road from a town to its nearest neighbour (roads.route,
