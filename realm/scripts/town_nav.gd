@@ -205,8 +205,8 @@ static func _ways(root: Node3D) -> Array:
 	return out
 
 
-## The sea and lakes within reach, as one obstruction per run of water along
-## each row, so the baked map stops at the shore.
+## The sea, lakes and rivers within reach (all but the fords: terrain.walkable), as one obstruction per run of
+## water along each row, so the baked map stops at the shore and crosses a river only where a road fords it.
 func _water(at: Vector3, reach: float) -> Array:
 	var key := [at, reach]
 	if _shore.has(key):
@@ -220,7 +220,7 @@ func _water(at: Vector3, reach: float) -> Array:
 		var start := INF
 		for col in range(-n, n + 2):
 			var x := col * WATER_STEP
-			var wet: bool = col <= n and not terrain.is_land(at.x + x, at.z + z)
+			var wet: bool = col <= n and not terrain.walkable(at.x + x, at.z + z)
 			if wet and start == INF:
 				start = x
 			elif not wet and start != INF:
@@ -376,8 +376,8 @@ func stand(towns: Node3D, p: Vector3, body := 0.0) -> Vector3:
 				break
 	# Wedged between two buildings, pushed from one into the other: the nearest
 	# clear place on rings widening out from where it got to.
-	# Or set down on water (a river through the town's edge, a scene's straight
-	# line over it): the same search, for clear dry ground. Nobody stands on water.
+	# Or asked to stand on water (a place out in a river at the town's edge): the same search, for ground a body
+	# may stand on (terrain.walkable: dry, or a ford). Nobody is set down in the water.
 	if not clear(towns, q, body) or not _dry(q):
 		for ring in range(1, 61):
 			var found := false
@@ -392,9 +392,10 @@ func stand(towns: Node3D, p: Vector3, body := 0.0) -> Vector3:
 	return Vector3(q.x, terrain.height_at(q.x, q.z) if terrain else p.y, q.z)
 
 
-## Dry land at `p` (world): not sea, lake or river (terrain.is_land). True with no terrain known.
+## Ground a body may stand on at `p` (world): not sea, lake or river, unless a road fords it (terrain.walkable).
+## True with no terrain known.
 func _dry(p: Vector3) -> bool:
-	return terrain == null or terrain.is_land(p.x, p.z)
+	return terrain == null or terrain.walkable(p.x, p.z)
 
 
 ## Whether `p` (world), or anything within `body` of it, is inside a

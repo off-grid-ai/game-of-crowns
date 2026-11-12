@@ -1903,8 +1903,9 @@ Any land terrain type may have a River on it. A River adds 1\
  trade to the resources produced by that tile. It also increases a\
  tile's defense factor by 25%.\
 "), _("\
-Land units may move along rivers for faster travel (but not diagonally).\
- Triremes may also travel up rivers (although later boats cannot).\
+Land units ford a river slowly: a host that ends its turn in a river\
+ tile without a bridge (a road over it) has one move fewer. Triremes\
+ may travel up rivers (although later boats cannot).\
 "), _("\
 Roads and railroads can only be built on River tiles if your\
  civilization has learned Bridge Building technology. Fortresses and\
@@ -2339,7 +2340,8 @@ gui_type       = "Maglev"
 
 [road_river]
 extra          = "River"
-move_cost      = 2
+; A river is not a highway: a host wades it (effects.ruleset effect_river_wading) or takes a bridge (a road on it).
+move_cost      = -1
 move_mode      = "Cardinal"
 trade_incr_const = 1
 compat_special = "River"

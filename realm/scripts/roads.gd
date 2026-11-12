@@ -444,12 +444,20 @@ func _segment(a: Vector3, b: Vector3, parent: Node3D = null, width := WIDTH, own
 	for run in [[a, mid], [mid, b]]:
 		var p: Vector3 = run[0]
 		var q: Vector3 = run[1]
-		# Roads stop at the shore: never a track drawn across the sea.
+		# Roads stop at the shore: never a track drawn across the sea. Over a river the road goes on as a ford: no
+		# track painted on the water, but the way runs through it (route) and the ground there is walked (terrain
+		# walkable): the realm's only crossings of a river.
 		var wet := false
+		var sea := false
 		for k in 5:
 			var s := p.lerp(q, k / 4.0)
-			wet = wet or not terrain.is_land(s.x, s.z)
+			if not terrain.is_land(s.x, s.z):
+				wet = true
+				sea = sea or not terrain.in_river(s.x, s.z)
 		if wet:
+			if not sea:
+				_remember(owner, p, q, width * 0.5)
+				terrain.ford(p, q, width * 0.5)
 			continue
 		_remember(owner, p, q, width * 0.5)
 		_painted.append([p, q, width, owner, parent if parent else self, _paint_run(p, q, width, owner, parent)])

@@ -408,6 +408,35 @@ func is_land(wx: float, wz: float) -> bool:
 	return not (name.contains("Ocean") or name == "Lake") and height_at(wx, wz) > SEA_LEVEL + 0.1
 
 
+## Where a person, a horse or a host may set foot: dry land, or a ford, where a road runs through a river (roads.gd
+## lays them; the rivers are the drawn ones, which Freeciv's river tiles come from too). Every walk map cuts the
+## rest of the water out (town_nav.gd, army_ground.gd).
+func walkable(wx: float, wz: float) -> bool:
+	return is_land(wx, wz) or ford_at(wx, wz)
+
+
+var _fords := {}  # "x|z" of a ford's middle -> [from, to (Vector2, world XZ), half its width]: a road's stretch over a river
+
+
+## A road's stretch from `a` to `b`, `half` wide each side, runs through a river here: a ford (roads.gd).
+func ford(a: Vector3, b: Vector3, half: float) -> void:
+	var m := a.lerp(b, 0.5)
+	var key := "%.2f|%.2f" % [m.x, m.z]
+	if _fords.has(key):
+		return
+	_fords[key] = [Vector2(a.x, a.z), Vector2(b.x, b.z), half]
+	ground_changed.emit(Rect2(Vector2(a.x, a.z), Vector2.ZERO).expand(Vector2(b.x, b.z)).grow(half))  # walk maps over it open the way
+
+
+## Whether `(wx, wz)` is on a ford's way through the water.
+func ford_at(wx: float, wz: float) -> bool:
+	var q := Vector2(wx, wz)
+	for f in _fords.values():
+		if q.distance_to(Geometry2D.get_closest_point_to_segment(q, f[0], f[1])) <= float(f[2]):
+			return true
+	return false
+
+
 func _color_at(wx: float, wz: float, h: float) -> Color:
 	var warped := _warp(wx, wz)
 	var fx := warped.x / TILE - 0.5

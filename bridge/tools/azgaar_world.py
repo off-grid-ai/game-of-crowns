@@ -1,9 +1,11 @@
 """Turns an Azgaar Fantasy Map Generator map (belia-world.json) into Freeciv terrain:
-one letter per Freeciv tile (same legend as worldgen.py) plus river tiles.
+one letter per Freeciv tile (same legend as worldgen.py) plus river tiles: every tile a river the game
+draws runs through (realm/assets/maps/rivers.json, from azgaar_rivers.py), so the rivers have one source.
 Each tile takes the Azgaar cells whose centres fall inside it: water when most
 of them are water, mountains and hills by height, otherwise Azgaar's biome.
 
   python3 tools/azgaar_world.py data/belia-world.json [--preview | --out lua/world_setup_azgaar.lua]
+  python3 tools/azgaar_world.py data/belia-world.json --rivers lua/world_setup_azgaar.lua  (the river tiles alone)
 """
 
 import collections
@@ -13,7 +15,8 @@ import sys
 W, H = 56, 88  # Belia is 760×1200, so tiles stay square
 
 SEA = 20  # Azgaar's sea level on its 0–100 height scale
-RIVER_DISCHARGE = 900  # keep only rivers at least this big; Azgaar draws every trickle
+DRAWN_RIVERS = __file__.replace("tools/azgaar_world.py", "../realm/assets/maps/rivers.json")  # the rivers the game draws
+TILE = 4.0  # game units per Freeciv tile (realm/scripts/terrain.gd)
 
 # Azgaar biome -> terrain letter. The map is placed from 55°N to 15°N in Azgaar's
 # world settings, so its own climate gives a cold north and a warm south.
@@ -93,18 +96,14 @@ def tiles(cells, width, height):
     return rows
 
 
-def rivers(cells, river_list, width, height, rows):
+def rivers(rows):
+    """Every land tile a drawn river's course runs through: the rivers the player sees are the ones the rules know."""
     out = []
     seen = set()
-    for r in river_list:
-        if r.get("discharge", 0) < RIVER_DISCHARGE:
-            continue
-        for ci in r.get("cells", []):
-            if ci >= len(cells):
-                continue
-            x, y = cells[ci]["p"]
-            tx, ty = min(W - 1, int(x / width * W)), min(H - 1, int(y / height * H))
-            if rows[ty][tx] not in "oOlm" and (tx, ty) not in seen:
+    for r in json.load(open(DRAWN_RIVERS))["rivers"]:
+        for x, _level, z, _width in r["points"]:
+            tx, ty = min(W - 1, int(x / TILE)), min(H - 1, int(z / TILE))
+            if rows[ty][tx] not in "oOl" and (tx, ty) not in seen:
                 seen.add((tx, ty))
                 out.append((tx, ty))
     return out
@@ -187,11 +186,18 @@ KINGSMERE = {{x = {kx}, y = {ky}}}
 def main():
     cells, river_list, width, height = load(sys.argv[1])
     rows = tiles(cells, width, height)
-    river = rivers(cells, river_list, width, height, rows)
+    river = rivers(rows)
     if "--preview" in sys.argv:
         for y, row in enumerate(rows):
             print("%2d %s" % (y, row))
         print("rivers:", len(river), "tiles;", collections.Counter("".join(rows)).most_common())
+        return
+    if "--rivers" in sys.argv:
+        # Only the river tiles, refreshed in the setup the realm runs (its towns and coast were tuned there by hand).
+        path = sys.argv[sys.argv.index("--rivers") + 1]
+        lines = open(path).read().split("\n")
+        lines = [f"local RIVERS = {{{', '.join('{%d,%d}' % t for t in river)}}}" if l.startswith("local RIVERS") else l for l in lines]
+        open(path, "w").write("\n".join(lines))
         return
     if "--out" in sys.argv:
         open(sys.argv[sys.argv.index("--out") + 1], "w").write(lua(rows, river))

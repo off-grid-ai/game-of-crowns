@@ -420,16 +420,16 @@ reqs    =
       "Extra",         "River",     "Tile",  FALSE
     }
 
-; Big Land units can't escape movement penalty via River
-[effect_mountains_movement_big_on_river]
+; Fording a river is slow (the realm's rivers are the drawn ones, bridge/tools/azgaar_world.py): a land host in a
+; river tile without a bridge (a road over it) has one move fewer, as on mountains
+[effect_river_wading]
 type    = "Move_Bonus"
 value   = -1
 reqs    =
     { "type",          "name",      "range", "present"
-      "Terrain",       "Mountains", "Tile",  TRUE
-      "UnitClass",     "Big Land",  "Local", TRUE
-      "Extra",         "Road",      "Tile",  FALSE
       "Extra",         "River",     "Tile",  TRUE
+      "UnitClassFlag", "Ground",    "Local", TRUE
+      "Extra",         "Road",      "Tile",  FALSE
     }
 
 ; Nuclear power gives +1 moves to sea units
