@@ -21,7 +21,6 @@ scripts/shot_harness.gd:raw-world
 scripts/terrain.gd:one-colour
 scripts/town_scenes.gd:cross-mind-write
 scripts/town_scenes.gd:one-colour
-scripts/units.gd:raw-world
 scripts/villagers.gd:cross-mind-write
 scripts/villagers.gd:view-fetch
 scripts/wear.gd:one-colour

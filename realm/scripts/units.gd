@@ -17,9 +17,10 @@ var _figures := {}  # unit id -> {node, target}
 
 ## A house's host to follow: soldiers only, the biggest stack in the field
 ## first, then its biggest garrison.
-func army_of(owner: int, world: Dictionary) -> Node3D:
+func army_of(owner: int) -> Node3D:
+	var store: Node = Awareness.store()
 	var stacks := {}  # tile -> [count, node, in the field]
-	for u in world.get("units", []):
+	for u in store.rec("units", []):
 		if int(u["owner"]) != owner or String(u["type"]) in Awareness.civilian or not _figures.has(int(u["id"])):
 			continue
 		var node: Node3D = _figures[int(u["id"])]["node"]
@@ -74,13 +75,14 @@ var _town_tiles := {}
 var _heading := {}  # tile -> the way the army standing there last marched
 
 
-func sync(world: Dictionary, houses: Dictionary) -> void:
+func sync(houses: Dictionary) -> void:
+	var store: Node = Awareness.store()
 	var seen := {}
 	var per_tile := {}
 	_town_tiles.clear()
-	for c in world.get("cities", []):
+	for c in store.rec("cities", []):
 		_town_tiles["%d,%d" % [int(c["x"]), int(c["y"])]] = true
-	for u in world.get("units", []):
+	for u in store.rec("units", []):
 		var id := int(u["id"])
 		seen[id] = true
 		var key := "%d,%d" % [int(u["x"]), int(u["y"])]

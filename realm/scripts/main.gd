@@ -863,7 +863,7 @@ func _on_realm_changed() -> void:
 	for id in towns.towns.keys():
 		towns.towns[id]["node"].queue_free()
 	towns.towns.clear()
-	units.sync({"units": []}, {})
+	units.sync({})  # the store's records are clear: no companies
 	roads.sync()  # the store's records are clear: no roads
 	ui.clear_chronicle()
 	_selected = -1
@@ -957,7 +957,7 @@ func _on_synced() -> void:
 	Engine.set_meta("stage", "scenes.sync")
 	scenes.sync(bridge.world, _houses)
 	Engine.set_meta("stage", "units.sync")
-	units.sync(bridge.world, _houses)
+	units.sync(_houses)
 	Engine.set_meta("stage", "ui.set_world")
 	ui.set_world(_houses)
 	if ui.minimap.terrain == null:
@@ -1131,7 +1131,7 @@ func _follow_house(pid: int) -> void:
 		_frame_castle(seat)
 		return
 	_house_seen = -1
-	var host: Node3D = units.army_of(pid, bridge.world)
+	var host: Node3D = units.army_of(pid)
 	if host:
 		director.watch_at(host.global_position, rig.knob("go_to.host", 12.0), "%s's host" % name, host)  # from above the canopy, not through it
 		return
