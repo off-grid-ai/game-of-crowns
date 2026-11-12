@@ -303,7 +303,6 @@ func _ready() -> void:
 	bridge.active = _shot.has("path") and not _shot.has("title")
 	add_child(bridge)
 	bridge.map_loaded.connect(_on_map)
-	bridge.world_updated.connect(_on_world)
 	over._overview_setup()
 	bridge.chronicle_added.connect(ui.add_chronicle)
 	# The realm's sound: ambience from the camera, stingers from the chronicle.
@@ -316,7 +315,9 @@ func _ready() -> void:
 	awareness.terrain = terrain
 	awareness.towns = towns
 	awareness.villagers = villagers
+	awareness.bridge = bridge  # the store takes /world itself; the view redraws when it has (synced)
 	add_child(awareness)
+	awareness.synced.connect(_on_synced)
 	# Town life's one director (town_scenes.gd): it casts every town scene's people from realm/data/town_scenes.json.
 	var town_scenes := preload("res://scripts/town_scenes.gd").new(self)
 	add_child(town_scenes)
@@ -878,7 +879,8 @@ func _on_map(map: Dictionary) -> void:
 
 const LANE_MARGIN := 0.8  # a pine's crown reaches about this far from its trunk
 var _laying := false  # roads and countryside are being laid out, a frame at a time
-func _on_world(world: Dictionary) -> void:
+func _on_synced() -> void:
+	var world: Dictionary = bridge.world
 	if world.get("seatId") != null:
 		Engine.set_meta("crown_seat", int(world["seatId"]))  # the King's seat: its townsfolk have minds (town_life.minds_on)
 	# The story needs only the houses and seats, not the land: it can begin
@@ -888,8 +890,6 @@ func _on_world(world: Dictionary) -> void:
 		story._tell_the_story.call_deferred()
 	if terrain.width == 0:
 		return
-	if awareness:
-		awareness.sync(world)  # the view's one mirror of the realm, before anyone reads it
 	director.world = world
 	director.set_process(not _shot.has("path") or _shot.get("director", false))
 	if _shot.get("director", false) and not director.active:
