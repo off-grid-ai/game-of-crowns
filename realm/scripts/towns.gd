@@ -1482,12 +1482,16 @@ func _fields_beyond(root: Node3D, center: Vector3, size: int, rng: RandomNumberG
 	var edge: PackedVector2Array = root.get_meta("edge_outline", PackedVector2Array())
 	if main.is_empty():
 		return
-	var n := clampi(size * 3, 4, 36)
+	var knobs: Dictionary = preload("res://scripts/data.gd").value("towns", "edge", {})
+	# How many strips (towns.json edge.fields_per_size, fields_most; 01-town's patchwork beyond the wall).
+	var n := clampi(size * int(knobs.get("fields_per_size", 3)), 4, int(knobs.get("fields_most", 36)))
+	var fw: Array = knobs.get("field_width", [0.32, 0.5])
+	var fl: Array = knobs.get("field_length", [1.1, 1.8])
+	var apart := float(knobs.get("field_apart", 0.0))  # > 0: strips as close as this share of their width, side by side
 
 	var laid: Array = []
 	# The town's edge as art target town-a/b paint it: wheat round the windmill, orchards by the roads out
 	# (towns.json edge), then the open strips.
-	var knobs: Dictionary = preload("res://scripts/data.gd").value("towns", "edge", {})
 	_mill_wheat(root, center, edge, int(knobs.get("mill_wheat", 0)), laid, rng)
 	_orchards(root, center, main, edge, int((knobs.get("orchards", {}) as Dictionary).get(_rank, 0)), knobs.get("orchard", {}), laid, rng)
 	for i in n * 8:
@@ -1502,17 +1506,20 @@ func _fields_beyond(root: Node3D, center: Vector3, size: int, rng: RandomNumberG
 		var tan: Vector2 = at[1]
 		var on: Vector2 = at[0] + tan * maxf(0.0, s - total)  # past the road's end, on in its line
 		var out: Vector2 = tan.orthogonal() * (1.0 if rng.randf() < 0.5 else -1.0)
-		var fsize := Vector2(rng.randf_range(0.32, 0.5), rng.randf_range(1.1, 1.8))  # narrow, and long back from the road
+		var fsize := Vector2(rng.randf_range(float(fw[0]), float(fw[1])), rng.randf_range(float(fl[0]), float(fl[1])))  # narrow, and long back from the road
 		var mid: Vector2 = on + out * (TownPlots.ROAD_HALF + 0.1 + fsize.y * 0.5)
 		var off := Vector3(mid.x, 0, mid.y)
 		if edge.size() >= 3 and Geometry2D.is_point_in_polygon(mid, edge):
 			continue  # inside the town
-		if laid.any(func(q): return q.distance_to(mid) < fsize.y * 0.55) or TownPlots.near_ways(mid, main, fsize.y * 0.45):
+		var keep := fsize.x * apart if apart > 0.0 else fsize.y * 0.55
+		if laid.any(func(q): return q.distance_to(mid) < keep) or TownPlots.near_ways(mid, main, fsize.y * 0.45):
 			continue
 		if not _flat_enough(center, off, 0.5) or _built_on(root, off) or not _dry_all_over(center, off, fsize, atan2(out.x, out.y)):
 			continue
 		_field_at(root, center, off, fsize, atan2(out.x, out.y), CROPS[rng.randi() % CROPS.size()], rng)
 		laid.append(mid)
+		if rng.randf() < float(knobs.get("hedgerow", 0.0)):
+			_hedgerow(root, center, off, fsize, atan2(out.x, out.y), knobs, rng)
 
 
 ## Wheat round the town's windmill (towns.json edge.mill_wheat: how many fields; art target town-a/b: the mill
@@ -3187,3 +3194,26 @@ func _tree_feet(root: Node3D, center: Vector3, q: Vector3, lots: Array, rng: Ran
 		if kind == "":
 			continue
 		_place(root, kind, p + Vector3(0, _ground_y(center, p) - 0.01, 0), rng.randf() * TAU, Vector3.ONE * rng.randf_range(0.8, 1.15), Vector2(0.03, 0.03))
+
+
+## A hedgerow down one long side of a field (towns.json edge.hedgerow: the chance, hedge_every: game units between
+## shrubs, hedge_tree: the chance a tree stands in it; 01-town's patchwork, fields edged in hedges): round shrubs
+## (assets.json tree_shrub) in a line, now and then a town tree, never on a road.
+func _hedgerow(root: Node3D, center: Vector3, off: Vector3, fsize: Vector2, yaw: float, knobs: Dictionary, rng: RandomNumberGenerator) -> void:
+	var b := Basis(Vector3.UP, yaw)
+	var side := 1.0 if rng.randf() < 0.5 else -1.0
+	var every := float(knobs.get("hedge_every", 0.07))
+	var z := -fsize.y * 0.5
+	while z <= fsize.y * 0.5:
+		var p := off + b * Vector3(side * (fsize.x * 0.5 + 0.03), 0, z + rng.randf_range(-0.2, 0.2) * every)
+		z += every
+		if not terrain.is_land(center.x + p.x, center.z + p.z) or _on_road(p, 0.05) or _built_on(root, p):
+			continue
+		var tree := rng.randf() < float(knobs.get("hedge_tree", 0.0))
+		var kind := _green_kind(_tree_comp() if tree else "tree_shrub", rng)
+		if kind == "":
+			continue
+		var sc := rng.randf_range(0.75, 0.95) if tree else rng.randf_range(0.9, 1.3)
+		_place(root, kind, p + Vector3(0, _ground_y(center, p) - 0.01, 0), rng.randf() * TAU, Vector3.ONE * sc, Vector2(0.04, 0.04))
+		if tree:
+			_crown(center, p, kind, sc)
