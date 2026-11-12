@@ -121,6 +121,12 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 12:00 (11-12) Mac: "there should be some engine that already solves for this", then "let me get this work done in
+  another one of my agents. you continue with the other stuff." Town-life behaviour (director, group scenes,
+  routines, the engine survey) now belongs to Mac's other session; my survey agent stopped. works-life moved to how
+  people and animals LOOK (clothes, livery, heads, children, animals, carried props); it must not edit npc_mind.gd,
+  villagers.gd errand code, awareness.gd or the square-life scheduling. Audit of today's NPC code (four uncoordinated
+  systems; the open-air fallback in villagers.gd place() 921-942) is in this session's history for the other agent.
 - 11:50 (11-12) Mac on a man looping gestures alone mid-square: "there is no real routine", "group routine", "town
   setting etc that governs people's behaviour... it all needs to flow from the top". Direction given to works-life:
   four layers, each reading only the one above: (1) the town's state from the bridge (size, food, prosperity,
