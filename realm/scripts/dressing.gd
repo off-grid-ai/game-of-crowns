@@ -214,6 +214,7 @@ static func dress(root: Node3D, ground: Callable, land: Callable, seed: int) -> 
 		var mmi := MultiMeshInstance3D.new()
 		mmi.name = model.replace("/", "_")
 		mmi.multimesh = mm
+		mmi.set_meta("xfs", xfs)  # where each copy stands, read by the walk map (nav_ground.instances; headless keeps none)
 		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if model.begins_with("nature/") else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		mmi.visibility_range_end = 30.0  # small things: drawn near the camera only
 		node.add_child(mmi)

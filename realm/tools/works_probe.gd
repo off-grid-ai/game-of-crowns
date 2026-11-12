@@ -20,7 +20,50 @@ class FlatLand extends Node3D:
 		return true
 
 
+## Stands in for the realm's navigation (as director_probe's): a straight route, the probe's town has nothing to go
+## round. The horses walk by the Mover (CLAUDE.md, one way to move), which asks the realm for every route; without
+## one it waits for ever, as it would for a walk map still baking.
+class Nav extends RefCounted:
+	func waits(_towns: Variant, _from: Vector3, _to: Vector3, _wide := false) -> bool:
+		return false
+	func route(_towns: Variant, from: Vector3, to: Vector3, _wide := false) -> PackedVector3Array:
+		return PackedVector3Array([from, to])
+
+
+class Scenes extends Node3D:
+	var nav := Nav.new()
+	func stand(p: Vector3) -> Vector3:
+		return p
+
+
+## The mirror's stand-in (as director_probe's): one blackboard per town, news never comes.
+class Aware extends Node:
+	signal stimulus(kind: String, pos: Vector3, radius: float, house: String, strength: float)
+	var boards := {}
+	var realm := Blackboard.new()
+	var villagers = null
+	func town(id: int) -> Blackboard:
+		if not boards.has(id):
+			boards[id] = Blackboard.new()
+		return boards[id]
+	func attach(_p: Node, _t: int) -> void:
+		pass
+
+
+class Towns extends Node3D:
+	var towns := {}
+
+
+## The realm the Mover finds through the mirror (Engine meta "awareness", its parent).
+class Main extends Node:
+	var scenes: Node3D
+	var towns = null
+	var terrain: Node3D
+	var awareness: Node
+
+
 func _init() -> void:
+	preload("res://tools/watchdog.gd").arm(self)
 	_run.call_deferred()
 
 
@@ -65,12 +108,52 @@ func _rotor(root: Node3D, at: Vector3) -> Node3D:
 	return holder
 
 
+## A spot by `want` (town-local) with open cobble, nobody within a horse's yield reach (towns.json nav.yield) of it
+## or of the straight way to it from `from`, so a led horse can come up behind whoever stands there (the Mover's
+## yield waits for anyone standing in its way: a knot of gossips on the line would hold it, not the lead).
+func _open_spot(life: Object, town: Node3D, want: Vector3, from: Vector3) -> Vector3:
+	for ring in 12:
+		for k in 12:
+			var a := TAU * k / 12.0
+			var p := want + Vector3(cos(a), 0, sin(a)) * 0.1 * ring
+			if not life.open_ground(town, p):
+				continue
+			var w := town.to_global(p)
+			var f2 := Vector2(from.x, from.z)
+			var p2 := Vector2(p.x, p.z)
+			if get_nodes_in_group("people").all(func(n):
+				var q := town.to_local((n as Node3D).global_position)
+				var q2 := Vector2(q.x, q.z)
+				return q2.distance_to(p2) > 0.6 and Geometry2D.get_closest_point_to_segment(q2, f2, p2).distance_to(q2) > 0.25):
+				return p
+	return want
+
+
+## A tenth of a second of the works: the tick decides where each horse is headed, its Mover walks it there (a
+## headless frame is far shorter than a tenth, so the probe steps both by the same clock).
+func _step(tick: Node, horses: Array) -> void:
+	tick._process(0.1)
+	for h: Node3D in horses:
+		var m: Node = h.get_node_or_null("Mover")
+		if m and m.moving():
+			m._process(0.1)
+
+
 func _run() -> void:
 	var fails := 0
 	var world := Node3D.new()
 	root.add_child(world)
 	var land := FlatLand.new()
 	world.add_child(land)
+	var main := Main.new()
+	main.terrain = land
+	main.towns = Towns.new()
+	main.scenes = Scenes.new()
+	main.awareness = Aware.new()
+	root.add_child(main)
+	main.add_child(main.scenes)
+	main.add_child(main.awareness)
+	Engine.set_meta("awareness", main.awareness)
 	var states := {
 		"peace": {},
 		"war": {"atWar": true},
@@ -109,7 +192,7 @@ func _run() -> void:
 			print("FAIL %s: the forge or the paddock is empty" % name)
 			fails += 1
 		# The barn's yard: beasts living their idle life, as many as works.json says (when this build has their models).
-		var beasts := l.get_children().filter(func(n): return n.has_meta("beast") and n.get_meta("beast") != "dog")
+		var beasts := l.get_children().filter(func(n): return n.has_meta("beast") and n.get_meta("beast") != "dog" and not n.has_meta("stall_hen"))  # the barn's: not the market's hens (town_scenes stall_hens)
 		var living := beasts.filter(func(n): return not n.find_children("Life", "Timer", true, false).is_empty())
 		var want_beasts := Works.count("beasts", Works.states(c, 7), 6)
 		print("WORKS %-7s yard: %d beasts (%d living their idle life; works.json %d); inn soldiers %d" % [name, beasts.size(), living.size(), want_beasts,
@@ -208,7 +291,7 @@ func _run() -> void:
 			var start: Array = horses.map(func(h): return (h as Node3D).position)
 			for i in 200:
 				await process_frame
-				tick._process(0.1)
+				_step(tick, horses)
 			var moved := 0
 			var paddock: Vector3 = tick.paddock
 			for i in horses.size():
@@ -216,7 +299,7 @@ func _run() -> void:
 				if h.position.distance_to(start[i]) > 0.01:
 					moved += 1
 				if Vector2(h.position.x - paddock.x, h.position.z - paddock.z).length() > tick.roam + 0.05:
-					print("FAIL a horse left its paddock")
+					print("FAIL a horse left its paddock (%.2f out, roam %.2f)" % [Vector2(h.position.x - paddock.x, h.position.z - paddock.z).length(), tick.roam])
 					fails += 1
 			var grazed := horses.filter(func(h): return (h.get("_idle_life") as Array).size() > 1).size()
 			print("WORKS horses grazing: %d of %d moved in 20 s; %d with a graze in their idle life" % [moved, horses.size(), grazed])
@@ -229,10 +312,11 @@ func _run() -> void:
 			# A groom leads one: it follows.
 			var groom := Node3D.new()
 			world.add_child(groom)
-			groom.global_position = town.to_global(Vector3(0.5, 0, 0.5))
+			groom.global_position = town.to_global(_open_spot(life, town, tick.paddock + Vector3(0.9, 0, -0.3), tick.paddock))  # a clear way from the paddock
 			var led := Works.take_horse(town, groom, false)
 			for i in 200:  # from the paddock to where the groom stands, then it waits behind him
-				tick._process(0.1)
+				await process_frame
+				_step(tick, horses)
 			var gap := Vector2(led.global_position.x - groom.global_position.x, led.global_position.z - groom.global_position.z).length()
 			print("WORKS a led horse is %.2f behind its groom" % gap)
 			if gap > 0.3:

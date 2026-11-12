@@ -515,14 +515,29 @@ class Tick extends Node:
 				h.set_meta("rest", _rng.randf_range(1.0, 3.0))
 				Mover.of(h).stop()
 				continue
-			_walk_horse(h, to, pace)
+			_walk_horse(h, to, pace, by == null)
 
 	## A horse's walk to `to` (town-local) by the Mover (CLAUDE.md, one way to move): it steers on an arc at least
 	## works.json paddock.turn_radius wide and never turns on the spot (Mac, 12 Nov: "it just rotates in the same
 	## place"); its gait follows its speed (horse.gd). A goal that moves (its groom walking on) is asked for again
 	## once it has moved a stride.
-	func _walk_horse(h: Node3D, to: Vector3, pace: float) -> void:
+	## fenced: loose in its paddock, it never steps past the fence (the Mover's keep: a horse on an arc slides along
+	## the rail rather than walking through it); led, it goes where its groom goes.
+	func _walk_horse(h: Node3D, to: Vector3, pace: float, fenced: bool) -> void:
 		var m: Node = Mover.of(h)
+		if fenced and paddock != Vector3.INF:
+			var r := root
+			var mid := paddock
+			var most := roam
+			m.keep = func(w: Vector3) -> Vector3:
+				var l := r.to_local(w)
+				var off := Vector2(l.x - mid.x, l.z - mid.z)
+				if off.length() <= most:
+					return w
+				off = off.normalized() * most
+				return r.to_global(Vector3(mid.x + off.x, l.y, mid.z + off.y))
+		else:
+			m.keep = Callable()
 		var goal := root.to_global(to)
 		var was: Vector3 = h.get_meta("walk_to", Vector3.INF)
 		if m.moving() and was.distance_to(goal) < 0.05:
