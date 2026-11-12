@@ -1,4 +1,5 @@
 #!/bin/zsh
+if [ -e /tmp/goc-no-render ]; then echo "stills.sh: renders are paused (/tmp/goc-no-render)" >&2; exit 3; fi
 # Renders the intro and launch-video stills into realm/assets/intro/stills:
 # one Godot at a time, natively, at 4K, without the interface. Each render is
 # given up to five minutes. Usage: realm/tools/stills.sh [log dir]

@@ -9,6 +9,9 @@
 # ahead of other renders (the launch kit), GODOT_ARGS engine
 # flags before the -- (a movie: "--write-movie out.avi --fixed-fps 30").
 cd "$(dirname "$0")/.."
+# Mac (11-12): no Godot windows until every coding change is done. While this file exists, every render
+# refuses to start. The top supervisor removes it for the one off-screen pass.
+if [ -e /tmp/goc-no-render ]; then echo "render.sh: renders are paused (/tmp/goc-no-render: $(cat /tmp/goc-no-render))" >&2; exit 3; fi
 LOCK=/tmp/goc-render.lock
 OUT=$1; shift
 # Ali's game: a Godot that isn't a render, a movie take or a headless check.
