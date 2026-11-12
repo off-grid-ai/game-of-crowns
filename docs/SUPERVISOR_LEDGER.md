@@ -121,6 +121,10 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 16:05 (11-12) Freeciv move steps 1-2 landed (20c2ee09 ruleset Lua in realmrules/script.lua; c56a5f0d medieval
+  ruleset, policies Levy Muster / Market Tolls / Granary Stores), main bridge restarted. Per Mac (via that thread): no
+  private-bridge runs for it; probe, commit, reload. Route past 3.2's Lua limit: decree buildings now, favour as AI
+  love on 3.3. Mac asked about Tripo AI vs Meshy: bake-off first (one building + the hen, same inputs), via GoC.
 - 16:00 (11-12) Mac gave a Meshy API key (macOS keychain: `security find-generic-password -a goc -s meshy-api-key -w`;
   never printed, filed or committed). All Meshy work goes through the API, no browser. Balance 1,060 credits.
   fire-siege pushed the square fixes (13429948 roof patches gone, 01236c8d 7 stalls round the edge, 24084252 bake-off
