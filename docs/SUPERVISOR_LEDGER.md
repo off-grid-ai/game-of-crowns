@@ -121,6 +121,12 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 14:45 (11-12) Mac like: the Meshy king's statue in the square, "this actually looks good". It's the bar for the
+  square set (full painted colour, gold trim, house banner on the plinth, clear silhouette). Mac on the square still,
+  "SUPER weird": routed (note supervisor-routing-square-weird.md in the shared notes): grey fountain-well and trees
+  in the paving -> fire-siege local_601300c6; angled planks/tipped tables and strewn crates -> army-ui local_3c38400b;
+  crowd knot -> town-life; horses/carts in props -> army-layer; washed-out light held by the supervisor. Builders
+  running: fire-siege local_601300c6, army-ui local_3c38400b, works-life local_a120f392. Round 11 rendering (the before).
 - 14:25 (11-12) Takeover: the Claude-4 account hit its limit; all 8 threads restarted on this account, same tree.
   "Game of Crowns visual polish" (top) → army-layer local_e7013866 (mover.gd + army files; fixes the mover.gd compile
   break first), ground-truth local_2b1ad043 (commit its probes + GROUND_TRUTH.md), town-life local_964c05dc
