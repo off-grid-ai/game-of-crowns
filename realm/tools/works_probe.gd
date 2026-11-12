@@ -196,9 +196,13 @@ func _run() -> void:
 		var at_work := {}
 		for trade in ["tannery", "dyer", "alehouse", "stables"]:
 			var want_n := 0
+			var spot := Vector3.INF
 			for row: Dictionary in crews.get(trade, []):
 				want_n += Works.count(String(row.get("n", "")), Works.states(c, 7), 6) if row.get("n") is String else int(row.get("n", 1))
-			var spot: Vector3 = Works.anchors(town)[trade]["spots"].values()[0] if Works.anchors(town).has(trade) else Vector3.INF
+				if Works.anchors(town).has(trade):
+					for k in row["spot"]:  # the crew's own spot: the first of its names the building has
+						if spot == Vector3.INF:
+							spot = (Works.anchors(town)[trade]["spots"] as Dictionary).get(String(k), Vector3.INF)
 			var crew := l.get_children().filter(func(n): return n.get_meta("crew", "") == trade and n.has_node("Mind") and (n as Node3D).position.distance_to(spot) < 0.35)
 			at_work[trade] = "%d/%d" % [crew.size(), want_n]
 			if want_n == 0 and name == "peace" or crew.size() != want_n:
@@ -331,6 +335,7 @@ func _run() -> void:
 			world.add_child(groom)
 			groom.global_position = town.to_global(_open_spot(life, town, tick.paddock + Vector3(0.9, 0, -0.3), tick.paddock))  # a clear way from the paddock
 			var led := Works.take_horse(town, groom, false)
+			groom.global_position = town.to_global(_open_spot(life, town, town.to_local(groom.global_position), led.position))  # the way clear from the horse he leads
 			for i in 200:  # from the paddock to where the groom stands, then it waits behind him
 				await process_frame
 				_step(tick, horses)

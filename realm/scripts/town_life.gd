@@ -915,8 +915,15 @@ func _crews(root: Node3D, life: Node3D, center: Vector3, all: Dictionary, n: Cal
 		var b: Dictionary = all[trade]
 		var sp: Dictionary = b["spots"]
 		for row: Dictionary in crews[trade]:
+			var spot: Variant = null
+			for k in row["spot"]:
+				if sp.has(String(k)):
+					spot = sp[String(k)]
+					break
+			if spot == null:
+				continue  # none of its spots: nowhere to work at this building
 			for i in int(n.call(String(row["n"]))):
-				var t := _stand(root, life, center, sp.get(String(row["spot"]), b["at"]), String(row["who"]), String(row["clip"]), rng.randi(), Color.WHITE, 0.2)
+				var t := _stand(root, life, center, spot, String(row["who"]), String(row["clip"]), rng.randi(), Color.WHITE, 0.2)
 				if t:
 					t.set_meta("crew", trade)
 					_face(t, b["at"])

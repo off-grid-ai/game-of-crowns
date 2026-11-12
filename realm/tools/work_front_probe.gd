@@ -15,7 +15,13 @@ const TownTrades := preload("res://scripts/town_trades.gd")
 const Data := preload("res://scripts/data.gd")
 ## [component, model as towns.gd names it, [[a worker's spot names, first found wins], ...]]
 ## (the forge: the smith at the anvil, the bellows hand, and where they step to: the quench and the coal store)
-const TRADES := [["forge", "meshy_sq_smithy", [["smith", "anvil"], ["bellows", "second", "hearth"], ["trough"], ["store"]]]]
+## [component, model, the workers' spots (each the first of its names the trade has), whether it brings its own props]
+const TRADES := [["forge", "meshy_sq_smithy", [["smith", "anvil"], ["bellows", "second", "hearth"], ["trough"], ["store"]], true],
+	["alehouse", "meshy_ts_alehouse", [["barrels"], ["door"]], false],  # the brewer (works.json crews)
+	["windmill", "meshy_ts_windmill", [["door"], ["sacks"]], false],  # the miller
+	["tannery", "meshy_ts_tannery", [["front", "vats"]], true],  # the tanner, before the hide racks
+	["dyer", "meshy_ts_dyer", [["vats"]], true],  # the dyer
+	["town_stables", "meshy_ts_stables", [["gate"]], true]]  # the stable hand, at the paddock gate (the heap is inside the fence)
 const REACH := 2.0  # metres in front of the outline's front edge a worker may stand and still be at the work
 
 
@@ -64,8 +70,8 @@ func _init() -> void:
 		# A model that brings its own work props (meshy.json own_props: the smithy's anvil and trough are in it) gets no
 		# kit ones laid over them (towns.gd puts dress false on its works entry; town_life._forge skips the kit anvil).
 		var own := TownTrades.own_props(kind)
-		fails += 0 if own else 1
-		print("WORK %s %s brings its own work props: %s" % ["ok  " if own else "FAIL", kind, own])
+		fails += 0 if own == bool(t[3]) else 1
+		print("WORK %s %s brings its own work props: %s" % ["ok  " if own == bool(t[3]) else "FAIL", kind, own])
 	if TownTrades.own_props("forge"):
 		fails += 1
 		print("WORK FAIL the kit forge claims its own work props (it has none: town_life dresses it)")
