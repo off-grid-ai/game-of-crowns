@@ -107,7 +107,47 @@ func build_castle(spec: Dictionary) -> ArrayMesh:
 		parts.append(["res://assets/props/Banner_1.gltf", Transform3D(b, keep_at + Vector3(-0.8 * banner, top - 2.0 - 0.84 * banner, kh + 0.15))])
 		for sx in [-1, 1]:
 			parts.append(["res://assets/props/Banner_2.gltf", Transform3D(b.scaled(Vector3.ONE * 0.8), gate_at + Vector3(sx * (gh - 0.9) - 0.65 * banner, (wall_st + 1) * STOREY - 0.6 - 0.7 * banner, 3.0 + 0.15))])
-	return _bake(parts)
+	var stone := _castle_stone()
+	if not stone.is_empty():
+		for p in parts:
+			var piece := String(p[0])
+			if piece in [LEAF, BARS, DOOR] or piece.begins_with("res://") or piece.begins_with("Stairs"):
+				p.append({})  # the gate's leaves, its portcullis, the doors, the stairs, Meshy's gate and the banners keep their own
+	return _bake(parts, stone)
+
+
+## The castle's own stone (data/castle.json stone; 01-town: warm light-grey stone; round 5: flat grey slabs
+## with dark mortar and orange course strips): the kit's stone lightened and warmed, and the timber courses
+## the wall panel carries at each storey laid in a darker stone of the same, so no orange strips run round the
+## walls. Its own materials, graded, so look.gd's kit tints leave them be. --castle-stone=kit: the kit's.
+func _castle_stone() -> Dictionary:
+	var k: Dictionary = preload("res://scripts/data.gd").value("castle", "stone", {})
+	if k.is_empty() or not bool(k.get("on", true)) or OS.get_cmdline_user_args().has("--castle-stone=kit"):
+		return {}
+	var n: Node3D = _piece(WALL)
+	var brick: BaseMaterial3D = null
+	for mi in n.find_children("*", "MeshInstance3D", true, false):
+		for i in (mi as MeshInstance3D).mesh.get_surface_count():
+			var m: Material = (mi as MeshInstance3D).get_active_material(i)
+			if m is BaseMaterial3D and m.resource_name == "MI_UnevenBrick":
+				brick = m
+	n.free()
+	if brick == null:
+		return {}
+	var rgb := func(a, fallback: Color) -> Color: return Color(float(a[0]), float(a[1]), float(a[2])) if a is Array and (a as Array).size() >= 3 else fallback
+	var out := {}
+	var wall: BaseMaterial3D = brick.duplicate()
+	wall.resource_name = "MI_UnevenBrick_castle"
+	wall.albedo_color = rgb.call(k.get("tint"), Color.WHITE)
+	wall.set_meta("graded", true)
+	out["MI_UnevenBrick"] = wall
+	if k.has("course_tint"):
+		var course: BaseMaterial3D = brick.duplicate()
+		course.resource_name = "MI_UnevenBrick_course"
+		course.albedo_color = rgb.call(k.get("course_tint"), Color.WHITE)
+		course.set_meta("graded", true)
+		out["MI_WoodTrim"] = course
+	return out
 
 
 ## The curtain's 2 m bays on each side (front, right, back, left), as offsets along the side's frame: all
@@ -342,8 +382,12 @@ func _passage(parts: Array, at: Vector3, half: float, opts: Dictionary) -> void:
 ## One 2 m bay of curtain wall, `off` along the run's frame (+Z outward): stone
 ## both faces, a walk along its top, a merlon on its outer edge every other metre.
 func _curtain(parts: Array, frame: Transform3D, off: float, storeys: int) -> void:
+	# An arrow slit in the top storey's outer face every few bays (castle.json stone.slit_every; round 5: the
+	# curtain a flat grey slab).
+	var every := int((preload("res://scripts/data.gd").value("castle", "stone", {}) as Dictionary).get("slit_every", 0))
+	var slit := every > 0 and posmod(int(round(off / CELL)), every) == 0
 	for f in storeys:
-		parts.append([WALL, frame * Transform3D(Basis(), Vector3(off, f * STOREY, 0))])
+		parts.append([WINDOW if slit and f == storeys - 1 else WALL, frame * Transform3D(Basis(), Vector3(off, f * STOREY, 0))])
 		parts.append([WALL, frame * Transform3D(Basis(Vector3.UP, PI), Vector3(off, f * STOREY, -0.4))])
 	var top := storeys * STOREY + 0.12
 	parts.append([CAP, frame * Transform3D(Basis.from_scale(Vector3(1.0, 1.0, 0.3)), Vector3(off, top - 0.02, -0.2))])

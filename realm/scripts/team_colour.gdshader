@@ -42,6 +42,7 @@ uniform float thatch_eave_dark = 0.62;
 uniform float thatch_eave_band = 0.16;
 uniform float thatch_storey = 0.36;
 uniform vec3 dark_tile : source_color = vec3(0.5, 0.42, 0.4);
+uniform float house_roof_share = 1.0;  // a roof that wears the house colour (the castle's, a hall's, a "house" covering) takes this share of it over its own terracotta
 uniform float ordinary_share = 0.5;  // a house's trims and shutters take this share of the colour
 uniform float paint_sat = 0.8;  // the house colour toned toward its own grey: warm, painted, not neon
 uniform vec3 paint_warm : source_color = vec3(1.0, 0.93, 0.84);
@@ -117,6 +118,7 @@ void fragment() {
 	} else if (!is_roof && team_rank < 1.5) {
 		amt *= ordinary_share;
 	}
+	if (is_roof && !straw) amt *= house_roof_share;
 	ALBEDO = mix(base, tc, amt);
 	ROUGHNESS = straw ? 0.95 : roughness;
 	if (straw) {

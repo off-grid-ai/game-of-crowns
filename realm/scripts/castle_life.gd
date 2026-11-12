@@ -237,6 +237,23 @@ func _arms(xf: Transform3D, sp: Dictionary, house: Dictionary, colour: Color, d:
 	var hangs := [[Vector3(0, keep_top, keep_z), Vector2(1.2, 3.0) * size]]
 	for sx in [-1.0, 1.0]:
 		hangs.append([Vector3(sx * (gh - 0.6), gate_top, gate_z), Vector2(0.9, 2.2) * size])
+	# Along the front curtain, facing the square, every arms.curtain_every metres (01-town: the arms all along
+	# the wall; round 5: none on the curtain), clear of the gatehouse.
+	var every := float(k.get("curtain_every", 0.0))
+	if every > 0.0:
+		var wall_top := int(sp.get("wall_storeys", 2)) * Builder.STOREY - 0.3
+		for run in Builder.curtain_runs(sp):
+			if int(run["side"]) != 0:
+				continue
+			var a: Vector3 = run["a"]
+			var b: Vector3 = run["b"]
+			var out: Vector3 = run["out"]
+			var n := int(floor(a.distance_to(b) / every))
+			for i in n:
+				var at: Vector3 = a.lerp(b, (i + 0.5) / float(n))
+				if absf(at.x) < Builder.gate_tower_x() + 1.5:
+					continue
+				hangs.append([at + out * 0.15 + Vector3(0, wall_top, 0), Vector2(0.9, 2.2) * size * float(k.get("curtain_size", 0.8))])
 	# One down the town-facing face of each front and gate tower (01-town: the arms on every tower).
 	for t in Builder.towers(sp):
 		var at: Vector3 = t["at"]

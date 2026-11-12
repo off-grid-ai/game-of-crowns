@@ -76,6 +76,7 @@ func _team_mat(src: BaseMaterial3D, amount: float) -> ShaderMaterial:
 	m.set_shader_parameter("roof_cottage", _v4(roofs.get("cottage"), Vector4(0.55, 0.25, 0.1, 0.1)))
 	m.set_shader_parameter("roof_town", _v4(roofs.get("town"), Vector4(0.15, 0.4, 0.2, 0.25)))
 	m.set_shader_parameter("thatch", _rgb(roofs.get("thatch"), Color(0.8, 0.64, 0.34)))
+	m.set_shader_parameter("house_roof_share", float(roofs.get("house_share", 1.0)))
 	m.set_shader_parameter("dark_tile", _rgb(roofs.get("dark_tile"), Color(0.5, 0.42, 0.4)))
 	m.set_shader_parameter("thatch_old", _rgb(roofs.get("thatch_old"), Color(0.5, 0.42, 0.31)))
 	var straw: Dictionary = roofs.get("straw", {})
