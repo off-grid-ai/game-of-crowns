@@ -1,6 +1,6 @@
 # Supervisor state (kept by the top supervisor every turn; Mac never has to remember)
 
-Updated 2026-11-12 ~19:20.
+Updated 2026-11-12 ~19:45.
 
 ## Waiting on Mac
 - Nothing.
@@ -8,10 +8,10 @@ Updated 2026-11-12 ~19:20.
 ## Threads (4 + 1 closing)
 | Thread | Session | Doing now | Next |
 |---|---|---|---|
-| Look audit (art set) | local_1116fb7d | Army set in Meshy: knight, horse redraw (Mac said yes), then a transport cog | Houses (roofs first), trees, ground; judges every frame beside the target |
-| Army layer | local_7f29ed9b | Muster crash: windowed only, after "mover gave up" (lead: re-entrant NavigationServer call) | 397 replay view faults; battle density (~60 of 600 drawn, lines still); routes coloured by house; ship view (map done 131fd48b) |
+| Look audit (art set) | local_1116fb7d | Army set LANDED 67c15196 (meshy_knight, cavalry on the horse rig, KayKit knight_v2 deleted). Open: barding, surcoat and plumes are cream on the turntable; they must take the house colour (mask or repaint). Castle (4) and houses (6) made, importing; nature set and cog in progress | Houses (roofs first), trees, ground; judges every frame beside the target |
+| Army layer | local_7f29ed9b | Crash RETRACTED (it was the window being closed); told to kill the re-signed Godot copy (it set off a macOS malware box) and drop the lldb runner | 397 replay view faults; battle density (~60 of 600 drawn, lines still); routes coloured by house; ship view (map done 131fd48b) |
 | One store | local_dad14ab9 | Land use from Freeciv's worked tiles and specials (scratch copy; land in use 15% to 72%) | Gardens, shores; engine-visual gaps (sync order proof, plague shown, house income shown); ruleset: ships transport-only |
-| GoC | local_22c5fa46 | READY 8 click fix (autoplay viewport vs window coords, x1.34): verifying, then land and retake | Step 6 camera and contrast frames (data edits ready, uncommitted); milestone retakes PAUSED until the Meshy army set lands (Mac killed the game: no filming of art about to be replaced) |
+| GoC | local_22c5fa46 | READY 8 click fix (autoplay viewport vs window coords, x1.34): verifying, then land and retake | Step 6 camera and contrast frames (data edits ready, uncommitted); UNPAUSED for the army: rendering the 03-army framing and a close cavalry frame for look audit to judge; then muster, battle and siege with the new army |
 | Fire and siege (closing) | local_7100b3cd | Capture-chain probe (a town changing hands mid-siege) | Land it, then archive |
 
 ## READY
