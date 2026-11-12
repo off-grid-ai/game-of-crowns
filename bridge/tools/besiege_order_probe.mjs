@@ -60,7 +60,9 @@ const foe = world.players.find((p) => p !== crown);
 const town = world.cities.filter((c) => c.owner === foe?.id).sort((x, y) => y.size - x.size)[0];
 check(crown && foe && town, `no crown, house and town (${JSON.stringify(world.players)} ${JSON.stringify(world.cities)})`);
 if (!town) { await b.quit(); done(); }
-const emptied = await b.cmd(`lua cmd local c = find.city(nil, ${town.id}); local gone = {}; for u in c.tile:units_iterate() do gone[#gone + 1] = u end; for _, u in ipairs(gone) do edit.unit_kill(u, "disbanded", nil) end; log.normal("EMPTIED %d", c.size)`, /EMPTIED/);
+// Its men cleared from three tiles round, too: a company of theirs in the fields would hold the King's men off by
+// Freeciv's zones of control, which is the realm's rule but not what this probe tests.
+const emptied = await b.cmd(`lua cmd local c = find.city(nil, ${town.id}); local gone = {}; for t in c.tile:square_iterate(3) do for u in t:units_iterate() do if u.owner == c.owner then gone[#gone + 1] = u end end end; for _, u in ipairs(gone) do edit.unit_kill(u, "disbanded", nil) end; log.normal("EMPTIED %d", c.size)`, /EMPTIED/);
 check(/EMPTIED [2-9]/.test(emptied ?? ""), `the house's town is still a hamlet (${emptied}): Freeciv razes a size-1 town it conquers`);
 // The host two tiles off, with land between it and the walls (so its walk is one step: the step that must stop
 // short of the town's tile).
