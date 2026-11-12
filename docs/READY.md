@@ -34,6 +34,15 @@ Audit 2026-11-12 (supervisor): what the design homework planned against what lan
 | 14 | Command card on | Attack and besiege orders exist, drag-to-face, and `host_command.json` is switched on | Army command | built (d0a609b9; host_command.json on since 5af67493) |
 | 15 | Properly integrated | Mac: "everything properly integrated: SSOT, SRP, DRY, SOLID, OOP." Every finding of the architecture audit (supervisor, 12 Nov) fixed at its seam: one writer per fact, no duplicated logic, god files split, no second path left; less hand code (Mac: "make sure that there is less hand code"): what an engine block, add-on, Freeciv rule or data row can do is deleted from our code, and the hand-code line count goes down | All threads, by file owner | in progress: #2 lua port 7a40e675, #3 1c21211f, #4 1123e85e, #5 2e42d3db, #14 1f9c5b82, #8 motion/knight/court, #9 towns.gd split, #12 army.gd split, #16, #17, #18, #19 landed; left #1, #6, #7, #10, #11, #13, #15, #20 |
 
+## Look pass (Mac 11-12 16:20: "finish the build first", then this)
+Mac on the war-slice frames: "the heavy cavalry looks so childish… even the banner sigils are off… even the trees look childish… this isn't what we agreed". The probes proved function, not the look. After lines 10 and 15 are built, before the full round is called done, each item below is judged by eye beside docs/art/target/03-army.jpg (and 01-town for trees) at the same framing.
+| # | Item | Today | Target |
+|---|---|---|---|
+| L1 | Cavalry, knights, engines | KayKit chibi riders on a pack horse (`armies/cavalry`, `knight_v2`); engines drawn as knights | Meshy riders and horses in the regiments' painted set; engines are the Meshy catapult |
+| L2 | Banners and shields | every regiment flies the crown's arms (crown over eagle); canton glyphs (arrow, cross, crescent that reads Ottoman) | each house's own arms on banner and shield, house colours on livery; no crescent |
+| L3 | Trees | broadleaf lollipops on thin red trunks | painted broadleaf and pine as in 01-town and 03-army |
+| L4 | Brown company | no house colour, reads modern | in house colours like every regiment |
+
 ## Milestone clips (part of the plan, never a stop)
 
 Mac: "make this part of the plan. I don't want to lose time." A clip is cut when a group of lines is built. GoC renders it in the background through render.sh, and no builder waits for it or stops for it. Headless probes keep running beside it. Defects it shows go to their owners as normal items.
