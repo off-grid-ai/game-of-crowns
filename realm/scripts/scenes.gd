@@ -1405,14 +1405,12 @@ func _handover(at: Vector3, old_house: Dictionary, new_house: Dictionary, town: 
 		var goal := spot + dir * (0.35 + (i / 2) * 0.16) + side * ((i % 2) * 0.16 - 0.08)
 		s.position = stand(start)
 		s.rotation.y = atan2(-dir.x, -dir.z)
-		people.play(s, "Walk")
-		var mt := s.create_tween()
-		# Up the realm's own way in (town_nav: streets, roads, over dry land), never a straight line over a river.
-		var way := _route(s.position, goal)
-		if way.size() < 2:
-			way = PackedVector3Array([s.position, goal])
-		mt.tween_method(func(k: float): s.position = stand(terrain.paths.along(way, k)), 0.0, 1.0, 14.0)
-		mt.tween_callback(people.play.bind(s, "Sword_Idle", 1.0))
+		# Up the realm's own way in by the Mover (it asks town_nav: streets, roads, over dry land, never a straight line
+		# over a river), at a pace that brings them in as the new banner goes up (about 14 s); then they stand to it.
+		var m: Node = Mover.of(s)
+		m.speed = maxf(0.12, s.position.distance_to(goal) * 1.2 / 14.0)
+		m.clip = "Walk"
+		m.go(goal, people.play.bind(s, "Sword_Idle", 1.0))
 	tw.tween_interval(13.0)
 	tw.tween_callback(func():
 		var b := _standard(root, spot + Vector3(0.12, 0, 0), new_col, Vector3(0, 0, 1), new_house)

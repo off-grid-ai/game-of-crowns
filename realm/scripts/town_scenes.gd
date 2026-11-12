@@ -24,6 +24,7 @@ const SceneKinds := preload("res://scripts/scene_kinds.gd")
 const Mover := preload("res://scripts/mover.gd")
 const Mind := preload("res://scripts/npc_mind.gd")
 const Animals := preload("res://scripts/animals.gd")
+const Awareness := preload("res://scripts/awareness.gd")  # a mind's part handed it through the store (assign)
 const SEEN := Vector3(-0.5736, 0, -0.8192)  # the side of a square the town camera looks across as it comes down
 static var READ: float = Data.num("people", "readable", 1.0)  # drawn larger: they cover ground as their legs do
 ## Every var a town mind's tasks read, with its default: LimboAI's own declaration (a BlackboardPlan, mind_plan()),
@@ -495,6 +496,8 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 		for j in idx.slice(0, cap):
 			keep.append(spots[j])
 		spots = keep
+	elif cap >= 0 and spots.size() > cap:
+		spots = spots.slice(0, cap)  # a form of knots places several to each: the census counts people, not knots
 	var root: Node3D = k["root"]
 	var life: Node3D = k["life"]
 	var tl: Object = k["tl"]
@@ -528,7 +531,7 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 			if tv is String and tv == "house":
 				tint = tl.house_colour(root)
 			elif tv is Array:
-				tint = Color(float(tv[0]), float(tv[1]), float(tv[2]))
+				tint = Data.colour(tv, Color.WHITE)
 			var clips: Array = role.get("clips", ["Idle"])
 			if bool(role.get("can_play", false)):
 				clips = clips.filter(func(c): return preload("res://scripts/weapons.gd").can_play(String(c))).slice(0, 1)  # a lute only once there's a lute
@@ -589,6 +592,9 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 						kid.set_meta("pair", pi / 2)
 						_walker(kid, Chase.new(), {"pair": pair, "root": root}, "Running", float(W.get("pace", 0.32)))
 				elif pi == placed.size() - 1:
+					if body.has_meta("census"):
+						k["census"]["cast"] = int(k["census"]["cast"]) - 1  # not there after all: his place goes back
+						k["census"]["left"] = int(k["census"]["left"]) + 1
 					body.queue_free()  # no one found room to chase him: he isn't there
 			"live":
 				Animals.live(body, String(role.get("beast", "")), rng)  # its own idle life (a hen pecking about)
@@ -658,8 +664,7 @@ func _walker(body: Node3D, task: BTTask, vars: Dictionary, clip: String, pace :=
 	player.name = "Mind"
 	player.set_scene_root_hint(body)
 	player.behavior_tree = bt
-	for key in vars:
-		player.blackboard.set_var(StringName(key), vars[key])
+	Awareness.assign(player, vars)  # its starting state, through the store
 	body.add_child(player)
 
 
@@ -814,6 +819,7 @@ func _cart(k: Dictionary, role: Dictionary, W: Dictionary, r: float) -> void:
 	rig.position = Vector3(start.x, tl.ground_at(root, start), start.z)
 	life.add_child(rig)
 	rig.add_to_group("bodies")  # the stopping rule (npc_mind Step.room) keeps people out of its way
+	rig.set_meta("room", float(W.get("room", 0.2)))  # and out of its standing place, wherever it draws up
 	rig.set_meta("scene", String(k["row"]["id"]))
 	rig.set_meta("cart", true)
 	var mkt: Vector3 = (root.get_meta("places", {}) as Dictionary).get("market", Vector3.ZERO) * float(W.get("market_in", 0.7))
@@ -1173,12 +1179,7 @@ func _cast(s: Dictionary, role: Dictionary, spot: Vector3, face: Vector3, door: 
 	player.name = "Mind"
 	player.set_scene_root_hint(person)
 	player.behavior_tree = bt
-	var bb := player.blackboard
-	bb.set_var(&"slot", spot)
-	bb.set_var(&"face", face)
-	bb.set_var(&"clips", role.get("clips", ["Idle"]))
-	bb.set_var(&"exit", person.global_position)
-	bb.set_var(&"done", _done.bind(s, person))
+	Awareness.assign(player, {"slot": spot, "face": face, "clips": role.get("clips", ["Idle"]), "exit": person.global_position, "done": _done.bind(s, person)})
 	person.add_child(player)
 	(s["cast"] as Array).append(person)
 	return person
@@ -1206,7 +1207,7 @@ func _end(s: Dictionary) -> void:
 	for p in s["cast"]:
 		var m := (p as Node).get_node_or_null("Mind") as BTPlayer
 		if m:
-			m.blackboard.set_var(&"leaving", true)
+			Awareness.assign(m, {"leaving": true})
 
 
 ## A person has walked off: the only way a cast member leaves the store.
@@ -1250,7 +1251,7 @@ func _on_stimulus(kind: String, pos: Vector3, radius: float, _house: String, _st
 				var act: Dictionary = row.get("near_act", {}) if d / radius <= float(row.get("near", 1.0)) else row.get("far_act", row.get("near_act", {}))
 				var m := (p as Node).get_node_or_null("Mind") as BTPlayer
 				if m and not act.is_empty():
-					m.blackboard.set_var(&"react", {"act": act.get("act", "gather"), "at": pos, "r": float(act.get("r", 1.0)), "clips": act.get("clips", ["Looking_Around"]), "until": until})
+					Awareness.assign(m, {"react": {"act": act.get("act", "gather"), "at": pos, "r": float(act.get("r", 1.0)), "clips": act.get("clips", ["Looking_Around"]), "until": until}})
 
 
 # --- the tasks: one tree each, the person's only decider ----------------------------------------

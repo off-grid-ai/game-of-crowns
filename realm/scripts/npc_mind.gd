@@ -193,18 +193,20 @@ class Step extends BTAction:
 	## The one rule for where a body may stop (every mind that stands someone somewhere asks it): nobody else, a person
 	## or another body on the ground (group bodies: a town dog, a hen, the market cart), stands within `r` of `at`
 	## (world), and nobody is stepping there (their step_to: where they're going is theirs too). `but`: the one they're
-	## with (a dog at its man's heel).
+	## with (a dog at its man's heel). A body wider than a person says how much more ground it stands on (meta room,
+	## world units: the market cart's half-length), and that much more is kept clear of it and of where it goes.
 	static func room(agent: Node, at: Vector3, r := 0.11, but: Node = null) -> bool:
 		for g in ["people", "bodies"]:
 			for p in agent.get_tree().get_nodes_in_group(g):
 				var n := p as Node3D
 				if n == agent or n == but or not n.is_visible_in_tree():
 					continue
-				if Vector2(n.global_position.x - at.x, n.global_position.z - at.z).length() < r:
+				var rr := r + float(n.get_meta("room", 0.0))
+				if Vector2(n.global_position.x - at.x, n.global_position.z - at.z).length() < rr:
 					return false
 				if n.has_meta("step_to"):
 					var s: Vector3 = n.get_meta("step_to")
-					if Vector2(s.x - at.x, s.z - at.z).length() < r:
+					if Vector2(s.x - at.x, s.z - at.z).length() < rr:
 						return false
 		return true
 
@@ -704,15 +706,8 @@ static func give(person: Node3D, post: String, ground: Callable, seed: int, open
 	player.name = "Mind"
 	player.set_scene_root_hint(person)  # made at runtime, with no owner: LimboAI needs to be told its scene
 	player.behavior_tree = bt
-	player.blackboard.set_var(&"post", person.position)
-	player.blackboard.set_var(&"face", person.rotation.y)
-	player.blackboard.set_var(&"ground", ground)
-	player.blackboard.set_var(&"danger", false)
-	for v in [&"last_activity", &"last_clip", &"last_breaker"]:
-		player.blackboard.set_var(v, "")
-	player.blackboard.set_var(&"alert", false)
-	player.blackboard.set_var(&"at_post", true)
-	player.blackboard.set_var(&"choices", acts.size())
+	Awareness.assign(player, {"post": person.position, "face": person.rotation.y, "ground": ground, "danger": false,
+		"last_activity": "", "last_clip": "", "last_breaker": "", "alert": false, "at_post": true, "choices": acts.size()})  # its starting state, through the store
 	person.add_child(player)
 	AnimLOD.add_mind(player)
 	_attach(player, town)
@@ -1097,8 +1092,7 @@ class FindPartner extends BTAction:
 			var other := m as BTPlayer
 			if other == me or other.get_meta("town", -2) != me.get_meta("town") or not other.blackboard.has_var(&"va"):
 				continue
-			var bb := other.blackboard
-			if booked(bb) or bb.get_var(&"alert", false, false) or bb.get_var(&"danger", false, false):
+			if booked(other.blackboard) or other.blackboard.get_var(&"alert", false, false) or other.blackboard.get_var(&"danger", false, false):
 				continue
 			var d: float = (other.get_parent() as Node3D).global_position.distance_to((agent as Node3D).global_position)
 			if d < best_d:
@@ -1116,16 +1110,12 @@ class FindPartner extends BTAction:
 		var off: Vector3 = (mine - them.global_position).normalized() * TALK_GAP * 0.5  # face to face, a pace apart
 		blackboard.set_var(&"meet", (agent as Node3D).position + (meet + off - mine))
 		blackboard.set_var(&"partner", them)
-		best.blackboard.set_var(&"meet", them.position + (meet - off - them.global_position))
-		best.blackboard.set_var(&"partner", agent)
-		best.blackboard.set_var(&"called", true)
-		best.blackboard.set_var(&"called_at", Time.get_ticks_msec())
+		# Its partner's part, handed it through the store; both spoken for until the talk ends: nobody calls either away.
+		Awareness.assign(best, {"meet": them.position + (meet - off - them.global_position), "partner": agent, "called": true,
+			"called_at": Time.get_ticks_msec(), "talking": true, "talk_pool": talk})
 		blackboard.set_var(&"called_at", Time.get_ticks_msec())
-		# Both are spoken for until the talk ends: nobody else calls either away.
 		blackboard.set_var(&"talking", true)
-		best.blackboard.set_var(&"talking", true)
 		blackboard.set_var(&"talk_pool", talk)
-		best.blackboard.set_var(&"talk_pool", talk)
 		# The topic: what the one who starts it saw last, passed on as their own news.
 		var memory: Array = (blackboard.get_var(&"memory", [], false) as Array).filter(func(x): return Time.get_ticks_msec() - int(x.get("ms", 0)) < FRESH_MS)
 		if not memory.is_empty():
@@ -1134,20 +1124,19 @@ class FindPartner extends BTAction:
 			var theirs: Array = best.blackboard.get_var(&"memory", [], false)
 			theirs = theirs.filter(func(x): return x.get("kind") != heard.get("kind"))
 			theirs.push_front(heard)
-			best.blackboard.set_var(&"memory", theirs.slice(0, 3))
 			blackboard.set_var(&"topic", String(heard.get("kind", "")))
-			best.blackboard.set_var(&"topic", String(heard.get("kind", "")))
+			Awareness.assign(best, {"memory": theirs.slice(0, 3), "topic": String(heard.get("kind", ""))})
 			if OS.get_cmdline_user_args().has("--probe"):
 				print("TALK %s tells %s of %s" % [agent.name, them.name, heard.get("kind", "")])
 		else:
 			blackboard.set_var(&"topic", "")
-			best.blackboard.set_var(&"topic", "")
+			Awareness.assign(best, {"topic": ""})
 		# Overheard: the two are a gathering chatter.gd puts words over (villagers.open_talk).
 		var v: Node = blackboard.get_var(&"vill", null, false)
 		if v != null and v.has_method("open_talk"):
 			var key: int = v.open_talk(blackboard.get_var(&"va"), bb_va(best), "talk" if talk.is_empty() else "mutter", String(blackboard.get_var(&"topic", "", false)))
 			blackboard.set_var(&"talk_key", key)
-			best.blackboard.set_var(&"talk_key", key)
+			Awareness.assign(best, {"talk_key": key})
 		return SUCCESS
 
 	static func bb_va(p: BTPlayer) -> Dictionary:
@@ -1880,25 +1869,11 @@ static func give_villager(person: Node3D, a: Dictionary, vill: Node) -> bool:
 	player.set_scene_root_hint(person)  # made at runtime, with no owner: LimboAI needs to be told its scene
 	player.behavior_tree = bt
 	# One in three is quick to anger or slow to cope: they shout in a riot and slump in a famine.
-	player.blackboard.set_var(&"moody", role != "child" and rng.randf() < 0.35)
-	player.blackboard.set_var(&"va", a)
-	player.blackboard.set_var(&"ground", func(q: Vector3) -> float: return vill.terrain.height_at(q.x, q.z))
-	player.blackboard.set_var(&"vill", vill)
-	player.blackboard.set_var(&"post", person.position)
-	player.blackboard.set_var(&"face", person.rotation.y)
-	for v in [&"last_activity", &"last_clip", &"last_breaker"]:
-		player.blackboard.set_var(v, "")
-	player.blackboard.set_var(&"alert", false)
-	player.blackboard.set_var(&"at_post", true)
-	player.blackboard.set_var(&"called", false)
-	player.blackboard.set_var(&"called_at", 0)
-	player.blackboard.set_var(&"talking", false)
-	player.blackboard.set_var(&"talk_pool", [])
-	player.blackboard.set_var(&"partner", null)
-	player.blackboard.set_var(&"topic", "")
-	player.blackboard.set_var(&"choices", acts.size())
-	player.blackboard.set_var(&"danger", false)
-	player.blackboard.set_var(&"firefight", false)
+	Awareness.assign(player, {"moody": role != "child" and rng.randf() < 0.35, "va": a,
+		"ground": func(q: Vector3) -> float: return vill.terrain.height_at(q.x, q.z), "vill": vill,
+		"post": person.position, "face": person.rotation.y, "last_activity": "", "last_clip": "", "last_breaker": "",
+		"alert": false, "at_post": true, "called": false, "called_at": 0, "talking": false, "talk_pool": [], "partner": null,
+		"topic": "", "choices": acts.size(), "danger": false, "firefight": false})  # its starting state, through the store
 	person.add_child(player)
 	AnimLOD.add_mind(player)
 	a["mind"] = player

@@ -1,5 +1,6 @@
 extends Node3D
 const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
+const Awareness := preload("res://scripts/awareness.gd")  # a mind's part handed it through the store (assign)
 ## Villagers for the towns near the camera: they walk between home, the square
 ## and the fields, stop to work, and go indoors at night. Purely visual: the
 ## simulation of how many people there are belongs to Freeciv (town size).
@@ -48,9 +49,8 @@ var _others_at := 0.0
 const OTHERS_REACH := 3.0
 # Minds (docs/MINDS.md): the bridge plans each commoner's day; the rules here
 # are the fallback until it has a plan for them.
-var BRIDGE: String = preload("res://scripts/bridge.gd").BASE
 var _plans := {}  # town id -> {villager index: plan}
-var _asking := {}  # bridge path -> true while a request is out
+var _asking := {}  # an ask's key (a town's plan) -> true while it is out
 var _minds_at := 0.0
 var _spoken := {}  # town id -> ids spoken to since the bridge was last told
 var _was := {}  # town id -> what the town was showing at the last look, for witnesses
@@ -2027,7 +2027,11 @@ func _ask_plans(id: int) -> void:
 			var p: Dictionary = by.get(int(a["i"]), {})
 			if not p.is_empty() and str(p) != String(a.get("plan_sig", "")) and a.get("talk", {}).is_empty():
 				a["wait"] = minf(float(a["wait"]), 0.5)
-	_bridge("GET", "/minds/town?city=%d&hour=%d" % [id, int(hour)], {}, got)
+	var answered := func(_code: int, data: Variant, done: Callable) -> void:
+		done.call()
+		if data != null:
+			got.call(data)
+	_ask("town%d" % id, func(b: Node, done: Callable): b.minds_town(id, int(hour), func(code, data): answered.call(code, data, done)))
 
 
 ## Tells the minds who is in view (thinking follows attention) and who the
@@ -2045,7 +2049,9 @@ func _tell_attention(id: int) -> void:
 	if near.is_empty() and spoken.is_empty():
 		return
 	_spoken.erase(id)
-	_bridge("POST", "/minds/attention", {"city": id, "near": near, "spoken": spoken}, Callable())
+	var bridge := _the_bridge()
+	if bridge:
+		bridge.minds_attention({"city": id, "near": near, "spoken": spoken})
 
 
 ## What the town shows that its people would remember: a feast begun, a riot,
@@ -2067,7 +2073,9 @@ func struck(town: int, i: int, by: Vector3, who_struck: String) -> void:
 		if b != a and b["node"].visible and b["node"].position.distance_to(a["node"].position) < 1.2:
 			_flee(b, by)
 			saw.append("folk:%d:%d" % [town, int(b["i"])])
-	_bridge("POST", "/minds/witness", {"city": town, "kind": "struck", "text": "%s struck one of us down in the street, unprovoked." % who_struck, "who": saw, "at": hour}, Callable())
+	var bridge := _the_bridge()
+	if bridge:
+		bridge.minds_witness({"city": town, "kind": "struck", "text": "%s struck one of us down in the street, unprovoked." % who_struck, "who": saw, "at": hour})
 	# On the bus too: minds near it (in towns on the switch) see it and react.
 	if Engine.has_meta("awareness"):
 		Engine.get_meta("awareness").emit("struck", a["node"].global_position)
@@ -2077,7 +2085,7 @@ func struck(town: int, i: int, by: Vector3, who_struck: String) -> void:
 func _flee(a: Dictionary, from: Vector3) -> void:
 	if a.has("mind"):
 		# Their mind takes it from here: Danger cuts in ahead of whatever they're doing.
-		(a["mind"] as BTPlayer).blackboard.set_var(&"danger", true)
+		Awareness.assign(a["mind"] as BTPlayer, {"danger": true})
 		return
 	var town: Dictionary = towns.towns.get(a["town"], {})
 	if town.is_empty():
@@ -2121,30 +2129,24 @@ func _witness(id: int) -> void:
 		if a["node"].visible:
 			who.append("folk:%d:%d" % [id, int(a["i"])])
 	for s in seen:
-		_bridge("POST", "/minds/witness", {"city": id, "kind": s[0], "text": s[1], "who": who, "at": hour}, Callable())
+		var bridge := _the_bridge()
+		if bridge:
+			bridge.minds_witness({"city": id, "kind": s[0], "text": s[1], "who": who, "at": hour})
 
 
-## One request to the bridge, at most one in flight per route; a route the
-## bridge doesn't have yet (404) is simply no plan.
-func _bridge(method: String, path: String, body: Dictionary, cb: Callable) -> void:
-	var key := path + str(body.get("city", ""))  # one in flight per town and route
-	if _asking.get(key, false):
+## The bridge node (bridge.gd: the one that asks the bridge anything), as main holds it; none in a probe.
+func _the_bridge() -> Node:
+	return get_parent().get("bridge") if get_parent() else null
+
+
+## One ask of the bridge at a time per `key` (a town's plan): `ask` is called with the bridge and a `done` to call when
+## its answer is in; a route the bridge doesn't have yet answers null (no plan).
+func _ask(key: String, ask: Callable) -> void:
+	var bridge := _the_bridge()
+	if bridge == null or _asking.get(key, false):
 		return
 	_asking[key] = true
-	var req := HTTPRequest.new()
-	req.timeout = 5.0
-	add_child(req)
-	req.request_completed.connect(func(_r, code, _h, bytes):
-		_asking[key] = false
-		req.queue_free()
-		if code == 200 and cb.is_valid():
-			var data = JSON.parse_string(bytes.get_string_from_utf8())
-			if data != null:
-				cb.call(data))
-	if method == "GET":
-		req.request(BRIDGE + path)
-	else:
-		req.request(BRIDGE + path, ["Content-Type: application/json"], HTTPClient.METHOD_POST, JSON.stringify(body))
+	ask.call(bridge, func(): _asking[key] = false)
 
 
 ## The town's gatherings in full swing (everyone in them in place), for

@@ -29,7 +29,6 @@ var _playing := {}  # gathering key -> the talk being played
 var _played := {}  # talk id -> true: never the same talk twice
 var _tags: Array[Label3D] = []
 var _check := 0.0
-var _waiting: Array[HTTPRequest] = []  # talks asked for and not yet written
 var _shot_on_talk := OS.get_cmdline_user_args().has("--chatter")
 var _said := {}  # line set -> how many of it have been used: each set's lines in turn, never the same twice running
 
@@ -332,14 +331,7 @@ func _ask_trades(town: int) -> void:
 	if town < 0 or _trades_asked.has(town) or bridge == null:
 		return
 	_trades_asked[town] = true
-	var req := HTTPRequest.new()
-	req.timeout = 10.0
-	add_child(req)
-	_waiting.append(req)
-	req.request_completed.connect(func(_r, code, _h, bytes):
-		_waiting.erase(req)
-		req.queue_free()
-		var data = JSON.parse_string(bytes.get_string_from_utf8()) if code == 200 else null
+	bridge.townsfolk(town, func(_code, data):
 		if not data is Dictionary:
 			_trades_asked.erase(town)  # ask again next time
 			return
@@ -347,7 +339,6 @@ func _ask_trades(town: int) -> void:
 		for f in data.get("folk", []):
 			out[int(f.get("i", -1))] = String(f.get("trade", ""))
 		_trades[town] = out)
-	req.request(bridge.BASE + "/townsfolk?city=%d" % town)
 
 
 ## The minds had `speaker` say `text` (a talk the model wrote): on their mind now.
@@ -358,13 +349,6 @@ func _heard(speaker: Node3D, text: String) -> void:
 	if cb.is_valid():
 		_better.erase(pid)
 		cb.call(mind_line(speaker))
-
-
-## Nothing left hanging on the bridge when the game closes.
-func _exit_tree() -> void:
-	for req in _waiting:
-		req.cancel_request()
-	_waiting.clear()
 
 
 func _distance(g: Dictionary, cam: Camera3D) -> float:
@@ -380,16 +364,12 @@ func _ask(town: int, g: Dictionary, key: String) -> void:
 	var who := PackedStringArray()
 	for i in g["who"]:
 		who.append(str(i))
-	var req := HTTPRequest.new()
-	req.timeout = 90.0
-	add_child(req)
-	_waiting.append(req)
-	req.request_completed.connect(func(_r, code, _h, bytes):
-		_waiting.erase(req)
-		req.queue_free()
+	if bridge == null:
+		_own_words(town, g, key)
+		return
+	bridge.minds_chatter(town, who, func(_code, data):  # a failed send answers (0, null): their own words
 		if _playing.has(key):
 			return  # plain words already said: these keep for the next time they meet
-		var data = JSON.parse_string(bytes.get_string_from_utf8()) if code == 200 else null
 		if data is Array:
 			for talk in data:
 				if talk is Dictionary and not _played.has(talk.get("id", "")) and _same(talk.get("who", []), g["who"]):
@@ -397,9 +377,6 @@ func _ask(town: int, g: Dictionary, key: String) -> void:
 					_play(town, g, key, talk)
 					return
 		_own_words(town, g, key))
-	if req.request(bridge.BASE + "/minds/chatter?city=%d&who=%s&wait=1" % [town, ",".join(who)]) != OK:
-		_own_words(town, g, key)
-		return
 	# The minds may take a while (the model's first call loads it): not this talk's silence.
 	get_tree().create_timer(OWN_WORDS_SECS).timeout.connect(func(): _own_words(town, g, key))
 
