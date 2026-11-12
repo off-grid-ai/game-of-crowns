@@ -1,3 +1,5 @@
+scripts/army.gd:raw-world
+scripts/army_field.gd:raw-world
 scripts/castle_builder.gd:one-colour
 scripts/castle_life.gd:one-colour
 scripts/castle_life.gd:raw-world
