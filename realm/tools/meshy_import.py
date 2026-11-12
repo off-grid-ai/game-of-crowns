@@ -345,6 +345,33 @@ def split_arm(obj, spec):
     return arm
 
 
+def passage(obj, spec):
+    """A way through where a gate was cut open: a box's floor, side walls and ceiling facing inward (no ends), in
+    a plain stone of spec colour, joined into the piece (Meshy's models are a shell: behind a cut door is hollow)."""
+    lo, hi = spec["box"]
+    bm = bmesh.new()
+    v = [bm.verts.new(c) for c in [(lo[0], lo[1], lo[2]), (hi[0], lo[1], lo[2]), (hi[0], hi[1], lo[2]), (lo[0], hi[1], lo[2]),
+                                   (lo[0], lo[1], hi[2]), (hi[0], lo[1], hi[2]), (hi[0], hi[1], hi[2]), (lo[0], hi[1], hi[2])]]
+    for f in [(0, 3, 2, 1), (4, 5, 6, 7), (0, 4, 7, 3), (1, 2, 6, 5)]:  # floor, ceiling, the two sides, facing in
+        bm.faces.new([v[i] for i in f])
+    me = bpy.data.meshes.new("passage")
+    bm.to_mesh(me)
+    bm.free()
+    m = bpy.data.materials.new("Passage_stone")
+    m.use_nodes = True
+    c = spec.get("colour", [0.42, 0.4, 0.37])
+    m.node_tree.nodes["Principled BSDF"].inputs[0].default_value = (c[0], c[1], c[2], 1.0)
+    m.node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.95
+    me.materials.append(m)
+    po = bpy.data.objects.new("passage", me)
+    bpy.context.scene.collection.objects.link(po)
+    bpy.ops.object.select_all(action="DESELECT")
+    po.select_set(True)
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.join()
+
+
 def main():
     name, test = args()
     spec = spec_of(name, test)
@@ -358,6 +385,8 @@ def main():
     k, size = place(obj, spec)
     before, after = decimate(obj, int(spec["tris"]))
     removed = cut(obj, spec.get("cut", []), spec.get("smoke_above")) if spec.get("cut") or spec.get("smoke_above") is not None else 0
+    if spec.get("passage"):
+        passage(obj, spec["passage"])
     if "--islands" in sys.argv:
         for n, lo, hi, col in islands(obj)[:40]:
             print("ISLAND faces=%d min=%s max=%s colour=%s" % (n, [round(x, 2) for x in lo], [round(x, 2) for x in hi], col))

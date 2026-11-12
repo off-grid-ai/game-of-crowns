@@ -9,10 +9,13 @@
   5.06,
   12.0
  ],
- "house_share": 0.007,
+ "house_share": 0.003,
  "mask_png": true,
  "materials": [
   "Material_0",
+  "Passage_stone",
   "MI_RoundTiles_house"
- ]
+ ],
+ "cut_faces": 813,
+ "arm": false
 }
