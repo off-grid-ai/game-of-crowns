@@ -132,6 +132,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- (11-12) GoC r16 (/tmp/goc-focus/r16/sheets): square matches r11's look (openness 62% vs 59, setts 0.200 vs 0.210, 18 stalls, 98 people) but READY 1 FAIL on people stacked at (158,330) + east third bare; READY 2 PASS (0 convex errors, 1/200 walks crossing). Battle not filmed (minimap.gd parse break: 604 script errors), siege on the pre-cd0c63ba steps: lines 4-6 unjudged. Round clock stopped (Mac: build everything, then one full round).
 - (11-12) Mac: "finish all your work and then play the game, and then refine… it's not making sense to play the game in between." No more 15-minute rounds: GoC's round clock and the supervisor's check are stopped. Build every READY line with headless probes; then one full filmed round; then refine.
 - (11-12) Mac: "work autonomously. I'm not going to be here to approve anything, so just do what you think is right." The supervisor decides every call and logs it here; no thread waits on Mac. The goal: every line of docs/READY.md passes on film, then the game opens for him.
 - (11-12) Mac on politics: "our stories should be enough right? … they just need to be wired in." Risings are not a separate trigger system: the story arcs drive them, and every arc effect reaches Freeciv. Supersedes the risings triggers in risings-civil-war-2026-11-12.md.
