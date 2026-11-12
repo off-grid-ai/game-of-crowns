@@ -4225,3 +4225,37 @@ reqs    =
     { "type", "name", "range"
       "OutputType", "Shield", "Local"
     }
+
+; Decree buildings (buildings.ruleset, set down by script.lua).
+[effect_royal_feast]
+type    = "Make_Content"
+value   = 2
+reqs    =
+    { "type", "name", "range"
+      "Building", "Royal Feast", "City"
+    }
+
+[effect_royal_relief_food]
+type    = "Output_Bonus"
+value   = 50
+reqs    =
+    { "type", "name", "range"
+      "Building", "Royal Relief", "City"
+      "OutputType", "Food", "Local"
+    }
+
+[effect_royal_relief_content]
+type    = "Make_Content"
+value   = 1
+reqs    =
+    { "type", "name", "range"
+      "Building", "Royal Relief", "City"
+    }
+
+[effect_heavy_tithe]
+type    = "Make_Content"
+value   = -1
+reqs    =
+    { "type", "name", "range"
+      "Building", "Heavy Tithe", "City"
+    }

@@ -141,8 +141,8 @@ const HANDLERS = {
     return {
       cost, favour: { [owner.id]: 12 },
       text: `By royal decree, wagons of grain roll into ${town}. ${lord} remembers the King's mercy.`,
-      // (It used to send Migrants to join the town: one more mouth, a worse famine.)
-      lua: [pay], relieved: c.id,
+      // The grain is Freeciv's: the town's food half again as much while the wagons last (Royal Relief).
+      lua: [pay, Lua.decree(c.id, "relief")], relieved: c.id,
     };
   },
   gift(x) {
@@ -203,12 +203,14 @@ const HANDLERS = {
     // At the King's own court: every great house is his guest.
     if (houseFor(owner).crown) {
       const guests = Object.fromEntries(world.players.filter((p) => !houseFor(p).crown && !houseFor(p).wild && p.id !== owner.id).map((p) => [p.id, 5]));
-      return { cost, favour: guests, text: "The King holds a feast at court. Every great house sends someone; tempers cool, for now.", lua: [pay] };
+      const seat = world.cities.find((c) => c.owner === owner.id && c.capital);
+      return { cost, favour: guests, text: "The King holds a feast at court. Every great house sends someone; tempers cool, for now.", lua: [pay, ...(seat ? [Lua.decree(seat.id, "feast")] : [])] };
     }
     return {
       cost, favour: { [owner.id]: 15 },
       text: `A feast at Kingsmere in honour of ${lord}. Wine flows; old slights are forgotten, for now.`,
-      lua: [pay],
+      // Its people feast too: a Royal Feast in the house's seat (Freeciv: content townsfolk while it lasts).
+      lua: [pay, ...((seat) => (seat ? [Lua.decree(seat.id, "feast")] : []))(world.cities.find((c) => c.owner === owner.id && c.capital))],
     };
   },
   ward(x) {

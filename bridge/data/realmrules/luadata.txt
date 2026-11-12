@@ -12,3 +12,8 @@ on = "yes"
 seam_seasons = "40"
 gold_house = "English"
 gold_seams = "3"
+
+[decrees]
+; How many seasons a decree building stands (script.lua realm_decree). Their effects: effects.ruleset.
+feast = "4"
+relief = "2"

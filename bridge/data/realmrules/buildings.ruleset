@@ -2261,3 +2261,77 @@ This is not a normal improvement. Instead, setting a city's\
  production to Coinage means its shield production is\
  converted to tax output (money, coins!).\
 ")
+
+; Decree buildings (Game of Crowns): never built by a town (they need Forbidden Lore, which no one
+; can learn); the King's decrees set them down and take them up through the ruleset's Lua
+; (script.lua realm_decree / realm_heavy_tithe). What they do is in effects.ruleset, so the houses'
+; AI weighs them like any building, and a save keeps them.
+
+[building_royal_feast]
+name		= _("Royal Feast")
+genus		= "Improvement"
+reqs	=
+    { "type", "name", "range"
+      "Tech", "Forbidden Lore", "Player"
+    }
+graphic         = "b.temple"
+graphic_alt     = "-"
+graphic_alt2    = "-"
+obsolete_by	=
+    { "type", "name", "range"
+    }
+build_cost	= 1
+upkeep		= 0
+sabotage	= 0
+sound		= "b_generic"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+helptext	= _("\
+The King's feast in this town: two more townsfolk content while it lasts.\
+")
+
+[building_royal_relief]
+name		= _("Royal Relief")
+genus		= "Improvement"
+reqs	=
+    { "type", "name", "range"
+      "Tech", "Forbidden Lore", "Player"
+    }
+graphic         = "b.temple"
+graphic_alt     = "-"
+graphic_alt2    = "-"
+obsolete_by	=
+    { "type", "name", "range"
+    }
+build_cost	= 1
+upkeep		= 0
+sabotage	= 0
+sound		= "b_generic"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+helptext	= _("\
+The King's grain wagons: the town's food half again as much, and one more townsman content, while it lasts.\
+")
+
+[building_heavy_tithe]
+name		= _("Heavy Tithe")
+genus		= "Improvement"
+reqs	=
+    { "type", "name", "range"
+      "Tech", "Forbidden Lore", "Player"
+    }
+graphic         = "b.temple"
+graphic_alt     = "-"
+graphic_alt2    = "-"
+obsolete_by	=
+    { "type", "name", "range"
+    }
+build_cost	= 1
+upkeep		= 0
+sabotage	= 0
+sound		= "b_generic"
+sound_alt	= "b_generic"
+sound_alt2      = "-"
+helptext	= _("\
+The crown's tithe weighs on this town: one more townsman unhappy.\
+")
