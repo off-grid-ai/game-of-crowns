@@ -22,6 +22,9 @@ Art step 6 (town camera) landed: people 2.5x larger, house colours. castle_build
 
 Built: 1-6, 9, 11-15. Reopened: 7 (capture chain fails at link 3), 8 (film click; fix in hand). Open: 10 (a full reign: muster crash, view faults). Look pass: started (owner look audit).
 
+## Asset wiring (look audit)
+In: Meshy army (67c15196), horse legs (174883d1), castle ck_* and houses hs_* (2dcec252), cog (cbc97f6f), castle banners in house colour, crowd colour. Coming: 3 soldiers remade (they fail army_colour_probe today), nature set. Town walls stay kit until fire-siege closes; then walls' look goes to the look audit. Square fill: GoC. Fields from Freeciv (9dbdf1ec), plague shown (a0778c91).
+
 ## Decisions and why
 - Army density (supervisor): keep drawPerMan 0.1 (Mac's fps rule) plus a per-regiment floor (40), so every regiment reads as a block; the plate shows the real men; bigger hosts still look bigger. Reversible in army.json.
 - One order per host per season (supervisor, on Mac's "just get this right"): each army acts each season, closer to the WC3 command bar; the season still sets the pace. Reversible in hosts.json.
