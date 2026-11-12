@@ -74,5 +74,21 @@ func _run() -> void:
 			if node:
 				node.free()
 	_check(Real.meshy_piece("square_merchant") != null, "the square's merchant house still comes (sq_merchant_house)")
+	# No component the towns place is left empty or pointing at a file that isn't there (an empty one hands the
+	# house builder a kit piece that doesn't exist: 26 script errors in a replay of 9e7177a8, when the civic rows
+	# had dropped out of meshy.json).
+	var empty := []
+	var missing := []
+	for id in comps:
+		if not comps[id] is Dictionary or String((comps[id] as Dictionary).get("kind", "")) == "":
+			continue
+		var names: Array = Real._component.get(id, [])
+		if names.is_empty():
+			empty.append(id)
+		for n in names:
+			if not Real.BUILT.has(n) and not ResourceLoader.exists(Real._path(String(n))):
+				missing.append("%s:%s" % [id, n])
+	_check(empty.is_empty(), "every placed component has a model (empty: %s)" % [empty])
+	_check(missing.is_empty(), "every component's file is there (missing: %s)" % [missing])
 	print("LOOK WIRING %s" % ("PASS" if _fails == 0 else "FAIL %d" % _fails))
 	quit(0 if _fails == 0 else 1)
