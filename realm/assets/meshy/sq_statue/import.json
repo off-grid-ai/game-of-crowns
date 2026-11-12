@@ -1,0 +1,22 @@
+{
+ "name": "sq_statue",
+ "source": "/Users/user/code/goc-kits/meshy/square/statue/statue_12k.glb",
+ "tris_before": 11958,
+ "tris_after": 11958,
+ "scale": 3.684422205963511,
+ "size_m": [
+  2.36,
+  2.36,
+  7.0
+ ],
+ "house_share": 0.184,
+ "mask_png": true,
+ "materials": [
+  "BakedMaterial",
+  "MI_RoundTiles_house"
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
+}

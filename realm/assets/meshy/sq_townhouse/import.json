@@ -1,0 +1,22 @@
+{
+ "name": "sq_townhouse",
+ "source": "/Users/user/code/goc-kits/meshy/square/townhouse/townhouse_30k.glb",
+ "tris_before": 29356,
+ "tris_after": 29356,
+ "scale": 4.737081718148756,
+ "size_m": [
+  5.83,
+  4.93,
+  9.0
+ ],
+ "house_share": 0.198,
+ "mask_png": true,
+ "materials": [
+  "BakedMaterial",
+  "MI_RoundTiles_house"
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
+}

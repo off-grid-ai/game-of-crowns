@@ -1,0 +1,21 @@
+{
+ "name": "sq_cart",
+ "source": "/Users/user/code/goc-kits/meshy/square/cart/cart_12k.glb",
+ "tris_before": 12236,
+ "tris_after": 12000,
+ "scale": 1.453987286814614,
+ "size_m": [
+  2.76,
+  1.71,
+  1.8
+ ],
+ "house_share": 0.0,
+ "mask_png": true,
+ "materials": [
+  "BakedMaterial"
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
+}

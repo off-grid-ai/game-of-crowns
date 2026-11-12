@@ -1,0 +1,22 @@
+{
+ "name": "sq_smithy",
+ "source": "/Users/user/code/goc-kits/meshy/square/smithy/smithy_30k.glb",
+ "tris_before": 30281,
+ "tris_after": 30000,
+ "scale": 3.9486470823113056,
+ "size_m": [
+  6.42,
+  6.61,
+  7.5
+ ],
+ "house_share": 0.171,
+ "mask_png": true,
+ "materials": [
+  "BakedMaterial",
+  "MI_RoundTiles_house"
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
+}

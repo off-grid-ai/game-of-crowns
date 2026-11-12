@@ -1,0 +1,22 @@
+{
+ "name": "sq_market_stall",
+ "source": "/Users/user/code/goc-kits/meshy/square/market_stall/market_stall_15k.glb",
+ "tris_before": 14837,
+ "tris_after": 14837,
+ "scale": 2.3779406336691684,
+ "size_m": [
+  4.51,
+  2.54,
+  3.6
+ ],
+ "house_share": 0.22,
+ "mask_png": true,
+ "materials": [
+  "BakedMaterial",
+  "MI_RoundTiles_house"
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
+}

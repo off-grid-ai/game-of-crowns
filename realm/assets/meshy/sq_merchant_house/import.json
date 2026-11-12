@@ -1,0 +1,22 @@
+{
+ "name": "sq_merchant_house",
+ "source": "/Users/user/code/goc-kits/meshy/square/merchant_house/merchant_house_30k.glb",
+ "tris_before": 30245,
+ "tris_after": 30000,
+ "scale": 6.323937521718976,
+ "size_m": [
+  8.12,
+  7.26,
+  12.0
+ ],
+ "house_share": 0.21,
+ "mask_png": true,
+ "materials": [
+  "BakedMaterial",
+  "MI_RoundTiles_house"
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
+}

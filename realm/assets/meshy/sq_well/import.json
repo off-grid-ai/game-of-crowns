@@ -1,0 +1,22 @@
+{
+ "name": "sq_well",
+ "source": "/Users/user/code/goc-kits/meshy/square/well/well_12k.glb",
+ "tris_before": 12382,
+ "tris_after": 12000,
+ "scale": 1.8945763332954928,
+ "size_m": [
+  2.63,
+  2.18,
+  3.6
+ ],
+ "house_share": 0.104,
+ "mask_png": true,
+ "materials": [
+  "BakedMaterial",
+  "MI_RoundTiles_house"
+ ],
+ "cut_faces": 0,
+ "arm": false,
+ "repainted": 0,
+ "flattened": 0
+}
