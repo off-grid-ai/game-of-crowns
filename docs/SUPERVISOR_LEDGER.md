@@ -121,6 +121,15 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 14:10 (11-12) Owners now: town-life session local_880cdb09 (town_life.gd, villagers.gd, npc_mind.gd,
+  town_scenes.gd/json, crowd/moods.json); army-layer local_cf2ddafe (mover.gd, units, battle, siege, combat);
+  ground-truth local_092eafb9 (nav_ground obstacles b24bc2a1, rivers a3b7cf8b, fire records 79aafe9f);
+  visual polish local_a4e5fc5c (coordination, Freeciv research, gold/economy). My builders: fire-siege
+  (buildings: wiring the 8 Meshy square pieces now, then fords' look), army-ui (ground), works-life (people's looks,
+  animals waiting on Meshy community models). Mac: "I still don't see the meshy stuff integrated": only the cast and
+  the gatehouse showed in the town view; the 8 square pieces (sheet /tmp/goc-models/meshy/square/sheet.jpg) were
+  imported but unplaced. Rules now: goc-cpto (supervisor + threads, status quo) and goc-engineering (probe first, no
+  hack-fixes, rules_check). Round 10 filming with navprobe + overlapprobe; round 11 for the Meshy houses.
 - 13:20 (11-12) Mac's other session (visual polish, town life) started two more: "army-layer" (units, battle_ai,
   siege_ai, siege_storm, combat, army_spike onto LimboAI + Mover) and "ground-truth" (walk maps from placed shapes,
   one river truth, fire damage owned by the bridge; overlaps army-ui: coordinate). Mover.road carries all road travel.
