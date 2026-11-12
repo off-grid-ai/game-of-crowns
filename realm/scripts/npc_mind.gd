@@ -656,7 +656,7 @@ static func post_activities(post: String) -> Array:
 
 
 ## Gives a person posted at a scene their mind: a BTPlayer whose tree picks among
-## the post's activities at random (never the same twice running), with Danger
+## the post's activities by their weights' plan (Weigh; never the same twice running), with Danger
 ## first: struck or threatened, they react and get clear, then go back to work.
 ## `ground(p)` gives the ground height at a point. Returns false for an unknown post.
 static func give(person: Node3D, post: String, ground: Callable, seed: int, opening: Array = [], town := -1) -> bool:
@@ -688,7 +688,7 @@ static func give(person: Node3D, post: String, ground: Callable, seed: int, open
 	if post == "trade":
 		life.add_child(serve())  # a shopper at the counter: turn to them, talk it over, hand it across
 	# Posted: the post's activities, one at a time, weighed by the town's state.
-	life.add_child(weighed(acts))
+	life.add_child(weighed(acts, seed))
 	var root := BTSequence.new()
 	for t in opening:  # once, at once, before the post's own life (a riot pair's scuffle, in step)
 		root.add_child(t)
@@ -859,20 +859,67 @@ static func react() -> BTTask:
 	return plain([flag(&"alert"), get_up(), React.new()])
 
 
-## Sets the next activity's odds from the town's state, read up the scopes
-## (awareness.gd): the selector after it picks by these weights. The state
-## shifts what people already do; it never adds a second system.
-class Weigh extends BTAction:
-	func _tick(_delta: float) -> Status:
-		var sel := get_parent().get_child(get_index() + 1) as BTProbabilitySelector
-		if sel == null:
-			return SUCCESS
-		for i in sel.get_child_count():
-			var act := sel.get_child(i)
-			var begin = act.get_child(0) if act.get_child_count() > 0 else null
-			var name_: String = begin.name_ if begin != null and "name_" in begin else ""
-			sel.set_weight(i, weight(name_, blackboard) if _playable(act) else 0.0)
-		return SUCCESS
+## The pick among a mind's activities, planned: smooth weighted round-robin (nginx's upstream balancing). Each
+## pick, every activity adds its weight now (weight(): the town's and the realm's state, read up the scopes) to its
+## credit; they are tried highest credit first (one that can't start now, or was the last, gives way to the next),
+## and the one taken pays the round's total back. Same weights, the same order: each comes up its share, spread
+## through the day, never a run of luck. The state shifts what people already do; it never adds a second system.
+class Weigh extends BTComposite:
+	@export var phase := 0  # this person's place in the round (picks made on paper at the start): a calling's folk out of step
+	var _credit: Array[float] = []
+	var _order: Array[int] = []
+	var _at := 0
+	var _total := 0.0
+	var _taken := -1
+
+	func _enter() -> void:
+		var n := get_child_count()
+		if _credit.size() != n:
+			_credit.resize(n)
+			_credit.fill(0.0)
+		_order.clear()
+		_total = 0.0
+		var ws: Array[float] = []
+		for i in n:
+			var act := get_child(i)
+			var w := weight(_name(act), blackboard) if _playable(act) else 0.0
+			ws.append(w)
+			if w <= 0.0:
+				_credit[i] = 0.0  # off now (a wartime watch in peace): it starts level when its state comes
+				continue
+			_credit[i] += w
+			_total += w
+			_order.append(i)
+		for k in phase % maxi(1, _order.size() * 2):
+			var best := _order[0]
+			for i in _order:
+				if _credit[i] > _credit[best]:
+					best = i
+			_credit[best] -= _total
+			for i in _order:
+				_credit[i] += ws[i]
+		phase = 0
+		_order.sort_custom(func(x: int, y: int) -> bool: return _credit[x] > _credit[y] or (_credit[x] == _credit[y] and x < y))
+		_at = 0
+		_taken = -1
+
+	func _tick(delta: float) -> Status:
+		if _taken >= 0:
+			return get_child(_taken).execute(delta)
+		while _at < _order.size():
+			var i := _order[_at]
+			var st := get_child(i).execute(delta)
+			if st == FAILURE:
+				_at += 1  # it can't start now: the next in the plan
+				continue
+			_taken = i
+			_credit[i] -= _total
+			return st
+		return FAILURE
+
+	static func _name(act: BTTask) -> String:
+		var begin = act.get_child(0) if act.get_child_count() > 0 else null
+		return begin.name_ if begin != null and "name_" in begin else ""
 
 	## An activity with a run of moves none of which can be played (each
 	## needs a tool with no model yet: a lute) is never picked.
@@ -936,12 +983,13 @@ static func state_activities() -> Array:
 	]
 
 
-## The pick among a list of activities: Weigh, then a weighted pick.
-static func weighed(acts: Array) -> BTTask:
-	var sel := BTProbabilitySelector.new()
+## The pick among a list of activities: by the plan of their weights (Weigh).
+static func weighed(acts: Array, phase := 0) -> BTTask:
+	var w := Weigh.new()
+	w.phase = absi(phase)
 	for a in acts:
-		sel.add_child(a)
-	return plain([Weigh.new(), sel])
+		w.add_child(a)
+	return w
 
 
 # --- villagers: farmers and market folk (slice 1) ------------------------------
@@ -1850,7 +1898,7 @@ static func give_villager(person: Node3D, a: Dictionary, vill: Node) -> bool:
 	if not role in ["tavern", "keeper"]:
 		# Winter evenings are spent indoors: home early, the square left to the few.
 		life.add_child(plain([season_is("winter"), block_is(["evening"]), go("home"), brk(["Idle", "Breathing_Idle"])]))
-	life.add_child(weighed(acts + state_activities()))
+	life.add_child(weighed(acts + state_activities(), rng.randi()))
 	var root := BTSequence.new()
 	var first := BTRandomWait.new()
 	first.min_duration = 0.5

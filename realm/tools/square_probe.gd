@@ -6,8 +6,8 @@ extends SceneTree
 ##   keeps no day table of its own (`_block` gone) and npc_mind no list of its own of the parts that are "day";
 ## - a mind's pick among its activities is planned (smooth weighted round-robin, nginx's): no BTProbabilitySelector;
 ##   over N picks each activity's share follows its weight (Weigh.weight, the town's state bends) within 10%; in
-##   every run of picks as long as the weights' sum each comes up its weight's worth (±1); the same weights give the
-##   same order (two minds, one plan); a weight of 0 is never picked; nobody does one thing more than twice running;
+##   every run of picks as long as the weights' sum each comes up its weight's worth (±1); the same weights and place
+##   in the round give the same order (two minds, one plan), another place a different one; a weight of 0 is never picked; nobody does one thing more than twice running;
 ## - the bridge minds' plan for a villager (minds.js plans: where they mean to be) is one input the pick reads: its
 ##   place's activities come up more (town_scenes.json `plan`); villagers.gd follows no plan of its own (`_follow`).
 ##   arch -arm64 godot --headless --path realm --script res://tools/square_probe.gd
@@ -102,11 +102,11 @@ static func _in(h: float, from: float, to: float) -> bool:
 
 # --- the pick: planned, by weight -----------------------------------------------
 
-func _mind(acts: Array, vars: Dictionary) -> BTPlayer:
+func _mind(acts: Array, vars: Dictionary, phase := 0) -> BTPlayer:
 	var body := Node3D.new()
 	root.add_child(body)
 	var bt := BehaviorTree.new()
-	bt.root_task = Mind.weighed(acts)
+	bt.root_task = Mind.weighed(acts, phase) if phase != 0 else Mind.weighed(acts)
 	var p := BTPlayer.new()
 	p.update_mode = BTPlayer.MANUAL
 	p.set_scene_root_hint(body)
@@ -157,6 +157,7 @@ func _picks() -> void:
 		_fail("weighed() still draws at random (a random selector in its tree)")
 	var p := _mind(_acts(names), state)
 	var q := _mind(_acts(names), state)
+	var other := _mind(_acts(names), state, 3)  # another of the calling: their own place in the round
 	await process_frame
 	var w := {}
 	var total := 0.0
@@ -167,6 +168,10 @@ func _picks() -> void:
 	if seq != _run(q, PICKS):
 		_fail("two minds with the same weights picked in different orders: the pick is a dice roll, not a plan")
 	_shares("peace, prosperous", seq, w, total)
+	var theirs := _run(other, PICKS)
+	if theirs.slice(0, 8) == seq.slice(0, 8):
+		_fail("two of a calling at different places in the round pick in step: %s" % [seq.slice(0, 8)])
+	_shares("peace, another of the calling", theirs, w, total)
 	# A war comes: the same minds, their weights bent by it (road and watch up, browsing down).
 	for pl in [p, q]:
 		pl.blackboard.set_var(&"at_war", true)
