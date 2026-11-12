@@ -12,8 +12,8 @@ extends Node
 ##            night: bool, weather := "clear")
 ##       Every frame (or a few times a second) from main.gd. zoom_distance is
 ##       rig.distance (0.35 close .. 260 whole realm). near_town is the town
-##       under the camera, {} for none; keys read (all optional):
-##       size:int, market/forge/church/tavern/coastal/river/north/siege:bool.
+##       under the camera, {} for none (town_sounds builds it); keys read (all optional; a building not named
+##       is not heard): size:int, market/forge/church/tavern/coastal/river/north/siege:bool.
 ##       season: spring|summer|autumn|winter. weather: clear|rain|snow|storm.
 ##   set_interior(room: String)   great_hall|tavern|chapel|cottage, "" for out.
 ##   event(kind: String, at := Vector3.INF)
@@ -202,6 +202,24 @@ func _ready() -> void:
 
 
 # --- API ---------------------------------------------------------------------
+
+## What the town `id` sounds of: the store's facts on it (its size, a siege, how far north it lies) and the buildings
+## towns.gd stood in it (`town`, its node: meta places, the square's market, tavern and sept; meta trades, the forge
+## and the armoury, the alehouse). The sounds follow what stands, never the town's size (integration audit #6).
+## {} for no town.
+static func town_sounds(id: int, town: Node) -> Dictionary:
+	var st: Node = preload("res://scripts/awareness.gd").store()
+	if st == null or id < 0:
+		return {}
+	var c: Dictionary = st.city(id)
+	if c.is_empty():
+		return {}
+	var places: Dictionary = town.get_meta("places", {}) if town else {}
+	var trades: Array = (town.get_meta("trades", []) as Array).map(func(t): return String(t.get("component", ""))) if town else []
+	return {"size": int(c.get("size", 1)), "market": places.has("market"), "tavern": places.has("tavern") or "alehouse" in trades,
+		"church": places.has("sept"), "forge": "forge" in trades or "armoury" in trades,
+		"siege": bool(st.town(id).get_var(&"besieged", false)), "north": int(c.get("y", 999)) < 25}
+
 
 func set_view(zoom_distance: float, near_town: Dictionary, season: String, night: bool, weather := "clear") -> void:
 	_view = {"d": zoom_distance, "town": near_town, "season": season, "night": night, "weather": weather}
@@ -394,9 +412,9 @@ func _targets() -> Dictionary:
 	t["town_day"] = near * day * (1.0 - 0.5 * winter) * (1.0 - siege)
 	# Rain thins the crowd a little; it never empties the street of its sound.
 	t["town_bustle"] = near * day * size * (1.0 - 0.25 * wet) * (1.0 - siege)
-	t["market"] = close * day * (1.0 if town.get("market", int(town.get("size", 0)) >= 4) else 0.0) * (1.0 - 0.35 * wet) * (1.0 - siege)
-	t["forge"] = close * day * (1.0 if town.get("forge", int(town.get("size", 0)) >= 3) else 0.0)
-	t["tavern"] = close * (1.0 if town.get("tavern", int(town.get("size", 0)) >= 3) else 0.0) * (0.9 if night else 0.3)
+	t["market"] = close * day * (1.0 if town.get("market", false) else 0.0) * (1.0 - 0.35 * wet) * (1.0 - siege)
+	t["forge"] = close * day * (1.0 if town.get("forge", false) else 0.0)
+	t["tavern"] = close * (1.0 if town.get("tavern", false) else 0.0) * (0.9 if night else 0.3)
 	t["birds_day"] = (country + near * 0.4) * day * green * (1.0 - wet)
 	t["forest"] = country * 0.6 * day * green
 	t["night"] = (country + near) * (1.0 - far) * (1.0 - day) * green * (1.0 - wet)
@@ -468,7 +486,7 @@ func _tick_bells(delta: float) -> void:
 		return
 	_bells_in = _rng.randf_range(120.0, 300.0)
 	var town: Dictionary = _view["town"]
-	if town.is_empty() or _view["night"] or _interior != "" or not town.get("church", int(town.get("size", 0)) >= 4):
+	if town.is_empty() or _view["night"] or _interior != "" or not town.get("church", false):
 		return
 	var near := 1.0 - smoothstep(10.0, 60.0, float(_view["d"]))
 	if near > 0.1:

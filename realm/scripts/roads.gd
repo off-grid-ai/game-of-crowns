@@ -4,6 +4,7 @@ extends Node3D
 ## follows the land. Rebuilt only when the network changes.
 
 const Awareness := preload("res://scripts/awareness.gd")  # the view's one store: the realm's records (rec)
+const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M): the verge plants' size
 var TEX: String = preload("res://scripts/terrain.gd").art("res://assets/ground/road-dirt.jpg", "res://assets/ground/dirt-albedo.jpg")
 const WIDTH := 0.26
 
@@ -247,7 +248,7 @@ func _plant_verges() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
 	for p in kept:
-		var k := 0.12 * rng.randf_range(0.7, 1.4)
+		var k := Units.M * rng.randf_range(0.7, 1.4)
 		groups[rng.randi() % 3].append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(k, k * rng.randf_range(0.8, 1.3), k)), p - Vector3(0, 0.02, 0)))
 	for i in 3:
 		if groups[i].is_empty():

@@ -737,10 +737,8 @@ func _listen() -> void:
 	var near := {}
 	var c: Dictionary = towns.nearest(rig.target, 8.0)
 	if not c.is_empty():
-		var b := str(c.get("buildings", ""))
-		near = {"size": int(c.get("size", 1)), "market": b.contains("Marketplace") or int(c.get("size", 1)) >= 4,
-			"church": b.contains("Temple") or b.contains("Cathedral"), "forge": b.contains("Barracks") or b.contains("Blacksmith"),
-			"tavern": int(c.get("size", 1)) >= 3, "siege": c.get("besieged", false), "north": float(c.get("y", 999)) < 25.0}
+		var id := int(c.get("id", -1))
+		near = sound.town_sounds(id, (towns.towns.get(id, {}) as Dictionary).get("node"))  # the store's town and what stands in it
 	var season := look_season()
 	sound.set_view(rig.distance, near, season, sky3d != null and sky3d.is_night(), String(awareness.realm.get_var(&"weather", "clear", false)) if awareness else "clear")
 	var th: Dictionary = awareness.rec("threat", {})

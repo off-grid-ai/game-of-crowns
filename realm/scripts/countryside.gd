@@ -295,7 +295,7 @@ func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: A
 				var t: Vector3 = o + side * (c - 1) * 0.42 + face * (r - 1) * -0.42 + Vector3(rng.randf_range(-0.05, 0.05), 0, rng.randf_range(-0.05, 0.05))
 				if not terrain.is_land(t.x, t.z):
 					continue
-				var k := 0.12 * rng.randf_range(0.45, 0.6)
+				var k := S * rng.randf_range(0.45, 0.6)
 				trees[rng.randi() % 2].append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(k, k * rng.randf_range(0.85, 1.1), k)), Vector3(t.x, terrain.height_at(t.x, t.z) - 0.02, t.z)))
 		yard.append([o, 0.6])
 	# Now and then a mill, where the farms around bring their grain.
@@ -896,7 +896,7 @@ func _grow(seed: String, p: Vector3, r: float, bare: Dictionary) -> Array:
 		var ang := prng.randf() * TAU
 		var d := sqrt(prng.randf()) * r
 		var q := p + Vector3(cos(ang), 0, sin(ang)) * d
-		var k := 0.12 * prng.randf_range(0.5, 1.0)
+		var k := S * prng.randf_range(0.5, 1.0)
 		var v := prng.rand_weighted(TUFT_ODDS)
 		var turn := prng.randf() * TAU
 		var tall := prng.randf_range(0.8, 1.3)
