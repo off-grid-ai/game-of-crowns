@@ -61,7 +61,8 @@ var _rng := RandomNumberGenerator.new()
 ## One side of a field battle (tools/field_battle.gd raises two): {side: 0 or 1, field: the line's middle,
 ## face: its facing, colour, house, shape}. Empty for the spike's own muster by the seat.
 var battle := {}
-var mustered := false  # its regiments raised and its line placed (the battle waits on both sides)
+var mustered := false
+var _extent := Vector2.ZERO  # the line's width and depth (for re-placing it: stand_at)  # its regiments raised and its line placed (the battle waits on both sides)
 signal raised
 
 
@@ -117,6 +118,7 @@ func _ready() -> void:
 		return
 	# The line: where it stands and the way it faces, every regiment's place in it.
 	var extent := _line_places()
+	_extent = extent
 	if battle.has("field"):  # a battle side stands where the battle puts it
 		_face = float(battle.get("face", 0.0))
 		_field = _ground_at(battle["field"])
@@ -221,6 +223,36 @@ func rows() -> Array:
 
 func field() -> Vector3:
 	return _field
+
+
+## The whole line stands again at `at`, facing `face` (field_battle.gd turns a battle to fit the ground), formed.
+func stand_at(at: Vector3, face: float) -> void:
+	_field = _ground_at(at)
+	_face = face
+	_take_field(_extent)
+	for r in _regiments:
+		_stand_in_line(r)
+	_standard_place()
+
+
+## Whether a line of the given width and depth, its middle at `at` facing `face`, stands on ground fit for men
+## (the same test as the muster's): the share of a grid of cells over it that do.
+func ground_share(at: Vector3, face: float, extent: Vector2) -> float:
+	var pitch := Data.num("army", "muster.cell", 2.0)
+	var fwd := Vector3(sin(face), 0, cos(face))
+	var right := Vector3(cos(face), 0, -sin(face))
+	var nx := maxi(1, int(ceil(extent.x / pitch)) + 1)
+	var nz := maxi(1, int(ceil(extent.y / pitch)) + 1)
+	var ok := 0
+	for i in nx:
+		for j in nz:
+			if _ground(at + right * (float(i) - (nx - 1) * 0.5) * pitch + fwd * (float(j) - (nz - 1) * 0.5) * pitch, pitch * 0.9):
+				ok += 1
+	return float(ok) / float(nx * nz)
+
+
+func extent() -> Vector2:
+	return _extent
 
 
 func facing() -> float:
@@ -419,7 +451,7 @@ func _layout(r: Dictionary, shape: String) -> Dictionary:
 		files = _rng.randi_range(int(cf[0]), int(cf[1]))
 		sr = maxf(sr, Data.num("army", "column.rank", 0.14))
 	else:
-		var lf: Array = (Data.value("army", "line.frontage", {}) as Dictionary).get(r["role"], [18, 25])
+		var lf: Array = battle["frontage"] if battle.has("frontage") else (Data.value("army", "line.frontage", {}) as Dictionary).get(r["role"], [18, 25])  # a battle's regiments stand deeper
 		files = _rng.randi_range(int(lf[0]), int(lf[1]))
 	files = clampi(files, 1, count)
 	var ranks := int(ceil(float(count) / files))

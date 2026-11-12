@@ -86,17 +86,31 @@ func _ready() -> void:
 			_dist = float(a.substr(7))
 	while main.terrain.width == 0 or not main.terrain.built or (main.bridge.world.get("cities", []) as Array).is_empty():
 		await get_tree().create_timer(0.5).timeout
-	var crown: Army = Army.new(main, men, {"side": 0})
+	var deep: Array = Data.value(F, "field.frontage", [10, 14])
+	var crown: Army = Army.new(main, men, {"side": 0, "shape": "line", "frontage": deep})
 	add_child(crown)
 	if not crown.mustered:
 		await crown.raised
 	if crown.rows().is_empty():
 		push_error("BATTLE the crown's host could not be raised")
 		return
+	# The battle turned to fit the ground (batch 8b: the foe formed across a lake): of field.turns bearings round the
+	# crown's muster, the one where the foe's line stands most on ground fit for men; the crown's line turns to face it.
+	var gap := Data.num(F, "field.gap", 9.0)
+	var best_face := crown.facing()
+	var best := -1.0
+	for k in int(Data.num(F, "field.turns", 12)):
+		var a := crown.facing() + TAU * float(k) / Data.num(F, "field.turns", 12)
+		var share := crown.ground_share(crown.field() + Vector3(sin(a), 0, cos(a)) * gap, a + PI, crown.extent())
+		if share > best + 0.001:
+			best = share
+			best_face = a
+	if absf(angle_difference(best_face, crown.facing())) > 0.01:
+		crown.stand_at(crown.field(), best_face)
 	var face := crown.facing()
 	var fwd := Vector3(sin(face), 0, cos(face))
 	var house := _foe_house()
-	var foe: Army = Army.new(main, men, {"side": 1, "field": crown.field() + fwd * Data.num(F, "field.gap", 9.0), "face": face + PI,
+	var foe: Army = Army.new(main, men, {"side": 1, "shape": "line", "frontage": deep, "field": crown.field() + fwd * gap, "face": face + PI,
 		"colour": Heraldry.colour(house, Color(0.72, 0.12, 0.12)) if not house.is_empty() else Color(0.72, 0.12, 0.12), "house": house})
 	add_child(foe)
 	if not foe.mustered:
@@ -104,8 +118,8 @@ func _ready() -> void:
 	sides = [crown, foe]
 	_arrows = _arrow_pool()
 	_focus = (crown.field() + foe.field()) * 0.5
-	print("BATTLE raised %d a side, %s against %s, the %s beaten; lines %.1f apart" % [men, "the crown", String(house.get("name", "a rebel host")),
-		"crown" if loser == 0 else "foe", crown.field().distance_to(foe.field())])
+	print("BATTLE raised %d a side, %s against %s, the %s beaten; lines %.1f apart, the foe's ground %d%% fit" % [men, "the crown", String(house.get("name", "a rebel host")),
+		"crown" if loser == 0 else "foe", crown.field().distance_to(foe.field()), int(best * 100.0)])
 
 
 ## Both sides at the battle's place, facing each other across field.play.gap: the victors (side 0) and the
@@ -126,7 +140,7 @@ func _raise_in_play() -> void:
 		if k == 1 and made.size() == 1 and _alike(colour, (made[0] as Army).battle["colour"]):
 			colour = Color(0.22, 0.3, 0.46)  # two houses in like colours: the beaten in steel blue, so the sides read apart
 		var side: Army = Army.new(main, 0, {"side": k, "field": at - fwd * half if k == 0 else at + fwd * half, "face": face if k == 0 else face + PI,
-			"colour": colour, "house": house, "quiet": true, "shape": "auto"})
+			"colour": colour, "house": house, "quiet": true, "shape": "auto", "frontage": Data.value(F, "field.frontage", [10, 14])})
 		var specs: Array = []
 		var kinds: Array = (play["kinds"] as Array)[k]
 		for i in mini(kinds.size(), most):
@@ -315,16 +329,20 @@ func _morale() -> void:
 func _frame(delta: float) -> void:
 	if main.rig == null:
 		return
+	# The thick of it: where the fronts are at blows once they meet, else every regiment still in the field.
 	var sum := Vector3.ZERO
 	var n := 0
+	var at_blows := _lines_met()
 	for a in sides:
 		for r in (a as Army).rows():
-			if r.get("state_name", "") != "rout":
+			var st := String(r.get("state_name", ""))
+			if st != "rout" and (not at_blows or st == "fight"):
 				sum += (r["node"] as Node3D).global_position
 				n += 1
 	if n > 0:
 		_focus = _focus.lerp(sum / n, minf(1.0, delta * Data.num(F, "field.camera.follow", 1.2)))
 	var crown: Army = sides[0]
+	main.rig.step_floor = _dist if _dist < main.rig.min_distance else 0.0  # the shot's own distance (d4 is d4)
 	main.rig.snap(_focus, _dist, crown.facing() + Data.num(F, "field.camera.quarter", 0.9))
 	main.rig.tilt = Data.num("army", "camera.tilt", -8.0)
 	main.rig.goal_tilt = main.rig.tilt
