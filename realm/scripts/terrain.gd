@@ -1317,10 +1317,15 @@ func _source_image(path: String) -> Image:
 ## stretching. `edge` softens it: "round" for a worn, ragged patch, "setts" for laid stone, "sides" for a
 ## verge's frayed edges, "track" for a road's (frayed, with wheel ruts), "paved" for a street of setts.
 const Data := preload("res://scripts/data.gd")
-const TILED_VERSION := ":v3"  # raise when how a tile is made changes, so the kept copies on disk are made again
+const TILED_VERSION := ":v4"  # raise when how a tile is made changes, so the kept copies on disk are made again
+const TILED_MOST := 2048  # px: the longest side of a tiled ground texture
+
 func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
-	nx = clampi(nx, 1, 12)
-	ny = clampi(ny, 1, 24)
+	# The copies asked for are the copies drawn (setts_probe: a 12-across cap stretched Kingsmere's 19 sheets into 12,
+	# stones twice their size); a wide or long surface spends fewer pixels per copy instead, the image kept within
+	# TILED_MOST on a side (a copy then covers a few dozen screen pixels at the camera's floor).
+	nx = clampi(nx, 1, 64)
+	ny = clampi(ny, 1, 64)
 	var key := "%s:%d:%d:%s" % [path, nx, ny, edge]
 	if _tiled.has(key):
 		return _tiled[key]
@@ -1331,8 +1336,10 @@ func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 		var kept := Image.load_from_file(cached)
 		if kept:
 			_tiled[key] = ImageTexture.create_from_image(kept)
+			_tiled[key].set_meta("copies", Vector2i(nx, ny))
 			return _tiled[key]
-	const N := 256
+	var N := clampi(TILED_MOST / maxi(nx, ny), 32, 256)
+	var fscale := 256.0 / N  # the edges' noise is sized for 256 pixels a copy: the same on the ground at any N
 	var src := _source_image(path)
 	if src == null:
 		return null  # the art isn't on this machine (third-party art stays out of git): the patch is left unpainted
@@ -1361,7 +1368,7 @@ func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 		# fraying into the grass in tongues and scuffs instead of a clean edge.
 		var wear := FastNoiseLite.new()
 		wear.seed = nx * 13 + ny
-		wear.frequency = 0.012
+		wear.frequency = 0.012 * fscale
 		wear.fractal_octaves = 4
 		for y in h:
 			for x in w:
@@ -1380,11 +1387,11 @@ func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 		# the streets, so it ends in packed earth rather than on a ruled circle.
 		var wear := FastNoiseLite.new()
 		wear.seed = nx * 11 + ny
-		wear.frequency = 0.006
+		wear.frequency = 0.006 * fscale
 		wear.fractal_octaves = 3
 		var lost := FastNoiseLite.new()
 		lost.seed = nx * 5 + ny
-		lost.frequency = 0.04
+		lost.frequency = 0.04 * fscale
 		for y in h:
 			for x in w:
 				var d := Vector2(2.0 * x / w - 1.0, 2.0 * y / h - 1.0).length()
@@ -1407,11 +1414,11 @@ func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 		var ruts := Data.num("ground", "roads.edge.ruts", 0.22) if edge == "track" else 0.0
 		var wear := FastNoiseLite.new()
 		wear.seed = nx * 7 + ny
-		wear.frequency = 0.02
+		wear.frequency = 0.02 * fscale
 		wear.fractal_octaves = 3
 		var tufts := FastNoiseLite.new()
 		tufts.seed = nx * 3 + ny * 5
-		tufts.frequency = 0.045
+		tufts.frequency = 0.045 * fscale
 		var ends := float(N) * Data.num("ground", "roads.edge.ends", 0.5)  # each end frays out over this (pixels): a stretch never ends square
 		for y in h:
 			var end_a := 1.0 if ends <= 0.0 else clampf(minf(y, h - 1 - y) / ends + wear.get_noise_2d(y * 0.5, 900.0) * 0.35, 0.0, 1.0)
@@ -1437,6 +1444,7 @@ func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 	DirAccess.make_dir_recursive_absolute("user://tiled")
 	img.save_png(cached)
 	_tiled[key] = ImageTexture.create_from_image(img)
+	_tiled[key].set_meta("copies", Vector2i(nx, ny))
 	return _tiled[key]
 
 

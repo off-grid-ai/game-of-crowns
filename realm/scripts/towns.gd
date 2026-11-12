@@ -361,13 +361,13 @@ func _bailey_ground(root: Node3D, cp: Vector3, cy: float, yaw: float, rng: Rando
 	var tile := float(pave.get("tile", 0.3))
 	var court: Array = k.get("court", [0.5, 0.45])  # the cobbled court's size, shares of the footprint
 	var cs := Vector2(f.x * float(court[0]), f.y * float(court[1]))
-	terrain.paint(root, terrain.tiled(stone, clampi(roundi(cs.x / tile), 2, 12), clampi(roundi(cs.y / tile), 2, 12), "setts"), cp + Vector3(0, cy, 0) + b * Vector3(0, 0, float(k.get("court_z", 0.1)) * f.y), cs, yaw, _rgb(pave.get("tint"), Color.WHITE))
+	terrain.paint(root, terrain.tiled(stone, maxi(2, roundi(cs.x / tile)), maxi(2, roundi(cs.y / tile)), "setts"), cp + Vector3(0, cy, 0) + b * Vector3(0, 0, float(k.get("court_z", 0.1)) * f.y), cs, yaw, _rgb(pave.get("tint"), Color.WHITE))
 	var way: Array = k.get("way", [0.5, -0.15, 0.1])  # from the gate (z share) to the keep (z share), its width (x share)
 	var a := float(way[0]) * f.y
 	var e := float(way[1]) * f.y
 	var w := float(way[2]) * f.x
 	var run := absf(a - e)
-	terrain.paint(root, terrain.tiled(stone, maxi(1, roundi(w / tile)), clampi(roundi(run / tile), 1, 24), "paved"), cp + Vector3(0, cy, 0) + b * Vector3(0, 0, (a + e) * 0.5), Vector2(w, run), yaw, _rgb(pave.get("tint"), Color.WHITE), 1.5)
+	terrain.paint(root, terrain.tiled(stone, maxi(1, roundi(w / tile)), maxi(1, roundi(run / tile)), "paved"), cp + Vector3(0, cy, 0) + b * Vector3(0, 0, (a + e) * 0.5), Vector2(w, run), yaw, _rgb(pave.get("tint"), Color.WHITE), 1.5)
 	# The forecourt (towns.json bailey.forecourt [width, game units]; round 5, 01-town: a broad cobbled way from the
 	# square up to the gate, no lawn between the stalls and the castle): setts from the gate out to the square's heart,
 	# under the square's own (they lie over it there).
@@ -380,7 +380,7 @@ func _bailey_ground(root: Node3D, cp: Vector3, cy: float, yaw: float, rng: Rando
 			var mid := (gate + to) * 0.5
 			var lo := minf(_ground_y(center, gate), _ground_y(center, to))
 			var hi := maxf(_ground_y(center, gate), _ground_y(center, to))
-			var fc: Decal = terrain.paint(root, terrain.tiled(stone, clampi(roundi(fw / tile), 1, 12), clampi(roundi((long + fw) / tile), 1, 24), "paved"), Vector3(mid.x, (lo + hi) * 0.5, mid.z), Vector2(fw, long + fw * 0.5), atan2(gate.x - to.x, gate.z - to.z), _rgb(pave.get("tint"), Color.WHITE), hi - lo + 1.5)
+			var fc: Decal = terrain.paint(root, terrain.tiled(stone, maxi(1, roundi(fw / tile)), maxi(1, roundi((long + fw) / tile)), "paved"), Vector3(mid.x, (lo + hi) * 0.5, mid.z), Vector2(fw, long + fw * 0.5), atan2(gate.x - to.x, gate.z - to.z), _rgb(pave.get("tint"), Color.WHITE), hi - lo + 1.5)
 			fc.sorting_offset = 0.5  # as a street's setts: over the roads' earth, under the square's
 			_note_paved(root, Vector2(gate.x, gate.z), Vector2.ZERO, fw * 0.5)
 
@@ -2679,10 +2679,10 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	var realm_roads = get_parent().get("roads") if get_parent() else null
 	if realm_roads and realm_roads.has_method("clear_in"):
 		realm_roads.clear_in(Vector2(center.x, center.z), pave_span * 0.5 * 0.9)  # the realm's roads end at the setts
-	var pave_reps := clampi(roundi(pave_span / float(pave.get("tile", 0.25))), 2, 12)
+	var pave_reps := maxi(2, roundi(pave_span / float(pave.get("tile", 0.25))))  # every sheet at its own size (setts_probe)
 	var setts_size := Vector2(pave_span, pave_span * float(pave.get("square_aspect", 0.9)))
 	var setts_yaw := rng.randf() * TAU
-	var setts: Decal = terrain.paint(root, terrain.tiled(String(pave.get("texture", SQUARE_TEX)), pave_reps, pave_reps, String(pave.get("square_edge", "setts"))), Vector3(0, _ground_y(center, Vector3.ZERO), 0), setts_size, setts_yaw, _rgb(pave.get("tint"), Color.WHITE))
+	var setts: Decal = terrain.paint(root, terrain.tiled(String(pave.get("texture", SQUARE_TEX)), pave_reps, maxi(2, roundi(pave_reps * float(pave.get("square_aspect", 0.9)))), String(pave.get("square_edge", "setts"))), Vector3(0, _ground_y(center, Vector3.ZERO), 0), setts_size, setts_yaw, _rgb(pave.get("tint"), Color.WHITE))
 	_note_setts(root, setts_size, setts_yaw)
 	setts.sorting_offset = 1.0  # the paving over the roads that come into the square: a road ends at its setts, never a dirt stripe across them
 
