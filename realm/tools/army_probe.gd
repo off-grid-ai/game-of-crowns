@@ -472,6 +472,11 @@ func _march_out() -> void:
 	var ArmyS: GDScript = load("res://scripts/army.gd")
 	var has := ArmyS.get_script_method_list().any(func(m): return m["name"] == "march_out")
 	_check(has, "a host can march out (army.gd march_out)")
+	var scenes_src := FileAccess.get_file_as_string("res://scripts/scenes.gd")
+	var muster_at := scenes_src.find("func _muster(")
+	var muster_src := scenes_src.substr(muster_at, scenes_src.find("\nfunc ", muster_at + 1) - muster_at) if muster_at >= 0 else ""
+	_check(muster_src.contains("Army.new(") and muster_src.contains("\"out_to\"") and not scenes_src.contains("func _on_route("),
+		"the muster scene raises the army layer's host to march out (army.gd out_to); no marcher is tweened along a route")
 	if not has:
 		return
 	var stub := GDScript.new()

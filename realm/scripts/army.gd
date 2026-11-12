@@ -115,7 +115,9 @@ func _ready() -> void:
 			waited += 0.5
 		town = main.towns.towns[id]["node"].global_position if main.towns.towns.has(id) else main.terrain.world_pos(float(seat["x"]), float(seat["y"]))
 	# A battle side brings its own regiments (army_field.gd: one per company that fought, from Freeciv's types).
-	var specs: Array = battle["specs"] if battle.has("specs") else (_from_world() if men <= 0 else _made_up(men))
+	var specs: Array = battle["specs"] if battle.has("specs") else (_made_up(men) if men > 0 else (_from_world() if not battle.has("house") else []))
+	if specs.is_empty() and battle.has("out_to"):  # a muster with no host in the field (or a house's): new levies
+		specs = _made_up(int(Data.num("army", "march.men", 600)))
 	if specs.is_empty():
 		push_error("ARMY no host to show (the crown has no soldiers, and no head count was given)")
 		return

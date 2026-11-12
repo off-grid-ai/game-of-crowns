@@ -59,6 +59,7 @@ func _towns_up() -> bool:
 
 ## The army layer (docs/research/army-layer-2026-11-12.md): two hosts in the field (army_field.gd, in play when
 ## switched on), else the small skirmish (army_skirmish.gd); a siege's assault parties (army_assault.gd).
+const Army := preload("res://scripts/army.gd")  # a host mustering and marching out (READY.md line 3)
 const ArmyField := preload("res://scripts/army_field.gd")
 const ArmySkirmish := preload("res://scripts/army_skirmish.gd")
 const ArmyAssault := preload("res://scripts/army_assault.gd")
@@ -123,8 +124,7 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 			"grain", "tribute":
 				follow = _convoy(at, terrain.world_pos(float(s["tx"]), float(s["ty"])), s["kind"] == "grain", "", s)
 			"muster":
-				var goal: Vector3 = terrain.world_pos(float(s.get("tx", s["x"])), float(s.get("ty", s["y"])))
-				_muster(at, goal)
+				_muster(s, at, houses)
 			"ward":
 				follow = _convoy(at, terrain.world_pos(float(s["tx"]), float(s["ty"])), false, "A ward for the King's court", s)
 			"rider":
@@ -1132,111 +1132,19 @@ func _walk(n: Node3D, goal: Vector3, seconds: float, fade: bool) -> void:
 		tw.tween_callback(n.queue_free)
 
 
-## The royal host musters in Kingsmere's square: spearmen in ranks under the
-## crown's banners, a sergeant out in front. They drill as one at his shout
-## (thrust, thrust, salute), then march out in step, two abreast behind their
-## captain and the banners, along the road and out through the gate
-## toward where they are sent, and halt there in formation.
-func _muster(at: Vector3, goal: Vector3) -> void:
-	var r := _rng(at)
-	var root := Node3D.new()
-	root.name = "Muster"
-	add_child(root)
-	var col := Color(0.72, 0.13, 0.16).lerp(Color.WHITE, 0.25)
-	var crown := {"name": "The Crown", "crown": true}
-	var route: PackedVector3Array = _route(at, goal)
-	var length := 0.0
-	for i in route.size() - 1:
-		length += route[i].distance_to(route[i + 1])
-	var start_dir: Vector3 = (terrain.along(route, minf(1.0, 0.6 / maxf(length, 0.6))) - at)
-	start_dir.y = 0
-	start_dir = start_dir.normalized() if start_dir.length() > 0.001 else Vector3.FORWARD
-	var side := Vector3(-start_dir.z, 0, start_dir.x)
-	var men := []
-	const FILES := 4
-	const RANKS := 5
-	for rank in RANKS:
-		for file in FILES:
-			var f: Node3D = people.make(r, "soldier", col, "adult")
-			f.position = stand(at + side * ((file - 1.5) * 0.13) - start_dir * (rank * 0.15))
-			f.rotation.y = atan2(start_dir.x, start_dir.z)
-			root.add_child(f)
-			arm(f, "spear")
-			people.play(f, "Sword_Idle", r.randf_range(0.9, 1.1))
-			men.append({"node": f, "slot": rank * FILES + file})
-	# The sergeant faces his men; the captain stands at the head.
-	var sergeant: Node3D = people.make(r, "soldier", col, "adult")
-	sergeant.position = stand(at + start_dir * 0.3 + side * 0.32)
-	sergeant.rotation.y = atan2(-start_dir.x, -start_dir.z) - 0.5
-	root.add_child(sergeant)
-	arm(sergeant, "sword")
-	people.play(sergeant, "Sword_Idle")
-	var captain: Node3D = people.make(r, "soldier", col, "adult")
-	captain.position = stand(at + start_dir * 0.32)
-	captain.rotation.y = atan2(start_dir.x, start_dir.z)
-	root.add_child(captain)
-	arm(captain, "sword")
-	people.play(captain, "Sword_Idle")
-	var banners := []
-	for i in 2:
-		var b: Node3D = Heraldry.standard(crown, col, PLANTED)
-		b.position = ground(at + side * (i * 0.36 - 0.18) + start_dir * 0.16)
-		root.add_child(b)
-		banners.append(b)
-	var yaw := atan2(side.x, side.z) - 0.5
-	framing.emit(ground(at), 2.6, yaw)
-	# The drill (1-7 s): at each shout the ranks thrust their spears as one,
-	# then salute the banners.
-	var tw := create_tween()
-	for drill in ["Spear_Thrust", "SS_Slash_4", "Salute"]:
-		tw.tween_interval(0.6)
-		tw.tween_callback(func(): people.play(sergeant, "Yelling", 1.3))
-		tw.tween_interval(0.9)
-		tw.tween_callback(func():
-			for m in men:
-				_in_step(m["node"], drill, 0.0))
-	tw.tween_interval(1.6)
-	# Formed for the march: everyone in step, the captain leading.
-	var seconds := clampf(length / 0.25, 12.0, 80.0)
-	var spacing := 0.12 / maxf(length, 0.5)
-	tw.tween_callback(func():
-		people.play(sergeant, "Yelling", 1.0)
-		var phase := r.randf()
-		for m in men:
-			_in_step(m["node"], "Walk", phase)
-		people.play(captain, "Walk", 1.0)
-		framing.emit(ground(at + start_dir * 1.2), 3.4, yaw))
-	tw.tween_method(func(t: float):
-		for m in men:
-			var row := int(m["slot"]) / 2
-			_on_route(m["node"], route, t - (row + 3) * spacing, 0.05 if int(m["slot"]) % 2 == 0 else -0.05)
-		_on_route(sergeant, route, t - 14 * spacing, 0.08)
-		_on_route(captain, route, t, 0.0)
-		for i in banners.size():
-			_on_route(banners[i], route, t - (1 + i) * spacing, 0.05 if i == 0 else -0.05)
-		, 0.0, 1.0 + 16 * spacing, seconds)
-	tw.tween_callback(func():
-		for m in men:
-			people.play(m["node"], "Sword_Idle", 1.0)
-		people.play(sergeant, "Sword_Idle", 1.0)
-		people.play(captain, "Sword_Idle", 1.0))
-	tw.tween_interval(40.0)
-	tw.tween_callback(root.queue_free)
-
-
-## Places a marcher at `t` along a route (held at the start before his turn
-## comes, and at the end once there), facing along it, `offset` to the side.
-func _on_route(n: Node3D, route: PackedVector3Array, t: float, offset: float) -> void:
-	var k := clampf(t, 0.0, 1.0)
-	var p: Vector3 = terrain.along(route, k)
-	var ahead: Vector3 = terrain.along(route, minf(1.0, k + 0.01))
-	var dir := Vector3(ahead.x - p.x, 0, ahead.z - p.z)
-	if dir.length() > 0.0001:
-		dir = dir.normalized()
-		n.rotation.y = atan2(dir.x, dir.z)
-	if t <= 0.0:
-		return  # still formed up, waiting for the column to reach him
-	n.position = stand(p + Vector3(-dir.z, 0, dir.x) * offset)
+## A host musters at its seat and marches out along the roads to where it is sent (READY.md line 3; casebook, War
+## and sieges: "The march feeds the battle"): the army layer's host (army.gd), formed in line by the seat, then out
+## in column by each regiment's Mover (march_out). The crown's largest host as the realm reports it (new levies of
+## march.men when it has none in the field); a rising's muster, its house's men in its colours and arms.
+func _muster(s: Dictionary, at: Vector3, houses: Dictionary) -> void:
+	var house: Dictionary = houses.get(int(s.get("owner", -1)), {})
+	var host := {"side": 0, "seat": int(s.get("city", -1)), "shape": "line", "quiet": true,
+		"out_to": terrain.world_pos(float(s.get("tx", s["x"])), float(s.get("ty", s["y"])))}
+	if not house.is_empty():
+		host["house"] = house
+		host["colour"] = Heraldry.colour(house, Color(0.5, 0.17, 0.15))
+	get_parent().add_child(Army.new(get_parent(), 0, host))
+	framing.emit(ground(at), 2.6, 0.0)
 
 
 ## A royal rider carries the King's ruling to the petitioner's seat on a
