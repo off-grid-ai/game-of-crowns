@@ -184,7 +184,7 @@ func _process(delta: float) -> void:
 	for m in _members:
 		var g: GeometryInstance3D = m[0]
 		var house: Dictionary = main._houses.get(owner_of.get(int(m[1]), -1), {})
-		var target := Color(1, 1, 1, 0) if house.is_empty() or house.get("wild", false) else _colour(house)
+		var target := Color(1, 1, 1, 0) if house.is_empty() or house.get("wild", false) else house_colour(house)
 		var key := g.get_instance_id()
 		var now: Color = _shown.get(key, target)  # a new town takes its colour at once; a change of hands eases
 		var next := now.lerp(target, step) if now != target and _shown.has(key) else target
@@ -193,7 +193,8 @@ func _process(delta: float) -> void:
 			_shown[key] = next
 
 
-func _colour(house: Dictionary) -> Color:
+## A house's team colour, as everything of its holder wears it (its towns' roofs here; its ships' sails, units.gd).
+static func house_colour(house: Dictionary) -> Color:
 	var c: Color = preload("res://scripts/heraldry.gd").colour(house, Color.GRAY, "#888")
 	var sat := float(cfg().get("saturation", 1.15))
 	var l := c.get_luminance()

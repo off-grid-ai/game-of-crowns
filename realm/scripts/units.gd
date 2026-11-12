@@ -44,6 +44,9 @@ const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.
 const HostPick := preload("res://scripts/host_pick.gd")  # a click on a host picks it by its own body
 const Horse = preload("res://scripts/horse.gd")
 const MapLook := preload("res://scripts/map_look.gd")  # Freeciv's hulls (SHIPS), one list
+const TeamColour := preload("res://scripts/team_colour.gd")  # a house's colour, one rule
+const Units := preload("res://scripts/world_units.gd")  # metres to world units
+const Data := preload("res://scripts/data.gd")
 
 const MOUNTED := ["Horsemen", "Chariot", "Elephants", "Crusaders", "Knights", "Dragoons", "Cavalry"]
 const LANCES := ["Knights", "Crusaders"]
@@ -121,6 +124,8 @@ func sync(houses: Dictionary) -> void:
 				mi.mesh = _beast
 				mi.material_override = _mat(Color(0.35, 0.27, 0.2))
 				node = mi
+			elif ship:
+				node = ship_body(house)  # the transport cog (ships only carry armies: Mac)
 			else:
 				var rng := RandomNumberGenerator.new()
 				rng.seed = id
@@ -139,7 +144,11 @@ func sync(houses: Dictionary) -> void:
 			node.position = target
 			add_child(node)
 			var mo: Node = Mover.of(node)
-			if wild:
+			if ship:
+				mo.clip = ""
+				mo.ground = func(_p: Vector3) -> float: return terrain.SEA_LEVEL  # it floats on the water
+				node.position.y = terrain.SEA_LEVEL
+			elif wild:
 				mo.clip = ""
 				mo.speed = 0.3
 				mo.ground = func(p: Vector3) -> float: return terrain.height_at(p.x, p.z) + 0.14  # the beast's block stands on the ground
@@ -149,7 +158,7 @@ func sync(houses: Dictionary) -> void:
 			else:
 				mo.stride = true  # the stride matches the ground covered
 			mo.keep = _keep.bind(_figures, id)
-			if not wild and slot == 0:
+			if not wild and not ship and slot == 0:
 				# Carried by the rider when the company is mounted.
 				_banner(node.rider if node.get("rider") else node, Color.from_string(String(house.get("color", "#888")), Color.GRAY), house)
 				HostPick.proxy(node, int(id), Vector3(0.22, 0.62, 0.22))  # the bearer and his standard, to click (host_command.gd)
@@ -174,6 +183,21 @@ func sync(houses: Dictionary) -> void:
 static var WOUNDED_HP: float = preload("res://scripts/data.gd").num("army", "map.wounded_hp", 4.0)  # (army.json map.wounded_hp)
 ## Freeciv's unit activities for a company dug in: fortified (4) and fortifying (10).
 const FORTIFIED := [4, 10]
+
+
+## A ship's body: look-audit's transport cog (assets/meshy/cog, metres, +Z its bow) at the realm's scale, sunk to its
+## waterline (army.json map.ship_sink, metres), its sail, pennant and ropes in the house's colour by the one rule
+## (team_colour.gd: the MI_RoundTiles_house material takes its shader, house_colour gives the colour).
+static func ship_body(house: Dictionary) -> Node3D:
+	var holder := Node3D.new()
+	var cog: Node3D = (load("res://assets/meshy/cog/cog.glb") as PackedScene).instantiate()
+	cog.scale = Vector3.ONE * Units.M
+	cog.position.y = -Data.num("army", "map.ship_sink", 1.2) * Units.M
+	holder.add_child(cog)
+	var colour: Color = TeamColour.house_colour(house)
+	for g in cog.find_children("*", "GeometryInstance3D", true, false):
+		(g as GeometryInstance3D).set_instance_shader_parameter("team_color", colour)
+	return holder
 
 
 ## The figure standing for a company on the map (its id from /world), or null.

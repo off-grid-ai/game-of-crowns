@@ -77,7 +77,10 @@ extends SceneTree
 ## 24. every regiment reads as a formed block (GoC's muster frames: 10-14 figures a regiment, a speck where 03-army is
 ##     a wall): a regiment draws army.json figureFloor figures and one for ten men above it (drawPerMan, Mac's), so a
 ##     160-man host draws at least the floor a regiment and a 600-man host more than a 160-man one; the realm's biggest
-##     host stays under figureBudget (from the fps bar); and its losses fell figures in step with its men.
+##     host stays under figureBudget (from the fps bar); and its losses fell figures in step with its men;
+## 25. a ship is the transport cog (look-audit's cbc97f6f; Mac: ships only carry armies): units.gd builds a ship's
+##     body as assets/meshy/cog at the realm's scale (Units.M, metres), sunk to its waterline, its sail and pennant
+##     in the house's colour by the one rule (team_colour.house_colour), never a soldier.
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
@@ -126,8 +129,31 @@ func _run() -> void:
 	_standards_read()
 	_muster_takes_the_road()
 	_regiments_read_as_blocks()
+	_ship_is_the_cog()
 	print("ARMY PROBE PASS" if _fails == 0 else "ARMY PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
+
+
+## 25. A ship is the cog.
+func _ship_is_the_cog() -> void:
+	var U: GDScript = load("res://scripts/units.gd")
+	var TC: GDScript = load("res://scripts/team_colour.gd")
+	var has := U.get_script_method_list().any(func(m): return m["name"] == "ship_body")
+	_check(has, "units.gd builds a ship's body (ship_body)")
+	_check(TC.get_script_method_list().any(func(m): return m["name"] == "house_colour"), "the house colour comes from one rule (team_colour.house_colour)")
+	if not has:
+		return
+	var house := {"name": "House Ashby", "color": "#335599"}
+	var ship: Node3D = U.call("ship_body", house)
+	var geos := ship.find_children("*", "GeometryInstance3D", true, false)
+	var M := float((load("res://scripts/world_units.gd") as GDScript).get("M"))
+	_check(not geos.is_empty() and ship.scene_file_path == "" and ship.get_child_count() > 0, "the ship is the cog's meshes (%d)" % geos.size())
+	var cog: Node3D = ship.get_child(0)
+	_check(is_equal_approx(cog.scale.x, M) and cog.position.y < 0.0, "at the realm's scale (%.3f) and sunk to its waterline (%.3f)" % [cog.scale.x, cog.position.y])
+	var want: Color = TC.call("house_colour", house)
+	var dyed: bool = geos.all(func(g): return (g as GeometryInstance3D).get_instance_shader_parameter("team_color") == want)
+	_check(dyed, "its sail and pennant take the house's colour")
+	ship.free()
 
 
 ## 24. Every regiment a formed block: hosts made up as a muster raises them (army.gd _made_up).
