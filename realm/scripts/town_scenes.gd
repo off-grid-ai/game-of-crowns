@@ -293,6 +293,8 @@ func _anchor(name: String, k: Dictionary, anchors: Dictionary) -> Dictionary:
 			return _castle(root, r, row)
 		"stops":
 			return _stops(k)
+		"open":
+			return _open(k, d)
 	var dir: Vector3 = Basis(Vector3.UP, float(d.get("turn", 0.0))) * SEEN
 	var at := Vector3.ZERO
 	var from := String(d.get("at", "heart"))
@@ -319,6 +321,93 @@ func _anchor(name: String, k: Dictionary, anchors: Dictionary) -> Dictionary:
 	if d.has("r"):
 		got["r"] = r if d["r"] is String else float(d["r"])  # "square": the square's own radius
 	return got
+
+
+## The square's own open ground (look audit on step 6: a bare plaza ringed by stalls; GoC's square life, Kingsmere:
+## the largest stretch nobody stands within 2 m of 400-670 m2 against 01-town's 30, every standing role anchored to a
+## stall, the well, a cart or the crier): a spot on its open setts, the emptiest first (farthest from anything that
+## stands on them: town_nav footprints), each call the next, spots at least `apart` metres from each other
+## (town_scenes.json anchors.<name>: by "open", apart, within: the share of the square's radius they keep inside).
+## Worked out once a stage (k["open"]); facing the heart. {} when the square has no open setts left.
+func _open(k: Dictionary, d: Dictionary) -> Dictionary:
+	if not k.has("open"):
+		k["open"] = open_spots(k["root"], float(d.get("apart", 4.0)), float(d.get("within", 0.85)))
+		k["open_next"] = 0
+	var spots: Array = k["open"]
+	if spots.is_empty():
+		return {}
+	var i := int(k["open_next"]) % spots.size()
+	k["open_next"] = int(k["open_next"]) + 1
+	var at: Vector2 = spots[i]
+	var dir := Vector3(-at.x, 0, -at.y).normalized() if at.length() > 0.001 else SEEN
+	var rest: Array = []
+	for j in spots.size():
+		var q: Vector2 = spots[(i + j) % spots.size()]
+		rest.append(Vector3(q.x, 0, q.y))
+	return {"at": Vector3(at.x, 0, at.y), "dir": dir, "spots": rest}
+
+
+## The open setts' spots, town-local, the emptiest first: grid points on the paved square (within `within` of its
+## radius) outside every footprint, chosen one by one farthest from anything standing and from the spots already
+## chosen (farthest-point sampling), none nearer than `apart_m` metres to another or to a footprint. Static, so a probe
+## checks the same spots (tools/square_open_probe.gd).
+static func open_spots(root: Node3D, apart_m: float, within: float) -> Array:
+	var TL: Script = load("res://scripts/town_life.gd")
+	var um: float = load("res://scripts/towns.gd").S
+	var pr := 0.0
+	for pv in root.get_meta("paved", []):
+		if (pv[0] as Vector2) == Vector2.ZERO and (pv[1] as Vector2) == Vector2.ZERO:
+			pr = float(pv[2])
+			break
+	if pr <= 0.0:
+		return []
+	var feats: Array = []
+	for fp in load("res://scripts/town_nav.gd").footprints(root):
+		var poly := fp as PackedVector2Array
+		if poly.size() >= 3:
+			feats.append(poly)
+	var far := func(q: Vector2) -> float:
+		var best := INF
+		for poly in feats:
+			if Geometry2D.is_point_in_polygon(q, poly):
+				return -1.0
+			for i in (poly as PackedVector2Array).size():
+				var e := Geometry2D.get_closest_point_to_segment(q, poly[i], poly[(i + 1) % poly.size()])
+				best = minf(best, q.distance_to(e))
+		return best
+	var step := um  # a metre
+	var n := int(ceil(pr / step))
+	var cells: Array = []
+	for gx in range(-n, n + 1):
+		for gz in range(-n, n + 1):
+			var q := Vector2(gx, gz) * step
+			if q.length() > pr * within:
+				continue
+			var f: float = far.call(q)
+			# Nobody stands on a road's lane or at the heart (town_life on_lane: the travellers' ground); a spot there
+			# would only come back "no room" (GoC's headless Kingsmere: 16 of the gossip's knots).
+			if f >= 0.0 and not TL.on_lane(root, root.global_position + Vector3(q.x, 0, q.y)):
+				cells.append([f, q])
+	# Farthest-point sampling: each next spot the cell farthest from anything standing and from the spots already
+	# chosen, so the knots spread over the bare ground instead of all keeping to its emptiest edge (GoC's headless
+	# Kingsmere: ranked by footprints alone, every knot stood on the square's west rim, 14-18 m out).
+	var spots: Array = []
+	var apart := apart_m * um
+	var gap: Array = cells.map(func(c): return float(c[0]))  # each cell's distance to the nearest standing thing or spot
+	while true:
+		var bi := -1
+		var bd := apart
+		for i in cells.size():
+			if float(gap[i]) >= bd:
+				bd = float(gap[i])
+				bi = i
+		if bi < 0:
+			break
+		var q: Vector2 = cells[bi][1]
+		spots.append(q)
+		for i in cells.size():
+			gap[i] = minf(float(gap[i]), q.distance_to(cells[i][1]))
+	return spots
 
 
 ## Along the castle's side that faces the square, a little out from it (only when the castle stands near).
@@ -439,6 +528,17 @@ func _spots(role: Dictionary, a: Dictionary, n: int, k: Dictionary) -> Array:
 				var t := ang0 + lerpf(-float(role.get("arc", 1.4)), float(role.get("arc", 1.4)), (kn + rng.randf_range(0.2, 0.8)) / maxf(n, 1))
 				var mid := Vector3(sin(t), 0, cos(t)) * sq * rng.randf_range(float(reach[0]), float(reach[1]))
 				var m := rng.randi_range(int(size[0]), int(size[1]))
+				for jj in m:
+					var b := TAU * jj / m + rng.randf_range(-0.3, 0.3)
+					out.append({"at": mid + Vector3(cos(b), 0, sin(b)) * float(role.get("apart", 0.085)), "face": mid, "knot": kn})
+		"knots_open":
+			# Knots of neighbours, one on each of the square's open spots, the emptiest first (anchor by "open"): the bare
+			# middle of the setts, not an arc that may fall on the stalls' ring.
+			var spots: Array = a.get("spots", [at])
+			var size2: Array = role.get("knot", [2, 3])
+			for kn in n:
+				var mid: Vector3 = spots[kn % spots.size()]
+				var m := rng.randi_range(int(size2[0]), int(size2[1]))
 				for jj in m:
 					var b := TAU * jj / m + rng.randf_range(-0.3, 0.3)
 					out.append({"at": mid + Vector3(cos(b), 0, sin(b)) * float(role.get("apart", 0.085)), "face": mid, "knot": kn})

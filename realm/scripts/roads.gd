@@ -500,6 +500,17 @@ func _paint_run(p: Vector3, q: Vector3, width: float, owner: String, parent: Nod
 ## every stretch reaching into the disc round `centre` (world x/z) of radius `r` is drawn again only outside it,
 ## a stretch wholly inside goes. Its bed (_paths, on_path) is kept: travellers still walk it.
 var _stone_discs: Array = []  # [centre, r] of every town's laid stone so far: a road laid later is trimmed too
+
+
+## Whether a world point lies on a town's laid stone (its square's setts: clear_in's discs). A road's painted stretch
+## ends there; its path runs on for the travellers' routes, but the setts are the square's own ground, where people
+## stand (town_life on_lane asks: GoC's square life, Kingsmere's paths' lanes kept the whole square bare).
+func in_setts(p: Vector3) -> bool:
+	var q := Vector2(p.x, p.z)
+	for d in _stone_discs:
+		if q.distance_to(d[0]) < float(d[1]):
+			return true
+	return false
 func clear_in(centre: Vector2, r: float, remember := true) -> void:
 	if remember:
 		_stone_discs.append([centre, r])

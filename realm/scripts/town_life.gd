@@ -168,6 +168,8 @@ static func on_lane(root: Node3D, world: Vector3) -> bool:
 		return true
 	var holder := root.get_parent().get_parent() if root.get_parent() else null  # the towns' owner (main.gd), which keeps the roads
 	var roads = holder.get("roads") if holder else null
+	if roads != null and roads.has_method("in_setts") and roads.in_setts(world):
+		return false  # the square's setts are its people's ground; a road's path across them keeps only the heart clear
 	return roads != null and roads.has_method("on_path") and roads.on_path(world, LANE)
 ## The way a camera faces as it comes down into a town (camera_rig.frame_town
 ## stands it at yaw 35 degrees, looking back at the heart): the half of the
