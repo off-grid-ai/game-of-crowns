@@ -298,6 +298,11 @@ func _put_town_away() -> void:
 	town_card._put_town_away()
 
 
+## A click on the world while the town card is open closes it and is taken by it (town_panel.gd).
+func take_world_click() -> bool:
+	return town_card.take_world_click()
+
+
 func glass_panel() -> PanelContainer:
 	var p := PanelContainer.new()
 	T.glass(p)

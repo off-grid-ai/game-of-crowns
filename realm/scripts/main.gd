@@ -1083,6 +1083,8 @@ func _follow_story(e: Dictionary) -> void:
 
 
 func _on_ground_clicked(p: Vector3) -> void:
+	if ui and ui.take_world_click():
+		return  # the click away from an open town card closes it, and does nothing else (town_panel.gd)
 	var hosts := get_node_or_null("HostCommand")
 	if hosts and hosts.take_click(p):
 		return  # a host's standard, or where a host was ordered (host_command.gd)

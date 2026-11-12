@@ -95,6 +95,17 @@ func _order(action: String, building: String, to: int) -> void:
 	_put_town_away()
 
 
+## A click on the world (main.gd: the ground clicked) while the card is open: it puts the card away and is taken by
+## it, so it selects nothing and opens no other town (Mac, 2026-11-12: the card closes when you click away from it,
+## as a game's info card does; CK3, Anno 1800). A click on the card itself never reaches the world (the interface
+## takes it). False with the card shut: the click is the world's.
+func take_world_click() -> bool:
+	if _town_panel == null or not _town_panel.visible:
+		return false
+	_put_town_away()
+	return true
+
+
 ## The town card put away for good: the realm's next update refreshes nothing,
 ## so it never comes back over whatever the King opened instead.
 func _put_town_away() -> void:
