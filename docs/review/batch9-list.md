@@ -194,3 +194,8 @@ beside the frames. Reference: Anno 1800's town at street height (close detail, f
     near the square, the funeral (priest, bier on four shoulders, mourners) walking round, the bell tolling.
 53. **The feast's bonfire** (centre-feast-wide): the same step as batch 8b. Judge: flames rising from the stones, its
     light on the dancers' faces.
+
+54. **The square's rim** (batch 8b goldrock-fountain: big empty cobbles between the stalls and the house fronts;
+    6d135651, `--dressing=on`): `city Goldrock 6 -25` and `city Kingsmere 6 -25`, without and with the switch.
+    Judge: benches facing the heart, barrels, crates, potted shrubs and flower tubs along the inside of the rim, none
+    on a stall's front, a door, a road mouth or the fountain's basin.
