@@ -382,6 +382,8 @@ func _bailey_ground(root: Node3D, cp: Vector3, cy: float, yaw: float, rng: Rando
 	# The forecourt (towns.json bailey.forecourt [width, game units]; round 5, 01-town: a broad cobbled way from the
 	# square up to the gate, no lawn between the stalls and the castle): setts from the gate out to the square's heart,
 	# under the square's own (they lie over it there).
+	if OS.get_cmdline_user_args().has("--tree-bakeoff=on"):
+		_tree_bakeoff(root, center, cp + b * Vector3(0, 0, float(way[0]) * f.y))
 	var fw := float(k.get("forecourt", 0.0))
 	if fw > 0.0:
 		var gate: Vector3 = cp + b * Vector3(0, 0, float(way[0]) * f.y)
@@ -3342,3 +3344,30 @@ func _pick_tree(rng: RandomNumberGenerator) -> String:
 ## kit's flowering bush (garden_hedge) with the kit's.
 static func _shrub_comp() -> String:
 	return "tree_shrub" if _tree_comp() == "town_tree_round" else "garden_hedge"
+
+
+## The tree bake-off (--tree-bakeoff=on; towns.json tree_bakeoff; Mac turned KayKit's crowns down): one of each
+## candidate tree (assets.json bake_*) in a row across the open way from the square's heart to the castle `gate`
+## (town-local), left to right as the list runs, and a work spot "tree_bakeoff" at its middle so a play script frames
+## it (`work Kingsmere tree_bakeoff 5 -20`). A test aid: off in play.
+func _tree_bakeoff(root: Node3D, center: Vector3, gate: Vector3) -> void:
+	var k: Dictionary = preload("res://scripts/data.gd").value("towns", "tree_bakeoff", {})
+	var kinds: Array = k.get("kinds", [])
+	if kinds.is_empty() or Vector2(gate.x, gate.z).length() < 0.01:
+		return
+	var mid := gate * float(k.get("along", 0.5))
+	var dir := Vector3(gate.x, 0, gate.z).normalized()
+	var across := Vector3(-dir.z, 0, dir.x)
+	var gap := float(k.get("spacing", 1.0))
+	for i in kinds.size():
+		var kind := Real.one(String(kinds[i]))
+		if kind == "" or Real.footprint(kind) == Vector2.ZERO:
+			print("CHECK tree bakeoff: %s not on this machine" % kinds[i])
+			continue
+		var p := mid + across * (float(i) - (kinds.size() - 1) * 0.5) * gap
+		p.y = 0.0
+		_place(root, kind, p + Vector3(0, _ground_y(center, p) - 0.01, 0), atan2(-dir.x, -dir.z), Vector3.ONE, Vector2(0.1, 0.1))
+	var works: Dictionary = root.get_meta("works", {})
+	works["tree_bakeoff"] = {"at": Vector3(mid.x, 0, mid.z), "yaw": atan2(-dir.x, -dir.z)}
+	root.set_meta("works", works)
+	print("CHECK tree bakeoff: %s in a row at %s (town-local), left to right" % [", ".join(PackedStringArray(kinds)), mid])

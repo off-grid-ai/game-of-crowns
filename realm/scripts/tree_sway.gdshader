@@ -6,6 +6,7 @@
 // the world (so no two trees and no two sides match), and the round crown's surface is lumped by the same clusters
 // so its outline breaks up. The trunk keeps its painted atlas colour.
 shader_type spatial;
+render_mode cull_disabled; // leaf cards are seen from both sides
 
 uniform sampler2D albedo_tex : source_color, filter_linear_mipmap_anisotropic;
 uniform vec4 albedo_color : source_color = vec4(1.0);
@@ -18,6 +19,7 @@ uniform vec3 leaf_sun : source_color = vec3(0.74, 0.74, 0.34);
 uniform float clusters = 7.0; // leaf clusters per world unit
 uniform float lump = 0.025; // how far a cluster stands out of the crown (world units)
 uniform float leaf_mix = 1.0; // 0: the atlas's own green, 1: the painted greens
+uniform float alpha_cut = 0.0; // > 0: leaf cards cut out where their texture is clear (a leaf-card tree's leaves)
 uniform float near_gone = -1.0; // nearer the lens than this (world units) the tree is gone, whole from near_solid
 uniform float near_solid = -1.0; // (camera.json near_fade; realistic.gd fade_near does the same for the kit's materials)
 global uniform vec4 wind;
@@ -81,6 +83,8 @@ void fragment() {
 		col = mix(col, painted, leaf_mix);
 	}
 	ALBEDO = col;
+	ALPHA = alpha_cut > 0.0 ? c.a : 1.0;
+	ALPHA_SCISSOR_THRESHOLD = max(alpha_cut, 0.001);
 	ROUGHNESS = 0.85;
 	BACKLIGHT = col * 0.3;
 }
