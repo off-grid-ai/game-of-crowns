@@ -2,6 +2,8 @@
 
 Messages from the supervisor pause after 10 sends while Mac isn't typing. Rulings land here instead. Newest first.
 
+- (11-12 20:45) **Mac: "no fallback, be bold, and ambitious."** Delete what we won't use: no archives, no kept old paths, no switches to the old way. The only limit: nothing the game loads or a feature uses goes, proven by probes.
+
 - (11-12 20:15) **Mac: no running Godot windows until all coding changes are done.** No renders, takes, film or windowed runs, by anyone. Headless probes only (never a window). Finish the code and wire every new asset first; then one render pass, off-screen, to judge.
 
 - (11-12 19:50) **Fire and siege stays open for READY 7** (its capture_chain_probe fails at link 3). It owns bridge hosts.js and campaigns.js for this fix: the besiegers hold the walls, an assault follows when the walls are breached or the engines are ready, and a siege survives the target changing hands (re-aim at the new owner, or end with a reason the player sees). The probe passes end to end, links 1-5. Then it closes.
