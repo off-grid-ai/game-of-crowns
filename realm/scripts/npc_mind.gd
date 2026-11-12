@@ -190,11 +190,12 @@ class Step extends BTAction:
 		var at := (agent.get_parent() as Node3D).to_global(to) if agent.get_parent() is Node3D else to
 		return not in_the_way(agent, blackboard, at) and room(agent, at)
 
-	## The one rule for where a body may stop (every mind that stands someone somewhere asks it): nobody else, person
-	## or beast (groups people and beasts), stands within `r` of `at` (world), and nobody is stepping there (their
-	## step_to: where they're going is theirs too). `but`: the one they're with (a dog at its man's heel).
+	## The one rule for where a body may stop (every mind that stands someone somewhere asks it): nobody else, a person
+	## or another body on the ground (group bodies: a town dog, a hen, the market cart), stands within `r` of `at`
+	## (world), and nobody is stepping there (their step_to: where they're going is theirs too). `but`: the one they're
+	## with (a dog at its man's heel).
 	static func room(agent: Node, at: Vector3, r := 0.11, but: Node = null) -> bool:
-		for g in ["people", "beasts"]:
+		for g in ["people", "bodies"]:
 			for p in agent.get_tree().get_nodes_in_group(g):
 				var n := p as Node3D
 				if n == agent or n == but or not n.is_visible_in_tree():

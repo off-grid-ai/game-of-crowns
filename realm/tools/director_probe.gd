@@ -21,7 +21,7 @@ const Mover := preload("res://scripts/mover.gd")
 const OVERLAP := 0.06  # world units: two bodies' radii at their drawn size; closer is one inside the other
 const STUCK := 2.0  # game seconds two bodies may brush in passing (a funeral's slow walk past a shoulder takes 1.7); longer, one stands inside the other
 const KNOT := 0.13  # world units: within a step of each other, they stand together
-const BUSY := 32  # people on a market square on an ordinary day (01-town: dozens), the posted and the walkers
+const CENSUS_LOW := 0.8  # the census's share a peaceful square must stand at least (no room may cost a few)
 const ORIGIN := 0.06  # world units (half a metre): nobody stands at a town's very middle, its well or statue
 const KNOT_MOST := 5  # the biggest group a peaceful square's day shows (a crier and his few, a knot of gossips)
 
@@ -84,7 +84,7 @@ func _init() -> void:
 		quit(1))
 
 
-func _town(world: Node3D) -> Node3D:
+func _town(world: Node3D, r11 := false) -> Node3D:
 	var holder := Node3D.new()
 	world.add_child(holder)
 	var root := Node3D.new()
@@ -92,6 +92,7 @@ func _town(world: Node3D) -> Node3D:
 	holder.add_child(root)
 	root.set_meta("places", {"tavern": Vector3(0.0, 0, 1.0), "well": Vector3(0.3, 0, -0.3), "market": Vector3(-0.4, 0, 0.2), "sept": Vector3(-1.2, 0, -1.0)})
 	root.set_meta("square_r", 1.2)
+	root.set_meta("paved", [[Vector2.ZERO, Vector2.ZERO, 1.2]])  # the square's setts (towns.gd _note_paved: its disc first)
 	root.set_meta("rank", "city")
 	root.set_meta("crown_seat", true)
 	root.set_meta("stalls", [[Vector3(-0.6, 0, 0.5), 0.12, 0.2], [Vector3(-0.75, 0, 0.1), 0.12, 0.2], [Vector3(-0.6, 0, -0.3), 0.12, 0.2]])
@@ -101,6 +102,21 @@ func _town(world: Node3D) -> Node3D:
 	root.set_meta("homes", [[Vector3(1.5, 0, 0.9), Vector3(-0.7, 0, -0.7)], [Vector3(-1.5, 0, 0.8), Vector3(0.7, 0, -0.7)]])
 	root.set_meta("castle_poly", PackedVector2Array([Vector2(-0.5, -2.6), Vector2(0.5, -2.6), Vector2(0.5, -2.0), Vector2(-0.5, -2.0)]))
 	root.set_meta("works", {"forge": {"at": Vector3(1.6, 0, 0.0), "yaw": -PI / 2}})
+	if r11:
+		# Round 11's Kingsmere (fire-siege's 24330665): square_r 2.1, 18 stalls in two rows round the market's side,
+		# the outer at 0.9 of the square over +-158 degrees, the inner at 0.62 over +-140, every front to the heart.
+		root.set_meta("square_r", 2.1)
+		root.set_meta("paved", [[Vector2.ZERO, Vector2.ZERO, 2.1]])
+		var st: Array = []
+		var mid := atan2(0.2, -0.4)  # the market's side
+		for row in [[0.9, 158.0, 11], [0.62, 140.0, 7]]:
+			for i in int(row[2]):
+				var a := mid + deg_to_rad(lerpf(-float(row[1]), float(row[1]), (i + 0.5) / float(row[2])))
+				st.append([Vector3(sin(a), 0, cos(a)) * 2.1 * float(row[0]), 0.12, 0.2])
+		root.set_meta("stalls", st)
+		var pl: Dictionary = root.get_meta("places")
+		pl["market"] = Vector3(sin(mid), 0, cos(mid)) * 1.6
+		root.set_meta("places", pl)
 	var well := MeshInstance3D.new()  # the well, standing in the square as a town's does (nav_ground reads it)
 	var drum := CylinderMesh.new()
 	drum.top_radius = 0.08
@@ -139,6 +155,7 @@ func _run() -> void:
 		main.add_child(director)
 	var states := {
 		"peace": {},
+		"market": {},
 		"war": {"atWar": true},
 		"levy": {},
 		"hunger": {"famine": true, "mood": "hunger"},
@@ -155,7 +172,7 @@ func _run() -> void:
 		if only != "" and name != only:
 			continue
 		(main.awareness as Aware).town(7).set_var(&"levy", name == "levy")
-		var town := _town(world)
+		var town := _town(world, name == "market")
 		var life := TownLife.new()
 		life.terrain = land
 		if director:
@@ -189,6 +206,7 @@ func _run() -> void:
 		# Nothing lost: each state's scenes.
 		var need := {
 			"peace": {"patrol": 2, "chasing": 2, "town_dog": 1, "gossip": 2, "errand": 1, "cart": 1, "keeper": 2},
+			"market": {"patrol": 2, "chasing": 2, "gossip": 2, "errand": 1, "keeper": 16, "shopper": 10},
 			"war": {"levy_man": 8, "patrol": 2},
 			"levy": {"levy_man": 10},
 			"hunger": {"dole": 4, "hungry": 3, "keeper": 1},
@@ -201,19 +219,29 @@ func _run() -> void:
 			var got: int = by.call(meta).size()
 			if got < int(need[name][meta]):
 				fail.call("%s: %d %s, want at least %d" % [name, got, meta, need[name][meta]])
-		if name == "peace":
-			# A market's day (01-town): dozens on the square, a small group at every kept stall.
-			var sq := float(town.get_meta("square_r", 1.0)) * 1.1
-			var on_square: int = cast.filter(func(n): return Vector2((n as Node3D).position.x, (n as Node3D).position.z).length() < sq).size()
-			var unserved := 0
+		if name in ["peace", "market"]:
+			# The crowd is the census (casebook, Living towns; round 11's Kingsmere, 01-town): the square's own people
+			# as many as its open setts hold at a lived-in density (towns.json square.targets.per_100m2), shared among
+			# the stalls, the crier, the watch, the children, the gossips and the carriers; a stall stands kept or served.
+			var m2: float = director.open_setts_m2(town)
+			var budget := int(round(m2 / 100.0 * preload("res://scripts/data.gd").num("towns", "square.targets.per_100m2", 6.0)))
+			var counted: Array = cast.filter(func(n): return n.has_meta("census"))
+			var by_row := {}
+			for n in counted:
+				by_row[n.get_meta("scene", "?")] = int(by_row.get(n.get_meta("scene", "?"), 0)) + 1
+			var empty := 0
 			for st in town.get_meta("stalls", []):
 				var m: Vector3 = st[0]
-				var front := m - Vector3(m.x, 0, m.z).normalized() * (float(st[1]) * 0.5 + 0.12)
-				if not cast.any(func(n): return n.has_meta("shopper") and (n as Node3D).position.distance_to(front) < 0.3):
-					unserved += 1
-			print("DIRECTOR peace   market day: %d on the square, %d of %d stalls with nobody at their front" % [on_square, unserved, (town.get_meta("stalls", []) as Array).size()])
-			if on_square < BUSY or unserved > 0:
-				fail.call("peace: the square reads empty (%d on it, want %d; %d stalls with nobody at the front)" % [on_square, BUSY, unserved])
+				if not cast.any(func(n): return (n.has_meta("shopper") or n.has_meta("keeper")) and (n as Node3D).position.distance_to(m) < float(st[1]) + 0.3):
+					empty += 1
+			print("DIRECTOR peace   square census: %d for %.0f m2, %d cast to it %s; %d of %d stalls with nobody at them" % [budget, m2, counted.size(), str(by_row), empty, (town.get_meta("stalls", []) as Array).size()])
+			if counted.size() > budget or counted.size() < int(budget * CENSUS_LOW):
+				fail.call("peace: the square's census is %d, and %d stand to it" % [budget, counted.size()])
+			for walk in ["patrol", "chase", "errands", "gossip", "stalls"]:
+				if not by_row.has(walk):
+					fail.call("peace: the census left the square no %s" % walk)
+			if empty > 0:
+				fail.call("peace: %d stalls with nobody at them" % empty)
 		var hens := l.get_children().filter(func(n): return n.has_meta("stall_hen"))
 		if name == "peace" and (hens.size() < 2 or hens.any(func(h): return (h as Node).find_children("Life", "Timer", true, false).is_empty())):
 			fail.call("peace: %d hens by the stalls, or one without its idle life" % hens.size())
@@ -292,7 +320,7 @@ func _run() -> void:
 		# Two walking past each other may brush for a moment; standing inside each other (over STUCK) is the fault.
 		var stuck: Array = overlaps.values().filter(func(o): return float(o[2]) > STUCK)
 		print("DIRECTOR %-7s %d pairs brushed, %d stood inside each other, biggest knot %d" % [name, overlaps.size(), stuck.size(), knot])
-		if not stuck.is_empty() and name != "peace":
+		if not stuck.is_empty() and not name in ["peace", "market"]:
 			# Walkers meeting posted people who step about (a feast's dancers, a crier's listeners): the town crowd's
 			# avoidance (Godot's RVO, villagers.gd) is what keeps those apart, and headless Godot never syncs a
 			# navigation map to run it. Shown, not failed, outside the square's ordinary day; peace is the gate.
@@ -307,12 +335,12 @@ func _run() -> void:
 					print("DIRECTOR stuck tag: now %d until %d count %d goal %s runner is first %s resting %s" % [Time.get_ticks_msec(), pr["until"], pr.get("count", 0), pr["goal"], pr["kids"][0] == o[0], pr.get("resting", false)])
 				print("DIRECTOR stuck: pairs %s %s, apart %.3f, moving %s %s" % [o[0].get_meta("pair", "-"), o[1].get_meta("pair", "-"), (o[0] as Node3D).position.distance_to((o[1] as Node3D).position), Mover.of(o[0]).moving(), Mover.of(o[1]).moving()])
 			fail.call("%s: %d pairs of bodies inside each other (first: %s %s and %s %s, %.1f s, at %s)" % [name, stuck.size(), o[0].get_meta("scene", "?"), o[0].get_meta("role", ""), o[1].get_meta("scene", "?"), o[1].get_meta("role", ""), float(o[2]), where])
-		if name == "peace" and knot > KNOT_MOST:
+		if name in ["peace", "market"] and knot > KNOT_MOST:
 			fail.call("peace: a knot of %d in the square (a market reads as groups of %d at most): %s" % [knot, KNOT_MOST, str(knot_of)])
 		var moved := walkers.filter(func(w): return is_instance_valid(w) and (w as Node3D).global_position.distance_to(from[w]) > 0.05).size()
 		var gone := walkers.filter(func(w): return not is_instance_valid(w) or (w as Node).is_queued_for_deletion()).size()
 		print("DIRECTOR %-7s %d walkers: %d moved in 10 s, %d walked off" % [name, walkers.size(), moved, gone])
-		if name in ["peace", "grief"] and moved + gone < walkers.size() / 2:
+		if name in ["peace", "market", "grief"] and moved + gone < walkers.size() / 2:
 			fail.call("%s: the walkers stood still (%d of %d moved)" % [name, moved, walkers.size()])
 		if name == "grief":
 			var heads: Array = by.call("procession").filter(func(n): return is_instance_valid(n) and n.has_meta("head"))

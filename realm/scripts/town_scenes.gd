@@ -98,6 +98,16 @@ func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object)
 	rng.seed = int(c.get("id", 0)) * 7919 + 17
 	var size := int(c.get("size", 1))
 	var tally := {"cast": 0, "no_room": {}, "no_place": []}  # said in the play log: an empty walk map shows as a number
+	# The square's census (casebook, Living towns: 'The crowd is the census'): as many on its open setts as its size
+	# holds at a lived-in square's density (towns.json square.targets.per_100m2: 01-town's, and round 11's Kingsmere),
+	# shared among the roles that stand there by their `census` weights; worked out once the stalls stand (_census).
+	var census := {"budget": -1, "left": 0, "weights": 0.0, "cast": 0, "m2": 0.0}
+	for row in _d.get("standing", []):
+		if _meets(row, root, states, size):
+			for role in row.get("roles", []):
+				var w: Variant = role.get("census", 0.0)
+				if not (w is String):
+					census["weights"] = float(census["weights"]) + float(w)
 	for row in _d.get("standing", []):
 		if not _meets(row, root, states, size):
 			continue
@@ -106,12 +116,77 @@ func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object)
 			var got: Variant = tl.call("dress_" + String(dress), root, life, row, rng)
 			if got is Dictionary:
 				anchors.merge(got, true)
-		var k := {"root": root, "life": life, "tl": tl, "states": states, "size": size, "rng": rng, "row": row, "lead": null, "cast": [], "tally": tally}
+		var k := {"root": root, "life": life, "tl": tl, "states": states, "size": size, "rng": rng, "row": row, "lead": null, "cast": [], "tally": tally, "census": census}
 		for role in row.get("roles", []):
 			_stage_role(k, role, anchors)
 		if row.has("march") and _meets(row["march"], root, states, size):
 			_begin_march(root, life, row["march"], rng)
-	print("CHECK town scenes: %s: %d cast; no room for %s; rows whose place wasn't there: %s" % [String(root.get_meta("title", root.name)), int(tally["cast"]), str(tally["no_room"]), str(tally["no_place"])])
+	print("CHECK town scenes: %s: %d cast; no room for %s; rows whose place wasn't there: %s; square census %d for %.0f m2 of open setts, %d cast to it" % [String(root.get_meta("title", root.name)), int(tally["cast"]), str(tally["no_room"]), str(tally["no_place"]), int(census["budget"]), float(census["m2"]), int(census["cast"])])
+
+
+## How many of a role the square's census lets stand, or -1 for no cap: a role outside the census (a riot's press,
+## a feast's ring: the state's own crowd), or one the census takes whole (`"census": "all"`: a keeper at every stall).
+## A weighted role takes its weight's share of what's still left when its turn comes, so whatever one couldn't place
+## (fewer stalls, no room) goes to those after it.
+func _census_cap(k: Dictionary, role: Dictionary) -> int:
+	var c: Dictionary = k["census"]
+	var w: Variant = role.get("census", 0.0)
+	if int(c["budget"]) < 0 and (w is String or float(w) > 0.0):
+		var m2 := open_setts_m2(k["root"])
+		c["m2"] = m2
+		c["budget"] = int(round(m2 / 100.0 * Data.num("towns", "square.targets.per_100m2", 6.0)))
+		c["left"] = int(c["budget"]) - int(c["cast"])
+	if w is String or float(w) <= 0.0:
+		return -1
+	var share := float(c["left"]) * float(w) / maxf(float(c["weights"]), 0.001)
+	c["weights"] = float(c["weights"]) - float(w)
+	var cap := maxi(0, int(round(share)))
+	if bool(role.get("pairs", false)) or String(role.get("does", "")) == "beat":
+		cap = maxi(2, cap) / 2 * 2 if share >= 1.5 else 0  # by twos
+	return mini(cap, maxi(0, int(c["left"])))
+
+
+## A body the census counts: marked, and the count kept for the play log.
+func _counted(k: Dictionary, role: Dictionary, body: Node3D) -> void:
+	var w: Variant = role.get("census", 0.0)
+	if w is String or float(w) > 0.0:
+		body.set_meta("census", true)
+		k["census"]["cast"] = int(k["census"]["cast"]) + 1
+		k["census"]["left"] = int(k["census"]["left"]) - 1
+
+
+## The square's open setts in square metres: metre cells inside its paved disc (towns.gd's first `paved` entry) under
+## nothing that stands on it (nav_ground's outlines centred on the setts: stalls, the well, the statue). The measure
+## squarelife (autoplay.gd) reads the square by.
+static func open_setts_m2(root: Node3D) -> float:
+	var um: float = load("res://scripts/towns.gd").S
+	var pr := 0.0
+	for pv in root.get_meta("paved", []):
+		if (pv[0] as Vector2) == Vector2.ZERO and (pv[1] as Vector2) == Vector2.ZERO:
+			pr = float(pv[2])
+			break
+	if pr <= 0.0:
+		return 0.0
+	var feats: Array = []
+	for fp in load("res://scripts/town_nav.gd").footprints(root):
+		var poly := fp as PackedVector2Array
+		if poly.size() < 3:
+			continue
+		var mid := Vector2.ZERO
+		for v in poly:
+			mid += v
+		if (mid / poly.size()).length() <= pr:
+			feats.append(poly)
+	var n := int(ceil(pr / um))
+	var open := 0
+	for gx in range(-n, n + 1):
+		for gz in range(-n, n + 1):
+			var cq := Vector2(gx, gz) * um
+			if cq.length() > pr:
+				continue
+			if not feats.any(func(poly): return Geometry2D.is_point_in_polygon(cq, poly)):
+				open += 1
+	return float(open)
 
 
 ## Whether a row's conditions hold: any of `needs`, none of `not`, the square's own life (`square`: a market
@@ -401,7 +476,22 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 	var n := 0 if String(role.get("form", "")) == "each" else _count(role.get("n", 1), k)
 	if bool(role.get("pairs", false)):
 		n *= 2
+	var cap := _census_cap(k, role)
+	if cap >= 0 and String(role.get("form", "")) != "each":
+		n = mini(n, cap)
 	var spots := _spots(role, a, n, k)
+	if cap >= 0 and String(role.get("form", "")) == "each" and spots.size() > cap:
+		# More stalls (seats, carts) than the census stands people at: which of them get someone, by chance.
+		var keep: Array = []
+		var idx := range(spots.size())
+		for j in range(idx.size() - 1, 0, -1):
+			var r := k["rng"].randi() % (j + 1) as int
+			var t: Variant = idx[j]
+			idx[j] = idx[r]
+			idx[r] = t
+		for j in idx.slice(0, cap):
+			keep.append(spots[j])
+		spots = keep
 	var root: Node3D = k["root"]
 	var life: Node3D = k["life"]
 	var tl: Object = k["tl"]
@@ -428,7 +518,7 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 		if role.has("beast"):
 			body = tl.beast(root, String(role["beast"]), pos, role.get("tints", []), i, rng)
 			if body:
-				body.add_to_group("beasts")  # stands on the ground like anyone: the stopping rule (npc_mind Step.room) sees it
+				body.add_to_group("bodies")  # stands on the ground like anyone: the stopping rule (npc_mind Step.room) sees it
 		else:
 			var tint := Color.WHITE
 			var tv: Variant = role.get("tint", null)
@@ -446,6 +536,7 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 			continue
 		body.set_meta("scene", String((k["row"] as Dictionary)["id"]))
 		k["tally"]["cast"] = int(k["tally"]["cast"]) + 1
+		_counted(k, role, body)
 		if not bool(role.get("exact", false)):
 			body.set_meta("spot", true)
 		for m in role.get("meta", []):
@@ -577,6 +668,9 @@ func _stage_walkers(k: Dictionary, role: Dictionary, a: Dictionary, does: String
 	var rng: RandomNumberGenerator = k["rng"]
 	var W: Dictionary = role.get("walk", {})
 	var n := _count(role.get("n", 1), k)
+	var cap := _census_cap(k, role)
+	if cap >= 0:
+		n = mini(n, cap / 2 if does == "beat" else cap)  # a beat is walked by a pair
 	var r := float(root.get_meta("square_r", 1.0))
 	for i in n:
 		match does:
@@ -590,6 +684,7 @@ func _stage_walkers(k: Dictionary, role: Dictionary, a: Dictionary, does: String
 					at.y = tl.ground_at(root, at)
 					var g: Node3D = tl.cast(root, at, String(role.get("who", "soldier")), "Sword_Idle", rng.randi(), tl.house_colour(root) if role.get("tint", "") == "house" else Color.WHITE, "", "")
 					g.set_meta("scene", String(k["row"]["id"]))
+					_counted(k, role, g)
 					for m in role.get("meta", []):
 						g.set_meta(String(m), true)
 					if bool(role.get("watch", false)):
@@ -627,6 +722,7 @@ func _stage_walkers(k: Dictionary, role: Dictionary, a: Dictionary, does: String
 				if order.size() < 2:
 					man.queue_free()
 					continue
+				_counted(k, role, man)
 				order.shuffle()
 				var streets: Array = a.get("streets", [])
 				if not streets.is_empty() and rng.randf() < float(role.get("street_share", 0.6)):
@@ -712,6 +808,7 @@ func _cart(k: Dictionary, role: Dictionary, W: Dictionary, r: float) -> void:
 		return
 	rig.position = Vector3(ends[0].x, tl.ground_at(root, ends[0]), ends[0].z)
 	life.add_child(rig)
+	rig.add_to_group("bodies")  # the stopping rule (npc_mind Step.room) keeps people out of its way
 	rig.set_meta("scene", String(k["row"]["id"]))
 	rig.set_meta("cart", true)
 	var mkt: Vector3 = (root.get_meta("places", {}) as Dictionary).get("market", Vector3.ZERO) * float(W.get("market_in", 0.7))
@@ -953,7 +1050,12 @@ func _start(id: int, root: Node3D, row: Dictionary) -> Dictionary:
 			var ea := _rng.randf() * TAU
 			var door: Vector3 = main.scenes.stand(slot + Vector3(cos(ea), 0, sin(ea)) * _rng.randf_range(float(enter[0]), float(enter[1])))
 			if main.scenes.nav.waits(main.towns, door, slot):
-				_unwalkable(id, root, String(row["id"]))  # no way in (the walk map baking, or empty): nobody parked
+				# No way in: nobody parked. A map still baking (Recast, a worker thread, 0.1-0.2 s) is waited for: the
+				# scene, cast by nobody, doesn't start and is chosen again next tick. A baked map with no route is said.
+				var nav: Object = main.scenes.nav
+				var map: RID = nav.map_for(id, root) if nav.has_method("map_for") else RID()
+				if not (map.is_valid() and not nav.ready(map)):
+					_unwalkable(id, root, String(row["id"]))
 				continue
 			var face := at
 			if bool(role.get("face", false)) and first != Vector3.INF:
@@ -966,8 +1068,8 @@ func _start(id: int, root: Node3D, row: Dictionary) -> Dictionary:
 	return s
 
 
-## A passing person the director didn't cast: the town's walk map gives no way from their way in to their spot
-## (still baking, or baked to nothing as Kingsmere's was in round 13; town_nav.waits). Said in the play log as it
+## A passing person the director didn't cast: the town's walk map, baked, gives no way from their way in to their
+## spot (baked to nothing, as Kingsmere's was in round 13; town_nav.waits). Said in the play log as it
 ## starts and every `director.say_every` seconds while it lasts, with the count, so an empty map shows.
 func _unwalkable(id: int, root: Node3D, row_id: String) -> void:
 	var w: Dictionary = _no_walk.get(id, {"n": 0, "rows": {}, "said": -1})
@@ -976,7 +1078,7 @@ func _unwalkable(id: int, root: Node3D, row_id: String) -> void:
 	var now := Time.get_ticks_msec()
 	if int(w["said"]) < 0 or now - int(w["said"]) > int(float(_d.get("director", {}).get("say_every", 30.0)) * 1000.0):
 		w["said"] = now
-		print("CHECK town scenes: %s: no way to walk in for %d passing people so far (by row %s): its walk map gives no route (empty, or still baking); nobody cast there" % [String(root.get_meta("title", root.name)), int(w["n"]), str(w["rows"])])
+		print("CHECK town scenes: %s: no way to walk in for %d passing people so far (by row %s): its walk map, baked, gives no route; nobody cast there" % [String(root.get_meta("title", root.name)), int(w["n"]), str(w["rows"])])
 	_no_walk[id] = w
 
 
@@ -1256,10 +1358,7 @@ class Round extends BTAction:
 			_goal = goal
 			_set_tail(false)
 			_carter(true)
-			if blackboard.get_var(&"town") == null:
-				Kit.go_to(me, Kit.free_near(me, blackboard, goal + off))  # a stop with room: never on a beggar at the step
-			else:
-				m.go(goal + off)
+			Kit.go_to(me, Kit.free_near(me, blackboard, goal + off))  # a stop with room: never on a beggar, nor a cart on the watch
 			if lead:
 				plan["goal"] = goal
 			return RUNNING
@@ -1356,7 +1455,9 @@ class Dog extends BTAction:
 			if not is_instance_valid(life):
 				return RUNNING
 			var folk := life.get_children().filter(func(n): return n is Node3D and n != dog and n.has_node("Anim") and (n as Node3D).position.distance_to(dog.position) < 1.2)
-			folk = folk.filter(func(n): return not n.has_meta("dogged"))  # one dog at anyone's heels, never a pack round a child
+			var dogged := life.get_children().filter(func(n): return n is Node3D and n.has_meta("dogged"))
+			# One dog to a knot of people, never a pack round a child or a group: nobody a step from someone dogged.
+			folk = folk.filter(func(n): return not dogged.any(func(o): return (o as Node3D).position.distance_to((n as Node3D).position) < 0.2))
 			var kids := folk.filter(func(n): return n.has_meta("chasing"))
 			var pool := kids if not kids.is_empty() and randf() < 0.6 else folk
 			if pool.is_empty():

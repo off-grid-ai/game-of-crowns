@@ -1734,16 +1734,22 @@ func dress_market_day(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomN
 	var wk: Dictionary = root.get_meta("works", {})
 	if wk.has("forge") and bool(Data.value("crowd", "square_agents.smith_in_smithy", true)) and square_agents_on():
 		smithy = (wk["forge"]["at"] as Vector3).length() < square_r * 1.8
+	var walls := _blocked(root, life)
 	if not smithy and bool(k.get("smith", true)) and preload("res://scripts/weapons.gd").can_play("Hammer_Swing"):
-		var at := side * square_r * 0.72
-		if _prop(life, center, "Anvil", at, atan2(-side.x, -side.z), 1.0, 0.0):
+		var at := _room_for(center, side * square_r * 0.72, 0.08, walls, root)
+		if not is_nan(at.x) and _prop(life, center, "Anvil", at, atan2(-side.x, -side.z), 1.0, 0.0):
 			_prop(life, center, "Bucket_Metal", at + Vector3(-side.z, 0, side.x) * 0.12, 0.0, 1.0, 0.0)
 			out["anvil"] = {"points": [{"at": at, "dir": side}]}
 	var carts: Array = []
 	for i in int(k.get("carts", 1)):
-		var cp := (-side * 0.62 + toward * (0.2 * i - 0.1)) * square_r
+		# Drawn up on open setts nearest its place across from the anvil, clear of every stall (round 11's square: two
+		# rows of them where the carts used to stand), and of the carts before it.
+		var cp := _room_for(center, (-side * 0.62 + toward * (0.2 * i - 0.1)) * square_r, 0.16, walls, root)
+		if is_nan(cp.x):
+			continue  # no room on the setts: no cart (the market is what fits)
 		var cart: Node3D = Real.meshy_piece("square_cart")  # Meshy's merchant cart
 		if cart:
+			walls.append(PackedVector2Array([Vector2(cp.x - 0.16, cp.z - 0.16), Vector2(cp.x + 0.16, cp.z - 0.16), Vector2(cp.x + 0.16, cp.z + 0.16), Vector2(cp.x - 0.16, cp.z + 0.16)]))
 			cart.position = Vector3(cp.x, _y(center, cp), cp.z)
 			cart.rotation.y = atan2(toward.x, toward.z)
 			life.add_child(cart)
@@ -1762,6 +1768,27 @@ func dress_market_day(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomN
 		ends.append({"at": m + along * (float(st[2]) * 0.5 + 0.18) - o * 0.15, "dir": -o})
 	out["stall_end"] = {"points": ends}
 	return out
+
+
+## The nearest spot to `want` (town-local) a prop `half` across each way fits on: its middle and its four sides on
+## open ground (_open: no building, stall or plinth, nobody standing) and off the road's lanes, on rings widening out
+## to half the square; NAN if none.
+func _room_for(center: Vector3, want: Vector3, half: float, walls: Array, root: Node3D) -> Vector3:
+	var taken: PackedVector2Array = PackedVector2Array()
+	var reach := float(root.get_meta("square_r", 1.0)) * 0.5
+	var r := 0.0
+	while r <= reach:
+		var n := 1 if r == 0.0 else int(TAU * r / 0.05)
+		for i in n:
+			var p := want + Vector3(cos(TAU * i / n), 0, sin(TAU * i / n)) * r
+			var fits := not on_lane(root, center + p)
+			for o in [Vector3.ZERO, Vector3(half, 0, 0), Vector3(-half, 0, 0), Vector3(0, 0, half), Vector3(0, 0, -half)]:
+				if fits and not _open(center, p + o, walls, taken):
+					fits = false
+			if fits:
+				return p
+		r += 0.05
+	return Vector3(NAN, 0, 0)
 
 
 ## The feast's bonfire, at the square's heart or off a fountain standing there; its ring of revellers stands
