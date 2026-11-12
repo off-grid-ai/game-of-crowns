@@ -18,8 +18,7 @@ var _held_court := false  # a new petitioner arrived while he was busy
 var _markers := {}  # matter id -> its marker on the map, at its place
 const PINNED_WIDTH := 440.0  # the court card standing by its place
 var _opened_at := Vector3.INF  # the place of the matter the King opened from its marker: the card stands by it
-## One court flow (--court=one, the build plan's item: the supervisor's go, behind this
-## switch until filmed): every matter, a lord's or the Hand's, on one card in four steps,
+## One court flow: every matter, a lord's or the Hand's, on one card in four steps,
 ## in (the court sits) / decide (who asks, what they want, the Hand's view, the answers
 ## with what each costs and whom it moves) / see it (the card turns over to what the
 ## ruling did) / out (the next, or the doors close once).

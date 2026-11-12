@@ -35,7 +35,6 @@ Switches (`--name`) go after `--` on the game's command line.
 - Each decree's price and words: `bridge/data/decrees.json`: `<decree>.cost`, `.label`.
 
 ## The court (Builder 2)
-- One court flow (in, decide, see it, out): the switch `--court=one` (off until filmed and judged).
 - How often the court sits and how many it hears, by stage of the reign: `bridge/data/court.json`: `stages`, `noClock`.
 - What the reign's petitions setting (rare, often) shifts: `bridge/data/court.json`: `petitions`, `wantMin`, `wantMax`.
 - How often the Hand may call the King in for a crisis between sittings: `bridge/data/court.json`: `handYear`.
