@@ -32,13 +32,15 @@ const server = read("../server.js");
 check(/ev\.kind === "assault"[^\n]*stormScene\(/.test(server) && /scene\("storm"/.test(server), "server.js doesn't turn Freeciv's assault EVENT into a storm scene");
 
 // The view: storms on the scene, never on a switch; the camp always pitched.
-const scenes = read("../../realm/scripts/scenes.gd");
-check(/"storm":/.test(scenes) && /\.storm\(/.test(scenes), "scenes.gd doesn't storm a siege on the bridge's storm scene");
+// (scene_kinds.gd's "storm" row is played by scene_kinds/siege.gd since the scenes.gd split, integration audit #11.)
+const kinds = read("../../realm/scripts/scene_kinds.gd");
+const siegeKind = read("../../realm/scripts/scene_kinds/siege.gd");
+check(/"storm":[^\n]*"play": "res:\/\/scripts\/scene_kinds\/siege\.gd"/.test(kinds) && /"storm"[\s\S]*storm\(city/.test(siegeKind) && /func storm\(/.test(siegeKind), "the view doesn't storm a siege on the bridge's storm scene (scene_kinds.gd storm row, scene_kinds/siege.gd storm)");
 const assault = read("../../realm/scripts/army_assault.gd");
 check(/func storm\(taken: bool\)/.test(assault), "army_assault.gd has no storm(taken) to end the storm Freeciv's way");
 check(!/"--storm=on"|"--storm=off"|assault\.storm"/.test(assault), "army_assault.gd still storms on a switch (--storm, walls.json assault.storm)");
 const field = read("../../realm/scripts/army_field.gd");
 check(!/"--storm-host=on"|"--storm-host=off"|storm_host\.on"/.test(field), "army_field.gd's massed storm still waits on a switch (--storm-host, storm_host.on)");
 const siegeCamp = read("../../realm/scripts/siege_camp.gd");
-check(!/"--camp=on"|"--camp=off"/.test(siegeCamp) && !/SiegeCamp\.on\(\)/.test(scenes), "a siege's camp and engines still wait on a switch (--camp, siege.json on)");
+check(!/"--camp=on"|"--camp=off"/.test(siegeCamp) && !/SiegeCamp\.on\(\)/.test(read("../../realm/scripts/scenes.gd") + siegeKind), "a siege's camp and engines still wait on a switch (--camp, siege.json on)");
 done();

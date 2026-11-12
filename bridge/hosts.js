@@ -18,7 +18,7 @@ import fs from "node:fs";
 import path from "node:path";
 import * as chron from "./chronicles.js";
 import { houseFor, cityName } from "./narrator.js";
-import { CIVILIAN } from "./campaigns.js";
+import { CIVILIAN, sworn } from "./campaigns.js";
 import * as Lua from "./lua.js";
 import { HITPOINTS } from "./rules.js";
 
@@ -244,7 +244,18 @@ export function homeward(ctx, { owner, units }, send) {
 // (a march becomes a hold; a garrison stays a garrison, in the town).
 export function season(ctx, turn) {
   const { world, meta, send, record, besiege } = ctx;
-  if (!world || !(meta?.hostOrders ?? []).length) return;
+  if (!world) return;
+  // A host holding before walls it besieges is kept there: the crown is AI-marshalled (realm.serv), and
+  // Freeciv's AI walked the King's men off the walls between seasons, so no assault came and the siege broke
+  // (realm/tools/capture_chain_probe.sh). Held from the AI while its siege stands (realm_hold, as the homeward
+  // men are), freed the season its order or the siege changes (before this season's moves).
+  const besieging = new Set((meta.campaigns ?? []).map((k) => k.city));
+  for (const o of meta.hostOrders ?? []) if (o.siege != null && o.kind === "hold" && !besieging.has(o.siege)) delete o.siege;
+  const keep = (orders) => orders.filter((o) => o.kind === "hold" && o.siege != null).flatMap((o) => o.units);
+  const freed = (meta.siegeHeld ?? []).filter((id) => !keep(meta.hostOrders ?? []).includes(id));
+  if (freed.length) send(`lua cmd ${Lua.homewardRelease(freed)}`);
+  meta.siegeHeld = (meta.siegeHeld ?? []).filter((id) => !freed.includes(id));
+  if (!(meta.hostOrders ?? []).length) { if (freed.length) chron.saveMeta(meta); return; }
   const crown = crownOf(world);
   const next = [];
   for (const o of meta.hostOrders) {
@@ -292,11 +303,13 @@ export function season(ctx, turn) {
     const reach0 = (goal && goal.owner !== crown?.id && o.kind === "march") || o.kind === "attack" ? 1 : 0;
     const there = units.every((id) => cheb(byId.get(id), o) <= reach0);
     if (there) {
-      // At the walls of the house it marched on: the siege begins (campaigns.js), the host holds before them.
-      if (o.siege && goal && goal.owner === o.house && !(meta.campaigns ?? []).some((k) => k.city === goal.id)) {
+      // At the walls of a town it marched on: the siege begins (campaigns.js) on whoever holds it now (the town
+      // may have changed hands on the road: a rising, a war), if that is still a foe, and the host holds before them.
+      const holder = goal && o.siege ? world.players.find((p) => p.id === goal.owner) : null;
+      if (holder && holder.id !== crown?.id && !sworn(ctx, holder.id) && !(meta.campaigns ?? []).some((k) => k.city === goal.id)) {
         record?.({ turn, kind: "decree", text: `The royal host reaches ${cityName(goal.id)} and lays siege.`, city: goal.id });
-        besiege?.({ city: goal.id, house: o.house });
-        next.push({ kind: "hold", units, since: turn });
+        besiege?.({ city: goal.id, house: holder.id });
+        next.push({ kind: "hold", units, since: turn, siege: goal.id });
         continue;
       }
       if (!o.arrived) record?.({ turn, kind: "decree", text: o.kind === "garrison" ? `The royal host ${o.home ? "is home at" : "garrisons"} ${cityName(o.city)}.` : `The royal host has reached ${o.city != null ? cityName(o.city) : "the place the King named"}.`, city: o.city ?? undefined });
@@ -321,5 +334,8 @@ export function season(ctx, turn) {
     }
     next.push({ ...o, units, far });
   }
+  const held = keep(next).filter((id) => !meta.siegeHeld.includes(id));
+  if (held.length) send(`lua cmd ${Lua.homewardHold(held)}`);
+  meta.siegeHeld.push(...held);
   save(meta, next);
 }

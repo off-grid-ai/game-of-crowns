@@ -15,6 +15,7 @@ import { calendar } from "./calendar.js";
 import * as chron from "./chronicles.js";
 import * as kingDeeds from "./ledger.js";
 import * as Lua from "./lua.js";
+import { view as damageOf } from "./damage.js";
 
 // A town is besieged while an enemy host stands at its walls: three or more
 // fighting units of another house on the tiles around it. One scene per turn.
@@ -163,9 +164,10 @@ export function resolveCampaigns(ctx, turn) {
   const { world, meta, court, send, record, deed, shiftFavour, greatHouses, SOLDIER } = ctx;
   for (const c of [...(meta.campaigns ?? [])]) {
     if (turn - c.turn >= 1) siegeTerms(ctx, c, turn);
-    // The assault waits for the host to reach the walls (two seasons), a season more to starve them,
-    // none once the King orders it pressed.
-    if (!c.press && turn - c.turn < 2 + (c.extra ?? 0)) continue;
+    // The assault waits while the engines are made (two seasons from the siege), a season more to starve them,
+    // none once the King orders it pressed or a wall section is breached (damage.js: the besiegers batter it).
+    const breached = (damageOf(meta, { id: c.city })?.walls ?? []).some((w) => w.stage === "breached");
+    if (!c.press && !breached && turn - c.turn < 2 + (c.extra ?? 0)) continue;
     // The herald's terms are answered before the first assault: it waits for the King's word, two
     // seasons at most, then the captains decide without him.
     if (c.asked && !c.ruled && court?.petitions.some((p) => !p.answered && p.beat === `siege-${c.city}-${c.turn}`) && (c.hold = (c.hold ?? 0) + 1) <= 2) continue;
@@ -185,7 +187,22 @@ export function resolveCampaigns(ctx, turn) {
       record({ turn, kind: "sack", text: `${cityName(c.city)} falls to the royal host: ${why} ${houseFor(foe).name} has learned what the crown's anger costs.`, city: c.city });
       continue;
     }
-    if (town.owner !== c.house) { end(); record({ turn, kind: "decree", text: `The royal host stands down before ${cityName(c.city)}: it is no longer ${houseFor(foe).name}'s to take.`, city: c.city }); continue; }
+    // The town changed hands under the siege (a rising, another house's war): the siege goes on against whoever
+    // holds it now if they are no friend of the crown, at war in Freeciv as when it began; else it is lifted. Said
+    // either way, so the player sees why.
+    if (town.owner !== c.house) {
+      const holder = world.players.find((p) => p.id === town.owner);
+      if (!holder || sworn(ctx, holder.id)) {
+        end();
+        record({ turn, kind: "decree", text: `The royal host stands down before ${cityName(c.city)}: it is no longer ${houseFor(foe).name}'s to take${holder ? `, and ${houseFor(holder).name} is sworn to the crown` : ""}.`, city: c.city });
+        continue;
+      }
+      record({ turn, kind: "decree", text: `${cityName(c.city)} has passed from ${houseFor(foe).name} to ${houseFor(holder).name}; the royal host keeps the siege.`, city: c.city });
+      c.house = holder.id;
+      const atWar = ctx.detail?.()?.players?.find((p) => p.slot === crown.id)?.atWarWith?.includes(holder.id);
+      if (!atWar) ctx.diplomacy?.([crown.id, holder.id, 0, "War"]);
+      continue;  // the next assault is on them, next season
+    }
     const men = (world.units ?? []).filter((u) => u.owner === crown.id && SOLDIER(u) && Math.max(Math.abs(u.x - town.x), Math.abs(u.y - town.y)) === 1).length;
     if ((c.assaults ?? 0) > 0 && men === 0 || (c.assaults ?? 0) >= SIEGE_ASSAULTS || (!c.assaults && men === 0 && turn - c.turn >= 2 + (c.extra ?? 0) + 3)) {
       end();

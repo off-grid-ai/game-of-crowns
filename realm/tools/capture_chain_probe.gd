@@ -67,20 +67,26 @@ func _run() -> void:
 	var hc: Node = main.get_node_or_null("HostCommand")
 	var have: bool = await _wait(func() -> bool: return hc != null and not (hc.hosts() as Array).is_empty(), 120.0)
 	var host := {}
-	if have:
+	if have:  # the King's largest host (hosts.js lists only the crown's)
 		for h in hc.hosts():
-			if int((h as Dictionary).get("owner", crown)) == crown:
+			if host.is_empty() or int((h as Dictionary).get("men", 0)) > int(host.get("men", 0)):
 				host = h
-				break
 	if not _check(crown >= 0 and not host.is_empty(), "the King's host in the field (crown %d, hosts %d)" % [crown, (hc.hosts() as Array).size() if hc else -1]):
 		_end()
 		return
 	hc.select(int(host["id"]))
 	_check(int(hc.selected) == int(host["id"]), "host %d selected (%d men at %d,%d)" % [int(host["id"]), int(host.get("men", 0)), int(host.get("x", 0)), int(host.get("y", 0))])
-	# 2. Besiege, through the card's one order: the nearest foe's towns tried in turn until the bridge takes one.
+	# 2. Besiege, through the card's one order, as a King with a small host chooses: the foe's towns held by the
+	# fewest soldiers first, then the nearest, tried in turn until the bridge takes one and lays siege (a town the
+	# crown may only march for, a sworn house's, is not a siege).
 	var here := Vector2(float(host.get("x", 0)), float(host.get("y", 0)))
+	var guard := func(c: Dictionary) -> int:
+		return (main.awareness.rec("units", []) as Array).filter(func(u) -> bool: return int(u.get("owner", -1)) == int(c.get("owner", -2)) and int(u.get("x", -1)) == int(c["x"]) and int(u.get("y", -1)) == int(c["y"]) and not String(u.get("type", "")) in preload("res://scripts/awareness.gd").civilian).size()
 	var theirs: Array = (main.awareness.rec("cities", []) as Array).filter(func(c): return int(c.get("owner", -1)) != crown)
-	theirs.sort_custom(func(a, b): return here.distance_to(Vector2(float(a["x"]), float(a["y"]))) < here.distance_to(Vector2(float(b["x"]), float(b["y"]))))
+	theirs.sort_custom(func(a, b):
+		var ga: int = guard.call(a)
+		var gb: int = guard.call(b)
+		return ga < gb if ga != gb else here.distance_to(Vector2(float(a["x"]), float(a["y"]))) < here.distance_to(Vector2(float(b["x"]), float(b["y"]))))
 	var target := -1
 	var said := ""
 	for c in theirs.slice(0, 8):
@@ -89,8 +95,9 @@ func _run() -> void:
 			break
 		await _wait(func() -> bool: return not res.is_empty(), 60.0)
 		said = String(res[0][1]) if not res.is_empty() else "no answer"
-		if not res.is_empty() and int(res[0][0]) == 200:
+		if not res.is_empty() and int(res[0][0]) == 200 and said.contains("siege"):
 			target = int(c["id"])
+			print("  besiege %s (%d soldiers inside): %s" % [String(c.get("name", "")), int(guard.call(c)), said])
 			break
 		print("  besiege %s: %s" % [String(c.get("name", "")), said])
 	var from := _turn()
@@ -115,7 +122,8 @@ func _run() -> void:
 		if sieged[0] < 0:
 			if bool(c.get("besieged", false)) or int(c.get("owner", -1)) == crown:  # the bridge's campaign on it (campaigns.js)
 				sieged[0] = _turn()
-		return int(c.get("owner", -1)) == crown or c.is_empty() or _turn() - from > SEASONS, SEASONS * 30.0)
+		var lost: bool = hc.host(int(host["id"])).is_empty() and sieged[0] >= 0 and not bool(c.get("besieged", false))  # the host fell and the siege broke
+		return int(c.get("owner", -1)) == crown or c.is_empty() or lost or _turn() - from > SEASONS, SEASONS * 30.0)
 	var c_now: Dictionary = main.awareness.city(target)
 	_check(sieged[0] >= 0, "the siege of %s laid (season %d after the order)" % [tname, sieged[0] - from if sieged[0] >= 0 else -1])
 	if not _check(int(c_now.get("owner", -1)) == crown, "Freeciv took %s and the store's owner is the crown's (owner %s, %d seasons after the order%s)" % [tname, str(c_now.get("owner")), _turn() - from, "" if taken else ", timed out"]):
