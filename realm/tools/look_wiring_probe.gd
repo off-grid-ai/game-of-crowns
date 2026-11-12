@@ -14,7 +14,7 @@ const Castle := preload("res://scripts/castle_builder.gd")
 
 ## The kit's own materials (Medieval Village MegaKit, Kenney Castle Kit): none may survive in a Meshy-built castle.
 const KIT_MATS := ["MI_UnevenBrick", "MI_UnevenBrick_castle", "MI_UnevenBrick_course", "MI_RoundTiles", "MI_WoodTrim", "MI_Plaster", "colormap"]
-const HOUSES := ["house_hovel", "house_poor", "house_burgher", "house_rich", "house_corner", "house_merchant", "house_manor"]
+const HOUSES := ["house_hovel", "house_poor", "house_burgher", "house_rich", "house_corner", "house_merchant", "house_manor", "hall", "church", "guild_hall"]
 
 var _fails := 0
 
