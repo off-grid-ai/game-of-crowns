@@ -257,7 +257,7 @@ func _hungry(at: Vector3) -> bool:
 		return false
 	var best := INF
 	var mood := ""
-	for id in aw.realm.get_var(&"towns", []):
+	for id in aw.realm.get_var(&"towns", [], false):
 		var bb: Blackboard = aw.town(int(id))
 		var tile: Vector2i = bb.get_var(&"tile", Vector2i(-1, -1))
 		if tile.x < 0:

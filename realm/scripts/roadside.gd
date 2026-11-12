@@ -702,7 +702,7 @@ func _traffic(delta: float) -> void:
 	var best: Blackboard = null
 	var best_at := Vector3.ZERO
 	var best_d := float(T.get("town_reach", 24.0))
-	for id in aw.realm.get_var(&"towns", []):
+	for id in aw.realm.get_var(&"towns", [], false):
 		var bb: Blackboard = aw.town(int(id))
 		var tile: Vector2i = bb.get_var(&"tile", Vector2i(-1, -1))
 		if tile.x < 0:
@@ -715,7 +715,7 @@ func _traffic(delta: float) -> void:
 			best_at = at
 	if best == null:
 		return
-	var kind: String = traffic._who(best, best, String(aw.realm.get_var(&"season", "")))
+	var kind: String = traffic._who(best, best, String(aw.realm.get_var(&"season", "", false)))
 	if kind == "":
 		return
 	var r: Vector2 = s["road"]

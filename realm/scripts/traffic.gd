@@ -78,7 +78,7 @@ func _decide(delta: float) -> void:
 	var seen := Vector3(cam.global_position.x, 0, cam.global_position.z)
 	# The towns in view, each with what the mirror knows of it.
 	var near: Array = []
-	for id in aw.realm.get_var(&"towns", []):
+	for id in aw.realm.get_var(&"towns", [], false):
 		var bb: Blackboard = aw.town(int(id))
 		var tile: Vector2i = bb.get_var(&"tile", Vector2i(-1, -1))
 		if tile.x < 0:
@@ -93,7 +93,7 @@ func _decide(delta: float) -> void:
 	if ends.is_empty():
 		return
 	var b: Dictionary = ends[_rng.randi() % ends.size()]
-	var kind := _who(a["bb"], b["bb"], String(aw.realm.get_var(&"season", "")))
+	var kind := _who(a["bb"], b["bb"], String(aw.realm.get_var(&"season", "", false)))
 	if kind == "" or _out >= _most(a["bb"]):
 		return
 	# One cart on a road at a time, either way: two never meet and run into each other
