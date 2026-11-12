@@ -16,6 +16,8 @@ var _clear: bool = preload("res://scripts/camera_rig.gd").clarity()
 var _haze := 0.006  # the volumetric haze's density at town zoom (look.json haze.volumetric with the one look)
 var _fill: DirectionalLight3D  # the soft light over the camera's shoulder (look.json fill), or null
 var _fill_energy := 0.0
+var _one := false  # the one look (or v3) is on
+var _air := false  # v3: the depth fog thinned by distance here (look.json haze), main.gd's left alone
 
 
 static func _read_look() -> Dictionary:
@@ -83,6 +85,7 @@ func _ready() -> void:
 	var env: Environment = main.env
 	var sky3d: Node = main.sky3d
 	var look_one := one()
+	_one = look_one
 	if look_one:
 		_haze = float((LOOK.get("haze", {}) as Dictionary).get("volumetric", 0.008))
 	# A shot's own hour (--hour=, shot_harness) stands: the golden hour overwrote it (batch 8b: night shots in daylight).
@@ -103,6 +106,7 @@ func _ready() -> void:
 		sky3d.sun_energy = float(LOOK.get("sun_energy", 1.0))
 		sky3d.sun_shadow_opacity = float(LOOK.get("shadow_opacity", 0.85))
 		sky3d.tonemap_exposure = float(LOOK.get("exposure", 1.1))
+		_tonemap_and_bounce(env)
 		# The free kit re-graded as it enters the realm (kit_tints), wherever a placer puts it.
 		get_tree().node_added.connect(_tint)
 		_tint_all(main)
@@ -149,10 +153,32 @@ func _ready() -> void:
 	env.volumetric_fog_detail_spread = 2.5
 	env.volumetric_fog_sky_affect = 0.0
 	env.volumetric_fog_ambient_inject = 0.4
+	# v3 owns the air by distance (look.json haze.fog, fog_far, fog_from, fog_to); main's own thinning stands otherwise.
+	_air = look_one and v3()
+	main.set("air_by_look", _air)
 	_attrs = sky3d.camera_attributes as CameraAttributesPractical
 	if _attrs == null:
 		_attrs = CameraAttributesPractical.new()
 		sky3d.camera_attributes = _attrs
+
+
+## The tonemapper's range and the bounce light (look.json tonemap, gi; docs/research/quality-deep-dive.md #2): AgX's
+## white and contrast (Godot 4.6+; the docs prefer AgX contrast to the adjustment's), so highlights are not capped grey
+## at the wide zoom, and SDFGI's bounce (energy, Y scale 50/75/100: less of the olive ground bounced into everything).
+## Keys left out keep main.gd's settings.
+func _tonemap_and_bounce(env: Environment) -> void:
+	var tm: Dictionary = LOOK.get("tonemap", {})
+	if tm.has("agx_white"):
+		env.tonemap_agx_white = float(tm["agx_white"])
+	if tm.has("agx_contrast"):
+		env.tonemap_agx_contrast = float(tm["agx_contrast"])
+	var gi: Dictionary = LOOK.get("gi", {})
+	if gi.has("on") and not bool(gi["on"]):
+		env.sdfgi_enabled = false
+	if gi.has("energy"):
+		env.sdfgi_energy = float(gi["energy"])
+	if gi.has("y_scale"):
+		env.sdfgi_y_scale = {50: Environment.SDFGI_Y_SCALE_50_PERCENT, 75: Environment.SDFGI_Y_SCALE_75_PERCENT}.get(int(gi["y_scale"]), Environment.SDFGI_Y_SCALE_100_PERCENT)
 
 
 ## A colour grade (a 33-slice LUT strip, golden-hour.png's layout) as a 3D texture: the imported one, or, before
@@ -292,7 +318,11 @@ func _process(_delta: float) -> void:
 	# realm the camera looks down through a hundred units of it and the whole
 	# map goes grey, so it thins away as the camera pulls back.
 	var near := lerpf(float(_clarity("hazeTown", 0.2)), 1.0, smoothstep(0.0, float(_clarity("hazeFull", 30.0)), d)) if _clear else 1.0
-	main.env.volumetric_fog_density = _haze * near * (1.0 - smoothstep(30.0, 70.0, d))
+	var hz: Dictionary = LOOK.get("haze", {}) if _one else {}
+	main.env.volumetric_fog_density = _haze * near * (1.0 - smoothstep(float(hz.get("fade_from", 30.0)), float(hz.get("fade_to", 70.0)), d))
+	if _air:
+		# The depth fog thinned as the camera pulls back (research #2: d16-30 read grey and hazy, highlights capped).
+		main.env.fog_density = lerpf(float(hz.get("fog", 0.0012)), float(hz.get("fog_far", 0.00015)), smoothstep(float(hz.get("fog_from", 45.0)), float(hz.get("fog_to", 110.0)), d))
 
 
 ## The kit's materials, re-graded by name (data/look.json kit_tints): a copy of each with its colour

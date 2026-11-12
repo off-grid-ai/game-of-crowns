@@ -604,6 +604,7 @@ func _input(event: InputEvent) -> void:
 ## of field (look.gd reads graphics_smooth), and shadows beyond the near ground.
 ## Beautiful keeps them all. Stills and film takes are always Beautiful.
 var graphics_smooth := true
+var air_by_look := false  # look.gd (the v3 look) sets the depth fog by distance itself (look.json haze)
 var _rich := {}  # the Beautiful values, kept to put back
 
 
@@ -852,7 +853,8 @@ func _update_labels() -> void:
 	# (camera_rig.OVERVIEW) takes over, so the hand-off has no jump (camera.json map).
 	terrain.set_atlas_mix(ATLAS_MOST * smoothstep(ATLAS_FROM, ATLAS_TO, d))
 	# Haze reads as air close up; looking down on the whole realm it would grey it out.
-	env.fog_density = lerpf(0.0012, 0.00015, smoothstep(45.0, 110.0, d))
+	if not air_by_look:
+		env.fog_density = lerpf(0.0012, 0.00015, smoothstep(45.0, 110.0, d))
 
 
 func _on_realm_changed() -> void:
