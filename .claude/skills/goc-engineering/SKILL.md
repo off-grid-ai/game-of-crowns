@@ -88,7 +88,10 @@ Several sessions commit to `main` from the same folder. Never `git add` and leav
   git diff <file> > /tmp/mine.patch   # trim to your hunks
   export GIT_INDEX_FILE=$(mktemp -u); git read-tree HEAD
   git apply --cached /tmp/mine.patch && git commit -m "…"; unset GIT_INDEX_FILE
+  git reset -q -- <your paths>        # refresh the shared index to the new HEAD for those paths only
   ```
+  Without that last line the shared index still holds the old blob, so every other session sees a staged revert of
+  your change and its next commit undoes it (GoC). It touches the index only, never the files.
   The shared index is never touched. If the file is yours alone, `git commit --only -m "…" -- <paths>` (new files: `git add <paths> && git commit --only … -- <paths>` in the same command). Never a bare `git commit` in the shared folder. Then `git push`; if the push is rejected because another session just pushed, `git pull --rebase -q && git push`. Check the compile output is clean before committing, never after.
 
 ## Production grade
