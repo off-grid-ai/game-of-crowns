@@ -187,6 +187,7 @@ Switches (`--name`) go after `--` on the game's command line.
 ## Feet on the ground (on by default, `--feet=off` for the clips' own keys)
 - How each move is planted on its feet (the reference skeleton, poses measured per clip, the most a clip or body is raised, what counts as sat, lying or kneeling, the moves sat on a seat that are left alone, the moves a body's own legs are measured in): `realm/data/people.json`: `feet.*`. Check it with `arch -arm64 godot --headless --path realm -s res://tools/feet_check.gd`.
 - How often a road traveller's path takes its height from the ground: `realm/data/people.json`: `travel.groundStep`.
+- How someone gets up from a low move (`rise`: off a bench `from_seat`, off the back `from_lying`, from a kneel or a seat on the ground none; `rise.on` false for Getting_Up after every low move, as before): `realm/data/people.json`.
 - How big and slim the townsfolk are drawn (`readable` 1.1: their size against the houses, with their stride, pace, room and furniture; `held`: what's in a hand on top; `build.female`: a woman's height; `build.slim_cast`, `build.slim_kit`: a body narrowed across the shoulders and chest): `realm/data/people.json`.
 - What people sit on, eat at and work at, drawn at the people's own size so drinkers sit on the benches (the inn's benches, long tables and what's on them, anvils; `--furniture=off` for life size): `realm/data/people.json`: `furniture.on`, `furniture.props`.
 

@@ -215,11 +215,15 @@ func play(clip: String, rate := 1.0, hold := false, phase := -1.0, repeat := fal
 	var length := get_animation(clip).length / maxf(rate, 0.01)
 	# v3: down low and asked a standing move: up first, through Getting_Up; the
 	# move waits (as a wish) until they stand, and starts from the rest stance.
-	if v3 and is_low() and not clip in LOW and not clip in WALKS and not clip in RUNS and clip != "Getting_Up" \
-			and not clip.begins_with("Getting_Up") and has_animation("Getting_Up") and not is_once(clip):
-		play("Getting_Up")
+	# The rise by the posture (people.json rise): off a bench Sitting_Exit, off the back Getting_Up (Mixamo's rise
+	# from lying flat: after a kneel or a seat on the ground it read as a body on the cobbles, legs in the air), from
+	# a kneel none (the crossfade brings them up).
+	var rise := _rise_from(_clip) if v3 and is_low() else ""
+	if rise != "" and not clip in LOW and not clip in WALKS and not clip in RUNS and clip != rise \
+			and not clip.begins_with("Getting_Up") and not is_once(clip):
+		play(rise)
 		_wish = clip
-		return length + get_animation("Getting_Up").length
+		return length + get_animation(rise).length
 	# A way of going (a walk, a run): it becomes the legs' walk or run, and the
 	# legs take over; how fast they go is how fast the person moves.
 	# A load on the move: the arms carry it over the walking legs.
@@ -381,6 +385,19 @@ func held_clip() -> String:
 func held_state() -> String:
 	return "now=%s to=%s blend=%.1f %s clip=%s carry=%s wish=%s held_for=%s" % [_now(), _to,
 		float(get(_at + "rest/mix/blend_amount")), "moving" if _pace > MOVING else "still", _clip, _carry.animation if _carry else "-", _wish, _held_for]
+
+
+## The move that brings the body up from low move `last` (people.json rise), "" for none or none on hand.
+func _rise_from(last: String) -> String:
+	var R: Dictionary = preload("res://scripts/data.gd").value("people", "rise", {})
+	var clip := ""
+	if not bool(R.get("on", true)):
+		clip = "Getting_Up"
+	elif last in (R.get("lying", ["Sleeping_Idle"]) as Array):
+		clip = String(R.get("from_lying", "Getting_Up"))
+	elif last in (R.get("seated", []) as Array):
+		clip = String(R.get("from_seat", "Sitting_Exit"))
+	return clip if clip != "" and has_animation(clip) else ""
 
 
 ## Whether the body is down low now (LOW), by where the machine is or is going.

@@ -226,27 +226,45 @@ class GetUp extends BTAction:
 
 	func _enter() -> void:
 		_left = 0.0
-		if String(blackboard.get_var(&"last_clip", "", false)) in GROUND:
-			var ap: AnimationPlayer = agent.get_node_or_null("Anim")
-			if ap and ap.has_animation("Getting_Up"):
-				People.play(agent, "Getting_Up")
-				blackboard.set_var(&"last_clip", "Getting_Up")
-				_left = ap.get_animation("Getting_Up").length
+		var last := String(blackboard.get_var(&"last_clip", "", false))
+		if last in GROUND:
+			var clip := rise_clip(agent, last)
+			if clip != "":
+				People.play(agent, clip)
+				blackboard.set_var(&"last_clip", clip)
+				_left = (agent.get_node("Anim") as AnimationPlayer).get_animation(clip).length
 
 	func _tick(delta: float) -> Status:
 		_left -= delta
 		return RUNNING if _left > 0.0 else SUCCESS
 
-	## For a move about to start: if the last left them on the ground and this
-	## one stands, Getting_Up now, and how long it takes (else 0: start at once).
-	static func rise_first(agent: Node, bb: Blackboard, next: String) -> float:
-		if not String(bb.get_var(&"last_clip", "", false)) in GROUND or next in GROUND:
-			return 0.0
+	## The move that brings them up from `last` (people.json rise; Mac's clip of the square, 2026-11-12: someone
+	## lay flat on their back with their legs in the air for 8 s, and another hung mid-leap: Getting_Up, Mixamo's
+	## rise from lying on the back, played after every sit and kneel). Off a bench: Sitting_Exit; from lying:
+	## Getting_Up; from a kneel or a seat on the ground: none, the next move blends them up. "" when there's none.
+	static func rise_clip(agent: Node, last: String) -> String:
+		var R: Dictionary = preload("res://scripts/data.gd").value("people", "rise", {})
+		var clip := ""
+		if last in (R.get("lying", ["Sleeping_Idle"]) as Array):
+			clip = String(R.get("from_lying", "Getting_Up"))
+		elif last in (R.get("seated", ["Sitting_Idle", "Sitting_Drinking", "Sitting_Talking"]) as Array):
+			clip = String(R.get("from_seat", "Sitting_Exit"))
+		elif not bool(R.get("on", true)):
+			clip = "Getting_Up"  # the switch back: Getting_Up after every low move, as before
 		var ap: AnimationPlayer = agent.get_node_or_null("Anim")
-		if ap == null or not ap.has_animation("Getting_Up"):
+		return clip if clip != "" and ap != null and ap.has_animation(clip) else ""
+
+	## For a move about to start: if the last left them on the ground and this
+	## one stands, their rise now, and how long it takes (else 0: start at once).
+	static func rise_first(agent: Node, bb: Blackboard, next: String) -> float:
+		var last := String(bb.get_var(&"last_clip", "", false))
+		if not last in GROUND or next in GROUND:
 			return 0.0
-		People.play(agent, "Getting_Up")
-		return ap.get_animation("Getting_Up").length
+		var clip := rise_clip(agent, last)
+		if clip == "":
+			return 0.0
+		People.play(agent, clip)
+		return (agent.get_node("Anim") as AnimationPlayer).get_animation(clip).length
 
 
 static func get_up() -> BTTask:
