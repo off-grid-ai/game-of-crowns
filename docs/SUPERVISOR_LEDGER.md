@@ -129,6 +129,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- (11-12) Mac on what he likes in r11: "the level of detail, the openness". The square: wide and open at r11's size, house fronts at r11's distance, filled with many small readable things (wares, crates, goods, people). Openness is measured as the visible paving share of c01, with r11 as the floor.
 - (11-12) Mac on r11 | r15 | 01-town: "tbh I like the first one" (r11 over the 01-town concept too). r11 c01 is the look to match for the square.
 - (11-12) GoC r15 (/tmp/goc-focus/r15/sheets): square tighter and busier but 5 stalls, setts 0.092 FAIL (sand); rout logged t=29 one break then three at t=49 (half staggered), unreadable on film (camera far, 56-body clumps): routed to army-layer via top. GoC taken over in a new account; builders restarted (trades 176d0121, paving 747b57ef). r16 judged beside r11 + 01-town.
 - (11-12) Mac: "Big square, 16 stalls". Kingsmere's square goes back to square_r ~1.8 with r11's stall and goods density and walk lanes (fire-siege); the tight 01-town square (7a8153dd) is overruled. Paving reads as stones again (747b57ef).
