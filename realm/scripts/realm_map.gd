@@ -384,11 +384,10 @@ func _town_marks(view: Rect2) -> Array:
 func _hosts() -> Array:
 	if not hosts.is_empty() or owners.size() > 0:
 		return hosts
-	var per := int(MapLook.num("marks.men_per_company", 200.0))
 	var out := []
 	for g in data.get("armies", []):
 		var house := {"name": g.get("key", g.get("house", "")), "sigil": g.get("sigil", ""), "crown": g.get("crown", false), "color": g.get("color", "#888")}
-		out.append({"x": float(g["x"]), "y": float(g["y"]), "men": int(g.get("companies", 1)) * per, "house": house})
+		out.append({"x": float(g["x"]), "y": float(g["y"]), "men": int(g.get("men", 0)), "house": house})  # its companies' men (bridge hosts.js menOf)
 	return out
 
 

@@ -66,7 +66,11 @@ extends SceneTree
 ##     and units.gd sends a ship by it;
 ## 21. a mover covers its speed whatever the frame rate (the reign replay: every off-tile figure still moving when its
 ##     season ended): along a way baked every 0.05 units (a march's road), one frame of a second at speed 1 carries it
-##     about 1 unit, through every point it passes, not one point a frame.
+##     about 1 unit, through every point it passes, not one point a frame;
+## 22. a host's standard on the map reads (Mac's realm map: every far standard said "200" on a blank flag): its men
+##     are the companies' own (the bridge's units carry their men, by kind and health), so two hosts differ; the
+##     flag flies the house's arms (Heraldry.arms, as the regiments' banners); and its line names the house, the men
+##     and where it is bound (map_look.host_line, the hover's words).
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
@@ -112,8 +116,32 @@ func _run() -> void:
 	_house_marches_show()
 	_ship_sails_the_water()
 	_mover_keeps_its_speed()
+	_standards_read()
 	print("ARMY PROBE PASS" if _fails == 0 else "ARMY PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
+
+
+## 22. A host's standard reads: the store's armies from a /world with two of House Ashby's hosts, one of three
+## companies and one of one, the second bound for a town.
+func _standards_read() -> void:
+	var Aw: GDScript = load("res://scripts/awareness.gd")
+	var ML: GDScript = load("res://scripts/map_look.gd")
+	var world := {"cities": [{"id": 5, "x": 40, "y": 40, "name": "Redbridge", "title": "Redbridge"}],
+		"units": [{"id": 1, "owner": 2, "type": "Pikemen", "x": 10, "y": 10, "men": 160}, {"id": 2, "owner": 2, "type": "Pikemen", "x": 10, "y": 11, "men": 160},
+			{"id": 3, "owner": 2, "type": "Knights", "x": 11, "y": 10, "men": 100}, {"id": 4, "owner": 2, "type": "Archers", "x": 30, "y": 30, "men": 60, "goto": {"x": 40, "y": 40}}]}
+	var groups: Array = Aw.call("_armies", world)
+	var men := groups.map(func(g): return int(g.get("men", -1)))
+	_check(men.has(420) and men.has(60), "two hosts of different strength carry their companies' men (%s)" % str(men))
+	var house := {"name": "House Ashby", "color": "#335599"}
+	_check(ML.get_script_method_list().any(func(m): return m["name"] == "flag_arms") and ML.call("flag_arms", house) != null,
+		"a host's standard on the map flies its house's arms (map_look.flag_arms: Heraldry.arms)")
+	var has_line := ML.get_script_method_list().any(func(m): return m["name"] == "host_line")
+	var small: Dictionary = {}
+	for g in groups:
+		if int(g.get("men", 0)) == 60:
+			small = g
+	var line: String = String(ML.call("host_line", {"x": 30.0, "y": 30.0, "men": 60, "house": house, "goal": small.get("goal")}, world["cities"])) if has_line else ""
+	_check(line.contains("Ashby") and line.contains("60") and line.contains("Redbridge"), "the standard's line names the house, its men and where it is bound (%s)" % line)
 
 
 ## 21. A mover keeps its speed: a body on a straight way of points 0.05 apart, one frame of 1 s at speed 1.

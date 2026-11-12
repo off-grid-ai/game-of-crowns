@@ -8,6 +8,7 @@ import { crownOf, northTowns } from "./realm.js";
 import * as Risings from "./risings.js";
 import { houseFor, cityName, HOUSES } from "./narrator.js";
 import { BUILD_COST, granarySize } from "./rules.js";
+import { menOf } from "./hosts.js";
 import { DECREES, TITHE_HIGH } from "./crown.js";
 import { shortOf, titheWait } from "./treasury.js";
 import { BANDS, band } from "./favour.js";
@@ -69,7 +70,8 @@ export function worldView(ctx) {
   const units = world.units.map((u) => {
     const x = d?.units[u.id];
     // A test reign's staged soldiers (/test/stage soldiers) over the save's own.
-    return x ? { ...u, hp: x.hp, activity: x.activity, goto: x.goto, home: x.home, ...(meta?.stageUnits?.[u.id] ?? {}) } : u;
+    const w = x ? { ...u, hp: x.hp, activity: x.activity, goto: x.goto, home: x.home, ...(meta?.stageUnits?.[u.id] ?? {}) } : u;
+    return { ...w, men: menOf(w) };  // the company's men by its kind and health (hosts.js): every host's strength sums them
   });
   const last = history[history.length - 1];
   const crownP = players.find((p) => p.house.crown);

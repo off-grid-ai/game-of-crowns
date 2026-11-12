@@ -20,8 +20,17 @@ import * as chron from "./chronicles.js";
 import { houseFor, cityName } from "./narrator.js";
 import { CIVILIAN } from "./campaigns.js";
 import * as Lua from "./lua.js";
+import { HITPOINTS } from "./rules.js";
 
 export const HOSTS = JSON.parse(fs.readFileSync(new URL("./data/hosts.json", import.meta.url), "utf8"));
+
+// A company's men, as the realm counts them: its Freeciv unit type's (data/hosts.json menOf, `men` for any other kind)
+// by its health, its hit points over its type's full (the ruleset's hitpoints). Every host's strength is their sum.
+export function menOf(u) {
+  const full = HITPOINTS[u.type] ?? 10;
+  const share = u.hp == null ? 1 : Math.max(0, Math.min(1, Number(u.hp) / full));
+  return Math.round((HOSTS.menOf?.[u.type] ?? HOSTS.men) * share);
+}
 export const SHIPS = new Set(HOSTS.ships);  // the hulls that carry hosts over water (data/hosts.json ships)
 const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 
@@ -50,7 +59,7 @@ export function list(ctx) {
     const town = world.cities.find((c) => c.x === lead.x && c.y === lead.y);
     const o = g.order;
     return {
-      id: lead.id, x: lead.x, y: lead.y, companies: g.units.length, men: g.units.length * HOSTS.men,
+      id: lead.id, x: lead.x, y: lead.y, companies: g.units.length, men: g.units.reduce((n, u) => n + menOf(u), 0),
       at: town ? { id: town.id, name: cityName(town.id) } : null, units: g.units.map((u) => u.id),
       order: o ? { kind: o.kind, x: o.x ?? null, y: o.y ?? null, city: o.city ?? null, to: o.city != null ? cityName(o.city) : null,
         seasons: o.x != null ? Math.ceil(Math.max(0, roadTo(lead, o)) / HOSTS.speed) : 0, face: o.face ?? null } : null,
@@ -156,7 +165,8 @@ function give(ctx, b) {
       const stay = h.units.filter((id) => !away.includes(id));
       const was = (meta.hostOrders ?? []).find((o) => o.units.some((id) => h.units.includes(id)));
       save(meta, [...rest, { ...(was ?? { kind: "hold", since: world.turn }), units: stay }, { kind: "hold", units: away, since: world.turn }]);
-      return [200, { ok: true, text: `The host divides: ${(half * HOSTS.men).toLocaleString("en-US")} men stand apart under their own captain.` }];
+      const men = away.reduce((n, id) => n + menOf(world.units.find((u) => u.id === id) ?? {}), 0);
+      return [200, { ok: true, text: `The host divides: ${men.toLocaleString("en-US")} men stand apart under their own captain.` }];
     }
   }
   return [400, { error: "no such order" }];

@@ -12,7 +12,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { CIVILIAN } from "./campaigns.js";
-import { SHIPS } from "./hosts.js";
+import { SHIPS, menOf } from "./hosts.js";
 import { FAMILIES, LESSER, bible } from "./lore.js";
 import { HOUSES, cityName, houseFor, nameIn } from "./narrator.js";
 import { ROLES } from "./characters.js";
@@ -235,12 +235,12 @@ export async function loreMap(ctx, req, res, url) {
   for (const u of (ctx.world.units ?? []).filter((x) => !CIVILIAN.has(x.type) && !SHIPS.has(x.type))) {
     if (ctx.world.cities.some((c) => c.x === u.x && c.y === u.y)) continue;  // a garrison, not a host
     const near = hosts.find((g) => g.owner === u.owner && Math.max(Math.abs(g.x - u.x), Math.abs(g.y - u.y)) <= 2);
-    if (near) { near.x = (near.x * near.companies + u.x) / (near.companies + 1); near.y = (near.y * near.companies + u.y) / (near.companies + 1); near.companies++; }
-    else hosts.push({ owner: u.owner, x: u.x, y: u.y, companies: 1 });
+    if (near) { near.x = (near.x * near.companies + u.x) / (near.companies + 1); near.y = (near.y * near.companies + u.y) / (near.companies + 1); near.companies++; near.men += menOf(u); }
+    else hosts.push({ owner: u.owner, x: u.x, y: u.y, companies: 1, men: menOf(u) });
   }
   const armies = hosts.filter((g) => g.companies >= 2).map((g) => {
     const h = houseFor(ctx.world.players.find((p) => p.id === g.owner) ?? {});
-    return { x: g.x, y: g.y, companies: g.companies, house: h?.name ?? "", key: h?.name ?? "", color: h?.color ?? "#888", sigil: h?.sigil ?? "", crown: !!h?.crown };
+    return { x: g.x, y: g.y, companies: g.companies, men: g.men, house: h?.name ?? "", key: h?.name ?? "", color: h?.color ?? "#888", sigil: h?.sigil ?? "", crown: !!h?.crown };
   });
   return json(res, 200, { tiles: [56, 88], towns: now, land, roads: ctx.world.roads ?? w.roads ?? [], armies });
 }

@@ -345,8 +345,8 @@ static func _crown_id(players: Dictionary) -> int:
 
 
 ## Every house's hosts in the field: its soldiers out of town, a company within two tiles of another as one host
-## (as the bridge groups them for the realm's map, routes_realm.js). [{owner, x, y, companies}], x and y the
-## companies' middle. Ships and the civilian kinds (world.civilian) aren't hosts; a garrison isn't in the field.
+## (as the bridge groups them for the realm's map, routes_realm.js). [{owner, x, y, companies, men, goal}], x and y
+## the companies' middle, men their summed men (the bridge's per company), goal the tile Freeciv sends them to or null. Ships and the civilian kinds (world.civilian) aren't hosts; a garrison isn't in the field.
 static func _armies(world: Dictionary) -> Array:
 	var towns := {}
 	for c in world.get("cities", []):
@@ -360,6 +360,11 @@ static func _armies(world: Dictionary) -> Array:
 		if towns.has(t):
 			continue
 		var owner := int(u.get("owner", -1))
+		var men := int(u.get("men", 0))  # the company's men by its kind and health (bridge hosts.js menOf)
+		var g0: Variant = u.get("goto")
+		var goal: Variant = Vector2i(int(g0.get("x", t.x)), int(g0.get("y", t.y))) if g0 is Dictionary else null
+		if goal == t:
+			goal = null  # dug in where it stands
 		var joined := false
 		for g in out:
 			if int(g["owner"]) == owner and maxf(absf(float(g["x"]) - t.x), absf(float(g["y"]) - t.y)) <= 2.0:
@@ -367,10 +372,13 @@ static func _armies(world: Dictionary) -> Array:
 				g["x"] = (float(g["x"]) * n + t.x) / (n + 1)
 				g["y"] = (float(g["y"]) * n + t.y) / (n + 1)
 				g["companies"] = n + 1
+				g["men"] = int(g["men"]) + men
+				if g["goal"] == null:
+					g["goal"] = goal
 				joined = true
 				break
 		if not joined:
-			out.append({"owner": owner, "x": float(t.x), "y": float(t.y), "companies": 1})
+			out.append({"owner": owner, "x": float(t.x), "y": float(t.y), "companies": 1, "men": men, "goal": goal})
 	return out
 
 

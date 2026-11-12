@@ -33,18 +33,17 @@ static func armies(aw: Object) -> Array:
 	var crown_men := {}  # the crown's own hosts carry their men (bridge hosts.js)
 	for h in aw.realm.get_var(&"hosts", [], false):
 		crown_men[Vector2i(int(h.get("x", 0)), int(h.get("y", 0)))] = int(h.get("men", 0))
-	var per := int(num("marks.men_per_company", 200.0))
 	var out := []
 	for g in aw.realm.get_var(&"armies", [], false):
 		var house: Dictionary = houses.get(int(g.get("owner", -1)), {})
 		if house.get("wild", false):
 			continue
 		var n := int(g.get("companies", 1))
-		var men := n * per
+		var men := int(g.get("men", 0))  # its companies' men, by kind and health (the bridge's, per company)
 		if house.get("crown", false):
 			var k := Vector2i(roundi(float(g["x"])), roundi(float(g["y"])))
 			men = int(crown_men.get(k, men))
-		out.append({"x": float(g["x"]), "y": float(g["y"]), "companies": n, "men": men, "house": house})
+		out.append({"x": float(g["x"]), "y": float(g["y"]), "companies": n, "men": men, "house": house, "goal": g.get("goal")})
 	return out
 
 
@@ -137,22 +136,49 @@ static func draw_banner(ci: CanvasItem, foot: Vector2, house: Dictionary, men: i
 	edge.append(flag[0])
 	ci.draw_colored_polygon(flag, col)
 	ci.draw_polyline(edge, dark, 1.5 * k, true)
-	var sig := Heraldry.sigil(house)
-	if sig:
-		var s := num("marks.banner.sigil", 16.0) * k
-		var c := o + Vector2(fw * 0.4, fh * 0.5)
-		ci.draw_texture_rect(sig, Rect2(c - Vector2(s, s) * 0.5, Vector2(s, s)), false, Color(1, 0.97, 0.9, alpha))
+	# The house's arms on it, as its regiments' banners fly them (Heraldry.arms); its sigil where none are drawn.
+	var arms := flag_arms(house)
+	if arms:
+		ci.draw_texture_rect(arms, Rect2(o, Vector2(fw * 0.76, fh)), false, Color(1, 1, 1, alpha))
+		ci.draw_polyline(edge, dark, 1.5 * k, true)
+	else:
+		var sig := Heraldry.sigil(house)
+		if sig:
+			var s := num("marks.banner.sigil", 16.0) * k
+			var c := o + Vector2(fw * 0.4, fh * 0.5)
+			ci.draw_texture_rect(sig, Rect2(c - Vector2(s, s) * 0.5, Vector2(s, s)), false, Color(1, 0.97, 0.9, alpha))
 	# The men, on a plate at the foot.
 	var font: Font = ci.get_theme_default_font()
 	if font == null or men <= 0:
 		return
 	var fs := int(num("marks.banner.font", 12.0) * k)
-	var text := _men(men)
+	var text := String(Data.value(F, "marks.line.plate", "{men} men")).replace("{men}", _men(men))
 	var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	var plate := Rect2(foot + Vector2(-w * 0.5 - 4.0, 2.0), Vector2(w + 8.0, fs + 4.0))
 	ci.draw_rect(plate, Color(0.06, 0.05, 0.04, 0.78 * alpha))
 	ci.draw_rect(plate, Color(col.r, col.g, col.b, alpha), false, 1.0)
 	ci.draw_string(font, plate.position + Vector2(4.0, fs + 0.5), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 0.97, 0.9, alpha))
+
+
+## The arms a host's standard flies on the map: its house's (Heraldry.arms, as its regiments' banners), or null.
+static func flag_arms(house: Dictionary) -> Texture2D:
+	return Heraldry.arms(house)
+
+
+## What a host's standard says when the pointer is on it (data/map.json marks.line): its house, its men, and where
+## Freeciv sends it (the town on that tile, else "the field"), or at ease.
+static func host_line(g: Dictionary, cities: Array) -> String:
+	var texts: Dictionary = (Data.value(F, "marks.line", {}) as Dictionary)
+	var house: Dictionary = g.get("house", {})
+	var line := String(texts.get("host", "{house}'s host, {men} men")).replace("{house}", String(house.get("name", "A house"))).replace("{men}", _men(int(g.get("men", 0))))
+	var goal: Variant = g.get("goal")
+	if goal == null:
+		return line + String(texts.get("ease", ", at ease"))
+	var to := String(texts.get("field", "the field"))
+	for c in cities:
+		if Vector2i(int(c.get("x", -1)), int(c.get("y", -1))) == Vector2i(goal):
+			to = String(c.get("title", c.get("name", to)))
+	return line + String(texts.get("bound", ", bound for {to}")).replace("{to}", to)
 
 
 ## Crossed swords in a pulsing red ring over a besieged town at `at`.
