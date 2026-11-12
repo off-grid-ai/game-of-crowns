@@ -599,6 +599,11 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 	await _trades_beyond(root, center, square_r, float(root.get_meta("edge_r", square_r + 3.6)), ways, lots, rng)
 
 
+## The house fronts' line round a square of radius `square_r` (town-local game units): on its edge, a little out.
+static func front_ring(square_r: float) -> float:
+	return square_r + 0.25
+
+
 ## --towns=plots: the square enclosed (art target 01-town): a ring of houses on its edge
 ## between the roads in, eaves almost touching, each facing the square, round the hall,
 ## the tavern and the stalls already standing there. Returns how many.
@@ -608,7 +613,7 @@ func _square_ring(root: Node3D, center: Vector3, square_r: float, ways: Array, k
 		return 0
 	var rr := RandomNumberGenerator.new()
 	rr.seed = rng.seed + 7  # the old first ring's own sequence
-	var ring := square_r + 0.25  # the house fronts' line, on the square's edge
+	var ring := front_ring(square_r)
 	var ang := rr.randf() * TAU
 	var walked := 0.0
 	var half_prev := 0.0

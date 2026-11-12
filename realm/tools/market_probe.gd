@@ -3,7 +3,7 @@ extends SceneTree
 ## alike in a grid like a car park; art target 01-town). Lays the crown's stalls with towns.gd's own lay_stalls and
 ## stall_count (towns.json market.crown) round the Meshy well at the heart, over several seeds, and measures: how many
 ## stand, the narrowest gap between neighbours, and the walkway between the stalls' fronts and the well's rim (metres).
-## Wants 5-7 stalls, gaps of at least 1.5 m, a walkway of at least 6 m. Prints CHECK lines; exits 1 on a fail.
+## Wants 5-7 stalls, gaps of at least 1.5 m, a walkway of at least 4 m (round 13: the square tightened to 01-town's). Prints CHECK lines; exits 1 on a fail.
 ##   arch -arm64 godot --headless --path realm -s res://tools/market_probe.gd
 
 const Towns := preload("res://scripts/towns.gd")
@@ -39,8 +39,8 @@ func _init() -> void:
 			if i > 0 and is_equal_approx(float(st[i - 1][2]), arc):
 				var fp := Real.footprint(String(st[i - 1][0]))
 				gap = minf(gap, absf(float(st[i][1]) - float(st[i - 1][1])) * arc - (f.x + fp.x) * 0.5)
-		var ok := st.size() >= 5 and st.size() <= 7 and gap / S >= 1.5 and walk / S >= 6.0
-		print("CHECK market seed %d: %d stalls (want 5-7), narrowest gap %.1f m (want >= 1.5), walkway to the well %.1f m (want >= 6): %s" % [seed, st.size(), gap / S, walk / S, "PASS" if ok else "FAIL"])
+		var ok := st.size() >= 5 and st.size() <= 7 and gap / S >= 1.5 and walk / S >= 4.0
+		print("CHECK market seed %d: %d stalls (want 5-7), narrowest gap %.1f m (want >= 1.5), walkway to the well %.1f m (want >= 4): %s" % [seed, st.size(), gap / S, walk / S, "PASS" if ok else "FAIL"])
 		if not ok:
 			fail += 1
 	print("CHECK market: %s" % ("PASS" if fail == 0 else "%d FAIL" % fail))
