@@ -2837,8 +2837,6 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 		_fields_beyond(root, center, size, rng)  # strips out past the plots, along the roads
 	_smoke(root, keep_off + Vector3(0.2, _ground_y(center, keep_off) + 1.2, 0.1))
 
-	if OS.get_cmdline_user_args().has("--tree-bakeoff=on") and root.has_meta("castle_frame"):
-		_tree_bakeoff(root, center)
 	await _pace()
 	_flush(root)
 	# Its name on the map is drawn in screen space by map_labels.gd.
@@ -3239,95 +3237,3 @@ func _pick_tree(rng: RandomNumberGenerator) -> String:
 ## kit's flowering bush (garden_hedge) with the kit's.
 static func _shrub_comp() -> String:
 	return "tree_shrub" if _tree_comp() == "town_tree_round" else "garden_hedge"
-
-
-## The tree bake-off (--tree-bakeoff=on; towns.json tree_bakeoff; Mac turned KayKit's crowns down; round 9: among the
-## square's own trees and stalls only one could be told apart): one of each candidate tree (assets.json bake_*) on open
-## grass out past the town's edge on the camera's side (opposite the castle, as the town view looks), in a row across
-## the view `spacing` apart, a numbered post by each (1 to 4, left to right as the list runs), nothing within `clear`:
-## a heading is taken where the land is dry and flat, no field, road, street, house or tree is that near, and the wild
-## wood is cleared round it. A work spot "tree_bakeoff" at its middle frames it (`work Kingsmere tree_bakeoff 4 -15`
-## after `home Kingsmere 0 1`, which turns the lens to look at the castle, the row side-on before it). A test aid.
-func _tree_bakeoff(root: Node3D, center: Vector3) -> void:
-	var k: Dictionary = preload("res://scripts/data.gd").value("towns", "tree_bakeoff", {})
-	var kinds: Array = k.get("kinds", [])
-	var fr: Array = root.get_meta("castle_frame", [])
-	if kinds.is_empty() or fr.size() < 1:
-		return
-	var away := -Vector2((fr[0] as Vector3).x, (fr[0] as Vector3).z).normalized()  # the camera's side of the town
-	var gap := float(k.get("spacing", 0.72))
-	var keep := float(k.get("clear", 1.0))
-	var fields: Array = root.get_meta("fields", [])
-	var ways: Array = root.get_meta("ways_main", [])
-	# Nearest first: each turn round the town at the given distance, then further out (towns.json tree_bakeoff.further,
-	# game units, how far past `out` to look; round 11: Kingsmere's fields and plots filled the ring at `out`).
-	for t in 17 * (1 + int(float(k.get("further", 6.0)) / maxf(gap, 0.1))):
-		var out_d := float(root.get_meta("plot_edge", 6.0)) + float(k.get("out", 1.8)) + gap * float(t / 17)
-		var turn := deg_to_rad(22.5) * float((t % 17 + 1) / 2) * (1.0 if t % 17 % 2 == 1 else -1.0)
-		var dir := away.rotated(turn)
-		var mid2 := dir * out_d
-		var across2 := dir.orthogonal()
-		var pts: Array = []
-		for i in kinds.size():
-			pts.append(mid2 + across2 * (float(i) - (kinds.size() - 1) * 0.5) * gap)
-		var ok := true
-		for q2: Vector2 in pts + [mid2 + dir * keep, mid2 - dir * keep]:
-			var q := Vector3(q2.x, 0, q2.y)
-			if not terrain.is_land(center.x + q.x, center.z + q.z) or not _flat_enough(center, q, 0.4) or _on_road(q, 0.3) or _near_built(root, q2, keep * 0.8) or (not ways.is_empty() and TownPlots.near_ways(q2, ways, keep * 0.6)):
-				ok = false
-				break
-			for f in fields:
-				if Vector2((f[0] as Vector3).x, (f[0] as Vector3).z).distance_to(q2) < (f[1] as Vector2).length() * 0.5 + keep * 0.6:
-					ok = false
-					break
-			if not ok:
-				break
-		if not ok:
-			continue
-		var mid := Vector3(mid2.x, 0, mid2.y)
-		terrain.clear_around(center + mid, gap * kinds.size() * 0.5 + keep)
-		var yaw := atan2(dir.x, dir.y)  # each tree turned to face the lens
-		for i in kinds.size():
-			var p := Vector3((pts[i] as Vector2).x, 0, (pts[i] as Vector2).y)
-			var kind := Real.one(String(kinds[i]))
-			if kind == "" or Real.footprint(kind) == Vector2.ZERO:
-				print("CHECK tree bakeoff: %s not on this machine" % kinds[i])
-				continue
-			_place(root, kind, p + Vector3(0, _ground_y(center, p) - 0.01, 0), yaw, Vector3.ONE, Vector2(0.1, 0.1))
-			_bakeoff_post(root, center, p + Vector3(dir.x, 0, dir.y) * 0.22, i + 1)
-		var works: Dictionary = root.get_meta("works", {})
-		works["tree_bakeoff"] = {"at": mid, "yaw": yaw}
-		root.set_meta("works", works)
-		print("CHECK tree bakeoff: %s round %s, posts 1-%d left to right, in a row at %s (town-local, %.1f past the edge), %.0f deg off the side away from the castle" % [", ".join(PackedStringArray(kinds)), String(root.get_meta("title", "")), kinds.size(), mid, out_d - float(root.get_meta("plot_edge", 6.0)), rad_to_deg(turn)])
-		return
-	print("CHECK tree bakeoff: no open ground found round %s" % String(root.get_meta("title", "")))
-
-
-## Whether anything the town set down (houses, trees, fences, yard things: its footprints) has its middle within `r`
-## of `q` (town-local).
-static func _near_built(root: Node3D, q: Vector2, r: float) -> bool:
-	for fp: PackedVector2Array in root.get_meta("footprints", []):
-		if fp.size() >= 4 and ((fp[0] + fp[2]) * 0.5).distance_to(q) < r:
-			return true
-	return false
-
-
-## A numbered marker post for the bake-off row: a short stake with its number painted on a board above it.
-func _bakeoff_post(root: Node3D, center: Vector3, p: Vector3, n: int) -> void:
-	var post := MeshInstance3D.new()
-	var bm := BoxMesh.new()
-	bm.size = Vector3(0.012, 0.16, 0.012)
-	post.mesh = bm
-	var m := StandardMaterial3D.new()
-	m.albedo_color = Color(0.36, 0.25, 0.15)
-	post.material_override = m
-	root.add_child(post)
-	post.position = p + Vector3(0, _ground_y(center, p) + 0.08, 0)
-	var label := Label3D.new()
-	label.text = str(n)
-	label.font_size = 160
-	label.outline_size = 24
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.modulate = Color(1, 0.95, 0.8)
-	root.add_child(label)
-	label.position = post.position + Vector3(0, 0.14, 0)
