@@ -341,7 +341,9 @@ func _frame_for_shot() -> void:
 				if c != king and (near.is_empty() or Vector2(c["x"] - king["x"], c["y"] - king["y"]).length() < Vector2(near["x"] - king["x"], near["y"] - king["y"]).length()):
 					near = c
 			var to: Vector3 = main.terrain.world_pos(float(near["x"]), float(near["y"]))
-			main.get_tree().create_timer(maxf(1.0, float(_shot.get("wait", 8.0)) - float(_shot.get("lead", 4.0)))).timeout.connect(func():
+			# A played take ends itself (its --wait is 9999): it stages --lead seconds in; a still stages lead before its --wait.
+			var stage_in := float(_shot.get("lead", 4.0)) if _shot.has("play") else maxf(1.0, float(_shot.get("wait", 8.0)) - float(_shot.get("lead", 4.0)))
+			main.get_tree().create_timer(stage_in).timeout.connect(func():
 				if _shot.get("convoy", false):
 					var cart: Node3D = main.scenes._convoy(from, to, true)
 					main._framed_until = int(main._game_ms) + 600000
