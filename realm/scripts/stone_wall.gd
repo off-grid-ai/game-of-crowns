@@ -21,8 +21,9 @@ extends Node3D
 ## Godot (godot-destruction fractures one mesh into shards); this file is the
 ## glue between the kit's stone, Jolt and MultiMesh.
 
+const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const Data := preload("res://scripts/data.gd")
-const S := 0.12  # world units a metre (towns.gd S)
+const S := Units.M  # world units a metre (towns.gd S)
 const KIT := "res://assets/village/T_RockTrim_%s.png"
 const DUST := "res://assets/fx/fire/smoke_0%d.png"
 

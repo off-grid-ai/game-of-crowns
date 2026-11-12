@@ -1,4 +1,5 @@
 extends RefCounted
+const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const Particles := preload("res://scripts/particles.gd")  # smoke and fire on the GPU
 ## The life director: turns what Freeciv says a town is doing into something you
 ## can see. Construction rises with its real progress; recruits drill on the
@@ -6,7 +7,7 @@ const Particles := preload("res://scripts/particles.gd")  # smoke and fire on th
 ## keep; celebrations light a bonfire; unrest sets roofs smoking.
 
 const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
-const S := 0.12
+const S := Units.M
 const Real = preload("res://scripts/realistic.gd")
 
 var terrain: Node3D
@@ -740,7 +741,7 @@ func raise_site(town_node: Node3D, plot: Transform3D, building: String, seasons:
 ## already hold. The state comes from the bridge (townStates); the people's
 ## behaviour is their minds' (npc_mind.gd); this is only what's set out.
 const PROPS := "res://assets/props/%s.gltf"
-const PROP_SCALE := 0.12  # the props kit is in metres; a person here stands about 0.2
+const PROP_SCALE := Units.M  # the props kit is in metres; a person here stands about 0.2
 static var _prop_cache := {}
 ## What people sit on, eat at and work at (people.json furniture: benches, tables and what's on them, the
 ## anvil) is drawn at the people's own size (readable), so a drinker sits on the bench and not proud of it.

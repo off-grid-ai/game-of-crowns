@@ -9,9 +9,10 @@ extends RefCounted
 ## (realm/data/works.json says the shape); a town without it has none of this.
 ## Knobs: realm/data/works.json. --works=off turns it all off.
 
+const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const Data := preload("res://scripts/data.gd")
-const S := 0.12  # world units per metre, as towns.gd
+const S := Units.M  # world units per metre, as towns.gd
 
 
 static func on() -> bool:

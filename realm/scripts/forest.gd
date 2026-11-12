@@ -4,6 +4,7 @@ extends Node3D
 ## import-made detail levels lighten them), so a realm-wide forest costs little. Tree positions come from terrain.gd's
 ## woodland noise.
 
+const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const Real := preload("res://scripts/realistic.gd")  # the asset catalogue (realm/data/assets.json)
 const Data := preload("res://scripts/data.gd")
 ## The kit's kinds, from data alone (the pickers run before any mesh loads):
@@ -14,7 +15,7 @@ static var _kit_read := _kit_layout()
 const CHUNK := 20.0  # game units per side
 const NEAR := 6.0  # within this distance of the camera, trees are drawn in full, with shadows (a block of woods switches as one: further, and the blocks under a town view drew thousands of full trees twice)
 const MID := 24.0  # out to this distance the middle batch, without shadows; the far one beyond
-const S := 0.12  # game units per metre
+const S := Units.M  # game units per metre
 var _full: Array = []  # Mesh or null
 var _mid: Array = []  # the lighter detail level, or the full one where a kind has none
 var _card: Array = []

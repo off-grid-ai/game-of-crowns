@@ -67,4 +67,6 @@ for f in $(grep -lE 'Engine\.set_meta\(' scripts/*.gd); do
     echo "$f:engine-copy   <- fixed: take it off $known"; fail=1
   fi
 done
+#   one-scale: metres to world units is Units.M (scripts/world_units.gd); no script keeps its own 0.12 (audit #17).
+check "one-scale" '^const [A-Z_]*(S|SCALE) := 0\.12\b' 'scripts/world_units\.gd'
 exit $fail

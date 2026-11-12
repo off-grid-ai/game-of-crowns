@@ -2,6 +2,7 @@ extends Node3D
 ## Builds the 3D land from Freeciv's tile map: a smooth heightfield coloured by
 ## terrain, a sea plane, and forests/rocks scattered on the right tiles.
 
+const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const TILE := 4.0
 const Awareness := preload("res://scripts/awareness.gd")  # the realm's rules as the bridge sends them (season length, bands)
 const SUB := 4  # mesh vertices per tile edge
@@ -705,7 +706,7 @@ func _scatter(mesh: Mesh, transforms: Array) -> MultiMeshInstance3D:
 
 
 ## Nature MegaKit trees, bushes and rocks, at the same scale as the towns.
-const VEG_SCALE := 0.12
+const VEG_SCALE := Units.M
 const VEG_PATCH := 12.0  # game units: grass and bushes are batched by patch of the map
 const VEG_REACH := 24.0  # and drawn only within this of the camera
 var _veg: Array[MultiMeshInstance3D] = []

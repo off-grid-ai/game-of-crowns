@@ -12,9 +12,10 @@ extends Node3D
 ## A test aid, --wall-demo: a wall across a staged siege's front (--siege) whose
 ## middle section each stone that strikes it wears further, without the bridge.
 
+const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const StoneWall := preload("res://scripts/stone_wall.gd")
 const Data := preload("res://scripts/data.gd")
-const S := 0.12
+const S := Units.M
 
 var main: Node
 var _rings := {}  # town id -> {wall, root, center}

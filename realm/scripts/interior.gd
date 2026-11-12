@@ -8,7 +8,8 @@ extends CanvasLayer
 signal closed
 signal opened(room: String)
 
-const S := 0.12  # town units per metre (people.gd builds townsfolk at this scale)
+const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
+const S := Units.M  # town units per metre (people.gd builds townsfolk at this scale)
 ## room -> [longest side in metres, a way to read its name, who's inside]
 const ROOMS := {
 	"great_hall": [26.0, "The great hall", [["Sword_Idle", 4], ["Idle_Talking", 3], ["Bow", 1], ["Arguing", 2]]],

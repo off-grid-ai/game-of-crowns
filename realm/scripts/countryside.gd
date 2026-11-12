@@ -5,8 +5,9 @@ extends Node3D
 ## and kept patch by patch: a town founded or razed redraws only the farms
 ## around it.
 
+const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const Real = preload("res://scripts/realistic.gd")
-const S := 0.12  # game units per metre
+const S := Units.M  # game units per metre
 const NEAR_TOWN := 2.4  # tiles kept clear around a town for its own fields
 const CHUNK := 20.0  # farms are kept and batched by patch of land, so distant ones still cull
 

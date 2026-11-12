@@ -3,7 +3,8 @@ extends RefCounted
 ## to Godot's humanoid skeleton and driven by Mixamo moves: outfit, hairstyle,
 ## beard, hair colour, cloth tint and build all vary, so no two look alike.
 
-const S := 0.12  # same scale as the towns: a 1.8 m person is ~0.22 units
+const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
+const S := Units.M  # same scale as the towns: a 1.8 m person is ~0.22 units
 ## Drawn larger than life, as 01-town draws its people against the houses (people.json readable; look-gap.md:
 ## ours were 1.5-1.7x too small to read): every person, beast, horse and cart, with their stride, pace and room.
 static var READ: float = preload("res://scripts/data.gd").num("people", "readable", 1.0)

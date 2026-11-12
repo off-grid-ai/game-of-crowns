@@ -7,6 +7,7 @@ extends Node3D
 ## castle_builder.gd's (towers, curtain_runs), read off the castle's own size.
 ## Knobs: data/castle.json.
 
+const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const Data := preload("res://scripts/data.gd")
 const Builder := preload("res://scripts/castle_builder.gd")
@@ -14,7 +15,7 @@ const Real := preload("res://scripts/realistic.gd")
 const Fire := preload("res://scripts/fire.gd")
 const Works := preload("res://scripts/works.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
-const S := 0.12  # world units a metre
+const S := Units.M  # world units a metre
 
 var main: Node
 var _done := {}  # castle node -> its dressing {torches: [lights and flames]}

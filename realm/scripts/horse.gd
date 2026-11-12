@@ -13,7 +13,8 @@ extends Node3D
 ##   horse.position = ...                # move it; the gait follows the speed
 ##   horse.dismount()                    # the rider stands beside it
 
-const S := 0.12  # town scale, as people.gd: metres to world units
+const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
+const S := Units.M  # town scale, as people.gd: metres to world units
 const SIZE := 1.1  # the export stands 1.38 m at the withers; a warhorse is 1.5
 static var READ: float = preload("res://scripts/data.gd").num("people", "readable", 1.0)  # drawn larger, as its riders are (people.json readable)
 static var MODEL := preload("res://scripts/realistic.gd").path_of("horse")  # by component (realm/data/assets.json)

@@ -5,8 +5,9 @@ extends Node3D
 ## Towns grow street by street with their Freeciv size, and are only rebuilt
 ## when size, owner or buildings change.
 
+const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const Awareness := preload("res://scripts/awareness.gd")  # the view's one store: the realm's records (rec)
-const S := 0.12  # world units per metre: a 6 m house is 0.72 units, a tile is 4
+const S := Units.M  # world units per metre: a 6 m house is 0.72 units, a tile is 4
 
 var terrain: Node3D
 var towns := {}  # city id -> {node, signature, data}

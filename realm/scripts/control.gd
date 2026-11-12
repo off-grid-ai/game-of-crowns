@@ -1,4 +1,5 @@
 extends Node3D
+const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
 const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
 ## Taking control of a character: you step into a lord, heir or knight and walk
 ## them through their own town, low behind their shoulder. WASD walks (Shift
@@ -25,7 +26,7 @@ const WALK := 0.17  # world units a second, as the townsfolk walk
 const RUN := 0.42
 const RIDE := 0.22  # a horse's walk
 const GALLOP := 0.9
-const S := 0.12  # town scale, as people.gd
+const S := Units.M  # town scale, as people.gd
 
 var terrain: Node3D
 var towns: Node3D

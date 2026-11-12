@@ -3,7 +3,8 @@ extends RefCounted
 ## scaled to its real size in metres, then to game units, standing on y = 0.
 ## Each arrives at its own arbitrary scale, so the table gives its true length.
 
-const S := 0.12  # game units per metre, as in towns.gd
+const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M)
+const S := Units.M  # game units per metre, as in towns.gd
 
 ## The kit comes from the catalogue (realm/data/assets.json, through data.gd): each
 ## component's models, by the names placers have always used. The tables below keep
