@@ -1,0 +1,24 @@
+{
+  "_": "The realm's scenes in the world (scenes.gd and scene_kinds/; docs/TUNING.md). fleeing: how many refugees leave a town, by the scene's kind. flight: how far each walks out before he is gone (out, world units) and how long a runner and a trudger take to get there (run_s, trudge_s; a third run). burn: a sacked or razed town's fire, [seconds, size].",
+  "fleeing": {
+    "famine": 5,
+    "plague": 3,
+    "sack": 7,
+    "razed": 10
+  },
+  "flight": {
+    "out": 4.0,
+    "run_s": 14.0,
+    "trudge_s": 30.0
+  },
+  "burn": {
+    "sack": [
+      45.0,
+      1.0
+    ],
+    "razed": [
+      70.0,
+      2.0
+    ]
+  }
+}

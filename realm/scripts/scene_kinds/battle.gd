@@ -6,32 +6,8 @@ extends "res://scripts/scene_kind.gd"
 const ArmyField := preload("res://scripts/army_field.gd")
 const ArmySkirmish := preload("res://scripts/army_skirmish.gd")
 const Awareness := preload("res://scripts/awareness.gd")
+const Data := preload("res://scripts/data.gd")
 const Horse := preload("res://scripts/horse.gd")
-
-## The skirmish (army_skirmish.gd), a pitched battle where Freeciv says men died, staged like film. The losing
-## house (team 0) holds a shield wall: swords and locked shields in front,
-## spears over their shoulders, archers behind. The victors (team 1) form
-## under their banner while their captain shouts them on, advance at a walk
-## under the archers' arrows, then charge home as their knights gallop round the
-## end of the wall into its flank. Front-rank men duel the man opposite; men fall, those behind step
-## up. The defenders' standard-bearer goes down, the banner falls, and the
-## wall breaks and scatters. The victors cheer under their own standard.
-const RANKS := 3
-const FILES := 9
-const GAP := 0.2  # between files: about 1.7 m, room for each pair to fight
-const ROW := 0.2  # between ranks: about 1.7 m
-const REACH := 0.11  # half the distance between two duelists: 1.8 m apart
-const KNIGHTS := 5
-const FIELD := 3.4  # how far the fight reaches from its centre: lines, the attackers' approach, the knights' wing
-## The most the ground may rise or fall across a field, from its centre.
-const FIELD_RISE := 0.3
-## How far out (in rings 0.8 apart) the field is looked for.
-const RINGS := 40
-## How far a field's edge keeps from a town's reach, and its centre from a farmstead.
-const TOWN_CLEAR := 0.4
-const FARM_CLEAR := FIELD + 4.8  # a farmstead's fields reach up to 4.6 from it (countryside._farmstead)
-## What the land itself costs a battle, per sample: woods hide it, hills break the lines.
-const ROUGH_GROUND := {"Forest": 12.0, "Jungle": 12.0, "Swamp": 8.0, "Hills": 4.0, "Mountains": 50.0, "Glacier": 50.0}
 
 var _played := {}  # "x,y,turn" -> true: the battles staged already
 var _fighting: Array = []  # [centre, battle root] of every battle on the field now
@@ -57,7 +33,21 @@ func play(s: Dictionary, at: Vector3, houses: Dictionary) -> Node3D:
 	return null
 
 
+## The skirmish (army_skirmish.gd; its line: battle.json skirmish.*), a pitched battle where Freeciv says men died, staged like film. The losing
+## house (team 0) holds a shield wall: swords and locked shields in front,
+## spears over their shoulders, archers behind. The victors (team 1) form
+## under their banner while their captain shouts them on, advance at a walk
+## under the archers' arrows, then charge home as their knights gallop round the
+## end of the wall into its flank. Front-rank men duel the man opposite; men fall, those behind step
+## up. The defenders' standard-bearer goes down, the banner falls, and the
+## wall breaks and scatters. The victors cheer under their own standard.
 func fight(at: Vector3, loser: Dictionary, victor := {}) -> void:
+	var field := Data.num("battle", "skirmish.field", 3.4)
+	var ranks := int(Data.num("battle", "skirmish.ranks", 3))
+	var files := int(Data.num("battle", "skirmish.files", 9))
+	var gap := Data.num("battle", "skirmish.gap", 0.2)
+	var row := Data.num("battle", "skirmish.row", 0.2)
+	var reach := Data.num("battle", "skirmish.reach", 0.11)
 	var root := Node3D.new()
 	root.name = "Battle"
 	stage.add_child(root)
@@ -82,7 +72,7 @@ func fight(at: Vector3, loser: Dictionary, victor := {}) -> void:
 		root.queue_free()
 		return  # no open ground near: the battle is told, not shown
 	_fighting.append([at, root])
-	stage.terrain.clear_around(at, FIELD)
+	stage.terrain.clear_around(at, field)
 	# The lines meet across the view, so you watch the clash from the side.
 	var dir := Vector3(cos(r.randf() * TAU), 0, 0)
 	dir.z = sqrt(1.0 - dir.x * dir.x)
@@ -98,15 +88,15 @@ func fight(at: Vector3, loser: Dictionary, victor := {}) -> void:
 	# between it and the fight, in a cone opening toward where it stands.
 	var toward_cam := Vector3(sin(view_yaw), 0, cos(view_yaw))
 	for k in 6:
-		stage.terrain.clear_around(at + toward_cam * (FIELD + k * 1.2), 1.4 + k * 0.35)
+		stage.terrain.clear_around(at + toward_cam * (field + k * 1.2), 1.4 + k * 0.35)
 	var teams := [[], []]
 	for team in 2:
 		var face: Vector3 = -dir if team == 0 else dir
-		for rank in RANKS:
-			for file in FILES:
+		for rank in ranks:
+			for file in files:
 				# Where this man will stand once the lines meet. The wall holds
 				# its ground a little forward; the attackers start well back.
-				var slot: Vector3 = at - face * (REACH + rank * ROW) + side * ((file - (FILES - 1) / 2.0) * GAP)
+				var slot: Vector3 = at - face * (reach + rank * row) + side * ((file - (files - 1) / 2.0) * gap)
 				slot += side * r.randf_range(-0.015, 0.015) - face * r.randf_range(0.0, 0.02)
 				var f: Node3D = stage.people.make(r, "soldier", cols[team], "adult")
 				var back := 0.25 if team == 0 else 1.5
@@ -125,7 +115,7 @@ func fight(at: Vector3, loser: Dictionary, victor := {}) -> void:
 	var bearers := []
 	for team in 2:
 		var face: Vector3 = -dir if team == 0 else dir
-		var p: Vector3 = at - face * (REACH + RANKS * ROW + (0.3 if team == 0 else 1.6))
+		var p: Vector3 = at - face * (reach + ranks * row + (0.3 if team == 0 else 1.6))
 		var bearer: Node3D = stage.people.make(r, "soldier", cols[team], "adult")
 		bearer.position = stage.stand(p)
 		bearer.rotation.y = atan2(face.x, face.z)
@@ -148,33 +138,43 @@ func fight(at: Vector3, loser: Dictionary, victor := {}) -> void:
 ## behind their own line (the victors form on the -dir side), to walk up during
 ## the advance.
 func _flank_company(root: Node3D, at: Vector3, dir: Vector3, side: Vector3, col: Color, r: RandomNumberGenerator) -> Array:
+	var field := Data.num("battle", "skirmish.field", 3.4)
+	var ranks := int(Data.num("battle", "skirmish.ranks", 3))
+	var files := int(Data.num("battle", "skirmish.files", 9))
+	var gap := Data.num("battle", "skirmish.gap", 0.2)
+	var row := Data.num("battle", "skirmish.row", 0.2)
+	var reach := Data.num("battle", "skirmish.reach", 0.11)
+	var knights_n := int(Data.num("battle", "skirmish.knights", 5))
 	var knights := []
-	for i in KNIGHTS:
+	for i in knights_n:
 		var h: Node3D = Horse.new(r.randi() % 5)
 		root.add_child(h)
 		h.mount(stage.people.make(r, "soldier", col, "adult"))
 		stage.arm(h.rider, "lance", col)
-		var wing: Vector3 = at + side * ((FILES / 2.0) * GAP + 0.55 + (i / 2) * 0.24) - dir * ((i % 2) * 0.22)
-		h.position = stage.stand(wing - dir * (REACH + RANKS * ROW + 1.8), stage.HORSE_BODY)
+		var wing: Vector3 = at + side * ((files / 2.0) * gap + 0.55 + (i / 2) * 0.24) - dir * ((i % 2) * 0.22)
+		h.position = stage.stand(wing - dir * (reach + ranks * row + 1.8), stage.HORSE_BODY)
 		h.rotation.y = atan2(dir.x, dir.z)
 		knights.append({"node": h, "wing": wing, "alive": true})
 	return knights
 
 
 ## Open ground for a pitched battle, as near `near` as there is. A field is
-## never in or beside a town or a farmstead: one whose fighting ground (FIELD
+## never in or beside a town or a farmstead: one whose fighting ground (field
 ## and a margin) comes within any town's reach or near a farm is refused
 ## outright, and the search widens ring by ring until a clear one is found.
 ## Among the clear fields of the nearest ring, the driest, flattest and most
 ## open wins. Vector3.INF if the land has none (no battle is staged then).
 func battlefield(near: Vector3) -> Vector3:
+	var field := Data.num("battle", "skirmish.field", 3.4)
+	var rings := int(Data.num("battle", "ground.rings", 40))
+	var farm_clear: float = field + Data.num("battle", "ground.farm_clear", 4.8)
 	var main: Node = stage.get_parent()
 	if stage.towns == null:
 		stage.towns = main.get("towns")
 	var towns: Node3D = stage.towns
 	var roads = main.get("roads")
 	var country = main.get("countryside")
-	var span := RINGS * 0.8 + FIELD
+	var span := rings * 0.8 + field
 	var walls := []  # [centre, reach] of every town that could touch a field
 	if towns:
 		for id in stage.towns.towns:
@@ -185,12 +185,12 @@ func battlefield(near: Vector3) -> Vector3:
 	# A field already being fought over is taken: the next battle finds its own.
 	_fighting = _fighting.filter(func(b): return is_instance_valid(b[1]))
 	for b in _fighting:
-		walls.append([b[0], FIELD])
+		walls.append([b[0], field])
 	var farms := []
 	for f in (country.get("_sites") if country else []):
-		if stage._flat_gap(f["at"], near) < span + FARM_CLEAR:
+		if stage._flat_gap(f["at"], near) < span + farm_clear:
 			farms.append(f["at"])
-	for ring in RINGS:
+	for ring in rings:
 		var best := Vector3.INF
 		var best_score := INF
 		var n := maxi(1, ring * 8)
@@ -210,11 +210,14 @@ func battlefield(near: Vector3) -> Vector3:
 
 ## Whether a field centred at `c` is clear of every town and farm.
 func _clear_field(c: Vector3, walls: Array, farms: Array) -> bool:
+	var field := Data.num("battle", "skirmish.field", 3.4)
+	var town_clear := Data.num("battle", "ground.town_clear", 0.4)
+	var farm_clear: float = field + Data.num("battle", "ground.farm_clear", 4.8)
 	for w in walls:
-		if stage._flat_gap(c, w[0]) < float(w[1]) + FIELD + TOWN_CLEAR:
+		if stage._flat_gap(c, w[0]) < float(w[1]) + field + town_clear:
 			return false
 	for f in farms:
-		if stage._flat_gap(c, f) < FARM_CLEAR:
+		if stage._flat_gap(c, f) < farm_clear:
 			return false
 	return true
 
@@ -222,10 +225,13 @@ func _clear_field(c: Vector3, walls: Array, farms: Array) -> bool:
 ## What's wrong with fighting at `c`: water, slope, rough ground and roads
 ## across the field, sampled at its centre and on three rings to its edge.
 func _field_cost(c: Vector3, roads) -> float:
+	var field := Data.num("battle", "skirmish.field", 3.4)
+	var most_rise := Data.num("battle", "ground.rise", 0.3)
+	var rough: Dictionary = Data.value("battle", "ground.rough", {})
 	var cost := 0.0
 	for k in 25:
 		var ring := int(ceil(k / 8.0))
-		var q := c + Vector3(cos(TAU * k / 8.0), 0, sin(TAU * k / 8.0)) * FIELD * ring / 3.0 if k > 0 else c
+		var q := c + Vector3(cos(TAU * k / 8.0), 0, sin(TAU * k / 8.0)) * field * ring / 3.0 if k > 0 else c
 		# Men stand everywhere out to the field's edge: none of it may be water.
 		if not stage.terrain.is_land(q.x, q.z):
 			return INF
@@ -233,10 +239,10 @@ func _field_cost(c: Vector3, roads) -> float:
 		var tile: Vector2i = stage.terrain.paths.tile_of(q)
 		var kind := String(stage.terrain.tile_at(tile.x, tile.y))
 		# A mountainside is never a battlefield: the lines can't stand on it.
-		if rise > FIELD_RISE or kind == "Mountains" or kind == "Glacier":
+		if rise > most_rise or kind == "Mountains" or kind == "Glacier":
 			return INF
 		cost += rise * 30.0
-		cost += float(ROUGH_GROUND.get(kind, 0.0))
+		cost += float(rough.get(kind, 0.0))
 		if roads and roads.on_path(q, 0.05):
 			cost += 3.0
 	return cost

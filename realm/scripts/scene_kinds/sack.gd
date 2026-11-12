@@ -1,16 +1,16 @@
 extends "res://scripts/scene_kinds/refugees.gd"
-## A town sacked or razed (scene_kinds.gd "sack", "razed"): its houses burn (fire.gd) for the row's "burn"
-## [seconds, size], and its people flee (refugees.gd, the row's "fleeing").
+## A town sacked or razed (scene_kinds.gd "sack", "razed"): its houses burn (fire.gd) for realm/data/scenes.json
+## burn [seconds, size], and its people flee (refugees.gd).
 
 const Fire := preload("res://scripts/fire.gd")
 const Particles := preload("res://scripts/particles.gd")
 
 
 func play(s: Dictionary, at: Vector3, _houses: Dictionary) -> Node3D:
-	var row: Dictionary = SceneKinds.of(String(s["kind"]))
-	var fire: Array = row.get("burn", [45.0, 1.0])
+	var kind := String(s["kind"])
+	var fire: Array = Data.value("scenes", "burn." + kind, [45.0, 1.0])
 	burn(at, float(fire[0]), float(fire[1]))
-	flee(at, int(row.get("fleeing", 0)))
+	flee(at, int(Data.num("scenes", "fleeing." + kind, 0)))
 	return null
 
 

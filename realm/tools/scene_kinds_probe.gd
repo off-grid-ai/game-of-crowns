@@ -128,6 +128,14 @@ func _run() -> void:
 	if (Scenes as GDScript).source_code.contains('match String(s["kind"])'):
 		print("FAIL scenes.sync still matches on the kind itself")
 		fails += 1
+	# The kinds' knobs are data (integration audit #20; docs/TUNING.md): no numeric const in a kind's class.
+	var knob := RegEx.create_from_string("(?m)^const [A-Z_]+ := -?[0-9]")
+	for f in DirAccess.get_files_at("res://scripts/scene_kinds"):
+		if f.ends_with(".gd"):
+			var hit := knob.search(FileAccess.get_file_as_string("res://scripts/scene_kinds/" + f))
+			if hit:
+				print("FAIL %s keeps a knob in code: %s" % [f, hit.get_string()])
+				fails += 1
 	var one: Node3D = Scenes.new()
 	if one.kind("siege") != one.kind("storm") or one.kind("grain") != one.kind("ward"):
 		print("FAIL kinds of one class don't share it (siege/storm, grain/ward)")
