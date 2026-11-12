@@ -443,8 +443,10 @@ function refreshCounsel() {
   counselNow = counsel(v.players, v.cities, v.threat);
 }
 
-// The realm's states, set on each town (view.js).
+// The realm's states, set on each town (view.js). A realm just made has no world until Freeciv first
+// reports (snapshot): nothing to set yet (tools/switch_probe.mjs).
 function townStates() {
+  if (!world) return;
   View.townStates({ world, meta, scenes, detail, besiegers, favourOf, marksNow, thoughtsOf: (id) => chatter?.thoughtsOf(id) ?? [], damageOf: (c) => Damage.view(meta, c), garrisonOf: (c) => Garrison.view(meta, c, world?.turn ?? 0), rulingOf: (c) => Rulings.view(meta, c, world?.turn ?? 0) });
   world.intrigue = intrigueNow({ world, court });  // the houses' schemes, for the map (intrigue.js)
 }
