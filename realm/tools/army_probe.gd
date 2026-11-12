@@ -241,6 +241,10 @@ const TILE := 4.0
 var width := 12
 var height := 9
 func tile_at(x: int, y: int) -> String:
+	if x == 9 and y == 7:
+		return "Forest|river"  # a river tile, a Trireme's water (the ruleset's River extra: native to Trireme)
+	if y >= 6 and not (x == 10 and y == 6):
+		return "Grassland"  # the shore below, a town at (10, 6), the river at (9, 7) its way inland
 	return "Grassland" if x >= 4 and x <= 7 and y >= 3 and y <= 5 else "Ocean"
 func world_pos(tx: float, ty: float) -> Vector3:
 	return Vector3((tx + 0.5) * TILE, 0, (ty + 0.5) * TILE)
@@ -259,6 +263,13 @@ func world_pos(tx: float, ty: float) -> Vector3:
 			var p: Vector3 = way[i].lerp(way[i + 1], k / 4.0)
 			wet = wet and land.tile_at(floori(p.x / 4.0), floori(p.z / 4.0)) == "Ocean"
 	_check(way.size() >= 3 and wet, "a route across goes round the island on water (%d points, all wet: %s)" % [way.size(), wet])
+	# A Trireme sails the river (Freeciv moved one from a coastal town up its river: the reign's five 'straight
+	# line' moves); a ship with no water between its ends gets no route at all, never a line over the land.
+	var up: PackedVector3Array = lp.call("sea_path", land.world_pos(10, 6), land.world_pos(9, 7), true)
+	_check(up.size() >= 2, "a Trireme sails from the coastal town up its river, corner to corner as Freeciv moves it (%d points)" % up.size())
+	var inland: PackedVector3Array = lp.call("sea_path", land.world_pos(1, 4), land.world_pos(2, 8), true)
+	_check(inland.is_empty(), "with no water between its ends a ship gets no route, never a straight line over land (%d points)" % inland.size())
+	_check(FileAccess.get_file_as_string("res://tools/reign_army_probe.gd").contains("ship-no-water"), "the reign probe fails a ship move with no water route")
 	land.free()
 
 

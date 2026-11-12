@@ -48,6 +48,7 @@ const TeamColour := preload("res://scripts/team_colour.gd")  # a house's colour,
 const Units := preload("res://scripts/world_units.gd")  # metres to world units
 const Data := preload("res://scripts/data.gd")
 
+const RIVER_SHIPS := ["Trireme"]  # the ruleset's Trireme class: its River extra is native to it (they sail rivers)
 const MOUNTED := ["Horsemen", "Chariot", "Elephants", "Crusaders", "Knights", "Dragoons", "Cavalry"]
 const LANCES := ["Knights", "Crusaders"]
 const SPEARS := ["Phalanx", "Pikemen", "Legion"]
@@ -162,7 +163,7 @@ func sync(houses: Dictionary) -> void:
 				# Carried by the rider when the company is mounted.
 				_banner(node.rider if node.get("rider") else node, Color.from_string(String(house.get("color", "#888")), Color.GRAY), house)
 				HostPick.proxy(node, int(id), Vector3(0.22, 0.62, 0.22))  # the bearer and his standard, to click (host_command.gd)
-			_figures[id] = {"node": node, "target": target, "wild": wild, "bow": String(u["type"]) in BOWS, "horse": node.has_method("mount"), "ship": ship}
+			_figures[id] = {"node": node, "target": target, "wild": wild, "bow": String(u["type"]) in BOWS, "horse": node.has_method("mount"), "ship": ship, "rivers": String(u["type"]) in RIVER_SHIPS}
 		if _figures[id]["target"].distance_to(target) > 0.01:
 			var moved: Vector3 = target - _figures[id]["node"].position
 			if slot == 0 and Vector2(moved.x, moved.z).length() > 0.3:
@@ -257,7 +258,10 @@ func _march(f: Dictionary) -> void:
 		return
 	if f.get("ship", false):
 		# Over the water by the sea's route (land_paths.sea_path), at the pace that gets it there within the season.
-		var sea: PackedVector3Array = terrain.paths.sea_path(n.position, f["target"])
+		var sea: PackedVector3Array = terrain.paths.sea_path(n.position, f["target"], bool(f.get("rivers", false)))
+		if sea.is_empty():
+			push_warning("UNITS a ship has no water to %s: it stays where it is" % str(f["target"]))  # never across the land
+			return
 		var length := 0.0
 		for i in sea.size() - 1:
 			length += sea[i].distance_to(sea[i + 1])

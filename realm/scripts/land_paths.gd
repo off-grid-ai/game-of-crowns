@@ -5,6 +5,7 @@ extends RefCounted
 
 var _astar: AStarGrid2D
 var _sea: AStarGrid2D  # the same tile map for ships: water open, land solid
+var _rivers: Array[Vector2i] = []  # river tiles: water to a ship that can sail them (a Trireme), land to the rest
 var _t: Node3D  # terrain.gd: the tile map, its size and its ground
 
 
@@ -31,12 +32,15 @@ func build() -> void:
 				_astar.set_point_weight_scale(Vector2i(x, y), 2.0)
 	_sea = AStarGrid2D.new()
 	_sea.region = Rect2i(0, 0, width, height)
-	_sea.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
+	_sea.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ALWAYS  # Freeciv moves a ship corner to corner past two shores
 	_sea.update()
+	_rivers.clear()
 	for y in height:
 		for x in width:
 			var n: String = _t.tile_at(x, y)
 			_sea.set_point_solid(Vector2i(x, y), not (n.contains("Ocean") or n == "Lake"))
+			if n.contains("river"):
+				_rivers.append(Vector2i(x, y))
 
 
 ## Roads the houses have built make travel cheap; called when the network changes.
@@ -74,21 +78,27 @@ func land_path(from: Vector3, to: Vector3) -> PackedVector3Array:
 
 
 ## A ship's route over water between two world points (ships only carry armies: Mac), as world points. Its ends may
-## stand on land (a ship in a coastal town's harbour): they are opened for this one route. The straight line when
-## the sea gives none.
-func sea_path(from: Vector3, to: Vector3) -> PackedVector3Array:
-	var out := PackedVector3Array([from])
-	if _sea != null:
-		var a := tile_of(from)
-		var b := tile_of(to)
-		var shut := [a, b].filter(func(p): return _sea.is_point_solid(p))
-		for p in shut:
-			_sea.set_point_solid(p, false)
-		var ids := _sea.get_id_path(a, b)
-		for p in shut:
-			_sea.set_point_solid(p, true)
-		for i in range(1, ids.size() - 1):
-			out.append(_t.world_pos(ids[i].x, ids[i].y))
+## stand on land (a ship in a coastal town's harbour): they are opened for this one route. `rivers`: it sails rivers
+## too (a Trireme: the ruleset's River extra is native to its class). Empty when no water joins them: a ship is
+## never drawn across the land.
+func sea_path(from: Vector3, to: Vector3, rivers := false) -> PackedVector3Array:
+	var out := PackedVector3Array()
+	if _sea == null:
+		return out
+	var a := tile_of(from)
+	var b := tile_of(to)
+	var opened: Array = [a, b] + (_rivers if rivers else [])
+	opened = opened.filter(func(p): return _sea.is_point_solid(p))
+	for p in opened:
+		_sea.set_point_solid(p, false)
+	var ids := _sea.get_id_path(a, b)
+	for p in opened:
+		_sea.set_point_solid(p, true)
+	if ids.is_empty():
+		return out
+	out.append(from)
+	for i in range(1, ids.size() - 1):
+		out.append(_t.world_pos(ids[i].x, ids[i].y))
 	out.append(to)
 	return out
 
