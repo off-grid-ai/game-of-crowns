@@ -5,6 +5,13 @@ description: Game of Crowns working rules (entry point). Load at the start of su
 
 # Game of Crowns rules
 
+**The casebook is the goal (Mac, 2026-11-12: "the casebook is the right one, you know thats our goal right?").**
+"What makes a medieval world sim great" (https://claude.ai/artifact/PzdycNn8Wj2xdTp8AX7AYK): 114 cases from 58 games,
+each an idea, a shipped game that nails it, the moment players remember and the lesson to steal. It is the bar for
+how the game plays and feels; docs/art/target is the bar for how it looks. Every change names the case it serves
+(e.g. "towns: The crowd is the census, Stronghold"), every review judges against both, and the casebook's failures
+chapter is the list of things we must not ship. Read the chapter for your area before you build.
+
 **One supervisor, several builder threads (Mac, 2026-11-12: "override the threads thing with the status quo").** The supervisor session judges, routes, renders and keeps `docs/SUPERVISOR_LEDGER.md`; builder sessions it starts each own a layer and its files (today: buildings, ground, people's looks), and other sessions Mac starts own whole systems (town life, the army layer, ground truth). Every writer names its files before editing, commits only its own hunks by path, and checks `pgrep -x godot` before any Godot run. Two writers never edit the same file at once: the owner of a file is asked first.
 
 **Build in batches, test together (Mac, 2026-11-07).** Make all the related changes first, then compile-check them all, launch once, and film and judge them together in one run, rather than launching and testing after each small change. Fix what the run shows, then run again. A change that can break a working system still gets its own before/after on film within that run.
