@@ -388,7 +388,7 @@ func _frame_for_shot() -> void:
 						main.rig.focus(mid, float(_shot.get("dist", 4.0))))
 					return
 				else:
-					main.scenes._rider(from, to, "The King rules for House Thornvale")
+					main.scenes.kind("rider").ride(from, to, "The King rules for House Thornvale")
 				var spot: Vector3 = from + (to - from).normalized() * 1.6
 				main.rig.snap(spot, float(_shot.get("dist", 4.0)), main.rig.clear_yaw(spot, float(_shot.get("dist", 4.0)), 0.6))
 				# The scene under test holds the camera, as test battles do.

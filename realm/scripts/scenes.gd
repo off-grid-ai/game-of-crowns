@@ -137,8 +137,6 @@ func sync(houses: Dictionary) -> void:
 				storm(stormed, bool(s.get("taken", false)))
 			"muster":
 				_muster(s, at, houses)
-			"rider":
-				follow = _rider(at, terrain.world_pos(float(s["tx"]), float(s["ty"])), String(s.get("label", "The King's word")), s)
 			"handover":
 				var town := "The town"
 				for c in store.rec("cities", []):
@@ -167,11 +165,10 @@ func _victor(s: Dictionary) -> int:
 # --- the roads alive: carters and pedlars between the King's moments ---------------
 
 
-
 ## A rider on the road from one town to another, given back so what rides with
 ## him (a house's envoy plate, scheme_marks.gd) can follow; null when none can go.
 func rider_on_road(from: Vector3, to: Vector3, on_done := Callable()) -> Node3D:
-	var horse := _rider(from, to, "")
+	var horse: Node3D = kind("rider").ride(from, to, "")
 	if horse and on_done.is_valid():
 		horse.tree_exited.connect(on_done)
 	return horse
@@ -1155,54 +1152,6 @@ func _muster(s: Dictionary, at: Vector3, houses: Dictionary) -> Node3D:
 	get_parent().add_child(army)
 	framing.emit(ground(at), 2.6, 0.0)
 	return army
-
-
-## A royal rider carries the King's ruling to the petitioner's seat on a
-## horse, the crown's standard in hand, with what was decided written above
-## him. He sets off at a walk, rides the road at a gallop and draws up at a walk.
-## Returns the horse, to follow. `s`: the scene, reported back on arrival.
-func _rider(from: Vector3, to: Vector3, label: String, s := {}) -> Node3D:
-	var r := rng(to)
-	var horse: Node3D = Horse.new(r.randi() % Horse.COATS.size())
-	add_child(horse)
-	horse.position = stand(from, HORSE_BODY)
-	var rider: Node3D = people.make(r, "soldier", Color(0.72, 0.13, 0.16).lerp(Color.WHITE, 0.3), "adult")
-	horse.mount(rider)
-	carried_standard(rider, {"name": "The Crown", "crown": true}, Color(0.72, 0.13, 0.16))
-	var tag := caption(self, label, ground(from) + Vector3(0, 0.45, 0))
-	var road: Curve3D = terrain.paths.smooth_road(route(from, to))
-	var length: float = maxf(road.get_baked_length(), 0.01)
-	# Eased in and out, the pace peaks at about pi/2 the average: a gallop
-	# (horse.gd) over the open road, a walk at either end.
-	var secs := clampf(length / (Horse.GALLOP * 0.63), 8.0, 90.0)
-	var last_y := [INF]  # the horse's height eases over the ground's bumps
-	var tw := create_tween()
-	tw.tween_method(func(t: float):
-		var d := t * length
-		var g := road.sample_baked(d)
-		var p := stand(g, HORSE_BODY)
-		# Eased, so the ground's bumps and a nudge clear of a wall are glides, not jumps.
-		if last_y[0] != INF:
-			var x := lerpf(horse.position.x, p.x, 0.35)
-			var z := lerpf(horse.position.z, p.z, 0.35)
-			# The ground under where the horse really is: it glides down over a
-			# bump, but going uphill it never sinks into the slope.
-			var under: float = stand(Vector3(x, p.y, z), HORSE_BODY).y
-			p = Vector3(x, maxf(lerpf(last_y[0], under, 0.25), under), z)
-		last_y[0] = p.y
-		# It steers toward a point a little way down the road, gently.
-		var ahead := road.sample_baked(minf(length, d + 0.25))
-		if Vector2(ahead.x - g.x, ahead.z - g.z).length() > 0.001:
-			horse.rotation.y = lerp_angle(horse.rotation.y, atan2(ahead.x - g.x, ahead.z - g.z), 0.12)
-		horse.position = p
-		place_tag(tag, p + Vector3(0, 0.45, 0)), 0.0, 1.0, secs).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	tw.tween_callback(func(): if not s.is_empty(): arrived.emit(s))
-	tw.tween_interval(3.0)
-	tw.tween_property(tag, "modulate:a", 0.0, 2.0)
-	tw.tween_callback(func():
-		horse.queue_free()
-		tag.queue_free())
-	return horse
 
 
 # --- feasts and handovers ----------------------------------------------------------
