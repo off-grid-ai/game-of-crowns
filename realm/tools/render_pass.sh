@@ -62,9 +62,6 @@ git -C $R archive HEAD realm bridge docs/art | tar -x -C $F
 # the shared tree draws and imports nothing of its own. (No copy of .godot after it: the link is the shared cache, and a
 # copy onto it would nest 7 GB inside the shared tree.)
 zsh $R/realm/tools/link_assets.sh $F >> $OUT/pass.log || { say "link_assets.sh failed"; exit 3; }
-# realistic.txt (gitignored: which towns get the full kit) until One store makes the kit the only way and drops it: a
-# copy without it built Kingsmere the old small way (a 163 m2 square against the film's 1154).
-[ -f $R/realm/realistic.txt ] && cp $R/realm/realistic.txt $F/realm/realistic.txt
 [ -L $F/realm/assets ] && [ -L $F/realm/.godot ] || { say "link_assets.sh left no links"; exit 3; }
 # Off-screen and never focused: the copy's project only.
 python3 -I - "$F/realm/project.godot" <<'EOF'
