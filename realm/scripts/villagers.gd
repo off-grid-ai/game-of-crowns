@@ -30,6 +30,7 @@ const Weapons := preload("res://scripts/weapons.gd")  # what a move needs in han
 const TownNav := preload("res://scripts/town_nav.gd")
 var nav = preload("res://scripts/town_nav.gd").new()
 const WALK_SPEED := 0.17  # world units per second: an unhurried 1.4 m/s at town scale
+static var _steer: Dictionary = preload("res://scripts/data.gd").value("people", "steer", {}) if bool(preload("res://scripts/data.gd").value("people", "steer.on", true)) and not OS.get_cmdline_user_args().has("--steer=off") else {"turn": 1000.0, "turn_slow": 1.0, "start_from": 1.0, "arrive_from": 1.0, "smooth": 1000.0, "corner": 0.0}
 static var READ: float = preload("res://scripts/data.gd").num("people", "readable", 1.0)  # drawn larger (people.json readable): they walk as fast as their legs carry them
 ## Moves that are walks (a load carried, a barrow pushed): played on the way,
 ## never on the spot. At the far end the load is set down instead.
@@ -649,6 +650,8 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 	if a.has("agent"):
 		NavigationServer2D.agent_set_position(a["agent"], here)
 	if route.is_empty():
+		a["go_t"] = 0.0  # standing: the next walk starts from a standstill (steer.start)
+		a["vel"] = Vector2.ZERO
 		if a.has("agent"):
 			NavigationServer2D.agent_set_velocity(a["agent"], Vector2.ZERO)
 			NavigationServer2D.agent_set_avoidance_priority(a["agent"], 1.0)  # walkers go round those standing still
@@ -676,6 +679,14 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 	# Walk the navmesh path, waypoint by waypoint, around the buildings, letting
 	# the avoidance steer around whoever is in the way.
 	var to := route[0] - here
+	# A corner on the way is taken round, not stood on: the next waypoint is made for from a little before this one
+	# (people.json steer.corner), so the path bends instead of turning sharp at each point.
+	if route.size() > 1 and to.length() < maxf(ARRIVE, float(_steer.get("corner", ARRIVE))):
+		route.remove_at(0)
+		a["route"] = route
+		a["best"] = INF
+		a["since"] = 0.0
+		to = route[0] - here
 	if to.length() < ARRIVE:
 		route.remove_at(0)
 		a["route"] = route
@@ -752,12 +763,32 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 		people.play(n, "Idle", 1.0)  # the shore: never a step into the water
 		a["route"] = PackedVector2Array()
 		return
+	# Steering (people.json steer; Mac 2026-11-12: "there isn't gradual smooth actions"): the way they face turns
+	# at a walker's rate, never snapping to each step; a sharp turn is made mostly on the spot, slowed by how far
+	# off the way they face (no sliding sideways); a walk starts from a standstill and eases up to pace; the last
+	# stretch to where they're going eases down to a stop; and the avoidance's nudges are smoothed over a few frames.
+	var smooth := 1.0 - exp(-delta * float(_steer.get("smooth", 8.0)))
+	var v_now: Vector2 = a.get("vel", step / maxf(delta, 0.0001))
+	v_now = v_now.lerp(step / maxf(delta, 0.0001), smooth)
+	a["vel"] = v_now
+	var dir := v_now if v_now.length() > 0.0001 else step
+	var want_yaw := atan2(dir.x, dir.y)
+	var off := angle_difference(n.rotation.y, want_yaw)
+	var rate := float(_steer.get("turn", 5.0))
+	n.rotation.y += clampf(off, -rate * delta, rate * delta)
+	var ease := clampf(cos(off), float(_steer.get("turn_slow", 0.15)), 1.0)
+	a["go_t"] = float(a.get("go_t", 0.0)) + delta
+	ease *= clampf(float(_steer.get("start_from", 0.35)) + a["go_t"] / maxf(float(_steer.get("start", 0.6)), 0.01), 0.0, 1.0)
+	if route.size() == 1:
+		ease *= clampf(to.length() / maxf(float(_steer.get("arrive", 0.07)), 0.001), float(_steer.get("arrive_from", 0.3)), 1.0)
+	step = step.normalized() * minf(step.length(), v_now.length() * delta) * ease if v_now.length() > 0.0 else step * ease
+	if step.length() > to.length():
+		step = to
 	n.position.x += step.x
 	n.position.z += step.y
 	n.position.y = terrain.height_at(n.position.x, n.position.z)
-	n.rotation.y = atan2(step.x, step.y)
-	# The legs keep time with the ground covered: slowed by the press, they slow too.
-	people.play(n, a.get("gait", "Walk"), clampf(step.length() / delta / WALK_SPEED, 0.5, 1.3))
+	# The legs keep time with the ground covered: slowed by the press, a turn or a stop, they slow too.
+	people.play(n, a.get("gait", "Walk"), clampf(step.length() / delta / (WALK_SPEED * READ), 0.4, 1.3))
 
 
 ## The town's shared places: the tavern's door, the church's, the market

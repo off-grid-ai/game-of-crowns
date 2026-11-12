@@ -149,7 +149,7 @@ class Step extends BTAction:
 			_to.y = ground.call(_to)
 		var flat := Vector2(_to.x - agent.position.x, _to.z - agent.position.z)
 		if flat.length() > 0.01 and back <= 0.0:
-			agent.rotation.y = atan2(flat.x, flat.y)
+			Turn.toward(agent as Node3D, atan2(flat.x, flat.y))  # turned over a beat, not snapped
 		People.play(agent, "Walk")
 		_left = maxf(0.3, flat.length() / 0.17)
 		agent.create_tween().tween_property(agent, "position", _to, _left)
@@ -193,8 +193,24 @@ class Step extends BTAction:
 			return RUNNING
 		agent.remove_meta("step_to")
 		var face: float = blackboard.get_var(&"face", agent.rotation.y, false)
-		agent.rotation.y = face  # back to facing the work
+		Turn.toward(agent as Node3D, face)  # back round to the work, over a beat
 		return SUCCESS
+
+
+## A turn on the spot to `yaw`, eased over a beat at people.json steer.turn (rad a second; at least steer.turn_min
+## seconds): never a snap. Returns how long it takes. With the steer switch off, at once, as before.
+class Turn:
+	static func toward(n: Node3D, yaw: float) -> float:
+		var K: Dictionary = preload("res://scripts/data.gd").value("people", "steer", {})
+		var off := absf(angle_difference(n.rotation.y, yaw))
+		if not bool(K.get("on", true)) or OS.get_cmdline_user_args().has("--steer=off") or off < 0.05:
+			n.rotation.y = yaw
+			return 0.0
+		var secs := maxf(off / maxf(float(K.get("turn", 5.0)), 0.1), float(K.get("turn_min", 0.25)))
+		var from := n.rotation.y
+		var tw := n.create_tween()
+		tw.tween_method(func(t: float): n.rotation.y = lerp_angle(from, yaw, t), 0.0, 1.0, secs).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		return secs
 
 
 ## The activity's name goes on the blackboard; fails if it was the last one,
@@ -808,10 +824,12 @@ class GoTo extends BTAction:
 		v.route_to(a, to)
 		_to = to
 		_waited = 0.0
+		_turn_left = -1.0
 		_started = true
 
 	var _to := Vector3.ZERO
 	var _waited := 0.0
+	var _turn_left := -1.0  # arrived and turning to what the slot faces: seconds left; -1 not turning
 
 	## Where a villager's route was to end (villagers.gd keeps the goal town-local).
 	static func _goal_world(a: Dictionary) -> Vector3:
@@ -847,10 +865,15 @@ class GoTo extends BTAction:
 		# Arrived: this is now their post, and they face the way they came in, or what the slot they claimed
 		# faces (a stall's counter, the well, on along the street: villagers.gd _slot).
 		var fa: Vector3 = a.get("face_at", Vector3.INF)
-		if fa != Vector3.INF:
+		if fa != Vector3.INF and _turn_left <= -1.0:
 			var to_f := Vector2(fa.x - here.x, fa.z - here.z)
 			if to_f.length() > 0.01:
-				(agent as Node3D).rotation.y = atan2(to_f.x, to_f.y)
+				_turn_left = Turn.toward(agent as Node3D, atan2(to_f.x, to_f.y))  # turned on the spot, then the work
+		if _turn_left > -1.0:
+			_turn_left -= delta
+			if _turn_left > 0.0:
+				return RUNNING
+		_turn_left = -1.0
 		blackboard.set_var(&"post", agent.position)
 		blackboard.set_var(&"face", agent.rotation.y)
 		blackboard.set_var(&"at_post", true)
@@ -1383,14 +1406,17 @@ static func villager_activities(role: String) -> Array:
 			# The square's shopper (crowd.json square_agents): in off a street, to a stall's front, haggles, takes
 			# what was bought and is off up a street with it; or browses along the stalls; or meets a neighbour.
 			return [
-				seq("shop", [go("street"), go("stall"), run(["Idle_Talking", "Pointing_Forward", "Arguing"], 2, 3), run(["Nod_Yes", "Shake_No", "Nodding"], 1, 1), once("PickUp_Table"), go("street", "Carrying"), brk(LOOK)]),
+				# Waits a beat at the counter, points out what they want and talks it over, weighs it up, takes it
+				# (the hand-over), nods it's done, and leaves carrying it.
+				seq("shop", [go("street"), go("stall"), brk(["Weight_Shift", "Looking_Around"]), run(["Pointing_Forward", "Idle_Talking", "Talking_Hands"], 2, 3), run(["Thinking", "Shake_No", "Arguing"], 1, 1), once("PickUp_Table"), once("Nod_Yes"), go("street", "Carrying"), brk(LOOK)]),
 				seq("browse", [go("stall"), once("Looking_Around"), run(["Thinking", "Doubtful"], 1, 1), go("stall"), once("PickUp_Table"), run(["Nod_Yes", "Nodding"], 1, 1), brk(LOOK)]),
 				seq("gossip", [partner(), go("meet"), Talk.new(), brk(LOOK)]),
 				seq("errand", [go("stall"), run(["Idle_Talking", "Nodding"], 1, 2), once("PickUp_Table"), go("home", "Carrying"), once("PickUp_Table"), brk(REST)]),
 			]
 		"water":  # the square's water carrier: to the well's rim, draws, carries it home or up a street
 			return [
-				seq("draw", [go("draw"), once("PickUp_Table"), run(["Pushing"], 1, 2), once("PickUp_Table"), go("home", "Carrying"), once("PickUp_Table"), brk(REST)]),
+				# The bucket set down on the rim, the windlass wound a few turns, the bucket lifted off, a breath, and home with it.
+				seq("draw", [go("draw"), once("PickUp_Table"), run(["Pushing"], 2, 3), once("PickUp_Table"), brk(["Wiping_Sweat", "Relieved_Sigh"]), go("home", "Carrying"), once("PickUp_Table"), brk(REST)]),
 				seq("sell", [go("draw"), once("PickUp_Table"), run(["Pushing"], 1, 1), go("stall", "Carrying"), once("PickUp_Table"), run(["Idle_Talking", "Nodding"], 1, 1), brk(LOOK)]),
 				seq("chat", [go("draw"), run(["Idle_Talking", "Laughing", "Nodding"], 2, 3), brk(LOOK)]),
 			]

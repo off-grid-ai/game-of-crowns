@@ -23,7 +23,7 @@ extends AnimationTree
 ## one move into the next (even the same move again) and never snaps. Each move
 ## is its own node with its own loop setting: the shared clips are never changed.
 
-const XFADE := 0.2
+static var XFADE: float = preload("res://scripts/data.gd").num("people", "steer.xfade", 0.2)  # between moves (people.json steer.xfade; Mac: changes of action must blend, never snap)
 const XFADE_HIT := 0.1  # into a blow, a reel or a fall: fast, it's a shock
 # Moves that are one-off by nature. Everything else loops.
 const ONCE := ["Sword_Attack", "SS_Slash", "SS_Attack", "SS_Kick", "SS_Block_1", "SS_Block_2", "SS_Impact",
