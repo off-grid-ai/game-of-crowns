@@ -344,6 +344,43 @@ const BAILEY := [
 ]
 
 
+## The bailey's ground (towns.json bailey; Mac: "the emptiness looks kinda weird", a flat green lawn inside the
+## walls): packed earth worn over the whole yard (the square's mud, in the ground itself), a worn cobbled court at its
+## middle in the square's stone, and a cobbled way from the gate to the keep's door. Sizes are shares of the castle's
+## footprint (castle frame: +z toward the gate), so any castle's yard is covered.
+func _bailey_ground(root: Node3D, cp: Vector3, cy: float, yaw: float, rng: RandomNumberGenerator) -> void:
+	var k: Dictionary = preload("res://scripts/data.gd").value("towns", "bailey", {})
+	var fr: Array = root.get_meta("castle_frame", [])
+	if k.is_empty() or fr.size() < 3:
+		return
+	var f: Vector2 = fr[2]
+	var b := Basis(Vector3.UP, yaw)
+	var center := root.position  # the town (world): its root stands at its centre
+	var inner: Array = k.get("inner", [0.4, 0.4])  # the yard inside the walls, half-extents as shares
+	if terrain.land3d and terrain.land3d.land:
+		var step := float(k.get("earth_step", 0.35))
+		var r := float(k.get("earth_r", 0.3))
+		var x := -float(inner[0]) * f.x
+		while x <= float(inner[0]) * f.x:
+			var z := -float(inner[1]) * f.y
+			while z <= float(inner[1]) * f.y:
+				terrain.land3d.paint_mud(center + cp + b * Vector3(x, 0, z), r, rng.randi())
+				z += step
+			x += step
+	var pave: Dictionary = _paving()
+	var stone: String = terrain.art(String(pave.get("texture", SQUARE_TEX)), ROAD_TEX)
+	var tile := float(pave.get("tile", 0.3))
+	var court: Array = k.get("court", [0.5, 0.45])  # the cobbled court's size, shares of the footprint
+	var cs := Vector2(f.x * float(court[0]), f.y * float(court[1]))
+	terrain.paint(root, terrain.tiled(stone, clampi(roundi(cs.x / tile), 2, 12), clampi(roundi(cs.y / tile), 2, 12), "setts"), cp + Vector3(0, cy, 0) + b * Vector3(0, 0, float(k.get("court_z", 0.1)) * f.y), cs, yaw, _rgb(pave.get("tint"), Color.WHITE))
+	var way: Array = k.get("way", [0.5, -0.15, 0.1])  # from the gate (z share) to the keep (z share), its width (x share)
+	var a := float(way[0]) * f.y
+	var e := float(way[1]) * f.y
+	var w := float(way[2]) * f.x
+	var run := absf(a - e)
+	terrain.paint(root, terrain.tiled(stone, maxi(1, roundi(w / tile)), clampi(roundi(run / tile), 1, 24), "paved"), cp + Vector3(0, cy, 0) + b * Vector3(0, 0, (a + e) * 0.5), Vector2(w, run), yaw, _rgb(pave.get("tint"), Color.WHITE), 1.5)
+
+
 ## Who's in the yard: role, place (castle frame), move, facing.
 const BAILEY_FOLK := [
 	# The drill in the open half of the yard, between the fire and the gate,
@@ -359,6 +396,7 @@ const BAILEY_FOLK := [
 
 func _bailey(root: Node3D, cp: Vector3, cy: float, yaw: float, rng: RandomNumberGenerator) -> void:
 	var b := Basis(Vector3.UP, yaw)
+	_bailey_ground(root, cp, cy, yaw, rng)
 	for item in BAILEY:
 		var kind: String = item[0]
 		if kind.begins_with("@"):
@@ -470,6 +508,7 @@ func _real_lots(root: Node3D, center: Vector3, square_r: float, size: int, kinds
 					# The castle's standard, to the castle's scale: over the keep, not taller than its towers.
 					_banner(root, cp + Vector3(0, cy + 0.9 * scale, 0), _house_colour, _house, 0.6 * scale)
 					_door(root, cp, f, "great_hall", "great hall")
+					root.set_meta("castle_frame", [cp, castle.rotation.y, f, cy])  # the bailey's dressing reads it (dressing.gd bailey)
 					_bailey(root, cp, cy, castle.rotation.y, rng)
 					held = true
 					if float(pass_[3]) == 0.0:

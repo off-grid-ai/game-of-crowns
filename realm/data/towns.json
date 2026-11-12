@@ -45,5 +45,6 @@
   "_edge": "edge (art target town-a/b: the town in its fields): mill_wheat, wheat fields laid round each windmill that stood (how many); orchards, how many orchards by the town's rank (crown, seat, town, village), by the roads out just past the edge; orchard: each one's rows and columns of trees (fewest, most), their spacing (game units; 0.55 is about 4.5 m) and size (a share of assets.json orchard_tree's height).",
   "edge": {"mill_wheat": 3, "orchards": {"crown": 3, "seat": 3, "town": 2, "village": 1}, "orchard": {"rows": [3, 4], "cols": [3, 5], "spacing": 0.55, "scale": [0.85, 1.1]}},
   "_farms": "farms.fieldRise: the most a farmstead's field's ground may rise across it (game units, about 3 m); steeper and the field is not laid (its paint was cut off in a triangle on a slope).",
-  "farms": {"fieldRise": 0.35}
+  "farms": {"fieldRise": 0.35},
+  "bailey": {"inner": [0.42, 0.42], "earth_step": 0.35, "earth_r": 0.3, "court": [0.5, 0.45], "court_z": 0.1, "way": [0.5, -0.15, 0.1]}
 }

@@ -36,9 +36,9 @@ static func dress(root: Node3D, ground: Callable, land: Callable, seed: int) -> 
 	var rank := float((Data.value("dressing", "rank", {}) as Dictionary).get(String(root.get_meta("rank", "village")), 0.5))
 	var placed := {}  # "kit/model" -> [Transform3D...]
 	var taken: Array[Vector2] = []
-	var counts := {"trade": 0, "home": 0, "ground": 0, "edge": 0, "cluster": 0, "refused": 0}
+	var counts := {"trade": 0, "home": 0, "ground": 0, "edge": 0, "cluster": 0, "bailey": 0, "refused": 0}
 	var put := func(model: String, at: Vector3, turn: float, scale: float, why: String) -> bool:
-		if not _fits(root, at, taken, why == "ground"):
+		if why != "bailey" and not _fits(root, at, taken, why == "ground"):  # the bailey lies inside the castle's own footprint
 			counts["refused"] = int(counts["refused"]) + 1
 			return false
 		if not bool(land.call(at)):
@@ -116,6 +116,20 @@ static func dress(root: Node3D, ground: Callable, land: Callable, seed: int) -> 
 				break
 		var span: Array = row[2]
 		put.call(String(row[0]), at, rng.randf() * TAU, rng.randf_range(float(span[0]), float(span[1])), "ground")
+	# The castle's bailey lived in (dressing.json bailey; Mac: "the emptiness looks kinda weird", a lawn with scattered
+	# props): a training yard (dummies, weapon racks, a target), the stores' barrels, crates and sacks stacked by the
+	# wall, a wagon, the smith's anvil, buckets, banners by the gate and the keep. Each row [kit/model, across, toward
+	# the gate (shares of the castle's footprint, from its middle), turn (degrees, + the castle's), scale]; set on the
+	# ground as everything is, but not tested against the castle's footprint, which covers its whole yard.
+	var castle: Array = root.get_meta("castle_frame", [])
+	if castle.size() >= 3:
+		var cp: Vector3 = castle[0]
+		var cyaw := float(castle[1])
+		var cf: Vector2 = castle[2]
+		var cb := Basis(Vector3.UP, cyaw)
+		for r in Data.value("dressing", "bailey", []):
+			var at: Vector3 = cp + cb * Vector3(float(r[1]) * cf.x, 0, float(r[2]) * cf.y)
+			put.call(String(r[0]), at, cyaw + deg_to_rad(float(r[3])) + rng.randf_range(-0.1, 0.1), float(r[4]) if r.size() > 4 else 1.0, "bailey")
 	# Every gap dressed the way Anno does it (docs/research/quality-deep-dive.md #4; dressing.json clusters): a group
 	# round one big piece (a wagon, a workbench, a barrel rack, a big plant), a few medium things about it (barrels,
 	# crates, a stool, a bucket, a bush) and many small ones further out (flowers, grass tufts, pebbles, petals), so a
