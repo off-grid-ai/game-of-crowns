@@ -502,12 +502,12 @@ func _ready() -> void:
 		add_child(load("res://scripts/hearths.gd").new(self))
 	if preload("res://scripts/roadside.gd").on(): add_child(load("res://scripts/roadside.gd").new(self))  # life along the roads (roadside.gd; --roadside=on, data/roadside.json)
 	if preload("res://scripts/gold_mines.gd").on(): add_child(load("res://scripts/gold_mines.gd").new(self))  # a mine on every gold seam, worked or spent (gold_mines.gd; --gold-mines=off, data/gold_mines.json)
-	# The army spike (a test aid, --army-spike=<men>; tools/army_spike.gd): regiments of VAT soldiers by Kingsmere.
+	# The muster (a test aid, --army-spike=<men>; army.gd, the army layer): regiments of VAT soldiers by Kingsmere.
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--army-spike="):
-			add_child(load("res://tools/army_spike.gd").new(self, int(a.substr(13))))
-		elif a.begins_with("--army-battle="):  # two hosts meet in the field (a test aid; tools/field_battle.gd)
-			add_child(load("res://tools/field_battle.gd").new(self, a.substr(14)))
+			add_child(load("res://scripts/army.gd").new(self, int(a.substr(13))))
+		elif a.begins_with("--army-battle="):  # two hosts meet in the field (a test aid; army_field.gd)
+			add_child(load("res://scripts/army_field.gd").new(self, a.substr(14)))
 	# The opening's clock (a test aid, GOC_OPENING_CLOCK=<file>): the first ten minutes, timed.
 	if OS.get_environment("GOC_OPENING_CLOCK") != "":
 		add_child(load("res://tools/opening_clock.gd").new(self))

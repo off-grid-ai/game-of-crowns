@@ -460,6 +460,27 @@ func route(towns: Node3D, from: Vector3, to: Vector3) -> PackedVector3Array:
 	return out
 
 
+## True while a town the way from `from` to `to` starts or ends in can't answer for it yet: its walk map still
+## baking, or synced but not yet giving paths (the first frame after a bake lands): its route would be just the two
+## ends (walk), straight through the well. A Mover asking waits for it (mover.gd route_to) rather than cross in a
+## straight line.
+func waits(towns: Node3D, from: Vector3, to: Vector3) -> bool:
+	for p: Vector3 in [from, to]:
+		var t := _walked(towns, p)
+		if t.is_empty():
+			continue
+		var map := map_for(t[0], t[1])
+		if not ready(map):
+			return true
+		var c := (t[1] as Node3D).global_position
+		var other: Vector3 = to if p == from else from
+		var a := Vector2(p.x - c.x, p.z - c.z)
+		var b := Vector2(other.x - c.x, other.z - c.z)
+		if a.distance_to(b) > 0.01 and path(map, a, b).is_empty():
+			return true  # (closest() answers (0, 0) then too: the path is the honest test)
+	return false
+
+
 ## The town with a walk map that `p` (world) is in: [id, root], or empty.
 static func _walked(towns: Node3D, p: Vector3) -> Array:
 	for t in towns_at(towns, p):

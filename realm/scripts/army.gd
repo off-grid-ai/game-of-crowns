@@ -1,8 +1,16 @@
 extends Node3D
-## The army spike (a test aid; docs/review/army-spike-plan.md; targets docs/art/target/03-army.jpg and
-## docs/research/army-and-town-rules.md section 1: Total War's regiment and banner, Warcraft III's worn colour,
-## Age of Empires' column and line). Run with --army-spike=<men> in a shot (--dist=<height>), or
-## --army-spike=host for the crown's largest host as the bridge reports it (/world hosts, bridge/hosts.js).
+## A host of regiments: the army layer's massed army (docs/research/army-layer-2026-11-12.md; targets
+## docs/art/target/03-army.jpg and docs/research/army-and-town-rules.md section 1: Total War's regiment and banner,
+## Warcraft III's worn colour, Age of Empires' column and line). The far look of every army in the realm: the
+## muster by the seat (--army-spike=<men> in a shot, --dist=<height>; --army-spike=host for the crown's largest
+## host as the bridge reports it, /world hosts, bridge/hosts.js), both sides of a field battle and the storm of a
+## siege (army_field.gd raises them as battle sides and gives their regiments their minds).
+##
+## Every regiment is one body with one Mover (mover.gd, CLAUDE.md's one way to move) standing on the host's
+## ground (army_ground.gd: round water, houses and walls): it marches the road in by the way the roads gave
+## (Mover.follow), goes to its place in the line by a route (Mover.go), and a battle steers it (Mover.toward). Its
+## men hold their places in it, laid out by the formation rows in data/army.json (line, column); changing shape
+## walks each man from his place in the one to his place in the other.
 ##
 ## The host is commanded by regiment, never by man. A regiment (100-200 men) is one VATMultiMeshInstance3D
 ## (antzGames' VAT plugin, MIT) of its unit's baked soldier, wearing the house colour (army_vat.gdshader), under
@@ -22,6 +30,8 @@ extends Node3D
 
 const KNIGHT := "armies/knight"
 const Data := preload("res://scripts/data.gd")
+const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
+const Ground := preload("res://scripts/army_ground.gd")
 const TownNav := preload("res://scripts/town_nav.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
 const VAT := preload("res://addons/godot_vat/vat_multi_mesh_instance_3d.gd")
@@ -58,10 +68,11 @@ var _yaw_march := 0.6  # onto the column, from its front quarter
 var _tilt := 0.0
 var _want_select := ""
 var _rng := RandomNumberGenerator.new()
-## One side of a field battle (tools/field_battle.gd raises two): {side: 0 or 1, field: the line's middle,
-## face: its facing, colour, house, shape}. Empty for the spike's own muster by the seat.
+## One side of a battle (army_field.gd raises two): {side: 0 or 1, field: the line's middle, face: its facing,
+## colour, house, shape, ground: the battle's one ground (army_ground.gd)}. Empty for the muster by the seat.
 var battle := {}
 var mustered := false
+var ground: RefCounted  # army_ground.gd: where its regiments may stand
 var _extent := Vector2.ZERO  # the line's width and depth (for re-placing it: stand_at)  # its regiments raised and its line placed (the battle waits on both sides)
 signal raised
 
@@ -100,7 +111,7 @@ func _ready() -> void:
 			await get_tree().create_timer(0.5).timeout
 			waited += 0.5
 		town = main.towns.towns[id]["node"].global_position if main.towns.towns.has(id) else main.terrain.world_pos(float(seat["x"]), float(seat["y"]))
-	# A battle side brings its own regiments (field_battle.gd: one per company that fought, from Freeciv's types).
+	# A battle side brings its own regiments (army_field.gd: one per company that fought, from Freeciv's types).
 	var specs: Array = battle["specs"] if battle.has("specs") else (_from_world() if men <= 0 else _made_up(men))
 	if specs.is_empty():
 		push_error("ARMY no host to show (the crown has no soldiers, and no head count was given)")
@@ -118,6 +129,7 @@ func _ready() -> void:
 		return
 	# The line: where it stands and the way it faces, every regiment's place in it.
 	var extent := _line_places()
+	ground = battle["ground"] if battle.has("ground") else null
 	_extent = extent
 	if battle.has("field"):  # a battle side stands where the battle puts it
 		_face = float(battle.get("face", 0.0))
@@ -127,6 +139,13 @@ func _ready() -> void:
 		push_error("ARMY no open ground by the seat")
 		_regiments.clear()
 		return
+	if ground == null:
+		ground = Ground.around(main, _field, maxf(extent.x, extent.y) * 0.5 + Data.num("army", "march.lead", 5.0) + 3.0)
+	for r in _regiments:
+		var mo: Node = Mover.of(r["node"]).on(ground)
+		mo.clip = ""  # its men's clips are the regiment's (VAT tracks)
+		mo.turn_rate = 3.0
+		mo.speed = float(r["speed"])
 	_standard_up()
 	# The column on the road in, unless the host starts in line.
 	_goal = "column" if shape == "march" else "line"
@@ -208,13 +227,15 @@ func set_shape(shape: String) -> void:
 	_goal = "column" if shape == "column" else "line"
 	for r in _regiments:
 		if _goal == "line" and r["state"] in ["halt", "rest"] and r["shape"] == "column":
-			r["state"] = "deploy"
-			_clips(r, "walk")
+			_deploy(r)
 		elif _goal == "column" and r["shape"] == "line" and r["state"] == "rest":
 			_reform(r, "column")
+		elif r["state"] == "road":
+			r["s"] = _along((r["node"] as Node3D).global_position)
+			_march(r)  # its end on the road changes with the order
 
 
-# --- For a field battle (tools/field_battle.gd moves the regiments; the spike only draws them) -------------
+# --- For a battle (army_field.gd gives the regiments their minds; the host draws them) ---------------------
 
 ## The regiments themselves (their state is "battle" while the battle has them: the spike leaves them be).
 func rows() -> Array:
@@ -225,7 +246,7 @@ func field() -> Vector3:
 	return _field
 
 
-## The whole line stands again at `at`, facing `face` (field_battle.gd turns a battle to fit the ground), formed.
+## The whole line stands again at `at`, facing `face` (army_field.gd turns a battle to fit the ground), formed.
 func stand_at(at: Vector3, face: float) -> void:
 	_field = _ground_at(at)
 	_face = face
@@ -259,9 +280,10 @@ func facing() -> float:
 	return _face
 
 
-## A regiment's men in place at once (their `local`), set where it stands on the ground, turned to `yaw`.
-func place(r: Dictionary, p: Vector3, yaw: float) -> void:
-	_set_at(r, p, yaw)
+## A regiment turned where it stands (an about-turn, a wheel in place): no travel, so no Mover.
+func turn(r: Dictionary, yaw: float) -> void:
+	r["yaw"] = yaw
+	(r["node"] as Node3D).rotation.y = yaw
 
 
 func dress(r: Dictionary) -> void:
@@ -335,7 +357,7 @@ func _made_up(count: int) -> Array:
 	return out
 
 
-## A regiment's spec for a company of a Freeciv type, of `count` men (field_battle.gd sizes a battle's sides).
+## A regiment's spec for a company of a Freeciv type, of `count` men (army_field.gd sizes a battle's sides).
 func spec_for(kind: String, count: int, id: int) -> Dictionary:
 	return {"id": id, "unit": _unit_for(kind), "men": count, "strength": 1.0}
 
@@ -994,10 +1016,54 @@ func _column_up() -> void:
 		off += float(r["column"]["d"]) * 0.5 + gap
 		r["speed"] = slowest  # the host marches at its slowest regiment's pace
 		_shape(r, "column")
-		r["state"] = "road"
 		var p := _at(r["s"])
 		_set_at(r, p, _heading(r["s"]))
 		_clips(r, "walk")
+		_march(r)
+
+
+## Along the road in at the host's pace (the Mover follows the road's own way, laid by roads.gd); at the turn-off
+## out to its place in the line, or, on a column order, halted at its own place in the column.
+func _march(r: Dictionary) -> void:
+	var end := _cum[_cum.size() - 1] - (float(r["off"]) if _goal == "column" else 0.0)
+	var from := float(r["s"])
+	var way := PackedVector3Array()
+	for i in _path.size():
+		if _cum[i] > from + 0.01 and _cum[i] < end - 0.01:
+			way.append(_path[i])
+	way.append(_at(end))
+	r["state"] = "road"
+	var mo: Node = Mover.of(r["node"])
+	mo.speed = float(r["speed"])
+	mo.follow(way, func():
+		r["s"] = end
+		if _goal == "column":
+			r["state"] = "halt"
+			_clips(r, "rest")
+		else:
+			_deploy(r))
+
+
+## Off the road to its place in the line by the ground's route, where it turns into line.
+func _deploy(r: Dictionary) -> void:
+	r["state"] = "deploy"
+	_clips(r, "walk")
+	var mo: Node = Mover.of(r["node"])
+	mo.speed = float(r["speed"])
+	mo.go(r["slot"], func(): _reform(r, "line"))
+
+
+## How far along the road in `p` (world) stands: its nearest point on it.
+func _along(p: Vector3) -> float:
+	var best := 0.0
+	var near := INF
+	for i in range(1, _path.size()):
+		var q := Geometry3D.get_closest_point_to_segment(p, _path[i - 1], _path[i])
+		var d := q.distance_to(p)
+		if d < near:
+			near = d
+			best = _cum[i - 1] + q.distance_to(_path[i - 1])
+	return best
 
 
 ## A point `s` units along the road in (clamped to its ends), on the ground.
@@ -1047,30 +1113,8 @@ func _process(delta: float) -> void:
 	if _regiments.is_empty() or _standard == null:
 		return
 	for r in _regiments:
+		r["yaw"] = (r["node"] as Node3D).rotation.y  # its Mover turns it as it goes
 		match String(r["state"]):
-			"road":
-				# Along the road at the host's pace; at the turn-off, out to its place in the line; on a column
-				# order, it halts at its own place in the column.
-				var end := _cum[_cum.size() - 1] - (float(r["off"]) if _goal == "column" else 0.0)
-				r["s"] = minf(float(r["s"]) + float(r["speed"]) * delta, end)
-				var yaw := lerp_angle(float(r["yaw"]), _heading(r["s"]), minf(1.0, delta * 3.0))
-				_set_at(r, _at(r["s"]), yaw)
-				if float(r["s"]) >= end:
-					if _goal == "column":
-						r["state"] = "halt"
-						_clips(r, "rest")
-					else:
-						r["state"] = "deploy"
-			"deploy":
-				var at: Vector3 = (r["node"] as Node3D).global_position
-				var to: Vector3 = r["slot"] - at
-				to.y = 0.0
-				var step := float(r["speed"]) * delta
-				if to.length() <= step:
-					_set_at(r, r["slot"], r["yaw"])
-					_reform(r, "line")
-				else:
-					_set_at(r, at + to.normalized() * step, lerp_angle(float(r["yaw"]), atan2(to.x, to.z), minf(1.0, delta * 3.0)))
 			"reform":
 				r["t"] = minf(1.0, float(r["t"]) + delta / maxf(Data.num("army", "line.reform", 5.0), 0.1))
 				var e := smoothstep(0.0, 1.0, float(r["t"]))

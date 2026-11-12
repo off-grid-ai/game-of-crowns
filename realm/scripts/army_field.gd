@@ -1,35 +1,45 @@
 extends Node3D
-## Two hosts meet in the field (Mac: "battles need polish"; Total War's field battle, Warcraft III's worn colour;
-## docs/research/army-and-town-rules.md section 1). A test aid, like the army spike it stands on:
-## --army-battle=<men per side>[:foe|crown], the side Freeciv beat after the colon (foe by default).
+## The massed fight: hosts of regiments (army.gd: one VAT draw and one banner each) meeting in the field or storming
+## a breach (the army layer, docs/research/army-layer-2026-11-12.md; Total War's field battle and its storm through
+## the breach, Warcraft III's worn colour and density). Who wins is the realm's (Freeciv decides, the bridge
+## tells): the beaten side bleeds faster and breaks, the victors never do. Every regiment moves by its Mover on the
+## battle's one ground (army_ground.gd), and decides by its mind (a LimboHSM from a data/army.json minds row,
+## army_mind.gd). Numbers in data/battle.json field and data/siege.json storm_host (docs/TUNING.md).
 ##
-## Both hosts are the army spike's regiments (tools/army_spike.gd: one VAT draw and one banner each). The crown's
-## host musters by its seat and marches in by the road; the foe comes in over open land and forms facing it,
-## field.gap away. When both lines stand, each regiment's own mind (a LimboHSM, as battle_ai.gd's men have) takes
-## it through the battle: archers loose volleys that arc onto the enemy's ranks and fell men where they land; the
-## foot advance and stop at sword's length, the two fronts fighting along their length, front ranks cutting,
-## reeling and falling, the fallen left where they fell; cavalry swings round the enemy's end and charges into his
-## flank; a beaten regiment's banner wavers as its pips fall, then it breaks and runs, its men scattering; the
-## victors hold the field. Who wins is the realm's (Freeciv decides, the bridge tells): the beaten side bleeds
-## faster and breaks, the victors never do. Numbers in data/battle.json field (docs/TUNING.md).
-## As a test aid it prints "BATTLE …" lines and frames itself. In play (stage(), from scenes.gd when the bridge tells of
-## a battle; data/battle.json field.play.on or --battles=field) it is quiet, sized from the men who really fought
-## (one regiment per company, of the Freeciv types on each side), ends as Freeciv decided, and never moves the camera:
-## the King hears of it as news (news.gd: the chip, the edge arrow, Space to go and back). Gone field.play.linger
-## seconds after the field is held.
+## A field battle (stage(), from scenes.gd when the bridge tells of a battle, data/battle.json field.play.on or
+## --battles=field; the test aid --army-battle=<men per side>[:foe|crown]): both hosts form facing each other, then
+## each regiment's mind (minds.regiment) takes it through: archers loose volleys that arc onto the enemy's ranks
+## and fell men where they land; the foot advance and stop at sword's length, front ranks cutting, reeling and
+## falling, the fallen left where they fell; cavalry swings round the enemy's end and charges his flank; a beaten
+## regiment's banner wavers as its pips fall, then it breaks and runs, its men scattering; the victors hold the
+## field. In play it is quiet, sized from the men who really fought, ends as Freeciv decided, never moves the camera,
+## and is gone field.play.linger seconds after. The test aid prints "BATTLE …" lines and frames itself.
+##
+## A storm (storm(), beside a siege's assault parties, army_assault.gd, whose breach drives it; --storm-host=on|off,
+## on with --wall-demo): the besiegers in line on the camp side, the holder's drawn up inside the wall
+## (minds.storm_regiment). Before the gap opens the besiegers stand ready and loose fire arrows over the wall: they
+## arc into the town and now and then a roof catches (fire.gd kindle). Once the gap is open the besiegers' regiments
+## march up in waves and queue into it, the front one at blows in the gap, the holder's regiments meeting them on
+## the town side, their banners wavering as the fight goes on. When the holder's block breaks, its regiments run
+## into the town and the besiegers pour in through the gap and spread out among the houses. Never moves the camera.
 
-const Army := preload("res://tools/army_spike.gd")
+const Army := preload("res://scripts/army.gd")
+const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
+const Mind := preload("res://scripts/army_mind.gd")
+const Ground := preload("res://scripts/army_ground.gd")
 const Data := preload("res://scripts/data.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
+const Fire := preload("res://scripts/fire.gd")
 const F := "battle"  # data/battle.json, its field block
 
 var main: Node
 var men := 0
-var loser := 1  # the side Freeciv beat: 0 the crown, 1 the foe
-var sides: Array = []  # the two army spikes
+var loser := 1  # the side Freeciv beat: 0 the crown (or the besiegers' foe), 1 the foe
+var sides: Array = []  # the two hosts
 var clock := -1.0  # seconds since the battle began; below 0 while the hosts deploy
+var ground: RefCounted  # army_ground.gd: the battle's one field
 var _arrows: MultiMeshInstance3D
-var _flights: Array = []  # [from, to, start, flight, target regiment, fells]
+var _flights: Array = []  # [from, to, start, flight, arc, on_land (Callable), light (Node3D or null)]
 var _rng := RandomNumberGenerator.new()
 var _dist := 12.0
 var _focus := Vector3.ZERO
@@ -38,6 +48,14 @@ var _over := false
 var _formed := 0.0  # seconds both lines have stood formed
 var play := {}  # in play: {at, face, houses: [victors, beaten], kinds: [[types], [types]], men: [victors, beaten], id}; empty for the test aid
 var _over_at := -1.0
+# The storm (storm() only): the siege's assault (its breach and town) drives it.
+var ai: Node
+var _queue: Array = []  # besieger regiments sent, in order
+var _wave_t := 0.0
+var _arrow_t := 0.0
+var _said := ""  # the phase last printed (--probe: a headless state proof, silent in play)
+var _probe_t := 0.0
+var _ready_sides := 0
 
 
 ## Field battles in play, on or off (data/battle.json field.play.on; --battles=field / --battles=skirmish).
@@ -58,13 +76,35 @@ static func stage(m: Node, s: Dictionary, houses: Dictionary, at: Vector3) -> No
 	var men_: Array = s.get("men", [200, 200])
 	if kinds.size() < 2 or (kinds[1] as Array).is_empty():
 		return null
-	var b = load("res://tools/field_battle.gd").new(m, "0")
+	var b = (load("res://scripts/army_field.gd") as GDScript).new(m, "0")
 	var seed := hash(String(s.get("id", "%d,%d,%d" % [int(s["x"]), int(s["y"]), int(s.get("turn", 0))])))
 	b.play = {"at": at, "face": float(posmod(seed, 6283)) / 1000.0, "id": seed,
 		"houses": [houses.get(int(s["victor"]), {}), houses.get(int(s.get("owner", -1)), {})],
 		"kinds": [kinds[1], kinds[0]], "men": [int(men_[1]) if men_.size() > 1 else 200, int(men_[0])]}
 	b.add_to_group(&"field_battles")
 	m.add_child(b)
+	return b
+
+
+## The storm as a mass on for this run (data/siege.json storm_host.on; --storm-host=on|off, on with --wall-demo).
+static func storm_host_on() -> bool:
+	var args := OS.get_cmdline_user_args()
+	if args.has("--storm-host=off"):
+		return false
+	if args.has("--storm-host=on") or args.has("--wall-demo"):
+		return true
+	return bool(Data.value("siege", "storm_host.on", false))
+
+
+static func k(path: String, fallback: float) -> float:
+	return Data.num("siege", "storm_host." + path, fallback)
+
+
+## Raised beside a siege's assault (army_assault.gd: its breach(), town_at, root): `camp` where the besiegers stand
+## (world), `wall` a point on the wall's foot facing them, `town` the town's heart; each side's colours.
+static func storm(assault: Node, camp: Vector3, wall: Vector3, town: Vector3, foe_col: Color, held_col: Color) -> Node:
+	var b = (load("res://scripts/army_field.gd") as GDScript).new(assault.scenes.get_parent(), "0")
+	b.call("_storm_up", assault, camp, wall, town, foe_col, held_col)
 	return b
 
 
@@ -77,6 +117,8 @@ func _init(owner: Node, arg: String) -> void:
 
 
 func _ready() -> void:
+	if ai != null:
+		return  # a storm: raised by _storm_up
 	_rng.seed = 1415
 	if not play.is_empty():
 		_raise_in_play()
@@ -99,8 +141,8 @@ func _ready() -> void:
 	var gap := Data.num(F, "field.gap", 9.0)
 	var best_face := crown.facing()
 	var best := -1.0
-	for k in int(Data.num(F, "field.turns", 12)):
-		var a := crown.facing() + TAU * float(k) / Data.num(F, "field.turns", 12)
+	for i in int(Data.num(F, "field.turns", 12)):
+		var a := crown.facing() + TAU * float(i) / Data.num(F, "field.turns", 12)
 		var share := crown.ground_share(crown.field() + Vector3(sin(a), 0, cos(a)) * gap, a + PI, crown.extent())
 		if share > best + 0.001:
 			best = share
@@ -110,12 +152,13 @@ func _ready() -> void:
 	var face := crown.facing()
 	var fwd := Vector3(sin(face), 0, cos(face))
 	var house := _foe_house()
-	var foe: Army = Army.new(main, men, {"side": 1, "shape": "line", "frontage": deep, "field": crown.field() + fwd * gap, "face": face + PI,
+	var foe: Army = Army.new(main, men, {"side": 1, "shape": "line", "frontage": deep, "field": crown.field() + fwd * gap, "face": face + PI, "ground": crown.ground,
 		"colour": Heraldry.colour(house, Color(0.72, 0.12, 0.12)) if not house.is_empty() else Color(0.72, 0.12, 0.12), "house": house})
 	add_child(foe)
 	if not foe.mustered:
 		await foe.raised
 	sides = [crown, foe]
+	ground = crown.ground
 	_arrows = _arrow_pool()
 	_focus = (crown.field() + foe.field()) * 0.5
 	print("BATTLE raised %d a side, %s against %s, the %s beaten; lines %.1f apart, the foe's ground %d%% fit" % [men, "the crown", String(house.get("name", "a rebel host")),
@@ -133,18 +176,19 @@ func _raise_in_play() -> void:
 	var half := Data.num(F, "field.play.gap", 5.0) * 0.5
 	var per := int(Data.num(F, "field.play.perCompany", 150))
 	var most := int(Data.num(F, "field.play.companies", 12))
+	ground = Ground.around(main, at, half + 8.0)
 	var made: Array = []
-	for k in 2:
-		var house: Dictionary = (play["houses"] as Array)[k]
+	for i in 2:
+		var house: Dictionary = (play["houses"] as Array)[i]
 		var colour := Heraldry.colour(house, Color(0.5, 0.17, 0.15)) if not house.is_empty() else Color(0.5, 0.17, 0.15)
-		if k == 1 and made.size() == 1 and _alike(colour, (made[0] as Army).battle["colour"]):
+		if i == 1 and made.size() == 1 and _alike(colour, (made[0] as Army).battle["colour"]):
 			colour = Color(0.22, 0.3, 0.46)  # two houses in like colours: the beaten in steel blue, so the sides read apart
-		var side: Army = Army.new(main, 0, {"side": k, "field": at - fwd * half if k == 0 else at + fwd * half, "face": face if k == 0 else face + PI,
-			"colour": colour, "house": house, "quiet": true, "shape": "auto", "frontage": Data.value(F, "field.frontage", [10, 14])})
+		var side: Army = Army.new(main, 0, {"side": i, "field": at - fwd * half if i == 0 else at + fwd * half, "face": face if i == 0 else face + PI,
+			"colour": colour, "house": house, "quiet": true, "shape": "auto", "frontage": Data.value(F, "field.frontage", [10, 14]), "ground": ground})
 		var specs: Array = []
-		var kinds: Array = (play["kinds"] as Array)[k]
-		for i in mini(kinds.size(), most):
-			specs.append(side.spec_for(String(kinds[i]), per, -(i + 1)))
+		var kinds: Array = (play["kinds"] as Array)[i]
+		for j in mini(kinds.size(), most):
+			specs.append(side.spec_for(String(kinds[j]), per, -(j + 1)))
 		side.battle["specs"] = specs
 		add_child(side)
 		made.append(side)
@@ -173,90 +217,45 @@ func _foe_house() -> Dictionary:
 
 func _begin() -> void:
 	clock = 0.0
-	for k in 2:
-		for r in (sides[k] as Army).rows():
-			r["state"] = "battle"  # the spike leaves it be from here
-			r["side"] = k
-			r["army"] = sides[k]
-			var alive := PackedByteArray()
-			alive.resize(int(r["men"]))
-			alive.fill(1)
-			r["alive"] = alive
-			r["living"] = int(r["men"])
-			r["dead_at"] = {}
-			r["bleed"] = 0.0
-			r["volley_t"] = _rng.randf_range(0.5, 2.0)
-			r["swing"] = {}  # front man -> when he next cuts
-			r["back"] = {}  # man -> when his one-shot ends and he takes his stance again
-			r["foe"] = null
-			r["moved"] = false
-			_mind(r)
+	for i in 2:
+		for r in (sides[i] as Army).rows():
+			_enlist(r, i, "regiment")
 	if play.is_empty():
 		print("BATTLE begins")
 
 
-## A regiment's mind: stand, then by its role loose volleys, advance or ride round the flank; fight; break and run,
-## or hold the field. No way back from running.
-func _mind(r: Dictionary) -> void:
-	var hsm := LimboHSM.new()
-	var stand := LimboState.new()
-	var volley := LimboState.new()
-	var advance := LimboState.new()
-	var flank := LimboState.new()
-	var charge := LimboState.new()
-	var fight := LimboState.new()
-	var rout := LimboState.new()
-	var hold := LimboState.new()
-	for s in [stand, volley, advance, flank, charge, fight, rout, hold]:
-		hsm.add_child(s)
-	var army: Army = r["army"]
-	var enter := func(state: LimboState, label: String, then: Callable) -> void:
-		state.call_on_enter(func():
-			r["state_name"] = label
-			then.call())
-	enter.call(stand, "stand", func(): _play(r, "ready"))
-	enter.call(volley, "volley", func(): _play(r, "ready"))
-	volley.call_on_update(func(dt: float): _volley(r, dt))
-	enter.call(advance, "advance", func(): _play(r, "walk"))
-	advance.call_on_update(func(dt: float): _advance(r, dt))
-	enter.call(flank, "flank", func(): _play(r, "walk"))
-	flank.call_on_update(func(dt: float): _flank(r, dt))
-	enter.call(charge, "charge", func(): _play(r, "run"))
-	charge.call_on_update(func(dt: float): _charge(r, dt))
-	enter.call(fight, "fight", func(): _play(r, "ready"))
-	fight.call_on_update(func(dt: float): _fight(r, dt))
-	enter.call(rout, "rout", func(): _break(r))
-	rout.call_on_update(func(dt: float): _run(r, dt))
-	enter.call(hold, "hold", func(): _hold(r))
-	hold.call_on_update(func(dt: float): _settle(r, dt))
-	hsm.add_transition(stand, volley, &"volley")
-	hsm.add_transition(stand, advance, &"advance")
-	hsm.add_transition(stand, flank, &"flank")
-	hsm.add_transition(advance, fight, &"engage")
-	hsm.add_transition(volley, fight, &"engage")
-	hsm.add_transition(flank, charge, &"charge")
-	hsm.add_transition(charge, fight, &"engage")
-	hsm.add_transition(fight, advance, &"advance")  # its foe broke: on to the next
-	hsm.add_transition(charge, flank, &"flank")
-	rout.set_guard(func() -> bool: return int(r["side"]) == loser)  # the victors never break
-	hsm.add_transition(hsm.ANYSTATE, rout, &"break")
-	hold.set_guard(func() -> bool: return int(r["side"]) != loser)
-	hsm.add_transition(hsm.ANYSTATE, hold, &"won")
-	hsm.initial_state = stand
-	(r["node"] as Node).add_child(hsm)
-	hsm.initialize(r["node"])
-	hsm.set_active(true)
-	r["hsm"] = hsm
-	r["state_name"] = "stand"
+## A regiment joins the fight: its men counted alive, its mind made from the row `kind`.
+func _enlist(r: Dictionary, side: int, kind: String) -> void:
+	r["state"] = "battle"  # the host leaves it be from here: its mind drives it
+	r["side"] = side
+	r["army"] = sides[side]
+	var alive := PackedByteArray()
+	alive.resize(int(r["men"]))
+	alive.fill(1)
+	r["alive"] = alive
+	r["living"] = int(r["men"])
+	r["dead_at"] = {}
+	r["bleed"] = 0.0
+	r["volley_t"] = _rng.randf_range(0.5, 2.0)
+	r["swing"] = {}  # front man -> when he next cuts
+	r["back"] = {}  # man -> when his one-shot ends and he takes his stance again
+	r["foe"] = null
+	r["moved"] = false
+	var mo: Node = Mover.of(r["node"])
+	mo.turn_rate = 1.8
+	Mind.make(kind, r, r["node"], self)
 
 
 func _send(r: Dictionary, ev: StringName) -> void:
-	(r["hsm"] as LimboHSM).dispatch(ev)
+	Mind.send(r, ev)
 
 
 # --- Each frame -------------------------------------------------------------------------------------------
 
 func _process(delta: float) -> void:
+	if ai != null:
+		_storm_tick(delta)
+		return
 	if sides.size() < 2:
 		return
 	if clock < 0.0:
@@ -266,20 +265,15 @@ func _process(delta: float) -> void:
 			_formed += delta
 			if _formed >= Data.num(F, "field.start", 2.0):
 				_begin()
-				for k in 2:
-					for r in (sides[k] as Army).rows():
+				for i in 2:
+					for r in (sides[i] as Army).rows():
 						_send(r, &"volley" if r["role"] == "ranged" else (&"flank" if r["role"] == "cavalry" else &"advance"))
 		if play.is_empty():
 			_frame(delta)
 		return
 	clock += delta
-	_fly(delta)
-	for k in 2:
-		for r in (sides[k] as Army).rows():
-			_backs(r)
-			if r["moved"]:
-				_keep_dead(r)
-				r["moved"] = false
+	_fly()
+	_keep_up()
 	_morale()
 	if not play.is_empty():
 		# In play: the field held a while, then the battle is gone (its dead too); the camera is never moved.
@@ -293,14 +287,27 @@ func _process(delta: float) -> void:
 	if _report <= 0.0:
 		_report = 2.0
 		var s := PackedStringArray()
-		for k in 2:
+		for i in 2:
 			var states := {}
 			var left := 0
-			for r in (sides[k] as Army).rows():
+			for r in (sides[i] as Army).rows():
 				states[r["state_name"]] = int(states.get(r["state_name"], 0)) + 1
 				left += int(r["living"])
-			s.append("%s %d men %s" % ["crown" if k == 0 else "foe", left, str(states)])
+			s.append("%s %d men %s" % ["crown" if i == 0 else "foe", left, str(states)])
 		print("BATTLE t=%.0f %s; arrows in flight %d; fps=%d" % [clock, " | ".join(s), _flights.size(), Engine.get_frames_per_second()])
+
+
+## Every regiment's men brought back to their stance after a one-shot, and its fallen kept where they fell while it
+## moves on.
+func _keep_up() -> void:
+	for a in sides:
+		for r in (a as Army).rows():
+			if not r.has("alive"):
+				continue
+			_backs(r)
+			if r["moved"] or Mover.of(r["node"]).moving():
+				_keep_dead(r)
+				r["moved"] = false
 
 
 ## The beaten side's banners waver as their strength falls, and each breaks below field.rout, or all of them after
@@ -325,11 +332,11 @@ func _morale() -> void:
 			_send(r, &"won")
 
 
-## The lens on the thick of it: the middle of every regiment still in the field, low and oblique, off the lines' quarter.
+## The lens on the thick of it (the test aid only): the middle of every regiment still in the field, low and
+## oblique, off the lines' quarter.
 func _frame(delta: float) -> void:
 	if main.rig == null:
 		return
-	# The thick of it: where the fronts are at blows once they meet, else every regiment still in the field.
 	var sum := Vector3.ZERO
 	var n := 0
 	var at_blows := _lines_met()
@@ -348,9 +355,29 @@ func _frame(delta: float) -> void:
 	main.rig.goal_tilt = main.rig.tilt
 
 
-# --- Archers ----------------------------------------------------------------------------------------------
+# --- A regiment's mind (data/army.json minds.regiment) ----------------------------------------------------
 
-## Loose a volley every field.volley.every seconds at the nearest enemy regiment, while the lines are apart.
+func _ready_in(r: Dictionary) -> void:
+	_play(r, "ready")
+
+
+func _walk_in(r: Dictionary) -> void:
+	_play(r, "walk")
+
+
+func _run_in(r: Dictionary) -> void:
+	_play(r, "run")
+
+
+func _may_break(r: Dictionary) -> bool:
+	return int(r["side"]) == loser  # the victors never break
+
+
+func _may_hold(r: Dictionary) -> bool:
+	return int(r["side"]) != loser
+
+
+## Archers: a volley every field.volley.every seconds at the nearest enemy regiment, while the lines are apart.
 func _volley(r: Dictionary, dt: float) -> void:
 	var foe := _nearest_foe(r)
 	if foe.is_empty():
@@ -384,62 +411,18 @@ func _volley(r: Dictionary, dt: float) -> void:
 		var fnode: Node3D = foe["node"]
 		var to := fnode.to_global(Vector3(_rng.randf_range(-0.5, 0.5) * float(foe["w"]), 0.0, _rng.randf_range(-0.5, 0.5) * float(foe["d"])))
 		to.y = main.terrain.height_at(to.x, to.z)
-		var lands := 1 if i < fells else 0
-		_flights.append([from, to, clock + _rng.randf_range(0.0, 0.5), flight * _rng.randf_range(0.9, 1.1), foe, lands])
+		var lands := i < fells
+		_loose(from, to, clock + _rng.randf_range(0.0, 0.5), flight * _rng.randf_range(0.9, 1.1), Data.num(F, "field.volley.arc", 0.45),
+			func(): if lands and foe.get("state_name", "") != "rout": _fell(foe, 1, false))
 
 
-func _arrow_pool() -> MultiMeshInstance3D:
-	var shaft := BoxMesh.new()
-	shaft.size = Vector3(0.006, 0.006, 0.09)
-	var m := StandardMaterial3D.new()
-	m.albedo_color = Color(0.3, 0.24, 0.17)
-	m.roughness = 0.9
-	shaft.material = m
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = shaft
-	var mmi := MultiMeshInstance3D.new()
-	mmi.multimesh = mm
-	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(mmi)
-	return mmi
-
-
-## Every arrow in the air along its arc, pointing the way it flies; one that lands on its mark fells a man there.
-func _fly(_delta: float) -> void:
-	var mm := _arrows.multimesh
-	var arc := Data.num(F, "field.volley.arc", 0.45)
-	var shown: Array = []
-	for i in range(_flights.size() - 1, -1, -1):
-		var f: Array = _flights[i]
-		var t := (clock - float(f[2])) / float(f[3])
-		if t < 0.0:
-			continue
-		if t >= 1.0:
-			if int(f[5]) > 0 and (f[4] as Dictionary).get("state_name", "") != "rout":
-				_fell(f[4], 1, false)
-			_flights.remove_at(i)
-			continue
-		var a: Vector3 = f[0]
-		var b: Vector3 = f[1]
-		var top := a.distance_to(b) * arc
-		var p := a.lerp(b, t) + Vector3(0, top * 4.0 * t * (1.0 - t), 0)
-		var q := a.lerp(b, minf(t + 0.02, 1.0)) + Vector3(0, top * 4.0 * minf(t + 0.02, 1.0) * (1.0 - minf(t + 0.02, 1.0)), 0)
-		shown.append(Transform3D(Basis.looking_at(q - p if (q - p).length() > 0.0001 else Vector3.FORWARD, Vector3.UP), p))
-	mm.instance_count = shown.size()
-	for i in shown.size():
-		mm.set_instance_transform(i, shown[i])
-
-
-# --- Foot -------------------------------------------------------------------------------------------------
-
-## Forward at field.advance until its front is at sword's length from the nearest enemy's front; then both fight.
-func _advance(r: Dictionary, dt: float) -> void:
+## Foot: forward until its front is at sword's length from the nearest enemy's front; then both fight.
+func _advance(r: Dictionary, _dt: float) -> void:
 	var foe := _nearest_foe(r)
 	if foe.is_empty():
 		return
+	var at: Vector3 = (r["node"] as Node3D).global_position
 	var to: Vector3 = (foe["node"] as Node3D).global_position
-	_face_toward(r, to, dt)
 	var gap := _front_gap(r, foe)
 	var contact := Data.num(F, "field.contact", 0.12)
 	if gap <= contact:
@@ -449,19 +432,16 @@ func _advance(r: Dictionary, dt: float) -> void:
 			foe["foe"] = r
 			_send(foe, &"engage")
 		return
-	var node: Node3D = r["node"]
-	var fwd := node.global_transform.basis.z.normalized()  # a regiment faces its +Z
-	(r["army"] as Army).place(r, node.global_position + fwd * minf(Data.num(F, "field.advance", 0.12) * dt, gap - contact), float(r["yaw"]))
-	r["moved"] = true
+	var way := Vector3(to.x - at.x, 0, to.z - at.z).normalized()
+	Mover.of(r["node"]).toward(at + way * (gap - contact), Data.num(F, "field.advance", 0.12), way)
 
 
-## At blows: the front ranks cut and reel, men fall from the front, the rest stand ready behind; the front
-## surges a little back and forth. It bleeds by the realm's outcome (field.fight.loss), harder when flanked.
+## At blows: the front ranks cut and reel, men fall from the front, the rest stand ready behind; the front surges a
+## little back and forth. It bleeds by the realm's outcome (field.fight.loss), harder when flanked.
 func _fight(r: Dictionary, dt: float) -> void:
 	var foe: Variant = r["foe"]
 	if foe == null or (foe as Dictionary).get("state_name", "") == "rout" or int((foe as Dictionary)["living"]) == 0:
-		var next := _nearest_foe(r)
-		if next.is_empty():
+		if _nearest_foe(r).is_empty():
 			return
 		r["foe"] = null
 		_send(r, &"advance")  # its foe broke: on to the next
@@ -482,7 +462,7 @@ func _fight(r: Dictionary, dt: float) -> void:
 			var roll := _rng.randf()
 			vat.update_instance_track(s, army.track(r, "hit" if roll < hit_odds else ("block" if roll < hit_odds + block_odds else "attack")))
 			back[s] = clock + 0.9
-	# The front surges: each front man a little forward and back on his own beat.
+	# The front surges: each front man a little forward and back on his own beat (his place in the formation).
 	var surge := Data.num(F, "field.fight.surge", 0.02)
 	var local: PackedVector3Array = r["local"]
 	var line: PackedVector3Array = r["line"]["at"]
@@ -504,10 +484,9 @@ func _fight(r: Dictionary, dt: float) -> void:
 		_fell(r, n, true)
 
 
-# --- Horse ------------------------------------------------------------------------------------------------
-
-## Round the end of the enemy's line nearest its own wing, wide of it (field.cavalry.wide), then in on his flank.
-func _flank(r: Dictionary, dt: float) -> void:
+## Horse: round the end of the enemy's line nearest its own wing, wide of it (field.cavalry.wide), then in on his
+## flank.
+func _flank(r: Dictionary, _dt: float) -> void:
 	var foe_army: Army = sides[1 - int(r["side"])]
 	var rows := foe_army.rows().filter(func(x): return x.get("state_name", "") != "rout" and int(x.get("living", 1)) > 0)
 	if rows.is_empty():
@@ -516,7 +495,6 @@ func _flank(r: Dictionary, dt: float) -> void:
 	var face := foe_army.facing()
 	var right := Vector3(cos(face), 0, -sin(face))
 	var fwd := Vector3(sin(face), 0, cos(face))
-	# The enemy's end on this wing's side, and a point wide of it and a little behind his front.
 	var mid := foe_army.field()
 	var side_sign := signf((node.global_position - mid).dot(right))
 	if side_sign == 0.0:
@@ -528,13 +506,15 @@ func _flank(r: Dictionary, dt: float) -> void:
 	var end_at: Vector3 = (end["node"] as Node3D).global_position
 	var goal := end_at + right * side_sign * (float(end["w"]) * 0.5 + Data.num(F, "field.cavalry.wide", 2.2)) - fwd * Data.num(F, "field.cavalry.behind", 1.0)
 	r["target"] = end
-	if _move_to(r, goal, Data.num(F, "field.cavalry.ride", 0.3), dt):
+	if Vector2(goal.x - node.global_position.x, goal.z - node.global_position.z).length() <= 0.05:
 		_send(r, &"charge")
+		return
+	Mover.of(node).toward(goal, Data.num(F, "field.cavalry.ride", 0.3))
 
 
 ## In on the flank at the charge, into the side of the regiment at the enemy's end; it fights there, and the
 ## regiment it hits is flanked (bleeds harder).
-func _charge(r: Dictionary, dt: float) -> void:
+func _charge(r: Dictionary, _dt: float) -> void:
 	var t: Variant = r.get("target")
 	if t == null or (t as Dictionary).get("state_name", "") == "rout":
 		_send(r, &"flank")
@@ -548,17 +528,14 @@ func _charge(r: Dictionary, dt: float) -> void:
 		target["flanked"] = true
 		_send(r, &"engage")
 		return
-	_move_to(r, tn.global_position, Data.num(F, "field.cavalry.charge", 0.55), dt)
+	Mover.of(r["node"]).toward(tn.global_position, Data.num(F, "field.cavalry.charge", 0.55))
 
-
-# --- Breaking and holding ---------------------------------------------------------------------------------
 
 ## It breaks: turns its back on the enemy, runs; its banner wavers its last.
 func _break(r: Dictionary) -> void:
 	var army: Army = r["army"]
 	army.waver(r, 1.0)
-	r["yaw"] = float(r["yaw"]) + PI
-	army.place(r, (r["node"] as Node3D).global_position, float(r["yaw"]))
+	army.turn(r, float(r["yaw"]) + PI)
 	# The dead lie where they fell; the living face the other way in their places.
 	var local: PackedVector3Array = r["local"]
 	var alive: PackedByteArray = r["alive"]
@@ -574,14 +551,15 @@ func _break(r: Dictionary) -> void:
 			vat.update_instance_track(s, run)
 			vat.update_instance_animation_offset(s, _rng.randf())
 	r["ran"] = 0.0
-	if play.is_empty(): print("BATTLE t=%.0f a %s regiment breaks at %d%%" % [clock, "crown" if int(r["side"]) == 0 else "foe", int(float(r["strength"]) * 100.0)])
+	if play.is_empty() and ai == null: print("BATTLE t=%.0f a %s regiment breaks at %d%%" % [clock, "crown" if int(r["side"]) == 0 else "foe", int(float(r["strength"]) * 100.0)])
 
 
-## Running: away from the field at field.run, each man drifting from his place (field.scatter), gone after field.fade.
+## Running: away from the field at field.run, each man drifting from his place (field.scatter), gone after
+## field.fade.
 func _run(r: Dictionary, dt: float) -> void:
 	var node: Node3D = r["node"]
 	var fwd := node.global_transform.basis.z.normalized()
-	(r["army"] as Army).place(r, node.global_position + fwd * Data.num(F, "field.run", 0.42) * dt, float(r["yaw"]))
+	Mover.of(node).toward(node.global_position + fwd * 0.5, Data.num(F, "field.run", 0.42), fwd)
 	var local: PackedVector3Array = r["local"]
 	var alive: PackedByteArray = r["alive"]
 	var scatter := Data.num(F, "field.scatter", 0.05)
@@ -605,10 +583,6 @@ func _hold(r: Dictionary) -> void:
 	(r["army"] as Army).waver(r, 0.0)
 	_play(r, "rest")
 	r["foe"] = null
-
-
-func _settle(_r: Dictionary, _dt: float) -> void:
-	pass
 
 
 # --- Men falling and the fallen ---------------------------------------------------------------------------
@@ -738,27 +712,264 @@ func _lines_met() -> bool:
 	return false
 
 
-## Turns a regiment toward a point, a little each frame.
+## Turns a regiment toward a point where it stands, a little each frame.
 func _face_toward(r: Dictionary, to: Vector3, dt: float) -> void:
 	var at: Vector3 = (r["node"] as Node3D).global_position
-	var want := atan2(to.x - at.x, to.z - at.z)
-	var yaw := lerp_angle(float(r["yaw"]), want, minf(1.0, dt * 1.5))
+	var yaw := lerp_angle(float(r["yaw"]), atan2(to.x - at.x, to.z - at.z), minf(1.0, dt * 1.5))
 	if absf(angle_difference(yaw, float(r["yaw"]))) > 0.0005:
-		(r["army"] as Army).place(r, at, yaw)
+		(r["army"] as Army).turn(r, yaw)
 		r["moved"] = true
 
 
-## Moves a regiment toward a point at a pace, turning as it goes; true when it is there.
-func _move_to(r: Dictionary, goal: Vector3, pace: float, dt: float) -> bool:
-	var node: Node3D = r["node"]
-	var to := goal - node.global_position
-	to.y = 0.0
-	var step := pace * dt
-	if to.length() <= step:
-		(r["army"] as Army).place(r, goal, float(r["yaw"]))
-		r["moved"] = true
-		return true
-	var yaw := lerp_angle(float(r["yaw"]), atan2(to.x, to.z), minf(1.0, dt * 2.0))
-	(r["army"] as Army).place(r, node.global_position + to.normalized() * step, yaw)
-	r["moved"] = true
-	return false
+# --- Arrows in the air ------------------------------------------------------------------------------------
+
+## An arrow loosed from `from` at `to` (world), leaving at `start` (the battle's clock) for `flight` seconds on an arc
+## `arc` high over its length; `on_land` when it comes down. Fire arrows carry a flame (`light`).
+func _loose(from: Vector3, to: Vector3, start: float, flight: float, arc: float, on_land: Callable, light: Node3D = null) -> void:
+	_flights.append([from, to, start, flight, arc, on_land, light])
+
+
+func _arrow_pool() -> MultiMeshInstance3D:
+	var shaft := BoxMesh.new()
+	shaft.size = Vector3(0.006, 0.006, 0.09)
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.3, 0.24, 0.17)
+	m.roughness = 0.9
+	shaft.material = m
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = shaft
+	var mmi := MultiMeshInstance3D.new()
+	mmi.multimesh = mm
+	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mmi)
+	return mmi
+
+
+## Every arrow in the air along its arc, pointing the way it flies (its flame with it); landed, it does what it does.
+func _fly() -> void:
+	var mm := _arrows.multimesh
+	var shown: Array = []
+	for i in range(_flights.size() - 1, -1, -1):
+		var f: Array = _flights[i]
+		var t := (clock - float(f[2])) / float(f[3])
+		if t < 0.0:
+			continue
+		if t >= 1.0:
+			(f[5] as Callable).call()
+			if f[6] != null and is_instance_valid(f[6]):
+				(f[6] as Node3D).queue_free()
+			_flights.remove_at(i)
+			continue
+		var p := _on_arc(f, t)
+		var q := _on_arc(f, minf(t + 0.02, 1.0))
+		shown.append(Transform3D(Basis.looking_at(q - p if (q - p).length() > 0.0001 else Vector3.FORWARD, Vector3.UP), p))
+		if f[6] != null and is_instance_valid(f[6]):
+			(f[6] as Node3D).global_position = p  # the flame rides its arrow (an effect, not a traveller)
+	mm.instance_count = shown.size()
+	for i in shown.size():
+		mm.set_instance_transform(i, shown[i])
+
+
+func _on_arc(f: Array, t: float) -> Vector3:
+	var a: Vector3 = f[0]
+	var b: Vector3 = f[1]
+	var top := a.distance_to(b) * float(f[4])
+	return a.lerp(b, t) + Vector3(0, top * 4.0 * t * (1.0 - t), 0)
+
+
+# --- The storm ---------------------------------------------------------------------------------------------
+
+func _storm_up(assault: Node, camp: Vector3, wall: Vector3, town: Vector3, foe_col: Color, held_col: Color) -> void:
+	ai = assault
+	name = "SiegeStorm"
+	_rng.seed = hash(town)
+	clock = 0.0
+	ground = assault.ground
+	ai.root.add_child(self)
+	_arrows = _arrow_pool()
+	if OS.get_cmdline_user_args().has("--probe"):
+		print("STORM begun: besiegers by %s, the wall at %s, the town at %s" % [str(camp), str(wall), str(town)])
+	var out := Vector3(camp.x - town.x, 0, camp.z - town.z).normalized()
+	var counts: Array = Data.value("siege", "storm_host.men", [800, 300])
+	var face_in := atan2(-out.x, -out.z)  # the soldier faces +Z: toward the town
+	var face_out := atan2(out.x, out.z)
+	var inside: Vector3 = wall - out * k("holders_back", 0.9)
+	for i in 2:
+		var side := {"side": i, "field": camp if i == 0 else inside, "face": face_in if i == 0 else face_out, "ground": ground,
+			"colour": foe_col if i == 0 else held_col, "house": {}, "shape": "line", "quiet": true}
+		var a := Army.new(main, int(counts[i]), side)
+		# Connected before it enters the tree: with the land and the towns already up (a siege always is), its _ready
+		# runs straight through inside add_child and says it's raised before anyone could be listening.
+		a.raised.connect(func():
+			for r in a.rows():
+				_enlist(r, i, "storm_regiment")
+				r["goal"] = (r["node"] as Node3D).global_position
+			_ready_sides += 1
+			if OS.get_cmdline_user_args().has("--probe"):
+				print("STORM side %d raised: %d regiments" % [i, a.rows().size()]))
+		sides.append(a)
+		add_child(a)
+
+
+func _storm_tick(delta: float) -> void:
+	if _ready_sides < 2 or not is_instance_valid(ai):
+		return
+	clock += delta
+	var st: Dictionary = ai.breach()
+	var phase := String(st.get("phase", "")) if not st.is_empty() else "wall"
+	_probe(phase, st, delta)
+	if phase == "wall":
+		_fire_arrows(delta)
+	elif phase == "hold":
+		_fire_arrows(delta)
+		_waves(st, delta)
+		_hold_line(st)
+	else:
+		_pour_in(st)
+	_fly()
+	_keep_up()
+
+
+## A storm regiment's mind (data/army.json minds.storm_regiment): standing it takes its stance, facing its way;
+## marching it goes to its goal at its pace by its Mover, and stands there.
+func _storm_stand(r: Dictionary) -> void:
+	_play(r, String(r.get("stance", "ready" if int(r["side"]) == 0 else "rest")))
+	if r.has("face"):
+		(r["army"] as Army).turn(r, float(r["face"]))
+
+
+func _storm_march(r: Dictionary) -> void:
+	_play(r, "run" if r.get("running", false) else "walk")
+	var mo: Node = Mover.of(r["node"])
+	mo.speed = float(r["pace"])
+	mo.go(r["goal"], func(): _send(r, &"there"))
+
+
+## Sends a storm regiment to `goal` (world), at a run or a walk; there it takes `stance`, facing `face`.
+func _go(r: Dictionary, goal: Vector3, run: bool, stance: String, face: float) -> void:
+	r["goal"] = goal
+	r["pace"] = k("run" if run else "walk", 0.5 if run else 0.22)
+	r["running"] = run
+	r["stance"] = stance
+	r["face"] = face
+	if r.get("state_name", "") == "march":
+		_storm_march(r)  # a new goal on the way
+	else:
+		_send(r, &"march")
+
+
+## The gap open: a besieger regiment sent every wave_s, each queueing into the gap behind the one before; the front
+## one at blows in the gap.
+func _waves(st: Dictionary, dt: float) -> void:
+	_wave_t -= dt
+	var gap: Vector3 = st["gap"]
+	var inward: Vector3 = st["inward"]
+	var across: Vector3 = st["across"]
+	if _wave_t <= 0.0:
+		_wave_t = k("wave_s", 6.0)
+		for r in (sides[0] as Army).rows():
+			if not _queue.has(r):
+				_queue.append(r)
+				break
+	var face := atan2(inward.x, inward.z)
+	for i in _queue.size():
+		var r: Dictionary = _queue[i]
+		var goal := gap - inward * (k("front", 0.1) + i * k("queue", 0.35)) + across * (_rng.randf_range(-0.05, 0.05) if i > 0 else 0.0)
+		if (r["goal"] as Vector3).distance_to(goal) > 0.05:
+			_go(r, goal, true, "attack" if i == 0 else "ready", face)
+
+
+## The holder's regiments meet them on the town side of the gap, their banners wavering more as the fight goes on
+## and the block thins (the assault's holders standing).
+func _hold_line(st: Dictionary) -> void:
+	var gap: Vector3 = st["gap"]
+	var inward: Vector3 = st["inward"]
+	var across: Vector3 = st["across"]
+	var face := atan2(-inward.x, -inward.z)
+	var rows: Array = (sides[1] as Army).rows()
+	var standing := (st["men"] as Array).filter(func(d): return d["alive"]).size()
+	var full := maxf(1.0, (st["men"] as Array).size())
+	for i in rows.size():
+		var r: Dictionary = rows[i]
+		var goal := gap + inward * (k("holders_at", 0.35) + (i / 3) * 0.3) + across * ((i % 3) - 1) * 0.3
+		if (r["goal"] as Vector3).distance_to(goal) > 0.05:
+			_go(r, goal, false, "attack" if i < 3 else "block", face)
+		(sides[1] as Army).waver(r, 1.0 - standing / full)
+
+
+## The gap taken: the holder's regiments break and run into the town, the besiegers pour through and spread out
+## among the houses.
+func _pour_in(st: Dictionary) -> void:
+	if st.is_empty():
+		return
+	var gap: Vector3 = st["gap"]
+	var inward: Vector3 = st["inward"]
+	var town: Vector3 = ai.town_at if ai.town_at != Vector3.INF else gap + inward * 2.0
+	for r in (sides[1] as Army).rows():
+		if not r.get("broke", false):
+			r["broke"] = true
+			(sides[1] as Army).waver(r, 1.0)
+			var away := town + Vector3(_rng.randf_range(-1.0, 1.0), 0, _rng.randf_range(-1.0, 1.0)) * k("spread", 1.2)
+			_go(r, away, true, "rest", float(r["yaw"]))
+	var i := 0
+	for r in (sides[0] as Army).rows():
+		if not r.get("in", false):
+			r["in"] = true
+			var into := gap + inward * (0.6 + 0.4 * (i % 4)) + Vector3(_rng.randf_range(-1.0, 1.0), 0, _rng.randf_range(-1.0, 1.0)) * k("spread", 1.2) * 0.6
+			_go(r, into, true, "ready", atan2(inward.x, inward.z))
+		i += 1
+
+
+## The besiegers' archers loose fire arrows over the wall into the town; now and then a roof catches.
+func _fire_arrows(dt: float) -> void:
+	_arrow_t -= dt
+	var burning := 0
+	for f in _flights:
+		if f[6] != null:
+			burning += 1
+	if _arrow_t > 0.0 or burning >= int(k("arrows.most_flying", 8)):
+		return
+	_arrow_t = k("arrows.every_s", 1.2) * _rng.randf_range(0.6, 1.4)
+	var rows: Array = (sides[0] as Army).rows()
+	if rows.is_empty() or ai.town_at == Vector3.INF:
+		return
+	var from: Vector3 = (rows[_rng.randi() % rows.size()]["node"] as Node3D).global_position + Vector3(0, 0.2, 0)
+	var spread := k("arrows.spread", 1.4)
+	var to: Vector3 = ai.town_at + Vector3(_rng.randf_range(-spread, spread), 0, _rng.randf_range(-spread, spread))
+	to.y = main.terrain.height_at(to.x, to.z) + 0.2
+	var flame := Node3D.new()
+	add_child(flame)
+	flame.global_position = from
+	Fire.hearth(flame, Vector3.ZERO)  # the burning rag on its head: fire.gd's small flames
+	_loose(from, to, clock, from.distance_to(to) / k("arrows.speed", 3.0), 0.3, func():
+		if _rng.randf() < k("arrows.catch", 0.18) and _burning_now() < int(k("arrows.most_burning", 6)):
+			Fire.kindle(to), flame)
+
+
+func _burning_now() -> int:
+	return Fire.live._burning.size() if Fire.live else 0
+
+
+## --probe only: the storm's state as it goes (phase changes, and every 10 s the men in the gap and through it).
+func _probe(phase: String, st: Dictionary, dt: float) -> void:
+	if not OS.get_cmdline_user_args().has("--probe"):
+		return
+	_probe_t -= dt
+	if phase == _said and _probe_t > 0.0:
+		return
+	_probe_t = 10.0
+	_said = phase
+	var gap: Vector3 = st.get("gap", Vector3.ZERO)
+	var inward: Vector3 = st.get("inward", Vector3.ZERO)
+	var through := 0
+	var at_gap := 0
+	for r in (sides[0] as Army).rows():
+		var p: Vector3 = (r["node"] as Node3D).global_position
+		var d := (p - gap).dot(inward) if not st.is_empty() else -9.0
+		if d > 0.2:
+			through += int(r["men"])
+		elif d > -0.6:
+			at_gap += int(r["men"])
+	var defenders := (st.get("men", []) as Array).filter(func(x): return x["alive"]).size()
+	print("STORM t=%.0f phase=%s besiegers_at_gap=%d through=%d gap_defenders=%d regiments_sent=%d" % [clock, phase, at_gap, through, defenders, _queue.size()])

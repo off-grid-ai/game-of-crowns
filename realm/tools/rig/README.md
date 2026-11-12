@@ -53,9 +53,9 @@ Sources: a man copies from `assets/hero/medieval_civilian_3` (Mixamo skeleton; c
   is 7.4 MB).
 - Horse gaits are baked as authored (no in-place pass: its root bone differs from Mixamo's hips).
 
-## The hook into the army (proposed; army_spike.gd is another agent's)
+## The hook into the army (proposed; army.gd is another agent's)
 
-`army_spike.gd` reads one soldier from `ASSET := "res://assets/armies/knight/"`. For units from this
+`army.gd` reads one soldier from `ASSET := "res://assets/armies/knight/"`. For units from this
 pipeline:
 
 1. Bake each into `realm/assets/armies/<unit>/` (same four files, plus `mask.png` and the TRELLIS texture

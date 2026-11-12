@@ -4,7 +4,7 @@
 // house colour with a unit-type glyph (sword, spear, bow, horse, axe, engine; the army's standard a crown or
 // the house's painted arms), a swallowtail for a regiment, and up to five strength pips beneath: filled for
 // the strength it holds, hollow for what it has lost. Selected, it brightens and wears a gold edge (the one
-// accent); wavering, it flashes. The quad's pivot is the pole's foot; army_spike.gd scales it so it keeps its
+// accent); wavering, it flashes. The quad's pivot is the pole's foot; army.gd scales it so it keeps its
 // size on screen from afar. Numbers in data/army.json banner.*.
 shader_type spatial;
 render_mode cull_disabled, diffuse_burley;

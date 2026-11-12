@@ -89,7 +89,7 @@ varying flat float man_roll;  // this man's own draw, 0..1: his variation from h
 // the house cloth with a darker trim band at its hem and collar (bands of the rest pose's height); feet grounded
 // by a darkening toward the ground; each man a little off his fellows in value and tint.
 uniform bool look_painted = false;
-uniform float mesh_height = 2.45;  // the soldier's rest-pose height, in his own units (army_spike.gd sets it)
+uniform float mesh_height = 2.45;  // the soldier's rest-pose height, in his own units (army.gd sets it)
 uniform float steel_sat = 0.14;  // saturation below which a texel is steel
 uniform float steel_metal = 0.65;
 uniform float steel_rough = 0.38;

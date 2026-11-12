@@ -1,7 +1,9 @@
 extends Node3D
 const PerfTools := preload("res://scripts/perf_tools.gd")  # the frame-cost probe
-## Armies, settlers and wild beasts: one small figure per unit, coloured by house,
-## gliding between tiles as Freeciv moves them.
+## Armies, settlers and wild beasts on the map: one small figure per unit, coloured by house, marching between
+## tiles as Freeciv moves them. Every march goes through the figure's Mover (mover.gd, CLAUDE.md's one way to
+## move): the route the realm's navigation gives (town_nav.gd: a town's streets, the roads, the land), smoothed,
+## followed at a soldier's pace across the season. The army layer's map presence (docs/research/army-layer-2026-11-12.md).
 
 var terrain: Node3D
 var towns: Node3D  # towns.gd: inside a town's reach, soldiers keep to its streets
@@ -37,6 +39,7 @@ var _beast := BoxMesh.new()
 var _mats := {}
 var _people = preload("res://scripts/people.gd").new()
 const Scenes = preload("res://scripts/scenes.gd")
+const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const Horse = preload("res://scripts/horse.gd")
 
 const MOUNTED := ["Horsemen", "Chariot", "Elephants", "Crusaders", "Knights", "Dragoons", "Cavalry"]
@@ -129,17 +132,27 @@ func sync(world: Dictionary, houses: Dictionary) -> void:
 					Scenes.arm(node, "bow" if kind in BOWS else ("spear" if kind in SPEARS or kind in MOUNTED else "sword"))
 			node.position = target
 			add_child(node)
+			var mo: Node = Mover.of(node)
+			if wild:
+				mo.clip = ""
+				mo.speed = 0.3
+				mo.ground = func(p: Vector3) -> float: return terrain.height_at(p.x, p.z) + 0.14  # the beast's block stands on the ground
+				node.position.y += 0.14
+			elif node.has_method("mount"):
+				mo.clip = ""  # the horse's gait follows how it is moved
+			else:
+				mo.stride = true  # the stride matches the ground covered
+			mo.keep = _keep.bind(_figures, id)
 			if not wild and slot == 0:
 				# Carried by the rider when the company is mounted.
 				_banner(node.rider if node.get("rider") else node, Color.from_string(String(house.get("color", "#888")), Color.GRAY), house)
-			_figures[id] = {"node": node, "target": target, "wild": wild, "from": target, "t": 1.0, "bow": String(u["type"]) in BOWS, "horse": node.has_method("mount")}
+			_figures[id] = {"node": node, "target": target, "wild": wild, "bow": String(u["type"]) in BOWS, "horse": node.has_method("mount")}
 		if _figures[id]["target"].distance_to(target) > 0.01:
 			var moved: Vector3 = target - _figures[id]["node"].position
 			if slot == 0 and Vector2(moved.x, moved.z).length() > 0.3:
 				_heading[key] = atan2(moved.x, moved.z)
-			_figures[id]["from"] = _figures[id]["node"].position
-			_figures[id]["path"] = _nav.route(towns, _figures[id]["node"].position, target)
-			_figures[id]["t"] = 0.0
+			_figures[id]["target"] = target
+			_march(_figures[id])
 		_figures[id]["target"] = target
 		# How the company stands, from Freeciv's own word on it (the save's hp and orders).
 		_figures[id]["hurt"] = u.get("hp") != null and float(u["hp"]) <= WOUNDED_HP
@@ -178,13 +191,11 @@ func _settle() -> void:
 			continue
 		var body := 0.17 if f.get("horse", false) else 0.0
 		var n: Node3D = f["node"]
-		if not _nav.clear(towns, n.position, body):
-			n.position = _nav.stand(towns, n.position, body)
 		if not _nav.clear(towns, f["target"], body):
 			f["target"] = _nav.stand(towns, f["target"], body)
-			f["from"] = n.position
-			f["path"] = _nav.route(towns, n.position, f["target"])
-			f["t"] = 0.0
+			_march(f)
+		elif not Mover.of(n).moving() and not _nav.clear(towns, n.position, body):
+			Mover.of(n).shift(_nav.stand(towns, n.position, body), 0.6)  # a step out of a building that went up round him
 
 
 ## Where a marcher through a town stands clear of its buildings. The town's walk
@@ -201,6 +212,36 @@ func _stood(f: Dictionary, at: Vector3) -> Vector3:
 		return q
 	var by: Vector3 = f["stood_by"]
 	return Vector3(at.x + by.x, terrain.height_at(at.x + by.x, at.z + by.z), at.z + by.z)
+
+
+## A company marches to its new place: the navigation's route, smoothed as a road is, followed by its Mover across
+## the whole turn (armies are always visibly on the move), never faster than a soldier's steady march (a sprint
+## reads as fleeing). A beast goes the same way, at its own pace.
+func _march(f: Dictionary) -> void:
+	var n: Node3D = f["node"]
+	var mo: Node = Mover.of(n)
+	if f["wild"]:
+		mo.go(f["target"])
+		return
+	mo.route_to(f["target"], func(way: PackedVector3Array):
+		if way[0].distance_to(n.position) > 0.01:
+			way.insert(0, n.position)
+		var road: Curve3D = terrain.smooth_road(way)
+		var length := road.get_baked_length()
+		if length < 0.01:
+			return  # already there: he stands
+		road.bake_interval = 0.05
+		mo.speed = minf(length / maxf(2.0, Awareness.season_seconds * 0.9), MARCH_SPEED)
+		mo.clip = "" if f.get("horse", false) else ("Injured_Walk" if f.get("hurt", false) else "Walk")
+		mo.follow(road.get_baked_points()))
+
+
+## Through a town with no walk map the way is a straight line: a marcher keeps off its buildings as he goes.
+func _keep(at: Vector3, figures: Dictionary, id: int) -> Vector3:
+	var f: Dictionary = figures.get(id, {})
+	if f.is_empty() or f["wild"] or TownNav.towns_at(towns, at).is_empty():
+		return at
+	return _stood(f, at)
 
 
 ## A company's standard: the house's banner on a pole.
@@ -230,38 +271,10 @@ func _process_timed(delta: float) -> void:
 	for id in _figures:
 		var f: Dictionary = _figures[id]
 		var n: Node3D = f["node"]
-		var t: Vector3 = f["target"]
 		if f["wild"]:
-			n.position = n.position.lerp(t + Vector3(0, 0.14, 0), clampf(delta * 1.5, 0.0, 1.0))
 			continue
-		# March across the whole turn, so armies are always visibly on the move.
-		if f["t"] < 1.0:
-			var path: PackedVector3Array = f.get("path", PackedVector3Array([f["from"], t]))
-			# The road as a smooth curve (made once per march), walked by distance,
-			# and the figure turns into each bend rather than snapping to it.
-			if not f.has("road") or f.get("road_of") != path:
-				f["road"] = terrain.smooth_road(path)
-				f["road_of"] = path
-			var road: Curve3D = f["road"]
-			var length := road.get_baked_length()
-			# A steady march: across the season if the road is short, never faster
-			# than a soldier's pace if it is long (a sprint reads as fleeing).
-			var speed := minf(length / maxf(2.0, Awareness.season_seconds * 0.9), MARCH_SPEED)
-			f["t"] = minf(1.0, f["t"] + (delta * speed / length if length > 0.01 else 1.0))
-			f["pace"] = speed
-			# A march with nowhere to go (already there) stands: no curve to walk.
-			var p: Vector3 = path[path.size() - 1] if length < 0.01 else road.sample_baked(f["t"] * length)
-			var dir: Vector3 = Vector3.ZERO if length < 0.01 else road.sample_baked(minf(length, f["t"] * length + 0.25)) - p
-			if Vector2(dir.x, dir.z).length() > 0.01:
-				n.rotation.y = lerp_angle(n.rotation.y, atan2(dir.x, dir.z), clampf(delta * 4.0, 0.0, 1.0))
-			n.position = Vector3(p.x, terrain.height_at(p.x, p.z), p.z)
-			# Through a town with no walk map the way is a straight line: keep
-			# off its buildings as it goes.
-			if not TownNav.towns_at(towns, p).is_empty():
-				n.position = _stood(f, n.position)
-			if not f.get("horse", false):
-				f["playing"] = ""  # marching: the stance is told afresh when he stops
-				_people.play(n, "Injured_Walk" if f.get("hurt", false) else "Walk", clampf(float(f.get("pace", MARCH_SPEED)) / _people.WALK_PACE, 0.6, 1.5))  # the stride matches the ground covered
+		if Mover.of(n).moving():
+			f["playing"] = ""  # marching: the stance is told afresh when he stops
 		elif f.get("horse", false):
 			pass  # the horse stands; its gait follows how it is moved
 		else:

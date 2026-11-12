@@ -168,7 +168,7 @@ func fallow_near(p: Vector2, r: float) -> Array:
 
 
 ## Whether a farm holds the ground at `p` (within `r`): a farmstead's yard (its house, barn, stacks, orchard)
-## or a hedged field, with its hedge. What a host mustering in the open keeps off (army_spike.gd).
+## or a hedged field, with its hedge. What a host mustering in the open keeps off (army.gd).
 func occupied(p: Vector3, r := 0.0) -> bool:
 	var q := Vector2(p.x, p.z)
 	var cx := floori(p.x / CHUNK)

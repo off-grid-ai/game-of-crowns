@@ -197,7 +197,7 @@ func strike(at: Vector3, along: Vector3) -> void:
 
 
 ## The breaches open now within `reach` (world units) of `at`, nearest first: each gap's middle on the
-## ground (world). The siege's men stream to them (siege_ai.gd).
+## ground (world). The siege's men stream to them (army_assault.gd).
 func breaches_near(at: Vector3, reach: float) -> Array:
 	var out := []
 	for w in _walls():
@@ -212,7 +212,7 @@ func breaches_near(at: Vector3, reach: float) -> Array:
 
 
 ## The top of any wall's rubble under a world point (world y), or -INF: the ramp
-## a breach leaves, which men storming it climb (siege_ai.gd).
+## a breach leaves, which men storming it climb (army_assault.gd).
 func rubble_height(at: Vector3) -> float:
 	var top := -INF
 	for w in _walls():

@@ -945,7 +945,7 @@ func foot() -> Array:
 
 
 ## The top of the rubble under a world point (world y), or -INF where none lies:
-## men storming a breach climb its ramp (siege_ai.gd). A height grid of the
+## men storming a breach climb its ramp (army_assault.gd). A height grid of the
 ## fallen stones in half-metre cells, rebuilt at most twice a second.
 func rubble_height(world: Vector3) -> float:
 	var now := Time.get_ticks_msec()

@@ -267,7 +267,7 @@ func blocking(eye: Vector3, at: Vector3) -> int:
 
 
 ## How many trees stand within `radius` of `center` on the ground plane: the
-## open ground a host or a camp needs (army_spike.gd keeps its regiments off them).
+## open ground a host or a camp needs (army.gd keeps its regiments off them).
 func trees_near(center: Vector3, radius: float) -> int:
 	var n := 0
 	for cx in range(floori((center.x - radius) / SIGHT_CELL), floori((center.x + radius) / SIGHT_CELL) + 1):
