@@ -263,48 +263,49 @@ func _count(v: Variant, k: Dictionary) -> int:
 	return int(floor(_val(v, k)))
 
 
-## Where a role stands: a town's place or one town_life's props set down. An anchor is {at (town-local), dir
-## (the way it faces), side, r, points: [{at, dir}] for each of many (stalls, seats, carts, gardens)}.
+## Where a role stands: one its dressing set down, or a town_scenes.json `anchors` row (a town's place, a working
+## building's front, or the square's heart, out along the way it faces). An anchor is {at (town-local), dir (the
+## way it faces), side, r, points: [{at, dir}] for each of many (stalls, seats, carts, gardens)}.
 func _anchor(name: String, k: Dictionary, anchors: Dictionary) -> Dictionary:
 	if anchors.has(name):
 		return anchors[name]
 	var root: Node3D = k["root"]
 	var row: Dictionary = k["row"]
-	var places: Dictionary = root.get_meta("places", {})
-	var well: Vector3 = places.get("well", Vector3(0.4, 0, 0.4))
 	var r := float(root.get_meta("square_r", 1.0))
-	match name:
-		"heart":
-			return {"at": Vector3.ZERO, "dir": SEEN, "r": r}
-		"market":
-			return {"at": places["market"], "dir": SEEN, "r": 0.5} if places.has("market") else {}
-		"well":
-			return {"at": well, "dir": SEEN, "r": r}
-		"seen":
-			return {"at": Vector3.ZERO, "dir": SEEN, "r": r}
-		"sept":
-			return {"at": places["sept"], "dir": SEEN} if places.has("sept") else {}
-		"crier":
-			return {"at": well + SEEN * Data.num("works", "crier.from_well", 0.35), "dir": SEEN}
-		"muster", "kin":
-			# On the seen half, turned off the crier's line so the two crowds stand apart.
-			var toward := Basis(Vector3.UP, 1.0) * SEEN
-			return {"at": well + toward * float(row.get("from_well", 0.45)), "dir": toward}
-		"forge":
-			var wk: Dictionary = root.get_meta("works", {})
-			if not wk.has("forge"):
-				return {}
-			var ff := Basis(Vector3.UP, float(wk["forge"].get("yaw", 0.0))) * Vector3(0, 0, 1)
-			return {"at": (wk["forge"]["at"] as Vector3) + ff * float(row.get("forge_out", 0.55)), "dir": ff}
+	var d: Dictionary = (_d.get("anchors", {}) as Dictionary).get(name, {})
+	if d.is_empty():
+		return {}
+	match String(d.get("by", "")):  # the two worked out from the town's shape, not a place
 		"castle":
 			return _castle(root, r, row)
-		"beat":
-			return {"at": Vector3.ZERO, "dir": SEEN, "r": r}
 		"stops":
 			return _stops(k)
-		"streets":
-			return {"at": Vector3.ZERO, "dir": SEEN, "r": r}
-	return {}
+	var dir: Vector3 = Basis(Vector3.UP, float(d.get("turn", 0.0))) * SEEN
+	var at := Vector3.ZERO
+	var from := String(d.get("at", "heart"))
+	if from.begins_with("place:"):
+		var places: Dictionary = root.get_meta("places", {})
+		var key := from.substr(6)
+		if places.has(key):
+			at = places[key]
+		elif d.has("or"):
+			at = Vector3(float(d["or"][0]), float(d["or"][1]), float(d["or"][2]))
+		else:
+			return {}
+	elif from.begins_with("works:"):
+		var wk: Dictionary = root.get_meta("works", {})
+		var key := from.substr(6)
+		if not wk.has(key):
+			return {}
+		at = wk[key]["at"]
+		dir = Basis(Vector3.UP, float(wk[key].get("yaw", 0.0))) * Vector3(0, 0, 1)  # out of its front
+	var out: Variant = d.get("out", 0.0)
+	if out is Dictionary:
+		out = float(row.get(String(out["row"]), out["or"])) if (out as Dictionary).has("row") else Data.num(String(out["data"][0]), String(out["data"][1]), float(out["data"][2]))
+	var got := {"at": at + dir * float(out), "dir": dir}
+	if d.has("r"):
+		got["r"] = r if d["r"] is String else float(d["r"])  # "square": the square's own radius
+	return got
 
 
 ## Along the castle's side that faces the square, a little out from it (only when the castle stands near).

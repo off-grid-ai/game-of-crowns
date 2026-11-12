@@ -17,7 +17,8 @@ extends SceneTree
 ##   who is who and where (who_at, who_is, who_is_home, fire_of) is village_registry.gd's;
 ## - dressings registered by row (integration audit #15): no `dress_*` method found by its name (town_life.gd keeps
 ##   none, town_scenes.gd calls none); every standing row's dress has a town_scenes.json `dressings` row whose
-##   class extends town_dress.gd.
+##   class extends town_dress.gd; the anchors are rows (town_scenes.json `anchors`), each giving where the old
+##   code's chain put it (a made-up town: places, a forge, a radius).
 ##   arch -arm64 godot --headless --path realm --script res://tools/square_probe.gd
 
 const Mind := preload("res://scripts/npc_mind.gd")
@@ -54,6 +55,7 @@ func _init() -> void:
 	_one_path()
 	_split()
 	_dressings()
+	_anchors()
 	print("SQUARE %s (%d fails)" % ["PASS" if fails == 0 else "FAIL", fails])
 	quit(1 if fails > 0 else 0)
 
@@ -324,3 +326,40 @@ func _dressings() -> void:
 			if not ok or c != base:
 				_fail("dressing '%s' (%s) is no class of town_dress.gd" % [dress, reg[dress]])
 	print("SQUARE dressings: %d registered" % reg.size())
+
+
+# --- anchors as rows (integration audit #15) ------------------------------------------------------
+
+func _anchors() -> void:
+	if FileAccess.get_file_as_string(TS_PATH).contains("\t\t\"crier\":"):
+		_fail("town_scenes.gd still names its anchors in a match chain")
+	var TS: GDScript = load(TS_PATH)
+	var ts = TS.new(null)
+	var town := Node3D.new()
+	town.set_meta("square_r", 1.3)
+	town.set_meta("places", {"well": Vector3(0.2, 0, -0.1), "market": Vector3(-0.5, 0, 0.3), "sept": Vector3(0.9, 0, 0.6)})
+	town.set_meta("works", {"forge": {"at": Vector3(0.6, 0, -0.7), "yaw": 0.5}})
+	var row := {"from_well": 0.5, "forge_out": 0.4}
+	var k := {"root": town, "row": row}
+	var seen: Vector3 = TS.SEEN
+	var well := Vector3(0.2, 0, -0.1)
+	var toward := Basis(Vector3.UP, 1.0) * seen
+	var ff := Basis(Vector3.UP, 0.5) * Vector3(0, 0, 1)
+	var want := {
+		"heart": {"at": Vector3.ZERO, "dir": seen, "r": 1.3}, "seen": {"at": Vector3.ZERO, "dir": seen, "r": 1.3},
+		"beat": {"at": Vector3.ZERO, "dir": seen, "r": 1.3}, "streets": {"at": Vector3.ZERO, "dir": seen, "r": 1.3},
+		"market": {"at": Vector3(-0.5, 0, 0.3), "dir": seen, "r": 0.5}, "well": {"at": well, "dir": seen, "r": 1.3},
+		"sept": {"at": Vector3(0.9, 0, 0.6), "dir": seen},
+		"crier": {"at": well + seen * Data.num("works", "crier.from_well", 0.35), "dir": seen},
+		"muster": {"at": well + toward * 0.5, "dir": toward}, "kin": {"at": well + toward * 0.5, "dir": toward},
+		"forge": {"at": Vector3(0.6, 0, -0.7) + ff * 0.4, "dir": ff},
+	}
+	for name in want:
+		var got: Dictionary = ts._anchor(name, k, {})
+		var w: Dictionary = want[name]
+		var same: bool = got.size() == w.size() and w.keys().all(func(key): return got.has(key) and (got[key].is_equal_approx(w[key]) if got[key] is Vector3 else is_equal_approx(float(got[key]), float(w[key]))))
+		if not same:
+			_fail("anchor '%s' is %s, the old chain gave %s" % [name, got, w])
+	town.free()
+	ts.free()
+	print("SQUARE anchors: %d checked against the old chain" % want.size())
