@@ -605,6 +605,32 @@ func _build_sea() -> void:
 	follow.snap_unit = ocean.max_unit_size  # the coarsest ring's grid, so no ring shifts against the waves
 	ocean.add_child(follow)
 	follow.target_path = follow.get_path_to(ocean)
+	_build_sea_floor()
+
+
+## A floor under the open sea past the realm's land (look.json sea.floor; batch 9 goldrock-30: a pale square over
+## the sea). The water is see-through and reads what lies under it: inside the realm Terrain3D's deep floor (-3.2),
+## past its edge nothing, so the sky's own colour showed through the water as a pale panel with a straight edge.
+## One large dark plane just under the deepest floor gives the open sea the same deep water everywhere.
+func _build_sea_floor() -> void:
+	var f: Variant = preload("res://scripts/data.gd").value("look", "sea.floor", {})
+	if not (f is Dictionary) or not bool((f as Dictionary).get("on", true)):
+		return
+	var c: Array = (f as Dictionary).get("color", [0.04, 0.11, 0.14])
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(float(c[0]), float(c[1]), float(c[2]))
+	mat.roughness = 1.0
+	mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	var plane := PlaneMesh.new()
+	var reach := float((f as Dictionary).get("reach", 4000.0))
+	plane.size = Vector2(reach, reach)
+	var mi := MeshInstance3D.new()
+	mi.name = "SeaFloor"
+	mi.mesh = plane
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.position = Vector3(width * TILE / 2, float((f as Dictionary).get("depth", -3.3)), height * TILE / 2)
+	add_child(mi)
 
 
 ## The realm's atlas laid over the sea as over the land (land3d._drape_atlas):

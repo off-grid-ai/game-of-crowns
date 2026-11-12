@@ -21,12 +21,45 @@ var _fill_energy := 0.0
 static func _read_look() -> Dictionary:
 	var f := FileAccess.open("res://data/look.json", FileAccess.READ)
 	var v = JSON.parse_string(f.get_as_text()) if f else null
-	return v if v is Dictionary else {}
+	var look: Dictionary = v if v is Dictionary else {}
+	# The v3 look (look.json v3; docs/review/look-gap.md): its values laid over the one look's, key by key.
+	if _v3_on(look):
+		look = _overlay(look, look.get("v3", {}))
+	return look
+
+
+## The v3 look (art target 01-town: crisp sun, strong contact shadows, clear air, the fitted grade): --look=v3,
+## or look.json v3.on; --look=one (or --look=today) keeps the one look as it was, for the before shot.
+static func _v3_on(look: Dictionary) -> bool:
+	var args := OS.get_cmdline_user_args()
+	if args.has("--look=v3"):
+		return true
+	var v: Variant = look.get("v3", {})
+	return v is Dictionary and bool((v as Dictionary).get("on", false)) and not args.has("--look=one") and not args.has("--look=today")
+
+
+static func v3() -> bool:
+	return _v3_on(LOOK)
+
+
+## a with b's keys laid over it (dictionaries merged key by key; "_" notes and, at the top, v3's own switch left out).
+static func _overlay(a: Dictionary, b: Variant, top := true) -> Dictionary:
+	var out := a.duplicate(true)
+	if not (b is Dictionary):
+		return out
+	for k in b:
+		if k == "_" or (top and k == "on"):
+			continue
+		if out.get(k) is Dictionary and b[k] is Dictionary:
+			out[k] = _overlay(out[k], b[k], false)
+		else:
+			out[k] = b[k]
+	return out
 
 
 static func one() -> bool:
 	var args := OS.get_cmdline_user_args()
-	return args.has("--look=one") or (bool(LOOK.get("on", false)) and not args.has("--look=today"))
+	return args.has("--look=one") or args.has("--look=v3") or (bool(LOOK.get("on", false)) and not args.has("--look=today")) or v3()
 
 
 static func _rgb(key: String, fallback: Color) -> Color:
@@ -58,7 +91,7 @@ func _ready() -> void:
 	if look_one:
 		# The one look: no brown LUT; a warm key against a cool shade, and a gentle S-curve after AgX.
 		var lut := String(LOOK.get("lut", ""))
-		env.adjustment_color_correction = load(lut) if lut != "" and ResourceLoader.exists(lut) else null
+		env.adjustment_color_correction = _lut(lut)
 		env.adjustment_saturation = float(_clarity("saturation", LOOK.get("saturation", 1.1)))
 		env.adjustment_contrast = float(_clarity("contrast", LOOK.get("contrast", 1.12)))
 		sky3d.sky.sun_light_color = _rgb_of(_clarity("sun_color", null), _rgb("sun_color", Color(1.0, 0.86, 0.68)))
@@ -107,6 +140,7 @@ func _ready() -> void:
 		var il: Dictionary = LOOK.get("ssil", {})
 		env.ssil_radius = float(il.get("radius", 4.0))
 		env.ssil_intensity = float(il.get("intensity", 1.0))
+		env.ssao_light_affect = float(ao.get("light_affect", 0.15))  # v3: contact shadows show in the sun too, not only the shade
 		env.fog_density = float((LOOK.get("haze", {}) as Dictionary).get("fog", 0.0016))
 		env.fog_light_color = _rgb_of(_clarity("haze_color", null), _rgb("haze_color", Color(0.96, 0.86, 0.7)))
 	env.volumetric_fog_anisotropy = 0.55
@@ -118,6 +152,28 @@ func _ready() -> void:
 	if _attrs == null:
 		_attrs = CameraAttributesPractical.new()
 		sky3d.camera_attributes = _attrs
+
+
+## A colour grade (a 33-slice LUT strip, golden-hour.png's layout) as a 3D texture: the imported one, or, before
+## Godot has imported a new strip (the v3 grade is made offline by tools/fit_look_lut.py), built from the PNG itself.
+static func _lut(path: String) -> Texture3D:
+	if path == "":
+		return null
+	if ResourceLoader.exists(path):
+		var t = load(path)
+		if t is Texture3D:
+			return t
+	var img := Image.load_from_file(ProjectSettings.globalize_path(path))
+	if img == null or img.is_empty() or img.get_width() != img.get_height() * img.get_height():
+		return null
+	var n := img.get_height()
+	img.convert(Image.FORMAT_RGB8)
+	var slices: Array[Image] = []
+	for k in n:
+		slices.append(img.get_region(Rect2i(k * n, 0, n, n)))
+	var tex := ImageTexture3D.new()
+	tex.create(Image.FORMAT_RGB8, n, n, n, false, slices)
+	return tex
 
 
 ## The morning hour when the sun stands SUN_HEIGHT above the horizon: the
