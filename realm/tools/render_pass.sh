@@ -134,9 +134,12 @@ echo "|---|---|---|---|" >> $OUT/side/INDEX.md
 
 if want town; then
   { print "wait 30"; print "home Kingsmere"; print "wait 6"; print "home Kingsmere"; print "wait 3"; print "snap hero"; print "snap hero_ui ui"
-    print "hold cam_turn_left 0.6"; print "wait 2"; print "snap left"; print "look end"; } > $OUT/town.play
-  shot town 1500 film $SW
-  side town $OUT/frames/town/hero.png $TARGETS/01-town.jpg "READY 1, art step 6"
+    print "hold cam_turn_left 0.6"; print "wait 2"; print "snap left"; print "home Kingsmere"; print "wait 4"
+    print "squarelife Kingsmere 60"; print "look end"; } > $OUT/town.play
+  shot town 2100 film $SW
+  # The square's life against 01-town's (towns.json square.targets): the crowd measured on the square the film builds
+  # (a headless run builds Kingsmere a 163 m2 square, the film's 1154 m2: only the pass can measure it).
+  side town $OUT/frames/town/hero.png $TARGETS/01-town.jpg "READY 1, art step 6; $(grep -h 'CHECK square life' $OUT/frames/town/play.log 2>/dev/null | sed 's/.*open setts: //' | cut -c1-160)"
 fi
 if want landuse; then
   { print "wait 30"; print "home Kingsmere 0 4"; print "wait 6"; print "home Kingsmere 0 4"; print "wait 3"; print "snap land"; print "look end"; } > $OUT/landuse.play
