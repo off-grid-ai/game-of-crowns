@@ -1,13 +1,12 @@
 extends SceneTree
 ## Measures the ground pace each walking clip implies (Mixamo clips are In
 ## Place): while a foot is planted (within 5 cm of its lowest), how fast it moves
-## back under the hips, in the person's own space. That speed, in world units at
-## an adult's size, is the pace at which the foot would stay put on the ground:
-## motion.gd's STRIDE table.
+## back under the hips, in the person's own space: the pace at which the foot
+## would stay put on the ground. The game measures it per body itself
+## (people.gd strides_of); this prints it per clip, and the planted band's floor.
 ##   arch -arm64 godot --headless --path realm -s res://tools/stride_probe.gd
 
 const People := preload("res://scripts/people.gd")
-const Motion := preload("res://scripts/motion.gd")
 const CLIPS := ["Walk", "Running", "Sprint", "Sneak", "Injured_Walk", "Carrying", "Wheelbarrow", "SS_Walk", "GS_Walk", "Axe_Walk"]
 const DT := 1.0 / 120.0
 
@@ -92,5 +91,5 @@ func _run() -> void:
 		print("IDEAL %-14s a perfect walk reads %d%% of %d planted frames sliding (2 cm band)" % [clip, int(100.0 * slid60 / maxf(1, planted60)), planted60])
 		speeds.sort()
 		var med: float = speeds[speeds.size() / 2] if not speeds.is_empty() else 0.0
-		print("STRIDE %-14s %.2f s, %d planted samples: foot %.3f clip units/s -> %.3f a second at an adult's size" % [clip, a.length, speeds.size(), med, med * Motion.ADULT])
+		print("STRIDE %-14s %.2f s, %d planted samples: foot %.3f clip units/s -> %.3f world units a second at this person's size" % [clip, a.length, speeds.size(), med, med * s])
 	quit()

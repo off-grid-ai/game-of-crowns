@@ -369,6 +369,70 @@ func _stand_up(body: String, skeleton: Skeleton3D) -> void:
 	skeleton.position += skeleton.transform.basis * Vector3(0, float(_body_lift[body]), 0)
 
 
+## A body's own stride (Unity Mecanim's humanoid scale, measured rather than assumed): for each way of going
+## (Motion WALKS and RUNS), how fast a planted foot travels back under the hips over the clip, in this skeleton's
+## own units a second at speed 1 (Mixamo moves are In Place), once per body. motion.gd sizes it by the skeleton in
+## the world, so a child's short legs step quicker than a man's over the same ground and nobody's feet slide
+## (tools/child_stride_probe.gd: the old single table, measured on one kit body, left every cast body skating).
+static var _strides := {}
+func strides_of(body: String, skeleton: Skeleton3D) -> Dictionary:
+	if not _strides.has(body):
+		var d := {}
+		for c in Motion.WALKS + Motion.RUNS:
+			if _lib.has_animation(String(c)):
+				d[c] = _stride(skeleton, _lib.get_animation(String(c)))
+		_strides[body] = d
+	return _strides[body]
+
+
+## The median speed of a planted foot (within 2 cm of its lowest, on a 0.95 m
+## hip) across the ground over one pass of a clip, skeleton units a second.
+## Posed by hand down the leg chain, as _sole_drop.
+static func _stride(sk: Skeleton3D, a: Animation) -> float:
+	var hips := sk.find_bone("Hips")
+	var bones := LEGS.map(func(n): return sk.find_bone(n))
+	var feet := [sk.find_bone("LeftFoot"), sk.find_bone("RightFoot")]
+	var ms := maxf(sk.motion_scale, 0.001)
+	var where := func(bone: int, pose: Dictionary) -> Vector3:
+		var xf := Transform3D.IDENTITY
+		var b := bone
+		while b >= 0:
+			xf = (pose[b] if pose.has(b) else sk.get_bone_rest(b)) * xf
+			b = sk.get_bone_parent(b)
+		return xf.origin
+	var path := "%GeneralSkeleton:"
+	var pt := a.find_track(NodePath(path + "Hips"), Animation.TYPE_POSITION_3D)
+	var rt := LEGS.map(func(n): return a.find_track(NodePath(path + n), Animation.TYPE_ROTATION_3D))
+	var dt := 1.0 / 60.0
+	var at := [[], []]
+	for i in maxi(2, int(a.length / dt)) + 1:
+		var t := minf(i * dt, a.length)
+		var pose := {}
+		for j in bones.size():
+			if bones[j] < 0:
+				continue
+			var r: Transform3D = sk.get_bone_rest(bones[j])
+			var q: Quaternion = a.rotation_track_interpolate(rt[j], t) if rt[j] >= 0 else r.basis.get_rotation_quaternion()
+			var o: Vector3 = a.position_track_interpolate(pt, t) * ms if bones[j] == hips and pt >= 0 else r.origin
+			pose[bones[j]] = Transform3D(Basis(q), o)
+		for k in 2:
+			if feet[k] >= 0:
+				at[k].append(where.call(feet[k], pose))
+	var band := 0.02 * (where.call(hips, {}) as Vector3).y / 0.95
+	var speeds := []
+	for k in 2:
+		var lo := INF
+		for v in at[k]:
+			lo = minf(lo, (v as Vector3).y)
+		for i in range(1, at[k].size()):
+			var v: Vector3 = at[k][i]
+			var u: Vector3 = at[k][i - 1]
+			if v.y < lo + band and u.y < lo + band:
+				speeds.append(Vector2(v.x - u.x, v.z - u.z).length() / dt)
+	speeds.sort()
+	return float(speeds[speeds.size() / 2]) if not speeds.is_empty() else 0.0
+
+
 ## A body's own knees and seat, in the moves played down low (Motion.LOW and
 ## feet.lowAlso): the clips are planted on the reference's legs, and a body with
 ## longer shins or a deeper seat still sank on a knee (tools/feet_check.gd:
@@ -895,6 +959,7 @@ func _finish(person: Node3D, skeleton: Skeleton3D, rng: RandomNumberGenerator, r
 	var mo: AnimationTree = Motion.new()
 	person.add_child(mo)
 	mo.setup(anim, stance)
+	mo.strides = strides_of(String(person.get_meta("body", "")), skeleton)  # this body's own stride (tools/child_stride_probe.gd)
 	preload("res://scripts/anim_lod.gd").add(mo)  # moved by distance, not every frame regardless
 	# Past arm's length of the camera a person is a speck: they fade out and stop
 	# costing draws, so a crowd only costs what's near.

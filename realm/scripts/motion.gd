@@ -67,18 +67,17 @@ const ARMS := ["LeftShoulder", "LeftUpperArm", "LeftLowerArm", "LeftHand", "Righ
 ## pace read in the person's own size, slow steps at a slow cadence, and the body
 ## turning at a person's rate instead of snapping.
 static var v2: bool = not OS.get_cmdline_user_args().has("--motion=v1")  # on by default since the go-live gate (2026-11-11); --motion=v1 for the old one
-const ADULT := 0.118  # an adult's body scale (people.gd: height * k * S, measured): the size WALK_PACE was set for
-## v2: the ground each way of going covers a second at speed 1, at an adult's
-## size, measured from the clips themselves (Mixamo moves are In Place: how fast
-## a planted foot travels back under the hips; realm/tools/stride_probe.gd). The
-## legs' walk and run points sit at their clip's own pace, so a foot on the
-## ground stays put at any pace between them.
-static var READ: float = preload("res://scripts/data.gd").num("people", "readable", 1.0)  # people drawn larger (people.json readable): their stride with them
-const STRIDE := {"Walk": 0.218, "Running": 0.661, "Sprint": 0.500, "Sneak": 0.229, "Injured_Walk": 0.061,
-	"SS_Walk": 0.164, "GS_Walk": 0.121, "Axe_Walk": 0.114}
+## v2: each way of going's stride on this body's own legs (people.gd strides_of: how fast a planted foot travels
+## back under the hips, in skeleton units a second at speed 1; Mixamo moves are In Place), measured once per body
+## when it is made, as Unity's humanoid avatar carries its own scale. A child's short legs, a woman's, a slimmed
+## cast body each cover their own ground, so a foot on the ground stays put at any pace (tools/child_stride_probe.gd).
+var strides := {}
+var _sk: Node3D = null  # the body's skeleton, whose size in the world sizes the stride
+var _sk_scale := 0.0  # that size along its walk when the legs' points were last set
 const TURN_RATE := deg_to_rad(300.0)  # how fast a person turns on the spot or mid-stride (about a full turn in 1.2 s)
 const TURN_EASE := 6.0  # how quickly a turn settles (per second): a small one eases, a big one hits TURN_RATE
 const STEP_FLOOR := 0.35  # the slowest cadence a moving walk plays at, of its own speed
+const STEP_CEIL := 1.35  # the quickest: past it the walk breaks into the run (a child keeping a grown pace walks briskly, it doesn't half-run)
 
 var speed := 1.0  # how fast the current move plays (anim_lod.gd advances by delta * speed)
 var _clip := ""  # the move now playing
@@ -127,7 +126,7 @@ func setup(player: AnimationPlayer, stance: String) -> void:
 	# beyond; the blend between them follows the ground covered.
 	_feet = AnimationNodeBlendSpace1D.new()
 	_feet.min_space = 0.0
-	_feet.max_space = (STRIDE["Running"] if v2 else RUN_PACE) * 1.2
+	_feet.max_space = RUN_PACE * 1.2  # v2: _refit sets it to this body's own run
 	if v2:
 		# Walk and run kept in step: their cycles time-scaled to one (Godot 4.7).
 		_feet.sync_mode = AnimationNodeBlendSpace1D.SYNC_MODE_CYCLIC_MUTABLE
@@ -311,7 +310,7 @@ func track(delta: float) -> void:
 	if _last != Vector3.INF and not _mounted():
 		var flat := Vector2(at.x - _last.x, at.z - _last.z).length() / delta
 		if v2:
-			flat *= ADULT / maxf(0.01, body.global_transform.basis.get_scale().x)  # a child's short legs step quicker over the same ground (size in the world: a holder may be scaled)
+			_refit(body)
 			now_pace = flat
 		# v2 eases quicker: a walk starting is in the legs within a few frames, not a third of a second.
 		_pace = lerpf(_pace, flat, minf(1.0, delta * (20.0 if v2 else 8.0)))
@@ -324,7 +323,7 @@ func track(delta: float) -> void:
 	# v2: once moving, below walking pace the walk plays whole at a slower cadence
 	# (never half stance, half walk at full cadence: short quick sliding steps).
 	var walk := _leg_pace("walk")
-	var slow := v2 and _pace > walk * 0.12 and _pace < walk
+	var slow := v2 and _pace > walk * 0.12 and _pace < walk * STEP_CEIL
 	set(_at + "rest/feet/blend_position", walk if slow else _pace)
 	var now := _now()
 	var going := _pace > MOVING or now_pace > MOVING
@@ -354,6 +353,8 @@ func track(delta: float) -> void:
 		speed = maxf(1.0, _pace / _leg_pace("run"))
 		if slow:
 			speed = maxf(STEP_FLOOR, _pace / walk)
+		elif v2 and _pace > walk and _pace < _leg_pace("run"):
+			speed = _pace / _between(_pace)
 	# What's in hand goes with the move (weapons.gd CLIP_TOOLS): a bowl while
 	# drinking, a basket while carrying, nothing once the move is over.
 	sync_held()
@@ -494,7 +495,7 @@ func add_moves(lib_name: String, lib: AnimationLibrary) -> void:
 func _assign(n: AnimationNodeAnimation, clip: String, loop: int, phase: float) -> void:
 	n.animation = clip
 	if v2 and _feet and (n == _legs.get("walk") or n == _legs.get("run")):
-		# The legs' point for this way of going moves to its own pace (STRIDE).
+		# The legs' point for this way of going moves to its own pace (its stride on these legs).
 		_feet.set_blend_point_position(1 if n == _legs["walk"] else 2, _leg_pace("walk" if n == _legs["walk"] else "run"))
 	if not has_animation(clip):
 		return
@@ -508,12 +509,44 @@ func _assign(n: AnimationNodeAnimation, clip: String, loop: int, phase: float) -
 	n.start_offset = clampf(phase, 0.0, 1.0) * a.length * 0.999
 
 
-## The pace the legs' walk or run plays at speed 1: its clip's own (STRIDE) in
-## v2, the old guesses otherwise.
+## The pace the legs' walk or run plays at speed 1, in world units a second: in
+## v2 its clip's stride on this body's legs (strides) at the skeleton's size in
+## the world, the old guesses otherwise.
 func _leg_pace(leg: String) -> float:
 	if not v2:
 		return WALK_PACE if leg == "walk" else RUN_PACE
-	return float(STRIDE.get(String(_legs[leg].animation), STRIDE["Walk"] if leg == "walk" else STRIDE["Running"])) * READ
+	return float(strides.get(String(_legs[leg].animation), strides.get("Walk" if leg == "walk" else "Running", 0.0))) * _sk_scale
+
+
+## v2: the ground the legs cover a second at speed 1 part way from the walk to
+## the run. The blend keeps the two in step (SYNC_MODE_CYCLIC_MUTABLE): one
+## cycle as long as the blend of theirs, each step as long as the blend of
+## theirs; so its pace is the blended step over the blended cycle, not the
+## blended pace (played at the blended pace, a child keeping a grown pace slid).
+func _between(pace: float) -> float:
+	var pw := _leg_pace("walk")
+	var pr := _leg_pace("run")
+	var lw := get_animation(String(_legs["walk"].animation)).length if has_animation(String(_legs["walk"].animation)) else 1.0
+	var lr := get_animation(String(_legs["run"].animation)).length if has_animation(String(_legs["run"].animation)) else 1.0
+	var f := clampf((pace - pw) / maxf(pr - pw, 0.0001), 0.0, 1.0)
+	return maxf(lerpf(pw * lw, pr * lr, f) / lerpf(lw, lr, f), 0.0001)
+
+
+## v2: the legs' walk and run points at this body's own stride in the world,
+## set again whenever the skeleton's size there changes (made, grown, carried
+## by a scaled holder).
+func _refit(body: Node3D) -> void:
+	if _sk == null:
+		_sk = body.find_child("GeneralSkeleton", true, false) as Node3D
+		if _sk == null:
+			return
+	var sc := _sk.global_transform.basis.z.length()
+	if is_equal_approx(sc, _sk_scale):
+		return
+	_sk_scale = sc
+	_feet.max_space = maxf(_leg_pace("run"), _leg_pace("walk")) * 1.2
+	_feet.set_blend_point_position(1, _leg_pace("walk"))
+	_feet.set_blend_point_position(2, _leg_pace("run"))
 
 
 ## v2: a gesture (a nod, a wave, a bow of the head) over whatever the legs are
