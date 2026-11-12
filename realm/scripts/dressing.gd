@@ -51,11 +51,6 @@ static func dress(root: Node3D, ground: Callable, land: Callable, seed: int) -> 
 		placed[model].append(Transform3D(Basis(Vector3.UP, turn).scaled(Vector3.ONE * k), Vector3(at.x, y, at.z)))
 		taken.append(Vector2(at.x, at.z))
 		counts[why] = int(counts[why]) + 1
-		# Ground nobody walks through (a crate, a barrel, a bush), on the town's walk map like its buildings.
-		var soft: Array = Data.value("dressing", "underfoot", [])
-		if not soft.any(func(w): return model.get_slice("/", 1).begins_with(String(w))):
-			var r := 0.035 * scale
-			root.set_meta("footprints", root.get_meta("footprints", []) + [PackedVector2Array([Vector2(at.x - r, at.z - r), Vector2(at.x + r, at.z - r), Vector2(at.x + r, at.z + r), Vector2(at.x - r, at.z + r)])])
 		return true
 	# Each trade's gear at its door.
 	var trades: Dictionary = Data.value("dressing", "trades", {})

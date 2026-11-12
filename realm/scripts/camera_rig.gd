@@ -13,6 +13,7 @@ signal overview  # drawn back past OVERVIEW: the painted map takes over from her
 ## Past this the land can't be read (towns are smudges), so zooming out hands
 ## over to the realm's painted map (main._overview) instead of going higher.
 const OVERVIEW := 60.0
+const NavGround := preload("res://scripts/nav_ground.gd")  # what a town's life has set down
 
 var terrain: Node3D
 var target := Vector3.ZERO
@@ -693,9 +694,9 @@ func _lens_bodies() -> void:
 		var fps: Array = root.get_meta("footprints", [])
 		var walls: Array = root.get_meta("walls", [])
 		var tops: Array = root.get_meta("tops", [])
-		# The town's street things (stalls, carts, barrels, the fire's ring: town_life.gd's Life).
-		var life: Node = root.get_node_or_null("Life")
-		var props: Array = life.get_meta("footprints", []) if life else []
+		# The town's street things (stalls, carts, barrels, the fire's ring: town_life.gd's Life), read off what its
+		# life has set down (nav_ground.gd, the outlines its walk map is cut from).
+		var props: Array = NavGround.outlines(root, terrain)["life"]
 		var count := fps.size() + walls.size() + props.size()
 		if float(o[0]) > arm or count > budget:
 			_drop_bodies(id)

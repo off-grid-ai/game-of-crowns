@@ -203,7 +203,7 @@ class Step extends BTAction:
 		return true
 
 	## Whether `at` (world) is inside something standing in a town: a building,
-	## or its life's fire, stall, cart or table (town_nav footprints). A scene's
+	## or its life's fire, stall, cart or table (read off what stands there, nav_ground.gd). A scene's
 	## person finds the town as the Life they stand in; a villager through villagers.gd.
 	static func in_the_way(agent: Node, bb: Blackboard, at: Vector3) -> bool:
 		var life := agent.get_parent()

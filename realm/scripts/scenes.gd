@@ -1751,15 +1751,21 @@ func _feast(at: Vector3, house: Dictionary) -> void:
 	var life: Node3D = town_root.get_node_or_null("Life") if town_root else null
 	var lit: bool = life != null and not life.get_meta("fires", []).is_empty()
 	var keep := TownLife.fire_reach()
-	var added := {"fires": [], "footprints": [], "standing": PackedVector2Array()}
+	var added := {"fires": [], "standing": PackedVector2Array()}
 	var local := func(p: Vector3) -> Vector2:
 		return Vector2(p.x - town_root.global_position.x, p.z - town_root.global_position.z) if town_root else Vector2(p.x, p.z)
+	# What the feast sets down on the ground (its fire pit, its casks) stands on the town's Life, so it is in the
+	# town's way like any stall (nav_ground.gd reads it off); placed in world space, gone with the feast.
+	var stands := Node3D.new()
+	stands.name = "FeastStands"
+	stands.top_level = true
+	(life if life else root).add_child(stands)
 	if not lit:
 		var fire: Node3D = Realistic.make(Realistic.one("fire_pit"))
 		if fire:
 			fire.position = centre
 			fire.scale = Vector3.ONE * TownLife.RING_SCALE  # the same stones as a town's own feast, and the same reach
-			root.add_child(fire)
+			stands.add_child(fire)
 		# A roasting fire: seen by day as its smoke, a thin grey column.
 		# Thin and see-through, and drifting off on the air, so it never hides the
 		# dancers round the fire.
@@ -1769,16 +1775,13 @@ func _feast(at: Vector3, house: Dictionary) -> void:
 		root.add_child(Particles.to_gpu(flame))
 		var mid: Vector2 = local.call(centre)
 		added["fires"].append([mid, keep])
-		added["footprints"].append(TownLife._rect(Vector3(mid.x, 0, mid.y), Vector2(keep, keep) * 2.0, 0.0))
 	for i in 3:
 		var cask: Node3D = Realistic.make(Realistic.one("cask"))
 		if cask:
 			var a := TAU * (0.1 + i * 0.07)
 			cask.position = ground(at + Vector3(cos(a), 0, sin(a)) * 0.95)
 			cask.rotation.y = r.randf() * TAU
-			root.add_child(cask)
-			var cp: Vector2 = local.call(cask.position)
-			added["footprints"].append(TownLife._rect(Vector3(cp.x, 0, cp.y), Vector2(0.1, 0.1), 0.0))  # a cask is in the way too
+			stands.add_child(cask)
 	var col := Color.from_string(String(house.get("color", "#b08a4a")), Color(0.7, 0.55, 0.3))
 	if not house.is_empty():
 		_standard(root, at + Vector3(0.0, 0, -0.9), col, Vector3(0, 0, 1), house)
@@ -1818,6 +1821,8 @@ func _feast(at: Vector3, house: Dictionary) -> void:
 		for k in added:
 			life.set_meta(k, life.get_meta(k, [] if k != "standing" else PackedVector2Array()) + added[k])
 		root.tree_exiting.connect(func():
+			if is_instance_valid(stands):
+				stands.queue_free()
 			if not is_instance_valid(life):
 				return
 			for k in added:

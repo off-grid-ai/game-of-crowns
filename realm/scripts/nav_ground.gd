@@ -28,7 +28,13 @@ static func outlines(root: Node3D, terrain: Node3D = null) -> Dictionary:
 	var K: Dictionary = Data.value("towns", "nav", {})
 	var out := {"town": [], "life": []}
 	var to_town := root.global_transform.affine_inverse()
-	_walk(root, root, life, to_town, terrain, K, out)
+	# The town's own pieces are read again only when they change (built, rebuilt, a wall breached); the life's,
+	# small, whenever it sets something down or takes it away.
+	if not kept.is_empty() and kept[0][0] == sig[0] and kept[0][2] == sig[2] and is_instance_valid(life):
+		out["town"] = kept[1]["town"]
+		_walk(life, root, life, to_town, terrain, K, out)
+	else:
+		_walk(root, root, life, to_town, terrain, K, out)
 	_cache[root.get_instance_id()] = [sig, out]
 	return out
 
@@ -36,13 +42,15 @@ static func outlines(root: Node3D, terrain: Node3D = null) -> Dictionary:
 ## What the town's layout is made of, cheaply: its own pieces and its life's that stand still (people, animals and
 ## rolling carts come and go without changing it). It changes when a building, a stall or a site is added or taken
 ## away, or a stone wall is breached: town_nav bakes afresh then.
-static var _layout := {}  # town root instance id -> [frame, layout]: read at most once a frame
+static var _layout := {}  # town root instance id -> [frame, layout, child counts]: read at most once a frame unless something was set down
 static func layout(root: Node3D) -> Array:
 	var now := Engine.get_process_frames()
-	var kept: Array = _layout.get(root.get_instance_id(), [])
-	if not kept.is_empty() and int(kept[0]) == now:
-		return kept[1]
 	var life: Node3D = root.get_node_or_null("Life")
+	# A piece set down this very frame (a stall, then the keeper placed beside it) is in the way at once.
+	var counts := [root.get_child_count(), life.get_child_count() if life else -1]
+	var kept: Array = _layout.get(root.get_instance_id(), [])
+	if not kept.is_empty() and int(kept[0]) == now and kept[2] == counts:
+		return kept[1]
 	var still := 0
 	if life:
 		for c in life.get_children():
@@ -52,7 +60,7 @@ static func layout(root: Node3D) -> Array:
 				continue  # an animal, a horse
 			still += 1
 	var out := [root.get_child_count(), still, int(root.get_meta("stone_walls_rev", 0))]
-	_layout[root.get_instance_id()] = [now, out]
+	_layout[root.get_instance_id()] = [now, out, counts]
 	return out
 
 

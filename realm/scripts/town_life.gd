@@ -104,9 +104,6 @@ func update(root: Node3D, c: Dictionary, house: Dictionary) -> void:
 	life = Node3D.new()
 	life.name = "Life"
 	life.set_meta("sig", sig)
-	# What stands in people's way, town-local like the town's own footprints:
-	# the building site and each group (town_nav.gd walks villagers round them).
-	life.set_meta("footprints", [])
 	life.set_meta("standing", PackedVector2Array())
 	root.add_child(life)
 	var center := root.position
@@ -183,10 +180,14 @@ const SEEN := Vector3(-0.5736, 0, -0.8192)
 static var CLEAR: float = 0.05 * preload("res://scripts/data.gd").num("people", "readable", 1.0)  # how far a person keeps off a wall or a fence
 
 
-## Everything that stands in the town, town-local: its buildings, walls, fences
-## and stalls (towns.gd) and whatever the life here has put up.
+## Everything that stands in the town, town-local: read off what is set down there (nav_ground.gd: its buildings,
+## walls, fences, stalls, carts, tables, the life's props), the outlines its walk map is cut from, and each fire's
+## ring and the step of heat past it (the life's "fires").
 func _blocked(root: Node3D, life: Node3D) -> Array:
-	return root.get_meta("footprints", []) + life.get_meta("footprints", [])
+	var out: Array = NavGround.all(root, terrain)
+	for f in life.get_meta("fires", []):
+		out.append(_rect(Vector3(f[0].x, 0, f[0].y), Vector2(f[1], f[1]) * 2.0, 0.0))
+	return out
 
 
 ## True when a person can stand at `p` (town-local): on land, clear of every
@@ -456,9 +457,6 @@ func _drill(root: Node3D, life: Node3D, center: Vector3, progress: float, color:
 				_drill_routine(s, bow, hash(unit) + i)
 			taken.append(Vector2(p.x, p.z))
 		life.set_meta("standing", taken)
-		# The rank is one block to walk round, not a lane to thread.
-		var mid := -face * dist
-		life.set_meta("footprints", life.get_meta("footprints") + [_rect(mid, Vector2(count * 0.45 + 0.1, 0.36), atan2(face.x, face.z))])
 		break
 	life.set_meta("doing", doing_line("UnitType", unit, progress))
 
@@ -510,12 +508,11 @@ func _crowd(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberGenera
 			tipped.rotation = Vector3(0, atan2(side.x, side.z), PI * 0.5)  # over on its side
 			tipped.set_meta("dress", "overturned cart")
 			life.add_child(tipped)
-			life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(tip_at, Real.footprint(Real.one("cart")), atan2(side.x, side.z))])
 		elif tipped:
 			tipped.free()
 		for k in 4:
 			var spill := dir * rng.randf_range(0.5, 0.8) + side * rng.randf_range(-0.2, 0.2)
-			var thing := _prop(life, center, ["Crate_Wooden", "Barrel", "FarmCrate_Empty", "FarmCrate_Apple"][k], spill, rng.randf() * TAU, 1.0, 0.0, 0.07)
+			var thing := _prop(life, center, ["Crate_Wooden", "Barrel", "FarmCrate_Empty", "FarmCrate_Apple"][k], spill, rng.randf() * TAU, 1.0, 0.0)
 			if thing:
 				thing.rotation.x = PI * 0.5 if k == 1 else rng.randf_range(-0.6, 0.6)  # the cask on its side, the crates askew
 				thing.set_meta("dress", "wreckage")
@@ -608,9 +605,8 @@ func _bonfire(life: Node3D, center: Vector3) -> void:
 		ring.scale = Vector3.ONE * RING_SCALE
 		life.add_child(ring)
 	# Nobody stands in the fire: the ring as wide as it really stands, and a
-	# step of heat past its stones, is ground nobody claims, steps on or walks.
+	# step of heat past its stones, is ground nobody claims (_blocked reads "fires").
 	var keep := fire_reach()
-	life.set_meta("footprints", life.get_meta("footprints") + [_rect(_fire_at, Vector2(keep, keep) * 2.0, 0.0)])
 	life.set_meta("fires", [[Vector2(_fire_at.x, _fire_at.z), keep]])
 	var light := OmniLight3D.new()
 	light.light_color = Color(1.0, 0.6, 0.3)
@@ -825,9 +821,9 @@ func _market_day(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberG
 		smithy = (wk["forge"]["at"] as Vector3).length() < square_r * 1.8
 	if not smithy and bool(k.get("smith", true)) and preload("res://scripts/weapons.gd").can_play("Hammer_Swing"):
 		var at := side * square_r * 0.72
-		var anvil := _prop(life, center, "Anvil", at, atan2(-side.x, -side.z), 1.0, 0.0, 0.1)
+		var anvil := _prop(life, center, "Anvil", at, atan2(-side.x, -side.z), 1.0, 0.0)
 		if anvil:
-			_prop(life, center, "Bucket_Metal", at + Vector3(-side.z, 0, side.x) * 0.12, 0.0, 1.0, 0.0, 0.05)
+			_prop(life, center, "Bucket_Metal", at + Vector3(-side.z, 0, side.x) * 0.12, 0.0, 1.0, 0.0)
 			var smith := _stand(root, life, center, at - side * 0.12, "townsfolk", "Hammer_Swing", rng.randi(), Color.WHITE, 0.2, "smith")
 			if smith:
 				smith.rotation.y = atan2(side.x, side.z)  # facing his anvil, his back to the houses
@@ -841,12 +837,11 @@ func _market_day(root: Node3D, life: Node3D, center: Vector3, rng: RandomNumberG
 			cart.position = Vector3(cp.x, _y(center, cp), cp.z)
 			cart.rotation.y = atan2(toward.x, toward.z)
 			life.add_child(cart)
-			life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(cp, Vector2(0.4, 0.3), cart.rotation.y)])
 		else:
-			cart = _prop(life, center, "Stall_Cart_Empty", cp, atan2(toward.x, toward.z), 1.0, 0.0, 0.18)
+			cart = _prop(life, center, "Stall_Cart_Empty", cp, atan2(toward.x, toward.z), 1.0, 0.0)
 		if cart:
 			for g in 2:
-				_prop(life, center, ["FarmCrate_Apple", "Barrel_Apples", "FarmCrate_Carrot"][(i + g) % 3], cp + toward * (0.05 - 0.1 * g), rng.randf() * TAU, 1.0, 0.0, 0.05)
+				_prop(life, center, ["FarmCrate_Apple", "Barrel_Apples", "FarmCrate_Carrot"][(i + g) % 3], cp + toward * (0.05 - 0.1 * g), rng.randf() * TAU, 1.0, 0.0)
 			var carter := _stand(root, life, center, cp + side * 0.16, "peasant", "Idle_Talking", rng.randi(), Color.WHITE, 0.2)
 			if carter:
 				carter.rotation.y = atan2(-side.x, -side.z)
@@ -940,9 +935,6 @@ func _site(root: Node3D, life: Node3D, center: Vector3, base: Vector3, ang: floa
 	var site: Node3D = Real.make(kit)
 	if site == null:
 		return null
-	# The site, its scaffold and its timber stand in the way: walk round them.
-	life.set_meta("footprints", life.get_meta("footprints", []) + [plot, _rect(base + Vector3(f.x * 0.55 + 0.2, 0, 0).rotated(Vector3.UP, ang), Vector2(0.42, 0.36), ang),
-		_rect(base + Vector3(f.x * 0.55 + 0.25, 0, f.y * 0.55 + 0.35).rotated(Vector3.UP, ang), Vector2(0.4, 0.3), ang + 0.4)])
 	_grow(site, grow)
 	site.name = "Site"
 	site.position = base
@@ -1001,7 +993,6 @@ func raise_site(town_node: Node3D, plot: Transform3D, building: String, seasons:
 	if life == null:
 		life = Node3D.new()
 		life.name = "Life"
-		life.set_meta("footprints", [])
 		life.set_meta("standing", PackedVector2Array())
 		town_node.add_child(life)
 	var kit := site_kit(building)
@@ -1063,7 +1054,7 @@ static func _furn_scale() -> float:
 	return float(D.num("people", "readable", 1.0))
 
 
-func _prop(life: Node3D, center: Vector3, name: String, at: Vector3, yaw := 0.0, scale := 1.0, lift := 0.0, size := 0.0) -> Node3D:
+func _prop(life: Node3D, center: Vector3, name: String, at: Vector3, yaw := 0.0, scale := 1.0, lift := 0.0) -> Node3D:
 	if not _prop_cache.has(name):
 		_prop_cache[name] = load(PROPS % name) if ResourceLoader.exists(PROPS % name) else null
 	var scene: PackedScene = _prop_cache[name]
@@ -1072,14 +1063,10 @@ func _prop(life: Node3D, center: Vector3, name: String, at: Vector3, yaw := 0.0,
 	var n: Node3D = scene.instantiate()
 	if name in FURN_NAMES:
 		scale *= FURN
-		size *= FURN
 	n.scale = Vector3.ONE * PROP_SCALE * scale
 	n.position = Vector3(at.x, _y(center, at) + lift, at.z)
 	n.rotation.y = yaw
 	life.add_child(n)
-	# Something to walk round (a table, a stand, a crate), as every group in the square is.
-	if size > 0.0:
-		life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(at, Vector2(size, size * 0.6), yaw)])
 	return n
 
 
@@ -1098,7 +1085,7 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 		var out := Vector3(m.x, 0, m.z).normalized()
 		var along := Vector3(-out.z, 0, out.x)
 		for i in goods.size():
-			_prop(life, center, goods[i], m - out * (float(st[1]) * 0.5 + 0.06) + along * ((i - (goods.size() - 1) * 0.5) * 0.07), atan2(out.x, out.z), 1.0, 0.0, 0.06)
+			_prop(life, center, goods[i], m - out * (float(st[1]) * 0.5 + 0.06) + along * ((i - (goods.size() - 1) * 0.5) * 0.07), atan2(out.x, out.z), 1.0, 0.0)
 	# Where the eye lands: inside the square, between its heart and the far side
 	# from the well (the judge: dressing at the edge is dressing nobody sees),
 	# on the half of the square a camera coming down into the town looks across.
@@ -1115,13 +1102,12 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 			cart.rotation.y = atan2(side.x, side.z) + 0.35  # slewed across the way, not parked
 			cart.set_meta("dress", "barricade")
 			life.add_child(cart)
-			life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(cart_at, Real.footprint(Real.one("cart")), atan2(side.x, side.z) + 0.35)])
 		elif cart:
 			cart.free()  # no room on that road: no cart across it
 		# Crates and casks heaped against it: a barricade, not a cart parked.
 		for k in 4:
 			var heap := edge * (1.2 + (0.06 if k % 2 else -0.06)) + side * (0.24 + k * 0.07) * (1.0 if k < 2 else -1.0)
-			_prop(life, center, ["Crate_Wooden", "Barrel", "FarmCrate_Empty", "Crate_Wooden"][k], heap, rng.randf() * TAU, 1.0, 0.0, 0.07)
+			_prop(life, center, ["Crate_Wooden", "Barrel", "FarmCrate_Empty", "Crate_Wooden"][k], heap, rng.randf() * TAU, 1.0, 0.0)
 		# The lord's standard planted either side of the way, high over the heads: seen from any street.
 		var col := Color.from_string(String(house.get("color", "#8a2a1e")), Color(0.55, 0.16, 0.12))
 		for k in [-1.0, 1.0]:
@@ -1131,8 +1117,7 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 			flag.rotation.y = atan2(-edge.x, -edge.z)
 			flag.set_meta("dress", "standard")
 			life.add_child(flag)
-			life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(at, Vector2(0.05, 0.05), 0.0)])
-		_prop(life, center, "WeaponStand", edge * 1.05 + side * 0.2, atan2(-edge.x, -edge.z), 1.0, 0.0, 0.1)
+		_prop(life, center, "WeaponStand", edge * 1.05 + side * 0.2, atan2(-edge.x, -edge.z), 1.0, 0.0)
 		_prop(life, center, "Shield_Wooden", edge * 1.05 - side * 0.2, atan2(-edge.x, -edge.z))
 		for i in 3:
 			var g := _stand(root, life, center, edge * 0.95 + side * (i - 1) * 0.22, "soldier", "Sword_Idle", rng.randi(), Color.WHITE, 0.2)
@@ -1157,7 +1142,7 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 	if c.get("prosperity", false):
 		# One more stall in good times, by the well, heaped with produce.
 		var extra := _off_centre(root, well + side * 0.38, float(Data.num("moods", "centre.stall", 0.2)))  # the canopy clear of a fountain's rim
-		var stall := _prop(life, center, "Stall_Empty", extra, atan2(-extra.x, -extra.z), 1.0, 0.0, 0.16)
+		var stall := _prop(life, center, "Stall_Empty", extra, atan2(-extra.x, -extra.z), 1.0, 0.0)
 		if stall:
 			for i in 3:
 				_prop(life, center, ["FarmCrate_Apple", "FarmCrate_Carrot", "Barrel_Apples"][i], extra + Vector3(-extra.z, 0, extra.x).normalized() * (i - 1) * 0.06 - extra.normalized() * 0.08, atan2(-extra.x, -extra.z))
@@ -1168,11 +1153,11 @@ func _dress(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, rng: Ran
 	if c.get("grasping", false):
 		# The tax collector's table in the square, coin and ledger on it, a guard by him, a queue muttering.
 		var at := edge * 0.6
-		_prop(life, center, "Table_Large", at, atan2(side.x, side.z), 1.0, 0.0, 0.16)
+		_prop(life, center, "Table_Large", at, atan2(side.x, side.z), 1.0, 0.0)
 		var TABLE_TOP := 0.098 * FURN  # the table's height (0.815 m at PROP_SCALE, drawn at the people's size): coin and ledger lie on it
 		_prop(life, center, "Coin_Pile", at + side * 0.04, 0.0, 1.0, TABLE_TOP)
 		_prop(life, center, "Scroll_1", at - side * 0.04, 0.0, 1.0, TABLE_TOP)
-		_prop(life, center, "Chest_Wood", at + edge.normalized() * 0.2, atan2(side.x, side.z), 1.0, 0.0, 0.07)
+		_prop(life, center, "Chest_Wood", at + edge.normalized() * 0.2, atan2(side.x, side.z), 1.0, 0.0)
 		var collector := _stand(root, life, center, at + edge.normalized() * 0.13, "townsfolk", "PickUp_Table", rng.randi(), Color(0.45, 0.4, 0.3), 0.1)
 		if collector:
 			collector.rotation.y = atan2(-edge.x, -edge.z)
@@ -1194,6 +1179,7 @@ const Works := preload("res://scripts/works.gd")
 const Dressing := preload("res://scripts/dressing.gd")
 const Horse := preload("res://scripts/horse.gd")
 const Data := preload("res://scripts/data.gd")
+const NavGround := preload("res://scripts/nav_ground.gd")  # what stands in the town, read off what is set down
 const NEWS := ["feast", "levy", "war", "hunger", "low", "relief", "justice", "grant", "build"]  # states the crier cries in the square (the last four: a court ruling, the herald's news)
 
 
@@ -1283,9 +1269,9 @@ func _forge(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: Wo
 	var anvil: Vector3 = sp.get("anvil", b["at"] + _front(b) * 0.25)
 	var hearth: Vector3 = sp.get("hearth", b["at"])
 	if b["dress"]:
-		_prop(life, center, "Anvil", anvil, float(b["yaw"]), 1.0, 0.0, 0.1)
+		_prop(life, center, "Anvil", anvil, float(b["yaw"]), 1.0, 0.0)
 		if sp.has("trough"):
-			_prop(life, center, "Bucket_Metal", sp["trough"], 0.0, 1.0, 0.0, 0.05)
+			_prop(life, center, "Bucket_Metal", sp["trough"], 0.0, 1.0, 0.0)
 	# The smith at the anvil, the second at the bellows by the hearth (batch 9: both stood out by the door, the
 	# building's own footprint keeping them off its yard): they work inside it.
 	var bellows: Vector3 = sp.get("bellows", sp.get("second", hearth + _front(b) * 0.1))
@@ -1357,7 +1343,7 @@ func _armoury(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: 
 	var sp: Dictionary = b["spots"]
 	var rack: Vector3 = sp.get("rack", b["at"] + _front(b) * 0.25)
 	if b["dress"]:
-		_prop(life, center, "WeaponStand", rack, float(b["yaw"]), 1.0, 0.0, 0.1)
+		_prop(life, center, "WeaponStand", rack, float(b["yaw"]), 1.0, 0.0)
 	# The arms on the rack: the apprentice's deliveries, the levy's takings (works.gd stock).
 	tick.stacks.append({"what": "rack", "at": rack + _front(b) * 0.06, "yaw": float(b["yaw"]), "prop": "Sword_Bronze", "nodes": [], "gap": 0.05, "lift": 0.0})
 	_line(root, life, center, sp.get("queue", rack + _front(b) * 0.2), _front(b), levy, "peasant", "Weight_Shift", "levy", rng)
@@ -1554,7 +1540,7 @@ func _inn(root: Node3D, life: Node3D, center: Vector3, b: Dictionary, tick: Work
 			continue
 		var at: Vector3 = sp[key]
 		if b["dress"]:
-			_prop(life, center, "Bench", at, yaw, 1.0, 0.0, 0.0)
+			_prop(life, center, "Bench", at, yaw, 1.0, 0.0)
 		seats += [at - along * 0.04 * FURN, at + along * 0.04 * FURN]
 	var taken: PackedVector2Array = life.get_meta("standing")
 	# In war or a levy the crown's men take the benches first (works.json counts.inn_soldiers).
@@ -1799,7 +1785,6 @@ func _bunting(root: Node3D, life: Node3D, center: Vector3, well: Vector3, b: Dic
 		var y := _y(center, at)
 		m.position = Vector3(at.x, y + h * 0.5, at.z)
 		life.add_child(m)
-		life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(at, Vector2(0.03, 0.03), 0.0)])
 		return Vector3(at.x, y + h, at.z)
 	var hub: Vector3 = pole.call(hub_at, top)
 	var st := SurfaceTool.new()
@@ -1972,7 +1957,6 @@ func _justice(root: Node3D, life: Node3D, center: Vector3, j: Dictionary, rng: R
 		g.rotation.y = atan2(toward.x, toward.z)
 		g.set_meta("dress", "gallows")
 		life.add_child(g)
-		life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(at, Real.footprint(Real.one("gallows")), atan2(toward.x, toward.z))])
 	var side := Vector3(-toward.z, 0, toward.x)
 	for i in int(j.get("guards", 2)):
 		var w := _stand(root, life, center, at - toward * 0.12 + side * (0.18 if i % 2 else -0.18), "soldier", "Sword_Idle", rng.randi(), Color.WHITE, 0.15)
@@ -2004,7 +1988,6 @@ func _grant(root: Node3D, life: Node3D, center: Vector3, c: Dictionary, house: D
 		flag.rotation.y = atan2(-at.x, -at.z)
 		flag.set_meta("dress", "grant_banner")
 		life.add_child(flag)
-		life.set_meta("footprints", life.get_meta("footprints", []) + [_rect(at, Vector2(0.05, 0.05), 0.0)])
 	_construction(root, life, center, String(g.get("site", "Palace")), float(g.get("progress", 0.15)), rng, int(c.get("size", 1)))
 
 
@@ -2675,7 +2658,7 @@ func _dole(root: Node3D, life: Node3D, center: Vector3, d: Dictionary, rng: Rand
 		return
 	var out := Vector3(at.x, 0, at.z).normalized() if Vector2(at.x, at.z).length() > 0.05 else SEEN
 	var yaw := atan2(out.x, out.z) + PI / 2
-	_prop(life, center, "Table_Large", at, yaw, 1.0, 0.0, 0.16)
+	_prop(life, center, "Table_Large", at, yaw, 1.0, 0.0)
 	_prop(life, center, "Bag", at + Vector3(-out.z, 0, out.x) * 0.05, rng.randf() * TAU, 1.0, 0.09)
 	_prop(life, center, "Bag", at - out * 0.12 + Vector3(-out.z, 0, out.x) * 0.1, rng.randf() * TAU)
 	var doler := _stand(root, life, center, at - out * 0.12, "townsfolk", "PickUp_Table", rng.randi(), Color(0.45, 0.4, 0.3), 0.1)
@@ -2694,7 +2677,7 @@ func _dole(root: Node3D, life: Node3D, center: Vector3, d: Dictionary, rng: Rand
 func _long_table(life: Node3D, center: Vector3, at: Vector3, out: Vector3, seats: int, n: int, rng: RandomNumberGenerator, role := "") -> Array:
 	var along := Vector3(-out.z, 0, out.x)
 	var yaw := atan2(along.x, along.z)
-	if _prop(life, center, "Table_Large", at, yaw, 1.0, 0.0, 0.18) == null:
+	if _prop(life, center, "Table_Large", at, yaw, 1.0, 0.0) == null:
 		return []
 	var TOP := 0.098 * FURN  # the table's height (0.815 m at PROP_SCALE, drawn at the people's size)
 	var ware := ["Mug", "Table_Plate", "Chalice", "Mug", "Pot_1", "Table_Plate", "Mug"]
@@ -2704,7 +2687,7 @@ func _long_table(life: Node3D, center: Vector3, at: Vector3, out: Vector3, seats
 	var sat: Array = []
 	for sgn in [-1.0, 1.0]:
 		var bench: Vector3 = at + out * sgn * 0.1 * FURN  # clear of the table's edge at its drawn size
-		_prop(life, center, "Bench", bench, yaw, 1.0, 0.0, 0.0)
+		_prop(life, center, "Bench", bench, yaw, 1.0, 0.0)
 		for i in seats:
 			var seat: Vector3 = bench + along * (i - (seats - 1) * 0.5) * 0.08 * FURN
 			var who := role if role != "" else ("townsfolk" if rng.randf() < 0.6 else "peasant")

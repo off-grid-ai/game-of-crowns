@@ -83,11 +83,14 @@ func _initialize() -> void:
 	life.name = "Life"
 	life.position.y = land.height_at(c.x + 2.0, c.y + 0.4)  # standing on the street's ground, as the game's do
 	town.add_child(life)
-	var props: Array = []
 	for i in 5:
 		var x := c.x + 0.8 + i * 1.1  # under the lens's path down the street (it stands ~0.4 behind its aim)
-		props.append(PackedVector2Array([Vector2(x - 0.2, c.y + 0.25), Vector2(x + 0.2, c.y + 0.25), Vector2(x + 0.2, c.y + 0.55), Vector2(x - 0.2, c.y + 0.55)]))
-	life.set_meta("footprints", props)
+		var stall := MeshInstance3D.new()
+		var box := BoxMesh.new()
+		box.size = Vector3(0.4, 0.3, 0.3)
+		stall.mesh = box
+		life.add_child(stall)
+		stall.global_position = Vector3(x, land.height_at(x, c.y + 0.4) + 0.15, c.y + 0.4)
 	rig = Rig.new()
 	rig.terrain = land
 	rig.towns = towns
