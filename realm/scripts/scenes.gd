@@ -40,10 +40,6 @@ var _timber: StandardMaterial3D
 
 
 func _ready() -> void:
-	# Where people may stand and the ways they walk (town_nav.gd), for every Mover from the first frame: the realm's
-	# land and roads as main hands them over, not on the first scene that stands someone.
-	nav.terrain = terrain
-	nav.roads = get_parent().get("roads")
 	var builder = preload("res://scripts/house_builder.gd").new()
 	wagon_mesh = builder.piece_mesh("Prop_Wagon")
 
@@ -96,10 +92,7 @@ func sync(houses: Dictionary) -> void:
 ## A rider on the road from one town to another, given back so what rides with
 ## him (a house's envoy plate, scheme_marks.gd) can follow; null when none can go.
 func rider_on_road(from: Vector3, to: Vector3, on_done := Callable()) -> Node3D:
-	var horse: Node3D = kind("rider").ride(from, to, "")
-	if horse and on_done.is_valid():
-		horse.tree_exited.connect(on_done)
-	return horse
+	return kind("rider").ride(from, to, "", {}, on_done)
 
 
 ## Someone on the road from one town to another, of a kind: "walker", "cart",
@@ -171,6 +164,9 @@ func rng(at: Vector3) -> RandomNumberGenerator:
 func stand(p: Vector3, body := 0.0) -> Vector3:
 	if towns == null:
 		towns = get_parent().get("towns")
+	nav.terrain = terrain
+	if nav.roads == null:
+		nav.roads = get_parent().get("roads")
 	return nav.stand(towns, p, body)
 
 
@@ -394,12 +390,8 @@ func _arrows(root: Node3D, archers_team: Array, targets: Array, r: RandomNumberG
 		tw.tween_callback(func():
 			if not m["alive"]:
 				return
-			# A mark is picked as he looses, among those still standing: one picked when he drew may be gone.
-			var standing := targets.filter(func(t): return is_instance_valid(t["node"]))
-			if standing.is_empty():
-				return
 			people.play(n, "Bow_Shoot", 1.0)
-			var mark: Dictionary = standing[r.randi() % standing.size()]
+			var mark: Dictionary = targets[r.randi() % targets.size()]
 			var land: Vector3 = mark["node"].position + Vector3(r.randf_range(-0.12, 0.12), 0, r.randf_range(-0.12, 0.12))
 			_arrow(root, n.position + Vector3(0, 0.17, 0), land, r)
 			if mark["alive"] and mark["rank"] > 0 and r.randf() < 0.08:

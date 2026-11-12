@@ -1,5 +1,5 @@
 {
-  "_": "The realm's scenes in the world (scenes.gd and scene_kinds/; docs/TUNING.md). fleeing: how many refugees leave a town, by the scene's kind. flight: how far each walks out before he is gone (out, world units) and how long a runner and a trudger take to get there (run_s, trudge_s; a third run). burn: a sacked or razed town's fire, [seconds, size].",
+  "_": "The realm's scenes in the world (scenes.gd and scene_kinds/; docs/TUNING.md). fleeing: how many refugees leave a town, by the scene's kind. flight: how far each walks out before he is gone (out, world units) and how long a runner and a trudger take to get there (run_s, trudge_s; a third run). burn: a sacked or razed town's fire, [seconds, size]. convoy: the King's grain, gold or ward on the road (scene_kinds/convoy.gd, by the Mover's road): pace (world units a second), min/max (seconds the road takes), escort ([behind the wagon, across] for each of its crown men), hail (seconds they hail the town before the caption fades). rider: the King's rider (scene_kinds/rider.gd): pace, min/max, linger (seconds he stands at the town before the caption fades).",
   "fleeing": {
     "famine": 5,
     "plague": 3,
@@ -20,5 +20,31 @@
       70.0,
       2.0
     ]
+  },
+  "convoy": {
+    "pace": 0.35,
+    "min": 12.0,
+    "max": 70.0,
+    "escort": [
+      [
+        0.12,
+        0.05
+      ],
+      [
+        0.21,
+        -0.05
+      ],
+      [
+        0.3,
+        0.05
+      ]
+    ],
+    "hail": 1.0
+  },
+  "rider": {
+    "pace": 0.57,
+    "min": 8.0,
+    "max": 90.0,
+    "linger": 3.0
   }
 }

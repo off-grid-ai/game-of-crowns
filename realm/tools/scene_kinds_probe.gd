@@ -19,7 +19,7 @@ const OLD := {"feast": "_feast", "handover": "_handover", "grain": "_convoy", "t
 const CLASSED := ["feast", "grain", "tribute", "ward", "rider", "muster", "famine", "plague", "sack", "razed", "handover", "battle", "siege", "storm"]
 
 ## What each kind, staged on the stand-in, must set down: [the node's name under the stage, the least of its children].
-const STAGED := {"feast": ["Feast", 10], "grain": ["Convoy", 4], "tribute": ["Convoy", 4], "ward": ["Convoy", 4], "rider": ["Rider", 1], "famine": ["Refugees", 5], "plague": ["Refugees", 3], "sack": ["Burn", 15], "razed": ["Burn", 30], "handover": ["Handover", 7], "battle": ["Battle", 60], "siege": ["Siege", 20]}
+const STAGED := {"feast": ["Feast", 10], "grain": ["Convoy/ConvoyRoad", 4], "tribute": ["Convoy/ConvoyRoad", 4], "ward": ["Convoy/ConvoyRoad", 4], "rider": ["RiderRoad/Rider", 1], "famine": ["Refugees", 5], "plague": ["Refugees", 3], "sack": ["Burn", 15], "razed": ["Burn", 30], "handover": ["Handover", 7], "battle": ["Battle", 60], "siege": ["Siege", 20]}
 
 
 class Land extends Node3D:
@@ -113,7 +113,8 @@ func _run() -> void:
 		var stage: Node3D = Scenes.new()  # a stage of its own each, so what a kind sets down is its own
 		stage.terrain = land
 		main.add_child(stage)
-		stage.kind(k).play({"kind": k, "owner": 1, "x": 10, "y": 10, "tx": 16, "ty": 12, "city": 3, "from": 2, "to": 1, "turn": 1, "victor": 2}, Vector3(10, 0, 10), {1: {"name": "Ashby", "color": "#884422"}, 2: {"name": "Thornvale", "color": "#2244aa"}})
+		main.scenes = stage  # the Mover lays its roads on the ground through it
+		var follow: Node3D = stage.kind(k).play({"kind": k, "owner": 1, "x": 10, "y": 10, "tx": 16, "ty": 12, "city": 3, "from": 2, "to": 1, "turn": 1, "victor": 2}, Vector3(10, 0, 10), {1: {"name": "Ashby", "color": "#884422"}, 2: {"name": "Thornvale", "color": "#2244aa"}})
 		await process_frame
 		var want: Array = STAGED[k]
 		var n: Node = stage.get_node_or_null(String(want[0]))
@@ -122,6 +123,29 @@ func _run() -> void:
 		if count < int(want[1]):
 			print("FAIL %s: staged %d things, want at least %d" % [k, count, int(want[1])])
 			fails += 1
+		if k in ["grain", "rider"]:  # a traveller is on its way: the road carries it off
+			var was: Vector3 = follow.global_position if is_instance_valid(follow) else Vector3.INF
+			Engine.time_scale = 8.0
+			for f in 20:
+				await process_frame
+			Engine.time_scale = 1.0
+			var went: float = follow.global_position.distance_to(was) if is_instance_valid(follow) and was != Vector3.INF else 0.0
+			print("KINDS %-9s travelled %.2f" % [k, went])
+			var told := [false]
+			stage.arrived.connect(func(_s): told[0] = true)
+			Engine.time_scale = 16.0
+			var until := Time.get_ticks_msec() + 6000
+			while not told[0] and Time.get_ticks_msec() < until:
+				await process_frame
+			Engine.time_scale = 1.0
+			var stood: bool = is_instance_valid(follow) and follow.get_parent() is Node3D and not (follow.get_parent() is PathFollow3D)
+			print("KINDS %-9s arrived: told %s, standing off the road %s" % [k, told[0], stood])
+			if not told[0] or not stood:
+				print("FAIL %s: never arrived, or wasn't set down at the town" % k)
+				fails += 1
+			if went < 0.05:
+				print("FAIL %s: what it sent didn't travel" % k)
+				fails += 1
 		stage.queue_free()
 	# One sync: scenes.gd plays every kind through its class, and keeps no match of its own; kinds sharing a class
 	# share one of it (a storm finds the siege its siege kind pitched).
@@ -129,6 +153,12 @@ func _run() -> void:
 		print("FAIL scenes.sync still matches on the kind itself")
 		fails += 1
 	# The kinds' knobs are data (integration audit #20; docs/TUNING.md): no numeric const in a kind's class.
+	# And they travel by the Mover (CLAUDE.md, one way to move): no hand tween that sets a body's position.
+	var walked := RegEx.create_from_string("tween_method\\(func[\\s\\S]{0,1500}?\\.position = ")
+	for f in DirAccess.get_files_at("res://scripts/scene_kinds"):
+		if f.ends_with(".gd") and walked.search(FileAccess.get_file_as_string("res://scripts/scene_kinds/" + f)):
+			print("FAIL %s walks a body by a hand tween, not the Mover" % f)
+			fails += 1
 	var knob := RegEx.create_from_string("(?m)^const [A-Z_]+ := -?[0-9]")
 	for f in DirAccess.get_files_at("res://scripts/scene_kinds"):
 		if f.ends_with(".gd"):
