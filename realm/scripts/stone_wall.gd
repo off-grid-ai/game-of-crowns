@@ -51,6 +51,7 @@ var _shade: Array[Color] = []
 var _courses := {}  # course -> Array of its stones
 var _chords: Array[Dictionary] = []  # {a, dir, n, len, s0}
 var _length := 0.0
+var _gaps: Array[Vector2] = []  # stretches left open (metres along it): a town gate's way through (walls.gd)
 var _gy := PackedFloat32Array()  # the ground's height every half metre along the wall
 var _top := 0.0  # the wall walk's height (merlons stand on it)
 var _thick := 1.8
@@ -133,6 +134,11 @@ func _lay(points: PackedVector3Array, height: float, colour: Color, opts: Dictio
 		_length += d.length()
 	if _chords.is_empty():
 		return
+	# Gaps: opts gaps (world points on the line) each gap_m metres either side left unlaid, a gate's way through.
+	for g in opts.get("gaps", []):
+		var s := along(g)
+		var hw := float(opts.get("gap_m", 7.0))
+		_gaps.append(Vector2(s - hw, s + hw))
 	# The ground under it, every half metre.
 	var lo := INF
 	var hi := -INF
@@ -195,6 +201,9 @@ func _lay(points: PackedVector3Array, height: float, colour: Color, opts: Dictio
 func _add(ch: Dictionary, x: float, l: float, y: float, h: float, deep: float, off: float, c: int, jit_r: float, jit_m: float, tint: Color, spread: float) -> void:
 	var s0: float = ch["s0"] + x
 	var s1 := s0 + l
+	for gap in _gaps:
+		if (s0 + s1) * 0.5 > gap.x and (s0 + s1) * 0.5 < gap.y:
+			return  # a gate's way through
 	var g_lo := INF
 	var g_hi := -INF
 	for k in range(int(s0 / 0.5), int(ceil(s1 / 0.5)) + 1):

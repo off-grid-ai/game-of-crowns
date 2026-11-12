@@ -180,6 +180,24 @@ static func meshy_gatehouse() -> String:
 	return path if String(g.get("replaces", "")) == "castle_gate" and ResourceLoader.exists(path) else ""
 
 
+## A town wall's gatehouse (walls.gd: where a road runs through a town's ring wall; 01-town's arched gate in
+## the town wall): the castle's own gate, its passage through and a cone tower either side, or Meshy's
+## gatehouse with --landmarks=meshy; in metres, the way out on +Z, the wall's line at z 0, y 0 the road.
+func town_gate(wall_st: int, seed: int) -> ArrayMesh:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed
+	var parts := []
+	var gh := 4 * CELL / 2.0
+	var meshy_gate := meshy_gatehouse()
+	if meshy_gate != "":
+		parts.append([meshy_gate, Transform3D()])
+	else:
+		_block(parts, Vector3.ZERO, 4, 3, wall_st + 1, rng, {"gate": true, "crenel": true, "windows": 0.5, "portcullis": 2.4})
+		for sx in [-1, 1]:
+			_block(parts, Vector3(sx * (gh + 1.0), 0, 0), 2, 2, wall_st + 2, rng, {"cone": true, "windows": 0.5})
+	return _bake(parts)
+
+
 ## How many storeys of stone podium the keep stands on, with its steps up the front (data/castle.json
 ## steps.storeys; --keep-steps=off for none). 0: the keep on the bailey's floor, as before.
 static func podium() -> int:

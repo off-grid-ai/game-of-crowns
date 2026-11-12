@@ -282,15 +282,59 @@ func _ring(id: int, root: Node3D, panels: Array) -> void:
 		var p := center + Vector3(sin(a), 0, -cos(a)) * r
 		p.y = main.terrain.height_at(p.x, p.z)
 		pts.append(p)
+	# Its gates: where a road runs out through the ring (01-town: the arched gate in the town wall), the wall
+	# left open and a gatehouse astride the road (castle_builder.gd town_gate).
+	var gk: Dictionary = ring.get("gates", {})
+	var gates := _gate_spots(center, r, gk)
 	var wall := StoneWall.build_along(pts, float(ring.get("height_m", 6.0)), Color.WHITE, {
-		"sections": sections, "outer": 1.0, "seed": id,
+		"sections": sections, "outer": 1.0, "seed": id, "gaps": gates, "gap_m": float(gk.get("half_m", 7.0)),
 		"ground": func(p: Vector3) -> float: return main.terrain.height_at(p.x, p.z)})
 	add_child(wall)
+	for g in gates:
+		var out := Vector3(g.x - center.x, 0, g.z - center.z).normalized()
+		var mi := MeshInstance3D.new()
+		mi.name = "TownGate"
+		mi.mesh = preload("res://scripts/castle_builder.gd").new().town_gate(maxi(1, int(round(float(ring.get("height_m", 6.0)) / 3.0))), id)
+		wall.add_child(mi)
+		mi.global_transform = Transform3D(Basis(Vector3.UP, atan2(out.x, out.z)).scaled(Vector3.ONE * S), g)
 	for p in panels:
 		p.visible = false  # the stones stand in the kit panels' place
 	_rings[id] = {"wall": wall, "root": root, "center": center}
 	wall.opened.connect(_publish.bind(wall, root))
 	_publish(wall, root)
+
+
+## Where roads run out through a town's ring (centre, radius r): the middle of each crossing, on the ground
+## (world), at most gates.most; none with --town-gates=off or gates.on false.
+func _gate_spots(center: Vector3, r: float, k: Dictionary) -> Array:
+	var args := OS.get_cmdline_user_args()
+	if args.has("--town-gates=off") or not (args.has("--town-gates=on") or bool(k.get("on", false))):
+		return []
+	var roads: Node = main.get("roads")
+	if roads == null or not roads.has_method("on_path"):
+		return []
+	var n := maxi(64, int(TAU * r / 0.03))
+	var runs := []
+	var start := -1
+	for i in n + 1:
+		var a := TAU * i / n
+		var p := center + Vector3(sin(a), 0, -cos(a)) * r
+		var on: bool = i < n and roads.on_path(p, 0.0)
+		if on and start < 0:
+			start = i
+		elif not on and start >= 0:
+			runs.append([i - start, (start + i - 1) * 0.5 * TAU / n])
+			start = -1
+	runs.sort_custom(func(x, y): return x[0] > y[0])  # the widest roads first (a great road before a farm track)
+	var out := []
+	for run in runs:
+		var a: float = run[1]
+		if out.size() >= int(k.get("most", 2)):
+			break
+		var p := center + Vector3(sin(a), 0, -cos(a)) * r
+		p.y = main.terrain.height_at(p.x, p.z)
+		out.append(p)
+	return out
 
 
 ## A wall's standing foot goes to its town's walking map: a breach is a way in. Every stone wall of the
