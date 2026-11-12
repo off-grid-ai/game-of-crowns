@@ -121,6 +121,10 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 17:40 (11-12) Mac: "i'm ok to reduce the soliders to 1/10th of the current" (round 12 field battle: 560 men, 1-6 fps).
+  Army layer: one drawn soldier per ten, one ratio in army.json for every regiment, muster, battle, storm, siege; the
+  UI keeps full strength; fps before/after. Round 12 sent to Mac beside his "super weird" shot. Ground truth on the
+  server.js:449 private-bridge crash. Horses/carts landed 0ca5b08f.
 - 16:45 (11-12) Round 12 (/tmp/goc-focus/r12, autumn, 0 script errors), sent to Mac. Big step: clean Meshy roofs,
   statue, well, 7 stalls at the edge, no planks/trees on paving. Light: mean 0.417 / clipped 0.04% / sat 0.42 vs 01-town
   0.431 / 0.5% / 0.47 (pass but for colour; r11 was winter 0.50/7%). Wrong: square thin, 16 people inside things
