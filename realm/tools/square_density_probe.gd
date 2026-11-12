@@ -4,8 +4,10 @@ extends SceneTree
 ## stalls_more 17, three rows) filled the square with stalls and goods; rounds 12-15 cut it to a handful on an empty
 ## floor. Lays round 11's crown market and today's with towns.gd's own stall_count and lay_stalls (Meshy stall, Meshy
 ## well at the heart) over several seeds and measures: stalls laid, goods pieces at them (each stall's two end piles and
-## its counter, the fronts' spill piles), both per square metre. Wants today's stall and goods count at least round
-## 11's on every seed, inside the tight square (7a8153dd, square_r 1.1), and the walk lanes kept: no two stalls closer
+## its counter, the fronts' spill piles), both per square metre. Wants round 11's size (Mac: "the level of detail, the
+## openness"), today's stall and goods count at least round 11's on every seed, at least OPEN of the square's ground
+## left open (not under a stall, its end piles, the well, the statue or the wagon; round 11's render showed 59% paving),
+## and the walk lanes kept: no two stalls closer
 ## than LANE metres, none within WALK metres of the well's rim, none past the square's edge, the King's statue (towns.gd:
 ## off the heart opposite the market at well_at, turned beside_turn) a LANE clear of every stall, and the way in from the
 ## castle gate (opposite the market, approach_clear either side) left open: no stall, nor the unloading wagon
@@ -17,6 +19,8 @@ const Real := preload("res://scripts/realistic.gd")
 const S := 0.12  # world units per metre (towns.gd)
 const LANE := 1.2  # metres between any two stalls: a buyer walks between them (01-town's stalls stand a body apart)
 const WALK := 2.0  # metres between a stall and the well's rim: the town goes to draw water
+const OPEN := 0.55  # the share of the square's ground nothing stands on: a wide square you see across (still_probe on
+	# round 11's render: paving 59% of the square's box; round 15: 21%)
 const GATE := 3.0  # metres either side of the way from the heart to the castle gate kept clear (the King's way in, the muster)
 ## Round 11's crown market (git show 01236c8d^:realm/data/towns.json market.crown): the floor.
 const R11 := {"square_r": 2.1, "stalls_more": 17, "rows": [[0.84, 0.45], [0.55, 0.25], [0.3, 0.3, 120]], "span": 75,
@@ -65,10 +69,17 @@ func _init() -> void:
 		var wagon_r := maxf(wagon.x, wagon.y) * 0.5
 		var wagon_gap := _ray_dist(wpos, gate_dir) - wagon_r
 		var ok_wagon := wagon_gap / S >= GATE and (wpos - statue).length() - wagon_r - statue_r >= LANE * S
-		var ok_walk := ok_wagon and lane / S >= LANE and walk / S >= WALK and edge <= sq and statue_gap / S >= LANE and gate_gap / S >= GATE
+		var covered := Real.footprint(Real.one(String(mk.get("centre", "well")))).x * Real.footprint(Real.one(String(mk.get("centre", "well")))).y \
+			+ statue_r * statue_r * 4.0 + wagon.x * wagon.y
+		for s in st:
+			var fp := Real.footprint(String(s[0]))
+			covered += (fp.x + fp.y) * fp.y  # the stall and a pile its depth long and half deep at either end
+		var open := 1.0 - covered / (PI * sq * sq)
+		var ok_size := sq >= float(R11["square_r"]) - 0.001 and open >= OPEN
+		var ok_walk := ok_size and ok_wagon and lane / S >= LANE and walk / S >= WALK and edge <= sq and statue_gap / S >= LANE and gate_gap / S >= GATE
 		var ok := ok_n and ok_g and ok_walk
-		print("CHECK square seed %d: stalls %d (round 11: %d), goods %d (round 11: %d); per 100 m2 stalls %.1f goods %.1f (round 11: %.1f, %.1f); closest stalls %.1f m (want >= %.1f), to the well's rim %.1f m (want >= %.1f), to the statue %.1f m (want >= %.1f), to the gate's way %.1f m (want >= %.1f), the wagon %.1f m from it (want >= %.1f), outermost edge %.2f of square_r %.2f: %s" % [
-			seed, st.size(), (old["stalls"] as Array).size(), now["goods"], old["goods"],
+		print("CHECK square seed %d: square_r %.2f (round 11: %.2f), open ground %.0f%% (want >= %.0f%%); stalls %d (round 11: %d), goods %d (round 11: %d); per 100 m2 stalls %.1f goods %.1f (round 11: %.1f, %.1f); closest stalls %.1f m (want >= %.1f), to the well's rim %.1f m (want >= %.1f), to the statue %.1f m (want >= %.1f), to the gate's way %.1f m (want >= %.1f), the wagon %.1f m from it (want >= %.1f), outermost edge %.2f of square_r %.2f: %s" % [
+			seed, sq, float(R11["square_r"]), open * 100.0, OPEN * 100.0, st.size(), (old["stalls"] as Array).size(), now["goods"], old["goods"],
 			st.size() * 100.0 / area, int(now["goods"]) * 100.0 / area,
 			(old["stalls"] as Array).size() * 100.0 / area_old, int(old["goods"]) * 100.0 / area_old,
 			lane / S, LANE, walk / S, WALK, statue_gap / S, LANE, gate_gap / S, GATE, wagon_gap / S, GATE, edge, sq, "PASS" if ok else "FAIL"])

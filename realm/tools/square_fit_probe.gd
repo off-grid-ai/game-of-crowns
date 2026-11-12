@@ -5,8 +5,8 @@ extends SceneTree
 ## the heart, how much paving each thing standing on it has (stalls, the well, the statue, the cart), and the walk
 ## left between the stalls' fronts and the well. 01-town, measured by eye with its well (2.6 m) as the ruler: fronts
 ## 8-9 m from the well, about 18 x 14 m of paving for about 7 things (35-40 m2 each). Wants the fronts at most 3 m past
-## the square's edge (they close round it), at most 90 m2 of paving a thing, a walkway of at least 4 m. How many stalls:
-## square_density_probe.gd. Prints CHECK lines; exits 1 on a fail.
+## the square's edge (they close round it) and a walkway of at least 4 m; prints the paving a thing (round 11's open
+## square: about 100 m2; how many stalls and how open: square_density_probe.gd). Prints CHECK lines; exits 1 on a fail.
 ##   arch -arm64 godot --headless --path realm -s res://tools/square_fit_probe.gd
 
 const Real := preload("res://scripts/realistic.gd")
@@ -42,11 +42,10 @@ func _init() -> void:
 	var things := st.size() + 1 + (1 if String(mk.get("beside", "")) != "" else 0) + int(mk.get("carts", 0))
 	var each := paved / maxf(things, 1)
 	var ok_ring := (ring - square_r) / S <= 3.0
-	var ok_each := each <= 90.0
 	var ok_walk := walk / S >= 4.0
 	print("CHECK square fit: fronts %.1f m from the well, %.1f m past the square's edge (want <= 3): %s" % [ring / S, (ring - square_r) / S, "ok" if ok_ring else "FAIL"])
-	print("CHECK square fit: %.0f m2 of paving for %d things, %.0f m2 each (want <= 90; 01-town 35-40): %s" % [paved, things, each, "ok" if ok_each else "FAIL"])
+	print("CHECK square fit: %.0f m2 of paving for %d things, %.0f m2 each (01-town 35-40)" % [paved, things, each])
 	print("CHECK square fit: %d stalls, walkway to the well %.1f m (want >= 4): %s" % [st.size(), walk / S, "ok" if ok_walk else "FAIL"])
-	var ok := ok_ring and ok_each and ok_walk
+	var ok := ok_ring and ok_walk
 	print("CHECK square fit: %s" % ("PASS" if ok else "FAIL"))
 	quit(0 if ok else 1)
