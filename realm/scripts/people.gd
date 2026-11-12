@@ -125,7 +125,8 @@ static func cloth_pick(role: String, rng: RandomNumberGenerator) -> Color:
 	return pal[rng.randi() % pal.size()]
 
 ## A cast member's cloth by who they are (cast.json member palette; people.json cloth.palettes; the supervisor's
-## dress code, 12 Nov): a child in plain undyed linen and browns, a merchant or a gentlewoman in the rich dyes (deep
+## dress code, 12 Nov; 01-town counted: two of its three children in the house's red): a child in the house's colour
+## or plain undyed linen (people.json cloth.palettes.child: "house" draws the town's colour), a merchant or a gentlewoman in the rich dyes (deep
 ## green, blue, burgundy), anyone else the town's cloth (cloth_pick: the house's colour only now and then).
 static func cloth_for(body: String, role: String, rng: RandomNumberGenerator) -> Color:
 	if role in SOLDIERLY and _town_house.a > 0.0 and not _town_mourning:
@@ -135,7 +136,9 @@ static func cloth_for(body: String, role: String, rng: RandomNumberGenerator) ->
 	if pal_name != "" and pals.has(pal_name) and not _town_mourning:
 		var pal: Array = pals[pal_name]
 		if not pal.is_empty():
-			var c: Array = pal[rng.randi() % pal.size()]
+			var c = pal[rng.randi() % pal.size()]
+			if c is String and c == "house":  # the town's house colour (01-town: two of its three children in red)
+				return _town_house if _town_house.a > 0.0 else cloth_pick(role, rng)
 			return Color(float(c[0]), float(c[1]), float(c[2]))
 	return cloth_pick(role, rng)
 
