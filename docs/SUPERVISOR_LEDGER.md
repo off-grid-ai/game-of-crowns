@@ -5,6 +5,14 @@ limit. Newest first. The plan is [PLAN.md](PLAN.md); the running log of checks i
 [review/supervisor-log.md](review/supervisor-log.md).
 
 ## How to take over (read this first)
+- **Takeover 2026-11-12 (account switch):** the "Claude" account ran out of credits. The supervisor moved to a new
+  session in another account and restarted only the threads with open work (Army layer, Life at the works and
+  Ground truth were done and idle, so they were not restarted). Current ids, which replace the older list below:
+  - Supervisor "Game of Crowns visual polish": this session (its id is shown by ListAgents).
+  - "Freeciv: move the king's rules into Freeciv" `local_0a0368db-d8d8-4522-ae5d-d1c9f4328888`: raids as Freeciv barbarians.
+  - "Town life: one director, hand-written scenes gone" `local_6abf9bb7-7230-46ea-875c-8e253bc08578`: blackboard "clip" error, parked bodies.
+  - "GoC" `local_9c8426ac-4628-4b65-9396-561a0acc3de3`: the round clock; it restarts its children "Fire and siege to the
+    measured rules" (trades wave) and "Army command: select ring and command card" (walk map, double-click pan).
 - **Role:** supervise the builders, judge their work against the casebook, route Mac's notes, and keep the plan.
   Don't build yourself. Mac delegated product calls; record them so he can flip them.
 - **Sessions** (Claude Desktop, linked; message with SendMessage to the id):
