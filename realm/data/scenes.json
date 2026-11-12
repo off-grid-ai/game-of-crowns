@@ -46,5 +46,6 @@
     "min": 8.0,
     "max": 90.0,
     "linger": 3.0
-  }
+  },
+  "captions": { "near": 0.8 }
 }

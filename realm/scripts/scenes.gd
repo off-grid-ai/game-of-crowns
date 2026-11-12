@@ -580,7 +580,7 @@ func puffs(color: Color, amount: int, life: float, smin: float, smax: float, add
 ## line above it, so two never print over each other.
 var _tags: Array[Label3D] = []
 const LINE := 0.17  # one caption's height, in world units
-const NEAR := 0.8  # captions closer than this (across the ground) share a place
+static var NEAR: float = preload("res://scripts/data.gd").num("scenes", "captions.near", 0.8)  # captions closer than this (across the ground) share a place
 
 
 ## A caption over the world: what a scene is, or what a rider carries. `root`

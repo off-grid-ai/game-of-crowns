@@ -50,6 +50,7 @@ const MOVED := [
 	["minimap", "FLOOD_S", "map", "flood_seconds"],
 	["political_overlay", "RAZED_BURN", "map", "razed_burn"],
 	["vegetation", "VEG_REACH", "ground", "wild.reach"],
+	["scenes", "NEAR", "scenes", "captions.near"],
 	["presence", "NEAR_CAM", "crowd", "presence.near_cam"],
 	["presence", "NOTICE", "crowd", "presence.notice"],
 	["presence", "FRONT", "crowd", "presence.front"],
