@@ -29,7 +29,11 @@ extends SceneTree
 ##     beaten regiment that breaks next, then at the next as the rout runs along the line, and stays where it ended;
 ## 10. the right banner (READY line 4): a regiment raised for a house with arms flies those arms on its banner (its
 ##     kind's glyph in the canton) and its men wear them on shield and tabard, in its colour; a house with none
-##     drawn flies its colour with the glyph; the host's standard flies the same arms (heraldry.gd arms, one place).
+##     drawn flies its colour with the glyph; the host's standard flies the same arms (heraldry.gd arms, one place);
+## 11. war: the host marches out (READY line 3): a host formed in line at its seat, told to march out, takes the
+##     road the realm's roads give (roads.route), leaves regiment by regiment in column order, each only once the
+##     one ahead has gone its length, and halts in column along the road's end, no two regiments in one place; then
+##     it is gone (march.linger).
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
@@ -65,6 +69,7 @@ func _run() -> void:
 	_rout_runs_along_the_line()
 	_lens_on_the_rout()
 	_the_right_banner()
+	await _march_out()
 	print("ARMY PROBE PASS" if _fails == 0 else "ARMY PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
 
@@ -459,6 +464,101 @@ func _the_right_banner() -> void:
 	if not plain.is_empty():
 		_check((plain["banner_mat"] as ShaderMaterial).get_shader_parameter("use_arms") != true, "a house with no arms drawn flies its colour with the glyph")
 	a.free()
+
+
+## 11. War: the host marches out. Three regiments raised (army.gd _regiment) and stood in line at a field, on a
+## stand-in realm whose one road runs east then north; march_out to its end, at 30x the game's pace.
+func _march_out() -> void:
+	var ArmyS: GDScript = load("res://scripts/army.gd")
+	var has := ArmyS.get_script_method_list().any(func(m): return m["name"] == "march_out")
+	_check(has, "a host can march out (army.gd march_out)")
+	if not has:
+		return
+	var stub := GDScript.new()
+	stub.source_code = """extends Node3D
+var terrain: Node3D
+var roads: Node
+var rig = null
+var scenes = null
+var towns = null
+func build(road: PackedVector3Array) -> void:
+	terrain = Node3D.new()
+	var ts := GDScript.new()
+	ts.source_code = "extends Node3D\\nvar width := 0\\nvar built := false\\nfunc height_at(_x: float, _z: float) -> float:\\n\\treturn 0.0\\n"
+	ts.reload()
+	terrain.set_script(ts)
+	add_child(terrain)
+	roads = Node.new()
+	var rs := GDScript.new()
+	rs.source_code = "extends Node\\nvar way := PackedVector3Array()\\nvar asked := 0\\nfunc route(_a: Vector3, _b: Vector3) -> PackedVector3Array:\\n\\tasked += 1\\n\\treturn way\\n"
+	rs.reload()
+	roads.set_script(rs)
+	roads.way = road
+	add_child(roads)
+"""
+	stub.reload()
+	var main := Node3D.new()
+	main.set_script(stub)
+	root.add_child(main)
+	var road := PackedVector3Array([Vector3(1, 0, 0), Vector3(3, 0, 0), Vector3(3, 0, 3)])
+	main.call("build", road)
+	var a: Node3D = ArmyS.new(main, 0, {"side": 0, "colour": Color(0.6, 0.15, 0.15), "house": {"name": "House Ashby"}, "quiet": true, "out_to": road[road.size() - 1]})
+	var rows: Array = []
+	for k in ["archers", "spearmen", "horse"]:
+		var r: Dictionary = a.call("_regiment", {"id": -(rows.size() + 1), "unit": k, "men": 150}, Color(0.6, 0.15, 0.15), {"name": "House Ashby"})
+		if not r.is_empty():
+			rows.append(r)
+	a.set("_regiments", rows)
+	a.set("_field", Vector3.ZERO)
+	main.add_child(a)  # its _ready waits for land the stand-in never builds: the probe drives it
+	a.set("_commander", rows[0])
+	a.call("_standard_up")
+	for i in rows.size():
+		var r: Dictionary = rows[i]
+		a.call("_shape", r, "line")
+		a.call("_set_at", r, Vector3((i - 1) * 0.6, 0, -0.3), 0.0)
+		r["state"] = "rest"
+	a.call("march_out", road[road.size() - 1])
+	_check(int(main.roads.asked) > 0, "it asks the realm's roads for its way")
+	var order: Array = Data.value("army", "column.order", ["cavalry", "melee", "ranged"])
+	var by_leave := rows.duplicate()
+	by_leave.sort_custom(func(p, q): return float(p["leave"]) < float(q["leave"]))
+	var roles := by_leave.map(func(r): return String(r["role"]))
+	var want := roles.duplicate()
+	want.sort_custom(func(p, q): return order.find(p) < order.find(q))
+	_check(roles == want, "it leaves in column order (%s)" % ", ".join(PackedStringArray(roles)))
+	var spaced := true
+	for i in range(1, by_leave.size()):
+		var gone: float = (float(by_leave[i]["off"]) - float(by_leave[i - 1]["off"]))
+		spaced = spaced and absf((float(by_leave[i]["leave"]) - float(by_leave[i - 1]["leave"])) * float(by_leave[i]["speed"]) - gone) < 0.01 and gone > 0.0
+	_check(spaced, "each regiment leaves once the one ahead has gone its length up the road")
+	Engine.time_scale = 30.0
+	var t0 := Time.get_ticks_msec()
+	while (Time.get_ticks_msec() - t0) < 8000 and not rows.all(func(r): return r["state"] == "halt"):
+		await process_frame
+	var states := rows.map(func(r): return String(r["state"]))
+	_check(rows.all(func(r): return r["state"] == "halt"), "every regiment halts at the road's end (%s)" % str(states))
+	var near := INF
+	var on_road := true
+	var along: Array = []
+	for i in by_leave.size():
+		var p: Vector3 = (by_leave[i]["node"] as Node3D).global_position
+		var s_at := float(a.call("_along", p))
+		on_road = on_road and (a.call("_at", s_at) as Vector3).distance_to(p) < 0.05
+		along.append(s_at)
+		for j in range(i + 1, by_leave.size()):
+			near = minf(near, p.distance_to((by_leave[j]["node"] as Node3D).global_position))
+	var head_first := true
+	for i in range(1, along.size()):
+		head_first = head_first and float(along[i]) < float(along[i - 1])
+	_check(on_road and head_first, "they halt on the road in column, the first out at its head (%s along)" % str(along.map(func(v): return snappedf(v, 0.01))))
+	_check(near > 0.2, "no two regiments halt in one place (closest %.2f apart)" % near)
+	t0 = Time.get_ticks_msec()
+	while (Time.get_ticks_msec() - t0) < 4000 and is_instance_valid(a) and not a.is_queued_for_deletion():
+		await process_frame
+	_check(not is_instance_valid(a) or a.is_queued_for_deletion(), "then the host is gone (march.linger)")
+	Engine.time_scale = 1.0
+	main.queue_free()
 
 
 ## 6. One figure for ten, each with room about him.

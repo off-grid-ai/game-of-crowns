@@ -72,6 +72,8 @@ var _rng := RandomNumberGenerator.new()
 ## colour, house, shape, ground: the battle's one ground (army_ground.gd)}. Empty for the muster by the seat.
 var battle := {}
 var mustered := false
+var _out := false  # marching out (march_out): halted at the road's end, it is gone after march.linger
+var _gone_in := 0.0
 var ground: RefCounted  # army_ground.gd: where its regiments may stand
 var _extent := Vector2.ZERO  # the line's width and depth (for re-placing it: stand_at)  # its regiments raised and its line placed (the battle waits on both sides)
 signal raised
@@ -175,6 +177,33 @@ func _ready() -> void:
 	_hold = battle.is_empty()  # the camera on the army itself, at the shot's own --dist, for the whole take (a test aid); a battle frames itself
 	mustered = true
 	raised.emit()
+	if battle.has("out_to"):  # war: formed at its seat a while, then out along the roads (march_out)
+		await get_tree().create_timer(Data.num("army", "march.form", 6.0)).timeout
+		march_out(battle["out_to"])
+
+
+## March out (READY.md line 3, war; casebook, War and sieges: "The march feeds the battle"): the host formed in line
+## at its seat turns into column and goes out along the roads to `to` (roads.route: the realm's road graph, Godot's
+## AStar3D), in column.order at its slowest regiment's pace. Each regiment turns into column and leaves once the one
+## ahead has gone its column's length up the road, follows it by its Mover on the realm's navigation (off the
+## muster's ground), and halts at its own place in the column at the road's end; the host is gone march.linger
+## seconds after the last halts. Off the road where the roads give no way: straight over the land to `to`.
+func march_out(to: Vector3) -> void:
+	var roads = main.get("roads")
+	var road: PackedVector3Array = roads.route(_field, to) if roads and roads.has_method("route") else PackedVector3Array()
+	_path = PackedVector3Array([_field])
+	_path.append_array(road if road.size() >= 2 else PackedVector3Array([to]))
+	_cum = PackedFloat32Array([0.0])
+	for j in range(1, _path.size()):
+		_cum.append(_cum[j - 1] + _path[j].distance_to(_path[j - 1]))
+	_goal = "column"
+	_out = true
+	var first := -1.0
+	for r in _in_column_order():
+		first = float(r["off"]) if first < 0.0 else first
+		r["leave"] = (float(r["off"]) - first) / maxf(float(r["speed"]), 0.01)
+		r["state"] = "out"
+		Mover.of(r["node"]).on(null)
 
 
 # --- The command hooks (the command card calls these; nothing in play does yet) -------------------------
@@ -1031,14 +1060,13 @@ func _column_length() -> float:
 	return n
 
 
-## The host in column on the road, its head march.lead short of the turn-off, in column.order (by role), each
-## regiment marching on its own step.
-func _column_up() -> void:
+## The host's regiments in column.order (by role), each given its place in the column (off: its middle's distance
+## behind the head, column.gap between regiments) and the host's pace (its slowest regiment's).
+func _in_column_order() -> Array:
 	var order: Array = Data.value("army", "column.order", ["cavalry", "melee", "ranged"])
 	var sorted := _regiments.duplicate()
 	sorted.sort_custom(func(a, b): return order.find(a["role"]) < order.find(b["role"]) if a["role"] != b["role"] else int(a["id"]) > int(b["id"]))
 	var gap := Data.num("army", "column.gap", 0.3)
-	var head := _cum[_cum.size() - 1] - Data.num("army", "march.lead", 5.0)
 	var off := 0.0
 	var slowest := INF
 	for r in sorted:
@@ -1046,9 +1074,17 @@ func _column_up() -> void:
 	for r in sorted:
 		off += float(r["column"]["d"]) * 0.5
 		r["off"] = off
-		r["s"] = head - off
 		off += float(r["column"]["d"]) * 0.5 + gap
 		r["speed"] = slowest  # the host marches at its slowest regiment's pace
+	return sorted
+
+
+## The host in column on the road, its head march.lead short of the turn-off, in column.order (by role), each
+## regiment marching on its own step.
+func _column_up() -> void:
+	var head := _cum[_cum.size() - 1] - Data.num("army", "march.lead", 5.0)
+	for r in _in_column_order():
+		r["s"] = head - float(r["off"])
 		_shape(r, "column")
 		var p := _at(r["s"])
 		_set_at(r, p, _heading(r["s"]))
@@ -1165,9 +1201,20 @@ func _process(delta: float) -> void:
 					_shape(r, String(r["into"]))
 					r["state"] = "rest"
 					_clips(r, "rest")
+					if _out and r["into"] == "column":  # marching out: in column, up the road
+						r["s"] = 0.0
+						_march(r)
+			"out":
+				r["leave"] = float(r["leave"]) - delta
+				if float(r["leave"]) <= 0.0:
+					_reform(r, "column")
 			"halt", "rest":
 				_at_ease(r, delta)
 	_far_view()
+	if _out and _regiments.all(func(r): return r["state"] == "halt"):
+		_gone_in += delta
+		if _gone_in > Data.num("army", "march.linger", 40.0):
+			queue_free()
 	if _want_select != "" and _regiments.all(func(r): return r["state"] in ["rest", "halt"]):
 		if _want_select == "all":
 			select_all()
@@ -1299,9 +1346,13 @@ static func _thousands(n: int) -> String:
 
 # --- The realm around it ----------------------------------------------------------------------------------
 
-## The crown's seat (/world seatId), or Kingsmere by name.
+## The host's seat: the town its muster names (battle seat: a city id), else the crown's (/world seatId), or
+## Kingsmere by name.
 func _seat() -> Dictionary:
 	var cities: Array = main.bridge.world.get("cities", [])
+	for c in cities if battle.has("seat") else []:
+		if int(c.get("id", -2)) == int(battle["seat"]):
+			return c
 	var want := int(main.bridge.world.get("seatId", -1)) if main.bridge.world.get("seatId") != null else -1
 	for c in cities:
 		if int(c.get("id", -2)) == want:
