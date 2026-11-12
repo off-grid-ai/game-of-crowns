@@ -66,6 +66,10 @@ const CLIP_TOOLS := {
 	"Wheelbarrow": ["barrow", "Right"],
 }
 static var _on_disk := {}  # tool -> whether its model is there
+## What a calling carries in its arms, where it isn't the move's own prop (people.json loads, {calling: {move:
+## tool}}; the calling is the person's folk.role, villagers.gd): one Carrying move, but the water carrier's load is
+## a pail of water and the porter's a basket (tools/carry_probe.gd).
+static var LOADS: Dictionary = preload("res://scripts/data.gd").value("people", "loads", {})
 
 
 ## Whether a move can be played as it should be: it needs nothing in hand, or
@@ -122,6 +126,9 @@ static func hold_for(person: Node3D, clip: String) -> void:
 	if skel == null:
 		return
 	var row: Array = CLIP_TOOLS.get(clip, [])
+	var load := String((LOADS.get(String((person.get_meta("folk", {}) as Dictionary).get("role", "")), {}) as Dictionary).get(clip, ""))
+	if load != "" and TOOLS.has(load) and not row.is_empty():
+		row = [load, row[1]]
 	if String(person.get_meta("tool", "")) == (String(row[0]) if not row.is_empty() else ""):
 		return
 	for c in skel.get_children():
