@@ -523,14 +523,14 @@ static func _soil(size: Vector2) -> Vector2:
 ## the camera and casting no shadow. `origin` is where `parent` stands in the
 ## world. The batch stands at the field's lowest ground, so a young field is
 ## shown by squashing it down there (the taller plants sink in).
-static func sow(parent: Node3D, land: Node3D, origin: Vector3, kind: String, c: Vector3, size: Vector2, yaw: float, rng: RandomNumberGenerator) -> void:
+static func sow(parent: Node3D, land: Node3D, origin: Vector3, kind: String, c: Vector3, size: Vector2, yaw: float, rng: RandomNumberGenerator, grow := 1.0) -> void:
 	if kind == "":
 		return
 	var mesh := crop_mesh(kind)
 	if mesh == null:
 		return
-	var gap: float = CROP_ROWS[kind][0]
-	var step: float = CROP_ROWS[kind][1]
+	var gap: float = CROP_ROWS[kind][0] * grow  # grow: a kitchen garden's crops drawn larger to read from roof height (towns.gd _croft)
+	var step: float = CROP_ROWS[kind][1] * grow
 	var inset := 0.05
 	var rows := maxi(1, int((size.y - inset * 2.0) / gap))
 	var per := maxi(1, int((size.x - inset * 2.0) / step))
@@ -555,7 +555,7 @@ static func sow(parent: Node3D, land: Node3D, origin: Vector3, kind: String, c: 
 	mm.mesh = mesh
 	mm.instance_count = pts.size()
 	for i in pts.size():
-		var k := rng.randf_range(0.85, 1.15)
+		var k := rng.randf_range(0.85, 1.15) * grow
 		mm.set_instance_transform(i, Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(k, k * rng.randf_range(0.9, 1.1), k)), pts[i] - at - Vector3(0, 0.01, 0)))
 	var mmi := MultiMeshInstance3D.new()
 	mmi.name = "Crop"

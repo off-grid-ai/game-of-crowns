@@ -684,11 +684,18 @@ func paint_mud(at: Vector3, r: float, seed: int) -> void:
 					land.data.set_control_base_id(p, MUD)
 					land.data.set_control_blend(p, 0.0)
 				else:
-					# The worn edge: the land shows through the mud.
-					if land.data.get_control_base_id(p) == MUD:
-						land.data.set_control_base_id(p, 0)
+					# The worn edge: the land shows through the mud. Never weaker mud than is there already: the
+					# next stamp's edge took back the last one's mud, so a yard stamped in a grid of overlapping
+					# patches (the bailey, round 5) came out mostly grass.
+					var edge := 1.0 - (d - 0.7) / 0.3
+					if land.data.get_control_base_id(p) == MUD and land.data.get_control_blend(p) <= 0.0:
+						z += step
+						continue
+					if land.data.get_control_overlay_id(p) == MUD and land.data.get_control_blend(p) >= edge:
+						z += step
+						continue
 					land.data.set_control_overlay_id(p, MUD)
-					land.data.set_control_blend(p, 1.0 - (d - 0.7) / 0.3)
+					land.data.set_control_blend(p, edge)
 			z += step
 		x += step
 

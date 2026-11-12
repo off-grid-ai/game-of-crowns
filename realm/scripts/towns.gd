@@ -379,6 +379,20 @@ func _bailey_ground(root: Node3D, cp: Vector3, cy: float, yaw: float, rng: Rando
 	var w := float(way[2]) * f.x
 	var run := absf(a - e)
 	terrain.paint(root, terrain.tiled(stone, maxi(1, roundi(w / tile)), clampi(roundi(run / tile), 1, 24), "paved"), cp + Vector3(0, cy, 0) + b * Vector3(0, 0, (a + e) * 0.5), Vector2(w, run), yaw, _rgb(pave.get("tint"), Color.WHITE), 1.5)
+	# The forecourt (towns.json bailey.forecourt [width, game units]; round 5, 01-town: a broad cobbled way from the
+	# square up to the gate, no lawn between the stalls and the castle): setts from the gate out to the square's heart,
+	# under the square's own (they lie over it there).
+	var fw := float(k.get("forecourt", 0.0))
+	if fw > 0.0:
+		var gate: Vector3 = cp + b * Vector3(0, 0, float(way[0]) * f.y)
+		var to := Vector3.ZERO
+		var long := Vector2(gate.x, gate.z).distance_to(Vector2(to.x, to.z))
+		if long > 0.1:
+			var mid := (gate + to) * 0.5
+			var lo := minf(_ground_y(center, gate), _ground_y(center, to))
+			var hi := maxf(_ground_y(center, gate), _ground_y(center, to))
+			var fc: Decal = terrain.paint(root, terrain.tiled(stone, clampi(roundi(fw / tile), 1, 12), clampi(roundi((long + fw) / tile), 1, 24), "paved"), Vector3(mid.x, (lo + hi) * 0.5, mid.z), Vector2(fw, long + fw * 0.5), atan2(gate.x - to.x, gate.z - to.z), _rgb(pave.get("tint"), Color.WHITE), hi - lo + 1.5)
+			fc.sorting_offset = 0.5  # as a street's setts: over the roads' earth, under the square's
 
 
 ## Who's in the yard: role, place (castle frame), move, facing.
@@ -1864,7 +1878,9 @@ func _trades_beyond(root: Node3D, center: Vector3, square_r: float, edge: float,
 ## bed took the whole yard: batch 6's yards grew 3 trees for 61 houses, by the green probe).
 func _croft(root: Node3D, center: Vector3, hp: Vector3, face: Vector3, f: Vector2, lots: Array, rng: RandomNumberGenerator, own_lot := -1, plot := false) -> void:
 	var deep: Array = _plot_knobs().get("green", {}).get("garden_depth", [0.3, 0.42]) if plot else [0.3, 0.42]
-	var size := Vector2(clampf(f.x * 0.75, 0.4, 0.8), rng.randf_range(float(deep[0]), float(deep[1])))
+	var gk: Dictionary = _plot_knobs().get("green", {}) if plot else {}
+	var wide: Array = gk.get("garden_width", [0.75, 0.4, 0.8])  # [share of the house's width, least, most] (game units)
+	var size := Vector2(clampf(f.x * float(wide[0]), float(wide[1]), float(wide[2])), rng.randf_range(float(deep[0]), float(deep[1])))
 	var back := hp - face * (f.y * 0.5 + size.y * 0.5 + 0.1)
 	var held := minf(size.x, size.y) * 0.5 if plot else size.x * 0.4  # the ground it keeps others off
 	var others: Array = lots.slice(0, lots.size() - 1) if own_lot < 0 else lots.slice(0, own_lot) + lots.slice(own_lot + 1)
@@ -1876,8 +1892,25 @@ func _croft(root: Node3D, center: Vector3, hp: Vector3, face: Vector3, f: Vector
 		Fields.plough(terrain, center + back, size, yaw)
 	else:
 		terrain.paint(plots[0], terrain.tiled(terrain.art("res://assets/ground/field-fallow.jpg", DIRT), 1, 1), back + Vector3(0, _ground_y(center, back), 0), size, yaw, Color(0.55, 0.42, 0.26))
-	Fields.sow(plots[1], terrain, center, ["cabbage", "beans", "cabbage"][rng.randi() % 3], center + back, size, yaw, rng)
+	# A yard's bed reads from roof height (round 5, 01-town: big cabbages in rows behind a low fence): its crops
+	# drawn larger (towns.json plots.green.garden_grow) and a low fence round it (garden_fence, a component).
+	Fields.sow(plots[1], terrain, center, ["cabbage", "beans", "cabbage"][rng.randi() % 3], center + back, size, yaw, rng, float(gk.get("garden_grow", 1.0)))
 	lots.append([back, held])
+	var gf := String(gk.get("garden_fence", ""))
+	if gf != "":
+		var gb := Basis(Vector3.UP, yaw)
+		var cn: Array = []
+		for c2 in [Vector2(-0.5, -0.5), Vector2(0.5, -0.5), Vector2(0.5, 0.5), Vector2(-0.5, 0.5)]:
+			var w3: Vector3 = back + gb * Vector3(c2.x * size.x + signf(c2.x) * 0.02, 0, c2.y * size.y + signf(c2.y) * 0.02)
+			cn.append(Vector2(w3.x, w3.z))
+		var near_house := Vector2(hp.x, hp.z)
+		var open_side := 0
+		for i in 4:
+			if (((cn[i] as Vector2) + cn[(i + 1) % 4]) * 0.5).distance_to(near_house) < (((cn[open_side] as Vector2) + cn[(open_side + 1) % 4]) * 0.5).distance_to(near_house):
+				open_side = i
+		for i in 4:
+			if i != open_side:  # the side toward the house stays open: the way into the bed
+				_fence_line(root, center, cn[i], cn[(i + 1) % 4], [], gf)
 	var all: Array = root.get_meta("gardens", [])
 	all.append(back)
 	root.set_meta("gardens", all)
