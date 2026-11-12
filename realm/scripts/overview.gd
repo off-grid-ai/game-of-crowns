@@ -32,8 +32,7 @@ func _overview_setup() -> void:
 	# The painting holds up to about four times the whole realm; closer than
 	# that the land itself is the better view.
 	_over_map.max_zoom = 4.0
-	_over_map.v2 = MapLook.v2()
-	if _over_map.v2 and bool(MapLook.Data.value(MapLook.F, "overview.match", true)):
+	if bool(MapLook.Data.value(MapLook.F, "overview.match", true)):
 		_over_map.max_zoom = MapLook.num("overview.match_most", 7.0)  # it opens at the camera's own scale
 	_over_map.modulate.a = 0.0
 	overview.add_child(_over_map)
@@ -46,9 +45,9 @@ func _overview_setup() -> void:
 			main.bridge.realm_map(func(d): _over_map.data = d))
 
 
-## The realm as it stands now, from the mirror (--map=v2): who holds the land, the hosts, marches and sieges.
+## The realm as it stands now, from the mirror: who holds the land, the hosts, marches and sieges.
 func _mirror() -> void:
-	if not _over_map.v2 or main.awareness == null:
+	if main.awareness == null:
 		return
 	var aw: Object = main.awareness
 	var houses := {}
@@ -78,7 +77,7 @@ func _overview_open(whole := false) -> void:
 	if whole:
 		_over_map.fit()
 	else:
-		_over_map.zoom = _matched_zoom() if _over_map.v2 and bool(MapLook.Data.value(MapLook.F, "overview.match", true)) else _over_map.max_zoom
+		_over_map.zoom = _matched_zoom() if bool(MapLook.Data.value(MapLook.F, "overview.match", true)) else _over_map.max_zoom
 		_over_map.center = Vector2(main.rig.target.x, main.rig.target.z) / main.terrain.TILE - Vector2(0.5, 0.5)
 	overview.visible = true
 	main.labels.visible = false
@@ -86,7 +85,7 @@ func _overview_open(whole := false) -> void:
 	var tw := main.create_tween().set_parallel(true)
 	tw.tween_property(_over_map, "modulate:a", 1.0, 0.0 if whole else 0.35)
 	if not whole:  # still drawing back as the painting comes up
-		tw.tween_property(_over_map, "zoom", maxf(MapLook.num("overview.ease_to", 2.6) if _over_map.v2 else 2.6, _over_map.min_zoom()), 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		tw.tween_property(_over_map, "zoom", maxf(MapLook.num("overview.ease_to", 2.6), _over_map.min_zoom()), 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 		tw.tween_method(func(_v): _over_map.queue_redraw(), 0.0, 1.0, 0.5)
 	tw = tw.chain()
 	tw.tween_callback(func():

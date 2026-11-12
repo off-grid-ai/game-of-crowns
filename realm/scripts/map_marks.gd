@@ -1,5 +1,5 @@
 extends CanvasLayer
-## The realm's marks over the land as the camera draws back to the map (docs/review/realm-map.md; --map=v2):
+## The realm's marks over the land as the camera draws back to the map (docs/review/realm-map.md):
 ## every host in the field under its standard with its men, the crown's hosts on the march as a dashed line
 ## with an arrow to where they're bound, and crossed swords over a town under siege (Total War's campaign map).
 ## They fade in from data/map.json marks.from to marks.to and are drawn as the painted overview draws them
@@ -13,8 +13,6 @@ var _canvas: Control
 
 
 static func apply(m: Node) -> void:
-	if not MapLook.v2():
-		return
 	var mm := new()
 	mm.name = "MapMarks"
 	mm.main = m

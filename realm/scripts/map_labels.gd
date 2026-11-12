@@ -80,7 +80,7 @@ func _process_timed(_delta: float) -> void:
 		# Seats read from across the realm; a small town only once you're near.
 		# What the King started here (his works, his siege) reads from as far as a seat.
 		var mine := _mine(data)
-		var far := 400.0 if cap or mine != "" else (_far_v2(int(data.get("size", 1))) if _map_v2 else 26.0 + int(data.get("size", 1)) * 2.5)
+		var far := 400.0 if cap or mine != "" else _far(int(data.get("size", 1)))
 		var a := smoothstep(far, far * 0.8, d) * smoothstep(7.0, 10.0, d)
 		var at: Vector3 = towns.towns[id]["node"].global_position + Vector3(0, 0.35, 0)
 		if a <= 0.01 or cam.is_position_behind(at):
@@ -199,15 +199,14 @@ func _think(tag: Dictionary, data: Dictionary, d: float) -> void:
 	l.text = "\u201c%s\u201d" % String(said[i])
 
 
-## The realm at map zoom (--map=v2, data/map.json labels): more towns named as you draw back, a bigger town's
+## The realm at map zoom (data/map.json labels): more towns named as you draw back, a bigger town's
 ## name bigger (CK3, Total War).
-var _map_v2 := preload("res://scripts/map_look.gd").v2()
-func _far_v2(size: int) -> float:
+func _far(size: int) -> float:
 	const ML := preload("res://scripts/map_look.gd")
 	return ML.num("labels.far_base", 34.0) + size * ML.num("labels.far_per_size", 4.0)
 
 
-func _font_v2(size: int) -> int:
+func _font_for(size: int) -> int:
 	const ML := preload("res://scripts/map_look.gd")
 	return mini(int(ML.num("labels.font_base", 12.0) + size * ML.num("labels.font_per_size", 0.6)), int(ML.num("labels.font_most", 18.0)))
 
@@ -223,7 +222,7 @@ func _refresh(tag: Dictionary, data: Dictionary) -> void:
 	tag["sig"] = sig
 	var name: Label = tag["name"]
 	name.text = String(data.get("title", data.get("name", "")))
-	name.add_theme_font_size_override("font_size", 16 if cap else (_font_v2(int(data.get("size", 1))) if _map_v2 else 12))
+	name.add_theme_font_size_override("font_size", 16 if cap else _font_for(int(data.get("size", 1))))
 	name.add_theme_font_override("font", T.sans)
 	name.add_theme_color_override("font_color", Color(1, 0.98, 0.94) if cap else Color(0.97, 0.95, 0.9, 0.9))
 	var house: Label = tag["house"]

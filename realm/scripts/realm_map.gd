@@ -24,9 +24,8 @@ var zoom := 1.0  # 1: the whole realm fits the view's height
 var max_zoom := 6.0
 var center := Vector2(27.5, 43.5)  # the tile at the middle of the view
 var mark := ""  # a town ringed in gold
-## The realm as it stands now, from the mirror (--map=v2; overview.gd sets them): who holds each tile (the
+## The realm as it stands now, from the mirror (overview.gd sets them): who holds each tile (the
 ## owners' rows), each owner's house, the hosts in the field, the crown's marches and the towns under siege.
-var v2 := false
 var owners: Array = []:
 	set(v):
 		if v != owners:
@@ -158,54 +157,14 @@ func _draw() -> void:
 	if _lands_tex == null and not data.is_empty():
 		_lands_tex = _lands_of()
 	if _lands_tex:
-		draw_texture_rect(_lands_tex, Rect2(origin, ms), false, Color(1, 1, 1, MapLook.num("overview.wash", 0.42) if v2 else 0.2))  # a wash, the land showing through
-	if v2:
-		_draw_v2()
-		return
-	var font: Font = T.get_theme().default_font
-	# No road lines: the roads are tiles, and joined they drew brackets, not routes.
-	var named := zoom >= 1.8  # every town named once you're close
-	for t in data.get("towns", []):
-		var at := to_screen(float(t["x"]), float(t["y"]))
-		if not Rect2(Vector2.ZERO, size).grow(60).has_point(at):
-			continue
-		var col := Color.from_string(String(t.get("color", "#888")), Color.GRAY)
-		var seat: bool = t.get("capital", false)
-		var marked: bool = String(t["title"]) == mark or String(t["title"]) == _hover
-		var r := (4.5 if seat else 2.4) * (1.0 + (zoom - 1.0) * 0.15)
-		if t.get("besieged", false):  # a host at the walls
-			draw_arc(at, r + 5.0, 0.0, TAU, 32, Color(0.85, 0.22, 0.16), 2.5, true)
-		if marked:
-			draw_arc(at, r + 8.0, 0.0, TAU, 32, T.ACCENT, 3.0, true)
-		draw_circle(at, r + 1.2, Color(0.08, 0.06, 0.04, 0.85))
-		draw_circle(at, r, col.lerp(Color(0.92, 0.88, 0.78), 0.2))
-		if seat or named or marked:
-			var fs := (15 if seat else 12) + int(minf(zoom, 4.0) * 0.5)
-			var pos := at + Vector2(r + 5.0, 5.0)
-			draw_string_outline(font, pos, String(t["title"]), HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 3, Color(0.06, 0.05, 0.03, 0.75))
-			draw_string(font, pos, String(t["title"]), HORIZONTAL_ALIGNMENT_LEFT, -1, fs, T.ACCENT if marked else T.TEXT)
-	# Hosts in the field: the house's sigil, dark-edged, and how many companies
-	# march under it.
-	for g in data.get("armies", []):
-		var at := to_screen(float(g["x"]), float(g["y"]))
-		if not Rect2(Vector2.ZERO, size).grow(60).has_point(at):
-			continue
-		var s := 22.0 + minf(zoom, 4.0) * 2.0
-		var box := Rect2(at - Vector2(s, s) * 0.5, Vector2(s, s))
-		var sig := Heraldry.sigil({"name": g.get("key", g.get("house", "")), "sigil": g.get("sigil", ""), "crown": g.get("crown", false)})
-		if sig:
-			draw_texture_rect(sig, box.grow(1.5), false, Color(0, 0, 0, 0.7))
-			draw_texture_rect(sig, box, false, Color.from_string(String(g.get("color", "#ddd")), Color.WHITE).lerp(Color.WHITE, 0.35))
-		var n := str(int(g.get("companies", 1)))
-		var np := at + Vector2(s * 0.5 + 3.0, s * 0.25)
-		draw_string_outline(font, np, n, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, 3, Color(0.06, 0.05, 0.03, 0.75))
-		draw_string(font, np, n, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, T.TEXT)
+		draw_texture_rect(_lands_tex, Rect2(origin, ms), false, Color(1, 1, 1, MapLook.num("overview.wash", 0.42)))  # a wash, the land showing through
+	_draw_marks()
 
 
 ## Each house's lands: every land tile shaded in the colour of the nearest
 ## town's house, within a few days' ride of it.
 func _lands_of() -> Texture2D:
-	if v2 and not owners.is_empty():
+	if not owners.is_empty():
 		return _held_lands()
 	var tl := tiles()
 	var w := int(tl.x)
@@ -229,9 +188,9 @@ func _lands_of() -> Texture2D:
 	return ImageTexture.create_from_image(img)
 
 
-## A siege's ring pulses (--map=v2): the painting redraws while one stands.
+## A siege's ring pulses: the painting redraws while one stands.
 func _process(_delta: float) -> void:
-	if v2 and visible and not sieges.is_empty():
+	if visible and not _sieges().is_empty():
 		queue_redraw()
 
 
@@ -274,7 +233,7 @@ func _gui_input(e: InputEvent) -> void:
 			queue_redraw()
 
 
-# --- the realm at map zoom (--map=v2; docs/review/realm-map.md) -------------------------------------------
+# --- the realm at map zoom (docs/review/realm-map.md) -------------------------------------------
 
 func _owner(x: int, y: int) -> int:
 	if y < 0 or y >= owners.size():
@@ -330,7 +289,7 @@ func _corner(p: Vector2) -> Vector2:
 	return to_screen(p.x - 0.5, p.y - 0.5)
 
 
-func _draw_v2() -> void:
+func _draw_marks() -> void:
 	var font: Font = T.get_theme().default_font
 	var view := Rect2(Vector2.ZERO, size).grow(60)
 	# Borders: each house's own colour on its side of a dark core (CK3); the coast is no border.
@@ -391,18 +350,42 @@ func _draw_v2() -> void:
 	var k := MapLook.num("overview.banner_scale", 0.85)
 	for m in marches:
 		MapLook.draw_route(self, to_screen(m[0].x, m[0].y), to_screen(m[1].x, m[1].y), k)
-	for st in sieges:
+	for st in _sieges():
 		var at := to_screen(st.x, st.y)
 		if view.has_point(at):
 			MapLook.draw_siege(self, at, k)
 	var standing := []
-	for g in hosts:
+	for g in _hosts():
 		var at := to_screen(float(g["x"]), float(g["y"]))
 		if view.has_point(at):
 			standing.append([at, g])
 	standing.sort_custom(func(x, y): return x[0].y < y[0].y)
 	for e in standing:
 		MapLook.draw_banner(self, e[0], e[1]["house"], int(e[1]["men"]), k)
+
+
+## The hosts in the field: the mirror's (overview.gd) or, with no mirror (the chronicle's map, lore.gd), the
+## bridge's realm map's armies in the same shape.
+func _hosts() -> Array:
+	if not hosts.is_empty() or owners.size() > 0:
+		return hosts
+	var per := int(MapLook.num("marks.men_per_company", 200.0))
+	var out := []
+	for g in data.get("armies", []):
+		var house := {"name": g.get("key", g.get("house", "")), "sigil": g.get("sigil", ""), "crown": g.get("crown", false), "color": g.get("color", "#888")}
+		out.append({"x": float(g["x"]), "y": float(g["y"]), "men": int(g.get("companies", 1)) * per, "house": house})
+	return out
+
+
+## The towns under siege: the mirror's or, with no mirror, the bridge's realm map's.
+func _sieges() -> Array:
+	if not sieges.is_empty() or owners.size() > 0:
+		return sieges
+	var out := []
+	for t in data.get("towns", []):
+		if t.get("besieged", false):
+			out.append(Vector2(float(t["x"]), float(t["y"])))
+	return out
 
 
 ## A seat first, then the bigger town.

@@ -1,6 +1,5 @@
 extends RefCounted
-## How the realm reads at map zoom (docs/review/realm-map.md; realm/data/map.json): the one switch, and the
-## one way each mark is drawn, so the mid zoom (map_marks.gd) and the painted overview (realm_map.gd) show an
+## How the realm reads at map zoom (docs/review/realm-map.md; realm/data/map.json): the one way each mark is drawn, so the mid zoom (map_marks.gd) and the painted overview (realm_map.gd) show an
 ## army, a siege and a march alike and the hand-off between them changes only the ground.
 ## Total War's campaign map: an army is a standard (pole, flag in its colour, its sigil, its men); a march a
 ## dashed line with an arrow; a siege crossed swords over the town.
@@ -10,16 +9,9 @@ const Heraldry := preload("res://scripts/heraldry.gd")
 const F := "map"
 
 
-static func v2() -> bool:
-	var args := OS.get_cmdline_user_args()
-	if args.has("--map=v1"):
-		return false
-	return args.has("--map=v2") or String(Data.value(F, "version", "v1")) == "v2"
-
-
-## v2 turns the political map on (look.json politics).
+## The map zoom turns the political map on (look.json politics).
 static func politics() -> bool:
-	return v2() and bool(Data.value(F, "politics", true))
+	return bool(Data.value(F, "politics", true))
 
 
 static func num(path: String, fallback: float) -> float:
