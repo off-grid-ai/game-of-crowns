@@ -1270,6 +1270,21 @@ static func art(path: String, fallback: String) -> String:
 	return path if ResourceLoader.exists(path) else fallback
 
 
+## The pixels of a ground texture for tiled(): the imported texture when Godot has imported it, else the
+## file itself read straight off disk (art dropped into assets/ before the next import pass, which gave
+## "No loader found" and a null get_image here), else null when the art isn't on this machine at all.
+func _source_image(path: String) -> Image:
+	if ResourceLoader.exists(path):
+		var tex := load(path) as Texture2D
+		if tex:
+			return tex.get_image()
+	if FileAccess.file_exists(path):
+		var raw := Image.load_from_file(ProjectSettings.globalize_path(path))
+		if raw:
+			return raw
+	return null
+
+
 ## A texture repeated nx by ny times, so a long road keeps its grain instead of
 ## stretching. `edge` softens it: "round" for a worn, ragged patch, "setts" for laid stone, "sides" for a
 ## verge's frayed edges, "track" for a road's (frayed, with wheel ruts), "paved" for a street of setts.
@@ -1290,7 +1305,9 @@ func tiled(path: String, nx: int, ny: int, edge := "") -> Texture2D:
 			_tiled[key] = ImageTexture.create_from_image(kept)
 			return _tiled[key]
 	const N := 256
-	var src: Image = (load(path) as Texture2D).get_image()
+	var src := _source_image(path)
+	if src == null:
+		return null  # the art isn't on this machine (third-party art stays out of git): the patch is left unpainted
 	if src.is_compressed():
 		src.decompress()
 	src.convert(Image.FORMAT_RGBA8)
