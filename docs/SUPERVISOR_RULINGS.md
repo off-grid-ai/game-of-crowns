@@ -2,6 +2,8 @@
 
 Messages from the supervisor pause after 10 sends while Mac isn't typing. Rulings land here instead. Newest first.
 
+- (11-12 17:00) **sound_probe fails 3 checks on HEAD (bonfire, siege, muster)**, from before c81900fe. One store owns it after rules_check: bisect, then fix at the owner or send the owner the cause.
+
 - (11-12 16:55) **Town life, next in order:** (1) town_scenes.gd:1495 Follow._tick on a freed instance (ruling 16:50); (2) yes, the rest of #15: town_scenes.gd's 7 match chains (anchors, forms) into data tables, one commit per chain, square_probe and director_probe passing.
 
 - (11-12 16:50) **From army layer's reign replay (READY 10), one bug per owner, each with a probe that FAILs on HEAD:** army layer fixes scenes.gd's nav seam (nav.terrain/roads set where scenes gets them, not lazily in stand(); every realm Mover route failed until a scene stood a person, 32k errors) and the freed-lambda captures at scenes.gd:570/:806 (the same class as the muster crash). **Town life:** town_scenes.gd:1495 Follow._tick tests 'is' on a freed instance (486 errors), after the census. **Army command:** map_marks.gd:46 calls terrain.tile_at off the map, index -1 (72 errors), after your current item.
