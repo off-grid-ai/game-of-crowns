@@ -14,7 +14,10 @@ extends SceneTree
 ##   gatherings and the minds-off switch), and every calling a villager can be given has a mind's activities;
 ## - villagers.gd split (integration audit #10): the talks are village_talk.gd's alone (no talk function or store
 ##   left in villagers.gd, nobody reaching for villagers' own); the claims on places and slots are village_slots.gd's;
-##   who is who and where (who_at, who_is, who_is_home, fire_of) is village_registry.gd's.
+##   who is who and where (who_at, who_is, who_is_home, fire_of) is village_registry.gd's;
+## - dressings registered by row (integration audit #15): no `dress_*` method found by its name (town_life.gd keeps
+##   none, town_scenes.gd calls none); every standing row's dress has a town_scenes.json `dressings` row whose
+##   class extends town_dress.gd.
 ##   arch -arm64 godot --headless --path realm --script res://tools/square_probe.gd
 
 const Mind := preload("res://scripts/npc_mind.gd")
@@ -50,6 +53,7 @@ func _init() -> void:
 	await _plan()
 	_one_path()
 	_split()
+	_dressings()
 	print("SQUARE %s (%d fails)" % ["PASS" if fails == 0 else "FAIL", fails])
 	quit(1 if fails > 0 else 0)
 
@@ -295,3 +299,28 @@ func _split() -> void:
 		for file in DirAccess.get_files_at(dir):
 			if file.ends_with(".gd") and file != "square_probe.gd" and FileAccess.get_file_as_string(dir.path_join(file)).contains("._talks"):
 				_fail("%s reaches into villagers' talks (._talks)" % file)
+
+
+# --- dressings registered by row (integration audit #15) ------------------------------------------
+
+func _dressings() -> void:
+	if FileAccess.get_file_as_string("res://scripts/town_life.gd").contains("func dress_"):
+		_fail("town_life.gd still keeps dress_* methods: each dressing is its own class")
+	if FileAccess.get_file_as_string("res://scripts/town_scenes.gd").contains("\"dress_\" +"):
+		_fail("town_scenes.gd still finds a dressing by its method's name (call(\"dress_\" + ...))")
+	var d := Data.read("town_scenes")
+	var reg: Dictionary = d.get("dressings", {})
+	var base: GDScript = load("res://scripts/town_dress.gd") if ResourceLoader.exists("res://scripts/town_dress.gd") else null
+	for row in d.get("standing", []):
+		for dress in row.get("dress", []):
+			if not reg.has(dress):
+				_fail("standing row '%s' dresses '%s', which has no dressings row" % [row.get("id", "?"), dress])
+				continue
+			var cls: GDScript = load(String(reg[dress])) if ResourceLoader.exists(String(reg[dress])) else null
+			var ok := cls != null and base != null
+			var c := cls
+			while ok and c != null and c != base:
+				c = c.get_base_script()
+			if not ok or c != base:
+				_fail("dressing '%s' (%s) is no class of town_dress.gd" % [dress, reg[dress]])
+	print("SQUARE dressings: %d registered" % reg.size())

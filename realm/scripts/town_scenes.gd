@@ -7,7 +7,8 @@ extends Node3D
 ##   ring round the bonfire and its tables, the muster and the levy marching out, the gallows' onlookers, the dole,
 ##   the funeral round the square, and the square's own life (the crier, beggars, the watch's beat, dogs, children
 ##   chasing, gossip, guards at the forge and the castle, carriers, the market cart, a gardener in the yards).
-##   town_life.gd lays only the props (its dress_* functions) and says where they stand (anchors).
+##   Each row's dress is a class of its own (town_dress/, registered in town_scenes.json dressings): it lays the
+##   props with town_life.gd's hands and says where they stand (anchors).
 ## - The town's passing scenes (`scenes` rows): near the camera, picked by hour, needs and mood weights, capped by
 ##   the town's size; their people walk in, act and walk off. The director alone writes each town's running
 ##   scenes and claimed places to the store (the mirror's town scope: `scenes`, `claims`).
@@ -50,6 +51,7 @@ var _seq := 0
 var _no_walk := {}  # town id -> {n: passing people not cast for want of a way in, rows: {id: n}, said: msec}
 var _held := {}  # town id -> {row, map}: a passing scene waiting on the town's walk map, still baking
 var _marches: Array = []  # levies marching out: {root, life, every, wait, file, spacing, most, gone, pace, rng}
+var _dressings := {}  # dress name -> its town_dress.gd class, one of each (_dressing)
 
 
 func _init(owner: Node) -> void:
@@ -94,7 +96,7 @@ func _process(delta: float) -> void:
 
 ## Stages a town's standing scenes into its fresh Life (town_life.gd update calls this once the props and the
 ## working buildings are set): every `standing` row whose needs the town's states meet, its props laid by
-## town_life's dress_<name>, then each role cast at its anchor in its form. `tl` is the town_life that dresses
+## its dressings (town_scenes.json dressings), then each role cast at its anchor in its form. `tl` is the town_life that dresses
 ## the town (its placing, people and props); `states` the town's (works.gd states, and riot in disorder).
 func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object) -> void:
 	var rng := RandomNumberGenerator.new()
@@ -116,15 +118,29 @@ func stage(root: Node3D, life: Node3D, c: Dictionary, states: Array, tl: Object)
 			continue
 		var anchors: Dictionary = (life.get_meta("anchors", {}) as Dictionary).duplicate()  # where town_life's own dressing stands
 		for dress in row.get("dress", []):
-			var got: Variant = tl.call("dress_" + String(dress), root, life, row, rng)
-			if got is Dictionary:
-				anchors.merge(got, true)
+			var d = _dressing(String(dress), tl)
+			if d != null:
+				anchors.merge(d.dress(root, life, row, rng), true)
 		var k := {"root": root, "life": life, "tl": tl, "states": states, "size": size, "rng": rng, "row": row, "lead": null, "cast": [], "tally": tally, "census": census}
 		for role in row.get("roles", []):
 			_stage_role(k, role, anchors)
 		if row.has("march") and _meets(row["march"], root, states, size):
 			_begin_march(root, life, row["march"], rng)
 	print("CHECK town scenes: %s: %d cast; no room for %s; rows whose place wasn't there: %s; square census %d for %.0f m2 of open setts, %d cast to it" % [String(root.get_meta("title", root.name)), int(tally["cast"]), str(tally["no_room"]), str(tally["no_place"]), int(census["budget"]), float(census["m2"]), int(census["cast"])])
+
+
+## The dressing a standing row names (town_scenes.json dressings: its class, extends town_dress.gd), one of each
+## kept; null, with an error, for a name with no row.
+func _dressing(name: String, tl: Object):
+	if not _dressings.has(name):
+		var path := String((_d.get("dressings", {}) as Dictionary).get(name, ""))
+		if path == "":
+			push_error("town_scenes: no dressing '%s' in town_scenes.json dressings" % name)
+			return null
+		_dressings[name] = load(path).new(tl)
+	var d = _dressings[name]
+	d.tl = tl
+	return d
 
 
 ## How many of a role the square's census lets stand, or -1 for no cap: a role outside the census (a riot's press,
