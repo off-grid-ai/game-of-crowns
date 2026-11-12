@@ -72,7 +72,7 @@ func _init() -> void:
 	# No house-colour patches on the set's roofs (round 11: the importer's roof mask split Meshy's baked atlas face by face,
 	# and the Crown's colour lay on the red tiles as smears). Only the statue keeps its mask (its banner, the bar Mac
 	# liked: "this actually looks good").
-	for piece in ["sq_townhouse", "sq_cottage", "sq_merchant_house", "sq_smithy", "sq_well"]:
+	for piece in ["sq_townhouse", "sq_cottage", "sq_merchant_house", "sq_smithy", "sq_well", "sq_market_stall", "sq_cart"]:
 		var path := "res://assets/meshy/%s/%s.glb" % [piece, piece]
 		var n: Node = (load(path) as PackedScene).instantiate() if ResourceLoader.exists(path) else null
 		var patches := 0
