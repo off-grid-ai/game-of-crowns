@@ -1,0 +1,7 @@
+# One writer per fact (goc-cpto; docs/GROUND_TRUTH.md): key, the one script that may set it, and "engine" when it is
+# one of the few things Engine may hold (a handle to a service or a debug marker, never a copy of a realm fact).
+# rules_check.sh flags set_meta("key") anywhere but the owner. A new shared fact gets a row here.
+footprints scripts/towns\.gd node
+awareness scripts/awareness\.gd engine
+stone_walls scripts/walls\.gd engine
+stage NONE engine

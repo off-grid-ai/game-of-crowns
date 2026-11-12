@@ -32,4 +32,39 @@ check "view-fetch" 'HTTPRequest\.new\(\)|bridge\.BASE|bridge\.gd"\)\.BASE|127\.0
   'scripts/(bridge|app_services)\.gd'  # app_services starts the packaged bridge; it asks it nothing
 check "cross-mind-write" '[A-Za-z0-9_)]\.blackboard\.set_var\(|get\("blackboard"\)|=[^=]*[A-Za-z0-9_)]\.blackboard[[:space:]]*(#.*)?$' \
   'scripts/awareness\.gd'
+# one-way-to-move, the tween form: a tween_method whose lambda sets a position (within its first lines) walks a
+# body by hand. A thrown thing (an arrow, a stone) flies an arc (`(1.0 - t)` in or just above it) and is not travel.
+check_tween() {
+  local rule="one-way-to-move-tween"
+  for f in scripts/*.gd; do
+    [[ $f == scripts/mover.gd ]] && continue
+    local hits=$(awk '{b[FNR]=$0} END{for(l=1;l<=FNR;l++) if(b[l] ~ /tween_method\(/){w=""; for(i=l;i<=l+4&&i<=FNR;i++) w=w"\n"b[i]; a=""; for(i=(l>8?l-8:1);i<=l+4&&i<=FNR;i++) a=a"\n"b[i]; if(w ~ /position *=[^=]/ && a !~ /\(1\.0 - t\)/) print FILENAME":"l": "b[l]}}' $f)
+    if [[ -n $hits ]]; then
+      grep -qx "$f:$rule" $known 2>/dev/null && continue
+      print -r -- "$hits" | sed "s#\$#   <- $rule#"; fail=1
+    elif grep -qx "$f:$rule" $known 2>/dev/null; then
+      echo "$f:$rule   <- fixed: take it off $known"; fail=1
+    fi
+  done
+}
+check_tween
+#   one-writer: each fact has one writer (goc-cpto, docs/GROUND_TRUTH.md). The store's scopes are written only by the
+#   store; a fact in tools/facts.txt (key owner) is set only by its owner; Engine holds handles, never a copy of a fact
+#   (the allowed Engine keys are the facts.txt rows marked engine).
+check "one-writer" '(\brealm|town\([^)]*\))\.set_var\(' 'scripts/awareness\.gd'
+facts=tools/facts.txt
+while read -r key owner scope; do
+  [[ -z $key || $key == \#* || $scope == engine ]] && continue
+  check "one-writer-$key" "set_meta\\(\"$key\"" "$owner"
+done < $facts
+allowed=$(awk '$3=="engine"{printf "%s%s", s, $1; s="|"}' $facts)
+for f in $(grep -lE 'Engine\.set_meta\(' scripts/*.gd); do
+  hits=$(grep -nE 'Engine\.set_meta\(' $f | grep -vE "Engine\.set_meta\(\"($allowed)\"")
+  if [[ -n $hits ]]; then
+    grep -qx "$f:engine-copy" $known 2>/dev/null && continue
+    print -r -- "$hits" | sed "s#^#$f:#;s#\$#   <- engine-copy#"; fail=1
+  elif grep -qx "$f:engine-copy" $known 2>/dev/null; then
+    echo "$f:engine-copy   <- fixed: take it off $known"; fail=1
+  fi
+done
 exit $fail

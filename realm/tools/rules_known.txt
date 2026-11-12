@@ -5,6 +5,7 @@ scripts/chatter.gd:view-fetch
 scripts/fire.gd:cross-mind-write
 scripts/main.gd:raw-world
 scripts/npc_mind.gd:cross-mind-write
+scripts/scenes.gd:one-way-to-move-tween
 scripts/scenes.gd:raw-world
 scripts/shot_harness.gd:raw-world
 scripts/town_scenes.gd:cross-mind-write
