@@ -195,6 +195,15 @@ func _arm_wait() -> void:
 		_take_shot(true))
 
 
+## Quits once the navigation servers have stopped (every film run ended in "libc++abi: recursive_mutex lock
+## failed": the 2D navigation's region sync was still running as the engine tore down); a few frames later.
+static func quit_clean(tree: SceneTree) -> void:
+	preload("res://scripts/perf_tools.gd").stop_watch()
+	NavigationServer2D.set_active(false)
+	NavigationServer3D.set_active(false)
+	tree.create_timer(0.15, true, false, true).timeout.connect(tree.quit)
+
+
 func _take_shot(backstop := false) -> void:
 	if _shot.get("taken", false):
 		return  # the --wait and its backstop: one still
@@ -210,7 +219,7 @@ func _take_shot(backstop := false) -> void:
 	var img := main.get_viewport().get_texture().get_image()
 	img.save_png(_shot["path"])
 	print("Saved screenshot to ", _shot["path"])
-	main.get_tree().quit()
+	quit_clean(main.get_tree())
 
 
 func _frame_for_shot(world: Dictionary) -> void:
@@ -261,7 +270,7 @@ func _frame_for_shot(world: Dictionary) -> void:
 								main.get_viewport().get_texture().get_image().save_png(path)
 								print("Saved screenshot to ", path)
 								if i == times.size() - 1:
-									main.get_tree().quit()))
+									quit_clean(main.get_tree())))
 				if _shot.has("ride"):
 					# Into the saddle, then away from the camera at the asked pace.
 					if _shot["ride"] == "all":
@@ -546,4 +555,4 @@ func _tour(world: Dictionary) -> void:
 		main.interior.open("great_hall", lord["p"], lord["h"], String(lord["p"].get("seat", "")))
 		await main.get_tree().create_timer(5.0).timeout
 		await snap.call("interior")
-	main.get_tree().quit()
+	quit_clean(main.get_tree())

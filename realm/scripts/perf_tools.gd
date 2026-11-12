@@ -96,9 +96,21 @@ static func _frame() -> void:
 	_mutex.unlock()
 
 
+## Stops the freeze watch and joins its thread (shot_harness.quit_clean): left running, it locked a mutex the
+## engine had already destroyed at quit ("libc++abi: recursive_mutex lock failed").
+static var _watch_stop := false
+static func stop_watch() -> void:
+	if _watch == null:
+		return
+	_watch_stop = true
+	if _watch.is_started():
+		_watch.wait_to_finish()
+	_watch = null
+
+
 static func _watching() -> void:
 	var told := 0
-	while true:
+	while not _watch_stop:
 		OS.delay_msec(250)
 		_mutex.lock()
 		var at := _last_at

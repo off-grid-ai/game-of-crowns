@@ -128,7 +128,7 @@ func update_instance_track(instance_id: int, track_number: int) -> void:
 	custom_data.b = vat_animation_tracks[track_number].endFrame
 	multimesh.set_instance_custom_data(instance_id, custom_data)
 		
-	reset_one_shot(instance_id)
+	reset_one_shot(instance_id, vat_animation_tracks[track_number])  # the track itself (ours: a lookup by frames came back empty, 14,825 errors a run with the 27-clip knight)
 
 ## Updates the current instance_id with the provided alpha (0..1)
 func update_instance_alpha(instance_id: int, alpha: float) -> void:
@@ -289,10 +289,12 @@ func get_current_timestamp() -> float:
 
 ## Restarts the one shot animation for a specific instance_id.[br][br]
 ## Only valid if instanced animation track  [is_looping] is true
-func reset_one_shot(instance_id: int):
+func reset_one_shot(instance_id: int, known: VATAnimationTrack = null):
 	custom_color = multimesh.get_instance_color(instance_id)
 	
-	var track: VATAnimationTrack = get_animation_from_instance(instance_id)
+	var track: VATAnimationTrack = known if known else get_animation_from_instance(instance_id)
+	if track == null:
+		return
 	
 	custom_color.r = _encode_color_channel_red(track)
 	custom_color.g = get_current_timestamp()
