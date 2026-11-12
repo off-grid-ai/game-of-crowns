@@ -1,3 +1,3 @@
-# meshy_town_guard
+# meshy_town_guard: the pikemen
 
-Remade in the knight's family (docs/art/army/spearman_front.png, soldiers_sheet.jpg): Meshy image-to-3D, rigged by realm/tools/rig/rig_unit.py (rig.json units.spearman), VAT-baked. Source: ~/code/goc-kits/meshy/army/spearman/.
+Two-handed pikemen (Mac, 2026-11-12), the spearmen's folder: a Meshy body with empty hands (docs/art/army/pikeman_body_front.png) and a separate Meshy pike (pike_front.png, 4.5 m, gripped a third up) carried by the right hand as a prop, rigged by realm/tools/rig/rig_unit.py (rig.json units.pikeman_body), VAT-baked. Sources: ~/code/goc-kits/meshy/army/pikeman_body/, ~/code/goc-kits/meshy/army/pike/pike_prop.glb.

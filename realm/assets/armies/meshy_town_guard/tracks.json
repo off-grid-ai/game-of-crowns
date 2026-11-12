@@ -24,81 +24,57 @@
   "framerate": 24
  },
  {
-  "name": "SS_Slash_5",
-  "startFrame": 104,
-  "endFrame": 136,
-  "isLooping": false,
-  "isBlended": true,
-  "framerate": 24
- },
- {
-  "name": "SS_Attack_4",
-  "startFrame": 137,
-  "endFrame": 160,
-  "isLooping": false,
-  "isBlended": true,
-  "framerate": 24
- },
- {
-  "name": "SS_Slash_2",
-  "startFrame": 161,
-  "endFrame": 245,
-  "isLooping": false,
-  "isBlended": true,
-  "framerate": 24
- },
- {
-  "name": "SS_Block_1",
-  "startFrame": 246,
-  "endFrame": 259,
-  "isLooping": false,
-  "isBlended": true,
-  "framerate": 24
- },
- {
   "name": "SS_Block_Idle",
-  "startFrame": 260,
-  "endFrame": 293,
+  "startFrame": 104,
+  "endFrame": 137,
   "isLooping": true,
   "isBlended": true,
   "framerate": 24
  },
  {
+  "name": "SS_Block_1",
+  "startFrame": 138,
+  "endFrame": 151,
+  "isLooping": false,
+  "isBlended": true,
+  "framerate": 24
+ },
+ {
   "name": "SS_Impact_1",
-  "startFrame": 294,
-  "endFrame": 312,
+  "startFrame": 152,
+  "endFrame": 170,
   "isLooping": false,
   "isBlended": true,
   "framerate": 24
  },
  {
   "name": "SS_Impact_2",
-  "startFrame": 313,
-  "endFrame": 336,
+  "startFrame": 171,
+  "endFrame": 194,
   "isLooping": false,
   "isBlended": true,
   "framerate": 24
  },
  {
   "name": "SS_Death_2",
-  "startFrame": 337,
-  "endFrame": 430,
+  "startFrame": 195,
+  "endFrame": 288,
   "isLooping": false,
   "isBlended": true,
   "framerate": 24
  },
  {
   "name": "SS_Death_1",
-  "startFrame": 431,
-  "endFrame": 486,
+  "startFrame": 289,
+  "endFrame": 344,
   "isLooping": false,
   "isBlended": true,
   "framerate": 24
  },
  {
   "name": "Battlecry",
-  "startFrame": 487,
-  "endFrame": 554,
+  "startFrame": 345,
+  "endFrame": 412,
   "isLooping": false,
   "isBlended": true,
   "framerate": 24
