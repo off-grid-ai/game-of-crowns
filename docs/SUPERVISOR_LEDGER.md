@@ -121,6 +121,10 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 10:30 (11-12) Round 4 (import ran; focus.sh composites now `arch -arm64 /usr/bin/python3`): brighter, cleaner lines,
+  colourful crowd, the well reads. Still: square ring 3-4 fronts (blocked by "a building" 139, "a street" 114) ->
+  fire-siege, plus gatehouse apart from the curtain and roofs too bright red; grass saturated emerald, side streets
+  dirt, awnings dark -> army-ui; ~80 figures in one swirl, some pink -> works-life (~25-30, spaced).
 - 10:20 (11-12) Round 3 rendered at the close town view (dist 6, 89078f57): framing now matches 01-town (square lower
   middle, castle upper right), paving reads, the crowd is there. Still short: roofs flat saturated orange and huge;
   gatehouse adrift in the square, keep a slab; houses loose (Kingsmere ring: 2-3 fronts stood, turned away street
