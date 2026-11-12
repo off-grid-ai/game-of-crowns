@@ -3,7 +3,6 @@ scripts/castle_life.gd:one-colour
 scripts/castle_life.gd:raw-world
 scripts/chatter.gd:view-fetch
 scripts/decisions_world.gd:one-colour
-scripts/fire.gd:cross-mind-write
 scripts/fire.gd:one-colour
 scripts/forest.gd:one-colour
 scripts/hearths.gd:one-colour

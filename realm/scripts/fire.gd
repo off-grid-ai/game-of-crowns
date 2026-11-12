@@ -11,6 +11,7 @@ extends Node3D
 ## each house that catches is told to the bridge (kindled), so it stands burnt through a reload, and whole again
 ## as the realm rebuilds it. Knobs: data/fire.json. On with fire.json on.
 
+const Awareness := preload("res://scripts/awareness.gd")  # the view's one store: minds are written through its reducer (assign)
 const Data := preload("res://scripts/data.gd")  # the one loader of realm/data (data.gd)
 const FLAME_SHADER := preload("res://scripts/stylized_fire.gdshader")
 const CHAR_SHADER := preload("res://scripts/charred.gdshader")
@@ -344,8 +345,8 @@ func _line(id: int, root: Node3D, key: String, h: Array) -> void:
 			continue
 		if String(a.get("role", "")) == "child" or String(a.get("age", "")) == "child":
 			continue
-		var bb: Blackboard = (a["mind"] as BTPlayer).blackboard
-		if bb.get_var(&"danger", false, false) or bb.get_var(&"firefight", false, false):
+		var mind: BTPlayer = a["mind"]
+		if mind.blackboard.get_var(&"danger", false, false) or mind.blackboard.get_var(&"firefight", false, false):
 			continue
 		var dd := (a["node"] as Node3D).global_position.distance_to(door)
 		if dd > flee and dd < within:
@@ -359,10 +360,8 @@ func _line(id: int, root: Node3D, key: String, h: Array) -> void:
 	var folk := []
 	for i in mini(n, near.size()):
 		var a: Dictionary = near[i][1]
-		var bb: Blackboard = (a["mind"] as BTPlayer).blackboard
-		bb.set_var(&"bucket_at", from.lerp(well, (i + 0.5) / float(n)) + side * (1.0 if i % 2 == 0 else -1.0))
-		bb.set_var(&"fire_at", door)
-		bb.set_var(&"firefight", true)
+		# Into the bucket line through the store's one reducer for minds (awareness.gd assign).
+		Awareness.assign(a["mind"], {"bucket_at": from.lerp(well, (i + 0.5) / float(n)) + side * (1.0 if i % 2 == 0 else -1.0), "fire_at": door, "firefight": true})
 		folk.append(a["mind"])
 	_lines[id] = {"key": key, "folk": folk}
 
@@ -374,7 +373,7 @@ func _release(id: int, key: String) -> void:
 		return
 	for m in _lines[id]["folk"]:
 		if is_instance_valid(m):
-			(m as BTPlayer).blackboard.set_var(&"firefight", false)
+			Awareness.assign(m, {"firefight": false})
 	_lines.erase(id)
 	for k in _burning:
 		var f: Node3D = _burning[k]
