@@ -10,18 +10,24 @@ extends SceneTree
 ##   - Hold and Go home are asked at once;
 ##   - a right-drag asks {order march, x, y, face}: the line's middle, facing up the screen for a left-to-right drag;
 ##     a right-click still marches, with no face;
-##   - a click on one of a host view's regiments selects its host and marks that regiment.
+##   - a click on one of a host view's regiments selects its host and marks that regiment;
+##   - an order goes to the one selected host and no other (army command item 5; the milestone take's Besiege went to
+##     a host nobody selected): with a second host in the field selected, the card's and the play step's (autoplay
+##     `order`) Besiege ask for it alone; with none selected, nothing is asked; the play step gives orders only
+##     through the card (host_command.order), never its own /host/order.
 ## Exit 1 on a fail.
 ##   arch -arm64 godot --headless --path realm -s res://tools/host_command_probe.gd
 
 const HostCommand := preload("res://scripts/host_command.gd")
 const Keys := preload("res://scripts/keys.gd")
 const HOST := 7
+const OTHER := 20  # a second host in the field, far from the first
 const TOWN := {"id": 3, "x": 4.0, "y": 0.0}  # its centre at (4, 0, 0) on the ground
 
 
 class Realm:
-	var hosts: Array = [{"id": HOST, "x": 0, "y": 0, "companies": 4, "men": 2000, "units": [HOST, 8, 9, 10], "order": null}]
+	var hosts: Array = [{"id": HOST, "x": 0, "y": 0, "companies": 4, "men": 2000, "units": [HOST, 8, 9, 10], "order": null},
+		{"id": OTHER, "x": 9, "y": 9, "companies": 2, "men": 1000, "units": [OTHER, 21], "order": null}]
 	func get_var(_k: StringName, _d: Variant = null, _c := false) -> Variant:
 		return hosts
 
@@ -214,8 +220,29 @@ func _run() -> void:
 
 	# A regiment: a click on it selects its host and marks it.
 	hc.select(-1)
+	hc._pressed = {"unit": 9, "view": view}  # what host_pick.gd's physics ray met at the press (army_probe 12 tests the ray)
 	hc.take_click(Vector3(-3, 0, 2))
 	_check(int(hc.selected) == HOST and view.marked == 9, "a click on a regiment selects its host and marks it (host %d, regiment %d)" % [int(hc.selected), view.marked])
+
+	# One order, one host: the selected one (the second here), from the card and from the play step.
+	hc.select(OTHER)
+	hc._press("besiege")
+	hc.take_click(Vector3(4.3, 0, 0.2))
+	var o: Dictionary = asked.back()
+	_check(int(o.get("host", -1)) == OTHER, "the card's Besiege goes to the selected host only: %s" % o)
+	var by_card: bool = hc.has_method("order")
+	_check(by_card, "the card has one way to give an order (host_command.order)")
+	if by_card:
+		var n1 := asked.size()
+		hc.order("besiege", {"city": int(TOWN["id"])})
+		var p: Dictionary = asked.back() if asked.size() > n1 else {}
+		_check(asked.size() == n1 + 1 and int(p.get("host", -1)) == OTHER and p.get("order") == "march" and int(p.get("city", -1)) == int(TOWN["id"]), "an order given by name goes to the selected host only: %s" % p)
+		hc.select(-1)
+		var n2 := asked.size()
+		hc.order("besiege", {"city": int(TOWN["id"])})
+		_check(asked.size() == n2, "with no host selected no order is asked")
+	var play := FileAccess.get_file_as_string("res://scripts/autoplay.gd")
+	_check(not play.contains("\"/host/order\"") and not play.contains("else all[0]"), "the play step orders only the selected host, through the card")
 
 	for x in fails:
 		print("HOST COMMAND FAIL " + x)

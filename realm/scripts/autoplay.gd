@@ -26,7 +26,7 @@ extends Node
 ##   rclick 0.6 0.5      right-click at a fraction of the screen (a selected host marches there)
 ##   rdrag 0.4 0.6 0.7 0.6   right-drag between two fractions of the screen (a selected host marches to that line and
 ##                       forms on it, facing away from it: left to right faces up the screen; host_command.gd)
-##   order march         give the selected host (else the first) an order; march/garrison to the nearest town it can reach,
+##   order march         give the selected host (none selected: no order) an order; march/garrison to the nearest town it can reach,
 ##                       besiege the nearest town not the crown's the bridge accepts, attack the nearest foe's men
 ##   answer              give the matter on the court card its first answer
 ##   director            let the camera director run, as it does in play
@@ -1074,19 +1074,19 @@ func _oblique(at: Vector3, dist: float, tilt: float) -> void:
 	main.rig.goal_tilt = main.rig.tilt
 
 
-## An order to a host, through the same bridge call the command card makes; a town target tried nearest first.
+## An order to the selected host through the command card's own order (host_command.order): never another host,
+## and none when nothing is selected (a `host` step selects one first). A town target tried nearest first.
 func _order(kind: String) -> void:
 	var hc: Node = main.get_node_or_null("HostCommand")
 	if hc == null:
 		_note("  order: no host command (--hosts=on)")
 		return
-	var all: Array = hc.hosts()
-	if all.is_empty():
-		_note("  order: no host in the field")
+	var h: Dictionary = hc.host(int(hc.selected)) if int(hc.selected) >= 0 else {}
+	if h.is_empty():
+		_note("  order %s: no host selected (a host step selects one)" % kind)
 		return
-	var h: Dictionary = hc.host(int(hc.selected)) if int(hc.selected) >= 0 else all[0]
 	var id := int(h.get("id", -1))
-	var bodies: Array = []
+	var places: Array = []
 	var here := Vector2(float(h.get("x", 0)), float(h.get("y", 0)))
 	var near := func(a, b): return here.distance_to(Vector2(float(a["x"]), float(a["y"]))) < here.distance_to(Vector2(float(b["x"]), float(b["y"])))
 	var ours := -1
@@ -1102,33 +1102,29 @@ func _order(kind: String) -> void:
 			var t := Vector2i(int(u["x"]), int(u["y"]))
 			if not tiles.has(t) and tiles.size() < 8:
 				tiles[t] = true
-				bodies.append({"host": id, "order": kind, "x": t.x, "y": t.y})
+				places.append({"x": t.x, "y": t.y})
 	elif kind == "besiege":
 		var theirs: Array = (main.awareness.rec("cities", []) as Array).filter(func(c): return int(c.get("owner", -1)) != ours)
 		theirs.sort_custom(near)
 		for c in theirs.slice(0, 8):
-			bodies.append({"host": id, "order": String(hc._row(kind).get("send", kind)), "city": int(c["id"])})  # the card's Besiege is the bridge's march on the town
+			places.append({"city": int(c["id"])})
 	elif kind in ["march", "garrison"]:
 		var towns: Array = (main.awareness.rec("cities", []) as Array).duplicate()
 		towns = towns.filter(func(c): return Vector2(float(c["x"]), float(c["y"])) != here)
 		towns.sort_custom(func(a, b): return here.distance_to(Vector2(float(a["x"]), float(a["y"]))) < here.distance_to(Vector2(float(b["x"]), float(b["y"]))))
 		for c in towns.slice(0, 8):
-			bodies.append({"host": id, "order": kind, "city": int(c["id"])})
+			places.append({"city": int(c["id"])})
 	else:
-		bodies.append({"host": id, "order": kind})
-	for body in bodies:
+		places.append({})
+	for at in places:
 		var res: Array = []
-		main.bridge._post("/host/order", body, func(code: int, d: Dictionary) -> void: res.append([code, d]))
+		if not hc.order(kind, at, func(code: int, said: String) -> void: res.append([code, said])):
+			_note("  order %s: the host is no longer selected" % kind)
+			return
 		while res.is_empty():
 			await get_tree().process_frame
-		var said := String(res[0][1].get("text", res[0][1].get("error", "")))
-		_note("  order %s %s: %d %s" % [kind, str(body.get("city", body.get("x", ""))), int(res[0][0]), said])
+		_note("  order %s %s: %d %s" % [kind, str(at.get("city", at.get("x", ""))), int(res[0][0]), String(res[0][1])])
 		if int(res[0][0]) == 200:
-			if main.ui:
-				main.ui.toast(said)
-			main.bridge._poll()
-			if int(hc.selected) < 0:
-				hc.select(id)
 			return
 
 

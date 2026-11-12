@@ -122,7 +122,7 @@ func take_click(ground: Vector3) -> bool:
 	if _aim != "":
 		var kind := _aim
 		_set_aim("")
-		_order_at(kind, ground)
+		order(kind, {"ground": ground})
 		return true
 	var got := _pressed
 	_pressed = {}
@@ -191,14 +191,14 @@ func _input(event: InputEvent) -> void:
 			_facing = false
 			var line := _line(was, event.position)
 			if not line.is_empty():
-				_ask(_place_body("march", line[0]).merged({"face": line[1]}))
+				order("march", {"ground": line[0], "face": line[1]})
 			return
 		if _aim != "":
 			_set_aim("")
 			return
 		var g: Vector3 = main.rig._ground_under(event.position)
 		if g != Vector3.INF:
-			_order_at("march", g)
+			order("march", {"ground": g})
 	elif event is InputEventMouseMotion and _right_at != Vector2.INF:
 		get_viewport().set_input_as_handled()
 		if not _facing and _right_at.distance_to(event.position) < Data.num(FILE, "face.drag_px", 14.0):
@@ -262,7 +262,7 @@ func _press(kind: String) -> void:
 		_set_aim("" if _aim == kind else kind)
 		return
 	_set_aim("")
-	_ask({"host": selected, "order": kind})
+	order(kind)
 
 
 ## An order's row on the card (host_command.json orders), or {}.
@@ -273,33 +273,43 @@ static func _row(kind: String) -> Dictionary:
 	return {}
 
 
-## An order to a place: into the town there when one is near, else to the ground (an attack is on what stands
-## there, so always the ground: the bridge finds the foe on it).
-func _order_at(kind: String, ground: Vector3) -> void:
-	_ask(_place_body(kind, ground))
-
-
-func _place_body(kind: String, ground: Vector3) -> Dictionary:
+## The one way an order is given (the card, its keys, a right-click or a drag, the film's play step): to the
+## selected host, never another; with none selected nothing is asked (false). at: where, as {city} or {x, y} (tiles),
+## or {ground} (a world point: into the town there when one is near, else its tile; an attack is on what stands there,
+## so always the tile: the bridge finds the foe on it), and {face}. done(code, said) once the bridge has answered.
+func order(kind: String, at := {}, done := Callable()) -> bool:
+	if selected < 0 or host(selected).is_empty():
+		return false
 	var body := {"host": selected, "order": String(_row(kind).get("send", kind))}  # the bridge's name for it
-	var town: Dictionary = {} if kind == "attack" else main.towns.nearest(ground, Data.num(FILE, "town_reach", 3.0))
-	if not town.is_empty():
-		body["city"] = int(town.get("id", -1))
-	else:
-		var tile: Vector2i = main.terrain.paths.tile_of(ground)
-		body["x"] = tile.x
-		body["y"] = tile.y
-	return body
+	if at.has("ground"):
+		var ground: Vector3 = at["ground"]
+		var town: Dictionary = {} if kind == "attack" else main.towns.nearest(ground, Data.num(FILE, "town_reach", 3.0))
+		if not town.is_empty():
+			body["city"] = int(town.get("id", -1))
+		else:
+			var tile: Vector2i = main.terrain.paths.tile_of(ground)
+			body["x"] = tile.x
+			body["y"] = tile.y
+	for k in ["city", "x", "y"]:
+		if at.has(k):
+			body[k] = int(at[k])
+	if at.has("face"):
+		body["face"] = at["face"]
+	_ask(body, done)
+	return true
 
 
 ## Asks the bridge; it decides, and says so (the toast), and the next /world shows the host's order.
-func _ask(body: Dictionary) -> void:
+func _ask(body: Dictionary, done := Callable()) -> void:
 	main.bridge._post("/host/order", body, func(code: int, d: Dictionary) -> void:
 		var said := String(d.get("text", d.get("error", "")))
 		if said != "" and main.ui:
 			main.ui.toast(said)
 		if code == 200:
 			main.sound.ordered(String(body.get("order", "")))  # heard as it sets off (sounds.json orders)
-			main.bridge._poll())
+			main.bridge._poll()
+		if done.is_valid():
+			done.call(code, said))
 
 
 func _set_aim(kind: String) -> void:
