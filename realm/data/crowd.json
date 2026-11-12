@@ -7,12 +7,12 @@
   "beggars": { "base": 2, "hunger": 5, "prosperity": 1 },
   "patrol": { "base": 1, "war": 2, "levy": 2, "pause": [3.0, 7.0], "pace": 0.14, "ring": 0.85 },
   "dogs": { "grief": 1, "base": 3, "hunger": 1, "length": 0.85, "tint": [[0.62, 0.44, 0.28], [0.35, 0.28, 0.22], [0.8, 0.7, 0.55], [0.25, 0.22, 0.2]], "trot": 0.2, "follow": 0.12 },
-  "chase": { "grief": 0, "base": 3, "war": 0, "hunger": 0, "pace": 0.32, "apart": 0.35, "sticks": 0.75, "stick": "dagger" },
-  "gossip": { "grief": 1, "base": 4, "war": 4, "feast": 2, "knot": [2, 4], "at_well": 1, "well_out": 0.22 },
-  "posted": { "lighten": 0.2, "forge_out": 0.55, "castle_out": 0.14, "castle_within": 4.0 },
+  "chase": { "grief": 0, "base": 2, "war": 0, "hunger": 0, "pace": 0.32, "apart": 0.35, "sticks": 0.75, "stick": "dagger" },
+  "gossip": { "grief": 1, "base": 2, "war": 3, "feast": 2, "knot": [2, 3], "at_well": 1, "well_out": 0.22 },
+  "posted": { "lighten": 0.0, "forge_out": 0.55, "castle_out": 0.14, "castle_within": 4.0 },
   "guards_forge": { "base": 2, "war": 3, "levy": 3 },
   "guards_castle": { "base": 4, "war": 6, "grief": 2 },
-  "errands": { "base": 9, "hunger": 3, "grief": 1, "feast": 10, "streets": 1.7, "street_share": 0.6, "pace": 0.15, "pause": [2.0, 6.0], "set_down": "PickUp_Table", "loads": [["Carrying", "townsfolk", "female"], ["Walk", "peasant", "male", "shoulder"], ["Carrying", "peasant", "female"], ["Box_Walk", "townsfolk", "male"], ["Walk", "peasant", "male", "shoulder"]], "sack": [0.16, -0.04, 0.9] },
+  "errands": { "base": 6, "hunger": 2, "grief": 1, "feast": 8, "streets": 1.7, "street_share": 0.7, "pace": 0.15, "pause": [2.0, 6.0], "set_down": "PickUp_Table", "loads": [["Carrying", "townsfolk", "female"], ["Walk", "peasant", "male", "shoulder"], ["Carrying", "peasant", "female"], ["Box_Walk", "townsfolk", "male"], ["Walk", "peasant", "male", "shoulder"]], "sack": [0.16, -0.04, 0.9] },
   "cart": { "base": 1, "grief": 0, "war": 0, "pace": 0.16, "from": 1.3, "market_in": 0.7, "stop": [6.0, 12.0], "load": { "sacks": 4, "bed": 0.1, "from": 0.0, "run": 0.09, "size": 1.0 } },
   "yards": { "base": 4, "within": 3.0, "hens": [2, 4], "pig": 0.5, "gardener": 0.7 }
 }

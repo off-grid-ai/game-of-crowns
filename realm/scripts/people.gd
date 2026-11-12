@@ -647,7 +647,7 @@ func make_body(rng: RandomNumberGenerator, body: String, tint := Color.WHITE, ag
 			elif String(info.get("mask", "")) != "":
 				# A cast member's cloth by its mask (cast_import.py): the house's colour or a dye of the town's on
 				# the masked cloth only, its skin, leather and steel kept as painted.
-				_mask_dye(mi, String(info["mask"]), tint if tint != Color.WHITE else cloth_pick(role if role != "" else String(info["roles"][0]), rng))
+				_mask_dye(mi, String(info["mask"]), tint if tint != Color.WHITE else cloth_pick(role if role != "" else String(info["roles"][0]), rng), (role if role != "" else String(info["roles"][0])) in SOLDIERLY)
 	if role == "":
 		role = info["roles"][0]
 	person.set_meta("body", body)
@@ -816,7 +816,7 @@ static var _masked := {}  # [material, mask, colour] -> the dyed copy, shared by
 
 ## Dyes a body's cloth through a mask (white: the cloth that takes the dye): the material's detail layer, the
 ## colour on the masked texels only (StandardMaterial3D detail_mask), so no shader of our own.
-func _mask_dye(mi: MeshInstance3D, mask_path: String, colour: Color) -> void:
+func _mask_dye(mi: MeshInstance3D, mask_path: String, colour: Color, livery := false) -> void:
 	if not ResourceLoader.exists(mask_path) and not FileAccess.file_exists(mask_path):
 		return
 	var mask: Texture2D = load(mask_path) if ResourceLoader.exists(mask_path) else ImageTexture.create_from_image(Image.load_from_file(mask_path))
@@ -824,17 +824,18 @@ func _mask_dye(mi: MeshInstance3D, mask_path: String, colour: Color) -> void:
 		var m := mi.get_active_material(s) as StandardMaterial3D
 		if m == null:
 			continue
-		var key := [m, mask_path, colour]
+		var key := [m, mask_path, colour, livery]
 		if not _masked.has(key):
 			var copy: StandardMaterial3D = m.duplicate()
 			# people.json cloth.cast_dye (round 3: the crowd read grey-brown, 01-town's in bright cloth): "mix" lays
 			# the dye over the cloth at `strength`, keeping that much less of the painted weave, so a red reads red;
 			# "mul" (the switch back) multiplies it into the painted cloth, darkening it. `lift` brightens the whole
-			# figure, skin and all (Meshy's albedo is painted dark for its own light).
+			# figure, skin and all (Meshy's albedo is painted dark for its own light). A livery (a soldier's house
+			# colour) is laid on at livery_strength: round 4's guards, red at 0.72 over pale leather, read pink.
 			var D: Dictionary = Data.value("people", "cloth.cast_dye", {})
 			var mix := String(D.get("mode", "mul")) == "mix"
 			var img := Image.create(4, 4, false, Image.FORMAT_RGBA8)
-			img.fill(Color(colour, float(D.get("strength", 0.7))) if mix else colour)
+			img.fill(Color(colour, float(D.get("livery_strength" if livery else "strength", 0.7))) if mix else colour)
 			copy.detail_enabled = true
 			copy.detail_mask = mask
 			copy.detail_albedo = ImageTexture.create_from_image(img)
