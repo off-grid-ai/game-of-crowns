@@ -1895,6 +1895,23 @@ func dress_grant(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumber
 	return {}
 
 
+## A rising's men in the town they hold: the claimant's standard (the rebels' house holds the town, so its colours)
+## planted on the square's seen half, off the crier's line, where his band musters round it (anchor "rebels").
+func dress_rebels(root: Node3D, life: Node3D, row: Dictionary, _rng: RandomNumberGenerator) -> Dictionary:
+	var center := root.position
+	var well: Vector3 = (root.get_meta("places", {}) as Dictionary).get("well", Vector3(0.4, 0, 0.4))
+	var toward := Basis(Vector3.UP, 1.0) * SEEN
+	var at := _spot(center, well + toward * float(row.get("from_well", 0.45)), _blocked(root, life), life.get_meta("standing"), 0.3)
+	if is_nan(at.x):
+		return {}
+	var flag := Heraldry.standard(life.get_meta("house", {}), house_colour(root), STANDARD_TALL)
+	flag.position = Vector3(at.x, _y(center, at), at.z)
+	flag.rotation.y = atan2(-at.x, -at.z)
+	flag.set_meta("dress", "rebel_standard")
+	life.add_child(flag)
+	return {"rebels": {"at": at + toward * 0.1, "dir": toward}}
+
+
 ## The ordered work's site with its builders (Manor Lords' works).
 func dress_build(root: Node3D, life: Node3D, _row: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
 	var b: Dictionary = Data.value("moods", "build", {})

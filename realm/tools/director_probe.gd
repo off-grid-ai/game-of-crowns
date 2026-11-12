@@ -229,6 +229,8 @@ func _run() -> void:
 			var got: int = by.call(meta).size()
 			if got < int(need[name][meta]):
 				fail.call("%s: %d %s, want at least %d" % [name, got, meta, need[name][meta]])
+		if name == "rebels" and not l.get_children().any(func(n): return String(n.get_meta("dress", "")) == "rebel_standard"):
+			fail.call("rebels: no claimant's standard in the town they hold")
 		if name in ["peace", "market"]:
 			# The crowd is the census (casebook, Living towns; round 11's Kingsmere, 01-town): the square's own people
 			# as many as its open setts hold at a lived-in density (towns.json square.targets.per_100m2), shared among
