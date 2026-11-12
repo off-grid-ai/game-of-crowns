@@ -129,6 +129,7 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- (11-12) Mac on politics: "our stories should be enough right? … they just need to be wired in." Risings are not a separate trigger system: the story arcs drive them, and every arc effect reaches Freeciv. Supersedes the risings triggers in risings-civil-war-2026-11-12.md.
 - (11-12) Mac: build risings ("Yes, my defaults"): the Crown never splits, a backed rival becomes a lesser house, a rising settles after 8 seasons. Freeciv thread, after line 7; it is the core of READY line 9.
 - (11-12) Mac's "ready to play" list is docs/READY.md (10 lines: square, walking, march out, banners, fight, siege, capture, command, politics, a full reign). The game opens for him only when all pass on film.
 - (11-12) Mac: "I want to be able to capture a town." Correction (Freeciv thread, 8d8eea11): it already worked. The King's march decree takes a town through edit.unit_move with conquer; the Norman ban in actions.ruleset binds only Freeciv's AI and stays. Call: a captured hamlet must never be razed.
