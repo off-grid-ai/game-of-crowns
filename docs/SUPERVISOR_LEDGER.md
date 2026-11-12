@@ -121,6 +121,9 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 15:30 (11-12) Mac: "why not just start a thread to move the rules into freeciv?" Right: it's bridge + ruleset work,
+  no Godot, no square files, so it runs in parallel. Session local_02d81d9f (renamed "Freeciv: move the king's rules
+  into Freeciv") builds the note's steps in order, private bridge 8788/5557, no realm/ edits. Supersedes 15:20's "after".
 - 15:20 (11-12) Freeciv research landed (22c72fe2, docs/research/freeciv-leverage-2026-11-12.md): our ruleset is stock
   civ2civ3; every king-game rule lives in the bridge, unseen by Freeciv's AI and its saves. Mac: move rules into
   Freeciv "after the square". Until then no new bridge rules; then decree buildings, riots/civil war, fought sieges,
