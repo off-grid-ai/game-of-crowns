@@ -348,6 +348,59 @@ func _step(w: PackedStringArray) -> void:
 					var r: Dictionary = nav.probe(int(c["id"]), root, nn, rng)
 					_note("CHECK nav probe: %s: %d walks, %d segments, %d crossing something (%d walks), straight lines would cross %d; the cart's straight legs into the market: %d of %d through something; %d outlines; crossed near %s" % [title, r["paths"], r["segments"], r["crossing"], r["paths_crossing"], r["straight"], r.get("cart_crossing", 0), r.get("cart_legs", 0), load("res://scripts/town_nav.gd").footprints(root).size(), str(r["what"])])
 					break
+			"overlapprobe":
+				# overlapprobe Town [secs]: every person, horse and cart in the town's square sampled twice a second for
+				# secs; any standing inside something placed there (a well, stall, statue, house: nav_ground outlines)
+				# is counted (Mac, round clip4: a horse and cart jammed into the well). Target 0.
+				var otitle := String(w[1]) if w.size() > 1 else "Kingsmere"
+				var secs := float(w[2]) if w.size() > 2 else 60.0
+				var oroot: Node3D = null
+				for c in main.bridge.world.get("cities", []):
+					if String(c.get("title", c.get("name", ""))) == otitle:
+						var tt: Dictionary = main.towns.towns.get(int(c["id"]), {})
+						oroot = tt.get("node") if not tt.is_empty() else null
+				if oroot == null:
+					_note("CHECK overlap probe: %s: no town" % otitle)
+				else:
+					var TN = load("res://scripts/town_nav.gd")
+					var reach := float(oroot.get_meta("square_r", 1.0)) * 1.4
+					var hits := {}  # body name -> [kind, times seen inside, where]
+					var samples := 0
+					var bodies_seen := {}
+					var t_end := Time.get_ticks_msec() + int(secs * 1000.0)
+					while Time.get_ticks_msec() < t_end:
+						var outlines: Array = TN.footprints(oroot)
+						var bodies: Array = []
+						for p in get_tree().get_nodes_in_group("people"):
+							bodies.append([p, "person"])
+						for h in load("res://scripts/works.gd").horses(oroot):
+							bodies.append([h, "horse"])
+						var sq: Node = oroot.get_node_or_null("Life/SquareLife")
+						if sq:
+							for k in sq.carts:
+								bodies.append([k["rig"], "cart"])
+						for b in bodies:
+							var n := b[0] as Node3D
+							if n == null or not is_instance_valid(n) or not n.is_visible_in_tree():
+								continue
+							var lp := oroot.to_local(n.global_position)
+							if Vector2(lp.x, lp.z).length() > reach:
+								continue
+							bodies_seen[n.get_instance_id()] = true
+							var q := Vector2(lp.x, lp.z)
+							for fp in outlines:
+								if (fp as PackedVector2Array).size() > 2 and Geometry2D.is_point_in_polygon(q, fp):
+									var key := "%s#%d" % [b[1], n.get_instance_id()]
+									var row: Array = hits.get(key, [b[1], 0, q])
+									row[1] = int(row[1]) + 1
+									hits[key] = row
+									break
+						samples += 1
+						await get_tree().create_timer(0.5).timeout
+					var by_kind := {}
+					for k in hits:
+						by_kind[hits[k][0]] = int(by_kind.get(hits[k][0], 0)) + 1
+					_note("CHECK overlap probe: %s: %d samples over %.0f s, %d bodies in the square, %d ever inside something (%s); first: %s" % [otitle, samples, secs, bodies_seen.size(), hits.size(), str(by_kind), str(hits.values().slice(0, 5))])
 			"town":
 				# Open a town's card, as clicking the town would.
 				for c in main.bridge.world.get("cities", []):
