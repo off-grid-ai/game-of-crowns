@@ -33,7 +33,8 @@ extends SceneTree
 ## 11. war: the host marches out (READY line 3): a host formed in line at its seat, told to march out, takes the
 ##     road the realm's roads give (roads.route), leaves regiment by regiment in column order, each only once the
 ##     one ahead has gone its length, and halts in column along the road's end, no two regiments in one place; then
-##     it is gone (march.linger);
+##     it is gone (march.linger); it tells where it is in that (march_phase: formed, out, halted), and the film has a
+##     play step that waits for a phase (autoplay `muster`), so a round films READY 3 without hand timing;
 ## 12. a click picks a host by its own body (READY line 8; the milestone's command take selected nothing): a
 ##     standard-bearer (scaled as the map's people are) and a regiment carry pick proxies, and a physics ray from
 ##     the camera through the standard picks that company, through the regiment picks it with its view, and through
@@ -570,7 +571,14 @@ func build(road: PackedVector3Array) -> void:
 		a.call("_shape", r, "line")
 		a.call("_set_at", r, Vector3((i - 1) * 0.6, 0, -0.3), 0.0)
 		r["state"] = "rest"
+	var phase := func() -> String: return String(a.call("march_phase")) if a.has_method("march_phase") else "?"
+	a.set("mustered", true)
+	var formed: String = phase.call()
 	a.call("march_out", road[road.size() - 1])
+	var out: String = phase.call()
+	var auto_src := FileAccess.get_file_as_string("res://scripts/autoplay.gd")
+	_check(formed == "formed" and out == "out", "the host says where it is in its march (formed %s, then out %s)" % [formed, out])
+	_check(auto_src.contains("\"muster\":") and auto_src.contains("march_phase"), "the film has a play step that waits for the muster's phase (autoplay muster)")
 	_check(int(main.roads.asked) > 0, "it asks the realm's roads for its way")
 	var order: Array = Data.value("army", "column.order", ["cavalry", "melee", "ranged"])
 	var by_leave := rows.duplicate()
@@ -590,6 +598,7 @@ func build(road: PackedVector3Array) -> void:
 		await process_frame
 	var states := rows.map(func(r): return String(r["state"]))
 	_check(rows.all(func(r): return r["state"] == "halt"), "every regiment halts at the road's end (%s)" % str(states))
+	_check(phase.call() == "halted", "and the host says it has halted (%s)" % phase.call())
 	var near := INF
 	var on_road := true
 	var along: Array = []

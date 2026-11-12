@@ -215,6 +215,17 @@ func march_out(to: Vector3) -> void:
 		Mover.of(r["node"]).on(null)
 
 
+## Where a host raised for war is in its march (the film's muster step waits on it): forming (its regiments not yet
+## raised and placed), formed (in line at its seat), out (marching out along the road), halted (every regiment at
+## its place at the road's end; gone march.linger later).
+func march_phase() -> String:
+	if not mustered:
+		return "forming"
+	if not _out:
+		return "formed"
+	return "halted" if _regiments.all(func(r): return r["state"] == "halt") else "out"
+
+
 # --- The command hooks (the command card calls these; nothing in play does yet) -------------------------
 
 ## The host's regiments as the command card shows them: [{id, host, unit, role, glyph, men, strength, colour,

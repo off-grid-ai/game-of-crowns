@@ -828,6 +828,30 @@ func _step(w: PackedStringArray) -> void:
 					await get_tree().create_timer(0.25).timeout
 					field = main.get_node_or_null("FieldBattle")
 				_note("  rout: %s after %.0f s" % ["the first break" if field != null and int(field.call("routed")) > 0 else "no break", (Time.get_ticks_msec() - t0) / 1000.0])
+			"muster":
+				# muster [phase] [most]: waits until a host raised for war (a war, a decree or --muster; army.gd, out_to)
+				# reaches `phase` (formed, out, halted, gone; default out), at most `most` seconds (120), so a round films
+				# READY 3 without hand timing. Logs the phase reached and how long it took.
+				var want := w[1] if w.size() > 1 else "out"
+				var most := float(w[2]) if w.size() > 2 else 120.0
+				var order := ["forming", "formed", "out", "halted", "gone"]
+				var t0 := Time.get_ticks_msec()
+				var seen := false
+				var at := "none"
+				while (Time.get_ticks_msec() - t0) / 1000.0 < most:
+					var host: Node = null
+					for n in get_tree().get_nodes_in_group(&"host_views"):
+						if n.has_method("march_phase") and (n.get("battle") as Dictionary).has("out_to") and not n.is_queued_for_deletion():
+							host = n
+					if host != null:
+						seen = true
+						at = String(host.call("march_phase"))
+					elif seen:
+						at = "gone"
+					if order.find(at) >= order.find(want):
+						break
+					await get_tree().create_timer(0.25).timeout
+				_note("  muster: %s after %.0f s (waited for %s)" % [at, (Time.get_ticks_msec() - t0) / 1000.0, want])
 			"director":
 				# director: the camera director runs as in play (shots turn it off).
 				main._shot["director"] = true
