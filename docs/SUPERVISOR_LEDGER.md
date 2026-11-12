@@ -121,6 +121,12 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 10:20 (11-12) Round 3 rendered at the close town view (dist 6, 89078f57): framing now matches 01-town (square lower
+  middle, castle upper right), paving reads, the crowd is there. Still short: roofs flat saturated orange and huge;
+  gatehouse adrift in the square, keep a slab; houses loose (Kingsmere ring: 2-3 fronts stood, turned away street
+  8-13 / crowded 9-12); stalls dark clumps; yards bare grass; people grey-brown clutter; heavy dark outlines.
+  Routed to fire-siege, army-ui, works-life and the look agent. The --import step didn't run (no `timeout` on macOS):
+  import before round 4. focus.sh composites fixed (no -I).
 - 10:05 (11-12) Round 2 rendered (/tmp/goc-focus/r2; composites fixed in focus.sh). Verdict vs 01-town: far below.
   Camera far too wide (whole town + lake; the square a patch) -> camera agent pulling the hero view to roof height.
   Roofs one flat saturated orange, no thatch; castle a brown block, not grey stone; houses loose on lawn ->
