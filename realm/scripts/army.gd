@@ -199,7 +199,8 @@ func _ready() -> void:
 ## seconds after the last halts. Off the road where the roads give no way: straight over the land to `to`.
 func march_out(to: Vector3) -> void:
 	var roads = main.get("roads")
-	var road: PackedVector3Array = roads.route(_field, to) if roads and roads.has_method("route") else PackedVector3Array()
+	# Onto the road from the muster's field, kept off it (muster.keepOff), within march.roadReach: then along it.
+	var road: PackedVector3Array = roads.route(_field, to, Data.num("army", "march.roadReach", 12.0)) if roads and roads.has_method("route") else PackedVector3Array()
 	_path = PackedVector3Array([_field])
 	_path.append_array(road if road.size() >= 2 else PackedVector3Array([to]))
 	_cum = PackedFloat32Array([0.0])

@@ -70,7 +70,10 @@ extends SceneTree
 ## 22. a host's standard on the map reads (Mac's realm map: every far standard said "200" on a blank flag): its men
 ##     are the companies' own (the bridge's units carry their men, by kind and health), so two hosts differ; the
 ##     flag flies the house's arms (Heraldry.arms, as the regiments' banners); and its line names the house, the men
-##     and where it is bound (map_look.host_line, the hover's words).
+##     and where it is bound (map_look.host_line, the hover's words);
+## 23. the muster's column takes the road (GoC's muster frames: it marched on the grass): the realm's roads join a
+##     road only within roads.reach of each end, and a muster's field keeps off roads, so march_out asks with its
+##     own reach (army.json march.roadReach) and its way runs along the road.
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
@@ -117,8 +120,19 @@ func _run() -> void:
 	_ship_sails_the_water()
 	_mover_keeps_its_speed()
 	_standards_read()
+	_muster_takes_the_road()
 	print("ARMY PROBE PASS" if _fails == 0 else "ARMY PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
+
+
+## 23. The muster takes the road: the stand-in realm of section 11, its road starting 6 units from the field.
+func _muster_takes_the_road() -> void:
+	var src := FileAccess.get_file_as_string("res://scripts/army.gd")
+	var at := src.find("func march_out(")
+	var body := src.substr(at, src.find("\nfunc ", at + 1) - at)
+	_check(body.contains("roadReach"), "march_out asks the roads with the muster's own reach (army.json march.roadReach)")
+	var reach := Data.num("army", "march.roadReach", 0.0)
+	_check(reach >= 6.0, "the muster's reach to the road covers a field kept off it (%.1f)" % reach)
 
 
 ## 22. A host's standard reads: the store's armies from a /world with two of House Ashby's hosts, one of three
@@ -853,7 +867,7 @@ func build(road: PackedVector3Array) -> void:
 	add_child(terrain)
 	roads = Node.new()
 	var rs := GDScript.new()
-	rs.source_code = "extends Node\\nvar way := PackedVector3Array()\\nvar asked := 0\\nfunc route(_a: Vector3, _b: Vector3) -> PackedVector3Array:\\n\\tasked += 1\\n\\treturn way\\n"
+	rs.source_code = "extends Node\\nvar way := PackedVector3Array()\\nvar asked := 0\\nvar reach_asked := 0.0\\nfunc route(a: Vector3, _b: Vector3, reach := 2.5) -> PackedVector3Array:\\n\\tasked += 1\\n\\treach_asked = reach\\n\\treturn way if way.is_empty() or Vector2(a.x - way[0].x, a.z - way[0].z).length() <= reach else PackedVector3Array()\\n"
 	rs.reload()
 	roads.set_script(rs)
 	roads.way = road

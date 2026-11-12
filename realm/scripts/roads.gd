@@ -346,7 +346,7 @@ func _cells() -> Dictionary:
 var _graph: AStar3D
 var _graph_version := -1
 static var ROAD_REACH: float = preload("res://scripts/data.gd").num("ground", "roads.reach", 2.5)  # how far an end may be from the road to set out along it
-func route(from: Vector3, to: Vector3) -> PackedVector3Array:
+func route(from: Vector3, to: Vector3, reach := -1.0) -> PackedVector3Array:
 	if _graph == null or _graph_version != version:
 		_graph = AStar3D.new()
 		_graph_version = version
@@ -370,7 +370,9 @@ func route(from: Vector3, to: Vector3) -> PackedVector3Array:
 	var b := _graph.get_closest_point(Vector3(to.x, 0, to.z))
 	var pa := _graph.get_point_position(a)
 	var pb := _graph.get_point_position(b)
-	if Vector2(pa.x - from.x, pa.z - from.z).length() > ROAD_REACH or Vector2(pb.x - to.x, pb.z - to.z).length() > ROAD_REACH:
+	# How far `from` may be off the road to set out along it: roads.reach, or the caller's own (a host mustered on a
+	# field kept off the road walks onto it).
+	if Vector2(pa.x - from.x, pa.z - from.z).length() > (reach if reach >= 0.0 else ROAD_REACH) or Vector2(pb.x - to.x, pb.z - to.z).length() > ROAD_REACH:
 		return out
 	var way := _graph.get_point_path(a, b)
 	if way.is_empty():
