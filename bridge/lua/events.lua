@@ -115,10 +115,11 @@ local function seam_in_reach(c)
 end
 
 local function seams_lay(seasons, house, count)
-  local laid = 0
+  local laid, towns = 0, 0
   for p in players_iterate() do
     if laid < count and p.is_alive and p.nation and p.nation:rule_name() == house then
       for c in p:cities_iterate() do
+        towns = towns + 1
         local t = laid < count and seam_in_reach(c)
         if t and pcall(edit.create_owned_extra, t, "Gold", nil) and t:has_extra("Gold") then laid = laid + 1 end
       end
@@ -129,7 +130,7 @@ local function seams_lay(seasons, house, count)
     if t:has_extra("Gold") then seams[#seams + 1] = string.format("%d,%d,%d", t.x, t.y, seasons) end
   end
   GOC_SEAMS = table.concat(seams, ";")
-  GOC_SEAMS_LAID = true
+  GOC_SEAMS_LAID = towns > 0  -- a realm whose gold house has no town yet tries again next season
   log.normal("SEAMS laid %d for %s; %d in the realm", laid, house, #seams)
 end
 

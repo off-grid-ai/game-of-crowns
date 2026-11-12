@@ -10,8 +10,15 @@ export const MINES = JSON.parse(fs.readFileSync(new URL("./data/mines.json", imp
 
 // Each season (season.js turn): the seams worked this season wear down; the first time, they're laid.
 export function season(ctx) {
-  if (!MINES.on) return;
-  ctx.send(`lua cmd realm_mines(${Number(MINES.seamSeasons)}, "${String(MINES.goldHouse).replace(/[^A-Za-z ]/g, "")}", ${Number(MINES.goldSeams)})`);
+  const c = command();
+  if (c) ctx.send(c);
+}
+
+// The one call, also sent as Freeciv starts or resumes (freeciv.js), so a realm has its seams from
+// the first moment, not a season later; Lua runs it once a turn however often it comes. "" when off.
+export function command() {
+  if (!MINES.on) return "";
+  return `lua cmd realm_mines(${Number(MINES.seamSeasons)}, "${String(MINES.goldHouse).replace(/[^A-Za-z ]/g, "")}", ${Number(MINES.goldSeams)})`;
 }
 
 // A seam worked out (Freeciv's "seam_spent" event): where the old workings stand, kept in the realm's
