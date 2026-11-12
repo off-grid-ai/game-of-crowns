@@ -496,7 +496,7 @@ func _regiment(spec: Dictionary, colour: Color, house: Dictionary = {}) -> Dicti
 	vat.exported_mesh = kit["mesh"]
 	# The plugin's own advice: the VAT material in the Material Override slot, one per regiment (its colour).
 	var own := (kit["mat"] as ShaderMaterial).duplicate() as ShaderMaterial
-	own.set_shader_parameter("team_color", colour)
+	own.set_shader_parameter("team_color", Heraldry.field_colour(house, colour) if not house.is_empty() else colour)  # its banner's own field, value and hue
 	Visual.wear_arms(own, house)
 	vat.material_override = own
 	vat.instance_count = count

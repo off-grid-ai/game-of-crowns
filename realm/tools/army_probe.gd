@@ -936,8 +936,8 @@ func _the_right_banner() -> void:
 		_check(bool(bm.get_shader_parameter("use_arms")) and bm.get_shader_parameter("arms") == want and bool(bm.get_shader_parameter("canton")),
 			"%s of House Ashby: its banner flies Ashby's arms, its glyph in the canton" % k)
 		_check((bm.get_shader_parameter("field_color") as Color).is_equal_approx(colour), "%s: the canton and pips in its house colour" % k)
-		_check(bool(lv.get_shader_parameter("emblem_on")) and lv.get_shader_parameter("emblem_texture") == want and (lv.get_shader_parameter("team_color") as Color).is_equal_approx(colour),
-			"%s: its men wear Ashby's arms on shield and tabard, in its colour" % k)
+		_check(bool(lv.get_shader_parameter("emblem_on")) and lv.get_shader_parameter("emblem_texture") == want and (lv.get_shader_parameter("team_color") as Color).is_equal_approx(H.field_colour(ashby, colour)),
+			"%s: its men wear Ashby's arms on shield and tabard, in its banner's own colour (Heraldry.field_colour)" % k)
 	_check(a.is_in_group(&"host_views") and a.has_method("select_host"), "the command card finds this host view (group host_views, select_host)")
 	var of_face := func(h: Dictionary) -> float: return float(ArmyS.call("order_face", h)) if ArmyS.get_script_method_list().any(func(m): return m["name"] == "order_face") else INF
 	_check(is_equal_approx(float(of_face.call({"order": {"kind": "march", "face": 1.25}})), 1.25) and is_nan(float(of_face.call({"order": {"kind": "march", "face": null}}))) and is_nan(float(of_face.call({"order": null}))),

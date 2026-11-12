@@ -23,6 +23,35 @@ static func arms(house: Dictionary) -> Texture2D:
 	return load(path) as Texture2D if key != "" and ResourceLoader.exists(path) else null
 
 
+## The colour a house's banner is painted in: the mean of its picture's outer band (clear of the arms), so what its
+## men wear reads at the banner's value and hue, not its data colour's (Wolfholt's #9aa6b2 is far paler than its
+## slate banner). `fallback` for a house with no arms drawn. Measured once a house.
+static var _fields := {}
+static func field_colour(house: Dictionary, fallback: Color) -> Color:
+	var tex := arms(house)
+	if tex == null:
+		return fallback
+	var key := slug(house)
+	if _fields.has(key):
+		return _fields[key]
+	var im := tex.get_image()
+	if im == null:
+		return fallback
+	if im.is_compressed():
+		im.decompress()
+	im.resize(64, 96)
+	var sum := Color(0, 0, 0)
+	var n := 0
+	for y in 96:
+		for x in 64:
+			if x < 6 or x > 57 or y < 8:
+				sum += im.get_pixel(x, y)
+				n += 1
+	var c := Color(sum.r / n, sum.g / n, sum.b / n)
+	_fields[key] = c
+	return c
+
+
 ## The banner cloth material for a house, or a plain one in `fallback`.
 static func cloth(house: Dictionary, fallback: Color) -> Material:
 	var key := slug(house)

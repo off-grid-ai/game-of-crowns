@@ -10,7 +10,10 @@ extends SceneTree
 ##   - no brown company: the dyed cloth outweighs the undyed brown (warm hue, some saturation, not bright: leather,
 ##     a bow, a shaded face) at least OVER_BROWN times, so the company reads its house's colour; an archer's leather
 ##     sleeves, quiver and bow are 03-army's too (not asked of cavalry, whose horses are bay under their barding);
-##   - steel stays steel: at most STEEL_MOST of the dyed cloth is mid-grey (the plate's paint, not cloth).
+##   - steel stays steel: at most STEEL_MOST of the dyed cloth is mid-grey (the plate's paint, not cloth);
+##   - a dark house reads dark (the render pass: Wolfholt's men near-white under a slate banner): a regiment raised for
+##     a house with arms drawn is dyed the banner's own field colour (its outer band, clear of the arms), its value
+##     within FIELD_NEAR of it, as well as its hue; Wolfholt's data colour (#9aa6b2) is far paler than its banner.
 ## Exit 1 on a failure.  arch -arm64 godot --headless --path realm -s res://tools/army_colour_probe.gd
 
 const Data := preload("res://scripts/data.gd")
@@ -19,6 +22,7 @@ const DYE_FLOOR := 0.6
 const OVER_BROWN := 1.5  # the dyed cloth outweighs the undyed brown at least this many times
 const STEEL_MOST := 0.25
 const SIDE := 256  # read at this size: the shares, not the detail
+const FIELD_NEAR := 0.08  # a dark house's men: their dye's value within this of their banner field's
 
 
 func _init() -> void:
@@ -100,8 +104,42 @@ func _init() -> void:
 		if grey_share > STEEL_MOST:
 			print("FAIL %s: %.0f%% of its dye lies on grey plate (at most %.0f%%): the steel would be painted" % [kind, grey_share * 100, STEEL_MOST * 100])
 			fails += 1
+	fails += _dark_house()
 	print("PASS" if fails == 0 else "FAIL %d" % fails)
 	quit(1 if fails > 0 else 0)
+
+
+## Wolfholt's men take their banner's field: the dye army.gd gives a regiment (its material's team_color) against the
+## mean of the banner picture's outer band, measured here on its own.
+func _dark_house() -> int:
+	var house := {"name": "House Wolfholt", "color": "#9aa6b2", "sigil": "wolf"}
+	var im := Image.load_from_file(ProjectSettings.globalize_path("res://assets/heraldry/banner-wolfholt.png"))
+	if im == null:
+		print("FAIL no banner-wolfholt.png")
+		return 1
+	im.resize(64, 96)
+	var sum := Color(0, 0, 0)
+	var n := 0
+	for y in 96:
+		for x in 64:
+			if x < 6 or x > 57 or y < 8:
+				sum += im.get_pixel(x, y)
+				n += 1
+	var field := Color(sum.r / n, sum.g / n, sum.b / n)
+	var ArmyS: GDScript = load("res://scripts/army.gd")
+	var a: Object = ArmyS.new(Node.new(), 0, {"side": 0, "colour": Color.from_string("#9aa6b2", Color.GRAY), "house": house})
+	var r: Dictionary = a.call("_regiment", {"id": 1, "unit": "men_at_arms", "men": 150}, Color.from_string("#9aa6b2", Color.GRAY), house)
+	if r.is_empty():
+		print("FAIL Wolfholt's men-at-arms not raised")
+		a.free()
+		return 1
+	var dye: Color = ((r["vat"] as GeometryInstance3D).material_override as ShaderMaterial).get_shader_parameter("team_color")
+	a.free()
+	var v := maxf(dye.r, maxf(dye.g, dye.b))
+	var fv := maxf(field.r, maxf(field.g, field.b))
+	var ok := absf(v - fv) <= FIELD_NEAR
+	print("%s a dark house reads dark: Wolfholt's men dyed %s (value %.2f), their banner's field %s (value %.2f)" % ["ok  " if ok else "FAIL", dye.to_html(false), v, field.to_html(false), fv])
+	return 0 if ok else 1
 
 
 ## The baked soldier's mesh (its first MeshInstance3D), or null.
