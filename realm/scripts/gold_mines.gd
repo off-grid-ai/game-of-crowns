@@ -1,6 +1,7 @@
 extends Node3D
-## The realm's gold mines: a mine on every gold seam (/world gold, through the mirror), worked by
-## miners with picks while the camera is near; where a seam ran out, the old workings stand dark and
+## The realm's gold mines: a mine on every gold seam (/world gold, through the mirror); where a town works
+## the seam (Freeciv's Lua decides it: realmrules/script.lua, the gold row's fourth field), miners with picks
+## while the camera is near, and its ore goes to that town by cart (traffic.gd asks worked()); where a seam ran out, the old workings stand dark and
 ## empty (/world spentSeams). Freeciv decides where the gold lies and how long it lasts (bridge
 ## mines.js, bridge/data/realmrules/script.lua realm_mines); this only shows it, the way Settlers and Anno show a mine
 ## at its deposit. Reads the mirror (awareness.gd), edits nothing else.
@@ -11,6 +12,7 @@ const People := preload("res://scripts/people.gd")
 const Real := preload("res://scripts/realistic.gd")
 const Scenes := preload("res://scripts/scenes.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
+const Mind := preload("res://scripts/npc_mind.gd")
 const ROCKS := ["res://assets/nature/Rock_Medium_1.gltf", "res://assets/nature/Rock_Medium_2.gltf", "res://assets/nature/Rock_Medium_3.gltf"]
 const PEBBLE := "res://assets/nature/Pebble_Round_1.gltf"
 const MODEL := "res://assets/meshy/mine/mine.glb"
@@ -19,7 +21,7 @@ var main: Node
 var _d: Dictionary
 var _sig := ""
 var _wait := 0.0
-var _sites := {}  # Vector2i tile -> {node, spent, at: Vector3, life: Array, holder: Node3D}
+var _sites := {}  # Vector2i tile -> {node, spent, city: the Freeciv id of the town working it (-1 none), at: Vector3, mouth: Vector3, holder: Node3D}
 var _rng := RandomNumberGenerator.new()
 
 
@@ -40,17 +42,12 @@ func _ready() -> void:
 	_rng.randomize()
 
 
-func _process(delta: float) -> void:
+func _process(delta: float) -> void:  # (each miner's day is his own mind's: npc_mind post "miner")
 	_wait -= delta
 	if _wait <= 0.0:
 		_wait = 1.0
 		_follow()
 		_people()
-	for s in _sites.values():
-		for m in s.get("life", []):
-			m["left"] = float(m["left"]) - delta
-			if float(m["left"]) <= 0.0:
-				_next_clip(m)
 
 
 ## Brings the mines in line with the mirror: a mine raised on a new seam, a spent seam's mine
@@ -67,10 +64,12 @@ func _follow() -> void:
 	_sig = sig
 	var want := {}
 	var owners := {}
+	var works := {}  # tile -> the town working it
 	for g in gold:
 		if g is Array and (g as Array).size() >= 2:
 			want[Vector2i(int(g[0]), int(g[1]))] = false
 			owners[Vector2i(int(g[0]), int(g[1]))] = int(g[2]) if (g as Array).size() > 2 else -1
+			works[Vector2i(int(g[0]), int(g[1]))] = int(g[3]) if (g as Array).size() > 3 else -1
 	for s in spent:
 		if s is Array and (s as Array).size() >= 2:
 			var t := Vector2i(int(s[0]), int(s[1]))
@@ -85,6 +84,18 @@ func _follow() -> void:
 		elif bool(_sites[t]["spent"]) != bool(want[t]):
 			_drop(t)
 			_raise(t, bool(want[t]), int(owners.get(t, -1)))
+		if _sites.has(t):
+			_sites[t]["city"] = -1 if bool(want[t]) else int(works.get(t, -1))  # a town takes up the seam, or leaves it
+
+
+## The seams a town is working now: [{mouth: world point, city: the Freeciv id of that town}]. traffic.gd sends
+## their ore down the road to that town.
+func worked() -> Array:
+	var out: Array = []
+	for s in _sites.values():
+		if not bool(s["spent"]) and int(s.get("city", -1)) >= 0 and s.has("mouth"):
+			out.append({"mouth": s["mouth"], "city": int(s["city"])})
+	return out
 
 
 func _raise(t: Vector2i, spent: bool, owner := -1) -> void:
@@ -189,14 +200,14 @@ func _drop(t: Vector2i) -> void:
 	_sites.erase(t)
 
 
-## Miners only where the eye is: at a live seam within `near` of the camera.
+## Miners only where the eye is: at a seam a town works, within `near` of the camera.
 func _people() -> void:
 	var cam := get_viewport().get_camera_3d()
 	if cam == null:
 		return
 	var near := float(_d.get("near", 40.0))
 	for s in _sites.values():
-		var close: bool = not bool(s["spent"]) and cam.global_position.distance_to(s["at"]) < near
+		var close: bool = not bool(s["spent"]) and int(s.get("city", -1)) >= 0 and cam.global_position.distance_to(s["at"]) < near
 		if close and not s.has("holder"):
 			_people_in(s)
 		elif not close and s.has("holder"):
@@ -210,7 +221,6 @@ func _people_in(s: Dictionary) -> void:
 	var holder := Node3D.new()
 	holder.name = "Miners"
 	add_child(holder)
-	var life: Array = []
 	var ring: Array = _d.get("ring", [0.2, 0.45])
 	var cloth: Array = People.cloth_of("peasant")
 	var jobs: Array = _d.get("jobs", [])
@@ -229,30 +239,15 @@ func _people_in(s: Dictionary) -> void:
 		n.global_position = p
 		var face: Vector3 = s["at"] if String(job.get("face", "rock")) == "rock" else mouth
 		n.rotation.y = atan2(face.x - p.x, face.z - p.z)
-		var m := {"node": n, "left": _rng.randf_range(0.3, 2.0), "last": "", "clips": job.get("clips", _d.get("clips", ["Idle"]))}
-		life.append(m)
+		var terrain: Node3D = main.terrain
+		Mind.give(n, "miner", func(q: Vector3) -> float: return terrain.height_at(q.x, q.z), _rng.randi())  # cut, barrow, carry: his own tree
 	s["holder"] = holder
-	s["life"] = life
 
 
 func _unpeople(s: Dictionary) -> void:
 	if s.has("holder") and is_instance_valid(s["holder"]):
 		s["holder"].queue_free()
 	s.erase("holder")
-	s.erase("life")
-
-
-func _next_clip(m: Dictionary) -> void:
-	var clips: Array = m.get("clips", _d.get("clips", ["Idle"]))
-	var pool: Array = clips.filter(func(c): return c != m["last"])
-	if pool.is_empty():
-		pool = clips
-	var clip := String(pool[_rng.randi() % pool.size()])
-	m["last"] = clip
-	var sw: Array = _d.get("swap_sec", [4.0, 9.0])
-	m["left"] = _rng.randf_range(float(sw[0]), float(sw[1]))
-	if is_instance_valid(m["node"]):
-		People.play(m["node"], clip, _rng.randf_range(0.9, 1.1))
 
 
 ## A tool in a miner's right hand, held as a soldier holds his sword (as roadside.gd's woodcutters).

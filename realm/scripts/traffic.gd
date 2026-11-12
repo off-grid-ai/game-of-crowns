@@ -66,6 +66,8 @@ func _decide(delta: float) -> void:
 	var envoy_aw: Object = Engine.get_meta("awareness") if Engine.has_meta("awareness") else null
 	if envoy_aw and scenes and scenes.has_method("rider_on_road") and terrain:
 		_ride_envoys(envoy_aw)
+	if envoy_aw and scenes and terrain:
+		_haul(delta, envoy_aw)
 	_left -= delta
 	if _left > 0.0:
 		return
@@ -114,6 +116,38 @@ func _decide(delta: float) -> void:
 
 
 var _carting := {}  # road (its two ends, either way) -> a cart is on it
+var _ore_left := {}  # a worked mine's mouth -> seconds until its next cart sets out
+
+
+## A worked gold mine's ore on the road to the town that works it (roadside.json traffic.ore; Settlers' and Anno's
+## goods that visibly travel): gold_mines.gd says which seams are worked and where their mouths are (worked()), the
+## mirror where each town stands; a cart sets out from each in view every few tens of seconds, one cart on a road.
+func _haul(delta: float, aw: Object) -> void:
+	var mines: Node = get_parent().get_node_or_null("GoldMines") if get_parent() else null
+	var cam := get_viewport().get_camera_3d()
+	if mines == null or cam == null:
+		return
+	var O: Dictionary = Data.value("roadside", "traffic.ore", {})
+	var every: Array = O.get("every", [25.0, 45.0])
+	var seen := Vector3(cam.global_position.x, 0, cam.global_position.z)
+	for w: Dictionary in mines.worked():
+		var mouth: Vector3 = w["mouth"]
+		if Vector3(mouth.x, 0, mouth.z).distance_to(seen) > float(O.get("near", 34.0)):
+			continue
+		var left := float(_ore_left.get(mouth, _rng.randf_range(0.0, float(every[0])))) - delta
+		_ore_left[mouth] = left
+		if left > 0.0:
+			continue
+		_ore_left[mouth] = _rng.randf_range(float(every[0]), float(every[1]))
+		var tile: Vector2i = aw.town(int(w["city"])).get_var(&"tile", Vector2i(-1, -1))
+		if tile.x < 0:
+			continue
+		var to: Vector3 = terrain.world_pos(float(tile.x), float(tile.y))
+		var road := _road_key(mouth, to)
+		if _carting.has(road):
+			continue
+		if go(mouth, to, "cart", func(): _carting.erase(road)):
+			_carting[road] = true
 
 
 func _road_key(a: Vector3, b: Vector3) -> String:
