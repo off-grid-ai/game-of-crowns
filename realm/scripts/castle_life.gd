@@ -239,7 +239,8 @@ func _walker(path: Array, colour: Color, k: Dictionary, scale: float, i: int) ->
 	add_child(f)
 	if guard:
 		main.scenes.arm(f, "spear")
-	var side := Vector3(1, 0, 0) * (float(k.get("abreast", 0.4)) * (i - 1)) * scale
+	var through: Vector3 = (path[path.size() - 1] - path[0]) * Vector3(1, 0, 1)
+	var side := Vector3(-through.z, 0, through.x).normalized() * (float(k.get("abreast", 0.4)) * (i - 1)) * scale  # across the gate
 	var pts: Array = path.map(func(p): return p + side)
 	f.global_position = pts[0]
 	var pace := maxf(float(k.get("pace", 0.8)) * S * scale, 0.001)
