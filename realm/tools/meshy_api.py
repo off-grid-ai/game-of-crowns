@@ -6,6 +6,11 @@
 #   python3 -I realm/tools/meshy_api.py retexture <image-to-3d task id> <style.png> <out.glb> [json overrides]
 #       paint a model (a mesh-only preview: model with {"should_texture": false}) from one style image, keeping its
 #       UVs (docs/art/STANDARDS.md §6 steps 3-4: preview the shape, judge it, then spend on the paint)
+#   python3 -I realm/tools/meshy_api.py animate <rigging task id> <action id> <out.fbx>   a library move (GET
+#       animations/library lists them) on a rigged character, at 24 fps, as FBX: the move only matters (rig_unit.py
+#       lays it on our soldiers' skeleton like any Mixamo clip; docs/art/army: Thrust Slash for the spearmen)
+#   python3 -I realm/tools/meshy_api.py motion <rigging task id> <seconds> <out.fbx> "<prompt>"   a move made from a
+#       sentence (text to motion, prime) and laid on a rigged character at 24 fps, as FBX (the spearmen's thrust)
 #   python3 -I realm/tools/meshy_api.py balance
 # model: the square set's settings (docs/research/meshy-square-set.md) as the API names them: latest (Meshy 7.1),
 # 2k geometry, Meshy 7 texture at 2k with PBR, image enhancement, remeshed in triangles (target_polycount, 10k unless
@@ -81,6 +86,31 @@ def retexture(task_id, img, out, extra):
         print("WROTE", out)
 
 
+def animate(rig_tid, action, out):
+    tid = _call("POST", "animations", {"rig_task_id": rig_tid, "action_id": int(action), "post_process": {"operation_type": "change_fps", "fps": 24}})["result"]
+    print("TASK", tid, flush=True)
+    t = _wait("animations", tid, 10)
+    if t["status"] == "SUCCEEDED":
+        r = t["result"]
+        urllib.request.urlretrieve(r.get("processed_animation_fps_fbx_url") or r["animation_fbx_url"], out)
+        print("WROTE", out)
+
+
+def motion(rig_tid, seconds, out, prompt):
+    mid = _call("POST", "text-to-motion", {"prompt": prompt[:400], "duration": float(seconds), "mode": "prime"})["result"]
+    print("MOTION", mid, flush=True)
+    m = _wait("text-to-motion", mid, 10)
+    if m["status"] != "SUCCEEDED":
+        return
+    tid = _call("POST", "animations", {"rig_task_id": rig_tid, "motion_task_id": mid, "post_process": {"operation_type": "change_fps", "fps": 24}})["result"]
+    print("TASK", tid, flush=True)
+    t = _wait("animations", tid, 10)
+    if t["status"] == "SUCCEEDED":
+        r = t["result"]
+        urllib.request.urlretrieve(r.get("processed_animation_fps_fbx_url") or r["animation_fbx_url"], out)
+        print("WROTE", out)
+
+
 def rig(task_id, out, height):
     tid = _call("POST", "rigging", {"input_task_id": task_id, "height_meters": height, "skeleton_template": "mixamo"})["result"]
     print("TASK", tid, flush=True)
@@ -96,6 +126,10 @@ if __name__ == "__main__":
         model(a[1], a[2], json.loads(a[3]) if len(a) > 3 else {})
     elif a[0] == "retexture":
         retexture(a[1], a[2], a[3], json.loads(a[4]) if len(a) > 4 else {})
+    elif a[0] == "animate":
+        animate(a[1], a[2], a[3])
+    elif a[0] == "motion":
+        motion(a[1], a[2], a[3], a[4])
     elif a[0] == "rig":
         rig(a[1], a[2], float(a[3]) if len(a) > 3 else 1.75)
     elif a[0] == "fetch":
