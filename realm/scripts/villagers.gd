@@ -79,7 +79,6 @@ func _ready() -> void:
 		_mats.append(m)
 
 
-
 func _process(delta: float) -> void:
 	if not PerfTools.probing:
 		_process_timed(delta)
@@ -369,10 +368,10 @@ func _spawn(id: int) -> void:
 		person.visible = false
 		person.set_meta("folk", {"town": int(id), "i": int(a["i"]), "role": String(a["role"])})  # who they are (who_is)
 		list.append(a)
-		# A town on the LimboAI switch: everyone gets a mind (npc_mind.gd) that
-		# picks their activities by calling and the town's mood; the walking stays here.
-		if TownLife.minds_on(id):
-			preload("res://scripts/npc_mind.gd").give_villager(person, a, self)
+		# Everyone gets a mind (npc_mind.gd, LimboAI) that picks their activities by calling, the day and the
+		# town's mood; the walking stays here.
+		if not preload("res://scripts/npc_mind.gd").give_villager(person, a, self):
+			push_error("villagers: no activities for the calling '%s': %s of town %d stands mindless" % [a["role"], person.name, id])
 	crowds[id] = list
 	# Every child has a parent: the grown-up of the town whose door is nearest theirs.
 	for a in list:
@@ -405,21 +404,6 @@ static func _weighed_key(weights: Dictionary, rng: RandomNumberGenerator) -> Str
 
 ## The villager nearest a point on the ground, within reach of a click:
 ## {town, i} so the bridge can say who they are, or empty.
-## Moves that need someone else there to make sense.
-const TOGETHER := ["Cheering", "Dance", "Idle_Talking", "Talking", "Talking_2", "Laughing", "Happy_Gesture", "Telling_Secret", "Arguing", "Whispering", "Nodding", "Yelling", "Waving"]
-
-
-## Anyone else within `reach` of `p` in this person's town.
-func _company(a: Dictionary, p: Vector3, reach: float) -> bool:
-	for b in crowds.get(a["town"], []):
-		if b == a:
-			continue
-		var m: Node3D = b["node"]
-		if is_instance_valid(m) and m.visible and Vector2(m.position.x - p.x, m.position.z - p.z).length() < reach:
-			return true
-	return false
-
-
 func who_at(p: Vector3, reach := 0.35) -> Dictionary:
 	var best := {}
 	var best_d := reach
@@ -576,9 +560,12 @@ func _set_down(a: Dictionary) -> bool:
 		a["goal"] = snap
 	a["placed"] = true
 	# A town comes into view in the middle of its day, not all at once out of
-	# their doors: each is already somewhere along their first errand (still at
-	# home, on the way, or there), so nobody arrives as one crowd.
-	_choose_next(a)
+	# their doors: each is already somewhere on the way to one of the town's
+	# places (still at home, on the way, or there), so nobody arrives as one
+	# crowd. Where they go next is their mind's (npc_mind), from there.
+	var places := _places(a["town"], c)
+	var spread: Array = [a["home"], a["bench"], places["well"], places["market"], places["tavern"], places["sept"]]
+	route_to(a, spread[a["rng"].randi() % spread.size()])
 	var route := PackedVector2Array(a["route"])
 	if not route.is_empty():
 		# Part-way along a leg of the way, never on its corner: the walk map's
@@ -591,7 +578,7 @@ func _set_down(a: Dictionary) -> bool:
 			if not _body_at(a, p):
 				n.position = Vector3(c.x + p.x, terrain.height_at(c.x + p.x, c.z + p.y), c.z + p.y)
 				a["route"] = route.slice(k - 1)
-	_set_off(a)
+	a["route"] = PackedVector2Array()  # set down there: their mind sends them on
 	return true
 
 
@@ -623,10 +610,6 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 	if block != a["block"]:
 		a["block"] = block
 		a["wait"] = minf(a["wait"], a["rng"].randf_range(0.0, 3.0))
-		if not a.get("talk", {}).is_empty() and not a.has("mind"):
-			_choose_next(a)  # the talk breaks up: home for the night, back to work
-			_set_off(a)
-			return
 	n.visible = a["block"] != "night" or (a["role"] == "tavern" and a["phase"] < 2.0)
 	var center: Vector3 = a["center"]
 	var route: PackedVector2Array = a["route"]
@@ -641,25 +624,7 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 			NavigationServer2D.agent_set_avoidance_priority(a["agent"], 1.0)  # walkers go round those standing still
 		if a.has("arrive"):
 			_settle(a, delta)
-		if a.has("mind"):
-			return  # their mind plays the moves and picks what's next
-		if not a.get("talk", {}).is_empty():
-			_converse(a, delta)
-			return
-		a["wait"] -= delta
-		# A cheer, a dance or a word needs someone to share it with: alone,
-		# they stand and look about instead of cheering at nobody.
-		if TOGETHER.has(String(a.get("work", ""))) and not a.get("checked_company", false):
-			a["checked_company"] = true
-			if not _company(a, n.position, 0.8):
-				a["work"] = ["Idle", "Looking_Around", "Bored"][a["rng"].randi() % 3]
-		if not a.has("arrive"):
-			people.play(n, a.get("work", "Idle"))
-		if a["wait"] <= 0.0:
-			a["checked_company"] = false
-			_choose_next(a)
-			_set_off(a)
-		return
+		return  # their mind plays the moves and picks what's next
 	# Walk the navmesh path, waypoint by waypoint, around the buildings, letting
 	# the avoidance steer around whoever is in the way.
 	var to := route[0] - here
@@ -719,18 +684,8 @@ func _step(a: Dictionary, delta: float, _t: float) -> void:
 			if (goal - here).length() < 0.35 or a["tries"] > 2:
 				a["route"] = PackedVector2Array()
 				a["tries"] = 0
-				# Held up in the square on the way somewhere else: never stranded
-				# there to stand in the press; they take up another errand and go.
-				var town: Dictionary = towns.towns.get(a["town"], {})
-				var sq: float = town["node"].get_meta("square_r", 0.0) + 0.1 if not town.is_empty() else 0.0
-				if here.length() < sq and (goal - here).length() >= 0.35 and a.get("talk", {}).is_empty():
-					_choose_next(a)
-					_set_off(a)
-					return
-				if a.get("talk", {}).is_empty() and not a.has("mind"):
-					a["goal"] = here  # settled here instead (one bound for a gathering keeps their place in it)
-				# Someone with a mind keeps where they were going: their mind asks
-				# again or gives it up (npc_mind GoTo), never does the work here.
+				# Their mind keeps where they were going: it asks again or gives it
+				# up (npc_mind GoTo), never does the work here.
 				return
 			var across := Vector2(-to.y, to.x).normalized() * (0.14 if a["rng"].randf() < 0.5 else -0.14)
 			route.insert(0, nav.closest(a["map"], here + across + to.normalized() * 0.05))
@@ -1319,20 +1274,8 @@ func _set_off(a: Dictionary) -> void:
 	if not PackedVector2Array(a["route"]).is_empty():
 		a.erase("arrive")
 		people.play(a["node"], a.get("gait", "Walk"))
-	elif a.has("mind"):
-		a.erase("arrive")  # arrived: their mind plays what comes next (never the old rules' chore: a man on his knees in the square)
-	elif a.get("talk", {}).is_empty():
-		_arrive(a, a.get("work", "Idle"))
 	else:
-		_arrive(a, "Idle")  # in place for a talk: the talk starts when the others are there
-
-
-## What they do on arriving starts once the body has stopped: begun while the
-## crowd's avoidance still carries them, a standing pose slides over the ground.
-func _arrive(a: Dictionary, clip: String) -> void:
-	a["arrive"] = clip
-	a["was"] = (a["node"] as Node3D).position
-	a["still"] = 0.0
+		a.erase("arrive")  # arrived: their mind plays what comes next (never the old rules' chore: a man on his knees in the square)
 
 
 ## Each frame on arrival: the move starts after a tenth of a second without moving.
@@ -1344,129 +1287,6 @@ func _settle(a: Dictionary, delta: float) -> void:
 	if float(a["still"]) >= 0.1:
 		people.play(n, String(a["arrive"]))
 		a.erase("arrive")
-
-
-func _choose_next(a: Dictionary) -> void:
-	var n: Node3D = a["node"]
-	var rng: RandomNumberGenerator = a["rng"]
-	var places := _places(a["town"], a["center"])
-	var roll := rng.randf()
-	var target: Vector3 = a["home"]
-	a["place_key"] = ""
-	_leave(a)
-	# Whatever was taken up at the last stop is carried on this walk.
-	a["gait"] = a.get("load", "Walk")
-	a["load"] = "Walk"
-	a["work"] = "Idle"
-	var role: String = a["role"]
-	var block := String(a["block"])
-	var mood := town_mood(a) if block != "night" and block != "dawn" else ""
-	var day := block in TownScenes.daytime()
-	if mood == "feast" and day and roll < (0.6 if block == "evening" else 0.3):
-		# A feast: the square fills round the bonfire, dancing, toasting, drinking.
-		target = place(a, "well")
-		a["work"] = ["Dance", "Cheering", "Drinking", "Dance", "Idle_Talking"][rng.randi() % 5]
-		block = "feasting"
-	elif mood == "riot" and day:
-		if roll < 0.35 and role != "child":
-			target = place(a, "well")  # to the square, to shout with the rest
-			a["work"] = ["Yelling", "Arguing", "Yelling"][rng.randi() % 3]
-		else:
-			target = nearby(a["home"], rng, 0.15)  # doors barred, watching from the step
-			a["work"] = ["Looking_Around", "Terrified", "Idle"][rng.randi() % 3]
-		block = "rioting"
-	elif mood == "hunger" and day and roll < 0.35:
-		# Hunger: standing idle at the empty stalls, or slumped at the door.
-		target = place(a, "market") if roll < 0.15 else nearby(a["home"], rng, 0.2)
-		a["work"] = ["Defeated", "Looking_Around", "Defeated", "Praying"][rng.randi() % 4]
-		block = "hungry"
-	match block:
-		"feasting", "rioting", "hungry":
-			pass  # chosen above
-		"night":
-			if role == "tavern" and roll < 0.5:
-				target = place(a, "tavern")
-				a["work"] = "Idle_Talking"
-		"dawn":
-			# Water from the well, a prayer at the sept, or the day's first chores.
-			if role in ["pious", "gentry"]:
-				target = place(a, "sept")
-			elif roll < 0.4 and role != "child":
-				target = place(a, "well")
-				a["work"] = "Carrying"  # water from the well
-			else:
-				target = a["bench"]
-				a["work"] = _able(["Carrying", "Wheelbarrow", "Idle"], rng)  # the day's first chores
-		"meal":
-			target = place(a, "tavern") if role == "tavern" or roll < 0.2 else a["home"]
-			a["work"] = "Idle_Talking" if roll < 0.5 else "Idle"
-		"evening":
-			if role == "child":
-				target = nearby(a["home"], rng, 0.4)
-				a["work"] = "Dance" if roll < 0.4 else ("Waving" if roll < 0.55 else "Idle")
-			elif role in ["pious", "gentry"] or roll < 0.12:
-				target = place(a, "sept")
-				a["work"] = "Praying"
-			elif role == "tavern" or roll < 0.45:
-				target = place(a, "tavern")
-				a["work"] = ["Idle_Talking", "Drinking", "Cheering", "Dance", "Whispering"][rng.randi() % 5]
-			elif roll < 0.65:
-				target = place(a, "well" if roll < 0.55 else "market")
-				a["work"] = ["Idle_Talking", "Whispering", "Arguing", "Nodding"][rng.randi() % 4]
-		_:
-			# The working day, by calling.
-			match role:
-				"farmer":
-					var tend := field_work(rng) if a["field"] != Vector3.INF else ""
-					if tend == "" or roll >= 0.85:
-						# Winter, or a break: wood and water fetched, the yard put to rights.
-						target = a["bench"] if roll < 0.6 or tend == "" else place(a, "well")
-						a["work"] = _able(["Carrying", "Wheelbarrow", "Fixing_Kneeling", "PickUp_Table"], rng)
-					else:
-						target = nearby(a["field"], rng, 0.25)
-						a["work"] = tend
-				"crafter":
-					target = a["bench"] if roll < 0.8 else place(a, "market")
-					a["work"] = _able(["Fixing_Kneeling", "PickUp_Table", "Carrying", "Wheelbarrow"], rng) if roll < 0.8 else ["Idle_Talking", "Arguing"][rng.randi() % 2]  # at the trade before the door, or haggling over it
-				"tavern":
-					target = place(a, "tavern")
-					a["work"] = ["Carrying", "Drinking", "Idle_Talking"][rng.randi() % 3]
-				"pious":
-					target = place(a, "sept") if roll < 0.4 else a["bench"]
-					a["work"] = ("Praying" if rng.randf() < 0.5 else "Kneeling") if roll < 0.4 else "Carrying"
-				"market":
-					target = place(a, "market")
-					a["work"] = ["Idle_Talking", "Arguing", "Carrying", "Nodding", "Whispering", "Yelling"][rng.randi() % 6]  # haggling at the stalls
-				"gentry":
-					# A lady's day: the stalls, never the haggling, and her prayers.
-					target = place(a, "market") if roll < 0.65 else place(a, "sept")
-					a["work"] = ["Idle_Talking", "Nodding", "Whispering", "Looking_Around"][rng.randi() % 4] if roll < 0.65 else "Praying"
-				"child":
-					target = nearby(a["home"], rng, 0.7) if roll < 0.6 else place(a, "well")
-					a["work"] = "Dance" if roll < 0.25 else "Idle"
-				_:
-					target = place(a, "market" if roll < 0.5 else "well")
-					a["work"] = "Idle_Talking" if roll < 0.5 else "Idle"
-	if GAITS.has(a["work"]):
-		a["load"] = a["work"]  # picked up here, carried on the next walk
-		a["work"] = GAITS[a["work"]]
-	# Talk takes two: join a knot already gathering there, or bring someone
-	# along; with nobody to hand, do something on your own instead.
-	if a["work"] in SOCIAL:
-		# Someone with a mind talks only when their mind arranges it (npc_mind
-		# FindPartner): an old-rules knot would never be kept up or closed.
-		if not a.has("mind"):
-			if String(a.get("place_key", "")) != "":
-				target = place(a, a["place_key"], true)  # room round them for a knot
-			if _gather(a, target, places):
-				return
-		a["work"] = _solo(a, target, places)
-	if a["work"] == "Idle":
-		a["work"] = _mood_idle(a)
-	# Some linger, some don't: no two keep the same rhythm.
-	a["wait"] = rng.randf_range(3.0, 20.0)
-	route_to(a, target)
-
 
 ## Sets `a` walking to `target` (world) on the town's walk map, never to the
 ## very spot someone else is bound for. Shared by the day's choices and by a
@@ -1522,55 +1342,6 @@ func route_to(a: Dictionary, target: Vector3) -> void:
 
 # --- gatherings: talk is always with someone ----------------------------------
 
-## Brings `a` into a gathering at `target` (world): one forming there already,
-## or a new one with the nearest villager free to come. False when there's no one.
-func _gather(a: Dictionary, target: Vector3, places: Dictionary) -> bool:
-	var c: Vector3 = a["center"]
-	var want := Vector2(target.x - c.x, target.z - c.z)
-	var now := Time.get_ticks_msec() * 0.001
-	var list: Array = _talks.get(a["town"], [])
-	# The square's budget counts talk too: full, nobody gathers there.
-	if _on_square(a, want) and _square_full(a):
-		return false
-	for g in list:
-		if not g.get("mind", false) and g["members"].size() < 3 and Vector2(g["centre"]).distance_to(want) < 0.6 and float(g["until"]) > now + 6.0:
-			_join(a, g)
-			return true
-	# Two knots talking at a spot already: a third would make them one crowd
-	# (as _meet and room_to_talk hold).
-	if list.filter(func(g): return Vector2(g["centre"]).distance_to(want) < 0.6).size() >= 2:
-		return false
-	# Someone near, standing about or wandering, not already in company, kept
-	# by the player, or a child at play: a neighbour within about 8 m, never
-	# called across the town (2.5, about 20 m, emptied the streets into the
-	# square). Those with minds keep their own day (npc_mind FindPartner).
-	var best := {}
-	var best_d := GATHER_REACH
-	for b in crowds.get(a["town"], []):
-		if is_same(b, a) or not b["placed"] or not b["node"].visible or not b.get("talk", {}).is_empty() or b.has("mind"):
-			continue
-		if b["role"] == "child" or Time.get_ticks_msec() < int(b.get("hold_until", 0)):
-			continue
-		var d := Vector2(b["node"].position.x - target.x, b["node"].position.z - target.z).length()
-		if d < best_d:
-			best_d = d
-			best = b
-	if best.is_empty():
-		return false
-	var rng: RandomNumberGenerator = a["rng"]
-	_talk_keys += 1
-	var g := {"key": _talk_keys, "centre": nav.closest(a["map"], want), "members": [], "move": a["work"], "kind": _kind(a["work"], target, places),
-		"until": now + rng.randf_range(10.0, 26.0), "speaker": 0, "turn_at": now, "spin": rng.randf() * TAU}
-	list.append(g)
-	_talks[a["town"]] = list
-	_join(a, g)
-	_leave(best)
-	best["gait"] = best.get("load", "Walk")
-	best["load"] = "Walk"
-	_join(best, g)
-	return true
-
-
 ## What a gathering is: a toast at the tavern, haggling at the market, or talk.
 func _kind(move: String, target: Vector3, places: Dictionary) -> String:
 	if move == "Cheering" or target.distance_to(places["tavern"]) < 0.6:
@@ -1578,159 +1349,6 @@ func _kind(move: String, target: Vector3, places: Dictionary) -> String:
 	if target.distance_to(places["market"]) < 0.7:
 		return "haggle"
 	return "talk"
-
-
-## Into the gathering, and everyone in it given a place round its middle,
-## a shoulder's width apart, facing in.
-func _join(a: Dictionary, g: Dictionary) -> void:
-	g["members"].append(a)
-	a["talk"] = g
-	a["alone"] = 0.0
-	_arrange(g)
-
-
-func _arrange(g: Dictionary) -> void:
-	var members: Array = g["members"]
-	var n := members.size()
-	var r := 0.065 if n <= 2 else 0.08  # two face each other a pace apart; three stand in a ring
-	var map: RID = members[0]["map"]
-	# Turn the ring until every place is on open ground as it was meant: by a
-	# wall or a stall the walk map would push a place aside, and two who should
-	# stand across from each other would end up shoulder to shoulder.
-	# Hard against a wall there may be no such turn: then the knot gathers a
-	# step or two out from it.
-	var best_slots := []
-	var best_err := INF
-	var best_mid: Vector2 = g["centre"]
-	var mids := [Vector2(g["centre"])]
-	for ring in [0.15, 0.3]:
-		for k in 8:
-			mids.append(nav.closest(map, Vector2(g["centre"]) + Vector2.from_angle(TAU * k / 8.0) * ring))
-	for mid: Vector2 in mids:
-		for turn in 8:
-			var spin := float(g["spin"]) + TAU * turn / 8.0
-			var slots := []
-			var err := 0.0
-			for i in n:
-				var want := mid + Vector2.from_angle(spin + TAU * i / n) * r
-				var got := nav.closest(map, want)
-				err = maxf(err, got.distance_to(want))
-				slots.append(got)
-			if err < best_err:
-				best_err = err
-				best_slots = slots
-				best_mid = mid
-			if err < 0.01:
-				break
-		if best_err < 0.01:
-			break
-	g["centre"] = best_mid
-	for i in n:
-		var b: Dictionary = members[i]
-		var slot: Vector2 = best_slots[i]
-		var nb: Node3D = b["node"]
-		var c: Vector3 = b["center"]
-		var here := Vector2(nb.position.x - c.x, nb.position.z - c.z)
-		b["goal"] = slot
-		b["route"] = PackedVector2Array() if here.distance_to(slot) < 0.03 else nav.path(b["map"], nav.closest(b["map"], here), slot)
-		b["best"] = INF
-		b["since"] = 0.0
-		_set_off(b)
-
-
-## Out of their gathering, if in one. Whoever is left on their own stops
-## talking to nobody and turns to something of their own.
-func _leave(a: Dictionary) -> void:
-	var g: Dictionary = a.get("talk", {})
-	a["talk"] = {}
-	if g.is_empty():
-		return
-	var at := _index(g["members"], a)
-	if at >= 0:
-		g["members"].remove_at(at)
-	if g["members"].size() == 1:
-		var b: Dictionary = g["members"][0]
-		g["members"].clear()
-		b["talk"] = {}
-		b["work"] = _solo(b, b["node"].position, _places(b["town"], b["center"]))
-		b["route"] = PackedVector2Array()
-		b["wait"] = b["rng"].randf_range(2.0, 6.0)
-		people.play(b["node"], b["work"])  # at once: not a word more to nobody
-	elif g["members"].size() > 1:
-		g["speaker"] = int(g["speaker"]) % g["members"].size()
-	if g["members"].is_empty():
-		var list: Array = _talks.get(a["town"], [])
-		var gi := _index(list, g)
-		if gi >= 0:
-			list.remove_at(gi)
-
-
-## Something to do alone where you stand: a drink at the tavern, a look over
-## the stalls, or simply standing about.
-func _solo(a: Dictionary, at: Vector3, places: Dictionary) -> String:
-	var rng: RandomNumberGenerator = a["rng"]
-	var felt := _mood_idle(a)
-	if felt != "Idle":
-		return felt  # grief or fear shows before anything else
-	if at.distance_to(places["tavern"]) < 0.6:
-		return ["Drinking", "Idle"][rng.randi() % 2]
-	if at.distance_to(places["market"]) < 0.7:
-		return ["Looking_Around", "PickUp_Table", "Idle"][rng.randi() % 3]
-	return ["Idle", "Looking_Around", "Bored"][rng.randi() % 3]
-
-
-## Standing in a gathering: face its middle, and take turns. One has the
-## floor (the gathering's move, or a toast); the rest nod and listen. With
-## nobody there yet, wait for them; if no one comes, give it up.
-func _converse(a: Dictionary, delta: float) -> void:
-	var g: Dictionary = a["talk"]
-	var n: Node3D = a["node"]
-	var c: Vector3 = a["center"]
-	var now := Time.get_ticks_msec() * 0.001
-	if now > float(g["until"]):
-		a["wait"] = 0.0
-		_choose_next(a)  # said and done: off to whatever's next
-		_set_off(a)
-		return
-	var to := _towards(a, g)
-	if to.length() > 0.005:
-		n.rotation.y = lerp_angle(n.rotation.y, atan2(to.x, to.y), minf(1.0, delta * 5.0))
-	var here: Array = g["members"].filter(func(b): return _present(b, g))
-	var placed := _index(here, a) >= 0
-	if here.size() < 2 or not placed:
-		a["alone"] = float(a.get("alone", 0.0)) + delta
-		if not placed and fmod(a["alone"], 3.0) < delta and a["alone"] > 1.0:
-			# Stopped short (someone was in the way): try for the place again.
-			var c2: Vector3 = a["center"]
-			a["route"] = nav.path(a["map"], nav.closest(a["map"], Vector2(n.position.x - c2.x, n.position.z - c2.z)), a["goal"])
-		people.play(n, "Looking_Around" if a["alone"] > 2.0 else "Idle")
-		if a["alone"] > 10.0:
-			a["wait"] = 0.0
-			_leave(a)  # they never came
-			a["work"] = _solo(a, n.position, _places(a["town"], c))
-			a["wait"] = a["rng"].randf_range(2.0, 6.0)
-		return
-	a["alone"] = 0.0
-	var speaking := false
-	var floor: Dictionary = g.get("floor", {})
-	if not floor.is_empty() and now < float(g["turn_at"]) and _index(here, floor) >= 0:
-		speaking = is_same(floor, a)  # chatter.gd gave them the floor: their line is up
-	else:
-		g["floor"] = {}
-		if now > float(g["turn_at"]):
-			g["speaker"] = (int(g["speaker"]) + 1) % here.size()
-			g["turn_at"] = now + a["rng"].randf_range(3.0, 6.5)
-		speaking = is_same(here[int(g["speaker"]) % here.size()], a)
-	var move: String = g["move"]
-	match String(g["kind"]):
-		"drink":
-			move = ("Cheering" if move == "Cheering" else "Idle_Talking") if speaking else "Drinking"
-		"haggle":
-			move = (["Arguing", "Idle_Talking"][int(g["spin"] * 10) % 2]) if speaking else "Nodding"
-		_:
-			if not speaking:
-				move = LISTEN[(_index(here, a) + int(g["speaker"])) % LISTEN.size()]
-	people.play(n, move)
 
 
 ## Where `x` is in `list`, by identity (a gathering and its members point at
@@ -1875,20 +1493,6 @@ func _mood_pace(a: Dictionary) -> float:
 		- 0.3 * float(m.get("grief", 0.0)) - 0.15 * float(m.get("hunger", 0.0)), 0.6, 1.4)
 
 
-## Standing about as they feel: weeping, slumped, glancing round in fear.
-func _mood_idle(a: Dictionary) -> String:
-	var m := _mood(a)
-	if float(m.get("grief", 0.0)) > 0.6:
-		return ["Crying", "Defeated"][a["rng"].randi() % 2]
-	if float(m.get("fear", 0.0)) > 0.6:
-		return ["Terrified", "Looking_Around"][a["rng"].randi() % 2]
-	if float(m.get("hunger", 0.0)) > 0.7:
-		return "Defeated"
-	if float(m.get("faith", 0.0)) > 0.8 and a["rng"].randf() < 0.3:
-		return "Praying"
-	return "Idle"
-
-
 ## Asks the bridge for the town's plans (minds.js: where each means to be this part of the day, and how they
 ## feel). Each villager keeps theirs (a.plan): their mind's pick leans to the plan's place (npc_mind Weigh,
 ## town_scenes.json plan), their mood sets their pace and their idle moves. The plan never sends anyone itself.
@@ -1959,25 +1563,10 @@ func struck(town: int, i: int, by: Vector3, who_struck: String) -> void:
 
 
 ## Away from `from`, at a run, home: what anyone does when steel is drawn on them.
-func _flee(a: Dictionary, from: Vector3) -> void:
+func _flee(a: Dictionary, _from: Vector3) -> void:
+	# Their mind takes it from here: Danger cuts in ahead of whatever they're doing.
 	if a.has("mind"):
-		# Their mind takes it from here: Danger cuts in ahead of whatever they're doing.
 		Awareness.assign(a["mind"] as BTPlayer, {"danger": true})
-		return
-	var town: Dictionary = towns.towns.get(a["town"], {})
-	if town.is_empty():
-		return
-	var n: Node3D = a["node"]
-	var c: Vector3 = a["center"]
-	var map: RID = nav.map_for(a["town"], town["node"])
-	var away: Vector3 = a["home"] if (a["home"] - from).length() > (n.position - from).length() else n.position + (n.position - from).normalized() * 1.5
-	var goal := nav.closest(map, Vector2(away.x - c.x, away.z - c.z))
-	a["goal"] = goal
-	a["route"] = nav.path(map, nav.closest(map, Vector2(n.position.x - c.x, n.position.z - c.z)), goal)
-	a["gait"] = "Running"
-	a["pace"] = 2.4
-	a["work"] = "Terrified"
-	a["wait"] = 6.0
 
 
 func _witness(id: int) -> void:
@@ -2039,11 +1628,8 @@ func gatherings(town: int) -> Array:
 	return out
 
 
-## In place for the talk: the old rules' ring spot, or, for two whose minds
-## arranged it, both arrived, standing, face to face within talking distance.
+## In place for the talk their minds arranged: both arrived, standing, face to face within talking distance.
 func _in_talk(b: Dictionary, g: Dictionary) -> bool:
-	if not g.get("mind", false):
-		return _present(b, g)
 	if not is_instance_valid(b.get("node")):
 		return false  # gone with their town (rebuilt, razed): not in any talk
 	var nb: Node3D = b["node"]
@@ -2074,7 +1660,7 @@ const MIND_TALK_SECS := 40.0
 func open_talk(a: Dictionary, b: Dictionary, kind := "talk", topic := "") -> int:
 	var town: int = a["town"]
 	var now := Time.get_ticks_msec() * 0.001
-	var list: Array = _talks.get(town, []).filter(func(g): return not g.get("mind", false) or (float(g["until"]) > now and not (_index(g["members"], a) >= 0 or _index(g["members"], b) >= 0)))
+	var list: Array = _talks.get(town, []).filter(func(g): return float(g["until"]) > now and not (_index(g["members"], a) >= 0 or _index(g["members"], b) >= 0))
 	_talk_keys += 1
 	var c: Vector3 = a["center"]
 	var mid: Vector3 = (a["node"].position + b["node"].position) * 0.5
@@ -2157,12 +1743,11 @@ func who_is(n: Node) -> Dictionary:
 	return n.get_meta("folk", {}) if n else {}  # set at spawn: asked every look-round, never a search of every town
 
 
-## Test aid (chatter.gd's talk count): talks open in a town, by the minds or the
-## old rules, and how many have everyone in place.
+## Test aid (chatter.gd's talk count): talks open in a town, by the minds, and how many have everyone in place.
 func talk_counts(town: int) -> Dictionary:
-	var out := {"open (minds)": 0, "open (rules)": 0, "in place": 0}
+	var out := {"open (minds)": 0, "in place": 0}
 	for g in _talks.get(town, []):
-		out["open (minds)" if g.get("mind", false) else "open (rules)"] += 1
+		out["open (minds)"] += 1
 		if g["members"].size() >= 2 and g["members"].all(func(b): return _in_talk(b, g)):
 			out["in place"] += 1
 		elif g.get("mind", false) and g["members"].size() == 2:
@@ -2226,8 +1811,6 @@ func _prune_talks(id: int) -> void:
 		var g: Dictionary = list[k]
 		if now < float(g["until"]) + 5.0:
 			continue
-		if not g.get("mind", false) and not g["members"].all(func(b): return b.has("mind")):
-			continue  # the old rules close their own (_converse)
 		for b in g["members"]:
 			if is_same(b.get("talk", {}), g):
 				b["talk"] = {}
@@ -2253,7 +1836,7 @@ func join_talk(a: Dictionary) -> Array:
 	var here := Vector2(a["node"].position.x - c.x, a["node"].position.z - c.z)
 	var now := Time.get_ticks_msec() * 0.001
 	for g in _talks.get(a["town"], []):
-		if not g.get("mind", false) or float(g["until"]) < now or _index(g["members"], a) >= 0:
+		if float(g["until"]) < now or _index(g["members"], a) >= 0:
 			continue
 		var members: Array = g["members"]
 		if members.size() >= int(K.get("most", 4)) or Vector2(g["centre"]).distance_to(here) > float(K.get("reach", 1.2)):

@@ -9,7 +9,9 @@ extends SceneTree
 ##   every run of picks as long as the weights' sum each comes up its weight's worth (±1); the same weights and place
 ##   in the round give the same order (two minds, one plan), another place a different one; a weight of 0 is never picked; nobody does one thing more than twice running;
 ## - the bridge minds' plan for a villager (minds.js plans: where they mean to be) is one input the pick reads: its
-##   place's activities come up more (town_scenes.json `plan`); villagers.gd follows no plan of its own (`_follow`).
+##   place's activities come up more (town_scenes.json `plan`); villagers.gd follows no plan of its own (`_follow`);
+## - one path for a villager's day (integration audit #1): no old-rules routine in villagers.gd (`_choose_next`, its
+##   gatherings and the minds-off switch), and every calling a villager can be given has a mind's activities.
 ##   arch -arm64 godot --headless --path realm --script res://tools/square_probe.gd
 
 const Mind := preload("res://scripts/npc_mind.gd")
@@ -43,6 +45,7 @@ func _init() -> void:
 	_day()
 	await _picks()
 	await _plan()
+	_one_path()
 	print("SQUARE %s (%d fails)" % ["PASS" if fails == 0 else "FAIL", fails])
 	quit(1 if fails > 0 else 0)
 
@@ -234,3 +237,21 @@ func _plan() -> void:
 	var vsrc := FileAccess.get_file_as_string("res://scripts/villagers.gd")
 	if vsrc.contains("func _follow("):
 		_fail("villagers.gd still follows the bridge's plan on its own (func _follow): a second owner of what's next")
+
+
+# --- one path: every villager's day is their mind's (integration audit #1) -----------------
+
+func _one_path() -> void:
+	var vsrc := FileAccess.get_file_as_string("res://scripts/villagers.gd")
+	for old in ["func _choose_next(", "func _gather(", "func _converse(", "minds_on("]:
+		if vsrc.contains(old):
+			_fail("villagers.gd keeps the old rules' day beside the minds (%s)" % old)
+	var callings := {"farmer": 1, "crafter": 1, "tavern": 1, "pious": 1, "market": 1, "gentry": 1, "idler": 1, "child": 1}
+	for k in Data.value("crowd", "square_agents.callings", {}):
+		callings[k] = 1
+	for job in Data.value("works", "jobs", {}):
+		callings[String(job)] = 1
+	for c in callings:
+		if Mind.villager_activities(c).is_empty():
+			_fail("the calling '%s' has no mind's activities: such a villager would stand mindless" % c)
+	print("SQUARE one path: %d callings, each with a mind's day" % callings.size())

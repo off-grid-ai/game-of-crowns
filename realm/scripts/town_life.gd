@@ -52,8 +52,8 @@ static func _limbo_args() -> Array[int]:
 	return out
 
 
-## Whether a town's people have minds (LimboAI): the one rule, for the town's
-## scenes and its villagers alike. Every town has them by default (2026-11-11,
+## Whether a town's scene people have minds (LimboAI); villagers always do (villagers.gd,
+## integration audit #1: the old rules' day is gone). Every town has them by default (2026-11-11,
 ## after Mac's playtest: Crowford on the old rules was one knot round a cold fire
 ## while Kingsmere, on minds, read as a town). Minds cost only where townsfolk
 ## are drawn, near the camera. --limbo=none turns them off everywhere (the old
