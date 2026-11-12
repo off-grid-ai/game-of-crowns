@@ -655,7 +655,7 @@ const PLANT_WIND := preload("res://scripts/plant_wind.gdshader")
 
 
 ## A plant mesh that bends in the wind: each surface keeps its own texture and colour.
-static func _windy(mesh: ArrayMesh) -> ArrayMesh:
+static func _windy(mesh: ArrayMesh, bury := -1.0) -> ArrayMesh:
 	var out := mesh.duplicate() as ArrayMesh
 	for i in out.get_surface_count():
 		var src := out.surface_get_material(i) as BaseMaterial3D
@@ -665,6 +665,8 @@ static func _windy(mesh: ArrayMesh) -> ArrayMesh:
 			m.set_shader_parameter("albedo_tex", src.albedo_texture)
 			m.set_shader_parameter("albedo_color", src.albedo_color)
 			m.set_shader_parameter("alpha_cut", src.alpha_scissor_threshold if src.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR else 0.0)
+		if bury >= 0.0:
+			m.set_shader_parameter("bury", bury)  # under snow: this share of the plants is gone (plant_wind.gdshader)
 		out.surface_set_material(i, m)
 	return out
 
@@ -673,7 +675,9 @@ func _grass(cities: Array) -> void:
 	if _tuft_meshes.is_empty():
 		var builder = preload("res://scripts/house_builder.gd").new()
 		for n in TUFTS:
-			_tuft_meshes.append(_windy(builder.bake_path("res://assets/nature/%s.gltf" % n)))
+			var plants: Dictionary = preload("res://scripts/data.gd").value("weather", "plants", {})
+			var bury := float(plants.get("flowers", 1.0)) if n.begins_with("Flower") or n.begins_with("Clover") else float(plants.get("grass", 0.6))
+			_tuft_meshes.append(_windy(builder.bake_path("res://assets/nature/%s.gltf" % n), bury))
 	if _grass_root == null or not is_instance_valid(_grass_root):
 		_grass_nodes.clear()  # a new realm took the old batches with it
 		_grass_sig = ""

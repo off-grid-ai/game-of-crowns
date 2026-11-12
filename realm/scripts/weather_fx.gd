@@ -259,7 +259,7 @@ func _dress_towns() -> void:
 			continue
 		if on:
 			for g in root.get_children():
-				if g is MultiMeshInstance3D and g.has_meta("kind") and not _roofed.has(g):
+				if g is MultiMeshInstance3D and g.has_meta("kind") and not _roofed.has(g) and not _cut_out(g):
 					(g as GeometryInstance3D).material_overlay = _roof  # buildings only: never people
 					_roofed[g] = true
 		var close: bool = cam != null and cam.global_position.distance_to(root.global_position) < near
@@ -276,6 +276,19 @@ func _dress_towns() -> void:
 			var fade := clampf((wet - float(pk.get("from", 0.45)) * 0.5) / 0.5, 0.0, 1.0)
 			for d in n.get_children():
 				(d as Decal).modulate.a = fade
+
+
+## A batch drawn from cut-out cards (a tree's leaves, a bush): the overlay can't follow their alpha and drew
+## them as solid white quads in snow (batch 9 settled); the leaves take their snow from terrain.gd instead.
+static func _cut_out(g: MultiMeshInstance3D) -> bool:
+	var mesh: Mesh = g.multimesh.mesh if g.multimesh else null
+	if mesh == null:
+		return false
+	for i in mesh.get_surface_count():
+		var m := mesh.surface_get_material(i) as BaseMaterial3D
+		if m and m.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
+			return true
+	return false
 
 
 ## Puddles round a town's square and mud along its roads near it: decals (Godot's own), dark and glossy,

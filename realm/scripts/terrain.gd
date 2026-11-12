@@ -145,7 +145,9 @@ func set_season(name: String, towns: Array = [], settle := 10.0) -> void:
 	if _snow_fade:
 		_snow_fade.kill()
 	_snow_fade = create_tween()
-	_snow_fade.tween_method(func(v: float): _snow.set_shader_parameter("amount", v), from, float(s["snow"]), maxf(2.0, Awareness.season_seconds / 2.0))  # snow settles or melts over half the realm's season
+	_snow_fade.tween_method(func(v: float):
+		_snow.set_shader_parameter("amount", v)
+		RenderingServer.global_shader_parameter_set("snow", v), from, float(s["snow"]), maxf(2.0, Awareness.season_seconds / 2.0))  # snow settles or melts over half the realm's season; the global `snow` the leaves and the low plants read (snow_leaf, plant_wind)
 	if s["snow"] <= 0.0:
 		var gone := towns.duplicate()
 		_snow_fade.tween_callback(func():
@@ -171,10 +173,31 @@ func set_season(name: String, towns: Array = [], settle := 10.0) -> void:
 			# A kit tree with its own turn (forest.gd _leaves, assets.json woods.kit.seasons) takes that instead.
 			var tint: Color = (mat.get_meta("seasons", {}) as Dictionary).get(name, s[key])
 			create_tween().tween_property(mat, "albedo_color", _leaf_mats[mat] * tint, settle)
+			_leaf_snow(mat, key != "grass" and s["snow"] > 0.0)
 		if s["snow"] > 0.0 and OVERLAY_SNOW and mmi in _veg:  # (the kit woods' batches are tinted through one per mesh: no overlay there)
 			mmi.material_overlay = _snow  # left on as it melts; the fade takes it to nothing
 	if land3d:
 		land3d.set_grass(s["ground"], s["snow"] > 0.0, settle)
+
+
+## Snow on a leaf material (snow_leaf.gdshader as its next pass, cut by the leaf's own texture, on what faces
+## the sky), on in a snowy season; one pass per leaf material, kept for when the snow comes back.
+const SNOW_LEAF := preload("res://scripts/snow_leaf.gdshader")
+var _leaf_passes := {}
+func _leaf_snow(mat: StandardMaterial3D, on: bool) -> void:
+	if not on:
+		if mat.next_pass and _leaf_passes.get(mat) == mat.next_pass:
+			mat.next_pass = null
+		return
+	if not _leaf_passes.has(mat):
+		var p := ShaderMaterial.new()
+		p.shader = SNOW_LEAF
+		p.set_shader_parameter("albedo_tex", mat.albedo_texture)
+		p.set_shader_parameter("alpha_cut", mat.alpha_scissor_threshold if mat.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR else 0.5)
+		p.set_shader_parameter("cover", Data.num("weather", "leaves.cover", 0.8))
+		_leaf_passes[mat] = p
+	if mat.next_pass == null:
+		mat.next_pass = _leaf_passes[mat]
 
 
 ## A town raised after the season was set: give it the season's snow too.
