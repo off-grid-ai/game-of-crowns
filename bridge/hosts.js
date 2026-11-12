@@ -139,16 +139,17 @@ function give(ctx, b) {
   return [400, { error: "no such order" }];
 }
 
-// Freeciv 3.2's teleport takes every argument (embark_to, allow_disembark, conquer_city, conquer_extra,
-// enter_hut, frighten_hut); given two it throws, and no host ever moved.
-const TELEPORT = "edit.unit_teleport, u, t, nil, false, false, false, false, false";
+// A step is a real move in Freeciv (edit.unit_move: its own test of the tile, then its move handling,
+// vision and huts), not a teleport; the season's pace stays the hosts' own (data/hosts.json speed), so it
+// costs no move points. Arguments: embark_to, disembark, conquer_city, conquer_extra, enter_hut, frighten_hut.
+const MOVE = "edit.unit_move, u, t, 0, nil, false, false, false, false, false";
 
 // One company's season on the road, in Freeciv: tile by tile along the way the bridge found, stopping
 // where the way is shut (another's men stand there).
-const walkLua = (id, tiles) => `local u = find.unit(nil, ${id}); if u then for _, p in ipairs({${tiles.map(([x, y]) => `{${x},${y}}`).join(",")}}) do local t = find.tile(p[1], p[2]); if not t then break end; pcall(${TELEPORT}); if u.tile ~= t then break end end end`;
+const walkLua = (id, tiles) => `local u = find.unit(nil, ${id}); if u then for _, p in ipairs({${tiles.map(([x, y]) => `{${x},${y}}`).join(",")}}) do local t = find.tile(p[1], p[2]); if not t then break end; pcall(${MOVE}); if u.tile ~= t then break end end end`;
 
 // With no way over land known: up to n steps, each to the neighbouring land tile nearest the goal.
-const stepLua = (id, x, y, n) => `local u = find.unit(nil, ${id}); if u then for i = 1, ${n} do local c = u.tile; local t, bd = nil, math.max(math.abs(c.x - ${x}), math.abs(c.y - ${y})); for a in c:square_iterate(1) do local nm = a.terrain:rule_name(); local d = math.max(math.abs(a.x - ${x}), math.abs(a.y - ${y})); if d < bd and not nm:find("Ocean") and nm ~= "Lake" then t, bd = a, d end end; if not t then break end; pcall(${TELEPORT}); if u.tile ~= t then break end end end`;
+const stepLua = (id, x, y, n) => `local u = find.unit(nil, ${id}); if u then for i = 1, ${n} do local c = u.tile; local t, bd = nil, math.max(math.abs(c.x - ${x}), math.abs(c.y - ${y})); for a in c:square_iterate(1) do local nm = a.terrain:rule_name(); local d = math.max(math.abs(a.x - ${x}), math.abs(a.y - ${y})); if d < bd and not nm:find("Ocean") and nm ~= "Lake" then t, bd = a, d end end; if not t then break end; pcall(${MOVE}); if u.tile ~= t then break end end end`;
 
 // The land as Freeciv wrote it for the reign (snapshot.lua's map.json): which tiles a host can walk.
 let land = { file: null };

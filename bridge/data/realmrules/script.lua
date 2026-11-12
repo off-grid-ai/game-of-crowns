@@ -560,12 +560,20 @@ function realm_host(who, x, y, kinds, count)
     local n = t.terrain:rule_name()
     if not n:find("Ocean") and n ~= "Lake" and t:city() == nil then tiles[#tiles + 1] = t end
   end
+  -- Each company is the house's to feed: homed to its town nearest the muster, so Freeciv charges its
+  -- upkeep there (the dead and other townless hosts have no home).
+  local home, best = nil, nil
+  local at = find.tile(x, y)
+  for c in who:cities_iterate() do
+    local d = c.tile:sq_distance(at)
+    if not best or d < best then home, best = c, d end
+  end
   local made = 0
   for i = 1, count do
     local ut = find.unit_type(kinds[(i - 1) % #kinds + 1])
     local t = tiles[(i - 1) % math.max(1, #tiles) + 1]
     if ut and t then
-      local ok, u = pcall(edit.create_unit, who, t, ut, 1, nil, -1)
+      local ok, u = pcall(edit.create_unit, who, t, ut, 1, home, -1)
       if ok and u then made = made + 1 end
     end
   end
