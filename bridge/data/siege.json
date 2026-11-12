@@ -1,0 +1,6 @@
+{
+ "_": "When the royal host storms a besieged town (campaigns.js stormCall; casebook, War and sieges: a siege is a season, Total War: Attila's captains don't throw a company at a full garrison). The royal companies beside the walls storm when they are at least ratio times the house's soldiers in the town, each defender counted 1 + wall_edge times its wall's standing share (1 - the worst section's wear, damage.js: a breach takes the walls' edge away). Too few, they wait for more men or a breach; after wait_most such seasons the captains lift the siege, and say why. A siege the King ordered pressed (the herald's terms) storms whatever the odds: it is his word.",
+ "ratio": 1.0,
+ "wall_edge": 1.0,
+ "wait_most": 3
+}

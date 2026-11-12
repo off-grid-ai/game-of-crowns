@@ -27,6 +27,17 @@ export function besiegers(ctx, c) {
   return (world?.units ?? []).filter((u) => u.owner !== c.owner && !CIVILIAN.has(u.type) && Math.max(Math.abs(u.x - c.x), Math.abs(u.y - c.y)) === 1);
 }
 
+// Whether the royal host storms a besieged town this season (data/siege.json): "storm" when the companies beside
+// the walls (men) are enough against the house's soldiers inside (defenders), each counted the more the walls still
+// stand (wear: the worst section's, 0 whole .. 1 gone); "wait" while too few; "lift" once they have waited too long.
+export const SIEGE = JSON.parse(fs.readFileSync(new URL("./data/siege.json", import.meta.url), "utf8"));
+export function stormCall({ men, defenders, wear = 0, waited = 0, pressed = false }) {
+  if (pressed) return "storm";
+  const need = SIEGE.ratio * defenders * (1 + SIEGE.wall_edge * (1 - Math.min(1, Math.max(0, wear))));
+  if (men > 0 && men >= need) return "storm";
+  return waited >= SIEGE.wait_most ? "lift" : "wait";
+}
+
 // The siege engines among a host's companies (Freeciv's catapults and trebuchets): the camp builds as many.
 const ENGINE = /Catapult|Trebuchet|Cannon|Artillery/;
 export const engines = (units) => units.filter((u) => ENGINE.test(u.type)).length;
@@ -212,6 +223,21 @@ export function resolveCampaigns(ctx, turn) {
       continue;
     }
     if (men === 0) continue;  // still on the road to the walls
+    // Strong enough to storm? A company isn't thrown at a full garrison: too few wait for more men or a breach,
+    // then the captains lift the siege, and the realm hears why.
+    const defenders = (world.units ?? []).filter((u) => u.owner === c.house && SOLDIER(u) && u.x === town.x && u.y === town.y).length;
+    const wear = Math.max(0, ...((damageOf(meta, { id: c.city })?.walls ?? []).map((w) => w.wear)));
+    const call = stormCall({ men, defenders, wear, waited: c.waited ?? 0, pressed: c.press });
+    if (call === "lift") {
+      end();
+      record({ turn, kind: "decree", text: `The royal host lifts the siege of ${cityName(c.city)}: ${men} ${men === 1 ? "company" : "companies"} at the walls against ${defenders} inside, too few to storm them, and no breach. The King's captains bring the men home whole.`, city: c.city });
+      continue;
+    }
+    if (call === "wait") {
+      if (!c.waited) record({ turn, kind: "decree", text: `The King's captains will not storm ${cityName(c.city)} with ${men} ${men === 1 ? "company" : "companies"} against ${defenders} inside: they wait for more men or a breach.`, city: c.city });
+      c.waited = (c.waited ?? 0) + 1;
+      continue;
+    }
     // An assault this season: each royal company beside the walls strikes once and Freeciv decides.
     send(`lua cmd ${Lua.assault(c.city, crown.id)}`);
     c.assaults = (c.assaults ?? 0) + 1;
