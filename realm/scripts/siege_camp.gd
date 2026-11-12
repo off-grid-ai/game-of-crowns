@@ -20,6 +20,7 @@ const Data := preload("res://scripts/data.gd")
 const Real := preload("res://scripts/realistic.gd")
 const Fire := preload("res://scripts/fire.gd")
 const Particles := preload("res://scripts/particles.gd")
+const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md): the ram, the tower and their crews
 
 var scenes: Node
 var root: Node3D
@@ -33,7 +34,7 @@ var _crews := []  # every crewman as the walls' archers see him: {node, alive, r
 var _stone_mesh: SphereMesh
 var _stone_mat: StandardMaterial3D
 var _wood: Material
-var _rolling := []  # the ram and the tower on their way to the wall: {node, kind, crew, to, from, t, dur, beat}
+var _rolling := []  # the ram and the tower on their way to the wall: {node, kind, crew, to, from, t, beat, rolling, at_wall}
 
 
 ## The camp pitched for a siege of the town at `town`: `middle` the angle its middle stands at, `line` where
@@ -239,8 +240,7 @@ func _parked() -> void:
 		# its crew behind it at pace, the ram to batter the wall's face, the tower to stand against it.
 		var to: Vector3 = _wall_face(p, float(k.get("ram_out" if kinds[i] == "siege_ram" else "tower_out", 0.15)))
 		if to != Vector3.INF:
-			var dur := p.distance_to(to) / maxf(float(k.get("pace", 0.12)), 0.01)
-			var go := {"node": m, "kind": kinds[i], "crew": crew, "from": p, "to": to, "t": -float(k.get("roll_after_s", 10.0)) - i * 4.0, "dur": dur, "beat": 0.0}
+			var go := {"node": m, "kind": kinds[i], "crew": crew, "from": p, "to": to, "t": -float(k.get("roll_after_s", 10.0)) - i * 4.0, "beat": 0.0}
 			_rolling.append(go)
 
 
@@ -253,8 +253,10 @@ func _wall_face(p: Vector3, out: float) -> Vector3:
 	return scenes.ground(f) if f != Vector3.INF else f
 
 
-## The ram and the tower on their way: rolled by their crews (pushing behind), then the ram swings at the
-## wall every blow_s, a blow and a burst of dust (walls.gd strike: a doomed stone falls to it), its crew heaving.
+## The ram and the tower on their way: each goes to the wall by its Mover at the crew's pace (its route from the
+## realm's navigation, its turning left to the camp's aim: the model faces the town on its x), its crew pushing
+## behind by theirs; then the ram swings at the wall every blow_s, a blow and a burst of dust (walls.gd strike: a
+## doomed stone falls to it), its crew heaving.
 func _roll(dt: float) -> void:
 	var k: Dictionary = Data.value("siege", "parked", {})
 	for g in _rolling:
@@ -266,21 +268,31 @@ func _roll(dt: float) -> void:
 		if float(g["t"]) < 0.0:
 			continue
 		var dir: Vector3 = (g["to"] - g["from"]).normalized()
-		var u := clampf(float(g["t"]) / maxf(float(g["dur"]), 0.1), 0.0, 1.0)
-		if u < 1.0:
-			if t0 < 0.0:
+		if not g.get("at_wall", false):
+			var pace := float(k.get("pace", 0.12))
+			if not g.get("rolling", false):
+				g["rolling"] = true
+				var mv := Mover.of(m)
+				mv.speed = pace
+				mv.clip = ""  # an engine: nothing to play
+				mv.turn_rate = 0.0  # it keeps the camp's aim at the wall
+				Mover.of(m).go(g["to"], func(): g["at_wall"] = true)
 				for c in g["crew"]:
 					if c["alive"] and is_instance_valid(c["node"]):
-						scenes.people.play(c["node"], "Pushing", 1.0)
-			m.global_position = scenes.ground((g["from"] as Vector3).lerp(g["to"], u))
+						Mover.of(c["node"]).clip = "Pushing"
 			var j := 0
 			for c in g["crew"]:
 				if c["alive"] and is_instance_valid(c["node"]):
 					var side := Vector3(-dir.z, 0, dir.x) * (0.12 * (j - 0.5))
-					(c["node"] as Node3D).global_position = scenes.stand(m.global_position - dir * float(k.get("behind", 0.35)) + side)
-					(c["node"] as Node3D).rotation.y = atan2(dir.x, dir.z)
+					Mover.of(c["node"]).toward(m.global_position - dir * float(k.get("behind", 0.35)) + side, pace * 1.1, dir)
 				j += 1
-			continue
+			if not g.get("at_wall", false):
+				continue
+		if not g.get("crew_still", false):  # at the wall: the crew stop pushing where they are
+			g["crew_still"] = true
+			for c in g["crew"]:
+				if c["alive"] and is_instance_valid(c["node"]):
+					Mover.of(c["node"]).stop()
 		if g["kind"] != "siege_ram":
 			if not g.get("there", false):
 				g["there"] = true
