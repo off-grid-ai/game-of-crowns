@@ -398,7 +398,6 @@ func _step(w: PackedStringArray) -> void:
 					var census := {}  # kind -> {instance id: true}: every beast, horse and cart seen in the square
 					var t_end := Time.get_ticks_msec() + int(secs * 1000.0)
 					while Time.get_ticks_msec() < t_end:
-						var outlines: Array = TN.footprints(oroot)
 						var bodies: Array = []
 						for p in get_tree().get_nodes_in_group("people"):
 							bodies.append([p, "person"])
@@ -427,16 +426,15 @@ func _step(w: PackedStringArray) -> void:
 								kin[n.get_instance_id()] = true
 								census[b[1]] = kin
 							var q := Vector2(lp.x, lp.z)
-							for fp in outlines:
-								if (fp as PackedVector2Array).size() > 2 and Geometry2D.is_point_in_polygon(q, fp):
-									var key := "%s#%d" % [b[1], n.get_instance_id()]
-									# Who placed it (town-life asked, round 13: bodies parked at the square's middle): the
-									# director's row id (scene meta), else the parent's name and the body's own.
-									var who := "%s/%s" % [str(n.get_meta("scene", "-")), n.get_parent().name if n.get_parent() else "?"]
-									var row: Array = hits.get(key, [b[1], 0, q, who, n.name])
-									row[1] = int(row[1]) + 1
-									hits[key] = row
-									break
+							# Inside something: nav_ground's one answer (villagers' crowd check asks the same).
+							if not TN.inside(oroot, n.global_position).is_empty():
+								var key := "%s#%d" % [b[1], n.get_instance_id()]
+								# Who placed it (town-life asked, round 13: bodies parked at the square's middle): the
+								# director's row id (scene meta), else the parent's name and the body's own.
+								var who := "%s/%s" % [str(n.get_meta("scene", "-")), n.get_parent().name if n.get_parent() else "?"]
+								var row: Array = hits.get(key, [b[1], 0, q, who, n.name])
+								row[1] = int(row[1]) + 1
+								hits[key] = row
 						samples += 1
 						await get_tree().create_timer(0.5).timeout
 					var by_kind := {}

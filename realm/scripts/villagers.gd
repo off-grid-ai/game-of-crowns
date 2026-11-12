@@ -1223,7 +1223,7 @@ func _crowd_check() -> void:
 					var why := "%s tool=%s held_for=%s can=%s from=%s" % [clip, n.get_meta("tool", "-"), mo.get("_held_for"), Weapons.can_play(clip), n.get_parent().name]
 					_crowd["empty_who"][why] = int(_crowd["empty_who"].get(why, 0)) + 1
 		# Nobody inside a house, wall, fence or stall (town_nav's building footprints).
-		if nav.in_building(towns, n.global_position) and not _in_yard(n.global_position):
+		if nav.in_building(towns, n.global_position):  # nav_ground.inside_something: the one answer (a bailey is open)
 			_crowd["in_building"] = int(_crowd.get("in_building", 0)) + 1
 			_crowd["building_who"][_who(n)] = true
 		for f in fires:
@@ -1299,17 +1299,6 @@ static func _travelling(n: Node) -> bool:
 		if p is PathFollow3D:
 			return true
 		p = p.get_parent()
-	return false
-
-
-## In a castle's open bailey (towns.gd "yards"): inside its footprint, but open ground.
-func _in_yard(p: Vector3) -> bool:
-	for t in TownNav.towns_at(towns, p):
-		var root: Node3D = t[1]
-		var q := Vector2(p.x - root.global_position.x, p.z - root.global_position.z)
-		for y in root.get_meta("yards", []):
-			if Geometry2D.is_point_in_polygon(q, y[0]):
-				return true
 	return false
 
 

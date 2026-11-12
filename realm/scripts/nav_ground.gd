@@ -71,6 +71,27 @@ static func all(root: Node3D, terrain: Node3D = null) -> Array:
 	return (o["town"] as Array) + (o["life"] as Array)
 
 
+## The one answer to "is `p` (world) inside something standing in this town": the outline it is in, or an empty one.
+## Anything the town has on the ground counts, its builders' (a house, a wall, the well's curb) and its life's (a
+## stall, a parked cart, a fire's ring); a castle's open bailey (towns.gd meta "yards": inside its walls' foot, but
+## open ground) is not. Every check and placer asks this (town_nav inside, in_building and clear; villagers' crowd
+## check; autoplay's overlap probe), so they can't disagree.
+static func inside_something(root: Node3D, p: Vector3, terrain: Node3D = null) -> PackedVector2Array:
+	if root == null or not is_instance_valid(root):
+		return PackedVector2Array()
+	var c := root.global_position
+	var q := Vector2(p.x - c.x, p.z - c.z)
+	for y in root.get_meta("yards", []):
+		if Geometry2D.is_point_in_polygon(q, y[0]):
+			return PackedVector2Array()
+	var o := outlines(root, terrain)  # kept per town until its layout changes: no copy made per ask
+	for key in ["town", "life"]:
+		for fp: PackedVector2Array in o[key]:
+			if fp.size() > 2 and Geometry2D.is_point_in_polygon(q, fp):
+				return fp
+	return PackedVector2Array()
+
+
 static func _walk(n: Node, root: Node3D, life: Node3D, to_town: Transform3D, terrain: Node3D, K: Dictionary, out: Dictionary) -> void:
 	for g in K.get("skip_groups", ["people", "animals", "horses"]):
 		if n.is_in_group(String(g)):

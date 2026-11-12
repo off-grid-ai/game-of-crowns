@@ -427,14 +427,9 @@ static func footprints(root: Node3D) -> Array:
 	return NavGround.all(root, _land)
 
 
-## The footprint `p` (world) stands in, or an empty one.
+## The footprint `p` (world) stands in, or an empty one (nav_ground.inside_something: the one answer).
 static func inside(root: Node3D, p: Vector3) -> PackedVector2Array:
-	var c := root.global_position
-	var q := Vector2(p.x - c.x, p.z - c.z)
-	for fp: PackedVector2Array in footprints(root):
-		if Geometry2D.is_point_in_polygon(q, fp):
-			return fp
-	return PackedVector2Array()
+	return NavGround.inside_something(root, p, _land)
 
 
 ## Whether a person could stand at `p` (world): in no building anywhere.
@@ -492,19 +487,10 @@ func _dry(p: Vector3) -> bool:
 	return terrain == null or terrain.walkable(p.x, p.z)
 
 
-## Whether `p` (world), or anything within `body` of it, is inside a
-## building: a house, wall, fence or stall (the town's own footprints, not the
-## ground its life keeps clear for a drill or a crowd).
+## Whether `p` (world), or anything within `body` of it, is inside something standing in a town: a house, wall,
+## fence, stall, the well (nav_ground.inside_something: the one answer; a castle's open bailey is open ground).
 static func in_building(towns: Node3D, p: Vector3, body := 0.0) -> bool:
-	for t in towns_at(towns, p):
-		var root: Node3D = t[1]
-		var c := root.global_position
-		for o in _reach_of(body):
-			var q := Vector2(p.x + o.x - c.x, p.z + o.z - c.z)
-			for fp: PackedVector2Array in NavGround.outlines(root, _land)["town"]:
-				if Geometry2D.is_point_in_polygon(q, fp):
-					return true
-	return false
+	return not clear(towns, p, body)
 
 
 ## Whether something reaching `body` all round could stand at `p` (world).
