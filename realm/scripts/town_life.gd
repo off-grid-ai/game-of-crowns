@@ -2087,6 +2087,8 @@ func _square_more(root: Node3D, life: Node3D, center: Vector3, n: Callable, go: 
 			if p == null:
 				continue
 			p.set_meta("errand", true)
+			if ld.size() > 3 and String(ld[3]) == "shoulder":
+				_shoulder_sack(p)  # a sack on his shoulder (01-town's porter), carried through every move
 			var order := stops.duplicate()
 			order.shuffle()
 			go.errands.append({"man": p, "stops": order, "leg": 0, "rest": rng.randf_range(0.0, 3.0), "pace": float(E.get("pace", 0.15)), "pause": E.get("pause", [2.0, 6.0]), "carry": String(ld[0]), "set_down": String(E.get("set_down", "PickUp_Table"))})
@@ -2144,6 +2146,23 @@ func _square_more(root: Node3D, life: Node3D, center: Vector3, n: Callable, go: 
 static var _wagon_mesh: Mesh
 
 
+## A sack slung on a porter's right shoulder (crowd.json cart.sack: [up, back] metres from the shoulder bone,
+## its size), on the bone itself so it goes with him through every step and stoop.
+func _shoulder_sack(p: Node3D) -> void:
+	var skel := p.find_child("GeneralSkeleton", true, false) as Skeleton3D
+	if skel == null or skel.find_bone("RightShoulder") < 0 or not ResourceLoader.exists(PROPS % "Bag"):
+		return
+	var S2: Array = Data.value("crowd", "errands.sack", [0.16, -0.04, 0.9])
+	var at := BoneAttachment3D.new()
+	at.bone_name = "RightShoulder"
+	skel.add_child(at)
+	var bag: Node3D = (load(PROPS % "Bag") as PackedScene).instantiate()
+	bag.position = Vector3(0, float(S2[0]), float(S2[1]))
+	bag.scale = Vector3.ONE * float(S2[2])
+	bag.rotation.z = 0.5
+	at.add_child(bag)
+
+
 ## A horse and cart in one piece (scenes.gd's road cart, facing +z as the town's people do): the wagon, the
 ## horse between its shafts and the carter at the horse's head.
 func _horse_cart(rng: RandomNumberGenerator) -> Node3D:
@@ -2174,6 +2193,17 @@ func _horse_cart(rng: RandomNumberGenerator) -> Node3D:
 	carter.rotation.y = PI
 	rig.add_child(carter)
 	holder.set_meta("carter", carter)
+	# Its load: sacks in the bed (crowd.json cart.load: how many, how high the bed stands, how far it runs back).
+	var L: Dictionary = Data.value("crowd", "cart.load", {})
+	if ResourceLoader.exists(PROPS % "Bag"):
+		var bag_scene: PackedScene = load(PROPS % "Bag")
+		var nb := int(L.get("sacks", 3))
+		for i in nb:
+			var bag: Node3D = bag_scene.instantiate()
+			bag.scale = Vector3.ONE * PROP_SCALE * big * float(L.get("size", 1.0))
+			bag.position = Vector3(rng.randf_range(-0.02, 0.02), float(L.get("bed", 0.1)), float(L.get("from", 0.02)) + float(L.get("run", 0.08)) * i / maxf(nb - 1, 1)) * big
+			bag.rotation.y = rng.randf() * TAU
+			rig.add_child(bag)
 	return holder
 
 
