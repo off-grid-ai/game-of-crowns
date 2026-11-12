@@ -1237,9 +1237,9 @@ func _yard(root: Node3D, center: Vector3, pl: Array, p: Vector3, face: Vector3, 
 	if tr.size() >= 2 and rng.randf() < float(tr[0]) and terrain.land3d and terrain.land3d.land:
 		var yard_mid := (corners[2] + corners[3] + side_from + corners[0].lerp(corners[3], house_part)) * 0.25
 		terrain.land3d.paint_mud(center + Vector3(yard_mid.x, 0, yard_mid.y), TownPlots.YARD * float(tr[1]), rng.randi())
-	_yard_thing(root, center, pl, face, lots, rng)  # first: the shed, pen or washing line won't shrink as a bed will
 	if rng.randf() < float(green.get("garden", 0.65)):
 		_croft(root, center, p, face, f, lots, rng, own_lot, true)
+	_yard_thing(root, center, pl, face, lots, rng)  # after the bed (placed first it took the bed's ground: round 9 stood 1-4 gardens of 93), tried in three spots and two sizes
 	_yard_green(root, center, pl, p, face, f, side_from, lots, rng, green)
 
 

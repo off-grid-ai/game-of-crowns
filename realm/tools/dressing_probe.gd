@@ -110,7 +110,7 @@ func _run() -> void:
 					for s in (b["spots"] as Dictionary).values():
 						if q.distance_to(Vector2((s as Vector3).x, (s as Vector3).z)) < float(C.get("spot", 0.07)) - 0.001:
 							bad.append("%s on a work spot" % model)
-		print("DRESS %-7s %d pieces of %d models: %d at the trades, %d by house doors, %d on the ground between, %d along the square's rim (%d refused as in the way)%s" % [rank, total, placed.size(), counts.get("trade", 0), counts.get("home", 0), counts.get("ground", 0), counts.get("edge", 0), counts.get("refused", 0),
+		print("DRESS %-7s %d pieces of %d models: %d at the trades, %d by house doors, %d on the ground between, %d along the square's rim, %d through its middle (%d refused as in the way)%s" % [rank, total, placed.size(), counts.get("trade", 0), counts.get("home", 0), counts.get("ground", 0), counts.get("edge", 0), counts.get("fill", 0), counts.get("refused", 0),
 			("; FAIL " + "; ".join(bad.slice(0, 6))) if not bad.is_empty() else ""])
 		if not bad.is_empty() or total == 0 or int(counts.get("trade", 0)) == 0 or int(counts.get("edge", 0)) == 0:
 			fails += 1

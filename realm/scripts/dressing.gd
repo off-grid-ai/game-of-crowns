@@ -33,7 +33,7 @@ static func dress(root: Node3D, ground: Callable, land: Callable, seed: int) -> 
 	var rank := float((Data.value("dressing", "rank", {}) as Dictionary).get(String(root.get_meta("rank", "village")), 0.5))
 	var placed := {}  # "kit/model" -> [Transform3D...]
 	var taken: Array[Vector2] = []
-	var counts := {"trade": 0, "home": 0, "ground": 0, "edge": 0, "cluster": 0, "bailey": 0, "refused": 0}
+	var counts := {"trade": 0, "home": 0, "ground": 0, "edge": 0, "cluster": 0, "bailey": 0, "fill": 0, "refused": 0}
 	var put := func(model: String, at: Vector3, turn: float, scale: float, why: String) -> bool:
 		if why != "bailey" and not _fits(root, at, taken, why == "ground"):  # the bailey lies inside the castle's own footprint
 			counts["refused"] = int(counts["refused"]) + 1
@@ -210,6 +210,63 @@ static func dress(root: Node3D, ground: Callable, land: Callable, seed: int) -> 
 			var span: Array = row[2]
 			var turn := atan2(-at.x, -at.z) if String(row[0]).ends_with("Bench") else rng.randf() * TAU  # a bench faces the heart
 			put.call(String(row[0]), at, turn, rng.randf_range(float(span[0]), float(span[1])), "edge")
+	# The square's middle filled (round 9: stalls round the rim, bare cobble in the middle; 01-town's square is dense):
+	# groups of goods round a big piece (a cart, a barrel rack, benches) through the open half of the square, off the
+	# stalls and their fronts, the well's basin and a clear way from the heart to the castle gate (dressing.json
+	# square_fill; the castle frame from towns.gd).
+	var F: Dictionary = Data.value("dressing", "square_fill", {})
+	var fbig: Array = F.get("big", [])
+	if not fbig.is_empty() and sq > 0.0:
+		var basin2 := preload("res://scripts/town_life.gd").centre_reach(root) + float(F.get("centre_clear", 0.15))
+		var gate := Vector2.INF
+		var fr_c: Array = root.get_meta("castle_frame", [])
+		if fr_c.size() >= 3:
+			var g3: Vector3 = (fr_c[0] as Vector3) + Basis(Vector3.UP, float(fr_c[1])) * Vector3(0, 0, 0.5 * (fr_c[2] as Vector2).y)
+			gate = Vector2(g3.x, g3.z)
+		var lane_half := float(F.get("gate_clear", 0.45))
+		var front2 := float(F.get("stall_clear", 0.22))
+		var free := func(at: Vector3) -> bool:
+			var q2 := Vector2(at.x, at.z)
+			if q2.length() < basin2:
+				return false
+			if gate != Vector2.INF and Geometry2D.get_closest_point_to_segment(q2, Vector2.ZERO, gate).distance_to(q2) < lane_half:
+				return false  # the way to the gate stays open
+			for st in root.get_meta("stalls", []):
+				var m: Vector3 = st[0]
+				var fr: Vector3 = m - Vector3(m.x, 0, m.z).normalized() * (float(st[1]) * 0.5 + 0.06)  # where its buyers stand
+				if Vector2(at.x - fr.x, at.z - fr.z).length() < front2 + float(st[2]) * 0.5:
+					return false
+			return true
+		var pick2 := func(rows: Array) -> Array:
+			var t := 0.0
+			for p in rows:
+				t += float(p[1])
+			var roll := rng.randf() * t
+			for p in rows:
+				roll -= float(p[1])
+				if roll <= 0.0:
+					return p
+			return rows[0]
+		var fring: Array = F.get("ring", [0.25, 0.85])
+		for i in int(F.get("tries", 30)):
+			var a := rng.randf() * TAU
+			var at := Vector3(cos(a), 0, sin(a)) * sq * sqrt(rng.randf_range(float(fring[0]) * float(fring[0]), float(fring[1]) * float(fring[1])))
+			if not free.call(at) or taken.any(func(q: Vector2) -> bool: return q.distance_to(Vector2(at.x, at.z)) < float(F.get("gap", 0.28))):
+				continue
+			var row: Array = pick2.call(fbig)
+			if not put.call(String(row[0]), at, rng.randf() * TAU, rng.randf_range(float(row[2][0]), float(row[2][1])), "fill"):
+				continue
+			for ring in [[F.get("medium", []), F.get("medium_n", [2, 4]), F.get("medium_r", [0.06, 0.14])], [F.get("small", []), F.get("small_n", [2, 4]), F.get("small_r", [0.08, 0.2])]]:
+				if (ring[0] as Array).is_empty():
+					continue
+				for k in rng.randi_range(int(ring[1][0]), int(ring[1][1])):
+					var b := rng.randf() * TAU
+					var q := at + Vector3(cos(b), 0, sin(b)) * rng.randf_range(float(ring[2][0]), float(ring[2][1]))
+					if not free.call(q) or taken.any(func(w: Vector2) -> bool: return w.distance_to(Vector2(q.x, q.z)) < 0.04):
+						continue
+					var r2: Array = pick2.call(ring[0])
+					var turn := atan2(-q.x, -q.z) if String(r2[0]).ends_with("Bench") else rng.randf() * TAU
+					put.call(String(r2[0]), q, turn, rng.randf_range(float(r2[2][0]), float(r2[2][1])), "fill")
 	# One batch per model.
 	var node := Node3D.new()
 	node.name = "Dressing"
