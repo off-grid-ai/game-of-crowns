@@ -121,6 +121,12 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 10:05 (11-12) Round 2 rendered (/tmp/goc-focus/r2; composites fixed in focus.sh). Verdict vs 01-town: far below.
+  Camera far too wide (whole town + lake; the square a patch) -> camera agent pulling the hero view to roof height.
+  Roofs one flat saturated orange, no thatch; castle a brown block, not grey stone; houses loose on lawn ->
+  fire-siege. Square bare dirt, streets thin tracks, yards empty flat green -> army-ui. People unreadable at this
+  zoom; square crowd to ~25 -> works-life. Stone call: grey for castle and tiered houses under v3. Round 3 after all
+  four commit.
 - 11:00 (11-12) Supervisor moved to this account (session "GoC"); the three builders recreated here with the same
   titles and layers: works-life "Life at the works and grounded people" `local_eb1d9df5-48cf-466c-b31e-f1bf6a182996`
   (people), fire-siege "Fire and siege to the measured rules" `local_1d3c1906-060c-4383-8a73-289c5a1621d9`
