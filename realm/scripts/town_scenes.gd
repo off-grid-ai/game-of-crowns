@@ -163,7 +163,17 @@ func _census_cap(k: Dictionary, role: Dictionary) -> int:
 	var cap := maxi(0, int(round(share)))
 	if bool(role.get("pairs", false)) or String(role.get("does", "")) == "beat":
 		cap = maxi(2, cap) / 2 * 2 if share >= 1.5 else 0  # by twos
-	return mini(cap, maxi(0, int(c["left"])))
+	var fewest := _knot_fewest(role)
+	if fewest > 1 and cap < fewest:
+		cap = fewest if share >= fewest * 0.5 else 0  # a knot is whole: never one gossip talking to nobody
+	cap = mini(cap, maxi(0, int(c["left"])))
+	return 0 if fewest > 1 and cap < fewest else cap
+
+
+## The fewest in one of a role's knots (knot: n, or [fewest, most]); 0 for a role that stands in no knots.
+static func _knot_fewest(role: Dictionary) -> int:
+	var kn: Variant = role.get("knot", 0)
+	return int(kn[0]) if kn is Array else int(kn)
 
 
 ## A body the census counts: marked, and the count kept for the play log.
@@ -417,7 +427,7 @@ func _spots(role: Dictionary, a: Dictionary, n: int, k: Dictionary) -> Array:
 				var m := rng.randi_range(int(size[0]), int(size[1]))
 				for jj in m:
 					var b := TAU * jj / m + rng.randf_range(-0.3, 0.3)
-					out.append({"at": mid + Vector3(cos(b), 0, sin(b)) * float(role.get("apart", 0.085)), "face": mid})
+					out.append({"at": mid + Vector3(cos(b), 0, sin(b)) * float(role.get("apart", 0.085)), "face": mid, "knot": kn})
 		"scatter":
 			var sp := float(a.get("r", 1.0)) * float(role.get("spread", 0.5))
 			for i in n:
@@ -545,6 +555,9 @@ func _stage_role(k: Dictionary, role: Dictionary, anchors: Dictionary) -> void:
 		spots = keep
 	elif cap >= 0 and spots.size() > cap:
 		spots = spots.slice(0, cap)  # a form of knots places several to each: the census counts people, not knots
+		var last := spots.filter(func(sp): return sp.has("knot") and sp["knot"] == spots[-1].get("knot", -1)) if not spots.is_empty() else []
+		if not last.is_empty() and last.size() < _knot_fewest(role):
+			spots = spots.slice(0, spots.size() - last.size())  # the knot cut short goes whole: nobody left talking to nobody
 	var root: Node3D = k["root"]
 	var life: Node3D = k["life"]
 	var tl: Object = k["tl"]
