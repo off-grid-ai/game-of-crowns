@@ -1,4 +1,5 @@
 extends Node3D
+const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const Particles := preload("res://scripts/particles.gd")  # smoke and fire on the GPU
 const SiegeCamp := preload("res://scripts/siege_camp.gd")  # the besiegers' camp and engines (--camp=on)
 const Fire := preload("res://scripts/fire.gd")  # fire v2: shaped flames, smoke and burnt houses
@@ -685,8 +686,7 @@ func _duel_step(m: Dictionary, r: RandomNumberGenerator, wall := false) -> void:
 	var across := Vector3(-face.z, 0, face.x)
 	var home: Vector3 = m["slot"]
 	var to: Vector3 = home + face * r.randf_range(-0.04, 0.03) + across * r.randf_range(-0.025, 0.025)
-	var mt := n.create_tween()
-	mt.tween_property(n, "position", stand(to), r.randf_range(0.35, 0.6)).set_trans(Tween.TRANS_SINE)
+	Mover.of(n).shift((n.get_parent() as Node3D).to_global(stand(to)), r.randf_range(0.35, 0.6))
 	var roll := r.randf()
 	var move := cut(r, m.get("last", "")) if roll < 0.7 else guard(r)
 	if wall and roll < 0.25:
@@ -707,7 +707,7 @@ func _wait_step(m: Dictionary, r: RandomNumberGenerator) -> void:
 	var face: Vector3 = m["face"]
 	var across := Vector3(-face.z, 0, face.x)
 	var to: Vector3 = m["slot"] + face * r.randf_range(0.0, 0.04) + across * r.randf_range(-0.02, 0.02)
-	n.create_tween().tween_property(n, "position", stand(to), r.randf_range(0.5, 0.9)).set_trans(Tween.TRANS_SINE)
+	Mover.of(n).shift((n.get_parent() as Node3D).to_global(stand(to)), r.randf_range(0.5, 0.9))
 	var roll := r.randf()
 	var move := "SS_Block_Idle" if roll < 0.4 else ("Sword_Idle" if roll < 0.75 else ("Battlecry" if roll < 0.88 else cut(r)))
 	if m["kit"] == "spear":

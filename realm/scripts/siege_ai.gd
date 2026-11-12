@@ -35,6 +35,7 @@ const RUN := 0.45
 const WAVE := 15.0  # seconds between one party's rushes
 const AT_WALL := [3.0, 4.6]  # how long a man fights at the foot of the wall
 const FALL := 0.06  # the chance a blow from above, landing, kills him outright
+const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const Data := preload("res://scripts/data.gd")
 const Combat := preload("res://scripts/combat.gd")
 const Fire := preload("res://scripts/fire.gd")
@@ -475,9 +476,10 @@ func _rout(d: Dictionary, inward: Vector3) -> void:
 	scenes.people.play(n, "Sprint")
 	n.rotation.y = atan2(inward.x, inward.z)
 	var to: Vector3 = n.position + (inward + Vector3(-inward.z, 0, inward.x) * r.randf_range(-0.4, 0.4)).normalized() * 1.8
-	var tw := n.create_tween()
-	tw.tween_property(n, "position", _stand(to), 1.8 / RUN)
-	tw.tween_callback(n.queue_free)
+	var m: Node = Mover.of(n)
+	m.speed = RUN
+	m.clip = ""  # already sprinting
+	m.go((n.get_parent() as Node3D).to_global(_stand(to)), n.queue_free)
 
 
 ## The gap taken: in over the rubble to a spot inside, a cheer, and the town is
@@ -576,7 +578,7 @@ func _land(a: Dictionary, e: Dictionary, move: String, hit: float) -> void:
 	e["busy"] = clock + _play(n, reels[r.randi() % reels.size()], 1.0) * 0.85
 	e["guarding"] = false
 	var back: Vector3 = (n.position - a["node"].position).normalized()
-	n.create_tween().tween_property(n, "position", _stand(n.position + back * 0.05), 0.35).set_trans(Tween.TRANS_SINE)
+	Mover.of(n).shift((n.get_parent() as Node3D).to_global(_stand(n.position + back * 0.05)), 0.35)
 
 
 ## Cut down in the gap: an attacker's mind goes to Dead (he is counted against

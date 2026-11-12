@@ -7,6 +7,7 @@ extends Node3D
 ## castle_builder.gd's (towers, curtain_runs), read off the castle's own size.
 ## Knobs: data/castle.json. On with castle.json on.
 
+const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const Data := preload("res://scripts/data.gd")
 const Builder := preload("res://scripts/castle_builder.gd")
 const Real := preload("res://scripts/realistic.gd")
@@ -363,18 +364,10 @@ func _guard(a: Vector3, b: Vector3, colour: Color, k: Dictionary, scale: float) 
 	add_child(f)
 	main.scenes.arm(f, "spear")
 	f.global_position = a
-	var leg := a.distance_to(b) / maxf(float(k.get("pace", 0.9)) * S * scale, 0.001)
+	var m: Node = Mover.of(f)
+	m.speed = maxf(float(k.get("pace", 0.9)) * S * scale, 0.001)
 	var look := float(k.get("look_s", 3.0))
-	var tw := f.create_tween().set_loops()
-	tw.tween_interval(_rng.randf_range(0.0, look * 2.0))  # each on his own beat
-	for end in [b, a]:
-		tw.tween_callback(func():
-			var dir: Vector3 = end - f.global_position
-			f.rotation.y = atan2(dir.x, dir.z)
-			main.scenes.people.play(f, "Walk", _rng.randf_range(0.9, 1.05)))
-		tw.tween_property(f, "global_position", end, leg)
-		tw.tween_callback(func(): main.scenes.people.play(f, ["Looking_Around", "Weight_Shift", "Idle"][_rng.randi() % 3], 1.0))
-		tw.tween_interval(look)
+	_rounds(f, [PackedVector3Array([b]), PackedVector3Array([a])], [look, look], _rng.randf_range(0.0, look * 2.0))  # each on his own beat
 	return f
 
 
@@ -441,21 +434,27 @@ func _walker(path: Array, colour: Color, k: Dictionary, scale: float, i: int) ->
 	f.global_position = pts[0]
 	var pace := maxf(float(k.get("pace", 0.8)) * S * scale, 0.001)
 	var wait: Array = k.get("wait_s", [4.0, 10.0])
-	var tw := f.create_tween().set_loops()
-	tw.tween_interval(_rng.randf_range(0.0, float(wait[1])) + i * 2.0)  # each on his own beat
+	Mover.of(f).speed = pace
 	var back: Array = pts.duplicate()
 	back.reverse()
-	for leg in [pts, back]:  # in, then out
-		for j in range(1, leg.size()):
-			var to: Vector3 = leg[j]
-			tw.tween_callback(func():
-				var dir: Vector3 = to - f.global_position
-				f.rotation.y = atan2(dir.x, dir.z)
-				main.scenes.people.play(f, "Walk", _rng.randf_range(0.9, 1.05)))
-			tw.tween_property(f, "global_position", to, (leg[j - 1] as Vector3).distance_to(to) / pace)
-		tw.tween_callback(func(): main.scenes.people.play(f, ["Looking_Around", "Weight_Shift", "Idle"][_rng.randi() % 3], 1.0))
-		tw.tween_interval(_rng.randf_range(float(wait[0]), float(wait[1])))
+	_rounds(f, [PackedVector3Array(pts.slice(1)), PackedVector3Array(back.slice(1))], [wait, wait], _rng.randf_range(0.0, float(wait[1])) + i * 2.0)  # in, then out; each on his own beat
 	return f
+
+
+## A round walked for ever with the Mover (CLAUDE.md, one way to move): each leg in turn (a way the castle lays,
+## a wall walk or the gate's road, followed as given), then a look about for its wait ([least, most] or seconds),
+## then the next; the first start held back `first` seconds so nobody keeps step with anyone.
+func _rounds(f: Node3D, legs: Array, waits: Array, first: float, at := 0) -> void:
+	get_tree().create_timer(first).timeout.connect(func():
+		if not is_instance_valid(f):
+			return
+		Mover.of(f).walk(legs[at % legs.size()], func():
+			if not is_instance_valid(f):
+				return
+			main.scenes.people.play(f, ["Looking_Around", "Weight_Shift", "Idle"][_rng.randi() % 3], 1.0)
+			var w: Variant = waits[at % waits.size()]
+			var secs: float = _rng.randf_range(float(w[0]), float(w[1])) if w is Array else float(w)
+			_rounds(f, legs, waits, secs, at + 1)))
 
 
 ## A torch on the gate: the kit's iron torch, a small flame (fire.gd's), a warm short light.

@@ -9,6 +9,7 @@ extends Node
 ## scenes.gd spawns the field and hands it here. It is loaded only when the
 ## LimboAI extension is present; without it the old timeline plays instead.
 
+const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const Combat := preload("res://scripts/combat.gd")
 const Data := preload("res://scripts/data.gd")  # the battle's numbers: realm/data/battle.json
 const WALK := 0.2  # a soldier's walk, units a second (about the Walk clip's stride)
@@ -401,7 +402,7 @@ func _land(m: Dictionary, e: Dictionary, move: String) -> void:
 	if move == Combat.KITS["sword"]["kick"]:
 		# Kicked: doubled over or dazed, guard broken for a moment.
 		e["busy"] = clock + _play(e, Combat.REELS["kick"][r.randi() % 3], 1.0) * 0.9
-		n.create_tween().tween_property(n, "position", scenes.stand(n.position + back * 0.06), 0.4).set_trans(Tween.TRANS_SINE)
+		Mover.of(n).shift((n.get_parent() as Node3D).to_global(scenes.stand(n.position + back * 0.06)), 0.4)
 		return
 	e["hp"] -= 1
 	if e["hp"] <= 0:
@@ -414,7 +415,7 @@ func _land(m: Dictionary, e: Dictionary, move: String) -> void:
 	e["guarding"] = false
 	e["busy"] = clock + _play(e, reels[r.randi() % reels.size()], 1.0) * 0.85
 	e["cool"] = maxf(e["cool"], 0.6)
-	n.create_tween().tween_property(n, "position", scenes.stand(n.position + back * 0.05), 0.35).set_trans(Tween.TRANS_SINE)
+	Mover.of(n).shift((n.get_parent() as Node3D).to_global(scenes.stand(n.position + back * 0.05)), 0.35)
 
 
 func _kill(m: Dictionary, back := true) -> void:

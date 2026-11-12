@@ -10,6 +10,7 @@ extends RefCounted
 ## moment, a kick leaves them dazed or doubled over; the badly hurt limp; who
 ## falls, falls away from it and stains the ground.
 
+const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const Weapons := preload("res://scripts/weapons.gd")
 const Blood := preload("res://scripts/blood.gd")
 
@@ -198,8 +199,7 @@ func dodge(way: String) -> bool:
 	var f := facing()
 	var left := Vector3(f.z, 0, -f.x)
 	var dir: Vector3 = {"left": left, "right": -left}.get(way, -f)
-	var go := node.create_tween()
-	go.tween_property(node, "position", node.position + dir * DODGE * node.scale.x, _timer * 0.6).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	Mover.of(node).shift((node.get_parent() as Node3D).to_global(node.position + dir * DODGE * node.scale.x), _timer * 0.6)
 	return true
 
 

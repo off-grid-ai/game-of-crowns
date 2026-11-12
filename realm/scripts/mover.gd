@@ -15,6 +15,8 @@ var speed := 0.17  # world units a second: a person's walk (npc_mind.gd Step's p
 var clip := "Walk"  # what the body plays while it travels ("" for a cart or beast that animates itself)
 var turn_rate := 6.0  # how fast it turns into its way (radians a second)
 var ground := Callable()  # (world point) -> height, where a place keeps its own ground (a town's square); else the land's
+var _face := true  # turns into its way (off for a step back from a blow, or a dodge)
+var _keep_y := false  # a given way keeps its own heights (a wall walk): no ground under it
 var _way := PackedVector3Array()
 var _i := 0
 var _then := Callable()
@@ -45,10 +47,39 @@ func go(to: Vector3, then := Callable()) -> void:
 		way = main.scenes.nav.route(main.towns, body.global_position, to)
 	if way.is_empty():
 		way.append(to)
+	_begin(way, then, true, false)
+
+
+## A short shift in `secs` without turning (a step back from a blow, a dodge, a shuffle in the ranks), still
+## routed, so a reel never pushes a man into a wall.
+func shift(to: Vector3, secs: float, then := Callable()) -> void:
+	var body := get_parent() as Node3D
+	if body == null:
+		return
+	speed = maxf(Vector2(to.x - body.global_position.x, to.z - body.global_position.z).length() / maxf(secs, 0.05), 0.01)
+	var main := _main()
+	var way := PackedVector3Array()
+	if main and main.scenes and main.scenes.nav and main.towns:
+		way = main.scenes.nav.route(main.towns, body.global_position, to)
+	if way.is_empty():
+		way.append(to)
+	_begin(way, then, false, false)
+
+
+## Walk a way someone else laid (a castle's wall walk, a parapet's round) that the ground's navigation doesn't
+## hold: its points are followed as given, heights and all.
+func walk(way: PackedVector3Array, then := Callable()) -> void:
+	_begin(way, then, true, true)
+
+
+func _begin(way: PackedVector3Array, then: Callable, face: bool, keep_y: bool) -> void:
+	var body := get_parent() as Node3D
 	_way = way
 	_i = 0
 	_then = then
-	if clip != "":
+	_face = face
+	_keep_y = keep_y
+	if clip != "" and body:
 		People.play(body, clip)
 	set_process(true)
 
@@ -74,14 +105,20 @@ func _process(delta: float) -> void:
 	var flat := Vector2(aim.x - at.x, aim.z - at.z)
 	var step := speed * delta
 	if flat.length() <= step:
-		at = Vector3(aim.x, at.y, aim.z)
+		at = Vector3(aim.x, aim.y if _keep_y else at.y, aim.z)
 		_i += 1
 	else:
 		var dir := flat.normalized() * step
+		var from_y := at.y
 		at += Vector3(dir.x, 0, dir.y)
-		body.rotation.y = lerp_angle(body.rotation.y, atan2(flat.x, flat.y), clampf(turn_rate * delta, 0.0, 1.0))
+		if _keep_y:
+			at.y = lerpf(from_y, aim.y, clampf(step / flat.length(), 0.0, 1.0))
+		if _face:
+			body.rotation.y = lerp_angle(body.rotation.y, atan2(flat.x, flat.y), clampf(turn_rate * delta, 0.0, 1.0))
 	var main := _main()
-	if ground.is_valid():
+	if _keep_y:
+		pass
+	elif ground.is_valid():
 		at.y = float(ground.call(at))
 	elif main and main.terrain:
 		at.y = main.terrain.height_at(at.x, at.z)
