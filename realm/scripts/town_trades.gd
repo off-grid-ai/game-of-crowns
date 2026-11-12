@@ -51,12 +51,13 @@ static func work_spots(component: String, at: Vector3, face: Vector3, foot: Vect
 		var piece: Dictionary = Data.value("meshy", "pieces", {}).get(model.substr(6), {})
 		if piece.has("work_front"):
 			given = piece["work_front"]
+	var k_m := Real.S * Real.built_scale(model)  # a kit trade built smaller (house_kit.scale_tiers): its spots with it
 	for k in given:
 		var m: Array = given[k]
 		if m.size() < 2:
 			continue
 		var up := float(m[2]) if m.size() > 2 else 0.0
-		spots[String(k)] = at + along * float(m[0]) * Real.S + face * (foot.y * 0.5 + float(m[1]) * Real.S) + Vector3.UP * up * Real.S
+		spots[String(k)] = at + along * float(m[0]) * k_m + face * (foot.y * 0.5 + float(m[1]) * k_m) + Vector3.UP * up * k_m
 	return spots
 
 

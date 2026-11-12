@@ -383,13 +383,25 @@ static func _built(name: String) -> Node3D:
 ## A kit house raised from its tier (house_tiers.gd) stands at assets.json house_kit.scale of the kit's metres
 ## (scale_kinds: the components it applies to): the kit's 3 m storeys and steep roofs put a townhouse's ridge at
 ## 9.7 m and a merchant's at 12-15 m beside 1.7 m townsfolk; a medieval storey was nearer 2.5 m. Trades keep
-## the kit's size (their work spots are in its metres: works.gd).
+## the kit's size (their work spots are in its metres: works.gd) unless their tier is in scale_tiers (one storey
+## height round the square: a forge or an armoury at the houses' 2.55 m storeys, their work spots scaled with them,
+## town_trades.gd; --trade-scale=kit for the kit's 3 m). A mill keeps the kit's size: its sails and wheel are
+## hung in the kit's metres (towns.gd _rotor).
 static func _built_scale(name: String) -> float:
 	var spec: Dictionary = BUILT[name].get("spec", {})
 	var hk: Dictionary = Data.value("assets", "house_kit", {})
-	if not spec.has("tier") or not String(KIT[name][0]) in (hk.get("scale_kinds", []) as Array):
+	if not spec.has("tier"):
 		return 1.0
-	return float(hk.get("scale", 1.0))
+	if String(KIT[name][0]) in (hk.get("scale_kinds", []) as Array):
+		return float(hk.get("scale", 1.0))
+	if String(spec["tier"]) in (hk.get("scale_tiers", []) as Array) and not OS.get_cmdline_user_args().has("--trade-scale=kit"):
+		return float(hk.get("scale", 1.0))
+	return 1.0
+
+
+## The share of the kit's metres a model our builders raise stands at (1 for any other model).
+static func built_scale(name: String) -> float:
+	return _built_scale(name) if BUILT.has(name) and KIT.has(name) else 1.0
 
 
 static func _path(name: String) -> String:
