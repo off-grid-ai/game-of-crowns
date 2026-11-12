@@ -342,13 +342,9 @@ func _arms_material(house: Dictionary, colour: Color) -> StandardMaterial3D:
 	return m
 
 
-## The town's holder as the bridge reports it.
+## The town's holder's house (name, colour, sigil), from the store.
 func _house(root: Node3D) -> Dictionary:
-	var owner := int(root.get_meta("owner", -1))
-	for h in main.bridge.world.get("houses", []):
-		if int(h.get("id", -2)) == owner:
-			return h
-	return {}
+	return main.awareness.houses_by_id().get(int(root.get_meta("owner", -1)), {})
 
 
 ## A guard walking a curtain's walk from a to b and back, looking out at each end.
