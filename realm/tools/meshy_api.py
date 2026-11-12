@@ -3,6 +3,9 @@
 #   python3 -I realm/tools/meshy_api.py model <concept.png> <out.glb> [json overrides]   image-to-3D, then the GLB
 #   python3 -I realm/tools/meshy_api.py rig <image-to-3d task id> <out.glb> [height m]   a person's Mixamo rig
 #   python3 -I realm/tools/meshy_api.py fetch <image-to-3d task id> <out.glb>             wait for a task already made
+#   python3 -I realm/tools/meshy_api.py retexture <image-to-3d task id> <style.png> <out.glb> [json overrides]
+#       paint a model (a mesh-only preview: model with {"should_texture": false}) from one style image, keeping its
+#       UVs (docs/art/STANDARDS.md §6 steps 3-4: preview the shape, judge it, then spend on the paint)
 #   python3 -I realm/tools/meshy_api.py balance
 # model: the square set's settings (docs/research/meshy-square-set.md) as the API names them: latest (Meshy 7.1),
 # 2k geometry, Meshy 7 texture at 2k with PBR, image enhancement, remeshed in triangles (target_polycount, 10k unless
@@ -24,6 +27,8 @@ def _call(method, path, body=None):
         r = urllib.request.Request(API + path, data=json.dumps(body).encode() if body else None, headers=h, method=method)
         try:
             return json.load(urllib.request.urlopen(r, timeout=120))
+        except urllib.error.HTTPError as e:
+            raise RuntimeError("Meshy %s %s: %s" % (e.code, path, e.read().decode()[:400]))
         except (urllib.error.URLError, TimeoutError):
             if method != "GET":
                 raise
@@ -53,9 +58,24 @@ def model(img, out, extra):
             "texture_resolution": "2k", "enable_pbr": True, "image_enhancement": True, "should_remesh": True,
             "topology": "triangle", "target_polycount": 10000, "target_formats": ["glb"]}
     body.update(extra)
+    if not body.get("should_texture", True):  # a shape preview: no paint settings (the API refuses them)
+        for k in ("texture_model", "texture_resolution", "enable_pbr", "texture_prompt", "texture_image_url"):
+            body.pop(k, None)
     tid = _call("POST", "image-to-3d", body)["result"]
     print("TASK", tid, flush=True)
     t = _wait("image-to-3d", tid, 15)
+    if t["status"] == "SUCCEEDED":
+        urllib.request.urlretrieve(t["model_urls"]["glb"], out)
+        print("WROTE", out)
+
+
+def retexture(task_id, img, out, extra):
+    body = {"input_task_id": task_id, "image_style_url": "data:image/png;base64," + base64.b64encode(open(img, "rb").read()).decode(),
+            "ai_model": "latest", "enable_original_uv": True, "enable_pbr": False}
+    body.update(extra)
+    tid = _call("POST", "retexture", body)["result"]
+    print("TASK", tid, flush=True)
+    t = _wait("retexture", tid, 15)
     if t["status"] == "SUCCEEDED":
         urllib.request.urlretrieve(t["model_urls"]["glb"], out)
         print("WROTE", out)
@@ -74,6 +94,8 @@ if __name__ == "__main__":
     a = sys.argv[1:]
     if a[0] == "model":
         model(a[1], a[2], json.loads(a[3]) if len(a) > 3 else {})
+    elif a[0] == "retexture":
+        retexture(a[1], a[2], a[3], json.loads(a[4]) if len(a) > 4 else {})
     elif a[0] == "rig":
         rig(a[1], a[2], float(a[3]) if len(a) > 3 else 1.75)
     elif a[0] == "fetch":

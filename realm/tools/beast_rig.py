@@ -20,6 +20,10 @@ args = sys.argv[sys.argv.index("--") + 1:]
 base, beast, out = args[0], args[1], args[2]
 turn = float(args[3]) if len(args) > 3 else 0.0
 donor = args[4] if len(args) > 4 else ""
+# `fit` (sixth, optional): "box" (each axis its own scale, the default) or an axis ("x", "y", "z") whose length alone
+# sets one even scale, feet on the base's ground and centred: a mounted rider makes the model taller than the base
+# beast, so a box fit would squash the horse under him (docs/art/army).
+fit = args[5] if len(args) > 5 else "box"
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 
@@ -87,6 +91,11 @@ bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 mlo, mhi = box([body])
 size_b, size_m = bhi - blo, mhi - mlo
 s = Vector((size_b.x / size_m.x, size_b.y / size_m.y, size_b.z / size_m.z))
+if fit in ("x", "y", "z"):
+    k = getattr(size_b, fit) / getattr(size_m, fit)
+    s = Vector((k, k, k))
+    centre_b, centre_m = (blo + bhi) / 2, (mlo + mhi) / 2
+    blo = Vector((centre_b.x - size_m.x * k / 2, centre_b.y - size_m.y * k / 2, blo.z))
 print("BEAST_RIG fit scale %.3f %.3f %.3f (1.0 each: the concept matched the base exactly)" % tuple(s))
 for v in body.data.vertices:
     p = v.co - mlo

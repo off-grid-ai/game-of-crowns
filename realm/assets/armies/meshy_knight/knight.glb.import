@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://3s3yuycw0csn"
-path="res://.godot/imported/soldier.glb-cfe796de1bb82445a6f6160fb6722123.scn"
+uid="uid://d0i7o4chocxon"
+path="res://.godot/imported/knight.glb-654ab9b38efcd770b85c98b28d451cdf.scn"
 
 [deps]
 
-source_file="res://assets/armies/knight_v2/soldier.glb"
-dest_files=["res://.godot/imported/soldier.glb-cfe796de1bb82445a6f6160fb6722123.scn"]
+source_file="res://assets/armies/meshy_knight/knight.glb"
+dest_files=["res://.godot/imported/knight.glb-654ab9b38efcd770b85c98b28d451cdf.scn"]
 
 [params]
 

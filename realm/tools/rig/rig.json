@@ -18,6 +18,9 @@
   },
   "mask": { "bright": 0.72, "grey": 0.18, "erode": 2, "soften": 1 },
   "units": {
+    "horse": {"mask": {"hue": [0.06, 0.2], "sat": 0.05, "sat_max": 0.4, "val": [0.45, 1.0]}},
+    "mounted": {"mask": {"hue": [0.06, 0.2], "sat": 0.05, "sat_max": 0.4, "val": [0.45, 1.0]}},
+    "knight": {"mask": {"hue": [0.06, 0.2], "sat": 0.05, "sat_max": 0.4, "val": [0.45, 1.0]}, "clips": [["Sword_Idle", true], ["Axe_Walk", true], ["Running", true], ["SS_Slash_5", false], ["SS_Attack_4", false], ["SS_Slash_1", false], ["SS_Slash_3", false], ["SS_Block_1", false], ["SS_Block_Idle", true], ["SS_Impact_1", false], ["SS_Impact_2", false], ["SS_Death_2", false], ["SS_Death_1", false], ["Battlecry", false]], "roles": {"idle": "Sword_Idle", "walk": "Axe_Walk", "run": "Running", "ready": "SS_Block_Idle", "block": "SS_Block_1", "attack": ["SS_Slash_5", "SS_Attack_4", "SS_Slash_1", "SS_Slash_3"], "hit": ["SS_Impact_1", "SS_Impact_2"], "death": ["SS_Death_2", "SS_Death_1"], "cheer": "Battlecry"}},
     "unit_man_at_arms_trellis": {
       "clips": [["Sword_Idle", true], ["SS_Walk", true], ["Running", true], ["SS_Slash_5", false], ["SS_Attack_4", false], ["SS_Block_1", false], ["SS_Block_Idle", true], ["SS_Impact_1", false], ["SS_Death_2", false]],
       "roles": { "idle": "Sword_Idle", "walk": "SS_Walk", "run": "Running", "ready": "SS_Block_Idle", "block": "SS_Block_1", "attack": ["SS_Slash_5", "SS_Attack_4"], "hit": "SS_Impact_1", "death": "SS_Death_2" },

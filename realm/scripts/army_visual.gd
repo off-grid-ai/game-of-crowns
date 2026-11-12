@@ -8,7 +8,7 @@ extends RefCounted
 
 const Data := preload("res://scripts/data.gd")
 const Heraldry := preload("res://scripts/heraldry.gd")
-const KNIGHT := "armies/knight_v2"  # the knight every regiment of the kit wears (27 clips, several to a role; docs/research/knight-clips.md)
+const KNIGHT := "armies/meshy_knight"  # the fallback a regiment wears when its folder is not baked yet (the Meshy knight, docs/art/army)
 
 static var _cache := {}  # asset dir -> {asset, mesh, mat, tracks, index, height, tall, roles}
 

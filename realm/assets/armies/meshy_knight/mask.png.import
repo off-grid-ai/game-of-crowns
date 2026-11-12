@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://blg2uwr5k81li"
-path="res://.godot/imported/normals.png-9c384b25ff10d2891cbe546ecd5b3436.ctex"
+uid="uid://qsd6afs52j6f"
+path="res://.godot/imported/mask.png-b02f0cd585f81ef6e72d3499bec57610.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/armies/knight_v2/normals.png"
-dest_files=["res://.godot/imported/normals.png-9c384b25ff10d2891cbe546ecd5b3436.ctex"]
+source_file="res://assets/armies/meshy_knight/mask.png"
+dest_files=["res://.godot/imported/mask.png-b02f0cd585f81ef6e72d3499bec57610.ctex"]
 
 [params]
 

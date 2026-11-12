@@ -698,14 +698,15 @@ def cloth_mask():
     hue_mask = UNIT.get("mask", {})
     if hue_mask.get("hue"):
         # A unit whose cloth is dyed (Meshy's blue, crimson, green): the cloth by its hue, saturation and value
-        # (units.<stem>.mask: hue [from, to] in 0..1, wrapping when from > to; sat, the least; val [least, most]).
+        # (units.<stem>.mask: hue [from, to] in 0..1, wrapping when from > to; sat, the least; sat_max, the most (a
+        # cream cloth beside gold trim and a bay coat of the same hue: docs/art/army); val [least, most]).
         r, g, b = px[:, :, 0], px[:, :, 1], px[:, :, 2]
         d = np.maximum(hi - lo, 1e-6)
         hue = np.where(hi == r, ((g - b) / d) % 6.0, np.where(hi == g, (b - r) / d + 2.0, (r - g) / d + 4.0)) / 6.0
         h0, h1 = float(hue_mask["hue"][0]), float(hue_mask["hue"][1])
         in_hue = (hue >= h0) & (hue <= h1) if h0 <= h1 else (hue >= h0) | (hue <= h1)
         v0, v1 = hue_mask.get("val", [0.12, 1.0])
-        cloth = in_hue & (sat >= float(hue_mask.get("sat", 0.3))) & (hi >= float(v0)) & (hi <= float(v1))
+        cloth = in_hue & (sat >= float(hue_mask.get("sat", 0.3))) & (sat <= float(hue_mask.get("sat_max", 1.0))) & (hi >= float(v0)) & (hi <= float(v1))
     else:
         cloth = (hi > float(CFG["mask"]["bright"])) & (sat < float(CFG["mask"]["grey"]))
     raw = float(cloth.mean())
