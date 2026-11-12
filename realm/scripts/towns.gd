@@ -13,14 +13,6 @@ var terrain: Node3D
 var towns := {}  # city id -> {node, signature, data}
 
 var _builder = preload("res://scripts/house_builder.gd").new()
-var _houses: Array[ArrayMesh] = []
-var _keep: ArrayMesh
-var _castle_keep: ArrayMesh
-var _corner_tower: ArrayMesh
-var _hall: ArrayMesh
-var _bell: ArrayMesh
-var _barn: ArrayMesh
-var _barracks: ArrayMesh
 const DIRT := "res://assets/ground/dirt-albedo.jpg"
 var ROAD_TEX: String = preload("res://scripts/terrain.gd").art("res://assets/ground/road-dirt.jpg", DIRT)
 ## Field crops by kind, each tinted dirt until its own texture is delivered.
@@ -30,17 +22,6 @@ var life = preload("res://scripts/town_life.gd").new()
 
 
 func _ready() -> void:
-	var styles := ["timber", "plaster", "brick", "timber", "plaster", "timber", "plaster", "brick", "timber", "plaster"]
-	var sizes := [[2, 3, 2], [3, 3, 2], [2, 2, 1], [2, 4, 3], [3, 4, 2], [2, 3, 2], [2, 2, 2], [3, 3, 1], [2, 4, 2], [3, 4, 3]]
-	for i in sizes.size():
-		_houses.append(_builder.build({"w": sizes[i][0], "d": sizes[i][1], "floors": sizes[i][2], "style": styles[i], "seed": 100 + i}))
-	_keep = _builder.build({"w": 2, "d": 2, "floors": 4, "style": "brick", "tower": true, "seed": 7})
-	_castle_keep = _builder.build({"w": 3, "d": 3, "floors": 5, "style": "brick", "seed": 8})
-	_corner_tower = _builder.build({"w": 2, "d": 2, "floors": 4, "style": "brick", "tower": true, "seed": 9})
-	_hall = _builder.build({"w": 3, "d": 4, "floors": 2, "style": "brick", "seed": 10})
-	_bell = _builder.build({"w": 2, "d": 2, "floors": 5, "style": "brick", "tower": true, "seed": 11})
-	_barn = _builder.build({"w": 3, "d": 4, "floors": 1, "style": "timber", "seed": 12})
-	_barracks = _builder.build({"w": 2, "d": 4, "floors": 1, "style": "brick", "seed": 13})
 	life.terrain = terrain
 	life.towns_node = self
 
@@ -293,7 +274,6 @@ static func town_rank(capital: bool, crown: bool, size: int) -> String:
 var _rank := "village"  # the town being built's rank (town_rank)
 var _road_tiles := {}  # Vector2i tile -> true: Freeciv's roads and towns, where a town's roads lead out
 var _cities: Array = []  # the realm's towns as last reported: where the King's road and the lords' roads run (roads.gd)
-var realistic_towns: Array = []
 var _house := {}  # the house of the town being built, for its castle banner
 var _house_colour := Color.GRAY  # town names drawn from the realistic kit; "*" for all
 
@@ -1833,49 +1813,6 @@ func _flat_enough(center: Vector3, off: Vector3, r: float) -> bool:
 	return true
 
 
-func _instances(parent: Node3D, mesh: Mesh, xforms: Array, shadows := true, mat: Material = null) -> void:
-	if xforms.is_empty():
-		return
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = mesh
-	mm.instance_count = xforms.size()
-	for i in xforms.size():
-		mm.set_instance_transform(i, xforms[i])
-	var mmi := MultiMeshInstance3D.new()
-	mmi.multimesh = mm
-	if mat:
-		mmi.material_override = mat
-	if not shadows:
-		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	parent.add_child(mmi)
-
-
-## Records a building's footprint (4 corners, town-local XZ) for navigation.
-func _footprint(root: Node3D, mesh: Mesh, xf: Transform3D) -> void:
-	var bb: AABB = mesh.get_aabb()
-	var pts := PackedVector2Array()
-	for c in [Vector3(bb.position.x, 0, bb.position.z), Vector3(bb.end.x, 0, bb.position.z), Vector3(bb.end.x, 0, bb.end.z), Vector3(bb.position.x, 0, bb.end.z)]:
-		var w: Vector3 = xf * c
-		pts.append(Vector2(w.x, w.z))
-	var all: Array = root.get_meta("footprints", [])
-	all.append(pts)
-	root.set_meta("footprints", all)
-	_top(root, (xf * Vector3(0, bb.end.y, 0)).y)
-
-
-func _single(parent: Node3D, mesh: Mesh, pos: Vector3, rot := 0.0, scale := S) -> void:
-	_footprint(parent, mesh, Transform3D(Basis(Vector3.UP, rot).scaled(Vector3.ONE * scale), pos))
-	var mi := MeshInstance3D.new()
-	mi.mesh = mesh
-	mi.position = pos
-	mi.rotation.y = rot
-	mi.scale = Vector3.ONE * scale
-	parent.add_child(mi)
-
-
-# --- the town --------------------------------------------------------------------
-
 ## A town is raised over as many frames as it takes, never more than the budget
 ## in any one (a big seat once held a frame for over two seconds): the loops that
 ## place its pieces call this, which waits a frame when the budget is spent. The
@@ -1920,11 +1857,9 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	for i in street_count:
 		streets.append(base_ang + TAU * i / street_count + rng.randf_range(-0.25, 0.25))
 
-	var square_r := 0.75 if size < 6 else 1.0
-	if realistic_towns.has("*") or realistic_towns.has(String(c.get("title", c["name"]))):
-		square_r = 1.25 if bool(c.get("capital", false)) or size >= 12 else 1.0  # a market square, room for stalls and a crowd
-		square_r = float(_market_knobs().get("square_r", square_r))  # by the town's rank: the realm's great market square at the crown's seat (art target town-b; the crown's 2.1 since round 6)
-		reach = maxf(reach, square_r + 3.6)  # the town reaches out to its palisade
+	var square_r := 1.25 if bool(c.get("capital", false)) or size >= 12 else 1.0  # a market square, room for stalls and a crowd
+	square_r = float(_market_knobs().get("square_r", square_r))  # by the town's rank: the realm's great market square at the crown's seat (art target town-b; the crown's 2.1 since round 6)
+	reach = maxf(reach, square_r + 3.6)  # the town reaches out to its palisade
 	var reps := roundi(square_r * 4.0)
 	# The square: a cobbled heart laid whole to its edge, and trodden earth
 	# spreading out round it, ragged where it wears into the grass.
@@ -1946,24 +1881,13 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	_note_setts(root, setts_size, setts_yaw)
 	setts.sorting_offset = 1.0  # the paving over the roads that come into the square: a road ends at its setts, never a dirt stripe across them
 
-	var per_variant := {}
-	var real := realistic_towns.has(String(c.get("title", c["name"]))) or realistic_towns.has("*")
 	# Townhouses mostly; now and then an inn-like timber house or a barn
 	# (the tavern on the square stays the one that stands out).
 	var homes_only: Array = Real.names_of("house").filter(func(n): return not n in Real.variants("tavern"))
 	var real_houses: Array = homes_only + homes_only + Real.names_of("house") + Real.names_of("barn")
-	var budget := clampi(size * 3, 4, 54)
-	var placed := 0
-	# House footprints in world units, so neighbours sit side by side, never overlapping.
-	var foot := []
-	for m in _houses:
-		var bb: AABB = m.get_aabb()
-		foot.append(Vector2(bb.size.x, bb.size.z) * S)
 	# --towns=plots: the roads come first, laid over the land toward where they
 	# lead, and lanes off them as the town grows; the spokes below stand aside.
-	var ways: Array = []
-	if real:
-		ways = layout.lay_ways(root, center, c, size, square_r, reach, streets, rng)
+	var ways: Array = layout.lay_ways(root, center, c, size, square_r, reach, streets, rng)
 	for ang in (streets if ways.is_empty() else []):
 		var dir := Vector3(cos(ang), 0, sin(ang))
 		var side := Vector3(-dir.z, 0, dir.x)
@@ -1985,106 +1909,25 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 			var lanes: Array = root.get_meta("lanes", [])
 			lanes.append([Vector2(dir.x, dir.z) * t0, Vector2(dir.x, dir.z) * t])
 			root.set_meta("lanes", lanes)
-		# Each side of the street fills with houses, front door to the road.
-		for s in [-1, 1]:
-			var cursor := square_r + 0.35
-			while cursor < reach and placed < budget and not real:
-				var v := rng.randi() % _houses.size()
-				var fw: float = foot[v].x
-				var fd: float = foot[v].y
-				# A realistic town draws from the downloaded kit instead.
-				var kit_name := ""
-				if real and not real_houses.is_empty():
-					kit_name = real_houses[rng.randi() % real_houses.size()]
-					var kf: Vector2 = Real.footprint(kit_name)
-					fw = kf.x
-					fd = kf.y
-				var along := cursor + fw / 2.0
-				if along + fw / 2.0 > reach:
-					break
-				var hp: Vector3 = dir * along + side * s * (0.2 + fd / 2.0)
-				cursor += fw + rng.randf_range(0.04, 0.16)
-				# The big realistic houses get a gentler test: real towns sit on slopes.
-				if rng.randf() < 0.1 or not _flat_enough(center, hp, minf(maxf(fw, fd) * 0.4, 0.35)):
-					continue
-				var face: Vector3 = -side * s
-				if kit_name != "":
-					var home: Node3D = Real.make(kit_name)
-					home.position = hp + Vector3(0, _ground_y(center, hp) - 0.02, 0)
-					home.rotation.y = atan2(face.x, face.z)
-					root.add_child(home)
-					_footprint_rect(root, hp, Vector2(fw, fd), home.rotation.y)
-					_dress(root, center, hp, face, side * s, fw, fd, rng)
-					if Real.KIT[kit_name][0] == "house" and rng.randf() < 0.45:
-						_smoke(root, home.position + Vector3(0, Real.height(kit_name) * 0.92, 0) - face * fd * 0.1)
-					placed += 1
-					continue
-				var basis := Basis(Vector3.UP, atan2(face.x, face.z)).scaled(Vector3.ONE * S)
-				if not per_variant.has(v):
-					per_variant[v] = []
-				per_variant[v].append(Transform3D(basis, hp + Vector3(0, _ground_y(center, hp) - 0.02, 0)))
-				_footprint(root, _houses[v], per_variant[v][-1])
-				placed += 1
-				await _pace()
-	for v in per_variant:
-		_instances(root, _houses[v], per_variant[v])
-	if real and not real_houses.is_empty():
+	if not real_houses.is_empty():
 		await layout.real_lots(root, center, square_r, size, real_houses, rng, streets, bool(c.get("capital", false)), ways)
 
-	# Keep or castle beside the square.
+	# A town's seat raises the stone castle in its lots (town_layout.real_lots); an ordinary town is ruled from its hall.
 	var keep_off := Vector3(cos(base_ang + PI / street_count), 0, sin(base_ang + PI / street_count)) * (square_r + 0.55)
-	# A realistic town never gets the old stylised keep: its seat raises the
-	# stone castle in _real_lots, and an ordinary town is ruled from its hall.
-	var stone: bool = real
-	if stone:
-		pass
-	elif c["capital"]:
-		_single(root, _castle_keep, keep_off + Vector3(0, _ground_y(center, keep_off), 0), base_ang)
-		for corner in [Vector3(0.5, 0, 0.5), Vector3(-0.5, 0, 0.5), Vector3(0.5, 0, -0.5), Vector3(-0.5, 0, -0.5)]:
-			var cp: Vector3 = keep_off + corner
-			_single(root, _corner_tower, cp + Vector3(0, _ground_y(center, cp), 0), 0.0, S * 0.8)
-	else:
-		_single(root, _keep, keep_off + Vector3(0, _ground_y(center, keep_off), 0), base_ang)
 	# A bannerman seated here flies his family's arms over the town; his
 	# liege's banner then stands at the square. A great house's seat, and any
 	# town the Crown holds, fly only their own.
 	var family: Dictionary = {}
 	if c.get("family") is String and not c["capital"] and not house.get("crown", false):
 		family = preload("res://scripts/heraldry.gd").family(String(c["family"]))
-	if not stone:
-		banners.stand(root, keep_off + Vector3(0, _ground_y(center, keep_off) + (2.0 if c["capital"] else 1.75), 0), color, house if family.is_empty() else family, 1.1)  # big enough to read its favour from afar
 	if not family.is_empty():
 		var sq := -keep_off.normalized() * (square_r + 0.15)
-		banners.stand(root, sq + Vector3(0, _ground_y(center, sq), 0), color, family if stone else house, 0.85)
+		banners.stand(root, sq + Vector3(0, _ground_y(center, sq), 0), color, family, 0.85)
 
-	# Great buildings take their places around the square. A realistic town's
-	# church, hall and tavern are already on its square, from the kit.
-	var slot := 0
-	var spots := []
-	for i in street_count:
-		var a: float = streets[i] + PI / street_count
-		spots.append(Vector3(cos(a), 0, sin(a)) * (square_r + 0.7))
-	spots.pop_front()  # the first gap holds the keep
-	if not real and ("Temple" in buildings or "Cathedral" in buildings):
-		if slot < spots.size():
-			var tp: Vector3 = spots[slot]
-			slot += 1
-			_single(root, _hall, tp + Vector3(0, _ground_y(center, tp), 0), atan2(-tp.x, -tp.z))
-			var bp: Vector3 = tp + tp.normalized() * 0.55
-			_single(root, _bell, bp + Vector3(0, _ground_y(center, bp), 0), 0.0)
-	if not real and "Barracks" in buildings and slot < spots.size():
-		var bp2: Vector3 = spots[slot]
-		slot += 1
-		_single(root, _barracks, bp2 + Vector3(0, _ground_y(center, bp2), 0), atan2(-bp2.x, -bp2.z))
-	if "Granary" in buildings and not (real and _trade_of("granary").has("stood")):  # a granary trade stood: it is the store
+	# The church, hall and tavern stand on the square from the kit (town_layout.real_lots).
+	if "Granary" in buildings and not _trade_of("granary").has("stood"):  # a granary trade stood: it is the store
 		var gp := Vector3(cos(base_ang - 0.5), 0, sin(base_ang - 0.5)) * (reach + 0.5)
-		var stored := false
-		if real:
-			stored = _put(root, center, "old_wooden_barn", gp, Real.footprint("old_wooden_barn"), [], rng, false)
-		elif _flat_enough(center, gp, 0.4):
-			_single(root, _barn, gp + Vector3(0, _ground_y(center, gp), 0), base_ang)
-			stored = true
-		if stored:
+		if _put(root, center, "old_wooden_barn", gp, Real.footprint("old_wooden_barn"), [], rng, false):
 			# Hay stacked by the granary's barn, against the winter: bales (assets.json haystack), not the
 			# scanned loose-hay pile, which lay flat as a pale orange disc from any height.
 			for k in 2:
@@ -2104,8 +1947,7 @@ func _build_town(c: Dictionary, house: Dictionary) -> Node3D:
 	fields.edge(root, center, rng)  # the orchards by the roads out (town_fields.gd); the fields are land_use.gd's
 	_smoke(root, keep_off + Vector3(0.2, _ground_y(center, keep_off) + 1.2, 0.1))
 
-	if real:
-		_kerbs(root, center)  # after the houses and stalls stand: the kerb runs only where the paving meets open ground
+	_kerbs(root, center)  # after the houses and stalls stand: the kerb runs only where the paving meets open ground
 	await _pace()
 	_flush(root)
 	# Its name on the map is drawn in screen space by map_labels.gd.

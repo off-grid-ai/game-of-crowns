@@ -58,7 +58,6 @@ func _run() -> void:
 		store.dispatch(store.SYNC, {"world": world})
 		var towns: Node3D = load("res://scripts/towns.gd").new()
 		towns.terrain = terrain
-		towns.realistic_towns = ["*"]
 		root.add_child(towns)
 		var before := errors.seen.size()
 		towns.sync(store.houses_by_id())

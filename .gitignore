@@ -14,7 +14,6 @@
 realm/.godot/
 *.tmp
 realm/export/
-realm/realistic.txt
 
 # --- Third-party art (Sketchfab, Mixamo, Quaternius, Poly Haven, Kenney) ---
 # Binaries out, import settings and licence notes in.

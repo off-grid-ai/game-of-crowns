@@ -141,11 +141,6 @@ func _ready() -> void:
 	add_child(terrain)
 	towns = preload("res://scripts/towns.gd").new()
 	towns.terrain = terrain
-	# The realistic kit is on trial in the towns named in realistic.txt (one per line, "*" for all).
-	var trial := FileAccess.get_file_as_string("res://realistic.txt")
-	towns.realistic_towns = Array(trial.split("\n", false)).map(func(l): return l.strip_edges())
-	if _shot.has("realistic"):
-		towns.realistic_towns.append(String(_shot["realistic"]))
 	add_child(towns)
 	ruins = preload("res://scripts/ruins.gd").new()  # what war leaves on the land
 	ruins.terrain = terrain

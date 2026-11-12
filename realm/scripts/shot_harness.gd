@@ -87,8 +87,6 @@ func _parse_args() -> void:
 		elif a == "--new":
 			_shot["title"] = true
 			_shot["new"] = true
-		elif a.begins_with("--realistic="):
-			_shot["realistic"] = a.substr(12)
 		elif a.begins_with("--form="):
 			_shot["form"] = int(a.substr(7))
 		elif a == "--ledger":

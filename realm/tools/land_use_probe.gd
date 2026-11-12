@@ -54,7 +54,6 @@ func _run() -> void:
 	await terrain.build(map)
 	var towns: Node3D = load("res://scripts/towns.gd").new()
 	towns.terrain = terrain
-	towns.realistic_towns = ["*"]
 	root.add_child(towns)
 	var main := Main.new()
 	main.terrain = terrain

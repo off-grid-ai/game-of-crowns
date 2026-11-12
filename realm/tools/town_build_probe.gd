@@ -68,7 +68,6 @@ func _run() -> void:
 	# The towns.
 	var towns: Node3D = load("res://scripts/towns.gd").new()
 	towns.terrain = terrain
-	towns.realistic_towns = ["*"]
 	root.add_child(towns)
 	var cities: Array = world.get("cities", [])
 	var crown: Dictionary = {}
