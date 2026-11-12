@@ -639,7 +639,7 @@ func _realm_matter(v: VBoxContainer, it: Dictionary) -> void:
 ## Who an answer helps and hurts, weighed by the bridge: each house's sigil, a
 ## direction (gold up, red down) and a size (one mark small, two large), under the
 ## answer; its price in crowns exact, the purse being a fact the King knows.
-const BIG_MOVE := 10  # favour points: a move this size or more shows two marks
+static var BIG_MOVE: int = int(preload("res://scripts/data.gd").num("court", "big_move", 10))  # favour points: a move this size or more shows two marks (court.json big_move)
 func _weighs_chips(w: Dictionary) -> Control:
 	var moves := HBoxContainer.new()
 	moves.add_theme_constant_override("separation", T.GAP_SECTION)

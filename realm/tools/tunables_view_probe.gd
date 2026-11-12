@@ -42,6 +42,7 @@ const MOVED := [
 	["weather_fx", "RAIN_DROPS", "weather", "drops.rain"],
 	["weather_fx", "SNOW_FLAKES", "weather", "drops.snow"],
 	["weather_fx", "PREVAILING_FROM", "weather", "prevailing_from"],
+	["court_panel", "BIG_MOVE", "court", "big_move"],
 	["main", "DAY_SECONDS", "weather", "day_seconds"],
 	["main", "UI_MIN", "ui", "scale.min"],
 	["main", "UI_MAX", "ui", "scale.max"],
