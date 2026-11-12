@@ -107,6 +107,11 @@ func start(s: Node, siege: Node3D, rng: RandomNumberGenerator, colour: Color, gr
 
 ## A fresh man in the camp, and his mind.
 func _man(m: Dictionary) -> void:
+	# The fallen man's own mind stops here: left running on his body it went on steering whoever took his
+	# place (the record is shared), and once his body was cleared away it steered a freed one (batch 8b: 3,238
+	# errors a launch at _go, the hosts stalled behind them).
+	if m.get("hsm") != null and is_instance_valid(m["hsm"]):
+		(m["hsm"] as LimboHSM).set_active(false)
 	if m.has("node") and is_instance_valid(m["node"]) and m["node"].has_meta("dead"):
 		m["node"].remove_from_group("people")  # the fallen stay where they fell
 	var f: Node3D = scenes.people.make(r, "soldier", col, "adult")
@@ -345,6 +350,8 @@ func _stand(p: Vector3) -> Vector3:
 ## An attacker in the gap: he takes on the nearest of the holder's men and
 ## fights him; with the gap taken, he goes in.
 func _melee(m: Dictionary, dt: float) -> void:
+	if not is_instance_valid(m.get("node")):
+		return
 	var st: Dictionary = _held_at[m["gap"]]
 	if st["phase"] != "hold":
 		m["hsm"].dispatch(&"inside")
@@ -480,6 +487,8 @@ func _pour_in(m: Dictionary, dt: float) -> void:
 	if not m.has("inside_at"):
 		var k: Dictionary = Data.value("walls", "assault", {})
 		m["inside_at"] = st["gap"] + st["inward"] * float(k.get("in", 0.9)) + st["across"] * r.randf_range(-0.35, 0.35)
+	if not is_instance_valid(m.get("node")):
+		return
 	var n: Node3D = m["node"]
 	var to: Vector3 = m["inside_at"] - n.position
 	to.y = 0.0
@@ -609,7 +618,10 @@ func _play(n: Node3D, move: String, speed := 1.0) -> float:
 
 ## Walks or runs toward `to`; there, the next state.
 func _go(m: Dictionary, to: Vector3, speed: float, dt: float, then: StringName) -> void:
-	var n: Node3D = m["node"]
+	var body = m.get("node")
+	if not is_instance_valid(body):
+		return  # his body was cleared away: nothing to move
+	var n: Node3D = body
 	var d := to - n.position
 	d.y = 0
 	if d.length() < 0.02:
@@ -622,6 +634,8 @@ func _go(m: Dictionary, to: Vector3, speed: float, dt: float, then: StringName) 
 ## At the foot of the wall: a cut, a guard, another cut, never the same twice
 ## running; what comes down from above may kill him.
 func _fight(m: Dictionary, dt: float) -> void:
+	if not is_instance_valid(m.get("node")):
+		return
 	var n: Node3D = m["node"]
 	var face: Vector3 = (m["foot"] - m["home"]).normalized()
 	n.rotation.y = lerp_angle(n.rotation.y, atan2(face.x, face.z), minf(1.0, dt * 6.0))
