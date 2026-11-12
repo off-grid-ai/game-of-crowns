@@ -454,6 +454,20 @@ static func daytime() -> Array:
 	return Data.value("town_scenes", "day", []).filter(func(r): return r.get("day", false)).map(func(r): return String(r["part"]))
 
 
+## How much a villager's plan (the bridge minds': where they mean to be) leans their pick to an activity that walks
+## to `place` (town_scenes.json plan): its bend when the plan's where names that place, else 1.
+static func plan_bend(where: String, place: String) -> float:
+	if where == "" or place == "":
+		return 1.0
+	var p: Dictionary = Data.value("town_scenes", "plan", {})
+	var w := where.to_lower()
+	var places: Dictionary = p.get("places", {})
+	for key in places:
+		if w.contains(key) and place in places[key]:
+			return float(p.get("bend", 1.0))
+	return 1.0
+
+
 ## Shorthand for town_life's constants without a cycle in the preloads.
 static func TownLife() -> GDScript:
 	return load("res://scripts/town_life.gd")

@@ -9,6 +9,8 @@
     {"from": 13.0, "to": 18.0, "part": "work2", "day": true},
     {"from": 18.0, "to": 21.5, "part": "evening", "day": true}
   ],
+  "_plan": "plan: the bridge minds' plan for a villager (minds.js plans: where they mean to be this part of the day) is one input of their mind's pick (npc_mind Weigh): an activity whose walk goes to the plan's place has its weight times bend. places: a word in the plan's where -> the places an activity walks to (npc_mind go: market, stall, cart, well, draw, street, tavern, sept, bench, home, field).",
+  "plan": {"bend": 3.0, "places": {"tavern": ["tavern"], "inn": ["tavern"], "ale": ["tavern"], "sept": ["sept"], "temple": ["sept"], "church": ["sept"], "chapel": ["sept"], "market": ["market", "stall", "cart"], "stall": ["market", "stall", "cart"], "well": ["well", "draw"], "square": ["well", "draw", "street"], "field": ["field"], "farm": ["field"], "plough": ["field"], "home": ["home"], "bench": ["bench"], "work": ["bench"], "shop": ["bench"], "forge": ["bench"]}},
   "director": {"tick": 2.0, "most": {"base": 3, "per_size": 0.5, "cap": 9}, "near": 30.0, "pace": 0.17, "enter": [1.2, 2.0], "square_size": 6, "say_every": 30.0, "clear": 0.08, "stand_reach": 0.4},
   "objects": {
     "well": {"place": "well"},

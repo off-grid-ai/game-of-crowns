@@ -50,7 +50,6 @@ var _others_at := 0.0
 const OTHERS_REACH := 3.0
 # Minds (docs/MINDS.md): the bridge plans each commoner's day; the rules here
 # are the fallback until it has a plan for them.
-var _plans := {}  # town id -> {villager index: plan}
 var _asking := {}  # an ask's key (a town's plan) -> true while it is out
 var _minds_at := 0.0
 var _spoken := {}  # town id -> ids spoken to since the bridge was last told
@@ -1359,11 +1358,6 @@ func _choose_next(a: Dictionary) -> void:
 	a["gait"] = a.get("load", "Walk")
 	a["load"] = "Walk"
 	a["work"] = "Idle"
-	# Their mind's plan for the day comes first, when the bridge has one.
-	var plan: Dictionary = _plans.get(a["town"], {}).get(int(a["i"]), {})
-	a["plan_sig"] = str(plan)
-	if not plan.is_empty() and a["block"] != "night" and _follow(a, plan, places):
-		return
 	var role: String = a["role"]
 	var block := String(a["block"])
 	var mood := town_mood(a) if block != "night" and block != "dawn" else ""
@@ -1783,76 +1777,7 @@ func _present(b: Dictionary, g: Dictionary) -> bool:
 		and (to.length() < 0.005 or absf(angle_difference(nb.rotation.y, atan2(to.x, to.y))) < 0.6)
 
 
-# --- minds: the day from the bridge's plan --------------------------------------
-
-## Where a plan's "where" is in this town (world), or the person's own place.
-func _plan_place(a: Dictionary, where: String, places: Dictionary) -> Vector3:
-	var rng: RandomNumberGenerator = a["rng"]
-	var w := where.to_lower()
-	for key in [["tavern", "tavern"], ["inn", "tavern"], ["ale", "tavern"], ["sept", "sept"], ["temple", "sept"], ["church", "sept"], ["chapel", "sept"],
-			["market", "market"], ["stall", "market"], ["well", "well"], ["square", "well"]]:
-		if w.contains(key[0]):
-			return place(a, key[1])
-	if (w.contains("field") or w.contains("farm") or w.contains("plough")) and a["field"] != Vector3.INF:
-		return nearby(a["field"], rng, 0.4)
-	if w.contains("work") or w.contains("shop") or w.contains("forge") or w.contains("bench"):
-		return a["bench"]
-	return nearby(a["home"], rng, 0.25)  # home, or somewhere this town can't show
-
-
-## The move for what a plan says they're doing, by its words.
-func _plan_move(doing: String) -> String:
-	var d := doing.to_lower()
-	for key in [["pray", "Praying"], ["kneel", "Kneeling"], ["drink", "Drinking"], ["cup", "Drinking"], ["ale", "Drinking"], ["toast", "Cheering"], ["celebrat", "Cheering"],
-			["argu", "Arguing"], ["quarrel", "Arguing"], ["haggl", "Arguing"], ["whisper", "Whispering"], ["gossip", "Whispering"],
-			["shout", "Yelling"], ["talk", "Idle_Talking"], ["chat", "Idle_Talking"], ["meet", "Idle_Talking"], ["visit", "Idle_Talking"],
-			["weep", "Crying"], ["mourn", "Crying"], ["grie", "Defeated"], ["dance", "Dance"], ["carry", "Carrying"], ["fetch", "Carrying"],
-			["water", "Watering"], ["plant", "Planting"], ["sow", "Planting"], ["harvest", "Pick_Fruit"], ["milk", "Milking"],
-			["mend", "Fixing_Kneeling"], ["fix", "Fixing_Kneeling"], ["build", "Fixing_Kneeling"], ["work", "PickUp_Table"], ["trade", "PickUp_Table"],
-			["sell", "PickUp_Table"], ["wait", "Looking_Around"], ["watch", "Looking_Around"]]:
-		if d.contains(key[0]):
-			return key[1]
-	return "Idle"
-
-
-## Goes where the plan says, to do what it says, and meets whoever it names.
-## False if the plan can't be shown here (the rules decide instead).
-func _follow(a: Dictionary, plan: Dictionary, places: Dictionary) -> bool:
-	var target := _plan_place(a, String(plan.get("where", "")), places)
-	var move := _plan_move(String(plan.get("doing", "")))
-	var with: Array = plan.get("with", [])
-	if _grieving(a):
-		with = with.slice(0, 2)  # a town mourns in knots of two or three (Mac's call)
-	var town: Array = crowds.get(a["town"], [])
-	var partners := []
-	for w in with:
-		var j := int(str(w).get_slice(":", 2)) if str(w).begins_with("folk:") else int(w)  # an index, or a mind's id
-		if int(j) >= 0 and int(j) < town.size() and int(j) != int(a["i"]):
-			partners.append(town[int(j)])
-	if not partners.is_empty() and not a.has("mind"):  # with a mind, they talk when their mind arranges it (FindPartner)
-		if not move in SOCIAL:
-			move = "Idle_Talking"  # with someone, whatever the errand: they talk
-		a["work"] = move
-		if String(a.get("place_key", "")) != "":
-			target = place(a, a["place_key"], true)  # room round them for a knot
-		if _meet(a, partners, target, places):
-			return true
-		a["work"] = _solo(a, target, places)  # none of them can come: alone after all
-	else:
-		a["work"] = move if not move in SOCIAL else _solo(a, target, places)
-		if GAITS.has(a["work"]):
-			a["load"] = a["work"]
-			a["work"] = GAITS[a["work"]]
-		if a["work"] == "Idle":
-			a["work"] = _mood_idle(a)
-	a["wait"] = a["rng"].randf_range(6.0, 20.0)
-	var map: RID = a["map"]
-	var c: Vector3 = a["center"]
-	var n: Node3D = a["node"]
-	a["goal"] = _room_in_square(a, nav.closest(map, Vector2(target.x - c.x, target.z - c.z)), map)
-	a["route"] = nav.path(map, nav.closest(map, Vector2(n.position.x - c.x, n.position.z - c.z)), a["goal"])
-	return true
-
+# --- minds: how the bridge's plan says they feel ---------------------------------
 
 func _grieving(a: Dictionary) -> bool:
 	return float(_mood(a).get("grief", 0.0)) > 0.6
@@ -1935,44 +1860,10 @@ func _square_full(a: Dictionary) -> bool:
 	return there >= _square_cap(a)
 
 
-## Meets the people the plan names: in the gathering one of them is already
-## in, or a new one at the plan's place that they're all called to.
-func _meet(a: Dictionary, partners: Array, target: Vector3, places: Dictionary) -> bool:
-	for b in partners:
-		var g: Dictionary = b.get("talk", {})
-		if not g.is_empty() and g["members"].size() < 3:
-			_join(a, g)
-			return true
-	var free := partners.filter(func(b): return b["placed"] and b["node"].visible and Time.get_ticks_msec() >= int(b.get("hold_until", 0)))
-	if free.is_empty():
-		return false
-	var c: Vector3 = a["center"]
-	# Two knots talking at a spot already: a third would make them one crowd.
-	var here := Vector2(target.x - c.x, target.z - c.z)
-	var knots := 0
-	for other in _talks.get(a["town"], []):
-		if Vector2(other["centre"]).distance_to(here) < 0.6:
-			knots += 1
-	if knots >= 2:
-		return false
-	var now := Time.get_ticks_msec() * 0.001
-	_talk_keys += 1
-	var g := {"key": _talk_keys, "centre": nav.closest(a["map"], Vector2(target.x - c.x, target.z - c.z)), "members": [], "move": a["work"],
-		"kind": _kind(a["work"], target, places), "until": now + a["rng"].randf_range(14.0, 30.0), "speaker": 0, "turn_at": now, "spin": a["rng"].randf() * TAU}
-	var list: Array = _talks.get(a["town"], [])
-	list.append(g)
-	_talks[a["town"]] = list
-	_join(a, g)
-	for b in free.slice(0, 2):
-		_leave(b)
-		_join(b, g)
-	return true
-
-
 ## The mind's mood, 0..1 each (fear, anger, joy, grief, faith, hunger); none
 ## when the bridge has no plan for them.
 func _mood(a: Dictionary) -> Dictionary:
-	return _plans.get(a["town"], {}).get(int(a.get("i", -1)), {}).get("mood", {})
+	return a.get("plan", {}).get("mood", {})
 
 
 ## How mood moves the legs: dragging with grief or hunger, hurried by fear.
@@ -1998,8 +1889,9 @@ func _mood_idle(a: Dictionary) -> String:
 	return "Idle"
 
 
-## Asks the bridge for the town's plans. A plan that changed sends its person
-## off to it at once, rather than when they next look up.
+## Asks the bridge for the town's plans (minds.js: where each means to be this part of the day, and how they
+## feel). Each villager keeps theirs (a.plan): their mind's pick leans to the plan's place (npc_mind Weigh,
+## town_scenes.json plan), their mood sets their pace and their idle moves. The plan never sends anyone itself.
 func _ask_plans(id: int) -> void:
 	var got := func(data):
 		var rows: Array = data if data is Array else (data.get("folk", data.get("plans", [])) if data is Dictionary else [])
@@ -2007,11 +1899,11 @@ func _ask_plans(id: int) -> void:
 		for r in rows:
 			if r is Dictionary and r.has("i"):
 				by[int(r["i"])] = r
-		_plans[id] = by
 		for a in crowds.get(id, []):
-			var p: Dictionary = by.get(int(a["i"]), {})
-			if not p.is_empty() and str(p) != String(a.get("plan_sig", "")) and a.get("talk", {}).is_empty():
-				a["wait"] = minf(float(a["wait"]), 0.5)
+			if by.has(int(a["i"])):
+				a["plan"] = by[int(a["i"])]
+			else:
+				a.erase("plan")
 	var answered := func(_code: int, data: Variant, done: Callable) -> void:
 		done.call()
 		if data != null:
@@ -2441,7 +2333,7 @@ func _talk_audit() -> void:
 	var planned := 0
 	for id in crowds:
 		groups += _talks.get(id, []).size()
-		planned += _plans.get(id, {}).size()
+		planned += crowds[id].filter(func(b): return b.has("plan")).size()
 		for a in crowds[id]:
 			var n: Node3D = a["node"]
 			var now := people.clip(n)

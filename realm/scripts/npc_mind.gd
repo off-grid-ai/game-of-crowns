@@ -864,6 +864,8 @@ static func react() -> BTTask:
 ## credit; they are tried highest credit first (one that can't start now, or was the last, gives way to the next),
 ## and the one taken pays the round's total back. Same weights, the same order: each comes up its share, spread
 ## through the day, never a run of luck. The state shifts what people already do; it never adds a second system.
+## A villager's plan from the bridge minds (va.plan: where they mean to be) leans it: an activity walking to that
+## place weighs its bend more (TownScenes.plan_bend, town_scenes.json plan).
 class Weigh extends BTComposite:
 	@export var phase := 0  # this person's place in the round (picks made on paper at the start): a calling's folk out of step
 	var _credit: Array[float] = []
@@ -880,9 +882,12 @@ class Weigh extends BTComposite:
 		_order.clear()
 		_total = 0.0
 		var ws: Array[float] = []
+		var va: Variant = blackboard.get_var(&"va", null, false)
+		var meant := String((va.get("plan", {}) as Dictionary).get("where", "")) if va is Dictionary else ""
+		var TS: GDScript = load("res://scripts/town_scenes.gd")  # the director's rows (load: it preloads this file)
 		for i in n:
 			var act := get_child(i)
-			var w := weight(_name(act), blackboard) if _playable(act) else 0.0
+			var w: float = weight(_name(act), blackboard) * float(TS.plan_bend(meant, _place(act))) if _playable(act) else 0.0
 			ws.append(w)
 			if w <= 0.0:
 				_credit[i] = 0.0  # off now (a wartime watch in peace): it starts level when its state comes
@@ -916,6 +921,14 @@ class Weigh extends BTComposite:
 			_credit[i] -= _total
 			return st
 		return FAILURE
+
+	## Where an activity walks first (its first GoTo), or "".
+	static func _place(act: BTTask) -> String:
+		for i in act.get_child_count():
+			var t := act.get_child(i)
+			if t is GoTo:
+				return (t as GoTo).where
+		return ""
 
 	static func _name(act: BTTask) -> String:
 		var begin = act.get_child(0) if act.get_child_count() > 0 else null
