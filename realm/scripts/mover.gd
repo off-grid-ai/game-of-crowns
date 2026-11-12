@@ -14,6 +14,7 @@ signal arrived
 var speed := 0.17  # world units a second: a person's walk (npc_mind.gd Step's pace)
 var clip := "Walk"  # what the body plays while it travels ("" for a cart or beast that animates itself)
 var turn_rate := 6.0  # how fast it turns into its way (radians a second)
+var turn_radius := 0.0  # a horse, a cart: it turns only by moving forward on an arc at least this wide (world units), never on the spot; 0 for people
 var ground := Callable()  # (world point) -> height, where a place keeps its own ground (a town's square); else the land's
 var _face := true  # turns into its way (off for a step back from a blow, or a dodge)
 var _keep_y := false  # a given way keeps its own heights (a wall walk): no ground under it
@@ -104,6 +105,9 @@ func _process(delta: float) -> void:
 	var aim := _way[_i]
 	var flat := Vector2(aim.x - at.x, aim.z - at.z)
 	var step := speed * delta
+	if turn_radius > 0.0 and _face:
+		_drive(body, at, aim, flat, step)
+		return
 	if flat.length() <= step:
 		at = Vector3(aim.x, aim.y if _keep_y else at.y, aim.z)
 		_i += 1
@@ -125,6 +129,32 @@ func _process(delta: float) -> void:
 	body.global_position = at
 	if _i >= _way.size():
 		_finish()
+
+
+## A horse or a cart: it steers, it doesn't pivot. Its heading turns toward the way only as fast as moving
+## forward on an arc of `turn_radius` allows, and it always moves along its own heading, so a turn about is a
+## walk round in a loop. A point it can't make on this arc (too close and to the side) counts as reached once
+## it is within the arc's width.
+func _drive(body: Node3D, at: Vector3, aim: Vector3, flat: Vector2, step: float) -> void:
+	var want := atan2(flat.x, flat.y)
+	var turn := angle_difference(body.rotation.y, want)
+	var most := step / turn_radius
+	body.rotation.y += clampf(turn, -most, most)
+	var fwd := Vector3(sin(body.rotation.y), 0, cos(body.rotation.y))
+	at += fwd * step
+	var main := _main()
+	if _keep_y:
+		pass
+	elif ground.is_valid():
+		at.y = float(ground.call(at))
+	elif main and main.terrain:
+		at.y = main.terrain.height_at(at.x, at.z)
+	body.global_position = at
+	var left := Vector2(aim.x - at.x, aim.z - at.z).length()
+	if left <= maxf(step * 1.5, 0.02) or (left < turn_radius * 1.2 and absf(turn) > 1.2):
+		_i += 1
+		if _i >= _way.size():
+			_finish()
 
 
 func _finish() -> void:

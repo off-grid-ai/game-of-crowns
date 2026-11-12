@@ -2482,6 +2482,7 @@ class SquareLife extends Node:
 		var rig: Node3D = k["rig"]
 		if not is_instance_valid(rig):
 			return
+		Mover.of(rig).turn_radius = float(preload("res://scripts/data.gd").num("crowd", "cart.turn_radius", 0.45))  # a cart steers round, never spins
 		var carter: Variant = rig.get_meta("carter", null)
 		if float(k["rest"]) > 0.0:
 			k["rest"] = float(k["rest"]) - delta

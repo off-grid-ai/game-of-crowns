@@ -9,6 +9,7 @@ extends RefCounted
 ## (realm/data/works.json says the shape); a town without it has none of this.
 ## Knobs: realm/data/works.json. --works=off turns it all off.
 
+const Mover := preload("res://scripts/mover.gd")  # the one way to move (CLAUDE.md)
 const Data := preload("res://scripts/data.gd")
 const S := 0.12  # world units per metre, as towns.gd
 
@@ -505,19 +506,37 @@ class Tick extends Node:
 						h.set_meta("rest", _rng.randf_range(float(span[0]), float(span[1])))
 						to = Vector3.INF
 			if to == Vector3.INF:
+				if h.has_node("Mover") and by != null:
+					Mover.of(h).stop()  # at its groom's back: it stands
 				continue
 			var flat := Vector2(to.x - h.position.x, to.z - h.position.z)
 			if by == null and _horse_ahead(h, flat, gap * 0.75):
 				h.set_meta("goal", Vector3.INF)  # another horse in its way: it stands a moment, then makes for somewhere else
 				h.set_meta("rest", _rng.randf_range(1.0, 3.0))
+				Mover.of(h).stop()
 				continue
-			var stepv := minf(flat.length(), pace * delta)
-			if flat.length() > 0.001:
-				h.rotation.y = lerp_angle(h.rotation.y, atan2(flat.x, flat.y), minf(1.0, delta * 4.0))
-				var d := flat.normalized() * stepv
-				h.position.x += d.x
-				h.position.z += d.y
-				h.position.y = float(ground.call(h.position)) if ground.is_valid() else h.position.y
+			_walk_horse(h, to, pace)
+
+	## A horse's walk to `to` (town-local) by the Mover (CLAUDE.md, one way to move): it steers on an arc at least
+	## works.json paddock.turn_radius wide and never turns on the spot (Mac, 12 Nov: "it just rotates in the same
+	## place"); its gait follows its speed (horse.gd). A goal that moves (its groom walking on) is asked for again
+	## once it has moved a stride.
+	func _walk_horse(h: Node3D, to: Vector3, pace: float) -> void:
+		var m: Node = Mover.of(h)
+		var goal := root.to_global(to)
+		var was: Vector3 = h.get_meta("walk_to", Vector3.INF)
+		if m.moving() and was.distance_to(goal) < 0.05:
+			return
+		m.speed = pace
+		m.clip = ""  # the horse plays its own gait from its speed
+		m.turn_radius = Data.num("works", "paddock.turn_radius", 0.4)
+		var r := root
+		var g := ground
+		m.ground = func(w: Vector3) -> float:
+			var l := r.to_local(w)
+			return r.to_global(Vector3(l.x, float(g.call(l)) if g.is_valid() else l.y, l.z)).y
+		h.set_meta("walk_to", goal)
+		m.go(goal)
 
 
 const Works := preload("res://scripts/works.gd")
