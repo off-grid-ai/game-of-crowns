@@ -91,6 +91,28 @@ func _look(kit_mat: String, look: String, tint: Color) -> Material:
 	return m
 
 
+## A house's roof covering, weathered (house_kit.roof_weather; round 2 against 01-town: every roof one flat
+## orange-red, where the concept's vary roof by roof, new tile to dark weathered tile): the covering's tint times
+## one of the weathers, picked by the house's seed on its own roll so nothing else about the house changes.
+## --roof-weather=off for one weather.
+func _roof_look(roof_kind: String, seed: int) -> Material:
+	var tint := _rgb((_k.get("roof_tints", {}) as Dictionary).get(roof_kind), Color.WHITE)
+	var weathers: Array = _k.get("roof_weather", [])
+	if weathers.is_empty() or OS.get_cmdline_user_args().has("--roof-weather=off"):
+		return _look("MI_RoundTiles", roof_kind, tint)
+	var r := RandomNumberGenerator.new()
+	r.seed = seed * 92821 + roof_kind.hash()
+	var i := r.randi() % weathers.size()
+	# Named MI_RoundTiles_<covering>_w<i>: team_colour.gd reads the covering from its third part.
+	return _look("MI_RoundTiles", "%s_w%d" % [roof_kind, i], tint * _rgb(weathers[i], Color.WHITE))
+
+
+## The tiered houses' stone: honey (stone_tint), or grey under the v3 look (stone_tint_v3).
+func _stone_look() -> Material:
+	var v3: bool = preload("res://scripts/look.gd").v3() and _k.has("stone_tint_v3")
+	return _look("MI_UnevenBrick", "grey" if v3 else "honey", _rgb(_k.get("stone_tint_v3" if v3 else "stone_tint"), Color.WHITE))
+
+
 ## The kit's own material by name, from the piece that carries it.
 func _kit_material(name: String) -> Material:
 	var from := {"MI_Plaster": "Wall_Plaster_Straight", "MI_RoundTiles": "Roof_RoundTiles_4x4", "MI_UnevenBrick": "Wall_UnevenBrick_Straight", "MI_WoodTrim": "Wall_Plaster_WoodGrid"}
@@ -143,9 +165,10 @@ func build(spec: Dictionary) -> ArrayMesh:
 	var wash_i := int(allowed[_rng.randi() % allowed.size()]) if not allowed.is_empty() else 0
 	var remap := {
 		"MI_Plaster": _look("MI_Plaster", "wash%d" % wash_i, _rgb(washes[wash_i % washes.size()], Color.WHITE)),
-		"MI_RoundTiles": _look("MI_RoundTiles", roof_kind, _rgb((_k.get("roof_tints", {}) as Dictionary).get(roof_kind), Color.WHITE)),
+		"MI_RoundTiles": _roof_look(roof_kind, int(spec.get("seed", 1))),
 		# Honey stone and honey timber (house_kit stone_tint, timber_tint; art target town-b): the kit's own read near black.
-		"MI_UnevenBrick": _look("MI_UnevenBrick", "honey", _rgb(_k.get("stone_tint"), Color.WHITE)),
+		# Under the v3 look the stone is grey (stone_tint_v3; 01-town's stone, the castle's with it).
+		"MI_UnevenBrick": _stone_look(),
 		"MI_WoodTrim": _look("MI_WoodTrim", "honey", _rgb(_k.get("timber_tint"), Color.WHITE)),
 	}
 	for key in remap.keys():
