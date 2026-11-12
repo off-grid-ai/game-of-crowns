@@ -14,7 +14,10 @@ extends SceneTree
 ##   - an order goes to the one selected host and no other (army command item 5; the milestone take's Besiege went to
 ##     a host nobody selected): with a second host in the field selected, the card's and the play step's (autoplay
 ##     `order`) Besiege ask for it alone; with none selected, nothing is asked; the play step gives orders only
-##     through the card (host_command.order), never its own /host/order.
+##     through the card (host_command.order), never its own /host/order;
+##   - the orders a season (bridge hosts.json ordersPerSeason, /world hostOrdersLeft, the store's host slice): with
+##     none left the card says so, every order button is greyed with the reason, and nothing is asked (a press, a key,
+##     the play step); with one left they are live again.
 ## Exit 1 on a fail.
 ##   arch -arm64 godot --headless --path realm -s res://tools/host_command_probe.gd
 
@@ -28,8 +31,9 @@ const TOWN := {"id": 3, "x": 4.0, "y": 0.0}  # its centre at (4, 0, 0) on the gr
 class Realm:
 	var hosts: Array = [{"id": HOST, "x": 0, "y": 0, "companies": 4, "men": 2000, "units": [HOST, 8, 9, 10], "order": null},
 		{"id": OTHER, "x": 9, "y": 9, "companies": 2, "men": 1000, "units": [OTHER, 21], "order": null}]
-	func get_var(_k: StringName, _d: Variant = null, _c := false) -> Variant:
-		return hosts
+	var orders_left := -1  # the store's host_orders_left: -1 before the bridge says
+	func get_var(k: StringName, _d: Variant = null, _c := false) -> Variant:
+		return orders_left if k == &"host_orders_left" else hosts
 
 
 class Awareness:
@@ -77,6 +81,21 @@ class Rig:
 class Sound:
 	func ordered(_k: String) -> void:
 		pass
+
+
+## The interface's few calls the card makes (ui.gd): its panel, its buttons, a toast, a head count.
+class FakeUI extends Node:
+	var toasts: Array = []
+	func glass_panel() -> PanelContainer:
+		return PanelContainer.new()
+	func icon_btn(_icon: String, tip: String, _cb: Callable = Callable()) -> Button:
+		var b := Button.new()
+		b.tooltip_text = tip
+		return b
+	func toast(text: String) -> void:
+		toasts.append(text)
+	func heads(n: int) -> String:
+		return str(n)
 
 
 class FakeMain extends Node:
@@ -270,6 +289,30 @@ func _run() -> void:
 	var met: Dictionary = preload("res://scripts/host_pick.gd").pick(cam2, cam2.unproject_position(at))
 	_check(int(met.get("unit", -1)) == 77, "a camera framed as the host step frames it meets the standard at its aim point: %s" % met)
 	cam.current = true
+
+	# The orders a season: none left, then one. The card built on a stand-in interface.
+	main.ui = FakeUI.new()
+	main.add_child(main.ui)
+	hc._build_card()
+	main.add_child(hc._card)
+	_check(hc._buttons.size() >= 5, "the card has its order buttons (%d)" % hc._buttons.size())
+	hc.select(HOST)
+	main.awareness.realm.orders_left = 0
+	hc._refresh()
+	var greyed := true
+	for k in hc._buttons:
+		greyed = greyed and (hc._buttons[k] as Button).disabled and (hc._buttons[k] as Button).tooltip_text != ""
+	_check(greyed, "with no orders left this season every order button is greyed, saying why")
+	_check(String(hc.get("_left").text) != "" if hc.get("_left") else false, "the card says how many orders are left this season (%s)" % (hc.get("_left").text if hc.get("_left") else "none"))
+	var n1 := asked.size()
+	hc._press("hold")
+	var given: bool = hc.order("return")
+	_check(asked.size() == n1 and not given, "with none left nothing is asked (a press, the play step's order)")
+	main.awareness.realm.orders_left = 1
+	hc._refresh()
+	_check(not (hc._buttons["hold"] as Button).disabled, "with one left the buttons are live again")
+	hc._press("hold")
+	_check(asked.size() == n1 + 1, "and an order is asked")
 
 	for x in fails:
 		print("HOST COMMAND FAIL " + x)

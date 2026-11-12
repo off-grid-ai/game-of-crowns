@@ -31,6 +31,7 @@ var _card: PanelContainer
 var _title: Label
 var _status: Label
 var _buttons := {}  # order -> its Button on the card
+var _left: Label  # how many orders are left this season
 var _ring: Decal
 var _end: Decal  # the ring where the selected host is bound
 var _glow: OmniLight3D
@@ -265,6 +266,13 @@ func _press(kind: String) -> void:
 	order(kind)
 
 
+## Orders the King may still give this season (the store's host slice, from /world hostOrdersLeft; the bridge reads
+## hosts.json ordersPerSeason), -1 while the bridge hasn't said.
+func orders_left() -> int:
+	var aw: Object = main.get("awareness") if main else null
+	return int(aw.realm.get_var(&"host_orders_left", -1, false)) if aw else -1
+
+
 ## An order's row on the card (host_command.json orders), or {}.
 static func _row(kind: String) -> Dictionary:
 	for o in Data.value(FILE, "orders", []):
@@ -278,7 +286,7 @@ static func _row(kind: String) -> Dictionary:
 ## or {ground} (a world point: into the town there when one is near, else its tile; an attack is on what stands there,
 ## so always the tile: the bridge finds the foe on it), and {face}. done(code, said) once the bridge has answered.
 func order(kind: String, at := {}, done := Callable()) -> bool:
-	if selected < 0 or host(selected).is_empty():
+	if selected < 0 or host(selected).is_empty() or orders_left() == 0:
 		return false
 	var body := {"host": selected, "order": String(_row(kind).get("send", kind))}  # the bridge's name for it
 	if at.has("ground"):
@@ -456,6 +464,8 @@ func _build_card() -> void:
 	v.add_child(_title)
 	_status = T.datum("", T.SIZE_DESC, T.TEXT)
 	v.add_child(_status)
+	_left = T.label("", T.TEXT_3)
+	v.add_child(_left)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", T.GAP_TIGHT)
 	v.add_child(row)
@@ -464,6 +474,7 @@ func _build_card() -> void:
 		var action := "host_" + kind
 		var key := Keys.label(action) if InputMap.has_action(StringName(action)) else ""
 		var b: Button = main.ui.icon_btn(String(o.get("icon", "play")), String(o.get("tip", kind.capitalize())) + ("  (%s)" % key if key != "" else ""))
+		b.set_meta("tip", b.tooltip_text)
 		b.toggle_mode = bool(o.get("aim", false))
 		b.pressed.connect(_press.bind(kind))
 		if key != "":
@@ -491,6 +502,16 @@ func _refresh() -> void:
 	_title.text = ("The royal host at %s" % String(at.get("name", ""))).to_upper() if at is Dictionary else "THE ROYAL HOST"
 	_status.text = "%s men · %s" % [main.ui.heads(int(h.get("men", 0))), _doing(h)]
 	_card.tooltip_text = "%d companies" % int(h.get("companies", 0))
+	# The orders a season (bridge hosts.json ordersPerSeason): the card says how many are left, and with none its
+	# buttons are greyed with the reason rather than looking live and refusing.
+	var left := orders_left()
+	var texts: Dictionary = Data.value(FILE, "left", {})
+	_left.visible = left >= 0
+	_left.text = String(texts.get("none" if left == 0 else ("one" if left == 1 else "some"), "")).replace("{n}", str(left))
+	for k in _buttons:
+		var b: Button = _buttons[k]
+		b.disabled = left == 0
+		b.tooltip_text = String(texts.get("why", "")) if left == 0 else String(b.get_meta("tip", b.tooltip_text))
 
 
 ## What the host is doing, in the card's words: its order's row in host_command.json doing ({to}, {road}), the
