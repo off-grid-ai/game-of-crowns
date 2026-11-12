@@ -11,12 +11,15 @@ then one headless Godot import; only while no other Godot runs). Each shot twice
    stone leaves from the cup at the top of the swing; no arm left behind on the frame, nothing floating.
 2. **The gatehouse stands open** (`--castles=kit --walls=stone`): `castle Kingsmere 4 -5 gate`, then
    `castle Kingsmere 8 -5`. Judge: a clear arch you can see through, a shadowed stone passage, no slab or leaf
-   left across it; the gatehouse sits on the curtains' line. (Men don't walk through it yet: the castle has no
-   walking map.)
+   left across it; the gatehouse sits on the curtains' line. Add `--castle-life=on`, a 6 s clip at 0.2 s on
+   `castle Kingsmere 5 -5 gate` (5d455446): three folk, a guard first, walk in from the road through the
+   passage into the bailey and out again, on the ground outside and the passage floor, never through a wall.
 3. **The market cart, no '$'** (`--dressing=on`): `city Kingsmere 4.5 -25`, find the cart by the square. Judge:
    the hanging sign reads as a plain board (a faint bag at most), no dollar sign from any side.
 4. **The tavern at 30,000 triangles** (`work * inn 4.5 -25`, then `4.5 -12`): its roofs whole (no rag edges, no
-   holes), no grey smoke blob over the chimney (the game's own smoke rises there), the sign and barrels read.
+   holes), no grey smoke blob over the chimney (the game's own smoke rises there), the sign and barrels read. It is every
+   town's tavern under `--landmarks=meshy` (the tavern's catalogue is swapped whole): check a second seat too,
+   `work Goldrock inn 4.5 -25`.
 
 Not placed, so not filmed: the market stalls (passed in the turntable, but they're one 7.8 x 6.7 m market block
 that needs its place in the square first), the treasury and house (still rejected), the well (cards for shingles).
@@ -67,3 +70,17 @@ Each shot twice, kit then cast, the same frame, at roof height or above.
 16. **What's drawn where** (batch 9's forge frame, `work Kingsmere forge 4.5 -25` in winter): `pick 0.373 0.522`
     (the red blob in mid-air), `pick 0.75 0.88` (the grey see-through rectangle), `pick 0.17 0.19` (the inn's
     name under a roof). play.log names each, its mesh, colour and height over the ground: the fixes follow.
+
+## The siege's engines at the wall (e97e07e9; North Star 04-siege; `--walls=stone --castles=kit --siege --wall-demo --camp=on`)
+
+Against batch 9's breach launch frames (`/tmp/goc-batch9`), the same steps. Oblique, roof height or above.
+
+1. **A stone's flight:** `engine 0 3.5 -5`, wait 14, an 8 s clip at 0.2 s. Judge: a thin dust trail follows
+   each stone on its arc from the cup to the wall; where it lands on open ground a burst of earth about 2.5
+   times the old puff; on the wall, the wall's own dust and falling stones.
+2. **The ram at the wall:** `camp 9 -20`, wait 35, a snap, then a 6 s clip at 0.2 s. Judge: the ram has left
+   its place in the band, pushed by its two men (Pushing, behind it), and stands at the wall's face, drawn back
+   and driven in about every 1.8 s, a burst of dust at each blow and a stone loosed when the wall's wear has
+   doomed one. Nothing sunk into the wall or floating off the ground.
+3. **The tower against the wall:** the same frame, or `camp 9 -20` turned to the tower's side. Judge: the
+   siege tower rolled up to stand against the wall, its men cheering at it.
