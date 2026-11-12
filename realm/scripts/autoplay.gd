@@ -1083,7 +1083,7 @@ func _order(kind: String) -> void:
 		var theirs: Array = (main.awareness.rec("cities", []) as Array).filter(func(c): return int(c.get("owner", -1)) != ours)
 		theirs.sort_custom(near)
 		for c in theirs.slice(0, 8):
-			bodies.append({"host": id, "order": kind, "city": int(c["id"])})
+			bodies.append({"host": id, "order": String(hc._row(kind).get("send", kind)), "city": int(c["id"])})  # the card's Besiege is the bridge's march on the town
 	elif kind in ["march", "garrison"]:
 		var towns: Array = (main.awareness.rec("cities", []) as Array).duplicate()
 		towns = towns.filter(func(c): return Vector2(float(c["x"]), float(c["y"])) != here)
@@ -1124,7 +1124,11 @@ func _host(n: int, dist: float, tilt: float) -> void:
 	_oblique(at, dist, tilt)
 	if main.rig.is_processing_input() == false:
 		main.rig.apply()
-	await get_tree().create_timer(2.0).timeout
+	# As a player clicks what he sees: the view settled first, then the standard's place on screen taken in the frame
+	# the click goes in (the milestone take clicked 2 s in, the view still easing, and its click fell beside the
+	# standard and opened Redbridge's card).
+	await _settle()
+	await get_tree().process_frame
 	var cam := get_viewport().get_camera_3d()
 	var b: Node3D = hc._banner(h)
 	var p: Vector3 = b.global_position if b else hc._ground(h)
