@@ -43,6 +43,15 @@ export function clampFavour(v) {
 // The court and the castles' keep, plus a little for a great treasury's
 // stewards. Not the soldiers: the engine already charges a town for its units,
 // and charging again left the crown at 0 crowns for good, unable to decree.
+// A house's fighting men where `near` holds: the men a decree sends home. They take a homeward order
+// (hosts.js): Freeciv's moves to their seat, disbanded there into its work. No unit vanishes.
+function menNear(world, pid, near) {
+  return (world.units ?? []).filter((u) => u.owner === pid && u.type !== "Workers" && u.type !== "Settlers" && near(u)).map((u) => u.id);
+}
+const within = (at, r) => (u) => Math.hypot(u.x - at.x, u.y - at.y) <= r;
+// Beside another house's towns (three tiles), as the old kill path counted them.
+const byTownsOf = (world, pid) => (u) => world.cities.some((c) => c.owner === pid && (u.x - c.x) ** 2 + (u.y - c.y) ** 2 <= 9);
+
 export function crownUpkeep(crown) {
   return 2 + (crown.cities ?? 0) * 2 + Math.floor(Math.max(0, crown.gold) * ECONOMY.upkeepShare);
 }
@@ -118,6 +127,8 @@ const HANDLERS = {
       favour[p.id] = f >= BANDS.loyal ? 3 : n ? 1 : -3;  // gladly, grudgingly, or not at all
       if (n) {
         men += n;
+        // A transfer, not a loss: these men leave the house and as many join the royal host at Kingsmere
+        // below. Freeciv 3.2's Lua can't give a unit to another player, so they are taken off and raised again.
         lua.push(`for p in players_iterate() do if p.id == ${p.id} then local i = 0; for u in p:units_iterate() do local r = u.utype:rule_name(); if i < ${n} and r ~= "Workers" and r ~= "Settlers" and r ~= "Explorer" then edit.unit_kill(u, "killed", nil); i = i + 1 end end end end`);
       }
     }
@@ -230,10 +241,10 @@ const HANDLERS = {
     const who = world.players.find((p) => p.id === u?.house);
     if (!u || u.stage === "none" || !who) return { error: "no pretender threatens the throne" };
     const at = cmd.seat;
-    const home = at ? `for p in players_iterate() do if p.id == ${who.id} then for u in p:units_iterate() do local r = u.utype:rule_name(); if r ~= "Workers" and r ~= "Settlers" and math.sqrt(u.tile:sq_distance(find.tile(${at.x}, ${at.y}))) <= 6 then edit.unit_kill(u, "killed", nil) end end end end` : null;
+    const homeward = at ? [{ owner: who.id, units: menNear(world, who.id, within(at, 6)) }] : [];
     const lord = houseFor(who).name;
     const others = Object.fromEntries(world.players.filter((p) => p.id !== who.id && !houseFor(p).wild && !houseFor(p).crown).map((p) => [p.id, -2]));
-    return { cost, favour: { [who.id]: 25, ...others }, lua: [pay, home].filter(Boolean), endUsurper: true,
+    return { cost, favour: { [who.id]: 25, ...others }, lua: [pay], homeward, endUsurper: true,
       text: `The King buys off ${lord}: gold for their claim. Their host breaks camp and goes home, and the other houses mutter that treason pays.` };
   },
   back(x) {
@@ -256,9 +267,9 @@ const HANDLERS = {
     const keeper = world.players.filter((p) => p.id !== owner?.id && p.id !== Number(cmd.to) && !houseFor(p).wild && !houseFor(p).crown && p.cities > 0)
       .sort((x, y) => fav(y.id) - fav(x.id))[0];
     if (!owner || !to || !keeper) return { error: "choose two warring houses and a house to settle it" };
-    const home = (x, y) => `for p in players_iterate() do if p.id == ${x} then for u in p:units_iterate() do local r = u.utype:rule_name(); if r ~= "Workers" and r ~= "Settlers" then for q in players_iterate() do if q.id == ${y} then for c in q:cities_iterate() do if u.tile:sq_distance(c.tile) <= 9 then edit.unit_kill(u, "killed", nil); break end end end end end end end end`;
+    const home = (x, y) => ({ owner: x, units: menNear(world, x, byTownsOf(world, y)) });
     const k = houseFor(keeper).name;
-    return { cost, favour: { [keeper.id]: 6, [owner.id]: -3, [to.id]: -3 }, lua: [pay, home(owner.id, to.id), home(to.id, owner.id)], truce: [owner.id, to.id],
+    return { cost, favour: { [keeper.id]: 6, [owner.id]: -3, [to.id]: -3 }, lua: [pay], homeward: [home(owner.id, to.id), home(to.id, owner.id)], truce: [owner.id, to.id],
       text: `At the King's word, ${k} rides between ${houseFor(owner).name} and ${houseFor(to).name}. ${k}'s men turn back the hosts near their towns, and riders carry the King's word to both houses: a truce for sixteen seasons.` };
   },
   peace(x) {
@@ -279,10 +290,10 @@ const HANDLERS = {
     if (crown.gold < cost) return { error: `the treasury holds ${(crown.gold * 100).toLocaleString("en-GB")} crowns; this costs ${(cost * 100).toLocaleString("en-GB")}` };
     const pay = Lua.gold(crown.id, -cost);
     const cold = [owner, to].filter((p) => fav(p.id) < (DECREES.peace.coldBelow ?? 40));
-    const home = (x, y) => `for p in players_iterate() do if p.id == ${x} then for u in p:units_iterate() do local r = u.utype:rule_name(); if r ~= "Workers" and r ~= "Settlers" then for q in players_iterate() do if q.id == ${y} then for c in q:cities_iterate() do if u.tile:sq_distance(c.tile) <= 9 then edit.unit_kill(u, "killed", nil); break end end end end end end end end`;
+    const home = (x, y) => ({ owner: x, units: menNear(world, x, byTownsOf(world, y)) });
     const favour = Object.fromEntries([owner, to].map((p) => [p.id, cold.includes(p) ? -3 : 2]));
     const grudging = cold.length ? ` ${cold.map((p) => houseFor(p).name).join(" and ")} ${cold.length > 1 ? "obey" : "obeys"} with bad grace, and the crown pays the blood-price.` : " Both bow to the crown.";
-    return { cost, favour, lua: [pay, home(owner.id, to.id), home(to.id, owner.id)], text: `The King tells ${a} and ${b} to stop.${grudging} They pull their hosts back from each other's towns, and riders carry the King's word to both houses: a truce for sixteen seasons.`, truce: [owner.id, to.id] };
+    return { cost, favour, lua: [pay], homeward: [home(owner.id, to.id), home(to.id, owner.id)], text: `The King tells ${a} and ${b} to stop.${grudging} They pull their hosts back from each other's towns, and riders carry the King's word to both houses: a truce for sixteen seasons.`, truce: [owner.id, to.id] };
   },
   marriage(x) {
     const { cmd, world, cost, pay, c, owner, lord } = x;
@@ -347,9 +358,9 @@ const HANDLERS = {
     if (!to || houseFor(to).crown || houseFor(to).wild) return { error: "choose a great house to cede it to" };
     const u = cmd.usurper;
     const at = cmd.seat;
-    const home = u && u.stage !== "none" && u.house === to.id && at ? `for p in players_iterate() do if p.id == ${to.id} then for u in p:units_iterate() do local r = u.utype:rule_name(); if r ~= "Workers" and r ~= "Settlers" and math.sqrt(u.tile:sq_distance(find.tile(${at.x}, ${at.y}))) <= 6 then edit.unit_kill(u, "killed", nil) end end end end` : null;
+    const home = u && u.stage !== "none" && u.house === to.id && at ? { owner: to.id, units: menNear(world, to.id, within(at, 6)) } : null;
     const others = Object.fromEntries(greatHouses(world).filter((p) => p.id !== to.id).map((p) => [p.id, d.others ?? -2]));
-    return { cost: 0, favour: { [to.id]: d.favour ?? 25, ...others }, lua: [Lua.transferCity(c.id, to.id), home].filter(Boolean), endUsurper: !!home,
+    return { cost: 0, favour: { [to.id]: d.favour ?? 25, ...others }, lua: [Lua.transferCity(c.id, to.id)], homeward: home ? [home] : [], endUsurper: !!home,
       text: `The King cedes ${town} to ${houseFor(to).name} for their claim. ${home ? "Their host goes home with a town to show for it, and" : "And"} every house marks what rising against the crown can buy.` };
   },
   march(x) {

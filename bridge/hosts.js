@@ -13,6 +13,7 @@ import path from "node:path";
 import * as chron from "./chronicles.js";
 import { houseFor, cityName } from "./narrator.js";
 import { CIVILIAN } from "./campaigns.js";
+import * as Lua from "./lua.js";
 
 export const HOSTS = JSON.parse(fs.readFileSync(new URL("./data/hosts.json", import.meta.url), "utf8"));
 const SHIPS = new Set(HOSTS.ships);
@@ -207,18 +208,50 @@ function wayOn(steps, from, n) {
   return out;
 }
 
+// A house's men sent home by a decree (crown.js buyoff, settle, peace, cede): one order, walked each season
+// like the King's hosts, to the house's seat, where they disband into its work (lua.js disbandHome). Held from
+// their house's AI meanwhile, so the march is Freeciv's moves and nothing vanishes. units: their ids.
+export function homeward(ctx, { owner, units }, send) {
+  const { world, meta } = ctx;
+  const seat = world?.cities?.find((c) => c.owner === owner && c.capital) ?? world?.cities?.find((c) => c.owner === owner);
+  const ids = (units ?? []).filter((id) => (world?.units ?? []).some((u) => u.id === id && u.owner === owner));
+  if (!seat || !ids.length) return;
+  send(`lua cmd ${Lua.homewardHold(ids)}`);
+  save(meta, [...(meta.hostOrders ?? []).filter((o) => !o.units.some((id) => ids.includes(id))), { kind: "homeward", owner, units: ids, x: seat.x, y: seat.y, city: seat.id }]);
+}
+
 // Each season (season.js): every host under a marching order moves; one that has arrived stands
 // (a march becomes a hold; a garrison stays a garrison, in the town).
 export function season(ctx, turn) {
   const { world, meta, send, record, besiege } = ctx;
   if (!world || !(meta?.hostOrders ?? []).length) return;
   const crown = crownOf(world);
-  const byId = new Map(soldiersOf(world, crown?.id).map((u) => [u.id, u]));
   const next = [];
-  const shut = new Set([...(world.cities ?? []), ...(world.units ?? [])].filter((x) => x.owner !== crown?.id).map((x) => `${x.x},${x.y}`));
   for (const o of meta.hostOrders) {
+    // The King's hosts, or (homeward) a house's men going home: each walks among its own side's men.
+    const side = o.owner ?? crown?.id;
+    const byId = new Map(soldiersOf(world, side).map((u) => [u.id, u]));
+    const shut = new Set([...(world.cities ?? []), ...(world.units ?? [])].filter((x) => x.owner !== side).map((x) => `${x.x},${x.y}`));
     const units = o.units.filter((id) => byId.has(id));
     if (!units.length) continue;  // the host is no more
+    if (o.kind === "homeward") {
+      const seat = world.cities.find((c) => c.id === o.city && c.owner === o.owner);
+      // Home (or the seat lost): the men disband into its work, or stand where they are, free again.
+      if (!seat || units.every((id) => cheb(byId.get(id), o) === 0)) {
+        if (seat) for (const id of units) send(`lua cmd ${Lua.disbandHome(id, seat.id)}`);
+        else send(`lua cmd ${Lua.homewardRelease(units)}`);
+        continue;
+      }
+      const steps = stepsTo(o, new Set([...shut].filter((k) => k !== `${o.x},${o.y}`))) ?? stepsTo(o);
+      const far = units.reduce((t, id) => t + (steps && steps.at(byId.get(id)) >= 0 ? steps.at(byId.get(id)) : cheb(byId.get(id), o)), 0);
+      if (o.far != null && far >= o.far) {  // no nearer: they stay where they are, free again
+        send(`lua cmd ${Lua.homewardRelease(units)}`);
+        continue;
+      }
+      for (const id of units) send(`lua cmd ${Lua.homewardStep(id, steps ? wayOn(steps, byId.get(id), HOSTS.speed) : [])}`);
+      next.push({ ...o, units, far });
+      continue;
+    }
     if (o.x == null) { next.push({ ...o, units }); continue; }
     // There: on the place, or before the walls of a town that isn't the crown's (a march halts at another's gates).
     const goal = o.city != null ? world.cities.find((c) => c.id === o.city) : null;

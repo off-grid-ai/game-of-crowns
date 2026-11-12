@@ -23,3 +23,10 @@ export const assault = (cityId, crownId) => `realm_assault(${n(cityId)}, ${n(cro
 const bear = (name, pids) => `realm_bear("${name}", "${pids.map(n).join(",")}")`;
 export const heavyTithe = (pids) => bear("Heavy Tithe", pids);
 export const grievance = (pids) => bear("Grievance", pids);
+
+// Men a decree sends home (hosts.js homeward orders; realmrules/script.lua): held from their house's AI,
+// walked along `way` ([[x, y], ...]) by Freeciv's own moves, and disbanded into their seat's work.
+export const homewardHold = (ids) => `realm_hold("${ids.map(n).join(",")}")`;
+export const homewardStep = (id, way) => `realm_walk_home(${n(id)}, "${way.map(([x, y]) => `${n(x)},${n(y)}`).join(";")}")`;
+export const disbandHome = (id, cityId) => `realm_disband_home(${n(id)}, ${n(cityId)})`;
+export const homewardRelease = (ids) => `realm_release("${ids.map(n).join(",")}")`;

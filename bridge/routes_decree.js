@@ -121,6 +121,8 @@ export async function issueDecree(ctx, req, res, url) {
   const endedU = ctx.stakes?.s.usurper.ended;
   if (endedU && !endedU.settled && ["feast", "grant", "ward"].includes(cmd.action) && ctx.world.cities.some((c) => c.id === Number(cmd.city) && c.owner === endedU.house)) { endedU.settled = true; ctx.stakes.save(); }
   result.lua.forEach((l) => send(`lua cmd ${l}`));
+  // Men the decree sends home march there by Freeciv's moves and disband into their seat's work (hosts.js).
+  for (const h of result.homeward ?? []) Hosts.homeward({ world: ctx.world, meta: ctx.meta }, h, send);
   if (result.work) (ctx.meta.works ??= {})[result.work.city] = { building: result.work.building, seasons: WORK_SEASONS, left: WORK_SEASONS, since: Date.now(), paid: result.cost ?? 0 };
   // Spend now, so a second decree before the next snapshot can't overdraw the treasury.
   const crownNow = ctx.world.players.find((p) => houseFor(p).crown);

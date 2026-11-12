@@ -17,7 +17,8 @@ export async function bareFreeciv({ port = 5571, serv = [], save = null, saves =
   try { execFileSync("pkill", ["-KILL", "-f", `freeciv-server -p ${port} `]); } catch { /* none */ }
   const dir = saves ?? fs.mkdtempSync(path.join(os.tmpdir(), "fc-probe-"));
   const script = path.join(dir, `start-${Date.now()}.serv`);
-  fs.writeFileSync(script, (save ? serv : ["rulesetdir realmrules", ...serv]).join("\n") + "\n");
+  // A new game is laid out as the realm is (realm.serv: flat, no wrap), so map coordinates mean the same.
+  fs.writeFileSync(script, (save ? serv : ["rulesetdir realmrules", 'set topology ""', 'set wrap ""', ...serv]).join("\n") + "\n");
   const args = ["-p", String(port), "-s", dir, "-d", "n", "-b", "127.0.0.1", "-r", script];
   if (save) args.push("-f", save);
   const env = { ...process.env, FREECIV_DATA_PATH: `${path.join(BRIDGE, "data")}:${SHARE}` };

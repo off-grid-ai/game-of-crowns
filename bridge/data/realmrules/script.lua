@@ -663,3 +663,43 @@ function realm_assault(city_id, crown_id)
   local after = find.city(nil, city_id)
   emit("assault", {city = city_id, men = #men, blows = blows, owner = after and after.owner.id or -1})
 end
+
+-- Men a decree sends home (hosts.js homeward orders): held from their house's AI while they march
+-- (edit.movement_disallow), walked by Freeciv's own moves, and at their seat disbanded into its work
+-- (Disband Unit Recover: half their shields to the town's production); kept as its garrison if
+-- Freeciv refuses. No unit vanishes.
+function realm_hold(ids)
+  for id in tostring(ids or ""):gmatch("%d+") do
+    local u = find.unit(nil, tonumber(id))
+    if u then edit.movement_disallow(u) end
+  end
+end
+
+function realm_walk_home(id, way)
+  local u = find.unit(nil, id)
+  if not u then return end
+  edit.movement_allow(u)
+  for x, y in tostring(way or ""):gmatch("(%d+),(%d+)") do
+    local t = find.tile(tonumber(x), tonumber(y))
+    if not t then break end
+    pcall(edit.unit_move, u, t, 0, nil, false, false, false, false, false)
+    if u.tile ~= t then break end
+  end
+  edit.movement_disallow(u)
+end
+
+function realm_disband_home(id, city_id)
+  local u, c = find.unit(nil, id), find.city(nil, city_id)
+  if not (u and c) then return end
+  edit.movement_allow(u)
+  local ok, done = pcall(edit.perform_action, u, find.action("Disband Unit Recover"), c)
+  if not (ok and done) then log.normal("HOMEWARD %d stays in %s as its garrison", id, c.name) end
+end
+
+-- Men who can go no nearer home (or whose seat is lost) are their house's AI's again, where they stand.
+function realm_release(ids)
+  for id in tostring(ids or ""):gmatch("%d+") do
+    local u = find.unit(nil, tonumber(id))
+    if u then edit.movement_allow(u) end
+  end
+end
