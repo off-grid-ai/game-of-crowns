@@ -214,7 +214,7 @@ func go(from: Vector3, to: Vector3, kind: String, on_done := Callable()) -> bool
 ## curve (Godot's PathFollow3D, as every traveller rides it), each playing the party's gait.
 func party(from: Vector3, to: Vector3, kind: String, on_done := Callable()) -> bool:
 	var P: Dictionary = Data.value("roadside", "traffic.parties.%s" % kind, {})
-	var way: PackedVector3Array = scenes._route(from, to)
+	var way: PackedVector3Array = scenes.route(from, to)
 	if way.size() <= 2 or P.is_empty():
 		return false
 	var rng := RandomNumberGenerator.new()

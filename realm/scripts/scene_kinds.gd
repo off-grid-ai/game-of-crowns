@@ -30,13 +30,13 @@ const KINDS := {
 	"vigil": {"tone": GRIEF, "reach": 2.5, "power": 0.9, "interest": 4, "dist": 5.0, "caption": "A vigil at %s"},
 	"death": {"tone": GRIEF, "reach": 2.5, "power": 0.8, "interest": 4, "dist": 5.0, "caption": "Mourning at %s"},
 	"feast": {"tone": JOY, "reach": 2.5, "power": 0.7, "interest": 3, "dist": 6.0, "caption": "A feast at %s", "play": "res://scripts/scene_kinds/feast.gd"},
-	"grain": {"tone": CROWN, "reach": 1.5, "power": 0.4, "interest": 4, "dist": 9.0, "caption": "The King's grain on the road to %s"},
-	"tribute": {"tone": CROWN, "reach": 1.2, "power": 0.3, "interest": 3, "dist": 9.0, "caption": "The King's gold on the road to %s"},
+	"grain": {"tone": CROWN, "reach": 1.5, "power": 0.4, "interest": 4, "dist": 9.0, "caption": "The King's grain on the road to %s", "play": "res://scripts/scene_kinds/convoy.gd"},
+	"tribute": {"tone": CROWN, "reach": 1.2, "power": 0.3, "interest": 3, "dist": 9.0, "caption": "The King's gold on the road to %s", "play": "res://scripts/scene_kinds/convoy.gd"},
 	"wagon": {"tone": CROWN, "reach": 1.2, "power": 0.3, "interest": 2, "dist": 9.0, "caption": "Wagons on the road to %s"},
 	"muster": {"tone": CROWN, "reach": 2.5, "power": 0.6, "interest": 4, "dist": 6.0, "caption": "The King's levy musters at %s"},
 	"rider": {"tone": CROWN, "reach": 1.5, "power": 0.5, "interest": 3, "dist": 9.0, "caption": "The King's rider, bound for %s"},
 	"king": {"tone": CROWN, "reach": 2.0, "power": 0.8, "interest": 3, "dist": 9.0, "caption": "The King's banner passes %s"},
-	"ward": {"tone": CROWN, "reach": 2.0, "power": 0.5, "interest": 2, "dist": 9.0, "caption": "A ward on the road to %s"},
+	"ward": {"tone": CROWN, "reach": 2.0, "power": 0.5, "interest": 2, "dist": 9.0, "caption": "A ward on the road to %s", "play": "res://scripts/scene_kinds/convoy.gd"},
 }
 
 ## A kind the table doesn't know: news all the same, heard a little way off.

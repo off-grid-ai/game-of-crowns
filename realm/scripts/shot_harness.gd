@@ -345,7 +345,7 @@ func _frame_for_shot() -> void:
 			var stage_in := float(_shot.get("lead", 4.0)) if _shot.has("play") else maxf(1.0, float(_shot.get("wait", 8.0)) - float(_shot.get("lead", 4.0)))
 			main.get_tree().create_timer(stage_in).timeout.connect(func():
 				if _shot.get("convoy", false):
-					var cart: Node3D = main.scenes._convoy(from, to, true)
+					var cart: Node3D = main.scenes.kind("grain").convoy(from, to, true)
 					main._framed_until = int(main._game_ms) + 600000
 					var ride := Timer.new()
 					ride.wait_time = 0.1

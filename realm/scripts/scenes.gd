@@ -35,14 +35,14 @@ func kind(name_: String) -> RefCounted:
 		var path := String(SceneKinds.of(name_).get("play", ""))
 		_kinds[name_] = load(path).new(self) if path != "" else null
 	return _kinds[name_]
-var _wagon: Mesh
+var wagon_mesh: Mesh  # the convoys' and carts' wagon (house_builder Prop_Wagon)
 var _sieges := {}  # city id -> {root, until}: one camp per besieged town, kept while the host stays
 var _timber: StandardMaterial3D
 
 
 func _ready() -> void:
 	var builder = preload("res://scripts/house_builder.gd").new()
-	_wagon = builder.piece_mesh("Prop_Wagon")
+	wagon_mesh = builder.piece_mesh("Prop_Wagon")
 
 
 ## Whether the towns stand: scenes are set out against their buildings, so
@@ -135,12 +135,8 @@ func sync(houses: Dictionary) -> void:
 						town_size = int(c.get("size", 4))
 				_siege(stormed, at, terrain.world_pos(float(s.get("ax", s["x"])), float(s.get("ay", s["y"]))), town_size, int(s.get("engines", 0)), houses.get(int(s.get("owner", -1)), {}), houses.get(int(s.get("defender", -1)), {}), Awareness.season_seconds)
 				storm(stormed, bool(s.get("taken", false)))
-			"grain", "tribute":
-				follow = _convoy(at, terrain.world_pos(float(s["tx"]), float(s["ty"])), s["kind"] == "grain", "", s)
 			"muster":
 				_muster(s, at, houses)
-			"ward":
-				follow = _convoy(at, terrain.world_pos(float(s["tx"]), float(s["ty"])), false, "A ward for the King's court", s)
 			"rider":
 				follow = _rider(at, terrain.world_pos(float(s["tx"]), float(s["ty"])), String(s.get("label", "The King's word")), s)
 			"handover":
@@ -192,7 +188,7 @@ func traveller(from: Vector3, to: Vector3, kind := "walker", on_done := Callable
 	var r := rng(from + Vector3(randf(), 0, randf()))
 	# Only where there's a way: a straight line between two towns means no road
 	# and no land joins them (it would cross the water).
-	var way := _route(from, to)
+	var way := route(from, to)
 	if way.size() <= 2:
 		return false
 	var carter := kind in ["cart", "wagon"]
@@ -219,7 +215,7 @@ func _cart_rig(r: RandomNumberGenerator, carter: Node3D) -> Node3D:
 	var rig := Node3D.new()
 	rig.name = "Cart"
 	var wagon := MeshInstance3D.new()
-	wagon.mesh = _wagon
+	wagon.mesh = wagon_mesh
 	var big := float(Data.num("people", "readable", 1.0))  # drawn larger, as the people and horses are
 	wagon.scale = Vector3.ONE * 0.1 * big
 	wagon.rotation.y = PI  # the wagon's shafts are its +z end: turned to point forward
@@ -262,7 +258,7 @@ const HORSE_BODY := 0.17
 
 ## The way a scene's people go from one place to another: through a town's
 ## streets, never through its houses, and over open land between.
-func _route(from: Vector3, to: Vector3) -> PackedVector3Array:
+func route(from: Vector3, to: Vector3) -> PackedVector3Array:
 	stand(from)  # finds the towns and the ground
 	return nav.route(towns, from, to)
 
@@ -1131,7 +1127,7 @@ func _refugees(at: Vector3, count: int) -> void:
 
 
 func _walk(n: Node3D, goal: Vector3, seconds: float, fade: bool) -> void:
-	var route: PackedVector3Array = _route(n.position, goal)
+	var route: PackedVector3Array = route(n.position, goal)
 	var tw := create_tween()
 	tw.tween_method(func(t: float):
 		if not is_instance_valid(n):
@@ -1174,7 +1170,7 @@ func _rider(from: Vector3, to: Vector3, label: String, s := {}) -> Node3D:
 	horse.mount(rider)
 	carried_standard(rider, {"name": "The Crown", "crown": true}, Color(0.72, 0.13, 0.16))
 	var tag := caption(self, label, ground(from) + Vector3(0, 0.45, 0))
-	var road: Curve3D = terrain.paths.smooth_road(_route(from, to))
+	var road: Curve3D = terrain.paths.smooth_road(route(from, to))
 	var length: float = maxf(road.get_baked_length(), 0.01)
 	# Eased in and out, the pace peaks at about pi/2 the average: a gallop
 	# (horse.gd) over the open road, a walk at either end.
@@ -1199,7 +1195,7 @@ func _rider(from: Vector3, to: Vector3, label: String, s := {}) -> Node3D:
 		if Vector2(ahead.x - g.x, ahead.z - g.z).length() > 0.001:
 			horse.rotation.y = lerp_angle(horse.rotation.y, atan2(ahead.x - g.x, ahead.z - g.z), 0.12)
 		horse.position = p
-		_place_tag(tag, p + Vector3(0, 0.45, 0)), 0.0, 1.0, secs).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		place_tag(tag, p + Vector3(0, 0.45, 0)), 0.0, 1.0, secs).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	tw.tween_callback(func(): if not s.is_empty(): arrived.emit(s))
 	tw.tween_interval(3.0)
 	tw.tween_property(tag, "modulate:a", 0.0, 2.0)
@@ -1207,69 +1203,6 @@ func _rider(from: Vector3, to: Vector3, label: String, s := {}) -> Node3D:
 		horse.queue_free()
 		tag.queue_free())
 	return horse
-
-
-# --- the King's convoys ------------------------------------------------------------------
-
-## Returns the wagon, to follow. `scene`: the bridge's scene, reported back on arrival.
-func _convoy(from: Vector3, to: Vector3, grain: bool, label := "", scene := {}) -> Node3D:
-	var r := rng(from)
-	var root := Node3D.new()
-	root.name = "Convoy"
-	add_child(root)
-	var wagon := MeshInstance3D.new()
-	wagon.mesh = _wagon
-	wagon.scale = Vector3.ONE * 0.12
-	root.add_child(wagon)
-	var crown_col := Color(0.72, 0.13, 0.16)
-	var escort := []
-	for i in 3:
-		var s: Node3D = people.make(r, "soldier", crown_col.lerp(Color.WHITE, 0.3), "adult")
-		root.add_child(s)
-		people.play(s, "Walk")
-		escort.append(s)
-	var road: Curve3D = terrain.paths.smooth_road(_route(from, to))
-	var length: float = maxf(road.get_baked_length(), 0.01)
-	var seconds := clampf(length / 0.35, 12.0, 70.0)
-	# No road joins the two towns and the way runs over the land: a cart track
-	# through any wood it crosses, wide enough that no crown closes over it, so
-	# what travels it can be watched (drawn roads have their lanes already).
-	var along := 0.0
-	while along < length:
-		terrain.clear_around(road.sample_baked(along), 0.85)  # a crown reaches about 0.8 from its trunk (main.gd LANE_MARGIN)
-		along += 0.4
-	var tag := caption(root, label if label != "" else ("The King's grain" if grain else "The King's gold"), ground(from) + Vector3(0, 0.45, 0))
-	var heading := [INF]  # eased, so the wagon rounds a bend instead of snapping to it
-	var tw := create_tween()
-	tw.tween_method(func(t: float):
-		var d := t * length
-		var g := road.sample_baked(d)
-		var p := stand(g)
-		var ahead := road.sample_baked(minf(length, d + 0.25))
-		var flat := Vector3(ahead.x - g.x, 0, ahead.z - g.z)
-		var dir := flat.normalized() if flat.length() > 0.001 else Vector3.FORWARD
-		var want := atan2(dir.x, dir.z)
-		heading[0] = want if heading[0] == INF else lerp_angle(heading[0], want, 0.12)
-		dir = Vector3(sin(heading[0]), 0, cos(heading[0]))
-		var side := Vector3(-dir.z, 0, dir.x)
-		wagon.position = p
-		wagon.rotation.y = heading[0] + PI
-		_place_tag(tag, p + Vector3(0, 0.45, 0))
-		for i in escort.size():
-			var e: Node3D = escort[i]
-			var trail := stand(road.sample_baked(maxf(0.0, d - (0.12 + i * 0.09))))
-			e.position = trail + side * (0.05 if i % 2 == 0 else -0.05)
-			e.rotation.y = heading[0], 0.0, 1.0, seconds)
-	tw.tween_callback(func():
-		# Arrived: the escort hails the town it was sent to.
-		for e in escort:
-			people.play(e, ["Waving", "Salute", "Cheering"][r.randi() % 3], r.randf_range(0.9, 1.1))
-		if not scene.is_empty():
-			arrived.emit(scene))
-	tw.tween_interval(1.0)
-	tw.tween_property(tag, "modulate:a", 0.0, 2.0)
-	tw.tween_callback(root.queue_free)
-	return wagon
 
 
 # --- feasts and handovers ----------------------------------------------------------
@@ -1360,7 +1293,7 @@ func caption(root: Node3D, text: String, at: Vector3) -> Label3D:
 			_fade_tag(o, 0.4)
 	_tags.append(tag)
 	tag.tree_exiting.connect(func(): _tags.erase(tag))
-	_place_tag(tag, at)
+	place_tag(tag, at)
 	# Every caption has a lifetime, like combat text: read, then gone.
 	get_tree().create_timer(9.0).timeout.connect(func(): _fade_tag(tag, 1.0))
 	return tag
@@ -1375,7 +1308,7 @@ func _fade_tag(tag: Label3D, seconds: float) -> void:
 
 
 ## Sets a caption at `at`, lifted a line for each older caption in the same place.
-func _place_tag(tag: Label3D, at: Vector3) -> void:
+func place_tag(tag: Label3D, at: Vector3) -> void:
 	var lift := 0
 	for o in _tags:
 		if o == tag:

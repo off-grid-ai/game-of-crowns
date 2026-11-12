@@ -16,10 +16,10 @@ const OLD := {"feast": "_feast", "handover": "_handover", "grain": "_convoy", "t
 	"sack": "_burn", "razed": "_burn", "famine": "_refugees", "plague": "_refugees"}
 
 ## The kinds that are their own class by now (grows a kind a commit, till scenes.gd stages none itself).
-const CLASSED := ["feast"]
+const CLASSED := ["feast", "grain", "tribute", "ward"]
 
 ## What each kind, staged on the stand-in, must set down: [the node's name under the stage, the least of its children].
-const STAGED := {"feast": ["Feast", 10]}
+const STAGED := {"feast": ["Feast", 10], "grain": ["Convoy", 4], "tribute": ["Convoy", 4], "ward": ["Convoy", 4]}
 
 
 class Land extends Node3D:
@@ -31,6 +31,24 @@ class Land extends Node3D:
 		return true
 	func walkable(_x: float, _z: float) -> bool:
 		return true
+	func clear_around(_p: Vector3, _r: float) -> void:
+		pass
+	var paths := Paths.new()
+
+
+## The realm's roads (terrain.paths): a road is the route it is given, smoothed to a curve.
+class Paths extends RefCounted:
+	func smooth_road(way: PackedVector3Array) -> Curve3D:
+		var c := Curve3D.new()
+		for p in way:
+			c.add_point(p)
+		return c
+	func land_path(from: Vector3, to: Vector3) -> PackedVector3Array:
+		return PackedVector3Array([from, from.lerp(to, 0.5), to])
+	func bowed(way: PackedVector3Array) -> PackedVector3Array:
+		return way
+	func along(way: PackedVector3Array, t: float) -> Vector3:
+		return way[0].lerp(way[way.size() - 1], t)
 
 
 class Main extends Node:
@@ -76,7 +94,7 @@ func _run() -> void:
 	for k in moved:
 		if not STAGED.has(k):
 			continue
-		stage.kind(k).play({"kind": k, "owner": 1}, Vector3(10, 0, 10), {1: {"name": "Ashby", "color": "#884422"}})
+		stage.kind(k).play({"kind": k, "owner": 1, "x": 10, "y": 10, "tx": 16, "ty": 12}, Vector3(10, 0, 10), {1: {"name": "Ashby", "color": "#884422"}})
 		await process_frame
 		var want: Array = STAGED[k]
 		var n: Node = stage.get_node_or_null(String(want[0]))
