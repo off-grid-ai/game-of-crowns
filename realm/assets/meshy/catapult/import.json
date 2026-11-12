@@ -13,5 +13,7 @@
  "mask_png": true,
  "materials": [
   "Material_0"
- ]
+ ],
+ "cut_faces": 0,
+ "arm": true
 }

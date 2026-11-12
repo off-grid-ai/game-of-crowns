@@ -270,7 +270,10 @@ func _engine(kind: String, a: float, k: Dictionary) -> void:
 	node.position = p
 	node.rotation.y = _x_to_town(p)
 	node.add_to_group("siege_engines")
-	var kk: Dictionary = (k.get("kinds", {}) as Dictionary).get(kind, {})
+	var kinds: Dictionary = k.get("kinds", {})
+	# Meshy's catapult (--landmarks=meshy) brings its own arm, split out by the import: its own angles and tip.
+	var meshy := Real.path_of(kind).contains("/meshy/") and kinds.has(kind + "_meshy")
+	var kk: Dictionary = kinds.get(kind + "_meshy" if meshy else kind, {})
 	var arm: Node3D = node.find_child(String(kk.get("arm", "arm")), true, false)
 	var e := {"node": node, "arm": arm, "kind": kind, "k": kk, "crew": [], "built": false}
 	engines.append(e)

@@ -324,9 +324,9 @@ def split_arm(obj, spec):
     bpy.ops.object.mode_set(mode="EDIT")
     bpy.ops.mesh.select_all(action="DESELECT")
     bpy.ops.object.mode_set(mode="OBJECT")
-    box = spec["box"]
+    boxes = spec["box"] if isinstance(spec["box"][0][0], list) else [spec["box"]]  # one box or a list of them
     for p in obj.data.polygons:
-        p.select = in_box(p.center, box)
+        p.select = any(in_box(p.center, b) for b in boxes)
     bpy.ops.object.mode_set(mode="EDIT")
     bpy.ops.mesh.separate(type="SELECTED")
     bpy.ops.object.mode_set(mode="OBJECT")
