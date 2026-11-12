@@ -1242,7 +1242,7 @@ class Talk extends PlayRun:
 		if not _started:
 			_waited += delta
 			if _waited > WAIT_SECS:
-				return SUCCESS
+				return FAILURE  # they didn't come: the talk is off, nothing after it is played alone
 			if _waited > 2.0 and not _stepped:
 				People.play(agent, "Looking_Around")
 			if _near():

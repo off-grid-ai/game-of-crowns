@@ -39,6 +39,14 @@ town. No code here; this is what the builder builds, in stages, behind `--town-d
 | Villagers (shoppers, water carriers, porters, gossips, and the town's other callings passing through) | `villagers.gd` (spawn, NavigationServer2D walking, RVO, slots) + `npc_mind.give_villager` (LimboAI) | A BTDynamicSelector: danger, fire, news, a call to talk, moods, night/rain/winter, then **Weigh: a weighted random pick** among the calling's activities (`villager_activities`) | Partly: each activity is a chain (street → stall → haggle → take → street), but which chain comes next is random and nothing ties two people's chains together |
 | Bailey folk (drill lines, archers, smith, servants, grooms) | `castle_folk.gd`, Timers and tweens | Fixed timers | No (out of the square) |
 
+**Checked against an independent read-only audit (supervisor, 12 Nov):** it agrees, and adds what my map missed:
+the posted crowd is only partly cut with square agents on (`square_agents.posted` cuts the gossip knots, straight
+carriers, chase pairs, patrol and stall buyers; the crier and his 3 listeners, 2 beggars, 6 guards at the forge and
+the castle side, the cart's seller and buyer, the 2 porters at the stall ends and the weeders stay); a quarter of the
+crown's villagers keep the old callings (the pious preaching at the well, idlers watching, gentry promenading),
+alone at `_claim` ring spots; the well's "chat" and the porter's "rest" talk to the well rim alone; and a Talk whose
+partner never came succeeded after 8 s, so the moves after it played alone.
+
 Numbers today (crown seat, square agents on): about 28 villagers on square errands at once at most; the posted
 crowd cut to keepers, the drill, one gossip knot, two carriers, two child pairs, one guard pair, the smith and boy.
 
@@ -49,6 +57,11 @@ activity's slot was not to be had. `villagers.place()` falls back from a full sl
 that does the same. Second candidates: the posted gossip knot left with one member when the others found no room,
 or a crier's listener standing in his ring with no crier. The cause in every case is the same: an action allowed
 without an object or a partner.
+
+Fixed at once (not waiting for the director, `--square-agents=on` only): a slot that can't be had no longer falls back
+to an open spot (`villagers.place` returns no place, GoTo fails, the tree goes on to something else), and a Talk whose
+partner doesn't come fails instead of succeeding. **Rule for the new design: a failed claim means walk on or leave,
+never act in place.**
 
 ## 2. The four layers
 
@@ -84,6 +97,11 @@ only.
 | events at the town: levy raised, war near, feast, fire, a ruling, a death (grief), gold seam spent | bridge scenes/rulings, awareness stimuli | yes (levy, atWar, grief, ruling, feast); gold seam spent: add |
 
 ### Layer 2: the town director (`town_director.gd`, one per town in view)
+
+Where it plugs in (the audit's pointer): `awareness.gd` already gives each town a Blackboard scope that every mind's
+blackboard is parented to. The director writes there (booked slots, role assignments, scene cues); a person's tree
+reads them with a BTCheckVar ahead of everything else in `give_villager`'s BTDynamicSelector; square-wide events go
+out through `awareness.stimulus()`.
 
 A LimboAI HSM per town (states = parts of the day), its blackboard parented to the town's awareness scope. It
 reads the facts, keeps a **schedule** and a **mood**, and asks the scene scheduler for scenes. It owns nothing the
@@ -165,6 +183,9 @@ the director gave, or leave the square.** No Weigh, no activity of their own. Ru
 | `villagers._slot` (stall, well, street, cart) | the scenes' objects | kept, + Occupied state |
 | `town_life` posted crowd at the square (gossip knot, listeners, guards on spots, buyers, porters at the stall ends, open smith) | scenes c, d, e, b | retired with the switch on |
 | SquareLife patrol, straight errands, chase | scene d; walkers with a destination; a children's play scene | retired with the switch on |
+| the remaining posted crowd (crier's listeners, beggars, guards on spots, cart seller and buyer, stall-end porters, weeders) | scene members cast by the director, or nothing | retired with the switch on |
+| the old callings at the crown (pious, idler, gentry) in the square | walkers passing through with a destination, or scene members | retired for the square |
+| `villagers.place` fallback from a full slot to the "market" ring | none: a failed claim walks on or leaves | retired (already, with square agents on) |
 | SquareLife cart | scene b drives it | moved |
 | keepers, smith and bellows (posted) | scene members with standing roles | kept as members |
 | `castle_folk.gd` | out of scope (the bailey); later its own scenes | kept |

@@ -923,6 +923,10 @@ func place(a: Dictionary, key: String, knot := false) -> Vector3:
 		if not is_nan(sp.x):
 			a["place_key"] = key
 			return sp
+		if TownLife.square_agents_on() and key != "street":
+			# No slot to be had: the errand is off (GoTo fails, the tree goes on to something else), never its moves
+			# played at an open spot on the cobbles in front of nothing (Mac's man looping gestures alone, round 8).
+			return Vector3.INF
 		key = "market" if key != "street" else "home"
 		if key == "home":
 			a["place_key"] = ""
