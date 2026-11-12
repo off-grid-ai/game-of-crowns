@@ -121,6 +121,10 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 11:05 (11-12) Other session ("Game of Crowns visual polish", Mac's ask): gold seams via Freeciv (0ea91fb3): 3 seams
+  near Goldrock that run out; crown market gold now 0 (balance change). Next batch: add a Goldrock shot (--city=Goldrock,
+  < 40 units) to judge the Meshy mine and miners; seamSeasons 1 in bridge/data/mines.json on the render bridge to see a
+  spent seam. Switch --gold-mines=off.
 - 11:00 (11-12) Mac: "the people behaviour is poor. that's the problem." Clip of the square (/tmp/goc-focus/clip1,
   24 frames over 6 s): almost nobody moves; no purposeful errands (buy, draw water, carry, cross to a door); a
   figure lying flat, one frozen mid-leap, one in the well; guards on fixed rings. Cause: town_life._square_life
