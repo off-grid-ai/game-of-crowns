@@ -88,7 +88,11 @@ extends SceneTree
 ## 27. the push off a building never pins a mover (the reign replay: a Worker 17 units off, five seasons, on a straight
 ##     line through a town out of sight): with a place's keep pushing it off a building on its way, a mover's progress
 ##     along its way carries on (only the body is pushed), so it goes round the building's edge and arrives, and it
-##     never stands inside the building.
+##     never stands inside the building;
+## 28. a war's muster forms as a column on the road out (the render pass: a small block on open grass where 03-army is
+##     a dense column on a road): a host raised for war (out_to) stands in column on the road from its seat toward
+##     where it is bound, every regiment on the road, halted, in column order with its head toward the goal, no two in
+##     one place, its ranks closed up (army.json column.rank at most 0.15, from 0.22), each regiment still at its floor of figures.
 ## Prints "ARMY PROBE …" lines and "ARMY PROBE PASS" or "ARMY PROBE FAIL n"; quits with 0 or 1.
 
 const Data := preload("res://scripts/data.gd")
@@ -140,8 +144,76 @@ func _run() -> void:
 	_ship_is_the_cog()
 	_marchers_not_pinned()
 	await _push_never_pins()
+	_muster_forms_on_the_road()
 	print("ARMY PROBE PASS" if _fails == 0 else "ARMY PROBE FAIL %d" % _fails)
 	quit(0 if _fails == 0 else 1)
+
+
+## 28. A war's muster on the road: a stand-in realm whose one road runs east from the seat, then north.
+func _muster_forms_on_the_road() -> void:
+	var ArmyS: GDScript = load("res://scripts/army.gd")
+	var has := ArmyS.get_script_method_list().any(func(m): return m["name"] == "_form_on_road")
+	_check(has, "a war's host forms on the road out (army.gd _form_on_road)")
+	_check(Data.num("army", "column.rank", 1.0) <= 0.15, "the column's ranks are closed up (column.rank %.3f)" % Data.num("army", "column.rank", 1.0))
+	if not has:
+		return
+	var stub := GDScript.new()
+	stub.source_code = '''extends Node3D
+var terrain: Node3D
+var roads: Node
+func build(road: PackedVector3Array) -> void:
+	terrain = Node3D.new()
+	var ts := GDScript.new()
+	ts.source_code = "extends Node3D\\nvar width := 0\\nvar built := false\\nfunc height_at(_x: float, _z: float) -> float:\\n\\treturn 0.0\\n"
+	ts.reload()
+	terrain.set_script(ts)
+	add_child(terrain)
+	roads = Node.new()
+	var rs := GDScript.new()
+	rs.source_code = "extends Node\\nvar way := PackedVector3Array()\\nfunc route(_a: Vector3, _b: Vector3, _reach := 2.5) -> PackedVector3Array:\\n\\treturn way\\n"
+	rs.reload()
+	roads.set_script(rs)
+	roads.way = road
+	add_child(roads)
+'''
+	stub.reload()
+	var main := Node3D.new()
+	main.set_script(stub)
+	root.add_child(main)
+	var road := PackedVector3Array([Vector3(0, 0, 0), Vector3(14, 0, 0), Vector3(14, 0, 10)])
+	main.call("build", road)
+	var a: Node3D = ArmyS.new(main, 0, {"side": 0, "colour": Color(0.6, 0.15, 0.15), "quiet": true, "out_to": road[road.size() - 1]})
+	var rows: Array = []
+	for k in ["archers", "spearmen", "horse", "men_at_arms"]:
+		var r: Dictionary = a.call("_regiment", {"id": -(rows.size() + 1), "unit": k, "men": 150}, Color(0.6, 0.15, 0.15), {})
+		if not r.is_empty():
+			rows.append(r)
+	a.set("_regiments", rows)
+	main.add_child(a)
+	var formed: bool = a.call("_form_on_road", Vector3.ZERO, road[road.size() - 1])
+	var on_road := true
+	var near := INF
+	var along: Array = []
+	var order := Formation_column_order(rows)
+	for i in order.size():
+		var p: Vector3 = (order[i]["node"] as Node3D).global_position
+		var s_at := float(a.call("_along", p))
+		on_road = on_road and (a.call("_at", s_at) as Vector3).distance_to(p) < 0.05
+		along.append(s_at)
+		for j in range(i + 1, order.size()):
+			near = minf(near, p.distance_to((order[j]["node"] as Node3D).global_position))
+	var head_first := true
+	for i in range(1, along.size()):
+		head_first = head_first and float(along[i]) < float(along[i - 1])
+	_check(formed and on_road, "every regiment stands on the road out (%s)" % str(along.map(func(v): return snappedf(v, 0.01))))
+	_check(rows.all(func(r): return r["shape"] == "column" and r["state"] == "halt"), "in column, halted until it marches out (%s)" % str(rows.map(func(r): return "%s/%s" % [r["shape"], r["state"]])))
+	_check(head_first and near > 0.2, "in column order, its head toward the goal, no two in one place (closest %.2f)" % near)
+	_check(rows.all(func(r): return int(r["figures"]) >= int(Data.num("army", "figureFloor", 0.0))), "each regiment at its floor of figures")
+	main.queue_free()
+
+
+func Formation_column_order(rows: Array) -> Array:
+	return (load("res://scripts/army_formation.gd") as GDScript).call("column_order", rows)
 
 
 ## 27. The push never pins: a straight way of points 0.05 apart from x 0 to 2, a round building of radius 0.3 at x 1.
