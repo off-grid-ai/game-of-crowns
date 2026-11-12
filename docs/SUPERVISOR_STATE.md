@@ -3,7 +3,8 @@
 Updated 2026-11-12 ~19:45.
 
 ## Waiting on Mac
-- Nothing.
+- Orders a season: one per host (recommended) or one for all hosts (hosts.json ordersPerSeason; today 1 for all).
+- The square: keep the r11 openness floor (paving >= 55%) and fill it with life (recommended), or lower the floor and shrink it toward 01-town's packed square.
 
 ## Threads (4 + 1 closing)
 | Thread | Session | Doing now | Next |
@@ -15,6 +16,8 @@ Updated 2026-11-12 ~19:45.
 | Fire and siege (kept for one fix) | local_7100b3cd | READY 7: the capture chain FAILs at link 3 (probe 2f1e8e1b). The besiegers leave the walls; no assault; the campaign ends when the town changes hands | Fix in bridge hosts.js/campaigns.js (it has the trace), then archive |
 
 ## READY
+Art step 6 (town camera) landed: people 2.5x larger, house colours. castle_builder.gd: the look audit wires its Meshy castle there; fire-siege keeps walls.gd.
+
 Built: 1-6, 9, 11-15. Reopened: 7 (capture chain fails at link 3), 8 (film click; fix in hand). Open: 10 (a full reign: muster crash, view faults). Look pass: started (owner look audit).
 
 ## Decisions and why
