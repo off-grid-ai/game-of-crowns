@@ -7,6 +7,7 @@
 // decides nothing. Tunables: data/damage.json. Saved in the realm's meta (meta.damage).
 import fs from "node:fs";
 import * as chron from "./chronicles.js";
+import * as Lua from "./lua.js";
 
 export const DAMAGE = JSON.parse(fs.readFileSync(new URL("./data/damage.json", import.meta.url), "utf8"));
 
@@ -34,6 +35,14 @@ export function season(ctx, turn) {
     } else {
       d.burnt = Math.max(0, d.burnt - DAMAGE.rebuildPerSeason);
       d.kindled = (d.kindled ?? []).slice(DAMAGE.kindledRebuiltPerSeason);  // the first lit, the first rebuilt
+    }
+  }
+  // A breach is Freeciv's too: a town with a wall section breached loses its City Walls (their defence
+  // bonus with them). The house builds them again in its own time, as Freeciv's AI decides.
+  for (const c of world.cities) {
+    const d = all[c.id];
+    if (d && (c.buildings ?? []).includes("City Walls") && d.walls.some((w) => stageOf(w) === "breached")) {
+      ctx.send?.(`lua cmd ${Lua.inCity(c.id, 'local b = find.building_type("City Walls"); if b and c:has_building(b) then edit.remove_building(c, b) end')}`);
     }
   }
   for (const id of Object.keys(all)) if (!world.cities.some((c) => c.id === Number(id))) delete all[id];

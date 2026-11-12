@@ -283,10 +283,9 @@ export function healBlights(ctx, turn) {
 // card covers the screen, otherwise it waits for one. The houses' truce is
 // keyed to them, whoever leads them; the goal and the panels read Freeciv's.
 export function houseTruce(ctx, pair, seasons = 16) {
-  const { world, meta, court, ceasefire } = ctx;
+  const { world, meta, court } = ctx;
   if (!court || pair[0] === pair[1]) return;
-  if (meta?.court?.sitting != null) ceasefire([[pair[0], pair[1], seasons]]).catch((e) => console.log("ceasefire:", e.message));
-  else (meta.pendingCease ??= []).push([pair[0], pair[1], seasons]);
+  ctx.diplomacy([pair[0], pair[1], seasons]);
   court.truces ??= {};
   const key = `h:${Math.min(...pair)}:${Math.max(...pair)}`;
   court.truces[key] = Math.max(court.truces[key] ?? 0, (world?.turn ?? 0) + seasons);

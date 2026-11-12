@@ -13,6 +13,10 @@ export const transferCity = (cityId, pid) => `local c = find.city(nil, ${n(cityI
 // A decree building set down in a town for its seasons (realmrules/script.lua realm_decree): "feast", "relief".
 export const decree = (cityId, kind) => `realm_decree(${n(cityId)}, "${kind === "relief" ? "relief" : "feast"}")`;
 
+// The King's soldiers beside a town he besieges strike it once each, and take it if no one is left
+// (realmrules/script.lua realm_assault; Freeciv fights every blow and reports "assault").
+export const assault = (cityId, crownId) => `realm_assault(${n(cityId)}, ${n(crownId)})`;
+
 // A mark the houses (player ids) bear in their seat, felt in all their towns, lifted everywhere else
 // (realmrules/script.lua realm_bear).
 const bear = (name, pids) => `realm_bear("${name}", "${pids.map(n).join(",")}")`;

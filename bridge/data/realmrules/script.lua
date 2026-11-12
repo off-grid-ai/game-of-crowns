@@ -619,3 +619,37 @@ function realm_bear(name, houses)
     end
   end
 end
+
+-- The King's assault on a house's town (the crown is at war with it: the bridge's one diplomacy writer):
+-- each of the crown's fighting men beside its walls strikes once (Freeciv's combat: walls, veterans,
+-- terrain), and when no defender is left one of them marches in and takes it (Freeciv's own conquest:
+-- a size-1 town is razed, a bigger one shrinks and changes hands). The crown's AI takes no town
+-- unbidden (actions.ruleset forbids Norman "Conquer City"); this is the King's bidding. Reports "assault"
+-- with the blows struck and who holds the town after (-1: razed).
+function realm_assault(city_id, crown_id)
+  local c, crown = find.city(nil, city_id), find.player(crown_id)
+  if not (c and crown) then return end
+  local attack, tile = find.action("Attack"), c.tile
+  local men = {}
+  for t in tile:square_iterate(1) do
+    if t ~= tile then
+      for u in t:units_iterate() do
+        if u.owner == crown and not u.utype:has_flag("NonMil") then men[#men + 1] = u.id end
+      end
+    end
+  end
+  local blows = 0  -- attacks Freeciv let happen (perform_action is false when refused)
+  for _, id in ipairs(men) do
+    local u, town = find.unit(crown, id), find.city(nil, city_id)
+    if u and town and town.owner ~= crown then
+      if tile:num_units() > 0 then
+        local ok, done = pcall(edit.perform_action, u, attack, tile)
+        if ok and done then blows = blows + 1 end
+      else
+        pcall(edit.unit_move, u, tile, 0, nil, false, true, false, false, false)
+      end
+    end
+  end
+  local after = find.city(nil, city_id)
+  emit("assault", {city = city_id, men = #men, blows = blows, owner = after and after.owner.id or -1})
+end

@@ -208,7 +208,7 @@ const FIRST_COURT_LATE_MS = OPENING.firstCourtWithoutLandingSec * 1000;
 export async function courtSeason(ctx, turn, force = false) {
   // world and counselNow are read again after each await: a snapshot may replace them meanwhile.
   let { world, meta, court, counselNow } = ctx;
-  const { record, ceasefire, turnHouses } = ctx;
+  const { record, setDiplomacy, turnHouses } = ctx;
   if (!court || !world) return;
   const c = courtYearOf(ctx);
   // A called matter stays until the King answers it; one the realm made worse is replaced in place.
@@ -281,10 +281,10 @@ export async function courtSeason(ctx, turn, force = false) {
     else c.lastSat = turn;
     c.lastCall = Date.now();
     hold(ctx, true);
-    // Ceasefires the King ordered away from court reload now, behind the card.
-    const pending = meta.pendingCease ?? [];
-    meta.pendingCease = [];
-    ceasefire(pending).catch((e) => console.log("ceasefire:", e.message));  // all of them, one reload
+    // Truces and wars the King ordered away from court reload now, behind the card.
+    const pending = meta.pendingDiplomacy ?? [];
+    meta.pendingDiplomacy = [];
+    setDiplomacy(pending).catch((e) => console.log("diplomacy:", e.message));  // all of them, one reload
     record({ turn, kind: "court", text: push ? `The Hand calls the King to court: ${crises[0].text}.` : `The court sits for the ${calendar(turn).season} of ${calendar(turn).year}: ${n} ${n === 1 ? "matter waits" : "matters wait"} for the King.` });
   } else if (due) c.lastSat = turn;
   chron.saveMeta(meta);

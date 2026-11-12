@@ -13,6 +13,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "damage-probe-"));
 fs.mkdirSync(path.join(tmp, "data"));
 fs.copyFileSync(path.join(here, "../data/damage.json"), path.join(tmp, "data/damage.json"));
+fs.copyFileSync(path.join(here, "../lua.js"), path.join(tmp, "lua.js"));  // damage.js sends a breach to Freeciv through it
 const src = fs.readFileSync(path.join(here, "../damage.js"), "utf8");
 const stubbed = src.replace('import * as chron from "./chronicles.js";', "const chron = { saveMeta: () => { globalThis.saves = (globalThis.saves ?? 0) + 1; } };");
 fs.writeFileSync(path.join(tmp, "damage.mjs"), stubbed);

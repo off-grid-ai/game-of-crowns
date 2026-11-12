@@ -8,10 +8,12 @@
 // the same names).
 
 import { houseFor, cityName } from "./narrator.js";
+import fs from "node:fs";
 import { decree } from "./crown.js";
 import { calendar } from "./stakes.js";
 import * as chron from "./chronicles.js";
 import * as kingDeeds from "./ledger.js";
+import * as Lua from "./lua.js";
 
 // A town is besieged while an enemy host stands at its walls: three or more
 // fighting units of another house on the tiles around it. One scene per turn.
@@ -66,6 +68,11 @@ export function startCampaign(ctx, { city, house }) {
   if (allies.length) record({ turn, kind: "decree", text: `${allies.map((p) => houseFor(p).name).join(" and ")} ${allies.length > 1 ? "answer their oaths" : "answers its oath"} and ${allies.length > 1 ? "send" : "sends"} men to march with the King.`, city });
   (meta.campaigns ??= []).push({ city, house, turn, allies: allies.map((p) => p.id) });
   chron.saveMeta(meta);
+  // In Freeciv the crown is at war with the house (the bridge's one diplomacy writer), so Freeciv fights
+  // every blow of the assault (resolveCampaigns, realm_assault).
+  const crown = world.players.find((p) => houseFor(p).crown);
+  const atWar = ctx.detail?.()?.players?.find((p) => p.slot === crown?.id)?.atWarWith?.includes(house);
+  if (crown && !atWar) ctx.diplomacy?.([crown.id, house, 0, "War"]);
   scene("siege", { x: at.x, y: at.y, city, owner: world.players.find((p) => houseFor(p).crown)?.id, defender: house });
 }
 
@@ -88,8 +95,8 @@ export function marchOdds(ctx, house, allies = [], { extra = 0, turn = ctx.world
 // The siege's middle: a season in, the besieged lord's herald brings terms, and
 // the King chooses: press the assault (gold, and better odds), take tribute and
 // go home, or starve them out (a season longer, better odds again).
-export const SIEGE_PRESS = 20;   // points in a hundred the assault adds, now
-export const SIEGE_STARVE = 10;  // points starving them out adds, a season later
+// Assaults the royal host makes on a town before its captains lift the siege (one a season, data/hosts.json).
+export const SIEGE_ASSAULTS = JSON.parse(fs.readFileSync(new URL("./data/hosts.json", import.meta.url), "utf8")).siegeAssaults ?? 4;
 export function siegeTerms(ctx, c, turn) {
   const { world, meta, court } = ctx;
   if (c.asked || !court) return;
@@ -99,10 +106,8 @@ export function siegeTerms(ctx, c, turn) {
   if (!foe || !lord) return;
   const town = cityName(c.city);
   const odds = Math.round(marchOdds(ctx, c.house, c.allies ?? [], { turn: turn + 1 }) * 100);
-  // Each answer's own chances, worked the way the siege will resolve them:
-  // the assault now, or the starving a season later (winter favours the walls).
-  const pressOdds = Math.min(95, odds + SIEGE_PRESS);
-  const starveOdds = Math.min(95, Math.round(marchOdds(ctx, c.house, c.allies ?? [], { turn: turn + 2 }) * 100) + SIEGE_STARVE);
+  // The captains' reckoning for a season later, if the King waits (winter favours the walls); Freeciv fights it.
+  const starveOdds = Math.round(marchOdds(ctx, c.house, c.allies ?? [], { turn: turn + 2 }) * 100);
   const starveWinter = calendar(turn + 2).season === "winter";
   // Tribute is what the house can pay, taken from its own chest.
   const tribute = Math.min(150, Math.max(0, Math.floor(foe.gold ?? 0)));
@@ -111,7 +116,7 @@ export function siegeTerms(ctx, c, turn) {
       ? `${lord.name}'s herald comes out of ${town} under a white flag: "My ${lord.gender === "female" ? "lady" : "lord"} will pay the Crown ${tribute} gold to see your host gone by morning." The captains put the King's chances at ${odds} in a hundred.`
       : `${lord.name}'s herald comes out of ${town} under a white flag, with nothing to offer but defiance. The captains put the King's chances at ${odds} in a hundred.`,
     options: [
-      { id: "press", label: "Press the assault (200 gold)", hint: `${pressOdds} in 100 · ${houseFor(foe).name} −10 · ladders and fire, more dead`, cost: 200, favour: { [c.house]: -10 }, result: `The King orders the assault. Ladders go up against the walls of ${town} at dawn.` },
+      { id: "press", label: "Press the assault (200 gold)", hint: `${odds} in 100, assaulted now · ${houseFor(foe).name} −10 · ladders and fire, more dead`, cost: 200, favour: { [c.house]: -10 }, result: `The King orders the assault. Ladders go up against the walls of ${town} at dawn.` },
       { id: "starve", label: "Starve them out", hint: `${starveOdds} in 100, a season longer${starveWinter ? ", in winter" : ""} · ${houseFor(foe).name} −5`, favour: { [c.house]: -5 }, result: `The royal host digs in around ${town}. No cart goes in or out.` },
       ...(tribute >= 50 ? [{ id: "tribute", label: "Take their gold and withdraw", hint: `+${tribute} gold · ${houseFor(foe).name} +10 · every other great house −3: a King who can be bought`, favour: { [c.house]: 10, ...Object.fromEntries((world?.players ?? []).filter((p) => p.id !== Number(c.house) && !houseFor(p).crown && !houseFor(p).wild && (world.cities ?? []).some((x) => x.owner === p.id)).map((p) => [p.id, -3])) }, result: `The King takes ${lord.name}'s gold and the host turns for home. ${town} rings its bells.` }] : []),
     ] }, world);
@@ -140,32 +145,41 @@ export function resolveCampaigns(ctx, turn) {
   const { world, meta, court, send, record, deed, shiftFavour, greatHouses, SOLDIER } = ctx;
   for (const c of [...(meta.campaigns ?? [])]) {
     if (turn - c.turn >= 1) siegeTerms(ctx, c, turn);
-    if (turn - c.turn < 2 + (c.extra ?? 0)) continue;
-    // The herald's terms are answered before the siege is decided: it waits for
-    // the King's word, two seasons at most, then the captains decide without him.
+    // The assault waits for the host to reach the walls (two seasons), a season more to starve them,
+    // none once the King orders it pressed.
+    if (!c.press && turn - c.turn < 2 + (c.extra ?? 0)) continue;
+    // The herald's terms are answered before the first assault: it waits for the King's word, two
+    // seasons at most, then the captains decide without him.
     if (c.asked && !c.ruled && court?.petitions.some((p) => !p.answered && p.beat === `siege-${c.city}-${c.turn}`) && (c.hold = (c.hold ?? 0) + 1) <= 2) continue;
-    meta.campaigns = meta.campaigns.filter((x) => x !== c);
     const town = world.cities.find((x) => x.id === c.city);
     const crown = world.players.find((p) => houseFor(p).crown);
     const foe = world.players.find((p) => p.id === c.house);
-    if (!town || !crown || !foe) continue;
-    if (town.owner !== c.house) { record({ turn, kind: "decree", text: `The royal host stands down before ${cityName(c.city)}: it is no longer ${houseFor(foe).name}'s to take.`, city: c.city }); continue; }
-    // Pressing the assault or starving them out tips the odds the King's way.
-    const odds = Math.min(0.95, marchOdds(ctx, c.house, c.allies ?? []) + (c.press ? SIEGE_PRESS : c.starve ? SIEGE_STARVE : 0) / 100);
+    const end = () => { meta.campaigns = meta.campaigns.filter((x) => x !== c); };
+    if (!crown || !foe) { end(); continue; }
     // Why it went as it did, in one line: our companies against theirs, and the season.
-    const why = `${(world.units ?? []).filter((u) => u.owner === crown.id && SOLDIER(u)).length} royal companies against ${houseFor(foe).name}'s ${(world.units ?? []).filter((u) => u.owner === foe.id && SOLDIER(u)).length}${calendar(turn).season === "winter" ? ", in the cold of winter" : ""}.`;
-    if (Math.random() < odds) {
-      send(`lua cmd local t = find.city(nil, ${c.city}); local to; for p in players_iterate() do if p.id == ${crown.id} then to = p end end; if t and to then edit.transfer_city(t, to) end`);
+    const why = `${(world.units ?? []).filter((u) => u.owner === crown.id && SOLDIER(u)).length} royal companies against ${houseFor(foe).name}'s ${(world.units ?? []).filter((u) => u.owner === foe.id && SOLDIER(u)).length}${calendar(turn).season === "winter" ? ", in winter" : ""}.`;
+    // Freeciv fought it (realm_assault): the town is the crown's (or razed), still the house's, or the host is gone.
+    if (!town || town.owner === crown.id) {
+      end();
       shiftFavour({ [c.house]: -20 }, "the royal host");
       shiftFavour(Object.fromEntries((c.allies ?? []).map((id) => [id, 6])), "the royal host");
       deed(kingDeeds.tagsFor("realm", "sack"), { act: false, place: cityName(c.city) });
       record({ turn, kind: "sack", text: `${cityName(c.city)} falls to the royal host: ${why} ${houseFor(foe).name} has learned what the crown's anger costs.`, city: c.city });
-    } else {
-      send(`lua cmd local n = 0; for p in players_iterate() do if p.id == ${crown.id} then for u in p:units_iterate() do if n < 5 and u.utype:rule_name() ~= "Workers" then edit.unit_kill(u, "killed", nil); n = n + 1 end end end end`);
+      continue;
+    }
+    if (town.owner !== c.house) { end(); record({ turn, kind: "decree", text: `The royal host stands down before ${cityName(c.city)}: it is no longer ${houseFor(foe).name}'s to take.`, city: c.city }); continue; }
+    const men = (world.units ?? []).filter((u) => u.owner === crown.id && SOLDIER(u) && Math.max(Math.abs(u.x - town.x), Math.abs(u.y - town.y)) === 1).length;
+    if ((c.assaults ?? 0) > 0 && men === 0 || (c.assaults ?? 0) >= SIEGE_ASSAULTS || (!c.assaults && men === 0 && turn - c.turn >= 2 + (c.extra ?? 0) + 3)) {
+      end();
       shiftFavour(Object.fromEntries(greatHouses().filter((p) => p.id !== c.house).map((p) => [p.id, -3])), "the royal host");
       shiftFavour({ [c.house]: -10 }, "the royal host");
       record({ turn, kind: "battle", text: `The royal host breaks against the walls of ${cityName(c.city)}: ${why} ${houseFor(foe).name} holds, and the realm sees a King who can be refused.`, city: c.city });
+      continue;
     }
+    if (men === 0) continue;  // still on the road to the walls
+    // An assault this season: each royal company beside the walls strikes once and Freeciv decides.
+    send(`lua cmd ${Lua.assault(c.city, crown.id)}`);
+    c.assaults = (c.assaults ?? 0) + 1;
   }
   chron.saveMeta(meta);
 }

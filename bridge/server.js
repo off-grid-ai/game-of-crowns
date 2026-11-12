@@ -184,12 +184,13 @@ function load(id) {
   minds.catchUp(chronicle);
 }
 
-// A ceasefire between two houses in Freeciv itself. Its Lua and its server
-// commands can't change diplomacy, but its save holds it: save, set both
-// players' diplstate rows to "Cease-fire" with `turns` left, and resume from
-// that save. Freeciv then keeps it and ends it by itself.
-// pairs: [[houseA, houseB, seasons], ...], all written in one reload.
-async function ceasefire(pairs) {
+// Diplomacy between two houses in Freeciv itself, the bridge's one writer of it: the King's truce (a
+// ceasefire) and the King's march (war on the house he besieges). Freeciv 3.2's Lua and server commands
+// can't change diplomacy (3.3 adds Player:cancel_pact and add_love; docs/research/freeciv-leverage-2026-11-12.md),
+// but its save holds it: save, set both players' diplstate rows, and resume from that save. Freeciv then
+// keeps it (a ceasefire ends by itself; a war lasts until its AI makes peace).
+// pairs: [[houseA, houseB, seasons, state], ...] (state "Cease-fire", the default, or "War"), one reload.
+async function setDiplomacy(pairs) {
   if (!Freeciv.proc() || switching || !pairs.length) return false;
   switching = true;
   const t0 = Date.now();
@@ -198,31 +199,39 @@ async function ceasefire(pairs) {
     const save = newestSave();
     if (!save) return false;
     let text = zlib.zstdDecompressSync(fs.readFileSync(save)).toString();
-    for (const [a, b, turns = 16] of pairs) text = setDipl(setDipl(text, a, b, turns), b, a, turns);
-    const out = path.join(P.saves, `realm-T${String(world?.turn ?? 0).padStart(4, "0")}-ceasefire-${Date.now()}.sav.zst`);
+    for (const [a, b, turns = 16, state = "Cease-fire"] of pairs) text = setDipl(setDipl(text, a, b, turns, state), b, a, turns, state);
+    const out = path.join(P.saves, `realm-T${String(world?.turn ?? 0).padStart(4, "0")}-diplomacy-${Date.now()}.sav.zst`);
     fs.writeFileSync(out, zlib.zstdCompressSync(Buffer.from(text)));
     return true;
   } finally {
     startFreeciv();
     switching = false;
-    // The hitch: how long the realm was without Freeciv while the truce went in.
+    // The hitch: how long the realm was without Freeciv while the diplomacy went in.
     Freeciv.timeReload(t0);
   }
 }
 
-// Player p's diplstate toward player q, set to a ceasefire. Freeciv's AI keeps
-// its own war plan per rival (the "ai" table: love, spam, countdown,
-// war_reason, ...); left alone it declares war again on its first turn, so the
-// King's truce also drops the plan: no countdown, no reason (DAI_WR_NONE = 5).
-// The grudge stays, cooled a tenth: a truce stops the swords, not the hatred,
-// and war may come back when it ends.
-function setDipl(text, p, q, turns) {
+// A truce or a war, [houseA, houseB, seasons, state]: written now behind a sitting court, where the realm is
+// already held and the card covers the screen; otherwise it waits for the next sitting (court.js sends them).
+function diplomacyNow(pair) {
+  if (meta?.court?.sitting != null) setDiplomacy([pair]).catch((e) => console.log("diplomacy:", e.message));
+  else (meta.pendingDiplomacy ??= []).push(pair);
+}
+
+// Player p's diplstate toward player q. A ceasefire: Freeciv's AI keeps its own war plan per rival (the "ai"
+// table: love, spam, countdown, war_reason, ...); left alone it declares war again on its first turn, so the
+// King's truce also drops the plan: no countdown, no reason (DAI_WR_NONE = 5). The grudge stays, cooled a
+// tenth: a truce stops the swords, not the hatred, and war may come back when it ends. A war: the rows say
+// "War", and each side's AI fights it as its own.
+function setDipl(text, p, q, turns, state = "Cease-fire") {
+  const war = state === "War";
   text = editRow(text, p, "diplstate", q, (c) => {
-    c[0] = '"Cease-fire"';
-    c[1] = '"Cease-fire"';
-    c[3] = String(turns);
+    c[0] = war ? '"War"' : '"Cease-fire"';
+    c[1] = war ? '"War"' : '"Cease-fire"';
+    c[3] = war ? "0" : String(turns);
     c[4] = "0";
   });
+  if (war) return text;
   return editRow(text, p, "ai", q, (c) => {
     const love = Number(c[0]) || 0;
     c[0] = String(love < 0 ? Math.round(love * 0.9) : love);
@@ -514,13 +523,13 @@ async function talkToNamed(res, city, id, b) {
 // every call: getters for what the bridge reassigns (the sitting reads them
 // again after each await), setSitting for the hold.
 const sittingCtx = () => ({ get world() { return world; }, get meta() { return meta; }, get court() { return court; }, get counselNow() { return counselNow; },
-  get sitting() { return sitting; }, setSitting: (v) => { sitting = v; }, timeoutNow, send, record, scene, deed, crowns, marchOn, shiftAndTell, shiftFavour, favourOf, ceasefire, turnHouses, lapse, lapseOf });
+  get sitting() { return sitting; }, setSitting: (v) => { sitting = v; }, timeoutNow, send, record, scene, deed, crowns, marchOn, shiftAndTell, shiftFavour, favourOf, setDiplomacy, turnHouses, lapse, lapseOf });
 // A ruling on a petition, by option, and how the realm sees it (court.js).
 function rule(id, option) { return Sittings.rule(sittingCtx(), id, option); }
 
 // A town besieged, the royal host and its sieges: campaigns.js. Its context,
 // read fresh on every call; scenes is read live, as scene() may replace it.
-const campCtx = () => ({ world, meta, court, get scenes() { return scenes; }, send, record, scene, deed, shiftFavour, greatHouses, crownOf, favourOf, causeOf, SOLDIER });
+const campCtx = () => ({ world, meta, court, get scenes() { return scenes; }, send, record, scene, deed, shiftFavour, greatHouses, crownOf, favourOf, causeOf, SOLDIER, detail, diplomacy: diplomacyNow });
 // The fighting companies of other houses on the tiles around a town (campaigns.js).
 function besiegers(c) { return Camp.besiegers(campCtx(), c); }
 // A town besieged is seen, once a turn (campaigns.js).
@@ -625,7 +634,7 @@ function marksNow() {
 const seasonCtx = () => ({ get world() { return world; }, get meta() { return meta; }, get court() { return court; }, get stakes() { return stakes; }, get minds() { return minds; },
   get P() { return P; }, get favour() { return favour; }, get deeds() { return deeds; }, get blights() { return blights; }, setBlights: (v) => { blights = v; },
   favourWhy, favourPast, treasuryCtx, send, record, flushHeld, courtSeason, royalWorks, resolveCampaigns, favourOf, restingFavour, noteFavour, recordDeed,
-  causeOf, saveFavour, goalNow, sworn, shiftFavour, heardCtx, ceasefire, snapshot, runArcs, addMark, detail, marksNow, besiegers, startCampaign });
+  causeOf, saveFavour, goalNow, sworn, shiftFavour, heardCtx, setDiplomacy, diplomacy: diplomacyNow, snapshot, runArcs, addMark, detail, marksNow, besiegers, startCampaign });
 function runSeason() { return Season.runSeason(seasonCtx()); }
 function turnHouses(turn) { return Season.turnHouses(seasonCtx(), turn); }
 function storyMarch(pid, size) { return Season.storyMarch(seasonCtx(), pid, size); }

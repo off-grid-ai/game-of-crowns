@@ -32,9 +32,9 @@ export function newestSave(saves, kind = "") {
     savesSeen.dir = saves;
     savesSeen.mtime = mtime;
   }
-  // An autosave, or the King's truce save written in its place (the newer of
+  // An autosave, or the King's diplomacy save (a truce, a war) written in its place (the newer of
   // the two is the realm as Freeciv now holds it, wars and all).
-  const hit = savesSeen.list.find((x) => x.f.includes(kind) || (kind === "auto" && x.f.includes("ceasefire")));
+  const hit = savesSeen.list.find((x) => x.f.includes(kind) || (kind === "auto" && x.f.includes("diplomacy")));
   return hit ? path.join(saves, hit.f) : null;
 }
 
@@ -98,8 +98,8 @@ export function stop() {
 // Logs once Freeciv answers on its port again, counted from t0.
 export function timeReload(t0) {
   const probe = () => {
-    const c = net.connect(FC_PORT, "127.0.0.1", () => { c.destroy(); console.log(`ceasefire reload: ${Date.now() - t0} ms`); });
-    c.on("error", () => (Date.now() - t0 < 120000 ? setTimeout(probe, 100) : console.log("ceasefire reload: no answer in 120 s")));
+    const c = net.connect(FC_PORT, "127.0.0.1", () => { c.destroy(); console.log(`diplomacy reload: ${Date.now() - t0} ms`); });
+    c.on("error", () => (Date.now() - t0 < 120000 ? setTimeout(probe, 100) : console.log("diplomacy reload: no answer in 120 s")));
   };
   probe();
 }
