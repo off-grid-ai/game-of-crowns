@@ -121,6 +121,12 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 17:25 (11-12) Round 13 sent (/tmp/goc-focus/r13): LIGHT PASS (mean 0.43, sat 0.466), 0 script errors. Wrong: square
+  too big/empty (fire-siege: tighten to 01-town), 18 people inside things, several parked at (0,0) (town-life),
+  navprobe empty map from blocks not water (army-ui), dclick pans rather than steps in (army-ui). Landed since:
+  puddles off paving bc1c3500, wind read 2fae6748, cobbles true size 2cb050a2, kerb 91ee9fb2, soldiers a tenth and
+  spaced 160e97bd (Mac: "let's see how that looks"), smith at the open front 3e7c8019, pen fit f0ed7cc8, bake-off
+  retired 8e0a6021 (pick: current tree). Round 14 with the battle rendering.
 - 17:40 (11-12) Mac: "i'm ok to reduce the soliders to 1/10th of the current" (round 12 field battle: 560 men, 1-6 fps).
   Army layer: one drawn soldier per ten, one ratio in army.json for every regiment, muster, battle, storm, siege; the
   UI keeps full strength; fps before/after. Round 12 sent to Mac beside his "super weird" shot. Ground truth on the
