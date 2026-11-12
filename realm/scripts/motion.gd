@@ -24,7 +24,7 @@ extends AnimationTree
 ## is its own node with its own loop setting: the shared clips are never changed.
 
 static var XFADE: float = preload("res://scripts/data.gd").num("people", "steer.xfade", 0.2)  # between moves (people.json steer.xfade; Mac: changes of action must blend, never snap)
-const XFADE_HIT := 0.1  # into a blow, a reel or a fall: fast, it's a shock
+static var XFADE_HIT: float = preload("res://scripts/data.gd").num("people", "motion.xfade_hit", 0.1)  # (people.json motion.xfade_hit) into a blow, a reel or a fall: fast, it's a shock
 # Moves that are one-off by nature. Everything else loops.
 const ONCE := ["Sword_Attack", "SS_Slash", "SS_Attack", "SS_Kick", "SS_Block_1", "SS_Block_2", "SS_Impact",
 	"GS_Attack", "GS_Slash", "GS_Kick", "GS_Block_1", "GS_Impact", "GS_Spin",
@@ -40,7 +40,7 @@ const WALKS := ["Walk", "SS_Walk", "GS_Walk", "Axe_Walk", "Injured_Walk", "Sneak
 const WALK_PACE := 0.17  # world units a second the Walk clip covers (people.gd WALK_PACE)
 const RUN_PACE := 0.45  # and Running (people.gd RUN_PACE)
 const MOVING := WALK_PACE * 0.5  # steadier than this is going somewhere
-const SETTLE := 0.3  # seconds moving, or still, before a standing move gives way or comes back
+static var SETTLE: float = preload("res://scripts/data.gd").num("people", "motion.settle", 0.3)  # (people.json motion.settle) seconds moving, or still, before a standing move gives way or comes back
 ## The body above the hips, for a gesture over the legs (with ARMS).
 const UPPER := ["Spine", "Chest", "UpperChest", "Neck", "Head"]
 const STATES := ["loop_a", "loop_b", "once_a", "once_b", "hold_a", "hold_b", "rest"]
@@ -54,7 +54,7 @@ const CARRIES := ["Carrying", "Box_Idle", "Carry_Walk"]
 ## standing move the body rises through Getting_Up, never a crossfade that pops.
 const LOW := ["Fixing_Kneeling", "Interact", "Kneeling", "Praying", "Planting", "Dig_And_Plant", "Sitting_Ground", "Sitting_Cross_Legged",
 	"Sitting_Idle", "Sitting_Drinking", "Sitting_Talking", "Sleeping_Idle", "Defeated", "Milking"]
-const XFADE_STAND := 0.45  # between two standing moves, slow enough that feet planted apart don't skid across
+static var XFADE_STAND: float = preload("res://scripts/data.gd").num("people", "motion.xfade_stand", 0.45)  # (people.json motion.xfade_stand) between two standing moves, slow enough that feet planted apart don't skid across
 const ARMS := ["LeftShoulder", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightShoulder", "RightUpperArm", "RightLowerArm", "RightHand",
 	"LeftThumbMetacarpal", "LeftThumbProximal", "LeftThumbDistal", "LeftIndexProximal", "LeftIndexIntermediate", "LeftIndexDistal",
 	"LeftMiddleProximal", "LeftMiddleIntermediate", "LeftMiddleDistal", "LeftRingProximal", "LeftRingIntermediate", "LeftRingDistal",
@@ -73,9 +73,9 @@ var strides := {}
 var _sk: Node3D = null  # the body's skeleton, whose size in the world sizes the stride
 var _sk_scale := 0.0  # that size along its walk when the legs' points were last set
 const TURN_RATE := deg_to_rad(300.0)  # how fast a person turns on the spot or mid-stride (about a full turn in 1.2 s)
-const TURN_EASE := 6.0  # how quickly a turn settles (per second): a small one eases, a big one hits TURN_RATE
-const STEP_FLOOR := 0.35  # the slowest cadence a moving walk plays at, of its own speed
-const STEP_CEIL := 1.35  # the quickest: past it the walk breaks into the run (a child keeping a grown pace walks briskly, it doesn't half-run)
+static var TURN_EASE: float = preload("res://scripts/data.gd").num("people", "motion.turn_ease", 6.0)  # (people.json motion.turn_ease) how quickly a turn settles (per second): a small one eases, a big one hits TURN_RATE
+static var STEP_FLOOR: float = preload("res://scripts/data.gd").num("people", "motion.step_floor", 0.35)  # (people.json motion.step_floor) the slowest cadence a moving walk plays at, of its own speed
+static var STEP_CEIL: float = preload("res://scripts/data.gd").num("people", "motion.step_ceil", 1.35)  # (people.json motion.step_ceil) the quickest: past it the walk breaks into the run (a child keeping a grown pace walks briskly, it doesn't half-run)
 
 var speed := 1.0  # how fast the current move plays (anim_lod.gd advances by delta * speed)
 var _clip := ""  # the move now playing

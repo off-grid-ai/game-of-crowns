@@ -81,5 +81,6 @@
   "lod": {"near": 6.0, "stride": 3, "mind_unseen": 10, "mind_lag": 0.25},
   "_seen_to": "seen_to: world units beyond which a person isn't drawn or animated (a few pixels tall). near_fade: within gone of the lens a person is gone, beyond solid fully there (about 0.7 m and 1.5 m).",
   "seen_to": 18.0,
-  "near_fade": {"gone": 0.08, "solid": 0.18}
+  "near_fade": {"gone": 0.08, "solid": 0.18},
+  "motion": {"_": "How a body moves between its clips (motion.gd): xfade_hit, seconds into a blow, a reel or a fall; settle, seconds moving or still before a standing move gives way or comes back; xfade_stand, seconds between two standing moves; turn_ease, how quickly a turn settles (per second); step_floor and step_ceil, the slowest and quickest cadence a moving walk plays at, of its own speed (past step_ceil it breaks into the run).", "xfade_hit": 0.1, "settle": 0.3, "xfade_stand": 0.45, "turn_ease": 6.0, "step_floor": 0.35, "step_ceil": 1.35}
 }

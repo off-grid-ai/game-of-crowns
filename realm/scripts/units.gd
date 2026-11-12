@@ -51,7 +51,7 @@ const BOWS := ["Archers", "Longbowmen", "Crossbowmen"]
 const BEASTS := ["Bear", "Wolf", "Lion", "Tiger", "Elephant", "Crocodile", "Polar Bear", "Snake", "Mammoth", "Jaguar", "Kraken", "Giant Squid", "Dragon", "Monkey", "Moose", "Deer", "Buffalo"]
 
 
-const MARCH_SPEED := 0.22  # world units a second: a soldier's steady march, a little brisker than a townsman's walk
+static var MARCH_SPEED: float = preload("res://scripts/data.gd").num("army", "map.march_speed", 0.22)  # (army.json map.march_speed) world units a second: a soldier's steady march, a little brisker than a townsman's walk
 
 func _ready() -> void:
 	if towns == null:
@@ -168,7 +168,7 @@ func sync(houses: Dictionary) -> void:
 
 
 ## Hit points at or under which a company looks wounded (most units have 10 or 20).
-const WOUNDED_HP := 4.0
+static var WOUNDED_HP: float = preload("res://scripts/data.gd").num("army", "map.wounded_hp", 4.0)  # (army.json map.wounded_hp)
 ## Freeciv's unit activities for a company dug in: fortified (4) and fortifying (10).
 const FORTIFIED := [4, 10]
 

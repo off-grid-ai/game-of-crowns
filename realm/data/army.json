@@ -163,5 +163,6 @@
       "go": [["stand", "march", "march"], ["march", "stand", "there"]]
     }
   },
- "steer": {"_": "A fighter steering toward a moving mark (mover.gd toward): lapse, seconds unasked before he stands (his mind moved on, or he fell); reroute, seconds between asking the fight's ground afresh for a way to a mark that keeps moving.", "lapse": 0.2, "reroute": 0.5}
+ "steer": {"_": "A fighter steering toward a moving mark (mover.gd toward): lapse, seconds unasked before he stands (his mind moved on, or he fell); reroute, seconds between asking the fight's ground afresh for a way to a mark that keeps moving.", "lapse": 0.2, "reroute": 0.5},
+  "map": {"_": "The companies on the map (units.gd): march_speed, world units a second at most a company's figure marches at (a soldier's steady march); wounded_hp, hit points at or under which a company looks wounded.", "march_speed": 0.22, "wounded_hp": 4.0}
 }

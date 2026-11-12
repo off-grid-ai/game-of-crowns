@@ -23,5 +23,6 @@
     "rough": { "Forest": 12.0, "Jungle": 12.0, "Swamp": 8.0, "Hills": 4.0, "Mountains": 50.0, "Glacier": 50.0 } },
   "crowd_seen": 24.0,
   "blood_stains": 40,
-  "combat": {"reach": 0.16, "arc": 0.75, "follow": 0.4, "dodge": 0.6, "hurt_for": 12.0, "weak": 35.0}
+  "combat": {"reach": 0.16, "arc": 0.75, "follow": 0.4, "dodge": 0.6, "hurt_for": 12.0, "weak": 35.0},
+  "skirmish": { "ranks": 3, "files": 9, "gap": 0.2, "row": 0.2, "reach": 0.11, "knights": 5, "field": 3.4 }
 }

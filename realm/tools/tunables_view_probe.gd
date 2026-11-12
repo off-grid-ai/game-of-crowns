@@ -42,6 +42,16 @@ const MOVED := [
 	["weather_fx", "RAIN_DROPS", "weather", "drops.rain"],
 	["weather_fx", "SNOW_FLAKES", "weather", "drops.snow"],
 	["weather_fx", "PREVAILING_FROM", "weather", "prevailing_from"],
+	["army_skirmish", "ROW", "battle", "skirmish.row"],
+	["army_skirmish", "SPAN", "battle", "skirmish.span"],
+	["motion", "XFADE_HIT", "people", "motion.xfade_hit"],
+	["motion", "SETTLE", "people", "motion.settle"],
+	["motion", "XFADE_STAND", "people", "motion.xfade_stand"],
+	["motion", "TURN_EASE", "people", "motion.turn_ease"],
+	["motion", "STEP_FLOOR", "people", "motion.step_floor"],
+	["motion", "STEP_CEIL", "people", "motion.step_ceil"],
+	["units", "MARCH_SPEED", "army", "map.march_speed"],
+	["units", "WOUNDED_HP", "army", "map.wounded_hp"],
 ]
 
 

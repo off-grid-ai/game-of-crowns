@@ -12,8 +12,8 @@ static var BREAK := Data.num("battle", "breakAt", 0.55)  # the beaten side runs 
 static var LONGEST := Data.num("battle", "longest", 18.0)  # or after this long at blows, whatever is left
 static var RIDE := Data.num("battle", "charge.ride", 0.85)  # a knight's charge (Horse.GALLOP is 0.9)
 static var PASSES := int(Data.num("battle", "charge.passes", 3))
-const ROW := 0.2
-const SPAN := 7.0  # the field's ground reaches this far round the clash: the lines, the knights' wing, the rout
+static var ROW: float = preload("res://scripts/data.gd").num("battle", "skirmish.row", 0.2)  # units between ranks of a line in a skirmish (battle.json skirmish.row)
+static var SPAN: float = preload("res://scripts/data.gd").num("battle", "skirmish.span", 7.0)  # (battle.json skirmish.span) the field's ground reaches this far round the clash: the lines, the knights' wing, the rout
 
 var at: Vector3
 var dir: Vector3  # the victors (team 1) advance along +dir
