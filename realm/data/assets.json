@@ -7,21 +7,15 @@
     
     "tree_range": [8, 14],
     "kit": {
-      "pine": { "models": ["nature/Pine_1.gltf", "nature/Pine_2.gltf", "nature/Pine_3.gltf", "nature/Pine_4.gltf", "nature/Pine_5.gltf"], "height": 12.0 },
-      "oak": { "models": ["nature/CommonTree_1.gltf", "nature/CommonTree_2.gltf", "nature/CommonTree_3.gltf", "nature/CommonTree_4.gltf", "nature/CommonTree_5.gltf", "nature/TwistedTree_1.gltf", "nature/TwistedTree_3.gltf"], "height": 10.5 },
-      "bush": { "models": ["nature/Bush_Common.gltf", "nature/Bush_Common_Flowers.gltf"], "height": 1.6 },
+      "pine": { "models": ["meshy/nt_pine_a/nt_pine_a.glb", "meshy/nt_pine_b/nt_pine_b.glb"], "height": 12.0 },
+      "oak": { "models": ["meshy/nt_oak_a/nt_oak_a.glb", "meshy/nt_oak_b/nt_oak_b.glb"], "height": 10.5 },
+      "bush": { "models": ["meshy/nt_bush/nt_bush.glb"], "height": 1.6 },
       "young": 0.65,
       "sapling": 0.35,
-      "_leaves": "leaf_texture: a kit leaf material's texture swapped by name (the twisted tree's leaves are painted solid red and read as red blobs; they take the common tree's green and turn with the season). seasons: by model file, the tint over its summer colour each season (forest.gd _leaves, terrain.gd's season pass), so a wood turns as a mix (art target 01-town: mostly deep green, some ochre, amber and rust; two of the seven broadleaf kinds turn amber or rust, one ochre-green, the rest stay green: from mid zoom the woods read green with warm accents, not red and orange dots); a model not listed takes the land's season tint.",
-      "leaf_texture": { "Leaves_TwistedTree": "nature/Leaves_NormalTree_C.png" },
+      "_leaves": "The nature set (docs/art/nature; the look audit's fix plan 3): each role a list of models, any of them picked per tree (pine: nt_pine_a, nt_pine_b; oak: nt_oak_a, nt_oak_b; bush: nt_bush; another model slots in by adding it to its list). Every model has its leaves in their own material, MI_Leaves, which the season tints (terrain.gd's season pass; forest.gd _leaves names the leaves of a pine \"pine\", the rest \"leaves\"); the trunks keep their paint. seasons: by model file, a tint over its summer colour that replaces the season's own for that model, so a wood turns as a mix (art target 01-town: mostly deep green, some ochre and amber); a model not listed takes the season's tint for its kind.",
       "seasons": {
-        "nature/CommonTree_1.gltf": { "autumn": [0.82, 0.95, 0.78] },
-        "nature/CommonTree_2.gltf": { "autumn": [0.78, 0.92, 0.72] },
-        "nature/CommonTree_3.gltf": { "autumn": [1.1, 0.96, 0.62] },
-        "nature/CommonTree_4.gltf": { "autumn": [0.88, 0.97, 0.8] },
-        "nature/CommonTree_5.gltf": { "autumn": [1.35, 0.92, 0.5] },
-        "nature/TwistedTree_1.gltf": { "autumn": [1.5, 0.75, 0.4] },
-        "nature/TwistedTree_3.gltf": { "autumn": [0.8, 0.93, 0.75] }
+        "meshy/nt_oak_a/nt_oak_a.glb": { "autumn": [1.15, 0.94, 0.58] },
+        "meshy/nt_oak_b/nt_oak_b.glb": { "autumn": [0.85, 0.96, 0.76] }
       }
     }
   },
@@ -80,8 +74,8 @@
     "alehouse": {"heightRange": [4, 14], "kind": "inn", "variants": [], "trade": "alehouse", "work_front": {"door": [0, 0.3], "bench_a": [1.9, 0.9], "barrels": [-1.9, 0.9]}},
     "guild_hall": {"heightRange": [9, 20], "kind": "guild", "variants": [], "trade": "guild", "work_front": {"door": [0, -0.6], "arcade_a": [-1.5, -1.0], "arcade_b": [1.5, -1.0]}},
     "low_wall": { "heightRange": [0.6, 1.6], "kind": "fence", "variants": [ { "name": "kit_low_wall", "builder": "house", "spec": { "pieces": [ ["Wall_UnevenBrick_Straight", [0, 0, 0], 0, [1, 0.36, 1]] ] } } ] },
-    "town_tree": { "heightRange": [6, 13], "kind": "garden", "variants": [ { "model": "nature/CommonTree_1.gltf", "name": "town_tree_1", "length": 4.3, "height": 9.0 }, { "model": "nature/CommonTree_2.gltf", "name": "town_tree_2", "length": 4.3, "height": 10.0 }, { "model": "nature/CommonTree_3.gltf", "name": "town_tree_3", "length": 4.1, "height": 11.0 }, { "model": "nature/CommonTree_4.gltf", "name": "town_tree_4", "length": 4.3, "height": 9.0 }, { "model": "nature/CommonTree_5.gltf", "name": "town_tree_5", "length": 4.3, "height": 10.0 } ] },
-    "orchard_tree": { "heightRange": [3.5, 7], "kind": "garden", "variants": [ { "model": "nature/CommonTree_1.gltf", "name": "orchard_tree_1", "length": 4.3, "height": 5.0 }, { "model": "nature/CommonTree_3.gltf", "name": "orchard_tree_3", "length": 4.1, "height": 5.5 }, { "model": "nature/CommonTree_5.gltf", "name": "orchard_tree_5", "length": 4.3, "height": 5.0 } ] },
+    "town_tree": {"heightRange": [6, 13], "kind": "garden", "variants": [{"model": "meshy/nt_oak_a/nt_oak_a.glb", "name": "town_tree_1", "length": 9.9, "height": 9.0}, {"model": "meshy/nt_oak_b/nt_oak_b.glb", "name": "town_tree_2", "length": 6.5, "height": 10.0}, {"model": "meshy/nt_oak_b/nt_oak_b.glb", "name": "town_tree_3", "length": 7.2, "height": 11.0}, {"model": "meshy/nt_oak_a/nt_oak_a.glb", "name": "town_tree_4", "length": 11.0, "height": 10.0}]},
+    "orchard_tree": {"heightRange": [3.5, 7], "kind": "garden", "variants": [{"model": "meshy/nt_oak_a/nt_oak_a.glb", "name": "orchard_tree_1", "length": 5.5, "height": 5.0}, {"model": "meshy/nt_oak_b/nt_oak_b.glb", "name": "orchard_tree_2", "length": 3.6, "height": 5.5}]},
     "garden_hedge": { "heightRange": [0.8, 1.8], "kind": "garden", "variants": [ { "model": "nature/Bush_Common_Flowers.gltf", "name": "garden_hedge", "length": 1.6, "height": 1.2 } ] },
     "garden_flowers": { "heightRange": [0.4, 1.5], "kind": "garden", "variants": [ { "model": "nature/Bush_Common_Flowers.gltf", "name": "garden_flowers", "length": 1.2, "height": 1.0 }, { "model": "nature/Flower_4_Group.gltf", "name": "garden_flowers_2", "length": 0.9, "height": 0.7 } ] },
     "yard_shed": { "heightRange": [1.5, 3.5], "kind": "yard", "variants": [ { "name": "kit_yard_shed", "builder": "house", "spec": { "pieces": [
@@ -164,8 +158,8 @@
     "square_cottage": { "heightRange": [4, 9], "kind": "house", "variants": [] },
     "square_merchant": { "heightRange": [8, 15], "kind": "house", "variants": [] },
     "castle_rock": { "heightRange": [0.5, 5.0], "kind": "rock", "variants": [ { "model": "nature/Rock_Medium_1.gltf", "name": "castle_rock_1", "length": 3.2 }, { "model": "nature/Rock_Medium_3.gltf", "name": "castle_rock_3", "length": 3.0 } ] },
-    "castle_cypress": { "heightRange": [3.0, 10.0], "kind": "tree", "variants": [ { "model": "nature/Pine_3.gltf", "name": "castle_cypress", "length": 2.6, "height": 7.0 } ] },
-    "castle_shrub": { "heightRange": [0.4, 2.0], "kind": "garden", "variants": [ { "model": "nature/Bush_Common.gltf", "name": "castle_shrub", "length": 1.6, "height": 1.2 } ] },
+    "castle_cypress": {"heightRange": [3.0, 10.0], "kind": "tree", "variants": [{"model": "nature/kaykit/Tree_4_A_Color1.gltf", "name": "castle_cypress", "length": 2.48, "height": 7.0, "dye": {"forest": {"sway": 0.02, "texture": "res://assets/nature/kaykit/forest_painted.png", "leaf_deep": [0.07, 0.12, 0.06], "leaf_mid": [0.12, 0.21, 0.09], "leaf_warm": [0.2, 0.3, 0.12], "leaf_sun": [0.32, 0.4, 0.17]}}}]},
+    "castle_shrub": {"heightRange": [0.4, 2.0], "kind": "garden", "variants": [{"model": "meshy/nt_bush/nt_bush.glb", "name": "castle_shrub", "length": 1.7, "height": 1.2}]},
     "smithy_barrel": { "heightRange": [0.6, 1.3], "kind": "prop", "variants": [ { "model": "props/Barrel.gltf", "name": "props/Barrel", "length": 0.8, "height": 0.95 } ] },
     "smithy_rack": { "heightRange": [0.8, 1.6], "kind": "prop", "variants": [ { "model": "props/WeaponStand.gltf", "name": "props/WeaponStand", "length": 1.4 } ] },
     "lamp_post": { "heightRange": [1.6, 3], "kind": "roadprop", "variants": [ { "model": "town/lantern.glb", "name": "town/lantern", "length": 0.35, "height": 2.2 } ] },

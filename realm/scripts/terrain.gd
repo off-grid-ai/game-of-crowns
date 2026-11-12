@@ -162,14 +162,13 @@ func set_season(name: String, towns: Array = [], settle := 10.0) -> void:
 			var mat := mesh.surface_get_material(i) as StandardMaterial3D
 			if mat == null:
 				continue
-			var n := mat.resource_name
-			var key := "pine" if n == "Leaves_Pine" else ("grass" if n == "Grass" else ("leaves" if n.begins_with("Leaves") else ""))
+			var key := String(mat.get_meta("leaf", ""))  # a nature-set model's leaves, by kind (forest.gd leaves)
 			if key == "":
 				continue
 			if not _leaf_mats.has(mat):
 				_leaf_mats[mat] = mat.albedo_color
 			# Leaves turn and grass dulls over the settle, never in a frame.
-			# A kit tree with its own turn (forest.gd _leaves, assets.json woods.kit.seasons) takes that instead.
+			# A tree with its own turn (forest.gd leaves, assets.json woods.kit.seasons) takes that instead.
 			var tint: Color = (mat.get_meta("seasons", {}) as Dictionary).get(name, s[key])
 			create_tween().tween_property(mat, "albedo_color", _leaf_mats[mat] * tint, settle)
 			_leaf_snow(mat, key != "grass" and s["snow"] > 0.0)

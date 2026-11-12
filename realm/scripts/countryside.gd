@@ -16,7 +16,7 @@ var roads: Node3D
 var towns: Node3D  # the towns, for their squares, lanes and doors (found beside us if unset)
 var land_use: Node3D  # the towns' worked fields (land_use.gd): no tufts on them
 var _bush: Mesh
-var _fruit: Array = []  # orchard trees: the nature kit's broadleaf, grown small
+var _fruit: Array = []  # orchard trees: the catalogue's orchard_tree (the nature set's oaks, data/assets.json), grown small
 var _field_tex := ["res://assets/ground/field-wheat.jpg", "res://assets/ground/field-green.jpg", "res://assets/ground/field-fallow.jpg"]
 
 var _realm := ""  # the realm the farm sites were surveyed for
@@ -64,8 +64,8 @@ func _update(cities: Array) -> void:
 	if _bush == null:
 		# The hedgerows' bush: the painted ground's fuller hedge (catalogue hedge_painted).
 		_bush = preload("res://scripts/house_builder.gd").new().bake_path(Real.path_of("hedge_painted"))
-		for t in ["CommonTree_2", "CommonTree_4"]:
-			_fruit.append(preload("res://scripts/house_builder.gd").new().bake_path("res://assets/nature/%s.gltf" % t))
+		for i in Real.variants("orchard_tree").size():
+			_fruit.append(preload("res://scripts/house_builder.gd").new().bake_path(Real.path_of("orchard_tree", i)))
 	var realm := _realm_now()
 	if realm != _realm:
 		# A new realm: survey its open land once for where farms can stand.
@@ -215,7 +215,9 @@ func _raise(key: String, farms: Array, sig: String) -> void:
 	add_child(node)
 	var hedges: Array = []
 	var steads: Array = []
-	var trees: Array = [[], []]
+	var trees: Array = []
+	for v in _fruit:
+		trees.append([])
 	for f in farms:
 		var site: Dictionary = f[0]
 		var rng := RandomNumberGenerator.new()
@@ -296,8 +298,8 @@ func _farmstead(node: Node3D, at: Vector3, rng: RandomNumberGenerator, hedges: A
 				var t: Vector3 = o + side * (c - 1) * 0.42 + face * (r - 1) * -0.42 + Vector3(rng.randf_range(-0.05, 0.05), 0, rng.randf_range(-0.05, 0.05))
 				if not terrain.is_land(t.x, t.z):
 					continue
-				var k := S * rng.randf_range(0.45, 0.6)
-				trees[rng.randi() % 2].append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(k, k * rng.randf_range(0.85, 1.1), k)), Vector3(t.x, terrain.height_at(t.x, t.z) - 0.02, t.z)))
+				var k := S * rng.randf_range(0.38, 0.5)  # 4-5.4 m (the oaks are about 10.5 m at scale 1), narrowed across so a row's crowns just touch
+				trees[rng.randi() % _fruit.size()].append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(k * 0.75, k * rng.randf_range(0.85, 1.1), k * 0.75)), Vector3(t.x, terrain.height_at(t.x, t.z) - 0.02, t.z)))
 		yard.append([o, 0.6])
 	# Now and then a mill, where the farms around bring their grain.
 	if rng.randf() < 0.08 and Real.footprint(Real.one("mill")) != Vector2.ZERO:
@@ -675,8 +677,8 @@ var _grass_sig := ""
 var _tuft_meshes: Array = []
 ## The nature kit's low plants, and how often each grows: mostly grass, with
 ## clover and wildflowers among it.
-const TUFTS := ["Grass_Common_Short", "Grass_Wispy_Short", "Clover_1", "Flower_3_Group"]
-const TUFT_ODDS := [0.58, 0.3, 0.08, 0.04]
+const TUFTS := ["meshy/nt_grass_clump/nt_grass_clump.glb", "nature/Clover_1.gltf", "nature/Flower_3_Group.gltf"]  # under assets/: the nature set's grass clump (0.5 m at scale 1), clover, flowers
+const TUFT_ODDS := [0.88, 0.08, 0.04]
 static var TUFT_REACH: float = preload("res://scripts/data.gd").num("countryside", "tuft_reach", 22.0)  # drawn only this near the camera
 const PLANT_WIND := preload("res://scripts/plant_wind.gdshader")
 
@@ -703,8 +705,8 @@ func _grass(cities: Array) -> void:
 		var builder = preload("res://scripts/house_builder.gd").new()
 		for n in TUFTS:
 			var plants: Dictionary = preload("res://scripts/data.gd").value("weather", "plants", {})
-			var bury := float(plants.get("flowers", 1.0)) if n.begins_with("Flower") or n.begins_with("Clover") else float(plants.get("grass", 0.6))
-			_tuft_meshes.append(_windy(builder.bake_path("res://assets/nature/%s.gltf" % n), bury))
+			var bury := float(plants.get("flowers", 1.0)) if n.begins_with("nature/Flower") or n.begins_with("nature/Clover") else float(plants.get("grass", 0.6))
+			_tuft_meshes.append(_windy(builder.bake_path("res://assets/" + n), bury))
 	if _grass_root == null or not is_instance_valid(_grass_root):
 		_grass_nodes.clear()  # a new realm took the old batches with it
 		_grass_sig = ""

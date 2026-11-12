@@ -39,7 +39,10 @@ func build() -> Array:
 	for k in kinds:
 		meshes[k] = []
 		for name in kinds[k]:
-			meshes[k].append(builder.bake_path("res://assets/" + String(name)))
+			var mesh: Mesh = builder.bake_path("res://assets/" + String(name))
+			for si in (mesh.get_surface_count() if mesh else 0):  # the nature set's leaves turn with the season (forest.gd leaves)
+				mesh.surface_set_material(si, preload("res://scripts/forest.gd").leaves(mesh.surface_get_material(si), "res://assets/" + String(name), "grass" if k == "grass" else "leaves"))
+			meshes[k].append(mesh)
 			placed["%s:%d" % [k, meshes[k].size() - 1]] = []
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 42

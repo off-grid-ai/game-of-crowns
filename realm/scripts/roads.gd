@@ -7,6 +7,7 @@ const Awareness := preload("res://scripts/awareness.gd")  # the view's one store
 const Units := preload("res://scripts/world_units.gd")  # the world's one scale (Units.M): the verge plants' size
 var TEX: String = preload("res://scripts/terrain.gd").art("res://assets/ground/road-dirt.jpg", "res://assets/ground/dirt-albedo.jpg")
 static var WIDTH: float = preload("res://scripts/data.gd").num("ground", "roads.width", 0.26)
+static var BUSH: String = "res://assets/" + String((preload("res://scripts/data.gd").value("forest", "cover.bush", [""]) as Array)[0])  # the verge's bush: the woods' own (data/forest.json cover.bush)
 
 
 
@@ -243,14 +244,14 @@ func _plant_verges() -> void:
 		if not town and not on_path(q, 0.05):
 			kept.append(Vector3(q.x, terrain.height_at(q.x, q.z), q.z))
 	var builder = preload("res://scripts/house_builder.gd").new()
-	var bushes := [builder.bake_path("res://assets/nature/Plant_1.gltf"), builder.bake_path("res://assets/nature/Fern_1.gltf"), builder.bake_path("res://assets/nature/Plant_7.gltf")]
-	var groups := [[], [], []]
+	var bushes := [builder.bake_path(BUSH)]  # the nature set's bush (data/forest.json cover.bush), one batch
+	var groups := [[]]
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
 	for p in kept:
-		var k := Units.M * rng.randf_range(0.7, 1.4)
-		groups[rng.randi() % 3].append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(k, k * rng.randf_range(0.8, 1.3), k)), p - Vector3(0, 0.02, 0)))
-	for i in 3:
+		var k := Units.M * rng.randf_range(0.5, 1.0)  # 0.8-1.7 m: nt_bush is 1.69 m at scale 1
+		groups[0].append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(k, k * rng.randf_range(0.8, 1.3), k)), p - Vector3(0, 0.02, 0)))
+	for i in groups.size():
 		if groups[i].is_empty():
 			continue
 		var mm := MultiMesh.new()

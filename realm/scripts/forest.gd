@@ -1,5 +1,5 @@
 extends Node3D
-## Woods of Quaternius' Stylized Nature pines, oaks and bushes (the painted look; realm/data/assets.json woods.kit),
+## Woods of the nature set's pines, oaks and bushes (docs/art/nature, the painted look; realm/data/assets.json woods.kit),
 ## drawn in blocks of land, each with its near, middle and far batches switched by distance on the GPU (Godot's
 ## import-made detail levels lighten them), so a realm-wide forest costs little. Tree positions come from terrain.gd's
 ## woodland noise.
@@ -8,7 +8,7 @@ const Units := preload("res://scripts/world_units.gd")  # the world's one scale 
 const Real := preload("res://scripts/realistic.gd")  # the asset catalogue (realm/data/assets.json)
 const Data := preload("res://scripts/data.gd")
 ## The kit's kinds, from data alone (the pickers run before any mesh loads):
-## [file, scale on its true height] per kind, and role -> [first kind, count].
+## [file, scale on its true height, role] per kind, and role -> [first kind, count]: a role is a list of models.
 static var _kit: Array = []
 static var _roles := {}
 static var _kit_read := _kit_layout()
@@ -38,7 +38,7 @@ static func _kit_layout() -> bool:
 		for t in tiers:
 			_roles[role + String(t[0])] = [_kit.size(), (r.get("models", []) as Array).size()]
 			for m in r.get("models", []):
-				_kit.append(["res://assets/" + String(m), float(r.get("height", 10.0)) * float(t[1])])
+				_kit.append(["res://assets/" + String(m), float(r.get("height", 10.0)) * float(t[1]), role])
 	return true
 
 
@@ -190,7 +190,7 @@ func _load_kit() -> void:
 			if mesh:
 				for si in mesh.get_surface_count():
 					if mesh.surface_get_material(si):
-						mesh.surface_set_material(si, _leaves(_cutout(mesh.surface_get_material(si)), path))  # leaves cut out; a crown at the lens dissolves
+						mesh.surface_set_material(si, leaves(_cutout(mesh.surface_get_material(si)), path, "pine" if kd[2] == "pine" else "leaves"))  # a crown at the lens dissolves; its leaves turn with the season
 			baked[path] = mesh
 		var mesh: Mesh = baked[path]
 		_full.append(mesh)
@@ -201,23 +201,18 @@ func _load_kit() -> void:
 		_kscale.append(float(kd[1]) / h if h > 0.0 else 1.0)
 
 
-## A kit tree's leaves as its own (data/assets.json woods.kit; art target 01-town): a leaf texture swapped
-## by material name (leaf_texture: the twisted tree's are painted solid red, which read as red blobs), and
-## its own colour per season (seasons: by model file, a tint over its summer colour, which terrain.gd's
-## season pass takes instead of the land's), so a wood turns as a mix: mostly deep green, some ochre,
-## amber and rust. A tree with neither keeps the shared material.
-func _leaves(mat: Material, path: String) -> Material:
+## A nature-set model's leaves (its MI_Leaves material, docs/art/nature) marked for terrain.gd's season pass: `kind`
+## names the season's tint it takes ("leaves", "pine", "grass": terrain.gd SEASONS), and a model with its own turn
+## (data/assets.json woods.kit.seasons, by model file) carries that instead, so a wood turns as a mix: mostly deep
+## green, some ochre and amber (art target 01-town). The trunk's material is left as it is. Any other material passes.
+## The one marker of leaves: the woods here, the ground cover in vegetation.gd.
+static func leaves(mat: Material, path: String, kind: String) -> Material:
 	var m := mat as BaseMaterial3D
-	if m == null or not m.resource_name.begins_with("Leaves"):
-		return mat
-	var kit: Dictionary = Data.value("assets", "woods.kit", {})
-	var swap := String((kit.get("leaf_texture", {}) as Dictionary).get(m.resource_name, ""))
-	var tints: Dictionary = (kit.get("seasons", {}) as Dictionary).get(path.trim_prefix("res://assets/"), {})
-	if swap == "" and tints.is_empty():
+	if m == null or not m.resource_name.begins_with("MI_Leaves"):
 		return mat
 	var c: BaseMaterial3D = m.duplicate()
-	if swap != "" and ResourceLoader.exists("res://assets/" + swap):
-		c.albedo_texture = load("res://assets/" + swap)
+	c.set_meta("leaf", kind)
+	var tints: Dictionary = (Data.value("assets", "woods.kit.seasons", {}) as Dictionary).get(path.trim_prefix("res://assets/"), {})
 	var by := {}
 	for season in tints:
 		var t: Array = tints[season]

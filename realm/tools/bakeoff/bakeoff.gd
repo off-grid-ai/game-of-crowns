@@ -23,7 +23,7 @@ const TARGET_H := {
 }
 const KIT_HOUSE := {"w": 2, "d": 3, "floors": 2, "style": "timber", "seed": 31}  # assets.json kit_townhouse_1
 const KIT_CASTLE := {"w": 18, "d": 16, "wall_storeys": 2, "keep": 4, "keep_storeys": 5, "tower_storeys": 4, "side_towers": false, "banner": 1.5, "seed": 5}  # kit_castle_seat
-const A_TREES := ["res://assets/nature/CommonTree_1.gltf", "res://assets/nature/CommonTree_3.gltf", "res://assets/nature/Pine_2.gltf", "res://assets/nature/CommonTree_4.gltf", "res://assets/nature/Bush_Common.gltf"]
+const A_TREES := ["res://assets/meshy/nt_oak_a/nt_oak_a.glb", "res://assets/meshy/nt_oak_b/nt_oak_b.glb", "res://assets/meshy/nt_pine_b/nt_pine_b.glb", "res://assets/meshy/nt_oak_a/nt_oak_a.glb", "res://assets/meshy/nt_bush/nt_bush.glb"]  # the woods' own (the nature set)
 const PACK := {
 	"house": "res://assets/realistic/romano-british_house_in_medieval_london/scene.gltf",
 	"keep": "res://assets/realistic/medieval_castle/scene.gltf",
