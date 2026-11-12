@@ -121,6 +121,12 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 14:50 (11-12) Mac: "Yes, square first". The Kingsmere square is the one gate until it's really right; every thread
+  serves it, the next render is judged only on it. Mac on a square still: "its SUPER weird" (crowd knot, horse/cart in
+  props, planks and tipped tables, strewn crates, grey fountain-well, trees in paving, washed-out light); on the Meshy
+  king's statue: "this actually looks good" (the bar for every square piece). Meshy Agent/batch UI: not adopted (web
+  clicks, drops Multi-view/texture options); the API pipeline stays and runs the next wave (farm, armory, animals).
+  Army battle work and bridges wait; no new bridge rules until the Freeciv research lands.
 - 15:00 (11-12) Round 11 (shared tree, Meshy wiring uncommitted; /tmp/goc-focus/r11/, 0 script errors), sent to Mac:
   Meshy houses, statue, well show round the square. Defects: roof house-colour mask reads as red smears, stray planks,
   stalls packed in rows. overlapprobe 19/53 inside something (18 people, 1 cart) -> parent routes. navprobe walked 0
