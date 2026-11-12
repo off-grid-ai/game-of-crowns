@@ -109,7 +109,7 @@ export async function issueDecree(ctx, req, res, url) {
   // An order given at the threat's place, of a kind that answers it: the threat passes (director.js).
   Director.answered(ctx.meta, cmd, ctx.world, ctx.record);
   // Bought: the same decree again within the year costs more (treasury.js wear).
-  Treasury.spend(ctx.meta, `decree:${cmd.action}`, price, ctx.world.turn ?? 0); chron.saveMeta(ctx.meta);
+  Treasury.spend(ctx.meta, `decree:${cmd.action}`, ctx.world.turn ?? 0); chron.saveMeta(ctx.meta);
   if (cmd.city != null) { (ctx.meta.answeredAt ??= {})[Number(cmd.city)] = ctx.world.turn ?? 0; chron.saveMeta(ctx.meta); }
   const warmed = ctx.world.cities.find((c) => c.id === Number(cmd.city))?.owner ?? (cmd.house != null ? Number(cmd.house) : null);
   result.favour = temper(cmd.action, warmed, result.favour);

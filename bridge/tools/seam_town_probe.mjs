@@ -19,7 +19,7 @@ check(await b.until(/Game ended as the turn limit/, 120000, from), "the baseline
 const ev = b.lines.slice(from).filter((l) => l.includes('"kind":"seams_worked"')).map((l) => JSON.parse(l.slice(l.indexOf("{")))).pop();
 check(ev, "Freeciv reported no seams_worked");
 const rows = String(ev?.at ?? "").split(";").filter(Boolean).map((s) => s.split(",").map(Number));
-check(rows.length > 0 && rows.every((r) => r.length === 3), `seams_worked isn't "x,y,town;..." (${ev?.at})`);
+check(rows.length > 0 && rows.every((r) => r.length === 4), `seams_worked isn't "x,y,town,owner;..." (${ev?.at})`);
 const worked = rows.filter((r) => r[2] >= 0);
 check(worked.length > 0, "no seam is worked by any town on the baseline");
 await b.quit();

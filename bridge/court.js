@@ -58,7 +58,7 @@ export function rule(ctx, id, option) {
   if (out.cost) {
     send(`lua cmd ${Lua.gold(crownNow.id, -out.cost)}`);
     crownNow.gold -= out.cost;
-    Treasury.spend(meta, wearKey, out.cost, world.turn ?? 0);
+    Treasury.spend(meta, wearKey, world.turn ?? 0);
   }
   out.lua.forEach((l) => send(`lua cmd ${l}`));
   // A ruling that sends the royal host (the siege plea's "relieve"): the same march as the decree.

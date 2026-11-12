@@ -434,11 +434,13 @@ function ev_turn(turn, year)
     end
   end
   emit("turn", {year = year})
+  realm_books_open()
   realm_mines_turn()
   realm_decrees_lapse()
   realm_raids_turn()
   realm_risings_turn()
   realm_purse()
+  realm_books_close()
 end
 
 -- Any conquest, by any house's AI or the rebels, takes the town, never razes it (realm_spare_hamlet): Freeciv
@@ -548,8 +550,12 @@ function realm_mines(seasons, house, count)
     left = tonumber(left)
     if t and t:has_extra("Gold") then
       local by = realm_seam_town(t)
-      if by then left = left - 1 end
-      worked[#worked + 1] = string.format("%d,%d,%d", t.x, t.y, by and by.id or -1)
+      if by then
+        left = left - 1
+        local pay = tonumber(luadata.get_str("mines.gold_per_season")) or 0
+        if pay > 0 then edit.change_gold(by.owner, pay) realm_book(by.owner.id, "mines", pay) end
+      end
+      worked[#worked + 1] = string.format("%d,%d,%d,%d", t.x, t.y, by and by.id or -1, t.owner and t.owner.id or -1)
       if left <= 0 then
         local owner = t.owner
         edit.remove_extra(t, "Gold")
@@ -562,7 +568,7 @@ function realm_mines(seasons, house, count)
     end
   end
   GOC_SEAMS = table.concat(kept, ";")
-  -- Which town works each seam this season, for the view's miners and ore carts (mines.js puts it on /world).
+  -- Which town works each seam this season (x,y,town,owner), for the view's miners and ore carts (mines.js puts it on /world).
   emit("seams_worked", {at = table.concat(worked, ";")})
 end
 
@@ -904,6 +910,77 @@ function realm_risings_phase(rebel)
   end
 end
 
+-- Every house's books (READY.md line 12, income by source per house): where its gold came from each season.
+-- The season opens at turn_begin: what the purse moved since the last close is the house's towns (Freeciv's own
+-- taxes, less its upkeep and what its towns buy) and the bridge's dealings (every gold the bridge moves goes
+-- through realm_gold). The ruleset's own moves this turn are booked as they happen (realm_book: the seams'
+-- "mines", the "tithe", the Royal Court's "court"); the close reports "income" (by: "id:towns:mines:tithe:court:
+-- dealings;...", crown: its id) and takes each purse as the next season's start. Plain text globals, which the
+-- save keeps ("id:gold;..." at the close, "id:gold;..." dealt since). A house first seen at a close reports from
+-- the next season on.
+GOC_BOOKS = GOC_BOOKS or ""
+GOC_DEALT = GOC_DEALT or ""
+local BOOK_SOURCES = {"towns", "mines", "tithe", "court", "dealings"}
+local season_books = {}
+
+local function book_read(text)
+  local t = {}
+  for id, g in tostring(text):gmatch("(%-?%d+):(%-?%d+)") do t[tonumber(id)] = tonumber(g) end
+  return t
+end
+local function book_write(t)
+  local rows = {}
+  for id, g in pairs(t) do rows[#rows + 1] = string.format("%d:%d", id, g) end
+  return table.concat(rows, ";")
+end
+
+function realm_book(pid, source, amount)
+  local b = season_books[pid]
+  if b then b[source] = b[source] + amount end
+end
+
+-- Gold the bridge gives (or takes, negative) a house: a decree's price, a gift, a debt (lua.js gold and pay).
+function realm_gold(pid, amount)
+  local p = realm_find_player(pid)
+  amount = math.floor(tonumber(amount) or 0)
+  if not p or amount == 0 then return end
+  edit.change_gold(p, amount)
+  local dealt = book_read(GOC_DEALT)
+  dealt[p.id] = (dealt[p.id] or 0) + amount
+  GOC_DEALT = book_write(dealt)
+end
+
+function realm_books_open()
+  local start, dealt = book_read(GOC_BOOKS), book_read(GOC_DEALT)
+  season_books = {}
+  for p in players_iterate() do
+    if p.is_alive and start[p.id] then
+      local d = dealt[p.id] or 0
+      season_books[p.id] = {towns = p:gold() - start[p.id] - d, mines = 0, tithe = 0, court = 0, dealings = d}
+    end
+  end
+  GOC_DEALT = ""
+end
+
+function realm_books_close()
+  local crown, rows, start = -1, {}, {}
+  for p in players_iterate() do
+    if p.is_alive then
+      start[p.id] = p:gold()
+      if p.nation and p.nation:rule_name() == "Norman" then crown = p.id end
+      local b = season_books[p.id]
+      if b then
+        local r = {p.id}
+        for _, k in ipairs(BOOK_SOURCES) do r[#r + 1] = b[k] end
+        rows[#rows + 1] = table.concat(r, ":")
+      end
+    end
+  end
+  GOC_BOOKS = book_write(start)
+  season_books = {}
+  if #rows > 0 then emit("income", {by = table.concat(rows, ";"), crown = crown}) end
+end
+
 -- The crown's purse each season (READY.md line 12: the tithe and the Royal Court's upkeep in Freeciv): every great
 -- house pays its tithe, the rate of what its towns yield (their size), handing over what it can spare from its
 -- purse (purse.house_pays) while the rest is taken at its town gates; the crown receives it all, less the Royal
@@ -933,7 +1010,7 @@ function realm_purse()
         local take = math.floor(size * per * GOC_TITHE_RATE)
         if take > 0 then
           local paid = math.min(take, math.floor(math.max(0, p:gold()) * pays))
-          if paid > 0 then edit.change_gold(p, -paid) end
+          if paid > 0 then edit.change_gold(p, -paid) realm_book(p.id, "tithe", -paid) end
           total = total + take
           takes[#takes + 1] = string.format("%d:%d", p.id, take)
         end
@@ -945,6 +1022,8 @@ function realm_purse()
   local court = purse_num("court_base", 2) + purse_num("court_per_town", 2) * towns + math.floor(math.max(0, crown:gold()) * purse_num("court_share", 0.02))
   local upkeep = math.min(court, math.max(0, crown:gold() + total))
   if total - upkeep ~= 0 then edit.change_gold(crown, total - upkeep) end
+  realm_book(crown.id, "tithe", total)
+  realm_book(crown.id, "court", -upkeep)
   emit("purse", {total = total, upkeep = upkeep, takes = table.concat(takes, ";")})
 end
 

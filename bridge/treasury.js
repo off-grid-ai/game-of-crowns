@@ -24,11 +24,10 @@ export function usesOf(meta, key, turn) {
 export function worn(meta, key, base, turn) {
   return Math.round(base * (1 + ECONOMY.wear.step * usesOf(meta, key, turn)));
 }
-// A purchase made: counted for wear, and for the season's true income (the top bar).
-export function spend(meta, key, cost, turn) {
+// A purchase made: counted for wear.
+export function spend(meta, key, turn) {
   meta.spent = (meta.spent ?? []).filter((x) => turn - x.turn < ECONOMY.wear.seasons);
   meta.spent.push({ key, turn });
-  (meta.econ ??= {}).spentSince = (meta.econ.spentSince ?? 0) + (cost ?? 0);
 }
 // One line of why the King can't pay, said at the moment of choice; null when he
 // can. In crowns, as the King reads money (a hundred to each gold).
@@ -78,8 +77,8 @@ export function priceOf(ctx, action) {
 }
 
 // The King's own works: what he funds in a royal town rises over two seasons
-// (shown as a building site), then stands and works for him: a market brings
-// coin each season, a barracks a company each year, a granary feeds the town.
+// (shown as a building site), then stands and works for him as Freeciv's own
+// building does (a market's tax, a barracks' veterans, a granary's food).
 export const WORK_SEASONS = 2;
 export function royalWorks(ctx, turn) {
   const { world, meta, send, record, scene, crownOf } = ctx;
@@ -132,21 +131,24 @@ export function tithe(ctx, turn) {
   send(`lua cmd ${Lua.titheRate(meta.tithe * (0.4 + 0.6 * peaceNow))}`);
 }
 
-// What the season's purse brought (Freeciv's "purse": the tithe taken, the Royal Court's upkeep paid): the
-// reckoning's tally, and the season's true income as the top bar shows it: what came in besides the tithe (the
-// crown's own towns, its markets) is the purse's rise since last season plus what the King spent, and the
-// tithe less the upkeep on top.
+// What the season's purse brought (Freeciv's "purse": the tithe taken, the Royal Court's upkeep paid), tallied
+// for the ten-season reckoning.
 export function purse(ctx, ev) {
-  const { world, meta, tally, lastSeason } = ctx;
-  const total = Number(ev.total) || 0, upkeep = Number(ev.upkeep) || 0;
-  tally.total += total;
-  tally.upkeep += upkeep;
-  const gold = crownOf(world)?.gold ?? 0;
-  const econ = (meta.econ ??= {});
-  const besides = econ.base == null ? 0 : gold - econ.base + (econ.spentSince ?? 0);
-  lastSeason.net = besides + total - upkeep;
-  econ.base = gold + total - upkeep;
-  econ.spentSince = 0;
+  ctx.tally.total += Number(ev.total) || 0;
+  ctx.tally.upkeep += Number(ev.upkeep) || 0;
+}
+
+// Every house's season by source (Freeciv's "income", realmrules/script.lua realm_books_close): its towns, its
+// mines, the tithe, the Royal Court and the bridge's dealings, kept as meta.income (id -> sources) for /world's
+// houses. The crown's season for the top bar (lastSeason.net) is its income less the King's own dealings.
+const SOURCES = ["towns", "mines", "tithe", "court", "dealings"];
+export function income(ctx, ev) {
+  ctx.meta.income = Object.fromEntries(String(ev.by ?? "").split(";").filter(Boolean).map((r) => {
+    const [id, ...v] = r.split(":").map(Number);
+    return [id, Object.fromEntries(SOURCES.map((k, i) => [k, v[i] || 0]))];
+  }));
+  const crown = ctx.meta.income[Number(ev.crown)];
+  if (crown && ctx.lastSeason) ctx.lastSeason.net = crown.towns + crown.mines + crown.tithe + crown.court;
 }
 
 // Every ten seasons the chronicle tells what the tithe brought and cost.
