@@ -22,8 +22,14 @@ const LOOKS := {
 # Streaks and flakes only near the street, as in Manor Lords: from town height up
 # the weather is the light, the cloud, the mist and the wet ground. Camera distance
 # (camera_rig.gd: 0.5 street, about 10-16 a town) where the fall is full and where it is gone.
-const RAIN_NEAR := Vector2(1.5, 4.0)
-const SNOW_NEAR := Vector2(3.0, 8.0)
+# (data/weather.json fall: they were 1.5-4 and 3-8, under the rig's floor of 6, so no camera ever saw a drop:
+# batch 8b review #9.)
+var RAIN_NEAR := Vector2(_fall_knob("rain_near", [8.0, 22.0])[0], _fall_knob("rain_near", [8.0, 22.0])[1])
+var SNOW_NEAR := Vector2(_fall_knob("snow_near", [10.0, 28.0])[0], _fall_knob("snow_near", [10.0, 28.0])[1])
+
+
+static func _fall_knob(key: String, fallback: Array) -> Array:
+	return preload("res://scripts/data.gd").value("weather", "fall." + key, fallback)
 const RAIN_DROPS := 12000  # at full rain: dense, fine and close (Manor Lords), never a few long sticks
 const SNOW_FLAKES := 1600
 const NEAR_GONE := 0.5  # game units (about 4 m): a drop or flake this near the lens is not drawn
@@ -63,8 +69,10 @@ func _ready() -> void:
 	if sky3d:
 		sky3d.wind_direction = deg_to_rad(PREVAILING_FROM)  # the clouds, the smoke and the flames all go one way
 	# Rain: short, fine, faint streaks in a small box about the lens, fading out with distance.
-	_rain = _fall(RAIN_DROPS, Vector2(0.0025, 0.07), Color(0.82, 0.86, 0.92, 0.22), 14.0, 0.45, 4.0)
-	_snow = _fall(SNOW_FLAKES, Vector2(0.035, 0.035), Color(0.96, 0.97, 1.0, 0.85), 1.1, 6.0, 9.0)
+	var rk: Array = _fall_knob("rain_drop", [0.004, 0.11, 0.3, 6.0])  # width, length, alpha, the ring's reach round the lens
+	var sk: Array = _fall_knob("snow_flake", [0.045, 0.85, 10.0])  # size, alpha, reach
+	_rain = _fall(RAIN_DROPS, Vector2(float(rk[0]), float(rk[1])), Color(0.82, 0.86, 0.92, float(rk[2])), 14.0, 0.45, float(rk[3]))
+	_snow = _fall(SNOW_FLAKES, Vector2(float(sk[0]), float(sk[0])), Color(0.96, 0.97, 1.0, float(sk[1])), 1.1, 6.0, float(sk[2]))
 
 
 ## The weather as the mirror holds it now; settle: seconds to change over.
