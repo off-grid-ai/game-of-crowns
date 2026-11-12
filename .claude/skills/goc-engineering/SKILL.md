@@ -5,6 +5,14 @@ description: How code is changed, checked and committed in Game of Crowns (realm
 
 # Engineering
 
+## Change the real tree, never a copy (Mac, 2026-11-12)
+
+Mac: "changes need to be made directly, they cannot / shouldn't be made in scratchpads." Every edit is made in the
+shared checkout's own files, the ones the game runs. No working copies of `realm/` or `bridge/` in a scratchpad to edit
+and copy back, no "after" tree built beside it. A scratch copy is allowed only to run a probe's before-run against
+HEAD's untouched code (read-only, deleted after). Keep the tree working while you edit: make each edit whole, run its
+load or compile check at once, and land it; a file that doesn't load (a ruleset, a script) is never left in the tree.
+
 ## No hack-fixes: reproduce it, then fix the system (Mac, 2026-11-12)
 
 Mac: "that's where we've been struggling, cause you keep making hackfixes." A bug seen on screen (a cart through a
