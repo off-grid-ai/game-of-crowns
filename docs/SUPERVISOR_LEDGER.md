@@ -129,6 +129,8 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- (11-12) Supervisor's call: Freeciv barbarians may not "Conquer City" (actions.ruleset), at every raiders level. Why: with raids as real barbarians (55bad97d), one raid took 9 towns in 20 turns (raid-guard-2026-11-12.md). Raiders still kill men and pillage. Mac can flip it.
+- (11-12) Mac: "round 11 looks much better than round 15". Agreed: the market density was lost after r11 (01236c8d, a6c3c016), and in r15 the paving reads as sand (6a7746cf). r11 c01 is now the floor and 01-town the target; GoC routed density to fire-siege and paving to army-command.
 - 18:20 (11-12) Mac: "the casebook is the right one... thats our goal" -> goc-cpto 6a5a4b04: casebook = bar for play,
   docs/art/target = bar for look; every change names its case. Freeciv move: steps 1-7 landed (sieges by Freeciv
   combat, seasons/blight, real moves, homed companies); setDiplomacy the one war writer until 3.3. Raids call
