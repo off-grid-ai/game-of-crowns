@@ -121,6 +121,13 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 09:40 (11-12) Mac: "focus on getting one component right first… extreme focus; then go wide." Batch 9 stopped.
+  The component: Kingsmere's square at the default town view vs docs/art/target/01-town.jpg at 100%. Layers:
+  fire-siege = buildings, castle, statue, banners (one painted style); army-ui = ground, paving, stalls, gardens,
+  trees, props; works-life = people and animals (Meshy cast, readability scale); look agent = light, colour,
+  atmosphere (look.gd/look.json); camera agent = composition + docs/review/focus.sh. Paused: army, fire, map,
+  Meshy buildings, wheat. Loop: workers commit -> supervisor runs focus.sh -> judge side by side -> route.
+  Also running: deep research (docs/research/quality-deep-dive.md), the King's-loop agent (bridge only).
 - 02:00 (11-12) Usage limit hit (resets ~4:30 IST); all sessions and agents stopped. Batch 8b keeps filming in the
   background (/tmp/goc-batch8b; judged so far: look2, centre, square-before in docs/review/batch8-review.md 8b).
   On resume, in order: (1) judge the rest of 8b; (2) run docs/review/batch9.sh if fire-siege finished it, else
