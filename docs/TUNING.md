@@ -127,7 +127,7 @@ Switches (`--name`) go after `--` on the game's command line.
 - One court matter at a time, and how likely a season brings one by the stage of the reign: `bridge/data/court.json`: `one`.
 - The herald: on or off, how many notices wait, how long each is read, its dry voices: `realm/data/herald.json`.
 - How often a royal seal comes (0.5: every other season): `bridge/data/seals.json`: `perSeason`.
-- What the tithe brings the crown, per town size: `bridge/data/economy.json`: `tithe.perSize`.
+- What the tithe brings the crown per town size, what share of its purse a house hands over, and the Royal Court's upkeep: `bridge/data/realmrules/luadata.txt` `[purse]`: `per_size`, `house_pays`, `court_base`, `court_per_town`, `court_share`. Probe: `bridge/tools/purse_probe.mjs`.
 - How often event cards come, and never in a breather (chanceInBreather 0): `bridge/data/events.json`: `settings.chance`, `settings.chanceInBreather`.
 
 ## The crowd thinks out loud (Builder 1; on by default, view `--thoughts=off`)
@@ -146,7 +146,7 @@ Switches (`--name`) go after `--` on the game's command line.
 
 ## Damage to towns: walls and burnt houses (Builder 1; the bridge owns it)
 - How fast besiegers batter a wall section, when it shows cracked and breached, how fast it's mended, how much a sack or razing burns and how fast it's rebuilt, how many houses a fire arrow lit are rebuilt a season (`kindledRebuiltPerSeason`), how many sections: `bridge/data/damage.json`.
-- How long a gold seam lasts while worked, whose hills hold the realm's gold and how many seams are laid there, or seams that never run out: `bridge/data/realmrules/luadata.txt` `[mines]`: `seam_seasons`, `gold_house`, `gold_seams`, `on` ("no": endless gold). Freeciv reads it with the ruleset; a running realm takes a change on its next restart.
+- How long a gold seam lasts while worked, whose hills hold the realm's gold and how many seams are laid there, or seams that never run out: `bridge/data/realmrules/luadata.txt` `[mines]`: `seam_seasons`, `gold_house`, `gold_seams`, `gold_per_season` (what a worked seam pays its house each season, its whole yield; each house's season by source is Freeciv's "income", probe `bridge/tools/income_probe.mjs`), `on` ("no": endless gold). Freeciv reads it with the ruleset; a running realm takes a change on its next restart.
 - Gold the crown gets per Marketplace on top of Freeciv's own tax (0: none, so a house is as rich as its land): `bridge/data/economy.json`: `marketGold`.
 - The gold mines in the view: the mine's size and place on its tile, how many miners work a live seam, how far out they stand, what they do and how often they change, how near the camera must be, how dark spent workings are: `realm/data/gold_mines.json`: `scale`, `off`, `miners`, `ring`, `clips`, `swap_sec`, `near`, `spent_shade`. `--gold-mines=off` shows none.
 - How tight a horse or a cart may turn (it steers on an arc this wide, world units, never spins on the spot): `realm/data/works.json`: `paddock.turn_radius` (led and paddock horses), `realm/data/town_scenes.json`: the cart row's `walk.turn_radius` (the square's cart).
