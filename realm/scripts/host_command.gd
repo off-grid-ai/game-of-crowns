@@ -116,7 +116,10 @@ func take_click(ground: Vector3) -> bool:
 		_set_aim("")
 		_order_at(kind, ground)
 		return true
-	var id := _pick(get_viewport().get_mouse_position())
+	# Where the click fell on the screen: the ground it hit, seen again (a played click doesn't move the pointer).
+	var cam := get_viewport().get_camera_3d()
+	var at := cam.unproject_position(ground) if cam and not cam.is_position_behind(ground) else get_viewport().get_mouse_position()
+	var id := _pick(at)
 	if id >= 0:
 		select(id)
 		return true

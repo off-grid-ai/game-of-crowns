@@ -22,6 +22,7 @@ extends Node
 ##   sigil 2             click the 2nd house sigil on the ladder over the minimap
 ##   host 0 6            frame the King's n-th host (the biggest first) and click its standard (--hosts=on)
 ##   rclick 0.6 0.5      right-click at a fraction of the screen (a selected host marches there)
+##   order march         give the selected host (else the first) an order; march/garrison to the nearest town it can reach
 ##   answer              give the matter on the court card its first answer
 ##   director            let the camera director run, as it does in play
 
@@ -94,7 +95,7 @@ func _play(quit_after: bool) -> void:
 	if quit_after:
 		_note("done")
 		_log.close()
-		get_tree().quit()
+		preload("res://scripts/shot_harness.gd").quit_clean(get_tree())
 
 
 ## A burst of frames: time held still between snaps; a wait of at most BURST_GAP seconds advances exactly that much.
@@ -202,6 +203,12 @@ func _step(w: PackedStringArray) -> void:
 			"click":
 				_click(Vector2(float(w[1]), float(w[2])))
 				await get_tree().create_timer(0.4).timeout
+			"order":
+				# order <march|garrison|hold|return|split>: the selected host (else the first) is given an order;
+				# march and garrison go to the nearest town the bridge accepts (tried nearest first), so the
+				# route, the card and the ring have something to show (batch 8b: Eaglehaven had no way over land).
+				await _order(w[1] if w.size() > 1 else "march")
+				await get_tree().create_timer(1.5).timeout
 			"rclick":
 				_click(Vector2(float(w[1]), float(w[2])), MOUSE_BUTTON_RIGHT)
 				await get_tree().create_timer(0.4).timeout
@@ -601,6 +608,44 @@ func _oblique(at: Vector3, dist: float, tilt: float) -> void:
 	main.rig.snap(at, dist, 0.6)
 	main.rig.tilt = clampf(tilt, -40.0, 30.0)
 	main.rig.goal_tilt = main.rig.tilt
+
+
+## An order to a host, through the same bridge call the command card makes; a town target tried nearest first.
+func _order(kind: String) -> void:
+	var hc: Node = main.get_node_or_null("HostCommand")
+	if hc == null:
+		_note("  order: no host command (--hosts=on)")
+		return
+	var all: Array = hc.hosts()
+	if all.is_empty():
+		_note("  order: no host in the field")
+		return
+	var h: Dictionary = hc.host(int(hc.selected)) if int(hc.selected) >= 0 else all[0]
+	var id := int(h.get("id", -1))
+	var bodies: Array = []
+	if kind in ["march", "garrison"]:
+		var towns: Array = (main.bridge.world.get("cities", []) as Array).duplicate()
+		var here := Vector2(float(h.get("x", 0)), float(h.get("y", 0)))
+		towns = towns.filter(func(c): return Vector2(float(c["x"]), float(c["y"])) != here)
+		towns.sort_custom(func(a, b): return here.distance_to(Vector2(float(a["x"]), float(a["y"]))) < here.distance_to(Vector2(float(b["x"]), float(b["y"]))))
+		for c in towns.slice(0, 8):
+			bodies.append({"host": id, "order": kind, "city": int(c["id"])})
+	else:
+		bodies.append({"host": id, "order": kind})
+	for body in bodies:
+		var res: Array = []
+		main.bridge._post("/host/order", body, func(code: int, d: Dictionary) -> void: res.append([code, d]))
+		while res.is_empty():
+			await get_tree().process_frame
+		var said := String(res[0][1].get("text", res[0][1].get("error", "")))
+		_note("  order %s %s: %d %s" % [kind, str(body.get("city", "")), int(res[0][0]), said])
+		if int(res[0][0]) == 200:
+			if main.ui:
+				main.ui.toast(said)
+			main.bridge._poll()
+			if int(hc.selected) < 0:
+				hc.select(id)
+			return
 
 
 ## Frames the King's n-th host and clicks its standard, as a player selects it (host_command.gd).

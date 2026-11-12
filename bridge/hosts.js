@@ -99,7 +99,7 @@ function give(ctx, b) {
       const to = town ? { x: town.x, y: town.y } : { x: Math.round(Number(b.x)), y: Math.round(Number(b.y)) };
       if (!inside(to.x, to.y)) return [400, { error: "choose where on the map" }];
       const road = roadTo(h, to);
-      if (road < 0) return [400, { error: `there is no way over land to ${town ? cityName(town.id) : "that place"}` }];
+      if (road < 0) return [400, { error: `The royal host can find no road over land to ${town ? cityName(town.id) : "that place"}; the sea lies between.` }];
       // Into a town only where the gates are open to the King's men; before another's walls otherwise.
       // A great house's town not sworn to the crown is marched on: the host lays siege when it arrives,
       // and the house hears of it now (declare: the route moves favour and names the deed).
@@ -115,7 +115,7 @@ function give(ctx, b) {
       const open = town.owner === crown?.id || sworn?.(town.owner);
       if (!open) return [400, { error: `${cityName(town.id)}'s gates are not open to the King's men: its house is not sworn to the crown` }];
       const road = roadTo(h, town);
-      if (road < 0) return [400, { error: `there is no way over land to ${cityName(town.id)}` }];
+      if (road < 0) return [400, { error: `The royal host can find no road over land to ${cityName(town.id)}; the sea lies between.` }];
       save(meta, [...rest, { kind: "garrison", units: h.units, x: town.x, y: town.y, city: town.id, since: world.turn }]);
       const seasons = Math.ceil(road / HOSTS.speed);
       return [200, { ok: true, text: seasons ? `${name} marches to garrison ${cityName(town.id)}: ${seasons === 1 ? "a season" : `${seasons} seasons`} on the road.` : `${name} garrisons ${cityName(town.id)}.` }];
