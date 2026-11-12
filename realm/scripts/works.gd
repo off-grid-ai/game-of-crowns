@@ -309,6 +309,15 @@ static func hour() -> float:
 	return float(v.hour) if v is Node and is_instance_valid(v) else 12.0
 
 
+## Whether the sky is dark now (the villagers' night: main.gd sets it from Sky3D). Lights follow this, not the
+## village clock alone: in always-day light that clock loops a working day while the sky stays at its morning
+## hour, and the inn's windows lit from 19:00 glowed white in daylight (batch 8b review #14).
+static func dark() -> bool:
+	var aw: Object = Engine.get_meta("awareness") if Engine.has_meta("awareness") else null
+	var v: Variant = aw.get("villagers") if aw else null
+	return bool(v.night) if v is Node and is_instance_valid(v) else false
+
+
 ## Whether the hour is within a span of works.json day ([from, to], wrapping midnight).
 static func within(h: float, key: String) -> bool:
 	var span: Array = Data.value("works", "day." + key, [0.0, 24.0])
@@ -378,7 +387,7 @@ class Tick extends Node:
 			sparks.restart()  # a burst off the anvil for the stroke (one_shot: never a steady stream)
 		if glow:
 			glow.light_energy = Data.num("works", ("forge.glow.war" if hot else "forge.glow.day") if working else "forge.glow.night", 1.0)
-		var lit := Works.within(h, "lit")
+		var lit := Works.within(h, "lit") and Works.dark()
 		for l in lights:
 			if is_instance_valid(l):
 				(l as OmniLight3D).visible = lit

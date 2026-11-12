@@ -54,7 +54,7 @@ func _tick() -> void:
 				if is_instance_valid(n):
 					n.queue_free()
 			_done.erase(c)
-	var lit := Works.within(Works.hour(), "lit")
+	var lit := Works.within(Works.hour(), "lit") and Works.dark()  # lit only when the sky is dark
 	for c in _done:
 		for t in _done[c]["torches"]:
 			if is_instance_valid(t):
