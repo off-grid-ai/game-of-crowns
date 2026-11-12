@@ -365,6 +365,49 @@ func kindled(city: int, home: int) -> void:
 	_post("/scene/kindled", {"city": city, "home": home}, func(_c, _d): pass)
 
 
+## The townsfolk's minds (bridge/minds.js), asked for by the town's people and their talk: the view's one client
+## asks, so no view holds an HTTPRequest of its own. Each callback gets (code, data); data is null on a failure.
+
+## Each townsperson of a town and their trade.
+func townsfolk(city: int, cb: Callable) -> void:
+	_ask_minds("/townsfolk?city=%d" % city, {}, 10.0, cb)
+
+
+## The minds' talk for exactly these people (the model may take a while on its first call).
+func minds_chatter(city: int, who: PackedStringArray, cb: Callable) -> void:
+	_ask_minds("/minds/chatter?city=%d&who=%s&wait=1" % [city, ",".join(who)], {}, 90.0, cb)
+
+
+## A town's plan for the hour: who is where (bridge/minds.js).
+func minds_town(city: int, hour: int, cb: Callable) -> void:
+	_ask_minds("/minds/town?city=%d&hour=%d" % [city, hour], {}, 5.0, cb)
+
+
+## The King is looking at these townsfolk: their minds wake first.
+func minds_attention(body: Dictionary) -> void:
+	_ask_minds("/minds/attention", body, 5.0, Callable())
+
+
+## Townsfolk saw something happen: it goes into their memories.
+func minds_witness(body: Dictionary) -> void:
+	_ask_minds("/minds/witness", body, 5.0, Callable())
+
+
+func _ask_minds(path: String, body: Dictionary, secs: float, cb: Callable) -> void:
+	var req := HTTPRequest.new()
+	req.timeout = secs
+	add_child(req)
+	req.request_completed.connect(func(_r, code, _h, bytes):
+		req.queue_free()
+		if cb.is_valid():
+			cb.call(code, JSON.parse_string(bytes.get_string_from_utf8()) if code == 200 else null))
+	var err := req.request(BASE + path) if body.is_empty() else req.request(BASE + path, ["Content-Type: application/json"], HTTPClient.METHOD_POST, JSON.stringify(body))
+	if err != OK:
+		req.queue_free()
+		if cb.is_valid():
+			cb.call(0, null)
+
+
 func _post(path: String, body: Dictionary, cb: Callable) -> void:
 	var req := HTTPRequest.new()
 	add_child(req)
