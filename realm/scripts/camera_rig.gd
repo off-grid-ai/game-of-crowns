@@ -297,6 +297,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT, MOUSE_BUTTON_MIDDLE]:
 			if event.pressed and event.double_click and event.button_index == MOUSE_BUTTON_LEFT:
 				double_click(event.position)
+				_doubled = true  # its release is no second single click
 			if event.pressed:
 				_dragging = event.button_index
 				_drag_moved = 0.0
@@ -304,8 +305,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				_grab = _ground_under(event.position) if event.button_index != MOUSE_BUTTON_RIGHT and not event.alt_pressed else Vector3.INF
 			else:
 				_grab = Vector3.INF
-				if event.button_index == MOUSE_BUTTON_LEFT and _drag_moved < 6.0:
+				if event.button_index == MOUSE_BUTTON_LEFT and _drag_moved < 6.0 and not _doubled:
 					_click(event.position)
+				_doubled = false
 				_dragging = 0
 	elif event is InputEventMouseMotion and _dragging != 0:
 		_drag_moved += event.relative.length()
@@ -835,16 +837,32 @@ func _pan(d: Vector2) -> void:
 ## A left double-click (Godot's double_click, so a single click waits for nothing): the view eases its aim onto the
 ## ground there and comes one step closer, camera.json doubleClick.step of the distance (Total War's campaign map,
 ## CK3, Google Maps), never under the floor: at the floor it only re-centres. The rig's own easing carries it.
+##
+## A double-click begins with a single click, which the game answers first (main.gd: a click on the ground frames the
+## nearest town, pulling the view out; round 12 ended far out, not closer). The double-click supersedes it, as an OS
+## double-click supersedes its first click: the view's goals go back to where they were before that click (if it
+## came within DOUBLE_WINDOW), then step in. What the click selected stays selected.
 func double_click(screen: Vector2) -> void:
 	var p := _ground_under(screen)
 	if p == Vector3.INF:
 		return
+	if not _before_click.is_empty() and Time.get_ticks_msec() - int(_before_click[4]) <= DOUBLE_WINDOW:
+		goal_target = _before_click[0]
+		goal_distance = _before_click[1]
+		goal_yaw = _before_click[2]
+		goal_tilt = _before_click[3]
 	_fling = Vector3.ZERO
 	goal_target = Vector3(p.x, goal_target.y, p.z)
 	goal_distance = maxf(goal_distance * (1.0 - knob("doubleClick.step", 0.35)), floor_now())
 
 
+var _doubled := false  # the button's down was a double-click's: its release is not a single click
+var _before_click: Array = []  # the view's goals just before the last single click: [target, distance, yaw, tilt, ms]
+const DOUBLE_WINDOW := 600  # ms: a double-click this soon after a click supersedes it (OS double-click times run 400-500)
+
+
 func _click(screen: Vector2) -> void:
+	_before_click = [goal_target, goal_distance, goal_yaw, goal_tilt, Time.get_ticks_msec()]
 	var p := _ground_under(screen)
 	if p != Vector3.INF:
 		clicked.emit(p)
