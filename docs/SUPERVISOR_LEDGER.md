@@ -121,6 +121,11 @@ bar, we say so with evidence and change the approach (style, kit, a purchase) be
 professional-feel fixes (Builder 2); a finesse catalogue (an agent); the text pass (research).
 
 ## Log
+- 14:25 (11-12) Takeover: the Claude-4 account hit its limit; all 8 threads restarted on this account, same tree.
+  "Game of Crowns visual polish" (top) → army-layer local_e7013866 (mover.gd + army files; fixes the mover.gd compile
+  break first), ground-truth local_2b1ad043 (commit its probes + GROUND_TRUTH.md), town-life local_964c05dc
+  (director, probe first), GoC supervisor local_c8794c09 → restarts fire-siege (Meshy square wiring + bridges,
+  uncommitted), army-ui, works-life, and runs rounds 10/11. Freeciv-leverage research rerun (its note was never written).
 - 14:10 (11-12) Owners now: town-life session local_880cdb09 (town_life.gd, villagers.gd, npc_mind.gd,
   town_scenes.gd/json, crowd/moods.json); army-layer local_cf2ddafe (mover.gd, units, battle, siege, combat);
   ground-truth local_092eafb9 (nav_ground obstacles b24bc2a1, rivers a3b7cf8b, fire records 79aafe9f);
