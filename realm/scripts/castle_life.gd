@@ -235,6 +235,13 @@ func _arms(xf: Transform3D, sp: Dictionary, house: Dictionary, colour: Color, d:
 	var gh := 4 * cell / 2.0
 	var mat := _arms_material(house, colour)
 	var hangs := [[Vector3(0, keep_top, keep_z), Vector2(1.2, 3.0) * size]]
+	# 01-town: two great banners either side of the keep's door, not one down its middle (castle.json
+	# arms.keep_pair: [out, a share of the keep's half-width; width; height] times size).
+	var kp: Array = k.get("keep_pair", [])
+	if kp.size() >= 3:
+		hangs = []
+		for sx in [-1.0, 1.0]:
+			hangs.append([Vector3(sx * float(kp[0]) * kh, keep_top, keep_z), Vector2(float(kp[1]), float(kp[2])) * size])
 	for sx in [-1.0, 1.0]:
 		hangs.append([Vector3(sx * (gh - 0.6), gate_top, gate_z), Vector2(0.9, 2.2) * size])
 	# Along the front curtain, facing the square, every arms.curtain_every metres (01-town: the arms all along
