@@ -352,12 +352,16 @@ func _kneel_up(person: Node3D, body: String, skeleton: Skeleton3D) -> void:
 		var lifts := {}
 		var hips := skeleton.find_bone("Hips")
 		var per_m: float = skeleton.get_bone_global_rest(hips).origin.y / 0.95 if hips >= 0 else 1.0  # skeleton units in a metre (a 0.95 m hip)
-		var extra := float((Data.value("people", "feet.lowExtra", {}) as Dictionary).get(body, 0.0)) * per_m
+		# feet.lowExtra: metres more for a body in every low move, or by move ({clip: metres}: the cast's young ranger
+		# sat 10 cm into a bench and kneels true).
+		var given: Variant = (Data.value("people", "feet.lowExtra", {}) as Dictionary).get(body, 0.0)
+		var extra := float(given) * per_m if not given is Dictionary else 0.0
+		var by_clip: Dictionary = given if given is Dictionary else {}
 		var clips: Array = Motion.LOW + (Data.value("people", "feet.lowAlso", []) as Array)
 		for c in clips:
 			if not _lib.has_animation(String(c)):
 				continue
-			var up := _sole_drop(skeleton, _lib.get_animation(String(c)), true) - float(_body_lift.get(body, 0.0)) + extra
+			var up := _sole_drop(skeleton, _lib.get_animation(String(c)), true) - float(_body_lift.get(body, 0.0)) + extra + float(by_clip.get(String(c), 0.0)) * per_m
 			if up > 0.01 * per_m:
 				lifts[String(c)] = up
 		# Standing moves whose feet these legs plant deeper than the reference's

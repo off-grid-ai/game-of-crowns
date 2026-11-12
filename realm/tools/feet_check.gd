@@ -33,7 +33,11 @@ func _initialize() -> void:
 	for sex in ["male", "female"]:
 		rng.seed = 7
 		who.append(["outfit:peasant/" + sex, ppl.make(rng, "peasant", Color.WHITE, "elder", "average", sex)])
-	who.append(["outfit:soldier", ppl.make(rng, "soldier", Color.WHITE, "adult", "average", "male")])
+	var soldier: Node3D = ppl.make(rng, "soldier", Color.WHITE, "adult", "average", "male")
+	if not soldier.has_meta("body"):
+		who.append(["outfit:soldier", soldier])  # (with the cast on, a soldier is the cast's guard: measured above as its body)
+	else:
+		soldier.free()
 	for w in who:
 		root.add_child(w[1])
 	await process_frame  # in the tree, so the players and skeletons pose
