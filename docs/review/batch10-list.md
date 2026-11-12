@@ -40,3 +40,7 @@ to order. Oblique, the rig's own pitch.
 9. **The whole realm** (the overview as the game opens, or `wheel 0.5 0.5 6` from 8): Judge against
    02-realm.jpg: each house's land in its colour as held now, a crisp border on every seam, the coast with no
    border, seats under their sigils, big towns named without overlaps, hosts as standards.
+10. **No red road at the wide town shots** (look.json politics line 30-38, was 9-22; `--politics=on`):
+    `city Kingsmere 30`, `city Kingsmere 50`, `city Kingsmere 60`. Judge against batch 9's kingsmere-30/50: no
+    salmon line round Kingsmere at 30, at most a faint one at 50, the border whole (and in the crown's own red,
+    not salmon) only at 60.
