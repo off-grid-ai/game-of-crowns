@@ -65,7 +65,7 @@ grep "home\|settled" $OUT/focus/play.log 2>/dev/null | tee -a $LOG
 say "film done: $(/bin/ls $OUT/focus 2>/dev/null | grep -c png) frames; script errors: $(grep -c 'SCRIPT ERROR\|SHADER ERROR' $OUT/focus.log 2>/dev/null)"
 
 # Side by side with 01-town: hero | target, and every frame beside the target on one sheet.
-/usr/bin/python3 -I - "$OUT/focus" "$TARGET" "$OUT" <<'PY'
+/usr/bin/python3 - "$OUT/focus" "$TARGET" "$OUT" <<'PY'
 import sys, os
 from PIL import Image, ImageDraw
 src, target, out = sys.argv[1], sys.argv[2], sys.argv[3]
