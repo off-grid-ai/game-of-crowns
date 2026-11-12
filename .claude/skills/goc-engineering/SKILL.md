@@ -83,6 +83,8 @@ Every change follows these. A plan that breaks one isn't approved.
 
 ## Sessions share one checkout and one git index
 
+Read `docs/SUPERVISOR_RULINGS.md` before each commit: the supervisor's calls land there when its messages are paused.
+
 Several sessions commit to `main` from the same folder. Never `git add` and leave files staged: another session's commit will take them. Commit only your own changes, in one step. A path commit takes the whole file, so if `git diff <file>` shows any lines that aren't yours (another session is editing it too), commit your hunks from a private index, so nobody else's staged or unstaged work can ride along (army-ui, 12 Nov: a path commit took three sessions' TUNING.md lines, and a plain commit swept the Freeciv thread's staged files):
   ```
   git diff <file> > /tmp/mine.patch   # trim to your hunks
