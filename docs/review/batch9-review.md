@@ -35,3 +35,13 @@ weather.json; look.gd glow). (2) The foreground chimney pot and roof edges at d6
 material). (2) Summer grass and flowers through the snow (grass.gd or countryside props aren't seasoned). (3) The
 smiths don't work at the anvil (works.gd smith anchor positions, works.json). (4) Floating red blob (a seed, an ember
 sprite or a flower prop). (5) The name label is cut by roofs (towns.gd site labels).
+
+## army-line-d12 (a still; ARMY 6000 men, 41 regiments at rest, 3 fps)
+
+| Shot | Verdict | Defects |
+|---|---|---|
+| army-line-d12 | FAIL (closest to 03-army yet) | **The army shows** (batch 7 caught the main menu): 41 dense rectangular regiments under red arrow banners and a great royal standard, with the town and castle behind. This is real density. Defects: regiments stand **through a house, trees and hedged fields** (no clearance from what stands on the ground). Only two looks (grey and dark), every man the same silhouette: no knights, archers, spears or siege, as in 03-army. House colour only on the flags, not on the men. Green hedges and summer trees in a snowfield. 3 fps. |
+
+**army defects:** (1) regiments placed over buildings, trees and fields (army_spike.gd placement; scenes.gd clearing).
+(2) No unit variety or house colours on the men (army.json units and colours). (3) Seasonless hedges and trees (forest.gd,
+countryside hedges).
