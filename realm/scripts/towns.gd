@@ -2134,7 +2134,8 @@ static func stall_count(mk: Dictionary, size: int, seat: bool, marketplace: bool
 ## share of the square's, its share of the stalls, and its own span in degrees; span: how far either side of the
 ## market's middle a row may run; stall_gap: the room between neighbours, a share of a stall's width). Each row is
 ## centred on the market's middle, no two neighbours the same model. {stalls: [[kind, angle, radius]], outer_end:
-## the outer row's half span (radians), outer_arc: its radius}. Static, so a headless probe lays the same market.
+## the outer row's half span (radians), outer_arc: its radius, rows: [[half span, radius]] each row laid, outer first}.
+## Static, so a headless probe lays the same market.
 static func lay_stalls(mk: Dictionary, stalls: int, square_r: float, market_ang: float, kinds: Array, rng: RandomNumberGenerator) -> Dictionary:
 	var rows: Array = mk.get("rows", [[0.8, 1.0]])
 	var span := deg_to_rad(float(mk.get("span", 180.0)))
@@ -2142,6 +2143,7 @@ static func lay_stalls(mk: Dictionary, stalls: int, square_r: float, market_ang:
 	var out: Array = []
 	var outer_end := 0.0
 	var outer_arc := square_r * 0.8
+	var laid_rows: Array = []
 	var left := stalls
 	var last_kind := ""
 	for ri in rows.size():
@@ -2163,6 +2165,8 @@ static func lay_stalls(mk: Dictionary, stalls: int, square_r: float, market_ang:
 			row.append([k, w])
 			width += w
 		left -= row.size()
+		if not row.is_empty():
+			laid_rows.append([width * 0.5, arc])
 		if ri == 0:
 			outer_end = width * 0.5
 			outer_arc = arc
@@ -2170,7 +2174,18 @@ static func lay_stalls(mk: Dictionary, stalls: int, square_r: float, market_ang:
 		for r in row:
 			out.append([r[0], ang + float(r[1]) * 0.5, arc])
 			ang += float(r[1])
-	return {"stalls": out, "outer_end": outer_end, "outer_arc": outer_arc}
+	return {"stalls": out, "outer_end": outer_end, "outer_arc": outer_arc, "rows": laid_rows}
+
+
+## Where the market's wagon draws up to unload: at the end of the innermost row, on the side away from the King's
+## statue (towns.json market.<rank>.beside_turn turns it off the castle's way in), a wagon's half length past the last
+## stall, so the outer row's ends by the gate keep the way in open (Mac's "big square, 16 stalls": the rows run round
+## toward the gate). [angle, radius]; static, so a headless probe checks the same spot.
+static func wagon_spot(mk: Dictionary, laid: Dictionary, market_ang: float) -> Array:
+	var rows: Array = laid.get("rows", [])
+	var row: Array = rows[rows.size() - 1] if not rows.is_empty() else [float(laid["outer_end"]), float(laid["outer_arc"])]
+	var away := -1.0 if float(mk.get("beside_turn", 0.0)) >= 0.0 else 1.0
+	return [market_ang + away * (float(row[0]) + 0.35 * 0.8 / maxf(float(row[1]), 0.1)), float(row[1])]
 
 
 ## The square's life: a well at its heart (a great town's fountain), and the market along one side: rows
@@ -2250,8 +2265,6 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 	var fronts := Vector3.ZERO
 	var n := 0
 	var laid := lay_stalls(mk, stalls, square_r, market_ang, stall_kinds, rng)
-	var outer_end := float(laid["outer_end"])  # how far the outer row runs either side of the market's middle (radians)
-	var outer_arc := float(laid["outer_arc"])
 	for i in (laid["stalls"] as Array).size():
 		var kind: String = laid["stalls"][i][0]
 		var stall: Vector2 = Real.footprint(kind)
@@ -2284,9 +2297,10 @@ func _plaza(root: Node3D, center: Vector3, square_r: float, size: int, seat: boo
 	root.set_meta("stalls_stood", n)
 	if n > 0:
 		places["market"] = fronts / n
-	# A wagon drawn up at the end of the outer row, unloading.
-	var wa := market_ang + outer_end + 0.35 * 0.8 / maxf(outer_arc, 0.1)
-	var wp := Vector3(cos(wa), 0, sin(wa)) * outer_arc
+	# A wagon drawn up at the end of the inner row, unloading.
+	var spot := wagon_spot(mk, laid, market_ang)
+	var wa := float(spot[0])
+	var wp := Vector3(cos(wa), 0, sin(wa)) * float(spot[1])
 	drop.call("old_wooden_wagon" if Real.footprint("old_wooden_wagon") != Vector2.ZERO else "medieval_wooden_cart", wp, -wa)  # lying along the row
 	var wagon_foot := Real.footprint("old_wooden_wagon" if Real.footprint("old_wooden_wagon") != Vector2.ZERO else "medieval_wooden_cart")
 	var wagon_side := -wp.normalized()  # its side toward the square's heart, where it's unloaded
