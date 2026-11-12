@@ -45,6 +45,19 @@ func _run() -> void:
 		var box := mesh.get_aabb()
 		var w := int(spec.get("w", 18)) * 2.0
 		_check(box.size.x > w * 0.9 and box.size.x < w * 1.5 and box.size.y > 12.0, "%s spans %.1f x %.1f x %.1f m on its %.0f m plan" % [v.get("name"), box.size.x, box.size.y, box.size.z, w])
+	# A town wall (walls.gd builds each section through castle_builder.town_wall): two straight runs and a turn.
+	var bays := []
+	for j in 12:
+		bays.append([Vector3(j * 2.0 + 1.0, 0, 0), 0.0, j])
+	for j in 6:
+		bays.append([Vector3(26.0, 0, -(j * 2.0 + 1.0)), PI / 2, j])
+	var wall: ArrayMesh = Castle.new().town_wall(bays, [Vector3(25.0, 0, 0)], 2, 7)
+	var wn := []
+	for i in wall.get_surface_count():
+		var m := wall.surface_get_material(i)
+		wn.append(m.resource_name if m else "")
+	_check(wall.get_surface_count() > 0 and wn.all(func(n): return not (String(n) in KIT_MATS or String(n).contains("colormap"))), "a town wall builds from the castle set only %s" % [wn])
+	_check(wall.get_aabb().size.y > 6.0, "a town wall stands %.1f m" % wall.get_aabb().size.y)
 	var comps: Dictionary = Data.value("assets", "components", {})
 	for id in HOUSES:
 		_check((comps.get(id, {}) as Dictionary).get("variants", [null]).is_empty(), "%s keeps no kit variant in assets.json" % id)
